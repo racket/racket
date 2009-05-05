@@ -130,9 +130,8 @@
           body2]
          [_ (let ([ty-str (match type
                             [(tc-result1: (? (lambda (t) (type-equal? t -Void)))) #f]
-                            [(tc-result1: t)
-                             (format "- : ~a\n" t)]
-                            [(tc-results: ts) (format "- : ~a\n" (cons 'values ts))]
+                            [(tc-results: t)
+                             (format "- : ~a\n" type)]
                             [x (int-err "bad type result: ~a" x)])])
               (if #'ty-str                  
                   #`(let ([type '#,ty-str])

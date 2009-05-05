@@ -188,9 +188,9 @@
         [(quote #t) (ret (-val #t) true-filter)]
         [(quote val)  (match expected
                         [(tc-result1: t)
-                         (ret (tc-literal #'val t))])]
+                         (ret (tc-literal #'val t) true-filter)])]
         ;; syntax
-        [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)))]
+        [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) true-filter)]
         ;; mutation!
         [(set! id val)
          (match-let* ([(tc-result: id-t) (tc-expr #'id)]
@@ -273,9 +273,9 @@
       [(quote #f) (ret (-val #f) false-filter)]
       [(quote #t) (ret (-val #t) true-filter)]
       
-      [(quote val)  (ret (tc-literal #'val))]
+      [(quote val)  (ret (tc-literal #'val) true-filter)]
       ;; syntax
-      [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)))]
+      [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) true-filter)]
       ;; w-c-m
       [(with-continuation-mark e1 e2 e3)
        (begin (tc-expr/check/type #'e1 Univ)
@@ -315,7 +315,6 @@
       ;; application        
       [(#%plain-app . _) (tc/app form)]
       ;; if
-      [(if tst body) (tc/if-twoarm #'tst #'body #'(#%app void))]
       [(if tst thn els) (tc/if-twoarm #'tst #'thn #'els)]                          
 
       

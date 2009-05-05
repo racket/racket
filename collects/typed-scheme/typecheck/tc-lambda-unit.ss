@@ -277,7 +277,7 @@
 (define (tc/lambda/internal form formals bodies expected)
   (if (or (syntax-property form 'typechecker:plambda) (Poly? expected) (PolyDots? expected))
       (ret (tc/plambda form formals bodies expected))
-      (ret (tc/mono-lambda/type formals bodies expected))))
+      (ret (tc/mono-lambda/type formals bodies expected) true-filter)))
 
 ;; tc/lambda : syntax syntax-list syntax-list -> tc-result
 (define (tc/lambda form formals bodies)

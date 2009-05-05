@@ -30,7 +30,8 @@
          just-Dotted?
          tc-error/expr
          lookup-fail
-         lookup-type-fail)
+         lookup-type-fail
+         combine-results)
 
 
 ;; substitute : Type Name Type -> Type
@@ -190,17 +191,15 @@
 
 ;; convenience function for returning the result of typechecking an expression
 (define ret
-  (case-lambda [(t) 
-                (make-tc-results
-                 (cond [(Type? t)
-                        (list (make-tc-result t (make-FilterSet null null) (make-Empty)))]
-                       [(or (Values? t) (ValuesDots? t))
-                        (int-err "Values in ret: ~a" t)
-                        #;(values->tc-results t)]
-                       [else
-                        (for/list ([i t])
-                          (make-tc-result i (make-FilterSet null null) (make-Empty)))])
-                 #f)]
+  (case-lambda [(t)
+                (let ([mk (lambda (t) (make-FilterSet null null))])
+                  (make-tc-results
+                   (cond [(Type? t)
+                          (list (make-tc-result t (mk t) (make-Empty)))]                       
+                         [else
+                          (for/list ([i t])
+                            (make-tc-result i (mk t) (make-Empty)))])
+                   #f))]
                [(t f)
                 (make-tc-results
                  (if (Type? t)
@@ -225,7 +224,7 @@
 
 (p/c
  [ret    
-  (->d ([t (or/c Type/c (listof Type/c) Values? ValuesDots?)])
+  (->d ([t (or/c Type/c (listof Type/c))])
        ([f (if (list? t)
                (listof FilterSet?)
                FilterSet?)]
@@ -235,6 +234,11 @@
         [dty Type/c]
         [dbound symbol?])
        [_ tc-results?])])
+
+(define (combine-results tcs)
+  (match tcs
+    [(list (tc-result1: t f o) ...)
+     (ret t f o)]))
 
 (define (subst v t e) (substitute t v e))
 

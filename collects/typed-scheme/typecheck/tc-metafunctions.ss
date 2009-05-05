@@ -118,28 +118,30 @@
 (define-match-expander F-FS:
   (lambda (stx) #'(FilterSet: (list (Bot:)) _)))
 
-(d/c (combine-filter f1 f2 f3)
-  (FilterSet? FilterSet? FilterSet? . -> . FilterSet?)
+(d/c (combine-filter f1 f2 f3 t2 t3 o2 o3)
+  (FilterSet? FilterSet? FilterSet? Type? Type? Object? Object? . -> . tc-results?)
+  (define (mk f) (ret (Un t2 t3) f (make-Empty)))
   (match* (f1 f2 f3)
-    [(f (T-FS:) (F-FS:)) f] ;; the student expansion
-    [((T-FS:) f _) f]
-    [((F-FS:) _ f) f]
+    [((T-FS:) f _) (ret t2 f o2)]
+    [((F-FS:) _ f) (ret t3 f o3)]
     ;; skipping the general or/predicate rule because it's really complicated
     ;; or/predicate special case for one elem lists
     ;; note that we are relying on equal? on identifiers here
     [((FilterSet: (list (TypeFilter: t pi x)) (list (NotTypeFilter: t pi x)))
       (T-FS:)
       (FilterSet: (list (TypeFilter: s pi x)) (list (NotTypeFilter: s pi x))))
-     (make-FilterSet (list (make-TypeFilter (Un t s) pi x)) (list (make-NotTypeFilter (Un t s) pi x)))]
+     (mk (make-FilterSet (list (make-TypeFilter (Un t s) pi x)) (list (make-NotTypeFilter (Un t s) pi x))))]
     ;; or
-    [((FilterSet: f1+ f1-) (T-FS:) (FilterSet: f3+ f3-)) (combine null (append f1- f3-))]
+    [((FilterSet: f1+ f1-) (T-FS:) (FilterSet: f3+ f3-)) (mk (combine null (append f1- f3-)))]
     ;; and
     [((FilterSet: f1+ f1-) (FilterSet: f2+ f2-) (F-FS:)) 
-     (combine (append f1+ f2+) null)]
-    [(f f* f*) f*]
+     (mk (combine (append f1+ f2+) null))]
+    [(f f* f*) (mk f*)]
+    ;; the student expansion
+    [(f (T-FS:) (F-FS:)) (mk f)]
     [(_ _ _)
      ;; could intersect f2 and f3 here
-     (make-FilterSet null null)]))
+     (mk (make-FilterSet null null))]))
 
 ;; (or/c Values? ValuesDots?) listof[identifier] -> tc-results?
 (define (values->tc-results tc formals)
