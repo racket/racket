@@ -5,7 +5,7 @@
 (require "type-env.ss" 
 	 "type-name-env.ss"
 	 "type-alias-env.ss"
-         (rep type-rep object-rep filter-rep)
+         (rep type-rep object-rep filter-rep rep-utils)
 	 (for-template (rep type-rep object-rep filter-rep) 
 		       (types union)
 		       mzlib/pconvert mzlib/shared scheme/base)
@@ -36,7 +36,8 @@
     [(Poly-names: ns b) `(make-Poly (list ,@(map sub ns)) ,(sub b))]
     [(PolyDots-names: ns b) `(make-PolyDots (list ,@(map sub ns)) ,(sub b))]
     [(? (lambda (e) (or (LatentFilter? e)
-                        (LatentObject? e)))
+                        (LatentObject? e)
+                        (PathElem? e)))
         (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq vals))) 
      `(,(gen-constructor tag) ,@(map sub vals))]
     [(? (lambda (e) (or (Type? e)))

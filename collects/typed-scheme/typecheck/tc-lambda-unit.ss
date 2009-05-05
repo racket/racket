@@ -30,7 +30,7 @@
 (define (lam-result->type lr)
   (match lr
     [(struct lam-result ((list (list arg-ids arg-tys) ...) (list (list kw kw-id kw-ty req?) ...) rest drest body))
-     (make-arr/values 
+     (make-arr 
       arg-tys
       (abstract-filters (append (for/list ([i (in-naturals)] [_ arg-ids]) i) kw)
                         (append arg-ids kw-id)

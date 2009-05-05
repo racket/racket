@@ -169,19 +169,6 @@
                     (make-Values (list (-result rng filters obj))))
             rest drest (sort #:key Keyword-kw kws keyword<?)))
 
-(d/c (make-arr/values dom rng
-                      #:rest [rest #f] #:drest [drest #f] #:kws [kws null]
-                      #:filters [filters -no-lfilter] #:object [obj -no-lobj])
-     (c:->* ((listof Type/c) (or/c ValuesDots? Values?))
-            (#:rest (or/c Type/c #f) 
-             #:drest (or/c (cons/c Type/c symbol?) #f)
-             #:kws (listof Keyword?)
-             #:filters LFilterSet?
-             #:object LatentObject?)
-            arr?)
-  (make-arr dom rng rest drest (sort #:key Keyword-kw kws keyword<?)))
-
-
 (define-syntax ->*
   (syntax-rules (:)
     [(_ dom rng)       

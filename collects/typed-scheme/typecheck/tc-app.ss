@@ -5,7 +5,7 @@
          "tc-app-helper.ss"
          stxclass scheme/match mzlib/trace
          (for-syntax stxclass)
-         (types utils abbrev union subtype)
+         (types utils abbrev union subtype resolve)
          (utils tc-utils)
          (rep type-rep filter-rep object-rep)
          (for-template 
@@ -95,17 +95,44 @@
     [((tc-result1: (and t (Function: (list (and a (arr: dom (Values: (list (Result: t-r lf-r lo-r) ...)) rest #f kws))))))
       argtys)
      (tc/funapp1 f-stx args-stx a argtys expected)]
-    [((tc-result1: (and t (Function: (and arrs (list (arr: doms rngs rests #f kws) ...)))))
+    [((tc-result1: (and t (Function: (and arrs (list (arr: doms rngs rests (and drests #f) kws) ...)))))
       (and argtys (list (tc-result1: argtys-t) ...)))
-     (let loop ([doms* doms] [rngs rngs] [rests* rests] [a arrs])
-       (cond [(null? doms*) 
-              (tc-error/expr 
-               #:return (or expected (ret (Un)))
-               (string-append "No function domains matched in function application:\n"
-                              (domain-mismatches t doms rests #f rngs argtys #f #f)))]
-             [(subtypes/varargs argtys-t (car doms*) (car rests*))
-              (tc/funapp1 f-stx args-stx (car a) argtys expected #:check #f)]
-             [else (loop (cdr doms*) (cdr rngs) (cdr rests*) (cdr a))]))]))
+     (or 
+      ;; find the first function where the argument types match
+      (for/first ([dom doms] [rng rngs] [rest rests] [a arrs]
+                  #:when (subtypes/varargs argtys-t dom rest))
+        ;; then typecheck here
+        ;; we call the separate function so that we get the appropriate filters/objects
+        (tc/funapp1 f-stx args-stx a argtys expected #:check #f))
+      ;; if nothing matched, error
+      (tc-error/expr 
+       #:return (or expected (ret (Un)))
+       (string-append "No function domains matched in function application:\n"
+                      (domain-mismatches t doms rests drests rngs argtys-t #f #f))))]
+    ;; parameters are functions too
+    [((tc-result1: (Param: in out)) (list)) (ret out)]
+    [((tc-result1: (Param: in out)) (list (tc-result1: t)))
+     (if (subtype t in) 
+         (ret -Void true-filter)
+         (tc-error/expr #:return (ret -Void true-filter)
+                        "Wrong argument to parameter - expected ~a and got ~a" in t))]
+    [((tc-result1: (Param: _ _)) _) 
+     (tc-error/expr #:return (ret (Un))
+                    "Wrong number of arguments to parameter - expected 0 or 1, got ~a"
+                    (length argtys))]
+    ;; resolve names, polymorphic apps, mu, etc
+    [((tc-result1: (? needs-resolving? t) f o) _)
+     (tc/funapp f-stx args-stx (ret (resolve-once t) f o) argtys expected)]
+    ;; a union of functions can be applied if we can apply all of the elements
+    [((tc-result1: (Union: (and ts (list (Function: _) ...)))) _)
+     (ret (for/fold ([result (Un)]) ([fty ts])            
+            (match (tc/funapp f-stx args-stx (ret fty) argtys expected)
+              [(tc-result1: t) (Un result t)])))]
+    ;; error type is a perfectly good fcn type
+    [((tc-result1: (Error:)) _) (ret (make-Error))]
+    ;; otherwise fail
+    [((tc-result1: f-ty) _) (tc-error/expr #:return (ret (Un))
+                                           "Cannot apply expression of type ~a, since it is not a function type" f-ty)]))
 
 
 ;; syntax? syntax? arr? (listof tc-results?) (or/c #f tc-results) [boolean?] -> tc-results?

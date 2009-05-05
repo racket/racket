@@ -250,7 +250,7 @@
 
 [apply        (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
 [kernel:apply (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
-[time-apply (-polydots (b a) (make-arr/values
+[time-apply (-polydots (b a) (make-arr
                               (list ((list) (a a) . ->... . b)
                                     (-lst a))                               
                               (-values (list (-pair b (-val '())) N N N))))]
@@ -261,7 +261,7 @@
 [quotient (-Integer -Integer . -> . -Integer)]
 [remainder (-Integer -Integer . -> . -Integer)]
 [quotient/remainder 
- (make-arr/values (list -Integer -Integer) (-values (list -Integer -Integer)))]
+ (make-arr (list -Integer -Integer) (-values (list -Integer -Integer)))]
 
 ;; parameter stuff
 

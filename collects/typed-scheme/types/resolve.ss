@@ -8,7 +8,7 @@
          scheme/match
          mzlib/trace)
 
-(provide resolve-name resolve-app needs-resolving? resolve-once)
+(provide resolve-name resolve-app needs-resolving? resolve-once resolve)
 
 (define (resolve-name t)
   (match t
@@ -33,3 +33,6 @@
     [(Mu: _ _) (unfold t)]
     [(App: r r* s) (resolve-app r r* s)]
     [(Name: _) (resolve-name t)]))
+
+(define (resolve t)
+  (if (needs-resolving? t) (resolve-once t) t))

@@ -19,6 +19,18 @@
 (+)
 (+ 1 2 3)
 (+ 1 2 3.5)
+#|
+(define-struct: (Z) x ([y : Z]))
+(define:  my-x : (x Number) (make-x 1))
+(number? (x-y my-x))
+(if (number? (x-y my-x)) (+ 1 (x-y my-x)) 7)
+|#
+
+(define: (f2) : (U) (error 'foo))
+(lambda: ([x : Number]) #{((f2)) :: (U)})
+
+(: f3 (U (Number -> Number) (Number -> String)))
+(define (f3 x) 7)
 
 ;(f 12 "hi")
 
