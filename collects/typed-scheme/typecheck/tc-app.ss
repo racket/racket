@@ -2,9 +2,10 @@
 
 (require (rename-in "../utils/utils.ss" [infer r:infer])
          "signatures.ss" "tc-metafunctions.ss"
+         "tc-app-helper.ss"
          stxclass scheme/match mzlib/trace
          (for-syntax stxclass)
-         (types utils abbrev)
+         (types utils abbrev union subtype)
          (utils tc-utils)
          (rep type-rep filter-rep object-rep)
          (for-template 
@@ -88,24 +89,48 @@
 (define (in-indexes dom)
   (in-range (length dom)))
 
-;; syntax? syntax? tc-results? (listof tc-results?) (or/c #f tc-results) -> tc-results?
 (define (tc/funapp f-stx args-stx ftype0 argtys expected)
   (match* (ftype0 argtys)
-    [((tc-result1: (Function: (list (arr: dom (Values: (list (Result: t-r lf-r lo-r) ...)) #f #f '()))))
+    ;; we special-case this (no case-lambda) for improved error messages
+    [((tc-result1: (and t (Function: (list (and a (arr: dom (Values: (list (Result: t-r lf-r lo-r) ...)) rest #f kws))))))
+      argtys)
+     (tc/funapp1 f-stx args-stx a argtys expected)]
+    [((tc-result1: (and t (Function: (and arrs (list (arr: doms rngs rests #f kws) ...)))))
+      (and argtys (list (tc-result1: argtys-t) ...)))
+     (let loop ([doms* doms] [rngs rngs] [rests* rests] [a arrs])
+       (cond [(null? doms*) 
+              (tc-error/expr 
+               #:return (or expected (ret (Un)))
+               (string-append "No function domains matched in function application:\n"
+                              (domain-mismatches t doms rests #f rngs argtys #f #f)))]
+             [(subtypes/varargs argtys-t (car doms*) (car rests*))
+              (tc/funapp1 f-stx args-stx (car a) argtys expected #:check #f)]
+             [else (loop (cdr doms*) (cdr rngs) (cdr rests*) (cdr a))]))]))
+
+
+;; syntax? syntax? arr? (listof tc-results?) (or/c #f tc-results) [boolean?] -> tc-results?
+(define (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
+  (match* (ftype0 argtys)
+    [((arr: dom (Values: (list (Result: t-r lf-r lo-r) ...)) rest #f '())
       (list (tc-result1: t-a phi-a o-a) ...))
-     (unless (= (length dom) (length t-a))
-       (tc-error/expr #:return (ret t-r)
-                      "Wrong number of arguments"))
-     (for ([dom-t (in-list dom)] [arg-t (in-list t-a)])
-       (check-below arg-t dom-t))
+     (when check?
+       (cond [(and (not rest) (not (= (length dom) (length t-a))))
+              (tc-error/expr #:return (ret t-r)
+                             "Wrong number of arguments, expected ~a and got ~a" (length dom) (length t-a))]
+             [(and rest (< (length t-a) (length dom)))
+              (tc-error/expr #:return (ret t-r)
+                             "Wrong number of arguments, expected at least ~a and got ~a" (length dom) (length t-a))])
+       (for ([dom-t (in-list-forever dom rest)] [a (syntax->list args-stx)] [arg-t (in-list t-a)])
+         (parameterize ([current-orig-stx a]) (check-below arg-t dom-t))))
      (let* (;; Listof[Listof[LFilterSet]]
             [lfs-f (for/list ([lf lf-r])
-                    (for/list ([i (in-indexes dom)])
-                      (split-lfilters lf i)))]
+                     (for/list ([i (in-indexes dom)])
+                       (split-lfilters lf i)))]
             ;; Listof[FilterSet]
             [f-r (for/list ([lfs lfs-f])
-                   (merge-filter-sets (for/list ([lf lfs] [t t-a] [o o-a])
-                                    (apply-filter lf t o))))]
+                   (merge-filter-sets 
+                    (for/list ([lf lfs] [t t-a] [o o-a])
+                      (apply-filter lf t o))))]
             ;; Listof[Object]
             [o-r (for/list ([lo lo-r])                     
                    (match lo
@@ -116,4 +141,4 @@
                      [_ (make-Empty)]))])
        (ret t-r f-r o-r))]
     [(_ _)
-     (int-err "funapp with keyword/rest args NYI")]))
+     (int-err "funapp with keyword args NYI")]))

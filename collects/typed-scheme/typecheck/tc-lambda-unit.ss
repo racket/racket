@@ -5,7 +5,7 @@
          "tc-metafunctions.ss"
          mzlib/trace
          scheme/list
-         stxclass/util
+         stxclass/util syntax/stx
          (rename-in scheme/contract [-> -->] [->* -->*] [one-of/c -one-of/c])
          (except-in (rep type-rep) make-arr)
          (rename-in (types convenience utils union)
@@ -160,10 +160,11 @@
                    #f
                    (tc-exprs (syntax->list body)))))]))]))
 
-
-;; FIXED TO HERE
-
-;(trace tc-args)
+(define (formals->list l)
+  (let loop ([l (syntax-e l)])
+    (cond [(stx-pair? l) (cons (stx-car l) (loop (stx-cdr l)))]
+          [(pair? l) (cons (car l) (loop (cdr l)))]
+          [else null])))
 
 ;; tc/mono-lambda : syntax-list syntax-list (or/c #f tc-results) -> (listof lam-result)
 ;; typecheck a sequence of case-lambda clauses
@@ -200,7 +201,7 @@
          [(tc-result1: (Function: (list (arr: argss rets rests drests '()) ...)))
           (for/list ([args argss] [ret rets] [rest rests] [drest drests])
             (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies))
-                                    args (values->tc-results ret (syntax->list (car (syntax->list formals)))) rest drest))]
+                                    args (values->tc-results ret (formals->list (car (syntax->list formals)))) rest drest))]
          [_ (go (syntax->list formals) (syntax->list bodies) null null null)]))]
     ;; otherwise
     [else (go (syntax->list formals) (syntax->list bodies) null null null)]))
