@@ -38,24 +38,24 @@ the state transitions / contracts are:
 (define exn:make-unknown-preference make-exn:unknown-preference)
 (define exn:struct:unknown-preference struct:exn:unknown-preference)
 
+(define preferences:low-level-put-preferences (make-parameter put-preferences))
+(define preferences:low-level-get-preference  (make-parameter get-preference))
+
 (define old-preferences-symbol 'plt:framework-prefs)
-(define old-preferences (make-hasheq))
-(let ([old-prefs (get-preference old-preferences-symbol (λ () '()))])
-  (for-each
-   (λ (line) (hash-set! old-preferences (car line) (cadr line)))
-   old-prefs))
+;; reading is delayed, in case the low-level parameter is changed
+(define old-preferences #f)
+(define (init-old-preferences)
+  (unless old-preferences
+    (set! old-preferences (make-hasheq))
+    (for ([line (in-list ((preferences:low-level-get-preference)
+                          old-preferences-symbol (λ () '())))])
+      (hash-set! old-preferences (car line) (cadr line)))))
 
 (define (add-pref-prefix p) (string->symbol (format "plt:framework-pref:~a" p)))
 
 ;; preferences : hash-table[sym -o> any]
 ;; the current values of the preferences
 (define preferences (make-hasheq))
-
-;; marshalled : hash-table[sym -o> any]
-;; the values of the preferences, as read in from the disk
-;; each symbol will only be mapped in one of the preferences
-;; hash-table and this hash-table, but not both.
-(define marshalled (make-hasheq))
 
 ;; marshall-unmarshall : sym -o> un/marshall
 (define marshall-unmarshall (make-hasheq))
@@ -93,18 +93,24 @@ the state transitions / contracts are:
   (cond
     [(pref-default-set? p)
      
-     ;; unmarshall, if required
-     (when (hash-has-key? marshalled p)
-       ;; if `preferences' is already bound, that means the unmarshalled value isn't useful.
-       (unless (hash-has-key? preferences p)
-         (hash-set! preferences p (unmarshall-pref p (hash-ref marshalled p))))
-       (hash-remove! marshalled p))
+     (unless (hash-has-key? preferences p)
+       ;; first time reading this, check the file, unmarshall if required
+       (let/ec k
+         ;; if there is no preference saved, we just don't do anything.
+         ;; the code below notices this case.
+         (let ([marshalled ((preferences:low-level-get-preference)
+                            (add-pref-prefix p) (λ () (k (void))))])
+           (hash-set! preferences p (unmarshall-pref p marshalled)))))
+     
+     ;; initialize old-preferences if needed
+     (init-old-preferences)
      
      ;; if there is no value in the preferences table, but there is one
      ;; in the old version preferences file, take that:
      (unless (hash-has-key? preferences p)
        (when (hash-has-key? old-preferences p)
-         (hash-set! preferences p (unmarshall-pref p (hash-ref old-preferences p)))))
+         (hash-set! preferences p
+                    (unmarshall-pref p (hash-ref old-preferences p)))))
      
      ;; clear the pref from the old table (just in case it was taking space -- we don't need it anymore)
      (when (hash-has-key? old-preferences p)
@@ -154,8 +160,6 @@ the state transitions / contracts are:
         ps
         values))
   (void))
-
-(define preferences:low-level-put-preferences (make-parameter put-preferences))
 
 (define (raise-unknown-preference-error sym fmt . args)
   (raise (exn:make-unknown-preference
@@ -243,12 +247,7 @@ the state transitions / contracts are:
        (unless default-okay?
          (error 'set-default "~s: checker (~s) returns ~s for ~s, expected #t~n"
                 p checker default-okay? default-value))
-       (hash-set! defaults p (make-default default-value checker))
-       (let/ec k
-         (let ([m (get-preference (add-pref-prefix p) (λ () (k (void))))])
-           ;; if there is no preference saved, we just don't do anything.
-           ;; `get' notices this case.
-           (hash-set! marshalled p m))))]
+       (hash-set! defaults p (make-default default-value checker)))]
     [(not (pref-can-init? p))
      (error 'preferences:set-default
             "tried to call set-default for preference ~e but it cannot be configured any more"
@@ -350,83 +349,77 @@ the state transitions / contracts are:
   ((p f)
    ((weak? #f)))
   @{This function adds a callback which is called with a symbol naming a
-         preference and its value, when the preference changes.
-         @scheme[preferences:add-callback] returns a thunk, which when
-         invoked, removes the callback from this preference.
-         
-         If @scheme[weak?] is true, the preferences system will only hold on to
-         the callback weakly.
-         
-         The callbacks will be called in the order in which they were added.
-         
-         If you are adding a callback for a preference that requires
-         marshalling and unmarshalling, you must set the marshalling and
-         unmarshalling functions by calling
-         @scheme[preferences:set-un/marshall] before adding a callback.
-         
-         This function raises
-         @index['("exn:unknown-preference")]{@scheme[exn:unknown-preference]}
-         @scheme[exn:unknown-preference]
-         if the preference has not been set.})
+    preference and its value, when the preference changes.
+    @scheme[preferences:add-callback] returns a thunk, which when
+    invoked, removes the callback from this preference.
+    
+    If @scheme[weak?] is true, the preferences system will only hold on to
+    the callback weakly.
+    
+    The callbacks will be called in the order in which they were added.
+    
+    If you are adding a callback for a preference that requires
+    marshalling and unmarshalling, you must set the marshalling and
+    unmarshalling functions by calling
+    @scheme[preferences:set-un/marshall] before adding a callback.
+    
+    This function raises
+    @index['("exn:unknown-preference")]{@scheme[exn:unknown-preference]}
+    @scheme[exn:unknown-preference]
+    if the preference has not been set.})
  (proc-doc/names
   preferences:set-default
   (symbol? any/c (any/c . -> . any) . -> . void?)
   (symbol value test)
-  @{This function must be called every time your application starts up, before any call to
-         @scheme[preferences:get] or
-         @scheme[preferences:set]
-         (for any given preference).
-         
-         If you use
-         @scheme[preferences:set-un/marshall],
-         you must call this function before calling it.
-         
-         This sets the default value of the preference @scheme[symbol] to
-         @scheme[value]. If the user has chosen a different setting,
-         the user's setting
-         will take precedence over the default value.
-         
-         The last argument, @scheme[test] is used as a safeguard. That function is
-         called to determine if a preference read in from a file is a valid
-         preference. If @scheme[test] returns @scheme[#t], then the preference is
-         treated as valid. If @scheme[test] returns @scheme[#f] then the default is
-         used.})
+  @{This function must be called every time your application starts up, before
+    any call to @scheme[preferences:get] or @scheme[preferences:set]
+    (for any given preference).
+    
+    If you use @scheme[preferences:set-un/marshall],
+    you must call this function before calling it.
+    
+    This sets the default value of the preference @scheme[symbol] to
+    @scheme[value]. If the user has chosen a different setting,
+    the user's setting will take precedence over the default value.
+    
+    The last argument, @scheme[test] is used as a safeguard. That function is
+    called to determine if a preference read in from a file is a valid
+    preference. If @scheme[test] returns @scheme[#t], then the preference is
+    treated as valid. If @scheme[test] returns @scheme[#f] then the default is
+    used.})
  (proc-doc/names
   preferences:set-un/marshall
   (symbol? (any/c . -> . printable/c) (printable/c . -> . any/c) . -> . void?)
   (symbol marshall unmarshall)
   @{@scheme[preference:set-un/marshall] is used to specify marshalling and
-           unmarshalling functions for the preference
-           @scheme[symbol]. @scheme[marshall] will be called when the users saves their
-           preferences to turn the preference value for @scheme[symbol] into a
-           printable value. @scheme[unmarshall] will be called when the user's
-           preferences are read from the file to transform the printable value
-           into its internal representation. If @scheme[preference:set-un/marshall]
-           is never called for a particular preference, the values of that
-           preference are assumed to be printable.
-           
-           If the unmarshalling function returns a value that does not meet the
-           guard passed to 
-           @scheme[preferences:set-default]
-           for this preference, the default value is used.
-           
-           The @scheme[marshall] function might be called with any value returned
-           from @scheme[read] and it must not raise an error 
-           (although it can return arbitrary results if it gets bad input). This might
-           happen when the preferences file becomes corrupted, or is edited
-           by hand.
-           
-           @scheme[preference:set-un/marshall] must be called before calling
-           @scheme[preferences:get],
-           @scheme[preferences:set].})
+    unmarshalling functions for the preference
+    @scheme[symbol]. @scheme[marshall] will be called when the users saves their
+    preferences to turn the preference value for @scheme[symbol] into a
+    printable value. @scheme[unmarshall] will be called when the user's
+    preferences are read from the file to transform the printable value
+    into its internal representation. If @scheme[preference:set-un/marshall]
+    is never called for a particular preference, the values of that
+    preference are assumed to be printable.
+    
+    If the unmarshalling function returns a value that does not meet the
+    guard passed to @scheme[preferences:set-default]
+    for this preference, the default value is used.
+    
+    The @scheme[marshall] function might be called with any value returned
+    from @scheme[read] and it must not raise an error 
+    (although it can return arbitrary results if it gets bad input). This might
+    happen when the preferences file becomes corrupted, or is edited
+    by hand.
+    
+    @scheme[preference:set-un/marshall] must be called before calling
+    @scheme[preferences:get],@scheme[preferences:set].})
  
  (proc-doc/names
   preferences:restore-defaults
   (-> void?)
   ()
-  @{@scheme[(preferences:restore-defaults)]
-           restores the users's configuration to the
-           default preferences.})
+  @{@scheme[(preferences:restore-defaults)] restores the users' configuration
+    to the default preferences.})
  
  (proc-doc/names
   exn:make-unknown-preference 
@@ -442,28 +435,33 @@ the state transitions / contracts are:
  
  (parameter-doc
   preferences:low-level-put-preferences
-  (parameter/c (-> (listof symbol?) (listof any/c) any))
-  put-preference
-  @{This parameter's value
-         is called to save preference the preferences. Its interface should 
-         be just like mzlib's @scheme[put-preference].})
+  (parameter/c ((listof symbol?) (listof any/c) . -> . any))
+  put-preferences
+  @{This parameter's value is called to save preference the preferences file.
+    Its interface should be just like mzlib's @scheme[put-preferences].})
+ 
+ (parameter-doc
+  preferences:low-level-get-preference
+  (parameter/c (->* [symbol?] [(-> any)] any))
+  get-preference
+  @{This parameter's value is called to get a preference from the preferences
+    file. Its interface should be just like mzlib's @scheme[get-preference].})
  
  (proc-doc/names
   preferences:snapshot? 
   (-> any/c boolean?)
   (arg)
   @{Determines if its argument is a preferences snapshot.
-               
-               See also 
-               @scheme[preferences:get-prefs-snapshot] and 
-               @scheme[preferences:restore-prefs-snapshot].})
+    
+    See also @scheme[preferences:get-prefs-snapshot] and
+    @scheme[preferences:restore-prefs-snapshot].})
  (proc-doc/names
   preferences:restore-prefs-snapshot 
   (-> preferences:snapshot? void?)
   (snapshot)
   @{Restores the preferences saved in @scheme[snapshot].
-             
-             See also @scheme[preferences:get-prefs-snapshot].})
+    
+    See also @scheme[preferences:get-prefs-snapshot].})
  
  (proc-doc/names
   preferences:get-prefs-snapshot 
