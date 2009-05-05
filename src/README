@@ -63,8 +63,23 @@ the Unix instructions below, but note the following:
 
 Quick instructions:
 
- The usual `./configure', `make', and `make install' sequence
- typically works fine.
+ From this directory (where the `README' and `configure' files are),
+ run the following commands:
+
+   mkdir build
+   cd build
+   ../configure
+   make
+   make install
+
+ This will create an in-place installation of PLT Scheme and store the
+ results of C/C++ compilation in a separate `build' subdirectory,
+ which is useful if you need to update your sources, delete the build,
+ and start from scratch.
+
+ You can also run the typical `./configure && make && make install' if
+ you don't anticipate updating/rebuilding, but it will be harder to
+ restart from scratch should you need to.
 
 Detailed instructions:
 
@@ -86,35 +101,40 @@ Detailed instructions:
     `make'. If the build fails with another variant of `make', please
     try using GNU `make'.
 
- 1. Run the script `configure' (which is in the same directory as this
-    README), possibly with a --prefix=TARGETDIR command-line argument
-    and optionally with --enable-shared.
-
-    For example, if you want to install into /usr/local/plt using
-    dynamic libraries, then run
-
-        [here]configure --prefix=/usr/local/plt --enable-shared
-
-    where "[here]" is the directory path containing the `configure'
-    script (possibly unnecessary, or possibly just "./", depending on
-    your shell and PATH setting).
+ 1. Select (or create) a build directory.
 
     It's better to run the build in a directory other than the one
-    contianing `configure', especially if you're getting sources via
-    Subversion.  Also, `svn update' ignores a subdirectory next to
-    `configure' called "build", so a better and more common way to
-    configure a Subversion-based build is as follows:
+    containing `configure', especially if you're getting sources via
+    Subversion.  A common way to start a Subversion-based build is:
 
         cd [here]
         mkdir build
         cd build
-        ../configure
+
+    where "[here]" is the directory containing this `README' file and
+    the `configure' script.  The Subversion repository is configured
+    to support this convention by ignoring `build' in this directory.
 
     A separate build directory is better in case the Makefile
     organization changes, or in case the Makefiles lack some
     dependencies. In those cases, when using a "build" subdirectory,
     you can just delete and re-create "build" without mangling your
     source tree.
+
+ 2. From your build directory, run the script `configure' (which is in
+    the same directory as this README), with optional command-line
+    arguments --prefix=TARGETDIR or --enable-shared (or both).
+
+    For example, if you want to install into /usr/local/plt using
+    dynamic libraries, then run:
+
+        [here]configure --prefix=/usr/local/plt --enable-shared
+
+    Again, "[here]" is the directory path containing the `configure'
+    script.  If you follow the convention of running from a "build"
+    subdirectory, "[here]" is just "../".  If you build from the
+    current directory, "[here]" is possibly unnecessary, or possibly
+    just "./", depending on your shell and PATH setting.
 
     If the --prefix flag is omitted, the binaries are built for an
     in-place installation (i.e., the parent of the directory
@@ -160,7 +180,7 @@ Detailed instructions:
     build directory (but the same source) for each platform or
     configuration.
 
- 2. Run `make'. [As noted in step 0, this must be GNU `make'.]
+ 3. Run `make'. [As noted in step 0, this must be GNU `make'.]
 
     With Cygwin, you may need to use `make --unix'.
 
@@ -168,7 +188,7 @@ Detailed instructions:
     directory. For example, the `mzscheme' binary appears in the
     `mzscheme' directory.
 
- 3. Run `make install'.
+ 4. Run `make install'.
 
     This step copies binaries and libraries into place within the
     target installation. For example, the `mzscheme' binary is copied
@@ -193,9 +213,9 @@ Detailed instructions:
 
     If the installation fails because the target directory cannot be
     created, or because the target directory is not the one you
-    want, then you can try repeating step 3 after running `configure'
+    want, then you can try repeating step 4 after running `configure'
     again with a new --prefix value. That is, sometimes it is not
-    necessary to repeat step 2 (so try it and find out). On other
+    necessary to repeat step 3 (so try it and find out). On other
     platforms and configurations, it is necessary to start with a
     clean build directory when changing the --prefix value, because
     the path gets wired into shared objects.
