@@ -1,6 +1,7 @@
-#lang mzscheme
+#lang scheme/base
 
-(require mzlib/etc
+(require (for-syntax scheme/base)
+         mzlib/etc
          scheme/contract
          mzlib/list
          "private/port.ss")
@@ -1064,13 +1065,13 @@
 (define-syntax (newline-rx stx)
   (syntax-case stx ()
     [(_ str)
-     (datum->syntax-object
+     (datum->syntax
       #'here
       (byte-regexp (string->bytes/latin-1
                     (format "^(?:(.*?)~a)|(.*?$)" (syntax-e #'str)))))]))
 
 (define read-bytes-line-evt
-  (opt-lambda (input-port [mode 'linefeed])
+  (lambda (input-port [mode 'linefeed])
     (wrap-evt
      (regexp-match-evt (case mode
                          [(linefeed) (newline-rx "\n")]
@@ -1085,7 +1086,7 @@
              (if (and l (zero? (bytes-length l))) eof l)))))))
 
 (define read-line-evt
-  (opt-lambda (input-port [mode 'linefeed])
+  (lambda (input-port [mode 'linefeed])
     (wrap-evt
      (read-bytes-line-evt input-port mode)
      (lambda (s)

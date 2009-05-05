@@ -4983,7 +4983,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	 simultaneous definitions: */
       if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_syntax_type)
 	  && (SCHEME_PINT_VAL(e) == DEFINE_VALUES_EXPD)) {
-	int n;
+	int n, cnst = 0, sproc = 0;
 
 	e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
 
@@ -4993,7 +4993,16 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	n = scheme_list_length(vars);
 	cont = scheme_omittable_expr(e, n, -1, 0, info);
       
-	if ((n == 1) && scheme_compiled_propagate_ok(e, info)) {
+        if (n == 1) {
+          if (scheme_compiled_propagate_ok(e, info))
+            cnst = 1;
+          else if (scheme_is_statically_proc(e, info)) {
+            cnst = 1;
+            sproc = 1;
+          }
+        }
+
+	if (cnst) {
 	  Scheme_Toplevel *tl;
 
 	  tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
@@ -5001,7 +5010,9 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	  if (!(SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_MUTATED)) {
 	    Scheme_Object *e2;
 
-	    if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type)) {
+            if (sproc) {
+              e2 = scheme_make_noninline_proc(e);
+            } else if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type)) {
 	      e2 = scheme_optimize_clone(1, e, info, 0, 0);
               if (e2) {
                 Scheme_Object *pr;
@@ -5011,7 +5022,8 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
                 else
                   cl_first = pr;
                 cl_last = pr;
-              }
+              } else
+                e2 = scheme_make_noninline_proc(e);
 	    } else {
 	      e2 = e;
 	    }
@@ -5102,6 +5114,9 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
             if (rpos) {
               e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
               e = SCHEME_CDR(e);
+              if (!scheme_compiled_propagate_ok(e, info)
+                  && scheme_is_statically_proc(e, info))
+                e = scheme_make_noninline_proc(e);
               scheme_hash_set(info->top_level_consts, rpos, e);
             }
           }

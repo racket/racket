@@ -2589,9 +2589,23 @@ static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *r
           break;
       }
     }
+  }    
+
+  if (c && SAME_TYPE(scheme_noninline_proc_type, SCHEME_TYPE(c))) {
+    c = SCHEME_BOX_VAL(c);
+  
+    while (SAME_TYPE(SCHEME_TYPE(c), scheme_compiled_let_void_type)) {
+      /* This must be (let ([x <proc>]) <proc>); see scheme_is_statically_proc() */
+      Scheme_Let_Header *lh = (Scheme_Let_Header *)c;
+      Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
+      c = lv->body;
+    }
   }
 
-  if (c && SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(c)))
+  if (c 
+      && (SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(c))
+          || (SAME_TYPE(scheme_compiled_syntax_type, SCHEME_TYPE(c))
+              && (SCHEME_PINT_VAL(c) == CASE_LAMBDA_EXPD))))
     return c;
 
   return NULL;
@@ -2727,16 +2741,45 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 
   if (SAME_OBJ(scheme_procedure_arity_includes_proc, app->rator)) {
     if (SCHEME_INTP(app->rand2)) {
-      Scheme_Closure_Data *data;
-      data = (Scheme_Closure_Data *)lookup_constant_proc(info, app->rand1);
-      if (data) {
-        int n = SCHEME_INT_VAL(app->rand2);
-        info->preserves_marks = 1;
-        info->single_result = 1;
-        if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
-          return ((data->num_params - 1) <= n) ? scheme_true : scheme_false;
+      Scheme_Object *proc;
+      Scheme_Case_Lambda *cl;
+      int i, cnt;
+
+      proc = lookup_constant_proc(info, app->rand1);      
+      if (proc) {
+        if (SAME_TYPE(SCHEME_TYPE(proc), scheme_compiled_unclosed_procedure_type)) {
+          cnt = 1;
+          cl = NULL;
         } else {
-          return (data->num_params == n) ? scheme_true : scheme_false;
+          cl = (Scheme_Case_Lambda *)SCHEME_IPTR_VAL(proc);
+          cnt = cl->count;
+        }
+
+        for (i = 0; i < cnt; i++) {
+          if (cl) proc = cl->array[i];
+          
+          if (SAME_TYPE(SCHEME_TYPE(proc), scheme_compiled_unclosed_procedure_type)) {
+            Scheme_Closure_Data *data = (Scheme_Closure_Data *)proc;
+            int n = SCHEME_INT_VAL(app->rand2), ok;
+            if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
+              ok = ((data->num_params - 1) <= n);
+            } else {
+              ok = (data->num_params == n);
+            }
+            if (ok) {
+              info->preserves_marks = 1;
+              info->single_result = 1;
+              return scheme_true;
+            }
+          } else {
+            break;
+          }
+        }
+
+        if (i == cnt) {
+          info->preserves_marks = 1;
+          info->single_result = 1;
+          return scheme_false;
         }
       }
     }

@@ -2207,6 +2207,8 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
 
 int scheme_compiled_duplicate_ok(Scheme_Object *o);
 int scheme_compiled_propagate_ok(Scheme_Object *o, Optimize_Info *info);
+int scheme_is_statically_proc(Scheme_Object *value, Optimize_Info *info);
+Scheme_Object *scheme_make_noninline_proc(Scheme_Object *e);
 
 Scheme_Object *scheme_resolve_expr(Scheme_Object *, Resolve_Info *);
 Scheme_Object *scheme_resolve_list(Scheme_Object *, Resolve_Info *);

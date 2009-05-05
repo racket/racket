@@ -2837,6 +2837,46 @@ int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
   return 0;
 }
 
+int scheme_is_statically_proc(Scheme_Object *value, Optimize_Info *info)
+{
+  while (1) {
+    if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_unclosed_procedure_type))
+      return 1;
+    else if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_syntax_type)) {
+      if (SCHEME_PINT_VAL(value) == CASE_LAMBDA_EXPD)
+        return 1;
+      else
+        break;
+    } else if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_let_void_type)) {
+      /* Look for (let ([x <proc>]) <proc>), which is generated for optional arguments. */
+      Scheme_Let_Header *lh = (Scheme_Let_Header *)value;
+      if (lh->num_clauses == 1) {
+        Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
+        if (scheme_omittable_expr(lv->value, lv->count, 20, 0, NULL)) {
+          value = lv->body;
+          info = NULL;
+        } else
+          break;
+      } else
+        break;
+    } else
+      break;
+  }
+   
+  return 0;
+}
+
+Scheme_Object *scheme_make_noninline_proc(Scheme_Object *e)
+{
+  Scheme_Object *ni;
+
+  ni = scheme_alloc_small_object();
+  ni->type = scheme_noninline_proc_type;
+  SCHEME_PTR_VAL(ni) = e;
+  
+  return ni;
+}
+
 static int is_values_apply(Scheme_Object *e)
 {
   if (SAME_TYPE(SCHEME_TYPE(e), scheme_application_type)) {
