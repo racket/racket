@@ -41,16 +41,6 @@ the state transitions / contracts are:
 (define preferences:low-level-put-preferences (make-parameter put-preferences))
 (define preferences:low-level-get-preference  (make-parameter get-preference))
 
-(define old-preferences-symbol 'plt:framework-prefs)
-;; reading is delayed, in case the low-level parameter is changed
-(define old-preferences #f)
-(define (init-old-preferences)
-  (unless old-preferences
-    (set! old-preferences (make-hasheq))
-    (for ([line (in-list ((preferences:low-level-get-preference)
-                          old-preferences-symbol (λ () '())))])
-      (hash-set! old-preferences (car line) (cadr line)))))
-
 (define (add-pref-prefix p) (string->symbol (format "plt:framework-pref:~a" p)))
 
 ;; preferences : hash-table[sym -o> any]
@@ -101,20 +91,6 @@ the state transitions / contracts are:
          (let ([marshalled ((preferences:low-level-get-preference)
                             (add-pref-prefix p) (λ () (k (void))))])
            (hash-set! preferences p (unmarshall-pref p marshalled)))))
-     
-     ;; initialize old-preferences if needed
-     (init-old-preferences)
-     
-     ;; if there is no value in the preferences table, but there is one
-     ;; in the old version preferences file, take that:
-     (unless (hash-has-key? preferences p)
-       (when (hash-has-key? old-preferences p)
-         (hash-set! preferences p
-                    (unmarshall-pref p (hash-ref old-preferences p)))))
-     
-     ;; clear the pref from the old table (just in case it was taking space -- we don't need it anymore)
-     (when (hash-has-key? old-preferences p)
-       (hash-remove! old-preferences p))
      
      ;; if it still isn't set, take the default value
      (unless (hash-has-key? preferences p)
