@@ -454,11 +454,11 @@
     (let ([cs (cgen/list null X S T)])
       (if (not expected)
           (subst-gen cs R must-vars)
-          (cset-meet cs (cgen null X R expected))))))
+          (subst-gen (cset-meet cs (cgen null X R expected)) R must-vars)))))
 
 ;; like infer, but T-var is the vararg type:
 (define (infer/vararg X S T T-var R must-vars [expected #f])
-  (define new-T (extend S T T-var))
+  (define new-T (if T-var (extend S T T-var) T))
   (and ((length S) . >= . (length T))
        (infer X S new-T R must-vars expected)))
 

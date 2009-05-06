@@ -187,7 +187,11 @@
    [(_ tp fp op) #'(struct tc-results ((list (struct tc-result (tp fp op))) #f))]
    [(_ tp) #'(struct tc-results ((list (struct tc-result (tp _ _))) #f))]))
 
-(provide tc-result: tc-results: tc-result1: tc-result? tc-results?)
+(define (tc-results-t tc)
+  (match tc
+    [(tc-results: t) t]))
+
+(provide tc-result: tc-results: tc-result1: tc-result? tc-results? tc-results-t)
 
 ;; convenience function for returning the result of typechecking an expression
 (define ret

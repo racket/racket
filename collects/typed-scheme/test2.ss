@@ -19,11 +19,12 @@
 (+)
 (+ 1 2 3)
 (+ 1 2 3.5)
-#|
-(define-struct: (Z) x ([y : Z]))
-(define:  my-x : (x Number) (make-x 1))
-(number? (x-y my-x))
-(if (number? (x-y my-x)) (+ 1 (x-y my-x)) 7)
+
+(define-struct: (Z) X ([y : Z]))
+(define:  my-x : (X Number) (make-X 1))
+#| ; FIXME - doesn't work yet
+(number? (X-y my-x))
+(if (number? (X-y my-x)) (+ 1 (X-y my-x)) 7)
 |#
 
 (define: (f2) : (U) (error 'foo))
@@ -32,5 +33,15 @@
 (: f3 (U (Number -> Number) (Number -> String)))
 (define (f3 x) 7)
 
+(define: x : (List Any Any) (list 1 23 ))
+(car x)
+(if (number? (car x)) (add1 (car #{x :: (Pair Number Any)})) 7)
+(if (number? (car x)) (add1 (car x)) 7)
+
+;; error
 ;(f 12 "hi")
 
+(map + (list 1 2 3))
+(map + (list 1 2 3) (list 1 2 3))
+;; error
+;(map + (list 1 2 3) (list 1 2 "foo"))

@@ -11,7 +11,7 @@
          (for-syntax scheme/base))
 
 (provide combine-filter apply-filter abstract-filter abstract-filters
-         split-lfilters merge-filter-sets values->tc-results)
+         split-lfilters merge-filter-sets values->tc-results tc-results->values)
 
 ;; this implements the sequence invariant described on the first page relating to Bot
 (define (lcombine l1 l2)
@@ -173,3 +173,7 @@
                  [(LEmpty:) #f]
                  [(LPath: p (== i)) (make-Path p x)]))
              (make-Empty))))]))
+
+(define (tc-results->values tc)
+  (match tc
+    [(tc-results: ts) (-values ts)]))

@@ -14,7 +14,23 @@
 
 [raise (Univ . -> . (Un))]
 
-[car   (-poly (a b) (cl-> [((-pair a b)) a] [((-lst a)) a]))]
+[car   (-poly (a b) 
+              (cl->*
+               (->acc (list (-pair a b)) a (list -car))
+               (->* (list (-lst a)) a)))]
+[cdr   (-poly (a b) 
+              (cl->*
+               (->acc (list (-pair a b)) b (list -cdr))
+               (->* (list (-lst a)) (-lst a))))]
+
+[cadr (-poly (a b c)
+             (cl-> [((-pair a (-pair b c))) b]
+                   [((-lst a)) a]))]
+[caddr  (-poly (a) (-> (-lst a) a))]
+[cadddr (-poly (a) (-> (-lst a) a))]
+[cddr  (-poly (a) (-> (-lst a) (-lst a)))]
+[cdddr (-poly (a) (-> (-lst a) (-lst a)))]
+
 [first (-poly (a b) (cl-> [((-pair a b)) a] [((-lst a)) a]))]
 [second (-poly (a b c)
                (cl-> [((-pair a (-pair b c))) b]
@@ -26,14 +42,7 @@
 [fifth  (-poly (a) ((-lst a) . -> .  a))]
 [sixth  (-poly (a) ((-lst a) . -> .  a))]
 [rest (-poly (a) ((-lst a) . -> .  (-lst a)))]
-[cadr (-poly (a b c)
-             (cl-> [((-pair a (-pair b c))) b]
-                   [((-lst a)) a]))]
-[caddr  (-poly (a) (-> (-lst a) a))]
-[cadddr (-poly (a) (-> (-lst a) a))]
-[cdr   (-poly (a b) (cl-> [((-pair a b)) b] [((-lst a)) (-lst a)]))]
-[cddr  (-poly (a) (-> (-lst a) (-lst a)))]
-[cdddr (-poly (a) (-> (-lst a) (-lst a)))]
+
 [cons (-poly (a b)
              (cl-> [(a (-lst a)) (-lst a)]
                    [(a b) (-pair a b)]))]

@@ -119,11 +119,11 @@
           ;; typecheck the body, and produce syntax-time code that registers types
           [let ([type (tc-toplevel-form body2)])])
          (define-syntax-class invis-kw
-           #:literals (define-values define-syntaxes require provide begin)
+           #:literals (define-values define-syntaxes #%require #%provide begin)
            (pattern define-values)
            (pattern define-syntaxes)
-           (pattern require)
-           (pattern provide)
+           (pattern #%require)
+           (pattern #%provide)
            (pattern begin))
        (syntax-parse body2
          [(head:invis-kw . _) 

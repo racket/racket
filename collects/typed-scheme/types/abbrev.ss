@@ -125,6 +125,9 @@
 (define -no-lobj (make-LEmpty))
 (define -no-obj (make-Empty))
 
+(define -car (make-CarPE))
+(define -cdr (make-CdrPE))
+
 ;; convenient syntax
 
 (define-syntax -v 
@@ -177,8 +180,12 @@
      (make-Function (list (make-arr* dom rng #:rest rst)))]
     [(_ dom rng : filters)
      (make-Function (list (make-arr* dom rng #:filters filters)))]
+    [(_ dom rng : filters : object)
+     (make-Function (list (make-arr* dom rng #:filters filters #:object object)))]
     [(_ dom rst rng : filters)
-     (make-Function (list (make-arr* dom rng #:rest rst #:filters filters)))]))
+     (make-Function (list (make-arr* dom rng #:rest rst #:filters filters)))]
+    [(_ dom rst rng : filters : object)
+     (make-Function (list (make-arr* dom rng #:rest rst #:filters filters #:object object)))]))
 
 (define-syntax (-> stx)
   (syntax-parse stx
@@ -200,6 +207,12 @@
      (->* dom rng : filters)]
     [(_ dom (dty dbound) rng : filters)
      (make-Function (list (make-arr* dom rng #:drest (cons dty 'dbound) #:filters filters)))]))
+
+(define (->acc dom rng path)
+  (make-Function (list (make-arr* dom rng 
+                                  #:filters (-LFS (list (-not-filter (-val #f) path)) 
+                                                  (list (-filter (-val #f) path)))
+                                  #:object (make-LPath path 0)))))
 
 (define (cl->* . args)
   (define (funty-arities f)
