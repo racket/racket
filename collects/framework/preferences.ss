@@ -80,23 +80,25 @@ the state transitions / contracts are:
 ;; return the current value of the preference `p'
 ;; exported
 (define (preferences:get p)
+  (define v (hash-ref preferences p none))
   (cond
+    ;; if this is found, we can just return it immediately
+    [(not (eq? v none))
+     v]
+    ;; first time reading this, check the file & unmarshall value, if
+    ;; it's not there, use the default
     [(pref-default-set? p)
-     
-     (unless (hash-has-key? preferences p)
-       ;; first time reading this, check the file, unmarshall if required
-       (let/ec k
-         ;; if there is no preference saved, we just don't do anything.
-         ;; the code below notices this case.
-         (let ([marshalled ((preferences:low-level-get-preference)
-                            (add-pref-prefix p) (λ () (k (void))))])
-           (hash-set! preferences p (unmarshall-pref p marshalled)))))
-     
-     ;; if it still isn't set, take the default value
-     (unless (hash-has-key? preferences p)
-       (hash-set! preferences p (default-value (hash-ref defaults p))))
-     
-     (hash-ref preferences p)]
+     (let* (;; try to read the preferece from the preferences file
+            [v ((preferences:low-level-get-preference)
+                (add-pref-prefix p) (λ () none))]
+            [v (if (eq? v none)
+                 ;; no value read, take the default value
+                 (default-value (hash-ref defaults p))
+                 ;; found a saved value, unmarshall it
+                 (unmarshall-pref p marshalled))])
+       ;; set the value for future reference and return it
+       (hash-set! preferences p v)
+       v)]
     [(not (pref-default-set? p))
      (raise-unknown-preference-error
       'preferences:get
