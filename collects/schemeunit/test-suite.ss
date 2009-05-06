@@ -10,7 +10,8 @@
          test-suite-test-case-around
          test-suite-check-around
          delay-test
-
+         make-test-suite
+         
          apply-test-suite
          
          define-test-suite
@@ -123,6 +124,38 @@
                   #:before void-thunk
                   #:after  void-thunk
                   test ...))]))
+
+(define (tests->test-suite-action tests)
+  (lambda (fdown fup fhere seed)
+    (parameterize
+        ([current-seed seed])
+      (for-each
+       (lambda (t)
+         (cond
+          [(schemeunit-test-suite? t)
+           (current-seed (apply-test-suite t fdown fup fhere (current-seed)))]
+          [(schemeunit-test-case? t)
+           (current-seed
+            (fhere t
+                   (schemeunit-test-case-name t)
+                   (schemeunit-test-case-action t)
+                   (current-seed)))]
+          [else
+           (raise
+            (make-exn:test
+             (format "tests->test-suite-action received ~a in list of tests ~a, which is not a test." t tests)
+             (current-continuation-marks)))]))
+       tests)
+    (current-seed))))
+
+;; make-test-suite : string [#:before thunk] [#:after thunk] (listof test?) -> test-suite?
+;;
+;; Construct a test suite from a list of tests
+(define (make-test-suite name #:before [before void-thunk] #:after [after void-thunk] tests)
+  (make-schemeunit-test-suite name
+                              (tests->test-suite-action tests)
+                              before
+                              after))
 
 ;;
 ;; Shortcut helpers

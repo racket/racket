@@ -35,6 +35,35 @@
     (check-exn exn:fail:contract?
                (lambda ()
                  (test-suite (check = 1 1)))))
+
+   (test-case
+    "make-test-suite"
+    (let* ([before? #f]
+           [after? #f]
+           [ran? #f]
+           [results
+            (run-test
+             (make-test-suite
+              "dummy1"
+              (list
+               (make-test-case
+                "dummy-test-1"
+                (lambda () (check-true #t)))
+               (make-test-suite
+                "dummy2"
+                #:before (lambda () (set! before? #t))
+                #:after  (lambda () (set! after? #t))
+                (list
+                 (make-test-case
+                  "dummy-test-2"
+                  (lambda ()
+                    (set! ran? #t)
+                    (check-true #t))))))))])
+      (check-equal? (length results) 2)
+      (map (lambda (r) (check-pred test-success? r)) results)
+      (check-true before?)
+      (check-true after?)
+      (check-true ran?)))
    ))
 
 

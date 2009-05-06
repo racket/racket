@@ -281,5 +281,13 @@
     check-info?
     check-info-name
     check-info-value)
+
+   (test-case
+    "make-test-case constructs a test case"
+    (check-pred
+     test-success?
+     (car
+      (run-test
+       (make-test-case "dummy" (lambda () (check-true #t)))))))
    ))
   
