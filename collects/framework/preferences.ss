@@ -98,7 +98,7 @@ the state transitions / contracts are:
                  ;; no value read, take the default value
                  (default-value (hash-ref defaults p))
                  ;; found a saved value, unmarshall it
-                 (unmarshall-pref p marshalled))])
+                 (unmarshall-pref p v))])
        ;; set the value for future reference and return it
        (hash-set! preferences p v)
        v)]
