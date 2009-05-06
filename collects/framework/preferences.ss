@@ -76,6 +76,9 @@ the state transitions / contracts are:
 ;; this is used as a wrapped to deal with the problem that different procedures might be eq?.
 (define-struct pref-callback (cb))
 
+;; used to detect missing hash entries
+(define none (gensym 'none))
+
 ;; get : symbol -> any
 ;; return the current value of the preference `p'
 ;; exported
