@@ -45,3 +45,5 @@
 (map + (list 1 2 3) (list 1 2 3))
 ;; error
 ;(map + (list 1 2 3) (list 1 2 "foo"))
+
+((lambda (a b . c) (+ a b (car c))) 1 2 3 4)

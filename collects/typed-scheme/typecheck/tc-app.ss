@@ -3,7 +3,7 @@
 (require (rename-in "../utils/utils.ss" [infer r:infer])
          "signatures.ss" "tc-metafunctions.ss"
          "tc-app-helper.ss"
-         stxclass scheme/match mzlib/trace
+         stxclass scheme/match mzlib/trace scheme/list
          (for-syntax stxclass scheme/base)
          (types utils abbrev union subtype resolve)
          (utils tc-utils)
@@ -64,11 +64,20 @@
      (tc/let-values #'((x) ...) #'(args ...) #'body 
                     #'(let-values ([(x) args] ...) . body)
                     expected)]
+    ;; inference for ((lambda with dotted rest
+    [(#%plain-app (#%plain-lambda (x ... . rst:id) . body) args ...)
+     #:when (<= (length (syntax->list #'(x ...)))
+                (length (syntax->list #'(args ...))))
+     (let-values ([(fixed-args varargs) (split-at (syntax->list #'(args ...)) (length (syntax->list #'(x ...))))])
+       (with-syntax ([(fixed-args ...) fixed-args]
+                     [varg #`(#%plain-app list #,@varargs)])
+         (tc/let-values #'((x) ... (rst)) #`(fixed-args ... varg) #'body 
+                        #'(let-values ([(x) fixed-args] ... [(rst) varg]) . body)
+                        expected)))]
     [(#%plain-app f . args)
      (let* ([f-ty (single-value #'f)]
             [arg-tys (map single-value (syntax->list #'args))])
-       (tc/funapp #'f #'args f-ty arg-tys expected))]
-    [_ (int-err "tc/app NYI")]))
+       (tc/funapp #'f #'args f-ty arg-tys expected))]))
 
 ;(trace tc/app/internal)
 
