@@ -7,7 +7,7 @@
 @defmodule[web-server/private/mod-map]{
 
 The @schememodname[scheme/serialize] library provides the
-functionality of serializing values. @filepath{private/mod-map.ss}
+functionality of serializing values. This module
 compresses the serialized representation.
 
 @defproc[(compress-serial [sv list?])

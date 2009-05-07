@@ -7,7 +7,7 @@
 
 @defmodule[web-server/servlet/servlet-structs]{
 
-@filepath{servlet/servlet-structs.ss} provides a number of contracts
+This module provides a number of contracts
 for use in servlets.
 
 @defthing[k-url? contract?]{

@@ -6,7 +6,7 @@
 
 @defmodule[web-server/private/mime-types]{
 
-@filepath{private/mime-types.ss} provides function for dealing with @filepath{mime.types}
+This module provides function for dealing with @filepath{mime.types}
 files.
 
 @defproc[(read-mime-types [p path-string?])

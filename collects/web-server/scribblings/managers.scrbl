@@ -17,7 +17,7 @@ pluggable through the manager interface.
 
 @defmodule[web-server/managers/manager]{
 
-@filepath{managers/manager.ss} defines the manager interface. It is required by
+This module defines the manager interface. It is required by
 the users and implementers of managers.
 
 @defstruct[manager ([create-instance ((-> void) . -> . number?)]
@@ -65,7 +65,7 @@ the users and implementers of managers.
 
 @defmodule[web-server/managers/none]{
 
-@filepath{managers/none.ss} defines a manager constructor:
+This module defines a manager constructor:
 
 @defproc[(create-none-manager (instance-expiration-handler expiration-handler/c))
          manager?]{
@@ -90,7 +90,7 @@ Web Language. (See @secref["stateless"].)
 
 @defmodule[web-server/managers/timeouts]{
 
-@filepath{managers/timeouts.ss} defines a manager constructor:
+This module defines a manager constructor:
 
 @defproc[(create-timeout-manager [instance-exp-handler expiration-handler/c]
                                  [instance-timeout number?]
@@ -122,7 +122,7 @@ deployments of the @web-server .
 
 @defmodule[web-server/managers/lru]{
 
-@filepath{managers/lru.ss} defines a manager constructor:
+This module defines a manager constructor:
 
 @defproc[(create-LRU-manager
           [instance-expiration-handler expiration-handler/c]

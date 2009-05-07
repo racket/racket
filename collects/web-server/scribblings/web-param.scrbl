@@ -7,7 +7,7 @@
 @defmodule[web-server/lang/web-param]{
 
 It is not easy to use @scheme[parameterize] in the
-Web Language. @filepath{lang/web-param.ss} provides (roughly) the same
+Web Language. This module provides (roughly) the same
 functionality in a way that is serializable. Like other serializable
 things in the Web Language, they are sensitive to source code modification.
 
