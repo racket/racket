@@ -191,7 +191,17 @@
   (match tc
     [(tc-results: t) t]))
 
-(provide tc-result: tc-results: tc-result1: tc-result? tc-results? tc-results-t)
+(provide tc-result: tc-results: tc-result1: tc-result? tc-results? tc-results-t Result1: Results:)
+
+(define-match-expander Result1:
+  (syntax-parser
+   [(_ tp) #'(Values: (list (Result: tp _ _)))]
+   [(_ tp fp op) #'(Values: (list (Result: tp fp op)))]))
+
+(define-match-expander Results:
+  (syntax-parser
+   [(_ tp) #'(Values: (list (Result: tp _ _) (... ...)))]
+   [(_ tp fp op) #'(Values: (list (Result: tp fp op) (... ...)))]))
 
 ;; convenience function for returning the result of typechecking an expression
 (define ret

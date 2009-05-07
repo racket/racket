@@ -58,6 +58,4 @@
     (match f
       [(Bot:) (env-map (lambda (x) (cons (car x) (Un))) Γ)]
       [(or (TypeFilter: _ _ x) (NotTypeFilter: _ _ x))
-       (update-type/lexical (lambda (x t) 
-                              (printf "upd: ~a ~a ~a~n" t f (update t f))
-                              (update t f)) x Γ)])))
+       (update-type/lexical (lambda (x t) (update t f)) x Γ)])))
