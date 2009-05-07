@@ -5555,6 +5555,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   if (rec[drec].comp || (rec[drec].depth != -2)) {
     /* rename tables no longer needed; NULL them out */
     menv->rename_set = NULL;
+    menv->post_ex_rename_set = NULL;
   }
 
   LOG_END_EXPAND(m);
@@ -6020,6 +6021,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   post_ex_rn_set = scheme_make_module_rename_set(mzMOD_RENAME_MARKED, rn_set);
   post_ex_rn = scheme_get_module_rename_from_set(post_ex_rn_set, scheme_make_integer(0), 1);
   post_ex_et_rn = scheme_get_module_rename_from_set(post_ex_rn_set, scheme_make_integer(1), 1);
+  env->genv->post_ex_rename_set = post_ex_rn_set;
 
   /* For syntax-local-context, etc., in a d-s RHS: */
   rhs_env = scheme_new_comp_env(env->genv, env->insp, SCHEME_TOPLEVEL_FRAME);
@@ -9098,14 +9100,11 @@ static void check_dup_require(Scheme_Object *prnt_name, Scheme_Object *name,
 }
 
 static Scheme_Object *
-top_level_require_execute(Scheme_Object *data)
+do_require_execute(Scheme_Env *env, Scheme_Object *form)
 {
   Scheme_Hash_Table *ht;
   Scheme_Object *rn_set, *modidx;
-  Scheme_Object *form = SCHEME_CDR(data), *rest;
-  Scheme_Env *env;
-
-  env = scheme_environment_from_dummy(SCHEME_CAR(data));
+  Scheme_Object *rest;
 
   if (env->module)
     modidx = env->module->self_modidx;
@@ -9145,6 +9144,13 @@ top_level_require_execute(Scheme_Object *data)
   scheme_append_rename_set_to_env(rn_set, env);
 
   return scheme_void;
+}
+
+static Scheme_Object *
+top_level_require_execute(Scheme_Object *data)
+{
+  do_require_execute(scheme_environment_from_dummy(SCHEME_CAR(data)),
+                     SCHEME_CDR(data));
 }
 
 static Scheme_Object *
@@ -9252,7 +9258,7 @@ Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path,
 
   form = make_require_form(module_path, phase, mark);
 
-  do_require(form, cenv, NULL, 0);
+  do_require_execute(cenv->genv, form);
 
   return form;
 }

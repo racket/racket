@@ -2552,6 +2552,7 @@ struct Scheme_Env {
 
   Scheme_Object *rename_set;
   Scheme_Hash_Table *temp_marked_names; /* used to correlate imports with re-exports */
+  Scheme_Object *post_ex_rename_set; /* during module expansion */
 
   Scheme_Bucket_Table *syntax;
   struct Scheme_Env *exp_env;

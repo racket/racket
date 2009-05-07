@@ -4515,6 +4515,8 @@ local_module_introduce(int argc, Scheme_Object *argv[])
   if (SCHEME_FALSEP(v)) {
     if (env->genv->rename_set)
       s = scheme_add_rename(s, env->genv->rename_set);
+    if (env->genv->post_ex_rename_set)
+      s = scheme_add_rename(s, env->genv->post_ex_rename_set);
   }
 
   return s;
