@@ -45,6 +45,7 @@ An example @scheme['stateless] servlet module:
 
 
 These servlets have an extensive API available to them: @schememodname[net/url], @schememodname[web-server/http],
+@schememodname[web-server/http/bindings],
 @schememodname[web-server/lang/abort-resume], @schememodname[web-server/lang/web], @schememodname[web-server/lang/web-param],
 @schememodname[web-server/lang/web-cells], @schememodname[web-server/lang/file-box], @schememodname[web-server/dispatch], and
 @schememodname[web-server/stuffers].
