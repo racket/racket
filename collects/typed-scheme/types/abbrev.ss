@@ -188,11 +188,12 @@
      (make-Function (list (make-arr* dom rng #:rest rst #:filters filters #:object object)))]))
 
 (define-syntax (-> stx)
+  (define-syntax-class c
+    (pattern x:id #:when (eq? ': (syntax-e #'x))))
   (syntax-parse stx
-    #:literals (:)
-    [(_ dom ... rng : filters)
+    [(_ dom ... rng :c filters)
      #'(->* (list dom ...) rng : filters)]
-    [(_ dom ... rng : filters)
+    [(_ dom ... rng :c filters)
      #'(->* (list dom ...) rng : filters)]
     [(_ dom ... rng)
      #'(->* (list dom ...) rng)]))
