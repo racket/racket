@@ -341,6 +341,17 @@
                       #:LatentFilter (sub-lf st))
                      e))
 
+(define ((sub-lo st) e)
+  (latentobject-case (#:Type st
+                      #:LatentObject (sub-lo st)
+                      #:PathElem (sub-pe st))
+                     e))
+
+(define ((sub-pe st) e)
+  (pathelem-case (#:Type st
+                  #:PathElem (sub-pe st))
+                 e))
+
 ;; abstract-many : Names Type -> Scope^n 
 ;; where n is the length of names  
 (define (abstract-many names ty)
@@ -349,7 +360,7 @@
       (define (sb t) (loop outer t))
       (define slf (sub-lf sb))
       (type-case 
-       (#:Type sb #:LatentFilter (sub-lf sb))
+       (#:Type sb #:LatentFilter (sub-lf sb) #:LatentObject (sub-lo sb))
        ty
        [#:F name* (if (eq? name name*) (*B (+ count outer)) ty)]
        ;; necessary to avoid infinite loops
@@ -392,7 +403,7 @@
       (define (sb t) (loop outer t))    
       (define slf (sub-lf sb))  
       (type-case 
-       (#:Type sb #:LatentFilter slf)
+       (#:Type sb #:LatentFilter slf #:LatentObject (sub-lo sb))
        ty
        [#:B idx (if (= (+ count outer) idx)
                     image
@@ -580,7 +591,7 @@
  free-vars*
  type-equal? type-compare type<?
  remove-dups
- sub-lf
+ sub-lf sub-lo sub-pe
  Values: Values? Values-rs
  (rename-out [Mu:* Mu:]               
              [Poly:* Poly:]

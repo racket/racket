@@ -116,7 +116,7 @@
     ;; names are just the printed as the original syntax
     [(Name: stx) (fp "~a" (syntax-e stx))]
     [(App: rator rands stx) 
-     (fp "~a" (cons rator rands))]
+     (fp "~a" (list* '@ rator rands))]
     ;; special cases for lists
     [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
      (fp "(Listof ~a)" elem-ty)]

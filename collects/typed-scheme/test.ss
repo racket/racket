@@ -86,7 +86,7 @@ xxx6-y
 (lambda () (values 1 1))
 (lambda () 1)
 #{(lambda (x) x) :: (Number -> Number)}
-;; BUG - this should work
+
 {ann (values (lambda (x) x) (lambda (x) x)) (values (Number -> Number) (String -> String))}
 
 (list 1 2 3)

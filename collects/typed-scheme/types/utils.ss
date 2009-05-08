@@ -38,7 +38,7 @@
 (define (substitute image name target #:Un [Un (get-union-maker)])
   (define (sb t) (substitute image name t))
   (if (hash-ref (free-vars* target) name #f)
-      (type-case (#:Type sb #:LatentFilter (sub-lf sb))
+      (type-case (#:Type sb #:LatentFilter (sub-lf sb) #:LatentObject (sub-lo sb))
                  target
                  [#:Union tys (Un (map sb tys))]
                  [#:F name* (if (eq? name* name) image target)]

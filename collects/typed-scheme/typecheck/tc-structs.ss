@@ -126,14 +126,14 @@
   (define bindings
     (append 
      (list (cons (or maker* maker) 
-                 (wrapper (->* external-fld-types (if cret cret name))))
+                 (debug (wrapper (->* external-fld-types (if cret cret name)))))
            (cons pred
                  (make-pred-ty (pred-wrapper name))))
      (for/list ([g (in-list getters)] [t (in-list external-fld-types/no-parent)] [i (in-naturals)])
        (let ([func (if setters? 
                        (->* (list name) t)
                        (make-Function 
-                        (list (make-arr* (list sty) t 
+                        (list (make-arr* (list name) t 
                                          #:object (make-LPath (list (make-StructPE name i)) 0)))))])
          (cons g (wrapper func))))
      (if setters?

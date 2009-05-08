@@ -22,6 +22,7 @@ at least theoretically.
          debug
          in-syntax
 	 symbol-append
+         custom-printer
 	 rep utils typecheck infer env private)
 
 (define-syntax (define-requirer stx)
@@ -200,6 +201,18 @@ at least theoretically.
 (defprinter
   print-type* print-filter* print-latentfilter* print-object* print-latentobject*
   print-pathelem*)
+
+(define pseudo-printer
+  (lambda (s port mode)
+    (parameterize ([current-output-port port]
+                   [show-sharing #f]
+                   [booleans-as-true/false #f]
+                   [constructor-style-printing #t])
+      (newline)
+      (pretty-print (print-convert s))
+      (newline))))
+
+(define custom-printer (make-parameter #t))
   
 (require scheme/pretty mzlib/pconvert)
 
@@ -208,15 +221,8 @@ at least theoretically.
     [(form name (flds ...) printer)
      #`(define-struct/properties name (flds ...) 
          #,(if printing?
-               #'([prop:custom-write printer]) 
-               #'([prop:custom-write (lambda (s port mode)
-                                       (parameterize ([current-output-port port]
-                                                      [show-sharing #f]
-                                                      [booleans-as-true/false #f]
-                                                      [constructor-style-printing #t])
-                                         (newline)
-                                         (pretty-print (print-convert s))
-                                         (newline)))]))
+               #'([prop:custom-write (lambda (a b c) (if (custom-printer) (printer a b c) (pseudo-printer a b c)))]) 
+               #'([prop:custom-write pseudo-printer]))
          #f)]))
 
 (define (id kw . args)
