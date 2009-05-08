@@ -166,6 +166,8 @@
        (ret expected))]))
 
 (define (tc/apply f args)
+  (define (do-ret t)
+    (match t [(Values: (list (Result: ts _ _) ...)) (ret ts)]))
   (define f-ty (single-value f))
   ;; produces the first n-1 elements of the list, and the last element
   (define (split l) (let-values ([(f r) (split-at l (sub1 (length l)))])
@@ -195,7 +197,7 @@
                             (subtype (apply -lst* arg-tys #:tail (make-Listof tail-ty))
                                      (apply -lst* (car doms*) #:tail (make-Listof (car rests*)))))))
                 (printf/log "Non-poly apply, ... arg\n")
-                (ret (car rngs*))]
+                (do-ret (car rngs*))]
                [(and (car rests*)
                      (let ([tail-ty (with-handlers ([exn:fail? (lambda _ #f)])
                                       (tc-expr/t tail))])
@@ -206,7 +208,7 @@
                     (printf/log (if (memq (syntax->datum f) '(+ - * / max min)) 
                                     "Simple arithmetic non-poly apply\n"
                                     "Simple non-poly apply\n"))
-                    (ret (car rngs*))]
+                    (do-ret (car rngs*))]
                [(and (car drests*)
                      (let-values ([(tail-ty tail-bound) 
                                    (with-handlers ([exn:fail? (lambda _ (values #f #f))])
@@ -216,9 +218,9 @@
                             (subtypes arg-tys (car doms*))
                             (subtype tail-ty (car (car drests*))))))                     
                 (printf/log "Non-poly apply, ... arg\n")
-                (ret (car rngs*))]
+                (do-ret (car rngs*))]
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
-    [(tc-result: (Poly: vars (Function: (list (arr: doms rngs rests drests '()) ..1))))
+    [(tc-result1: (Poly: vars (Function: (list (arr: doms rngs rests drests '()) ..1))))
      (let*-values ([(arg-tys) (map tc-expr/t fixed-args)]
                    [(tail-ty tail-bound) (with-handlers ([exn:fail:syntax? (lambda _ (values (tc-expr/t tail) #f))])
                                            (tc/dots tail))])
@@ -242,7 +244,7 @@
                                    (car rests*)
                                    (car rngs*)
                                    (fv (car rngs*))))
-                => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
+                => (lambda (substitution) (do-ret (subst-all substitution (car rngs*))))]
                ;; actual work, when we have a * function and ... final arg
                [(and (car rests*)
                      tail-bound                     
@@ -255,7 +257,7 @@
                                    (car rests*)
                                    (car rngs*)
                                    (fv (car rngs*))))
-                => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
+                => (lambda (substitution) (do-ret (subst-all substitution (car rngs*))))]
                ;; ... function, ... arg
                [(and (car drests*)
                      tail-bound
@@ -263,7 +265,7 @@
                      (= (length (car doms*))
                         (length arg-tys))
                      (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*) (fv (car rngs*))))
-                => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
+                => (lambda (substitution) (do-ret (subst-all substitution (car rngs*))))]
                ;; if nothing matches, around the loop again
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
     [(tc-result1: (Poly: vars (Function: '())))
@@ -294,7 +296,7 @@
                                    (car rests*)
                                    (car rngs*)
                                    (fv (car rngs*))))
-                => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
+                => (lambda (substitution) (do-ret (subst-all substitution (car rngs*))))]
                ;; actual work, when we have a * function and ... final arg
                [(and (car rests*)
                      tail-bound                     
@@ -308,7 +310,7 @@
                                    (car rngs*)
                                    (fv (car rngs*))))
                 => (lambda (substitution) 
-                     (ret (subst-all substitution (car rngs*))))]
+                     (do-ret (subst-all substitution (car rngs*))))]
                ;; ... function, ... arg, same bound on ...
                [(and (car drests*)
                      tail-bound
@@ -317,7 +319,7 @@
                         (length arg-tys))
                      (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*) (fv (car rngs*))))
                 => (lambda (substitution)
-                     (ret (subst-all substitution (car rngs*))))]
+                     (do-ret (subst-all substitution (car rngs*))))]
                ;; ... function, ... arg, different bound on ...
                [(and (car drests*)
                      tail-bound
@@ -331,11 +333,11 @@
                        (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*) (fv (car rngs*)))))
                 => (lambda (substitution) 
                      (define drest-bound (cdr (car drests*)))
-                     (ret (substitute-dotted (cadr (assq drest-bound substitution))
-                                             tail-bound
-                                             drest-bound
-                                             (subst-all (alist-delete drest-bound substitution eq?)
-                                                        (car rngs*)))))]
+                     (do-ret (substitute-dotted (cadr (assq drest-bound substitution))
+                                                tail-bound
+                                                drest-bound
+                                                (subst-all (alist-delete drest-bound substitution eq?)
+                                                           (car rngs*)))))]
                ;; ... function, (List A B C etc) arg
                [(and (car drests*)
                      (not tail-bound)
@@ -347,7 +349,7 @@
                                  (car (car drests*)) (car rngs*) (fv (car rngs*))))
                 => (lambda (substitution) 
                      (define drest-bound (cdr (car drests*)))
-                     (ret (subst-all substitution (car rngs*))))]
+                     (do-ret (subst-all substitution (car rngs*))))]
                ;; if nothing matches, around the loop again
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
     [(tc-result1: (PolyDots: vars (Function: '())))
@@ -373,7 +375,7 @@
     [(#%plain-app not arg)
      (match (single-value #'arg)
        [(tc-result1: t (FilterSet: f+ f-) _)
-        (ret t (make-FilterSet f- f+))])]
+        (ret -Boolean (make-FilterSet f- f+))])]
     ;; (apply values l) gets special handling
     [(#%plain-app apply values e)
      (cond [(with-handlers ([exn:fail? (lambda _ #f)])
@@ -382,6 +384,8 @@
            [else (tc/apply #'values #'(e))])]
     ;; rewrite this so that it takes advantages of all the special cases
     [(#%plain-app k:apply . args) (tc/app/internal (syntax/loc form (apply . args)) expected)]
+    ;; handle apply specially
+    [(#%plain-app apply f . args) (tc/apply #'f #'args)]
     ;; special case for `values' with single argument - we just ignore the values, except that it forces arg to return one value
     [(#%plain-app values arg) (single-value #'arg expected)]
     ;; handle `values' specially
@@ -400,8 +404,6 @@
                        (for/list ([arg (syntax->list #'args)])
                          (single-value arg))])
             (ret ts fs os))])]
-    ;; rewrite this so that it takes advantages of all the special cases
-    [(#%plain-app k:apply . args) (tc/app/internal (syntax/loc form (apply . args)) expected)]
     ;; special case for keywords
     [(#%plain-app
       (#%plain-app kpe kws num fn)
@@ -449,7 +451,10 @@
      (tc/let-values #'((x) ...) #'(args ...) #'body 
                     #'(let-values ([(x) args] ...) . body)
                     expected)]
+    ;; FIXME - make this work - doesn't work because the annotation 
+    ;; on rst is not a normal annotation, may have * or ...
     ;; inference for ((lambda with dotted rest
+    #;
     [(#%plain-app (#%plain-lambda (x ... . rst:id) . body) args ...)
      #:when (<= (length (syntax->list #'(x ...)))
                 (length (syntax->list #'(args ...))))
