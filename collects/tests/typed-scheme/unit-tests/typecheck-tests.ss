@@ -18,6 +18,7 @@
          (for-template (private base-env base-types)))
 
 
+(require (for-syntax syntax/kerncase stxclass))
 
 (provide typecheck-tests g tc-expr/expand)
 
@@ -62,7 +63,9 @@
        (check-tc-result-equal? (format "~a" 'expr) (tc-expr/expand expr) r))]
     [(_ expr ty f o) (syntax/loc stx (tc-e expr #:ret (ret ty f o)))]))
 
-(require (for-syntax syntax/kerncase))
+(define-syntax (tc-e/t stx)
+  (syntax-parse stx
+    [(_ e t) #'(tc-e e #:ret (ret t (-FS (list) (list (make-Bot)))))]))
 
 ;; duplication of the mzscheme toplevel expander, necessary for expanding the rhs of defines
 ;; note that this ability is never used
@@ -96,37 +99,37 @@
                    (+ 1 (car x))
                    5))
          N]
-        (tc-e (if (let ([y 12]) y) 3 4) -Integer)
-        (tc-e 3 -Integer)
-        (tc-e "foo" -String)
+        (tc-e/t (if (let ([y 12]) y) 3 4) -Integer)
+        (tc-e/t 3 -Integer)
+        (tc-e/t "foo" -String)
         (tc-e (+ 3 4) -Integer)
-        [tc-e (lambda: () 3) (-> -Integer)]
-        [tc-e (lambda: ([x : Number]) 3) (-> N -Integer)]
-        [tc-e (lambda: ([x : Number] [y : Boolean]) 3) (-> N B -Integer)]
-        [tc-e (lambda () 3) (-> -Integer)]
-        [tc-e (values 3 4) (-values (list -Integer -Integer))]
+        [tc-e/t (lambda: () 3) (-> -Integer : (-LFS (list) (list (make-LBot))))]
+        [tc-e/t (lambda: ([x : Number]) 3) (-> N -Integer : (-LFS (list) (list (make-LBot))))]
+        [tc-e/t (lambda: ([x : Number] [y : Boolean]) 3) (-> N B -Integer : (-LFS (list) (list (make-LBot))))]
+        [tc-e/t (lambda () 3) (-> -Integer : (-LFS (list) (list (make-LBot))))]
+        [tc-e (values 3 4) #:ret (ret (list -Integer -Integer) (list (-FS (list) (list (make-Bot))) (-FS (list) (list (make-Bot)))))]
         [tc-e (cons 3 4) (-pair -Integer -Integer)]
         [tc-e (cons 3 #{'() : (Listof -Integer)}) (make-Listof -Integer)]
         [tc-e (void) -Void]
         [tc-e (void 3 4) -Void]
         [tc-e (void #t #f '(1 2 3)) -Void]
-        [tc-e #(3 4 5) (make-Vector -Integer)]
-        [tc-e '(2 3 4) (-lst* -Integer -Integer -Integer)]
-        [tc-e '(2 3 #t) (-lst* -Integer -Integer (-val #t))]
-        [tc-e #(2 3 #t) (make-Vector (Un -Integer (-val #t)))]
-        [tc-e '(#t #f) (-lst* (-val #t) (-val #f))]
-        [tc-e (plambda: (a) ([l : (Listof a)]) (car l))
+        [tc-e/t #(3 4 5) (make-Vector -Integer)]
+        [tc-e/t '(2 3 4) (-lst* -Integer -Integer -Integer)]
+        [tc-e/t '(2 3 #t) (-lst* -Integer -Integer (-val #t))]
+        [tc-e/t #(2 3 #t) (make-Vector (Un -Integer (-val #t)))]
+        [tc-e/t '(#t #f) (-lst* (-val #t) (-val #f))]
+        [tc-e/t (plambda: (a) ([l : (Listof a)]) (car l))
+                (make-Poly '(a) (-> (make-Listof  (-v a)) (-v a)))]
+        [tc-e/t (plambda: (a) ([l : (Listof a)]) (car l))
               (make-Poly '(a) (-> (make-Listof  (-v a)) (-v a)))]
-        [tc-e (plambda: (a) ([l : (Listof a)]) (car l))
-              (make-Poly '(a) (-> (make-Listof  (-v a)) (-v a)))]
-        [tc-e (case-lambda: [([a : Number] [b : Number]) (+ a b)]) (-> N N N)]
+        [tc-e/t (case-lambda: [([a : Number] [b : Number]) (+ a b)]) (-> N N N)]
         [tc-e (let: ([x : Number 5]) x) #:ret (-path -Number #'x)]
         [tc-e (let-values ([(x) 4]) (+ x 1)) -Integer]
         [tc-e (let-values ([(#{x : Number} #{y : Boolean}) (values 3 #t)]) (and (= x 1) (not y))) 
               #:ret (ret -Boolean (-FS (list (make-TypeFilter (-val #f) #'y)) null))]
-        [tc-e (values 3) -Integer]
-        [tc-e (values) (-values (list))]
-        [tc-e (values 3 #f) (-values (list -Integer (-val #f)))]
+        [tc-e/t (values 3) -Integer]
+        [tc-e (values) #:ret (ret null)]
+        [tc-e (values 3 #f) #:ret (ret (list -Integer (-val #f)) (list (-FS (list) (list (make-Bot))) (-FS (list (make-Bot)) (list))))]
         [tc-e (map #{values @ Symbol} '(a b c)) (make-Listof  Sym)]
         [tc-e (letrec: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                        (fact 20))
@@ -142,11 +145,11 @@
               N]
         [tc-e (let: ([v : (Un Number Boolean) #f])
                     (if (boolean? v) 5 (+ v 1)))
-              N]
+              #:ret (ret N (-FS null (list (make-NotTypeFilter -Boolean null #'v))))]
         [tc-e (let: ([f : (Number Number -> Number) +]) (f 3 4)) N]
         [tc-e (let: ([+ : (Boolean -> Number) (lambda: ([x : Boolean]) 3)]) (+ #f)) N]
-        [tc-e (when #f #t) (Un -Void)]
-        [tc-e (when (number? #f) (+ 4 5)) (Un -Integer -Void)]
+        [tc-e (when #f #t) -Void]
+        [tc-e (when (number? #f) (+ 4 5)) -Void]
         [tc-e (let: ([x : (Un #f Number) 7])
                     (if x (+ x 1) 3))
               N]
@@ -155,25 +158,25 @@
 			(+ x 4)
 			'bc))
 	      N]
-        [tc-e (let: ((x : Number 3)) (if (boolean? x) (not x) #t)) (-val #t)]
-        [tc-e (begin 3) -Integer]
-        [tc-e (begin #f 3) -Integer]
-        [tc-e (begin #t) #:ret (ret (-val #t) (-FS null (list (make-Bot))))]
-        [tc-e (begin0 #t) #:ret (ret (-val #t) (-FS null (list (make-Bot))))]
-        [tc-e (begin0 #t 3) #:ret (ret (-val #t) (-FS null (list (make-Bot))))]
-        [tc-e #t #:ret (ret (-val #t) (-FS null (list (make-Bot))))]
+        [tc-e/t (let: ((x : Number 3)) (if (boolean? x) (not x) #t)) (-val #t)]
+        [tc-e/t (begin 3) -Integer]
+        [tc-e/t (begin #f 3) -Integer]
+        [tc-e/t (begin #t) (-val #t)]
+        [tc-e/t (begin0 #t) (-val #t)]
+        [tc-e/t (begin0 #t 3) (-val #t)]
+        [tc-e/t #t (-val #t)]
         [tc-e #f #:ret (ret (-val #f) (-FS (list (make-Bot)) null))]
-        [tc-e '#t #:ret (ret (-val #t) (-FS null (list (make-Bot))))]
+        [tc-e/t '#t (-val #t)]
         [tc-e '#f #:ret (ret (-val #f) (-FS (list (make-Bot)) null))]
-        [tc-e (if #f 'a 3) -Integer]
-        [tc-e (if #f #f #t) (Un (-val #t))]
+        [tc-e/t (if #f 'a 3) -Integer]
+        [tc-e/t (if #f #f #t) (Un (-val #t))]
         [tc-e (when #f 3) -Void]
-        [tc-e '() (-val '())]
-        [tc-e (let: ([x : (Listof Number) '(1)]) 
-                    (cond [(pair? x) 1]
-                          [(null? x) 1]))
+        [tc-e/t '() (-val '())]
+        [tc-e/t (let: ([x : (Listof Number) '(1)]) 
+                      (cond [(pair? x) 1]
+                            [(null? x) 1]))
               -Integer]
-        [tc-e (lambda: ([x : Number] . [y : Number *]) (car y)) (->* (list N) N N)]
+        [tc-e/t (lambda: ([x : Number] . [y : Number *]) (car y)) (->* (list N) N N)]
         [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3) N]
         [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4 5) N]
         [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4) N]
@@ -181,18 +184,18 @@
         [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '(4 6 7)) N]
         [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '()) N]
         
-        [tc-e (lambda: ([x : Number] . [y : Boolean *]) (car y)) (->* (list N) B B)]
+        [tc-e/t (lambda: ([x : Number] . [y : Boolean *]) (car y)) (->* (list N) B B)]
         [tc-e ((lambda: ([x : Number] . [y : Boolean *]) (car y)) 3) B]
         [tc-e (apply (lambda: ([x : Number] . [y : Boolean *]) (car y)) 3 '(#f)) B]
         
-        [tc-e (let: ([x : Number 3])
-                    (when (number? x) #t))
-              #:ret (ret (-val #t) (-FS null (list (make-Bot))))]
+        [tc-e/t (let: ([x : Number 3])
+                      (when (number? x) #t))
+              (-val #t)]
         [tc-e (let: ([x : Number 3])
                     (when (boolean? x) #t))
               -Void]
         
-        [tc-e (let: ([x : Any 3])
+        [tc-e/t (let: ([x : Any 3])
                     (if (list? x)
                         (begin (car x) 1) 2))
               -Integer]
@@ -205,10 +208,10 @@
               N]
         
         [tc-e (let ([x 1]) x) #:ret (-path -Integer #'x)]
-        [tc-e (let ([x 1]) (boolean? x)) #:ret (ret -Boolean (-FS ))]
-        [tc-e (boolean? number?) #:ret (-path -Boolean #'number?)]
+        [tc-e (let ([x 1]) (boolean? x)) #:ret (ret -Boolean (-FS (list (make-Bot)) null))]
+        [tc-e (boolean? number?) #:ret (ret -Boolean (-FS (list (make-Bot)) null))]
         
-        [tc-e (let: ([x : (Option Number) #f]) x) (-path (Un N (-val #f)) #'x)]
+        [tc-e (let: ([x : (Option Number) #f]) x) #:ret (-path (Un N (-val #f)) #'x)]
         [tc-e (let: ([x : Any 12]) (not (not x)))
               #:ret (ret -Boolean (-FS (list (make-NotTypeFilter (-val #f) null #'x)) (list (make-TypeFilter (-val #f) null #'x))))]
         
@@ -222,7 +225,7 @@
         [tc-err (map (lambda: ([x : Any] [y : Any]) 1) '(1))]
         [tc-e (map add1 '(1)) (-lst -Integer)]
         
-        [tc-e (let ([x 5])
+        [tc-e/t (let ([x 5])
                 (if (eq? x 1)
                     12
                     14))
@@ -270,21 +273,23 @@
               N]
         
         
-        [tc-e null (-path (-val null) #'null)]
+        [tc-e null #:ret (-path (-val null) #'null)]
         
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 x)
               #:ret (-path (Un (-val 'squarf) -Integer) #'x)]
         
-        [tc-e (if #t 1 2) -Integer]
+        [tc-e/t (if #t 1 2) -Integer]
         
         
         ;; eq? as predicate
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
-                    (if (eq? x 'foo) 3 x)) N]
+                    (if (eq? x 'foo) 3 x)) 
+              #:ret (ret N (-FS (list) (list (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x))))]
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
-                    (if (eq? 'foo x) 3 x)) N]
+                    (if (eq? 'foo x) 3 x))
+              #:ret (ret N (-FS (list) (list (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x))))]
         
         [tc-err (let: ([x : (U String 'foo) 'foo])
                       (if (string=? x 'foo)
@@ -299,25 +304,27 @@
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (eq? x sym) 3 x))
-              -Integer]
+              #:ret (ret -Integer (-FS (list) (list (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))]
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (eq? sym x) 3 x))
-              -Integer]
+              #:ret (ret -Integer (-FS (list) (list (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))]
         ;; equal? as predicate for symbols
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
-                    (if (equal? x 'foo) 3 x)) N]
+                    (if (equal? x 'foo) 3 x))
+               #:ret (ret N (-FS (list) (list (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x))))]
         [tc-e (let: ([x : (Un 'foo Number) 'foo])
-                    (if (equal? 'foo x) 3 x)) N]
+                    (if (equal? 'foo x) 3 x))
+               #:ret (ret N (-FS (list) (list (make-NotTypeFilter (-val 'foo) null #'x) (make-TypeFilter (-val #f) null #'x))))]
         
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (equal? x sym) 3 x))
-              -Integer]
+              #:ret (ret -Integer (-FS (list) (list (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))]
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (equal? sym x) 3 x))
-              -Integer]
+              #:ret (ret -Integer (-FS (list) (list (make-NotTypeFilter (-val 'squarf) null #'x) (make-TypeFilter (-val #f) null #'x))))]
         
         [tc-e (let: ([x : (Listof Symbol)'(a b c)])
                     (cond [(memq 'a x) => car]
@@ -352,15 +359,15 @@
         
         ;;; tests for and
         [tc-e (let: ([x : Any 1]) (and (number? x) (boolean? x))) 
-              #:ret (ret B (-FS (list (make-TypeFilter N null #'x) (make-TypeFilter B null #'x)) null))]
-        [tc-e (let: ([x : Any 1]) (and (number? x) x)) (Un N (-val #f))
-              #:ret (ret (Un N (-val #f)) (-FS (list (make-TypeFilter N null #'x) (make-TypeFilter (-val #f) null #'x)) null))]
-        [tc-e (let: ([x : Any 1]) (and x (boolean? x))) B
-              #:ret (ret (Un N (-val #f)) (-FS (list (make-TypeFilter N null #'x) (make-TypeFilter (-val #f) null #'x)) null))]
+              #:ret (ret B (-FS (list (make-Bot)) null))]
+        [tc-e (let: ([x : Any 1]) (and (number? x) x))
+              #:ret (ret (Un N (-val #f)) (-FS (list (make-TypeFilter N null #'x) (make-NotTypeFilter (-val #f) null #'x)) null))]
+        [tc-e (let: ([x : Any 1]) (and x (boolean? x)))
+              #:ret (ret -Boolean (-FS (list (make-NotTypeFilter (-val #f) null #'x) (make-TypeFilter -Boolean null #'x)) null))]
         
-        [tc-e (let: ([x : Any 3])
-                    (if (and (list? x) (not (null? x)))
-                        (begin (car x) 1) 2))
+        [tc-e/t (let: ([x : Any 3])
+                      (if (and (list? x) (not (null? x)))
+                          (begin (car x) 1) 2))
               -Integer]
         
         ;; set! tests
@@ -404,30 +411,30 @@
               Univ]
         
         ;; T-AbsPred
-        [tc-e (let ([p? (lambda: ([x : Any]) (number? x))])
-                (lambda: ([x : Any]) (if (p? x) (add1 x) 12)))
-              (-> Univ N)]
-        [tc-e (let ([p? (lambda: ([x : Any]) (not (number? x)))])
-                (lambda: ([x : Any]) (if (p? x) 12 (add1 x))))
-              (-> Univ N)]
-        [tc-e (let* ([z 1]
-                     [p? (lambda: ([x : Any]) (number? z))])
-                (lambda: ([x : Any]) (if (p? x) 11 12)))
-              (-> Univ -Integer)]
-        [tc-e (let* ([z 1]
-                     [p? (lambda: ([x : Any]) (number? z))])
-                (lambda: ([x : Any]) (if (p? x) x 12)))
-              (-> Univ Univ)]
-        [tc-e (let* ([z 1]
-                     [p? (lambda: ([x : Any]) (not (number? z)))])
-                (lambda: ([x : Any]) (if (p? x) x 12)))
-              (-> Univ Univ)]
-        [tc-e (let* ([z 1]
-                     [p? (lambda: ([x : Any]) z)])
-                (lambda: ([x : Any]) (if (p? x) x 12)))
-              (-> Univ Univ)]
+        [tc-e/t (let ([p? (lambda: ([x : Any]) (number? x))])
+                  (lambda: ([x : Any]) (if (p? x) (add1 x) 12)))
+                (-> Univ N)]
+        [tc-e/t (let ([p? (lambda: ([x : Any]) (not (number? x)))])
+                  (lambda: ([x : Any]) (if (p? x) 12 (add1 x))))
+                (-> Univ N)]
+        [tc-e/t (let* ([z 1]
+                       [p? (lambda: ([x : Any]) (number? z))])
+                  (lambda: ([x : Any]) (if (p? x) 11 12)))
+                (-> Univ -Integer)]
+        [tc-e/t (let* ([z 1]
+                       [p? (lambda: ([x : Any]) (number? z))])
+                  (lambda: ([x : Any]) (if (p? x) x 12)))
+                (-> Univ Univ)]
+        [tc-e/t (let* ([z 1]
+                       [p? (lambda: ([x : Any]) (not (number? z)))])
+                  (lambda: ([x : Any]) (if (p? x) x 12)))
+                (-> Univ Univ)]
+        [tc-e/t (let* ([z 1]
+                       [p? (lambda: ([x : Any]) z)])
+                  (lambda: ([x : Any]) (if (p? x) x 12)))
+                (-> Univ Univ)]
         
-        [tc-e (not 1) B]
+        [tc-e (not 1) #:ret (ret B (-FS (list (make-Bot)) null))]
         
         [tc-err ((lambda () 1) 2)]
         [tc-err (apply (lambda () 1) '(2))]
@@ -450,7 +457,7 @@
                   (set! x "foo")
                   x)]      
         ;; w-c-m
-        [tc-e (with-continuation-mark 'key 'mark 
+        [tc-e/t (with-continuation-mark 'key 'mark 
                 3)
               -Integer]
         [tc-err (with-continuation-mark (5 4) 1
@@ -481,8 +488,8 @@
         [tc-err (call-with-values (lambda () (values 2 1))
                                   (lambda: ([x : String] [y : Number]) (+ x y)))]
         ;; quote-syntax
-        [tc-e #'3 (-Syntax -Integer)]
-        [tc-e #'(1 2 3) (-Syntax (-lst* -Integer -Integer -Integer))]
+        [tc-e/t #'3 (-Syntax -Integer)]
+        [tc-e/t #'(1 2 3) (-Syntax (-lst* -Integer -Integer -Integer))]
         
         ;; testing some primitives
         [tc-e (let ([app apply]
@@ -555,7 +562,7 @@
                 ((null? x) sum)))
          N]
         
-        [tc-e (if #f 1 'foo) (-val 'foo)]
+        [tc-e/t (if #f 1 'foo) (-val 'foo)]
         
         [tc-e (list* 1 2 3) (-pair -Integer (-pair -Integer -Integer))]
         
@@ -574,13 +581,13 @@
                           (apply (plambda: (b) ([x : Number] . [y : Number ... a]) x)
                                  1 w))]
         
-        [tc-e (plambda: (a ...) ([z : String] . [w : Number ... a])
+        [tc-e/t (plambda: (a ...) ([z : String] . [w : Number ... a])
                         (apply (plambda: (b ...) ([x : Number] . [y : Number ... b]) x)
                                1 w))
               (-polydots (a) ((list -String) (N a) . ->... . N))]
         ;; instantiating non-dotted terms
         [tc-e (inst (plambda: (a) ([x : a]) x) Integer)
-              (make-Function (list (make-arr (list -Integer) -Integer #:filter (-LFS (list (-not-filter (-val #f))) (list (-filter (-val #f)))))))]
+              (make-Function (list (make-arr* (list -Integer) -Integer #:filters (-LFS (list (-not-filter (-val #f))) (list (-filter (-val #f)))))))]
         [tc-e (inst (plambda: (a) [x : a *] (apply list x)) Integer)
               ((list) -Integer . ->* . (-lst -Integer))]
         
@@ -593,7 +600,7 @@
                (-Integer B -Integer . -> . -Integer)
                . -> . -Integer)]
         
-        [tc-e (plambda: (z x y ...) () (inst map z x y ... y))
+        [tc-e/t (plambda: (z x y ...) () (inst map z x y ... y))
               (-polydots (z x y) (-> ((list ((list x) (y y) . ->... . z) (-lst x)) ((-lst y) y) . ->... . (-lst z))))]
         
         ;; error tests
@@ -614,7 +621,7 @@
                        (if (number? x)
                            (begin (f) (add1 x))
                            12))]
-        
+        #;
         [tc-err (lambda: ([x : Any])
                          (if (number? (not (not x)))
                              (add1 x)
@@ -636,27 +643,27 @@
                           (apply fold-left (lambda: ([c : Integer] [a : Char] . [xs : a ... a]) c)
                                  3 (list #\c) (map list (map list as))))]
         
-        [tc-e (plambda: (a ...) [as : a ... a]
+        [tc-e/t (plambda: (a ...) [as : a ... a]
                         (apply fold-left (lambda: ([c : Integer] [a : Char] . [xs : a ... a]) c)
                                3 (list #\c) (map list as)))
               (-polydots (a) ((list) (a a) . ->... . -Integer))]
         
         ;; First is same as second, but with map explicitly instantiated.
-        [tc-e (plambda: (a ...) [ys : (a ... a -> Number) *]
+        [tc-e/t (plambda: (a ...) [ys : (a ... a -> Number) *]
                 (lambda: [zs : a ... a]
                   ((inst map Number (a ... a -> Number))
                    (lambda: ([y : (a ... a -> Number)])
                      (apply y zs))
                    ys)))
               (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N))))]
-        [tc-e (plambda: (a ...) [ys : (a ... a -> Number) *]
+        [tc-e/t (plambda: (a ...) [ys : (a ... a -> Number) *]
                 (lambda: [zs : a ... a]
                   (map (lambda: ([y : (a ... a -> Number)])
                          (apply y zs))
                        ys)))
               (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N))))]
         
-        [tc-e (lambda: ((x : (All (t) t)))
+        [tc-e/t (lambda: ((x : (All (t) t)))
                        ((inst (inst x (All (t) (t -> t))) 
                               (All (t) t))
                         x))
