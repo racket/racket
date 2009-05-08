@@ -3,7 +3,7 @@
 (require 
  "test-utils.ss"
  "planet-requires.ss"
- ;"typecheck-tests.ss" ;; doesn't compile yet
+ "typecheck-tests.ss" ;; doesn't compile yet
  "subtype-tests.ss" ;; pass
  "type-equal-tests.ss" ;; pass
  "remove-intersect-tests.ss" ;; pass

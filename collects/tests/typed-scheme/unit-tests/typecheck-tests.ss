@@ -3,10 +3,11 @@
 (require "test-utils.ss" "planet-requires.ss"
          (for-syntax scheme/base)
          (for-template scheme/base))
-(require (private base-env mutated-vars type-utils union prims type-effect-convenience type-annotation)
+(require (private base-env prims type-annotation)
 	 (typecheck typechecker)
-	 (rep type-rep effect-rep)
-         (utils tc-utils)
+	 (rep type-rep filter-rep object-rep)
+         (types utils union convenience)
+         (utils tc-utils mutated-vars)
          (env type-name-env type-environments init-envs)
          (schemeunit))
 
@@ -20,9 +21,19 @@
 
 (provide typecheck-tests g tc-expr/expand)
 
+(define N -Number)
+(define B -Boolean)
+(define Sym -Symbol)
+
 (define (g) (run typecheck-tests))
 
 (define-namespace-anchor anch)
+
+(define (-path t var [p null])
+  (ret t
+       (-FS (list (make-NotTypeFilter (-val #f) p var))
+            (list (make-TypeFilter (-val #f) p var)))
+       (make-Path p var)))
 
 
 ;; check that a literal typechecks correctly
@@ -45,11 +56,11 @@
 ;; check that an expression typechecks correctly
 (define-syntax (tc-e stx)
   (syntax-case stx ()
-    [(_ expr ty) (syntax/loc stx (tc-e expr ty (list) (list)))]
-    [(_ expr ty eff1 eff2)
-     (syntax/loc stx (check-tc-result-equal? (format "~a" 'expr)
-                                             (tc-expr/expand expr)
-                                             (ret ty eff1 eff2)))]))
+    [(_ expr ty) (syntax/loc stx (tc-e expr #:ret (ret ty)))]
+    [(_ expr #:ret r) 
+     (syntax/loc stx 
+       (check-tc-result-equal? (format "~a" 'expr) (tc-expr/expand expr) r))]
+    [(_ expr ty f o) (syntax/loc stx (tc-e expr #:ret (ret ty f o)))]))
 
 (require (for-syntax syntax/kerncase))
 
@@ -76,8 +87,6 @@
   (test-suite 
    "Typechecker tests"
    #reader typed-scheme/typed-reader
-   (let ([-vet (lambda (x) (list (-vet x)))]
-	 [-vef (lambda (x) (list (-vef x)))])
      (test-suite
         "tc-expr tests"
         
@@ -111,10 +120,10 @@
         [tc-e (plambda: (a) ([l : (Listof a)]) (car l))
               (make-Poly '(a) (-> (make-Listof  (-v a)) (-v a)))]
         [tc-e (case-lambda: [([a : Number] [b : Number]) (+ a b)]) (-> N N N)]
-        [tc-e (let: ([x : Number 5]) x) N (-vet #'x) (-vef #'x)]
+        [tc-e (let: ([x : Number 5]) x) #:ret (-path -Number #'x)]
         [tc-e (let-values ([(x) 4]) (+ x 1)) -Integer]
         [tc-e (let-values ([(#{x : Number} #{y : Boolean}) (values 3 #t)]) (and (= x 1) (not y))) 
-              B (list (-rest (-val #f) #'y)) (list)]
+              #:ret (ret -Boolean (-FS (list (make-TypeFilter (-val #f) #'y)) null))]
         [tc-e (values 3) -Integer]
         [tc-e (values) (-values (list))]
         [tc-e (values 3 #f) (-values (list -Integer (-val #f)))]
@@ -149,13 +158,13 @@
         [tc-e (let: ((x : Number 3)) (if (boolean? x) (not x) #t)) (-val #t)]
         [tc-e (begin 3) -Integer]
         [tc-e (begin #f 3) -Integer]
-        [tc-e (begin #t) (-val #t) (list (make-True-Effect)) (list (make-True-Effect))]
-        [tc-e (begin0 #t) (-val #t) (list (make-True-Effect)) (list (make-True-Effect))]
-        [tc-e (begin0 #t 3) (-val #t) (list (make-True-Effect)) (list (make-True-Effect))]
-        [tc-e #t (-val #t) (list (make-True-Effect)) (list (make-True-Effect))]
-        [tc-e #f (-val #f) (list (make-False-Effect)) (list (make-False-Effect))]
-        [tc-e '#t (-val #t) (list (make-True-Effect)) (list (make-True-Effect))]
-        [tc-e '#f (-val #f) (list (make-False-Effect)) (list (make-False-Effect))]
+        [tc-e (begin #t) #:ret (ret (-val #t) (-FS null (list (make-Bot))))]
+        [tc-e (begin0 #t) #:ret (ret (-val #t) (-FS null (list (make-Bot))))]
+        [tc-e (begin0 #t 3) #:ret (ret (-val #t) (-FS null (list (make-Bot))))]
+        [tc-e #t #:ret (ret (-val #t) (-FS null (list (make-Bot))))]
+        [tc-e #f #:ret (ret (-val #f) (-FS (list (make-Bot)) null))]
+        [tc-e '#t #:ret (ret (-val #t) (-FS null (list (make-Bot))))]
+        [tc-e '#f #:ret (ret (-val #f) (-FS (list (make-Bot)) null))]
         [tc-e (if #f 'a 3) -Integer]
         [tc-e (if #f #f #t) (Un (-val #t))]
         [tc-e (when #f 3) -Void]
@@ -178,7 +187,7 @@
         
         [tc-e (let: ([x : Number 3])
                     (when (number? x) #t))
-              (-val #t) (list (make-True-Effect)) (list (make-True-Effect))]
+              #:ret (ret (-val #t) (-FS null (list (make-Bot))))]
         [tc-e (let: ([x : Number 3])
                     (when (boolean? x) #t))
               -Void]
@@ -195,13 +204,13 @@
                         3))
               N]
         
-        [tc-e (let ([x 1]) x) -Integer (-vet #'x) (-vef #'x)]
-        [tc-e (let ([x 1]) (boolean? x)) B (list (-rest B #'x)) (list (-rem B #'x))]
-        [tc-e (boolean? number?) B (list (-rest B #'number?)) (list (-rem B #'number?))]
+        [tc-e (let ([x 1]) x) #:ret (-path -Integer #'x)]
+        [tc-e (let ([x 1]) (boolean? x)) #:ret (ret -Boolean (-FS ))]
+        [tc-e (boolean? number?) #:ret (-path -Boolean #'number?)]
         
-        [tc-e (let: ([x : (Option Number) #f]) x) (Un N (-val #f)) (-vet #'x) (-vef #'x)]
-        [tc-e (let: ([x : Any 12]) (not (not x))) 
-              B (list (-rem (-val #f) #'x)) (list (-rest (-val #f) #'x))]
+        [tc-e (let: ([x : (Option Number) #f]) x) (-path (Un N (-val #f)) #'x)]
+        [tc-e (let: ([x : Any 12]) (not (not x)))
+              #:ret (ret -Boolean (-FS (list (make-NotTypeFilter (-val #f) null #'x)) (list (make-TypeFilter (-val #f) null #'x))))]
         
         [tc-e (let: ([x : (Option Number) #f])
                     (if (let ([z 1]) x)
@@ -261,13 +270,12 @@
               N]
         
         
-        [tc-e null (-val null) (-vet #'null) (-vef #'null)]
+        [tc-e null (-path (-val null) #'null)]
         
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 x)
-              (Un (-val 'squarf) -Integer)
-              (-vet #'x) (-vef #'x)]
+              #:ret (-path (Un (-val 'squarf) -Integer) #'x)]
         
         [tc-e (if #t 1 2) -Integer]
         
@@ -343,12 +351,12 @@
         
         
         ;;; tests for and
-        [tc-e (let: ([x : Any 1]) (and (number? x) (boolean? x))) B 
-              (list (-rest N #'x) (-rest B #'x)) (list)]
-        [tc-e (let: ([x : Any 1]) (and (number? x) x)) (Un N (-val #f)) 
-              (list (-rest N #'x) (make-Var-True-Effect #'x)) (list)]
+        [tc-e (let: ([x : Any 1]) (and (number? x) (boolean? x))) 
+              #:ret (ret B (-FS (list (make-TypeFilter N null #'x) (make-TypeFilter B null #'x)) null))]
+        [tc-e (let: ([x : Any 1]) (and (number? x) x)) (Un N (-val #f))
+              #:ret (ret (Un N (-val #f)) (-FS (list (make-TypeFilter N null #'x) (make-TypeFilter (-val #f) null #'x)) null))]
         [tc-e (let: ([x : Any 1]) (and x (boolean? x))) B
-              (list (-rem (-val #f) #'x) (-rest B #'x)) (list)]
+              #:ret (ret (Un N (-val #f)) (-FS (list (make-TypeFilter N null #'x) (make-TypeFilter (-val #f) null #'x)) null))]
         
         [tc-e (let: ([x : Any 3])
                     (if (and (list? x) (not (null? x)))
@@ -572,7 +580,7 @@
               (-polydots (a) ((list -String) (N a) . ->... . N))]
         ;; instantiating non-dotted terms
         [tc-e (inst (plambda: (a) ([x : a]) x) Integer)
-              (-Integer . -> . -Integer : (list (make-Latent-Var-True-Effect)) (list (make-Latent-Var-False-Effect)))]
+              (make-Function (list (make-arr (list -Integer) -Integer #:filter (-LFS (list (-not-filter (-val #f))) (list (-filter (-val #f)))))))]
         [tc-e (inst (plambda: (a) [x : a *] (apply list x)) Integer)
               ((list) -Integer . ->* . (-lst -Integer))]
         
@@ -668,7 +676,7 @@
                         (fact 20))]
         
         #;[tc-err ]
-        ))
+        )
   (test-suite
    "check-type tests"
    (test-exn "Fails correctly" exn:fail:syntax? (lambda () (parameterize ([orig-module-stx #'here])
