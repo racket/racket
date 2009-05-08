@@ -23,8 +23,7 @@
 
 ;; return the type of a literal value
 ;; scheme-value -> type
-(d/c (tc-literal v-stx [expected #f])
-  (-->* (syntax?) ((-or/c #f Type/c)) Type/c)
+(define (tc-literal v-stx [expected #f])
   (define-syntax-class exp
     (pattern i
              #:when expected

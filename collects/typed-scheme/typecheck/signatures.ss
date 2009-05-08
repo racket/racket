@@ -11,6 +11,7 @@
 
 (define-signature tc-expr^
   ([cnt tc-expr (syntax? . -> . tc-results?)]
+   [cnt tc-literal (->* (syntax?) ((or/c #f Type/c)) Type/c)]
    [cnt tc-expr/check (syntax? tc-results? . -> . tc-results?)]
    [cnt tc-expr/check/t (syntax? tc-results? . -> . Type/c)]
    [cnt check-below (->d ([s (or/c Type/c tc-results?)] [t (or/c Type/c tc-results?)]) () [_ (if (Type? s) Type/c tc-results?)])]
