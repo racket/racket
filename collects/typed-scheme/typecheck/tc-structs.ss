@@ -126,7 +126,7 @@
   (define bindings
     (append 
      (list (cons (or maker* maker) 
-                 (debug (wrapper (->* external-fld-types (if cret cret name)))))
+                 (wrapper (->* external-fld-types (if cret cret name))))
            (cons pred
                  (make-pred-ty (pred-wrapper name))))
      (for/list ([g (in-list getters)] [t (in-list external-fld-types/no-parent)] [i (in-naturals)])

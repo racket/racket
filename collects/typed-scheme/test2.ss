@@ -1,5 +1,5 @@
 #lang typed-scheme
-#|
+
 (: f (Number String -> Number))
 (define (f x z) #;(f x z) 7)
 (lambda: ([x : Any] [y : Any]) (values (number? y) (number? x)))
@@ -19,16 +19,16 @@
 (+)
 (+ 1 2 3)
 (+ 1 2 3.5)
-|#
+
 (define-struct: (Z) X ([y : Z]))
 (define:  my-x : (X Number) (make-X 1))
 (X-y my-x)
 
-#| ; FIXME - doesn't work yet
+; FIXME - doesn't work yet
 (number? (X-y my-x))
 (if (number? (X-y my-x)) (+ 1 (X-y my-x)) 7)
-|#
-#|
+
+
 (define: (f2) : (U) (error 'foo))
 (lambda: ([x : Number]) #{((f2)) :: (U)})
 
@@ -49,4 +49,4 @@
 ;(map + (list 1 2 3) (list 1 2 "foo"))
 
 ((lambda (a b . c) (+ a b (car c))) 1 2 3 4)
-|#
+
