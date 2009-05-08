@@ -41,8 +41,10 @@
          test-begin
          test-case
          test-suite
+         make-test-suite
          delay-test
-         (rename-out [schemeunit-test-case? test-case?]
+         (rename-out [make-schemeunit-test-case make-test-case]
+                     [schemeunit-test-case? test-case?]
                      [schemeunit-test-suite? test-suite?])
          
          define-test-suite

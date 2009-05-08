@@ -6,9 +6,9 @@
 
 @defmodule[web-server/configuration/namespace]{
 
-@filepath{configuration/namespace.ss} provides a function to help create the
-@scheme[make-servlet-namespace] procedure needed by the @scheme[make] functions
-of @filepath{dispatchers/dispatch-servlets.ss} and @filepath{dispatchers/dispatch-lang.ss}.
+This module provides a function to help create the
+@scheme[make-servlet-namespace] procedure needed by the @scheme[make] function
+of @schememodname[web-server/dispatchers/dispatch-servlets].
 
 @defthing[make-servlet-namespace/c contract?]{
  Equivalent to 

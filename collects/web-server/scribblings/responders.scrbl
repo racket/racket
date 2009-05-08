@@ -8,7 +8,7 @@
 
 @defmodule[web-server/configuration/responders]{
 
-@filepath{configuration/responders.ss} provides some functions that help constructing HTTP responders.
+This module provides some functions that help constructing HTTP responders.
 These functions are used by the default dispatcher constructor (see @secref["web-server-unit.ss"]) to
 turn the paths given in the @scheme[configuration-table] into responders for the associated circumstance.
 

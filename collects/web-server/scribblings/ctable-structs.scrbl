@@ -9,7 +9,7 @@
 
 @defmodule[web-server/configuration/configuration-table-structs]{
 
-@filepath{configuration/configuration-table-structs.ss} provides the following structures that
+This module provides the following structures that
 represent a standard configuration (see @secref["web-server-unit.ss"]) of the @web-server .
 The contracts on this structure influence the valid types of values in
 the configuration table S-expression file format described in

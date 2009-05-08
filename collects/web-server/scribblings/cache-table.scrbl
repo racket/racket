@@ -6,7 +6,7 @@
 
 @defmodule[web-server/private/cache-table]{
 
-@filepath{private/cache-table.ss} provides a set of caching hash table
+This module provides a set of caching hash table
 functions.
 
 @defproc[(make-cache-table)

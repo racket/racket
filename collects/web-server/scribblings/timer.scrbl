@@ -6,7 +6,7 @@
 
 @defmodule[web-server/private/timer]{
 
-@filepath{private/timer.ss} provides a functionality for running
+This module provides a functionality for running
 procedures after a given amount of time, that may be extended.
 
 @defstruct[timer ([evt evt?]

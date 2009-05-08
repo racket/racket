@@ -8,7 +8,7 @@
 
 @defmodule[web-server/configuration/configuration-table]{
 
-@filepath{configuration/configuration-table.ss} provides functions for
+This module provides functions for
 reading, writing, parsing, and printing @scheme[configuration-table]
 structures.
 

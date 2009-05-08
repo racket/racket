@@ -6,19 +6,17 @@
 A servlet has the following process performed on it automatically:
 @itemize[
  @item{All uses of @scheme[letrec] are removed and replaced with equivalent uses of
-       @scheme[let] and imperative features. (@filepath{lang/elim-letrec.ss})}
+       @scheme[let] and imperative features.}
  @item{The program is converted into ANF (Administrative Normal Form),
-       making all continuations explicit. (@filepath{lang/anormal.ss})}
+       making all continuations explicit.}
  @item{All continuations (and other continuations marks) are recorded in the
        continuation marks of the expression
-       they are the continuation of. (@filepath{lang/elim-callcc.ss})}
- @item{All calls to external modules are identified and marked.
-       (@filepath{lang/elim-callcc.ss})}
+       they are the continuation of.}
+ @item{All calls to external modules are identified and marked.}
  @item{All uses of @scheme[call/cc] are removed and replaced with
-       equivalent gathering of the continuations through the continuation-marks.
-       (@filepath{lang/elim-callcc.ss})}
+       equivalent gathering of the continuations through the continuation-marks.}
  @item{The program is defunctionalized with a serializable data-structure for each
-       anonymous lambda. (@filepath{lang/defun.ss})}
+       anonymous lambda.}
 ]
 
 This process allows the continuations captured by your servlet to be serialized.

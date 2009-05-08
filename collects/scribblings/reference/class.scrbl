@@ -1663,7 +1663,7 @@ Returns @scheme[#t] if @scheme[v] is an interface, @scheme[#f] otherwise.}
 Returns @scheme[#t] if @scheme[v] is a @tech{generic}, @scheme[#f] otherwise.}
 
 
-@defproc[(object=? [a object?][b object?]) eq?]{
+@defproc[(object=? [a object?] [b object?]) boolean?]{
 
 Determines if two objects are the same object, or not; this procedure uses
 @scheme[eq?], but also works properly with contracts.}
@@ -1745,7 +1745,6 @@ not including fields whose names are local (i.e., declared with
 
 Returns two values, analogous to the return
 values of @scheme[struct-info]:
-K%
 @itemize[
 
   @item{@scheme[class]: a class or @scheme[#f]; the result is

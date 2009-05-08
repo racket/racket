@@ -27,7 +27,7 @@ documentation.
 
 @defmodule[web-server/dispatchers/dispatch]{
 
-@filepath{dispatchers/dispatch.ss} provides a few functions for dispatchers in general.
+This module provides a few functions for dispatchers in general.
 
 @defthing[dispatcher/c contract?]{
  Equivalent to @scheme[(connection? request? . -> . void)].
@@ -74,7 +74,7 @@ Consider the following example dispatcher, that captures the essence of URL rewr
 
 @defmodule[web-server/dispatchers/filesystem-map]{
 
-@filepath{dispatchers/filesystem-map.ss} provides a means of mapping
+This module provides a means of mapping
 URLs to paths on the filesystem.
 
 @defthing[url->path/c contract?]{

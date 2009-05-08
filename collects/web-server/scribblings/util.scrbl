@@ -10,7 +10,7 @@
 @defmodule[web-server/private/util]
 
 There are a number of other miscellaneous utilities the @web-server
-needs. They are provided by @filepath{private/util.ss}.
+needs. They are provided by this module.
 
 @section{Contracts}
 @defthing[non-empty-string/c contract?]{Contract for non-empty strings.}

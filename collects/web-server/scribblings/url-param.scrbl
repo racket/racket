@@ -10,7 +10,7 @@
 The @web-server needs to encode information in URLs. If this data
 is stored in the query string, than it will be overridden by browsers that
 make GET requests to those URLs with more query data. So, it must be encoded
-in URL params. @filepath{private/url-param.ss} provides functions for helping
+in URL params. This module provides functions for helping
 with this process.
 
 @defproc[(insert-param [u url?]

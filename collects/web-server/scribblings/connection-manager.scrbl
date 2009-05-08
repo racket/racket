@@ -7,7 +7,7 @@
 
 @defmodule[web-server/private/connection-manager]{
 
-@filepath{private/connection-manager.ss} provides functionality for managing pairs of
+This module provides functionality for managing pairs of
 input and output ports. We have plans to allow a number of different strategies
 for doing this.
 

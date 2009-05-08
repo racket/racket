@@ -10,11 +10,11 @@
 (define gl-lib (case stype
                  [(windows) (ffi-lib "opengl32")]
                  [(macosx) (ffi-lib "/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL")]
-                 [else (ffi-lib "libGL")]))
+                 [else (ffi-lib "libGL" '("1" ""))]))
 (define glu-lib (case stype
                   [(windows) (ffi-lib "glu32")]
                   [(macosx) (ffi-lib "/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGLU")]
-                  [else (ffi-lib "libGLU")]))
+                  [else (ffi-lib "libGLU" '("1" ""))]))
 
 (define (unavailable name)
   (lambda () (lambda x (error name "unavailable on this system"))))

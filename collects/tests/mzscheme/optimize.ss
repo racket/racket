@@ -694,6 +694,36 @@
               (define (q x)
                 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ 1 (+ x 10))))))))))))))
 
+(let ([check (lambda (proc arities non-arities)
+               (test-comp `(module m scheme/base
+                             (define f ,proc)
+                             (print (procedure? f)))
+                          `(module m scheme/base
+                             (define f ,proc)
+                             (print #t)))
+               (for-each
+                (lambda (a)
+                  (test-comp `(module m scheme/base
+                                (define f ,proc)
+                                (print (procedure-arity-includes? f ,a)))
+                             `(module m scheme/base
+                                (define f ,proc)
+                                (print #t))))
+                arities)
+               (for-each
+                (lambda (a)
+                  (test-comp `(module m scheme/base
+                                (define f ,proc)
+                                (print (procedure-arity-includes? f ,a)))
+                             `(module m scheme/base
+                                (define f ,proc)
+                                (print #f))))
+                non-arities))])
+  (check '(lambda (x) x) '(1) '(0 2))
+  (check '(lambda (x . y) x) '(1 2 3) '(0))
+  (check '(case-lambda [() 1] [(x y) x]) '(0 2) '(1 3))
+  (check '(lambda (x [y #f]) y) '(1 2) '(0 3)))
+
 (let ([test-dropped
        (lambda (cons-name . args)
          (test-comp `(let ([x 5])

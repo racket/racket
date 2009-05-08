@@ -483,6 +483,17 @@
           (term ((z z) (z z)))))
   
   (let ()
+    (define-metafunction empty-language
+      [(f number_1)
+       number_1
+       (where number_2 ,(add1 (term number_1)))
+       (where number_3 ,(add1 (term number_2)))
+       (side-condition (and (number? (term number_3))
+                            (= (term number_3) 4)))]
+      [(f any) 0])
+    (test (term (f 2)) 2))
+  
+  (let ()
     (define-language x-lang
       (x variable))
     (define-metafunction x-lang

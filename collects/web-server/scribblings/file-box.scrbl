@@ -9,7 +9,7 @@
 
 As mentioned earlier, it is dangerous to rely on the store in
 Web Language servlets, due to the deployment scenarios available
-to them. @filepath{lang/file-box.ss} provides a simple API to replace
+to them. This module provides a simple API to replace
 boxes in a safe way.
 
 @defproc[(file-box? [v any/c])

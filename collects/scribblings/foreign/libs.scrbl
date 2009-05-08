@@ -20,7 +20,7 @@ Returns @scheme[#t] if @scheme[v] is the result of @scheme[ffi-lib],
 @section{Unsafe Library Functions}
 
 @defproc[(ffi-lib [path (or/c path-string? #f)]
-                  [version (or/c string? (listof string?) #f) #f]) any]{
+                  [version (or/c string? (listof (or/c string? #f)) #f) #f]) any]{
 
 Returns an foreign-library value. If @scheme[path] is a path, the
 result represents the foreign library, which is opened in an
@@ -29,14 +29,15 @@ OS-specific way (using @cpp{LoadLibrary} under Windows, and
 
 The path is not expected to contain the library suffix, which is added
 according to the current platform.  If adding the suffix fails,
-several other filename variations are tried --- retrying without an
+several other filename variations are tried: retrying without an
 automatically added suffix, and using a full path of a file if it
 exists relative to the current directory (since the OS-level library
 function usually searches, unless the library name is an absolute
 path). An optional @scheme[version] string can be supplied, which is
-appended to the name after any added suffix. If you need any of a few
-possible versions, use a list of version strings, and @scheme[ffi-lib]
-will try all of them.
+appended to the name before or after the suffix, depending on platform
+conventions, unless it is @scheme[#f] or @scheme[""]. If
+@scheme[version] is a list, @scheme[ffi-lib] will try each of them in
+order.
 
 If @scheme[path] is @scheme[#f], then the resulting foreign-library
 value represents all libraries loaded in the current process,
@@ -45,10 +46,12 @@ particular, use @scheme[#f] to access C-level functionality exported
 by the run-time system (as described in @|InsideMzScheme|).
 
 Note: @scheme[ffi-lib] tries to look for the library file in a few
-places like the PLT libraries (see @scheme[get-lib-search-dirs]), a
-relative path, or a system search.  However, if @cpp{dlopen} cannot
-open a library, there is no reliable way to know why it failed, so if
-all path combinations fail, it will raise an error with the result of
+places, inluding the PLT libraries (see @scheme[get-lib-search-dirs]),
+a relative path, or a system search. When @scheme[version] is a list,
+different versions are tried through each route before continuing the
+search with other routes. However, if @cpp{dlopen} cannot open a
+library, there is no reliable way to know why it failed, so if all
+path combinations fail, it will raise an error with the result of
 @cpp{dlopen} on the unmodified argument name.  For example, if you
 have a local @filepath{foo.so} library that cannot be loaded because
 of a missing symbol, using @scheme[(ffi-lib "foo.so")] will fail with

@@ -199,6 +199,42 @@
     [(_ orig-reduction-relation lang args ...)
      #'(do-reduction-relation extend-reduction-relation orig-reduction-relation #t lang args ...)]))
 
+;; the withs, freshs, and side-conditions come in backwards order
+(define-for-syntax (bind-withs orig-name main stx body)
+  (let loop ([stx stx]
+             [body body])
+    (syntax-case stx (side-condition where fresh)
+      [() body]
+      [((where x e) y ...) 
+       (loop #'(y ...) #`(term-let ([x (term e)]) #,body))]
+      [((side-condition s ...) y ...)
+       (loop #'(y ...) #`(and s ... #,body))]
+      [((fresh x) y ...)
+       (identifier? #'x)
+       (loop #'(y ...) #`(term-let ([x (variable-not-in #,main 'x)]) #,body))]
+      [((fresh x name) y ...)
+       (identifier? #'x)
+       (loop #'(y ...)
+             #`(term-let ([x (let ([the-name (term name)])
+                               (verify-name-ok '#,orig-name the-name)
+                               (variable-not-in #,main the-name))])
+                         #,body))]
+      [((fresh (y) (x ...)) z ...)
+       (loop #'(z ...)
+             #`(term-let ([(y #,'...)
+                           (variables-not-in #,main 
+                                             (map (λ (_ignore_) 'y)
+                                                  (term (x ...))))])
+                         #,body))]
+      [((fresh (y) (x ...) names) z ...)
+       (loop #'(z ...)
+             #`(term-let ([(y #,'...)
+                           (let ([the-names (term names)]
+                                 [len-counter (term (x ...))])
+                             (verify-names-ok '#,orig-name the-names len-counter)
+                             (variables-not-in #,main the-names))])
+                         #,body))])))
+
 (define-struct successful (result))
 
 (define-syntax-set (do-reduction-relation)
@@ -608,42 +644,6 @@
                            #,(bind-withs orig-name #'main sides/withs/freshs
                                          #'(make-successful (term to)))))))))))
   
-  ;; the withs, freshs, and side-conditions come in backwards order
-  (define (bind-withs orig-name main stx body)
-    (let loop ([stx stx]
-               [body body])
-      (syntax-case stx (side-condition where fresh)
-        [() body]
-        [((where x e) y ...) 
-         (loop #'(y ...) #`(term-let ([x (term e)]) #,body))]
-        [((side-condition s ...) y ...)
-         (loop #'(y ...) #`(and s ... #,body))]
-        [((fresh x) y ...)
-         (identifier? #'x)
-         (loop #'(y ...) #`(term-let ([x (variable-not-in #,main 'x)]) #,body))]
-        [((fresh x name) y ...)
-         (identifier? #'x)
-         (loop #'(y ...)
-               #`(term-let ([x (let ([the-name (term name)])
-                                 (verify-name-ok '#,orig-name the-name)
-                                 (variable-not-in #,main the-name))])
-                   #,body))]
-        [((fresh (y) (x ...)) z ...)
-         (loop #'(z ...)
-               #`(term-let ([(y #,'...)
-                             (variables-not-in #,main 
-                                               (map (λ (_ignore_) 'y)
-                                                    (term (x ...))))])
-                   #,body))]
-        [((fresh (y) (x ...) names) z ...)
-         (loop #'(z ...)
-               #`(term-let ([(y #,'...)
-                             (let ([the-names (term names)]
-                                   [len-counter (term (x ...))])
-                               (verify-names-ok '#,orig-name the-names len-counter)
-                               (variables-not-in #,main the-names))])
-                   #,body))])))
-  
   (define (process-extras stx orig-name name-table extras)
     (let ([the-name #f]
           [the-name-stx #f]
@@ -1012,114 +1012,117 @@
                                       (loop name (cdr names))]))])
                
                (with-syntax ([(((tl-side-conds ...) ...) 
-                               (tl-bindings ...))
-                              (extract-side-conditions (syntax-e #'name) stx #'((stuff ...) ...))])
+                               (tl-bindings ...)
+                               (tl-side-cond/binds ...))
+                              (parse-extras #'((stuff ...) ...))])
                  (let ([lang-nts (language-id-nts #'lang 'define-metafunction)])
-                   (with-syntax ([(side-conditions-rewritten ...) 
-                                  (map (λ (x) (rewrite-side-conditions/check-errs
-                                               lang-nts
-                                               'define-metafunction
-                                               #t
-                                               x))
-                                       (syntax->list (syntax ((side-condition lhs (and tl-side-conds ...)) ...))))]
-                                 [dom-side-conditions-rewritten
-                                  (and dom-ctcs
-                                       (rewrite-side-conditions/check-errs
-                                        lang-nts
-                                        'define-metafunction
-                                        #f
-                                        dom-ctcs))]
-                                 [codom-side-conditions-rewritten
-                                  (rewrite-side-conditions/check-errs
-                                   lang-nts
-                                   'define-metafunction
-                                   #f
-                                   codom-contract)]
-                                 [(rhs-fns ...)
-                                  (map (λ (lhs rhs bindings)
-                                         (let-values ([(names names/ellipses) (extract-names lang-nts 'define-metafunction #t lhs)])
-                                           (with-syntax ([(names ...) names]
-                                                         [(names/ellipses ...) names/ellipses]
-                                                         [rhs rhs]
-                                                         [((tl-var tl-exp) ...) bindings])
-                                             (syntax 
-                                              (λ (name bindings)
-                                                (term-let-fn ((name name))
-                                                             (term-let ([names/ellipses (lookup-binding bindings 'names)] ...)
-                                                                       (term-let ([tl-var (term tl-exp)] ...)
-                                                                                 (term rhs)))))))))
-                                       (syntax->list (syntax (lhs ...)))
-                                       (syntax->list (syntax (rhs ...)))
-                                       (syntax->list (syntax (tl-bindings ...))))]
-                                 [(name2 name-predicate) (generate-temporaries (syntax (name name)))]
-                                 [((side-cond ...) ...)
-                                  ;; For generating a pict, separate out side conditions wrapping the LHS and at the top-level
-                                  (map (lambda (lhs scs)
-                                         (append
-                                          (let loop ([lhs lhs])
-                                            (syntax-case lhs (side-condition term)
-                                              [(side-condition pat (term sc))
-                                               (cons #'sc (loop #'pat))]
-                                              [_else null]))
-                                          scs))
-                                       (syntax->list #'(lhs ...))
-                                       (syntax->list #'((tl-side-conds ...) ...)))]
-                                 [(((bind-id . bind-pat) ...) ...)
-                                  ;; Also for pict, extract pattern bindings
-                                  (map extract-pattern-binds (syntax->list #'(lhs ...)))]
-                                 [(((rhs-bind-id . rhs-bind-pat) ...) ...)
-                                  ;; Also for pict, extract pattern bindings
-                                  (map extract-term-let-binds (syntax->list #'(rhs ...)))]
-                                 [(((where-id where-pat) ...) ...)
-                                  ;; Also for pict, extract where bindings
-                                  #'(tl-bindings ...)])
-                     (syntax-property
-                      #`(begin
-                          (define-values (name2 name-predicate)
-                            (let ([sc `(side-conditions-rewritten ...)]
-                                  [dsc `dom-side-conditions-rewritten])
-                              (build-metafunction 
-                               lang
-                               sc
-                               (list rhs-fns ...)
-                               #,(if prev-metafunction
-                                     (let ([term-fn (syntax-local-value prev-metafunction)])
-                                       #`(metafunc-proc-cps #,(term-fn-get-id term-fn)))
-                                     #''())
-                               #,(if prev-metafunction
-                                     (let ([term-fn (syntax-local-value prev-metafunction)])
-                                       #`(metafunc-proc-rhss #,(term-fn-get-id term-fn)))
-                                     #''())
-                               (λ (f/dom cps rhss)
-                                 (make-metafunc-proc
-                                  (let ([name (lambda (x) (f/dom x))]) name)
-                                  (list (list (to-lw lhs-for-lw)
-                                              (list (to-lw/uq side-cond) ...)
-                                              (list (cons (to-lw bind-id)
-                                                          (to-lw bind-pat))
-                                                    ...
-                                                    (cons (to-lw rhs-bind-id)
-                                                          (to-lw/uq rhs-bind-pat))
-                                                    ...
-                                                    (cons (to-lw where-id)
-                                                          (to-lw where-pat))
-                                                    ...)
-                                              (to-lw rhs))
-                                        ...)
-                                  lang
-                                  #t ;; multi-args?
-                                  'name
-                                  cps
-                                  rhss
-                                  (let ([name (lambda (x) (name-predicate x))]) name)
-                                  dsc
-                                  sc))
-                               dsc
-                               'codom-side-conditions-rewritten
-                               'name)))
-                          (term-define-fn name name2))
-                      'disappeared-use
-                      (map syntax-local-introduce (syntax->list #'(original-names ...)))))))))))]
+                   (with-syntax ([(tl-withs ...) (map (λ (sc/b) (bind-withs syn-error-name '() sc/b #t))
+                                                      (syntax->list #'(tl-side-cond/binds ...)))])
+                         (with-syntax ([(side-conditions-rewritten ...) 
+                                        (map (λ (x) (rewrite-side-conditions/check-errs
+                                                     lang-nts
+                                                     'define-metafunction
+                                                     #t
+                                                     x))
+                                             (syntax->list (syntax ((side-condition lhs tl-withs) ...))))]
+                                       [dom-side-conditions-rewritten
+                                        (and dom-ctcs
+                                             (rewrite-side-conditions/check-errs
+                                              lang-nts
+                                              'define-metafunction
+                                              #f
+                                              dom-ctcs))]
+                                       [codom-side-conditions-rewritten
+                                        (rewrite-side-conditions/check-errs
+                                         lang-nts
+                                         'define-metafunction
+                                         #f
+                                         codom-contract)]
+                                       [(rhs-fns ...)
+                                        (map (λ (lhs rhs bindings)
+                                               (let-values ([(names names/ellipses) (extract-names lang-nts 'define-metafunction #t lhs)])
+                                                 (with-syntax ([(names ...) names]
+                                                               [(names/ellipses ...) names/ellipses]
+                                                               [rhs rhs]
+                                                               [((tl-var tl-exp) ...) bindings])
+                                                   (syntax 
+                                                    (λ (name bindings)
+                                                      (term-let-fn ((name name))
+                                                                   (term-let ([names/ellipses (lookup-binding bindings 'names)] ...)
+                                                                             (term-let ([tl-var (term tl-exp)] ...)
+                                                                                       (term rhs)))))))))
+                                             (syntax->list (syntax (lhs ...)))
+                                             (syntax->list (syntax (rhs ...)))
+                                             (syntax->list (syntax (tl-bindings ...))))]
+                                       [(name2 name-predicate) (generate-temporaries (syntax (name name)))]
+                                       [((side-cond ...) ...)
+                                        ;; For generating a pict, separate out side conditions wrapping the LHS and at the top-level
+                                        (map (lambda (lhs scs)
+                                               (append
+                                                (let loop ([lhs lhs])
+                                                  (syntax-case lhs (side-condition term)
+                                                    [(side-condition pat (term sc))
+                                                     (cons #'sc (loop #'pat))]
+                                                    [_else null]))
+                                                scs))
+                                             (syntax->list #'(lhs ...))
+                                             (syntax->list #'((tl-side-conds ...) ...)))]
+                                       [(((bind-id . bind-pat) ...) ...)
+                                        ;; Also for pict, extract pattern bindings
+                                        (map extract-pattern-binds (syntax->list #'(lhs ...)))]
+                                       [(((rhs-bind-id . rhs-bind-pat) ...) ...)
+                                        ;; Also for pict, extract pattern bindings
+                                        (map extract-term-let-binds (syntax->list #'(rhs ...)))]
+                                       [(((where-id where-pat) ...) ...)
+                                        ;; Also for pict, extract where bindings
+                                        #'(tl-bindings ...)])
+                           (syntax-property
+                            #`(begin
+                                (define-values (name2 name-predicate)
+                                  (let ([sc `(side-conditions-rewritten ...)]
+                                        [dsc `dom-side-conditions-rewritten])
+                                    (build-metafunction 
+                                     lang
+                                     sc
+                                     (list rhs-fns ...)
+                                     #,(if prev-metafunction
+                                           (let ([term-fn (syntax-local-value prev-metafunction)])
+                                             #`(metafunc-proc-cps #,(term-fn-get-id term-fn)))
+                                           #''())
+                                     #,(if prev-metafunction
+                                           (let ([term-fn (syntax-local-value prev-metafunction)])
+                                             #`(metafunc-proc-rhss #,(term-fn-get-id term-fn)))
+                                           #''())
+                                     (λ (f/dom cps rhss)
+                                       (make-metafunc-proc
+                                        (let ([name (lambda (x) (f/dom x))]) name)
+                                        (list (list (to-lw lhs-for-lw)
+                                                    (list (to-lw/uq side-cond) ...)
+                                                    (list (cons (to-lw bind-id)
+                                                                (to-lw bind-pat))
+                                                          ...
+                                                          (cons (to-lw rhs-bind-id)
+                                                                (to-lw/uq rhs-bind-pat))
+                                                          ...
+                                                          (cons (to-lw where-id)
+                                                                (to-lw where-pat))
+                                                          ...)
+                                                    (to-lw rhs))
+                                              ...)
+                                        lang
+                                        #t ;; multi-args?
+                                        'name
+                                        cps
+                                        rhss
+                                        (let ([name (lambda (x) (name-predicate x))]) name)
+                                        dsc
+                                        sc))
+                                     dsc
+                                     'codom-side-conditions-rewritten
+                                     'name)))
+                                (term-define-fn name name2))
+                            'disappeared-use
+                            (map syntax-local-introduce (syntax->list #'(original-names ...))))))))))))]
       [(_ prev-metafunction name lang clauses ...)
        (begin
          (unless (identifier? #'name)
@@ -1199,31 +1202,38 @@
           (syntax->list #'(x ...)))
          (raise-syntax-error syn-error-name "error checking failed.2" stx))]))
   
-  (define (extract-side-conditions name stx stuffs)
-    (let loop ([stuffs (syntax->list stuffs)]
+  (define (parse-extras extras)
+    (let loop ([stuffs (syntax->list extras)]
                [side-conditionss '()]
-               [bindingss '()])
+               [bindingss '()]
+               [bothss '()])
       (cond
         [(null? stuffs) (list (reverse side-conditionss)
-                              (reverse bindingss))]
+                              (reverse bindingss)
+                              (reverse bothss))]
         [else 
          (let s-loop ([stuff (syntax->list (car stuffs))]
                       [side-conditions '()]
-                      [bindings '()])
+                      [bindings '()]
+                      [boths '()])
            (cond
              [(null? stuff) (loop (cdr stuffs)
                                   (cons (reverse side-conditions) side-conditionss)
-                                  (cons (reverse bindings) bindingss))]
+                                  (cons (reverse bindings) bindingss)
+                                  ; Want these in reverse order.
+                                  (cons boths bothss))]
              [else 
               (syntax-case (car stuff) (where side-condition)
                 [(side-condition tl-side-conds ...) 
                  (s-loop (cdr stuff)
                          (append (syntax->list #'(tl-side-conds ...)) side-conditions)
-                         bindings)]
+                         bindings
+                         (cons (car stuff) boths))]
                 [(where x e)
                  (s-loop (cdr stuff)
                          side-conditions
-                         (cons #'(x e) bindings))]
+                         (cons #'(x e) bindings)
+                         (cons (car stuff) boths))]
                 [_
                  (raise-syntax-error 'define-metafunction 
                                      "expected a side-condition or where clause"
