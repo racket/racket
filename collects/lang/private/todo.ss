@@ -1,10 +1,5 @@
 #lang scheme
 
-;; If we eliminate char from HtDP/I, we need to add re-think 
-;; the following functions. Concrete proposals attached. 
-
-;; If you're in a hurry, look for QQQ. 
-
 #| QQQ: okay?
 char-upcase:   use string-upcase instead
 char-downcase: use string-downcase instead 
@@ -83,20 +78,17 @@ substring consumes 2 or 3 arguments
     (string (string-ref s n))))
 
 ;; -----------------------------------------------------------------------------
-;; QQQ: this would be a re-definition of a Scheme function. Should we rename? 
 
-(check-expect (beginner-make-string 3 "a") "aaa")
-(check-error
- (beginner-make-string 3 "ab")
- (string-append "make-string: " 1-letter " expected, given " 
-                (format "~s" "ab")))
+(check-expect (beginner-replicate 3 "a") "aaa")
+(check-expect (beginner-replicate 3 "ab") "ababab")
+(check-error (beginner-replicate 3 10) "replicate: string expected, given 10")
 
-(define-teach beginner make-string 
+(define-teach beginner replicate 
   (lambda (n s1)
     (unless (and (number? n) (exact-integer? n) (>= n 0))
-      (error 'make-string "(exact) natural number expected, given ~e" n))
-    (unless (1-letter? 'make-string s1)
-      (error 'make-string "~a expected, given ~e" 1-letter s1))
+      (error 'replicate "(exact) natural number expected, given ~e" n))
+    (unless (string? s1)
+      (error 'replicate "string expected, given ~e" s1))
     (apply string-append (build-list n (lambda (i) s1)))))
 
 ;; -----------------------------------------------------------------------------
@@ -126,14 +118,10 @@ substring consumes 2 or 3 arguments
 (check-expect (beginner-string->int "A") 65)
 (check-error 
  (beginner-string->int 10) 
- (string-append 
-  "string->int: " 1-letter " expected, not a string: "
-  "10"))
+ (string-append "string->int: " 1-letter " expected, not a string: 10"))
 (check-error 
  (beginner-string->int "AB") 
- (string-append 
-  "string->int: " 1-letter " expected, given "
-  (format "~s" "AB")))
+ (string-append "string->int: " 1-letter " expected, given " (format "~s" "AB")))
 
 (define-teach beginner string->int 
   (lambda (s) 
@@ -144,11 +132,8 @@ substring consumes 2 or 3 arguments
 ;; -----------------------------------------------------------------------------
 
 (check-expect (beginner-explode "hello") (list "h" "e" "l" "l" "o"))
-(check-error
- (beginner-explode 10)
- (string-append
-  "explode: string expected, given " 
-  "10"))
+(check-error (beginner-explode 10) 
+             (string-append "explode: string expected, given " "10"))
 
 (define-teach beginner explode 
   (lambda (s)
@@ -159,60 +144,48 @@ substring consumes 2 or 3 arguments
 ;; -----------------------------------------------------------------------------
 
 (check-expect (beginner-implode (list "h" "e" "l" "l" "o")) "hello")
-(check-error 
- (beginner-implode 10)
- (string-append 
-  "implode: list of " 1-letter* " expected, not a list: " 
-  "10"))
-(check-error 
- (beginner-implode '("he" "l"))
- (string-append 
-  "implode: list of " 1-letter* " expected, given " 
-  (format "~s" '("he" "l"))))
+(check-error (beginner-implode 10)
+             (string-append "implode: list of " 1-letter* 
+                            " expected, not a list: 10"))
+(check-error (beginner-implode '("he" "l"))
+             (string-append "implode: list of " 1-letter* " expected, given " 
+                            (format "~s" '("he" "l"))))
 
 (define-teach beginner implode
   (lambda (los)
     (unless (1-letter*? 'implode los)
       (error 'implode "list of ~a expected, given ~e" 1-letter* los))
-    (list->string (map (lambda (s) (string-ref s 0)) los))))
+    (apply string-append los)))
 
 ;; -----------------------------------------------------------------------------
 
-(check-expect (beginner-string1-numeric? "0") true)
-(check-expect (beginner-string1-numeric? "a") false)
-(check-error
- (beginner-string1-numeric? "ab")
- (string-append "string1-numeric?: " 1-letter " expected, given " 
-                (format "~s" "ab")))
+(check-expect (beginner-string-numeric? "0") true)
+(check-expect (beginner-string-numeric? "10") true)
+(check-expect (beginner-string-numeric? "a") false)
+(check-expect (beginner-string-numeric? "ab") false)
+(check-error (beginner-string-numeric? 10)
+             (string-append "string-numeric?: string expected, given 10"))
 
-(define-teach beginner string1-numeric? 
+(define-teach beginner string-numeric? 
   ;; is this: (number? (string->number s)) enough?
   (lambda (s1)
-    (unless (1-letter? 'string1-numeric? s1)
-      (error 'string1-numeric? "~a expected, given ~e" 1-letter s1))   
-    (char-numeric? (string-ref s1 0))))
+    (unless (string? s1)
+      (error 'string-numeric? "string expected, given ~e" s1))   
+    (andmap char-numeric? (string->list s1))))
 
 ;; -----------------------------------------------------------------------------
 
 ;; I used copying here and I feel awful. 
-(check-expect (beginner-string1-alphabetic? "0") false)
-(check-expect (beginner-string1-alphabetic? "a") true)
-(check-error
- (beginner-string1-alphabetic? "ab")
- (string-append "string1-alphabetic?: " 1-letter " expected, given " 
-                (format "~s" "ab")))
+(check-expect (beginner-string-alphabetic? "a0") false)
+(check-expect (beginner-string-alphabetic? "a") true)
+(check-expect (beginner-string-alphabetic? "ba") true)
+(check-expect (beginner-string-alphabetic? "ab") true)
 
-(define-teach beginner string1-alphabetic? 
-  ;; is this
-  #;
-  (andmap (lambda (c) 
-            (or (string<=? "A" x "Z") (string<=? "a" x "z")))
-          (string->list s))
-  ;; enough?
+(define-teach beginner string-alphabetic? 
   (lambda (s1)
-    (unless (1-letter? 'string1-alphabetic? s1)
-      (error 'string1-alphabetic? "~a expected, given ~e" 1-letter s1))
-    (char-alphabetic? (string-ref s1 0))))
+    (unless (string? s1)
+      (error 'string-alphabetic? "string expected, given ~e" s1))
+    (andmap char-alphabetic? (string->list s1))))
 
 ;; -----------------------------------------------------------------------------
 
@@ -251,30 +224,5 @@ substring consumes 2 or 3 arguments
     (andmap char-lower-case? (string->list s))))
 
 ;; -----------------------------------------------------------------------------
-
-;; !!! redefinition !!! (and copy from teachprims.ss)
-;; QQQ: do we need a new name????
-(check-expect (intermediate-build-string 3 (lambda (x) "x")) "xxx")
-
-(define-teach intermediate build-string
-  (lambda (n f)
-    (unless (and (number? n) (integer? n) (>= n 0))
-      (error 'build-string
-             "first argument must be of type <natural number>, given ~e" 
-             n))
-    (unless (and (procedure? f) (procedure-arity-includes? f 1))
-      (error 'build-string
-             "second argument must be a <procedure> that accepts one argument, given ~e"
-             f))
-    (apply string-append 
-           (build-list
-            n
-            (lambda (i)
-              (define r (f i))
-              (unless (1-letter? 'build-string r)
-                (error 'build-string
-                       "second argument must be a <procedure> that produces a ~a, given ~e, which produced ~e for ~e"
-                       1-letter f r i))
-              r)))))
 
 (test)
