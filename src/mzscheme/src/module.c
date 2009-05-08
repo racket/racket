@@ -4983,7 +4983,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	 simultaneous definitions: */
       if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_syntax_type)
 	  && (SCHEME_PINT_VAL(e) == DEFINE_VALUES_EXPD)) {
-	int n;
+	int n, cnst = 0, sproc = 0;
 
 	e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
 
@@ -4993,7 +4993,16 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	n = scheme_list_length(vars);
 	cont = scheme_omittable_expr(e, n, -1, 0, info);
       
-	if ((n == 1) && scheme_compiled_propagate_ok(e, info)) {
+        if (n == 1) {
+          if (scheme_compiled_propagate_ok(e, info))
+            cnst = 1;
+          else if (scheme_is_statically_proc(e, info)) {
+            cnst = 1;
+            sproc = 1;
+          }
+        }
+
+	if (cnst) {
 	  Scheme_Toplevel *tl;
 
 	  tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
@@ -5001,7 +5010,9 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	  if (!(SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_MUTATED)) {
 	    Scheme_Object *e2;
 
-	    if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type)) {
+            if (sproc) {
+              e2 = scheme_make_noninline_proc(e);
+            } else if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type)) {
 	      e2 = scheme_optimize_clone(1, e, info, 0, 0);
               if (e2) {
                 Scheme_Object *pr;
@@ -5011,7 +5022,8 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
                 else
                   cl_first = pr;
                 cl_last = pr;
-              }
+              } else
+                e2 = scheme_make_noninline_proc(e);
 	    } else {
 	      e2 = e;
 	    }
@@ -5102,6 +5114,9 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
             if (rpos) {
               e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
               e = SCHEME_CDR(e);
+              if (!scheme_compiled_propagate_ok(e, info)
+                  && scheme_is_statically_proc(e, info))
+                e = scheme_make_noninline_proc(e);
               scheme_hash_set(info->top_level_consts, rpos, e);
             }
           }
@@ -5540,6 +5555,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   if (rec[drec].comp || (rec[drec].depth != -2)) {
     /* rename tables no longer needed; NULL them out */
     menv->rename_set = NULL;
+    menv->post_ex_rename_set = NULL;
   }
 
   LOG_END_EXPAND(m);
@@ -6005,6 +6021,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   post_ex_rn_set = scheme_make_module_rename_set(mzMOD_RENAME_MARKED, rn_set);
   post_ex_rn = scheme_get_module_rename_from_set(post_ex_rn_set, scheme_make_integer(0), 1);
   post_ex_et_rn = scheme_get_module_rename_from_set(post_ex_rn_set, scheme_make_integer(1), 1);
+  env->genv->post_ex_rename_set = post_ex_rn_set;
 
   /* For syntax-local-context, etc., in a d-s RHS: */
   rhs_env = scheme_new_comp_env(env->genv, env->insp, SCHEME_TOPLEVEL_FRAME);
@@ -9083,14 +9100,11 @@ static void check_dup_require(Scheme_Object *prnt_name, Scheme_Object *name,
 }
 
 static Scheme_Object *
-top_level_require_execute(Scheme_Object *data)
+do_require_execute(Scheme_Env *env, Scheme_Object *form)
 {
   Scheme_Hash_Table *ht;
   Scheme_Object *rn_set, *modidx;
-  Scheme_Object *form = SCHEME_CDR(data), *rest;
-  Scheme_Env *env;
-
-  env = scheme_environment_from_dummy(SCHEME_CAR(data));
+  Scheme_Object *rest;
 
   if (env->module)
     modidx = env->module->self_modidx;
@@ -9130,6 +9144,13 @@ top_level_require_execute(Scheme_Object *data)
   scheme_append_rename_set_to_env(rn_set, env);
 
   return scheme_void;
+}
+
+static Scheme_Object *
+top_level_require_execute(Scheme_Object *data)
+{
+  do_require_execute(scheme_environment_from_dummy(SCHEME_CAR(data)),
+                     SCHEME_CDR(data));
 }
 
 static Scheme_Object *
@@ -9237,7 +9258,7 @@ Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path,
 
   form = make_require_form(module_path, phase, mark);
 
-  do_require(form, cenv, NULL, 0);
+  do_require_execute(cenv->genv, form);
 
   return form;
 }

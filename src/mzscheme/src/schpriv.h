@@ -267,6 +267,7 @@ void scheme_do_add_global_symbol(Scheme_Env *env, Scheme_Object *sym,
 
 extern Scheme_Object *scheme_values_func;
 extern Scheme_Object *scheme_procedure_p_proc;
+extern Scheme_Object *scheme_procedure_arity_includes_proc;
 extern Scheme_Object *scheme_void_proc;
 extern Scheme_Object *scheme_cons_proc;
 extern Scheme_Object *scheme_mcons_proc;
@@ -2206,6 +2207,8 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
 
 int scheme_compiled_duplicate_ok(Scheme_Object *o);
 int scheme_compiled_propagate_ok(Scheme_Object *o, Optimize_Info *info);
+int scheme_is_statically_proc(Scheme_Object *value, Optimize_Info *info);
+Scheme_Object *scheme_make_noninline_proc(Scheme_Object *e);
 
 Scheme_Object *scheme_resolve_expr(Scheme_Object *, Resolve_Info *);
 Scheme_Object *scheme_resolve_list(Scheme_Object *, Resolve_Info *);
@@ -2549,6 +2552,7 @@ struct Scheme_Env {
 
   Scheme_Object *rename_set;
   Scheme_Hash_Table *temp_marked_names; /* used to correlate imports with re-exports */
+  Scheme_Object *post_ex_rename_set; /* during module expansion */
 
   Scheme_Bucket_Table *syntax;
   struct Scheme_Env *exp_env;

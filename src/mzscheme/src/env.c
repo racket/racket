@@ -4436,7 +4436,7 @@ id_intdef_remove(int argc, Scheme_Object *argv[])
   Scheme_Object *l, *res, *skips;
 
   if (!SCHEME_STXP(argv[0]) || !SCHEME_SYMBOLP(SCHEME_STX_VAL(argv[0])))
-    scheme_wrong_type("identifier-from-from-definition-context", 
+    scheme_wrong_type("identifier-remove-from-definition-context", 
                       "syntax identifier", 0, argc, argv);
   
   l = argv[1];
@@ -4515,6 +4515,8 @@ local_module_introduce(int argc, Scheme_Object *argv[])
   if (SCHEME_FALSEP(v)) {
     if (env->genv->rename_set)
       s = scheme_add_rename(s, env->genv->rename_set);
+    if (env->genv->post_ex_rename_set)
+      s = scheme_add_rename(s, env->genv->post_ex_rename_set);
   }
 
   return s;

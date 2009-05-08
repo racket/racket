@@ -746,13 +746,15 @@ inline static void *fast_malloc_one_small_tagged(size_t sizeb, int dirty)
   }
 }
 
+#define PAIR_SIZE_IN_BYTES ALIGN_BYTES_SIZE(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object))) + WORD_SIZE)
+
 void *GC_malloc_pair(void *car, void *cdr)
 {
   unsigned long ptr, newptr;
   size_t sizeb;
   void *retval;
 
-  sizeb = ALIGN_BYTES_SIZE(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object))) + WORD_SIZE);
+  sizeb = PAIR_SIZE_IN_BYTES;
   ptr = GC_gen0_alloc_page_ptr;
   newptr = GC_gen0_alloc_page_ptr + sizeb;
 
@@ -1887,7 +1889,11 @@ void GC_mark(const void *const_p)
 
       /* transfer the object */
       ohead->mark = 1; /* mark is copied to newplace, too */
-      memcpy(newplace, (const void *)ohead, size);
+      if (size == PAIR_SIZE_IN_BYTES) 
+        /* pairs are common, and compiler tends to inline constant-size memcpys */
+        memcpy(newplace, ohead, PAIR_SIZE_IN_BYTES);
+      else
+        memcpy(newplace, ohead, size);
       /* mark the old location as marked and moved, and the new location
          as marked */
       ohead->moved = 1;

@@ -81,6 +81,7 @@ int scheme_defining_primitives; /* set to 1 during start-up */
 Scheme_Object scheme_void[1]; /* the void constant */
 Scheme_Object *scheme_values_func; /* the function bound to `values' */
 Scheme_Object *scheme_procedure_p_proc;
+Scheme_Object *scheme_procedure_arity_includes_proc;
 Scheme_Object *scheme_void_proc;
 Scheme_Object *scheme_call_with_values_proc; /* the function bound to `call-with-values' */
 Scheme_Object *scheme_reduced_procedure_struct;
@@ -226,6 +227,7 @@ scheme_init_fun (Scheme_Env *env)
   REGISTER_SO(cached_dv_stx);
   REGISTER_SO(cached_ds_stx);
   REGISTER_SO(scheme_procedure_p_proc);
+  REGISTER_SO(scheme_procedure_arity_includes_proc);
 
   REGISTER_SO(offstack_cont);
   REGISTER_SO(offstack_overflow);
@@ -488,11 +490,14 @@ scheme_init_fun (Scheme_Env *env)
 						      "procedure-arity?",
 						      1, 1, 1),
 			     env);
+
+  scheme_procedure_arity_includes_proc = scheme_make_folding_prim(procedure_arity_includes,
+                                                                  "procedure-arity-includes?",
+                                                                  2, 2, 1);
   scheme_add_global_constant("procedure-arity-includes?",
-			     scheme_make_folding_prim(procedure_arity_includes,
-						      "procedure-arity-includes?",
-						      2, 2, 1),
+			     scheme_procedure_arity_includes_proc,
 			     env);
+
   scheme_add_global_constant("procedure-reduce-arity",
 			     scheme_make_prim_w_arity(procedure_reduce_arity,
 						      "procedure-reduce-arity",

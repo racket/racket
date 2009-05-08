@@ -2564,6 +2564,53 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
   return (Scheme_Object *)app;
 }
 
+static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *rand)
+{
+  Scheme_Object *c = NULL;
+
+  if (SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(rand)))
+    c = rand;
+  if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)) {
+    int offset;
+    Scheme_Object *expr;
+    expr = scheme_optimize_reverse(info, SCHEME_LOCAL_POS(rand), 0);
+    c = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(expr), &offset, NULL);
+  }
+  if (SAME_TYPE(SCHEME_TYPE(rand), scheme_compiled_toplevel_type)) {
+    if (info->top_level_consts) {
+      int pos;
+      
+      while (1) {
+        pos = SCHEME_TOPLEVEL_POS(rand);
+        c = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
+        if (c && SAME_TYPE(SCHEME_TYPE(c), scheme_compiled_toplevel_type))
+          rand = c;
+        else
+          break;
+      }
+    }
+  }    
+
+  if (c && SAME_TYPE(scheme_noninline_proc_type, SCHEME_TYPE(c))) {
+    c = SCHEME_BOX_VAL(c);
+  
+    while (SAME_TYPE(SCHEME_TYPE(c), scheme_compiled_let_void_type)) {
+      /* This must be (let ([x <proc>]) <proc>); see scheme_is_statically_proc() */
+      Scheme_Let_Header *lh = (Scheme_Let_Header *)c;
+      Scheme_Compiled_Let_Value *lv = (Scheme_Compiled_Let_Value *)lh->body;
+      c = lv->body;
+    }
+  }
+
+  if (c 
+      && (SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(c))
+          || (SAME_TYPE(scheme_compiled_syntax_type, SCHEME_TYPE(c))
+              && (SCHEME_PINT_VAL(c) == CASE_LAMBDA_EXPD))))
+    return c;
+
+  return NULL;
+}
+
 static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *info)
 {
   Scheme_App2_Rec *app;
@@ -2598,20 +2645,10 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
   }
 
   if (SAME_OBJ(scheme_procedure_p_proc, app->rator)) {
-    if (SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(app->rand))) {
+    if (lookup_constant_proc(info, app->rand)) {
       info->preserves_marks = 1;
       info->single_result = 1;
       return scheme_true;
-    }
-    if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)) {
-      int offset;
-      Scheme_Object *expr;
-      expr = scheme_optimize_reverse(info, SCHEME_LOCAL_POS(app->rand), 0);
-      if (scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(expr), &offset, NULL)) {
-        info->preserves_marks = 1;
-        info->single_result = 1;
-        return scheme_true;
-      }
     }
   }
 
@@ -2701,6 +2738,53 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
       }
     }
   }
+
+  if (SAME_OBJ(scheme_procedure_arity_includes_proc, app->rator)) {
+    if (SCHEME_INTP(app->rand2)) {
+      Scheme_Object *proc;
+      Scheme_Case_Lambda *cl;
+      int i, cnt;
+
+      proc = lookup_constant_proc(info, app->rand1);      
+      if (proc) {
+        if (SAME_TYPE(SCHEME_TYPE(proc), scheme_compiled_unclosed_procedure_type)) {
+          cnt = 1;
+          cl = NULL;
+        } else {
+          cl = (Scheme_Case_Lambda *)SCHEME_IPTR_VAL(proc);
+          cnt = cl->count;
+        }
+
+        for (i = 0; i < cnt; i++) {
+          if (cl) proc = cl->array[i];
+          
+          if (SAME_TYPE(SCHEME_TYPE(proc), scheme_compiled_unclosed_procedure_type)) {
+            Scheme_Closure_Data *data = (Scheme_Closure_Data *)proc;
+            int n = SCHEME_INT_VAL(app->rand2), ok;
+            if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
+              ok = ((data->num_params - 1) <= n);
+            } else {
+              ok = (data->num_params == n);
+            }
+            if (ok) {
+              info->preserves_marks = 1;
+              info->single_result = 1;
+              return scheme_true;
+            }
+          } else {
+            break;
+          }
+        }
+
+        if (i == cnt) {
+          info->preserves_marks = 1;
+          info->single_result = 1;
+          return scheme_false;
+        }
+      }
+    }
+  }
+
 
   info->preserves_marks = !!(rator_flags & CLOS_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & CLOS_SINGLE_RESULT);

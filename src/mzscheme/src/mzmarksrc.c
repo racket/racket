@@ -833,6 +833,7 @@ namespace_val {
 
   gcMARK(e->rename_set);
   gcMARK(e->temp_marked_names);
+  gcMARK(e->post_ex_rename_set);
 
   gcMARK(e->syntax);
   gcMARK(e->exp_env);
