@@ -278,6 +278,27 @@
   (parameterize ([current-orig-stx stx])
     (parse/get stx t type)))
 
+(define (parse-all-type stx parse-type)
+  (syntax-parse stx
+    [(All (vars ... v dd) t)
+     #:when (eq? (syntax-e #'dd) '...)
+     #:when (andmap identifier? (syntax->list #'(v vars ...)))
+     (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
+            [tvars (map make-F vars)]
+            [v (syntax-e #'v)]
+            [tv (make-Dotted (make-F v))])
+       (add-type-name-reference #'All)
+       (parameterize ([current-tvars (extend-env (cons v vars) (cons tv tvars) (current-tvars))])
+         (make-PolyDots (append vars (list v)) (parse-type #'t))))]
+    [(All (vars ...) t) 
+     #:when (andmap identifier? (syntax->list #'(vars ...)))
+     (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
+            [tvars (map make-F vars)])
+       (add-type-name-reference #'All)
+       (parameterize ([current-tvars (extend-env vars tvars (current-tvars))])
+         (make-Poly vars (parse-type #'t))))]
+    [(All . rest) (tc-error "All: bad syntax")]))
+
 (define (parse-type stx)    
   (parameterize ([current-orig-stx stx])    
     (syntax-case* stx ()
@@ -423,27 +444,10 @@
       [(quot t)
        (eq? (syntax-e #'quot) 'quote)
        (-val (syntax-e #'t))]
-      [(All (vars ... v dd) t)
-       (and (or (eq? (syntax-e #'All) 'All)
-                (eq? (syntax-e #'All) '∀))
-            (eq? (syntax-e #'dd) '...)
-            (andmap identifier? (syntax->list #'(v vars ...))))
-       (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
-              [tvars (map make-F vars)]
-              [v (syntax-e #'v)]
-              [tv (make-Dotted (make-F v))])
-         (add-type-name-reference #'All)
-         (parameterize ([current-tvars (extend-env (cons v vars) (cons tv tvars) (current-tvars))])
-           (make-PolyDots (append vars (list v)) (parse-values-type #'t))))]
-      [(All (vars ...) t) 
-       (and (or (eq? (syntax-e #'All) 'All)
-                (eq? (syntax-e #'All) '∀))
-            (andmap identifier? (syntax->list #'(vars ...))))
-       (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
-              [tvars (map make-F vars)])
-         (add-type-name-reference #'All)
-         (parameterize ([current-tvars (extend-env vars tvars (current-tvars))])
-           (make-Poly vars (parse-values-type #'t))))]
+      [(All . rest)
+       (or (eq? (syntax-e #'All) 'All)
+           (eq? (syntax-e #'All) '∀))
+       (parse-all-type stx parse-type)]
       [(Opaque p?) 
        (eq? (syntax-e #'Opaque) 'Opaque)
        (begin
@@ -487,9 +491,7 @@
           Err]
          [else
           (tc-error/delayed "Unbound type name ~a" (syntax-e #'id))
-          Err])]
-
-      [(All . rest) (eq? (syntax-e #'All) 'All) (tc-error "All: bad syntax")]
+          Err])]      
       [(Opaque . rest) (eq? (syntax-e #'Opaque) 'Opqaue) (tc-error "Opaque: bad syntax")]
       [(U . rest) (eq? (syntax-e #'U) 'U) (tc-error "Union: bad syntax")]
       [(Vectorof . rest) (eq? (syntax-e #'Vectorof) 'Vectorof) (tc-error "Vectorof: bad syntax")]
@@ -562,6 +564,10 @@
       [(values tys ...) 
        #:when (eq? (syntax-e #'values) 'values)
        (-values (map parse-type (syntax->list #'(tys ...))))]
+      [(All . rest)
+       #:when (or (eq? (syntax-e #'All) 'All)
+                  (eq? (syntax-e #'All) '∀))
+       (parse-all-type stx parse-values-type)]
       [t
        (-values (list (parse-type #'t)))])))
 

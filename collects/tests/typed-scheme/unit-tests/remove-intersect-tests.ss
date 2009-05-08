@@ -15,15 +15,15 @@
 
 (define (restrict-tests) 
   (restr-tests
-   [N (Un N Sym) N]
-   [N N N]
-   [(Un (-val 'foo) (-val 6)) (Un N Sym) (Un (-val 'foo) (-val 6))]
-   [N (-mu a (Un N Sym (make-Listof a))) N]
-   [(Un N B) (-mu a (Un N Sym (make-Listof a))) N]
-   [(-mu x (Un N (make-Listof x))) (Un Sym N B) N]
-   [(Un N -String Sym B) N N]
+   [-Number (Un -Number -Symbol) -Number]
+   [-Number -Number -Number]
+   [(Un (-val 'foo) (-val 6)) (Un -Number -Symbol) (Un (-val 'foo) (-val 6))]
+   [-Number (-mu a (Un -Number -Symbol (make-Listof a))) -Number]
+   [(Un -Number -Boolean) (-mu a (Un -Number -Symbol (make-Listof a))) -Number]
+   [(-mu x (Un -Number (make-Listof x))) (Un -Symbol -Number -Boolean) -Number]
+   [(Un -Number -String -Symbol -Boolean) -Number -Number]
    
-   [(-lst N) (-pair Univ Univ) (-pair N (-lst N))]
+   [(-lst -Number) (-pair Univ Univ) (-pair -Number (-lst -Number))]
    ;; FIXME
    #;
    [-Listof -Sexp (-lst (Un B N -String Sym))]
@@ -40,18 +40,18 @@
 
 (define (remove-tests)
   (remo-tests
-   [(Un N Sym) N Sym]
-   [N N (Un)]
-   [(-mu x (Un N Sym (make-Listof x))) N (Un Sym (make-Listof (-mu x (Un N Sym (make-Listof x)))))]
-   [(-mu x (Un N Sym B (make-Listof x))) N (Un Sym B (make-Listof (-mu x (Un N Sym B (make-Listof x)))))]
-   [(Un (-val #f) (-mu x (Un N Sym (make-Listof (-v x)))))
-    (Un B N) 
-    (Un Sym (make-Listof (-mu x (Un N Sym (make-Listof x)))))]
-   [(Un (-val 'foo) (-val 6)) (Un N Sym) (Un)]
-   [(-> (Un Sym N) N) (-> N N) (Un)]
-   [(Un (-poly (a) (make-Listof a)) (-> N N)) (-> N N) (-poly (a) (make-Listof a))]
-   [(Un Sym N) (-poly (a) N) Sym]
-   [(-pair N (-v a)) (-pair Univ Univ) (Un)]
+   [(Un -Number -Symbol) -Number -Symbol]
+   [-Number -Number (Un)]
+   [(-mu x (Un -Number -Symbol (make-Listof x))) -Number (Un -Symbol (make-Listof (-mu x (Un -Number -Symbol (make-Listof x)))))]
+   [(-mu x (Un -Number -Symbol -Boolean (make-Listof x))) -Number (Un -Symbol -Boolean (make-Listof (-mu x (Un -Number -Symbol -Boolean (make-Listof x)))))]
+   [(Un (-val #f) (-mu x (Un -Number -Symbol (make-Listof (-v x)))))
+    (Un -Boolean -Number) 
+    (Un -Symbol (make-Listof (-mu x (Un -Number -Symbol (make-Listof x)))))]
+   [(Un (-val 'foo) (-val 6)) (Un -Number -Symbol) (Un)]
+   [(-> (Un -Symbol -Number) -Number) (-> -Number -Number) (Un)]
+   [(Un (-poly (a) (make-Listof a)) (-> -Number -Number)) (-> -Number -Number) (-poly (a) (make-Listof a))]
+   [(Un -Symbol -Number) (-poly (a) -Number) -Symbol]
+   [(-pair -Number (-v a)) (-pair Univ Univ) (Un)]
    ))
 
 (define-go 
@@ -62,11 +62,11 @@
   (-mu list-rec 
        (Un 
         (-val '()) 
-        (-pair (-mu x (Un B N -String Sym (-val '()) (-pair x x)))
+        (-pair (-mu x (Un -Boolean -Number -String -Symbol (-val '()) (-pair x x)))
                list-rec))))
 (define x2 
   (Un (-val '()) 
-      (-pair (-mu x (Un B N -String Sym (-val '()) (-pair x x)))
-             (-mu x (Un B N -String Sym (-val '()) (-pair x x))))))
+      (-pair (-mu x (Un -Boolean -Number -String -Symbol (-val '()) (-pair x x)))
+             (-mu x (Un -Boolean -Number -String -Symbol (-val '()) (-pair x x))))))
 (provide remove-tests restrict-tests)
 

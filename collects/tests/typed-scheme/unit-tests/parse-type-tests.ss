@@ -55,6 +55,10 @@
      (test-suite nm
                  (pt-test elems ...) ...)]))
 
+(define N -Number)
+(define B -Boolean)
+(define Sym -Symbol)
+
 (define (parse-type-tests)  
   (pt-tests
    "parse-type tests" 
@@ -65,7 +69,7 @@
    [(Listof Boolean) (make-Listof  B)]
    [(Vectorof (Listof Symbol)) (make-Vector (make-Listof Sym))]
    [(pred Number) (make-pred-ty N)]
-   [(values Number Boolean Number) (-values (list N B N))]
+   [(-> (values Number Boolean Number)) (t:-> (-values (list N B N)))]
    [(Number -> Number) (t:-> N N)]
    [(Number -> Number) (t:-> N N)]
    [(Number Number Number Boolean -> Number) (N N N B . t:-> . N)]
@@ -80,8 +84,8 @@
    [(∀ (a ...) (a ... a -> Integer)) (-polydots (a) ( (list) (a a) . ->... . -Integer))]
    [(All (a ...) (a ... -> Number))
     (-polydots (a) ((list) [a a] . ->... . N))]
-   [(All (a ...) (values a ...))
-    (-polydots (a) (make-ValuesDots (list) a 'a))]
+   [(All (a ...) (-> (values a ...)))
+    (-polydots (a) (t:-> (make-ValuesDots (list) a 'a)))]
    [(case-lambda (Number -> Boolean) (Number Number -> Number)) (cl-> [(N) B]
                                                                       [(N N) N])]
    [1 (-val 1)]
