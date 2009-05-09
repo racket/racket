@@ -1196,6 +1196,8 @@
   (profj-java "Java")
   (profj-java-mode "Java-Modus")
 
+  (profj-java-coverage "Java-Abdeckung") ;; shows up in the preferences dialog under 'Color'
+
   (profj-beginner-lang "Anfänger")
   (profj-beginner-lang-one-line-summary "Java-ähnliche Lehrsprache für Anfänger")
   (profj-full-lang "Voller Sprachumfang")
