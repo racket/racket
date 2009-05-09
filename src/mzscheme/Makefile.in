@@ -275,7 +275,7 @@ unix-install:
 	cd ..; rm -f "$(DESTDIR)$(bindir)/mzscheme@CGC_INSTALLED@"
 	cd ..; rm -f "$(DESTDIR)$(bindir)/mzscheme@MMM_INSTALLED@"
 	cd ..; cp mzscheme/starter "$(DESTDIR)$(libpltdir)/starter"
-	cd ..; strip -S "$(DESTDIR)$(libpltdir)/starter"
+	-cd ..; strip -S "$(DESTDIR)$(libpltdir)/starter"
 	cd ..; echo 'CC=@CC@' > "$(BUILDINFO)"
 	cd ..; echo 'CFLAGS=@CFLAGS@ @PREFLAGS@ @COMPFLAGS@' >> "$(BUILDINFO)"
 	cd ..; echo 'OPTIONS=@OPTIONS@' >> "$(BUILDINFO)"
