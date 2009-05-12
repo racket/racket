@@ -38,31 +38,43 @@ TODO
          ;; tho nothing is used from this module.
          planet/terse-info)
 
-(provide rep@ with-stacktrace-name)
+(provide rep@ with-stack-checkpoint)
 
-(define stacktrace-runtime-name
-  (string->uninterned-symbol "this-is-the-funny-name"))
+;; run a thunk, and if an exception is raised, make it possible to cut the
+;; stack so that the surrounding context is hidden
+(define stack-checkpoint (make-parameter #f))
+(define checkpoints (make-weak-hasheq))
+(define (call-with-stack-checkpoint thunk)
+  (define checkpoint (current-continuation-marks))
+  (with-handlers ([exn? (lambda (exn)
+                          ;; nested ones take precedence
+                          (unless (hash-has-key? checkpoints exn)
+                            (hash-set! checkpoints exn checkpoint))
+                          (raise exn))])
+    (thunk)))
+;; returns the stack of the input exception, cutting off any tail that was
+;; registered as a checkpoint
+(define (cut-stack-at-checkpoint exn)
+  (define stack (continuation-mark-set->context (exn-continuation-marks exn)))
+  (define checkpoint
+    (cond [(hash-ref checkpoints exn #f) => continuation-mark-set->context]
+          [else #f]))
+  (if (not checkpoint)
+    stack
+    (let loop ([st stack]
+               [sl (length stack)]
+               [cp checkpoint]
+               [cl (length checkpoint)])
+      (cond [(sl . > . cl) (cons (car st) (loop (cdr st) (sub1 sl) cp cl))]
+            [(sl . < . cl) (loop st sl (cdr cp) (sub1 cl))]
+            [(equal? st cp) '()]
+            [else (loop st sl (cdr cp) (sub1 cl))]))))
 
-;; this function wraps its argument expression in some code in a non-tail manner
-;; so that a new name gets put onto the mzscheme stack. DrScheme's exception
-;; handlers trims the stack starting at this point to avoid showing drscheme's
-;; internals on the stack in the REPL.
-(define call-with-stacktrace-name
-  (eval `(let ([,stacktrace-runtime-name
-                (lambda (thunk)
-                  (begin0
-                    (thunk)
-                    (void)))])
-           ,stacktrace-runtime-name)
-        (make-base-namespace)))
-
-(define-syntax-rule (with-stacktrace-name expr)
-  (call-with-stacktrace-name (lambda () expr)))
+(define-syntax-rule (with-stack-checkpoint expr)
+  (call-with-stack-checkpoint (lambda () expr)))
 
 (define no-breaks-break-parameterization
-  (parameterize-break 
-   #f
-   (current-break-parameterization)))
+  (parameterize-break #f (current-break-parameterization)))
 
 (define-unit rep@
   (import (prefix drscheme:init: drscheme:init^)
@@ -193,7 +205,7 @@ TODO
   (define (drscheme-error-display-handler msg exn)
     (let* ([cut-stack (if (and (exn? exn)
                                (main-user-eventspace-thread?))
-                          (cut-out-top-of-stack exn)
+                          (cut-stack-at-checkpoint exn)
                           '())]
            [srclocs-stack (filter values (map cdr cut-stack))]
            [stack 
@@ -220,7 +232,6 @@ TODO
          (λ (frame) (printf " ~s\n" frame))
          (continuation-mark-set->context (exn-continuation-marks exn)))
         (printf "\n"))
-      
       (drscheme:debug:error-display-handler/stacktrace msg exn stack)))
   
   (define (main-user-eventspace-thread?)
@@ -228,35 +239,6 @@ TODO
       (and rep
            (eq? (eventspace-handler-thread (send rep get-user-eventspace))
                 (current-thread)))))
-  
-  (define (cut-out-top-of-stack exn)
-    (let ([initial-stack (continuation-mark-set->context (exn-continuation-marks exn))])
-      initial-stack ;; just give up on trying to trim out DrScheme's frame's from the stack for now.
-      #;
-      (let loop ([stack initial-stack])
-        (cond
-          [(null? stack) 
-           (unless (exn:break? exn)
-             ;; give break exn's a free pass on this one.
-             ;; sometimes they get raised in a funny place. 
-             ;; (see call-with-break-parameterization below)
-             (unless (null? initial-stack)
-               ;; sometimes, mzscheme just doesn't have any backtrace all. in that case,
-               ;; don't print anything either.
-               (fprintf (current-error-port) "ACK! didn't find drscheme's stackframe when filtering\n")))
-           initial-stack]
-          [else 
-           (let ([top (car stack)])
-             (cond
-               [(cut-here? top) null]
-               [else (cons top (loop (cdr stack)))]))]))))
-  
-  ;; is-cut? : any symbol -> boolean
-  ;; determines if this stack entry is drscheme's barrier in the stacktrace
-  (define (cut-here? top)
-    (and (pair? top)
-         (let ([fn-name (car top)])
-           (eq? fn-name stacktrace-runtime-name))))
   
   (define drs-bindings-keymap (make-object keymap:aug-keymap%))
 
@@ -1120,12 +1102,12 @@ TODO
                  user-break-parameterization
                  (λ ()
                    (let loop ()
-                     (let ([sexp/syntax/eof (with-stacktrace-name (get-sexp/syntax/eof))])
+                     (let ([sexp/syntax/eof (with-stack-checkpoint (get-sexp/syntax/eof))])
                        (unless (eof-object? sexp/syntax/eof)
                          (call-with-values
                           (λ () 
                             (call-with-continuation-prompt
-                             (λ () (with-stacktrace-name (eval-syntax sexp/syntax/eof)))
+                             (λ () (with-stack-checkpoint (eval-syntax sexp/syntax/eof)))
                              (default-continuation-prompt-tag)
                              (and complete-program?
                                   (λ args
