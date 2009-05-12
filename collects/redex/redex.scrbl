@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/bnf
+          scribble/struct
           scribble/eval
           (for-syntax scheme/base)
           (for-label scheme/base
@@ -47,6 +48,12 @@
     [(_ args ...)
      #'((tech "term") args ...)]
     [x (identifier? #'x) #'(tech "term")]))
+
+@(define-syntax-rule (arrows a0 a ...)
+   (make-blockquote #f 
+    (list (make-paragraph 
+           (list (schemeidfont (make-element #f (list (symbol->string 'a0))))
+                 (make-element #f (list " " (hspace 1) " " (schemeidfont (symbol->string 'a)))) ...)))))
 
 @(define redex-eval (make-base-eval))
 @(interaction-eval #:eval redex-eval (require redex/reduction-semantics))
@@ -228,7 +235,7 @@ matches the first @|ttpattern|. This match must include exactly one match
 against the second @|ttpattern|. If there are zero matches or more
 than one match, an exception is raised.
 
-When matching the first argument of in-hole, the `hole' @pattern
+When matching the first argument of in-hole, the @scheme[hole] @pattern
 matches any sexpression. Then, the sexpression that matched the hole
 @pattern is used to match against the second @|pattern|.
 }
@@ -243,7 +250,7 @@ that @|ttpattern|.
 matches what the embedded @ttpattern matches, and then the guard
 expression is evaluated. If it returns @scheme[#f], the @pattern fails
 to match, and if it returns anything else, the @pattern matches. Any
-occurrences of `name' in the @pattern (including those implicitly
+occurrences of @scheme[name] in the @pattern (including those implicitly
 there via @tt{_} pattersn) are bound using @scheme[term-let] in the
 guard. 
 }
@@ -578,7 +585,7 @@ all non-GUI portions of Redex) and also exported by
 This form defines the grammar of a language. It allows the
 definition of recursive @|pattern|s, much like a BNF, but for
 regular-tree grammars. It goes beyond their expressive
-power, however, because repeated `name' @|pattern|s and
+power, however, because repeated @scheme[name] @|pattern|s and
 side-conditions can restrict matches in a context-sensitive
 way.
 
@@ -651,7 +658,7 @@ defined by this language.
 
 @defproc[(compiled-lang? [l any/c]) boolean?]{
 
-Returns #t if its argument was produced by `language', #f
+Returns @scheme[#t] if its argument was produced by @scheme[language], @scheme[#f]
 otherwise.
 }
 
@@ -739,15 +746,15 @@ defines a reduction relation for the lambda-calculus above.
 
 Defines a reduction relation with shortcuts. As above, the
 first section defines clauses of the reduction relation, but
-instead of using -->, those clauses can use any identifier
+instead of using @scheme[-->], those clauses can use any identifier
 for an arrow, as long as the identifier is bound after the
-`with' clause. 
+@scheme[with] clause. 
 
-Each of the clauses after the `with' define new relations
-in terms of other definitions after the `with' clause or in
-terms of the main --> relation.
+Each of the clauses after the @scheme[with] define new relations
+in terms of other definitions after the @scheme[with] clause or in
+terms of the main @scheme[-->] relation.
 
-@scheme[fresh] is always fresh with respect to the entire
+A @scheme[fresh] variable is always fresh with respect to the entire
 term, not just with respect to the part that matches the
 right-hand-side of the newly defined arrow.
 
@@ -778,7 +785,7 @@ where the @tt{==>} relation is defined by reducing in the context
 
 This form extends the reduction relation in its first
 argument with the rules specified in @scheme[more]. They should
-have the same shape as the rules (including the `with'
+have the same shape as the rules (including the @scheme[with]
 clause) in an ordinary @scheme[reduction-relation].
 
 If the original reduction-relation has a rule with the same
@@ -815,7 +822,7 @@ closure of the reduction for the specified non-terminal.
 
 This accepts a reduction, a language, a pattern representing
 a context (ie, that can be used as the first argument to
-`in-hole'; often just a non-terminal) in the language and
+@scheme[in-hole]; often just a non-terminal) in the language and
 returns the closure of the reduction in that context.
 }
 
@@ -1184,7 +1191,7 @@ Like @scheme[check-reduction-relation] but for metafunctions.}
 
 It is easy to write grammars and reduction rules that are
 subtly wrong and typically such mistakes result in examples
-that just get stuck when viewed in a `traces' window.
+that just get stuck when viewed in a @scheme[traces] window.
 
 The best way to debug such programs is to find an expression
 that looks like it should reduce but doesn't and try to find
@@ -1583,6 +1590,11 @@ relevant dc: a @scheme[bitmap-dc%] or a @scheme[post-script-dc%], depending on
 whether @scheme[file] is a path. See also
 @scheme[reduction-relation->pict].
 
+The following forms of arrows can be typeset: 
+
+@arrows[--> -+> ==> -> => ..> >-> ~~> ~> :-> :--> c->
+        -->> >-- --< >>-- --<<]
+
 }
 
 @defproc[(reduction-relation->pict (r reduction-relation?)
@@ -1650,7 +1662,7 @@ This function sets @scheme[dc-for-text-size]. See also
 
 If this is #t, then a language constructed with
 extend-language is shown as if the language had been
-constructed directly with `language'. If it is #f, then only
+constructed directly with @scheme[language]. If it is #f, then only
 the last extension to the language is shown (with
 four-period ellipses, just like in the concrete syntax).
 
@@ -1725,10 +1737,10 @@ the results are displayed below the arguments.
 @defparam[default-style style text-style/c]{}]]{
 
 These parameters determine the font used for various text in
-the picts. See `text' in the texpict collection for
-documentation explaining text-style/c. One of the more
-useful things it can be is one of the symbols 'roman,
-'swiss, or 'modern, which are a serif, sans-serif, and
+the picts. See @scheme[text] in the texpict collection for
+documentation explaining @scheme[text-style/c]. One of the more
+useful things it can be is one of the symbols @scheme['roman],
+@scheme['swiss], or @scheme['modern], which are a serif, sans-serif, and
 monospaced font, respectively. (It can also encode style
 information, too.)
 
