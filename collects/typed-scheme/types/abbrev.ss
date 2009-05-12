@@ -191,8 +191,8 @@
   (define-syntax-class c
     (pattern x:id #:when (eq? ': (syntax-e #'x))))
   (syntax-parse stx
-    [(_ dom ... rng :c filters)
-     #'(->* (list dom ...) rng : filters)]
+    [(_ dom ... rng _:c filters _:c objects)
+     #'(->* (list dom ...) rng : filters : objects)]
     [(_ dom ... rng :c filters)
      #'(->* (list dom ...) rng : filters)]
     [(_ dom ... rng)

@@ -96,8 +96,8 @@
   (-> LatentFilter/c Type/c Object? (or/c '() (list/c Filter/c)))
   (match* (lf s o)
     [((LBot:) _ _) (list (make-Bot))]
-    [((LNotTypeFilter: (? (lambda (t) (subtype s t))) (list) _) _ _) (list (make-Bot))]
-    [((LTypeFilter: (? (lambda (t) (not (overlap s t)))) (list) _) _ _) (list (make-Bot))]
+    [((LNotTypeFilter: (? (lambda (t) (subtype s t)) t) (list) _) _ _) (list (make-Bot))]
+    [((LTypeFilter: (? (lambda (t) (not (overlap s t))) t) (list) _) _ _) (list (make-Bot))]
     [(_ _ (Empty:)) null]
     [((LTypeFilter: t pi* _) _ (Path: pi x)) (list (make-TypeFilter t (append pi* pi) x))]
     [((LNotTypeFilter: t pi* _) _ (Path: pi x)) (list (make-NotTypeFilter t (append pi* pi) x))]))
