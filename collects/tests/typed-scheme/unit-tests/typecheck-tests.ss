@@ -690,13 +690,13 @@
                    (lambda: ([y : (a ... a -> Number)])
                      (apply y zs))
                    ys)))
-              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N))))]
+              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N)) : (-LFS null (list (make-LBot)))))]
         [tc-e/t (plambda: (a ...) [ys : (a ... a -> Number) *]
                 (lambda: [zs : a ... a]
                   (map (lambda: ([y : (a ... a -> Number)])
                          (apply y zs))
                        ys)))
-              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N))))]
+              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N)) : (-LFS null (list (make-LBot)))))]
         
         [tc-e/t (lambda: ((x : (All (t) t)))
                        ((inst (inst x (All (t) (t -> t))) 
