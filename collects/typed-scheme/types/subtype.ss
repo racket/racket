@@ -150,7 +150,14 @@
                     (subtype* t-rest s-rest)
                     (kw-subtypes* t-kws s-kws)
                     (subtype* s-rng t-rng))]
-      ;; FIXME - handle dotted varargs
+      ;; handle ... varargs when the bounds are the same
+      [((arr: s-dom s-rng #f (cons s-drest dbound) s-kws)
+        (arr: t-dom t-rng #f (cons t-drest dbound) t-kws))
+       (subtype-seq A0
+                    (subtype* t-drest s-drest)
+                    (subtypes* t-dom s-dom)
+                    (kw-subtypes* t-kws s-kws)
+                    (subtype* s-rng t-rng))]
       [(_ _) 
        (fail! s t)])))
 

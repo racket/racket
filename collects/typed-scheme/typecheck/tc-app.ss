@@ -211,12 +211,12 @@
                     (do-ret (car rngs*))]
                [(and (car drests*)
                      (let-values ([(tail-ty tail-bound) 
-                                   (with-handlers ([exn:fail? (lambda _ (values #f #f))])
+                                   (with-handlers ([exn:fail? (lambda (e) (values #f #f))])
                                      (tc/dots tail))])
                        (and tail-ty
                             (eq? (cdr (car drests*)) tail-bound)
                             (subtypes arg-tys (car doms*))
-                            (subtype tail-ty (car (car drests*))))))                     
+                            (subtype tail-ty (car (car drests*))))))
                 (printf/log "Non-poly apply, ... arg\n")
                 (do-ret (car rngs*))]
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
@@ -365,6 +365,11 @@
     #:literals (#%plain-app #%plain-lambda letrec-values quote
                 values apply k:apply not list list* call-with-values do-make-object make-object cons
                 andmap ormap)
+    ;; call-with-values
+    [(#%plain-app call-with-values prod con)
+     (match (tc/funapp #'prod #'() (single-value #'prod) null #f)
+       [(tc-results: ts fs os)
+        (tc/funapp #'con #'prod (single-value #'con) (map ret ts fs os) expected)])]
     ;; in eq? cases, call tc/eq
     [(#%plain-app eq?:comparator v1 v2)
      ;; make sure the whole expression is type correct
