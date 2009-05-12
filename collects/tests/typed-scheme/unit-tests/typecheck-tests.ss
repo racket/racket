@@ -603,8 +603,8 @@
         [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list 1))) (-lst -Integer)]
         [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list "foo"))) (-lst (Un -String -Integer))]
         [tc-err (plambda: (b ...) [y : b ... b] (apply append (map list y)))]
-        [tc-e (plambda: (b ...) [y : (Listof Integer) ... b] (apply append y))
-              (-polydots (b) (->... (list) ((-lst -Integer) b) (-lst -Integer)))]
+        [tc-e/t (plambda: (b ...) [y : (Listof Integer) ... b] (apply append y))
+                (-polydots (b) (->... (list) ((-lst -Integer) b) (-lst -Integer)))]
         
         [tc-err (plambda: (a ...) ([z : String] . [w : Number ... a])
                           (apply (plambda: (b) ([x : Number] . [y : Number ... a]) x)
@@ -627,13 +627,13 @@
                 ((list) -Integer . ->* . (-lst -Integer))]
         
         ;; instantiating dotted terms
-        [tc-e (inst (plambda: (a ...) [xs : a ... a] 3) Integer Boolean Integer)
-              (-Integer B -Integer . -> . -Integer)]
-        [tc-e (inst (plambda: (a ...) [xs : (a ... a -> Integer) ... a] 3) Integer Boolean Integer)
-              ((-Integer B -Integer . -> . -Integer)
-               (-Integer B -Integer . -> . -Integer)
-               (-Integer B -Integer . -> . -Integer)
-               . -> . -Integer)]
+        [tc-e/t (inst (plambda: (a ...) [xs : a ... a] 3) Integer Boolean Integer)
+                (-Integer B -Integer . -> . -Integer : (-LFS null (list (make-LBot))))]
+        [tc-e/t (inst (plambda: (a ...) [xs : (a ... a -> Integer) ... a] 3) Integer Boolean Integer)
+                ((-Integer B -Integer . -> . -Integer)
+                 (-Integer B -Integer . -> . -Integer)
+                 (-Integer B -Integer . -> . -Integer)
+                 . -> . -Integer : (-LFS null (list (make-LBot))))]
         
         [tc-e/t (plambda: (z x y ...) () (inst map z x y ... y))
               (-polydots (z x y) (-> ((list ((list x) (y y) . ->... . z) (-lst x)) ((-lst y) y) . ->... . (-lst z))))]
@@ -706,10 +706,10 @@
         
         ;; We need to make sure that even if a isn't free in the dotted type, that it gets replicated
         ;; appropriately.
-        [tc-e (inst (plambda: (a ...) [ys : Number ... a]
-                              (apply + ys))
-                    Boolean String Number)
-              (N N N . -> . N)]
+        [tc-e/t (inst (plambda: (a ...) [ys : Number ... a]
+                                (apply + ys))
+                      Boolean String Number)
+                (N N N . -> . N)]
         
         [tc-e (assq 'foo #{'((a b) (foo bar)) :: (Listof (List Symbol Symbol))})
               (Un (-val #f) (-pair Sym (-pair Sym (-val null))))]
