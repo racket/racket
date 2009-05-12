@@ -37,7 +37,7 @@
 (define-signature tc-app^
   ([cnt tc/app (syntax? . -> . tc-results?)] 
    [cnt tc/app/check (syntax? tc-results? . -> . tc-results?)]
-   [cnt tc/funapp (syntax? syntax? tc-result? (listof tc-results?) (or/c #f tc-results?) . -> . tc-results?)]))
+   [cnt tc/funapp (syntax? syntax? tc-results? (listof tc-results?) (or/c #f tc-results?) . -> . tc-results?)]))
 
 (define-signature tc-let^
   ([cnt tc/let-values ((syntax? syntax? syntax? syntax?) ((or/c #f tc-results?)) . ->* . tc-results?)]

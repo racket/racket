@@ -23,7 +23,7 @@
 (d-s/c lam-result ([args (listof (list/c identifier? Type/c))] 
                    [kws (listof (list/c keyword? identifier? Type/c boolean?))]
                    [rest (or/c #f Type/c)]
-                   [drest (or/c #f (cons/c symbol? Type/c))]
+                   [drest (or/c #f (cons/c Type/c symbol?))]
                    [body tc-results?])
        #:transparent)
 
@@ -146,7 +146,7 @@
                        (map list arg-list arg-types)
                        null
                        #f
-                       (cons bound rest-type)
+                       (cons rest-type bound)
                        (tc-exprs (syntax->list body)))))))]
          [else
           (let ([rest-type (get-type #'rest #:default Univ)])

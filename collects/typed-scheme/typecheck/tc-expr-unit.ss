@@ -192,8 +192,8 @@
         [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) true-filter)]
         ;; mutation!
         [(set! id val)
-         (match-let* ([(tc-result: id-t) (tc-expr #'id)]
-                      [(tc-result: val-t) (tc-expr #'val)])
+         (match-let* ([(tc-result1: id-t) (single-value #'id)]
+                      [(tc-result1: val-t) (single-value #'val)])
            (unless (subtype val-t id-t)
              (tc-error/expr "Mutation only allowed with compatible types:~n~a is not a subtype of ~a" val-t id-t))
            (ret -Void))]

@@ -100,8 +100,8 @@
          [name-assoc (map list names (syntax->list named-args))])
     (let loop ([t (tc-expr cl)])
       (match t
-        [(tc-result: (? Mu? t)) (loop (ret (unfold t)))]
-        [(tc-result: (and c (Class: pos-tys (list (and tnflds (list tnames _ _)) ...) _))) 
+        [(tc-result1: (? Mu? t)) (loop (ret (unfold t)))]
+        [(tc-result1: (and c (Class: pos-tys (list (and tnflds (list tnames _ _)) ...) _))) 
          (unless (= (length pos-tys)
                     (length (syntax->list pos-args)))
            (tc-error/delayed "expected ~a positional arguments, but got ~a"
@@ -129,7 +129,7 @@
                             #f))])
                    tnflds)
          (ret (make-Instance c))]
-        [(tc-result: t)
+        [(tc-result1: t)
          (tc-error/expr #:return (ret (Un)) "expected a class value for object creation, got: ~a" t)]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -227,7 +227,7 @@
        (let loop ([doms* doms] [rngs* rngs] [rests* rests] [drests* drests])
          (cond [(null? doms*)
                 (match f-ty 
-                  [(tc-result: (Poly-names: _ (Function: (list (arr: doms rngs rests drests '()) ..1))))
+                  [(tc-result1: (Poly-names: _ (Function: (list (arr: doms rngs rests drests '()) ..1))))
                    (tc-error/expr #:return (ret (Un))
                                  (string-append 
                                   "Bad arguments to polymorphic function in apply:~n"
@@ -279,7 +279,7 @@
        (let loop ([doms* doms] [rngs* rngs] [rests* rests] [drests* drests])
          (cond [(null? doms*)
                 (match f-ty 
-                  [(tc-result: (PolyDots-names: _ (Function: (list (arr: doms rngs rests drests '()) ..1))))
+                  [(tc-result1: (PolyDots-names: _ (Function: (list (arr: doms rngs rests drests '()) ..1))))
                    (tc-error/expr #:return (ret (Un))
                                  (string-append 
                                   "Bad arguments to polymorphic function in apply:~n"
