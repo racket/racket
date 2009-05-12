@@ -453,11 +453,15 @@
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (number? z))])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
-                (-> Univ Univ : (-LFS null (list (make-LBot))))]
+                (-> Univ Univ : (-LFS (list (-not-filter (-val #f))) (list (-filter (-val #f)))) : (make-LPath null 0))]
+        [tc-e/t (let* ([z (ann 1 : Any)]
+                       [p? (lambda: ([x : Any]) (not (number? z)))])
+                  (lambda: ([x : Any]) (if (p? x) x 12)))
+                (-> Univ Univ)]
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) (not (number? z)))])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
-                (-> Univ Univ : (-LFS (list (-not-filter (-val #f))) (list (-filter (-val #f)))) : (make-LPath null 0))]
+                (-> Univ -Integer : (-LFS null (list (make-LBot))))]
         [tc-e/t (let* ([z 1]
                        [p? (lambda: ([x : Any]) z)])
                   (lambda: ([x : Any]) (if (p? x) x 12)))
@@ -615,10 +619,12 @@
                                1 w))
               (-polydots (a) ((list -String) (N a) . ->... . N))]
         ;; instantiating non-dotted terms
-        [tc-e (inst (plambda: (a) ([x : a]) x) Integer)
-              (make-Function (list (make-arr* (list -Integer) -Integer #:filters (-LFS (list (-not-filter (-val #f))) (list (-filter (-val #f)))))))]
-        [tc-e (inst (plambda: (a) [x : a *] (apply list x)) Integer)
-              ((list) -Integer . ->* . (-lst -Integer))]
+        [tc-e/t (inst (plambda: (a) ([x : a]) x) Integer)
+                (make-Function (list (make-arr* (list -Integer) -Integer
+                                                #:filters (-LFS (list (-not-filter (-val #f))) (list (-filter (-val #f)))) 
+                                                #:object (make-LPath null 0))))]
+        [tc-e/t (inst (plambda: (a) [x : a *] (apply list x)) Integer)
+                ((list) -Integer . ->* . (-lst -Integer))]
         
         ;; instantiating dotted terms
         [tc-e (inst (plambda: (a ...) [xs : a ... a] 3) Integer Boolean Integer)

@@ -3,12 +3,12 @@
 (require 
  "test-utils.ss"
  "planet-requires.ss"
- "typecheck-tests.ss" ;; doesn't compile yet
+ "typecheck-tests.ss" ;;fail
  "subtype-tests.ss" ;; pass
  "type-equal-tests.ss" ;; pass
  "remove-intersect-tests.ss" ;; pass
  "parse-type-tests.ss" ;; pass
- "type-annotation-test.ss" ;; fail
+ "type-annotation-test.ss" ;; pass
  "module-tests.ss" ;; pass
  "subst-tests.ss" ;; pass
  "infer-tests.ss" ;; pass
