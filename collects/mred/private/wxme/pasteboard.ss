@@ -1299,6 +1299,7 @@
                        (not ps?))
                   ;; draw to offscreen
                   (begin
+                    (send s-offscreen set-in-use #t)
                     (draw (send s-offscreen get-dc) (- left) (- top) left top width height show-caret bg-color)
                     
                     (send dc draw-bitmap-section 
