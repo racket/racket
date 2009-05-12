@@ -393,6 +393,10 @@
           [((Result: s f o)
             (Result: t f o))
            (cg s t)]
+          ;; handle the trivial case where we need to filters/etc
+          [((Result: s f o)
+            (Result: t (LFilterSet: '() '()) (LEmpty:)))
+           (cg s t)]
           [(_ _)
            (cond [(subtype S T) empty]
                  ;; or, nothing worked, and we fail
@@ -452,6 +456,7 @@
 (define (infer X S T R must-vars [expected #f])
   (with-handlers ([exn:infer? (lambda _ #f)])  
     (let ([cs (cgen/list null X S T)])
+      ;(printf "cs: ~a~n" cs)
       (if (not expected)
           (subst-gen cs R must-vars)
           (subst-gen (cset-meet cs (cgen null X R expected)) R must-vars)))))
@@ -486,4 +491,4 @@
 (define (i s t r)
   (infer/simple (list s) (list t) r))
 
-;(trace cgen subst-gen)
+;(trace cgen/list)

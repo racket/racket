@@ -259,7 +259,7 @@
                                    (fv (car rngs*))))
                 => (lambda (substitution) (do-ret (subst-all substitution (car rngs*))))]
                ;; ... function, ... arg
-               [(and (car drests*)
+               [(and (car drests*)                     
                      tail-bound
                      (eq? tail-bound (cdr (car drests*)))
                      (= (length (car doms*))
@@ -316,7 +316,7 @@
                      tail-bound
                      (eq? tail-bound (cdr (car drests*)))
                      (= (length (car doms*))
-                        (length arg-tys))
+                        (length arg-tys))                     
                      (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*) (fv (car rngs*))))
                 => (lambda (substitution)
                      (do-ret (subst-all substitution (car rngs*))))]
