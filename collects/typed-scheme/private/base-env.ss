@@ -270,7 +270,7 @@
 [quotient (-Integer -Integer . -> . -Integer)]
 [remainder (-Integer -Integer . -> . -Integer)]
 [quotient/remainder 
- (make-arr (list -Integer -Integer) (-values (list -Integer -Integer)))]
+ (make-Function (list (make-arr (list -Integer -Integer) (-values (list -Integer -Integer)))))]
 
 ;; parameter stuff
 

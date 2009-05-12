@@ -3,10 +3,15 @@
 (require (except-in "../utils/utils.ss" extend))
 (require "type-environments.ss" 
 	 "type-env.ss"
+         (only-in scheme/contract ->* ->)
          (utils tc-utils mutated-vars)
-	 (types utils convenience))
+         (only-in (rep type-rep) Type/c)
+	 (except-in (types utils convenience) -> ->*))
 
-(provide (all-defined-out))
+(provide lexical-env with-lexical-env with-lexical-env/extend with-update-type/lexical)
+(p/c
+ [lookup-type/lexical ((identifier?) (env?) . ->* . Type/c)]
+ [update-type/lexical (((identifier? Type/c . -> . Type/c) identifier?) (env?) . ->* . env?)])
 
 ;; the current lexical environment
 (define lexical-env (make-parameter (make-empty-env free-identifier=?)))
