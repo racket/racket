@@ -679,9 +679,9 @@
                                  3 (list #\c) (map list (map list as))))]
         
         [tc-e/t (plambda: (a ...) [as : a ... a]
-                        (apply fold-left (lambda: ([c : Integer] [a : Char] . [xs : a ... a]) c)
-                               3 (list #\c) (map list as)))
-              (-polydots (a) ((list) (a a) . ->... . -Integer))]
+                          (apply fold-left (lambda: ([c : Integer] [a : Char] . [xs : a ... a]) c)
+                                 3 (list #\c) (map list as)))
+                (-polydots (a) ((list) (a a) . ->... . -Integer))]
         
         ;; First is same as second, but with map explicitly instantiated.
         [tc-e/t (plambda: (a ...) [ys : (a ... a -> Number) *]
