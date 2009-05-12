@@ -23,7 +23,8 @@ at least theoretically.
          in-syntax
 	 symbol-append
          custom-printer
-	 rep utils typecheck infer env private)
+	 rep utils typecheck infer env private
+         hashof)
 
 (define-syntax (define-requirer stx)
   (syntax-parse stx
@@ -319,3 +320,15 @@ at least theoretically.
      (if enable-contracts?
          (list #'[contracted (nm cnt)])     
          (list #'nm))]))
+
+
+(define (hashof k/c v/c)
+  (flat-named-contract
+   (format "#<hashof ~a ~a>" k/c v/c)
+   (lambda (h)
+     (define k/c? (if (flat-contract? k/c) (flat-contract-predicate k/c) k/c))
+     (define v/c? (if (flat-contract? v/c) (flat-contract-predicate v/c) v/c))
+     (and (hash? h)
+          (for/and ([(k v) h])
+            (and (k/c? k) 
+                 (v/c? v)))))))

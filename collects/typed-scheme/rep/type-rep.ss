@@ -146,18 +146,30 @@
          [rest (or/c #f Type/c)] 
          [drest (or/c #f (cons/c Type/c (or/c natural-number/c symbol?)))]
          [kws (listof Keyword?)])
-    [#:frees (lambda (free*)
-               (combine-frees 
-                (append (map (compose flip-variances free*) 
-                             (append (if rest (list rest) null)
-                                     (map Keyword-ty kws)
-                                     dom))
-                        (match drest
-                          [(cons t (? symbol? bnd))
-                           (list (fix-bound (flip-variances (free* t)) bnd))]
-                          [(cons t (? number? bnd)) (list (flip-variances (free* t)))]
-                          [#f null])
-                        (list (free* rng)))))]
+    [#:frees (combine-frees 
+              (append (map (compose flip-variances free-vars*) 
+                           (append (if rest (list rest) null)
+                                   (map Keyword-ty kws)
+                                   dom))
+                      (match drest
+                        [(cons t (? symbol? bnd))
+                         (list (fix-bound (flip-variances (free-vars* t)) bnd))]                          
+                        [(cons t (? number? bnd)) 
+                         (list (flip-variances (free-vars* t)))]
+                        [#f null])
+                      (list (free-vars* rng))))
+             (combine-frees 
+              (append (map (compose flip-variances free-idxs*) 
+                           (append (if rest (list rest) null)
+                                   (map Keyword-ty kws)
+                                   dom))
+                      (match drest
+                        [(cons t (? symbol? bnd))
+                         (list (flip-variances (free-idxs* t)))]
+                        [(cons t (? number? bnd)) 
+                         (list (fix-bound (flip-variances (free-idxs* t)) bnd))]
+                        [#f null])
+                      (list (free-idxs* rng))))]
     [#:fold-rhs (*arr (map type-rec-id dom)
                       (type-rec-id rng)
                       (and rest (type-rec-id rest))

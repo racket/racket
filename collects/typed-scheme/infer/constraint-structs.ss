@@ -31,18 +31,6 @@
 ;; don't want to rule them out too early
 (define-struct cset (maps) #:prefab)
 
-
-(define (hashof k/c v/c)
-  (flat-named-contract
-   (format "#<hashof ~a ~a>" k/c v/c)
-   (lambda (h)
-     (define k/c? (if (flat-contract? k/c) (flat-contract-predicate k/c) k/c))
-     (define v/c? (if (flat-contract? v/c) (flat-contract-predicate v/c) v/c))
-     (and (hash? h)
-          (for/and ([(k v) h])
-                   (and (k/c? k) 
-                        (v/c? v)))))))
-
 (provide/contract (struct c ([S Type?] [X symbol?] [T Type?]))
                   (struct dcon ([fixed (listof c?)] [rest (or/c c? false/c)]))
                   (struct dcon-exact ([fixed (listof c?)] [rest c?]))

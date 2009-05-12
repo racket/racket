@@ -172,20 +172,22 @@
                     (make-Values (list (-result rng filters obj))))
             rest drest (sort #:key Keyword-kw kws keyword<?)))
 
-(define-syntax ->*
-  (syntax-rules (:)
+(define-syntax (->* stx)
+  (define-syntax-class c
+    (pattern x:id #:when (eq? ': (syntax-e #'x))))
+  (syntax-parse stx
     [(_ dom rng)       
-     (make-Function (list (make-arr* dom rng)))]
+     #'(make-Function (list (make-arr* dom rng)))]
     [(_ dom rst rng)
-     (make-Function (list (make-arr* dom rng #:rest rst)))]
-    [(_ dom rng : filters)
-     (make-Function (list (make-arr* dom rng #:filters filters)))]
-    [(_ dom rng : filters : object)
-     (make-Function (list (make-arr* dom rng #:filters filters #:object object)))]
-    [(_ dom rst rng : filters)
-     (make-Function (list (make-arr* dom rng #:rest rst #:filters filters)))]
-    [(_ dom rst rng : filters : object)
-     (make-Function (list (make-arr* dom rng #:rest rst #:filters filters #:object object)))]))
+     #'(make-Function (list (make-arr* dom rng #:rest rst)))]
+    [(_ dom rng :c filters)
+     #'(make-Function (list (make-arr* dom rng #:filters filters)))]
+    [(_ dom rng _:c filters _:c object)
+     #'(make-Function (list (make-arr* dom rng #:filters filters #:object object)))]
+    [(_ dom rst rng _:c filters)
+     #'(make-Function (list (make-arr* dom rng #:rest rst #:filters filters)))]
+    [(_ dom rst rng _:c filters : object)
+     #'(make-Function (list (make-arr* dom rng #:rest rst #:filters filters #:object object)))]))
 
 (define-syntax (-> stx)
   (define-syntax-class c
