@@ -5,6 +5,16 @@
          (types convenience subtype union remove-intersect)
          (schemeunit))
 
+(define-syntax (over-tests stx)    
+  (syntax-case stx ()
+    [(_ [t1 t2 res] ...)
+     #'(test-suite "Tests for intersect"
+                   (test-check (format "Overlap test: ~a ~a" t1 t2) (lambda (a b) (eq? (not (not a)) b)) (overlap t1 t2) res) ...)]))
+
+(define (overlap-tests)
+  (over-tests
+   [-Number -Integer #t]))
+
 (define-syntax (restr-tests stx)    
   (syntax-case stx ()
     [(_ [t1 t2 res] ...)
@@ -56,7 +66,8 @@
 
 (define-go 
   restrict-tests
-  remove-tests)
+  remove-tests
+  overlap-tests)
 
 (define x1 
   (-mu list-rec 
@@ -68,5 +79,5 @@
   (Un (-val '()) 
       (-pair (-mu x (Un -Boolean -Number -String -Symbol (-val '()) (-pair x x)))
              (-mu x (Un -Boolean -Number -String -Symbol (-val '()) (-pair x x))))))
-(provide remove-tests restrict-tests)
+(provide remove-tests restrict-tests overlap-tests)
 

@@ -31,6 +31,7 @@
                   type-equal-tests
                   restrict-tests
                   remove-tests
+                  overlap-tests
                   parse-type-tests
                   type-annotation-tests
                   module-tests
