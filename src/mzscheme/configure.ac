@@ -349,6 +349,8 @@ CGC_INSTALLED=cgc
 CGC_CAP_INSTALLED=CGC
 MAIN_VARIANT=3m
 
+STRIP_DEBUG=":"
+
 ###### OSKit stuff #######
 
 if test "${enable_oskit}" = "yes" ; then
@@ -536,6 +538,7 @@ case $OS in
     LIBS="$LIBS -ldl -lm -rdynamic"
     DYN_CFLAGS="-fPIC"
     GC_THREADS_FLAG="-DGC_LINUX_THREADS"
+    STRIP_DEBUG="strip -S"
     # PPC: X11 librares are not found
     case `$UNAME -m` in
       #Required for CentOS 4.6
@@ -606,6 +609,8 @@ case $OS in
     fi
     
     PREFLAGS="$PREFLAGS -DOS_X -D_DARWIN_UNLIMITED_SELECT"
+
+    STRIP_DEBUG="/usr/bin/strip -S"
 
     # zlib comes with the OS
     ZLIB_A=""
@@ -1318,6 +1323,7 @@ AC_SUBST(RANLIB)
 AC_SUBST(AR)
 AC_SUBST(STATIC_AR)
 AC_SUBST(ARFLAGS)
+AC_SUBST(STRIP_DEBUG)
 AC_SUBST(WBUILD)
 AC_SUBST(CC_FOR_BUILD)
 AC_SUBST(REZ)

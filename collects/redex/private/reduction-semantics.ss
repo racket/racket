@@ -192,12 +192,12 @@
 (define-syntax (-reduction-relation stx)
   (syntax-case stx ()
     [(_ lang args ...)
-     #'(do-reduction-relation reduction-relation empty-reduction-relation #f lang args ...)]))
+     (syntax/loc stx (do-reduction-relation reduction-relation empty-reduction-relation #f lang args ...))]))
 
 (define-syntax (extend-reduction-relation stx)
   (syntax-case stx ()
     [(_ orig-reduction-relation lang args ...)
-     #'(do-reduction-relation extend-reduction-relation orig-reduction-relation #t lang args ...)]))
+     (syntax/loc stx (do-reduction-relation extend-reduction-relation orig-reduction-relation #t lang args ...))]))
 
 ;; the withs, freshs, and side-conditions come in backwards order
 (define-for-syntax (bind-withs orig-name main stx body)
@@ -258,10 +258,9 @@
               (syntax-e #'allow-zero-rules?)
               domain-pattern
               main-arrow))))]
-      [(_ id orig-reduction-relation lang args ...)
+      [(_ id orig-reduction-relation allow-zero-rules? lang args ...)
        (raise-syntax-error (syntax-e #'id) 
                            "expected an identifier for the language name"
-                           stx 
                            #'lang)]))
   
   (define (parse-keywords stx id args)

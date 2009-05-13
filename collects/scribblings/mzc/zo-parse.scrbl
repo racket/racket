@@ -380,9 +380,13 @@ from before evaluating @scheme[rhs].}
 
 Represents a @scheme[letrec] form with @scheme[lambda] bindings. It
 allocates a closure shell for each @scheme[lambda] form in
-@scheme[procs], pushes them onto the stack in reverse order, fills out
-each shell's closure using the created shells, and then evaluates
-@scheme[body].}
+@scheme[procs], installs each onto the stack in previously
+allocated slots in reverse order (so that the closure shell for the
+last element of @scheme[procs] is installed at stack position
+@scheme[0]), fills out each shell's closure (where each closure
+normally references some other just-created closures, which is
+possible because the shells have been installed on the stack), and
+then evaluates @scheme[body].}
 
 
 @defstruct+[(boxenv expr) ([pos exact-nonnegative-integer?]

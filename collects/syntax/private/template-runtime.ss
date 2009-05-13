@@ -4,6 +4,7 @@
 (provide template-map-apply)
 
 (define-struct ellipses (elem count rest) #:prefab #:omit-define-syntaxes)
+(define-struct ellipses-quote (rest) #:prefab #:omit-define-syntaxes)
 (define-struct prefab (key fields) #:prefab #:omit-define-syntaxes)
 
 (define (stx-list->vector l)
@@ -74,6 +75,8 @@
                     stx
                     appended)
               appended)))]
+     [(ellipses-quote? tmap)
+      (loop (ellipses-quote-rest tmap) data stx local-pcons)]
      [(prefab? tmap)
       (d->s (car data)
             stx

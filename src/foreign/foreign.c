@@ -1752,8 +1752,10 @@ static Scheme_Object *foreign_compiler_sizeof(int argc, Scheme_Object *argv[])
     else scheme_signal_error(MYNAME": cannot qualify 'char");
     break;
   case 3: /* void */
-    if (intsize==0) RETSIZE(void);
-    else scheme_signal_error(MYNAME": cannot qualify 'char");
+    if (intsize==0 && stars>0) RETSIZE(void);
+    else if (stars==0)
+      scheme_signal_error(MYNAME": cannot use 'void without a '*");
+    else scheme_signal_error(MYNAME": cannot qualify 'void");
     break;
   case 4: /* float */
     if (intsize==0) RETSIZE(float);
@@ -2331,6 +2333,8 @@ void do_ptr_finalizer(void *p, void *finalizer)
 
 #define MAX_QUICK_ARGS 16
 
+typedef void(*VoidFun)();
+
 Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
 /* data := {name, c-function, itypes, otype, cif} */
 {
@@ -2417,7 +2421,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
     }
   }
   /* Finally, call the function */
-  ffi_call(cif, (void *)W_OFFSET(c_func, cfoff), p, avalues);
+  ffi_call(cif, (VoidFun)W_OFFSET(c_func, cfoff), p, avalues);
   if (ivals != stack_ivals) free(ivals);
   ivals = NULL; /* no need now to hold on to this */
   for (i=0; i<nargs; i++) { avalues[i] = NULL; } /* no need for these refs */

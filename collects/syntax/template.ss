@@ -19,10 +19,12 @@
 ;; - (vector map) => template portion is a vector,
 ;;                   contents like the list in map
 ;; - (box map) => template portion is a box with substition
-;; - #s(ellipses count map) => template portion is an ellipses-generated list
-;; - #s(prefab v map) => templat portion is a prefab
+;; - #s(ellipses elem count map) => template portion is an ellipses-generated list
+;; - #s(ellipses-quote map) => template has a quoting ellipses
+;; - #s(prefab v map) => template portion is a prefab
 
 (define-struct ellipses (elem count rest) #:prefab #:omit-define-syntaxes)
+(define-struct ellipses-quote (rest) #:prefab #:omit-define-syntaxes)
 (define-struct prefab (key fields) #:prefab #:omit-define-syntaxes)
 
 (define (datum->syntax* stx d)
@@ -36,7 +38,7 @@
        (and (not in-ellipses?)
             (identifier? #'ellipses)
             (free-identifier=? #'ellipses #'(... ...)))
-       (loop #'expr #t)]
+       (make-ellipses-quote (loop #'expr #t))]
       [(expr ellipses . rest)
        (and (not in-ellipses?)
             (identifier? #'ellipses)
@@ -108,6 +110,8 @@
                     (loop (ellipses-rest tmap) rest))
             (cons (loop (ellipses-elem tmap) (stx-car template))
                   (loop (ellipses-rest tmap) rest))))]
+     [(ellipses-quote? tmap)
+      (loop (ellipses-quote-rest tmap) (stx-car (stx-cdr template)))]
      [(prefab? tmap)
       (cons (s->d template)
             (loop (prefab-fields tmap)
@@ -149,6 +153,10 @@
           (if (syntax? template)
               (datum->syntax* template new)
               new)))]
+     [(ellipses-quote? tmap)
+      (datum->syntax* template
+                      (list (stx-car template)
+                           (loop (ellipses-quote-rest tmap) (stx-car (stx-cdr template)))))]
      [(prefab? tmap)
       (datum->syntax* 
        template

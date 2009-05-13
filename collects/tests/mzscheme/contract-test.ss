@@ -5092,6 +5092,7 @@ so that propagation occurs.
   (test-flat-contract '(string-len/c 3) "ab" "abc")
   (test-flat-contract 'natural-number/c 5 -1)
   (test-flat-contract 'natural-number/c #e3 #i3.0)
+  (test-flat-contract 'natural-number/c 0 -1)
   (test-flat-contract 'false/c #f #t)
   
   (test-flat-contract #t #t "x")

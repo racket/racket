@@ -499,7 +499,7 @@
                 create-immutable-custom-hash
                 make-weak-custom-hash)
   (let ([mk
-         (lambda (hash hash2 =? who make-custom-hash table)
+         (lambda (hash hash2 =? who make-custom-hash table wrap-make-box)
            (unless (and (procedure? =?)
                         (procedure-arity-includes? =? 2))
              (raise-type-error who "procedure (arity 2)" =?))
@@ -518,16 +518,25 @@
                                              (hash (hash-box-key v)))
                                            (lambda (v recur)
                                              (hash2 (hash-box-key v)))))
-             (make-custom-hash table make-box)))])
+             (make-custom-hash table (wrap-make-box make-box))))])
     (let ([make-custom-hash 
            (lambda (=? hash [hash2 (lambda (v) 10001)])
-             (mk hash hash2 =? 'make-custom-hash make-custom-hash (make-hash)))]
+             (mk hash hash2 =? 'make-custom-hash make-custom-hash (make-hash) values))]
           [make-immutable-custom-hash 
            (lambda (=? hash [hash2 (lambda (v) 10001)])
-             (mk hash hash2 =? 'make-immutable-custom-hash make-immutable-custom-hash #hash()))]
+             (mk hash hash2 =? 'make-immutable-custom-hash make-immutable-custom-hash #hash() values))]
           [make-weak-custom-hash 
            (lambda (=? hash [hash2 (lambda (v) 10001)])
-             (mk hash hash2 =? 'make-immutable-custom-hash make-immutable-custom-hash (make-weak-hash)))])
+             (mk hash hash2 =? 'make-weak-custom-hash make-custom-hash (make-weak-hash)
+                 (lambda (make-box)
+                   (let ([ht (make-weak-hasheq)])
+                     (lambda (v)
+                       (let ([e (hash-ref ht v #f)])
+                         (if e
+                             (ephemeron-value e)
+                             (let ([b (make-box v)])
+                               (hash-set! ht v (make-ephemeron v b))
+                               b))))))))])
       (values make-custom-hash 
               make-immutable-custom-hash
               make-weak-custom-hash))))

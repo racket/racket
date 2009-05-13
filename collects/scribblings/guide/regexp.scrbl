@@ -749,7 +749,7 @@ the call
 (regexp-match #rx"a*aa" "aaaa")
 ]
 
-the matcher backtracks even further.  Overall, failure is conceded
+the matcher backtracks even further.  Overall failure is conceded
 only when all possible backtracking has been tried with no success.
 
 Backtracking is not restricted to greedy quantifiers.

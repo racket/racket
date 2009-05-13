@@ -103,6 +103,20 @@
               h)
             #f #t #t
             "1")
+(let ([s1 (make-string 1 #\1)]
+      [s2 (make-string 1 #\2)])
+  (try-simple (let ([h (make-weak-custom-hash (lambda (a b)
+                                                (string=? (format "~a" a)
+                                                          (format "~a" b)))
+                                              (lambda (a)
+                                                (equal-hash-code (format "~a" a))))])
+                (dict-set! h s1 'one)
+                (dict-set! h s2 'two)
+                h)
+              #t #t #f
+              "1")
+  ;; preserve from GC:
+  (list s1 s2))
 
 ;; ----------------------------------------
 

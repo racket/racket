@@ -680,6 +680,7 @@ AS
 AR
 STATIC_AR
 ARFLAGS
+STRIP_DEBUG
 WBUILD
 CC_FOR_BUILD
 REZ
@@ -2285,6 +2286,8 @@ CGC=cgc
 CGC_INSTALLED=cgc
 CGC_CAP_INSTALLED=CGC
 MAIN_VARIANT=3m
+
+STRIP_DEBUG=":"
 
 ###### OSKit stuff #######
 
@@ -5801,6 +5804,7 @@ case $OS in
     LIBS="$LIBS -ldl -lm -rdynamic"
     DYN_CFLAGS="-fPIC"
     GC_THREADS_FLAG="-DGC_LINUX_THREADS"
+    STRIP_DEBUG="strip -S"
     # PPC: X11 librares are not found
     case `$UNAME -m` in
       #Required for CentOS 4.6
@@ -5871,6 +5875,8 @@ case $OS in
     fi
 
     PREFLAGS="$PREFLAGS -DOS_X -D_DARWIN_UNLIMITED_SELECT"
+
+    STRIP_DEBUG="/usr/bin/strip -S"
 
     # zlib comes with the OS
     ZLIB_A=""
@@ -11933,6 +11939,7 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
+
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -12787,6 +12794,7 @@ AS!$AS$ac_delim
 AR!$AR$ac_delim
 STATIC_AR!$STATIC_AR$ac_delim
 ARFLAGS!$ARFLAGS$ac_delim
+STRIP_DEBUG!$STRIP_DEBUG$ac_delim
 WBUILD!$WBUILD$ac_delim
 CC_FOR_BUILD!$CC_FOR_BUILD$ac_delim
 REZ!$REZ$ac_delim
@@ -12817,7 +12825,6 @@ MREDLINKER!$MREDLINKER$ac_delim
 LIBSFX!$LIBSFX$ac_delim
 WXLIBS!$WXLIBS$ac_delim
 WXVARIANT!$WXVARIANT$ac_delim
-ICP!$ICP$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -12859,6 +12866,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+ICP!$ICP$ac_delim
 MRLIBINSTALL!$MRLIBINSTALL$ac_delim
 LIBFINISH!$LIBFINISH$ac_delim
 MAKE_MRED!$MAKE_MRED$ac_delim
@@ -12900,7 +12908,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 39; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 40; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

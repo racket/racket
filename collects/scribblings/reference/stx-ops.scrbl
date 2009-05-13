@@ -151,7 +151,8 @@ needed to strip lexical and source-location information recursively.}
                                                (or/c exact-positive-integer? #f)
                                                (or/c exact-nonnegative-integer? #f)
                                                (or/c exact-nonnegative-integer? #f)
-                                               (or/c exact-positive-integer? #f)))]
+                                               (or/c exact-positive-integer? #f)))
+                                #f]
                         [prop (or/c syntax? #f) #f]
                         [cert (or/c syntax? #f) #f])
           syntax?]{
