@@ -96,21 +96,38 @@
              dmap)))
    cset))
 
-;; t and s must be *latent* effects
-(define (cgen/eff V X t s)
+;; t and s must be *latent* filters
+(define (cgen/filter V X t s)
   (match* (t s)
     [(e e) (empty-cset X)]
-    ;; FIXME - do something here
-    #;#;
-    [((Latent-Restrict-Effect: t) (Latent-Restrict-Effect: s))
-     (cset-meet (cgen V X t s) (cgen V X s t))]
-    [((Latent-Remove-Effect: t) (Latent-Remove-Effect: s))
-     (cset-meet (cgen V X t s) (cgen V X s t))]
+    ;; FIXME - is there something to be said about LBot?
+    [((LTypeFilter: t p i) (LTypeFilter: s p i)) (cset-meet (cgen V X t s) (cgen V X s t))]
+    [((LNotTypeFilter: t p i) (LNotTypeFilter: s p i)) (cset-meet (cgen V X t s) (cgen V X s t))]
     [(_ _) (fail! t s)]))
 
-(define (cgen/eff/list V X ts ss)
-  (unless (>= (length ts) (length ss)) (fail! ts ss))
-  (cset-meet* (for/list ([t ts] [s ss]) (cgen/eff V X t s))))
+(define (cgen/filters V X ts ss)
+  (cond 
+    [(null? ss) (empty-cset X)]
+    ;; FIXME - this can be less conservative
+    [(= (length ts) (length ss))
+     (cset-meet* (for/list ([t ts] [s ss]) (cgen/filter V X t s)))]
+    [else (fail! ts ss)]))
+
+
+;; t and s must be *latent* filter sets
+(define (cgen/filter-set V X t s)
+  (match* (t s)
+    [(e e) (empty-cset X)]
+    [((LFilterSet: t+ t-) (LFilterSet: s+ s-))
+     (cset-meet (cgen/filters V X t+ s+) (cgen/filters V X t- s-))]
+    [(_ _) (fail! t s)]))
+
+(define (cgen/object V X t s)
+  (match* (t s)
+    [(e e) (empty-cset X)]
+    [(e (LEmpty:)) (empty-cset X)]
+    ;; FIXME - do something here    
+    [(_ _) (fail! t s)]))
 
 (define (cgen/arr V X t-arr s-arr)
   (define (cg S T) (cgen V X S T))
@@ -390,13 +407,11 @@
               (with-handlers ([exn:infer? (lambda (_) #f)])
                 (cgen/arr V X t-arr s-arr)))))]
           ;; this is overly conservative
-          [((Result: s f o)
-            (Result: t f o))
-           (cg s t)]
-          ;; handle the trivial case where we need to filters/etc
-          [((Result: s f o)
-            (Result: t (LFilterSet: '() '()) (LEmpty:)))
-           (cg s t)]
+          [((Result: s f-s o-s)
+            (Result: t f-t o-t))
+           (cset-meet* (list (cg s t) 
+                             (cgen/filter-set V X f-s f-t)
+                             (cgen/object V X o-s o-t)))]
           [(_ _)
            (cond [(subtype S T) empty]
                  ;; or, nothing worked, and we fail
@@ -491,4 +506,4 @@
 (define (i s t r)
   (infer/simple (list s) (list t) r))
 
-;(trace cgen/list)
+;(trace cgen cgen/filters cgen/filter)
