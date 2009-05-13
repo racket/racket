@@ -34,27 +34,6 @@
        (tc-exprs/check (syntax->list body) expected)
        (tc-exprs (syntax->list body)))))
 
-#|
-;; this is more abstract, but sucks
-  (define ((mk f) namess exprs body form)
-    (let* ([names (map syntax->list (syntax->list namess))]
-           [exprs (syntax->list exprs)])
-      (f (lambda (e->t namess types exprs) (do-check e->t namess types form exprs body)) names exprs)))
-  
-  (define tc/letrec-values 
-    (mk (lambda (do names exprs)
-          (let ([types (map (lambda (l) (map get-type l)) names)])
-            (do tc-expr/t names types exprs)))))
-  
-  (define tc/let-values
-    (mk (lambda (do names exprs)
-          (let* (;; the types of the exprs
-                 [inferred-types (map tc-expr/t exprs)]
-                 ;; the annotated types of the name (possibly using the inferred types)
-                 [types (map get-type/infer names inferred-types)])
-            (do (lambda (x) x) names types inferred-types)))))
-  |#
-
 (define (tc/letrec-values/check namess exprs body form expected)
   (tc/letrec-values/internal namess exprs body form expected))
 
@@ -72,8 +51,7 @@
      (andmap values expecteds)
      (tc-expr/check e (mk expecteds))
      (tc-expr e)))
-  (match tcr
-    [(tc-result1: t) t]))
+  tcr)
 
 (define (tc/letrec-values/internal namess exprs body form expected)
   (let* ([names (map syntax->list (syntax->list namess))]
@@ -100,8 +78,9 @@
          ;; then check this expression separately
          (with-lexical-env/extend
           (list (car names))
-          (list (get-type/infer (car names) (car exprs) (lambda (e) (tc-expr/maybe-expected/t e (car names))) 
-                                (lambda (e t) (tc-expr/check/t e (ret t)))))
+          (list (match (get-type/infer (car names) (car exprs) (lambda (e) (tc-expr/maybe-expected/t e (car names))) 
+                                       tc-expr/check)
+                  [(tc-results: ts) ts]))
           (loop (cdr names) (cdr exprs) (apply append (cdr names)) (cdr clauses)))]
         [else
          ;(for-each (lambda (vs) (for-each (lambda (v) (printf/log "Letrec Var: ~a~n" (syntax-e v))) vs)) names)
@@ -115,9 +94,8 @@
     [(#%plain-lambda () _)
      (and expected (syntax-property e 'typechecker:called-in-tail-position))
      (begin
-       (tc-expr/check e (-> expected))
-       (-> expected))]
-    [_ (tc-expr/t e)]))
+       (tc-expr/check e (ret (-> expected))))]
+    [_ (tc-expr e)]))
 
 (define (tc/let-values namess exprs body form [expected #f])
   (let* (;; a list of each name clause
@@ -127,8 +105,10 @@
          ;; the types of the exprs
          #;[inferred-types (map (tc-expr-t/maybe-expected expected) exprs)]
          ;; the annotated types of the name (possibly using the inferred types)
-         [types (for/list ([name names] [e exprs]) (get-type/infer name e (tc-expr-t/maybe-expected expected) 
-                                                                   (lambda (e t) (tc-expr/check/t e (ret t)))))]
+         [types (for/list ([name names] [e exprs]) 
+                  (match (get-type/infer name e (tc-expr-t/maybe-expected expected) 
+                                         tc-expr/check)
+                    [(tc-results: ts) ts]))]
          ;; the clauses for error reporting
          [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])
     (do-check void names types form types body clauses expected)))
