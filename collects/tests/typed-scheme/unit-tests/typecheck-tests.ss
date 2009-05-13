@@ -151,7 +151,7 @@
         [tc-e (let: ([x : Number 5]) x) #:proc (get-let-name x 0 (-path -Number #'x))]
         [tc-e (let-values ([(x) 4]) (+ x 1)) -Integer]
         [tc-e (let-values ([(#{x : Number} #{y : Boolean}) (values 3 #t)]) (and (= x 1) (not y))) 
-              #:proc (syntax-parser [(_ ([(_ y) . _]) . _) (ret -Boolean (-FS (list (make-TypeFilter (-val #f) #'y)) null))])]
+              #:proc (syntax-parser [(_ ([(_ y) . _]) . _) (ret -Boolean (-FS (list (make-TypeFilter (-val #f) null #'y)) null))])]
         [tc-e/t (values 3) -Integer]
         [tc-e (values) #:ret (ret null)]
         [tc-e (values 3 #f) #:ret (ret (list -Integer (-val #f)) (list (-FS (list) (list (make-Bot))) (-FS (list (make-Bot)) (list))))]
@@ -559,14 +559,14 @@
                 (* x z))
               -Integer]
         
-        [tc-e (let ()
-                (define: (f [x : Number]) : Number
-                  (define: (g [y : Number]) : Number
-                    (let*-values ([(#{z : Number} #{w : Number}) (values (g (f x)) 5)])
-                      (+ z w)))
-                  (g 4))
-                5)
-              -Integer]
+        [tc-e/t (let ()
+                  (define: (f [x : Number]) : Number
+                    (define: (g [y : Number]) : Number
+                      (let*-values ([(#{z : Number} #{w : Number}) (values (g (f x)) 5)])
+                        (+ z w)))
+                    (g 4))
+                  5)
+                -Integer]
         
         [tc-err (let ()
                   (define x x)
