@@ -456,13 +456,13 @@
      (tc/let-values #'((x) ...) #'(args ...) #'body 
                     #'(let-values ([(x) args] ...) . body)
                     expected)]
-    ;; FIXME - make this work - doesn't work because the annotation 
-    ;; on rst is not a normal annotation, may have * or ...
-    ;; inference for ((lambda with dotted rest
-    #;
+    ;; inference for ((lambda with dotted rest    
     [(#%plain-app (#%plain-lambda (x ... . rst:id) . body) args ...)
      #:when (<= (length (syntax->list #'(x ...)))
                 (length (syntax->list #'(args ...))))
+    ;; FIXME - remove this restriction - doesn't work because the annotation 
+    ;; on rst is not a normal annotation, may have * or ...
+     #:when (not (type-annotation #'rst))
      (let-values ([(fixed-args varargs) (split-at (syntax->list #'(args ...)) (length (syntax->list #'(x ...))))])
        (with-syntax ([(fixed-args ...) fixed-args]
                      [varg #`(#%plain-app list #,@varargs)])
