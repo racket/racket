@@ -41,7 +41,7 @@
   (lambda (node o w?) (fprintf o "#<node:~s>" (or (node-id node) '???))))
 
 ;; An edge representing function calls between two nodes:
-;; - time: the total time spent while the call was somewhere on the stack.
+;; - total: the total time spent while the call was anywhere on the stack.
 ;; - caller, callee: the two relevant `node' values.
 ;; - caller-time, callee-time: the time that the caller/callee spent in this
 ;;   call (different from the above time because each stack sample's time is
