@@ -1,13 +1,13 @@
 #lang scheme/base
 
-(provide format-percent format-source get-hidden)
-(require "structs.ss")
+(require "structs.ss" scheme/list)
 
 ;; Format a percent number, possibly doing the division too.  If we do the
 ;; division, then be careful: if we're dividing by zero, then make the result
 ;; zero.  This is useful if the total time is zero because we didn't see any
 ;; activity (for example, the profiled code is just doing a `sleep'), in which
 ;; case all times will be 0.
+(provide format-percent)
 (define format-percent
   (case-lambda
     [(percent)
@@ -15,6 +15,7 @@
        (format "~a.~a%" (quotient percent 10) (modulo percent 10)))]
     [(x y) (format-percent (if (zero? y) 0 (/ x y)))]))
 
+(provide format-source)
 (define (format-source src)
   (if src
     (format "~a:~a"
@@ -27,6 +28,7 @@
 ;; Hide a node if its self time is smaller than the self threshold *and* all of
 ;; its edges are below the sub-node threshold too -- this avoids confusing
 ;; output where a node does not have an entry but appears as a caller/callee.
+(provide get-hidden)
 (define (get-hidden profile hide-self% hide-subs%)
   (define self% (or hide-self% 0))
   (define subs% (or hide-subs% 0))
@@ -45,3 +47,57 @@
   (cond [(and (<= self% 0) (<= subs% 0)) '()]
         [(zero? total-time) (profile-nodes profile)]
         [else (filter hide? (profile-nodes profile))]))
+
+;; A simple topological sort of nodes using BFS, starting from node `x' (which
+;; will be given as the special *-node).  `subsort' is a `resolver' function to
+;; sort nodes on the same level.
+(provide topological-sort)
+(define (topological-sort x subsort)
+  (let loop ([todo (list x)] [sorted (list x)])
+    (if (null? todo)
+      (reverse sorted)
+      (let* (;; take the next level of nodes
+             [next (append-map (lambda (x) (map edge-callee (node-callees x)))
+                               todo)]
+             ;; remove visited and duplicates
+             [next (remove-duplicates (remq* sorted next))]
+             ;; leave only nodes with no other incoming edges
+             [next* (filter (lambda (node)
+                              (andmap (lambda (e) (memq (edge-caller e) sorted))
+                                      (node-callers node)))
+                            next)]
+             ;; but if all nodes have other incoming edges, then there must be
+             ;; a cycle, so just do them now (instead of dropping them)
+             [next (if (and (null? next*) (pair? next)) next next*)]
+             ;; sort using subsort
+             [next (subsort next)])
+        (loop next (append (reverse next) sorted))))))
+#|
+(define-syntax-rule (letnodes [id ...] body ...)
+  (let ([id (make-node 'id #f '() 0 0 '() '())] ...) body ...))
+(define (X . -> . Y)
+  (let ([e (make-edge 0 X 0 Y 0)])
+    (set-node-callers! Y (cons e (node-callers Y)))
+    (set-node-callees! X (cons e (node-callees X)))))
+(letnodes [A B C]
+  (A . -> . B)
+  (B . -> . C)
+  (equal? (topological-sort A values)
+          (list A B C)))
+(letnodes [A B C]
+  ;; check that a cycle doesn't lead to dropping nodes
+  (A . -> . B)
+  (A . -> . C)
+  (B . -> . A)
+  (B . -> . C)
+  (C . -> . A)
+  (C . -> . B)
+  (null? (remq* (topological-sort A values) (list A B C))))
+(letnodes [A B C D]
+  (A . -> . B)
+  (B . -> . C)
+  (C . -> . D)
+  (A . -> . D)
+  (equal? (topological-sort A values)
+          (list A B C D)))
+|#
