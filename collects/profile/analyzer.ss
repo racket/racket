@@ -55,13 +55,8 @@
              (or (node-id (edge-caller edge)) '???)
              (or (node-id (edge-callee edge)) '???))))
 
-(define with-hash:not-found (gensym))
 (define-syntax-rule (with-hash <hash> <key> <expr>)
-  (let ([t <hash>] [k <key>])
-    (let ([v (hash-ref t k with-hash:not-found)])
-      (if (eq? v with-hash:not-found)
-        (let ([v <expr>]) (hash-set! t k v) v)
-        v))))
+  (hash-ref! <hash> <key> (lambda () <expr>)))
 
 ;; This function analyzes the output of the sampler.  Returns a `profile'
 ;; struct holding a list of `node' values, each one representing a node in the
