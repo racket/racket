@@ -34,7 +34,9 @@
 (define-struct node (id src thread-ids total self callers callees)
   #:mutable
   #:property prop:custom-write
-  (lambda (node o w?) (fprintf o "#<node:~s>" (or (node-id node) '???))))
+  (lambda (node o w?)
+    (fprintf o "#<node:~s>"
+             (or (node-id node) (if (node-src node) '??? 'ROOT)))))
 
 ;; An edge representing function calls between two nodes:
 ;; - total: the total time spent while the call was anywhere on the stack.
