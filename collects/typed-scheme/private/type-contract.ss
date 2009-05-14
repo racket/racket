@@ -70,18 +70,13 @@
            #;(printf "~a~n" (syntax-object->datum #'cnts))
            #'(or/c . cnts))]
         [(Function: arrs)
-         (let ()
+         (let ()           
            (define (f a)
              (define-values (dom* rngs* rst)
                (match a
-                 [(arr: dom (Values: rngs) #f #f '())
-                  (values (map t->c/neg dom) (map t->c rngs) #f)]
-                 [(arr: dom rng #f #f '())
-                  (values (map t->c/neg dom) (list (t->c rng)) #f)]
-                 [(arr: dom (Values: rngs) rst #f '() )
-                  (values (map t->c/neg dom) (map t->c rngs) (t->c/neg rst))]
-                 [(arr: dom rng rst #f '())
-                  (values (map t->c/neg dom) (list (t->c rng)) (t->c/neg rst))]))
+                 [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f '())
+                  (values (map t->c/neg dom) (map t->c rngs) (and rst (t->c/neg rst)))]
+                 [_ (exit (fail))]))
              (with-syntax 
                  ([(dom* ...) dom*]
                   [rng* (match rngs*
