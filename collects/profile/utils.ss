@@ -64,8 +64,9 @@
              ;; remove visited and duplicates
              [next (remove-duplicates (remq* sorted next))]
              ;; leave only nodes with no other incoming edges
+             [seen (append next sorted)] ; important for cycles
              [next* (filter (lambda (node)
-                              (andmap (lambda (e) (memq (edge-caller e) sorted))
+                              (andmap (lambda (e) (memq (edge-caller e) seen))
                                       (node-callers node)))
                             next)]
              ;; but if all nodes have other incoming edges, then there must be
@@ -74,32 +75,3 @@
              ;; apply sublevel
              [next (if sublevel (sublevel next) next)])
         (loop next (append (reverse next) sorted))))))
-#|
-(define-syntax-rule (letnodes [id ...] body ...)
-  (let ([id (make-node 'id #f '() 0 0 '() '())] ...) body ...))
-(define (X . -> . Y)
-  (let ([e (make-edge 0 X 0 Y 0)])
-    (set-node-callers! Y (cons e (node-callers Y)))
-    (set-node-callees! X (cons e (node-callees X)))))
-(letnodes [A B C]
-  (A . -> . B)
-  (B . -> . C)
-  (equal? (topological-sort A values)
-          (list A B C)))
-(letnodes [A B C]
-  ;; check that a cycle doesn't lead to dropping nodes
-  (A . -> . B)
-  (A . -> . C)
-  (B . -> . A)
-  (B . -> . C)
-  (C . -> . A)
-  (C . -> . B)
-  (null? (remq* (topological-sort A values) (list A B C))))
-(letnodes [A B C D]
-  (A . -> . B)
-  (B . -> . C)
-  (C . -> . D)
-  (A . -> . D)
-  (equal? (topological-sort A values)
-          (list A B C D)))
-|#
