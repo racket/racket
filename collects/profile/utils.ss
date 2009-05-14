@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (provide format-percent format-source get-hidden)
-(require "analyzer.ss")
+(require "structs.ss")
 
 ;; Format a percent number, possibly doing the division too.  If we do the
 ;; division, then be careful: if we're dividing by zero, then make the result
