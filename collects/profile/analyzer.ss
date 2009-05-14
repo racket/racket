@@ -144,30 +144,57 @@
      nodes
      *-node)))
 
-;; A simple topological sort of nodes using BFS, starting from node `x' which
-;; will be the special *-node.  `subsort' is a `resolver' function to sort
-;; nodes on the same level.
+;; A simple topological sort of nodes using BFS, starting from node `x' (which
+;; will be given as the special *-node).  `subsort' is a `resolver' function to
+;; sort nodes on the same level.
 (define (topological-sort x subsort)
-  (let loop ([todo (list x)] [seen (list x)])
+  (let loop ([todo (list x)] [sorted (list x)])
     (if (null? todo)
-      '()
-      (let* ([next (append-map (lambda (x)
-                                 (subsort (map edge-callee (node-callees x))))
+      (reverse sorted)
+      (let* (;; take the next level of nodes
+             [next (append-map (lambda (x) (map edge-callee (node-callees x)))
                                todo)]
-             [next (remq* seen (remove-duplicates next))])
-        (append todo (loop next (append next seen)))))))
+             ;; remove visited and duplicates
+             [next (remove-duplicates (remq* sorted next))]
+             ;; leave only nodes with no other incoming edges
+             [next* (filter (lambda (node)
+                              (andmap (lambda (e) (memq (edge-caller e) sorted))
+                                      (node-callers node)))
+                            next)]
+             ;; but if all nodes have other incoming edges, then there must be
+             ;; a cycle, so just do them now (instead of dropping them)
+             [next (if (and (null? next*) (pair? next)) next next*)]
+             ;; sort using subsort
+             [next (subsort next)])
+        (loop next (append (reverse next) sorted))))))
 #|
-(define (node id) (make-node id #f '() 0 0 '() '()))
+(define-syntax-rule (letnodes [id ...] body ...)
+  (let ([id (make-node 'id #f '() 0 0 '() '())] ...) body ...))
 (define (X . -> . Y)
   (let ([e (make-edge 0 X 0 Y 0)])
     (set-node-callers! Y (cons e (node-callers Y)))
     (set-node-callees! X (cons e (node-callees X)))))
-(define A (node 'A))
-(define B (node 'B))
-(define C (node 'C))
-(A . -> . B)
-(B . -> . C)
-(topological-sort A 3)
+(letnodes [A B C]
+  (A . -> . B)
+  (B . -> . C)
+  (equal? (topological-sort A values)
+          (list A B C)))
+(letnodes [A B C]
+  ;; check that a cycle doesn't lead to dropping nodes
+  (A . -> . B)
+  (A . -> . C)
+  (B . -> . A)
+  (B . -> . C)
+  (C . -> . A)
+  (C . -> . B)
+  (null? (remq* (topological-sort A values) (list A B C))))
+(letnodes [A B C D]
+  (A . -> . B)
+  (B . -> . C)
+  (C . -> . D)
+  (A . -> . D)
+  (equal? (topological-sort A values)
+          (list A B C D)))
 |#
 
 ;; Groups raw samples by their thread-id, returns a vector with a field for
