@@ -716,7 +716,7 @@
         
         [tc-e/t (ann (lambda (x) x) (All (a) (a -> a)))
                 (-poly (a) (a . -> . a))]
-        
+        [tc-e (apply values (list 1 2 3)) #:ret (ret (list -Integer -Integer -Integer))]
         #;[tc-err (let: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                         (fact 20))]
         
