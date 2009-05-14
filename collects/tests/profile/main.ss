@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require tests/eli-tester profile/analyzer scheme/match scheme/list)
+(require tests/eli-tester profile/structs profile/analyzer
+         scheme/match scheme/list)
 
 (define A '(A . #f))
 (define B '(B . #f))
