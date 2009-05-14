@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require tests/eli-tester profile/structs profile/analyzer
-         scheme/match scheme/list)
+         scheme/match scheme/list "topsort.ss")
 
 (define A '(A . #f))
 (define B '(B . #f))
@@ -36,6 +36,8 @@
     ,@(map node->sexpr (cons (profile-*-node prof) (profile-nodes prof)))))
 
 (test
+
+ do (topological-sort-tests)
 
  (match (analyze `(10
                    [0 0 ,A]
