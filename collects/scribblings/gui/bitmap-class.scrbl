@@ -125,7 +125,7 @@ Returns @scheme[#f] if the bitmap is monochrome, @scheme[#t] otherwise.
 
 }
 
-@defmethod[(load-file [name pat-string?]
+@defmethod[(load-file [name path-string?]
                       [kind (one-of/c 'unknown 'unknown/mask 
                                       'gif 'gif/mask 'jpeg 'png 'png/mask 
                                       'xbm 'xpm 'bmp 'pict)
@@ -188,7 +188,7 @@ Returns @scheme[#t] if the bitmap is usable (created or changed
 
 }
 
-@defmethod[(save-file [name pat-string?]
+@defmethod[(save-file [name path-string?]
                       [kind (one-of/c 'png 'jpeg 'xbm 'xpm 'bmp)]
                       [quality (integer-in 0 100) 75])
            boolean?]{
