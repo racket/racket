@@ -12,6 +12,7 @@
  "module-tests.ss" ;; pass
  "subst-tests.ss" ;; pass
  "infer-tests.ss" ;; pass
+ "contract-tests.ss"
  )
 
 (require (r:infer infer infer-dummy)
@@ -35,7 +36,8 @@
                   parse-type-tests
                   type-annotation-tests
                   module-tests
-                  fv-tests)])
+                  fv-tests
+                  contract-tests)])
      (f))))
 
 
