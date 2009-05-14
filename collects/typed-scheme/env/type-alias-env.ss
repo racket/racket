@@ -31,8 +31,6 @@
   (mapping-put! id (make-unresolved stx #f)))
 
 (define (register-resolved-type-alias id ty)
-  #;(when (eq? 'Number (syntax-e id))
-    (printf "registering type ~a ~a~n~a~n" id (syntax-e id) ty))
   (mapping-put! id (make-resolved ty)))
 
 (define (lookup-type-alias id parse-type [k (lambda () (tc-error "Unknown type alias: ~a" (syntax-e id)))])

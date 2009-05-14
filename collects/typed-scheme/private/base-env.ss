@@ -259,10 +259,12 @@
 
 [apply        (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
 [kernel:apply (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
-[time-apply (-polydots (b a) (make-arr
-                              (list ((list) (a a) . ->... . b)
-                                    (-lst a))                               
-                              (-values (list (-pair b (-val '())) N N N))))]
+[time-apply (-polydots (b a) 
+		       (make-Function 
+			(list (make-arr
+			       (list ((list) (a a) . ->... . b)
+				     (-lst a))                               
+			       (-values (list (-pair b (-val '())) N N N))))))]
 
 [call/cc (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]
 [call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (Un a b)))]

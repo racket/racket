@@ -137,6 +137,10 @@
      (unless (andmap subtype t1 t2)
        (tc-error/expr "1 Expected ~a, but got ~a" t2 t1))
      expected]
+    [((tc-results: t1 f o dty dbound) (tc-results: t2 f o dty dbound))
+     (unless (andmap subtype t1 t2)
+       (tc-error/expr "1.5 Expected ~a, but got ~a" t2 t1))
+     expected]
     [((tc-result1: t1 f o) (? Type? t2))
      (unless (subtype t1 t2)
        (tc-error/expr "1 Expected ~a, but got ~a" t2 t1))

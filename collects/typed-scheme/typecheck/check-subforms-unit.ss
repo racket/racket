@@ -61,7 +61,8 @@
         [stx
          ;; this is a hander function
          (syntax-property form 'typechecker:exn-handler)
-         (tc-expr/check form (-> (Un) expected))]
+         (tc-expr/check form (match expected 
+                               [(tc-result1: e) (ret (-> (Un) e))]))]
         [stx
          ;; this is the body of the with-handlers
          (syntax-property form 'typechecker:exn-body)
@@ -71,7 +72,7 @@
            (loop #'a)
            (loop #'b))]
         [_ (void)])))
-  (ret expected))
+  expected)
 
 ;; typecheck the expansion of a with-handlers form
 ;; syntax -> any

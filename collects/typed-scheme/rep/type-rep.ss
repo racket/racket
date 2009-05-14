@@ -10,30 +10,31 @@
 
 (define name-table (make-weak-hasheq))
 
-(define Type/c
-  (flat-named-contract
-   'Type
+(define Type/c?
    (λ (e)
      (and (Type? e)
           (not (Scope? e))
           (not (arr? e))
           (not (Values? e))
           (not (ValuesDots? e))
-          (not (Result? e))))))
+          (not (Result? e)))))
+
+(define Type/c
+  (flat-named-contract 'Type Type/c?))
 
 ;; Name = Symbol
 
 ;; Type is defined in rep-utils.ss
 
 ;; t must be a Type
-(dt Scope ([t Type?]) [#:key (Type-key t)])
+(dt Scope ([t (or/c Type/c Scope?)]) [#:key (Type-key t)])
 
 (define (scope-depth k)
   (flat-named-contract 
    (format "Scope of depth ~a" k)
    (lambda (sc)
      (define (f k sc)
-       (cond [(= 0 k) (not (Scope? sc))]
+       (cond [(= 0 k) (Type/c? sc)]
              [(not (Scope? sc)) #f]
              [else (f (sub1 k) (Scope-t sc))]))
      (f k sc))))

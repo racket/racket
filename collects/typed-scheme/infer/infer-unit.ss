@@ -498,7 +498,7 @@
            [cs (cset-meet cs-short cs-dotted*)])
       (if (not expected)
           (subst-gen cs R must-vars)
-          (cset-meet cs (cgen null X R expected))))))
+          (subst-gen (cset-meet cs (cgen null X R expected)) R must-vars)))))
 
 (define (infer/simple S T R)
   (infer (fv/list T) S T R))

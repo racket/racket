@@ -146,7 +146,7 @@
 ;; (or/c Values? ValuesDots?) listof[identifier] -> tc-results?
 (define (values->tc-results tc formals)
   (match tc
-    [(ValuesDots: (list (Result: ts lfs los)) dty dbound)
+    [(ValuesDots: (list (Result: ts lfs los) ...) dty dbound)
      (ret ts
           (for/list ([lf lfs]) 
             (merge-filter-sets

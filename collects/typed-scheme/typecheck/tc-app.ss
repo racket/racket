@@ -167,7 +167,9 @@
 
 (define (tc/apply f args)
   (define (do-ret t)
-    (match t [(Values: (list (Result: ts _ _) ...)) (ret ts)]))
+    (match t 
+      [(Values: (list (Result: ts _ _) ...)) (ret ts)]
+      [(ValuesDots: (list (Result: ts _ _) ...) dty dbound) (ret ts (for/list ([t ts]) (-FS null null)) (for/list ([t ts]) (make-Empty)) dty dbound)]))
   (define f-ty (single-value f))
   ;; produces the first n-1 elements of the list, and the last element
   (define (split l) (let-values ([(f r) (split-at l (sub1 (length l)))])
@@ -385,10 +387,10 @@
     [(#%plain-app apply values e)
      (cond [(with-handlers ([exn:fail? (lambda _ #f)])
               (untuple (tc-expr/t #'e)))
-            => (lambda (t) (ret (-values t)))]
+            => ret]
            [else (tc/apply #'values #'(e))])]
     ;; rewrite this so that it takes advantages of all the special cases
-    [(#%plain-app k:apply . args) (tc/app/internal (syntax/loc form (apply . args)) expected)]
+    [(#%plain-app k:apply . args) (tc/app/internal (syntax/loc form (#%plain-app apply . args)) expected)]
     ;; handle apply specially
     [(#%plain-app apply f . args) (tc/apply #'f #'args)]
     ;; special case for `values' with single argument - we just ignore the values, except that it forces arg to return one value
@@ -543,8 +545,8 @@
                      t argtys expected)]
     ;; polymorphic ... type
     [((tc-result1: (and t (PolyDots: 
-                         (and vars (list fixed-vars ... dotted-var))
-                         (Function: (list (and arrs (arr: doms rngs (and #f rests) (cons dtys dbounds) '())) ...)))))
+                           (and vars (list fixed-vars ... dotted-var))
+                           (Function: (list (and arrs (arr: doms rngs (and #f rests) (cons dtys dbounds) '())) ...)))))
       (list (tc-result1: argtys-t) ...))
      (handle-clauses (doms dtys dbounds rngs arrs) f-stx args-stx
                      (lambda (dom dty dbound rng arr) (and (<= (length dom) (length argtys))
@@ -577,8 +579,10 @@
     ;; error type is a perfectly good fcn type
     [((tc-result1: (Error:)) _) (ret (make-Error))]
     ;; otherwise fail
-    [((tc-result1: f-ty) _) (tc-error/expr #:return (ret (Un))
-                                           "Cannot apply expression of type ~a, since it is not a function type" f-ty)]))
+    [((tc-result1: f-ty) _) 
+     ;(printf "ft: ~a argt: ~a~n" ftype0 argtys)
+     (tc-error/expr #:return (ret (Un))
+                    "Cannot apply expression of type ~a, since it is not a function type" f-ty)]))
 
 
 ;; syntax? syntax? arr? (listof tc-results?) (or/c #f tc-results) [boolean?] -> tc-results?
@@ -593,7 +597,7 @@
              [(and rest (< (length t-a) (length dom)))
               (tc-error/expr #:return (ret t-r)
                              "Wrong number of arguments, expected at least ~a and got ~a" (length dom) (length t-a))])
-       (for ([dom-t (in-list-forever dom rest)] [a (syntax->list args-stx)] [arg-t (in-list t-a)])
+       (for ([dom-t (if rest (in-list-forever dom rest) (in-list dom))] [a (syntax->list args-stx)] [arg-t (in-list t-a)])
          (parameterize ([current-orig-stx a]) (check-below arg-t dom-t))))
      (let* (;; Listof[Listof[LFilterSet]]
             [lfs-f (for/list ([lf lf-r])

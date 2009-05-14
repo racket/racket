@@ -23,7 +23,7 @@
 (define-signature check-subforms^
   ([cnt check-subforms/ignore (syntax? . -> . any)]
    [cnt check-subforms/with-handlers (syntax? . -> . any)]
-   [cnt check-subforms/with-handlers/check (syntax? Type/c . -> . any)]))
+   [cnt check-subforms/with-handlers/check (syntax? tc-results? . -> . any)]))
 
 (define-signature tc-if^
   ([cnt tc/if-twoarm (syntax? syntax? syntax? . -> . tc-results?)]   
