@@ -49,10 +49,12 @@
         [else (filter hide? (profile-nodes profile))]))
 
 ;; A simple topological sort of nodes using BFS, starting from node `x' (which
-;; will be given as the special *-node).  `subsort' is a `resolver' function to
-;; sort nodes on the same level.
+;; will be given as the special *-node).  `sublevel' is a function that is
+;; applied on each set of nodes at the same level in turn; can be used as a
+;; `resolver' function to sort nodes on the same level, or to get a graphical
+;; layout.
 (provide topological-sort)
-(define (topological-sort x subsort)
+(define (topological-sort x [sublevel #f])
   (let loop ([todo (list x)] [sorted (list x)])
     (if (null? todo)
       (reverse sorted)
@@ -69,8 +71,8 @@
              ;; but if all nodes have other incoming edges, then there must be
              ;; a cycle, so just do them now (instead of dropping them)
              [next (if (and (null? next*) (pair? next)) next next*)]
-             ;; sort using subsort
-             [next (subsort next)])
+             ;; apply sublevel
+             [next (if sublevel (sublevel next) next)])
         (loop next (append (reverse next) sorted))))))
 #|
 (define-syntax-rule (letnodes [id ...] body ...)
