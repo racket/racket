@@ -342,4 +342,5 @@ namespace.
     advanced-cons
     advanced-list*
     advanced-append
-    cyclic-list?))
+    cyclic-list?)
+)
