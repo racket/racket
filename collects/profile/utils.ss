@@ -48,30 +48,26 @@
         [(zero? total-time) (profile-nodes profile)]
         [else (filter hide? (profile-nodes profile))]))
 
-;; A simple topological sort of nodes using BFS, starting from node `x' (which
-;; will be given as the special *-node).  `sublevel' is a function that is
-;; applied on each set of nodes at the same level in turn; can be used as a
-;; `resolver' function to sort nodes on the same level, or to get a graphical
-;; layout.
+;; A simple topological sort of nodes using the Khan method, starting
+;; from node `x' (which will be given as the special *-node).  The
+;; result is a list of node lists, each one corresponds to one level.
 (provide topological-sort)
-(define (topological-sort x [sublevel #f])
-  (let loop ([todo (list x)] [sorted (list x)])
-    (if (null? todo)
-      (reverse sorted)
-      (let* (;; take the next level of nodes
-             [next (append-map (lambda (x) (map edge-callee (node-callees x)))
-                               todo)]
-             ;; remove visited and duplicates
-             [next (remove-duplicates (remq* sorted next))]
-             ;; leave only nodes with no other incoming edges
-             [seen (append next sorted)] ; important for cycles
-             [next* (filter (lambda (node)
-                              (andmap (lambda (e) (memq (edge-caller e) seen))
-                                      (node-callers node)))
-                            next)]
-             ;; but if all nodes have other incoming edges, then there must be
-             ;; a cycle, so just do them now (instead of dropping them)
-             [next (if (and (null? next*) (pair? next)) next next*)]
-             ;; apply sublevel
-             [next (if sublevel (sublevel next) next)])
-        (loop next (append (reverse next) sorted))))))
+(define (topological-sort x)
+  (let loop ([todo (list x)] [sorted (list (list x))] [seen (list x)])
+    (let* (;; take the next level of nodes
+           [next (append-map (lambda (x) (map edge-callee (node-callees x)))
+                             todo)]
+           ;; remove visited and duplicates
+           [next (remove-duplicates (remq* seen next))]
+           ;; leave only nodes with no other incoming edges
+           [seen* (append next seen)] ; important for cycles
+           [next* (filter (lambda (node)
+                            (andmap (lambda (e) (memq (edge-caller e) seen*))
+                                    (node-callers node)))
+                          next)]
+           ;; but if all nodes have other incoming edges, then there must be a
+           ;; cycle, so just do them now (instead of dropping them)
+           [next (if (null? next*) next next*)])
+      (if (null? next)
+        (reverse sorted)
+        (loop next (cons next sorted) (append next seen))))))

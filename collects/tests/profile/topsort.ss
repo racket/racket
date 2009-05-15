@@ -1,52 +1,57 @@
 #lang scheme/base
 
-(require tests/eli-tester profile/structs profile/utils)
+(require tests/eli-tester profile/structs profile/utils
+         scheme/list scheme/match)
 
 (define (connect! from to)
-  (define e (make-edge 0 from 0 to 0))
-  (set-node-callers! to   (cons e (node-callers to  )))
-  (set-node-callees! from (cons e (node-callees from))))
+  (define edge (make-edge 0 from 0 to 0))
+  (set-node-callers! to   (cons edge (node-callers to  )))
+  (set-node-callees! from (cons edge (node-callees from))))
 
-(define-syntax with-graph
-  (syntax-rules (->)
-    [(_ [] <from> -> <to> -> more ...)
-     (begin (connect! <from> <to>) (with-graph [] <to> -> more ...))]
-    [(_ [] <from> -> <to> more ...)
-     (begin (connect! <from> <to>) (with-graph [] more ...))]
-    [(_ [] more ...) (begin more ...)]
-    [(_ [<id> ...] more ...)
-     (let ([<id> (make-node '<id> #f '() 0 0 '() '())] ...)
-       (with-graph [] more ...))]))
+(define (sort-graph . edges)
+  (define names (remove-duplicates (remq* '(->) (append* edges))))
+  (define nodes (map (lambda (sym) (make-node sym #f '() 0 0 '() '())) names))
+  (define ->node (make-immutable-hasheq (map cons names nodes)))
+  (for ([edges edges])
+    (let loop ([xs edges])
+      (match xs
+        [(list from '-> to '-> _ ...)
+         (connect! (hash-ref ->node from) (hash-ref ->node to))
+         (loop (cddr xs))]
+        [(list from '-> to _ ...)
+         (connect! (hash-ref ->node from) (hash-ref ->node to))
+         (loop (cdddr xs))]
+        ['() (void)])))
+  (map (lambda (nodes) (map node-id nodes)) (topological-sort (car nodes))))
+
+(define (same-levels graph levels)
+  (define sorted (sort-graph graph))
+  (define (set=? l1 l2) (null? (append (remq* l1 l2) (remq* l2 l1))))
+  (andmap set=? sorted levels))
 
 (provide topological-sort-tests)
 (define (topological-sort-tests)
   (test
 
-    do (with-graph [A B C]
-         A -> B -> C
-         (test (topological-sort A values) => (list A B C)))
+    (same-levels '(A -> B -> C)
+                 '((A) (B) (C)))
 
-    do (with-graph [A B C]
-         ;; check that a cycle doesn't lead to dropping nodes
-         A -> B -> C -> A
-         A -> C -> B -> A
-         (null? (remq* (topological-sort A values) (list A B C))))
+    (same-levels '(A -> B -> C -> A
+                   A -> C -> B -> A)
+                 '((A) (B C)))
 
-    do (with-graph [A B C D]
-         A -> B -> C -> D
-         A -> D
-         (test (topological-sort A values) => (list A B C D)))
+    (same-levels '(A -> B -> C -> D
+                   A -> D)
+                 '((A) (B) (C) (D)))
 
-    do (with-graph [A B C]
-         A -> B
-         A -> C
-         C -> C
-         (test (memq C (topological-sort A))))
+    (same-levels '(A -> B
+                   A -> C
+                   C -> C)
+                 '((A) (B C)))
 
-    do (with-graph [A B C D]
-         A -> B
-         A -> C -> D
-         A -> D -> C
-         (test (memq C (topological-sort A))))
+    (same-levels '(A -> B
+                   A -> C -> D
+                   A -> D -> C)
+                 '((A) (B C D)))
 
     ))
