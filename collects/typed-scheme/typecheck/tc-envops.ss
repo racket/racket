@@ -31,7 +31,7 @@
      (make-Pair (update t (make-TypeFilter u rst x)) s)]
     [((Pair: t s) (NotTypeFilter: u (list* (CarPE:) rst) x))
      (make-Pair (update t (make-NotTypeFilter u rst x)) s)]
-    [((Pair: t s) (TypeFilter: u (list* (CarPE:) rst) x))
+    [((Pair: t s) (TypeFilter: u (list* (CdrPE:) rst) x))
      (make-Pair t (update s (make-TypeFilter u rst x)))]
     [((Pair: t s) (NotTypeFilter: u (list* (CdrPE:) rst) x))
      (make-Pair t (update s (make-NotTypeFilter u rst x)))]
@@ -49,7 +49,7 @@
      (restrict t u)]
     [(t (NotTypeFilter: u (list) _))
      (remove t u)]
-    [(_ _)
+    [(t lo)
      (int-err "update along ill-typed path: ~a ~a" t lo)]))
 
 (define/contract (env+ env fs)
