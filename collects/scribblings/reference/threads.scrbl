@@ -199,7 +199,9 @@ Returns a @tech{synchronizable event} (see @secref["sync"]) that is
 ready if and only if @scheme[thd] has terminated.  Unlike using
 @scheme[thd] directly, however, a reference to the event does not
 prevent @scheme[thd] from being garbage collected (see
-@secref["gc-model"]).}
+@secref["gc-model"]). For a given @scheme[thd],
+@scheme[thread-dead-evt] always returns the same (i.e., @scheme[eq?])
+result.}
 
 @defproc[(thread-resume-evt [thd thread?]) evt?]{
 
