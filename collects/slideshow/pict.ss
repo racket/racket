@@ -89,7 +89,7 @@
                              #:under? [under? #f]
                              #:solid? [solid? #t]
                              #:hide-arrowhead? [hide-arrowhead? #f])
-      (if (not sa ea)
+      (if (not (or sa ea))
           (finish-pin (launder (t:pin-arrows-line sz (ghost p)
                                                   src src-find 
                                                   dest dest-find
