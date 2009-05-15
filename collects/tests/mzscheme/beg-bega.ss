@@ -44,3 +44,15 @@
 
 (htdp-top-pop 1)
 (htdp-teachpack-pop)
+
+(htdp-err/rt-test (+) exn:application:arity?)
+(htdp-err/rt-test (+ 1) exn:application:arity?)
+(htdp-err/rt-test (*) exn:application:arity?)
+(htdp-err/rt-test (* 1) exn:application:arity?)
+(htdp-err/rt-test (-) exn:application:arity?)
+(htdp-err/rt-test (/) exn:application:arity?)
+(htdp-err/rt-test (/ 1) exn:application:arity?)
+
+(err/rt-test (+) exn:application:arity?)
+
+

@@ -11,6 +11,6 @@
 (test 'id f11 'id)
 
 (err/rt-test (1 2 3))
-(err/rt-test (+) exn:application:arity?)
+
 
 

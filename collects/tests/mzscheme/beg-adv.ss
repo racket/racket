@@ -133,14 +133,6 @@
 (htdp-test #t 'eq? (eq? #t true))
 (htdp-test #t 'eq? (eq? #f false))
 
-(htdp-err/rt-test (+) exn:application:arity?)
-(htdp-err/rt-test (+ 1) exn:application:arity?)
-(htdp-err/rt-test (*) exn:application:arity?)
-(htdp-err/rt-test (* 1) exn:application:arity?)
-(htdp-err/rt-test (-) exn:application:arity?)
-(htdp-err/rt-test (/) exn:application:arity?)
-(htdp-err/rt-test (/ 1) exn:application:arity?)
-
 (htdp-test -9 '- (- 9))
 
 (htdp-top (define-struct an-example-structure (first-field second-field)))
