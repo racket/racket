@@ -33,25 +33,25 @@
 (define (topological-sort-tests)
   (test
 
-    (same-levels '(A -> B -> C)
+    (same-levels '(* -> A -> B)
+                 '((A) (B)))
+
+    (same-levels '(* -> A -> B -> *
+                   * -> B -> A -> *)
+                 '((A B)))
+
+    (same-levels '(* -> A -> B -> C
+                   * -> C)
                  '((A) (B) (C)))
 
-    (same-levels '(A -> B -> C -> A
-                   A -> C -> B -> A)
-                 '((A) (B C)))
+    (same-levels '(* -> A
+                   * -> B
+                   B -> B)
+                 '((A B)))
 
-    (same-levels '(A -> B -> C -> D
-                   A -> D)
-                 '((A) (B) (C) (D)))
-
-    (same-levels '(A -> B
-                   A -> C
-                   C -> C)
-                 '((A) (B C)))
-
-    (same-levels '(A -> B
-                   A -> C -> D
-                   A -> D -> C)
-                 '((A) (B C D)))
+    (same-levels '(* -> A
+                   * -> B -> C
+                   * -> C -> B)
+                 '((A B C)))
 
     ))

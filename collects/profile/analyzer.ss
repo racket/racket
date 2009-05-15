@@ -78,10 +78,8 @@
   (set-node-total! *-node total-time)
   ;; convert the nodes from the hash to a list, do a topological sort, and then
   ;; sort by total time (combining both guarantees(?) sensible order)
-  (let* ([nodes (topological-sort *-node)]
-         [nodes (append-map (lambda (nodes) (sort nodes > #:key node-total))
-                            nodes)]
-         [nodes (remq *-node nodes)])
+  (let ([nodes (append-map (lambda (nodes) (sort nodes > #:key node-total))
+                           (topological-sort *-node))])
     ;; sort all the edges in the nodes according to total time
     (for ([n (in-list nodes)])
       (set-node-callees! n (sort (node-callees n) > #:key edge-callee-time))

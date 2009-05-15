@@ -48,12 +48,13 @@
         [(zero? total-time) (profile-nodes profile)]
         [else (filter hide? (profile-nodes profile))]))
 
-;; A simple topological sort of nodes using the Khan method, starting
-;; from node `x' (which will be given as the special *-node).  The
-;; result is a list of node lists, each one corresponds to one level.
+;; A simple topological sort of nodes using the Khan method, starting from node
+;; `x' (which will be given as the special *-node).  The result is a list of
+;; node lists, each one corresponds to one level.  Conceptually, the input node
+;; is always only item in the first level, so it is not included in the result.
 (provide topological-sort)
 (define (topological-sort x)
-  (let loop ([todo (list x)] [sorted (list (list x))] [seen (list x)])
+  (let loop ([todo (list x)] [sorted '()] [seen (list x)])
     (let* (;; take the next level of nodes
            [next (append-map (lambda (x) (map edge-callee (node-callees x)))
                              todo)]
