@@ -555,8 +555,8 @@
                        (infer/dots fixed-vars dotted-var argtys-t dom dty rng (fv rng) #:expected (and expected (tc-results->values expected))))
                      t argtys expected)]
     ;; procedural structs
-    [(tc-result1: (and sty (Struct: _ _ _ (? Type? proc-ty) _ _ _)))
-     (tc/funapp f-stx (cons (syntax/loc f-stx dummy) args-stx) (ret proc-ty) (cons sty argtys) expected)]
+    [((tc-result1: (and sty (Struct: _ _ _ (? Function? proc-ty) _ _ _))) _)
+     (tc/funapp f-stx #`(#,(syntax/loc f-stx dummy) . #,args-stx) (ret proc-ty) (cons ftype0 argtys) expected)]
     ;; parameters are functions too
     [((tc-result1: (Param: in out)) (list)) (ret out)]
     [((tc-result1: (Param: in out)) (list (tc-result1: t)))

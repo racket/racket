@@ -303,10 +303,14 @@
 		   v))]
 	      [(list (Name: n) other)
 	       (let ([t (lookup-type-name n)])
-					;(printf "subtype: name: ~a ~a ~a~n" (syntax-e n) t other)
 		 (if (Type? t)                     
 		     (subtype* A0 t other)
 		     (fail! s t)))]
+              [(list other (Name: n))
+	       (let ([t (lookup-type-name n)])
+		 (if (Type? t)                     
+		     (subtype* A0 other t)
+		     (fail! t s)))]
 	      ;; Promises are covariant
 	      [(list (Struct: 'Promise _ (list t) _ _ _ _) (Struct: 'Promise _ (list t*) _ _ _ _)) (subtype* A0 t t*)]
 	      ;; subtyping on values is pointwise
