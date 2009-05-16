@@ -7,7 +7,8 @@
 
   (provide-and-document
    procedures
-   (all-from beginner: lang/private/beginner-funs procedures)
+   (all-from-except beginner: lang/private/beginner-funs procedures
+                    + * - /)
 
    ("Numbers (relaxed conditions)"
     
