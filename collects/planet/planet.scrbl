@@ -38,7 +38,7 @@ how to use PLaneT by example.
 
 @subsection[#:tag "finding-a-package"]{Finding a Package}
 
-If you are new to PLaneT, the first thing to to is visit
+If you are new to PLaneT, the first thing to do is visit
 @link["http://planet.plt-scheme.org/"]{the PLaneT repository web site}
 and see what packages are available. People contribute new PLaneT
 packages all the time --- if you want to be notified whenever a new or
