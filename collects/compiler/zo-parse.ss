@@ -505,6 +505,7 @@
 (define-form-struct wrap ())
 (define-form-struct (lexical-rename wrap) (alist))
 (define-form-struct (phase-shift wrap) (amt src dest))
+(define-form-struct (prune wrap) (sym))
 (define-form-struct (module-rename wrap) (phase kind set-id unmarshals renames mark-renames plus-kern?))
 
 (define-form-struct all-from-module (path phase src-phase exceptions prefix))
@@ -691,6 +692,7 @@
                  '(#%mark-barrier)]
                 [(box? a)
                  (match (unbox a)
+                   [(list (? symbol?) ...) (make-prune (unbox a))]
                    [`#(,amt ,src ,dest #f)
                     (make-phase-shift amt 
                                       (parse-module-path-index cp src)
