@@ -65,6 +65,7 @@ static Scheme_Object *module_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_trans_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_templ_binding(int argc, Scheme_Object **argv);
 static Scheme_Object *module_label_binding(int argc, Scheme_Object **argv);
+static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv);
 static Scheme_Object *syntax_src_module(int argc, Scheme_Object **argv);
 
 static Scheme_Object *syntax_recertify(int argc, Scheme_Object **argv);
@@ -99,6 +100,8 @@ static THREAD_LOCAL Scheme_Object *unsealed_dependencies;
 
 static THREAD_LOCAL Scheme_Hash_Table *id_marks_ht; /* a cache */
 static THREAD_LOCAL Scheme_Hash_Table *than_id_marks_ht; /* a cache */
+
+static Scheme_Bucket_Table *interned_skip_ribs; /* FIXME: shared among threads */
 
 static Scheme_Object *no_nested_inactive_certs;
 
@@ -222,6 +225,18 @@ static Module_Renames *krn;
 #define SCHEME_MODIDXP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_module_index_type))
 #define SCHEME_RIB_DELIMP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_rib_delimiter_type))
 
+#define SCHEME_PRUNEP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_prune_context_type))
+
+XFORM_NONGCING static int is_member(Scheme_Object *a, Scheme_Object *l)
+{
+  while (SCHEME_PAIRP(l)) {
+    if (SAME_OBJ(a, SCHEME_CAR(l)))
+      return 1;
+    l = SCHEME_CDR(l);
+  }
+  return 0;
+}
+
 static int is_rename_inspector_info(Scheme_Object *v)
 {
   return (SAME_TYPE(SCHEME_TYPE(v), scheme_inspector_type)
@@ -276,6 +291,10 @@ static int is_rename_inspector_info(Scheme_Object *v)
          environment past the end delimiter; this is used by `local-expand'
          when given a list of ribs, and simplifcation eliminates
          rib delimiters
+
+   - A wrap-elem (make-prune <sym>)
+         restricts binding information to that relevant for <sym>
+         as a datum
 
    - A wrap-elem <rename-table> is a module rename set
          the hash table maps renamed syms to modname-srcname pairs
@@ -548,6 +567,11 @@ void scheme_init_stx(Scheme_Env *env)
 						    "identifier-label-binding",
 						    1, 1),
 			     env);
+  scheme_add_global_constant("identifier-prune-lexical-context", 
+			     scheme_make_immed_prim(identifier_prune,
+						    "identifier-prune-lexical-context",
+						    1, 2),
+			     env);
 
 
   scheme_add_global_constant("syntax-source-module", 
@@ -610,6 +634,9 @@ void scheme_init_stx(Scheme_Env *env)
 
   scheme_install_type_writer(scheme_free_id_info_type, write_free_id_info_prefix);
   scheme_install_type_reader(scheme_free_id_info_type, read_free_id_info_prefix);
+
+  REGISTER_SO(interned_skip_ribs);
+  interned_skip_ribs = scheme_make_weak_equal_table();
 }
 
 /*========================================================================*/
@@ -1213,6 +1240,17 @@ Scheme_Object *scheme_stx_id_remove_rib(Scheme_Object *stx, Scheme_Object *ro)
   ((Scheme_Stx *)stx)->wraps = v;
   
   return stx;
+}
+
+static Scheme_Object *make_prune_context(Scheme_Object *a)
+{
+  Scheme_Object *p;
+
+  p = scheme_alloc_small_object();
+  p->type = scheme_prune_context_type;
+  SCHEME_BOX_VAL(p) = a;
+
+  return p;
 }
 
 /******************** module renames ********************/
@@ -3866,12 +3904,12 @@ static int nonempty_rib(Scheme_Lexical_Rib *rib)
 
 static int in_skip_set(Scheme_Object *timestamp, Scheme_Object *skip_ribs)
 {
-  while (skip_ribs) {
-    if (SAME_OBJ(SCHEME_CAR(skip_ribs), timestamp))
-      return 1;
-    skip_ribs = SCHEME_CDR(skip_ribs);
-  }
-
+  if (!skip_ribs)
+    return 0;
+  
+  if (scheme_hash_tree_get((Scheme_Hash_Tree *)skip_ribs, timestamp))
+    return 1;
+  
   return 0;
 }
 
@@ -3879,20 +3917,29 @@ static Scheme_Object *add_skip_set(Scheme_Object *timestamp, Scheme_Object *skip
 {
   if (in_skip_set(timestamp, skip_ribs))
     return skip_ribs;
-  else
-    return scheme_make_raw_pair(timestamp, skip_ribs);
+  
+  if (!skip_ribs)
+    skip_ribs = (Scheme_Object *)scheme_make_hash_tree(1);
+  
+  skip_ribs = (Scheme_Object *)scheme_hash_tree_set((Scheme_Hash_Tree *)skip_ribs, timestamp, scheme_true);
+
+  {
+    Scheme_Bucket *b;
+    scheme_start_atomic();
+    b = scheme_bucket_from_table(interned_skip_ribs, (const char *)skip_ribs);
+    scheme_end_atomic_no_swap();
+    if (!b->val)
+      b->val = scheme_true;
+
+    skip_ribs = (Scheme_Object *)HT_EXTRACT_WEAK(b->key);
+  }
+
+  return skip_ribs;
 }
 
 XFORM_NONGCING static int same_skipped_ribs(Scheme_Object *a, Scheme_Object *b)
 {
-  while (a) {
-    if (!b) return 0;
-    if (!SAME_OBJ(SCHEME_CAR(a), SCHEME_CAR(b)))
-      return 0;
-    a = SCHEME_CDR(a);
-    b = SCHEME_CDR(b);
-  }
-  return !b;
+  return SAME_OBJ(a, b);
 }
 
 XFORM_NONGCING static Scheme_Object *filter_cached_env(Scheme_Object *other_env, Scheme_Object *skip_ribs)
@@ -3913,8 +3960,9 @@ XFORM_NONGCING static Scheme_Object *filter_cached_env(Scheme_Object *other_env,
   if (SCHEME_RPAIRP(other_env)) {
     while (other_env) {
       p = SCHEME_CAR(other_env);
-      if (same_skipped_ribs(SCHEME_CAR(p), skip_ribs))
+      if (same_skipped_ribs(SCHEME_CAR(p), skip_ribs)) {
         return SCHEME_CDR(p);
+      }
       other_env = SCHEME_CDR(other_env);
     }
     return scheme_void;
@@ -3976,6 +4024,36 @@ static Scheme_Object *extend_cached_env(Scheme_Object *orig, Scheme_Object *othe
   }
 
   return orig;
+}
+
+static void extract_lex_range(Scheme_Object *rename, Scheme_Object *a, int *_istart, int *_iend)
+{
+  int istart, iend, c;
+
+  c = SCHEME_RENAME_LEN(rename);
+
+  if (!SCHEME_FALSEP(SCHEME_VEC_ELS(rename)[1])) {
+    void *pos;
+    pos = scheme_hash_get((Scheme_Hash_Table *)(SCHEME_VEC_ELS(rename)[1]), a);
+    if (pos) {
+      istart = SCHEME_INT_VAL(pos);
+      if (istart < 0) {
+        /* -1 indicates multiple slots matching this name. */
+        istart = 0;
+        iend = c;
+      } else
+        iend = istart + 1;
+    } else {
+      istart = 0;
+      iend = 0;
+    }
+  } else {
+    istart = 0;
+    iend = c;
+  }
+
+  *_istart = istart;
+  *_iend = iend;
 }
 
 /* This needs to be a multiple of 4: */
@@ -4426,6 +4504,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
       } else {
 	rename = WRAP_POS_FIRST(wraps);
 	is_rib = NULL;
+        did_rib = NULL;
       }
 
       EXPLAIN(fprintf(stderr, "%d lexical rename (%d) %d %s%s\n", depth, is_rib ? 1 : 0,
@@ -4436,25 +4515,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
       c = SCHEME_RENAME_LEN(rename);
 
       /* Get index from hash table, if there is one: */
-      if (!SCHEME_FALSEP(SCHEME_VEC_ELS(rename)[1])) {
-	void *pos;
-	pos = scheme_hash_get((Scheme_Hash_Table *)(SCHEME_VEC_ELS(rename)[1]), SCHEME_STX_VAL(a));
-	if (pos) {
-	  istart = SCHEME_INT_VAL(pos);
-	  if (istart < 0) {
-	    /* -1 indicates multiple slots matching this name. */
-	    istart = 0;
-	    iend = c;
-	  } else
-	    iend = istart + 1;
-	} else {
-	  istart = 0;
-	  iend = 0;
-	}
-      } else {
-	istart = 0;
-	iend = c;
-      }
+      extract_lex_range(rename, SCHEME_STX_VAL(a), &istart, &iend);
 
       for (ri = istart; ri < iend; ri++) {
 	renamed = SCHEME_VEC_ELS(rename)[2+ri];
@@ -4591,6 +4652,7 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
       rib_delim = WRAP_POS_FIRST(wraps);
       if (SCHEME_NULLP(SCHEME_BOX_VAL(rib_delim)))
         rib_delim = scheme_false;
+      did_rib = NULL;
     } else if (SCHEME_NUMBERP(WRAP_POS_FIRST(wraps))) {
       EXPLAIN(fprintf(stderr, "%d mark %p\n", depth, WRAP_POS_FIRST(wraps)));
       did_rib = NULL;
@@ -4612,6 +4674,11 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	set_wraps_to_skip(ht, &wraps);
 
 	continue; /* <<<<< ------ */
+      }
+    } else if (SCHEME_PRUNEP(WRAP_POS_FIRST(wraps))) {
+      if (!is_member(SCHEME_STX_VAL(a), SCHEME_BOX_VAL(WRAP_POS_FIRST(wraps)))) {
+        /* Doesn't match pruned-to sym; already produce #f */
+        return scheme_false;
       }
     }
 
@@ -4859,6 +4926,11 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
           }
         }
       } while (rib);
+    } else if (SCHEME_PRUNEP(WRAP_POS_FIRST(wraps))) {
+      if (!is_member(SCHEME_STX_VAL(a), SCHEME_BOX_VAL(WRAP_POS_FIRST(wraps)))) {
+        /* Doesn't match pruned-to sym, so no binding */
+        return SCHEME_STX_VAL(a);
+      }
     }
     
     /* Keep looking: */
@@ -5001,8 +5073,8 @@ int scheme_stx_ribs_matter(Scheme_Object *a, Scheme_Object *skip_ribs)
   Scheme_Object *m1, *m2, *skips = NULL;
 
   while (SCHEME_PAIRP(skip_ribs)) {
-    skips = scheme_make_raw_pair(((Scheme_Lexical_Rib *)SCHEME_CAR(skip_ribs))->timestamp,
-                                 skips);
+    skips = add_skip_set(((Scheme_Lexical_Rib *)SCHEME_CAR(skip_ribs))->timestamp,
+                         skips);
     skip_ribs = SCHEME_CDR(skip_ribs);
   }
 
@@ -5521,15 +5593,49 @@ static Scheme_Object *extract_free_id_info(Scheme_Object *id)
   }
 }
 
-static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_cache)
+static int not_in_rename(Scheme_Object *constrain_to_syms, Scheme_Object *rename)
+{
+  int istart, iend, ri;
+  Scheme_Object *renamed, *s;
+
+  while (SCHEME_PAIRP(constrain_to_syms)) {
+  
+    s = SCHEME_CAR(constrain_to_syms);
+    extract_lex_range(rename, s, &istart, &iend);
+    
+    for (ri = istart; ri < iend; ri++) {
+      renamed = SCHEME_VEC_ELS(rename)[2+ri];
+      if (SAME_OBJ(renamed, s))
+        return 0;
+    }
+
+    constrain_to_syms = SCHEME_CDR(constrain_to_syms);
+  }
+  
+  return 1;
+}
+
+static int not_in_rib(Scheme_Object *constrain_to_syms, Scheme_Lexical_Rib *rib)
+{
+  for (rib = rib->next; rib; rib = rib->next) {
+    if (!not_in_rename(constrain_to_syms, rib->rename))
+      return 0;
+  }
+  return 1;
+}
+
+#define EXPLAIN_R(x) /* empty */
+
+static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Table *lex_cache, 
+                                           Scheme_Object *stx_datum)
 {
   WRAP_POS w, prev, w2;
-  Scheme_Object *stack = scheme_null, *key, *old_key, *prec_ribs = NULL, *prev_prec_ribs;
-  Scheme_Object *ribs_stack = scheme_null, *rib_delim = scheme_false;
+  Scheme_Object *stack = scheme_null, *key, *old_key, *prec_ribs, *prev_prec_ribs;
+  Scheme_Object *ribs_stack = scheme_null, *rib_delim = scheme_false, *constrain_to_syms = NULL;
   Scheme_Object *v, *v2, *v2l, *v2rdl, *stx, *name, *svl, *end_mutable = NULL, **v2_rib_delims = NULL, *svrdl;
   Scheme_Lexical_Rib *did_rib = NULL;
   Scheme_Hash_Table *skip_ribs_ht = NULL, *prev_skip_ribs_ht;
-  int copy_on_write, no_rib_mutation = 1;
+  int copy_on_write, no_rib_mutation = 1, rib_count = 0;
   long size, vsize, psize, i, j, pos;
 
   /* Although it makes no sense to simplify the rename table itself,
@@ -5563,25 +5669,81 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
      the symbol and marks. So, we have to compute that summary as we
      go in. */
 
+  if (SCHEME_SYMBOLP(stx_datum)) {
+    /* Search for prunings */
+    WRAP_POS_INIT(w, wraps);
+    old_key = NULL;
+    prec_ribs = NULL;
+    while (!WRAP_POS_END_P(w)) {
+      if (SCHEME_VECTORP(WRAP_POS_FIRST(w))
+          || SCHEME_RIBP(WRAP_POS_FIRST(w))) {
+        /* Lexical rename --- maybe an already-simplified point  */
+        key = WRAP_POS_KEY(w);
+        if (!SAME_OBJ(key, old_key)) {
+          v = scheme_hash_get(lex_cache, key);
+          if (v && SCHEME_HASHTP(v)) {
+            v = scheme_hash_get((Scheme_Hash_Table *)v, prec_ribs ? prec_ribs : scheme_false);
+          } else if (prec_ribs)
+            v = NULL;
+        } else
+          v = NULL;
+        old_key = key;
+
+        if (v) {
+          /* Tables here are already simplified. */
+          break;
+        }
+
+        if (SCHEME_RIBP(WRAP_POS_FIRST(w))) {
+          Scheme_Lexical_Rib *rib = (Scheme_Lexical_Rib *)WRAP_POS_FIRST(w);
+          if (!nonempty_rib(rib))
+            prec_ribs = add_skip_set(rib->timestamp, prec_ribs);
+        }
+      } else if (SCHEME_PRUNEP(WRAP_POS_FIRST(w))) {
+        v = SCHEME_BOX_VAL(WRAP_POS_FIRST(w));
+        if (is_member(stx_datum, v)) {
+          if (!constrain_to_syms)
+            constrain_to_syms = v;
+          else {
+            v2 = scheme_null;
+            while (SCHEME_PAIRP(v)) {
+              if (is_member(SCHEME_CAR(v), constrain_to_syms))
+                v2 = scheme_make_pair(SCHEME_CAR(v), v2);
+              v = SCHEME_CDR(v);
+            }
+            constrain_to_syms = v2;
+          }
+        } else
+          constrain_to_syms = scheme_null;
+      }
+      WRAP_POS_INC(w);
+    }
+  }
+
   WRAP_POS_INIT(w, wraps);
   WRAP_POS_INIT_END(prev);
 
   old_key = NULL;
+  prec_ribs = NULL;
 
   v2l = scheme_null;
   v2rdl = NULL;
 
   EXPLAIN_S(fprintf(stderr, "[in simplify]\n"));
 
+  EXPLAIN_R(printf("Simplifying %p\n", lex_cache));
+
   while (!WRAP_POS_END_P(w)) {
     if (SCHEME_VECTORP(WRAP_POS_FIRST(w))
 	|| SCHEME_RIBP(WRAP_POS_FIRST(w))) {
       /* Lexical rename */
       key = WRAP_POS_KEY(w);
+      EXPLAIN_R(printf(" key %p\n", key));
       if (!SAME_OBJ(key, old_key)) {
-        if (!prec_ribs)
-          v = scheme_hash_get(lex_cache, key);
-        else
+        v = scheme_hash_get(lex_cache, key);
+        if (v && SCHEME_HASHTP(v)) {
+          v = scheme_hash_get((Scheme_Hash_Table *)v, prec_ribs ? prec_ribs : scheme_false);
+        } else if (prec_ribs)
           v = NULL;
       } else
 	v = NULL;
@@ -5609,11 +5771,15 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
             return NULL;
           }
           if (SAME_OBJ(did_rib, rib)
-              || !nonempty_rib(rib)) {
+              || !nonempty_rib(rib)
+              || (constrain_to_syms && !not_in_rib(constrain_to_syms, rib))) {
             skip_this = 1;
+            if (!nonempty_rib(rib))
+              prec_ribs = add_skip_set(rib->timestamp, prec_ribs);
             EXPLAIN_S(fprintf(stderr, " to skip %p=%s\n", rib, 
                               scheme_write_to_string(rib->timestamp, NULL)));
           } else {
+            rib_count++;
             did_rib = rib;
             prec_ribs = add_skip_set(rib->timestamp, prec_ribs);
 
@@ -5622,6 +5788,8 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
             EXPLAIN_S(print_skips(prec_ribs));
           
             copy_on_write = 1;
+
+            EXPLAIN_R(printf(" rib %p\n", rib->timestamp));
 
             /* Compute, per id, whether to skip later instances of rib: */
             for (rib = rib->next; rib; rib = rib->next) {
@@ -5636,8 +5804,9 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
                                   scheme_write_to_string(SCHEME_VEC_ELS(rib->rename)[0], NULL)));
 
                 /* already skipped? */
-                if (!skip_ribs_ht
-                    || !scheme_hash_get(skip_ribs_ht, scheme_make_pair(SCHEME_STX_VAL(stx), rib->timestamp))) {
+                if ((!constrain_to_syms || is_member(SCHEME_STX_VAL(stx), constrain_to_syms))
+                    && (!skip_ribs_ht
+                        || !scheme_hash_get(skip_ribs_ht, scheme_make_pair(SCHEME_STX_VAL(stx), rib->timestamp)))) {
                   /* No. Should we skip? */
                   Scheme_Object *other_env;
                   other_env = SCHEME_VEC_ELS(rib->rename)[2+vsize+i];
@@ -5648,6 +5817,11 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
                     if (rib_dep) {
                       scheme_signal_error("compile: unsealed local-definition context found in fully expanded form");
                       return NULL;
+                    }
+                    {
+                      Scheme_Object *e;
+                      e = extend_cached_env(SCHEME_VEC_ELS(rib->rename)[2+vsize+i], other_env, prec_ribs, 0);
+                      SCHEME_VEC_ELS(rib->rename)[2+vsize+i] = e;
                     }
                   }
                   WRAP_POS_INIT(w2, ((Scheme_Stx *)stx)->wraps);
@@ -5678,7 +5852,15 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
 	  if ((SCHEME_VEC_SIZE(v) > 2) /* a simplified vec can be empty */
 	      && !SCHEME_SYMBOLP(SCHEME_VEC_ELS(v)[2])) {
 	    add = 1;
-	  }
+
+            if (constrain_to_syms) {
+              /* Maybe pruned so that we don't need to resolve: */
+              if (not_in_rename(constrain_to_syms, v))
+                skip_this = 1;
+            }
+          }
+          EXPLAIN_R(printf(" lex reset\n"));
+          did_rib = NULL;
 	}
 
 	if (add) {
@@ -5709,10 +5891,30 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
       rib_delim = WRAP_POS_FIRST(w);
       if (SCHEME_NULLP(SCHEME_BOX_VAL(rib_delim)))
         rib_delim = scheme_false;
+      if (rib_count > 1) {
+        EXPLAIN_R(if (did_rib) printf("       reset delim %d\n", rib_count));
+        did_rib = NULL;
+      }
+      rib_count = 0;
+    } else if (SCHEME_NUMBERP(WRAP_POS_FIRST(w))) {
+      v = WRAP_POS_FIRST(w);
+      WRAP_POS_COPY(w2, w);
+      WRAP_POS_INC(w2);
+      if (!WRAP_POS_END_P(w2) && SAME_OBJ(v, WRAP_POS_FIRST(w2))) {
+        WRAP_POS_INC(w);
+      } else {
+        EXPLAIN_R(printf("         reset by mark\n"));
+        did_rib = NULL;
+      }
+    } else {
+      EXPLAIN_R(if (did_rib) printf("       reset %d\n", SCHEME_TYPE(WRAP_POS_FIRST(w))));
+      did_rib = NULL;
     }
-    
+
     WRAP_POS_INC(w);
   }
+
+  EXPLAIN_R(printf(" ... phase2\n"));
 
   while (!SCHEME_NULLP(stack)) {
     key = SCHEME_CAR(stack);
@@ -5803,9 +6005,10 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
 	  name = SCHEME_STX_VAL(stx);
 	  SCHEME_VEC_ELS(v2)[2+pos] = name;
 
-	  if (!rib 
-              || !skip_ribs_ht 
-              || !scheme_hash_get(skip_ribs_ht, scheme_make_pair(name, rib->timestamp))) {
+          if ((!constrain_to_syms || is_member(name, constrain_to_syms))
+              && (!rib
+                  || !skip_ribs_ht 
+                  || !scheme_hash_get(skip_ribs_ht, scheme_make_pair(name, rib->timestamp)))) {
 	    /* Either this name is in prev, in which case the answer
 	       must match this rename's target, or this rename's
 	       answer applies. */
@@ -5838,6 +6041,10 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
                   ok = CONS(other_env, free_id_rename);
                 else
                   ok = other_env;
+                SCHEME_VEC_ELS(v)[2+vvsize+ii] = ok;
+                ok = NULL;
+              } else {
+                ok = extend_cached_env(SCHEME_VEC_ELS(v)[2+vvsize+ii], other_env, prec_ribs, 0);
                 SCHEME_VEC_ELS(v)[2+vvsize+ii] = ok;
                 ok = NULL;
               }
@@ -6044,19 +6251,36 @@ static Scheme_Object *simplify_lex_renames(Scheme_Object *wraps, Scheme_Hash_Tab
       WRAP_POS_DEC(w);
     }
 
-    if (!prev_prec_ribs) {
-      /* no dependency on ribs, so we can globally cache this result */
-      scheme_hash_set(lex_cache, key, v2l);
+    if (!constrain_to_syms) {
+      v = scheme_hash_get(lex_cache, key);
+      if (!v && !prev_prec_ribs) {
+        /* no dependency on ribs, so we can simply cache this result: */
+        scheme_hash_set(lex_cache, key, v2l);
+      } else {
+        Scheme_Hash_Table *ht;
+        if (v && SCHEME_HASHTP(v))
+          ht = (Scheme_Hash_Table *)v;
+        else {
+          ht = scheme_make_hash_table(SCHEME_hash_ptr);
+        }
+        if (v && !SCHEME_HASHTP(v))
+          scheme_hash_set(ht, scheme_false, v);
+        scheme_hash_set(ht, prev_prec_ribs ? prev_prec_ribs : scheme_false, v2l);
+        scheme_hash_set(lex_cache, key, (Scheme_Object *)ht);
+      }
       end_mutable = v2l;
     }
 
     stack = SCHEME_CDR(stack);
   }
 
+  EXPLAIN_R(printf(" ... done\n"));
+
   return v2l;
 }
 
-static Scheme_Object *wraps_to_datum(Scheme_Object *w_in, 
+static Scheme_Object *wraps_to_datum(Scheme_Object *stx_datum,
+                                     Scheme_Object *w_in, 
 				     Scheme_Marshal_Tables *mt,
                                      Scheme_Hash_Table *rns,
 				     int just_simplify)
@@ -6064,7 +6288,7 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
   Scheme_Object *stack, *a, *old_key, *simplifies = scheme_null, *prec_ribs = scheme_null;
   WRAP_POS w;
   Scheme_Hash_Table *lex_cache, *reverse_map;
-  int stack_size = 0;
+  int stack_size = 0, specific_to_datum = 0;
 
   if (!rns)
     rns = mt->rns;
@@ -6098,8 +6322,11 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
     scheme_hash_set(rns, scheme_void, (Scheme_Object *)lex_cache);
   }
 
+  if (!just_simplify)
+    stx_datum = scheme_false;
+
   /* Ensures that all lexical tables in w have been simplified */
-  simplifies = simplify_lex_renames(w_in, lex_cache);
+  simplifies = simplify_lex_renames(w_in, lex_cache, stx_datum);
 
   if (mt)
     scheme_marshal_push_refs(mt);
@@ -6382,6 +6609,16 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
       stack_size++;
     } else if (SCHEME_HASHTP(a)) {
       /* chain-specific cache; drop it */
+    } else if (SCHEME_PRUNEP(a)) {
+      if (SCHEME_SYMBOLP(stx_datum)) {
+        /* Assuming that there are lex renames later, then this chain is
+           specific to this wrap. */
+        specific_to_datum = 1;
+      }
+      if (!just_simplify)
+        a = scheme_box(SCHEME_BOX_VAL(a));
+      stack = CONS(a, stack);
+      stack_size++;
     } else {
       /* box, a phase shift */
       /* We used to drop a phase shift if there are no following
@@ -6459,8 +6696,9 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
         return a;
       }
     }
-    
-    scheme_hash_set(reverse_map, stack, w_in);
+
+    if (!specific_to_datum)
+      scheme_hash_set(reverse_map, stack, w_in);
   }
 
   /* Convert to a chunk if just simplifying.
@@ -6487,7 +6725,8 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
 
   /* Remember this wrap set: */
   if (just_simplify) {
-    scheme_hash_set(rns, w_in, stack);
+    if (!specific_to_datum)
+      scheme_hash_set(rns, w_in, stack);
     return stack;
   } else {
     return scheme_marshal_wrap_set(mt, w_in, stack);
@@ -6670,7 +6909,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
       if (with_marks) {
         v = extract_for_common_wrap(v, 1, 0);
         if (v && SAME_OBJ(common_wraps, v)) {
-          converted_wraps = wraps_to_datum(stx->wraps, mt, NULL, 0);
+          converted_wraps = wraps_to_datum(scheme_false, stx->wraps, mt, NULL, 0);
           if (SAME_OBJ(common_wraps, converted_wraps))
             lift_common_wraps(first, common_wraps, cnt, 1);
           else
@@ -6688,7 +6927,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
 	first = scheme_make_pair(scheme_make_integer(cnt), first);
       }
     } else if (with_marks && SCHEME_TRUEP(common_wraps)) {
-      converted_wraps = wraps_to_datum(stx->wraps, mt, NULL, 0);
+      converted_wraps = wraps_to_datum(scheme_false, stx->wraps, mt, NULL, 0);
       if (SAME_OBJ(common_wraps, converted_wraps))
         lift_common_wraps(first, common_wraps, cnt, 0);
       else
@@ -6750,7 +6989,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
 
   if (with_marks > 1) {
     if (!converted_wraps)
-      converted_wraps = wraps_to_datum(stx->wraps, mt, NULL, 0);
+      converted_wraps = wraps_to_datum(stx->val, stx->wraps, mt, NULL, 0);
     result = CONS(result, converted_wraps);
     if (stx->certs) {
       Scheme_Object *cert_marks = scheme_null, *icert_marks = scheme_null;
@@ -7348,9 +7587,19 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
                                             1);
     } else if (SCHEME_SYMBOLP(a)) {
       /* mark barrier */
+    } else if (SCHEME_BOXP(a)) {
+      if (SCHEME_PAIRP(SCHEME_BOX_VAL(a))) {
+        /* prune context */
+        a = make_prune_context(SCHEME_BOX_VAL(a));
+      } else {
+        /* must be a phase shift */
+        Scheme_Object *vec;
+        vec = SCHEME_BOX_VAL(a);
+        if (!SCHEME_VECTORP(vec)) return_NULL;
+        if (SCHEME_VEC_SIZE(vec) != 4) return_NULL;
+      }
     } else {
-      /* must be a box for a phase shift */
-      /* (or garbage due to a bad .zo, and we'll ignore it) */
+      return_NULL;
     }
 
     if (wc)
@@ -7827,7 +8076,7 @@ static void simplify_syntax_inner(Scheme_Object *o,
   scheme_stx_content((Scheme_Object *)stx);
 
   if (rns) {
-    v = wraps_to_datum(stx->wraps, NULL, rns, 1);
+    v = wraps_to_datum(stx->val, stx->wraps, NULL, rns, 1);
     stx->wraps = v;
   }
 
@@ -8636,6 +8885,32 @@ static Scheme_Object *module_templ_binding(int argc, Scheme_Object **argv)
 static Scheme_Object *module_label_binding(int argc, Scheme_Object **argv)
 {
   return do_module_binding("identifier-label-binding", argc, argv, scheme_false);
+}
+
+static Scheme_Object *identifier_prune(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *a = argv[0], *p, *l;
+
+  if (!SCHEME_STXP(a) || !SCHEME_STX_SYMBOLP(a))
+    scheme_wrong_type("identifier-prune-lexical-context", "identifier syntax", 0, argc, argv);
+
+  if (argc > 1) {
+    l = argv[1];
+    while (SCHEME_PAIRP(l)) {
+      if (!SCHEME_SYMBOLP(SCHEME_CAR(l)))
+        break;
+      l = SCHEME_CDR(l);
+    }
+    if (!SCHEME_NULLP(l))
+      scheme_wrong_type("identifier-prune-lexical-context", "list of symbols", 1, argc, argv);
+    l = argv[1];
+  } else {
+    l = scheme_make_pair(SCHEME_STX_VAL(a), scheme_null);
+  }
+
+  p = make_prune_context(l);
+
+  return scheme_add_rename(a, p);
 }
 
 static Scheme_Object *syntax_src_module(int argc, Scheme_Object **argv)

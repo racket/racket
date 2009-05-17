@@ -224,3 +224,18 @@ in the corresponding generated name, which is useful for debugging
 purposes. The generated identifiers are built with interned symbols
 (not @scheme[gensym]s), so the limitations described with
 @scheme[current-compile] do not apply.}
+
+
+@defproc[(identifier-prune-lexical-context [id-stx identifier?]
+                                           [syms (listof symbol?) (list (syntax-e id-stx))])
+         identifier?]{
+
+Returns an identifier with the same binding as @scheme[id-stx], but
+without lexical information from @scheme[id-stx] that does not apply
+to the symbols in @scheme[syms], where even further extension of the
+lexical information drops information for other symbols. In
+particular, transferring the lexical context via
+@scheme[datum->syntax] from the result of this function to a symbol
+other than one in @scheme[syms] produces a identifier with no binding.
+
+See also @scheme[quote-syntax/prune].}

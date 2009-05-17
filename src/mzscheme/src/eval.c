@@ -9366,12 +9366,16 @@ static Scheme_Object *add_intdef_renamings(Scheme_Object *l, Scheme_Object *rena
   Scheme_Object *rl = renaming;
 
   if (SCHEME_PAIRP(renaming)) {
-    l = scheme_add_rib_delimiter(l, scheme_null);
+    int need_delim;
+    need_delim = !SCHEME_NULLP(SCHEME_CDR(rl));
+    if (need_delim)
+      l = scheme_add_rib_delimiter(l, scheme_null);
     while (!SCHEME_NULLP(rl)) {
       l = scheme_add_rename(l, SCHEME_CAR(rl));
       rl = SCHEME_CDR(rl);
     }
-    l = scheme_add_rib_delimiter(l, renaming);
+    if (need_delim)
+      l = scheme_add_rib_delimiter(l, renaming);
   } else {
     l = scheme_add_rename(l, renaming);
   }
