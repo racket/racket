@@ -1893,7 +1893,8 @@ static void unmarshal_rename(Module_Renames *mrn,
   if (sealed)
     mrn->sealed = 0;
     
-  for (l = mrn->unmarshal_info; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+  l = scheme_reverse(mrn->unmarshal_info);
+  for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
     scheme_do_module_rename_unmarshal((Scheme_Object *)mrn, SCHEME_CAR(l),
 				      modidx_shift_from, modidx_shift_to,
 				      export_registry);
