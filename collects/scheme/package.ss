@@ -266,10 +266,13 @@
                                          (let* ([exports-renamed (bound-identifier-mapping-map tmp (lambda (k v) k))]
                                                 [exports (map (lambda (id) (pre-package-id id def-ctxes))
                                                               exports-renamed)])
-                                           (values exports exports-renamed)))))])
-                     (with-syntax ([(export ...) exports]
-                                   [(renamed ...) exports-renamed]
-                                   [(hidden ...) (complement new-bindings exports-renamed)])
+                                           (values exports exports-renamed)))))]
+                                [(prune)
+                                 (lambda (stx)
+                                   (identifier-prune-lexical-context stx (list (syntax-e stx) '#%top)))])
+                     (with-syntax ([(export ...) (map prune exports)]
+                                   [(renamed ...) (map prune exports-renamed)]
+                                   [(hidden ...) (map prune (complement new-bindings exports-renamed))])
                        (let ([body (map (fixup-sub-package exports-renamed defined-renamed def-ctxes) 
                                         (reverse rev-forms))])
                          (if (eq? mode '#:begin)

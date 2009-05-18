@@ -56,6 +56,10 @@
                 [alternate-bitmap bitmap]
                 [vertical-tight? #f])
     
+    (when (and (is-a? label bitmap%)
+               (not (send label ok?)))
+      (error 'switchable-button% "label bitmap is not ok?"))
+    
     (define/override (get-label) label)
     
     (define disable-bitmap (make-dull-mask bitmap))

@@ -358,6 +358,16 @@ Like @scheme[quasisyntax], but with source-location assignment like
 @scheme[syntax/loc].}
 
 
+@defform[(quote-syntax/prune id)]{
+
+Like @scheme[quote-syntax], but the lexical context of @scheme[id] is
+pruned via @scheme[identifier-prune-lexical-context] to including
+binding only for the symbolic name of @scheme[id] and for
+@scheme['#%top]. Use this form to quote an identifier when its lexical
+information will not be transferred to other syntax objects (except
+maybe to @scheme['#%top] for a top-level binding).}
+
+
 @defform[(syntax-rules (literal-id ...)
            [(id . pattern) template] ...)]{
 

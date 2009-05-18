@@ -369,7 +369,9 @@
                                                stx
                                                super-id))
                                           (and super-expr
-                                               #`(check-struct-type 'fm #,super-expr)))])
+                                               #`(check-struct-type 'fm #,super-expr)))]
+                       [prune (lambda (stx) (identifier-prune-lexical-context stx
+                                                                              (list (syntax-e stx) '#%top)))])
                    (let ([run-time-defns
                           (lambda ()
                             (quasisyntax/loc stx
@@ -424,7 +426,7 @@
                             (let ([protect (lambda (sel)
                                              (and sel
                                                   (if (syntax-e sel)
-                                                      #`(quote-syntax #,sel)
+                                                      #`(quote-syntax #,(prune sel))
                                                       sel)))]
 				  [mk-info (if super-info-checked?
 					       #'make-checked-struct-info
@@ -434,9 +436,9 @@
                                   (#,mk-info
                                    (lambda ()
                                      (list
-                                      (quote-syntax #,struct:)
-                                      (quote-syntax #,make-)
-                                      (quote-syntax #,?)
+                                      (quote-syntax #,(prune struct:))
+                                      (quote-syntax #,(prune make-))
+                                      (quote-syntax #,(prune ?))
                                       (list
                                        #,@(map protect (reverse sels))
                                        #,@(if super-info

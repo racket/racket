@@ -1,10 +1,6 @@
 
 ;; These are true for beginner, but the operators are syntax, so
 ;; arity-test doesn't work.
-(arity-test + 2 -1)
-(arity-test * 2 -1)
-(arity-test / 2 -1)
-(arity-test - 1 -1)
 
 (htdp-syntax-test #'local)
 (htdp-syntax-test #'(local))
@@ -108,3 +104,11 @@
 
 (htdp-err/rt-test (build-string 2 add1)
   "build-string : second argument must be a <procedure> that produces a <char>, given #<procedure:add1>, which produced 1 for 0")
+
+(htdp-test 0 '+ (+))
+(htdp-test 1 '+ (+ 1))
+(htdp-test 1 '* (*))
+(htdp-test 1 '* (* 1))
+;(htdp-test (-) exn:application:arity?)
+;(htdp-err/rt-test (/) exn:application:arity?)
+;(htdp-test 1 (/ 1) exn:application:arity?)

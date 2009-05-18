@@ -100,6 +100,8 @@
    [(All (a ...) (a ... -> Number))
     (-polydots (a) ((list) [a a] . ->... . N))]
    
+   [(Any -> Boolean : Number) (make-pred-ty -Number)]
+   
    ))
 
 ;; FIXME - add tests for parse-values-type, parse-tc-results

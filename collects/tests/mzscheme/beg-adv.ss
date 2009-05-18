@@ -133,14 +133,6 @@
 (htdp-test #t 'eq? (eq? #t true))
 (htdp-test #t 'eq? (eq? #f false))
 
-(htdp-err/rt-test (+) exn:application:arity?)
-(htdp-err/rt-test (+ 1) exn:application:arity?)
-(htdp-err/rt-test (*) exn:application:arity?)
-(htdp-err/rt-test (* 1) exn:application:arity?)
-(htdp-err/rt-test (-) exn:application:arity?)
-(htdp-err/rt-test (/) exn:application:arity?)
-(htdp-err/rt-test (/ 1) exn:application:arity?)
-
 (htdp-test -9 '- (- 9))
 
 (htdp-top (define-struct an-example-structure (first-field second-field)))
@@ -294,3 +286,104 @@
 (htdp-top (check-within 1 2 3))
 (htdp-test 2 'two 2)
 (htdp-top-pop 1)
+
+;; -----------------------------------------------------------------------------
+;; mf's tests for string functions replacing chars 
+
+(htdp-test "h" 'string-ith (string-ith "hell" 0))
+
+(htdp-err/rt-test (string-ith "hell" 4) exn:fail:contract?
+  #;
+  (string-append 
+    "string-ith:"
+    " <exact integer in [0, length of the given string (4)]>"
+    " for second argument expected, given "
+    "4"))
+
+(htdp-err/rt-test (string-ith 10 4) exn:fail:contract?
+  #;
+  (string-append "string-ith: <string> for first argument expected, given "
+    "10"))
+
+(htdp-err/rt-test (string-ith "10" 'a) exn:fail:contract?
+  #;
+  (string-append "string-ith: <natural number> for second argument expected, given "
+    "a"))
+
+(htdp-test "aaa" 'replicate (replicate 3 "a"))
+
+(htdp-test "ababab" 'replicate (replicate 3 "ab"))
+
+(htdp-err/rt-test (replicate 3 10) exn:fail:contract?
+  #;
+  "replicate: <string> expected, given 10")
+
+(htdp-test "\n" 'int->string (int->string 10))
+
+(htdp-err/rt-test (int->string 56555) exn:fail:contract?
+  #;
+  (string-append 
+    "int->string: <exact integer in [0,55295] or [57344 1114111]> expected, given "
+    "56555"))
+
+(htdp-err/rt-test (int->string "A") exn:fail:contract?
+  #;
+  (string-append 
+    "int->string: <exact integer in [0,55295] or [57344 1114111]> expected, given "
+    (format "~s" "A")))
+
+(htdp-test 65 'string->int (string->int "A"))
+
+(htdp-err/rt-test (string->int 10) exn:fail:contract?
+  #;
+  (string-append "string->int: " 1-LETTER " expected, not a string: 10"))
+
+(htdp-err/rt-test (string->int "AB") exn:fail:contract?
+  #;
+  (string-append
+    "string->int: " 1-LETTER " expected, given " (format "~s" "AB")))
+
+(htdp-test (list "h" "e" "l" "l" "o") 'explode (explode "hello"))
+
+(htdp-err/rt-test (explode 10) exn:fail:contract?
+  #;
+  (string-append "explode: <string> expected, given " "10"))
+
+(htdp-test "hello" 'implode (implode (list "h" "e" "l" "l" "o")))
+
+(htdp-err/rt-test (implode 10) exn:fail:contract?
+  #;
+  (string-append "implode: " 1-LETTER* " expected, not a <list>: 10"))
+
+(htdp-err/rt-test (implode (list "he" "l")) exn:fail:contract?
+  #;
+  (string-append "implode: " 1-LETTER* " expected, given " 
+    (format "~s" (list "he" "l"))))
+
+(htdp-test true 'string-numeric? (string-numeric? "0"))
+(htdp-test true 'string-numeric? (string-numeric? "10"))
+(htdp-test false 'string-numeric? (string-numeric? "a"))
+(htdp-test false 'string-numeric? (string-numeric? "ab"))
+
+(htdp-err/rt-test (string-numeric? 10) exn:fail:contract?
+  #;
+  (string-append "string-numeric?: <string> expected, given 10"))
+
+
+(htdp-test false 'string-alphabetic? (string-alphabetic? "a0"))
+(htdp-test true 'string-alphabetic? (string-alphabetic? "a"))
+(htdp-test true 'string-alphabetic? (string-alphabetic? "ba"))
+(htdp-test true 'string-alphabetic? (string-alphabetic? "ab"))
+
+(htdp-test true 'string-whitespace? (string-whitespace? "  "))
+(htdp-test true 'string-whitespace? (string-whitespace? "  \t"))
+(htdp-test false 'string-whitespace? (string-whitespace? "ABC"))
+
+(htdp-test false 'string-upper-case? (string-upper-case? "  "))
+(htdp-test false 'string-upper-case? (string-upper-case? "AB\t"))
+(htdp-test true 'string-upper-case? (string-upper-case? "ABC"))
+
+(htdp-test false 'string-lower-case? (string-lower-case? "  "))
+(htdp-test false 'string-lower-case? (string-lower-case? "ab\t"))
+(htdp-test true 'string-lower-case? (string-lower-case? "abc"))
+

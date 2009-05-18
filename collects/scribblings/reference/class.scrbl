@@ -1117,8 +1117,8 @@ Returns an accessor procedure that takes an instance of the class
 produced by @scheme[class-expr] and returns the value of the object's
 field with (external) name @scheme[field-id].
 
-If @scheme[obj-expr] does not produce an object, the
-@exnraise[exn:fail:contract]. If the object has no @scheme[field-id]
+If @scheme[class-expr] does not produce a class, the
+@exnraise[exn:fail:contract]. If the class has no @scheme[field-id]
 field, the @exnraise[exn:fail:object].}
 
 @defform[(class-field-mutator class-expr field-id)]{
@@ -1128,8 +1128,8 @@ produced by @scheme[class-expr] and a value, and sets the value of the
 object's field with (external) name @scheme[field-id] to the given
 value. The result is @|void-const|.
 
-If @scheme[obj-expr] does not produce an object, the
-@exnraise[exn:fail:contract]. If the object has no @scheme[field-id]
+If @scheme[class-expr] does not produce a class, the
+@exnraise[exn:fail:contract]. If the class has no @scheme[field-id]
 field, the @exnraise[exn:fail:object].}
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

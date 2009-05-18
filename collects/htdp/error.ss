@@ -34,8 +34,10 @@
 (define-struct (tp-exn exn) ())
 
 (define (tp-error name fmt . args)
-  (raise (make-tp-exn (string-append (format "~a: " name) (apply format fmt args))
-                      (current-continuation-marks))))
+  (raise 
+   (make-exn:fail:contract #; make-tp-exn 
+    (string-append (format "~a: " name) (apply format fmt args))
+    (current-continuation-marks))))
 
 (define (number->ord i)
   (if (= i 0)

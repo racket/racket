@@ -521,7 +521,7 @@ case $OS in
     DYN_CFLAGS="-fPIC"
     ;;
   OpenBSD)
-    LIBS="$LIBS -rdynamic"
+    LIBS="$LIBS -rdynamic -Wl,--export-dynamic"
     ;;
   NetBSD)
     LIBS="$LIBS -rdynamic"

@@ -7,8 +7,16 @@
 
   (provide-and-document
    procedures
-   (all-from beginner: lang/private/beginner-funs procedures)
+   (all-from-except beginner: lang/private/beginner-funs procedures
+                    + * - /)
 
+   ("Numbers (relaxed conditions)"
+    
+    (+ (number ... -> number) "to add all given numbers")
+    (* (number ... -> number) "to multiply all given numbers")
+    (- (number ... -> number) "to subtract from the first all remaining numbers")
+    (/ (number ... -> number) "to divide the first by all remaining numbers")
+    )
    ("Higher-Order Functions"
     (map ((X ... -> Z) (listof X) ... -> (listof Z))
 	 "to construct a new list by applying a function to each item on one or more existing lists") 

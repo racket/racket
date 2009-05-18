@@ -2734,7 +2734,9 @@ Scheme_Object *scheme_intern_resolved_module_path_worker(Scheme_Object *o)
   rmp->type = scheme_resolved_module_path_type;
   SCHEME_PTR_VAL(rmp) = o;
 
+  scheme_start_atomic();
   b = scheme_bucket_from_table(modpath_table, (const char *)rmp);
+  scheme_end_atomic_no_swap();
   if (!b->val)
     b->val = scheme_true;
 
@@ -9151,6 +9153,7 @@ top_level_require_execute(Scheme_Object *data)
 {
   do_require_execute(scheme_environment_from_dummy(SCHEME_CAR(data)),
                      SCHEME_CDR(data));
+  return scheme_void;
 }
 
 static Scheme_Object *

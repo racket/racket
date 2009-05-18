@@ -4,64 +4,10 @@
 
 (provide analyze-samples)
 
-(require scheme/list)
+(require "structs.ss" "utils.ss" scheme/list)
 
-;; An encapsulation of an analyzed profile call graph:
-;; - total-time: the total time observed in msec (this is generally different
-;;   than the time it took to run the profile).
-;; - sample-number: the number of samples taken.
-;; - thread-times: a list of (<thread-id> . msec) for the time spent in
-;;   observed threads.
-;; - nodes: the list of call-graph nodes sorted by their total time.
-;; - *-node: a special node that is connected as a "caller" for all toplevel
-;;   functions and a "callee" for all leaf functions.  It will also be
-;;   identifiable by having both id and src fields being #f.  Can be used to
-;;   start a graph traversal from the top or the bottom.
-(provide (struct-out profile))
-(define-struct profile
-  (total-time cpu-time sample-number thread-times nodes *-node))
-
-;; An entry for a single profiled function:
-;; - id, src: the corresponding values from `continuation-mark-set->context'.
-;; - thread-ids: the list of thread identifiers this function has been seen in.
-;; - total: total msecs it participated in (= time in it, including callees).
-;; - self: msecs where it was at the top of the stack (= time in its own code).
-;; - callers, callees: a list of `edge' values for the time spent while it was
-;;   called by the repective <node>, or it called it, sorted in decreasing msec
-;;   time.
-;; Note that the sum of caller/callee edges including the special `*-node'
-;; should be equal to the `total' time.  So the edge from/to the `*-node' can
-;; be used to get the time spent as a leaf or as a root divided by the number
-;; of time the function appeared on the stack: so this value can be displayed
-;; in the call-graph and the numbers will sum up nicely to a 100%.
-(provide (struct-out node))
-(define-struct node (id src thread-ids total self callers callees)
-  #:mutable
-  #:property prop:custom-write
-  (lambda (node o w?) (fprintf o "#<node:~s>" (or (node-id node) '???))))
-
-;; An edge representing function calls between two nodes:
-;; - time: the total time spent while the call was somewhere on the stack.
-;; - caller, callee: the two relevant `node' values.
-;; - caller-time, callee-time: the time that the caller/callee spent in this
-;;   call (different from the above time because each stack sample's time is
-;;   divided by the number of times the caller/callee appears in that slice).
-(provide (struct-out edge))
-(define-struct edge (total caller caller-time callee callee-time)
-  #:mutable
-  #:property prop:custom-write
-  (lambda (edge o w?)
-    (fprintf o "#<edge:~s-~s>"
-             (or (node-id (edge-caller edge)) '???)
-             (or (node-id (edge-callee edge)) '???))))
-
-(define with-hash:not-found (gensym))
 (define-syntax-rule (with-hash <hash> <key> <expr>)
-  (let ([t <hash>] [k <key>])
-    (let ([v (hash-ref t k with-hash:not-found)])
-      (if (eq? v with-hash:not-found)
-        (let ([v <expr>]) (hash-set! t k v) v)
-        v))))
+  (hash-ref! <hash> <key> (lambda () <expr>)))
 
 ;; This function analyzes the output of the sampler.  Returns a `profile'
 ;; struct holding a list of `node' values, each one representing a node in the
@@ -132,10 +78,8 @@
   (set-node-total! *-node total-time)
   ;; convert the nodes from the hash to a list, do a topological sort, and then
   ;; sort by total time (combining both guarantees(?) sensible order)
-  (let ([nodes (remq *-node (topological-sort
-                             *-node
-                             (lambda (nodes)
-                               (sort nodes > #:key node-total))))])
+  (let ([nodes (append-map (lambda (nodes) (sort nodes > #:key node-total))
+                           (topological-sort *-node))])
     ;; sort all the edges in the nodes according to total time
     (for ([n (in-list nodes)])
       (set-node-callees! n (sort (node-callees n) > #:key edge-callee-time))
@@ -148,32 +92,6 @@
        (cons n time))
      nodes
      *-node)))
-
-;; A simple topological sort of nodes using BFS, starting from node `x' which
-;; will be the special *-node.  `subsort' is a `resolver' function to sort
-;; nodes on the same level.
-(define (topological-sort x subsort)
-  (let loop ([todo (list x)] [seen (list x)])
-    (if (null? todo)
-      '()
-      (let* ([next (append-map (lambda (x)
-                                 (subsort (map edge-callee (node-callees x))))
-                               todo)]
-             [next (remq* seen (remove-duplicates next))])
-        (append todo (loop next (append next seen)))))))
-#|
-(define (node id) (make-node id #f '() 0 0 '() '()))
-(define (X . -> . Y)
-  (let ([e (make-edge 0 X 0 Y 0)])
-    (set-node-callers! Y (cons e (node-callers Y)))
-    (set-node-callees! X (cons e (node-callees X)))))
-(define A (node 'A))
-(define B (node 'B))
-(define C (node 'C))
-(A . -> . B)
-(B . -> . C)
-(topological-sort A 3)
-|#
 
 ;; Groups raw samples by their thread-id, returns a vector with a field for
 ;; each thread id holding the sample data for that thread.  The samples in

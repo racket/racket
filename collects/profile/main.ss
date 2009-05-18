@@ -2,7 +2,7 @@
 
 (provide profile-thunk profile)
 
-(require "sampler.ss" (except-in "analyzer.ss" profile)
+(require "sampler.ss" "analyzer.ss"
          (prefix-in text: "render-text.ss")
          (for-syntax scheme/base))
 

@@ -166,8 +166,8 @@
 
   (define/private (rubber-band x y w h)
     (when (and s-admin
-               (positive? w)
-               (positive? h))
+               (not (zero? w))
+               (not (zero? h)))
       (let-values ([(x w)
                     (if (w . < . 0)
                         (values (+ x w) (- w))
