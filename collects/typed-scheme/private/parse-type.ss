@@ -356,7 +356,8 @@
         (eq? (syntax-e #':) ':))
        (begin
          (add-type-name-reference (stx-cadr stx))
-         (make-pred-ty (list (parse-type #'dom)) (parse-values-type #'rng) (parse-type #'pred-ty)))]
+         ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
+         (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (parse-type #'pred-ty)))]
       [(dom ... rest ::: -> rng)
        (and (eq? (syntax-e #'->) '->) 
             (eq? (syntax-e #':::) '*))
