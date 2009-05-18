@@ -20,7 +20,7 @@
          with-dotted-env/extend)
 
 ;; eq? has the type of equal?, and l is an alist (with conses!)
-(r:d-s/c env ([eq? (any/c any/c . -> . boolean?)] [l (listof pair?)]))
+(r:d-s/c env ([eq? (any/c any/c . -> . boolean?)] [l (listof pair?)]) #:transparent)
 
 (define (env-vals e)
   (map cdr (env-l e)))
