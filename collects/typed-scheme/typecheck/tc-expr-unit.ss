@@ -228,7 +228,7 @@
          (begin (tc-exprs/check (syntax->list #'es) Univ)
                 (tc-expr/check #'e expected))]          
         ;; if
-        [(if tst thn els) (tc/if-twoarm/check #'tst #'thn #'els expected)]
+        [(if tst thn els) (tc/if-twoarm #'tst #'thn #'els expected)]
         ;; lambda
         [(#%plain-lambda formals . body)
          (tc/lambda/check form #'(formals) #'(body) expected)]        

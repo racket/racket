@@ -36,5 +36,3 @@
     [(tc-results: t _ _)
      (tc-error/expr #:return (ret (or expected Err))
                     "Test expression expects one value, given ~a" t)]))
-
-(define tc/if-twoarm/check tc/if-twoarm)

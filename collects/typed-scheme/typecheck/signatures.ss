@@ -1,6 +1,7 @@
 #lang scheme/base
-(require scheme/unit scheme/contract "../utils/utils.ss")
-(require (rep type-rep)
+(require scheme/unit scheme/contract
+         "../utils/utils.ss"
+         (rep type-rep)
          (utils unit-utils)
          (types utils))
 (provide (all-defined-out))
@@ -26,8 +27,7 @@
    [cnt check-subforms/with-handlers/check (syntax? tc-results? . -> . any)]))
 
 (define-signature tc-if^
-  ([cnt tc/if-twoarm (syntax? syntax? syntax? . -> . tc-results?)]   
-   [cnt tc/if-twoarm/check (syntax? syntax? syntax? tc-results? . -> . tc-results?)]))
+  ([cnt tc/if-twoarm ((syntax? syntax? syntax?) (tc-results?) . ->* . tc-results?)]))
 
 (define-signature tc-lambda^
   ([cnt tc/lambda (syntax? syntax? syntax? . -> . tc-results?)]
