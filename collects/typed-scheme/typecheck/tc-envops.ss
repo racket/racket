@@ -27,21 +27,21 @@
   (Type/c Filter/c . -> . Type/c)
   (match* ((resolve t) lo)
     ;; pair ops
-    [((Pair: t s) (TypeFilter: u (list* (CarPE:) rst) x))
+    [((Pair: t s) (TypeFilter: u (list rst ... (CarPE:)) x))
      (make-Pair (update t (make-TypeFilter u rst x)) s)]
-    [((Pair: t s) (NotTypeFilter: u (list* (CarPE:) rst) x))
+    [((Pair: t s) (NotTypeFilter: u (list rst ... (CarPE:)) x))
      (make-Pair (update t (make-NotTypeFilter u rst x)) s)]
-    [((Pair: t s) (TypeFilter: u (list* (CdrPE:) rst) x))
+    [((Pair: t s) (TypeFilter: u (list rst ... (CdrPE:)) x))
      (make-Pair t (update s (make-TypeFilter u rst x)))]
-    [((Pair: t s) (NotTypeFilter: u (list* (CdrPE:) rst) x))
+    [((Pair: t s) (NotTypeFilter: u (list rst ... (CdrPE:)) x))
      (make-Pair t (update s (make-NotTypeFilter u rst x)))]
     
     ;; struct ops
     [((Struct: nm par flds proc poly pred cert) 
-      (TypeFilter: u (list* (StructPE: (? (lambda (s) (subtype t s)) s) idx) rst) x))     
+      (TypeFilter: u (list rst ... (StructPE: (? (lambda (s) (subtype t s)) s) idx)) x))     
      (make-Struct nm par (replace-nth flds idx (lambda (e) (update e (make-TypeFilter u rst x)))) proc poly pred cert)]
     [((Struct: nm par flds proc poly pred cert) 
-      (NotTypeFilter: u (list* (StructPE: (? (lambda (s) (subtype t s)) s) idx) rst) x))
+      (NotTypeFilter: u (list rst ... (StructPE: (? (lambda (s) (subtype t s)) s) idx)) x))
      (make-Struct nm par (replace-nth flds idx (lambda (e) (update e (make-NotTypeFilter u rst x)))) proc poly pred cert)]
     
     ;; otherwise
@@ -49,8 +49,8 @@
      (restrict t u)]
     [(t (NotTypeFilter: u (list) _))
      (remove t u)]
-    [(t lo)
-     (int-err "update along ill-typed path: ~a ~a" t lo)]))
+    [(t* lo)
+     (int-err "update along ill-typed path: ~a ~a ~a" t t* lo)]))
 
 (define/contract (env+ env fs)
   (env? (listof Filter/c) . -> . env?)
