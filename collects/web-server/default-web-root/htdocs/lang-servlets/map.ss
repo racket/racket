@@ -1,19 +1,26 @@
 #lang web-server
-(define interface-version 'stateless)
-(provide start interface-version)
+(require web-server/managers/lru)
 
-;; get-number-from-user: string -> number
+(define-native (build-list/native _ ho) build-list)
+
+(define interface-version 'stateless)
+(define manager
+  (make-threshold-LRU-manager #f (* 1024 1024 128)))
+
+(provide start interface-version manager)
+
+;; get-number-from-user: number -> number
 ;; ask the user for a number
-(define (gn msg)
+(define (get-number-from-user message)
   (let ([req
          (send/suspend/url
           (lambda (k-url)
-            `(html (head (title ,(format "Get ~a number" msg)))
+            `(html (head (title ,message))
                    (body
                     (form ([action ,(url->string k-url)]
                            [method "post"]
                            [enctype "application/x-www-form-urlencoded"])
-                          ,(format "Enter the ~a number to add: " msg)
+                          ,message
                           (input ([type "text"] [name "number"] [value ""]))
                           (input ([type "submit"])))))))])
     (string->number
@@ -23,8 +30,14 @@
                       (request-bindings/raw req)))))))
 
 (define (start initial-request)
+  (define how-many-numbers
+    (get-number-from-user "How many numbers do you want to add?"))
   `(html (head (title "Final Page"))
          (body
           (h1 "Final Page")
           (p ,(format "The answer is ~a"
-                      (+ (gn "first") (gn "second")))))))
+                      (apply +
+                             (build-list/native how-many-numbers
+                                                (lambda (i)
+                                                  (get-number-from-user
+                                                   (format "Enter number ~a" (add1 i)))))))))))

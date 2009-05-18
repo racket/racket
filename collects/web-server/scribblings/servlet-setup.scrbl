@@ -27,9 +27,11 @@ This module is used internally to build and load servlets. It may be useful to t
 }
  
 @defproc[(make-stateless.servlet [directory path-string?]
+                                 [stuffer (stuffer/c serializable? bytes?)]
+                                 [manager manager?]
                                  [start (request? . -> . response/c)])
          servlet?]{
- Creates a stateless @schememodname[web-server] servlet that uses @scheme[directory] as its current directory and @scheme[start] as the request handler.
+ Creates a stateless @schememodname[web-server] servlet that uses @scheme[directory] as its current directory, @scheme[stuffer] as its stuffer, and @scheme[manager] as the continuation manager, and @scheme[start] as the request handler.
 }
                   
 @defthing[default-module-specs (listof module-path?)]{

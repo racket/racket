@@ -8,7 +8,7 @@
   (let ([req
          (send/suspend/url
           (lambda (k-url)
-            `(hmtl (head (title ,(format "Get ~a number" msg)))
+            `(html (head (title ,(format "Get ~a number" msg)))
                    (body
                     (form ([action ,(url->string k-url)]
                            [method "get"]

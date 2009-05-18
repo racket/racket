@@ -7,7 +7,7 @@
 (define (gn msg)
   (send/suspend/url/dispatch
    (lambda (embed/url)
-     `(hmtl (head (title ,(format "Get ~a number" msg)))
+     `(html (head (title ,(format "Get ~a number" msg)))
             (body
              (form ([action ,(url->string 
                               (embed/url 
