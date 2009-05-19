@@ -180,6 +180,7 @@ static BOOL CALLBACK CheckWindow(HWND wnd, LPARAM param)
                     info->remove ? PM_REMOVE : PM_NOREMOVE)) {
       info->wnd = wnd;
       info->c_return = c;
+      scheme_notify_sleep_progress();
       return FALSE;
     }
   }
@@ -217,6 +218,7 @@ int FindReady(MrEdContext *c, MSG *msg, int remove, MrEdContext **c_return)
     while (PeekMessage(&pmsg, NULL, 0x4000, 0xFFFF, PM_REMOVE)) {
       wxTranslateMessage(&pmsg);
       DispatchMessage(&pmsg);
+      scheme_notify_sleep_progress();
     }
   }
 
