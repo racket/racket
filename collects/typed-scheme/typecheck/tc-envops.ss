@@ -52,10 +52,15 @@
     [(t* lo)
      (int-err "update along ill-typed path: ~a ~a ~a" t t* lo)]))
 
-(define/contract (env+ env fs)
-  (env? (listof Filter/c) . -> . env?)
+;; sets the flag box to #f if anything becomes (U)
+(d/c (env+ env fs flag)
+  (env? (listof Filter/c) (box/c #t). -> . env?)
   (for/fold ([Γ env]) ([f fs])
     (match f
-      [(Bot:) (env-map (lambda (x) (cons (car x) (Un))) Γ)]
+      [(Bot:) (set-box! flag #f) (env-map (lambda (x) (cons (car x) (Un))) Γ)]
       [(or (TypeFilter: _ _ x) (NotTypeFilter: _ _ x))
-       (update-type/lexical (lambda (x t) (update t f)) x Γ)])))
+       (update-type/lexical (lambda (x t) (let ([new-t (update t f)])
+                                            (when (type-equal? new-t (Un))
+                                              (set-box! flag #f))
+                                            new-t))
+                            x Γ)])))
