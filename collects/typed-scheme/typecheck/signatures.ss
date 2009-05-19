@@ -32,7 +32,7 @@
 (define-signature tc-lambda^
   ([cnt tc/lambda (syntax? syntax? syntax? . -> . tc-results?)]
    [cnt tc/lambda/check (syntax? syntax? syntax? tc-results? . -> . tc-results?)]
-   [cnt tc/rec-lambda/check (syntax? syntax? syntax? syntax? (listof Type/c) Type/c . -> . Type/c)]))
+   [cnt tc/rec-lambda/check (syntax? syntax? syntax? syntax? (listof Type/c) tc-results? . -> . tc-results?)]))
 
 (define-signature tc-app^
   ([cnt tc/app (syntax? . -> . tc-results?)] 

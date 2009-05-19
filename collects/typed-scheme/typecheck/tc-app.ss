@@ -100,7 +100,7 @@
          [name-assoc (map list names (syntax->list named-args))])
     (let loop ([t (tc-expr cl)])
       (match t
-        [(tc-result1: (? Mu? t)) (loop (ret (unfold t)))]
+        [(tc-result1: (? Mu? t*)) (loop (ret (unfold t*)))]
         [(tc-result1: (and c (Class: pos-tys (list (and tnflds (list tnames _ _)) ...) _))) 
          (unless (= (length pos-tys)
                     (length (syntax->list pos-args)))
@@ -151,10 +151,12 @@
                           (generalize (tc-expr/t ac))))]
             [ts (cons ts1 ann-ts)])
        ;; check that the actual arguments are ok here
-       (map tc-expr/check (syntax->list #'(actuals ...)) ann-ts)
+       (for/list ([a (syntax->list #'(actuals ...))]
+                  [t ann-ts])
+         (tc-expr/check a (ret t)))
        ;; then check that the function typechecks with the inferred types
        (tc/rec-lambda/check form args body lp ts expected)
-       (ret expected))]
+       expected)]
     ;; special case when argument needs inference
     [_
      (let ([ts (for/list ([ac (syntax->list actuals)]
@@ -163,7 +165,7 @@
                   (type-annotation f #:infer #t)
                   (generalize (tc-expr/t ac))))])
        (tc/rec-lambda/check form args body lp ts expected)
-       (ret expected))]))
+       expected)]))
 
 (define (tc/apply f args)
   (define (do-ret t)

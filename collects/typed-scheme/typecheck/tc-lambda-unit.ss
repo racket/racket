@@ -197,7 +197,7 @@
           (= 1 (length (syntax->list formals))))
      (let loop ([expected expected])        
        (match expected          
-         [(tc-result1: (Mu: _ _)) (loop (unfold expected))]
+         [(tc-result1: (and t (Mu: _ _))) (loop (ret (unfold t)))]
          [(tc-result1: (Function: (list (arr: argss rets rests drests '()) ...)))
           (for/list ([args argss] [ret rets] [rest rests] [drest drests])
             (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies))
@@ -299,14 +299,15 @@
 ;; name : the name of the loop
 ;; args : the types of the actual arguments to the loop
 ;; ret : the expected return type of the whole expression
-(define (tc/rec-lambda/check form formals body name args ret)
+(define (tc/rec-lambda/check form formals body name args return)
   (with-lexical-env/extend
    (syntax->list formals) args
-   (let* ([t (make-arr args ret)]
+   (let* ([r (tc-results->values return)]
+          [t (make-arr args r)]
           [ft (make-Function (list t))])
      (with-lexical-env/extend
       (list name) (list ft)
-      (begin (tc-exprs/check (syntax->list body) ret) ft)))))
+      (begin (tc-exprs/check (syntax->list body) return) (ret ft))))))
 
 ;(trace tc/mono-lambda)
 
