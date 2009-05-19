@@ -905,11 +905,12 @@ Debugging tools:
 
 ;; ------------------------------------------------------------
 
-(define (update-flow mline root-box media max-width dc)
+(define (update-flow mline root-box media max-width dc notify-delete notify-insert)
   (define (flow-left)
     (if (bit-overlap? (mline-flags mline) FLOW-LEFT)
         (if (and (not (eq? (mline-left mline) NIL))
-                 (update-flow (mline-left mline) root-box media max-width dc))
+                 (update-flow (mline-left mline) root-box media max-width dc
+                              notify-delete notify-insert))
             #t
             (begin
               (set-mline-flags! mline (- (mline-flags mline) FLOW-LEFT))
@@ -929,7 +930,8 @@ Debugging tools:
   (define (flow-right)
     (if (bit-overlap? (mline-flags mline) FLOW-RIGHT)
         (if (and (not (eq? (mline-right mline) NIL))
-                 (update-flow (mline-right mline) root-box media max-width dc))
+                 (update-flow (mline-right mline) root-box media max-width dc
+                              notify-delete notify-insert))
             #t
             (begin
               (set-mline-flags! mline (- (mline-flags mline) FLOW-RIGHT))
@@ -967,7 +969,9 @@ Debugging tools:
               (set-mline-last-snip! newline (mline-last-snip mline))
               (set-mline-last-snip! mline asnip)
 
-              (snips-to-line! newline))
+              (snips-to-line! newline)
+
+              (notify-insert newline))
             ;; just pushed to next line
             (begin
               (set-mline-last-snip! mline asnip)
@@ -992,7 +996,10 @@ Debugging tools:
     (if (and (mline-next mline)
              (eq? asnip (mline-last-snip (mline-next mline))))
         ;; a line was deleted
-        (begin (delete (mline-next mline) root-box) #t)
+        (let ([next (mline-next mline)])
+          (delete next root-box) 
+          (notify-delete next)
+          #t)
         #f))
   (define (do-extend-line asnip)
     ;; this line was extended
@@ -1015,6 +1022,7 @@ Debugging tools:
                    (let ([next (mline-next mline)])
                      (when next
                        (delete next root-box)
+                       (notify-delete delete)
                        (loop))))
                  #f))])
 

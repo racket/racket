@@ -532,7 +532,9 @@
           (if (and media
                    (or (positive? y)
                        scroll-bottom-based?))
-              (let ([v (- (send media scroll-line-location (+ y scroll-offset))
+              (let ([v (- (if (send media locked-for-read?)
+                              0.0
+                              (send media scroll-line-location (+ y scroll-offset)))
                           ymargin)])
                 (set-box! fy v)
                 (when (and scroll-bottom-based?

@@ -1,9 +1,9 @@
 #lang scheme/gui
 
-(define seed 700438844 #;(abs (current-milliseconds)))
+(define seed (abs (current-milliseconds)))
 (random-seed seed)
 
-; scroll-line-location bug
+(error-print-context-length 100)
 
 (define orig-t (new text%))
 
