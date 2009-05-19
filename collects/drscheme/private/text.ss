@@ -9,12 +9,12 @@
     (interface (scheme:text<%>)
       printing-on
       printing-off
-      is-printing?))
+      is-printing-on?))
   
   (define text%
     (class* scheme:text% (text<%>)
       (define printing? #f)
-      (define/public (is-printing?) printing?)
+      (define/public (is-printing-on?) printing?)
       (define/public (printing-on) (set! printing? #t))
       (define/public (printing-off) (set! printing? #f))
       ;      (rename [super-on-paint on-paint])
