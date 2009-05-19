@@ -224,7 +224,7 @@
                                                 0 0 #t #t)))
       (inherit editor-canvas-on-scroll)
       (define/override (on-scroll e)
-        (if (or (eq? 'msw (system-type))
+        (if (or (eq? 'windows (system-type))
                 (eq? 'macosx (system-type)))
             (queue-window-callback
              this

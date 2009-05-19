@@ -351,13 +351,13 @@
         (thunk)))
 
   (define/override (on-set-focus)
-    (if (eq? 'msw (system-type))
+    (if (eq? 'windows (system-type))
         (queue-window-callback
          this
          (lambda () (on-focus #t)))
         (on-focus #t)))
   (define/override (on-kill-focus)
-    (if (eq? 'msw (system-type))
+    (if (eq? 'windows (system-type))
         (queue-window-callback
          this
          (lambda () (on-focus #f)))
