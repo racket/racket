@@ -182,7 +182,7 @@
 (define (serial->native* thnk)
   (call-with-continuation-prompt thnk unsafe-barrier-prompt-tag))
 (define (native->serial* thnk)
-  (call-with-current-continuation 
+  (call-with-composable-continuation 
    (lambda (unsafe-continuation-portion)
      (with-continuation-mark
          continuation-of-unsafe-part-mark unsafe-continuation-portion
