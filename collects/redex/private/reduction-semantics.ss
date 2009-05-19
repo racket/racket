@@ -1359,7 +1359,7 @@
     [(_ name (names rhs ...) ...)
      (identifier? (syntax name))
      (begin
-       (check-rhss-not-empty stx (cddr (syntax-e stx)))
+       (check-rhss-not-empty stx (cddr (syntax->list stx)))
        (with-syntax ([((nt-names orig) ...) (pull-out-names 'define-language stx #'(names ...))])
          (with-syntax ([(subst-names ...) (generate-temporaries (syntax->list #'(nt-names ...)))])
            (syntax/loc stx
@@ -1511,7 +1511,7 @@
          (raise-syntax-error 'define-extended-langauge "expected an identifier" stx #'name))
        (unless (identifier? (syntax orig-lang))
          (raise-syntax-error 'define-extended-langauge "expected an identifier" stx #'orig-lang))
-       (check-rhss-not-empty stx (cdddr (syntax-e stx)))
+       (check-rhss-not-empty stx (cdddr (syntax->list stx)))
        (let ([old-names (language-id-nts #'orig-lang 'define-extended-language)])
          (with-syntax ([((new-nt-names orig) ...) (append (pull-out-names 'define-language stx #'(names ...)) 
                                                           (map (λ (x) #`(#,x #f)) old-names))])
