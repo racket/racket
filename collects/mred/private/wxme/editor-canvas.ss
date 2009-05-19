@@ -5,6 +5,7 @@
          "editor-admin.ss"
          "private.ss"
          (only-in "cycle.ss" popup-menu%)
+         (only-in "../helper.ss" queue-window-callback)
          "wx.ss")
 
 (provide editor-canvas%)
@@ -350,9 +351,17 @@
         (thunk)))
 
   (define/override (on-set-focus)
-    (on-focus #t))
+    (if (eq? 'msw (system-type))
+        (queue-window-callback
+         this
+         (lambda () (on-focus #t)))
+        (on-focus #t)))
   (define/override (on-kill-focus)
-    (on-focus #f))
+    (if (eq? 'msw (system-type))
+        (queue-window-callback
+         this
+         (lambda () (on-focus #f)))
+        (on-focus #f)))
 
   (define/public (is-focus-on?) focuson?)
 
