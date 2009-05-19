@@ -42,7 +42,7 @@
 (define-syntax tc-l
   (syntax-rules ()
     [(_ lit ty)
-     (check-type-equal? (format "~a" 'lit) (tc-literal #'lit) ty)]))
+     (check-type-equal? (format "~s" 'lit) (tc-literal #'lit) ty)]))
 
 ;; local-expand and then typecheck an expression
 (define-syntax (tc-expr/expand/values stx)
@@ -72,7 +72,7 @@
     [(_ expr #:proc p) 
      (syntax/loc stx 
        (let-values ([(t e) (tc-expr/expand/values expr)])
-         (check-tc-result-equal? (format "~a" 'expr) (t) (p e))))]
+         (check-tc-result-equal? (format "~s" 'expr) (t) (p e))))]
     [(_ expr #:ret r) 
      (syntax/loc stx 
        (check-tc-result-equal? (format "~a" 'expr) (tc-expr/expand expr) r))]
@@ -717,6 +717,8 @@
         [tc-e/t (ann (lambda (x) x) (All (a) (a -> a)))
                 (-poly (a) (a . -> . a))]
         [tc-e (apply values (list 1 2 3)) #:ret (ret (list -Integer -Integer -Integer))]
+        
+        [tc-e (ann (if #t 3 "foo") Integer) -Integer]
         #;[tc-err (let: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                         (fact 20))]
         
