@@ -248,63 +248,22 @@
 	      [(list s (Poly: vs b))
 	       (=> unmatch)
 	       (if (null? (fv b)) (subtype* A0 s b) (unmatch))]
-	      ;; names are compared for equality:
-	      [(list (Name: n) (Name: n*))
-	       (=> unmatch)
-	       (if (free-identifier=? n n*)
-		   A0
-		   (unmatch))]
-	      ;; just unfold the recursive types
-	      [(list _ (? Mu?)) (subtype* A0 s (unfold t))]
-	      [(list (? Mu?) _) (subtype* A0 (unfold s) t)]
+	      ;; rec types, applications and names (that aren't the same
+	      [(list (? needs-resolving? s) other)
+               (let ([s* (resolve-once s)])
+                 (if (Type? s*) ;; needed in case this was a name that hasn't been resolved yet
+                     (subtype* A0 s* other)
+                     (fail! s t)))]
+	      [(list other (? needs-resolving? t))
+               (let ([t* (resolve-once t)])
+                 (if (Type? t*) ;; needed in case this was a name that hasn't been resolved yet
+                     (subtype* A0 other t*)
+                     (fail! s t)))]
 	      ;; for unions, we check the cross-product
 	      [(list (Union: es) t) (and (andmap (lambda (elem) (subtype* A0 elem t)) es) A0)]
 	      [(list s (Union: es)) (and (ormap (lambda (elem) (subtype*/no-fail A0 s elem)) es) A0)]
-	      ;; applications and names are structs too
-	      [(list (App: (Name: n) args stx) other)
-	       (let ([t (lookup-type-name n)])
-		 (unless (Type? t)                     
-			 (fail! s t))
-		 #;(printf "subtype: app-name: name: ~a type: ~a other: ~a ~ninst: ~a~n" (syntax-e n) t other 
-		 (instantiate-poly t args))
-		 (unless (Poly? t)
-			 (tc-error/stx stx "cannot apply non-polymorphic type ~a" t))                 
-		 (match t [(Poly-unsafe: n _)
-			   (unless (= n (length args))
-				   (tc-error/stx stx "wrong number of arguments to polymorphic type: expected ~a and got ~a"
-						 n (length args)))])
-		 (let ([v (subtype* A0 (instantiate-poly t args) other)])
-		   #;(printf "val: ~a~n"  v)
-		   v))]
-	      [(list other (App: (Name: n) args stx))
-	       (let ([t (lookup-type-name n)])
-		 (unless (Type? t)                     
-			 (fail! s t))
-		 #;(printf "subtype: 2 app-name: name: ~a type: ~a other: ~a ~ninst: ~a~n" (syntax-e n) t other 
-		 (instantiate-poly t args))
-		 (unless (Poly? t)
-			 (tc-error/stx stx "cannot apply non-polymorphic type ~a" t))                 
-		 (match t [(Poly-unsafe: n _)
-			   (unless (= n (length args))
-				   (tc-error/stx stx "wrong number of arguments to polymorphic type: expected ~a and got ~a"
-						 n (length args)))])
-					;(printf "about to call subtype with: ~a ~a ~n" other (instantiate-poly t args))
-		 (let ([v (subtype* A0 other (instantiate-poly t args))])
-		   #;(printf "2 val: ~a~n"  v)
-		   v))]
-	      [(list (Name: n) other)
-	       (let ([t (lookup-type-name n)])
-		 (if (Type? t)                     
-		     (subtype* A0 t other)
-		     (fail! s t)))]
-              [(list other (Name: n))
-	       (let ([t (lookup-type-name n)])
-		 (if (Type? t)                     
-		     (subtype* A0 other t)
-		     (fail! t s)))]
 	      ;; subtyping on immutable structs is covariant
 	      [(list (Struct: nm _ flds #f _ _ _) (Struct: nm _ flds* #f _ _ _))
-               (printf "subtyping on structs: ~a ~a~n" flds flds*)
 	       (subtypes* A0 flds flds*)]
 	      [(list (Struct: nm _ flds proc _ _ _) (Struct: nm _ flds* proc* _ _ _))
 	       (subtypes* A0 (cons proc flds) (cons proc* flds*))]

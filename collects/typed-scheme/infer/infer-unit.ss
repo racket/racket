@@ -471,7 +471,6 @@
 (define (infer X S T R must-vars [expected #f])
   (with-handlers ([exn:infer? (lambda _ #f)])  
     (let ([cs (cgen/list null X S T)])
-      (printf "cs: ~a~n" cs)
       (if (not expected)
           (subst-gen cs R must-vars)
           (subst-gen (cset-meet cs (cgen null X R expected)) R must-vars)))))
@@ -480,7 +479,6 @@
 (define (infer/vararg X S T T-var R must-vars [expected #f])
   (define new-T (if T-var (extend S T T-var) T))
   (and ((length S) . >= . (length T))
-       (printf "calling infer~n")
        (infer X S new-T R must-vars expected)))
 
 ;; like infer, but dotted-var is the bound on the ...
@@ -507,4 +505,4 @@
 (define (i s t r)
   (infer/simple (list s) (list t) r))
 
-(trace subst-gen cgen)
+;(trace subst-gen cgen)

@@ -63,7 +63,7 @@
          [else #t])])))
 
 
-(trace overlap)
+;(trace overlap)
 
 
 ;(trace restrict)

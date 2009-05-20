@@ -18,7 +18,6 @@
     (match l
       [(Union: es) 
        (let ([l (map f es)])
-         (printf "l is ~a~n" l)
          (apply Un l))]))
   (cond
     [(subtype t1 t2) t1] ;; already a subtype          
@@ -34,5 +33,5 @@
     [(not (overlap t1 t2)) (Un)] ;; there's no overlap, so the restriction is empty
     [else t2] ;; t2 and t1 have a complex relationship, so we punt
     ))
-(trace restrict*)
 (define restrict restrict*)
+;(trace restrict*)
