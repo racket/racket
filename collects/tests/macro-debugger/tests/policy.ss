@@ -38,9 +38,9 @@
       (test-base base:if #f)
 
       ;; Other Scheme/* forms
-      (test-base scheme:match #t)
+      (test-base scheme:match #f)
       (test-base scheme:unit #t)
-      (test-base scheme:class #t)
+      (test-base scheme:class #f)
 
       ;; Unbound names
       (test-base no-such-name #t)

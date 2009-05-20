@@ -12,23 +12,27 @@
 (unsafe!)
 
 (define libcrypto
-  (ffi-lib libcrypto-so '("" "0.9.8b" "0.9.8" "0.9.7")))
+  (with-handlers ([exn:fail? (lambda (x) #f)])
+    (ffi-lib libcrypto-so '("" "0.9.8b" "0.9.8" "0.9.7"))))
 
 (define EVP_SHA1
-  (get-ffi-obj 'EVP_sha1 libcrypto
-               (_fun f-> _fpointer)))
+  (and libcrypto
+       (get-ffi-obj 'EVP_sha1 libcrypto
+                    (_fun f-> _fpointer))))
 
 (define HMAC-SHA1/raw
-  (get-ffi-obj 'HMAC libcrypto
-               (_fun [EVP_MD : _fpointer = (EVP_SHA1)]
-                     [key : _bytes]
-                     [key_len : _int = (bytes-length key)]
-                     [data : _bytes]
-                     [data_len : _int = (bytes-length data)]
-                     [md : _int = 0]
-                     [md_len : _int = 0]
-                     f->
-                     _pointer)))
+  (if libcrypto
+      (get-ffi-obj 'HMAC libcrypto
+                   (_fun [EVP_MD : _fpointer = (EVP_SHA1)]
+                         [key : _bytes]
+                         [key_len : _int = (bytes-length key)]
+                         [data : _bytes]
+                         [data_len : _int = (bytes-length data)]
+                         [md : _int = 0]
+                         [md_len : _int = 0]
+                         f->
+                         _pointer))
+      (lambda (key data) (error 'HMAC-SHA1/raw "libcrypto could not load"))))
 
 (define (HMAC-SHA1 key data)
   ; It returns the same pointer always
