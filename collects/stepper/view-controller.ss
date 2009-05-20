@@ -358,7 +358,10 @@
              (list x:finished-text 'finished-stepping (list))])])
       (hand-off-and-block step-text step-kind posns)))
   
-  ;; need to capture the custodian as the thread starts up:
+  ;; program-expander-prime : wrap the program-expander for a couple of reasons:
+  ;; 1) we need to capture the custodian as the thread starts up:
+  ;; ok, it was just one.
+  ;; 
   (define (program-expander-prime init iter)
     (program-expander
      (lambda args
