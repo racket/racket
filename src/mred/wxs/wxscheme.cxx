@@ -2108,6 +2108,7 @@ Bool wxMediaPrintout::OnBeginDocument(int startPage, int endPage)
 void wxMediaPrintout::OnEndDocument()
 {
   scheme_apply(end_doc, 0, NULL);
+  wxPrintout::OnEndDocument();
 }
 
 #endif
