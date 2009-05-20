@@ -88,6 +88,7 @@
              (#,cm)
              (#%plain-lambda #,x
                              (#%plain-app abort
+                                          ; XXX Do I need to rebuild the CMs?
                                           (#%plain-lambda () (#%plain-app resume #,ref-to-cm #,ref-to-x)))))
             (#%plain-app activation-record-list))))))]
     [(#%plain-app call-with-values (#%plain-lambda () prod) cons)

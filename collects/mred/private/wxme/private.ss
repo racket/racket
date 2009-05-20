@@ -85,7 +85,6 @@
   end-sequence-lock
   check-flow
   get-printing
-  is-printing?
   do-begin-print
   do-end-print
   do-has-print-page?)
@@ -96,6 +95,7 @@
   get-s-last-snip
   get-s-total-width
   get-s-total-height
+  get-s-snips
   refresh-box
   add-back-clickback
   do-insert-snips)

@@ -2060,6 +2060,10 @@
 (test #t symbol? '1+ei)
 (test #t symbol? '|1/0|)
 
+(test #t inexact? (string->number "4@5"))
+(test #f inexact? (string->number "#e4@5"))
+(test #f inexact? (string->number "#e4.0@5.0"))
+
 (arity-test string->number 1 2)
 (arity-test number->string 1 2)
 

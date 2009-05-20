@@ -259,7 +259,8 @@ Matthew
                (interactive? fit-on-page?)
                (interactive? fit-on-page? output-mode)
                (interactive? fit-on-page? output-mode parent)
-               (interactive? fit-on-page? output-mode parent force-ps-page-bbox?)]
+               (interactive? fit-on-page? output-mode parent force-ps-page-bbox?)
+               (interactive? fit-on-page? output-mode parent force-ps-page-bbox? as-eps?)]
               unlocked)
        
        (get-text [() (x) (x y) (x y z) (x y z p)] unlocked)

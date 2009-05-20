@@ -33,6 +33,7 @@ An example version 2 module:
 @schememod[
  scheme
  (require web-server/managers/none)
+ (provide interface-version manager start)
  
  (define interface-version 'v2)
  (define manager 

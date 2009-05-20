@@ -121,7 +121,7 @@ expressions, a printed symbol should not be confused with an
 identifier. In particular, the symbol @scheme[(#, @scheme[quote] #,
 @schemeidfont{map})] has nothing to do with the @schemeidfont{map}
 identifier or the predefined function that is bound to
-@schemeidfont{map}, except that the symbol and the identifier happen
+@scheme[map], except that the symbol and the identifier happen
 to be made up of the same letters.
 
 Indeed, the intrinsic value of a symbol is nothing more than its

@@ -233,6 +233,7 @@
   (define initial-space 0.0) ; space from first line
   (define initial-line-base 0.0) ; inverse descent from first line
 
+  (define/public (get-s-snips) snips)
   (define/public (get-s-last-snip) last-snip)
   (define/public (get-s-total-width) total-width)
   (define/public (get-s-total-height) total-height)
@@ -593,14 +594,15 @@
 
   (def/override (blink-caret)
     (if s-caret-snip
-        (let-boxes ([dx 0.0]
-                    [dy 0.0]
-                    [dc #f])
-            (set-box! dc (send s-admin get-dc dx dy))
-          (when dc
-            (let-boxes ([x 0.0] [y 0.0])
-                (get-snip-location s-caret-snip x y)
-              (send s-caret-snip blink-caret dc (- x dx) (- y dy)))))
+        (when s-admin
+          (let-boxes ([dx 0.0]
+                      [dy 0.0]
+                      [dc #f])
+              (set-box! dc (send s-admin get-dc dx dy))
+            (when dc
+              (let-boxes ([x 0.0] [y 0.0])
+                  (get-snip-location s-caret-snip x y)
+                (send s-caret-snip blink-caret dc (- x dx) (- y dy))))))
         (if (too-busy-to-refresh?)
             ;; we're busy; go away
             (void)
@@ -1036,7 +1038,8 @@
                                                           ;;   - already at top
                                                           (let-boxes ([scroll-left 0.0] [vy 0.0]
                                                                       [scroll-width 0.0] [scroll-height 0.0])
-                                                              (send s-admin get-view scroll-left vy scroll-width scroll-height)
+                                                              (when s-admin
+                                                                (send s-admin get-view scroll-left vy scroll-width scroll-height))
                                                             ;; top line should be completely visible as bottom line after
                                                             ;;   scrolling
                                                             (let* ([top (find-scroll-line vy)]
@@ -1094,7 +1097,8 @@
                                                       (if (eq? 'page kind)
                                                           (let-boxes ([scroll-left 0.0] [vy 0.0]
                                                                       [scroll-width 0.0] [scroll-height 0.0])
-                                                              (send s-admin get-view scroll-left vy scroll-width scroll-height)
+                                                              (when s-admin
+                                                                (send s-admin get-view scroll-left vy scroll-width scroll-height))
                                                             ;; last fully-visible line is the new top line 
                                                             (let* ([newtop (find-scroll-line (+ vy scroll-height))]
                                                                    [y (scroll-line-location (+ newtop 1))]
@@ -2213,9 +2217,12 @@
     (if read-locked?
         #\nul
         (let-values ([(snip s-pos) (find-snip/pos (max 0 (min start len)) 'after)])
-          (let ([buffer (make-string 1)])
-            (send snip get-text! buffer (- start s-pos) 1 0)
-            (string-ref buffer 0)))))
+          (let ([delta (- start s-pos)])
+            (if (delta . >= . (snip->count snip))
+                #\nul
+                (let ([buffer (make-string 1)])
+                  (send snip get-text! buffer delta 1 0)
+                  (string-ref buffer 0)))))))
 
   ;; ----------------------------------------
 
@@ -2929,7 +2936,8 @@
                 (let ([dc (send s-admin get-dc)])
                   (let-boxes ([w 0.0]
                               [h 0.0])
-                      (send thesnip get-extent dc (unbox x) (unbox y) w h #f #f #f #f)
+                      (when dc
+                        (send thesnip get-extent dc (unbox x) (unbox y) w h #f #f #f #f))
 
                     (set! write-locked? wl?)
                     (set! flow-locked? fl?)
@@ -3054,7 +3062,8 @@
                       (let-boxes ([h 0.0]
                                   [descent 0.0]
                                   [space 0.0])
-                          (send snip get-extent dc horiz topy #f h descent space #f #F)
+                          (when dc
+                            (send snip get-extent dc horiz topy #f h descent space #f #F))
                         (let ([align (send (snip->style snip) get-alignment)])
                           (cond
                            [(eq? 'bottom align)
@@ -4561,7 +4570,17 @@
                      
                      (let ([w (- max-width CURSOR-WIDTH)])
                        (let loop ([-changed? #f])
-                         (if (mline-update-flow (unbox line-root-box) line-root-box this w dc)
+                         (if (mline-update-flow (unbox line-root-box) line-root-box this w dc
+                                                (lambda (del-line)
+                                                  (when (eq? del-line first-line)
+                                                    (set! first-line (mline-first (unbox line-root-box))))
+                                                  (when (eq? del-line last-line)
+                                                    (set! last-line (mline-last (unbox line-root-box)))))
+                                                (lambda (ins-line)
+                                                  (when (not (mline-prev ins-line))
+                                                    (set! first-line ins-line))
+                                                  (when (not (mline-next ins-line))
+                                                    (set! last-line ins-line))))
                              (loop #t)
                              
                              (begin

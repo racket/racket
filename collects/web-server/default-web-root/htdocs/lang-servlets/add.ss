@@ -12,7 +12,7 @@
           (send/suspend/url
            (lambda (k-url)
              (printf "ssu~n")
-             `(hmtl (head (title ,(format "Get ~a number" msg)))
+             `(html (head (title ,(format "Get ~a number" msg)))
                     (body
                      (form ([action ,(url->string k-url)]
                             [method "post"]

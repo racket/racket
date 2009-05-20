@@ -24,7 +24,7 @@
 ;; generate the page for the question
 (define (make-cue-page mc-q)
   (lambda (ses-url k-hidden)
-    `(hmtl (head (title "Question"))
+    `(html (head (title "Question"))
            (body
             (form ([action ,(url->string ses-url)] [method "post"]
                                                    [enctype "application/x-www-form-urlencoded"])

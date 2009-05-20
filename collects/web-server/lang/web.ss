@@ -81,25 +81,23 @@
    (lambda (k-url)
      (page-maker (url->string k-url)))))
 
-(define-closure embed/url (proc) (k)
-  (stuff-url (stateless-servlet-stuffer (current-servlet))
-             (request-uri (execution-context-request (current-execution-context)))
-             (kont-append-fun k proc)))
+(define-closure embed/url (proc) (k string?)
+  (let ([url
+         (stuff-url (stateless-servlet-stuffer (current-servlet))
+                    (request-uri (execution-context-request (current-execution-context)))
+                    (kont-append-fun k proc))])
+    (if string?
+        (url->string url)
+        url)))
+
 (define (send/suspend/url/dispatch response-generator)
   (call-with-serializable-current-continuation
    (lambda (k)
-     (response-generator (make-embed/url (lambda () k))))))
-
-; XXX Uncopy&paste
-(define-closure embed (proc) (k)
-  (url->string
-   (stuff-url (stateless-servlet-stuffer (current-servlet))
-              (request-uri (execution-context-request (current-execution-context)))
-              (kont-append-fun k proc))))
+     (response-generator (make-embed/url (lambda () (values k #f)))))))
 (define (send/suspend/dispatch response-generator)
   (call-with-serializable-current-continuation
    (lambda (k)
-     (response-generator (make-embed (lambda () k))))))
+     (response-generator (make-embed/url (lambda () (values k #t)))))))
 
 ;; request->continuation: req -> continuation
 ;; decode the continuation from the hidden field of a request

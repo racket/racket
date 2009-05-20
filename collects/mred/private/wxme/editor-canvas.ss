@@ -5,6 +5,7 @@
          "editor-admin.ss"
          "private.ss"
          (only-in "cycle.ss" popup-menu%)
+         (only-in "../helper.ss" queue-window-callback)
          "wx.ss")
 
 (provide editor-canvas%)
@@ -350,9 +351,17 @@
         (thunk)))
 
   (define/override (on-set-focus)
-    (on-focus #t))
+    (if (eq? 'windows (system-type))
+        (queue-window-callback
+         this
+         (lambda () (on-focus #t)))
+        (on-focus #t)))
   (define/override (on-kill-focus)
-    (on-focus #f))
+    (if (eq? 'windows (system-type))
+        (queue-window-callback
+         this
+         (lambda () (on-focus #f)))
+        (on-focus #f)))
 
   (define/public (is-focus-on?) focuson?)
 
@@ -532,7 +541,9 @@
           (if (and media
                    (or (positive? y)
                        scroll-bottom-based?))
-              (let ([v (- (send media scroll-line-location (+ y scroll-offset))
+              (let ([v (- (if (send media locked-for-read?)
+                              0.0
+                              (send media scroll-line-location (+ y scroll-offset)))
                           ymargin)])
                 (set-box! fy v)
                 (when (and scroll-bottom-based?

@@ -734,7 +734,7 @@ See also  @method[editor<%> set-load-overwrites-styles].
 }
 
 @defmethod[(get-max-height)
-           (or/c (and/c real? (not/c negative?)) (one/of 'none))]{
+           (or/c (and/c real? (not/c negative?)) 'none)]{
 
 Gets the maximum display height for the contents of the editor; zero or
  @scheme['none] indicates that there is no maximum.
@@ -770,7 +770,7 @@ If the @techlink{display} is an editor canvas, see also
 }
 
 @defmethod[(get-max-width)
-           (or/c (and/c real? (not/c negative?)) (one/of 'none))]{
+           (or/c (and/c real? (not/c negative?)) 'none)]{
 
 Gets the maximum display width for the contents of the editor; zero or
  @scheme['none] indicates that there is no maximum. In a text editor,
@@ -779,7 +779,7 @@ Gets the maximum display width for the contents of the editor; zero or
 }
 
 @defmethod[(get-min-height)
-           (or/c (and/c real? (not/c negative?)) (one/of 'none))]{
+           (or/c (and/c real? (not/c negative?)) 'none)]{
 
 Gets the minimum display height for the contents of the editor; zero
  or @scheme['none] indicates that there is no minimum.
@@ -788,7 +788,7 @@ Gets the minimum display height for the contents of the editor; zero
 
 
 @defmethod[(get-min-width)
-           (or/c (and/c real? (not/c negative?)) (one/of 'none))]{
+           (or/c (and/c real? (not/c negative?)) 'none)]{
 
 Gets the minimum display width for the contents of the editor; zero or
  @scheme['none] indicates that there is no minimum.
@@ -945,7 +945,7 @@ inserts the resulting snip into the editor.
                                              'text 'text-force-cr) 'guess]
                            [show-errors? any/c #t])
               boolean?]
-             [(insert-file [port input-port]
+             [(insert-file [port input-port?]
                            [format (one-of/c 'guess 'same 'copy 'standard
                                              'text 'text-force-cr) 'guess]
                            [show-errors? any/c #t])
@@ -988,7 +988,7 @@ calling
 
 }
 
-@defmethod[(insert-port [port input-port]
+@defmethod[(insert-port [port input-port?]
                         [format (one-of/c 'guess 'same 'copy 'standard
                                           'text 'text-force-cr) 'guess]
                         [replace-styles? any/c #t])
@@ -1014,8 +1014,8 @@ if @scheme[replace-styles?] is true, then styles in the current style
 
 @defmethod[(invalidate-bitmap-cache [x real? 0.0]
                                     [y real? 0.0]
-                                    [width (or/c (and/c real? (not/c negative?)) (one/of 'end)) 'end]
-                                    [height (or/c (and/c real? (not/c negative?)) (one/of 'end)) 'end])
+                                    [width (or/c (and/c real? (not/c negative?)) 'end) 'end]
+                                    [height (or/c (and/c real? (not/c negative?)) 'end) 'end])
            void?]{
 
 When @method[editor<%> on-paint] is overridden, call this method when
@@ -1523,7 +1523,7 @@ Creates a @scheme[editor-snip%] with either a sub-editor from
 }}
 
 
-@defmethod[(on-new-image-snip [filename (or/c path? #f)]
+@defmethod[(on-new-image-snip [filename path?]
                               [kind (one-of/c 'unknown 'gif 'jpeg 'xbm 'xpm 'bmp 'pict)]
                               [relative-path? any/c]
                               [inline? any/c])
@@ -1713,7 +1713,7 @@ To extend or re-implement copying, override the @xmethod[text%
 @defmethod[(print [interactive? any/c #t]
                   [fit-on-page? any/c #t]
                   [output-mode (one-of/c 'standard 'postscript) 'standard]
-                  [parent (or/c (or/c @scheme[frame%] (is-a?/c dialog%)) #f) #f]
+                  [parent (or/c (or/c (is-a?/c frame%) (is-a?/c dialog%)) #f) #f]
                   [force-ps-page-bbox? any/c #t]
                   [as-eps? any/c #f])
            void?]{
@@ -2003,7 +2003,7 @@ The @scheme[show-errors?] argument is no longer used.
 }
 
 
-@defmethod[(save-port [port output-port]
+@defmethod[(save-port [port output-port?]
                       [format (one-of/c 'guess 'same 'copy 'standard
                                         'text 'text-force-cr) 'same]
                       [show-errors? any/c #t])
@@ -2044,7 +2044,7 @@ administrator, @scheme[#f] is returned.
 }
 
 
-@defmethod[(scroll-line-location [pos (and/c exact? integer?)])
+@defmethod[(scroll-line-location [pos exact-nonnegative-integer?])
            (and/c real? (not/c negative?))]{
 
 Maps a vertical scroll position to a vertical @techlink{location}
@@ -2226,7 +2226,7 @@ See also @method[editor<%> get-load-overwrites-styles] and
 }
 
 
-@defmethod[(set-max-height [width (or/c (and/c real? (not/c negative?)) (one/of 'none))])
+@defmethod[(set-max-height [width (or/c (and/c real? (not/c negative?)) 'none)])
            void?]{
 
 Sets the maximum display height for the contents of the editor.  A
@@ -2238,7 +2238,7 @@ Setting the height is disallowed when the editor is internally locked
 }
 
 
-@defmethod[(set-max-undo-history [count (or/c exact-nonnegative-integer? (one/of 'forever))])
+@defmethod[(set-max-undo-history [count (or/c exact-nonnegative-integer? 'forever)])
            void?]{
 
 Sets the maximum number of undoables that will be remembered by the
@@ -2249,7 +2249,7 @@ Sets the maximum number of undoables that will be remembered by the
 }
 
 
-@defmethod[(set-max-width [width (or/c (and/c real? (not/c negative?)) (one/of 'none))])
+@defmethod[(set-max-width [width (or/c (and/c real? (not/c negative?)) 'none)])
            void?]{
 
 Sets the maximum display width for the contents of the editor;
@@ -2265,7 +2265,7 @@ See also @method[text% set-autowrap-bitmap].
 
 }
 
-@defmethod[(set-min-height [width (or/c (and/c real? (not/c negative?)) (one/of 'none))])
+@defmethod[(set-min-height [width (or/c (and/c real? (not/c negative?)) 'none)])
            void?]{
 
 Sets the minimum display height for the contents of the editor; zero
@@ -2276,7 +2276,7 @@ Setting the height is disallowed when the editor is internally locked
 
 }
 
-@defmethod[(set-min-width [width (or/c (and/c real? (not/c negative?)) (one/of 'none))])
+@defmethod[(set-min-width [width (or/c (and/c real? (not/c negative?)) 'none)])
            void?]{
 
 Sets the minimum display width for the contents of the editor; zero or

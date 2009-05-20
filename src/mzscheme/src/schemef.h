@@ -125,6 +125,8 @@ MZ_EXTERN void scheme_cancel_sleep(void);
 MZ_EXTERN void scheme_start_sleeper_thread(void (*mzsleep)(float seconds, void *fds), float secs, void *fds, int hit_fd);
 MZ_EXTERN void scheme_end_sleeper_thread();
 
+MZ_EXTERN void scheme_notify_sleep_progress();
+
 MZ_EXTERN Scheme_Object *scheme_make_thread_cell(Scheme_Object *def_val, int inherited);
 MZ_EXTERN Scheme_Object *scheme_thread_cell_get(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells);
 MZ_EXTERN void scheme_thread_cell_set(Scheme_Object *cell, Scheme_Thread_Cell_Table *cells, Scheme_Object *v);

@@ -8,7 +8,7 @@
   (let ([req
          (send/suspend/hidden
           (lambda (ses-url k-hidden)
-            `(hmtl (head (title ,(format "Get ~a number" msg)))
+            `(html (head (title ,(format "Get ~a number" msg)))
                    (body
                     (form ([action ,(url->string ses-url)]
                            [method "post"]
