@@ -23,7 +23,8 @@
          "../model/reductions.ss"
          "../model/steps.ss"
          "cursor.ss"
-         "../util/notify.ss")
+         "../util/notify.ss"
+         (only-in mzscheme [#%top-interaction mz-top-interaction]))
 (provide macro-stepper-widget%
          macro-stepper-widget/process-mixin)
 
@@ -434,7 +435,8 @@
 
     ;; adjust-deriv/top : Derivation -> Derivation
     (define/private (adjust-deriv/top deriv)
-      (if (or (syntax-source (wderiv-e1 deriv))
+      (if (or (and #| (syntax-source (wderiv-e1 deriv)) |#
+                   (syntax-original? (wderiv-e1 deriv)))
               (p:module? deriv))
           deriv
           ;; It's not original...
@@ -454,6 +456,7 @@
                  #f])))
 
     (define/public (top-interaction-kw? x)
-      (free-identifier=? x #'#%top-interaction))
+      (or (free-identifier=? x #'#%top-interaction)
+          (free-identifier=? x #'mz-top-interaction)))
 
     ))

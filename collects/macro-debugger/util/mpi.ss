@@ -41,14 +41,25 @@
 ;;   (list #f)  ;; "self" module
 ;;   null
 
+;; An rmp-sexpr is
+;;   (list 'resolved path/symbol)
+
 ;; mpi->mpi-sexpr : mpi -> mpi-sexpr
 (define (mpi->mpi-sexpr mpi)
   (cond [(module-path-index? mpi)
          (let-values ([(mod next) (module-path-index-split mpi)])
-           (cons mod (mpi->mpi-sexpr next)))]
+           (cons (mp->mp-sexpr mod) (mpi->mpi-sexpr next)))]
         [(resolved-module-path? mpi)
          (list (rmp->rmp-sexpr mpi))]
         [else null]))
+
+;; mp->mp-sexpr : mp -> mp-sexpr
+(define (mp->mp-sexpr mp)
+  (if (path? mp)
+      (if (absolute-path? mp)
+          `(file ,(path->string mp))
+          (path->string mp))
+      mp))
 
 ;; mpi-sexpr->mpi : mpi-sexpr -> mpi
 (define (mpi-sexpr->mpi sexpr)
@@ -124,7 +135,11 @@
            [else
             `(REL (split-mods path))])]
     [(? string? path)
-     `(REL ,(split-mods path))]))
+     `(REL ,(split-mods path))]
+    [`(resolved ,(? path? path))
+     `(FILE ,path)]
+    [`(resolved ,(? symbol? symbol))
+     `(QUOTE ,symbol)]))
 
 ;; expanded-mpi-sexpr->mpi-sexpr
 (define (expanded-mpi-sexpr->mpi-sexpr sexpr)
