@@ -224,7 +224,7 @@
 							    [else #f])])
 
 ;; elems : Listof[Type]
-(dt Union ([elems (and/c (listof Type/c)
+(dt Union ([elems (and/c (listof Type/c)                         
                          (lambda (es)
                            (let-values ([(sorted? k)
                                          (for/fold ([sorted? #t]

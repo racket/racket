@@ -22,7 +22,7 @@
   (define (gen-constructor sym)
     (string->symbol (string-append "make-" (substring (symbol->string sym) 7))))
   (match v
-    [(Union: elems) `(make-Union (list ,@(map sub elems)))]
+    [(Union: elems) `(make-Union (sort (list ,@(map sub elems)) < #:key Type-seq))]
     [(Base: n cnt) `(make-Base ',n (quote-syntax ,cnt))]
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
     [(Struct: name parent flds proc poly? pred-id cert)

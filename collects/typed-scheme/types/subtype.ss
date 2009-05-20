@@ -260,15 +260,6 @@
 	      ;; for unions, we check the cross-product
 	      [(list (Union: es) t) (and (andmap (lambda (elem) (subtype* A0 elem t)) es) A0)]
 	      [(list s (Union: es)) (and (ormap (lambda (elem) (subtype*/no-fail A0 s elem)) es) A0)]
-	      ;; subtyping on immutable structs is covariant
-	      [(list (Struct: nm _ flds #f _ _ _) (Struct: nm _ flds* #f _ _ _))
-	       (subtypes* A0 flds flds*)]
-	      [(list (Struct: nm _ flds proc _ _ _) (Struct: nm _ flds* proc* _ _ _))
-	       (subtypes* A0 (cons proc flds) (cons proc* flds*))]
-	      ;; subtyping on structs follows the declared hierarchy
-	      [(list (Struct: nm (? Type? parent) flds proc _ _ _) other) 
-					;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)
-	       (subtype* A0 parent other)]
 	      ;; applications and names are structs too
 	      [(list (App: (Name: n) args stx) other)
 	       (let ([t (lookup-type-name n)])
@@ -311,6 +302,16 @@
 		 (if (Type? t)                     
 		     (subtype* A0 other t)
 		     (fail! t s)))]
+	      ;; subtyping on immutable structs is covariant
+	      [(list (Struct: nm _ flds #f _ _ _) (Struct: nm _ flds* #f _ _ _))
+               (printf "subtyping on structs: ~a ~a~n" flds flds*)
+	       (subtypes* A0 flds flds*)]
+	      [(list (Struct: nm _ flds proc _ _ _) (Struct: nm _ flds* proc* _ _ _))
+	       (subtypes* A0 (cons proc flds) (cons proc* flds*))]
+	      ;; subtyping on structs follows the declared hierarchy
+	      [(list (Struct: nm (? Type? parent) flds proc _ _ _) other) 
+					;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)
+	       (subtype* A0 parent other)]
 	      ;; Promises are covariant
 	      [(list (Struct: 'Promise _ (list t) _ _ _ _) (Struct: 'Promise _ (list t*) _ _ _ _)) (subtype* A0 t t*)]
 	      ;; subtyping on values is pointwise

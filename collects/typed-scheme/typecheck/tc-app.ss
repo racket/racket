@@ -538,6 +538,7 @@
                           (PolyDots: vars
                                      (Function: (list (and arrs (arr: doms rngs rests (and drests #f) '())) ...))))))
       (list (tc-result1: argtys-t) ...))
+     (printf "simple poly case: ~a~n" t)
      (handle-clauses (doms rngs rests arrs) f-stx args-stx
                      ;; only try inference if the argument lengths are appropriate
                      (lambda (dom _ rest a) ((if rest <= =) (length dom) (length argtys)))

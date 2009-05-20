@@ -2,7 +2,7 @@
 
 (require (except-in "../utils/utils.ss"))
 (require (rep free-variance type-rep filter-rep rep-utils)
-	 (types convenience union subtype remove-intersect)
+	 (types convenience union subtype remove-intersect resolve)
 	 (except-in (utils tc-utils) make-env)
 	 (env type-name-env)
          (except-in (types utils) Dotted)
@@ -347,9 +347,9 @@
             (App: (Name: n*) args* _))
            (unless (free-identifier=? n n*)
              (fail! S T))
-           (let ([x (instantiate-poly (lookup-type-name n) args)]
-                 [y (instantiate-poly (lookup-type-name n) args*)])
-             (cg x y))]
+             (cg (resolve-once S) (resolve-once T))]
+          [((App: _ _ _) _) (cg (resolve-once S) T)]
+          [(_ (App: _ _ _)) (cg S (resolve-once T))]
           [((Values: ss) (Values: ts))
            (unless (= (length ss) (length ts))
              (fail! ss ts))
@@ -471,7 +471,7 @@
 (define (infer X S T R must-vars [expected #f])
   (with-handlers ([exn:infer? (lambda _ #f)])  
     (let ([cs (cgen/list null X S T)])
-      ;(printf "cs: ~a~n" cs)
+      (printf "cs: ~a~n" cs)
       (if (not expected)
           (subst-gen cs R must-vars)
           (subst-gen (cset-meet cs (cgen null X R expected)) R must-vars)))))
@@ -480,6 +480,7 @@
 (define (infer/vararg X S T T-var R must-vars [expected #f])
   (define new-T (if T-var (extend S T T-var) T))
   (and ((length S) . >= . (length T))
+       (printf "calling infer~n")
        (infer X S new-T R must-vars expected)))
 
 ;; like infer, but dotted-var is the bound on the ...
@@ -506,4 +507,4 @@
 (define (i s t r)
   (infer/simple (list s) (list t) r))
 
-;(trace cgen cgen/filters cgen/filter)
+(trace subst-gen cgen)
