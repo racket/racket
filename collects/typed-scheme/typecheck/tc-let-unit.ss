@@ -1,14 +1,14 @@
 #lang scheme/unit
 
 (require (rename-in "../utils/utils.ss" [infer r:infer]))
-(require "signatures.ss"
+(require "signatures.ss" "tc-metafunctions.ss"
          (types utils convenience)
          (private type-annotation parse-type)
 	 (env lexical-env type-alias-env type-env)
          syntax/free-vars
          mzlib/trace
          scheme/match
-         syntax/kerncase
+         syntax/kerncase stxclass
          (for-template 
           scheme/base
           "internal-forms.ss"))
@@ -90,11 +90,10 @@
 ;; this is so match can provide us with a syntax property to
 ;; say that this binding is only called in tail position
 (define ((tc-expr-t/maybe-expected expected) e)
-  (kernel-syntax-case e #f
+  (syntax-parse e #:literals (#%plain-lambda)
     [(#%plain-lambda () _)
-     (and expected (syntax-property e 'typechecker:called-in-tail-position))
-     (begin
-       (tc-expr/check e (ret (-> expected))))]
+     #:when (and expected (syntax-property e 'typechecker:called-in-tail-position))
+     (tc-expr/check e (ret (-> (tc-results->values expected))))]
     [_ (tc-expr e)]))
 
 (define (tc/let-values namess exprs body form [expected #f])
