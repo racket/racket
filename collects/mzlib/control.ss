@@ -73,7 +73,7 @@
   ;; call-with-control, parameterized over whether to keep the
   ;; prompt (if the prompt's handler gives us the option of
   ;; removing it). The generated function is the same
-  ;; a fcontrol when `abort-cc' is `abort-current-continuation'.
+  ;; as fcontrol when `abort-cc' is `abort-current-continuation'.
   (define (make-call-with-control abort-cc)
     ;; Uses call/cc to always keep the enclosing prompt.
     (letrec ([call-with-control
