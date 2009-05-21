@@ -169,8 +169,15 @@
   
   ;; is this step on the selected expression?
   (define (selected-exp-step? history-entry)
-    (member selection-posn (step-posns history-entry)))
+    (ormap (posn-in-span selection-posn) (step-posns history-entry)))
   
+  (define ((posn-in-span selection-posn) source-posn-info)
+    (match source-posn-info
+      [#f #f]
+      [(struct model:posn-info (posn span))
+       (and posn
+            (<= posn selection-posn)
+            (< selection-posn (+ posn span)))]))
   
   ;; build gui object:
   
