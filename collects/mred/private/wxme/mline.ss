@@ -633,7 +633,7 @@
              (if (eq? asnip nexts)
                  l
                  (let ([l (+ l (snip->count asnip))])
-                   (when (has-flag? (snip->count asnip) WIDTH-DEPENDS-ON-X)
+                   (when (has-flag? (snip->flags asnip) WIDTH-DEPENDS-ON-X)
                      (send asnip size-cache-invalid))
                    (loop (snip->next asnip) l)))))])
 
