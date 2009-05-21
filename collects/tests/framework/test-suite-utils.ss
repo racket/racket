@@ -297,6 +297,7 @@
                 (and win
                      (string=? (send win get-label) ,name)))])
     (if eventspace
-        `(parameterize ([current-eventspace ,eventspace])
-           ,exp)
+        (wait-for
+         `(parameterize ([current-eventspace ,eventspace])
+            ,exp))
         (wait-for exp))))
