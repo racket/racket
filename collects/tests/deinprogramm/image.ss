@@ -2,7 +2,7 @@
 
 (provide all-image-tests)
 
-(require (planet schematics/schemeunit:3)
+(require schemeunit
 	 deinprogramm/image
          (only-in lang/private/imageeq image=?)
 	 mred
@@ -154,7 +154,7 @@
 ;;  c) has the right name.
 (define (tp-exn-pred name position)
   (lambda (exn)
-    (and (tp-exn? exn)
+    (and (exn:fail:contract? exn)
 	 (let* ([msg (exn-message exn)]
 		[beg (format "~a:" name)]
 		[len (string-length beg)])

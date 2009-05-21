@@ -2,7 +2,7 @@
 
 (provide all-contract-tests)
 
-(require (planet schematics/schemeunit:3)
+(require schemeunit
 	 deinprogramm/contract/contract
 	 deinprogramm/contract/contract-syntax)
 
