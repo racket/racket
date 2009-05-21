@@ -234,17 +234,23 @@
   
   
   (define-signature-form (open stx)
+    (define (build-sig-elems sig)
+      (map (λ (p c)
+             (if c #`(contracted [#,(car p) #,c]) (car p)))
+           (car sig)
+           (cadddr sig)))
     (parameterize ([error-syntax stx])
       (syntax-case stx ()
         ((_ export-spec)
          (let ([sig (process-spec #'export-spec)])
-           (with-syntax ((((int . ext) ...) (car sig))
+           (with-syntax (((sig-elem ...)
+                          (build-sig-elems sig))
                          ((renames
                            (((mac-name ...) mac-body) ...) 
                            (((val-name ...) val-body) ...))
                           (build-val+macro-defs sig)))
              (syntax->list
-              #'(int ...
+              #'(sig-elem ...
                  (define-syntaxes . renames)
                  (define-syntaxes (mac-name ...) mac-body) ...
                  (define-values (val-name ...) val-body) ...)))))
