@@ -14,7 +14,7 @@
 
 (define-values/invoke-unit/infer
   (export graphics^) 
-  (link graphics-posn-less@ standard-mred@))
+  (link standard-mred@ graphics-posn-less@))
 
 (provide-signature-elements graphics^)
 
