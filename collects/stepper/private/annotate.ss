@@ -35,18 +35,6 @@
    . -> .
    syntax?)]                       ; results
  
- [annotate/not-top-level           ;; SAME CONTRACT AS ANNOTATE!
-  (syntax?                         ; syntax to annotate
-   (((or/c continuation-mark-set? false/c) 
-     break-kind?)
-    (list?)
-    . opt->* .
-    (any/c))                       ; procedure for runtime break
-   boolean?                        ; show-lambdas-as-lambdas?
-   (union any/c (symbols 'testing)); language-level
-   . -> .
-   syntax?)]                       ; results
- 
  #;[top-level-rewrite (-> syntax? syntax?)])
 
 ;  ;;                                              ;;;;                          ;
@@ -272,7 +260,7 @@
 
 
 
-(define ((annotate/master input-is-top-level?) main-exp break show-lambdas-as-lambdas? language-level)
+(define (annotate main-exp break show-lambdas-as-lambdas? language-level)
   
   #;(define _ (>>> main-exp #;(syntax->datum main-exp)))
   
@@ -1135,12 +1123,13 @@
                   (#%plain-lambda () . rest3)))
          exp]
         [else
+         ;; I think we can re-enable this error now. I don't want to do it right before a release, though. 2009-05-20
          #;
          (error `annotate/top-level "unexpected top-level expression: ~a\n"
                 (syntax->datum exp))
          (annotate/module-top-level exp)])))
   
-  (define/contract annotate/top-level/acl2
+  #;(define/contract annotate/top-level/acl2
     (syntax? . -> . syntax?)
     (lambda (exp)
       (syntax-case exp (begin define-values #%plain-app)
@@ -1222,18 +1211,13 @@
               #;(error `annotate/module-top-level "unexpected module-top-level expression to annotate: ~a\n" (syntax->datum exp))])]))
   
   ; body of local
-  (if input-is-top-level?
-      (let* ([annotated-exp (cond 
-                              [(and (not (eq? language-level 'testing))
-                                    (string=? (language-level->name language-level) "ACL2 Beginner (beta 8)"))
-                               (annotate/top-level/acl2 main-exp)]
-                              [else 
-                               (annotate/top-level main-exp)])])
-        annotated-exp)
-      (let*-2vals ([(annotated dont-care)
-                    (annotate/inner (top-level-rewrite main-exp) 'all #f #f)])
-                  annotated)))
+  (let* ([annotated-exp (cond 
+                          ;; support for ACL2 is commented out.
+                          #;[(and (not (eq? language-level 'testing))
+                                (string=? (language-level->name language-level) "ACL2 Beginner (beta 8)"))
+                           (annotate/top-level/acl2 main-exp)]
+                          [else 
+                           (annotate/top-level main-exp)])])
+    annotated-exp))
 
-;; !@#$ defs have to appear after annotate/master.
-(define annotate (annotate/master #t))
-(define annotate/not-top-level (annotate/master #f))
+
