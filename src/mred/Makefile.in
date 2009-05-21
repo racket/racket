@@ -174,17 +174,17 @@ mred.@LTO@ :  $(srcdir)/mred.cxx \
           $(srcdir)/../mzscheme/include/scheme.h \
           $(srcdir)/wxs/wxsmred.h $(WXINCDEP) $(srcdir)/../wxcommon/wxGC.h \
           $(srcdir)/../wxcommon/wx_list.h
-	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -c $(srcdir)/mred.cxx -o mred.@LTO@
+	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) -c $(srcdir)/mred.cxx -o mred.@LTO@
 
 DEF_COLLECTS_DIR = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../collects; pwd`"'"'
 
 mrmain.@LTO@ :  $(srcdir)/mrmain.cxx $(srcdir)/mred.h $(srcdir)/wxs/wxsmred.h \
             $(srcdir)/../mzscheme/cmdline.inc $(srcdir)/../mzscheme/src/stypes.h \
             $(srcdir)/../mzscheme/include/scheme.h
-	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) $(DEF_COLLECTS_DIR) -c $(srcdir)/mrmain.cxx -o mrmain.@LTO@
+	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) $(DEF_COLLECTS_DIR) -c $(srcdir)/mrmain.cxx -o mrmain.@LTO@
 
 mrmain_ee.@LTO@ : mred.@LTO@
-	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -DSTANDALONE_WITH_EMBEDDED_EXTENSION $(DEF_COLLECTS_DIR) -c $(srcdir)/mrmain.cxx -o mrmain_ee.@LTO@
+	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) -DSTANDALONE_WITH_EMBEDDED_EXTENSION $(DEF_COLLECTS_DIR) -c $(srcdir)/mrmain.cxx -o mrmain_ee.@LTO@
 
 ee-main:
 	$(MAKE) mrmain_ee.@LTO@
@@ -193,28 +193,28 @@ mredx.@LTO@ : $(srcdir)/mredx.cxx $(srcdir)/../mzscheme/include/scheme.h $(srcdi
           $(WXINCDEP) \
           $(srcdir)/../wxcommon/wxGC.h $(srcdir)/../wxcommon/wx_list.h \
           $(srcdir)/../mzscheme/src/stypes.h
-	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -c $(srcdir)/mredx.cxx -o mredx.@LTO@
+	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) -c $(srcdir)/mredx.cxx -o mredx.@LTO@
 
 mredmac.@LTO@ : $(srcdir)/mredmac.cxx $(srcdir)/../mzscheme/include/scheme.h $(srcdir)/mred.h \
           $(srcdir)/../wxcommon/wxGC.h $(srcdir)/../wxcommon/wx_list.h \
           $(srcdir)/../mzscheme/src/stypes.h
-	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -c $(srcdir)/mredmac.cxx -o mredmac.@LTO@
+	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) -c $(srcdir)/mredmac.cxx -o mredmac.@LTO@
 
 wxGC.@LTO@ : $(srcdir)/../wxcommon/wxGC.cxx $(srcdir)/../wxcommon/wxGC.h \
          $(srcdir)/../mzscheme/src/stypes.h
-	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -c $(srcdir)/../wxcommon/wxGC.cxx -o wxGC.@LTO@
+	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) -c $(srcdir)/../wxcommon/wxGC.cxx -o wxGC.@LTO@
 
 wxJPEG.@LTO@ : $(srcdir)/../wxcommon/wxJPEG.cxx $(srcdir)/../wxcommon/wxGC.h
-	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) @JPEG_INC@ @ZLIB_INC@ -c $(srcdir)/../wxcommon/wxJPEG.cxx -o wxJPEG.@LTO@
+	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) @JPEG_INC@ @ZLIB_INC@ -c $(srcdir)/../wxcommon/wxJPEG.cxx -o wxJPEG.@LTO@
 
 dl_stub.@LTO@: $(srcdir)/misc/dl_stub.c
 	$(CC) $(CFLAGS) $(LOCALFLAGS) -c $(srcdir)/misc/dl_stub.c -o dl_stub.@LTO@
 
 simpledrop.@LTO@ : $(srcdir)/../mac/mzscheme/simpledrop.cpp
-	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -o simpledrop.@LTO@ -c $(srcdir)/../mac/mzscheme/simpledrop.cpp
+	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) -o simpledrop.@LTO@ -c $(srcdir)/../mac/mzscheme/simpledrop.cpp
 
 sgilinkhack.@LTO@:
-	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -c $(srcdir)/misc/sgilinkhack.cxx -o sgilinkhack.@LTO@
+	$(CXX) $(LOCALFLAGS) $(CXXFLAGS) -c $(srcdir)/misc/sgilinkhack.cxx -o sgilinkhack.@LTO@
 
 $(WXDIR)/libwx_xt.@LIBSFX@:
 	$(MAKE) wx

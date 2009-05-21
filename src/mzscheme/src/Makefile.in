@@ -10,7 +10,7 @@ PERL = @PERL@
 
 MZSRC = $(srcdir)
 
-CFLAGS = @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PROFFLAGS@ @OPTIONS@ @MZOPTIONS@ -I$(builddir)/.. -I$(srcdir)/../include
+CFLAGS = -I$(builddir)/.. -I$(srcdir)/../include @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PROFFLAGS@ @OPTIONS@ @MZOPTIONS@
 
 OBJS =  salloc.@LTO@ \
 	bignum.@LTO@ \
