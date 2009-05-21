@@ -341,7 +341,7 @@ Second, some keys have multiple-character string representations. Strings
 @item{ A @tech{MouseEvent} represents mouse events, e.g., mouse movements
  or mouse clicks, by the computer's user. 
  
-@deftech{MouseEvent} : @scheme[(one-of/c 'button-down 'button-up 'drag 'move 'enter 'leave)]
+@deftech{MouseEvent} : @scheme[(one-of/c "button-down" "button-up" "drag" "move" "enter" "leave")]
 
 All @tech{MouseEvent}s are represented via strings:
 @itemize[
