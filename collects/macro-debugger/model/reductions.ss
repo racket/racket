@@ -612,7 +612,7 @@
 ;; lift-error
 (define (lift-error sym . args)
   (apply fprintf (current-error-port) args)
-  (when #t
+  (when #f
     (apply error sym args)))
 
 ;; opaque-table
