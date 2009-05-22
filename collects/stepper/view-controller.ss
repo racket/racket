@@ -169,8 +169,15 @@
   
   ;; is this step on the selected expression?
   (define (selected-exp-step? history-entry)
-    (member selection-posn (step-posns history-entry)))
+    (ormap (posn-in-span selection-posn) (step-posns history-entry)))
   
+  (define ((posn-in-span selection-posn) source-posn-info)
+    (match source-posn-info
+      [#f #f]
+      [(struct model:posn-info (posn span))
+       (and posn
+            (<= posn selection-posn)
+            (< selection-posn (+ posn span)))]))
   
   ;; build gui object:
   
@@ -358,7 +365,10 @@
              (list x:finished-text 'finished-stepping (list))])])
       (hand-off-and-block step-text step-kind posns)))
   
-  ;; need to capture the custodian as the thread starts up:
+  ;; program-expander-prime : wrap the program-expander for a couple of reasons:
+  ;; 1) we need to capture the custodian as the thread starts up:
+  ;; ok, it was just one.
+  ;; 
   (define (program-expander-prime init iter)
     (program-expander
      (lambda args

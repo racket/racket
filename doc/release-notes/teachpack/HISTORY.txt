@@ -1,4 +1,11 @@
 ------------------------------------------------------------------------
+Version 4.2				  [Thu May 21 08:51:15 EDT 2009]
+
+* the universe API has changed. It no longer uses chars or symbols
+  for the callbacks but one-letter strings, except for arrow keys 
+  and special events, which are arbitrarily long strings. 
+
+------------------------------------------------------------------------
 Version 4.1.5   			  [Sat Feb 14 20:12:23 EST 2009]
 
 * the universe teachpack exports iworld, not world now
