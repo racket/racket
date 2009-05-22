@@ -355,17 +355,17 @@
 
 (define (tc/send rcvr method args [expected #f])
   (match (tc-expr rcvr)
-    [(tc-result: (Instance: (and c (Class: _ _ methods))))
+    [(tc-result1: (Instance: (and c (Class: _ _ methods))))
      (match (tc-expr method)
-       [(tc-result: (Value: (? symbol? s)))
+       [(tc-result1: (Value: (? symbol? s)))
         (let* ([ftype (cond [(assq s methods) => cadr]
                             [else (tc-error/expr "send: method ~a not understood by class ~a" s c)])]
                [ret-ty (tc/funapp rcvr args (ret ftype) (map tc-expr (syntax->list args)) expected)])
           (if expected
               (begin (check-below ret-ty expected) (ret expected))
               ret-ty))]
-       [(tc-result: t) (int-err "non-symbol methods not supported by Typed Scheme: ~a" t)])]
-    [(tc-result: t) (tc-error/expr #:return (or expected (ret (Un))) "send: expected a class instance, got ~a" t)]))
+       [(tc-result1: t) (int-err "non-symbol methods not supported by Typed Scheme: ~a" t)])]
+    [(tc-result1: t) (tc-error/expr #:return (or expected (ret (Un))) "send: expected a class instance, got ~a" t)]))
 
 (define (single-value form [expected #f])  
   (define t (if expected (tc-expr/check form expected) (tc-expr form)))

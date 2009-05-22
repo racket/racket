@@ -3,7 +3,7 @@
 (require (except-in "../utils/utils.ss" extend))
 (require syntax/kerncase
          scheme/match
-         "signatures.ss"
+         "signatures.ss" "tc-metafunctions.ss"
          (types utils convenience union subtype)
 	 (utils tc-utils)
 	 (rep type-rep))
@@ -61,8 +61,7 @@
         [stx
          ;; this is a hander function
          (syntax-property form 'typechecker:exn-handler)
-         (tc-expr/check form (match expected 
-                               [(tc-result1: e) (ret (-> (Un) e))]))]
+         (tc-expr/check form (ret (-> (Un) (tc-results->values expected))))]
         [stx
          ;; this is the body of the with-handlers
          (syntax-property form 'typechecker:exn-body)
