@@ -1104,7 +1104,7 @@
                          (send mask2 ok?)
                          (= w (send mask2 get-width))
                          (= h (send mask2 get-height)))
-                (send mask get-argb-pixels 0 0 w h s1 #t)))
+                (send mask2 get-argb-pixels 0 0 w h s2 #t)))
             (equal? s1 s2)))))))
 
   (define/private (do-hash-code hash-code)
