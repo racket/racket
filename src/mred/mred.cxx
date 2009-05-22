@@ -3152,6 +3152,11 @@ wxFrame *MrEdApp::OnInit(void)
 # endif
 #endif
 
+#ifdef OS_X
+  /* Hack to make sure it's referenced, so that xform doesn't throw it away. */
+  wx_in_terminal = wx_in_terminal;
+#endif
+
   mred_run_from_cmd_line(argc, argv, setup_basic_env);
 
 #if WCONSOLE_STDIO
