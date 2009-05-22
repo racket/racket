@@ -135,11 +135,11 @@
                             [(tc-results: t)
                              (format "- : ~a\n" type)]
                             [x (int-err "bad type result: ~a" x)])])
-              (if #'ty-str                  
+              (if ty-str                  
                   #`(let ([type '#,ty-str])
                       (begin0 
                         #,body2
-                        (printf type)))
+                        (display type)))
                   body2))]))]))
 
 
