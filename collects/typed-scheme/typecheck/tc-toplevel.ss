@@ -44,11 +44,11 @@
       ;; FIXME - this sucks and should die
       [(define-values () (begin (quote-syntax (declare-refinement-internal pred)) (#%plain-app values)))
        (match (lookup-type/lexical #'pred)
-              [(and t (Function: (list (arr: (list dom) rng #f #f '()))))
-               (register-type #'pred 
-                              (make-pred-ty (list dom)
-                                            rng
-                                            (make-Refinement dom #'pred (syntax-local-certifier))))
+              [(and t (Function: (list (arr: (list dom) (Values: (list (Result: rng _ _))) #f #f '()))))
+               (let ([new-t (make-pred-ty (list dom)
+                                          rng
+                                          (make-Refinement dom #'pred (syntax-local-certifier)))])
+                 (register-type #'pred new-t))
                (list)]
               [t (tc-error "cannot declare refinement for non-predicate ~a" t)])]
       
