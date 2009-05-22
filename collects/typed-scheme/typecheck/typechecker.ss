@@ -7,11 +7,11 @@
                   provide-signature-elements
                   define-values/invoke-unit/infer link)
          "signatures.ss" "tc-toplevel.ss"
-         "tc-new-if.ss" "tc-lambda-unit.ss" "tc-app.ss"
+         "tc-if.ss" "tc-lambda-unit.ss" "tc-app.ss"
          "tc-let-unit.ss" "tc-dots-unit.ss"
          "tc-expr-unit.ss" "check-subforms-unit.ss")
 
 (provide-signature-elements typechecker^ tc-expr^)
 
 (define-values/invoke-unit/infer
-  (link tc-toplevel@ tc-new-if@ tc-lambda@ tc-dots@ tc-app@ tc-let@ tc-expr@ check-subforms@))
+  (link tc-toplevel@ tc-if@ tc-lambda@ tc-dots@ tc-app@ tc-let@ tc-expr@ check-subforms@))
