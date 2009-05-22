@@ -133,8 +133,12 @@
 ;;                   (Type Type -> Type))
 (define (check-below tr1 expected)
   (match* (tr1 expected)
+    [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) _)
+     expected]
     [((tc-results: t1) (tc-results: t2))
-     (unless (andmap subtype t1 t2)
+     (unless (= (length t1) (length t2))
+       (tc-error/expr "0.5 Expected ~a values, but got ~a" (length t2) (length t1)))
+     (unless (for/and ([t t1] [s t2]) (subtype t s))
        (tc-error/expr "1 Expected ~a, but got ~a" t2 t1))
      expected]
     [((tc-results: t1 f o dty dbound) (tc-results: t2 f o dty dbound))

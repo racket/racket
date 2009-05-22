@@ -436,6 +436,20 @@
      (check-do-make-object #'cl #'args #'() #'())]
     [(#%plain-app do-make-object cl (#%plain-app list . pos-args) (#%plain-app list (#%plain-app cons 'names named-args) ...))
      (check-do-make-object #'cl #'pos-args #'(names ...) #'(named-args ...))]
+    ;; ormap/andmap of ... argument
+    [(#%plain-app or/andmap:id f arg)
+     #:when (or (free-identifier=? #'or/andmap #'ormap)
+                (free-identifier=? #'or/andmap #'andmap))
+     #:when (with-handlers ([exn:fail? (lambda _ #f)])
+              (tc/dots #'arg)
+              #t)
+     (let-values ([(ty bound) (tc/dots #'arg)])
+       (parameterize ([current-tvars (extend-env (list bound)
+                                                 (list (make-DottedBoth (make-F bound)))
+                                                 (current-tvars))])
+         (match-let* ([ft (tc-expr #'f)]
+                      [(tc-result1: t) (tc/funapp #'f #'(arg) ft (list (ret ty)) #f)])
+           (ret (Un (-val #f) t)))))]
     ;; special case for `delay'
     [(#%plain-app 
       mp1 
