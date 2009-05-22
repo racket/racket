@@ -250,7 +250,9 @@
   (make-LNotTypeFilter t p i))
 
 
-(define make-pred-ty
+(d/c make-pred-ty
+  (case-> (c:-> Type/c Type/c)
+          (c:-> (listof Type/c) Type/c Type/c Type/c))
   (case-lambda 
     [(in out t)
      (->* in out : (-LFS (list (-filter t)) (list (-not-filter t))))]
