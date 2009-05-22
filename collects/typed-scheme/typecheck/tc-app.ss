@@ -83,7 +83,7 @@
                  (loop kws-rest (cdr actuals) form-rest)]
                 [else ;; otherwise, ignore this formal param, and continue
                  (loop actual-kws actuals form-rest)])]))
-     (tc/funapp (car (syntax-e form)) kw-args (ret (make-Function arities)) (map tc-expr (syntax->list pos-args)) expected)]
+     (tc/funapp (car (syntax-e form)) kw-args (ret (make-Function (list (make-arr* dom rng #:rest rest)))) (map tc-expr (syntax->list pos-args)) expected)]
     [_ (int-err "case-lambda w/ keywords not supported")]))
 
 (define (type->list t)
@@ -590,7 +590,8 @@
 ;; syntax? syntax? arr? (listof tc-results?) (or/c #f tc-results) [boolean?] -> tc-results?
 (define (tc/funapp1 f-stx args-stx ftype0 argtys expected #:check [check? #t])
   (match* (ftype0 argtys)
-    [((arr: dom (Values: (list (Result: t-r lf-r lo-r) ...)) rest #f '())
+    ;; we check that all kw args are optional
+    [((arr: dom (Values: (list (Result: t-r lf-r lo-r) ...)) rest #f (list (Keyword: _ _ #f) ...))
       (list (tc-result1: t-a phi-a o-a) ...))
      (when check?
        (cond [(and (not rest) (not (= (length dom) (length t-a))))
