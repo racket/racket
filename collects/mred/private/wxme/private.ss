@@ -98,7 +98,8 @@
   get-s-snips
   refresh-box
   add-back-clickback
-  do-insert-snips)
+  do-insert-snips
+  consistent-snip-lines)
 
 ;; editor-admin%
 (define-local-member-name

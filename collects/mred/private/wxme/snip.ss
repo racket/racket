@@ -643,7 +643,11 @@
                               (values n
                                       tabs
                                       space
-                                      (if units? 1 str-w)))
+                                      (if units? 
+                                          1 
+                                          (if (zero? str-w)
+                                              1.0
+                                              str-w))))
                             (values 0
                                     #()
                                     TAB-WIDTH

@@ -606,15 +606,16 @@
 
 (for-each
  (lambda (str)
-   ;; (printf ">> ~a <<\n" str)
+   ;; (printf ">> ~s <<\n" str)
    (for ([i (in-range (add1 (send t last-position)))])
-     ;; (printf "~a\n" i)
      (check-line-starts)
      (send t insert str i)
      (check-line-starts)
+     ;; (printf "=> ~a ~s\n" i (send t get-text 0 'eof #t #t))
      (send t last-line)
      (send t delete i (+ i (string-length str)))
      (check-line-starts)
+     ;; (printf "~a ~s <=\n" i (send t get-text 0 'eof #t #t))
      (check-ge&h-flow)))
  '(" a" "a " "qvzxw " " qvxzw" "qqq qqqq" "a\nb"))
 
