@@ -643,7 +643,11 @@
                               (values n
                                       tabs
                                       space
-                                      (if units? 1 str-w)))
+                                      (if units? 
+                                          1 
+                                          (if (zero? str-w)
+                                              1.0
+                                              str-w))))
                             (values 0
                                     #()
                                     TAB-WIDTH
@@ -1104,7 +1108,7 @@
                          (send mask2 ok?)
                          (= w (send mask2 get-width))
                          (= h (send mask2 get-height)))
-                (send mask get-argb-pixels 0 0 w h s1 #t)))
+                (send mask2 get-argb-pixels 0 0 w h s2 #t)))
             (equal? s1 s2)))))))
 
   (define/private (do-hash-code hash-code)

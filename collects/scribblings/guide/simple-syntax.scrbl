@@ -113,7 +113,8 @@ evaluated only for some side-effect, such as printing.
 (bake "apple")
 ]
 
-Scheme programmers prefer to avoid side-effects. It's
+Scheme programmers prefer to avoid side-effects, so a definition usually
+has just one expression in its body. It's
 important, though, to understand that multiple expressions are allowed
 in a definition body, because it explains why the following
 @scheme[nobake] function simply returns its argument:
@@ -165,7 +166,7 @@ next line under the first argument, instead of under the
 
 In this case, indentation helps highlight the mistake. In other cases,
 where the indentation may be normal while an open parenthesis has no
-matching close parenthesis; both @exec{mzscheme} and DrScheme use the
+matching close parenthesis, both @exec{mzscheme} and DrScheme use the
 source's indentation to suggest where a parenthesis might be missing.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

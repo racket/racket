@@ -529,13 +529,15 @@
                              (+ (syntax-column c) delta)))
                 (set! src-col (+ orig-col (syntax-span c)))))]
            [(graph-reference? (syntax-e c))
+            (advance c init-line!)
             (out (format "#~a#" (unbox (graph-reference-bx (syntax-e c)))) 
                  (if (positive? quote-depth) 
                      value-color
-                     paren-color))]
+                     paren-color))
+            (set! src-col (+ src-col (syntax-span c)))]
            [(graph-defn? (syntax-e c))
+            (advance c init-line!)
             (let ([bx (graph-defn-bx (syntax-e c))])
-              (set-box! bx 0)
               (out (format "#~a=" (unbox bx))
                    (if (positive? quote-depth) 
                        value-color
@@ -723,12 +725,12 @@
   (define-struct graph-defn (r bx))
 
   (define (syntax-ize v col [line 1])
-    (do-syntax-ize v col line (make-hasheq) #f))
+    (do-syntax-ize v col line (box #hasheq()) #f))
 
   (define (graph-count ht graph?)
     (and graph?
-         (let ([n (hash-ref ht '#%graph-count 0)])
-           (hash-set! ht '#%graph-count (add1 n))
+         (let ([n (hash-ref (unbox ht) '#%graph-count 0)])
+           (set-box! ht (hash-set (unbox ht) '#%graph-count (add1 n)))
            n)))
 
   (define (do-syntax-ize v col line ht graph?)
@@ -746,7 +748,7 @@
                        s
                        s
                        (just-context-ctx v)))]
-     [(hash-ref ht v #f)
+     [(hash-ref (unbox ht) v #f)
       => (lambda (m)
            (unless (unbox m)
              (set-box! m #t))
@@ -770,62 +772,70 @@
           (vector? v)
           (and (struct? v)
                (prefab-struct-key v)))
-      (let ([graph-box (box (graph-count ht graph?))])
-        (hash-set! ht v graph-box)
-        (let ([r (let* ([vec-sz (+ (if graph? 
-                                       (+ 2 (string-length (format "~a" (unbox graph-box)))) 
-                                       0)
+      (let ([orig-ht (unbox ht)]
+            [graph-box (box (graph-count ht graph?))])
+        (set-box! ht (hash-set (unbox ht) v graph-box))
+        (let* ([graph-sz (if graph? 
+                             (+ 2 (string-length (format "~a" (unbox graph-box)))) 
+                             0)]
+               [vec-sz (cond
+                        [(vector? v)
+                         (+ 1 #;(string-length (format "~a" (vector-length v))))]
+                        [(struct? v) 2]
+                        [else 0])]
+               [r (let ([l (let loop ([col (+ col 1 vec-sz graph-sz)]
+                                      [v (cond
+                                          [(vector? v)
+                                           (vector->short-list v values)]
+                                          [(struct? v)
+                                           (cons (prefab-struct-key v)
+                                                 (cdr (vector->list (struct->vector v))))]
+                                          [else v])])
+                             (if (null? v)
+                                 null
+                                 (let ([i (do-syntax-ize (car v) col line ht #f)])
+                                   (cons i
+                                         (loop (+ col 1 (syntax-span i)) (cdr v))))))])
+                    (datum->syntax #f
                                    (cond
-                                    [(vector? v)
-                                     (+ 1 #;(string-length (format "~a" (vector-length v))))]
-                                    [(struct? v) 2]
-                                    [else 0]))])
-                   (let ([l (let loop ([col (+ col 1 vec-sz)]
-                                       [v (cond
-                                           [(vector? v)
-                                            (vector->short-list v values)]
-                                           [(struct? v)
-                                            (cons (prefab-struct-key v)
-                                                  (cdr (vector->list (struct->vector v))))]
-                                           [else v])])
-                              (if (null? v)
-                                  null
-                                  (let ([i (do-syntax-ize (car v) col line ht #f)])
-                                    (cons i
-                                          (loop (+ col 1 (syntax-span i)) (cdr v))))))])
-                     (datum->syntax #f
-                                    (cond
-                                     [(vector? v) (short-list->vector v l)]
-                                     [(struct? v) 
-                                      (apply make-prefab-struct (prefab-struct-key v) (cdr l))]
-                                     [else l])
-                                    (vector #f line col (+ 1 col)
-                                            (+ 2
-                                               vec-sz
-                                               (if (zero? (length l))
-                                                   0
-                                                   (sub1 (length l)))
-                                               (apply + (map syntax-span l)))))))])
+                                    [(vector? v) (short-list->vector v l)]
+                                    [(struct? v) 
+                                     (apply make-prefab-struct (prefab-struct-key v) (cdr l))]
+                                    [else l])
+                                   (vector #f line 
+                                           (+ graph-sz col) 
+                                           (+ 1 graph-sz col) 
+                                           (+ 2
+                                              vec-sz
+                                              (if (zero? (length l))
+                                                  0
+                                                  (sub1 (length l)))
+                                              (apply + (map syntax-span l))))))])
           (unless graph?
-            (hash-set! ht v #f))
+            (set-box! ht (hash-set (unbox ht) v #f)))
           (cond
            [graph? (datum->syntax #f
                                   (make-graph-defn r graph-box)
-                                  r)]
+                                  (vector #f (syntax-line r)
+                                          (- (syntax-column r) graph-sz)
+                                          (- (syntax-position r) graph-sz)
+                                          (+ (syntax-span r) graph-sz)))]
            [(unbox graph-box)
             ;; Go again, this time knowing that there will be a graph:
+            (set-box! ht orig-ht)
             (do-syntax-ize v col line ht #t)]
            [else r])))]
      [(pair? v)
-      (let ([graph-box (box (graph-count ht graph?))])
-        (hash-set! ht v graph-box)
+      (let ([orig-ht (unbox ht)]
+            [graph-box (box (graph-count ht graph?))])
+        (set-box! ht (hash-set (unbox ht) v graph-box))
         (let* ([inc (if graph? 
                         (+ 2 (string-length (format "~a" (unbox graph-box)))) 
                         0)]
                [a (do-syntax-ize (car v) (+ col 1 inc) line ht #f)]
                [sep (if (and (pair? (cdr v))
                              ;; FIXME: what if it turns out to be a graph reference?
-                             (not (hash-ref ht (cdr v) #f)))
+                             (not (hash-ref (unbox ht) (cdr v) #f)))
                         0 
                         3)]
                [b (do-syntax-ize (cdr v) (+ col 1 inc (syntax-span a) sep) line ht #f)])
@@ -834,7 +844,7 @@
                                   (vector #f line (+ col inc) (+ 1 col inc)
                                           (+ 2 sep (syntax-span a) (syntax-span b))))])
             (unless graph?
-              (hash-set! ht v #f))
+              (set-box! ht (hash-set (unbox ht) v #f)))
             (cond
              [graph? (datum->syntax #f
                                     (make-graph-defn r graph-box)
@@ -842,6 +852,7 @@
                                             (+ inc (syntax-span r))))]
              [(unbox graph-box)
               ;; Go again...
+              (set-box! ht orig-ht)
               (do-syntax-ize v col line ht #t)]
              [else r]))))]
      [(box? v)

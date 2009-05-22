@@ -1,3 +1,5 @@
+#lang scheme/base
+
 ;step collector state machine (not yet implemented):
 ;
 ; datatype held-type = NO-HELD-STEP | SKIPPED-STEP | HELD(args)
@@ -11,7 +13,7 @@
 ; held = NO-HELD-STEP :
 ;  first(x) : held := HELD(x)
 ;  skipped-first : held := SKIPPED-STEP
-;  second(x) : trigger(NO-HELD-STEP, x), held := NO-HELD-STEP
+;  second(x) : trigger(NO-HELD-STEP, x), held := NO-HELD-STEP.
 ;      this happens when evaluating unannotated code
 ;  skipped-second : held := NO-HELD-STEP
 ;      I believe this can also arise in unannotated code
@@ -35,7 +37,6 @@
 ;  double(x) : ERROR
 ;  late-let(x) : ERROR
 
-#lang scheme/base
 
 (require scheme/contract
          scheme/match
@@ -72,6 +73,12 @@
       . -> .
       void?)])
 
+   
+(define-struct posn-info (posn span))
+
+(provide (struct-out posn-info))
+
+
 ; go starts a stepper instance
 ; see provide stmt for contract
 (define (go program-expander receive-result render-settings
@@ -94,7 +101,7 @@
   ;; the "held" variables are used to store the "before" step.
   (define held-exp-list the-no-sexp)
   
-  (define-struct held (exps was-app? source-pos))
+  (define-struct held (exps was-app? source-info))
   
   (define held-finished-list null)
   
@@ -215,7 +222,9 @@
                                  mark-list returned-value-list render-settings)
                                 #f))
                           (r:step-was-app? mark-list)
-                          (syntax-position (mark-source (car mark-list))))))]
+                          (make-posn-info
+                           (syntax-position (mark-source (car mark-list)))
+                           (syntax-span (mark-source (car mark-list)))))))]
                 
                 [(result-exp-break result-value-break)
                  (let ([reconstruct 
@@ -248,7 +257,7 @@
                       (append (reconstruct-all-completed) (reconstruct))
                       'normal
                       #f #f))]
-                   [(struct held (held-exps held-step-was-app? held-source-pos))
+                   [(struct held (held-exps held-step-was-app? held-posn-info))
                     (let*-values
                         ([(step-kind)
                           (if (and held-step-was-app?
@@ -267,8 +276,11 @@
                       
                       (send-result
                        (make-before-after-result
-                        left-exps right-exps step-kind held-source-pos
-                        (syntax-position (mark-source (car mark-list))))))]))]
+                        left-exps right-exps step-kind 
+                        held-posn-info
+                        (make-posn-info
+                         (syntax-position (mark-source (car mark-list)))
+                         (syntax-span (mark-source (car mark-list)))))))]))]
                 
                 [(double-break)
                  ;; a double-break occurs at the beginning of a let's
@@ -284,13 +296,16 @@
                                         (maybe-lift (car reconstruct-result) #f))]
                         [right-side (map (lambda (exp) (unwind exp render-settings))
                                          (maybe-lift (cadr reconstruct-result) #t))])
-                   ;; add highlighting code as for other cases...
-                   (receive-result
-                    (make-before-after-result
-                     (append new-finished-list left-side)
-                     (append new-finished-list right-side)
-                     'normal
-                     #f #f)))]
+                   (let ([posn-info (make-posn-info
+                                     (syntax-position (mark-source (car mark-list)))
+                                     (syntax-span (mark-source (car mark-list))))])
+                     (receive-result
+                      (make-before-after-result
+                       (append new-finished-list left-side)
+                       (append new-finished-list right-side)
+                       'normal
+                       posn-info
+                       posn-info))))]
                 
                 [(expr-finished-break)
                  (unless (not mark-list)
@@ -323,13 +338,12 @@
     (match held-exp-list
       [(struct no-sexp ())
         (receive-result (make-error-result message))]
-      [(struct held (exps dc source-pos))
+      [(struct held (exps dc posn-info))
        (begin
          (receive-result
           (make-before-error-result (append held-finished-list exps)
                                     message
-                                    #f
-                                    source-pos))
+                                    posn-info))
          (set! held-exp-list the-no-sexp))]))
   
   (program-expander

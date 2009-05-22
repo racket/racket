@@ -325,13 +325,13 @@ See also @method[text% hide-caret].
 
 @defmethod*[#:mode extend
             ([(change-style [delta (or/c (is-a?/c style-delta%) #f)]
-                            [start (or/c exact-nonnegative-integer? (one/of 'start)) 'start]
-                            [end (or/c exact-nonnegative-integer? (one/of 'end)) 'end]
+                            [start (or/c exact-nonnegative-integer? 'start) 'start]
+                            [end (or/c exact-nonnegative-integer? 'end) 'end]
                             [counts-as-mod? any/c #t])
               void?]
              [(change-style [style (or/c (is-a?/c style<%>) #f)]
-                            [start (or/c exact-nonnegative-integer? (one/of 'start)) 'start]
-                            [end (or/c exact-nonnegative-integer? (one/of 'end)) 'end]
+                            [start (or/c exact-nonnegative-integer? 'start) 'start]
+                            [end (or/c exact-nonnegative-integer? 'end) 'end]
                             [counts-as-mod? any/c #t])
               void?])]{
 
@@ -352,8 +352,8 @@ When @scheme[style] is provided: @InStyleListNote[@scheme[style]]
 @defmethod[#:mode extend
            (copy [extend? any/c #f]
                  [time (and/c exact? integer?) 0]
-                 [start (or/c exact-nonnegative-integer? (one/of 'start)) 'start]
-                 [end (or/c exact-nonnegative-integer? (one/of 'end)) 'end])
+                 [start (or/c exact-nonnegative-integer? 'start) 'start]
+                 [end (or/c exact-nonnegative-integer? 'end) 'end])
            void?]{
 
 Copies specified range of text into the clipboard. If @scheme[extend?] is
@@ -383,8 +383,8 @@ In addition to the default @xmethod[editor<%> copy-self-to] work,
 @defmethod[#:mode override
            (cut [extend? any/c #f]
                 [time (and/c exact? integer?) 0]
-                [start (or/c exact-nonnegative-integer? (one/of 'start)) 'start]
-                [end (or/c exact-nonnegative-integer? (one/of 'end)) 'end])
+                [start (or/c exact-nonnegative-integer? 'start) 'start]
+                [end (or/c exact-nonnegative-integer? 'end) 'end])
            void?]{
 
 Copies and then deletes the specified range. If @scheme[extend?] is not
@@ -399,8 +399,8 @@ See @|timediscuss| for a discussion of the @scheme[time] argument. If
 }
 
 
-@defmethod*[([(delete [start (or/c exact-nonnegative-integer? (one/of 'start))]
-                      [end (or/c exact-nonnegative-integer? (one/of 'back)) 'back]
+@defmethod*[([(delete [start (or/c exact-nonnegative-integer? 'start)]
+                      [end (or/c exact-nonnegative-integer? 'back) 'back]
                       [scroll-ok? any/c #t])
               void?]
              [(delete)
@@ -520,8 +520,8 @@ Given a @techlink{location} in the editor, returns the line at the
 
 
 @defmethod[(find-newline [direction (one-of/c 'forward 'backward) 'forward]
-                         [start (or/c exact-nonnegative-integer? (one/of 'start)) 'start]
-                         [end (or/c exact-nonnegative-integer? (one/of 'eof)) 'eof])
+                         [start (or/c exact-nonnegative-integer? 'start) 'start]
+                         [end (or/c exact-nonnegative-integer? 'eof) 'eof])
            (or/c exact-nonnegative-integer? #f)]{
 
 Like @method[text% find-string], but specifically finds a paragraph
@@ -623,8 +623,8 @@ can be any of the following:
 
 @defmethod[(find-string [str string?]
                         [direction (one-of/c 'forward 'backward) 'forward]
-                        [start (or/c exact-nonnegative-integer? (one/of 'start)) 'start]
-                        [end (or/c exact-nonnegative-integer? (one/of 'eof)) 'eof]
+                        [start (or/c exact-nonnegative-integer? 'start) 'start]
+                        [end (or/c exact-nonnegative-integer? 'eof) 'eof]
                         [get-start? any/c #t]
                         [case-sensitive? any/c #t])
            (or/c exact-nonnegative-integer? #f)]{
@@ -655,8 +655,8 @@ If @scheme[case-sensitive?] is @scheme[#f], then an uppercase and lowercase
 
 @defmethod[(find-string-all [str string?]
                             [direction (one-of/c 'forward 'backward) 'forward]
-                            [start (or/c exact-nonnegative-integer? (one/of 'start)) 'start]
-                            [end (or/c exact-nonnegative-integer? (one/of 'eof)) 'eof]
+                            [start (or/c exact-nonnegative-integer? 'start) 'start]
+                            [end (or/c exact-nonnegative-integer? 'eof) 'eof]
                             [get-start? any/c #t]
                             [case-sensitive any/c #t])
            (listof exact-nonnegative-integer?)]{
@@ -944,7 +944,7 @@ See also
 
 
 @defmethod[(get-text [start exact-nonnegative-integer? 0]
-                     [end (or/c exact-nonnegative-integer? (one/of 'eof)) 'eof]
+                     [end (or/c exact-nonnegative-integer? 'eof) 'eof]
                      [flattened? any/c #f]
                      [force-cr? any/c #f])
            string?]{
@@ -1045,13 +1045,13 @@ See also @method[text% caret-hidden?] and @method[editor<%> lock].
 @defmethod*[#:mode override 
             ([(insert [str string?]
                       [start exact-nonnegative-integer?]
-                      [end (or/c exact-nonnegative-integer? (one/of 'same)) 'same]
+                      [end (or/c exact-nonnegative-integer? 'same) 'same]
                       [scroll-ok? any/c #t])
               void?]
              [(insert [n exact-nonnegative-integer?]
                       [str string?]
                       [start exact-nonnegative-integer?]
-                      [end (or/c exact-nonnegative-integer? (one/of 'same)) 'same]
+                      [end (or/c exact-nonnegative-integer? 'same) 'same]
                       [scroll-ok? any/c #t])
               void?]
              [(insert [str string?])
@@ -1061,7 +1061,7 @@ See also @method[text% caret-hidden?] and @method[editor<%> lock].
               void?]
              [(insert [snip (is-a?/c snip%)]
                       [start exact-nonnegative-integer?]
-                      [end (or/c exact-nonnegative-integer? (one/of 'same)) 'same]
+                      [end (or/c exact-nonnegative-integer? 'same) 'same]
                       [scroll-ok? any/c #t])
               void?]
              [(insert [snip (is-a?/c snip%)])
@@ -1070,7 +1070,7 @@ See also @method[text% caret-hidden?] and @method[editor<%> lock].
               void?]
              [(insert [char char?]
                       [start exact-nonnegative-integer?]
-                      [end (or/c exact-nonnegative-integer? (one/of 'same)) 'same])
+                      [end (or/c exact-nonnegative-integer? 'same) 'same])
               void?])]{
 
 Inserts text or a snip into @this-obj[] at @techlink{position}
@@ -1562,8 +1562,8 @@ If the paragraph starts with invisible @techlink{item}s and @scheme[visible?] is
 
 @defmethod[#:mode override
            (paste [time (and/c exact? integer?) 0]
-                  [start (or/c exact-nonnegative-integer? (one/of 'start 'end)) 'start]
-                  [end (or/c exact-nonnegative-integer? (one/of 'same)) 'same])
+                  [start (or/c exact-nonnegative-integer? 'start 'end) 'start]
+                  [end (or/c exact-nonnegative-integer? 'same) 'same])
            void?]{
 
 Pastes into the specified range. If @scheme[start] is @scheme['start],
@@ -1604,8 +1604,8 @@ If the previous operation on the editor was not a paste, calling
 
 @defmethod[#:mode override
            (paste-x-selection [time (and/c exact? integer?)]
-                              [start (or/c exact-nonnegative-integer? (one/of 'start 'end)) 'start]
-                              [end (or/c exact-nonnegative-integer? (one/of 'same)) 'same])
+                              [start (or/c exact-nonnegative-integer? 'start 'end) 'start]
+                              [end (or/c exact-nonnegative-integer? 'same) 'same])
            void?]{
 
 Pastes into the specified range. If @scheme[start] is @scheme['start],
@@ -1697,7 +1697,7 @@ Returns the paragraph number of the paragraph containing a given @techlink{posit
 
 @defmethod[#:mode extend
            (read-from-file [stream (is-a?/c editor-stream-in%)]
-                           [start (or/c exact-nonnegative-integer? (one/of 'start))]
+                           [start (or/c exact-nonnegative-integer? 'start)]
                            [overwrite-styles? any/c #f])
            boolean?]{
 
@@ -1719,7 +1719,7 @@ Removes all clickbacks installed for exactly the range @scheme[start]
 
 @defmethod[(scroll-to-position [start exact-nonnegative-integer?]
                                [at-eol? any/c #f]
-                               [end (or/c exact-nonnegative-integer? (one/of 'same)) 'same]
+                               [end (or/c exact-nonnegative-integer? 'same) 'same]
                                [bias (one-of/c 'start 'end 'none) 'none])
            boolean?]{
 
@@ -1914,7 +1914,7 @@ The first line of the paragraph is indented by @scheme[first-left] points
 
 
 @defmethod[(set-position [start exact-nonnegative-integer?]
-                         [end (or/c exact-nonnegative-integer? (one/of 'same)) 'same]
+                         [end (or/c exact-nonnegative-integer? 'same) 'same]
                          [at-eol? any/c #f]
                          [scroll? any/c #t]
                          [seltype (one-of/c 'default 'x 'local) 'default])
@@ -1958,7 +1958,7 @@ See also @scheme[editor-set-x-selection-mode].
 
 @defmethod[(set-position-bias-scroll [bias (one-of/c 'start-only 'start 'none 'end 'end-only)]
                                      [start exact-nonnegative-integer?]
-                                     [end (or/c exact-nonnegative-integer? (one/of 'same)) 'same]
+                                     [end (or/c exact-nonnegative-integer? 'same) 'same]
                                      [ateol? any/c #f]
                                      [scroll? any/c #t]
                                      [seltype (one-of/c 'default 'x 'local) 'default])
@@ -2087,7 +2087,7 @@ Splitting a snip is disallowed when the editor is internally locked
 @defmethod[#:mode extend
            (write-to-file [stream (is-a?/c editor-stream-out%)]
                           [start exact-nonnegative-integer? 0]
-                          [end (or/c exact-nonnegative-integer? (one/of 'eof)) 'eof])
+                          [end (or/c exact-nonnegative-integer? 'eof) 'eof])
            boolean?]{
 
 If @scheme[start] is 0 and @scheme[end] is @scheme['eof] negative,

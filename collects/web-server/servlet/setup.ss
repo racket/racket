@@ -67,15 +67,18 @@
        (parameterize ([current-servlet-instance-id instance-id])
          (handler req))))))
 
-(define (make-stateless.servlet directory stuffer start)
+(define (make-stateless.servlet directory stuffer manager start)
+  (define instance-id
+    ((manager-create-instance manager) (exit-handler)))
   (define ses 
     (make-stateless-servlet
      (current-custodian) (current-namespace)
-     (create-none-manager (lambda (req) (error "No continuations!")))
+     manager
      directory
      (lambda (req) (error "Session not initialized"))
      stuffer))
   (parameterize ([current-directory directory]
+                 [current-servlet-instance-id instance-id]
                  [current-servlet ses])    
     (set-servlet-handler! ses (initialize-servlet start)))
   ses)
@@ -110,7 +113,7 @@
 (provide/contract
  [make-v1.servlet (path-string? integer? (request? . -> . response/c) . -> . servlet?)]
  [make-v2.servlet (path-string? manager? (request? . -> . response/c) . -> . servlet?)]
- [make-stateless.servlet (path-string? (stuffer/c serializable? bytes?) (request? . -> . response/c) . -> . servlet?)]
+ [make-stateless.servlet (path-string? (stuffer/c serializable? bytes?) manager? (request? . -> . response/c) . -> . servlet?)]
  [default-module-specs (listof (or/c resolved-module-path? module-path?))])
 
 (define (make-default-path->servlet #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)]
@@ -163,11 +166,16 @@
                                        (dynamic-require module-name 'start)
                                        pos-blame neg-blame
                                        (mk-loc "start"))]
+                      [manager (contract manager?
+                                         (dynamic-require module-name 'manager 
+                                                          (lambda () (create-none-manager (lambda (req) (error "No continuations!")))))
+                                         pos-blame neg-blame
+                                         (mk-loc "manager"))]
                       [stuffer (contract (stuffer/c serializable? bytes?)
                                          (dynamic-require module-name 'stuffer (lambda () default-stuffer))
                                          pos-blame neg-blame
                                          (mk-loc "stuffer"))])
-                  (make-stateless.servlet (directory-part a-path) stuffer start))]))]
+                  (make-stateless.servlet (directory-part a-path) stuffer manager start))]))]
           [else
            (make-v1.servlet (directory-part a-path) timeouts-default-servlet
                             (v0.response->v1.lambda 

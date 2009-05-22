@@ -8061,14 +8061,14 @@ static void clean_up_wait(long result, OS_SEMAPHORE_TYPE *array,
 static int made_progress;
 static DWORD max_sleep_time;
 
-void scheme_notify_sleep_progres()
+void scheme_notify_sleep_progress()
 {
   made_progress = 1;
 }
 
 #else
 
-void scheme_notify_sleep_progres()
+void scheme_notify_sleep_progress()
 {
 }
 

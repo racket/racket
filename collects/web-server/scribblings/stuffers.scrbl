@@ -49,22 +49,22 @@ You can supply your own (built with these functions) when you write a stateless 
  The identitiy @tech{stuffer}.
 }
 
-@defproc[(stuffer-compose [g (stuffer any/c any/c)]
-                          [f (stuffer any/c any/c)])
-         (stuffer any/c any/c)]{
+@defproc[(stuffer-compose [g (stuffer/c any/c any/c)]
+                          [f (stuffer/c any/c any/c)])
+         (stuffer/c any/c any/c)]{
  Composes @scheme[f] and @scheme[g], i.e., applies @scheme[f] then @scheme[g] for @scheme[in]
  and @scheme[g] then @scheme[f] for @scheme[out].
 }
                                
-@defproc[(stuffer-sequence [f (stuffer any/c any/c)]
-                           [g (stuffer any/c any/c)])
-         (stuffer any/c any/c)]{
+@defproc[(stuffer-sequence [f (stuffer/c any/c any/c)]
+                           [g (stuffer/c any/c any/c)])
+         (stuffer/c any/c any/c)]{
  @scheme[stuffer-compose] with arguments swapped.
 }
                                
 @defproc[(stuffer-if [c (bytes? . -> . boolean?)]
-                     [f (stuffer bytes? bytes?)])
-         (stuffer bytes? bytes?)]{
+                     [f (stuffer/c bytes? bytes?)])
+         (stuffer/c bytes? bytes?)]{
  Creates a @tech{stuffer} that stuffs with @scheme[f] if @scheme[c] is true on the input
  to @scheme[in]. Similarly, applies @scheme[f] during @scheme[out] if it was applied during
  @scheme[in] (which is recorded by prepending a byte.)
@@ -140,7 +140,7 @@ The @schememodname[web-server/stuffers/hash] @tech{stuffers} rely on a key/value
   ]
  }
 
- It should be easy to use this interface to create store for databases, like SQLite, CouchDB, or BerkeleyDB.
+ It should be easy to use this interface to create store for databases like SQLite, CouchDB, or BerkeleyDB.
 }
 
 @section{Hash-addressed Storage}
@@ -201,7 +201,7 @@ The @schememodname[web-server/stuffers/hash] @tech{stuffers} rely on a key/value
 @defproc[(is-url-too-big? [v bytes?])
          boolean?]{
  Determines if stuffing @scheme[v] into the current servlet's URL would result in a URL that is too big for Internet Explorer.
- (@link["http://www.boutell.com/newfaq/misc/urllength.html"]{IE only supports URLs up to 2048 characters.}).
+ (@link["http://www.boutell.com/newfaq/misc/urllength.html"]{IE only supports URLs up to 2048 characters.})
 }
                   
 @defproc[(make-default-stuffer [root path-string?])

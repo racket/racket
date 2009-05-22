@@ -233,9 +233,37 @@
   (define initial-space 0.0) ; space from first line
   (define initial-line-base 0.0) ; inverse descent from first line
 
+  (define/public (get-s-snips) snips)
   (define/public (get-s-last-snip) last-snip)
   (define/public (get-s-total-width) total-width)
   (define/public (get-s-total-height) total-height)
+
+  (define/public (consistent-snip-lines who)
+    (unless (eq? first-line (mline-first (unbox line-root-box)))
+      (error who "bad first line"))
+    (unless (eq? last-line (mline-last (unbox line-root-box)))
+      (error who "bad last line"))
+    (let loop ([line first-line]
+               [snip snips])
+      (unless (eq? snips (mline-snip first-line))
+        (error who "bad start snip"))
+      (let sloop ([snip snip])
+        (unless (eq? line (snip->line snip))
+          (error who "snip's line is wrong: ~s ~s" snip (snip->line snip)))
+        (if (eq? snip (mline-last-snip line))
+            (if (mline-next line)
+                (begin
+                  (unless (has-flag? (snip->flags snip) NEWLINE)
+                    (error who "strange line ending"))
+                  (loop (mline-next line) (snip->next snip)))
+                (unless (eq? last-snip snip)
+                  (error who "bad last snip")))
+            (begin
+              (when (or (has-flag? (snip->flags snip) NEWLINE)
+                        (has-flag? (snip->flags snip) HARD-NEWLINE))
+                (error who "mid-line NEWLINE"))
+              (sloop (snip->next snip))))))
+    #t)
 
   (define caret-style #f)
 
@@ -593,14 +621,15 @@
 
   (def/override (blink-caret)
     (if s-caret-snip
-        (let-boxes ([dx 0.0]
-                    [dy 0.0]
-                    [dc #f])
-            (set-box! dc (send s-admin get-dc dx dy))
-          (when dc
-            (let-boxes ([x 0.0] [y 0.0])
-                (get-snip-location s-caret-snip x y)
-              (send s-caret-snip blink-caret dc (- x dx) (- y dy)))))
+        (when s-admin
+          (let-boxes ([dx 0.0]
+                      [dy 0.0]
+                      [dc #f])
+              (set-box! dc (send s-admin get-dc dx dy))
+            (when dc
+              (let-boxes ([x 0.0] [y 0.0])
+                  (get-snip-location s-caret-snip x y)
+                (send s-caret-snip blink-caret dc (- x dx) (- y dy))))))
         (if (too-busy-to-refresh?)
             ;; we're busy; go away
             (void)
@@ -1036,7 +1065,8 @@
                                                           ;;   - already at top
                                                           (let-boxes ([scroll-left 0.0] [vy 0.0]
                                                                       [scroll-width 0.0] [scroll-height 0.0])
-                                                              (send s-admin get-view scroll-left vy scroll-width scroll-height)
+                                                              (when s-admin
+                                                                (send s-admin get-view scroll-left vy scroll-width scroll-height))
                                                             ;; top line should be completely visible as bottom line after
                                                             ;;   scrolling
                                                             (let* ([top (find-scroll-line vy)]
@@ -1094,7 +1124,8 @@
                                                       (if (eq? 'page kind)
                                                           (let-boxes ([scroll-left 0.0] [vy 0.0]
                                                                       [scroll-width 0.0] [scroll-height 0.0])
-                                                              (send s-admin get-view scroll-left vy scroll-width scroll-height)
+                                                              (when s-admin
+                                                                (send s-admin get-view scroll-left vy scroll-width scroll-height))
                                                             ;; last fully-visible line is the new top line 
                                                             (let* ([newtop (find-scroll-line (+ vy scroll-height))]
                                                                    [y (scroll-line-location (+ newtop 1))]
@@ -1180,6 +1211,7 @@
   ;; ----------------------------------------
 
   (define/private (do-insert isnip str snipsl start end scroll-ok?)
+    (assert (consistent-snip-lines 'do-insert))
     (unless (or write-locked?
                 s-user-locked?
                 (start . < . 0))
@@ -1274,7 +1306,8 @@
             (cond
              [(or isnip snipsl) 
               (insert-snips (if isnip (list isnip) snipsl) start success-finish fail-finish)]
-             [else (insert-string str start success-finish fail-finish)])))))))
+             [else (insert-string str start success-finish fail-finish)])))))
+      (assert (consistent-snip-lines 'post-do-insert))))
   
   (define/private (insert-snips snipsl start success-finish fail-finish)
     (let ([addlen (for/fold ([addlen 0])
@@ -1313,6 +1346,9 @@
                                    (not (has-flag? (snip->flags isnip) HARD-NEWLINE)))
                           (set-snip-flags! isnip (remove-flag (snip->flags isnip) NEWLINE)))
 
+                        (assert (consistent-snip-lines 'inner-insert))
+                                
+
                         (let-values ([(before-snip inserted-new-line?)
                                       (if (and (zero? len) (not did-one?))
                                           
@@ -1348,6 +1384,10 @@
                                                                 (set! num-valid-lines (add1 num-valid-lines))
                                                                 #t)
                                                               (begin
+                                                                ;; The former last snip might still have a NEWLINE
+                                                                ;;  flag due to line-flowing
+                                                                (when (has-flag? (snip->flags gsnip) NEWLINE)
+                                                                  (set-snip-flags! gsnip (remove-flag (snip->flags gsnip) NEWLINE)))
                                                                 (set-snip-line! isnip last-line)
                                                                 (when (not (mline-snip last-line))
                                                                   (set-mline-snip! last-line isnip))
@@ -1408,6 +1448,8 @@
 
                           (set! first-line (mline-first (unbox line-root-box)))
                           (set! last-line (mline-last (unbox line-root-box)))
+
+                          (assert (consistent-snip-lines 'inner-insert2))
 
                           (loop #t
                                 before-snip
@@ -1522,9 +1564,8 @@
                         (set! first-line (mline-first (unbox line-root-box)))
                         (set! last-line (mline-last (unbox line-root-box)))
                         (set! len (+ len addlen))
-                        (unless (= (last-position) (+ (mline-get-position last-line)
-                                                      (mline-len last-line)))
-                          (error "yuck out"))
+                        (assert (= (last-position) (+ (mline-get-position last-line)
+                                                      (mline-len last-line))))
                         (success-finish addlen inserted-line?))
                       (begin
                         (when (equal? (string-ref str sp) #\return)
@@ -1603,6 +1644,8 @@
                                         (when (has-flag? (snip->flags tabsnip) CAN-SPLIT)
                                           (set-snip-flags! tabsnip 
                                                            (remove-flag (snip->flags tabsnip) CAN-SPLIT)))
+                                        (when (has-flag? (snip->flags snip) NEWLINE)
+                                          (set-snip-flags! tabsnip (add-flag (snip->flags tabsnip) NEWLINE)))
 
                                         (splice-snip tabsnip (snip->prev snip) (snip->next snip))
                                         (set-snip-line! tabsnip (snip->line snip))
@@ -1679,6 +1722,7 @@
       (set! typing-streak? #t)))
 
   (define/private (do-delete start end with-undo? [scroll-ok? #t])
+    (assert (consistent-snip-lines 'do-delete))
     (unless (or write-locked? s-user-locked?)
       (let-values ([(start end set-caret-style?)
                     (if (eq? end 'back)
@@ -1770,7 +1814,8 @@
                                                             (set-mline-last-snip! line prev)
                                                             ;; maybe deleted extra ghost line:
                                                             extra-line?))]
-                                                     [else #f]))])
+                                                     [else 
+                                                      #f]))])
                                             (delete-snip snip)
                                             (loop prev 
                                                   (or deleted-line?
@@ -1785,7 +1830,7 @@
 
                       (set! first-line (mline-first (unbox line-root-box)))
                       (set! last-line (mline-last (unbox line-root-box)))
-                      
+
                       (let-values ([(line moved-to-next?)
                                     (if start-snip
                                         (if (has-flag? (snip->flags start-snip) NEWLINE)
@@ -1811,6 +1856,8 @@
 
                           (when (max-width . >= . 0)
                             (mline-mark-check-flow line)
+                            (let ([next (mline-next line)])
+                              (when next (mline-mark-check-flow next)))
                             (let ([prev (mline-prev line)])
                               (when (and prev
                                          (has-flag? (snip->flags (mline-last-snip prev)) HARD-NEWLINE))
@@ -1896,7 +1943,8 @@
 
                           (when update-cursor?
                             (when s-admin
-                              (send s-admin update-cursor))))))))))))))
+                              (send s-admin update-cursor))))))))))))
+      (assert (consistent-snip-lines 'post-do-delete))))
 
   (define/public (delete . args)
     (case-args
@@ -2213,9 +2261,12 @@
     (if read-locked?
         #\nul
         (let-values ([(snip s-pos) (find-snip/pos (max 0 (min start len)) 'after)])
-          (let ([buffer (make-string 1)])
-            (send snip get-text! buffer (- start s-pos) 1 0)
-            (string-ref buffer 0)))))
+          (let ([delta (- start s-pos)])
+            (if (delta . >= . (snip->count snip))
+                #\nul
+                (let ([buffer (make-string 1)])
+                  (send snip get-text! buffer delta 1 0)
+                  (string-ref buffer 0)))))))
 
   ;; ----------------------------------------
 
@@ -2929,7 +2980,8 @@
                 (let ([dc (send s-admin get-dc)])
                   (let-boxes ([w 0.0]
                               [h 0.0])
-                      (send thesnip get-extent dc (unbox x) (unbox y) w h #f #f #f #f)
+                      (when dc
+                        (send thesnip get-extent dc (unbox x) (unbox y) w h #f #f #f #f))
 
                     (set! write-locked? wl?)
                     (set! flow-locked? fl?)
@@ -3054,7 +3106,8 @@
                       (let-boxes ([h 0.0]
                                   [descent 0.0]
                                   [space 0.0])
-                          (send snip get-extent dc horiz topy #f h descent space #f #F)
+                          (when dc
+                            (send snip get-extent dc horiz topy #f h descent space #f #F))
                         (let ([align (send (snip->style snip) get-alignment)])
                           (cond
                            [(eq? 'bottom align)
@@ -3505,6 +3558,7 @@
   ;; ----------------------------------------
   
   (define/private (do-change-style start end new-style delta restore-sel? counts-as-mod?)
+    (assert (consistent-snip-lines 'do-change-style))
     (unless (or write-locked?
                 s-user-locked?
                 (and new-style
@@ -3631,7 +3685,8 @@
                                     (check-merge-snips start)
                                     (check-merge-snips end)))
 
-                              (after-change-style start (- end start))))))))]))))))
+                              (after-change-style start (- end start))))))))]))))
+      (assert (consistent-snip-lines 'post-do-change-style))))
 
   (def/public (change-style [(make-or-false (make-alts style<%> style-delta%)) st]
                             [(make-alts exact-nonnegative-integer? (symbol-in start)) [start 'start]]
@@ -4498,6 +4553,8 @@
                                                 #t))]
                                           [(and (c . < . 0) (b . > . startp))
                                            ;; overflow, but previous wordbreak was before this snip
+                                           (when had-newline?
+                                             (set-snip-flags! snip (add-flag (snip->flags snip) NEWLINE)))
                                            b]
                                           [else
                                            ;; overflow: we have to break the word anyway
@@ -4561,7 +4618,20 @@
                      
                      (let ([w (- max-width CURSOR-WIDTH)])
                        (let loop ([-changed? #f])
-                         (if (mline-update-flow (unbox line-root-box) line-root-box this w dc)
+                         (if (begin0
+                              (mline-update-flow (unbox line-root-box) line-root-box this w dc
+                                                 (lambda (del-line)
+                                                   (when (eq? del-line first-line)
+                                                     (set! first-line (mline-first (unbox line-root-box))))
+                                                   (when (eq? del-line last-line)
+                                                     (set! last-line (mline-last (unbox line-root-box)))))
+                                                 (lambda (ins-line)
+                                                   (when (not (mline-prev ins-line))
+                                                     (set! first-line ins-line))
+                                                   (when (not (mline-next ins-line))
+                                                     (set! last-line ins-line))))
+                              (assert (consistent-snip-lines 'post-update-flow)))
+
                              (loop #t)
                              
                              (begin

@@ -388,7 +388,7 @@
 
   ;; ----------------------------------------
 
-  (def/public (set-keymap [keymap% [k #f]])
+  (def/public (set-keymap [(make-or-false keymap%) [k #f]])
     (set! s-keymap k))
   (def/public (get-keymap) s-keymap)
   (def/public (get-style-list) s-style-list)
@@ -540,7 +540,7 @@
                                                  [box? data-buffer])
     (set-box! data-buffer (send f tell))
     (send f put-fixed 0)
-    (send f put-bytes (string->bytes/utf-8 header-name))
+    (send f put-unterminated (string->bytes/utf-8 header-name))
     #t)
 
   (def/public (end-write-header-footer-to-file [editor-stream-out% f]
@@ -850,7 +850,7 @@
                                       (values 0 size s naya))
                                     ;; no room to grow, so drop an undo record
                                     (begin
-                                      (send c cancel)
+                                      (send (vector-ref c start) cancel)
                                       (vector-set! c start #f)
                                       (values (modulo (add1 start) size)
                                               end

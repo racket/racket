@@ -73,6 +73,7 @@ AC_ARG_ENABLE(noopt,   [  --enable-sdk=<path>     use Mac OS X 10.4 SDK director
 AC_ARG_ENABLE(xonx,    [  --enable-xonx           compile X11 (not Quartz) MrEd for Mac OS X])
 AC_ARG_ENABLE(libfw,   [  --enable-libfw          install Mac OS X frameworks to /Library/Frameworks])
 AC_ARG_ENABLE(libfw,   [  --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks])
+AC_ARG_ENABLE(macprefix, [  --enable-macprefix      allow --prefix with a Mac OS X install])
 
 
 ###### Get OS Type #######
@@ -133,6 +134,17 @@ else
   if test "$OS" = "Darwin" ; then
     enable_quartz=yes
     enable_origtree=yes
+    if test "${prefix}" != "NONE" ; then
+      if test "${enable_macprefix}" != "yes" ; then
+        echo "ERROR: --prefix not allowed for a Mac OS X build, unless either"
+        echo "         --enable-xonx is supplied (to create a Unix-style"
+        echo "           build), or "
+        echo "         --enable-macprefix is supplied (to allow a Mac-style"
+        echo "           installation, even though --prefix is normally used"
+        echo "           for Unix-style installations)"
+        exit 1
+      fi
+    fi
   fi
 fi
 

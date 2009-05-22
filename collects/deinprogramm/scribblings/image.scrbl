@@ -20,8 +20,6 @@ Zusätzliche Prozeduren erlauben die Komposition von Bildern.
 @;-----------------------------------------------------------------------------
 @section{Bilder}
 
-@declare-exporting[teachpack/deinprogramm/image]
-
 @defthing[image contract]{
 Ein @deftech{Bild} (Name: @scheme[image]) ist die Repräsentation eines Bildes.
 } 

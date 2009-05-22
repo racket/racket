@@ -80,7 +80,9 @@
                   (let-boxes ([ok? #f]
                               [sl 0.0]
                               [st 0.0])
-                      (set-box! ok? (send editor get-snip-location snip sl st #f))
+                      (set-box! ok? (if (send editor locked-for-read?)
+                                        #f
+                                        (send editor get-snip-location snip sl st #f)))
                     (if ok?
                         (let-boxes ([sr 0.0][sb 0.0])
                             (send editor get-snip-location snip sr sb #t)

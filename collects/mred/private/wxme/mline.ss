@@ -633,7 +633,7 @@
              (if (eq? asnip nexts)
                  l
                  (let ([l (+ l (snip->count asnip))])
-                   (when (has-flag? (snip->count asnip) WIDTH-DEPENDS-ON-X)
+                   (when (has-flag? (snip->flags asnip) WIDTH-DEPENDS-ON-X)
                      (send asnip size-cache-invalid))
                    (loop (snip->next asnip) l)))))])
 
@@ -905,11 +905,12 @@ Debugging tools:
 
 ;; ------------------------------------------------------------
 
-(define (update-flow mline root-box media max-width dc)
+(define (update-flow mline root-box media max-width dc notify-delete notify-insert)
   (define (flow-left)
     (if (bit-overlap? (mline-flags mline) FLOW-LEFT)
         (if (and (not (eq? (mline-left mline) NIL))
-                 (update-flow (mline-left mline) root-box media max-width dc))
+                 (update-flow (mline-left mline) root-box media max-width dc
+                              notify-delete notify-insert))
             #t
             (begin
               (set-mline-flags! mline (- (mline-flags mline) FLOW-LEFT))
@@ -922,6 +923,7 @@ Debugging tools:
           (let* ([first-line (box #f)]
                  [para (get-paragraph-style mline first-line)]
                  [line-max-width (get-line-max-width para max-width (unbox first-line))])
+            (assert (send media consistent-snip-lines 'pre-check-flow))
             (if (send media check-flow line-max-width dc (get-location mline) (get-position mline) (mline-snip mline))
                 (do-flow)
                 (flow-right))))
@@ -929,7 +931,8 @@ Debugging tools:
   (define (flow-right)
     (if (bit-overlap? (mline-flags mline) FLOW-RIGHT)
         (if (and (not (eq? (mline-right mline) NIL))
-                 (update-flow (mline-right mline) root-box media max-width dc))
+                 (update-flow (mline-right mline) root-box media max-width dc
+                              notify-delete notify-insert))
             #t
             (begin
               (set-mline-flags! mline (- (mline-flags mline) FLOW-RIGHT))
@@ -939,17 +942,20 @@ Debugging tools:
     (let loop ([asnip (mline-snip mline)])
       (if (eq? asnip (mline-last-snip mline))
           (begin
-            (do-extend-line asnip)
+            (do-extend-line mline asnip)
+            (assert (send media consistent-snip-lines 'post-do-extend-line))
             #t)
           (if (has-flag? (snip->flags asnip) NEWLINE)
               (begin
                 (do-new-line asnip)
+                (send media consistent-snip-lines 'post-do-new-line)
                 #t)
               (begin
                 (set-snip-line! asnip mline)
                 (loop (snip->next asnip)))))))
   (define (do-new-line asnip)
-    ;; items pushed to next line or new line was inserted
+    ;; items pushed to next line or new line was inserted;
+    ;; current line now ends with ansip (which used to be in the middle of the current line)
     (let ([next (mline-next mline)])
       (let ([nextsnip (if next
                           (let loop ([nextsnip (snip->next asnip)])
@@ -967,15 +973,18 @@ Debugging tools:
               (set-mline-last-snip! newline (mline-last-snip mline))
               (set-mline-last-snip! mline asnip)
 
-              (snips-to-line! newline))
-            ;; just pushed to next line
+              (snips-to-line! newline)
+
+              (notify-insert newline))
+            ;; some of this line pushed to next line --- or maybe multiple lines pushed
+            ;;  together into a later line
             (begin
               (set-mline-last-snip! mline asnip)
               (set-snip-line! asnip mline)
               
-              (set-mline-snip! next (snip->next asnip))
-
-              (snips-to-line! next)))
+              (let ([nextsnip (snip->next asnip)])
+                (set-mline-snip! next nextsnip)
+                (do-extend-line next nextsnip))))
 
         (calc-line-length mline)
         (mark-recalculate mline))))
@@ -992,9 +1001,12 @@ Debugging tools:
     (if (and (mline-next mline)
              (eq? asnip (mline-last-snip (mline-next mline))))
         ;; a line was deleted
-        (begin (delete (mline-next mline) root-box) #t)
+        (let ([next (mline-next mline)])
+          (delete next root-box) 
+          (notify-delete next)
+          #t)
         #f))
-  (define (do-extend-line asnip)
+  (define (do-extend-line mline asnip)
     ;; this line was extended
     (let ([asnip
            (if asnip
@@ -1015,6 +1027,7 @@ Debugging tools:
                    (let ([next (mline-next mline)])
                      (when next
                        (delete next root-box)
+                       (notify-delete delete)
                        (loop))))
                  #f))])
 

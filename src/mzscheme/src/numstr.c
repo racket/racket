@@ -876,12 +876,17 @@ Scheme_Object *scheme_read_number(const mzchar *str, long len,
 
 #ifdef MZ_USE_SINGLE_FLOATS
     if (SCHEME_FLTP(n1) && SCHEME_FLTP(n2))
-      return scheme_make_complex(scheme_make_float((float)r1),
-				 scheme_make_float((float)r2));
+      n1 = scheme_make_complex(scheme_make_float((float)r1),
+                               scheme_make_float((float)r2));
+    else
 #endif
+      n1 = scheme_make_complex(scheme_make_double(r1),
+                               scheme_make_double(r2));
 
-    return scheme_make_complex(scheme_make_double(r1),
-			       scheme_make_double(r2));
+    if (is_not_float)
+      n1 = scheme_inexact_to_exact(1, &n1);
+
+    return n1;
   }
 
   has_decimal = has_slash = has_hash = has_hash_since_slash = has_expt = 0;

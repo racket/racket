@@ -6,9 +6,11 @@
          web-server/stuffers
          web-server/lang/abort-resume
          web-server/lang/web
+         web-server/lang/native
          web-server/lang/web-cells
          web-server/lang/web-param
-         web-server/lang/file-box)
+         web-server/lang/file-box
+         web-server/lang/soft)
 (provide (except-out (all-from-out scheme) #%module-begin)
          (all-from-out net/url
                        web-server/http
@@ -17,6 +19,8 @@
                        web-server/stuffers
                        web-server/lang/abort-resume
                        web-server/lang/web
+                       web-server/lang/native
                        web-server/lang/web-cells
                        web-server/lang/web-param
-                       web-server/lang/file-box))
+                       web-server/lang/file-box
+                       web-server/lang/soft))

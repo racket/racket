@@ -5,25 +5,10 @@
 
 @(require (for-label net/url
                      xml
-                     scheme/serialize
-                     web-server/servlet/servlet-structs
+                     web-server/lang/web
+                     scheme
                      web-server/http))
 
-@section{Low Level}
-
-@(require (for-label web-server/lang/abort-resume))
-@defmodule[web-server/lang/abort-resume]{
-
-@defproc[(call-with-serializable-current-continuation [response-generator (continuation? . -> . any)])
-         any]{
- Captures the current continuation in a serializable way and calls @scheme[response-generator] with it, returning the result.
-}
-             
-}
-
-@section{High Level}
-
-@(require (for-label web-server/lang/web))
 @defmodule[web-server/lang/web]{
 
 @defproc[(send/suspend/url [response-generator (url? . -> . response/c)])

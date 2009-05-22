@@ -1129,7 +1129,7 @@ based on the state of the key event.
                      (world-state w)
                      (world-size w)
                      (world-mouse-posn w)
-                     (key=? ke #\h)))]
+                     (key=? ke "h")))]
 
 The @scheme[clack] function handles mouse input. It has three tasks and each corresponds 
 to a helper function:
@@ -1156,7 +1156,7 @@ player's move (via the @scheme[player-moved?] function.
            (update-world-posn
             moved-world
             (and (eq? (world-state moved-world) 'playing)
-                 (not (eq? evt 'leave))
+                 (not (equal? evt "leave"))
                  (make-posn x y)))))]
 
 The @scheme[player-moved?] predicate returns
@@ -1170,7 +1170,7 @@ is not over, and then it just calls @scheme[circle-at-point].
        (define/contract (player-moved? world x y evt)
          (-> world? integer? integer? any/c 
              (or/c posn? #f))
-         (and (equal? evt 'button-up)
+         (and (equal? evt "button-up")
               (equal? 'playing (world-state world))
               (circle-at-point (world-board world) x y)))]
 
@@ -2009,7 +2009,7 @@ and reports the results.
 @chunk[<clack-tests>
        (test (clack 
               (make-world '() (make-posn 0 0) 'playing 3 #f #f)
-              1 1 'button-down)
+              1 1 "button-down")
              (make-world '() (make-posn 0 0) 'playing 3 #f #f))
        (test (clack
               (make-world '() (make-posn 0 0) 'playing 3 #f #f)
@@ -2059,7 +2059,7 @@ and reports the results.
                                 'playing 3 (make-posn 0 0) #f)
                     10
                     10
-                    'button-down)
+                    "button-down")
              (make-world '() (make-posn 0 0) 'playing 3 #f #f))
        
        (test (clack (make-world (list (make-cell (make-posn 0 0) #f)
@@ -2071,7 +2071,7 @@ and reports the results.
                                 #f)
                     (cell-center-x (make-posn 0 0))
                     (cell-center-y (make-posn 0 0))
-                    'button-up)
+                    "button-up")
              (make-world (list (make-cell (make-posn 0 0) #t)
                                (make-cell (make-posn 1 1) #f))
                          (make-posn 1 1)
@@ -2085,7 +2085,7 @@ and reports the results.
                                 'cat-lost 3 (make-posn 0 0) #f)
                     10
                     10
-                    'button-up)
+                    "button-up")
              (make-world '() (make-posn 0 0)
                          'cat-lost 3 #f #f))
        (test (clack
@@ -2104,7 +2104,7 @@ and reports the results.
                #f)
               (cell-center-x (make-posn 1 0))
               (cell-center-y (make-posn 1 0))
-              'button-up)
+              "button-up")
              (make-world
               (list (make-cell (make-posn 1 0) #t)
                     (make-cell (make-posn 2 0) #t)
@@ -2135,7 +2135,7 @@ and reports the results.
                #f)
               (cell-center-x (make-posn 1 0))
               (cell-center-y (make-posn 1 0))
-              'button-up)
+              "button-up")
              (make-world
               (list (make-cell (make-posn 1 0) #t)
                     (make-cell (make-posn 2 0) #f)
@@ -2246,12 +2246,12 @@ and reports the results.
 @chunk[<change-tests>
        (test (change (make-world '() (make-posn 1 1)
                                  'playing 3 (make-posn 0 0) #f)
-                     #\h)
+                     "h")
              (make-world '() (make-posn 1 1)
                          'playing 3 (make-posn 0 0) #t))
        (test (change (make-world '() (make-posn 1 1)
                                  'playing 3 (make-posn 0 0) #t)
-                     'release)
+                     "release")
              (make-world '() (make-posn 1 1) 'playing 3 (make-posn 0 0) #f))]
 
 

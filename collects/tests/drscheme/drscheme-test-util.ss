@@ -373,7 +373,7 @@
   ;; checks that the language in the drscheme window is set to the given one.
   ;; clears the definitions, clicks execute and checks the interactions window.
   (define (check-language-level lang-spec)
-    (let* ([drs-frame (get-top-level-focus-window)]
+    (let* ([drs-frame (wait-for-drscheme-frame)]
            [interactions (send drs-frame get-interactions-text)]
            [definitions-canvas (send drs-frame get-definitions-canvas)])
       (fw:test:new-window definitions-canvas)

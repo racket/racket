@@ -46,12 +46,12 @@ TODO
 (define checkpoints (make-weak-hasheq))
 (define (call-with-stack-checkpoint thunk)
   (define checkpoint (current-continuation-marks))
-  (with-handlers ([exn? (lambda (exn)
-                          ;; nested ones take precedence
-                          (unless (hash-has-key? checkpoints exn)
-                            (hash-set! checkpoints exn checkpoint))
-                          (raise exn))])
-    (thunk)))
+  (call-with-exception-handler
+   (λ (exn)
+     (unless (hash-has-key? checkpoints exn)
+       (hash-set! checkpoints exn checkpoint))
+     exn)
+   thunk))
 ;; returns the stack of the input exception, cutting off any tail that was
 ;; registered as a checkpoint
 (define (cut-stack-at-checkpoint exn)

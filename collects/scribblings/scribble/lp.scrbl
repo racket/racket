@@ -58,9 +58,17 @@ provides core support for literate programming.}
   chunks. Normally, @scheme[id] starts with @litchar{<} and ends with
   @litchar{>}.
 
-  If @scheme[id] is @schemeidfont{<*>}, then this chunk is used as the main
-  chunk in the file. If @schemeidfont{<*>} is never used, then the first chunk
-  in the file is treated as the main chunk.
+  When running a scribble program only the code inside the
+  chunks is run; the rest is ignored. 
+
+  If @scheme[id] is @schemeidfont{<*>}, then this chunk is
+  used as the main chunk in the file. If @schemeidfont{<*>}
+  is never used, then the first chunk in the file is treated
+  as the main chunk. If some chunk is not referenced from
+  the main chunk (possibly indirectly via other chunks that
+  the main chunk references), then it is not included in the
+  program and thus is not run.
+
 }
 
 @section{@schememodname[scribble/lp-include] Module}

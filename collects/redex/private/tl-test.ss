@@ -571,6 +571,22 @@
     (test (term (foo y))
           (term docare)))
   
+  (let ()
+    (define f-called? #f)
+    (define-metafunction empty-language
+      f : (side-condition any_1 (begin (set! f-called? #t) #t)) -> any
+      [(f any_1) any_1])
+    (test (term (f 1)) 1)
+    (test f-called? #t))
+    
+  (let ()
+    (define g-called? #f)
+    (define-metafunction empty-language
+      g : any -> (side-condition any_1 (begin (set! g-called? #t) #t))
+      [(g any_1) any_1])
+    (test (term (g 1)) 1)
+    (test g-called? #t))
+  
   ;; test that tracing works properly
   ;; note that caching comes into play here (which is why we don't see the recursive calls)
   (let ()

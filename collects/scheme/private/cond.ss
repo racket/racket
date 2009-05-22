@@ -68,7 +68,7 @@
                                         (if else?
                                             (if first?
                                                 ;; first => be careful not to introduce a splicable begin...
-                                                `(,(quote-syntax if) #t ,(cons (quote-syntax begin) value) (void))
+                                                `(,(quote-syntax #%expression) ,(cons (quote-syntax begin) value))
                                                 ;; we're in an `if' branch already...
                                                 (cons (quote-syntax begin) value))
                                             (if (stx-null? value)

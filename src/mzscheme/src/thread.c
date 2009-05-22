@@ -118,7 +118,6 @@ extern void *scheme_gmp_tls_load(long *s);
 extern void scheme_gmp_tls_unload(long *s, void *p);
 extern void scheme_gmp_tls_snapshot(long *s, long *save);
 extern void scheme_gmp_tls_restore_snapshot(long *s, void *data, long *save, int do_free);
-extern void scheme_notify_sleep_progres();
 
 static void check_ready_break();
 
@@ -3493,7 +3492,7 @@ static int check_sleep(int need_activity, int sleep_now)
   p2 = scheme_first_thread;
   while (p2) {
     if (p2->ran_some) {
-      scheme_notify_sleep_progres();
+      scheme_notify_sleep_progress();
       p2->ran_some = 0;
     }
     p2 = p2->next;
