@@ -1,7 +1,7 @@
-#lang typed-scheme/no-check
+#lang typed-scheme
 
-(require #;typed/ mred/mred
-         #;typed/ framework/framework
+(require typed/mred/mred
+         typed/framework/framework
          scheme/class
          string-constants/string-constant)
 

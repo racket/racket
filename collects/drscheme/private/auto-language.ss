@@ -1,7 +1,7 @@
-#lang typed-scheme/no-check
+#lang typed-scheme
 
-(require framework/framework ;typed/framework/framework 
-	 mred ;typed/mred/mred
+(require typed/framework/framework 
+	 typed/mred/mred
          scheme/class)
 
 (provide pick-new-language looks-like-module?)
