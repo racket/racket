@@ -268,8 +268,8 @@ This produces an ACK message
             "define-values: cannot change constant identifier: +"
             "define-values: cannot change constant identifier: +"
             "define-values: cannot change constant identifier: +"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:246:28: define-values: cannot change constant identifier: \\+"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:246:28: define-values: cannot change constant identifier: \\+")
+            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: define-values: cannot change constant identifier: \\+"
+            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: define-values: cannot change constant identifier: \\+")
            'interactions
            #f
            void
