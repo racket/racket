@@ -8,7 +8,10 @@
 (define orig-t (new text%))
 
 (define frame
-  (new frame% [label "Test"]
+  (new (class frame% 
+         (define/augment (on-close) (exit))
+         (super-new))
+       [label "Test"]
        [width 300]
        [height 400]))
 (define canvas
@@ -24,16 +27,39 @@
   (vector-ref v (random (vector-length v))))
 
 (define (random-string)
-  (random-elem '#("a" "x\ny\nz\n" "hello there")))
+  (random-elem '#("a" "x\ny\nz\n" "(define (f x)\n  (+ x x))\n" "hello there")))
 
 (define seqs (make-hasheq))
-(define ts (make-weak-hasheq))
+
+(define ts-length 64)
+(define ts-pos 0)
+(define ts (make-vector ts-length orig-t))
+(define (add-t! t2)
+  (if (= ts-pos ts-length)
+      (let ([v ts])
+        (set! ts (make-vector ts-length orig-t))
+        (set! ts-pos 0)
+        (for ([t3 (in-vector v)])
+          (when (zero? (random 2))
+            (add-t! t3)))
+        (add-t! t2))
+      (begin
+        (vector-set! ts ts-pos t2)
+        (set! ts-pos (add1 ts-pos)))))
+
+;; Don't paste before copying, because that interferes with replay
+(define copied? #f)
+(define (set-copied?! t)
+  (unless (= (send t get-start-position)
+             (send t get-end-position))
+    (set! copied? #t)))
 
 (define actions
   (vector
    (lambda (t) (send t undo))
    (lambda (t) (send t redo))
    (lambda (t) (send t insert (random-string) (random (add1 (send t last-position)))))
+   (lambda (t) (send t insert "\t" (random (add1 (send t last-position)))))
    (lambda (t) 
      (let ([pos (random (add1 (send t last-position)))])
        (send t delete pos (random (max 1 (- (send t last-position) pos))))))
@@ -50,27 +76,38 @@
    (lambda (t) 
      (let ([pos (random (add1 (send t last-position)))])
        (send t set-position pos (random (max 1 (- (send t last-position) pos))))))
-   (lambda (t) (send t copy))
-   (lambda (t) (send t cut))
-   (lambda (t) (send t paste))
+   (lambda (t) (set-copied?! t) (send t copy))
+   (lambda (t) (set-copied?! t) (send t cut))
+   (lambda (t) (set-copied?! t) (send t kill))
+   (lambda (t) (when copied? 
+                 (send t paste)
+                 (when (zero? (random 4))
+                   (send t paste-next))))
    (lambda (t) (send t change-style (make-object style-delta% 'change-size (add1 (random 42)))))
+   (lambda (t) (send t change-style 
+                     (send (make-object style-delta%) set-delta-foreground (make-object color%
+                                                                                        (random 256)
+                                                                                        (random 256)
+                                                                                        (random 256)))))
    (lambda (t) 
      (let ([t2 (new text%)])
-       (hash-set! ts t2 #t)
+       (add-t! t2)
        (init t2)
        (send t insert (make-object editor-snip% t2))))
    (lambda (t)
-     (send t set-max-width (if (zero? (random 2)) 100.0 'none)))
+     (send t set-max-width (if (zero? (random 2)) 
+                               (+ 50.0 (/ (random 500) 10.0))
+                               'none)))
+   (lambda (t) (yield (system-idle-evt)))
    ))
+
+(send canvas focus)
    
 (let loop ()
   (let ([act (random-elem actions)]
         [t (if (zero? (random 2))
                orig-t
-               (for/fold ([t orig-t])
-                   ([t (in-hash-keys ts)]
-                    [n (in-range (random (add1 (hash-count ts))))])
-                 t))])
-    (printf "~s: ~s\n" seed act)
+               (random-elem ts))])
+    (printf "~s: ~s ~s\n" seed (eq-hash-code t) act)
     (act t)
     (loop)))

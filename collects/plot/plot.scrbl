@@ -44,7 +44,7 @@ plotted.
   ]
 
 The display area and appearance of the plot can be changed by adding
-bracjets argument/value pairs after the first argument.
+brackets argument/value pairs after the first argument.
 
 @schemeblock[
   (plot (line (lambda (x) (sin x)))

@@ -10,7 +10,8 @@
          method-name init-name
          let-boxes
          properties field-properties init-properties
-         ->long)
+         ->long
+         assert)
 
 (define-syntax-parameter class-name #f)
 
@@ -264,3 +265,7 @@
    [(eqv? +inf.0 i) (expt 2 64)]
    [(eqv? +nan.0 i) 0]
    [else (inexact->exact (floor i))]))
+
+
+(define-syntax-rule (assert e) (void))
+; (define-syntax-rule (assert e) (unless e (error 'assert "failed: ~s" 'e)))

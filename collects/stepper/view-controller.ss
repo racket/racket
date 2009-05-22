@@ -27,7 +27,7 @@
 ;; the stored representation of a step
 (define-struct step (text kind posns) #:transparent)
 
-(define (go drscheme-frame program-expander selection-posn)
+(define (go drscheme-frame program-expander selection-start selection-end)
   
   ;; get the language-level name:
   (define language-settings (definitions-text->settings (send drscheme-frame get-definitions-text)))
@@ -169,16 +169,8 @@
   
   ;; is this step on the selected expression?
   (define (selected-exp-step? history-entry)
-    (ormap (posn-in-span selection-posn) (step-posns history-entry)))
-  
-  (define ((posn-in-span selection-posn) source-posn-info)
-    (match source-posn-info
-      [#f #f]
-      [(struct model:posn-info (posn span))
-       (and posn
-            (<= posn selection-posn)
-            (< selection-posn (+ posn span)))]))
-  
+    (ormap (span-overlap selection-start selection-end) (step-posns history-entry)))
+    
   ;; build gui object:
   
 
@@ -304,7 +296,7 @@
   ;; counting steps...
   (define status-text
     (new text%))
-  (define _1 (send status-text insert ""))
+  (define _2 (send status-text insert ""))
   
   (define status-canvas
     (new editor-canvas%
@@ -398,3 +390,42 @@
   
   s-frame)
 
+
+
+;; UTILITY FUNCTIONS:
+
+;; span-overlap : number number -> posn-info -> boolean
+;; return true if the selection is of zero length and precedes a char of the 
+;; stepping expression, *or* if the selection has positive overlap with the 
+;; stepping expression.
+(define ((span-overlap selection-start selection-end) source-posn-info)
+  (match source-posn-info
+    [#f #f]
+    [(struct model:posn-info (posn span))
+     (let ([end (+ posn span)])
+       (and posn
+            ;; you can *almost* combine these two, but not quite.
+            (cond [(= selection-start selection-end)
+                   (and (<= posn selection-start) (< selection-start end))]
+                  [else 
+                   (let ([overlap-begin (max selection-start posn)]
+                         ;; nb: we don't want zero-length overlaps at the end.
+                         ;; compensate by subtracting one from the end of the 
+                         ;; current expression.
+                         [overlap-end (min selection-end end)])
+                     ;; #t if there's positive overlap:
+                     (< overlap-begin overlap-end))])))]))
+
+;; a few unit tests.  Use them if changing span-overlap.
+#;(and
+;; zero-length selection cases:
+(equal? ((span-overlap 13 13) (model:make-posn-info 14 4)) #f)
+(equal? ((span-overlap 14 14) (model:make-posn-info 14 4)) #t)
+(equal? ((span-overlap 18 18) (model:make-posn-info 14 4)) #f)
+;; nonzero-length selection cases:
+(equal? ((span-overlap 13 14) (model:make-posn-info 14 4)) #f)
+(equal? ((span-overlap 13 15) (model:make-posn-info 14 4)) #t)
+(equal? ((span-overlap 13 23) (model:make-posn-info 14 4)) #t)
+(equal? ((span-overlap 16 17) (model:make-posn-info 14 4)) #t)
+(equal? ((span-overlap 16 24)  (model:make-posn-info 14 4)) #t)
+(equal? ((span-overlap 18 21)  (model:make-posn-info 14 4)) #f))

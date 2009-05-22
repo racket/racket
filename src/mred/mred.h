@@ -198,7 +198,7 @@ MRED_EXTERN void mred_set_run_from_cmd_line(MrEd_Run_From_Cmd_Line_Proc);
 #endif
 
 #ifndef REDIRECT_STDIO
-# if (defined(wx_msw) || defined(wx_mac)) && !WCONSOLE_STDIO
+# if defined(wx_msw) && !WCONSOLE_STDIO
 #  define REDIRECT_STDIO 1
 # else
 #  define REDIRECT_STDIO 0

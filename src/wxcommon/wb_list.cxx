@@ -396,7 +396,11 @@ Bool wxList::OnDeleteObject(wxObject *object)  // mac platform only
  */
 
 wxStringList::wxStringList (void):
-wxList ()
+#ifdef wx_mac
+ wxList(kNoDestroyData, FALSE)
+#else
+ wxList ()
+#endif
 {
   __type = wxTYPE_STRING_LIST;
 }

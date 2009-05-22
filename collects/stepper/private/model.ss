@@ -1,3 +1,5 @@
+#lang scheme/base
+
 ;step collector state machine (not yet implemented):
 ;
 ; datatype held-type = NO-HELD-STEP | SKIPPED-STEP | HELD(args)
@@ -35,7 +37,6 @@
 ;  double(x) : ERROR
 ;  late-let(x) : ERROR
 
-#lang scheme/base
 
 (require scheme/contract
          scheme/match
@@ -342,7 +343,6 @@
          (receive-result
           (make-before-error-result (append held-finished-list exps)
                                     message
-                                    #f
                                     posn-info))
          (set! held-exp-list the-no-sexp))]))
   

@@ -544,17 +544,23 @@
 
   (def/override (get-num-scroll-steps)
     (if editor
-        (send editor num-scroll-lines)
+        (if (send editor locked-for-read?)
+            1
+            (send editor num-scroll-lines))
         1))
 
   (def/override (find-scroll-step [real? y])
     (if editor
-        (send editor find-scroll-line (- y top-margin))
+        (if (send editor locked-for-read?)
+            0
+            (send editor find-scroll-line (- y top-margin)))
         0))
 
   (def/override (get-scroll-step-offset [exact-integer? n])
     (if editor
-        (+ (send editor scroll-line-location n) top-margin)
+        (if (send editor locked-for-read?)
+            0
+            (+ (send editor scroll-line-location n) top-margin))
         0))
 
   (def/override (set-unmodified)

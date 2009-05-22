@@ -216,9 +216,9 @@
             (send text change-style c start end #f)))))
 
     (define (display-reason text fail)
-      (write (list 'display-reason fail (check-fail? fail) (message-error? fail))
+      #;(write (list 'display-reason fail (check-fail? fail) (message-error? fail))
 	     (current-error-port))
-      (newline (current-error-port))
+      #;(newline (current-error-port))
 		   
       (let* ((print-string
 	      (lambda (m)
