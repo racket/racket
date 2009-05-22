@@ -84,7 +84,7 @@
           (loop (cdr names) (cdr exprs) (apply append (cdr names)) (cdr clauses)))]
         [else
          ;(for-each (lambda (vs) (for-each (lambda (v) (printf/log "Letrec Var: ~a~n" (syntax-e v))) vs)) names)
-         (do-check (lambda (stx e t) (tc-expr/check/t e t))
+         (do-check (lambda (stx e t) (tc-expr/check e t))
                    names (map (lambda (l) (map get-type l)) names) form exprs body clauses expected)]))))
 
 ;; this is so match can provide us with a syntax property to

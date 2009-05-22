@@ -298,7 +298,7 @@
                     (map list mname (map type-rec-id mty)))])])
 
 ;; cls : Class
-(dt Instance ([cls Class?]) [#:key 'instance])
+(dt Instance ([cls Type/c]) [#:key 'instance])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

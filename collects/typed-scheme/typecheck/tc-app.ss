@@ -101,6 +101,7 @@
     (let loop ([t (tc-expr cl)])
       (match t
         [(tc-result1: (? Mu? t*)) (loop (ret (unfold t*)))]
+        [(tc-result1: (Union: '())) (ret (Un))]
         [(tc-result1: (and c (Class: pos-tys (list (and tnflds (list tnames _ _)) ...) _))) 
          (unless (= (length pos-tys)
                     (length (syntax->list pos-args)))
@@ -109,7 +110,7 @@
          ;; use for, since they might be different lengths in error case
          (for ([pa (in-syntax pos-args)]
                [pt (in-list pos-tys)])
-           (tc-expr/check pa pt))
+           (tc-expr/check pa (ret pt)))
          (for ([n names]
                #:when (not (memq n tnames)))
            (tc-error/delayed 
@@ -124,7 +125,7 @@
                                      [else #f])])
                         (if s
                             ;; this argument was present
-                            (tc-expr/check s tfty)
+                            (tc-expr/check s (ret tfty))
                             ;; this argument wasn't provided, and was optional
                             #f))])
                    tnflds)

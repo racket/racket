@@ -362,7 +362,7 @@
                             [else (tc-error/expr "send: method ~a not understood by class ~a" s c)])]
                [ret-ty (tc/funapp rcvr args (ret ftype) (map tc-expr (syntax->list args)) expected)])
           (if expected
-              (begin (check-below ret-ty expected) (ret expected))
+              (begin (check-below ret-ty expected) expected)
               ret-ty))]
        [(tc-result1: t) (int-err "non-symbol methods not supported by Typed Scheme: ~a" t)])]
     [(tc-result1: t) (tc-error/expr #:return (or expected (ret (Un))) "send: expected a class instance, got ~a" t)]))
