@@ -87,11 +87,11 @@
                    [else (format "All ~a" count)])
                  (if (= count 1) "" "s"))))
     
-    (define (display-untested-summary port)
+    (define/public (display-untested-summary port)
       (unless (test-silence)
         (fprintf port "This program should be tested.~n")))
 
-    (define (display-disabled-summary port)
+    (define/public (display-disabled-summary port)
       (fprintf port "Tests disabled.\n"))
 
     (define/public (next-line) (printf "~a" "\n\t"))
