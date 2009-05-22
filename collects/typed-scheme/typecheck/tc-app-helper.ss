@@ -5,14 +5,19 @@
 
 (provide (all-defined-out))
 
+(define (make-printable t)
+  (match t
+    [(tc-result1: t) t]
+    [_ t]))
+
 (define (stringify-domain dom rst drst [rng #f])
-  (let ([doms-string (if (null? dom) "" (string-append (stringify dom) " "))]
+  (let ([doms-string (if (null? dom) "" (string-append (stringify (map make-printable dom)) " "))]
         [rng-string (if rng (format " -> ~a" rng) "")])
     (cond [drst
            (format "~a~a ... ~a~a" doms-string (car drst) (cdr drst) rng-string)]
           [rst
            (format "~a~a *~a" doms-string rst rng-string)]
-          [else (string-append (stringify dom) rng-string)])))
+          [else (string-append (stringify (map make-printable dom)) rng-string)])))
 
 (define (domain-mismatches ty doms rests drests rngs arg-tys tail-ty tail-bound #:expected [expected #f])
   (define arguments-str
@@ -26,18 +31,18 @@
              arguments-str
              (if expected
                  (format "Result type: ~a~nExpected result: ~a~n"
-                         (car rngs) expected)
+                         (car rngs) (make-printable expected))
                  ""))]
     [else
      (format "~a: ~a~nArguments: ~a~n~a"
              (if expected "Types" "Domains")
              (stringify (if expected 
-                            (map stringify-domain doms rests drests rngs)
-                            (map stringify-domain doms rests drests))
+                            (map stringify-domain (map make-printable doms) rests drests rngs)
+                            (map stringify-domain (map make-printable doms) rests drests))
                         "~n\t")
              arguments-str
              (if expected
-                 (format "Expected result: ~a~n" expected)
+                 (format "Expected result: ~a~n" (make-printable expected))
                  ""))]))
 
 (define (poly-fail t argtypes #:name [name #f] #:expected [expected #f])

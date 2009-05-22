@@ -90,14 +90,17 @@
        (when drest
          (fp "~a ... ~a " (car drest) (cdr drest)))
        (match rng
-         #|
          [(Values: (list (Result: t (LFilterSet: (list) (list)) (LEmpty:))))
           (fp "-> ~a" t)]
+         [(Values: (list (Result: t
+				  (LFilterSet: (list (LTypeFilter: ft '() 0))
+					       (list (LNotTypeFilter: ft '() 0)))
+				  (LEmpty:)))) 
+          (fp "-> ~a : ~a" t ft)]
          [(Values: (list (Result: t fs (LEmpty:)))) 
           (fp "-> ~a : ~a" t fs)]
          [(Values: (list (Result: t lf lo)))
           (fp "-> ~a : ~a ~a" t lf lo)]
-|#
          [_
           (fp "-> ~a" rng)])
        (fp ")")]))
@@ -116,7 +119,7 @@
     ;; names are just the printed as the original syntax
     [(Name: stx) (fp "~a" (syntax-e stx))]
     [(App: rator rands stx) 
-     (fp "~a" (list* '@ rator rands))]
+     (fp "~a" (list* rator rands))]
     ;; special cases for lists
     [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
      (fp "(Listof ~a)" elem-ty)]
@@ -153,7 +156,7 @@
     [(Pair: l r) (fp "(Pair ~a ~a)" l r)]
     [(F: nm) (fp "~a" nm)]   
     ;; FIXME
-    ;[(Values: (list v)) (fp "~a" v)]
+    [(Values: (list v)) (fp "~a" v)]
     [(Values: (list v ...)) (fp "~a" (cons 'values v))]
     [(ValuesDots: v dty dbound) (fp "~a" (cons 'values (append v (list dty '... dbound))))]
     [(Param: in out) 
@@ -195,6 +198,7 @@
     [(Result: t fs lo) (fp "(~a : ~a : ~a)" t fs lo)]
     [(Refinement: parent p? _)
      (fp "(Refinement ~a ~a)" parent (syntax-e p?))]
+    [(Error:) (fp "Error")]
     [else (fp "Unknown Type: ~a" (struct->vector c))]
     ))
 
