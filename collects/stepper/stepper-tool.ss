@@ -219,7 +219,8 @@
                                    (set! stepper-frame
                                          (go this 
                                              program-expander 
-                                             (+ 1 (send (get-definitions-text) get-start-position))))
+                                             (+ 1 (send (get-definitions-text) get-start-position))
+                                             (+ 1 (send (get-definitions-text) get-end-position))))
                                    (message-box
                                     (string-constant stepper-name)
                                     (format (string-constant stepper-language-level-message)
