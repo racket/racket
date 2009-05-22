@@ -1117,7 +1117,7 @@
                                         dsc
                                         sc))
                                      dsc
-                                     'codom-side-conditions-rewritten
+                                     `codom-side-conditions-rewritten
                                      'name)))
                                 (term-define-fn name name2))
                             'disappeared-use
