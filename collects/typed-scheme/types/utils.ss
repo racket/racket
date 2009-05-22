@@ -290,7 +290,7 @@
 (define (lookup-fail e) 
   (match (identifier-binding e)
     ['lexical (int-err "untyped lexical variable ~a" (syntax-e e))]
-    [#f (int-err "untyped top-level variable ~a" (syntax-e e))]
+    [#f (tc-error/expr "untyped top-level identifier ~a" (syntax-e e))]
     [(list _ _ nominal-source-mod nominal-source-id _ _ _)
      (let-values ([(x y) (module-path-index-split nominal-source-mod)])
        (cond [(and (not x) (not y))

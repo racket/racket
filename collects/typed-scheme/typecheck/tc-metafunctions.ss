@@ -149,9 +149,15 @@
     [(ValuesDots: (list (Result: ts lfs los) ...) dty dbound)
      (ret ts
           (for/list ([lf lfs]) 
-            (merge-filter-sets
-             (for/list ([x formals] [i (in-naturals)])
-               (apply-filter (split-lfilters lf i) Univ (make-Path null x)))))
+            (or
+             (and (null? formals)
+                  (match lf
+                    [(LFilterSet: lf+ lf-)
+                     (combine (if (memq (make-LBot) lf+) (list (make-Bot)) (list))
+                              (if (memq (make-LBot) lf-) (list (make-Bot)) (list)))]))
+             (merge-filter-sets
+              (for/list ([x formals] [i (in-naturals)])
+                (apply-filter (split-lfilters lf i) Univ (make-Path null x))))))
           (for/list ([lo los])
             (or 
              (for/or ([x formals] [i (in-naturals)])
@@ -163,9 +169,15 @@
     [(Values: (list (Result: ts lfs los) ...))
      (ret ts
           (for/list ([lf lfs]) 
-            (merge-filter-sets
-             (for/list ([x formals] [i (in-naturals)])
-               (apply-filter (split-lfilters lf i) Univ (make-Path null x)))))
+            (or
+             (and (null? formals)
+                  (match lf
+                    [(LFilterSet: lf+ lf-)
+                     (combine (if (memq (make-LBot) lf+) (list (make-Bot)) (list))
+                              (if (memq (make-LBot) lf-) (list (make-Bot)) (list)))]))
+             (merge-filter-sets
+              (for/list ([x formals] [i (in-naturals)])
+                (apply-filter (split-lfilters lf i) Univ (make-Path null x))))))
           (for/list ([lo los])
             (or 
              (for/or ([x formals] [i (in-naturals)])

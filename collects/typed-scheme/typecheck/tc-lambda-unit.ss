@@ -209,7 +209,7 @@
 (define (tc/mono-lambda/type formals bodies expected)
   (define t (make-Function (map lam-result->type (tc/mono-lambda formals bodies expected))))
   (if expected 
-      (check-below t expected)
+      (and (check-below (ret t true-filter) expected) t)
       t))
 
 ;; tc/plambda syntax syntax-list syntax-list type -> Poly
