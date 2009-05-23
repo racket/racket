@@ -7,7 +7,6 @@
          "compiler.ss"
          "parse-helper.ss"
          "parse-quasi.ss"
-         (only-in srfi/1 delete-duplicates)
          (for-template (only-in "runtime.ss" matchable?)
                        scheme/base))
 

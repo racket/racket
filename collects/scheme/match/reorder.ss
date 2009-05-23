@@ -2,7 +2,6 @@
 
 (require "patterns.ss"
          scheme/list
-         (only-in srfi/1/list take-while)
          (for-syntax scheme/base))
 
 (provide reorder-columns)
@@ -52,16 +51,20 @@
 (define (or-all? ps l)
   (ormap (lambda (p) (andmap p l)) ps))
 
+(define (count-while pred l)
+  (let loop ([l l] [r 0])
+    (if (or (null? l) (not (pred (car l)))) r (loop (cdr l) (add1 r)))))
+
 (define (score col)
   (define n (length col))
   (define c (car col))
   (define preds (list Var? Pair? Null?))
   (cond [(or-all? preds col) (add1 n)]
         [(andmap CPat? col) n]
-        [(Var? c) (length (take-while Var? col))]
-        [(Pair? c) (length (take-while Pair? col))]
-        [(Vector? c) (length (take-while Vector? col))]
-        [(Box? c) (length (take-while Box? col))]
+        [(Var? c)    (count-while Var? col)]
+        [(Pair? c)   (count-while Pair? col)]
+        [(Vector? c) (count-while Vector? col)]
+        [(Box? c)    (count-while Box? col)]
         [else 0]))
 
 (define (reorder-by ps scores*)

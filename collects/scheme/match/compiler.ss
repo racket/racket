@@ -8,8 +8,7 @@
          "reorder.ss"
          scheme/struct-info
          scheme/stxparam
-         scheme/nest
-         (only-in srfi/1 delete-duplicates))
+         scheme/nest)
 
 (provide compile*)
 

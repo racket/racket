@@ -5,8 +5,7 @@
          syntax/stx
          scheme/struct-info
          "patterns.ss"
-         "compiler.ss"
-         (only-in srfi/1 delete-duplicates))
+         "compiler.ss")
 
 (provide ddk? parse-literal all-vars pattern-var? match:syntax-err
          match-expander-transform trans-match parse-struct

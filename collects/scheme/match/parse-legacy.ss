@@ -7,8 +7,7 @@
          "patterns.ss"
          "compiler.ss"
          "parse-helper.ss"
-         "parse-quasi.ss"
-         (only-in srfi/1 delete-duplicates))
+         "parse-quasi.ss")
 
 (provide parse/legacy/cert)
 
