@@ -41,16 +41,19 @@
        (syntax-case stx ()
          [(k [pats . rhs] ...)
           (let* ([pss (syntax->list #'(pats ...))]
-                 [ps1 (car pss)]
-                 [len (length (syntax->list ps1))])
-            (for/list ([ps pss])
-              (unless (= (length (syntax->list ps)) len)
-                (raise-syntax-error
-                 #f "unequal number of patterns in match clauses"
-                 stx ps)))
-            (with-syntax ([(vars ...) (generate-temporaries (car pss))])
-              (syntax/loc stx
-                (lambda (vars ...) (match* (vars ...) [pats . rhs] ...)))))]))
+                 [ps1 (car pss)])
+            (unless (syntax->list ps1)
+              (raise-syntax-error 
+               #f "expected a sequence of patterns" stx ps1))
+            (let ([len (length (syntax->list ps1))])
+              (for/list ([ps pss])
+                (unless (= (length (syntax->list ps)) len)
+                  (raise-syntax-error
+                   #f "unequal number of patterns in match clauses"
+                   stx ps)))
+              (with-syntax ([(vars ...) (generate-temporaries (car pss))])
+                (syntax/loc stx
+                  (lambda (vars ...) (match* (vars ...) [pats . rhs] ...))))))]))
 
      ;; there's lots of duplication here to handle named let
      ;; some factoring out would do a lot of good
