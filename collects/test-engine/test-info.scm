@@ -98,9 +98,9 @@
 	     (formatter (unequal-test fail))
 	     (formatter (unequal-actual fail)))]
      [(outofrange? fail)
-      (print "Actual value ~F is not within ~v of expected value ~F."
+      (print "Actual value ~F is not within ~a of expected value ~F."
 	     (formatter (outofrange-test fail))
-	     (format  (outofrange-range fail))
+	     (formatter  (outofrange-range fail))
 	     (formatter (outofrange-actual fail)))]
      [(incorrect-error? fail)
       (print "check-error encountered the following error instead of the expected ~a~n   :: ~a"
