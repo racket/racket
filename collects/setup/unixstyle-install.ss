@@ -179,7 +179,8 @@
                   (regexp-replace* #rx"[\"`'$\\]" (dir: 'bin) "\\\\&"))
           (write-bytes buf (current-output-port) (cdadr m))))))
   (let ([magic (with-input-from-file file (lambda () (read-bytes 10)))])
-    (cond [(regexp-match #rx#"^\177ELF" magic)
+    (cond [(or (regexp-match #rx#"^\177ELF" magic) 
+               (regexp-match #rx#"^\316\372\355\376" magic))
            (let ([temp (format "~a-temp-for-install"
                                (regexp-replace* #rx"/" file "_"))])
              (with-handlers ([exn? (lambda (e) (delete-file temp) (raise e))])
