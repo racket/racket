@@ -517,7 +517,8 @@ Returns the last pair of a (possibly improper) list.}
 Returns a newly constructed list of length @scheme[k], holding
 @scheme[v] in all positions.
 
-@mz-examples[(make-list 7 'foo)]}
+@mz-examples[#:eval list-eval
+  (make-list 7 'foo)]}
 
 @defproc[(take [lst any/c] [pos exact-nonnegative-integer?]) list?]{
 Returns a fresh list whose elements are the first @scheme[pos] elements of
