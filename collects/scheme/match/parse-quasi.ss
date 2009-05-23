@@ -6,8 +6,7 @@
          scheme/struct-info
          "patterns.ss"
          "compiler.ss"
-         "parse-helper.ss"
-         (only-in srfi/1 delete-duplicates))
+         "parse-helper.ss")
 
 (provide parse-quasi)
 

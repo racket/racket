@@ -34,7 +34,8 @@
 
 #lang scheme/base
 
-(require srfi/optional "selector.ss" (only-in scheme/list make-list))
+(require srfi/optional "selector.ss"
+         (only-in scheme/list [make-list make-list*]))
 
 (provide xcons
          make-list
@@ -50,10 +51,7 @@
 
 ;; Make a list of length LEN.
 
-;; reprovided from mzscheme
-;; (define (make-list len [elt #f])
-;;   (check-arg (lambda (n) (and (integer? n) (>= n 0))) len 'make-list)
-;;   (for/list ([i (in-range len)]) elt))
+(define (make-list len [elt #f]) (make-list* len elt))
 
 ;; Make a list of length LEN. Elt i is (PROC i) for 0 <= i < LEN.
 

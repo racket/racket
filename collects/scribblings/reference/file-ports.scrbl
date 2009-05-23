@@ -53,7 +53,7 @@ cases, the port is buffered by default.
 The port produced by @scheme[open-input-file] should be explicitly
 closed, either though @scheme[close-input-port] or indirectly via
 @scheme[custodian-shutdown-all], to release the OS-level file
-handle. The input port will not closed automatically if it is
+handle. The input port will not be closed automatically if it is
 otherwise available for garbage collection (see
 @secref["gc-model"]); a @tech{will} could be associated input port
 to close it more automatically (see @secref["willexecutor"]).
@@ -134,7 +134,7 @@ terminal, in which case is it line buffered bu default.
 The port produced by @scheme[open-output-port] should be explicitly
 closed, either though @scheme[close-output-port] or indirectly via
 @scheme[custodian-shutdown-all], to release the OS-level file
-handle. The output port will not closed automatically if it is
+handle. The output port will not be closed automatically if it is
 otherwise available for garbage collection (see
 @secref["gc-model"]); a @tech{will} could be associated input port
 to close it more automatically (see @secref["willexecutor"]).
