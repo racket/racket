@@ -59,11 +59,11 @@ X(scheme_make, _string)(const Xchar *chars)
 }
 
 Scheme_Object *
-X(scheme_alloc, _string)(int size, Xchar fill)
+X(scheme_alloc, _string)(long size, Xchar fill)
 {
   Scheme_Object *str;
   Xchar *s;
-  int i;
+  long i;
   
   if (size < 0) {
     str = scheme_make_integer(size);

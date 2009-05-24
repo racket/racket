@@ -472,7 +472,7 @@ Like @cpp{scheme_make_sized_byte_string}, except the @var{len}
  non-zero, then @var{copy} must be non-zero.}
 
 @function[(Scheme_Object* scheme_alloc_byte_string
-           [int size]
+           [long size]
            [char fill])]{
 
 Allocates a new Scheme byte string.}
@@ -555,7 +555,7 @@ Like @cpp{scheme_make_sized_char_string}, except the @var{len}
  non-zero, then @var{copy} must be non-zero.}
 
 @function[(Scheme_Object* scheme_alloc_char_string
-           [int size]
+           [long size]
            [mzchar fill])]{
 
 Allocates a new Scheme string.}
@@ -636,7 +636,7 @@ Like @cpp{scheme_intern_exact_keyword}, but given a character array
  instead of a UTF-8-encoding byte array.}
 
 @function[(Scheme_Object* scheme_make_vector
-           [int size]
+           [long size]
            [Scheme_Object* fill])]{
 
 Allocates a new vector.}
