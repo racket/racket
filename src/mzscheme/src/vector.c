@@ -123,10 +123,10 @@ scheme_init_vector (Scheme_Env *env)
 }
 
 Scheme_Object *
-scheme_make_vector (int size, Scheme_Object *fill)
+scheme_make_vector (long size, Scheme_Object *fill)
 {
   Scheme_Object *vec;
-  int i;
+  long i;
 
   if (size < 0) {
     vec = scheme_make_integer(size);
@@ -331,7 +331,7 @@ list_to_vector (int argc, Scheme_Object *argv[])
 Scheme_Object *
 scheme_list_to_vector (Scheme_Object *list)
 {
-  int len, i;
+  long len, i;
   Scheme_Object *vec, *orig = list;
 
   len = scheme_proper_list_length(list);
