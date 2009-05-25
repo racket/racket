@@ -3,6 +3,7 @@
 (require (except-in "../utils/utils.ss" infer))
 (require "infer-unit.ss" "constraints.ss" "dmap.ss" "signatures.ss"
          "restrict.ss" "promote-demote.ss"
+         mzlib/trace
          (only-in scheme/unit provide-signature-elements
                   define-values/invoke-unit/infer link)
          (utils unit-utils))

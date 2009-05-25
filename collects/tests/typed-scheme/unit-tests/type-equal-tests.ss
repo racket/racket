@@ -2,12 +2,12 @@
 
 (require "test-utils.ss" "planet-requires.ss" (for-syntax scheme/base))
 (require (rep type-rep)
-	 (private type-comparison type-effect-convenience union subtype)
+	 (types comparison abbrev union)
          (schemeunit))
 
 (provide type-equal-tests)
 
-(define (-base x) (make-Base x #f))
+(define (-base x) (make-Base x #'dummy))
 
 
 (define-syntax (te-tests stx)
@@ -26,24 +26,22 @@
 
 (define (type-equal-tests)
   (te-tests
-   [N N]
-   [(Un N) N]
-   [(Un N Sym B) (Un N B Sym)]
-   [(Un N Sym B) (Un Sym B N)]
-   [(Un N Sym B) (Un Sym N B)]
-   [(Un N Sym B) (Un B (Un Sym N))]
-   [(Un N Sym) (Un Sym N)]
-   [(-poly (x) (-> (Un Sym N) x)) (-poly (xyz) (-> (Un N Sym) xyz))]
-   [(-mu x (Un N Sym x)) (-mu y (Un N Sym y))]     
+   [-Number -Number]
+   [(Un -Number) -Number]
+   [(Un -Number -Symbol -Boolean) (Un -Number -Boolean -Symbol)]
+   [(Un -Number -Symbol -Boolean) (Un -Symbol -Boolean -Number)]
+   [(Un -Number -Symbol -Boolean) (Un -Symbol -Number -Boolean)]
+   [(Un -Number -Symbol -Boolean) (Un -Boolean (Un -Symbol -Number))]
+   [(Un -Number -Symbol) (Un -Symbol -Number)]
+   [(-poly (x) (-> (Un -Symbol -Number) x)) (-poly (xyz) (-> (Un -Number -Symbol) xyz))]
+   [(-mu x (Un -Number -Symbol x)) (-mu y (Un -Number -Symbol y))]     
    ;; found bug
    [FAIL (Un (-mu heap-node 
-                  (-struct 'heap-node #f (list (-base 'comparator) N (-v a) (Un heap-node (-base 'heap-empty))) #f  #f #f values)) 
+                  (-struct 'heap-node #f (list (-base 'comparator) -Number (-v a) (Un heap-node (-base 'heap-empty))))) 
              (-base 'heap-empty))
          (Un (-mu heap-node 
-                  (-struct 'heap-node #f (list (-base 'comparator) N (-pair N N) (Un heap-node (-base 'heap-empty))) #f #f #f values)) 
+                  (-struct 'heap-node #f (list (-base 'comparator) -Number (-pair -Number -Number) (Un heap-node (-base 'heap-empty))))) 
              (-base 'heap-empty))]))
-
-
 
 (define-go
   type-equal-tests)

@@ -33,11 +33,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
           syntax/struct
           syntax/stx
           scheme/struct-info
-	  (except-in (utils utils tc-utils) id)
+	  (except-in (utils utils tc-utils))
           (env type-name-env)
           "type-contract.ss"))
 
-(require "require-contract.ss"
+(require (utils require-contract)
          (typecheck internal-forms)
          (except-in mzlib/contract ->)
          (only-in mzlib/contract [-> c->])

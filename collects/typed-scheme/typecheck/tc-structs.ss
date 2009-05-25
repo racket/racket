@@ -2,9 +2,8 @@
 
 (require (except-in "../utils/utils.ss" extend))
 (require (rep type-rep)
-	 (private type-effect-convenience
-		  type-utils parse-type
-		  union resolve-type)
+         (private parse-type)
+	 (types convenience utils union resolve abbrev)
 	 (env type-env type-environments type-name-env)
 	 (utils tc-utils)
          "def-binding.ss"
@@ -130,7 +129,13 @@
                  (wrapper (->* external-fld-types (if cret cret name))))
            (cons pred
                  (make-pred-ty (pred-wrapper name))))
-     (map (lambda (g t) (cons g (wrapper (->* (list name) t)))) getters external-fld-types/no-parent)
+     (for/list ([g (in-list getters)] [t (in-list external-fld-types/no-parent)] [i (in-naturals)])
+       (let ([func (if setters? 
+                       (->* (list name) t)
+                       (make-Function 
+                        (list (make-arr* (list name) t 
+                                         #:object (make-LPath (list (make-StructPE name i)) 0)))))])
+         (cons g (wrapper func))))
      (if setters?
          (map (lambda (g t) (cons g (wrapper (->* (list name t) -Void)))) setters external-fld-types/no-parent)
          null)))

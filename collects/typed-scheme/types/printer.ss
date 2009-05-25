@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "../utils/utils.ss")
-(require (rep type-rep effect-rep rep-utils)
+(require (rep type-rep filter-rep object-rep rep-utils)
 	 (utils tc-utils)
 	 scheme/match)
 
@@ -9,7 +9,7 @@
 ;; FIXME - currently broken
 (define print-poly-types? #f)
 ;; do we use simple type aliases in printing
-(define print-aliases #t)
+(define print-aliases #f)
 
 ;; does t have a type name associated with it currently?
 ;; has-name : Type -> Maybe[Symbol]
@@ -27,20 +27,46 @@
 
 ;; print out an effect
 ;; print-effect : Effect Port Boolean -> Void
-(define (print-effect c port write?)
-  (define (fp . args) (apply fprintf port args))    
+(define (print-latentfilter c port write?)
+  (define (fp . args) (apply fprintf port args))
   (match c
-    [(Restrict-Effect: t v) (fp "(restrict ~a ~a)" t (syntax-e v))]
-    [(Remove-Effect: t v) (fp "(remove ~a ~a)" t (syntax-e v))]
-    [(Latent-Restrict-Effect: t) (fp "(restrict ~a)" t)]
-    [(Latent-Remove-Effect: t) (fp "(remove ~a)" t)]
-    [(Latent-Var-True-Effect:) (fp "(var #t)")]
-    [(Latent-Var-False-Effect:) (fp "(var #f)")]
-    [(True-Effect:) (fp "T")]
-    [(False-Effect:) (fp "F")]
-    [(Var-True-Effect: v) (fp "(var #t ~a)" (syntax-e v))]
-    [(Var-False-Effect: v) (fp "(var #f ~a)" (syntax-e v))]))
+    [(LFilterSet: thn els) (fp "(")
+                           (for ([i thn]) (fp "~a " i)) (fp "|")
+                           (for ([i els]) (fp " ~a" i))
+                           (fp")")]
+    [(LNotTypeFilter: type path idx) (fp "(! ~a @ ~a ~a)" type path idx)]
+    [(LTypeFilter: type path idx) (fp "(~a @ ~a ~a)" type path idx)]
+    [(LBot:) (fp "LBot")]))
 
+(define (print-filter c port write?)
+  (define (fp . args) (apply fprintf port args))
+  (match c
+    [(FilterSet: thn els) (fp "(")
+                          (for ([i thn]) (fp "~a " i)) (fp "|")
+                          (for ([i els]) (fp " ~a" i))
+                          (fp")")]
+    [(NotTypeFilter: type path id) (fp "(! ~a @ ~a ~a)" type path (syntax-e id))]
+    [(TypeFilter: type path id) (fp "(~a @ ~a ~a)" type path (syntax-e id))]
+    [(Bot:) (fp "Bot")]))
+
+(define (print-pathelem c port write?)
+  (define (fp . args) (apply fprintf port args))
+  (match c
+    [(CarPE:) (fp "car")]
+    [(CdrPE:) (fp "cdr")]
+    [(StructPE: t i) (fp "(~a ~a)" t i)]))
+
+(define (print-latentobject c port write?)
+  (define (fp . args) (apply fprintf port args))
+  (match c
+    [(LEmpty:) (fp "")]
+    [(LPath: pes i) (fp "~a" (append pes (list i)))]))
+
+(define (print-object c port write?)
+  (define (fp . args) (apply fprintf port args))
+  (match c
+    [(Empty:) (fp "")]
+    [(Path: pes i) (fp "~a" (append pes (list (syntax-e i))))]))
 
 ;; print out a type
 ;; print-type : Type Port Boolean -> Void
@@ -50,7 +76,7 @@
     (match a
       [(top-arr:)
        (fp "Procedure")]
-      [(arr: dom rng rest drest kws thn-eff els-eff)
+      [(arr: dom rng rest drest kws)
        (fp "(")
        (for-each (lambda (t) (fp "~a " t)) dom)
        (for ([kw kws])
@@ -63,12 +89,20 @@
          (fp "~a* " rest))
        (when drest
          (fp "~a ... ~a " (car drest) (cdr drest)))
-       (fp "-> ~a" rng)
-       (match* (thn-eff els-eff)         
-         [((list) (list)) (void)]
-         [((list (Latent-Restrict-Effect: t)) (list (Latent-Remove-Effect: t))) (fp " : ~a" t)]
-         [((list (Latent-Restrict-Effect: t)) (list (Latent-Remove-Effect: t))) (fp " : ~a" t)]
-         [(_ _) (fp " : ~a ~a" thn-eff els-eff)])
+       (match rng
+         [(Values: (list (Result: t (LFilterSet: (list) (list)) (LEmpty:))))
+          (fp "-> ~a" t)]
+         [(Values: (list (Result: t
+				  (LFilterSet: (list (LTypeFilter: ft '() 0))
+					       (list (LNotTypeFilter: ft '() 0)))
+				  (LEmpty:)))) 
+          (fp "-> ~a : ~a" t ft)]
+         [(Values: (list (Result: t fs (LEmpty:)))) 
+          (fp "-> ~a : ~a" t fs)]
+         [(Values: (list (Result: t lf lo)))
+          (fp "-> ~a : ~a ~a" t lf lo)]
+         [_
+          (fp "-> ~a" rng)])
        (fp ")")]))
   (define (tuple? t)
     (match t
@@ -85,7 +119,7 @@
     ;; names are just the printed as the original syntax
     [(Name: stx) (fp "~a" (syntax-e stx))]
     [(App: rator rands stx) 
-     (fp "~a" (cons rator rands))]
+     (fp "~a" (list* rator rands))]
     ;; special cases for lists
     [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
      (fp "(Listof ~a)" elem-ty)]
@@ -115,16 +149,16 @@
                           (lambda (e) (fp " ") (print-arr e))
                           b)
                          (fp ")")]))]
-    [(arr: _ _ _ _ _ _ _) (print-arr c)]
+    [(arr: _ _ _ _ _) (print-arr c)]
     [(Vector: e) (fp "(Vectorof ~a)" e)]
     [(Box: e) (fp "(Box ~a)" e)]
     [(Union: elems) (fp "~a" (cons 'U elems))]
     [(Pair: l r) (fp "(Pair ~a ~a)" l r)]
-    [(F: nm) (fp "~a" nm)]      
+    [(F: nm) (fp "~a" nm)]   
+    ;; FIXME
+    [(Values: (list v)) (fp "~a" v)]
     [(Values: (list v ...)) (fp "~a" (cons 'values v))]
     [(ValuesDots: v dty dbound) (fp "~a" (cons 'values (append v (list dty '... dbound))))]
-    [(Refinement: parent p? _)
-     (fp "(Refinement ~a ~a)" parent (syntax-e p?))]
     [(Param: in out) 
      (if (equal? in out)
          (fp "(Parameter ~a)" in)           
@@ -150,7 +184,7 @@
                               (Vector: (F: x))
                               (Box: (F: x))))))
      (fp "SyntaxObject")]
-    [(Mu-name: name body) (fp "(mu ~a ~a ~a)" (Type-seq c) name body)]
+    [(Mu-name: name body) (fp "(Rec ~a ~a)" name body)]
     ;; FIXME - this should not be used
     #;
     [(Scope: sc) (fp "(Scope ~a)" sc)]
@@ -159,8 +193,18 @@
     [(Syntax: t) (fp "(Syntax ~a)" t)]
     [(Instance: t) (fp "(Instance ~a)" t)]
     [(Class: pf nf ms) (fp "(Class)")]
+    [(Result: t (LFilterSet: (list) (list)) (LEmpty:)) (fp "~a" t)]
+    [(Result: t fs (LEmpty:)) (fp "(~a : ~a)" t fs)]
+    [(Result: t fs lo) (fp "(~a : ~a : ~a)" t fs lo)]
+    [(Refinement: parent p? _)
+     (fp "(Refinement ~a ~a)" parent (syntax-e p?))]
+    [(Error:) (fp "Error")]
     [else (fp "Unknown Type: ~a" (struct->vector c))]
     ))
 
 (set-box! print-type* print-type)
-(set-box! print-effect* print-effect)
+(set-box! print-filter* print-filter)
+(set-box! print-latentfilter* print-latentfilter)
+(set-box! print-object* print-object)
+(set-box! print-latentobject* print-latentobject)
+(set-box! print-pathelem* print-pathelem)

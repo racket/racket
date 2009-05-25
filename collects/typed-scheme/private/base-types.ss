@@ -1,10 +1,10 @@
 #lang s-exp "type-env-lang.ss"
 
-[Number N]
+[Number -Number]
 [Integer -Integer]
 [Void -Void]
-[Boolean B]
-[Symbol Sym]
+[Boolean -Boolean]
+[Symbol -Symbol]
 [String -String]
 [Any Univ]
 [Port -Port]

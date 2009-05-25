@@ -1,14 +1,14 @@
 #lang scheme/unit
 
 
-(require (rename-in "../utils/utils.ss" [private r:private]))
+(require (rename-in "../utils/utils.ss" [private private-in]))
 (require syntax/kerncase
-         scheme/match
+         scheme/match (prefix-in - scheme/contract)
          "signatures.ss"
-         (r:private type-utils type-effect-convenience union subtype 
-		    parse-type type-annotation stxclass-util)
-         (rep type-rep effect-rep)
-         (utils tc-utils)
+         (types utils convenience union subtype)
+         (private-in parse-type type-annotation)
+         (rep type-rep)
+         (utils tc-utils stxclass-util)
          (env lexical-env)
          (only-in (env type-environments) lookup current-tvars extend-env)
          scheme/private/class-internal
@@ -23,12 +23,18 @@
 
 ;; return the type of a literal value
 ;; scheme-value -> type
-(define (tc-literal v-stx)
+(define (tc-literal v-stx [expected #f])
+  (define-syntax-class exp
+    (pattern i
+             #:when expected
+             #:with datum (syntax-e #'i)
+             #:when (subtype (-val #'datum) expected)))
   (syntax-parse v-stx 
+    [i:exp expected]
     [i:boolean (-val #'i.datum)]
     [i:identifier (-val #'i.datum)]
     [i:exact-integer -Integer]
-    [i:number N]
+    [i:number -Number]
     [i:str -String]
     [i:char -Char]
     [i:keyword (-val #'i.datum)]
@@ -39,7 +45,7 @@
     [(i ...) 
      (-Tuple (map tc-literal (syntax->list #'(i ...))))]
     [i #:declare i (3d vector?)
-     (make-Vector (apply Un (map tc-literal (vector->list #'i.datum))))]
+       (make-Vector (apply Un (map tc-literal (vector->list #'i.datum))))]
     [_ Univ]))
 
 
@@ -55,75 +61,113 @@
         [#f null]
         [(cons a b) (cons a (loop b))]
         [e (list e)])))
-  (for/fold ([ty ty])
-    ([inst (in-improper-stx inst)])
-    (cond [(not inst) ty]
-          [(not (or (Poly? ty) (PolyDots? ty)))
-           (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a" ty)]
-          
-          [(and (Poly? ty)
-                (not (= (length (syntax->list inst)) (Poly-n ty))))
+  (match ty
+    [(list ty)
+     (list
+      (for/fold ([ty ty])
+        ([inst (in-improper-stx inst)])
+        (cond [(not inst) ty]
+              [(not (or (Poly? ty) (PolyDots? ty)))
+               (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a" ty)]          
+              [(and (Poly? ty)
+                    (not (= (length (syntax->list inst)) (Poly-n ty))))
+               (tc-error/expr #:return (Un)
+                              "Wrong number of type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
+                              ty (Poly-n ty) (length (syntax->list inst)))]
+              [(and (PolyDots? ty) (not (>= (length (syntax->list inst)) (sub1 (PolyDots-n ty)))))
+               ;; we can provide 0 arguments for the ... var
+               (tc-error/expr #:return (Un)
+                              "Wrong number of type arguments to polymorphic type ~a:~nexpected at least: ~a~ngot: ~a"
+                              ty (sub1 (PolyDots-n ty)) (length (syntax->list inst)))]
+              [(PolyDots? ty)
+               ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
+               ;; use instantiate-poly-dotted, otherwise we do the normal thing.
+               (let-values ([(all-but-last last-stx) (split-last (syntax->list inst))])
+                 (match (syntax-e last-stx)
+                   [(cons last-ty-stx (? identifier? last-id-stx))
+                    (unless (Dotted? (lookup (current-tvars) (syntax-e last-id-stx) (lambda _ #f)))
+                      (tc-error/stx last-id-stx "~a is not a type variable bound with ..." (syntax-e last-id-stx)))
+                    (if (= (length all-but-last) (sub1 (PolyDots-n ty)))
+                        (let* ([last-id (syntax-e last-id-stx)]
+                               [last-ty
+                                (parameterize ([current-tvars (extend-env (list last-id)
+                                                                          (list (make-DottedBoth (make-F last-id)))
+                                                                          (current-tvars))])
+                                  (parse-type last-ty-stx))])
+                          (instantiate-poly-dotted ty (map parse-type all-but-last) last-ty last-id))
+                        (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
+                                       ty (sub1 (PolyDots-n ty)) (length all-but-last)))]
+                   [_
+                    (instantiate-poly ty (map parse-type (syntax->list inst)))]))]
+              [else
+               (instantiate-poly ty (map parse-type (syntax->list inst)))])))]
+    [_ (if inst
            (tc-error/expr #:return (Un)
-                          "Wrong number of type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
-                          ty (Poly-n ty) (length (syntax->list inst)))]
-          [(and (PolyDots? ty) (not (>= (length (syntax->list inst)) (sub1 (PolyDots-n ty)))))
-           ;; we can provide 0 arguments for the ... var
-           (tc-error/expr #:return (Un)
-                          "Wrong number of type arguments to polymorphic type ~a:~nexpected at least: ~a~ngot: ~a"
-                          ty (sub1 (PolyDots-n ty)) (length (syntax->list inst)))]
-          [(PolyDots? ty)
-           ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
-           ;; use instantiate-poly-dotted, otherwise we do the normal thing.
-           (let-values ([(all-but-last last-stx) (split-last (syntax->list inst))])
-             (match (syntax-e last-stx)
-               [(cons last-ty-stx (? identifier? last-id-stx))
-                (unless (Dotted? (lookup (current-tvars) (syntax-e last-id-stx) (lambda _ #f)))
-                  (tc-error/stx last-id-stx "~a is not a type variable bound with ..." (syntax-e last-id-stx)))
-                (if (= (length all-but-last) (sub1 (PolyDots-n ty)))
-                    (let* ([last-id (syntax-e last-id-stx)]
-                           [last-ty
-                            (parameterize ([current-tvars (extend-env (list last-id)
-                                                                      (list (make-DottedBoth (make-F last-id)))
-                                                                      (current-tvars))])
-                              (parse-type last-ty-stx))])
-                      (instantiate-poly-dotted ty (map parse-type all-but-last) last-ty last-id))
-                    (tc-error/expr #:return (Un) "Wrong number of fixed type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
-                                   ty (sub1 (PolyDots-n ty)) (length all-but-last)))]
-               [_
-                (instantiate-poly ty (map parse-type (syntax->list inst)))]))]
-          [else
-           (instantiate-poly ty (map parse-type (syntax->list inst)))])))
+                          "Cannot instantiate expression that produces ~a values"
+                          (if (null? ty) 0 "multiple"))
+           ty)]))
 
 ;; typecheck an identifier
 ;; the identifier has variable effect
 ;; tc-id : identifier -> tc-result
 (define (tc-id id)
   (let* ([ty (lookup-type/lexical id)])
-    (ret ty (list (make-Var-True-Effect id)) (list (make-Var-False-Effect id)))))
+    (ret ty
+         (make-FilterSet (list (make-NotTypeFilter (-val #f) null id)) 
+                         (list (make-TypeFilter (-val #f) null id)))
+         (make-Path null id))))
 
 ;; typecheck an expression, but throw away the effect
 ;; tc-expr/t : Expr -> Type
 (define (tc-expr/t e) (match (tc-expr e)
-                        [(tc-result: t) t]
-			[t (int-err "tc-expr returned ~a, not a tc-result, for ~a" t (syntax->datum e))]))
+                        [(tc-result1: t _ _) t]
+                        [t (int-err "tc-expr returned ~a, not a single tc-result, for ~a" t (syntax->datum e))]))
 
 (define (tc-expr/check/t e t)
   (match (tc-expr/check e t)
-    [(tc-result: t) t]))
+    [(tc-result1: t) t]))
 
-;; check-below : (/\ (Result Type -> Result)
+;; check-below : (/\ (Results Type -> Result)
+;;                   (Results Results -> Result)
+;;                   (Type Results -> Type)
 ;;                   (Type Type -> Type))
 (define (check-below tr1 expected)
   (match* (tr1 expected)
-    [((tc-result: t1 te1 ee1) t2)
+    [((tc-result1: (? (lambda (t) (type-equal? t (Un))))) _)
+     expected]
+    [((tc-results: t1) (tc-results: t2))
+     (unless (= (length t1) (length t2))
+       (tc-error/expr "Expected ~a values, but got ~a" (length t2) (length t1)))
+     (unless (for/and ([t t1] [s t2]) (subtype t s))
+       (tc-error/expr "Expected ~a, but got ~a" (stringify t2) (stringify t1)))
+     expected]
+    [((tc-results: t1 f o dty dbound) (tc-results: t2 f o dty dbound))
+     (unless (andmap subtype t1 t2)
+       (tc-error/expr "Expected ~a, but got ~a" (stringify t2) (stringify t1)))
+     expected]
+    [((tc-result1: t1 f o) (? Type? t2))
      (unless (subtype t1 t2)
        (tc-error/expr "Expected ~a, but got ~a" t2 t1))
-     (ret expected)]
-    [(t1 t2)
+     (ret t2 f o)]
+    [((? Type? t1) (tc-result1: t2 (FilterSet: (list) (list)) (Empty:)))
+     (unless (subtype t1 t2)
+       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
+     t1]
+    [((? Type? t1) (tc-result1: t2 f o))
+     (if (subtype t1 t2)
+         (tc-error/expr "Expected result with filter ~a and object ~a, got ~a" f o t1)
+         (tc-error/expr "Expected ~a, but got ~a" t2 t1))
+     t1]
+    [((? Type? t1) (? Type? t2))
      (unless (subtype t1 t2)
        (tc-error/expr "Expected ~a, but got ~a" t2 t1))
      expected]))
 
+(define (tc-expr/check/type form expected)
+  #;(syntax? Type/c . -> . tc-results?)
+  (tc-expr/check form (ret expected)))
+
+;; tc-expr/check : syntax tc-results -> tc-results
 (define (tc-expr/check form expected)
   (parameterize ([current-orig-stx form])
     ;(printf "form: ~a~n" (syntax-object->datum form))
@@ -134,8 +178,7 @@
           [ret 
            (lambda args
              (define te (apply ret args))
-             (check-below te expected)
-             (ret expected))])
+             (check-below te expected))])
       (kernel-syntax-case* form #f 
         (letrec-syntaxes+values find-method/who) ;; letrec-syntaxes+values is not in kernel-syntax-case literals
         [stx
@@ -148,15 +191,17 @@
              (int-err "internal error: ignore-some"))
            (check-below ty expected))]
         ;; data
-        [(quote #f) (ret (-val #f) (list (make-False-Effect)) (list (make-False-Effect)))]
-        [(quote #t) (ret (-val #t) (list (make-True-Effect)) (list (make-True-Effect)))]
-        [(quote val)  (ret (tc-literal #'val))]
+        [(quote #f) (ret (-val #f) false-filter)]
+        [(quote #t) (ret (-val #t) true-filter)]
+        [(quote val)  (match expected
+                        [(tc-result1: t)
+                         (ret (tc-literal #'val t) true-filter)])]
         ;; syntax
-        [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)))]
+        [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) true-filter)]
         ;; mutation!
         [(set! id val)
-         (match-let* ([(tc-result: id-t) (tc-expr #'id)]
-                      [(tc-result: val-t) (tc-expr #'val)])
+         (match-let* ([(tc-result1: id-t) (single-value #'id)]
+                      [(tc-result1: val-t) (single-value #'val)])
            (unless (subtype val-t id-t)
              (tc-error/expr "Mutation only allowed with compatible types:~n~a is not a subtype of ~a" val-t id-t))
            (ret -Void))]
@@ -170,8 +215,8 @@
            (check-below (tc-id #'x) expected)]
         ;; w-c-m
         [(with-continuation-mark e1 e2 e3)
-         (begin (tc-expr/check #'e1 Univ)
-                (tc-expr/check #'e2 Univ)
+         (begin (tc-expr/check/type #'e1 Univ)
+                (tc-expr/check/type #'e2 Univ)
                 (tc-expr/check #'e3 expected))]  
         ;; application        
         [(#%plain-app . _) (tc/app/check form expected)]
@@ -187,7 +232,7 @@
          (begin (tc-exprs/check (syntax->list #'es) Univ)
                 (tc-expr/check #'e expected))]          
         ;; if
-        [(if tst thn els) (tc/if-twoarm/check #'tst #'thn #'els expected)]
+        [(if tst thn els) (tc/if-twoarm #'tst #'thn #'els expected)]
         ;; lambda
         [(#%plain-lambda formals . body)
          (tc/lambda/check form #'(formals) #'(body) expected)]        
@@ -200,7 +245,7 @@
          (tc/send #'rcvr #'meth #'(args ...) expected)]
         ;; let
         [(let-values ([(name ...) expr] ...) . body)
-         (tc/let-values/check #'((name ...) ...) #'(expr ...) #'body form expected)]
+         (tc/let-values #'((name ...) ...) #'(expr ...) #'body form expected)]
         [(letrec-values ([(name ...) expr] ...) . body)
          (tc/letrec-values/check #'((name ...) ...) #'(expr ...) #'body form expected)]
         ;; other
@@ -232,16 +277,16 @@
          ty)]
       
       ;; data
-      [(quote #f) (ret (-val #f) (list (make-False-Effect)) (list (make-False-Effect)))]
-      [(quote #t) (ret (-val #t) (list (make-True-Effect)) (list (make-True-Effect)))]
+      [(quote #f) (ret (-val #f) false-filter)]
+      [(quote #t) (ret (-val #t) true-filter)]
       
-      [(quote val)  (ret (tc-literal #'val))]
+      [(quote val)  (ret (tc-literal #'val) true-filter)]
       ;; syntax
-      [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)))]
+      [(quote-syntax datum) (ret (-Syntax (tc-literal #'datum)) true-filter)]
       ;; w-c-m
       [(with-continuation-mark e1 e2 e3)
-       (begin (tc-expr/check #'e1 Univ)
-              (tc-expr/check #'e2 Univ)
+       (begin (tc-expr/check/type #'e1 Univ)
+              (tc-expr/check/type #'e2 Univ)
               (tc-expr #'e3))]
       ;; lambda
       [(#%plain-lambda formals . body)
@@ -260,8 +305,8 @@
        (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body form)]        
       ;; mutation!
       [(set! id val)
-       (match-let* ([(tc-result: id-t) (tc-expr #'id)]
-                    [(tc-result: val-t) (tc-expr #'val)])
+       (match-let* ([(tc-result1: id-t) (tc-expr #'id)]
+                    [(tc-result1: val-t) (tc-expr #'val)])
          (unless (subtype val-t id-t)
            (tc-error/expr "Mutation only allowed with compatible types:~n~a is not a subtype of ~a" val-t id-t))
          (ret -Void))]        
@@ -277,7 +322,6 @@
       ;; application        
       [(#%plain-app . _) (tc/app form)]
       ;; if
-      [(if tst body) (tc/if-twoarm #'tst #'body #'(#%app void))]
       [(if tst thn els) (tc/if-twoarm #'tst #'thn #'els)]                          
 
       
@@ -305,23 +349,29 @@
                                                  (tc-expr/check form ann))]
                     [else (internal-tc-expr form)])])
       (match ty
-        [(tc-result: t eff1 eff2)
-         (let ([ty* (do-inst form t)])
-           (ret ty* eff1 eff2))]))))
+        [(tc-results: ts fs os)
+         (let ([ts* (do-inst form ts)])
+           (ret ts* fs os))]))))
 
 (define (tc/send rcvr method args [expected #f])
   (match (tc-expr rcvr)
-    [(tc-result: (Instance: (and c (Class: _ _ methods))))
+    [(tc-result1: (Instance: (and c (Class: _ _ methods))))
      (match (tc-expr method)
-       [(tc-result: (Value: (? symbol? s)))
+       [(tc-result1: (Value: (? symbol? s)))
         (let* ([ftype (cond [(assq s methods) => cadr]
                             [else (tc-error/expr "send: method ~a not understood by class ~a" s c)])]
                [ret-ty (tc/funapp rcvr args (ret ftype) (map tc-expr (syntax->list args)) expected)])
           (if expected
-              (begin (check-below ret-ty expected) (ret expected))
+              (begin (check-below ret-ty expected) expected)
               ret-ty))]
-       [(tc-result: t) (int-err "non-symbol methods not supported by Typed Scheme: ~a" t)])]
-    [(tc-result: t) (tc-error/expr #:return (or expected (ret (Un))) "send: expected a class instance, got ~a" t)]))
+       [(tc-result1: t) (int-err "non-symbol methods not supported by Typed Scheme: ~a" t)])]
+    [(tc-result1: t) (tc-error/expr #:return (or expected (ret (Un))) "send: expected a class instance, got ~a" t)]))
+
+(define (single-value form [expected #f])  
+  (define t (if expected (tc-expr/check form expected) (tc-expr form)))
+  (match t
+    [(tc-result1: _ _ _) t]
+    [_ (tc-error/stx form "expected single value, got multiple (or zero) values")]))
 
 ;; type-check a list of exprs, producing the type of the last one.
 ;; if the list is empty, the type is Void.
@@ -329,11 +379,11 @@
 (define (tc-exprs exprs)
   (cond [(null? exprs) (ret -Void)]
         [(null? (cdr exprs)) (tc-expr (car exprs))]
-        [else (tc-expr/check (car exprs) Univ)
+        [else (tc-expr/check/type (car exprs) Univ)
               (tc-exprs (cdr exprs))]))
 
 (define (tc-exprs/check exprs expected)
   (cond [(null? exprs) (check-below (ret -Void) expected)]
         [(null? (cdr exprs)) (tc-expr/check (car exprs) expected)]
-        [else (tc-expr/check (car exprs) Univ)
+        [else (tc-expr/check/type (car exprs) Univ)
               (tc-exprs/check (cdr exprs) expected)]))

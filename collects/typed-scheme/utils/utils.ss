@@ -1,17 +1,19 @@
 #lang scheme/base
 
-(require (for-syntax scheme/base)
-         mzlib/plt-match
-	 scheme/require-syntax
-         mzlib/struct
+#|
+This file is for utilities that are of general interest, 
+at least theoretically.
+|#
+
+(require (for-syntax scheme/base stxclass)
+         scheme/contract mzlib/plt-match scheme/require-syntax scheme/provide-syntax
+         mzlib/struct scheme/unit
          (except-in stxclass id))
 
 (provide with-syntax* syntax-map start-timing do-time reverse-begin printf/log
          with-logging-to-file log-file-name ==
-         print-type*
-         print-effect*
          define-struct/printer
-         id
+         (rename-out [id mk-id])
          filter-multiple
          hash-union
          in-pairs
@@ -20,39 +22,62 @@
          debug
          in-syntax
 	 symbol-append
-	 ;; require macros
-	 rep utils typecheck infer env private)
+         custom-printer
+	 rep utils typecheck infer env private
+         hashof)
 
 (define-syntax (define-requirer stx)
-  (syntax-case stx ()
-    [(_ nm)
+  (syntax-parse stx
+    [(_ nm:id nm-out:id)
      #`(...
-	(define-require-syntax nm
-	  (lambda (stx)
-	    (syntax-case stx ()
-	      [(_ id ...)
-	       (andmap identifier? (syntax->list #'(id ...)))
-	       (with-syntax ([(id* ...) 
+        (begin
+          (define-require-syntax (nm stx)
+            (syntax-parse stx
+              [(form id:identifier ...)
+               (with-syntax ([(id* ...)
                               (map (lambda (id) 
                                      (datum->syntax 
-                                      id 
-                                      (string->symbol
-                                       (string-append 
-                                        "typed-scheme/"
-                                        #,(symbol->string (syntax-e #'nm))
-                                        "/" 
-                                        (symbol->string (syntax-e id))))
+                                      id
+                                      `(file
+                                        ,(datum->syntax
+                                          #f
+                                          (path->string
+                                           (build-path (collection-path "typed-scheme"
+                                                                        #,(symbol->string (syntax-e #'nm)))
+                                                       (string-append (symbol->string (syntax-e id))
+                                                                      ".ss")))
+                                          id id))
                                       id id))
                                    (syntax->list #'(id ...)))])
-			    (syntax/loc stx (combine-in id* ...)))]))))]))
+                 (syntax-property (syntax/loc stx (combine-in id* ...))
+                                  'disappeared-use
+                                  #'form))]))
+          (define-provide-syntax (nm-out stx)
+            (syntax-parse stx
+              [(_ id:identifier ...)
+               (with-syntax ([(id* ...)
+                              (map (lambda (id) 
+                                     (datum->syntax 
+                                      id
+                                      `(file
+                                        ,(path->string
+                                          (build-path (collection-path "typed-scheme"
+                                                                       #,(symbol->string (syntax-e #'nm)))
+                                                      (string-append (symbol->string (syntax-e id))
+                                                                     ".ss"))))
+                                      id id))
+                                   (syntax->list #'(id ...)))])
+                 (syntax/loc stx (combine-out (all-from-out id*) ...)))]))
+          (provide nm nm-out)))]))
 
 
-(define-requirer rep)
-(define-requirer infer)
-(define-requirer typecheck)
-(define-requirer utils)
-(define-requirer env)
-(define-requirer private)
+(define-requirer rep rep-out)
+(define-requirer infer infer-out)
+(define-requirer typecheck typecheck-out)
+(define-requirer utils utils-out)
+(define-requirer env env-out)
+(define-requirer private private-out)
+(define-requirer types types-out)
 
 (define-sequence-syntax in-syntax 
   (lambda () #'syntax->list)
@@ -169,9 +194,27 @@
 
 (define-for-syntax printing? #t)
 
-(define print-type* (box (lambda _ (error "print-type* not yet defined"))))
-(define print-effect* (box (lambda _ (error "print-effect* not yet defined"))))
+(define-syntax-rule (defprinter t ...)
+  (begin
+    (define t (box (lambda _ (error (format "~a not yet defined" 't))))) ...
+    (provide t ...)))
 
+(defprinter
+  print-type* print-filter* print-latentfilter* print-object* print-latentobject*
+  print-pathelem*)
+
+(define pseudo-printer
+  (lambda (s port mode)
+    (parameterize ([current-output-port port]
+                   [show-sharing #f]
+                   [booleans-as-true/false #f]
+                   [constructor-style-printing #t])
+      (newline)
+      (pretty-print (print-convert s))
+      (newline))))
+
+(define custom-printer (make-parameter #t))
+  
 (require scheme/pretty mzlib/pconvert)
 
 (define-syntax (define-struct/printer stx)
@@ -179,21 +222,15 @@
     [(form name (flds ...) printer)
      #`(define-struct/properties name (flds ...) 
          #,(if printing?
-               #'([prop:custom-write printer]) 
-               #'([prop:custom-write (lambda (s port mode)
-                                       (parameterize ([current-output-port port]
-                                                      [show-sharing #f]
-                                                      [booleans-as-true/false #f]
-                                                      [constructor-style-printing #t])
-                                         (newline)
-                                         (pretty-print (print-convert s))
-                                         (newline)))]))
+               #'([prop:custom-write (lambda (a b c) (if (custom-printer) (printer a b c) (pseudo-printer a b c)))]) 
+               #'([prop:custom-write pseudo-printer]))
          #f)]))
 
 (define (id kw . args)
   (define (f v)
     (cond [(string? v) v]
           [(symbol? v) (symbol->string v)]
+          [(char? v) (string v)]
           [(identifier? v) (symbol->string (syntax-e v))]))
   (datum->syntax kw (string->symbol (apply string-append (map f args)))))
 
@@ -236,3 +273,62 @@
 (define (extend s t extra)
   (append t (build-list (- (length s) (length t)) (lambda _ extra))))
 
+(define-for-syntax enable-contracts? #f)
+(provide (for-syntax enable-contracts?) p/c w/c cnt d-s/c d/c)
+
+(define-syntax p/c
+  (if enable-contracts?
+      (make-rename-transformer #'provide/contract)
+      (lambda (stx)
+        (define-syntax-class clause
+          #:literals ()
+          #:attributes (i)
+          (pattern [rename out:id in:id cnt:expr]
+                   #:when (eq? (syntax-e #'rename) 'rename)
+                   #:with i #'(rename-out [out in]))
+          (pattern [i:id cnt:expr]))
+        (syntax-parse stx
+          [(_ c:clause ...)
+           #'(provide c.i ...)]))))
+
+(define-syntax w/c
+  (if enable-contracts?
+      (make-rename-transformer #'with-contract)
+      (lambda (stx)        
+        (syntax-parse stx
+          [(_ name specs . body)
+           #'(begin . body)]))))
+
+(define-syntax d/c
+  (if enable-contracts?
+      (make-rename-transformer #'define/contract)
+      (lambda (stx)        
+        (syntax-parse stx
+          [(_ head cnt . body)
+           #'(define head . body)]))))
+
+(define-syntax d-s/c
+  (if enable-contracts?
+      (make-rename-transformer #'define-struct/contract)
+      (syntax-rules ()
+        [(_ hd ([i c] ...) . opts)
+         (define-struct hd (i ...) . opts)])))
+
+(define-signature-form (cnt stx)
+  (syntax-case stx ()
+    [(_ nm cnt)
+     (if enable-contracts?
+         (list #'[contracted (nm cnt)])     
+         (list #'nm))]))
+
+
+(define (hashof k/c v/c)
+  (flat-named-contract
+   (format "#<hashof ~a ~a>" k/c v/c)
+   (lambda (h)
+     (define k/c? (if (flat-contract? k/c) (flat-contract-predicate k/c) k/c))
+     (define v/c? (if (flat-contract? v/c) (flat-contract-predicate v/c) v/c))
+     (and (hash? h)
+          (for/and ([(k v) h])
+            (and (k/c? k) 
+                 (v/c? v)))))))

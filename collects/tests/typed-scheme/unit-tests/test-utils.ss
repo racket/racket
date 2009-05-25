@@ -8,9 +8,10 @@
          (for-syntax scheme/base))
 
 
-(require (private type-comparison type-utils)
+(require (types comparison utils)
          (schemeunit))
-(provide private typecheck (rename-out [infer r:infer]) utils env rep)
+
+(provide private typecheck (rename-out [infer r:infer]) utils env rep types)
 
 (define (mk-suite ts)
   (match (map (lambda (f) (f)) ts)
@@ -38,13 +39,9 @@
 	    (values (lambda () (run tmps ...))
 		    (lambda () (run/gui tmps ...))))))]))
 
-;; FIXME - check that effects are equal
+;; FIXME - do something more intelligent
 (define (tc-result-equal/test? a b)
-  (match* (a b)
-          [((tc-result: t1 thn1 els1) (tc-result: t2 thn2 els2))
-           (and (type-equal? t1 t2)
-                (= (length thn1) (length thn2))
-                (= (length els1) (length els2)))]))
+  (equal? a b))
 
 (define-syntax (check-type-equal? stx)
   (syntax-case stx ()

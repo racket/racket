@@ -3,8 +3,8 @@
 (require (except-in "../utils/utils.ss" extend))
 (require syntax/kerncase
          scheme/match
-         "signatures.ss"
-         (private type-utils type-effect-convenience union subtype)
+         "signatures.ss" "tc-metafunctions.ss"
+         (types utils convenience union subtype)
 	 (utils tc-utils)
 	 (rep type-rep))
 
@@ -18,7 +18,7 @@
   (define body-ty #f)    
   (define (get-result-ty t)
     (match t
-      [(Function: (list (arr: _ rngs #f _ '() _ _) ...)) (apply Un rngs)]
+      [(Function: (list (arr: _ (Values: (list (Result: rngs _ _))) #f _ '()) ...)) (apply Un rngs)]
       [_ (tc-error "Internal error in get-result-ty: not a function type: ~n~a" t)]))
   (let loop ([form form])
     (parameterize ([current-orig-stx form])
@@ -61,7 +61,7 @@
         [stx
          ;; this is a hander function
          (syntax-property form 'typechecker:exn-handler)
-         (tc-expr/check form (-> (Un) expected))]
+         (tc-expr/check form (ret (-> (Un) (tc-results->values expected))))]
         [stx
          ;; this is the body of the with-handlers
          (syntax-property form 'typechecker:exn-body)
@@ -71,7 +71,7 @@
            (loop #'a)
            (loop #'b))]
         [_ (void)])))
-  (ret expected))
+  expected)
 
 ;; typecheck the expansion of a with-handlers form
 ;; syntax -> any

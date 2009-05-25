@@ -1,13 +1,14 @@
 #lang scheme/unit
 
 (require (rename-in "../utils/utils.ss" [infer r:infer]))
-(require "signatures.ss"
-         (private type-effect-convenience type-annotation parse-type type-utils)
+(require "signatures.ss" "tc-metafunctions.ss"
+         (types utils convenience)
+         (private type-annotation parse-type)
 	 (env lexical-env type-alias-env type-env)
          syntax/free-vars
          mzlib/trace
          scheme/match
-         syntax/kerncase
+         syntax/kerncase stxclass
          (for-template 
           scheme/base
           "internal-forms.ss"))
@@ -28,31 +29,10 @@
    (for-each expr->type
              clauses
              exprs 
-             (map -values types))
+             (map ret types))
    (if expected 
        (tc-exprs/check (syntax->list body) expected)
        (tc-exprs (syntax->list body)))))
-
-#|
-;; this is more abstract, but sucks
-  (define ((mk f) namess exprs body form)
-    (let* ([names (map syntax->list (syntax->list namess))]
-           [exprs (syntax->list exprs)])
-      (f (lambda (e->t namess types exprs) (do-check e->t namess types form exprs body)) names exprs)))
-  
-  (define tc/letrec-values 
-    (mk (lambda (do names exprs)
-          (let ([types (map (lambda (l) (map get-type l)) names)])
-            (do tc-expr/t names types exprs)))))
-  
-  (define tc/let-values
-    (mk (lambda (do names exprs)
-          (let* (;; the types of the exprs
-                 [inferred-types (map tc-expr/t exprs)]
-                 ;; the annotated types of the name (possibly using the inferred types)
-                 [types (map get-type/infer names inferred-types)])
-            (do (lambda (x) x) names types inferred-types)))))
-  |#
 
 (define (tc/letrec-values/check namess exprs body form expected)
   (tc/letrec-values/internal namess exprs body form expected))
@@ -71,8 +51,7 @@
      (andmap values expecteds)
      (tc-expr/check e (mk expecteds))
      (tc-expr e)))
-  (match tcr
-    [(tc-result: t) t]))
+  tcr)
 
 (define (tc/letrec-values/internal namess exprs body form expected)
   (let* ([names (map syntax->list (syntax->list namess))]
@@ -99,25 +78,25 @@
          ;; then check this expression separately
          (with-lexical-env/extend
           (list (car names))
-          (list (get-type/infer (car names) (car exprs) (lambda (e) (tc-expr/maybe-expected/t e (car names))) tc-expr/check/t))
+          (list (match (get-type/infer (car names) (car exprs) (lambda (e) (tc-expr/maybe-expected/t e (car names))) 
+                                       tc-expr/check)
+                  [(tc-results: ts) ts]))
           (loop (cdr names) (cdr exprs) (apply append (cdr names)) (cdr clauses)))]
         [else
          ;(for-each (lambda (vs) (for-each (lambda (v) (printf/log "Letrec Var: ~a~n" (syntax-e v))) vs)) names)
-         (do-check (lambda (stx e t) (tc-expr/check/t e t))
+         (do-check (lambda (stx e t) (tc-expr/check e t))
                    names (map (lambda (l) (map get-type l)) names) form exprs body clauses expected)]))))
 
 ;; this is so match can provide us with a syntax property to
 ;; say that this binding is only called in tail position
 (define ((tc-expr-t/maybe-expected expected) e)
-  (kernel-syntax-case e #f
+  (syntax-parse e #:literals (#%plain-lambda)
     [(#%plain-lambda () _)
-     (and expected (syntax-property e 'typechecker:called-in-tail-position))
-     (begin
-       (tc-expr/check e (-> expected))
-       (-> expected))]
-    [_ (tc-expr/t e)]))
+     #:when (and expected (syntax-property e 'typechecker:called-in-tail-position))
+     (tc-expr/check e (ret (-> (tc-results->values expected))))]
+    [_ (tc-expr e)]))
 
-(define (tc/let-values/internal namess exprs body form expected)
+(define (tc/let-values namess exprs body form [expected #f])
   (let* (;; a list of each name clause
          [names (map syntax->list (syntax->list namess))]
          ;; all the trailing expressions - the ones actually bound to the names
@@ -125,17 +104,12 @@
          ;; the types of the exprs
          #;[inferred-types (map (tc-expr-t/maybe-expected expected) exprs)]
          ;; the annotated types of the name (possibly using the inferred types)
-         [types (for/list ([name names] [e exprs]) (get-type/infer name e (tc-expr-t/maybe-expected expected) tc-expr/check/t))]
+         [types (for/list ([name names] [e exprs]) 
+                  (match (get-type/infer name e (tc-expr-t/maybe-expected expected) 
+                                         tc-expr/check)
+                    [(tc-results: ts) ts]))]
          ;; the clauses for error reporting
          [clauses (syntax-case form () [(lv cl . b) (syntax->list #'cl)])])
     (do-check void names types form types body clauses expected)))
-
-(define (tc/let-values/check namess exprs body form expected)
-  (tc/let-values/internal namess exprs body form expected))
-
-(define (tc/let-values namess exprs body form)
-  (tc/let-values/internal namess exprs body form #f))
-
-;(trace tc/letrec-values/internal)
 
 

@@ -1,6 +1,12 @@
 #lang scheme/base
+
+#|
+This file is for utilities that are only useful for Typed Scheme, but
+don't depend on any other portion of the system
+|#
+
 (provide (all-defined-out))
-(require "syntax-traversal.ss" (for-syntax scheme/base) scheme/match)
+(require "syntax-traversal.ss" stxclass (for-syntax scheme/base stxclass) scheme/match)
 
 ;; a parameter representing the original location of the syntax being currently checked
 (define current-orig-stx (make-parameter #'here))
@@ -142,4 +148,37 @@
 (define (add-type-name-reference t)
   (type-name-references (cons t (type-name-references))))
 
+;; environment constructor
+(define-syntax (make-env stx)
+  (define-syntax-class spec
+    #:transparent
+    #:attributes (ty id)
+    (pattern [nm:identifier ty]
+             #:with id #'#'nm)
+    (pattern [e:expr ty extra-mods ...]
+             #:with id #'(let ([new-ns
+                                (let* ([ns (make-empty-namespace)])
+                                  (namespace-attach-module (current-namespace)
+                                                           'scheme/base
+                                                           ns)
+                                  ns)])
+                           (parameterize ([current-namespace new-ns])
+                             (namespace-require 'scheme/base)
+                             (namespace-require 'extra-mods) ...
+                             e))))
+  (syntax-parse stx
+    [(_ e:spec ...)
+     #'(list (list e.id e.ty) ...)]))
 
+;; id: identifier
+;; sym: a symbol
+;; mod: a quoted require spec like 'scheme/base
+;; is id the name sym defined in mod?
+(define (id-from? id sym mod)
+  (and (eq? (syntax-e id) sym)
+       (eq? (module-path-index-resolve (syntax-source-module id))
+            ((current-module-name-resolver) mod #f #f #f))))
+
+(define-syntax-class (id-from sym mod)
+  (pattern i:id
+           #:when (id-from? #'i sym mod)))

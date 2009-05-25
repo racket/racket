@@ -2,10 +2,12 @@
 
 (require (rename-in "utils/utils.ss" [infer r:infer]))
 
-(require (private #;base-env base-types)
+(require (private base-types)
          (for-syntax 
+          (except-in stxclass id)
           scheme/base
-	  (private type-utils type-contract type-effect-convenience)
+          (private type-contract)
+          (types utils convenience)
 	  (typecheck typechecker provide-handling)
 	  (env type-environments type-name-env type-alias-env)
 	  (r:infer infer)
@@ -46,7 +48,9 @@
            [with-handlers
                ([(lambda (e) (and catch-errors? (exn:fail? e) (not (exn:fail:syntax? e))))
                  (lambda (e) (tc-error "Internal error: ~a" e))])]
-           [parameterize (;; a cheat to avoid units
+           [parameterize (;; disable fancy printing
+                          [custom-printer #t]
+                          ;; a cheat to avoid units
                           [infer-param infer]
                           ;; do we report multiple errors
                           [delay-errors? #t]
@@ -116,28 +120,29 @@
                          [expanded-module-stx body2])]
           ;; typecheck the body, and produce syntax-time code that registers types
           [let ([type (tc-toplevel-form body2)])])
-       (kernel-syntax-case body2 #f
-         [(head . _)
-          (or (free-identifier=? #'head #'define-values)
-              (free-identifier=? #'head #'define-syntaxes)
-              (free-identifier=? #'head #'require)
-              (free-identifier=? #'head #'provide)
-              (free-identifier=? #'head #'begin)
-              (void? type)
-              (type-equal? -Void (tc-result-t type)))
+         (define-syntax-class invis-kw
+           #:literals (define-values define-syntaxes #%require #%provide begin)
+           (pattern define-values)
+           (pattern define-syntaxes)
+           (pattern #%require)
+           (pattern #%provide)
+           (pattern begin))
+       (syntax-parse body2
+         [(head:invis-kw . _) 
           body2]
-         ;; construct code to print the type
-         [_           
-          (nest
-              ([with-syntax ([b body2]
-                             [ty-str (match type
-                                       [(tc-result: t)
-                                        (format "- : ~a\n" t)]
-                                       [x (int-err "bad type result: ~a" x)])])])
-            #`(let ([v b] [type 'ty-str])
-                (begin0 
-                  v
-                  (printf type))))]))]))
+         [_ (let ([ty-str (match type
+                            [(tc-result1: (? (lambda (t) (type-equal? t -Void)))) #f]
+                            [(tc-result1: t)
+                             (format "- : ~a\n" t)]
+                            [(tc-results: t)
+                             (format "- : ~a\n" (cons 'Values t))]
+                            [x (int-err "bad type result: ~a" x)])])
+              (if ty-str                  
+                  #`(let ([type '#,ty-str])
+                      (begin0 
+                        #,body2
+                        (display type)))
+                  body2))]))]))
 
 
 

@@ -2,7 +2,7 @@
 (require "test-utils.ss" "planet-requires.ss" (for-syntax scheme/base))
 (require (rep type-rep)
 	 (r:infer infer)
-	 (private type-effect-convenience union type-utils)
+	 (types convenience union utils abbrev)
          (schemeunit))
 
 
@@ -18,7 +18,7 @@
 
 (define (fv-tests)
   (test-suite "Tests for fv"
-              (fv-t N)
+              (fv-t -Number)
               [fv-t (-v a) a]
               [fv-t (-poly (a) a)]
               [fv-t (-poly (a b c d e) a)]
@@ -27,7 +27,7 @@
               [fv-t (-mu a (-lst a))]
               [fv-t (-mu a (-lst (-pair a (-v b)))) b]
               
-              [fv-t (->* null (-v a) N) a] ;; check that a is CONTRAVARIANT
+              [fv-t (->* null (-v a) -Number) a] ;; check that a is CONTRAVARIANT
               ))
 
 (define-syntax-rule (i2-t t1 t2 (a b) ...)

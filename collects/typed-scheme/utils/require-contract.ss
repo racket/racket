@@ -2,7 +2,7 @@
 
 (require scheme/contract (for-syntax scheme/base syntax/kerncase 
                                      "../utils/tc-utils.ss"
-                                     (prefix-in tr: "typed-renaming.ss")))
+                                     (prefix-in tr: "../private/typed-renaming.ss")))
 
 (provide require/contract define-ignored)
 

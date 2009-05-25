@@ -2,15 +2,14 @@
 
 (require (rename-in "../utils/utils.ss" [infer r:infer]))
 
-(require (for-syntax (private type-effect-convenience)
+(require (for-syntax (utils tc-utils)
                      (env init-envs)
                      scheme/base
                      (r:infer infer)
                      (only-in (r:infer infer-dummy) infer-param)
-                     (except-in (rep effect-rep type-rep) make-arr)
-                     "type-effect-convenience.ss"
-                     (only-in "type-effect-convenience.ss" [make-arr* make-arr])
-                     "union.ss"))
+                     (except-in (rep object-rep filter-rep type-rep) make-arr)
+                     (types convenience union)
+                     (only-in (types convenience) [make-arr* make-arr])))
 
 (define-syntax (#%module-begin stx)
   (syntax-case stx (require)
@@ -32,7 +31,7 @@
 (provide #%module-begin
          require
          (all-from-out scheme/base)
-         (for-syntax
-          (all-from-out scheme/base
-                        "type-effect-convenience.ss"                        
-                        "union.ss")))
+         types rep private utils
+         (for-syntax          
+          (types-out convenience union)
+          (all-from-out scheme/base)))

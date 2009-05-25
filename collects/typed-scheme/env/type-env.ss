@@ -3,7 +3,7 @@
 (require (except-in "../utils/utils.ss" extend))
 (require syntax/boundmap
          (utils tc-utils)
-	 (private type-utils))
+         (types utils))
 
 (provide register-type
          finish-register-type

@@ -1,38 +1,27 @@
 #lang scheme/base
 (require "../utils/utils.ss")
 
-(require (except-in (rep type-rep effect-rep rep-utils) sub-eff)
+(require (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
-	 "type-utils.ss"
-         "type-comparison.ss"
-         "resolve-type.ss"
-         "type-abbrev.ss"
+	 (types utils comparison resolve abbrev)
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
          scheme/match
-         mzlib/trace)
-
-
+         mzlib/trace
+	 (for-syntax scheme/base stxclass))
 
 ;; exn representing failure of subtyping
 ;; s,t both types
 
 (define-struct (exn:subtype exn:fail) (s t))
-#;
-(define-values (fail-sym exn:subtype?)
-  (let ([sym (gensym)])
-    (values sym (lambda (s) (eq? s sym)))))
 
 ;; inference failure - masked before it gets to the user program
 (define-syntax fail!
   (syntax-rules ()
-    [(_ s t) #;(raise fail-sym)
-             (raise (make-exn:subtype "subtyping failed" (current-continuation-marks) s t))
-             #;(error "inference failed" s t)]))
-
+    [(_ s t) (raise (make-exn:subtype "subtyping failed" (current-continuation-marks) s t))]))
 
 ;; data structures for remembering things on recursive calls
-(define (empty-set) '())  
+(define (empty-set) '())
 
 (define current-seen (make-parameter (empty-set)))
 
@@ -94,52 +83,82 @@
 (define (supertype-of-one/arr A s ts)
   (ormap (lambda (e) (arr-subtype*/no-fail A e s)) ts))
 
-(define (sub-eff e1 e2)
-  (match* (e1 e2)
-    [(e e) #t]
-    [((Latent-Restrict-Effect: t) (Latent-Restrict-Effect: t*))
-     (and (subtype t t*)
-          (subtype t* t))]
-    [((Latent-Remove-Effect: t) (Latent-Remove-Effect: t*))
-     (and (subtype t t*)
-          (subtype t* t))]
-    [(_ _) #f]))
+(define-syntax (subtype-seq stx)
+  (define-syntax-class sub*
+    (pattern e:expr))
+  (syntax-parse stx
+    [(_ init (s1:sub* . args1) (s:sub* . args) ...)
+     (with-syntax ([(A* ... A-last) (generate-temporaries #'(s1 s ...))])
+       (with-syntax ([(clauses ...)
+		      (for/list ([s (syntax->list #'(s1 s ...))]
+				 [args (syntax->list #'(args1 args ...))]
+				 [A (syntax->list #'(init A* ...))]
+				 [A-next (syntax->list #'(A* ... A-last))])
+			 #`[#,A-next (#,s #,A . #,args)])])
+	#'(let* (clauses ...)
+	    A-last)))]))
 
-;(trace sub-eff)
-
+(define (kw-subtypes* A0 t-kws s-kws)
+  (let loop ([A A0] [t t-kws] [s s-kws])    
+    (match* (t s)
+      [((list (Keyword: kt tt rt) rest-t) (list (Keyword: ks ts rs) rest-s))
+       (cond [(eq? kt ks)
+              (if  
+               ;; if s is optional, t must be as well
+               (or rs (not rt))
+               (loop (subtype A tt ts) rest-t rest-s)
+               (fail! t s))]
+             ;; extra keywords in t are ok
+             ;; we just ignore them
+             [(keyword<? kt ks) (loop A rest-t s)]
+             ;; extra keywords in s are a problem
+             [else (fail! t s)])]
+      ;; no more keywords to satisfy
+      [(_ '()) A]
+      ;; we failed to satisfy all the keyword
+      [(_ _) (fail! s t)])))
 
 ;; simple co/contra-variance for ->
 (define (arr-subtype*/no-fail A0 s t)
   (with-handlers
       ([exn:subtype? (lambda _ #f)])
-    (match (list s t)
+    (match* (s t)
       ;; top for functions is above everything
-      [(list _ (top-arr:)) A0]
-      [(list (arr: s1 s2 #f #f (list (cons kw s-kw-ty) ...) thn-eff els-eff) 
-             (arr: t1 t2 #f #f (list (cons kw t-kw-ty) ...) thn-eff  els-eff))       
-       (let* ([A1 (subtypes* A0 t1 s1)]
-              [A2 (subtypes* A1 t-kw-ty s-kw-ty)])
-         (subtype* A1 s2 t2))]
-      [(list (arr: s1 s2 s3 #f (list (cons kw s-kw-ty) ...) thn-eff els-eff)
-             (arr: t1 t2 t3 #f (list (cons kw t-kw-ty) ...) thn-eff* els-eff*))
-       (unless 
-           (or (and (null? thn-eff*) (null? els-eff*))
-               (and (effects-equal? thn-eff thn-eff*)
-                    (effects-equal? els-eff els-eff*))
-               (and 
-                (= (length thn-eff) (length thn-eff*))
-                (= (length els-eff) (length els-eff*))
-                (andmap sub-eff thn-eff thn-eff*)
-                (andmap sub-eff els-eff els-eff*)))
-         (fail! s t))
-       ;; either the effects have to be the same, or the supertype can't have effects
-       (let* ([A2 (subtypes*/varargs A0 t1 s1 s3)]
-              [A3 (subtypes* A2 t-kw-ty s-kw-ty)])
-         (if (not t3)
-             (subtype* A3 s2 t2)
-             (let ([A1 (subtype* A3 t3 s3)])
-               (subtype* A1 s2 t2))))]
-      [else 
+      [(_ (top-arr:)) A0]
+      ;; the really simple case
+      [((arr: s1 s2 #f #f '())
+        (arr: t1 t2 #f #f '()))
+       (subtype-seq A0
+                    (subtypes* t1 s1)
+                    (subtype* s2 t2))]
+      [((arr: s1 s2 #f #f s-kws)
+        (arr: t1 t2 #f #f t-kws))
+       (subtype-seq A0
+                    (subtypes* t1 s1)
+                    (kw-subtypes* t-kws s-kws)
+                    (subtype* s2 t2))]
+      [((arr: s-dom s-rng s-rest #f s-kws)
+        (arr: t-dom t-rng #f #f t-kws))
+       (subtype-seq A0
+                    (subtypes*/varargs t-dom s-dom s-rest)
+                    (kw-subtypes* t-kws s-kws)
+                    (subtype* s-rng t-rng))]
+      [((arr: s-dom s-rng s-rest #f s-kws)
+        (arr: t-dom t-rng t-rest #f t-kws))
+       (subtype-seq A0
+                    (subtypes*/varargs t-dom s-dom s-rest)
+                    (subtype* t-rest s-rest)
+                    (kw-subtypes* t-kws s-kws)
+                    (subtype* s-rng t-rng))]
+      ;; handle ... varargs when the bounds are the same
+      [((arr: s-dom s-rng #f (cons s-drest dbound) s-kws)
+        (arr: t-dom t-rng #f (cons t-drest dbound) t-kws))
+       (subtype-seq A0
+                    (subtype* t-drest s-drest)
+                    (subtypes* t-dom s-dom)
+                    (kw-subtypes* t-kws s-kws)
+                    (subtype* s-rng t-rng))]
+      [(_ _) 
        (fail! s t)])))
 
 (define (subtypes/varargs args dom rst)
@@ -220,8 +239,7 @@
 		       (unmatch))
 					;(printf "Poly: ~n~a ~n~a~n" b1 (subst-all (map list ms (map make-F ns)) b2))
 	       (subtype* A0 b1 (subst-all (map list ms (map make-F ns)) b2))]
-              ;; A refinement is a subtype of its parent
-              [(list (Refinement: par _ _) t)
+	      [(list (Refinement: par _ _) t)
                (subtype* A0 par t)]
 	      ;; use unification to see if we can use the polytype here
 	      [(list (Poly: vs b) s)
@@ -230,15 +248,17 @@
 	      [(list s (Poly: vs b))
 	       (=> unmatch)
 	       (if (null? (fv b)) (subtype* A0 s b) (unmatch))]
-	      ;; names are compared for equality:
-	      [(list (Name: n) (Name: n*))
-	       (=> unmatch)
-	       (if (free-identifier=? n n*)
-		   A0
-		   (unmatch))]
-	      ;; just unfold the recursive types
-	      [(list _ (? Mu?)) (subtype* A0 s (unfold t))]
-	      [(list (? Mu?) _) (subtype* A0 (unfold s) t)]
+	      ;; rec types, applications and names (that aren't the same
+	      [(list (? needs-resolving? s) other)
+               (let ([s* (resolve-once s)])
+                 (if (Type? s*) ;; needed in case this was a name that hasn't been resolved yet
+                     (subtype* A0 s* other)
+                     (fail! s t)))]
+	      [(list other (? needs-resolving? t))
+               (let ([t* (resolve-once t)])
+                 (if (Type? t*) ;; needed in case this was a name that hasn't been resolved yet
+                     (subtype* A0 other t*)
+                     (fail! s t)))]
 	      ;; for unions, we check the cross-product
 	      [(list (Union: es) t) (and (andmap (lambda (elem) (subtype* A0 elem t)) es) A0)]
 	      [(list s (Union: es)) (and (ormap (lambda (elem) (subtype*/no-fail A0 s elem)) es) A0)]
@@ -251,51 +271,16 @@
 	      [(list (Struct: nm (? Type? parent) flds proc _ _ _) other) 
 					;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)
 	       (subtype* A0 parent other)]
-	      ;; applications and names are structs too
-	      [(list (App: (Name: n) args stx) other)
-	       (let ([t (lookup-type-name n)])
-		 (unless (Type? t)                     
-			 (fail! s t))
-		 #;(printf "subtype: app-name: name: ~a type: ~a other: ~a ~ninst: ~a~n" (syntax-e n) t other 
-		 (instantiate-poly t args))
-		 (unless (Poly? t)
-			 (tc-error/stx stx "cannot apply non-polymorphic type ~a" t))                 
-		 (match t [(Poly-unsafe: n _)
-			   (unless (= n (length args))
-				   (tc-error/stx stx "wrong number of arguments to polymorphic type: expected ~a and got ~a"
-						 n (length args)))])
-		 (let ([v (subtype* A0 (instantiate-poly t args) other)])
-		   #;(printf "val: ~a~n"  v)
-		   v))]
-	      [(list other (App: (Name: n) args stx))
-	       (let ([t (lookup-type-name n)])
-		 (unless (Type? t)                     
-			 (fail! s t))
-		 #;(printf "subtype: 2 app-name: name: ~a type: ~a other: ~a ~ninst: ~a~n" (syntax-e n) t other 
-		 (instantiate-poly t args))
-		 (unless (Poly? t)
-			 (tc-error/stx stx "cannot apply non-polymorphic type ~a" t))                 
-		 (match t [(Poly-unsafe: n _)
-			   (unless (= n (length args))
-				   (tc-error/stx stx "wrong number of arguments to polymorphic type: expected ~a and got ~a"
-						 n (length args)))])
-					;(printf "about to call subtype with: ~a ~a ~n" other (instantiate-poly t args))
-		 (let ([v (subtype* A0 other (instantiate-poly t args))])
-		   #;(printf "2 val: ~a~n"  v)
-		   v))]
-	      [(list (Name: n) other)
-	       (let ([t (lookup-type-name n)])
-					;(printf "subtype: name: ~a ~a ~a~n" (syntax-e n) t other)
-		 (if (Type? t)                     
-		     (subtype* A0 t other)
-		     (fail! s t)))]
 	      ;; Promises are covariant
 	      [(list (Struct: 'Promise _ (list t) _ _ _ _) (Struct: 'Promise _ (list t*) _ _ _ _)) (subtype* A0 t t*)]
 	      ;; subtyping on values is pointwise
 	      [(list (Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
-	      ;; single values shouldn't actually happen, but they're just like the type
-	      [(list t (Values: (list t*))) (int-err "BUG - singleton values type~a" (make-Values (list t*)))]
-	      [(list (Values: (list t)) t*) (int-err "BUG - singleton values type~a" (make-Values (list t)))]              
+              ;; trivial case for Result
+              [(list (Result: t f o) (Result: t* f o))
+               (subtype* A0 t t*)]
+              ;; we can ignore interesting results
+              [(list (Result: t f o) (Result: t* (LFilterSet: (list) (list)) (LEmpty:)))
+               (subtype* A0 t t*)]
 	      ;; subtyping on other stuff
 	      [(list (Syntax: t) (Syntax: t*))
 	       (subtype* A0 t t*)]

@@ -2,13 +2,14 @@
 
 (require "../utils/utils.ss")
 
-(require (rep type-rep effect-rep rep-utils)
+(require (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
          (only-in (rep free-variance) combine-frees)
          scheme/match
          scheme/list
          mzlib/trace
-         (for-syntax scheme/base))
+         scheme/contract
+         (for-syntax scheme/base stxclass))
 
 (provide fv fv/list
          substitute
@@ -16,10 +17,9 @@
          substitute-dotted
          subst-all
          subst 
-         ret
+         ;ret
          instantiate-poly
          instantiate-poly-dotted
-         tc-result:
          tc-result?
          tc-result-equal? 
          effects-equal?
@@ -30,17 +30,19 @@
          just-Dotted?
          tc-error/expr
          lookup-fail
-         lookup-type-fail)
+         lookup-type-fail
+         combine-results)
 
 
 ;; substitute : Type Name Type -> Type
 (define (substitute image name target #:Un [Un (get-union-maker)])
   (define (sb t) (substitute image name t))
   (if (hash-ref (free-vars* target) name #f)
-      (type-case sb target
-		 [#:Union tys (Un (map sb tys))]
+      (type-case (#:Type sb #:LatentFilter (sub-lf sb) #:LatentObject (sub-lo sb))
+                 target
+                 [#:Union tys (Un (map sb tys))]
                  [#:F name* (if (eq? name* name) image target)]
-                 [#:arr dom rng rest drest kws thn-eff els-eff
+                 [#:arr dom rng rest drest kws
                         (begin
                           (when (and (pair? drest)
                                      (eq? name (cdr drest))
@@ -50,10 +52,7 @@
                                     (sb rng)
                                     (and rest (sb rest))
                                     (and drest (cons (sb (car drest)) (cdr drest)))
-                                    (for/list ([kw kws])
-                                      (cons (car kw) (sb (cdr kw))))
-                                    (map (lambda (e) (sub-eff sb e)) thn-eff)
-                                    (map (lambda (e) (sub-eff sb e)) els-eff)))]
+                                    (map sb kws)))]
                  [#:ValuesDots types dty dbound
                                (begin
                                  (when (eq? name dbound)
@@ -65,7 +64,7 @@
 (define (substitute-dots images rimage name target)    
   (define (sb t) (substitute-dots images rimage name t))
   (if (hash-ref (free-vars* target) name #f)
-      (type-case sb target
+      (type-case (#:Type sb #:LatentFilter (sub-lf sb)) target
                  [#:ValuesDots types dty dbound
                                (if (eq? name dbound)
                                    (make-Values
@@ -73,31 +72,29 @@
                                      (map sb types)
                                      ;; We need to recur first, just to expand out any dotted usages of this.
                                      (let ([expanded (sb dty)])
-                                       (map (lambda (img) (substitute img name expanded)) images))))
+                                       (for/list ([img images])
+                                         (make-Result
+                                          (substitute img name expanded)
+                                          (make-LFilterSet null null)
+                                          (make-LEmpty))))))
                                    (make-ValuesDots (map sb types) (sb dty) dbound))]
-                 [#:arr dom rng rest drest kws thn-eff els-eff
+                 [#:arr dom rng rest drest kws
                         (if (and (pair? drest)
                                  (eq? name (cdr drest)))                            
                             (make-arr (append 
                                        (map sb dom)
                                        ;; We need to recur first, just to expand out any dotted usages of this.
                                        (let ([expanded (sb (car drest))])
-					 (map (lambda (img) (substitute img name expanded)) images)))
+                                         (map (lambda (img) (substitute img name expanded)) images)))
                                       (sb rng)
                                       rimage
                                       #f
-                                      (for/list ([kw kws])
-                                        (cons (car kw) (sb (cdr kw))))
-                                      (map (lambda (e) (sub-eff sb e)) thn-eff)
-                                      (map (lambda (e) (sub-eff sb e)) els-eff))
+                                      (map sb kws))
                             (make-arr (map sb dom)
                                       (sb rng)
                                       (and rest (sb rest))
                                       (and drest (cons (sb (car drest)) (cdr drest)))
-                                      (for/list ([kw kws])
-                                        (cons (car kw) (sb (cdr kw))))
-                                      (map (lambda (e) (sub-eff sb e)) thn-eff)
-                                      (map (lambda (e) (sub-eff sb e)) els-eff)))])
+                                      (map sb kws)))])
       target))
 
 ;; implements sd from the formalism
@@ -105,7 +102,8 @@
 (define (substitute-dotted image image-bound name target)
   (define (sb t) (substitute-dotted image image-bound name t))
   (if (hash-ref (free-vars* target) name #f)
-      (type-case sb target
+      (type-case (#:Type sb #:LatentFilter (sub-lf sb))
+                 target
                  [#:ValuesDots types dty dbound
                                (make-ValuesDots (map sb types)
                                                 (sb dty)
@@ -114,17 +112,14 @@
                       (if (eq? name* name)
                           image
                           target)]
-                 [#:arr dom rng rest drest kws thn-eff els-eff
+                 [#:arr dom rng rest drest kws
                         (make-arr (map sb dom)
                                   (sb rng)
                                   (and rest (sb rest))
                                   (and drest
                                        (cons (sb (car drest))
                                              (if (eq? name (cdr drest)) image-bound (cdr drest))))
-                                  (for/list ([kw kws])
-                                    (cons (car kw) (sb (cdr kw))))
-                                  (map (lambda (e) (sub-eff sb e)) thn-eff)
-                                  (map (lambda (e) (sub-eff sb e)) els-eff))])
+                                  (map sb kws))])
        target))
 
 ;; substitute many variables
@@ -173,18 +168,91 @@
 
 
 ;; this structure represents the result of typechecking an expression
-(define-struct tc-result (t thn els) #:inspector #f)
+(d-s/c tc-result ([t Type/c] [f FilterSet?] [o Object?]) #:transparent)
+(d-s/c tc-results ([ts (listof tc-result?)] [drest (or/c (cons/c Type/c symbol?) #f)]) #:transparent)
 
 (define-match-expander tc-result:
-  (lambda (stx)
-    (syntax-case stx ()
-      [(form pt) #'(struct tc-result (pt _ _))]
-      [(form pt pe1 pe2) #'(struct tc-result (pt pe1 pe2))])))
+  (syntax-parser
+   [(_ tp fp op) #'(struct tc-result (tp fp op))]
+   [(_ tp) #'(struct tc-result (tp _ _))]))
+
+(define-match-expander tc-results:
+  (syntax-parser
+   [(_ tp fp op) #'(struct tc-results ((list (struct tc-result (tp fp op)) (... ...)) #f))]
+   [(_ tp fp op dty dbound) #'(struct tc-results ((list (struct tc-result (tp fp op)) (... ...)) (cons dty dbound)))]
+   [(_ tp) #'(struct tc-results ((list (struct tc-result (tp _ _)) (... ...)) #f))]))
+
+(define-match-expander tc-result1:
+  (syntax-parser
+   [(_ tp fp op) #'(struct tc-results ((list (struct tc-result (tp fp op))) #f))]
+   [(_ tp) #'(struct tc-results ((list (struct tc-result (tp _ _))) #f))]))
+
+(define (tc-results-t tc)
+  (match tc
+    [(tc-results: t) t]))
+
+(provide tc-result: tc-results: tc-result1: tc-result? tc-results? tc-results-t Result1: Results:)
+
+(define-match-expander Result1:
+  (syntax-parser
+   [(_ tp) #'(Values: (list (Result: tp _ _)))]
+   [(_ tp fp op) #'(Values: (list (Result: tp fp op)))]))
+
+(define-match-expander Results:
+  (syntax-parser
+   [(_ tp) #'(Values: (list (Result: tp _ _) (... ...)))]
+   [(_ tp fp op) #'(Values: (list (Result: tp fp op) (... ...)))]))
 
 ;; convenience function for returning the result of typechecking an expression
 (define ret
-  (case-lambda [(t) (make-tc-result t (list) (list))]
-               [(t thn els) (make-tc-result t thn els)]))
+  (case-lambda [(t)
+                (let ([mk (lambda (t) (make-FilterSet null null))])
+                  (make-tc-results
+                   (cond [(Type? t)
+                          (list (make-tc-result t (mk t) (make-Empty)))]                       
+                         [else
+                          (for/list ([i t])
+                            (make-tc-result i (mk t) (make-Empty)))])
+                   #f))]
+               [(t f)
+                (make-tc-results
+                 (if (Type? t)
+                     (list (make-tc-result t f (make-Empty)))
+                     (for/list ([i t] [f f])
+                               (make-tc-result i f (make-Empty))))
+                 #f)]
+               [(t f o)
+                (make-tc-results
+                 (if (and (list? t) (list? f) (list? o))
+                     (map make-tc-result t f o)
+                     (list (make-tc-result t f o)))
+                 #f)]
+               [(t f o dty)
+                (int-err "ret used with dty without dbound")]
+               [(t f o dty dbound)
+                (make-tc-results
+                 (if (and (list? t) (list? f) (list? o))
+                     (map make-tc-result t f o)
+                     (list (make-tc-result t f o)))
+                 (cons dty dbound))]))
+
+(p/c
+ [ret    
+  (->d ([t (or/c Type/c (listof Type/c))])
+       ([f (if (list? t)
+               (listof FilterSet?)
+               FilterSet?)]
+        [o (if (list? t)
+               (listof Object?)
+               Object?)]
+        [dty Type/c]
+        [dbound symbol?])
+       [_ tc-results?])])
+
+(define (combine-results tcs)
+  (match tcs
+    [(list (tc-result1: t f o) ...)
+     (ret t f o)]))
 
 (define (subst v t e) (substitute t v e))
 
@@ -222,7 +290,7 @@
 (define (lookup-fail e) 
   (match (identifier-binding e)
     ['lexical (int-err "untyped lexical variable ~a" (syntax-e e))]
-    [#f (int-err "untyped top-level variable ~a" (syntax-e e))]
+    [#f (tc-error/expr "untyped top-level identifier ~a" (syntax-e e))]
     [(list _ _ nominal-source-mod nominal-source-id _ _ _)
      (let-values ([(x y) (module-path-index-split nominal-source-mod)])
        (cond [(and (not x) (not y))

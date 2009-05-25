@@ -33,7 +33,8 @@
    [cnt infer/vararg (((listof symbol?) 
                        (listof Type?)
                        (listof Type?)
-                       Type? Type?
+                       (or/c #f Type?)
+                       Type?
                        (listof symbol?))
                       ((or/c #f Type?)) . ->* . any)]
    [cnt infer/dots (((listof symbol?) 

@@ -8,10 +8,11 @@
          "signatures.ss"
          "tc-structs.ss"
          (rep type-rep)
-         (private type-utils type-effect-convenience parse-type type-annotation mutated-vars type-contract)
-	 (env type-env init-envs type-name-env type-alias-env lexical-env)
-	 (utils tc-utils)
-	 "provide-handling.ss"
+         (types utils convenience)
+         (private parse-type type-annotation type-contract)
+         (env type-env init-envs type-name-env type-alias-env lexical-env)
+         (utils tc-utils mutated-vars)
+         "provide-handling.ss"
          "def-binding.ss"
          (for-template
           "internal-forms.ss"
@@ -40,13 +41,14 @@
        (list)]
 
       ;; declare-refinement
+      ;; FIXME - this sucks and should die
       [(define-values () (begin (quote-syntax (declare-refinement-internal pred)) (#%plain-app values)))
        (match (lookup-type/lexical #'pred)
-              [(and t (Function: (list (arr: (list dom) rng #f #f '() _ _))))
-               (register-type #'pred 
-                              (make-pred-ty (list dom)
-                                            rng
-                                            (make-Refinement dom #'pred (syntax-local-certifier))))
+              [(and t (Function: (list (arr: (list dom) (Values: (list (Result: rng _ _))) #f #f '()))))
+               (let ([new-t (make-pred-ty (list dom)
+                                          rng
+                                          (make-Refinement dom #'pred (syntax-local-certifier)))])
+                 (register-type #'pred new-t))
                (list)]
               [t (tc-error "cannot declare refinement for non-predicate ~a" t)])]
       
@@ -112,7 +114,7 @@
                    (begin0 (tc-expr #'expr)
                            (restore-errors!))))
             => (match-lambda 
-                 [(tc-result: t)
+                 [(tc-result1: t)
                   (register-type (car vars) t)
                   (list (make-def-binding (car vars) t))]
                  [t (int-err "~a is not a tc-result" t)])]
@@ -159,6 +161,7 @@
       [(define-syntaxes . _) (void)]
       [(define-values-for-syntax . _) (void)]
       
+      ;; FIXME - we no longer need these special cases
       ;; these forms are handled in pass1
       [(define-values () (begin (quote-syntax (require/typed-internal . rest)) (#%plain-app values)))
        (void)]
@@ -171,7 +174,7 @@
       [(define-values (var ...) expr)
        (let* ([vars (syntax->list #'(var ...))]
               [ts (map lookup-type vars)])
-         (tc-expr/check #'expr (-values ts)))
+         (tc-expr/check #'expr (ret ts)))
        (void)]
       
       ;; to handle the top-level, we have to recur into begins

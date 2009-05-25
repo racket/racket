@@ -9,28 +9,11 @@
 
 (define-syntax define-module
   (syntax-rules ()
-    [(_ nm spec ...)
-     
+    [(_ nm spec ...)     
      (define-syntax nm
        (make-require-transformer
         (lambda (stx)
-          (splice-requires (list (syntax-local-introduce (quote-syntax spec)) ...)))))
-     #;
-     (define-require-syntax nm
-       (lambda (stx) 
-         (syntax-case stx ()
-           [(_) (datum->syntax stx (syntax->datum #'(combine-in spec ...)))])))]))
-
-#;
-(define-syntax define-module
-  (lambda (stx)
-    (syntax-case stx ()
-      [(_ nm spec ...)
-       (syntax/loc stx
-         (define-syntax nm
-           (make-require-transformer
-            (lambda (stx)
-              (splice-requires (list (syntax-local-introduce (quote-syntax spec)) ...))))))])))
+          (splice-requires (list (syntax-local-introduce (quote-syntax spec)) ...)))))]))
 
 (define-syntax planet/multiple
   (make-require-transformer

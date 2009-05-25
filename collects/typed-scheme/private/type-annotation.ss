@@ -4,8 +4,9 @@
 (require (rep type-rep)
 	 (utils tc-utils)
 	 (env type-env)
-	 "parse-type.ss" "subtype.ss"
-         "type-effect-convenience.ss" "resolve-type.ss" "union.ss"
+         (except-in (types subtype union convenience resolve utils) -> ->*)
+         (private parse-type)
+         (only-in scheme/contract listof ->)
          scheme/match mzlib/trace)
 (provide type-annotation
          get-type
@@ -58,8 +59,8 @@
   (define (pt prop)
     #;(print-size prop)
     (if (syntax? prop)
-        (parse-type prop)
-        (parse-type/id stx prop)))
+        (parse-tc-results prop)
+        (parse-tc-results/id stx prop)))
   (cond
     [(syntax-property stx type-ascrip-symbol) => pt]
     [else #f]))
@@ -89,40 +90,38 @@
 (define (get-types stxs #:default [default #f])
   (map (lambda (e) (get-type e #:default default)) stxs))
 
-;; get the type annotations on this list of identifiers
-;; if not all identifiers have annotations, return the supplied inferred type
-;; list[identifier] type -> list[type]
-(define (get-type/infer stxs expr tc-expr tc-expr/check)
+;; list[identifier] stx (stx -> tc-results?) (stx tc-results? -> tc-results?) -> tc-results?
+(d/c (get-type/infer stxs expr tc-expr tc-expr/check)
+  ((listof identifier?) syntax? (syntax? . -> . tc-results?) (syntax? tc-results? . -> . tc-results?) . -> . tc-results?)
   (match stxs
     ['() 
-     (tc-expr/check expr (-values null))
-     (list)]          
+     (tc-expr/check expr (ret null))]
     [(list stx)
      (cond [(type-annotation stx #:infer #t)
             => (lambda (ann)
-                 (list (tc-expr/check expr ann)))]
-           [else (list (tc-expr expr))])]
+                 (tc-expr/check expr (ret ann)))]
+           [else (tc-expr expr)])]
     [(list stx ...)
      (let ([anns (for/list ([s stxs]) (type-annotation s #:infer #t))])
        (if (for/and ([a anns]) a)
-           (begin (tc-expr/check expr (-values anns)) anns)
+           (begin (tc-expr/check expr (ret anns)))
            (let ([ty (tc-expr expr)])
              (match ty
-               [(Values: tys) 
+               [(tc-results: tys) 
                 (if (not (= (length stxs) (length tys)))
                     (begin
                       (tc-error/delayed 
                                       "Expression should produce ~a values, but produces ~a values of types ~a"
                                       (length stxs) (length tys) (stringify tys))
-                      (map (lambda _ (Un)) stxs))
-                    (map (lambda (stx ty a)
-                           (cond [a => (lambda (ann) (check-type stx ty ann) #;(log/extra stx ty ann) ann)]
-                                 [else #;(log/noann stx ty) ty]))
-                         stxs tys anns))]
+                      (ret (map (lambda _ (Un)) stxs)))
+                    (ret 
+                     (for/list ([stx stxs] [ty tys] [a anns])
+                       (cond [a => (lambda (ann) (check-type stx ty ann) ann)]
+                             [else ty]))))]
                [ty (tc-error/delayed 
                     "Expression should produce ~a values, but produces one values of type ~a"
                     (length stxs) ty)
-                   (map (lambda _ (Un)) stxs)]))))]))
+                   (ret (map (lambda _ (Un)) stxs))]))))]))
 
 
 ;; check that e-type is compatible with ty in context of stx

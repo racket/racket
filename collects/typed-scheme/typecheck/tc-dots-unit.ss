@@ -4,7 +4,7 @@
 (require "signatures.ss"
          (utils tc-utils)
          (env type-environments)
-         (private type-utils)
+         (types utils)
          (rep type-rep)
          syntax/kerncase
          scheme/match)
@@ -35,8 +35,8 @@
          (parameterize ([current-tvars (extend-env (list lbound)
                                                    (list (make-DottedBoth (make-F lbound)))
                                                    (current-tvars))])
-           (match-let* ([ft (tc-expr #'f)]
-                        [(tc-result: t) (tc/funapp #'f #'(l) ft (list (ret lty)) #f)])
+           (match-let* ([ft (single-value #'f)]
+                        [(tc-result1: t) (tc/funapp #'f #'(l) ft (list (ret lty)) #f)])
              (values t lbound))))]
       [_
        (tc-error "form cannot be used where a term of ... type is expected")])))

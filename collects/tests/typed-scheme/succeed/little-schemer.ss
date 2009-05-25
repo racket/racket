@@ -17,10 +17,11 @@
 (define-syntax (cond* stx)
   (syntax-case stx (else)
     [(_ [pred expr id rhs] . rest)
-     #'(let ([id expr])
-         (if (pred id) 
-             rhs
-             (cond . rest)))]
+     (quasisyntax/loc stx
+         (let ([id expr])
+           (if (pred id) 
+               rhs
+               #,(syntax/loc #'rest (cond . rest)))))]
     [(_ [else . rest]) #'(begin . rest)]
     [(_ [p . rhs] . rest)
      #'(if p (begin . rhs)

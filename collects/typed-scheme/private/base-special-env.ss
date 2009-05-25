@@ -16,17 +16,17 @@
 ;; these are all for constructing the types given to variables
 (require (for-syntax
           scheme/base
+          (utils tc-utils)
           (env init-envs)          
-          (except-in (rep effect-rep type-rep) make-arr)
-          "type-effect-convenience.ss"
-          (only-in "type-effect-convenience.ss" [make-arr* make-arr])
-          "union.ss"
+          (except-in (rep filter-rep object-rep type-rep) make-arr)
+          (types convenience union)
+          (only-in (types convenience) [make-arr* make-arr])          
           (typecheck tc-structs)))
 
 (define-for-syntax (initialize-others) 
   (d-s date 
-       ([second : N] [minute : N] [hour : N] [day : N] [month : N] 
-        [year : N] [weekday : N] [year-day : N] [dst? : B] [time-zone-offset : N])
+       ([second : -Number] [minute : -Number] [hour : -Number] [day : -Number] [month : -Number] 
+        [year : -Number] [weekday : -Number] [year-day : -Number] [dst? : -Boolean] [time-zone-offset : -Number])
        ())
   (d-s exn ([message : -String] [continuation-marks : Univ]) ())
   (d-s (exn:fail exn) () (-String -Cont-Mark-Set))
@@ -65,7 +65,7 @@
   ;; make-promise
   (-poly (a) (-> (-> a) (-Promise a)))
   ;; language
-  Sym
+  -Symbol
   ;; qq-append
   (-poly (a b) 
          (cl->*
