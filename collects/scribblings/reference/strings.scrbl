@@ -85,11 +85,12 @@ Returns an immutable string with the same content as
 @defproc[(substring [str string?] [start exact-nonnegative-integer?]
  [end exact-nonnegative-integer? (string-length str)]) string?]{
  Returns a new mutable string that is @scheme[(- end start)]
- characters long, and that contains the same characters
- as @scheme[str] from @scheme[start] inclusive to @scheme[end] exclusive.  The
- @scheme[start] and @scheme[end] arguments must be less than the length of
- @scheme[str], and @scheme[end] must be greater than or equal to @scheme[str],
- otherwise the @exnraise[exn:fail:contract].
+ characters long, and that contains the same characters as
+ @scheme[str] from @scheme[start] inclusive to @scheme[end] exclusive.
+ The @scheme[start] and @scheme[end] arguments must be less than or
+ equal to the length of @scheme[str], and @scheme[end] must be greater
+ than or equal to @scheme[start], otherwise the
+ @exnraise[exn:fail:contract].
 
 @mz-examples[(substring "Apple" 1 3)
              (substring "Apple" 1)]}

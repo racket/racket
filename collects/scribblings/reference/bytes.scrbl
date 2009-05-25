@@ -90,13 +90,13 @@ positions are initialized with the given @scheme[b]s.
 
 
 @defproc[(subbytes [bstr bytes?] [start exact-nonnegative-integer?]
- [end exact-nonnegative-integer? (bytes-length str)]) bytes?]{
- Returns a new mutable byte string that is @scheme[(- end start)]
- bytes long, and that contains the same bytes
- as @scheme[bstr] from @scheme[start] inclusive to @scheme[end] exclusive.  The
- @scheme[start] and @scheme[end] arguments must be less than the length of
- @scheme[bstr], and @scheme[end] must be greater than or equal to @scheme[bstr],
- otherwise the @exnraise[exn:fail:contract].
+ [end exact-nonnegative-integer? (bytes-length str)]) bytes?]{ Returns
+ a new mutable byte string that is @scheme[(- end start)] bytes long,
+ and that contains the same bytes as @scheme[bstr] from @scheme[start]
+ inclusive to @scheme[end] exclusive.  The @scheme[start] and
+ @scheme[end] arguments must be less than or equal to the length of
+ @scheme[bstr], and @scheme[end] must be greater than or equal to
+ @scheme[start], otherwise the @exnraise[exn:fail:contract].
 
 @mz-examples[(subbytes #"Apple" 1 3)
              (subbytes #"Apple" 1)]}

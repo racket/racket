@@ -516,7 +516,7 @@ MZ_EXTERN Scheme_Object *scheme_make_sized_byte_string(char *chars, long len, in
 MZ_EXTERN Scheme_Object *scheme_make_sized_offset_byte_string(char *chars, long d, long len, int copy);
 MZ_EXTERN Scheme_Object *scheme_make_immutable_sized_byte_string(char *chars, long len, int copy);
 MZ_EXTERN Scheme_Object *scheme_make_byte_string_without_copying(char *chars);
-MZ_EXTERN Scheme_Object *scheme_alloc_byte_string(int size, char fill);
+MZ_EXTERN Scheme_Object *scheme_alloc_byte_string(long size, char fill);
 MZ_EXTERN Scheme_Object *scheme_append_byte_string(Scheme_Object *, Scheme_Object *);
 
 MZ_EXTERN Scheme_Object *scheme_make_utf8_string(const char *chars);
@@ -538,12 +538,12 @@ MZ_EXTERN Scheme_Object *scheme_make_sized_char_string(mzchar *chars, long len, 
 MZ_EXTERN Scheme_Object *scheme_make_sized_offset_char_string(mzchar *chars, long d, long len, int copy);
 MZ_EXTERN Scheme_Object *scheme_make_immutable_sized_char_string(mzchar *chars, long len, int copy);
 MZ_EXTERN Scheme_Object *scheme_make_char_string_without_copying(mzchar *chars);
-MZ_EXTERN Scheme_Object *scheme_alloc_char_string(int size, mzchar fill);
+MZ_EXTERN Scheme_Object *scheme_alloc_char_string(long size, mzchar fill);
 MZ_EXTERN Scheme_Object *scheme_append_char_string(Scheme_Object *, Scheme_Object *);
 
 MZ_EXTERN mzchar *scheme_string_recase(mzchar *s, int d, int len, int mode, int inplace, int *_len);
 
-MZ_EXTERN Scheme_Object *scheme_make_vector(int size, Scheme_Object *fill);
+MZ_EXTERN Scheme_Object *scheme_make_vector(long size, Scheme_Object *fill);
 MZ_EXTERN Scheme_Object *scheme_make_integer_value(long i);
 MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_unsigned(unsigned long i);
 MZ_EXTERN Scheme_Object *scheme_make_integer_value_from_long_long(mzlonglong i);
