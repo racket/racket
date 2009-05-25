@@ -103,7 +103,8 @@
                                                       [(class? curr-input) (values rank-class 'missclass 1)]
                                                       [else (values rank-wrong 'wrong 0)])])
                                           (make-fail chance name kind curr-input may-use)))]))])])
-                 (weak-map-put! memo-table input result))])))))
+                 (weak-map-put! memo-table input result)
+                 result)])))))
 
     ;seq: ( (list ((list 'a) -> res)) ((list 'b) -> 'c) string -> ((list 'a) -> result)
     (define seq 
@@ -366,7 +367,7 @@
                                  (let loop ([next-res (next-opt fst)])
                                    (when next-res (loop (next-opt fst))))]
                                 [else correct-rsts]))]
-                           [else (error 'here3)]))])))])
+                           [else (error 'here3 (format "~a" fst))]))])))])
         walker))
     
     ;get-fail-info: fail-type -> (values symbol 'a 'b)

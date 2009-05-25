@@ -1,3 +1,10 @@
+Version 4.2, May 2009
+
+Ported the editor classes (text%, snip%, editor-canvas%, etc.) from
+ C++ to Scheme
+
+----------------------------------------------------------------------
+
 Version 4.1.5, March 2009
 
 Minor bug fixes

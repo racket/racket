@@ -1,4 +1,8 @@
-Version 4.1.5.3
+Version 4.2, May 2009
+Changed visiting of modules at phase N to happen only when compilation
+ at phase N starts
+Changed expander to detect a reaname transformer and install a
+ free-identifier=? syntax-object equivalence
 Changed provide to convert an exported rename transformer to its
  free-identifier=? target
 Added 'not-free-identifier=? syntax property to disable free-identifier=? 
@@ -9,10 +13,6 @@ Fixed scheme/local so that local syntax bindings are visible to later
 Changed current-process-milliseconds to accept a thread argument
 Added hash-hash-key?, hash-ref!
 Added in-sequences, in-cycle
-
-Version 4.1.5.2
-Changed expander to detect a reaname transformer and install a
- free-identifier=? syntax-object equivalence
 
 Version 4.1.5, March 2009
 Allow infix notation for prefab structure literals
