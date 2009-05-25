@@ -95,7 +95,7 @@ positions are initialized with the given @scheme[b]s.
  bytes long, and that contains the same bytes
  as @scheme[bstr] from @scheme[start] inclusive to @scheme[end] exclusive.  The
  @scheme[start] and @scheme[end] arguments must be less than the length of
- @scheme[bstr], and @scheme[end] must be greater than or equal to @scheme[bstr],
+ @scheme[bstr], and @scheme[end] must be greater than or equal to @scheme[start],
  otherwise the @exnraise[exn:fail:contract].
 
 @mz-examples[(subbytes #"Apple" 1 3)

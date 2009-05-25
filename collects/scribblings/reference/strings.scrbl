@@ -88,7 +88,7 @@ Returns an immutable string with the same content as
  characters long, and that contains the same characters
  as @scheme[str] from @scheme[start] inclusive to @scheme[end] exclusive.  The
  @scheme[start] and @scheme[end] arguments must be less than the length of
- @scheme[str], and @scheme[end] must be greater than or equal to @scheme[str],
+ @scheme[str], and @scheme[end] must be greater than or equal to @scheme[start],
  otherwise the @exnraise[exn:fail:contract].
 
 @mz-examples[(substring "Apple" 1 3)
