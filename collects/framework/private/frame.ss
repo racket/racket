@@ -1763,7 +1763,7 @@
              [top-searching-edit (get-searching-text)])
         (when top-searching-edit
           (let ([searching-edit (let ([focus-snip (send top-searching-edit get-focus-snip)])
-                                  (if focus-snip
+                                  (if (and focus-snip (is-a? focus-snip editor-snip%))
                                       (send focus-snip get-editor)
                                       top-searching-edit))]
                 
