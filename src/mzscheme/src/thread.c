@@ -3265,6 +3265,10 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
   p->cont_mark_pos = MZ_CONT_MARK_POS;
 #endif
 
+  /* zero out anything we need now, because nestee disables
+     GC cleaning for this thread: */
+  prepare_this_thread_for_GC(p);
+
   if (!p->runstack_owner) {
     Scheme_Thread **owner;
     owner = MALLOC_N(Scheme_Thread *, 1);
@@ -3322,10 +3326,6 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
   }
   np->cont_mark_pos = (MZ_MARK_POS_TYPE)1;
   /* others 0ed already by allocation */
-
-  /* zero out anything we need now, because nestee disables
-     GC cleaning for this thread: */
-  prepare_this_thread_for_GC(p);
 
   check_ready_break();
 
