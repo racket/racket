@@ -456,5 +456,48 @@
             module->language-info 'tests/mzscheme/langm))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check shadowing of initial imports:
+
+(let ([m-code '(module m scheme/base (define-syntax-rule (lambda . _) 5) (provide lambda))]
+      [n-code '(module n scheme/base 
+                 (require 'm) 
+                 (define five (lambda (x) x)) 
+                 (define five-stx #'lambda)
+                 (provide five five-stx))]
+      [p-code '(module p scheme/base
+                 (require 'n)
+                 (define same? (free-identifier=? #'lambda five-stx))
+                 (provide same?))])
+  (let ([ns (make-base-namespace)])
+    (eval m-code ns)
+    (eval '(require 'm) ns)
+    (test 5 eval '(lambda (x) x) ns)
+    (let ([m-ns (eval '(module->namespace ''m) ns)])
+      (test 5 eval '(lambda (x) x) m-ns))
+    (eval n-code ns)
+    (eval '(require 'n) ns)
+    (test 5 eval 'five ns)
+    (eval p-code ns)
+    (eval '(require 'p) ns)
+    (test #f eval 'same? ns)
+    (let ([n-ns (eval '(module->namespace ''n) ns)])
+      (test 5 eval '(lambda (x) x) n-ns)))
+  (let ([ns (make-base-namespace)])
+    (eval m-code ns)
+    (let ([n-zo (let ([s (open-output-bytes)])
+                  (parameterize ([current-namespace ns])
+                    (write (compile n-code) s))
+                  (parameterize ([read-accept-compiled #t])
+                    (read (open-input-bytes (get-output-bytes s)))))])
+      (eval n-zo ns)
+      (eval '(require 'n) ns)
+      (test 5 eval 'five ns)
+      (eval p-code ns)
+      (eval '(require 'p) ns)
+      (test #f eval 'same? ns)
+      (let ([n-ns (eval '(module->namespace ''n) ns)])
+        (test 5 eval '(lambda (x) x) n-ns)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

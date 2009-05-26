@@ -2404,8 +2404,8 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
           }
 
           if (l) {
-            /* Shouldn't we do initial import first, to get shadowing
-               right? Somehow, it seems to work this way. */
+            /* Do initial import first to get shadowing right: */
+            l = scheme_reverse(l);
             for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
               idx = SCHEME_CAR(l);
               name = scheme_module_resolve(idx, 0);
