@@ -1618,9 +1618,11 @@
 
 (define* (register-finalizer obj finalizer)
   (unless killer-thread
-    (set! killer-thread
-          (thread (lambda ()
-                    (let loop () (will-execute killer-executor) (loop))))))
+    (let ([priviledged-custodian ((get-ffi-obj 'scheme_make_custodian #f (_fun _pointer -> _scheme)) #f)])
+      (set! killer-thread
+            (parameterize ([current-custodian priviledged-custodian])
+              (thread (lambda ()
+                        (let loop () (will-execute killer-executor) (loop))))))))
   (will-register killer-executor obj finalizer))
 
 (define-unsafer unsafe!)
