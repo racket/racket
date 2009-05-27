@@ -9,7 +9,7 @@
   ; reason 2) the render-settings should be recomputed once for each stepper 
   ; invocation.  invoke-unit is a nice way of doing this without dropping back
   ; to linking-by-position, which is what happens with a simple closure 
-  ; implementatian.
+  ; implementation.
   
   ; HOWEVER, like I said, it's just too painful. Once this is a unit, then 
   ; everything else wants to be a unit too. For instance, to make sure that 
