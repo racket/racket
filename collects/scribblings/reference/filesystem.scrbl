@@ -391,7 +391,7 @@ a distribution.
 In addition to the bindings described below,
 @schememodname[scheme/runtime-path] provides @scheme[#%datum] in
 @tech{phase level} 1, since string constants are often used as
-compile-time expression with @scheme[define-runtime-path].
+compile-time expressions with @scheme[define-runtime-path].
 
 @defform[(define-runtime-path id expr)]{
 
