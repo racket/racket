@@ -1696,6 +1696,8 @@
        [(make-alts exact-nonnegative-integer? (symbol-in same)) [end 'same]]
        [any? [scroll-ok? #t]])
       (do-insert #f (substring str 0 len) #f start end scroll-ok?)]
+     [([snip% snip])
+      (do-insert snip #f #f startpos endpos #t)]
      [([snip% snip]
        [exact-nonnegative-integer? [start startpos]]
        [(make-alts exact-nonnegative-integer? (symbol-in same)) [end 'same]]
