@@ -341,7 +341,7 @@
                                                     (list (quote-syntax quote)
                                                           (prefab-struct-key (syntax-e x)))
                                                     l2))))
-                                      ;; hash or hasheq
+                                      ;; hash[eq[v]]
                                       (if (if (syntax? x)
                                               (hash? (syntax-e x))
                                               #f)
@@ -349,15 +349,29 @@
                                               (((qq-hash-assocs)
 						(lambda (x level)
 						  (if (null? x)
-						      (quote-syntax ())
+						      x
 						      (let-values
 						          (((pair) (car x)))
-							(apply-cons
-							 (list (quote-syntax list*)
-							       (list (quote-syntax quote)
-								     (datum->syntax here (car pair)))
-							       (qq (datum->syntax here (cdr pair)) level))
-							 (qq-hash-assocs (cdr x) level)))))))
+                                                        (let-values ([(val)
+                                                                      (qq (datum->syntax here (cdr pair)) level)]
+                                                                     [(rest)
+                                                                      (qq-hash-assocs (cdr x) level)])
+                                                          (if (if (eq? val (cdr pair))
+                                                                  (eq? rest (cdr x))
+                                                                  #f)
+                                                              x
+                                                              (apply-cons
+                                                               (list (quote-syntax list*)
+                                                                     (list (quote-syntax quote)
+                                                                           (datum->syntax here (car pair)))
+                                                                     (if (eq? val (cdr pair))
+                                                                         (list (quote-syntax quote)
+                                                                               val)
+                                                                         val))
+                                                               (if (eq? rest (cdr x))
+                                                                   (list (quote-syntax quote)
+                                                                         rest)
+                                                                   rest)))))))))
                                             (let-values (((l0) (hash-map (syntax-e x) cons)))
                                               (let-values
                                                   (((l) (qq-hash-assocs l0 level)))
