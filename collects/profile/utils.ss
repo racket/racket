@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "structs.ss" scheme/list)
+(require "structs.ss" scheme/list scheme/nest)
 
 ;; Format a percent number, possibly doing the division too.  If we do the
 ;; division, then be careful: if we're dividing by zero, then make the result
@@ -48,27 +48,122 @@
         [(zero? total-time) (profile-nodes profile)]
         [else (filter hide? (profile-nodes profile))]))
 
-;; A simple topological sort of nodes using the Khan method, starting from node
-;; `x' (which will be given as the special *-node).  The result is a list of
-;; node lists, each one corresponds to one level.  Conceptually, the input node
-;; is always only item in the first level, so it is not included in the result.
+;; A topological sort of nodes, starting from node `root' (which will be given
+;; as the special *-node).  The result is a list of node lists, each one
+;; corresponds to one level.  Conceptually, the root node is always the only
+;; item in the first level, so it is not included in the result.  This is done
+;; by assigning layers to nodes in a similar way to section 9.1 of "Graph
+;; Drawing: Algorithms for the Visualization of Graphs" by Tollis, Di Battista,
+;; Eades, and Tamassia.  It uses a similar technique to the one described in
+;; section 9.4 to remove cycles in the input graph, but improved by the fact
+;; that we have weights on input/output edges (this is the only point that is
+;; specific to the fact that it's a profiler graph).  Note that this is useful
+;; for a graphical rendering of the results, but it's also useful to sort the
+;; results in a way that makes more sense.
 (provide topological-sort)
-(define (topological-sort x)
-  (let loop ([todo (list x)] [sorted '()] [seen (list x)])
-    (let* (;; take the next level of nodes
-           [next (append-map (lambda (x) (map edge-callee (node-callees x)))
-                             todo)]
-           ;; remove visited and duplicates
-           [next (remove-duplicates (remq* seen next))]
-           ;; leave only nodes with no other incoming edges
-           [seen* (append next seen)] ; important for cycles
-           [next* (filter (lambda (node)
-                            (andmap (lambda (e) (memq (edge-caller e) seen*))
-                                    (node-callers node)))
-                          next)]
-           ;; but if all nodes have other incoming edges, then there must be a
-           ;; cycle, so just do them now (instead of dropping them)
-           [next (if (null? next*) next next*)])
-      (if (null? next)
-        (reverse sorted)
-        (loop next (cons next sorted) (append next seen))))))
+(define (topological-sort root)
+
+  ;; a general purpose hash for nodes
+  (define t (make-hasheq))
+
+  ;; make `t' map a node to an mcons of total input and total output times
+  ;; ignoring edges to/from the *-node and self edges
+  (define (add! node)
+    (define (sum node-callers/lees edge-caller/lee edge-callee/ler-time)
+      (for/fold ([sum 0]) ([e (in-list (node-callers/lees node))])
+        (let ([n (edge-caller/lee e)])
+          (if (or (eq? n node) (eq? n root)) sum
+              (+ sum (edge-callee/ler-time e))))))
+    (hash-set! t node
+               (mcons (sum node-callers edge-caller edge-callee-time)
+                      (sum node-callees edge-callee edge-caller-time))))
+  (define nodes+io-times
+    (let loop ([todo (list root)])
+      (if (pair? todo)
+        (let ([cur (car todo)] [todo (cdr todo)])
+          (unless (eq? cur root) (add! cur))
+          (loop (append (filter-map (lambda (e)
+                                      (let ([lee (edge-callee e)])
+                                        (and (not (hash-ref t lee #f)) lee)))
+                                    (node-callees cur))
+                        todo)))
+        ;; note: the result still includes the root node
+        (hash-map t cons))))
+
+  ;; now create a linear order similar to the way section 9.4 describes, except
+  ;; that this uses the total caller/callee times to get an even better
+  ;; ordering (also, look for sources and sinks in every step)
+  (define acyclic-order
+    (let loop ([todo nodes+io-times] [rev-left '()] [right '()])
+      ;; heuristic for best sources: the ones with the lowest intime/outtime
+      (define (best-sources)
+        (let loop ([todo todo] [r '()] [best #f])
+          (if (null? todo)
+            r
+            (let* ([1st (car todo)]
+                   [rest (cdr todo)]
+                   [ratio (/ (mcar (cdr 1st)) (mcdr (cdr 1st)))])
+              (if (or (not best) (ratio . < . best))
+                (loop rest (list 1st) ratio)
+                (loop rest (if (ratio . > . best) r (cons 1st r)) best))))))
+      (if (pair? todo)
+        (let* ([sinks   (filter (lambda (x) (zero? (mcdr (cdr x)))) todo)]
+               [todo    (remq* sinks todo)]
+               [sources (filter (lambda (x) (zero? (mcar (cdr x)))) todo)]
+               ;; if we have no sources and sinks, use the heuristic
+               [sources (if (and (null? sinks) (null? sources))
+                          (best-sources) sources)]
+               [todo    (remq* sources todo)]
+               [sinks   (map car sinks)]
+               [sources (map car sources)])
+          ;; remove the source and sink times from the rest
+          (for* ([nodes (in-list (list sources sinks))]
+                 [n (in-list nodes)])
+            (for ([e (in-list (node-callees n))])
+              (let ([x (assq (edge-callee e) todo)])
+                (when x (set-mcar! (cdr x) (- (mcar (cdr x))
+                                              (edge-callee-time e))))))
+            (for ([e (in-list (node-callers n))])
+              (let ([x (assq (edge-caller e) todo)])
+                (when x (set-mcdr! (cdr x) (- (mcdr (cdr x))
+                                              (edge-caller-time e)))))))
+          (loop todo (append (reverse sources) rev-left) (append sinks right)))
+        ;; all done, get the order
+        (append (reverse rev-left) right))))
+
+  ;; we're done, so make `t' map nodes to their callers with only edges that
+  ;; are consistent with this ordering
+  (for ([n acyclic-order]) (hash-set! t n '()))
+  (let loop ([nodes acyclic-order])
+    (when (pair? nodes)
+      (let ([ler (car nodes)] [rest (cdr nodes)])
+        (for ([e (in-list (node-callees ler))])
+          (let ([lee (edge-callee e)])
+            (when (memq lee rest) ; only consistent edges
+              ;; note that we connect each pair of nodes at most once, and
+              ;; never a node with itself
+              (hash-set! t lee (cons ler (hash-ref t lee))))))
+        (loop rest))))
+
+  ;; finally, assign layers using the simple method from section 9.1: sources
+  ;; are at 0, and other nodes are placed at one layer after their parents
+  (let ([height 0])
+    (for ([node (in-list acyclic-order)])
+      (let loop ([node node])
+        (define x (hash-ref t node))
+        (if (number? x)
+          x
+          (let ([max (add1 (for/fold ([m -1]) ([ler (in-list x)])
+                             (max m (loop ler))))])
+            (when (max . > . height) (set! height max))
+            (hash-set! t node max)
+            max))))
+    (let ([layers (make-vector (add1 height) '())])
+      (for ([node (in-list acyclic-order)])
+        (unless (eq? node root) ; filter out the root
+          (let ([l (hash-ref t node)])
+            (vector-set! layers l (cons node (vector-ref layers l))))))
+      ;; in almost all cases, the root is the full first layer (in a few cases
+      ;; it can be there with another node, eg (* -> A 2-> B 3-> A)), but be
+      ;; safe and look for any empty layer
+      (filter pair? (vector->list layers)))))
