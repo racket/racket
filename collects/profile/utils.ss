@@ -87,7 +87,7 @@
                                         (and (not (hash-ref t lee #f)) lee)))
                                     (node-callees cur))
                         todo)))
-        ;; note: the result still includes the root node
+        ;; note: the result does not include the root node
         (hash-map t cons))))
 
   ;; now create a linear order similar to the way section 9.4 describes, except
