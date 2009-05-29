@@ -42,8 +42,9 @@
 ;; - total: the total time spent while the call was anywhere on the stack.
 ;; - caller, callee: the two relevant `node' values.
 ;; - caller-time, callee-time: the time that the caller/callee spent in this
-;;   call (different from the above time because each stack sample's time is
-;;   divided by the number of times the caller/callee appears in that slice).
+;;   call relative to the callee/caller (different from the above time because
+;;   each stack sample's time is divided by the number of times the
+;;   caller/callee appears in that slice).
 (provide (struct-out edge))
 (define-struct edge (total caller caller-time callee callee-time)
   #:mutable
