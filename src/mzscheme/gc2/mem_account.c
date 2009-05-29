@@ -702,7 +702,7 @@ static inline void BTC_clean_up(NewGC *gc) {
   clean_up_account_hooks(gc);
 }
 
-static inline void BTC_set_btc_mark(NewGC *gc, void* x) {
-  ((objhead *)(x))->btc_mark = gc->old_btc_mark;
+static inline void BTC_set_btc_mark(NewGC *gc, objhead* info) {
+  info->btc_mark = gc->old_btc_mark;
 }
 #endif
