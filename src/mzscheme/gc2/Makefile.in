@@ -314,14 +314,47 @@ foreign.@LTO@: $(XSRCDIR)/foreign.c
 main.@LTO@: $(XSRCDIR)/main.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/main.c -o main.@LTO@
 
-gc2.@LTO@: $(srcdir)/gc2.c $(srcdir)/newgc.c $(srcdir)/gc2.h \
-			 $(srcdir)/newgc.h $(srcdir)/mem_account.c \
-			 $(srcdir)/sighand.c \
-       $(srcdir)/vm_osx.c $(srcdir)/vm_mmap.c $(srcdir)/vm_osk.c $(srcdir)/vm.c\
-       $(srcdir)/vm_memalign.c $(srcdir)/alloc_cache.c \
-       $(srcdir)/page_range.c $(srcdir)/protect_range.c $(srcdir)/var_stack.c $(srcdir)/stack_comp.c \
-       $(srcdir)/../utils/splay.c $(srcdir)/my_qsort.c $(srcdir)/backtrace.c \
-       $(srcdir)/weak.c $(srcdir)/fnls.c $(srcdir)/../include/scheme.h $(srcdir)/../src/schpriv.h
+gc2.@LTO@: \
+		$(srcdir)/alloc_cache.c \
+		$(srcdir)/backtrace.c \
+		$(srcdir)/commongc_internal.h \
+		$(srcdir)/platforms.h \
+		$(srcdir)/fnls.c \
+		$(srcdir)/gc2.c \
+		$(srcdir)/gc2.h \
+		$(srcdir)/gc2_dump.h \
+		$(srcdir)/gc2_obj.h \
+		$(srcdir)/immobile_boxes.c \
+		$(srcdir)/../include/scheme.h \
+		$(srcdir)/../include/../sconfig.h \
+		$(srcdir)/../include/../mzconfig.h \
+		$(srcdir)/../include/../uconfig.h \
+		$(srcdir)/../include/../src/stypes.h \
+		$(srcdir)/../include/../src/schexn.h \
+		$(srcdir)/../include/../gc2/gc2.h \
+		$(srcdir)/../include/../src/schemef.h \
+		$(srcdir)/../mzconfig.h \
+		$(srcdir)/../src/mzrt.h \
+		$(srcdir)/../src/schpriv.h \
+		$(srcdir)/../utils/splay.c \
+		$(srcdir)/mem_account.c \
+		$(srcdir)/msgprint.c \
+		$(srcdir)/my_qsort.c \
+		$(srcdir)/newgc.c \
+		$(srcdir)/newgc.h \
+		$(srcdir)/page_range.c \
+		$(srcdir)/protect_range.c \
+		$(srcdir)/rlimit_heapsize.c \
+		$(srcdir)/roots.c \
+		$(srcdir)/stack_comp.c \
+		$(srcdir)/sighand.c \
+		$(srcdir)/var_stack.c \
+		$(srcdir)/vm.c \
+		$(srcdir)/vm_memalign.c \
+		$(srcdir)/vm_mmap.c \
+		$(srcdir)/vm_osk.c \
+		$(srcdir)/vm_osx.c \
+		$(srcdir)/weak.c
 	$(CC) $(CFLAGS) -I$(builddir)/.. -c $(srcdir)/gc2.c -o gc2.@LTO@
 
 FOREIGN_OBJS = ../../foreign/gcc/libffi/src/*.@LTO@ ../../foreign/gcc/libffi/src/*/*.@LTO@

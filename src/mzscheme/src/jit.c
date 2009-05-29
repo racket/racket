@@ -1185,6 +1185,7 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #ifdef CAN_INLINE_ALLOC
 extern THREAD_LOCAL unsigned long GC_gen0_alloc_page_ptr;
 long GC_initial_word(int sizeb);
+void GC_initial_words(char *buffer, int sizeb);
 long GC_compute_alloc_size(long sizeb);
 long GC_alloc_alignment(void);
 
@@ -1248,6 +1249,7 @@ static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut
 {
   GC_CAN_IGNORE jit_insn *ref, *reffail;
   long a_word, sz, algn;
+  long a_words[2];
   
   sz = GC_compute_alloc_size(amt);
   algn = GC_alloc_alignment();
@@ -1282,12 +1284,29 @@ static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut
   mz_patch_branch(ref);
   jit_addi_ul(JIT_R2, JIT_V1, sz);
   (void)jit_sti_l(&GC_gen0_alloc_page_ptr, JIT_R2);
+#if !defined(MZ_USE_PLACES)
   a_word = GC_initial_word(amt);
   jit_movi_l(JIT_R2, a_word);
   jit_str_l(JIT_V1, JIT_R2);
+
+  /*SchemeObject header*/
   a_word = initial_tag_word(ty, immut);
   jit_movi_l(JIT_R2, a_word);
   jit_stxi_l(sizeof(long), JIT_V1, JIT_R2);
+#else
+  GC_initial_words(a_words, amt);
+  jit_movi_l(JIT_R2, a_words[0]);
+  jit_str_l(JIT_V1, JIT_R2);
+
+  jit_movi_l(JIT_R2, a_words[1]);
+  jit_stxi_l(sizeof(long), JIT_V1, JIT_R2);
+
+  /*SchemeObject header*/
+  a_word = initial_tag_word(ty, immut);
+  jit_movi_l(JIT_R2, a_word);
+  jit_stxi_l(sizeof(long)*2, JIT_V1, JIT_R2);
+#endif
+
   CHECK_LIMIT();
   __END_TINY_JUMPS__(1);
 
@@ -3200,7 +3219,7 @@ static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int r
 # ifdef CAN_INLINE_ALLOC
         inline_alloc(jitter, sizeof(Scheme_Double), scheme_double_type, 0, 0, 1, 0);
         CHECK_LIMIT();
-        jit_addi_p(JIT_R0, JIT_V1, sizeof(long));
+        jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
         (void)jit_stxi_d_fppop(&((Scheme_Double *)0x0)->double_val, JIT_R0, JIT_FPR1);
 # else
         (void)jit_sti_d_fppop(&double_result, JIT_FPR1);    
@@ -4372,8 +4391,8 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       inline_alloc(jitter, sizeof(Scheme_Small_Object), scheme_box_type, 0, 1, 0, 0);
       CHECK_LIMIT();
       
-      jit_stxi_p((long)&SCHEME_BOX_VAL(0x0) + sizeof(long), JIT_V1, JIT_R0);
-      jit_addi_p(JIT_R0, JIT_V1, sizeof(long));
+      jit_stxi_p((long)&SCHEME_BOX_VAL(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R0);
+      jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
 #else
       /* Non-inlined */
       JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
@@ -4893,9 +4912,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_mutable_pair_type, 0, 1, 0, 0);
       CHECK_LIMIT();
 
-      jit_stxi_p((long)&SCHEME_MCAR(0x0) + sizeof(long), JIT_V1, JIT_R0);
-      jit_stxi_p((long)&SCHEME_MCDR(0x0) + sizeof(long), JIT_V1, JIT_R1);
-      jit_addi_p(JIT_R0, JIT_V1, sizeof(long));
+      jit_stxi_p((long)&SCHEME_MCAR(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R0);
+      jit_stxi_p((long)&SCHEME_MCDR(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R1);
+      jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
 #else
       /* Non-inlined alloc */
       JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
@@ -5134,13 +5153,13 @@ static int generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry)
   CHECK_LIMIT();
   
   if (rev) {
-    jit_stxi_p((long)&SCHEME_CAR(0x0) + sizeof(long), JIT_V1, JIT_R1);
-    jit_stxi_p((long)&SCHEME_CDR(0x0) + sizeof(long), JIT_V1, JIT_R0);
+    jit_stxi_p((long)&SCHEME_CAR(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R1);
+    jit_stxi_p((long)&SCHEME_CDR(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R0);
   } else {
-    jit_stxi_p((long)&SCHEME_CAR(0x0) + sizeof(long), JIT_V1, JIT_R0);
-    jit_stxi_p((long)&SCHEME_CDR(0x0) + sizeof(long), JIT_V1, JIT_R1);
+    jit_stxi_p((long)&SCHEME_CAR(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R0);
+    jit_stxi_p((long)&SCHEME_CDR(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R1);
   }
-  jit_addi_p(JIT_R0, JIT_V1, sizeof(long));
+  jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
 #else
   /* Non-inlined */
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
@@ -5194,14 +5213,14 @@ static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
   CHECK_LIMIT();
 
   if ((c == 2) || (c == 1)) {
-    jit_stxi_p((long)&SCHEME_VEC_ELS(0x0)[0] + sizeof(long), JIT_V1, JIT_R0);
+    jit_stxi_p((long)&SCHEME_VEC_ELS(0x0)[0] + GC_OBJHEAD_SIZE, JIT_V1, JIT_R0);
   }
   if (c == 2) {
-    jit_stxi_p((long)&SCHEME_VEC_ELS(0x0)[1] + sizeof(long), JIT_V1, JIT_R1);
+    jit_stxi_p((long)&SCHEME_VEC_ELS(0x0)[1] + GC_OBJHEAD_SIZE, JIT_V1, JIT_R1);
   }
   jit_movi_l(JIT_R1, c);
-  jit_stxi_i((long)&SCHEME_VEC_SIZE(0x0) + sizeof(long), JIT_V1, JIT_R1);
-  jit_addi_p(JIT_R0, JIT_V1, sizeof(long));
+  jit_stxi_i((long)&SCHEME_VEC_SIZE(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R1);
+  jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
 #else
   /* Non-inlined */
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
@@ -5304,7 +5323,7 @@ static int generate_closure(Scheme_Closure_Data *data,
       /* Inlined alloc */
       inline_alloc(jitter, sz, scheme_native_closure_type, 0, 0, 0, 0);
       CHECK_LIMIT();
-      jit_addi_p(JIT_R0, JIT_V1, sizeof(long));
+      jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
     } else
 # endif
       {

@@ -220,7 +220,7 @@ static int missed_context_switch = 0;
 static int have_activity = 0;
 int scheme_active_but_sleeping = 0;
 static int thread_ended_with_activity;
-int scheme_no_stack_overflow;
+THREAD_LOCAL int scheme_no_stack_overflow;
 
 static int needs_sleep_cancelled;
 
