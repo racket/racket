@@ -82,36 +82,51 @@
 
 ;; installed-tools-for-directory : directory-record -> (list-of installed-tool)
 (define (installed-tools-for-directory coll-dir)
-  (let ([table (get-info/full (directory-record-path coll-dir))])
-    (if table
-        (let* ([tools (table 'tools (lambda () null))]
-               [tool-icons (table 'tool-icons (lambda () (map (lambda (x) #f) tools)))]
-               [tool-names (table 'tool-names (lambda () (map (lambda (x) #f) tools)))]
-               [tool-urls (table 'tool-urls (lambda () (map (lambda (x) #f) tools)))])
-          (unless (= (length tools) (length tool-icons))
-            (message-box (string-constant drscheme)
-                         (format (string-constant tool-tool-icons-same-length)
-                                 coll-dir tools tool-icons)
-                         #f
-                         '(ok stop))
-            (set! tool-icons (map (lambda (x) #f) tools)))
-          (unless (= (length tools) (length tool-names))
-            (message-box (string-constant drscheme)
-                         (format (string-constant tool-tool-names-same-length)
-                                 coll-dir tools tool-names)
-                         #f
-                         '(ok stop))
-            (set! tool-names (map (lambda (x) #f) tools)))
-          (unless (= (length tools) (length tool-urls))
-            (message-box (string-constant drscheme)
-                         (format (string-constant tool-tool-urls-same-length)
-                                 coll-dir tools tool-urls)
-                         #f
-                         '(ok stop))
-            (set! tool-urls (map (lambda (x) #f) tools)))
-          (map (lambda (t i n u) (make-installed-tool coll-dir t i n u))
-               tools tool-icons tool-names tool-urls))
-        null)))
+  (let ([table (with-handlers ((exn:fail? values))
+                 (get-info/full (directory-record-path coll-dir)))])
+    (cond
+      [(not table)
+       null]
+      [(exn? table)
+       (message-box (string-constant drscheme)
+                    (format (string-constant error-loading-tool-title)
+                            (directory-record-path coll-dir)
+                            (let ([sp (open-output-string)])
+                              (parameterize ([current-error-port sp]
+                                             [current-error-port sp])
+                                (drscheme:init:original-error-display-handler (exn-message table) table))
+                              (get-output-string sp)))
+                    #f
+                    '(ok stop))
+       null]
+      [else
+       (let* ([tools (table 'tools (lambda () null))]
+              [tool-icons (table 'tool-icons (lambda () (map (lambda (x) #f) tools)))]
+              [tool-names (table 'tool-names (lambda () (map (lambda (x) #f) tools)))]
+              [tool-urls (table 'tool-urls (lambda () (map (lambda (x) #f) tools)))])
+         (unless (= (length tools) (length tool-icons))
+           (message-box (string-constant drscheme)
+                        (format (string-constant tool-tool-icons-same-length)
+                                coll-dir tools tool-icons)
+                        #f
+                        '(ok stop))
+           (set! tool-icons (map (lambda (x) #f) tools)))
+         (unless (= (length tools) (length tool-names))
+           (message-box (string-constant drscheme)
+                        (format (string-constant tool-tool-names-same-length)
+                                coll-dir tools tool-names)
+                        #f
+                        '(ok stop))
+           (set! tool-names (map (lambda (x) #f) tools)))
+         (unless (= (length tools) (length tool-urls))
+           (message-box (string-constant drscheme)
+                        (format (string-constant tool-tool-urls-same-length)
+                                coll-dir tools tool-urls)
+                        #f
+                        '(ok stop))
+           (set! tool-urls (map (lambda (x) #f) tools)))
+         (map (lambda (t i n u) (make-installed-tool coll-dir t i n u))
+              tools tool-icons tool-names tool-urls))])))
 
 ;; candidate-tool? : installed-tool -> boolean
 ;; Predicate for tools selected for execution in this
