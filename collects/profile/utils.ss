@@ -63,36 +63,37 @@
 (provide topological-sort)
 (define (topological-sort root)
 
-  ;; a general purpose hash for nodes
-  (define t (make-hasheq))
-
-  ;; make `t' map a node to an mcons of total input and total output times
-  ;; ignoring edges to/from the *-node and self edges
-  (define (add! node)
+  ;; Make `nodes+io-times' map a node to an mcons of total input and total
+  ;; output times ignoring edges to/from the *-node and self edges, the order
+  ;; is the reverse of how we scan the graph
+  (define (get-node+io node)
     (define (sum node-callers/lees edge-caller/lee edge-callee/ler-time)
       (for/fold ([sum 0]) ([e (in-list (node-callers/lees node))])
         (let ([n (edge-caller/lee e)])
           (if (or (eq? n node) (eq? n root)) sum
               (+ sum (edge-callee/ler-time e))))))
-    (hash-set! t node
-               (mcons (sum node-callers edge-caller edge-callee-time)
+    (cons node (mcons (sum node-callers edge-caller edge-callee-time)
                       (sum node-callees edge-callee edge-caller-time))))
   (define nodes+io-times
-    (let loop ([todo (list root)])
+    (let loop ([todo (list root)] [r '()])
       (if (pair? todo)
-        (let ([cur (car todo)] [todo (cdr todo)])
-          (unless (eq? cur root) (add! cur))
-          (loop (append (filter-map (lambda (e)
+        (let* ([cur (car todo)] [todo (cdr todo)]
+               [r (if (eq? cur root) r (cons (get-node+io cur) r))])
+          (loop (append todo ; append new things in the end, so it's a BFS
+                        (filter-map (lambda (e)
                                       (let ([lee (edge-callee e)])
-                                        (and (not (hash-ref t lee #f)) lee)))
-                                    (node-callees cur))
-                        todo)))
+                                        (and (not (memq lee todo))
+                                             (not (assq lee r))
+                                             lee)))
+                                    (node-callees cur)))
+                r))
         ;; note: the result does not include the root node
-        (hash-map t cons))))
+        r)))
 
-  ;; now create a linear order similar to the way section 9.4 describes, except
+  ;; Now create a linear order similar to the way section 9.4 describes, except
   ;; that this uses the total caller/callee times to get an even better
-  ;; ordering (also, look for sources and sinks in every step)
+  ;; ordering (also, look for sources and sinks in every step).  Note that the
+  ;; list we scan is in reverse order.
   (define acyclic-order
     (let loop ([todo nodes+io-times] [rev-left '()] [right '()])
       ;; heuristic for best sources: the ones with the lowest intime/outtime
@@ -131,19 +132,22 @@
         ;; all done, get the order
         (append (reverse rev-left) right))))
 
-  ;; we're done, so make `t' map nodes to their callers with only edges that
+  ;; We're done, so make `t' map nodes to their callers with only edges that
   ;; are consistent with this ordering
-  (for ([n acyclic-order]) (hash-set! t n '()))
-  (let loop ([nodes acyclic-order])
-    (when (pair? nodes)
-      (let ([ler (car nodes)] [rest (cdr nodes)])
-        (for ([e (in-list (node-callees ler))])
-          (let ([lee (edge-callee e)])
-            (when (memq lee rest) ; only consistent edges
-              ;; note that we connect each pair of nodes at most once, and
-              ;; never a node with itself
-              (hash-set! t lee (cons ler (hash-ref t lee))))))
-        (loop rest))))
+  (define t
+    (let ([t (make-hasheq)])
+      (let loop ([nodes acyclic-order])
+        (when (pair? nodes)
+          (let ([ler (car nodes)] [rest (cdr nodes)])
+            (unless (hash-ref t ler #f) (hash-set! t ler '()))
+            (for ([e (in-list (node-callees ler))])
+              (let ([lee (edge-callee e)])
+                (when (memq lee rest) ; only consistent edges
+                  ;; note that we connect each pair of nodes at most once, and
+                  ;; never a node with itself
+                  (hash-set! t lee (cons ler (hash-ref t lee '()))))))
+            (loop rest))))
+      t))
 
   ;; finally, assign layers using the simple method from section 9.1: sources
   ;; are at 0, and other nodes are placed at one layer after their parents
