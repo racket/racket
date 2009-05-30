@@ -804,6 +804,7 @@ please adhere to these guidelines:
  ;;; tools
  (invalid-tool-spec "The tool specification in collection ~a's info.ss file is invalid. Expected either a string or a non-empty list of strings, got: ~e")
  (error-invoking-tool-title "Error invoking tool ~s;~s")
+ (error-loading-tool-title "Error loading tool ~s\n~a") ;; ~s filled with a path, ~a filled with an error message from an exn
  (tool-tool-names-same-length
   "expected `tool-names' and `tools' to be lists of the same length, in info.ss file for ~s, got ~e and ~e")
  (tool-tool-icons-same-length
