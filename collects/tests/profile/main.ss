@@ -54,6 +54,7 @@
     'ok]
    [bad (error 'test ">>> ~s" bad)])
 
+ ;; demonstrates different edge-caller/lee-times
  (match (analyze `(10
                    [0 0 ,A ,B ,A]
                    [0 1 ,A ,B ,A]))

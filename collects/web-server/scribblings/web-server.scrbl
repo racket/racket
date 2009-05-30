@@ -11,7 +11,7 @@ This manual describes the PLT libraries for building Web applications.
 
 @secref["servlet"] and @secref["stateless"] describe two ways to write Web applications. 
 @secref["servlet"] use the entire PLT Scheme language, but their continuations are stored in the Web server's memory.
-@secref["stateless"] use a slightly restricted PLT Scheme language, but their continuation can be stored by the Web client or on a Web server's disk.
+@secref["stateless"] use a slightly restricted PLT Scheme language, but their continuation can be stored by the Web client or on a Web server's disk. If you can, you want to use @secref["stateless"] for the improved scalability.
 
 The @secref["http"] section describes the common library function for manipulating HTTP requests and creating HTTP responses.
 In particular, this section covers cookies, authentication, and request bindings.

@@ -661,6 +661,9 @@
 (test '#hash(("foo" . (1 2 3 4 5)))
       'qq
       `#hash(("foo" . (1 2 ,(+ 1 2) 4 5))))
+(test '#hash(("foo" . (1 2 (+ 1 2) 4 5)))
+      'qq
+      `#hash(("foo" . (1 2 (+ 1 2) 4 5))))
 (test '#hash(("foo" . (1 2 3 4 5)))
       'qq
       `#hash(("foo" . (1 2 ,@(list 3 4 5)))))
@@ -670,6 +673,12 @@
 (test '#hash((,(read) . 2))
       'qq
       `#hash((,(read) . 1) (,(read) . 2)))
+(test '#hash(("moo" . 3) ("foo" . (1 2)))
+      'qq
+      `#hash(("moo" . ,(+ 1 2)) ("foo" . (1 2))))
+(test '#hash(("moo" . (+ 1 2)) ("foo" . -1))
+      'qq
+      `#hash(("moo" . (+ 1 2)) ("foo" . ,(- 1 2))))
 (syntax-test #'`#hash(("foo" . ,@(list 1 2 3 4 5))))
 (error-test #'(read (open-input-string "`#hash((foo ,@(list 1 2 3 4 5)))")) exn:fail:read?)
 
