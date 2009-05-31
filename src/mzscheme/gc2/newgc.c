@@ -428,8 +428,8 @@ int GC_is_allocated(void *p)
 #define MAX_OBJECT_SIZEW (gcBYTES_TO_WORDS(APAGE_SIZE) - PREFIX_WSIZE - 3)
 #define MAX_OBJECT_SIZE  (gcWORDS_TO_BYTES(MAX_OBJECT_SIZEW))
 
-#define ASSERT_TAG(tag) assert((tag) >= 0 && (tag) <= NUMBER_OF_TAGS)
-#define ASSERT_VALID_OBJPTR(objptr) assert(!((long)(objptr) & (0x3)))
+#define ASSERT_TAG(tag) GC_ASSERT((tag) >= 0 && (tag) <= NUMBER_OF_TAGS)
+#define ASSERT_VALID_OBJPTR(objptr) GC_ASSERT(!((long)(objptr) & (0x3)))
 
 /* Generation 0. Generation 0 is a set of very large pages in a list(gc->gen0.pages),
    plus a set of smaller bigpages in a separate list(gc->gen0.big_pages). 

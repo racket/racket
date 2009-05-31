@@ -327,13 +327,12 @@ gc2.@LTO@: \
 		$(srcdir)/immobile_boxes.c \
 		$(srcdir)/../include/scheme.h \
 		$(srcdir)/../include/../sconfig.h \
-		$(srcdir)/../include/../mzconfig.h \
 		$(srcdir)/../include/../uconfig.h \
 		$(srcdir)/../include/../src/stypes.h \
 		$(srcdir)/../include/../src/schexn.h \
 		$(srcdir)/../include/../gc2/gc2.h \
 		$(srcdir)/../include/../src/schemef.h \
-		$(srcdir)/../mzconfig.h \
+		$(builddir)/../mzconfig.h \
 		$(srcdir)/../src/mzrt.h \
 		$(srcdir)/../src/schpriv.h \
 		$(srcdir)/../utils/splay.c \
