@@ -1249,8 +1249,10 @@ static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut
 {
   GC_CAN_IGNORE jit_insn *ref, *reffail;
   long a_word, sz, algn;
+#if defined(MZ_USE_PLACES)
   long a_words[2];
-  
+#endif
+
   sz = GC_compute_alloc_size(amt);
   algn = GC_alloc_alignment();
 
