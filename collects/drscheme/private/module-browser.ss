@@ -321,20 +321,17 @@
              (add-all)]
             [else
              (let ([ht (make-hasheq)])
-               (for-each
-                (λ (snip)
-                  (insert snip)
-                  (let loop ([snip snip])
-                    (unless (hash-ref ht snip (λ () #f))
-                      (hash-set! ht snip #t)
-                      (for-each
-                       (λ (child)
-                         (unless (ormap (λ (key) (send snip is-special-key-child? key child))
-                                        hidden-paths)
-                           (insert child)
-                           (loop child)))
-                       (send snip get-children)))))
-                (get-top-most-snips)))]))
+               (for ([snip (in-list (get-top-most-snips))])
+                 (insert snip)
+                 (let loop ([snip snip])
+                   (unless (hash-ref ht snip #f)
+                     (hash-set! ht snip #t)
+                     (for ([child (in-list (send snip get-children))])
+                       (unless (ormap (λ (key) (send snip is-special-key-child?
+                                                     key child))
+                                      hidden-paths)
+                         (insert child)
+                         (loop child)))))))]))
         
         (define/private (remove-currrently-inserted)
           (let loop ()
@@ -504,14 +501,9 @@
         (field [special-children (make-hasheq)])
         (define/public (is-special-key-child? key child)
           (let ([ht (hash-ref special-children key #f)])
-            (and ht
-                 (hash-ref ht child #f))))
+            (and ht (hash-ref ht child #f))))
         (define/public (add-special-key-child key child)
-          (let ([ht (hash-ref special-children key #f)])
-            (unless ht
-              (set! ht (make-hasheq))
-              (hash-set! special-children key ht))
-            (hash-set! ht child #t)))
+          (hash-set! (hash-ref! special-children key make-hasheq) child #t))
         
         (define/public (get-filename) filename)
         (define/public (get-word) word)
