@@ -952,7 +952,7 @@
 			 (semaphore-post lock))
 			(wrap-evt
 			 (semaphore-peek-evt lock)
-			 (lambda () 0)))))
+			 (lambda (v) 0)))))
 	     void)])
     (test-a-port p (gdelay go) gsync)))
 
