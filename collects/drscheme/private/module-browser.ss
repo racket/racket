@@ -196,7 +196,7 @@
           (render-snips)
           (end-edit-sequence))
         
-        ;; add-connection : string string boolean number -> void
+        ;; add-connection : string string symbol number -> void
         ;; name-original and name-require and the identifiers for those paths and
         ;; original-filename? and require-filename? are booleans indicating if the names
         ;; are filenames.
