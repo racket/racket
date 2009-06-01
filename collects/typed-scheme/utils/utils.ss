@@ -5,7 +5,7 @@ This file is for utilities that are of general interest,
 at least theoretically.
 |#
 
-(require (for-syntax scheme/base stxclass)
+(require (for-syntax scheme/base stxclass scheme/string)
          scheme/contract mzlib/plt-match scheme/require-syntax scheme/provide-syntax
          mzlib/struct scheme/unit
          (except-in stxclass id))
@@ -38,15 +38,15 @@ at least theoretically.
                               (map (lambda (id) 
                                      (datum->syntax 
                                       id
-                                      `(file
-                                        ,(datum->syntax
-                                          #f
-                                          (path->string
-                                           (build-path (collection-path "typed-scheme"
-                                                                        #,(symbol->string (syntax-e #'nm)))
-                                                       (string-append (symbol->string (syntax-e id))
-                                                                      ".ss")))
-                                          id id))
+                                      `(lib
+					,(datum->syntax 
+					  #f
+					  (string-join
+					   (list "typed-scheme" 
+						 (symbol->string (syntax-e #'nm))
+						 (string-append (symbol->string (syntax-e id)) ".ss"))
+					   "/")
+					  id id))
                                       id id))
                                    (syntax->list #'(id ...)))])
                  (syntax-property (syntax/loc stx (combine-in id* ...))
@@ -59,13 +59,15 @@ at least theoretically.
                               (map (lambda (id) 
                                      (datum->syntax 
                                       id
-                                      `(file
-                                        ,(path->string
-                                          (build-path (collection-path "typed-scheme"
-                                                                       #,(symbol->string (syntax-e #'nm)))
-                                                      (string-append (symbol->string (syntax-e id))
-                                                                     ".ss"))))
-                                      id id))
+                                      `(lib
+					,(datum->syntax 
+					  #f
+					  (string-join
+					   (list "typed-scheme" 
+						 (symbol->string (syntax-e #'nm))
+						 (string-append (symbol->string (syntax-e id)) ".ss"))
+					   "/")
+					  id id))))
                                    (syntax->list #'(id ...)))])
                  (syntax/loc stx (combine-out (all-from-out id*) ...)))]))
           (provide nm nm-out)))]))
