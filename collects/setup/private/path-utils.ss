@@ -42,8 +42,10 @@
   (define (try find-base prefix)
     (define rel (path->rel path find-base))
     (and (pair? rel)
-         (let* ([p (cdr (append-map (lambda (p) (list #"/" p)) (cdr rel)))]
-                [p (bytes->string/utf-8 (apply bytes-append p))])
+         (let* ([p (append-map (lambda (p) (list #"/" p)) (cdr rel))]
+                [p (if (null? p)
+                     ""
+                     (bytes->string/utf-8 (apply bytes-append (cdr p))))])
            (if prefix (format "<~a>/~a" prefix p) p))))
   (define (->string) (if (string? path) path (path->string path)))
   (if (not (complete-path? path))
