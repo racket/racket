@@ -101,7 +101,7 @@ static THREAD_LOCAL Scheme_Object *unsealed_dependencies;
 static THREAD_LOCAL Scheme_Hash_Table *id_marks_ht; /* a cache */
 static THREAD_LOCAL Scheme_Hash_Table *than_id_marks_ht; /* a cache */
 
-static Scheme_Bucket_Table *interned_skip_ribs; /* FIXME: shared among threads */
+static THREAD_LOCAL Scheme_Bucket_Table *interned_skip_ribs;
 
 static Scheme_Object *no_nested_inactive_certs;
 
@@ -623,9 +623,6 @@ void scheme_init_stx(Scheme_Env *env)
   REGISTER_SO(empty_hash_table);
   empty_hash_table = scheme_make_hash_table(SCHEME_hash_ptr);
 
-  REGISTER_SO(id_marks_ht);
-  REGISTER_SO(than_id_marks_ht);
-
   REGISTER_SO(no_nested_inactive_certs);
   no_nested_inactive_certs = scheme_make_raw_pair(NULL, NULL);
   SCHEME_SET_IMMUTABLE(no_nested_inactive_certs);
@@ -634,7 +631,11 @@ void scheme_init_stx(Scheme_Env *env)
 
   scheme_install_type_writer(scheme_free_id_info_type, write_free_id_info_prefix);
   scheme_install_type_reader(scheme_free_id_info_type, read_free_id_info_prefix);
+}
 
+void scheme_init_stx_places() {
+  REGISTER_SO(id_marks_ht);
+  REGISTER_SO(than_id_marks_ht);
   REGISTER_SO(interned_skip_ribs);
   interned_skip_ribs = scheme_make_weak_equal_table();
 }
