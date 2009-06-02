@@ -9,7 +9,8 @@
          mrlib/graph
          "drsig.ss"
          scheme/unit
-         scheme/async-channel)
+         scheme/async-channel
+         setup/private/lib-roots)
 
 (define-struct req (filename key))
 ;; type req = (make-req string[filename] (union symbol #f))
@@ -196,7 +197,7 @@
           (render-snips)
           (end-edit-sequence))
         
-        ;; add-connection : string string symbol number -> void
+        ;; add-connection : string string (union symbol #f) number -> void
         ;; name-original and name-require and the identifiers for those paths and
         ;; original-filename? and require-filename? are booleans indicating if the names
         ;; are filenames.
@@ -948,15 +949,13 @@
                        requires)))
          import-assoc))))
   
-  ;; add-connection : string string boolean number -> void
+  ;; add-connection : string string (union symbol #f) number -> void
   ;; name-original and name-require and the identifiers for those paths and
   ;; original-filename? and require-filename? are booleans indicating if the names
   ;; are filenames.
   (define (add-connection name-original name-require req-sym require-depth)
-    (async-channel-put connection-channel (list name-original 
-                                                name-require  
-                                                req-sym
-                                                require-depth)))
+    (async-channel-put connection-channel
+                       (list name-original name-require req-sym require-depth)))
   
   (define (extract-module-name stx)
     (syntax-case stx ()
@@ -965,30 +964,32 @@
             (identifier? (syntax m-name)))
        (format "~a" (syntax->datum (syntax m-name)))]
       [else unknown-module-name]))
-  
-  ;; extract-filenames : (listof (union symbol module-path-index)) string[module-name] ->
-  ;;                     (listof req)
+
+  ;; maps a path to the path of its "library" (see setup/private/lib-roots)
+  (define get-lib-root
+    (let ([t (make-hash)]) ; maps paths to their library roots
+      (lambda (path)
+        (hash-ref! t path (lambda () (path->library-root path))))))
+
+  ;; extract-filenames :
+  ;;   (listof (union symbol module-path-index)) string[module-name]
+  ;;   -> (listof req)
   (define (extract-filenames direct-requires base)
-    (let loop ([direct-requires direct-requires])
-      (cond
-        [(null? direct-requires) null]
-        [else
-         
-         (let ([dr (car direct-requires)])
-           (if (module-path-index? dr)
-               (let ([path (resolve-module-path-index dr base)])
-                 (if (path? path)
-                     (cons (make-req (simplify-path path) (get-key dr))
-                           (loop (cdr direct-requires)))
-                     (loop (cdr direct-requires))))
-               (loop (cdr direct-requires))))])))
-  
-  (define (get-key dr)
+    (define base-lib (get-lib-root base))
+    (for*/list ([dr (in-list direct-requires)]
+                [path (in-value (and (module-path-index? dr)
+                                     (resolve-module-path-index dr base)))]
+                #:when (path? path))
+      (make-req (simplify-path path) (get-key dr base-lib path))))
+
+  (define (get-key dr requiring-libroot required)
     (and (module-path-index? dr)
+         ;; files in the same library => return #f as if the require
+         ;; is a relative one, so any kind of require from the same
+         ;; library is always displayed (regardless of hiding planet
+         ;; or lib links)
+         (not (equal? requiring-libroot (get-lib-root required)))
          (let-values ([(a b) (module-path-index-split dr)])
-           (cond
-             [(symbol? a) 'lib]
-             [(pair? a)
-              (and (symbol? (car a))
-                   (car a))]
-             [else #f])))))
+           (cond [(symbol? a) 'lib]
+                 [(pair? a) (and (symbol? (car a)) (car a))]
+                 [else #f])))))
