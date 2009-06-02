@@ -5180,8 +5180,8 @@ typedef struct Evt {
   int can_redirect;
 } Evt;
 
-static int evts_array_size;
-static Evt **evts;
+static THREAD_LOCAL int evts_array_size;
+static THREAD_LOCAL Evt **evts;
 
 void scheme_add_evt(Scheme_Type type,
 		    Scheme_Ready_Fun ready, 
