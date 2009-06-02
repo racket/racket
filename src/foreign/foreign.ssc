@@ -2083,12 +2083,8 @@ void ctype_printer(Scheme_Object *ctype, int dis, Scheme_Print_Params *pp)
 /*****************************************************************************/
 /* Initialization */
 
-void scheme_init_foreign(Scheme_Env *env)
+void scheme_init_foreign_globals()
 {
-  Scheme_Env *menv;
-  ctype_struct *t;
-  Scheme_Object *s;
-  menv = scheme_primitive_module(scheme_intern_symbol("#%foreign"), env);
   @(maplines (lambda (x)
                @list{@(cadr x)_tag = scheme_make_type("<@(car x)>")})
              (reverse (cstructs)))
@@ -2105,6 +2101,14 @@ void scheme_init_foreign(Scheme_Env *env)
                @list{MZ_REGISTER_STATIC(@(cadr sym));
                      @(cadr sym) = scheme_intern_symbol("@(car sym)")})
              (reverse (symbols)))
+}
+
+void scheme_init_foreign(Scheme_Env *env)
+{
+  Scheme_Env *menv;
+  ctype_struct *t;
+  Scheme_Object *s;
+  menv = scheme_primitive_module(scheme_intern_symbol("#%foreign"), env);
   @(maplines
      (lambda (x)
        (define-values (sname cfun min max) (apply values x))

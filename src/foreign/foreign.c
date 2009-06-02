@@ -2702,7 +2702,6 @@ void scheme_init_foreign_globals()
   GC_register_traversers(ffi_callback_tag, ffi_callback_SIZE, ffi_callback_MARK, ffi_callback_FIXUP, 1, 0);
 # endif /* MZ_PRECISE_GC */
   scheme_set_type_printer(ctype_tag, ctype_printer);
-
   MZ_REGISTER_STATIC(opened_libs);
   opened_libs = scheme_make_hash_table(SCHEME_hash_string);
   MZ_REGISTER_STATIC(default_sym);
