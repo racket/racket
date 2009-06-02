@@ -465,9 +465,6 @@ scheme_init_port (Scheme_Env *env)
 
   exact_symbol = scheme_intern_symbol("exact");
 
-  REGISTER_SO(scheme_orig_stdout_port);
-  REGISTER_SO(scheme_orig_stderr_port);
-  REGISTER_SO(scheme_orig_stdin_port);
 #ifdef MZ_FDS
   REGISTER_SO(fd_input_port_type);
   REGISTER_SO(fd_output_port_type);
@@ -599,6 +596,9 @@ scheme_init_port (Scheme_Env *env)
 
 void scheme_init_port_places(void)
 {
+  REGISTER_SO(scheme_orig_stdout_port);
+  REGISTER_SO(scheme_orig_stderr_port);
+  REGISTER_SO(scheme_orig_stdin_port);
   scheme_orig_stdin_port = (scheme_make_stdin
 			    ? scheme_make_stdin()
 #ifdef USE_OSKIT_CONSOLE
