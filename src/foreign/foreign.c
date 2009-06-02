@@ -2689,12 +2689,8 @@ void ctype_printer(Scheme_Object *ctype, int dis, Scheme_Print_Params *pp)
 /*****************************************************************************/
 /* Initialization */
 
-void scheme_init_foreign(Scheme_Env *env)
+void scheme_init_foreign_globals()
 {
-  Scheme_Env *menv;
-  ctype_struct *t;
-  Scheme_Object *s;
-  menv = scheme_primitive_module(scheme_intern_symbol("#%foreign"), env);
   ffi_lib_tag = scheme_make_type("<ffi-lib>");
   ffi_obj_tag = scheme_make_type("<ffi-obj>");
   ctype_tag = scheme_make_type("<ctype>");
@@ -2706,6 +2702,7 @@ void scheme_init_foreign(Scheme_Env *env)
   GC_register_traversers(ffi_callback_tag, ffi_callback_SIZE, ffi_callback_MARK, ffi_callback_FIXUP, 1, 0);
 # endif /* MZ_PRECISE_GC */
   scheme_set_type_printer(ctype_tag, ctype_printer);
+
   MZ_REGISTER_STATIC(opened_libs);
   opened_libs = scheme_make_hash_table(SCHEME_hash_string);
   MZ_REGISTER_STATIC(default_sym);
@@ -2734,6 +2731,14 @@ void scheme_init_foreign(Scheme_Env *env)
   fail_ok_sym = scheme_intern_symbol("fail-ok");
   MZ_REGISTER_STATIC(abs_sym);
   abs_sym = scheme_intern_symbol("abs");
+}
+
+void scheme_init_foreign(Scheme_Env *env)
+{
+  Scheme_Env *menv;
+  ctype_struct *t;
+  Scheme_Object *s;
+  menv = scheme_primitive_module(scheme_intern_symbol("#%foreign"), env);
   scheme_add_global("ffi-lib?",
     scheme_make_prim_w_arity(foreign_ffi_lib_p, "ffi-lib?", 1, 1), menv);
   scheme_add_global("ffi-lib",

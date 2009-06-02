@@ -333,6 +333,9 @@ Scheme_Env *scheme_engine_instance_init() {
   scheme_init_symbol_table();
   scheme_init_module_path_table();
   scheme_init_type();
+#ifndef DONT_USE_FOREIGN
+  scheme_init_foreign_globals();
+#endif
 
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
   GC_switch_out_master_gc();

@@ -214,6 +214,7 @@ void scheme_init_parameterization(Scheme_Env *env);
 void scheme_init_getenv(void);
 
 #ifndef DONT_USE_FOREIGN
+void scheme_init_foreign_globals();
 void scheme_init_foreign(Scheme_Env *env);
 #endif
 void scheme_init_place(Scheme_Env *env);
