@@ -1039,7 +1039,7 @@ static void do_next_finalization(void *o, void *data)
 
 /* Makes gc2 xformer happy: */
 typedef void (*finalizer_function)(void *p, void *data);
-static int traversers_registered;
+static THREAD_LOCAL int traversers_registered;
 static THREAD_LOCAL Finalizations **save_fns_ptr;
 
 static void add_finalizer(void *v, void (*f)(void*,void*), void *data, 
