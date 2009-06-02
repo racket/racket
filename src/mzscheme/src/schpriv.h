@@ -222,6 +222,8 @@ void scheme_init_place(Scheme_Env *env);
 void scheme_init_print_buffers_places(void);
 void scheme_init_eval_places(void);
 void scheme_init_port_places(void);
+void scheme_init_regexp_places(void);
+
 
 void scheme_free_dynamic_extensions(void);
 

@@ -5545,11 +5545,6 @@ void scheme_regexp_initialize(Scheme_Env *env)
   GC_REG_TRAV(scheme_rt_regwork, mark_regwork);
 #endif
 
-  REGISTER_SO(regparsestr);
-  REGISTER_SO(regstr);
-  REGISTER_SO(regbackknown);
-  REGISTER_SO(regbackdepends);
-  
   GLOBAL_PRIM_W_ARITY("byte-regexp",                           make_regexp,             1, 1, env);
   GLOBAL_PRIM_W_ARITY("regexp",                                make_utf8_regexp,        1, 1, env);
   GLOBAL_PRIM_W_ARITY("byte-pregexp",                          make_pregexp,            1, 1, env);
@@ -5568,4 +5563,12 @@ void scheme_regexp_initialize(Scheme_Env *env)
   GLOBAL_FOLDING_PRIM("byte-regexp?",                          byte_regexp_p,   1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("pregexp?",                              pregexp_p,       1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("byte-pregexp?",                         byte_pregexp_p,  1, 1, 1, env);
+}
+
+void scheme_init_regexp_places()
+{
+  REGISTER_SO(regparsestr);
+  REGISTER_SO(regstr);
+  REGISTER_SO(regbackknown);
+  REGISTER_SO(regbackdepends);
 }
