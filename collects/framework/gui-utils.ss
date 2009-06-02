@@ -407,7 +407,7 @@
    (-> void?)
    (-> void?)
    . -> .
-   void?)
+   (-> void?))
   (delay-time open close)
   @{Use this function to delay an action for some period of time. It also
         supports cancelling the action before the time period elapses. For
