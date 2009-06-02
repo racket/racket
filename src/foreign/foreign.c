@@ -2689,6 +2689,10 @@ void ctype_printer(Scheme_Object *ctype, int dis, Scheme_Print_Params *pp)
 /*****************************************************************************/
 /* Initialization */
 
+/* types need to be initialized before places can spawn
+ * types become entries in the GC mark and fixup tables
+ * this function should initialize read-only globals that can be
+ * shared without locking */
 void scheme_init_foreign_globals()
 {
   ffi_lib_tag = scheme_make_type("<ffi-lib>");
