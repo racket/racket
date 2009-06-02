@@ -173,6 +173,7 @@
                  [(italic) (wrap e "textit" #f)]
                  [(bold) (wrap e "textbf" #f)]
                  [(tt) (wrap e "Scribtexttt" #t)]
+                 [(url) (wrap e "nolinkurl" 'exact)]
                  [(no-break) (super render-element e part ri)]
                  [(sf) (wrap e "textsf" #f)]
                  [(subscript) (wrap e "textsub" #f)]
@@ -187,6 +188,8 @@
                  [(newline) (printf "\\\\")]
                  [else (error 'latex-render
                               "unrecognzied style symbol: ~s" style)])]
+              [(target-url? style)
+               (wrap e (format "href{~a}" (target-url-addr style)) #f)]
               [(string? style)
                (wrap e style (regexp-match? #px"^scheme(?!error)" style))]
               [(and (pair? style) (memq (car style) '(bg-color color)))
@@ -439,50 +442,52 @@
       null)
 
     (define/private (display-protected s)
-      (let ([len (string-length s)])
-        (let loop ([i 0])
-          (unless (= i len)
-            (let ([c (string-ref s i)])
-              (display
-               (case c
-                 [(#\\) (if (rendering-tt)
-                            "{\\char`\\\\}"
-                            "$\\backslash$")]
-                 [(#\_) (if (rendering-tt)
-                            "{\\char`\\_}"
-                            "$\\_$")]
-                 [(#\^) "{\\char'136}"]
-                 [(#\>) (if (rendering-tt) "{\\texttt >}" "$>$")]
-                 [(#\<) (if (rendering-tt) "{\\texttt <}" "$<$")]
-                 [(#\|) (if (rendering-tt) "{\\texttt |}" "$|$")]
-                 [(#\? #\! #\. #\:)
-                  (if (rendering-tt) (format "{\\hbox{\\texttt{~a}}}" c) c)]
-                 [(#\~) "$\\sim$"]
-                 [(#\{ #\}) (if (rendering-tt)
-                                (format "{\\char`\\~a}" c)
-                                (format "\\~a" c))]
-                 [(#\# #\% #\& #\$) (format "\\~a" c)]
-                 [(#\uA0) "~"]
-                 [(#\uDF) "{\\ss}"]
-                 [(#\u039A) "K"] ; kappa
-                 [(#\u0391) "A"] ; alpha
-                 [(#\u039F) "O"] ; omicron
-                 [(#\u03A3) "$\\Sigma$"]
-                 [(#\u03BA) "$\\kappa$"]
-                 [(#\u03B1) "$\\alpha$"]
-                 [(#\u03B2) "$\\beta$"]
-                 [(#\u03B3) "$\\gamma$"]
-                 [(#\u03BF) "o"] ; omicron
-                 [(#\u03C3) "$\\sigma$"]
-                 [(#\u03C2) "$\\varsigma$"]
-                 [(#\u03BB) "$\\lambda$"]
-                 [(#\u039B) "$\\Lambda$"]
-                 [(#\u03BC) "$\\mu$"]
-                 [(#\u03C0) "$\\pi$"]
-                 [(#\∞) "$\\infty$"]
-                 [(#\à) "\\`{a}"]
-                 [else c])))
-            (loop (add1 i))))))
+      (if (eq? (rendering-tt) 'exact)
+          (display s)
+          (let ([len (string-length s)])
+            (let loop ([i 0])
+              (unless (= i len)
+                (let ([c (string-ref s i)])
+                  (display
+                   (case c
+                     [(#\\) (if (rendering-tt)
+                                "{\\char`\\\\}"
+                                "$\\backslash$")]
+                     [(#\_) (if (rendering-tt)
+                                "{\\char`\\_}"
+                                "$\\_$")]
+                     [(#\^) "{\\char'136}"]
+                     [(#\>) (if (rendering-tt) "{\\texttt >}" "$>$")]
+                     [(#\<) (if (rendering-tt) "{\\texttt <}" "$<$")]
+                     [(#\|) (if (rendering-tt) "{\\texttt |}" "$|$")]
+                     [(#\? #\! #\. #\:)
+                      (if (rendering-tt) (format "{\\hbox{\\texttt{~a}}}" c) c)]
+                     [(#\~) "$\\sim$"]
+                     [(#\{ #\}) (if (rendering-tt)
+                                    (format "{\\char`\\~a}" c)
+                                    (format "\\~a" c))]
+                     [(#\# #\% #\& #\$) (format "\\~a" c)]
+                     [(#\uA0) "~"]
+                     [(#\uDF) "{\\ss}"]
+                     [(#\u039A) "K"] ; kappa
+                     [(#\u0391) "A"] ; alpha
+                     [(#\u039F) "O"] ; omicron
+                     [(#\u03A3) "$\\Sigma$"]
+                     [(#\u03BA) "$\\kappa$"]
+                     [(#\u03B1) "$\\alpha$"]
+                     [(#\u03B2) "$\\beta$"]
+                     [(#\u03B3) "$\\gamma$"]
+                     [(#\u03BF) "o"] ; omicron
+                     [(#\u03C3) "$\\sigma$"]
+                     [(#\u03C2) "$\\varsigma$"]
+                     [(#\u03BB) "$\\lambda$"]
+                     [(#\u039B) "$\\Lambda$"]
+                     [(#\u03BC) "$\\mu$"]
+                     [(#\u03C0) "$\\pi$"]
+                     [(#\∞) "$\\infty$"]
+                     [(#\à) "\\`{a}"]
+                     [else c])))
+                (loop (add1 i)))))))
 
     ;; ----------------------------------------
 

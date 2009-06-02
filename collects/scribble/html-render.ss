@@ -979,6 +979,7 @@
              [(italic) (render* 'i)]
              [(bold) (render* 'b)]
              [(tt) (render* '([class "stt"]))]
+             [(url) (render* '([class "url"]))]
              [(no-break) (render* '([class "nobreak"]))]
              [(sf) `((b ,@(render* '(font ([size "-1"] [face "Helvetica"])))))]
              [(subscript) (render* 'sub)]

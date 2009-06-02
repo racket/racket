@@ -502,7 +502,7 @@ The @scheme[style] field is normally either
        a macro name for Latex output (see @secref["extra-style"]);}
 
  @item{one of the symbols that all renderers recognize: @scheme['tt],
-       @scheme['italic], @scheme['bold], @scheme['sf],
+       @scheme['italic], @scheme['bold], @scheme['sf], @scheme['url],
        @scheme['subscript], @scheme['superscript], @scheme['hspace],
        or @scheme['newline] (which renders a line break independent of
        the @scheme[content]);}

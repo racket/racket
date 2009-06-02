@@ -148,7 +148,7 @@ Provided @scheme[for-syntax]; returns @scheme[#t] if @scheme[v] is an
 @defproc[(make-variable-id [sym (or/c symbol? identifier?)])
          variable-id?]{
 
-Provided @scheme[for-syntax]; like @scheme[element-id-transformer] for
+Provided @scheme[for-syntax]; like @scheme[make-element-id-transformer] for
 a transformer that produces @scheme[sym] typeset as a variable (like
 @scheme[schemevarfont])---unless it appears under quote or quasiquote,
 in which case @scheme[sym] is typeset as a symbol.}
