@@ -1,6 +1,6 @@
 
 (module init scheme/gui
-  (require (only-in scheme/init))
+  (require scheme/init)
 
   (current-load text-editor-load-handler)
 
