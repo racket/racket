@@ -9,7 +9,7 @@
 #endif
 typedef struct objhead {
 # ifdef MZ_USE_PLACES
-  unsigned long filler;
+  unsigned long owner;
 #endif
   unsigned long hash      : ((8 * sizeof(unsigned long)) - (4+3+LOG_APAGE_SIZE) );
   /* the type and size of the object */

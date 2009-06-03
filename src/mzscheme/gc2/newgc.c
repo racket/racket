@@ -81,15 +81,20 @@ static const char *type_name[PAGE_TYPES] = {
 
 
 #include "newgc.h"
+#ifdef MZ_USE_PLACES
 static NewGC *MASTERGC;
+static NewGCMasterInfo *MASTERGCINFO;
+#endif
 static THREAD_LOCAL NewGC *GC;
 #define GCTYPE NewGC
 #define GC_get_GC() (GC)
 #define GC_set_GC(gc) (GC = gc)
 
+#ifdef MZ_USE_PLACES
 inline static int is_master_gc(NewGC *gc) {
   return (MASTERGC == gc);
 }
+#endif
 
 #include "msgprint.c"
 
@@ -1587,18 +1592,46 @@ void GC_write_barrier(void *p)
 
 #include "sighand.c"
 
-void NewGC_initialize(NewGC *newgc, NewGC *parentgc) {
+#ifdef MZ_USE_PLACES
+static void NewGCMasterInfo_initialize() {
+  MASTERGCINFO = ofm_malloc_zero(sizeof(NewGCMasterInfo));
+  mzrt_rwlock_create(&MASTERGCINFO->cangc);
+}
+
+static void NewGCMasterInfo_cleanup() {
+  mzrt_rwlock_destroy(MASTERGCINFO->cangc);
+  free(MASTERGCINFO);
+  MASTERGCINFO = NULL;
+}
+
+static void NewGCMasterInfo_get_next_id(NewGC *newgc) {
+  /* this could just be an atomic op if we had those */
+  /* waiting for other threads to finish a possible concurrent GC is not optimal*/
+  mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
+  newgc->objhead_template.owner     = MASTERGCINFO->next_GC_id++;
+  mzrt_rwlock_unlock(MASTERGCINFO->cangc);
+}
+#endif
+
+static void NewGC_initialize(NewGC *newgc, NewGC *parentgc) {
   if (parentgc) {
     newgc->mark_table  = parentgc->mark_table;
     newgc->fixup_table = parentgc->fixup_table;
   }
   else {
+#ifdef MZ_USE_PLACES
+    NewGCMasterInfo_initialize();
+#endif
     newgc->mark_table  = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Mark_Proc)); 
     newgc->fixup_table = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Fixup_Proc)); 
-# ifdef NEWGC_BTC_ACCOUNT
+#ifdef NEWGC_BTC_ACCOUNT
     BTC_initialize_mark_table(newgc);
 #endif
   }
+
+#ifdef MZ_USE_PLACES
+  NewGCMasterInfo_get_next_id(newgc);
+#endif
 
   mark_stack_initialize();
 
@@ -1673,11 +1706,13 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
   }
 }
 
+#ifdef MZ_USE_PLACES
 void GC_construct_child_gc() {
   NewGC *gc = MASTERGC;
   NewGC *newgc = init_type_tags_worker(gc, 0, 0, 0, gc->weak_box_tag, gc->ephemeron_tag, gc->weak_array_tag, gc->cust_box_tag);
   newgc->primoridal_gc = MASTERGC;
 }
+#endif
 
 static inline void save_globals_to_gc(NewGC *gc) {
   gc->saved_mark_stack              = mark_stack;
@@ -1693,6 +1728,7 @@ static inline void restore_globals_from_gc(NewGC *gc) {
   GC_gen0_alloc_page_end  = gc->saved_GC_gen0_alloc_page_end;
 }
 
+#ifdef MZ_USE_PLACES
 void GC_switch_out_master_gc() {
   static int initialized = 0;
 
@@ -1713,6 +1749,7 @@ void GC_switch_in_master_gc() {
   GC_set_GC(MASTERGC);
   restore_globals_from_gc(MASTERGC);
 }
+#endif
 
 void GC_gcollect(void)
 {
@@ -3002,7 +3039,9 @@ static void garbage_collect(NewGC *gc, int force_full)
   mark_roots(gc);
   mark_immobiles(gc);
   TIME_STEP("rooted");
+#ifdef MZ_USE_PLACES
   if (!is_master_gc(gc))
+#endif
     GC_mark_variable_stack(GC_variable_stack, 0, get_stack_base(gc), NULL);
 
   TIME_STEP("stacked");
@@ -3060,7 +3099,9 @@ static void garbage_collect(NewGC *gc, int force_full)
   repair_weak_finalizer_structs(gc);
   repair_roots(gc);
   repair_immobiles(gc);
+#ifdef MZ_USE_PLACES
   if (!is_master_gc(gc))
+#endif
     GC_fixup_variable_stack(GC_variable_stack, 0, get_stack_base(gc), NULL);
   TIME_STEP("reparied roots");
   repair_heap(gc);

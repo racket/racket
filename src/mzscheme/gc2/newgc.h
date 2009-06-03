@@ -85,6 +85,12 @@ typedef struct Page_Range {
   unsigned long range_alloc_used;
 } Page_Range;
 
+#ifdef MZ_USE_PLACES
+typedef struct NewGCMasterInfo {
+  unsigned short next_GC_id;
+  mzrt_rwlock *cangc;
+} NewGCMasterInfo;
+#endif
 
 #ifdef SIXTY_FOUR_BIT_INTEGERS
 typedef mpage ****PageMap;
@@ -147,6 +153,11 @@ typedef struct NewGC {
   unsigned int owner_table_size;
   AccountHook *hooks;
 
+  /* Distributed GC over places info */
+#ifdef MZ_USE_PLACES
+  objhead objhead_template;
+  unsigned short id;
+#endif
 
   unsigned long number_of_gc_runs;
   unsigned int since_last_full;
