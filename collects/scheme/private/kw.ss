@@ -98,7 +98,7 @@
     (make-struct-type 'procedure
                       struct:okp
                       0 0 #f))
-  
+
   ;; Constructor generator for a procedure with a required keyword.
   ;; (This is used with lift-expression, so that the same constructor
   ;;  is used for each evaluation of a keyword lambda.)
@@ -790,32 +790,34 @@
                                              ""))])
                        (apply
                         raise-type-error 'x "x" 0 'x
-                        (append args (apply append (map list kws kw-args))))))])
+                        (append args (apply append (map list kws kw-args))))))]
+                  [proc-name (lambda (p) (or (and (keyword-procedure? p)
+                                                  (substring (symbol->string (object-name p)) 10)) ; strip "procedure:"
+                                             (object-name p)
+                                             p))])
               (raise
                (make-exn:fail:contract
                 (if extra-kw
                   (if (keyword-procedure? p)
                     (format
                      (string-append
-                      "procedure application: procedure: ~e;"
-                      " does not expect an argument with keyword ~a; ~a")
-                     p extra-kw args-str)
+                      "~a: does not expect an argument with keyword ~a; ~a")
+                     (proc-name p) extra-kw args-str)
                     (format
                      (string-append
-                      "procedure application: expected a procedure that"
-                      " accepts keyword arguments, given ~e; ~a")
-                     p args-str))
+                      "~a: does not accept keyword arguments; ~a")
+                     (proc-name p) args-str))
                   (if missing-kw
                     (format
                      (string-append
-                      "procedure application: procedure: ~e; requires"
-                      " an argument with keyword ~a, not supplied; ~a")
-                     p missing-kw args-str)
+                      "~a: requires an argument with keyword ~a, not supplied; ~a")
+                     (proc-name p) missing-kw args-str)
                     (format
                      (string-append
-                      "procedure application: no case matching ~a non-keyword"
+                      "~a: no case matching ~a non-keyword"
                       " argument~a for: ~e; ~a")
-                     (- n 2) (if (= 1 (- n 2)) "" "s") p args-str)))
+                     (proc-name p)
+                     (- n 2) (if (= 1 (- n 2)) "" "s") args-str)))
                 (current-continuation-marks)))))))))
   (define (keyword-procedure-extract kws n p)
     (keyword-procedure-extract/method kws n p 0))
