@@ -676,11 +676,11 @@
                                     [(or (and (eq? bias 'start) (fw . > . iw))
                                          (and (fw . < . iw) (localx . < . x))
                                          (and (fw . > . iw) (not (eq? bias 'end)) (localx . < . x)))
-                                     (quotient localx hpixels-per-scroll)]
+                                     (->long (/ localx hpixels-per-scroll))]
                                     [(or (and (eq? bias 'end) (fw . > . iw))
                                          (and (fw . < . iw) ((+ x iw) . < . (+ localx fw)))
                                          (and (fw . > . iw) (not (eq? bias 'start)) ((+ localx fw) . > . (+ x iw))))
-                                     (+ (quotient (+ localx (- fw iw)) hpixels-per-scroll) 1)]
+                                     (+ (->long (/ (+ localx (- fw iw)) hpixels-per-scroll)) 1)]
                                     [else cx])
                                    0)
                                cx)])
@@ -773,7 +773,7 @@
                                                                        (if (modulo tw hpixels-per-scroll)
                                                                            (+ tw (- hpixels-per-scroll (modulo tw hpixels-per-scroll)))
                                                                            tw)])
-                                                                  (values (quotient tw hpixels-per-scroll)
+                                                                  (values (->long (/ tw hpixels-per-scroll))
                                                                           given-h-scrolls-per-page)))
                                                               (values 0 1))])
 
