@@ -79,7 +79,7 @@
           (let ([no-number? (and (pair? number) 
                                  (or (not (car number))
                                      ((length number) . > . 3)))])
-            (printf "\\~a~a~a"
+            (printf "\n\n\\~a~a~a"
                     (case (length number)
                       [(0 1) "sectionNewpage\n\n\\section"]
                       [(2) "subsection"]
@@ -306,7 +306,7 @@
                                                     (car flowss)))))))
                        (if boxed? 
                            (if (equal? tableform "bigtabular")
-                               (format "~a \\endfirsthead\n" boxline)
+                               (format "~a \\SEndFirstHead\n" boxline)
                                (format "\\multicolumn{~a}{@{}l@{}}{~a} \\\\\n" 
                                        (length (car flowss))
                                        boxline))

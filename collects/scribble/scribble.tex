@@ -3,7 +3,7 @@
 \usepackage{graphicx}
 \usepackage{hyperref}
 \renewcommand{\rmdefault}{ptm}
-\usepackage{longtable}
+\usepackage{stabular}
 \usepackage{relsize}
 \usepackage[htt]{hyphenat}
 \usepackage[usenames,dvipsnames]{color}
@@ -77,7 +77,14 @@
 
 \newcommand{\bibentry}[1]{\parbox[t]{0.8\linewidth}{#1}}
 
-\newenvironment{bigtabular}{\begin{longtable}}{\end{longtable}\vspace{-3ex}}
+\renewcommand{\Scribtexttt}[1]{{\texttt{\textbf{#1}}}}
+
+\newenvironment{bigtabular}{\vspace{0ex}
+
+\begin{stabular}}{\end{stabular}
+
+\vspace{0ex}}
+\newcommand{\SEndFirstHead}[0]{ \nopagebreak \\ }
 
 \newenvironment{schemeblock}{}{}
 \newenvironment{defmodule}{}{}
