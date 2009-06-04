@@ -123,6 +123,8 @@ END
      (test-xexpr? (make-comment "Comment!"))
      (test-xexpr? (make-pcdata #f #f "quoted <b>"))
      
+     (test-not-xexpr? (list 'a (list (list 'href)) "content"))
+     
      (test-not-xexpr? +)
      (test-not-xexpr? #f))
     

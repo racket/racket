@@ -26,11 +26,11 @@
         comment? p-i? cdata? pcdata?))
 
 #;(define xexpr/c
-  (flat-rec-contract xexpr
-    xexpr-datum/c
-    (cons/c symbol?
-            (or/c (cons/c (listof (list/c symbol? string?)) (listof xexpr))
-                  (listof xexpr)))))
+    (flat-rec-contract xexpr
+                       xexpr-datum/c
+                       (cons/c symbol?
+                               (or/c (cons/c (listof (list/c symbol? string?)) (listof xexpr))
+                                     (listof xexpr)))))
 
 (define xexpr/c 
   (make-proj-contract
@@ -129,13 +129,18 @@
 ;; True if the list is a list of String,Symbol pairs.
 (define (attribute-symbol-string? attr true false)
   (if (symbol? (car attr))
-      (if (or (string? (cadr attr))
-              (permissive?))
-          (true)
+      (if (pair? (cdr attr))
+          (if (or (string? (cadr attr))
+                  (permissive?))
+              (true)
+              (false (make-exn:invalid-xexpr
+                      (format "Expected a string, given ~a" (cadr attr))
+                      (current-continuation-marks)
+                      (cadr attr))))
           (false (make-exn:invalid-xexpr
-                  (format "Expected a string, given ~a" (cadr attr))
+                  (format "Expected an attribute value string for attribute ~a" attr)
                   (current-continuation-marks)
-                  (cadr attr))))
+                  attr)))
       (false (make-exn:invalid-xexpr
               (format "Expected a symbol, given ~a" (car attr))
               (current-continuation-marks)

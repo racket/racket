@@ -23,13 +23,17 @@
                            (make-exn:pretty
                             (exn-message exn)
                             marks
-                            `(span ,(drop-after "Context:\n" (exn-message exn))
+                            `(span ,(drop-after "Context:\n" (exn-message exn)) "\n"
                                    ,(make-cdata #f #f (format-xexpr/errors val))))))])
          (contract xexpr/c val pos neg src-info))))
    (lambda (v) #t)))
 
 (define (drop-after delim str)
-  (substring str 0 (cdr (first (regexp-match-positions (regexp-quote delim) str)))))
+  (match (regexp-match-positions (regexp-quote delim) str)
+    [(list-rest (list-rest start end) _rst)
+     (substring str 0 end)]
+    [_
+     str]))
 
 ; Formating Xexprs
 (define (format-xexpr/errors v)
