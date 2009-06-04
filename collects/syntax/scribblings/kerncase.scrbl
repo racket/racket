@@ -53,7 +53,7 @@ Generalizes @scheme[kernel-syntax-case*] to work at an arbitrary phase
 level, as indicated by @scheme[phase-expr].}
 
 
-@defproc[(kernel-form-identifier-list) (listof indentifier?)]{
+@defproc[(kernel-form-identifier-list) (listof identifier?)]{
 
 Returns a list of identifiers that are bound normally,
 @scheme[for-syntax], and @scheme[for-template] to the primitive PLT

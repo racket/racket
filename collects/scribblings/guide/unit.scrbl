@@ -381,7 +381,7 @@ To link a unit from @scheme[toy-store@-maker], we can use the
 
 This @scheme[compound-unit] form packs a lot of information into one
 place. The left-hand-side @scheme[TF] and @scheme[TS] in the
-@scheme[link] clause are binding indentifiers. The identifier
+@scheme[link] clause are binding identifiers. The identifier
 @scheme[TF] is essentially bound to the elements of
 @scheme[toy-factory^] as implemented by
 @scheme[store-specific-factory@].  The identifier @scheme[TS] is
