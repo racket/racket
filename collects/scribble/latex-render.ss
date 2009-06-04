@@ -252,10 +252,9 @@
              [index? (eq? 'index (table-style t))]
              [tableform
               (cond [index? "list"]
-                    [(and (not (current-table-mode)) (not inline-table?))
-                     "bigtabular"]
+                    [(not (current-table-mode)) "bigtabular"]
                     [else "tabular"])]
-             [opt (cond [(equal? tableform "bigtabular") "[l]"]
+             [opt (cond [(equal? tableform "bigtabular") ""]
                         [(equal? tableform "tabular") "[t]"]
                         [else ""])]
              [flowss (if index? (cddr (table-flowss t)) (table-flowss t))]
@@ -285,12 +284,18 @@
               [index? (printf "\\begin{list}{}{\\parsep=0pt \\itemsep=1pt \\leftmargin=2ex \\itemindent=-2ex}\n")]
               [inline? (void)]
               [else
-               (printf "~a\\begin{~a}~a{@{}~a}\n~a"
+               (printf "~a~a\\begin{~a}~a{@{~a}~a}\n~a"
+                       (if (and inline-table? (equal? tableform "bigtabular"))
+                           "\\bigtableinlinecorrect"
+                           "")
                        (if (string? (table-style t))
                            (format "\\begin{~a}" (table-style t))
                            "")
                        tableform
                        opt
+                       (if (equal? tableform "bigtabular")
+                           "\\bigtableleftpad"
+                           "")
                        (string-append*
                         (map (lambda (i align)
                                (format "~a@{}"
@@ -397,7 +402,7 @@
                                 (eq? (styled-itemization-style t) 'ordered))
                            "enumerate"
                            "itemize"))])
-        (printf "\\begin{~a}" mode)
+        (printf "\\begin{~a}\\atItemizeStart" mode)
         (for ([flow (itemization-flows t)])
           (printf "\n\n\\~a" (if style-str
                                   (format "~aItem{" style-str)
@@ -469,24 +474,152 @@
                      [(#\# #\% #\& #\$) (format "\\~a" c)]
                      [(#\uA0) "~"]
                      [(#\uDF) "{\\ss}"]
-                     [(#\u039A) "K"] ; kappa
-                     [(#\u0391) "A"] ; alpha
-                     [(#\u039F) "O"] ; omicron
-                     [(#\u03A3) "$\\Sigma$"]
-                     [(#\u03BA) "$\\kappa$"]
-                     [(#\u03B1) "$\\alpha$"]
-                     [(#\u03B2) "$\\beta$"]
-                     [(#\u03B3) "$\\gamma$"]
-                     [(#\u03BF) "o"] ; omicron
-                     [(#\u03C3) "$\\sigma$"]
-                     [(#\u03C2) "$\\varsigma$"]
-                     [(#\u03BB) "$\\lambda$"]
-                     [(#\u039B) "$\\Lambda$"]
-                     [(#\u03BC) "$\\mu$"]
-                     [(#\u03C0) "$\\pi$"]
-                     [(#\∞) "$\\infty$"]
-                     [(#\à) "\\`{a}"]
-                     [else c])))
+                     [else
+                      (if ((char->integer c) . > . 127)
+                          (case c
+                            [(#\u039A) "K"] ; kappa
+                            [(#\u0391) "A"] ; alpha
+                            [(#\u039F) "O"] ; omicron
+                            [(#\u03A3) "$\\Sigma$"]
+                            [(#\u03BA) "$\\kappa$"]
+                            [(#\u03B1) "$\\alpha$"]
+                            [(#\u03B2) "$\\beta$"]
+                            [(#\u03B3) "$\\gamma$"]
+                            [(#\u03BF) "o"] ; omicron
+                            [(#\u03C3) "$\\sigma$"]
+                            [(#\u03C2) "$\\varsigma$"]
+                            [(#\u03BB) "$\\lambda$"]
+                            [(#\u039B) "$\\Lambda$"]
+                            [(#\u03BC) "$\\mu$"]
+                            [(#\u03C0) "$\\pi$"]
+                            [(#\∞) "$\\infty$"]
+                            [(#\⇓) "$\\Downarrow$"]
+                            [(#\↖) "$\\nwarrow$"]
+                            [(#\↓) "$\\downarrow$"]
+                            [(#\⇒) "$\\Rightarrow$"]
+                            [(#\→) "$\\rightarrow$"]
+                            [(#\↘) "$\\searrow$"]
+                            [(#\↙) "$\\swarrow$"]
+                            [(#\←) "$\\leftarrow$"]
+                            [(#\↑) "$\\uparrow$"]
+                            [(#\⇐) "$\\Leftarrow$"]
+                            [(#\−) "$\\longrightarrow$"]
+                            [(#\⇑) "$\\Uparrow$"]
+                            [(#\⇔) "$\\Leftrightarrow$"]
+                            [(#\↕) "$\\updownarrow$"]
+                            [(#\↔) "$\\leftrightarrow$"]
+                            [(#\↗) "$\\nearrow$"]
+                            [(#\⇕) "$\\Updownarrow$"]
+                            [(#\א) "$\\aleph$"]
+                            [(#\′) "$\\prime$"]
+                            [(#\∅) "$\\emptyset$"]
+                            [(#\∇) "$\\nabla$"]
+                            [(#\♦) "$\\diamondsuit$"]
+                            [(#\♠) "$\\spadesuit$"]
+                            [(#\♣) "$\\clubsuit$"]
+                            [(#\♥) "$\\heartsuit$"]
+                            [(#\♯) "$\\sharp$"]
+                            [(#\♭) "$\\flat$"]
+                            [(#\♮) "$\\natural$"]
+                            [(#\√) "$\\surd$"]
+                            [(#\¬) "$\\neg$"]
+                            [(#\△) "$\\triangle$"]
+                            [(#\∀) "$\\forall$"]
+                            [(#\∃) "$\\exists$"]
+                            [(#\∘) "$\\circ$"]
+                            [(#\θ) "$\\theta$"]
+                            [(#\τ) "$\\tau$"]
+                            [(#\υ) "$\\upsilon$"]
+                            [(#\φ) "$\\phi$"]
+                            [(#\δ) "$\\delta$"]
+                            [(#\ρ) "$\\rho$"]
+                            [(#\ε) "$\\epsilon$"]
+                            [(#\χ) "$\\chi$"]
+                            [(#\ψ) "$\\psi$"]
+                            [(#\ζ) "$\\zeta$"]
+                            [(#\ν) "$\\nu$"]
+                            [(#\ω) "$\\omega$"]
+                            [(#\η) "$\\eta$"]
+                            [(#\ξ) "$\\xi$"]
+                            [(#\Γ) "$\\Gamma$"]
+                            [(#\Ψ) "$\\Psi$"]
+                            [(#\∆) "$\\Delta$"]
+                            [(#\Ξ) "$\\Xi$"]
+                            [(#\Υ) "$\\Upsilon$"]
+                            [(#\Ω) "$\\Omega$"]
+                            [(#\Θ) "$\\Theta$"]
+                            [(#\Π) "$\\Pi$"]
+                            [(#\Φ) "$\\Phi$"]
+                            [(#\±) "$\\pm$"]
+                            [(#\∩) "$\\cap$"]
+                            [(#\◇) "$\\diamond$"]
+                            [(#\⊕) "$\\oplus$"]
+                            [(#\∓) "$\\mp$"]
+                            [(#\∪) "$\\cup$"]
+                            [(#\△) "$\\bigtriangleup$"]
+                            [(#\⊖) "$\\ominus$"]
+                            [(#\×) "$\\times$"]
+                            [(#\⊎) "$\\uplus$"]
+                            [(#\▽) "$\\bigtriangledown$"]
+                            [(#\⊗) "$\\otimes$"]
+                            [(#\÷) "$\\div$"]
+                            [(#\⊓) "$\\sqcap$"]
+                            [(#\▹) "$\\triangleleft$"]
+                            [(#\⊘) "$\\oslash$"]
+                            [(#\∗) "$\\ast$"]
+                            [(#\⊔) "$\\sqcup$"]
+                            [(#\∨) "$\\vee$"]
+                            [(#\∧) "$\\wedge$"]
+                            [(#\◃) "$\\triangleright$"]
+                            [(#\⊙) "$\\odot$"]
+                            [(#\★) "$\\star$"]
+                            [(#\†) "$\\dagger$"]
+                            [(#\•) "$\\bullet$"]
+                            [(#\‡) "$\\ddagger$"]
+                            [(#\≀) "$\\wr$"]
+                            [(#\⨿) "$\\amalg$"]
+                            [(#\≤) "$\\leq$"]
+                            [(#\≥) "$\\geq$"]
+                            [(#\≡) "$\\equiv$"]
+                            [(#\⊨) "$\\models$"]
+                            [(#\≺) "$\\prec$"]
+                            [(#\≻) "$\\succ$"]
+                            [(#\∼) "$\\sim$"]
+                            [(#\⊥) "$\\perp$"]
+                            [(#\≼) "$\\preceq$"]
+                            [(#\≽) "$\\succeq$"]
+                            [(#\≃) "$\\simeq$"]
+                            [(#\≪) "$\\ll$"]
+                            [(#\≫) "$\\gg$"]
+                            [(#\≍) "$\\asymp$"]
+                            [(#\∥) "$\\parallel$"]
+                            [(#\⊂) "$\\subset$"]
+                            [(#\⊃) "$\\supset$"]
+                            [(#\≈) "$\\approx$"]
+                            [(#\⋈) "$\\bowtie$"]
+                            [(#\⊆) "$\\subseteq$"]
+                            [(#\⊇) "$\\supseteq$"]
+                            [(#\≌) "$\\cong$"]
+                            [(#\⊏) "$\\sqsubset$"]
+                            [(#\⊐) "$\\sqsupset$"]
+                            [(#\≠) "$\\neq$"]
+                            [(#\⌣) "$\\smile$"]
+                            [(#\⊑) "$\\sqsubseteq$"]
+                            [(#\⊒) "$\\sqsupseteq$"]
+                            [(#\≐) "$\\doteq$"]
+                            [(#\⌢) "$\\frown$"]
+                            [(#\∈) "$\\in$"]
+                            [(#\∋) "$\\ni$"]
+                            [(#\∝) "$\\propto$"]
+                            [(#\⊢) "$\\vdash$"]
+                            [(#\⊣) "$\\dashv$"]    
+                            [(#\☠) "$\\skull$"] 
+                            [(#\☺) "$\\smiley$"]
+                            [(#\☻) "$\\blacksmiley$"]
+                            [(#\☹) "$\\frownie$"]
+                            [(#\à) "\\`{a}"]
+                            [else c])
+                          c)])))
                 (loop (add1 i)))))))
 
     ;; ----------------------------------------

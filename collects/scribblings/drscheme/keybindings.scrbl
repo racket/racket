@@ -184,8 +184,8 @@ These are the currently supported macro names and the keys they map into:
 	 (let ([macro (list-ref line 0)]
 	       [char (list-ref line 1)])
 	   (list (make-flow (list (make-paragraph (list (index (format "\\~a keyboard shortcut" macro))
-							(tt (format "\\~a" macro))))))
-		 (make-flow (list (make-paragraph (list char)))))))
+							(tt (format " \\~a" macro))))))
+		 (make-flow (list (make-paragraph (list (hspace 1) char)))))))
        tex-shortcut-table))
 }
 ]

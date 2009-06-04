@@ -5,6 +5,8 @@
 \renewcommand{\rmdefault}{ptm}
 \usepackage{stabular}
 \usepackage{relsize}
+\usepackage{wasysym}
+\usepackage{skull}
 \usepackage[htt]{hyphenat}
 \usepackage[usenames,dvipsnames]{color}
 \hypersetup{bookmarks=true,bookmarksopen=true,bookmarksnumbered=true}
@@ -77,12 +79,21 @@
 
 \newcommand{\bibentry}[1]{\parbox[t]{0.8\linewidth}{#1}}
 
-\newenvironment{bigtabular}{\vspace{0ex}
-
-\begin{stabular}}{\end{stabular}
-
-\vspace{0ex}}
+% stabular seems to be the lesser of all page-breaking table evironments
+\newenvironment{bigtabular}{\begin{stabular}}{\end{stabular}}
+% used to keep the horizontal line for a definition on the same page:
 \newcommand{\SEndFirstHead}[0]{ \nopagebreak \\ }
+% attempts to correct weirdness when a table is the first thing in
+%  an itemization:
+\newcommand{\bigtableinlinecorrect}[0]{~
+
+\vspace{-\baselineskip}\vspace{\parskip}}
+% used to indent the table correctly in an itemization, since that's
+% one of the things stabular gets wrong
+\newlength{\stabLeft}
+\newcommand{\bigtableleftpad}{\hspace{\stabLeft}}
+\newcommand{\atItemizeStart}[0]{\addtolength{\stabLeft}{\labelsep}
+                                \addtolength{\stabLeft}{\labelwidth}}
 
 \newenvironment{schemeblock}{}{}
 \newenvironment{defmodule}{}{}

@@ -16,7 +16,7 @@
 The DrScheme window has three parts: a row of buttons at the top, two
 editing panels in the middle, and a status line at the bottom.
 
-@image["example.png"]
+@centerline{@image[#:scale 0.7 "example.png"]}
 
 The top editing panel, called the @deftech{definitions window}, is for
 defining programs. The above figure shows a program that defines the
@@ -404,7 +404,7 @@ expressions and results. For example, evaluating
 
 in the interactions window produces a special box for entering input:
 
-@image["io.png"]
+@centerline{@image[#:scale 0.6 "io.png"]}
 
 Type a number into the box and hit Enter, and that number becomes the
 result of the @scheme[(read)] expression. Once text is submitted for
@@ -686,7 +686,7 @@ execution is currently paused.  The expression's return value is
 displayed at the left of the button bar, and the value of @scheme[n]
 is displayed in the stack view pane.
 
-@image["debugger1.png"]
+@centerline{@image[#:scale 0.5 "debugger1.png"]}
 
 @subsection{Debugging Multiple Files}
 
