@@ -116,7 +116,7 @@ on the next character or characters in the input stream as follows:
 
   @dispatch[@litchar{#|}]{starts a block comment; see @secref["parse-comment"]}
   @dispatch[@litchar{#;}]{starts an S-expression comment; see @secref["parse-comment"]}
-  @dispatch[@litchar{#,}]{starts a syntax quote; see @secref["parse-quote"]}
+  @dispatch[@litchar{#'}]{starts a syntax quote; see @secref["parse-quote"]}
   @dispatch[@litchar{#! }]{starts a line comment; see @secref["parse-comment"]}
   @dispatch[@litchar{#!/}]{starts a line comment; see @secref["parse-comment"]}
   @dispatch[@litchar{#!}]{may start a reader extension; see @secref["parse-reader"]}
