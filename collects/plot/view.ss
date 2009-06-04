@@ -111,7 +111,7 @@
       ;set-line-color : symbol -> nothing
       (define (set-line-color color)
         (let ((index (cond [(assq color colors ) => cadr]
-                           [else (error (string-append "color \"" color "\" not found"))])))
+                           [else (error (format "color ~v not found" color))])))
           (pl-select-colormap0-index index)))
 
       ; start the plot
