@@ -11,7 +11,9 @@
 \usepackage[usenames,dvipsnames]{color}
 \hypersetup{bookmarks=true,bookmarksopen=true,bookmarksnumbered=true}
 
-\newcommand{\inColor}[2]{{\Scribtexttt{\color{#1}{#2}}}}
+\newcommand{\SColorize}[2]{\color{#1}{#2}}
+
+\newcommand{\inColor}[2]{{\Scribtexttt{\SColorize{#1}{#2}}}}
 \definecolor{CommentColor}{rgb}{0.76,0.45,0.12}
 \definecolor{ParenColor}{rgb}{0.52,0.24,0.14}
 \definecolor{IdentifierColor}{rgb}{0.15,0.15,0.50}
@@ -23,7 +25,7 @@
 
 \newcommand{\Scribtexttt}[1]{{\texttt{#1}}}
 \newcommand{\schemeplain}[1]{\inColor{black}{#1}}
-\newcommand{\schemekeyword}[1]{{\color{black}{\Scribtexttt{\textbf{#1}}}}}
+\newcommand{\schemekeyword}[1]{{\SColorize{black}{\Scribtexttt{\textbf{#1}}}}}
 \newcommand{\schemesyntaxlink}[1]{\schemekeyword{#1}}
 \newcommand{\schemecomment}[1]{\inColor{CommentColor}{#1}}
 \newcommand{\schemeparen}[1]{\inColor{ParenColor}{#1}}
