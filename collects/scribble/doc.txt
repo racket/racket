@@ -701,8 +701,6 @@ resulting reader in several ways.
                                 #'cmd)])
            (syntax/loc stx (mk-cmd rest ...)))]))
 
-* #:start-inside? -- used internally by the above `-inside' variants.
-
 > (use-at-readtable [keyword-args])
 
 Installs the Scribble readtable as the default.  Useful for REPL

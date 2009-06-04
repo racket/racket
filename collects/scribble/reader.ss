@@ -506,17 +506,26 @@
 ;; ----------------------------------------------------------------------------
 ;; readtable
 
-(provide make-at-readtable)
-(define (make-at-readtable
-         #:readtable [readtable (current-readtable)]
-         #:command-char [command-char ch:command]
-         #:start-inside? [start-inside? #f]
-         #:datum-readtable [datum-readtable #t]
-         #:syntax-post-processor [syntax-post-processor values])
+(provide make-at-readtable make-at-reader/inside)
+
+(define default-src (gensym 'scribble-reader))
+(define (src-name src port)
+  (if (eq? src default-src) (object-name port) src))
+
+(define ((make-at-readtable-or-inside-reader inside-reader?)
+         readtable command-char datum-readtable syntax-post-processor)
   (define dispatcher
-    (make-dispatcher start-inside? command-char
-                     (lambda () cmd-rt) (lambda () datum-rt)
+    (make-dispatcher #f command-char (lambda () cmd-rt) (lambda () datum-rt)
                      syntax-post-processor))
+  (define (make-inside-reader)
+    (define dispatcher
+      (make-dispatcher #t command-char (lambda () cmd-rt) (lambda () datum-rt)
+                       syntax-post-processor))
+    (define (inside-reader [src default-src] [inp (current-input-port)])
+      (define-values [line col pos] (port-next-location inp))
+      (parameterize ([current-readtable at-rt])
+        (dispatcher #f inp (src-name src inp) line col pos)))
+    inside-reader)
   (define at-rt
     (make-readtable readtable command-char 'non-terminating-macro dispatcher))
   (define cmd-rt
@@ -544,7 +553,23 @@
           [(procedure? datum-readtable) (datum-readtable at-rt)]
           [else (error 'make-at-readtable
                        "bad datum-readtable: ~e" datum-readtable)]))
-  at-rt)
+  (if inside-reader? (make-inside-reader) at-rt))
+
+(define (make-at-readtable
+         #:readtable [readtable (current-readtable)]
+         #:command-char [command-char ch:command]
+         #:datum-readtable [datum-readtable #t]
+         #:syntax-post-processor [syntax-post-processor values])
+  ((make-at-readtable-or-inside-reader #f)
+   readtable command-char datum-readtable syntax-post-processor))
+
+(define (make-at-reader/inside
+         #:readtable [readtable (current-readtable)]
+         #:command-char [command-char ch:command]
+         #:datum-readtable [datum-readtable #t]
+         #:syntax-post-processor [syntax-post-processor values])
+  ((make-at-readtable-or-inside-reader #t)
+   readtable command-char datum-readtable syntax-post-processor))
 
 (provide use-at-readtable)
 (define use-at-readtable
@@ -556,51 +581,23 @@
 
 ;; utilities for below
 (define make-default-at-readtable
-  (readtable-cached
-   (lambda (rt) (make-at-readtable #:readtable rt))))
-(define make-default-at-dispatcher/inside
-  (readtable-cached
-   (lambda (rt)
-     (let-values ([(_1 disp _2)
-                   (readtable-mapping
-                    (make-at-readtable #:readtable rt #:start-inside? #t)
-                    ch:command)])
-       disp))))
+  (readtable-cached (lambda (rt) (make-at-readtable #:readtable rt))))
+(define make-default-at-reader/inside
+  (readtable-cached (lambda (rt) (make-at-reader/inside #:readtable rt))))
 
 ;; ----------------------------------------------------------------------------
 ;; readers
 
-(define default-src (gensym 'scribble-reader))
-(define (src-name src port)
-  (if (eq? src default-src) (object-name port) src))
-
-(define-syntax with-at-reader
-  (syntax-rules ()
-    [(_ body ...)
-     (parameterize ([current-readtable (make-default-at-readtable)])
-       body ...)]))
-
+(provide (rename-out [*read read] [*read-syntax read-syntax]))
 (define (*read [inp (current-input-port)])
-  (with-at-reader (read inp)))
+  (parameterize ([current-readtable (make-default-at-readtable)])
+    (read inp)))
+(define (*read-syntax [src default-src] [inp (current-input-port)])
+  (parameterize ([current-readtable (make-default-at-readtable)])
+    (read-syntax (src-name src inp) inp)))
 
-(define (*read-syntax [src default-src]
-                      [inp (current-input-port)])
-  (with-at-reader (read-syntax (src-name src inp) inp)))
-
+(provide read-inside read-syntax-inside)
 (define (read-inside [inp (current-input-port)])
-  (let*-values ([(line col pos) (port-next-location inp)]
-                [(inside-dispatcher) (make-default-at-dispatcher/inside)])
-    (with-at-reader
-     (syntax->datum
-      (inside-dispatcher #f inp (object-name inp) line col pos)))))
-
-(define (read-syntax-inside [src default-src]
-                            [inp (current-input-port)])
-  (let*-values ([(line col pos) (port-next-location inp)]
-                [(inside-dispatcher) (make-default-at-dispatcher/inside)])
-    (with-at-reader
-     (inside-dispatcher #f inp (src-name src inp) line col pos))))
-
-(provide (rename-out [*read read]
-                     [*read-syntax read-syntax])
-         read-inside read-syntax-inside)
+  (syntax->datum ((make-default-at-reader/inside) default-src inp)))
+(define (read-syntax-inside [src default-src] [inp (current-input-port)])
+  ((make-default-at-reader/inside) src inp))

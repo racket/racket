@@ -891,14 +891,16 @@ Useful for implementing languages that are textual by default (see
 @filepath{docreader.ss} for example).
 }
 
-@defproc[(make-at-readtable [#:readtable readtable readtable? (current-readtable)]
-                            [#:command-char command-char character? #\@]
-                            [#:start-inside? start-inside? any/c #f]
-                            [#:datum-readtable datum-readtable 
-                                               (or/c readtable? boolean? 
-                                                     (readtable? . -> . readtable?)) 
-                                               #t]
-                            [#:syntax-post-processor syntax-post-proc (syntax? . -> . syntax?) values])
+@defproc[(make-at-readtable
+          [#:readtable readtable readtable? (current-readtable)]
+          [#:command-char command-char character? #\@]
+          [#:datum-readtable datum-readtable
+                             (or/c readtable? boolean?
+                                              (readtable? . -> . readtable?))
+                             #t]
+          [#:syntax-post-processor syntax-post-proc
+                                   (syntax? . -> . syntax?)
+                                   values])
           readtable?]{
 
 Constructs an @"@"-readtable.  The keyword arguments can customize the
@@ -933,9 +935,6 @@ resulting reader in several ways:
           [(cmd rest ...) #'(list 'cmd rest ...)]
           [_else (error "@ forms must have a body")])))
   ]}
-
-@item{@scheme[start-inside?] --- if true, creates a readtable for
-use starting in text mode, instead of S-expression mode.}
 
 ]}
 
