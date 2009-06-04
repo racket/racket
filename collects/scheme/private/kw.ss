@@ -694,14 +694,11 @@
                                             (lambda (a b)
                                               (keyword<? (syntax-e (car a))
                                                          (syntax-e (car b)))))]
-                          [lifted (syntax-local-lift-expression
-                                   #`(list #,@(map (lambda (p) #`(quote #,(car p))) 
-                                                   sorted-kws)))]
                           [cnt (+ 1 (length args))])
                      (quasisyntax/loc stx
                        (let #,(reverse bind-accum)
-                         ((keyword-procedure-extract #,lifted #,cnt #,(car args))
-                          #,lifted
+                         ((keyword-procedure-extract '#,(map car sorted-kws) #,cnt #,(car args))
+                          '#,(map car sorted-kws)
                           (list #,@(map cdr sorted-kws))
                           . #,(cdr args)))))]
                   [(keyword? (syntax-e (car l)))
