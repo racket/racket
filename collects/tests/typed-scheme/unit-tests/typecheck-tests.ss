@@ -724,6 +724,9 @@
                           (andmap null? (map list y)))
                 (-polydots (a) ((list -Number) (a a) . ->... . -Boolean))]
         [tc-e (ann (error 'foo) (values Number Number)) #:ret (ret (list -Number -Number))]
+        
+        [tc-e #{(make-hash) :: (HashTable Number Number)}
+              (make-Hashtable -Number -Number)]
         #;[tc-err (let: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                         (fact 20))]
         
