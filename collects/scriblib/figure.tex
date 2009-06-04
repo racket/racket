@@ -1,0 +1,15 @@
+\usepackage{ccaption}
+
+\newcommand{\Legend}[1]{~
+
+                        \hrule width \hsize height .33pt
+                        \vspace{4pt}
+                        \legend{#1}}
+
+\newlength{\FigOrigskip}
+\FigOrigskip=\parskip
+
+\newenvironment{CenterfigureMulti}{\begin{figure*}\centering}{\end{figure*}}
+\newenvironment{CenterfigureMultiWide}{\begin{CenterfigureMulti}}{\end{CenterfigureMulti}}
+\newenvironment{Centerfigure}{\begin{figure}\centering}{\end{figure}}
+\newenvironment{FigureInside}{\begin{list}{}{\leftmargin=0pt\parsep=\FigOrigskip}\item}{\end{list}}

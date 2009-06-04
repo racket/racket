@@ -1,0 +1,21 @@
+
+.Centerfigure, .CenterfigureMulti, .centerfigureMultiWide {
+  margin: 1em 0 1em 0;
+  width: 100%;
+  border: 1px solid #1818FF;
+  text-align: center;
+}
+
+.CenterfigureMultiWide {
+  width: 125%;
+}
+
+.FigureInside {
+  margin: 0 0 0 0;
+  padding: 0 1em 0 1em;
+}
+
+.Caption:before {
+  content: "Figure: ";
+}
+
