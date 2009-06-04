@@ -4,7 +4,6 @@
          "check-aux.ss"
          "timer.ss"    
          "last.ss"
-         scheme/match
          htdp/error
          (only-in mzlib/etc evcase)
          string-constants)
@@ -32,7 +31,7 @@
    (clock-mixin
     (class* object% (start-stop<%>) (inspect #f) (super-new)
       (init-field        ;; type Result
-                         ; = (make-bundle [Listof World] Universe [Listof Mail])
+       ; = (make-bundle [Listof World] Universe [Listof Mail])
        universe0         ;; the initial state of the universe
        on-new            ;; Universe World -> Result
        on-msg            ;; Universe World Message -> Result
@@ -51,41 +50,56 @@
         (def/cback pub (pname a ...) 
           ;; Universe A B ... -> (cons Universe Mail)
           ;; effect: change server state, broadcast mails 
-          name)
+          name body ...)
         (begin
           (pub pname)
           (define (pname a ...) 
             (define (handler e) (stop! e))
             (with-handlers ([exn? handler])
-              (define r (check-state-x-mail 'name (name iworlds universe a ...)))
-              (define u (bundle-state r))
-              (set! iworlds (bundle-low r))
+              (define ___  (begin 'dummy body ...))
+              (define-values (u mails bad) (bundle> 'name (name universe a ...)))
               (set! universe u)
-              (unless (boolean? to-string) (send gui add (to-string iworlds u)))
-              (broadcast (bundle-mails r))))))
+              (unless (boolean? to-string) (send gui add (to-string u)))
+              (broadcast mails)
+              (for-each (lambda (iw)
+                          (iworld-close iw)
+                          (set! iworlds (remq iw iworlds)))
+                        bad)))))
       
-      (def/cback private (pmsg iworld received) on-msg)
+      ;; [Listof Mail] -> Void
+      ;; send payload of messages to designated worlds 
+      (define/private (broadcast lm)
+        (for-each (lambda (p+m) 
+                    (define w (mail-to p+m))
+                    (define p (mail-content p+m))
+                    (define n (iworld-name w))
+                    (if (not (memq w iworlds))
+                        (send gui add (format "~s not on list" n))
+                        (with-handlers ((exn:fail? (lambda (e) (kill w))))
+                          (iworld-send w p)
+                          (send gui add (format "-> ~a: ~a" n p)))))
+                  lm))
       
-      (def/cback private (pdisconnect iworld) on-disconnect)
+      (def/cback private (pnew iworld) on-new
+        (set! iworlds (cons iworld iworlds))
+        (iworld-send iworld 'okay)  ;; <--- this can fail!                  
+        (send gui add (format "~a signed up" (iworld-info iworld))))
       
-      (def/cback private (pnew iworld) ppnew)
+      (def/cback private (pmsg iworld r) on-msg
+        (send gui add (format "~a ->: ~a" (iworld-name iworld) r)))
       
-      (define/private (ppnew low uni p)
-        (iworld-send p 'okay)
-        (on-new low uni p))
+      (def/cback private (pdisconnect iworld) on-disconnect
+        (kill iworld))
       
       (def/cback public (ptock) tick)
       
-      ;; Symbol Any -> Result
-      ;; check that r is Result
-      ;; effect: stop the server if the callbacks perform badly 
-      (define/private (check-state-x-mail tag r)
-        (with-handlers ((exn? (lambda (x) (stop! x))))
-          (define s (format "expected from ~a, given: " tag))
-          (define f "(make-bundle [Listof World] Universe [Listof Mail]) ~a~e")
-          (unless (bundle? r) 
-            (error tag (format f s r)))
-          r))
+      ;; IWorld -> Void 
+      ;; effect: remove from given iworld from iworlds 
+      ;;         and shut down all connections 
+      (define/private (kill w)
+        (send gui add (format "~a !! closed port" (iworld-name w)))
+        (set! iworlds (remq w iworlds))
+        (iworld-close w))
       
       ;; -----------------------------------------------------------------------
       ;; start and stop server, start and stop the universe
@@ -104,72 +118,36 @@
           (define (loop)
             (apply sync 
                    (handle-evt (tcp-accept-evt tcp-listener) add-iworld)
-                   (map iworld-wait-for-msg iworlds)))
-          (define (add-iworld in-out)
-            (with-handlers ((tcp-eof? (lambda _ (loop))))
-              (define in (first in-out))        
-              (define next (tcp-receive in))
-              (match next
-                [(cons 'REGISTER info)
-                 (let* ([w (create-iworld in (second in-out) info)])
-                   ; (set! iworlds (cons w iworlds))
-                   (pnew w)
-                   (send gui add (format "~a signed up" info))
-                   (loop))]
-                [else (loop)])))
-          (define (iworld-wait-for-msg p)
-            (handle-evt (iworld-in p) 
-                        (lambda (in)
-                          (with-handlers 
-                              ((tcp-eof? 
-                                (lambda (e) 
-                                  (handler p e 
-                                           (lambda () 
-                                             (if (null? iworlds)
-                                                 (restart)
-                                                 (loop)))))))
-                            (define r (tcp-receive in))
-                            (send gui add (format "~a ->: ~a" (iworld-name p) r))
-                            (pmsg p r)
-                            (loop)))))
+                   (map(lambda (p) 
+                         (handle-evt (iworld-in p) (process-message p)))
+                       iworlds)))
+          ;;; WHERE 
           (define tcp-listener 
             (with-handlers ((exn:fail:network? (lambda (x) (stop! x))))
               (tcp-listen SQPORT 4 #t)))
+          ;; (list IPort OPort) -> Void 
+          (define (add-iworld in-out)
+            ;; is it possible to kill the server with lots of bad connections?
+            (with-handlers ((tcp-eof? (lambda _ (loop))))
+              (define in (first in-out))        
+              (define next (tcp-receive in))
+              (when (and (pair? next) (eq? 'REGISTER (car next)))
+                (pnew (create-iworld in (second in-out) (cdr next))))
+              (loop)))
+          ;; IWorld -> [IPort -> Void]
+          (define (process-message p)
+            (lambda (in)
+              (define (disc e)
+                (pdisconnect p)
+                (if (null? iworlds) (restart) (loop)))
+              (with-handlers ((tcp-eof? disc))
+                (pmsg p (tcp-receive in))
+                (loop))))
           ;; --- go universe go ---
           (set! iworlds '())
           (set! universe universe0)
           (send gui add "a new universe is up and running")
           (thread loop)))
-      
-      ;; World Exn (-> X) -> X
-      (define/private (handler p e cont)
-        (close-output-port (iworld-out p))
-        (close-input-port (iworld-in p))
-        (send gui add (format "~a !! closed port" (iworld-name p)))
-        (pdisconnect p)
-        (cont))
-      
-      ;; [Listof Mail] -> Void
-      ;; send payload of messages to designated worlds 
-      (define/private (broadcast lm)
-        ;;; --- why the heck is there no exception handler -------------
-        (for-each (lambda (p+m) 
-                    ;; what exception should I catch 
-                    ;; remove the world from the list 
-                    ;; factor out from elsewhere 
-                    ;; can this mean I perform a callback during a callback? 
-                    ;; collect 'bad' worlds instead and disconnect them later?
-                    ;; (handler 
-                    (with-handlers ((exn? (lambda (e) (printf "\n\n*** to be done ***\n\n"))))
-                      (define w (mail-to p+m))
-                      (define n (iworld-name w))
-                      (define p (mail-content p+m))
-                      (unless (memq w iworlds)
-                        (send gui add (format "~s not on list" n)))
-                      (when (memq w iworlds)
-                        (iworld-send w p)
-                        (send gui add (format "-> ~a: ~a" n p)))))
-                  lm))
       
       (define/private (restart)
         ;; I am running in a custodian that is about to be killed, 
@@ -182,10 +160,7 @@
                       (start!))))
           (send gui add "stopping the universe")
           (send gui add "----------------------------------")
-          (for-each (lambda (w)
-                      (close-input-port (iworld-in w))
-                      (close-output-port (iworld-out w)))
-                    iworlds)
+          (for-each iworld-close iworlds)
           (custodian-shutdown-all the-custodian)
           (semaphore-post go)))
       
@@ -227,16 +202,22 @@
 (define-struct iworld (in out name info) #:transparent)
 ;; World = (make-iworld IPort OPort Symbol [Listof Sexp])
 
-(define iworld1 (make-iworld (current-input-port) (current-output-port) 'iworld1 '()))
-(define iworld2 (make-iworld (current-input-port) (current-output-port) 'iworld2 '()))
-(define iworld3 (make-iworld (current-input-port) (current-output-port) 'iworld3 '()))
+(define (iw* n) (make-iworld (current-input-port) (current-output-port) n '()))
+(define iworld1 (iw* 'iworld1))
+(define iworld2 (iw* 'iworld2))
+(define iworld3 (iw* 'iworld3))
 
 (define (iworld=? u v)
   (check-arg 'iworld=? (iworld? u) 'iworld "first" u)
   (check-arg 'iworld=? (iworld? v) 'iworld "second" v)
   (eq? u v))
 
-;; IPort OPort Sexp -> Player 
+;; IWorld -> Void
+(define (iworld-close p)
+  (close-output-port (iworld-out p))
+  (close-input-port (iworld-in p)))
+
+;; IPort OPort Sexp -> IWorld 
 (define (create-iworld i o info)
   (if (and (pair? info) (symbol? (car info)))
       (make-iworld i o (car info) (cdr info))
@@ -345,14 +326,14 @@
  mail?       ;; is this a real mail? 
  )
 
-(define-struct bundle (low state mails) #:transparent)
+(define-struct bundle (state mails bad) #:transparent)
 
 (set! make-bundle
       (let ([make-bundle make-bundle])
-        (lambda (low state mails)
-          (check-arg-list 'make-bundle low iworld? "iworld" "first")
-          (check-arg-list 'make-bundle mails mail? "mail" "third")
-          (make-bundle low state mails))))
+        (lambda (state mails bads)
+          (check-arg-list 'make-bundle mails mail? "mail" "second")
+          (check-arg-list 'make-bundle bads iworld? "mail" "third")
+          (make-bundle state mails bads))))
 
 ;; Symbol Any (Any -> Boolean) String String -> Void 
 ;; raise a TP exception if low is not a list of world? elements 
@@ -361,6 +342,12 @@
   (for-each (lambda (c) 
               (check-arg tag (iworld? c) msg (format "(elements of) ~a" rank) c))
             low))
+
+;; Any ->* Universe [Listof Mail] [Listof IWorld]
+(define (bundle> tag r)
+  (unless (bundle? r) 
+    (error "bundle expected from ~a, given: " tag))
+  (values (bundle-state r) (bundle-mails r) (bundle-bad r)))
 
 (define-struct mail (to content) #:transparent)
 

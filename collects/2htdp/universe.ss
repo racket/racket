@@ -246,7 +246,6 @@
  make-mail   ;; World S-expression -> Mail 
  mail?       ;; is this a real mail? 
  universe    ;; <syntax> : see below 
- universe2   ;; (World World -> U) (U World Message) -> U
  )
 
 ;; Expr = (universe Expr UniSpec)
@@ -262,10 +261,10 @@
 ;;    in the console 
 
 (define-keywords UniSpec
-  [on-new (function-with-arity 3)]
-  [on-msg (function-with-arity 4)]
-  [on-disconnect (function-with-arity 3)]
-  [to-string (function-with-arity 2)])
+  [on-new (function-with-arity 2)]
+  [on-msg (function-with-arity 3)]
+  [on-disconnect (function-with-arity 2)]
+  [to-string (function-with-arity 1)])
 
 (define-syntax (universe stx)
   (syntax-case stx ()
@@ -311,18 +310,3 @@
          [else ; (and (memq #'on-new domain) (memq #'on-msg domain))
           #`(send (new universe% [universe0 u] #,@args) last)]))]))
 
-;; (World World -> U) (U World Msg) -> U
-(define (universe2 create process)
-  ;; UniState = '() | (list World) | Universe
-  ;; [Listof World] UniState World -> (cons UniState [Listof (list World S-expression)])
-  (define (nu s x p)
-    (cond
-      [(null? s) (make-bundle (list p) '* '())]
-      [(not (pair? s)) (make-bundle s '* '())]
-      [(null? (rest s)) (create (first s) p)]
-      [else (error 'create "a third world is signing up!")]))
-  (universe '() 
-            (on-new nu)
-            (on-msg process)
-            #;
-            (on-tick (lambda (u x) (printf "hello!\n") (list u)) 1)))
