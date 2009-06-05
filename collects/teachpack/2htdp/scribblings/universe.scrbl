@@ -1014,19 +1014,18 @@ for universe programs. For example:
 }
 
 @item{Each event handler produces a @emph{bundle}, which is a structure
- that contains the list of @emph{iworld}s that the universe must track; the
- @tech{server}'s remaining state; and a list of mails to other
- worlds: 
+ that contains the @tech{server}'s state, a list of mails to other worlds, 
+ and the list of @emph{iworld}s that are to be disconnected. 
 
 @defproc[(bundle? [x any/c]) boolean?]{
  determines whether @scheme[x] is a @emph{bundle}.}
 
-@defproc[(make-bundle [low (listof iworld?)] [state any/c] [mails (listof mail?)]) bundle?]{
- creates a @emph{bundle} from a list of iworlds, a piece of data that
- represents a server state, and a list of mails.}
+@defproc[(make-bundle [state any/c] [mails (listof mail?)] [low (listof iworld?)]) bundle?]{
+ creates a @emph{bundle} from a piece of data that
+ represents a server state, a list of mails, and a list of iworlds.}
 
-If an event handler returns a bundle with an empty list of worlds, the
-universe server is restarted in the initial state. 
+If disconnecting from these worlds results in an empty list of
+participants, the universe server is restarted in the initial state.
 
 A @emph{mail} represents a message from an event handler to a world. The
 teachpack provides only a predicate and a constructor for these structures:
@@ -1095,31 +1094,28 @@ The mandatory clauses of a @scheme[universe] server description are
 @item{
  @defform[(on-new new-expr)
           #:contracts
-          ([new-expr (-> [listof iworld?] (unsyntax @tech{UniverseState}) iworld? bundle?)])]{
+          ([new-expr (-> (unsyntax @tech{UniverseState}) iworld? bundle?)])]{
  tell DrScheme to call the function @scheme[new-expr] every time another world joins the
- universe. The event handler is called on the current list of iworlds and the
+ universe. The event handler is called with the current state and the
  joining iworld, which isn't on the list yet. In particular, the handler may
  reject a @tech{world} program from participating in a @tech{universe},
- simply by not including it in the resulting @scheme[bundle] structure. The
- handler may still send one message to the world that attempts to join. }
+ by simply including it in the resulting @scheme[bundle] structure (third field).}
 }
 
 @item{
  @defform[(on-msg msg-expr)
           #:contracts
-          ([msg-expr (-> [listof iworld?] (unsyntax @tech{UniverseState}) iworld? sexp? bundle?)])]{
-
- tell DrScheme to apply @scheme[msg-expr] to the list of currently
- participating worlds @scheme[low], the current state of the universe, the world
+          ([msg-expr (-> (unsyntax @tech{UniverseState}) iworld? sexp? bundle?)])]{
+ tell DrScheme to apply @scheme[msg-expr] to the current state of the universe, the world
  @scheme[w] that sent the message, and the message itself. Note that
  @scheme[w] is guaranteed to be on the list @scheme[low]. 
  }
 }]
- All proper event handlers produce a @emph{bundle}. The list of worlds in
- this @emph{bundle} becomes the server's list of worlds, meaning that only
- the server listens only to messages from "approved" worlds.  The state in
- the bundle is safe-guarded by the server until the next event, and the
- mails are broadcast as specified.
+ All proper event handlers produce a @emph{bundle}.  The state in the
+ bundle is safe-guarded by the server until the next event, and the mails
+ are broadcast as specified.  The list of iworlds in the third field of the
+ bundle is removed from the list of participants from which to expect
+ messages. 
 
 The following picture provides a graphical overview of the server's workings. 
 
@@ -1137,7 +1133,7 @@ optional handlers:
 @item{
 @defform/none[(on-tick tick-expr)
               #:contracts
-              ([tick-expr (-> [listof iworld?] (unsyntax @tech{UniverseState}) bundle?)])]{
+              ([tick-expr (-> (unsyntax @tech{UniverseState}) bundle?)])]{
  tell DrScheme to apply @scheme[tick-expr] to the current list of
  participating worlds and the current state of the
  universe. 
@@ -1145,7 +1141,7 @@ optional handlers:
 
 @defform/none[(on-tick tick-expr rate-expr)
               #:contracts
-              ([tick-expr (-> [listof iworld?] (unsyntax @tech{UniverseState}) bundle?)]
+              ([tick-expr (-> (unsyntax @tech{UniverseState}) bundle?)]
                [rate-expr natural-number/c])]{ 
  tell DrScheme to apply @scheme[tick-expr] as above but use the specified
  clock tick rate instead of the default.
@@ -1156,7 +1152,7 @@ optional handlers:
 @item{
  @defform[(on-disconnect dis-expr)
           #:contracts
-          ([dis-expr (-> [listof iworld?] (unsyntax @tech{UniverseState}) iworld? bundle?)])]{
+          ([dis-expr (-> (unsyntax @tech{UniverseState}) iworld? bundle?)])]{
  tell DrScheme to invoke @scheme[dis-expr] every time a participating
  @tech{world} drops its connection to the server. The first two arguments
  are the current list of participating worlds and the state of the
@@ -1167,7 +1163,7 @@ optional handlers:
 @item{
  @defform[(to-string render-expr)
           #:contracts
-          ([render-expr (-> [listof iworld?] (unsyntax @tech{UniverseState}) string?)])]{
+          ([render-expr (-> (unsyntax @tech{UniverseState}) string?)])]{
  tell DrScheme to render the state of the universe after each event and to
  display this string in the universe console. 
  }
@@ -1294,16 +1290,16 @@ translates into the design of two functions with the following headers,
 #reader scribble/comment-reader
 (schemeblock
 ;; Bundle is
-;;   (make-bundle [Listof iworld?] UniverseState [Listof mail?])
+;;   (make-bundle UniverseState [Listof mail?] [Listof iworld?])
 
-;; [Listof iworld?] UniverseState iworld? -> Bundle 
-;; compute next list of worlds and new @tech{UniverseState} 
-;; when world w is joining the universe, which is in state s; 
+;; UniverseState iworld? -> Bundle 
+;; next list of worlds when world w is joining 
+;; the universe in state s 
 (define (add-world s w) ...)
 
-;; [Listof iworld?] UniverseState iworld? W2U -> Bundle 
-;; compute next list of worlds and new @tech{UniverseState} 
-;; when world w is sending message m to universe in state s
+;; UniverseState iworld? W2U -> Bundle 
+;; next list of worlds when world w is sending message m to 
+;; the universe in state s
 (define (process s p m) ...)
 ))
 
@@ -1419,13 +1415,13 @@ The preceding subsection dictates that our server program starts like this:
 #reader scribble/comment-reader
 [schemeblock
 ;; Result is 
-;;   (make-bundle [Listof world?] '* (list (make-mail world? GoMessage)))
+;;   (make-bundle [Listof iworld?] (list (make-mail iworld? GoMessage)) '())
 
-;; [Listof world?] UniverseState world? -> Result 
+;; [Listof iworld?] iworld? -> Result 
 ;; add world w to the universe, when server is in state u
 (define (add-world u w) ...)
 
-;; [Listof world?] UniverseState world? StopMessage -> Result
+;; [Listof iworld?] iworld? StopMessage -> Result
 ;; world w sent message m when server is in state u 
 (define (switch u w m) ...)
 ])
@@ -1443,17 +1439,17 @@ The second step of the design recipe calls for functional examples:
 [schemeblock
 ;; an obvious example for adding a world: 
 (check-expect
-  (add-world '() '* world1) 
+  (add-world '() world1) 
   (make-bundle (list world1)
-               '*
-               (list (make-mail world1 'it-is-your-turn))))
+               (list (make-mail world1 'it-is-your-turn))
+	       '()))
 
 ;; an example for receiving a message from the active world:
 (check-expect
- (switch (list world1 world2) '* world1 'done)
+ (switch (list world1 world2) world1 'done)
  (make-bundle (list world2 world1)
-              '*
-              (list (make-mail world2 'it-is-your-turn))))
+              (list (make-mail world2 'it-is-your-turn))
+	      '()))
 ])
 
  Note that our protocol analysis dictates this behavior for the two
@@ -1475,8 +1471,8 @@ The protocol tells us that @emph{add-world} just adds the given
 (define (add-world univ state wrld)
   (local ((define univ* (append univ (list wrld))))
     (make-bundle univ*
-                 '*
-                 (list (make-mail (first univ*) 'it-is-your-turn)))))
+                 (list (make-mail (first univ*) 'it-is-your-turn))
+		 '())))
 ])
 
 Because @emph{univ*} contains at least @emph{wrld}, it is acceptable to
@@ -1492,11 +1488,11 @@ Similarly, the protocol says that when @emph{switch} is invoked because a
 @(begin
 #reader scribble/comment-reader
 [schemeblock
-(define (switch univ state wrld m)
+(define (switch univ wrld m)
   (local ((define univ* (append (rest univ) (list (first univ)))))
     (make-bundle univ*
-                 '*
-                 (list (make-mail (first univ*) 'it-is-your-turn)))))
+                 (list (make-mail (first univ*) 'it-is-your-turn))
+		 '())))
 ])
 
  As before, appending the first world to the end of the list guarantees
@@ -1505,7 +1501,7 @@ Similarly, the protocol says that when @emph{switch} is invoked because a
 
 Start the server now. 
 
- @schemeblock[(universe '* (on-new add-world) (on-msg switch))]
+ @schemeblock[(universe '() (on-new add-world) (on-msg switch))]
           
 Exercise: The function definition simply assumes that @emph{wrld} is
  @scheme[world=?] to @scheme[(first univ)] and that the received message
