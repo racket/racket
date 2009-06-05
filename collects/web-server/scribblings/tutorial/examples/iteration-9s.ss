@@ -8,7 +8,7 @@
 (define (start request)  
   (render-blog-page 
    (initialize-blog! 
-    (build-path (find-system-path 'home-dir)
+    (build-path (current-directory)
                 "the-blog-data.db"))
    request))
 

@@ -918,7 +918,7 @@ First, change @scheme[start] to call @scheme[initialize-blog!] with a path in ou
  (define (start request)  
    (render-blog-page 
     (initialize-blog! 
-     (build-path (find-system-path 'home-dir)
+     (build-path (current-directory)
                  "the-blog-data.db"))
     request))
 ]
