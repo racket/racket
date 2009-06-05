@@ -38,21 +38,22 @@
            #'(let ([lang-x lang])
                (let ([cp-x (compile-pattern lang-x `side-conditions-rewritten #t)] ...)
                  (λ (exp)
-                   (let/ec k
-                     (let ([match (match-pattern cp-x exp)])
-                       (when match
-                         (unless (null? (cdr match))
-                           (redex-error
-			    'term-match/single
-			    "pattern ~s matched term ~e multiple ways"
-			    'pattern
-			    exp))
-                         (k (term-let/error-name 
-                             term-match/single
-                             ([names/ellipses (lookup-binding (mtch-bindings (car match)) 'names)] ...)
-                              rhs))))
-                     ...
-                     (redex-error 'term-match/single "no patterns matched ~e" exp))))))))]))
+                   ((let/ec k
+                      (let ([match (match-pattern cp-x exp)])
+                        (when match
+                          (unless (null? (cdr match))
+                            (redex-error
+                             'term-match/single
+                             "pattern ~s matched term ~e multiple ways"
+                             'pattern
+                             exp))
+                          (k (λ ()
+                               (term-let/error-name 
+                                term-match/single
+                                ([names/ellipses (lookup-binding (mtch-bindings (car match)) 'names)] ...)
+                                rhs)))))
+                      ...
+                      (redex-error 'term-match/single "no patterns matched ~e" exp)))))))))]))
 
 (define-syntax (term-match stx)
   (syntax-case stx ()

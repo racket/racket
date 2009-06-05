@@ -1344,6 +1344,14 @@
          '(1 1))
         1)
   
+  (test (call-with-values
+         (λ () 
+           ((term-match/single empty-language
+                               [() (values 1 2)])
+            '()))
+         list)
+        '(1 2))
+  
   (test (let ([x 0])
           (cons ((term-match empty-language
                              [(any_a ... number_1 any_b ...)
