@@ -414,7 +414,7 @@
                                (cadr xs)
                                (loop (cddr xs)))
                         xs))
-                sx))))
+                xs))))
     ;; ------------------------------------------------------------------------
     ;; generates the part of the body that deals with rest-related stuff
     (define (make-keys-body expr)
