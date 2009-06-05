@@ -99,6 +99,9 @@
                       struct:okp
                       0 0 #f))
 
+  (define-values (prop:named-keyword-procedure named-keyword-procedure? keyword-procedure-name)
+    (make-struct-type-property 'named-keyword-procedure))
+
   ;; Constructor generator for a procedure with a required keyword.
   ;; (This is used with lift-expression, so that the same constructor
   ;;  is used for each evaluation of a keyword lambda.)
@@ -111,7 +114,8 @@
                                         struct:keyword-method
                                         struct:keyword-procedure)
                                     0 0 #f
-                                    (list (cons prop:arity-string generate-arity-string))
+                                    (list (cons prop:arity-string generate-arity-string)
+                                          (cons prop:named-keyword-procedure name))
                                     (current-inspector) fail-proc)])
       mk))
 
@@ -788,8 +792,8 @@
                        (apply
                         raise-type-error 'x "x" 0 'x
                         (append args (apply append (map list kws kw-args))))))]
-                  [proc-name (lambda (p) (or (and (keyword-procedure? p)
-                                                  (substring (symbol->string (object-name p)) 10)) ; strip "procedure:"
+                  [proc-name (lambda (p) (or (and (named-keyword-procedure? p)
+                                                  (keyword-procedure-name p))
                                              (object-name p)
                                              p))])
               (raise
@@ -812,7 +816,7 @@
                     (format
                      (string-append
                       "~a: no case matching ~a non-keyword"
-                      " argument~a for: ~e; ~a")
+                      " argument~a; ~a")
                      (proc-name p)
                      (- n 2) (if (= 1 (- n 2)) "" "s") args-str)))
                 (current-continuation-marks)))))))))
