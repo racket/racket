@@ -752,8 +752,8 @@ itself.  It is useful, for example, to print out CPP directives.
            }
            }-|
 
-If there are values after a @scheme[verbatim] value on the same line
-will, they will get indented to the goal column (unless the output is
+If there are values after a @scheme[verbatim] value on the same line,
+they will get indented to the goal column (unless the output is
 already beyond it).
 
 @example|-{#lang scribble/text
