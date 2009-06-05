@@ -417,12 +417,16 @@
   (define (get-rprefixes) ; return punctuation prefixes in reverse
     (let loop ([r '()])
       (let-values ([(line col pos) (port-next-location inp)])
-        (cond [(*match1 #rx#"^(?:'|`|,@?)")
+        (cond [(*match1 #rx#"^#?(?:'|`|,@?)")
                => (lambda (m)
-                    (let ([sym (cond [(assoc m '([#"'"  quote]
-                                                 [#"`"  quasiquote]
-                                                 [#","  unquote]
-                                                 [#",@" unquote-splicing]))
+                    (let ([sym (cond [(assoc m '([#"'"   quote]
+                                                 [#"`"   quasiquote]
+                                                 [#","   unquote]
+                                                 [#",@"  unquote-splicing]
+                                                 [#"#'"  syntax]
+                                                 [#"#`"  quasisyntax]
+                                                 [#"#,"  unsyntax]
+                                                 [#"#,@" unsyntax-splicing]))
                                       => cadr]
                                      [else (internal-error 'get-rprefixes)])])
                       (loop (cons (datum->syntax #f sym

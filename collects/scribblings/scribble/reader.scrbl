@@ -255,6 +255,7 @@ wrapping the @italic{whole} expression.
 
 @scribble-examples|==={
   @`',@foo{blah}
+  @#`#'#,@foo{blah}
 }===|
 
 When writing Scheme code, this means that @litchar|{@`',@foo{blah}}|
