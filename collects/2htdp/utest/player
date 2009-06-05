@@ -1,0 +1,16 @@
+#! /bin/sh
+#|
+exec mred -qu "$0" ${1+"$@"}
+|#
+
+#lang scheme
+
+(require "shared.ss")
+
+(define argv (current-command-line-arguments))
+
+(unless (= (vector-length argv) 1)
+  (error 'player "name of one player expected: $ ./player name"))
+  
+(make-player 200 (string->symbol (vector-ref argv 0)))
+
