@@ -3180,13 +3180,19 @@ Scheme_Object *scheme_current_library_collection_paths(int argc, Scheme_Object *
 /*                           places                                       */
 /*========================================================================*/
 
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+#if defined(MZ_USE_PLACES)
+# if defined(MZ_PRECISE_GC)
 typedef struct Scheme_Symbol_Parts {
   Scheme_Hash_Table *table;
   int kind;
   unsigned int len;
   const char *name;
 } Scheme_Symbol_Parts;
+
+void spawn_master_scheme_place();
+void *scheme_master_fast_path(int msg_type, void *msg_payload);
+# endif
+Scheme_Object *scheme_places_deep_copy(Scheme_Object *so);
 #endif
 
 typedef struct Scheme_Place {
@@ -3195,8 +3201,6 @@ typedef struct Scheme_Place {
 } Scheme_Place;
 
 Scheme_Env *scheme_place_instance_init();
-void spawn_master_scheme_place();
-Scheme_Object *scheme_places_deep_copy(Scheme_Object *so);
 
 /*========================================================================*/
 /*                           engine                                       */

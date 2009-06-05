@@ -403,6 +403,17 @@ GC2_EXTERN void GC_construct_child_gc();
    Creates a new place specific GC and links to the master GC.
 */
 
+GC2_EXTERN void *GC_switch_to_master_gc();
+/*
+   Switches to the master GC
+*/
+
+GC2_EXTERN void GC_switch_back_from_master(void *gc);
+/*
+   Switches to back to gc from the master GC
+*/
+
+
 # ifdef __cplusplus
 };
 # endif

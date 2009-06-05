@@ -396,19 +396,14 @@ Scheme_Object *
 scheme_intern_exact_symbol_in_table(Scheme_Hash_Table *symbol_table, int kind, const char *name, unsigned int len)
 {
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-  mz_proc_thread *self;
-  self = proc_thread_self;
-  if ( scheme_master_proc_thread && scheme_master_proc_thread != proc_thread_self ) {
-    int return_msg_type;
-    void *return_payload;
-    Scheme_Symbol_Parts parts;
-    parts.table = symbol_table;
-    parts.kind = kind;
-    parts.len  = len;
-    parts.name = name;
-    pt_mbox_send_recv(scheme_master_proc_thread->mbox, 3, &parts, self->mbox, &return_msg_type, &return_payload);
-    return (Scheme_Object*) return_payload;
-  }
+  void *return_payload;
+  Scheme_Symbol_Parts parts;
+  parts.table = symbol_table;
+  parts.kind = kind;
+  parts.len  = len;
+  parts.name = name;
+  return_payload = scheme_master_fast_path(3, &parts);
+  return (Scheme_Object*) return_payload;
 #endif
   return scheme_intern_exact_symbol_in_table_worker(symbol_table, kind, name, len);
 }

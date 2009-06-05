@@ -1745,10 +1745,45 @@ void GC_switch_out_master_gc() {
   }
 }
 
+/* used to initialize a MasterGC Thread, bad idea
+ * scheme_master_fast_path is more performant */
 void GC_switch_in_master_gc() {
   GC_set_GC(MASTERGC);
   restore_globals_from_gc(MASTERGC);
 }
+
+/*used in scheme_master_fast_path*/
+void *GC_switch_to_master_gc() {
+  NewGC *gc = GC_get_GC();
+  /* return if MASTERGC hasn't been constructed yet, allow recursive locking */
+  if (!MASTERGC || gc == MASTERGC) {
+    return MASTERGC;
+  }
+  save_globals_to_gc(gc);
+
+  /*obtain exclusive access to MASTERGC*/
+  mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
+
+  GC_set_GC(MASTERGC);
+  restore_globals_from_gc(MASTERGC);
+  return gc;
+}
+
+void GC_switch_back_from_master(void *gc) {
+  /* return if MASTERGC hasn't been constructed yet, allow recursive locking */
+  if (!MASTERGC || gc == MASTERGC) {
+    return;
+  }
+  save_globals_to_gc(MASTERGC);
+
+  /*release exclusive access to MASTERGC*/
+  mzrt_rwlock_unlock(MASTERGCINFO->cangc);
+
+  GC_set_GC(gc);
+  restore_globals_from_gc(gc);
+}
+
+  
 #endif
 
 void GC_gcollect(void)
