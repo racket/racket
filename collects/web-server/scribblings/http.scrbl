@@ -199,7 +199,9 @@ Here is an example typical of what you will find in many applications:
            ([generator ((() () #:rest (listof bytes?) . ->* . any) . -> . any)])]{
  As with @scheme[response/basic], except with @scheme[generator] as a function that is
  called to generate the response body, by being given an @scheme[output-response] function
- that outputs the content it is called with.
+ that outputs the content it is called with. If the @scheme[output-response] function is called
+ with arguments of zero length (when concatenated), then the output port is flushed with
+ @scheme[flush-output].
  
  Here is a short example:
  @schemeblock[
@@ -208,11 +210,11 @@ Here is an example typical of what you will find in many applications:
     #"application/octet-stream"
     (list (make-header #"Content-Disposition"
                        #"attachment; filename=\"file\""))
-    (lambda (send/bytes)
-      (send/bytes #"Some content")
-      (send/bytes)
-      (send/bytes #"Even" #"more" #"content!")
-      (send/bytes #"Now we're done")))
+    (lambda (output-response)
+      (output-response #"Some content")
+      (output-response)
+      (output-response #"Even" #"more" #"content!")
+      (output-response #"Now we're done")))
  ]
 }
 

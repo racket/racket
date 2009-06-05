@@ -110,10 +110,13 @@
          (begin
            ((response/incremental-generator bresp)
             (lambda chunks
-              (fprintf o-port "~x\r\n"
-                       (apply + 0 (map bytes-length chunks)))                     
-              (for-each (lambda (chunk) (display chunk o-port)) chunks)
-              (fprintf o-port "\r\n")))
+              (define length (apply + 0 (map bytes-length chunks)))
+              (if (zero? length)
+                  (flush-output o-port)
+                  (begin
+                    (fprintf o-port "~x\r\n" length)                  
+                    (for-each (lambda (chunk) (display chunk o-port)) chunks)
+                    (fprintf o-port "\r\n")))))
            ; one \r\n ends the last (empty) chunk and the second \r\n ends the (non-existant) trailers
            (fprintf o-port "0\r\n\r\n")))]))
 
