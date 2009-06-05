@@ -1,6 +1,6 @@
 #lang scheme/gui
 
-(require "../2htdp/universe.ss")
+(require 2htdp/universe)
 
 (define-struct unistate (active passive) #:transparent)
 

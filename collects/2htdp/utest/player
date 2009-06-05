@@ -1,5 +1,5 @@
 #! /bin/sh
-#|
+#| -*- scheme -*-
 exec mred -qu "$0" ${1+"$@"}
 |#
 
@@ -11,6 +11,6 @@ exec mred -qu "$0" ${1+"$@"}
 
 (unless (= (vector-length argv) 1)
   (error 'player "name of one player expected: $ ./player name"))
-  
+
 (make-player 200 (string->symbol (vector-ref argv 0)))
 
