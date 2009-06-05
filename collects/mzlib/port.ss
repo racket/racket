@@ -1023,43 +1023,45 @@
 (define (regexp-match-evt pattern input-port)
   (define (go nack ch poll?)
     (let try-again ()
-      (let* ([progress-evt (port-progress-evt input-port)]
-             [m ((if poll?
-                   regexp-match-peek-positions-immediate
-                   regexp-match-peek-positions)
-                 pattern input-port 0 #f progress-evt)])
-        (cond
-          [(sync/timeout 0 nack) (void)]
-          [(sync/timeout 0 progress-evt) (try-again)]
-          [(not m)
-           (if poll?
-             #f
-             (sync nack
-                   (handle-evt progress-evt
-                               (lambda (x) (try-again)))))]
-          [else
-           (let ([m2 (map (lambda (p)
-                            (and p
-                                 (let ([bstr (make-bytes (- (cdr p) (car p)))])
-                                   (unless (= (car p) (cdr p))
-                                     (let loop ([offset 0])
-                                       (let ([v (peek-bytes-avail! bstr (car p) progress-evt input-port offset)])
-                                         (unless (zero? v)
-                                           (when ((+ offset v) . < . (bytes-length bstr))
-                                             (loop (+ offset v)))))))
-                                   bstr)))
-                          m)])
-             (cond
-               [(and (zero? (cdar m)) (or poll? (channel-put ch m2)))
-                m2]
-               [(port-commit-peeked
-                 (cdar m)
-                 progress-evt
-                 (if poll? always-evt (channel-put-evt ch m2))
-                 input-port)
-                m2]
-               [poll? #f]
-               [else (try-again)]))]))))
+      (if (port-closed? input-port)
+          #f
+          (let* ([progress-evt (port-progress-evt input-port)]
+                 [m ((if poll?
+                         regexp-match-peek-positions-immediate
+                         regexp-match-peek-positions)
+                     pattern input-port 0 #f progress-evt)])
+            (cond
+              [(sync/timeout 0 nack) (void)]
+              [(sync/timeout 0 progress-evt) (try-again)]
+              [(not m)
+               (if poll?
+                   #f
+                   (sync nack
+                         (handle-evt progress-evt
+                                     (lambda (x) (try-again)))))]
+              [else
+               (let ([m2 (map (lambda (p)
+                                (and p
+                                     (let ([bstr (make-bytes (- (cdr p) (car p)))])
+                                       (unless (= (car p) (cdr p))
+                                         (let loop ([offset 0])
+                                           (let ([v (peek-bytes-avail! bstr (car p) progress-evt input-port offset)])
+                                             (unless (zero? v)
+                                               (when ((+ offset v) . < . (bytes-length bstr))
+                                                 (loop (+ offset v)))))))
+                                       bstr)))
+                              m)])
+                 (cond
+                   [(and (zero? (cdar m)) (or poll? (channel-put ch m2)))
+                    m2]
+                   [(port-commit-peeked
+                     (cdar m)
+                     progress-evt
+                     (if poll? always-evt (channel-put-evt ch m2))
+                     input-port)
+                    m2]
+                   [poll? #f]
+                   [else (try-again)]))])))))
   (poll-or-spawn go))
 
 (define-syntax (newline-rx stx)
