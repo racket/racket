@@ -84,6 +84,7 @@ static const char *type_name[PAGE_TYPES] = {
 #ifdef MZ_USE_PLACES
 static NewGC *MASTERGC;
 static NewGCMasterInfo *MASTERGCINFO;
+static THREAD_LOCAL objhead GC_objhead_template;
 #endif
 static THREAD_LOCAL NewGC *GC;
 #define GCTYPE NewGC
@@ -510,6 +511,7 @@ static inline int BTC_single_allocation_limit(NewGC *gc, size_t sizeb);
 #define COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(s) (ALIGN_BYTES_SIZE((s) + OBJHEAD_SIZE))
 #define COMPUTE_ALLOC_SIZE_FOR_BIG_PAGE_SIZE(s) (ALIGN_BYTES_SIZE((s) + OBJHEAD_SIZE + PREFIX_SIZE))
 #define BIG_PAGE_TO_OBJECT(big_page) ((void *) (((char *)((big_page)->addr)) + OBJHEAD_SIZE + PREFIX_SIZE))
+#define BIG_PAGE_TO_OBJHEAD(big_page) ((void *) (((char *)((big_page)->addr)) + PREFIX_SIZE))
 #define MED_OBJHEAD_TO_OBJECT(ptr, page_size) ((void*) (((char *)MED_OBJHEAD((ptr), (page_size))) + OBJHEAD_SIZE));
 
 /* the core allocation functions */
@@ -558,6 +560,10 @@ static void *allocate_big(const size_t request_size_bytes, int type)
   bpage->size_class = 2;
   bpage->page_type = type;
 
+#ifdef MZ_USE_PLACES
+    memcpy(BIG_PAGE_TO_OBJHEAD(bpage), &GC_objhead_template, sizeof(objhead));
+#endif
+
   /* push new bpage onto GC->gen0.big_pages */
   bpage->next = gc->gen0.big_pages;
   if(bpage->next) bpage->next->prev = bpage;
@@ -599,6 +605,10 @@ static void *allocate_medium(size_t sizeb, int type)
       while (n <= (APAGE_SIZE - sz)) {
         info = (struct objhead *)PTR(NUM(page->addr) + n);
         if (info->dead) {
+#ifdef MZ_USE_PLACES
+          info->owner = GC_objhead_template.owner;
+          //memcpy(info, &GC_objhead_template, sizeof(objhead));
+#endif
           info->dead = 0;
           info->type = type;
           page->previous_size = (n + sz);
@@ -625,6 +635,9 @@ static void *allocate_medium(size_t sizeb, int type)
   
   for (n = page->previous_size; (n + sz) <= APAGE_SIZE; n += sz) {
     info = (struct objhead *)PTR(NUM(page->addr) + n);
+#ifdef MZ_USE_PLACES
+    memcpy(info, &GC_objhead_template, sizeof(objhead));
+#endif
     info->dead = 1;
     info->size = gcBYTES_TO_WORDS(sz);
   }
@@ -735,6 +748,10 @@ inline static void *allocate(const size_t request_size, const int type)
     else
       bzero(info, allocate_size);
 
+#ifdef MZ_USE_PLACES
+    memcpy(info, &GC_objhead_template, sizeof(objhead));
+#endif
+
     info->type = type;
     info->size = BYTES_MULTIPLE_OF_WORD_TO_WORDS(allocate_size); /* ALIGN_BYTES_SIZE bumbed us up to the next word boundary */
     {
@@ -765,6 +782,10 @@ inline static void *fast_malloc_one_small_tagged(size_t request_size, int dirty)
       memset(info, 0, sizeof(objhead)); /* init objhead */
     else
       bzero(info, allocate_size);
+
+#ifdef MZ_USE_PLACES
+    memcpy(info, &GC_objhead_template, sizeof(objhead));
+#endif
 
     info->size = BYTES_MULTIPLE_OF_WORD_TO_WORDS(allocate_size); /* ALIGN_BYTES_SIZE bumbed us up to the next word boundary */
 
@@ -801,7 +822,11 @@ void *GC_malloc_pair(void *car, void *cdr)
     objhead *info = (objhead *) PTR(GC_gen0_alloc_page_ptr);
     GC_gen0_alloc_page_ptr = newptr;
 
-    memset(info, 0, sizeof(objhead) + WORD_SIZE); /* init objhead */ /* init first word of SchemeObject to 0 */
+#ifdef MZ_USE_PLACES
+    memcpy(info, &GC_objhead_template, sizeof(objhead));
+#else
+    memset(info, 0, sizeof(objhead)); /* init objhead */
+#endif
 
 
     /* info->type = type; */ /* We know that the type field is already 0 */
@@ -815,6 +840,7 @@ void *GC_malloc_pair(void *car, void *cdr)
   {
     Scheme_Simple_Object *obj = (Scheme_Simple_Object *) pair;
     obj->iso.so.type = scheme_pair_type;
+    obj->iso.so.keyex = 0; /* init first word of SchemeObject to 0 */
     obj->u.pair_val.car = car;
     obj->u.pair_val.cdr = cdr;
   }
@@ -849,20 +875,30 @@ long GC_initial_word(int request_size)
 
   const size_t allocate_size = COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(request_size);
 
+#ifdef MZ_USE_PLACES
+  memcpy(&info, &GC_objhead_template, sizeof(objhead));
+#else
   memset(&info, 0, sizeof(objhead));
+#endif
+
   info.size = BYTES_MULTIPLE_OF_WORD_TO_WORDS(allocate_size); /* ALIGN_BYTES_SIZE bumbed us up to the next word boundary */
   memcpy(&w, &info, sizeof(objhead));
 
   return w;
 }
 
-void GC_initial_words(char *buffer, int sizeb)
+void GC_initial_words(char *buffer, long sizeb)
 {
   objhead *info = (objhead *)buffer;
 
   const size_t allocate_size = COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(sizeb);
 
+#ifdef MZ_USE_PLACES
+  memcpy(info, &GC_objhead_template, sizeof(objhead));
+#else
   memset(info, 0, sizeof(objhead));
+#endif
+
   info->size = BYTES_MULTIPLE_OF_WORD_TO_WORDS(allocate_size); /* ALIGN_BYTES_SIZE bumbed us up to the next word boundary */
 }
 
@@ -1608,7 +1644,7 @@ static void NewGCMasterInfo_get_next_id(NewGC *newgc) {
   /* this could just be an atomic op if we had those */
   /* waiting for other threads to finish a possible concurrent GC is not optimal*/
   mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
-  newgc->objhead_template.owner     = MASTERGCINFO->next_GC_id++;
+  GC_objhead_template.owner = MASTERGCINFO->next_GC_id++;
   mzrt_rwlock_unlock(MASTERGCINFO->cangc);
 }
 #endif
@@ -1712,13 +1748,13 @@ void GC_construct_child_gc() {
   NewGC *newgc = init_type_tags_worker(gc, 0, 0, 0, gc->weak_box_tag, gc->ephemeron_tag, gc->weak_array_tag, gc->cust_box_tag);
   newgc->primoridal_gc = MASTERGC;
 }
-#endif
 
 static inline void save_globals_to_gc(NewGC *gc) {
   gc->saved_mark_stack              = mark_stack;
   gc->saved_GC_variable_stack       = GC_variable_stack;
   gc->saved_GC_gen0_alloc_page_ptr  = GC_gen0_alloc_page_ptr;
   gc->saved_GC_gen0_alloc_page_end  = GC_gen0_alloc_page_end;
+  gc->saved_GC_objhead_template     = GC_objhead_template;
 }
 
 static inline void restore_globals_from_gc(NewGC *gc) {
@@ -1726,9 +1762,9 @@ static inline void restore_globals_from_gc(NewGC *gc) {
   GC_variable_stack       = gc->saved_GC_variable_stack;
   GC_gen0_alloc_page_ptr  = gc->saved_GC_gen0_alloc_page_ptr;
   GC_gen0_alloc_page_end  = gc->saved_GC_gen0_alloc_page_end;
+  GC_objhead_template     = gc->saved_GC_objhead_template;
 }
 
-#ifdef MZ_USE_PLACES
 void GC_switch_out_master_gc() {
   static int initialized = 0;
 
@@ -1887,7 +1923,7 @@ void GC_mark(const void *const_p)
         /* if we're doing memory accounting, then we need to make sure the
            btc_mark is right */
 #ifdef NEWGC_BTC_ACCOUNT
-        BTC_set_btc_mark(gc, PTR(NUM(page->addr) + PREFIX_SIZE));
+        BTC_set_btc_mark(gc, BIG_PAGE_TO_OBJHEAD(page));
 #endif
       }
 

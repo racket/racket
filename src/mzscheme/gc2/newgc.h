@@ -153,11 +153,6 @@ typedef struct NewGC {
   unsigned int owner_table_size;
   AccountHook *hooks;
 
-  /* Distributed GC over places info */
-#ifdef MZ_USE_PLACES
-  objhead objhead_template;
-  unsigned short id;
-#endif
 
   unsigned long number_of_gc_runs;
   unsigned int since_last_full;
@@ -169,10 +164,14 @@ typedef struct NewGC {
   unsigned long num_major_collects;
   
   /* THREAD_LOCAL variables that need to be saved off */
-  MarkSegment *saved_mark_stack;
-  void *saved_GC_variable_stack;
+  MarkSegment  *saved_mark_stack;
+  void         *saved_GC_variable_stack;
   unsigned long saved_GC_gen0_alloc_page_ptr;
   unsigned long saved_GC_gen0_alloc_page_end;
+  /* Distributed GC over places info */
+#ifdef MZ_USE_PLACES
+  objhead       saved_GC_objhead_template;
+#endif
 
 
   /* Callbacks */
