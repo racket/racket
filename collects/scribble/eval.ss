@@ -374,13 +374,21 @@
        (defs+int #:eval (make-base-eval) [def ...] e ...)]))
 
   (define example-title
+    (make-paragraph (list "Example:")))
+  (define examples-title
     (make-paragraph (list "Examples:")))
+
+  (define-syntax pick-example-title
+    (syntax-rules ()
+      [(_ e) example-title]
+      [(_ . _) examples-title]))
+
   (define-syntax examples
     (syntax-rules ()
       [(_ #:eval ev e ...)
-       (titled-interaction #:eval ev example-title schemeinput* e ...)]
+       (titled-interaction #:eval ev (pick-example-title e ...) schemeinput* e ...)]
       [(_ e ...)
-       (titled-interaction example-title schemeinput* e ...)]))
+       (titled-interaction (pick-example-title e ...)  schemeinput* e ...)]))
   (define-syntax examples*
     (syntax-rules ()
       [(_ #:eval ev example-title e ...)
@@ -390,9 +398,9 @@
   (define-syntax defexamples
     (syntax-rules ()
       [(_ #:eval ev e ...)
-       (titled-interaction #:eval ev example-title schemedefinput* e ...)]
+       (titled-interaction #:eval ev (pick-example-title e ...)  schemedefinput* e ...)]
       [(_ e ...)
-       (titled-interaction example-title schemedefinput* e ...)]))
+       (titled-interaction (pick-example-title e ...)  schemedefinput* e ...)]))
   (define-syntax defexamples*
     (syntax-rules ()
       [(_ #:eval ev example-title e ...)
@@ -409,7 +417,7 @@
 
   (define as-examples
     (case-lambda
-     [(t) (as-examples example-title t)]
+     [(t) (as-examples examples-title t)]
      [(example-title t)
       (make-table #f
                   (list
