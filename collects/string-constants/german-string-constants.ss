@@ -697,6 +697,7 @@
  ;;; tools
  (invalid-tool-spec "Die Tool-Spezifikation in der Datei info.ss der Kollektion ~a enthält Fehler. Da sollte eine Zeichenkette oder eine Liste von Zeichenketten stehen, tatsächlich steht dort aber: ~e")
  (error-invoking-tool-title "Fehler beim Starten von Tool ~s;~s")
+ (error-loading-tool-title "Fehler beim Laden von Tool ~s\n~a") ;; ~s filled with a path, ~a filled with an error message from an exn
  (tool-tool-names-same-length
   "`tool-names' und `tools' in info.ss für ~s müssen Listen der gleichen Länge sein, tatsächlich stehen dort ~e und ~e")
  (tool-tool-icons-same-length
