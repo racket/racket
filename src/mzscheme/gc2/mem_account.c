@@ -242,7 +242,7 @@ inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr)
   if(page->size_class) {
     if(page->size_class > 1) {
       /* big page */
-      objhead *info = (objhead *)(NUM(page->addr) + PREFIX_SIZE);
+      objhead *info = BIG_PAGE_TO_OBJHEAD(page);
       
       if(info->btc_mark == gc->old_btc_mark) {
         info->btc_mark = gc->new_btc_mark;
