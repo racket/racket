@@ -6254,17 +6254,21 @@ Scheme_Object *scheme_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
   return scheme_compile_expand_expr(form, env, erec, drec, 0);
 }
 
-static Scheme_Object *pair_lifted(Scheme_Object *_ip, Scheme_Object **_id, Scheme_Object *expr, Scheme_Comp_Env *env)
+static Scheme_Object *pair_lifted(Scheme_Object *_ip, Scheme_Object **_ids, Scheme_Object *expr, Scheme_Comp_Env *env)
 {
   Scheme_Comp_Env **ip = (Scheme_Comp_Env **)_ip, *naya;
+  Scheme_Object *ids, *id;
 
   naya = scheme_new_compilation_frame(1, SCHEME_CAPTURE_LIFTED, (*ip)->next, NULL);
   (*ip)->next = naya;
   *ip = naya;
 
-  scheme_add_compilation_binding(0, *_id, naya);
+  for (ids = *_ids; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
+    id = SCHEME_CAR(ids);
+    scheme_add_compilation_binding(0, id, naya);
+  }
 
-  return icons(icons(*_id, scheme_null), icons(expr, scheme_null));
+  return icons(*_ids, icons(expr, scheme_null));
 }
 
 static Scheme_Object *add_lifts_as_let(Scheme_Object *obj, Scheme_Object *l, Scheme_Comp_Env *env,
@@ -9346,15 +9350,18 @@ Scheme_Object *scheme_generate_lifts_key(void)
 }
 
 Scheme_Object *
-scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object **_id, Scheme_Object *expr, Scheme_Comp_Env *env)
+scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object **_ids, Scheme_Object *expr, Scheme_Comp_Env *env)
 {
-  Scheme_Object *l;
+  Scheme_Object *l, *ids, *id;
 
-  /* Registers marked id: */
-  scheme_tl_id_sym(env->genv, *_id, scheme_false, 2, NULL, NULL);
+  /* Registers marked ids: */
+  for (ids = *_ids; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
+    id = SCHEME_CAR(ids);
+    scheme_tl_id_sym(env->genv, id, scheme_false, 2, NULL, NULL);
+  }
 
   l = icons(scheme_datum_to_syntax(define_values_symbol, scheme_false, sys_wraps, 0, 0), 
-	    icons(scheme_make_pair(*_id, scheme_null),
+	    icons(*_ids,
 		  icons(expr,
 			scheme_null)));
 

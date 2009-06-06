@@ -109,6 +109,7 @@ static Scheme_Object *local_module_definitions(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_module_imports(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_module_expanding_provides(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_expr(int argc, Scheme_Object *argv[]);
+static Scheme_Object *local_lift_exprs(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_context(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_end_statement(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_require(int argc, Scheme_Object *argv[]);
@@ -555,6 +556,7 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("rename-transformer-target", rename_transformer_target, 1, 1, env);
 
   GLOBAL_PRIM_W_ARITY("syntax-local-lift-expression", local_lift_expr, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-lift-values-expression", local_lift_exprs, 2, 2, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-lift-context", local_lift_context, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-lift-module-end-declaration", local_lift_end_statement, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-lift-require", local_lift_require, 2, 2, env);
@@ -4894,25 +4896,42 @@ local_module_expanding_provides(int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
-local_lift_expr(int argc, Scheme_Object *argv[])
+do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object *argv[])
 {
   Scheme_Env *menv;
   Scheme_Comp_Env *env, *orig_env;
-  Scheme_Object *id, *local_mark, *expr, *data, *vec, *id_sym;
+  Scheme_Object *id, *ids, *rev_ids, *local_mark, *expr, *data, *vec, *id_sym;
   Scheme_Lift_Capture_Proc cp;  
   Scheme_Object *orig_expr;
+  int count;
   char buf[24];
 
-  expr = argv[0];
+  if (stx_pos) {
+    if (SCHEME_INTP(argv[0])) {
+      count = SCHEME_INT_VAL(argv[0]);
+    } else if (SCHEME_BIGNUMP(argv[0])) {
+      if (SCHEME_BIGPOS(argv[0]))
+        scheme_raise_out_of_memory(NULL, NULL);
+      count = -1;
+    } else
+      count = -1;
+
+    if (count < 0)
+      scheme_wrong_type(who, "exact nonnegative integer", 0, argc, argv);
+  } else
+    count = 1;
+
+  expr = argv[stx_pos];
   if (!SCHEME_STXP(expr))
-    scheme_wrong_type("syntax-local-lift-expression", "syntax", 0, argc, argv);
+    scheme_wrong_type(who, "syntax", stx_pos, argc, argv);
 
   env = orig_env = scheme_current_thread->current_local_env;
   local_mark = scheme_current_thread->current_local_mark;
 
   if (!env)
     scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
-		     "syntax-local-lift-expression: not currently transforming");
+		     "%s: not currently transforming",
+                     who);
 
   while (env && !COMPILE_DATA(env)->lifts) {
     env = env->next;
@@ -4932,11 +4951,17 @@ local_lift_expr(int argc, Scheme_Object *argv[])
      will generate new bindings. But lots of things work better or faster
      when different bindings have different symbols. Use env->genv->id_counter
      to help keep name generation deterministic within a module. */
-  sprintf(buf, "lifted.%d", env->genv->id_counter++);
-  id_sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
+  rev_ids = scheme_null;
+  while (count--) {
+    sprintf(buf, "lifted.%d", env->genv->id_counter++);
+    id_sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
 
-  id = scheme_datum_to_syntax(id_sym, scheme_false, scheme_false, 0, 0);
-  id = scheme_add_remove_mark(id, scheme_new_mark());
+    id = scheme_datum_to_syntax(id_sym, scheme_false, scheme_false, 0, 0);
+    id = scheme_add_remove_mark(id, scheme_new_mark());
+
+    rev_ids = scheme_make_pair(id, rev_ids);
+  }
+  ids = scheme_reverse(rev_ids);
 
   vec = COMPILE_DATA(env)->lifts;
   cp = *(Scheme_Lift_Capture_Proc *)SCHEME_VEC_ELS(vec)[1];
@@ -4952,15 +4977,35 @@ local_lift_expr(int argc, Scheme_Object *argv[])
   expr = scheme_stx_activate_certs(expr);
   orig_expr = expr;
 
-  expr = cp(data, &id, expr, orig_env);
+  expr = cp(data, &ids, expr, orig_env);
 
   expr = scheme_make_pair(expr, SCHEME_VEC_ELS(vec)[0]);
   SCHEME_VEC_ELS(vec)[0] = expr;
 
-  SCHEME_EXPAND_OBSERVE_LOCAL_LIFT(scheme_get_expand_observe(), id, orig_expr);
+  rev_ids = scheme_null;
+  for (; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
+    id = SCHEME_CAR(ids);
+    SCHEME_EXPAND_OBSERVE_LOCAL_LIFT(scheme_get_expand_observe(), id, orig_expr);
+    id = scheme_add_remove_mark(id, local_mark);
+    rev_ids = scheme_make_pair(id, rev_ids);
+  }
+  ids = scheme_reverse(rev_ids);
 
-  id = scheme_add_remove_mark(id, local_mark);
-  return id;
+  return ids;
+}
+
+static Scheme_Object *
+local_lift_expr(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *ids;
+  ids = do_local_lift_expr("syntax-local-lift-expression", 0, argc, argv);
+  return SCHEME_CAR(ids);
+}
+
+static Scheme_Object *
+local_lift_exprs(int argc, Scheme_Object *argv[])
+{
+  return do_local_lift_expr("syntax-local-lift-values-expression", 1, argc, argv);
 }
 
 static Scheme_Object *

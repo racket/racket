@@ -425,6 +425,15 @@ Other syntactic forms can capture lifts by using
 
 @transform-time[]}
 
+@defproc[(syntax-local-lift-values-expression [n exact-nonnegative-integer?] [stx syntax?])
+         (listof identifier?)]{
+
+Like @scheme[syntax-local-lift-expression], but binds the result to
+@scheme[n] identifiers, and returns a list of the @scheme[n]
+identifiers.
+
+@transform-time[]}
+
 
 @defproc[(syntax-local-lift-context)
          any/c]{
