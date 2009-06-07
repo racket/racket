@@ -175,7 +175,7 @@ Raised when the server produces a mal-formed response.}
   "Status: RO")
  ("some body" "text" "goes" "." "here" "." "")
  #,pt (get-unique-id/single c 205)
- #, @schemeerror{no message numbered 205 available for unique id}
+ @#,schemeerror{no message numbered 205 available for unique id}
  #,pt (list-tail (get-unique-id/all c) 194)
  ((195 . "e24d13c7ef050000") (196 . "3ad2767070050000"))
  #,pt (get-unique-id/single c 196)

@@ -112,7 +112,7 @@ Raised for errors when handling cookies.}
 Produces
 
 @schemeblock[
-#, @schemeresultfont{"foo=bar; Max-Age=3600; Path=/servlets; Version=1"}
+@#,schemeresultfont{"foo=bar; Max-Age=3600; Path=/servlets; Version=1"}
 ]
 
 To use this output in a ``regular'' CGI, instead of the last line use:
