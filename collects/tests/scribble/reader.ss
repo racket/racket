@@ -553,20 +553,6 @@ bar}
                  "done") "\n"
       "end")
 ---
-@foo{
-  @|| bar @||
-  @|| baz}
--@->
-(foo " bar " "\n" " baz")
----
-@foo{bar
-     @|baz| bbb
-     @|x1 x2| x3 x4
-     @|| waaaah
-    }
--@->
-(foo "bar" "\n" baz " bbb" "\n" x1 x2 " x3 x4" "\n" " waaaah")
----
 @foo{x1
      x2@;
               y2
@@ -608,6 +594,20 @@ bar}
      @||}
 -@->
 (foo "\n" "bar" "\n")
+---
+@foo{
+  @|| bar @||
+  @|| baz}
+-@->
+(foo " bar " "\n" " baz")
+---
+@foo{bar
+     @|baz| bbb
+     @|x1 x2| x3 x4
+     @|| waaaah
+    }
+-@->
+(foo "bar" "\n" baz " bbb" "\n" x1 x2 " x3 x4" "\n" " waaaah")
 ---
 ;; -------------------- some code test
 ---
