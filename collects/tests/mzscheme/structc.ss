@@ -167,7 +167,7 @@
 (error-test '(struct-case-lambda x . 5) syntaxe?)
 (error-test '(struct-case-lambda x ()) syntaxe?)
 (error-test '(struct-case-lambda x else) syntaxe?)
-(error-test '(struct-case-lambda x (else 9) (exn? 8)) syntaxe?))
+(error-test '(struct-case-lambda x (else 9) (exn? 8)) syntaxe?)
 
 (define time-branch
   (lambda (proc list)
