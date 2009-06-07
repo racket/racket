@@ -128,20 +128,22 @@
       [else
        (let ([start-line (or (lw-line lw) line)]
              [start-column (or (lw-column lw) col)])
-         (let-values ([(last-line first-column last-column)
-                       (add-spans/obj (lw-e lw) start-line start-column)])
-           (unless (lw-line lw)
-             (set-lw-line! lw line))
-           (set-lw-line-span! lw (- last-line start-line))
-           
-           (unless (lw-column lw)
-             (set-lw-column! lw col))
-           (let ([new-col (min (lw-column lw)
-                               first-column)])
-             (set-lw-column! lw new-col)
-             (set-lw-column-span! lw (- last-column new-col)))
-           
-           (values last-line first-column last-column)))]))
+         (when (and start-line  ;; if we don't have src loc info, just give up.
+                    start-column)
+           (let-values ([(last-line first-column last-column)
+                         (add-spans/obj (lw-e lw) start-line start-column)])
+             (unless (lw-line lw)
+               (set-lw-line! lw line))
+             (set-lw-line-span! lw (- last-line start-line))
+             
+             (unless (lw-column lw)
+               (set-lw-column! lw col))
+             (let ([new-col (min (lw-column lw)
+                                 first-column)])
+               (set-lw-column! lw new-col)
+               (set-lw-column-span! lw (- last-column new-col)))
+             
+             (values last-line first-column last-column))))]))
   (define (add-spans/obj e line col)
     (cond
       [(string? e) 
