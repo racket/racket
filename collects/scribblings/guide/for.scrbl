@@ -421,14 +421,14 @@ fast-parallel-seq (in-parallel fast-seq ...)
 
 @examples[
 (time (for ([i (in-range 100000)])
-        (for ([elem (in-list '(a b c d e f g h))]) (code:comment #, @elem{fast})
+        (for ([elem (in-list '(a b c d e f g h))]) (code:comment @#,elem{fast})
           (void))))
 (time (for ([i (in-range 100000)])
-        (for ([elem '(a b c d e f g h)])           (code:comment #, @elem{slower})
+        (for ([elem '(a b c d e f g h)])           (code:comment @#,elem{slower})
           (void))))
 (time (let ([seq (in-list '(a b c d e f g h))])
         (for ([i (in-range 100000)])
-          (for ([elem seq])                        (code:comment #, @elem{slower})
+          (for ([elem seq])                        (code:comment @#,elem{slower})
             (void)))))
 ]
 

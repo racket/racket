@@ -539,7 +539,7 @@ framework)) @(require (for-label scheme/gui)) @(require
 
 
 
-    Calls @scheme[(make-object #, @method[frame:editor<%> get-editor%])].
+    Calls @scheme[(make-object @#,method[frame:editor<%> get-editor%])].
 
   }
   @defmethod*[(((revert) void))]{

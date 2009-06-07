@@ -41,7 +41,7 @@ a sequence of characters). These grammatical specifications are shown
 as in the following specification of a @schemekeywordfont{something}
 form:
 
-@specsubform[(#, @schemekeywordfont{something} id thing-expr ...)
+@specsubform[(@#,schemekeywordfont{something} id thing-expr ...)
              #:contracts ([thing-expr number?])]
 
 Within such specifications,
@@ -77,7 +77,7 @@ Within such specifications,
               ]} 
 
  @item{Contracts indicate constraints on sub-expression results. For
-       example, @scheme[_thing-expr #, @elem{:} number?] indicates that
+       example, @scheme[_thing-expr @#,elem{:} number?] indicates that
        the expression @scheme[_thing-expr] must produce a number.}]
 
 @;------------------------------------------------------------------------
@@ -611,13 +611,13 @@ corresponds to the default @tech{module name resolver}.
  symbolically.
 
  @examples[
- (code:comment #, @t{@filepath{main.ss} in package @filepath{farm} by @filepath{mcdonald}:})
+ (code:comment @#,t{@filepath{main.ss} in package @filepath{farm} by @filepath{mcdonald}:})
  (eval:alts (require (planet mcdonald/farm)) (void))
- (code:comment #, @t{@filepath{main.ss} in version >= 2.0 of package @filepath{farm} by @filepath{mcdonald}:})
+ (code:comment @#,t{@filepath{main.ss} in version >= 2.0 of package @filepath{farm} by @filepath{mcdonald}:})
  (eval:alts (require (planet mcdonald/farm:2)) (void))
- (code:comment #, @t{@filepath{main.ss} in version >= 2.5 of package @filepath{farm} by @filepath{mcdonald}:})
+ (code:comment @#,t{@filepath{main.ss} in version >= 2.5 of package @filepath{farm} by @filepath{mcdonald}:})
  (eval:alts (require (planet mcdonald/farm:2:5)) (void))
- (code:comment #, @t{@filepath{duck.ss} in version >= 2.5 of package @filepath{farm} by @filepath{mcdonald}:})
+ (code:comment @#,t{@filepath{duck.ss} in version >= 2.5 of package @filepath{farm} by @filepath{mcdonald}:})
  (eval:alts (require (planet mcdonald/farm:2:5/duck)) (void))
  ]}
 
@@ -1135,10 +1135,10 @@ the reference evaluates to the value in the location associated with
 the binding.
 
 When the expander encounters an @scheme[id] that is not bound by a
-module-level or local binding, it converts the expression to @scheme[(#,
-@schemeidfont{#%top} . id)] giving @schemeidfont{#%top} the lexical
-context of the @scheme[id]; typically, that context refers to
-@scheme[#%top]. See also @secref["expand-steps"].
+module-level or local binding, it converts the expression to
+@scheme[(@#,schemeidfont{#%top} . id)] giving @schemeidfont{#%top}
+the lexical context of the @scheme[id]; typically, that context refers
+to @scheme[#%top]. See also @secref["expand-steps"].
 
 @examples[
 (define x 10)
@@ -1198,10 +1198,10 @@ Applies a procedure, when @scheme[proc-expr] is not an
 identifier that has a transformer binding (see
 @secref["expansion"]).
 
-More precisely, the expander converts this form to @scheme[(#,
-@schemeidfont{#%app} proc-expr arg ...)], giving @schemeidfont{#%app}
-the lexical context that is associated with the original form (i.e.,
-the pair that combines @scheme[proc-expr] and its
+More precisely, the expander converts this form to
+@scheme[(@#,schemeidfont{#%app} proc-expr arg ...)], giving
+@schemeidfont{#%app} the lexical context that is associated with the
+original form (i.e., the pair that combines @scheme[proc-expr] and its
 arguments). Typically, the lexical context of the pair indicates the
 procedure-application @scheme[#%app] that is described next. See also
 @secref["expand-steps"].
@@ -1790,7 +1790,7 @@ A @scheme[case-clause] that starts with @scheme[else] must be the last
                 ([head id
                        (head args)]
                  [args (code:line arg ...)
-                       (code:line arg ... #, @schemeparenfont{.} rest-id)]
+                       (code:line arg ... @#,schemeparenfont{.} rest-id)]
                  [arg arg-id
                       [arg-id default-expr]
                       (code:line keyword arg-id)
@@ -1805,7 +1805,7 @@ defined as follows:
 @schemeblock[
 (#,cvt (id . _kw-formals) . _datum)   = (lambda _kw-formals . _datum)
 (#,cvt (head . _kw-formals) . _datum) = (lambda _kw-formals expr)
-                                         #, @elem{if} (#,cvt head . _datum) = expr
+                                         @#,elem{if} (#,cvt head . _datum) = expr
 ]
 
 At the top level, the top-level binding @scheme[id] is created after

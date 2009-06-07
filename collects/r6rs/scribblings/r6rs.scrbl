@@ -178,7 +178,7 @@ are searched in order, and before the installation's collections.
 
 The @schememodname[r6rs] language is usually used in the form
 @schememetafont{#!}@schememodname[r6rs], which is equivalent to
-@scheme[#, @hash-lang[] #, @schememodname[r6rs]] and is also valid
+@scheme[@#,hash-lang[] @#,schememodname[r6rs]] and is also valid
 @|r6rs| syntax.
 
 The @schememodname[r6rs] module language provides only a
@@ -259,13 +259,13 @@ applied to each symbol before concatenating them:
 Examples (assuming a typical PLT Scheme installation):
 
 @schemeblock[
-(rnrs io simple (6))  #, @elem{means}  (lib "rnrs/io/simple-6.ss")
-(rnrs)                #, @elem{means}  (lib "rnrs/main-6.ss")
-(rnrs main)           #, @elem{means}  (lib "rnrs/main_.ss")
-(rnrs (6))            #, @elem{means}  (lib "rnrs/main-6.ss")
-(scheme base)         #, @elem{means}  (lib "scheme/base.ss")
-(achtung!)            #, @elem{means}  (lib "achtung%21/main.ss")
-(funco new-λ)         #, @elem{means}  (lib "funco/new-%ce%bb.ss")
+(rnrs io simple (6))  @#,elem{means}  (lib "rnrs/io/simple-6.ss")
+(rnrs)                @#,elem{means}  (lib "rnrs/main-6.ss")
+(rnrs main)           @#,elem{means}  (lib "rnrs/main_.ss")
+(rnrs (6))            @#,elem{means}  (lib "rnrs/main-6.ss")
+(scheme base)         @#,elem{means}  (lib "scheme/base.ss")
+(achtung!)            @#,elem{means}  (lib "achtung%21/main.ss")
+(funco new-λ)         @#,elem{means}  (lib "funco/new-%ce%bb.ss")
 ]
 
 

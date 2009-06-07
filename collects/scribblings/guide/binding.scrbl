@@ -75,7 +75,7 @@ shadowed.
 
 @examples[
 define
-(eval:alts (let ([#, @schemeidfont{define} 5]) #, @schemeidfont{define}) (let ([define 5]) define))
+(eval:alts (let ([@#,schemeidfont{define} 5]) @#,schemeidfont{define}) (let ([define 5]) define))
 ]
 
 Shadowing standard bindings in this way is rarely a good idea, but the

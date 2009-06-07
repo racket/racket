@@ -120,7 +120,7 @@ We can insert the old text editor (which we recently removed from the
  creating an editor snip:
 
 @schemeblock[
-(define s (make-object editor-snip% t)) (code:comment #, @t{@scheme[t] is the old text editor})
+(define s (make-object editor-snip% t)) (code:comment @#,t{@scheme[t] is the old text editor})
 (send pb #,(:: editor<%> insert) s)
 ]
 
@@ -128,7 +128,7 @@ An individual snip cannot be inserted into different editors at the
  same time, or inserted multiple times in the same editor:
 
 @schemeblock[
-(send pb #,(:: editor<%> insert) s) (code:comment #, @t{no effect})
+(send pb #,(:: editor<%> insert) s) (code:comment @#,t{no effect})
 ]
 
 However, we can make a deep copy of the snip and insert the copy into

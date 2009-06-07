@@ -35,8 +35,8 @@
             (define id expr)
             (define id (lambda (id id ...) expr))
             (define-struct id (id ...))]
-[expr (code:line (id expr expr ...) (code:comment #, @seclink["beginner-call"]{function call}))
-      (code:line (prim-op expr ...) (code:comment #, @seclink["beginner-prim-call"]{primitive operation call}))
+[expr (code:line (id expr expr ...) (code:comment @#,seclink["beginner-call"]{function call}))
+      (code:line (prim-op expr ...) (code:comment @#,seclink["beginner-prim-call"]{primitive operation call}))
       (cond [expr expr] ... [expr expr])
       (cond [expr expr] ... [else expr])
       (if expr expr expr)
@@ -44,8 +44,8 @@
       (or expr expr expr ...)
       empty
       id
-      (code:line #, @elem{@schemevalfont{'}@scheme[quoted]} (code:comment #, @seclink["beginner-abbr-quote"]{quoted value}))
-      (code:line #, @elem{@schemevalfont{`}@scheme[quasiquoted]} (code:comment #, @seclink["beginner-abbr-quasiquote"]{quasiquote}))
+      (code:line @#,elem{@schemevalfont{'}@scheme[quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
+      (code:line @#,elem{@schemevalfont{`}@scheme[quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
       number
       true
       false
@@ -70,7 +70,7 @@ Creates symbols and abbreviates nested lists.
 
 Normally, this form is written with a @litchar{'}, like
 @scheme['(apple banana)], but it can also be written with @scheme[quote], like
-@scheme[(#, @scheme[quote] (apple banana))].}
+@scheme[(@#,scheme[quote] (apple banana))].}
 
 @; ----------------------------------------
 
@@ -87,7 +87,7 @@ to expression ``unquotes.''
 Normally, this form is written with a backquote, @litchar{`}, like
 @scheme[`(apple ,(+ 1 2))], but it can also be written with
 @scheme[quasiquote], like
-@scheme[(#, @scheme[quasiquote] (apple ,(+ 1 2)))].}
+@scheme[(@#,scheme[quasiquote] (apple ,(+ 1 2)))].}
 
 
 @deftogether[(

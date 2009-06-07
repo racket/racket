@@ -114,7 +114,7 @@ predicate:
   (car 17))
 (eval:alts ; `examples' doesn't catch break exceptions!
  (with-handlers ([exn:fail? (lambda (v) 'oops)])
-   (break-thread (current-thread)) (code:comment #, @t{simulate Ctl-C})
+   (break-thread (current-thread)) (code:comment @#,t{simulate Ctl-C})
    (car 17))
  (error "user break"))
 ]
@@ -203,7 +203,7 @@ changing @scheme[0] to grab the continuation before returning 0:
 (define saved-k #f)
 (define (save-it!)
   (call-with-composable-continuation
-   (lambda (k) (code:comment #, @t{@scheme[k] is the captured continuation})
+   (lambda (k) (code:comment @#,t{@scheme[k] is the captured continuation})
      (set! saved-k k) 
      0)))
 (+ 1 (+ 1 (+ 1 (save-it!))))

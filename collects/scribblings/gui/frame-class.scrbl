@@ -250,9 +250,9 @@ If the event does not correspond to a complete shortcut combination,
 Returns the result of
 
 @schemeblock[
-(or (send this #, @method[frame% on-menu-char] event)
-    (send this #, @method[top-level-window<%> on-system-menu-char] event)
-    (send this #, @method[top-level-window<%> on-traverse-char] event))
+(or (send this @#,method[frame% on-menu-char] event)
+    (send this @#,method[top-level-window<%> on-system-menu-char] event)
+    (send this @#,method[top-level-window<%> on-traverse-char] event))
 ]
 }
 

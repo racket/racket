@@ -11,7 +11,7 @@
 A program module is written as
 
 @schemeblock[
-#, @BNF-seq[@litchar{#lang} @nonterm{langname} @kleenestar{@nonterm{topform}}]
+@#,BNF-seq[@litchar{#lang} @nonterm{langname} @kleenestar{@nonterm{topform}}]
 ]
 
 where a @nonterm{topform} is either a @nonterm{definition} or an
@@ -67,11 +67,11 @@ A definition of the form
 
 @moreguide["define"]{definitions}
 
-@schemeblock[#, @val-defn-stx]
+@schemeblock[@#,val-defn-stx]
 
 binds @nonterm{id} to the result of @nonterm{expr}, while
 
-@schemeblock[#, @fun-defn-stx]
+@schemeblock[@#,fun-defn-stx]
 
 binds the first @nonterm{id} to a function (also called a
 @defterm{procedure}) that takes arguments as named by the remaining
@@ -81,9 +81,9 @@ the last @nonterm{expr}.
 
 @defexamples[
 #:eval ex-eval
-(code:line (define pie 3)             (code:comment #, @t{defines @scheme[pie] to be @scheme[3]}))
-(code:line (define (piece str)        (code:comment #, @t{defines @scheme[piece] as a function})
-             (substring str 0 pie))   (code:comment #, @t{ of one argument}))
+(code:line (define pie 3)             (code:comment @#,t{defines @scheme[pie] to be @scheme[3]}))
+(code:line (define (piece str)        (code:comment @#,t{defines @scheme[piece] as a function})
+             (substring str 0 pie))   (code:comment @#,t{ of one argument}))
 pie
 (piece "key lime")
 ]
@@ -192,12 +192,12 @@ identifiers, as opposed to arithmetic expressions. Here are several
 more examples:
 
 @schemeblock[
-#, @schemeid[+]
-#, @schemeid[Hfuhruhurr]
-#, @schemeid[integer?]
-#, @schemeid[pass/fail]
-#, @schemeid[john-jacob-jingleheimer-schmidt]
-#, @schemeid[a-b-c+1-2-3]
+@#,schemeid[+]
+@#,schemeid[Hfuhruhurr]
+@#,schemeid[integer?]
+@#,schemeid[pass/fail]
+@#,schemeid[john-jacob-jingleheimer-schmidt]
+@#,schemeid[a-b-c+1-2-3]
 ]
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -210,7 +210,7 @@ terminology. The syntax of a function call is
 @moreguide["application"]{function calls}
 
 @schemeblock[
-#, app-expr-stx
+#,app-expr-stx
 ]
 
 where the number of @nonterm{expr}s determines the number of
@@ -225,20 +225,20 @@ pre-defined names are hyperlinked to the reference manual. So, you can
 click on an identifier to get full details about its use.
 
 @interaction[
-(code:line (string-append "rope" "twine" "yarn")  (code:comment #, @t{append strings}))
-(code:line (substring "corduroys" 0 4)            (code:comment #, @t{extract a substring}))
-(code:line (string-length "shoelace")             (code:comment #, @t{get a string's length}))
-(code:line (string? "c'est ne pas une string")    (code:comment #, @t{recognize strings}))
+(code:line (string-append "rope" "twine" "yarn")  (code:comment @#,t{append strings}))
+(code:line (substring "corduroys" 0 4)            (code:comment @#,t{extract a substring}))
+(code:line (string-length "shoelace")             (code:comment @#,t{get a string's length}))
+(code:line (string? "c'est ne pas une string")    (code:comment @#,t{recognize strings}))
 (string? 1)
-(code:line (sqrt 16)                              (code:comment #, @t{find a square root}))
+(code:line (sqrt 16)                              (code:comment @#,t{find a square root}))
 (sqrt -16)
-(code:line (+ 1 2)                                (code:comment #, @t{add numbers}))
-(code:line (- 2 1)                                (code:comment #, @t{subtract numbers}))
-(code:line (< 2 1)                                (code:comment #, @t{compare numbers}))
+(code:line (+ 1 2)                                (code:comment @#,t{add numbers}))
+(code:line (- 2 1)                                (code:comment @#,t{subtract numbers}))
+(code:line (< 2 1)                                (code:comment @#,t{compare numbers}))
 (>= 2 1)
-(code:line (number? "c'est une number")           (code:comment #, @t{recognize numbers}))
+(code:line (number? "c'est une number")           (code:comment @#,t{recognize numbers}))
 (number? 1)
-(code:line (equal? 6 "half dozen")                (code:comment #, @t{compare anything}))
+(code:line (equal? 6 "half dozen")                (code:comment @#,t{compare anything}))
 (equal? 6 6)
 (equal? "half dozen" "half dozen")
 ]
@@ -249,7 +249,7 @@ click on an identifier to get full details about its use.
 The next simplest kind of expression is an @scheme[if] conditional:
 
 @schemeblock[
-#, if-expr-stx
+#,if-expr-stx
 ]
 
 @moreguide["conditionals"]{conditionals}
@@ -306,8 +306,8 @@ provides more readable shortcuts through the @scheme[and] and
 @moreguide["and+or"]{@scheme[and] and @scheme[or]}
 
 @schemeblock[
-#, and-expr-stx
-#, or-expr-stx
+#,and-expr-stx
+#,or-expr-stx
 ]
 
 The @scheme[and] form short-circuits: it stops and returns @scheme[#f]
@@ -345,7 +345,7 @@ The shorthand for a sequence of tests is the @scheme[cond] form:
 @moreguide["cond"]{@scheme[cond]}
 
 @schemeblock[
-#, cond-expr-stx
+#,cond-expr-stx
 ]
 
 A @scheme[cond] form contains a sequence of clauses between square
@@ -393,7 +393,7 @@ expression for the function, instead of just an @nonterm{id}:
 @moreguide["application"]{function calls}
 
 @schemeblock[
-#, app2-expr-stx
+#,app2-expr-stx
 ]
 
 The first @nonterm{expr} is often an @nonterm{id}, such
@@ -462,7 +462,7 @@ identifiers for the function's arguments, and then the function's
 body expressions:
 
 @schemeblock[
-#, lambda-expr-stx
+#,lambda-expr-stx
 ]
 
 Evaluating a @scheme[lambda] form by itself produces a function:
@@ -506,8 +506,8 @@ function. In other words, the @scheme[lambda]-generated function
 (twice louder "really")
 ]
 
-We have so far referred to definitions of the form @scheme[(define #,
-@nonterm{id} #, @nonterm{expr})] as ``non-function
+We have so far referred to definitions of the form @scheme[(define
+@#,nonterm{id} @#,nonterm{expr})] as ``non-function
 definitions.'' This characterization is misleading, because the
 @nonterm{expr} could be a @scheme[lambda] form, in which case
 the definition is equivalent to using the ``function'' definition
@@ -541,8 +541,8 @@ body expressions:
 @moreguide["intdefs"]{local (internal) definitions}
 
 @schemeblock[
-#, fun-defn2-stx
-#, lambda2-expr-stx
+#,fun-defn2-stx
+#,lambda2-expr-stx
 ]
 
 Definitions at the start of a function body are local to the
@@ -550,8 +550,8 @@ function body.
 
 @defexamples[
 (define (converse s)
-  (define (starts? s2) (code:comment #, @t{local to @scheme[converse]})
-    (define len2 (string-length s2))  (code:comment #, @t{local to @scheme[starts?]})
+  (define (starts? s2) (code:comment @#,t{local to @scheme[converse]})
+    (define len2 (string-length s2))  (code:comment @#,t{local to @scheme[starts?]})
     (and (>= (string-length s) len2)
          (equal? s2 (substring s 0 len2))))
   (cond
@@ -560,7 +560,7 @@ function body.
    [else "huh?"]))
 (converse "hello!")
 (converse "urp")
-(eval:alts (code:line starts? (code:comment #, @t{outside of @scheme[converse], so...}))
+(eval:alts (code:line starts? (code:comment @#,t{outside of @scheme[converse], so...}))
            (parameterize ([current-namespace (make-base-namespace)]) (eval 'starts?)))
 ]
 
@@ -572,7 +572,7 @@ of requiring a separate @scheme[define] for each identifier.
 @moreguide["intdefs"]{@scheme[let] and @scheme[let*]}
 
 @schemeblock[
-#, let-expr-stx
+#,let-expr-stx
 ]
 
 Each binding clause is an @nonterm{id} and a

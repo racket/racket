@@ -25,11 +25,11 @@ Abstraktion - fortgeschritten} that goes with the German textbook
           string
           character
           (quoted ...)
-          #, @elem{@schemevalfont{'}@scheme[quoted]}]
+          @#,elem{@schemevalfont{'}@scheme[quoted]}]
 )
 (
   (set! id expr)
-  (code:line #, @elem{@schemevalfont{'}@scheme[quoted]} (code:comment #, @seclink["advanced-quote"]{Quote-Literal}))
+  (code:line @#,elem{@schemevalfont{'}@scheme[quoted]} (code:comment @#,seclink["advanced-quote"]{Quote-Literal}))
 )
 ]
 

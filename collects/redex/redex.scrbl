@@ -282,7 +282,7 @@ Multiple ellipses are allowed. For example, this @|pattern|:
 
 matches this sexpression:
 
-@schemeblock[(#, @|tttterm| (a a))]
+@schemeblock[(@#,tttterm (a a))]
 
 three different ways. One where the first @tt{a} in the @pattern
 matches nothing, and the second matches both of the
@@ -302,7 +302,7 @@ As an example, this @|pattern|:
 
 only matches this sexpression:
 
-@schemeblock[(#, @|tttterm| (a a))]
+@schemeblock[(@#,tttterm (a a))]
 
 one way, with each named @pattern matching a single a. Unlike
 the above, the two @|pattern|s with mismatched lengths is ruled
@@ -318,7 +318,7 @@ Thus, with the @|pattern|:
 
 and the expression
 
-@schemeblock[(#, @|tttterm| (a a))]
+@schemeblock[(@#,tttterm (a a))]
 
 two matches occur, one where @tt{x} is bound to @scheme['()] and
 @tt{y} is bound to @scheme['(a a)] and one where @tt{x} is bound to
@@ -328,8 +328,8 @@ bound to @scheme['()].
 }
 ]
 
-@defform*[[(redex-match lang #, @|ttpattern| any)
-           (redex-match lang #, @|ttpattern|)]]{
+@defform*[[(redex-match lang @#,ttpattern any)
+           (redex-match lang @#,ttpattern)]]{
           
 If @scheme[redex-match] receives three arguments, it
 matches the pattern (in the language) against its third
@@ -446,7 +446,7 @@ them.}
 produces the boolean or the string.}
 ]
 
-@defform[(term #, @|tttterm|)]{
+@defform[(term @#,tttterm)]{
 
 This form is used for construction of a term.
 
@@ -508,7 +508,7 @@ Redex's full pattern matching facilities, see @scheme[term-match] and
 
 }
 
-@defform[(term-match language [#, @|ttpattern| expression] ...)]{
+@defform[(term-match language [@#,ttpattern expression] ...)]{
 
 This produces a procedure that accepts term (or quoted)
 expressions and checks them against each pattern. The
@@ -522,7 +522,7 @@ compiled in an effort to speed up matching. Using the procedural
 result multiple times to avoid compiling the patterns multiple times.
 }
 
-@defform[(term-match/single language [#, @|ttpattern| expression] ...)]{
+@defform[(term-match/single language [@#,ttpattern expression] ...)]{
 
 This produces a procedure that accepts term (or quoted)
 expressions and checks them against each pattern. The
@@ -578,7 +578,7 @@ all non-GUI portions of Redex) and also exported by
 @schememodname[redex] (which includes all of Redex).
 
 @defform/subs[(define-language lang-name 
-                (non-terminal-spec #, @|ttpattern| ...)
+                (non-terminal-spec @#,ttpattern ...)
                 ...)
               ([non-terminal-spec symbol (symbol ...)])]{
 
@@ -613,7 +613,7 @@ variables, @scheme[c] for the evaluation contexts and @scheme[v] for values.
 }
 
 @defform[(define-extended-language language language
-           (non-terminal #, @|ttpattern| ...)
+           (non-terminal @#,ttpattern ...)
            ...)]{
 
 This form extends a language with some new, replaced, or
@@ -671,13 +671,13 @@ all non-GUI portions of Redex) and also exported by
 
 @defform/subs[#:literals (--> fresh side-condition where) 
               (reduction-relation language domain main-arrow reduction-case ...)
-              ([domain (code:line) (code:line #:domain #, @|ttpattern|)]
+              ([domain (code:line) (code:line #:domain @#,ttpattern)]
                [main-arrow (code:line) (code:line #:arrow arrow)]
-               [reduction-case (--> #, @|ttpattern| #, @|tttterm| extras ...)]
+               [reduction-case (--> @#,ttpattern @#,tttterm extras ...)]
                [extras name
                        (fresh fresh-clause ...)
                        (side-condition scheme-expression ...)
-                       (where tl-pat #, @|tttterm|)]
+                       (where tl-pat @#,tttterm)]
                [fresh-clause var ((var1 ...) (var2 ...))]
                [tl-pat identifier (tl-pat-ele ...)]
                [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
@@ -739,9 +739,9 @@ defines a reduction relation for the lambda-calculus above.
 @defform/none[#:literals (with reduction-relation)
          (reduction-relation 
           language
-          (arrow-var #, @|ttpattern| #, @|tttterm|) ...
+          (arrow-var @#,ttpattern @#,tttterm) ...
           with
-          [(arrow #, @|ttpattern| #, @|tttterm|)
+          [(arrow @#,ttpattern @#,tttterm)
            (arrow-var var var)] ...)]{
 
 Defines a reduction relation with shortcuts. As above, the
@@ -881,12 +881,12 @@ all non-GUI portions of Redex) and also exported by
 @defform/subs[#:literals (: ->)
               (define-metafunction language-exp
                contract
-               [(name #, @|ttpattern| ...) #, @|tttterm| extras ...] 
+               [(name @#,ttpattern ...) @#,tttterm extras ...] 
                ...)
                ([contract (code:line) 
-                          (code:line id : #, @|ttpattern| ... -> #, @|ttpattern|)]
+                          (code:line id : @#,ttpattern ... -> @#,ttpattern)]
                 [extras (side-condition scheme-expression)
-                        (where tl-pat #, @|tttterm|)]
+                        (where tl-pat @#,tttterm)]
                 [tl-pat identifier (tl-pat-ele ...)]
                 [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
 
@@ -965,7 +965,7 @@ match.
 
 @defform[(define-metafunction/extension extending-name language-exp 
            contract
-           [(name #, @|ttpattern| ...) #, @|tttterm| (side-condition scheme-expression) ...]
+           [(name @#,ttpattern ...) @#,tttterm (side-condition scheme-expression) ...]
            ...)]{
 
 This defines a metafunction as an extension of an existing
@@ -974,7 +974,7 @@ patterns were in this definitions, with the name of the
 function fixed up to be @scheme[extending-name]. 
 }
 
-@defform[(in-domain? (metafunction-name #, @|tttterm| ...))]{
+@defform[(in-domain? (metafunction-name @#,tttterm ...))]{
 Returns @scheme[#t] if the inputs specified to @scheme[metafunction-name] are
 legtimate inputs according to @scheme[metafunction-name]'s contract,
 and @scheme[#f] otherwise.
@@ -1069,7 +1069,7 @@ an association list mapping names to application counts.}
            (apply-reduction-relation* equals (term (+ 1 2 3)))
            (covered-cases coverage)))]
 
-@defform/subs[(generate-term language #, @|ttpattern| size-exp kw-args ...)
+@defform/subs[(generate-term language @#,ttpattern size-exp kw-args ...)
               ([kw-args (code:line #:attempts attempts-expr)
                         (code:line #:retries retries-expr)])
               #:contracts ([size-expr natural-number/c]
@@ -1096,7 +1096,7 @@ argument @scheme[retries-expr] (default @scheme[100]) bounds the number of times
 @scheme[generate-term] is unable to produce a satisfying term after 
 @scheme[retries-expr] attempts, it raises an error}
 
-@defform/subs[(redex-check language #, @|ttpattern| property-expr kw-arg ...)
+@defform/subs[(redex-check language @#,ttpattern property-expr kw-arg ...)
               ([kw-arg (code:line #:attempts attempts-expr)
                        (code:line #:source metafunction)
                        (code:line #:source relation-expr)

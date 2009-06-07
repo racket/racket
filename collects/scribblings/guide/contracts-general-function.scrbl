@@ -74,8 +74,8 @@ Take a look at this excerpt from a string-processing module, inspired by the
 scheme
 
 (provide/contract
- (code:comment #, @t{pad the given str left and right with})
- (code:comment #, @t{the (optional) char so that it is centered})
+ (code:comment @#,t{pad the given str left and right with})
+ (code:comment @#,t{the (optional) char so that it is centered})
  [string-pad-center (->* (string? natural-number/c)
                          (char?) 
                          string?)])

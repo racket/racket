@@ -218,15 +218,15 @@ keyword, @scheme[prop:equal+hash], and then a list of three functions:
   #:property
   prop:equal+hash
   (list (lambda (a b equal?-recur) 
-          (code:comment #, @t{compare @scheme[a] and @scheme[b]})
+          (code:comment @#,t{compare @scheme[a] and @scheme[b]})
           (and (equal?-recur (lead-width a) (lead-width b))
                (equal?-recur (lead-height a) (lead-height b))))
         (lambda (a hash-recur)
-          (code:comment #, @t{compute primary hash code of @scheme[a]})
+          (code:comment @#,t{compute primary hash code of @scheme[a]})
           (+ (hash-recur (lead-width a))
              (* 3 (hash-recur (lead-height a)))))
         (lambda (a hash2-recur)
-          (code:comment #, @t{compute secondary hash code of @scheme[a]})
+          (code:comment @#,t{compute secondary hash code of @scheme[a]})
           (+ (hash2-recur (lead-width a))
              (hash2-recur (lead-height a))))))
 (equal? (make-lead 1 2) (make-lead 1 2))
@@ -343,7 +343,7 @@ than the one with a single field:
 @interaction[
 #:eval posn-eval
 (sprout? #s(sprout bean #f 17))
-(code:line (define-struct sprout (kind yummy? count) #:prefab) (code:comment #, @t{redefine}))
+(code:line (define-struct sprout (kind yummy? count) #:prefab) (code:comment @#,t{redefine}))
 (sprout? #s(sprout bean #f 17))
 (sprout? lunch)
 ]

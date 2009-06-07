@@ -43,7 +43,7 @@ simplifies
 Scheme evaluation simplifies
 
 @schemeblock[
-(+ 1 1) #, @reduces 2
+(+ 1 1) @#,reduces 2
 ]
 
 The arrow @reduces above replaces the more traditional @tt{=} to
@@ -66,7 +66,7 @@ into two parts: a @deftech{redex}, which is the part that changed in a
 single-step simplification (highlighted), and the
 @deftech{continuation}, which is the surrounding expression
 context. In @scheme[(- 4 (+ 1 1))], the redex is @scheme[(+ 1 1)], and
-the continuation is @scheme[(- 4 #, @hole)], where @hole takes the
+the continuation is @scheme[(- 4 @#,hole)], where @hole takes the
 place of the redex. That is, the continuation says how to ``continue''
 after the @tech{redex} is reduced to a @tech{value}.
 
@@ -97,18 +97,18 @@ substituting @scheme[_expr] in place of @hole in the @tech{continuation}
 @scheme[_C]:
 
 @schemeblock[
-#, @sub[_C (- 4 (+ 1 1))] #, @reduces #, @sub[_C (- 4 2)]
+@#,sub[_C (- 4 (+ 1 1))] @#,reduces @#,sub[_C (- 4 2)]
 ]
 
 In this case, the @tech{continuation} for reducing @scheme[(+ 1 1)] is
-@sub[_C (+ 4 #, @hole)], not just @scheme[_C].
+@sub[_C (+ 4 @#,hole)], not just @scheme[_C].
 
 In contrast, @scheme[(+ 1 1)] is in @tech{tail position} with respect
 to @scheme[(if (zero? 0) (+ 1 1) 3)], because, for any continuation
 @scheme[_C],
 
 @schemeblock[
-#, @sub[_C (if (zero? 0) (+ 1 1) 3)] #, @reduces #, @sub[_C (if #t (+ 1 1) 3)] #, @reduces #, @sub[_C (+ 1 1)]
+@#,sub[_C (if (zero? 0) (+ 1 1) 3)] @#,reduces @#,sub[_C (if #t (+ 1 1) 3)] @#,reduces @#,sub[_C (+ 1 1)]
 ]
 
 The steps in this reduction sequence are driven by the definition of
@@ -131,11 +131,11 @@ same way that a procedure can accept multiple arguments.
 
 Most @tech{continuations} expect a particular number of result
 @tech{values}.  Indeed, most @tech{continuations}, such as @scheme[(+
-#, @hole 1)] expect a single @tech{value}. The @tech{continuation}
-@scheme[(let-values ([(x y) #, @hole]) _expr)] expects two result
+@#,hole 1)] expect a single @tech{value}. The @tech{continuation}
+@scheme[(let-values ([(x y) @#,hole]) _expr)] expects two result
 @tech{values}; the first result replaces @scheme[x] in the body
 @scheme[_expr], and the second replaces @scheme[y] in
-@scheme[_expr]. The @tech{continuation} @scheme[(begin #, @hole (+ 1
+@scheme[_expr]. The @tech{continuation} @scheme[(begin @#,hole (+ 1
 2))] accepts any number of result @tech{values}, because it ignores
 the result(s).
 

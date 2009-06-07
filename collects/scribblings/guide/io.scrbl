@@ -172,7 +172,7 @@ ports.
 @examples[
 #:eval io-eval
 (display "Hi")
-(code:line (display "Hi" (current-output-port)) (code:comment #, @t{the same}))
+(code:line (display "Hi" (current-output-port)) (code:comment @#,t{the same}))
 ]
 
 If you start the @exec{mzscheme} program in a terminal, then the

@@ -18,7 +18,7 @@ expands to a use of @scheme[unchecked-go]:
 (module m mzscheme
   (provide go)
   (define (unchecked-go n x) 
-    (code:comment #, @t{to avoid disaster, @scheme[n] must be a number})
+    (code:comment @#,t{to avoid disaster, @scheme[n] must be a number})
     (+ n 17))
   (define-syntax (go stx)
     (syntax-case stx ()

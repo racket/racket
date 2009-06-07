@@ -62,7 +62,7 @@ which can be implemented as libraries. To import the bindings of SRFI
 @math{n}, use
 
 @schemeblock[
-(require #, @elem{@schemeidfont{srfi/}@math{n}})
+(require @#,elem{@schemeidfont{srfi/}@math{n}})
 ]
 
 This document lists the SRFIs that are supported by PLT Scheme and

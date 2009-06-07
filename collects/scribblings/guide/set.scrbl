@@ -188,7 +188,7 @@ individually to the @scheme[_id]s using @scheme[set!].
           (set! l (+ l 1)))
       (begin0
         (values w l)
-        (code:comment #, @t{swap sides...})
+        (code:comment @#,t{swap sides...})
         (set!-values (w l) (values l w))))))
 (game #t)
 (game #t)

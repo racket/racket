@@ -37,18 +37,18 @@ Dieses teachpack definiert Prozeduren für lineare Algebra und 3D-Rendering:
 Zum Beispiel:
 
 @schemeblock[
-(code:comment #, @t{scene-data (simple box example)})
+(code:comment @#,t{scene-data (simple box example)})
 (define box
   (create-box 1.0 1.0 1.0 "brown")) 
-(code:comment #, @t{screen})
+(code:comment @#,t{screen})
 (define screenWidth 320)
 (define screenHeight 240) 
-(code:comment #, @t{camera})
+(code:comment @#,t{camera})
 (define pos (make-vec3 5 5 3))
 (define lookat (make-vec3 0 0 0))
 (define camera
    (create-camera-matrix pos lookat 70.0 screenWidth screenHeight))
-(code:comment #, @t{render image})
+(code:comment @#,t{render image})
 (render-scene screenWidth screenHeight box camera)
 ]
 

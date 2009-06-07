@@ -116,7 +116,7 @@ is used as the path if no sub-path element is supplied.
 @examples[
 (eval:alts
  (module m (lib "scheme")
-   (code:comment #, @t{Use @filepath{schematics}'s @filepath{random.plt} 1.0, file @filepath{random.ss}:})
+   (code:comment @#,t{Use @filepath{schematics}'s @filepath{random.plt} 1.0, file @filepath{random.ss}:})
    (require (planet schematics/random:1/random))
    (display (random-gaussian)))
  (void))

@@ -128,7 +128,7 @@ The full syntax of the function shorthand for @scheme[define] is as follows:
                ([head id
                       (head args)]
                 [args (code:line arg ...)
-                      (code:line arg ... #, @schemeparenfont{.} rest-id)])]{}
+                      (code:line arg ... @#,schemeparenfont{.} rest-id)])]{}
 
 The expansion of this shorthand has one nested @scheme[lambda] form
 for each @scheme[_head] in the definition, where the innermost
@@ -212,18 +212,18 @@ For example, the syntax of @scheme[lambda] is
 so the following are valid instances of the grammar:
 
 @schemeblock[
-(lambda (f)                (code:comment #, @elem{no definitions})
+(lambda (f)                (code:comment @#,elem{no definitions})
   (printf "running\n")
   (f 0))
 
-(lambda (f)                (code:comment #, @elem{one definition})
+(lambda (f)                (code:comment @#,elem{one definition})
   (define (log-it what)
     (printf "~a\n"))
   (log-it "running")
   (f 0)
   (log-it "done"))
 
-(lambda (f n)              (code:comment #, @elem{two definitions})
+(lambda (f n)              (code:comment @#,elem{two definitions})
   (define (call n)
     (if (zero? n)
         (log-it "done")

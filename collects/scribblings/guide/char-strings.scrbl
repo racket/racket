@@ -23,11 +23,11 @@ to the string-constant syntax used to print a string result.
 
 @examples[
 "Apple"
-(eval:alts #, @schemevalfont{"\u03BB"} "\u03BB")
+(eval:alts @#,schemevalfont{"\u03BB"} "\u03BB")
 (display "Apple")
 (display "a \"quoted\" thing")
 (display "two\nlines")
-(eval:alts (display #, @schemevalfont{"\u03BB"}) (display "\u03BB"))
+(eval:alts (display @#,schemevalfont{"\u03BB"}) (display "\u03BB"))
 ]
 
 A string can be mutable or immutable; strings written directly as

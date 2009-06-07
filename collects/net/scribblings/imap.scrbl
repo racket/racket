@@ -381,10 +381,10 @@ message-state changes (so they will not show up through
 @examples[
 (eval:alts (imap-store imap '+ '(1 2 3) (list (symbol->imap-flag 'deleted)))
            (void))
-(code:comment #, @t{marks the first three messages to be deleted})
+(code:comment @#,t{marks the first three messages to be deleted})
 (eval:alts (imap-expunge imap) (void))
-(code:comment #, @t{permanently removes the first three messages (and possibly})
-(code:comment #, @t{others) from the currently-selected mailbox})
+(code:comment @#,t{permanently removes the first three messages (and possibly})
+(code:comment @#,t{others) from the currently-selected mailbox})
 ]}
 
 

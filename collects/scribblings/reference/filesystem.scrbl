@@ -482,26 +482,26 @@ to @scheme[(find-collects-dir)], and it is reconstructed using
 Examples:
 
 @schemeblock[
-(code:comment #, @t{Access a file @filepath{data.txt} at run-time that is originally})
-(code:comment #, @t{located in the same directory as the module source file:})
+(code:comment @#,t{Access a file @filepath{data.txt} at run-time that is originally})
+(code:comment @#,t{located in the same directory as the module source file:})
 (define-runtime-path data-file "data.txt")
 (define (read-data) 
   (with-input-from-file data-file 
     (lambda () 
       (read-bytes (file-size data-file)))))
 
-(code:comment #, @t{Load a platform-specific shared object (using @scheme[ffi-lib])})
-(code:comment #, @t{that is located in a platform-specific sub-directory of the})
-(code:comment #, @t{module's source directory:})
+(code:comment @#,t{Load a platform-specific shared object (using @scheme[ffi-lib])})
+(code:comment @#,t{that is located in a platform-specific sub-directory of the})
+(code:comment @#,t{module's source directory:})
 (define-runtime-path libfit-path
   (build-path "compiled" "native" (system-library-subpath #f)
               (path-replace-suffix "libfit" 
                                    (system-type 'so-suffix))))
 (define libfit (ffi-lib libfit-path))
 
-(code:comment #, @t{Load a platform-specific shared object that might be installed})
-(code:comment #, @t{as part of the operating system, or might be installed})
-(code:comment #, @t{specifically for PLT Scheme:})
+(code:comment @#,t{Load a platform-specific shared object that might be installed})
+(code:comment @#,t{as part of the operating system, or might be installed})
+(code:comment @#,t{specifically for PLT Scheme:})
 (define-runtime-path libssl-so
   (case (system-type)
     [(windows) '(so "ssleay32")]

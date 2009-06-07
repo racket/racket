@@ -45,7 +45,7 @@ value:
 (let ([+ (lambda (x y)
            (if (string? x)
                (string-append x y)
-               (+ x y)))]) (code:comment #, @t{use original @scheme[+]})
+               (+ x y)))]) (code:comment @#,t{use original @scheme[+]})
   (list (+ 1 2)
         (+ "see" "saw")))
 ]

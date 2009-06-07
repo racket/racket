@@ -57,8 +57,8 @@ interpretation of digits.
 
 @examples[
 0.5
-(eval:alts #, @schemevalfont{#e0.5} 1/2)
-(eval:alts #, @schemevalfont{#x03BB} #x03BB)
+(eval:alts @#,schemevalfont{#e0.5} 1/2)
+(eval:alts @#,schemevalfont{#x03BB} #x03BB)
 ]
 
 Computations that involve an inexact number produce inexact results,
@@ -82,8 +82,8 @@ representing real numbers that are not rational. Scheme can represent
 only rational numbers and complex numbers with rational parts.
 
 @examples[
-(code:line (sin 0)   (code:comment #, @t{rational...}))
-(code:line (sin 1/2) (code:comment #, @t{not rational...}))
+(code:line (sin 0)   (code:comment @#,t{rational...}))
+(code:line (sin 1/2) (code:comment @#,t{not rational...}))
 ]
 
 In terms of performance, computations with small integers are

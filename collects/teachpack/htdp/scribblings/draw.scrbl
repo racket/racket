@@ -92,7 +92,7 @@ The following functions allow programs to react to events from the canvas.
 
 @defproc[(on-key-event [change (-> (unsyntax @tech{DrawKeyEvent}) (unsyntax @tech{DrawWorld}) (unsyntax @tech{DrawWorld}))])
 true]{Adds @scheme[change] to the world. The function reacts to keyboard
-events and creates a new @scheme[#, @tech{DrawWorld}].}
+events and creates a new @scheme[@#,tech{DrawWorld}].}
 
 @defproc[(on-tick-event [tock (-> (unsyntax @tech{DrawWorld}) (unsyntax @tech{DrawWorld}))]) true]{Adds @scheme[tock]
 to the world. The function reacts to clock tick events, creating a new

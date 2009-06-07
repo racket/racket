@@ -42,9 +42,9 @@ expression is provided to the transformer.
   (let-syntax ([x (make-set!-transformer
                     (lambda (stx)
                       (syntax-case stx (set!)
-                        (code:comment #, @t{Redirect mutation of x to y})
+                        (code:comment @#,t{Redirect mutation of x to y})
                         [(set! id v) (syntax (set! y v))]
-                        (code:comment #, @t{Normal use of @scheme[x] really gets @scheme[x]})
+                        (code:comment @#,t{Normal use of @scheme[x] really gets @scheme[x]})
                         [id (identifier? (syntax id)) (syntax x)])))])
     (begin
       (set! x 3)

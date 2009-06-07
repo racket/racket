@@ -192,16 +192,16 @@ Example:
    #:once-any
    [("-o" "--optimize-1") "Compile with optimization level 1"
                           (optimize-level 1)]
-   ["--optimize-2"        ((code:comment #, @t{show help on separate lines})
+   ["--optimize-2"        ((code:comment @#,t{show help on separate lines})
                            "Compile with optimization level 2,"
                            "which includes all of level 1")
                           (optimize-level 2)]
    #:multi
-   [("-l" "--link-flags") lf (code:comment #, @t{flag takes one argument})
+   [("-l" "--link-flags") lf (code:comment @#,t{flag takes one argument})
                           "Add a flag <lf> for the linker"
                           (link-flags (cons lf (link-flags)))]
-   #:args (filename) (code:comment #, @t{expect one command-line argument: <filename>})
-   (code:comment #, @t{return the argument as a filename to compile})
+   #:args (filename) (code:comment @#,t{expect one command-line argument: <filename>})
+   (code:comment @#,t{return the argument as a filename to compile})
    filename))
 ]}
 

@@ -22,8 +22,8 @@
             (define id expr)
             (define id (lambda (id id ...) expr))
             (define-struct id (id ...))]
-[expr (code:line (id expr expr ...) (code:comment #, @seclink["beginner-call"]{function call}))
-      (code:line (prim-op expr ...) (code:comment #, @seclink["beginner-prim-call"]{primitive operation call}))
+[expr (code:line (id expr expr ...) (code:comment @#,seclink["beginner-call"]{function call}))
+      (code:line (prim-op expr ...) (code:comment @#,seclink["beginner-prim-call"]{primitive operation call}))
       (cond [expr expr] ... [expr expr])
       (cond [expr expr] ... [else expr])
       (if expr expr expr)
@@ -31,8 +31,8 @@
       (or expr expr expr ...)
       empty
       id
-      (code:line id (code:comment #, @seclink["beginner-id"]{identifier}))
-      (code:line #, @elem{@schemevalfont{'}@scheme[id]} (code:comment #, @seclink["beginner-quote"]{symbol}))
+      (code:line id (code:comment @#,seclink["beginner-id"]{identifier}))
+      (code:line @#,elem{@schemevalfont{'}@scheme[id]} (code:comment @#,seclink["beginner-quote"]{symbol}))
       number
       true
       false
@@ -276,7 +276,7 @@ A quoted @scheme[id] is a symbol. A symbol is a constant, like
 
 Normally, a symbol is written with a @litchar{'}, like
 @scheme['apple], but it can also be written with @scheme[quote], like
-@scheme[(#, @scheme[quote] apple)].
+@scheme[(@#,scheme[quote] apple)].
 
 The @scheme[id] for a symbol is a sequence of characters not including
 a space or one of the following:}

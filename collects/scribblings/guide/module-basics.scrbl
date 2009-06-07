@@ -16,7 +16,7 @@ scheme
 
 (provide print-cake)
 
-(code:comment #, @t{draws a cake with @scheme[n] candles})
+(code:comment @#,t{draws a cake with @scheme[n] candles})
 (define (print-cake n)
   (printf "   ~a  \n" (make-string n #\.))
   (printf " .-~a-.\n" (make-string n #\|))
@@ -76,9 +76,9 @@ scheme
 
 (require setup/dirs)
 
-(find-collects-dir) (code:comment #, @t{main collection directory})
-(find-user-collects-dir) (code:comment #, @t{user-specific collection directory})
-(get-collects-search-dirs) (code:comment #, @t{complete search path})
+(find-collects-dir) (code:comment @#,t{main collection directory})
+(find-user-collects-dir) (code:comment @#,t{user-specific collection directory})
+(get-collects-search-dirs) (code:comment @#,t{complete search path})
 ]
 
 We discuss more forms of module reference later in

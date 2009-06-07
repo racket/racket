@@ -79,7 +79,7 @@ non-@scheme[#f] value from its @scheme[expr]s.  As a special case,
  (define (got-milk? lst)
    (and (not (null? lst))
         (or (eq? 'milk (car lst))
-            (got-milk? (cdr lst))))) (code:comment #, @t{recurs only if needed}))
+            (got-milk? (cdr lst))))) (code:comment @#,t{recurs only if needed}))
 (got-milk? '(apple banana))
 (got-milk? '(apple milk banana))
 ]

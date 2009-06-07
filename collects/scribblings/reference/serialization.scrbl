@@ -414,9 +414,9 @@ instance of @scheme[id] and copies its field values into @scheme[x].
 
 (define-serializable-struct/versions point 1 (x y z)
    ([0 
-     (code:comment #, @t{Constructor for simple v0 instances:})
+     (code:comment @#,t{Constructor for simple v0 instances:})
      (lambda (x y) (make-point x y 0))
-     (code:comment #, @t{Constructor for v0 instance in a cycle:})
+     (code:comment @#,t{Constructor for v0 instance in a cycle:})
      (lambda ()
        (let ([p0 (make-point #f #f 0)])
          (values

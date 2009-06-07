@@ -248,16 +248,16 @@ Windows examples.
 
 @schemeblock[
 (define p1 (build-path (current-directory) "src" "scheme"))
- (code:comment #, @t{Unix: @scheme[p1] is @scheme["/home/joeuser/src/scheme"]})
- (code:comment #, @t{Windows: @scheme[p1] is @scheme["C:\\Joe's Files\\src\\scheme"]})
+ (code:comment @#,t{Unix: @scheme[p1] is @scheme["/home/joeuser/src/scheme"]})
+ (code:comment @#,t{Windows: @scheme[p1] is @scheme["C:\\Joe's Files\\src\\scheme"]})
 (define p2 (build-path 'up 'up "docs" "Scheme"))
- (code:comment #, @t{Unix: @scheme[p2] is @scheme["../../docs/Scheme"]})
- (code:comment #, @t{Windows: @scheme[p2] is @scheme["..\\..\\docs\\Scheme"]})
+ (code:comment @#,t{Unix: @scheme[p2] is @scheme["../../docs/Scheme"]})
+ (code:comment @#,t{Windows: @scheme[p2] is @scheme["..\\..\\docs\\Scheme"]})
 (build-path p2 p1) 
- (code:comment #, @t{Unix and Windows: raises @scheme[exn:fail:contract]; @scheme[p1] is absolute})
+ (code:comment @#,t{Unix and Windows: raises @scheme[exn:fail:contract]; @scheme[p1] is absolute})
 (build-path p1 p2) 
- (code:comment #, @t{Unix: is @scheme["/home/joeuser/src/scheme/../../docs/Scheme"]})
- (code:comment #, @t{Windows: is @scheme["C:\\Joe's Files\\src\\scheme\\..\\..\\docs\\Scheme"]})
+ (code:comment @#,t{Unix: is @scheme["/home/joeuser/src/scheme/../../docs/Scheme"]})
+ (code:comment @#,t{Windows: is @scheme["C:\\Joe's Files\\src\\scheme\\..\\..\\docs\\Scheme"]})
 ]}
 
 

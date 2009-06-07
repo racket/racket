@@ -151,8 +151,8 @@ arguments before the matching close parenthesis:
 
 @mr-schemeblock+eval[
 (define (square n)
-  (code:comment #, @t{A semi-colon starts a line comment.})
-  (code:comment #, @t{The expression below is the function body.})
+  (code:comment @#,t{A semi-colon starts a line comment.})
+  (code:comment @#,t{The expression below is the function body.})
   (filled-rectangle n n))
 ]
 

@@ -34,11 +34,11 @@ little setup program (as an executable) in your distribution:
     (require mzlib/runtime-path
              mzlib/process)
 
-    (code:comment #, @t{Ensure that DLLs are included with the distribution:})
+    (code:comment @#,t{Ensure that DLLs are included with the distribution:})
     (define-runtime-path myspage-dll '(so "myspage"))
     (define-runtime-path myssink-dll '(so "myssink"))
 
-    (code:comment #, @t{Register the DLLs:})
+    (code:comment @#,t{Register the DLLs:})
     (define regsvr32 
       (path->string (find-executable-path "regsvr32.exe" #f)))
     (system* regsvr32 (path->string myspage-dll))

@@ -233,7 +233,7 @@ and converts a list of colors into an image.
 #reader scribble/comment-reader
 (schemeblock
 ;; -- @scheme[empty]
-;; -- @scheme[(cons #, @tech{Color} List-of-color)]
+;; -- @scheme[(cons @#,tech{Color} List-of-color)]
 ;; Interpretation: represents a list of colors.
 ))
 

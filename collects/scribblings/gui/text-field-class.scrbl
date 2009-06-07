@@ -103,13 +103,13 @@ For a text field, the most useful methods of a @scheme[text%] object
  are the following:
 @itemize[
  
- @item{@scheme[(send a-text #, @method[text% get-text])] returns
+ @item{@scheme[(send a-text @#,method[text% get-text])] returns
  the current text of the editor.}
 
- @item{@scheme[(send a-text #, @method[text% erase])] deletes all text from
+ @item{@scheme[(send a-text @#,method[text% erase])] deletes all text from
  the editor.}
 
- @item{@scheme[(send a-text #, @method[text% insert] _str)] inserts
+ @item{@scheme[(send a-text @#,method[text% insert] _str)] inserts
  @scheme[_str] into the editor at the current caret position.}
 
 ]

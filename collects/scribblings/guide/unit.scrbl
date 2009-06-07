@@ -322,7 +322,7 @@ scheme
 
     (define (store-color) the-color)
 
-    (code:comment #, @t{the rest is the same as before})
+    (code:comment @#,t{the rest is the same as before})
 
     (define (maybe-repaint t)
       (if (eq? (toy-color t) (store-color))

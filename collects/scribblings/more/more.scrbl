@@ -173,9 +173,9 @@ header, and then write a ``Hello, world!'' web page as the result:
 
 @schemeblock[
 (define (handle in out)
-  (code:comment #, @t{Discard the request header (up to blank line):})
+  (code:comment @#,t{Discard the request header (up to blank line):})
   (regexp-match #rx"(\r\n|^)\r\n" in)
-  (code:comment #, @t{Send reply:})
+  (code:comment @#,t{Send reply:})
   (display "HTTP/1.0 200 Okay\r\n" out)
   (display "Server: k\r\nContent-Type: text/html\r\n\r\n" out)
   (display "<html><body>Hello, world!</body></html>" out))
@@ -315,7 +315,7 @@ watcher-thread strategy works well:
                 (handle in out)
                 (close-input-port in)
                 (close-output-port out))))
-  (code:comment #, @t{Watcher thread:})
+  (code:comment @#,t{Watcher thread:})
   (thread (lambda ()
             (sleep 10)
             (kill-thread t))))
@@ -346,7 +346,7 @@ custodian:
               (handle in out)
               (close-input-port in)
               (close-output-port out))))
-  (code:comment #, @t{Watcher thread:})
+  (code:comment @#,t{Watcher thread:})
   (thread (lambda ()
             (sleep 10)
             (custodian-shutdown-all cust))))
@@ -442,15 +442,15 @@ takes a requested URL and produces a result value suitable to use with
 @schemeblock[
 (define (handle in out)
   (define req
-    (code:comment #, @t{Match the first line to extract the request:})
+    (code:comment @#,t{Match the first line to extract the request:})
     (regexp-match #rx"^GET (.+) HTTP/[0-9]+\\.[0-9]+"
                   (read-line in)))
   (when req
-    (code:comment #, @t{Discard the rest of the header (up to blank line):})
+    (code:comment @#,t{Discard the rest of the header (up to blank line):})
     (regexp-match #rx"(\r\n|^)\r\n" in)
-    (code:comment #, @t{Dispatch:})
+    (code:comment @#,t{Dispatch:})
     (let ([xexpr (dispatch (list-ref req 1))])
-      (code:comment #, @t{Send reply:})
+      (code:comment @#,t{Send reply:})
       (display "HTTP/1.0 200 Okay\r\n" out)
       (display "Server: k\r\nContent-Type: text/html\r\n\r\n" out)
       (display (xexpr->string xexpr) out))))
@@ -474,16 +474,16 @@ path element, like @scheme["foo"], to a handler function:
 
 @schemeblock[
 (define (dispatch str-path)
-  (code:comment #, @t{Parse the request as a URL:})
+  (code:comment @#,t{Parse the request as a URL:})
   (define url (string->url str-path))
-  (code:comment #, @t{Extract the path part:})
+  (code:comment @#,t{Extract the path part:})
   (define path (map path/param-path (url-path url)))
-  (code:comment #, @t{Find a handler based on the path's first element:})
+  (code:comment @#,t{Find a handler based on the path's first element:})
   (define h (hash-ref dispatch-table (car path) #f))
   (if h
-      (code:comment #, @t{Call a handler:})
+      (code:comment @#,t{Call a handler:})
       (h (url-query url))
-      (code:comment #, @t{No handler found:})
+      (code:comment @#,t{No handler found:})
       `(html (head (title "Error"))
             (body
              (font ((color "red"))
@@ -684,14 +684,14 @@ Thus, @scheme[get-number] is implemented as follows:
 @schemeblock[
 (define (get-number label)
   (define query
-    (code:comment #, @t{Generate a URL for the current computation:})
+    (code:comment @#,t{Generate a URL for the current computation:})
     (send/suspend
-      (code:comment #, @t{Receive the computation-as-URL here:})
+      (code:comment @#,t{Receive the computation-as-URL here:})
       (lambda (k-url)
-        (code:comment #, @t{Generate the query-page result for this connection.})
-        (code:comment #, @t{Send the query result to the saved-computation URL:})
+        (code:comment @#,t{Generate the query-page result for this connection.})
+        (code:comment @#,t{Send the query result to the saved-computation URL:})
         (build-request-page label k-url ""))))
-  (code:comment #, @t{We arrive here later, in a new connection})
+  (code:comment @#,t{We arrive here later, in a new connection})
   (string->number (cdr (assq 'number query))))
 ]
 

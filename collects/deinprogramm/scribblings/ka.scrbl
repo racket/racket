@@ -67,10 +67,10 @@ Schreiben Sie dann eine Datendefinition, die mit folgenden Worten
 anfängt:
 
 @schemeblock[
-(code:comment #, @t{Ein @scheme[x] besteht aus / hat:})
-(code:comment #, @t{- @scheme[#,(elem (scheme Feld) (subscript "1"))] @scheme[(#,(elem (scheme ctr) (subscript "1")))]})
-(code:comment #, @t{...})
-(code:comment #, @t{- @scheme[#,(elem (scheme Feld) (subscript "n"))] @scheme[(#,(elem (scheme ctr) (subscript "n")))]})
+(code:comment @#,t{Ein @scheme[x] besteht aus / hat:})
+(code:comment @#,t{- @scheme[#,(elem (scheme Feld) (subscript "1"))] @scheme[(#,(elem (scheme ctr) (subscript "1")))]})
+(code:comment @#,t{...})
+(code:comment @#,t{- @scheme[#,(elem (scheme Feld) (subscript "n"))] @scheme[(#,(elem (scheme ctr) (subscript "n")))]})
 ]
 
 Dabei ist @scheme[x] ein umgangssprachlicher Name für die Sorte
@@ -125,11 +125,11 @@ Wenn bei der Datenanalyse gemischte Daten auftauchen, schreiben Sie
 eine Datendefinition der Form:
 
 @schemeblock[
-(code:comment #, @t{Ein @scheme[x] ist eins der Folgenden:})
-(code:comment #, @t{- @elem[(scheme Sorte) (subscript "1")] (@elem[(scheme ctr) (subscript "1")])})
-(code:comment #, @t{...})
-(code:comment #, @t{- @elem[(scheme Sorte) (subscript "n")] (@elem[(scheme ctr) (subscript "n")])})
-(code:comment #, @t{Name: @scheme[ctr]})
+(code:comment @#,t{Ein @scheme[x] ist eins der Folgenden:})
+(code:comment @#,t{- @elem[(scheme Sorte) (subscript "1")] (@elem[(scheme ctr) (subscript "1")])})
+(code:comment @#,t{...})
+(code:comment @#,t{- @elem[(scheme Sorte) (subscript "n")] (@elem[(scheme ctr) (subscript "n")])})
+(code:comment @#,t{Name: @scheme[ctr]})
 ]
 
 Dabei sind die @elem[(scheme Sorte) (subscript "i")] umgangssprachliche Namen

@@ -45,7 +45,7 @@ The essential reduction rules are:
 @schemeblock[
 (% _val proc) => _val
 (% _E[(fcontrol _val)] _proc) => (_proc _val (lambda (_x) _E[_x]))
-  (code:comment #, @t{where @scheme[_E] has no @scheme[%]})
+  (code:comment @#,t{where @scheme[_E] has no @scheme[%]})
 ]
 
 When @scheme[handler-expr] is omitted, @scheme[%] is the same as 
@@ -66,7 +66,7 @@ The essential reduction rules are:
 (prompt _val) => _val
 (prompt _E[(control _k _expr)]) => (prompt ((lambda (_k) _expr)
                                             (lambda (_v) _E[_v])))
-  (code:comment #, @t{where @scheme[_E] has no @scheme[prompt]})
+  (code:comment @#,t{where @scheme[_E] has no @scheme[prompt]})
 ]}
 
 @; ----------------------------------------------------------------------
@@ -84,7 +84,7 @@ tags:
 (prompt-at _tag _E[(control-at _tag _k _expr)]) => (prompt-at _tag 
                                                     ((lambda (_k) _expr)
                                                      (lambda (_v) _E[_v])))
-  (code:comment #, @t{where @scheme[_E] has no @scheme[prompt-at] for @scheme[_tag]})
+  (code:comment @#,t{where @scheme[_E] has no @scheme[prompt-at] for @scheme[_tag]})
 ]}
 
 @; ----------------------------------------------------------------------
@@ -102,7 +102,7 @@ The essential reduction rules are:
 (reset _val) => _val
 (reset _E[(shift _k _expr)]) => (reset ((lambda (_k) _expr) 
                                         (lambda (_v) (reset _E[_v]))))
-  (code:comment #, @t{where @scheme[_E] has no @scheme[reset]})
+  (code:comment @#,t{where @scheme[_E] has no @scheme[reset]})
 ]
 
 The @scheme[reset] and @scheme[prompt] forms are interchangeable.}
@@ -182,7 +182,7 @@ The essential reduction rules are:
 (spawn _proc) => (prompt _tag (_proc (lambda (_x) (abort _tag _x))))
 (prompt-at _tag _E[(abort _tag _proc)])
   => (_proc (lambda (_x) (prompt-at _tag _E[_x])))
-  (code:comment #, @t{where @scheme[_E] has no @scheme[prompt-at] for @scheme[_tag]})
+  (code:comment @#,t{where @scheme[_E] has no @scheme[prompt-at] for @scheme[_tag]})
 ]}
 
 @; ----------------------------------------------------------------------
@@ -202,10 +202,10 @@ The essential reduction rules are:
                             (lambda (_proc)
                               (control0-at _tag _k (_proc _k)))))
 (prompt-at _tag _E[(abort _tag _thunk)]) => (_thunk)
-  (code:comment #, @t{where @scheme[_E] has no @scheme[prompt-at] for @scheme[_tag]})
+  (code:comment @#,t{where @scheme[_E] has no @scheme[prompt-at] for @scheme[_tag]})
 (prompt-at _tag _E[(control0-at _tag _k _expr)]) => ((lambda (_k) _expr)
                                                      (lambda (_x) _E[_x]))
-  (code:comment #, @t{where @scheme[_E] has no @scheme[prompt-at] for @scheme[_tag]})
+  (code:comment @#,t{where @scheme[_E] has no @scheme[prompt-at] for @scheme[_tag]})
 ]}
 
 @; ----------------------------------------------------------------------

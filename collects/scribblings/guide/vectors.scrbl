@@ -19,8 +19,8 @@ represent symbols and lists.
 @refdetails/gory["parse-vector"]{the syntax of vectors}
 
 @examples[
-(eval:alts #, @schemevalfont{#("a" "b" "c")} #("a" "b" "c"))
-(eval:alts #, @schemevalfont{#(name (that tune))} #(name (that tune)))
+(eval:alts @#,schemevalfont{#("a" "b" "c")} #("a" "b" "c"))
+(eval:alts @#,schemevalfont{#(name (that tune))} #(name (that tune)))
 (vector-ref #("a" "b" "c") 1)
 (vector-ref #(name (that tune)) 1)
 ]

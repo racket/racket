@@ -156,7 +156,7 @@ explicitly and install it for the call to eval:
 scheme
 
 (define ns (make-base-namespace))
-(eval '(cons 1 2) ns) (code:comment #, @t{works})
+(eval '(cons 1 2) ns) (code:comment @#,t{works})
 ]
 
 The @scheme[make-base-namespace] function creates a namespace that is
@@ -209,7 +209,7 @@ scheme
 (define x 1)
 (define y 2)
 
-(eval '(cons x y) ns) (code:comment #, @t{produces @schemeresult[(1 . 2)]})
+(eval '(cons x y) ns) (code:comment @#,t{produces @schemeresult[(1 . 2)]})
 ]
 
 
@@ -332,7 +332,7 @@ again will create a distinct class datatype:
 (class? object%)
 (class?
  (parameterize ([current-namespace (make-base-empty-namespace)])
-   (namespace-require 'scheme/class) (code:comment #, @t{loads again})
+   (namespace-require 'scheme/class) (code:comment @#,t{loads again})
    (eval 'object%)))
 ]
 
@@ -351,7 +351,7 @@ shared:
                             'scheme/class
                             ns)
    (parameterize ([current-namespace ns])
-     (namespace-require 'scheme/class) (code:comment #, @t{uses attached})
+     (namespace-require 'scheme/class) (code:comment @#,t{uses attached})
      (eval 'object%))))
 ]
 

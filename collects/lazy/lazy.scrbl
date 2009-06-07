@@ -45,7 +45,7 @@ can be used to write lazy code. To write lazy code, simply use
 
 @schememod[
 lazy
-... #, @elem{lazy code here}...]
+... @#,elem{lazy code here}...]
 
 Function applications are delayed, and promises are automatically
 forced. The language provides bindings that are equivalent to most of

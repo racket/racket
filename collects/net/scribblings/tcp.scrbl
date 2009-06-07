@@ -31,7 +31,7 @@ See also @scheme[tcp-redirect] and @scheme[make-ssl-tcp@].
                      [max-allow-wait exact-nonnegative-integer? 4]
                      [reuse? any/c #f]
                      [hostname (or/c string? false/c) #f]) 
-         #, @sigelem[tcp^ tcp-listener?]]{
+         @#,sigelem[tcp^ tcp-listener?]]{
 
 Like @scheme[tcp-listen] from @schememodname[scheme/tcp].}
 
@@ -58,21 +58,21 @@ Like @scheme[tcp-connect] from @schememodname[scheme/tcp].}
 
 Like @scheme[tcp-connect/enable-break] from @schememodname[scheme/tcp].}
 
-@defproc[(tcp-accept [listener #, @sigelem[tcp^ tcp-listener?]])
+@defproc[(tcp-accept [listener @#,sigelem[tcp^ tcp-listener?]])
          (values input-port? output-port?)]{
 
 Like @scheme[tcp-accept] from @schememodname[scheme/tcp].}
 
-@defproc[(tcp-accept/enable-break [listener #, @sigelem[tcp^ tcp-listener?]])
+@defproc[(tcp-accept/enable-break [listener @#,sigelem[tcp^ tcp-listener?]])
          (values input-port? output-port?)]{
 
 Like @scheme[tcp-accept/enable-break] from @schememodname[scheme/tcp].}
 
-@defproc[(tcp-accept-ready? [listener #, @sigelem[tcp^ tcp-listener?]]) boolean?]{
+@defproc[(tcp-accept-ready? [listener @#,sigelem[tcp^ tcp-listener?]]) boolean?]{
 
 Like @scheme[tcp-accept-ready?] from @schememodname[scheme/tcp].}
 
-@defproc[(tcp-close [listener #, @sigelem[tcp^ tcp-listener?]]) void?]{
+@defproc[(tcp-close [listener @#,sigelem[tcp^ tcp-listener?]]) void?]{
 
 Like @scheme[tcp-close] from @schememodname[scheme/tcp].}
 

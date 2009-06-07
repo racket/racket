@@ -19,7 +19,7 @@ is immediately imported. For example, @scheme[ptr-equal?] can never
 cause memory corruption or an invalid memory access, so it is
 immediately available on import.
 
-Use @scheme[(#, @indexed-scheme[unsafe!])] at the top-level of a
+Use @scheme[(@#,indexed-scheme[unsafe!])] at the top-level of a
 module that imports @schememodname[scheme/foreign] to make unsafe
 features accessible. (For additional safety, the @scheme[unsafe!] is
 itself protected; see @secref[#:doc '(lib

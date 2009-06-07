@@ -616,20 +616,20 @@ result of @scheme[(viewport-dc viewport)], too.}
 
 @schemeblock[
 (open-graphics)
-(code:comment #, @t{nothing appears to happen, but the library is initialized...})
+(code:comment @#,t{nothing appears to happen, but the library is initialized...})
 
 (define w (open-viewport "practice" 300 300))
-(code:comment #, @t{viewport window appears})
+(code:comment @#,t{viewport window appears})
 
 ((draw-line w) (make-posn 30 30) (make-posn 100 100))     
-(code:comment #, @t{line appears})
+(code:comment @#,t{line appears})
 
 (close-viewport w)
-(code:comment #, @t{viewport disappears})
+(code:comment @#,t{viewport disappears})
 
 (close-graphics)
-(code:comment #, @t{again, nothing appears to happen, but})
-(code:comment #, @t{unclosed viewports (if any) would disappear})
+(code:comment @#,t{again, nothing appears to happen, but})
+(code:comment @#,t{unclosed viewports (if any) would disappear})
 ]
 
 @section{A More Complicated Example}
@@ -640,21 +640,21 @@ viewport:
 
 @schemeblock[
 (open-graphics)
-(let* ((code:comment #, @t{@scheme[w1] and @scheme[w2] are viewports for different windows})
+(let* ((code:comment @#,t{@scheme[w1] and @scheme[w2] are viewports for different windows})
        [w1  (open-viewport "viewport 1" 300 300)]
        [w2  (open-viewport "viewport 2" 200 500)]
-       (code:comment #, @t{@scheme[d1] and @scheme[d2] draw lines in different viewports})
+       (code:comment @#,t{@scheme[d1] and @scheme[d2] draw lines in different viewports})
        [d1  (draw-line w1)]
        [d2  (draw-line w2)])
-  (code:comment #, @t{draws a line in viewport labeled ``viewport 1''})
+  (code:comment @#,t{draws a line in viewport labeled ``viewport 1''})
   (d1 (make-posn 100 5) (make-posn 5 100))
-  (code:comment #, @t{draws a line in viewport labeled ``viewport 2''})
+  (code:comment @#,t{draws a line in viewport labeled ``viewport 2''})
   (d2 (make-posn 100 100) (make-posn 101 400)))
  
-(code:comment #, @t{we no longer have access to viewports 1 and 2,})
-(code:comment #, @t{since their descriptors did not escape the @scheme[let]})
+(code:comment @#,t{we no longer have access to viewports 1 and 2,})
+(code:comment @#,t{since their descriptors did not escape the @scheme[let]})
 (close-graphics) 
-(code:comment #, @t{removes the viewports})
+(code:comment @#,t{removes the viewports})
 ]
 
 @section{Protecting Graphics Operations}
@@ -666,12 +666,12 @@ programmer should use @scheme[dynamic-wind:]
 @schemeblock[
 (let ([w (open-viewport "hello" 100 100)])
   (dynamic-wind
-    (code:comment #, @t{what we want to happen first: nothing})
+    (code:comment @#,t{what we want to happen first: nothing})
     void
-    (code:comment #, @t{the main program (errors constrained to this piece)})
-    (lambda () (draw-pixel 13))  (code:comment #, @t{an error})
-    (code:comment #, @t{what we would like to happen, whether the main program})
-    (code:comment #, @t{finishes normally or not})
+    (code:comment @#,t{the main program (errors constrained to this piece)})
+    (lambda () (draw-pixel 13))  (code:comment @#,t{an error})
+    (code:comment @#,t{what we would like to happen, whether the main program})
+    (code:comment @#,t{finishes normally or not})
     (lambda () (close-viewport w))))
 ]
 

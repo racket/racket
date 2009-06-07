@@ -17,7 +17,7 @@ program on top of the @scheme[scheme/gui] library.
 
 @itemize[
 
-@item{@scheme[(require #, @schememodname[framework])]
+@item{@scheme[(require @#,schememodname[framework])]
 
   This library provides all of the definitions and syntax
   described in this manual.
@@ -45,19 +45,19 @@ program on top of the @scheme[scheme/gui] library.
 @item{
  @bold{Test Suite Engine}
 
-@scheme[(require #, @schememodname[framework/test])]
+@scheme[(require @#,schememodname[framework/test])]
 
 This library provides all of the definitions beginning with
 @scheme[test:] described in this manual.
 }
 @item{ @bold{GUI Utilities}
-@scheme[(require #, @schememodname[framework/gui-utils])]
+@scheme[(require @#,schememodname[framework/gui-utils])]
     
     This libraries provides all of the definitions beginning
     with @scheme[gui-utils:] described in this manual.
 }
 @item{ @bold{Preferences}
-@scheme[(require #, @schememodname[framework/preferences])]
+@scheme[(require @#,schememodname[framework/preferences])]
     
   This library provides a subset of the names of the
   @tt{framework.ss} library, namely those for

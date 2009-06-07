@@ -38,8 +38,8 @@
       (letrec ([id expr-for-let] ...) expr)
       (let ([id expr-for-let] ...) expr)
       (let* ([id expr-for-let] ...) expr)
-      (code:line (id expr expr ...) (code:comment #, @seclink["intermediate-call"]{function call}))
-      (code:line (prim-op expr ...) (code:comment #, @seclink["beginner-prim-call"]{primitive operation call}))
+      (code:line (id expr expr ...) (code:comment @#,seclink["intermediate-call"]{function call}))
+      (code:line (prim-op expr ...) (code:comment @#,seclink["beginner-prim-call"]{primitive operation call}))
       (cond [expr expr] ... [expr expr])
       (cond [expr expr] ... [else expr])
       (if expr expr expr)
@@ -47,11 +47,11 @@
       (or expr expr expr ...)
       (time expr)
       empty
-      (code:line id (code:comment #, @seclink["intermediate-id"]{identifier}))
-      (code:line prim-op (code:comment #, @seclink["intermediate-prim-op"]{primitive operation}))
+      (code:line id (code:comment @#,seclink["intermediate-id"]{identifier}))
+      (code:line prim-op (code:comment @#,seclink["intermediate-prim-op"]{primitive operation}))
       'id
-      (code:line #, @elem{@schemevalfont{'}@scheme[quoted]} (code:comment #, @seclink["beginner-abbr-quote"]{quoted value}))
-      (code:line #, @elem{@schemevalfont{`}@scheme[quasiquoted]} (code:comment #, @seclink["beginner-abbr-quasiquote"]{quasiquote}))
+      (code:line @#,elem{@schemevalfont{'}@scheme[quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
+      (code:line @#,elem{@schemevalfont{`}@scheme[quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
       number
       true
       false

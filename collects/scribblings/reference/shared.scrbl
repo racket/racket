@@ -50,7 +50,7 @@ production take precedence over later variants:
             (mcons patchable-expr patchable-expr)
             (vector patchable-expr ...)
             (box patchable-expr ...)
-            (#, @|maker| patchable-expr ...)]
+            (@#,|maker| patchable-expr ...)]
 [in-immutable-expr shell-id
                    shell-expr
                    early-expr]
@@ -105,12 +105,12 @@ data cycles (but only with cycles that can be created via mutation).
 (shared ([a (cons 1 b)]
          [b 7])
   a)
-(shared ([a a]) (code:comment #, @t{no indirection...})
+(shared ([a a]) (code:comment @#,t{no indirection...})
   a)
-(shared ([a (cons 1 b)] (code:comment #, @t{@scheme[b] is early...})
+(shared ([a (cons 1 b)] (code:comment @#,t{@scheme[b] is early...})
          [b a])
   a)
-(shared ([a (mcons 1 b)] (code:comment #, @t{@scheme[b] is patchable...})
+(shared ([a (mcons 1 b)] (code:comment @#,t{@scheme[b] is patchable...})
          [b a])
   a)
 (shared ([a (vector b b b)]
@@ -118,8 +118,8 @@ data cycles (but only with cycles that can be created via mutation).
   (set-box! b 5)
   a)
 (shared ([a (box b)]
-         [b (vector (unbox a)   (code:comment #, @t{@scheme[unbox] after @scheme[a] is patched})
-                    (unbox c))] (code:comment #, @t{@scheme[unbox] before @scheme[c] is patched})
+         [b (vector (unbox a)   (code:comment @#,t{@scheme[unbox] after @scheme[a] is patched})
+                    (unbox c))] (code:comment @#,t{@scheme[unbox] before @scheme[c] is patched})
          [c (box b)])
   b)
 ]}

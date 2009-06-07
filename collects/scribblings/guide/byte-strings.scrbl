@@ -47,9 +47,9 @@ UTF-8-decoded form of the output.
 
 @examples[
 (display #"Apple")
-(eval:alts (code:line (display #, @schemevalfont{"\316\273"})  (code:comment #, @t{same as @scheme["\316\273"]}))
+(eval:alts (code:line (display @#,schemevalfont{"\316\273"})  (code:comment @#,t{same as @scheme["\316\273"]}))
            (display "\316\273"))
-(code:line (display #"\316\273") (code:comment #, @t{UTF-8 encoding of @elem["\u03BB"]}))
+(code:line (display #"\316\273") (code:comment @#,t{UTF-8 encoding of @elem["\u03BB"]}))
 ]
 
 For explicitly converting between strings and byte strings, Scheme
@@ -62,9 +62,9 @@ arbitrary string encodings.
 (bytes->string/utf-8 #"\316\273")
 (bytes->string/latin-1 #"\316\273")
 (code:line
- (parameterize ([current-locale "C"])  (code:comment #, @elem{C locale supports ASCII,})
-   (bytes->string/locale #"\316\273")) (code:comment #, @elem{only, so...}))
-(let ([cvt (bytes-open-converter "cp1253" (code:comment #, @elem{Greek code page})
+ (parameterize ([current-locale "C"])  (code:comment @#,elem{C locale supports ASCII,})
+   (bytes->string/locale #"\316\273")) (code:comment @#,elem{only, so...}))
+(let ([cvt (bytes-open-converter "cp1253" (code:comment @#,elem{Greek code page})
                                  "UTF-8")]
       [dest (make-bytes 2)])
   (bytes-convert cvt #"\353" 0 1 dest)

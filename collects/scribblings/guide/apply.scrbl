@@ -89,13 +89,13 @@ result, a function that takes a list of arguments cannot directly
 apply a function like @scheme[+] to all of the items in the list:
 
 @def+int[
-(define (avg lst) (code:comment #, @elem{doesn't work...})
+(define (avg lst) (code:comment @#,elem{doesn't work...})
   (/ (+ lst) (length lst)))
 (avg '(1 2 3))
 ]
 
 @def+int[
-(define (avg lst) (code:comment #, @elem{doesn't always work...})
+(define (avg lst) (code:comment @#,elem{doesn't always work...})
  (/ (+ (list-ref lst 0) (list-ref lst 1) (list-ref lst 2))
     (length lst)))
 (avg '(1 2 3))

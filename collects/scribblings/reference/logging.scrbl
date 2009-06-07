@@ -137,15 +137,15 @@ string.
 For each @schemekeywordfont{log-}@scheme[_level],
 
 @schemeblock[
-(#, @schemekeywordfont{log-}_level string-expr)
+(@#,schemekeywordfont{log-}_level string-expr)
 ]
 
 is equivalent to
 
 @schemeblock[
 (let ([l (current-logger)])
-  (when (log-level? l '#, @scheme[_level])
-   (log-message l '#, @scheme[_level] string-expr 
+  (when (log-level? l '@#,scheme[_level])
+   (log-message l '@#,scheme[_level] string-expr 
                 (current-continuation-marks))))
 ]}
 

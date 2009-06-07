@@ -50,9 +50,9 @@ Reads HTML from a port, producing an @xexpr compatible with the
 @def+int[
 (module html-example scheme
 
-  (code:comment #, @t{Some of the symbols in @schememodname[html] and @schememodname[xml] conflict with})
-  (code:comment #, @t{each other and with scheme/base language, so we prefix})
-  (code:comment #, @t{to avoid namespace conflict.})
+  (code:comment @#,t{Some of the symbols in @schememodname[html] and @schememodname[xml] conflict with})
+  (code:comment @#,t{each other and with scheme/base language, so we prefix})
+  (code:comment @#,t{to avoid namespace conflict.})
   (require (prefix-in h: html)
            (prefix-in x: xml))
 
@@ -64,8 +64,8 @@ Reads HTML from a port, producing an @xexpr compatible with the
        "<p>Hello world</p><p><b>Testing</b>!</p>"
        "</body></html>"))))
   
-  (code:comment #, @t{extract-pcdata: html-content -> (listof string)})
-  (code:comment #, @t{Pulls out the pcdata strings from some-content.})
+  (code:comment @#,t{extract-pcdata: html-content -> (listof string)})
+  (code:comment @#,t{Pulls out the pcdata strings from some-content.})
   (define (extract-pcdata some-content)
     (cond [(x:pcdata? some-content)
            (list (x:pcdata-string some-content))]
@@ -74,8 +74,8 @@ Reads HTML from a port, producing an @xexpr compatible with the
           [else
            (extract-pcdata-from-element some-content)]))
   
-  (code:comment #, @t{extract-pcdata-from-element: html-element -> (listof string)})
-  (code:comment #, @t{Pulls out the pcdata strings from an-html-element.})
+  (code:comment @#,t{extract-pcdata-from-element: html-element -> (listof string)})
+  (code:comment @#,t{Pulls out the pcdata strings from an-html-element.})
   (define (extract-pcdata-from-element an-html-element)
     (match an-html-element
       [(struct h:html-full (attributes content))

@@ -32,7 +32,7 @@ and linefeed characters print as @scheme[#\space] and
 (integer->char 65)
 (char->integer #\A)
 #\u03BB
-(eval:alts #, @schemevalfont["#\\u03BB"] #\u03BB)
+(eval:alts @#,schemevalfont["#\\u03BB"] #\u03BB)
 (integer->char 17)
 (char->integer #\space)
 ]

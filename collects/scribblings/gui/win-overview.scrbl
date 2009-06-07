@@ -12,10 +12,10 @@ The PLT Scheme windowing toolbox provides the basic building blocks of GUI
  @scheme[frame%] class:
 
 @schemeblock[
-(code:comment #, @t{Make a frame by instantiating the @scheme[frame%] class})
+(code:comment @#,t{Make a frame by instantiating the @scheme[frame%] class})
 (define frame (new frame% [label "Example"]))
  
-(code:comment #, @t{Show the frame by calling its @method[top-level-window<%> show] method})
+(code:comment @#,t{Show the frame by calling its @method[top-level-window<%> show] method})
 (send frame #,(:: top-level-window<%> show) #t)
 ]
 
@@ -27,21 +27,21 @@ The built-in classes provide various mechanisms for handling GUI
  clicks the button, the message changes:
 
 @schemeblock[
-(code:comment #, @t{Make a frame by instantiating the @scheme[frame%] class})
+(code:comment @#,t{Make a frame by instantiating the @scheme[frame%] class})
 (define frame (new frame% [label "Example"]))
 
-(code:comment #, @t{Make a static text message in the frame})
+(code:comment @#,t{Make a static text message in the frame})
 (define msg (new message% [parent frame]
                           [label "No events so far..."]))
 
-(code:comment #, @t{Make a button in the frame})
+(code:comment @#,t{Make a button in the frame})
 (new button% [parent frame] 
              [label "Click Me"]
-             (code:comment #, @t{Callback procedure for a button click:})
+             (code:comment @#,t{Callback procedure for a button click:})
              (callback (lambda (button event) 
                          (send msg #,(method message% set-label) "Button click"))))
 
-(code:comment #, @t{Show the frame by calling its @scheme[show] method})
+(code:comment @#,t{Show the frame by calling its @scheme[show] method})
 (send frame #,(:: top-level-window<%> show) #t)
 ]
 
@@ -63,19 +63,19 @@ If a window receives multiple kinds of events, the events are
  that handles mouse and keyboard events:
 
 @schemeblock[
-(code:comment #, @t{Derive a new canvas (a drawing window) class to handle events})
+(code:comment @#,t{Derive a new canvas (a drawing window) class to handle events})
 (define my-canvas%
-  (class canvas% (code:comment #, @t{The base class is @scheme[canvas%]})
-    (code:comment #, @t{Define overriding method to handle mouse events})
+  (class canvas% (code:comment @#,t{The base class is @scheme[canvas%]})
+    (code:comment @#,t{Define overriding method to handle mouse events})
     (define/override (#,(:: canvas<%> on-event) event)
       (send msg #,(:: message% set-label) "Canvas mouse"))
-    (code:comment #, @t{Define overriding method to handle keyboard events})
+    (code:comment @#,t{Define overriding method to handle keyboard events})
     (define/override (#,(:: canvas<%> on-char) event)
       (send msg #,(:: message% set-label) "Canvas keyboard"))
-    (code:comment #, @t{Call the superclass init, passing on all init args})
+    (code:comment @#,t{Call the superclass init, passing on all init args})
     (super-new)))
 
-(code:comment #, @t{Make a canvas that handles events in the frame})
+(code:comment @#,t{Make a canvas that handles events in the frame})
 (new my-canvas% [parent frame])
 ]
 
@@ -344,23 +344,23 @@ The built-in container classes include horizontal panels (and panes),
 with the following program:
 
 @schemeblock[
-(code:comment #, @t{Create a dialog})
+(code:comment @#,t{Create a dialog})
 (define dialog (instantiate dialog% ("Example")))
 
-(code:comment #, @t{Add a text field to the dialog})
+(code:comment @#,t{Add a text field to the dialog})
 (new text-field% [parent dialog] [label "Your name"])
 
-(code:comment #, @t{Add a horizontal panel to the dialog, with centering for buttons})
+(code:comment @#,t{Add a horizontal panel to the dialog, with centering for buttons})
 (define panel (new horizontal-panel% [parent dialog]
                                      [alignment '(center center)]))
 
-(code:comment #, @t{Add @onscreen{Cancel} and @onscreen{Ok} buttons to the horizontal panel})
+(code:comment @#,t{Add @onscreen{Cancel} and @onscreen{Ok} buttons to the horizontal panel})
 (new button% [parent panel] [label "Cancel"])
 (new button% [parent panel] [label "Ok"])
 (when (system-position-ok-before-cancel?)
   (send panel #,(:: area-container<%> change-children) reverse))
 
-(code:comment #, @t{Show the dialog})
+(code:comment @#,t{Show the dialog})
 (send dialog #,(:: dialog% show) #t)
 ]
 
@@ -883,7 +883,7 @@ Whenever the system dispatches an event, the call to the handler
 
 @def+int[
 (define (block f)
-  (code:comment #, @t{calls @scheme[f] and returns void if @scheme[f] tries to escape})
+  (code:comment @#,t{calls @scheme[f] and returns void if @scheme[f] tries to escape})
   (let ([done? #f])
     (let/ec k
       (dynamic-wind

@@ -117,7 +117,7 @@ The same binding as @scheme[#%app].  (This binding was not present in
                 ([head id
                        (head args)]
                  [args (code:line arg-id ...)
-                       (code:line arg-id ... #, @schemeparenfont{.} rest-id)])]{
+                       (code:line arg-id ... @#,schemeparenfont{.} rest-id)])]{
 
 Like @|base-define| in @schememodname[scheme/base], but without
 support for keyword arguments or optional arguments.}

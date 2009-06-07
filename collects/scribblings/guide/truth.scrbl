@@ -87,9 +87,9 @@ lists that prints as @schemeresult[((1) (2) (3))]. The @scheme[quote]
 form does exactly that:
 
 @interaction[
-(eval:alts (#, @scheme[quote] ((1) (2) (3))) '((1) (2) (3)))
-(eval:alts (#, @scheme[quote] ("red" "green" "blue")) '("red" "green" "blue"))
-(eval:alts (#, @scheme[quote] ()) '())
+(eval:alts (@#,scheme[quote] ((1) (2) (3))) '((1) (2) (3)))
+(eval:alts (@#,scheme[quote] ("red" "green" "blue")) '("red" "green" "blue"))
+(eval:alts (@#,scheme[quote] ()) '())
 ]
 
 The @scheme[quote] form works with the dot notation, too, whether the
@@ -97,29 +97,29 @@ quoted form is normalized by the dot-parenthesis elimination rule or
 not:
 
 @interaction[
-(eval:alts (#, @scheme[quote] (1 . 2)) '(1 . 2))
-(eval:alts (#, @scheme[quote] (0 #, @schemeparenfont{.} (1 . 2))) '(0 . (1 . 2)))
+(eval:alts (@#,scheme[quote] (1 . 2)) '(1 . 2))
+(eval:alts (@#,scheme[quote] (0 @#,schemeparenfont{.} (1 . 2))) '(0 . (1 . 2)))
 ]
 
 Naturally, lists of any kind can be nested:
 
 @interaction[
 (list (list 1 2 3) 5 (list "a" "b" "c"))
-(eval:alts (#, @scheme[quote] ((1 2 3) 5 ("a" "b" "c"))) '((1 2 3) 5 ("a" "b" "c")))
+(eval:alts (@#,scheme[quote] ((1 2 3) 5 ("a" "b" "c"))) '((1 2 3) 5 ("a" "b" "c")))
 ]
 
 If you wrap an identifier with @scheme[quote], then you get output
 that looks like an identifier:
 
 @interaction[
-(eval:alts (#, @scheme[quote] jane-doe) 'jane-doe)
+(eval:alts (@#,scheme[quote] jane-doe) 'jane-doe)
 ]
 
 A value that prints like an identifier is a @defterm{symbol}. In the
 same way that parenthesized output should not be confused with
 expressions, a printed symbol should not be confused with an
-identifier. In particular, the symbol @scheme[(#, @scheme[quote] #,
-@schemeidfont{map})] has nothing to do with the @schemeidfont{map}
+identifier. In particular, the symbol @scheme[(@#,scheme[quote]
+@#,schemeidfont{map})] has nothing to do with the @schemeidfont{map}
 identifier or the predefined function that is bound to
 @scheme[map], except that the symbol and the identifier happen
 to be made up of the same letters.
@@ -132,27 +132,27 @@ them.
 
 @examples[
 map
-(eval:alts (#, @scheme[quote] #, @schemeidfont{map}) 'map)
-(eval:alts (symbol? (#, @scheme[quote] #, @schemeidfont{map})) (symbol? 'map))
+(eval:alts (@#,scheme[quote] @#,schemeidfont{map}) 'map)
+(eval:alts (symbol? (@#,scheme[quote] @#,schemeidfont{map})) (symbol? 'map))
 (symbol? map)
 (procedure? map)
 (string->symbol "map")
-(eval:alts (symbol->string (#, @scheme[quote] #, @schemeidfont{map})) (symbol->string 'map))
+(eval:alts (symbol->string (@#,scheme[quote] @#,schemeidfont{map})) (symbol->string 'map))
 ]
 
 When @scheme[quote] is used on a parenthesized sequence of
 identifiers, it creates a list of symbols:
 
 @interaction[
-(eval:alts (#, @scheme[quote] (#, @schemeidfont{road} #, @schemeidfont{map})) '(road map))
-(eval:alts (car (#, @scheme[quote] (#, @schemeidfont{road} #, @schemeidfont{map}))) (car '(road map)))
-(eval:alts (symbol? (car (#, @scheme[quote] (#, @schemeidfont{road} #, @schemeidfont{map})))) (symbol? (car '(road map))))
+(eval:alts (@#,scheme[quote] (@#,schemeidfont{road} @#,schemeidfont{map})) '(road map))
+(eval:alts (car (@#,scheme[quote] (@#,schemeidfont{road} @#,schemeidfont{map}))) (car '(road map)))
+(eval:alts (symbol? (car (@#,scheme[quote] (@#,schemeidfont{road} @#,schemeidfont{map})))) (symbol? (car '(road map))))
 ]
 
 @;------------------------------------------------------------------------
 @section{Abbreviating @scheme[quote] with @schemevalfont{'}}
 
-If @scheme[(#, @scheme[quote] (1 2 3))] still seems like too much
+If @scheme[(@#,scheme[quote] (1 2 3))] still seems like too much
 typing, you can abbreviate by just putting @litchar{'} in front of
 @scheme[(1 2 3)]:
 
@@ -175,7 +175,7 @@ way. You can see this if you put a @litchar{'} in front of a form that has a
 @litchar{'}:
 
 @interaction[
-(eval:alts (car '(#, @schemevalfont{quote} #, @schemevalfont{road})) 'quote)
+(eval:alts (car '(@#,schemevalfont{quote} @#,schemevalfont{road})) 'quote)
 (car ''road)
 ]
 
@@ -186,7 +186,7 @@ Beware, however, that the @tech{REPL}'s printer recognizes the symbol
 @interaction[
 'road
 ''road
-(eval:alts '(#, @schemevalfont{quote} #, @schemevalfont{road}) ''road)
+(eval:alts '(@#,schemevalfont{quote} @#,schemevalfont{road}) ''road)
 ]
 
 @; FIXME:
@@ -223,10 +223,10 @@ One consequence of the read layer for expressions is that you can use
 the dot notation in expressions that are not quoted forms:
 
 @interaction[
-(eval:alts (+ 1 . #, @scheme[(2)]) (+ 1 2))
+(eval:alts (+ 1 . @#,scheme[(2)]) (+ 1 2))
 ]
 
-This works because @scheme[(+ 1 . #, @scheme[(2)])] is just another
+This works because @scheme[(+ 1 . @#,scheme[(2)])] is just another
 way of writing @scheme[(+ 1 2)]. It is practically never a good idea
 to write application expressions using this dot notation; it's just a
 consequence of the way Scheme's syntax is defined.

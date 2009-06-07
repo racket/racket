@@ -30,7 +30,7 @@ arrive at a symbol, but the reader preserves case by default.
 (eq? 'a (string->symbol "a"))
 (eq? 'a 'b)
 (eq? 'a 'A)
-(eval:alts #, @elem{@schemefont{#ci}@schemevalfont{'A}} #ci'A)
+(eval:alts @#,elem{@schemefont{#ci}@schemevalfont{'A}} #ci'A)
 ]
 
 Any string (i.e., any character sequence) can be supplied to

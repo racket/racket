@@ -89,7 +89,7 @@ Whether in ``text'' mode or Scheme mode, @litchar["@"] in a document
 provides an escape to Scheme mode. The syntax of @litchar["@"] is
 
 @schemeblock[
- #, @BNF-seq[@litchar["@"]
+ @#,BNF-seq[@litchar["@"]
              @nonterm{cmd}
              @litchar{[} @kleenestar{@nonterm{datum}} @litchar{]}
              @litchar["{"] @nonterm{text-body} @litchar["}"]]
@@ -114,14 +114,14 @@ A @nonterm{cmd} or @nonterm{datum} is a Scheme datum, while a
 The expansion of @litchar["@"]@nonterm{cmd} into Scheme code is
 
 @schemeblock[
-  #, @nonterm{cmd}
+  @#,nonterm{cmd}
 ]
 
 When either @litchar{[} @litchar{]} or @litchar["{"] @litchar["}"]
 are used, the expansion is
 
 @schemeblock[
-  (#, @nonterm{cmd} #, @kleenestar{@nonterm{datum}} #, @kleenestar{@nonterm{parsed-body}})
+  (@#,nonterm{cmd} @#,kleenestar{@nonterm{datum}} @#,kleenestar{@nonterm{parsed-body}})
 ]
 
 where @kleenestar{@nonterm{parsed-body}} is the parse result of the

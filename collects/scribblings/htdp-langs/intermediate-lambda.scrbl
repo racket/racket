@@ -52,7 +52,7 @@
       (letrec ([id expr] ...) expr)
       (let ([id expr] ...) expr)
       (let* ([id expr] ...) expr)
-      (code:line (expr expr expr ...) (code:comment #, @seclink["intermediate-lambda-call"]{function call}))
+      (code:line (expr expr expr ...) (code:comment @#,seclink["intermediate-lambda-call"]{function call}))
       (cond [expr expr] ... [expr expr])
       (cond [expr expr] ... [else expr])
       (if expr expr expr)
@@ -60,11 +60,11 @@
       (or expr expr expr ...)
       (time expr)
       empty
-      (code:line id (code:comment #, @seclink["intermediate-id"]{identifier}))
-      (code:line prim-op (code:comment #, @seclink["intermediate-lambda-prim-op"]{primitive operation}))
+      (code:line id (code:comment @#,seclink["intermediate-id"]{identifier}))
+      (code:line prim-op (code:comment @#,seclink["intermediate-lambda-prim-op"]{primitive operation}))
       'id
-      (code:line #, @elem{@schemevalfont{'}@scheme[quoted]} (code:comment #, @seclink["beginner-abbr-quote"]{quoted value}))
-      (code:line #, @elem{@schemevalfont{`}@scheme[quasiquoted]} (code:comment #, @seclink["beginner-abbr-quasiquote"]{quasiquote}))
+      (code:line @#,elem{@schemevalfont{'}@scheme[quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
+      (code:line @#,elem{@schemevalfont{`}@scheme[quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
       number
       true
       false

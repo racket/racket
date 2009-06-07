@@ -187,7 +187,7 @@ must be a list or vector of five elements:
 
 @schemeblock[
   (list source-name line column position span)
-  #, @elem{or} (vector source-name line column position span)
+  @#,elem{or} (vector source-name line column position span)
 ]
 
 where @scheme[source-name-v] is an arbitrary value for the source

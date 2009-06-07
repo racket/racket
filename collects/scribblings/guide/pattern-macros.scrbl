@@ -160,8 +160,8 @@ so that
 
 @schemeblock[
 (let ([red 1] [green 2] [blue 3])
-  (rotate red green)      (code:comment #, @t{swaps})
-  (rotate red green blue) (code:comment #, @t{rotates left})
+  (rotate red green)      (code:comment @#,t{swaps})
+  (rotate red green blue) (code:comment @#,t{rotates left})
   (list red green blue))
 ]
 
@@ -395,7 +395,7 @@ module, which lets us write @scheme[define-cbr] easily enough:
                  (set! actual v))
                (... ...))]))
     (define-for-cbr do-f (arg ...)
-      () (code:comment #, @t{explained below...})
+      () (code:comment @#,t{explained below...})
       body)))
 ]
 

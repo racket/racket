@@ -519,8 +519,8 @@ is represented by @scheme[#f]
 
 @interaction[
 (define date-re
-  (code:comment #, @t{match `month year' or `month day, year';})
-  (code:comment #, @t{subpattern matches day, if present})
+  (code:comment @#,t{match `month year' or `month day, year';})
+  (code:comment @#,t{subpattern matches day, if present})
   #rx"([a-z]+) +([0-9]+,)? *([0-9]+)")
 (regexp-match date-re "jan 1, 1970")
 (regexp-match date-re "jan 1970")
@@ -863,11 +863,11 @@ First, we define a subregexp @scheme[n0-255] that matches 0 through
 (define n0-255
   (string-append
    "(?:"
-   "\\d|"        (code:comment #, @t{  0 through   9})
-   "\\d\\d|"     (code:comment #, @t{ 00 through  99})
-   "[01]\\d\\d|" (code:comment #, @t{000 through 199})
-   "2[0-4]\\d|"  (code:comment #, @t{200 through 249})
-   "25[0-5]"     (code:comment #, @t{250 through 255})
+   "\\d|"        (code:comment @#,t{  0 through   9})
+   "\\d\\d|"     (code:comment @#,t{ 00 through  99})
+   "[01]\\d\\d|" (code:comment @#,t{000 through 199})
+   "2[0-4]\\d|"  (code:comment @#,t{200 through 249})
+   "25[0-5]"     (code:comment @#,t{250 through 255})
    ")"))
 ]
 
@@ -892,14 +892,14 @@ three dots separating them.
 #:eval ex-eval
 (define ip-re1
   (string-append
-    "^"        (code:comment #, @t{nothing before})
-    n0-255     (code:comment #, @t{the first @scheme[n0-255],})
-    "(?:"      (code:comment #, @t{then the subpattern of})
-    "\\."      (code:comment #, @t{a dot followed by})
-    n0-255     (code:comment #, @t{an @scheme[n0-255],})
-    ")"        (code:comment #, @t{which is})
-    "{3}"      (code:comment #, @t{repeated exactly 3 times})
-    "$"        (code:comment #, @t{with nothing following})
+    "^"        (code:comment @#,t{nothing before})
+    n0-255     (code:comment @#,t{the first @scheme[n0-255],})
+    "(?:"      (code:comment @#,t{then the subpattern of})
+    "\\."      (code:comment @#,t{a dot followed by})
+    n0-255     (code:comment @#,t{an @scheme[n0-255],})
+    ")"        (code:comment @#,t{which is})
+    "{3}"      (code:comment @#,t{repeated exactly 3 times})
+    "$"        (code:comment @#,t{with nothing following})
     ))
 ]
 
@@ -928,7 +928,7 @@ ensure there @emph{is} a digit other than zero.
 (define ip-re
   (pregexp
    (string-append
-     "(?=.*[1-9])" (code:comment #, @t{ensure there's a non-0 digit})
+     "(?=.*[1-9])" (code:comment @#,t{ensure there's a non-0 digit})
      ip-re1)))
 ]
 
@@ -940,8 +940,8 @@ composed of @emph{only} zeros and dots.
 (define ip-re
   (pregexp
    (string-append
-     "(?![0.]*$)" (code:comment #, @t{not just zeros and dots})
-                  (code:comment #, @t{(note: @litchar{.} is not metachar inside @litchar{[}...@litchar{]})})
+     "(?![0.]*$)" (code:comment @#,t{not just zeros and dots})
+                  (code:comment @#,t{(note: @litchar{.} is not metachar inside @litchar{[}...@litchar{]})})
      ip-re1)))
 ]
 

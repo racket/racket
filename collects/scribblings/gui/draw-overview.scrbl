@@ -35,23 +35,23 @@ The following example creates a frame with a drawing canvas, and then
  mouth:
 
 @schemeblock[
-(code:comment #, @t{Make a 300 x 300 frame})
+(code:comment @#,t{Make a 300 x 300 frame})
 (define frame (new frame% [label "Drawing Example"]
                           [width 300]
                           [height 300]))
-(code:comment #, @t{Make the drawing area})
+(code:comment @#,t{Make the drawing area})
 (define canvas (new canvas% [parent frame]))
-(code:comment #, @t{Get the canvas's drawing context})
+(code:comment @#,t{Get the canvas's drawing context})
 (define dc (send canvas #,(:: canvas<%> get-dc)))
 
-(code:comment #, @t{Make some pens and brushes})
+(code:comment @#,t{Make some pens and brushes})
 (define no-pen (make-object pen% "BLACK" 1 'transparent))
 (define no-brush (make-object brush% "BLACK" 'transparent))
 (define blue-brush (make-object brush% "BLUE" 'solid))
 (define yellow-brush (make-object brush% "YELLOW" 'solid))
 (define red-pen (make-object pen% "RED" 2 'solid))
 
-(code:comment #, @t{Define a procedure to draw a face})
+(code:comment @#,t{Define a procedure to draw a face})
 (define (draw-face dc) 
   (send dc #,(:: dc<%> set-pen) no-pen) 
   (send dc #,(:: dc<%> set-brush) blue-brush) 
@@ -66,11 +66,11 @@ The following example creates a frame with a drawing canvas, and then
   (let ([-pi (atan 0 -1)]) 
     (send dc #,(:: dc<%> draw-arc) 75 75 150 150 (* 5/4 -pi) (* 7/4 -pi))))
 
-(code:comment #, @t{Show the frame})
+(code:comment @#,t{Show the frame})
 (send frame #,(:: top-level-window<%> show) #t) 
-(code:comment #, @t{Wait a second to let the window get ready})
+(code:comment @#,t{Wait a second to let the window get ready})
 (sleep/yield 1) 
-(code:comment #, @t{Draw the face})
+(code:comment @#,t{Draw the face})
 (draw-face dc)
 ]
 
@@ -92,20 +92,20 @@ One second is plenty of time for the frame to show itself, but a
  the canvas:
 
 @schemeblock[
-(code:comment #, @t{Make a 300 x 300 frame})
+(code:comment @#,t{Make a 300 x 300 frame})
 (define frame (new frame% [label "Drawing Example"]
                           [width 300]
                           [height 300]))
 
-(code:comment #, @t{Make the drawing area with a paint callback})
+(code:comment @#,t{Make the drawing area with a paint callback})
 (define canvas
   (new canvas% [parent frame]
                [paint-callback
                 (lambda (canvas dc) (draw-face dc))]))
 
-(code:comment #, @t{... pens, brushes, and @scheme[draw-face] are the same as above ...})
+(code:comment @#,t{... pens, brushes, and @scheme[draw-face] are the same as above ...})
 
-(code:comment #, @t{Show the frame})
+(code:comment @#,t{Show the frame})
 (send frame #,(:: top-level-window<%> show) #t)
 ]
 
@@ -118,31 +118,31 @@ Suppose that @scheme[draw-face] creates a particularly complex face that
  bitmap:
 
 @schemeblock[
-(code:comment #, @t{... pens, brushes, and @scheme[draw-face] are the same as above ...})
+(code:comment @#,t{... pens, brushes, and @scheme[draw-face] are the same as above ...})
  
-(code:comment #, @t{Create a 300 x 300 bitmap})
+(code:comment @#,t{Create a 300 x 300 bitmap})
 (define face-bitmap (make-object bitmap% 300 300))
-(code:comment #, @t{Create a drawing context for the bitmap})
+(code:comment @#,t{Create a drawing context for the bitmap})
 (define bm-dc (make-object bitmap-dc% face-bitmap))
-(code:comment #, @t{A bitmap's initial content is undefined; clear it before drawing})
+(code:comment @#,t{A bitmap's initial content is undefined; clear it before drawing})
 (send bm-dc #,(:: dc<%> clear))
  
-(code:comment #, @t{Draw the face into the bitmap})
+(code:comment @#,t{Draw the face into the bitmap})
 (draw-face bm-dc) 
  
-(code:comment #, @t{Make a 300 x 300 frame})
+(code:comment @#,t{Make a 300 x 300 frame})
 (define frame (new frame% [label "Drawing Example"]
                           [width 300]
                           [height 300]))
 
-(code:comment #, @t{Make a drawing area whose paint callback copies the bitmap})
+(code:comment @#,t{Make a drawing area whose paint callback copies the bitmap})
 (define canvas
   (new canvas% [parent frame]
                [paint-callback
                 (lambda (canvas dc)
                   (send dc #,(:: dc<%> draw-bitmap) face-bitmap 0 0))]))
  
-(code:comment #, @t{Show the frame})
+(code:comment @#,t{Show the frame})
 (send frame #,(:: top-level-window<%> show) #t)
 ]
 

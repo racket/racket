@@ -137,7 +137,7 @@ top-level namespace:
 @interaction[
 #:eval box-eval
 (define base-module-eval 
-  (code:comment #, @t{a module cannot have free variables...})
+  (code:comment @#,t{a module cannot have free variables...})
   (make-evaluator 'scheme/base '(define (f) later)))
 (define base-module-eval 
   (make-evaluator 'scheme/base '(define (f) later)
@@ -145,7 +145,7 @@ top-level namespace:
 (base-module-eval '(f))
 
 (define base-top-eval 
-  (code:comment #, @t{non-module code can have free variables:})
+  (code:comment @#,t{non-module code can have free variables:})
   (make-evaluator '(begin) '(define (f) later)))
 (base-top-eval '(+ 1 2))
 (base-top-eval '(define later 5))
@@ -162,7 +162,7 @@ restriction is enforced).
 
 @schemeblock[
 (define base-module-eval2
-  (code:comment #, @t{equivalent to @scheme[base-module-eval]:})
+  (code:comment @#,t{equivalent to @scheme[base-module-eval]:})
   (make-module-evaluator '(module m scheme/base
                             (define (f) later)
                             (define later 5))))
@@ -868,7 +868,7 @@ your own permissions, for example,
     (call-in-sandbox-context
       (lambda ()
         (parameterize ([current-security-guard guard])
-          (code:comment #, @t{can access anything you want here})
+          (code:comment @#,t{can access anything you want here})
           ))))
 ]}
 

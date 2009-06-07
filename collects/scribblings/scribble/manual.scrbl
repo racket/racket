@@ -92,8 +92,11 @@ A few other escapes are recognized symbolically:
        produces a paragraph using @scheme[t]: 
 
        @verbatim[#:indent 2]|{
-         (code:comment #, @t{this is a comment})
-       }|}
+         (code:comment @#,t{this is a comment})
+       }|
+
+       (Note that @litchar|{@#,foo{...}}| reads as @scheme[(unsyntax (foo "..."))].)
+       }
 
  @item{@schemeidfont{code:blank} typesets as a blank space.}
 
@@ -366,8 +369,8 @@ sub-sections.}
                          (keyword arg-id contract-expr-datum default-expr)
                          ellipses
                          ellipses+]
-               [ellipses #, @lit-ellipses]
-               [ellipses+ #, @lit-ellipses+])]{
+               [ellipses @#,lit-ellipses]
+               [ellipses+ @#,lit-ellipses+])]{
 
 Produces a sequence of flow elements (encapsulated in a
 @scheme[splice]) to document a procedure named @scheme[id]. Nesting
@@ -402,13 +405,13 @@ Each @scheme[arg-spec] must have one of the following forms:
        Like the previous case, but with a default
        value.}
 
-@specsubform[#, @lit-ellipses]{Any number of the preceding argument.  This
+@specsubform[@#,lit-ellipses]{Any number of the preceding argument.  This
        form is normally used at the end, but keyword-based arguments
        can sensibly appear afterward. See also the documentation for
        @scheme[append] for a use of @lit-ellipses before the last
        argument.}
 
-@specsubform[#, @lit-ellipses+]{One or more of the preceding argument
+@specsubform[@#,lit-ellipses+]{One or more of the preceding argument
        (normally at the end, like @lit-ellipses).}
 
 The @scheme[result-contract-expr-datum] is typeset via

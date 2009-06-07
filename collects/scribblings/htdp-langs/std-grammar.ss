@@ -17,15 +17,15 @@
   (schemegrammar*
    #:literals lits
    form ...
-   [test-case #, @scheme[(check-expect expr expr)]
-              #, @scheme[(check-within expr expr expr)]
-              #, @scheme[(check-error expr expr)]]
+   [test-case @#,scheme[(check-expect expr expr)]
+              @#,scheme[(check-within expr expr expr)]
+              @#,scheme[(check-error expr expr)]]
    (...
-    [library-require #, @scheme[(require string)]
-                     #, @scheme[(require (lib string string ...))]
-                     #, @scheme[(require (planet string package))]])
+    [library-require @#,scheme[(require string)]
+                     @#,scheme[(require (lib string string ...))]
+                     @#,scheme[(require (planet string package))]])
    (...
-    [package #, @scheme[(string string number number)]])))
+    [package @#,scheme[(string string number number)]])))
 
 (define-syntax-rule (schemegrammar*+qq 
                      #:literals lits
@@ -40,21 +40,21 @@
             number
             string
             character
-            #, @scheme[(quoted ...)]
-            #, @elem{@schemevalfont{'}@scheme[quoted]}
-            #, @elem{@schemevalfont{`}@scheme[quoted]}
-            #, @elem{@schemefont{,}@scheme[quoted]}
-            #, @elem{@schemefont[",@"]@scheme[quoted]}])
+            @#,scheme[(quoted ...)]
+            @#,elem{@schemevalfont{'}@scheme[quoted]}
+            @#,elem{@schemevalfont{`}@scheme[quoted]}
+            @#,elem{@schemefont{,}@scheme[quoted]}
+            @#,elem{@schemefont[",@"]@scheme[quoted]}])
    (...
     [quasiquoted id
                  number
                  string
                  character
-                 #, @scheme[(quasiquoted ...)]
-                 #, @elem{@schemevalfont{'}@scheme[quasiquoted]}
-                 #, @elem{@schemevalfont{`}@scheme[quasiquoted]}
-                 #, @elem{@schemefont{,}@scheme[expr]}
-                 #, @elem{@schemefont[",@"]@scheme[expr]}])))
+                 @#,scheme[(quasiquoted ...)]
+                 @#,elem{@schemevalfont{'}@scheme[quasiquoted]}
+                 @#,elem{@schemevalfont{`}@scheme[quasiquoted]}
+                 @#,elem{@schemefont{,}@scheme[expr]}
+                 @#,elem{@schemefont[",@"]@scheme[expr]}])))
 
 (define prim-nonterms
   (make-splice

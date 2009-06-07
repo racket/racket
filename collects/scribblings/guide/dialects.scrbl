@@ -43,15 +43,15 @@ PLT Scheme tools in their default modes do not conform to @|r5rs|,
 mainly because PLT Scheme tools generally expect modules, and @|r5rs|
 does not define a module system. Typical single-file @|r5rs| programs
 can be converted to PLT Scheme programs by prefixing them with
-@scheme[#, @hash-lang[] #, @schememodname[r5rs]], but other Scheme
-systems do not recognize @scheme[#, @hash-lang[] #,
-@schememodname[r5rs]]. The @exec{plt-r5rs} executable (see
+@scheme[@#,hash-lang[] @#,schememodname[r5rs]], but other Scheme
+systems do not recognize @scheme[@#,hash-lang[]
+@#,schememodname[r5rs]]. The @exec{plt-r5rs} executable (see
 @secref[#:doc '(lib "r5rs/r5rs.scrbl") "plt-r5rs"]) more directly
 conforms to the @|r5rs| standard.
 
 Aside from the module system, the syntactic forms and functions of
 @|r5rs| and PLT Scheme differ. Only simple @|r5rs| become PLT Scheme
-programs when prefixed with @scheme[#, @hash-lang[] scheme], and
+programs when prefixed with @scheme[@#,hash-lang[] scheme], and
 relatively few PLT Scheme programs become @|r5rs| programs when a
 @hash-lang[] line is removed. Also, when mixing ``@|r5rs| modules''
 with PLT Scheme modules, beware that @|r5rs| pairs correspond to PLT
@@ -119,7 +119,7 @@ including the following:
 
 Each of these languages is used by starting module with the language
 name after @hash-lang[]. For example, this source of this
-document starts with @scheme[#, @hash-lang[] scribble/doc].
+document starts with @scheme[@#,hash-lang[] scribble/doc].
 
 PLT Scheme users can define their own languages.  A language name maps
 to its implementation through a module path by adding
@@ -134,11 +134,11 @@ Some language names act as language loaders. For example,
 @schememodname[s-exp] as a language uses the usual PLT Scheme parser
 for surface-syntax reading, and then it uses the module path after
 @schememodname[s-exp] for the language's syntactic forms. Thus,
-@scheme[#, @hash-lang[] #, @schememodname[s-exp] "mylang.ss"] parses
+@scheme[@#,hash-lang[] @#,schememodname[s-exp] "mylang.ss"] parses
 the module body using the normal PLT Scheme reader, by then imports
 the initial syntax and functions for the module body from
-@scheme["mylang.ss"]. Similarly, @scheme[#, @hash-lang[] #,
-@schememodname[planet] _planet-path] loads a language via
+@scheme["mylang.ss"]. Similarly, @scheme[@#,hash-lang[]
+@#,schememodname[planet] _planet-path] loads a language via
 @seclink["top" #:doc '(lib "planet/planet.scrbl")]{@|PLaneT|}.
 
 @; --------------------------------------------------

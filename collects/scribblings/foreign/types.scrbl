@@ -781,7 +781,7 @@ work:
 (define makeB
   (get-ffi-obj 'makeB "foo.so"
     (_fun -> (_list-struct (_list-struct _int _byte) _int))))
-(makeB) (code:comment #, @t{should return @scheme['((1 2) 3)]})
+(makeB) (code:comment @#,t{should return @scheme['((1 2) 3)]})
 ]
 
 The problem here is that @cpp{makeB} returns a pointer to the struct rather
@@ -801,10 +801,10 @@ define a type for @cpp{A} which makes it possible to use @cpp{makeA}:
 (define-cstruct #,(schemeidfont "_A") ([x _int] [y _byte]))
 (define makeA
   (get-ffi-obj 'makeA "foo.so"
-    (_fun -> #,(schemeidfont "_A-pointer")))) (code:comment #, @t{using @schemeidfont{_A} is a memory-corrupting bug!})
+    (_fun -> #,(schemeidfont "_A-pointer")))) (code:comment @#,t{using @schemeidfont{_A} is a memory-corrupting bug!})
 (define a (makeA))
 (list a (A-x a) (A-y a))
-(code:comment #, @t{produces an @scheme[A] containing @scheme[1] and @scheme[2]})
+(code:comment @#,t{produces an @scheme[A] containing @scheme[1] and @scheme[2]})
 ]
 
 Using @cpp{gety} is also simple:
@@ -813,7 +813,7 @@ Using @cpp{gety} is also simple:
 (define gety
   (get-ffi-obj 'gety "foo.so"
     (_fun #,(schemeidfont "_A-pointer") -> _byte)))
-(gety a) (code:comment #, @t{produces @scheme[2]})
+(gety a) (code:comment @#,t{produces @scheme[2]})
 ]
 
 We now define another C struct for @cpp{B}, and expose @cpp{makeB}

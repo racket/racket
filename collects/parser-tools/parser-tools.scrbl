@@ -458,7 +458,7 @@ the right choice when using @scheme[lexer] in other situations.
 
    Like @scheme[define-tokens], except a each token constructor
    @schemeidfont{token-}@scheme[token-id] takes no arguments and returns
-   @scheme[(#, @scheme[quote] token-id)].}
+   @scheme[(@#,scheme[quote] token-id)].}
 
 
 @defproc[(token-name [t (or/c token? symbol?)]) symbol?]{
@@ -494,7 +494,7 @@ the right choice when using @scheme[lexer] in other situations.
                        (tokens group-id ...)
                        (start non-terminal-id ...)
                        (end token-id ...)
-                       (#, @schemeidfont{error} expr)
+                       (@#,schemeidfont{error} expr)
                        (precs (assoc token-id ...) ...)
                        (src-pos)
                        (suppress)
@@ -574,7 +574,7 @@ the right choice when using @scheme[lexer] in other situations.
       that parses entire lines individually.}
 
 
-      @item{@scheme[(#, @schemeidfont{error} expr)]
+      @item{@scheme[(@#,schemeidfont{error} expr)]
 
       The @scheme[expr] should evaluate to a function which will be
       executed for its side-effect whenever the parser encounters an

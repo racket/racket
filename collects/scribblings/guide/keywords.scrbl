@@ -37,12 +37,12 @@ run-time flags and enumerations, use symbols instead of keywords.  The
 example below illustrates the distinct roles of keywords and symbols.
 
 @examples[
-(code:line (define dir (find-system-path 'temp-dir)) (code:comment #, @t{not @scheme['#:temp-dir]}))
+(code:line (define dir (find-system-path 'temp-dir)) (code:comment @#,t{not @scheme['#:temp-dir]}))
 (with-output-to-file (build-path dir "stuff.txt")
   (lambda () (printf "example\n"))
-  (code:comment #, @t{optional @scheme[#:mode] argument can be @scheme['text] or @scheme['binary]})
+  (code:comment @#,t{optional @scheme[#:mode] argument can be @scheme['text] or @scheme['binary]})
   #:mode 'text
-  (code:comment #, @t{optional @scheme[#:exists] argument can be @scheme['replace], @scheme['truncate], ...})
+  (code:comment @#,t{optional @scheme[#:exists] argument can be @scheme['replace], @scheme['truncate], ...})
   #:exists 'replace)
 ]
 

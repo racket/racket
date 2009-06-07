@@ -19,8 +19,8 @@ the least-used characters in Scheme code.
 You can use the reader via Scheme's @schemefont{#reader} form:
 
 @schemeblock[
- #, @schemefont|{
-      #reader scribble/reader @foo{This is free-form text!}
+ @#,schemefont|{
+     #reader scribble/reader @foo{This is free-form text!}
 }|]
 
 or use the @scheme[at-exp] meta-language as described in
@@ -60,10 +60,10 @@ function to switch the current readtable to a readtable that parses
 Informally, the concrete syntax of @"@"-forms is
 
 @schemeblock[
- #, @BNF-seq[@litchar["@"]
-             @nonterm{cmd}
-             @litchar{[} @kleenestar{@nonterm{datum}} @litchar{]}
-             @litchar["{"] @kleenestar{@nonterm{text-body}} @litchar["}"]]
+ @#,BNF-seq[@litchar["@"]
+            @nonterm{cmd}
+            @litchar{[} @kleenestar{@nonterm{datum}} @litchar{]}
+            @litchar["{"] @kleenestar{@nonterm{text-body}} @litchar["}"]]
 ]
 
 where all three parts after @litchar["@"] are optional, but at least
@@ -71,7 +71,7 @@ one should be present.  (Note that spaces are not allowed between the
 three parts.)  Roughly, a form matching the above grammar is read as
 
 @schemeblock[
-  (#, @nonterm{cmd} #, @kleenestar{@nonterm{datum}} #, @kleenestar{@nonterm{parsed-body}})
+  (@#,nonterm{cmd} @#,kleenestar{@nonterm{datum}} @#,kleenestar{@nonterm{parsed-body}})
 ]
 
 where @nonterm{parsed-body} is the translation of each
@@ -289,9 +289,9 @@ comment.  There are two comment forms, one for arbitrary-text and
 possibly nested comments, and another one for line comments:
 
 @schemeblock[
-#, @BNF-seq[@litchar["@;{"] @kleenestar{@nonterm{any}} @litchar["}"]]
+@#,BNF-seq[@litchar["@;{"] @kleenestar{@nonterm{any}} @litchar["}"]]
 
-#, @BNF-seq[@litchar["@;"] @kleenestar{@nonterm{anything-else-without-newline}}]
+@#,BNF-seq[@litchar["@;"] @kleenestar{@nonterm{anything-else-without-newline}}]
 ]
 
 In the first form, the commented body must still parse correctly; see
@@ -620,12 +620,12 @@ can be used to identify newlines in the original @nonterm{text-body}.
 @; FIXME: unfortunate code duplication (again):
 @interaction[
 (eval:alts
-  (let ([nl (car #, @tt["@'{"]
-                 #, @tt["  }"])])
+  (let ([nl (car @#,tt["@'{"]
+                 @#,tt["  }"])])
     (for-each (lambda (x) (display (if (eq? x nl) "\n... " x)))
-              #, @tt["@`{foo"]
-              #, @elem[@tt["   @"] @scheme[,@(list "bar" "\n" "baz")]]
-              #, @tt["   blah}}"])
+              @#,tt["@`{foo"]
+              @#,elem[@tt["   @"] @scheme[,@(list "bar" "\n" "baz")]]
+              @#,tt["   blah}}"])
     (newline))
   (let ([nl (car @'{
                    })])
@@ -785,7 +785,7 @@ example, implicitly quoted keywords:
                    (cddr xs))))])))
   (eval:alts
    (code:line
-    #, @tt["@foo[x 1 y (* 2 3)]{blah}"])
+    @#,tt["@foo[x 1 y (* 2 3)]{blah}"])
     ;; Unfortunately, expressions are preserved by `def+int'
     ;; using `quote', not `quote-syntax' (which would create all sorts
     ;; or binding trouble), so we manually re-attach the property:
@@ -827,10 +827,10 @@ is an example of this.
                                      rst)])))))]))
   (eval:alts
    (code:line
-    #, @tt["@verb[string-append]{"]
-    #, @tt["  foo"]
-    #, @tt["    bar"]
-    #, @tt["}"])
+    @#,tt["@verb[string-append]{"]
+    @#,tt["  foo"]
+    @#,tt["    bar"]
+    @#,tt["}"])
    @verb[string-append]{
      foo
        bar
@@ -845,13 +845,13 @@ is an example of this.
 another language that is specified immediate after
 @schememodname[at-exp].}
 
-For example, @scheme[#, @hash-lang[] at-exp scheme/base] adds @"@"-reader
+For example, @scheme[@#,hash-lang[] at-exp scheme/base] adds @"@"-reader
 support to @scheme[scheme/base], so that
 
 @schememod[
 at-exp scheme/base
 
-(define (greet who) #, @elem{@tt["@"]@scheme[string-append]@schemeparenfont["{"]@schemevalfont{Hello, }@tt["@|"]@scheme[who]@tt["|"]@schemevalfont{.}@schemeparenfont["}"]})
+(define (greet who) @#,elem{@tt["@"]@scheme[string-append]@schemeparenfont["{"]@schemevalfont{Hello, }@tt["@|"]@scheme[who]@tt["|"]@schemevalfont{.}@schemeparenfont["}"]})
 (greet "friend")]
 
 reports @scheme["Hello, friend."].
