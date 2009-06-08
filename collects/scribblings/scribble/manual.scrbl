@@ -96,7 +96,7 @@ A few other escapes are recognized symbolically:
        }|
 
        (Note that @litchar|{@#,foo{...}}| reads as
-       @scheme[(@schemeidfont{unsyntax} (foo "..."))].)
+       @SCHEME[(unsyntax (foo "..."))].)
        }
 
  @item{@schemeidfont{code:blank} typesets as a blank space.}
