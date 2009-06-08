@@ -737,7 +737,6 @@ END-OF-TESTS
 
 (define (read-all str reader [whole? #f])
   (define i (open-input-string str))
-  (port-count-lines! i)
   (if whole?
     (reader i)
     (let loop ()
@@ -778,15 +777,18 @@ END-OF-TESTS
            [ts (regexp-replace* #px"(?m:^;.*\r?\n)" ts "")]
            ;; split the tests
            [ts (regexp-split #px"(?:^|\r?\n)-+(?:$|\r?\n)" ts)])
-      (for ([t ts] #:when (not (regexp-match? #px"^\\s*$" t)))
-        (let ([m (or (regexp-match #px"^(.*)\n\\s*(-\\S+->)\\s*\n(.*)$" t)
-                     (regexp-match #px"^(.*\\S)\\s+(-\\S+->)\\s+(\\S.*)$" t))])
-          (if (not (and m (= 4 (length m))))
-            (error 'bad-test "~a" t)
-            (let-values ([(x y)
-                          ((string->tester (caddr m)) (cadr m) (cadddr m))])
-              (test #:failure-message
-                    (format "bad result in\n    ~a\n  results:\n    ~s != ~s\n"
-                            (regexp-replace* #rx"\n" t "\n    ")
-                            x y)
-                    (equal? x y)))))))))
+      (parameterize ([port-count-lines-enabled #t])
+        (for ([t ts] #:when (not (regexp-match? #px"^\\s*$" t)))
+          (let ([m (or (regexp-match #px"^(.*)\n\\s*(-\\S+->)\\s*\n(.*)$"
+                                     t)
+                       (regexp-match #px"^(.*\\S)\\s+(-\\S+->)\\s+(\\S.*)$"
+                                     t))])
+            (if (not (and m (= 4 (length m))))
+              (error 'bad-test "~a" t)
+              (let-values ([(x y)
+                            ((string->tester (caddr m)) (cadr m) (cadddr m))])
+                (test #:failure-message
+                      (format "bad result in\n    ~a\n  results:\n    ~s != ~s"
+                              (regexp-replace* #rx"\n" t "\n    ")
+                              x y)
+                      (equal? x y))))))))))
