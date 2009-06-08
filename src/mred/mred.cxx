@@ -2222,6 +2222,15 @@ static HANDLE waiting_sema;
 
 typedef HWND (WINAPI* gcw_proc)();
 
+static void init_console_in()
+{
+  if (!console_in) {
+    console_in = GetStdHandle(STD_INPUT_HANDLE);
+    wxREGGLOB(console_inport);
+    console_inport = scheme_make_fd_input_port((int)console_in, scheme_intern_symbol("stdin"), 0, 0);
+  }
+}
+
 static BOOL WINAPI ConsoleHandler(DWORD op)
 {
   if (stdio_kills_prog) {
@@ -2278,13 +2287,9 @@ static void MrEdSchemeMessages(char *msg, ...)
     console_out = GetStdHandle(STD_OUTPUT_HANDLE);
 
     if (!wx_in_terminal) {
-      console_in = GetStdHandle(STD_INPUT_HANDLE);
       has_stdio = 1;
       waiting_sema = CreateSemaphore(NULL, 0, 1, NULL);
-      SetConsoleCtrlHandler(ConsoleHandler, TRUE);
-
-      wxREGGLOB(console_inport);
-      console_inport = scheme_make_fd_input_port((int)console_in, scheme_intern_symbol("stdin"), 0, 0);
+      SetConsoleCtrlHandler(ConsoleHandler, TRUE);      
 
       {
 	HMODULE hm;
@@ -2417,6 +2422,7 @@ static long mrconsole_get_string(Scheme_Input_Port *ip,
   MrEdSchemeMessages("");
 
 #if WCONSOLE_STDIO
+  init_console_in();
   pipe = console_inport;
 #endif
 
@@ -2435,6 +2441,7 @@ static Scheme_Object *mrconsole_progress_evt(Scheme_Input_Port *ip)
   MrEdSchemeMessages("");
 
 #if WCONSOLE_STDIO
+  init_console_in();
   pipe = console_inport;
 #endif
 
@@ -2450,6 +2457,7 @@ static int mrconsole_peeked_read(Scheme_Input_Port *ip,
   MrEdSchemeMessages("");
 
 #if WCONSOLE_STDIO
+  init_console_in();
   pipe = console_inport;
 #endif
 
@@ -2462,6 +2470,7 @@ static int mrconsole_char_ready(Scheme_Input_Port *ip)
   MrEdSchemeMessages("");
 
 #if WCONSOLE_STDIO
+  init_console_in();
   pipe = console_inport;
 #endif
 
@@ -2472,6 +2481,7 @@ static void mrconsole_close(Scheme_Input_Port *ip)
 {
   Scheme_Object *pipe = (Scheme_Object *)ip->port_data;
 #if WCONSOLE_STDIO
+  init_console_in();
   pipe = console_inport;
 #endif
   scheme_close_input_port(pipe);
