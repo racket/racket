@@ -727,6 +727,25 @@ foo
 -@e->
 "foo\n      bar"
 ---
+;; -------------------- empty input tests
+---
+
+-@->
+
+---
+
+-@i->
+
+---
+
+-\->
+
+---
+
+-\i->
+
+---
+
 
 END-OF-TESTS
 )
@@ -743,14 +762,10 @@ END-OF-TESTS
       (let ([x (reader i)])
         (if (eof-object? x) '() (cons x (loop)))))))
 
-(define (read/BS i)
-  (parameterize ([current-readtable
-                  (scr:make-at-readtable #:command-char #\\)])
-    (read i)))
+(define read/BS (scr:make-at-reader #:command-char #\\ #:syntax? #f))
 
-(define (read-inside/BS i)
-  (syntax->datum ((scr:make-at-reader/inside #:command-char #\\)
-                  (object-name i) i)))
+(define read-inside/BS
+  (scr:make-at-reader #:inside? #t #:command-char #\\ #:syntax? #f))
 
 (define (x . -@-> . y)
   (values (read-all x scr:read) (read-all y read)))

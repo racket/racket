@@ -508,13 +508,19 @@
                 (get-datum-readtable) syntax-post-processor)))
 
 ;; ----------------------------------------------------------------------------
-;; readtable
-
-(provide make-at-readtable make-at-reader/inside)
+;; minor utilities for the below
 
 (define default-src (gensym 'scribble-reader))
 (define (src-name src port)
   (if (eq? src default-src) (object-name port) src))
+
+(define-syntax-rule (named-lambda (name . args) . body)
+  (let ([name (lambda args . body)]) name))
+
+;; ----------------------------------------------------------------------------
+;; readtable and reader
+
+(provide make-at-readtable make-at-reader)
 
 (define ((make-at-readtable-or-inside-reader inside-reader?)
          readtable command-char datum-readtable syntax-post-processor)
@@ -525,11 +531,12 @@
     (define dispatcher
       (make-dispatcher #t command-char (lambda () cmd-rt) (lambda () datum-rt)
                        syntax-post-processor))
-    (define (inside-reader [src default-src] [inp (current-input-port)])
+    ;; use a name consistent with `make-at-reader'
+    (named-lambda (at-read-syntax/inside [src default-src]
+                                         [inp (current-input-port)])
       (define-values [line col pos] (port-next-location inp))
       (parameterize ([current-readtable at-rt])
-        (dispatcher #f inp (src-name src inp) line col pos)))
-    inside-reader)
+        (dispatcher #f inp (src-name src inp) line col pos))))
   (define at-rt
     (make-readtable readtable command-char 'non-terminating-macro dispatcher))
   (define cmd-rt
@@ -560,20 +567,43 @@
   (if inside-reader? (make-inside-reader) at-rt))
 
 (define (make-at-readtable
-         #:readtable [readtable (current-readtable)]
-         #:command-char [command-char ch:command]
-         #:datum-readtable [datum-readtable #t]
+         #:readtable             [readtable (current-readtable)]
+         #:command-char          [command-char ch:command]
+         #:datum-readtable       [datum-readtable #t]
          #:syntax-post-processor [syntax-post-processor values])
   ((make-at-readtable-or-inside-reader #f)
    readtable command-char datum-readtable syntax-post-processor))
 
-(define (make-at-reader/inside
-         #:readtable [readtable (current-readtable)]
-         #:command-char [command-char ch:command]
-         #:datum-readtable [datum-readtable #t]
-         #:syntax-post-processor [syntax-post-processor values])
-  ((make-at-readtable-or-inside-reader #t)
-   readtable command-char datum-readtable syntax-post-processor))
+(define (make-at-reader
+         #:readtable             [readtable (current-readtable)]
+         #:command-char          [command-char ch:command]
+         #:datum-readtable       [datum-readtable #t]
+         #:syntax-post-processor [syntax-post-processor values]
+         #:syntax?               [syntax-reader? #t]
+         #:inside?               [inside-reader? #f])
+  (let ([r ((make-at-readtable-or-inside-reader inside-reader?)
+            readtable command-char datum-readtable syntax-post-processor)])
+    ;; the result can be a readtable or a syntax reader, depending on inside?,
+    ;; convert it now to the appropriate reader
+    (if inside-reader?
+      ;; if it's a function, then it already is a syntax reader, convert it to
+      ;; a plain reader if needed (note: this only happens when r is a reader)
+      (if syntax-reader?
+        r
+        (named-lambda (at-read/inside [in (current-input-port)])
+          ;; can't be eof, since it returns a list of expressions (as a syntax)
+          (syntax->datum (r (object-name in) in))))
+      ;; if it's a readtable, then just wrap the standard functions
+      (if syntax-reader?
+        (named-lambda (at-read-syntax [src default-src]
+                                      [inp (current-input-port)])
+          (parameterize ([current-readtable r])
+            (read-syntax src inp)))
+        (named-lambda (at-read [inp (current-input-port)])
+          (parameterize ([current-readtable r])
+            (let ([r (read-syntax (object-name inp) inp)])
+              ;; it might be eof
+              (if (syntax? r) (syntax->datum r) r))))))))
 
 (provide use-at-readtable)
 (define use-at-readtable
@@ -587,7 +617,8 @@
 (define make-default-at-readtable
   (readtable-cached (lambda (rt) (make-at-readtable #:readtable rt))))
 (define make-default-at-reader/inside
-  (readtable-cached (lambda (rt) (make-at-reader/inside #:readtable rt))))
+  (readtable-cached
+   (lambda (rt) (make-at-reader #:inside? #t #:readtable rt))))
 
 ;; ----------------------------------------------------------------------------
 ;; readers

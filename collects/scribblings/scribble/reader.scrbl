@@ -879,7 +879,7 @@ provides direct Scribble reader functionality for advanced needs.}
          (or/c syntax? eof-object?)]{
 These procedures implement the Scribble reader.  They do so by
 constructing a reader table based on the current one, and using that
-in reading.
+for reading.
 }
 
 @defproc[(read-inside [in input-port? (current-input-port)]) any]{}
@@ -939,11 +939,31 @@ resulting reader in several ways:
 
 ]}
 
+@defproc[(make-at-reader [#:syntax? syntax? #t] [#:inside? inside? #f] ...)
+          procedure?]{
+Constructs a variant of a @"@"-readtable.  The arguments are the same
+as in @scheme[make-at-readtable], with two more that determine the
+kind of reader function that will be created: @scheme[syntax?] chooses
+between a @scheme[read]- or @scheme[read-syntax]-like function, and
+@scheme[inside?] chooses a plain reader or an @schemeid[-inside]
+variant.
+
+Note that the resulting function has a different contract and action
+based on these inputs.  The expected inputs are as in @scheme[read] or
+@scheme[read-syntax] depending on @scheme[syntax?]; the function will
+read a single expression or, if @scheme[inside?] is true, the whole
+input; it will return a syntactic list of expressions rather than a
+single one in this case.
+
+Note also that @scheme[syntax] defaults to @scheme[#t].}
+
 @defproc[(use-at-readtable ...) void?]{
 
 Passes all arguments to @scheme[make-at-readtable], and installs the
 resulting readtable using @scheme[current-readtable]. It also enables
-line counting for the current input-port via @scheme[port-count-lines!].}
+line counting for the current input-port via @scheme[port-count-lines!].
+
+This is mostly useful for playing with the Scribble syntax on the REPL.}
 
 @; *** End reader-import section ***
 ))]))
