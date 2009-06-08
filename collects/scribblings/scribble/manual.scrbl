@@ -95,7 +95,8 @@ A few other escapes are recognized symbolically:
          (code:comment @#,t{this is a comment})
        }|
 
-       (Note that @litchar|{@#,foo{...}}| reads as @scheme[(unsyntax (foo "..."))].)
+       (Note that @litchar|{@#,foo{...}}| reads as
+       @scheme[(@schemeidfont{unsyntax} (foo "..."))].)
        }
 
  @item{@schemeidfont{code:blank} typesets as a blank space.}
