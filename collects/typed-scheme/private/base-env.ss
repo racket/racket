@@ -584,6 +584,10 @@
 [append-map
  (-polydots (c a b) ((list ((list a) (b b) . ->... . (-lst c)) (-lst a))
                      ((-lst b) b) . ->... .(-lst c)))]
+[split-at
+ (-poly (a) ((list (-lst a)) -Integer . ->* . (-values (list (-lst a) (-lst a)))))]
+[append*
+ (-poly (a) ((-lst (-lst a)) . -> . (-lst a)))]
 
 ;; scheme/tcp
 [tcp-listener? (make-pred-ty -TCP-Listener)]
