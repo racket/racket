@@ -948,14 +948,19 @@ between a @scheme[read]- or @scheme[read-syntax]-like function, and
 @scheme[inside?] chooses a plain reader or an @schemeid[-inside]
 variant.
 
-Note that the resulting function has a different contract and action
-based on these inputs.  The expected inputs are as in @scheme[read] or
+The resulting function has a different contract and action based on
+these inputs.  The expected inputs are as in @scheme[read] or
 @scheme[read-syntax] depending on @scheme[syntax?]; the function will
 read a single expression or, if @scheme[inside?] is true, the whole
 input; it will return a syntactic list of expressions rather than a
 single one in this case.
 
-Note also that @scheme[syntax] defaults to @scheme[#t].}
+Note that @scheme[syntax?] defaults to @scheme[#t], as this is the
+more expected common case when you're dealing with concrete-syntax
+reading.
+
+Note that if @scheme[syntax?] is true, the @scheme[read]-like function
+is constructed by simply converting a syntax result back into a datum.}
 
 @defproc[(use-at-readtable ...) void?]{
 
