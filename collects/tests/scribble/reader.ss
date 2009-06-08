@@ -10,6 +10,7 @@
 ;; format:
 ;; * a line with only `-'s marks the boundary between tests
 ;; * -<token>-> marks a <token> kind of reader test
+;;   (put on a new line if whitespace matters)
 ;; * lines with semicolon comments flushed at the left column ignored,
 
 ---
@@ -609,7 +610,54 @@ bar}
 -@->
 (foo "bar" "\n" baz " bbb" "\n" x1 x2 " x3 x4" "\n" " waaaah")
 ---
-;; -------------------- some code test
+;; -------------------- inside-reader
+---
+foo bar baz  -@i->  "foo bar baz"
+---
+foo @bar baz  -@i->  "foo " bar " baz"
+---
+foo @bar{blah} baz  -@i-> "foo " (bar "blah") " baz"
+---
+{{{  -@i->  "{{{"
+---
+}}}  -@i->  "}}}"
+---
+foo
+  bar
+baz
+-@i->
+"foo" "\n" "  " "bar" "\n" "baz"
+---
+  foo
+    bar
+  baz
+-@i->
+"  foo" "\n" "    " "bar" "\n" "  " "baz"
+---
+;; -------------------- using a different command character
+---
+\foo
+-\->
+foo
+---
+\foo[1]{bar
+          baz \nested|{\form{}}|
+        blah}
+-\->
+(foo 1 "bar" "\n" "  " "baz " (nested "\\form{}") "\n" "blah")
+---
+\foo
+-\i->
+foo
+---
+\foo[1]{bar
+          baz \nested|{\form{}}|
+        blah}
+\bar[]
+-\i->
+(foo 1 "bar" "\n" "  " "baz " (nested "\\form{}") "\n" "blah") "\n" (bar)
+---
+;; -------------------- some code tests
 ---
 @string-append{1 @(number->string (+ 2 3)) 4}  -@e-> "1 5 4"
 ---
@@ -687,12 +735,35 @@ END-OF-TESTS
 (define ns (namespace-anchor->namespace anchor))
 (define (string->tester name) (eval (string->symbol name) ns))
 
-(define (read-all str reader)
+(define (read-all str reader [whole? #f])
   (define i (open-input-string str))
   (port-count-lines! i)
-  (let loop ()
-    (let ([x (reader i)])
-      (if (eof-object? x) '() (cons x (loop))))))
+  (if whole?
+    (reader i)
+    (let loop ()
+      (let ([x (reader i)])
+        (if (eof-object? x) '() (cons x (loop)))))))
+
+(define (read/BS i)
+  (parameterize ([current-readtable
+                  (scr:make-at-readtable #:command-char #\\)])
+    (read i)))
+
+(define (read-inside/BS i)
+  (syntax->datum ((scr:make-at-reader/inside #:command-char #\\)
+                  (object-name i) i)))
+
+(define (x . -@-> . y)
+  (values (read-all x scr:read) (read-all y read)))
+
+(define (x . -@i-> . y)
+  (values (read-all x scr:read-inside #t) (read-all y read)))
+
+(define (x . -\\-> . y)
+  (values (read-all x read/BS) (read-all y read)))
+
+(define (x . -\\i-> . y)
+  (values (read-all x read-inside/BS #t) (read-all y read)))
 
 (define (x . -@e-> . y)
   (define r (void))
@@ -700,24 +771,22 @@ END-OF-TESTS
     (set! r (call-with-values (lambda () (eval x ns)) list)))
   (values r (read-all y read)))
 
-(define (x . -@-> . y)
-  (values (read-all x scr:read) (read-all y read)))
-
 (define (reader-tests)
   (test do
     (let* ([ts the-tests]
+           ;; remove all comment lines
            [ts (regexp-replace* #px"(?m:^;.*\r?\n)" ts "")]
-           [ts (regexp-replace #px"^\\s+" ts "")]
-           [ts (regexp-replace #px"\\s+$" ts "")]
-           [ts (regexp-split #px"\\s*(?:^|\r?\n)-+(?:$|\r?\n)\\s*" ts)])
-      (for ([t ts] #:when (not (equal? "" t)))
-        (let ([m (regexp-match #px"^(.*\\S)\\s+(-\\S+->)\\s+(\\S.*)$" t)])
+           ;; split the tests
+           [ts (regexp-split #px"(?:^|\r?\n)-+(?:$|\r?\n)" ts)])
+      (for ([t ts] #:when (not (regexp-match? #px"^\\s*$" t)))
+        (let ([m (or (regexp-match #px"^(.*)\n\\s*(-\\S+->)\\s*\n(.*)$" t)
+                     (regexp-match #px"^(.*\\S)\\s+(-\\S+->)\\s+(\\S.*)$" t))])
           (if (not (and m (= 4 (length m))))
             (error 'bad-test "~a" t)
             (let-values ([(x y)
                           ((string->tester (caddr m)) (cadr m) (cadddr m))])
               (test #:failure-message
-                    (format "bad result in\n    ~a\n  results:\n    ~s != ~s"
+                    (format "bad result in\n    ~a\n  results:\n    ~s != ~s\n"
                             (regexp-replace* #rx"\n" t "\n    ")
                             x y)
                     (equal? x y)))))))))
