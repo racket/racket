@@ -7660,6 +7660,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 {
   Scheme_Type type;
   Scheme_Object *v;
+  GC_CAN_IGNORE Scheme_Object *tmpv;
   GC_MAYBE_IGNORE_INTERIOR Scheme_Object **old_runstack;
   GC_MAYBE_IGNORE_INTERIOR MZ_MARK_STACK_TYPE old_cont_mark_stack;
 #if USE_LOCAL_RUNSTACK
@@ -7710,6 +7711,15 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 # define UPDATE_THREAD_RSPTR() /**/
 # define RUNSTACK_CHANGED() /**/
 # define RESET_LOCAL_RUNSTACK() /**/
+#endif
+
+#if 1
+# define EVAL_SFS_CLEAR(runstack, obj)                                \
+          if (SCHEME_LOCAL_FLAGS(obj) & SCHEME_LOCAL_CLEAR_ON_READ) { \
+            runstack[SCHEME_LOCAL_POS(obj)] = NULL;                   \
+          }
+#else
+# define EVAL_SFS_CLEAR(rs, obj) /* empty */
 #endif
 
 #define RUNSTACK_START MZ_RUNSTACK_START
@@ -8183,11 +8193,13 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       case scheme_local_type:
 	{
 	  v = RUNSTACK[SCHEME_LOCAL_POS(obj)];
+          EVAL_SFS_CLEAR(RUNSTACK, obj);
           goto returnv_never_multi;
 	}
       case scheme_local_unbox_type:
 	{
 	  v = SCHEME_ENVBOX_VAL(RUNSTACK[SCHEME_LOCAL_POS(obj)]);
+          EVAL_SFS_CLEAR(RUNSTACK, obj);
           goto returnv_never_multi;
 	}
       case scheme_syntax_type:
@@ -8202,7 +8214,6 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       case scheme_application_type:
 	{
 	  Scheme_App_Rec *app;
-	  GC_CAN_IGNORE Scheme_Object *tmpv;
 	  GC_MAYBE_IGNORE_INTERIOR Scheme_Object **randsp;
 	  Scheme_Object **stack;
 	  int k;
@@ -8237,10 +8248,18 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    global_lookup(obj =, obj, tmpv);
 	    break;
 	  case SCHEME_EVAL_LOCAL:
-	    obj = stack[SCHEME_LOCAL_POS(obj)];
+            {
+              tmpv = stack[SCHEME_LOCAL_POS(obj)];
+              EVAL_SFS_CLEAR(stack, obj);
+              obj = tmpv;
+            }
 	    break;
 	  case SCHEME_EVAL_LOCAL_UNBOX:
-	    obj = SCHEME_ENVBOX_VAL(stack[SCHEME_LOCAL_POS(obj)]);
+            {
+              tmpv = SCHEME_ENVBOX_VAL(stack[SCHEME_LOCAL_POS(obj)]);
+              EVAL_SFS_CLEAR(stack, obj);
+              obj = tmpv;
+            }
 	    break;
 	  default:
 	    obj = _scheme_eval_linked_expr_wp(obj, p);
@@ -8276,9 +8295,11 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 		break;
 	      case SCHEME_EVAL_LOCAL:
 		*(randsp++) = stack[SCHEME_LOCAL_POS(v)];
+                EVAL_SFS_CLEAR(stack, v);
 		break;
 	      case SCHEME_EVAL_LOCAL_UNBOX:
 		*(randsp++) = SCHEME_ENVBOX_VAL(stack[SCHEME_LOCAL_POS(v)]);
+                EVAL_SFS_CLEAR(stack, v);
 		break;
 	      default:
 		{
@@ -8318,15 +8339,22 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    break;
 	  case SCHEME_EVAL_GLOBAL:
             {
-              GC_CAN_IGNORE Scheme_Object *tmpv;
               global_lookup(obj =, obj, tmpv);
             }
 	    break;
 	  case SCHEME_EVAL_LOCAL:
-	    obj = rands[SCHEME_LOCAL_POS(obj)];
+            {
+              tmpv = rands[SCHEME_LOCAL_POS(obj)];
+              EVAL_SFS_CLEAR(rands, obj);
+              obj = tmpv;
+            }
 	    break;
 	  case SCHEME_EVAL_LOCAL_UNBOX:
-	    obj = SCHEME_ENVBOX_VAL(rands[SCHEME_LOCAL_POS(obj)]);
+            {
+              tmpv = SCHEME_ENVBOX_VAL(rands[SCHEME_LOCAL_POS(obj)]);
+              EVAL_SFS_CLEAR(rands, obj);
+              obj = tmpv;
+            }
 	    break;
 	  default:
 	    obj = _scheme_eval_linked_expr_wp(obj, p);
@@ -8340,15 +8368,22 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    break;
 	  case SCHEME_EVAL_GLOBAL:
             {
-              GC_CAN_IGNORE Scheme_Object *tmpv;
               global_lookup(arg =, arg, tmpv);
             }
 	    break;
 	  case SCHEME_EVAL_LOCAL:
-	    arg = rands[SCHEME_LOCAL_POS(arg)];
+            {
+              tmpv = rands[SCHEME_LOCAL_POS(arg)];
+              EVAL_SFS_CLEAR(rands, arg);
+              arg = tmpv;
+            }
 	    break;
 	  case SCHEME_EVAL_LOCAL_UNBOX:
-	    arg = SCHEME_ENVBOX_VAL(rands[SCHEME_LOCAL_POS(arg)]);
+            {
+              tmpv = SCHEME_ENVBOX_VAL(rands[SCHEME_LOCAL_POS(arg)]);
+              EVAL_SFS_CLEAR(rands, arg);
+              arg = tmpv;
+            }
 	    break;
 	  default:
 	    arg = _scheme_eval_linked_expr_wp(arg, p);
@@ -8366,7 +8401,6 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  Scheme_App3_Rec *app;
 	  GC_CAN_IGNORE Scheme_Object *arg;
 	  short flags;
-	  GC_CAN_IGNORE Scheme_Object *tmpv;
 
 	  app = (Scheme_App3_Rec *)obj;
 	  
@@ -8385,10 +8419,14 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    global_lookup(obj =, obj, tmpv);
 	    break;
 	  case SCHEME_EVAL_LOCAL:
-	    obj = rands[SCHEME_LOCAL_POS(obj)];
+	    tmpv = rands[SCHEME_LOCAL_POS(obj)];
+            EVAL_SFS_CLEAR(rands, obj);
+            obj = tmpv;
 	    break;
 	  case SCHEME_EVAL_LOCAL_UNBOX:
-	    obj = SCHEME_ENVBOX_VAL(rands[SCHEME_LOCAL_POS(obj)]);
+	    tmpv = SCHEME_ENVBOX_VAL(rands[SCHEME_LOCAL_POS(obj)]);
+            EVAL_SFS_CLEAR(rands, obj);
+            obj = tmpv;
 	    break;
 	  default:
 	    obj = _scheme_eval_linked_expr_wp(obj, p);
@@ -8404,10 +8442,14 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    global_lookup(arg =, arg, tmpv);
 	    break;
 	  case SCHEME_EVAL_LOCAL:
-	    arg = rands[SCHEME_LOCAL_POS(arg)];
+	    tmpv = rands[SCHEME_LOCAL_POS(arg)];
+            EVAL_SFS_CLEAR(rands, arg);
+            arg = tmpv;
 	    break;
 	  case SCHEME_EVAL_LOCAL_UNBOX:
-	    arg = SCHEME_ENVBOX_VAL(rands[SCHEME_LOCAL_POS(arg)]);
+	    tmpv = SCHEME_ENVBOX_VAL(rands[SCHEME_LOCAL_POS(arg)]);
+            EVAL_SFS_CLEAR(rands, arg);
+            arg = tmpv;
 	    break;
 	  default:
 	    arg = _scheme_eval_linked_expr_wp(arg, p);
@@ -8425,10 +8467,14 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    global_lookup(arg =, arg, tmpv);
 	    break;
 	  case SCHEME_EVAL_LOCAL:
-	    arg = rands[SCHEME_LOCAL_POS(arg)];
+	    tmpv = rands[SCHEME_LOCAL_POS(arg)];
+            EVAL_SFS_CLEAR(rands, arg);
+            arg = tmpv;
 	    break;
 	  case SCHEME_EVAL_LOCAL_UNBOX:
-	    arg = SCHEME_ENVBOX_VAL(rands[SCHEME_LOCAL_POS(arg)]);
+	    tmpv = SCHEME_ENVBOX_VAL(rands[SCHEME_LOCAL_POS(arg)]);
+            EVAL_SFS_CLEAR(rands, arg);
+            arg = tmpv;
 	    break;
 	  default:
 	    arg = _scheme_eval_linked_expr_wp(arg, p);
@@ -8630,15 +8676,16 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    break;
 	  case SCHEME_EVAL_GLOBAL:
 	    {
-	      GC_CAN_IGNORE Scheme_Object *tmpv;
 	      global_lookup(RUNSTACK[0] =, lo->value, tmpv);
 	    }
 	    break;
 	  case SCHEME_EVAL_LOCAL:
 	    RUNSTACK[0] = RUNSTACK[SCHEME_LOCAL_POS(lo->value)];
+            EVAL_SFS_CLEAR(RUNSTACK, lo->value);
 	    break;
 	  case SCHEME_EVAL_LOCAL_UNBOX:
 	    RUNSTACK[0] = SCHEME_ENVBOX_VAL(RUNSTACK[SCHEME_LOCAL_POS(lo->value)]);
+            EVAL_SFS_CLEAR(RUNSTACK, lo->value);
 	    break;
 	  default:
 	    UPDATE_THREAD_RSPTR();
