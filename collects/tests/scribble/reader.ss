@@ -1,7 +1,6 @@
 #lang scheme/base
 
-(require tests/eli-tester (prefix-in scr: scribble/reader)
-         (for-syntax scheme/base))
+(require tests/eli-tester (prefix-in scr: scribble/reader))
 
 (provide reader-tests)
 
@@ -683,6 +682,7 @@ foo
 -@e->
 "foo\n... bar\nbaz\n... blah\n"
 ---
+(require (for-syntax scheme/base))
 (let-syntax ([foo
               (lambda (stx)
                 (let ([p (syntax-property stx 'scribble)])
