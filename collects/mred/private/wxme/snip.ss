@@ -551,7 +551,7 @@
         (send f put (bytes-length bytes) bytes))))
 
   (define/public (s-read len f)
-    (unless (len . <= . 0)
+    (unless (len . < . 0) ; tolerate a 0-length snip, to be filtered out later
       (when ((string-length s-buffer) . < . len)
         (set! s-buffer (make-string (* 2 len))))
       (set! s-dtext 0)

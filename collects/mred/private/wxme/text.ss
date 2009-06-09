@@ -244,10 +244,14 @@
     (unless (eq? last-line (mline-last (unbox line-root-box)))
       (error who "bad last line"))
     (let loop ([line first-line]
-               [snip snips])
+               [snip snips]
+               [snip-num 0])
       (unless (eq? snips (mline-snip first-line))
         (error who "bad start snip"))
-      (let sloop ([snip snip])
+      (let sloop ([snip snip][snip-num snip-num])
+        (when (zero? (snip->count snip))
+          (unless (zero? len)
+            (error who "snip count is 0 at ~s" snip-num)))
         (unless (eq? line (snip->line snip))
           (error who "snip's line is wrong: ~s ~s" snip (snip->line snip)))
         (if (eq? snip (mline-last-snip line))
@@ -255,14 +259,14 @@
                 (begin
                   (unless (has-flag? (snip->flags snip) NEWLINE)
                     (error who "strange line ending"))
-                  (loop (mline-next line) (snip->next snip)))
+                  (loop (mline-next line) (snip->next snip) (add1 snip-num)))
                 (unless (eq? last-snip snip)
                   (error who "bad last snip")))
             (begin
               (when (or (has-flag? (snip->flags snip) NEWLINE)
                         (has-flag? (snip->flags snip) HARD-NEWLINE))
                 (error who "mid-line NEWLINE"))
-              (sloop (snip->next snip))))))
+              (sloop (snip->next snip) (add1 snip-num))))))
     #t)
 
   (define caret-style #f)
@@ -1215,7 +1219,8 @@
     (unless (or write-locked?
                 s-user-locked?
                 (start . < . 0))
-      (let ([start (min start len)])
+      (let ([start (min start len)]
+            [str (and str (positive? (string-length str)) str)])
         ;; turn off pending style, if it doesn't apply
         (when caret-style
           (when (or (not (equal? end start)) (not (= startpos start)))
@@ -1295,6 +1300,8 @@
 
                        (unless s-modified?
                          (set-modified #t))
+
+                       (assert (consistent-snip-lines 'pre-after-insert))
                        
                        (after-insert start addlen)))]
                   [fail-finish
