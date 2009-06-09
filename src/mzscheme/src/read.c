@@ -6181,9 +6181,31 @@ static Scheme_Object *expected_lang(const char *prefix, int ch,
   if (get_lang > 1) {
     return scheme_void;
   } else {
-    scheme_read_err(port, stxsrc, line, col, pos, 1, 0, NULL, 
-                    "read-language: expected `#lang' or `#!', found `%s%c'",
-                    prefix, ch);
+    mzchar chs[2];
+    char *more;
+
+    chs[0] = 0;
+    chs[1] = 0;
+      
+    if (ch == EOF)
+      more = "an end-of-file";
+    else if (ch == SCHEME_SPECIAL)
+      more = "a non-character";
+    else {
+      chs[0] = ch;
+      more = "";
+    }
+
+    scheme_read_err(port, stxsrc, line, col, pos, 1, ch, NULL, 
+                    "read-language: expected (after whitespace and comments)"
+                    " `#lang ' or `#!' followed"
+                    " immediately by a language name, found %s%s%5%s%s%s",
+                    (*prefix || *chs) ? "`" : "", 
+                    prefix, chs, 
+                    (*prefix || *chs) ? "`" : "", 
+                    ((*prefix || *chs) && *more) ? " followed by " : "", 
+                    more);
+    
     return NULL;
   }
 }
