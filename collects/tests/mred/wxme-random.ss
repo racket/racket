@@ -36,7 +36,7 @@
     (vector-ref v (random (vector-length v))))
 
   (define (random-string)
-    (random-elem '#("a" "x\ny\nz\n" "(define (f x)\n  (+ x x))\n" "hello there")))
+    (random-elem '#("a" "x\ny\nz\n" "(define (f x)\n  (+ x x))\n" "hello there" "" "\n")))
 
   (define seqs (make-hasheq))
 
