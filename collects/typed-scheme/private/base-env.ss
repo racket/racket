@@ -484,16 +484,19 @@
  (cl->* (-Pattern (Un -Bytes -String) (Un -Bytes -String) . -> . -Bytes)
         (-Pattern -String -String . -> . -String))]
 [peek-char
- (cl->* [-> -Char]
-        [-Input-Port . -> . -Char]
-        [-Input-Port N . -> . -Char])]
+ (cl->* [-> (Un -Char (-val eof))]
+        [-Input-Port . -> . (Un -Char (-val eof))]
+        [-Input-Port N . -> . (Un -Char (-val eof))])]
 [peek-byte
- (cl->* [-> -Byte]
-        [-Input-Port . -> . -Byte]
-        [-Input-Port N . -> . -Byte])]
+ (cl->* [-> (Un -Byte (-val eof))]
+        [-Input-Port . -> . (Un -Byte (-val eof))]
+        [-Input-Port N . -> . (Un -Byte (-val eof))])]
 [read-char
  (cl->* [-> (Un -Char (-val eof))]
         [-Input-Port . -> . (Un -Char (-val eof))])]
+[read-byte
+ (cl->* [-> (Un -Byte (-val eof))]
+        [-Input-Port . -> . (Un -Byte (-val eof))])]
 [make-pipe
  (cl->* [-> (-values (list -Input-Port -Output-Port))]
         [N . -> . (-values (list -Input-Port -Output-Port))])]
@@ -544,11 +547,11 @@
 	 [S (-Syntax Univ)]
 	 [ctxt (-opt S)]
 	 [srclist (-Tuple (list
-			   Univ 
-			   (-opt -Number)
-			   (-opt -Number)
-			     (-opt -Number)
-			     (-opt -Number)))]
+                           Univ 
+                           (-opt -Integer)
+                           (-opt -Integer)
+                           (-opt -Integer)
+                           (-opt -Integer)))]
 	 [srcloc (Un S (-val #f) srclist)]
 	 [prop (-opt S)]
 	 [cert (-opt S)])
