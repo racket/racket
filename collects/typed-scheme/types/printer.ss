@@ -9,7 +9,7 @@
 ;; FIXME - currently broken
 (define print-poly-types? #f)
 ;; do we use simple type aliases in printing
-(define print-aliases #f)
+(define print-aliases #t)
 
 ;; does t have a type name associated with it currently?
 ;; has-name : Type -> Maybe[Symbol]
@@ -183,14 +183,14 @@
                               (Mu: y (Union: (list (F: x) (Pair: (F: x) (F: y)))))
                               (Vector: (F: x))
                               (Box: (F: x))))))
-     (fp "SyntaxObject")]
+     (fp "Syntax")]
     [(Mu-name: name body) (fp "(Rec ~a ~a)" name body)]
     ;; FIXME - this should not be used
     #;
     [(Scope: sc) (fp "(Scope ~a)" sc)]
     
     [(B: idx) (fp "(B ~a)" idx)]      
-    [(Syntax: t) (fp "(Syntax ~a)" t)]
+    [(Syntax: t) (fp "(Syntaxof ~a)" t)]
     [(Instance: t) (fp "(Instance ~a)" t)]
     [(Class: pf nf ms) (fp "(Class)")]
     [(Result: t (LFilterSet: (list) (list)) (LEmpty:)) (fp "~a" t)]
@@ -199,7 +199,7 @@
     [(Refinement: parent p? _)
      (fp "(Refinement ~a ~a)" parent (syntax-e p?))]
     [(Error:) (fp "Error")]
-    [else (fp "Unknown Type: ~a" (struct->vector c))]
+    [else (fp "(Unknown Type: ~a)" (struct->vector c))]
     ))
 
 (set-box! print-type* print-type)

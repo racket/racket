@@ -36,9 +36,11 @@
 @defidform[Regexp]
 @defidform[PRegexp]
 @defidform[Syntax]
+@defidform[Identifier]
 @defidform[Bytes]
 @defidform[Namespace]
 @defidform[EOF]
+@defidform[Continuation-Mark-Set]
 @defidform[Char])]{
 These types represent primitive Scheme data.  Note that @scheme[Integer] represents exact integers.}
 
@@ -48,6 +50,7 @@ The following base types are parameteric in their type arguments.
 
 @defform[(Listof t)]{Homogenous @rtech{lists} of @scheme[t]}
 @defform[(Boxof t)]{A @rtech{box} of @scheme[t]}
+@defform[(Syntaxof t)]{A @rtech{syntax object} containing a @scheme[t]}
 @defform[(Vectorof t)]{Homogenous @rtech{vectors} of @scheme[t]}
 @defform[(Option t)]{Either @scheme[t] of @scheme[#f]}
 @defform*[[(Parameter t)

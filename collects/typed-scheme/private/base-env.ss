@@ -61,7 +61,7 @@
 [boolean? (make-pred-ty B)]
 [add1 (cl->* (-> -Integer -Integer)
              (-> N N))]
-[sub1 (cl->* #;(-> -Integer -Integer)
+[sub1 (cl->* (-> -Integer -Integer)
              (-> N N))]
 [eq? (-> Univ Univ B)]
 [eqv? (-> Univ Univ B)]
@@ -486,13 +486,14 @@
 [peek-char
  (cl->* [-> -Char]
         [-Input-Port . -> . -Char]
-        [-Input-Port N . -> . -Char]
-        [N . -> . -Char])]
+        [-Input-Port N . -> . -Char])]
 [peek-byte
  (cl->* [-> -Byte]
         [-Input-Port . -> . -Byte]
-        [-Input-Port N . -> . -Byte]
-        [N . -> . -Byte])]
+        [-Input-Port N . -> . -Byte])]
+[read-char
+ (cl->* [-> (Un -Char (-val eof))]
+        [-Input-Port . -> . (Un -Char (-val eof))])]
 [make-pipe
  (cl->* [-> (-values (list -Input-Port -Output-Port))]
         [N . -> . (-values (list -Input-Port -Output-Port))])]
@@ -536,9 +537,31 @@
 
 [syntax-source (-> (-Syntax Univ) Univ)]
 [syntax-position (-> (-Syntax Univ) (-opt N))]
-[datum->syntax (cl->*
-                (-> (-opt (-Syntax Univ)) Sym (-Syntax Sym))
-                (-> (-opt (-Syntax Univ)) Univ (-Syntax Univ)))]
+[datum->syntax 
+ (-poly 
+  (a)
+  (let* ([I (-Syntax Sym)]
+	 [S (-Syntax Univ)]
+	 [ctxt (-opt S)]
+	 [srclist (-Tuple (list
+			   Univ 
+			   (-opt -Number)
+			   (-opt -Number)
+			     (-opt -Number)
+			     (-opt -Number)))]
+	 [srcloc (Un S (-val #f) srclist)]
+	 [prop (-opt S)]
+	 [cert (-opt S)])
+    (cl->*
+     (-> ctxt Sym I)
+     (-> ctxt Univ S)
+     (-> ctxt Sym srcloc I)
+     (-> ctxt Univ srcloc S)
+     (-> ctxt Sym srcloc prop I)
+     (-> ctxt Univ srcloc prop S)
+     (-> ctxt Sym srcloc prop cert I)
+     (-> ctxt Univ srcloc prop cert S))))]
+
 [syntax->datum (-> (-Syntax Univ) Univ)]
 [syntax-e (-poly (a) (-> (-Syntax a) a))]
 [syntax-original? (-poly (a) (-> (-Syntax a) B))]
@@ -560,6 +583,7 @@
 [sort (-poly (a) ((-lst a) (a a . -> . B) . -> . (-lst a)))]
 [find-system-path (Sym . -> . -Path)]
 
+[object-name (Univ . -> . Univ)]
 ;; scheme/cmdline
 
 [parse-command-line

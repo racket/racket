@@ -28,9 +28,10 @@
        ([second : -Number] [minute : -Number] [hour : -Number] [day : -Number] [month : -Number] 
         [year : -Number] [weekday : -Number] [year-day : -Number] [dst? : -Boolean] [time-zone-offset : -Number])
        ())
-  (d-s exn ([message : -String] [continuation-marks : Univ]) ())
+  (d-s exn ([message : -String] [continuation-marks : -Cont-Mark-Set]) ())
   (d-s (exn:fail exn) () (-String -Cont-Mark-Set))
   (d-s (exn:fail:read exn:fail) ([srclocs : (-lst Univ)]) (-String -Cont-Mark-Set))
+  (d-s (exn:fail:read:eof exn:fail:read) () (-String -Cont-Mark-Set (-lst Univ)))
   )
 
 (provide (for-syntax initial-env/special-case initialize-others initialize-type-env)

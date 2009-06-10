@@ -16,9 +16,9 @@
 [Input-Port -Input-Port]
 [Output-Port -Output-Port]
 [Bytes -Bytes]
-#;[List (-lst Univ)]
 [EOF (-val eof)]
 [Syntax Any-Syntax]
+[Syntaxof (-poly (a) (-Syntax a))]
 [Identifier Ident]
 [Procedure top-func]
 [Keyword -Keyword]
@@ -29,4 +29,4 @@
 [Promise (-poly (a) (-Promise a))]
 [Pair (-poly (a b) (-pair a b))]
 [Boxof (-poly (a) (make-Box a))]
-
+[Continuation-Mark-Set -Cont-Mark-Set]
