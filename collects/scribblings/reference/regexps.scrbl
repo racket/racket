@@ -204,8 +204,8 @@ case-sensitively.
                        [start-pos exact-nonnegative-integer? 0]
                        [end-pos (or/c exact-nonnegative-integer? #f) #f]
                        [output-port (or/c output-port? #f) #f])
-         (or/c (listof (or/c string? #f))
-               (listof (or/c bytes? #f))
+         (or/c (cons/c string? (listof (or/c string? #f)))
+               (cons/c bytes?  (listof (or/c bytes?  #f)))
                #f)]{
 
 Attempts to match @scheme[pattern] (a string, byte string, @tech{regexp
