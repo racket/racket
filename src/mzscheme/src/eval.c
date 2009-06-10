@@ -7660,7 +7660,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 {
   Scheme_Type type;
   Scheme_Object *v;
-  GC_CAN_IGNORE Scheme_Object *tmpv;
+  GC_CAN_IGNORE Scheme_Object *tmpv; /* safe-for-space relies on GC_CAN_IGNORE */
   GC_MAYBE_IGNORE_INTERIOR Scheme_Object **old_runstack;
   GC_MAYBE_IGNORE_INTERIOR MZ_MARK_STACK_TYPE old_cont_mark_stack;
 #if USE_LOCAL_RUNSTACK
@@ -8056,7 +8056,9 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	goto returnv;
       }
 
-      v = data->code(obj, num_rands, rands);
+      tmpv = obj;
+      obj = NULL; /* save for space, since tmpv is ignored by the GC */
+      v = data->code(tmpv, num_rands, rands);
 
       if (v == SCHEME_TAIL_CALL_WAITING) {
         /* [TC-SFS]; see schnapp.inc */

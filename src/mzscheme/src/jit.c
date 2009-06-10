@@ -171,6 +171,7 @@ typedef struct {
   int log_depth;
   int self_pos, self_closure_size, self_toplevel_pos;
   int self_to_closure_delta, closure_to_args_delta;
+  int closure_self_on_runstack;
   int example_argc;
   Scheme_Object **example_argv;
   void *self_restart_code;
@@ -2602,8 +2603,8 @@ static int generate_nontail_self_setup(mz_jit_state *jitter)
   jitter->patch_depth = pd;
   (void)jit_patchable_movi_p(JIT_R0, jitter->self_nontail_code);
 #ifdef JIT_PRECISE_GC
-  /* Get this closure's pointer from the run stack */
-  {
+  if (jitter->closure_self_on_runstack) {
+    /* Get this closure's pointer from the run stack */
     int depth = jitter->depth + jitter->extra_pushed - 1;
     jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(depth));
   }
@@ -2742,9 +2743,11 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
     }
 
 #ifdef JIT_PRECISE_GC
-    /* We can get this closure's pointer back from the Scheme stack. */
-    if (nontail_self)
-      direct_self = 1;
+    if (jitter->closure_self_on_runstack) {
+      /* We can get this closure's pointer back from the Scheme stack. */
+      if (nontail_self)
+        direct_self = 1;
+    }
 #endif
 
     if (direct_self)
@@ -7942,10 +7945,17 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   }
 
 #ifdef JIT_PRECISE_GC
-  /* Keeping the native-closure pointer on the runstack
-     ensures that the code won't be GCed while we're running
-     it. */
-  mz_pushr_p(JIT_R0);  /* no sync */
+  /* Keeping the native-closure code pointer on the runstack ensures
+     that the code won't be GCed while we're running it. If the
+     closure is empty, it's ok, faster, and useful to keep it,
+     otherwise keep just the code pointer for space safety. */
+  if (!data->closure_size) {
+    jitter->closure_self_on_runstack = 1;
+    mz_pushr_p(JIT_R0);  /* no sync */
+  } else {
+    jit_ldxi_p(JIT_R1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
+    mz_pushr_p(JIT_R1);  /* no sync */
+  }
   to_args = 0;
 #else
   to_args = 0;
