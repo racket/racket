@@ -3,6 +3,8 @@
 
 (define-type-alias Cursor (Pair 0 (Listof (Pair Integer Integer))))
 
+(provide Char-Set Cursor)
+
 (require/typed 
  srfi/14
  ;; Predicates & comparison
