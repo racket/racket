@@ -1,5 +1,5 @@
 #reader scribble/reader
-#lang scheme/gui
+#lang scheme/base
 #|
 
 There are three attributes for each preference:
@@ -27,7 +27,8 @@ the state transitions / contracts are:
 
 |#
 
-(require scribble/srcdoc)
+(require scribble/srcdoc scheme/class scheme/gui/base 
+         scheme/contract scheme/file)
 (require/doc scheme/base scribble/manual)
 
 (provide exn:struct:unknown-preference)

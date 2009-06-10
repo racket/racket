@@ -135,6 +135,10 @@ Several environment variables can affect DrScheme's behavior:
        variable is set to @litchar{profile}, DrScheme also records
        profiling information about itself.}
 
+ @item{@indexed-envvar{PLTDRPROFILE} : When this environment variable is
+       set, DrScheme uses the @schememodname[profile] library (with
+       a little GUI) to collect profiling information about itself.}
+
  @item{@indexed-envvar{PLTDRBREAK} : When this environment variable is
        set, DrScheme creates a window with a break button, during
        startup. Clicking the button breaks DrScheme's eventspace's

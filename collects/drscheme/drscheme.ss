@@ -3,6 +3,7 @@
 (require "private/key.ss")
 
 (define debugging? (getenv "PLTDRDEBUG"))
+(define profiling? (getenv "PLTDRPROFILE"))
 
 (define install-cm? (and (not debugging?)
                          (getenv "PLTDRCM")))
@@ -51,5 +52,12 @@
       (flprintf "PLTDRCM: enabling CM tracing\n")
       (manager-trace-handler
        (λ (x) (display "1: ") (display x) (newline) (flush-output))))))
+
+(when profiling?
+  (flprintf "PLTDRPROFILE: installing profiler\n")
+  (let ([orig-cust (current-custodian)]
+        [new-cust (make-custodian)])
+    (current-custodian new-cust)
+    ((dynamic-require 'drscheme/private/profile-drs 'start-profile) orig-cust)))
 
 (dynamic-require 'drscheme/private/drscheme-normal #f)
