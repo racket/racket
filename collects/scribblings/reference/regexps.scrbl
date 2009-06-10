@@ -337,8 +337,8 @@ port).
                        [start-pos exact-nonnegative-integer? 0]
                        [end-pos (or/c exact-nonnegative-integer? #f) #f]
                        [output-port (or/c output-port? #f) #f])
-         (or/c (listof (or/c string? #f))
-               (listof (or/c bytes? #f))
+         (or/c (cons/c string? (listof (or/c string? #f)))
+               (cons/c bytes? (listof (or/c bytes? #f)))
                #f)]{
 
 Like @scheme[regexp-match] on input ports, except that if the match
@@ -357,9 +357,11 @@ fails.}
                         [start-pos exact-nonnegative-integer? 0]
                         [end-pos (or/c exact-nonnegative-integer? #f) #f]
                         [output-port (or/c output-port? #f) #f])
-          (or/c (listof (or/c (cons/c exact-nonnegative-integer?
-                                      exact-nonnegative-integer?)
-                              #f))
+          (or/c (cons/c (cons/c exact-nonnegative-integer?
+                                exact-nonnegative-integer?)
+                        (listof (or/c (cons/c exact-nonnegative-integer?
+                                              exact-nonnegative-integer?)
+                                #f)))
                 #f)]{
 
 Like @scheme[regexp-match], but returns a list of number pairs (and
@@ -432,7 +434,7 @@ entire content of @scheme[input] matches @scheme[pattern].
                             [start-pos exact-nonnegative-integer? 0]
                             [end-pos (or/c exact-nonnegative-integer? #f) #f]
                             [progress (or/c evt #f) #f])
-          (or/c (listof (or/c bytes? #f))
+          (or/c (cons/c bytes? (listof (or/c bytes? #f)))
                 #f)]{
 
 Like @scheme[regexp-match] on input ports, but only peeks bytes from
@@ -461,9 +463,11 @@ information if another process meanwhile reads from
                             [start-pos exact-nonnegative-integer? 0]
                             [end-pos (or/c exact-nonnegative-integer? #f) #f]
                             [progress (or/c evt #f) #f])
-          (or/c (listof (or/c (cons/c exact-nonnegative-integer?
-                                      exact-nonnegative-integer?)
-                              #f))
+          (or/c (cons/c (cons/c exact-nonnegative-integer?
+                                exact-nonnegative-integer?)
+                        (listof (or/c (cons/c exact-nonnegative-integer?
+                                              exact-nonnegative-integer?)
+                                      #f)))
                 #f)]{
 
 Like @scheme[regexp-match-positions] on input ports, but only peeks
@@ -476,7 +480,7 @@ bytes from @scheme[input-port] instead of reading them, and with a
                             [start-pos exact-nonnegative-integer? 0]
                             [end-pos (or/c exact-nonnegative-integer? #f) #f]
                             [progress (or/c evt #f) #f])
-          (or/c (listof (or/c bytes? #f))
+          (or/c (cons/c bytes? (listof (or/c bytes? #f)))
                 #f)]{
 
 Like @scheme[regexp-match-peek], but it attempts to match only bytes
@@ -490,9 +494,11 @@ match fails if not-yet-available characters might be used to match
                             [start-pos exact-nonnegative-integer? 0]
                             [end-pos (or/c exact-nonnegative-integer? #f) #f]
                             [progress (or/c evt #f) #f])
-          (or/c (listof (or/c (cons/c exact-nonnegative-integer?
-                                      exact-nonnegative-integer?)
-                              #f))
+          (or/c (cons/c (cons/c exact-nonnegative-integer?
+                                exact-nonnegative-integer?)
+                        (listof (or/c (cons/c exact-nonnegative-integer?
+                                              exact-nonnegative-integer?)
+                                      #f)))
                 #f)]{
 
 Like @scheme[regexp-match-peek-positions], but it attempts to match
