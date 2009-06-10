@@ -92,6 +92,7 @@
         (render-metafunction Name))
       "metafunction-Name-vertical.png")
 
+
 ;; makes sure that there is no overlap inside or across metafunction calls  
 ;; or when there are unquotes involved
 (define-metafunction lang

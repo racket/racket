@@ -457,7 +457,12 @@
            (set! current-line line)
            (set! current-column col))]
         [else
-         (error 'eject "lines going backwards")])
+         (error 'eject
+                "lines going backwards (current-line ~s line ~s atom ~s tokens ~s)" 
+                current-line
+                line
+                atom
+                tokens)])
       (when (< current-column col)
         (let ([space-span (- col current-column)])
           (set! tokens (cons (make-blank-space-token unquoted?

@@ -580,9 +580,10 @@
                              [column (+ (lw-column fst)
                                         (lw-column-span fst))]
                              [column-span
-                              (- (lw-column snd)
-                                 (+ (lw-column fst)
-                                    (lw-column-span fst)))])
+                              (max (- (lw-column snd)
+                                      (+ (lw-column fst)
+                                         (lw-column-span fst)))
+                                   0)])
                         (build-lw (make-bar) line line-span column column-span))]
                      [else
                       (build-lw
