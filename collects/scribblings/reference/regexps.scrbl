@@ -338,7 +338,7 @@ port).
                        [end-pos (or/c exact-nonnegative-integer? #f) #f]
                        [output-port (or/c output-port? #f) #f])
          (or/c (cons/c string? (listof (or/c string? #f)))
-               (cons/c bytes? (listof (or/c bytes? #f)))
+               (cons/c bytes?  (listof (or/c bytes?  #f)))
                #f)]{
 
 Like @scheme[regexp-match] on input ports, except that if the match
@@ -361,7 +361,7 @@ fails.}
                                 exact-nonnegative-integer?)
                         (listof (or/c (cons/c exact-nonnegative-integer?
                                               exact-nonnegative-integer?)
-                                #f)))
+                                      #f)))
                 #f)]{
 
 Like @scheme[regexp-match], but returns a list of number pairs (and
