@@ -107,13 +107,9 @@
   (syntax-case stx ()
     ((define-check (name formal ...) expr ...)
      (with-syntax ([reported-name
-                    (symbol->string
-                     (syntax->datum (syntax name)))]
+                    (symbol->string (syntax->datum (syntax name)))]
                    [(actual ...)
-                    (datum->syntax
-                     stx
-                     (map gensym
-                          (syntax->datum (syntax (formal ...)))))]
+                    (generate-temporaries (syntax (formal ...)))]
                    [check-fn
                     (syntax
                      (lambda (formal ...
