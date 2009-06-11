@@ -478,8 +478,8 @@ encountered before a terminating line, the @exnraise[exn:fail:read].
 
 @section[#:tag "parse-quote"]{Reading Quotes}
 
-When the reader enounters @as-index{@litchar{'}}, then it recursively
-reads one datum, and it forms a new list containing the symbol
+When the reader enounters @as-index{@litchar{'}}, it recursively
+reads one datum, and forms a new list containing the symbol
 @scheme['quote] and the following datum. This convention is mainly
 useful for reading Scheme code, where @scheme['s] can be used as a
 shorthand for @scheme[(code:quote s)].
@@ -508,19 +508,19 @@ the @scheme[read-accept-quasiquote] @tech{parameter} is set to
 @section[#:tag "parse-comment"]{Reading Comments}
 
 A @as-index{@litchar{;}} starts a line comment. When the reader
-encounters @litchar{;}, then it skips past all characters until the
+encounters @litchar{;}, it skips past all characters until the
 next linefeed (ASCII 10), carriage return (ASCII 13), next-line
 (Unicode @scheme[#x0085]), line-separator (Unicode @scheme[#x2028]),
-or line-separator (Uunicode @scheme[#x2028]) character.
+or line-separator (Unicode @scheme[#x2028]) character.
 
 A @as-index{@litchar{#|}} starts a nestable block comment.  When the
-reader encounters @litchar{#|}, then it skips past all characters
+reader encounters @litchar{#|}, it skips past all characters
 until a closing @litchar{|#}. Pairs of matching @litchar{#|} and
 @litchar{|#} can be nested.
 
-A @as-index{@litchar{#;}} starts an S-expression comment. Then the
+A @as-index{@litchar{#;}} starts an S-expression comment. When the
 reader encounters @litchar{#;}, it recursively reads one datum, and
-then discards the datum (continuing on to the next datum for the read
+then discards it (continuing on to the next datum for the read
 result).
 
 A @as-index{@litchar{#! }} (which is @litchar{#!} followed by a space)
@@ -764,7 +764,7 @@ neither defines nor uses graph tags for other top-level forms.
 
 @section[#:tag "parse-reader"]{Reading via an Extension}
 
-When the reader encounters @as-index{@litchar{#reader}}, then it loads
+When the reader encounters @as-index{@litchar{#reader}}, it loads
 an external reader procedure and applies it to the current input
 stream.
 
