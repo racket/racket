@@ -50,5 +50,6 @@
    (test-case "Also intended to fail" (check-eq? 'apples 'orange))
    (test-equal? "Yet again intended to fail" "apples" "oranges")
    (test-case "Intended to throw error" (error 'testing "<<This is an error message>>"))
+   (test-case "Error within a check" (check error 'foo 'bar))
    ))
 

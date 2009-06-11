@@ -10,29 +10,28 @@
 
 ;; Infrastructure ----------------------------------------------
 
-;; parameter check-info-stack : (listof check-info)
-(define check-info-stack
-  (make-parameter
-   (list)
-   (lambda (v)
-     (if (list? v)
-         v
-         (raise-type-error 'check-info-stack "list" v)))))
+;; The continuation mark under which all check-info is keyed
+(define check-info-mark (gensym 'schemeunit))
+
+;; (continuation-mark-set -> (listof check-info))
+(define (check-info-stack marks)
+  (apply append (continuation-mark-set->list marks check-info-mark)))
 
 ;; with-check-info* : (list-of check-info) thunk -> any
 (define (with-check-info* info thunk)
-  (parameterize
-      ((check-info-stack (append (check-info-stack) info)))
-    (thunk)))
+  (define current-marks
+    (continuation-mark-set-first #f check-info-mark))
+  (with-continuation-mark
+   check-info-mark
+   (append (if current-marks current-marks null) info)
+   (thunk)))
 
 (define-syntax with-check-info
   (syntax-rules ()
-    ((_ ((name val) ...) body ...)
+    [(_ ((name val) ...) body ...)
      (with-check-info*
       (list (make-check-info name val) ...)
-      (lambda ()
-        body ...)))))
-
+      (lambda () body ...))]))
 
 (define (make-check-name name)
   (make-check-info 'name name))

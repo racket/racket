@@ -1,6 +1,6 @@
 ;;;
 ;;; <check-util-test.ss> ---- Tests for check-util
-;;; Time-stamp: <2008-06-19 21:04:14 noel>
+;;; Time-stamp: <2009-06-11 17:03:21 noel>
 ;;;
 ;;; Copyright (C) 2003 by Noel Welsh. 
 ;;;
@@ -40,7 +40,7 @@
                              (('1 1)
                               ('2 2)
                               ('3 3))
-                             (check-info-stack))))
+                             (check-info-stack (current-continuation-marks)))))
                  (for-each (lambda (actual expected)
                              (check-eq? (check-info-name actual)
                                         expected))
@@ -57,7 +57,7 @@
                               (('4 4)
                                ('5 5)
                                ('6 6))
-                              (check-info-stack)))))
+                              (check-info-stack (current-continuation-marks))))))
                  (for-each (lambda (actual expected)
                              (check-eq? (check-info-name actual)
                                         expected))

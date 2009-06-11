@@ -1,5 +1,5 @@
 ;;;
-;;; Time-stamp: <2008-08-08 21:38:07 noel>
+;;; Time-stamp: <2009-06-11 17:11:22 noel>
 ;;;
 ;;; Copyright (C) 2005 by Noel Welsh.
 ;;;
@@ -39,6 +39,7 @@
          "location.ss"
          "result.ss"
          "test.ss"
+         "check-info.ss"
          "monad.ss"
          "hash-monad.ss"
          "name-collector.ss"
@@ -127,45 +128,50 @@
    [(test-failure? result)
     (let* ([exn (test-failure-result result)]
            [stack (exn:test:check-stack exn)])
-      (for-each
-       (lambda (info)
-         (cond
-          [(check-name? info)
-           (display-check-info info)]
-          [(check-location? info)
-           (display-check-info-name-value
-            'location
-            (trim-current-directory
-             (location->string
-              (check-info-value info)))
-            display)]
-          [(check-params? info)
-           (display-check-info-name-value
-            'params
-            (check-info-value info)
-            (lambda (v) (map pretty-print v)))]
-          [(check-actual? info)
-           (display-check-info-name-value
-            'actual
-            (check-info-value info)
-            pretty-print)]
-          [(check-expected? info)
-           (display-check-info-name-value
-            'expected
-            (check-info-value info)
-            pretty-print)]
-          [(and (check-expression? info)
-                (not verbose?))
-           (void)]
-          [else
-           (display-check-info info)]))
-       (if verbose?
-           stack
-           (strip-redundant-params stack))))]
+      (textui-display-check-info-stack stack verbose?))]
    [(test-error? result)
-    (display-exn (test-error-result result))]
+    (let ([exn (test-error-result result)])
+      (textui-display-check-info-stack (check-info-stack (exn-continuation-marks exn)))
+      (display-exn exn))]
    [else (void)]))
-    
+
+(define (textui-display-check-info-stack stack [verbose? #f])
+  (for-each
+   (lambda (info)
+     (cond
+      [(check-name? info)
+       (display-check-info info)]
+      [(check-location? info)
+       (display-check-info-name-value
+        'location
+        (trim-current-directory
+         (location->string
+          (check-info-value info)))
+        display)]
+      [(check-params? info)
+       (display-check-info-name-value
+        'params
+        (check-info-value info)
+        (lambda (v) (map pretty-print v)))]
+      [(check-actual? info)
+       (display-check-info-name-value
+        'actual
+        (check-info-value info)
+        pretty-print)]
+      [(check-expected? info)
+       (display-check-info-name-value
+        'expected
+        (check-info-value info)
+        pretty-print)]
+      [(and (check-expression? info)
+            (not verbose?))
+       (void)]
+      [else
+       (display-check-info info)]))
+   (if verbose?
+       stack
+       (strip-redundant-params stack))))
+
 ;; display-verbose-check-info : test-result -> void
 (define (display-verbose-check-info result)
   (cond

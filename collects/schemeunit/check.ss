@@ -75,20 +75,22 @@
 (define-syntax fail-check
   (syntax-rules ()
     ((_)
-     (raise
-      (make-exn:test:check
-       "Check failure"
-       (current-continuation-marks)
-       (check-info-stack))))))
+     (let ([marks (current-continuation-marks)])
+       (raise
+        (make-exn:test:check
+         "Check failure"
+         marks
+         (check-info-stack marks)))))))
 
 (define-syntax fail-internal
   (syntax-rules ()
     ((_)
-     (raise
-      (make-exn:test:check:internal
-       "Internal failure"
-       (current-continuation-marks)
-       (check-info-stack))))))
+     (let ([marks (current-continuation-marks)])
+       (raise
+        (make-exn:test:check:internal
+         "Internal failure"
+         marks
+         (check-info-stack marks)))))))
 
 ;; refail-check : exn:test:check -> (exception raised)
 ;;
