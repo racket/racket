@@ -28,7 +28,11 @@
   
   (define (test/proc line-number pict raw-bitmap-filename)
     (set! tests (+ tests 1))
-    (let* ([bitmap-filename (build-path "bmps" raw-bitmap-filename)]
+    (let* ([bitmap-filename 
+            (build-path "bmps" 
+                        (case (system-type)
+                          [(unix) (string-append "unix-" raw-bitmap-filename)]
+                          [else raw-bitmap-filename]))]
            [old-bitmap (if (file-exists? bitmap-filename)
                            (make-object bitmap% bitmap-filename)
                            (let* ([bm (make-object bitmap% 100 20)]
@@ -50,7 +54,7 @@
             (set! failed (append failed (list (make-failed-test failed-panel)))))))))
   
   (define (compute-diffs old-bitmap new-bitmap)
-    (let* ([w (max (send old-bitmap get-width)
+    (let* ([w (max (send old-bitmap get-width)
                    (send new-bitmap get-width))]
            [h (max (send old-bitmap get-height)
                    (send new-bitmap get-height))]

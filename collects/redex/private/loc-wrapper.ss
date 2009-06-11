@@ -5,8 +5,14 @@
          (for-syntax "loc-wrapper-ct.ss")
          "loc-wrapper-rt.ss")
 
-(define-syntax (to-lw stx) (to-lw/proc stx))
-(define-syntax (to-lw/uq stx) (to-lw/uq/proc stx))
+(define-syntax (to-lw stx) 
+  (syntax-case stx ()
+    [(_ stx)
+     (to-lw/proc #'stx)]))
+(define-syntax (to-lw/uq stx)
+  (syntax-case stx ()
+    [(_ stx)
+     (to-lw/uq/proc #'stx)]))
 
 (define pnum (and/c number? (or/c zero? positive?)))
 

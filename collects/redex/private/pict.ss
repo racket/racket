@@ -768,18 +768,20 @@
               ltl-superimpose ltl-superimpose
               sep sep)]
       [(up-down up-down/vertical-side-conditions)
-       (apply vl-append
-              sep
-              (apply append
-                     (map (lambda (lhs sc rhs)
-                            (cons
-                             (vl-append (hbl-append lhs =-pict) rhs)
-                             (if (not sc)
-                                 null
-                                 (list (inset sc 0 0 (- 5 (pict-width sc)) 0)))))
-                          lhss
-                          scs
-                          rhss)))])))
+       (panorama
+        ;; the side-conditions may hang outside the pict, so bring them back w/ panorama
+        (apply vl-append
+               sep
+               (apply append
+                      (map (lambda (lhs sc rhs)
+                             (cons
+                              (vl-append (hbl-append lhs =-pict) rhs)
+                              (if (not sc)
+                                  null
+                                  (list (inset sc 0 0 (- 5 (pict-width sc)) 0)))))
+                           lhss
+                           scs
+                           rhss))))])))
 
 (define (metafunction-call name an-lw flattened?)
   (if flattened?

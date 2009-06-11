@@ -2,7 +2,14 @@
 (require (for-template scheme/base)
          (for-template "loc-wrapper-rt.ss")
          "term-fn.ss")
-(provide to-lw/proc to-lw/uq/proc)
+(provide to-lw/proc to-lw/uq/proc is-term-fn?)
+
+;; this parameter allows define-metafunction to
+;; communicate which name is the recursive calls
+;; to the typesetting code, since the let-term-fn
+;; won't have been expanded before to-lw/proc
+;; is called.
+(define is-term-fn? (make-parameter (λ (x) #f)))
 
 (define (process-arg stx quote-depth)
   (define quoted? (quote-depth . > . 0))
@@ -60,7 +67,8 @@
         #,quoted?)]
     [x 
      (and (identifier? #'x)
-          (term-fn? (syntax-local-value #'x (λ () #f))))
+          (or (term-fn? (syntax-local-value #'x (λ () #f)))
+              ((is-term-fn?) #'x)))
      #`(make-lw
         '#,(syntax-e #'x)
         #,(syntax-line stx) 
@@ -86,11 +94,5 @@
         #,(syntax-column stx)
         #,quoted?)]))
 
-(define (to-lw/proc stx)
-  (syntax-case stx ()
-    [(_ stx)
-     #`(add-spans #,(process-arg #'stx 1))]))
-(define (to-lw/uq/proc stx)
-  (syntax-case stx ()
-    [(_ stx)
-     #`(add-spans #,(process-arg #'stx 0))]))
+(define (to-lw/proc stx) #`(add-spans #,(process-arg stx 1)))
+(define (to-lw/uq/proc stx) #`(add-spans #,(process-arg stx 0)))
