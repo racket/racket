@@ -149,6 +149,18 @@ different arity.}
 @defform[(pcase-lambda: (a ...) [formals body] ...)]{
 A polymorphic function of multiple arities.}
 
+@subsection{Loops}
+
+@defform/subs[(do: : u ([id : t init-expr step-expr-maybe] ...)
+                       (stop?-expr finish-expr ...)
+                expr ...+)
+              ([step-expr-maybe code:blank
+                                step-expr])]{
+Like @scheme[do], but each @scheme[id] having the associated type @scheme[t], and 
+the final body @scheme[expr] having the type @scheme[u].
+}
+
+
 @subsection{Definitions}
 
 @defform*[[(define: v : t e)
@@ -212,47 +224,38 @@ contexts.}
 Here, @scheme[_m] is a module spec, @scheme[_pred] is an identifier
 naming a predicate, and @scheme[_r] is an optionally-renamed identifier.
 
-@defform*[[
-(require/typed r t m)
-(require/typed m [r t] ...)
-]]{The first form requires @scheme[r] from module @scheme[m], giving
-it type @scheme[t].  The second form generalizes this to multiple
-identifiers.
+@defform/subs[#:literals (struct opaque)
+(require/typed m rt-clause ...)
+([rt-clause [r t]
+	    [struct name ([f : t] ...)]
+	    [struct (name parent) ([f : t] ...)]
+	    [opaque t pred]])
+]{This form requires identifiers from the module @scheme[m], giving
+them the specified types.   
 
-In both cases, the identifiers are protected with @rtech{contracts} which
-enforce the type @scheme[t].  If this contract fails, the module
+The first form requires @scheme[r], giving it type @scheme[t].
+
+The second and third forms require the struct with name @scheme[name]
+with fields @scheme[f ...], where each field has type @scheme[t].  The
+third form allows a @scheme[parent] structure type to be specified.
+The parent type must already be a structure type known to Typed
+Scheme, either built-in or via @scheme[require/typed].  The
+structure predicate has the appropriate Typed Scheme filter type so
+that it may be used as a predicate in @scheme[if] expressions in Typed
+Scheme.
+
+The fourth case defines a new type @scheme[t].  @scheme[pred], imported from
+module @scheme[m], is a predicate for this type.  The type is defined
+as precisely those values to which @scheme[pred] produces
+@scheme[#t].  @scheme[pred] must have type @scheme[(Any -> Boolean)].
+
+In all cases, the identifiers are protected with @rtech{contracts} which
+enforce the specified types.  If this contract fails, the module
 @scheme[m] is blamed. 
 
 Some types, notably polymorphic types constructed with @scheme[All],
 cannot be converted to contracts and raise a static error when used in
 a @scheme[require/typed] form.}
-
-@defform[(require/opaque-type t pred m)]{
-This defines a new type @scheme[t].  @scheme[pred], imported from
-module @scheme[m], is a predicate for this type.  The type is defined
-as precisely those values to which @scheme[pred] produces
-@scheme[#t].  @scheme[pred] must have type @scheme[(Any -> Boolean)].}
-
-@defform*[[(require-typed-struct name ([f : t] ...) m)
-           (require-typed-struct (name parent) ([f : t] ...) m)]]{
-Requires all the functions associated with the structure @scheme[name] from the module @scheme[m],
-with the appropriate types.  The structure predicate has the
-appropriate Typed Scheme filter type so that it may be used as a
-predicate in @scheme[if] expressions in Typed Scheme.  
-
-In the second form, @scheme[parent] must already be a structure type
-known to Typed Scheme, either via @scheme[define-struct:] or
-@scheme[require-typed-struct].  
-}
-
-@defform/subs[(do: : u ([id : t init-expr step-expr-maybe] ...)
-                       (stop?-expr finish-expr ...)
-                expr ...+)
-              ([step-expr-maybe code:blank
-                                step-expr])]{
-Like @scheme[do], but each @scheme[id] having the associated type @scheme[t], and 
-the final body @scheme[expr] having the type @scheme[u].
-}
 
 @section{Libraries Provided With Typed Scheme}
 

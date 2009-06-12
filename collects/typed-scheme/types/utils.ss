@@ -240,7 +240,7 @@
  [ret    
   (->d ([t (or/c Type/c (listof Type/c))])
        ([f (if (list? t)
-               (listof FilterSet?)
+               (listof (or/c FilterSet? NoFilter?))
                FilterSet?)]
         [o (if (list? t)
                (listof Object?)

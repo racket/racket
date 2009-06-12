@@ -45,6 +45,7 @@
                           (for ([i thn]) (fp "~a " i)) (fp "|")
                           (for ([i els]) (fp " ~a" i))
                           (fp")")]
+    [(NoFilter:) (fp "-")]
     [(NotTypeFilter: type path id) (fp "(! ~a @ ~a ~a)" type path (syntax-e id))]
     [(TypeFilter: type path id) (fp "(~a @ ~a ~a)" type path (syntax-e id))]
     [(Bot:) (fp "Bot")]))
@@ -65,6 +66,7 @@
 (define (print-object c port write?)
   (define (fp . args) (apply fprintf port args))
   (match c
+    [(NoObject:) (fp "-")]
     [(Empty:) (fp "")]
     [(Path: pes i) (fp "~a" (append pes (list (syntax-e i))))]))
 

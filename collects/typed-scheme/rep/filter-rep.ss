@@ -48,6 +48,10 @@
                       ()
                       [result FilterSet?])])
 
+;; represents no info about the filters of this expression
+;; should only be used for parsing type annotations and expected types
+(df NoFilter () [#:fold-rhs #:base])
+
 (define index/c (or/c natural-number/c keyword?))
 
 (dlf LBot () [#:fold-rhs #:base])

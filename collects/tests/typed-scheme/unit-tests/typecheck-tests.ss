@@ -718,7 +718,7 @@
                 (-poly (a) (a . -> . a))]
         [tc-e (apply values (list 1 2 3)) #:ret (ret (list -Integer -Integer -Integer))]
         
-        [tc-e (ann (if #t 3 "foo") Integer) -Integer]
+        [tc-e/t (ann (if #t 3 "foo") Integer) -Integer]
         
         [tc-e/t (plambda: (a ...) ([x : Number] . [y : a ... a])
                           (andmap null? (map list y)))
@@ -730,7 +730,7 @@
         #;[tc-err (let: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                         (fact 20))]
         
-        #;[tc-err ]
+        [tc-err (ann (lambda: ([x : Any]) #f) (Any -> Boolean : String))]
         )
   (test-suite
    "check-type tests"

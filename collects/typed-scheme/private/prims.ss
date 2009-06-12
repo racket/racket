@@ -63,9 +63,25 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (pattern (orig-nm:id internal-nm:id)
 	     #:with spec #'(orig-nm internal-nm)
 	     #:with nm #'internal-nm))
+  (define-syntax-class simple-clause
+    #:attributes (nm ty)
+    (pattern [nm:opt-rename ty]))
+  (define-syntax-class struct-clause
+    #:literals (struct)
+    #:attributes (nm (body 1))
+    (pattern [struct nm:opt-rename (body ...)]))
+  (define-syntax-class opaque-clause
+    #:literals (opaque)
+    #:attributes (ty pred opt)
+    (pattern [opaque ty:id pred:id]
+             #:with opt #'())
+    (pattern [opaque ty:id pred:id #:name-exists]
+             #:with opt #'(#:name-exists)))
   (syntax-parse stx
-    [(_ lib [nm:opt-rename ty] ...)
-     #'(begin (require/typed nm ty lib) ...)]
+    [(_ lib (~or [sc:simple-clause] [strc:struct-clause] [oc:opaque-clause]) ...)
+     #'(begin (require/typed sc.nm sc.ty lib) ... 
+              (require-typed-struct strc.nm (strc.body ...) lib) ...
+              (require/opaque-type oc.ty oc.pred lib . oc.opt) ...)]
     [(_ nm:opt-rename ty lib (~or [#:struct-maker parent] #:opt) ...)
      (with-syntax ([cnt* (generate-temporary #'nm.nm)]
 		   [sm (if #'parent

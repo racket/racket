@@ -15,6 +15,10 @@
   [#:frees (combine-frees (map free-vars* p)) (combine-frees (map free-idxs* p))]
   [#:fold-rhs (*Path (map pathelem-rec-id p) v)])
 
+;; represents no info about the filters of this expression
+;; should only be used for parsing type annotations and expected types
+(do NoObject () [#:fold-rhs #:base])
+
 (dlo LEmpty () [#:fold-rhs #:base])
 
 (dlo LPath ([p (listof PathElem?)] [idx index/c])

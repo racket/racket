@@ -501,8 +501,7 @@
 ;; syntax tc-results? -> tc-results?
 (define (tc/app/check form expected)
     (define t (tc/app/internal form expected))
-    (check-below t expected)
-    expected)
+    (check-below t expected))
 
 (define (object-index os i)
   (unless (number? i)
@@ -639,3 +638,4 @@
      (int-err "funapp with drest args NYI")]
     [((arr: _ _ _ _ kws) _)
      (int-err "funapp with keyword args NYI")]))
+

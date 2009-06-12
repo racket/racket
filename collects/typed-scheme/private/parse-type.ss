@@ -576,8 +576,10 @@
   (syntax-parse stx
     [(values t ...)
      #:when (eq? 'values (syntax-e #'values))
-     (ret (map parse-type (syntax->list #'(t ...))))]
-    [t (ret (parse-type #'t))]))
+     (ret (map parse-type (syntax->list #'(t ...))) 
+          (map (lambda (x) (make-NoFilter)) (syntax->list #'(t ...)))
+          (map (lambda (x) (make-NoObject)) (syntax->list #'(t ...))))]
+    [t (ret (parse-type #'t) (make-NoFilter) (make-NoObject))]))
 
 (define parse-tc-results/id (parse/id parse-tc-results))
 
