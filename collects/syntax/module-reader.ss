@@ -26,7 +26,7 @@
                 ...
                 [else (err "got an unknown keyword" (car body))])))))
       checks ...
-      (set! var (or var default)) ...))
+      (unless var (set! var default)) ...))
   (define (construct-reader lang body)
     (keywords body
               [#:language    ~lang        lang]
@@ -45,30 +45,26 @@
     (quasisyntax/loc stx
       (#%module-begin
        #,@body
-       (#%provide (rename *read read) (rename *read-syntax read-syntax))
-       (define-values (*read *read-syntax)
-         (let* ([lang #,~lang]
-                [rd  #,~read]
-                [rds #,~read-syntax]
-                [w1  #,~wrapper1]
-                [w2  #,~wrapper2]
-                [w2  (cond [(not w2) (lambda (in r _) (r in))]
-                           [(procedure-arity-includes? w2 3) w2]
-                           [else (lambda (in r _) (w2 in r))])]
-                [whole? #,~whole-body-readers?])
-           (values
-            (lambda (in modpath line col pos)
-              (w2 in
-                  (lambda (in)
-                    (wrap-internal lang in rd whole?
-                                   w1 #f modpath #f line col pos))
-                  #f))
-            (lambda (src in modpath line col pos)
-              (w2 in
-                  (lambda (in)
-                    (wrap-internal lang in (lambda (in) (rds src in)) whole?
-                                   w1 #t modpath src line col pos))
-                  #t))))))))
+       (#%provide (rename lang:read read) (rename lang:read-syntax read-syntax))
+       (define lang #,~lang)
+       (define rd   #,~read)
+       (define rds  #,~read-syntax)
+       (define w1   #,~wrapper1)
+       (define w2   #,~wrapper2)
+       (define w2*  (cond [(not w2) (lambda (in r _) (r in))]
+                          [(procedure-arity-includes? w2 3) w2]
+                          [else (lambda (in r _) (w2 in r))]))
+       (define whole? #,~whole-body-readers?)
+       (define (lang:read in modpath line col pos)
+         (w2* in (lambda (in)
+                   (wrap-internal lang in rd whole?
+                                  w1 #f modpath #f line col pos))
+              #f))
+       (define (lang:read-syntax src in modpath line col pos)
+         (w2* in (lambda (in)
+                   (wrap-internal lang in (lambda (in) (rds src in)) whole?
+                                  w1 #t modpath src line col pos))
+              #t)))))
   (syntax-case stx ()
     [(_ lang body ...)
      (not (keyword? (syntax-e #'lang)))
