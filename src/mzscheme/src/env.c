@@ -113,6 +113,7 @@ static Scheme_Object *local_lift_exprs(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_context(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_end_statement(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_require(int argc, Scheme_Object *argv[]);
+static Scheme_Object *local_lift_provide(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_introducer(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_make_delta_introduce(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_set_transformer(int argc, Scheme_Object *argv[]);
@@ -560,6 +561,7 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("syntax-local-lift-context", local_lift_context, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-lift-module-end-declaration", local_lift_end_statement, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-lift-require", local_lift_require, 2, 2, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-lift-provide", local_lift_provide, 1, 1, env);
 
   {
     Scheme_Object *sym;
@@ -1419,7 +1421,8 @@ scheme_add_compilation_binding(int index, Scheme_Object *val, Scheme_Comp_Env *f
 }
 
 void scheme_frame_captures_lifts(Scheme_Comp_Env *env, Scheme_Lift_Capture_Proc cp, Scheme_Object *data, 
-                                 Scheme_Object *end_stmts, Scheme_Object *context_key, Scheme_Object *requires)
+                                 Scheme_Object *end_stmts, Scheme_Object *context_key, 
+                                 Scheme_Object *requires, Scheme_Object *provides)
 {
   Scheme_Lift_Capture_Proc *pp;
   Scheme_Object *vec;
@@ -1427,7 +1430,7 @@ void scheme_frame_captures_lifts(Scheme_Comp_Env *env, Scheme_Lift_Capture_Proc 
   pp = (Scheme_Lift_Capture_Proc *)scheme_malloc_atomic(sizeof(Scheme_Lift_Capture_Proc));
   *pp = cp;
 
-  vec = scheme_make_vector(7, NULL);
+  vec = scheme_make_vector(8, NULL);
   SCHEME_VEC_ELS(vec)[0] = scheme_null;
   SCHEME_VEC_ELS(vec)[1] = (Scheme_Object *)pp;
   SCHEME_VEC_ELS(vec)[2] = data;
@@ -1435,6 +1438,7 @@ void scheme_frame_captures_lifts(Scheme_Comp_Env *env, Scheme_Lift_Capture_Proc 
   SCHEME_VEC_ELS(vec)[4] = context_key;
   SCHEME_VEC_ELS(vec)[5] = (requires ? requires : scheme_false);
   SCHEME_VEC_ELS(vec)[6] = scheme_null; /* accumulated requires */
+  SCHEME_VEC_ELS(vec)[7] = provides;
 
   COMPILE_DATA(env)->lifts = vec;
 }
@@ -1453,7 +1457,7 @@ void scheme_propagate_require_lift_capture(Scheme_Comp_Env *orig_env, Scheme_Com
 
     p = scheme_make_raw_pair(NULL, (Scheme_Object *)orig_env);
 
-    vec = scheme_make_vector(7, NULL);
+    vec = scheme_make_vector(8, NULL);
     SCHEME_VEC_ELS(vec)[0] = scheme_false;
     SCHEME_VEC_ELS(vec)[1] = scheme_void;
     SCHEME_VEC_ELS(vec)[2] = scheme_void;
@@ -1461,6 +1465,7 @@ void scheme_propagate_require_lift_capture(Scheme_Comp_Env *orig_env, Scheme_Com
     SCHEME_VEC_ELS(vec)[4] = scheme_false;
     SCHEME_VEC_ELS(vec)[5] = p; /* (rcons NULL env) => continue with env */
     SCHEME_VEC_ELS(vec)[6] = scheme_null;
+    SCHEME_VEC_ELS(vec)[7] = scheme_false;
 
     COMPILE_DATA(env)->lifts = vec;
   }
@@ -1468,7 +1473,7 @@ void scheme_propagate_require_lift_capture(Scheme_Comp_Env *orig_env, Scheme_Com
 
 Scheme_Object *scheme_frame_get_lifts(Scheme_Comp_Env *env)
 {
-  return SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[0];
+  return scheme_reverse(SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[0]);
 }
 
 Scheme_Object *scheme_frame_get_end_statement_lifts(Scheme_Comp_Env *env)
@@ -1479,6 +1484,11 @@ Scheme_Object *scheme_frame_get_end_statement_lifts(Scheme_Comp_Env *env)
 Scheme_Object *scheme_frame_get_require_lifts(Scheme_Comp_Env *env)
 {
   return SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[6];
+}
+
+Scheme_Object *scheme_frame_get_provide_lifts(Scheme_Comp_Env *env)
+{
+  return SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[7];
 }
 
 void scheme_add_local_syntax(int cnt, Scheme_Comp_Env *env)
@@ -5123,6 +5133,47 @@ static Scheme_Object *local_lift_require(int argc, Scheme_Object *argv[])
   form = scheme_add_remove_mark(form, local_mark);
 
   return form;
+}
+
+static Scheme_Object *local_lift_provide(int argc, Scheme_Object *argv[])
+{
+  Scheme_Comp_Env *env;
+  Scheme_Object *pr, *form, *local_mark;
+
+  form = argv[0];
+  if (!SCHEME_STXP(form))
+    scheme_wrong_type("syntax-local-lift-provide", "syntax", 1, argc, argv);
+
+  env = scheme_current_thread->current_local_env;
+  local_mark = scheme_current_thread->current_local_mark;
+
+  if (!env)
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
+		     "syntax-local-lift-provide: not currently transforming");
+
+  while (env) {
+    if (COMPILE_DATA(env)->lifts
+        && SCHEME_TRUEP(SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[7])) {
+      break;
+    } else
+      env = env->next;
+  }
+
+  if (!env)
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT, 
+		     "syntax-local-lift-provide: not expanding in a module run-time body");
+  
+  form = scheme_add_remove_mark(form, local_mark);
+  form = scheme_datum_to_syntax(scheme_make_pair(scheme_datum_to_syntax(scheme_intern_symbol("#%provide"), 
+                                                                        scheme_false, scheme_sys_wraps(env), 
+                                                                        0, 0),
+                                                 scheme_make_pair(form, scheme_null)),
+                                form, scheme_false, 0, 0);
+
+  pr = scheme_make_pair(form, SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[7]);
+  SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[7] = pr;
+
+  return scheme_void;
 }
 
 static Scheme_Object *

@@ -5081,7 +5081,7 @@ static void *compile_k(void)
 	 before the rest. */
       while (1) {
 	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), 
-                                    scheme_false, scheme_false, scheme_null);
+                                    scheme_false, scheme_false, scheme_null, scheme_false);
 	form = scheme_check_immediate_macro(form, 
 					    cenv, &rec, 0,
 					    0, &gval, NULL, NULL);
@@ -5122,7 +5122,7 @@ static void *compile_k(void)
 
       while (1) {
 	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), 
-                                    scheme_false, scheme_false, scheme_null);
+                                    scheme_false, scheme_false, scheme_null, scheme_false);
 
 	scheme_init_compile_recs(&rec, 0, &rec2, 1);
 
@@ -6258,28 +6258,45 @@ static Scheme_Object *pair_lifted(Scheme_Object *_ip, Scheme_Object **_ids, Sche
 {
   Scheme_Comp_Env **ip = (Scheme_Comp_Env **)_ip, *naya;
   Scheme_Object *ids, *id;
+  int pos;
 
-  naya = scheme_new_compilation_frame(1, SCHEME_CAPTURE_LIFTED, (*ip)->next, NULL);
+  pos = scheme_list_length(*_ids);
+  naya = scheme_new_compilation_frame(pos, SCHEME_CAPTURE_LIFTED, (*ip)->next, NULL);
   (*ip)->next = naya;
   *ip = naya;
 
   for (ids = *_ids; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
     id = SCHEME_CAR(ids);
-    scheme_add_compilation_binding(0, id, naya);
+    scheme_add_compilation_binding(--pos, id, naya);
   }
 
   return icons(*_ids, icons(expr, scheme_null));
 }
 
 static Scheme_Object *add_lifts_as_let(Scheme_Object *obj, Scheme_Object *l, Scheme_Comp_Env *env,
-                                       Scheme_Object *orig_form)
+                                       Scheme_Object *orig_form, int comp_rev)
 {
-  Scheme_Object *revl = scheme_null, *a;
+  Scheme_Object *revl, *a;
 
   if (SCHEME_NULLP(l)) return obj;
 
-  for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-    revl = icons(SCHEME_CAR(l), revl);
+  revl = scheme_reverse(l);
+
+  if (comp_rev) {
+    /* We've already compiled the body of this let
+       with the bindings in reverse order. So insert a series of `lets'
+       to match that order: */
+    if (!SCHEME_NULLP(SCHEME_CDR(l))) {
+      for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+        a = scheme_reverse(SCHEME_CAR(SCHEME_CAR(l)));
+        for (; !SCHEME_NULLP(a); a = SCHEME_CDR(a)) {
+          obj = icons(scheme_datum_to_syntax(let_values_symbol, scheme_false, scheme_sys_wraps(env), 0, 0),
+                      icons(icons(icons(icons(SCHEME_CAR(a), scheme_null), icons(SCHEME_CAR(a), scheme_null)),
+                                  scheme_null),
+                            icons(obj, scheme_null)));
+        }
+      }
+    }
   }
 
   for (; SCHEME_PAIRP(revl); revl = SCHEME_CDR(revl)) {
@@ -6289,7 +6306,9 @@ static Scheme_Object *add_lifts_as_let(Scheme_Object *obj, Scheme_Object *l, Sch
                       icons(obj, scheme_null)));
   }
 
-  return scheme_datum_to_syntax(obj, orig_form, scheme_false, 0, 0);
+  obj = scheme_datum_to_syntax(obj, orig_form, scheme_false, 0, 0);
+  
+  return obj;
 }
  
 static Scheme_Object *compile_expand_expr_lift_to_let_k(void);
@@ -6355,7 +6374,8 @@ compile_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
 
   context_key = scheme_generate_lifts_key();
   
-  scheme_frame_captures_lifts(inserted, pair_lifted, (Scheme_Object *)ip, scheme_false, context_key, NULL);
+  scheme_frame_captures_lifts(inserted, pair_lifted, (Scheme_Object *)ip, scheme_false, 
+                              context_key, NULL, scheme_false);
 
   if (rec[drec].comp) {
     scheme_init_compile_recs(rec, drec, recs, 2);
@@ -6381,7 +6401,7 @@ compile_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
       SCHEME_IPTR_VAL(o) = form;
     } else
       o = form;
-    form = add_lifts_as_let(o, l, env, orig_form);
+    form = add_lifts_as_let(o, l, env, orig_form, rec[drec].comp);
     SCHEME_EXPAND_OBSERVE_LETLIFT_LOOP(rec[drec].observer, form);
     form = compile_expand_expr_lift_to_let(form, env, recs, 1);
     if (rec[drec].comp)
@@ -7718,8 +7738,12 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
           if (SCHEME_LOCAL_FLAGS(obj) & SCHEME_LOCAL_CLEAR_ON_READ) { \
             runstack[SCHEME_LOCAL_POS(obj)] = NULL;                   \
           }
+# define SFS_CLEAR_RUNSTACK_ONE(runstack, pos) runstack[pos] = NULL
+# define SFS_CLEAR_RUNSTACK(runstack, i, n)  for (i = n; i--; ) { SFS_CLEAR_RUNSTACK_ONE(runstack, i); }
 #else
 # define EVAL_SFS_CLEAR(rs, obj) /* empty */
+# define SFS_CLEAR_RUNSTACK_ONE(runstack, pos) /* empty */
+# define SFS_CLEAR_RUNSTACK(runstack, i, n)  /* empty */
 #endif
 
 #define RUNSTACK_START MZ_RUNSTACK_START
@@ -7911,16 +7935,16 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    return NULL; /* Doesn't get here */
 	  }
 	
-	  stack = RUNSTACK = old_runstack - num_params;
-	  CHECK_RUNSTACK(p, RUNSTACK);
-	  RUNSTACK_CHANGED();
-
-	  if (rands != stack) {
-	    int n = num_params; 
-	    while (n--) {
-	      stack[n] = rands[n];
-	    }
-	  }
+          stack = RUNSTACK = old_runstack - num_params;
+          CHECK_RUNSTACK(p, RUNSTACK);
+          RUNSTACK_CHANGED();
+          
+          if (rands != stack) {
+            int n = num_params; 
+            while (n--) {
+              stack[n] = rands[n];
+            }
+          }
 	}
       } else {
 	if (num_rands) {
@@ -8241,6 +8265,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  stack = PUSH_RUNSTACK(p, RUNSTACK, num_rands);
 	  RUNSTACK_CHANGED();
 	  UPDATE_THREAD_RSPTR();
+          SFS_CLEAR_RUNSTACK(RUNSTACK, k, num_rands);
 
 	  /* Inline local & global variable lookups for speed */
 	  switch (GET_FIRST_EVAL) {
@@ -8334,6 +8359,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  rands = PUSH_RUNSTACK(p, RUNSTACK, 1);
 	  RUNSTACK_CHANGED();
 	  UPDATE_THREAD_RSPTR();
+          SFS_CLEAR_RUNSTACK_ONE(RUNSTACK, 0);
 	  
 	  /* Inline local & global variable lookups for speed */
 	  switch (flags & 0x7) {
@@ -8412,7 +8438,9 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  rands = PUSH_RUNSTACK(p, RUNSTACK, 2);
 	  RUNSTACK_CHANGED();
 	  UPDATE_THREAD_RSPTR();
-	  
+          SFS_CLEAR_RUNSTACK_ONE(RUNSTACK, 0);
+          SFS_CLEAR_RUNSTACK_ONE(RUNSTACK, 1);
+
 	  /* Inline local & global variable lookups for speed */
 	  switch (flags & 0x7) {
 	  case SCHEME_EVAL_CONSTANT:
@@ -8693,6 +8721,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    UPDATE_THREAD_RSPTR();
 	    {
 	      GC_CAN_IGNORE Scheme_Object *val;
+              SFS_CLEAR_RUNSTACK_ONE(RUNSTACK, 0);
 	      val = _scheme_eval_linked_expr_wp(lo->value, p);
 	      RUNSTACK[0] = val;
 	    }
@@ -9112,7 +9141,8 @@ static void *expand_k(void)
       scheme_frame_captures_lifts(env, 
                                   (as_local < 0) ? pair_lifted : scheme_make_lifted_defn, data, 
                                   scheme_false, catch_lifts_key, 
-                                  (!as_local && catch_lifts_key) ? scheme_null : NULL);
+                                  (!as_local && catch_lifts_key) ? scheme_null : NULL,
+                                  scheme_false);
     }
 
     if (just_to_top) {
@@ -9129,7 +9159,7 @@ static void *expand_k(void)
           || SCHEME_PAIRP(rl)) {
         l = scheme_append(rl, l);
         if (as_local < 0)
-          obj = add_lifts_as_let(obj, l, env, scheme_false);
+          obj = add_lifts_as_let(obj, l, env, scheme_false, 0);
         else
           obj = add_lifts_as_begin(obj, l, env);
         SCHEME_EXPAND_OBSERVE_LIFT_LOOP(erec1.observer,obj);
@@ -9654,7 +9684,8 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
       scheme_frame_captures_lifts(env, 
                                   (catch_lifts < 0) ? pair_lifted : scheme_make_lifted_defn, data,
                                   scheme_false, 
-                                  catch_lifts_key, NULL);
+                                  catch_lifts_key, NULL,
+                                  scheme_false);
     }
 
     memset(drec, 0, sizeof(drec));
@@ -9678,7 +9709,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
 
     if (catch_lifts_key) {
       if (catch_lifts < 0)
-        xl = add_lifts_as_let(xl, scheme_frame_get_lifts(env), env, orig_l);
+        xl = add_lifts_as_let(xl, scheme_frame_get_lifts(env), env, orig_l, 0);
       else
         xl = add_lifts_as_begin(xl, scheme_frame_get_lifts(env), env);
       SCHEME_EXPAND_OBSERVE_LIFT_LOOP(observer,xl);

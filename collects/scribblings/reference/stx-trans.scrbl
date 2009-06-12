@@ -453,13 +453,13 @@ for caching lift information to avoid redundant lifts.
 
 Cooperates with the @scheme[module] form to insert @scheme[stx] as
 a top-level declaration at the end of the module currently being
-expanded. If the current expression being transformed is not within a
-@scheme[module] form, or if it is not a run-time expression, then the
-@exnraise[exn:fail:contract]. If the current expression being
+expanded. If the current expression being
 transformed is not in the module top-level, then @scheme[stx] is
 eventually expanded in an expression context.
 
-@transform-time[]}
+@transform-time[] If the current expression being transformed is not
+within a @scheme[module] form, or if it is not a run-time expression,
+then the @exnraise[exn:fail:contract].}
 
 
 @defproc[(syntax-local-lift-require [raw-require-spec any/c][stx syntax?])
@@ -480,6 +480,17 @@ resulting syntax object (assuming that the lexical information of
 @scheme[#%require] is lifted).
 
 @transform-time[]}
+
+@defproc[(syntax-local-lift-provide [raw-provide-spec-stx syntax?])
+         void?]{
+
+Lifts a @scheme[#%provide] form corresponding to
+@scheme[raw-provide-spec-stx] to the top of the module currently being
+expanded.
+
+@transform-time[] If the current expression being transformed is not
+within a @scheme[module] form, or if it is not a run-time expression,
+then the @exnraise[exn:fail:contract]. }
 
 @defproc[(syntax-local-name) (or/c symbol? #f)]{
 

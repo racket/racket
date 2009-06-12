@@ -155,7 +155,7 @@ If @scheme[in] does not specify a @tech{reader language}, then
 
 A parameter that controls parsing and printing of symbols. When this
 parameter's value is @scheme[#f], the reader case-folds symbols (e.g.,
-producing @scheme['hi] when the input is any one of \litchar{hi},
+producing @scheme['hi] when the input is any one of @litchar{hi},
 @litchar{Hi}, @litchar{HI}, or @litchar{hI}). The parameter also
 affects the way that @scheme[write] prints symbols containing
 uppercase characters; if the parameter's value is @scheme[#f], then
