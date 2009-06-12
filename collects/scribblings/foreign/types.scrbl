@@ -183,7 +183,14 @@ Unicode strings in UTF-16 format. As usual, the types treat
 @defthing[_path ctype?]{
 
 Simple @cpp{char*} strings, corresponding to Scheme's paths. As usual,
-the types treat @scheme[#f] as @cpp{NULL} and vice-versa.}
+the types treat @scheme[#f] as @cpp{NULL} and vice-versa.
+
+Beware that changing the current directory via
+@scheme[current-directory] does not change the OS-level current
+directory as seen by foreign library functions. Paths normally should
+be converted to absolute form using @scheme[path->complete-path]
+(which uses the @scheme[current-directory] parameter) before passing
+them to a foreign function.}
 
 
 @defthing[_symbol ctype?]{
