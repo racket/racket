@@ -45,7 +45,8 @@
     (quasisyntax/loc stx
       (#%module-begin
        #,@body
-       (#%provide (rename lang:read read) (rename lang:read-syntax read-syntax))
+       (#%provide (rename lang:read read) (rename lang:read-syntax read-syntax)
+                  read-properties get-info-getter get-info)
        (define lang #,~lang)
        (define rd   #,~read)
        (define rds  #,~read-syntax)
@@ -56,15 +57,32 @@
                           [else (lambda (in r _) (w2 in r))]))
        (define whole? #,~whole-body-readers?)
        (define (lang:read in modpath line col pos)
+         ;; just read and discard them in this case
+         (read-properties in modpath line col pos)
          (w2* in (lambda (in)
                    (wrap-internal lang in rd whole?
                                   w1 #f modpath #f line col pos))
               #f))
        (define (lang:read-syntax src in modpath line col pos)
-         (w2* in (lambda (in)
-                   (wrap-internal lang in (lambda (in) (rds src in)) whole?
-                                  w1 #t modpath src line col pos))
-              #t)))))
+         (define props (read-properties in modpath line col pos))
+         (syntax-property
+          (w2* in (lambda (in)
+                    (wrap-internal lang in (lambda (in) (rds src in)) whole?
+                                   w1 #t modpath src line col pos))
+               #t)
+          'module-language
+          (vector (syntax->datum modpath) 'get-info-getter props)))
+       (define (read-properties in modpath line col pos)
+         ;; !!! TODO
+         #f)
+       (define (get-info in modpath line col pos)
+         (get-info-getter (read-properties in modpath line col pos)))
+       (define (get-info-getter props)
+         (define (language-info what)
+           (case what
+             ;; !!! TODO
+             [else #f]))
+         language-info))))
   (syntax-case stx ()
     [(_ lang body ...)
      (not (keyword? (syntax-e #'lang)))
