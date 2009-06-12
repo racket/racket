@@ -543,9 +543,11 @@
 [datum->syntax 
  (-poly 
   (a)
-  (let* ([I (-Syntax Sym)]
+  (let* ([Pre Syntax-Sexp]
+         [I (-Syntax Sym)]
+         [A Any-Syntax]
 	 [S (-Syntax Univ)]
-	 [ctxt (-opt S)]
+         [ctxt (-opt S)]
 	 [srclist (-Tuple (list
                            Univ 
                            (-opt -Integer)
@@ -557,15 +559,20 @@
 	 [cert (-opt S)])
     (cl->*
      (-> ctxt Sym I)
+     (-> ctxt Pre A)
      (-> ctxt Univ S)
      (-> ctxt Sym srcloc I)
+     (-> ctxt Pre srcloc A)
      (-> ctxt Univ srcloc S)
      (-> ctxt Sym srcloc prop I)
+     (-> ctxt Pre srcloc prop A)
      (-> ctxt Univ srcloc prop S)
      (-> ctxt Sym srcloc prop cert I)
+     (-> ctxt Pre srcloc prop cert A)
      (-> ctxt Univ srcloc prop cert S))))]
 
-[syntax->datum (-> (-Syntax Univ) Univ)]
+[syntax->datum (cl->* (-> Any-Syntax -Sexp)
+                      (-> (-Syntax Univ) Univ))]
 [syntax-e (-poly (a) (-> (-Syntax a) a))]
 [syntax-original? (-poly (a) (-> (-Syntax a) B))]
 [identifier? (make-pred-ty (-Syntax Sym))]

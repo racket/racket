@@ -17,8 +17,12 @@
 [Output-Port -Output-Port]
 [Bytes -Bytes]
 [EOF (-val eof)]
-[Syntax Any-Syntax]
-[Syntaxof (-poly (a) (-Syntax a))]
+[Sexpof (-poly (a) (-Sexpof a))]   ;; recursive union of sexps with a
+[Syntaxof (-poly (a) (-Syntax a))] ;; syntax-e yields a
+[Syntax-E In-Syntax] ;; possible results of syntax-e on "2D" syntax
+[Syntax Any-Syntax]  ;; (Syntaxof Syntax-E): "2D" syntax
+[Datum Syntax-Sexp]  ;; (Sexpof Syntax), datum->syntax yields "2D" syntax
+[Sexp -Sexp]         ;; (Sexpof (U)), syntax->datum of "2D" syntax
 [Identifier Ident]
 [Procedure top-func]
 [Keyword -Keyword]

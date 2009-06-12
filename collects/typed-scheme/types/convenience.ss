@@ -45,3 +45,30 @@
 
 ;; DO NOT USE if t contains #f
 (define (-opt t) (Un (-val #f) t))
+
+(define In-Syntax
+  (-mu e
+       (*Un -Number -Boolean -Symbol -String -Keyword -Char
+            (make-Vector (-Syntax e))
+            (make-Box (-Syntax e))
+            (-mu list
+                 (*Un (-val '())
+                      (-pair (-Syntax e)
+                             (*Un (-Syntax e) list)))))))
+
+(define Any-Syntax (-Syntax In-Syntax))
+
+(define (-Sexpof t)
+  (-mu sexp
+       (Un -Number -Boolean -Symbol -String -Keyword -Char
+           (-val '())
+           (-pair sexp sexp)
+           (make-Vector sexp)
+           (make-Box sexp)
+           t)))
+
+(define -Sexp (-Sexpof (Un)))
+
+(define Syntax-Sexp (-Sexpof Any-Syntax))
+
+(define Ident (-Syntax -Symbol))

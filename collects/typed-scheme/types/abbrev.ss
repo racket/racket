@@ -18,6 +18,7 @@
 ;; convenient constructors
 
 
+(define -App make-App)
 (define -pair make-Pair)
 (define -val make-Value)
 (define -Param make-Param)
@@ -98,21 +99,6 @@
 (define -Nat -Integer)
 (define -Real -Number)
 
-(define Any-Syntax
-  (-mu x
-       (-Syntax (*Un 
-                 -Number
-                 -Boolean
-                 -Symbol
-                 -String
-		 -Keyword                 
-                 (-mu y (*Un (-val '()) (-pair x (*Un x y))))
-                 (make-Vector x)
-                 (make-Box x)))))
-
-(define Ident (-Syntax -Symbol))
-
-(define -Sexp (-mu x (*Un (-val null) -Number -Boolean -Symbol -String (-pair x x))))
 (define -Port (*Un -Output-Port -Input-Port))
 
 (define -Pathlike (*Un -String -Path))
