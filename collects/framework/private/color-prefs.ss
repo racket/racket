@@ -152,6 +152,13 @@
     (send bold-check set-value (eq? (send style get-weight) 'bold))
     (send underline-check set-value (send style get-underlined))
     (send smoothing-menu set-selection (smoothing->index (send style get-smoothing)))
+    
+    (send hp reflow-container)
+    (when (> (send c get-height) 50)
+      (send c set-line-count #f)
+      (send c min-height 50)
+      (send c stretchable-height #f))
+    
     (preferences:add-callback
      pref-sym
      (λ (p sd)
