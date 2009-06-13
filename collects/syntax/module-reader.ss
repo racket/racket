@@ -29,15 +29,16 @@
       (unless var (set! var default)) ...))
   (define (construct-reader lang body)
     (keywords body
-              [#:language    ~lang        lang]
-              [#:read        ~read        #'read]
-              [#:read-syntax ~read-syntax #'read-syntax]
-              [#:wrapper1    ~wrapper1    #'#f]
-              [#:wrapper2    ~wrapper2    #'#f]
+              [#:language            ~lang                lang]
+              [#:read                ~read                #'read]
+              [#:read-syntax         ~read-syntax         #'read-syntax]
+              [#:wrapper1            ~wrapper1            #'#f]
+              [#:wrapper2            ~wrapper2            #'#f]
               [#:whole-body-readers? ~whole-body-readers? #'#f]
       [(when (equal? (and lang #t) (and ~lang #t))
-         (err (string-append "must specify either a module path, or #:lang"
-                             (if (and lang ~lang) ", not both" ""))))
+         (err (string-append
+               "must specify either a module language, or #:language"
+               (if (and lang ~lang) ", not both" ""))))
        (unless (equal? (and ~read #t) (and ~read-syntax #t))
          (err "must specify either both #:read and #:read-syntax, or none"))
        (when (and ~whole-body-readers? (not (and ~read ~read-syntax)))
