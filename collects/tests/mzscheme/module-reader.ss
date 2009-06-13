@@ -5,48 +5,65 @@
 
 ;; ----------------------------------------
 
+(define (from-string read str)
+  (parameterize ([read-accept-reader #t])
+    (read (open-input-string str))))
+
+(define (test-both mods str result)
+  (for* ([mod mods]
+         [str (in-value (format str mod))]
+         [read (list read
+                     ;; same as `read', but using read-syntax
+                     (lambda (in) (syntax->datum (read-syntax #f in))))])
+    (test result from-string read str)))
+
 ;; plain version
 (module r0 syntax/module-reader scheme/base)
+(test-both '(r0) "#reader '~s (define FoO #:bAr)"
+           '(module page scheme/base (define FoO #:bAr)))
 
 ;; using a simple wrapper to get a case-insensitive reader
 (module r1 syntax/module-reader scheme/base
   #:wrapper1 (lambda (t) (parameterize ([read-case-sensitive #f]) (t))))
-
 ;; using the more general wrapper to get a case-insensitive reader
 (module r2 syntax/module-reader scheme/base
   #:wrapper2 (lambda (in r) (parameterize ([read-case-sensitive #f]) (r in))))
-
 ;; using explicit case-insensitive read/-syntax versions
 (module r3 syntax/module-reader scheme/base
   #:read (wrap read) #:read-syntax (wrap read-syntax)
   (define ((wrap reader) . args)
     (parameterize ([read-case-sensitive #f]) (apply reader args))))
+;;
+(test-both '(r1 r2 r3) "#reader '~s (define FoO #:bAr)"
+           '(module page scheme/base (define foo #:bar)))
 
 ;; add something to the result
 (module r4 syntax/module-reader zzz
   #:wrapper1 (lambda (t) (cons 'foo (t))))
-
-;; same as above, but do it properly, if a syntax or a datum is needed
+;; same, but do it properly, if a syntax or a datum is needed
 (module r5 syntax/module-reader zzz
   #:wrapper1 (lambda (t stx?) (cons (if stx? #'foo 'foo) (t))))
+;;
+(test-both '(r4 r5) "#reader '~s (define foo #:bar)"
+           '(module page zzz foo (define foo #:bar)))
 
 ;; make an empty module, after reading the contents
 (module r6 syntax/module-reader zzz
   #:wrapper1 (lambda (t) '()))
-
 ;; fake input port to get an empty module
 (module r7 syntax/module-reader zzz
   #:wrapper2 (lambda (in rd) (rd (open-input-string ""))))
-
 ;; forget about the input -- just return a fixed empty input module
 (module r8 syntax/module-reader whatever
   #:wrapper2 (lambda (in rd)
                (if (syntax? (rd in)) #'(module page zzz) '(module page zzz))))
-
 ;; the same, the easy way
 (module r9 syntax/module-reader
   #:language (lambda () 'zzz)
   #:wrapper1 (lambda (t) '()))
+;;
+(test-both '(r6 r7 r8 r9) "#reader '~s (define foo #:bar)"
+           '(module page zzz))
 
 ;; a module that uses the scribble syntax with a specified language
 (module r10 syntax/module-reader -ignored-
@@ -63,53 +80,17 @@
                    (syntax/loc mod (module name lang . body)))])])
       (if stx? r (syntax->datum r))))
   (require scribble/reader))
-
-;; the same, using #:language
+;; same, using #:language
 (module r11 syntax/module-reader
   #:language read
   #:wrapper2 (lambda (in rd stx?)
                (parameterize ([current-readtable (make-at-readtable)])
                  (rd in)))
   (require scribble/reader))
-
-(define (from-string read str)
-  (parameterize ([read-accept-reader #t])
-    (read (open-input-string str))))
-
-(define (test-both str result)
-  (for ([read (list read
-                    ;; same as `read', but using read-syntax
-                    (lambda (in) (syntax->datum (read-syntax #f in))))])
-    (test result from-string read str)))
-
-(test-both "#reader 'r0 (define FoO #:bAr)"
-           '(module page scheme/base (define FoO #:bAr)))
-
-(for ([mod '(r1 r2 r3)])
-  (test-both (format "#reader '~a (define FoO #:bAr)" mod)
-             '(module page scheme/base (define foo #:bar))))
-
-(test-both "#reader 'r4 (define foo #:bar)"
-           '(module page zzz foo (define foo #:bar)))
-(test-both "#reader 'r5 (define foo #:bar)"
-           '(module page zzz foo (define foo #:bar)))
-
-(test-both "#reader 'r6 (define foo #:bar)"
-           '(module page zzz))
-(test-both "#reader 'r7 (define foo #:bar)"
-           '(module page zzz))
-(test-both "#reader 'r8 (define foo #:bar)"
-           '(module page zzz))
-(test-both "#reader 'r9 (define foo #:bar)"
-           '(module page zzz))
-
-(test-both "#reader 'r10 scheme/base (define foo 1)"
+;;
+(test-both '(r10 r11) "#reader '~s scheme/base (define foo 1)"
            '(module page scheme/base (define foo 1)))
-(test-both "#reader 'r10 scheme/base @define[foo]{one}"
-           '(module page scheme/base (define foo "one")))
-(test-both "#reader 'r11 scheme/base (define foo 1)"
-           '(module page scheme/base (define foo 1)))
-(test-both "#reader 'r11 scheme/base @define[foo]{one}"
+(test-both '(r10 r11) "#reader '~s scheme/base @define[foo]{one}"
            '(module page scheme/base (define foo "one")))
 
 ;; ----------------------------------------
