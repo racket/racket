@@ -68,9 +68,9 @@ according to @scheme[eq?]. Otherwise, the result of @scheme[eq?]
 applied to two numbers is undefined.
 
 Two numbers are @scheme[eqv?] when they are both inexact or both
-exact, and when they are @scheme[=] (except for @scheme[+nan.0], as
-noted above). Two numbers are @scheme[equal?] when they are
-@scheme[eqv?].
+exact, and when they are @scheme[=] (except for @scheme[+nan.0],
+@scheme[+0.0], and @scheme[-0.0], as noted above). Two numbers are
+@scheme[equal?] when they are @scheme[eqv?].
 
 @; ----------------------------------------
 @section{Number Types}
