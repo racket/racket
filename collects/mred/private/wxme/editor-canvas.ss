@@ -1,5 +1,6 @@
 #lang scheme/base
 (require scheme/class
+         scheme/file
          "../syntax.ss"
          "editor.ss"
          "editor-admin.ss"
@@ -128,7 +129,11 @@
 
 ;; ----------------------------------------
 
-(define default-wheel-amt 3)
+(define default-wheel-amt
+  (let ([v (get-preference 'MrEd:wheelStep)])
+    (if (exact-integer? v)
+        (max 3 (min 1000 v))
+        3)))
 
 (define (INIT-SB style)
   (append
@@ -439,9 +444,10 @@
                        [y 0])
                (get-scroll x y)
              (let ([y (max (+ y
-                              (if (eq? code 'wheel-up)
-                                  -1
-                                  1))
+                              (* wheel-amt
+                                 (if (eq? code 'wheel-up)
+                                     -1
+                                     1)))
                            0)])
                (do-scroll x y #t))))]
         [else
