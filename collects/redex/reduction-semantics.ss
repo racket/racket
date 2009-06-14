@@ -26,6 +26,7 @@
          none?
          define-metafunction
          define-metafunction/extension
+         define-relation
          metafunction
          in-domain?
          caching-enabled?)

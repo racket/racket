@@ -871,7 +871,7 @@ terminate (it does terminate if the only infinite reduction paths are cyclic).
   @scheme[reduction-relation]. A @scheme[with] form is an
   error elsewhere.  }
 
-@section{Metafunctions}
+@section{Metafunctions and Relations}
 
 All of the exports in this section are provided both by
 @schememodname[redex/reduction-semantics] (which includes
@@ -978,6 +978,38 @@ function fixed up to be @scheme[extending-name].
 Returns @scheme[#t] if the inputs specified to @scheme[metafunction-name] are
 legtimate inputs according to @scheme[metafunction-name]'s contract,
 and @scheme[#f] otherwise.
+}
+
+@defform/subs[#:literals ()
+              (define-relation language-exp
+               [(name @#,ttpattern ...) @#,tttterm extras ...] 
+               ...)
+               ([extras (side-condition scheme-expression)
+                        (where tl-pat @#,tttterm)]
+                [tl-pat identifier (tl-pat-ele ...)]
+                [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
+
+The @scheme[define-relation] form builds a relation on
+sexpressions according to the pattern and right-hand-side
+expressions. The first argument indicates the language used
+to resolve non-terminals in the pattern expressions. Each of
+the rhs-expressions is implicitly wrapped in @|tttterm|. 
+
+If specified, the side-conditions are collected with 
+@scheme[and] and used as guards on the case being matched. The
+argument to each side-condition should be a Scheme
+expression, and the pattern variables in the @|ttpattern| are
+bound in that expression.
+
+Unlike metafunctions, relations check all possible ways to match each
+case, looking for a true result and if none of the clauses match, then
+the result is @scheme[#f].
+
+Note that relations are assumed to always return the same results
+for the same inputs, and their results are cached, unless
+@scheme[caching-enable?] is set to @scheme[#f]. Accordingly, if a
+metafunction is called with the same inputs twice, then its body is
+only evaluated a single time.
 }
 
 @defparam[current-traced-metafunctions traced-metafunctions (or/c 'all (listof symbol?))]{

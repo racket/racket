@@ -983,20 +983,26 @@
 ;                                                                                                          
 
 
-(define-syntax-set (define-metafunction define-metafunction/extension)
+(define-syntax-set (define-metafunction define-metafunction/extension define-relation)
   
   (define (define-metafunction/proc stx)
     (syntax-case stx ()
       [(_ . rest)
-       (internal-define-metafunction stx #f #'rest)]))
+       (internal-define-metafunction stx #f #'rest #f)]))
+  
+  (define (define-relation/proc stx)
+    (syntax-case stx ()
+      [(_ . rest)
+       ;; need to rule out the contracts for this one
+       (internal-define-metafunction stx #f #'rest #t)]))
   
   (define (define-metafunction/extension/proc stx)
     (syntax-case stx ()
       [(_ prev . rest)
        (identifier? #'prev)
-       (internal-define-metafunction stx #'prev #'rest)]))
+       (internal-define-metafunction stx #'prev #'rest #f)]))
   
-  (define (internal-define-metafunction orig-stx prev-metafunction stx)
+  (define (internal-define-metafunction orig-stx prev-metafunction stx relation?)
     (syntax-case stx ()
       [(lang . rest)
        (let ([syn-error-name (if prev-metafunction
@@ -1140,7 +1146,8 @@
                                        sc))
                                     dsc
                                     `codom-side-conditions-rewritten
-                                    'name)))
+                                    'name
+                                    #,relation?)))
                                (term-define-fn name name2))
                            'disappeared-use
                            (map syntax-local-introduce (syntax->list #'(original-names ...))))))))))))))]
@@ -1260,7 +1267,7 @@
                                      "expected a side-condition or where clause"
                                      (car stuff))])]))]))))
 
-(define (build-metafunction lang patterns rhss old-cps old-rhss wrap dom-contract-pat codom-contract-pat name)
+(define (build-metafunction lang patterns rhss old-cps old-rhss wrap dom-contract-pat codom-contract-pat name relation?)
   (let ([compiled-patterns (append old-cps
                                    (map (λ (pat) (compile-pattern lang pat #t)) patterns))]
         [dom-compiled-pattern (and dom-contract-pat (compile-pattern lang dom-contract-pat #f))]
@@ -1284,7 +1291,11 @@
                                   [num (- (length old-cps))])
                          (cond
                            [(null? patterns) 
-                            (redex-error name "no clauses matched for ~s" `(,name . ,exp))]
+                            (if relation?
+                                (begin 
+                                  (hash-set! cache exp #f)
+                                  #f)
+                                (redex-error name "no clauses matched for ~s" `(,name . ,exp)))]
                            [else
                             (let ([pattern (car patterns)]
                                   [rhs (car rhss)])
@@ -1293,6 +1304,19 @@
                                   [(not mtchs) (loop (cdr patterns)
                                                      (cdr rhss)
                                                      (+ num 1))]
+                                  [relation? 
+                                   (let ([ans (ormap (λ (mtch) (rhs traced-metafunc (mtch-bindings mtch)))
+                                                     mtchs)])
+                                     (unless (match-pattern codom-compiled-pattern ans)
+                                       (redex-error name "codomain test failed for ~s, call was ~s" ans `(,name ,@exp)))
+                                     (cond
+                                       [ans 
+                                        (hash-set! cache exp #t)
+                                        #t]
+                                       [else
+                                        (loop (cdr patterns)
+                                              (cdr rhss)
+                                              (+ num 1))]))]
                                   [(not (null? (cdr mtchs)))
                                    (redex-error name "~a matched ~s ~a different ways" 
                                                 (if (< num 0)
@@ -1974,6 +1998,7 @@
          
          define-metafunction
          define-metafunction/extension
+         define-relation
          
          (rename-out [metafunction-form metafunction])
          metafunction? metafunction-proc
