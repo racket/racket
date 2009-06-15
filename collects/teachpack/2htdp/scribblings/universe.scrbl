@@ -161,8 +161,7 @@ The design of a world program demands that you come up with a data
 
 @defform/subs[#:id big-bang
               #:literals 
-	      (on-tick on-draw on-key on-mouse on-receive 
-	        stop-when register record? name)
+	      (on-tick on-draw on-key on-mouse on-receive stop-when world? register record? name)
               (big-bang state-expr clause ...)
               ([clause
 		 (on-tick tick-expr)
@@ -172,6 +171,7 @@ The design of a world program demands that you come up with a data
 		 (on-draw draw-expr)
 		 (on-draw draw-expr width-expr height-expr)
 		 (stop-when stop-expr)	   
+		 (world? world?-expr)	   
 		 (record? boolean-expr)
 		 (on-receive rec-expr)
 		 (register IP-expr)
@@ -413,6 +413,16 @@ All @tech{MouseEvent}s are represented via strings:
  tick events, @tech{KeyEvent}s, or @tech{MouseEvent}s are forwarded to
  the respective handlers. The @scheme[big-bang] expression returns this
  last world. 
+}}
+
+@item{
+
+@defform[(world? world-expr?)
+         #:contracts
+         ([world-expr? (-> Any boolean?)])]{
+ tell DrScheme to call the @scheme[world-expr?] function on the result of
+ every world handler call. If this call produces @scheme[true], the result
+ is considered a world; otherwise the world program signals an error. 
 }}
 
 @item{
@@ -1060,7 +1070,7 @@ The @tech{server} itself is created with a description that includes the
 
 @defform/subs[#:id universe
               #:literals 
-	      (on-new on-msg on-tick on-disconnect to-string)
+	      (on-new on-msg on-tick on-disconnect to-string universe?)
               (universe state-expr clause ...)
               ([clause
 		 (on-new new-expr)
@@ -1069,6 +1079,7 @@ The @tech{server} itself is created with a description that includes the
 		 (on-tick tick-expr rate-expr)
 		 (on-disconnect dis-expr)
 		 (to-string render-expr)
+		 (universe? universe?-expr)
 		 ])]{
 
 creates a server with a given state, @scheme[state-expr]. The
@@ -1167,6 +1178,14 @@ optional handlers:
  tell DrScheme to render the state of the universe after each event and to
  display this string in the universe console. 
  }
+}
+
+@item{
+ @defform[(universe? universe?-expr)
+          #:contracts
+          ([universe?-expr (-> Any boolean?)])]{
+ ensure that what the event handlers produce is really an element of
+ @tech{UniverseState}.}
 }
 
 ]
@@ -1293,14 +1312,14 @@ translates into the design of two functions with the following headers,
 ;;   (make-bundle UniverseState [Listof mail?] [Listof iworld?])
 
 ;; UniverseState iworld? -> Bundle 
-;; next list of worlds when world w is joining 
-;; the universe in state s 
-(define (add-world s w) ...)
+;; next list of worlds when world @scheme[iw] is joining 
+;; the universe in state @scheme[s]
+(define (add-world s iw) ...)
 
 ;; UniverseState iworld? W2U -> Bundle 
-;; next list of worlds when world w is sending message m to 
-;; the universe in state s
-(define (process s p m) ...)
+;; next list of worlds when world @scheme[iw] is sending message @scheme[m] to 
+;; the universe in state @scheme[s]
+(define (process s iw m) ...)
 ))
 
 Finally, we must also decide how the messages affect the states of the
@@ -1418,12 +1437,12 @@ The preceding subsection dictates that our server program starts like this:
 ;;   (make-bundle [Listof iworld?] (list (make-mail iworld? GoMessage)) '())
 
 ;; [Listof iworld?] iworld? -> Result 
-;; add world w to the universe, when server is in state u
-(define (add-world u w) ...)
+;; add world @scheme[iw] to the universe, when server is in state @scheme[u]
+(define (add-world u @scheme[iw]) ...)
 
 ;; [Listof iworld?] iworld? StopMessage -> Result
-;; world w sent message m when server is in state u 
-(define (switch u w m) ...)
+;; world @scheme[iw] sent message @scheme[m] when server is in state @scheme[u] 
+(define (switch u iw m) ...)
 ])
 
 Although we could have re-used the generic contracts from this
