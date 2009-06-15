@@ -39,10 +39,28 @@
        (on-disconnect    ;; Universe World -> Result
         (lambda (u w) (list u)))
        (to-string #f)    ;; Universe -> String 
+       (universe? True)  ;; Universe -> Boolean 
        )
       
-      (field [universe universe0])
+      (field [universe #f])
       
+      ;; Symbol (U World Package) -> Boolean 
+      ;; does the new world differ from the old? 
+      ;; effect: if so, set world
+      (define/private (set-universe tag nw)
+        (define tcb tag)
+        (define wcb "universe? predicate")
+        (let ([b (universe? nw)])
+          (check-result wcb boolean? "Boolean" b)
+          (check-result tag (lambda _ b) "UniState (see universe?)" nw))
+        (if (equal? universe nw)
+            #t
+            (begin
+              (set! universe nw)
+              #f)))
+      
+      (set-universe "initial value" universe0)
+
       ;; -----------------------------------------------------------------------
       ;; dealing with events
       (define-syntax-rule 
@@ -58,7 +76,7 @@
             (with-handlers ([exn? handler])
               (define ___  (begin 'dummy body ...))
               (define-values (u mails bad) (bundle> 'name (name universe a ...)))
-              (set! universe u)
+              (set-universe (format "~a callback" 'name) u)
               (unless (boolean? to-string) (send gui add (to-string u)))
               (broadcast mails)
               (for-each (lambda (iw)
@@ -145,7 +163,7 @@
                 (loop))))
           ;; --- go universe go ---
           (set! iworlds '())
-          (set! universe universe0)
+          (set-universe "initial value" universe0)
           (send gui add "a new universe is up and running")
           (thread loop)))
       

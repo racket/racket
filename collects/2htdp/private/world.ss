@@ -52,6 +52,7 @@
        world0            ;; World
        (name #f)         ;; (U #f Symbol)
        (register #f)     ;; (U #f IP)
+       (world? True)     ;; World -> Boolean 
        (tick K))         ;; (U (World -> World) (list (World -> World) Nat))
       
       (init
@@ -63,21 +64,28 @@
        (record? #f)      ;; Boolean 
        )
       ;; -----------------------------------------------------------------------
-      (field (world  world0))
+      (field (world #f))
       
-      ;; (U World Package) -> Boolean 
+      ;; Symbol (U World Package) -> Boolean 
       ;; does the new world differ from the old? 
       ;; effect: if so, set world
-      (define/private (set-world new-world)
-        (when (package? new-world)
-          (broadcast (package-message new-world))
-          (set! new-world (package-world new-world)))
-        (if (equal? world new-world)
+      (define/private (set-world tag nw)
+        (define tcb tag)
+        (define wcb "world? predicate")
+        (when (package? nw)
+          (broadcast (package-message nw))
+          (set! nw (package-world nw)))
+        (let ([b (world? nw)])
+          (check-result wcb boolean? "Boolean" b)
+          (check-result tag (lambda _ b) "World (see world?)" nw))
+        (if (equal? world nw)
             #t
             (begin
-              (set! world new-world)
+              (set! world nw)
               #f)))
-      
+
+      (set-world "initial value" world0)
+
       ;; -----------------------------------------------------------------------
       (field [*out* #f] ;; (U #f OutputPort), where to send messages to 
              [*rec* (make-custodian)]) ;; Custodian, monitor traffic)
@@ -216,7 +224,8 @@
           (queue-callback 
            (lambda ()
              (with-handlers ([exn:break? (handler #f)][exn? (handler #t)])
-               (define changed-world? (set-world (transform world arg ...)))
+               (define tag (format "~a callback" 'transform))
+               (define changed-world? (set-world tag (transform world arg ...)))
                (unless changed-world? 
                  (when draw (pdraw))
                  (when (pstop) 

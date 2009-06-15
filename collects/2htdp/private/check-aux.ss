@@ -14,6 +14,7 @@
 
 (define (K w . r) w)
 (define (False w) #f)
+(define (True w) #t)
 
 ;                                                                               
 ;                                                                               

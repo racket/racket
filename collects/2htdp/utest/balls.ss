@@ -80,6 +80,7 @@
 (define (run _)
   (universe '() 
             (on-new add-world)
+            (universe? list?)
             (on-msg switch)
             (on-disconnect disconnect)))
 

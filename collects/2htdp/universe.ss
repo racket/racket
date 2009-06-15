@@ -113,6 +113,7 @@
   [on-key (function-with-arity 2)]
   [on-receive (function-with-arity 2)]
   [stop-when (function-with-arity 1)]
+  [world? (function-with-arity 1)]
   [register (lambda (tag)
               (lambda (p)
                 (syntax-case p ()
@@ -264,6 +265,7 @@
   [on-new (function-with-arity 2)]
   [on-msg (function-with-arity 3)]
   [on-disconnect (function-with-arity 2)]
+  [universe? (function-with-arity 1)]
   [to-string (function-with-arity 1)])
 
 (define-syntax (universe stx)
