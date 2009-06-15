@@ -873,10 +873,10 @@
                                          #:decode? [decode? #t]
                                          . s)
                          (inset (htl-append (/ gap-size 2)
-                                            o-bullet 
+                                            bullet 
                                             (para/kw #:width (- width
                                                                 (* 2 gap-size)
-                                                                (pict-width o-bullet) 
+                                                                (pict-width bullet) 
                                                                 (/ gap-size 2)) 
                                                      #:align align
                                                      #:fill? fill?
