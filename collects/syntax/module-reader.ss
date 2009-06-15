@@ -48,31 +48,27 @@
        #,@body
        (#%provide (rename lang:read read) (rename lang:read-syntax read-syntax)
                   read-properties get-info-getter get-info)
-       (define lang #,~lang)
-       (define rd   #,~read)
-       (define rds  #,~read-syntax)
-       (define w1   #,~wrapper1)
-       (define w2   #,~wrapper2)
-       (define w2*  (cond [(not w2) (lambda (in r _) (r in))]
-                          [(procedure-arity-includes? w2 3) w2]
-                          [else (lambda (in r _) (w2 in r))]))
-       (define whole? #,~whole-body-readers?)
        (define (lang:read in modpath line col pos)
-         ;; just read and discard them in this case
-         (read-properties in modpath line col pos)
-         (w2* in (lambda (in)
-                   (wrap-internal lang in rd whole?
-                                  w1 #f modpath #f line col pos))
-              #f))
+         (wrap-internal/wrapper #f #f in modpath line col pos))
        (define (lang:read-syntax src in modpath line col pos)
-         (define props (read-properties in modpath line col pos))
-         (syntax-property
-          (w2* in (lambda (in)
-                    (wrap-internal lang in (lambda (in) (rds src in)) whole?
-                                   w1 #t modpath src line col pos))
-               #t)
-          'module-language
-          (vector (syntax->datum modpath) 'get-info-getter props)))
+         (wrap-internal/wrapper #t src in modpath line col pos))
+       (define (wrap-internal/wrapper stx? src in modpath line col pos)
+         (let* ([props (read-properties in modpath line col pos)]
+                [lang #,~lang]
+                [read (if stx? (lambda (in) (#,~read-syntax src in)) #,~read)]
+                [w1 #,~wrapper1]
+                [w2 #,~wrapper2]
+                [whole? #,~whole-body-readers?]
+                [rd (lambda (in) (wrap-internal lang in read whole? w1 stx?
+                                                modpath src line col pos))]
+                [r (cond [(not w2) (rd in)]
+                         [(procedure-arity-includes? w2 3) (w2 in rd stx?)]
+                         [else (w2 in rd)])])
+           (if stx?
+             (syntax-property r 'module-language
+                              (vector (syntax->datum modpath) 'get-info-getter
+                                      props))
+             r)))
        (define (read-properties in modpath line col pos)
          ;; !!! TODO
          #f)
