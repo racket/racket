@@ -789,7 +789,7 @@
           [(thunk thunk*) (user-eval expr)]
           [else (error 'evaluator "internal error, bad message: ~e" msg)]))
       (user-eval expr)))
-  (define (make-output what out set-out! allow-link?)
+  (define (make-output what out set-out!)
     (cond [(not out) (open-output-nowhere)]
           [(and (procedure? out) (procedure-arity-includes? out 0)) (out)]
           [(output-port? out) out]
@@ -830,11 +830,9 @@
          (let-values ([(i o) (make-pipe)]) (set! input o) i)]
         [else (error 'make-evaluator "bad sandbox-input: ~e" inp)]))]
     [current-output-port (make-output 'output (sandbox-output)
-                                      (lambda (o) (set! output o))
-                                      #f)]
+                                      (lambda (o) (set! output o)))]
     [current-error-port (make-output 'error-output (sandbox-error-output)
-                                     (lambda (o) (set! error-output o))
-                                     #t)]
+                                     (lambda (o) (set! error-output o)))]
     ;; paths
     [current-library-collection-paths
      (filter directory-exists?
