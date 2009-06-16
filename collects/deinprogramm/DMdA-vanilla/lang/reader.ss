@@ -1,2 +1,2 @@
-(module reader syntax/module-reader
-  deinprogramm/DMdA-vanilla)
+#lang s-exp syntax/module-reader
+deinprogramm/DMdA-vanilla

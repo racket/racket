@@ -1,2 +1,2 @@
-(module reader syntax/module-reader
-  eopl/eopl)
+#lang s-exp syntax/module-reader
+eopl/eopl

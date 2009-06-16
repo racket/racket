@@ -1,2 +1,2 @@
-(module reader syntax/module-reader
-  #:language '(planet plt/dummy-package))
+#lang s-exp syntax/module-reader
+#:language '(planet plt/dummy-package)

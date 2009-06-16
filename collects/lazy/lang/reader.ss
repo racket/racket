@@ -1,2 +1,2 @@
-(module reader syntax/module-reader
-  lazy)
+#lang s-exp syntax/module-reader
+lazy

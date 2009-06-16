@@ -1,2 +1,2 @@
-(module reader syntax/module-reader
-  scheme/unit/lang)
+#lang s-exp syntax/module-reader
+scheme/unit/lang

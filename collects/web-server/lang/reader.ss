@@ -1,2 +1,2 @@
-(module reader syntax/module-reader
-  web-server/lang)
+#lang s-exp syntax/module-reader
+web-server/lang

@@ -1,2 +1,2 @@
-(module reader syntax/module-reader
-  setup/infotab)
+#lang s-exp syntax/module-reader
+setup/infotab

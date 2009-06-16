@@ -1,3 +1,2 @@
-
-(module reader syntax/module-reader
-  scheme)
+#lang s-exp syntax/module-reader
+scheme

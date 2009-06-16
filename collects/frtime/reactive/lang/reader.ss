@@ -1,2 +1,2 @@
-(module reader syntax/module-reader
-  frtime/reactive)
+#lang s-exp syntax/module-reader
+frtime/reactive

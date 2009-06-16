@@ -1,2 +1,2 @@
-(module reader syntax/module-reader
-  mred)
+#lang s-exp syntax/module-reader
+mred

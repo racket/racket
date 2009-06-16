@@ -1,2 +1,2 @@
-(module reader syntax/module-reader
-  slideshow)
+#lang s-exp syntax/module-reader
+slideshow

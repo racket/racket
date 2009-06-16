@@ -1,2 +1,2 @@
-(module reader syntax/module-reader
-  scheme/gui)
+#lang s-exp syntax/module-reader
+scheme/gui

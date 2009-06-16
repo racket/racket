@@ -1,2 +1,2 @@
-(module reader syntax/module-reader
-  mzscheme)
+#lang s-exp syntax/module-reader
+mzscheme
