@@ -6,6 +6,8 @@
 
 (require (for-syntax scheme/base))
 
+(define ar? procedure-arity-includes?)
+
 (define-syntax (provide-module-reader stx)
   (define (err str [sub #f])
     (raise-syntax-error 'syntax/module-reader str sub))
@@ -27,6 +29,8 @@
                 [else (err "got an unknown keyword" (car body))])))))
       checks ...
       (unless var (set! var default)) ...))
+  (define <lang-id> (datum->syntax stx 'language-module stx))
+  (define <data-id> (datum->syntax stx 'language-data   stx))
   (define (construct-reader lang body)
     (keywords body
               [#:language            ~lang                lang]
@@ -35,6 +39,7 @@
               [#:wrapper1            ~wrapper1            #'#f]
               [#:wrapper2            ~wrapper2            #'#f]
               [#:whole-body-readers? ~whole-body-readers? #'#f]
+              [#:info                ~info                #'#f]
       [(when (equal? (and lang #t) (and ~lang #t))
          (err (string-append
                "must specify either a module language, or #:language"
@@ -54,31 +59,68 @@
          (wrap-internal/wrapper #t src in modpath line col pos))
        (define (wrap-internal/wrapper stx? src in modpath line col pos)
          (let* ([props (read-properties in modpath line col pos)]
-                [lang #,~lang]
-                [read (if stx? (lambda (in) (#,~read-syntax src in)) #,~read)]
+                [lang (car  props)] [#,<lang-id> lang] ;\ visible in
+                [data (cadr props)] [#,<data-id> data] ;/ user-code
+                [read (if stx?
+                        (let ([rd #,~read-syntax]) (lambda (in) (rd src in)))
+                        #,~read)]
                 [w1 #,~wrapper1]
                 [w2 #,~wrapper2]
                 [whole? #,~whole-body-readers?]
                 [rd (lambda (in) (wrap-internal lang in read whole? w1 stx?
                                                 modpath src line col pos))]
                 [r (cond [(not w2) (rd in)]
-                         [(procedure-arity-includes? w2 3) (w2 in rd stx?)]
+                         [(ar? w2 3) (w2 in rd stx?)]
                          [else (w2 in rd)])])
            (if stx?
              (syntax-property r 'module-language
                               (vector (syntax->datum modpath) 'get-info-getter
                                       props))
              r)))
+       (define lang*
+         (let ([lang #,~lang])
+           (if (not (procedure? lang))
+             (list lang #f)
+             (cond [(ar? lang 5) lang]
+                   [(ar? lang 1) (lambda (in . _) (lang in))]
+                   [(ar? lang 0) (lambda _ (lang))]
+                   [else (raise-type-error
+                          'syntax/module-reader
+                          "language+reader procedure of 5, 1, or 0 arguments"
+                          lang)]))))
        (define (read-properties in modpath line col pos)
-         ;; !!! TODO
-         #f)
+         (if (not (procedure? lang*))
+           lang*
+           (call-with-values
+             (lambda () (parameterize ([current-input-port in])
+                          (lang* in modpath line col pos)))
+             (lambda xs
+               (case (length xs)
+                 [(2) xs] [(1) (list (car xs) #f)]
+                 [else (error 'syntax/module-reader
+                              "wrong number of results from ~a, ~a ~e"
+                              "the #:language function"
+                              "expected 1 or 2 values, got"
+                              (length xs))])))))
        (define (get-info in modpath line col pos)
          (get-info-getter (read-properties in modpath line col pos)))
        (define (get-info-getter props)
-         (define (language-info what)
+         (define (default-info what)
            (case what
-             ;; !!! TODO
+             [(module-language) (car props)]
+             ;; ... more?
              [else #f]))
+         (define info
+           (let ([info #,~info])
+             (if (or (not info) (and (procedure? info) (ar? info 2)))
+               info
+               (raise-type-error 'syntax/module-reader
+                                 "info procedure of 1 or 0 arguments" info))))
+         (define (language-info what)
+           (if info
+             (let ([r (info what default-info)])
+               (if (eq? r default-info) (default-info what) r))
+             (default-info what)))
          language-info))))
   (syntax-case stx ()
     [(_ lang body ...)
@@ -88,19 +130,16 @@
 
 (define (wrap-internal lang port read whole? wrapper stx?
                        modpath src line col pos)
-  (let* ([lang (if (procedure? lang)
-                 (parameterize ([current-input-port port]) (lang))
-                 lang)]
-         [lang (if stx? (datum->syntax #f lang modpath modpath) lang)]
+  (let* ([lang (if stx? (datum->syntax #f lang modpath modpath) lang)]
          [body (lambda ()
                  (if whole?
                    (read port)
                    (let loop ([a null])
                      (let ([v (read port)])
                        (if (eof-object? v) (reverse a) (loop (cons v a)))))))]
-         [body (cond [(not wrapper) (body)]
-                     [(procedure-arity-includes? wrapper 2) (wrapper body stx?)]
-                     [else (wrapper body)])]
+         [body (cond [(not wrapper)   (body)]
+                     [(ar? wrapper 2) (wrapper body stx?)]
+                     [else            (wrapper body)])]
          [all-loc (vector src line col pos
                           (let-values ([(l c p) (port-next-location port)])
                             (and p (- p pos))))]
