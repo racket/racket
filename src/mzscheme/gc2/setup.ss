@@ -68,9 +68,11 @@
     #f
     "xform-collects/xform/xform-mod.ss")
 ;; Readers:
-(go 'mzscheme/lang/reader #f #f)
-(go 'scheme/base/lang/reader #f #f)
-(go 'scheme/lang/reader #f #f)
+(map (lambda (r) (go r #f #f))
+     '(s-exp/lang/reader
+       mzscheme/lang/reader
+       scheme/base/lang/reader
+       scheme/lang/reader))
 
 (current-library-collection-paths 
  (list (build-path (current-directory) "xform-collects")))
