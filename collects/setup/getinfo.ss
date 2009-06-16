@@ -13,13 +13,14 @@
                         (map (lambda (x) (if (path? x) (path->string x) x))
                              coll-path))))
 
-;; HACK
-;; This requires the infotab reader, since otherwise the reader guard
-;; below will be invoked on it too, and that will make it throw up.
-;; One possible solution for this would be for the security guard to
-;; be provided with the file in question.  Another would be to force
-;; all info files to use `#lang' which means that we'll be able to
-;; query their module-language via the `get-info' protocol.
+;; HACK:
+;; This require is not used.  It just requires the file, since
+;; otherwise the reader guard below will be invoked on it too, and
+;; that will make it throw up.  One possible solution for this would
+;; be for the security guard to be provided with the file in question.
+;; Another would be to force all info files to use `#lang' which means
+;; that we'll be able to query their module-language via the
+;; `get-info' protocol.
 (require (prefix-in !!!HACK!!! setup/infotab/lang/reader))
 
 ;; get-info/full : path -> info/#f
