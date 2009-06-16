@@ -124,7 +124,7 @@ The possible combinations for @scheme[key], @scheme[mode], and
  mapping a character to an action in the default readtable means that
  the character's behavior is sensitive to parameters that affect the
  original character; for example, mapping a character to the same
- action is a curly brace @litchar["{"] in the default readtable means
+ action as a curly brace @litchar["{"] in the default readtable means
  that the character is disallowed when the
  @scheme[read-curly-brace-as-paren] parameter is set to @scheme[#f].}
 
