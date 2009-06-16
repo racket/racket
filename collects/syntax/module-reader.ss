@@ -105,13 +105,17 @@
        (define (get-info in modpath line col pos)
          (get-info-getter (read-properties in modpath line col pos)))
        (define (get-info-getter props)
+         (define lang (car  props))
+         (define data (cadr props))
          (define (default-info what)
            (case what
              [(module-language) (car props)]
              ;; ... more?
              [else #f]))
          (define info
-           (let ([info #,~info])
+           (let* ([#,<lang-id> lang] ;\ visible in
+                  [#,<data-id> data] ;/ user-code
+                  [info #,~info])
              (if (or (not info) (and (procedure? info) (ar? info 2)))
                info
                (raise-type-error 'syntax/module-reader
