@@ -13,6 +13,15 @@
                         (map (lambda (x) (if (path? x) (path->string x) x))
                              coll-path))))
 
+;; HACK
+;; This requires the infotab reader, since otherwise the reader guard
+;; below will be invoked on it too, and that will make it throw up.
+;; One possible solution for this would be for the security guard to
+;; be provided with the file in question.  Another would be to force
+;; all info files to use `#lang' which means that we'll be able to
+;; query their module-language via the `get-info' protocol.
+(require (prefix-in !!!HACK!!! setup/infotab/lang/reader))
+
 ;; get-info/full : path -> info/#f
 (define (get-info/full dir)
   (define file (build-path dir "info.ss"))
@@ -25,8 +34,7 @@
                     (lambda (x)
                       (if (eq? x 'setup/infotab/lang/reader)
                         x
-                        (err "has illegal #lang or #reader"))
-                      x)])
+                        (err "has illegal #lang or #reader")))])
       (with-input-from-file file
         (lambda ()
           (begin0 
