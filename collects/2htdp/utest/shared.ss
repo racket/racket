@@ -60,6 +60,7 @@
             (on-receive receive)
             (on-tick move)
 	    (name t)
+	    (check-with (lambda (w) (or (symbol? w) (number? w))))
             (register LOCALHOST)))
 
 (generate-report)

@@ -1,6 +1,7 @@
 #lang scheme/gui
 
 (require (for-syntax "syn-aux.ss")
+         "checked-cell.ss"
          "check-aux.ss"
          "timer.ss"    
          "last.ss"
@@ -39,28 +40,13 @@
        (on-disconnect    ;; Universe World -> Result
         (lambda (u w) (list u)))
        (to-string #f)    ;; Universe -> String 
-       (universe? True)  ;; Universe -> Boolean 
+       (check-with True) ;; Any -> Boolean 
        )
       
-      (field [universe #f])
-      
-      ;; Symbol (U World Package) -> Boolean 
-      ;; does the new world differ from the old? 
-      ;; effect: if so, set world
-      (define/private (set-universe tag nw)
-        (define tcb tag)
-        (define wcb "universe? predicate")
-        (let ([b (universe? nw)])
-          (check-result wcb boolean? "Boolean" b)
-          (check-result tag (lambda _ b) "UniState (see universe?)" nw))
-        (if (equal? universe nw)
-            #t
-            (begin
-              (set! universe nw)
-              #f)))
-      
-      (set-universe "initial value" universe0)
-
+      (field 
+       [universe 
+        (new checked-cell% [msg "UniSt"] [value0 universe0] [ok? check-with])])
+ 
       ;; -----------------------------------------------------------------------
       ;; dealing with events
       (define-syntax-rule 
@@ -75,8 +61,9 @@
             (define (handler e) (stop! e))
             (with-handlers ([exn? handler])
               (define ___  (begin 'dummy body ...))
-              (define-values (u mails bad) (bundle> 'name (name universe a ...)))
-              (set-universe (format "~a callback" 'name) u)
+              (define-values (u mails bad) 
+                (bundle> 'name (name (send universe get) a ...)))
+              (send universe set (format "~a callback" 'name) u)
               (unless (boolean? to-string) (send gui add (to-string u)))
               (broadcast mails)
               (for-each (lambda (iw)
@@ -124,7 +111,7 @@
       
       (field [iworlds   '()] ;; [Listof World]
              [gui      (new gui%
-                            [stop-server (lambda () (stop! universe))] 
+                            [stop-server (lambda () (stop! (send universe get)))] 
                             [stop-and-restart (lambda () (restart))])]
              [dr:custodian  (current-custodian)]
              [the-custodian (make-custodian)])
@@ -163,7 +150,7 @@
                 (loop))))
           ;; --- go universe go ---
           (set! iworlds '())
-          (set-universe "initial value" universe0)
+          (send universe set "initial value" universe0)
           (send gui add "a new universe is up and running")
           (thread loop)))
       

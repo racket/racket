@@ -3,6 +3,7 @@
 (require "check-aux.ss"
          "timer.ss"
          "last.ss"
+         "checked-cell.ss"
          htdp/image
          htdp/error
          mzlib/runtime-path
@@ -52,7 +53,7 @@
        world0            ;; World
        (name #f)         ;; (U #f Symbol)
        (register #f)     ;; (U #f IP)
-       (world? True)     ;; World -> Boolean 
+       (check-with True) ;; Any -> Boolean 
        (tick K))         ;; (U (World -> World) (list (World -> World) Nat))
       
       (init
@@ -64,28 +65,10 @@
        (record? #f)      ;; Boolean 
        )
       ;; -----------------------------------------------------------------------
-      (field (world #f))
+      (field
+       (world
+        (new checked-cell% [msg "World"] [value0 world0] [ok? check-with])))
       
-      ;; Symbol (U World Package) -> Boolean 
-      ;; does the new world differ from the old? 
-      ;; effect: if so, set world
-      (define/private (set-world tag nw)
-        (define tcb tag)
-        (define wcb "world? predicate")
-        (when (package? nw)
-          (broadcast (package-message nw))
-          (set! nw (package-world nw)))
-        (let ([b (world? nw)])
-          (check-result wcb boolean? "Boolean" b)
-          (check-result tag (lambda _ b) "World (see world?)" nw))
-        (if (equal? world nw)
-            #t
-            (begin
-              (set! world nw)
-              #f)))
-
-      (set-world "initial value" world0)
-
       ;; -----------------------------------------------------------------------
       (field [*out* #f] ;; (U #f OutputPort), where to send messages to 
              [*rec* (make-custodian)]) ;; Custodian, monitor traffic)
@@ -225,13 +208,17 @@
            (lambda ()
              (with-handlers ([exn:break? (handler #f)][exn? (handler #t)])
                (define tag (format "~a callback" 'transform))
-               (define changed-world? (set-world tag (transform world arg ...)))
-               (unless changed-world? 
-                 (when draw (pdraw))
-                 (when (pstop) 
-                   (callback-stop! 'name)
-                   (enable-images-button)))
-               changed-world?)))))
+               (define nw (transform (send world get) arg ...))
+               (when (package? nw)
+                 (broadcast (package-message nw))
+                 (set! nw (package-world nw)))
+               (let ([changed-world? (send world set tag nw)])
+                 (unless changed-world?
+                   (when draw (pdraw))
+                   (when (pstop) 
+                     (callback-stop! 'name)
+                     (enable-images-button)))
+                 changed-world?))))))
       
       ;; tick, tock : deal with a tick event for this world 
       (def/pub-cback (ptock) tick)
@@ -250,26 +237,26 @@
       (define/private (pdraw) (show (ppdraw)))
       
       (define/private (ppdraw)
-        (check-scene-result (name-of draw 'your-draw) (draw world)))
+        (check-scene-result (name-of draw 'your-draw) (draw (send world get))))
       
       ;; -----------------------------------------------------------------------
       ;; stop-when 
       (field [stop  stop-when])
       
       (define/private (pstop)
-        (define result (stop world))
+        (define result (stop (send world get)))
         (check-result (name-of stop 'your-stop-when) boolean? "boolean" result)
         result)
       
       ;; -----------------------------------------------------------------------
       ;; start & stop
       (define/public (callback-stop! msg)
-        (stop! world))
+        (stop! (send world get)))
       
       (define (handler re-raise)
         (lambda (e)
           (disable-images-button)
-          (stop! (if re-raise e world))))
+          (stop! (if re-raise e (send world get)))))
       
       (define/public (start!)
         (when draw (show-canvas))
@@ -283,7 +270,7 @@
       ;; initialize the world and run 
       (super-new)
       (start!)
-      (when (stop-when world) (stop! world))))))
+      (when (stop-when (send world get)) (stop! (send world get)))))))
 
 ;; -----------------------------------------------------------------------------
 (define-runtime-path break-btn:path '(lib "icons/break.png"))

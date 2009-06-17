@@ -25,6 +25,8 @@
 ;; Spec = (on-tick Expr) 
 ;;      | (on-tick Expr Expr) 
 ;; -- on-tick must specify a tick handler; it may specify a clock-tick rate
+;;      = (check-with Expr)
+;; -- check-with must specify a predicate 
 
 (define-keywords AllSpec
   [on-tick (function-with-arity
@@ -32,7 +34,8 @@
             except
             [(x rate) 
              #'(list (proc> 'on-tick (f2h x) 1) 
-                     (num> 'on-tick rate positive? "pos. number" "rate"))])])
+                     (num> 'on-tick rate positive? "pos. number" "rate"))])]
+  [check-with (function-with-arity 1)])
 
 ;                                     
 ;                                     
@@ -113,7 +116,6 @@
   [on-key (function-with-arity 2)]
   [on-receive (function-with-arity 2)]
   [stop-when (function-with-arity 1)]
-  [world? (function-with-arity 1)]
   [register (lambda (tag)
               (lambda (p)
                 (syntax-case p ()
@@ -265,7 +267,6 @@
   [on-new (function-with-arity 2)]
   [on-msg (function-with-arity 3)]
   [on-disconnect (function-with-arity 2)]
-  [universe? (function-with-arity 1)]
   [to-string (function-with-arity 1)])
 
 (define-syntax (universe stx)
