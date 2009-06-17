@@ -93,7 +93,9 @@
 	     [(list e) e]
 	     [l #`(case-> #,@l)]))]
         [(Vector: t)
-         #`(vectorof #,(t->c t))]
+         #`(vector-immutableof #,(t->c t))]
+        [(Box: t)
+         #`(box-immutable/c #,(t->c t))]
         [(Pair: t1 t2)
          #`(cons/c #,(t->c t1) #,(t->c t2))]
         [(Opaque: p? cert)
