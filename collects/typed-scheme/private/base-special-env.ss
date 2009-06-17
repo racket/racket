@@ -23,7 +23,14 @@
           (only-in (types convenience) [make-arr* make-arr])          
           (typecheck tc-structs)))
 
-(define-for-syntax (initialize-others) 
+(define-for-syntax (initialize-others)
+  (d-s srcloc
+       ([source : Univ]
+        [line : (*Un -Integer (-val #f))]
+        [column : (*Un -Integer (-val #f))]
+        [position : (*Un -Integer (-val #f))]
+        [span : (*Un -Integer (-val #f))])
+       ())
   (d-s date 
        ([second : -Number] [minute : -Number] [hour : -Number] [day : -Number] [month : -Number] 
         [year : -Number] [weekday : -Number] [year-day : -Number] [dst? : -Boolean] [time-zone-offset : -Number])
