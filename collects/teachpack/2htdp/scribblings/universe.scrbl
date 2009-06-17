@@ -161,7 +161,7 @@ The design of a world program demands that you come up with a data
 
 @defform/subs[#:id big-bang
               #:literals 
-	      (on-tick on-draw on-key on-mouse on-receive stop-when world? register record? name)
+	      (on-tick on-draw on-key on-mouse on-receive stop-when check-with register record? name)
               (big-bang state-expr clause ...)
               ([clause
 		 (on-tick tick-expr)
@@ -171,7 +171,7 @@ The design of a world program demands that you come up with a data
 		 (on-draw draw-expr)
 		 (on-draw draw-expr width-expr height-expr)
 		 (stop-when stop-expr)	   
-		 (world? world?-expr)	   
+		 (check-with world?-expr)	   
 		 (record? boolean-expr)
 		 (on-receive rec-expr)
 		 (register IP-expr)
@@ -417,7 +417,7 @@ All @tech{MouseEvent}s are represented via strings:
 
 @item{
 
-@defform[(world? world-expr?)
+@defform[(check-with world-expr?)
          #:contracts
          ([world-expr? (-> Any boolean?)])]{
  tell DrScheme to call the @scheme[world-expr?] function on the result of
@@ -1070,7 +1070,7 @@ The @tech{server} itself is created with a description that includes the
 
 @defform/subs[#:id universe
               #:literals 
-	      (on-new on-msg on-tick on-disconnect to-string universe?)
+	      (on-new on-msg on-tick on-disconnect to-string check-with)
               (universe state-expr clause ...)
               ([clause
 		 (on-new new-expr)
@@ -1079,7 +1079,7 @@ The @tech{server} itself is created with a description that includes the
 		 (on-tick tick-expr rate-expr)
 		 (on-disconnect dis-expr)
 		 (to-string render-expr)
-		 (universe? universe?-expr)
+		 (check-with universe?-expr)
 		 ])]{
 
 creates a server with a given state, @scheme[state-expr]. The
@@ -1181,7 +1181,7 @@ optional handlers:
 }
 
 @item{
- @defform[(universe? universe?-expr)
+ @defform[(check-with universe?-expr)
           #:contracts
           ([universe?-expr (-> Any boolean?)])]{
  ensure that what the event handlers produce is really an element of
