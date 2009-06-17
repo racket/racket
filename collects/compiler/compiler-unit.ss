@@ -149,7 +149,8 @@
                      [current-load-relative-directory dir]
                      ;; Verbose compilation manager:
                      [manager-trace-handler (if verbose?
-                                                (lambda (s) (printf "~a\n" s))
+                                                (let ([op (current-output-port)])
+                                                  (lambda (s) (fprintf op "~a\n" s)))
                                                 (manager-trace-handler))]
                      [manager-compile-notify-handler
                       (lambda (path) ((compile-notify-handler) path))])

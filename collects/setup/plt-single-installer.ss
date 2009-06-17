@@ -76,5 +76,12 @@
                            setup:option@
                            set-options@
                            setup@)))))])
-          (thread-wait thd)
-          (custodian-shutdown-all cust))))))
+          (dynamic-wind
+              void
+              (lambda ()
+                (with-handlers ([exn:break? (lambda (exn)
+                                              (break-thread thd)
+                                              (sleep 0.1)
+                                              (raise exn))])
+                  (thread-wait thd)))
+              (lambda () (custodian-shutdown-all cust))))))))
