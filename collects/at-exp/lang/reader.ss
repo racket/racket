@@ -13,7 +13,7 @@
   (define (bad str eof?)
     ((if eof? raise-read-eof-error raise-read-error)
      (let ([msg "bad language path following at-exp"])
-       (if str (string-append msg ": " str) msg))
+       (if str (format "~a: ~a" msg str) msg))
      src line col pos
      (let-values ([(line col pos2) (port-next-location in)])
        (and pos pos2 (- pos2 pos)))))
