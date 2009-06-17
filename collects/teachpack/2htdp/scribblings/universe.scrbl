@@ -1181,7 +1181,7 @@ optional handlers:
 }
 
 @item{
- @defform[(check-with universe?-expr)
+ @defform/none[(check-with universe?-expr)
           #:contracts
           ([universe?-expr (-> Any boolean?)])]{
  ensure that what the event handlers produce is really an element of
