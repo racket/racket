@@ -62,9 +62,8 @@
       empty
       (code:line id (code:comment @#,seclink["intermediate-id"]{identifier}))
       (code:line prim-op (code:comment @#,seclink["intermediate-lambda-prim-op"]{primitive operation}))
-      'id
-      (code:line @#,elem{@schemevalfont{'}@scheme[quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
-      (code:line @#,elem{@schemevalfont{`}@scheme[quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
+      (code:line @#,elem{@schemevalfont{'}@scheme[_quoted]} (code:comment @#,seclink["beginner-abbr-quote"]{quoted value}))
+      (code:line @#,elem{@schemevalfont{`}@scheme[_quasiquoted]} (code:comment @#,seclink["beginner-abbr-quasiquote"]{quasiquote}))
       number
       true
       false
