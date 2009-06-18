@@ -235,7 +235,7 @@ them the specified types.
 
 The first form requires @scheme[r], giving it type @scheme[t].
 
-The second and third forms require the struct with name @scheme[name]
+@index["struct"]{The second and third forms} require the struct with name @scheme[name]
 with fields @scheme[f ...], where each field has type @scheme[t].  The
 third form allows a @scheme[parent] structure type to be specified.
 The parent type must already be a structure type known to Typed
@@ -244,7 +244,7 @@ structure predicate has the appropriate Typed Scheme filter type so
 that it may be used as a predicate in @scheme[if] expressions in Typed
 Scheme.
 
-The fourth case defines a new type @scheme[t].  @scheme[pred], imported from
+@index["opaque"]{The fourth case} defines a new type @scheme[t].  @scheme[pred], imported from
 module @scheme[m], is a predicate for this type.  The type is defined
 as precisely those values to which @scheme[pred] produces
 @scheme[#t].  @scheme[pred] must have type @scheme[(Any -> Boolean)].
