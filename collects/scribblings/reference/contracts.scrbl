@@ -301,6 +301,23 @@ type named by @scheme[struct-id], and whose field values match the
 Produces a contract on parameters whose values must match
 @scheme[contract].}
 
+@defproc[(hash/c [key contract?]
+                 [val contract?] 
+                 [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care])
+         contract?]{
+Produces a contract that recognizes @scheme[hash] tables with keys and values
+as specified by the @scheme[key] and @scheme[val] arguments.
+
+If the @scheme[immutable] argument is @scheme[#f] or
+@scheme['dont-care], then the resulting contract is a flat contract,
+and the @scheme[key] and @scheme[val] arguments must also be flat
+contracts. 
+
+If @scheme[immtable] is @scheme[#t], then the other arguments do not
+have to be flat contracts, the result is not a flat contract, and
+checking this contract involves making a copy of the hash-table.
+}
+
 
 @defform[(flat-rec-contract id flat-contract-expr ...)]
 
