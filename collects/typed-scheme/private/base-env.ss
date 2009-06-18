@@ -231,6 +231,8 @@
 [string-normalize-nfc (-> -String -String)]
 [string-normalize-nfkc (-> -String -String)]
 
+[string-copy (-> -String -String)]
+[string->immutable-string (-> -String -String)]
 [string-ref (-> -String N -Char)]
 [substring (cl->*
             (-> -String N -String)
