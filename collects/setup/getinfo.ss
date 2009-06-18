@@ -54,8 +54,20 @@
           ;; that is required).
           ;; We are, however, trusting that the bytecode form of the
           ;; file (if any) matches the source.
-          (dynamic-require file '#%info-lookup)]
+          (parameterize ([current-namespace (info-namespace)])
+            (dynamic-require file '#%info-lookup))]
          [else (err "does not contain a module of the right shape")])))
+
+(define info-namespace
+  ;; To avoid loading modules into the current namespace
+  ;; when get-info is called, load info modules in a separate
+  ;; namespace.
+  (let ([ns-box (make-weak-box #f)])
+    (lambda ()
+      (or (weak-box-value ns-box)
+          (let ([ns (make-base-empty-namespace)])
+            (set! ns-box (make-weak-box ns))
+            ns)))))
 
 ;; directory-record = (make-directory-record nat nat key path (listof symbol))
 ;; eg: (make-directory-record 1 0 '(lib "mzlib") #"mzlib" '(name))

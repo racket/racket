@@ -6,6 +6,7 @@
            "decode.ss"
            scheme/file
            scheme/sandbox
+           scheme/promise
            mzlib/string
            (for-syntax scheme/base))
 
@@ -23,6 +24,8 @@
            as-examples
            
            make-base-eval
+           make-base-eval-factory
+           make-eval-factory
            close-eval
 
            scribble-eval-handler)
@@ -240,7 +243,37 @@
        (parameterize ([sandbox-output 'string]
                       [sandbox-error-output 'string]
                       [sandbox-propagate-breaks #f])
-         (make-evaluator '(begin (require scheme/base)))))))
+         (make-evaluator '(begin))))))
+
+  (define (make-base-eval-factory mod-paths)
+    (let ([ns (delay (let ([ns (make-base-empty-namespace)])
+                       (parameterize ([current-namespace ns])
+                         (for-each
+                          (lambda (mod-path)
+                            (dynamic-require mod-path #f))
+                          mod-paths))
+                       ns))])
+      (lambda ()
+        (let ([ev (make-base-eval)]
+              [ns (force ns)])
+          ((scribble-eval-handler) 
+           ev #f
+           `(,(lambda ()
+                (for-each (lambda (mod-path) 
+                            (namespace-attach-module ns mod-path))
+                          mod-paths))))
+          ev))))
+
+  (define (make-eval-factory mod-paths)
+    (let ([base-factory (make-base-eval-factory mod-paths)])
+      (lambda ()
+        (let ([ev (base-factory)])
+          ((scribble-eval-handler) 
+           ev #f
+           `(,(lambda ()
+                (for-each (lambda (mod-path) (namespace-require mod-path))
+                          mod-paths))))
+          ev))))
 
   (define (close-eval e)
     (kill-evaluator e)

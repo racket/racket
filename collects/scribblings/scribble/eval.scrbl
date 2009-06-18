@@ -22,7 +22,8 @@ The @scheme[eval-expr] must produce a sandbox evaluator via
 @scheme[make-evaluator] or @scheme[make-module-evaluator] with the
 @scheme[sandbox-output] and @scheme[sandbox-error-output] parameters
 set to @scheme['string]. If @scheme[eval] is not provided, an
-evaluator is created using @scheme[make-base-eval].
+evaluator is created using @scheme[make-base-eval]. See also
+@scheme[make-eval-factory].
 
 Uses of @scheme[code:comment] and @schemeidfont{code:blank} are
 stipped from each @scheme[datum] before evaluation.
@@ -91,6 +92,21 @@ prompt, and with line of space after it.}
 Creates an evaluator using @scheme[(make-evaluator 'scheme/base)],
 setting sandbox parameters to disable limits, set the outputs to
 @scheme['string], and not add extra security guards.}
+
+
+@defproc[(make-base-eval-factory [mod-paths (listof module-path?)]) (-> (any/c . -> . any))]{
+
+Produces a function that is like @scheme[make-base-eval], except that
+each module in @scheme[mod-paths] is attached to the evaluator's
+namespace. The modules are loaded and instantiated once (when the
+returned @scheme[make-base-eval]-like function is called the first
+time) and then attached to each evaluator that is created.}
+
+
+@defproc[(make-eval-factory [mod-paths (listof module-path?)]) (-> (any/c . -> . any))]{
+
+Like @scheme[make-base-eval-factor], but each module in @scheme[mod-paths] is
+also required into the top-level environment for each generated evaluator.}
 
 
 @defproc[(close-eval [eval (any/c . -> . any)]) (one-of/c "")]{
