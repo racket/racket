@@ -3,7 +3,7 @@
          web-server/stuffers/store
          file/md5)
 
-(define hash/c
+(define hash-fun/c
   (bytes? . -> . bytes?))
 
 (define (hash-stuffer hash store)
@@ -19,6 +19,6 @@
   (hash-stuffer md5 (dir-store home)))
 
 (provide/contract
- [hash/c contract?]
- [hash-stuffer (hash/c store? . -> . (stuffer/c bytes? bytes?))]
+ [hash-fun/c contract?]
+ [hash-stuffer (hash-fun/c store? . -> . (stuffer/c bytes? bytes?))]
  [md5-stuffer (path-string? . -> . (stuffer/c bytes? bytes?))])
