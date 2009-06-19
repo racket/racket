@@ -77,6 +77,10 @@
     [(Bot:) (list (make-LBot))]
     [(TypeFilter: t p (lookup: idx)) (list (make-LTypeFilter t p idx))]
     [(NotTypeFilter: t p (lookup: idx)) (list (make-LNotTypeFilter t p idx))]
+    [(ImpFilter: a c)
+     (match* [(abo a) (abo c)]
+       [((list a*) (list c*)) (list (make-LImpFilter a* c*))]
+       [(_ _) null])]
     [_ null]))
 
 (define (merge-filter-sets fs)
@@ -95,6 +99,12 @@
 (d/c (apo lf s o)
   (-> LatentFilter/c Type/c Object? (or/c '() (list/c Filter/c)))
   (match* (lf s o)
+    [((ImpFilter: as cs) _ _)
+     (match* [(for/list ([a as]) (apo a s o))
+	      (for/list ([c cs]) (apo c s o))]
+       [((list (list a*) ...)
+	 (list (list c*) ...)) (list (make-ImpFilter a* c*))]
+       [(_ _) null])]
     [((LBot:) _ _) (list (make-Bot))]
     [((LNotTypeFilter: (? (lambda (t) (subtype s t)) t) (list) _) _ _) (list (make-Bot))]
     [((LTypeFilter: (? (lambda (t) (not (overlap s t))) t) (list) _) _ _) (list (make-Bot))]
@@ -135,7 +145,13 @@
     [((FilterSet: f1+ f1-) (T-FS:) (FilterSet: f3+ f3-)) (mk (combine null (append f1- f3-)))]
     ;; and
     [((FilterSet: f1+ f1-) (FilterSet: f2+ f2-) (F-FS:)) 
-     (mk (combine (append f1+ f2+) null))]
+     (mk (combine (append f1+ f2+)
+		  null
+		  #;
+		  (append (for/list ([f f1-])
+			    (make-ImpFilter f2+ f))
+			  (for/list ([f f2-])
+			    (make-ImpFilter f1+ f)))))]
     [(f f* f*) (mk f*)]
     ;; the student expansion
     [(f (T-FS:) (F-FS:)) (mk f)]

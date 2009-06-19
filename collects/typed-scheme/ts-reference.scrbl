@@ -129,6 +129,11 @@ result of @scheme[_loop] (and thus the result of the entire
 @defform[(let*: ([v : t e] ...) . body)]]]{Type-annotated versions of
 @scheme[letrec] and @scheme[let*].}
 
+@deftogether[[
+@defform[(let/cc: v : t . body)]
+@defform[(let/ec: v : t . body)]]]{Type-annotated versions of
+@scheme[let/cc] and @scheme[let/ec].}
+
 @subsection{Anonymous Functions}
 
 @defform/subs[(lambda: formals . body)

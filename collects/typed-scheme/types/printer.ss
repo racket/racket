@@ -15,7 +15,7 @@
 ;; has-name : Type -> Maybe[Symbol]
 (define (has-name? t) 
   (define ns ((current-type-names)))
-  (let/cc return
+  (let/ec return
     (unless print-aliases
       (return #f))
     (for-each

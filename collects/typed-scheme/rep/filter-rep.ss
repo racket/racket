@@ -7,7 +7,7 @@
   (flat-named-contract
    'Filter
    (λ (e)
-     (and (Filter? e) (not (FilterSet? e))))))
+     (and (Filter? e) (not (NoFilter? e)) (not (FilterSet? e))))))
 
 (define LatentFilter/c
   (flat-named-contract
@@ -30,6 +30,9 @@
   [#:frees (combine-frees (map free-vars* (cons t p)))
 	   (combine-frees (map free-idxs* (cons t p)))]
   [#:fold-rhs (*NotTypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])
+
+;; implication
+(df ImpFilter ([a (listof Filter/c)] [c (listof Filter/c)]))
 
 (df FilterSet (thn els)
      [#:frees (combine-frees (map free-vars* (append thn els)))
@@ -63,6 +66,9 @@
 (dlf LNotTypeFilter ([t Type?] [p (listof PathElem?)] [idx index/c])
   [#:frees (lambda (frees*) (combine-frees (map (compose make-invariant frees*) (cons t p))))]
   [#:fold-rhs (*LNotTypeFilter (type-rec-id t) (map pathelem-rec-id p) idx)])
+
+;; implication
+(df LImpFilter ([a (listof LatentFilter/c)] [c (listof LatentFilter/c)]))
 
 (dlf LFilterSet (thn els)
      [#:frees (combine-frees (map free-vars* (append thn els)))

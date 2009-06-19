@@ -50,7 +50,7 @@
 
 (define (type->contract ty fail)
   (define vars (make-parameter '()))
-  (let/cc exit
+  (let/ec exit
     (let loop ([ty ty] [pos? #t])
       (define (t->c t) (loop t pos?))
       (define (t->c/neg t) (loop t (not pos?)))

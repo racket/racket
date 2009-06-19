@@ -429,3 +429,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (syntax-parse stx
     [(_ p:id)
      (quasisyntax/loc stx #,(internal #'(declare-refinement-internal p)))]))
+
+(define-syntaxes (let/cc: let/ec:)
+  (let ()
+    (define ((mk l/c) stx)      
+      (syntax-parse stx
+       #:literals (:)
+       [(_ k:id : t . body)
+	(quasisyntax/loc stx
+   	  (let/cc #,(annotate-names #'([k : t]) stx) . body))]))
+    (values (mk #'let/cc) (mk #'let/ec))))
