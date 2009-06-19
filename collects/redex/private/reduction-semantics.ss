@@ -26,15 +26,19 @@
    (identifier-prune-lexical-context #'whatever '(#%app #%datum))
    (let loop ([stx stx])
      (syntax-case stx (quote)
-       [(quote x) (list (quote-syntax/prune quote)
-                        (syntax->datum #'x))]
-       [(a . b) (cons (loop #'a) (loop #'b))]
+       [(quote x)
+        (list (quote-syntax/prune quote)
+              (syntax->datum #'x))]
+       [(a . b)
+        (datum->syntax (identifier-prune-lexical-context #'whatever '(#%app))
+                       (cons (loop #'a) (loop #'b))
+                       stx)]
        [x 
         (identifier? #'x)
-        (datum->syntax (identifier-prune-lexical-context #'x)
-                       (syntax-e #'x))]
-       [() '()]
-       [_ (syntax->datum stx)]))))
+        (identifier-prune-lexical-context #'x)]
+       [() (datum->syntax #f '() stx)]
+       [_ (datum->syntax (identifier-prune-lexical-context #'whatever '(#%datum))
+                         (syntax->datum stx) stx)]))))
 
 (define-syntax (term-match/single stx)
   (syntax-case stx ()
@@ -1005,21 +1009,26 @@
   (define (internal-define-metafunction orig-stx prev-metafunction stx relation?)
     (syntax-case stx ()
       [(lang . rest)
-       (let ([syn-error-name (if prev-metafunction
-                                 'define-metafunction/extension
-                                 'define-metafunction)])
+       (let ([syn-error-name (if relation?
+                                 'define-relation
+                                 (if prev-metafunction
+                                     'define-metafunction/extension
+                                     'define-metafunction))])
          (unless (identifier? #'lang)
            (raise-syntax-error syn-error-name "expected an identifier in the language position" orig-stx #'lang))
          (when (null? (syntax-e #'rest))
            (raise-syntax-error syn-error-name "no clauses" orig-stx))
          (prune-syntax
           (let-values ([(contract-name dom-ctcs codom-contract pats)
-                        (split-out-contract orig-stx syn-error-name #'rest)])
-            (with-syntax ([(((original-names lhs-clauses ...) rhs stuff ...) ...) pats]
+                        (split-out-contract orig-stx syn-error-name #'rest relation?)])
+            (with-syntax ([(((original-names lhs-clauses ...) raw-rhses ...) ...) pats]
                           [(lhs-for-lw ...)
-                           (with-syntax ([((lhs-for-lw _ _ ...) ...) pats])
+                           (with-syntax ([((lhs-for-lw _ ...) ...) pats])
                              (map (λ (x) (to-lw/proc (datum->syntax #f (cdr (syntax-e x)) x)))
                                   (syntax->list #'(lhs-for-lw ...))))])
+              (with-syntax ([((rhs stuff ...) ...) (if relation?
+                                                       #'((,(and (term raw-rhses) ...)) ...)
+                                                       #'((raw-rhses ...) ...))])
               (parameterize ([is-term-fn? 
                               (let ([names (syntax->list #'(original-names ...))])
                                 (λ (x) (and (not (null? names))
@@ -1057,7 +1066,7 @@
                         (with-syntax ([(side-conditions-rewritten ...) 
                                        (map (λ (x) (rewrite-side-conditions/check-errs
                                                     lang-nts
-                                                    'define-metafunction
+                                                    syn-error-name
                                                     #t
                                                     x))
                                             (syntax->list (syntax ((side-condition lhs tl-withs) ...))))]
@@ -1065,18 +1074,19 @@
                                        (and dom-ctcs
                                             (rewrite-side-conditions/check-errs
                                              lang-nts
-                                             'define-metafunction
+                                             syn-error-name
                                              #f
                                              dom-ctcs))]
                                       [codom-side-conditions-rewritten
                                        (rewrite-side-conditions/check-errs
                                         lang-nts
-                                        'define-metafunction
+                                        syn-error-name
                                         #f
                                         codom-contract)]
                                       [(rhs-fns ...)
                                        (map (λ (lhs rhs bindings)
-                                              (let-values ([(names names/ellipses) (extract-names lang-nts 'define-metafunction #t lhs)])
+                                              (let-values ([(names names/ellipses) 
+                                                            (extract-names lang-nts syn-error-name #t lhs)])
                                                 (with-syntax ([(names ...) names]
                                                               [(names/ellipses ...) names/ellipses]
                                                               [rhs rhs]
@@ -1150,7 +1160,7 @@
                                     #,relation?)))
                                (term-define-fn name name2))
                            'disappeared-use
-                           (map syntax-local-introduce (syntax->list #'(original-names ...))))))))))))))]
+                           (map syntax-local-introduce (syntax->list #'(original-names ...)))))))))))))))]
       [(_ prev-metafunction name lang clauses ...)
        (begin
          (unless (identifier? #'name)
@@ -1166,11 +1176,11 @@
           (syntax->list (syntax (clauses ...))))
          (raise-syntax-error 'define-metafunction "missing error check for bad syntax" stx))]))
 
-  (define (split-out-contract stx syn-error-name rest)
+  (define (split-out-contract stx syn-error-name rest relation?)
     ;; initial test determines if a contract is specified or not
     (cond
       [(pair? (syntax-e (car (syntax->list rest))))
-       (values #f #f #'any (check-clauses stx syn-error-name rest))]
+       (values #f #f #'any (check-clauses stx syn-error-name rest relation?))]
       [else
        (syntax-case rest ()
          [(id colon more ...)
@@ -1187,7 +1197,7 @@
                    (raise-syntax-error syn-error-name "expected a range contract to follow the arrow" stx (car more)))
                  (let ([doms (reverse dom-pats)]
                        [codomain (cadr more)]
-                       [clauses (check-clauses stx syn-error-name (cddr more))])
+                       [clauses (check-clauses stx syn-error-name (cddr more) relation?)])
                    (values #'id doms codomain clauses))]
                 [else
                  (loop (cdr more) (cons (car more) dom-pats))])))]
@@ -1198,19 +1208,21 @@
            stx
            rest)])]))
            
-  (define (check-clauses stx syn-error-name rest)
+  (define (check-clauses stx syn-error-name rest relation?)
     (syntax-case rest ()
       [([(lhs ...) roc1 roc2 ...] ...)
        rest]
       [([(lhs ...) rhs ...] ...)
-       (begin
-         (for-each 
-          (λ (clause)
-            (syntax-case clause ()
-              [(a b) (void)]
-              [x (raise-syntax-error syn-error-name "expected a pattern and a right-hand side" stx clause)]))
-          (syntax->list #'([(lhs ...) rhs ...] ...)))
-         (raise-syntax-error syn-error-name "error checking failed.3" stx))]
+       (if relation?
+           rest
+           (begin
+             (for-each 
+              (λ (clause)
+                (syntax-case clause ()
+                  [(a b) (void)]
+                  [x (raise-syntax-error syn-error-name "expected a pattern and a right-hand side" stx clause)]))
+              (syntax->list #'([(lhs ...) rhs ...] ...)))
+             (raise-syntax-error syn-error-name "error checking failed.3" stx)))]
       [([x roc ...] ...)
        (begin
          (for-each 

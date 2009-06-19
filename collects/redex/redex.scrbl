@@ -982,11 +982,8 @@ and @scheme[#f] otherwise.
 
 @defform/subs[#:literals ()
               (define-relation language-exp
-               [(name @#,ttpattern ...) @#,tttterm extras ...] 
-               ...)
-               ([extras (side-condition scheme-expression)
-                        (where tl-pat @#,tttterm)]
-                [tl-pat identifier (tl-pat-ele ...)]
+               [(name @#,ttpattern ...) @#,tttterm ...] ...)
+               ([tl-pat identifier (tl-pat-ele ...)]
                 [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
 
 The @scheme[define-relation] form builds a relation on
@@ -995,21 +992,22 @@ expressions. The first argument indicates the language used
 to resolve non-terminals in the pattern expressions. Each of
 the rhs-expressions is implicitly wrapped in @|tttterm|. 
 
-If specified, the side-conditions are collected with 
-@scheme[and] and used as guards on the case being matched. The
-argument to each side-condition should be a Scheme
-expression, and the pattern variables in the @|ttpattern| are
-bound in that expression.
+Relations are like metafunctions in that they are called with
+arguments and return results (unlike in, say, prolog, where a relation
+definition would be able to synthesize some of the arguments based on
+the values of others).
 
 Unlike metafunctions, relations check all possible ways to match each
 case, looking for a true result and if none of the clauses match, then
-the result is @scheme[#f].
+the result is @scheme[#f]. If there are multiple expressions on
+the right-hand side of a relation, then all of them must be satisfied
+in order for that clause of the relation to be satisfied.
 
-Note that relations are assumed to always return the same results
-for the same inputs, and their results are cached, unless
+Note that relations are assumed to always return the same results for
+the same inputs, and their results are cached, unless
 @scheme[caching-enable?] is set to @scheme[#f]. Accordingly, if a
-metafunction is called with the same inputs twice, then its body is
-only evaluated a single time.
+relation is called with the same inputs twice, then its right-hand
+sides are evaluated only once.
 }
 
 @defparam[current-traced-metafunctions traced-metafunctions (or/c 'all (listof symbol?))]{

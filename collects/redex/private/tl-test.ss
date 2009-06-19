@@ -656,6 +656,23 @@
     (test (term (<: 1 2 1 3 4)) #t)
     (test (term (<: 1 2 3 1 4)) #t)
     (test (term (<: 1 2 3 4 1)) #t))
+  
+  (let ()
+    (define-relation empty-language
+      [(<: number_1 number_1)])
+    (test (term (<: 1 1)) #t)
+    (test (term (<: 1 2)) #f))
+  
+  (let ()
+    (define-relation empty-language
+      [(<: number_1 number_2 number_3)
+       ,(= (term number_1) (term number_2))
+       ,(= (term number_2) (term number_3))])
+    (test (term (<: 1 2 3)) #f)
+    (test (term (<: 1 1 2)) #f)
+    (test (term (<: 1 2 2)) #f)
+    (test (term (<: 1 1 1)) #t))
+  
  
 ;                    ;;                         ;                                        ;;                    ;                 
 ;                     ;                 ;                                                 ;            ;                         
