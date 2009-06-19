@@ -1075,7 +1075,6 @@ improve method arity mismatch contract violation error messages?
                                                 (list (slc #'exported-selector-ids) ...)
                                                 (list mutator-id-info ...)
                                                 super-id)
-                                          ;#;
                                           (list (slc #'-struct:struct-name)
                                                 (slc #'constructor-new-name)
                                                 (slc #'predicate-new-name)
