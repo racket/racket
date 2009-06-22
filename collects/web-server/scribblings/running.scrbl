@@ -25,6 +25,7 @@ web-server/insta
 ]
 
 And press @onscreen["Run"]. A Web browser will open up showing your new servlet.
+This servlet will only be accessible from your local machine.
 
 Behind the scenes, DrScheme has used @scheme[serve/servlet] to start a new server
 that uses your @scheme[start] function as the servlet. 

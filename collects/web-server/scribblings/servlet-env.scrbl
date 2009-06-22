@@ -39,6 +39,12 @@ Suppose you'd like to change the port to something else, change the last line to
                #:port 8080)
 ]
 
+Suppose you want to accept connections from external machines:
+@schemeblock[
+(serve/servlet my-app 
+               #:listen-ip #f)
+]
+
 By default the URL for your servlet is @filepath{http://localhost:8000/servlets/standalone.ss}, 
 suppose you wanted it to be @filepath{http://localhost:8000/hello.ss}:
 @schemeblock[
@@ -155,7 +161,9 @@ and if @scheme[serve/servlet] is run in another module.
  
  Advanced users may need the following options:
  
- The server listens on @scheme[listen-ip] and port @scheme[port].
+ The server listens on @scheme[listen-ip] and port @scheme[port]. If @scheme[listen-ip] is @scheme[#f], then the server accepts 
+ connections to all of the listening machine's addresses. Otherwise, the server accepts connections only at the interface(s) associated with the given string.
+ For example, providing @scheme["127.0.0.1"] (the default) as @scheme[listen-ip] creates a server that accepts only connections to @scheme["127.0.0.1"] (the loopback interface) from the local machine.
  
  If @scheme[ssl-cert] and @scheme[ssl-key] are not false, then the server runs in HTTPS mode with @scheme[ssl-cert]
  and @scheme[ssl-key] as the certificates and private keys.
