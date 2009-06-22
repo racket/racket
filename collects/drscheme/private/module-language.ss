@@ -282,7 +282,7 @@
                               (namespace-require 'scheme/base)
                               (compile 
                                `(namespace-require '',(string->symbol (path->string short-program-name))))))
-                          #:cmdline null))))
+                          #:cmdline '("-U" "--")))))
                     (let ([make-launcher (if gui? make-mred-launcher make-mzscheme-launcher)])
                       (make-launcher (list "-qt-" (path->string program-filename))
                                      executable-filename))))))))
