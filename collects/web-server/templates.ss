@@ -15,12 +15,6 @@
     [(_ p)
      (string->xexpr (include-template p))]))
 
-(define (string->xexpr s)
-  (with-input-from-string 
-   s
-   (lambda ()
-     (xml->xexpr (document-element (read-xml))))))
-
 (define-syntax in
   (syntax-rules ()
     [(_ x xs e ...)

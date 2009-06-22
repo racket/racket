@@ -110,7 +110,6 @@ and if @scheme[serve/servlet] is run in another module.
                         [#:banner? banner? boolean? (not command-line?)]
                         [#:listen-ip listen-ip (or/c false/c string?) "127.0.0.1"]
                         [#:port port number? 8000]
-                        [#:ssl? ssl? boolean? #f]
                         [#:servlet-path servlet-path string?
                                         "/servlets/standalone.ss"]
                         [#:servlet-regexp servlet-regexp regexp?
@@ -135,6 +134,10 @@ and if @scheme[serve/servlet] is run in another module.
                                                       "not-found.html"))]
                         [#:mime-types-path mime-types-path path-string?
                                            ....]
+                        [#:ssl? ssl? boolean? #f]
+                        [#:ssl-cert ssl-cert (or/c false/c path-string?) (and ssl? (build-path server-root-path "server-cert.pem"))]
+                        [#:ssl-key ssl-key (or/c false/c path-string?) (and ssl? (build-path server-root-path "private-key.pem"))]
+
                         [#:log-file log-file (or/c false/c path-string?) #f]
                         [#:log-format log-format log-format/c 'apache-default])
                        void]{
@@ -154,8 +157,8 @@ and if @scheme[serve/servlet] is run in another module.
  
  The server listens on @scheme[listen-ip] and port @scheme[port].
  
- If @scheme[ssl?] is true, then the server runs in HTTPS mode with @filepath{<server-root-path>/server-cert.pem}
- and @filepath{<server-root-path>/private-key.pem} as the certificates and private keys.
+ If @scheme[ssl-cert] and @scheme[ssl-key] are not false, then the server runs in HTTPS mode with @scheme[ssl-cert]
+ and @scheme[ssl-key] as the certificates and private keys.
  
  The servlet is loaded with @scheme[manager]
  as its continuation manager. (The default manager limits the amount of memory to 64 MB and

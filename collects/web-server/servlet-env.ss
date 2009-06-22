@@ -45,6 +45,8 @@
                   #:listen-ip (or/c false/c string?)
                   #:port number?
                   #:ssl? boolean?
+                  #:ssl-cert (or/c false/c path-string?)
+                  #:ssl-key (or/c false/c path-string?)
                   #:manager manager?
                   #:servlet-namespace (listof module-path?)
                   #:server-root-path path-string?
@@ -84,9 +86,7 @@
          #:listen-ip
          [listen-ip "127.0.0.1"]
          #:port
-         [the-port 8000]
-         #:ssl?
-         [ssl? #f]
+         [the-port 8000]         
 
          #:manager
          [manager
@@ -124,6 +124,13 @@
                             (if (file-exists? p)
                               p
                               (build-path default-web-root "mime.types")))]
+         
+         #:ssl?
+         [ssl? #f]
+         #:ssl-cert
+         [ssl-cert (and ssl? (build-path server-root-path "server-cert.pem"))]
+         #:ssl-key
+         [ssl-key (and ssl? (build-path server-root-path "private-key.pem"))]
 
          #:log-file
          [log-file #f]
@@ -169,8 +176,5 @@
    #:banner? banner?   
    #:listen-ip listen-ip
    #:port the-port
-   #:ssl-keys
-   (if ssl?
-       (cons (build-path server-root-path "server-cert.pem")
-             (build-path server-root-path "private-key.pem"))
-       #f)))
+   #:ssl-cert ssl-cert
+   #:ssl-key ssl-key))
