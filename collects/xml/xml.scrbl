@@ -374,7 +374,7 @@ A @deftech{plist dictionary} is a value that could be created by an
 expression matching the following @scheme[_dict-expr] grammar:
 
 @schemegrammar*[
-#:literals (list)
+#:literals (list quote)
 [dict-expr (list 'dict assoc-pair ...)]
 [assoc-pair (list 'assoc-pair string pl-value)]
 [pl-value string
