@@ -91,7 +91,7 @@
                       (car x))
                      (current-continuation-marks)
                      x)))))
-    [(permissive?) (true)]
+    [(permissive-xexprs) (true)]
     (else (false
            (make-exn:invalid-xexpr
             (format (string-append
@@ -132,7 +132,7 @@
   (if (symbol? (car attr))
       (if (pair? (cdr attr))
           (if (or (string? (cadr attr))
-                  (permissive?))
+                  (permissive-xexprs))
               (true)
               (false (make-exn:invalid-xexpr
                       (format "Expected a string, given ~a" (cadr attr))
@@ -189,7 +189,7 @@
         [(entity? x) (entity-text x)]
         [(or (comment? x) (p-i? x) (cdata? x)) x]
         [(document? x) (error 'xml->xexpr "Expected content, given ~e\nUse document-element to extract the content." x)]
-        [(permissive?) x]
+        [(permissive-xexprs) x]
         [else (error 'xml->xexpr "Expected content, given ~e" x)]))))
 
 ;; attribute->srep : Attribute -> Attribute-srep

@@ -106,7 +106,7 @@ Represents an attribute within an element.}
 }
 
 @defthing[permissive/c contract?]{
- If @scheme[(permissive?)] is @scheme[#t], then equivalent to @scheme[any/c], otherwise equivalent to @scheme[(make-none/c 'permissive)]}
+ If @scheme[(permissive-xexprs)] is @scheme[#t], then equivalent to @scheme[any/c], otherwise equivalent to @scheme[(make-none/c 'permissive)]}
 
 @defstruct[(entity source) ([text (or/c symbol? exact-nonnegative-integer?)])]{
 
@@ -246,7 +246,7 @@ like @scheme[display-xml].}
 
 @section{XML and X-expression Conversions}
 
-@defboolparam[permissive? v]{
+@defboolparam[permissive-xexprs v]{
  If this is set to non-false, then @scheme[xml->xexpr] will allow
  non-XML objects, such as other structs, in the content of the converted XML
  and leave them in place in the resulting ``@tech{X-expression}''.
@@ -255,7 +255,7 @@ like @scheme[display-xml].}
 @defproc[(xml->xexpr [content content/c]) xexpr/c]{
 
 Converts document content into an @tech{X-expression}, using
-@scheme[permissive?] to determine if foreign objects are allowed.}
+@scheme[permissive-xexprs] to determine if foreign objects are allowed.}
 
 @defproc[(xexpr->xml [xexpr xexpr/c]) content/c]{
 

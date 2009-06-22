@@ -566,7 +566,7 @@ END
       ; XXX correct-xexpr?
       
       (test-suite
-       "permissive?"
+       "permissive-xexprs"
        (test-exn
         "Non-permissive"
         (lambda (exn)
@@ -577,7 +577,7 @@ END
        
        (test-false
         "Permissive"
-        (parameterize ([permissive? #t])
+        (parameterize ([permissive-xexprs #t])
           (xml->xexpr #f))))))
    
    (local

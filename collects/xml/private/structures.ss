@@ -54,19 +54,19 @@
 ; Comment = (make-comment String)
 (define-struct comment (text))
 
-; permissive? : parameter bool
-(define permissive? (make-parameter #f))
+; permissive-xexprs : parameter bool
+(define permissive-xexprs (make-parameter #f))
 
 (define permissive/c
   (make-proj-contract 'permissive/c
                       (lambda (pos neg src-info name)
                         (lambda (v)
-                          (if (permissive?)
+                          (if (permissive-xexprs)
                               v
                               (raise-contract-error
                                v src-info pos name "not in permissive mode"))))
                       (lambda (v)
-                        (permissive?))))
+                        (permissive-xexprs))))
 
 ; content? : TST -> Bool
 (define content/c
@@ -112,7 +112,7 @@
                              [stop location/c]
                              [name symbol?]
                              [value (or/c string? permissive/c)]))
- [permissive? (parameter/c boolean?)]
+ [permissive-xexprs (parameter/c boolean?)]
  [permissive/c contract?]
  [content/c contract?] 
  (struct (pcdata source) ([start location/c]
