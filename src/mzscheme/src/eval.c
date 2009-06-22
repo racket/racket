@@ -10276,11 +10276,12 @@ void scheme_pop_prefix(Scheme_Object **rs)
    CLOS_PRESERVES_MARKS. (Maybe check them in the JIT pass?) */
 
 #define VALID_NOT 0
-#define VALID_VAL 1
-#define VALID_BOX 2
-#define VALID_TOPLEVELS 3
-#define VALID_VAL_NOCLEAR 4
-#define VALID_BOX_NOCLEAR 5
+#define VALID_UNINIT 1
+#define VALID_VAL 2
+#define VALID_BOX 3
+#define VALID_TOPLEVELS 4
+#define VALID_VAL_NOCLEAR 5
+#define VALID_BOX_NOCLEAR 6
 
 typedef struct Validate_Clearing {
   MZTAG_IF_REQUIRED
@@ -10601,7 +10602,7 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
     if (q == self_pos)
       self_pos_in_closure = i;
     p = q + delta;
-    if ((q < 0) || (p >= depth) || (stack[p] == VALID_NOT))
+    if ((q < 0) || (p >= depth) || (stack[p] <= VALID_UNINIT))
       scheme_ill_formed_code(port);
     vld = stack[p];
     if (vld == VALID_VAL_NOCLEAR)
@@ -10644,11 +10645,18 @@ static void check_self_call_valid(Scheme_Object *rator, Mz_CPort *port, struct V
     int i, pos;
     for (i = vc->self_count; i--; ) {
       pos = i + vc->self_start;
-      if (stack[pos] == VALID_NOT)
+      if (stack[pos] <= VALID_UNINIT)
         scheme_ill_formed_code(port);
     }
   }
 }
+
+#define CAN_RESET_STACK_SLOT 0
+#if !CAN_RESET_STACK_SLOT
+# define WHEN_CAN_RESET_STACK_SLOT(x) 0
+#else
+# define WHEN_CAN_RESET_STACK_SLOT(x) (x)
+#endif
 
 void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr, 
                           char *stack, Validate_TLS tls,
@@ -11008,9 +11016,9 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 					   || ((stack[p] != VALID_BOX)
                                                && (stack[p] != VALID_BOX_NOCLEAR))))
 	    || (!SCHEME_LET_AUTOBOX(lv) && ((p >= letlimit)
-					    || ((stack[p] != VALID_VAL) 
-                                                && (stack[p] != VALID_VAL_NOCLEAR) 
-                                                && (stack[p] != VALID_NOT)))))
+					    || (WHEN_CAN_RESET_STACK_SLOT(stack[p] != VALID_VAL) 
+                                                && WHEN_CAN_RESET_STACK_SLOT(stack[p] != VALID_VAL_NOCLEAR) 
+                                                && (stack[p] != VALID_UNINIT)))))
 	  scheme_ill_formed_code(port);
 
 	if (!SCHEME_LET_AUTOBOX(lv)) {
@@ -11039,7 +11047,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 	}
       } else {
 	delta -= c;
-	memset(stack + delta, VALID_NOT, c);
+	memset(stack + delta, VALID_UNINIT, c);
       }
 
 
@@ -11063,6 +11071,10 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
       }
 
       for (i = 0; i < c; i++) {
+#if !CAN_RESET_STACK_SLOT
+        if (stack[delta + i] != VALID_UNINIT)
+          scheme_ill_formed_code(port);
+#endif
 	stack[delta + i] = VALID_VAL;
       }
 
@@ -11083,10 +11095,16 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
       --delta;
       if (delta < 0)
 	scheme_ill_formed_code(port);
-      stack[delta] = VALID_NOT;
+      stack[delta] = VALID_UNINIT;
 
       scheme_validate_expr(port, lo->value, stack, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts,
                            NULL, 0, 0, vc, 0);
+
+#if !CAN_RESET_STACK_SLOT
+      if (stack[delta] != VALID_UNINIT)
+        scheme_ill_formed_code(port);
+#endif
+      
       stack[delta] = VALID_VAL;
 
       expr = lo->body;
