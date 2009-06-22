@@ -3223,7 +3223,7 @@ static void garbage_collect(NewGC *gc, int force_full)
     gc->last_full_mem_use = gc->memory_in_use;
 
   /* inform the system (if it wants us to) that we're done with collection */
-  if (gc->GC_collect_start_callback)
+  if (gc->GC_collect_end_callback)
     gc->GC_collect_end_callback();
   if (gc->GC_collect_inform_callback)
     gc->GC_collect_inform_callback(gc->gc_full, old_mem_use + old_gen0, gc->memory_in_use);
