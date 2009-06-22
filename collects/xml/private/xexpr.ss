@@ -1,6 +1,7 @@
 #lang scheme
 (require scheme/pretty
          "structures.ss"
+         "reader.ss"
          "writer.ss")
 
 ;; Xexpr ::= String
@@ -232,6 +233,9 @@
     (write-xml/content (xexpr->xml xexpr) port)
     (get-output-string port)))
 
+(define (string->xexpr str)
+  (xml->xexpr (read-xml/element (open-input-string str))))
+
 ;; bcompose : (a a -> c) (b -> a) -> (b b -> c)
 (define (bcompose f g)
   (lambda (x y) (f (g x) (g y))))
@@ -241,6 +245,7 @@
  [exn:invalid-xexpr-code (exn:invalid-xexpr? . -> . any/c)]
  [xexpr/c contract?]
  [xexpr? (any/c . -> . boolean?)]
+ [string->xexpr (string? . -> . xexpr/c)]
  [xexpr->string (xexpr/c . -> . string?)]
  [xml->xexpr (content/c . -> . xexpr/c)]
  [xexpr->xml (xexpr/c . -> . content/c)]

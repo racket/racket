@@ -265,6 +265,10 @@ Converts an @tech{X-expression} into XML content.}
 
 Converts an @tech{X-expression} into a string containing XML.}
 
+@defproc[(string->xexpr [str string?]) xexpr/c]{
+
+Converts XML represented with a string into an @tech{X-expression}.}
+
 @defproc[((eliminate-whitespace [tags (listof symbol?)]
                                 [choose (boolean? . -> . boolean?)])
           [elem element?])

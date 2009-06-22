@@ -463,7 +463,7 @@ END
    
    (local
      [(define (test-xml->xexpr str xe)
-        (test-equal? str (xml->xexpr (document-element (read-xml (open-input-string str)))) xe))
+        (test-equal? str (string->xexpr str) xe))
       (define (test-xexpr->string xe str)
         (test-equal? (format "~S" xe) (xexpr->string xe) str))]
      (test-suite 
