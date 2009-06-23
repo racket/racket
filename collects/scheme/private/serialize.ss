@@ -70,6 +70,18 @@
   (define deserialize-module-guard (make-parameter (lambda (mod-path sym) 
                                                      (void))))
   (define varref (#%variable-reference varref))
+
+  (define (collapse/resolve-module-path-index mpi rel-to)
+    (let ([v (collapse-module-path-index mpi rel-to)])
+      (if (path? v)
+          ;; If collapsing gives a path, then we can't do any better than
+          ;; resolving --- and we must resolved, because the mpi may record
+          ;; a more accurate path inside.
+          (let ([v2 (resolved-module-path-name (module-path-index-resolve mpi))])
+            (if (symbol? v2)
+                `(quote ,v2)
+                v2))
+          v)))
   
   (define (mod-to-id info mod-map cache)
     (let ([deserialize-id (serialize-info-deserialize-id info)])
@@ -86,7 +98,7 @@
 				 (if (symbol? (caddr b))
 				     (caddr b)
 				     (protect-path
-				      (collapse-module-path-index 
+				      (collapse/resolve-module-path-index 
 				       (caddr b)
 				       (build-path (serialize-info-dir info)
 						   "here.ss")))))
@@ -98,7 +110,7 @@
 			  (if (symbol? (cdr deserialize-id))
 			      (cdr deserialize-id)
 			      (protect-path
-			       (collapse-module-path-index 
+			       (collapse/resolve-module-path-index 
 				(cdr deserialize-id)
 				(build-path (serialize-info-dir info)
 					    "here.ss"))))

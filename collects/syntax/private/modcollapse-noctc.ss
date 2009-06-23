@@ -138,8 +138,11 @@ Use syntax/modcollapse instead.
                                        (cdddr relto-mp))
                                   (list (cadr relto-mp))))))])
            (normalize-planet `(planet ,pathstr ,(caddr relto-mp)))))]
+      [(eq? (car relto-mp) 'quote)
+       (set! relto-mp (build-path (current-directory) "x"))
+       (combine-relative-elements elements)]
       [else (error 'combine-relative-elements
-                   "don't know how to deal with: ~s" relto-mp)]))
+                   "don't know how to deal with: ~s for ~s" relto-mp elements)]))
   
   (define (normalize-lib s)
     (if (null? (cddr s))
