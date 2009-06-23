@@ -10,7 +10,7 @@
          make-caching-managed-compile-zo
          trust-existing-zos
          manager-compile-notify-handler
-         ;manager-skip-file-handler ;; not yet tested, so not yet exported
+         manager-skip-file-handler
          (rename-out [trace manager-trace-handler]))
 
 (define manager-compile-notify-handler (make-parameter void))

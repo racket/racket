@@ -50,6 +50,8 @@
       (add-flags '((make-user #f) (make-planet #f)))]
      [("--no-planet") "Do not setup PLaneT packages"
       (add-flags '((make-planet #f)))]
+     [("--avoid-main") "Do not make main-installation files"
+      (add-flags '((avoid-main-installation #t)))]
      [("-v" "--verbose") "See names of compiled files and info printfs"
       (add-flags '((verbose #t)))]
      [("-m" "--make-verbose") "See make and compiler usual messages"

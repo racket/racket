@@ -646,6 +646,10 @@
   ;;                  Make zo                      ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define compile-skip-directory
+    (and (avoid-main-installation)
+         (find-collects-dir)))
+
   (when (make-zo)
     (setup-printf #f "--- compiling collections ---")
     (with-specified-mode
@@ -667,7 +671,7 @@
                               (setup-fprintf (current-error-port) #f " deleting ~a" (build-path c p))
                               (delete-file (build-path c p))))))))
                   ;; Make .zos
-                  (compile-directory-zos dir info))
+                  (compile-directory-zos dir info #:skip-path compile-skip-directory))
                 make-base-empty-namespace))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -797,7 +801,8 @@
     (with-handlers ([exn:fail?
                      (lambda (exn)
                        (setup-printf #f "docs failure: ~a" (exn->string exn)))])
-      (doc:setup-scribblings #f (not (null? (archives))))))
+      (doc:setup-scribblings #f (and (not (null? (archives)))
+                                     (archive-implies-reindex)))))
 
   (when (doc-pdf-dest)
     (setup-printf #f "building PDF documentation (via pdflatex)")

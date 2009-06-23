@@ -389,7 +389,7 @@ initialized between them, e.g.:
   _...)
 ]
 
-@subsubsection{@|setup-plt| Unit}
+@subsection{@|setup-plt| Unit}
 
 @defmodule[setup/setup-unit]
 
@@ -459,6 +459,10 @@ form.}
   If on, update @filepath{info-domain/compiled/cache.ss} for each
   collection path. @defaults[@scheme[#t]]}
 
+@defboolparam[avoid-main-installation on?]{
+ If on, avoid building bytecode in the main installation tree when building
+ other bytecode (e.g., in a user-specific collection). @defaults[@scheme[#f]]}
+
 @defboolparam[call-install on?]{
   If on, call collection @filepath{info.ss}-specified setup code.
   @defaults[@scheme[#t]]}
@@ -479,6 +483,11 @@ form.}
   A list of @filepath{.plt} archives to unpack; any collections specified
   by the archives are set-up in addition to the collections listed in
   specific-collections. @defaults[@scheme[null]]}
+
+@defboolparam[archive-implies-reindex on?]{
+  If on, when @scheme[archives] has a non-empty list of packages, if any
+  documentation is built, then suitable documentation start pages, search pages,
+  and master index pages are re-built. @defaults[@scheme[#t]]}
 
 @defparam[current-target-directory-getter thunk (-> . path-string?)]{
   A thunk that returns the target directory for unpacking a relative
@@ -694,7 +703,7 @@ for making @filepath{.plt} archives:}
 
 The @schememodname[setup/plt-single-installer] module provides a
 function for installing a single @filepath{.plt} file, and
-@schememodname[setup/plt-single-installer] wraps it with a GUI
+@schememodname[setup/plt-installer] wraps it with a GUI
 interface.
 
 @subsubsection{Non-GUI Installer}
@@ -717,7 +726,37 @@ interface.
    The @scheme[get-dir-proc] procedure is called if the installer needs a
    target directory for installation, and a @scheme[#f] result means that
    the user canceled the installation. Typically, @scheme[get-dir-proc] is
-   @scheme[current-directory].}}
+   @scheme[current-directory].}
+
+@defproc[(install-planet-package [file path-string?] 
+                                 [directory path-string?] 
+                                 [spec (list/c string? string? 
+                                               (listof string?) 
+                                               exact-nonnegative-integer?
+                                               exact-nonnegative-integer?)])
+         void?]{
+
+ Similar to @scheme[run-single-installer], but runs the setup process
+ to install the archive @scheme[file] into @scheme[directory] as the
+ @|PLaneT| package described by @scheme[spec]. The user-specific
+ documentation index is not rebuilt, so @scheme[reindex-user-documentation]
+ should be run after a set of @|PLaneT| packages are installed.}
+
+@defproc[(reindex-user-documentation) void?]{
+  Similar to @scheme[run-single-installer], but runs only the part of
+  the setup process that rebuilds the user-specific documentation
+  start page, search page, and master index.}
+
+@defproc[(clean-planet-package [directory path-string?] 
+                               [spec (list/c string? string? 
+                                             (listof string?) 
+                                             exact-nonnegative-integer?
+                                             exact-nonnegative-integer?)])
+         void?]{
+  Undoes the work of @scheme[install-planet-package]. The user-specific
+ documentation index is not rebuilt, so @scheme[reindex-user-documentation]
+ should be run after a set of @|PLaneT| packages are removed.}}
+
 
 @subsubsection[#:tag "gui-unpacking"]{GUI Installer}
 
@@ -754,7 +793,8 @@ interface.
 @defproc[(run-single-installer (file path-string?)
                                (get-dir-proc (-> (or/c path-string? false/c))))
          void?]{
-  The same as the sole export of @schememodname[setup/plt-single-installer], but with a GUI.}
+  The same as the export from @schememodname[setup/plt-single-installer], 
+  but with a GUI.}
 
 @; ----------------------------------------
 

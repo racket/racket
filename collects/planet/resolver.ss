@@ -210,6 +210,9 @@ subdirectory.
 ;; if #f, will not install packages and instead give an error
 (define install? (make-parameter #t))
 
+;; update doc index only once for a set of installs:
+(define planet-nested-install (make-parameter #f))
+
 ;; =============================================================================
 ;; DIAMOND PROPERTY STUFF
 ;; make sure a module isn't loaded twice with two different versions
@@ -535,12 +538,13 @@ subdirectory.
           (apply build-path (CACHE-DIR)
                  (append (pkg-spec-path pkg) (list (pkg-spec-name pkg)
                                                    (number->string maj)
-                                                   (number->string min))))])
+                                                   (number->string min))))]
+         [was-nested? (planet-nested-install)])
     (if (directory-exists? the-dir)
       (raise (make-exn:fail
               "Internal PLaneT error: trying to install already-installed package"
               (current-continuation-marks)))
-      (begin
+      (parameterize ([planet-nested-install #t])
         (planet-terse-log 'install (pkg-spec->string pkg))
         (with-logging
          (LOG-FILE)
@@ -551,9 +555,14 @@ subdirectory.
            ;; oh man is this a bad hack!
            (parameterize ([current-namespace (make-namespace)])
              (let ([ipp (dynamic-require 'setup/plt-single-installer
-                                         'install-planet-package)])
+                                         'install-planet-package)]
+                   [rud (dynamic-require 'setup/plt-single-installer
+                                         'reindex-user-documentation)])
                (ipp path the-dir (list owner (pkg-spec-name pkg)
-                                       extra-path maj min))))))
+                                       extra-path maj min))
+               (unless was-nested?
+                 (printf "------------- Rebuilding documentation index -------------\n")
+                 (rud))))))
         (planet-terse-log 'finish (pkg-spec->string pkg))
         (make-pkg (pkg-spec-name pkg) (pkg-spec-path pkg)
                   maj min the-dir 'normal)))))

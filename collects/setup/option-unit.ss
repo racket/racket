@@ -34,6 +34,7 @@
   (define-flag-param make-docs #t)
   (define-flag-param make-user #t)
   (define-flag-param make-planet #t)
+  (define-flag-param avoid-main-installation #f)
   (define-flag-param call-install #t)
   (define-flag-param call-post-install #t)
   (define-flag-param pause-on-errors #f)
@@ -44,6 +45,7 @@
   (define specific-planet-dirs (make-parameter null))
 
   (define archives (make-parameter null))
+  (define archive-implies-reindex (make-parameter #t))
 
   (define current-target-directory-getter (make-parameter current-directory))
   (define current-target-plt-directory-getter 

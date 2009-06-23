@@ -241,21 +241,14 @@ A parameter for a procedure of one argument that is called to report
  compilation-manager actions, such as checking a file. The argument to
  the procedure is a string.}
 
-@;{
 @defparam[manager-skip-file-handler proc (-> path? (or/c number? #f))]{
-  This handler is consulted for each file that is loaded. If it
-  returns a number, then the file is skipped (ie, not compiled), 
-  and the number is used as the timestamp. If it returns @scheme[#f],
-  then the file is compiled (if necessary) as usual.
 
-@;{Defaults to a function that checks to see if the module in the file
-   has already been loaded in the filesystem and, if it has, it
-   returns the timestamp of the .zo file for that file (or the .ss file
-   if the .zo file does not exist).}
-
-  Defaults to @scheme[(λ (x) #f)].
-}
-}
+A parameter whose value is called for each file that is loaded and
+ needs recompilation. If the procedure returns a number, then the file
+ is skipped (i.e., not compiled), and the number is used as the
+ timestamp for the file's bytecode. If the procedure returns
+ @scheme[#f], then the file is compiled as usual. The default is
+ @scheme[(lambda (x) #f)].}
 
 @; ----------------------------------------------------------------------
 

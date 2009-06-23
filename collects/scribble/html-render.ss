@@ -21,8 +21,6 @@
 (provide render-mixin
          render-multi-mixin)
 
-(xml:empty-tag-shorthand xml:html-empty-tags)
-
 (define literal
   (let ([loc (xml:make-location 0 0 0)])
     (lambda strings (xml:make-cdata loc loc (string-append* strings)))))
@@ -616,34 +614,35 @@
           (call-with-input-file* prefix-file
             (lambda (in)
               (copy-port in (current-output-port))))
-          (xml:write-xml/content
-           (xml:xexpr->xml
-            `(html ()
-               (head ()
-                 (meta ([http-equiv "content-type"]
-                        [content "text-html; charset=utf-8"]))
-                 ,title
-                 ,(scribble-css-contents style-file  css-path)
-                 ,@(map (lambda (style-file)
-                          (install-file style-file)
-                          (scribble-css-contents style-file #f))
-                        (append style-extra-files
-                                (extract-part-style-files
-                                 d
-                                 ri
-                                 'css
-                                 (lambda (p) (part-whole-page? p ri)))))
-                 ,(scribble-js-contents  script-file script-path))
-               (body ((id ,(or (extract-part-body-id d ri)
-                               "scribble-plt-scheme-org")))
-                 ,@(render-toc-view d ri)
-                 (div ([class "maincolumn"])
-                   (div ([class "main"])
-                     ,@(parameterize ([current-version (extract-version d)])
-                         (render-version d ri))
-                     ,@(navigation d ri #t)
-                     ,@(render-part d ri)
-                     ,@(navigation d ri #f))))))))))
+          (parameterize ([xml:empty-tag-shorthand xml:html-empty-tags])
+            (xml:write-xml/content
+             (xml:xexpr->xml
+              `(html ()
+                 (head ()
+                   (meta ([http-equiv "content-type"]
+                          [content "text-html; charset=utf-8"]))
+                   ,title
+                   ,(scribble-css-contents style-file  css-path)
+                   ,@(map (lambda (style-file)
+                            (install-file style-file)
+                            (scribble-css-contents style-file #f))
+                          (append style-extra-files
+                                  (extract-part-style-files
+                                   d
+                                   ri
+                                   'css
+                                   (lambda (p) (part-whole-page? p ri)))))
+                   ,(scribble-js-contents  script-file script-path))
+                 (body ((id ,(or (extract-part-body-id d ri)
+                                 "scribble-plt-scheme-org")))
+                   ,@(render-toc-view d ri)
+                   (div ([class "maincolumn"])
+                     (div ([class "main"])
+                       ,@(parameterize ([current-version (extract-version d)])
+                           (render-version d ri))
+                       ,@(navigation d ri #t)
+                       ,@(render-part d ri)
+                       ,@(navigation d ri #f)))))))))))
 
     (define/private (part-parent d ri)
       (collected-info-parent (part-collected-info d ri)))

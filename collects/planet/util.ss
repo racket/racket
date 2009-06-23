@@ -124,6 +124,8 @@
       (delete-directory/files path)
       (planet-log "Trimming empty directories")
       (trim-directory (CACHE-DIR) path)
+      (planet-log "Rebuilding documentation index")
+      (reindex-user-documentation)
       (void))))
 
 ;; erase-metadata : pkg -> void
