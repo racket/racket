@@ -18,10 +18,10 @@
 (define-syntax lang-module-begin 
   (make-lang-module-begin 
    make-labeling
-   (make-module-case/new-defs
-    (make-define-case/new-defs
+   (make-module-case
+    (make-define-case
      (lambda (stx)
        (define anf-stx (anormalize stx))
        (define no-callcc-stx (elim-callcc anf-stx))
-       (define-values (defun-stx new-defs) (defun no-callcc-stx))
-       (values defun-stx new-defs))))))
+       (define defun-stx (defun no-callcc-stx))
+       defun-stx)))))

@@ -2,40 +2,34 @@
 @(require "web-server.ss")
 
 @title[#:tag "closure.ss"]{Serializable Closures}
-@(require (for-label web-server/private/closure
+@(require (for-label scheme/serialize
+                     web-server/lang/closure
+                     web-server/lang/serial-lambda
                      web-server/private/define-closure))
 
-@defmodule[web-server/private/closure]{
-
+                                              
 The defunctionalization process of the Web Language (see @secref["stateless" #:doc '(lib "web-server/scribblings/web-server.scrbl")])
-requires an explicit representation of closures that is serializable. This module provides that representation.
+requires an explicit representation of closures that is serializable.
 
-@defproc[(make-closure-definition-syntax [tag syntax?]
-                                         [fvars (listof identifier?)]
-                                         [proc syntax?])
-         syntax?]{
- Outputs a syntax object that defines a serializable structure,
- with @scheme[tag] as the tag, that represents a closure over
- @scheme[fvars], that acts a procedure and when invoked calls
- @scheme[proc], which is assumed to be syntax of @scheme[lambda]
- or @scheme[case-lambda].
+@defmodule[web-server/lang/serial-lambda]{
+ 
+@defform[(serial-lambda formals body ...)]{
+ Returns @scheme[(lambda formals body ...)], except it is serializable.
+}
+        
+@defform[(serial-case-lambda [formals body ...] ...)]{
+ Returns @scheme[(case-lambda [formals body ...] ...)], except it is serializable.
+}
+        
 }
 
-@defproc[(closure->deserialize-name [c closure?])
-         symbol?]{
- Extracts the unique tag of a closure @scheme[c].
-}
-                 
-}
-                 
-These are difficult to use directly, so we provide a helper syntactic form:
+@section[#:style 'hidden]{Definition Syntax}
 
-@section[#:style 'hidden]{Define Closure}
 @defmodule[web-server/private/define-closure]{
 
-@defform[(define-closure tag formals (free-vars ...) body)]{
- Defines a closure, constructed with @scheme[make-tag] that accepts closure that returns
- @scheme[freevars ...], that when invoked with @scheme[formals]
+@defform[(define-closure tag formals (free-var ...) body)]{
+ Defines a closure, constructed with @scheme[make-tag] that accepts a closure that returns
+ @scheme[freevar ...], that when invoked with @scheme[formals]
  executes @scheme[body].
 }
 

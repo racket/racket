@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (for-syntax scheme/base)
          scheme/contract
-         "../private/closure.ss"
+         web-server/lang/serial-lambda
          mzlib/list)
 
 (provide/contract
@@ -11,8 +11,8 @@
 
 (define (web-parameter? any)
   (and (procedure? any)
-       (procedure-arity-includes? any 0)
-       (procedure-arity-includes? any 2)))  
+       (procedure-arity-includes? any 0)
+       (procedure-arity-includes? any 2)))  
 
 (define next-web-parameter-id
   (let ([i (box 0)])

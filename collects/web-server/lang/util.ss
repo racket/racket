@@ -1,38 +1,22 @@
 #lang scheme/base
 (require (for-template scheme/base)
-         scheme/pretty
          scheme/list
-         scheme/contract
-         syntax/kerncase)
+         scheme/contract)
 (provide/contract
  [transformer? (parameter/c boolean?)]
  [recertify (syntax? syntax? . -> . syntax?)]
- [recertify* (syntax? (listof syntax?) . -> . (listof syntax?))]
- [recertify/new-defs (syntax? (-> (values syntax? (listof syntax?))) . -> . (values syntax? (listof syntax?)))]
  [current-code-labeling (parameter/c (syntax? . -> . syntax?))]
  [generate-formal ((symbol?) ((or/c false/c syntax?)) . ->* . (values syntax? syntax?))]
  [formals-list (syntax? . -> . (listof syntax?))]
- [make-define-case/new-defs ((syntax? . -> . (values syntax? (listof syntax?))) . -> . (syntax? . -> . (listof syntax?)))]
- [make-module-case/new-defs ((syntax? . -> . (listof syntax?)) . -> . (syntax? . -> . (listof syntax?)))]
- [make-lang-module-begin ((bytes? . -> . (-> symbol?)) (syntax? . -> . (listof syntax?)) . -> . (syntax? . -> . syntax?))]
+ [make-define-case ((syntax? . -> . syntax?) . -> . (syntax? . -> . syntax?))]
+ [make-module-case ((syntax? . -> . syntax?) . -> . (syntax? . -> . syntax?))]
+ [make-lang-module-begin ((bytes? . -> . (-> symbol?)) (syntax? . -> . syntax?) . -> . (syntax? . -> . syntax?))]
  [bound-identifier-member? (syntax? (listof syntax?) . -> . boolean?)])
 
 (define transformer? (make-parameter #f))
 
 (define (recertify old-expr expr)
   (syntax-recertify expr old-expr (current-code-inspector) #f))
-
-(define (recertify* old-expr exprs)
-  (map (lambda (expr)
-         (syntax-recertify expr old-expr (current-code-inspector) #f))
-       exprs))
-
-(define (recertify/new-defs old-expr thunk)
-  (call-with-values
-   thunk
-   (lambda (expr new-defs)
-     (values (recertify old-expr expr)
-             (recertify* old-expr new-defs)))))
 
 (define current-code-labeling
   (make-parameter
@@ -56,32 +40,29 @@
     [(v ... . rv)
      (list* #'rv (syntax->list #'(v ...)))]))
 
-(define ((make-define-case/new-defs inner) stx)
-  (recertify*
+(define ((make-define-case inner) stx)
+  (recertify
    stx
    (syntax-case stx (define-values define-syntaxes define-values-for-syntax)
      [(define-values (v ...) ve)
-      (let-values ([(nve defs) (inner #'ve)])
-        (append 
-         defs
-         (list (quasisyntax/loc stx
-                 (define-values (v ...) #,nve)))))]
+      (let-values ([(nve) (inner #'ve)])
+        (quasisyntax/loc stx
+          (define-values (v ...) #,nve)))]
      [(define-syntaxes (v ...) ve)
-      (list stx)]      
+      stx]      
      [(define-values-for-syntax (v ...) ve)
-      (list stx)]
+      stx]
      [(#%require spec ...)
-      (list stx)]
+      stx]
      [expr
-      (let-values ([(nexpr defs) (inner #'expr)])
-        (append defs (list nexpr)))])))
+      (inner #'expr)])))
 
-(define ((make-module-case/new-defs inner) stx)
-  (recertify*
+(define ((make-module-case inner) stx)
+  (recertify
    stx
    (syntax-case* stx (#%provide) free-identifier=?     
      [(#%provide spec ...)
-      (list stx)]
+      stx]
      [_
       (inner stx)])))
 
@@ -99,8 +80,7 @@
         (define new-defs 
           (parameterize ([current-code-labeling
                           (lambda (stx) (datum->syntax stx (base-labeling)))])
-            (apply append (map transform (syntax->list #'(body ...))))))
-        #;(pretty-print (syntax->datum #`(pmb #,@new-defs)))
+            (map transform (syntax->list #'(body ...)))))
         (quasisyntax/loc stx
           (pmb #,@new-defs)))])))
 
