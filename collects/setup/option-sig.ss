@@ -16,6 +16,7 @@
      make-docs
      make-user
      make-planet
+     avoid-main-installation
      call-install
      call-post-install
      pause-on-errors
@@ -24,5 +25,6 @@
      specific-collections
      specific-planet-dirs
      archives
+     archive-implies-reindex
      current-target-directory-getter
      current-target-plt-directory-getter)))
