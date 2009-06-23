@@ -149,6 +149,8 @@
            (map (lambda (d)
                   (if (info? d) d (or (hash-ref src->info d #f) d)))
                 (info-deps info)))
+          (unless (andmap info? (info-deps info))
+            (set-info-need-in-write?! info #t))
           ;; Propagate existing dependencies as expected dependencies:
           (for ([d (info-deps info)])
             (let ([i (if (info? d) d (hash-ref src->info d #f))])
@@ -664,12 +666,7 @@
              (lambda ()
                (list (list (info-vers info) (doc-flags doc))
                      (serialize (info-undef info))
-                     (filter
-                      values
-                      (map (lambda (i)
-                             (and (info? i)
-                                  (path->rel (doc-src-file (info-doc i)))))
-                           (info-deps info)))
+                     (convert-deps (info-deps info))
                      (serialize (info-searches info)))))))))
 
 (define (write-out info setup-printf)
@@ -693,3 +690,11 @@
     (if (path? r)
         (path->bytes r)
         r)))
+
+(define (convert-deps deps)
+  (filter
+   values
+   (map (lambda (i)
+          (and (info? i)
+               (path->rel (doc-src-file (info-doc i)))))
+        deps)))
