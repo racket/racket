@@ -186,7 +186,7 @@
                     "ignoring `compile-subcollections' entry in info ~a"
                     path-name))
     ;; this check is also done in compiler/compiler-unit, in compile-directory
-    (and (not (eq? 'all (omitted-paths path)))
+    (and (not (eq? 'all (omitted-paths path getinfo)))
          (make-cc collection path
                   (if name (string-append path-name " (" name ")") path-name)
                   info root-dir info-path shadowing-policy)))
@@ -282,7 +282,7 @@
              ;; collection should not have been included, but we might
              ;; jump in if a command-line argument specified a
              ;; coll/subcoll
-             [omit (omitted-paths ccp)]
+             [omit (omitted-paths ccp getinfo)]
              [subs (if (eq? 'all omit)
                      '()
                      (filter (lambda (p)

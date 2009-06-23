@@ -1,7 +1,8 @@
 
 ;; Defines a language to be used by info.ss files
 
-#lang mzscheme
+#lang scheme/base
+(require (for-syntax scheme/base))
 
 (define-syntax info-module-begin
   (lambda (stx)
@@ -49,14 +50,14 @@
 
 (define-syntax (limited-require stx)
   (syntax-case stx ()
-    [(_ lib) (member (syntax-object->datum #'lib)
+    [(_ lib) (member (syntax->datum #'lib)
                      '((lib "string-constant.ss" "string-constants")
                        (lib "string-constants/string-constant.ss")
                        string-constants/string-constant
                        string-constants))
      (syntax/loc stx (require lib))]))
 
-(provide (rename info-module-begin #%module-begin)
+(provide (rename-out [info-module-begin #%module-begin])
          #%app #%datum #%top
          define quote
          list cons car cdr quasiquote unquote unquote-splicing
@@ -64,4 +65,4 @@
          string-append
          path->string build-path collection-path
          system-library-subpath
-         (rename limited-require require))
+         (rename-out [limited-require require]))

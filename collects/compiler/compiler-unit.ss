@@ -51,6 +51,9 @@
   (define (c-get-info cp)
     ((current-compiler-dynamic-require-wrapper)
      (lambda () (get-info cp))))
+  (define (c-get-info/full cp)
+    ((current-compiler-dynamic-require-wrapper)
+     (lambda () (get-info/full cp))))
 
   (define (make-extension-compiler mode prefix)
     (let ([u (c-dynamic-require 'compiler/private/base 'base@)]
@@ -143,7 +146,7 @@
 
   (define (compile-directory dir info #:verbose [verbose? #t])
     (define info* (or info (lambda (key mk-default) (mk-default))))
-    (define omit-paths (omitted-paths dir))
+    (define omit-paths (omitted-paths dir c-get-info/full))
     (unless (eq? 'all omit-paths)
       (parameterize ([current-directory dir]
                      [current-load-relative-directory dir]
@@ -168,7 +171,7 @@
         (for ([p (directory-list dir)])
           (let ([p* (build-path dir p)])
             (when (and (directory-exists? p*) (not (member p omit-paths)))
-              (compile-directory p* (get-info/full p*))))))))
+              (compile-directory p* (c-get-info/full p*))))))))
 
   (define (compile-collection-zos collection . cp)
     (compile-directory (apply collection-path collection cp)
