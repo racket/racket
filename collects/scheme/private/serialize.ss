@@ -34,7 +34,9 @@
 	(null? v)
 	(number? v)
 	(char? v)
-	(symbol? v)
+	(and (symbol? v)
+             (or (symbol-interned? v)
+                 (eq? v (string->unreadable-symbol (symbol->string v)))))
 	(string? v)
 	(path-for-some-system? v)
 	(bytes? v)
@@ -59,6 +61,11 @@
     (if (bytes? p)
 	(bytes->path p)
 	p))
+
+  (define (revive-symbol s)
+    (if (string? s)
+        (string->unreadable-symbol s)
+        s))
 
   (define deserialize-module-guard (make-parameter (lambda (mod-path sym) 
                                                      (void))))
@@ -226,9 +233,12 @@
        [(or (boolean? v)
 	    (number? v)
 	    (char? v)
-	    (symbol? v)
 	    (null? v))
 	v]
+       [(symbol? v)
+        (if (symbol-interned? v)
+            v
+            (cons 'su (symbol->string v)))]
        [(void? v)
 	'(void)]
        [(and check-share?
@@ -342,9 +352,12 @@
 	      [main-serialized (serialize-one v share #t mod-map mod-map-cache)]
 	      [mod-map-l (map car (sort (hash-map mod-map cons)
                                         (lambda (a b) (< (cdr a) (cdr b)))))])
-	  (list '(1) ;; serialization-format version
+	  (list '(2) ;; serialization-format version
                 (hash-count mod-map)
-		mod-map-l
+		(map (lambda (v) (if (symbol-interned? (cdr v))
+                                     v 
+                                     (cons (car v) (symbol->string (cdr v)))))
+                     mod-map-l)
 		(length serializeds)
 		serializeds
 		fixups
@@ -404,6 +417,7 @@
 	  [(?) (lookup-shared! share (cdr v) mod-map module-path-index-join)]
           [(f) (apply make-prefab-struct (cadr v) (map loop (cddr v)))]
 	  [(void) (void)]
+          [(su) (string->unreadable-symbol (cdr v))]
 	  [(u) (let ([x (cdr v)])
 		 (cond
 		  [(string? x) (string-copy x)]
@@ -530,7 +544,7 @@
             (let* ([path+name (car l)]
                    [des (if (car path+name)
                             (let ([p (unprotect-path (car path+name))]
-                                  [sym (cdr path+name)])
+                                  [sym (revive-symbol (cdr path+name))])
                               ((deserialize-module-guard) p sym)
                               (dynamic-require p sym))
                             (namespace-variable-value (cdr path+name)))])
@@ -551,7 +565,7 @@
             [make-key (lambda (path+name)
                         (if (car path+name)
                             (let ([p (unprotect-path (car path+name))]
-                                  [sym (cdr path+name)])
+                                  [sym (revive-symbol (cdr path+name))])
                               (list p sym))
                             (list #f (cdr path+name))))]
             [mpi-key (gensym)])

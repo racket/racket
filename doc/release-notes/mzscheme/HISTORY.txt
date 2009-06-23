@@ -1,3 +1,12 @@
+Version 4.2.0.5
+Added string->unreadable-symbol and symbol-interned?
+
+Version 4.2.0.4
+Added syntax-local-lift-provide
+
+Version 4.2.0.3
+Added syntax-local-lift-values-expression
+
 Version 4.2.0.2
 Added identifier-prune-lexical-context and quote-syntax/prune
 

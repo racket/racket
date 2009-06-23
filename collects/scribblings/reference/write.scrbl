@@ -159,7 +159,9 @@ mutable pairs print using @litchar["{"] and @litchar["}"] instead of
 A parameter that controls printing values that have no
 @scheme[read]able form (using the default reader), including
 structures that have a custom-write procedure (see
-@scheme[prop:custom-write]); defaults to @scheme[#t]. See
+@scheme[prop:custom-write]), but not including @tech{uninterned}
+symbols and @tech{unreadable symbols} (which print the same as
+@tech{interned} symbols); defaults to @scheme[#t]. See
 @secref["printing"] for more information.}
 
 @defboolparam[print-graph on?]{

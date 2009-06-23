@@ -43,8 +43,9 @@ The following kinds of values are serializable:
  @item{instances of classes defined with @scheme[define-serializable-class]
        or @scheme[define-serializable-class];}
 
- @item{booleans, numbers, characters, symbols, strings, byte strings,
-       paths (for a specific convention), @|void-const|, and the empty list;}
+ @item{booleans, numbers, characters, @tech{interned} symbols,
+       @tech{unreadable symbols}, strings, byte strings, paths (for a
+       specific convention), @|void-const|, and the empty list;}
 
  @item{pairs, mutable pairs, vectors, boxes, and hash tables;}
 
@@ -75,10 +76,11 @@ elements:
 
 @itemize[
 
- @item{An optional list @scheme['(1)] that represents the version of
-       the serialization format. If the first element of a
-       representation is not a list, then the version is
-       @scheme[0]. Version 1 adds support for mutable pairs.}
+ @item{An optional list @scheme['(1)] or @scheme['(2)] that represents
+       the version of the serialization format. If the first element
+       of a representation is not a list, then the version is
+       @scheme[0]. Version 1 adds support for mutable pairs, and
+       version 2 adds support for @tech{unreadable symbols}.}
 
  @item{A non-negative exact integer @scheme[_s-count] that represents the
        number of distinct structure types represented in the
@@ -94,7 +96,8 @@ elements:
        that exports the structure's deserialization information.  The
        @scheme[cdr] of the pair is the name of a binding (at the top
        level or exported from a module) for deserialization
-       information. These two are used with either
+       information, either a symbol or a string representing an
+       @tech{unreadable symbol}. These two are used with either
        @scheme[namespace-variable-binding] or @scheme[dynamic-require]
        to obtain deserialization information. See
        @scheme[make-deserialization-info] for more information on the
@@ -171,7 +174,7 @@ elements:
 
             @itemize[
 
-            @item{a boolean, number, character, symbol, or empty list,
+            @item{a boolean, number, character, interned symbol, or empty list,
                   representing itself.}
 
             @item{a string, representing an immutable string.}
@@ -202,6 +205,10 @@ elements:
             @item{a pair whose @scheme[car] is @scheme['void],
                   representing @|void-const|.}
 
+            @item{a pair whose @scheme[car] is @scheme['su] and whose
+                  @scheme[cdr] is a character string; it represents a
+                  @tech{unreadable symbol}.}
+
             @item{a pair whose @scheme[car] is @scheme['u] and whose
                   @scheme[cdr] is either a byte string or character
                   string; it represents a mutable byte or character
@@ -215,7 +222,7 @@ elements:
             @item{a pair whose @scheme[car] is @scheme['p+], whose
                   @scheme[cadr] is a byte string, and whose @scheme[cddr]
                   is one of the possible symbol results of 
-                  @scheme[system-path-convetion-type]; it represents a 
+                  @scheme[system-path-convention-type]; it represents a 
                   path using the specified convention.}
 
             @item{a pair whose @scheme[car] is @scheme['c] and whose

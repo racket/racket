@@ -352,13 +352,19 @@ A compiled-form object may contain @tech{uninterned} symbols (see
 via @litchar{#~}, each uninterned symbol in the original form is
 mapped to a new uninterned symbol, where multiple instances of a
 single symbol are consistently mapped to the same new symbol. The
-original and new symbols have the same printed representation.
+original and new symbols have the same printed
+representation. @tech{Unreadable symbols}, which are typically
+generated indirectly during expansion and compilation, are saved and
+restored consistently through @litchar{#~}.
 
-Due to the above restrictions, do not use @scheme[gensym] or
-@scheme[string->uninterned-symbol] to construct an identifier for a
-top-level or module binding. Instead, generate distinct identifiers
-either with @scheme[generate-temporaries] or by applying the result of
-@scheme[make-syntax-introducer] to an existing identifier.}
+Due to the restrictions on @tech{uninterned} symbols in @litchar{#~},
+do not use @scheme[gensym] or @scheme[string->uninterned-symbol] to
+construct an identifier for a top-level or module binding. Instead,
+generate distinct identifiers either with
+@scheme[generate-temporaries] or by applying the result of
+@scheme[make-syntax-introducer] to an existing identifier; those
+functions will lead to top-level and module bindings with
+@tech{unreadable symbol}ic names.}
 
 
 @defproc[(compile [top-level-form any/c]) compiled-expression?]{

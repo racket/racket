@@ -41,39 +41,71 @@ The two procedures @scheme[string->uninterned-symbol] and
 that are not @scheme[eq?], @scheme[eqv?], or @scheme[equal?] to any
 other symbol, although they may print the same as other symbols.
 
-Regular (interned) symbols are only weakly held by the internal symbol
-table. This weakness can never affect the result of an @scheme[eq?],
-@scheme[eqv?], or @scheme[equal?] test, but a symbol may disappear
-when placed into a weak box (see @secref["weakbox"]) used as the key
-in a weak @tech{hash table} (see @secref["hashtables"]), or used as an
-ephemeron key (see @secref["ephemerons"]).
+The procedure @scheme[string->unreadable-symbol] returns an
+@deftech{unreadable symbol} that is partially interned.  The default
+reader (see @secref["parse-symbol"]) never produces a unreadable
+symbol, but two calls to @scheme[string->unreadable-symbol] with
+@scheme[equal?] strings produce @scheme[eq?] results. An unreadable
+symbol can print the same as an interned or uninterned
+symbol. Unreadable symbols are useful in expansion and
+compilation to avoid collisions with symbols that appear in the
+source; they are usually not generated directly, but they can appear
+in the result of functions like @scheme[identifier-binding].
+
+Interned and unreadable symbols are only weakly held by the internal
+symbol table. This weakness can never affect the result of an
+@scheme[eq?], @scheme[eqv?], or @scheme[equal?] test, but a symbol may
+disappear when placed into a weak box (see @secref["weakbox"]) used as
+the key in a weak @tech{hash table} (see @secref["hashtables"]), or
+used as an ephemeron key (see @secref["ephemerons"]).
 
 @defproc[(symbol? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
- a symbol, @scheme[#f] otherwise.}
+ a symbol, @scheme[#f] otherwise.
 
-@examples[(symbol? 'Apple) (symbol? 10)]
+@examples[(symbol? 'Apple) (symbol? 10)]}
+
+
+@defproc[(symbol-interned? [sym symbol?]) boolean?]{Returns @scheme[#t] if @scheme[sym] is
+ @tech{interned}, @scheme[#f] otherwise.
+
+@examples[(symbol-interned? 'Apple)
+          (symbol-interned? (gensym))
+          (symbol-interned? (string->unreadable-symbol "Apple"))]}
 
 
 @defproc[(symbol->string [sym symbol?]) symbol?]{Returns a freshly
  allocated mutable string whose characters are the same as in
- @scheme[sym].}
+ @scheme[sym].
 
-@examples[(symbol->string 'Apple)]
+@examples[(symbol->string 'Apple)]}
 
 
 @defproc[(string->symbol [str string?]) symbol?]{Returns an
  @tech{interned} symbol whose characters are the same as in
- @scheme[str].}
+ @scheme[str].
 
-@examples[(string->symbol "Apple") (string->symbol "1")]
+@examples[(string->symbol "Apple") (string->symbol "1")]}
 
 
 @defproc[(string->uninterned-symbol [str string?]) symbol?]{Like
  @scheme[(string->symbol str)], but the resulting symbol is a new
  @tech{uninterned} symbol. Calling @scheme[string->uninterned-symbol]
- twice with the same @scheme[str] returns two distinct symbols.}
+ twice with the same @scheme[str] returns two distinct symbols.
 
-@examples[(string->uninterned-symbol "Apple") (eq? 'a (string->uninterned-symbol "a"))]
+@examples[(string->uninterned-symbol "Apple") 
+          (eq? 'a (string->uninterned-symbol "a"))
+          (eq? (string->uninterned-symbol "a") (string->uninterned-symbol "a"))]}
+
+
+@defproc[(string->unreadable-symbol [str string?]) symbol?]{Like
+ @scheme[(string->symbol str)], but the resulting symbol is a new
+ @tech{unreadable symbol}. Calling @scheme[string->unreadable-symbol]
+ twice with equivalent @scheme[str]s returns the same symbol, but
+ @scheme[read] never produces the symbol.}
+
+@examples[(string->unreadble-symbol "Apple") 
+          (eq? 'a (string->unreadable-symbol "a"))
+          (eq? (string->unreadable-symbol "a") (string->unreadable-symbol "a"))]}
 
 
 @defproc[(gensym [base (or/c string? symbol?) "g"]) symbol?]{Returns a
