@@ -441,8 +441,8 @@
                               (call-with-parameterization
                                params
                                (lambda () expr ...))))))
-             (receive [('vals . vs) (apply values vs)]
-                      [('exn e) (raise e)])))]))
+             (receive [(list-rest 'vals vs) (apply values vs)]
+                      [(list 'exn e) (raise e)])))]))
   
   (define-syntax do-in-manager-after
     (syntax-rules ()
@@ -456,8 +456,8 @@
                               (call-with-parameterization
                                params
                                (lambda () expr ...))))))
-             (receive [('vals .  vs) (apply values vs)]
-                      [('exn e) (raise e)])))]))
+             (receive [(list-rest 'vals  vs) (apply values vs)]
+                      [(list 'exn e) (raise e)])))]))
   
   (define (register inf sup)
     (do-in-manager
@@ -651,13 +651,13 @@
                         [(? signal? b)
                          (iq-enqueue b)
                          (loop)]
-                        [($ external-event recip-val-pairs)
+                        [(struct external-event (recip-val-pairs))
                          (for-each iq-enqueue recip-val-pairs)
                          (loop)]
-                        [($ alarm ms beh)
+                        [(struct alarm (ms beh))
                          (schedule-alarm ms beh)
                          (loop)]
-                        [('run-thunk rtn-pid thunk)
+                        [(list 'run-thunk rtn-pid thunk)
                          (begin
                            (do-and-queue rtn-pid thunk)
                            (loop))]
@@ -667,21 +667,21 @@
                         ;; queues thunks to be evaluated after this round of computation,
                         ;; but before the next round
                         
-                        [('run-thunk/stabilized rtn-pid thunk)
+                        [(list 'run-thunk/stabilized rtn-pid thunk)
                          (begin
                            (set! thunks-to-run (cons (list rtn-pid thunk) thunks-to-run))
                            (loop))]
                         
                         
-                        [('stat rtn-pid)
+                        [(list 'stat rtn-pid)
                          (! rtn-pid (hash-table-size signal-cache))]
                         
-                        [('remote-reg tid sym)
+                        [(list 'remote-reg tid sym)
                          (let ([f+l (hash-table-get named-providers sym)])
                            (when (not (member tid (mcdr f+l)))
                              (set-mcdr! f+l (cons tid (mcdr f+l)))))
                          (loop)]
-                        [('remote-evt sym val)
+                        [(list 'remote-evt sym val)
                          (iq-enqueue
                           (list (hash-table-get named-dependents sym (lambda () dummy)) val))
                          (loop)]

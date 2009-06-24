@@ -4,7 +4,7 @@
            mzlib/thread
            mzlib/etc
            net/dns
-           "mymatch.ss")
+           scheme/match)
   
   (define (with-semaphore s thunk)
     (semaphore-wait s)
@@ -114,6 +114,18 @@
   
   (define-struct mailbox (old-head old-last head tail sem-count sem-space lock-enqueue))
   
+  ; XXX This should be removed in preference to just an exception
+  (define match-fail
+    (let ()
+      (define-struct match-failure ())
+      (make-match-failure)))
+  (define (matcher->matcher/fail m)
+    (lambda (x)
+      (with-handlers ([exn:misc:match?
+                       (lambda (x)
+                         match-fail)])
+        (m x))))
+  
   (define (try-extract m l)
     (let loop ([prev l] [cur (mcdr l)])
       (if (empty? (mcdr cur))
@@ -164,7 +176,7 @@
       [(_ (after timeout to-expr ...) (pat expr ...) ...)
        (let* ([matcher (match-lambda (pat (lambda () expr ...)) ...)]
               [timeout-thunk (lambda () to-expr ...)])
-         (receive-help timeout timeout-thunk matcher))]
+         (receive-help timeout timeout-thunk (matcher->matcher/fail matcher)))]
       [(_ clause ...) (receive (after false (void)) clause ...)]))
   
   ; must ensure name not already taken
@@ -263,7 +275,7 @@
              [(input-port? val)
               (match (with-handlers ([exn? (lambda (exn) (report-exn exn) eof)])
                        (read val))
-                [(lid msg)
+                [(list lid msg)
                  ; forward to local mailbox
                  (let ([mb (hash-table-get mailboxes lid (lambda () false))])
                    (when mb (send-msg mb msg)))
@@ -276,7 +288,7 @@
              [else ; val was the mailbox semaphore
               (match (mcar (mailbox-head forward-mailbox))
                 ;['quit (void)]
-                [(#('tid ip:port lid) msg)
+                [(list (vector 'tid ip:port lid) msg)
                  (let inner ([out-p (hash-table-get
                                      out-ports ip:port
                                      (lambda ()
