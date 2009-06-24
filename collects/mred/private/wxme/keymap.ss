@@ -39,7 +39,7 @@
         ("wheelup" . wheel-up)
         ("wheeldown" . wheel-down)
         ("esc" . escape) 
-        ("delete" . delete)
+        ("delete" . #\rubout)
         ("del" . #\rubout)
         ("insert" . insert)
         ("ins" . insert)
