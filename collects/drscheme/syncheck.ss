@@ -2024,10 +2024,15 @@ If the namespace does not, they are colored the unbound color.
         
         (when (and unused/phases requires/phases)
           (let ([req-path/pr (get-module-req-path (identifier-binding var phase-level)
-                                                  phase-level)])
-            (when req-path/pr
+                                                  phase-level)]
+                [source-req-path/pr (get-module-req-path (identifier-binding var phase-level)
+                                                          phase-level
+                                                          #:nominal? #f)])
+            (when (and req-path/pr source-req-path/pr)
               (let* ([req-path (list-ref req-path/pr 0)]
                      [id (list-ref req-path/pr 1)]
+                     [source-req-path (list-ref source-req-path/pr 3)]
+                     [source-id (list-ref source-req-path/pr 1)]
                      [req-phase-level (list-ref req-path/pr 2)]
                      [unused (hash-ref unused/phases req-phase-level)]
                      [requires (hash-ref requires/phases req-phase-level)]
@@ -2041,8 +2046,8 @@ If the namespace does not, they are colored the unbound color.
                                 (when id
                                   (add-jump-to-definition
                                    var
-                                   id
-                                   (get-require-filename req-path user-namespace user-directory)))
+                                   source-id
+                                   (get-require-filename source-req-path user-namespace user-directory)))
                                 (add-mouse-over var
                                                 (fw:gui-utils:format-literal-label 
                                                  (string-constant cs-mouse-over-import)
@@ -2072,25 +2077,28 @@ If the namespace does not, they are colored the unbound color.
         [else (eq? var id)]))
     
     
-    ;; get-module-req-path : binding -> (union #f (cons require-sexp sym))
+    ;; get-module-req-path : binding number [#:nominal? boolean] -> (union #f (list require-sexp sym ?? module-path))
     ;; argument is the result of identifier-binding or identifier-transformer-binding
-    (define (get-module-req-path binding phase-level)
+    (define (get-module-req-path binding phase-level #:nominal? [nominal-source-path? #t])
       (and (pair? binding)
            (or (not (number? phase-level))
                (= phase-level
                   (+ (list-ref binding 5)
                      (list-ref binding 6))))
-           (let ([mod-path (list-ref binding 2)])
+           (let ([mod-path (if nominal-source-path? (list-ref binding 2) (list-ref binding 0))])
              (cond
                [(module-path-index? mod-path)
                 (let-values ([(base offset) (module-path-index-split mod-path)])
                   (list base
-                        (list-ref binding 3)
-                        (list-ref binding 5)))]
+                        (if nominal-source-path? (list-ref binding 3) (list-ref binding 1))
+                        (list-ref binding 5)
+                        mod-path))]
                [(symbol? mod-path)
                 (list mod-path 
-                      (list-ref binding 3)
-                      (list-ref binding 5))]))))
+                      (if nominal-source-path? (list-ref binding 3) (list-ref binding 1))
+                      (list-ref binding 5)
+                      mod-path)]
+               [else #f]))))
     
     ;; color/connect-top : namespace directory id-set syntax -> void
     (define (color/connect-top rename-ht user-namespace user-directory binders var)
@@ -2242,17 +2250,21 @@ If the namespace does not, they are colored the unbound color.
                             #f
                             (make-require-open-menu file)))))))))))
     
-    ;; get-require-filename : sexp namespace string[directory] -> filename
+    ;; get-require-filename : sexp-or-module-path-index namespace string[directory] -> filename
     ;; finds the filename corresponding to the require in stx
     (define (get-require-filename datum user-namespace user-directory)
-      (let ([mp
-             (parameterize ([current-namespace user-namespace]
-                            [current-directory user-directory]
-                            [current-load-relative-directory user-directory])
-               (with-handlers ([exn:fail? (λ (x) #f)])
-                 ((current-module-name-resolver) datum #f #f)))])
-        (and (resolved-module-path? mp)
-             (resolved-module-path-name mp))))
+      (parameterize ([current-namespace user-namespace]
+                     [current-directory user-directory]
+                     [current-load-relative-directory user-directory])
+        (with-handlers ([exn:fail? (λ (x) 
+                                     (printf "fail ~s\n" (exn-message x))
+                                     #f)])
+          (cond
+            [(module-path-index? datum)
+             (resolved-module-path-name 
+              (module-path-index-resolve datum))]
+            [else
+             ((current-module-name-resolver) datum #f #f)]))))
     
     ;; make-require-open-menu : path -> menu -> void
     (define (make-require-open-menu file)
