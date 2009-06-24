@@ -6,6 +6,7 @@
          (only-in "match-expander.ss"
                   define-match-expander)
          "define-forms.ss"
+         "struct.ss"
          (for-syntax "parse.ss"
                      "gen-match.ss"
                      (only-in "patterns.ss" match-...-nesting)))
@@ -13,6 +14,7 @@
 (provide (for-syntax match-...-nesting)
          match-equality-test
          define-match-expander
+         struct*
          exn:misc:match?)
 
 (define-forms parse/cert

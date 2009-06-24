@@ -209,6 +209,89 @@
    
    ))
 
+(define struct*-tests
+  (make-test-suite 
+   "Tests of struct*"
+   (make-test-case "not an id for struct"
+                   (assert-exn exn:fail:syntax?
+                               (lambda ()
+                                 (expand #'(let ()
+                                             (define-struct tree (val left right))
+                                             (match (make-tree 0 1 2)
+                                               [(struct* 4 ())
+                                                #f]))))))
+   (make-test-case "not a struct-info for struct"
+                   (assert-exn exn:fail:syntax?
+                               (lambda ()
+                                 (expand #'(let ()
+                                             (define-syntax tree 1)
+                                             (match 1
+                                               [(struct* tree ())
+                                                #f]))))))
+   (make-test-case "bad form"
+                   (assert-exn exn:fail:syntax?
+                               (lambda ()
+                                 (expand #'(let ()
+                                             (define-struct tree (val left right))
+                                             (match (make-tree 0 1 2)
+                                               [(struct* tree ([val]))
+                                                #f]))))))
+   (make-test-case "bad form"
+                   (assert-exn exn:fail:syntax?
+                               (lambda ()
+                                 (expand #'(let ()
+                                             (define-struct tree (val left right))
+                                             (match (make-tree 0 1 2)
+                                               [(struct* tree (val))
+                                                #f]))))))
+   (make-test-case "field appears twice"
+                   (assert-exn exn:fail:syntax?
+                               (lambda ()
+                                 (expand #'(let ()
+                                             (define-struct tree (val left right))
+                                             (match (make-tree 0 1 2)
+                                               [(struct* tree ([val 0] [val 0]))
+                                                #f]))))))
+   (make-test-case "not a field"
+                   (assert-exn exn:fail:syntax?
+                               (lambda ()
+                                 (expand #'(let ()
+                                             (define-struct tree (val left right))
+                                             (match (make-tree 0 1 2)
+                                               [(struct* tree ([feet 0]))
+                                                #f]))))))
+   (make-test-case "super structs don't work"
+                   (assert-exn exn:fail:syntax?
+                               (lambda ()
+                                 (expand #'(let ()
+                                             (define-struct extra (foo))
+                                             (define-struct (tree extra) (val left right))
+                                             (match (make-tree #f 0 1 2)
+                                               [(struct* tree ([extra #f] [val 0]))
+                                                #f]))))))
+   (make-test-case "super struct kinda work"
+                   (let ()
+                     (define-struct extra (foo))
+                     (define-struct (tree extra) (val left right))
+                     (match (make-tree #f 0 1 2)
+                       [(struct* tree ([val a]))
+                        (assert = 0 a)])))
+   (make-test-case "from documentation"
+                   (let ()
+                     (define-struct tree (val left right))
+                     (match-define 
+                      (struct* 
+                       tree 
+                       ([val a]
+                        [left
+                         (struct*
+                          tree 
+                          ([right #f]
+                           [val b]))]))
+                      (make-tree 0 (make-tree 1 #f #f) #f))
+                     (assert = 0 a)
+                     (assert = 1 b)))))
+
 (define plt-match-tests
   (make-test-suite "Tests for plt-match.ss"
                    doc-tests
@@ -217,6 +300,7 @@
                    nonlinear-tests
                    match-expander-tests
                    reg-tests
+                   struct*-tests
                    ))
 
 (define (run-tests)

@@ -445,4 +445,23 @@ default is @scheme[equal?].}
 
 @; ----------------------------------------------------------------------
 
+@section{Library Extensions}
+
+@defform[(struct* struct-id ([field pat] ...))]{
+ Matches an instance of a structure type named @scheme[struct-id], where the field @scheme[field] in the instance matches the corresponding @scheme[pat].
+                                                
+ Any field of @scheme[struct-id] may be omitted and they may occur in any order.
+ 
+ @defexamples[
+  #:eval match-eval
+  (define-struct tree (val left right))
+  (match (make-tree 0 (make-tree 1 #f #f) #f)
+    [(struct* tree ([val a]
+                    [left (struct* tree ([right #f] [val b]))]))
+     (list a b)])
+ ]
+ }
+
+@; ----------------------------------------------------------------------
+
 @close-eval[match-eval]
