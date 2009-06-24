@@ -1,3 +1,4 @@
+#lang frtime
 (require
  frtime/animation
  frtime/gui)

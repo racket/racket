@@ -1,3 +1,4 @@
+#lang frtime
 (require frtime/animation)
 
 (define-values (pos vel)
