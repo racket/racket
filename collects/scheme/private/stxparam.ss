@@ -11,9 +11,9 @@
 
   (#%provide (for-syntax do-syntax-parameterize))
 
-  (define-for-syntax (do-syntax-parameterize stx let-syntaxes-id)
+  (define-for-syntax (do-syntax-parameterize stx let-syntaxes-id empty-body-ok?)
     (syntax-case stx ()
-      [(_ ([id val] ...) body0 body ...)
+      [(_ ([id val] ...) body ...)
        (let ([ids (syntax->list #'(id ...))])
 	 (with-syntax ([(gen-id ...)
 			(map (lambda (id)
@@ -43,7 +43,13 @@
 		"duplicate binding"
 		stx
 		dup)))
+           (unless empty-body-ok?
+             (when (null? (syntax-e #'(body ...)))
+               (raise-syntax-error
+                #f
+                "missing body expression(s)"
+                stx)))
            (with-syntax ([let-syntaxes let-syntaxes-id])
              (syntax/loc stx
                (let-syntaxes ([(gen-id) (convert-renamer val)] ...)
-                 body0 body ...)))))])))
+                 body ...)))))])))

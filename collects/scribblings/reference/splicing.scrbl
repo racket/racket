@@ -66,7 +66,8 @@ forms are valid in an internal-definition context. In particular,
 @scheme[require] and @scheme[provide] forms cannot appear in the body
 of @scheme[splicing-syntax-parameterize], even if
 @scheme[splicing-syntax-parameterize] is used in a @scheme[module]
-body.
+body. In a definition context, the body of
+@scheme[splicing-syntax-parameterize] can be empty.
 
 @examples[
 #:eval splice-eval

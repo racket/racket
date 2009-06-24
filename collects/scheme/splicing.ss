@@ -169,9 +169,9 @@
 (define-syntax (splicing-syntax-parameterize stx)
   (if (eq? 'expression (syntax-local-context))
       ;; Splicing is no help in an expression context:
-      (do-syntax-parameterize stx #'let-syntaxes)
+      (do-syntax-parameterize stx #'let-syntaxes #f)
       ;; Let `syntax-parameterize' check syntax, then continue
-      (do-syntax-parameterize stx #'ssp-let-syntaxes)))
+      (do-syntax-parameterize stx #'ssp-let-syntaxes #t)))
 
 (define-syntax (ssp-let-syntaxes stx)
   (syntax-case stx ()
