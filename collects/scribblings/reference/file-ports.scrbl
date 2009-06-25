@@ -1,5 +1,38 @@
 #lang scribble/doc
-@(require "mz.ss")
+@(require "mz.ss"
+          scheme/file)
+
+@(begin
+  ;; ignore expressions at the top-level so that they don't print #<void>
+  (define-syntax ignore
+    (syntax-rules ()
+      [(_ expr) (define x expr)]))
+
+  ;; hacky?
+  (define file-eval
+   (lambda ()
+     (let ([the-eval (make-base-eval)])
+       (the-eval '(require (for-syntax scheme/base)
+			   scheme/file))
+       (the-eval '(define some-file (make-temporary-file)))
+       (the-eval '(define some-other-file (make-temporary-file)))
+       the-eval)))
+
+  (define-syntax file-examples
+    (syntax-rules ()
+      [(_ expr ...)
+       (let [(my-eval (file-eval))]
+	 (define (clean)
+	   (my-eval '(for [(i (list some-file some-other-file))]
+			  (when (file-exists? i)
+			    (delete-file i)))))
+	 (clean)
+	 (begin0
+	   (defexamples #:eval my-eval
+			expr ...)
+	   (clean)))]))
+
+  "")
 
 @title[#:tag "file-ports"]{File Ports}
 
@@ -59,7 +92,16 @@ otherwise available for garbage collection (see
 to close it more automatically (see @secref["willexecutor"]).
 
 A @tech{path} value that is the @tech{cleanse}d version of
-@scheme[path] is used as the name of the opened port.}
+@scheme[path] is used as the name of the opened port.
+
+@file-examples[
+;; put some text in a file
+(with-output-to-file some-file
+  (lambda () (printf "hello world")))
+(define in (open-input-file some-file))
+(read-string 11 in)
+(close-input-port in)
+]}
 
 @defproc[(open-output-file [path path-string?]
                            [#:mode mode-flag (or/c 'binary 'text) 'binary]
@@ -140,7 +182,13 @@ otherwise available for garbage collection (see
 to close it more automatically (see @secref["willexecutor"]).
 
 A @tech{path} value that is the @tech{cleanse}d version of
-@scheme[path] is used as the name of the opened port.}
+@scheme[path] is used as the name of the opened port.
+
+@file-examples[
+(define out (open-output-file some-file))
+(write "hello world" out)
+(close-output-port out)
+]}
 
 @defproc[(open-input-output-file [path path-string?]
                            [#:mode mode-flag (or/c 'binary 'text) 'binary]
@@ -167,7 +215,14 @@ Calls @scheme[open-input-file] with the @scheme[path] and
 @scheme[mode-flag] arguments, and passes the resulting port
 to @scheme[proc]. The result of @scheme[proc] is the result of the
 @scheme[call-with-input-file] call, but the newly opened port is closed
-when @scheme[thunk] return.}
+when @scheme[thunk] return.
+
+@file-examples[
+(with-output-to-file some-file
+  (lambda () (printf "text in a file")))
+(call-with-input-file some-file
+  (lambda (in) (read-string 15 in)))
+]}
 
 @defproc[(call-with-output-file [path path-string?]
                                 [proc (output-port? . -> . any)]
@@ -177,7 +232,16 @@ when @scheme[thunk] return.}
          any]{
 Analogous to @scheme[call-with-input-file], but passing @scheme[path],
 @scheme[mode-flag] and @scheme[exists-flag] to
-@scheme[open-output-file].}
+@scheme[open-output-file].
+
+@file-examples[
+(call-with-output-file some-file
+  (lambda (out)
+    (write 'hello out)))
+(call-with-input-file some-file
+  (lambda (in)
+    (read-string 5 in)))
+]}
 
 @defproc[(call-with-input-file* [path path-string?]
                                 [proc (input-port? . -> . any)]
@@ -206,7 +270,14 @@ return, a continuation application, or a prompt-based abort.}
 Like @scheme[call-with-input-file*], but instead of passing the newly
 opened port to the given procedure argument, the port is installed as
 the current input port (see @scheme[current-input-port]) using
-@scheme[parameterize] around the call to @scheme[thunk].}
+@scheme[parameterize] around the call to @scheme[thunk].
+
+@file-examples[
+(with-output-to-file some-file
+  (lambda () (printf "hello")))
+(with-input-from-file some-file
+  (lambda () (read-string 5)))
+]}
 
 @defproc[(with-output-to-file [path path-string?]
                               [thunk (-> any)]
@@ -217,7 +288,14 @@ the current input port (see @scheme[current-input-port]) using
 Like @scheme[call-with-output-file*], but instead of passing the newly
 opened port to the given procedure argument, the port is installed as
 the current output port (see @scheme[current-output-port]) using
-@scheme[parameterize] around the call to @scheme[thunk].}
+@scheme[parameterize] around the call to @scheme[thunk].
+
+@file-examples[
+(with-output-to-file some-file
+  (lambda () (printf "hello")))
+(with-input-from-file some-file
+  (lambda () (read-string 5)))
+]}
 
 @defproc[(port-file-identity [port file-stream-port?]) any]{
 
@@ -231,4 +309,13 @@ identities (even if the ports actually access the same file)---except
 as can be inferred through relationships with other ports. If
 @scheme[file-stream-port] is closed, the @exnraise[exn:fail].  Under
 Windows 95, 98, and Me, if @scheme[file-stream-port] is connected to a
-pipe instead of a file, the @exnraise[exn:fail:filesystem].}
+pipe instead of a file, the @exnraise[exn:fail:filesystem].
+
+@file-examples[
+(define file1 (open-output-file some-file))
+(define file2 (open-output-file some-other-file))
+(port-file-identity file1)
+(port-file-identity file2)
+(close-output-port file1)
+(close-output-port file2)
+]}
