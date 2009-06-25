@@ -877,18 +877,19 @@ WARNING: printf is rebound in the body of the unit to always
             (split-snip (+ start len))
             (let loop ([snip (find-snip start 'after-or-none)])
               (when snip
-                (let ([next (send snip next)])
-                  (when (is-a? snip string-snip%)
-                    (let* ([old (send snip get-text 0 (send snip get-count))]
-                           [new (string-normalize old)])
-                      (unless (equal? new old)
-                        (when ask?
-                          (set! ask? #f)
-                          (unless (ask-normalize?) (abort)))
-                        (let ([snip-pos (get-snip-position snip)])
-                          (delete snip-pos (+ snip-pos (string-length old)))
-                          (insert new snip-pos snip-pos #f)))))
-                  (loop next)))))
+                (let ([pos (get-snip-position snip)])
+                  (when (< pos (+ start len))
+                    (when (is-a? snip string-snip%)
+                      (let* ([old (send snip get-text 0 (send snip get-count))]
+                             [new (string-normalize old)])
+                        (unless (equal? new old)
+                          (when ask?
+                            (set! ask? #f)
+                            (unless (ask-normalize?) (abort)))
+                          (let ([snip-pos (get-snip-position snip)])
+                            (delete snip-pos (+ snip-pos (string-length old)))
+                            (insert new snip-pos snip-pos #f)))))
+                    (loop (send snip next)))))))
           (set! rewriting? #f)))
       (end-edit-sequence)
       (inner (void) after-insert start len))
