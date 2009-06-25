@@ -1,6 +1,6 @@
 #lang setup/infotab
 
-(define compile-omit-paths '("demos"))
+(define compile-omit-paths '("demos" "tests"))
 
 (define scribblings '(("frtime.scrbl" () (experimental))))
 (define tools      '("frtime-tool.ss"))
