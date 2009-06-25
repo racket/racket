@@ -1,4 +1,4 @@
-(module frtime "mzscheme-utils.ss"
+(module frtime "lang-utils.ss"
   (require (all-except "lang-ext.ss" lift deep-value-now))
   (require "frp-snip.ss")
   (require (as-is:unchecked frtime/core/frp
@@ -13,10 +13,7 @@
       (or (undefined? v)
           (pred v))))
 
-
-  ;(provide-for-syntax (rename frtime/mzscheme-utils syntax->list syntax->list))
-  
   (provide value-nowable? behaviorof
            (all-from "lang-ext.ss")
-	   (all-from "mzscheme-utils.ss")
+	   (all-from "lang-utils.ss")
            (all-from "frp-snip.ss")))

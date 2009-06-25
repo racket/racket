@@ -1,4 +1,4 @@
-(module mzscheme-utils "mzscheme-core.ss"
+(module lang-utils "lang-core.ss"
   
   (require (all-except mzscheme
                        module
@@ -380,6 +380,6 @@
            )
   
   ; from core
-  (provide (all-from "mzscheme-core.ss"))
+  (provide (all-from "lang-core.ss"))
            
   )

@@ -13,8 +13,8 @@
   (require-for-syntax mzlib/list)
   (require (only frtime/core/frp super-lift undefined undefined?))
   (require (rename frtime/lang-ext frtime:lift lift)
-           (rename frtime/mzscheme-core frtime:if if)
-           (only frtime/mzscheme-core frp:copy-list))
+           (rename frtime/lang-core frtime:if if)
+           (only frtime/lang-core frp:copy-list))
 ;  (require mzlib/unit mzlib/unitsig)
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

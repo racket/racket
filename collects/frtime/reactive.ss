@@ -1,4 +1,4 @@
-(module reactive "mzscheme-utils.ss"
+(module reactive frtime/lang-utils
   (require "lang-ext.ss")
   (require "frp-snip.ss")
   (require frtime/list)
@@ -17,11 +17,9 @@
       (or (undefined? v)
           (pred v))))
 
-  ;(provide-for-syntax (rename frtime/mzscheme-utils syntax->list syntax->list))
-  
   (provide value-nowable? behaviorof
            (all-from frtime/list)
            (all-from frtime/etc)
-	   (all-from "mzscheme-utils.ss")
+	   (all-from frtime/lang-utils)
            (all-from-except "lang-ext.ss" lift)
            (all-from "frp-snip.ss")))

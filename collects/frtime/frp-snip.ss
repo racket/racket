@@ -10,7 +10,7 @@
            
            frtime/core/frp
            (all-except frtime/lang-ext undefined?)
-           (only frtime/mzscheme-core any-nested-reactivity? raise-reactivity)
+           (only frtime/lang-core any-nested-reactivity? raise-reactivity)
 
            ;; MrEd require
            (all-except mred send-event))

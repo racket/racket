@@ -1,4 +1,4 @@
-(module frtime-lang-only "mzscheme-utils.ss"
+(module frtime-lang-only "lang-utils.ss"
   (require frtime/lang-ext)
   (require (as-is:unchecked frtime/core/frp
 	    event-set? signal-value))
@@ -12,9 +12,6 @@
       (or (undefined? v)
           (pred v))))
 
-
-  ;(provide-for-syntax (rename frtime/mzscheme-utils syntax->list syntax->list))
-  
   (provide value-nowable? behaviorof
-	   (all-from "mzscheme-utils.ss")
+	   (all-from "lang-utils.ss")
            (all-from-except frtime/lang-ext lift)))

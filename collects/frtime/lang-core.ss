@@ -1,4 +1,4 @@
-(module mzscheme-core mzscheme
+(module lang-core mzscheme
   (require-for-syntax frtime/struct mzlib/list)
   (require mzlib/list
            frtime/core/frp
