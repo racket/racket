@@ -5,9 +5,9 @@
            mzlib/match
            (as-is:unchecked frtime/lang-ext lift)
            mzlib/class
-           frtime/list
-           frtime/etc
-           frtime/math
+           frtime/frlibs/list
+           frtime/frlibs/etc
+           frtime/frlibs/math
            (rename mzscheme mz:define-struct define-struct))
   
   (require-for-syntax mzlib/etc)

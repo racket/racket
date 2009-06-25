@@ -1,6 +1,6 @@
 #lang scheme
 (require "list.ss")
-(require (rename-in (only-in "frtime.ss" provide)
+(require (rename-in (only-in frtime/frtime provide)
                     [provide frtime:provide]))
 
 (frtime:provide

@@ -482,7 +482,7 @@
         (lambda (c prev)
           (syntax-case prev ()
             [(begin clause ...)
-             (syntax-case c (lifted lifted:nonstrict as-is:unchecked as-is frlibs)
+             (syntax-case c (lifted lifted:nonstrict as-is:unchecked as-is)
                [(lifted:nonstrict module . ids)
                 (with-syntax ([(fun-name ...) #'ids]
                               [(tmp-name ...) (generate-temporaries/loc stx #'ids)])
@@ -511,10 +511,6 @@
                       (require (rename module tmp-name fun-name) ...)
                       (define fun-name (ensure-no-signal-args tmp-name 'fun-name))
                       ...))]
-               [(frlibs str ...)
-                #'(begin
-                    clause ...
-                    (require (lib str "frtime") ...))]
                [require-spec
                 #'(begin clause ... (require require-spec))])]))
         #'(begin)
