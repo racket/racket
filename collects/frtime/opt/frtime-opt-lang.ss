@@ -3,7 +3,7 @@
 ;; optimization, though -- that is left to the frtime-opt module.
 (module frtime-opt-lang mzscheme
   (require (prefix frtime: frtime/frtime))
-  (require-for-syntax frtime/lowered-equivs)
+  (require-for-syntax frtime/opt/lowered-equivs)
   
   ;; Export a function that is just a lifted version of a standard
   ;; function (with the same name).

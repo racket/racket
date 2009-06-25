@@ -8,7 +8,7 @@
   (provide (rename my-module-begin #%module-begin)
            #%app #%top #%datum optimize-expr optimize-module dont-optimize)
   
-  (require-for-syntax frtime/lowered-equivs)
+  (require-for-syntax frtime/opt/lowered-equivs)
   (require-for-syntax (only srfi/1 lset-union lset-difference every))
   (require-for-syntax mzlib/list)
   (require (only frtime/core/frp super-lift undefined undefined?))
