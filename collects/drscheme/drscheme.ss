@@ -1,6 +1,5 @@
 #lang scheme/base
-
-(require "private/key.ss")
+(require scheme/gui/base "private/key.ss")
 
 (define debugging? (getenv "PLTDRDEBUG"))
 (define profiling? (getenv "PLTDRPROFILE"))
@@ -55,7 +54,12 @@
 
 (when profiling?
   (flprintf "PLTDRPROFILE: installing profiler\n")
+  ;; NOTE that this might not always work.
+  ;; it creates a new custodian and installs it, but the
+  ;; original eventspace was created on the original custodian
+  ;; and this code does not create a new eventspace. 
   (let ([orig-cust (current-custodian)]
+        [orig-eventspace (current-eventspace)]
         [new-cust (make-custodian)])
     (current-custodian new-cust)
     ((dynamic-require 'drscheme/private/profile-drs 'start-profile) orig-cust)))

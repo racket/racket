@@ -18,6 +18,7 @@ itself.
 
 (define (start-profile super-custodian)
   (define drs-custodian (current-custodian))
+  (define drs-main-thread (current-thread))
   (define profile-eventspace
     (parameterize ([current-custodian super-custodian])
       (make-eventspace)))
@@ -32,6 +33,22 @@ itself.
   (define resume-b (new button% [label "Resume"] [parent bp] [callback (λ (a b) (resume))] [stretchable-width #t]))
   (define start-stop-b (new button% [label "Stop"] [parent bp] [callback (λ (a b) (start-stop))] [stretchable-width #t]))
   (define choice (new choice% [label #f] [choices '("9" "10" "12")] [parent bp] [callback (λ (a b) (font-size))]))
+
+  
+  (define mb (new menu-bar% [parent frame]))
+  (define edit-menu (new menu% [label "&Edit"] [parent mb]))
+  (define sa (new menu-item% 
+                  [parent edit-menu]
+                  [label "Select al&l"]
+                  [shortcut #\a] 
+                  [callback (λ (x y) 
+                              (send ec focus)
+                              (send t set-position 0 (send t last-position)))]))
+  (define copy (new menu-item%
+                    [parent edit-menu]
+                    [label "&Copy"]
+                    [shortcut #\c]
+                    [callback (λ (x y) (send t copy))]))
   
   (define (font-size)
     (let ([n (send choice get-string-selection)])
@@ -49,7 +66,7 @@ itself.
   (define running? #f)
   (define current-sampler #f)
   (define (start-sampler)
-    (let ([s (create-sampler drs-custodian 1/2 super-custodian)])
+    (let ([s (create-sampler (list drs-custodian drs-main-thread) 1/2 super-custodian)])
       (set! current-sampler s)))
   (define (stop-sampler)
     (current-sampler 'stop)
@@ -101,4 +118,5 @@ itself.
     (update-buttons))
 
   (update-buttons)
+  (send ec focus)
   (send frame show #t))
