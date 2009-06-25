@@ -3,11 +3,13 @@
   (for-label scheme
     scheme/class
     (except-in scheme/gui/base send-event)
-    (only-in frtime undefined undefined? behavior? event? signal? seconds milliseconds never-e
+    (only-in frtime 
+             undefined undefined? behavior? event? signal? seconds milliseconds never-e
 	     new-cell set-cell! event-receiver send-event
 	     map-e ==> filter-e =#> accum-e accum-b collect-e collect-b changes hold merge-e
 	     value-now delay-by integral derivative once-e switch when-e lift-strict)
-    (only-in "gui/fred.ss" ft-frame% ft-message% ft-button% ft-check-box% ft-slider%
+    (only-in frtime/gui/fred 
+             ft-frame% ft-message% ft-button% ft-check-box% ft-slider%
 	     ft-text-field% ft-radio-box% ft-choice% ft-list-box%)))
 
 @title[#:tag "frtime"]{@bold{FrTime}: A Language for Reactive Programs}
