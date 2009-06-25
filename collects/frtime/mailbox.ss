@@ -56,7 +56,7 @@
        (not-on-receive empty))))  
   (make-mailbox manager control-ch msgs-ch))
 
-(define-struct receive (reply-ch timeout timeout-thunk  matcher))
+(define-struct receive (reply-ch timeout timeout-thunk matcher))
 (define (mailbox-send! mb msg)
   (match mb
     [(struct mailbox (thd _ msgs))
