@@ -1,7 +1,8 @@
 #lang scheme
-(require "dv.ss")
+(require "dv.ss"
+         "contract.ss")
 
-(define-struct t (sorter equality data) #:transparent)
+(define-struct t (sorter equality data))
 
 ;; sorter: elements which have the most trueness according to 
 ;; the sorter pop out first
@@ -100,7 +101,7 @@
   (and (heap? heap)
        (not (= (heap-size heap) 0))))
 
-(provide/contract
+(provide/contract*
  [heap? (any/c . -> . boolean?)]
  [non-empty-heap? (any/c . -> . boolean?)]
  [make-heap (sorter/c equality/c . -> . heap?)]

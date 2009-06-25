@@ -1,5 +1,7 @@
 #lang scheme
-(require "mailbox.ss")
+(require "match.ss"
+         "contract.ss"
+         "mailbox.ss")
 
 (define-struct tid (lid) #:prefab)
 (define (create-tid thr) (make-tid thr))
@@ -12,11 +14,7 @@
 
 (define (do-receive timeout timeout-thunk matcher)
   (define mb (hash-ref mailboxes (tid-lid (self))))
-  (define timeout-evt
-    (if timeout
-        (alarm-evt (+ (current-inexact-milliseconds) timeout)) 
-        never-evt))
-  (define val-thunk (mailbox-receive mb timeout-evt timeout-thunk matcher))
+  (define val-thunk (mailbox-receive mb timeout timeout-thunk matcher))
   (val-thunk))
 
 (define-syntax receive
@@ -25,7 +23,9 @@
      (do-receive 
       timeout 
       (lambda () to-expr ...)
-      (match-lambda (pat (lambda () expr ...)) ...))]
+      (match-lambda
+        (pat (lambda () expr ...)) ...
+        [_ match-fail]))]
     [(_ clause ...) (receive (after false (void)) clause ...)]))
 
 ; must ensure name not already taken
@@ -84,6 +84,6 @@
 (provide
  spawn/name
  receive)
-(provide/contract
+(provide/contract*
  [! (tid? any/c . -> . void)]
  [self (-> tid?)])

@@ -1,6 +1,7 @@
 #lang scheme
+(require "contract.ss")
 
-(define-struct dv (real used vec) #:mutable #:transparent)
+(define-struct dv (real used vec) #:mutable)
 
 (define (dv:make size)
   (make-dv size 0 (make-vector size)))
@@ -11,7 +12,7 @@
   (match a-dv
     [(struct dv (_ used vec))
      (set-dv-used! a-dv (sub1 used))
-     (vector-set! vec (sub1 used) 0)]))
+     (vector-set! vec used 0)]))
 
 (define (dv:ref a-dv pos)
   (match a-dv
@@ -42,7 +43,7 @@
            (set-dv-used! a-dv (add1 used))
            (vector-set! new-vec used item)))]))
 
-(provide/contract
+(provide/contract*
  [dv:make (exact-nonnegative-integer? . -> . dv?)]
  [dv:length (dv? . -> . exact-nonnegative-integer?)]
  [dv:remove-last (dv? . -> . void)]

@@ -1,6 +1,7 @@
 #lang scheme
 (require (only-in mzlib/etc 
                   identity nor)
+         "contract.ss"
          "erl.ss"
          "heap.ss")
 
@@ -676,7 +677,7 @@
 (define switching-trigger/c
   any/c)
 
-(provide/contract
+(provide/contract*
  ; Event Sets
  [make-events-now ((listof any/c) . -> . event-set?)] ; XXX Ugly contract
  [event-set? (any/c . -> . boolean?)]
