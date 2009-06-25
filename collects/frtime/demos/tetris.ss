@@ -1,3 +1,4 @@
+#lang frtime
 (require (lifted texpict/mrpict colorize vl-append vr-append text
                  cc-superimpose hb-append ht-append pin-over blank
                  dc-for-text-size)

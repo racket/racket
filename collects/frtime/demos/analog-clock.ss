@@ -1,3 +1,4 @@
+#lang frtime
 ;; Analog Clock
 ;; Written by Robb Cutler
 ;; July, 2004

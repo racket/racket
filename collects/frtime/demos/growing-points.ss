@@ -1,3 +1,4 @@
+#lang frtime
 ;; GrowingPoints
 ;; Written by Robb Cutler
 ;; July, 2004

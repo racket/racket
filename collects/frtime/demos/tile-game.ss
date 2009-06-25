@@ -1,5 +1,5 @@
 ;; tile game by Dave Tucker
-
+#lang frtime
 (require frtime/animation
          frtime/gui
          mzlib/class)
