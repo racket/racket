@@ -1,7 +1,9 @@
 (module animation frtime
   
-  (require (all-except "graphics.ss" make-posn posn-x posn-y make-rgb)
-           (lifted "graphics.ss" posn-x posn-y make-posn make-rgb)
+  (require (all-except frtime/animation/graphics
+                       make-posn posn-x posn-y make-rgb)
+           (lifted frtime/animation/graphics
+                   posn-x posn-y make-posn make-rgb)
            mzlib/match
            (as-is:unchecked frtime/lang-ext lift)
            mzlib/class
@@ -375,6 +377,4 @@
   (provide
    (all-defined-except pixmap window draw-list l d 
                        make-wave-state wave-state-hz wave-state-offset)
-   #;(lifted make-circle make-ring make-solid-ellipse make-rect make-line make-polygon make-solid-polygon
-           make-graph-string)
-   (all-from "graphics.ss")))
+   (all-from frtime/animation/graphics)))
