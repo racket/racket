@@ -1,6 +1,6 @@
 (module frtime-lang-only "mzscheme-utils.ss"
   (require frtime/lang-ext)
-  (require (as-is:unchecked frtime/frp-core
+  (require (as-is:unchecked frtime/core/frp
 	    event-set? signal-value))
   
   (define (value-nowable? x)

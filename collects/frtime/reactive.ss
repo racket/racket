@@ -3,7 +3,7 @@
   (require "frp-snip.ss")
   (require frtime/list)
   (require frtime/etc)
-  (require (as-is:unchecked "frp-core.ss"
+  (require (as-is:unchecked frtime/core/frp
                             event-set? snap? signal-value))
 
   (snap? #t)

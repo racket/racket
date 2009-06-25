@@ -3,7 +3,7 @@
                  dc-for-text-size)
          (lifted texpict/utils filled-rectangle rectangle)
          frtime/gui/fred mred
-         (only frtime/frp-core do-in-manager do-in-manager-after))
+         (only frtime/core/frp do-in-manager do-in-manager-after))
 
 ;; TODO: layered drawing, pause, game over
 

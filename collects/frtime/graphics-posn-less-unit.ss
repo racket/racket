@@ -10,11 +10,7 @@
 	   mzlib/class
 	   mzlib/class100
 	   mzlib/etc
-           "erl.ss"
-           ;(rename "frp-core.ss" event-receiver event-receiver)
-           ;(rename "frp-core.ss" frp-man man)
-           ;(rename "frp-core.ss" send-event send-event)
-           frtime/frp-core
+           frtime/core/frp
 	   "graphics-sig.ss")
 
   (import (prefix mred: mred^)

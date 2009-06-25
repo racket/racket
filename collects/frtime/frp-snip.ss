@@ -8,7 +8,7 @@
            
            ;; FRP requires
            
-           frtime/frp-core
+           frtime/core/frp
            (all-except frtime/lang-ext undefined?)
            (only frtime/mzscheme-core any-nested-reactivity? raise-reactivity)
 

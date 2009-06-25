@@ -11,7 +11,7 @@
   (require-for-syntax frtime/lowered-equivs)
   (require-for-syntax (only srfi/1 lset-union lset-difference every))
   (require-for-syntax mzlib/list)
-  (require (only frtime/frp-core super-lift undefined undefined?))
+  (require (only frtime/core/frp super-lift undefined undefined?))
   (require (rename frtime/lang-ext frtime:lift lift)
            (rename frtime/mzscheme-core frtime:if if)
            (only frtime/mzscheme-core frp:copy-list))
@@ -81,7 +81,7 @@
   ;; The variables are projected before evaluating the expression,
   ;; and the result is then injected into the dataflow graph as a
   ;; single node.
-  (require (only frtime/frp-core proc->signal value-now))
+  (require (only frtime/core/frp proc->signal value-now))
   (define-syntax (dip stx)
     (syntax-case stx (begin)
       ;; special case: don't dip lone identifiers

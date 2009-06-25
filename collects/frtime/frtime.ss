@@ -1,7 +1,7 @@
 (module frtime "mzscheme-utils.ss"
   (require (all-except "lang-ext.ss" lift deep-value-now))
   (require "frp-snip.ss")
-  (require (as-is:unchecked "frp-core.ss"
+  (require (as-is:unchecked frtime/core/frp
                             event-set? signal-value))
 
   (define (value-nowable? x)

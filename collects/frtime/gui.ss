@@ -3,7 +3,7 @@
    (all-except mzlib/etc rec)
    mzlib/list
    frtime/gui/fred
-   (rename frtime/frp-core proc->signal proc->signal)
+   (rename frtime/core/frp proc->signal proc->signal)
    (all-except mred send-event))
   
   (define frame (new ft-frame% [label "GUI"] [min-height 150] [min-width 200] [shown #t]))

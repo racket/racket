@@ -1,5 +1,5 @@
 (module lang-ext mzscheme
-  (require frtime/frp-core
+  (require frtime/core/frp
            mzlib/etc
            mzlib/list)
 
@@ -879,7 +879,7 @@
            split
            define-reactive
            
-           ;; from frp-core
+           ;; from core/frp
            event-receiver
            send-event
            send-synchronous-event

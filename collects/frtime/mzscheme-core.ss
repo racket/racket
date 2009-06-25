@@ -1,7 +1,7 @@
 (module mzscheme-core mzscheme
   (require-for-syntax frtime/struct mzlib/list)
   (require mzlib/list
-           frtime/frp-core
+           frtime/core/frp
            (only srfi/43/vector-lib vector-any)
            (only frtime/lang-ext lift new-cell switch ==> changes deep-value-now)
            (only mzlib/etc build-vector rec build-list opt-lambda identity))

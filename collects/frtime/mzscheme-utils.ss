@@ -34,7 +34,7 @@
                        map ormap andmap assoc member)
            (rename mzscheme mzscheme:if if)
            (rename "lang-ext.ss" lift lift)
-           (only "frp-core.ss" super-lift behavior? value-now)
+           (only frtime/core/frp super-lift behavior? value-now)
            (rename "lang-ext.ss" undefined undefined)
            (rename "lang-ext.ss" undefined? undefined?)
 	   mzlib/class)
