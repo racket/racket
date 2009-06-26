@@ -431,7 +431,7 @@ invocations of the function).
 
 If @scheme[(values range-expr ...)] is used as the last sub-form of
 @scheme[->], the function must produce a result for each contract, and
-each values must match its respective contract.}
+each value must match its respective contract.}
 
 
 @defform*/subs[#:literals (any values)
@@ -443,7 +443,7 @@ each values must match its respective contract.}
 
 The @scheme[->*] contract combinator produces contracts for
 functions that accept optional arguments (either keyword or
-positional) and or arbitrarily many arguments. The first
+positional) and/or arbitrarily many arguments. The first
 clause of a @scheme[->*] contract describes the mandatory
 arguments, and is similar to the argument description of a
 @scheme[->] contract. The second clause describes the
