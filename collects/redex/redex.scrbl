@@ -97,6 +97,10 @@ Note that pattern matching is caching (including caching the results
 of side-conditions). This means that once a pattern has matched a
 given term, Redex assumes that it will always match that term. 
 
+This is the grammar for the Redex pattern language. Non-terminal
+references are wrapped with angle brackets; otherwise identifiers
+in the grammar are terminals.
+
 @(schemegrammar* #;#:literals #;(any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole hide-hole name in-hole side-condition cross) 
    [pattern any 
             number 
@@ -105,20 +109,20 @@ given term, Redex assumes that it will always match that term.
             real
             string 
             variable 
-            (variable-except symbol ...)
-            (variable-prefix symbol)
+            (variable-except <id> ...)
+            (variable-prefix <id>)
             variable-not-otherwise-mentioned
             hole
             symbol
-            (name symbol pattern)
-            (in-hole pattern pattern)
-            (hide-hole pattern)
-            (side-condition pattern guard)
-            (cross symbol)
-            (pattern-sequence ...)
-            scheme-constant]
+            (name <id> <pattern>)
+            (in-hole <pattern> <pattern>)
+            (hide-hole <pattern>)
+            (side-condition <pattern> guard)
+            (cross <id>)
+            (<pattern-sequence> ...)
+            <scheme-constant>]
    [pattern-sequence 
-     pattern 
+     <pattern> 
      (code:line ... (code:comment "literal ellipsis"))
      ..._id])
 
