@@ -7400,13 +7400,26 @@ static void done_with_GC()
 #ifdef MZ_PRECISE_GC
 static void inform_GC(int major_gc, long pre_used, long post_used)
 {
-  if (scheme_main_logger)
-    scheme_log(scheme_main_logger,
-               SCHEME_LOG_DEBUG, 0,
-               "GC [%s] at %ld bytes; %ld collected in %ld msec",
-               (major_gc ? "major" : "minor"),
-               pre_used, pre_used - post_used,
-               end_this_gc_time - start_this_gc_time);
+  if (scheme_main_logger) {
+    /* Don't use scheme_log(), because it wants to allocate a buffer
+       based on the max value-print width, and we may not be at a
+       point where parameters are available. */
+    char buf[128];
+    long buflen;
+
+    sprintf(buf,
+            "GC [%s] at %ld bytes; %ld collected in %ld msec",
+            (major_gc ? "major" : "minor"),
+            pre_used, pre_used - post_used,
+            end_this_gc_time - start_this_gc_time);
+    buflen = strlen(buf);
+
+    scheme_log_message(scheme_main_logger,
+                       SCHEME_LOG_DEBUG,
+                       buf, buflen,
+                       NULL);
+  }
+
 }
 #endif
 
