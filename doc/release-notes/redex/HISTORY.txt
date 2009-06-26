@@ -1,5 +1,8 @@
 v4.2.1
 
+  * improved 'where' conditions in metafunctions and reduction-relations
+    so that they work with Redex's full pattern language.
+
   * added 'define-relation' 
 
   * relaxed the restrictions on metafunctions so that multiple
