@@ -97,7 +97,7 @@ dependency.
 If an identifier has a @tech{local binding}, then it is the same for
 all phase levels, though the reference is allowed only at a particular
 phase level. Attempting to reference a @tech{local binding} in a
-different @tech{phase level} than the binding's context produces a
+different @tech{phase level} from the binding's context produces a
 syntax error. If an identifier has a @tech{top-level binding} or
 @tech{module binding}, then it can have different such bindings in
 different phase levels.
