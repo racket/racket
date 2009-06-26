@@ -3,7 +3,7 @@
 (require stepper/private/model-settings
          (prefix-in m: "language-level-model.ss")
          "test-engine.ss"
-         #;"test-abbrev.ss"
+         "test-abbrev.ss"
          
          ;; for xml testing:
          ;; mzlib/class

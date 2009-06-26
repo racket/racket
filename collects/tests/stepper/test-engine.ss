@@ -172,7 +172,7 @@
     (error-display-handler current-error-display-handler)))
 
 ;; call-iter-on-each : (-> syntax?) (syntax? (-> 'a) -> 'a) -> void/c
-;; call the given iter on each syntax-object in turn (iter bounces control)
+;; call the given iter on each syntax in turn (iter bounces control)
 ;; back to us by calling the followup-thunk.
 (define (call-iter-on-each stx-thunk iter)
   (let* ([next (stx-thunk)]
@@ -194,8 +194,8 @@
           (andmap (lambda (fn expected name)
                     (unless (list? (fn actual))
                       (warn 'compare-steps "not a list: ~v"
-                            (syntax-object->hilite-datum (fn actual))))
-                    (noisy-equal? (map syntax-object->hilite-datum
+                            (syntax->hilite-datum (fn actual))))
+                    (noisy-equal? (map syntax->hilite-datum
                                        (fn actual))
                                   expected
                                   name))
@@ -208,7 +208,7 @@
           (string-contains (error-result-err-msg actual) err-msg))]
     [`(before-error ,before ,err-msg)
      (and (before-error-result? actual)
-          (and (noisy-equal? (map syntax-object->hilite-datum
+          (and (noisy-equal? (map syntax->hilite-datum
                                   (before-error-result-pre-exps actual))
                              before
                              'before)
@@ -228,8 +228,8 @@
             (map (lambda (fn)
                    (unless (list? (fn r))
                      (warn 'show-result "not a list: ~v"
-                           (syntax-object->hilite-datum (fn r))))
-                   (map syntax-object->hilite-datum
+                           (syntax->hilite-datum (fn r))))
+                   (map syntax->hilite-datum
                         (fn r)))
                  (list before-after-result-pre-exps
                        before-after-result-post-exps)))
