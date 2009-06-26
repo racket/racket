@@ -37,7 +37,6 @@
                    (if (i . < . used)
                        (vector-ref vec i)
                        0)))])
-           (printf "Doubling DV to ~a~n" (* 2 real))
            (set-dv-vec! a-dv new-vec)
            (set-dv-vec-length! a-dv (* 2 real))
            (dv:append a-dv item)))]))
