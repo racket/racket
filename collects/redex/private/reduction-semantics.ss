@@ -25,10 +25,7 @@
   (datum->syntax
    (identifier-prune-lexical-context #'whatever '(#%app #%datum))
    (let loop ([stx stx])
-     (syntax-case stx (quote)
-       [(quote x)
-        (list (quote-syntax/prune quote)
-              (syntax->datum #'x))]
+     (syntax-case stx ()
        [(a . b)
         (datum->syntax (identifier-prune-lexical-context #'whatever '(#%app))
                        (cons (loop #'a) (loop #'b))

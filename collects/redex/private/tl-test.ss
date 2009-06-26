@@ -639,6 +639,14 @@
     
     (test (term (f 1 1 1 1 1)) (term 1)))
   
+   (let ()
+     (define-metafunction empty-language
+       [(ex variable_x) 
+        variable_x
+        (where quote variable_x)])
+
+     (test (term (ex quote)) (term quote)))
+  
   
   
 ;                                                                                                 
