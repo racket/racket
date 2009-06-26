@@ -24,7 +24,6 @@
     [(struct dv (_ _ vec))
      (vector-set! vec pos new-val)]))
 
-; XXX Make this more efficient by preserving previous vector
 (define (dv:append a-dv item)
   (match a-dv
     [(struct dv (real used vec))
