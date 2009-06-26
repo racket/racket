@@ -107,8 +107,8 @@
  [make-heap (sorter/c equality/c . -> . heap?)]
  [heap-empty? (heap? . -> . boolean?)]
  [heap-insert (heap? any/c . -> . void)]
- [heap-pop (non-empty-heap? . -> . void)]
+ [heap-pop (non-empty-heap? . -> . any/c)]
  [heap-peak (non-empty-heap? . -> . any/c)]
  [heap-remove-pos (non-empty-heap? exact-nonnegative-integer? . -> . void)]
- [heap-remove (heap? any/c . -> . void)]
+ [heap-remove (heap? any/c . -> . boolean?)]
  [heap-contains (heap? any/c . -> . boolean?)])

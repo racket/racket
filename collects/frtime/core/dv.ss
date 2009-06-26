@@ -1,18 +1,18 @@
 #lang scheme
 (require "contract.ss")
 
-(define-struct dv (real used vec) #:mutable)
+(define-struct dv (vec-length next-avail-pos vec) #:mutable)
 
 (define (dv:make size)
   (make-dv size 0 (make-vector size)))
 
-(define (dv:length dv) (dv-used dv))
+(define (dv:length dv) (dv-next-avail-pos dv))
 
 (define (dv:remove-last a-dv)
   (match a-dv
     [(struct dv (_ used vec))
-     (set-dv-used! a-dv (sub1 used))
-     (vector-set! vec used 0)]))
+     (set-dv-next-avail-pos! a-dv (sub1 used))
+     (vector-set! vec (sub1 used) 0)]))
 
 (define (dv:ref a-dv pos)
   (match a-dv
@@ -28,7 +28,7 @@
   (match a-dv
     [(struct dv (real used vec))
      (if (used . < . real)
-         (begin (set-dv-used! a-dv (add1 used))
+         (begin (set-dv-next-avail-pos! a-dv (add1 used))
                 (vector-set! vec used item))
          (let ([new-vec 
                 (build-vector
@@ -37,15 +37,19 @@
                    (if (i . < . used)
                        (vector-ref vec i)
                        0)))])
+           (printf "Doubling DV to ~a~n" (* 2 real))
            (set-dv-vec! a-dv new-vec)
-           (set-dv-real! a-dv (* 2 real))
-           (set-dv-used! a-dv (add1 used))
-           (vector-set! new-vec used item)))]))
+           (set-dv-vec-length! a-dv (* 2 real))
+           (dv:append a-dv item)))]))
+
+(define (non-empty-dv? dv)
+  ((dv:length dv) . > . 0))
 
 (provide/contract*
+ [dv? (any/c . -> . boolean?)]
  [dv:make (exact-nonnegative-integer? . -> . dv?)]
  [dv:length (dv? . -> . exact-nonnegative-integer?)]
- [dv:remove-last (dv? . -> . void)]
+ [dv:remove-last (non-empty-dv? . -> . void)]
  [dv:ref (->d ([dv dv?] [pos exact-nonnegative-integer?]) () 
               #:pre-cond (pos . < . (dv:length dv))
               [r any/c])]

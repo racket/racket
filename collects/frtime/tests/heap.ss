@@ -1,27 +1,41 @@
 #lang scheme
-(require frtime/heap)
+(require frtime/core/heap
+         scheme/package
+         tests/eli-tester)
 
-(define f (make-heap > eq?))
-(heap-insert f 99)
-(printf "A ~S~n" f)
-(heap-remove-pos f 1)
-(printf "B ~S~n" f)
-(for-each (lambda (x) (heap-insert f x)) '(1 2 3 4 5 6 7 8 9 10 11 12 13 14))
-(printf "C ~S~n" f)
-(heap-remove f 10) (printf "~S~n" f)
-(heap-remove f 5) (printf "~S~n" f)
-(heap-remove f 8) (printf "~S~n" f)
-(heap-remove f 13) (printf "~S~n" f)
-(printf "~S~n" (heap-contains f 11))
-(printf "~S~n" (heap-contains f 123))
-(heap-pop f)
-(heap-pop f)
-(heap-pop f)
-(heap-pop f) (printf "~S~n" f)
-(printf "~S~n" (heap-contains f 11))
-(printf "~S~n" (heap-contains f 4))
-(printf "~S~n" f)
-(heap-remove f 2)
-(printf "~S~n" f)
-(heap-remove f 3)
-(printf "~S~n" f)
+(package-begin
+ (define h (make-heap > eq?))
+ (test
+  (heap? h) => #t
+  (heap-empty? h) => #t
+  (non-empty-heap? h) => #f
+  (heap-insert h 99) => (void)
+  (heap-empty? h) => #f
+  (non-empty-heap? h) => #t
+  (heap-peak h) => 99
+  (heap-pop h) => 99
+  (heap-empty? h) => #t
+  (non-empty-heap? h) => #f
+  (heap-contains h 99) => #f
+  (heap-insert h 99) => (void)
+  (heap-contains h 99) => #t
+  (heap-remove h 99) => #t
+  (heap-contains h 99) => #f
+  (heap-remove h 99) => #f
+  (heap-insert h 1) => (void)
+  (heap-insert h 2) => (void)
+  (heap-insert h 3) => (void)
+  (heap-pop h) => 3
+  (heap-peak h) => 2
+  (heap-pop h) => 2
+  (heap-pop h) => 1
+  (heap-empty? h) => #t
+  (heap-insert h 3) => (void)
+  (heap-insert h 1) => (void)
+  (heap-insert h 4) => (void)
+  (heap-insert h 2) => (void)
+  (heap-pop h) => 4
+  (heap-pop h) => 3
+  (heap-pop h) => 2
+  (heap-pop h) => 1
+  ))

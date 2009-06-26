@@ -82,5 +82,5 @@
 (provide/contract*
  [mailbox? (any/c . -> . boolean?)]
  [new-mailbox (-> mailbox?)]
- [mailbox-send! (mailbox? any/c . -> . void)]
+ [mailbox-send! (mailbox? (not/c false/c) . -> . void)]
  [mailbox-receive (mailbox? (or/c false/c number?) (-> any) (any/c . -> . (-> any)) . -> . (-> any))])
