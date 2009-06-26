@@ -710,7 +710,7 @@
   
   (define-metafunction empty
     g : number ... -> (any ...)
-    [(g number_1 ... 1 number_2 ...) ()])
+    [(g number_1 ... 1 number_2 ...) (number_1 ...)])
   
   (define-metafunction empty
     h : number -> number
@@ -796,10 +796,10 @@
   (let ([T (reduction-relation
             L
             (==> number number
-                 (where num number)
-                 (side-condition (eq? (term num) 4))
-                 (where numb num)
-                 (side-condition (eq? (term numb) 4)))
+                 (where any_num number)
+                 (side-condition (eq? (term any_num) 4))
+                 (where any_numb any_num)
+                 (side-condition (eq? (term any_numb) 4)))
             with
             [(--> (9 a) b)
              (==> a b)])])

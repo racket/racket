@@ -33,8 +33,10 @@
 (define (term-node-labels term-node) (send (term-node-snip term-node) get-one-step-labels))
 (define (term-node-set-color! term-node r?)
   (snip/eventspace
+   term-node
    (λ ()
      (send (term-node-snip term-node) set-bad r?))))
+(define (term-node-color term-node) (send (term-node-snip term-node) get-bad))
 
 (define (term-node-set-red! term-node r?)
   (term-node-set-color! term-node (and r? "pink")))
@@ -692,6 +694,7 @@
                 [hb (box 0)])
             (send admin get-view-size wb hb)
             (send admin needs-update this 0 0 (unbox wb) (unbox hb))))))
+    (define/public (get-bad) bad-color)
     
     (define names-to-here '())
     ;; might have the same parent twice with a different name
@@ -886,6 +889,7 @@
          term-node-labels 
          term-node-set-red!
          term-node-set-color!
+         term-node-color
          term-node-set-position!
          term-node-x
          term-node-y

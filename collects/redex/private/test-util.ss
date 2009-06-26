@@ -43,9 +43,10 @@
 
 (define (test/proc run expected line filename)
   ;(printf "testing line ~s:~s\n" filename line)
-  (let ([got (run)])
+  (let ([got (with-handlers ((exn:fail? values)) (run))])
     (set! tests (+ tests 1))
-    (unless (matches? got expected)
+    (unless (and (not (exn? got))
+                 (matches? got expected))
       (set! failures (+ 1 failures))
       (fprintf (current-error-port)
                "test/proc: file ~a line ~a:\n     got ~s\nexpected ~s\n\n" 

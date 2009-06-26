@@ -67,6 +67,7 @@
  [term-node-set-color! (-> term-node? 
                            (or/c string? (is-a?/c color%) false/c)
                            void?)]
+ [term-node-color (-> term-node? (or/c string? (is-a?/c color%) false/c))]
  [term-node-expr (-> term-node? any)]
  [term-node-set-position! (-> term-node? real? real? void?)]
  [term-node-x (-> term-node? real?)]

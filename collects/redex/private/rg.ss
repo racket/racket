@@ -778,7 +778,7 @@
                                      #`(let ([r #,source-stx])
                                          (assert-rel 'redex-check r)
                                          (values
-                                          (map rewrite-proc-lhs (reduction-relation-make-procs r))
+                                          (map (λ (x) ((rewrite-proc-lhs x) lang)) (reduction-relation-make-procs r))
                                           (reduction-relation-srcs r)
                                           (reduction-relation-lang r)))])])
                         (check-prop-srcs
@@ -935,7 +935,8 @@
            (assert-rel 'check-reduction-relation rel)
            (check-prop-srcs
             (reduction-relation-lang rel)
-            (map rewrite-proc-lhs (reduction-relation-make-procs rel))
+            (map (λ (x) ((rewrite-proc-lhs x) (reduction-relation-lang rel)))
+                 (reduction-relation-make-procs rel))
             (reduction-relation-srcs rel)
             (λ (term _) (property term))
             decisions@

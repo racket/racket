@@ -903,8 +903,9 @@ expression, and the pattern variables in the @|ttpattern| are
 bound in that expression.
 
 Raises an exception recognized by @scheme[exn:fail:redex?] if
-no clauses match, if one of the clauses matches multiple ways, or
-if the contract is violated.
+no clauses match, if one of the clauses matches multiple ways
+(and that leads to different results for the different matches),
+or if the contract is violated.
 
 Note that metafunctions are assumed to always return the same results
 for the same inputs, and their results are cached, unless
@@ -1449,6 +1450,12 @@ to the specified @scheme[color%] object or the color named by the
 string. The @scheme[color-database<%>] is used to convert the string
 to a @scheme[color%] object.
 }
+
+@defproc[(term-node-color [tn term-node?]) (or/c string? (is-a?/c color%) false/c)]{
+
+Returns the current highlighting of the node. See also @scheme[term-node-set-color!].
+}
+
 
 @defproc[(term-node-set-red! [tn term-node?] [red? boolean?]) void?]{
 

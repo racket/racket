@@ -35,7 +35,8 @@ In the other window, you expect to see the currently unreducted terms in green a
                                    (floor (- 255 (* val (/ 255 max-val))))
                                    0
                                    (floor (* val (/ 255 max-val)))))))
-       parents)))
+       parents)
+      (term-node-color term-node)))
   
   (define-language empty-language)
   
@@ -52,10 +53,9 @@ In the other window, you expect to see the currently unreducted terms in green a
   (define-language empty-language)
   
   (define (last-color-pred sexp term-node)
-    (term-node-set-color! term-node 
-                          (if (null? (term-node-children term-node))
-                              "green"
-                              "white")))
+    (if (null? (term-node-children term-node))
+        "green"
+        "white"))
   
   (traces (reduction-relation
            empty-language
