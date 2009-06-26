@@ -1756,13 +1756,27 @@ label on each rule, but only in horizontal mode. Defaults to
 0.
 }
 
-@defparam[metafunction-pict-style style (parameter/c (symbols 'left-right 'up-down 'left-right/vertical-side-conditions 'up-down/vertical-side-conditions))]{
+@defparam[metafunction-pict-style style 
+                                  (or/c 'left-right
+                                        'up-down
+                                        'left-right/vertical-side-conditions
+                                        'up-down/vertical-side-conditions)]{
 
 This parameter controls the style used for typesetting
-metafunctions. The 'left-right style means that the
+metafunctions. The @scheme['left-right] style means that the
 results of calling the metafunction are displayed to the 
-right of the arguments and the 'up-down style means that
+right of the arguments and the @scheme['up-down] style means that
 the results are displayed below the arguments.
+}
+
+@defparam[metafunction-cases 
+          cases
+          (or/c #f (and/c (listof (and/c integer?
+                                         (or/c zero? positive?)))
+                          pair?))]{
+
+This parameter controls which cases in a metafunction are rendered. If it is @scheme[#f] (the default), then all of the
+cases appear. If it is a list of numbers, then only the selected cases appear (counting from @scheme[0]).
 }
 
 @deftogether[[

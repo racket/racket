@@ -45,6 +45,7 @@
          arrow-space
          label-space
          metafunction-pict-style
+         metafunction-cases
          compact-vertical-min-width
          extend-language-show-union
          set-arrow-pict!)
@@ -682,6 +683,35 @@
 (define linebreaks (make-parameter #f))
 
 (define metafunction-pict-style (make-parameter 'left-right))
+(define metafunction-cases (make-parameter #f))
+(define (select-cases eqns)
+  (let ([cases (metafunction-cases)])
+    (if cases
+        (let loop ([eqns eqns]
+                   [cases (remove-dups (sort cases <))]
+                   [i 0])
+          (cond
+            [(null? eqns) null]
+            [(null? cases) null]
+            [else 
+             (cond
+               [(= i (car cases))
+                (cons (car eqns)
+                      (loop (cdr eqns) (cdr cases) (+ i 1)))]
+               [else
+                (loop (cdr eqns) cases (+ i 1))])]))
+        eqns)))
+
+;; remove-dups : (listof number)[sorted] -> (listof number)[sorted]
+;; removes duplicate numbers from 'l'
+(define (remove-dups l)
+  (let loop ([l l])
+    (cond
+      [(null? (cdr l)) l]
+      [(= (car l) (cadr l))
+       (loop (cdr l))]
+      [else
+       (cons (car l) (loop (cdr l)))])))
 
 (define (metafunctions->pict/proc mfs name)
   (unless (andmap (λ (mf) (eq? (metafunc-proc-lang (metafunction-proc (car mfs)))
@@ -693,8 +723,8 @@
          [sep 2]
          [style (metafunction-pict-style)]
          [wrapper->pict (lambda (lw) (lw->pict all-nts lw))]
-         [eqns (apply append (map (λ (mf) (metafunc-proc-pict-info (metafunction-proc mf))) mfs))]
-         [lhss 
+         [all-eqns (apply append (map (λ (mf) (metafunc-proc-pict-info (metafunction-proc mf))) mfs))]
+         [all-lhss 
           (apply append
                  (map (λ (mf)
                         (map (lambda (eqn) 
@@ -704,6 +734,8 @@
                                                    (metafunc-proc-multi-arg? (metafunction-proc mf)))))
                              (metafunc-proc-pict-info (metafunction-proc mf))))
                       mfs))]
+         [eqns (select-cases all-eqns)]
+         [lhss (select-cases all-lhss)]
          [scs (map (lambda (eqn)
                      (if (and (null? (list-ref eqn 1))
                               (null? (list-ref eqn 2)))

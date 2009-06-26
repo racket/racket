@@ -259,7 +259,9 @@
                [(null? lst) null]
                [(null? (cdr lst))
                 (let ([last (car lst)])
-                  (list (just-before (close-white-square-bracket) last)))]
+                  (list (build-lw "" (lw-line last) 0 (lw-column last) 0)
+                        'spring
+                        (just-after (close-white-square-bracket) last)))]
                [(null? (cddr lst))
                 (cons (car lst) (loop (cdr lst)))]
                [else (list* (car lst) 

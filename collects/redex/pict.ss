@@ -69,6 +69,7 @@
   (parameter/c reduction-rule-style/c)]
  [arrow-space (parameter/c natural-number/c)]
  [label-space (parameter/c natural-number/c)]
+ [metafunction-cases (parameter/c (or/c #f (and/c pair? (listof (and/c integer? (or/c zero? positive?))))))]
  [metafunction-pict-style 
   (parameter/c (symbols 'left-right
                         'left-right/vertical-side-conditions
