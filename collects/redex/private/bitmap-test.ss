@@ -36,6 +36,20 @@
        (extend-reduction-relation red lang (--> 1 2)))
       "extended-reduction-relation.png")
 
+;; this test should fail because it gets the order wrong
+;; for the where/side-conditions
+(define red2
+  (reduction-relation
+   lang
+   (--> (number_a number_b number_c)
+        any_z
+        (where (any_x any_y) (number_a number_b))
+        (side-condition (= (term number_c) 5))
+        (where any_z any_x))))
+
+(test (render-reduction-relation red2)
+      "red2.png")
+        
 (define-metafunction lang
   [(S x v e) e])
 
@@ -91,7 +105,6 @@
 (test (parameterize ([metafunction-pict-style 'up-down/vertical-side-conditions])
         (render-metafunction Name))
       "metafunction-Name-vertical.png")
-
 
 ;; makes sure that there is no overlap inside or across metafunction calls  
 ;; or when there are unquotes involved

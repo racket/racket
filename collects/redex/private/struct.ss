@@ -50,27 +50,37 @@
 ;; I started to add it, but didn't finish. -robby
 (define (build-reduction-relation orig-reduction-relation lang make-procs rule-names lws domain-pattern)
   (let* ([make-procs/check-domain
-          (map (λ (make-proc)
-                 (make-rewrite-proc
-                  (λ (lang)
-                    (let ([compiled-domain-pat (compile-pattern lang domain-pattern #f)]
-                          [proc (make-proc lang)])
-                      (λ (tl-exp exp f acc)
-                        (unless (match-pattern compiled-domain-pat tl-exp)
-                          (error 'reduction-relation "relation not defined for ~s" tl-exp))
-                        (let ([ress (proc tl-exp exp f acc)])
-                          (for-each
-                           (λ (res)
-                             (let ([term (cadr res)])
-                               (unless (match-pattern compiled-domain-pat term)
-                                 (error 'reduction-relation "relation reduced to ~s, which is outside its domain"
-                                        term))))
-                           ress)
-                          ress))))
-                  (rewrite-proc-name make-proc)
-                  (rewrite-proc-lhs make-proc)
-                  (rewrite-proc-id make-proc)))
-               make-procs)])
+          (let loop ([make-procs make-procs]
+                     [i 0])
+            (cond
+              [(null? make-procs) null]
+              [else
+               (let ([make-proc (car make-procs)])
+                 (cons (make-rewrite-proc
+                        (λ (lang)
+                          (let ([compiled-domain-pat (compile-pattern lang domain-pattern #f)]
+                                [proc (make-proc lang)])
+                            (λ (tl-exp exp f acc)
+                              (unless (match-pattern compiled-domain-pat tl-exp)
+                                (error 'reduction-relation "relation not defined for ~s" tl-exp))
+                              (let ([ress (proc tl-exp exp f acc)])
+                                (for-each
+                                 (λ (res)
+                                   (let ([term (cadr res)])
+                                     (unless (match-pattern compiled-domain-pat term)
+                                       (error 'reduction-relation "relation reduced to ~s via ~a, which is outside its domain"
+                                              term
+                                              (let ([name (rewrite-proc-name make-proc)])
+                                                (if name
+                                                    (format "the rule named ~a" name)
+                                                    (format "rule #~a (counting from 0)" i)))))))
+                                 ress)
+                                ress))))
+                        (rewrite-proc-name make-proc)
+                        (rewrite-proc-lhs make-proc)
+                        (rewrite-proc-id make-proc))
+                       (loop (cdr make-procs)
+                             (+ i 1))))]))])
     (cond
       [orig-reduction-relation
        (let* ([new-names (map rewrite-proc-name make-procs)]

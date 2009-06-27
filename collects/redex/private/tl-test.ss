@@ -639,14 +639,25 @@
     
     (test (term (f 1 1 1 1 1)) (term 1)))
   
-   (let ()
-     (define-metafunction empty-language
-       [(ex variable_x) 
-        variable_x
-        (where quote variable_x)])
-
-     (test (term (ex quote)) (term quote)))
+  (let ()
+    (define-metafunction empty-language
+      [(ex variable_x) 
+       variable_x
+       (where quote variable_x)])
+    
+    (test (term (ex quote)) (term quote)))
   
+  (let ()
+    (define-metafunction empty-language
+      [(f any ...)
+       (any ...)
+       (where variable_1 x)
+       (side-condition #f)
+       (where (number ...) y)]
+      [(f any ...)
+       12345])
+    
+    (test (term (f 8)) 12345))
   
   
 ;                                                                                                 
@@ -924,7 +935,7 @@
           (with-handlers ((exn? exn-message))
             (apply-reduction-relation red 1)
             'no-exception-raised))
-        "reduction-relation: relation reduced to x, which is outside its domain")
+        "reduction-relation: relation reduced to x via rule #0 (counting from 0), which is outside its domain")
 
   (let* ([red1
           (reduction-relation 

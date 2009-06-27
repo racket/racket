@@ -251,7 +251,10 @@
            ltl-superimpose ltl-superimpose
            (list* 2 (+ 2 (current-label-extra-space))) 2)))
 
-(define (side-condition-pict fresh-vars side-conditions pattern-binds max-w)
+;; side-condition-pict : (listof pict) (listof (or/c (cons/c pict pict) pict)) number -> pict
+;; the elements of pattern-binds/sc that are pairs are bindings (ie "x = <something>")
+;;     and the elements of pattern-binds/sc that are just picts are just plain side-conditions
+(define (side-condition-pict fresh-vars pattern-binds/sc max-w)
   (let* ([frsh 
           (if (null? fresh-vars)
               null
@@ -264,16 +267,17 @@
                   fresh-vars))
                 (basic-text " fresh" (default-style)))))]
          [binds (map (lambda (b)
-                       (htl-append
-                        (car b)
-                        (make-=)
-                        (cdr b)))
-                     pattern-binds)]
+                       (if (pair? b)
+                           (htl-append
+                            (car b)
+                            (make-=)
+                            (cdr b))
+                           b))
+                     pattern-binds/sc)]
          [lst (add-between
                'comma
                (append
                 binds
-                side-conditions
                 frsh))])
     (if (null? lst)
         (blank)
@@ -293,8 +297,8 @@
 
 (define (rp->side-condition-pict rp max-w)
   (side-condition-pict (rule-pict-fresh-vars rp)
-                       (rule-pict-side-conditions rp)
-                       (rule-pict-pattern-binds rp)
+                       (append (rule-pict-side-conditions rp)
+                               (rule-pict-pattern-binds rp))
                        max-w))
 
 (define (rp->pict-label rp)
@@ -737,21 +741,21 @@
          [eqns (select-cases all-eqns)]
          [lhss (select-cases all-lhss)]
          [scs (map (lambda (eqn)
-                     (if (and (null? (list-ref eqn 1))
-                              (null? (list-ref eqn 2)))
+                     (if (null? (list-ref eqn 1))
                          #f
                          (side-condition-pict null 
-                                              (map wrapper->pict (list-ref eqn 1)) 
                                               (map (lambda (p)
-                                                     (cons (wrapper->pict (car p))
-                                                           (wrapper->pict (cdr p))))
-                                                   (list-ref eqn 2))
+                                                     (if (pair? p)
+                                                         (cons (wrapper->pict (car p))
+                                                               (wrapper->pict (cdr p)))
+                                                         (wrapper->pict p)))
+                                                   (list-ref eqn 1))
                                               (if (memq style '(up-down/vertical-side-conditions
                                                                 left-right/vertical-side-conditions))
                                                   0
                                                   +inf.0))))
                    eqns)]
-         [rhss (map (lambda (eqn) (wrapper->pict (list-ref eqn 3))) eqns)]
+         [rhss (map (lambda (eqn) (wrapper->pict (list-ref eqn 2))) eqns)]
          [linebreak-list (or current-linebreaks
                              (map (lambda (x) #f) eqns))]
          [=-pict (make-=)]
