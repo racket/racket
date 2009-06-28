@@ -680,7 +680,7 @@ all non-GUI portions of Redex) and also exported by
                [reduction-case (--> @#,ttpattern @#,tttterm extras ...)]
                [extras name
                        (fresh fresh-clause ...)
-                       (side-condition scheme-expression ...)
+                       (side-condition scheme-expression)
                        (where tl-pat @#,tttterm)]
                [fresh-clause var ((var1 ...) (var2 ...))]
                [tl-pat identifier (tl-pat-ele ...)]
