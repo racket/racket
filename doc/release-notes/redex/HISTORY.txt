@@ -9,6 +9,9 @@ v4.2.1
     pattern matches are allowed, as long as the right-hand side
     has the same value for each different pattern binding
 
+  * added metafunction styles 'up-down/compact-side-conditions and 
+    'left-right/compact-side-conditions
+
 v4.2
 
   * minor bug fixes

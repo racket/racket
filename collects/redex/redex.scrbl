@@ -1655,7 +1655,7 @@ other tools that combine picts together.
 @defform/none[#:literals (render-metafunction)
               (render-metafunction metafunction-name filename)]{}
 @defform[(render-metafunctions metafunction-name ...)]{}
-@defform/none[#:literals (render-metafunction)
+@defform/none[#:literals (render-metafunctions)
               (render-metafunctions metafunction-name ... #:file filename)]{}]]{
 
 If provided with one argument, @scheme[render-metafunction]
@@ -1764,14 +1764,25 @@ label on each rule, but only in horizontal mode. Defaults to
                                   (or/c 'left-right
                                         'up-down
                                         'left-right/vertical-side-conditions
-                                        'up-down/vertical-side-conditions)]{
+                                        'up-down/vertical-side-conditions
+                                        'left-right/compact-side-conditions
+                                        'up-down/compact-side-conditions)]{
 
 This parameter controls the style used for typesetting
 metafunctions. The @scheme['left-right] style means that the
 results of calling the metafunction are displayed to the 
 right of the arguments and the @scheme['up-down] style means that
 the results are displayed below the arguments.
-}
+
+The @scheme['left-right/vertical-side-conditions] and
+@scheme['up-down/vertical-side-conditions] variants format side
+conditions each on a separate line, instead of all on the same line.
+
+The @scheme['left-right/compact-side-conditions] and
+@scheme['up-down/compact-side-conditions] variants move side
+conditions to separate lines to avoid making the rendered form wider
+than it would be otherwise.}
+
 
 @defparam[metafunction-cases 
           cases
