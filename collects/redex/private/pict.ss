@@ -455,7 +455,7 @@
                      (map (λ (x) (format " ~a" x)) (cdr langs-nts)))))))
      nts)))
 
-;; lang-pict-builder : (-> pict) string -> void
+;; save-as-ps : (-> pict) string -> void
 (define (save-as-ps mk-pict filename) 
   (let ([ps-dc (make-ps-dc filename)])
     (parameterize ([dc-for-text-size ps-dc])
