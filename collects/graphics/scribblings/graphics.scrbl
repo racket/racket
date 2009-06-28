@@ -85,7 +85,7 @@ for drawing), @scheme[#f] otherwise.}
 @section[#:tag "posn"]{Position Operations}
 
 A position is a pixel location within a viewport.  The upper-left
-corner is pixel @math{(0, 0)}, and positions increase to the left and
+corner is pixel @math{(0, 0)}, and positions increase to the right and
 down.
 
 
