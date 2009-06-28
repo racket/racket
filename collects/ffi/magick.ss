@@ -1315,7 +1315,7 @@
 ;; profiles from the image.
 (defmagick* MagickProfileImage :
   _MagickWand (profile-name : _string)
-  (profile : _bytes) (_ulong = (string-length profile))
+  (profile : _bytes) (_ulong = (bytes-length profile))
   -> _status)
 
 ;; MagickQuantizeImage analyzes the colors within a reference image and chooses
@@ -1384,7 +1384,7 @@
 
 ;; MagickReadImageBlob reads an image or image sequence from a blob.
 (defmagick* MagickReadImageBlob :
-  _MagickWand (blob : _bytes) (_ulong = (string-length blob)) -> _status)
+  _MagickWand (blob : _bytes) (_ulong = (bytes-length blob)) -> _status)
 
 ;; MagickReadImageFile reads an image or image sequence from an open file
 ;; descriptor.
@@ -1595,7 +1595,7 @@
 ;; profiles.
 (defmagick* MagickSetImageProfile :
   _MagickWand (profile-name : _string)
-  (profile : _bytes) (_ulong = (string-length profile))
+  (profile : _bytes) (_ulong = (bytes-length profile))
   -> _status)
 
 ;; MagickSetImageRedPrimary sets the image chromaticity red primary point.
