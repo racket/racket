@@ -195,7 +195,7 @@ static Scheme_Bucket_Table *initial_toplevel;
 static Scheme_Object *empty_self_modidx;
 static Scheme_Object *empty_self_modname;
 
-static Scheme_Bucket_Table *starts_table;
+static THREAD_LOCAL Scheme_Bucket_Table *starts_table;
 
 /* caches */
 static THREAD_LOCAL Scheme_Modidx *modidx_caching_chain;
@@ -370,15 +370,15 @@ void scheme_init_module(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("module->namespace",                module_to_namespace,        1, 1, env);
   GLOBAL_PRIM_W_ARITY("module->language-info",            module_to_lang_info,        1, 1, env);
   GLOBAL_PRIM_W_ARITY("module-path?",                     is_module_path,             1, 1, env);
-
-  REGISTER_SO(starts_table);
-  starts_table = scheme_make_weak_equal_table();
 }
 
 void scheme_init_module_resolver(void)
 {
   Scheme_Object *o;
   Scheme_Config *config;
+
+  REGISTER_SO(starts_table);
+  starts_table = scheme_make_weak_equal_table();
 
   config = scheme_current_config();
 

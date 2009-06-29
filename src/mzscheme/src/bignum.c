@@ -112,8 +112,8 @@ static Scheme_Object *bignum_one;
 extern void GC_check(void *p);
 
 #define BIGNUM_CACHE_SIZE 16
-static void *bignum_cache[BIGNUM_CACHE_SIZE];
-static int cache_count;
+static THREAD_LOCAL void *bignum_cache[BIGNUM_CACHE_SIZE];
+static THREAD_LOCAL int cache_count;
 
 static void *copy_to_protected(void *p, long len, int zero)
 {
