@@ -465,9 +465,9 @@ For the creation of scenes from the world, use the functions from
 @secref["image"].  The teachpack adds the following two functions, which
 are highly useful for creating scenes. 
 
-@defproc[(nw:rectangle [width natural-number/c] [height natural-number/c] [solid-or-filled Mode] [c Color]) image?]{
+@defproc[(nw:rectangle [width natural-number/c] [height natural-number/c] [solid-or-outline Mode] [c Color]) image?]{
    creates a @scheme[width] by @scheme[height] rectangle, solid or outlined as specified by
-   @scheme[solid-or-filled] and colored according to @scheme[c], with a pinhole at the upper left
+   @scheme[solid-or-outline] and colored according to @scheme[c], with a pinhole at the upper left
    corner.}
    
 @defproc[(scene+line [s scene?][x0 number?][y0 number?][x1 number?][y1 number?][c Color]) scene?]{
