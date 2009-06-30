@@ -198,7 +198,32 @@ was triggered by a use of a module-defined identifier with a
 expanded for the body of a module, then the expansion of @scheme[stx]
 can use any identifier defined by the module.
 
-@transform-time[]}
+@transform-time[]
+
+@examples[#:eval stx-eval
+(define-syntax do-print
+  (syntax-rules ()
+    [(_ x ...) (printf x ...)]))
+
+(define-syntax hello
+  (syntax-rules ()
+    [(_ x) (do-print "hello ~a" x)]))
+
+(define-syntax (show stx)
+  (syntax-case stx ()
+    [(_ x)
+     (with-syntax ([partly-expanded (local-expand #'(hello x)
+						  'expression
+						  (list #'do-print))]
+		   [expanded (local-expand #'(hello x)
+					   'expression
+					   #f)])
+       (printf "partly expanded syntax is ~a\n" (syntax->datum #'partly-expanded))
+       (printf "expanded syntax is ~a\n" (syntax->datum #'expanded))
+       #'expanded)]))
+
+(show 1)
+]}
 
 
 @defproc[(syntax-local-expand-expression [stx syntax?])
