@@ -1,54 +1,52 @@
+#lang scheme
 
-(module util mzscheme
-  (provide delim-identifier=?
-           extract-until)
+(provide delim-identifier=?
+         extract-until)
 
-  (require syntax/stx)
+(require syntax/stx)
 
-  (define (delim-identifier=? a b)
-    (eq? (syntax-e a) (syntax-e b)))
+(define (delim-identifier=? a b)
+  (eq? (syntax-e a) (syntax-e b)))
 
-  (define extract-until
-    (case-lambda
-     [(r ids keep?)
-      (let loop ([r r][val-stxs null])
-	(cond
-	 [(stx-null? r)
-	  (values #f #f #f)]
-	 [(and (identifier? (stx-car r))
-	       (ormap (lambda (id)
-			(delim-identifier=? id (stx-car r)))
-		      ids))
-	  (values (reverse (if keep?
-			       (cons (stx-car r) val-stxs) 
-			       val-stxs))
-		  r
-		  (stx-car r))]
-	 [else
-	  (loop (stx-cdr r) (cons (stx-car r) val-stxs))]))]
-     [(r ids) (extract-until r ids #f)]))
+(define extract-until
+  (case-lambda
+    [(r ids keep?)
+     (let loop ([r r][val-stxs null])
+       (cond
+         [(stx-null? r)
+          (values #f #f #f)]
+         [(and (identifier? (stx-car r))
+               (ormap (lambda (id)
+                        (delim-identifier=? id (stx-car r)))
+                      ids))
+          (values (reverse (if keep?
+                             (cons (stx-car r) val-stxs) 
+                             val-stxs))
+                  r
+                  (stx-car r))]
+         [else
+           (loop (stx-cdr r) (cons (stx-car r) val-stxs))]))]
+    [(r ids) (extract-until r ids #f)]))
 
-  (define (test)
-    (let* ([original #'(a b c d e)]
-           [delimiter #'c]
-           [expected-before #'(a b)]
-           [expected-rest #'(c d e)]
-           [expected-delimiter #'c]
-           )
+(define (test)
+  (let* ([original #'(a b c d e)]
+         [delimiter #'c]
+         [expected-before #'(a b)]
+         [expected-rest #'(c d e)]
+         [expected-delimiter #'c]
+         )
     (let-values ([(before rest hit) (extract-until original (list delimiter))])
       ;; is there a better way to test equality between two syntaxes?
-      (when (not (and (equal? (syntax-object->datum expected-before)
-                              (map syntax-object->datum before))
-                      (equal? (syntax-object->datum expected-rest)
-                              (map syntax-object->datum rest))
-                      (equal? (syntax-object->datum expected-delimiter)
-                              (syntax-object->datum hit))))
-        (printf "failure: original ~a until ~a\n" (syntax-object->datum original) (map syntax-object->datum (list delimiter)))
-        (printf " before expected ~a actual ~a\n" (syntax-object->datum expected-before) (map syntax-object->datum before))
-        (printf " rest expected ~a actual ~a\n" (syntax-object->datum expected-rest) (map syntax-object->datum rest))
-        (printf " delimiter expected ~a actual ~a\n" (syntax-object->datum expected-delimiter) (syntax-object->datum hit))
+      (when (not (and (equal? (syntax->datum expected-before)
+                              (map syntax->datum before))
+                      (equal? (syntax->datum expected-rest)
+                              (map syntax->datum rest))
+                      (equal? (syntax->datum expected-delimiter)
+                              (syntax->datum hit))))
+        (printf "failure: original ~a until ~a\n" (syntax->datum original) (map syntax->datum (list delimiter)))
+        (printf " before expected ~a actual ~a\n" (syntax->datum expected-before) (map syntax->datum before))
+        (printf " rest expected ~a actual ~a\n" (syntax->datum expected-rest) (map syntax->datum rest))
+        (printf " delimiter expected ~a actual ~a\n" (syntax->datum expected-delimiter) (syntax->datum hit))
         ))))
 
-  (test)
-
-  )
+(test)
