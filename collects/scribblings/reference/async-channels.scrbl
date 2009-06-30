@@ -2,6 +2,12 @@
 @(require "mz.ss"
           (for-label scheme/async-channel))
 
+@(define async-eval
+   (lambda ()
+     (let ([the-eval (make-base-eval)])
+       (the-eval '(require scheme/async-channel))
+       the-eval)))
+
 @title[#:tag "async-channel"]{Buffered Asynchronous Channels}
 
 @note-lib-only[scheme/async-channel]
@@ -54,3 +60,39 @@ is full until space is available.}
 Returns a @tech{synchronizable event} that is blocked while
 @scheme[(async-channel-put ach v)] would block. The unblock result is
 the event itself. See also @scheme[sync].}
+
+@defexamples[#:eval (async-eval)
+(define (server input-channel output-channel)
+  (thread (lambda ()
+	    (define (get)
+	      (async-channel-get input-channel))
+	    (define (put x)
+	      (async-channel-put output-channel x))
+	    (define (do-large-computation)
+	      (sqrt 9))
+	    (let loop ([data (get)])
+	      (case data
+		[(quit) (void)]
+		[(add) (begin
+			 (put (+ 1 (get)))
+			 (loop (get)))]
+		[(long) (begin
+			  (put (do-large-computation))
+			  (loop (get)))])))))
+
+(define to-server (make-async-channel))
+(define from-server (make-async-channel))
+
+(server to-server from-server)
+
+(async-channel? to-server)
+(printf "Adding 1 to 4\n")
+(async-channel-put to-server 'add)
+(async-channel-put to-server 4)
+(printf "Result is ~a\n" (async-channel-get from-server))
+(printf "Ask server to do a long computation that might take a while\n")
+(async-channel-put to-server 'long)
+(printf "I can do other stuff\n")
+(printf "Ok, computation from server is ~a\n" (async-channel-get from-server))
+(async-channel-put to-server 'quit)
+]
