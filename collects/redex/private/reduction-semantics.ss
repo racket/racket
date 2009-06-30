@@ -1089,8 +1089,7 @@
                                 (λ (x) (and (not (null? names))
                                             (identifier? (car names))
                                             (free-identifier=? x (car names)))))])
-                (with-syntax ([(rhs/lw ...) (map to-lw/proc (syntax->list #'(rhs ...)))]
-                              [(lhs ...) #'((lhs-clauses ...) ...)]
+                (with-syntax ([(lhs ...) #'((lhs-clauses ...) ...)]
                               [name (let loop ([name (if contract-name
                                                          contract-name
                                                          (car (syntax->list #'(original-names ...))))]
@@ -1179,31 +1178,12 @@
                                             (syntax->list (syntax (lhs ...)))
                                             (syntax->list (syntax (rhs/wheres ...))))]
                                       [(name2 name-predicate) (generate-temporaries (syntax (name name)))]
-                                      [(((bind-id/lw . bind-pat/lw) ...) ...)
-                                       ;; Also for pict, extract pattern bindings
-                                       (map (λ (x) (map (λ (x) (cons (to-lw/proc (car x)) (to-lw/proc (cdr x))))
-                                                        (extract-pattern-binds x)))
-                                            (syntax->list #'(lhs ...)))]
-                                      
-                                      
-                                      [((where/sc/lw ...) ...)
-                                       ;; Also for pict, extract where bindings
-                                       (map (λ (hm)
-                                              (map
-                                               (λ (lst)
-                                                 (syntax-case lst (side-condition where)
-                                                   [(where pat exp)
-                                                    #`(cons #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
-                                                   [(side-condition x)
-                                                    (to-lw/uq/proc #'x)]))
-                                               (syntax->list hm)))
-                                            (syntax->list #'(tl-side-cond/binds ...)))]
-                                      
-                                      [(((rhs-bind-id/lw . rhs-bind-pat/lw/uq) ...) ...)
-                                       ;; Also for pict, extract pattern bindings
-                                       (map (λ (x) (map (λ (x) (cons (to-lw/proc (car x)) (to-lw/uq/proc (cdr x))))
-                                                        (extract-term-let-binds x)))
-                                            (syntax->list #'(rhs ...)))])
+
+                                      ;; See "!!" below for information on the `seq-' bindings:
+                                      [seq-of-rhs #'(rhs ...)]
+                                      [seq-of-lhs #'(lhs ...)]
+                                      [seq-of-tl-side-cond/binds #'(tl-side-cond/binds ...)]
+                                      [seq-of-lhs-for-lw #'(lhs-for-lw ...)])
                           (syntax-property
                            #`(begin
                                (define-values (name2 name-predicate)
@@ -1227,12 +1207,54 @@
                                       (λ (f/dom cps rhss)
                                         (make-metafunc-proc
                                          (let ([name (lambda (x) (f/dom x))]) name)
-                                         (list (list lhs-for-lw
-                                                     (list (cons bind-id/lw bind-pat/lw) ...
-                                                           (cons rhs-bind-id/lw rhs-bind-pat/lw/uq) ...
-                                                           where/sc/lw ...)
-                                                     rhs/lw)
-                                               ...)
+                                         ;; !! This code goes back to phase 1 to call `to-lw', but it's delayed
+                                         ;;    through `let-syntax' instead of `unsyntax' so that `to-lw' isn't called
+                                         ;;    until all metafunction definitions have been processed.
+                                         ;;    It gets a little complicated because we want to use sequences from the
+                                         ;;    original `define-metafunction' (step 1) and sequences that are generated within
+                                         ;;    `let-syntax' (step 2). So we quote all the `...' in the `let-syntax' form ---
+                                         ;;    and also have to quote all uses step-1 pattern variables in case they produce
+                                         ;;    `...', which should be treated as literals at step 2. Hece the `seq-' bindings
+                                         ;;    above and a quoting `...' on each use of a `seq-' binding.
+                                         (...
+                                          (let-syntax 
+                                              ([generate-lws
+                                                (lambda (stx)
+                                                  (with-syntax
+                                                      ([(rhs/lw ...) (map to-lw/proc (syntax->list #'(... seq-of-rhs)))]
+                                                       [(((bind-id/lw . bind-pat/lw) ...) ...)
+                                                        ;; Also for pict, extract pattern bindings
+                                                        (map (λ (x) (map (λ (x) (cons (to-lw/proc (car x)) (to-lw/proc (cdr x))))
+                                                                         (extract-pattern-binds x)))
+                                                             (syntax->list #'(... seq-of-lhs)))]
+                                                       
+                                                       [((where/sc/lw ...) ...)
+                                                        ;; Also for pict, extract where bindings
+                                                        (map (λ (hm)
+                                                                (map
+                                                                 (λ (lst)
+                                                                    (syntax-case lst (side-condition where)
+                                                                      [(where pat exp)
+                                                                       #`(cons #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
+                                                                      [(side-condition x)
+                                                                       (to-lw/uq/proc #'x)]))
+                                                                 (syntax->list hm)))
+                                                             (syntax->list #'(... seq-of-tl-side-cond/binds)))]
+                                                       
+                                                       [(((rhs-bind-id/lw . rhs-bind-pat/lw/uq) ...) ...)
+                                                        ;; Also for pict, extract pattern bindings
+                                                        (map (λ (x) (map (λ (x) (cons (to-lw/proc (car x)) (to-lw/uq/proc (cdr x))))
+                                                                         (extract-term-let-binds x)))
+                                                             (syntax->list #'(... seq-of-rhs)))]
+
+                                                       [(x-lhs-for-lw ...) #'(... seq-of-lhs-for-lw)])
+                                                    #'(list (list x-lhs-for-lw
+                                                                  (list (cons bind-id/lw bind-pat/lw) ...
+                                                                        (cons rhs-bind-id/lw rhs-bind-pat/lw/uq) ...
+                                                                        where/sc/lw ...)
+                                                                  rhs/lw)
+                                                            ...)))])
+                                            (generate-lws)))
                                          lang
                                          #t ;; multi-args?
                                          'name
