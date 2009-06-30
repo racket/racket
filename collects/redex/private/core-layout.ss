@@ -188,15 +188,6 @@
     
     (define (ar/e e line line-span col col-span)
       (cond
-        [(and (symbol? e) (assoc e (atomic-rewrite-table)))
-         =>
-         (λ (m)
-           (when (eq? (cadr m) e)
-             (error 'apply-rewrites "rewritten version of ~s is still ~s" e e))
-           (let ([p (cadr m)])
-             (if (procedure? p)
-                 (p)
-                 p)))]
         [(symbol? e) e]
         [(string? e) e]
         [(pict? e) e]
@@ -704,22 +695,37 @@
                 [second-part (caddr m)]
                 [first-span (- span (string-length first-part))])
            (list 
-            (make-string-token col
-                               first-span
-                               first-part
-                               (non-terminal-style))
+            (non-terminal->token col first-span first-part)
             (make-string-token (+ col first-span) 
                                (- span first-span)
                                second-part
                                (non-terminal-subscript-style)))))]
       [(or (memq atom all-nts)
            (memq atom '(number variable variable-except variable-not-otherwise-mentioned)))
-       (list (make-string-token col span (format "~s" atom) (non-terminal-style)))]
+       (list (non-terminal->token col span (format "~s" atom)))]
       [(symbol? atom)
        (list (make-string-token col span (symbol->string atom) (literal-style)))]
       [(string? atom)
        (list (make-string-token col span atom (default-style)))]
       [else (error 'atom->tokens "unk ~s" atom)]))
+  
+  (define (non-terminal->token col span str)
+    (let ([e (string->symbol str)])
+      (cond
+        [(assoc e (atomic-rewrite-table))
+         =>
+         (λ (m)
+           (when (eq? (cadr m) e)
+             (error 'apply-rewrites "rewritten version of ~s is still ~s" e e))
+           (let ([p (cadr m)])
+             (if (procedure? p)
+                 (make-pict-token col span (p))
+                 (make-string-token col span p (non-terminal-style)))))]
+        [else
+         (make-string-token col
+                            span
+                            str
+                            (non-terminal-style))])))
   
   (define (pick-font lst fallback)
     (let ([fl (get-face-list 'all)])
