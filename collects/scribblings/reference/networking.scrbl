@@ -198,12 +198,14 @@ Returns @scheme[#t] if @scheme[v] is a @tech{TCP listener} created by
 
 @defproc[(tcp-accept-evt [listener tcp-listener?]) evt?]{
 
-Returns a @tech{synchronizable event} (see @secref["sync"]) that is
-in a blocking state when @scheme[tcp-accept] on @scheme[listener]
-would block. If the event is chosen in a synchronization, the result
-is a list of two items, which correspond to the two results of
+Returns a @tech{synchronizable event} (see @secref["sync"]) that is in
+a blocking state when @scheme[tcp-accept] on @scheme[listener] would
+block. If the event is chosen in a synchronization, the result is a
+list of two items, which correspond to the two results of
 @scheme[tcp-accept]. (If the event is not chosen, no connections are
-accepted.)}
+accepted.) The ports are placed into the management of the custodian
+that is the current custodian (see @secref["custodians"]) at the time that
+@scheme[tcp-accept-evt] is called.}
 
 
 @defproc[(tcp-abandon-port [tcp-port tcp-port?]) void?]{
