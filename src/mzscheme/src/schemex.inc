@@ -65,6 +65,7 @@
   scheme_extension_table->scheme_make_custodian = scheme_make_custodian;
   scheme_extension_table->scheme_add_managed = scheme_add_managed;
   scheme_extension_table->scheme_custodian_check_available = scheme_custodian_check_available;
+  scheme_extension_table->scheme_custodian_is_available = scheme_custodian_is_available;
   scheme_extension_table->scheme_remove_managed = scheme_remove_managed;
   scheme_extension_table->scheme_close_managed = scheme_close_managed;
   scheme_extension_table->scheme_schedule_custodian_close = scheme_schedule_custodian_close;
@@ -458,6 +459,7 @@
   scheme_extension_table->scheme_make_port_type = scheme_make_port_type;
   scheme_extension_table->scheme_make_input_port = scheme_make_input_port;
   scheme_extension_table->scheme_make_output_port = scheme_make_output_port;
+  scheme_extension_table->scheme_set_next_port_custodian = scheme_set_next_port_custodian;
   scheme_extension_table->scheme_set_port_location_fun = scheme_set_port_location_fun;
   scheme_extension_table->scheme_set_port_count_lines_fun = scheme_set_port_count_lines_fun;
   scheme_extension_table->scheme_progress_evt_via_get = scheme_progress_evt_via_get;

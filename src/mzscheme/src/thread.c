@@ -1331,15 +1331,21 @@ static void managed_object_gone(void *o, void *mr)
     remove_managed(mr, o, NULL, NULL);
 }
 
+int scheme_custodian_is_available(Scheme_Custodian *m)
+{
+  if (m->shut_down)
+    return 0;
+  return 1;
+}
+
 void scheme_custodian_check_available(Scheme_Custodian *m, const char *who, const char *what)
 {
   if (!m)
     m = (Scheme_Custodian *)scheme_get_param(scheme_current_config(), MZCONFIG_CUSTODIAN);
   
-  if (m->shut_down) {
+  if (!scheme_custodian_is_available(m))
     scheme_arg_mismatch(who, "the custodian has been shut down: ",
-			(Scheme_Object *)m);
-  }
+                        (Scheme_Object *)m);
 }
 
 Scheme_Custodian_Reference *scheme_add_managed(Scheme_Custodian *m, Scheme_Object *o, 

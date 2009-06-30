@@ -140,6 +140,7 @@ MZ_EXTERN Scheme_Custodian_Reference *scheme_add_managed(Scheme_Custodian *m, Sc
 							 Scheme_Close_Custodian_Client *f, void *data,
 							 int strong);
 MZ_EXTERN void scheme_custodian_check_available(Scheme_Custodian *m, const char *who, const char *what);
+MZ_EXTERN int scheme_custodian_is_available(Scheme_Custodian *m);
 MZ_EXTERN void scheme_remove_managed(Scheme_Custodian_Reference *m, Scheme_Object *o);
 MZ_EXTERN void scheme_close_managed(Scheme_Custodian *m);
 MZ_EXTERN void scheme_schedule_custodian_close(Scheme_Custodian *c);
@@ -800,6 +801,7 @@ MZ_EXTERN Scheme_Output_Port *scheme_make_output_port(Scheme_Object *subtype, vo
 						      Scheme_Write_Special_Evt_Fun write_special_evt_fun,
 						      Scheme_Write_Special_Fun write_special_fun,
 						      int must_close);
+MZ_EXTERN void scheme_set_next_port_custodian(Scheme_Custodian *c);
 
 MZ_EXTERN void scheme_set_port_location_fun(Scheme_Port *port,
 					    Scheme_Location_Fun location_fun);

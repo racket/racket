@@ -347,6 +347,8 @@ int scheme_force_port_closed;
 static int flush_out;
 static int flush_err;
 
+static THREAD_LOCAL Scheme_Custodian *new_port_cust; /* back-door argument */
+
 #if defined(FILES_HAVE_FDS)
 static int external_event_fd, put_external_event_fd;
 #endif
@@ -1276,6 +1278,11 @@ static void init_port_locations(Scheme_Port *ip)
   ip->count_lines = cl;
 }
 
+void scheme_set_next_port_custodian(Scheme_Custodian *c)
+{
+  new_port_cust = c;
+}
+
 Scheme_Input_Port *
 scheme_make_input_port(Scheme_Object *subtype,
 		       void *data,
@@ -1290,6 +1297,9 @@ scheme_make_input_port(Scheme_Object *subtype,
 		       int must_close)
 {
   Scheme_Input_Port *ip;
+  Scheme_Custodian *cust = new_port_cust;
+
+  new_port_cust = NULL;
 
   ip = MALLOC_ONE_TAGGED(Scheme_Input_Port);
   ip->p.so.type = scheme_input_port_type;
@@ -1313,7 +1323,7 @@ scheme_make_input_port(Scheme_Object *subtype,
 
   if (must_close) {
     Scheme_Custodian_Reference *mref;
-    mref = scheme_add_managed(NULL,
+    mref = scheme_add_managed(cust,
 			      (Scheme_Object *)ip,
 			      (Scheme_Close_Custodian_Client *)force_close_input_port,
 			      NULL, must_close);
@@ -1355,6 +1365,9 @@ scheme_make_output_port(Scheme_Object *subtype,
 			int must_close)
 {
   Scheme_Output_Port *op;
+  Scheme_Custodian *cust = new_port_cust;
+
+  new_port_cust = NULL;
 
   op = MALLOC_ONE_TAGGED(Scheme_Output_Port);
   op->p.so.type = scheme_output_port_type;
@@ -1376,7 +1389,7 @@ scheme_make_output_port(Scheme_Object *subtype,
 
   if (must_close) {
     Scheme_Custodian_Reference *mref;
-    mref = scheme_add_managed(NULL,
+    mref = scheme_add_managed(cust,
 			      (Scheme_Object *)op,
 			      (Scheme_Close_Custodian_Client *)force_close_output_port,
 			      NULL, must_close);

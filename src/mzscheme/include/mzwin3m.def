@@ -59,6 +59,7 @@ EXPORTS
  scheme_make_custodian
  scheme_add_managed
  scheme_custodian_check_available
+ scheme_custodian_is_available
  scheme_remove_managed
  scheme_close_managed
  scheme_schedule_custodian_close
@@ -410,6 +411,7 @@ EXPORTS
  scheme_make_port_type
  scheme_make_input_port
  scheme_make_output_port
+ scheme_set_next_port_custodian
  scheme_set_port_location_fun
  scheme_set_port_count_lines_fun
  scheme_progress_evt_via_get

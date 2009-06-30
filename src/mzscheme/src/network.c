@@ -1576,9 +1576,12 @@ tcp_out_buffer_mode(Scheme_Port *p, int mode)
 }
 
 static Scheme_Object *
-make_tcp_input_port(void *data, const char *name)
+make_tcp_input_port(void *data, const char *name, Scheme_Object *cust)
 {
   Scheme_Input_Port *ip;
+
+  if (cust)
+    scheme_set_next_port_custodian((Scheme_Custodian *)cust);
   
   ip = scheme_make_input_port(scheme_tcp_input_port_type,
 			      data,
@@ -1598,9 +1601,12 @@ make_tcp_input_port(void *data, const char *name)
 }
 
 static Scheme_Object *
-make_tcp_output_port(void *data, const char *name)
+make_tcp_output_port(void *data, const char *name, Scheme_Object *cust)
 {
   Scheme_Output_Port *op;
+
+  if (cust)
+    scheme_set_next_port_custodian((Scheme_Custodian *)cust);
 
   op = scheme_make_output_port(scheme_tcp_output_port_type,
 						  data,
@@ -1805,8 +1811,8 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 
 	      tcp = make_tcp_port_data(s, 2);
 	      
-	      v[0] = make_tcp_input_port(tcp, address);
-	      v[1] = make_tcp_output_port(tcp, address);
+	      v[0] = make_tcp_input_port(tcp, address, NULL);
+	      v[1] = make_tcp_output_port(tcp, address, NULL);
 	      
 	      REGISTER_SOCKET(s);
 
@@ -2175,7 +2181,8 @@ tcp_accept_ready(int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
-tcp_accept(int argc, Scheme_Object *argv[])
+do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail_reason)
+/* If _fail_reason is not NULL, never raise an exception. */
 {
 #ifdef USE_TCP
   int was_closed = 0, errid, ready_pos;
@@ -2206,12 +2213,22 @@ tcp_accept(int argc, Scheme_Object *argv[])
     ready_pos = 0;
 
   if (was_closed) {
-    scheme_raise_exn(MZEXN_FAIL_NETWORK,
-		     "tcp-accept: listener is closed");
+    if (_fail_reason)
+      *_fail_reason = "tcp-accept-evt: listener is closed";
+    else
+      scheme_raise_exn(MZEXN_FAIL_NETWORK,
+                       "tcp-accept: listener is closed");
     return NULL;
   }
 
-  scheme_custodian_check_available(NULL, "tcp-accept", "network");
+  if (!_fail_reason)
+    scheme_custodian_check_available((Scheme_Custodian *)cust, "tcp-accept", "network");
+  else {
+    if (!scheme_custodian_is_available((Scheme_Custodian *)cust)) {
+      *_fail_reason = "tcp-accept-evt: custodian is shutdown";
+      return NULL;
+    }
+  }
   
 # ifdef USE_SOCKETS_TCP
   ls = ((listener_t *)listener)->s[ready_pos-1];
@@ -2235,8 +2252,8 @@ tcp_accept(int argc, Scheme_Object *argv[])
 
     tcp = make_tcp_port_data(s, 2);
 
-    v[0] = make_tcp_input_port(tcp, "tcp-accepted");
-    v[1] = make_tcp_output_port(tcp, "tcp-accepted");
+    v[0] = make_tcp_input_port(tcp, "tcp-accepted", cust);
+    v[1] = make_tcp_output_port(tcp, "tcp-accepted", cust);
 
     scheme_file_open_count++;
     REGISTER_SOCKET(s);
@@ -2246,13 +2263,22 @@ tcp_accept(int argc, Scheme_Object *argv[])
   errid = SOCK_ERRNO();
 # endif
   
-  scheme_raise_exn(MZEXN_FAIL_NETWORK,
-		   "tcp-accept: accept from listener failed (%E)", errid);
+  if (_fail_reason)
+    *_fail_reason = "tcp-accept-evt: accept from listener failed";
+  else
+    scheme_raise_exn(MZEXN_FAIL_NETWORK,
+                     "tcp-accept: accept from listener failed (%E)", errid);
 #else
   scheme_wrong_type("tcp-accept", "tcp-listener", 0, argc, argv);
 #endif
 
   return NULL;
+}
+
+static Scheme_Object *
+tcp_accept(int argc, Scheme_Object *argv[])
+{
+  return do_tcp_accept(argc, argv, NULL, NULL);
 }
 
 static Scheme_Object *
@@ -2460,35 +2486,54 @@ static Scheme_Object *tcp_port_p(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *tcp_accept_evt(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *r;
+  Scheme_Object *r, *custodian;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_listener_type))
     scheme_wrong_type("tcp-accept-evt", "tcp-listener", 0, argc, argv);
 
-  r = scheme_alloc_small_object();
+  custodian = scheme_get_param(scheme_current_config(), MZCONFIG_CUSTODIAN);
+
+  scheme_custodian_check_available((Scheme_Custodian *)custodian, "tcp-accept", "network");
+  
+  r = scheme_alloc_object();
   r->type = scheme_tcp_accept_evt_type;
-  SCHEME_PTR_VAL(r) = argv[0];
+  SCHEME_PTR1_VAL(r) = argv[0];
+  SCHEME_PTR2_VAL(r) = custodian;
 
   return r;
 }
 
+static Scheme_Object *accept_failed(void *msg, int argc, Scheme_Object **argv)
+{
+  scheme_raise_exn(MZEXN_FAIL_NETWORK, msg ? (const char *)msg : "accept failed");
+  return NULL;
+} 
+
 static int tcp_check_accept_evt(Scheme_Object *ae, Scheme_Schedule_Info *sinfo)
 {
-  if (tcp_check_accept(SCHEME_PTR_VAL(ae))) {
+  if (tcp_check_accept(SCHEME_PTR1_VAL(ae))) {
     Scheme_Object *a[2];
-    a[0] = SCHEME_PTR_VAL(ae);
-    tcp_accept(1, a);
-    a[0] = scheme_current_thread->ku.multiple.array[0];
-    a[1] = scheme_current_thread->ku.multiple.array[1];
-    scheme_set_sync_target(sinfo, scheme_build_list(2, a), NULL, NULL, 0, 0, NULL);
-    return 1;
+    char *fail_reason = NULL;
+    a[0] = SCHEME_PTR1_VAL(ae);
+    if (do_tcp_accept(1, a, SCHEME_PTR2_VAL(ae), &fail_reason)) {
+      a[0] = scheme_current_thread->ku.multiple.array[0];
+      a[1] = scheme_current_thread->ku.multiple.array[1];
+      scheme_set_sync_target(sinfo, scheme_build_list(2, a), NULL, NULL, 0, 0, NULL);
+      return 1;
+    } else {
+      /* error on accept */
+      scheme_set_sync_target(sinfo, scheme_always_ready_evt, 
+                             scheme_make_closed_prim(accept_failed, fail_reason), 
+                             NULL, 0, 0, NULL);
+      return 1;
+    }
   } else
     return 0;
 }
 
 static void tcp_accept_evt_needs_wakeup(Scheme_Object *ae, void *fds)
 {
-  tcp_accept_needs_wakeup(SCHEME_PTR_VAL(ae), fds);
+  tcp_accept_needs_wakeup(SCHEME_PTR1_VAL(ae), fds);
 }
 
 int scheme_get_port_socket(Scheme_Object *p, long *_s)
@@ -2533,9 +2578,9 @@ void scheme_socket_to_ports(long s, const char *name, int takeover,
 
   tcp = make_tcp_port_data(s, takeover ? 2 : 3);
 
-  v = make_tcp_input_port(tcp, name);
+  v = make_tcp_input_port(tcp, name, NULL);
   *_inp = v;
-  v = make_tcp_output_port(tcp, name);
+  v = make_tcp_output_port(tcp, name, NULL);
   *_outp = v;
   
   if (takeover) {
