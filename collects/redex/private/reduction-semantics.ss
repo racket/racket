@@ -1238,7 +1238,7 @@
                                                                        #`(cons #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
                                                                       [(side-condition x)
                                                                        (to-lw/uq/proc #'x)]))
-                                                                 (syntax->list hm)))
+                                                                 (reverse (syntax->list hm))))
                                                              (syntax->list #'(... seq-of-tl-side-cond/binds)))]
                                                        
                                                        [(((rhs-bind-id/lw . rhs-bind-pat/lw/uq) ...) ...)
