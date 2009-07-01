@@ -124,8 +124,8 @@
          get-point-size)))
 
 ;; the initial spacing between row and columns of the reduction terms
-(define x-spacing 15)
-(define y-spacing 15)
+(define default-x-spacing 15)
+(define default-y-spacing 15)
 
 (define (traces/ps reductions pre-exprs filename
                    #:multiple? [multiple? #f] 
@@ -138,7 +138,9 @@
                    #:edge-labels? [edge-labels? #t]
                    #:graph-pasteboard-mixin [extra-graph-pasteboard-mixin values]
                    #:filter [term-filter (lambda (x y) #t)]
-                   #:post-process [post-process void])
+                   #:post-process [post-process void]
+                   #:x-spacing [x-spacing default-x-spacing]
+                   #:y-spacing [y-spacing default-x-spacing])
   (let-values ([(graph-pb canvas)
                 (traces reductions pre-exprs
                         #:no-show-frame? #t
@@ -151,7 +153,9 @@
                         #:edge-label-font edge-label-font
                         #:edge-labels? edge-labels?
                         #:graph-pasteboard-mixin extra-graph-pasteboard-mixin
-                        #:filter term-filter)])
+                        #:filter term-filter
+                        #:x-spacing x-spacing
+                        #:y-spacing y-spacing)])
     (post-process graph-pb)
     (print-to-ps graph-pb canvas filename)))
 
@@ -243,7 +247,9 @@
                 #:edge-labels? [edge-labels? #t]
                 #:filter [term-filter (lambda (x y) #t)]
                 #:graph-pasteboard-mixin [extra-graph-pasteboard-mixin values]
-                #:no-show-frame? [no-show-frame? #f])
+                #:no-show-frame? [no-show-frame? #f]
+                #:x-spacing [x-spacing default-x-spacing]
+                #:y-spacing [y-spacing default-y-spacing])
   (define exprs (if multiple? pre-exprs (list pre-exprs)))
   (define main-eventspace (current-eventspace))
   (define saved-parameterization (current-parameterization))
@@ -438,7 +444,7 @@
                       (unless col  ;; only compute col here, incase user moves snips
                         (set! col (+ x-spacing (find-rightmost-x graph-pb))))
                       (begin0
-                        (insert-into col y graph-pb new-snips)
+                        (insert-into col y graph-pb new-snips y-spacing)
                         (send graph-pb end-edit-sequence)
                         (send status-message set-label
                               (string-append (term-count (count-snips)) "...")))))])
@@ -610,7 +616,7 @@
               null)))
   (out-of-dot-state) ;; make sure the state is initialized right
   (set-font-size (initial-font-size)) ;; have to call this before 'insert-into' or else it triggers resizing
-  (insert-into init-rightmost-x 0 graph-pb frontier)
+  (insert-into init-rightmost-x 0 graph-pb frontier y-spacing)
   (cond
     [no-show-frame?
      (let ([s (make-semaphore)]) 
@@ -759,7 +765,7 @@
 ;; inserts the snips into the pasteboard vertically 
 ;; aligned, starting at (x,y). Returns
 ;; the y coordinate where another snip might be inserted.
-(define (insert-into x y pb exprs)
+(define (insert-into x y pb exprs y-spacing)
   (let loop ([exprs exprs]
              [y y])
     (cond

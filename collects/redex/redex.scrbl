@@ -1272,6 +1272,8 @@ exploring reduction sequences.
 
                  [#:scheme-colors? scheme-colors? boolean? #t]
                  [#:filter term-filter (-> any/c (or/c #f string?) any/c) (lambda (x y) #t)]
+                 [#:x-spacing number? 15]
+                 [#:y-spacing number? 15]
                  [#:layout layout (-> (listof term-node?) void) void]
                  [#:edge-labels? edge-label-font boolean? #t]
                  [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f]
@@ -1338,6 +1340,9 @@ The @scheme[term-filter] function is called each time a new node is
 about to be inserted into the graph. If the filter returns false, the
 node is not inserted into the graph.
 
+The @scheme[x-spacing] and @scheme[y-spacing] control the amount of
+space put between the snips in the default layout.
+
 The @scheme[layout] argument is called (with all of the terms) when
 new terms is inserted into the window. In general, it is called when
 after new terms are inserted in response to the user clicking on the
@@ -1378,6 +1383,8 @@ inserted into the editor by this library have a
                     [#:colors colors (listof (list string string)) '()]
                     [#:filter term-filter (-> any/c (or/c #f string?) any/c) (lambda (x y) #t)]
                     [#:layout layout (-> (listof term-node?) void) void]
+                    [#:x-spacing number? 15]
+                    [#:y-spacing number? 15]
                     [#:edge-labels? edge-label-font boolean? #t]
                     [#:edge-label-font edge-label-font (or/c #f (is-a?/c font%)) #f]
                     [#:graph-pasteboard-mixin graph-pasteboard-mixin (make-mixin-contract graph-pasteboard<%>) values]
