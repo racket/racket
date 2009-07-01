@@ -391,71 +391,66 @@
   (define (rule->lws rule)
     (syntax-case rule ()
       [(arrow lhs rhs stuff ...)
-       (let-values ([(label scs fvars withs)
+       (let-values ([(label scs/withs fvars)
                      (let loop ([stuffs (syntax->list #'(stuff ...))]
                                 [label #f]
-                                [scs null]
-                                [fvars null]
-                                [withs null])
+                                [scs/withs null]
+                                [fvars null])
                        (cond
-                         [(null? stuffs) (values label (reverse scs) (reverse fvars) (reverse withs))]
+                         [(null? stuffs) (values label (reverse scs/withs) (reverse fvars))]
                          [else
                           (syntax-case (car stuffs) (where fresh variable-not-in)
                             [(fresh xs ...) 
                              (loop (cdr stuffs)
                                    label
-                                   scs
+                                   scs/withs
                                    (append 
                                     (reverse (map (λ (x)
-                                                    (syntax-case x ()
-                                                      [x
-                                                       (identifier? #'x)
-                                                       #'x]
-                                                      [(x whatever)
-                                                       (identifier? #'x)
-                                                       #'x]
-                                                      [((y dots) (x dots2))
-                                                       (datum->syntax 
-                                                        #f 
-                                                        `(,(syntax->datum #'y) ...) 
-                                                        #'y)]
-                                                      [((y dots) (x dots2) whatever)
-                                                       (datum->syntax 
-                                                        #f 
-                                                        `(,(syntax->datum #'y) ...) 
-                                                        #'y)]))
+                                                    (to-lw/proc
+                                                     (syntax-case x ()
+                                                       [x
+                                                        (identifier? #'x)
+                                                        #'x]
+                                                       [(x whatever)
+                                                        (identifier? #'x)
+                                                        #'x]
+                                                       [((y dots) (x dots2))
+                                                        (datum->syntax 
+                                                         #f 
+                                                         `(,(syntax->datum #'y) ...) 
+                                                         #'y)]
+                                                       [((y dots) (x dots2) whatever)
+                                                        (datum->syntax 
+                                                         #f 
+                                                         `(,(syntax->datum #'y) ...) 
+                                                         #'y)])))
                                                   (syntax->list #'(xs ...))))
-                                    fvars)
-                                   withs)]
+                                    fvars))]
                             [(where x e)
                              (loop (cdr stuffs)
                                    label
-                                   scs
-                                   fvars
-                                   (cons #'(x e) withs))]
+                                   (cons #`(cons #,(to-lw/proc #'x) #,(to-lw/proc #'e))
+                                         scs/withs)
+                                   fvars)]
                             [(side-condition sc)
                              (loop (cdr stuffs)
                                    label
-                                   (cons #'sc scs)
-                                   fvars
-                                   withs)]
+                                   (cons (to-lw/uq/proc #'sc) scs/withs)
+                                   fvars)]
                             [x
                              (identifier? #'x)
                              (loop (cdr stuffs)
                                    #''x
-                                   scs
-                                   fvars
-                                   withs)]
+                                   scs/withs
+                                   fvars)]
                             [x
                              (string? (syntax-e #'x))
                              (loop (cdr stuffs)
                                    #'x
-                                   scs
-                                   fvars
-                                   withs)])]))])
-         (with-syntax ([(scs ...) scs]
+                                   scs/withs
+                                   fvars)])]))])
+         (with-syntax ([(scs/withs ...) scs/withs]
                        [(fvars ...) fvars]
-                       [((where-id where-expr) ...) withs]
                        [((bind-id . bind-pat) ...) 
                         (extract-pattern-binds #'lhs)]
                        [((tl-id . tl-pat) ...)
@@ -464,9 +459,8 @@
                              #,(to-lw/proc #'lhs)
                              #,(to-lw/proc #'rhs)
                              #,label
-                             (list #,@(map to-lw/uq/proc (syntax->list #'(scs ...))))
-                             (list #,@(map to-lw/proc (syntax->list #'(fvars ...))))
-                             (list #,@(map (λ (bind-id bind-pat)
+                             (list scs/withs ...
+                                   #,@(map (λ (bind-id bind-pat)
                                              #`(cons #,(to-lw/proc bind-id)
                                                      #,(to-lw/proc bind-pat)))
                                            (syntax->list #'(bind-id ...))
@@ -475,12 +469,8 @@
                                              #`(cons #,(to-lw/proc tl-id)
                                                      #,(to-lw/uq/proc tl-pat)))
                                            (syntax->list #'(tl-id ...))
-                                           (syntax->list #'(tl-pat ...)))
-                                   #,@(map (λ (where-id where-expr)
-                                             #`(cons #,(to-lw/proc where-id)
-                                                     #,(to-lw/proc where-expr)))
-                                           (syntax->list #'(where-id ...))
-                                           (syntax->list #'(where-expr ...)))))))]))
+                                           (syntax->list #'(tl-pat ...))))
+                             (list fvars ...))))]))
   
   (define (reduction-relation/helper stx orig-name orig-red-expr lang-id rules shortcuts 
                                      lws 

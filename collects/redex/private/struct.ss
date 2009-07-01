@@ -14,7 +14,7 @@
          make-rewrite-proc rewrite-proc? rewrite-proc-name rewrite-proc-lhs rewrite-proc-id
          (struct-out rule-pict))
 
-(define-struct rule-pict (arrow lhs rhs label side-conditions fresh-vars pattern-binds))
+(define-struct rule-pict (arrow lhs rhs label side-conditions/pattern-binds fresh-vars))
 
 ;; type proc = (exp exp (any -> any) (listof any) -> (listof any)))
 ;;   a proc is a `cached' version of a make-proc, specialized to a particular langugage

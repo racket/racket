@@ -120,11 +120,12 @@
                     (tp (rule-pict-lhs rp))
                     (tp (rule-pict-rhs rp))
                     (rule-pict-label rp)
-                    (map tp (rule-pict-side-conditions rp))
-                    (map tp (rule-pict-fresh-vars rp))
-                    (map (lambda (v)
-                           (cons (tp (car v)) (tp (cdr v))))
-                         (rule-pict-pattern-binds rp)))))
+                    (map (lambda (v) 
+                           (if (pair? v)
+                               (cons (tp (car v)) (tp (cdr v)))
+                               (tp v)))
+                         (rule-pict-side-conditions/pattern-binds rp))
+                    (map tp (rule-pict-fresh-vars rp)))))
 
 (define current-label-extra-space (make-parameter 0))
 (define reduction-relation-rule-separation (make-parameter 4))
@@ -304,8 +305,7 @@
 
 (define (rp->side-condition-pict rp max-w)
   (side-condition-pict (rule-pict-fresh-vars rp)
-                       (append (rule-pict-side-conditions rp)
-                               (rule-pict-pattern-binds rp))
+                       (rule-pict-side-conditions/pattern-binds rp)
                        max-w))
 
 (define (rp->pict-label rp)
