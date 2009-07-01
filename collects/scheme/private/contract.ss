@@ -2064,7 +2064,7 @@ improve method arity mismatch contract violation error messages?
             (if (flat-contract? ctc)
                 (let ([content-pred? (flat-contract-predicate ctc)])
                   (build-flat-contract
-                   `(listof ,(contract-name ctc))
+                   `(type-name ,(contract-name ctc))
                    (lambda (x) (and (predicate? x) (testmap content-pred? x)))))
                 (let ([proj (contract-proc ctc)])
                   (make-proj-contract
