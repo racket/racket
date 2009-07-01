@@ -1766,7 +1766,8 @@ label on each rule, but only in horizontal mode. Defaults to
                                         'left-right/vertical-side-conditions
                                         'up-down/vertical-side-conditions
                                         'left-right/compact-side-conditions
-                                        'up-down/compact-side-conditions)]{
+                                        'up-down/compact-side-conditions
+                                        'left-right/beside-side-conditions)]{
 
 This parameter controls the style used for typesetting
 metafunctions. The @scheme['left-right] style means that the
@@ -1781,7 +1782,11 @@ conditions each on a separate line, instead of all on the same line.
 The @scheme['left-right/compact-side-conditions] and
 @scheme['up-down/compact-side-conditions] variants move side
 conditions to separate lines to avoid making the rendered form wider
-than it would be otherwise.}
+than it would be otherwise.
+
+The @scheme['left-right/beside-side-conditions] variant is like
+@scheme['left-right], except it puts the side-conditions on the 
+same line, instead of on a new line below the case.}
 
 
 @defparam[metafunction-cases 

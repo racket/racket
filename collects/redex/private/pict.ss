@@ -784,14 +784,16 @@
                                                       +inf.0)))))
                    eqns)])
     (case style
-      [(left-right left-right/vertical-side-conditions left-right/compact-side-conditions)
+      [(left-right left-right/vertical-side-conditions left-right/compact-side-conditions left-right/beside-side-conditions)
        (table 3
               (apply append
                      (map (lambda (lhs sc rhs linebreak?)
                             (append
                              (if linebreak?
                                  (list lhs (blank) (blank))
-                                 (list lhs =-pict rhs))
+                                 (if (and sc (eq? style 'left-right/beside-side-conditions))
+                                     (list lhs =-pict (hbl-append 10 rhs sc))
+                                     (list lhs =-pict rhs)))
                              (if linebreak?
                                  (let ([p rhs])
                                    (list (hbl-append sep
@@ -802,7 +804,9 @@
                                          (blank (max 0 (- (pict-width p) max-lhs-w sep))
                                                 0)))
                                  null)
-                             (if (not sc)
+                             (if (or (not sc)
+                                     (and (not linebreak?)
+                                          (eq? style 'left-right/beside-side-conditions)))
                                  null
                                  (list (inset sc 0 0 (- 5 (pict-width sc)) 0)
                                        (blank)

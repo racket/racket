@@ -74,6 +74,7 @@
   (parameter/c (symbols 'left-right
                         'left-right/vertical-side-conditions
                         'left-right/compact-side-conditions
+                        'left-right/beside-side-conditions
                         'up-down
                         'up-down/vertical-side-conditions
                         'up-down/compact-side-conditions))])
