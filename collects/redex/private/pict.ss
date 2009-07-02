@@ -759,7 +759,10 @@
                              max
                              (map (lambda (lhs rhs linebreak?)
                                     (max
-                                     (if linebreak?
+                                     (if (or linebreak?
+                                             (memq style '(up-down
+                                                           up-down/vertical-side-conditions
+                                                           up-down/compact-side-conditions)))
                                          (max (pict-width lhs)
                                               (+ (pict-width rhs) (pict-width =-pict)))
                                          (+ (pict-width lhs) (pict-width rhs) (pict-width =-pict)
