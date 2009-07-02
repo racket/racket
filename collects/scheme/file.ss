@@ -316,32 +316,34 @@
                null path)))
 
 (define (pathlist-closure paths)
-  (let loop ([paths (map (lambda (p) 
-                           (let ([p2 (if (link-exists? p)
-                                         (let ([p2 (resolve-path p)])
-                                           (if (relative-path? p2)
-                                               (let-values ([(base name dir?) (split-path p)])
-                                                 (build-path base p2))
-                                               p2))
-                                         p)])
-                             (simplify-path p2 #f)))
-                         paths)]
+  (let loop ([paths
+              (map (lambda (p)
+                     (simplify-path
+                      (if (link-exists? p)
+                        (let ([p2 (resolve-path p)])
+                          (if (relative-path? p2)
+                            (let-values ([(base name dir?) (split-path p)])
+                              (build-path base p2))
+                            p2))
+                        p)
+                      #f))
+                   paths)]
              [r '()])
     (if (null? paths)
-        (reverse r)
-        (let loop2 ([path (car paths)]
-                    [new (cond [(file-exists? (car paths))
-                                (list (car paths))]
-                               [(directory-exists? (car paths))
-                                (find-files void (car paths))]
-                               [else (error 'pathlist-closure
-                                            "file/directory not found: ~a"
-                                            (car paths))])])
-          (let-values ([(base name dir?) (split-path path)])
-            (if (path? base)
-                (loop2 base (if (or (member base r) (member base paths))
-                                new (cons base new)))
-                (loop (cdr paths) (append (reverse new) r))))))))
+      (reverse r)
+      (let loop2 ([path (car paths)]
+                  [new (cond [(file-exists? (car paths))
+                              (list (car paths))]
+                             [(directory-exists? (car paths))
+                              (find-files void (car paths))]
+                             [else (error 'pathlist-closure
+                                          "file/directory not found: ~a"
+                                          (car paths))])])
+        (let-values ([(base name dir?) (split-path path)])
+          (if (path? base)
+            (loop2 base (if (or (member base r) (member base paths))
+                          new (cons base new)))
+            (loop (cdr paths) (append (reverse new) r))))))))
 
 (define (check-path who f)
   (unless (path-string? f)
