@@ -2360,7 +2360,7 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
 	/* Local, provided: */
 	for (i = 0; i < m->me->rt->num_provides; i++) {
 	  if (SCHEME_FALSEP(m->me->rt->provide_srcs[i])) {
-	    name = m->me->rt->provides[i];
+	    name = m->me->rt->provide_src_names[i];
 	    scheme_extend_module_rename(one_rn, m->self_modidx, name, name, m->self_modidx, name, 0, 
                                         scheme_make_integer(0), NULL, NULL, 0);
 	  }
