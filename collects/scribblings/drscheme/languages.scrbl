@@ -365,7 +365,7 @@ Unless disabled in the language configuration window, expression-level coverage
 
 For information on @onscreen{Lazy Scheme}, see @other-manual['(lib "lazy/lazy.scrbl")].
 
-For information on @onscreen{FrTime}, see @other-manual['(lib "frtime/frtime.scrbl")].
+For information on @onscreen{FrTime}, see @other-manual['(lib "frtime/scribblings/frtime.scrbl")].
 
 For information on @onscreen{Algol 60}, see @other-manual['(lib "algol60/algol60.scrbl")].
 

@@ -109,7 +109,7 @@ including the following:
 
  @item{@schememodname[frtime] --- changes evaluation in an even more
        radical way to support reactive programming; see
-       @other-manual['(lib "frtime/frtime.scrbl")]}
+       @other-manual['(lib "frtime/scribblings/frtime.scrbl")]}
        
  @item{@schememodname[scribble/doc] --- a language, which looks more
        like Latex than Scheme, for writing documentation; see
