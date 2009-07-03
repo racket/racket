@@ -4142,14 +4142,15 @@ static Scheme_Object *sfs_let_one(Scheme_Object *o, SFS_Info *info)
     info->max_nontail = save_mnt;
 
     if (info->max_used[pos] <= ip) {
-      /* No one is using it, so either don't push the real value, or clear it.
+      /* No one is using it, so either don't push the real value, or 
+         clear it if there's a later non-tail call.
          The optimizer normally would have converted away the binding, but
          it might not because (1) it was introduced late by inlining,
          or (2) the rhs expression doesn't always produce a single
          value. */
       if (scheme_omittable_expr(rhs, 1, -1, 1, NULL)) {
         rhs = scheme_false;
-      } else {
+      } else if (ip < info->max_calls[pos]) {
         Scheme_Object *clr;
         Scheme_Sequence *s;
         s = malloc_sequence(2);

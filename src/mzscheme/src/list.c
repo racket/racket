@@ -160,7 +160,7 @@ scheme_init_list (Scheme_Env *env)
   scheme_add_global_constant ("mpair?", p, env);
 
   REGISTER_SO(scheme_cons_proc);
-  p = scheme_make_noncm_prim(cons_prim, "cons", 2, 2);
+  p = scheme_make_immed_prim(cons_prim, "cons", 2, 2);
   scheme_cons_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant ("cons", p, env);
@@ -174,7 +174,7 @@ scheme_init_list (Scheme_Env *env)
   scheme_add_global_constant ("cdr", p, env);
 
   REGISTER_SO(scheme_mcons_proc);
-  p = scheme_make_noncm_prim(mcons_prim, "mcons", 2, 2);
+  p = scheme_make_immed_prim(mcons_prim, "mcons", 2, 2);
   scheme_mcons_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant ("mcons", p, env);
