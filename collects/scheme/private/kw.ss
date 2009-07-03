@@ -22,7 +22,7 @@
   
   ;; ----------------------------------------
 
-  (-define-struct keyword-procedure (proc required allowed))
+  (-define-struct keyword-procedure (proc required allowed checker))
   (define-values (struct:keyword-method make-km keyword-method? km-ref km-set!)
     (make-struct-type 'procedure
                       struct:keyword-procedure
@@ -138,6 +138,7 @@
                   proc
                   null
                   #f
+                  (make-keyword-checker null #f (procedure-arity proc))
                   plain-proc)])])
       make-keyword-procedure))
                          
@@ -188,7 +189,7 @@
         (if (null? kws)
             (apply proc normal-args)
             (apply
-             (keyword-procedure-extract kws (+ 2 (length normal-args)) proc)
+             (keyword-procedure-extract/method kws (+ 2 (length normal-args)) proc 0)
              kws
              kw-vals
              normal-args)))))
@@ -373,8 +374,11 @@
                                           [make-okp (if method?
                                                         #'make-optional-keyword-method
                                                         #'make-optional-keyword-procedure)]
-                                          [method? method?])
-                              
+                                          [method? method?]
+                                          [with-kw-min-args (+ 2 (length plain-ids))]
+                                          [with-kw-max-arg (if (null? (syntax-e #'rest))
+                                                               (+ 2 (length plain-ids) (length opts))
+                                                               #f)])
                               (let ([with-core 
                                      (lambda (result)
                                        ;; body of procedure, where all keyword and optional
@@ -464,6 +468,9 @@
                                         with-kws
                                         null
                                         'kws
+                                        (lambda (given-kws given-argc)
+                                          (and (in-range?/static given-argc with-kw-min-args with-kw-max-arg)
+                                               (subset?/static given-kws 'kws)))
                                         no-kws))))]
                                  [else
                                   ;; just the keywords part dispatches to core,
@@ -481,17 +488,20 @@
                                        (mk-id
                                         with-kws
                                         'needed-kws
-                                        'kws))))]))))))])
+                                        'kws
+                                        (lambda (given-kws given-argc)
+                                          (and (in-range?/static given-argc with-kw-min-args with-kw-max-arg)
+                                               (subsets?/static 'needed-kws given-kws 'kws)))))))]))))))])
                  #`(#%expression #,stx)))])
       (values new-lambda new-lambda)))
   
   (define (missing-kw proc . args)
     (apply
-     (keyword-procedure-extract null 0 proc)
+     (keyword-procedure-extract/method null 0 proc 0)
      null
      null
      args))
-  
+
   ;; ----------------------------------------
 
   ;; Helper macro:
@@ -505,6 +515,11 @@
     (syntax-rules ()
       [(_ kws kw-args () . body)
        (begin . body)]
+      [(_ kws kw-args ([kw arg arg? #f]) . body)
+       ;; last optional argument doesn't need to check as much or take as many cdrs
+       (let ([arg? (pair? kws)])
+         (let ([arg (if arg? (car kw-args) (void))])
+           . body))]
       [(_ kws kw-args ([kw arg arg? #f] . rest) . body)
        (let ([arg? (and (pair? kws)
                         (eq? 'kw (car kws)))])
@@ -512,6 +527,10 @@
                [kws (if arg? (cdr kws) kws)]
                [kw-args (if arg? (cdr kw-args) kw-args)])
            (let-kws kws kw-args rest . body)))]
+      [(_ kws kw-args ([kw arg arg? #t]) . body)
+       ;; last required argument doesn't need to take cdrs
+       (let ([arg (car kw-args)])
+         . body)]
       [(_ kws kw-args ([kw arg arg? #t] . rest) . body)
        (let ([arg (car kw-args)]
              [kws (cdr kws)]
@@ -619,6 +638,49 @@
        (let ([id req-id]) . body)]))
 
   ;; ----------------------------------------
+  ;; Helper macros:
+  ;;  Generate arity and keyword-checking procedure statically
+  ;;  as much as is reasonable.
+
+  (define-syntax (in-range?/static stx)
+    (syntax-case stx ()
+      [(_ v min #f)
+       #'(v . >= . min)]
+      [(_ v min max)
+       (if (equal? (syntax-e #'min) (syntax-e #'max))
+           #'(= v min)
+           #'(and (v . >= . min) (v . <= . max)))]))
+  
+  (define-syntax (subset?/static stx)
+    (syntax-case stx (quote)
+      [(_ l1-expr '()) #'(null? l1-expr)]
+      [(_ '() l2-expr) #'#t]
+      [(_ l1-expr l2-expr) #'(subset? l1-expr l2-expr)]))
+
+  (define-syntax (subsets?/static stx)
+    (syntax-case stx (quote)
+      [(_ '() l2-expr l3-expr)
+       #'(subset?/static l2-expr l3-expr)]
+      [(_ l1-expr l2-expr '())
+       #'(subset?/static l1-expr l2-expr)]
+      [(_ 'l1-elems l2-expr 'l3-elems)
+       (if (equal? (map syntax-e (syntax->list #'l1-elems))
+                   (map syntax-e (syntax->list #'l3-elems)))
+           ;; l2 must be equal to l1/l3:
+           #'(equal?/static 'l1-elems l2-expr)
+           #'(subsets? 'l1-elems l2-expr 'l3-elems))]))
+
+  (define-syntax (equal?/static stx)
+    ;; Unroll loop at expansion time
+    (syntax-case stx (quote)
+      [(_ '() l2-expr) #'(null? l2-expr)]
+      [(_ '(kw . kw-rest) l2-expr)
+       #'(let ([l2 l2-expr])
+           (and (pair? l2)
+                (eq? (car l2) 'kw)
+                (equal?/static 'kw-rest (cdr l2))))]))
+  
+  ;; ----------------------------------------
   ;; `define' with keyword arguments
   
   (define-syntax (new-define stx)
@@ -701,7 +763,7 @@
                           [cnt (+ 1 (length args))])
                      (quasisyntax/loc stx
                        (let #,(reverse bind-accum)
-                         ((keyword-procedure-extract '#,(map car sorted-kws) #,cnt #,(car args))
+                         ((keyword-procedure-extract/method '#,(map car sorted-kws) #,cnt #,(car args) 0)
                           '#,(map car sorted-kws)
                           (list #,@(map cdr sorted-kws))
                           . #,(cdr args)))))]
@@ -741,85 +803,158 @@
              (loop kws required (cdr allowed)))]
         [else (values #f (car kws))])))
 
+  ;; Generates a keyword an arity checker dynamically:
+  (define (make-keyword-checker req-kws allowed-kws arity)
+    ;; If min-args is #f, then max-args is an arity value.
+    ;; If max-args is #f, then >= min-args is accepted.
+    (define-syntax (arity-check-lambda stx)
+      (syntax-case stx ()
+        [(_ (kws) kw-body)
+         #'(cond
+            [(integer? arity)
+             (lambda (kws a) (and kw-body (= a arity)))]
+            [(arity-at-least? arity)
+             (let ([arity (arity-at-least-value arity)])
+               (lambda (kws a) (and kw-body (a . >= . arity))))]
+            [else
+             (lambda (kws a) (and kw-body (arity-includes? arity a)))])]))
+    (cond
+     [(not allowed-kws)
+      ;; All allowed
+      (cond
+       [(null? req-kws)
+        ;; None required
+        (arity-check-lambda (kws) #t)]
+       [else
+        (arity-check-lambda (kws) (subset? req-kws kws))])]
+     [(null? allowed-kws)
+      ;; None allowed
+      (arity-check-lambda (kws) (null? kws))]
+     [else
+      (cond
+       [(null? req-kws)
+        ;; None required, just allowed
+        (arity-check-lambda (kws) (subset? kws allowed-kws))]
+       [else
+        ;; Some required, some allowed
+        (if (equal? req-kws allowed-kws)
+            (arity-check-lambda 
+             (kws)
+             ;; All allowed are required, so check equality
+             (let loop ([kws kws][req-kws req-kws])
+               (if (null? req-kws)
+                   (null? kws)
+                   (and (eq? (car kws) (car req-kws))
+                        (loop (cdr kws) (cdr req-kws))))))
+            (arity-check-lambda
+             (kws) 
+             ;; Required is a subset of allowed
+             (subsets? req-kws kws allowed-kws)))])]))
+  
+  (define (arity-includes? arity a)
+    (cond
+     [(integer? arity) (= arity a)]
+     [(arity-at-least? arity)
+      (a . >= . (arity-at-least-value a))]
+     [else
+      (ormap (lambda (ar) (arity-includes? ar a)) arity)]))
+  
+  (define (subset? l1 l2)
+    ;; l1 and l2 are sorted
+    (cond
+     [(null? l1) #t]
+     [(null? l2) #f]
+     [(eq? (car l1) (car l2)) (subset? (cdr l1) (cdr l2))]
+     [else (subset? l1 (cdr l2))]))
+
+  (define (subsets? l1 l2 l3)
+    ;; l1, l2, and l3 are sorted, and l1 is a subset of l3
+    (cond
+     [(null? l1) (subset? l2 l3)]
+     [(null? l2) #f]
+     [(null? l3) #f]
+     [else (let ([v2 (car l2)])
+             (cond
+              [(eq? (car l1) v2) (subsets? (cdr l1) (cdr l2) (cdr l3))]
+              [(eq? v2 (car l3)) (subsets? l1 (cdr l2) (cdr l3))]
+              [else (subsets? l1 l2 (cdr l3))]))]))
+
   ;; Extracts the procedure using the keyword-argument protocol.
   ;; If `p' doesn't accept keywords, make up a procedure that
   ;; reports an error.
   (define (keyword-procedure-extract/method kws n p method-n)
     (if (and (keyword-procedure? p)
-             (procedure-arity-includes? (keyword-procedure-proc p) n)
-             (let-values ([(missing-kw extra-kw) (check-kw-args p kws)])
-               (and (not missing-kw) (not extra-kw))))
-      ;; Ok:
-      (keyword-procedure-proc p)
-      ;; Not ok, so far:
-      (let ([p2 (and (not (keyword-procedure? p))
-                     (procedure? p)
-                     (or (procedure-extract-target p)
-                         (and (new-procedure? p) 'method)))])
-        (if p2
-          ;; Maybe the target is ok:
-          (if (eq? p2 'method)
-            ;; Build wrapper method:
-            (let ([p3 (keyword-procedure-extract/method
-                       kws (add1 n) (new-procedure-ref p) (add1 method-n))])
+             ((keyword-procedure-checker p) kws n))
+        ;; Ok:
+        (keyword-procedure-proc p)
+        ;; Not ok, so far:
+        (let ([p2 (and (not (keyword-procedure? p))
+                       (procedure? p)
+                       (or (procedure-extract-target p)
+                           (and (new-procedure? p) 'method)))])
+          (if p2
+              ;; Maybe the target is ok:
+              (if (eq? p2 'method)
+                  ;; Build wrapper method:
+                  (let ([p3 (keyword-procedure-extract/method
+                             kws (add1 n) (new-procedure-ref p) (add1 method-n))])
+                    (lambda (kws kw-args . args)
+                      (apply p3 kws kw-args (cons p args))))
+                  ;; Recur:
+                  (keyword-procedure-extract/method kws n p2 method-n))
+              ;; Not ok, period:
               (lambda (kws kw-args . args)
-                (apply p3 kws kw-args (cons p args))))
-            ;; Recur:
-            (keyword-procedure-extract/method kws n p2 method-n))
-          ;; Not ok, period:
-          (lambda (kws kw-args . args)
-            (define-values (missing-kw extra-kw)
-              (if (keyword-procedure? p)
-                (check-kw-args p kws)
-                (values #f (car kws))))
-            (let ([n (let ([method-n
-                            (+ method-n
-                               (if (or (keyword-method? p) (okm? p)) 1 0))])
-                       (if (n . >= . method-n) (- n method-n) n))]
-                  [args-str
-                   (if (and (null? args) (null? kws))
-                     "no arguments supplied"
-                     ;; Hack to format arguments:
-                     (with-handlers
-                         ([exn:fail?
-                           (lambda (exn)
-                             ;; the message can end with:
-                             ;; ..., given: x; given 117 arguments total
-                             ;; ..., given: x; other arguments were: 1 2 3
-                             (regexp-replace #rx"^.*? given: x; (other )?"
-                                             (exn-message exn)
-                                             ""))])
-                       (apply
-                        raise-type-error 'x "x" 0 'x
-                        (append args (apply append (map list kws kw-args))))))]
-                  [proc-name (lambda (p) (or (and (named-keyword-procedure? p)
-                                                  (keyword-procedure-name p))
-                                             (object-name p)
-                                             p))])
-              (raise
-               (make-exn:fail:contract
-                (if extra-kw
+                (define-values (missing-kw extra-kw)
                   (if (keyword-procedure? p)
-                    (format
-                     (string-append
-                      "~a: does not expect an argument with keyword ~a; ~a")
-                     (proc-name p) extra-kw args-str)
-                    (format
-                     (string-append
-                      "~a: does not accept keyword arguments; ~a")
-                     (proc-name p) args-str))
-                  (if missing-kw
-                    (format
-                     (string-append
-                      "~a: requires an argument with keyword ~a, not supplied; ~a")
-                     (proc-name p) missing-kw args-str)
-                    (format
-                     (string-append
-                      "~a: no case matching ~a non-keyword"
-                      " argument~a; ~a")
-                     (proc-name p)
-                     (- n 2) (if (= 1 (- n 2)) "" "s") args-str)))
-                (current-continuation-marks)))))))))
+                      (check-kw-args p kws)
+                      (values #f (car kws))))
+                (let ([n (let ([method-n
+                                (+ method-n
+                                   (if (or (keyword-method? p) (okm? p)) 1 0))])
+                           (if (n . >= . method-n) (- n method-n) n))]
+                      [args-str
+                       (if (and (null? args) (null? kws))
+                           "no arguments supplied"
+                           ;; Hack to format arguments:
+                           (with-handlers ([exn:fail?
+                                            (lambda (exn)
+                                              ;; the message can end with:
+                                              ;; ..., given: x; given 117 arguments total
+                                              ;; ..., given: x; other arguments were: 1 2 3
+                                              (regexp-replace #rx"^.*? given: x; (other )?"
+                                                              (exn-message exn)
+                                                              ""))])
+                             (apply
+                              raise-type-error 'x "x" 0 'x
+                              (append args (apply append (map list kws kw-args))))))]
+                      [proc-name (lambda (p) (or (and (named-keyword-procedure? p)
+                                                      (keyword-procedure-name p))
+                                                 (object-name p)
+                                                 p))])
+                  (raise
+                   (make-exn:fail:contract
+                    (if extra-kw
+                        (if (keyword-procedure? p)
+                            (format
+                             (string-append
+                              "~a: does not expect an argument with keyword ~a; ~a")
+                             (proc-name p) extra-kw args-str)
+                            (format
+                             (string-append
+                              "~a: does not accept keyword arguments; ~a")
+                             (proc-name p) args-str))
+                        (if missing-kw
+                            (format
+                             (string-append
+                              "~a: requires an argument with keyword ~a, not supplied; ~a")
+                             (proc-name p) missing-kw args-str)
+                            (format
+                             (string-append
+                              "~a: no case matching ~a non-keyword"
+                              " argument~a; ~a")
+                             (proc-name p)
+                             (- n 2) (if (= 1 (- n 2)) "" "s") args-str)))
+                    (current-continuation-marks)))))))))
   (define (keyword-procedure-extract kws n p)
     (keyword-procedure-extract/method kws n p 0))
 
@@ -877,15 +1012,17 @@
             (raise-mismatch-error 'procedure-reduce-keyword-arity
                                   "cannot allow keywords not in original allowed set: "
                                   old-allowed))))
-      (make-optional-keyword-procedure
-       (procedure-reduce-arity (keyword-procedure-proc proc)
-                               (let loop ([a arity])
-                                 (cond
-                                  [(integer? a) (+ a 2)]
-                                  [(arity-at-least? a)
-                                   (make-arity-at-least (+ (arity-at-least-value a) 2))]
-                                  [else
-                                   (map loop a)])))
-       req-kw
-       allowed-kw
-       plain-proc))))
+      (let ([new-arity (let loop ([a arity])
+                         (cond
+                          [(integer? a) (+ a 2)]
+                          [(arity-at-least? a)
+                           (make-arity-at-least (+ (arity-at-least-value a) 2))]
+                          [else
+                           (map loop a)]))])
+        (make-optional-keyword-procedure
+         (procedure-reduce-arity (keyword-procedure-proc proc)
+                                 new-arity)
+         req-kw
+         allowed-kw
+         (make-keyword-checker req-kw allowed-kw new-arity)
+         plain-proc)))))
