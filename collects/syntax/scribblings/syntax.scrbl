@@ -20,5 +20,6 @@
 
 @include-section["docprovide.scrbl"]
 
+@include-section["parse.scrbl"]
 
 @index-section[]

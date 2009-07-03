@@ -240,7 +240,7 @@
                stx
                (apply make-prefab-struct
                       (prefab-struct-key stx)
-                      (vector->list rinner))))]
+                      (cdr (vector->list rinner)))))]
         [else stx]))
 
 ;; make-renames-mapping : stx stx -> stx kw-args -> stx

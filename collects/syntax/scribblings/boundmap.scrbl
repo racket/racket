@@ -4,6 +4,10 @@
 
 @title[#:tag "boundmap"]{Hashing on @scheme[bound-identifier=?] and @scheme[free-identifier=?]}
 
+See also @schememodname[syntax/id-table] for an implementation of
+identifier mappings using the @schememodname[scheme/dict] dictionary
+interface.
+
 @defmodule[syntax/boundmap]
 
 @defproc[(make-bound-identifier-mapping) bound-identifier-mapping?]{
@@ -120,4 +124,4 @@ Like @scheme[hash-table-map].}
          (listof any?)]
 )]{
 
-The same as @scheme[make-module-identifier-mapping], etc.}
+The same as @scheme[make-free-identifier-mapping], etc.}
