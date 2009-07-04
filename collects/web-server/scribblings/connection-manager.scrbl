@@ -47,5 +47,5 @@ for doing this.
          void]{
  Calls @scheme[reset-timer!] with the timer behind @scheme[c] with @scheme[t].
 }
-              
+
 }

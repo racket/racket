@@ -20,5 +20,5 @@ files.
  Uses a @scheme[read-mime-types] with @scheme[p] and constructs a
  function from paths to their MIME type.
 }
-                               
+
 }

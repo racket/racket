@@ -221,7 +221,7 @@ The @schememodname[web-server/stuffers/hash] @tech{stuffers} rely on a key/value
    (md5-stuffer root))
  ]
 }
-                                          
+
 @defthing[default-stuffer (stuffer/c serializable? bytes?)]{
  Equivalent to:
  @schemeblock[

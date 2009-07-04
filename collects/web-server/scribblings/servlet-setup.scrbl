@@ -54,6 +54,6 @@ Equivalent to @scheme[(path? . -> . servlet?)].
          path->servlet/c]{
  Constructs a procedure that loads a servlet from the path in a namespace created with @scheme[make-servlet-namespace],
  using a timeout manager with @scheme[timeouts-default-servlet] as the default timeout (if no manager is given.)
-} 
-                         
+}
+
 }

@@ -51,6 +51,6 @@
 
 (provide number-arg
          integer-arg
-         real-arg         
+         real-arg
          string-arg
          symbol-arg)

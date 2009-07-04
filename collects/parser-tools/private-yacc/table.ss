@@ -291,4 +291,3 @@
                 (display-parser a grouped-table (send g get-prods) port))
               #:exists 'truncate)))
         (resolve-conflicts grouped-table suppress))))
-  
