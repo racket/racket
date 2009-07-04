@@ -12,7 +12,7 @@
                                     '#,(syntax-line stx)
                                     '#,(syntax-column stx))))
               (s:car x))]))
-  
+
 
 (define-struct id-table-position (a b))
 
