@@ -41,12 +41,12 @@ extend or configure Scribble fall into two groups:
 
 When a string is uses as a style in an @scheme[element],
 @scheme[styled-paragraph], @scheme[table],
-@scheme[styled-itemization], or @scheme[blockquote], it corresponds to
+@scheme[styled-itemization], @scheme[blockquote], or @scheme[compound-paragraph], it corresponds to
 a CSS class for HTML output or a Tex macro/environment for Latex
 output. In Latex output, the string is used as a command name for a
 @scheme[styled-paragraph] and an environment name for a
-@scheme[table], @scheme[itemization], or @scheme[blockquote], except
-that a @scheme[blockquote] style name that starts with @litchar{\} is
+@scheme[table], @scheme[itemization], @scheme[blockquote], or @scheme[compound-paragraph], except
+that a @scheme[blockquote] or @scheme[compound-paragraph] style name that starts with @litchar{\} is
 used (sans @litchar{\}) as a command instead of an environment.
 In addition, for an itemization, the style string is
 suffixed with @scheme["Item"] and used as a CSS class or Tex macro

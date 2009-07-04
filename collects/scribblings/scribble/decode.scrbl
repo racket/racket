@@ -11,8 +11,11 @@ stream of strings to produces instances of the
 @schememodname[scribble/struct] datatypes (see @secref["struct"]).}
 
 At the @tech{flow} level, decoding recognizes a blank line as a
-@tech{paragraph} separator. At the @tech{paragraph}-content level,
-decoding makes just a few special text conversions:
+@tech{paragraph} separator. Blocks and paragraphs without blank lines
+in between are collected into a @tech{compound paragraph}.
+
+At the @tech{paragraph}-content level, decoding makes just a few
+special text conversions:
 
 @itemize[
 
@@ -81,6 +84,14 @@ the enclosing flow.
 
 }
 
+@defproc[(decode-compound-paragraph [lst list?]) block?]{
+
+Decodes a compound paragraph. If the compound paragraph contains a
+single block, the block is returned without a
+@scheme[compound-paragraph] wrapper.
+
+}
+
 @defproc[(decode-paragraph [lst list?]) paragraph?]{
 
 Decodes a paragraph.
@@ -103,6 +114,7 @@ An alias for @scheme[decode-content].
 Decodes a single string to produce a list of elements.
 
 }
+
 
 @defproc[(whitespace? [s string?]) boolean?]{
 

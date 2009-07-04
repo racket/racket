@@ -506,6 +506,8 @@
                    (append-map flow-targets (itemization-flows e))]
                   [(blockquote? e)
                    (append-map block-targets (blockquote-paragraphs e))]
+                  [(compound-paragraph? e)
+                   (append-map block-targets (compound-paragraph-blocks e))]
                   [(delayed-block? e) null]))
           (define (para-targets para)
             (let loop ([c (paragraph-content para)])
@@ -851,7 +853,7 @@
     (define/override (render-flow p part ri start-inline?)
       (render-flow* p part ri start-inline? #t))
 
-    (define/override (render-paragraph p part ri)
+    (define/private (do-render-paragraph p part ri flatten-unstyled?)
       ;; HACK: for the search, we need to be able to render a `div'
       ;; with an `id' attribute, `p' will probably work fine instead
       ;; of `div' since it's a block element.  Do this for now.
@@ -861,13 +863,25 @@
              [style (if (with-attributes? raw-style)
                         (with-attributes-style raw-style)
                         raw-style)])
-        `((,(if (eq? style 'div) 'div 'p)
-           ,(append
-             (if (string? style)
-                 `([class ,style]) 
-                 `()) 
-             (style->attribs raw-style))
-           ,@contents))))
+        (if (and flatten-unstyled?
+                 (not style))
+            contents
+            `((,(if (eq? style 'div) 'div 'p)
+               ,(append
+                 (if (string? style)
+                     `([class ,style]) 
+                     `()) 
+                 (style->attribs raw-style))
+               ,@contents)))))
+
+    (define/override (render-paragraph p part ri)
+      (do-render-paragraph p part ri #f))
+
+    (define/override (render-intrapara-block p part ri first? last?)
+      `((div ([class "SIntrapara"])
+             ,@(cond
+                [(paragraph? p) (do-render-paragraph p part ri #t)]
+                [else (render-block p part ri #t)]))))
 
     (define/override (render-element e part ri)
       (cond
@@ -1118,7 +1132,7 @@
                     [(centered) '([align "center"])]
                     [(at-right) '([align "right"])]
                     [(at-left)  '([align "left"])]
-                    [else null])
+                    [else '()])
                 ,@(let ([a (t-style-get 'style)])
                     (if (and a (string? (cadr a))) `([class ,(cadr a)]) null))
                 ,@(if (string? t-style) `([class ,t-style]) null)
@@ -1136,6 +1150,12 @@
                        `())
           ,@(append-map (lambda (i) (render-block i part ri #f))
                         (blockquote-paragraphs t)))))
+
+    (define/override (render-compound-paragraph t part ri)
+      `((p ,(if (string? (compound-paragraph-style t))
+                `([class ,(regexp-replace #rx"^[\\]" (compound-paragraph-style t) "")])
+                `())
+           ,@(super render-compound-paragraph t part ri))))
 
     (define/override (render-itemization t part ri)
       (let ([style-str (and (styled-itemization? t)

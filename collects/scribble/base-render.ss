@@ -242,32 +242,37 @@
                            (add-current-tag-prefix t))))))
 
     (define/public (collect-content c ci)
-      (for ([i c]) (collect-element i ci)))
+      (for ([i (in-list c)]) (collect-element i ci)))
 
     (define/public (collect-paragraph p ci)
       (collect-content (paragraph-content p) ci))
 
     (define/public (collect-flow p ci)
-      (for ([p (flow-paragraphs p)])
+      (for ([p (in-list (flow-paragraphs p))])
         (collect-block p ci)))
 
     (define/public (collect-block p ci)
       (cond [(table? p) (collect-table p ci)]
             [(itemization? p) (collect-itemization p ci)]
             [(blockquote? p) (collect-blockquote p ci)]
+            [(compound-paragraph? p) (collect-compound-paragraph p ci)]
             [(delayed-block? p) (void)]
             [else (collect-paragraph p ci)]))
 
     (define/public (collect-table i ci)
-      (for ([d (apply append (table-flowss i))])
+      (for ([d (in-list (apply append (table-flowss i)))])
         (when (flow? d) (collect-flow d ci))))
 
     (define/public (collect-itemization i ci)
-      (for ([d (itemization-flows i)])
+      (for ([d (in-list (itemization-flows i))])
         (collect-flow d ci)))
 
     (define/public (collect-blockquote i ci)
-      (for ([d (blockquote-paragraphs i)])
+      (for ([d (in-list (blockquote-paragraphs i))])
+        (collect-block d ci)))
+
+    (define/public (collect-compound-paragraph i ci)
+      (for ([d (in-list (compound-paragraph-blocks i))])
         (collect-block d ci)))
 
     (define/public (collect-element i ci)
@@ -315,7 +320,7 @@
           (resolve-part p ri))))
 
     (define/public (resolve-content c d ri)
-      (for ([i c])
+      (for ([i (in-list c)])
         (resolve-element i d ri)))
 
     (define/public (resolve-paragraph p d ri)
@@ -330,6 +335,7 @@
         [(table? p) (resolve-table p d ri)]
         [(itemization? p) (resolve-itemization p d ri)]
         [(blockquote? p) (resolve-blockquote p d ri)]
+        [(compound-paragraph? p) (resolve-compound-paragraph p d ri)]
         [(delayed-block? p) 
          (let ([v ((delayed-block-resolve p) this d ri)])
            (hash-set! (resolve-info-delays ri) p v)
@@ -337,15 +343,19 @@
         [else (resolve-paragraph p d ri)]))
 
     (define/public (resolve-table i d ri)
-      (for ([f (apply append (table-flowss i))])
+      (for ([f (in-list (apply append (table-flowss i)))])
         (when (flow? f) (resolve-flow f d ri))))
 
     (define/public (resolve-itemization i d ri)
-      (for ([f (itemization-flows i)])
+      (for ([f (in-list (itemization-flows i))])
         (resolve-flow f d ri)))
 
     (define/public (resolve-blockquote i d ri)
-      (for ([f (blockquote-paragraphs i)])
+      (for ([f (in-list (blockquote-paragraphs i))])
+        (resolve-block f d ri)))
+
+    (define/public (resolve-compound-paragraph i d ri)
+      (for ([f (in-list (compound-paragraph-blocks i))])
         (resolve-block f d ri)))
 
     (define/public (resolve-element i d ri)
@@ -415,6 +425,15 @@
     (define/public (render-paragraph p part ri)
       (render-content (paragraph-content p) part ri))
 
+    (define/public (render-compound-paragraph p part ri)
+      (apply append (let loop ([l (compound-paragraph-blocks p)]
+                               [first? #t])
+                      (cond
+                       [(null? l) null]
+                       [else (cons
+                              (render-intrapara-block (car l) part ri first? (null? (cdr l)))
+                              (loop (cdr l) #f))]))))
+
     (define/public (render-flow p part ri start-inline?)
       (if (null? (flow-paragraphs p))
           null
@@ -426,6 +445,9 @@
                          (render-block p part ri #f))
                        (cdr (flow-paragraphs p)))))))
 
+    (define/public (render-intrapara-block p part ri first? last?)
+      (render-block p part ri first?))
+
     (define/public (render-block p part ri inline?)
       (cond
         [(table? p) (if (auxiliary-table? p)
@@ -433,6 +455,7 @@
                       (render-table p part ri inline?))]
         [(itemization? p) (render-itemization p part ri)]
         [(blockquote? p) (render-blockquote p part ri)]
+        [(compound-paragraph? p) (render-compound-paragraph p part ri)]
         [(delayed-block? p) 
          (render-block (delayed-block-blocks p ri) part ri inline?)]
         [else (render-paragraph p part ri)]))

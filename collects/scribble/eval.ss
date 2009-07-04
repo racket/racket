@@ -392,8 +392,9 @@
     (syntax-rules ()
       [(_ #:eval ev def e ...)
        (let ([eva ev])
-         (make-splice (list (schemeblock+eval #:eval eva def)
-                            (interaction #:eval eva e ...))))]
+         (column (list (schemeblock+eval #:eval eva def)
+                       blank-line
+                       (interaction #:eval eva e ...))))]
       [(_ def e ...) 
        (def+int #:eval (make-base-eval) def e ...)]))
 
@@ -401,8 +402,9 @@
     (syntax-rules ()
       [(_ #:eval ev [def ...] e ...)
        (let ([eva ev])
-         (make-splice (list (schemeblock+eval #:eval eva def ...)
-                            (interaction #:eval eva e ...))))]
+         (column (list (schemeblock+eval #:eval eva def ...)
+                       blank-line
+                       (interaction #:eval eva e ...))))]
       [(_ [def ...] e ...)
        (defs+int #:eval (make-base-eval) [def ...] e ...)]))
 
@@ -440,6 +442,14 @@
        (titled-interaction #:eval ev example-title schemedefinput* e ...)]
       [(_ example-title e ...)
        (titled-interaction example-title schemedefinput* e ...)]))
+
+  (define blank-line (make-paragraph (list 'nbsp)))
+
+  (define (column l)
+    (make-table #f (map
+                    (lambda (t)
+                      (list (make-flow (list t))))
+                    l)))
 
   (define (do-splice l)
     (cond

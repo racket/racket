@@ -41,8 +41,8 @@ A @deftech{flow} is an instance of @scheme[flow]; it has a list of
  @techlink{blocks}.
 
 A @deftech{block} is either a @techlink{table}, an
- @techlink{itemization}, @techlink{blockquote}, @techlink{paragraph},
- or a @techlink{delayed block}.
+ @techlink{itemization}, a @techlink{blockquote}, a @techlink{paragraph},
+ @techlink{compound paragraph}, or a @techlink{delayed block}.
 
 @itemize[
 
@@ -55,8 +55,9 @@ A @deftech{block} is either a @techlink{table}, an
              it has a list of @techlink{flows}.}
 
        @item{A @deftech{blockquote} is an instance of
-             @scheme[blockquote]; it has list of @tech{blocks}
-             that are indented according to a specified style.}
+             @scheme[blockquote]; it has list of @tech{blocks} that
+             are typeset as sub-flow, and by default the subflow is
+             inset.}
 
        @item{A @deftech{paragraph} is an instance of
              @scheme[paragraph]; it has a @deftech{content}, which is
@@ -161,6 +162,12 @@ A @deftech{block} is either a @techlink{table}, an
                          processing.}
 
              ]}]}
+
+       @item{A @deftech{compound paragraph} is an instance of
+             @scheme[compound-paragraph]; like @scheme[blockquote], it
+             has list of @tech{blocks}, but the blocks are typeset as
+             a single paragraph (e.g., no indentation after the first
+             block) instead of inset.}
 
        @item{A @deftech{delayed block} is an instance of
              @scheme[delayed-block], which has a procedure that
@@ -340,7 +347,7 @@ it is attached to a part representing the whole document. The default
 version for a document is @scheme[(version)].}
 
 
-@defstruct[flow ([paragraphs (listof flow-element?)])]{
+@defstruct[flow ([paragraphs (listof block?)])]{
 
 A @techlink{flow} has a list of @tech{blocks}.
 
@@ -396,8 +403,9 @@ output, individual paragraphs are not automatically line-wrapped; to
 get a line-wrapped paragraph, use an element with a string style and
 define a corresponding Latex macro in terms of @tt{parbox}. For Latex
 output of blocks in the flow that are @scheme[blockquote]s,
-@scheme[itemization]s, or @scheme[delayed-block]s, the block is
-wrapped with @tt{minipage} using @tt{linewidth} as the width.
+@scheme[itemization]s, @scheme[compound-paragraph]s, or
+@scheme[delayed-block]s, the block is wrapped with @tt{minipage} using
+@tt{linewidth} as the width.
 
 The @scheme[style] can be any of the following:
 
@@ -472,7 +480,7 @@ The @scheme[style] can be
 
 
 @defstruct[blockquote ([style any/c]
-                       [paragraphs (listof flow-element?)])]{
+                       [paragraphs (listof block?)])]{
 
 A @techlink{blockquote} has a style and a list of @tech{blocks}.  The
 @scheme[style] field is normally a string that corresponds to a CSS
@@ -482,7 +490,18 @@ leading @litchar{\} in the style name is treated specially (see
 
 }
 
-@defstruct[delayed-block ([resolve (any/c part? resolve-info? . -> . flow-element?)])]{
+@defstruct[compound-paragraph ([style any/c]
+                               [blocks (listof block?)])]{
+
+A @techlink{compound paragraph} has a style and a list of @tech{blocks}.  The
+@scheme[style] field is normally a string that corresponds to a CSS
+class for HTML output or Latex environment for Latex output where a
+leading @litchar{\} in the style name is treated specially (see
+@secref["extra-style"]).
+
+}
+
+@defstruct[delayed-block ([resolve (any/c part? resolve-info? . -> . block?)])]{
 
 The @scheme[resolve] procedure is called during the @techlink{resolve
 pass} to obtain a normal @tech{block}. The first argument to

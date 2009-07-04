@@ -11,7 +11,7 @@
 
 @defproc[(autobib-style-extras) list?]{
 
-Include the content of the result list in the style of a document part
+Includes the content of the result list in the style of a document part
 that includes all figures. These style extras pull in HTML and Latex
 rendering support.}
 

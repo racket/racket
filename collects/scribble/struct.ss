@@ -123,6 +123,7 @@
       (table? p)
       (itemization? p)
       (blockquote? p)
+      (compound-paragraph? p)
       (delayed-block? p)))
 
 (define (string-without-newline? s)
@@ -151,6 +152,8 @@
  [(styled-itemization itemization) ([style any/c])]
  [blockquote ([style any/c]
               [paragraphs (listof block?)])]
+ [compound-paragraph ([style any/c]
+                      [blocks (listof block?)])]
  ;; content = list of elements
  [element ([style any/c]
            [content list?])]
@@ -487,6 +490,7 @@
     [(table? p) (table-width p)]
     [(itemization? p) (itemization-width p)]
     [(blockquote? p) (blockquote-width p)]
+    [(compound-paragraph? p) (compound-paragraph-width p)]
     [(delayed-block? p) 1]))
 
 (define (table-width p)
@@ -503,7 +507,10 @@
   (apply max 0 (map flow-width (itemization-flows p))))
 
 (define (blockquote-width p)
-  (+ 4 (apply max 0 (map paragraph-width (blockquote-paragraphs p)))))
+  (+ 4 (apply max 0 (map block-width (blockquote-paragraphs p)))))
+
+(define (compound-paragraph-width p)
+  (apply max 0 (map block-width (compound-paragraph-blocks p))))
 
 ;; ----------------------------------------
 

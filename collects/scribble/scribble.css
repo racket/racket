@@ -27,6 +27,11 @@
 
 /* ---------------------------------------- */
 
+p, .SIntrapara {
+  display: block;
+  margin: 1em 0;
+}
+
 h2 { /* per-page main title */
   margin-top: 0;
 }
@@ -515,6 +520,10 @@ i {
 
 .SBibliography td {
   vertical-align: text-top;
+}
+
+.SCentered {
+  text-align: center;
 }
 
 .imageleft {

@@ -97,6 +97,10 @@
 \newcommand{\atItemizeStart}[0]{\addtolength{\stabLeft}{\labelsep}
                                 \addtolength{\stabLeft}{\labelwidth}}
 
+\newenvironment{SingleColumn}{\begin{list}{}{\topsep=0pt\partopsep=0pt%
+\listparindent=0pt\itemindent=0pt\labelwidth=0pt\leftmargin=0pt\rightmargin=0pt%
+\itemsep=0pt\parsep=0pt}\item}{\end{list}}
+
 \newenvironment{schemeblock}{}{}
 \newenvironment{defmodule}{}{}
 \newenvironment{prototype}{}{}
@@ -112,6 +116,8 @@
 \newcommand{\sectionhidden}[1]{\section{#1}}
 \newcommand{\subsectionhidden}[1]{\subsection{#1}}
 \newcommand{\subsubsectionhidden}[1]{\subsubsection{#1}}
+
+\newenvironment{SCentered}{\begin{trivlist}\item \centering}{\end{trivlist}}
 
 % Scribble then generates the following:
 %

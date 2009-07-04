@@ -10,9 +10,15 @@
 @title[#:tag "manual" #:style 'toc]{Manual Forms}
 
 @defmodule[scribble/manual]{The @schememodname[scribble/manual]
-library provides all of @schememodname[scribble/basic], plus
-additional functions that are relatively specific to writing PLT
-Scheme documentation.}
+library provides all of @schememodname[scribble/basic] plus additional
+functions, including many that are relatively specific to writing PLT
+Scheme documentation.
+
+The @schememodname[scribble/manual] name can also be used as a
+language with @hash-lang[]. It acts like the
+@schememodname[scribble/doc] language, except that the
+@schememodname[scribble/manual] library is also required into
+the module.}
 
 @local-table-of-contents[]
 
@@ -1074,6 +1080,8 @@ combination of @scheme[envvar] and @scheme[as-index].}
 
 @; ------------------------------------------------------------------------
 @section{Bibliography}
+
+@margin-note{See also @schememodname[scriblib/autobib].}
 
 @defproc[(cite [key string?]) element?]{
 

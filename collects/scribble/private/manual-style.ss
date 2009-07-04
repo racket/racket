@@ -162,7 +162,7 @@
 
 
 (define (centerline . s)
-  (make-table 'centered (list (list (make-flow (list (decode-paragraph s)))))))
+  (make-blockquote "SCentered" (flow-paragraphs (decode-flow s))))
 
 (define (commandline . s)
   (make-paragraph (cons (hspace 2) (map (lambda (s)

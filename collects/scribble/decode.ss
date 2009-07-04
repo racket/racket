@@ -9,6 +9,7 @@
          decode-part
          decode-flow
          decode-paragraph
+         decode-compound-paragraph
          decode-content
          (rename-out [decode-content decode-elements])
          decode-string
@@ -63,8 +64,8 @@
 
 (define (decode-accum-para accum)
   (if (andmap whitespace? accum)
-    null
-    (list (decode-paragraph (reverse (skip-whitespace accum))))))
+      null
+      (list (decode-compound-paragraph (reverse (skip-whitespace accum))))))
 
 (define (part-version p)
   (if (versioned-part? p)
@@ -117,6 +118,8 @@
                          (title-decl-tags (car l))
                          (title-decl-version (car l))
                          (title-decl-style (car l)))])]
+      #;
+      ;; Blocks are now handled by decode-accum-para
       [(block? (car l))
        (let ([para (decode-accum-para accum)]
              [part (decode-flow* (cdr l) keys colls tag-prefix tags vers style
@@ -248,3 +251,30 @@
 (define (decode-content l)
   (append-map (lambda (s) (if (string? s) (decode-string s) (list s)))
               (skip-whitespace l)))
+
+(define (decode-compound-paragraph l)
+  (define (finish-accum para-accum)
+    (if (null? para-accum)
+        null
+        (list (make-paragraph (skip-whitespace (apply append (reverse para-accum)))))))
+  (let ([r (let loop ([l (skip-whitespace l)]
+                      [para-accum null])
+             (cond
+              [(null? l)
+               (finish-accum para-accum)]
+              [else
+               (let ([s (car l)])
+                 (cond
+                  [(block? s) (append
+                               (finish-accum para-accum)
+                               (cons s (loop (skip-whitespace (cdr l)) null)))]
+                  [(string? s) (loop (cdr l)
+                                     (cons (decode-string s) para-accum))]
+                  [else (loop (cdr l)
+                              (cons (list (car l)) para-accum))]))]))])
+    (cond
+     [(null? r)
+      (make-paragraph null)]
+     [(null? (cdr r))
+      (car r)]
+     [(make-compound-paragraph #f r)])))
