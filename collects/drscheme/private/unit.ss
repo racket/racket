@@ -2613,8 +2613,9 @@ module browser threading seems wrong.
         
         (inherit is-maximized?)
         (define/override (on-size w h)
-          (preferences:set 'drscheme:unit-window-width w)
-          (preferences:set 'drscheme:unit-window-height h)
+          (unless (is-maximized?)
+            (preferences:set 'drscheme:unit-window-width w)
+            (preferences:set 'drscheme:unit-window-height h))
           (preferences:set 'drscheme:unit-window-max? (is-maximized?))
           (super on-size w h))
         
@@ -3800,6 +3801,9 @@ module browser threading seems wrong.
          (style '(toolbar-button))
          (width (preferences:get 'drscheme:unit-window-width))
          (height (preferences:get 'drscheme:unit-window-height)))
+        (inherit maximize)
+        (when (preferences:get 'drscheme:unit-window-max?)
+          (maximize #t))
         
         (initialize-menus)
         
@@ -4523,10 +4527,7 @@ module browser threading seems wrong.
         (when first-frame?
           (let ([pos (preferences:get 'drscheme:frame:initial-position)])
             (when pos
-              (send frame move (car pos) (cdr pos))))
-          (unless (eq? (system-type) 'macosx)
-            ;; mac os x has a bug where maximizing can make the window too big.
-            (send frame maximize (preferences:get 'drscheme:unit-window-max?))))
+              (send frame move (car pos) (cdr pos)))))
         (send frame update-toolbar-visibility)
         (send frame show #t)
         (set! first-frame? #f)
