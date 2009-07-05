@@ -6,8 +6,6 @@
          "private.ss"
          "wx.ss")
 
-(define font-directory #f)
-
 (provide mult-color<%>
          add-color<%>
          style-delta%
@@ -155,6 +153,8 @@
 (define (alignment-delta? s)
   (memq s '(base top bottom center)))
 
+(define not-supplied (string->uninterned-symbol "[not-supplied]"))
+
 (defclass style-delta% object%
   (field-properties [[family-delta? family] 'base]
                     [[(make-or-false string?) face] #f]
@@ -189,14 +189,33 @@
   (send foreground-mult set 1.0 1.0 1.0)
 
   (init [change-command 'change-nothing]
-        [param 0])
+        [param not-supplied])
   (super-new)
-  (set-delta change-command param)
+  (do-set-delta change-command param
+                (lambda () (init-name 'style-delta%)))
 
   (def/public (set-delta [symbol? [change-command 'change-nothing]]
-                         [any? [param 0]])
+                         [any? [param not-supplied]])
+    (do-set-delta change-command param (lambda () (method-name 'style-delta% 'set-delta))))
+
+  (define/private (do-set-delta change-command param get-who)
+    (define (check-no-param)
+      (unless (eq? param not-supplied)
+        (raise-mismatch-error (get-who)
+                              (format "no extra argument expected for '~a command: " change-command)
+                              param)))
+    (define (check-param pred)
+      (unless (pred param)
+        (if (eq? param not-supplied)
+            (raise-mismatch-error (get-who)
+                                  "missing argument for command: "
+                                  change-command)
+            (raise-mismatch-error (get-who)
+                                  (format "bad argument for '~a command: " change-command)
+                                  param))))
     (case change-command
       [(change-nothing)
+       (check-no-param)
        (set! family 'base)
        (set! face #f)
        (set! size-mult 1)
@@ -222,57 +241,75 @@
        (set! alignment-on 'base)
        (set! alignment-off 'base)]
       [(change-style)
+       (check-param style-delta?)
        (set! style-on param)
        (set! style-off 'base)]
       [(change-weight)
+       (check-param weight-delta?)
        (set! weight-on param)
        (set! weight-off 'base)]
       [(change-smoothing)
+       (check-param smoothing-delta?)
        (set! smoothing-on param)
        (set! smoothing-off 'base)]
       [(change-underline)
+       (check-param bool?)
        (set! underlined-on param)
        (set! underlined-off (not param))]
       [(change-size-in-pixels)
+       (check-param bool?)
        (set! size-in-pixels-on param)
        (set! size-in-pixels-off (not param))]
       [(change-size)
+       (check-param exact-integer?)
        (set! size-mult 0)
        (set! size-add param)]
       [(change-family)
+       (check-param family-delta?)
        (set! family param)
        (set! face #f)]
       [(change-alignment)
+       (check-param alignment-delta?)
        (set! alignment-on param)
        (set! alignment-off 'base)]
       [(change-bold)
+       (check-no-param)
        (set! weight-on 'bold)
        (set! weight-off 'base)]
       [(change-italic)
+       (check-no-param)
        (set! style-on 'italic)
        (set! style-off 'base)]
       [(change-toggle-style)
+       (check-param style-delta?)
        (set! style-on param)
        (set! style-off param)]
       [(change-toggle-weight)
+       (check-param weight-delta?)
        (set! weight-on param)
        (set! weight-off param)]
       [(change-toggle-smoothing)
+       (check-param smoothing-delta?)
        (set! smoothing-on param)
        (set! smoothing-off param)]
       [(change-toggle-underline)
+       (check-no-param)
        (set! underlined-on #t)
        (set! underlined-off #t)]
       [(change-toggle-size-in-pixels)
+       (check-no-param)
        (set! size-in-pixels-on #t)
        (set! size-in-pixels-off #t)]
       [(change-bigger)
+       (check-param exact-integer?)
        (set! size-mult 1)
        (set! size-add param)]
       [(change-smaller)
+       (check-param exact-integer?)
        (set! size-mult 1)
        (set! size-add (- param))]
       [(change-normal)
+       (check-no-param)
        (set! family 'default)
        (set! face #f)
        (set! size-mult 0)
@@ -291,10 +328,15 @@
        (set! alignment-off 'base)
        (set-delta 'change-normal-color)]
       [(change-normal-color)
+       (check-no-param)
        (send foreground-mult set 0 0 0)
        (send foreground-add set 0 0 0)
        (send background-mult set 0 0 0)
-       (send background-add set 255 255 255)])
+       (send background-add set 255 255 255)]
+      [else
+       (raise-type-error (get-who)
+                         "change-command symbol"
+                         change-command)])
     this)
 
   (def/public (set-delta-face [string? name] [symbol? [fam 'default]])
