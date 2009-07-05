@@ -115,11 +115,7 @@
        [else (proc stx)]))))
 
 (define unwrapped-tag (gensym))
-
-(define (wrap expr)
-  (datum->syntax #f
-                 (convert-mpairs expr)
-                 (list unwrapped-tag #f #f #f #f)))
+(define unwrapped-srcloc (list unwrapped-tag #f #f #f #f))
 
 (define (convert-mpairs expr)
   (cond
@@ -169,7 +165,7 @@
                                          lit)))
                  lits)
        (quasisyntax/loc stx
-         (syntax-case (wrap expr) (lit ...)
+         (syntax-case (wrap expr (quote-syntax #,(datum->syntax #'expr 'ctx)) unwrapped-srcloc #f) (lit ...)
            . #,(map (lambda (clause)
                       (syntax-case clause ()
                         [(pat val)

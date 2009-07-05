@@ -557,28 +557,6 @@
                   (syntax/loc stx
                     (define-syntax id (wrap-as-needed expr))))]))
 
-(define-for-syntax (wrap r stx)
-  (cond
-   [(syntax? r) r]
-   [(symbol? r) (error 'macro
-                       "transformer result included a raw symbol: ~e"
-                       r)]
-   [(mpair? r) 
-    (let ([istx (or (hash-ref reconstruction-memory r #f)
-                    stx)])
-      (datum->syntax
-       istx
-       (cons (wrap (mcar r) stx)
-             (wrap (mcdr r) stx))
-       istx))]
-   [(vector? r) (datum->syntax
-                 stx
-                 (list->vector
-                  (map (lambda (r) (wrap r stx))
-                       (vector->list r)))
-                 stx)]
-   [else (datum->syntax stx r stx)]))
-
 (define-for-syntax (wrap-as-needed v)
   (cond
    [(and (procedure? v)
@@ -587,7 +565,7 @@
      (case-lambda 
       [(stx) (if (syntax? stx)
                  (let ([r (v stx)])
-                   (wrap r stx))
+                   (wrap r stx stx #t))
                  (v stx))]
       [args (apply v args)])
      (procedure-arity v))]
