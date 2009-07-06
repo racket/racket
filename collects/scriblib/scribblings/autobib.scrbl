@@ -108,6 +108,13 @@ describing a book's location.}
 Combines elements to generate an element that is suitable for
 describing a technical report's location.}
 
+@defproc[(dissertation-location [#:institution institution edition any/c]
+                                [#:number degree any/c "PhD"])
+         element?]{
+
+Combines elements to generate an element that is suitable for
+describing a dissertation.}
+
 
 @defproc[(author-name [first any/c]
                       [last any/c]

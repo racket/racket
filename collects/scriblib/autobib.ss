@@ -7,7 +7,8 @@
 (provide autobib-style-extras
          define-cite
          make-bib in-bib (rename-out [auto-bib? bib?])
-         proceedings-location journal-location book-location techrpt-location
+         proceedings-location journal-location book-location 
+         techrpt-location dissertation-location
          author-name org-author-name authors editor)
 
 (define (autobib-style-extras)
@@ -216,6 +217,11 @@
          #:institution org
          #:number num)
   @elem{@|org|, @|num|})
+
+(define (dissertation-location
+         #:institution org
+         #:degree [degree "PhD"])
+  @elem{@|degree| dissertation, @|org|})
 
 ;; ----------------------------------------
 
