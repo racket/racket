@@ -76,7 +76,7 @@
                                   #:additional-specs
                                   default-module-specs)])
                    (if stateless?
-                       (make-stateless.servlet servlet-current-directory stuffer start)
+                       (make-stateless.servlet servlet-current-directory stuffer manager start)
                        (make-v2.servlet servlet-current-directory manager start)))])
             (set-box! servlet-box servlet)
             servlet))))))
