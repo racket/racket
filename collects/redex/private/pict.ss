@@ -227,37 +227,56 @@
                             (append
                              (map rule-pict-lhs rps)
                              (map rule-pict-rhs rps))))]
+         [scs (map (lambda (rp)
+                     (rp->side-condition-pict rp max-w))
+                   rps)]
+         [labels (map (lambda (rp)
+                        (hbl-append (blank (label-space) 0) (rp->pict-label rp)))
+                      rps)]
+         [total-w (apply max
+                         max-w
+                         (append (map pict-width scs)
+                                 (map (lambda (lbl)
+                                        (+ max-w 2 (label-space) (pict-width lbl)))
+                                      labels)))]
          [one-line
           (lambda (sep?)
-            (lambda (rp)
+            (lambda (rp sc label)
               (let ([arrow (hbl-append (arrow->pict (rule-pict-arrow rp)) (blank (arrow-space) 0))]
                     [lhs (rule-pict-lhs rp)]
                     [rhs (rule-pict-rhs rp)]
                     [spc (basic-text " " (default-style))]
-                    [label (hbl-append (blank (label-space) 0) (rp->pict-label rp))]
                     [sep (blank (compact-vertical-min-width)
-                                (reduction-relation-rule-separation))])
+                                (reduction-relation-rule-separation))]
+                    [add-label (lambda (p label)
+                                 (htl-append 
+                                  p
+                                  (inset label (- total-w (pict-width p) (pict-width label))
+                                         0 0 0)))])
                 (append
                  (if ((apply + (map pict-width (list lhs spc arrow spc rhs)))
                       . < .
                       max-w)
                      (list 
-                      (blank) (hbl-append lhs spc arrow spc rhs) label
-                      (blank) (rp->side-condition-pict rp max-w) (blank))
-                     (list (blank) lhs label
-                           arrow rhs (blank)
-                           (blank) (rp->side-condition-pict rp max-w) (blank)))
-                 (if sep? (list (blank) sep (blank)) null)))))])
+                      (blank) (add-label (hbl-append lhs spc arrow spc rhs) label)
+                      (blank) sc)
+                     (list (blank) (add-label lhs label)
+                           arrow rhs
+                           (blank) sc))
+                 (if sep? (list (blank) sep) null)))))])
     (if (null? rps)
         (blank)
-        (table 3
+        (table 2
                (append
                 (apply
                  append
-                 (map (one-line #t) (drop-right rps 1)))
-                ((one-line #f) (last rps)))
+                 (map (one-line #t)
+                      (drop-right rps 1) 
+                      (drop-right scs 1)
+                      (drop-right labels 1)))
+                ((one-line #f) (last rps) (last scs) (last labels)))
                ltl-superimpose ltl-superimpose
-               (list* 2 (+ 2 (current-label-extra-space))) 2))))
+               2 2))))
 
 ;; side-condition-pict : (listof pict) (listof (or/c (cons/c pict pict) pict)) number -> pict
 ;; the elements of pattern-binds/sc that are pairs are bindings (ie "x = <something>")
