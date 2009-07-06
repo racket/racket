@@ -704,13 +704,13 @@
            (memq atom '(number variable variable-except variable-not-otherwise-mentioned)))
        (list (non-terminal->token col span (format "~s" atom)))]
       [(symbol? atom)
-       (list (or (rewrite-atomic col span atom)
+       (list (or (rewrite-atomic col span atom literal-style)
                  (make-string-token col span (symbol->string atom) (literal-style))))]
       [(string? atom)
        (list (make-string-token col span atom (default-style)))]
       [else (error 'atom->tokens "unk ~s" atom)]))
 
-  (define (rewrite-atomic col span e)
+  (define (rewrite-atomic col span e get-style)
     (cond
      [(assoc e (atomic-rewrite-table))
       =>
@@ -720,12 +720,12 @@
          (let ([p (cadr m)])
            (if (procedure? p)
                (make-pict-token col span (p))
-               (make-string-token col span p (non-terminal-style)))))]
+               (make-string-token col span p (get-style)))))]
      [else #f]))
 
   (define (non-terminal->token col span str)
     (let ([e (string->symbol str)])
-      (or (rewrite-atomic col span e)
+      (or (rewrite-atomic col span e non-terminal-style)
           (make-string-token col
                              span
                              str
