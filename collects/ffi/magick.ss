@@ -2,7 +2,20 @@
 
 (require mzlib/foreign) (unsafe!)
 
-(define libwand (ffi-lib "libWand" "6.0.1"))
+(define (ffi-try-libs . libs)
+  (let loop ([libs* libs]
+             [exceptions '()])
+    (if (null? libs*)
+      (error 'ffi-try-libs "Could not load any of the libraries in ~a\n~a\n" libs exceptions)
+      (let ([lib (car libs*)])
+        (with-handlers ([exn:fail:filesystem? (lambda (e)
+                                                (loop (cdr libs*) (cons e exceptions)))])
+          (ffi-lib lib))))))
+
+;; Warning! This interface was written for libWand 6.0.1
+;; No guarantees are made about future compatibility
+;; (define libwand (ffi-lib "libWand" "6.0.1"))
+(define libwand (ffi-try-libs "libWand" "libMagickWand"))
 
 ;; ===== Main Objects =========================================================
 
