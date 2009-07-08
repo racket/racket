@@ -1839,7 +1839,7 @@ static int is_constant_and_avoids_r1(Scheme_Object *obj)
 
 static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands, GC_CAN_IGNORE jit_insn *refagain)
 {
-  GC_CAN_IGNORE jit_insn *ref2, *refz1, *refz2, *refz3, *refz5;
+  GC_CAN_IGNORE jit_insn *ref2, *refz1, *refz2, *refz3, *refz4, *refz5;
 
   ref2 = jit_bnei_i(jit_forward(), JIT_R1, scheme_proc_struct_type);
   jit_ldxi_p(JIT_R1, JIT_V1, &((Scheme_Structure *)0x0)->stype);
@@ -1855,6 +1855,7 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   jit_ldxr_p(JIT_R1, JIT_V1, JIT_R1);
 
   /* JIT_R1 now has the wrapped procedure */
+  refz4 = jit_bmsi_i(jit_forward(), JIT_R1, 0x1);
   jit_ldr_s(JIT_R2, JIT_R1);
   refz2 = jit_bnei_i(jit_forward(), JIT_R2, scheme_native_closure_type);
   CHECK_LIMIT();
@@ -1884,6 +1885,7 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   mz_patch_branch(refz1);
   mz_patch_branch(refz2);
   mz_patch_branch(refz3);
+  mz_patch_branch(refz4);
   mz_patch_branch(refz5);
 
   return ref2;
