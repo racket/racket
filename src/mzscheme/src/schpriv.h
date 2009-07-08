@@ -188,6 +188,7 @@ void scheme_init_numstr(Scheme_Env *env);
 void scheme_init_eval(Scheme_Env *env);
 void scheme_init_promise(Scheme_Env *env);
 void scheme_init_struct(Scheme_Env *env);
+void scheme_init_reduced_proc_struct(Scheme_Env *env);
 void scheme_init_fun(Scheme_Env *env);
 void scheme_init_symbol(Scheme_Env *env);
 void scheme_init_char(Scheme_Env *env);
@@ -613,6 +614,7 @@ typedef struct Scheme_Struct_Type {
 } Scheme_Struct_Type;
 
 #define STRUCT_TYPE_ALL_IMMUTABLE 0x1
+#define STRUCT_TYPE_CHECKED_PROC  0x2
 
 typedef struct Scheme_Structure
 {
@@ -667,6 +669,8 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
 Scheme_Object *scheme_make_prefab_struct_instance(Scheme_Struct_Type *stype,
                                                          Scheme_Object *vec);
 Scheme_Object *scheme_clone_prefab_struct_instance(Scheme_Structure *s);
+
+Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv);
 
 /*========================================================================*/
 /*                         syntax objects                                 */

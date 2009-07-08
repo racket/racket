@@ -72,6 +72,7 @@ static Scheme_Object *check_input_port_property_value_ok(int argc, Scheme_Object
 static Scheme_Object *check_output_port_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_rename_transformer_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_set_transformer_property_value_ok(int argc, Scheme_Object *argv[]);
+static Scheme_Object *check_checked_proc_property_value_ok(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *make_struct_type(int argc, Scheme_Object *argv[]);
 
@@ -139,6 +140,7 @@ static Scheme_Object *procedure_extract_target(int argc, Scheme_Object **argv);
 static Scheme_Object *rename_transformer_property;
 static Scheme_Object *set_transformer_property;
 static Scheme_Object *not_free_id_symbol;
+static Scheme_Object *scheme_checked_proc_property;
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -349,6 +351,17 @@ scheme_init_struct (Scheme_Env *env)
                                                                         guard);
     
     scheme_add_global_constant("prop:set!-transformer", set_transformer_property, env);
+  }
+
+
+  {
+    guard = scheme_make_prim_w_arity(check_checked_proc_property_value_ok,
+				     "guard-for-prop:checked-procedure",
+				     2, 2);
+    REGISTER_SO(scheme_checked_proc_property);
+    scheme_checked_proc_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("checked-procedure"),
+                                                                             guard);
+    scheme_add_global_constant("prop:checked-procedure", scheme_checked_proc_property, env);
   }
 
   REGISTER_SO(not_free_id_symbol);
@@ -600,6 +613,15 @@ scheme_init_struct (Scheme_Env *env)
 						      "exn:srclocs-accessor",
 						      1, 1, 1),
 			     env);
+
+  {
+    Scheme_Object *p;
+    p = scheme_make_prim_w_arity(scheme_extract_checked_procedure,
+                                 "checked-procedure-check-and-extract",
+                                 5, 5);
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+    scheme_add_global_constant("checked-procedure-check-and-extract", p, env);
+  }
 }
 
 /*========================================================================*/
@@ -1347,6 +1369,75 @@ static Scheme_Object *check_set_transformer_property_value_ok(int argc, Scheme_O
                                           is_proc_1, 
                                           "property value is not an procedure (arity 1) or exact non-negative integer: ",
                                           argc, argv);
+}
+
+/*========================================================================*/
+/*                           checked-proc property                        */
+/*========================================================================*/
+
+static Scheme_Object *check_checked_proc_property_value_ok(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *parent, *l;
+  int num_islots, num_aslots;
+
+  l = argv[1];
+  l = SCHEME_CDR(l);
+  num_islots = SCHEME_INT_VAL(SCHEME_CAR(l));
+  l = SCHEME_CDR(l);
+  num_aslots = SCHEME_INT_VAL(SCHEME_CAR(l));
+  l = SCHEME_CDR(l);
+  l = SCHEME_CDR(l);
+  l = SCHEME_CDR(l);
+  l = SCHEME_CDR(l);
+  parent = SCHEME_CAR(l);
+
+  if (SCHEME_TRUEP(parent)) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "prop:checked-procedure: not allowed on a structure type with a supertype");
+  }
+
+  if (num_islots + num_aslots < 2) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "prop:checked-procedure: need at least two fields in the structure type");
+  }
+
+  return scheme_true;
+}
+
+Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv)
+{
+  Scheme_Struct_Type *stype;
+  Scheme_Object *v, *checker, *proc, *a[3];
+  
+  v = argv[1];
+
+  if (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_struct_type_type))
+    stype = (Scheme_Struct_Type *)argv[0];  
+  else
+    stype = NULL;
+
+  if (!stype || !(MZ_OPT_HASH_KEY(&stype->iso) & STRUCT_TYPE_CHECKED_PROC)) {
+    scheme_wrong_type("checked-procedure-check-and-extract", "structure type with prop:checked-procedure property",
+                      0, argc, argv);
+    return NULL;
+  }
+
+  if (SCHEME_STRUCTP(v) && scheme_is_struct_instance((Scheme_Object *)stype, v)) {
+    checker = ((Scheme_Structure *)v)->slots[0];
+    proc = ((Scheme_Structure *)v)->slots[1];
+    
+    a[0] = argv[3];
+    a[1] = argv[4];
+    v = _scheme_apply(checker, 2, a);
+    
+    if (SCHEME_TRUEP(v))
+      return proc;
+  }
+
+  a[0] = argv[1];
+  a[1] = argv[3];
+  a[2] = argv[4];
+  return _scheme_apply(argv[2], 3, a);
 }
 
 /*========================================================================*/
@@ -2950,7 +3041,7 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
 					Scheme_Object *guard)
 {
   Scheme_Struct_Type *struct_type, *parent_type;
-  int j, depth;
+  int j, depth, checked_proc = 0;
   
   parent_type = (Scheme_Struct_Type *)parent;
 
@@ -3012,6 +3103,8 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
   if (parent_type) {
     struct_type->num_props = parent_type->num_props;
     struct_type->props = parent_type->props;
+    if (MZ_OPT_HASH_KEY(&parent_type->iso) & STRUCT_TYPE_CHECKED_PROC)
+      checked_proc = 1;
   }
 
   /* In principle, we should check for duplicate properties here
@@ -3116,7 +3209,10 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
       for (l = props; SCHEME_PAIRP(l); ) {
 	a = SCHEME_CAR(l);
 	prop = SCHEME_CAR(a);
-        
+
+        if (SAME_OBJ(prop, scheme_checked_proc_property))
+          checked_proc = 1;
+
         propv = guard_property(prop, SCHEME_CDR(a), struct_type);
         
         if (SAME_OBJ(prop, proc_property)) {
@@ -3166,6 +3262,9 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
 	a = SCHEME_CAR(l);
 
 	prop = SCHEME_CAR(a);
+
+        if (SAME_OBJ(prop, scheme_checked_proc_property))
+          checked_proc = 1;
 
         propv = guard_property(prop, SCHEME_CDR(a), struct_type);
 
@@ -3227,6 +3326,9 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
     
     struct_type->guard = guard;
   }
+
+  if (checked_proc)
+    MZ_OPT_HASH_KEY(&struct_type->iso) |= STRUCT_TYPE_CHECKED_PROC;
       
   return (Scheme_Object *)struct_type;
 }

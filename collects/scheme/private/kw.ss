@@ -22,7 +22,18 @@
   
   ;; ----------------------------------------
 
-  (-define-struct keyword-procedure (proc required allowed checker))
+  (define-values (struct:keyword-procedure make-keyword-procedure keyword-procedure?
+                                           keyword-procedure-ref keyword-procedure-set!)
+    (make-struct-type 'keyword-procedure #f 4 0 #f
+                      (list (cons prop:checked-procedure #t))
+                      (current-inspector)
+                      #f
+                      '(0 1 2 3)))
+  (define keyword-procedure-checker (make-struct-field-accessor keyword-procedure-ref 0))
+  (define keyword-procedure-proc (make-struct-field-accessor keyword-procedure-ref 1))
+  (define keyword-procedure-required (make-struct-field-accessor keyword-procedure-ref 2))
+  (define keyword-procedure-allowed (make-struct-field-accessor keyword-procedure-ref 3))
+
   (define-values (struct:keyword-method make-km keyword-method? km-ref km-set!)
     (make-struct-type 'procedure
                       struct:keyword-procedure
@@ -135,10 +146,10 @@
                            (apply proc null null args)))]
                 [(proc plain-proc)
                  (make-optional-keyword-procedure
+                  (make-keyword-checker null #f (procedure-arity proc))
                   proc
                   null
                   #f
-                  (make-keyword-checker null #f (procedure-arity proc))
                   plain-proc)])])
       make-keyword-procedure))
                          
@@ -465,12 +476,12 @@
                                                  [with-kws (mk-with-kws)])
                                      (syntax/loc stx
                                        (make-okp
-                                        with-kws
-                                        null
-                                        'kws
                                         (lambda (given-kws given-argc)
                                           (and (in-range?/static given-argc with-kw-min-args with-kw-max-arg)
                                                (subset?/static given-kws 'kws)))
+                                        with-kws
+                                        null
+                                        'kws
                                         no-kws))))]
                                  [else
                                   ;; just the keywords part dispatches to core,
@@ -486,12 +497,12 @@
                                                            #'(make-required 'n call-fail method?)))])
                                      (syntax/loc stx
                                        (mk-id
-                                        with-kws
-                                        'needed-kws
-                                        'kws
                                         (lambda (given-kws given-argc)
                                           (and (in-range?/static given-argc with-kw-min-args with-kw-max-arg)
-                                               (subsets?/static 'needed-kws given-kws 'kws)))))))]))))))])
+                                               (subsets?/static 'needed-kws given-kws 'kws)))
+                                        with-kws
+                                        'needed-kws
+                                        'kws))))]))))))])
                  #`(#%expression #,stx)))])
       (values new-lambda new-lambda)))
   
@@ -763,7 +774,11 @@
                           [cnt (+ 1 (length args))])
                      (quasisyntax/loc stx
                        (let #,(reverse bind-accum)
-                         ((keyword-procedure-extract/method '#,(map car sorted-kws) #,cnt #,(car args) 0)
+                         ((checked-procedure-check-and-extract struct:keyword-procedure
+                                                               #,(car args)
+                                                               keyword-procedure-extract 
+                                                               '#,(map car sorted-kws) 
+                                                               #,cnt)
                           '#,(map car sorted-kws)
                           (list #,@(map cdr sorted-kws))
                           . #,(cdr args)))))]
@@ -955,7 +970,7 @@
                              (proc-name p)
                              (- n 2) (if (= 1 (- n 2)) "" "s") args-str)))
                     (current-continuation-marks)))))))))
-  (define (keyword-procedure-extract kws n p)
+  (define (keyword-procedure-extract p kws n)
     (keyword-procedure-extract/method kws n p 0))
 
   ;; setting procedure arity
@@ -1020,9 +1035,9 @@
                           [else
                            (map loop a)]))])
         (make-optional-keyword-procedure
+         (make-keyword-checker req-kw allowed-kw new-arity)
          (procedure-reduce-arity (keyword-procedure-proc proc)
                                  new-arity)
          req-kw
          allowed-kw
-         (make-keyword-checker req-kw allowed-kw new-arity)
          plain-proc)))))

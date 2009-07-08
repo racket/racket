@@ -143,6 +143,7 @@ static void *struct_pred_code, *struct_pred_multi_code;
 static void *struct_pred_branch_code;
 static void *struct_get_code, *struct_get_multi_code;
 static void *struct_set_code, *struct_set_multi_code;
+static void *struct_proc_extract_code;
 static void *bad_app_vals_target;
 static void *app_values_slow_code, *app_values_multi_slow_code, *app_values_tail_slow_code;
 static void *finish_tail_call_code, *finish_tail_call_fixup_code;
@@ -648,6 +649,17 @@ static Scheme_Object *clear_runstack(long amt, Scheme_Object *sv)
     MZ_RUNSTACK[i] = NULL;
   }
   return sv;
+}
+
+static Scheme_Object *apply_checked_fail(Scheme_Object **args)
+{
+  Scheme_Object *a[3];
+
+  a[0] = args[1];
+  a[1] = args[3];
+  a[2] = args[4];
+
+  return _scheme_apply(args[2], 3, a);
 }
 
 /*========================================================================*/
@@ -1825,6 +1837,58 @@ static int is_constant_and_avoids_r1(Scheme_Object *obj)
 /*                         application codegen                            */
 /*========================================================================*/
 
+static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands, GC_CAN_IGNORE jit_insn *refagain)
+{
+  GC_CAN_IGNORE jit_insn *ref2, *refz1, *refz2, *refz3, *refz5;
+
+  ref2 = jit_bnei_i(jit_forward(), JIT_R1, scheme_proc_struct_type);
+  jit_ldxi_p(JIT_R1, JIT_V1, &((Scheme_Structure *)0x0)->stype);
+  refz3 = jit_beqi_p(jit_forward(), JIT_R1, scheme_reduced_procedure_struct);
+  jit_ldxi_p(JIT_R1, JIT_R1, &((Scheme_Struct_Type *)0x0)->proc_attr);
+  refz1 = jit_bmci_i(jit_forward(), JIT_R1, 0x1);
+  CHECK_LIMIT();
+
+  /* Proc is a field in the record */
+  jit_rshi_ul(JIT_R1, JIT_R1, 1);
+  jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
+  jit_addi_p(JIT_R1, JIT_R1, &((Scheme_Structure *)0x0)->slots);
+  jit_ldxr_p(JIT_R1, JIT_V1, JIT_R1);
+
+  /* JIT_R1 now has the wrapped procedure */
+  jit_ldr_s(JIT_R2, JIT_R1);
+  refz2 = jit_bnei_i(jit_forward(), JIT_R2, scheme_native_closure_type);
+  CHECK_LIMIT();
+
+  /* It's a native closure, but we can't just jump to it, in case
+     the arity is wrong. */
+  mz_prepare(2);
+  jit_movi_i(JIT_R0, num_rands);
+  jit_pusharg_i(JIT_R0); /* argc */
+  jit_pusharg_p(JIT_R1); /* closure */
+  (void)mz_finish(scheme_native_arity_check);
+  CHECK_LIMIT();
+  jit_retval(JIT_R0);
+  refz5 = jit_beqi_i(jit_forward(), JIT_R0, 0);
+  CHECK_LIMIT();
+
+  /* Extract proc again, then loop */
+  jit_ldxi_p(JIT_R1, JIT_V1, &((Scheme_Structure *)0x0)->stype);
+  jit_ldxi_p(JIT_R1, JIT_R1, &((Scheme_Struct_Type *)0x0)->proc_attr);
+  jit_rshi_ul(JIT_R1, JIT_R1, 1);
+  jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
+  jit_addi_p(JIT_R1, JIT_R1, &((Scheme_Structure *)0x0)->slots);
+  jit_ldxr_p(JIT_V1, JIT_V1, JIT_R1);
+  (void)jit_jmpi(refagain);
+  CHECK_LIMIT();
+
+  mz_patch_branch(refz1);
+  mz_patch_branch(refz2);
+  mz_patch_branch(refz3);
+  mz_patch_branch(refz5);
+
+  return ref2;
+}
+
 static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
 {
   /* JIT_V1 must have the target function pointer.
@@ -1851,13 +1915,14 @@ static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
   return 1;
 }
 
-static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs)
-/* If num_rands < 0, then argc is in LOCAL2 and arguments are already below RUNSTACK_BASE.
+static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, int is_inline)
+/* Proc is in V1, args are at RUNSTACK.
+   If num_rands < 0, then argc is in LOCAL2 and arguments are already below RUNSTACK_BASE.
    If direct_native == 2, then some arguments are already in place (shallower in the runstack
    than the arguments to move). */
 {
   int i;
-  GC_CAN_IGNORE jit_insn *ref, *ref2, *ref4, *ref5;
+  GC_CAN_IGNORE jit_insn *refagain, *ref, *ref2, *ref4, *ref5;
 
   __START_SHORT_JUMPS__(num_rands < 100);
 
@@ -1870,6 +1935,9 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   } else {
     ref = ref2 = NULL;
   }
+
+  refagain = _jit.x.pc;
+
   /* Right kind of function. Extract data and check stack depth: */
   jit_ldxi_p(JIT_R0, JIT_V1, &((Scheme_Native_Closure *)0x0)->code);
   jit_ldxi_i(JIT_R2, JIT_R0, &((Scheme_Native_Closure_Data *)0x0)->max_let_depth);
@@ -1944,6 +2012,13 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   /* Now jump: */
   jit_jmpr(JIT_V1);
   CHECK_LIMIT();
+
+  if (!direct_native && !is_inline && (num_rands >= 0)) {
+    /* Handle simple applicable struct: */
+    mz_patch_branch(ref2);
+    ref2 = generate_proc_struct_retry(jitter, num_rands, refagain);
+    CHECK_LIMIT();
+  }
 
   /* The slow way: */
   /*  V1 and RUNSTACK must be intact! */
@@ -2137,7 +2212,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
      If num_rands < 0, then argc is in R0, and need to pop runstack before returning.
      If num_rands == -1, skip prolog. */
   GC_CAN_IGNORE jit_insn *ref, *ref2, *ref4, *ref5, *ref6, *ref7, *ref8, *ref9;
-  GC_CAN_IGNORE jit_insn *ref10, *reftop = NULL;
+  GC_CAN_IGNORE jit_insn *ref10, *reftop = NULL, *refagain;
 #ifndef FUEL_AUTODECEREMENTS
   GC_CAN_IGNORE jit_insn *ref11;
 #endif
@@ -2162,6 +2237,8 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     ref = ref2 = NULL;
   }
 
+  refagain = _jit.x.pc;
+      
   /* Before inlined native, check max let depth */
   if (!nontail_self) {
     jit_ldxi_p(JIT_R2, JIT_V1, &((Scheme_Native_Closure *)0x0)->code);
@@ -2347,6 +2424,13 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     }
     CHECK_LIMIT();
     ref8 = jit_jmpi(jit_forward());
+
+    /* Check for simple applicable struct wrapper */
+    if (num_rands >= 0) {
+      mz_patch_branch(ref2);
+      ref2 = generate_proc_struct_retry(jitter, num_rands, refagain);
+      CHECK_LIMIT();
+    }
   } else {
     ref2 = ref7 = ref8 = ref10 = NULL;
   }
@@ -2514,7 +2598,7 @@ int do_generate_shared_call(mz_jit_state *jitter, void *_data)
     if (data->direct_prim)
       ok = generate_direct_prim_tail_call(jitter, data->num_rands);
     else
-      ok = generate_tail_call(jitter, data->num_rands, data->direct_native, 1);
+      ok = generate_tail_call(jitter, data->num_rands, data->direct_native, 1, 0);
 
     register_helper_func(jitter, code);
 
@@ -2920,7 +3004,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
           jit_movi_l(JIT_R2, args_already_in_place);
           mz_set_local_p(JIT_R2, JIT_LOCAL2);
         }
-	generate_tail_call(jitter, num_rands, direct_native, jitter->need_set_rs);
+	generate_tail_call(jitter, num_rands, direct_native, jitter->need_set_rs, 1);
       }
     } else {
       if (direct_prim)
@@ -5133,6 +5217,18 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         mz_rs_inc(c); /* no sync */
         mz_runstack_popped(jitter, c);
       }
+
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "checked-procedure-check-and-extract")) {
+      generate_app(app, NULL, 5, jitter, 0, 0, 2);  /* sync'd below */
+      CHECK_LIMIT();
+      mz_rs_sync();
+
+      (void)jit_calli(struct_proc_extract_code);
+      CHECK_LIMIT();
+
+      mz_rs_inc(5);
+      mz_runstack_popped(jitter, 5);
 
       return 1;
     }
@@ -7770,6 +7866,123 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
+static int do_generate_more_common(mz_jit_state *jitter, void *_data)
+{
+  /* *** check_proc_extract_code *** */
+  /* arguments are on the Scheme stack */
+  {
+    void *code_end;
+    jit_insn *ref, *ref2, *ref3, *refslow;
+    
+    struct_proc_extract_code = jit_get_ip().ptr;
+    mz_prolog(JIT_V1);
+      
+    __START_SHORT_JUMPS__(1);
+
+    mz_rs_ldr(JIT_R0);
+    ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+    CHECK_LIMIT();
+
+    /* Slow path: call C implementation */
+    refslow = _jit.x.pc;
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_movi_i(JIT_V1, 5);
+    jit_prepare(2);
+    jit_pusharg_p(JIT_RUNSTACK);
+    jit_pusharg_p(JIT_V1);
+    (void)mz_finish(scheme_extract_checked_procedure);
+    jit_retval(JIT_R0);
+    VALIDATE_RESULT(JIT_R0);
+    mz_epilog(JIT_V1);
+
+    /* Continue trying fast path: check proc */
+    mz_patch_branch(ref);
+    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+    (void)jit_bnei_i(refslow, JIT_R2, scheme_struct_type_type);
+    jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY(&((Scheme_Struct_Type *)0x0)->iso));
+    (void)jit_bmci_ul(refslow, JIT_R2, STRUCT_TYPE_CHECKED_PROC);
+    CHECK_LIMIT();
+
+    mz_rs_ldxi(JIT_R1, 1);
+    (void)jit_bmsi_ul(refslow, JIT_R1, 0x1);
+    jit_ldxi_s(JIT_R2, JIT_R1, &((Scheme_Object *)0x0)->type);
+    __START_INNER_TINY__(1);
+    ref2 = jit_beqi_i(jit_forward(), JIT_R2, scheme_structure_type);
+    __END_INNER_TINY__(1);
+    (void)jit_bnei_i(refslow, JIT_R2, scheme_proc_struct_type);
+    __START_INNER_TINY__(1);
+    mz_patch_branch(ref2);
+    __END_INNER_TINY__(1);
+    CHECK_LIMIT();
+
+    /* Put argument struct type in R2, target struct type is in R0 */
+    jit_ldxi_p(JIT_R2, JIT_R1, &((Scheme_Structure *)0x0)->stype);
+    jit_ldxi_i(JIT_R2, JIT_R2, &((Scheme_Struct_Type *)0x0)->name_pos);
+    jit_ldxi_i(JIT_V1, JIT_R0, &((Scheme_Struct_Type *)0x0)->name_pos);
+
+    /* Now R2 is argument depth, V1 is target depth */
+    (void)jit_bltr_i(refslow, JIT_R2, JIT_V1);
+    CHECK_LIMIT();
+    /* Lookup argument type at target type depth, put it in R2: */
+    jit_lshi_ul(JIT_R2, JIT_V1, JIT_LOG_WORD_SIZE);
+    jit_addi_p(JIT_R2, JIT_R2, &((Scheme_Struct_Type *)0x0)->parent_types);
+    jit_ldxi_p(JIT_V1, JIT_R1, &((Scheme_Structure *)0x0)->stype);
+    jit_ldxr_p(JIT_R2, JIT_V1, JIT_R2);
+    CHECK_LIMIT();
+    (void)jit_bner_p(refslow, JIT_R2, JIT_R0);
+
+    /* Type matches. Extract checker. */
+    jit_ldxi_p(JIT_V1, JIT_R1, &(((Scheme_Structure *)0x0)->slots[0]));
+
+    /* Checker is in V1. Set up args on runstack, then apply it. */
+    mz_rs_dec(2);
+    mz_rs_ldxi(JIT_R2, 5);
+    mz_rs_str(JIT_R2);
+    mz_rs_ldxi(JIT_R2, 6);
+    mz_rs_stxi(1, JIT_R2);
+    CHECK_LIMIT();
+    mz_rs_sync();
+
+    __END_SHORT_JUMPS__(1);
+    generate_non_tail_call(jitter, 2, 0, 1, 0, 0, 0);
+    CHECK_LIMIT();
+    __START_SHORT_JUMPS__(1);
+
+    mz_rs_inc(2);
+    mz_rs_sync();
+    ref3 = jit_bnei_p(refslow, JIT_R0, scheme_false);
+    CHECK_LIMIT();
+
+    /* Check failed. Apply the failure procedure. */
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_prepare(1);
+    jit_pusharg_p(JIT_RUNSTACK);
+    (void)mz_finish(apply_checked_fail);
+    CHECK_LIMIT();
+    jit_retval(JIT_R0);
+    VALIDATE_RESULT(JIT_R0);
+    mz_epilog(JIT_V1);
+    CHECK_LIMIT();
+
+    /* Check passed. Extract the procedure. */
+    mz_patch_branch(ref3);
+    mz_rs_ldxi(JIT_R1, 1);
+    jit_ldxi_p(JIT_R0, JIT_R1, &(((Scheme_Structure *)0x0)->slots[1]));
+
+    mz_epilog(JIT_V1);
+    CHECK_LIMIT();
+      
+    __END_SHORT_JUMPS__(1);
+
+    if (jitter->retain_start) {
+      code_end = jit_get_ip().ptr;
+      add_symbol((unsigned long)struct_proc_extract_code, (unsigned long)code_end - 1, scheme_false, 0);
+    }
+  }
+
+  return 1;
+}
+
 #ifdef CAN_INLINE_ALLOC
 static int generate_alloc_retry(mz_jit_state *jitter, int i)
 {
@@ -8156,6 +8369,7 @@ Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, in
   if (!check_arity_code) {
     /* Create shared code used for stack-overflow handling, etc.: */
     generate_one(NULL, do_generate_common, NULL, 0, NULL, NULL);
+    generate_one(NULL, do_generate_more_common, NULL, 0, NULL, NULL);
   }
 
   if (!case_lam) {

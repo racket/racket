@@ -3460,17 +3460,16 @@ static int is_arity(Scheme_Object *a, int at_least_ok, int list_ok)
   return 0;
 }
 
-static void init_reduced_proc_struct()
+void scheme_init_reduced_proc_struct(Scheme_Env *env)
 {
   if (!scheme_reduced_procedure_struct) {
-    Scheme_Object *pr, *orig;
+    Scheme_Object *pr;
 
     REGISTER_SO(scheme_reduced_procedure_struct);
     pr = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
     while (((Scheme_Inspector *)pr)->superior->superior) {
       pr = (Scheme_Object *)((Scheme_Inspector *)pr)->superior;
     }
-    orig = scheme_builtin_value("prop:procedure");
     scheme_reduced_procedure_struct = scheme_make_proc_struct_type(NULL,
                                                                    NULL,
                                                                    pr,
@@ -3510,8 +3509,6 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
   if (!is_arity(argv[1], 1, 1)) {
     scheme_wrong_type("procedure-reduce-arity", "arity", 1, argc, argv);
   }
-
-  init_reduced_proc_struct();
 
   /* Check whether current arity covers the requested arity.  This is
      a bit complicated, because both the source and target can be
@@ -3655,8 +3652,6 @@ static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[])
     scheme_wrong_type("procedure-rename", "procedure", 0, argc, argv);
   if (!SCHEME_SYMBOLP(argv[1]))
     scheme_wrong_type("procedure-rename", "symbol", 1, argc, argv);
-
-  init_reduced_proc_struct();
 
   aty = get_or_check_arity(argv[0], -1, NULL);  
 
