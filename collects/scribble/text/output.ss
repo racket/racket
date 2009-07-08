@@ -19,11 +19,11 @@
 ;; system (when line counts are enabled) -- this is used to tell what part of a
 ;; prefix is already displayed.
 ;;
-;; Each prefix is either an integer (for a number of spaces) or a
-;; string.  The prefix mechanism can be disabled by using #f for the
-;; global prefix, and in this case the line prefix can have (cons pfx
-;; lpfx) so it can be restored -- used by `verbatim' and `unverbatim'
-;; resp.  (This is different from 0 -- no prefix will be accumulated).
+;; Each prefix is either an integer (for a number of spaces) or a string.  The
+;; prefix mechanism can be disabled by using #f for the global prefix, and in
+;; this case the line prefix can have (cons pfx lpfx) so it can be restored --
+;; used by `disable-prefix' and `restore-prefix' resp.  (This is different from
+;; a 0 prefix -- #f means that no prefix will be accumulated).
 ;;
 (define (output x [p (current-output-port)])
   ;; these are the global prefix and the one that is local to the current line
@@ -68,7 +68,7 @@
   ;; the basic printing unit: strings
   (define (output-string x)
     (define pfx (mcar pfxs))
-    (if (not pfx) ; verbatim mode?
+    (if (not pfx) ; prefix disabled?
       (write-string x p)
       (let ([len (string-length x)]
             [nls (regexp-match-positions* #rx"\n" x)])
@@ -120,12 +120,14 @@
        (let ([c (special-contents x)])
          (case (special-flag x)
            [(splice) (for-each loop c)]
-           [(verbatim) ; save the previous pfxs
+           [(flush) ; useful before `disable-prefix'
+            (output-pfx (getcol) (mcar pfxs) (mcdr pfxs))]
+           [(disable-prefix) ; save the previous pfxs
             (let ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)])
               (set-mcar! pfxs #f)  (set-mcdr! pfxs (cons pfx lpfx))
               (for-each loop c)
               (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
-           [(unverbatim) ; restore the previous pfxs
+           [(restore-prefix) ; restore the previous pfxs
             (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
                    [npfx (pfx+col (if (and (not pfx) (pair? lpfx))
                                     (pfx+ (car lpfx) (cdr lpfx))
@@ -133,8 +135,6 @@
               (set-mcar! pfxs npfx)  (set-mcdr! pfxs 0)
               (for-each loop c)
               (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
-           [(flush) ; useful before verbatim
-            (output-pfx (getcol) (mcar pfxs) (mcdr pfxs))]
            [(prefix)
             (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
                    [npfx (pfx+ (pfx+col (pfx+ pfx lpfx)) (car c))])
@@ -171,15 +171,21 @@
 
 ;; special constructs
 
-(provide splice verbatim unverbatim flush prefix)
+(provide splice flush disable-prefix restore-prefix prefix)
 
 (define-struct special (flag contents))
 
-(define (splice     . contents) (make-special 'splice     contents))
-(define (verbatim   . contents) (make-special 'verbatim   contents))
-(define (unverbatim . contents) (make-special 'unverbatim contents))
-(define flush                   (make-special 'flush      #f))
-(define (prefix pfx . contents) (make-special 'prefix     (cons pfx contents)))
+(define-syntax define-special
+  (syntax-rules ()
+    [(_ (name x ...)) (define (name x ... . contents)
+                        (make-special 'name (list* x ... contents)))]
+    [(_ name)         (define name (make-special 'name #f))]))
+
+(define-special (splice))
+(define-special flush)
+(define-special (disable-prefix))
+(define-special (restore-prefix))
+(define-special (prefix pfx))
 
 (define make-spaces ; (efficiently)
   (let ([t (make-hasheq)] [v (make-vector 80 #f)])

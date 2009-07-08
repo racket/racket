@@ -19,20 +19,20 @@
 (provide IFDEF IFNDEF)
 (define ((((IF*DEF token choose) . c) . t) . e)
   (if (null? e)
-    @list{@verbatim{#}@token @c
+    @list{@disable-prefix{#}@token @c
           @t
-          @verbatim{#}endif /* @c */}
-    @list{@verbatim{#}@token @c
+          @disable-prefix{#}endif /* @c */}
+    @list{@disable-prefix{#}@token @c
           @t
-          @verbatim{#}else /* @c @(choose '("undefined" . "defined")) */
+          @disable-prefix{#}else /* @c @(choose '("undefined" . "defined")) */
           @e
-          @verbatim{#}endif /* @c */}))
+          @disable-prefix{#}endif /* @c */}))
 (define IFDEF  (IF*DEF "ifdef"  car))
 (define IFNDEF (IF*DEF "ifndef" cdr))
 
 (provide DEFINE UNDEF)
-(define (DEFINE . t) @list{@verbatim{#}define @t})
-(define (UNDEF  . t) @list{@verbatim{#}undef @t})
+(define (DEFINE . t) @list{@disable-prefix{#}define @t})
+(define (UNDEF  . t) @list{@disable-prefix{#}undef @t})
 
 (provide scheme-id->c-name)
 (define (scheme-id->c-name str)
@@ -52,12 +52,12 @@
 (define (_cdefine name minargs maxargs . body)
   (define cname @list{foreign_@(scheme-id->c-name name)})
   (cfunctions (cons (list name cname minargs maxargs) (cfunctions)))
-  @list{@verbatim{#define MYNAME "@name"}
+  @list{@disable-prefix{#define MYNAME "@name"}
         static Scheme_Object *@|cname|(int argc, Scheme_Object *argv[])
         {
           @body
         }
-        @verbatim{#undef MYNAME}})
+        @disable-prefix{#undef MYNAME}})
 (provide cdefine)
 (define-syntax (cdefine stx)
   (syntax-case stx ()

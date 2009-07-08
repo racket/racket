@@ -718,9 +718,10 @@ number of values but avoid introducing a new indentation context.
            end
            }-|
 
-The @scheme[verbatim] function disables all indentation printouts in
-its contents, including the indentation before the verbatim value
-itself.  It is useful, for example, to print out CPP directives.
+The @scheme[disable-prefix] function disables all indentation
+printouts in its contents, including the indentation before the body
+of the @scheme[disable-prefix] value itself.  It is useful, for
+example, to print out CPP directives.
 
 @example|-{#lang scribble/text
            @(define (((IFFOO . var) . expr1) . expr2)
@@ -728,14 +729,14 @@ itself.  It is useful, for example, to print out CPP directives.
                 @list{[@e1,
                        @e2]})
               @list{var @var;
-                    @verbatim{#ifdef FOO}
+                    @disable-prefix{#ifdef FOO}
                     @var = @array[expr1 expr2];
-                    @verbatim{#else}
+                    @disable-prefix{#else}
                     @var = @array[expr2 expr1];
-                    @verbatim{#endif}})
+                    @disable-prefix{#endif}})
 
            function blah(something, something_else) {
-             @verbatim{#include "stuff.inc"}
+             @disable-prefix{#include "stuff.inc"}
              @@@IFFOO{i}{something}{something_else}
            }
            ---***---
@@ -752,8 +753,8 @@ itself.  It is useful, for example, to print out CPP directives.
            }
            }-|
 
-If there are values after a @scheme[verbatim] value on the same line,
-they will get indented to the goal column (unless the output is
+If there are values after a @scheme[disable-prefix] value on the same
+line, they will get indented to the goal column (unless the output is
 already beyond it).
 
 @example|-{#lang scribble/text
@@ -762,11 +763,11 @@ already beyond it).
                       @body
                     }})
            @(define (ifdef cond then else)
-              @list{@verbatim{#}ifdef @cond
+              @list{@disable-prefix{#}ifdef @cond
                       @then
-                    @verbatim{#}else
+                    @disable-prefix{#}else
                       @else
-                    @verbatim{#}endif})
+                    @disable-prefix{#}endif})
 
            @thunk['do_stuff]{
              init();
@@ -774,7 +775,7 @@ already beyond it).
                @list{var x = blah();}
                @thunk['blah]{
                  @ifdef["BLEHOS"
-                   @list{@verbatim{#}include <bleh.h>
+                   @list{@disable-prefix{#}include <bleh.h>
                          bleh();}
                    @list{error("no bleh");}]
                }]
@@ -833,17 +834,17 @@ indentation in the contents gets added to the prefix.
            }
            }-|
 
-Trying to combine @scheme[prefix] and @scheme[verbatim] is more useful
-using an additional value: @scheme[flush] is bound to a value that
-causes @scheme[output] to print the current indentation and prefix.
-It makes it possible to get the ``ignored as a prefix'' property of
-@scheme[verbatim] but only for a nested prefix.
+When combining @scheme[prefix] and @scheme[disable-prefix] there is an
+additional value that can be useful: @scheme[flush].  This is a value
+that causes @scheme[output] to print the current indentation and
+prefix.  This makes it possible to get the ``ignored as a prefix''
+property of @scheme[disable-prefix] but only for a nested prefix.
 
 @example|-{#lang scribble/text
            @(define (comment . text)
               (list flush
                     @prefix[" *"]{
-                      @verbatim{/*} @text */}))
+                      @disable-prefix{/*} @text */}))
            function foo(x) {
              @comment{blah
                       more blah
@@ -876,12 +877,12 @@ It makes it possible to get the ``ignored as a prefix'' property of
 
   @(begin
      ;; This is a somewhat contrived example, showing how to use lists
-     ;; and verbatim to control the added prefix
+     ;; and disable-prefix to control the added prefix
      (define (item . text)
        ;; notes: the `flush' makes the prefix to that point print so the
-       ;; verbatim "* " is printed after it, which overwrites the "| "
-       ;; prefix
-       (list flush (prefix "| " (verbatim "* ") text)))
+       ;; disable-prefix "* " is printed after it, which overwrites the
+       ;; "| " prefix
+       (list flush (prefix "| " (disable-prefix "* ") text)))
      ;; note that a simple item with spaces is much easier:
      (define (simple . text) @list{* @text}))
 
