@@ -1843,7 +1843,8 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
 
   ref2 = jit_bnei_i(jit_forward(), JIT_R1, scheme_proc_struct_type);
   jit_ldxi_p(JIT_R1, JIT_V1, &((Scheme_Structure *)0x0)->stype);
-  refz3 = jit_beqi_p(jit_forward(), JIT_R1, scheme_reduced_procedure_struct);
+  jit_ldi_p(JIT_R2, &scheme_reduced_procedure_struct);
+  refz3 = jit_beqr_p(jit_forward(), JIT_R1, JIT_R2);
   jit_ldxi_p(JIT_R1, JIT_R1, &((Scheme_Struct_Type *)0x0)->proc_attr);
   refz1 = jit_bmci_i(jit_forward(), JIT_R1, 0x1);
   CHECK_LIMIT();
@@ -2206,7 +2207,7 @@ static int generate_clear_slow_previous_args(mz_jit_state *jitter)
 }
 
 static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
-				  int multi_ok, int nontail_self, int pop_and_jump)
+				  int multi_ok, int nontail_self, int pop_and_jump, int is_inlined)
 {
   /* Non-tail call.
      Proc is in V1, args are at RUNSTACK.
@@ -2428,7 +2429,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     ref8 = jit_jmpi(jit_forward());
 
     /* Check for simple applicable struct wrapper */
-    if (num_rands >= 0) {
+    if (!is_inlined && (num_rands >= 0)) {
       mz_patch_branch(ref2);
       ref2 = generate_proc_struct_retry(jitter, num_rands, refagain);
       CHECK_LIMIT();
@@ -2614,7 +2615,7 @@ int do_generate_shared_call(mz_jit_state *jitter, void *_data)
     if (data->direct_prim)
       ok = generate_direct_prim_non_tail_call(jitter, data->num_rands, data->multi_ok, 1);
     else
-      ok = generate_non_tail_call(jitter, data->num_rands, data->direct_native, 1, data->multi_ok, data->nontail_self, 1);
+      ok = generate_non_tail_call(jitter, data->num_rands, data->direct_native, 1, data->multi_ok, data->nontail_self, 1, 0);
 
     register_sub_func(jitter, code, scheme_false);
 
@@ -3015,7 +3016,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
         if (nontail_self) {
           generate_nontail_self_setup(jitter);
         }
-	generate_non_tail_call(jitter, num_rands, direct_native, jitter->need_set_rs, multi_ok, nontail_self, 0);
+	generate_non_tail_call(jitter, num_rands, direct_native, jitter->need_set_rs, multi_ok, nontail_self, 0, 1);
       }
     }
   } else {
@@ -7946,7 +7947,7 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     mz_rs_sync();
 
     __END_SHORT_JUMPS__(1);
-    generate_non_tail_call(jitter, 2, 0, 1, 0, 0, 0);
+    generate_non_tail_call(jitter, 2, 0, 1, 0, 0, 0, 0);
     CHECK_LIMIT();
     __START_SHORT_JUMPS__(1);
 
