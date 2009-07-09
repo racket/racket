@@ -64,7 +64,7 @@
                 [else
                  (let ([col (- col len1)]
                        [len2 (if (number? pfx2) pfx2 (string-length pfx2))])
-                   (when (< col len2) (write-string (->str pfx2) p col )))])))))
+                   (when (< col len2) (write-string (->str pfx2) p col)))])))))
   ;; the basic printing unit: strings
   (define (output-string x)
     (define pfx (mcar pfxs))
