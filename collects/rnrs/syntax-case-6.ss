@@ -165,7 +165,7 @@
                                          lit)))
                  lits)
        (quasisyntax/loc stx
-         (syntax-case (wrap expr (quote-syntax #,(datum->syntax #'expr 'ctx)) unwrapped-srcloc #f) (lit ...)
+         (syntax-case (add-wrap expr) (lit ...)
            . #,(map (lambda (clause)
                       (syntax-case clause ()
                         [(pat val)
@@ -179,6 +179,11 @@
                         [else clause]))
                     (syntax->list #'(clause ...))))))]
     [(_ . rest) (syntax/loc stx (syntax-case . rest))]))
+
+(define-syntax (add-wrap stx)
+  (syntax-case stx ()
+    [(_ expr)
+     #`(wrap expr (quote-syntax #,(datum->syntax #'expr 'ctx)) unwrapped-srcloc #f)]))
 
 ;; ----------------------------------------
 
@@ -238,7 +243,7 @@
 (define-syntax r6rs:with-syntax
   (syntax-rules ()
     [(_ [(p e0) ...] e1 e2 ...)
-     (r6rs:syntax-case (mlist e0 ...) ()
+     (r6rs:syntax-case (mlist (add-wrap e0) ...) ()
        [(p ...) (let () e1 e2 ...)])]))
 
 (define-syntax (r6rs:quasisyntax stx)
