@@ -775,7 +775,8 @@ already beyond it).
                @list{var x = blah();}
                @thunk['blah]{
                  @ifdef["BLEHOS"
-                   @list{@disable-prefix{#}include <bleh.h>
+                   @list{@disable-prefix{#}@;
+                           include <bleh.h>
                          bleh();}
                    @list{error("no bleh");}]
                }]
