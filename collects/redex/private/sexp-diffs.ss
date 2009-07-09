@@ -56,6 +56,7 @@
        (list->vector (map loop (vector->list s)))]
       [(box? s)
        (box (loop (unbox s)))]
+      [(syntax? s) (datum->syntax s (unkink (loop (syntax-e s))) s)]
       [(number? s) (make-wrap s)]
       [(symbol? s) (make-wrap s)]
       [else s])))
@@ -89,8 +90,7 @@
 ;; render-sexp/colors : sexp ht text -> void
 (define (render-sexp/colors sexp to-color text columns)
   (let ([start '()])
-    (parameterize ([pretty-print-columns columns]
-                   [pretty-print-abbreviate-read-macros #f])
+    (parameterize ([pretty-print-columns columns])
       (pretty-print sexp (open-output-text-editor text)))
     (for-each 
      (λ (p) (send text highlight-range (car p) (cdr p) (send the-color-database find-color "NavajoWhite")))
@@ -122,7 +122,6 @@
                                  1]))
                             void)])
     (parameterize ([pretty-print-columns columns]
-                   [pretty-print-abbreviate-read-macros #f]
                    [pretty-print-remap-stylable
                     (λ (val)
                       (and (wrap? val)

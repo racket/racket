@@ -1186,7 +1186,7 @@
    (define (read-macro? l pair? car cdr)
      (define (length1? l) (and (pair? l) (null? (cdr l))))
      (and (pretty-print-abbreviate-read-macros)
-          (let ((head (car l)) (tail (cdr l)))
+          (let ((head (do-remap (car l))) (tail (cdr l)))
             (case head
               ((quote quasiquote unquote unquote-splicing syntax unsyntax unsyntax-splicing)
                (length1? tail))
@@ -1196,7 +1196,7 @@
      (car (cdr l)))
   
    (define (read-macro-prefix l car)
-     (let ((head (car l)))
+     (let ((head (do-remap (car l))))
        (case head
 	 ((quote)             "'")
 	 ((quasiquote)        "`")

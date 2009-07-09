@@ -117,7 +117,10 @@ printed with a leading @litchar{#i}. The initial value is @scheme[#f].}
 A parameter that controls whether or not @schemeidfont{quote},
 @schemeidfont{unquote}, @schemeidfont{unquote-splicing}, @|etc| are
 abbreviated with @litchar{'}, @litchar{,}, @litchar[",@"], etc. 
-By default, the abbreviations are enabled.}
+By default, the abbreviations are enabled.
+
+See also @scheme[pretty-print-remap-stylable].
+}
 
 
 @defproc[(pretty-print-style-table? [v any/c]) boolean?]{
@@ -179,11 +182,17 @@ so that the output follows popular code-formatting rules:
           proc 
           (any/c . -> . (or/c symbol? #f))]{
 
-A parameter that controls remapping for styles. This procedure is
+A parameter that controls remapping for styles and for the determination of 
+the reader shorthands.
+
+This procedure is
 called with each subexpression that appears as the first element in a
 sequence. If it returns a symbol, the style table is used, as if that
 symbol were at the head of the sequence. If it returns @scheme[#f],
-the style table is treated normally.}
+the style table is treated normally.
+Similarly, when determining whether or not to abbreviate reader macros,
+the parameter is consulted.
+}
 
 
 @; ----------------------------------------------------------------------
