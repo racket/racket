@@ -9,10 +9,13 @@
   (define-syntax case-test
     (lambda (x)
       (syntax-case x ()
+        ;; For up to 3 elements, inline `eqv?' tests:
 	[(_ x (k))
-	 (if (symbol? (syntax-e #'k))
-	     (syntax (eq? x 'k))
-	     (syntax (eqv? x 'k)))]
+         (syntax (eqv? x 'k))]
+	[(_ x (k1 k2))
+         (syntax (let ([tmp x]) (if (eqv? x 'k1) #t (eqv? x 'k2))))]
+	[(_ x (k1 k2 k3))
+         (syntax (let ([tmp x]) (if (eqv? x 'k1) #t (if (eqv? x 'k2) #t (eqv? x 'k3)))))]
 	[(_ x (k ...))
 	 (syntax (memv x '(k ...)))])))
 
