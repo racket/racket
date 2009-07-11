@@ -3786,6 +3786,38 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
       if (info->max_let_depth < max_let_depth)
         info->max_let_depth = max_let_depth;
 
+      /* Check for (let ([x <expr>]) (<simple> x)) at end, and change to
+         (<simple> <expr>). This is easy because the local-variable
+         offsets in <expr> do not change (as long as <simple> doesn't
+         access the stack). */
+      last_body = NULL;
+      body = first;
+      while (1) {
+        if (!SAME_TYPE(SCHEME_TYPE(body), scheme_let_one_type))
+          break;
+        if (!SAME_TYPE(SCHEME_TYPE(((Scheme_Let_One *)body)->body), scheme_let_one_type))
+          break;
+        last_body = body;
+        body = ((Scheme_Let_One *)body)->body;
+      }
+      if (SAME_TYPE(SCHEME_TYPE(body), scheme_let_one_type)) {
+        if (SAME_TYPE(SCHEME_TYPE(((Scheme_Let_One *)body)->body), scheme_application2_type)) {
+          Scheme_App2_Rec *app = (Scheme_App2_Rec *)((Scheme_Let_One *)body)->body;
+          if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)
+              && (SCHEME_LOCAL_POS(app->rand) == 1)) {
+            if (SCHEME_TYPE(app->rator) > _scheme_values_types_) {
+              /* Move <expr> to app, and drop let-one: */
+              app->rand = ((Scheme_Let_One *)body)->value;
+              scheme_reset_app2_eval_type(app);
+              if (last_body)
+                ((Scheme_Let_One *)last_body)->body = (Scheme_Object *)app;
+              else
+                first = (Scheme_Object *)app;
+            }
+          }
+        }
+      }
+
       return first;
     } else {
       /* Maybe some multi-binding lets, but all of them are unused

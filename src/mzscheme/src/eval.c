@@ -1304,6 +1304,11 @@ static void set_app2_eval_type(Scheme_App2_Rec *app)
   SCHEME_APPN_FLAGS(app) = et;
 }
 
+void scheme_reset_app2_eval_type(Scheme_App2_Rec *app)
+{
+  set_app2_eval_type(app);
+}
+
 static Scheme_Object *resolve_application2(Scheme_Object *o, Resolve_Info *orig_info, int already_resolved_arg_count)
 {
   Resolve_Info *info;

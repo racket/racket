@@ -2122,6 +2122,8 @@ Scheme_Closure *scheme_malloc_empty_closure(void);
 Scheme_Object *scheme_make_native_closure(Scheme_Native_Closure_Data *code);
 Scheme_Object *scheme_make_native_case_closure(Scheme_Native_Closure_Data *code);
 
+void scheme_reset_app2_eval_type(Scheme_App2_Rec *app);
+
 Scheme_Native_Closure_Data *scheme_generate_case_lambda(Scheme_Case_Lambda *cl);
 
 void scheme_delay_load_closure(Scheme_Closure_Data *data);
