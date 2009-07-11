@@ -666,6 +666,13 @@
     (syntax-case stx (quote)
       [(_ l1-expr '()) #'(null? l1-expr)]
       [(_ '() l2-expr) #'#t]
+      [(_ l1-expr '(kw . kws)) #'(let ([l1 l1-expr])
+                                   (let ([l1 (if (null? l1)
+                                                 l1
+                                                 (if (eq? (car l1) 'kw)
+                                                     (cdr l1)
+                                                     l1))])
+                                     (subset?/static l1 'kws)))]
       [(_ l1-expr l2-expr) #'(subset? l1-expr l2-expr)]))
 
   (define-syntax (subsets?/static stx)
