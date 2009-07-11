@@ -1,5 +1,6 @@
 (module automatic-tests mzscheme
-  (require "through-tests.ss")
+  (require "through-tests.ss" 
+           "test-engine.ss")
   
   (parameterize ([display-only-errors #t]
                  [current-output-port (open-output-string)])

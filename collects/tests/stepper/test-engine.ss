@@ -52,6 +52,7 @@
 ;; (so that you can take advantage of DrScheme's error reporting)
 (define disable-stepper-error-handling (make-parameter #f))
 
+
 ;; DATA DEFINITIONS:
 
 ;; a step is one of 
@@ -100,26 +101,27 @@
 (define (run-one-test name models exp-str expected-steps)
   (unless (display-only-errors)
     (printf "running test: ~v\n" name))
-  (parameterize ([error-has-occurred-box (box #f)])
-    (test-sequence/many models exp-str expected-steps)
-    (if (unbox (error-has-occurred-box))
+  (let ([error-has-occurred-box (box #f)])
+    (test-sequence/many models exp-str expected-steps error-has-occurred-box)
+    (if (unbox error-has-occurred-box)
         (begin (fprintf (current-error-port) "...Error has occurred during test: ~v\n" name)
                #f)
-        #t)))
+        #t)
+    ))
 
 
 ;; test-sequence/many : model-or-models/c string? steps? -> (void)
 ;; run a given test through a bunch of language models (or just one).
 
-(define (test-sequence/many models exp-str expected-steps)
-  (cond [(list? models)(for-each (lambda (model) (test-sequence model exp-str expected-steps))
+(define (test-sequence/many models exp-str expected-steps error-box)
+  (cond [(list? models)(for-each (lambda (model) (test-sequence model exp-str expected-steps error-box))
                                  models)]
-        [else (test-sequence models exp-str expected-steps)]))
+        [else (test-sequence models exp-str expected-steps error-box)]))
 
 ;; test-sequence : ll-model? string? steps? -> (void)
 ;; given a language model and an expression and a sequence of steps,
 ;; check to see whether the stepper produces the desired steps
-(define (test-sequence the-ll-model exp-str expected-steps)
+(define (test-sequence the-ll-model exp-str expected-steps error-box)
   (match the-ll-model
     [(struct ll-model (namespace-spec teachpack-specs render-settings show-lambdas-as-lambdas? enable-testing?))
      (let ([filename (build-path test-directory "stepper-test")])
@@ -131,35 +133,45 @@
          (printf "testing string: ~v\n" exp-str))
        (let* ([port (open-input-file filename)]
               [module-id (gensym "stepper-module-name-")]
-              [expanded (expand-teaching-program port read-syntax namespace-spec teachpack-specs #f module-id enable-testing?)])
-         (test-sequence/core render-settings show-lambdas-as-lambdas? expanded expected-steps)))]))
+              ;; thunk this so that syntax errors happen within the error handlers:
+              [expanded-thunk 
+               (lambda () (expand-teaching-program port read-syntax namespace-spec teachpack-specs #f module-id enable-testing?))])
+         (test-sequence/core render-settings show-lambdas-as-lambdas? expanded-thunk expected-steps error-box)))]))
 
 ;; test-sequence/core : render-settings? boolean? syntax? steps?
 ;; this is a front end for calling the stepper's "go"; the main 
 ;; responsibility here is to fake the behavior of DrScheme and collect the
 ;; resulting steps.
-(define (test-sequence/core render-settings show-lambdas-as-lambdas? expanded expected-steps)
+(define (test-sequence/core render-settings show-lambdas-as-lambdas? expanded-thunk expected-steps error-box)
   (let* ([current-error-display-handler (error-display-handler)]
          [all-steps
           (append expected-steps '((finished-stepping)))]
+         ;; the values of certain parameters aren't surviving; create 
+         ;; lexical bindings for them:
+         [current-show-all-steps (show-all-steps)]
+         [current-display-only-errors (display-only-errors)]
          [receive-result
           (lambda (result)
             (if (null? all-steps)
-                (warn 'test-sequence
+                (warn error-box
+                      'test-sequence
                       "ran out of expected steps. Given result: ~v" result)
                 (begin
-                  (if (compare-steps result (car all-steps))
-                      (when (and (show-all-steps) (not (display-only-errors)))
+                  (if (compare-steps result (car all-steps) error-box)
+                      (when (and current-show-all-steps (not current-display-only-errors))
                         (printf "test-sequence: steps match for expected result: ~v\n"
                                 (car all-steps)))
-                      (warn 'test-sequence
+                      (warn error-box
+                            'test-sequence
                             "steps do not match\n   given: ~v\nexpected: ~v"
-                            (show-result result) (car all-steps)))
+                            (show-result result error-box)
+                            (car all-steps)))
                   (set! all-steps (cdr all-steps)))))]
+         [dc1 (display (expanded-thunk))]
          [iter-caller
           (lambda (init iter)
             (init)
-            (call-iter-on-each expanded iter))])
+            (call-iter-on-each (expanded-thunk) iter))])
     (let/ec escape
       (parameterize ([error-escape-handler (lambda () (escape (void)))])
         (go iter-caller receive-result render-settings
@@ -177,28 +189,29 @@
 (define (call-iter-on-each stx-thunk iter)
   (let* ([next (stx-thunk)]
          [followup-thunk (if (eof-object? next) void (lambda () (call-iter-on-each stx-thunk iter)))])
-    (iter (expand next) followup-thunk)))
+    (iter next followup-thunk)))
 
-(define error-has-occurred-box (make-parameter #f))
 
-(define (warn who fmt . args)
-  (set-box! (error-has-occurred-box) #t)
+(define (warn error-box who fmt . args)
+  (set-box! error-box #t)
   (fprintf (current-error-port) "~a: ~a\n" who (apply format fmt args)))
 
 
 ;; (-> step-result? sexp? boolean?)
-(define (compare-steps actual expected)
+(define (compare-steps actual expected error-box)
   (match expected
     [`(before-after ,before ,after)
      (and (before-after-result? actual)
           (andmap (lambda (fn expected name)
                     (unless (list? (fn actual))
-                      (warn 'compare-steps "not a list: ~v"
+                      (warn error-box
+                            'compare-steps "not a list: ~v"
                             (syntax->hilite-datum (fn actual))))
                     (noisy-equal? (map syntax->hilite-datum
                                        (fn actual))
                                   expected
-                                  name))
+                                  name
+                                  error-box))
                   (list before-after-result-pre-exps
                         before-after-result-post-exps)
                   (list before after)
@@ -211,23 +224,27 @@
           (and (noisy-equal? (map syntax->hilite-datum
                                   (before-error-result-pre-exps actual))
                              before
-                             'before)
+                             'before
+                             error-box)
                (equal? err-msg (before-error-result-err-msg actual))))]
     [`(finished-stepping) (finished-stepping? actual)]
-    [`(ignore) (warn 'compare-steps "ignoring one step") #t]
-    [else (begin (warn 'compare-steps
+    [`(ignore) (warn error-box 
+                     'compare-steps "ignoring one step") #t]
+    [else (begin (warn error-box 
+                       'compare-steps
                        "unexpected expected step type: ~v" expected)
                  #f)]))
 
 
 
 ;; used to display results in an error message
-(define (show-result r)
+(define (show-result r error-box)
   (if (before-after-result? r)
       (list 'before-after-result
             (map (lambda (fn)
                    (unless (list? (fn r))
-                     (warn 'show-result "not a list: ~v"
+                     (warn error-box 
+                           'show-result "not a list: ~v"
                            (syntax->hilite-datum (fn r))))
                    (map syntax->hilite-datum
                         (fn r)))
@@ -237,11 +254,26 @@
 
 ;; noisy-equal? : (any any . -> . boolean)
 ;; like equal?, but prints a noisy error message
-(define (noisy-equal? actual expected name)
+(define (noisy-equal? actual expected name error-box)
   (if (equal? actual expected)
       #t
-      (begin (warn 'not-equal?
+      (begin (warn error-box 'not-equal?
                    "~e:\nactual:   ~e =/= \nexpected: ~e\n  here's the diff: ~e" name actual expected (sexp-diff actual expected))
              #f)))
 
 
+
+
+;; test-sequence : ll-model? string? steps? -> (void)
+;; given a language model and an expression and a sequence of steps,
+;; check to see whether the stepper produces the desired steps
+;;define (test-sequence the-ll-model exp-str expected-steps error-box)
+(match mz
+  [(struct ll-model (namespace-spec teachpack-specs render-settings show-lambdas-as-lambdas? enable-testing?))
+   (let* ([p2 (open-input-string "134")]
+          [module-id (gensym "stepper-module-name-")]
+          ;; thunk this so that syntax errors happen within the error handlers:
+          [expanded-thunk 
+           (lambda () (expand-teaching-program p2 read-syntax namespace-spec teachpack-specs #f module-id enable-testing?))])
+     (display (expanded-thunk))
+     (test-sequence/core render-settings show-lambdas-as-lambdas? expanded-thunk '() (box #f)))])

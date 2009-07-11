@@ -13,6 +13,7 @@
 
          )
 
+(provide run-test run-tests run-all-tests run-all-tests-except)
 
 (define list-of-tests null)
 
@@ -1421,6 +1422,16 @@
      (test-teachpack-sequence
       "(define (f2c x) x) (convert-gui f2c)" `() ; placeholder
       ))
+  
+  ;; SYNTAX ERRORS : 
+  
+  (t1 'bad-parens m:upto-int/lam
+      "("
+      `((error "read: expected a `)' to close `('")))
+  
+  #;(t1 'bad-stx-and m:upto-int/lam
+      "(and)"
+      `((error "foo")))
 
   
   ;; run whatever tests are enabled (intended for interactive use):
@@ -1431,5 +1442,15 @@
                    #;[show-all-steps #t])
       #;(run-tests '(check-expect forward-ref check-within #;check-within-bad #;check-error) #;'(#;check-expect #;check-expect-2 check-within check-within-bad check-error))
       #;(run-tests '(teachpack-universe))
+      #;(run-test 'bad-parens)
       (run-all-tests)))
   
+
+(define (hhh)
+  (run-one-test 'bogus 
+              m:mz "abc" 
+              `()))
+
+(run-one-test 'bogus 
+              m:mz "abc" 
+              `())
