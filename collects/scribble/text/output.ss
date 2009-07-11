@@ -28,6 +28,8 @@
 (define (output x [p (current-output-port)])
   ;; these are the global prefix and the one that is local to the current line
   (define pfxs (port->state p))
+  ;; the low-level string output function (can change with `with-writer')
+  (define write write-string)
   ;; to get the output column
   (define (getcol) (let-values ([(line col pos) (port-next-location p)]) col))
   ;; total size of the two prefixes
@@ -53,23 +55,23 @@
   (define (output-pfx col pfx1 pfx2)
     (define-syntax-rule (->str pfx) (if (number? pfx) (make-spaces pfx) pfx))
     (define-syntax-rule (show pfx) ; optimize when not needed
-      (unless (eq? pfx 0) (write-string (->str pfx) p)))
+      (unless (eq? pfx 0) (write (->str pfx) p)))
     (when (and pfx1 pfx2)
       (if (eq? 0 col)
         (begin (show pfx1) (show pfx2))
         (let ([len1 (if (number? pfx1) pfx1 (string-length pfx1))])
-          (cond [(< col len1) (write-string (->str pfx1) p col) (show pfx2)]
+          (cond [(< col len1) (write (->str pfx1) p col) (show pfx2)]
                 [(= col len1) (show pfx2)]
                 [(eq? 0 pfx2)]
                 [else
                  (let ([col (- col len1)]
                        [len2 (if (number? pfx2) pfx2 (string-length pfx2))])
-                   (when (< col len2) (write-string (->str pfx2) p col)))])))))
+                   (when (< col len2) (write (->str pfx2) p col)))])))))
   ;; the basic printing unit: strings
   (define (output-string x)
     (define pfx (mcar pfxs))
     (if (not pfx) ; prefix disabled?
-      (write-string x p)
+      (write x p)
       (let ([len (string-length x)]
             [nls (regexp-match-positions* #rx"\n" x)])
         (let loop ([start 0] [nls nls] [lpfx (mcdr pfxs)] [col (getcol)])
@@ -78,7 +80,7 @@
                    (if (regexp-match? #rx"^ *$" x start (car nl))
                      (newline p) ; only spaces before the end of the line
                      (begin (output-pfx col pfx lpfx)
-                            (write-string x p start (cdr nl))))
+                            (write x p start (cdr nl))))
                    (loop (cdr nl) (cdr nls) 0 0))]
                 ;; last substring from here (always set lpfx state when done)
                 [(start . = . len)
@@ -86,7 +88,7 @@
                 [(col . > . (2pfx-length pfx lpfx))
                  (set-mcdr! pfxs lpfx)
                  ;; the prefix was already shown, no accumulation needed
-                 (write-string x p start)]
+                 (write x p start)]
                 [else
                  (let ([m (regexp-match-positions #rx"^ +" x start)])
                    ;; accumulate spaces to lpfx, display if it's not all spaces
@@ -95,7 +97,7 @@
                      (unless (and m (= len (cdar m)))
                        (output-pfx col pfx lpfx)
                        ;; the spaces were already added to lpfx
-                       (write-string x p (if m (cdar m) start)))))])))))
+                       (write x p (if m (cdar m) start)))))])))))
   ;; main loop
   (define (loop x)
     (cond
@@ -139,8 +141,13 @@
             (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
                    [npfx (pfx+ (pfx+col (pfx+ pfx lpfx)) (car c))])
               (set-mcar! pfxs npfx) (set-mcdr! pfxs 0)
-              (for ([x (in-list (cdr c))]) (loop x))
+              (for-each loop (cdr c))
               (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
+           [(with-writer)
+            (let ([old write])
+              (set! write (or (car c) write-string))
+              (for-each loop (cdr c))
+              (set! write old))]
            [else (error 'output "unknown special value flag: ~e"
                         (special-flag x))]))]
       [else
@@ -171,21 +178,24 @@
 
 ;; special constructs
 
-(provide splice flush disable-prefix restore-prefix prefix)
-
 (define-struct special (flag contents))
 
-(define-syntax define-special
+(define-syntax define/provide-special
   (syntax-rules ()
-    [(_ (name x ...)) (define (name x ... . contents)
-                        (make-special 'name (list* x ... contents)))]
-    [(_ name)         (define name (make-special 'name #f))]))
+    [(_ (name x ...))
+     (begin (provide name)
+            (define (name x ... . contents)
+              (make-special 'name (list* x ... contents))))]
+    [(_ name)
+     (begin (provide name)
+            (define name (make-special 'name #f)))]))
 
-(define-special (splice))
-(define-special flush)
-(define-special (disable-prefix))
-(define-special (restore-prefix))
-(define-special (prefix pfx))
+(define/provide-special (splice))
+(define/provide-special flush)
+(define/provide-special (disable-prefix))
+(define/provide-special (restore-prefix))
+(define/provide-special (prefix pfx))
+(define/provide-special (with-writer writer))
 
 (define make-spaces ; (efficiently)
   (let ([t (make-hasheq)] [v (make-vector 80 #f)])
