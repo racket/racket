@@ -13,9 +13,9 @@
 	[(_ x (k))
          (syntax (eqv? x 'k))]
 	[(_ x (k1 k2))
-         (syntax (let ([tmp x]) (if (eqv? x 'k1) #t (eqv? x 'k2))))]
+         (syntax (let ([tmp x]) (if (eqv? tmp 'k1) #t (eqv? tmp 'k2))))]
 	[(_ x (k1 k2 k3))
-         (syntax (let ([tmp x]) (if (eqv? x 'k1) #t (if (eqv? x 'k2) #t (eqv? x 'k3)))))]
+         (syntax (let ([tmp x]) (if (eqv? tmp 'k1) #t (if (eqv? tmp 'k2) #t (eqv? tmp 'k3)))))]
 	[(_ x (k ...))
 	 (syntax (memv x '(k ...)))])))
 
