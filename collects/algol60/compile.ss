@@ -173,22 +173,22 @@
                                  (cond
                                    [(call-by-name-variable? var context)
                                     => (lambda (spec)
-                                         `(set-target! ,var ',var (coerce ',(spec-coerce-target spec) val)))]
+                                         `(set-target! ,var ',var (coerce ',(spec-coerce-target spec null) val)))]
                                    [(procedure-result-variable? var context)
                                     `(set! ,(procedure-result-variable-name var context) 
-                                           (coerce ',(spec-coerce-target (procedure-result-spec var context)) val))]
+                                           (coerce ',(spec-coerce-target (procedure-result-spec var context) null) val))]
                                    [(or (settable-variable? var context)
                                         (array-element? var context))
                                     => (lambda (spec)
                                          `(,(if (own-variable? var context) 'set-box! 'set!)
                                            ,var
-                                           (coerce ',(spec-coerce-target spec) val)))]
+                                           (coerce ',(spec-coerce-target spec null) val)))]
                                    [else (raise-syntax-error #f "confused by assignment" (expression-location var))])]
                                 [else
                                  (let ([spec (or (array-element? var context)
                                                  (call-by-name-variable? var context))])
                                    `(array-set! ,(compile-expression (make-a60:variable var null) context 'numbool)
-                                                (coerce ',(spec-coerce-target spec) val)
+                                                (coerce ',(spec-coerce-target spec null) val)
                                                 ,@(map (lambda (e) (compile-expression e context 'num)) 
                                                        (a60:variable-indices avar))))]))))
                       vars))
@@ -245,8 +245,8 @@
             (cond
               [(call-by-name-variable? var context)
                => (lambda (spec)
-                    (check-spec-type spec type var)
-                    (sub (lambda (val) `(coerce ',(spec-coerce-target spec) ,val)) `(get-value ,var)))]
+                    (check-spec-type spec type var subscripts)
+                    (sub (lambda (val) `(coerce ',(spec-coerce-target spec subscripts) ,val)) `(get-value ,var)))]
 	      [(primitive-variable? var context)
 	       => (lambda (name)
 		    (sub values
@@ -260,10 +260,10 @@
                (unless (null? subscripts)
                  (raise-syntax-error "confused by subscripts" var))
                (let ([spec (procedure-result-spec var context)])
-                 (check-spec-type spec type var)
+                 (check-spec-type spec type var null)
                  (at var
                      `(coerce
-                       ',(spec-coerce-target spec)
+                       ',(spec-coerce-target spec null)
                        ,(procedure-result-variable-name var context))))]
               [(or (procedure-result-variable? var context)
                    (procedure-variable? var context)
@@ -277,8 +277,8 @@
                                              (null? subscripts)))
                                     #f ;; need just the proc or array...
                                     spec)])
-                      (check-spec-type spec type var)
-                      (let ([target (spec-coerce-target spec)])
+                      (check-spec-type spec type var subscripts)
+                      (let ([target (spec-coerce-target spec subscripts)])
                         (sub (if target
                                  (lambda (v) `(coerce ',target ,v))
                                  values)
@@ -345,8 +345,8 @@
 			       (format "type mismatch (~a != ~a)" got expected)
 			       expr)))
      
-     (define (check-spec-type spec type expr)
-       (let ([target (spec-coerce-target spec)])
+     (define (check-spec-type spec type expr subscripts)
+       (let ([target (spec-coerce-target spec subscripts)])
          (when target
            (case (syntax-e target)
              [(integer real) (check-type 'num type expr)]
@@ -524,12 +524,12 @@
               (or (cadr v)
                   #'unknown))))
      
-     (define (spec-coerce-target spec)
+     (define (spec-coerce-target spec subscripts)
        (cond
          [(and (syntax? spec) (memq (syntax-e spec) '(string label switch real integer boolean unknown))) spec]
          [(and (syntax? spec) (memq (syntax-e spec) '(unknown))) #f]
          [(or (not spec) (not (pair? spec))) #f]
-         [(eq? (car spec) 'array) (cadr spec)]
+         [(eq? (car spec) 'array) (if (null? subscripts) #'array (cadr spec))]
          [(eq? (car spec) 'procedure) #'procedure]
          [else #f]))
      
