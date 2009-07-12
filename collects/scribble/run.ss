@@ -125,7 +125,7 @@
         (when (current-info-output-file)
           (let ([s (send renderer serialize-info r-info)])
             (with-output-to-file (current-info-output-file)
-              (lambda () (write s))
-              'truncate/replace)))))))
+              #:exists 'truncate/replace
+              (lambda () (write s)))))))))
 
 (run)
