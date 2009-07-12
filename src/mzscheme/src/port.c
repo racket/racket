@@ -7402,6 +7402,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   Scheme_Object *in, *out, *err;
 #if defined(UNIX_PROCESSES)
   System_Child *sc;
+  int fork_errno = 0;
 #else
   void *sc = 0;
 #endif
@@ -7639,7 +7640,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       sc->next = scheme_system_children;
       scheme_system_children = sc;
       sc->id = pid;
-    } else {
+    } else if (!pid) {
 #ifdef USE_ITIMER
       /* Turn off the timer. */
       /* SIGPROF is masked at this point due to
@@ -7668,6 +7669,8 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       }
       END_XFORM_SKIP;
 #endif
+    } else {
+      fork_errno = errno;
     }
 
     scheme_block_child_signals(0);
@@ -7689,7 +7692,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 	MSC_IZE(close)(err_subprocess[0]);
 	MSC_IZE(close)(err_subprocess[1]);
       }
-      scheme_raise_exn(MZEXN_FAIL, "%s: fork failed", name);
+      scheme_raise_exn(MZEXN_FAIL, "%s: fork failed (%e)", name, fork_errno);
       return scheme_false;
 
     case 0: /* child */
