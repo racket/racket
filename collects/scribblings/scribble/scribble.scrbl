@@ -12,7 +12,8 @@ especially those that document libraries, and especially for HTML and
 PDF (via LaTeX) output.  More generally, it is useful for cases where
 you need to deal with Scheme code that is rich in textual content: it
 has a syntactic extension for writing almost free-form text and a tool
-for using the scribble syntax for preprocessing text files.
+for using the scribble syntax for preprocessing text files with
+embedded Scheme code.
 
 This document itself is written using Scribble. At the time that it
 was written, its source was available at
