@@ -248,14 +248,18 @@
   (let ([names (map parse-author (cons name names))])
     (make-author-element
      #f
-     (let loop ([names names])
+     (let loop ([names names] [prefix 0])
        (if (null? (cdr names))
-           (list (car names))
-           (append (loop (list (car names)))
-                   (list (if (null? (cddr names))
-                             ", and "
-                             ", "))
-                   (loop (cdr names)))))
+           (case prefix
+             [(0) (list (car names))]
+             [(1) (list " and " (car names))]
+             [else (list ", and " (car names))])
+           (case prefix
+             [(0) (list* (car names)
+                         (loop (cdr names) (add1 prefix)))]
+             [else (list* ", "
+                          (car names)
+                          (loop (cdr names) (add1 prefix)))])))
      (string-join (map author-element-names names) " / ")
      (case (length names)
        [(1) (author-element-cite (car names))]
