@@ -1077,7 +1077,7 @@ module's text does.  If you find yourself in such a situation, it is
 better to switch to a Scheme-with-@"@"-expressions file as shown
 above.)
 
-@;FIXME: add more text on `restore-prefix', and on `with-writer'
+@;FIXME: add more text on `restore-prefix', `set-prefix', `with-writer'
 
 @;FIXME: add this to the reference section
 @;@defform[(include filename)]{

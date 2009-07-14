@@ -137,10 +137,15 @@
               (set-mcar! pfxs npfx)  (set-mcdr! pfxs 0)
               (for-each loop c)
               (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
-           [(prefix)
+           [(prefix) ; maybe call this `add-prefix'?
             (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
                    [npfx (pfx+ (pfx+col (pfx+ pfx lpfx)) (car c))])
               (set-mcar! pfxs npfx) (set-mcdr! pfxs 0)
+              (for-each loop (cdr c))
+              (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
+           [(set-prefix)
+            (let ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)])
+              (set-mcar! pfxs (car c)) (set-mcdr! pfxs 0)
               (for-each loop (cdr c))
               (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
            [(with-writer)
@@ -195,6 +200,7 @@
 (define/provide-special (disable-prefix))
 (define/provide-special (restore-prefix))
 (define/provide-special (prefix pfx))
+(define/provide-special (set-prefix pfx))
 (define/provide-special (with-writer writer))
 
 (define make-spaces ; (efficiently)
