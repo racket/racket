@@ -6,7 +6,7 @@
 
 ;; -----------------------------------------------------------------------------
 ;; Universe = [Listof IWorld]
-;; BallMail = (make-mail World 'go)
+;; BallMail = (make-mail IWorld 'go)
 ;; Result   = (make-bundle [Listof IWorld] [Listof BallMail] '())
 
 (define Result0 (make-bundle '() '() '()))
@@ -18,7 +18,7 @@
   (make-bundle lw (list (make-mail (first lw) 'go)) '()))
 
 ;; -----------------------------------------------------------------------------
-;; Universe World -> Result
+;; Universe IWorld -> Result
 ;; add w to the list of worlds; get the first one to play 
 
 (check-expect (add-world '() iworld1) (mail2 (list iworld1)))
@@ -27,7 +27,7 @@
   (mail2 (append univ (list wrld))))
 
 ;; -----------------------------------------------------------------------------
-;; Universe World Sexp -> Result
+;; Universe IWorld Sexp -> Result
 ;; w sent message m in universe u 
 
 (check-expect
@@ -48,7 +48,7 @@
       [else (error 'switch "wrong world sent message")])))
 
 ;; -----------------------------------------------------------------------------
-;; [Listof World] Universe World -> Result
+;; [Listof IWorld] Universe IWorld -> Result
 ;; w disconnected from the universe 
 
 (check-expect (disconnect (list iworld1 iworld2 iworld3) iworld2) 
@@ -59,7 +59,7 @@
   (local ((define nxt (remq w u)))
     (if (empty? nxt) Result0  (mail2 nxt))))
 
-;; World [Listof World] -> [Listof World]
+;; IWorld [Listof IWorld] -> [Listof IWorld]
 ;; remove w from low
 
 (check-expect (remq 'a '(a b c)) '(b c))

@@ -1,0 +1,88 @@
+
+		Twitter Chat
+
+Design and implement a program that allows people to chat with each
+ other, using short messages. 
+
+A participant uses a chat space, which is a window divided into two spaces:
+ the top half for listing the messages received and the bottom half for
+ listing the messages sent plus the one message the participant is currently
+ entering.
+
+The two halves display the messages in historical order, with the most
+ recent message received/sent at the bottom. When the either half is full of
+ messages, drop the least recent lines. 
+
+Each message is at most one line of text, i.e., the width of the
+ window, which is 400 pixels. A line consists of two pieces: 
+
+  -- an address 
+  -- a message
+
+ where the address is separated from the message with a ":". The user sends
+ a message by typing the name of a participant, followed by ":" and the text
+ of the message. The message is sent when the user hits "\r" (return) or
+ when the line is too wide for the screen.
+
+A message whose recipient is "*" is broadcast to every current participant.
+ Otherwise a message is sent to the designated recipient, if the string is
+ the valid name of a current participant. 
+
+Each received message is displayed like those that are sent, with an sender
+ followed by ":" and the text of the message. If the message went to all
+ participants, the sender's name is followed by an asterisk "*". 
+
+;; -----------------------------------------------------------------------------
+protocol:
+
+Sending and receiving message occur without any synchronization. 
+
+Clients send messages of the form (list String String) to the server.  The
+ first string designates the recipient of the message, the second string
+ represents the message text.
+
+The Chat Server swaps the name of the recipient of a message with that of
+ the sender; if the message is to be broadcast, it adds an asterisk "*".
+ The server sends sends the resulting messages to the designated recipient.
+ If the recipient name of a message is "*", then the server sends it all
+ current participants.
+
+
+   SERVER   		   CLIENT (name1)       CLIENT (name2)
+     |			     |	  	     	      	         |
+     |	name1		     |  % name by which client is known  |
+     | <-------------------- |	       	  	       	  	 |
+     |			     |					 |
+     |	(list name2 txt)     |					 |
+     | <-------------------- |					 |
+     |			     |					 |
+     |			     |	(list name1 txt)		 |
+     | --------------------------------------------------------> |
+     |			     |					 |
+     |			     |					 |
+
+;; Client2ServerMsg = (list String String)
+;; interp. recipient followed by message text 
+
+;; Server2ClientMsg = (list String String)
+;; interp. sender followed by message text. 
+
+;; -----------------------------------------------------------------------------
+
+chat server: receive message, swap recipient for sender & send message(s)
+
+;; -----------------------------------------------------------------------------
+
+chat world: 
+
+ +------------------------------------------------------------------+
+ | from: text text text text text text				    |
+ | from*: text text text text text text				    |
+ | ...								    |
+ +------------------------------------------------------------------+
+ | to: text text text text text text				    |
+ | *: text text text text text text				    |
+ | ...								    |
+ +------------------------------------------------------------------+
+
+ 
