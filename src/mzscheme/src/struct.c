@@ -737,11 +737,6 @@ static Scheme_Object *prop_pred(int argc, Scheme_Object **args, Scheme_Object *p
   Scheme_Struct_Type *stype;
   Scheme_Object *prop = SCHEME_PRIM_CLOSURE_ELS(prim)[0];
 
-  if (!args[0]) {
-    printf("%p\n", prim);
-    return scheme_false;
-  }
-
   if (SCHEME_STRUCTP(args[0]))
     stype = ((Scheme_Structure *)args[0])->stype;
   else if (SAME_TYPE(SCHEME_TYPE(args[0]), scheme_struct_type_type))

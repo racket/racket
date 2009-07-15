@@ -6201,7 +6201,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           jit_ldxi_p(JIT_R2, JIT_R2, WORDS_TO_BYTES(pos));
           CHECK_LIMIT();
 
-	  JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+          JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
           mz_prepare(1);
 	  jit_pusharg_p(JIT_R2);
 	  (void)mz_finish(make_global_ref);
