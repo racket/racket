@@ -802,14 +802,14 @@ already beyond it).
            }-|
 
 There are cases where each line should be prefixed with some string
-other than a plain indentation.  The @scheme[prefix] function causes
-its contents to be printed using some given string prefix for every
-line.  The prefix gets accumulated to an existing indentation, and
-indentation in the contents gets added to the prefix.
+other than a plain indentation.  The @scheme[add-prefix] function
+causes its contents to be printed using some given string prefix for
+every line.  The prefix gets accumulated to an existing indentation,
+and indentation in the contents gets added to the prefix.
 
 @example|-{#lang scribble/text
            @(define (comment . body)
-              @prefix["// "]{@body})
+              @add-prefix["// "]{@body})
            @comment{add : int int -> string}
            char *foo(int x, int y) {
              @comment{
@@ -835,16 +835,16 @@ indentation in the contents gets added to the prefix.
            }
            }-|
 
-When combining @scheme[prefix] and @scheme[disable-prefix] there is an
-additional value that can be useful: @scheme[flush].  This is a value
-that causes @scheme[output] to print the current indentation and
+When combining @scheme[add-prefix] and @scheme[disable-prefix] there
+is an additional value that can be useful: @scheme[flush].  This is a
+value that causes @scheme[output] to print the current indentation and
 prefix.  This makes it possible to get the ``ignored as a prefix''
 property of @scheme[disable-prefix] but only for a nested prefix.
 
 @example|-{#lang scribble/text
            @(define (comment . text)
               (list flush
-                    @prefix[" *"]{
+                    @add-prefix[" *"]{
                       @disable-prefix{/*} @text */}))
            function foo(x) {
              @comment{blah
@@ -883,7 +883,7 @@ property of @scheme[disable-prefix] but only for a nested prefix.
        ;; notes: the `flush' makes the prefix to that point print so the
        ;; disable-prefix "* " is printed after it, which overwrites the
        ;; "| " prefix
-       (list flush (prefix "| " (disable-prefix "* ") text)))
+       (list flush (add-prefix "| " (disable-prefix "* ") text)))
      ;; note that a simple item with spaces is much easier:
      (define (simple . text) @list{* @text}))
 
