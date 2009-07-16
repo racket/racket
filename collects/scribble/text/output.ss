@@ -137,7 +137,7 @@
               (set-mcar! pfxs npfx)  (set-mcdr! pfxs 0)
               (for-each loop c)
               (set-mcar! pfxs pfx) (set-mcdr! pfxs lpfx))]
-           [(add-prefix)
+           [(add-prefix) ; add to the current prefix (unless it's #f)
             (let* ([pfx (mcar pfxs)] [lpfx (mcdr pfxs)]
                    [npfx (pfx+ (pfx+col (pfx+ pfx lpfx)) (car c))])
               (set-mcar! pfxs npfx) (set-mcdr! pfxs 0)
