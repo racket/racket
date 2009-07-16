@@ -15,6 +15,7 @@
     ("downarrow" "↓")
     ("Rightarrow" "⇒")
     ("rightarrow" "→")
+    ("mapsto" "↦")
     ("searrow" "↘")
     ("swarrow" "↙")
     ("leftarrow" "←")
