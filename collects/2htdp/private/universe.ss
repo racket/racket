@@ -208,9 +208,9 @@
 ;; World = (make-iworld IPort OPort Symbol [Listof Sexp])
 
 (define (iw* n) (make-iworld (current-input-port) (current-output-port) n '()))
-(define iworld1 (iw* 'iworld1))
-(define iworld2 (iw* 'iworld2))
-(define iworld3 (iw* 'iworld3))
+(define iworld1 (iw* "iworld1"))
+(define iworld2 (iw* "iworld2"))
+(define iworld3 (iw* "iworld3"))
 
 (define (iworld=? u v)
   (check-arg 'iworld=? (iworld? u) 'iworld "first" u)
@@ -226,7 +226,7 @@
 (define (create-iworld i o info)
   (if (and (pair? info) (symbol? (car info)))
       (make-iworld i o (car info) (cdr info))
-      (make-iworld i o (gensym 'iworld) info)))
+      (make-iworld i o (symbol->string (gensym 'iworld)) info)))
 
 ;; Player S-exp -> Void
 (define (iworld-send p sexp)
