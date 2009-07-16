@@ -38,7 +38,7 @@
        on-msg            ;; Universe World Message -> Result
        tick              ;; Universe -> Result
        (on-disconnect    ;; Universe World -> Result
-        (lambda (u w) (list u)))
+        (lambda (u w) (make-bundle u '() '())))
        (to-string #f)    ;; Universe -> String 
        (check-with True) ;; Any -> Boolean 
        )
@@ -61,8 +61,9 @@
             (define (handler e) (stop! e))
             (with-handlers ([exn? handler])
               (define ___  (begin 'dummy body ...))
+	      (define n (if (object-name name) (object-name name) name))
               (define-values (u mails bad) 
-                (bundle> 'name (name (send universe get) a ...)))
+                (bundle> n (name (send universe get) a ...)))
               (send universe set (format "~a callback" 'name) u)
               (unless (boolean? to-string) (send gui add (to-string u)))
               (broadcast mails)
@@ -88,7 +89,7 @@
       (def/cback private (pnew iworld) on-new
         (set! iworlds (cons iworld iworlds))
         (iworld-send iworld 'okay)  ;; <--- this can fail!                  
-        (send gui add (format "~a signed up" (iworld-info iworld))))
+        (send gui add (format "~a signed up" (iworld-name iworld))))
       
       (def/cback private (pmsg iworld r) on-msg
         (send gui add (format "~a ->: ~a" (iworld-name iworld) r)))
@@ -224,7 +225,7 @@
 
 ;; IPort OPort Sexp -> IWorld 
 (define (create-iworld i o info)
-  (if (and (pair? info) (symbol? (car info)))
+  (if (and (pair? info) (string? (car info)))
       (make-iworld i o (car info) (cdr info))
       (make-iworld i o (symbol->string (gensym 'iworld)) info)))
 
@@ -348,10 +349,13 @@
               (check-arg tag (iworld? c) msg (format "(elements of) ~a" rank) c))
             low))
 
-;; Any ->* Universe [Listof Mail] [Listof IWorld]
+;; Symbol Any ->* Universe [Listof Mail] [Listof IWorld]
 (define (bundle> tag r)
   (unless (bundle? r) 
-    (error "bundle expected from ~a, given: " tag))
+    (raise
+      (make-exn
+	(format "error: bundle expected from ~a, given: ~e" tag r)
+	(current-continuation-marks))))
   (values (bundle-state r) (bundle-mails r) (bundle-bad r)))
 
 (define-struct mail (to content) #:transparent)

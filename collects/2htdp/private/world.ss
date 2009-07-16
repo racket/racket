@@ -89,7 +89,9 @@
                                  (begin (sleep PAUSE)
                                         (do-register (- n 1)))))))
             (define-values (in out) (tcp-connect register SQPORT))
-            (tcp-send out `(REGISTER ,(if name name (gensym 'world))))
+            (tcp-send
+	      out
+	      `(REGISTER ,(if name name (symbol->string (gensym 'world)))))
             (if (eq? (tcp-receive in) 'okay) 
                 (values in out)
                 (raise tcp-eof))))
