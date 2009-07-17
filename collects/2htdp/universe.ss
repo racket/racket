@@ -96,9 +96,9 @@
 ;;      | (stop-when Expr)
 ;; -- stop-when must specify a boolean-valued function 
 ;;      | (register Expr)
-;;      | (register Expr Expr)
 ;; -- register must specify the internet address of a host (including LOCALHOST)
-;; -- it may specify a world's name 
+;;      | (name Expr)
+;; -- the name 
 ;;      | (record? Expr)
 ;; -- should the session be recorded and turned into PNGs and an animated GIF
 ;;      | (on-receive Expr) 
@@ -124,7 +124,7 @@
   [name (lambda (tag)
           (lambda (p)
             (syntax-case p ()
-              [(n) #`(symbol> #,tag n)]
+              [(n) #`(string> #,tag n)]
               [_ (err tag p "expected a string for the current world")])))]
   [record? (lambda (tag)
              (lambda (p)

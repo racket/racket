@@ -1007,7 +1007,7 @@ Understanding the server's event handling functions demands several data
 @defproc[(iworld=? [u iworld?][v iworld?]) boolean?]{
  compares two @emph{iworld}s for equality.}
 
-@defproc[(iworld-name [w iworld?]) symbol?]{
+@defproc[(iworld-name [w iworld?]) string?]{
  extracts the name from a @emph{iworld} structure.}
 
 @defthing[iworld1 iworld?]{an @emph{iworld} for testing your programs}

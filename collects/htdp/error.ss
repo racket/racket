@@ -65,7 +65,7 @@
 ;; check-arg : sym bool str str TST -> void
 (define (check-arg pname condition expected arg-posn given)
   (unless condition
-    (tp-error pname "expected <~a> as ~a argument, given: ~a"
+    (tp-error pname "expected <~a> as ~a argument, given: ~e"
               expected arg-posn given)))
 
 ;; check-arity : sym num (list-of TST) -> void
@@ -79,8 +79,8 @@
 (define (check-proc proc f exp-arity arg# arg-err)
   (unless (procedure? f)
     (tp-error proc "procedure expected as ~a argument; given ~e" arg# f))
-  (unless (procedure-arity-includes? f exp-arity)
-    (let ([arity-of-f (procedure-arity f)])
+  (let ([arity-of-f (procedure-arity f)])
+    (unless  (and (number? arity-of-f) (>= arity-of-f exp-arity))
       (tp-error proc "procedure of ~a expected as ~a argument; given procedure of ~a "
                 arg-err arg# 
                 (cond
@@ -88,5 +88,5 @@
                    (if (= arity-of-f 1)
                        (format "1 argument")
                        (format "~s arguments" arity-of-f))]
-                  [(arity-at-least? arity-of-f) (format "at least ~s arguments" (arity-at-least-value arity-of-f))]
+                  [(arity-at-least? arity-of-f) "variable number of arguments"]
                   [else (format "multiple arities (~s)" arity-of-f)])))))

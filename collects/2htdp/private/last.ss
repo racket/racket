@@ -7,6 +7,7 @@
 (define last-mixin
   (mixin (start-stop<%>) ()
     (field [end:ch  (make-channel)])
+
     ;; X -> Void
     (define/override (stop! w)
       (send-to-last w)

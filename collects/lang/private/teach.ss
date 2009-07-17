@@ -37,6 +37,7 @@
   (require mzlib/etc
 	   mzlib/list
 	   mzlib/math
+           scheme/match
            "set-result.ss")
   (require-for-syntax "teachhelp.ss"
                       "teach-shared.ss"
@@ -137,7 +138,7 @@
 			      beginner-if
 			      beginner-and
 			      beginner-or
-			      beginner-quote
+			      beginner-quote/expr
                               beginner-require
                               beginner-dots
 			      
@@ -150,8 +151,8 @@
 			      intermediate-let*
 			      intermediate-recur
 			      intermediate-app
-			      intermediate-quote
-			      intermediate-quasiquote
+			      intermediate-quote/expr
+			      intermediate-quasiquote/expr
 			      intermediate-unquote
 			      intermediate-unquote-splicing
 			      intermediate-time
@@ -1131,7 +1132,7 @@
     ;; quote (symbols)
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    (define (beginner-quote/proc stx)
+    (define (beginner-quote/expr/proc stx)
       (syntax-case stx ()
 	[(_ expr)
 	 (let ([sym (syntax expr)])
@@ -1758,7 +1759,7 @@
     ;; quote (intermediate)
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    (define intermediate-quote/proc
+    (define intermediate-quote/expr/proc
       (lambda (stx)
 	(syntax-case stx ()
 	  [(_ expr ...)
@@ -1780,7 +1781,7 @@
     ;; suitable error messages. The "right" cons is actually advanced-cons,
     ;; because it works with shared:
 
-    (define (intermediate-quasiquote/proc stx)
+    (define (intermediate-quasiquote/expr/proc stx)
       (let loop ([stx (syntax-case stx ()
 			[(_ stx) (syntax stx)]
 			[(_ . any)
@@ -1811,7 +1812,7 @@
 	       (with-syntax ([x (loop (syntax x) (sub1 depth))]
 			     [rest (loop (syntax rest) depth)]
 			     [uq-splicing (stx-car (stx-car stx))])
-		 (stepper-syntax-property (syntax/loc stx (the-cons (list (quote uq-splicing) x) rest))
+		 (stepper-syntax-property (syntax/loc stx (the-cons/matchable (list (quote uq-splicing) x) rest))
                                   'stepper-hint
                                   'quasiquote-the-cons-application)))]
 	  [intermediate-unquote-splicing
@@ -1827,7 +1828,7 @@
 	  [(a . b)
 	   (with-syntax ([a (loop (syntax a) depth)]
 			 [b (loop (syntax b) depth)])
-	     (stepper-syntax-property (syntax/loc stx (the-cons a b))
+	     (stepper-syntax-property (syntax/loc stx (the-cons/matchable a b))
                               'stepper-hint
                               'quasiquote-the-cons-application))]
 	  [any
@@ -2383,4 +2384,66 @@
 	     [_else (bad-use-error 'shared stx)])
 
 	   ;; The main implementation
-           (shared/proc stx make-check-cdr #'undefined)))))))
+           (shared/proc stx make-check-cdr #'undefined))))))
+
+  ;; ----------------------------------------
+  ;; Extend quote forms to work with `match':
+
+  (provide beginner-quote
+           intermediate-quote
+           intermediate-quasiquote)
+
+  (define-match-expander beginner-quote
+    (syntax-local-value #'beginner-quote/expr)
+    (syntax-local-value #'beginner-quote/expr))
+  
+  (define-match-expander intermediate-quote
+    (syntax-local-value #'intermediate-quote/expr)
+    (syntax-local-value #'intermediate-quote/expr))
+  
+  (define-match-expander intermediate-quasiquote
+    ;; Match expander:
+    (let ([qq (syntax-local-value #'intermediate-quasiquote/expr)])
+      (lambda (stx)
+        ;; Call expression version for checking:
+        (qq stx)
+        ;; But then just use `scheme/base' quasiquote and unquotes:
+        (quasisyntax/loc stx
+          (quasiquote
+           #,(let loop ([stx (syntax-case stx ()
+                               [(_ stx) (syntax stx)])]
+                        [depth 0])
+               (syntax-case stx (intermediate-unquote intermediate-unquote-splicing intermediate-quasiquote)
+                 [(intermediate-unquote x)
+                  (if (zero? depth)
+                      (syntax (unquote x))
+                      (with-syntax ([x (loop (syntax x) (sub1 depth))])
+                        (syntax/loc stx (unquote x))))]
+                 [((intermediate-unquote-splicing x) . rest)
+                  (if (zero? depth)
+                      (with-syntax ([rest (loop (syntax rest) depth)])
+                        (syntax/loc stx ((unquote-splicing x) . rest)))
+                      (with-syntax ([x (loop (syntax x) (sub1 depth))]
+                                    [rest (loop (syntax rest) depth)])
+                        (syntax/loc stx ((unquote-splicing x) . rest))))]
+                 [(intermediate-quasiquote x)
+                  (with-syntax ([x (loop (syntax x) (add1 depth))]
+                                [qq (stx-car stx)])
+                    (syntax/loc stx (quasiquote x)))]
+                 [(a . b)
+                  (with-syntax ([a (loop (syntax a) depth)]
+                                [b (loop (syntax b) depth)])
+                    (syntax/loc stx (a . b)))]
+                 [any stx]))))))
+    ;; Expression expander:
+    (syntax-local-value #'intermediate-quasiquote/expr))
+
+  (define-match-expander the-cons/matchable
+    ;; For match (no cdr check needed for deconstruction):
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_ a b) (syntax/loc stx (cons a b))]))
+    ;; For expressions (cdr check via `the-cons'):
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_ a b) (syntax/loc stx (the-cons a b))]))))

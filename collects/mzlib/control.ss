@@ -139,10 +139,10 @@
                    (abort-cc
                     tag
                     (lambda () 
-                      (f (lambda (val)
+                      (f (lambda vals
                            (call-with-continuation-prompt
                             (lambda ()
-                              (k val))
+                              (apply k vals))
                             tag
                             inserted-handler))))))
                  tag)])])

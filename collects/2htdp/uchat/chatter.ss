@@ -2,6 +2,7 @@
 ;; about the language level of this file in a form that our tools can easily process.
 #reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname chatter) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
 (require 2htdp/universe)
+(require "aux.ss")
 
 #|
 
@@ -97,32 +98,37 @@
                     (line*-render (rest lines))))]))
 
 ;; -----------------------------------------------------------------------------
-;; Line -> Image
+;; String String -> Image
 ;; render a single display line 
 
 (define result0 (text (string-append SP "ada: hello") 11 "black"))
+
 (check-expect (line-render "ada" "hello") result0)
 
-(check-expect (line-render false "hello") 
-              (text (string-append SP ": hello") 11 "black"))
-
-(check-expect (line-render "ada" false) 
-              (text (string-append SP "ada: ") 11 "black"))
-
 (define (line-render addr msg)
-  (local ((define addr* (if (boolean? addr) "" addr))
-          (define msg* (if (boolean? msg) "" msg)))
-    (text (string-append SP addr* ": " msg*) 11 "black")))
+  (text (string-append SP addr ": " msg) 11 "black"))
 
 ;; -----------------------------------------------------------------------------
-;; Line -> Image
-;; render a single display line 
+;; StrFl StrFl -> Image
+;; render a single display line, with a cursor at current 'editing' position
 
-(check-expect (line-render-cursor "ada" "hello") (image-append result0 CURSOR))
+(check-expect (line-render-cursor false false) 
+              (image-append (text SP 11 "black") CURSOR))
 
-(define (line-render-cursor addr msg)
-  (local ((define r (line-render addr msg)))
-    (image-append r CURSOR)))
+(check-expect (line-render-cursor "ada" false) 
+              (image-append (text (string-append SP "ada") 11 "black") CURSOR))
+
+(check-expect (line-render-cursor "ada" "hello") 
+              (image-append result0 CURSOR))
+
+(define (line-render-cursor addr msg)  
+  (cond
+    [(and (boolean? addr) (boolean? msg)) 
+     (image-append (text SP 11 "black") CURSOR)]
+    [(and (string? addr) (boolean? msg)) 
+     (image-append (text (string-append SP addr) 11 "black") CURSOR)]
+    [else 
+     (image-append (text (string-append SP addr ": " msg) 11 "black") CURSOR)]))
 
 ;                                                   
 ;                                                   
@@ -167,6 +173,42 @@
           (define hj (image-height j)))
     (overlay/xy (put-pinhole i 0 0) (image-width i) (- hi hj) (put-pinhole j 0 0))))
 
+;                                                   
+;                                                   
+;                                 ;                 
+;                                                   
+;   ;; ;;   ;;;    ;;;;   ;;;   ;;;   ;;; ;;;  ;;;  
+;    ;;    ;   ;  ;   ;  ;   ;    ;    ;   ;  ;   ; 
+;    ;     ;;;;;  ;      ;;;;;    ;    ;   ;  ;;;;; 
+;    ;     ;      ;      ;        ;     ; ;   ;     
+;    ;     ;      ;   ;  ;        ;     ; ;   ;     
+;   ;;;;;   ;;;;   ;;;    ;;;;  ;;;;;    ;     ;;;; 
+;                                                   
+;                                                   
+;                                                   
+;                                                   
+
+;; World Message -> World 
+;; receive a message, append to end of received messages 
+
+(define w0 (make-world false false '() '()))
+(define w1 (make-world false false (list (make-messg "bob*" "hello")) '()))
+
+(check-expect (receive w0 (list "bob*" "hello")) w1)
+(check-expect (receive w1 (list "angie" "world")) 
+              (make-world false false 
+                          (list (make-messg "bob*" "hello")
+                                (make-messg "angie" "world"))
+                          '()))
+
+(define (receive w m)
+  (make-world (world-todraft w)
+              (world-mmdraft w)
+              (append (world-from w) (list (make-messg (first m) (second m))))
+              (world-to w)))
+
+
+
 ;                                                                               
 ;                                                                               
 ;             ;;    ;                                                        ;; 
@@ -191,7 +233,6 @@
 ;; -- (2) "\r"/rendering a line is wider than the window
 ;; WHAT HAPPENS IF THE LINE BECOMES WIDER THAN THE BUFFER BEFORE ":" ?
 
-(define w0 (make-world false false '() '()))
 (define WIDE-STRING (replicate WIDTH "m"))
 
 (check-expect (react w0 ":") w0)
@@ -363,7 +404,10 @@
 (render world1)
 (render world2)
 
-(define (maim name)
+(define (main n)
   (big-bang world0 
             (on-key react)
-            (on-draw render)))
+            (on-draw render)
+            (on-receive receive)
+            (name n)
+            (register LOCALHOST)))
