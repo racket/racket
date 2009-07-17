@@ -162,7 +162,8 @@
                                        kwds Spec)))
                          (list (syntax-e (car co)) ((cadr co) (cdr x))))
                        spec)])
-       #`(send (new (if #,rec? aworld% world%) [world0 w]  #,@args) last))]))
+       #`(let ([o (new (if #,rec? aworld% world%) [world0 w]  #,@args)])
+           (send o last)))]))
 
 
 ;                                                                 
