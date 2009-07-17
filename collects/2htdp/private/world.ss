@@ -74,49 +74,53 @@
              [*rec* (make-custodian)]) ;; Custodian, monitor traffic)
       
       (define/private (register-with-host)
-        (define FMTtry "unable to register with ~a after ~s tries")
-        (define FMTcom "unable to register with ~a due to protocol problems")
-        ;; try to register with the server n times 
-        (define (do-register n)
-          (printf "trying to register with ~a ...\n" register)
-          (with-handlers ((tcp-eof? 
-                           (lambda (x) 
-                             (error 'register FMTcom register)))
-                          (exn:fail:network? 
-                           (lambda (x)
-                             (if (= n 1) 
-                                 (error 'register FMTtry register TRIES)
-                                 (begin (sleep PAUSE)
-                                        (do-register (- n 1)))))))
-            (define-values (in out) (tcp-connect register SQPORT))
-            (tcp-send
-	      out
-	      `(REGISTER ,(if name name (symbol->string (gensym 'world)))))
-            (if (eq? (tcp-receive in) 'okay) 
-                (values in out)
-                (raise tcp-eof))))
-        ;; --- now register, obtain connection, and spawn a thread for receiving
-        (parameterize ([current-custodian *rec*])
-          (define-values (in out) (do-register TRIES))
-          (define dis (text "the universe disappeared" 11 'red))
+        (define FMT "\nworking off-line\n")
+        (define FMTtry 
+          (string-append "unable to register with ~a after ~s tries" 
+                         FMT))                         
+        (define FMTcom 
+          (string-append "unable to register with ~a due to protocol problems" 
+                         FMT))
+        ;; Input-Port -> [-> Void]
+        ;; create closure (for thread) to receive messages and signal events
+        (define (RECEIVE in)
           (define (RECEIVE)
             (sync 
              (handle-evt
               in
               (lambda (in) 
-                (with-handlers ((tcp-eof? (compose (handler #f)
-                                                   (lambda (e)
-                                                     (set! draw (lambda (w) dis))
-                                                     (pdraw)
-                                                     e))))
+                (define dis (text "the universe disappeared" 11 'red))
+                (with-handlers ((tcp-eof? 
+                                 (compose (handler #f)
+                                          (lambda (e)
+                                            (set! draw (lambda (w) dis))
+                                            (pdraw)
+                                            e))))
                   ;; --- "the universe disconnected" should come from here ---
                   (define msg (tcp-receive in))
                   (cond
                     [(sexp? msg) (prec msg) (RECEIVE)] ;; break loop if EOF
                     [#t (error 'RECEIVE "sexp expected, received: ~e" msg)]))))))
-          (printf "... successful registered and ready to receive\n")
-          (set! *out* out)
-          (thread RECEIVE)))
+          RECEIVE)
+        ;; --- now register, obtain connection, and spawn a thread for receiving
+        (parameterize ([current-custodian *rec*])
+          ;; try to register with the server n times 
+          (let try ([n TRIES])
+              (printf "trying to register with ~a ...\n" register)
+              (with-handlers ((tcp-eof? (lambda (x) (printf FMTcom register)))
+                              (exn:fail:network? 
+                               (lambda (x)
+                                 (if (= n 1) 
+                                     (printf FMTtry register TRIES)
+                                     (begin (sleep PAUSE) (try (- n 1)))))))
+                (define-values (in out) (tcp-connect register SQPORT))
+                (tcp-send
+                 out
+                 `(REGISTER ,(if name name (symbol->string (gensym 'world)))))
+                (unless (eq? (tcp-receive in) 'okay) (raise tcp-eof))
+                (printf "... successful registered and ready to receive\n")
+                (set! *out* out)
+                (thread (RECEIVE in))))))
       
       (define/private (broadcast msg)
         (when *out* 
