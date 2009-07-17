@@ -20,9 +20,9 @@
 
  Convention: the names of participants may not contain ":". 
  The first typed ":" separates the addressess from the message.
-
+ 
  TODO:
-   -- delete key during editing. should it work?
+   -- the editing of too-tall send messages is a bit off screen. 
    
 |#
 
@@ -49,18 +49,25 @@
 ;; Line  = (make-messg String String)
 ;; WorldPackage = (make-package World (list String String))
 
-(define WIDTH 400)
-(define HEIGHT 300)
-(define MID (/ HEIGHT 2))
+;; NOTE: the from and to fields never contain lists that would 
+;;   create images taller than MID-2. We enforce this via send
+;;   and receive. 
 
 ;; visual constants 
 
+(define WIDTH 400)
+(define HEIGHT 300) ;; at least 200 
+(define MID (/ HEIGHT 2))
+
+(define FTSZ 11)
+(define FTCL "black")
+
 (define SP " ")
 
-(define MT (scene+line (empty-scene WIDTH HEIGHT) 0 MID WIDTH MID "black"))
-(define BLANK (rectangle WIDTH 11 "outline" "white"))
+(define MT (scene+line (empty-scene WIDTH HEIGHT) 0 MID WIDTH MID FTCL))
+(define BLANK (rectangle WIDTH FTSZ "outline" "white"))
 
-(define CURSOR (rectangle 3 11 "solid" "red"))
+(define CURSOR (rectangle 3 FTSZ "solid" "red"))
 
 ;                                            
 ;                                            
@@ -82,7 +89,8 @@
 (define (render w)
   (local ((define fr (line*-render (world-from w)))
           (define t1 (line*-render (world-to w)))
-          (define last-to-line (line-render-cursor (world-todraft w) (world-mmdraft w)))
+          (define last-to-line
+	    (line-render-cursor (world-todraft w) (world-mmdraft w)))
           (define tt (image-stack t1 last-to-line)))
     (place-image fr 1 1 (place-image tt 1 MID MT))))
 
@@ -101,22 +109,22 @@
 ;; String String -> Image
 ;; render a single display line 
 
-(define result0 (text (string-append SP "ada: hello") 11 "black"))
+(define result0 (text (string-append SP "ada: hello") FTSZ FTCL))
 
 (check-expect (line-render "ada" "hello") result0)
 
 (define (line-render addr msg)
-  (text (string-append SP addr ": " msg) 11 "black"))
+  (text (string-append SP addr ": " msg) FTSZ FTCL))
 
 ;; -----------------------------------------------------------------------------
 ;; StrFl StrFl -> Image
 ;; render a single display line, with a cursor at current 'editing' position
 
 (check-expect (line-render-cursor false false) 
-              (image-append (text SP 11 "black") CURSOR))
+              (image-append (text SP FTSZ FTCL) CURSOR))
 
 (check-expect (line-render-cursor "ada" false) 
-              (image-append (text (string-append SP "ada") 11 "black") CURSOR))
+              (image-append (text (string-append SP "ada") FTSZ FTCL) CURSOR))
 
 (check-expect (line-render-cursor "ada" "hello") 
               (image-append result0 CURSOR))
@@ -124,11 +132,11 @@
 (define (line-render-cursor addr msg)  
   (cond
     [(and (boolean? addr) (boolean? msg)) 
-     (image-append (text SP 11 "black") CURSOR)]
+     (image-append (text SP FTSZ FTCL) CURSOR)]
     [(and (string? addr) (boolean? msg)) 
-     (image-append (text (string-append SP addr) 11 "black") CURSOR)]
+     (image-append (text (string-append SP addr) FTSZ FTCL) CURSOR)]
     [else 
-     (image-append (text (string-append SP addr ": " msg) 11 "black") CURSOR)]))
+     (image-append (text (string-append SP addr ": " msg) FTSZ FTCL) CURSOR)]))
 
 ;                                                   
 ;                                                   
@@ -204,9 +212,29 @@
 (define (receive w m)
   (make-world (world-todraft w)
               (world-mmdraft w)
-              (append (world-from w) (list (make-messg (first m) (second m))))
+              (enqueue (world-from w) (first m) (second m))
               (world-to w)))
 
+;; [Listof Line] String String -> [Listof Line]
+;; generative: add the line at end of list; if small enough, okay. 
+
+;; this tests adding one too many items to the list
+(check-expect 
+ (enqueue (build-list 11 (lambda (i) (make-messg "a*" (number->string i))))
+          "ada" "hello world")
+ (build-list 11 (lambda (i) 
+                  (if (<= i 9)
+                      (make-messg "a*" (number->string (+ i 1)))
+                      (make-messg "ada" "hello world")))))
+                      
+
+(define (enqueue from* from msg)
+  (local ((define candidate (append from* (list (make-messg from msg))))
+          (define rendered  (line*-render candidate)))
+    (cond
+      [(<= (image-height rendered) (- MID 2)) candidate]
+      [else (enqueue (rest from*) from msg)])))
+    
 
 
 ;                                                                               
@@ -262,43 +290,72 @@
 (check-expect (react (make-world WIDE-STRING false '() '()) "x")
               (send WIDE-STRING "" '() '()))
 
+;; -------------------------------
+;; editing keys, not required 
+
+(check-expect (react (make-world "abc" false '() '()) "\b")
+              (make-world "ab" false '() '()))
+(check-expect (react (make-world false false '() '()) "\b")
+              (make-world false false '() '()))
+(check-expect (react (make-world "abc" "def" '() '()) "\b")
+              (make-world "abc" "de" '() '()))
+
 (define (react w key)
-  (local ((define mm (world-mmdraft w))
-	  (define to (world-todraft w))
-	  (define from* (world-from w))
-	  (define to* (world-to w)))
+  (local ((define to (world-todraft w))
+          (define mm (world-mmdraft w))
+          (define from* (world-from w))
+          (define to* (world-to w)))
     (cond
       [(key=? "\r" key) 
        (if (boolean? to) w (send to (if (boolean? mm) "" mm) from* to*))]
+      ;; -------------------------------
+      ;; editing keys; not required 
+      [(key=? "\b" key)
+       (cond
+         [(boolean? to) w]
+         [(string? mm) (world-mmdraft! w (shorten mm))]
+         ;; (boolean? mm) ^ (not (boolean? to)) => (string? mm)
+         [else (world-todraft! w (shorten to))])]       
+      ;; -------------------------------
       [(key=? ":" key)
        (cond
-	 [(boolean? to) w]
-	 [(boolean? mm) (world-mmdraft! w "")]
-	 ;; (and (string? to) (string? mm))
-	 ;; so this string belongs to the end of mm
-	 [else (world-mmdraft! w (string-append mm ":"))])]
+         [(boolean? to) w]
+         [(boolean? mm) (world-mmdraft! w "")]
+         ;; (and (string? to) (string? mm))
+         ;; so this string belongs to the end of mm
+         [else (world-mmdraft! w (string-append mm ":"))])]
       [else 
-	(cond
-	  [(and (boolean? to) (boolean? mm))
-	   ;; the key belongs into the address; it can't possibly be too wide
-	   (cond
-	     [(bad-name-key? key) w]
-	     [else (world-todraft! w key)])]
-	  [(and (string? to) (boolean? mm))
-	   ;; the key also belongs into address 
-	   (local ((define to-new (string-append to key)))
-	     (cond
-	       [(bad-name-key? key) w]
-	       [(too-wide? to-new mm) (send to "" from* to*)]
-	       [else (world-todraft! w to-new)]))]
-	  ; [(and (boolean? to) (string? mm)) (error 'react "can't happen")]
-	  [else				; (and (string? to) (string? mm))
-	    ;; the key belongs into the message text 
-	    (local ((define new-mm (string-append mm key)))
-	      (cond
-		[(bad-msg-key? key) w]
-		[(too-wide? to new-mm) (send to mm from* to*)]
-		[else (world-mmdraft! w new-mm)]))])])))
+       (cond
+         [(and (boolean? to) (boolean? mm))
+          ;; the key belongs into the address; it can't possibly be too wide
+          (cond
+            [(bad-name-key? key) w]
+            [else (world-todraft! w key)])]
+         [(and (string? to) (boolean? mm))
+          ;; the key also belongs into address 
+          (local ((define to-new (string-append to key)))
+            (cond
+              [(bad-name-key? key) w]
+              [(too-wide? to-new mm) (send to "" from* to*)]
+              [else (world-todraft! w to-new)]))]
+         ; [(and (boolean? to) (string? mm)) (error 'react "can't happen")]
+         [else				; (and (string? to) (string? mm))
+          ;; the key belongs into the message text 
+          (local ((define new-mm (string-append mm key)))
+            (cond
+              [(bad-msg-key? key) w]
+              [(too-wide? to new-mm) (send to mm from* to*)]
+              [else (world-mmdraft! w new-mm)]))])])))
+
+;; -----------------------------------------------------------------------------
+;; String -> String 
+;; take off last character 
+(check-expect (shorten "") "")
+(check-expect (shorten "abc") "ab")
+(define (shorten to)
+  (if (= (string-length to) 0)
+      to
+      (substring to 0 (- (string-length to) 1))))
 
 ;; -----------------------------------------------------------------------------
 ;; String -> Boolean 
@@ -331,9 +388,8 @@
                (list "ada" "hello")))
 
 (define (send addr msg from* to*)
-  (local ((define to*-appended (append to* (list (make-messg addr msg)))))
-    (make-package (make-world false false from* to*-appended)
-                  (list addr msg))))
+  (make-package (make-world false false from* (enqueue to* addr msg)) 
+                (list addr msg)))
 
 ;; -----------------------------------------------------------------------------
 ;; World String -> World 

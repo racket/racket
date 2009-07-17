@@ -3,4 +3,4 @@
 #reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname sam) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
 (require "shared.ss")
 
-(make-player 200 'sam)
+(make-player 200 "sam")

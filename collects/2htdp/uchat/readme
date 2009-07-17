@@ -1,9 +1,8 @@
+				Chit Chat
+				---------
 
-		Chit Chat
-		---------
-
-Design and implement a program that allows people to chat with each
- other, using short messages. 
+Design and implement a universe program that allows people to chat with
+ each other, using short messages.
 
 A participant uses a chat space, which is a window divided into two spaces:
  the top half for listing the messages received and the bottom half for
@@ -11,11 +10,12 @@ A participant uses a chat space, which is a window divided into two spaces:
  entering.
 
 The two halves display the messages in historical order, with the most
- recent message received/sent at the bottom. When the either half is full of
+ recent message received/sent at the bottom. When either half is full of
  messages, drop the least recent lines. 
 
-Each message is at most one line of text, i.e., the width of the
- window, which is 400 pixels. A line consists of two pieces: 
+Each message is at most one line of text, which is the width of the
+ window. Use 400 pixels for the width of a window, and use 11 point text
+ fonts to render lines.  A line consists of two pieces: 
 
   -- an address 
   -- a message
@@ -25,13 +25,27 @@ Each message is at most one line of text, i.e., the width of the
  of the message. The message is sent when the user hits "\r" (return) or
  when the line is too wide for the screen.
 
+Editing is just entering keys. Ignore all those key strokes that aren't
+ one-character strings and of the remaining strings ignore backspace and
+ delete. (Of course, if you are ambitious you may wish to assign meaning to
+ some of those keys so that chatters can edit a bit.) 
+
 A message whose recipient is "*" is broadcast to every current participant.
  Otherwise a message is sent to the designated recipient, if the string is
- the valid name of a current participant. 
+ the valid name of a current participant; all other messages disappear in
+ the big empty void. 
 
 Each received message is displayed like those that are sent, with an sender
  followed by ":" and the text of the message. If the message went to all
  participants, the sender's name is followed by an asterisk "*". 
+
+As you work on this project, you will encounter questions for which this
+problem statement doesn't provide enough information to make decisions. You
+must make the decisions on your own, following this procedure: 
+ -- do not opt for answers that render the project trivial 
+ -- document all non-trivial answers and the answer you chose 
+ -- provide a reason for your choice 
+Be concise. 
 
 ;; -----------------------------------------------------------------------------
 protocol:

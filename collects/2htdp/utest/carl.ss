@@ -2,5 +2,5 @@
 
 (require "shared.ss")
 
-(make-player 100 'carl)
+(make-player 100 "carl")
 )
