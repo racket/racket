@@ -98,32 +98,37 @@
                     (line*-render (rest lines))))]))
 
 ;; -----------------------------------------------------------------------------
-;; Line -> Image
+;; String String -> Image
 ;; render a single display line 
 
 (define result0 (text (string-append SP "ada: hello") 11 "black"))
+
 (check-expect (line-render "ada" "hello") result0)
 
-(check-expect (line-render false "hello") 
-              (text (string-append SP ": hello") 11 "black"))
-
-(check-expect (line-render "ada" false) 
-              (text (string-append SP "ada: ") 11 "black"))
-
 (define (line-render addr msg)
-  (local ((define addr* (if (boolean? addr) "" addr))
-          (define msg* (if (boolean? msg) "" msg)))
-    (text (string-append SP addr* ": " msg*) 11 "black")))
+  (text (string-append SP addr ": " msg) 11 "black"))
 
 ;; -----------------------------------------------------------------------------
-;; Line -> Image
-;; render a single display line 
+;; StrFl StrFl -> Image
+;; render a single display line, with a cursor at current 'editing' position
 
-(check-expect (line-render-cursor "ada" "hello") (image-append result0 CURSOR))
+(check-expect (line-render-cursor false false) 
+              (image-append (text SP 11 "black") CURSOR))
 
-(define (line-render-cursor addr msg)
-  (local ((define r (line-render addr msg)))
-    (image-append r CURSOR)))
+(check-expect (line-render-cursor "ada" false) 
+              (image-append (text (string-append SP "ada") 11 "black") CURSOR))
+
+(check-expect (line-render-cursor "ada" "hello") 
+              (image-append result0 CURSOR))
+
+(define (line-render-cursor addr msg)  
+  (cond
+    [(and (boolean? addr) (boolean? msg)) 
+     (image-append (text SP 11 "black") CURSOR)]
+    [(and (string? addr) (boolean? msg)) 
+     (image-append (text (string-append SP addr) 11 "black") CURSOR)]
+    [else 
+     (image-append (text (string-append SP addr ": " msg) 11 "black") CURSOR)]))
 
 ;                                                   
 ;                                                   
