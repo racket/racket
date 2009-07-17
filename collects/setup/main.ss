@@ -40,7 +40,7 @@
 
   (define-values (print-bootstrapping)
     (lambda ()
-      (fprintf (current-error-port) "setup-plt: bootstrapping from source...\n")))
+      (fprintf (current-output-port) "setup-plt: bootstrapping from source...\n")))
 
   (if (or (on? 'clean values)
 	  (on? 'make-zo not))
