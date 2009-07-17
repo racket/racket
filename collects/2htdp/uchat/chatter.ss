@@ -212,15 +212,30 @@
 (define (receive w m)
   (make-world (world-todraft w)
               (world-mmdraft w)
-              (enqueue (world-from w) (first m) (second m))
+              (enqueue 2 (world-from w) (first m) (second m))
               (world-to w)))
 
-;; [Listof Line] String String -> [Listof Line]
+;                                                          
+;                                                          
+;    ;;      ;                                             
+;     ;                                                    
+;     ;    ;;;   ;; ;;    ;;;           ;;;  ;;  ;; ;;  ;; 
+;     ;      ;    ;;  ;  ;   ;         ;   ;  ;   ;  ;  ;  
+;     ;      ;    ;   ;  ;;;;;          ;;;;  ;   ;   ;;   
+;     ;      ;    ;   ;  ;             ;   ;  ;   ;   ;;   
+;     ;      ;    ;   ;  ;             ;   ;  ;  ;;  ;  ;  
+;   ;;;;;  ;;;;; ;;; ;;;  ;;;;          ;;;;;  ;; ;;;;  ;; 
+;                                                          
+;                                                          
+;                                                          
+;                                                          
+
+;; Nat [Listof Line] String String -> [Listof Line]
 ;; generative: add the line at end of list; if small enough, okay. 
 
 ;; this tests adding one too many items to the list
 (check-expect 
- (enqueue (build-list 11 (lambda (i) (make-messg "a*" (number->string i))))
+ (enqueue 2 (build-list 11 (lambda (i) (make-messg "a*" (number->string i))))
           "ada" "hello world")
  (build-list 11 (lambda (i) 
                   (if (<= i 9)
@@ -228,12 +243,12 @@
                       (make-messg "ada" "hello world")))))
                       
 
-(define (enqueue from* from msg)
+(define (enqueue h from* from msg)
   (local ((define candidate (append from* (list (make-messg from msg))))
           (define rendered  (line*-render candidate)))
     (cond
-      [(<= (image-height rendered) (- MID 2)) candidate]
-      [else (enqueue (rest from*) from msg)])))
+      [(<= (image-height rendered) (- MID h)) candidate]
+      [else (enqueue h (rest from*) from msg)])))
     
 
 
@@ -388,8 +403,8 @@
                (list "ada" "hello")))
 
 (define (send addr msg from* to*)
-  (make-package (make-world false false from* (enqueue to* addr msg)) 
-                (list addr msg)))
+  (local ((define new-to* (enqueue (+ (image-height CURSOR) 2) to* addr msg)))
+    (make-package (make-world false false from* new-to*) (list addr msg))))
 
 ;; -----------------------------------------------------------------------------
 ;; World String -> World 
