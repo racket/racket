@@ -8,7 +8,8 @@
 
   (#%provide (rename map2 map)
              (rename for-each2 for-each)
-             (rename andmap2 andmap))
+             (rename andmap2 andmap)
+             (rename ormap2 ormap))
   
   ;; -------------------------------------------------------------------------
 
