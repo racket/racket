@@ -2,7 +2,7 @@
 (require
  frtime/animation
  frtime/gui
- frtime/math)
+ frtime/frlibs/math)
 
 (define radius (make-slider "Radius" 30 50 30))
 (define crank (make-slider "Crank length" 150 200 150))
