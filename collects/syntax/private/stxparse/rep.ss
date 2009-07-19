@@ -23,7 +23,10 @@
        (values stx-list? DeclEnv/c (listof SideClause/c)))]
  [parse-directive-table any/c]
  [get-decls+defs
-  (-> list?
+  (->* [list?] [boolean?]
+       (values DeclEnv/c (listof syntax?)))]
+ [decls-create-defs
+  (-> DeclEnv/c
       (values DeclEnv/c (listof syntax?)))]
  [check-literals-list
   (-> syntax?
@@ -81,12 +84,17 @@
 ;; ---
 
 ;; parse-rhs : stx boolean boolean stx -> RHS
-;; If allow-unbound? is true, then all stxclasses act as if they have no attrs.
-;; Used for pass1 (attr collection); parser requires stxclasses to be bound.
-(define (parse-rhs stx allow-unbound? splicing? ctx)
-  (define-values (rest description transparent? attributes decls defs)
-    (parse-rhs/part1 stx ctx))
-  (define patterns (parse-variants rest decls allow-unbound? splicing? ctx))
+;; If strict? is true, then referenced stxclasses must be defined, literals must be bound.
+;; Set to #f for pass1 (attr collection); parser requires stxclasses to be bound.
+(define (parse-rhs stx strict? splicing? ctx)
+  (define-values (rest description transparent? attributes auto-nested? decls defs)
+    (parse-rhs/part1 stx strict? ctx))
+  (define patterns
+    (parameterize ((stxclass-lookup-config
+                    (cond [strict? 'yes]
+                          [auto-nested? 'try]
+                          [else 'no])))
+      (parse-variants rest decls splicing? ctx)))
   (when (null? patterns)
     (wrong-syntax ctx "expected at least one variant"))
   (let ([sattrs
@@ -94,23 +102,29 @@
              (intersect-sattrss (map variant-attrs patterns)))])
     (make rhs stx sattrs transparent? description patterns defs)))
 
-(define (parse-rhs/part1 stx ctx)
+(define (parse-rhs/part1 stx strict? ctx)
   (define-values (chunks rest)
     (chunk-kw-seq/no-dups stx rhs-directive-table #:context ctx))
   (define desc0 (assq '#:description chunks))
   (define trans0 (assq '#:transparent chunks))
   (define attrs0 (assq '#:attributes chunks))
+  (define auto-nested0 (assq '#:auto-nested-attributes chunks))
   (define description (and desc0 (caddr desc0)))
   (define transparent? (and trans0 #t))
-  (define attributes (and attrs0 (caddr attrs0)))
-  (define-values (decls defs) (get-decls+defs chunks))
-  (values rest description transparent? attributes decls defs))
+  (define attributes
+    (cond [(and attrs0 auto-nested0)
+           (raise-syntax-error #f "cannot use both #:attributes and #:auto-nested-attributes"
+                               ctx (cadr auto-nested0))]
+          [attrs0 (caddr attrs0)]
+          [else #f]))
+  (define-values (decls defs) (get-decls+defs chunks strict?))
+  (values rest description transparent? attributes (and auto-nested0 #t) decls defs))
 
-(define (parse-variants rest decls allow-unbound? splicing? ctx)
+(define (parse-variants rest decls splicing? ctx)
   (define (gather-patterns stx)
     (syntax-case stx (pattern)
       [((pattern . _) . rest)
-       (cons (parse-variant (stx-car stx) allow-unbound? splicing? decls)
+       (cons (parse-variant (stx-car stx) splicing? decls)
              (gather-patterns #'rest))]
       [(bad-variant . rest)
        (raise-syntax-error #f "expected syntax-class variant" ctx #'bad-variant)]
@@ -118,22 +132,29 @@
        null]))
   (gather-patterns rest))
 
-;; get-decls+defs : chunks -> (values DeclEnv (listof syntax))
-(define (get-decls+defs chunks)
-  (decls-create-defs (get-decls chunks)))
+;; get-decls+defs : chunks boolean -> (values DeclEnv (listof syntax))
+(define (get-decls+defs chunks [strict? #t])
+  (decls-create-defs (get-decls chunks strict?)))
 
 ;; get-decls : chunks -> DeclEnv
-(define (get-decls chunks #:context [ctx #f])
+(define (get-decls chunks strict? #:context [ctx #f])
   (define lits0 (assq '#:literals chunks))
   (define litsets0 (assq '#:literal-sets chunks))
   (define convs0 (assq '#:conventions chunks))
   (define literals
     (append-lits+litsets
-     (if lits0 (caddr lits0) null)
+     (check-literals-bound (if lits0 (caddr lits0) null) strict?)
      (if litsets0 (caddr litsets0) null)
      ctx))
   (define convention-rules (if convs0 (apply append (caddr convs0)) null))
   (new-declenv literals #:conventions convention-rules))
+
+(define (check-literals-bound lits strict?)
+  (when strict?
+    (for ([p lits])
+      (unless (identifier-binding (cadr p))
+        (wrong-syntax (cadr p) "unbound literal not allowed"))))
+  lits)
 
 ;; decls-create-defs : DeclEnv -> (values DeclEnv (listof stx))
 (define (decls-create-defs decls0)
@@ -172,25 +193,24 @@
       (bound-id-table-set! seen (car lit) #t)))
   (apply append lits litsets))
 
-;; parse-variant : stx boolean boolean boolean DeclEnv -> RHS
-(define (parse-variant stx allow-unbound? splicing? decls0)
+;; parse-variant : stx boolean DeclEnv -> RHS
+(define (parse-variant stx splicing? decls0)
   (syntax-case stx (pattern)
     [(pattern p . rest)
-     (parameterize ((use-dummy-stxclasses? allow-unbound?))
-       (let-values ([(rest decls1 clauses)
-                     (parse-pattern-directives #'rest
-                                               #:decls decls0)])
-         (define-values (decls defs) (decls-create-defs decls1))
-         (unless (stx-null? rest)
-           (wrong-syntax (if (pair? rest) (car rest) rest)
-                         "unexpected terms after pattern directives"))
-         (let* ([pattern (parse-whole-pattern #'p decls splicing?)]
-                [attrs
-                 (append-iattrs
-                  (cons (pattern-attrs pattern)
-                        (side-clauses-attrss clauses)))]
-                [sattrs (iattrs->sattrs attrs)])
-           (make variant stx sattrs pattern clauses defs))))]))
+     (let-values ([(rest decls1 clauses)
+                   (parse-pattern-directives #'rest
+                                             #:decls decls0)])
+       (define-values (decls defs) (decls-create-defs decls1))
+       (unless (stx-null? rest)
+         (wrong-syntax (if (pair? rest) (car rest) rest)
+                       "unexpected terms after pattern directives"))
+       (let* ([pattern (parse-whole-pattern #'p decls splicing?)]
+              [attrs
+               (append-iattrs
+                (cons (pattern-attrs pattern)
+                      (side-clauses-attrss clauses)))]
+              [sattrs (iattrs->sattrs attrs)])
+         (make variant stx sattrs pattern clauses defs)))]))
 
 (define (side-clauses-attrss clauses)
   (for/list ([c clauses]
@@ -673,6 +693,7 @@
       [else (values decls chunks)]))
   (loop chunks decls))
 
+;; Keyword Options & Checkers
 
 ;; check-lit-string : stx -> string
 (define (check-lit-string stx)
@@ -703,7 +724,7 @@
     [_
      (wrong-syntax stx "expected attribute name with optional depth declaration")]))
 
-;; check-literals-list : syntax -> (listof id)
+;; check-literals-list : syntax -> (listof (list id id))
 (define (check-literals-list stx)
   (unless (stx-list? stx)
     (wrong-syntax stx "expected literals list"))
@@ -712,6 +733,7 @@
       (when dup (wrong-syntax dup "duplicate literal identifier")))
     lits))
 
+;; check-literal-entry : syntax -> (list id id)
 (define (check-literal-entry stx)
   (syntax-case stx ()
     [(internal external)
@@ -799,6 +821,7 @@
   (list* (list '#:description values)
          (list '#:transparent)
          (list '#:attributes check-attr-arity-list)
+         (list '#:auto-nested-attributes)
          parse-directive-table))
 
 ;; pattern-directive-table

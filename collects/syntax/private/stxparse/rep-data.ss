@@ -167,7 +167,7 @@ DeclEntry =
  [SideClause/c contract?]
 
  [make-dummy-stxclass (-> identifier? stxclass?)]
- [use-dummy-stxclasses? (parameter/c boolean?)]
+ [stxclass-lookup-config (parameter/c (symbols 'no 'try 'yes))]
 
  [new-declenv
   (->* [(listof (list/c identifier? identifier?))]
@@ -194,23 +194,26 @@ DeclEntry =
  [split-id/get-stxclass
   (-> identifier? DeclEnv/c any)])
 
-(define use-dummy-stxclasses? (make-parameter #f))
+;; stxclass-lookup-config : (parameterof (U 'no 'try 'yes))
+;;  'no means don't lookup, always use dummy (no nested attrs)
+;;  'try means lookup, but on failure use dummy (-> nested attrs only from prev.)
+;;  'yes means lookup, raise error on failure
+(define stxclass-lookup-config (make-parameter 'yes))
 
 (define (get-stxclass id)
-  (if (use-dummy-stxclasses?)
+  (define config (stxclass-lookup-config))
+  (if (eq? config 'no)
       (make-dummy-stxclass id)
-      (let* ([no-good
-              (lambda () (wrong-syntax id "not defined as syntax class"))]
-             [sc (syntax-local-value/catch id stxclass?)])
-        (unless (stxclass? sc)
-          (no-good))
-        sc)))
+      (cond [(syntax-local-value/catch id stxclass?) => values]
+            [(eq? config 'try)
+             (make-dummy-stxclass id)]
+            [else (wrong-syntax id "not defined as syntax class")])))
 
 (define (get-stxclass/check-arg-count id arg-count)
   (let* ([sc (get-stxclass id)]
          [expected-arg-count (length (stxclass-params sc))])
     (unless (or (= expected-arg-count arg-count)
-                (use-dummy-stxclasses?))
+                (memq (stxclass-lookup-config) '(try no)))
       ;; (above: don't check error if stxclass may not be defined yet)
       (wrong-syntax id
                     "too few arguments for syntax-class ~a (expected ~s)"

@@ -49,7 +49,7 @@
                  [rhss rhss])
      (let ([the-rhs
             (parameterize ((current-syntax-context stx))
-              (parse-rhs #'rhss #t splicing? stx))])
+              (parse-rhs #'rhss #f splicing? stx))])
        (with-syntax ([parser (generate-temporary
                               (format-symbol "parse-~a" (syntax-e #'name)))]
                      [attrs (rhs-attrs the-rhs)])
@@ -125,7 +125,7 @@
      (with-disappeared-uses
       (let ([rhs
              (parameterize ((current-syntax-context #'ctx))
-               (parse-rhs #'rhss #f (syntax-e #'splicing?) #'ctx))])
+               (parse-rhs #'rhss #t (syntax-e #'splicing?) #'ctx))])
         #`(let ([get-description
                  (lambda args
                    #,(or (rhs-description rhs)
@@ -164,7 +164,7 @@
 (define-syntax (debug-rhs stx)
   (syntax-case stx ()
     [(debug-rhs rhs)
-     (let ([rhs (parse-rhs #'rhs #f stx)])
+     (let ([rhs (parse-rhs #'rhs #t stx)])
        #`(quote #,rhs))]))
 
 (define-syntax (debug-pattern stx)
