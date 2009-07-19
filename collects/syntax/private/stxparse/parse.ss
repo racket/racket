@@ -145,12 +145,16 @@
            [[p . rest]
             (let-values ([(rest decls sides)
                           (parse-pattern-directives #'rest #:decls decls0)])
+              (define-values (decls2 defs2) (decls-create-defs decls))
               (with-syntax ([rest rest]
                             [fc (empty-frontier #'x)]
-                            [pattern (parse-whole-pattern #'p decls)])
-                #`(parse:S x fc pattern
-                           (convert-sides x #,sides
-                                          (clause-success () (let () . rest))))))]))
+                            [pattern (parse-whole-pattern #'p decls2)]
+                            [(local-def ...) defs2])
+                #`(let ()
+                    local-def ...
+                    (parse:S x fc pattern
+                             (convert-sides x #,sides
+                                            (clause-success () (let () . rest)))))))]))
        (unless (and (stx-list? clauses-stx) (stx-pair? clauses-stx))
          (wrong-syntax clauses-stx "expected non-empty sequence of clauses"))
        (with-syntax ([(def ...) defs]

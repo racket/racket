@@ -66,6 +66,11 @@ and the identifier expected to occur in those positions
 (@scheme[literal-id]). If the single-identifier form is used, the same
 identifier is used for both purposes.
 
+@bold{Note:} Unlike @scheme[syntax-case], @scheme[syntax-parse]
+requires all literals to have a binding. To match identifiers by their
+symbolic names, consider using the @scheme[atom-in-list] syntax class
+instead.
+
 Many literals can be declared at once via one or more @tech{literal sets},
 imported with the @scheme[#:literal-sets] option. The literal-set
 definition determines the literal identifiers to recognize and the
@@ -894,7 +899,7 @@ Match syntax satisfying the corresponding predicates.
 @defstxclass[id]{ Alias for @scheme[identifier]. }
 @defstxclass[nat]{ Alias for @scheme[exact-nonnegative-integer]. }
 
-@defform[(static-of predicate description)]{
+@defform[(static predicate description)]{
 
 Matches an identifier that is bound in the syntactic environment to
 static information (see @scheme[syntax-local-value]) satisfying the
@@ -907,20 +912,29 @@ When used outside of the dynamic extend of a macro transformer (see
 The attribute @var[value] contains the value the name is bound to.
 }
 
-@defstxclass[static]{
+@defform[(atom-in-list atoms description)]{
 
-Like @scheme[static-of], but matches any identifier bound to static
-information (see @scheme[syntax-local-value]).
+Matches a syntax object whose inner datum is @scheme[eqv?] to some
+atom in the given list.
 
-The attribute @var[value] contains the value the name is bound to.
+Use @scheme[atom-in-list] instead of a literals list when recognizing
+identifier based on their symbolic names rather than their bindings.
+
 }
+
 
 @subsection{Literal sets}
 
 @defidform[kernel-literals]{
 
-Literal set containing the identifiers for fully-expanded expression
-and definition forms (the same as provided by
-@scheme[kernel-form-identifier-list]).
+Literal set containing the identifiers for fully-expanded code. The
+set contains all of the forms listed by
+@scheme[kernel-form-identifier-list], plus @scheme[module],
+@scheme[#%plain-module-begin], @scheme[#%require], and
+@scheme[#%provide].
 
+@;{See @secref[#:doc '(lib "scribblings/reference/reference.scrbl") 'fully-expanded].}
+
+Note that the literal-set uses the names @scheme[#%plain-lambda] and
+@scheme[#%plain-app], not @scheme[lambda] and @scheme[#%app].
 }

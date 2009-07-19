@@ -12,7 +12,27 @@
                      (only-in "rep-data.ss" make-literalset))
          (for-template scheme/base
                        scheme/contract))
-(provide (all-defined-out))
+
+(provide identifier
+         boolean
+         str
+         character
+         keyword
+         number
+         integer
+         exact-integer
+         exact-nonnegative-integer
+         exact-positive-integer
+
+         id
+         nat
+         char
+
+         expr
+         static
+         atom-in-list
+
+         kernel-literals)
 
 (define-syntax-rule (define-pred-stxclass name pred)
   (define-syntax-class name #:attributes ()
@@ -38,18 +58,20 @@
 
 (define notfound (box 'notfound))
 
-(define-syntax-class (static-of pred name)
+(define-syntax-class (static pred name)
   #:attributes (value)
+  #:description name
   (pattern x:id
            #:fail-unless (syntax-transforming?)
                          "not within the extent of a macro transformer"
            #:attr value (syntax-local-value #'x (lambda () notfound))
            #:fail-when (eq? (attribute value) notfound) #f))
 
-(define-syntax-class static #:attributes (value)
+(define-syntax-class (atom-in-list atoms name)
+  #:attributes ()
+  #:description name
   (pattern x
-           #:declare x (static-of (lambda _ #t) "static")
-           #:attr value (attribute x.value)))
+           #:fail-unless (memv (syntax-e #'x) atoms) #f))
 
 (define-syntax-class struct-name
   #:description "struct name"
@@ -60,7 +82,7 @@
                 super
                 complete?)
   (pattern s
-           #:declare s (static-of "struct name" struct-info?)
+           #:declare s (static struct-info? "struct name")
            #:with info (extract-struct-info (attribute s.value))
            #:with descriptor (list-ref (attribute info) 0)
            #:with constructor (list-ref (attribute info) 1)
@@ -83,5 +105,9 @@
 
 (define-syntax kernel-literals
   (make-literalset
-   (for/list ([id (kernel-form-identifier-list)])
-     (list (syntax-e id) id))))
+   (list* (quote-syntax module)
+          (quote-syntax #%plain-module-begin)
+          (quote-syntax #%require)
+          (quote-syntax #%provide)
+          (for/list ([id (kernel-form-identifier-list)])
+            (list (syntax-e id) id)))))

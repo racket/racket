@@ -98,7 +98,7 @@
                             (update-view/existing (- (length view-history) 1)))]
                     [else 
                      ;; nope, keep running:
-                     (begin (if (eq? (step-kind new-step) 'finished-stepping)
+                     (begin (if (finished-stepping-step? new-step)
                                 (begin (message-box "Ran out of steps"
                                                     "Reached the end of evaluation before finding the kind of step you were looking for.")
                                        (update-view/existing (- (length view-history) 1)))
@@ -158,13 +158,13 @@
   ;; is this an application step?
   (define (application-step? history-entry)
     (match history-entry
-      [(struct step (text (or 'user-application 'finished-stepping) posns)) #t]
+      [(struct step (text (or 'user-application 'finished-or-error) posns)) #t]
       [else #f]))
   
   ;; is this the finished-stepping step?
   (define (finished-stepping-step? history-entry)
     (match (step-kind history-entry)
-      ['finished-stepping #t]
+      ['finished-or-error #t]
       [else #f]))
   
   ;; is this step on the selected expression?
@@ -350,11 +350,11 @@
             [(struct before-after-result (pre-exps post-exps kind pre-src post-src))
              (list (new x:stepper-text% [left-side pre-exps] [right-side post-exps]) kind (list pre-src post-src))]
             [(struct before-error-result (pre-exps err-msg pre-src))
-             (list (new x:stepper-text% [left-side pre-exps] [right-side err-msg]) #f (list pre-src))]
+             (list (new x:stepper-text% [left-side pre-exps] [right-side err-msg]) 'finished-or-error (list pre-src))]
             [(struct error-result (err-msg))
-             (list (new x:stepper-text% [left-side null] [right-side err-msg]) #f (list))]
+             (list (new x:stepper-text% [left-side null] [right-side err-msg]) 'finished-or-error (list))]
             [(struct finished-stepping ())
-             (list x:finished-text 'finished-stepping (list))])])
+             (list x:finished-text 'finished-or-error (list))])])
       (hand-off-and-block step-text step-kind posns)))
   
   ;; program-expander-prime : wrap the program-expander for a couple of reasons:

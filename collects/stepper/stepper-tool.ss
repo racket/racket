@@ -7,7 +7,7 @@
          string-constants
          (prefix-in frame: framework) 
          mrlib/switchable-button
-         "private/my-macros.ss"
+         (file "private/my-macros.ss")
          (prefix-in x: "private/mred-extensions.ss")
          "private/shared.ss"
          lang/stepper-language-interface
