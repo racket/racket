@@ -2221,8 +2221,7 @@ void *wxSchemeYield(void *sema)
     else {
       Scheme_Object *a[1];
       a[0] = (Scheme_Object *)sema;
-      scheme_sync(1, a);
-      return scheme_false;
+      return scheme_sync(1, a);
     }
   } else {
     if (is_handler && wxYield())
