@@ -43,6 +43,6 @@
 
 ;; some silly tests
 
-(launch-many-worlds 1 2 3)
+; (launch-many-worlds 1 2 3)
 
-(launch-many-worlds 1 (let loop ([n 100]) (printf "~s\n" n) (sleep 1) (loop n)) 3)
+; (launch-many-worlds 1 (let loop ([n 100]) (printf "~s\n" n) (sleep 1) (loop n)) 3)
