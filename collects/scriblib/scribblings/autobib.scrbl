@@ -137,6 +137,12 @@ parsed in the same way as by @scheme[make-bib].}
 Converts an element for an organization name to one suitable for use
 as a bib-value author.}
 
+@defproc[(other-authors) element?]{
+
+Generates an element that is suitable for use as a ``others'' author.
+When combined with another author element via @scheme[authors], the
+one created by @scheme[other-authors] renders as ``et al.''}
+
 @defproc[(editor [name name/c]) element?]{
 
 Takes an author-name element and create one that represents the editor

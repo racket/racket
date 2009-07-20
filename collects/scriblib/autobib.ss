@@ -9,7 +9,7 @@
          make-bib in-bib (rename-out [auto-bib? bib?])
          proceedings-location journal-location book-location 
          techrpt-location dissertation-location
-         author-name org-author-name authors editor)
+         author-name org-author-name authors other-authors editor)
 
 (define (autobib-style-extras)
   (let ([abs (lambda (s)
@@ -20,6 +20,7 @@
 (define-struct bib-group (ht))
 
 (define-struct (author-element element) (names cite))
+(define-struct (other-author-element author-element) ())
          
 (define (add-cite group bib-entry which)
   (hash-set! (bib-group-ht group) bib-entry #t)
@@ -47,10 +48,12 @@
                       (loop (cdr keys))))))
          ")")))
 
+(define (extract-bib-key b)
+  (author-element-names (auto-bib-author b)))
+
 (define (gen-bib tag group)
   (let* ([author<? (lambda (a b)
-                     (string<? (author-element-names (auto-bib-author a))
-                               (author-element-names (auto-bib-author b))))]
+                     (string<? (extract-bib-key a) (extract-bib-key b)))]
          [bibs (sort (hash-map (bib-group-ht group)
                                (lambda (k v) k))
                      author<?)])
@@ -108,24 +111,33 @@
     (define (generate-bibliography #:tag [tag "doc-bibliography"])
       (gen-bib tag group))))
 
+(define (ends-in-punc? e)
+  (regexp-match? #rx"[.!?,]$" (element->string e)))
+
 (define (make-bib #:title title	 	 	 	 
                   #:author [author #f]
                   #:is-book? [is-book? #f]
                   #:location [location #f]
                   #:date [date #f]
                   #:url [url #f])
-  (let* ([author (if (author-element? author)
-                     author
-                     (parse-author author))]
+  (let* ([author (cond
+                  [(not author) #f]
+                  [(author-element? author) author]
+                  [else (parse-author author)])]
          [elem (make-element
                 "bibentry"
                 (append
-                 (if author `(,@(decode-content (list author)) ". ") null)
+                 (if author 
+                     `(,author
+                       ,@(if (ends-in-punc? author)
+                             '(" ")
+                             '(". ")))
+                     null)
                  ;; (if is-book? null '(ldquo))
                  (if is-book?
                      (list (italic title))
                      (decode-content (list title)))
-                 (if (regexp-match? #rx"[.!?,]$" (element->string title))
+                 (if (ends-in-punc? title)
                      null
                      '("."))
                  ;; (if is-book? null '(rdquo))
@@ -135,7 +147,7 @@
                  (if date `(" " ,@(decode-content (list date)) ".") null)
                  (if url `(" " ,(link url (make-element 'url (list url)))) null)))])
     (make-auto-bib
-     author
+     (or author (org-author-name title))
      date 
      elem
      (element->string elem)
@@ -244,6 +256,13 @@
    org
    org))
 
+(define (other-authors)
+  (make-other-author-element
+   #f
+   (list "Alia")
+   "al."
+   "al."))
+
 (define (authors name . names)
   (let ([names (map parse-author (cons name names))])
     (make-author-element
@@ -252,8 +271,12 @@
        (if (null? (cdr names))
            (case prefix
              [(0) (list (car names))]
-             [(1) (list " and " (car names))]
-             [else (list ", and " (car names))])
+             [(1) (if (other-author-element? (car names))
+                      (list " et al.")
+                      (list " and " (car names)))]
+             [else (if (other-author-element? (car names))
+                       (list ", et al.")
+                       (list ", and " (car names)))])
            (case prefix
              [(0) (list* (car names)
                          (loop (cdr names) (add1 prefix)))]
@@ -263,9 +286,11 @@
      (string-join (map author-element-names names) " / ")
      (case (length names)
        [(1) (author-element-cite (car names))]
-       [(2) (format "~a and ~a" 
-                    (author-element-cite (car names))
-                    (author-element-cite (cadr names)))]
+       [(2) (if (other-author-element? (cadr names))
+                (format "~a et al." (author-element-cite (car names)))
+                (format "~a and ~a" 
+                        (author-element-cite (car names))
+                        (author-element-cite (cadr names))))]
        [else (format "~a et al." (author-element-cite (car names)))]))))
 
 (define (editor name)
