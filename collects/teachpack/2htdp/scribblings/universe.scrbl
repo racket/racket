@@ -572,198 +572,9 @@ A typical program does not use all three of these functions. Furthermore,
  goal. It often demands the design of many auxiliary functions. The
  collection of all these functions is your @tech{world} program. 
 
-@; -----------------------------------------------------------------------------
-@subsection{Simulating a Door: Data}
+@centerline{An extended example is available in 
+ @link["http://www.ccs.neu.edu/home/matthias/HtDP2e/"]{How to Design Worlds/2e}.}
 
-Our first and immediate goal is to represent the world as data. In this
- specific example, the world consists of our door and what changes about
- the door is whether it is locked, unlocked but closed, or open. We use
- three symbols to represent the three states:
-
-@(begin
-#reader scribble/comment-reader
-(schemeblock
-;; WorldState is one of: 
-;; -- @scheme['locked]
-;; -- @scheme['closed]
-;; -- @scheme['open]
-;; interpretation: state of door 
-))
-
-Symbols are particularly well-suited here because they directly express
- the state of the door. 
-
-Now that we have a data definition, we must also decide which computer
- interactions should model the various actions on the door.  Our pictorial
- representation of the door's states and transitions, specifically the
- arrow from @tt{open} to @tt{closed} suggests the use of a function that
- simulates time. For the other three arrows, we could use either keyboard
- events or mouse clicks or both. Our solution uses three keystrokes:
- @scheme[#\u] for unlocking the door, @scheme[#\l] for locking it, and
- @scheme[#\space] for pushing it open.  We can express these choices
- graphically by translating the above state-machine diagram from the world
- of information into the world of data.
-
-@table*[ @list[ @t{@image["door-sim.png"]} @t{@image["door-real.png"]}] ]
-
-For completeness, we have repeated the original diagram on the right so
-that you can see which computer interaction corresponds to which domain
-action. 
-
-@; -----------------------------------------------------------------------------
-@subsection{Simulating a Door: Functions}
-
-Our analysis and data definition leaves us with three functions to design: 
-
-@itemize[
-
-@item{@emph{automatic-closer}, which closes the time during one tick;}
-
-@item{@emph{door-actions}, which manipulates the time in response to
-pressing a key; and}
-
-@item{@emph{render}, which translates the current state of the door into
-a visible scene.}
-
-]
-
-Let's start with @emph{automatic-closer}. Since @emph{automatic-closer}
-acts as the @scheme[on-tick] handler, we get its contract, 
-and it is easy to refine the purpose statement, too:
-
-@(begin
-#reader scribble/comment-reader
-(schemeblock
-;; automatic-closer : WorldState -> WorldState
-;; closes an open door over the period of one tick 
-(define (automatic-closer state-of-door) ...)
-))
-
- Making up examples is trivial when the world can only be in one of three
- states: 
-
-@table*[
-	@list[@t{ given state } @t{ desired state }]
-        @list[@t{ @scheme['locked] } @t{ @scheme['locked] }]
-        @list[@t{ @scheme['closed] } @t{ @scheme['closed] }]
-        @list[@t{ @scheme['open]   } @t{ @scheme['closed] }]
-]
-
-@(begin
-#reader scribble/comment-reader
-(schemeblock
-;; automatic-closer : WorldState -> WorldState
-;; closes an open door over the period of one tick 
-
-(check-expect (automatic-closer 'locked) 'locked)
-(check-expect (automatic-closer 'closed) 'closed)
-(check-expect (automatic-closer 'open) 'closed)
-
-(define (automatic-closer state-of-door) ...)
-))
-
- The template step demands a conditional with three clauses: 
-
-@(begin
-#reader scribble/comment-reader
-(schemeblock
-(define (automatic-closer state-of-door)
-  (cond
-    [(symbol=? 'locked state-of-door) ...]
-    [(symbol=? 'closed state-of-door) ...]
-    [(symbol=? 'open state-of-door) ...]))
-))
-
- The examples basically dictate what the outcomes of the three cases must
- be:
-
-@(begin
-#reader scribble/comment-reader
-(schemeblock
-(define (automatic-closer state-of-door)
-  (cond
-    [(symbol=? 'locked state-of-door) 'locked]
-    [(symbol=? 'closed state-of-door) 'closed]
-    [(symbol=? 'open state-of-door) 'closed]))
-))
-
- Don't forget to run the example-tests. 
-
-For the remaining three arrows of the diagram, we design a function that
- reacts to the three chosen keyboard events. As mentioned, functions that
- deal with keyboard events consume both a world and a keyevent:
-
-@(begin
-#reader scribble/comment-reader
-(schemeblock
-;; door-actions : WorldState @tech{KeyEvent} -> WorldState
-;; key events simulate actions on the door 
-(define (door-actions s k) ...)
-))
-
-@table*[
-	@list[@t{ given state } @t{ given keyevent } @t{ desired state }]
- 
-@list[ @t{ @scheme['locked] } @t{ @scheme[#\u]}     @t{@scheme['closed]}]
-@list[ @t{ @scheme['closed] } @t{ @scheme[#\l]}     @t{@scheme['locked]}]
-@list[ @t{ @scheme['closed] } @t{ @scheme[#\space]} @t{@scheme['open]  }]
-@list[ @t{ @scheme['open] }   @t{  --- }             @t{@scheme['open]  }]]
-
- The examples combine what the above picture shows and the choices we made
- about mapping actions to keyboard events. 
-
-From here, it is straightforward to turn this into a complete design:
- 
-@schemeblock[
-(define (door-actions s k)
-  (cond
-    [(and (symbol=? 'locked s) (key=? #\u k)) 'closed]
-    [(and (symbol=? 'closed s) (key=? #\l k)) 'locked]
-    [(and (symbol=? 'closed s) (key=? #\space k)) 'open]
-    [else s]))
-
-(check-expect (door-actions 'locked #\u) 'closed)
-(check-expect (door-actions 'closed #\l) 'locked)
-(check-expect (door-actions 'closed #\space) 'open)
-(check-expect (door-actions 'open 'any) 'open)
-(check-expect (door-actions 'closed 'any) 'closed)
-]
-
-Last but not least we need a function that renders the current state of the
-world as a scene. For simplicity, let's just use a large text for this
-purpose:
-
-@(begin
-#reader scribble/comment-reader
-(schemeblock
-;; render : WorldState -> @tech{scene}
-;; translate the current state of the door into a large text 
-(define (render s)
-  (text (symbol->string s) 40 'red))
-
-(check-expect (render 'closed) (text "closed" 40 'red))
-))
- The function @scheme[symbol->string] translates a symbol into a string,
- which is needed because @scheme[text] can deal only with the latter, not
- the former. A look into the language documentation revealed that this
- conversion function exists, and so we use it. 
-
-Once everything is properly designed, it is time to @emph{run} the
-program. In the case of the universe teachpack, this means we must specify
-which function takes care of tick events, key events, and drawing: 
-
-@schemeblock[
-(big-bang 'locked
-          (on-tick automatic-closer)
-	  (on-key door-actions)
-	  (on-draw render))
-]
- 
-Now it's time for you to collect the pieces and run them in DrScheme to see
-whether it all works. 
-
-Exercise: Design a data representation that closes the door over two (or
-three or more) clock ticks instead of one. 
 
 @; -----------------------------------------------------------------------------
 @section[#:tag "world2"]{The World is not Enough} 
@@ -1189,6 +1000,43 @@ optional handlers:
 }
 
 ]
+
+@subsection{Exploring a Universe}
+
+In order to explore the workings of a universe, it is necessary to launch a
+ server and several world programs on one and the same computer. We
+ recommend launching one server out of one DrScheme tab and as many worlds
+ as necessary out of second lab. For the latter, the teachpack provides a
+ special form. 
+
+@defform[(launch-many-worlds expression ...)]{
+ evaluates all sub-expressions in parallel. Typically each sub-expression
+ is an application of a function that evaluates a @scheme[big-bang]
+ expression. When all worlds have stopped, the expression returns all final
+ worlds in order.}
+
+Once you have designed a world program, add a function definition
+ concerning @scheme[big-bang] to the end of the tab: 
+@(begin
+#reader scribble/comment-reader
+(schemeblock
+;; String -> World 
+(define (main n)
+  (big-bang ... (name n) ...))
+))
+ Then in DrScheme's Interactions area, use @scheme[launch-with-many-worlds]
+ to create several distinctively named worlds: 
+@(begin
+#reader scribble/comment-reader
+(schemeblock
+> (launch-with-many-worlds (main "matthew") (main "kathi") (main "h3") )
+10
+25
+33
+))
+ The three worlds can then interact via a server. When all of them have
+ stopped, they produce the final states, here @scheme[10], @scheme[25], and
+ @scheme[33]. 
 
 @; -----------------------------------------------------------------------------
 @section[#:tag "universe-sample"]{A First Sample Universe} 
