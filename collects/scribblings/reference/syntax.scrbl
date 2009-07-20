@@ -613,11 +613,11 @@ corresponds to the default @tech{module name resolver}.
  @examples[
  (code:comment @#,t{@filepath{main.ss} in package @filepath{farm} by @filepath{mcdonald}:})
  (eval:alts (require (planet mcdonald/farm)) (void))
- (code:comment @#,t{@filepath{main.ss} in version >= 2.0 of package @filepath{farm} by @filepath{mcdonald}:})
+ (code:comment @#,t{@filepath{main.ss} in version >= 2.0 of @filepath{farm} by @filepath{mcdonald}:})
  (eval:alts (require (planet mcdonald/farm:2)) (void))
- (code:comment @#,t{@filepath{main.ss} in version >= 2.5 of package @filepath{farm} by @filepath{mcdonald}:})
+ (code:comment @#,t{@filepath{main.ss} in version >= 2.5 of @filepath{farm} by @filepath{mcdonald}:})
  (eval:alts (require (planet mcdonald/farm:2:5)) (void))
- (code:comment @#,t{@filepath{duck.ss} in version >= 2.5 of package @filepath{farm} by @filepath{mcdonald}:})
+ (code:comment @#,t{@filepath{duck.ss} in version >= 2.5 of @filepath{farm} by @filepath{mcdonald}:})
  (eval:alts (require (planet mcdonald/farm:2:5/duck)) (void))
  ]}
 
