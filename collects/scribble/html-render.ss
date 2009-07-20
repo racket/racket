@@ -837,21 +837,21 @@
                 (append (render-part (car secs) ri)
                         (loop (add1 pos) (cdr secs))))))))
 
-    (define/private (render-flow* p part ri start-inline? special-last?)
+    (define/private (render-flow* p part ri starting-item? special-last?)
       ;; Wrap each table with <p>, except for a trailing table
       ;;  when `special-last?' is #t
-      (let loop ([f (flow-paragraphs p)] [inline? start-inline?])
+      (let loop ([f (flow-paragraphs p)] [starting-item? starting-item?])
         (cond
           [(null? f) null]
           [(and (table? (car f))
                 (or (not special-last?) (not (null? (cdr f)))))
-           (cons `(p ,@(render-block (car f) part ri inline?))
+           (cons `(p ,@(render-block (car f) part ri starting-item?))
                  (loop (cdr f) #f))]
-          [else (append (render-block (car f) part ri inline?)
+          [else (append (render-block (car f) part ri starting-item?)
                         (loop (cdr f) #f))])))
 
-    (define/override (render-flow p part ri start-inline?)
-      (render-flow* p part ri start-inline? #t))
+    (define/override (render-flow p part ri starting-item?)
+      (render-flow* p part ri starting-item? #t))
 
     (define/private (do-render-paragraph p part ri flatten-unstyled?)
       ;; HACK: for the search, we need to be able to render a `div'
@@ -877,11 +877,11 @@
     (define/override (render-paragraph p part ri)
       (do-render-paragraph p part ri #f))
 
-    (define/override (render-intrapara-block p part ri first? last?)
+    (define/override (render-intrapara-block p part ri first? last? starting-item?)
       `((div ([class "SIntrapara"])
              ,@(cond
                 [(paragraph? p) (do-render-paragraph p part ri #t)]
-                [else (render-block p part ri #t)]))))
+                [else (render-block p part ri starting-item?)]))))
 
     (define/override (render-element e part ri)
       (cond
@@ -1067,7 +1067,7 @@
                      ,@sz))))]
           [else (render*)])))
 
-    (define/override (render-table t part ri need-inline?)
+    (define/override (render-table t part ri starting-item?)
       (define raw-style (flatten-style (table-style t)))
       (define t-style (if (with-attributes? raw-style)
                           (with-attributes-style raw-style)
@@ -1124,7 +1124,7 @@
                                 (render-flow d part ri #f)))
                      (loop (cdr ds) (cdr as) (cdr vas) (cdr sts) #f)))]))))
       `((table ([cellspacing "0"]
-                ,@(if need-inline?
+                ,@(if starting-item?
                     '([style "display: inline-table; vertical-align: text-top;"])
                     null)
                 ,@(case t-style

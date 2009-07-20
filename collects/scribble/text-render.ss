@@ -43,13 +43,13 @@
               (render-part (car secs) ht)
               (loop (add1 pos) (cdr secs))))))
 
-      (define/override (render-flow f part ht start-inline?)
+      (define/override (render-flow f part ht starting-item?)
         (let ([f (flow-paragraphs f)])
           (if (null? f)
               null
               (apply
                append
-               (render-block (car f) part ht start-inline?)
+               (render-block (car f) part ht starting-item?)
                (map (lambda (p)
                       (newline) (newline)
                       (render-block p part ht #f))

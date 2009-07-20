@@ -130,11 +130,11 @@
           (when (string? style) (printf "}"))))
       null)
 
-    (define/override (render-intrapara-block p part ri first? last?)
+    (define/override (render-intrapara-block p part ri first? last? starting-item?)
       (unless first?
         (printf "\n\n\\noindent "))
       (begin0
-       (super render-intrapara-block p part ri first? last?)))
+       (super render-intrapara-block p part ri first? last? starting-item?)))
 
     (define/override (render-element e part ri)
       (when (render-element? e)
@@ -243,17 +243,17 @@
                 [else (format "x~x" (char->integer c))]))
             (string->list (format "~s" s)))))
 
-    (define/override (render-flow p part ri start-inline?)
+    (define/override (render-flow p part ri starting-item?)
       (if (null? (flow-paragraphs p))
           null
           (begin
-            (render-block (car (flow-paragraphs p)) part ri start-inline?)
+            (render-block (car (flow-paragraphs p)) part ri starting-item?)
             (for ([b (in-list (cdr (flow-paragraphs p)))])
               (printf "\n\n")
               (render-block b part ri #f))
             null)))
 
-    (define/override (render-table t part ri inline-table?)
+    (define/override (render-table t part ri starting-item?)
       (let* ([boxed? (eq? 'boxed (table-style t))]
              [index? (eq? 'index (table-style t))]
              [tableform
@@ -267,30 +267,36 @@
              [row-styles (cdr (or (and (list? (table-style t))
                                        (assoc 'row-styles (table-style t)))
                                   (cons #f (map (lambda (x) #f) flowss))))]
-             [inline?
-              (and (not boxed?) 
-                   (not index?)
-                   (ormap (lambda (rs) (equal? rs "inferencetop")) row-styles)
-                   (or (null? (table-flowss t))
-                       (= 1 (length (car (table-flowss t)))))
-                   (let ([m (current-table-mode)])
-                     (and m
-                          (equal? "bigtabular" (car m))
-                          (= 1 (length (car (table-flowss (cadr m))))))))]
-             [boxline "{\\setlength{\\unitlength}{\\linewidth}\\begin{picture}(1,0)\\put(0,0){\\line(1,0){1}}\\end{picture}}"]
              [twidth (if (null? (table-flowss t))
                          1
                          (length (car (table-flowss t))))]
              [single-column? (and (= 1 twidth)
-                                  (not (table-style t))
-                                  (not (current-table-mode)))])
+                                  (or (not (table-style t))
+                                      (string? (table-style t)))
+                                  (not (current-table-mode)))]
+             [inline?
+              (and (not single-column?)
+                   (not boxed?) 
+                   (not index?)
+                   (ormap (lambda (rs) (equal? rs "inferencetop")) row-styles)
+                   (= 1 twidth)
+                   (let ([m (current-table-mode)])
+                     (and m
+                          (equal? "bigtabular" (car m))
+                          (= 1 (length (car (table-flowss (cadr m))))))))]
+             [boxline "{\\setlength{\\unitlength}{\\linewidth}\\begin{picture}(1,0)\\put(0,0){\\line(1,0){1}}\\end{picture}}"])
         (if single-column?
-            (do-render-blockquote 
-             (make-blockquote "SingleColumn"
-                              (apply append (map flow-paragraphs (map car (table-flowss t)))))
-             part 
-             ri
-             #t)
+            (begin
+              (when (string? (table-style t))
+                (printf "\\begin{~a}" (table-style t)))
+              (do-render-blockquote 
+               (make-blockquote "SingleColumn"
+                                (apply append (map flow-paragraphs (map car (table-flowss t)))))
+               part 
+               ri
+               #t)
+              (when (string? (table-style t))
+                (printf "\\end{~a}" (table-style t))))
             (unless (or (null? flowss) (null? (car flowss)))
               (parameterize ([current-table-mode
                               (if inline? (current-table-mode) (list tableform t))]
@@ -302,7 +308,7 @@
                  [single-column? (printf "\\begin{tabbing}\n")]
                  [else
                   (printf "~a~a\\begin{~a}~a{@{~a}~a}\n~a"
-                          (if (and inline-table? (equal? tableform "bigtabular"))
+                          (if (and starting-item? (equal? tableform "bigtabular"))
                               "\\bigtableinlinecorrect"
                               "")
                           (if (string? (table-style t))
@@ -435,7 +441,8 @@
         (if (regexp-match #rx"^[\\]" kind)
             (printf "~a{" kind)
             (printf "\\begin{~a}" kind))
-        (parameterize ([current-table-mode (if single-column?
+        (parameterize ([current-table-mode (if (or single-column?
+                                                   (not (current-table-mode)))
                                                (current-table-mode)
                                                (list "blockquote" t))])
           (render-flow (make-flow (blockquote-paragraphs t)) part ri #f))
@@ -447,14 +454,13 @@
     (define/override (render-blockquote t part ri)
       (do-render-blockquote t part ri #f))
 
-    (define/override (render-compound-paragraph t part ri)
+    (define/override (render-compound-paragraph t part ri starting-item?)
       (let ([kind (compound-paragraph-style t)])
         (when kind
           (if (regexp-match #rx"^[\\]" kind)
               (printf "~a{" kind)
               (printf "\\begin{~a}" kind)))
-        (parameterize ([current-table-mode (list "blockquote" t)])
-          (super render-compound-paragraph t part ri))
+        (super render-compound-paragraph t part ri starting-item?)
         (when kind
           (if (regexp-match #rx"^[\\]" kind)
               (printf "}")

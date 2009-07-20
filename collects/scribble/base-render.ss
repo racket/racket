@@ -425,28 +425,29 @@
     (define/public (render-paragraph p part ri)
       (render-content (paragraph-content p) part ri))
 
-    (define/public (render-compound-paragraph p part ri)
+    (define/public (render-compound-paragraph p part ri starting-item?)
       (apply append (let loop ([l (compound-paragraph-blocks p)]
                                [first? #t])
                       (cond
                        [(null? l) null]
                        [else (cons
-                              (render-intrapara-block (car l) part ri first? (null? (cdr l)))
+                              (render-intrapara-block (car l) part ri first? (null? (cdr l))
+                                                      (and first? starting-item?))
                               (loop (cdr l) #f))]))))
 
-    (define/public (render-flow p part ri start-inline?)
+    (define/public (render-flow p part ri starting-item?)
       (if (null? (flow-paragraphs p))
           null
           (append
            (render-block (car (flow-paragraphs p))
-                         part ri start-inline?)
+                         part ri starting-item?)
            (apply append
                   (map (lambda (p)
                          (render-block p part ri #f))
                        (cdr (flow-paragraphs p)))))))
 
-    (define/public (render-intrapara-block p part ri first? last?)
-      (render-block p part ri first?))
+    (define/public (render-intrapara-block p part ri first? last? starting-item?)
+      (render-block p part ri starting-item?))
 
     (define/public (render-block p part ri inline?)
       (cond
@@ -455,7 +456,7 @@
                       (render-table p part ri inline?))]
         [(itemization? p) (render-itemization p part ri)]
         [(blockquote? p) (render-blockquote p part ri)]
-        [(compound-paragraph? p) (render-compound-paragraph p part ri)]
+        [(compound-paragraph? p) (render-compound-paragraph p part ri inline?)]
         [(delayed-block? p) 
          (render-block (delayed-block-blocks p ri) part ri inline?)]
         [else (render-paragraph p part ri)]))
