@@ -1151,11 +1151,11 @@
           ,@(append-map (lambda (i) (render-block i part ri #f))
                         (blockquote-paragraphs t)))))
 
-    (define/override (render-compound-paragraph t part ri)
+    (define/override (render-compound-paragraph t part ri starting-item?)
       `((p ,(if (string? (compound-paragraph-style t))
                 `([class ,(regexp-replace #rx"^[\\]" (compound-paragraph-style t) "")])
                 `())
-           ,@(super render-compound-paragraph t part ri))))
+           ,@(super render-compound-paragraph t part ri starting-item?))))
 
     (define/override (render-itemization t part ri)
       (let ([style-str (and (styled-itemization? t)
