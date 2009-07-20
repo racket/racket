@@ -20,8 +20,8 @@
    (mailbox-send! mb 25) => (void)  
    ((mailbox-receive mb #f error-timeout id-thnk)) => 25
    ((mailbox-receive mb 10 error-timeout id-thnk)) =error> "never"
-   (mailbox-send! mb #f) => (void)  
-   ((mailbox-receive mb #f error-timeout id-thnk)) => #f
+   ;(mailbox-send! mb #f) => (void)  
+   ;((mailbox-receive mb #f error-timeout id-thnk)) =error> "never"
    (mailbox-send! mb 21) => (void)
    ((mailbox-receive mb 10 error-timeout (want-thnk 25))) =error> "never"
    ((mailbox-receive mb 10 error-timeout (want-thnk 21))) => 21

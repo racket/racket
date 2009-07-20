@@ -732,7 +732,7 @@
                                                   [total-height 0.0])
                                           (send med get-extent total-width total-height)
 
-                                        (let-values ([(vnum-scrolls scroll-offset)
+                                        (let-values ([(vnum-scrolls -scroll-offset)
                                                       (if (or (zero? h)
                                                               (and (not scroll-to-last?)
                                                                    (h . >= . total-height)))
@@ -744,7 +744,7 @@
                                                                     (values vnum-scrolls 1)
                                                                     (let ([start (- (send med find-scroll-line (+ h 1)) 1)])
                                                                       (values (- vnum-scrolls start)
-                                                                              (+ scroll-offset start)))))
+                                                                              (+ 1 start)))))
                                                               (let ([top (max 0
                                                                               (- (->long (- total-height
                                                                                             (if scroll-to-last?
@@ -757,6 +757,8 @@
                                                                               (- nsl 1)
                                                                               vnum-scrolls)
                                                                           0)))))])
+
+                                          (set! scroll-offset -scroll-offset)
 
                                           (let-values ([(num-scrolls vspp)
                                                         (if (positive? vnum-scrolls)

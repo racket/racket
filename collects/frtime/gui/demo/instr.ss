@@ -1,3 +1,4 @@
+#lang frtime
 (require frtime/gui/mixin-macros frtime/gui/aux-mixin-macros)
 (require mzlib/class) ; require class utilities
 (require mred) ; require base mred library
