@@ -6,6 +6,7 @@
 
 (define last-mixin
   (mixin (start-stop<%>) ()
+    ;; to comunicate between stop! and last
     (field [end:ch  (make-channel)])
 
     ;; X -> Void
@@ -15,7 +16,7 @@
     
     ;; -> World
     (define/public (last) 
-      (define result (yield end:ch))
+      (define result (sync #;yield end:ch)) ;; bug? 
       (if (exn? result) (raise result) result))
     
     (field [dr:cust (current-custodian)])
@@ -24,7 +25,9 @@
     ;; send x to last method
     (define/private (send-to-last x)
       (parameterize ((current-custodian dr:cust))
-        (thread (lambda () (channel-put end:ch x)))))
+        (thread 
+         (lambda ()
+           (channel-put end:ch x)))))
     
     (super-new)))
     

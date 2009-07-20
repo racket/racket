@@ -170,8 +170,9 @@
                                        kwds Spec)))
                          (list (syntax-e (car co)) ((cadr co) (cdr x))))
                        spec)])
-       #`(let ([o (new (if #,rec? aworld% world%) [world0 w]  #,@args)])
-           (send o last)))]))
+       #`(parameterize ([current-eventspace (make-eventspace)])
+           (let ([o (new (if #,rec? aworld% world%) [world0 w]  #,@args)])
+             (send o last))))]))
 
 
 ;                                                                 
@@ -320,5 +321,6 @@
          [(not (memq 'on-msg domain))
           (raise-syntax-error #f "missing on-msg clause" stx)]
          [else ; (and (memq #'on-new domain) (memq #'on-msg domain))
-          #`(send (new universe% [universe0 u] #,@args) last)]))]))
+          #`(parameterize ([current-eventspace (make-eventspace)])
+              (send (new universe% [universe0 u] #,@args) last))]))]))
 

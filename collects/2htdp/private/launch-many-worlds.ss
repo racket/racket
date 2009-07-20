@@ -19,8 +19,7 @@
          [ch (make-channel)]
          [pu (curry channel-put ch)]
          [th (map (lambda (th i)
-                    (parameterize ([current-custodian c*]
-                                   [current-eventspace (make-eventspace)])
+                    (parameterize ([current-custodian c*])
                       (rec t
                         (thread
                          (lambda ()
