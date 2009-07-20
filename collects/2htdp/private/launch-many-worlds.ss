@@ -19,7 +19,8 @@
          [ch (make-channel)]
          [pu (curry channel-put ch)]
          [th (map (lambda (th i)
-                    (parameterize ([current-custodian c*])
+                    (parameterize ([current-custodian c*]
+                                   [current-eventspace (make-eventspace)])
                       (rec t
                         (thread
                          (lambda ()
@@ -43,6 +44,6 @@
 
 ;; some silly tests
 
-(launch-many-worlds 1 2 3)
+; (launch-many-worlds 1 2 3)
 
-(launch-many-worlds 1 (let loop ([n 100]) (printf "~s\n" n) (sleep 1) (loop n)) 3)
+; (launch-many-worlds 1 (let loop ([n 100]) (printf "~s\n" n) (sleep 1) (loop n)) 3)
