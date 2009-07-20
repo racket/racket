@@ -79,10 +79,10 @@ better memory performance, but it also allows multiple results.}
 A @tech{flat contract} that accepts no values.}
 
 
-@defproc[(or/c [contract (or/c contract? (any/c . -> . any/c))] ...)
+@defproc[(or/c [contract contract?] ...)
          contract?]{
 
-Takes any number of predicates and higher-order contracts and returns
+Takes any number of contracts and returns
 a contract that accepts any value that any one of the contracts
 accepts, individually.
 
