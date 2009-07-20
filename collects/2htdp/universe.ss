@@ -11,11 +11,19 @@
          "private/image.ss"
          "private/world.ss"
          "private/universe.ss"
+	 "private/launch-many-worlds.ss"
          htdp/error
          (rename-in lang/prim (first-order->higher-order f2h))
          (only-in mzlib/etc evcase))
 
 (provide (all-from-out "private/image.ss"))
+
+(provide
+  launch-many-worlds
+  ;; (launch-many-worlds e1 ... e2)
+  ;; run expressions e1 through e2 in parallel,
+  ;; produce all values
+)
 
 (provide
  sexp?  ;; Any -> Boolean 
