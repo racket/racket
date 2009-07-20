@@ -33,7 +33,7 @@
 (define question-answer caddr)
 (define question-explanation cadddr)
 
-(define quiz (load *data-file*))
+(define quiz (with-input-from-file *data-file* read))
 (define quiz-intro (car quiz))
 (define all-questions (cadr quiz))
 
