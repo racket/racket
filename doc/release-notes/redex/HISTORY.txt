@@ -1,7 +1,15 @@
 v4.2.1
 
-  * improved 'where' conditions in metafunctions and reduction-relations
-    so that they work with Redex's full pattern language.
+  * improved 'where' conditions in metafunctions and
+    reduction-relations so that they work with Redex's full pattern
+    language. 
+
+    This is a backwards incompatible change. In old versions,
+    variables used in a where clause were independent of the pattern
+    language. Now, if the variable in a where clause is a literal in
+    the grammar, the result of the where clause must be that
+    literal. Similarly, if the variable is a non-terminal, the result
+    must match that non-terminal.
 
   * added 'define-relation' 
 
