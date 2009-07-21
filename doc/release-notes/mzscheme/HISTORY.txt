@@ -1,4 +1,4 @@
-Version 4.2.1, August 2009
+Version 4.2.1, July 2009
 Added string->unreadable-symbol and symbol-interned?
 Added syntax-local-lift-provide
 Added syntax-local-lift-values-expression

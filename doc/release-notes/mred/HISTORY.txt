@@ -1,4 +1,4 @@
-Version 4.2.1, August 2009
+Version 4.2.1, July 2009
 
 Minor bug fixes
 
