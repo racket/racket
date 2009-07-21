@@ -5,7 +5,7 @@
 
 @title{@bold{Guide}: PLT Scheme}
 
-@author["Matthew Flatt" "Robert Bruce Findler" "PLT Scheme"]
+@author["Matthew Flatt" "Robert Bruce Findler" "PLT"]
 
 This guide is intended for programmers who are new to Scheme, new to PLT
 Scheme, or new to some part of PLT Scheme. It assumes

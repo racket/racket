@@ -17,7 +17,7 @@
 
 @title{@bold{Reference}: PLT Scheme}
 
-@author["Matthew Flatt" "PLT Scheme"]
+@author["Matthew Flatt" "PLT"]
 
 This manual defines the core PLT Scheme language and describes its
 most prominent libraries. The companion manual @|Guide| provides a
