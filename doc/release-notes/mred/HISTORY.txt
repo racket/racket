@@ -1,3 +1,9 @@
+Version 4.2.1, August 2009
+
+Minor bug fixes
+
+----------------------------------------------------------------------
+
 Version 4.2, May 2009
 
 Ported the editor classes (text%, snip%, editor-canvas%, etc.) from
