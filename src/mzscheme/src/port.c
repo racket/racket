@@ -6814,6 +6814,8 @@ static int MyPipe(int *ph, int near_index) {
 # define GC_write_barrier(x) /* empty */
 #endif
 
+static int need_to_check_children;
+
 #ifdef MZ_XFORM
 START_XFORM_SKIP;
 #endif
@@ -6832,6 +6834,7 @@ void scheme_block_child_signals(int block)
 
 static void child_done(int ingored)
 {
+  need_to_check_children = 1;
   scheme_signal_received();
 
 # ifdef SIGSET_NEEDS_REINSTALL
@@ -6893,6 +6896,14 @@ static void check_child_done()
         }
       }
     } while (result > 0);
+  }
+}
+
+void scheme_check_child_done(void)
+{
+  if (need_to_check_children) {
+    need_to_check_children = 0;
+    check_child_done();
   }
 }
 

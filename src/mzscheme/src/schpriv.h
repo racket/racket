@@ -414,6 +414,7 @@ void scheme_start_itimer_thread(long usec);
 
 #ifdef UNIX_PROCESSES
 void scheme_block_child_signals(int block);
+void scheme_check_child_done(void);
 #endif
 
 Scheme_Object **scheme_alloc_runstack(long len);

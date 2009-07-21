@@ -4088,6 +4088,11 @@ void scheme_thread_block(float sleep_time)
   /* Check scheduled_kills early and often. */
   check_scheduled_kills();
 
+#ifdef UNIX_PROCESSES
+  /* Reap zombie processes: */
+  scheme_check_child_done();
+#endif
+
   shrink_cust_box_array();
 
   if (scheme_active_but_sleeping)

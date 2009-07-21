@@ -73,11 +73,7 @@ The @scheme[subprocess] procedure returns four values:
 
 @bold{Important:} All ports returned from @scheme[subprocess] must be
 explicitly closed with @scheme[close-input-port] or
-@scheme[close-output-port]. Similarly, waiting on the subprocess value
-(using @scheme[subprocess-wait] or @scheme[sync]) ensures that the
-operating system can release the subprocess; for example,
-exiting without waiting on a subprocess under Unix risks leaving the
-subprocess as a zombie.
+@scheme[close-output-port].
 
 The returned ports are @tech{file-stream ports} (see
 @secref["file-ports"]), and they are placed into the management of
