@@ -1,4 +1,10 @@
 ------------------------------------------------------------------------
+Version 4.2.1				  [Wed Jul 22 11:15:54 EDT 2009]
+
+* universe API: added launch-many-worlds, fixed numerous small bugs
+  concerning symbol and char elimination
+
+------------------------------------------------------------------------
 Version 4.2				  [Thu May 21 08:51:15 EDT 2009]
 
 * the universe API has changed. It no longer uses chars or symbols
