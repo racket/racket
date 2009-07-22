@@ -15,6 +15,8 @@
 #include "wx_clipb.h"
 #include "wx_mf.h"
 
+static WORD PaletteSize (VOID FAR * pv);
+
 Bool wxClipboardIsOpen = FALSE;
 
 Bool wxOpenClipboard(void)
@@ -153,32 +155,70 @@ wxObject *wxGetClipboardData(int dataFormat, long *len)
       HBITMAP old;
       HBITMAP hNewBitmap;
       HBITMAP old1;
-      
-      hBitmap = (HBITMAP)GetClipboardData(CF_BITMAP);
-      if (!hBitmap)
-        return NULL;
+      HANDLE bits;
+      BITMAPINFO *bmi;
+
+      /* I think we should be able to use CF_BITMAP always, but
+         it doesn't work right under Windows XP with a particular 
+	 image created by copying in Firefox. So, we do things the
+         hard way. */
+      bits = GetClipboardData(CF_DIB);
+      if (bits) {
+        bmi = (BITMAPINFO *)GlobalLock(bits);
+	
+	hBitmap = NULL;
+	hdcSrc = NULL;
+        old = NULL;
+	
+	bm.bmBitsPixel = bmi->bmiHeader.biBitCount;
+	bm.bmWidth = bmi->bmiHeader.biWidth;
+	bm.bmHeight = bmi->bmiHeader.biHeight;
+      } else {
+	hBitmap = (HBITMAP)GetClipboardData(CF_BITMAP);
+        if (!hBitmap)
+          return NULL;
+
+        hdcSrc = CreateCompatibleDC(NULL);
+
+        old = (HBITMAP)::SelectObject(hdcSrc, hBitmap);
+        GetObject(hBitmap, sizeof(BITMAP), (LPSTR)&bm);
+
+	bmi = NULL;
+      }
 
       hdcMem = CreateCompatibleDC(NULL);
-      hdcSrc = CreateCompatibleDC(NULL);
-
-      old = (HBITMAP)::SelectObject(hdcSrc, hBitmap);
-      GetObject(hBitmap, sizeof(BITMAP), (LPSTR)&bm);
-
-      hNewBitmap = CreateBitmapIndirect(&bm);
-
+      if (bm.bmBitsPixel == 1)
+        hNewBitmap = CreateBitmapIndirect(&bm);
+      else
+	hNewBitmap = CreateCompatibleBitmap(GetDC(NULL), bm.bmWidth, bm.bmHeight);
       if (!hNewBitmap)
         return NULL;
         
       old1 = (HBITMAP)SelectObject(hdcMem, hNewBitmap);
-      BitBlt(hdcMem, 0, 0, bm.bmWidth, bm.bmHeight,
-             hdcSrc, 0, 0, SRCCOPY);
-
+  	    
+      if (bits) {
+	int psize;
+	psize = PaletteSize(bmi);
+        StretchDIBits(hdcMem, 0, 0, bm.bmWidth, bm.bmHeight,
+                      0, 0, bm.bmWidth, bm.bmHeight,
+		      (char *)bmi XFORM_OK_PLUS bmi->bmiHeader.biSize XFORM_OK_PLUS psize, 
+		      bmi, DIB_RGB_COLORS, SRCCOPY);
+      } else {
+        BitBlt(hdcMem, 0, 0, bm.bmWidth, bm.bmHeight,
+               hdcSrc, 0, 0, SRCCOPY);
+      }
+      
       // Select new bitmap out of memory DC
       SelectObject(hdcMem, old1);
-
+      
       // Clean up
-      SelectObject(hdcSrc, old);
-      DeleteDC(hdcSrc);
+	  if (bits) {
+		GlobalUnlock(bits);
+	  } else {
+        SelectObject(hdcSrc, old);
+        DeleteDC(hdcSrc);
+	  }
+
       DeleteDC(hdcMem);
 
       // Create a new wxBitmap
@@ -461,3 +501,80 @@ char *wxClipboard::GetClipboardData(char *format, long *length, long time)
     return receivedString;
   }
 }
+
+/**********************************************************************/
+
+/* Copied from MS example: */
+
+/****************************************************************************
+ *                                                                          *
+ *  FUNCTION   : DibNumColors(VOID FAR * pv)                                *
+ *                                                                          *
+ *  PURPOSE    : Determines the number of colors in the DIB by looking at   *
+ *               the BitCount filed in the info block.                      *
+ *                                                                          *
+ *  RETURNS    : The number of colors in the DIB.                           *
+ *                                                                          *
+ ****************************************************************************/
+
+static WORD DibNumColors (VOID FAR * pv)
+{
+    INT                 bits;
+    LPBITMAPINFOHEADER  lpbi;
+    LPBITMAPCOREHEADER  lpbc;
+
+    lpbi = ((LPBITMAPINFOHEADER)pv);
+    lpbc = ((LPBITMAPCOREHEADER)pv);
+
+    /*  With the BITMAPINFO format headers, the size of the palette
+     *  is in biClrUsed, whereas in the BITMAPCORE - style headers, it
+     *  is dependent on the bits per pixel ( = 2 raised to the power of
+     *  bits/pixel).
+     */
+    if (lpbi->biSize != sizeof(BITMAPCOREHEADER)){
+        if (lpbi->biClrUsed != 0)
+            return (WORD)lpbi->biClrUsed;
+        bits = lpbi->biBitCount;
+    }
+    else
+        bits = lpbc->bcBitCount;
+
+    switch (bits){
+        case 1:
+                return 2;
+        case 4:
+                return 16;
+        case 8:
+                return 256;
+        default:
+                /* A 24 bitcount DIB has no color table */
+                return 0;
+    }
+}
+
+/****************************************************************************
+ *                                                                          *
+ *  FUNCTION   :  PaletteSize(VOID FAR * pv)                                *
+ *                                                                          *
+ *  PURPOSE    :  Calculates the palette size in bytes. If the info. block  *
+ *                is of the BITMAPCOREHEADER type, the number of colors is  *
+ *                multiplied by 3 to give the palette size, otherwise the   *
+ *                number of colors is multiplied by 4.                                                          *
+ *                                                                          *
+ *  RETURNS    :  Palette size in number of bytes.                          *
+ *                                                                          *
+ ****************************************************************************/
+static WORD PaletteSize (VOID FAR * pv)
+{
+    LPBITMAPINFOHEADER lpbi;
+    WORD               NumColors;
+
+    lpbi      = (LPBITMAPINFOHEADER)pv;
+    NumColors = DibNumColors(lpbi);
+
+    if (lpbi->biSize == sizeof(BITMAPCOREHEADER))
+        return (WORD)(NumColors * sizeof(RGBTRIPLE));
+    else
+        return (WORD)(NumColors * sizeof(RGBQUAD));
+}
+
