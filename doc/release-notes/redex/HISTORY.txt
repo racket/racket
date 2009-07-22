@@ -24,6 +24,10 @@ v4.2.1
   * added #:x-spacing and #:y-spacing parameters to traces and
     traces/ps
 
+  * changed the grammar for 'side-condition' clauses
+    from (side-condition scheme-expression ... )
+    to (side-condition scheme-expression)
+
 v4.2
 
   * minor bug fixes
