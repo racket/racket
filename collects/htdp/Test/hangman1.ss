@@ -47,13 +47,17 @@
         (make-word '_ '_ '_))
 
 ;; check errors 
+#;
 (check-error (hangman make-word) "hangman: primitive operator requires 3 arguments")
 
+#;
 (check-error (hangman (make-word 'a 'b 'c) reveal draw-next-part)
              "hangman: primitive operator hangman expects a defined procedure name (usually `make-word') in this position")
 
+#;
 (check-error (hangman make-word (reveal (make-word 'd 'e 'r) (make-word '_ '_ '_) 'd) draw-next-part)
               "hangman: primitive operator hangman expects a defined procedure name (usually `reveal') in this position")
 
+#;
 (check-error (hangman make-word reveal 100)
              "hangman: primitive operator hangman expects a defined procedure name (usually `draw-next') in this position")
