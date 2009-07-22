@@ -19,17 +19,13 @@ source locations if you do so.
 The following are the basic checks SchemeUnit provides.  You
 can create your own checks using @scheme[define-check].
 
-@defproc[(check (op (-> any any (or/c #t #f)))
+@defproc[(check (op (-> any any any))
                 (v1 any)
                 (v2 any)
 		(message string? ""))
-         #t]{
+         any]{
 
-The simplest check.  Succeeds if @scheme[op] applied to
-@scheme[v1] and @scheme[v2] is not @scheme[#f], otherwise
-raises an exception of type @scheme[exn:test:check].  The
-optional @scheme[message] is included in the output if the
-check fails.}
+The simplest check.  Succeeds if @scheme[op] applied to @scheme[v1] and @scheme[v2] is not @scheme[#f], otherwise raises an exception of type @scheme[exn:test:check].  The optional @scheme[message] is included in the output if the check fails. If the check succeeds, the value returned by @scheme[op] is the value returned by the check.}
 
 For example, the following check succeeds:
 
@@ -58,8 +54,8 @@ For example, the following checks all fail:
   (check-not-equal? (list 1) (list 1) "equal?")
 ]
 
-@defproc[(check-pred (pred (-> any (or/c #t #f))) (v any) (message string? ""))
-        #t]{Checks that @scheme[pred] returns @scheme[#t] when applied to @scheme[v].  The optional @scheme[message] is included in the output if the check fails.}
+@defproc[(check-pred (pred (-> any any)) (v any) (message string? ""))
+        #t]{Checks that @scheme[pred] returns a value that is not @scheme[#f] when applied to @scheme[v].  The optional @scheme[message] is included in the output if the check fails. The value returned by a successful check is the value returned by @scheme[pred].}
 
 Here's an example that passes and an example that fails:
 
