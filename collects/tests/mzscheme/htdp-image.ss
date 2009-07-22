@@ -1232,7 +1232,7 @@
 
 (define (tp-exn/num re)
   (lambda (exn)
-    (and (tp-exn? exn)
+    (and (exn:fail? exn)
          (regexp-match re (exn-message exn)))))
 
 ;; tests that the expression
@@ -1246,7 +1246,7 @@
      (syntax 
       (err/rt-test (name . args)                   
                    (lambda (exn)
-                     (and (tp-exn? exn)
+                     (and (exn:fail? exn)
                           (let* ([msg (exn-message exn)]
                                  [beg (format "~a:" 'name)]
                                  [len (string-length beg)])
