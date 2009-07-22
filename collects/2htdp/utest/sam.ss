@@ -2,5 +2,6 @@
 ;; about the language level of this file in a form that our tools can easily process.
 #reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname sam) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
 (require "shared.ss")
+(require 2htdp/universe)
 
-(make-player 200 "sam")
+(launch-many-worlds (make-player 200 "sam") (make-player 100 "carl"))

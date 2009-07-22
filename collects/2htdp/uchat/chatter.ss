@@ -483,3 +483,5 @@
             (check-with world?)
             (name n)
             (register LOCALHOST)))
+
+; (launch-many-worlds (main "carl") (main "sam"))
