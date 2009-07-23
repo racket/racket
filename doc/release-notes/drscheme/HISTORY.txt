@@ -1,4 +1,16 @@
 ------------------------------
+        Version 4.2.1
+------------------------------
+
+  . (Eli) The module browser used to treat any non-string require as
+    "libraries", where they can all be hidden or not.  Now this does
+    not include requires from the same "package", where a package is
+    defined as a toplevel collection or a planet collection.  This
+    means that requiring a file from your own collection is just as
+    convenient to do (wrt the module browser) using the normal
+    symbolic form.
+
+------------------------------
         Version 4.2
 ------------------------------
 
