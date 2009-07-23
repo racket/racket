@@ -276,14 +276,14 @@ otherwise.}
 
 @mz-examples[(abs 1.0) (abs -1)]}
 
-@defproc[(max [x real?] ...+) boolean?]{ Returns the largest of the
+@defproc[(max [x real?] ...+) real?]{ Returns the largest of the
  @scheme[x]s, or @scheme[+nan.0] if any @scheme[x] is @scheme[+nan.0].
  If any @scheme[x] is inexact, the result is coerced to inexact.
 
 @mz-examples[(max 1 3 2) (max 1 3 2.0)]}
 
 
-@defproc[(min [x real?] ...+) boolean?]{ Returns the smallest of the
+@defproc[(min [x real?] ...+) real?]{ Returns the smallest of the
  @scheme[x]s, or @scheme[+nan.0] if any @scheme[x] is @scheme[+nan.0].
  If any @scheme[x] is inexact, the result is coerced to inexact.
 

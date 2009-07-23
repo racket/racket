@@ -2355,5 +2355,5 @@ the Chat Noir game going.
                             (world-height board-size))
                    (on-key change)
                    (on-mouse clack)
-                   (name '|Chat Noir|))
+                   (name "Chat Noir"))
          (void))]
