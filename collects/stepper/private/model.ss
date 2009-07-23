@@ -222,9 +222,7 @@
                                  mark-list returned-value-list render-settings)
                                 #f))
                           (r:step-was-app? mark-list)
-                          (make-posn-info
-                           (syntax-position (mark-source (car mark-list)))
-                           (syntax-span (mark-source (car mark-list)))))))]
+                          (mark-list->posn-info mark-list))))]
                 
                 [(result-exp-break result-value-break)
                  (let ([reconstruct 
@@ -278,9 +276,7 @@
                        (make-before-after-result
                         left-exps right-exps step-kind 
                         held-posn-info
-                        (make-posn-info
-                         (syntax-position (mark-source (car mark-list)))
-                         (syntax-span (mark-source (car mark-list)))))))]))]
+                        (mark-list->posn-info mark-list))))]))]
                 
                 [(double-break)
                  ;; a double-break occurs at the beginning of a let's
@@ -296,9 +292,7 @@
                                         (maybe-lift (car reconstruct-result) #f))]
                         [right-side (map (lambda (exp) (unwind exp render-settings))
                                          (maybe-lift (cadr reconstruct-result) #t))])
-                   (let ([posn-info (make-posn-info
-                                     (syntax-position (mark-source (car mark-list)))
-                                     (syntax-span (mark-source (car mark-list))))])
+                   (let ([posn-info (mark-list->posn-info mark-list)])
                      (receive-result
                       (make-before-after-result
                        (append new-finished-list left-side)
@@ -366,3 +360,12 @@
 ; skipped-step is used to indicate that the "before" step was skipped.
 (define-struct skipped-step ())
 (define the-skipped-step (make-skipped-step))
+
+;; produce a posn-info structure based on the information in a mark-list
+(define (mark-list->posn-info mark-list)
+  (let* ([first-mark-source (mark-source (car mark-list))]
+         [posn (syntax-position first-mark-source)]
+         [span (syntax-span first-mark-source)])
+    (unless posn
+      (error 'mark-list->posn-info "expected a syntax object with a syntax-position, got: ~v" (syntax->datum first-mark-source)))    
+    (make-posn-info posn span)))
