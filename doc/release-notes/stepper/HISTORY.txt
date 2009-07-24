@@ -1,6 +1,10 @@
 Stepper
 -------
 
+Changes for v4.1.1:
+
+Minor bug fixes.
+
 Changes for v4.2:
 
 It's now possible to jump to the evaluation of a selected expression in
