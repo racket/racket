@@ -361,11 +361,12 @@
 (define-struct skipped-step ())
 (define the-skipped-step (make-skipped-step))
 
-;; produce a posn-info structure based on the information in a mark-list
+;; produce a posn-info structure or false based on the information in a mark-list
+;; mark-list->posn-info : (listof mark) -> (or/c posn-info? false?)
 (define (mark-list->posn-info mark-list)
   (let* ([first-mark-source (mark-source (car mark-list))]
          [posn (syntax-position first-mark-source)]
          [span (syntax-span first-mark-source)])
-    (unless posn
-      (error 'mark-list->posn-info "expected a syntax object with a syntax-position, got: ~v" (syntax->datum first-mark-source)))    
-    (make-posn-info posn span)))
+    (if posn
+        (make-posn-info posn span)
+        #f)))

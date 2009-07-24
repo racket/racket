@@ -68,7 +68,7 @@
   ;; possible values: #f, or a predicate on steps.
   (define stepper-is-waiting? (lambda (x) #t))
   
-  ;; hand-off-and-block : (-> text%? boolean? void?)
+  ;; hand-off-and-block : (-> text%? any (listof (or/c posn-info? false?)) void?)
   ;; hand-off-and-block generates a new semaphore, hands off a thunk to
   ;; drscheme's eventspace, and blocks on the new semaphore.  The thunk
   ;; adds the text% to the waiting queue, and checks to see if the
@@ -194,7 +194,8 @@
        (begin
             ;; each step has its own semaphore, so releasing one twice is
             ;; no problem.
-            (semaphore-post release-for-next-step)
+            (when release-for-next-step
+              (semaphore-post release-for-next-step))
             (when stepper-is-waiting?
               (error 'try-to-get-view
                      "try-to-get-view should not be reachable when already waiting for new step"))
@@ -327,7 +328,9 @@
   ;; en/dis-able-buttons : set enable & disable the stepper buttons,
   ;; based on view-controller state
   (define (en/dis-able-buttons)
-    (let* ([can-go-back? (and view (> view 0))])
+     ;; let's just leave all the buttons enabled...
+     (void)
+     #;(let* ([can-go-back? (and view (> view 0))])
       (send previous-button enable can-go-back?)
       (send previous-application-button enable can-go-back?)
       (send next-button
