@@ -78,7 +78,7 @@ only the line drawings of the first turtles argument.}
 
 @section[#:tag "value-examples"]{Examples}
 
-@defmodule[graphics/value-turtle-examples]
+@defmodule[graphics/value-turtles-examples]
 
 The @schememodname[graphics/value-turtle-examples] library is similar
 to @schememodname[graphics/turtle-examples], but using
