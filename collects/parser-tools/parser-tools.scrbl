@@ -216,8 +216,10 @@ are a few examples, using @scheme[:] prefixed SRE syntax:
        no @scheme[(special)] rule is present, the lexer returns
        @scheme[(void)].}]
 
-    End-of-files, specials, special-comments and special-errors can
-    never be part of a lexeme with surrounding characters.
+    End-of-files, specials, special-comments and special-errors cannot
+    be parsed via a rule using an ordinary regular expression
+    (but dropping down and manipulating the port to handle them
+     is possible in some situations).
 
     Since the lexer gets its source information from the port, use
     @scheme[port-count-lines!] to enable the tracking of line and

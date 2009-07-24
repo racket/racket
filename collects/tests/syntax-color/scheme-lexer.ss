@@ -1,4 +1,6 @@
-;; Not tested:
+#lang scheme
+
+;; Not well tested:
 ;;  Non-character input data (i.e. specials)
 ;;  The R5RS part of numbers
 ;; 
@@ -40,22 +42,35 @@
      (cons (make-string (- end start) (char kind))
            (lex f p)))))
       
-(define (test input expected . num-toks)
-  (let* ((l (lex scheme-lexer (open-input-string input)))
+(define (test input expected [e-n (chunks (string->list expected))])
+  (let* ([p (input->port input)]
+         (l (lex scheme-lexer p))
          (s (apply string-append l)))
+    (close-input-port p)
     (unless (string=? s expected)
-      (printf "input   : ~a~n" input)
+      (printf "input   : ~s~n" input)
       (printf "output  : ~s~n" s)
       (printf "expected: ~s~n~n" expected))
-    (let ((e-n
-           (cond
-             ((not (null? num-toks)) (car num-toks))
-             (else (chunks (string->list expected)))))
-          (a-n (length l)))
+    (let ((a-n (length l)))
       (unless (= e-n a-n)
         (printf "input   : ~a~n" input)
         (printf "expected: ~a tokens~n" e-n)
         (printf "got     : ~a tokens~n~n" a-n)))))
+
+(define (input->port input) 
+  (let-values ([(in out) (make-pipe-with-specials)])
+    (thread
+     (λ ()
+       (let loop ([input input])
+         (cond
+           [(list? input) 
+            (for-each loop input)]
+           [(string? input)
+            (display input out)]
+           [else
+            (write-special input out)]))
+       (close-output-port out)))
+    in))
       
 ;; Delimiters
 (test " " " ")
@@ -400,11 +415,14 @@ end-string
       
       
 ;; Comments
+(test ";ab" ";;;")
 (test #<<end-string
 1 a; asd\
 1 ;a
 end-string
     "c i;;;;;; c ;;")
+(test '(";a" 1 "b") ";;;;" 1)  ;; a special comment
+(test '(";a" 1 "b\n1" 1) ";;;; cn" 4)
 
 (test "#||#" ";;;;")
 (test "#|#||#|#" ";;;;;;;;")

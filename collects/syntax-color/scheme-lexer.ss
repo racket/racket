@@ -235,6 +235,18 @@
         (else
          (read-char i)
          (cons next (special-read-line i))))))
+  
+  (define (read-line/skip-over-specials i)
+    (let loop ()
+      (let ((next (peek-char-or-special i)))
+        (cond
+          ((or (eq? next #\newline) (eof-object? next))
+           null)
+          (else
+           (read-char-or-special i)
+           (if (char? next)
+               (cons next (loop))
+               (loop)))))))
           
   (define (get-here-string start-pos i)
     (let* ((ender (list->string (special-read-line i)))
@@ -273,6 +285,11 @@
       (ret lexeme 'constant #f start-pos end-pos)]
      [keyword (ret lexeme 'parenthesis #f start-pos end-pos)]
      [str (ret lexeme 'string #f start-pos end-pos)]
+     [";"
+      (values (apply string (read-line/skip-over-specials input-port)) 'comment #f 
+              (position-offset start-pos)
+              (get-offset input-port))]
+     #;
      [line-comment
       (ret lexeme 'comment #f start-pos end-pos)]
      ["#;"
