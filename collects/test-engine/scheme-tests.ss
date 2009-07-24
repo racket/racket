@@ -54,39 +54,69 @@
                        (syntax-column stx)
                        (syntax-position stx)
                        (syntax-span stx)))))
-  #`(define #,bogus-name
-      #,(stepper-syntax-property
-         #`(let ([test-info (namespace-variable-value
-                             'test~object #f builder (current-namespace))])
-             (when test-info
-               (insert-test test-info
-                            (lambda ()
-                              #,(with-stepper-syntax-properties
-                                 (['stepper-hint hint-tag]
-                                  ['stepper-hide-reduction #t]
-                                  ['stepper-use-val-as-final #t])
-                                 (quasisyntax/loc stx
-                                   (#,checker-proc-stx
-                                    #,(with-stepper-syntax-properties
-                                          (['stepper-hide-reduction #t])
+  (if (eq? 'module (syntax-local-context))
+      #`(define #,bogus-name
+          #,(stepper-syntax-property
+             #`(let ([test-info (namespace-variable-value
+                                 'test~object #f builder (current-namespace))])
+                 (when test-info
+                   (insert-test test-info
+                                (lambda ()
+                                  #,(with-stepper-syntax-properties
+                                     (['stepper-hint hint-tag]
+                                      ['stepper-hide-reduction #t]
+                                      ['stepper-use-val-as-final #t])
+                                     (quasisyntax/loc stx
+                                       (#,checker-proc-stx
+                                        #,(with-stepper-syntax-properties
+                                           (['stepper-hide-reduction #t])
+                                           #`(car 
+                                              #,(with-stepper-syntax-properties
+                                                 (['stepper-hide-reduction #t])
+                                                 #`(list
+                                                    (lambda () #,test-expr)
+                                                    #,(syntax/loc stx (void))))))
+                                        #,@embedded-stxes
+                                        #,src-info
+                                        #,(with-stepper-syntax-properties
+                                           (['stepper-no-lifting-info #t]
+                                            ['stepper-hide-reduction #t])
+                                           #'test-info))))))))
+             'stepper-skipto
+             (append skipto/third ;; let
+                     skipto/third skipto/second ;; unless (it expands into a begin)
+                     skipto/cdr skipto/third ;; application of insert-test
+                     '(syntax-e cdr cdr syntax-e car) ;; lambda
+                     )))
+      #`(begin
+          (let ([test-info (namespace-variable-value
+                            'test~object #f builder (current-namespace))])
+            (when test-info
+              (begin
+                (send test-info reset-info)
+                (insert-test test-info
+                             (lambda ()
+                               #,(with-stepper-syntax-properties
+                                  (['stepper-hint hint-tag]
+                                   ['stepper-hide-reduction #t]
+                                   ['stepper-use-val-as-final #t])
+                                  (quasisyntax/loc stx
+                                    (#,checker-proc-stx
+                                     #,(with-stepper-syntax-properties
+                                        (['stepper-hide-reduction #t])
                                         #`(car 
                                            #,(with-stepper-syntax-properties
-                                                 (['stepper-hide-reduction #t])
-                                               #`(list
-                                                  (lambda () #,test-expr)
-                                                  #,(syntax/loc stx (void))))))
-                                    #,@embedded-stxes
-                                    #,src-info
-                                    #,(with-stepper-syntax-properties
-                                       (['stepper-no-lifting-info #t]
-                                        ['stepper-hide-reduction #t])
-                                       #'test-info))))))))
-         'stepper-skipto
-         (append skipto/third ;; let
-                 skipto/third skipto/second ;; unless (it expands into a begin)
-                 skipto/cdr skipto/third ;; application of insert-test
-                 '(syntax-e cdr cdr syntax-e car) ;; lambda
-                 ))))
+                                              (['stepper-hide-reduction #t])
+                                              #`(list
+                                                 (lambda () #,test-expr)
+                                                 #,(syntax/loc stx (void))))))
+                                     #,@embedded-stxes
+                                     #,src-info
+                                     #,(with-stepper-syntax-properties
+                                        (['stepper-no-lifting-info #t]
+                                         ['stepper-hide-reduction #t])
+                                        #'test-info)))))))))
+          (test))))
 
 (define-for-syntax (check-context?)
   (let ([c (syntax-local-context)])
@@ -244,6 +274,9 @@
     (define/public (get-info)
       (unless test-info (send this setup-info 'check-require))
       test-info)
+    (define/public (reset-info)
+      (set! tests null)
+      #;(send this setup-info 'check-require))
 
     (define/augment (run)
       (inner (void) run)
