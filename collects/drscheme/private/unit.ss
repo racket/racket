@@ -149,14 +149,15 @@ module browser threading seems wrong.
                         [name (and l (send l get-language-name))])
                    (unless (string=? str "")
                      (add-sep)
-                     (make-object menu-item%
-                       (gui-utils:format-literal-label
-                        (string-constant search-help-desk-for) 
-                        (shorten-str 
-                         str 
-                         (- 200 (string-length (string-constant search-help-desk-for)))))
-                       menu
-                       (λ x (help-desk:help-desk str (list ctxt name))))))))
+                     (let ([short-str (shorten-str str 50)])
+                       (make-object menu-item%
+                         (gui-utils:format-literal-label
+                          (string-constant search-help-desk-for) 
+                          (if (equal? short-str str)
+                              str
+                              (string-append short-str "...")))
+                         menu
+                         (λ x (help-desk:help-desk str (list ctxt name)))))))))
            
            (when (is-a? text editor:basic<%>)
              (let-values ([(pos text) (send text get-pos/text event)])
