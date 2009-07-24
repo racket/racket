@@ -32,6 +32,8 @@ namespace.
                  (let ([id expr])
                    id))))]))
 
+(provide define-teach)
+
 (define-teach beginner list?
   (lambda (x)
     (or (null? x) (pair? x))))
@@ -161,6 +163,11 @@ namespace.
     (check-second 'member a b)
     (not (boolean? (member a b)))))
 
+(define-teach beginner remove
+  (lambda (a b)
+    (check-second 'remove a b)
+    (remove a b)))
+
 (define-teach beginner cons 
   (lambda (a b)
     (check-second 'cons a b)
@@ -249,21 +256,23 @@ namespace.
     (check-three a b c 'equal~? values 'any values 'any positive-real? 'non-negative-real)
     (tequal? a b c)))
 
-(define (qcheck quicksort fmt-str . x)
+(define (hocheck name fmt-str . x)
   (raise
    (make-exn:fail:contract
-    (string-append (format "~a : " quicksort) (apply format fmt-str x))
+    (string-append (format "~a : " name) (apply format fmt-str x))
     (current-continuation-marks))))
+
+(provide hocheck)
 
 (define (do-sort l cmp? name)
   (unless (beginner-list? l) 
-    (qcheck name "first argument must be of type <list>, given ~e" l))
+    (hocheck name "first argument must be of type <list>, given ~e" l))
   (unless (and (procedure? cmp?) (procedure-arity-includes? cmp? 2))
-    (qcheck name "second argument must be a <procedure> that accepts two arguments, given ~e" cmp?))
+    (hocheck name "second argument must be a <procedure> that accepts two arguments, given ~e" cmp?))
   (sort l (lambda (x y) 
             (define r (cmp? x y))
             (unless (boolean? r)
-              (qcheck name "the results of the procedure argument must be of type <boolean>, produced ~e" r))
+              (hocheck name "the results of the procedure argument must be of type <boolean>, produced ~e" r))
             r)))
 
 (define-teach intermediate quicksort
@@ -276,29 +285,29 @@ namespace.
 (define-teach intermediate foldr
   (lambda (f e l)
     (unless (and (procedure? f) (procedure-arity-includes? f 2))
-      (qcheck 'foldr "first argument must be a <procedure> that accepts two arguments, given ~e" f))
+      (hocheck 'foldr "first argument must be a <procedure> that accepts two arguments, given ~e" f))
     (unless (beginner-list? l) 
-      (qcheck 'foldr "third argument must be of type <list>, given ~e" l))
+      (hocheck 'foldr "third argument must be of type <list>, given ~e" l))
     (foldr f e l)))
 
 (define-teach intermediate foldl
   (lambda (f e l)
     (unless (and (procedure? f) (procedure-arity-includes? f 2))
-      (qcheck 'foldl "first argument must be a <procedure> that accepts two arguments, given ~e" f))
+      (hocheck 'foldl "first argument must be a <procedure> that accepts two arguments, given ~e" f))
     (unless (beginner-list? l) 
-      (qcheck 'foldl "third argument must be of type <list>, given ~e" l))
+      (hocheck 'foldl "third argument must be of type <list>, given ~e" l))
     (foldl f e l)))
 
 (define-teach intermediate build-string
   (lambda (n f)
     (unless (and (procedure? f) (procedure-arity-includes? f 1))
-      (qcheck 'build-string "second argument must be a <procedure> that accepts one argument, given ~e" f))
+      (hocheck 'build-string "second argument must be a <procedure> that accepts one argument, given ~e" f))
     (unless (and (number? n) (integer? n) (>= n 0))
-      (qcheck 'build-string "first argument must be of type <natural number>, given ~e" n))
+      (hocheck 'build-string "first argument must be of type <natural number>, given ~e" n))
     (build-string n (lambda (i)
                       (define r (f i))
                       (unless (char? r)
-                        (qcheck 'build-string
+                        (hocheck 'build-string
                                 "second argument must be a <procedure> that produces a <char>, given ~e, which produced ~e for ~e" f r i))
                       r))))
 
@@ -329,6 +338,7 @@ namespace.
  beginner-sqr
  beginner-list?
  beginner-member
+ beginner-remove
  beginner-cons
  beginner-list*
  beginner-append

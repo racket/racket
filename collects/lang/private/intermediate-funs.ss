@@ -1,5 +1,5 @@
 (module intermediate-funs scheme/base
-  (require "teachprims.ss"
+  (require "teachprims.ss" "and-or-map.ss"
 	   mzlib/etc
 	   scheme/list
 	   syntax/docprovide
@@ -36,10 +36,10 @@
 	       "to construct a list from all items on a list in an order according to a predicate")
     ((intermediate-sort sort) ((listof X) (X X -> boolean) -> (listof X))
 	       "to construct a list from all items on a list in an order according to a predicate")
-    (andmap ((X -> boolean) (listof X) -> boolean)
-	    "(andmap p (list x-1 ... x-n)) = (and (p x-1) (and ... (p x-n)))")
-    (ormap ((X -> boolean) (listof X) -> boolean)
-	   "(ormap p (list x-1 ... x-n)) = (or (p x-1) (or ... (p x-n)))")
+    ((intermediate-andmap andmap) ((X -> boolean) (listof X) -> boolean)
+	    "(andmap p (list x-1 ... x-n)) = (and (p x-1) ... (p x-n))")
+    ((intermediate-ormap ormap) ((X -> boolean) (listof X) -> boolean)
+	   "(ormap p (list x-1 ... x-n)) = (or (p x-1) ... (p x-n))")
 
     (argmin ((X -> real) (listof X) -> X)
             "to find the (first) element of the list that minimizes the output of the function")
