@@ -959,9 +959,12 @@ TODO
         (send context enable-evaluation))
       
       (define/augment (submit-to-port? key)
-        (and prompt-position
-             (only-whitespace-after-insertion-point)
-             (submit-predicate this prompt-position)))
+        (or (eq? (send key get-key-code) 'numpad-enter)
+            (send key get-control-down)
+            (send key get-alt-down)
+            (and prompt-position
+                 (only-whitespace-after-insertion-point)
+                 (submit-predicate this prompt-position))))
       
       (define/private (only-whitespace-after-insertion-point)
         (let ([start (get-start-position)]
