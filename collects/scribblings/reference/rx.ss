@@ -1,5 +1,5 @@
 (module rx scheme/base
-  (require scribble/struct
+  (require scribble/core
            scribble/manual
            scribble/bnf)
 
@@ -240,13 +240,15 @@ Category ::= Ll | Lu | Lt | Lm        Unicode general category                  
        lines))
 
     (make-table
-     '((alignment left left center left left left))
+     (make-style #f (list (make-table-columns (map (lambda (s)
+                                                     (make-style #f (list s)))
+                                                   '(left left center left left left)))))
      (map (lambda (line)
-            (cons (make-flow (list (make-paragraph (list (hspace 1)))))
+            (cons (make-paragraph plain (list (hspace 1)))
                   (map (lambda (i)
                          (if (eq? i 'cont)
                              i
-                             (make-flow (list (make-paragraph (list i))))))
+                             (make-paragraph plain (list i))))
                        line)))
           table-lines)))
 
@@ -398,35 +400,32 @@ Class : <1,1>
                                    (list (list line))
                                    (cons (cons line (car r)) (cdr r))))))))])
       (make-table
-       '((alignment center))
+       (make-style #f (list (make-table-columns (list (make-style #f '(center))))))
        (insert
-       (list (make-flow (list (make-paragraph (list spacer)))))
+       (list (make-paragraph plain (list spacer)))
        (map (lambda (line)
              (list
-              (make-flow
-               (list
                 (make-table
-                 #f
+                 plain
                  (list
                   (insert
-                  (make-flow (list (make-paragraph (list (hspace 3)))))
+                  (make-paragraph plain (list (hspace 3)))
                   (map (lambda (line)
-                         (make-flow
-                          (list
                            (call-with-values (lambda ()
                                                (apply values (regexp-split " iff " line)))
                              (case-lambda
                               [(bottom top)
                                (make-table
-                                '((alignment center)
-                                  (row-styles "inferencetop" "inferencebottom"))
+                                (make-style #f
+                                 (list
+                                  (make-table-cells (list (list (make-style "inferencetop" '(center)))
+                                                          (list (make-style "inferencebottom" '(center)))))))
                                 (list
-                                 (list (make-flow (list (make-paragraph (append (list spacer) (fixup-type top) (list spacer))))))
-                                 (list (make-flow (list (make-paragraph (append (list spacer) (fixup-type bottom) (list spacer))))))))]
+                                 (list (make-paragraph plain (append (list spacer) (fixup-type top) (list spacer))))
+                                 (list (make-paragraph plain (append (list spacer) (fixup-type bottom) (list spacer))))))]
                               [(single)
-                               (make-paragraph
-                                 (fixup-type line))])))))
-                       line))))))))
+                               (make-paragraph plain (fixup-type line))])))
+                       line))))))
             lines)))))
 
   (provide type-table))

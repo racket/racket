@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "struct.ss"
+(require "core.ss"
          "base-render.ss"
          "xref.ss"
          scheme/cmdline
@@ -64,7 +64,7 @@
    #:multi
    [("++extra") file "add given file"
     (current-extra-files (cons file (current-extra-files)))]
-   [("++style") file "add given .css/.tex file"
+   [("++style") file "add given .css/.tex file after others"
     (current-style-extra-files (cons file (current-style-extra-files)))]
    [("++info-in") file "load format-specific link information from <file>"
     (current-info-input-files

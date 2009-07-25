@@ -1,5 +1,9 @@
 
-.SBibliography p {
+.AutoBibliography p {
   padding-left: 1em; 
   text-indent: -1em;
+}
+
+.AutoBibliography td {
+  vertical-align: text-top;
 }

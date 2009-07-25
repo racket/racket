@@ -1,21 +1,29 @@
 #lang at-exp scheme/base
 (require scribble/manual
-         scribble/struct
+         scribble/core
          scribble/decode
-         scheme/string)
+         scribble/html-variants
+         scribble/latex-variants
+         scheme/string
+         setup/main-collects)
 
-(provide autobib-style-extras
-         define-cite
+(provide define-cite
          make-bib in-bib (rename-out [auto-bib? bib?])
          proceedings-location journal-location book-location 
          techrpt-location dissertation-location
          author-name org-author-name authors other-authors editor)
 
-(define (autobib-style-extras)
+(define autobib-style-extras
   (let ([abs (lambda (s)
-               (build-path (collection-path "scriblib") s))])
-    `((css ,(abs "autobib.css")) (tex ,(abs "autobib.tex")))))
+               (path->main-collects-relative
+                (build-path (collection-path "scriblib") s)))])
+    (list
+     (make-css-addition (abs "autobib.css"))
+     (make-tex-addition (abs "autobib.tex")))))
 
+(define bib-table-style (make-style "AutoBibliography" autobib-style-extras)) 
+(define bibentry-style (make-style "Autobibentry" autobib-style-extras))
+                                    
 (define-struct auto-bib (author date entry-element key specific))
 (define-struct bib-group (ht))
 
@@ -57,48 +65,46 @@
          [bibs (sort (hash-map (bib-group-ht group)
                                (lambda (k v) k))
                      author<?)])
-    (make-unnumbered-part
+    (make-part
      #f
      `((part ,tag))
      '("Bibliography")
-     '()
+     (make-style #f '(unnumbered))
      null
-     (make-flow
-      (list
-       (make-table
-        "SBibliography"
-        (map (lambda (k)
-               (list
-                (make-flow
-                 (list
-                  (make-paragraph
-                   (list
-                    (make-collect-element
-                     #f
-                     (list (make-target-element
-                            #f
-                            (list (auto-bib-entry-element k))
-                            `(autobib ,(auto-bib-key k))))
-                     (lambda (ci)
-                       (collect-put! ci 
-                                     `(autobib-cite ,(auto-bib-key k))
-                                     (make-element
-                                      #f
-                                      (list
-                                       (author-element-cite (auto-bib-author k))
-                                       " "
-                                       (auto-bib-date k))))
-                       (collect-put! ci 
-                                     `(autobib-inline ,(auto-bib-key k))
-                                     (make-element
-                                      #f
-                                      (list
-                                       (author-element-cite (auto-bib-author k))
-                                       'nbsp
-                                       "("
-                                       (auto-bib-date k)
-                                       ")")))))))))))
-             bibs))))
+     (list
+      (make-table
+       bib-table-style
+       (map (lambda (k)
+              (list
+               (make-paragraph
+                plain
+                (list
+                 (make-collect-element
+                  #f
+                  (list (make-target-element
+                         #f
+                         (list (auto-bib-entry-element k))
+                         `(autobib ,(auto-bib-key k))))
+                  (lambda (ci)
+                    (collect-put! ci 
+                                  `(autobib-cite ,(auto-bib-key k))
+                                  (make-element
+                                   #f
+                                   (list
+                                    (author-element-cite (auto-bib-author k))
+                                    " "
+                                    (auto-bib-date k))))
+                    (collect-put! ci 
+                                  `(autobib-inline ,(auto-bib-key k))
+                                  (make-element
+                                   #f
+                                   (list
+                                    (author-element-cite (auto-bib-author k))
+                                    'nbsp
+                                    "("
+                                    (auto-bib-date k)
+                                    ")")))))))))
+            bibs)))
      null)))
 
 (define-syntax-rule (define-cite ~cite citet generate-bibliography)
@@ -112,7 +118,7 @@
       (gen-bib tag group))))
 
 (define (ends-in-punc? e)
-  (regexp-match? #rx"[.!?,]$" (element->string e)))
+  (regexp-match? #rx"[.!?,]$" (content->string e)))
 
 (define (make-bib #:title title	 	 	 	 
                   #:author [author #f]
@@ -125,7 +131,7 @@
                   [(author-element? author) author]
                   [else (parse-author author)])]
          [elem (make-element
-                "bibentry"
+                bibentry-style
                 (append
                  (if author 
                      `(,author
@@ -144,13 +150,13 @@
                  (if location
                      `(" " ,@(decode-content (list location)) ,(if date "," "."))
                      null)
-                 (if date `(" " ,@(decode-content (list date)) ".") null)
+                 (if date `(" " ,@(decode-content (list (to-string date))) ".") null)
                  (if url `(" " ,(link url (make-element 'url (list url)))) null)))])
     (make-auto-bib
      (or author (org-author-name title))
-     date 
+     (to-string date)
      elem
-     (element->string elem)
+     (content->string elem)
      "")))
 
 (define (in-bib bib where)
@@ -164,7 +170,7 @@
 (define (parse-author a)
   (if (author-element? a)
       a
-      (let* ([s (element->string a)]
+      (let* ([s (content->string a)]
              [m (regexp-match #rx"^(.*) ([A-Za-z]+)$" s)])
         (make-author-element
          #f
@@ -183,13 +189,13 @@
          #:volume [volume #f])
   (let* ([s @elem{In @italic{@elem{Proc. @|location|}}}]
          [s (if series
-                @elem{@|s|, @|series|}
+                @elem{@|s|, @(format "~a" series)}
                 s)]
          [s (if volume
-                @elem{@|s| volume @|volume|}
+                @elem{@|s| volume @(format "~a" volume)}
                 s)]
          [s (if pages
-                @elem{@|s|, pp. @(car pages)--@(cadr pages)}
+                @elem{@|s|, pp. @(to-string (car pages))--@(to-string (cadr pages))}
                 s)])
     s))
 
@@ -200,13 +206,13 @@
          #:volume [volume #f])
   (let* ([s @italic{@|location|}]
          [s (if volume
-                @elem{@|s| @|volume|}
+                @elem{@|s| @(to-string volume)}
                 s)]
          [s (if number
-                @elem{@|s|(@|number|)}
+                @elem{@|s|(@(to-string number))}
                 s)]
          [s (if pages
-                @elem{@|s|, pp. @(car pages)--@(cadr pages)}
+                @elem{@|s|, pp. @(to-string (car pages))--@(to-string (cadr pages))}
                 s)])
     s))
 
@@ -301,3 +307,5 @@
              '(" (Ed.)"))
      (author-element-names name)
      (author-element-cite name))))
+
+(define (to-string v) (format "~a" v))

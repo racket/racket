@@ -1,7 +1,7 @@
 #lang scheme/base
 (require "../struct.ss"
          "../decode.ss"
-         "../basic.ss"
+         "../base.ss"
          scheme/list)
 
 (provide spacer doc-prefix
@@ -11,17 +11,6 @@
          max-proto-width)
 
 (define spacer (hspace 1))
-
-(define doc-prefix
-  (case-lambda
-   [(doc s)
-    (if doc
-        (list (module-path-prefix->string doc) s) 
-        s)]
-   [(doc prefix s)
-    (doc-prefix doc (if prefix
-                        (append prefix (list s))
-                        s))]))
 
 (define (to-flow e)
   (make-flow (list (make-omitable-paragraph (list e)))))

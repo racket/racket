@@ -12,17 +12,17 @@
 
 (define-syntax (*module-begin stx)
   (syntax-case stx ()
-    [(_ id exprs . body)
+    [(_ id post-process exprs . body)
      #'(#%module-begin
-        (doc-begin id exprs . body))]))
+        (doc-begin id post-process exprs . body))]))
 
 (define-syntax (doc-begin stx)
   (syntax-case stx ()
-    [(_ m-id (expr ...))
+    [(_ m-id post-process (expr ...))
      #`(begin
-         (define m-id (decode (list . #,(reverse (syntax->list #'(expr ...))))))
+         (define m-id (post-process (decode (list . #,(reverse (syntax->list #'(expr ...)))))))
          (provide m-id))]
-    [(_ m-id exprs . body)
+    [(_ m-id post-process exprs . body)
      ;; `body' probably starts with lots of string constants; it's
      ;; slow to trampoline on every string, so do them in a batch
      ;; here:
@@ -34,7 +34,7 @@
           (loop #'rest (cons #'s accum))]
          [()
           (with-syntax ([(accum ...) accum])
-            #`(doc-begin m-id (accum ... . exprs)))]
+            #`(doc-begin m-id post-process (accum ... . exprs)))]
          [(body1 . body)
           (with-syntax ([exprs (append accum #'exprs)])
             (let ([expanded (local-expand
@@ -46,7 +46,7 @@
                                                       #%require))))])
               (syntax-case expanded (begin)
                 [(begin body1 ...)
-                 #`(doc-begin m-id exprs body1 ... . body)]
+                 #`(doc-begin m-id post-process exprs body1 ... . body)]
                 [(id . rest)
                  (and (identifier? #'id)
                       (ormap (lambda (kw) (free-identifier=? #'id kw))
@@ -57,6 +57,6 @@
                                               define-values-for-syntax
                                               #%require
                                               #%provide))))
-                 #`(begin #,expanded (doc-begin m-id exprs . body))]
+                 #`(begin #,expanded (doc-begin m-id post-process exprs . body))]
                 [_else
-                 #`(doc-begin m-id (#,expanded . exprs) . body)])))]))]))
+                 #`(doc-begin m-id post-process (#,expanded . exprs) . body)])))]))]))

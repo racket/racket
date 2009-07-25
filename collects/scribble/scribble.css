@@ -8,20 +8,17 @@
    see if any font is set. */
 
 /* Monospace: */
-.maincolumn, .refpara, .tocset, .stt, .hspace,
-.schemeinput, .schemereader, .schemeparen, .schememeta,
-.schememod, .schemekeyword, .schemevariable, .schemesymbol,
-.schemeresult, .schemestdout, .schemecomment, .schemevalue {
+.maincolumn, .refpara, .tocset, .stt, .hspace {
   font-family: monospace;
 }
 
 /* Serif: */
-.main, .refcontent, .tocview, .tocsub, .inheritedlbl, i {
+.main, .refcontent, .tocview, .tocsub, i {
   font-family: serif;
 }
 
 /* Sans-serif: */
-.version {
+.version, .versionNoNav {
   font-family: sans-serif;
 }
 
@@ -135,6 +132,9 @@ table td {
 }
 .version {
   font-size: small;
+}
+.versionNoNav {
+  font-size: xx-small; /* avoid overlap with author */
 }
 
 /* ---------------------------------------- */
@@ -293,120 +293,7 @@ table td {
 }
 
 /* ---------------------------------------- */
-/* Inherited methods, left margin */
-
-.inherited {
-  width: 100%;
-  margin-top: 0.5em;
-  text-align: left;
-  background-color: #ECF5F5;
-}
-
-.inherited td {
-  font-size: 82%;
-  padding-left: 1em;
-  text-indent: -0.8em;
-  padding-right: 0.2em;
-}
-
-.inheritedlbl {
-  font-style: italic;
-}
-
-/* ---------------------------------------- */
-/* Scheme text styles */
-
-.schemeinput {
-  color: #cc6633;
-  background-color: #eeeeee;
-}
-
-.schemeinputbg {
-  background-color: #eeeeee;
-}
-
-.schemereader {
-}
-
-.schemeparen {
-  color: #843c24;
-}
-
-.schememeta {
-  color: #262680;
-}
-
-.schememod {
-  color: black;
-}
-
-.schemeopt {
-  color: black;
-}
-
-.schemekeyword {
-  color: black;
-  font-weight: bold;
-}
-
-.schemeerror {
-  color: red;
-  font-style: italic;
-}
-
-.schemevariable {
-  color: #262680;
-  font-style: italic;
-}
-
-.schemesymbol {
-  color: #262680;
-}
-
-.schemevaluelink {
-  text-decoration: none;
-  color: blue;
-}
-
-.schememodlink {
-  text-decoration: none;
-  color: blue;
-}
-
-.schemesyntaxlink {
-  text-decoration: none;
-  color: black;
-  font-weight: bold;
-}
-
-.schemeresult {
-  color: #0000af;
-}
-
-.schemestdout {
-  color: #960096;
-}
-
-.schemecomment {
-  color: #c2741f;
-}
-
-.schemevalue {
-  color: #228b22;
-}
-
-/* ---------------------------------------- */
 /* Some inline styles */
-
-.leftindent {
- margin-left: 1em;
- margin-right: 0em;
-}
-
-.insetpara {
- margin-left: 1em;
- margin-right: 1em;
-}
 
 .indexlink {
   text-decoration: none;
@@ -437,50 +324,13 @@ ol ol ol ol { list-style-type: upper-alpha; }
 i {
 }
 
+.SubFlow {
+  display: block;
+}
+
 .boxed {
   width: 100%;
   background-color: #E8E8FF;
-}
-
-.inlinetop{
-  display: inline;
-  vertical-align: text-top;
-}
-
-.together {
-  width: 100%;
-}
-
-.prototype td {
-  vertical-align: text-top;
-}
-.longprototype td {
-  vertical-align: bottom;
-}
-
-.schemeblock td {
-  vertical-align: baseline;
-}
-
-.argcontract td {
-  vertical-align: text-top;
-}
-
-.ghost {
-  color: white;
-}
-
-.highlighted {
-  background-color: #ddddff;
-}
-
-.defmodule {
-  width: 100%;
-  background-color: #F5F5DC;
-}
-
-.specgrammar {
-  float: right;
 }
 
 .hspace {
@@ -488,14 +338,6 @@ i {
 
 .slant {
   font-style: oblique;
-}
-
-.inferencetop td {
-  border-bottom: 1px solid black;
-  text-align: center;
-}
-.inferencebottom td {
-  text-align: center;
 }
 
 .badlink {
@@ -518,10 +360,6 @@ i {
 .techinside:hover              { color: blue; }
 .techoutside:hover>.techinside { color: inherit; }
 
-.SBibliography td {
-  vertical-align: text-top;
-}
-
 .SCentered {
   text-align: center;
 }
@@ -531,8 +369,12 @@ i {
   margin-right: 0.3em;
 }
 
-.smaller{
+.Smaller{
   font-size: 82%;
+}
+
+.Larger{
+  font-size: 122%;
 }
 
 /* A hack, inserted to break some Scheme ids: */
@@ -550,16 +392,22 @@ i {
   border: 0;
 }
 
-.author {
+.SAuthorListBox {
   position: relative;
   float: right;
   left: 2em;
-  top: -3em;
+  top: -2.5em;
   height: 0em;
-  width: 23em; /* very wide to keep author names on separate lines */
-  margin: 0em -23em 0em 0em;
+  width: 13em;
+  margin: 0em -13em 0em 0em;
+}
+.SAuthorList {
   font-size: 82%;
 }
-.author:before {
+.SAuthorList:before {
   content: "by ";
+}
+.author {
+  display: inline;
+  white-space: nowrap;
 }

@@ -1,6 +1,6 @@
 
 (module text-render mzscheme
-  (require "struct.ss"
+  (require "core.ss"
            mzlib/class)
   (provide render-mixin)
 
@@ -35,7 +35,7 @@
                     (part-title-content d))
             (newline))
           (newline)
-          (render-flow (part-flow d) d ht #f)
+          (render-flow (part-blocks d) d ht #f)
           (let loop ([pos 1]
                      [secs (part-parts d)])
             (unless (null? secs)
@@ -44,31 +44,30 @@
               (loop (add1 pos) (cdr secs))))))
 
       (define/override (render-flow f part ht starting-item?)
-        (let ([f (flow-paragraphs f)])
-          (if (null? f)
-              null
-              (apply
-               append
-               (render-block (car f) part ht starting-item?)
-               (map (lambda (p)
-                      (newline) (newline)
-                      (render-block p part ht #f))
-                    (cdr f))))))
+        (if (null? f)
+            null
+            (apply
+             append
+             (render-block (car f) part ht starting-item?)
+             (map (lambda (p)
+                    (newline) (newline)
+                    (render-block p part ht #f))
+                  (cdr f)))))
 
       (define/override (render-table i part ht inline?)
-        (let ([flowss (table-flowss i)])
+        (let ([flowss (table-blockss i)])
           (if (null? flowss)
               null
               (apply
                append
-               (map (lambda (d) (unless (eq? d 'cont) (render-flow d part ht #f))) (car flowss))
+               (map (lambda (d) (unless (eq? d 'cont) (render-block d part ht #f))) (car flowss))
                (map (lambda (flows)
                       (newline)
                       (map (lambda (d) (unless (eq? d 'cont) (render-flow d part ht #f))) flows))
                     (cdr flowss))))))
 
       (define/override (render-itemization i part ht)
-        (let ([flows (itemization-flows i)])
+        (let ([flows (itemization-blockss i)])
           (if (null? flows)
               null
               (apply append

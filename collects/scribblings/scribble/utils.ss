@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require scribble/struct
+(require scribble/core
+         scribble/html-variants
          scribble/manual
          (prefix-in scheme: scribble/scheme)
          (prefix-in scribble: scribble/reader))
@@ -15,25 +16,27 @@
     [(_ mod ...) (begin (bounce-for-label mod) ...)]))
 
 (bounce-for-label (all-except scheme (link) ())
-                  scribble/struct
+                  scribble/core
                   scribble/base-render
                   scribble/decode
                   scribble/manual
                   scribble/scheme
+                  scribble/html-variants
+                  scribble/latex-variants
                   scribble/eval
                   scribble/bnf)
 
 (provide scribble-examples litchar/lines)
 
 (define (as-flow e)
-  (make-flow (list (if (block? e) e (make-paragraph (list e))))))
+  (if (block? e) e (make-paragraph plain (list e))))
 
 (define (litchar/lines . strs)
   (let ([strs (regexp-split #rx"\n" (apply string-append strs))])
     (if (= 1 (length strs))
       (litchar (car strs))
       (make-table
-       #f
+       plain
        (map (lambda (s) ; the nbsp is needed for IE
               (list (as-flow (if (string=? s "") 'nbsp (litchar s)))))
             strs)))))
@@ -69,7 +72,7 @@
                p)]))
 
 (define (scribble-examples . lines)
-  (define reads-as (make-paragraph (list spacer "reads as" spacer)))
+  (define reads-as (make-paragraph plain (list spacer "reads as" spacer)))
   (let* ([lines (apply string-append lines)]
          [p (open-input-string lines)])
     (port-count-lines! p)
@@ -87,7 +90,7 @@
                       (cdr (apply append (map (lambda (x) (list #f x)) r)))
                       r)])
             (make-table
-             #f
+             plain
              (map (lambda (x)
                     (let ([@expr (if x (litchar/lines (car x)) "")]
                           [sexpr (if x
@@ -122,9 +125,10 @@
       (list (as-flow (make-element 'newline '())))
       (list (as-flow (make-element 'tt (str->elts str))))))
   (define (small-attr attr)
-    (make-with-attributes attr '([style . "font-size: 82%;"])))
+    (make-style attr (list
+                      (make-attributes '([style . "font-size: 82%;"])))))
   (define (make-box strs)
-    (make-table (small-attr 'boxed) (map make-line strs)))
+    (make-table (small-attr "Shaded") (map make-line strs)))
   (define filenames (map car more))
   (define indent (let ([d (- max-textsample-width
                              (for*/fold ([m 0])
@@ -138,16 +142,20 @@
   ;; Note: the font-size property is reset for every table, so we need it
   ;; everywhere there's text, and they don't accumulate for nested tables
   (values
-   (make-table (make-with-attributes
-                '([alignment right left] [valignment top top])
-                '())
+   (make-table 
+     (make-style #f
+                 (list (make-table-columns (list (make-style (if (null? filenames)
+                                                                 "Short"
+                                                                 "Medium")
+                                                             '(right top))
+                                                 (make-style #f '(left top))))))
      (cons (list (as-flow (make-table (small-attr #f)
                                       (list (list (as-flow indent)))))
                  (as-flow (make-box strs1)))
            (map (lambda (file strs)
                   (let* ([file (make-element 'tt (list file ":" 'nbsp))]
                          [file (list (make-element 'italic (list file)))])
-                    (list (as-flow (make-element '(bg-color 232 232 255) file))
+                    (list (as-flow (make-element (make-style #f (list (make-background-color-variant '(232 232 255)))) file))
                           (as-flow (make-box strs)))))
                 filenames strsm)))
    (make-box strs2)))
@@ -155,8 +163,11 @@
 (define (textsample line in-text out-text more)
   (define-values (box1 box2)
     (textsample-verbatim-boxes line in-text out-text more))
-  (make-table '([alignment left left left] [valignment center center center])
-    (list (map as-flow (list box1 (make-paragraph '(nbsp rarr nbsp)) box2)))))
+  (make-table 
+   (make-style #f (list (make-table-columns (list (make-style #f '(left vcenter))
+                                                  (make-style "Short" '(left vcenter))
+                                                  (make-style #f '(left vcenter))))))
+    (list (map as-flow (list box1 (make-paragraph plain '(nbsp rarr nbsp)) box2)))))
 
 (define-for-syntax tests-ids #f)
 

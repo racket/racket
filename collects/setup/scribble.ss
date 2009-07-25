@@ -12,8 +12,8 @@
          scheme/serialize
          syntax/modread
          scribble/base-render
-         scribble/struct
-         scribble/basic
+         scribble/core
+         scribble/html-variants
          scribble/manual ; really shouldn't be here... see dynamic-require-doc
          scribble/private/run-pdflatex
          (prefix-in html: scribble/html-render)
@@ -265,7 +265,10 @@
 (define (make-renderer latex-dest doc)
   (if latex-dest
     (new (latex:render-mixin render%)
-         [dest-dir latex-dest])
+         [dest-dir latex-dest]
+         ;; Use PLT manual style:
+         [prefix-file (build-path (collection-path "scribble") "manual-prefix.tex")]
+         [style-file (build-path (collection-path "scribble") "manual-style.tex")])
     (let* ([flags (doc-flags doc)]
            [multi? (memq 'multi-page flags)]
            [main?  (doc-under-main? doc)]
@@ -277,8 +280,15 @@
         [dest-dir (if multi?
                     (let-values ([(base name dir?) (split-path ddir)]) base)
                     ddir)]
-        [css-path    (and main? "../scribble.css")]
-        [script-path (and main? "../scribble-common.js")]
+        [alt-paths   (if main?
+                         (let ([std-path (lambda (s)
+                                           (cons (build-path (collection-path "scribble") s)
+                                                 (format "../~a" s)))])
+                           (list (std-path "scribble.css")
+                                 (std-path "scribble-style.css")
+                                 (std-path "scheme.css")
+                                 (std-path "scribble-common.js")))
+                         null)]
         ;; up-path is #t, which makes it go to the (user's) start page
         ;; (using cookies) -- except when it is the start page itself
         ;; (one of the two)
@@ -315,22 +325,24 @@
           [tags (if (member '(part "top") (part-tags v))
                   (part-tags v)
                   (cons '(part "top") (part-tags v)))]
-          [style (if (list? (part-style v))
-                     (part-style v)
-                     (list (part-style v)))])
-      (make-versioned-part
+          [style (part-style v)])
+      (make-part
        tag-prefix
        tags
        (part-title-content v)
-       (if (ormap (lambda (s)
-                    (and (pair? s) (eq? (car s) 'body-id)))
-                  style)
-           style
-           (cons '(body-id "doc-plt-scheme-org") style))
+       (let* ([v (style-variants style)]
+              [v (if (ormap body-id? v)
+                     v
+                     (cons (make-body-id "doc-plt-scheme-org")
+                           v))]
+              [v (if (ormap document-version? v)
+                     v
+                     (cons (make-document-version (version))
+                           v))])
+         (make-style (style-name style) v))
        (part-to-collect v)
-       (part-flow v)
-       (part-parts v)
-       (and (versioned-part? v) (versioned-part-version v))))))
+       (part-blocks v)
+       (part-parts v)))))
 
 (define (omit? cat)
   (or (eq? cat 'omit)

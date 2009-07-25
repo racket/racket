@@ -1057,7 +1057,7 @@ Say we want to represent a universe that consists of a number of worlds and
 Here is an image that illustrates how this universe would work if two
  worlds participated: 
 
-@image["balls.gif"]
+@image["balls" #:suffixes '(".gif" ".png")]
 
  The two @tech{world} programs could be located on two distinct computers
  or on just one. A @tech{server} mediates between the two worlds, including

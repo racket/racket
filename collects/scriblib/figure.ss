@@ -1,58 +1,67 @@
 #lang scheme/base
 
 (require scribble/manual
-         scribble/struct
+         scribble/core
          scribble/decode
+         scribble/html-variants
+         scribble/latex-variants
+         setup/main-collects
          "private/counter.ss")
 
 (provide figure
          figure*
          figure**
          Figure-target 
-         Figure-ref
-         figure-style-extras)
+         Figure-ref)
 
-(define (figure-style-extras)
+(define figure-style-extras
   (let ([abs (lambda (s)
                (build-path (collection-path "scriblib") s))])
-    `((css ,(abs "figure.css")) (tex ,(abs "figure.tex")))))
+    (list (make-css-addition (abs "figure.css"))
+          (make-tex-addition (abs "figure.tex")))))
+
+(define centerfigure-style (make-style "Centerfigure" figure-style-extras))
+(define figureinside-style (make-style "FigureInside" figure-style-extras))
+(define legend-style (make-style "Legend" figure-style-extras))
+(define centerfiguremulti-style (make-style "CenterfigureMulti" figure-style-extras))
+(define centerfiguremultiwide-style (make-style "CenterfigureMultiWide" figure-style-extras))
 
 (define (figure tag caption . content)
-  (make-blockquote
-   "Centerfigure"
+  (make-nested-flow
+   centerfigure-style
    (list
-    (make-blockquote
-     "FigureInside"
+    (make-nested-flow
+     figureinside-style
      (append
-      (flow-paragraphs
-       (decode-flow content))
+      (decode-flow content)
       (list
        (make-paragraph
+        plain
         (list
-         (make-element "Legend"
+         (make-element legend-style
                        (list* (Figure-target tag) ": " 
                               (decode-content (list caption))))))))))))
 
 (define (*figure style tag caption content)
-  (make-blockquote
+  (make-nested-flow
    style
    (list
-    (make-blockquote
-     "FigureInside"
+    (make-nested-flow
+     figureinside-style
      (append
-      (flow-paragraphs
-       (decode-flow content))
+      (decode-flow content)
       (list
        (make-paragraph
+        plain
         (list
-         (make-element "Legend"
+         (make-element legend-style
                        (list* (Figure-target tag) ": " 
                               (decode-content (list caption))))))))))))
 
 (define (figure* tag caption . content)
-  (*figure "CenterfigureMulti" tag caption content))
+  (*figure centerfiguremulti-style tag caption content))
 (define (figure** tag caption . content)
-  (*figure "CenterfigureMultiWide" tag caption content))
+  (*figure centerfiguremultiwide-style tag caption content))
 
 (define figures (new-counter "figure"))
 (define (Figure-target tag)

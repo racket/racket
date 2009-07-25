@@ -565,7 +565,7 @@ function UpdateResults() {
           note +=
             (j==0 ? "" : ", ")
             + '<a href="?q=' + encodeURIComponent("L:"+desc[j]) + '"'
-               +' class="schememod" tabIndex="2"'
+               +' class="ScmMod" tabIndex="2"'
                +' title="show bindings from the '+desc[j]+' module'
                        +' (right-click to refine current query)"'
                +' style="text-decoration: none; color: #006;"'

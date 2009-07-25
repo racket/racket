@@ -1,5 +1,10 @@
 #lang scribble/doc
-@(require "mz.ss" scribble/struct scheme/list)
+@(require "mz.ss" 
+          scribble/core 
+          scribble/html-variants
+          scribble/latex-variants
+          scribble/core 
+          scheme/list)
 
 @(define (scheme-extra-libs)
    (make-delayed-element
@@ -15,7 +20,12 @@
     (lambda () "...")
     (lambda () "...")))
 
-@title{@bold{Reference}: PLT Scheme}
+@(define (extras)
+   (make-style #f (list
+                   (make-css-addition "extras.css")
+                   (make-tex-addition "extras.tex"))))
+
+@title[#:style (extras)]{@bold{Reference}: PLT Scheme}
 
 @author["Matthew Flatt" "PLT"]
 

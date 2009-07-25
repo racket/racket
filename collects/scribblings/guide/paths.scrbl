@@ -38,11 +38,11 @@ values, instead of strings.
 Although it's sometimes tempting to directly manipulate strings that
 represent filesystem paths, correctly manipulating a path can be
 surprisingly difficult. For example, if you start under Unix with the
-absolute path @file{/tmp/~} and take just the last part, you end up
-with @file{~}---which looks like a reference to the current user's
+absolute path @filepath{/tmp/~} and take just the last part, you end up
+with @filepath{~}---which looks like a reference to the current user's
 home directory, instead of a relative path to a file of directory
-named @file{~}. Windows path manipulation, furthermore, is far
-trickier, because path elements like @file{aux} can have special
+named @filepath{~}. Windows path manipulation, furthermore, is far
+trickier, because path elements like @filepath{aux} can have special
 meanings.
 
 @refdetails/gory["windows-path"]{Windows filesystem paths}

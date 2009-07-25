@@ -1,17 +1,20 @@
 #lang scribble/doc
 @(require "mz.ss"
-          scribble/struct
+          scribble/core
+          scribble/html-variants
           (for-label scheme/help
                      net/url
                      scheme/gui))
 
 @; Beware of this hard-wired link to the main doc page:
 @(define main-doc-page
-   (link "../index.html"
-         #:style (make-with-attributes 
-                  "plainlink" 
-                  `((onclick . ,(format "return GotoPLTRoot(\"~a\");" (version)))))
-         "main documentation page"))
+   (hyperlink "../index.html"
+              #:style (make-style
+                       "plainlink" 
+                       (list
+                        (make-attributes 
+                         `((onclick . ,(format "return GotoPLTRoot(\"~a\");" (version)))))))
+              "main documentation page"))
 
 @title{Interactive Help}
 

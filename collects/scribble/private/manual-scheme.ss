@@ -57,9 +57,9 @@
      (syntax/loc stx (schememod #:file #f lang rest ...))]))
 
 (define (to-element/result s)
-  (make-element "schemeresult" (list (to-element/no-color s))))
+  (make-element result-color (list (to-element/no-color s))))
 (define (to-element/id s)
-  (make-element "schemesymbol" (list (to-element/no-color s))))
+  (make-element symbol-color (list (to-element/no-color s))))
 
 (define-syntax (keep-s-expr stx)
   (syntax-case stx ()
@@ -106,7 +106,7 @@
 
 (define (as-modname-link s e)
   (if (symbol? s)
-    (make-link-element "schememodlink"
+    (make-link-element module-link-color
                        (list e)
                        `(mod-path ,(symbol->string s)))
     e))

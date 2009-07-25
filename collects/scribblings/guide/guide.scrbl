@@ -1,6 +1,5 @@
-#lang scribble/doc
-@(require scribble/manual
-          scribble/eval
+#lang scribble/manual
+@(require scribble/eval
           "guide-utils.ss")
 
 @title{@bold{Guide}: PLT Scheme}

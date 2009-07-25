@@ -7,6 +7,6 @@
 
 (define (keep-file file)
   (make-render-element
-   (make-element #f (list))
+   #f
    null
    (lambda (r s i) (send r install-file file))))

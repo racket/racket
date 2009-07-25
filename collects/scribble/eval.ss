@@ -90,13 +90,13 @@
                            (if (flow? p)
                                p
                                (make-flow (list p))))))
-             (format-output (cadar val-list+outputs) "schemestdout")
-             (format-output (caddar val-list+outputs) "schemeerror")
+             (format-output (cadar val-list+outputs) output-color)
+             (format-output (caddar val-list+outputs) error-color)
              (if (string? (caar val-list+outputs))
                  ;; Error result case:
                  (map
                   (lambda (s)
-                    (car (format-output s "schemeerror")))
+                    (car (format-output s error-color)))
                   (let sloop ([s (caar val-list+outputs)])
                      (if ((string-length s) . > . maxlen)
                          ;; break the error message into multiple lines:
@@ -117,8 +117,8 @@
                               (list (make-flow (list (make-paragraph 
                                                       (list
                                                        (hspace 2)
-                                                       (span-class "schemeresult"
-                                                                   (to-element/no-color v))))))))
+                                                       (elem #:style result-color
+                                                             (to-element/no-color v))))))))
                             val-list))))
              (loop (cdr expr-paras)
                    (cdr val-list+outputs)
@@ -313,8 +313,8 @@
 
 
   (define (show-val v)
-    (span-class "schemeresult"
-                (to-element/no-color v)))
+    (elem #:style result-color
+          (to-element/no-color v)))
 
   (define (do-interaction-eval-show ev e)
     (parameterize ([current-command-line-arguments #()])

@@ -1,12 +1,18 @@
 #lang scribble/doc
 @(require scribble/manual 
-          scribble/struct 
+          scribble/core
+          scribble/html-variants
+          scribble/latex-variants
           scheme/runtime-path
           (prefix-in lp-ex: "lp-ex-doc.scrbl")
           "utils.ss"
           (for-label scribble/lp-include scribble/lp))
 
-@title[#:tag "lp" #:style `((css "lp.css") (tex "lp.tex")) ]{Literate Programming}
+@title[#:tag "lp" 
+       #:style (make-style #f
+                           (list (make-css-addition "lp.css")
+                                 (make-tex-addition "lp.tex")))
+      ]{Literate Programming}
 
 Programs written using @schememodname[scribble/lp] are simultaneously
 two things: a program and a document describing the program.
@@ -43,9 +49,9 @@ function @scheme[f] that squares its argument, and the documentation
 is ignored. When it is included with @scheme[lp-include], it looks
 like this:
 
-@(make-blockquote
-  "LPBoxed"
-  (flow-paragraphs (part-flow lp-ex:doc)))
+@(make-nested-flow
+  (make-style "LPBoxed" null)
+  (part-blocks lp-ex:doc))
 
 @section{@schememodname[scribble/lp] Language}
 
@@ -73,7 +79,11 @@ provides core support for literate programming.}
 
 @section{@schememodname[scribble/lp-include] Module}
 
-@defmodule[scribble/lp-include]{}
+@defmodule[scribble/lp-include]{The
+@schememodname[scribble/lp-include] library is normally used within a
+Scribble document---that is, a module that starts with something like
+@scheme[#, @hash-lang[] scribble/base] or @scheme[#, @hash-lang[]
+scribble/manual], instead of @scheme[#, @hash-lang[] scheme].}
 
 @defform[(lp-include filename)]{
 Includes the source of @scheme[filename] as the typeset version of the literate

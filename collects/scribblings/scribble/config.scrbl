@@ -1,12 +1,12 @@
 #lang scribble/doc
 @(require scribble/manual
-          scribble/struct
+          scribble/core
           scribble/decode
+          scribble/html-variants
+          scribble/latex-variants
           "utils.ss"
           (for-label scheme/base))
 
-@(define (nested . str)
-   (make-blockquote #f (flow-paragraphs (decode-flow str))))
 @(define (fake-title . str) (apply bold str))
 
 @title[#:tag "config"]{Extending and Configuring Scribble Output}
@@ -18,66 +18,87 @@ extend or configure Scribble fall into two groups:
 @itemize[
 
  @item{You may need to drop into the back-end ``language'' of CSS or
-       Tex to create a specific output effect. For this kind of
-       extension, you will mostly likely attach a @scheme[`(css
-       ,_file)] or @scheme[`(tex ,_file)] style to a @scheme[section]
-       and then use a string defined in the @scheme[_file] as an
-       @scheme[element] or @tech{block} style. This kind of extension
-       is described in @secref["extra-style"].}
+       Latex to create a specific output effect. For this kind of
+       extension, you will mostly likely attach a
+       @scheme[css-addition] or @scheme[tex-addition] @tech{variant}
+       to style, where the addition implements the style name. This
+       kind of extension is described in @secref["extra-style"].}
 
  @item{You may need to produce a document whose page layout is
        different from the PLT Scheme documentation style. For that
-       kind of configuration, you will most likely run the
-       @exec{scribble} command-line tool and supply flags like
-       @DFlag{prefix} or @DPFlag{style}. This kind of configuration
-       is described in @secref["config-style"].}
+       kind of configuration, you can run the @exec{scribble} command-line
+       tool and supply flags like @DFlag{prefix} or @DPFlag{style}, or
+       you can associate a @scheme[html-defaults] or
+       @scheme[latex-defaults] @tech{variant} to the main document's
+       style. This kind of configuration is described in
+       @secref["config-style"].}
 
 ]
 
 @; ------------------------------------------------------------
 
 @section[#:tag "extra-style" 
-         #:style `((css "inbox.css") (tex "inbox.tex"))]{Adding a Style}
+         #:style (make-style #f (list (make-css-addition "inbox.css")
+                                      (make-tex-addition "inbox.tex")))
+        ]{Implementing Styles}
 
-When a string is uses as a style in an @scheme[element],
-@scheme[styled-paragraph], @scheme[table],
-@scheme[styled-itemization], @scheme[blockquote], or @scheme[compound-paragraph], it corresponds to
-a CSS class for HTML output or a Tex macro/environment for Latex
-output. In Latex output, the string is used as a command name for a
-@scheme[styled-paragraph] and an environment name for a
-@scheme[table], @scheme[itemization], @scheme[blockquote], or @scheme[compound-paragraph], except
-that a @scheme[blockquote] or @scheme[compound-paragraph] style name that starts with @litchar{\} is
-used (sans @litchar{\}) as a command instead of an environment.
-In addition, for an itemization, the style string is
-suffixed with @scheme["Item"] and used as a CSS class or Tex macro
-name to use for the itemization's items (in place of @tt{item} in the
-case of Latex).
-
-Scribble includes a number of predefined styles that are used by the
-exports of @scheme[scribble/manual], but they are not generally
-intended for direct use. For now, use them or redefine them at your
-own risk. 
+When a string is uses as a style in an @scheme[element], 
+a @scheme[multiarg-element], @scheme[paragraph], @scheme[table],
+@scheme[itemization], @scheme[nested-flow], or
+@scheme[compound-paragraph], it corresponds to a CSS class for HTML
+output or a Latex macro/environment for Latex output. In Latex output,
+the string is used as a command name for a @scheme[paragraph]
+and an environment name for a @scheme[table], @scheme[itemization],
+@scheme[nested-flow], or @scheme[compound-paragraph]; the if style has
+a @scheme['commad] @tech{variant} for a @scheme[nested-flow] or
+@scheme[compound-paragraph], then the style name is used as a command
+instead of an environment.  In addition, for an itemization, the style
+string is suffixed with @scheme["Item"] and used as a CSS class or Latex
+macro name to use for the itemization's items (in place of @tt{item}
+in the case of Latex).
 
 To add a mapping from your own style name to a CSS configuration, add
-a @scheme[`(css ,_file)] style (in a list of styles) to an enclosing
-@scheme[part]. To map a style name to a Tex macro (or Latex
-environment), add a @scheme[`(tex ,_file)] style to an enclosing part.
+a @scheme[css-addition] structure instance to a style's @tech{variant}
+list. To map a style name to a Latex macro or environment, add a
+scheme[tex-addition] structure instance. A @scheme[css-addition] or
+@scheme[tex-addition] is normally associated with the style whose name
+is implemented by the adition, but it can also be added to the style
+for an enclosing part.
+
+Scribble includes a number of predefined styles that are used by the
+exports of @scheme[scribble/base]. You can use them or redefine
+them. The styles are specified by @filepath{scribble.css} and
+@filepath{scribble.tex} in the @filepath{scribble} collection.
+
+The styles used by @schememodname[scribble/manual] are implemented by
+@filepath{scheme.css} and @filepath{scheme.tex} in the
+@filepath{scribble} collection. Other libraries, such as
+@schememodname[scriblib/autobib], similarly implement styles through files
+that are associated by @scheme[css-addition] and @scheme[tex-addition]
+@tech{variants}.
 
 To avoid collisions with future additions to Scribble, start your
 style name with an uppercase letter that is not @litchar{S}. An
 uppercase letter helps to avoid collisions with macros defined by
-Latex packages, and future styles needed by @scheme[scribble/manual]
-will start with @litchar{S}.
+Latex packages, and future styles needed by @schememodname[scribble/base] and
+@schememodname[scribble/manual] will start with @litchar{S}.
 
 For example, a Scribble document
 
 @verbatim[#:indent 2]|{
- #lang scribble/doc
- @(require manual)
+ #lang scribble/manual
+ @(require scribble/core
+           scribble/html-variants
+           scribble/latex-variants)
 
- @title[#:style `((css "inbox.css") (tex "inbox.tex"))]{Quantum Pet}
+ (define inbox-style
+   (make-style "InBox"
+               (list (make-css-addition "inbox.css")
+                     (make-tex-addition "inbox.tex"))))
 
- Do not open: @elem[#:style "InBox"]{Cat}
+ @title{Quantum Pet}
+
+ Do not open: @elem[#:style inbox-style]{Cat}
 }|
 
 combined with an @filepath{inbox.css} that contains
@@ -97,7 +118,7 @@ and an @filepath{inbox.tex} that contains
 
 generates
 
-@nested{
+@nested[#:style 'inset]{
  @fake-title{Quantum Pet}
 
  Do not open: @elem[#:style "InBox"]{Cat}
@@ -107,38 +128,87 @@ generates
 
 @section[#:tag "config-style"]{Configuring Output}
 
-Scribble's output is configured in two layers:
+The implementation of styles used by libraries depends to some degree
+on separately configurable parameters, and configuration is also
+possible by replacing style implementations. Latex output is more
+configurable in the former way, since a document class determines a
+set of page-layout and font properties that are used by other
+commands. The style-replacement kind of configuration corresponds to
+re-defining Latex macros or overriding CSS class attributes.  When
+@exec{setup-plt} builds PDF documentation, it uses both kinds of
+configuration to produce a standard layout for PLT Scheme manuals;
+that is, it selects a particular page layout, and it replaces some
+@schememodname[scheme/base] styles.
+
+Two kinds of files implement the two kinds of configuration:
 
 @itemize[
 
- @item{A prefix determines the @tt{DOCTYPE} line for HTML output or
-       the @tt{documentclass} configuration (and perhaps some addition
-       package uses or other configuration) for Latex output. The
-       default prefix is @filepath{scribble-prefix.html} or
-       @filepath{scribble-prefix.tex} in the @filepath{scribble}
+ @item{A @deftech{prefix file} determines the @tt{DOCTYPE} line for
+       HTML output or the @tt{documentclass} configuration (and
+       perhaps some addition package uses or other configurations) for
+       Latex output.
+
+       The default prefix files are @filepath{scribble-prefix.html}
+       and @filepath{scribble-prefix.tex} in the @filepath{scribble}
        collection.}
 
- @item{Style definitions for all of the ``built-in'' styles used by
-        @scheme[scribble/manual] (as described in
-        @secref["extra-style"]).  The default style definitions are
-        @filepath{scribble.css} or @filepath{scribble.tex} in the
-        @filepath{scribble} collection.}
+ @item{A @deftech{style file} refines the implementation of styles
+       nused in the document---typically just the ``built-in'' styles
+       used by @schememodname[scribble/base].
+
+       The default style files, @filepath{scribble-style.css} and
+       @filepath{scribble-style.tex} in the @filepath{scribble}
+       collection, change no style implementations.}
 
 ]
 
-When using the @exec{scribble} command-line utility:
+For a given configuration of output, typically a particular prefix
+file works with a particular style file. Some prefix or style files
+may be more reusable. For now, reading the default files is the best
+way to understand how they interact. A prefix and/or style file may
+also require extra accomanying files; for example, a prefix file for
+Latex mode may require a corresponding Latex class file. The default
+prefix and style files require no extra files.
+
+When rendering a document through the @exec{scribble} command-line
+tool, use flags to select a prefix file, style file, and additional
+accompanying files:
 
 @itemize[
 
- @item{Replace the prefix using the @as-index{@DFlag{prefix}} flag.}
+ @item{Select the prefix file using the @as-index{@DFlag{prefix}}
+       flag. (Selecting the prefix file also cancels the default list
+       of accompanying files, if any.)}
 
- @item{Replace the style definitions using the
-       @as-index{@DFlag{style}} flag.}
+ @item{Replace the style file using the @as-index{@DFlag{style}}
+       flag. Add additional style definitions and re-definitions using
+       the @as-index{@DPFlag{style}} flag.}
 
- @item{Add style definitions (that can override earlier ones)
-       using the @as-index{@DPFlag{style}} flag.}
+ @item{Add additional accompanying files with @as-index{@DFlag{extra}}.}
 
 ]
 
-For now, reading the default files is the best way to understand how
-they interact.
+When using the @exec{scribble} command-line utility, a document can
+declare its default style, prefix, and extra files through a
+@scheme[html-defaults] and/or @scheme[latex-defaults] style
+@tech{variant}. In particular, when using the @exec{scribble}
+command-line tool to generate Latex or PDF a document whose main part
+is implemented with @scheme[#, @hash-lang[] #,
+@schememodname[scribble/manual]], the result has the standard PLT
+Scheme manual configuration, because @schememodname[scribble/manual]
+associates a @scheme[latex-defaults] @tech{variant} with the exported
+document. The @schememodname[scribble/sigplan] language similarly
+associates a default configuration with an exported document.  As
+libraries imported with @scheme[require], however,
+@schememodname[scribble/manual] and @schememodname[scribble/sigplan]
+simply implement new styles in a composable way.
+
+Whether or not a document has a default prefix- and style-file
+configuration through a style @tech{variant}, the defaults can be
+overridden using @exec{scribble} command-line flags. Furthermore,
+languages like @schememodname[scribble/manual] and
+@schememodname[scribble/sigplan] add a @scheme[html-defaults] and/or
+@scheme[latex-defaults] @tech{variant} to a main-document part only if
+it does not already have such a variant added through the
+@scheme[#:style] argument of @scheme[title].

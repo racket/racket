@@ -14,7 +14,7 @@ C-language OpenGL API.  It provides a binding for each @tt{#defined}
 constant (these start with @schemeidfont{GL_}) and for the functions
 in the GL 1.5 and GLU 1.3 specifications, except for the following:
 
-@itemize[#:style "compact"
+@itemize[#:style 'compact
  @item{Vertex arrays           (GL 1.5, Section 2.8)}
  @item{Buffer objects          (GL 1.5, Section 2.9)}
  @item{@tt{glGetPointerv}      (GL 1.5, Section 6.1.11)}

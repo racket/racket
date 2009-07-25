@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/eval
+          scribble/core
           "guide-utils.ss")
 
 @title[#:tag "regexp" #:style 'toc]{Regular Expressions}
@@ -358,7 +359,7 @@ the form @litchar{[:}...@litchar{:]} that can be used only inside a
 bracketed expression in @litchar{#px} syntax.  The POSIX classes
 supported are
 
-@itemize[#:style "compact"
+@itemize[#:style (make-style "compact" null)
 
  @item{@litchar{[:alnum:]} --- ASCII letters and digits}
 

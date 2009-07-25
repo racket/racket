@@ -3,20 +3,19 @@
           scribble/bnf
           "utils.ss")
 
-@title{How to Scribble Documentation}
+@title[#:tag "how-to-doc"]{How to Scribble PLT Scheme Documentation}
 
 Although the @exec{scribble} command-line utility generates output
-from a Scribble document (run @exec{scribble -h} for more
-information), documentation of PLT Scheme libraries is normally built
-by @exec{setup-plt}. This chapter emphasizes the @exec{setup-plt}
-approach, which more automatically supports links across
-documents.
+from a Scribble document, documentation of PLT Scheme libraries is
+normally built by @exec{setup-plt}. This chapter emphasizes the
+@exec{setup-plt} approach, which more automatically supports links
+across documents.
 
-@margin-note{See @secref["config"] for information on using the
+@margin-note{See @secref["how-to-paper"] for information on using the
              @exec{scribble} command-line utility.}
 
 @;----------------------------------------
-@section[#:tag "getting-started"]{Getting Started}
+@section[#:tag "setting-up"]{Setting Up Documentation}
 
 To document a collection or @|PLaneT| package:
 
@@ -30,20 +29,17 @@ To document a collection or @|PLaneT| package:
 
   @item{Start @filepath{manual.scrbl} like this:
           @verbatim[#:indent 2]|{
-            #lang scribble/doc
-            @(require scribble/manual)
+            #lang scribble/manual
 
             @title{My Library}
 
             Welcome to my documentation: @scheme[(list 'testing 1 2 3)].
           }|
 
-        The first line starts the file in ``text'' mode, and
-        introduces the @litchar["@"] syntax to use Scheme bindings.
-        The second line introduces bindings like @scheme[title] and
-        @scheme[scheme] for writing PLT Scheme documentation. The
-        @scheme[title] call (using @litchar["@"]) produces a title
-        declaration in the text stream.}
+        The first line starts the file in ``text'' mode and selects
+        the PLT Scheme manual output format.
+        It also introduces bindings like @scheme[title] and
+        @scheme[scheme] for writing PLT Scheme documentation.}
 
   @item{Add the following entry to your collect or package's
         @filepath{info.ss}:
@@ -83,104 +79,18 @@ To document a collection or @|PLaneT| package:
 ]
 
 @; ----------------------------------------
-@section[#:tag "how-to:reader"]{Document Syntax}
-
-Whether in ``text'' mode or Scheme mode, @litchar["@"] in a document
-provides an escape to Scheme mode. The syntax of @litchar["@"] is
-
-@schemeblock[
- @#,BNF-seq[@litchar["@"]
-             @nonterm{cmd}
-             @litchar{[} @kleenestar{@nonterm{datum}} @litchar{]}
-             @litchar["{"] @nonterm{text-body} @litchar["}"]]
-]
-
-where all three parts after @litchar["@"] are optional, but at least
-one must be present. No spaces are allowed between
-
-@itemize[
-
- @item{@litchar["@"] and @nonterm{cmd}, @litchar{[}, or @litchar["{"]}
-
- @item{@nonterm{cmd} and @litchar{[} or @litchar["{"]; or}
-
- @item{@litchar{]} and @litchar["{"].}
-
-]
-
-A @nonterm{cmd} or @nonterm{datum} is a Scheme datum, while a
-@nonterm{text-body} is itself in text mode.
-
-The expansion of @litchar["@"]@nonterm{cmd} into Scheme code is
-
-@schemeblock[
-  @#,nonterm{cmd}
-]
-
-When either @litchar{[} @litchar{]} or @litchar["{"] @litchar["}"]
-are used, the expansion is
-
-@schemeblock[
-  (@#,nonterm{cmd} @#,kleenestar{@nonterm{datum}} @#,kleenestar{@nonterm{parsed-body}})
-]
-
-where @kleenestar{@nonterm{parsed-body}} is the parse result of the
-@nonterm{text-body}. The @kleenestar{@nonterm{parsed-body}} part often
-turns out to be a sequence of Scheme strings.
-
-In practice, the @nonterm{cmd} is normally a Scheme identifier that is
-bound to a procedure or syntactic form. If the procedure or form
-expects further text to typeset, then @litchar["{"] @litchar["}"]
-supplies the text. If the form expects other data, typically
-@litchar{[} @litchar{]} is used to surround Scheme arguments,
-instead. Sometimes, both @litchar{[} @litchar{]} and @litchar["{"]
-@litchar["}"] are used, where the former surround Scheme arguments
-that precede text to typeset.
-
-Thus,
-
-@verbatim[#:indent 2]|{
-  @(require scribble/manual)
-  @title{My Library}
-  @scheme[(list 'testing 1 2 3)]
-  @section[#:tag "here"]{You Are Here}
-}|
-
-means
-
-@schemeblock[
-(require scribble/manual)
-(title "My Library")
-(scheme (list 'testing 1 2 3))
-(section #:tag "here" "You Are Here")
-]
-
-For more information on the syntax of @litchar["@"], see
-@secref["reader"].
-
-In a document that starts @hash-lang[] @schememodname[scribble/doc],
-the top level is a text-mode sequence, as the @nonterm{text-body} in a
-@litchar["@"] form.  The parsed sequence is further
-decoded to turn it into a hierarchy of sections and paragraphs. For
-example, a linear sequence of @scheme[section] declarations with
-interleaved text is turned into a list of @scheme[part] instances with
-all text assigned to a particular part. See @secref["layers"] for more
-information on these layers.
-
-@; ----------------------------------------
 @section[#:tag "scheme-hyperlinks"]{Scheme Typesetting and Hyperlinks}
 
 In the document source at the start of this chapter
-(@secref["getting-started"]), the Scheme expression
+(@secref["setting-up"]), the Scheme expression
 @scheme[(#,(schemeidfont "list") 'testing 1 2 3)] is typeset properly,
 but the @schemeidfont{list} identifier is not hyperlinked to the usual
-definition. To cause @schemeidfont{list} to be hyperlinked, extend the
+definition. To cause @schemeidfont{list} to be hyperlinked, add a
 @scheme[require] form like this:
 
-@schemeblock[
-(require scribble/manual
-         (for-label #,(schememodname scheme)))
-]
+@verbatim[#:indent 2]|{
+  @(require (for-label scheme))
+}|
 
 This @scheme[require] with @scheme[for-label] declaration introduces a
 document-time binding for each export of the @schememodname[scheme]
@@ -197,9 +107,8 @@ document. Such links require no information about where and how a
 binding is documented elsewhere:
 
 @verbatim[#:indent 2]|{
-  #lang scribble/doc
-  @(require scribble/manual
-            (for-label scheme))
+  #lang scribble/manual
+  @(require (for-label scheme))
 
   @title{My Library}
 
@@ -212,9 +121,8 @@ so it ignores the source formatting of the expression. The
 and it preserves the expression's formatting from the document source.
 
 @verbatim[#:indent 2]|{
-  #lang scribble/doc
-  @(require scribble/manual
-            (for-label scheme))
+  #lang scribble/manual
+  @(require (for-label scheme))
 
   @title{My Library}
 
@@ -242,9 +150,8 @@ hyperlink with text other than the section title.
 The following example illustrates section hyperlinks:
 
 @verbatim[#:indent 2]|{
-  #lang scribble/doc
-  @(require scribble/manual
-            (for-label scheme))
+  #lang scribble/manual
+  @(require (for-label scheme))
 
 
   @title{My Library}
@@ -281,9 +188,8 @@ following example links to a section in the PLT Scheme reference
 manual:
 
 @verbatim[#:indent 2]|{
-  #lang scribble/doc
-  @(require scribble/manual
-            (for-label scheme))
+  #lang scribble/manual
+  @(require (for-label scheme))
   @(define ref-src
      '(lib "scribblings/reference/reference.scrbl"))
 
@@ -336,9 +242,8 @@ following:
 @; [Eli] This is also using `my-lib/helper' which doesn't work with
 @; planet libraries
 @verbatim[#:indent 2]|{
-  #lang scribble/doc
-  @(require scribble/manual
-            (for-label scheme
+  #lang scribble/manual
+  @(require (for-label scheme
                        "helper.ss"))
 
   @title{My Library}
@@ -408,9 +313,8 @@ from the previous section, @filepath{helper.ss} must be imported both
 via @scheme[require-for-label] and @scheme[require]:
 
 @verbatim[#:indent 2]|{
-  #lang scribble/doc
-  @(require scribble/manual
-            scribble/eval    ; <--- added
+  #lang scribble/manual
+  @(require scribble/eval    ; <--- added
             "helper.ss"      ; <--- added
             (for-label scheme
                        "helper.ss"))
@@ -433,58 +337,6 @@ via @scheme[require-for-label] and @scheme[require]:
 }|
 
 @;----------------------------------------
-@section{Splitting the Document Source}
-
-In general, a @filepath{.scrbl} file produces a @techlink{part}. A part
-produced by a document's main source (as specified in the
-@filepath{info.ss} file) represents the whole document. The
-@scheme[include-section] procedure can be used to incorporate a part
-as a sub-part of the enclosing part.
-
-In @filepath{manual.scrbl}:
-
-@verbatim[#:indent 2]|{
-  #lang scribble/doc
-  @(require scribble/manual)
-
-  @title{My Library}
-
-  @defmodule[my-lib/helper]{The @schememodname[my-lib/helper]
-  module---now with extra cows!}
-
-  @include-section["cows.scrbl"]
-  @include-section["aardvarks.scrbl"]
-}|
-
-In @filepath{cows.scrbl}:
-
-@verbatim[#:indent 2]|{
-  #lang scribble/doc
-  @(require scribble/manual)
-
-  @title{Cows}
-
-  Wherever they go, it's a quite a show.
-}|
-
-In @filepath{aardvarks.scrbl}:
-
-@verbatim[#:indent 2]|{
-  #lang scribble/doc
-  @(require scribble/manual
-            (for-label scheme
-                       "helper.ss"))
-
-  @title{Aardvarks}
-
-  @defproc[(my-helper [lst list?])
-           (listof (not/c (one-of/c 'cow)))]{
-
-   Replaces each @scheme['cow] in @scheme[lst] with
-   @scheme['aardvark].}
-}|
-
-@;----------------------------------------
 @section{Multi-Page Sections}
 
 Setting the @scheme['multi-page] option (see
@@ -500,8 +352,7 @@ sub-sections.
 Revising @filepath{cows.scrbl} from the previous section:
 
 @verbatim[#:indent 2]|{
-  #lang scribble/doc
-  @(require scribble/manual)
+  #lang scribble/manual
 
   @title[#:style '(toc)]{Cows}
 

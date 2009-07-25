@@ -1,544 +1,401 @@
 #lang scheme/base
-(require scheme/serialize
+(require (rename-in (except-in "core.ss"
+                               target-url struct:target-url target-url? target-url-addr
+                               deserialize-info:target-url-v0)
+                    [make-target-url core:make-target-url])
+         "private/provide-structs.ss"
+         "html-variants.ss"
+         scheme/provide-syntax
+         scheme/struct-info
          scheme/contract
          (for-syntax scheme/base))
 
-;; ----------------------------------------
+(define-provide-syntax (compat**-out stx)
+  (syntax-case stx ()
+    [(_ struct-out o) 
+     (let ([id (syntax-case #'o ()
+                 [(id (field-id ...)) #'id]
+                 [id #'id])])
+       (with-syntax ([make-id (datum->syntax id
+                                             (string->symbol (format "make-~a" (syntax-e id)))
+                                             id)]
+                     [make-id/compat (datum->syntax id
+                                                    (string->symbol (format "make-~a/compat" (syntax-e id)))
+                                                    id)])
+         #'(combine-out
+            (except-out (struct-out o) make-id)
+            (rename-out [make-id/compat make-id]))))]
+    [(_ struct-out o ...) #'(combine-out (compat**-out struct-out o) ...)]))
 
-(define-struct collect-info (ht ext-ht parts tags gen-prefix relatives parents))
-(define-struct resolve-info (ci delays undef searches))
+(define-provide-syntax (compat-out stx)
+  (syntax-case stx ()
+    [(_ . outs) #'(compat**-out struct-out . outs)]))
 
-(define (part-collected-info part ri)
-  (hash-ref (collect-info-parts (resolve-info-ci ri))
-            part))
+(define-provide-syntax (compat*-out stx)
+  (syntax-case stx ()
+    [(_ . outs) #'(compat**-out struct*-out . outs)]))
 
-(define (collect-put! ci key val)
-  (let ([ht (collect-info-ht ci)])
-    (let ([old-val (hash-ref ht key #f)])
-      (when old-val
-        (fprintf (current-error-port)
-                 "WARNING: collected information for key multiple times: ~e; values: ~e ~e\n"
-                 key old-val val))
-    (hash-set! ht key val))))
-
-(define (resolve-get/where part ri key)
-  (let ([key (tag-key key ri)])
-    (let ([v (hash-ref (if part
-                         (collected-info-info (part-collected-info part ri))
-                         (collect-info-ht (resolve-info-ci ri)))
-                       key
-                       #f)])
-      (cond
-        [v (values v #f)]
-        [part (resolve-get/where
-               (collected-info-parent (part-collected-info part ri))
-               ri key)]
-        [else
-         (values (hash-ref (collect-info-ext-ht (resolve-info-ci ri)) key #f)
-                 #t)]))))
-
-(define (resolve-get/ext? part ri key)
-  (let-values ([(v ext?) (resolve-get/where part ri key)])
-    (when ext?
-      (hash-set! (resolve-info-undef ri) (tag-key key ri) #t))
-    (values v ext?)))
-
-(define (resolve-get part ri key)
-  (let-values ([(v ext?) (resolve-get/ext? part ri key)])
-    v))
-
-(define (resolve-get/tentative part ri key)
-  (let-values ([(v ext?) (resolve-get/where part ri key)])
-    v))
-
-(define (resolve-search search-key part ri key)
-  (let ([s-ht (hash-ref (resolve-info-searches ri)
-                        search-key
-                        (lambda ()
-                          (let ([s-ht (make-hash)])
-                            (hash-set! (resolve-info-searches ri)
-                                       search-key s-ht)
-                            s-ht)))])
-    (hash-set! s-ht key #t))
-  (resolve-get part ri key))
-
-(define (resolve-get-keys part ri key-pred)
-  (let ([l null])
-    (hash-for-each
-     (collected-info-info (part-collected-info part ri))
-     (lambda (k v) (when (key-pred k) (set! l (cons k l)))))
-    l))
+(define-provide-syntax (struct*-out stx)
+  (syntax-case stx ()
+    [(_ [id (field-id ...)]) 
+     (with-syntax ([id? (datum->syntax #'id
+                                       (string->symbol (format "~a?" (syntax-e #'id)))
+                                       #'id)]
+                   [struct:id (datum->syntax #'id
+                                             (string->symbol (format "struct:~a" (syntax-e #'id)))
+                                             #'id)]
+                   [make-id (datum->syntax #'id
+                                           (string->symbol (format "make-~a" (syntax-e #'id)))
+                                           #'id)]
+                   [(sel-id ...)
+                    (map (lambda (field-id)
+                           (datum->syntax field-id
+                                          (string->symbol (format "~a-~a" (syntax-e #'id) (syntax-e field-id)))
+                                          field-id))
+                         (syntax->list #'(field-id ...)))])
+              #'(combine-out
+                 id struct:id make-id id? sel-id ...))]
+    [(_ [id (field-id ...)]...)
+     #'(combine-out (struct*-out [id (field-id ...)]) ...)]))
 
 (provide (struct-out collect-info)
-         (struct-out resolve-info))
+         (struct-out resolve-info)
+         tag? block?
+         
+         make-flow flow? flow-paragraphs
 
-;; ----------------------------------------
+         (except-out (compat-out part) part-title-content)
+         (rename-out [part-blocks part-flow]
+                     [part-title-content/compat part-title-content])
+         make-versioned-part versioned-part?
+         make-unnumbered-part unnumbered-part?
 
-(provide provide-structs)
+         (except-out (compat-out paragraph) paragraph-content)
+         (rename-out [paragraph-content/compat paragraph-content])
+         make-styled-paragraph
+         (rename-out [paragraph? styled-paragraph?]
+                     [paragraph-style styled-paragraph-style])
+         make-omitable-paragraph omitable-paragraph?
 
-(define-syntax (provide-structs stx)
-  (syntax-case stx ()
-    [(_ (id ([field ct] ...)) ...)
-     #`(begin
-         (define-serializable-struct id (field ...)) ...
-         (provide/contract
-          #,@(let ([ids (syntax->list #'(id ...))]
-                   [fields+cts (syntax->list #'(([field ct] ...) ...))])
-               (define (get-fields super-id)
-                 (ormap (lambda (id  fields+cts)
-                          (if (identifier? id)
-                            (and (free-identifier=? id super-id)
-                                 fields+cts)
-                            (syntax-case id ()
-                              [(my-id next-id)
-                               (free-identifier=? #'my-id super-id)
-                               #`[#,@(get-fields #'next-id)
-                                  #,@fields+cts]]
-                              [_else #f])))
-                        ids fields+cts))
-               (map (lambda (id fields+cts)
-                      (if (identifier? id)
-                        #`[struct #,id #,fields+cts]
-                        (syntax-case id ()
-                          [(id super)
-                           #`[struct id (#,@(get-fields #'super) 
-                                         #,@fields+cts)]])))
-                    ids
-                    fields+cts))))]))
+         (compat-out table) 
+         table-flowss
+         make-auxiliary-table auxiliary-table?
 
-(provide tag?)
-(define (tag? s)
-  (and (pair? s)
-       (symbol? (car s))
-       (pair? (cdr s))
-       (or (string? (cadr s))
-           (generated-tag? (cadr s))
-           (and (pair? (cadr s))
-                (list? (cadr s))))
-       (null? (cddr s))))
+         (struct-out delayed-block)
 
-(provide block?)
-(define (block? p)
-  (or (paragraph? p)
-      (table? p)
-      (itemization? p)
-      (blockquote? p)
-      (compound-paragraph? p)
-      (delayed-block? p)))
+         (compat-out itemization)
+         (rename-out [itemization-blockss itemization-flows]
+                     [itemization? styled-itemization?]
+                     [itemization-style styled-itemization-style])
+         make-styled-itemization
 
-(define (string-without-newline? s)
-  (and (string? s)
-       (not (regexp-match? #rx"\n" s))))
+         make-blockquote
+
+         (compat-out compound-paragraph)
+
+         (except-out (compat-out element) element? element-style element-content)
+         (rename-out [element?/compat element?]
+                     [element-style/compat element-style]
+                     [element-content/compat element-content])
+         (except-out (compat*-out [toc-element (toc-content)])
+                     toc-element-toc-content)
+         (rename-out [toc-element-toc-content/compat toc-element-toc-content])
+         (compat*-out [target-element (tag)]
+                      [toc-target-element ()]
+                      [page-target-element ()]
+                      [redirect-target-element (alt-path alt-anchor)]
+                      [link-element (tag)]
+                      [index-element (tag plain-seq entry-seq desc)])
+         make-aux-element aux-element?
+         make-hover-element hover-element? hover-element-text
+         make-script-element script-element? script-element-type script-element-script
+
+         (struct-out collected-info)
+
+         (struct-out delayed-element)
+         ; delayed-element-content delayed-block-blocks current-serialize-resolve-info
+         
+         (struct-out part-relative-element)
+         ; part-relative-element-content collect-info-parents
+
+         (struct-out delayed-index-desc)
+
+         (struct*-out [collect-element (collect)])
+
+         (struct*-out [render-element (render)])
+
+         (struct-out generated-tag)
+         ; generate-tag tag-key current-tag-prefixes add-current-tag-prefix
+
+         content->string
+         (rename-out [content->string element->string]
+                     [content-width element-width])
+         ; strip-aux
+
+         block-width
+
+         info-key? part-collected-info collect-put!
+         resolve-get resolve-get/tentative resolve-get/ext? resolve-search resolve-get-keys)
 
 (provide-structs
- [part ([tag-prefix (or/c false/c string?)]
-        [tags (listof tag?)]
-        [title-content (or/c false/c list?)]
-        [style any/c]
-        [to-collect list?]
-        [flow flow?]
-        [parts (listof part?)])]
- [(unnumbered-part part) ()]
- [(versioned-part part) ([version (or/c string? false/c)])]
- [flow ([paragraphs (listof block?)])]
- [paragraph ([content list?])]
- [(styled-paragraph paragraph) ([style any/c])]
- [(omitable-paragraph paragraph) ()]
- [table ([style any/c]
-         [flowss (listof (listof (or/c flow? (one-of/c 'cont))))])]
- [(auxiliary-table table) ()]
- [delayed-block ([resolve (any/c part? resolve-info? . -> . block?)])]
- [itemization ([flows (listof flow?)])]
- [(styled-itemization itemization) ([style any/c])]
- [blockquote ([style any/c]
-              [paragraphs (listof block?)])]
- [compound-paragraph ([style any/c]
-                      [blocks (listof block?)])]
- ;; content = list of elements
- [element ([style any/c]
-           [content list?])]
- [(toc-element element) ([toc-content list?])]
- [(target-element element) ([tag tag?])]
- [(toc-target-element target-element) ()]
- [(page-target-element target-element) ()]
- [(redirect-target-element target-element) ([alt-path path-string?]
-                                            [alt-anchor string?])]
- [(link-element element) ([tag tag?])]
- [(index-element element) ([tag tag?]
-                           [plain-seq (and/c pair? (listof string-without-newline?))]
-                           [entry-seq list?]
-                           [desc any/c])]
- [(aux-element element) ()]
- [(hover-element element) ([text string?])]
- [(script-element element) ([type string?]
-                            [script (or/c path-string? (listof string?))])]
- ;; specific renders support other elements, especially strings
-
  [with-attributes ([style any/c]
                    [assoc (listof (cons/c symbol? string?))])]
-
- [collected-info ([number (listof (or/c false/c integer?))]
-                  [parent (or/c false/c part?)]
-                  [info any/c])]
-
- [target-url ([addr path-string?] [style any/c])]
- [url-anchor ([name string?])]
  [image-file ([path (or/c path-string?
                           (cons/c (one-of/c 'collects)
                                   (listof bytes?)))]
-              [scale real?])])
+              [scale real?])]
+ [target-url ([addr path-string?] [style any/c])])
 
-;; ----------------------------------------
+(define (make-flow l) l)
+(define (flow? l) (and (list? l) (andmap block? l)))
+(define (flow-paragraphs l) l)
 
-;; Delayed element has special serialization support:
-(define-struct delayed-element (resolve sizer plain)
-  #:property
-  prop:serializable
-  (make-serialize-info
-   (lambda (d)
-     (let ([ri (current-serialize-resolve-info)])
-       (unless ri
-         (error 'serialize-delayed-element
-                "current-serialize-resolve-info not set"))
-       (with-handlers ([exn:fail:contract?
-                        (lambda (exn)
-                          (error 'serialize-delayed-element
-                                 "serialization failed (wrong resolve info? delayed element never rendered?); ~a"
-                                 (exn-message exn)))])
-         (vector
-          (let ([l (delayed-element-content d ri)])
-            (if (and (pair? l) (null? (cdr l)))
-              (car l)
-              (make-element #f l)))))))
-   #'deserialize-delayed-element
-   #f
-   (or (current-load-relative-directory) (current-directory))))
+(define (list->content l)
+  (if (and (pair? l) (null? (cdr l)))
+      (car l)
+      l))
 
-(provide/contract
- (struct delayed-element ([resolve (any/c part? resolve-info? . -> . list?)]
-                          [sizer (-> any)]
-                          [plain (-> any)])))
+(define (content->list v)
+  (if (list? v)
+      v
+      (list v)))
 
-(provide deserialize-delayed-element)
-(define deserialize-delayed-element
-  (make-deserialize-info values values))
+(define (make-part/compat tag-prefix tags title-content orig-style to-collect flow parts)
+  (make-part tag-prefix 
+             tags
+             (list->content title-content)
+             (convert-style orig-style)
+             to-collect 
+             (flow-paragraphs flow)
+             parts))
 
-(provide delayed-element-content)
-(define (delayed-element-content e ri)
-  (hash-ref (resolve-info-delays ri) e))
+(define (part-title-content/compat p)
+  (list (part-title-content p)))
 
-(provide delayed-block-blocks)
-(define (delayed-block-blocks p ri)
-  (hash-ref (resolve-info-delays ri) p))
+(define (make-versioned-part tag-prefix tags title-content orig-style to-collect flow parts version)
+  (make-part tag-prefix 
+             tags
+             (list->content title-content)
+             (let ([s (convert-style orig-style)])
+               (make-style (style-name s)
+                           (cons
+                            (make-document-version version)
+                            (style-variants s))))
+             to-collect 
+             (flow-paragraphs flow)
+             parts))
+(define (versioned-part? p)
+  (and (part? p) (ormap document-version? (style-variants (part-style p)))))
 
-(provide current-serialize-resolve-info)
-(define current-serialize-resolve-info (make-parameter #f))
+(define (make-unnumbered-part tag-prefix tags title-content orig-style to-collect flow parts)
+  (make-part tag-prefix 
+             tags
+             (list->content title-content)
+             (let ([s (convert-style orig-style)])
+               (make-style (style-name s)
+                           (cons 'unnumbered (style-variants s))))
+             to-collect 
+             (flow-paragraphs flow)
+             parts))
+(define (unnumbered-part? p)
+  (and (part? p) (memq 'unnumbered (style-variants (part-style p)))))
 
-;; ----------------------------------------
+(define (make-paragraph/compat content)
+  (make-paragraph plain (list->content content)))
+(define (paragraph-content/compat p)
+  (content->list (paragraph-content p)))
+(define (make-styled-paragraph content style)
+  (make-paragraph (convert-style style) (list->content content)))
 
-;; part-relative element has special serialization support:
-(define-struct part-relative-element (collect sizer plain)
-  #:property
-  prop:serializable
-  (make-serialize-info
-   (lambda (d)
-     (let ([ri (current-serialize-resolve-info)])
-       (unless ri
-         (error 'serialize-part-relative-element
-                "current-serialize-resolve-info not set"))
-       (with-handlers ([exn:fail:contract?
-                        (lambda (exn)
-                          (error 'serialize-part-relative-element
-                                 "serialization failed (wrong resolve info? part-relative element never rendered?); ~a"
-                                 (exn-message exn)))])
-         (vector
-          (make-element #f (part-relative-element-content d ri))))))
-   #'deserialize-part-relative-element
-   #f
-   (or (current-load-relative-directory) (current-directory))))
+(define (make-omitable-paragraph content)
+  (make-paragraph (make-style #f '(omitable)) (list->content content)))
+(define (omitable-paragraph? p)
+  (and (paragraph? p) (memq 'omitable (style-variants (paragraph-style p)))))
 
-(provide/contract
- (struct part-relative-element ([collect (collect-info? . -> . list?)]
-                                [sizer (-> any)]
-                                [plain (-> any)])))
+(define (make-table/compat style cellss)
+  (make-table (convert-style style)
+              (map (lambda (cells)
+                     (map (lambda (cell)
+                            (cond
+                             [(eq? cell 'cont) 'cont]
+                             [(= 1 (length cell)) (car cell)]
+                             [else (make-nested-flow plain cell)]))
+                          cells))
+                   cellss)))
+(define (table-flowss t)
+  (map (lambda (row) (map (lambda (c) (make-flow (list c))) row))
+       (table-blockss t)))
 
-(provide deserialize-part-relative-element)
-(define deserialize-part-relative-element
-  (make-deserialize-info values values))
+(define (make-auxiliary-table style cells)
+  (let ([t (make-table/compat style cells)])
+    (make-table (make-style (style-name (table-style t))
+                            (cons 'aux
+                                  (style-variants (table-style t))))
+                (table-blockss t))))
 
-(provide part-relative-element-content)
-(define (part-relative-element-content e ci/ri)
-  (hash-ref (collect-info-relatives
-             (if (resolve-info? ci/ri) (resolve-info-ci ci/ri) ci/ri))
-            e))
+(define (auxiliary-table? t)
+  (ormap (lambda (v) (eq? v 'aux) (style-variants (table-style t)))))
 
-(provide collect-info-parents)
+(define (make-itemization/compat flows)
+  (make-itemization plain flows))
+(define (make-styled-itemization style flows)
+  (make-itemization (convert-style style) flows))
 
-;; ----------------------------------------
+(define (make-blockquote style blocks)
+  (make-nested-flow (convert-style (or style 'inset)) blocks))
 
-;; Delayed index entry also has special serialization support.
-;; It uses the same delay -> value table as delayed-element
-(define-struct delayed-index-desc (resolve)
-  #:mutable
-  #:property
-  prop:serializable 
-  (make-serialize-info
-   (lambda (d)
-     (let ([ri (current-serialize-resolve-info)])
-       (unless ri
-         (error 'serialize-delayed-index-desc
-                "current-serialize-resolve-info not set"))
-       (with-handlers ([exn:fail:contract?
-                        (lambda (exn)
-                          (error 'serialize-index-desc
-                                 "serialization failed (wrong resolve info?); ~a"
-                                 (exn-message exn)))])
-         (vector
-          (delayed-element-content d ri)))))
-   #'deserialize-delayed-index-desc
-   #f
-   (or (current-load-relative-directory) (current-directory))))
+(define (make-compound-paragraph/compat style blocks)
+  (make-compound-paragraph (convert-style style) blocks))
 
-(provide/contract
- (struct delayed-index-desc ([resolve (any/c part? resolve-info? . -> . any)])))
+(define (element-style-name s)
+  (if (style? s)
+      (style-name s)
+      s))
+(define (element-style-variants s)
+  (if (style? s)
+      (style-variants s)
+      null))
 
-(provide deserialize-delayed-index-desc)
-(define deserialize-delayed-index-desc
-  (make-deserialize-info values values))
+(define (add-element-variant v e)
+  (make-element (make-style (element-style-name (element-style e))
+                            (cons v
+                                  (element-style-variants (element-style e))))
+                (element-content e)))
+(define (check-element-style e pred)
+  (ormap pred (style-variants (element-style e))))
 
-;; ----------------------------------------
+(define (handle-image-style ctr style . args)
+  (if (image-file? style)
+      (make-image-element #f (list (apply ctr #f args)) 
+                          (image-file-path style)
+                          null
+                          (image-file-scale style))
+      (apply ctr (convert-element-style style) args)))
 
-(define-struct (collect-element element) (collect)
-  #:mutable
-  #:property
-  prop:serializable
-  (make-serialize-info
-   (lambda (d)
-     (vector (make-element
-              (element-style d)
-              (element-content d))))
-   #'deserialize-collect-element
-   #f
-   (or (current-load-relative-directory) (current-directory))))
-
-(provide deserialize-collect-element)
-(define deserialize-collect-element
-  (make-deserialize-info values values))
-
-(provide/contract
- [struct collect-element ([style any/c]
-                          [content list?]
-                          [collect (collect-info? . -> . any)])])
-
-;; ----------------------------------------
-
-(define-struct (render-element element) (render)
-  #:property
-  prop:serializable
-  (make-serialize-info
-   (lambda (d)
-     (vector (make-element
-              (element-style d)
-              (element-content d))))
-   #'deserialize-render-element
-   #f
-   (or (current-load-relative-directory) (current-directory))))
-
-(provide deserialize-render-element)
-(define deserialize-render-element
-  (make-deserialize-info values values))
-
-(provide/contract
- [struct render-element ([style any/c]
-                         [content list?]
-                         [render (any/c part? resolve-info? . -> . any)])])
-
-;; ----------------------------------------
-
-(define-struct generated-tag ()
-  #:property
-  prop:serializable
-  (make-serialize-info
-   (lambda (g)
-     (let ([ri (current-serialize-resolve-info)])
-       (unless ri
-         (error 'serialize-generated-tag
-                "current-serialize-resolve-info not set"))
-       (let ([t (hash-ref (collect-info-tags (resolve-info-ci ri)) g #f)])
-         (if t
-           (vector t)
-           (error 'serialize-generated-tag
-                  "serialization failed (wrong resolve info?)")))))
-   #'deserialize-generated-tag
-   #f
-   (or (current-load-relative-directory) (current-directory))))
-
-(provide (struct-out generated-tag))
-
-(provide deserialize-generated-tag)
-(define deserialize-generated-tag
-  (make-deserialize-info values values))
-
-(provide generate-tag tag-key
-         current-tag-prefixes
-         add-current-tag-prefix)
-
-(define (generate-tag tg ci)
-  (if (generated-tag? (cadr tg))
-      (let ([t (cadr tg)])
-        (list (car tg)
-              (let ([tags (collect-info-tags ci)])
-                (or (hash-ref tags t #f)
-                    (let ([key (list* 'gentag
-                                      (hash-count tags)
-                                      (collect-info-gen-prefix ci))])
-                      (hash-set! tags t key)
-                      key)))))
-      tg))
-
-(define (tag-key tg ri)
-  (if (generated-tag? (cadr tg))
-      (list (car tg)
-            (hash-ref (collect-info-tags (resolve-info-ci ri)) (cadr tg)))
-      tg))
-
-(define current-tag-prefixes (make-parameter null))
-(define (add-current-tag-prefix t)
-  (let ([l (current-tag-prefixes)])
-    (if (null? l)
-        t
-        (cons (car t) (append l (cdr t))))))
-
-;; ----------------------------------------
-
-(provide content->string
-         element->string
-         strip-aux)
-
-(define content->string
-  (case-lambda
-    [(c) (c->s c element->string)]
-    [(c renderer sec ri)
-     (c->s c (lambda (e) (element->string e renderer sec ri)))]))
-
-(define (c->s c do-elem)
-  (apply string-append (map do-elem c)))
-
-(define element->string
-  (case-lambda
-    [(c)
-     (cond
-       [(element? c) (content->string (element-content c))]
-       [(part-relative-element? c) (element->string ((part-relative-element-plain c)))]
-       [(delayed-element? c) (element->string ((delayed-element-plain c)))]
-       [(string? c) c]
-       [else (case c
-               [(mdash) "---"]
-               [(ndash) "--"]
-               [(ldquo rdquo) "\""]
-               [(rsquo) "'"]
-               [(rarr) "->"]
-               [(lang) "<"]
-               [(rang) ">"]
-               [else (format "~s" c)])])]
-    [(c renderer sec ri)
-     (cond
-       [(and (link-element? c)
-             (null? (element-content c)))
-        (let ([dest (resolve-get sec ri (link-element-tag c))])
-          ;; FIXME: this is specific to renderer
-          (if dest
-            (content->string (strip-aux
-                              (if (pair? dest) (cadr dest) (vector-ref dest 1)))
-                             renderer sec ri)
-            "???"))]
-       [(element? c) (content->string (element-content c) renderer sec ri)]
-       [(delayed-element? c)
-        (content->string (delayed-element-content c ri) renderer sec ri)]
-       [(part-relative-element? c)
-        (content->string (part-relative-element-content c ri) renderer sec ri)]
-       [else (element->string c)])]))
-
-(define (strip-aux content)
+(define (convert-element-style style)
   (cond
-    [(null? content) null]
-    [(aux-element? (car content)) (strip-aux (cdr content))]
-    [else (cons (car content) (strip-aux (cdr content)))]))
+   [(not style) style]
+   [(string? style) style]
+   [(symbol? style) style]
+   [else (convert-style style)]))
 
-;; ----------------------------------------
-
-(provide block-width
-         element-width)
-
-(define (element-width s)
+(define (element?/compat e)
+  (or (element? e) (and (list? e) (content? e))))
+(define (element-content/compat e)
   (cond
-    [(string? s) (string-length s)]
-    [(element? s) (apply + (map element-width (element-content s)))]
-    [(delayed-element? s) (element-width ((delayed-element-sizer s)))]
-    [(part-relative-element? s) (element-width ((part-relative-element-sizer s)))]
-    [else 1]))
-
-(define (paragraph-width s)
-  (apply + (map element-width (paragraph-content s))))
-
-(define (flow-width f)
-  (apply max 0 (map block-width (flow-paragraphs f))))
-
-(define (block-width p)
+   [(element? e) (content->list (element-content e))]
+   [else e]))
+(define (element-style/compat e)
   (cond
-    [(paragraph? p) (paragraph-width p)]
-    [(table? p) (table-width p)]
-    [(itemization? p) (itemization-width p)]
-    [(blockquote? p) (blockquote-width p)]
-    [(compound-paragraph? p) (compound-paragraph-width p)]
-    [(delayed-block? p) 1]))
+   [(element? e) (element-style e)]
+   [else #f]))
 
-(define (table-width p)
-  (let ([flowss (table-flowss p)])
-    (if (null? flowss)
-      0
-      (let loop ([flowss flowss])
-        (if (null? (car flowss))
-          0
-          (+ (apply max 0 (map flow-width (map car flowss)))
-             (loop (map cdr flowss))))))))
+(define (make-element/compat style content)
+  (handle-image-style make-element style (list->content content)))
+(define (make-toc-element/compat style content toc-content)
+  (handle-image-style make-toc-element style (list->content content) (list->content toc-content)))
+(define (toc-element-toc-content/compat e)
+  (content->list (toc-element-toc-content e)))
+(define (make-target-element/compat style content tag)
+  (handle-image-style make-target-element style (list->content content) tag))
+(define (make-toc-target-element/compat style content tag)
+  (handle-image-style make-toc-target-element style (list->content content) tag))
+(define (make-page-target-element/compat style content tag)
+  (handle-image-style make-page-target-element style (list->content content) tag))
+(define (make-redirect-target-element/compat style content tag alt-path alt-anchor)
+  (handle-image-style make-redirect-target-element style (list->content content) tag alt-path alt-anchor))
+(define (make-link-element/compat style content tag)
+  (handle-image-style make-link-element style (list->content content) tag))
+(define (make-index-element/compat style content tag plain-seq etry-seq desc)
+  (handle-image-style make-index-element style (list->content content) tag plain-seq etry-seq desc))
 
-(define (itemization-width p)
-  (apply max 0 (map flow-width (itemization-flows p))))
+(define (make-aux-element style content)
+  (add-element-variant 'aux (make-element/compat style content)))
+(define (aux-element? e)
+  (check-element-style e (lambda (v) (eq? v 'aux))))
 
-(define (blockquote-width p)
-  (+ 4 (apply max 0 (map block-width (blockquote-paragraphs p)))))
+(define (make-hover-element style content text)
+  (add-element-variant (make-hover-variant text)
+                       (make-element/compat style content)))
+(define (hover-element? e)
+  (check-element-style e hover-variant?))
+(define (hover-element-text e)
+  (ormap (lambda (v)
+           (and (hover-variant? v) (hover-variant-text e)))
+         (style-variants (element-style e))))
 
-(define (compound-paragraph-width p)
-  (apply max 0 (map block-width (compound-paragraph-blocks p))))
+(define (make-script-element style content type script)
+  (add-element-variant (make-script-variant type script)
+                       (make-element/compat style content)))
+(define (script-element? e)
+  (check-element-style e script-variant?))
+(define (script-element-type e)
+  (ormap (lambda (v)
+           (and (script-variant? v) (script-variant-type e)))
+         (style-variants (element-style e))))
+(define (script-element-script e)
+  (ormap (lambda (v)
+           (and (script-variant? v) (script-variant-script e)))
+         (style-variants (element-style e))))
 
 ;; ----------------------------------------
 
-(provide part-style?)
-
-(define (part-style? p s)
-  (let ([st (part-style p)])
-    (or (eq? s st)
-        (and (list? st) (memq s st)))))
-
-;; ----------------------------------------
-
-(define (info-key? l)
-  (and (pair? l)
-       (symbol? (car l))
-       (pair? (cdr l))))
-
-(provide info-key?)
-(provide/contract
- [part-collected-info (part? resolve-info? . -> . collected-info?)]
- [collect-put! (collect-info? info-key?  any/c . -> . any)]
- [resolve-get ((or/c part? false/c) resolve-info? info-key? . -> . any)]
- [resolve-get/tentative ((or/c part? false/c) resolve-info? info-key? . -> . any)]
- [resolve-get/ext? ((or/c part? false/c) resolve-info? info-key? . -> . any)]
- [resolve-search (any/c (or/c part? false/c) resolve-info? info-key? . -> . any)]
- [resolve-get-keys ((or/c part? false/c) resolve-info? (info-key? . -> . any/c) . -> . any/c)])
-
-;; ----------------------------------------
+(define (convert-style s)
+  (cond
+   [(not s) plain]
+   [(style? s) s]
+   [(string? s) (make-style s null)]
+   [(symbol? s) (make-style s null)]
+   [(and (list? s) (andmap symbol? s)) (make-style #f s)]
+   [(with-attributes? s) (let* ([wa (flatten-style s)]
+                                [s (convert-style (with-attributes-style wa))])
+                           (make-style (style-name s)
+                                       (cons
+                                        (make-attributes (with-attributes-assoc wa))
+                                        (style-variants s))))]
+   [(target-url? s) (let ([s (convert-style (target-url-style s))])
+                      (make-style (style-name s)
+                                       (cons
+                                        (core:make-target-url (target-url-addr s))
+                                        (style-variants s))))]
+   [(image-file? s) (make-style #f null)]
+   [(and (list? s) (pair? s) (eq? (car s) 'color))
+    (make-style #f (list (make-color-variant
+                          (if (string? (cadr s)) (cadr s) (cdr s)))))]
+   [(and (list? s) (pair? s) (eq? (car s) 'bg-color))
+    (make-style #f (list (make-background-color-variant
+                          (if (string? (cadr s)) (cadr s) (cdr s)))))]
+   [(and (pair? s)
+         (list? s)
+         (andmap (lambda (v) (and (pair? v) 
+                                  (memq (car v) '(alignment valignment row-styles style))))
+                 s))
+    (let ([gen-columns (lambda (sn a va)
+                         (map (lambda (sn a va)
+                                (make-style sn
+                                            (append (if a (list a) null)
+                                                    (if va (list va) null))))
+                              (cdr (or sn (map (lambda (x) #f) (or va a))))
+                              (cdr (or a (map (lambda (x) #f) (or va sn))))
+                              (cdr (or va (map (lambda (x) #f) (or a sn))))))])
+      (make-style (let ([s (assq 'style s)])
+                    (and s (cadr s)))
+                  (let ([a (assq 'alignment s)]
+                        [va (assq 'valignment s)])
+                    (if (or a va)
+                        (list (make-table-columns (gen-columns #f a va)))
+                        (let ([l (cdr (assq 'row-styles s))])
+                          (list
+                           (make-table-cells
+                            (map (lambda (row)
+                                   (let ([sn (assq 'style row)]
+                                         [a (assq 'alignment row)]
+                                         [va (assq 'valignment row)])
+                                     (if (or sn a va)
+                                         (gen-columns sn a va)
+                                         (error 'convert-style "no row style found"))))
+                                 l))))))))]
+   [else (error 'convert-style "unrecognized style: ~e" s)]))
 
 (define (flatten-style s)
   (cond
@@ -568,5 +425,3 @@
            (target-url-addr s)
            rest)))]
    [else s]))
-
-(provide flatten-style)

@@ -2,6 +2,7 @@
 (require "../decode.ss"
          "../scheme.ss"
          "../struct.ss"
+         (only-in "../core.ss" style-name)
          (for-syntax scheme/base
                      syntax/kerncase
                      syntax/boundmap)
@@ -108,7 +109,7 @@
         (unless (and (box-splice? box)
                      (= 1 (length (splice-run box)))
                      (table? (car (splice-run box)))
-                     (eq? 'boxed (table-style (car (splice-run box)))))
+                     (eq? 'boxed (style-name (table-style (car (splice-run box))))))
           (error 'deftogether
                  "element is not a boxing splice containing a single table: ~e"
                  box))

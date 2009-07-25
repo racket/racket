@@ -440,7 +440,7 @@ of the text.  This works for @litchar["@"] too:
 }===|
 
 @;--------------------------------------------------------------------
-@subsubsub*section{Alternative Body Syntax}
+@subsubsub*section[#:tag "alt-body-syntax"]{Alternative Body Syntax}
 
 In addition to the above, there is an alternative syntax for the body,
 one that specifies a new marker for its end: use @litchar["|{"] for

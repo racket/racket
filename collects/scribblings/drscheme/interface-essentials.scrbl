@@ -3,13 +3,14 @@
           scribble/decode
           scribble/eval
           scribble/struct
+          scribble/scheme
           (for-label htdp/convert
                      scheme/gui/base))
 
 @(define (ioinputfont . s)
    (apply tt s))
 @(define (iooutputfont . s)
-   (make-element "schemestdout" (decode-content s)))
+   (make-element output-color (decode-content s)))
 
 @title[#:tag "interface-essentials" #:style 'toc]{Interface Essentials}
 

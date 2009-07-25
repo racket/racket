@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require "struct.ss"
+(require "core.ss"
+         "private/provide-structs.ss"
          scheme/contract)
 
 (provide-structs

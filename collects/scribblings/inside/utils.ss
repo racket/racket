@@ -3,6 +3,7 @@
 (require scribble/manual
          scribble/struct
          scribble/decode
+         scribble/scheme
          (for-syntax scheme/base)
          (for-label scheme/base))
 
@@ -140,7 +141,7 @@
              (let ([d (resolve-get/tentative part ri `(cpp ,x))])
                (list
                 (if d
-                    (make-link-element "schemesyntaxlink" (list e) `(cpp ,x))
+                    (make-link-element syntax-link-color (list e) `(cpp ,x))
                     e))))
            (lambda () e)
            (lambda () e)))

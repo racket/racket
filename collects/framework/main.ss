@@ -854,7 +854,7 @@
   ()
   @{This returns the reset unlocked @scheme[bitmap].
          
-         The bitmap may not respond @scheme[#t] to the @link bitmap ok?
+         The bitmap may not respond @scheme[#t] to the @method[bitmap% ok?]
          method.})
  
  (proc-doc/names
@@ -870,10 +870,10 @@
   icon:get-left/right-cursor
   (-> (is-a?/c cursor%))
   ()
-  @{This function returns a @link cursor object that indicates
+  @{This function returns a @scheme[cursor%] object that indicates
          left/right sizing is possible, for use with columns inside a window.
          
-         The cursor may not respond @scheme[#t] to the @link cursor ok?
+         The cursor may not respond @scheme[#t] to the @method[cursor% ok?]
          method.})
  
  (proc-doc/names
@@ -893,7 +893,7 @@
   @{This returns a bitmap to be displayed in an @scheme[frame:info<%>]
          frame when garbage collection is taking place.
          
-         The bitmap may not respond @scheme[#t] to the @link bitmap ok?
+         The bitmap may not respond @scheme[#t] to the @method[bitmap% ok?]
          method.})
  
  (proc-doc/names
@@ -1233,7 +1233,7 @@
   keymap:setup-search
   ((is-a?/c keymap%) . -> . void?)
   (keymap)
-  @{This extends a @link keymap with the bindings for searching.})
+  @{This extends a @scheme[keymap%] with the bindings for searching.})
  
  (proc-doc/names
   keymap:set-chained-keymaps
@@ -1344,7 +1344,7 @@
   scheme:get-wordbreak-map
   (-> (is-a?/c editor-wordbreak-map%))
   ()
-  @{This method returns a @link editor-wordbreak-map that is suitable
+  @{This method returns a @scheme[editor-wordbreak-map%] that is suitable
          for Scheme.})
  
  (proc-doc/names

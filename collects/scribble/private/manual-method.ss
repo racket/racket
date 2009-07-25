@@ -34,8 +34,8 @@
        (lambda (c mk) (mk id/tag)))
      content
      (lambda (tag)
-       (make-element "schemesymbol"
-                     (list (make-link-element "schemevaluelink" content
+       (make-element symbol-color
+                     (list (make-link-element value-link-color content
                                               (method-tag tag sym))))))))
 
 (define (method-tag vtag sym)

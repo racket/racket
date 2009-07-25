@@ -1,9 +1,10 @@
 #lang scribble/doc
 @(require scribble/struct
+          scribble/scheme
           "mz.ss")
 
 @(define (cont n)
-   (make-element "schemevariable"
+   (make-element variable-color
                  (list "C" (make-element 'subscript (list (format "~a" n))))))
 
 @title[#:tag "contmarks"]{Continuation Marks}

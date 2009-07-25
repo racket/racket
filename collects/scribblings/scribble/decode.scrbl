@@ -14,7 +14,7 @@ At the @tech{flow} level, decoding recognizes a blank line as a
 @tech{paragraph} separator. Blocks and paragraphs without blank lines
 in between are collected into a @tech{compound paragraph}.
 
-At the @tech{paragraph}-content level, decoding makes just a few
+At the @tech{content} level, decoding makes just a few
 special text conversions:
 
 @itemize[
@@ -43,6 +43,29 @@ that in
 
 the @litchar{``apple''} argument is decoded to use fancy quotes, and
 then it is bolded.
+
+
+@defproc[(pre-flow? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a @deftech{pre-flow} value: a
+string or other non-list @scheme[content], a @scheme[block?], or a
+@scheme[splice] containing a list of @tech{pre-flow} values; otherwise
+returns @scheme[#f].
+
+Pre-flow is decoded into a @tech{flow} (i.e., a list of @tech{blocks})
+by functions like @scheme[decode] and @scheme[decode-flow].}
+
+
+@defproc[(pre-content? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a @deftech{pre-content} value: a
+string or other non-list @scheme[content], or a @scheme[splice]
+containing a list of @tech{pre-content} values; otherwise returns
+@scheme[#f].
+
+Pre-content is decoded into @tech{content} by functions like
+@scheme[decode-content] and @scheme[decode-paragraph].}
+
 
 @defproc[(decode [lst list?]) part?]{
 
@@ -74,7 +97,7 @@ parsing.
 
 }
 
-@defproc[(decode-flow [lst list?]) flow?]{
+@defproc[(decode-flow [lst (listof pre-flow?)]) flow?]{
 
 Decodes a flow. A sequence of two or more newlines separated only by
 whitespace counts is parsed as a paragraph separator. In @scheme[lst],
@@ -84,7 +107,7 @@ the enclosing flow.
 
 }
 
-@defproc[(decode-compound-paragraph [lst list?]) block?]{
+@defproc[(decode-compound-paragraph [lst (listof pre-flow?)]) block?]{
 
 Decodes a compound paragraph. If the compound paragraph contains a
 single block, the block is returned without a
@@ -92,26 +115,26 @@ single block, the block is returned without a
 
 }
 
-@defproc[(decode-paragraph [lst list?]) paragraph?]{
+@defproc[(decode-paragraph [lst (listof pre-content?)]) paragraph?]{
 
 Decodes a paragraph.
 
 }
 
-@defproc[(decode-content [lst list?]) list?]{
+@defproc[(decode-content [lst (listof pre-content?)]) list?]{
 
-Decodes a sequence of elements.
+Decodes @tech{content}.
 
 }
 
-@defproc[(decode-elements [lst list?]) list?]{
+@defproc[(decode-elements [lst (listof pre-content?)]) list?]{
 
 An alias for @scheme[decode-content].
 }
 
-@defproc[(decode-string [s string?]) list?]{
+@defproc[(decode-string [s string?]) (listof content?)]{
 
-Decodes a single string to produce a list of elements.
+Decodes a single string to produce @tech{content}.
 
 }
 
@@ -127,7 +150,7 @@ otherwise.
                        [tags (listof string?)]
                        [version (or/c string? false/c)]
                        [style any/c]
-                       [content list?])]{
+                       [content content?])]{
 
 See @scheme[decode] and @scheme[decode-part]. The @scheme[tag-prefix]
 and @scheme[style] fields are propagated to the resulting
@@ -139,7 +162,7 @@ and @scheme[style] fields are propagated to the resulting
                        [tag-prefix (or/c false/c string?)]
                        [tags (listof string?)]
                        [style any/c]
-                       [title list?])]{
+                       [title content?])]{
 
 Like @scheme[title-decl], but for a sub-part.  See @scheme[decode] and
 @scheme[decode-part].

@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "basic.ss"
+(require "base.ss"
          "private/manual-style.ss"
          "private/manual-scheme.ss"
          "private/manual-mod.ss"
@@ -15,7 +15,7 @@
 (provide unsyntax
          make-binding-redirect-elements
          defidentifier
-         (all-from-out "basic.ss"
+         (all-from-out "base.ss"
                        "private/manual-style.ss"
                        "private/manual-scheme.ss"
                        "private/manual-mod.ss"

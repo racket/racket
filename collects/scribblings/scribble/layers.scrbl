@@ -17,13 +17,33 @@ and instead use the document-generation structure directly.
 A Scribble document normally starts
 
 @schememod[
+scribble/manual
+]
+
+but it could also start
+
+@schememod[
+scribble/base
+]
+
+or
+
+@schememod[
 scribble/doc
 ]
 
-Besides making the file a module, this declaration selects the
-Scribble reader (instead of the usual Scheme reader), and it starts
-the body of the file in ``text'' mode. The reader layer mostly leaves
-text alone, but @litchar["@"] forms escape to S-expression mode.
+The last one introduces the smallest number of typesetting bindings in
+the document body. Using @schememodname[scribble/base] after
+@hash-lang[] is the same as using @schememodname[scribble/doc] plus
+@scheme[(require scribble/base)], and using
+@schememodname[scribble/manual] after @hash-lang[] is the same as using
+@schememodname[scribble/doc] plus @scheme[(require scribble/manual)].
+
+Besides making the file a module, each of the @hash-lang[]
+declarations selects the Scribble reader (instead of the usual Scheme
+reader), and it starts the body of the file in ``text'' mode. The
+reader layer mostly leaves text alone, but @litchar["@"] forms escape
+to S-expression mode.
 
 A module written as
 
@@ -150,10 +170,10 @@ Working roughly from the bottom up, the Scribble layers are:
        syntax of Scheme with @"@"-forms for conveniently embedding a
        mixin of text and escapes. See @secref["reader"].}
 
- @item{@schememodname[scribble/struct]: A set of document datatypes
+ @item{@schememodname[scribble/core]: A set of document datatypes
        and utilities that define the basic layout and processing of a
        document. For example, the @scheme[part] datatype is defined in
-       this layer. See @secref["struct"].}
+       this layer. See @secref["core"].}
 
  @item{@schememodname[scribble/base-render] with
        @schememodname[scribble/html-render],
@@ -165,7 +185,7 @@ Working roughly from the bottom up, the Scribble layers are:
 
  @item{@schememodname[scribble/decode]: Processes a stream of text,
        section-start markers, etc. to produce instances of the
-       @schememodname[scribble/struct] datatypes. See
+       @schememodname[scribble/core] datatypes. See
        @secref["decode"].}
 
  @item{@schememodname[scribble/doclang]: A language to be used for the
@@ -177,19 +197,22 @@ Working roughly from the bottom up, the Scribble layers are:
        @schememodname[scribble/reader] with
        @schememodname[scribble/doclang]. See @secref["docreader"].}
 
- @item{@schememodname[scribble/basic]: A library of basic document
+ @item{@schememodname[scribble/base]: A library of basic document
        operators---such as @scheme[title], @scheme[section], and
        @scheme[secref]---for use with @schememodname[scribble/decode]
-       and a renderer. See @secref["basic"].}
+       and a renderer. This library name also can be used as a
+       language, where it combines @schememodname[scribble/doc] with
+       the exports of @schememodname[scribble/base]. See
+       @secref["base"].}
 
  @item{@schememodname[scribble/scheme]: A library of functions for
        typesetting Scheme code. See @secref["scheme"]. These functions
-       are not normally used directly, but instead through
+       are not normally used directly, but instead used through
        @schememodname[scribble/manual].}
 
  @item{@schememodname[scribble/manual]: A library of functions for
        writing PLT Scheme documentation; re-exports
-       @schememodname[scribble/basic]. Also, the
+       @schememodname[scribble/base]. Also, the
        @schememodname[scribble/manual-struct] library provides types
        for index-entry descriptions created by functions in
        @schememodname[scribble/manual]. See @secref["manual"].}

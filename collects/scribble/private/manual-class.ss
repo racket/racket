@@ -3,7 +3,6 @@
          "../struct.ss"
          "../scheme.ss"
          "../search.ss"
-         "../config.ss"
          "../basic.ss"
          "../manual-struct.ss"
          "qsloc.ss"
@@ -134,9 +133,9 @@
           `(cls/intf ,(cadr tag))
           (make-cls/intf
            (make-element
-            "schemesymbol"
+            symbol-color
             (list (make-link-element
-                   "schemevaluelink"
+                   value-link-color
                    (list (symbol->string (syntax-e (decl-name decl))))
                    tag)))
            (map id-info (decl-app-mixins decl))

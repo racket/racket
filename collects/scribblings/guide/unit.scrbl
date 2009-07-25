@@ -51,10 +51,10 @@ describes the exports of a component that implements a toy factory:
 scheme]
 
 (define-signature toy-factory^
-  (build-toys  (code:comment (integer? -> (listof toy?)))
-   repaint     (code:comment (toy? symbol? -> toy?))
-   toy?        (code:comment (any/c -> boolean?))
-   toy-color)) (code:comment (toy? -> symbol?))
+  (build-toys  (code:comment #, @tt{(integer? -> (listof toy?))})
+   repaint     (code:comment #, @tt{(toy? symbol? -> toy?)})
+   toy?        (code:comment #, @tt{(any/c -> boolean?)})
+   toy-color)) (code:comment #, @tt{(toy? -> symbol?)})
 
 (provide toy-factory^)
 ]
@@ -101,9 +101,9 @@ is willing to sell only toys in a particular color.)
 scheme]
 
 (define-signature toy-store^
-  (store-color     (code:comment (-> symbol?))
-   stock!          (code:comment (integer? -> void?))
-   get-inventory)) (code:comment (-> (listof toy?)))
+  (store-color     (code:comment #, @tt{(-> symbol?)})
+   stock!          (code:comment #, @tt{(integer? -> void?)})
+   get-inventory)) (code:comment #, @tt{(-> (listof toy?))})
 
 (provide toy-store^)
 ]
@@ -420,10 +420,10 @@ For example, @filepath{toy-factory-sig.ss} can be written as
 @schememod[
 scheme/signature
 
-build-toys  (code:comment (integer? -> (listof toy?)))
-repaint     (code:comment (toy? symbol? -> toy?))
-toy?        (code:comment (any/c -> boolean?))
-toy-color   (code:comment (toy? -> symbol?))
+build-toys  (code:comment #, @tt{(integer? -> (listof toy?))})
+repaint     (code:comment #, @tt{(toy? symbol? -> toy?)})
+toy?        (code:comment #, @tt{(any/c -> boolean?)})
+toy-color   (code:comment #, @tt{(toy? -> symbol?)})
 ]
 
 The signature @scheme[toy-factory^] is automatically provided from the

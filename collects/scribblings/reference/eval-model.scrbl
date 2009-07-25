@@ -1,5 +1,6 @@
 #lang scribble/doc
 @(require scribble/struct
+          scribble/scheme
           (for-syntax scheme/base)
           "mz.ss"
           "prog-steps.ss")
@@ -8,7 +9,7 @@
 @(define rspace (make-element "ghost" (list 'rarr)))
 
 @(define *redex (lambda (c)
-                  (make-element "highlighted" (list c))))
+                  (make-element highlighted-color (list c))))
 @(define-syntax redex
    (syntax-rules () [(_ a) (*redex (scheme a))]))
 
@@ -18,7 +19,7 @@
 @(define-syntax sub
    (syntax-rules () [(_ a b) (*sub (scheme a) (scheme b))]))
 @(define (frame n)
-   (make-element "schemevariable"
+   (make-element variable-color
                  (list "C" (make-element 'subscript (list (format "~a" n))))))
 @;{
 These are not used; if they do get back in, then it's probably better

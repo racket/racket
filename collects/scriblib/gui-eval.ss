@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require scribble/eval
-         scribble/struct
+         scribble/core
          scribble/scheme
          scheme/class
          scheme/file
@@ -127,13 +127,14 @@
         (send dc clear)
         (((gui-eval 'make-pict-drawer) v) dc 0 0)
         (send bm save-file fn 'png)
-        (make-element #f (list (make-element (make-image-file 
-                                              ;; For HTML output, .pdf is automatically changed to .png.
-                                              ;; Be sure to use a string rather than a path, because
-                                              ;; it gets recorded in "exprs.dat".
-                                              (path->string (path-replace-suffix fn #".pdf"))
-                                              1.0) 
-                                             (list "[image]"))))))]
+        (make-image-element
+         #f
+         (list "[image]")
+         ;; Be sure to use a string rather than a path, because
+         ;; it gets recorded in "exprs.dat".
+         (path->string (path-replace-suffix fn #""))
+         '(".pdf" ".png")
+         1.0)))]
    [(pair? v) (cons (fixup-picts (car v))
                     (fixup-picts (cdr v)))]
    [(serializable? v) v]

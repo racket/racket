@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require "struct.ss"
+(require "core.ss"
+         "private/render-utils.ss"
          mzlib/class
          mzlib/serialize
          scheme/file
@@ -51,36 +52,109 @@
 
     ;; ----------------------------------------
 
-    (define/public (extract-part-style-files d ri tag stop-at-part?)
-      (let loop ([p d][up? #t][only-up? #f])
-        (let ([s (part-style p)])
-          (apply
-           append
-           (if up?
-               (let ([p (collected-info-parent (part-collected-info p ri))])
-                 (if p
-                     (loop p #t #t)
-                     null))
-               null)
-           (if (list? s)
-               (filter
-                values
-                (map (lambda (s)
-                       (and (list? s)
-                            (= 2 (length s))
-                            (eq? (car s) tag)
-                            (path-string? (cadr s))
-                            (cadr s)))
-                     s))
-               null)
-           (if only-up?
-               null
-               (map (lambda (p)
-                      (if (stop-at-part? p)
-                          null
-                          (loop p #f #f)))
-                    (part-parts p)))))))
-  
+    (define/public (extract-part-style-files d ri tag stop-at-part? pred extract)
+      (let ([ht (make-hash)])
+        (let loop ([p d][up? #t][only-up? #f])
+          (let ([s (part-style p)])
+            (when up?
+              (let ([p (collected-info-parent (part-collected-info p ri))])
+                (if p
+                    (loop p #t #t)
+                    null)))
+             (extract-style-style-files (part-style p) ht pred extract)
+             (unless only-up?
+               (extract-content-style-files (part-to-collect p) d ri ht pred extract)
+               (extract-content-style-files (part-title-content p) d ri ht pred extract)
+               (extract-flow-style-files (part-blocks p) d ri ht pred extract))
+             (unless only-up?
+               (for-each (lambda (p)
+                           (unless (stop-at-part? p)
+                             (loop p #f #f)))
+                         (part-parts p)))))
+        (for/list ([k (in-hash-keys ht)]) (main-collects-relative->path k))))
+
+    (define/private (extract-style-style-files s ht pred extract)
+      (for ([v (in-list (style-variants s))])
+        (when (pred v)
+          (hash-set! ht (extract v) #t))))
+
+    (define/private (extract-flow-style-files blocks d ri ht pred extract)
+      (for ([b (in-list blocks)])
+        (extract-block-style-files b d ri ht pred extract)))
+
+    (define/private (extract-block-style-files p d ri ht pred extract)
+      (cond
+        [(table? p)
+         (extract-style-style-files (table-style p) ht pred extract)
+         (for-each (lambda (blocks)
+                     (for-each (lambda (block)
+                                 (unless (eq? block 'cont)
+                                   (extract-block-style-files block d ri ht pred extract)))
+                               blocks))
+                   (table-blockss p))]
+        [(itemization? p)
+         (extract-style-style-files (itemization-style p) ht pred extract)
+         (for-each (lambda (blocks)
+                     (extract-flow-style-files blocks d ri ht pred extract))
+                   (itemization-blockss p))]
+        [(nested-flow? p) 
+         (extract-style-style-files (nested-flow-style p) ht pred extract)
+         (extract-flow-style-files (nested-flow-blocks p) d ri ht pred extract)]
+        [(compound-paragraph? p)
+         (extract-style-style-files (compound-paragraph-style p) ht pred extract)
+         (extract-flow-style-files (compound-paragraph-blocks p) d ri ht pred extract)]
+        [(delayed-block? p)
+         (let ([v ((delayed-block-resolve p) this d ri)])
+           (extract-block-style-files v d ri ht pred extract))]
+        [else
+         (extract-style-style-files (paragraph-style p) ht pred extract)
+         (extract-content-style-files (paragraph-content p) d ri ht pred extract)]))
+
+    (define/private (extract-content-style-files e d ri ht pred extract)
+      (cond
+       [(element? e)
+        (when (style? (element-style e))
+          (extract-style-style-files (element-style e) ht pred extract))
+        (extract-content-style-files (element-content e) d ri ht pred extract)]
+       [(multiarg-element? e)
+        (when (style? (multiarg-element-style e))
+          (extract-style-style-files (multiarg-element-style e) ht pred extract))
+        (extract-content-style-files (multiarg-element-contents e) d ri ht pred extract)]
+       [(list? e)
+        (for ([e (in-list e)])
+          (extract-content-style-files e d ri ht pred extract))]
+       [(delayed-element? e)
+        (extract-content-style-files (delayed-element-content e ri) d ri ht pred extract)]
+       [(part-relative-element? e)
+        (extract-content-style-files (part-relative-element-content e ri) d ri ht pred extract)]))
+
+    (define/public (extract-version d)
+      (or (ormap (lambda (v)
+               (and (document-version? v)
+                    (document-version-text v)))
+                 (style-variants (part-style d)))
+          ""))
+
+    (define/private (extract-pre-paras d sym)
+      (let loop ([l (part-blocks d)])
+        (cond
+         [(null? l) null]
+         [else (let ([v (car l)])
+                 (cond
+                  [(and (paragraph? v)
+                        (eq? sym (style-name (paragraph-style v))))
+                   (cons v (loop (cdr l)))]
+                  [(compound-paragraph? v)
+                   (append (loop (compound-paragraph-blocks v))
+                           (loop (cdr l)))]
+                  [else (loop (cdr l))]))])))
+
+    (define/public (extract-authors d)
+      (extract-pre-paras d 'author))
+
+    (define/public (extract-pretitle d)
+      (extract-pre-paras d 'pretitle))
+    
     ;; ----------------------------------------
 
     (define root (make-mobile-root root-path))
@@ -196,20 +270,18 @@
             (collect-content (part-title-content d) p-ci))
           (collect-part-tags d p-ci number)
           (collect-content (part-to-collect d) p-ci)
-          (collect-flow (part-flow d) p-ci)
+          (collect-flow (part-blocks d) p-ci)
           (let loop ([parts (part-parts d)]
                      [pos 1])
             (unless (null? parts)
               (let ([s (car parts)])
                 (collect-part s d p-ci
-                              (cons (if (or (unnumbered-part? s) 
-                                            (part-style? s 'unnumbered))
+                              (cons (if (part-style? s 'unnumbered)
                                         #f 
                                         pos)
                                     number))
                 (loop (cdr parts)
-                      (if (or (unnumbered-part? s) 
-                              (part-style? s 'unnumbered))
+                      (if (part-style? s 'unnumbered)
                           pos
                           (add1 pos)))))))
         (let ([prefix (part-tag-prefix d)])
@@ -241,41 +313,38 @@
                            number
                            (add-current-tag-prefix t))))))
 
-    (define/public (collect-content c ci)
-      (for ([i (in-list c)]) (collect-element i ci)))
-
     (define/public (collect-paragraph p ci)
       (collect-content (paragraph-content p) ci))
 
     (define/public (collect-flow p ci)
-      (for ([p (in-list (flow-paragraphs p))])
+      (for ([p (in-list p)])
         (collect-block p ci)))
 
     (define/public (collect-block p ci)
       (cond [(table? p) (collect-table p ci)]
             [(itemization? p) (collect-itemization p ci)]
-            [(blockquote? p) (collect-blockquote p ci)]
+            [(nested-flow? p) (collect-nested-flow p ci)]
             [(compound-paragraph? p) (collect-compound-paragraph p ci)]
             [(delayed-block? p) (void)]
             [else (collect-paragraph p ci)]))
 
     (define/public (collect-table i ci)
-      (for ([d (in-list (apply append (table-flowss i)))])
-        (when (flow? d) (collect-flow d ci))))
+      (for ([d (in-list (apply append (table-blockss i)))])
+        (unless (eq? d 'cont) (collect-block d ci))))
 
     (define/public (collect-itemization i ci)
-      (for ([d (in-list (itemization-flows i))])
+      (for ([d (in-list (itemization-blockss i))])
         (collect-flow d ci)))
 
-    (define/public (collect-blockquote i ci)
-      (for ([d (in-list (blockquote-paragraphs i))])
+    (define/public (collect-nested-flow i ci)
+      (for ([d (in-list (nested-flow-blocks i))])
         (collect-block d ci)))
 
     (define/public (collect-compound-paragraph i ci)
       (for ([d (in-list (compound-paragraph-blocks i))])
         (collect-block d ci)))
 
-    (define/public (collect-element i ci)
+    (define/public (collect-content i ci)
       (if (part-relative-element? i)
         (let ([content (or (hash-ref (collect-info-relatives ci) i #f)
                            (let ([v ((part-relative-element-collect i) ci)])
@@ -286,7 +355,11 @@
                (when (index-element? i) (collect-index-element i ci))
                (when (collect-element? i) ((collect-element-collect i) ci))
                (when (element? i)
-                 (for ([e (element-content i)]) (collect-element e ci))))))
+                 (collect-content (element-content i) ci))
+               (when (multiarg-element? i)
+                 (collect-content (multiarg-element-contents i) ci))
+               (when (list? i)
+                 (for ([e (in-list i)]) (collect-content e ci))))))
 
     (define/public (collect-target-element i ci)
       (let ([t (generate-tag (target-element-tag i) ci)])
@@ -315,26 +388,22 @@
                       (extend-prefix d (fresh-tag-resolve-context? d ri))])
         (when (part-title-content d)
           (resolve-content (part-title-content d) d ri))
-        (resolve-flow (part-flow d) d ri)
+        (resolve-flow (part-blocks d) d ri)
         (for ([p (part-parts d)])
           (resolve-part p ri))))
-
-    (define/public (resolve-content c d ri)
-      (for ([i (in-list c)])
-        (resolve-element i d ri)))
 
     (define/public (resolve-paragraph p d ri)
       (resolve-content (paragraph-content p) d ri))
 
-    (define/public (resolve-flow p d ri)
-      (for ([p (flow-paragraphs p)])
+    (define/public (resolve-flow f d ri)
+      (for ([p (in-list f)])
         (resolve-block p d ri)))
 
     (define/public (resolve-block p d ri)
       (cond
         [(table? p) (resolve-table p d ri)]
         [(itemization? p) (resolve-itemization p d ri)]
-        [(blockquote? p) (resolve-blockquote p d ri)]
+        [(nested-flow? p) (resolve-nested-flow p d ri)]
         [(compound-paragraph? p) (resolve-compound-paragraph p d ri)]
         [(delayed-block? p) 
          (let ([v ((delayed-block-resolve p) this d ri)])
@@ -343,22 +412,22 @@
         [else (resolve-paragraph p d ri)]))
 
     (define/public (resolve-table i d ri)
-      (for ([f (in-list (apply append (table-flowss i)))])
-        (when (flow? f) (resolve-flow f d ri))))
+      (for ([f (in-list (apply append (table-blockss i)))])
+        (unless (eq? f 'cont) (resolve-block f d ri))))
 
     (define/public (resolve-itemization i d ri)
-      (for ([f (in-list (itemization-flows i))])
+      (for ([f (in-list (itemization-blockss i))])
         (resolve-flow f d ri)))
-
-    (define/public (resolve-blockquote i d ri)
-      (for ([f (in-list (blockquote-paragraphs i))])
+    
+    (define/public (resolve-nested-flow i d ri)
+      (for ([f (in-list (nested-flow-blocks i))])
         (resolve-block f d ri)))
 
     (define/public (resolve-compound-paragraph i d ri)
       (for ([f (in-list (compound-paragraph-blocks i))])
         (resolve-block f d ri)))
 
-    (define/public (resolve-element i d ri)
+    (define/public (resolve-content i d ri)
       (cond
         [(part-relative-element? i)
          (resolve-content (part-relative-element-content i ri) d ri)]
@@ -368,6 +437,9 @@
                                 (hash-set! (resolve-info-delays ri) i v)
                                 v))
                           d ri)]
+        [(list? i)
+         (for ([i (in-list i)])
+           (resolve-content i d ri))]
         [(element? i)
          (cond
            [(index-element? i)
@@ -377,19 +449,30 @@
                   (hash-set! (resolve-info-delays ri) e v))))]
            [(link-element? i)
             (resolve-get d ri (link-element-tag i))])
-         (for ([e (element-content i)])
-           (resolve-element e d ri))]))
+         (resolve-content (element-content i) d ri)]
+        [(multiarg-element? i)
+         (resolve-content (multiarg-element-contents i) d ri)]))
 
     ;; ----------------------------------------
     ;; render methods
 
-    (define/public (install-extra-files)
-      (for ([fn extra-files]) (install-file fn)))
+    (define/public (auto-extra-files? v) #f)
+    (define/public (auto-extra-files-paths v) null)
+
+    (define/public (install-extra-files ds)
+      (for ([fn extra-files]) (install-file fn))
+      (unless prefix-file
+        (for ([d (in-list ds)])
+          (let ([extras (ormap (lambda (v) (and (auto-extra-files? v) v))
+                               (style-variants (part-style d)))])
+            (when extras
+              (for ([fn (in-list (auto-extra-files-paths extras))])
+                (install-file (main-collects-relative->path fn))))))))
 
     (define/public (render ds fns ri)
       ;; maybe this should happen even if fns is empty or all #f?
       ;; or maybe it should happen for each file rendered (when d is not #f)?
-      (unless (andmap not ds) (install-extra-files))
+      (unless (andmap not ds) (install-extra-files ds))
       (map (lambda (d fn)
              (define (one) (render-one d ri fn))
              (when (report-output?) (printf " [Output to ~a]\n" fn))
@@ -415,12 +498,9 @@
       (list
        (when (part-title-content d)
          (render-content (part-title-content d) d ri))
-       (render-flow (part-flow d) d ri #f)
+       (render-flow (part-blocks d) d ri #f)
        (map (lambda (s) (render-part s ri))
             (part-parts d))))
-
-    (define/public (render-content c part ri)
-      (apply append (map (lambda (i) (render-element i part ri)) c)))
 
     (define/public (render-paragraph p part ri)
       (render-content (paragraph-content p) part ri))
@@ -436,49 +516,51 @@
                               (loop (cdr l) #f))]))))
 
     (define/public (render-flow p part ri starting-item?)
-      (if (null? (flow-paragraphs p))
+      (if (null? p)
           null
           (append
-           (render-block (car (flow-paragraphs p))
+           (render-block (car p)
                          part ri starting-item?)
            (apply append
                   (map (lambda (p)
                          (render-block p part ri #f))
-                       (cdr (flow-paragraphs p)))))))
+                       (cdr p))))))
 
     (define/public (render-intrapara-block p part ri first? last? starting-item?)
       (render-block p part ri starting-item?))
 
-    (define/public (render-block p part ri inline?)
+    (define/public (render-block p part ri starting-item?)
       (cond
-        [(table? p) (if (auxiliary-table? p)
-                      (render-auxiliary-table p part ri)
-                      (render-table p part ri inline?))]
-        [(itemization? p) (render-itemization p part ri)]
-        [(blockquote? p) (render-blockquote p part ri)]
-        [(compound-paragraph? p) (render-compound-paragraph p part ri inline?)]
-        [(delayed-block? p) 
-         (render-block (delayed-block-blocks p ri) part ri inline?)]
-        [else (render-paragraph p part ri)]))
+       [(table? p) (if (memq 'aux (style-variants (table-style p)))
+                       (render-auxiliary-table p part ri)
+                       (render-table p part ri starting-item?))]
+       [(itemization? p) (render-itemization p part ri)]
+       [(nested-flow? p) (render-nested-flow p part ri)]
+       [(compound-paragraph? p) (render-compound-paragraph p part ri starting-item?)]
+       [(delayed-block? p) 
+        (render-block (delayed-block-blocks p ri) part ri starting-item?)]
+       [else (render-paragraph p part ri)]))
 
     (define/public (render-auxiliary-table i part ri)
       null)
 
-    (define/public (render-table i part ri inline?)
-      (map (lambda (d) (if (flow? i) (render-flow d part ri #f) null))
-           (apply append (table-flowss i))))
+    (define/public (render-table i part ri starting-item?)
+      (map (lambda (d) (if (eq? i 'cont) null (render-block d part ri #f)))
+           (apply append (table-blockss i))))
 
     (define/public (render-itemization i part ri)
       (map (lambda (d) (render-flow d part ri #t))
-           (itemization-flows i)))
+           (itemization-blockss i)))
 
-    (define/public (render-blockquote i part ri)
+    (define/public (render-nested-flow i part ri)
       (map (lambda (d) (render-block d part ri #f))
-           (blockquote-paragraphs i)))
+           (nested-flow-blocks i)))
 
-    (define/public (render-element i part ri)
+    (define/public (render-content i part ri)
       (cond
         [(string? i) (render-other i part ri)] ; short-cut for common case
+        [(list? i)
+         (apply append (for/list ([i (in-list i)]) (render-content i part ri)))]
         [(and (link-element? i)
               (null? (element-content i)))
          (let ([v (resolve-get part ri (link-element-tag i))])
@@ -489,6 +571,8 @@
          (when (render-element? i)
            ((render-element-render i) this part ri))
          (render-content (element-content i) part ri)]
+        [(multiarg-element? i)
+         (render-content (multiarg-element-contents i) part ri)]
         [(delayed-element? i)
          (render-content (delayed-element-content i ri) part ri)]
         [(part-relative-element? i)
@@ -568,15 +652,15 @@
     ;; ----------------------------------------
 
     (define/private (do-table-of-contents part ri delta quiet depth)
-      (make-table #f (generate-toc part
-                                   ri
-                                   (+ delta
-                                      (length (collected-info-number
-                                               (part-collected-info part ri))))
-                                   #t
-                                   quiet
-                                   depth
-                                   null)))
+      (make-table plain (generate-toc part
+                                      ri
+                                      (+ delta
+                                         (length (collected-info-number
+                                                  (part-collected-info part ri))))
+                                      #t
+                                      quiet
+                                      depth
+                                      null)))
 
     (define/public (table-of-contents part ri)
       (do-table-of-contents part ri -1 not +inf.0))
@@ -605,31 +689,30 @@
         (if skip?
             subs
             (let ([l (cons
-                      (list (make-flow
+                      (list (make-paragraph
+                             plain
                              (list
-                              (make-paragraph
-                               (list
-                                (make-element
-                                 'hspace
-                                 (list (make-string (* 2 (- (length number)
-                                                            base-len))
-                                                    #\space)))
-                                (make-link-element
-                                 (if (= 1 (length number)) "toptoclink" "toclink")
-                                 (append
-                                  (format-number
-                                   number
-                                   (list (make-element 'hspace '(" "))))
-                                  (or (part-title-content part) '("???")))
-                                 (for/fold ([t (car (part-tags part))])
-                                     ([prefix (in-list prefixes)])
-                                   (convert-key prefix t))))))))
+                              (make-element
+                               'hspace
+                               (list (make-string (* 2 (- (length number)
+                                                          base-len))
+                                                  #\space)))
+                              (make-link-element
+                               (if (= 1 (length number)) "toptoclink" "toclink")
+                               (append
+                                (format-number
+                                 number
+                                 (list (make-element 'hspace '(" "))))
+                                (or (part-title-content part) '("???")))
+                               (for/fold ([t (car (part-tags part))])
+                                   ([prefix (in-list prefixes)])
+                                 (convert-key prefix t))))))
                       subs)])
               (if (and (= 1 (length number))
                        (or (not (car number)) ((car number) . > . 1)))
-                  (cons (list (make-flow
-                               (list (make-paragraph
-                                      (list (make-element 'hspace (list "")))))))
+                  (cons (list (make-paragraph
+                               plain
+                               (list (make-element 'hspace (list "")))))
                         l)
                   l)))))
 

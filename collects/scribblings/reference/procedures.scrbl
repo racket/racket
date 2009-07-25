@@ -220,7 +220,7 @@ is @scheme[#f], then the resulting procedure still accepts any
 keyword, otherwise the keywords in @scheme[required-kws] must be a
 subset of those in @scheme[allowed-kws]. The original @scheme[proc]
 must require no more keywords than the ones listed din
-@scheme[required-kws], and it must allow at least the keywors in
+@scheme[required-kws], and it must allow at least the keywords in
 @scheme[allowed-kws] (or it must allow all keywords if
 @scheme[allowed-kws] is @scheme[#f]).
 

@@ -200,7 +200,7 @@ sie bindet den Namen @scheme[id] an den Vertrag @scheme[contract].
 
 Die zweite Form führt einen @deftech{parametrischen Vertrag} (wie
 @scheme[list]) ein, der über die Parameter @scheme[p1]
-... abstrahiert.  Der parametrische Vertrag kann dann als @schemeidfont['(id
+... abstrahiert.  Der parametrische Vertrag kann dann als @scheme['(id
 a1 ...)] verwendet werden, wobei in @scheme[contract] für die
 Parameter @scheme[p1] ... die @scheme[a1] ... eingesetzt werden.
 }

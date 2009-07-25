@@ -1,12 +1,17 @@
 #lang scribble/doc
-@(require scribble/manual scribble/struct "utils.ss"
+@(require scribble/manual 
+          scribble/core scribble/html-variants scribble/latex-variants
+          "utils.ss"
           (for-label scheme/base
                      ;; FIXME: need to get this in
                      ;; scribble/text
                      ))
 @initialize-tests
 
-@title[#:tag "preprocessor"]{Text Preprocessor}
+@title[#:tag "preprocessor"
+       #:style (make-style #f (list (make-tex-addition "shaded.tex")
+                                    (make-css-addition "shaded.css")))
+      ]{Text Preprocessing}
 
 @defmodulelang[scribble/text]{The @schememodname[scribble/text]
 language provides everything from @scheme[scheme/base] with a few

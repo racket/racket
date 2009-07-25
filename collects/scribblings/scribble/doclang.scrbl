@@ -1,6 +1,5 @@
-#lang scribble/doc
-@(require scribble/manual
-          "utils.ss")
+#lang scribble/manual
+@(require "utils.ss")
 
 @title[#:tag "doclang"]{Document Language}
 

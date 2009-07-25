@@ -1,7 +1,9 @@
 (module scheme scheme/base
-  (require "struct.ss"
+  (require "core.ss"
            "basic.ss"
            "search.ss"
+           "html-variants.ss"
+           "latex-variants.ss"
            mzlib/class
            mzlib/for
            setup/main-collects
@@ -20,6 +22,28 @@
            current-variable-list
            current-meta-list
 
+           input-color
+           output-color
+           input-background-color
+           no-color
+           reader-color
+           result-color
+           keyword-color
+           comment-color
+           paren-color
+           meta-color
+           value-color
+           symbol-color
+           variable-color
+           opt-color
+           error-color
+           syntax-link-color
+           value-link-color
+           module-color
+           module-link-color
+           block-color
+           highlighted-color
+
            (struct-out var-id)
            (struct-out shaped-parens)
            (struct-out just-context)
@@ -29,16 +53,38 @@
                        make-element-id-transformer
                        element-id-transformer?))
 
-  (define no-color "schemeplain")
-  (define reader-color "schemereader")
-  (define keyword-color "schemekeyword")
-  (define comment-color "schemecomment")
-  (define paren-color "schemeparen")
-  (define meta-color "schememeta")
-  (define value-color "schemevalue")
-  (define symbol-color "schemesymbol")
-  (define variable-color "schemevariable")
-  (define opt-color "schemeopt")
+  (define scheme-variants
+    (let ([abs (lambda (s)
+                 (path->main-collects-relative (build-path (collection-path "scribble") s)))])
+      (list (make-css-addition (abs "scheme.css"))
+            (make-tex-addition (abs "scheme.tex")))))
+
+  (define (make-scheme-style s #:tt? [tt? #t])
+    (make-style s (if tt?
+                      (cons 'tt-chars scheme-variants)
+                      scheme-variants)))
+
+  (define output-color (make-scheme-style "ScmOut"))
+  (define input-color (make-scheme-style "ScmIn"))
+  (define input-background-color (make-scheme-style "ScmInBG"))
+  (define no-color (make-scheme-style "ScmPlain"))
+  (define reader-color (make-scheme-style "ScmRdr"))
+  (define result-color (make-scheme-style "ScmRes"))
+  (define keyword-color (make-scheme-style "ScmKw"))
+  (define comment-color (make-scheme-style "ScmCmt"))
+  (define paren-color (make-scheme-style "ScmPn"))
+  (define meta-color (make-scheme-style "ScmMeta"))
+  (define value-color (make-scheme-style "ScmVal"))
+  (define symbol-color (make-scheme-style "ScmSym"))
+  (define variable-color (make-scheme-style "ScmVar"))
+  (define opt-color (make-scheme-style "ScmOpt"))
+  (define error-color (make-scheme-style "ScmErr" #:tt? #f))
+  (define syntax-link-color (make-scheme-style "ScmStxLink"))
+  (define value-link-color (make-scheme-style "ScmValLink"))
+  (define module-color (make-scheme-style "ScmMod"))
+  (define module-link-color (make-scheme-style "ScmModLink"))
+  (define block-color (make-scheme-style "ScmBlk"))
+  (define highlighted-color (make-scheme-style "highlighted" #:tt? #f))
 
   (define current-keyword-list 
     (make-parameter null))
@@ -66,7 +112,7 @@
           i)))
 
 
-  (define line-breakable-space (make-element 'tt (list " ")))
+  (define line-breakable-space (make-element 'tt " "))
 
   ;; These caches intentionally record a key with the value.
   ;; That way, when the value is no longer used, the key
@@ -96,12 +142,12 @@
                             (list
                              (case (car tag)
                                [(form)
-                                (make-link-element "schemesyntaxlink" (list s) tag)]
+                                (make-link-element syntax-link-color (list s) tag)]
                                [else
-                                (make-link-element "schemevaluelink" (list s) tag)]))
+                                (make-link-element value-link-color (list s) tag)]))
                             (list 
                              (make-element "badlink"
-                                           (list (make-element "schemevaluelink" (list s))))))))
+                                           (make-element value-link-color s))))))
                     (lambda () s)
                     (lambda () s)
                     key)])
@@ -111,10 +157,8 @@
 
   (define (make-element/cache style content)
     (if (and element-cache 
-             (pair? content)
-             (string? (car content))
-             (null? (cdr content)))
-        (let ([key (vector style (car content))])
+             (string? content))
+        (let ([key (vector style content)])
           (let ([b (hash-ref element-cache key #f)])
             (or (and b (weak-box-value b))
                 (let ([e (make-cached-element style content key)])
@@ -184,6 +228,8 @@
                     [else paren-color])
                    (string-length s))))))
 
+  (define omitable (make-style #f '(omitable)))
+
   (define (gen-typeset c multi-line? prefix1 prefix suffix color?)
     (let* ([c (syntax-ize c 0)]
            [content null]
@@ -200,7 +246,7 @@
            [line (or (syntax-line first) 0)])
       (define (finish-line!)
         (when multi-line?
-          (set! docs (cons (make-flow (list (make-omitable-paragraph (reverse content))))
+          (set! docs (cons (make-paragraph omitable (reverse content))
                            docs))
           (set! content null)))
       (define out
@@ -209,16 +255,14 @@
           (out v cls (let sz-loop ([v v])
                        (cond
                         [(string? v) (string-length v)]
+                        [(list? v) (for/fold ([s 0]) ([v (in-list v)]) (+ s (sz-loop v)))]
                         [(sized-element? v) (sized-element-length v)]
-                        [(and (element? v)
-                              (= 1 (length (element-content v))))
-                         (sz-loop (car (element-content v)))]
                         [(element? v)
-                         (element-width v)]
+                         (sz-loop (element-content v))]
                         [(delayed-element? v)
-                         (element-width v)]
+                         (content-width v)]
                         [(part-relative-element? v)
-                         (element-width v)]
+                         (content-width v)]
                         [(spaces? v)
                          (+ (sz-loop (car (element-content v)))
                             (spaces-cnt v)
@@ -240,10 +284,10 @@
              [else
               (set! content (cons ((if highlight?
                                        (lambda (c)
-                                         (make-element "highlighted" (list c)))
+                                         (make-element highlighted-color c))
                                        values)
                                    (if (and color? cls)
-                                       (make-element/cache cls (list v))
+                                       (make-element/cache cls v)
                                        v))
                                   content))
               (set! dest-col (+ dest-col len))]))]))
@@ -300,9 +344,9 @@
                                                     (make-sized-element 
                                                      (if val? value-color #f)
                                                      (list
-                                                      (make-element/cache (if val? value-color paren-color) '(". "))
+                                                      (make-element/cache (if val? value-color paren-color) '". ")
                                                       (typeset a #f "" "" "" (not val?))
-                                                      (make-element/cache (if val? value-color paren-color) '(" .")))
+                                                      (make-element/cache (if val? value-color paren-color) '" ."))
                                                      (+ (syntax-span a) 4)))
                                                   (list (syntax-source a)
                                                         (syntax-line a)
@@ -564,8 +608,8 @@
         (finish-line!))
       (if multi-line?
           (if (= 1 (length docs))
-              (car (flow-paragraphs (car docs)))
-              (make-table "schemeblock" (map list (reverse docs))))
+              (car docs)
+              (make-table block-color (map list (reverse docs))))
           (make-sized-element #f (reverse content) dest-col))))
 
   (define (typeset c multi-line? prefix1 prefix suffix color?)
@@ -590,8 +634,8 @@
                                    [(elem color len)
                                     (if (and (string? elem)
                                              (= len (string-length elem)))
-                                        (make-element/cache (and color? color) (list elem))
-                                        (make-sized-element (and color? color) (list elem) len))])])
+                                        (make-element/cache (and color? color) elem)
+                                        (make-sized-element (and color? color) elem len))])])
                           mk)
                         color? 0))))
   

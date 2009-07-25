@@ -43,7 +43,7 @@
                                         [(eof-object? v)
                                          (make-element 'italic '("nothing"))]
                                         [(string? v)
-                                         (make-element "schemevalue"
+                                         (make-element value-color
                                                        (list (schemefont 
                                                               (regexp-replace* #rx"[\\]\""
                                                                                (regexp-replace*

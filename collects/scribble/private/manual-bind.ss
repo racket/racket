@@ -3,7 +3,6 @@
          "../struct.ss"
          "../scheme.ss"
          "../search.ss"
-         "../config.ss"
          "../basic.ss"
          "../manual-struct.ss"
          "manual-ex.ss"
@@ -52,10 +51,10 @@
               [sd (and stag (resolve-get/tentative sec ri stag))])
          (list
           (make-element
-           "schemesymbol"
+           symbol-color
            (list
-            (cond [sd (make-link-element "schemesyntaxlink" (list s) stag)]
-                  [vtag (make-link-element "schemevaluelink" (list s) vtag)]
+            (cond [sd (make-link-element  syntax-link-color (list s) stag)]
+                  [vtag (make-link-element value-link-color (list s) vtag)]
                   [else s]))))))
      (lambda () s)
      (lambda () s))))
@@ -232,12 +231,12 @@
                                        (list (symbol->string id))
                                        (list
                                         (make-element
-                                         "schemesymbol"
+                                         symbol-color
                                          (list
                                           (make-element
                                            (if form?
-                                             "schemesyntaxlink"
-                                             "schemevaluelink")
+                                             syntax-link-color
+                                             value-link-color)
                                            (list (symbol->string id))))))
                                        ((if form?
                                           make-form-index-desc

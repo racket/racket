@@ -69,7 +69,7 @@ Like @scheme[to-paragraph], but @scheme[prefix1] is prefixed onto the
 first line, @scheme[prefix] is prefix to any subsequent line, and
 @scheme[suffix] is added to the end. The @scheme[prefix1],
 @scheme[prefix], and @scheme[suffix] arguments are used as
-@tech{elements}, except that if @scheme[suffix] is a list of elements,
+@tech{content}, except that if @scheme[suffix] is a list of elements,
 it is added to the end on its own line.}
 
 
@@ -152,3 +152,29 @@ Provided @scheme[for-syntax]; like @scheme[make-element-id-transformer] for
 a transformer that produces @scheme[sym] typeset as a variable (like
 @scheme[schemevarfont])---unless it appears under quote or quasiquote,
 in which case @scheme[sym] is typeset as a symbol.}
+
+@deftogether[(
+@defthing[output-color style?]
+@defthing[input-color style?]
+@defthing[input-background-color style?]
+@defthing[no-color style?]
+@defthing[reader-color style?]
+@defthing[result-color style?]
+@defthing[keyword-color style?]
+@defthing[comment-color style?]
+@defthing[paren-color style?]
+@defthing[meta-color style?]
+@defthing[value-color style?]
+@defthing[symbol-color style?]
+@defthing[variable-color style?]
+@defthing[opt-color style?]
+@defthing[error-color style?]
+@defthing[syntax-link-color style?]
+@defthing[value-link-color style?]
+@defthing[module-color style?]
+@defthing[module-link-color style?]
+@defthing[block-color style?]
+@defthing[highlighted-color style?]
+)]{
+
+Styles that are used for coloring Scheme programs, results, and I/O.}

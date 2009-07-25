@@ -3,7 +3,6 @@
          "../struct.ss"
          "../scheme.ss"
          "../search.ss"
-         "../config.ss"
          "../basic.ss"
          "../manual-struct.ss"
          "qsloc.ss"

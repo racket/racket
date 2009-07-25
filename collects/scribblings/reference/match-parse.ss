@@ -8,7 +8,7 @@
 (provide parse-match-grammar)
 
 (define (match-nonterm s)
-  (make-element "schemevariable" (list s)))
+  (make-element variable-color (list s)))
 
 (define (fixup s middle)
   (lambda (m)
@@ -67,15 +67,15 @@
        (match-nonterm (symbol->string s))]
       [(QUOTE LIST LIST-REST LIST-NO-ORDER VECTOR HASH-TABLE BOX STRUCT 
               REGEXP PREGEXP AND OR NOT APP ? QUASIQUOTE CONS MCONS)
-       (make-element "schemesymbol" (list (string-downcase (symbol->string s))))]
+       (make-element symbol-color (list (string-downcase (symbol->string s))))]
       [(***)
-       (make-element "schemesymbol" '("..."))]
-      [(___) (make-element "schemesymbol" '("___"))]
+       (make-element symbol-color '("..."))]
+      [(___) (make-element symbol-color '("___"))]
       [(__K)
-       (make-element #f (list (make-element "schemesymbol" '("__"))
+       (make-element #f (list (make-element symbol-color '("__"))
                               (match-nonterm "k")))]
       [(..K)
-       (make-element #f (list (make-element "schemesymbol" '(".."))
+       (make-element #f (list (make-element symbol-color '(".."))
                               (match-nonterm "k")))]
       [else
        s])]
