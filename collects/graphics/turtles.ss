@@ -4,8 +4,7 @@
          mzlib/class
          mzlib/class100
          mzlib/list
-         mzlib/etc
-         "turtle-sig.ss")
+         mzlib/etc)
 
 (provide turtles
          clear home
@@ -19,7 +18,8 @@
          splitfn split*fn tpromptfn
          turtle-window-size
          
-         display-lines-in-drawing)
+         display-lines-in-drawing
+         split split* tprompt)
 
 (define turtles:window #f)
 (define turtles:shown? #f)
