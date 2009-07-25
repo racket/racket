@@ -2044,10 +2044,12 @@ If the namespace does not, they are colored the unbound color.
                                                        id 
                                                        (syntax->datum req-stx))
                                 (when id
-                                  (add-jump-to-definition
-                                   var
-                                   source-id
-                                   (get-require-filename source-req-path user-namespace user-directory)))
+                                  (let ([filename (get-require-filename source-req-path user-namespace user-directory)])
+                                    (when filename
+                                      (add-jump-to-definition
+                                       var
+                                       source-id
+                                       filename))))
                                 (add-mouse-over var
                                                 (fw:gui-utils:format-literal-label 
                                                  (string-constant cs-mouse-over-import)
@@ -2185,6 +2187,7 @@ If the namespace does not, they are colored the unbound color.
                    defs-text
                    (syntax-position stx)
                    (syntax-span stx))
+          (printf "filename ~s\n" filename)
           (let* ([pos-left (- (syntax-position stx) 1)]
                  [pos-right (+ pos-left (syntax-span stx))])
             (send defs-text syncheck:add-jump-to-definition
@@ -2250,21 +2253,24 @@ If the namespace does not, they are colored the unbound color.
                             #f
                             (make-require-open-menu file)))))))))))
     
-    ;; get-require-filename : sexp-or-module-path-index namespace string[directory] -> filename
+    ;; get-require-filename : sexp-or-module-path-index namespace string[directory] -> filename or #f
     ;; finds the filename corresponding to the require in stx
     (define (get-require-filename datum user-namespace user-directory)
       (parameterize ([current-namespace user-namespace]
                      [current-directory user-directory]
                      [current-load-relative-directory user-directory])
-        (with-handlers ([exn:fail? (λ (x) 
-                                     (printf "fail ~s\n" (exn-message x))
-                                     #f)])
-          (cond
-            [(module-path-index? datum)
-             (resolved-module-path-name 
-              (module-path-index-resolve datum))]
-            [else
-             ((current-module-name-resolver) datum #f #f)]))))
+        (let ([ans (with-handlers ([exn:fail? (λ (x) 
+                                                (printf "fail ~s\n" (exn-message x))
+                                                #f)])
+                     (cond
+                       [(module-path-index? datum)
+                        (resolved-module-path-name 
+                         (module-path-index-resolve datum))]
+                       [else
+                        (resolved-module-path-name 
+                         ((current-module-name-resolver) datum #f #f))]))])
+          (and (path? ans)
+               ans))))
     
     ;; make-require-open-menu : path -> menu -> void
     (define (make-require-open-menu file)
