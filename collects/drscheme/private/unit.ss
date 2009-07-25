@@ -2929,6 +2929,7 @@ module browser threading seems wrong.
             (set! interactions-shown? is?)
             (set! definitions-shown? ds?)
             (update-shown)
+            (reflow-container) ;; without this one, the percentages in the resizable-panel are not up to date with the children
             (fix-up-canvas-numbers definitions-text vd #f)
             (fix-up-canvas-numbers interactions-text vi #t)
             (reflow-container)
