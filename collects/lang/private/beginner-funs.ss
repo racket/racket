@@ -291,8 +291,11 @@
       (memv (any (listof any) -> (union false list))
 	"to determine whether some value is on the list"
 	" (comparing values with eqv?)")
-      ((beginner-member member) (any (listof any)-> boolean)
+      ((beginner-member member) (any (listof any) -> boolean)
 	"to determine whether some value is on the list"
+	" (comparing values with equal?)")
+      ((beginner-remove remove) (any (listof any) -> (listof any))
+	"to construct a list like the given one with the first occurrence of the given item removed"
 	" (comparing values with equal?)")
       (reverse ((listof any) -> list)
 	"to create a reversed version of a list")
