@@ -138,14 +138,16 @@ TODO
       insert-prompt
       get-context))
   
+  
   (define context<%>
     (interface ()
       ensure-rep-shown   ;; (interactions-text -> void)
       ;; make the rep visible in the frame
       
-      needs-execution   ;; (-> boolean)
-      ;; ask if things have changed that would mean the repl is out
-      ;; of sync with the program being executed in it.
+      repl-submit-happened ;; (-> boolean)
+      ;; notify the context that an evaluation is about to
+      ;; happen in the REPL (so it can show a warning about
+      ;; the language/etc is out of sync if neccessary).
       
       enable-evaluation  ;; (-> void)
       ;; make the context enable all methods of evaluation
@@ -895,8 +897,7 @@ TODO
           (end-edit-sequence)
           (when locked? (lock #t))))
       
-      (field (already-warned? #f)
-             (show-no-user-evaluation-message? #t))
+      (field (show-no-user-evaluation-message? #t))
       
       ;; use this to be able to kill the evaluator without the popup dialog
       (define/public (set-show-no-user-evaluation-message? b)
@@ -988,13 +989,7 @@ TODO
                  [lst (last old-regions)])
             (reset-regions (append abl (list (list (list-ref lst 0) (last-position))))))
           
-          (let ([needs-execution (send context needs-execution)])
-            (when (if (preferences:get 'drscheme:execute-warning-once)
-                      (and (not already-warned?)
-                           needs-execution)
-                      needs-execution)
-              (set! already-warned? #t)
-              (insert-warning needs-execution)))
+          (send context repl-submit-happened)
           
           ;; lets us know we are done with this one interaction
           ;; (since there may be multiple expressions at the prompt)
@@ -1607,7 +1602,6 @@ TODO
         
         (set! setting-up-repl? #f)
         
-        (set! already-warned? #f)
         (reset-regions (list (list (last-position) (last-position))))
         (set-unread-start-point (last-position))
         (set-insertion-point (last-position))
