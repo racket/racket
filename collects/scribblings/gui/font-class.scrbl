@@ -27,7 +27,7 @@ A @defterm{font} is an object which determines the appearance of text,
  @item{@indexed-scheme['system] (used to draw control labels)}
  ]
 
- The @scheme['modern] designation is special under Mac OS X and X with
+ The @scheme['symbol] designation is special under Mac OS X and X with
  fontconfig/Xft; characters in the ASCII range 0-255 are converted to
  Unicode characters that match Adobe symbols. For example, @litchar{a} is
  converted to @litchar["\u03B1"].}
