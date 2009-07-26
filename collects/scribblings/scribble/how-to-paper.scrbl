@@ -252,7 +252,7 @@ The @scheme[centered] operation centers a flow of text:
 
          @sample|{
            If a mouse eats all your cookies, put up a sign that says
-           @centerline{
+           @centered{
              @bold{Cookies Wanted}
              
              @italic{Chocolate chip preferred!}
@@ -264,7 +264,7 @@ which renders as
 
        @result{
            If a mouse eats all your cookies, put up a sign that says
-           @centerline{
+           @centered{
              @bold{Cookies Wanted}
              
              @italic{Chocolate chip preferred!}
@@ -355,7 +355,7 @@ which is equivalent to the Scheme expression
 These equivalences explain why Scribble functions are documented in
 Scheme notation. If you're reading this in HTML format, you can click
 @scheme[italic] above to access its documentation. The documentation
-won't completely make sense, yet, because it will be the end of this
+won't completely make sense, yet, but it will by the end of this
 chapter.
 
 What if you want to provide arguments in text mode, but you also want
