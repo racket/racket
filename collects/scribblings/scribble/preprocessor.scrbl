@@ -993,7 +993,7 @@ on whether it is more convenient to write a text file with occasional
 Scheme expressions or the other way.
 
 @example|-{#lang at-exp scheme/base
-           @(require scribble/text scheme/list)
+           (require scribble/text scheme/list)
            (define (itemize . items)
              (add-between (map (lambda (item)
                                  @list{* @item})
@@ -1002,15 +1002,15 @@ Scheme expressions or the other way.
            (define summary
              @list{If that's not enough,
                    I don't know what is.})
-           @(output
-             @list{
-               Todo:
-               @itemize[@list{Hack some}
-                        @list{Sleep some}
-                        @list{Hack some
-                              more}]
-               @summary
-             })
+           (output
+            @list{
+              Todo:
+              @itemize[@list{Hack some}
+                       @list{Sleep some}
+                       @list{Hack some
+                             more}]
+              @summary
+            })
            ---***---
            Todo:
            * Hack some
