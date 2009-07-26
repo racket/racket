@@ -209,7 +209,7 @@ language, then you get an error, because @scheme[abstract] is not
 defined.
 
 When a document is implemented across multiple files, changing the
-language of the man document can set the style for all of the parts,
+language of the main document can set the style for all of the parts,
 but it does not introduce bindings into the other part files. For
 example, if you change the language of @filepath{mouse.scrbl} to
 @schememodname[scribble/sigplan], then @scheme[abstract] becomes
