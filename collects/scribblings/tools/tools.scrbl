@@ -194,7 +194,7 @@ sufficient, simply create an
 @File{info.ss} file in the collection
 where the module is saved. Include these
 definitions:
-@(itemize
+@itemize[
 @item/cap['drscheme-language-modules]{
   @index{drscheme-language-modules} This must be bound to a
   list of collection path specifications or strings, one for
@@ -257,7 +257,7 @@ This is optional. If
   represents a relative path starting at the directory
   containing the @File{info.ss} file.  It is interpreted
   like the string arguments to @scheme[require].
-})
+}]
 The lists must have the same length.
 
 As an example, the @italic{Essentials of Programming Languages}
@@ -393,13 +393,13 @@ DrScheme.
 @section{Extending the Existing DrScheme Classes}
 
 Each of the names:
-@(itemize
+@itemize[
 @item{@scheme[drscheme:get/extend:extend-interactions-text]}
 @item{@scheme[drscheme:get/extend:extend-definitions-text]}
 @item{@scheme[drscheme:get/extend:extend-interactions-canvas]}
 @item{@scheme[drscheme:get/extend:extend-definitions-canvas]}
 @item{@scheme[drscheme:get/extend:extend-unit-frame]}
-@item{@scheme[drscheme:get/extend:extend-tab]})
+@item{@scheme[drscheme:get/extend:extend-tab]}]
 is bound to an extender function. In order to change the
 behavior of drscheme, you can derive new classes from the
 standard classes for the frame, texts, canvases. Each
