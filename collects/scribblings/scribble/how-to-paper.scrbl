@@ -6,7 +6,7 @@
 @(define (sample . text) (nested #:style 'inset (apply verbatim text)))
 @(define (result . text) (apply nested #:style 'inset text))
 
-@title[#:tag "how-to-paper"]{Getting Started}
+@title[#:tag "getting-started"]{Getting Started}
 
 No matter what you want to do with Scribble, it's best to start by
 generating a few simple HTML and/or PDF documents. This chapter steps

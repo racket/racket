@@ -11,7 +11,7 @@ normally built by @exec{setup-plt}. This chapter emphasizes the
 @exec{setup-plt} approach, which more automatically supports links
 across documents.
 
-@margin-note{See @secref["how-to-paper"] for information on using the
+@margin-note{See @secref["getting-started"] for information on using the
              @exec{scribble} command-line utility.}
 
 @;----------------------------------------
