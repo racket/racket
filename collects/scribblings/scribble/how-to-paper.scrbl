@@ -596,10 +596,11 @@ renders as
 @section[#:tag "roadmap"]{Next Steps}
 
 If your immediate goal is to document a PLT Scheme library or write
-literate programs, skip to @secref["how-to-doc"].
+literate programs, skip to @secref["how-to-doc"], and then go back to
+@secref["reader"] and other chapters.
 
 If you are more interested in producing documents unrelated to PLT
-Scheme, skip continue with @secref["reader"] and then
+Scheme, continue with @secref["reader"] and then
 @secref["generic-prose"].  Move on to @secref["internals"] when you
 need more power.
 

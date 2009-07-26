@@ -3,7 +3,7 @@
           scribble/bnf
           "utils.ss")
 
-@title[#:tag "how-to-doc"]{Starting Documentation}
+@title[#:tag "how-to-doc"]{Getting Started with Documentation}
 
 Although the @exec{scribble} command-line utility generates output
 from a Scribble document, documentation of PLT Scheme libraries is
@@ -15,7 +15,7 @@ across documents.
              @exec{scribble} command-line utility.}
 
 @;----------------------------------------
-@section[#:tag "setting-up"]{Setting Up Documentation}
+@section[#:tag "setting-up"]{Setting Up Library Documentation}
 
 To document a collection or @|PLaneT| package:
 

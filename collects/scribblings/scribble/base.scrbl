@@ -27,15 +27,14 @@
 
 @title[#:tag "base"]{Base Document Format}
 
-@defmodule[scribble/base]{The @schememodname[scribble/base] library
+@defmodulelang[scribble/base]{The @schememodname[scribble/base] language
 provides functions and forms that can be used from code written either
 in Scheme or with @elem["@"] expressions.
 
 The @schememodname[scribble/base] name can also be used as a
-language with @hash-lang[]. It acts like the
-@schememodname[scribble/doc] language, except that the
-@schememodname[scribble/base] library is also required into
-the module.}
+library with @scheme[require], in which case it provides all of the same
+bindings, but without setting the reader or setting the default
+rendering format to the PLT Scheme manual format.}
 
 Functions provided by this library, such as @scheme[title] and
 @scheme[italic], might be called from Scheme as

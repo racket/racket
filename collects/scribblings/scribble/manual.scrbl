@@ -9,22 +9,21 @@
 
 @title[#:tag "manual" #:style 'toc]{Manual Forms}
 
-@defmodule[scribble/manual]{The @schememodname[scribble/manual]
-library provides all of @schememodname[scribble/basic] plus additional
-functions, including all of @scheme[scribble/base] plus many others
-that are relatively specific to writing PLT Scheme documentation.
+@defmodulelang[scribble/manual]{The @schememodname[scribble/manual]
+language provides all of @schememodname[scribble/base] plus many
+additional functions that are specific to writing PLT Scheme
+documentation.
 
-The @schememodname[scribble/manual] name can also be used as a
-language with @hash-lang[]. It acts like the
-@schememodname[scribble/doc] language, except that the
-@schememodname[scribble/manual] library is also required into the
-module. 
+The @schememodname[scribble/manual] name can also be used as a library
+with @scheme[require], in which case it provides all of the same
+bindings, but without setting the reader or setting the default
+rendering format to the PLT Scheme manual format.}
 
-In addition, @scheme[#, @hash-lang[] #, @schememodname[scribble/manual]]
-associates a @scheme[latex-defaults] style @tech{variant} with its
-@scheme[doc] export to select the default PLT Scheme manual style for
-Latex rendering---unless a style is supplied to @scheme[title] that
-already includes a @scheme[latex-defaults] @tech{variant}.}
+With @hash-lang[], @schememodname[scribble/manual] associates a
+@scheme[latex-defaults] style @tech{variant} with its @scheme[doc]
+export to select the default PLT Scheme manual style for Latex
+rendering---unless a style is supplied to @scheme[title] that already
+includes a @scheme[latex-defaults] @tech{variant}.
 
 @local-table-of-contents[]
 
