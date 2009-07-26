@@ -753,7 +753,7 @@ problem with Scheme code, for example:
 }===|
 
 For rare situations where spaces at the beginning (or end) of lines
-matter, you can begin (or end) a line with a "@||".
+matter, you can begin (or end) a line with a @litchar["@||"].
 
 @scribble-examples|==={
   @foo{
