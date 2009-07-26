@@ -1,7 +1,10 @@
 #lang scribble/manual
 @(require "utils.ss")
 
-@title[#:tag "generic-prose"]{General Documents}
+@title[#:tag "generic-prose" #:style 'toc]{High-Level Scribble API}
+
+@local-table-of-contents[]
 
 @include-section["base.scrbl"]
-@include-section["other.scrbl"]
+@include-section["manual-stub.scrbl"]
+@include-section["sigplan.scrbl"]

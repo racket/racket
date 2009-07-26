@@ -3,7 +3,7 @@
           scribble/bnf
           "utils.ss")
 
-@title[#:tag "how-to-doc"]{How to Scribble PLT Scheme Documentation}
+@title[#:tag "how-to-doc"]{Starting Documentation}
 
 Although the @exec{scribble} command-line utility generates output
 from a Scribble document, documentation of PLT Scheme libraries is

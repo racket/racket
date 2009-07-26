@@ -6,10 +6,12 @@
 @(define (sample . text) (nested #:style 'inset (apply verbatim text)))
 @(define (result . text) (apply nested #:style 'inset text))
 
-@title[#:tag "how-to-paper"]{How to Scribble Documents}
+@title[#:tag "how-to-paper"]{Getting Started}
 
-This chapter demonstrates the basics of generating stand-alone HTML
-and PDF (through Latex) documents with Scribble.
+No matter what you want to do with Scribble, it's best to start by
+generating a few simple HTML and/or PDF documents. This chapter steps
+you through the basics, and it ends in @secref["roadmap"] with
+goal-specific advice on how to continue.
 
 @section[#:tag "first-example"]{A First Example}
 
@@ -387,7 +389,7 @@ The call to @scheme[number->string] is needed because a naked number
 is not valid as document content.
 
 @; ----------------------------------------
-@section[#:tag "how-to:reader"]{The @"@" Syntax}
+@section[#:tag "how-to:reader"]{@"@" Syntax Basics}
 
 The @"@" notation provided by Scribble is just another way of
 writing Scheme expressions. Scribble documents could be constructed
@@ -591,32 +593,15 @@ renders as
   }
 
 @; ----------------------------------------
-@section[#:tag "roadmap"]{The Big Picture and Next Steps}
-
-Although it may not look like it, @filepath{mouse.scrbl} is a Scheme
-program. You could run it directly in DrScheme or with MzScheme, the
-latter like this:
-
- @commandline{mzscheme mouse.scrbl}
-
-If you do that though, nothing much seems to happen. As a program
-module, @filepath{mouse.scrbl} builds a document description and
-exports it as @scheme[doc], but exporting a binding is not a visible
-operation. The @exec{scribble} tool runs @filepath{mouse.scrbl} to get
-the exported description, and then it uses the description to generate
-an output document.
-
-Despite a suspicious lack of parentheses compared to most Scheme
-programs, and despite the fact that running @filepath{mouse.scrbl} by
-itself has no apparent effect, it's important to understand that
-@filepath{mouse.scrbl} is a Scheme program. @emph{Data is code.}
-Scribble tools vary in the kinds of documents they transform and
-generate, but all share the twin principles of @"@" notation
-for convenience and data-as-code for expressiveness.
+@section[#:tag "roadmap"]{Next Steps}
 
 If your immediate goal is to document a PLT Scheme library or write
-literate programs, continue with @secref["how-to-doc"]. If you are more
-interested in producing documents unrelated to PLT Scheme, move on to
-the main documentation at @secref["generic-prose"], and then read
-@secref["internals"] when you need more power. If you are interested
-in text preprocessing, go instead to @secref["preprocessor"].
+literate programs, skip to @secref["how-to-doc"].
+
+If you are more interested in producing documents unrelated to PLT
+Scheme, skip continue with @secref["reader"] and then
+@secref["generic-prose"].  Move on to @secref["internals"] when you
+need more power.
+
+If you are interested in text preprocessing, contiue with
+@secref["reader"], but then skip to @secref["preprocessor"].

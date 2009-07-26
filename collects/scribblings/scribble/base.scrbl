@@ -25,7 +25,7 @@
      [(_ id)
       @def-elem-proc[id]{Like @scheme[elem], but with style @scheme['id].}]))
 
-@title[#:tag "base"]{Base Document Forms}
+@title[#:tag "base"]{Base Document Format}
 
 @defmodule[scribble/base]{The @schememodname[scribble/base] library
 provides functions and forms that can be used from code written either

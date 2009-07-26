@@ -2,14 +2,16 @@
 @(require scribble/bnf
           "utils.ss")
 
-@title{@bold{Scribble}: PLT Documentation Tools}
+@title{@bold{Scribble}: PLT Documentation Tool}
 
 @author["Matthew Flatt" "Eli Barzilay"]
 
-Scribble is a collection of tools for creating ASCII, HTML, and
-Latex/PDF documents with PLT Scheme. Suitable uses include the
-creation of papers, books, literate programs, preprocessed text, and
-PLT Scheme library documentation.
+Scribble is a collection of tools for creating prose
+documents---papers, books, library documentation, etc.---in HTML or
+PDF (via Latex) form. More generally, Scribble helps you write
+programs that are rich in textual content, whether the content is
+prose to be typeset or some other form of text to be generated
+programmatically.
 
 This document itself is written using Scribble. At the time that it
 was written, its source was available at
@@ -20,7 +22,8 @@ starting with the @filepath{scribble.scrbl} file.
 @table-of-contents[]
 
 @; ------------------------------------------------------------------------
-@include-section["getting-started.scrbl"]
+@include-section["how-to-paper.scrbl"]
+@include-section["reader.scrbl"]
 @include-section["generic.scrbl"]
 @include-section["plt.scrbl"]
 @include-section["lp.scrbl"]

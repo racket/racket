@@ -10,54 +10,41 @@
 @(define read-eval (make-base-eval))
 @(interaction-eval #:eval read-eval (require (for-syntax scheme/base)))
 
-@title[#:tag "reader"]{@"@"-Reader}
+@(define (at-exp-scheme)
+   @scheme[#, @hash-lang[] #, @schememodname[at-exp] #, @schemeidfont{scheme}])
 
-The Scribble @"@"-reader is designed to be a convenient facility for
-using free-form text in Scheme code, where ``@"@"'' is chosen as one of
-the least-used characters in Scheme code.
+@title[#:tag "reader"]{@"@" Syntax}
 
-You can use the reader via Scheme's @schemefont{#reader} form:
+The Scribble @"@" notation is designed to be a convenient facility for
+free-form text in Scheme code, where ``@"@"'' was chosen as one of the
+least-used characters in existing Scheme code. An @"@"-expression is
+simply an S-expression in disguise.
 
-@schemeblock[
- @#,schemefont|{
-     #reader scribble/reader @foo{This is free-form text!}
-}|]
+Typically, @"@" notation is enabled through
+@schememodname[scribble/base] or similar languages, but you can also
+add @"@" notation to an S-expression-based language using the
+@schememodname[at-exp] meta-language. For example,
 
-or use the @scheme[at-exp] meta-language as described in
-@secref["at-exp-lang"].
+@verbatim[#:indent 2]|{
+  #lang at-exp scheme
+  (define v '@op{str})
+}|
 
-Note that the Scribble reader reads @"@"-forms as S-expressions.  This
-means that it is up to you to give meanings for these expressions in
-the usual way: use Scheme functions, define your functions, or require
-functions.  For example, typing the above into @exec{mzscheme} is likely
-going to produce a ``reference to undefined identifier'' error, unless
-@scheme[foo] is defined. You can use @scheme[string-append] instead,
-or you can define @scheme[foo] as a function (with variable arity).
+is equivalent to 
 
-A common use of the Scribble @"@"-reader is when using Scribble as a
-documentation system for producing manuals.  In this case, the manual
-text is likely to start with
+@schememod[
+scheme
+(define v '(op "str"))
+]
 
-@schememod[scribble/doc]
-
-which installs the @"@" reader starting in ``text mode,'' wraps the
-file content afterward into a Scheme module where many useful Scheme
-and documentation related functions are available, and parses the body
-into a document using @schememodname[scribble/decode].  See
-@secref["docreader"] for more information.
-
-Another way to use the reader is to use the @scheme[use-at-readtable]
-function to switch the current readtable to a readtable that parses
-@"@"-forms.  You can do this in a single command line:
-
-@commandline{mzscheme -ile scribble/reader "(use-at-readtable)"}
+Using @at-exp-scheme[] is probably the easiest way to try the examples
+in this chapter.
 
 @;--------------------------------------------------------------------
-@section{Concrete Syntax}
+@section{The Scribble Syntax at a Glance}
 
-@subsection{The Scribble Syntax at a Glance}
-
-Informally, the concrete syntax of @"@"-forms is
+To review @secref["how-to:reader"], the concrete syntax of @"@"-forms
+is roughly
 
 @schemeblock[
  @#,BNF-seq[@litchar["@"]
@@ -67,7 +54,7 @@ Informally, the concrete syntax of @"@"-forms is
 ]
 
 where all three parts after @litchar["@"] are optional, but at least
-one should be present.  (Note that spaces are not allowed between the
+one should be present.  (Spaces are not allowed between the
 three parts.)  Roughly, a form matching the above grammar is read as
 
 @schemeblock[
@@ -80,8 +67,48 @@ determines the Scheme code that the input is translated into.  The
 common case is when @nonterm{cmd} is a Scheme identifier, which reads
 as a plain Scheme form, with datum arguments and/or string arguments.
 
+Here is one example:
+
 @scribble-examples|==={
   @foo{blah blah blah}
+}===|
+
+The example shows how an input syntax is read as Scheme syntax, not
+what it evaluates to. If you want to see the translation of an example
+into S-expression form, add a quote in front of it in a
+@at-exp-scheme[] module. For example, running
+
+@verbatim[#:indent 2]|{
+  #lang at-exp scheme
+  '@foo{blah blah blah}
+}|
+
+in DrScheme prints the output
+
+@nested[#:style 'inset]{@schemeresult[(foo "blah blah blah")]}
+
+while omitting the quote
+
+@verbatim[#:indent 2]|{
+  #lang at-exp scheme
+  @foo{blah blah blah}
+}|
+
+triggers a syntax error because @scheme[foo] is not bound, and
+
+@verbatim[#:indent 2]|{
+  #lang at-exp scheme
+  (define (foo str) (printf "He wrote ~s.\n" str))
+  @foo{blah blah blah}
+}|
+
+prints the output
+
+@nested[#:style 'inset]{@schemeoutput{He wrote "blah blah blah".}}
+
+Here are more examples of @"@"-forms:
+
+@scribble-examples|==={
   @foo{blah "blah" (`blah'?)}
   @foo[1 2]{3 4}
   @foo[1 2 3 4]
@@ -93,9 +120,6 @@ as a plain Scheme form, with datum arguments and/or string arguments.
     yada yada
   }
 }===|
-
-(Note that these examples show how an input syntax is read as Scheme
-syntax, not what it evaluates to.)
 
 As seen in the last example, multiple lines and the newlines that
 separate them are parsed to multiple Scheme strings.  More generally,
@@ -116,9 +140,10 @@ expressions.
        *p = '\n';}
 }===|
 
-The command part of an @"@"-form is optional as well, which is read as
-a list, usually a function application, but also useful when quoted
-with the usual Scheme @scheme[quote]:
+The command part of an @"@"-form is optional as well. In that case,
+the @"@" forms is read as a list, which usually counts as a function
+application, but it also useful when quoted with the usual Scheme
+@scheme[quote]:
 
 @scribble-examples|==={
   @{blah blah}
@@ -128,8 +153,8 @@ with the usual Scheme @scheme[quote]:
      baz}
 }===|
 
-But we can also drop the datum and text parts, which leaves us with
-only the command --- which is read as is, not within a parenthesized
+Finally, we can also drop the datum and text parts, which leaves us with
+only the command---which is read as is, not within a parenthesized
 form.  This is not useful when reading Scheme code, but it can be used
 inside a text block to escape a Scheme identifier.  A vertical bar
 (@litchar{|}) can be used to delimit the escaped identifier when
@@ -142,7 +167,8 @@ needed.
   @{blah @|foo|: blah}
 }===|
 
-Actually, the command part can be any Scheme expression, which is
+Actually, the command part can be any Scheme expression (that does
+start with @litchar["["], @litchar["{"], or @litchar["|"]), which is
 particularly useful with such escapes since they can be used with any
 expression.
 
@@ -153,8 +179,8 @@ expression.
 
 Note that an escaped Scheme string is merged with the surrounding text
 as a special case.  This is useful if you want to use the special
-characters in your string (but note that escaping braces is not
-necessary if they are balanced).
+characters in your string, but escaping braces are not necessary if
+they are balanced.
 
 @scribble-examples|==={
   @foo{eli@"@"barzilay.org}
@@ -164,9 +190,10 @@ necessary if they are balanced).
      }}
 }===|
 
-In some cases a @"@"-rich text can become cumbersome to quote.  For
-this, the braces have an alternative syntax --- a block of text can
-begin with a ``@litchar["|{"]'' and terminated accordingly with a
+In some cases, a text contains many literal @"@"s, which can be
+cumbersome to quote individually.  For such case, braces have an
+alternative syntax: A block of text can begin with a
+``@litchar["|{"]'' and terminated accordingly with a
 ``@litchar["}|"]''.  Furthermore, any nested @"@" forms must begin
 with a ``@litchar["|@"]''.
 
@@ -179,21 +206,22 @@ with a ``@litchar["|@"]''.
 In cases when even this is not convenient enough, punctuation
 characters can be added between the @litchar{|} and the braces and the
 @"@" in nested forms.  (The punctuation is mirrored for parentheses
-and @litchar{<>}s.)  With this, the Scribble syntax can be used as a
-here-string replacement.
+and @litchar{<>}s.)  With this extension, Scribble syntax can be used as a
+``here string'' replacement.
 
 @scribble-examples|==={
   @foo|--{bar}@|{baz}--|
   @foo|<<{bar}@|{baz}>>|
 }===|
 
-The flip side of this is: how can an @"@" sign be used in Scheme code?
-This is almost never an issue, because Scheme strings and characters
-are still read the same, and because @litchar["@"] is set as a
+On the flip side of this is, how can an @"@" sign be used in Scheme
+code?  This is almost never an issue, because Scheme strings and
+characters are still read the same, and @litchar["@"] is set as a
 non-terminating reader macro so it can be used in Scheme identifiers
-as usual, except when it is the first character of an identifier.  In
-this case, you need to quote the identifier like other non-standard
-characters --- with a backslash or with vertical bars:
+anywhere except in the first character of an identifier.  When
+@litchar["@"] must appear as the first character of an identifier, you
+must quote the identifier just like other non-standard characters in
+normal S-expression syntax: with a backslash or with vertical bars.
 
 @scribble-examples|==={
   (define \@email "foo@bar.com")
@@ -209,7 +237,7 @@ code).  (More on using braces in body texts below.)
 }===|
 
 Finally, remember that the Scribble is just an alternate for
-S-expressions --- identifiers still get their meaning, as in any
+S-expressions. Identifiers still get their meaning, as in any
 Scheme code, through the lexical context in which they appear.
 Specifically, when the above @"@"-form appears in a Scheme expression
 context, the lexical environment must provide bindings for
@@ -235,19 +263,8 @@ or bound locally (with @scheme[let], for example).
     @text{@it{Note}: @bf{This is @ul{not} a pipe}.}))
 ]
 
-When you first experiment with the Scribble syntax, it is often useful
-to use Scheme's @scheme[quote] to inspect how some concrete syntax is
-being read.
-
-@; FIXME: unfortunate code duplication
-@interaction[
-(eval:alts
-  #,(tt "'@foo{bar}")
-  '@foo{bar})
-]
-
 @;--------------------------------------------------------------------
-@subsection{The Command Part}
+@section{The Command Part}
 
 Besides being a Scheme identifier, the @nonterm{cmd} part of an
 @"@"-form can have Scheme punctuation prefixes, which will end up
@@ -337,7 +354,7 @@ Finally, note that there are currently no special rules for using
 }===|
 
 @;--------------------------------------------------------------------
-@subsection{The Datum Part}
+@section{The Datum Part}
 
 The datum part can contains arbitrary Scheme expressions, which
 are simply stacked before the body text arguments:
@@ -374,7 +391,7 @@ keyword-value arguments that precede the body of text arguments.
 }===|
 
 @;--------------------------------------------------------------------
-@subsection{The Body Part}
+@section{The Body Part}
 
 The syntax of the body part is intended to be as convenient as
 possible for free text.  It can contain almost any text---the only
@@ -440,7 +457,7 @@ of the text.  This works for @litchar["@"] too:
 }===|
 
 @;--------------------------------------------------------------------
-@subsubsub*section[#:tag "alt-body-syntax"]{Alternative Body Syntax}
+@subsection[#:tag "alt-body-syntax"]{Alternative Body Syntax}
 
 In addition to the above, there is an alternative syntax for the body,
 one that specifies a new marker for its end: use @litchar["|{"] for
@@ -486,7 +503,7 @@ to quote short pieces, and the above works well when you have larger
 multi-line body texts.
 
 @;--------------------------------------------------------------------
-@subsubsub*section{Scheme Expression Escapes}
+@subsection{Scheme Expression Escapes}
 
 In some cases, you may want to use a Scheme identifier (or a number or
 a boolean etc.) in a position that touches the following text; in
@@ -543,7 +560,7 @@ as the Scheme command part of a @"@"-form.  The latter is used in this case
 }===|
 
 @;--------------------------------------------------------------------
-@subsubsub*section{Comments}
+@subsection{Comments}
 
 As noted above, there are two kinds of Scribble comments: @litchar|{@;{...}}| is
 a (nestable) comment for a whole body of text (following the same
@@ -569,7 +586,7 @@ Note how this is different from using @litchar["@||"]s in that strings
 around it are not merged.
 
 @;--------------------------------------------------------------------
-@subsubsub*section{Spaces, Newlines, and Indentation}
+@subsection{Spaces, Newlines, and Indentation}
 
 The Scribble syntax treats spaces and newlines in a special way is
 meant to be sensible for dealing with text.  As mentioned above,
@@ -744,234 +761,6 @@ matter, you can begin (or end) a line with a "@||".
     @|| baz}
 }===|
 
-@;--------------------------------------------------------------------
-@section{Syntax Properties}
+@; --------------------------------------------------
+@(close-eval read-eval)
 
-The Scribble reader attaches properties to syntax objects.  These
-properties might be useful in some rare situations.
-
-Forms that Scribble reads are marked with a @scheme['scribble]
-property, and a value of a list of three elements: the first is
-@scheme['form], the second is the number of items that were read from
-the datum part, and the third is the number of items in the body part
-(strings, sub-forms, and escapes).  In both cases, a @scheme[0] means
-an empty datum/body part, and @scheme[#f] means that the corresponding
-part was omitted.  If the form has neither parts, the property is not
-attached to the result.  This property can be used to give different
-meanings to expressions from the datum and the body parts, for
-example, implicitly quoted keywords:
-
-@; FIXME: a bit of code duplication here
-@def+int[
-  #:eval read-eval
-  (define-syntax (foo stx)
-    (let ([p (syntax-property stx 'scribble)])
-      (printf ">>> ~s\n" (syntax->datum stx))
-      (syntax-case stx ()
-        [(_ x ...)
-         (and (pair? p) (eq? (car p) 'form) (even? (cadr p)))
-         (let loop ([n (/ (cadr p) 2)]
-                    [as '()]
-                    [xs (syntax->list #'(x ...))])
-           (if (zero? n)
-             (with-syntax ([attrs (reverse as)]
-                           [(x ...) xs])
-               #'(list 'foo `attrs x ...))
-             (loop (sub1 n)
-                   (cons (with-syntax ([key (car xs)]
-                                       [val (cadr xs)])
-                           #'(key ,val))
-                         as)
-                   (cddr xs))))])))
-  (eval:alts
-   (code:line
-    @#,tt["@foo[x 1 y (* 2 3)]{blah}"])
-    ;; Unfortunately, expressions are preserved by `def+int'
-    ;; using `quote', not `quote-syntax' (which would create all sorts
-    ;; or binding trouble), so we manually re-attach the property:
-    (eval (syntax-property #'@foo[x 1 y (* 2 3)]{blah}
-                           'scribble '(form 4 1))))
-]
-
-In addition, the Scribble parser uses syntax properties to mark syntax
-items that are not physically in the original source --- indentation
-spaces and newlines.  Both of these will have a @scheme['scribble]
-property; an indentation string of spaces will have
-@scheme['indentation] as the value of the property, and a newline will
-have a @scheme['(newline S)] value where @scheme[S] is the original
-newline string including spaces that precede and follow it (which
-includes the indentation for the following item).  This can be used to
-implement a verbatim environment: drop indentation strings, and use
-the original source strings instead of the single-newline string.  Here
-is an example of this.
-
-@; FIXME: a bit of code duplication here
-@def+int[
-  #:eval read-eval
-  (define-syntax (verb stx)
-    (syntax-case stx ()
-      [(_ cmd item ...)
-       #`(cmd
-          #,@(let loop ([items (syntax->list #'(item ...))])
-               (if (null? items)
-                 '()
-                 (let* ([fst  (car items)]
-                        [prop (syntax-property fst 'scribble)]
-                        [rst  (loop (cdr items))])
-                   (cond [(eq? prop 'indentation) rst]
-                         [(not (and (pair? prop)
-                                    (eq? (car prop) 'newline)))
-                          (cons fst rst)]
-                         [else (cons (datum->syntax-object
-                                      fst (cadr prop) fst)
-                                     rst)])))))]))
-  (eval:alts
-   (code:line
-    @#,tt["@verb[string-append]{"]
-    @#,tt["  foo"]
-    @#,tt["    bar"]
-    @#,tt["}"])
-   @verb[string-append]{
-     foo
-       bar
-   })
-]
-
-@;--------------------------------------------------------------------
-@section[#:tag "at-exp-lang"]{Adding @"@"-expressions to a Language}
-
-@defmodulelang[at-exp]{The @schememodname[at-exp] language installs
-@"@"-reader support in the readtable, and then chains to the reader of
-another language that is specified immediate after
-@schememodname[at-exp].}
-
-For example, @scheme[@#,hash-lang[] at-exp scheme/base] adds @"@"-reader
-support to @scheme[scheme/base], so that
-
-@schememod[
-at-exp scheme/base
-
-(define (greet who) @#,elem{@tt["@"]@scheme[string-append]@schemeparenfont["{"]@schemevalfont{Hello, }@tt["@|"]@scheme[who]@tt["|"]@schemevalfont{.}@schemeparenfont["}"]})
-(greet "friend")]
-
-reports @scheme["Hello, friend."].
-
-@;--------------------------------------------------------------------
-@section{Interface}
-
-@defmodule[scribble/reader]{The @schememodname[scribble/reader] module
-provides direct Scribble reader functionality for advanced needs.}
-
-@; The `with-scribble-read' trick below shadows `read' and
-@;  `read-syntax' with for-label bindings from the Scribble reader
-
-@(define-syntax with-scribble-read
-   (syntax-rules ()
-     [(_)
-      (...
-       (begin
-         (require (for-label scribble/reader))
-
-@; *** Start reader-import section ***
-@defproc[(read [in input-port? (current-input-port)]) any]{}
-@defproc[(read-syntax [source-name any/c (object-name in)]
-                      [in input-port? (current-input-port)])
-         (or/c syntax? eof-object?)]{
-These procedures implement the Scribble reader.  They do so by
-constructing a reader table based on the current one, and using that
-for reading.
-}
-
-@defproc[(read-inside [in input-port? (current-input-port)]) any]{}
-@defproc[(read-syntax-inside [source-name any/c (object-name in)]
-                             [in input-port? (current-input-port)])
-         (or/c syntax? eof-object?)]{
-These @schemeid[-inside] variants parse as if starting inside a
-@litchar["@{"]...@litchar["}"], and they return a (syntactic) list.
-Useful for implementing languages that are textual by default (see
-@filepath{docreader.ss} for example).
-}
-
-@defproc[(make-at-readtable
-          [#:readtable readtable readtable? (current-readtable)]
-          [#:command-char command-char character? #\@]
-          [#:datum-readtable datum-readtable
-                             (or/c readtable? boolean?
-                                              (readtable? . -> . readtable?))
-                             #t]
-          [#:syntax-post-processor syntax-post-proc
-                                   (syntax? . -> . syntax?)
-                                   values])
-          readtable?]{
-
-Constructs an @"@"-readtable.  The keyword arguments can customize the
-resulting reader in several ways:
-
-@itemize[
-
-@item{@scheme[readtable] --- a readtable to base the @"@"-readtable
-  on.}
-
-@item{@scheme[command-char] --- the character used for @"@"-forms.}
-
-@item{@scheme[datum-readtable] --- determines the readtable used for
-  reading the datum part.  A @scheme[#t] values uses the
-  @"@"-readtable, otherwise it can be a readtable, or a
-  readtable-to-readtable function that will construct one from the
-  @"@"-readtable.  The idea is that you may want to have completely
-  different uses for the datum part, for example, introducing a
-  convenient @litchar{key=val} syntax for attributes.}
-
-@item{@scheme[syntax-post-proc] --- function that is applied on
-  each resulting syntax value after it has been parsed (but before it
-  is wrapped quoting punctuations).  You can use this to further
-  control uses of @"@"-forms, for example, making the command be the
-  head of a list:
-
-  @schemeblock[
-    (use-at-readtable
-      #:syntax-post-processor
-      (lambda (stx)
-        (syntax-case stx ()
-          [(cmd rest ...) #'(list 'cmd rest ...)]
-          [_else (error "@ forms must have a body")])))
-  ]}
-
-]}
-
-@defproc[(make-at-reader [#:syntax? syntax? #t] [#:inside? inside? #f] ...)
-          procedure?]{
-Constructs a variant of a @"@"-readtable.  The arguments are the same
-as in @scheme[make-at-readtable], with two more that determine the
-kind of reader function that will be created: @scheme[syntax?] chooses
-between a @scheme[read]- or @scheme[read-syntax]-like function, and
-@scheme[inside?] chooses a plain reader or an @schemeid[-inside]
-variant.
-
-The resulting function has a different contract and action based on
-these inputs.  The expected inputs are as in @scheme[read] or
-@scheme[read-syntax] depending on @scheme[syntax?]; the function will
-read a single expression or, if @scheme[inside?] is true, the whole
-input; it will return a syntactic list of expressions rather than a
-single one in this case.
-
-Note that @scheme[syntax?] defaults to @scheme[#t], as this is the
-more expected common case when you're dealing with concrete-syntax
-reading.
-
-Note that if @scheme[syntax?] is true, the @scheme[read]-like function
-is constructed by simply converting a syntax result back into a datum.}
-
-@defproc[(use-at-readtable ...) void?]{
-
-Passes all arguments to @scheme[make-at-readtable], and installs the
-resulting readtable using @scheme[current-readtable]. It also enables
-line counting for the current input-port via @scheme[port-count-lines!].
-
-This is mostly useful for playing with the Scribble syntax on the REPL.}
-
-@; *** End reader-import section ***
-))]))
-@with-scribble-read[]
-
- 
