@@ -2187,7 +2187,6 @@ If the namespace does not, they are colored the unbound color.
                    defs-text
                    (syntax-position stx)
                    (syntax-span stx))
-          (printf "filename ~s\n" filename)
           (let* ([pos-left (- (syntax-position stx) 1)]
                  [pos-right (+ pos-left (syntax-span stx))])
             (send defs-text syncheck:add-jump-to-definition
