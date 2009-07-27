@@ -89,8 +89,8 @@ Scheme_Object *scheme_tail_call_waiting;
 Scheme_Object *scheme_inferred_name_symbol;
 Scheme_Object *scheme_default_prompt_tag;
 
-int scheme_cont_capture_count;
-int scheme_prompt_capture_count;
+THREAD_LOCAL int scheme_cont_capture_count;
+static THREAD_LOCAL int scheme_prompt_capture_count;
 
 
 /* locals */

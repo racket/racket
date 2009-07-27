@@ -163,7 +163,7 @@ static THREAD_LOCAL Scheme_Object *quick_stx;
 /* FIXME needs to be atomically incremented */
 int scheme_overflow_count;
 int get_overflow_count() { return scheme_overflow_count; }
-int scheme_continuation_application_count;
+int THREAD_LOCAL scheme_continuation_application_count;
 
 /* read-only globals */
 Scheme_Object *scheme_eval_waiting;

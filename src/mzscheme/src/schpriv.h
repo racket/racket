@@ -91,8 +91,8 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[]);
 #define REGISTER_SO(x) MZ_REGISTER_STATIC(x)
 
 extern long scheme_total_gc_time;
-extern int scheme_cont_capture_count;
-extern int scheme_continuation_application_count;
+extern THREAD_LOCAL int scheme_cont_capture_count;
+extern THREAD_LOCAL int scheme_continuation_application_count;
 
 int scheme_num_types(void);
 
