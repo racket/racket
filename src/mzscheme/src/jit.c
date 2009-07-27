@@ -1953,6 +1953,23 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   return ref2;
 }
 
+/* Support for interectpting direct calls to primitives: */
+#if 1
+# define mz_prepare_direct_prim(n) mz_prepare(n)
+# define mz_finishr_direct_prim(reg, proc) mz_finishr(reg)
+#else
+# define mz_prepare_direct_prim(n) mz_prepare(n+1)
+# define mz_finishr_direct_prim(reg, proc) (jit_pusharg_p(reg), (void)mz_finish(proc))
+static Scheme_Object *noncm_prim_indirect(Scheme_Prim proc, int argc, Scheme_Object **argv)
+{
+  return proc(argc, argv);
+}
+static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc, Scheme_Object **argv, Scheme_Object *self)
+{
+  return proc(argc, argv, self);
+}
+#endif
+
 static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
 {
   /* JIT_V1 must have the target function pointer.
@@ -1966,11 +1983,11 @@ static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
     JIT_UPDATE_THREAD_RSPTR();
   }
   jit_movi_i(JIT_R1, num_rands);
-  mz_prepare(2); /* a prim takes 3 args, but a NONCM prim ignores the 3rd */
+  mz_prepare_direct_prim(2); /* a prim takes 3 args, but a NONCM prim ignores the 3rd */
   CHECK_LIMIT();
   jit_pusharg_p(JIT_RUNSTACK);
   jit_pusharg_i(JIT_R1);
-  mz_finishr(JIT_V1);
+  mz_finishr_direct_prim(JIT_V1, noncm_prim_indirect);
   CHECK_LIMIT();
   /*  Return: */
   mz_pop_locals();
@@ -2159,11 +2176,11 @@ static int generate_direct_prim_non_tail_call(mz_jit_state *jitter, int num_rand
   }
 
   jit_movi_i(JIT_R1, num_rands);
-  mz_prepare(2); /* a prim takes 3 args, but a NONCM prim ignores the 3rd */
+  mz_prepare_direct_prim(2); /* a prim takes 3 args, but a NONCM prim ignores the 3rd */
   CHECK_LIMIT();
   jit_pusharg_p(JIT_RUNSTACK);
   jit_pusharg_i(JIT_R1);
-  mz_finishr(JIT_V1);
+  mz_finishr_direct_prim(JIT_V1, noncm_prim_indirect);
   CHECK_LIMIT();
   jit_retval(JIT_R0);
   VALIDATE_RESULT(JIT_R0);
@@ -2451,12 +2468,12 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     if (need_set_rs) {
       JIT_UPDATE_THREAD_RSPTR();
     }
-    mz_prepare(3);
+    mz_prepare_direct_prim(3);
     jit_pusharg_p(JIT_V1);
     if (num_rands < 0) { jit_movr_p(JIT_V1, JIT_R0); } /* save argc to manually pop runstack */
     jit_pusharg_p(JIT_RUNSTACK);
     jit_pusharg_i(JIT_R2);
-    (void)mz_finishr(JIT_R1);
+    mz_finishr_direct_prim(JIT_R1, prim_indirect);
     CHECK_LIMIT();
     jit_retval(JIT_R0);
     VALIDATE_RESULT(JIT_R0);
@@ -7189,10 +7206,10 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
         mz_set_local_p(JIT_V1, JIT_LOCAL2);
       }
       JIT_UPDATE_THREAD_RSPTR();
-      mz_prepare(2);
+      mz_prepare_direct_prim(2);
       jit_pusharg_p(JIT_RUNSTACK);
       jit_pusharg_p(JIT_R1);
-      (void)mz_finishr(JIT_R2);
+      mz_finishr_direct_prim(JIT_R2, noncm_prim_indirect);
       CHECK_LIMIT();
       jit_retval(JIT_R0);
       VALIDATE_RESULT(JIT_R0);

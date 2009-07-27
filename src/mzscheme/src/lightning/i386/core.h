@@ -43,6 +43,13 @@
 #define JIT_R(i)		(_EAX + (i))
 #define JIT_V(i)		((i) == 0 ? _EBX : _ESI + (i) - 1)
 
+/* JIT_R0 = EAX
+   JIT_R1 = ECX
+   JIT_R2 = EDX
+   JIT_V0 = EBX
+   JIT_V1 = ESI
+   JIT_V2 = EDI */
+
 struct jit_local_state {
 #ifdef JIT_X86_64
   int   long_jumps;
