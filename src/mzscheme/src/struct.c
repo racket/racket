@@ -146,7 +146,7 @@ static Scheme_Object *scheme_checked_proc_property;
 static void register_traversers(void);
 #endif
 
-static Scheme_Bucket_Table *prefab_table;
+static THREAD_LOCAL Scheme_Bucket_Table *prefab_table;
 static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type);
 
 #define cons scheme_make_pair
