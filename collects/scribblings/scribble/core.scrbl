@@ -195,10 +195,10 @@ example, @scheme[section] and @scheme[secref] both accept a string
 @section[#:tag "style"]{Styles}
 
 A @deftech{style} combines a @tech{style name} with a list of
-@tech{variants} in a @scheme[style] structure. A @deftech{style name}
-is either a string, symbol, of @scheme[#f]. A @deftech{variant} can be
+@tech{style properties} in a @scheme[style] structure. A @deftech{style name}
+is either a string, symbol, of @scheme[#f]. A @deftech{style property} can be
 anything, including a symbol a structure such as
-@scheme[color-variant].
+@scheme[color-property].
 
 A style has a single @tech{style name}, because the name typically
 corresponds to a configurable instruction to a renderer. For example,
@@ -210,11 +210,11 @@ layer of abstraction between the renderer and documents for widely
 supported style; for example, the @scheme['italic] style name is
 supported by all renderers.
 
-@tech{Variants} within a style compose with style names and other
-variants. Again, symbols are often used for variants that are directly
+@tech{Style properties} within a style compose with style names and other
+properties. Again, symbols are often used for properties that are directly
 supported by renderers. For example, @scheme['unnumbered] style
-variant for a @tech{part} renders the part without a section number.
-Many variants are renderer-specific, such as a @scheme[hover-variant]
+property for a @tech{part} renders the part without a section number.
+Many properties are renderer-specific, such as a @scheme[hover-property]
 structure that associates text with an element to be shown in an
 HTML display when the mouse hovers over the text.
 
@@ -285,7 +285,7 @@ names are as follows:
 
 ]
 
-The recognized @tech{variants} are as follows:
+The recognized @tech{style properties} are as follows:
 
 @itemize[
 
@@ -369,7 +369,7 @@ recognized:
 
 ]
 
-The currently recognized style @tech{variants} are as follows:
+The currently recognized @tech{style properties} are as follows:
 
 @itemize[
 
@@ -410,13 +410,13 @@ recognized:
 
 ]
 
-The following style @tech{variants} are currently recognized:
+The following @tech{style properties} are currently recognized:
 
 @itemize[
 
  @item{@scheme[table-columns] structure --- Provides column-specific
        styles, but only if a @scheme[table-cells] structure is not
-       included as a @tech{variant}.}
+       included as a @tech{style property}.}
 
  @item{@scheme[table-cells] structure --- Provides cell-specific
        styles.}
@@ -434,8 +434,8 @@ The following style @tech{variants} are currently recognized:
 
 For Latex output, a paragraph as a cell value is not automatically
 line-wrapped, unless a vertical alignment is specified for the cell
-through a @scheme[table-cells] or @scheme[table-columns] style
-@tech{variant}. To get a line-wrapped paragraph, use a
+through a @scheme[table-cells] or @scheme[table-columns]
+@tech{style property}. To get a line-wrapped paragraph, use a
 @scheme[compound-paragraph] or use an element with a string style and
 define a corresponding Latex macro in terms of @tt{parbox}. For Latex
 output of blocks in the flow that are @scheme[nested-flow]s,
@@ -463,7 +463,7 @@ names are recognized:
        itemization.}
 ]
 
-The following style @tech{variants} are currently recognized:
+The following @tech{style properties} are currently recognized:
 
 @itemize[
 
@@ -493,7 +493,7 @@ names are recognized:
 
 ]
 
-The following style @tech{variants} are currently recognized:
+The following @tech{style properties} are currently recognized:
 
 @itemize[
 
@@ -522,8 +522,8 @@ non-@scheme[#f] @tech{style name}.
 
 The @scheme[style] field of a compound paragraph is normally a string
 that corresponds to a CSS class for HTML output or Latex environment
-for Latex output (see @secref["extra-style"]). The following style
-@tech{variants} are currently recognized:
+for Latex output (see @secref["extra-style"]). The following
+@tech{style properties} are currently recognized:
 
 @itemize[
 
@@ -577,7 +577,7 @@ recognized:
 
 ]
 
-The following style @tech{variants} are currently recognized:
+The following @tech{style properties} are currently recognized:
 
 @itemize[
 
@@ -586,20 +586,20 @@ The following style @tech{variants} are currently recognized:
  @item{@scheme[url-anchor] structure --- For HTML, inserts a hyperlink
        target before @scheme[content].}
 
- @item{@scheme[color-variant] structure --- Applies a color to the
+ @item{@scheme[color-property] structure --- Applies a color to the
        text of @scheme[content].}
 
- @item{@scheme[background-color-variant] structure --- Applies a color to the
+ @item{@scheme[background-color-property] structure --- Applies a color to the
        background of @scheme[content].}
 
  @item{@scheme[attributes] structure --- Provides additional HTML
        attributes for a @tt{<span>} tag.}
 
- @item{@scheme[hover-variant] structure --- For HTML, adds a text
+ @item{@scheme[hover-property] structure --- For HTML, adds a text
        label to the content to be shown when the mouse hovers over
        it.}
 
- @item{@scheme[script-variant] structure --- For HTML, supplies a
+ @item{@scheme[script-property] structure --- For HTML, supplies a
        script alternative to @scheme[content].}
 
   @item{@scheme[body-id] structure --- For HTML uses the given
@@ -675,7 +675,7 @@ When @scheme[tag] is a part tag and the content of the element is
 @scheme[null], then the hyperlink uses the target part's number and/or
 title as the content. In that case, if the section number is preceded
 by a word, the word starts in uppercase if the element's style includes a
-@scheme['uppercase] variant.}
+@scheme['uppercase] property.}
 
 
 @defstruct[(index-element element) ([tag tag?]
@@ -781,20 +781,20 @@ Computed for each part by the @techlink{collect pass}.}
 
 @defstruct[target-url ([addr path-string?])]{
 
-Used as a style @tech{variant} for an @scheme[element]. A path is
+Used as a @tech{style property} for an @scheme[element]. A path is
 allowed for @scheme[addr], but a string is interpreted as a URL rather
 than a file path.}
 
 
 @defstruct[document-version ([text (or/c string? false/c)])]{
 
-Used as a style @tech{variant} for a @scheme[path] to indicate a
+Used as a @tech{style property} for a @scheme[path] to indicate a
 version number.}
 
 
-@defstruct[color-variant ([color (or/c string? (list/c byte? byte? byte?))])]{
+@defstruct[color-property ([color (or/c string? (list/c byte? byte? byte?))])]{
 
-Used as a style @tech{variant} for an @scheme[element] to set its
+Used as a @tech{style property} for an @scheme[element] to set its
 color. Recognized string names for @scheme[color] depend on the
 renderer, but at the recognized set includes at least
 @scheme["white"], @scheme["black"], @scheme["red"], @scheme["green"],
@@ -803,19 +803,19 @@ renderer, but at the recognized set includes at least
 are used as RGB levels.}
 
 
-@defstruct[background-color-variant ([color (or/c string? (list/c byte? byte? byte?))])]{
+@defstruct[background-color-property ([color (or/c string? (list/c byte? byte? byte?))])]{
 
-Like @scheme[color-variant], but sets the background color.}
+Like @scheme[color-property], but sets the background color.}
 
 @defstruct[table-cells ([styless (listof (listof style?))])]{
 
-Used as a style @tech{variant} for a @scheme[table] to set its cells'
+Used as a @tech{style property} for a @scheme[table] to set its cells'
 styles.
 
 If a cell style has a string name, it is used as an HTML class for the
 @tt{<td>} tag or as a Latex command name.
 
-The following symbols are recognized as cell-style @tech{variants}:
+The following symbols are recognized as cell-@tech{style properties}:
 
 @itemize[
 
@@ -839,8 +839,8 @@ The following symbols are recognized as cell-style @tech{variants}:
 @defstruct[table-columns ([styles (listof style?)])]{
 
 Like @scheme[table-cells], but the @scheme[styles] list is duplicated
-for each row in the table. This @tech{variant} is only when a
-@scheme[table-cells] is not present in a style's list of variants.}
+for each row in the table. This @tech{style property} is only when a
+@scheme[table-cells] is not present in a style's list of properties.}
 
 @defproc[(block? [v any/c]) boolean?]{
 
@@ -858,7 +858,7 @@ otherwise.}
 
 
 @defstruct[style ([name (or/c string? symbol? #f)]
-                  [variants list?])]{
+                  [properties list?])]{
 
 Represents a @techlink{style}.}
 
@@ -1036,43 +1036,43 @@ Converts a @scheme[generated-tag] value with @scheme[t] to a string.
 
 @; ----------------------------------------
 
-@section{HTML Style Variants}
+@section{HTML Style Properties}
 
-@defmodule[scribble/html-variants]{ The
-@scheme[scribble/html-variants] library provides datatypes used as
-style @tech{variants} for HTML rendering.}
+@defmodule[scribble/html-properties]{ The
+@scheme[scribble/html-properties] library provides datatypes used as
+@tech{style properties} for HTML rendering.}
 
 
 @defstruct[attributes ([assoc (listof (cons/c symbol? string?))])]{
 
-Used as a style @tech{variant} to add arbitrary attributes to an HTML
+Used as a @tech{style property} to add arbitrary attributes to an HTML
 tag.}
 
 
 @defstruct[url-anchor ([name string?])]{
 
-Used as a style @tech{variant} with @scheme[element] to insert an
+Used as a @tech{style property} with @scheme[element] to insert an
 anchor before the element.}
 
 
-@defstruct[hover-variant ([text string?])]{
+@defstruct[hover-property ([text string?])]{
 
-Used as a style @tech{variant} with @scheme[element] to add text that
+Used as a @tech{style property} with @scheme[element] to add text that
 is shown when the mouse hovers over the element.}
 
 
-@defstruct[script-variant ([type string?]
+@defstruct[script-property ([type string?]
                            [script (or/c path-string? (listof string?))])]{
 
-Used as a style @tech{variant} with @scheme[element] to supply a
+Used as a @tech{style property} with @scheme[element] to supply a
 script alternative to the element content.}
 
 
 @defstruct[css-addition ([path (or/c path-string? 
                                      (cons/c 'collects (listof bytes?)))])]{
 
-Used as a style @tech{variant} to supply a CSS file to be referenced
-in the generated HTML. This variant can be attached to any style, and
+Used as a @tech{style property} to supply a CSS file to be referenced
+in the generated HTML. This property can be attached to any style, and
 all additions are collected to the top of the generated HTML page.
 
 The @scheme[path] field can be a result of
@@ -1081,7 +1081,7 @@ The @scheme[path] field can be a result of
 
 @defstruct[body-id ([value string?])]{
 
-Used as a style @tech{variant} to associate an @tt{id} attribute with
+Used as a @tech{style property} to associate an @tt{id} attribute with
 an HTML tag.}
 
 
@@ -1099,18 +1099,18 @@ Like @scheme[latex-defaults], but use for the
 
 @; ----------------------------------------
 
-@section{Latex Style Variants}
+@section{Latex Style Properties}
 
-@defmodule[scribble/latex-variants]{ The
-@scheme[scribble/latex-variants] library provides datatypes used as
-style @tech{variants} for Latex rendering.}
+@defmodule[scribble/latex-properties]{ The
+@scheme[scribble/latex-properties] library provides datatypes used as
+@tech{style properties} for Latex rendering.}
 
 
 @defstruct[tex-addition ([path (or/c path-string? 
                                      (cons/c 'collects (listof bytes?)))])]{
 
-Used as a style @tech{variant} to supply a @filepath{.tex} file to be
-included in the generated Latex. This variant can be attached to any
+Used as a @tech{style property} to supply a @filepath{.tex} file to be
+included in the generated Latex. This property can be attached to any
 style, and all additions are collected to the top of the generated
 Latex file.
 
@@ -1125,7 +1125,7 @@ The @scheme[path] field can be a result of
                            [extra-files (listof (or/c path-string? 
                                                       (cons/c 'collects (listof bytes?))))])]{
 
-Used as a style @tech{variant} on the main @scheme[part] of a document
+Used as a @tech{style property} on the main @scheme[part] of a document
 to set a default prefix file, style file, and extra files (see
 @secref["config-style"]).  The defaults are used by the
 @exec{scribble} command-line tool for and @DFlag{latex} or @DFlag{pdf}
@@ -1136,18 +1136,18 @@ be a result of @scheme[path->main-collects-relative].
 
 Languages (used with @hash-lang[]) like
 @schememodname[scribble/manual] and @schememodname[scribble/sigplan]
-add this variant to a document to specify appropriate files for Latex
+add this property to a document to specify appropriate files for Latex
 rendering.}
 
 
 @defstruct[latex-auto-extra-files ([paths (listof (or/c path-string? 
                                                         (cons/c 'collects (listof bytes?))))])]{
 
-Used as a style @tech{variant} for the main @scheme[part] of a
+Used as a @tech{style property} for the main @scheme[part] of a
 document to supply extra files needed to build the document via the
 @exec{scribble} command-line tool (for @DFlag{latex} and @DFlag{pdf}
 mode).
 
 Languages (used with @hash-lang[]) like
-@schememodname[scribble/sigplan] add this variant to a document to specify
+@schememodname[scribble/sigplan] add this property to a document to specify
 appropriate extra files.}

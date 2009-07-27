@@ -13,7 +13,7 @@
          syntax/modread
          scribble/base-render
          scribble/core
-         scribble/html-variants
+         scribble/html-properties
          scribble/manual ; really shouldn't be here... see dynamic-require-doc
          scribble/private/run-pdflatex
          (prefix-in html: scribble/html-render)
@@ -330,7 +330,7 @@
        tag-prefix
        tags
        (part-title-content v)
-       (let* ([v (style-variants style)]
+       (let* ([v (style-properties style)]
               [v (if (ormap body-id? v)
                      v
                      (cons (make-body-id "doc-plt-scheme-org")

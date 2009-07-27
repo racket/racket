@@ -7,7 +7,7 @@
          empty-content?)
 
 (define (part-style? p s)
-  (memq s (style-variants (part-style p))))
+  (memq s (style-properties (part-style p))))
 
 (define (select-suffix path suggested-suffixes accepted-suffixes)
   (or (ormap (lambda (suggested)
@@ -23,7 +23,7 @@
       path))
 
 (define (extract-table-cell-styles t)
-  (let ([vars (style-variants (table-style t))])
+  (let ([vars (style-properties (table-style t))])
     (or (let ([l (ormap (lambda (v)
                           (and (table-cells? v)
                                (table-cells-styless v)))
@@ -31,12 +31,12 @@
           (and l
                (unless (= (length l) (length (table-blockss t)))
                  (error 'table 
-                        "table-cells variant list's length does not match row count: ~e vs. ~e"
+                        "table-cells property list's length does not match row count: ~e vs. ~e"
                         l (length (table-blockss t))))
                (for-each (lambda (l row)
                            (unless (= (length l) (length row))
                              (error 'table
-                                    "table-cells variant list contains a row whose length does not match the content: ~e vs. ~e"
+                                    "table-cells property list contains a row whose length does not match the content: ~e vs. ~e"
                                     l (length row))))
                          l (table-blockss t))
                l))
@@ -46,7 +46,7 @@
                  (map (lambda (row)
                         (unless (= (length cols) (length row))
                           (error 'table
-                                 "table-columns variant list's length does not match a row length: ~e vs. ~e"
+                                 "table-columns property list's length does not match a row length: ~e vs. ~e"
                                  cols (length row)))
                         cols)
                       (table-blockss t)))))

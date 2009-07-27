@@ -2,7 +2,7 @@
 
 (require "core.ss"
          "private/render-utils.ss"
-         "html-variants.ss"
+         "html-properties.ss"
          scheme/class
          scheme/path
          scheme/file
@@ -132,14 +132,14 @@
                    (cond
                     [(attributes? v)
                      (map (lambda (v) (list (car v) (cdr v))) (attributes-assoc v))]
-                    [(color-variant? v)
-                     `((style ,(format "color: ~a" (color->string (color-variant-color v)))))]
-                    [(background-color-variant? v)
-                     `((style ,(format "background-color: ~a" (color->string (background-color-variant-color v)))))]
-                    [(hover-variant? v)
-                     `((title ,(hover-variant-text v)))]
+                    [(color-property? v)
+                     `((style ,(format "color: ~a" (color->string (color-property-color v)))))]
+                    [(background-color-property? v)
+                     `((style ,(format "background-color: ~a" (color->string (background-color-property-color v)))))]
+                    [(hover-property? v)
+                     `((title ,(hover-property-text v)))]
                     [else null]))
-                 (style-variants style)))])
+                 (style-properties style)))])
     (let ([name (style-name style)])
       (if (string? name)
           (cons `[class ,name]
@@ -432,7 +432,7 @@
                (filter (lambda (e)
                          (let loop ([e e])
                            (or (and (table? e)
-                                    (memq 'aux (style-variants (table-style e)))
+                                    (memq 'aux (style-properties (table-style e)))
                                     (pair? (table-blockss e)))
                                (and (delayed-block? e)
                                     (loop (delayed-block-blocks e ri))))))
@@ -539,14 +539,14 @@
       (or (ormap (lambda (v)
                    (and (body-id? v)
                         (body-id-value v)))
-                 (style-variants (part-style d)))
+                 (style-properties (part-style d)))
           (let ([p (part-parent d ri)])
             (and p (extract-part-body-id p ri)))))
     
     (define/public (render-one-part d ri fn number)
       (parameterize ([current-output-file fn])
         (let* ([defaults (ormap (lambda (v) (and (html-defaults? v) v))
-                                (style-variants (part-style d)))]
+                                (style-properties (part-style d)))]
                [prefix-file (or prefix-file 
                                 (and defaults
                                      (let ([v (html-defaults-prefix-path defaults)])
@@ -857,7 +857,7 @@
                      (not (style-name style))
                      (null? attrs))
                 contents
-                `((,(if (memq 'div (style-variants style)) 'div 'p)
+                `((,(if (memq 'div (style-properties style)) 'div 'p)
                    [,@attrs
                     ,@(case (style-name style)
                         [(author) '([class "author"])]
@@ -919,15 +919,15 @@
                    ,@sz
                    ,@(attribs)))))]
         [(and (or (element? e) (multiarg-element? e))
-              (ormap (lambda (v) (and (script-variant? v) v))
+              (ormap (lambda (v) (and (script-property? v) v))
                      (let ([s (if (element? e)
                                   (element-style e)
                                   (multiarg-element-style e))])
-                       (if (style? s) (style-variants s) null))))
+                       (if (style? s) (style-properties s) null))))
          =>
          (lambda (v)
-           (let* ([t `[type ,(script-variant-type v)]]
-                  [s (script-variant-script v)]
+           (let* ([t `[type ,(script-property-type v)]]
+                  [s (script-property-script v)]
                   [s (if (list? s)
                          `(script (,t ,@(attribs)) ,(apply as-literal `("\n" ,@s "\n")))
                          `(script (,t ,@(attribs) [src ,s])))])
@@ -1002,20 +1002,20 @@
 
     (define/private (render-plain-content e part ri)
       (define (attribs) (content-attribs e))
-      (let* ([variants (let ([s (content-style e)])
-                         (if (style? s)
-                             (style-variants s)
-                             null))]
+      (let* ([properties (let ([s (content-style e)])
+                           (if (style? s)
+                               (style-properties s)
+                               null))]
              [name (let ([s (content-style e)])
                      (if (style? s)
                          (style-name s)
                          s))]
-             [link? (and (ormap target-url? variants)
+             [link? (and (ormap target-url? properties)
                          (not (current-no-links)))]
-             [anchor? (ormap url-anchor? variants)]
+             [anchor? (ormap url-anchor? properties)]
              [attribs
               (append
-               (if (null? variants)
+               (if (null? properties)
                    null
                    (append-map (lambda (v)
                                  (cond
@@ -1027,7 +1027,7 @@
                                                       (from-root addr (get-dest-directory))
                                                       addr))]))]
                                   [else null]))
-                               variants))
+                               properties))
                (attribs))]
              [newline? (eq? name 'newline)])
         (let-values ([(content) (cond
@@ -1050,7 +1050,7 @@
                                     (if (url-anchor? v)
                                         `((a ([name ,(url-anchor-name v)])))
                                         null))
-                                  variants)
+                                  properties)
                       null)
                 (,(cond
                    [link? 'a]
@@ -1098,16 +1098,16 @@
                   (cons
                    `(td (,@(cond
                             [(not column-style) null]
-                            [(memq 'right (style-variants column-style)) '([align "right"])]
-                            [(memq 'left (style-variants column-style)) '([align "left"])]
-                            [(memq 'center (style-variants column-style)) '([align "center"])]
+                            [(memq 'right (style-properties column-style)) '([align "right"])]
+                            [(memq 'left (style-properties column-style)) '([align "left"])]
+                            [(memq 'center (style-properties column-style)) '([align "center"])]
                             [else null])
                          ,@(cond
                             [(not column-style) null]
-                            [(memq 'top (style-variants column-style)) '([valign "top"])]
-                            [(memq 'baseline (style-variants column-style)) '([valign "baseline"])]
-                            [(memq 'vcenter (style-variants column-style)) '([valign "center"])]
-                            [(memq 'bottom (style-variants column-style)) '([valign "bottom"])]
+                            [(memq 'top (style-properties column-style)) '([valign "top"])]
+                            [(memq 'baseline (style-properties column-style)) '([valign "baseline"])]
+                            [(memq 'vcenter (style-properties column-style)) '([valign "center"])]
+                            [(memq 'bottom (style-properties column-style)) '([valign "bottom"])]
                             [else null])
                          ,@(if (and column-style
                                     (string? (style-name column-style)))
@@ -1124,7 +1124,7 @@
                                             [else n])))])
                                null))
                         ,@(if (and (paragraph? d)
-                                   (memq 'omitable (style-variants (paragraph-style d))))
+                                   (memq 'omitable (style-properties (paragraph-style d))))
                               (render-content (paragraph-content d) part ri)
                               (render-block d part ri #f)))
                    (loop (cdr ds) (cdr column-styles) #f)))]))))

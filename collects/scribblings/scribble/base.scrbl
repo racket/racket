@@ -75,7 +75,7 @@ from the content. The tag string is combined with the symbol
 The @scheme[style] argument can be a style structure, or it can be one
 of the following: a @scheme[#f] that corresponds to a ``plain'' style,
 a string that is used as a @tech{style name}, a symbol that is used as
-a @tech{variant}, or a list of symbols to be used as @tech{variants}.
+a @tech{style property}, or a list of symbols to be used as @tech{style properties}.
 For information on styles, see @scheme[part]. For example, a style of
 @scheme['toc] causes sub-sections to be generated as separate pages in
 multi-page HTML output.
@@ -350,7 +350,7 @@ Generates a literal hyperlinked URL.}
          element?]{
 
 Inserts the hyperlinked title of the section tagged @scheme[tag], but
-elements in the title content with the @scheme['aux] @tech{variant}
+elements in the title content with the @scheme['aux] @tech{style property}
 are omitted in the hyperlink label.
 
 If @scheme[#:doc module-path] is provided, the @scheme[tag] refers to

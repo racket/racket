@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual 
-          scribble/core scribble/html-variants scribble/latex-variants
+          scribble/core scribble/html-properties scribble/latex-properties
           "utils.ss"
           (for-label scheme/base
                      ;; FIXME: need to get this in

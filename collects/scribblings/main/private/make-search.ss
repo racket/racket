@@ -6,7 +6,7 @@
          scribble/basic
          scribble/core
          scribble/scheme
-         scribble/html-variants
+         scribble/html-properties
          scribble/manual-struct
          scheme/list
          scheme/string

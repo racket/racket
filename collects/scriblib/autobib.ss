@@ -2,8 +2,8 @@
 (require scribble/manual
          scribble/core
          scribble/decode
-         scribble/html-variants
-         scribble/latex-variants
+         scribble/html-properties
+         scribble/latex-properties
          scheme/string
          setup/main-collects)
 

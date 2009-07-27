@@ -2,8 +2,8 @@
   (require "core.ss"
            "basic.ss"
            "search.ss"
-           "html-variants.ss"
-           "latex-variants.ss"
+           "html-properties.ss"
+           "latex-properties.ss"
            mzlib/class
            mzlib/for
            setup/main-collects
@@ -53,7 +53,7 @@
                        make-element-id-transformer
                        element-id-transformer?))
 
-  (define scheme-variants
+  (define scheme-properties
     (let ([abs (lambda (s)
                  (path->main-collects-relative (build-path (collection-path "scribble") s)))])
       (list (make-css-addition (abs "scheme.css"))
@@ -61,8 +61,8 @@
 
   (define (make-scheme-style s #:tt? [tt? #t])
     (make-style s (if tt?
-                      (cons 'tt-chars scheme-variants)
-                      scheme-variants)))
+                      (cons 'tt-chars scheme-properties)
+                      scheme-properties)))
 
   (define output-color (make-scheme-style "ScmOut"))
   (define input-color (make-scheme-style "ScmIn"))

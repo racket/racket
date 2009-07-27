@@ -83,9 +83,9 @@ coerced to one.}
 )]{
 
 @compat[] Like @scheme[make-part], but adds a the
-@scheme[document-version] style @tech{variant} using the given
+@scheme[document-version] @tech{style property} using the given
 @scheme[version]. The @scheme[versioned-part?] predicate recognizes a
-@scheme[part] with a @scheme[document-version] variant.}
+@scheme[part] with a @scheme[document-version] property.}
 
 @deftogether[(
 @defproc[(make-unnumbered-part [tag-prefix (or/c false/c string?)]
@@ -100,8 +100,8 @@ coerced to one.}
 )]{
 
 @compat[] Like @scheme[make-part], but adds the @scheme['unnumbered]
-style @tech{variant}. The @scheme[unnumbered-part?] predicate
-recognizes a @scheme[part] with the @scheme['unnumbered] variant.}
+@tech{style property}. The @scheme[unnumbered-part?] predicate
+recognizes a @scheme[part] with the @scheme['unnumbered] property.}
 
 
 @defproc[(make-paragraph [content list?]) paragraph?]{
@@ -135,9 +135,9 @@ to the current one. The @scheme[styled-paragraph?] predicate and
 )]{
 
 @compat[] Like @scheme[make-paragraph], but adds the
-@scheme['omitable] style @tech{variant}. The
+@scheme['omitable] @tech{style property}. The
 @scheme[omitable-paragraph?] predicate checks for a paragraph with the
-variant.}
+property.}
 
 
 @defproc[(make-table [style any/c]
@@ -185,9 +185,9 @@ parsed to the current format.}
 @defproc[(auxiliary-table? [v any/c]) boolean?]
 )]{
 
-@compat[] Like @scheme[make-table], but adds the @scheme['aux] style
-@tech{variant}.  The @scheme[auxiliary-table?] predicate recognizes
-tables with the @scheme['aux] variant.}
+@compat[] Like @scheme[make-table], but adds the @scheme['aux]
+@tech{style property}.  The @scheme[auxiliary-table?] predicate recognizes
+tables with the @scheme['aux] property.}
 
 
 @defproc[(make-compound-paragraph [style any/c]
@@ -227,20 +227,20 @@ and the result of @scheme[element-content] is always a list.}
 
 @defproc[(make-aux-element [style any/c] [content list?]) element?]{
 
-@compat[] Like @scheme[make-element], but adds the @scheme['aux] style
-@tech{variant}.}
+@compat[] Like @scheme[make-element], but adds the @scheme['aux]
+@tech{style property}.}
 
 
 @defproc[(make-hover-element [style any/c] [content list?] [text string?]) element?]{
 
-@compat[] Like @scheme[make-element], but adds @scheme[hover-variant]
+@compat[] Like @scheme[make-element], but adds @scheme[hover-property]
 containing @scheme[text] to the element's style.}
 
 
 @defproc[(make-script-element [style any/c] [content list?] [type string?]
                               [script (or/c path-string? (listof string?))]) element?]{
 
-@compat[] Like @scheme[make-element], but adds @scheme[script-variant]
+@compat[] Like @scheme[make-element], but adds @scheme[script-property]
 containing @scheme[type] and @scheme[script] to the element's style.}
 
 

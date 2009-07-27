@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "mz.ss"
           scribble/core
-          scribble/html-variants
+          scribble/html-properties
           (for-label scheme/help
                      net/url
                      scheme/gui))

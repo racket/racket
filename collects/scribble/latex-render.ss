@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "core.ss"
-         "latex-variants.ss"
+         "latex-properties.ss"
          "private/render-utils.ss"
          scheme/class
          scheme/runtime-path
@@ -52,7 +52,7 @@
 
     (define/override (render-one d ri fn)
       (let* ([defaults (ormap (lambda (v) (and (latex-defaults? v) v))
-                              (style-variants (part-style d)))]
+                              (style-properties (part-style d)))]
              [prefix-file (or prefix-file
                               (and defaults
                                    (let ([v (latex-defaults-prefix defaults)])
@@ -184,7 +184,7 @@
                         [(1) "Chap"]
                         [else "Sec"])
                       (if (let ([s (element-style e)])
-                            (and (style? s) (memq 'uppercase (style-variants s))))
+                            (and (style? s) (memq 'uppercase (style-properties s))))
                           "UC"
                           ""))
               (render-content
@@ -249,7 +249,7 @@
                   [else (error 'latex-render
                                "unrecognzied style symbol: ~s" style)])]
                [(string? style-name)
-                (let* ([v (if style (style-variants style) null)]
+                (let* ([v (if style (style-properties style) null)]
                        [tt? (cond
                              [(memq 'tt-chars v) #t]
                              [(memq 'exact-chars v) 'exact]
@@ -267,7 +267,7 @@
                     (wrap e style-name tt?)]))]
                [else 
                 (core-render e tt?)]))
-            (let loop ([l (if style (style-variants style) null)] [tt? #f])
+            (let loop ([l (if style (style-properties style) null)] [tt? #f])
               (if (null? l)
                   (finish tt?)
                   (let ([v (car l)])
@@ -276,16 +276,16 @@
                       (printf "\\href{~a}{" (target-url-addr v))
                       (loop (cdr l) #t)
                       (printf "}")]
-                     [(color-variant? v)
+                     [(color-property? v)
                       (printf "\\intext~acolor{~a}{"
-                              (if (string? (color-variant-color v)) "" "rgb")
-                              (color->string (color-variant-color v)))
+                              (if (string? (color-property-color v)) "" "rgb")
+                              (color->string (color-property-color v)))
                       (loop (cdr l) tt?)
                       (printf "}")]
-                     [(background-color-variant? v)
+                     [(background-color-property? v)
                       (printf "\\in~acolorbox{~a}{"
-                              (if (string? (background-color-variant-color v)) "" "rgb")
-                              (color->string (background-color-variant-color v)))
+                              (if (string? (background-color-property-color v)) "" "rgb")
+                              (color->string (background-color-property-color v)))
                       (loop (cdr l) tt?)
                       (printf "}")]
                      [else (loop (cdr l) tt?)]))))))
@@ -345,7 +345,7 @@
                                   (not (ormap (lambda (cell-styles)
                                                 (ormap (lambda (s) 
                                                          (or (string? (style-name s))
-                                                             (let ([l (style-variants s)])
+                                                             (let ([l (style-properties s)])
                                                                (or (memq 'right l)
                                                                    (memq 'center l)))))
                                                        cell-styles))
@@ -401,8 +401,8 @@
                            (map (lambda (i cell-style)
                                   (format "~a@{}"
                                           (cond
-                                           [(memq 'center (style-variants cell-style)) "c"]
-                                           [(memq 'right (style-variants cell-style)) "r"]
+                                           [(memq 'center (style-properties cell-style)) "c"]
+                                           [(memq 'right (style-properties cell-style)) "r"]
                                            [else "l"])))
                                 (car blockss)
                                 (car cell-styless)))
@@ -446,8 +446,8 @@
       null)
 
     (define/private (render-table-cell p part ri twidth vstyle)
-      (let ([top? (memq 'top (style-variants vstyle))]
-            [center? (memq 'vcenter (style-variants vstyle))])
+      (let ([top? (memq 'top (style-properties vstyle))]
+            [center? (memq 'vcenter (style-properties vstyle))])
         (when (style-name vstyle)
           (printf "\\~a{" (style-name vstyle)))
         (let ([minipage? (and (not (table? p))
@@ -498,7 +498,7 @@
                         (or (and (string? s) s)
                             (and (eq? s 'inset) "quote")))
                       "Subflow")]
-            [command? (memq 'command (style-variants (nested-flow-style t)))])
+            [command? (memq 'command (style-properties (nested-flow-style t)))])
         (if command?
             (printf "\\~a{" kind)
             (printf "\\begin{~a}" kind))
@@ -517,7 +517,7 @@
 
     (define/override (render-compound-paragraph t part ri starting-item?)
       (let ([kind (style-name (compound-paragraph-style t))]
-            [command? (memq 'command (style-variants (compound-paragraph-style t)))])
+            [command? (memq 'command (style-properties (compound-paragraph-style t)))])
         (when kind
           (if command?
               (printf "\\~a{" kind)

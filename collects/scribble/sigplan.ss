@@ -3,8 +3,8 @@
          scribble/core
          scribble/base
          scribble/decode
-         scribble/html-variants
-         scribble/latex-variants
+         scribble/html-properties
+         scribble/latex-properties
          (for-syntax scheme/base))
 
 (provide preprint

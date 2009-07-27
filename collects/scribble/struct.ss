@@ -4,7 +4,7 @@
                                deserialize-info:target-url-v0)
                     [make-target-url core:make-target-url])
          "private/provide-structs.ss"
-         "html-variants.ss"
+         "html-properties.ss"
          scheme/provide-syntax
          scheme/struct-info
          scheme/contract
@@ -180,12 +180,12 @@
                (make-style (style-name s)
                            (cons
                             (make-document-version version)
-                            (style-variants s))))
+                            (style-properties s))))
              to-collect 
              (flow-paragraphs flow)
              parts))
 (define (versioned-part? p)
-  (and (part? p) (ormap document-version? (style-variants (part-style p)))))
+  (and (part? p) (ormap document-version? (style-properties (part-style p)))))
 
 (define (make-unnumbered-part tag-prefix tags title-content orig-style to-collect flow parts)
   (make-part tag-prefix 
@@ -193,12 +193,12 @@
              (list->content title-content)
              (let ([s (convert-style orig-style)])
                (make-style (style-name s)
-                           (cons 'unnumbered (style-variants s))))
+                           (cons 'unnumbered (style-properties s))))
              to-collect 
              (flow-paragraphs flow)
              parts))
 (define (unnumbered-part? p)
-  (and (part? p) (memq 'unnumbered (style-variants (part-style p)))))
+  (and (part? p) (memq 'unnumbered (style-properties (part-style p)))))
 
 (define (make-paragraph/compat content)
   (make-paragraph plain (list->content content)))
@@ -210,7 +210,7 @@
 (define (make-omitable-paragraph content)
   (make-paragraph (make-style #f '(omitable)) (list->content content)))
 (define (omitable-paragraph? p)
-  (and (paragraph? p) (memq 'omitable (style-variants (paragraph-style p)))))
+  (and (paragraph? p) (memq 'omitable (style-properties (paragraph-style p)))))
 
 (define (make-table/compat style cellss)
   (make-table (convert-style style)
@@ -230,11 +230,11 @@
   (let ([t (make-table/compat style cells)])
     (make-table (make-style (style-name (table-style t))
                             (cons 'aux
-                                  (style-variants (table-style t))))
+                                  (style-properties (table-style t))))
                 (table-blockss t))))
 
 (define (auxiliary-table? t)
-  (ormap (lambda (v) (eq? v 'aux) (style-variants (table-style t)))))
+  (ormap (lambda (v) (eq? v 'aux) (style-properties (table-style t)))))
 
 (define (make-itemization/compat flows)
   (make-itemization plain flows))
@@ -251,18 +251,18 @@
   (if (style? s)
       (style-name s)
       s))
-(define (element-style-variants s)
+(define (element-style-properties s)
   (if (style? s)
-      (style-variants s)
+      (style-properties s)
       null))
 
-(define (add-element-variant v e)
+(define (add-element-property v e)
   (make-element (make-style (element-style-name (element-style e))
                             (cons v
-                                  (element-style-variants (element-style e))))
+                                  (element-style-properties (element-style e))))
                 (element-content e)))
 (define (check-element-style e pred)
-  (ormap pred (style-variants (element-style e))))
+  (ormap pred (style-properties (element-style e))))
 
 (define (handle-image-style ctr style . args)
   (if (image-file? style)
@@ -310,33 +310,33 @@
   (handle-image-style make-index-element style (list->content content) tag plain-seq etry-seq desc))
 
 (define (make-aux-element style content)
-  (add-element-variant 'aux (make-element/compat style content)))
+  (add-element-property 'aux (make-element/compat style content)))
 (define (aux-element? e)
   (check-element-style e (lambda (v) (eq? v 'aux))))
 
 (define (make-hover-element style content text)
-  (add-element-variant (make-hover-variant text)
-                       (make-element/compat style content)))
+  (add-element-property (make-hover-property text)
+                        (make-element/compat style content)))
 (define (hover-element? e)
-  (check-element-style e hover-variant?))
+  (check-element-style e hover-property?))
 (define (hover-element-text e)
   (ormap (lambda (v)
-           (and (hover-variant? v) (hover-variant-text e)))
-         (style-variants (element-style e))))
+           (and (hover-property? v) (hover-property-text e)))
+         (style-properties (element-style e))))
 
 (define (make-script-element style content type script)
-  (add-element-variant (make-script-variant type script)
-                       (make-element/compat style content)))
+  (add-element-property (make-script-property type script)
+                        (make-element/compat style content)))
 (define (script-element? e)
-  (check-element-style e script-variant?))
+  (check-element-style e script-property?))
 (define (script-element-type e)
   (ormap (lambda (v)
-           (and (script-variant? v) (script-variant-type e)))
-         (style-variants (element-style e))))
+           (and (script-property? v) (script-property-type e)))
+         (style-properties (element-style e))))
 (define (script-element-script e)
   (ormap (lambda (v)
-           (and (script-variant? v) (script-variant-script e)))
-         (style-variants (element-style e))))
+           (and (script-property? v) (script-property-script e)))
+         (style-properties (element-style e))))
 
 ;; ----------------------------------------
 
@@ -352,18 +352,18 @@
                            (make-style (style-name s)
                                        (cons
                                         (make-attributes (with-attributes-assoc wa))
-                                        (style-variants s))))]
+                                        (style-properties s))))]
    [(target-url? s) (let ([s (convert-style (target-url-style s))])
                       (make-style (style-name s)
                                        (cons
                                         (core:make-target-url (target-url-addr s))
-                                        (style-variants s))))]
+                                        (style-properties s))))]
    [(image-file? s) (make-style #f null)]
    [(and (list? s) (pair? s) (eq? (car s) 'color))
-    (make-style #f (list (make-color-variant
+    (make-style #f (list (make-color-property
                           (if (string? (cadr s)) (cadr s) (cdr s)))))]
    [(and (list? s) (pair? s) (eq? (car s) 'bg-color))
-    (make-style #f (list (make-background-color-variant
+    (make-style #f (list (make-background-color-property
                           (if (string? (cadr s)) (cadr s) (cdr s)))))]
    [(and (pair? s)
          (list? s)

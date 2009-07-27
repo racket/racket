@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/bnf
-          "utils.ss")
+          "utils.ss"
+          (for-label scriblib/figure))
 
 @(define (sample . text) (nested #:style 'inset (apply verbatim text)))
 @(define (result . text) (apply nested #:style 'inset text))
@@ -155,7 +156,7 @@ into one document that is the same as before.
 @; ----------------------------------------
 @section{Document Styles}
 
-Scribble currently supports only one from of HTML output. You can
+Scribble currently supports only one form of HTML output. You can
 replace the @filepath{scribble.css} file for the generated pages, and
 that's about it. (We expect to add more styles in the future.)
 
@@ -466,7 +467,7 @@ For example the text-mode stream
     @section[#:tag "poetry"]{Of Mice and Cookies}
     See @secref["milk"].
 
-    @section[#:tag "milk"]{@italic{Important} Things About Milk}
+    @section[#:tag "milk"]{@italic{Important} Stuff About Milk}
     @figure["straw" @elem{A straw}]{@image["straw.png"]}
   }|
 
@@ -478,7 +479,7 @@ is equivalent to the Scheme-mode sequence
     (section #:tag "poetry" "Of Mice and Cookies") "\n"
     "See " (secref "milk") "." "\n"
     "\n"
-    (section #:tag "milk" (italic "Important") " Things About Milk") "\n"
+    (section #:tag "milk" (italic "Important") " Milk Supplies") "\n"
     (figure "straw" (elem "A straw") (image "straw.png")) "\n"
 ]
 

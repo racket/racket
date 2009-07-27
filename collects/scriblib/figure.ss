@@ -3,8 +3,8 @@
 (require scribble/manual
          scribble/core
          scribble/decode
-         scribble/html-variants
-         scribble/latex-variants
+         scribble/html-properties
+         scribble/latex-properties
          setup/main-collects
          "private/counter.ss")
 
@@ -12,7 +12,8 @@
          figure*
          figure**
          Figure-target 
-         Figure-ref)
+         Figure-ref
+         figure-ref)
 
 (define figure-style-extras
   (let ([abs (lambda (s)
@@ -39,8 +40,8 @@
         plain
         (list
          (make-element legend-style
-                       (list* (Figure-target tag) ": " 
-                              (decode-content (list caption))))))))))))
+                       (list (Figure-target tag) ": " 
+                             caption))))))))))
 
 (define (*figure style tag caption content)
   (make-nested-flow
@@ -55,8 +56,8 @@
         plain
         (list
          (make-element legend-style
-                       (list* (Figure-target tag) ": " 
-                              (decode-content (list caption))))))))))))
+                       (list (Figure-target tag) ": " 
+                             caption))))))))))
 
 (define (figure* tag caption . content)
   (*figure centerfiguremulti-style tag caption content))
@@ -68,3 +69,5 @@
   (counter-target figures tag "Figure"))
 (define (Figure-ref tag)
   (make-element #f (list (counter-ref figures tag "Figure"))))
+(define (figure-ref tag)
+  (make-element #f (list (counter-ref figures tag "figure"))))

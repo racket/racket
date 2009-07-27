@@ -1,8 +1,8 @@
 #lang scribble/doc
 @(require "mz.ss" 
           scribble/core 
-          scribble/html-variants
-          scribble/latex-variants
+          scribble/html-properties
+          scribble/latex-properties
           scribble/core 
           scheme/list)
 

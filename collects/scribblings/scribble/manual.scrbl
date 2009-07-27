@@ -20,10 +20,10 @@ bindings, but without setting the reader or setting the default
 rendering format to the PLT Scheme manual format.}
 
 With @hash-lang[], @schememodname[scribble/manual] associates a
-@scheme[latex-defaults] style @tech{variant} with its @scheme[doc]
+@scheme[latex-defaults] @tech{style property} with its @scheme[doc]
 export to select the default PLT Scheme manual style for Latex
 rendering---unless a style is supplied to @scheme[title] that already
-includes a @scheme[latex-defaults] @tech{variant}.
+includes a @scheme[latex-defaults] @tech{style property}.
 
 @local-table-of-contents[]
 
@@ -819,7 +819,7 @@ as a member of the signature named by @scheme[sig-id].}
 @section[#:tag "doc-strings"]{Various String Forms}
 
 @defproc[(aux-elem [pre-content any/c] ...) element?]{
-Like @scheme[elem], but adds an @scheme['aux] style @tech{variant}.}
+Like @scheme[elem], but adds an @scheme['aux] @tech{style property}.}
 
 @defproc[(defterm [pre-content any/c] ...) element?]{Typesets the
 @tech{decode}d @scheme[pre-content] as a defined term (e.g., in

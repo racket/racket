@@ -169,12 +169,12 @@
                     [contents (listof content?)])]
 
  [style ([name (or/c string? symbol? #f)]
-         [variants list?])]
- ;; variants:
+         [properties list?])]
+ ;; properties:
  [document-version ([text (or/c string? false/c)])]
  [target-url ([addr path-string?])]
- [color-variant ([color (or/c string? (list/c byte? byte? byte?))])]
- [background-color-variant ([color (or/c string? (list/c byte? byte? byte?))])]
+ [color-property ([color (or/c string? (list/c byte? byte? byte?))])]
+ [background-color-property ([color (or/c string? (list/c byte? byte? byte?))])]
 
  [table-columns ([styles (listof style?)])]
  [table-cells ([styless (listof (listof style?))])]
@@ -455,7 +455,7 @@
   (and (element? e)
        (let ([s (element-style e)])
          (and (style? e)
-              (memq 'aux (style-variants s))))))
+              (memq 'aux (style-properties s))))))
 
 (define (strip-aux content)
   (cond

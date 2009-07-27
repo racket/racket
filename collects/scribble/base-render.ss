@@ -74,7 +74,7 @@
         (for/list ([k (in-hash-keys ht)]) (main-collects-relative->path k))))
 
     (define/private (extract-style-style-files s ht pred extract)
-      (for ([v (in-list (style-variants s))])
+      (for ([v (in-list (style-properties s))])
         (when (pred v)
           (hash-set! ht (extract v) #t))))
 
@@ -132,7 +132,7 @@
       (or (ormap (lambda (v)
                (and (document-version? v)
                     (document-version-text v)))
-                 (style-variants (part-style d)))
+                 (style-properties (part-style d)))
           ""))
 
     (define/private (extract-pre-paras d sym)
@@ -464,7 +464,7 @@
       (unless prefix-file
         (for ([d (in-list ds)])
           (let ([extras (ormap (lambda (v) (and (auto-extra-files? v) v))
-                               (style-variants (part-style d)))])
+                               (style-properties (part-style d)))])
             (when extras
               (for ([fn (in-list (auto-extra-files-paths extras))])
                 (install-file (main-collects-relative->path fn))))))))
@@ -531,7 +531,7 @@
 
     (define/public (render-block p part ri starting-item?)
       (cond
-       [(table? p) (if (memq 'aux (style-variants (table-style p)))
+       [(table? p) (if (memq 'aux (style-properties (table-style p)))
                        (render-auxiliary-table p part ri)
                        (render-table p part ri starting-item?))]
        [(itemization? p) (render-itemization p part ri)]

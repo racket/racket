@@ -4,7 +4,7 @@
 (require "../config.ss"
          scribble/manual
          scribble/core
-         scribble/html-variants
+         scribble/html-properties
          scribble/decode
          scheme/list
          setup/dirs)
@@ -19,14 +19,14 @@
 
 (define (script #:noscript [noscript null] . body)
   (make-element (make-style #f (list
-                                (make-script-variant
+                                (make-script-property
                                  "text/javascript"
                                  (flatten body))))
                 noscript))
 
 (define (script-ref #:noscript [noscript null] path)
   (make-element (make-style #f (list
-                                (make-script-variant
+                                (make-script-property
                                  "text/javascript"
                                  path)))
                 noscript))

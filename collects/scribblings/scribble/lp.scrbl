@@ -1,8 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual 
           scribble/core
-          scribble/html-variants
-          scribble/latex-variants
+          scribble/html-properties
+          scribble/latex-properties
           scheme/runtime-path
           (prefix-in lp-ex: "lp-ex-doc.scrbl")
           "utils.ss"

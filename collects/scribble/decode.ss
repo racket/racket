@@ -6,19 +6,6 @@
          scheme/class
          scheme/list)
 
-(provide decode
-         decode-part
-         decode-flow
-         decode-paragraph
-         decode-compound-paragraph
-         decode-content
-         (rename-out [decode-content decode-elements])
-         decode-string
-         whitespace?
-         clean-up-index-string
-         pre-content?
-         pre-flow?)
-
 (define (pre-content? i)
   (or (string? i)
       (and (content? i)
@@ -33,6 +20,17 @@
       (block? i)
       (and (splice? i)
            (andmap pre-flow? (splice-run i)))))
+
+(define (pre-part? v)
+  (or (pre-flow? v)
+      (title-decl? v)
+      (part-start? v)
+      (part-index-decl? v)
+      (part-collect-decl? v)
+      (part-tag-decl? v)
+      (part? v)
+      (and (splice? v)
+           (andmap pre-part? (splice-run v)))))
 
 (provide-structs
  [title-decl ([tag-prefix (or/c false/c string?)]
@@ -50,6 +48,33 @@
                    [entry-seq list?])]
  [part-collect-decl ([element (or/c element? part-relative-element?)])]
  [part-tag-decl ([tag tag?])])
+
+(provide whitespace?
+         pre-content?
+         pre-flow?
+         pre-part?)
+
+(provide/contract
+ [decode (-> (listof pre-part?)
+             part?)]
+ [decode-part  (-> (listof pre-part?)
+                   (listof string?)
+                   (or/c #f content?)
+                   exact-nonnegative-integer?
+                   part?)]
+ [decode-flow  (-> (listof pre-flow?)
+                   (listof block?))]
+ [decode-paragraph (-> (listof pre-content?)
+                       paragraph?)]
+ [decode-compound-paragraph (-> (listof pre-flow?)
+                                paragraph?)]
+ [decode-content (-> (listof pre-content?)
+                     content?)]
+ [rename decode-content decode-elements
+         (-> (listof pre-content?)
+             content?)]
+ [decode-string (-> string? content?)]
+ [clean-up-index-string (-> string? string?)])
 
 (define (clean-up-index-string s)
   ;; Collapse whitespace, and remove leading or trailing spaces, which
@@ -102,7 +127,7 @@
           (if vers
               (make-style (style-name style)
                           (cons (make-document-version vers)
-                                (style-variants style)))
+                                (style-properties style)))
               style)
           (let ([l (append
                     (map (lambda (k tag)
@@ -113,7 +138,7 @@
                          keys k-tags)
                      colls)])
             (if (and title 
-                     (not (memq 'hidden (style-variants style))))
+                     (not (memq 'hidden (style-properties style))))
               (cons (make-index-element
                      #f null (car tags)
                      (list (clean-up-index-string

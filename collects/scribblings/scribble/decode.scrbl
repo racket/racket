@@ -45,17 +45,6 @@ the @litchar{``apple''} argument is decoded to use fancy quotes, and
 then it is bolded.
 
 
-@defproc[(pre-flow? [v any/c]) boolean?]{
-
-Returns @scheme[#t] if @scheme[v] is a @deftech{pre-flow} value: a
-string or other non-list @scheme[content], a @scheme[block?], or a
-@scheme[splice] containing a list of @tech{pre-flow} values; otherwise
-returns @scheme[#f].
-
-Pre-flow is decoded into a @tech{flow} (i.e., a list of @tech{blocks})
-by functions like @scheme[decode] and @scheme[decode-flow].}
-
-
 @defproc[(pre-content? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a @deftech{pre-content} value: a
@@ -67,7 +56,31 @@ Pre-content is decoded into @tech{content} by functions like
 @scheme[decode-content] and @scheme[decode-paragraph].}
 
 
-@defproc[(decode [lst list?]) part?]{
+@defproc[(pre-flow? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a @deftech{pre-flow} value: a
+string or other non-list @scheme[content], a @scheme[block], or a
+@scheme[splice] containing a list of @tech{pre-flow} values; otherwise
+returns @scheme[#f].
+
+Pre-flow is decoded into a @tech{flow} (i.e., a list of @tech{blocks})
+by functions like @scheme[decode-flow].}
+
+
+@defproc[(pre-part? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a @deftech{pre-part} value: a
+string or other non-list @scheme[content], a @scheme[block], a
+@scheme[part], a @scheme[title-decl], a @scheme[part-start], a
+@scheme[part-index-decl], a @scheme[part-collect-decl], a
+@scheme[part-tag-decl], or a @scheme[splice] containing a list of
+@tech{pre-part} values; otherwise returns @scheme[#f].
+
+A pre-part sequences is decoded into a @scheme[part] by functions like
+@scheme[decode] and @scheme[decode-part].}
+
+
+@defproc[(decode [lst (listof pre-part?)]) part?]{
 
 Decodes a document, producing a part. In @scheme[lst], instances of
 @scheme[splice] are inlined into the list. An instance of
@@ -84,10 +97,10 @@ flow-element datatypes are used as-is in the enclosing flow.
 
 }
 
-@defproc[(decode-part [lst list?]
+@defproc[(decode-part [lst (listof pre-part?)]
                       [tags (listof string?)]
-                      [title (or/c false/c list?)]
-                      [depth excat-nonnegative-integer?])
+                      [title (or/c #f list?)]
+                      [depth exact-nonnegative-integer?])
          part?]{
 
 Like @scheme[decode], but given a list of tag string for the part, a
@@ -146,9 +159,9 @@ otherwise.
 
 }
 
-@defstruct[title-decl ([tag-prefix (or/c false/c string?)]
+@defstruct[title-decl ([tag-prefix (or/c #f string?)]
                        [tags (listof string?)]
-                       [version (or/c string? false/c)]
+                       [version (or/c string? #f)]
                        [style any/c]
                        [content content?])]{
 
@@ -159,7 +172,7 @@ and @scheme[style] fields are propagated to the resulting
 }
 
 @defstruct[part-start ([depth integer?]
-                       [tag-prefix (or/c false/c string?)]
+                       [tag-prefix (or/c #f string?)]
                        [tags (listof string?)]
                        [style any/c]
                        [title content?])]{

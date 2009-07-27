@@ -4,7 +4,7 @@
          "core.ss"
          "manual-struct.ss"
          "decode-struct.ss"
-         "html-variants.ss"
+         "html-properties.ss"
          scheme/list
          scheme/class
          scheme/contract
@@ -501,7 +501,7 @@
                                 style)
                             (cons (make-target-url url)
                                   (if (style? style)
-                                      (style-variants style)
+                                      (style-properties style)
                                       null)))
                 (decode-content str)))
 

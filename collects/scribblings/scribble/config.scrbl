@@ -2,8 +2,8 @@
 @(require scribble/manual
           scribble/core
           scribble/decode
-          scribble/html-variants
-          scribble/latex-variants
+          scribble/html-properties
+          scribble/latex-properties
           "utils.ss"
           (for-label scheme/base))
 
@@ -20,7 +20,7 @@ extend or configure Scribble fall into two groups:
  @item{You may need to drop into the back-end ``language'' of CSS or
        Latex to create a specific output effect. For this kind of
        extension, you will mostly likely attach a
-       @scheme[css-addition] or @scheme[tex-addition] @tech{variant}
+       @scheme[css-addition] or @scheme[tex-addition] @tech{style property}
        to style, where the addition implements the style name. This
        kind of extension is described in @secref["extra-style"].}
 
@@ -29,7 +29,7 @@ extend or configure Scribble fall into two groups:
        kind of configuration, you can run the @exec{scribble} command-line
        tool and supply flags like @DFlag{prefix} or @DPFlag{style}, or
        you can associate a @scheme[html-defaults] or
-       @scheme[latex-defaults] @tech{variant} to the main document's
+       @scheme[latex-defaults] @tech{style property} to the main document's
        style. This kind of configuration is described in
        @secref["config-style"].}
 
@@ -50,7 +50,7 @@ output or a Latex macro/environment for Latex output. In Latex output,
 the string is used as a command name for a @scheme[paragraph]
 and an environment name for a @scheme[table], @scheme[itemization],
 @scheme[nested-flow], or @scheme[compound-paragraph]; the if style has
-a @scheme['commad] @tech{variant} for a @scheme[nested-flow] or
+a @scheme['command] @tech{style property} for a @scheme[nested-flow] or
 @scheme[compound-paragraph], then the style name is used as a command
 instead of an environment.  In addition, for an itemization, the style
 string is suffixed with @scheme["Item"] and used as a CSS class or Latex
@@ -58,7 +58,7 @@ macro name to use for the itemization's items (in place of @tt{item}
 in the case of Latex).
 
 To add a mapping from your own style name to a CSS configuration, add
-a @scheme[css-addition] structure instance to a style's @tech{variant}
+a @scheme[css-addition] structure instance to a style's @tech{style property}
 list. To map a style name to a Latex macro or environment, add a
 scheme[tex-addition] structure instance. A @scheme[css-addition] or
 @scheme[tex-addition] is normally associated with the style whose name
@@ -75,7 +75,7 @@ The styles used by @schememodname[scribble/manual] are implemented by
 @filepath{scribble} collection. Other libraries, such as
 @schememodname[scriblib/autobib], similarly implement styles through files
 that are associated by @scheme[css-addition] and @scheme[tex-addition]
-@tech{variants}.
+@tech{style properties}.
 
 To avoid collisions with future additions to Scribble, start your
 style name with an uppercase letter that is not @litchar{S}. An
@@ -88,8 +88,8 @@ For example, a Scribble document
 @verbatim[#:indent 2]|{
  #lang scribble/manual
  @(require scribble/core
-           scribble/html-variants
-           scribble/latex-variants)
+           scribble/html-properties
+           scribble/latex-properties)
 
  (define inbox-style
    (make-style "InBox"
@@ -191,13 +191,13 @@ accompanying files:
 
 When using the @exec{scribble} command-line utility, a document can
 declare its default style, prefix, and extra files through a
-@scheme[html-defaults] and/or @scheme[latex-defaults] style
-@tech{variant}. In particular, when using the @exec{scribble}
+@scheme[html-defaults] and/or @scheme[latex-defaults]
+@tech{style property}. In particular, when using the @exec{scribble}
 command-line tool to generate Latex or PDF a document whose main part
 is implemented with @scheme[#, @hash-lang[] #,
 @schememodname[scribble/manual]], the result has the standard PLT
 Scheme manual configuration, because @schememodname[scribble/manual]
-associates a @scheme[latex-defaults] @tech{variant} with the exported
+associates a @scheme[latex-defaults] @tech{style property} with the exported
 document. The @schememodname[scribble/sigplan] language similarly
 associates a default configuration with an exported document.  As
 libraries imported with @scheme[require], however,
@@ -205,10 +205,10 @@ libraries imported with @scheme[require], however,
 simply implement new styles in a composable way.
 
 Whether or not a document has a default prefix- and style-file
-configuration through a style @tech{variant}, the defaults can be
+configuration through a @tech{style property}, the defaults can be
 overridden using @exec{scribble} command-line flags. Furthermore,
 languages like @schememodname[scribble/manual] and
 @schememodname[scribble/sigplan] add a @scheme[html-defaults] and/or
-@scheme[latex-defaults] @tech{variant} to a main-document part only if
-it does not already have such a variant added through the
+@scheme[latex-defaults] @tech{style property} to a main-document part only if
+it does not already have such a property added through the
 @scheme[#:style] argument of @scheme[title].

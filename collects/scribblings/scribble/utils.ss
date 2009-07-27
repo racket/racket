@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require scribble/core
-         scribble/html-variants
+         scribble/html-properties
          scribble/manual
          (prefix-in scheme: scribble/scheme)
          (prefix-in scribble: scribble/reader))
@@ -21,8 +21,8 @@
                   scribble/decode
                   scribble/manual
                   scribble/scheme
-                  scribble/html-variants
-                  scribble/latex-variants
+                  scribble/html-properties
+                  scribble/latex-properties
                   scribble/eval
                   scribble/bnf)
 
@@ -155,7 +155,7 @@
            (map (lambda (file strs)
                   (let* ([file (make-element 'tt (list file ":" 'nbsp))]
                          [file (list (make-element 'italic (list file)))])
-                    (list (as-flow (make-element (make-style #f (list (make-background-color-variant '(232 232 255)))) file))
+                    (list (as-flow (make-element (make-style #f (list (make-background-color-property '(232 232 255)))) file))
                           (as-flow (make-box strs)))))
                 filenames strsm)))
    (make-box strs2)))
