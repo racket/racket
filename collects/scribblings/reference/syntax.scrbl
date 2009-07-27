@@ -1048,7 +1048,7 @@ aliens
 @note-lib-only[scheme/provide]
 
 @defform[(matching-identifiers-out regexp provide-spec)]{ Like
-  @scheme[provide-spec], but omitting the export of each binding with
+  @scheme[provide-spec], but including only exports of bindings with
   an external name that matches @scheme[regexp]. The @scheme[regexp]
   must be a literal regular expression (see @secref["regexp"]).}
 
