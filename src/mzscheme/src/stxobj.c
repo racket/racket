@@ -37,7 +37,7 @@
    In addition, the need to marshal syntax objects to bytecode
    introduces some other complications. */
 
-Scheme_Object *scheme_datum_to_syntax_proc;
+static Scheme_Object *scheme_datum_to_syntax_proc;
 
 static Scheme_Object *syntax_p(int argc, Scheme_Object **argv);
 
@@ -627,7 +627,6 @@ void scheme_init_stx(Scheme_Env *env)
   no_nested_inactive_certs = scheme_make_raw_pair(NULL, NULL);
   SCHEME_SET_IMMUTABLE(no_nested_inactive_certs);
 
-  REGISTER_SO(unsealed_dependencies);
 
   scheme_install_type_writer(scheme_free_id_info_type, write_free_id_info_prefix);
   scheme_install_type_reader(scheme_free_id_info_type, read_free_id_info_prefix);
@@ -637,6 +636,7 @@ void scheme_init_stx_places() {
   REGISTER_SO(id_marks_ht);
   REGISTER_SO(than_id_marks_ht);
   REGISTER_SO(interned_skip_ribs);
+  REGISTER_SO(unsealed_dependencies);
   interned_skip_ribs = scheme_make_weak_equal_table();
 }
 
