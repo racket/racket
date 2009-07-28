@@ -379,8 +379,13 @@
       (if no-specific-collections?
         all-collections
         (check-again-all
-         (filter-map (lambda (c) (collection->cc (map string->path c)))
-                     x-specific-collections))))))
+         (filter-map
+          (lambda (c)
+            (collection->cc (append-map (lambda (s)
+                                          (map string->path
+                                               (regexp-split #rx"/" s)))
+                                        c)))
+          x-specific-collections))))))
 
   (set! planet-dirs-to-compile
         (sort-collections
