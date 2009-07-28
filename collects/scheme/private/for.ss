@@ -650,7 +650,7 @@
                                              post-cont?s
                                              poses
                                              vals))))))))
-  
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  running sequences outside of a loop:
 
@@ -709,10 +709,10 @@
                   [sequence-next (lambda () (next))])
               (values sequence-more?
                       sequence-next)))))))
-      
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  core `for/fold' syntax
-  
+
   (define-syntax values*
     (syntax-rules ()
       [(_ x) x]
@@ -721,11 +721,13 @@
   (define-syntax (for/foldX/derived stx)
     (syntax-case stx ()
       ;; Done case (no more clauses, and no generated clauses to emit):
-      [(_ [orig-stx nested? emit? ()] ([fold-var fold-init] ...) () expr1 expr ...)
+      [(_ [orig-stx nested? emit? ()] ([fold-var fold-init] ...) ()
+          expr1 expr ...)
        #`(let ([fold-var fold-init] ...) (let () expr1 expr ...))]
       ;; Switch-to-emit case (no more clauses to generate):
       [(_ [orig-stx nested? #f binds] ([fold-var fold-init] ...) () . body)
-       #`(for/foldX/derived [orig-stx nested? #t binds] ([fold-var fold-init] ...) () . body)]
+       #`(for/foldX/derived [orig-stx nested? #t binds]
+                            ([fold-var fold-init] ...) () . body)]
       ;; Emit case:
       [(_ [orig-stx nested? #t binds] ([fold-var fold-init] ...) rest expr1 . body)
        (with-syntax ([(([outer-binding ...]
@@ -753,38 +755,37 @@
       ;; Bad body cases:
       [(_ [orig-stx . _] fold-bind ())
        (raise-syntax-error
-        #f
-        "missing body expression after sequence bindings"
-        #'orig-stx)]
+        #f "missing body expression after sequence bindings" #'orig-stx)]
       [(_ [orig-stx . _] fold-bind () . rest)
        (raise-syntax-error
-        #f
-        "bad syntax (illegal use of `.') after sequence bindings"
-        #'orig-stx)]
+        #f "bad syntax (illegal use of `.') after sequence bindings" #'orig-stx)]
       ;; Guard case, no pending emits:
       [(_ [orig-stx nested? #f ()] ([fold-var fold-init] ...) (#:when expr . rest) . body)
        #'(let ([fold-var fold-init] ...)
            (if expr
-               (for/foldX/derived [orig-stx nested? #f ()] ([fold-var fold-var] ...) rest . body)
-               (values* fold-var ...)))]
+             (for/foldX/derived [orig-stx nested? #f ()]
+                                ([fold-var fold-var] ...) rest . body)
+             (values* fold-var ...)))]
       ;; Guard case, pending emits need to be flushed first
-      [(frm [orig-stx nested? #f binds] ([fold-var fold-init] ...) (#:when expr . rest) . body)
-       #'(frm [orig-stx nested? #t binds] ([fold-var fold-init] ...) (#:when expr . rest) . body)]
+      [(frm [orig-stx nested? #f binds] ([fold-var fold-init] ...)
+            (#:when expr . rest) . body)
+       #'(frm [orig-stx nested? #t binds] ([fold-var fold-init] ...)
+              (#:when expr . rest) . body)]
       ;; Convert single-value form to multi-value form:
       [(_ [orig-stx nested? #f binds] fold-bind ([id rhs] . rest) . body)
        (identifier? #'id)
-       #'(for/foldX/derived [orig-stx nested? #f binds] fold-bind ([(id) rhs] . rest) . body)]
+       #'(for/foldX/derived [orig-stx nested? #f binds] fold-bind
+                            ([(id) rhs] . rest) . body)]
       ;; If we get here in single-value mode, then it's a bad clause:
       [(_ [orig-stx #f #f nested? #f binds] fold-bind (clause . rest) . body)
        (raise-syntax-error
-        #f
-        "bad sequence binding clause"
-        #'orig-stx
-        #'clause)]
-      ;; Expand one multi-value clause, and push it into the results to emit: 
-      [(frm [orig-stx nested? #f binds] ([fold-var fold-init] ...) (clause . rest) . body)
+        #f "bad sequence binding clause" #'orig-stx #'clause)]
+      ;; Expand one multi-value clause, and push it into the results to emit:
+      [(frm [orig-stx nested? #f binds] ([fold-var fold-init] ...)
+            (clause . rest) . body)
        (with-syntax ([bind (expand-clause #'orig-stx #'clause)])
-         #`(frm [orig-stx nested? nested? (bind . binds)] ([fold-var fold-init] ...) rest . body))]
+         #`(frm [orig-stx nested? nested? (bind . binds)]
+                ([fold-var fold-init] ...) rest . body))]
       [(_ [orig-stx . _] . _)
        (raise-syntax-error #f "bad syntax" #'orig-stx)]))
 
