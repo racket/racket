@@ -91,7 +91,7 @@
       (let-values ([(end-line end-col end-pos) (port-next-location in)])
         (values (cadr m)
                 'parenthesis
-                #f
+                '|{| ;; Better complex paren?
                 pos
                 end-pos
                 (let ([closer (regexp-quote
@@ -108,8 +108,8 @@
                                                  #"[@{])|(?="
                                                  closer
                                                  #")|(?=[\r\n])|$)"))
-                                   #f
-                                   #f)
+                                   '|{|  ;; Better complex paren?
+                                   '|}|) ;; Better complex paren?
                         mode)))))
 
     (if (eof-object? (peek-char in))

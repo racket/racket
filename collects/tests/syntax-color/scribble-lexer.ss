@@ -200,7 +200,7 @@
 (test "@`',@foo{blah}" '((1 parenthesis)
                          (1 constant) ; `
                          (1 constant) ; '
-                         (2 other) ; ,@
+                         (2 other)    ; ,@
                          (3 symbol)
                          (1 parenthesis)
                          (4 string)
@@ -232,3 +232,4 @@
                       (1 string)
                       (1 parenthesis)))
 
+; (test "@|=@=|}" null)
