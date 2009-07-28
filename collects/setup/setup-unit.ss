@@ -331,6 +331,12 @@
     (define all-names   (map cc->name all-ccs))
     (define given-names (map cc->name given-ccs))
     (define (cc-mark cc) (build-path (cc-path cc) ".setup-plt-marker"))
+    (define (complain-about-mark name mark)
+      (let ([given (with-handlers ([void (lambda (_) '???)])
+                     (with-input-from-file mark read-line))])
+        (error 'setup-plt
+               "given collection path: \"~a\" refers to the same directory as another given collection path, \"~a\""
+               name given)))
     ;; For cleanup: try to remove all files, be silent
     (define (cleanup)
       (for ([cc (append given-ccs all-ccs)])
@@ -351,19 +357,14 @@
       (for ([cc given-ccs] [name given-names])
         (let ([mark (cc-mark cc)])
           (if (file-exists? mark)
-            (error 'setup-plt
-                   "given collection path: ~e refers to the same directory as another given collection path"
-                   name)
+            (complain-about-mark name mark)
             (with-output-to-file mark (lambda () (printf "~a\n" name)))))))
     ;; Finally scan all ccs and look for duplicates
     (define (scan-all)
       (for ([cc all-ccs] [name all-names])
         (when (and (not (member name given-names))
                    (file-exists? (cc-mark cc)))
-          (let ([given (with-input-from-file (cc-mark cc) read-line)])
-            (error 'setup-plt
-                   "given collection path: ~e refers to the same directory as another given collection path"
-                   name)))))
+          (complain-about-mark name (cc-mark cc)))))
     (dynamic-wind
       void
       (lambda () (remove-markers) (put-markers) (scan-all) given-ccs)
