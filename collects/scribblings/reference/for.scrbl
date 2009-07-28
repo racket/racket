@@ -181,8 +181,8 @@ result of of the last evaluation of @scheme[body]. If the
 
 Iterates like @scheme[for]. Before iteration starts, the
 @scheme[init-expr]s are evaluated to produce initial accumulator
-values. At the start of each out iteration, a location is generated
-for each @scheme[accum-id], and the correspinding current accumulator
+values. At the start of each iteration, a location is generated
+for each @scheme[accum-id], and the corresponding current accumulator
 value is placed into the location. The last expression in
 @scheme[body] must produce as many values as @scheme[accum-id]s, and
 those values become the current accumulator values. When iteration
