@@ -2837,7 +2837,7 @@ static Scheme_Object *os_wxPenSetJoin(int n,  Scheme_Object *p[])
   
   x0 = WITH_VAR_STACK(unbundle_symset_join(p[POFFSET+0], "set-join in pen%"));
 
-  
+  if (!((wxPen *)((Scheme_Class_Object *)THEOBJ)->primdata)->IsMutable()) WITH_VAR_STACK(scheme_signal_error("%s: this %s%% object is locked (in use by a dc<%%> object or in a list of %s constants)", METHODNAME("pen%","set-join"), "pen", "pen"));
   WITH_VAR_STACK(((wxPen *)((Scheme_Class_Object *)p[0])->primdata)->SetJoin(x0));
 
   
@@ -2880,7 +2880,7 @@ static Scheme_Object *os_wxPenSetCap(int n,  Scheme_Object *p[])
   
   x0 = WITH_VAR_STACK(unbundle_symset_cap(p[POFFSET+0], "set-cap in pen%"));
 
-  
+  if (!((wxPen *)((Scheme_Class_Object *)THEOBJ)->primdata)->IsMutable()) WITH_VAR_STACK(scheme_signal_error("%s: this %s%% object is locked (in use by a dc<%%> object or in a list of %s constants)", METHODNAME("pen%","set-cap"), "pen", "pen"));
   WITH_VAR_STACK(((wxPen *)((Scheme_Class_Object *)p[0])->primdata)->SetCap(x0));
 
   
@@ -2923,7 +2923,7 @@ static Scheme_Object *os_wxPenSetWidth(int n,  Scheme_Object *p[])
   
   x0 = WITH_VAR_STACK(objscheme_unbundle_double_in(p[POFFSET+0], 0, 255, "set-width in pen%"));
 
-  
+  if (!((wxPen *)((Scheme_Class_Object *)THEOBJ)->primdata)->IsMutable()) WITH_VAR_STACK(scheme_signal_error("%s: this %s%% object is locked (in use by a dc<%%> object or in a list of %s constants)", METHODNAME("pen%","set-width"), "pen", "pen"));
   WITH_VAR_STACK(((wxPen *)((Scheme_Class_Object *)p[0])->primdata)->SetWidth(x0));
 
   

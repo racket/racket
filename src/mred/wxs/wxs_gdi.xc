@@ -178,11 +178,11 @@
 @CREATOR (string,rdouble[0|255],SYM[penStyle]); <> color name
 
 @ "get-width" : double GetWidthF();
-@ "set-width" : void SetWidth(rdouble[0|255]);
+@ "set-width" : void SetWidth(rdouble[0|255]); : : /CHECKMUT[wxPen."pen".METHODNAME("pen%","set-width")]
 @ "get-cap" : SYM[cap] GetCap();
-@ "set-cap" : void SetCap(SYM[cap]);
+@ "set-cap" : void SetCap(SYM[cap]); : : /CHECKMUT[wxPen."pen".METHODNAME("pen%","set-cap")]
 @ "get-join" : SYM[join] GetJoin();
-@ "set-join" : void SetJoin(SYM[join]);
+@ "set-join" : void SetJoin(SYM[join]); : : /CHECKMUT[wxPen."pen".METHODNAME("pen%","set-join")]
 
 @ "get-color" : wxColour! GetColour();
 @ "set-color" : void SetColour(wxColour!);  : : /CHECKMUT[wxPen."pen".METHODNAME("pen%","set-color")] <> color%
