@@ -9,6 +9,8 @@
 (define-struct args ())
 (define-struct text-args ())
 
+(define rx:opener #rx"^[|]([^a-zA-Z0-9 \t\r\n\f@\\\177-\377{]*){")
+
 (define (scribble-inside-lexer in mode)
   (let ([mode (or mode
                   (list
@@ -20,49 +22,95 @@
                               #f)))])
   (let-values ([(line col pos) (port-next-location in)]
                [(l) (car mode)])
+    
     (define (enter-@ comment-k)
-      (if (equal? #\; (peek-char in))
-          ;; Comment
-          (begin
-            (read-char in)
-            (if (or (equal? #\{ (peek-char in))
-                    (equal? #\| (peek-char in)))
-                ;; Bracketed comment:
-                (let-values ([(end-line end-col end-pos) (port-next-location in)])
-                  (comment-k "@;"
-                             'comment
-                             #f
-                             pos
-                             end-pos
-                             (cons (make-text-args)
-                                   mode)))
-                ;; Line comment:
-                (begin
-                  (regexp-match? #rx".*?(?=[\r\n])" in)
-                  (let-values ([(end-line end-col end-pos) (port-next-location in)])
-                    (comment-k "@;"
-                               'comment
-                               #f
-                               pos
-                               end-pos
-                               mode)))))
-          (let ([new-mode
-                 (cond
-                  [(equal? #\| (peek-char in))
-                   (read-char in)
-                   (list* (make-scheme 'bar)
-                          mode)]
-                  [else
-                   (list* (make-scheme 'one)
-                          (make-args)
-                          mode)])])
+      (cond
+       [(equal? #\; (peek-char in))
+        ;; Comment
+        (read-char in)
+        (if (or (equal? #\{ (peek-char in))
+                (equal? #\| (peek-char in)))
+            ;; Bracketed comment:
             (let-values ([(end-line end-col end-pos) (port-next-location in)])
-              (values "@"
-                      'other
-                      #f
-                      pos
-                      end-pos
-                      new-mode)))))
+              (comment-k "@;"
+                         'comment
+                         #f
+                         pos
+                         end-pos
+                         (cons (make-text-args)
+                               mode)))
+            ;; Line comment:
+            (begin
+              (regexp-match? #rx".*?(?=[\r\n])" in)
+              (let-values ([(end-line end-col end-pos) (port-next-location in)])
+                (comment-k "@;"
+                           'comment
+                           #f
+                           pos
+                           end-pos
+                           mode))))]
+       [(regexp-try-match rx:opener in)
+        => (lambda (m) (enter-opener m mode))]
+       [(regexp-try-match #rx"^{" in)
+        (enter-simple-opener mode)]
+       [else
+        (let ([new-mode
+               (cond
+                [(equal? #\| (peek-char in))
+                 (read-char in)
+                 (list* (make-scheme 'bar)
+                        mode)]
+                [else
+                 (list* (make-scheme 'one)
+                        (make-args)
+                        mode)])])
+          (let-values ([(end-line end-col end-pos) (port-next-location in)])
+            (values "@"
+                    'parenthesis
+                    #f
+                    pos
+                    end-pos
+                    new-mode)))]))
+
+    (define (enter-simple-opener mode)
+      (let-values ([(end-line end-col end-pos) (port-next-location in)])
+        (values "{"
+                'parenthesis
+                '|{|
+                pos
+                end-pos
+                (cons (make-text #rx"^@"
+                                 #rx"^}"
+                                 #rx"^{"
+                                 #rx".*?(?:(?=[@{}\r\n])|$)"
+                                 '|{|
+                                 '|}|)
+                      mode))))
+
+    (define (enter-opener m mode)
+      (let-values ([(end-line end-col end-pos) (port-next-location in)])
+        (values (cadr m)
+                'parenthesis
+                #f
+                pos
+                end-pos
+                (let ([closer (regexp-quote
+                               (bytes-append #"}"
+                                             (flip (cadr m))
+                                             #"|"))]
+                      [re-opener (regexp-quote (cadr m))])
+                  (cons (make-text (byte-regexp (bytes-append #"^[|]" re-opener #"@"))
+                                   (byte-regexp (bytes-append #"^" closer))
+                                   (byte-regexp (bytes-append #"^[|]" re-opener #"{"))
+                                   (byte-regexp (bytes-append
+                                                 #".*?(?:(?=[|]"
+                                                 re-opener
+                                                 #"[@{])|(?="
+                                                 closer
+                                                 #")|(?=[\r\n])|$)"))
+                                   #f
+                                   #f)
+                        mode)))))
 
     (if (eof-object? (peek-char in))
         (values eof
@@ -82,7 +130,7 @@
                  (regexp-try-match (text-end-rx l) in))
             (let-values ([(end-line end-col end-pos) (port-next-location in)])
               (values "}"
-                      'other
+                      'parenthesis
                       (text-close-paren l)
                       pos
                       end-pos
@@ -91,7 +139,7 @@
                  (regexp-try-match (text-sub-rx l) in))
             (let-values ([(end-line end-col end-pos) (port-next-location in)])
               (values "{"
-                      'other
+                      'parenthesis
                       (text-open-paren l)
                       pos
                       end-pos
@@ -123,7 +171,7 @@
                    (regexp-try-match #px"^\\s*?[]]" in))
               (let-values ([(end-line end-col end-pos) (port-next-location in)])
                 (values "]"
-                        'other
+                        'parenthesis
                         '|]|
                         pos
                         end-pos
@@ -132,7 +180,7 @@
                    (regexp-try-match #px"^\\s*?[|]" in))
               (let-values ([(end-line end-col end-pos) (port-next-location in)])
                 (values "|"
-                        'other
+                        'parenthesis
                         #f
                         pos
                         end-pos
@@ -147,6 +195,34 @@
                                  start
                                  end
                                  mode)))]
+             [(and (eq? status 'one)
+                   (regexp-try-match rx:opener in))
+              ;; Must have consumed a special before an opener
+              => (lambda (m) (enter-opener m (cdr mode)))]
+             [(and (eq? status 'one)
+                   (regexp-try-match #rx"^{" in))
+              ;; Must have consumed a special before an opener
+              (enter-simple-opener (cdr mode))]
+             [(and (eq? status 'one)
+                   (regexp-try-match #rx"^#?['`]" in))
+              ;; Value special:
+              (let-values ([(end-line end-col end-pos) (port-next-location in)])
+                (values "'"
+                        'constant
+                        #f
+                        pos
+                        end-pos
+                        mode))]
+             [(and (eq? status 'one)
+                   (regexp-try-match #rx"^#?,@?" in))
+              ;; Other special:
+              (let-values ([(end-line end-col end-pos) (port-next-location in)])
+                (values ","
+                        'other
+                        #f
+                        pos
+                        end-pos
+                        mode))]
              [else
               (let-values ([(lexeme type paren start end adj) 
                             (case status
@@ -197,7 +273,7 @@
            [(regexp-try-match #rx"^\\[" in)
             (let-values ([(end-line end-col end-pos) (port-next-location in)])
               (values "["
-                      'other
+                      'parenthesis
                       '|[|
                       pos
                       end-pos
@@ -207,47 +283,10 @@
             (scribble-lexer in (cons (make-text-args) (cdr mode)))])]
          [(text-args? l)
           (cond
-           [(regexp-try-match #rx"^[|]([^a-zA-Z0-9 \t\r\n\f@\\\177-\377{]*){" in)
-            => (lambda (m)
-                 (let-values ([(end-line end-col end-pos) (port-next-location in)])
-                   (values (cadr m)
-                           'other
-                           #f
-                           pos
-                           end-pos
-                           (let ([closer (regexp-quote
-                                          (bytes-append #"}"
-                                                        (regexp-replace** (list #rx"[(]" #rx"[[]" #rx"{" #rx"<")
-                                                                          (cadr m)
-                                                                          (list #")" #"]" #"}" #">"))
-                                                        #"|"))]
-                                 [re-opener (regexp-quote (cadr m))])
-                             (cons (make-text (byte-regexp (bytes-append #"^[|]" re-opener #"@"))
-                                              (byte-regexp (bytes-append #"^" closer))
-                                              (byte-regexp (bytes-append #"^[|]" re-opener #"{"))
-                                              (byte-regexp (bytes-append
-                                                            #".*?(?:(?=[|]"
-                                                            re-opener
-                                                            #"[@{])|(?="
-                                                            closer
-                                                            #")|(?=[\r\n])|$)"))
-                                              #f
-                                              #f)
-                                   (cdr mode))))))]
+           [(regexp-try-match rx:opener in)
+            => (lambda (m) (enter-opener m (cdr mode)))]
            [(regexp-try-match #rx"^{" in)
-            (let-values ([(end-line end-col end-pos) (port-next-location in)])
-              (values "{"
-                      'other
-                      '|{|
-                      pos
-                      end-pos
-                      (cons (make-text #rx"^@"
-                                       #rx"^}"
-                                       #rx"^{"
-                                       #rx".*?(?:(?=[@{}\r\n])|$)"
-                                       '|{|
-                                       '|}|)
-                            (cdr mode))))]
+            (enter-simple-opener (cdr mode))]
            [else
             (scribble-lexer in (cdr mode))])]
          [else (error "bad mode")])))))
@@ -255,9 +294,16 @@
 (define (scribble-lexer in mode)
   (scribble-inside-lexer in (or mode (list (make-scheme 'many)))))
 
-(define (regexp-replace** rxs str strs)
-  (if (null? rxs)
-      str
-      (regexp-replace** (cdr rxs)
-                        (regexp-replace* (car rxs) str (car strs))
-                        (cdr strs))))
+(define (flip s)
+  (list->bytes
+   (for/list ([c (in-bytes s)])
+     (cond
+      [(equal? c (char->integer #\()) (char->integer #\))]
+      [(equal? c (char->integer #\[)) (char->integer #\])]
+      [(equal? c (char->integer #\{)) (char->integer #\})]
+      [(equal? c (char->integer #\<)) (char->integer #\>)]
+      [(equal? c (char->integer #\))) (char->integer #\()]
+      [(equal? c (char->integer #\])) (char->integer #\[)]
+      [(equal? c (char->integer #\})) (char->integer #\{)]
+      [(equal? c (char->integer #\>)) (char->integer #\<)]
+      [else c]))))
