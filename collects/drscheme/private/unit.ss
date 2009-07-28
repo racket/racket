@@ -1247,7 +1247,9 @@ module browser threading seems wrong.
           (update-execute-warning-gui))
         (define/public (update-execute-warning-gui)
           (when (is-current-tab?)
-            (send frame show/hide-warning-message (get-current-execute-warning))))
+            (send frame show/hide-warning-message 
+                  (get-current-execute-warning)
+                  (λ () (clear-execution-state)))))
         
         (define/public (get-directory)
           (let ([filename (send defs get-filename)])
@@ -1424,7 +1426,7 @@ module browser threading seems wrong.
         (define execute-warning-panel #f)
         (define execute-warning-parent-panel #f)
         (define execute-warning-canvas #f)
-        (define/public-final (show/hide-warning-message msg)
+        (define/public-final (show/hide-warning-message msg hide-canvas)
           (when (and execute-warning-parent-panel
                      execute-warning-panel)
             (cond
@@ -1435,8 +1437,13 @@ module browser threading seems wrong.
                  [else
                   (set! execute-warning-canvas
                         (new execute-warning-canvas% 
+                             [stretchable-height #t]
                              [parent execute-warning-panel]
-                             [message msg]))])
+                             [message msg]))
+                  (new close-icon% 
+                       [parent execute-warning-panel]
+                       [bg-color "yellow"]
+                       [callback (λ () (hide-canvas))])])
                (send execute-warning-parent-panel
                      change-children
                      (λ (l) (append (remq execute-warning-panel l)
@@ -1779,7 +1786,7 @@ module browser threading seems wrong.
             (send logger-parent-panel change-children (lambda (x) (remq logger-panel x)))
             
             (set! execute-warning-parent-panel execute-warning-outer-panel)
-            (set! execute-warning-panel (new vertical-panel% 
+            (set! execute-warning-panel (new horizontal-panel% 
                                              [parent execute-warning-parent-panel]
                                              [stretchable-height #f]))
             (send execute-warning-parent-panel change-children (λ (l) (remq execute-warning-panel l)))
@@ -4069,6 +4076,7 @@ module browser threading seems wrong.
         (inherit stretchable-height get-dc get-client-size min-height)
         (init-field message)
         (define/public (set-message _msg) (set! message _msg))
+        
         (define/override (on-paint)
           (let ([dc (get-dc)])
             (let-values ([(w h) (get-client-size)])
@@ -4095,7 +4103,6 @@ module browser threading seems wrong.
                         (floor (- (/ w 2) (/ tw 2)))
                         (floor (- (/ h 2) (/ th 2)))))))))
         (super-new)
-        (stretchable-height #f)
         (let-values ([(w h d a) (send (get-dc) get-text-extent "Xy")])
           (min-height (+ 4 (floor (inexact->exact h)))))))
     

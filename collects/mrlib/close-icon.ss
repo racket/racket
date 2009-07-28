@@ -55,7 +55,8 @@
   (class canvas%
     (inherit get-dc min-width min-height stretchable-width stretchable-height
              get-client-size refresh)
-    (init-field [callback void])
+    (init-field [callback void]
+                [bg-color #f])
     (init [horizontal-pad 4]
           [vertical-pad 4])
     (init-masks)
@@ -92,6 +93,11 @@
     (define/override (on-paint)
       (let ([dc (get-dc)])
         (let-values ([(cw ch) (get-client-size)])
+          (when bg-color
+            (send dc set-brush bg-color 'solid)
+            (send dc set-pen bg-color 1 'transparent)
+            (let-values ([(w h) (get-client-size)])
+              (send dc draw-rectangle 0 0 w h)))
           (send dc draw-bitmap icon 
                 (- (/ cw 2) (/ (send icon get-width) 2))
                 (- (/ ch 2) (/ (send icon get-height) 2))
