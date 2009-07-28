@@ -12,9 +12,16 @@
                   [(init) (file-position p)]
                   [(start-line start-col start-pos) (port-next-location p)])
       (let ([get-info (with-handlers ([exn:fail? (lambda (exn) 'fail)])
-                        ;; FIXME: set the reader guard to disable access to 
-                        ;; untrusted planet packages.
-                        (read-language in (lambda () #f)))])
+                        (parameterize ([current-reader-guard
+                                        (let ([old (current-reader-guard)])
+                                          (lambda (g)
+                                            (if (and (pair? g)
+                                                     (eq? (car g) 'planet))
+                                                (error "#lang planet disbled")
+                                                (old g))))])
+                          ;; FIXME: set the reader guard to disable access to 
+                          ;; untrusted planet packages.
+                          (read-language in (lambda () #f))))])
         (cond
          [(procedure? get-info)
           ;; Produce language as first token:
