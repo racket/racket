@@ -305,9 +305,12 @@
   (define (check-again-all given-ccs)
     #|
     ;; This code is better than using marker files, but an older version of it
-    ;; relied on the obligatory existence of an "info.ss" file.  That is no
-    ;; longer required, so it needs to identify directories and that is
-    ;; currently not available.  So use the code below instead.
+    ;; relied on the obligatory existence of an "info.ss" file to implement
+    ;; `file-or-directory-identity'.  That is no longer required, so it needs
+    ;; to identify directories and that is currently not available.  So use the
+    ;; code below it instead.  Perhaps there will be some robust way to do this
+    ;; in the future, eg -- for directories, use the identity of their first
+    ;; file.
     (define all-cc+ids
       (map (lambda (cc)
              (cons cc (file-or-directory-identity (cc-path cc))))
