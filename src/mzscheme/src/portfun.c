@@ -263,7 +263,7 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("read-honu/recursive",            read_honu_recur_f,              0, 1, env);
   GLOBAL_NONCM_PRIM("read-honu-syntax",               read_honu_syntax_f,             0, 2, env);
   GLOBAL_NONCM_PRIM("read-honu-syntax/recursive",     read_honu_syntax_recur_f,       0, 2, env);
-  GLOBAL_NONCM_PRIM("read-language",                  read_language,                  0, 2, env);
+  GLOBAL_PRIM_W_ARITY2("read-language",               read_language,                  0, 2, 0, -1, env);
   GLOBAL_NONCM_PRIM("read-char",                      read_char,                      0, 1, env);
   GLOBAL_NONCM_PRIM("read-char-or-special",           read_char_spec,                 0, 1, env);
   GLOBAL_NONCM_PRIM("read-byte",                      read_byte,                      0, 1, env);

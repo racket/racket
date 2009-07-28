@@ -9,19 +9,29 @@
   that knows how to color itself.  It also describes how to query the
   lexical and s-expression structure of the text.
   @defmethod*[(((start-colorer (token-sym->style (-> symbol? string?)) 
-                               (get-token (-> input-port? (values any/c 
-                                                                  symbol? 
-                                                                  (or/c false? symbol?) 
-                                                                  exact-nonnegative-integer?
-                                                                  exact-nonnegative-integer?)))
+                               (get-token (or/c (-> input-port? 
+                                                    (values any/c 
+                                                            symbol? 
+                                                            (or/c false? symbol?) 
+                                                            exact-nonnegative-integer?
+                                                            exact-nonnegative-integer?))
+                                                (-> input-port? 
+                                                    any/c
+                                                    (values any/c 
+                                                            symbol? 
+                                                            (or/c false? symbol?) 
+                                                            exact-nonnegative-integer?
+                                                            exact-nonnegative-integer?
+                                                            any/c))))
                                (pairs (listof (list/p symbol? symbol?)))) void))]{
     Starts tokenizing the buffer for coloring and parenthesis matching.
 
+    The @scheme[token-sym->style] argument will be passed the first return symbol from @scheme[get-token],
+    and it should return the style-name that the token should be colored.
 
-    The @scheme[token-sym->style] argument will be passed the first return symbol from @scheme[get-token]
-    and should return the style-name that the token should be colored.
+    The @scheme[get-token] argument takes an input port and optionally a mode value.
+    When it accepts just an input port, @scheme[get-token] returns the next token as 5 values:
 
-    The @scheme[get-token] argument takes an input port and returns the next token as 5 values:
     @itemize[
     @item{
     An unused value.  This value is intended to represent the textual
@@ -42,32 +52,44 @@
     @item{
     The ending position of the token.}]
 
-    The @scheme[get-token] function will usually be implemented with a lexer using the 
-    @scheme[parser-tools/lex] library.
-    get-token must obey the following invariants:
+    When @scheme[get-token] accepts a mode value in addition to an
+    input port, it must also return an extra result, which is a new
+    mode. When @scheme[get-token] is called for the beginning on a
+    stream, the mode argument is @scheme[#f].  Thereafter, the mode
+    returned for the previous token is provided to @scheme[get-token]
+    for the next token. The mode should not be a mutable value; if
+    part of the stream is re-tokenized, the mode saved from the
+    immediately preceding token is given again to the
+    @scheme[get-token] function.
+
+    The @scheme[get-token] function is usually be implemented with a lexer using the 
+    @scheme[parser-tools/lex] library. The
+    @scheme[get-token] function must obey the following invariants:
     @itemize[
     @item{
     Every position in the buffer must be accounted for in exactly one
     token.}
     @item{
     The token returned by @scheme[get-token] must rely only on the contents of the
-    input port argument.  This means that the tokenization of some part of
-    the input cannot depend on earlier parts of the input.}
+    input port argument plus the mode argument. This constraint  means that the
+    tokenization of some part of the input cannot depend on earlier parts of the 
+    input except through the mode (and implicitly through the starting positions
+    for tokens).}
     @item{
-    No edit to the buffer can change the tokenization of the buffer prior
-    to the token immediately preceding the edit.  In the following
-    example this invariant does not hold.  If the buffer contains:
-    @verbatim{" 1 2 3}
+    A change to the stream must not change the tokenization of the stream prior
+    to the token immediately preceding the change.  In the following
+    example this invariant does not hold. If the buffer contains
+    @verbatim[#:indent 2]{" 1 2 3}
     and the tokenizer treats the unmatched " as its own token (a string
     error token), and separately tokenizes the 1 2 and 3, an edit to make
-    the buffer look like:
-    @verbatim{" 1 2 3"}
+    the buffer look like
+    @verbatim[#:indent 2]{" 1 2 3"}
     would result in a single string token modifying previous tokens.  To
     handle these situations, @scheme[get-token] must treat the first line as a
     single token.}]
 
     The @scheme[pairs] argument is a list of different kinds of matching parens.  The second
-    value returned by get-token is compared to this list to see how the
+    value returned by @scheme[get-token] is compared to this list to see how the
     paren matcher should treat the token.  An example: Suppose pairs is
     @scheme['((|(| |)|) (|[| |]|) (begin end))].  This means that there
     are three kinds of parens.  Any token which has @scheme['begin] as its second

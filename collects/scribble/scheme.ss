@@ -47,6 +47,7 @@
            (struct-out var-id)
            (struct-out shaped-parens)
            (struct-out just-context)
+           (struct-out alternate-display)
            (struct-out literal-syntax)
            (for-syntax make-variable-id
                        variable-id?
@@ -178,11 +179,12 @@
                                       (memq (syntax-e c) (current-variable-list)))]
                       [(s it? sub?)
                        (let ([sc (syntax-e c)])
-                         (let ([s (format "~s" (if (literal-syntax? sc)
-                                                   (literal-syntax-stx sc)
-                                                   (if (var-id? sc)
-                                                       (var-id-sym sc)
-                                                       sc)))])
+                         (let ([s (or (syntax-property c 'display-string)
+                                      (format "~s" (if (literal-syntax? sc)
+                                                       (literal-syntax-stx sc)
+                                                       (if (var-id? sc)
+                                                           (var-id-sym sc)
+                                                           sc))))])
                            (if (and (symbol? sc)
                                     ((string-length s) . > . 1)
                                     (char=? (string-ref s 0) #\_)
@@ -763,6 +765,7 @@
   (define-struct var-id (sym))
   (define-struct shaped-parens (val shape))
   (define-struct just-context (val ctx))
+  (define-struct alternate-display (id string))
   (define-struct literal-syntax (stx))
 
   (define-struct graph-reference (bx))
@@ -792,6 +795,11 @@
                        s
                        s
                        (just-context-ctx v)))]
+     [(alternate-display? v)
+      (let ([s (do-syntax-ize (alternate-display-id v) col line ht #f)])
+        (syntax-property s
+                         'display-string
+                         (alternate-display-string v)))]
      [(hash-ref (unbox ht) v #f)
       => (lambda (m)
            (unless (unbox m)

@@ -6,7 +6,7 @@
 (require string-constants
          scheme/class
          mred/mred-sig
-         syntax-color/scheme-lexer
+         syntax-color/module-lexer
          "collapsed-snipclass-helpers.ss"
          "sig.ss"
          "../gui-utils.ss"
@@ -1172,14 +1172,14 @@
     (preferences:add-callback
      'framework:tabify
      (lambda (k v) (set! tabify-pref v)))
-    (define/private (scheme-lexer-wrapper in)
-      (let-values (((lexeme type paren start end) (scheme-lexer in)))
+    (define/private (scheme-lexer-wrapper in mode)
+      (let-values (((lexeme type paren start end mode) (module-lexer in mode)))
         (cond
           ((and (eq? type 'symbol)
                 (get-keyword-type lexeme tabify-pref))
-           (values lexeme 'keyword paren start end))
+           (values lexeme 'keyword paren start end mode))
           (else
-           (values lexeme type paren start end)))))
+           (values lexeme type paren start end mode)))))
     
     (define/override (put-file text sup directory default-name)
       (parameterize ([finder:default-extension "ss"]
@@ -1188,7 +1188,7 @@
         ;; don't call the surrogate's super, since it sets the default extension
         (sup directory default-name)))
     
-    (super-new (get-token (lambda (in) (scheme-lexer-wrapper in)))
+    (super-new (get-token (lambda (in mode) (scheme-lexer-wrapper in mode)))
                (token-sym->style short-sym->style-name)
                (matches '((|(| |)|)
                           (|[| |]|)

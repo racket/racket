@@ -1953,7 +1953,7 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   return ref2;
 }
 
-/* Support for interectpting direct calls to primitives: */
+/* Support for intercepting direct calls to primitives: */
 #if 1
 # define mz_prepare_direct_prim(n) mz_prepare(n)
 # define mz_finishr_direct_prim(reg, proc) mz_finishr(reg)

@@ -31,8 +31,15 @@
         (bad (cadr spec) #f)))))
 
 (define (get-info inp mod line col pos)
-  (at-get inp 'get-info (object-name inp) line col pos
-          (lambda (spec) (lambda () (lambda (tag) #f)))))
+  (let ([r (at-get inp 'get-info (object-name inp) line col pos
+                   (lambda (spec) (lambda () (lambda (inp mod line col pos)
+                                               (lambda (tag) #f)))))])
+    (let ([proc (r inp mod line col pos)])
+      (lambda (key)
+        (case key
+          [(color-lexer)
+           (dynamic-require 'syntax-color/scribble-lexer 'scribble-lexer)]
+          [else (and proc (proc key))])))))
 
 (define at-readtable (make-at-readtable))
 

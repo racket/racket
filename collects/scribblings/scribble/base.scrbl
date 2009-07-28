@@ -272,6 +272,9 @@ gets progressively larger.}
 @defproc[(emph [pre-content pre-content?] ...) element?]{
 The same as @scheme[italic].}
 
+@defproc[(linebreak) element?]{
+Produces an element that forces a line break.}
+
 @defproc[(hspace [n exact-nonnegative-integer?]) element?]{
 
 Produces an element containing @scheme[n] spaces and style

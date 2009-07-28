@@ -259,6 +259,7 @@
   (->* () () #:rest (listof pre-content?) element?))
 
 (provide/contract
+ [linebreak (-> element?)]
  [hspace (-> exact-nonnegative-integer? element?)]
  [elem (->* ()
             (#:style element-style?)
@@ -290,6 +291,9 @@
             (vector-set! hspace-cache n h)
             h))
       (make-element 'hspace (list (make-string n #\space)))))
+
+(define (linebreak)
+  (make-element 'newline '("\n")))
 
 (define (elem #:style [style plain] . str)
   (make-element style (decode-content str)))

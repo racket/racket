@@ -3,6 +3,8 @@
           (for-label syntax-color/token-tree
                      syntax-color/paren-tree
                      syntax-color/scheme-lexer
+                     syntax-color/module-lexer
+                     syntax-color/scribble-lexer
                      syntax-color/default-lexer
                      framework/framework
                      framework/private/color
@@ -38,7 +40,7 @@ Parenthesis matching code built on top of @scheme[token-tree%].
                  symbol?
                  (or/c symbol? false/c) 
                  (or/c number? false/c) 
-                 (or/c number? false/c))]
+                 (or/c number? false/c))]{
 
 A lexer for Scheme, including reader extensions (@secref[#:doc'(lib
 "scribblings/reference/reference.scrbl")]{Reader_Extension}), built
@@ -59,6 +61,35 @@ The @scheme[scheme-lexer] function returns 5 values:
   @item{A number representing the starting position of the match (or @scheme[#f] if eof).}
 
   @item{A number representing the ending position of the match (or @scheme[#f] if eof).}]
+
+}
+
+@defproc[(scheme-lexer/status [in input-port?]) 
+         (values (or/c string? eof-object?) 
+                 symbol?
+                 (or/c symbol? false/c) 
+                 (or/c number? false/c) 
+                 (or/c number? false/c)
+                 (or/c 'datum 'open 'close 'continue))]{
+
+Like @scheme[scheme-lexer], but returns an extra value. The last
+return value indicates whether the consumed token should count as a
+datum, an opening parenthesis (or similar starting token to group
+other tokens), a closing parenthesis (or similar), or a prefix (such
+as whitespace) on a datum.}
+
+@defproc[(scheme-nobar-lexer/status [in input-port?]) 
+         (values (or/c string? eof-object?) 
+                 symbol?
+                 (or/c symbol? false/c) 
+                 (or/c number? false/c) 
+                 (or/c number? false/c)
+                 (or/c 'datum 'open 'close 'continue))]{
+
+Like @scheme[scheme-lexer/status], but for a dialect of Scheme where
+@litchar{|} is a delimiter instead of quoting syntax for a symbol.
+This function is used by @scheme[scribble-lexer].}
+
 
 @section{Default lexer}
 @defmodule[syntax-color/default-lexer]
@@ -90,6 +121,90 @@ A lexer that only identifies @litchar{(}, @litchar{)}, @litchar{[},
   @item{A number representing the ending position of the match (or @scheme[#f] if eof).}]
 
                      
+@section{Module Lexer}
+
+@defmodule[syntax-color/module-lexer]
+
+@defproc[(module-lexer [in input-port?]
+                       [mode (or/c #f
+                                   (-> input-port? any)
+                                   (cons/c (-> input-port? any/c any) any/c))])
+         (values (or/c string? eof-object?) 
+                 symbol?
+                 (or/c symbol? false/c) 
+                 (or/c number? false/c) 
+                 (or/c number? false/c)
+                 (or/c #f 
+                       (-> input-port? any)
+                       (cons/c (-> input-port? any/c any) any/c)))]{
+
+Like @scheme[scheme-lexer], but
+
+@itemize[
+
+ @item{A @scheme[module-lexer] accepts (and returns) a lexer mode,
+       instead of just an input port.}
+
+ @item{When @scheme[mode] is @scheme[#f] (indicating the start of the
+       stream), the lexer checks @scheme[in] for a @hash-lang[]
+       specification.
+
+       If a @hash-lang[] line is present but the specified
+       language does not exist, the entire @scheme[in] input is
+       consumed and colored as @scheme['error].
+
+       If the language exists and the language provides a
+       @scheme[get-info] function, then it is called with
+       @scheme['color-lexer]. If the result is not @scheme[#f], then
+       it should be a lexer function for use with
+       @scheme[color:text%]. The result mode is the lexer---paired
+       with @scheme[#f] if the lexer is a procedure arity 2---so that
+       future calls will dispatch to the language-supplied lexer.
+
+       If the language is specified but it provides no
+       @scheme[get-info] or @scheme['color-lexer] result, then
+       @scheme[scheme-lexer] is returned as the mode.}
+
+ @item{When @scheme[mode] is a lexer procedure, the lexer is applied
+       to @scheme[in]. The lexer's results are returned, plus the
+       lexer again as the mode.}
+
+ @item{When @scheme[mode] is a pair, then the lexer procedure in the
+       @scheme[car] is applied to @scheme[in] and the mode in the
+       @scheme[cdr]. The lexer's results are returned, except that its
+       mode result is paired back with the lexer procedure.}
+
+]}
+
+@section{Scribble Lexer}
+
+@defmodule[syntax-color/scribble-lexer]
+
+@defproc[(scribble-lexer [in input-port?]
+                         [mode any/c])
+         (values (or/c string? eof-object?) 
+                 symbol?
+                 (or/c symbol? false/c) 
+                 (or/c number? false/c) 
+                 (or/c number? false/c)
+                 any/c)]{
+
+Like @scheme[scheme-lexer], but for Scheme extended with Scribbles
+@"@" notation (see @secref[#:doc '(lib
+"scribblings/scribble/scribble.scrbl") "reader"]).}
+
+@defproc[(scribble-inside-lexer [in input-port?]
+                                [mode any/c])
+         (values (or/c string? eof-object?) 
+                 symbol?
+                 (or/c symbol? false/c) 
+                 (or/c number? false/c) 
+                 (or/c number? false/c)
+                 any/c)]{
+
+Like @scheme[scribble-lexer], but starting in ``text'' mode instead of
+Scheme mode.}
+
 @; ----------------------------------------------------------------------
 
 @section{Splay Tree for Tokenization}

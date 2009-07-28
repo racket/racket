@@ -32,6 +32,10 @@ added get-regions
 (define (should-color-type? type)
   (not (memq type '(white-space no-color))))
 
+(define (make-data type mode) (cons type mode))
+(define (data-type data) (car data))
+(define (data-lexer-mode data) (cdr data))
+
 (define -text<%>
   (interface (text:basic<%>)
     start-colorer
@@ -102,6 +106,11 @@ added get-regions
        invalid-tokens-start ; = +inf.0
        ;; The position right before the next token to be read
        current-pos
+       ;; Thread a mode through lexing, and remember the mode
+       ;;  at each token boundary, so that lexing can depend on
+       ;;  previous tokens. This is the mode for lexing at
+       ;;  current-pos:
+       current-lexer-mode
        ;; Paren-matching
        parens 
        )
@@ -118,6 +127,7 @@ added get-regions
                         (new token-tree%)
                         +inf.0
                         start
+                        #f
                         (new paren-tree% (matches pairs))))
 
     (define lexer-states (list (make-new-lexer-state 0 'end)))
@@ -228,6 +238,7 @@ added get-regions
          (set-lexer-state-invalid-tokens-start! ls +inf.0)
          (set-lexer-state-up-to-date?! ls #t)
          (set-lexer-state-current-pos! ls (lexer-state-start-pos ls))
+         (set-lexer-state-current-lexer-mode! ls #f)
          (set-lexer-state-parens! ls (new paren-tree% (matches pairs))))
        lexer-states)
       (set! restart-callback #f)
@@ -258,12 +269,12 @@ added get-regions
             (set-lexer-state-invalid-tokens-start! ls (+ invalid-tokens-start length)))
           (sync-invalid ls))))
     
-    (define/private (re-tokenize ls in in-start-pos enable-suspend)
-      (let-values ([(lexeme type data new-token-start new-token-end) 
+    (define/private (re-tokenize ls in in-start-pos in-lexer-mode enable-suspend)
+      (let-values ([(lexeme type data new-token-start new-token-end new-lexer-mode) 
                     (begin
                       (enable-suspend #f)
                       (begin0
-                       (get-token in)
+                       (get-token in in-lexer-mode)
                        (enable-suspend #t)))])
         (unless (eq? 'eof type)
           (enable-suspend #f)
@@ -271,6 +282,7 @@ added get-regions
                      (+ in-start-pos (sub1 new-token-end)))
           (let ((len (- new-token-end new-token-start)))
             (set-lexer-state-current-pos! ls (+ len (lexer-state-current-pos ls)))
+            (set-lexer-state-current-lexer-mode! ls new-lexer-mode)
             (sync-invalid ls)
             (when (and should-color? (should-color-type? type) (not frozen?))
               (set! colors
@@ -286,7 +298,7 @@ added get-regions
             ;; version.  In other words, the new greatly outweighs the tree
             ;; operations.
             ;;(insert-last! tokens (new token-tree% (length len) (data type)))
-            (insert-last-spec! (lexer-state-tokens ls) len type)
+            (insert-last-spec! (lexer-state-tokens ls) len (make-data type new-lexer-mode))
             (send (lexer-state-parens ls) add-token data len)
             (cond
              ((and (not (send (lexer-state-invalid-tokens ls) is-empty?))
@@ -301,7 +313,7 @@ added get-regions
               (enable-suspend #t))
              (else
               (enable-suspend #t)
-              (re-tokenize ls in in-start-pos enable-suspend)))))))
+              (re-tokenize ls in in-start-pos new-lexer-mode enable-suspend)))))))
     
     (define/private (do-insert/delete/ls ls edit-start-pos change-length)
       (unless (lexer-state-up-to-date? ls)
@@ -318,7 +330,14 @@ added get-regions
            (if (send (lexer-state-invalid-tokens ls) is-empty?)
                +inf.0
                (+ (lexer-state-start-pos ls) orig-token-end change-length)))
-          (set-lexer-state-current-pos! ls (+ (lexer-state-start-pos ls) orig-token-start))
+          (let ([start (+ (lexer-state-start-pos ls) orig-token-start)])
+            (set-lexer-state-current-pos! ls start)
+            (set-lexer-state-current-lexer-mode! ls
+                                                 (if (= start (lexer-state-start-pos ls))
+                                                     #f
+                                                     (begin
+                                                       (send valid-tree search-max!)
+                                                       (data-lexer-mode (send valid-tree get-root-data))))))
           (set-lexer-state-up-to-date?! ls #f)
           (queue-callback (λ () (colorer-callback)) #f)))
        ((>= edit-start-pos (lexer-state-invalid-tokens-start ls))
@@ -340,7 +359,13 @@ added get-regions
           (send (lexer-state-parens ls) truncate tok-start)
           (set-lexer-state-tokens! ls valid-tree)
           (set-lexer-state-invalid-tokens-start! ls (+ change-length (lexer-state-invalid-tokens-start ls)))
-          (set-lexer-state-current-pos! ls (+ (lexer-state-start-pos ls) tok-start))))))
+          (let ([start (+ (lexer-state-start-pos ls) tok-start)])
+            (set-lexer-state-current-pos! ls start)
+            (if (= start (lexer-state-start-pos ls))
+                #f
+                (begin
+                  (send valid-tree search-max!)
+                  (data-lexer-mode (send valid-tree get-root-data)))))))))
 
     (define/private (do-insert/delete edit-start-pos change-length)
       (unless (or stopped? force-stop?)
@@ -378,6 +403,7 @@ added get-regions
                                                                  (λ (x) #f))
                                          (enable-suspend #t)))
                                       (lexer-state-current-pos ls)
+                                      (lexer-state-current-lexer-mode ls)
                                       enable-suspend))
                        lexer-states)))))
           (set! rev (get-revision-number)))
@@ -427,7 +453,14 @@ added get-regions
         (reset-tokens)
         (set! should-color? (preferences:get 'framework:coloring-active))
         (set! token-sym->style token-sym->style-)
-        (set! get-token get-token-)
+        (set! get-token (if (procedure-arity-includes? get-token- 2)
+                            ;; New interface: thread through a mode:
+                            get-token-
+                            ;; Old interface: no mode
+                            (lambda (in mode)
+                              (let-values ([(lexeme type data new-token-start new-token-end) 
+                                            (get-token- in)])
+                                (values lexeme type data new-token-start new-token-end #f)))))
         (set! pairs pairs-)
         (for-each
          (lambda (ls)
@@ -739,7 +772,7 @@ added get-regions
              (let ([tokens (lexer-state-tokens ls)])
                (tokenize-to-pos ls position)
                (send tokens search! (- position (lexer-state-start-pos ls)))
-               (send tokens get-root-data)))))
+               (data-type (send tokens get-root-data))))))
     
     (define/private (tokenize-to-pos ls position)
       (when (and (not (lexer-state-up-to-date? ls)) 
@@ -768,8 +801,8 @@ added get-regions
                 (send tokens search! (- (if (eq? direction 'backward) (sub1 position) position)
                                         start-pos))
                 (cond
-                 ((or (eq? 'white-space (send tokens get-root-data))
-                      (and comments? (eq? 'comment (send tokens get-root-data))))
+                 ((or (eq? 'white-space (data-type (send tokens get-root-data)))
+                      (and comments? (eq? 'comment (data-type (send tokens get-root-data)))))
                   (skip-whitespace (+ start-pos
                                       (if (eq? direction 'forward)
                                           (send tokens get-root-end-position)

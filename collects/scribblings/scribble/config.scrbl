@@ -60,7 +60,7 @@ in the case of Latex).
 To add a mapping from your own style name to a CSS configuration, add
 a @scheme[css-addition] structure instance to a style's @tech{style property}
 list. To map a style name to a Latex macro or environment, add a
-scheme[tex-addition] structure instance. A @scheme[css-addition] or
+@scheme[tex-addition] structure instance. A @scheme[css-addition] or
 @scheme[tex-addition] is normally associated with the style whose name
 is implemented by the adition, but it can also be added to the style
 for an enclosing part.

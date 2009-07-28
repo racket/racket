@@ -167,7 +167,7 @@ needed.
   @{blah @|foo|: blah}
 }===|
 
-Actually, the command part can be any Scheme expression (that does
+Actually, the command part can be any Scheme expression (that does not
 start with @litchar["["], @litchar["{"], or @litchar["|"]), which is
 particularly useful with such escapes since they can be used with any
 expression.

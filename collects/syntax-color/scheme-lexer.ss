@@ -3,7 +3,9 @@
   (require parser-tools/lex
            (prefix : parser-tools/lex-sre))
   
-  (provide scheme-lexer)
+  (provide scheme-lexer
+           scheme-lexer/status
+           scheme-nobar-lexer/status)
    
   (define-lex-abbrevs
          
@@ -120,6 +122,13 @@
    [identifier (:: identifier-start
                    (:* identifier-escapes identifier-chars))]
 
+   [nobar-identifier-escapes (:: "\\" any-char)]
+   [nobar-identifier-start (:or nobar-identifier-escapes
+                                (:~ identifier-delims "\\" "|" "#")
+                                "#%")]
+   [nobar-identifier (:: nobar-identifier-start
+                         (:* nobar-identifier-escapes identifier-chars))]
+
    [bad-id-start (:or identifier-escapes
                       (:~ identifier-delims "\\" "|"))]
    [bad-id-escapes (:or identifier-escapes
@@ -129,8 +138,17 @@
                     (:? "\\" bad-id-escapes))
                 "\\"
                 bad-id-escapes)]
+
+   
+   [nobar-bad-id-escapes nobar-identifier-escapes]
+   [nobar-bad-id (:or (:: bad-id-start
+                          (:* nobar-identifier-escapes identifier-chars)
+                          (:? "\\" nobar-bad-id-escapes))
+                      "\\"
+                      nobar-bad-id-escapes)]
     
    [keyword (:: "#:" (:* identifier-escapes identifier-chars))]
+   [nobar-keyword (:: "#:" (:* nobar-identifier-escapes identifier-chars))]
     
    [reader-command (:or (:: "#" c s) (:: "#" c i))]
    [sharing (:or (:: "#" (make-uinteger digit10) "=")
@@ -189,8 +207,8 @@
       ((_ digit) (:or "" (:: exponent-marker (:? sign) (:+ digit))))))
 
   
-  (define (ret lexeme type paren start-pos end-pos)
-    (values lexeme type paren (position-offset start-pos) (position-offset end-pos)))
+  (define (ret lexeme type paren start-pos end-pos status)
+    (values lexeme type paren (position-offset start-pos) (position-offset end-pos) status))
 
 
   (define get-next-comment
@@ -208,11 +226,11 @@
   (define (read-nested-comment num-opens start-pos input)
     (let-values (((diff end) (get-next-comment input)))
       (cond
-        ((eq? 'eof diff) (ret "" 'error #f start-pos end))
+        ((eq? 'eof diff) (ret "" 'error #f start-pos end 'continue))
         (else
          (let ((next-num-opens (+ diff num-opens)))
            (cond
-             ((= 0 next-num-opens) (ret "" 'comment #f start-pos end))
+             ((= 0 next-num-opens) (ret "" 'comment #f start-pos end 'continue))
              (else (read-nested-comment next-num-opens start-pos input))))))))
   
   (define (get-offset i)
@@ -253,7 +271,7 @@
            (next-char (peek-char-or-special i)))
       (cond
         ((or (equal? ender "") (not (eq? #\newline next-char)))
-         (values (string-append "#<<" ender) 'error #f start-pos (get-offset i)))
+         (values (string-append "#<<" ender) 'error #f start-pos (get-offset i) 'datum))
         (else
          (read-char i)
          (let loop ((acc (list (string-append "#<<" ender "\n"))))
@@ -262,85 +280,96 @@
              (cond
                ((not (or (char? next-char) (eof-object? next-char))) ;; a special
                 (values (apply string-append (reverse (cons next-line acc)))
-                        'error #f start-pos (get-offset i)))
+                        'error #f start-pos (get-offset i)
+                        'datum))
                ((equal? next-line ender)  ;; end of string
                 (values (apply string-append (reverse (cons next-line acc)))
-                        'string #f start-pos (get-offset i)))
+                        'string #f start-pos (get-offset i)
+                        'datum))
                ((eof-object? next-char)
                 (values (apply string-append (reverse (cons next-line acc)))
-                        'error #f start-pos (get-offset i)))
+                        'error #f start-pos (get-offset i)
+                        'datum))
                (else
                 (read-char i)
                 (loop (cons (string-append next-line "\n") acc))))))))))
+
+  (define (scheme-lexer in)
+    (let-values ([(lexeme type paren start end adj) (scheme-lexer/status in)])
+      (values lexeme type paren start end)))
         
-  (define scheme-lexer
+  (define-syntax-rule (lexer/status identifier keyword bad-id)
     (lexer
      [(:+ scheme-whitespace)
-      (ret lexeme 'white-space #f start-pos end-pos)]
+      (ret lexeme 'white-space #f start-pos end-pos 'continue)]
      [(:or "#t" "#f" "#T" "#F" character
            (make-num digit2 radix2)
            (make-num digit8 radix8)
            (make-num digit10 (:? radix10))
            (make-num digit16 radix16))
-      (ret lexeme 'constant #f start-pos end-pos)]
-     [keyword (ret lexeme 'parenthesis #f start-pos end-pos)]
-     [str (ret lexeme 'string #f start-pos end-pos)]
+      (ret lexeme 'constant #f start-pos end-pos 'datum)]
+     [keyword (ret lexeme 'parenthesis #f start-pos end-pos 'datum)]
+     [str (ret lexeme 'string #f start-pos end-pos 'datum)]
      [";"
       (values (apply string (read-line/skip-over-specials input-port)) 'comment #f 
               (position-offset start-pos)
-              (get-offset input-port))]
+              (get-offset input-port)
+              'continue)]
      #;
      [line-comment
       (ret lexeme 'comment #f start-pos end-pos)]
      ["#;"
-      (ret lexeme 'sexp-comment #f start-pos end-pos)]
+      (ret lexeme 'sexp-comment #f start-pos end-pos 'continue)]
      ["#|" (read-nested-comment 1 start-pos input-port)]
      [script
-      (ret lexeme 'comment #f start-pos end-pos)]
+      (ret lexeme 'comment #f start-pos end-pos 'continue)]
      [(:: list-prefix "(")
-      (ret lexeme 'parenthesis '|(| start-pos end-pos)]
+      (ret lexeme 'parenthesis '|(| start-pos end-pos 'open)]
      [(:: list-prefix "[")
-      (ret lexeme 'parenthesis '|[| start-pos end-pos)]
+      (ret lexeme 'parenthesis '|[| start-pos end-pos 'open)]
      [(:: list-prefix "{")
-      (ret lexeme 'parenthesis '|{| start-pos end-pos)]
+      (ret lexeme 'parenthesis '|{| start-pos end-pos 'open)]
      [(:or ")" "]" "}")
-      (ret lexeme 'parenthesis (string->symbol lexeme) start-pos end-pos)]
+      (ret lexeme 'parenthesis (string->symbol lexeme) start-pos end-pos 'close)]
      [(:or "'" "`" "#'" "#`" "#&")
-      (ret lexeme 'constant #f start-pos end-pos)]
+      (ret lexeme 'constant #f start-pos end-pos 'continue)]
      [(:or sharing reader-command "." "," ",@" "#," "#,@")
-      (ret lexeme 'other #f start-pos end-pos)]
+      (ret lexeme 'other #f start-pos end-pos 'continue)]
 
      [(:: (:or "#lang " "#!")
           (:or langchar
                (:: langchar (:* (:or langchar "/")) langchar)))
-      (ret lexeme 'other #f start-pos end-pos)]
+      (ret lexeme 'other #f start-pos end-pos 'continue)]
      [(:: (:or "#lang " "#!") (:* (:& any-char (complement whitespace))))
-      (ret lexeme 'error #f start-pos end-pos)]
+      (ret lexeme 'error #f start-pos end-pos 'continue)]
      
      [identifier
-      (ret lexeme 'symbol #f start-pos end-pos)]
+      (ret lexeme 'symbol #f start-pos end-pos 'datum)]
      ["#<<"
       (get-here-string (position-offset start-pos) input-port)]
      [(special)
-      (ret "" 'no-color #f start-pos end-pos)]
+      (ret "" 'no-color #f start-pos end-pos 'datum)]
      [(special-comment)
-      (ret "" 'comment #f start-pos end-pos)]
-     [(eof) (values lexeme 'eof #f #f #f)]
+      (ret "" 'comment #f start-pos end-pos 'continue)]
+     [(eof) (values lexeme 'eof #f #f #f #f)]
      [(:or bad-char bad-str 
            (:& bad-id
                (complement (:: (:or (:: "#" (:or f t)) reader-command sharing "#<<" "#\\" "#|" "#;" "#&" script)
                                any-string))))
-      (ret lexeme 'error #f start-pos end-pos)]
+      (ret lexeme 'error #f start-pos end-pos 'bad)]
      [any-char (extend-error lexeme start-pos end-pos input-port)]))
+
+  (define scheme-lexer/status (lexer/status identifier keyword bad-id))
+  (define scheme-nobar-lexer/status (lexer/status nobar-identifier nobar-keyword nobar-bad-id))
   
   (define (extend-error lexeme start end in)
     (if (memq (peek-char-or-special in)
               `(special #\newline #\return #\tab #\space #\vtab
                  #\" #\, #\' #\` #\( #\) #\[ #\] #\{ #\} #\;
                  ,eof))
-        (ret lexeme 'error #f start end)
+        (ret lexeme 'error #f start end 'bad)
         (let-values (((rest end-pos) (get-chunk in)))
-          (ret (string-append lexeme rest) 'error #f start end-pos))))
+          (ret (string-append lexeme rest) 'error #f start end-pos 'bad))))
   
   (define get-chunk
     (lexer
