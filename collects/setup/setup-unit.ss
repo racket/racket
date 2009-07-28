@@ -304,6 +304,20 @@
             subs))))
 
   (define (check-again-all given-ccs)
+    ;; the function below has two parts: the first (doubly) commented part is
+    ;; od code that relies on having an identity for a directory, and cannot be
+    ;; used as explained there.  The solution was to put "marker" files to
+    ;; identify directories, but that doesn't work out too, since it requires
+    ;; writing into the directories which might not be possible and not needed.
+    ;; Specifically, installing planet libraries calls setup on
+    ;; scribblings/main/user -- but there's no need to write in there.  (This
+    ;; is especially bad on vista which creates a virtual user directory...)
+    ;; So the whole thing is disabled for now, and we plan to add a new new
+    ;; system level function for getting the identity of a file or a directory
+    ;; and use the original code here.
+    given-ccs)
+  #;
+  (define (check-again-all given-ccs)
     #|
     ;; This code is better than using marker files, but an older version of it
     ;; relied on the obligatory existence of an "info.ss" file to implement
