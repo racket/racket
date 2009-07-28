@@ -303,11 +303,28 @@
             subs))))
 
   (define (check-again-all given-ccs)
+    ;; the function below has two parts: the first (doubly) commented part is
+    ;; od code that relies on having an identity for a directory, and cannot be
+    ;; used as explained there.  The solution was to put "marker" files to
+    ;; identify directories, but that doesn't work out too, since it requires
+    ;; writing into the directories which might not be possible and not needed.
+    ;; Specifically, installing planet libraries calls setup on
+    ;; scribblings/main/user -- but there's no need to write in there.  (This
+    ;; is especially bad on vista which creates a virtual user directory...)
+    ;; So the whole thing is disabled for now, and we plan to add a new new
+    ;; system level function for getting the identity of a file or a directory
+    ;; and use the original code here.
+    given-ccs)
+  #;
+  (define (check-again-all given-ccs)
     #|
     ;; This code is better than using marker files, but an older version of it
-    ;; relied on the obligatory existence of an "info.ss" file.  That is no
-    ;; longer required, so it needs to identify directories and that is
-    ;; currently not available.  So use the code below instead.
+    ;; relied on the obligatory existence of an "info.ss" file to implement
+    ;; `file-or-directory-identity'.  That is no longer required, so it needs
+    ;; to identify directories and that is currently not available.  So use the
+    ;; code below it instead.  Perhaps there will be some robust way to do this
+    ;; in the future, eg -- for directories, use the identity of their first
+    ;; file.
     (define all-cc+ids
       (map (lambda (cc)
              (cons cc (file-or-directory-identity (cc-path cc))))
@@ -331,6 +348,12 @@
     (define all-names   (map cc->name all-ccs))
     (define given-names (map cc->name given-ccs))
     (define (cc-mark cc) (build-path (cc-path cc) ".setup-plt-marker"))
+    (define (complain-about-mark name mark)
+      (let ([given (with-handlers ([void (lambda (_) '???)])
+                     (with-input-from-file mark read-line))])
+        (error 'setup-plt
+               "given collection path: \"~a\" refers to the same directory as another given collection path, \"~a\""
+               name given)))
     ;; For cleanup: try to remove all files, be silent
     (define (cleanup)
       (for ([cc (append given-ccs all-ccs)])
@@ -351,19 +374,14 @@
       (for ([cc given-ccs] [name given-names])
         (let ([mark (cc-mark cc)])
           (if (file-exists? mark)
-            (error 'setup-plt
-                   "given collection path: ~e refers to the same directory as another given collection path"
-                   name)
+            (complain-about-mark name mark)
             (with-output-to-file mark (lambda () (printf "~a\n" name)))))))
     ;; Finally scan all ccs and look for duplicates
     (define (scan-all)
       (for ([cc all-ccs] [name all-names])
         (when (and (not (member name given-names))
                    (file-exists? (cc-mark cc)))
-          (let ([given (with-input-from-file (cc-mark cc) read-line)])
-            (error 'setup-plt
-                   "given collection path: ~e refers to the same directory as another given collection path"
-                   name)))))
+          (complain-about-mark name (cc-mark cc)))))
     (dynamic-wind
       void
       (lambda () (remove-markers) (put-markers) (scan-all) given-ccs)
@@ -378,8 +396,13 @@
       (if no-specific-collections?
         all-collections
         (check-again-all
-         (filter-map (lambda (c) (collection->cc (map string->path c)))
-                     x-specific-collections))))))
+         (filter-map
+          (lambda (c)
+            (collection->cc (append-map (lambda (s)
+                                          (map string->path
+                                               (regexp-split #rx"/" s)))
+                                        c)))
+          x-specific-collections))))))
 
   (set! planet-dirs-to-compile
         (sort-collections

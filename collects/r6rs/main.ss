@@ -233,12 +233,14 @@ FIXME:
                                               orig
                                               ex)])))
                    exs)
-         (add-no-set!-identifiers (map (lambda (ex)
-                                         (syntax-case ex ()
-                                           [(rename (id ex-id))
-                                            #'id]
-                                           [id ex]))
-                                       exs))
+         (add-no-set!-identifiers (apply 
+                                   append
+                                   (map (lambda (ex)
+                                          (syntax-case ex (rename)
+                                            [(rename (id ex-id) ...)
+                                             (syntax->list #'(id ...))]
+                                            [id (list ex)]))
+                                        exs)))
          (with-syntax ([((ex ...) ...)
                         (map (lambda (ex)
                                (syntax-case ex ()

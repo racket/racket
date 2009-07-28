@@ -37,9 +37,9 @@ A @tech{resolved module path} is interned. That is, if two
 @scheme[eq?].}
 
 @defproc[(resolved-module-path-name [module-path resolved-module-path?])
-         path?]{
+         (or/c path? symbol?)]{
 
-Returns the path encapsulated by a @tech{resolved module path}.}
+Returns the path or symbol encapsulated by a @tech{resolved module path}.}
 
 
 @defproc[(module-path? [v any/c]) boolean?]{

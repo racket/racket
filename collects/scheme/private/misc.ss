@@ -20,13 +20,13 @@
                (syntax-case** dr #t x () free-identifier=?
                               [(_ . pattern) (syntax/loc x template)]))))]
         [(dr (foo . pattern) template)
-         (raise-syntax-error 'define-rule "expected an identifier" stx #'foo)]
+         (raise-syntax-error 'define-syntax-rule "expected an identifier" stx #'foo)]
         [(dr (foo . pattern))
-         (raise-syntax-error 'define-rule "no template provided" stx)]
+         (raise-syntax-error 'define-syntax-rule "no template provided" stx)]
         [(dr (foo . pattern) template . etc)
-         (raise-syntax-error 'define-rule "too many templates" stx #'etc)]
+         (raise-syntax-error 'define-syntax-rule "too many templates" stx #'etc)]
         [(dr head . template)
-         (raise-syntax-error 'define-rule "invalid pattern" stx #'head)])))
+         (raise-syntax-error 'define-syntax-rule "invalid pattern" stx #'head)])))
 
   ;; -------------------------------------------------------------------------
 
