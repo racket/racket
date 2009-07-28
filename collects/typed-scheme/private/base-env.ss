@@ -297,6 +297,19 @@
 [current-command-line-arguments (-Param (-vec -String) (-vec -String))]
 
 ;; regexp stuff
+[regexp? (make-pred-ty -Regexp)]
+[pregexp? (make-pred-ty -PRegexp)]
+[byte-regexp? (make-pred-ty -Byte-Regexp)]
+[byte-pregexp? (make-pred-ty -Byte-PRegexp)]
+[regexp (-String . -> . -Regexp)]
+[pregexp (-String . -> . -PRegexp)]
+[byte-regexp (-Bytes . -> . -Byte-Regexp)]
+[byte-pregexp (-Bytes . -> . -Byte-PRegexp)]
+[regexp-quote (cl-> [(-String) -String]
+                    [(-String -Boolean) -String]
+                    [(-Bytes) -Bytes]
+                    [(-Bytes -Boolean) -Bytes])]
+ 
 [regexp-match
  (let ([?outp   (-opt -Output-Port)]
        [?N      (-opt N)]
@@ -482,6 +495,9 @@
 [bytes-append (->* (list -Bytes) -Bytes -Bytes)]
 [subbytes (cl-> [(-Bytes N) -Bytes] [(-Bytes N N) -Bytes])]
 [bytes-length (-> -Bytes N)]
+[read-bytes-line (cl-> [() -Bytes]
+                       [(-Input-Port) -Bytes]
+                       [(-Input-Port Sym) -Bytes])]
 [open-input-file (->key -Pathlike #:mode (Un (-val 'binary) (-val 'text)) #f -Input-Port)]
 [close-input-port (-> -Input-Port -Void)]
 [close-output-port (-> -Output-Port -Void)]
