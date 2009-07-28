@@ -10,6 +10,7 @@
          scheme/match
          scheme/system
          scheme/list
+         scheme/string
          compiler/cm
          planet/planet-archives
          planet/private/planet-shared
@@ -330,7 +331,8 @@
     ;; file we assume that we generated it rather than another setup-plt
     ;; process
     (define all-ccs (plt-collection-closure all-collections))
-    (define (cc->name cc) (apply build-path (cc-collection cc)))
+    (define (cc->name cc)
+      (string-join (map path->string (cc-collection cc)) "/"))
     (define all-names   (map cc->name all-ccs))
     (define given-names (map cc->name given-ccs))
     (define (cc-mark cc) (build-path (cc-path cc) ".setup-plt-marker"))
