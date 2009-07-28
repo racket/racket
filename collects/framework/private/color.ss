@@ -104,6 +104,7 @@ added get-regions
        invalid-tokens ; = (new token-tree%)
        ;; The position right before the ainvalid-tokens tree
        invalid-tokens-start ; = +inf.0
+       invalid-tokens-mode
        ;; The position right before the next token to be read
        current-pos
        ;; Thread a mode through lexing, and remember the mode
@@ -126,6 +127,7 @@ added get-regions
                         #t
                         (new token-tree%)
                         +inf.0
+                        #f
                         start
                         #f
                         (new paren-tree% (matches pairs))))
@@ -264,9 +266,11 @@ added get-regions
                    (< invalid-tokens-start
                       (lexer-state-current-pos ls)))
           (send invalid-tokens search-min!)
-          (let ((length (send invalid-tokens get-root-length)))
+          (let ((length (send invalid-tokens get-root-length))
+                (mode (data-lexer-mode (send invalid-tokens get-root-data))))
             (send invalid-tokens remove-root!)
-            (set-lexer-state-invalid-tokens-start! ls (+ invalid-tokens-start length)))
+            (set-lexer-state-invalid-tokens-start! ls (+ invalid-tokens-start length))
+            (set-lexer-state-invalid-tokens-mode! ls mode))
           (sync-invalid ls))))
     
     (define/private (re-tokenize ls in in-start-pos in-lexer-mode enable-suspend)
@@ -303,7 +307,9 @@ added get-regions
             (cond
              ((and (not (send (lexer-state-invalid-tokens ls) is-empty?))
                    (= (lexer-state-invalid-tokens-start ls)
-                      (lexer-state-current-pos ls)))
+                      (lexer-state-current-pos ls))
+                   (equal? new-lexer-mode 
+                           (lexer-state-invalid-tokens-mode ls)))
               (send (lexer-state-invalid-tokens ls) search-max!)
               (send (lexer-state-parens ls) merge-tree
                     (send (lexer-state-invalid-tokens ls) get-root-end-position))
@@ -320,8 +326,8 @@ added get-regions
         (sync-invalid ls))
       (cond
        ((lexer-state-up-to-date? ls)
-        (let-values (((orig-token-start orig-token-end valid-tree invalid-tree)
-                      (send (lexer-state-tokens ls) split (- edit-start-pos (lexer-state-start-pos ls)))))
+        (let-values (((orig-token-start orig-token-end valid-tree invalid-tree orig-data)
+                      (send (lexer-state-tokens ls) split/data (- edit-start-pos (lexer-state-start-pos ls)))))
           (send (lexer-state-parens ls) split-tree orig-token-start)
           (set-lexer-state-invalid-tokens! ls invalid-tree)
           (set-lexer-state-tokens! ls valid-tree)
@@ -330,6 +336,7 @@ added get-regions
            (if (send (lexer-state-invalid-tokens ls) is-empty?)
                +inf.0
                (+ (lexer-state-start-pos ls) orig-token-end change-length)))
+          (set-lexer-state-invalid-tokens-mode! ls (and orig-data (data-lexer-mode orig-data)))
           (let ([start (+ (lexer-state-start-pos ls) orig-token-start)])
             (set-lexer-state-current-pos! ls start)
             (set-lexer-state-current-lexer-mode! ls
@@ -341,31 +348,34 @@ added get-regions
           (set-lexer-state-up-to-date?! ls #f)
           (queue-callback (λ () (colorer-callback)) #f)))
        ((>= edit-start-pos (lexer-state-invalid-tokens-start ls))
-        (let-values (((tok-start tok-end valid-tree invalid-tree)
-                      (send (lexer-state-invalid-tokens ls) split 
+        (let-values (((tok-start tok-end valid-tree invalid-tree orig-data)
+                      (send (lexer-state-invalid-tokens ls) split/data
                             (- edit-start-pos (lexer-state-start-pos ls)))))
           (set-lexer-state-invalid-tokens! ls invalid-tree)
           (set-lexer-state-invalid-tokens-start!
            ls
-           (+ (lexer-state-invalid-tokens-start ls) tok-end change-length))))
+           (+ (lexer-state-invalid-tokens-start ls) tok-end change-length))
+          (set-lexer-state-invalid-tokens-mode! ls (and orig-data (data-lexer-mode orig-data)))))
        ((> edit-start-pos (lexer-state-current-pos ls))
         (set-lexer-state-invalid-tokens-start! 
          ls 
          (+ change-length (lexer-state-invalid-tokens-start ls))))
        (else
-        (let-values (((tok-start tok-end valid-tree invalid-tree)
-                      (send (lexer-state-tokens ls) split 
+        (let-values (((tok-start tok-end valid-tree invalid-tree data)
+                      (send (lexer-state-tokens ls) split/data 
                             (- edit-start-pos (lexer-state-start-pos ls)))))
           (send (lexer-state-parens ls) truncate tok-start)
           (set-lexer-state-tokens! ls valid-tree)
           (set-lexer-state-invalid-tokens-start! ls (+ change-length (lexer-state-invalid-tokens-start ls)))
           (let ([start (+ (lexer-state-start-pos ls) tok-start)])
             (set-lexer-state-current-pos! ls start)
-            (if (= start (lexer-state-start-pos ls))
-                #f
-                (begin
-                  (send valid-tree search-max!)
-                  (data-lexer-mode (send valid-tree get-root-data)))))))))
+            (set-lexer-state-current-lexer-mode! 
+             ls
+             (if (= start (lexer-state-start-pos ls))
+                 #f
+                 (begin
+                   (send valid-tree search-max!)
+                   (data-lexer-mode (send valid-tree get-root-data))))))))))
 
     (define/private (do-insert/delete edit-start-pos change-length)
       (unless (or stopped? force-stop?)

@@ -257,14 +257,15 @@
       ;; pos is on a token boundary, 2 tokens will be dropped.
       ;; In this case, the start will be for the first dropped
       ;; token and the stop will be for the second.
-      (define/public (split pos)
+      (define/public (split/data pos)
         (search! pos)
         (let ((t1 (new token-tree%))
               (t2 (new token-tree%)))
           (cond
             (root
              (let ((second-start (get-root-start-position))
-                   (second-stop (get-root-end-position)))
+                   (second-stop (get-root-end-position))
+                   (data (node-token-data root)))
                (send t1 set-root (node-left root))
                (send t2 set-root (node-right root))
                (set! root #f)
@@ -273,10 +274,15 @@
                   (send t1 search-max!)
                   (let ((first-start (send t1 get-root-start-position)))
                     (send t1 remove-root!)
-                    (values first-start second-stop t1 t2)))
+                    (values first-start second-stop t1 t2 data)))
                  (else
-                  (values second-start second-stop t1 t2)))))
-            (else (values 0 0 t1 t2)))))
+                  (values second-start second-stop t1 t2 data)))))
+            (else (values 0 0 t1 t2 #f)))))
+
+      (define/public (split pos)
+        (let-values ([(orig-token-start orig-token-end valid-tree invalid-tree orig-data)
+                      (split/data pos)])
+          (values orig-token-start orig-token-end valid-tree invalid-tree)))
 
 ;;      (define/public (split)
 ;;        (let ((t1 (new token-tree%))
