@@ -15,7 +15,7 @@
                    (make-text #rx"^@"
                               #f
                               #f
-                              #rx".*?(?:(?=@)|$)"
+                              #rx".*?(?:(?=[@\r\n])|$)"
                               #f
                               #f)))])
   (let-values ([(line col pos) (port-next-location in)]
@@ -38,7 +38,7 @@
                                    mode)))
                 ;; Line comment:
                 (begin
-                  (regexp-match #rx"\r\n|\r|\n" in)
+                  (regexp-match? #rx".*?(?=[\r\n])" in)
                   (let-values ([(end-line end-col end-pos) (port-next-location in)])
                     (comment-k "@;"
                                'comment
@@ -96,8 +96,18 @@
                       pos
                       end-pos
                       (cons (car mode) mode)))]
+           [(regexp-try-match #px"^(?:[\r\n])\\s*" in)
+            ;; Treat a newline and leading whitespace in text mode as whitespace
+            ;; instead of as a string:
+            (let-values ([(end-line end-col end-pos) (port-next-location in)])
+              (values " "
+                      'white-space
+                      #f
+                      pos
+                      end-pos
+                      mode))]
            [else
-            ;; Read string up to @ or }
+            ;; Read string up to @, }, or newline
             (regexp-match? (text-string-rx l) in)
             (let-values ([(end-line end-col end-pos) (port-next-location in)])
               (values 'string
@@ -220,7 +230,7 @@
                                                             re-opener
                                                             #"[@{])|(?="
                                                             closer
-                                                            #")|$)"))
+                                                            #")|(?=[\r\n])|$)"))
                                               #f
                                               #f)
                                    (cdr mode))))))]
@@ -234,7 +244,7 @@
                       (cons (make-text #rx"^@"
                                        #rx"^}"
                                        #rx"^{"
-                                       #rx".*?(?:(?=[@{}])|$)"
+                                       #rx".*?(?:(?=[@{}\r\n])|$)"
                                        '|{|
                                        '|}|)
                             (cdr mode))))]
