@@ -43,14 +43,7 @@
          [(eq? 'fail get-info)
           (let*-values ([(end-line end-col end-pos) (port-next-location in)])
             (values #f 'error #f start-pos end-pos
-                    (lambda (in) 
-                       (let-values ([(line col pos) (port-next-location in)])
-                         (if (eof-object? (peek-byte in))
-                             (values #f 'eof #f pos pos)
-                             (begin
-                               (copy-port in (open-output-nowhere))
-                               (let-values ([(end-line end-col end-pos) (port-next-location in)])
-                                 (values #f 'other #f pos end-pos))))))))]
+                    scheme-lexer))]
          [else
           ;; Start over using the Scheme lexer
           (module-lexer in scheme-lexer)])))]
