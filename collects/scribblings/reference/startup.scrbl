@@ -136,9 +136,8 @@ flags:
        @nonterm{path} : @scheme[require]s @scheme[(lib
        @#,nontermstr{path})].}
 
-  @item{@FlagFirst{p} @nonterm{file} @nonterm{u} @nonterm{path} :
-       @scheme[require]s @scheme[(planet @#,nontermstr{file}
-       @#,nontermstr{user} @#,nontermstr{pkg})].
+  @item{@FlagFirst{p} @nonterm{package} :
+       @scheme[require]s @scheme[(planet @#,nontermstr{package})].
 
        @margin-note{Despite its name, @DFlag{script} is not usually
        used for Unix scripts. See @guidesecref["scripts"] for more
