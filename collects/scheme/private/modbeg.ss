@@ -7,7 +7,9 @@
   (#%provide module-begin)
 
   (define-values (print-values)
-    (lambda vs (for-each (current-print) vs)))
+    (lambda vs 
+      (for-each (current-print) vs)
+      (apply values vs)))
 
   (define-syntaxes (module-begin)
     (lambda (stx)

@@ -3701,7 +3701,7 @@ Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[])
     return NULL;
   }
 
-  return scheme_get_fd_identity(p, fd);
+  return scheme_get_fd_identity(p, fd, NULL);
 }
 
 static int is_fd_terminal(int fd)

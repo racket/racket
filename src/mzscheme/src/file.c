@@ -195,6 +195,7 @@ static Scheme_Object *expand_user_path(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_drive(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_modify_seconds(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[]);
+static Scheme_Object *file_identity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *file_size(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_library_collection_paths(int argc, Scheme_Object *argv[]);
 static Scheme_Object *use_compiled_kind(int, Scheme_Object *[]);
@@ -473,6 +474,11 @@ void scheme_init_file(Scheme_Env *env)
 			     scheme_make_prim_w_arity(file_or_dir_permissions,
 						      "file-or-directory-permissions",
 						      1, 1), 
+			     env);
+  scheme_add_global_constant("file-or-directory-identity",
+			     scheme_make_prim_w_arity(file_identity,
+						      "file-or-directory-identity",
+						      1, 2), 
 			     env);
   scheme_add_global_constant("file-size",
 			     scheme_make_prim_w_arity(file_size,
@@ -2311,7 +2317,8 @@ static Scheme_Object *link_exists(int argc, Scheme_Object **argv)
 #endif
 }
 
-Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, long fd)
+Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, long fd, char *path)
+/* If path is supplied, then fd is 0 for stat, 1 for lstat */
 {
   int errid = 0;
   unsigned long devi = 0, inoi = 0, inoi2 = 0;
@@ -2322,7 +2329,11 @@ Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, long fd)
   struct MSC_IZE(stat) buf;
 
   while (1) {
-    if (!MSC_IZE(fstat)(fd, &buf))
+    if (!path && !MSC_IZE(fstat)(fd, &buf))
+      break;
+    else if (path && !fd && !MSC_IZE(stat)(path, &buf))
+      break;
+    else if (path && fd && !MSC_IZE(lstat)(path, &buf))
       break;
     else if (errno != EINTR) {
       errid = errno;
@@ -2340,10 +2351,29 @@ Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, long fd)
 #ifdef WINDOWS_FILE_HANDLES
   BY_HANDLE_FILE_INFORMATION info;
 
-  if (GetFileInformationByHandle((HANDLE)fd, &info))
-    errid = 0;
-  else
-    errid = GetLastError();
+  errid = 0;
+  if (path) {
+    fd = CreateFileW(WIDE_PATH(path),
+                     0, /* not even read access => just get info */
+                     FILE_SHARE_READ | FILE_SHARE_WRITE,
+                     NULL,
+                     OPEN_EXISTING,
+                     0,
+                     NULL);
+    if (fd == INVALID_HANDLE_VALUE) {
+      errid = GetLastError();
+    }
+  }
+
+  if (fd == INVALID_HANDLE_VALUE) {
+    /* errid is set */
+  } else {
+    if (!GetFileInformationByHandle((HANDLE)fd, &info))
+      errid = GetLastError();
+    
+    if (path)
+      CloseHandle(fd);
+  }
 
   if (!errid) {
     devi = info.dwVolumeSerialNumber;
@@ -2371,9 +2401,17 @@ Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, long fd)
     return scheme_bin_plus(devn, inon);
   }
 
-  scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-		   "port-file-identity: error obtaining identity (%E)",
-		   errid);
+  if (!path) {
+    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                     "port-file-identity: error obtaining identity (%E)",
+                     errid);
+  } else {
+    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                     "file-or-directory-identity: error obtaining identity for \"%q\" (%E)", 
+                     path, 
+                     errid);
+  }
+
   return NULL;
 }
 
@@ -5429,6 +5467,25 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
   }
 
   return l;
+}
+
+static Scheme_Object *file_identity(int argc, Scheme_Object *argv[])
+{
+  char *filename;
+  int as_link = 0;
+
+  if (!SCHEME_PATH_STRINGP(argv[0]))
+    scheme_wrong_type("file-or-directory-identity", SCHEME_PATH_STRING_STR, 0, argc, argv);
+
+  filename = scheme_expand_string_filename(argv[0],
+					   "file-or-directory-identity",
+					   NULL,
+					   SCHEME_GUARD_FILE_EXISTS);
+
+  if (argc > 1)
+    as_link = SCHEME_TRUEP(argv[1]);
+
+  return scheme_get_fd_identity(NULL, as_link, filename);
 }
 
 static Scheme_Object *file_size(int argc, Scheme_Object *argv[])

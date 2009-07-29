@@ -297,18 +297,18 @@ the current output port (see @scheme[current-output-port]) using
   (lambda () (read-string 5)))
 ]}
 
-@defproc[(port-file-identity [port file-stream-port?]) any]{
+@defproc[(port-file-identity [port file-stream-port?]) exact-positive-integer?]{
 
-@index['("inode")]{Returns} an exact positive integer that represents
+@index['("inode")]{Returns} a number that represents
 the identity of the device and file read or written by
-@scheme[file-stream-port]. For two ports whose open times overlap, the
+@scheme[port]. For two ports whose open times overlap, the
 result of @scheme[port-file-identity] is the same for both ports if
 and only if the ports access the same device and file. For ports whose
-open times do not overlap, no guarantee is provided for the port
+open times do not overlap, no guarantee can be provided for the port
 identities (even if the ports actually access the same file)---except
 as can be inferred through relationships with other ports. If
-@scheme[file-stream-port] is closed, the @exnraise[exn:fail].  Under
-Windows 95, 98, and Me, if @scheme[file-stream-port] is connected to a
+@scheme[port] is closed, the @exnraise[exn:fail].  Under
+Windows 95, 98, and Me, if @scheme[port] is connected to a
 pipe instead of a file, the @exnraise[exn:fail:filesystem].
 
 @file-examples[

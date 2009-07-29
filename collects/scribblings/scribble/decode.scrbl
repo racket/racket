@@ -59,9 +59,9 @@ Pre-content is decoded into @tech{content} by functions like
 @defproc[(pre-flow? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a @deftech{pre-flow} value: a
-string or other non-list @scheme[content], a @scheme[block], or a
-@scheme[splice] containing a list of @tech{pre-flow} values; otherwise
-returns @scheme[#f].
+string or other non-list @scheme[content], a @scheme[block],
+@|void-const|, or a @scheme[splice] containing a list of
+@tech{pre-flow} values; otherwise returns @scheme[#f].
 
 Pre-flow is decoded into a @tech{flow} (i.e., a list of @tech{blocks})
 by functions like @scheme[decode-flow].}
@@ -73,8 +73,8 @@ Returns @scheme[#t] if @scheme[v] is a @deftech{pre-part} value: a
 string or other non-list @scheme[content], a @scheme[block], a
 @scheme[part], a @scheme[title-decl], a @scheme[part-start], a
 @scheme[part-index-decl], a @scheme[part-collect-decl], a
-@scheme[part-tag-decl], or a @scheme[splice] containing a list of
-@tech{pre-part} values; otherwise returns @scheme[#f].
+@scheme[part-tag-decl], @|void-const|, or a @scheme[splice] containing
+a list of @tech{pre-part} values; otherwise returns @scheme[#f].
 
 A pre-part sequences is decoded into a @scheme[part] by functions like
 @scheme[decode] and @scheme[decode-part].}
@@ -93,9 +93,8 @@ of @scheme[part-tag-decl] add hyperlink tags to the section
 title. Instances of @scheme[part-start] at level 0 trigger sub-part
 parsing. Instances of @scheme[section] trigger are used as-is as
 subsections, and instances of @scheme[paragraph] and other
-flow-element datatypes are used as-is in the enclosing flow.
+flow-element datatypes are used as-is in the enclosing flow.}
 
-}
 
 @defproc[(decode-part [lst (listof pre-part?)]
                       [tags (listof string?)]

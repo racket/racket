@@ -2968,7 +2968,7 @@ int scheme_is_special_filename(const char *_f, int not_nul);
 char *scheme_get_exec_path(void);
 Scheme_Object *scheme_get_run_cmd(void);
 
-Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, long fd);
+Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, long fd, char *path);
 
 Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir);
 

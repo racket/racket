@@ -285,6 +285,22 @@ given file or directory path. On error (e.g., if no such file exists),
 the @exnraise[exn:fail:filesystem]. Under @|AllUnix|, permissions are
 checked for the current effective user instead of the real user.}
 
+
+@defproc[(file-or-directory-identity [path path-string?]
+                                     [as-link? any/c #f]) 
+         exact-positive-integer?]{
+
+@index['("inode")]{Returns} a number that represents the identity of
+@scheme[path] in terms of the device and file or directory that it
+accesses. This function can be used to check whether two paths
+correspond to the same filesystem entity under the assumption that the
+path's entity selection does not change.
+
+If @scheme[as-link?] is a true value, then if @scheme[path] refers to
+a filesystem link, the identity of the link is returned instead of the
+identity of the referenced file or directory (if any).}
+
+
 @defproc[(file-size [path path-string?]) exact-nonnegative-integer?]{
 
 Returns the (logical) size of the specified file in bytes. Under Mac

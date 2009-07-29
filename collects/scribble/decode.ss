@@ -11,7 +11,8 @@
       (and (content? i)
            (not (list? i)))
       (and (splice? i)
-           (andmap pre-content? (splice-run i)))))
+           (andmap pre-content? (splice-run i)))
+      (void? i)))
 
 (define (pre-flow? i)
   (or (string? i)
@@ -19,7 +20,8 @@
            (not (list? i)))
       (block? i)
       (and (splice? i)
-           (andmap pre-flow? (splice-run i)))))
+           (andmap pre-flow? (splice-run i)))
+      (void? i)))
 
 (define (pre-part? v)
   (or (pre-flow? v)
@@ -150,6 +152,8 @@
               l))
           (decode-accum-para accum)
           null))]
+      [(void? (car l))
+       (loop (cdr l) next? keys colls accum title tag-prefix tags vers style)]
       [(title-decl? (car l))
        (cond [(not part-depth) (error 'decode "misplaced title: ~e" (car l))]
              [title (error 'decode "found extra title: ~v" (car l))]
@@ -267,6 +271,7 @@
 
 (define (match-newline-whitespace l)
   (cond [(null? l) #f]
+        [(void? (car l)) (match-newline-whitespace (cdr l))]
         [(line-break? (car l)) (skip-whitespace l)]
         [(splice? (car l))
          (match-newline-whitespace (append (splice-run (car l)) (cdr l)))]
@@ -274,9 +279,11 @@
         [else #f]))
 
 (define (skip-whitespace l)
-  (if (or (null? l) (not (whitespace? (car l))))
-    l
-    (skip-whitespace (cdr l))))
+  (if (or (null? l) 
+          (not (or (whitespace? (car l))
+                   (void? (car l)))))
+      l
+      (skip-whitespace (cdr l))))
 
 (define (decode l)
   (decode-part l null #f 0))
@@ -285,7 +292,10 @@
   (make-paragraph plain (decode-content l)))
 
 (define (decode-content l)
-  (append-map (lambda (s) (if (string? s) (decode-string s) (list s)))
+  (append-map (lambda (s) (cond
+                           [(string? s) (decode-string s)]
+                           [(void? s) null]
+                           [else (list s)]))
               (skip-whitespace l)))
 
 (define (decode-compound-paragraph l)
