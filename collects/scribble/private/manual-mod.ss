@@ -11,7 +11,9 @@
          (for-syntax scheme/base)
          (for-label scheme/base))
 
-(provide defmodule defmodule* defmodulelang defmodulelang* defmodulereader defmodulereader*
+(provide defmodule defmodule* 
+         defmodulelang defmodulelang* 
+         defmodulereader defmodulereader*
          defmodule*/no-declare defmodulelang*/no-declare defmodulereader*/no-declare
          declare-exporting)
 
@@ -21,6 +23,7 @@
   (syntax-rules ()
     [(_ #:require-form req (name ...) . content)
      (*defmodule (list (schememodname name) ...)
+                 #f
                  #f
                  (list . content)
                  req)]
@@ -46,22 +49,34 @@
     [(_ name . content)
      (defmodule* (name) . content)]))
 
-(define-syntax-rule (defmodulelang*/no-declare (lang ...) . content)
-  (*defmodule (list (schememodname lang) ...) #t (list . content) #f))
+(define-syntax defmodulelang*/no-declare
+  (syntax-rules ()
+    [(_ (lang ...) #:module-paths (modpath ...) . content)
+     (*defmodule (list lang ...) (list (schememodname modpath) ...) #t (list . content) #f)]
+    [(_ (lang ...) . content)
+     (*defmodule (list (schememodname lang) ...) #f #t (list . content) #f)]))
 
 (define-syntax defmodulelang*
   (syntax-rules ()
+    [(_ (name ...) #:module-paths (modpath ...) #:use-sources (pname ...) . content)
+     (begin (declare-exporting modpath ... #:use-sources (pname ...))
+            (defmodulelang*/no-declare (name ...) #:module-paths (modpath ...) . content))]
+    [(_ (name ...) #:module-paths (modpath ...) . content)
+     (defmodulelang* (name ...) #:module-paths (modpath ...) #:use-sources () . content)]
     [(_ (name ...) #:use-sources (pname ...) . content)
-     (begin (declare-exporting name ... #:use-sources (pname ...))
-            (defmodulelang*/no-declare (name ...) . content))]
+     (defmodulelang* ((schememodname name) ...) #:module-paths (name ...) #:use-sources (pname ...) . content)]
     [(_ (name ...) . content)
      (defmodulelang* (name ...) #:use-sources () . content)]))
 
-(define-syntax-rule (defmodulelang lang . content)
-  (defmodulelang* (lang) . content))
+(define-syntax defmodulelang
+  (syntax-rules ()
+    [(_ lang #:module-path modpath . content)
+     (defmodulelang* (lang) #:module-paths (modpath) . content)]
+    [(_ lang . content)
+     (defmodulelang* (lang) . content)]))
 
 (define-syntax-rule (defmodulereader*/no-declare (lang ...) . content)
-  (*defmodule (list (schememodname lang) ...) 'reader (list . content) #f))
+  (*defmodule (list (schememodname lang) ...) #f 'reader (list . content) #f))
 
 (define-syntax defmodulereader*
   (syntax-rules ()
@@ -74,35 +89,42 @@
 (define-syntax-rule (defmodulereader lang . content)
   (defmodulereader* (lang) . content))
 
-(define (*defmodule names lang content req)
-  (make-splice
-   (cons
-    (make-table
-     "defmodule"
-     (map
-      (lambda (name)
-        (list
-         (make-flow
+(define (*defmodule names modpaths lang content req)
+  (let ([modpaths (or modpaths names)])
+    (make-splice
+     (cons
+      (make-table
+       "defmodule"
+       (map
+        (lambda (name modpath)
           (list
-           (make-omitable-paragraph
-            (cons
-             spacer
-             (if lang
-                 (if (eq? lang 'reader)
-                     (list (schememetafont "#reader") spacer (make-defschememodname name))
-                     (list (hash-lang) spacer (make-defschememodname name)))
-                 (list (scheme (#,req #,(make-defschememodname name)))))))))))
-      names))
-    (append (map (lambda (name)
-                   (make-part-tag-decl `(mod-path ,(element->string name))))
-                 names)
-            (flow-paragraphs (decode-flow content))))))
+           (make-flow
+            (list
+             (make-omitable-paragraph
+              (cons
+               spacer
+               (case lang
+                 [(#f)
+                  (list (scheme (#,req #,(make-defschememodname name modpath))))]
+                 [(#t)
+                  (list (hash-lang) spacer (make-defschememodname name modpath))]
+                 [(reader)
+                  (list (schememetafont "#reader") spacer (make-defschememodname name modpath))]
+                 [(just-lang)
+                  (list (hash-lang) spacer (make-defschememodname name modpath))])))))))
+        names
+        modpaths))
+      (append (map (lambda (modpath)
+                     (make-part-tag-decl `(mod-path ,(element->string modpath))))
+                   modpaths)
+              (flow-paragraphs (decode-flow content)))))))
 
-(define (make-defschememodname mn)
-  (let ([name-str (element->string mn)])
+(define (make-defschememodname mn mp)
+  (let ([name-str (element->string mn)]
+        [path-str (element->string mp)])
     (make-index-element #f
                         (list mn)
-                        `(mod-path ,name-str)
+                        `(mod-path ,path-str)
                         (list name-str)
                         (list mn)
                         (make-module-path-index-desc))))

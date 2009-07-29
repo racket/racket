@@ -163,6 +163,11 @@ is an identifier or @scheme[expr] produces a symbol, then it is
 hyperlinked to the module path's definition as created by
 @scheme[defmodule].}
 
+@defform[(schememodlink datum pre-content-expr ...)]{
+Like @scheme[schememodlink], but separating the module path to link
+from the content to be linked. The @scheme[datum] module path is always
+linked, even if it is not an identifier.}
+
 @defproc[(litchar [str string?]) element?]{Typesets @scheme[str] as a
 representation of literal text. Use this when you have to talk about
 the individual characters in a stream of text, as as when documenting
@@ -284,11 +289,15 @@ Hyperlinks created by @scheme[schememodname] are associated with the
 enclosing section, rather than the local @scheme[id] text.}
 
 
-@defform[(defmodulelang id maybe-sources pre-flow ...)]{
+@defform*[[(defmodulelang id maybe-sources pre-flow ...)
+           (defmodulelang content-expr #:module-paths (mod-path ...) 
+                          maybe-sources pre-flow ...)]]{
 
 Like @scheme[defmodule], but documents @scheme[id] as a module path
-suitable for use by either @scheme[require] or @schememodfont{#lang}.}
-
+suitable for use by either @scheme[require] or @hash-lang[].  If the
+module path for @scheme[require] is syntactically different from the
+@hash-lang[] form, use the @scheme[#:module-paths] to provide them
+separately.}
 
 @defform[(defmodulereader id maybe-sources pre-flow ...)]{
 
@@ -298,7 +307,9 @@ suitable for use with @schememetafont{#reader}.}
 
 @deftogether[(
 @defform[(defmodule* maybe-req  (id ...+) maybe-sources pre-flow ...)]
-@defform[(defmodulelang* (id ...+) maybe-sources pre-flow ...)]
+@defform*[[(defmodulelang* (id ...+) maybe-sources pre-flow ...)
+           (defmodulelang* (content-expr ...+) #:module-paths (mod-path ...+) 
+                           maybe-sources pre-flow ...)]]
 @defform[(defmodulereader* (id ...+) maybe-sources pre-flow ...)]
 )]{
 
@@ -307,7 +318,9 @@ of just one.}
 
 @deftogether[(
 @defform[(defmodule*/no-declare maybe-req (id ...) pre-flow ...)]
-@defform[(defmodulelang*/no-declare (id ...) pre-flow ...)]
+@defform*[[(defmodulelang*/no-declare (id ...) pre-flow ...)
+           (defmodulelang*/no-declare (content-expr ...) 
+                                      #:module-paths (mod-path ...+) pre-flow ...)]]
 @defform[(defmodulereader*/no-declare (id ...) pre-flow ...)]
 )]{
 
