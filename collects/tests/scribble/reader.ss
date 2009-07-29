@@ -31,13 +31,13 @@ fo@o  -@->  fo@o
 ---
 |@foo|  -@->  @foo
 ---
-@foo@bar  -@-> foo bar
+@foo@bar  -@-> foo@bar
 ---
-@foo@bar.  -@-> foo bar.
+@foo@bar.  -@-> foo@bar.
 ---
-@foo@bar:  -@-> foo bar:
+@foo@bar:  -@-> foo@bar:
 ---
-@foo@bar;  -@-> foo bar
+@foo@bar;  -@-> foo@bar
 ---
 @foo[]@bar{}  -@-> (foo) (bar)
 ---

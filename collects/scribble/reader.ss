@@ -540,12 +540,11 @@
   (define at-rt
     (make-readtable readtable command-char 'non-terminating-macro dispatcher))
   (define cmd-rt
-    ;; similar to plain Scheme (scribble, actually), but with `@' and `|' as
-    ;; terminating macro characters (otherwise it behaves the same; the only
-    ;; difference is that `a|b|c' is three symbols and `@foo@bar' are two
-    ;; @-forms)
+    ;; similar to plain Scheme (scribble, actually), but with `@' as usual and
+    ;; and `|' as a terminating macro characters (otherwise it behaves the
+    ;; same; the only difference is that `a|b|c' is three symbols)
     (make-readtable readtable
-      command-char 'terminating-macro dispatcher
+      command-char 'non-terminating-macro dispatcher
       #\| 'terminating-macro
       (lambda (char inp source-name line-num col-num position)
         (let ([m (*regexp-match #rx#"^([^|]*)\\|" inp)])

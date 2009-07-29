@@ -283,7 +283,7 @@ separate text arguments in the S-expression part of an @"@"-form.
 
 @example|-{#lang scribble/text
            @(define (choose 1st 2nd)
-              @list{Either @1st, or @2nd@"."})
+              @list{Either @1st, or @|2nd|@"."})
            @(define who "us")
            @choose[@list{you're with @who}
                    @list{against @who}]
@@ -297,7 +297,7 @@ sub-parts without dealing with quotes.
 
 @example|-{#lang scribble/text
            @(define (choose 1st 2nd)
-              @list{Either @1st, or @2nd@"."})
+              @list{Either @1st, or @|2nd|@"."})
            @(define who "us")
            @choose[@list{you're with @who}
                    @list{against @who}]
@@ -324,9 +324,9 @@ convenient --- you can even specify the patterns with @"@"-forms.
            @(require scheme/match)
            @(define (features . text)
               (match text
-                [@list{@1st@...
+                [@list{@|1st|@...
                        ---
-                       @2nd@...}
+                       @|2nd|@...}
                  @list{>> Pros <<
                        @1st;
                        >> Cons <<
@@ -369,7 +369,7 @@ number of body expressions must be fixed.
 
 @example|-{#lang scribble/text
            @(define ((choose . 1st) . 2nd)
-              @list{Either you're @1st, or @2nd@"."})
+              @list{Either you're @1st, or @|2nd|.})
            @(define who "me")
            @@choose{with @who}{against @who}
            ---***---
