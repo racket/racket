@@ -16,10 +16,12 @@
                                                             exact-nonnegative-integer?
                                                             exact-nonnegative-integer?))
                                                 (-> input-port? 
+                                                    exact-nonnegative-integer?
                                                     any/c
                                                     (values any/c 
                                                             symbol? 
                                                             (or/c false? symbol?) 
+                                                            exact-nonnegative-integer?
                                                             exact-nonnegative-integer?
                                                             exact-nonnegative-integer?
                                                             any/c))))
@@ -29,7 +31,7 @@
     The @scheme[token-sym->style] argument will be passed the first return symbol from @scheme[get-token],
     and it should return the style-name that the token should be colored.
 
-    The @scheme[get-token] argument takes an input port and optionally a mode value.
+    The @scheme[get-token] argument takes an input port and optionally an offset and mode value.
     When it accepts just an input port, @scheme[get-token] returns the next token as 5 values:
 
     @itemize[
@@ -52,15 +54,21 @@
     @item{
     The ending position of the token.}]
 
-    When @scheme[get-token] accepts a mode value in addition to an
-    input port, it must also return an extra result, which is a new
-    mode. When @scheme[get-token] is called for the beginning on a
-    stream, the mode argument is @scheme[#f].  Thereafter, the mode
+    When @scheme[get-token] accepts an offset and mode value in addition to an
+    input port, it must also return two extra results, which are a backup
+    distance and new mode. The offset given to @scheme[get-token] can be added
+    to the position of the input port to obtain absolute coordinates within a 
+    text stream. The mode argument allows @scheme[get-token] to communicate information
+    from earlier parsing to later.
+    When @scheme[get-token] is called for the beginning on a
+    stream, the mode argument is @scheme[#f]; thereafter, the mode
     returned for the previous token is provided to @scheme[get-token]
     for the next token. The mode should not be a mutable value; if
     part of the stream is re-tokenized, the mode saved from the
     immediately preceding token is given again to the
-    @scheme[get-token] function.
+    @scheme[get-token] function. The backup distance returned by @scheme[get-token]
+    indicates the maximum number of characters to back up (counting from the start of the token)
+    and for re-parsing after a change to the editor within the token's region.
 
     The @scheme[get-token] function is usually be implemented with a lexer using the 
     @scheme[parser-tools/lex] library. The
@@ -68,7 +76,7 @@
     @itemize[
     @item{
     Every position in the buffer must be accounted for in exactly one
-    token.}
+    token, and every token must have a non-zero width.}
     @item{
     The token returned by @scheme[get-token] must rely only on the contents of the
     input port argument plus the mode argument. This constraint  means that the
@@ -77,16 +85,16 @@
     for tokens).}
     @item{
     A change to the stream must not change the tokenization of the stream prior
-    to the token immediately preceding the change.  In the following
-    example this invariant does not hold. If the buffer contains
+    to the token immediately preceding the change plus the backup distance.  In the following
+    example, this invariant does not hold for a zero backup distance: If the buffer contains
     @verbatim[#:indent 2]{" 1 2 3}
     and the tokenizer treats the unmatched " as its own token (a string
     error token), and separately tokenizes the 1 2 and 3, an edit to make
     the buffer look like
     @verbatim[#:indent 2]{" 1 2 3"}
     would result in a single string token modifying previous tokens.  To
-    handle these situations, @scheme[get-token] must treat the first line as a
-    single token.}]
+    handle these situations, @scheme[get-token] can treat the first line as a
+    single token, or it can precisely track backup distances.}]
 
     The @scheme[pairs] argument is a list of different kinds of matching parens.  The second
     value returned by @scheme[get-token] is compared to this list to see how the

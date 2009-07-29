@@ -126,6 +126,7 @@ A lexer that only identifies @litchar{(}, @litchar{)}, @litchar{[},
 @defmodule[syntax-color/module-lexer]
 
 @defproc[(module-lexer [in input-port?]
+                       [offset exact-nonnegative-integer?]
                        [mode (or/c #f
                                    (-> input-port? any)
                                    (cons/c (-> input-port? any/c any) any/c))])
@@ -134,6 +135,7 @@ A lexer that only identifies @litchar{(}, @litchar{)}, @litchar{[},
                  (or/c symbol? false/c) 
                  (or/c number? false/c) 
                  (or/c number? false/c)
+                 exact-nonnegative-integer?
                  (or/c #f 
                        (-> input-port? any)
                        (cons/c (-> input-port? any/c any) any/c)))]{
@@ -142,8 +144,9 @@ Like @scheme[scheme-lexer], but
 
 @itemize[
 
- @item{A @scheme[module-lexer] accepts (and returns) a lexer mode,
-       instead of just an input port.}
+ @item{A @scheme[module-lexer] accepts an offset and lexer mode,
+       instead of just an input port, and it returns a backup distance 
+       and a new lexer mode.}
 
  @item{When @scheme[mode] is @scheme[#f] (indicating the start of the
        stream), the lexer checks @scheme[in] for a @hash-lang[]
@@ -158,7 +161,7 @@ Like @scheme[scheme-lexer], but
        @scheme['color-lexer]. If the result is not @scheme[#f], then
        it should be a lexer function for use with
        @scheme[color:text%]. The result mode is the lexer---paired
-       with @scheme[#f] if the lexer is a procedure arity 2---so that
+       with @scheme[#f] if the lexer is a procedure arity 3---so that
        future calls will dispatch to the language-supplied lexer.
 
        If the language is specified but it provides no
@@ -170,7 +173,7 @@ Like @scheme[scheme-lexer], but
        lexer again as the mode.}
 
  @item{When @scheme[mode] is a pair, then the lexer procedure in the
-       @scheme[car] is applied to @scheme[in] and the mode in the
+       @scheme[car] is applied to @scheme[in], @scheme[offset], and the mode in the
        @scheme[cdr]. The lexer's results are returned, except that its
        mode result is paired back with the lexer procedure.}
 
@@ -181,12 +184,14 @@ Like @scheme[scheme-lexer], but
 @defmodule[syntax-color/scribble-lexer]
 
 @defproc[(scribble-lexer [in input-port?]
+                         [offset exact-nonnegative-integer?]
                          [mode any/c])
          (values (or/c string? eof-object?) 
                  symbol?
                  (or/c symbol? false/c) 
                  (or/c number? false/c) 
                  (or/c number? false/c)
+                 exact-nonnegative-integer?
                  any/c)]{
 
 Like @scheme[scheme-lexer], but for Scheme extended with Scribbles
@@ -194,12 +199,14 @@ Like @scheme[scheme-lexer], but for Scheme extended with Scribbles
 "scribblings/scribble/scribble.scrbl") "reader"]).}
 
 @defproc[(scribble-inside-lexer [in input-port?]
+                                [offset exact-nonnegative-integer?]
                                 [mode any/c])
          (values (or/c string? eof-object?) 
                  symbol?
                  (or/c symbol? false/c) 
                  (or/c number? false/c) 
                  (or/c number? false/c)
+                 exact-nonnegative-integer?
                  any/c)]{
 
 Like @scheme[scribble-lexer], but starting in ``text'' mode instead of

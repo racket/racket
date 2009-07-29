@@ -32,9 +32,13 @@ added get-regions
 (define (should-color-type? type)
   (not (memq type '(white-space no-color))))
 
-(define (make-data type mode) (cons type mode))
-(define (data-type data) (car data))
-(define (data-lexer-mode data) (cdr data))
+(define (make-data type mode backup-delta) 
+  (if (zero? backup-delta)
+      (cons type mode)
+      (vector type mode backup-delta)))
+(define (data-type data) (if (pair? data) (car data) (vector-ref data 0)))
+(define (data-lexer-mode data) (if (pair? data) (cdr data) (vector-ref data 1)))
+(define (data-backup-delta data) (if (vector? data) (vector-ref data 2) 0))
 
 (define -text<%>
   (interface (text:basic<%>)
@@ -274,11 +278,11 @@ added get-regions
           (sync-invalid ls))))
     
     (define/private (re-tokenize ls in in-start-pos in-lexer-mode enable-suspend)
-      (let-values ([(lexeme type data new-token-start new-token-end new-lexer-mode) 
+      (let-values ([(lexeme type data new-token-start new-token-end backup-delta new-lexer-mode) 
                     (begin
                       (enable-suspend #f)
                       (begin0
-                       (get-token in in-lexer-mode)
+                       (get-token in in-start-pos in-lexer-mode)
                        (enable-suspend #t)))])
         (unless (eq? 'eof type)
           (enable-suspend #f)
@@ -302,7 +306,8 @@ added get-regions
             ;; version.  In other words, the new greatly outweighs the tree
             ;; operations.
             ;;(insert-last! tokens (new token-tree% (length len) (data type)))
-            (insert-last-spec! (lexer-state-tokens ls) len (make-data type new-lexer-mode))
+            (insert-last-spec! (lexer-state-tokens ls) len (make-data type new-lexer-mode backup-delta))
+            #; (show-tree (lexer-state-tokens ls))
             (send (lexer-state-parens ls) add-token data len)
             (cond
              ((and (not (send (lexer-state-invalid-tokens ls) is-empty?))
@@ -320,6 +325,29 @@ added get-regions
              (else
               (enable-suspend #t)
               (re-tokenize ls in in-start-pos new-lexer-mode enable-suspend)))))))
+
+    (define/private (show-tree t)
+      (printf "Tree:\n")
+      (send t search-min!)
+      (let loop ([old-s -inf.0])
+        (let ([s (send t get-root-start-position)]
+              [e (send t get-root-end-position)])
+          (unless (= s old-s)
+            (printf " ~s\n" (list s e))
+            (send t search! e)
+            (loop s)))))
+
+    (define/private (split-backward ls valid-tree pos)
+      (let loop ([pos pos][valid-tree valid-tree][old-invalid-tree #f])
+        (let-values (((orig-token-start orig-token-end valid-tree invalid-tree orig-data)
+                      (send valid-tree split/data (- pos (lexer-state-start-pos ls)))))
+          (let ([backup-pos (- pos (data-backup-delta orig-data))]
+                [invalid-tree (or old-invalid-tree invalid-tree)])
+            (if (backup-pos . < . pos)
+                ;; back up more:
+                (loop pos valid-tree invalid-tree)
+                ;; that was far enough:
+                (values orig-token-start orig-token-end valid-tree invalid-tree orig-data))))))
     
     (define/private (do-insert/delete/ls ls edit-start-pos change-length)
       (unless (lexer-state-up-to-date? ls)
@@ -327,7 +355,7 @@ added get-regions
       (cond
        ((lexer-state-up-to-date? ls)
         (let-values (((orig-token-start orig-token-end valid-tree invalid-tree orig-data)
-                      (send (lexer-state-tokens ls) split/data (- edit-start-pos (lexer-state-start-pos ls)))))
+                      (split-backward ls (lexer-state-tokens ls) edit-start-pos)))
           (send (lexer-state-parens ls) split-tree orig-token-start)
           (set-lexer-state-invalid-tokens! ls invalid-tree)
           (set-lexer-state-tokens! ls valid-tree)
@@ -349,8 +377,7 @@ added get-regions
           (queue-callback (λ () (colorer-callback)) #f)))
        ((>= edit-start-pos (lexer-state-invalid-tokens-start ls))
         (let-values (((tok-start tok-end valid-tree invalid-tree orig-data)
-                      (send (lexer-state-invalid-tokens ls) split/data
-                            (- edit-start-pos (lexer-state-start-pos ls)))))
+                      (split-backward ls (lexer-state-invalid-tokens ls) edit-start-pos)))
           (set-lexer-state-invalid-tokens! ls invalid-tree)
           (set-lexer-state-invalid-tokens-start!
            ls
@@ -362,8 +389,7 @@ added get-regions
          (+ change-length (lexer-state-invalid-tokens-start ls))))
        (else
         (let-values (((tok-start tok-end valid-tree invalid-tree data)
-                      (send (lexer-state-tokens ls) split/data 
-                            (- edit-start-pos (lexer-state-start-pos ls)))))
+                      (split-backward ls (lexer-state-tokens ls) edit-start-pos)))
           (send (lexer-state-parens ls) truncate tok-start)
           (set-lexer-state-tokens! ls valid-tree)
           (set-lexer-state-invalid-tokens-start! ls (+ change-length (lexer-state-invalid-tokens-start ls)))
@@ -463,14 +489,14 @@ added get-regions
         (reset-tokens)
         (set! should-color? (preferences:get 'framework:coloring-active))
         (set! token-sym->style token-sym->style-)
-        (set! get-token (if (procedure-arity-includes? get-token- 2)
+        (set! get-token (if (procedure-arity-includes? get-token- 3)
                             ;; New interface: thread through a mode:
                             get-token-
-                            ;; Old interface: no mode
-                            (lambda (in mode)
+                            ;; Old interface: no offset, backup delta, or mode
+                            (lambda (in offset mode)
                               (let-values ([(lexeme type data new-token-start new-token-end) 
                                             (get-token- in)])
-                                (values lexeme type data new-token-start new-token-end #f)))))
+                                (values lexeme type data new-token-start new-token-end 0 #f)))))
         (set! pairs pairs-)
         (for-each
          (lambda (ls)

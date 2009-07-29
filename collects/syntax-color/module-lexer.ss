@@ -4,7 +4,7 @@
   
 (provide module-lexer)
   
-(define (module-lexer in mode)
+(define (module-lexer in offset mode)
   (cond
    [(not mode)
     ;; Starting out: look for #lang:
@@ -21,39 +21,41 @@
                                                 (old g))))])
                           ;; FIXME: set the reader guard to disable access to 
                           ;; untrusted planet packages.
-                          (read-language in (lambda () #f))))])
+                          (read-language p (lambda () #f))))]
+            [sync-ports (lambda ()
+                          (read-bytes (- (file-position p) init) in))])
         (cond
          [(procedure? get-info)
           ;; Produce language as first token:
-          (let*-values ([(bytes-len) (- (file-position p) init)]
-                        [(bstr) (read-bytes bytes-len in)]
-                        [(end-line end-col end-pos) (port-next-location in)])
+          (sync-ports)
+          (let-values ([(end-line end-col end-pos) (port-next-location in)])
             (values
-             bstr
+             "#lang"
              'other
              #f
              start-pos
              end-pos
+             0
              (or (let ([v (get-info 'color-lexer)])
                    (and v
-                        (if (procedure-arity-includes? v 2)
+                        (if (procedure-arity-includes? v 3)
                             (cons v #f)
                             v)))
                  scheme-lexer)))]
          [(eq? 'fail get-info)
+          (sync-ports)
           (let*-values ([(end-line end-col end-pos) (port-next-location in)])
-            (values #f 'error #f start-pos end-pos
-                    scheme-lexer))]
+            (values #f 'error #f start-pos end-pos 0 scheme-lexer))]
          [else
           ;; Start over using the Scheme lexer
-          (module-lexer in scheme-lexer)])))]
+          (module-lexer in offset scheme-lexer)])))]
    [(pair? mode)
     ;; #lang-selected language consumes and produces a mode:
-    (let-values ([(lexeme type data new-token-start new-token-end new-mode) 
-                  ((car mode) in (cdr mode))])
-      (values lexeme type data new-token-start new-token-end (cons (car mode) new-mode)))]
+    (let-values ([(lexeme type data new-token-start new-token-end backup-delta new-mode) 
+                  ((car mode) in offset (cdr mode))])
+      (values lexeme type data new-token-start new-token-end backup-delta (cons (car mode) new-mode)))]
    [else
     ;; #lang-selected language (or default) doesn't deal with modes:
     (let-values ([(lexeme type data new-token-start new-token-end) 
                   (mode in)])
-      (values lexeme type data new-token-start new-token-end mode))]))
+      (values lexeme type data new-token-start new-token-end 0 mode))]))
