@@ -103,6 +103,7 @@
 		           ;; If something goes wrong, of course, give up on .zo files.
                            (parameterize ([uncaught-exception-handler
                                            (lambda (exn)
+                                             (when (exn:break? exn) (exit 1))
                                              (if skip-zo?
                                                  (escape
                                                   (lambda () (raise exn)))
