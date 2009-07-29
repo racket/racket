@@ -524,7 +524,7 @@ Like @scheme[regexp-match-peek-positions], but returns multiple matches like
                        [input (or/c string? bytes? input-port?)]
                        [start-pos exact-nonnegative-integer? 0]
                        [end-pos (or/c exact-nonnegative-integer? #f) #f])
-         (listof (or/c string? bytes?))]{
+         (cons/c (or/c string? bytes?) (listof (or/c string? bytes?)))]{
 
 The complement of @scheme[regexp-match*]: the result is a list of
 strings (if @scheme[pattern] is a string or character regexp and
