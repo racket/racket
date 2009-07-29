@@ -40,7 +40,7 @@
 
 ;; the second argument specifies installation/user specific, and if
 ;; it's missing, then it's a page with a single version
-(define (main-page id [installation-specific? '?])
+(define (main-page id [installation-specific? '?] #:force-scheme-css? [force-scheme-css? #f])
   (define info (page-info id))
   (define title-string (car info))
   (define root (cadr info))
@@ -53,9 +53,8 @@
   (define page-title
     (title #:style (make-style #f (cons 
                                    'no-toc
-                                   (if user-doc?
+                                   (if (not force-scheme-css?)
                                        null
-                                       ;; Ensure that "scheme.css" gets installed in the shared location:
                                        (list
                                         (make-css-addition (build-path (collection-path "scribble")
                                                                        "scheme.css"))))))

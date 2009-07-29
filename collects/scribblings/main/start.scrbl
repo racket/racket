@@ -3,7 +3,9 @@
           "private/utils.ss"
           "private/manuals.ss")
 
-@main-page['start #t]
+@main-page['start #t 
+                  ;; "scheme.css" needs to be installed so it can be shared:
+                  #:force-scheme-css? #t]
 
 @margin-note{
   @not-on-the-web{
