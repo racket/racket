@@ -98,7 +98,7 @@ and
 }|
 
 Furthermore, there are no constraints on the Scheme used by templates: they can use macros, structs, continuation marks, threads, etc.
-However, Scheme values that are ultimately returned must be printable by the @text-ref@"."
+However, Scheme values that are ultimately returned must be printable by the @|text-ref|.
 For example, consider the following outputs of the 
 title line of different calls to @scheme[fast-template]:
 

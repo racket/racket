@@ -458,7 +458,7 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 (define (describe-type stype cname ftype ctype pred s->c c->s offset)
   @list{
     #define FOREIGN_@cname (@(type-counter))
-    /* Type Name:   @stype@(and (not (equal? cname stype)) @list{ (@cname)})
+    /* Type Name:   @|stype|@(and (not (equal? cname stype)) @list{ (@cname)})
      * LibFfi type: ffi_type_@ftype
      * C type:      @(or ctype "-none-")
      * Predicate:   @(cond [(not pred) "-none-"]
@@ -1707,7 +1707,7 @@ void do_ptr_finalizer(void *p, void *finalizer)
 /* unreachable, and it will get a new cpointer object that points to it. */
 /* (Only needed in cases where pointer aliases might be created.) */
 /*
-@prefix[" * "]{
+@add-prefix[" * "]{
 defsymbols[pointer]
 cdefine[register-finalizer 2 3]{
   void *ptr, *old = NULL;
