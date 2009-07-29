@@ -11,19 +11,20 @@
          "private/image.ss"
          "private/world.ss"
          "private/universe.ss"
-	 "private/launch-many-worlds.ss"
+         "private/launch-many-worlds.ss"
          htdp/error
          (rename-in lang/prim (first-order->higher-order f2h))
+         (for-syntax (rename-in lang/prim (first-order->higher-order f2h)))
          (only-in mzlib/etc evcase))
 
 (provide (all-from-out "private/image.ss"))
 
 (provide
-  launch-many-worlds
-  ;; (launch-many-worlds e1 ... e2)
-  ;; run expressions e1 through e2 in parallel,
-  ;; produce all values
-)
+ launch-many-worlds
+ ;; (launch-many-worlds e1 ... e2)
+ ;; run expressions e1 through e2 in parallel,
+ ;; produce all values
+ )
 
 (provide
  sexp?  ;; Any -> Boolean 
@@ -142,12 +143,15 @@
 
 (define-syntax (big-bang stx)
   (syntax-case stx ()
-    [(big-bang) (raise-syntax-error #f "bad world description" stx)]
+    [(big-bang) 
+     (raise-syntax-error #f "big-bang needs at least an initial world;" stx)]
     [(big-bang w s ...)
-     (let* ([Spec (append AllSpec WldSpec)]
+     (let* (;; [Listof (list Keyword Contract)]
+            [Spec (append AllSpec WldSpec)]
             [kwds (map (lambda (x) (datum->syntax #'here x)) (map car Spec))]
             [rec? #'#f]
-            [spec (map (lambda (stx) 
+            ;; [Listof (cons Keyword Value)]
+            [wrld (map (lambda (stx)
                          (syntax-case stx ()
                            [(kw . E)
                             (and (identifier? #'kw) 
@@ -157,21 +161,26 @@
                                 (syntax-case #'E ()
                                   [(V) (set! rec? #'V)]
                                   [_ (err 'record? stx)]))
-                              (cons #'kw #;(syntax-e #'kw) (syntax E)))]
+                              (cons #'kw #'E #;(syntax E)))]
                            [_ (raise-syntax-error
                                'big-bang "not a legal big-bang clause" stx)]))
                        (syntax->list (syntax (s ...))))]
-            ;; assert: all bind = (kw . E) and kw is constrained via Bind 
+            ;; assert: all items of wrld have shape (kw . E) 
+            ;;         and all kw are guaranted in the domain of Spec
+            ;; now bring together the coercion-contracts and the values, 
+            ;; PLUS use the 'local' version of the keyword because it is 
+            ;; also the name of the class
             [args (map (lambda (x) 
                          (define kw (car x))
-                         (define co ;; patch from Jay to allow rename on import
-                           (findf (lambda (n) (free-identifier=? kw (car n)))
-                                  (map (lambda (k s) (cons k (cdr s))) 
-                                       kwds Spec)))
-                         (list (syntax-e (car co)) ((cadr co) (cdr x))))
-                       spec)])
+                         (define-values (key coercion)
+                           (let loop ([kwds kwds][Spec Spec])
+                             (if (free-identifier=? (car kwds) kw)
+                                 (values (car kwds) (cadar Spec))
+                                 (loop (cdr kwds) (cdr Spec)))))
+                         (list key (coercion (cdr x))))
+                       wrld)])
        #`(parameterize ([current-eventspace (make-eventspace)])
-           (let ([o (new (if #,rec? aworld% world%) [world0 w]  #,@args)])
+           (let ([o (new (if #,rec? aworld% world%) [world0 w] #,@args)])
              (send o last))))]))
 
 
