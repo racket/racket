@@ -93,9 +93,9 @@
 	     [(list e) e]
 	     [l #`(case-> #,@l)]))]
         [(Vector: t)
-         #`(vector-immutableof #,(t->c t))]
+         #`(vectorof #,(t->c t))]
         [(Box: t)
-         #`(box-immutable/c #,(t->c t))]
+         #`(box/c #,(t->c t))]
         [(Pair: t1 t2)
          #`(cons/c #,(t->c t1) #,(t->c t2))]
         [(Opaque: p? cert)
@@ -127,7 +127,7 @@
         [(Syntax: t) #`(syntax/c #,(t->c t))]
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]
         [(Param: in out) #`(parameter/c #,(t->c out))]
-	[(Hashtable: k v) #`hash?]
+	[(Hashtable: k v) #`(hash/c #,(t->c k) #,(t->c v) #:immutable 'dont-care)]
         [else          
          (exit (fail))]))))
 

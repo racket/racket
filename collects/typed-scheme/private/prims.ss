@@ -79,9 +79,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
              #:with opt #'(#:name-exists)))
   (syntax-parse stx
     [(_ lib (~or [sc:simple-clause] [strc:struct-clause] [oc:opaque-clause]) ...)
-     #'(begin (require/typed sc.nm sc.ty lib) ... 
-              (require-typed-struct strc.nm (strc.body ...) lib) ...
-              (require/opaque-type oc.ty oc.pred lib . oc.opt) ...)]
+     #'(begin 
+	 (require/opaque-type oc.ty oc.pred lib . oc.opt) ...
+	 (require/typed sc.nm sc.ty lib) ... 
+	 (require-typed-struct strc.nm (strc.body ...) lib) ...)]
     [(_ nm:opt-rename ty lib (~or [#:struct-maker parent] #:opt) ...)
      (with-syntax ([cnt* (generate-temporary #'nm.nm)]
 		   [sm (if #'parent
