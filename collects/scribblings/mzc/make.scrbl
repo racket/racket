@@ -250,6 +250,9 @@ A parameter whose value is called for each file that is loaded and
  @scheme[#f], then the file is compiled as usual. The default is
  @scheme[(lambda (x) #f)].}
 
+  Defaults to @scheme[(λ (x) #f)].
+}
+
 @; ----------------------------------------------------------------------
 
 @section{Compilation Manager Hook for Syntax Transformers}
