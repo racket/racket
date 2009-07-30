@@ -266,6 +266,12 @@ the contract @scheme[c]. Beware that when this contract is applied to
 a value, the result is not necessarily @scheme[eq?] to the input.}
 
 
+@defproc[(non-empty-listof [c (or/c contract? (any/c . -> . any/c))]) contract?]{
+
+Returns a contract that recognizes non-empty lists whose elements match
+the contract @scheme[c]. Beware that when this contract is applied to
+a value, the result is not necessarily @scheme[eq?] to the input.}
+
 @defproc[(cons/c [car-c contract?][cdr-c contract?]) contract?]{
 
 Produces a contract the recognizes pairs first and second elements

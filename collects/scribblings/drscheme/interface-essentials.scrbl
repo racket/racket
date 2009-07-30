@@ -168,21 +168,21 @@ non-Scheme languages. You specify a language in one of two ways:
 
 @itemize[
 
- @item{Select the @menuitem["Language" "Choose Language..."] menu
+ @item{Select the @drlang{Module} language (via the
+       @menuitem["Language" "Choose Language..."] menu item), and then
+       specify a specific language as part of the program usually by
+       starting the definitions-window content with @hash-lang[].}
+
+  @item{Select the @menuitem["Language" "Choose Language..."] menu
        item, and choose a language other than @drlang{Module}. After
        changing the language, click @onscreen{Run} to reset the
        language in the interactions window. The bottom-left corner of
        DrScheme's main window also has a shortcut menu item for
        selecting previously selected languages.}
 
- @item{Select the @drlang{Module} language (via the
-       @menuitem["Language" "Choose Language..."] menu item), and then
-       specify a specific language as part of the program usually by
-       starting the definitions-window content with @hash-lang[].}
-
 ]
 
-The latter method, @drlang{Module} with @hash-lang[], is the recommend
+The former method, @drlang{Module} with @hash-lang[], is the recommend
 mode, and it is described further in @secref["module"].
 
 The @menuitem["Language" "Choose Language..."] dialog contains a

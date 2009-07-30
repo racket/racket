@@ -22,7 +22,8 @@
            annotate-executed-file
 
            coverage-counts-enabled
-           get-coverage-counts
+           get-coverage
+           test-coverage-info
            annotate-covered-file)
 
   (current-compile errortrace-compile-handler)

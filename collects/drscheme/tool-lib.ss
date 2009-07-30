@@ -27,6 +27,8 @@ all of the names in the tools library, for use defining keybindings
 
 (require/doc drscheme/private/ts scheme/base scribble/manual)
 
+(require/doc (for-label errortrace/errortrace-key))
+
 (shutdown-splash)
 (define-values/invoke-unit/infer drscheme@)
 (close-splash)
@@ -298,7 +300,7 @@ all of the names in the tools library, for use defining keybindings
    drscheme:debug:error-display-handler/stacktrace
    (->* (string? any/c)
         ((or/c false/c (listof srcloc?)))
-        any)
+        (or/c #f (listof srcloc?)))
    ((msg exn) ((stack #f)))
    @{Displays the error message represented by the string, adding
      embellishments like those that appears in the DrScheme REPL,
@@ -306,8 +308,12 @@ all of the names in the tools library, for use defining keybindings
      and a clickable icon for the source of the error (read & syntax errors show their source
      locations and otherwise the first place in the stack trace is shown).
                                       
-     If @scheme[stack] is false, then the stack trace embedded in the @scheme[exn] argument (if any) is used.
-                                                                         
+     If @scheme[stack] is false, then the stack traces embedded in the @scheme[exn] argument (if any) are used.
+     Specifically, this function looks for a stacktrace via
+     @scheme[errortrace-key] in the continuation marks of @scheme[exn] and @scheme[continuation-mark-set->context].
+
+     If @scheme[stack] is not false, that stack is added to the stacks already in the exception.
+     
      This should be called in the same eventspace and on the same thread as the error.})
   
   (proc-doc/names
@@ -320,9 +326,6 @@ all of the names in the tools library, for use defining keybindings
    @{This function implements an error-display-handler in terms
      of another error-display-handler.
      
-     This function is designed to work in conjunction with
-     @scheme[drscheme:debug:make-debug-eval-handler].
-     
      See also MzScheme's
      @scheme[error-display-handler]
      parameter.
@@ -330,49 +333,21 @@ all of the names in the tools library, for use defining keybindings
      If the current-error-port is the definitions window in
      drscheme, this error handler inserts some debugging
      annotations, calls @scheme[oedh], and then highlights the
-     source location of the runtime error.})
-  
-  (proc-doc/names
-   drscheme:debug:make-debug-eval-handler
-   ((any/c . -> . any/c)
-    . -> .
-    (any/c . -> . any/c))
-   
-   (odeh)
-   
-   @{This function implements an eval-handler in terms of another
-     eval-handler.
+     source location of the runtime error.
      
-     This function is designed to work in conjunction with
-     @scheme[drscheme:debug:make-debug-error-display-handler].
+     It looks for both stack trace information in the continuation
+     marks both via the
+     @schememodname[errortrace/errortrace-key] 
+     module and via 
+     @scheme[continuation-mark-set->context].
      
-     See also MzScheme's @scheme[eval-handler]
-     parameter. 
-     
-     The resulting eval-handler expands and annotates the input
-     expression and then passes it to the input eval-handler,
-     unless the input expression is already compiled, in which
-     case it just hands it directly to the input eval-handler.})
+     })
   
   (proc-doc/names
    drscheme:debug:hide-backtrace-window
    (-> void?)
    ()
    @{Hides the backtrace window.})
-  
-  
-  (proc-doc/names
-   drscheme:debug:profiling-enabled
-   (case-> (boolean? . -> . void?)
-           (-> boolean?))
-   ((enabled?) ())
-   @{A parameter that controls if profiling information is recorded.
-     
-     Defaults to @scheme[#f].
-     
-     Only applies if
-     @scheme[drscheme:debug:make-debug-eval-handler]
-     has been added to the eval handler.})
   
   (proc-doc/names
    drscheme:debug:add-prefs-panel
@@ -386,15 +361,14 @@ all of the names in the tools library, for use defining keybindings
    (debug-info)
    @{This function opens a DrScheme to display
      @scheme[debug-info]. Only the src the position
-     and the span fields of the srcloc are considered.
-     
-     See also
-     @scheme[drscheme:debug:get-cm-key].})
+     and the span fields of the srcloc are considered.})
   
   (proc-doc/names
    drscheme:debug:show-backtrace-window
    (string?
-    (or/c exn? (listof srcloc?))
+    (or/c exn? 
+          (listof srcloc?)
+          (non-empty-listof (cons/c string? (listof srcloc?))))
     . -> .
     void?)
    (error-message dis)
@@ -404,17 +378,8 @@ all of the names in the tools library, for use defining keybindings
      The @scheme[error-message] argument is the text of the error,
      @scheme[dis] is the debug information, extracted from the
      continuation mark in the exception record, using
-     @scheme[drscheme:debug:get-cm-key].})
-  
-  (proc-doc/names
-   drscheme:debug:get-cm-key
-   (-> any)
-   ()
-   @{Returns a key used with @scheme[contination-mark-set->list].
-     The contination mark set attached to an exception record
-     for the user's program may use this mark. If it does,
-     each mark on the continuation is a list of the fields
-     of a srcloc object.})
+     @scheme[errortrace-key].})
+ 
   
   ;                           
   ;                           

@@ -65,7 +65,6 @@
    hide-backtrace-window
    show-backtrace-window
    open-and-highlight-in-file
-   get-cm-key
    
    small-planet-bitmap
    

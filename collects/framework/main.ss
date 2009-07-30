@@ -54,6 +54,37 @@
   (link standard-mred@ framework@))
 
 (provide/doc
+ 
+ (proc-doc/names 
+  text:range? (-> any/c boolean?) (arg)
+  @{Determines if @scheme[arg] is an instance of the @tt{range} struct.})
+ 
+ (proc-doc/names
+  text:range-start
+  (-> text:range? exact-nonnegative-integer?)
+  (range)
+  @{Returns the start position of the range.})
+ (proc-doc/names
+  text:range-end
+  (-> text:range? exact-nonnegative-integer?)
+  (range)
+  @{Returns the end position of the range.})
+ (proc-doc/names
+  text:range-caret-space?
+  (-> text:range? boolean?)
+  (range)
+  @{Returns a boolean indicating where the caret-space in the range goes. See also @method[text:basic<%> highlight-range].})
+ (proc-doc/names
+  text:range-style
+  (-> text:range? exact-nonnegative-integer?)
+  (range)
+  @{Returns the style of the range. See also @method[text:basic<%> highlight-range].})
+ (proc-doc/names
+  text:range-color
+  (-> text:range? (or/c string? (is-a?/c color%)))
+  (range)
+  @{Returns the color of the highlighted range.})
+    
  (parameter-doc
   text:autocomplete-append-after
   (parameter/c string?)

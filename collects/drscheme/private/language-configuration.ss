@@ -1285,6 +1285,16 @@
 
         (super-new)))
 
+    (define (add-errortrace-key-mixin %)
+      (class %
+        (define/override (on-execute setting run-in-user-thread)
+          (super on-execute setting run-in-user-thread)
+          (run-in-user-thread
+           (λ ()
+             (namespace-require 'errortrace/errortrace-key)
+             (namespace-transformer-require 'errortrace/errortrace-key))))
+        (super-new)))
+  
     (define (r5rs-mixin %)
       (class %
         (define/override (on-execute setting run-in-user-thread)
@@ -1374,7 +1384,7 @@
                       (list -200 3)
                       #t
                       (string-constant pretty-big-scheme-one-line-summary)
-                      assume-mixin))
+                      (λ (%) (assume-mixin (add-errortrace-key-mixin %)))))
         (add-language
          (make-simple '(lib "r5rs/lang.ss")
                       "plt:r5rs"
@@ -1383,7 +1393,7 @@
                       (list -200 -1000)
                       #f
                       (string-constant r5rs-one-line-summary)
-                      (lambda (%) (r5rs-mixin (assume-mixin %)))))
+                      (lambda (%) (r5rs-mixin (assume-mixin (add-errortrace-key-mixin %))))))
         
         (add-language
          (make-simple 'mzscheme

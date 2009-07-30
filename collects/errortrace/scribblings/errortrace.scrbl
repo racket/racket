@@ -118,7 +118,12 @@ by a factor of 2 or 3.}
 @defboolparam[profiling-enabled on?]{
 
 Errortrace's profiling instrumentation is @scheme[#f] by default. To use it,
-you also need to ensure that @scheme[instrumenting-enabled] is on.}
+you also need to ensure that @scheme[instrumenting-enabled] is on.
+
+Also, profiling only records information about the time taken on the thread
+that compiled the code (more precisely, the thread that instruments the code via
+the @scheme[errortrace-compile-handler]).
+}
 
 @defboolparam[profiling-record-enabled on?]{
 
@@ -131,7 +136,8 @@ version of the procedure, but the old information is also preserved.
 
 Depending of the source program, profiling usually induces a factor of
 2 to 4 slowdown, in addition to any slowdown from the
-exception-information instrumentation.}
+exception-information instrumentation.
+}
 
 @defproc[(output-profile-results [paths? any/c] [sort-time? any/c]) void?]{
                                                                       
@@ -139,10 +145,10 @@ Gets the current profile results using @scheme[get-profile-results] and
 displays them.  It optionally shows paths information (if it is recorded),
 and sorts by either time or call counts.}
 
-@defproc[(get-profile-results) list?]{
+@defproc[(get-profile-results [thd thread? (current-thread)]) list?]{
 
 Returns a list of lists that contain all profiling information accumulated
-so far:
+so far (for the thread @scheme[thd]):
 
 @itemize[
    @item{the number of times a procedure was called.}
@@ -182,7 +188,8 @@ all procedures instrumented for profiling information.}
 
 @defproc[(clear-profile-results) void?]{
 
-Clears accumulated profile results.}
+Clears accumulated profile results for the current thread.}
+
 
 @; ------------------------------------------------
 
@@ -214,25 +221,30 @@ Parameters that determine if the first (exact coverage) or second
 (profiler-based coverage) are enabled. Remember that setting
 @scheme[instrumenting-enabled] to @scheme[#f] also disables both.}
 
-@deftogether[(
-  @defproc[(get-coverage-counts) list?]
-  @defproc[(get-execute-counts) list?])]{
-                                         
+@defproc[(get-coverage) (listof (cons/c syntax? boolean?))]{
+
+Returns a list of pairs, one for each instrumented expression.  The
+first element of the pair is a @scheme[syntax?] object (usually containing
+source location information) for the original expression, and the
+second element of the pair indicates if the code has been executed.
+This list is snapshot of the current state of the computation.}
+
+@defproc[(get-execute-counts) (list (cons/c syntax? number?))])]{
 Returns a list of pairs, one for each instrumented expression.  The
 first element of the pair is a @scheme[syntax?] object (usually containing
 source location information) for the original expression, and the
 second element of the pair is the number of times that the
-expression has been evaluated.  These elements are destructively
-modified, so to take a snapshot you will need to copy them.}
+expression has been evaluated.
+This list is snapshot of the current state of the computation.}
 
 @deftogether[(
   @defproc[(annotate-covered-file 
             [filename-path path-string?]
-            [display-string (or/c string? false/c) #f]) 
+            [display-string (or/c string? #f) #f]) 
            void?]
   @defproc[(annotate-executed-file
             [filename-path path-string?]
-            [display-string (or/c string? false/c) "^.,"]) 
+            [display-string (or/c string? #t #f) "^.,"]) 
            void?])]{
                                                                      
 Writes the named file to the @scheme[current-output-port], inserting an
@@ -241,9 +253,15 @@ additional line between each source line to reflect execution counts
 The optional @scheme[display-string] is used for the annotation: the first
 character is used for expressions that were visited 0 times, the
 second character for 1 time, ..., and the last character for
-expressions that were visited more times.  It can also be @scheme[#t]
-for a maximal display (@scheme["012...9ABC...Z"]), or @scheme[#f] for
-a minimal display (@scheme["#-"]).}
+expressions that were visited more times.  It can also be
+@scheme[#f] for a minimal display, @scheme["#."], or, in
+the case of @scheme[annotate-executed-file],
+@scheme[#t] for a maximal display, @scheme["0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"].
+}
+
+@defparam[test-coverage-info ht hasheq?]{
+  The hash-table in this parameter is used to store the profile results.
+}
 
 @; ------------------------------------------------------
 
@@ -281,11 +299,27 @@ The additional exports are as follows:
 Compiles @scheme[stx] using the compilation handler that was active
 when the @schememodname[errortrace/errortrace-lib] module was
 executed, but first instruments the code for Errortrace information.
-The code is instrumented only if @scheme[(namespace-module-registry
-(current-namespace))] is the same as when the
+The code is instrumented only if
+@schemeblock[(namespace-module-registry (current-namespace))] 
+is the same as when the
 @schememodname[errortrace/errortrace-lib] module was executed. This
 procedure is suitable for use as a compilation handler via
 @scheme[current-compile].}
+
+@defproc[(make-errortrace-compile-handler) 
+         (-> any/c any/c compiled-expression)]{
+
+Produces a compile handler that is like
+@scheme[errortrace-compile-handler], except that the code that the
+it produces is instrumented if the value of 
+@schemeblock[(namespace-module-registry (current-namespace))]
+is the same as when the original thunk is invoked.
+
+In addition, when the thunk is invoked, it uses
+@scheme[namespace-attach-module] to attach the
+@schememodname[errortrace/errortrace-key] module and the
+@schememodname['#%kernel] module to the @scheme[current-namespace].
+}
 
 @defproc[(errortrace-error-display-handler (string string?) (exn exn?)) void?]{
 
@@ -344,14 +378,17 @@ expression, typically @scheme[(namespace-base-phase)] for a top-level
 expression.}
 
 @deftogether[(
-  @defproc[(make-st-mark (syntax syntax?)) st-mark?]
+  @defproc[(make-st-mark (syntax syntax?)) (or/c #f st-mark?)]
   @defproc[(st-mark-source (st-mark st-mark?)) syntax?]
   @defproc[(st-mark-bindings (st-mark st-mark?)) list?])]{
 
 The @schemeout[st-mark-source] and @schemeout[st-mark-bindings]
-functions extract information from a particular kind of value. The
-value must be created by @schemeout[make-st-mark]. The
-@schemeout[st-mark-source] extracts the value originally provided to
+functions extract information from a particular kind of value.
+The value must be created by @schemeout[make-st-mark]
+(the shape of the value is guaranteed to be writable and not to be @scheme[#f], but otherwise unspecified). 
+The @scheme[make-st-mark] function returns @scheme[#f] when there is
+no source location information in the syntax object.
+The @schemeout[st-mark-source] extracts the value originally provided to
 the expression-maker, and @schemeout[st-mark-bindings] returns local
 binding information (if available) as a list of two element (syntax?
 any/c) lists. The @schemeout[st-mark-bindings] function is currently
@@ -436,4 +473,14 @@ Note that @schemein[register-profile-start] and
 this case, the result of @schemein[register-profile-start] should be
 @scheme[#f].}
 
+}
+
+@section{Errortrace Key}
+@defmodule[errortrace/errortrace-key]
+
+This module depends only on @schememodname['#%kernel].
+
+@defthing[errortrace-key symbol?]{
+  A key used by errortrace via @scheme[with-continuation-mark] to 
+  record stack information.
 }

@@ -1009,7 +1009,11 @@ please adhere to these guidelines:
  (decimal-notation-for-rationals "Use decimal notation for rationals")
  (enforce-primitives-group-box-label "Initial Bindings")
  (enforce-primitives-check-box-label "Disallow redefinition of initial bindings")
- (automatically-compile? "Automatically compile source files?")
+ (automatically-compile "Populate compiled/ directories (for faster loading)")
+ (preserve-stacktrace-information "Preserve stacktrace (disable some JIT optimizations)")
+ (expression-level-stacktrace "Expression-level stacktrace")
+ (function-level-stacktrace "Function-level stacktrace")
+  
   
   ; used in the bottom left of the drscheme frame 
   ; used the popup menu from the just above; greyed out and only

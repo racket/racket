@@ -8,7 +8,8 @@ profile todo:
 
 |#
 
-(require scheme/unit
+(require errortrace/errortrace-key
+         scheme/unit
          scheme/contract
          errortrace/stacktrace
          scheme/class
@@ -64,21 +65,15 @@ profile todo:
   ;; for debugging -- be sure to print to here, not the current output port
   (define original-output-port (current-output-port))
   
-  ;; cm-key : symbol
-  ;; the key used to put information on the continuation
-  (define cm-key (gensym 'drscheme-debug-continuation-mark-key))
-  
-  (define (get-cm-key) cm-key)
-  
   ;; cms->srclocs : continuation-marks -> (listof srcloc)
   (define (cms->srclocs cms)
     (map 
-     (λ (x) (make-srcloc (list-ref x 0)
-                         (list-ref x 1)
+     (λ (x) (make-srcloc (list-ref x 1)
                          (list-ref x 2)
                          (list-ref x 3)
-                         (list-ref x 4)))
-     (continuation-mark-set->list cms cm-key)))
+                         (list-ref x 4)
+                         (list-ref x 5)))
+     (continuation-mark-set->list cms errortrace-key)))
   
   ;; error-delta : (instanceof style-delta%)
   (define error-delta (make-object style-delta% 'change-style 'italic))
@@ -493,7 +488,7 @@ profile todo:
   
   ;; with-mark : mark-stx syntax (any? -> syntax) -> syntax
   ;; a member of stacktrace-imports^
-  ;; guarantees that the continuation marks associated with cm-key are
+  ;; guarantees that the continuation marks associated with errortrace-key are
   ;; members of the debug-source type, after unwrapped with st-mark-source
   (define (with-mark src-stx expr)
     (let ([source (cond
@@ -518,10 +513,10 @@ profile todo:
           [column (or (syntax-column src-stx) 0)])
       (if source
           (with-syntax ([expr expr]
-                        [mark (list source line column position span)]
-                        [cm-key cm-key])
+                        [mark (list 'dummy-thing source line column position span)]
+                        [errortrace-key errortrace-key])
             (syntax
-             (with-continuation-mark 'cm-key
+             (with-continuation-mark 'errortrace-key
                'mark
                expr)))
           expr)))
@@ -1265,8 +1260,8 @@ profile todo:
     (let ([profile-info (thread-cell-ref current-profile-info)])
       (when profile-info
         (hash-set! profile-info
-                         key 
-                         (make-prof-info #f 0 0 (and (syntax? name) (syntax-e name)) expr))))
+                   key 
+                   (make-prof-info #f 0 0 (and (syntax? name) (syntax-e name)) expr))))
     (void))
   
   ;; register-profile-start : sym -> (union #f number)

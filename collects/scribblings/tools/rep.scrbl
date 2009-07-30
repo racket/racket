@@ -2,6 +2,7 @@
 @(require "common.ss")
 @(tools-title "rep")
 
+
 @definterface[drscheme:rep:text<%> ()]{
 }
 
@@ -90,6 +91,24 @@ The @scheme[complete-program?] argument determines if the
 
 }}
 
+@defmethod[#:mode augment (after-many-evals) any]{
+  Called from the drscheme main thread after
+  @method[drscheme:rep:text% evaluate-from-port] finishes (no matter
+  how it finishes).
+}
+
+@defmethod[#:mode augment (on-execute [run-on-user-thread (-> any)]) any]{
+
+  Called from the drscheme thread after the language's
+  @method[drscheme:language:language<%> on-execute]
+  method has been invoked, and after the
+  special values have been setup (the ones registered
+  via @scheme[drscheme:language:add-snip-value]).
+
+  Use @scheme[run-on-user-thread] to initialize the user's parameters, etc.
+
+}
+
 @defmethod[(get-error-range)
            (or/c false/c (list/c (is-a?/c text:basic%) number? number?))]{
 @methspec{
@@ -155,7 +174,9 @@ for more information about parameters.
 
 }
 
-@defmethod[(highlight-errors [locs (listof (list (instance (implements text:basic<%>)) small-integer small-integer))])
+@defmethod[(highlight-errors 
+            [locs (listof srcloc?)]
+            [error-arrows (or/c #f (listof srcloc?)) #f])
            void?]{
 Call this method to highlight errors associated with this repl.
 See also

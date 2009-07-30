@@ -125,23 +125,20 @@ the settings above should match r5rs
     (test-expression "(define-syntax app syntax-case)" "{stop-22x22.png} syntax-case: bad syntax in: syntax-case")))
 
 
-
-;                           
-;                           
-;                           
-;        ;;;;;;             
-;        ;                  
-;        ;                  
-;   ; ;  ;       ; ;   ;;;  
-;   ;;   ;;;;    ;;   ;     
-;   ;        ;   ;    ;;    
-;   ;         ;  ;     ;;   
-;   ;         ;  ;       ;  
-;   ;    ;   ;   ;       ;  
-;   ;     ;;;    ;    ;;;   
-;                           
-;                           
-;                           
+;                                      
+;                                      
+;  ;;;;;;;           ;;;;;;;    ;;;;;; 
+;   ;;   ;;           ;;   ;;  ;;   ;; 
+;   ;;   ;;    ;;;;;  ;;   ;;  ;;    ; 
+;   ;;   ;;    ;;;;;  ;;   ;;  ;;;;    
+;   ;;;;;;     ;      ;;;;;;    ;;;;;  
+;   ;; ;;      ;;;;   ;; ;;        ;;; 
+;   ;;  ;;        ;;  ;;  ;;   ;    ;; 
+;   ;;   ;;       ;;  ;;   ;;  ;;   ;; 
+;  ;;;;   ;;; ;;  ;; ;;;;   ;;;;;;;;;  
+;             ;;  ;;                   
+;              ;;;;                    
+;                                      
 
 
 (define (r5rs)
@@ -229,21 +226,23 @@ the settings above should match r5rs
     
     (test-expression "argv" "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: argv")
     (test-expression "(define-syntax app syntax-case)" 
-                     "{stop-22x22.png} compile: bad syntax; reference to top-level identifier is not allowed, because no #%top syntax transformer is bound in: syntax-case")))
+                     "{stop-22x22.png} macro-transformer: only a `syntax-rules' form is allowed in: syntax-case")))
 
-;;                      ;                               
-;                                                      
-;                                                      
-;;;;    ;;;    ;;; ; ;;;   ; ;;;  ; ;;;    ;;;   ; ;;; 
-;   ;  ;   ;  ;   ;    ;    ;;  ;  ;;  ;  ;   ;   ;    
-;   ;  ;;;;;  ;   ;    ;    ;   ;  ;   ;  ;;;;;   ;    
-;   ;  ;      ;   ;    ;    ;   ;  ;   ;  ;       ;    
-;   ;  ;   ;  ;   ;    ;    ;   ;  ;   ;  ;   ;   ;    
-; ;;;    ;;;    ;;;;  ;;;;; ;;;  ;;;;;  ;;  ;;;   ;;;;  
-;                                    
-;                                    
-;;;                                     
 
+;                                                             
+;  ;;;                    ;;                                  
+;   ;;                    ;;                                  
+;   ;;                                                        
+;   ;;;;;   ;;;;   ;;;;;;;;;  ;;; ;;   ;;; ;;    ;;;;  ;;; ;; 
+;   ;;  ;; ;;  ;; ;;  ;;  ;;   ;;; ;;   ;;; ;;  ;;  ;;  ;;;;; 
+;   ;;  ;; ;;  ;; ;;  ;;  ;;   ;;  ;;   ;;  ;;  ;;  ;;  ;;    
+;   ;;  ;; ;;;;;;  ;;;;   ;;   ;;  ;;   ;;  ;;  ;;;;;;  ;;    
+;   ;;  ;; ;;      ;      ;;   ;;  ;;   ;;  ;;  ;;      ;;    
+;   ;;  ;; ;;   ;  ;;;;;  ;;   ;;  ;;   ;;  ;;  ;;   ;  ;;    
+;   ;;;;;   ;;;;   ;;;;;;;;;; ;;;; ;;; ;;;; ;;;  ;;;;  ;;;;   
+;                 ;;   ;;                                     
+;                 ;;   ;;                                     
+;                  ;;;;;                                      
 
 (define (beginner)
   (parameterize ([language (list "How to Design Programs" #rx"Beginning Student(;|$)")])
@@ -395,18 +394,20 @@ the settings above should match r5rs
 
 
 
-;;                         ;       ;;                          
-;                        ;         ;                          
-;                        ;         ;                          
-;;;;    ;;;    ;;; ;    ;   ;;;;   ;;;;   ; ;;;   ;;;  ;;; ;;;
-;   ;  ;   ;  ;   ;     ;       ;  ;   ;   ;     ;   ;  ;   ; 
-;   ;  ;;;;;  ;   ;    ;     ;;;;  ;   ;   ;     ;;;;;  ;   ; 
-;   ;  ;      ;   ;    ;    ;   ;  ;   ;   ;     ;       ; ;  
-;   ;  ;   ;  ;   ;   ;     ;   ;  ;   ;   ;     ;   ;   ;;;  
-; ;;;    ;;;    ;;;;   ;      ;;; ;; ;;;   ;;;;    ;;;     ;   
-;  ;                                        
-;                                           
-;;;                                            
+;                                                                            
+;  ;;;                                 ;;;     ;;;                           
+;   ;;                       ;          ;;      ;;                           
+;   ;;                       ;          ;;      ;;                           
+;   ;;;;;   ;;;;   ;;;;;;   ;   ;;;;    ;;;;;   ;;;;;  ;;; ;;  ;;;;  ;;; ;;; 
+;   ;;  ;; ;;  ;; ;;  ;;    ;      ;;   ;;  ;;  ;;  ;;  ;;;;; ;;  ;;  ;;  ;  
+;   ;;  ;; ;;  ;; ;;  ;;   ;       ;;   ;;  ;;  ;;  ;;  ;;    ;;  ;;  ;;  ;  
+;   ;;  ;; ;;;;;;  ;;;;    ;    ;;;;;   ;;  ;;  ;;  ;;  ;;    ;;;;;;   ;;;   
+;   ;;  ;; ;;      ;       ;   ;;  ;;   ;;  ;;  ;;  ;;  ;;    ;;       ;;;   
+;   ;;  ;; ;;   ;  ;;;;;  ;    ;;  ;;   ;;  ;;  ;;  ;;  ;;    ;;   ;   ;;;   
+;   ;;;;;   ;;;;   ;;;;;; ;     ;;;;;;  ;;;;;   ;;;;;  ;;;;    ;;;;     ;    
+;                 ;;   ;;;                                                   
+;                 ;;   ;;;                                                   
+;                  ;;;;;                                                     
 
 
 (define (beginner/abbrev)
@@ -558,19 +559,20 @@ the settings above should match r5rs
                      "reference to an identifier before its definition: define-syntax")))
 
 
-
-;                                                 ;;    ;                        
-;                                     ;                 ;           
-;                                     ;                 ;           
-;;;   ; ;;;   ;;;;;   ;;;   ; ;;; ;;; ;    ;;;    ;;;;  ;;;    ;;;;   ;;;;;   ;;;  
-;    ;;  ;   ;     ;   ;   ;     ; ; ;  ;   ;  ;   ;    ;        ;   ;     ;   ; 
-;    ;   ;   ;     ;;;;;   ;     ; ; ;  ;;;;;  ;   ;    ;     ;;;;   ;     ;;;;; 
-;    ;   ;   ;     ;       ;     ; ; ;  ;      ;   ;    ;    ;   ;   ;     ;     
-;    ;   ;   ;   ; ;   ;   ;     ; ; ;  ;   ;  ;   ;    ;    ;   ;   ;   ; ;   ; 
-;;;;; ;;;  ;;   ;;;   ;;;   ;;;;  ;; ; ;;  ;;;    ;;; ; ;;;;;   ;;; ;   ;;;   ;;;  
-
-
-
+;                                                                                          
+;   ;;                                                      ;;;   ;;                       
+;   ;;            ;;                                         ;;   ;;           ;;          
+;                 ;;                                         ;;                ;;          
+;  ;;;  ;;; ;;   ;;;;;  ;;;;  ;;; ;; ;;; ;;  ;;    ;;;;   ;;;;;  ;;;   ;;;;   ;;;;;  ;;;;  
+;   ;;   ;;; ;;   ;;   ;;  ;;  ;;;;;  ;;; ;;; ;;  ;;  ;; ;;  ;;   ;;      ;;   ;;   ;;  ;; 
+;   ;;   ;;  ;;   ;;   ;;  ;;  ;;     ;;  ;;  ;;  ;;  ;; ;;  ;;   ;;      ;;   ;;   ;;  ;; 
+;   ;;   ;;  ;;   ;;   ;;;;;;  ;;     ;;  ;;  ;;  ;;;;;; ;;  ;;   ;;   ;;;;;   ;;   ;;;;;; 
+;   ;;   ;;  ;;   ;;   ;;      ;;     ;;  ;;  ;;  ;;     ;;  ;;   ;;  ;;  ;;   ;;   ;;     
+;   ;;   ;;  ;;   ;;   ;;   ;  ;;     ;;  ;;  ;;  ;;   ; ;;  ;;   ;;  ;;  ;;   ;;   ;;   ; 
+;  ;;;; ;;;; ;;;   ;;;  ;;;;  ;;;;   ;;;; ;;; ;;;  ;;;;   ;;;;;; ;;;;  ;;;;;;   ;;;  ;;;;  
+;                                                                                          
+;                                                                                          
+;                                                                                          
 
 
 (define (intermediate)
@@ -654,7 +656,7 @@ the settings above should match r5rs
     (test-expression "(local ((define x x)) 1)" "local variable used before its definition: x")
     (test-expression "(letrec ([x x]) 1)" "local variable used before its definition: x")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
-    (test-expression "(+ 1)" "procedure +: expects at least 2 arguments, given 1: 1")
+    (test-expression "(+ 1)" "1\nThis program should be tested.")
     
     (test-expression "1.0" "1\nThis program should be tested." "1")
     (test-expression "#i1.0" "#i1.0\nThis program should be tested." "#i1.0")
@@ -813,7 +815,7 @@ the settings above should match r5rs
     (test-expression "(local ((define x x)) 1)" "local variable used before its definition: x")
     (test-expression "(letrec ([x x]) 1)" "local variable used before its definition: x")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
-    (test-expression "(+ 1)" "procedure +: expects at least 2 arguments, given 1: 1")
+    (test-expression "(+ 1)" "1\nThis program should be tested.")
     
     (test-expression "1.0" "1\nThis program should be tested." "1")
     (test-expression "#i1.0" "#i1.0\nThis program should be tested." "#i1.0")

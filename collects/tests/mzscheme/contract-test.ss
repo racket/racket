@@ -189,6 +189,8 @@
   
   (test/no-error '(listof any/c))
   (test/no-error '(listof (lambda (x) #t)))
+  (test/no-error '(non-empty-listof any/c))
+  (test/no-error '(non-empty-listof (lambda (x) #t)))
 
   
   (test/no-error '(list/c 'x "x" #t #f #\c #rx"a" #rx#"b"))
@@ -3923,6 +3925,14 @@
               'pos
               'neg))
   
+  (test/spec-passed
+   'immutable7
+   '(let ([ct (contract (non-empty-listof (boolean? . -> . boolean?))
+                        (list (λ (x) #t))
+                        'pos
+                        'neg)])
+      ((car ct) #f)))
+  
   (test/neg-blame
    'immutable8
    '(let ([ct (contract (cons/c (number? . -> . boolean?) (number? . -> . boolean?)) 
@@ -5511,6 +5521,14 @@ so that propagation occurs.
   (test-name '(listof boolean?) (listof boolean?))
   (test-name '(listof (-> boolean? boolean?)) (listof (-> boolean? boolean?)))
   
+  (test-name '(non-empty-listof boolean?) (non-empty-listof boolean?))  
+  (test-name '(non-empty-listof any/c) (non-empty-listof any/c))
+  (test-name '(non-empty-listof boolean?) (non-empty-listof boolean?))
+  (test-name '(non-empty-listof any/c) (non-empty-listof any/c))
+  (test-name '(non-empty-listof boolean?) (non-empty-listof boolean?))
+  (test-name '(non-empty-listof (-> boolean? boolean?)) (non-empty-listof (-> boolean? boolean?)))
+
+  
   (test-name '(vectorof boolean?) (vectorof boolean?))
   (test-name '(vectorof any/c) (vectorof any/c))
   
@@ -5784,6 +5802,10 @@ so that propagation occurs.
   (ctest #t contract-first-order-passes? (listof integer?) (list 1))
   (ctest #f contract-first-order-passes? (listof integer?) #f)
 
+  (ctest #t contract-first-order-passes? (non-empty-listof integer?) (list 1))
+  (ctest #f contract-first-order-passes? (non-empty-listof integer?) (list))
+
+  
   (ctest #t contract-first-order-passes? (vector-immutableof integer?) (vector->immutable-vector (vector 1)))
   (ctest #f contract-first-order-passes? (vector-immutableof integer?) 'x)
   (ctest #f contract-first-order-passes? (vector-immutableof integer?) '())

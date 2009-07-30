@@ -7,17 +7,16 @@ WARNING: printf is rebound in the body of the unit to always
 |#
 
 (require string-constants
-         mzlib/class
-         mzlib/match
+         scheme/unit
+         scheme/class
+         scheme/match
          scheme/path
          "sig.ss"
          "../gui-utils.ss"
          "../preferences.ss"
          mred/mred-sig
          mrlib/interactive-value-port
-         mzlib/list
          setup/dirs
-         mzlib/string
          (prefix-in srfi1: srfi/1))
 (require setup/xref
          scribble/xref
@@ -40,6 +39,7 @@ WARNING: printf is rebound in the body of the unit to always
 (define (printf . args) 
   (apply fprintf original-output-port args)
   (void))
+
 
 (define-struct range (start end caret-space? style color) #:inspector #f)
 (define-struct rectangle (left top right bottom style color) #:inspector #f)
@@ -2674,12 +2674,12 @@ WARNING: printf is rebound in the body of the unit to always
              (map
               (λ (a-committer)
                 (match a-committer
-                  [($ committer 
-                      kr
-                      commit-peeker-evt
-                      done-evt
-                      resp-chan
-                      resp-nack)
+                  [(struct committer 
+                           (kr
+                            commit-peeker-evt
+                            done-evt
+                            resp-chan
+                            resp-nack))
                    (choice-evt
                     (handle-evt 
                      commit-peeker-evt
@@ -2737,9 +2737,9 @@ WARNING: printf is rebound in the body of the unit to always
        ;; does the dumping. otherwise, return #f
        (define ((service-committer data peeker-evt) a-committer)
          (match a-committer
-           [($ committer
-               kr commit-peeker-evt
-               done-evt resp-chan resp-nack)
+           [(struct committer
+                    (kr commit-peeker-evt
+                        done-evt resp-chan resp-nack))
             (let ([size (queue-size data)])
               (cond
                 [(not (eq? peeker-evt commit-peeker-evt))
@@ -2758,7 +2758,7 @@ WARNING: printf is rebound in the body of the unit to always
        ;; otherwise return #f
        (define (service-waiter a-peeker)
          (match a-peeker
-           [($ peeker bytes skip-count pe resp-chan nack-evt polling?)
+           [(struct peeker (bytes skip-count pe resp-chan nack-evt polling?))
             (cond
               [(and pe (not (eq? pe peeker-evt)))
                (choice-evt (channel-put-evt resp-chan #f)

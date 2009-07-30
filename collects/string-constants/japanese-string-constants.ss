@@ -191,6 +191,7 @@ please adhere to these guidelines:
  (cs-status-loading-docs-index "構文の検証: ドキュメントの索引をロードしています")
  (cs-mouse-over-import "束縛 ~s が ~s からインポートされました")
  (cs-view-docs "~a のドキュメントを表示する")
+ (cs-view-docs-from "~a 参照元は ~a")  ;; a completed version of the line above (cs-view-docs) is put into the first ~a and a list of modules (separated by commas) is put into the second ~a. Use check syntax and right-click on a documented variable (eg, 'require') to see this in use
 
  (cs-lexical-variable "レキシカル変数")
  (cs-imported-variable "インポート変数")
@@ -240,6 +241,11 @@ please adhere to these guidelines:
  (logging-to "記録先: ")
  (erase-log-directory-contents "記録先のディレクトリ ~a の内容を消去しますか？")
  (error-erasing-log-directory "記録先のディレクトリの内容を消去できませんでした。\n\n~a\n")
+
+  ;; menu items connected to the logger -- also in a button in the planet status line in the drs frame
+  (show-log "ログを表示(&L)")
+  (hide-log "ログを非表示(&L)")
+  (logging-all "すべて") ;; in the logging window in drscheme, shows all logs simultaneously
 
  ;; modes
  (mode-submenu-label "モード")
@@ -320,6 +326,18 @@ please adhere to these guidelines:
   ;; in the Help Desk language dialog, title on the right.
   (plt:hd:manual-search-ordering "マニュアルの検索順序")
 
+  ;; in the help-desk standalone font preference dialog, on a check box
+  (use-drscheme-font-size "DrScheme のフォンサイズを使用する")
+  
+  ;; in the preferences dialog in drscheme there is example text for help desk font size.
+  ;; clicking the links in that text produces a dialog with this message
+  (help-desk-this-is-just-example-text
+   "これはフォントサイズを設定するためのサンプルです。[ヘルプ] メニューから [ヘルプデスクを開く] を開いてリンクを辿ってください。")
+
+  ;; this appears in the bottom part of the frame the first time the user hits `f1' 
+  ;; (assuming nothing else has loaded the documentation index first)
+  ;; see also: cs-status-loading-docs-index
+  (help-desk-loading-documentation-index "ヘルプデスク: ドキュメントの索引を読み込んでいます")
 
  ;; Help desk htty proxy
  (http-proxy "HTTP プロキシ")
@@ -372,12 +390,14 @@ please adhere to these guidelines:
  ;;; about box
  (about-drscheme-frame-title "DrScheme について")
 
-
  ;;; save file in particular format prompting.
  (save-as-plain-text "このファイルをプレーンテキストで保存しますか？")
  (save-in-drs-format "このファイルを DrScheme 専用のバイナリ形式で保存しますか？")
  (yes "はい")
  (no "いいえ")
+
+ ;; saving image (right click on an image to see the text)
+  (save-image "画像を保存する...")
 
  ;;; preferences
  (preferences "環境設定")
@@ -393,7 +413,8 @@ please adhere to these guidelines:
  (editor-prefs-panel-label "編集")
  (general-prefs-panel-label "一般")
  (highlight-parens "対応する括弧の間を強調表示する")
- (fixup-parens "括弧を自動修正する")
+ (fixup-open-brackets "左角括弧を自動調整する")
+ (fixup-close-parens "右括弧を自動調整する")
  (flash-paren-match "対応する括弧をフラッシュする")
  (auto-save-files "ファイルを自動保存する")
  (backup-files "ファイルをバックアップする")
@@ -404,6 +425,8 @@ please adhere to these guidelines:
  (show-status-line "ステータス行を表示する")
  (count-columns-from-one "桁番号を 1 から数える")
  (display-line-numbers "バッファの行番号を表示 (文字オフセットではなく)")
+ (show-line-and-column-numbers "行番号と桁番号を表示する") ; used for popup menu; right click on line/column box in bottom of drs window
+ (show-character-offsets "文字オフセットを表示する") ; used for popup menu; right click on line/column box in bottom of drs window
  (enable-keybindings-in-menus "メニューのキーバインドを有効にする")
  (automatically-to-ps "自動的に PostScript ファイルに印刷する")
  (command-as-meta "Command キーを Meta キーとして処理する") ;; macos/macos x only
@@ -462,10 +485,15 @@ please adhere to these guidelines:
  (indenting-prefs-panel-label "インデント")
  (indenting-prefs-extra-regexp "正規表現")
 
+ (square-bracket-prefs-panel-label "角括弧")
+
  ; filled with define, lambda, or begin
  (enter-new-keyword "新しい ~a のようなキーワードを入力してください:")
  (x-keyword "~a キーワード")
  (x-like-keywords "~a のようなキーワード")
+
+ ; used in Square bracket panel
+ (skip-subexpressions "スキップする部分式の個数")
 
  (expected-a-symbol "シンボルでなければなりません: ~a")
  (already-used-keyword "\"~a\" はすでに特別にインデントされるキーワードです")
@@ -479,15 +507,22 @@ please adhere to these guidelines:
   (repl-error-color "エラー")
 
  ;;; find/replace
- (find-and-replace "検索と置換")
- (find "検索")
- (replace "置換")
- (dock "結合")
- (undock "分離")
- (replace&find-again "置換＋再検索") ;;; need double & to get a single &
- (forward "前方")
- (backward "後方")
- (hide "隠す")
+  (search-next "次")
+  (search-previous "前")
+  (search-match "一致")  ;;; this one and the next one are singular/plural variants of each other
+  (search-matches "一致") 
+  (search-replace "置換")
+  (search-skip "無視")
+  (search-show-replace "置換を表示")
+  (search-hide-replace "置換を非表示")
+  (find-case-sensitive "大小文字を区別")  ;; the check box in both the docked & undocked search
+  (find-anchor-based "アンカーを用いて検索")
+
+  ;; these string constants used to be used by searching,
+  ;; but aren't anymore. They are still used by other tools, tho.
+  (hide "隠す")
+  (dock "結合")
+  (undock "分離")
 
  ;;; multi-file-search
  (mfs-multi-file-search-menu-item "ファイルから検索...")
@@ -621,18 +656,34 @@ please adhere to these guidelines:
  (select-all-info "文書全体を選択します")
  (select-all-menu-item "すべて選択(&L)")
 
- (find-info "文字列を検索します")
- (find-menu-item "検索...")
+  (find-menu-item "検索") ;; menu item
+  (find-info "検索対象ウィンドウと検索バーの間でキーボード フォーカスを移動する")
 
- (find-again-info "直前の検索文字列と同じ文字列を検索します")
- (find-again-menu-item "再検索")
+ (find-next-info "検索ウィンドウ内の文字列が次に見つかるまでスキップ")
+ (find-next-menu-item "次を検索")
+  
+ (find-previous-info "検索ウィンドウ内の文字列が前に見つかるまでスキップ")
+ (find-previous-menu-item "前を検索")
+  
+  (show-replace-menu-item "置換を表示")
+  (hide-replace-menu-item "置換を非表示")
+  (show/hide-replace-info "置換パネルの表示/非表示を切り替える")
 
- (replace-and-find-again-info "現在のテキストを置換し、直前の検索文字列と同じ文字列を検索します")
- (replace-and-find-again-menu-item "置換と再検索")
+  (replace-menu-item "置換")
+  (replace-info "黒い円の中の検索にヒットした部分を置換する")
+  
+  (replace-all-info "見つかった検索文字列をすべて置換する")
+  (replace-all-menu-item "すべて置換する")
+  
+  (find-case-sensitive-info "大小文字を区別する/区別しないを切り替える")
+  (find-case-sensitive-menu-item "大小文字を区別して検索")
 
   (complete-word "自動補完") ; the complete word menu item in the edit menu
   (no-completions "... 自動補完できません") ; shows up in the completions menu when there are no completions (in italics)
-
+  
+  (overwrite-mode "上書きモード")
+  (enable-overwrite-mode-keybindings "上書きモードのキーバインドを有効にする")
+  
  (preferences-info "環境設定を行います")
  (preferences-menu-item "環境設定...")
 
@@ -643,10 +694,17 @@ please adhere to these guidelines:
  (keybindings-sort-by-name "名前で並べ替え")
  (keybindings-sort-by-key "キーで並べ替え")
  (keybindings-add-user-defined-keybindings "ユーザー定義のキーバインドを追加...")
+ (keybindings-add-user-defined-keybindings/planet "ユーザー定義のキーバインドを PLaneT から追加...")
  (keybindings-menu-remove "~a を削除")
  (keybindings-choose-user-defined-file "キーバインドを記述したファイルを選択してください")
+ (keybindings-planet-malformed-spec "PLaneT の指定が不正です: ~a") ; the string will be what the user typed in
+ (keybindings-type-planet-spec "PLaneT の require 指定を入力してください (`require' は入力しないでください)")
+  
+ ; first ~a will be a string naming the file or planet package where the keybindings come from;
+ ; second ~a will be an error message
+ (keybindings-error-installing-file "キーバインドのインストール時にエラーが発生しました ~a:\n\n~a")
 
- (user-defined-keybinding-error "キーバインド ~a\n\n~a を実行中にエラーが発生しました")
+ (user-defined-keybinding-error "キーバインドを実行中にエラーが発生しました ~a\n\n~a")
  (user-defined-keybinding-malformed-file "ファイル ~a には、言語 framework/keybinding-lang で書かれたモジュールが含まれていません。")
 
  ;; menu items in the "special" menu
@@ -657,12 +715,15 @@ please adhere to these guidelines:
 
  (wrap-text-item "テキストを折り返す")
 
+  ;; windows menu
  (windows-menu-label "ウィンドウ(&W)")
  (minimize "最小化") ;; minimize and zoom are only used under mac os x
  (zoom "拡大")
  (bring-frame-to-front "フレームを前面に移動")       ;;; title of dialog
  (bring-frame-to-front... "フレームを前面に移動...") ;;; corresponding title of menu item
  (most-recent-window "最近使用したウィンドウ")
+  (next-tab "次のタブ")
+  (prev-tab "前のタブ")
 
  (view-menu-label "表示(&V)")
  (show-overview "プログラムの外観を表示")
@@ -670,7 +731,7 @@ please adhere to these guidelines:
  (show-module-browser "モジュール ブラウザを表示")
  (hide-module-browser "モジュール ブラウザを非表示")
 
- (help-menu-label "ヘルプ(&H)")
+  (help-menu-label "ヘルプ(&H)")
  (about-info "このアプリケーションの著作権と詳細情報を表示します")
  (about-menu-item "バージョン情報...")
 
@@ -687,6 +748,12 @@ please adhere to these guidelines:
  (quit "終了")
  (are-you-sure-exit "終了してよろしいですか？")
  (are-you-sure-quit "終了してよろしいですか？")
+  ; these next two are only used in the quit/exit dialog
+  ; on the button whose semantics is "dismiss this dialog".
+  ; they are there to provide more flexibility for translations
+  ; in English, they are just cancel.
+ (dont-exit "キャンセル") 
+ (dont-quit "キャンセル")
 
  ;;; autosaving
  (error-autosaving "\"~a\" を自動保存中にエラーが発生しました。") ;; ~a will be a filename
@@ -765,8 +832,6 @@ please adhere to these guidelines:
  (show-interactions-menu-item-label "対話を表示(&I)")
  (hide-interactions-menu-item-label "対話を非表示(&I)")
  (interactions-menu-item-help-string "対話ウィンドウを表示/非表示します")
- (show-toolbar "ツールバーを表示(&T)")
- (hide-toolbar "ツールバーを非表示(&T)")
  (toolbar "ツールバー")
  (toolbar-on-top "ツールバーを上側に表示する")
  (toolbar-on-left "ツールバーを左側に表示する")
@@ -799,12 +864,12 @@ please adhere to these guidelines:
  (scheme-menu-name "S&cheme")
  (execute-menu-item-label "実行")
  (execute-menu-item-help-string "定義ウィンドウのプログラムを再開始します")
- (break-menu-item-label "停止")
- (break-menu-item-help-string "現在の評価を停止します")
- (kill-menu-item-label "強制終了")
- (kill-menu-item-help-string "現在の評価を強制終了します")
+ (ask-quit-menu-item-label "プログラムを停止しますか？")
+ (ask-quit-menu-item-help-string "現在の式評価のプライマリ スレッドを停止するには break-thread を使用してください")
+ (force-quit-menu-item-label "プログラムを強制終了します")
+ (force-quit-menu-item-help-string "現在の式評価を強制終了するには custodian-shutdown-all を使用してください")
  (limit-memory-menu-item-label "メモリを制限する...")
- (limit-memory-msg-1 "ここで指定したメモリ制限値は、プログラムを次に実行するときに有効になります。")
+ (limit-memory-msg-1 "ここで指定したメモリ制限値は、プログラムを次回に実行するときに有効になります。")
  (limit-memory-msg-2 "制限値は 1MB 以上にしてください。")
  (limit-memory-unlimited "制限しない")
  (limit-memory-limited "制限する")
@@ -827,23 +892,34 @@ please adhere to these guidelines:
  (save-a-mzscheme-launcher "MzScheme ランチャの保存")
  (save-a-mred-stand-alone-executable "MrEd スタンドアロン実行ファイルの保存")
  (save-a-mzscheme-stand-alone-executable "MzScheme スタンドアロン実行ファイルの保存")
+ (save-a-mred-distribution "MrEd 配布物の保存")
+ (save-a-mzscheme-distribution "MzScheme 配布物の保存")
 
  (definitions-not-saved "定義ウィンドウが保存されていません。実行ファイルでは定義ウィンドウの最新の保存が使われます。よろしいですか？")
+ ;; The "-explanatory-label" variants are the labels used for the radio buttons in
+ ;;  the "Create Executable..." dialog for the "(module ...)" language.
  (launcher "ランチャ")
+ (launcher-explanatory-label "Launcher (for this machine only, runs from source)")
  (stand-alone "スタンドアロン")
+ (stand-alone-explanatory-label "Stand-alone (for this machine only, run compiled copy)")
+ (distribution "Distribution")
+ (distribution-explanatory-label "Distribution (to install on other machines)")
  (executable-type "Type")
  (executable-base "Base")
  (filename "ファイル名: ")
  (create "作成")
- ;; "choose-an-executable" changed to "specify-a"
- ;(please-choose-an-executable-filename "Please choose a filename.")
- ;; Replaced by generic ~a-must-end-with-~a
- ;(windows-executables-must-end-with-exe
- ; "ファイル名\n\n  ~a\n\nは正しくありません。Windows では、実行ファイルは .exe という拡張子を持たなければなりません。")
- ;(macosx-executables-must-end-with-app
- ; "ファイル名\n\n  ~a\n\nは正しくありません。MacOS X では、実行ファイルは .app という名前で終わるディレクトリでなければなりません。")
+ (please-specify-a-filename "作成するファイル名を指定してください。")
+ (~a-must-end-with-~a
+  "~a のファイル名\n\n  ~a\n\n は不正です。ファイル名の末尾は \".~a\" でなければなりません。")
+ (macosx-executables-must-end-with-app
+  "ファイル名\n\n  ~a\n\n は不正です。MacOS X では実行ファイルは末尾が .app のディレクトリでなければなりません。")
  (warning-directory-will-be-replaced
-  "警告: ディレクトリ:\n\n  ~a\n\nは削除または上書きされます。よろしいですか？")
+  "警告: ディレクトリ:\n\n  ~a\n\n を置換します。よろしいですか？")
+
+ (distribution-progress-window-title "配布物作成の進行状況")
+ (creating-executable-progress-status "配布物のための実行ファイルを作成しています...")
+ (assembling-distribution-files-progress-status "配布物のファイルをまとめています...")
+ (packing-distribution-progress-status "配布物を展開しています...")
 
  (create-servlet "サーブレットの作成...")
 
@@ -869,7 +945,9 @@ please adhere to these guidelines:
  (whole-part "整数部")
  (numerator "分子")
  (denominator "分母")
- (invalid-number "不正な数値です。正確数で、実数で、整数でない数でないといけません。")
+ (insert-number/bad-whole-part "整数でなければなりません。")
+ (insert-number/bad-numerator "分子は非負の整数でなければなりません。")
+ (insert-number/bad-denominator "分母は正の整数でなければなりません。")
  (insert-fraction-menu-item-label "分数を挿入...")
 
  ;; number snip popup menu
@@ -929,6 +1007,7 @@ please adhere to these guidelines:
  (decimal-notation-for-rationals "有理数を10進数で表示する")
  (enforce-primitives-group-box-label "初期束縛")
  (enforce-primitives-check-box-label "初期束縛の再定義を禁止する")
+ (automatically-compile? "ソースファイルを自動的にコンパイルしますか？")
 
   ; used in the bottom left of the drscheme frame
   ; used the popup menu from the just above; greyed out and only
@@ -955,6 +1034,7 @@ please adhere to these guidelines:
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
  (pretty-big-scheme "Pretty Big")
  (pretty-big-scheme-one-line-summary "syntax と HtDP 言語の関数を追加")
+ (pretty-big-scheme-one-line-summary "HtDP 言語, mzscheme, mred/mred の構文と関数を追加")
  (r5rs-language-name "R5RS")
  (r5rs-one-line-summary "純粋な R5RS")
  (expander "Expander")
@@ -966,6 +1046,7 @@ please adhere to these guidelines:
   (no-language-chosen "言語が選択されていません")
 
  (module-language-one-line-summary "実行するとモジュールのコンテキスト内で REPL を作成する。モジュールで宣言された言語を含む。")
+  (module-language-auto-text "#lang 行を自動的に追加する") ;; shows up in the details section of the module language
 
   ;;; from the `not a language language' used initially in drscheme.
   (must-choose-language "DrScheme は、プログラミング言語を選択しなければプログラムを実行できません。")
@@ -1099,6 +1180,7 @@ please adhere to these guidelines:
  (module-browser-compiling-defns "モジュール ブラウザ: 定義をコンパイル中です")
  (module-browser-show-lib-paths/short "必要なライブラリを含める") ;; check box label in show module browser pane in drscheme window.
  (module-browser-refresh "更新") ;; button label in show module browser pane in drscheme window.
+ (module-browser-refresh "再表示") ;; button label in show module browser pane in drscheme window.
  (module-browser-only-in-plt-and-module-langs
   "モジュール ブラウザは PLT 言語、または、モジュール言語のプログラム (あるいは、それらの言語のモジュールを持つプログラム) でのみ利用可能です。")
  (module-browser-name-length "名前の長さ")
@@ -1203,6 +1285,8 @@ please adhere to these guidelines:
   (ml-cp-remove "削除")
   (ml-cp-raise "上へ")
   (ml-cp-lower "下へ")
+
+  (ml-always-show-#lang-line "モジュール言語で常に #lang 行を表示する")
 
   ;; Profj
   (profj-java "Java")
@@ -1342,4 +1426,29 @@ please adhere to these guidelines:
   (gui-tool-show-gui-toolbar "GUI ツールバーを表示")
   (gui-tool-hide-gui-toolbar "GUI ツールバーを非表示")
   (gui-tool-insert-gui "GUI を挿入")
+
+  ;; contract violation tracking
+  
+  ; tooltip for new planet icon in drscheme window (must have a planet violation logged to see it)
+  (show-planet-contract-violations "PLaneT の規約違反を表示する")
+
+  ; buttons in the dialog that lists the recorded bug reports
+  (bug-track-report "File Ticket")
+  (bug-track-forget "Forget")
+  (bug-track-forget-all "Forget All")
+    
+  ;; planet status messages in the bottom of the drscheme window; the ~a is filled with the name of the package
+  (planet-downloading "PLaneT: ダウンロード中 ~a...")
+  (planet-installing "PLaneT: インストール中 ~a...")
+  (planet-finished "PLaneT: 完了 ~a.")
+  (planet-no-status "PLaneT") ;; this can happen when there is status shown in a different and then the user switches to a tab where planet hasn't been used
+  
+  ;; string normalization. To see this, paste some text with a ligature into DrScheme
+  ;; the first three strings are in the dialog that appears. The last one is in the preferences dialog
+  (normalize "Normalize")
+  (leave-alone "Leave alone")
+  (normalize-string-info "The string you pasted contains ligatures or other non-normalized characters. Normalize them?")
+  (normalize-string-preference "Normalize pasted strings")
+  (ask-about-normalizing-strings "Ask about normalizing strings")
+  
   )

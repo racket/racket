@@ -5,25 +5,33 @@
 ;;          (esp. useful when debugging the users's io)
 
 (require "drsig.ss"
-           string-constants
-           mzlib/pconvert
-           mzlib/pretty
-           mzlib/etc
-           mzlib/struct
-           mzlib/class
-           scheme/file
-           mzlib/list
-           compiler/embed
-           launcher
-           mred
-           framework
-           mrlib/syntax-browser
-           compiler/distribute
-           compiler/bundle-dist
-           "rep.ss")
+         string-constants
+         
+         ;; NOTE: this module instantiates stacktrace itself, so we have
+         ;; to be careful to not mix that instantiation with the one
+         ;; drscheme/private/debug.ss does. errortrace-lib's is for the
+         ;; compilation handling, DrScheme's is for profiling and test coverage
+         ;; (which do not do compilation)
+         (prefix-in el: errortrace/errortrace-lib) 
+         
+         mzlib/pconvert
+         scheme/pretty
+         mzlib/struct
+         scheme/class
+         scheme/file
+         scheme/list
+         compiler/embed
+         launcher
+         mred
+         framework
+         mrlib/syntax-browser
+         compiler/distribute
+         compiler/bundle-dist
+         "rep.ss")
   
   (import [prefix drscheme:debug: drscheme:debug^]
           [prefix drscheme:tools: drscheme:tools^]
+          [prefix drscheme:rep: drscheme:rep^]
           [prefix drscheme:help-desk: drscheme:help-desk^])
   (export drscheme:language^)
   
@@ -203,8 +211,9 @@
   (define (simple-module-based-language-config-panel
            _parent
            #:case-sensitive [*case-sensitive '?]
-           #:annotations-callback [annotations-callback void]
-           #:dynamic-panel-extras [dynamic-panel-extras void])
+           #:dynamic-panel-extras [dynamic-panel-extras void]
+           #:get-debugging-radio-box [get-debugging-radio-box void]
+           #:debugging-radio-box-callback [debugging-radio-box-callback void])
     (letrec ([parent (instantiate vertical-panel% ()
                        (parent _parent)
                        (alignment '(center center)))]
@@ -238,7 +247,7 @@
                                  (string-constant debugging-and-profiling)
                                  (string-constant test-coverage)))
                           (parent dynamic-panel)
-                          (callback (λ (x y) (annotations-callback x y))))]
+                          (callback debugging-radio-box-callback))]
              [output-style (make-object radio-box%
                              (string-constant output-style-label)
                              (list (string-constant constructor-printing-style)
@@ -263,7 +272,7 @@
                                 (string-constant use-pretty-printer-label)
                                 output-panel
                                 void)])
-      
+      (get-debugging-radio-box debugging)
       (dynamic-panel-extras dynamic-panel)
       
       (case-lambda
@@ -412,16 +421,29 @@
   (define (initialize-simple-module-based-language setting run-in-user-thread)
     (run-in-user-thread
      (λ ()
+       
        (let ([annotations (simple-settings-annotations setting)])
-         (when (memq annotations '(debug debug/profile test-coverage))
-           (current-eval 
-            (drscheme:debug:make-debug-eval-handler
-             (current-eval)))
-           (error-display-handler 
-            (drscheme:debug:make-debug-error-display-handler
-             (error-display-handler))))
-         (drscheme:debug:profiling-enabled (eq? annotations 'debug/profile))
-         (drscheme:debug:test-coverage-enabled (eq? annotations 'test-coverage)))
+         (case annotations
+           [(debug)
+            (current-compile (el:make-errortrace-compile-handler))
+            (error-display-handler 
+             (drscheme:debug:make-debug-error-display-handler
+              (error-display-handler)))
+            (use-compiled-file-paths
+             (cons (build-path "compiled" "errortrace")
+                   (use-compiled-file-paths)))]
+           
+           [(debug/profile)
+            (drscheme:debug:profiling-enabled #t)
+            (error-display-handler 
+             (drscheme:debug:make-debug-error-display-handler
+              (error-display-handler)))
+            (current-eval (drscheme:debug:make-debug-eval-handler (current-eval)))]
+           
+           [(debug/profile test-coverage)
+            (drscheme:debug:test-coverage-enabled #t)
+            (current-eval (drscheme:debug:make-debug-eval-handler (current-eval)))]))
+       
        (global-port-print-handler
         (λ (value port)
           (let ([converted-value (simple-module-based-language-convert-value value setting)])
@@ -1122,7 +1144,7 @@
   (define to-snips null)
   (define-struct to-snip (predicate? >value setup-thunk))
   (define add-snip-value
-    (opt-lambda (predicate constructor [setup-thunk void])
+    (lambda (predicate constructor [setup-thunk void])
       (set! to-snips (cons (make-to-snip predicate constructor setup-thunk) to-snips))))
   
   (define (value->snip v)

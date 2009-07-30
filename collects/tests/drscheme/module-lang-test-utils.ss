@@ -124,7 +124,12 @@
                        (send interactions-text get-error-ranges))))])))))
 
 (define (run-test)
-  (set-language-level! '("Module") #t)
+  (set-language-level! '("Module") #f)
+  (test:set-radio-box-item! "Debugging")
+  (let ([f (get-top-level-focus-window)])
+    (test:button-push "OK")
+    (wait-for-new-frame f))
+  
   (for-each single-test (reverse tests))
   (clear-definitions drs)
   (send (send drs get-definitions-text) set-modified #f)

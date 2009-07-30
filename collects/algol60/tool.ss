@@ -8,7 +8,8 @@
            "compile.ss"
 	   compiler/embed
 	   string-constants
-	   (prefix bd: "bd-tool.ss"))
+	   errortrace/errortrace-lib
+           (prefix bd: "bd-tool.ss"))
 
   (provide tool@)
 
@@ -92,8 +93,7 @@
                (lambda ()
 		 (error-display-handler 
 		  (drscheme:debug:make-debug-error-display-handler (error-display-handler)))
-		 (current-eval 
-		  (drscheme:debug:make-debug-eval-handler (current-eval)))
+		 (current-compile (make-errortrace-compile-handler))
                  (with-handlers ([void (lambda (x)
                                          (printf "~a~n"
                                                  (exn-message x)))])

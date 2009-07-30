@@ -12,8 +12,8 @@
 
 (define (try files   #; (list (list path content-str compile?) ...)
              recomps #; (list (list (list touch-path ...) 
-                              (list rebuild-path ...)
-                              (list check-rebuilt-path ...)))
+                                    (list rebuild-path ...)
+                                    (list check-rebuilt-path ...)))
              )
   (delete-directory/files dir)
   (make-directory* dir)
@@ -40,30 +40,32 @@
     (for-each (lambda (recomp)
                 (printf "pausing...\n")
                 (sleep 1) ;; timestamps have a 1-second granularity on most filesystems
-                (for-each (lambda (f)
-                            (printf "touching ~a\n" f)
-                            (with-output-to-file (build-path dir f)
-                              #:exists 'append
-                              (lambda () (display " "))))
-                          (car recomp))
-                (for-each (lambda (f)
-                            (printf "re-making ~a\n" f)
-                            (managed-compile-zo (build-path dir f)))
-                          (cadr recomp))
-                (for-each (lambda (f)
-                            (let ([ts (hash-ref timestamps f)]
-                                  [new-ts
-                                   (file-or-directory-modify-seconds
-                                    (build-path dir "compiled" (path-add-suffix f #".zo"))
-                                    #f
-                                    (lambda () -inf.0))]
-                                  [updated? (lambda (a b) a)])
-                              (test (and (member f (caddr recomp)) #t)
-                                    updated?
-                                    (new-ts . > . ts)
-                                    f)
-                              (hash-set! timestamps f new-ts)))
-                          (map car files)))
+                (let ([to-touch (list-ref recomp 0)]
+                      [to-make (list-ref recomp 1)])
+                  (for-each (lambda (f)
+                              (printf "touching ~a\n" f)
+                              (with-output-to-file (build-path dir f)
+                                #:exists 'append
+                                (lambda () (display " "))))
+                            to-touch)
+                  (for-each (lambda (f)
+                              (printf "re-making ~a\n" f)
+                              (managed-compile-zo (build-path dir f)))
+                            to-make)
+                  (for-each (lambda (f)
+                              (let ([ts (hash-ref timestamps f)]
+                                    [new-ts
+                                     (file-or-directory-modify-seconds
+                                      (build-path dir "compiled" (path-add-suffix f #".zo"))
+                                      #f
+                                      (lambda () -inf.0))]
+                                    [updated? (lambda (a b) a)])
+                                (test (and (member f (caddr recomp)) #t)
+                                      updated?
+                                      (new-ts . > . ts)
+                                      f)
+                                (hash-set! timestamps f new-ts)))
+                            (map car files))))
               recomps)))
 
 (try '(("a.ss" "(module a scheme/base (require \"b.ss\" \"d.ss\" \"g.ss\"))" #t)
@@ -85,6 +87,18 @@
        [() ("a.ss") ("a.ss" "d.ss")]
        [("i.ss") ("a.ss") ("a.ss" "g.ss" "i.ss")]
        [("h.sch") ("a.ss") ("a.ss" "g.ss")]))
+
+;; test manager-skip-file-handler
+(parameterize ([manager-skip-file-handler
+                (λ (x)
+                  (let-values ([(base name dir) (split-path x)])
+                    (cond
+                      [(equal? (path->string name) "b.ss")
+                       (file-or-directory-modify-seconds x)]
+                      [else #f])))])
+  (try '(("a.ss" "(module a scheme/base (require \"b.ss\"))" #f)
+         ("b.ss" "(module b scheme/base)" #f))
+       '([("b.ss") ("a.ss") ("a.ss")])))
 
 ;; ----------------------------------------
 

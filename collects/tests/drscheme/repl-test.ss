@@ -804,8 +804,8 @@ This produces an ACK message
             "{stop-multi.png} {stop-22x22.png} procedure application: expected procedure, given: 3; arguments were: 3"
             "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:3:13: procedure application: expected procedure, given: 3; arguments were: 3"
             "procedure application: expected procedure, given: 3; arguments were: 3"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:246:28: procedure application: expected procedure, given: 3; arguments were: 3"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:246:28: procedure application: expected procedure, given: 3; arguments were: 3")
+            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: procedure application: expected procedure, given: 3; arguments were: 3"
+            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: procedure application: expected procedure, given: 3; arguments were: 3")
            'definitions
            #f
            void
@@ -1081,15 +1081,6 @@ This produces an ACK message
   (define definitions-canvas (send drscheme-frame get-definitions-canvas))
   (define execute-button (send drscheme-frame get-execute-button))
   
-  (define (insert-string string)
-    (let loop ([n 0])
-      (unless (= n (string-length string))
-        (let ([c (string-ref string n)])
-          (if (char=? c #\newline)
-              (test:keystroke #\return)
-              (test:keystroke c)))
-        (loop (+ n 1)))))
-  
   (define wait-for-execute (lambda () (wait-for-button execute-button)))
   (define get-int-pos (lambda () (get-text-pos interactions-text)))
   
@@ -1133,10 +1124,10 @@ This produces an ACK message
   ; of the file "foo.ss".  First, we insert its contents into the REPL
   ; directly, and second, we use the load command.  We compare the
   ; the results of these operations against expected results.
-  (define ((run-single-test execute-text-start escape raw?) in-vector)
+  (define ((run-single-test execute-text-start escape language-cust) in-vector)
     ;(printf "\n>> testing ~s\n" (test-program in-vector))
     (let* ([program (test-program in-vector)]
-           [execute-answer (make-execute-answer in-vector raw?)]
+           [execute-answer (make-execute-answer in-vector language-cust)]
            [source-location (test-source-location in-vector)]
            [setup (test-setup in-vector)]
            [teardown (test-teardown in-vector)]
@@ -1154,16 +1145,18 @@ This produces an ACK message
       ; load contents of test-file into the REPL, recording
       ; the start and end positions of the text
       
+      (wait-for-drscheme-frame)
+      
       (cond
         [(string? program)
-         (insert-string program)]
+         (insert-in-definitions/newlines drscheme-frame program)]
         [(eq? program 'fraction-sum)
          (setup-fraction-sum-interactions)]
         [(list? program)
          (for-each
           (lambda (item)
             (cond
-              [(string? item) (insert-string item)]
+              [(string? item) (insert-in-definitions/newlines drscheme-frame item)]
               [(eq? item 'left)
                (send definitions-text 
                      set-position
@@ -1182,34 +1175,36 @@ This produces an ACK message
               (fetch-output drscheme-frame execute-text-start execute-text-end)])
         
         ; check focus and selection for execute test
-        (unless raw?
-          (cond
-            [(eq? source-location 'definitions)
-             (unless (send definitions-canvas has-focus?)
-               (printf "FAILED execute test for ~s\n  expected definitions to have the focus\n"
-                       program))]
-            [(eq? source-location 'interactions)
-             (unless (send interactions-canvas has-focus?)
-               (printf "FAILED execute test for ~s\n  expected interactions to have the focus\n"
-                       program))]
-            [(send definitions-canvas has-focus?)
-             (let ([start (car source-location)]
-                   [finish (cdr source-location)])
-               (let* ([error-ranges (send interactions-text get-error-ranges)]
-                      [error-range (and error-ranges
-                                        (not (null? error-ranges))
-                                        (car error-ranges))])
-                 (unless (and error-range
-                              (= (+ (srcloc-position error-range) -1) (loc-offset start))
-                              (= (+ (srcloc-position error-range) -1 (srcloc-span error-range)) 
-                                 (loc-offset finish)))
-                   (printf "FAILED execute test for ~s\n  error-range is ~s\n  expected ~s\n"
-                           program
-                           (and error-range
-                                (list (+ (srcloc-position error-range) -1)
-                                      (+ (srcloc-position error-range) -1 (srcloc-span error-range))))
-                           (list (loc-offset start)
-                                 (loc-offset finish))))))]))
+        (case language-cust
+          [(raw) (void)]
+          [else
+           (cond
+             [(eq? source-location 'definitions)
+              (unless (send definitions-canvas has-focus?)
+                (printf "FAILED execute test for ~s\n  expected definitions to have the focus\n"
+                        program))]
+             [(eq? source-location 'interactions)
+              (unless (send interactions-canvas has-focus?)
+                (printf "FAILED execute test for ~s\n  expected interactions to have the focus\n"
+                        program))]
+             [(send definitions-canvas has-focus?)
+              (let ([start (car source-location)]
+                    [finish (cdr source-location)])
+                (let* ([error-ranges (send interactions-text get-error-ranges)]
+                       [error-range (and error-ranges
+                                         (not (null? error-ranges))
+                                         (car error-ranges))])
+                  (unless (and error-range
+                               (= (+ (srcloc-position error-range) -1) (loc-offset start))
+                               (= (+ (srcloc-position error-range) -1 (srcloc-span error-range)) 
+                                  (loc-offset finish)))
+                    (printf "FAILED execute test for ~s\n  error-range is ~s\n  expected ~s\n"
+                            program
+                            (and error-range
+                                 (list (+ (srcloc-position error-range) -1)
+                                       (+ (srcloc-position error-range) -1 (srcloc-span error-range))))
+                            (list (loc-offset start)
+                                  (loc-offset finish))))))])])
         
         ; check text for execute test
         (next-test)
@@ -1222,7 +1217,7 @@ This produces an ACK message
           (failure)
           (printf "FAILED execute test for ~s (~a)\n  expected: ~s\n       got: ~s\n"
                   program
-                  raw?
+                  language-cust
                   execute-answer received-execute))
         
         (test:new-window interactions-canvas)
@@ -1238,9 +1233,7 @@ This produces an ACK message
                              (send interactions-text get-character
                                    (- (send interactions-text last-position) 1))))
           (test:keystroke #\return))
-        
-        ;
-        
+          
         (let ([load-test
                (lambda (short-filename load-answer)
                  ;; in order to erase the state in the namespace already, we clear (but don't save!)
@@ -1252,8 +1245,7 @@ This produces an ACK message
                  (wait-for-execute)
                  
                  ;; stuff the load command into the REPL 
-                 (for-each test:keystroke
-                           (string->list (format "(load ~s)" short-filename)))
+                 (insert-in-interactions drscheme-frame (format "(load ~s)" short-filename))
                  
                  ;; record current text position, then stuff a CR into the REPL
                  (let ([load-text-start (+ 1 (send interactions-text last-position))])
@@ -1280,11 +1272,11 @@ This produces an ACK message
                        (printf "FAILED load test ~a for ~s\n  expected: ~s\n       got: ~s\n"
                                short-filename
                                program load-answer received-load)))))])
-          (load-test tmp-load-short-filename (make-load-answer in-vector raw? #f))
+          (load-test tmp-load-short-filename (make-load-answer in-vector language-cust #f))
           (when (file-exists? tmp-load3-filename)
             (delete-file tmp-load3-filename))
           (copy-file tmp-load-filename tmp-load3-filename)
-          (load-test tmp-load3-short-filename (make-load-answer in-vector raw? tmp-load3-short-filename)))
+          (load-test tmp-load3-short-filename (make-load-answer in-vector language-cust tmp-load3-short-filename)))
         
         (teardown)
         
@@ -1303,17 +1295,27 @@ This produces an ACK message
         (printf "tests finished: all ~a tests passed\n" tests)
         (printf "tests finished: ~a failed out of ~a total\n" failures tests)))
   
-  (define (run-test-in-language-level raw?)
+  (define (run-test-in-language-level language-cust)
     (let ([level (list #rx"Pretty Big")])
-      (printf "running tests ~a debugging\n" (if raw? "without" "with"))
-      (if raw?
-          (begin
-            (set-language-level! level #f)
-            (test:set-radio-box-item! "No debugging or profiling")
-            (let ([f (get-top-level-focus-window)])
-              (test:button-push "OK")
-              (wait-for-new-frame f)))
-          (set-language-level! level))
+      (printf "running tests: ~a\n" language-cust)
+      (case language-cust
+        [(raw)
+         (begin
+           (set-language-level! level #f)
+           (test:set-radio-box-item! "No debugging or profiling")
+           (let ([f (get-top-level-focus-window)])
+             (test:button-push "OK")
+             (wait-for-new-frame f)))]
+        [(debug)
+         (set-language-level! level)]
+        [(debug/profile)
+         (begin
+           (set-language-level! level #f)
+           (test:set-radio-box-item! "Debugging and profiling")
+           (let ([f (get-top-level-focus-window)])
+             (test:button-push "OK")
+             (wait-for-new-frame f)))])
+         
       
       (random-seed-test)
       
@@ -1321,7 +1323,7 @@ This produces an ACK message
       (clear-definitions drscheme-frame)
       (do-execute drscheme-frame)
       (let/ec escape 
-        (for-each (run-single-test (get-int-pos) escape raw?) test-data))))
+        (for-each (run-single-test (get-int-pos) escape language-cust) test-data))))
   
   (define kill-menu-item "Force the Program to Quit")
   
@@ -1390,19 +1392,18 @@ This produces an ACK message
           (fprintf (current-error-port) "callcc-test: expected something matching ~s, got ~s\n" expected output)))))
   
   (define (random-seed-test)
-    (define expression
-      (string->list (format "~a" '(pseudo-random-generator->vector (current-pseudo-random-generator)))))
+    (define expression (format "~s" '(pseudo-random-generator->vector (current-pseudo-random-generator))))
     (next-test)
     (clear-definitions drscheme-frame)
     (do-execute drscheme-frame)
     (wait-for-execute)
     
-    (for-each test:keystroke expression)
+    (insert-in-interactions drscheme-frame expression)
     (let ([start1 (+ 1 (send interactions-text last-position))])
       (test:keystroke #\return)
       (wait-for-execute)
       (let ([output1 (fetch-output drscheme-frame start1 (- (get-int-pos) 1))])
-        (for-each test:keystroke expression)
+        (insert-in-interactions drscheme-frame expression)
         (let ([start2 (+ 1 (send interactions-text last-position))])
           (test:keystroke #\return)
           (wait-for-execute)
@@ -1453,27 +1454,45 @@ This produces an ACK message
     (delete-file tmp-load-filename))
   (save-drscheme-window-as tmp-load-filename)
   
-  (run-test-in-language-level #f)
-  (run-test-in-language-level #t)
+  ;; the debug and debug/profile tests should not differ in their output
+  ;; they are both run here because debug uses the automatic-compilation 
+  ;; stuff and debug/profile does not (so they use different instantiations
+  ;; of the stacktrace module.
+  (run-test-in-language-level 'raw)
+  (run-test-in-language-level 'debug)
+  (run-test-in-language-level 'debug/profile)
+  
   (kill-tests)
   (callcc-test)
   (top-interaction-test)
   (final-report)
   )
 
+(define (insert-in-definitions/newlines drs str)
+  (let loop ([strs (regexp-split #rx"\n" str)])
+    (insert-in-definitions drs (car strs))
+    (unless (null? (cdr strs))
+      (test:keystroke #\return)
+      (loop (cdr strs)))))
 
-(define (make-execute-answer test raw?)
-  ((if raw? answer-raw-execute answer-debug-execute) 
+(define (make-execute-answer test language-cust)
+  ((case language-cust
+     [(debug debug/profile)
+      answer-debug-execute]
+     [(raw)
+      answer-raw-execute]) 
    (test-answer test)))
 
-(define (make-load-answer test raw? src-file)
-  ((if raw?
-       (if src-file
-           answer-raw-load
-           answer-raw-load-fn)
-       (if src-file
-           answer-debug-load
-           answer-debug-load-fn))
+(define (make-load-answer test language-cust src-file)
+  ((case language-cust
+     [(debug debug/profile)
+      (if src-file
+          answer-debug-load
+          answer-debug-load-fn)]
+     [(raw)
+      (if src-file
+          answer-raw-load
+          answer-raw-load-fn)])
    (test-answer test)))
 
 (define (string/rx-append a b)

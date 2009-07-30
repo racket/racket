@@ -117,6 +117,7 @@ TODO
       
       run-in-evaluation-thread
       after-many-evals
+      on-execute
       
       shutdown
       
@@ -133,6 +134,8 @@ TODO
       initialize-console
       
       reset-pretty-print-width
+      
+      
       
       get-prompt
       insert-prompt
@@ -662,7 +665,7 @@ TODO
       ;; highlight-errors :    (listof srcloc)
       ;;                       (union #f (listof srcloc))
       ;;                    -> (void)
-      (define/public (highlight-errors raw-locs raw-error-arrows)
+      (define/public (highlight-errors raw-locs [raw-error-arrows #f])
         (let* ([cleanup-locs
                 (λ (locs)
                   (let ([ht (make-hasheq)])
@@ -859,7 +862,7 @@ TODO
       
       (field (user-language-settings #f)
              (user-custodian-parent #f)
-             (memory-killed-thread #f)
+             (memory-killed-cust-box #f)
              (user-custodian #f)
              (custodian-limit (and (custodian-memory-accounting-available?)
                                    (preferences:get 'drscheme:child-only-memory-limit)))
@@ -912,7 +915,7 @@ TODO
             (no-user-evaluation-message
              (get-frame)
              user-exit-code
-             (not (thread-running? memory-killed-thread))))
+             (not (custodian-box-value memory-killed-cust-box))))
           (set! show-no-user-evaluation-message? #t)))
       
       (field (need-interaction-cleanup? #f))
@@ -1140,6 +1143,10 @@ TODO
                 (cleanup-interaction)
                 (insert-prompt)))))))
       
+      ;; =User=, =Handler=
+      (define/pubment (on-execute rout) (inner (void) on-execute rout))
+      
+      ;; =Kernel=, =Handler=
       (define/pubment (after-many-evals) (inner (void) after-many-evals))
       
       (define/private shutdown-user-custodian ; =Kernel=, =Handler=
@@ -1199,9 +1206,7 @@ TODO
         (set! user-custodian-parent (make-custodian))
         (set! user-custodian (parameterize ([current-custodian user-custodian-parent])
                                (make-custodian)))
-        (set! memory-killed-thread 
-              (parameterize ([current-custodian user-custodian-parent])
-                (thread (λ () (semaphore-wait (make-semaphore 0))))))
+        (set! memory-killed-cust-box (make-custodian-box user-custodian-parent #t))
         (when custodian-limit
           (custodian-limit-memory user-custodian-parent 
                                   custodian-limit
@@ -1294,7 +1299,11 @@ TODO
             (send (drscheme:language-configuration:language-settings-language user-language-settings)
                   on-execute
                   (drscheme:language-configuration:language-settings-settings user-language-settings)
-                  (let ([run-on-user-thread (lambda (t) (queue-user/wait t))])
+                  (let ([run-on-user-thread (lambda (t) 
+                                              (queue-user/wait 
+                                               (λ ()
+                                                 (with-handlers ((exn? (λ (x) (printf "~s\n" (exn-message x)))))
+                                                   (t)))))])
                     run-on-user-thread))
             
             ;; setup the special repl values
@@ -1311,6 +1320,11 @@ TODO
                  (current-error-port)
                  "copied exn raised when setting up snip values (thunk passed as third argume to drscheme:language:add-snip-value)\n")
                 (raise exn)))
+            
+            ;; allow extensions to this class to do some setup work
+            (on-execute 
+             (let ([run-on-user-thread (lambda (t) (queue-user/wait t))])
+               run-on-user-thread))
             
             (parameterize ([current-eventspace user-eventspace])
               (queue-callback

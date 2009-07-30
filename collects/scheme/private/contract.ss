@@ -1356,7 +1356,7 @@ improve method arity mismatch contract violation error messages?
          false/c
          printable/c
          symbols one-of/c
-         listof cons/c list/c
+         listof non-empty-listof cons/c list/c
          vectorof vector-immutableof vector/c vector-immutable/c 
          box-immutable/c box/c
          promise/c
@@ -2086,6 +2086,10 @@ improve method arity mismatch contract violation error messages?
 
 (define listof
   (*-immutableof list? map andmap list listof))
+
+(define (non-empty-list? x) (and (pair? x) (list? (cdr x))))
+(define non-empty-listof
+  (*-immutableof non-empty-list? map andmap non-empty-list non-empty-listof))
 
 (define (immutable-vector? val) (and (immutable? val) (vector? val)))
 

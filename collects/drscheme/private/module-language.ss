@@ -4,6 +4,7 @@
 (require scheme/unit
          scheme/class
          scheme/list
+         scheme/path
          mred
          compiler/embed
          compiler/cm
@@ -45,9 +46,10 @@
   ;; command-line-args : (vectorof string)
   ;; auto-text : string
   (define-struct (module-language-settings drscheme:language:simple-settings)
-    (collection-paths command-line-args auto-text compilation-on?))
+    (collection-paths command-line-args auto-text compilation-on? full-trace?))
   
   (define default-compilation-on? #t)
+  (define default-full-trace? #t)
   (define default-auto-text "#lang scheme\n")  
   
   ;; module-mixin : (implements drscheme:language:language<%>)
@@ -68,19 +70,27 @@
       (define/override (config-panel parent)
         (module-language-config-panel parent))
       
+      ;; NOTE: this method is also used in the super class's implementation
+      ;; of default-settings?, which is why the super call is appropriate
+      ;; there, even tho these settings are not the same as the defaults
+      ;; in other languages (here 'none is the default annotations,
+      ;; there you get errortrace annotations).
       (define/override (default-settings)
         (let ([super-defaults (super default-settings)])
-          (apply make-module-language-settings
-                 (append 
-                  (vector->list (drscheme:language:simple-settings->vector super-defaults))
-                  (list '(default)
-                        #()
-                        default-auto-text
-                        default-compilation-on?)))))
+          (make-module-language-settings
+           #t 'write 'mixed-fraction-e #f #t 'none ;; simple settings defaults 
+           
+           '(default)
+           #()
+           default-auto-text
+           default-compilation-on?
+           default-full-trace?)))
       
       ;; default-settings? : -> boolean
       (define/override (default-settings? settings)
+        
         (and (super default-settings? settings)
+             
              (equal? (module-language-settings-collection-paths settings)
                      '(default))
              (equal? (module-language-settings-command-line-args settings)
@@ -90,7 +100,9 @@
              ;; (equal? (module-language-settings-auto-text settings)
              ;;         default-auto-text)
              (equal? (module-language-settings-compilation-on? settings)
-                     default-compilation-on?)))
+                     default-compilation-on?)
+             (equal? (module-language-settings-full-trace? settings)
+                     default-full-trace?)))
       
       (define/override (marshall-settings settings)
         (let ([super-marshalled (super marshall-settings settings)])
@@ -112,7 +124,10 @@
                                          (list-ref marshalled 3))]
                           [compilation-on? (if (<= marshalled-len 4)
                                                default-compilation-on?
-                                               (list-ref marshalled 4))])
+                                               (list-ref marshalled 4))]
+                          [full-trace? (if (<= marshalled-len 5)
+                                           default-full-trace?
+                                           (list-ref marshalled 5))])
                       (and (list? collection-paths)
                            (andmap (λ (x) (or (string? x) (symbol? x)))
                                    collection-paths)
@@ -128,7 +143,8 @@
                                           (list collection-paths
                                                 command-line-args
                                                 auto-text
-                                                compilation-on?)))))))))))
+                                                compilation-on?
+                                                full-trace?)))))))))))
       
       (define/override (on-execute settings run-in-user-thread)
         (super on-execute settings run-in-user-thread)
@@ -142,14 +158,62 @@
                                        settings))])
              (when (null? cpaths)
                (fprintf (current-error-port)
-                        "Warning: your collection paths are empty!\n"))
+                        "WARNING: your collection paths are empty!\n"))
              (current-library-collection-paths cpaths))
            
-           (when (and (module-language-settings-compilation-on? settings)
-                      (eq? (drscheme:language:simple-settings-annotations settings) 'none))
-             (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler)))
-           ;[manager-trace-handler (λ (x) (display x) (newline))]
-           )))
+           (compile-context-preservation-enabled (module-language-settings-full-trace? settings))
+           
+           (when (module-language-settings-compilation-on? settings)
+             (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))
+             (manager-skip-file-handler
+              (λ (p)
+                ;; iterate over all of the collection paths; if we find that this path is
+                ;; inside the collection hierarchy, we skip it.
+                (let ([p-eles (explode-path (simplify-path p))])
+                  (let c-loop ([collects-paths (current-library-collection-paths)])
+                    (cond
+                      [(null? collects-paths) #f]
+                      [else
+                       (let i-loop ([collects-eles (explode-path (car collects-paths))]
+                                    [p-eles p-eles])
+                         (cond
+                           [(null? collects-eles)
+                            ;; we're inside the collection hierarchy, so we just 
+                            ;; use the date of the original file (or the zo, whichever
+                            ;; is newer).
+                            (let-values ([(base name dir) (split-path p)])
+                              (let* ([ext (filename-extension p)]
+                                     [pbytes (path->bytes name)]
+                                     [zo-file-name 
+                                      (and ext
+                                           (bytes->path
+                                            (bytes-append
+                                             (subbytes 
+                                              pbytes
+                                              0
+                                              (- (bytes-length pbytes)
+                                                 (bytes-length ext)))
+                                             #"zo")))]
+                                     [zo-path (and zo-file-name
+                                                   (build-path 
+                                                    base
+                                                    (car (use-compiled-file-paths))
+                                                    zo-file-name))])
+                                (cond
+                                  [(and zo-file-name (file-exists? zo-path))
+                                   (max (file-or-directory-modify-seconds p)
+                                        (file-or-directory-modify-seconds zo-file-name))]
+                                  [else
+                                   (file-or-directory-modify-seconds p)])))]
+			   [(null? p-eles) 
+			    ;; this case shouldn't happen... I think.
+			    (c-loop (cdr collects-paths))]
+                           [else
+                            (cond
+                              [(equal? (car p-eles) (car collects-eles))
+                               (i-loop (cdr collects-eles) (cdr p-eles))]
+                              [else 
+                               (c-loop (cdr collects-paths))])]))])))))))))
       
       (define/override (get-one-line-summary)
         (string-constant module-language-one-line-summary))
@@ -320,6 +384,7 @@
            (semaphore-post s))))
       (semaphore-wait s))
     (custodian-shutdown-all (send rep get-user-custodian)))
+  
   (define (raise-hopeless-syntax-error . error-args)
     (with-handlers ([exn? raise-hopeless-exception])
       (apply raise-syntax-error '|Module Language|
@@ -341,20 +406,41 @@
            [alignment '(center center)]
            [stretchable-height #f]
            [stretchable-width #f]))
-    (define compilation-on-radio-box #f)
-    (define annotations-radio-box #f)
+    (define compilation-on-check-box #f)
+    (define compilation-on? #t)
+    (define save-stacktrace-on-check-box #f)
+    (define debugging-radio-box #f)
     (define simple-case-lambda
       (drscheme:language:simple-module-based-language-config-panel
        new-parent
        #:case-sensitive #t
-       #:annotations-callback 
-       (λ (cb evt) (update-compilation-on-radio-box-visibility))
+       
+       #:get-debugging-radio-box (λ (rb) (set! debugging-radio-box rb))
+       
+       #:debugging-radio-box-callback
+       (λ (debugging-radio-box evt)
+         (update-compilation-checkbox debugging-radio-box))
+
        #:dynamic-panel-extras
        (λ (dynamic-panel)
-         (set! annotations-radio-box (car (send dynamic-panel get-children)))
-         (set! compilation-on-radio-box (new check-box%
-                                             [label (string-constant automatically-compile?)]
-                                             [parent dynamic-panel])))))
+         (set! compilation-on-check-box
+               (new check-box%
+                    [label (string-constant automatically-compile)]
+                    [parent dynamic-panel]
+                    [callback
+                     (λ (_1 _2) (set! compilation-on? (send compilation-on-check-box get-value)))]))
+         (set! save-stacktrace-on-check-box (new check-box%
+                                                 [label (string-constant preserve-stacktrace-information)]
+                                                 [parent dynamic-panel])))))
+    (define (update-compilation-checkbox debugging-radio-box)
+      (case (send debugging-radio-box get-selection)
+        [(2 3)
+         (send compilation-on-check-box enable #f)
+         (send compilation-on-check-box set-value #f)]
+        [(0 1)
+         (send compilation-on-check-box enable #t)
+         (send compilation-on-check-box set-value compilation-on?)]))
+    
     (define cp-panel (new group-box-panel%
                           [parent new-parent]
                           [label (string-constant ml-cp-collection-paths)]))
@@ -409,8 +495,7 @@
         (send remove-button enable lb-selection)
         (send raise-button enable (and lb-selection (not (= lb-selection 0))))
         (send lower-button enable
-              (and lb-selection (not (= lb-selection (- lb-tot 1)))))
-        (update-compilation-on-radio-box-visibility)))
+              (and lb-selection (not (= lb-selection (- lb-tot 1)))))))
     
     (define (add-callback)
       (let ([dir (get-directory (string-constant ml-cp-choose-a-collection-path)
@@ -499,12 +584,10 @@
     (define (install-auto-text str)
       (send auto-text-text-box set-value (regexp-replace #rx"\n$" str "")))
     
-    (define (update-compilation-on-radio-box-visibility)
-      (send compilation-on-radio-box enable (equal? 0 (send annotations-radio-box get-selection))))
-    
     (install-collection-paths '(default))
     (update-buttons)
     (install-auto-text default-auto-text)
+    (update-compilation-checkbox debugging-radio-box)
     
     (case-lambda
       [()
@@ -515,13 +598,19 @@
                  (list (get-collection-paths)
                        (get-command-line-args)
                        (get-auto-text)
-                       (send compilation-on-radio-box get-value)))))]
+                       (case (send debugging-radio-box get-selection)
+                         [(2 3) #f]
+                         [(0 1) compilation-on?])
+                       (send save-stacktrace-on-check-box get-value)))))]
       [(settings)
        (simple-case-lambda settings)
        (install-collection-paths (module-language-settings-collection-paths settings))
        (install-command-line-args (module-language-settings-command-line-args settings))
        (install-auto-text (module-language-settings-auto-text settings))
-       (send compilation-on-radio-box set-value (module-language-settings-compilation-on? settings))
+       (set! compilation-on? (module-language-settings-compilation-on? settings))
+       (send compilation-on-check-box set-value (module-language-settings-compilation-on? settings))
+       (update-compilation-checkbox debugging-radio-box)
+       (send save-stacktrace-on-check-box set-value (module-language-settings-full-trace? settings))
        (update-buttons)]))
   
   ;; transform-module : (union #f path) syntax

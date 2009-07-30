@@ -217,7 +217,14 @@
     (autocomplete-append-after
      autocomplete-limit
      get-completions/manuals
-     lookup-port-name))
+     lookup-port-name
+     
+     range?
+     range-start
+     range-end
+     range-caret-space? 
+     range-style 
+     range-color))
   
   (define-signature canvas-class^
     (basic<%>
