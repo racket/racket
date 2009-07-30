@@ -488,6 +488,17 @@
                  (cl-> [((-HT a b) a) b]
                        [((-HT a b) a (-> c)) (Un b c)]
                        [((-HT a b) a c) (Un b c)]))]
+[hash-ref! (-poly (a b c)
+                  (cl-> [((-HT a b) a (-> b)) b]
+                        [((-HT a b) a b) b]))]
+[hash-iterate-first (-poly (a b)
+                           ((-HT a b) . -> . (Un (-val #f) -Integer)))]
+[hash-iterate-next (-poly (a b)
+                           ((-HT a b) -Integer . -> . (Un (-val #f) -Integer)))]
+[hash-iterate-key (-poly (a b)
+                           ((-HT a b) -Integer . -> . a))]
+[hash-iterate-value (-poly (a b)
+                           ((-HT a b) -Integer . -> . b))]
 #;[hash-table-index (-poly (a b) ((-HT a b) a b . -> . -Void))]
 
 [bytes (->* (list) N -Bytes)]
