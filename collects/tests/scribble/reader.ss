@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require tests/eli-tester (prefix-in scr: scribble/reader))
+(require tests/eli-tester (prefix-in scr: scribble/reader) scheme/list)
 
 (provide reader-tests)
 
@@ -609,6 +609,33 @@ bar}
 -@->
 (foo "bar" "\n" baz " bbb" "\n" x1 x2 " x3 x4" "\n" " waaaah")
 ---
+;; -------------------- errors
+---
+(  -@error-> "inp:1:0: read: expected a `)' to close `('" ; check -@error->
+---
+@foo{ -@error-> #rx":1:0: missing closing `}'$"
+---
+\foo{ -\error-> #rx":1:0: missing closing `}'$"
+---
+@foo{@bar{ -@error-> #rx":1:5: missing closing `}'$"
+---
+\foo{\bar{ -\error-> #rx":1:5: missing closing `}'$"
+---
+@foo{@bar{} -@error-> #rx":1:0: missing closing `}'$"
+---
+@foo{@bar|{} -@error-> #rx":1:5: missing closing `}\\|'$"
+---
+@foo{@bar|-{} -@error-> #rx":1:5: missing closing `}-\\|'$"
+---
+@foo{@bar|-{} -@error-> #rx":1:5: missing closing `}-\\|'$"
+---
+\foo{\bar|-{} -\error-> #rx":1:5: missing closing `}-\\|'$"
+---
+@foo{@" -@error-> #rx":1:6: read: expected a closing '\"'$"
+;; " <-- (balance this file)
+---
+\foo{\" -\error-> #rx":1:6: read: expected a closing '\"'$"
+---
 ;; -------------------- inside-reader
 ---
 foo bar baz  -@i->  "foo bar baz"
@@ -658,7 +685,7 @@ foo
 ---
 ;; -------------------- some code tests
 ---
-@string-append{1 @(number->string (+ 2 3)) 4}  -@e-> "1 5 4"
+@string-append{1 @(number->string (+ 2 3)) 4}  -@eval-> "1 5 4"
 ---
 (let* ([formatter (lambda (fmt)
                     (lambda args (format fmt (apply string-append args))))]
@@ -667,7 +694,7 @@ foo
        [ul (formatter "_~a_")]
        [text string-append])
   @text{@it{Note}: @bf{This is @ul{not} a pipe}.})
--@e->
+-@eval->
 "/Note/: *This is _not_ a pipe*."
 ---
 (let ([nl (car @'{
@@ -679,7 +706,7 @@ foo
                blah})
   (newline o)
   (get-output-string o))
--@e->
+-@eval->
 "foo\n... bar\nbaz\n... blah\n"
 ---
 (require (for-syntax scheme/base))
@@ -698,7 +725,7 @@ foo
                                (cons #`(#,(car xs) ,#,(cadr xs)) as)
                                (cddr xs))))])))])
   @foo[x 1 y (* 2 3)]{blah})
--@e->
+-@eval->
 (foo ((x 1) (y 6)) "blah")
 ---
 (let-syntax ([verb
@@ -724,7 +751,7 @@ foo
     foo
       bar
   })
--@e->
+-@eval->
 "foo\n      bar"
 ---
 ;; -------------------- empty input tests
@@ -750,12 +777,18 @@ foo
 END-OF-TESTS
 )
 
+;; get a tester function
+
 (define-namespace-anchor anchor)
 (define ns (namespace-anchor->namespace anchor))
 (define (string->tester name) (eval (string->symbol name) ns))
 
+;; reader utilities
+
+(define the-name (string->path "inp"))
+
 (define (read-all str reader [whole? #f])
-  (define i (open-input-string str))
+  (define i (open-input-string str the-name))
   (if whole?
     (reader i)
     (let loop ()
@@ -763,29 +796,58 @@ END-OF-TESTS
         (if (eof-object? x) '() (cons x (loop)))))))
 
 (define read/BS (scr:make-at-reader #:command-char #\\ #:syntax? #f))
+(define read-syntax/BS (scr:make-at-reader #:command-char #\\ #:syntax? #t))
 
 (define read-inside/BS
   (scr:make-at-reader #:inside? #t #:command-char #\\ #:syntax? #f))
 
-(define (x . -@-> . y)
-  (values (read-all x scr:read) (read-all y read)))
+;; tester makers
 
-(define (x . -@i-> . y)
-  (values (read-all x scr:read-inside #t) (read-all y read)))
+(define (x . (mk-reader-test reader) . y)
+  (values (read-all x reader) (read-all y read)))
 
-(define (x . -\\-> . y)
-  (values (read-all x read/BS) (read-all y read)))
+(define (x . (mk-inside-reader-test inside-reader) . y)
+  (values (read-all x inside-reader #t) (read-all y read)))
 
-(define (x . -\\i-> . y)
-  (values (read-all x read-inside/BS #t) (read-all y read)))
-
-(define (x . -@e-> . y)
+(define (x . (mk-eval-test syntax-reader) . y)
   (define r (void))
-  (for ([x (read-all x (lambda (i) (scr:read-syntax 'test i)))])
+  (for ([x (read-all x (lambda (i) (syntax-reader 'test i)))])
     (set! r (call-with-values (lambda () (eval x ns)) list)))
   (values r (read-all y read)))
 
+(define (x . (mk-error-test reader) . y)
+  (define (get-exn-data e)
+    (cons (exn-message e)
+          null #;
+          (append-map (lambda (s) (list (srcloc-line s) (srcloc-column s)))
+                      (exn:fail:read-srclocs e))
+          ))
+  (values (with-handlers ([exn:fail:read? get-exn-data])
+            (read-all x reader) "no error!")
+          (read-all y read)))
+
+;; testers
+
+(define -@->       (mk-reader-test scr:read))
+(define -\\->      (mk-reader-test read/BS))
+(define -@i->      (mk-inside-reader-test scr:read-inside))
+(define -\\i->     (mk-inside-reader-test read-inside/BS))
+(define -@eval->   (mk-eval-test scr:read-syntax))
+(define -\\eval->  (mk-eval-test read-syntax/BS))
+(define -@error->  (mk-error-test scr:read))
+(define -\\error-> (mk-error-test read/BS))
+
+;; running the tests
+
 (define (reader-tests)
+  (define (matching? x y)
+    (cond [(equal? x y) #t]
+          [(pair? x) (and (pair? y)
+                          (matching? (car x) (car y))
+                          (matching? (cdr x) (cdr y)))]
+          [(and (regexp? x) (string? y)) (matching? y x)]
+          [(and (string? x) (regexp? y)) (regexp-match? y x)]
+          [else #f]))
   (test do
     (let* ([ts the-tests]
            ;; remove all comment lines
@@ -806,4 +868,4 @@ END-OF-TESTS
                       (format "bad result in\n    ~a\n  results:\n    ~s != ~s"
                               (regexp-replace* #rx"\n" t "\n    ")
                               x y)
-                      (equal? x y))))))))))
+                      (matching? x y))))))))))
