@@ -201,6 +201,8 @@
         (verify-times path zo-name)
         (write-deps code mode path external-deps)))))
 
+(define depth (make-parameter 0))
+
 (define (compile-zo mode path read-src-syntax)
   ((manager-compile-notify-handler) path)
   (trace-printf "compiling: ~a" path)
@@ -210,14 +212,20 @@
       (if (and zo-exists? (trust-existing-zos))
           (touch zo-name)
           (begin (when zo-exists? (delete-file zo-name))
-                 (with-handlers
-                     ([exn:get-module-code?
-                       (lambda (ex)
-                         (compilation-failure mode path zo-name
-                                              (exn:get-module-code-path ex)
-                                              (exn-message ex))
-                         (raise ex))])
-                   (compile-zo* mode path read-src-syntax zo-name))))))
+                 (log-info (format "cm: ~acompiling ~a" 
+                                   (build-string 
+                                    (depth)
+                                    (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
+                                   path))
+                 (parameterize ([depth (+ (depth) 1)])
+                   (with-handlers
+                       ([exn:get-module-code?
+                         (lambda (ex)
+                           (compilation-failure mode path zo-name
+                                                (exn:get-module-code-path ex)
+                                                (exn-message ex))
+                           (raise ex))])
+                     (compile-zo* mode path read-src-syntax zo-name)))))))
   (trace-printf "end compile: ~a" path))
 
 (define (get-compiled-time mode path)
