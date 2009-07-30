@@ -488,7 +488,7 @@
                  (cl-> [((-HT a b) a) b]
                        [((-HT a b) a (-> c)) (Un b c)]
                        [((-HT a b) a c) (Un b c)]))]
-[hash-ref! (-poly (a b c)
+[hash-ref! (-poly (a b)
                   (cl-> [((-HT a b) a (-> b)) b]
                         [((-HT a b) a b) b]))]
 [hash-iterate-first (-poly (a b)
