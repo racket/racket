@@ -299,7 +299,7 @@
   (class canvas%
     (inherit get-client-size get-dc)
     (define/override (on-char evt) (char-observer evt))
-    (define/override (on-paint) (send (get-dc) draw-bitmap splash-cache-bitmap 0 0))
+    (define/override (on-paint) (when splash-cache-bitmap (send (get-dc) draw-bitmap splash-cache-bitmap 0 0)))
     (define/override (on-event evt) (splash-event-callback evt))
     (super-new)))
 
