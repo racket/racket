@@ -116,7 +116,7 @@
         (and (list? marshalled)
              (let ([marshalled-len (length marshalled)])
                ;; older formats had no auto-text or compilation disabling
-               (and (<= 3 (length marshalled))
+               (and (<= 3 marshalled-len)
                     (let ([collection-paths (list-ref marshalled 1)]
                           [command-line-args (list-ref marshalled 2)]
                           [auto-text (if (<= marshalled-len 3)
@@ -143,7 +143,14 @@
                                           (list collection-paths
                                                 command-line-args
                                                 auto-text
-                                                compilation-on?
+                                                
+                                                ;; current versions of drscheme do not allow this combination
+                                                ;; in the first place (compilation is only allowed in 'none
+                                                ;; and 'debug mode), but older versions might.
+                                                (and (memq (drscheme:language:simple-settings-annotations super) 
+                                                           '(none debug))
+                                                     compilation-on?)
+                                                
                                                 full-trace?)))))))))))
       
       (define/override (on-execute settings run-in-user-thread)
