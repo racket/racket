@@ -300,7 +300,7 @@ all of the names in the tools library, for use defining keybindings
    drscheme:debug:error-display-handler/stacktrace
    (->* (string? any/c)
         ((or/c false/c (listof srcloc?)))
-        (or/c #f (listof srcloc?)))
+        any/c)
    ((msg exn) ((stack #f)))
    @{Displays the error message represented by the string, adding
      embellishments like those that appears in the DrScheme REPL,
