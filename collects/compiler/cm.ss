@@ -311,6 +311,8 @@
     (define (compilation-manager-load-handler path mod-name)
       (cond [(not mod-name)
              (trace-printf "skipping:  ~a mod-name ~s" path mod-name)]
+            [(not (file-exists? path))
+             (trace-printf "skipping:  ~a file does not exist" path)]
             [(or (null? (use-compiled-file-paths))
                  (not (equal? (car modes)
                               (car (use-compiled-file-paths)))))
