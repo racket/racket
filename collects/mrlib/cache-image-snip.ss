@@ -295,6 +295,7 @@
                                    (inexact->exact (floor w))
                                    (inexact->exact (floor h)))]
                             [bdc (make-object bitmap-dc% bmp)])
+                       (send bdc clear)
                        (send snp draw bdc 0 0 0 0 w h 0 0 'no-caret)
                        (send bdc set-bitmap #f)
                        (bitmaps->cache-image-snip bmp 
