@@ -909,7 +909,10 @@
  (enforce-primitives-group-box-label "Initiale Bindungen")
  (enforce-primitives-check-box-label "Änderungen von initialen Bindungen verbieten")
 
- (automatically-compile? "Quelldateien automatisch compilieren?")
+ (automatically-compile "compiled/-Verzeichnisse bestücken (für schnelleres laden)")
+ (preserve-stacktrace-information "Stack-Trace aufbewahren (einige JIT-Optimierungen werden abgeschaltet)")
+ (expression-level-stacktrace "Stack-Trace mit Ausdrücken")
+ (function-level-stacktrace "Stack-Trace mit Funktionen")
 
  ;; used in the bottom left of the drscheme frame as the label
  ;; above the programming language's name
