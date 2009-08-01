@@ -1135,7 +1135,7 @@ WARNING: printf is rebound in the body of the unit to always
              =>
              (λ (next)
                (cond
-                 [(< next (get-start-position))
+                 [(<= next (get-start-position))
                   (loop (+ next 1)
                         (+ count 1))]
                  [else
