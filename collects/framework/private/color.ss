@@ -559,19 +559,21 @@ added get-regions
              (else
               (begin-edit-sequence #f #f)
               (finish-now)
-              (for-each
-               (lambda (ls)
-                 (let ([tokens (lexer-state-tokens ls)]
-                       [start-pos (lexer-state-start-pos ls)])
-                   (send tokens for-each
-                         (λ (start len type)
-                            (when (and should-color? (should-color-type? type))
-                              (let ((color (send (get-style-list) find-named-style
-                                                 (token-sym->style type)))
-                                    (sp (+ start-pos start))
-                                    (ep (+ start-pos (+ start len))))
-                                (change-style color sp ep #f)))))))
-               lexer-states)
+              (when should-color?
+                (for-each
+                 (lambda (ls)
+                   (let ([tokens (lexer-state-tokens ls)]
+                         [start-pos (lexer-state-start-pos ls)])
+                     (send tokens for-each
+                           (λ (start len data)
+                              (let ([type (data-type data)])
+                                (when (should-color-type? type)
+                                  (let ((color (send (get-style-list) find-named-style
+                                                     (token-sym->style type)))
+                                        (sp (+ start-pos start))
+                                        (ep (+ start-pos (+ start len))))
+                                    (change-style color sp ep #f))))))))
+                 lexer-states))
               (end-edit-sequence))))))))
     
     
