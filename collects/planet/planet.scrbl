@@ -14,7 +14,7 @@
 
 @title{@bold{PLaneT}: Automatic Package Distribution}
 
-@author["Jacob Matthews"]
+@author["Jacob Matthews" "Robert Bruce Findler"]
 
 The @PLaneT system is a method for automatically sharing code packages,
 both as libraries and as full applications, that gives every user of a
