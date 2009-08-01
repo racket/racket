@@ -124,6 +124,24 @@
           (read-line in) ;; read the newline 
           x))))
 
+(define REGISTER '***register***)
+(define OKAY '***okay***)
+
+;; InPort OutPort (X -> Y) -> (U Y Void)
+;; process a registration from a potential client, invoke k if it is okay
+(define (tcp-process-registration in out k)
+  (define next (tcp-receive in))
+  (when (and (pair? next) (eq? REGISTER (car next))) 
+    (tcp-send out OKAY)
+    (k (cdr next))))
+  
+
+;; InPort OutPort (U #f String) -> Void 
+;; register with the server 
+(define (tcp-register in out name)
+  (tcp-send out `(,REGISTER ,(if name name (symbol->string (gensym 'world)))))
+  (unless (eq? (tcp-receive in) OKAY) (raise tcp-eof)))
+
 ;                                                   
 ;                                                   
 ;                                                   

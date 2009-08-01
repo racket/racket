@@ -88,7 +88,6 @@
       
       (def/cback private (pnew iworld) on-new
         (set! iworlds (cons iworld iworlds))
-        (iworld-send iworld 'okay)  ;; <--- this can fail!                  
         (send gui add (format "~a signed up" (iworld-name iworld))))
       
       (def/cback private (pmsg iworld r) on-msg
@@ -133,12 +132,16 @@
               (tcp-listen SQPORT 4 #t)))
           ;; (list IPort OPort) -> Void 
           (define (add-iworld in-out)
+            (define in (first in-out))
+            (define out (second in-out))
             ;; is it possible to kill the server with lots of bad connections?
-            (with-handlers ((tcp-eof? (lambda _ (loop))))
-              (define in (first in-out))        
-              (define next (tcp-receive in))
-              (when (and (pair? next) (eq? 'REGISTER (car next)))
-                (pnew (create-iworld in (second in-out) (cdr next))))
+            (with-handlers ((tcp-eof? (lambda _ (loop)))
+                            (exn? (lambda (e)
+                                    (printf "process registration failed!\n~a" 
+                                            (exn-message e))
+                                    (loop))))
+              (tcp-process-registration
+               in out (lambda (info) (pnew (create-iworld in out info))))
               (loop)))
           ;; IWorld -> [IPort -> Void]
           (define (process-message p)

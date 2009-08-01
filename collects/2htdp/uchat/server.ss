@@ -1,6 +1,6 @@
 ;; The first three lines of this file were inserted by DrScheme. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname server) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
+#reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname server) (read-case-sensitive #f) (teachpacks ()) (htdp-settings #(#f constructor repeating-decimal #f #t none #f ())))
 (require 2htdp/universe)
 
 ;; UniState = [Listof IWorld]
@@ -95,3 +95,5 @@
   (universe '() 
             (on-new new-chatter)
             (on-msg forward)))
+
+(run 0)

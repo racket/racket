@@ -114,10 +114,7 @@
                                      (printf FMTtry register TRIES)
                                      (begin (sleep PAUSE) (try (- n 1)))))))
                 (define-values (in out) (tcp-connect register SQPORT))
-                (tcp-send
-                 out
-                 `(REGISTER ,(if name name (symbol->string (gensym 'world)))))
-                (unless (eq? (tcp-receive in) 'okay) (raise tcp-eof))
+                (tcp-register in out name)
                 (printf "... successful registered and ready to receive\n")
                 (set! *out* out)
                 (thread (RECEIVE in))))))

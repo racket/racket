@@ -1,0 +1,4 @@
+#!/bin/tcsh
+
+mred server.ss &
+mred chatter.ss -e"(run* 'go)" &

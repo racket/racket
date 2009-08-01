@@ -484,4 +484,7 @@
             (name n)
             (register LOCALHOST)))
 
-; (launch-many-worlds (main "carl") (main "sam"))
+(define (run* _)
+  (launch-many-worlds (main "carl") (main "sam")))
+
+(run* 0)

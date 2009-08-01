@@ -145,7 +145,7 @@
   (syntax-case stx ()
     [(big-bang) 
      (raise-syntax-error #f "big-bang needs at least an initial world;" stx)]
-    [(big-bang w s ...)
+    [(big-bang w (k s ...) ...)
      (let* (;; [Listof (list Keyword Contract)]
             [Spec (append AllSpec WldSpec)]
             [kwds (map (lambda (x) (datum->syntax #'here x)) (map car Spec))]
@@ -161,10 +161,10 @@
                                 (syntax-case #'E ()
                                   [(V) (set! rec? #'V)]
                                   [_ (err 'record? stx)]))
-                              (cons #'kw #'E #;(syntax E)))]
+                              (cons #'kw #'E))]
                            [_ (raise-syntax-error
                                'big-bang "not a legal big-bang clause" stx)]))
-                       (syntax->list (syntax (s ...))))]
+                       (syntax->list (syntax ((k s ...) ...))))]
             ;; assert: all items of wrld have shape (kw . E) 
             ;;         and all kw are guaranted in the domain of Spec
             ;; now bring together the coercion-contracts and the values, 
