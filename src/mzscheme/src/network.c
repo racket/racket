@@ -1495,7 +1495,10 @@ static long tcp_write_string(Scheme_Output_Port *port,
 
   if (!len) {
     /* Flush */
-    return tcp_flush(port, rarely_block, enable_break);
+    tcp_flush(port, rarely_block, enable_break);
+    if (data->b.out_bufpos != data->b.out_bufmax)
+      return -1;
+    return 0;
   }
 
   if (rarely_block) {
