@@ -441,17 +441,17 @@
                element?)]
  [secref (->* (string?)
               (#:doc module-path?
-                     #:tag-prefixes (or/c #f (listof string))
+                     #:tag-prefixes (or/c #f (listof string?))
                      #:underline? any/c)
               element?)]
  [Secref (->* (string?)
               (#:doc module-path?
-                     #:tag-prefixes (or/c #f (listof string))
+                     #:tag-prefixes (or/c #f (listof string?))
                      #:underline? any/c)
               element?)]
  [seclink (->* (string?)
                (#:doc module-path?
-                      #:tag-prefixes (or/c #f (listof string))
+                      #:tag-prefixes (or/c #f (listof string?))
                       #:underline? any/c)
                #:rest (listof pre-content?)
                element?)]
