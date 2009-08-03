@@ -373,49 +373,46 @@ improve method arity mismatch contract violation error messages?
 
 (define-syntax-parameter current-contract-region (λ (stx) #'(#%variable-reference)))
 
-(define-for-syntax (make-with-contract-transformer contract-stx id pos-blame-id)
+(define-for-syntax (make-contracted-id-transformer id contract-stx pos-blame-id neg-blame-id)
   (make-set!-transformer
    (lambda (stx)
-     (with-syntax ([neg-blame-id #'(current-contract-region)]
-                   [pos-blame-id pos-blame-id]
-                   [contract-stx contract-stx])
-       (syntax-case stx (set!)
-         [(set! id arg)
-          (raise-syntax-error 'with-contract
-                              "cannot set! a with-contract variable"
-                              stx
-                              (syntax id))]
-         [(f arg ...)
-          (quasisyntax/loc stx
-            ((-contract contract-stx
-                        #,id
-                        pos-blame-id
-                        neg-blame-id
-                        #,(id->contract-src-info id))
-             arg ...))]
-         [ident
-          (identifier? (syntax ident))
-          (quasisyntax/loc stx
-            (-contract contract-stx
-                       #,id
-                       pos-blame-id
-                       neg-blame-id
-                       #,(id->contract-src-info id)))])))))
+     (syntax-case stx (set!)
+       [(set! id arg)
+        (raise-syntax-error 'with-contract
+                            "cannot set! a contracted variable"
+                            stx
+                            (syntax id))]
+       [(f arg ...)
+        (quasisyntax/loc stx
+          ((-contract #,contract-stx
+                      #,id
+                      #,pos-blame-id
+                      #,neg-blame-id
+                      #,(id->contract-src-info id))
+           arg ...))]
+       [ident
+        (identifier? (syntax ident))
+        (quasisyntax/loc stx
+          (-contract #,contract-stx
+                     #,id
+                     #,pos-blame-id
+                     #,neg-blame-id
+                     #,(id->contract-src-info id)))]))))
 
 
 (define-syntax (with-contract-helper stx)
   (syntax-case stx ()
-    [(_ blame-stx () ())
+    [(_ () ())
      (begin #'(define-values () (values)))]
-    [(_ blame-stx (p0 p ...) (u ...))
+    [(_ (p0 p ...) (u ...))
      (raise-syntax-error 'with-contract
                          "no definition found for identifier"
                          #'p0)]
-    [(_ blame-stx () (u0 u ...))
+    [(_ () (u0 u ...))
      (raise-syntax-error 'with-contract
                          "no definition found for identifier"
                          #'u0)]
-    [(_ blame-stx (p ...) (u ...) body0 body ...)
+    [(_ (p ...) (u ...) body0 body ...)
      (let ([expanded-body0 (local-expand #'body0
                                          (syntax-local-context)
                                          (kernel-form-identifier-list))])
@@ -428,7 +425,7 @@ improve method arity mismatch contract violation error messages?
        (syntax-case expanded-body0 (begin define-values define-syntaxes)
          [(begin sub ...)
           (syntax/loc stx
-            (with-contract-helper blame-stx (p ...) (u ...) sub ... body ...))]
+            (with-contract-helper (p ...) (u ...) sub ... body ...))]
          [(define-syntaxes (id ...) expr)
           (let ([ids (syntax->list #'(id ...))])
             (for ([i1 (syntax->list #'(p ...))])
@@ -442,18 +439,18 @@ improve method arity mismatch contract violation error messages?
                           [unused-us (filter-ids (syntax->list #'(u ...)) ids)])
               (with-syntax ()
                 (syntax/loc stx
-                  (begin def (with-contract-helper blame-stx (p ...) unused-us body ...))))))]
+                  (begin def (with-contract-helper (p ...) unused-us body ...))))))]
          [(define-values (id ...) expr)
           (let ([ids (syntax->list #'(id ...))])
             (with-syntax ([def expanded-body0]
                           [unused-ps (filter-ids (syntax->list #'(p ...)) ids)]
                           [unused-us (filter-ids (syntax->list #'(u ...)) ids)])
               (syntax/loc stx
-                (begin def (with-contract-helper blame-stx unused-ps unused-us body ...)))))]
+                (begin def (with-contract-helper unused-ps unused-us body ...)))))]
          [else
           (quasisyntax/loc stx
             (begin #,expanded-body0
-                   (with-contract-helper blame-stx (p ...) (u ...) body ...)))]))]))
+                   (with-contract-helper (p ...) (u ...) body ...)))]))]))
 
 (define-for-syntax (check-and-split-with-contracts single-allowed? args)
   (let loop ([args args]
@@ -488,32 +485,6 @@ improve method arity mismatch contract violation error messages?
                            (format "expected ~a(identifier contract)"
                                    (if single-allowed? "an identifier or " ""))
                            (car args))])))
-
-(define-for-syntax (make-free-var-transformer fv ctc pos-blame neg-blame)
-  (make-set!-transformer
-   (lambda (stx)
-     (syntax-case stx (set!)
-       [(set! id arg)
-        (raise-syntax-error 'with-contract
-                            "cannot set! a contracted variable"
-                            stx
-                            (syntax id))]
-       [(f arg ...)
-        (quasisyntax/loc stx
-          ((-contract #,ctc
-                      #,fv
-                      #,pos-blame
-                      #,neg-blame
-                      #,(id->contract-src-info fv))
-           arg ...))]
-       [ident
-        (identifier? (syntax ident))
-        (quasisyntax/loc stx
-          (-contract #,ctc
-                     #,fv
-                     #,pos-blame
-                     #,neg-blame
-                     #,(id->contract-src-info fv)))]))))
 
 (define-syntax (with-contract stx)
   (when (eq? (syntax-local-context) 'expression)
@@ -589,13 +560,13 @@ improve method arity mismatch contract violation error messages?
                         ...
                         (values)))
                (define-syntaxes (free-var-id ...)
-                 (values (make-free-var-transformer
+                 (values (make-contracted-id-transformer
                           (quote-syntax free-var)
                           (quote-syntax free-ctc-id)
                           (quote-syntax blame-id)
                           (quote-syntax blame-stx)) ...))
                (splicing-syntax-parameterize ([current-contract-region (λ (stx) #'blame-stx)])
-                 (with-contract-helper blame-stx (marked-p ...) (marked-u ...) . #,(marker #'body)))
+                 (with-contract-helper (marked-p ...) (marked-u ...) . #,(marker #'body)))
                (define-values (ctc-id ...)
                  (values (verify-contract 'with-contract ctc) ...))
                (define-values ()
@@ -608,10 +579,11 @@ improve method arity mismatch contract violation error messages?
                         (values)))
                (define-syntaxes (u ... p ...)
                  (values (make-rename-transformer #'marked-u) ...
-                         (make-with-contract-transformer
-                          (quote-syntax ctc-id)
+                         (make-contracted-id-transformer
                           (quote-syntax marked-p)
-                          (quote-syntax blame-stx)) ...)))))))]
+                          (quote-syntax ctc-id)
+                          (quote-syntax blame-stx)
+                          (quote-syntax blame-id)) ...)))))))]
     [(_ #:type type blame (arg ...) #:freevar x c . body)
      (syntax/loc stx
        (with-contract #:type type blame (arg ...) #:freevars ([x c]) . body))]

@@ -2399,6 +2399,13 @@
         (if b (f m) (f #t)))
       (g #t 3)))
   
+  ;; For some of the following tests, it may not be clear
+  ;; why the blame is what it is.  The contract(s) entered
+  ;; into via with-contract are between the contracting
+  ;; region and its context.  If the context allows the
+  ;; value to flow into other regions without contracts
+  ;; that protect it from misuses in those regions, it's
+  ;; the context's fault.
   (test/spec-failed
    'define/contract12
    '(let ()
@@ -2409,7 +2416,7 @@
         (-> boolean? number? number?)
         (if b (f m) (f #t)))
       (g #f 3))
-   "(function g)")
+   "top-level")
 
   (test/spec-failed
    'define/contract13
@@ -2436,7 +2443,7 @@
 	       (require 'foo-dc14)
 	       (foo-dc14 #t)))
       (eval '(require 'bar-dc14)))
-   "'bar-dc14")
+   "'foo-dc14")
 
   (test/spec-failed
    'define/contract15
@@ -2449,7 +2456,7 @@
 		 (+ n 1))))
       (eval '(require 'foo-dc15))
       (eval '(foo-dc15 #t)))
-   "top-level")
+   "'foo-dc15")
   
   ;; Let's see how units + define/contract interact
   
