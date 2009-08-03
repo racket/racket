@@ -2331,7 +2331,7 @@ void GC_dump_with_traces(int flags,
               sizes[tag] += info->size;
             }
             if (tag == trace_for_tag) {
-              register_traced_object(obj_staart);
+              register_traced_object(obj_start);
               if (for_each_found)
                 for_each_found(obj_start);
             }
