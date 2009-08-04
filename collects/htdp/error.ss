@@ -1,7 +1,4 @@
-#lang mzscheme
-
-(require mzlib/etc 
-         mzlib/list)
+#lang scheme/base
 
 ;; --------------------------------------------------------------------------
 (provide check-arg check-arity check-proc check-result check-list-list
@@ -85,7 +82,7 @@
        [(8) "eighth"]
        [(9) "ninth"]
        [(10) "tenth"]
-       [_ (format "~ath") arg-posn])]))
+       [else (format "~ath") arg-posn])]))
 
 ;; check-arity : sym num (list-of TST) -> void
 (define (check-arity name arg# args)
