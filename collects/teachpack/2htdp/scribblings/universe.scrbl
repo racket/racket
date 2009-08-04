@@ -205,7 +205,8 @@ world every time the clock ticks. The result of the call becomes the
 current world. The clock ticks at the rate of 28 times per second.}}
 
 @item{
-@defform/none[(on-tick tick-expr rate-expr)
+@defform/none[#:literals(on-tick)
+              (on-tick tick-expr rate-expr)
               #:contracts
               ([tick-expr (-> (unsyntax @tech{WorldState}) (unsyntax @tech{WorldState}))]
                [rate-expr natural-number/c])]{
@@ -328,7 +329,7 @@ Second, some keys have multiple-character string representations. Strings
   (cond
     [(key=? a-key "left")  (world-go w -DELTA)]
     [(key=? a-key "right") (world-go w +DELTA)]
-    [(= (string-length a-key) 1) w] (code:comment "to demonstrate order-free checking")
+    [(= (string-length a-key) 1) w] (code:comment "order-free checking")
     [(key=? a-key "up")    (world-go w -DELTA)]
     [(key=? a-key "down")  (world-go w +DELTA)]
     [else w]))
@@ -369,7 +370,9 @@ All @tech{MouseEvent}s are represented via strings:
 @defform[(on-mouse clack-expr)
          #:contracts
 	 ([clack-expr 
-           (-> (unsyntax @tech{WorldState}) natural-number/c natural-number/c (unsyntax @tech{MouseEvent}) (unsyntax @tech{WorldState}))])]{
+           (-> (unsyntax @tech{WorldState}) 
+               natural-number/c natural-number/c (unsyntax @tech{MouseEvent}) 
+               (unsyntax @tech{WorldState}))])]{
  tell DrScheme to call @scheme[clack-expr] on the current world, the current
  @scheme[x] and @scheme[y] coordinates of the mouse, and and a
  @tech{MouseEvent} for every (noticeable) action of the mouse by the
@@ -391,7 +394,8 @@ All @tech{MouseEvent}s are represented via strings:
  dealt with an event. Its size is determined by the size of the first
  generated @tech{scene}.}
 
-@defform/none[(on-draw render-expr width-expr height-expr)
+@defform/none[#:literals (on-draw)
+              (on-draw render-expr width-expr height-expr)
               #:contracts
               ([render-expr (-> (unsyntax @tech{WorldState}) scene?)]
 	       [width-expr natural-number/c]
@@ -639,26 +643,31 @@ Each world-producing callback in a world program---those for handling clock
 As mentioned, all event handlers may return @tech{WorldState}s or @tech{Package}s;
 here are the revised specifications: 
 
-@defform/none[(on-tick tick-expr)
+@defform/none[#:literals (on-tick)
+              (on-tick tick-expr)
               #:contracts
               ([tick-expr (-> (unsyntax @tech{WorldState}) (or/c (unsyntax @tech{WorldState}) package?))])]{
 } 
 
-@defform/none[(on-tick tick-expr rate-expr)
+@defform/none[#:literals (on-tick)
+              (on-tick tick-expr rate-expr)
               #:contracts
               ([tick-expr (-> (unsyntax @tech{WorldState}) (or/c (unsyntax @tech{WorldState}) package?))]
                [rate-expr natural-number/c])]{
 }
 
-@defform/none[(on-key change-expr)
+@defform/none[#:literals (on-key)
+              (on-key change-expr)
               #:contracts
               ([change-expr (-> (unsyntax @tech{WorldState}) key-event? (or/c (unsyntax @tech{WorldState}) package?))])]{
 }
 
-@defform/none[(on-mouse clack-expr)
+@defform/none[#:literals (on-mouse)
+              (on-mouse clack-expr)
               #:contracts
               ([clack-expr
-                (-> (unsyntax @tech{WorldState}) natural-number/c natural-number/c (unsyntax @tech{MouseEvent})
+                (-> (unsyntax @tech{WorldState}) 
+                    natural-number/c natural-number/c (unsyntax @tech{MouseEvent})
                     (or/c (unsyntax @tech{WorldState}) package?))])]{
 }
 
@@ -953,7 +962,8 @@ optional handlers:
 @itemize[
 
 @item{
-@defform/none[(on-tick tick-expr)
+@defform/none[#:literals (on-tick)
+              (on-tick tick-expr)
               #:contracts
               ([tick-expr (-> (unsyntax @tech{UniverseState}) bundle?)])]{
  tell DrScheme to apply @scheme[tick-expr] to the current list of
@@ -961,7 +971,8 @@ optional handlers:
  universe. 
  }
 
-@defform/none[(on-tick tick-expr rate-expr)
+@defform/none[#:literals (on-tick)
+              (on-tick tick-expr rate-expr)
               #:contracts
               ([tick-expr (-> (unsyntax @tech{UniverseState}) bundle?)]
                [rate-expr natural-number/c])]{ 
@@ -992,7 +1003,8 @@ optional handlers:
 }
 
 @item{
- @defform/none[(check-with universe?-expr)
+ @defform/none[#:literals (check-with)
+               (check-with universe?-expr)
           #:contracts
           ([universe?-expr (-> Any boolean?)])]{
  ensure that what the event handlers produce is really an element of
@@ -1029,7 +1041,9 @@ Once you have designed a world program, add a function definition
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-> (launch-with-many-worlds (main "matthew") (main "kathi") (main "h3") )
+> (launch-with-many-worlds (main "matthew") 
+                           (main "kathi") 
+                           (main "h3"))
 10
 25
 33
@@ -1282,7 +1296,9 @@ The preceding subsection dictates that our server program starts like this:
 #reader scribble/comment-reader
 [schemeblock
 ;; Result is 
-;;   (make-bundle [Listof iworld?] (list (make-mail iworld? GoMessage)) '())
+;;   (make-bundle [Listof iworld?]
+;;                (list (make-mail iworld? GoMessage))
+;;                '())
 
 ;; [Listof iworld?] iworld? -> Result 
 ;; add world @scheme[iw] to the universe, when server is in state @scheme[u]
@@ -1519,7 +1535,9 @@ the scene every time @scheme['it-is-your-turn] is received. Design this function
 (define (move x)
   (cond
     [(symbol? x) x]
-    [(number? x) (if (<= x 0) (make-package 'resting 'done) (sub1 x))]))
+    [(number? x) (if (<= x 0) 
+                     (make-package 'resting 'done)
+                     (sub1 x))]))
 ))
 
 Exercise: what could happen if we had designed @emph{receive} so that it
