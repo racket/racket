@@ -1,7 +1,10 @@
 #lang scheme/base
+(require scheme/gui/base
+         scheme/class)
 
 ;; --------------------------------------------------------------------------
-(provide check-arg check-arity check-proc check-result check-list-list
+(provide check-arg check-arity check-proc check-result 
+         check-list-list check-color
          check-fun-res
          natural?
          find-non tp-exn? number->ord)
@@ -58,6 +61,26 @@
                 (if (pair? other-given)
                     (car other-given)
                     given))))
+
+;; check-color : symbol (or/c str non-negative-integer) TST -> void
+(define (check-color pname arg-pos given)
+  (check-arg pname
+             (or (is-a? given color%)
+                 (string? given)
+                 (symbol? given))
+             'color
+             arg-pos given)
+  (let ([color
+         (cond
+           [(symbol? given)
+            (send the-color-database find-color (symbol->string given))]
+           [(string? given)
+            (send the-color-database find-color given)]
+           [else given])])
+    (unless color
+      (tp-error pname 
+                "expected the name ~e to be a color, but did not recognize it"
+                given))))
 
 ;; check-arg : sym bool str (or/c str non-negative-integer) TST -> void
 (define (check-arg pname condition expected arg-posn given)
