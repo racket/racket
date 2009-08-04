@@ -62,11 +62,30 @@
                     (car other-given)
                     given))))
 
-;; check-arg : sym bool str str TST -> void
+;; check-arg : sym bool str (or/c str non-negative-integer) TST -> void
 (define (check-arg pname condition expected arg-posn given)
   (unless condition
     (tp-error pname "expected <~a> as ~a argument, given: ~e"
-              expected arg-posn given)))
+              expected 
+              (spell-out arg-posn)
+              given)))
+
+(define (spell-out arg-posn)
+  (cond
+    [(string? arg-posn) arg-posn]
+    [(number? arg-posn)
+     (case arg-posn
+       [(1) "first"]
+       [(2) "second"]
+       [(3) "third"]
+       [(4) "fourth"]
+       [(5) "fifth"]
+       [(6) "sixth"]
+       [(7) "seventh"]
+       [(8) "eighth"]
+       [(9) "ninth"]
+       [(10) "tenth"]
+       [_ (format "~ath") arg-posn])]))
 
 ;; check-arity : sym num (list-of TST) -> void
 (define (check-arity name arg# args)
