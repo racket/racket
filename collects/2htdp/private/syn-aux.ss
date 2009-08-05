@@ -1,6 +1,6 @@
 #lang scheme
 
-(provide define-keywords function-with-arity except err check-flat-spec)
+(provide define-keywords function-with-arity except err)
 
 (require 
  (for-template "syn-aux-aux.ss" 
@@ -38,9 +38,3 @@
 	(string-append "illegal specification: " (car extra-spec)))
     #`(#,spec . #,p) p))
 
-;; Symbol (Symbol X -> X) -> (X -> X)
-(define (check-flat-spec tag coerce>)
-  (lambda (p)
-    (syntax-case p ()
-      [(b) #'(coerce> tag b)]
-      [_ (err tag p)])))
