@@ -186,7 +186,7 @@ Matthew
   (check-size/0 'nw:rectangle width "first")
   (check-size/0 'nw:rectangle height "second")
   (check-mode 'rectangle mode "third")
-  (check-color 'rectangle color "fourth")
+  (check-sym/string-color 'rectangle color "fourth")
   (put-pinhole (rectangle width height mode color) 0 0))
 
 (define (place-image image x y scene)
@@ -411,7 +411,7 @@ Matthew
 (define (scene? i) (and (= 0 (pinhole-x i)) (= 0 (pinhole-y i))))
 
 ;; Symbol Any String -> Void
-(define (check-color tag width rank)
+(define (check-sym/string-color tag width rank)
   (check-arg tag (or (symbol? width) (string? width)) 
              "color symbol or string" rank width))
 

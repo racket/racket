@@ -185,12 +185,6 @@
 (define (image-pins i)
   (format "image with pinhole at (~s,~s)" (pinhole-x i) (pinhole-y i)))
 
-
-;; Symbol Any String -> Void
-(define (check-color tag width rank)
-  (check-arg tag (or (symbol? width) (string? width)) 
-             "color symbol or string" rank width))
-
 ;; Symbol (union Symbol String) Nat -> Void
 (define (check-mode tag s rank)
   (check-arg tag (or (eq? s 'solid)

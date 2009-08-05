@@ -1,9 +1,8 @@
 #lang scheme
 
-(provide define-keywords function-with-arity except err check-flat-spec
-         (all-from-out "syn-aux-aux.ss"))
+(provide define-keywords function-with-arity except err check-flat-spec)
 
-(require "syn-aux-aux.ss"
+(require 
  (for-template "syn-aux-aux.ss" 
                scheme
                (rename-in lang/prim (first-order->higher-order f2h))))
