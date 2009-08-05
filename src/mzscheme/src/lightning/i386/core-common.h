@@ -284,7 +284,11 @@ static jit_state 			_jit;
 #define jit_pushr_p(rs)			jit_pushr_ul(rs)
 #define jit_popr_p(rs)			jit_popr_ul(rs)		
 
-#define jit_prepare(nint)		jit_prepare_i((nint))
+static void jit_check_arg_count(int n) {
+  if (n > 3) printf("jit_prepare: arg count must be less than 3 for x86_64!\n"); 
+}
+
+#define jit_prepare(nint)		(jit_check_arg_count(nint), jit_prepare_i((nint)))
 #define jit_pusharg_c(rs)		jit_pusharg_i(rs)
 #define jit_pusharg_s(rs)		jit_pusharg_i(rs)
 #define jit_pusharg_uc(rs)		jit_pusharg_i(rs)
