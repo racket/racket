@@ -1249,7 +1249,9 @@ module browser threading seems wrong.
           (when (is-current-tab?)
             (send frame show/hide-warning-message 
                   (get-current-execute-warning)
-                  (λ () (clear-execution-state)))))
+                  (λ () 
+                    ;; this callback might be run with a different tab ...
+                    (send (send frame get-current-tab) clear-execution-state)))))
         
         (define/public (get-directory)
           (let ([filename (send defs get-filename)])
@@ -1397,8 +1399,7 @@ module browser threading seems wrong.
         register-toolbar-button
         get-tabs))
     
-    
-    
+
     (define frame-mixin
       (mixin (drscheme:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)
         (-frame<%>)
