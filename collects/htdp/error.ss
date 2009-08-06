@@ -1,6 +1,5 @@
 #lang scheme/base
-(require scheme/gui/base
-         scheme/class)
+(require scheme/class)
 
 ;; --------------------------------------------------------------------------
 (provide check-arg check-arity check-proc check-result 
@@ -65,11 +64,16 @@
 ;; check-color : symbol (or/c str non-negative-integer) TST -> void
 (define (check-color pname arg-pos given)
   (check-arg pname
-             (or (is-a? given color%)
-                 (string? given)
+             (or (string? given)
                  (symbol? given))
              'color
              arg-pos given)
+  ;; this would be good to check, but it isn't possible, since this
+  ;; file is not allowed to rely on mred. 
+  ;; also nice would be to allow color% objects here, but that's
+  ;; not possible for the same reason (but that is why 
+  ;; the '[else color]' case is below in the cond.
+  #;
   (let ([color
          (cond
            [(symbol? given)
