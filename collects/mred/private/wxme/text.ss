@@ -1790,8 +1790,10 @@
                                         (values deleted-line? update-cursor?)
                                         (let ([update-cursor?
                                                (or (and (eq? snip s-caret-snip)
-                                                        (begin
+                                                        (let ([rl? read-locked?])
+                                                          (set! read-locked? #t)
                                                           (send s-caret-snip own-caret #f)
+                                                          (set! read-locked? rl?)
                                                           (set! s-caret-snip #f)
                                                           #t))
                                                    update-cursor?)])
