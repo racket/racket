@@ -80,7 +80,7 @@ only the line drawings of the first turtles argument.}
 
 @defmodule[graphics/value-turtles-examples]
 
-The @schememodname[graphics/value-turtle-examples] library is similar
+The @schememodname[graphics/value-turtles-examples] library is similar
 to @schememodname[graphics/turtle-examples], but using
 @schememodname[graphics/value-turtles] instead of
 @schememodname[graphics/turtles].
