@@ -203,11 +203,13 @@
   }
   @defmethod*[(((insert-close-paren (position natural-number?) (char char?) (flash? boolean?) (fixup? boolean?)) void))]{
 
-    Position is the place to put the parenthesis and char is the
-    parenthesis to be added.  If @scheme[fixup?] is true, the right kind of closing
-    parenthesis will be chosen from the pairs list kept last passed to
-    @scheme[start-colorer], otherwise char will be inserted, even if it is not the
-    right kind.  If @scheme[flash?] is true the matching open parenthesis will be
+    The @scheme[position] is the place to put the parenthesis, and @scheme[char] is the
+    parenthesis to be added (e.g., that the user typed).  If @scheme[fixup?] is true, the right kind of closing
+    parenthesis will be chosen from the set previously passed to
+    @scheme[start-colorer]---but only if an inserted @scheme[char] would be colored
+    as a parenthesis (i.e., with the @scheme['parenthesis] classification).
+    Otherwise, @scheme[char] will be inserted, even if it is not the
+    right kind.  If @scheme[flash?] is true, the matching open parenthesis will be
     flashed.
   }
   @defmethod*[(((classify-position (position natural-number?)) symbol?))]{

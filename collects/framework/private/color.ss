@@ -849,7 +849,7 @@ added get-regions
                                    comments?))
                  (else position))))))))
     
-    (define/private (get-close-paren pos closers)
+    (define/private (get-close-paren pos closers continue-after-non-paren?)
       (cond
        ((null? closers) #f)
        (else
@@ -859,16 +859,23 @@ added get-regions
             (if ls
                 (let ([start-pos (lexer-state-start-pos ls)])
                   (insert c pos)
-                  (let ((m (backward-match (+ l pos) start-pos)))
-                    (cond
-                     ((and m
-                           (send (lexer-state-parens ls) is-open-pos? (- m start-pos))
-                           (send (lexer-state-parens ls) is-close-pos? (- pos start-pos)))
-                      (delete pos (+ l pos))
-                      c)
-                     (else
-                      (delete pos (+ l pos))
-                      (get-close-paren pos (cdr closers))))))
+                  (let ((cls (classify-position pos)))
+                    (if (eq? cls 'parenthesis)
+                        (let ((m (backward-match (+ l pos) start-pos)))
+                          (cond
+                           ((and m
+                                 (send (lexer-state-parens ls) is-open-pos? (- m start-pos))
+                                 (send (lexer-state-parens ls) is-close-pos? (- pos start-pos)))
+                            (delete pos (+ l pos))
+                            c)
+                           (else
+                            (delete pos (+ l pos))
+                            (get-close-paren pos (cdr closers) #t))))
+                        (begin
+                          (delete pos (+ l pos))
+                          (if continue-after-non-paren?
+                              (get-close-paren pos (cdr closers) #t)
+                              #f)))))
                 c))))))
     
     (inherit insert delete flash-on on-default-char)
@@ -877,7 +884,15 @@ added get-regions
       (let ((closer
              (begin
                (begin-edit-sequence #f #f)
-               (get-close-paren pos (if fixup? (map symbol->string (map cadr pairs)) null)))))
+               (get-close-paren pos 
+                                (if fixup? 
+                                    (let ([l (map symbol->string (map cadr pairs))])
+                                      ;; Ensure preference for given character:
+                                      (cons (string char) (remove (string char) l)))
+                                    null)
+                                ;; If the inserted preferred (i.e., given) paren doesn't parse
+                                ;;  as a paren, then don't try to change it.
+                                #f))))
         (end-edit-sequence)
         (let ((insert-str (if closer closer (string char))))
           (for-each (lambda (c)
