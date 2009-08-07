@@ -370,7 +370,7 @@
       
       ((beginner-string-ith string-ith) (string nat -> string)
         "to extract the ith 1-letter substring from the given one")
-      ((beginner-replicate replicate) (string nat -> string)
+      ((beginner-replicate replicate) (nat string -> string)
         "to replicate the given string")
       ((beginner-int->string int->string) (integer -> string)
         "to convert an integer in [0,55295] or [57344 1114111] to a 1-letter string")
