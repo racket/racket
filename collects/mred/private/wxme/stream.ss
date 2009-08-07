@@ -517,10 +517,10 @@
                                   (fail))]
                              [(positive? (bitwise-and b #x02))
                               (if (= 2 (send f read-bytes buf 0 2))
-                                  (integer-bytes->integer b #t #t)
+                                  (integer-bytes->integer buf #t #t 0 2)
                                   (fail))]
                              [else
-                              (if (= 4 (send f read-bytes buf 0 2))
+                              (if (= 4 (send f read-bytes buf 0 4))
                                   (integer-bytes->integer buf #t #t)
                                   (fail))])
                             (if (= 1 (send f read-bytes buf 0 1))

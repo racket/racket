@@ -1296,8 +1296,7 @@
                    (style-list-link-style-list sll)))
             (send f get-s-sll))
 
-     (let-boxes ([nms 0])
-         (send f get nms)
+     (let ([nms (send f get-exact)])
 
        (let* ([map-vec (make-vector nms)]
               [sll (make-style-list-link style-list
@@ -1310,18 +1309,15 @@
          (vector-set! map-vec 0 (send style-list basic-style))
 
          (for ([i (in-range 1 nms)])
-           (let-boxes ([base-index 0])
-               (send f get base-index)
+           (let ([base-index (send f get-exact)])
 
              (when (base-index . >= . i)
                (error 'map-index-to-style "bad style index"))
 
              (let ([name (bytes->string/utf-8 (send f get-bytes))])
-               (let-boxes ([is-join 0])
-                   (send f get is-join)
+               (let ([is-join (send f get-exact)])
                  (if (positive? is-join)
-                     (let-boxes ([shift-index 0])
-                         (send f get shift-index)
+                     (let ([shift-index (send f get-exact)])
                        (when (shift-index . >= . i)
                          (error 'map-index-to-style "bad shift-style index"))
                        (let ([js
@@ -1331,16 +1327,9 @@
                                     (vector-ref map-vec shift-index))])
                          (vector-set! map-vec i js)))
                      (let ([delta (new style-delta%)]
-                           [get-float (lambda (f)
-                                        (let-boxes ([v 0.0])
-                                            (send f get v)
-                                          v))]
-                           [get-int (lambda (f)
-                                        (let-boxes ([v 0])
-                                            (send f get v)
-                                          v))])
-                       (let-boxes ([fam 0])
-                           (send f get fam)
+                           [get-float (lambda (f) (send f get-inexact))]
+                           [get-int (lambda (f) (send f get-exact))])
+                       (let ([fam (send f get-exact)])
                          
                          (send delta set-family (family-standard-to-this fam))
                          (let ([name (bytes->string/utf-8 (send f get-bytes))])
@@ -1358,24 +1347,28 @@
                            (send delta set-smoothing-off (smoothing-standard-to-this (get-int f))))
                          (send delta set-underlined-on (positive? (get-int f)))
                          (send delta set-underlined-off (positive? (get-int f)))
-                         (unless (<= 1 (send f get-wxme-version) 4)
+                         (unless (<= 1 (send f get-wxme-version) 5)
                            (send delta set-size-in-pixels-on (positive? (get-int f)))
                            (send delta set-size-in-pixels-off (positive? (get-int f))))
                          (unless (<= 1 (send f get-wxme-version) 2)
                            (send delta set-transparent-text-backing-on (positive? (get-int f)))
                            (send delta set-transparent-text-backing-off (positive? (get-int f))))
 
-                         (let-boxes ([r 0.0][g 0.0][b 0.0])
-                             (begin (send f get r) (send f get g) (send f get b))
+                         (let ([r (send f get-inexact)]
+                               [g (send f get-inexact)]
+                               [b (send f get-inexact)])
                            (send (send delta get-foreground-mult) set r g b))
-                         (let-boxes ([r 0.0][g 0.0][b 0.0])
-                             (begin (send f get r) (send f get g) (send f get b))
+                         (let ([r (send f get-inexact)]
+                               [g (send f get-inexact)]
+                               [b (send f get-inexact)])
                            (send (send delta get-background-mult) set r g b))
-                         (let-boxes ([r 0][g 0][b 0])
-                             (begin (send f get r) (send f get g) (send f get b))
+                         (let ([r (send f get-exact)]
+                               [g (send f get-exact)]
+                               [b (send f get-exact)])
                            (send (send delta get-foreground-add) set r g b))
-                         (let-boxes ([r 0][g 0][b 0])
-                             (begin (send f get r) (send f get g) (send f get b))
+                         (let ([r (send f get-exact)]
+                               [g (send f get-exact)]
+                               [b (send f get-exact)])
                            (send (send delta get-background-add) set r g b)
 
                            (when (<= 1 (send f get-wxme-version) 2)
