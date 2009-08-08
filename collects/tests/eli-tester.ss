@@ -41,41 +41,45 @@
                        [(syntax-position e) => (lambda (p) (format "#~a" p))]
                        [else "?"])))))
     (with-syntax ([e e] [fmt fmt] [(arg ...) args] [loc loc])
-      #'(let ([msg (failure-message)])
+      #'(let* ([msg (failure-message)]
+               [str (regexp-replace #rx"\n"
+                                    (if msg (msg) (format fmt arg ...))
+                                    "\n  ")])
           (if msg
-            (error 'loc "test failure\n  ~a" (msg))
-            (error 'loc "test failure in ~e\n  ~a" 'e (format fmt arg ...))))))
+            (error 'loc "test failure\n  ~a" str)
+            (error 'loc "test failure in ~e\n  ~a" 'e str)))))
   (define (t1 x)
     #`(let ([x (safe #,x)])
         (unless (and (eq? 'values (car x)) (= 2 (length x)) (cadr x))
-          #,(blame x "expected non-#f single value; got: ~a" #'(show x)))))
+          #,(blame x "expected: non-#f single value\n     got: ~a"
+                   #'(show x)))))
   (define (t2 x y [eval2? #t])
     #`(let* ([x (safe #,x)]                   [xtag (car x)]
              [y #,(if eval2? #`(safe #,y) y)] [ytag (car y)])
         (cond
           [(eq? ytag 'values)
            (unless (equal? x y)
-             #,(blame x "expected ~a; got: ~a" #'(show y) #'(show x)))]
+             #,(blame x "expected: ~a\n     got: ~a" #'(show y) #'(show x)))]
           [(eq? xtag 'values)
-           #,(blame x "expected an error; got ~a" #'(show x))]
+           #,(blame x "expected: an error\n     got: ~a" #'(show x))]
           ;; both are errors (or other raised values)
           [(not (cadr x)) ; expecting a non-exception raise
            (unless (or (equal? x y)
                        (and (procedure? (cadr y)) ((cadr y) (caddr x))))
-             #,(blame x "expected ~a; got ~a" #'(show y) #'(show x)))]
+             #,(blame x "expected ~a\n     got: ~a" #'(show y) #'(show x)))]
           [else
            (let ([xerr (cadr x)] [xval (caddr x)] [yerr (cadr y)])
              (cond [(string? yerr)
                     (unless (regexp-match? (regexp-quote yerr) xerr)
-                      #,(blame x "bad error message, expected ~s; got ~s"
+                      #,(blame x "bad error message, expected: ~s\ngot: ~s"
                                #'yerr #'xerr))]
                    [(regexp? yerr)
                     (unless (regexp-match? yerr xerr)
-                      #,(blame x "bad error message, expected ~a ~s; got ~s"
+                      #,(blame x "bad error message, expected ~a: ~s\ngot: ~s"
                                "a match for" #'yerr #'xerr))]
                    [(and (procedure? yerr) (procedure-arity-includes? yerr 1))
                     (unless (yerr xval)
-                      #,(blame x "bad error message, expected ~a ~s; got ~s"
+                      #,(blame x "bad error message, expected ~a: ~s\ngot: ~s"
                                "an exception satisfying" #'yerr #'xerr))]
                    [else (error 'test "bad error specification: ~e" yerr)]))])))
   (define (te x y) (t2 x #`(list 'error #,y #f) #f))
@@ -169,9 +173,9 @@
  (raise "1") =error> string?
 
  ;; test `test' errors
- (test* (/ 0)) =error> "expected non-#f single value"
- (test* 1 => 2) =error> "expected 2"
- (test* 1 =error> "") =error> "expected an error"
+ (test* (/ 0)) =error> "expected: non-#f single value"
+ (test* 1 => 2) =error> "expected: 2"
+ (test* 1 =error> "") =error> "expected: an error"
  (test* (/ 0) =error> "zzz") =error> "bad error message"
  (test* (raise 1) =error> "foo") =error> "raised non-exception"
  (test* #:failure-message "FOO" (/ 0) => 1) =error> "FOO"
