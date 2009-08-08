@@ -131,7 +131,7 @@
             (test-context #f)
             (let ([num (mcar c)] [exns (mcdr c)])
               (if (null? exns)
-                (printf "~a tests passed\n" num)
+                (printf "~a test~a passed\n" num (if (= num 1) "" "s"))
                 (error 'test "~a/~a test failures:~a" (length exns) num
                        (string-append*
                         (append-map (lambda (e) (list "\n" (exn-message e)))
@@ -176,6 +176,14 @@
  (test* (raise 1) =error> "foo") =error> "raised non-exception"
  (test* #:failure-message "FOO" (/ 0) => 1) =error> "FOO"
  (test* #:failure-message "FOO" (/ 0)) =error> "FOO"
+
+ ;; test possitive message
+ (let ([o (open-output-bytes)])
+   (list (begin (parameterize ([current-output-port o]) (test* 1 => 1))
+                (get-output-bytes o #t))
+         (begin (parameterize ([current-output-port o]) (test* 1 => 1 (odd? 1)))
+                (get-output-bytes o #t))))
+ => '(#"1 test passed\n" #"2 tests passed\n")
  )
 
 ;; SchemeUnit stuff
