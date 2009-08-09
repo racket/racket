@@ -640,7 +640,7 @@
     (define next-content     '("next " rarr))
     (define sep-element      '(nbsp nbsp))
 
-    (define/public (derive-filename d) "bad.html")
+    (define/public (derive-filename d ci ri) "bad.html")
 
     (define/public (include-navigation?) search-box?)
 
@@ -1239,17 +1239,34 @@
                  d))
           (super get-dest-directory create?)))
 
-    (define/override (derive-filename d)
+    (define/private (append-part-prefixes d ci ri)
+      (let ([parents (drop-right
+                      (if ci
+                          (cons d (collect-info-parents ci))
+                          (let loop ([d d])
+                            (if d
+                                (cons d
+                                      (loop (collected-info-parent (part-collected-info d ri))))
+                                null)))
+                      1)])
+        (apply
+         string-append
+         (for/list ([p (in-list parents)])
+           (or (part-tag-prefix p) "")))))
+
+    (define/override (derive-filename d ci ri)
       (let ([fn (format "~a.html"
                         (regexp-replace*
                          "[^-a-zA-Z0-9_=]"
-                         (let ([s (cadr (car (part-tags d)))])
-                           (cond [(string? s) s]
-                                 [(part-title-content d)
-                                  (content->string (part-title-content d))]
-                                 [else
-                                  ;; last-ditch effort to make up a unique name:
-                                  (format "???~a" (eq-hash-code d))]))
+                         (string-append
+                          (append-part-prefixes d ci ri)
+                          (let ([s (cadr (car (part-tags d)))])
+                            (cond [(string? s) s]
+                                  [(part-title-content d)
+                                   (content->string (part-title-content d))]
+                                  [else
+                                   ;; last-ditch effort to make up a unique name:
+                                   (format "???~a" (eq-hash-code d))])))
                          "_"))])
         (when ((string-length fn) . >= . 48)
           (error "file name too long (need a tag):" fn))
@@ -1281,7 +1298,7 @@
                        [collecting-whole-page (prev-sub . <= . 1)])
           (if (and (current-part-whole-page? d)
                    (not (eq? d (current-top-part))))
-            (let ([filename (derive-filename d)])
+            (let ([filename (derive-filename d ci #f)])
               (parameterize ([current-output-file
                               (build-path (path-only (current-output-file))
                                           filename)])
@@ -1325,7 +1342,7 @@
                    (not (eq? d (current-top-part))))
             ;; Render as just a link, and put the actual content in a
             ;; new file:
-            (let* ([filename (derive-filename d)]
+            (let* ([filename (derive-filename d #f ri)]
                    [full-path (build-path (path-only (current-output-file))
                                           filename)])
               (parameterize ([on-separate-page-ok #f])
