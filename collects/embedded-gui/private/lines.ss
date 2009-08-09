@@ -19,7 +19,7 @@
       (super-new
        (snip (new vline-snip%)))))
   
-  (define (make-line-snip draw-line stretch-w stretch-h)
+  (define (make-line-snip draw-line stretch-w stretch-h classname)
     (letrec ([c (class* snip% (stretchable-snip<%>)
                
                (field
@@ -101,7 +101,7 @@
                  (define/override (read f)
                    (new c))
                  (super-new)))])
-      (send sc set-classname "make-line-snip")
+      (send sc set-classname classname)
       (send sc set-version 1)
       (send (get-the-snip-class-list) add sc)
       c))
@@ -112,14 +112,16 @@
       (lambda (dc x y width height)
         (send dc draw-line x (+ y (/ height 2)) (+ x width) (+ y (/ height 2))))
       true
-      false))
+      false
+      "make-hline-snip"))
     
   (define vline-snip%
      (make-line-snip
       (lambda (dc x y width height)
         (send dc draw-line (+ x (/ width 2)) y (+ x (/ width 2))  (+ y height)))
       false
-      true))
+      true
+      "make-line-snip"))
   
   #|
   (require
