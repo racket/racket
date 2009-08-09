@@ -1238,11 +1238,15 @@
   
   (def/public (add [snip-class% c])
     (let ([name (send c get-classname)])
-      (hash-set! ht name c)
-      (let ([n (hash-count pos-ht)])
-        (hash-set! pos-ht c n)
-        (hash-set! rev-pos-ht n c))))
-
+      (let ([old (hash-ref ht name #f)])
+        (hash-set! ht name c)
+        (let ([n (if old
+                     (hash-ref pos-ht old)
+                     (hash-count pos-ht))])
+          (when old (hash-remove! pos-ht old))
+          (hash-set! pos-ht c n)
+          (hash-set! rev-pos-ht n c)))))
+    
   (def/public (number) (hash-count ht))
 
   (def/public (nth [exact-nonnegative-integer? n]) (hash-ref rev-pos-ht n #f)))
