@@ -6550,6 +6550,7 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_PRINT_UNREADABLE, scheme_true);
   init_param(cells, paramz, MZCONFIG_PRINT_PAIR_CURLY, scheme_false);
   init_param(cells, paramz, MZCONFIG_PRINT_MPAIR_CURLY, scheme_true);
+  init_param(cells, paramz, MZCONFIG_PRINT_SYNTAX_WIDTH, scheme_make_integer(32));
 
   init_param(cells, paramz, MZCONFIG_HONU_MODE, scheme_false);
 

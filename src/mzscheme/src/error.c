@@ -2231,7 +2231,7 @@ static Scheme_Object *error_print_width(int argc, Scheme_Object *argv[])
   return scheme_param_config("error-print-width",
 			     scheme_make_integer(MZCONFIG_ERROR_PRINT_WIDTH),
 			     argc, argv,
-			     -1, good_print_width, "integer greater than three", 0);
+			     -1, good_print_width, "exact integer greater than three", 0);
 }
 
 static Scheme_Object *good_print_context_length(int c, Scheme_Object **argv)

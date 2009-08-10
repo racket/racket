@@ -198,6 +198,14 @@ A parameter that controls printing values in an alternate syntax.  See
 @|HonuManual| for more information.}
 
 
+@defparam[print-syntax-width width (or/c +inf.0 0 (and/c exact-integer? (>/c 3)))]{
+
+A parameter that controls printing of @tech{syntax objects}. Up to
+@scheme[width] characters are used to show the datum form of a syntax
+object within @litchar{#<syntax}...@litchar{>} (after the
+@tech{syntax object}'s source location, if any).}
+
+
 @defparam*[current-write-relative-directory path 
                                             (or/c (and/c path-string? complete-path?) #f)
                                             (or/c (and/c path? complete-path?) #f)]{

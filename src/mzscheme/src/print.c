@@ -78,6 +78,7 @@ typedef struct Scheme_Print_Params {
   long print_allocated;
   long print_maxlen;
   long print_offset;
+  long print_syntax;
   Scheme_Object *print_port;
   mz_jmp_buf *print_escape;
 } PrintParams;
@@ -786,6 +787,7 @@ print_to_string(Scheme_Object *obj,
   params.print_offset = 0;
   params.print_maxlen = maxl;
   params.print_port = port;
+  params.print_syntax = 0;
 
   /* Getting print params can take a while, and they're irrelevant
      for simple things like displaying numbers. So try a shortcut: */
@@ -817,6 +819,11 @@ print_to_string(Scheme_Object *obj,
     params.print_struct = SCHEME_TRUEP(v);
     v = scheme_get_param(config, MZCONFIG_PRINT_VEC_SHORTHAND);
     params.print_vec_shorthand = SCHEME_TRUEP(v);
+    v = scheme_get_param(config, MZCONFIG_PRINT_SYNTAX_WIDTH);
+    if (SCHEME_INTP(v))
+      params.print_syntax = SCHEME_INT_VAL(v);
+    else
+      params.print_syntax = -1;
     v = scheme_get_param(config, MZCONFIG_PRINT_HASH_TABLE);
     params.print_hash_table = SCHEME_TRUEP(v);
     if (write) {
@@ -2353,9 +2360,17 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  else
 	    sprintf(quick_buffer, ":%ld", stx->srcloc->pos);
 	  print_utf8_string(pp, quick_buffer, 0, -1);
-	  print_utf8_string(pp, ">", 0, 1);
 	} else
-	  print_utf8_string(pp, "#<syntax>", 0, 9);
+	  print_utf8_string(pp, "#<syntax", 0, 9);
+        if (pp->print_syntax) {
+          long slen;
+          char *str;
+          print_utf8_string(pp, " ", 0, 1);
+          str = print_to_string(scheme_syntax_to_datum((Scheme_Object *)stx, 0, NULL),
+                                &slen, 1, NULL, pp->print_syntax, 0);
+          print_utf8_string(pp, str, 0, slen);
+        }
+        print_utf8_string(pp, ">", 0, 1);
       } else {
 	cannot_print(pp, notdisplay, obj, ht, compact);
       }
