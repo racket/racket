@@ -514,7 +514,7 @@
 
 (define (margin-note . c)
   (make-nested-flow
-   (make-style "refpara" '(command))
+   (make-style "refpara" '(command never-indents))
    (list
     (make-nested-flow
      (make-style "refcolumn" null)

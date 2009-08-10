@@ -386,6 +386,9 @@ The currently recognized @tech{style properties} are as follows:
  @item{@scheme[body-id] structure --- For HTML, uses the given string
        as an @tt{id} attribute of the @tt{<p>} or @tt{<div>} tag.}
 
+ @item{@scheme['never-indents] --- For Latex and @tech{compound
+       paragraphs}; see @scheme[compound-paragraph].}
+
 ]}
 
 
@@ -430,6 +433,9 @@ The following @tech{style properties} are currently recognized:
  @item{@scheme['aux] --- For HTML, include the table in the
        table-of-contents display for the enclosing part.}
 
+ @item{@scheme['never-indents] --- For Latex and @tech{compound
+       paragraphs}; see @scheme[compound-paragraph].}
+
 ]
 
 For Latex output, a paragraph as a cell value is not automatically
@@ -473,6 +479,9 @@ The following @tech{style properties} are currently recognized:
  @item{@scheme[body-id] structure --- For HTML, uses the given string
        as an @tt{id} attribute of the @tt{<ul>} or @tt{<ol>} tag.}
 
+ @item{@scheme['never-indents] --- For Latex and @tech{compound
+       paragraphs}; see @scheme[compound-paragraph].}
+
 ]}
 
 
@@ -507,6 +516,9 @@ The following @tech{style properties} are currently recognized:
  @item{@scheme[body-id] structure --- For HTML, uses the given string
        as an @tt{id} attribute of the @tt{<blockquote>} tag.}
 
+ @item{@scheme['never-indents] --- For Latex and @tech{compound
+       paragraphs}; see @scheme[compound-paragraph].}
+
 ]}
 
 
@@ -518,7 +530,12 @@ A @techlink{compound paragraph} has a @tech{style} and a list of
 
 For HTML, a @scheme[paragraph] block in @scheme[blocks] is rendered
 without a @tt{<p>} tag, unless the paragraph has a style with a
-non-@scheme[#f] @tech{style name}.
+non-@scheme[#f] @tech{style name}. For Latex, each @tech{block} in
+@scheme[blocks] is rendered with a preceding @tt{\noindent}, unless
+the block has the @scheme['never-indents] property (checking
+recursively in a @scheme[nested-flow] or @scheme[compound-paragraph]
+if the @scheme[nested-flow] or @scheme[compound-paragraph] itself has
+no @scheme['never-indents] property).
 
 The @scheme[style] field of a compound paragraph is normally a string
 that corresponds to a CSS class for HTML output or Latex environment
@@ -536,6 +553,9 @@ for Latex output (see @secref["extra-style"]). The following
 
  @item{@scheme[body-id] structure --- For HTML, uses the given string
        as an @tt{id} attribute of the @tt{<p>} tag.}
+
+ @item{@scheme['never-indents] --- For Latex within another
+       @tech{compound paragraph}; see above.}
 
 ]}
 
