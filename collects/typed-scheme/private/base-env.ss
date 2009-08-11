@@ -576,6 +576,8 @@
 [module->namespace (-> -Sexp -Namespace)]
 [current-namespace (-Param -Namespace -Namespace)]
 
+[getenv (-> -String (Un -String (-val #f)))]
+
 ;; syntax operations
 
 [expand (-> (-Syntax Univ) (-Syntax Univ))]
@@ -716,3 +718,15 @@
 [sinh (N . -> . N)]
 [cosh (N . -> . N)]
 [tanh (N . -> . N)]
+
+;; scheme/pretty
+
+[pretty-print
+ (cl->* (Univ . -> . -Void)
+        (Univ -Output-Port . -> . -Void))]
+[pretty-display
+ (cl->* (Univ . -> . -Void)
+        (Univ -Output-Port . -> . -Void))]
+[pretty-format
+ (cl->* (Univ . -> . -Void)
+        (Univ -Integer . -> . -Void))]
