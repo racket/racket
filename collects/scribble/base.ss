@@ -564,9 +564,9 @@
 (provide get-index-entries)
 (provide/contract
  [index-block (-> delayed-block?)]
- [index (((or/c string? (listof string?))) ()  #:rest (listof any/c) . ->* . index-element?)] ; XXX pre-content docs
- [index* (((listof string?) (listof any/c)) ()  #:rest (listof any/c) . ->* . index-element?)] ; XXX pre-content docs and first any/c wrong in docs 
- [as-index (() () #:rest (listof any/c) . ->* . index-element?)] ; XXX pre-content docs
+ [index (((or/c string? (listof string?))) ()  #:rest (listof pre-content?) . ->* . index-element?)]
+ [index* (((listof string?) (listof any/c)) ()  #:rest (listof pre-content?) . ->* . index-element?)] ; XXX first any/c wrong in docs 
+ [as-index (() () #:rest (listof pre-content?) . ->* . index-element?)]
  [section-index (() () #:rest (listof string?) . ->* . part-index-decl?)]
  [index-section (() (#:tag (or/c false/c string?)) . ->* . part?)])
 

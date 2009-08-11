@@ -7,10 +7,10 @@
          "manual-style.ss")
 
 (provide/contract
- ; XXX boolean? and precontent?
- [deftech (() (#:style? any/c) #:rest (listof any/c) . ->* . element?)]
- [tech (() (#:doc (or/c module-path? false/c) #:tag-prefixes (or/c (listof string?) false/c)) #:rest (listof any/c) . ->* . element?)]
- [techlink (() (#:doc (or/c module-path? false/c) #:tag-prefixes (or/c (listof string?) false/c)) #:rest (listof any/c) . ->* . element?)])
+ ; XXX boolean?
+ [deftech (() (#:style? any/c) #:rest (listof pre-content?) . ->* . element?)]
+ [tech (() (#:doc (or/c module-path? false/c) #:tag-prefixes (or/c (listof string?) false/c)) #:rest (listof pre-content?) . ->* . element?)]
+ [techlink (() (#:doc (or/c module-path? false/c) #:tag-prefixes (or/c (listof string?) false/c)) #:rest (listof pre-content?) . ->* . element?)])
 
 (define (*tech make-elem style doc prefix s)
   (let* ([c (decode-content s)]

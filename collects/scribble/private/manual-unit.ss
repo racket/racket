@@ -42,8 +42,7 @@
   (make-sig-desc l))
 
 (provide/contract
- ; XXX preflow & docs
- [signature-desc (() () #:rest (listof any/c) . ->* . sig-desc?)])
+ [signature-desc (() () #:rest (listof pre-flow?) . ->* . sig-desc?)])
 
 (define (*defsignature stx-id supers body-thunk indent?)
   (*defthing

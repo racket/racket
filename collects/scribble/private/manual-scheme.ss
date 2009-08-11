@@ -18,7 +18,6 @@
          scheme SCHEME scheme/form schemeresult schemeid 
          schememodname
          schememodlink indexed-scheme
-         ; XXX doc says this is function
          schemelink)
 
 (define-code schemeblock0 to-paragraph)

@@ -18,16 +18,14 @@
          itemize
          aux-elem)
 
-; XXX pre-content
 (define styling-f/c
-  (() () #:rest (listof any/c) . ->* . element?))
+  (() () #:rest (listof pre-content?) . ->* . element?))
 (define-syntax-rule (provide-styling id ...)
   (provide/contract [id styling-f/c] ...))
-(provide-styling onscreen defterm
-                 schememodfont schemeoutput ; XXX no docs
+(provide-styling schememodfont schemeoutput
                  schemeerror schemefont schemevalfont schemeresultfont schemeidfont schemevarfont
                  schemeparenfont schemekeywordfont schememetafont
-                 filepath exec envvar Flag DFlag PFlag DPFlag math
+                 onscreen defterm filepath exec envvar Flag DFlag PFlag DPFlag math
                  procedure
                  indexed-file indexed-envvar idefterm pidefterm)
 (provide/contract
@@ -37,9 +35,9 @@
  [hash-lang (-> element?)]
  [etc string?]
  [inset-flow (() () #:rest (listof any/c) . ->* . any/c)] ; XXX no docs and bad return contract
- [litchar (() () #:rest (listof string?) . ->* . element?)] ; XXX docs wrong
- [t (() () #:rest (listof any/c) . ->* . paragraph?)] ; XXX pre-content
- [commandline (() () #:rest (listof any/c) . ->* . paragraph?)] ; XXX pre-content
+ [litchar (() () #:rest (listof string?) . ->* . element?)]
+ [t (() () #:rest (listof pre-content?) . ->* . paragraph?)]
+ [commandline (() () #:rest (listof pre-content?) . ->* . paragraph?)]
  [menuitem (string? string? . -> . element?)]) 
 
 (define PLaneT (make-element "planetName" '("PLaneT")))
@@ -47,9 +45,6 @@
 (define etc "etc.") ; so we can fix the latex space, one day
 
 (define (litchar . strs)
-  ; XXX Remove not-contract
-  (unless (andmap string? strs)
-    (raise-type-error 'litchar "strings" strs))
   (let ([s (string-append* (map (lambda (s) (regexp-replace* "\n" s " "))
                                 strs))])
     (if (regexp-match? #rx"^ *$" s)
