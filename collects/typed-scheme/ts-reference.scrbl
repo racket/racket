@@ -188,6 +188,12 @@ types.  In most cases, use of @scheme[:] is preferred to use of @scheme[define:]
 structure is a substructure of @scheme[parent].  When
 @scheme[maybe-type-vars] is present, the structure is polymorphic in the type
  variables @scheme[v].}
+                                 
+@defform/subs[
+(define-struct/exec: name-spec ([f : t] ...) [e : proc-t])
+([name-spec name (name parent)])]{
+ Like @scheme[define-struct:], but defines an procedural structure.  
+ The procdure @scheme[e] is used as the value for @scheme[prop:procedure], and must have type @scheme[proc-t].}
 
 @subsection{Type Aliases}
 @defform*[[(define-type-alias name t)

@@ -20,7 +20,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 
 (provide (all-defined-out)
-	 (rename-out [define-typed-struct define-struct:]))
+	 (rename-out [define-typed-struct define-struct:]
+                     [define-typed-struct/exec define-struct/exec:]))
 
 (require (except-in "../utils/utils.ss" extend))
 (require (for-syntax 
