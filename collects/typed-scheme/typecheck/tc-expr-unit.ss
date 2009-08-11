@@ -127,6 +127,11 @@
   (match (tc-expr/check e t)
     [(tc-result1: t) t]))
 
+(define (print-object o)
+  (match o
+    [(Empty:) "no object"]
+    [_ (format "object ~a" o)]))
+
 ;; check-below : (/\ (Results Type -> Result)
 ;;                   (Results Results -> Result)
 ;;                   (Type Results -> Type)
@@ -157,7 +162,7 @@
        [(not (subtype t1 t2))
         (tc-error/expr "Expected ~a, but got ~a" t2 t1)]
        [(not (and (equal? f1 f2) (equal? o1 o2)))
-        (tc-error/expr "Expected result with filter ~a and object ~a, got filter ~a and object ~a" f2 o2 f1 o1)])
+        (tc-error/expr "Expected result with filter ~a and ~a, got filter ~a and ~a" f2 (print-object o2) f1 (print-object o1))])
      expected]
     [((tc-results: t1 f o dty dbound) (tc-results: t2 f o dty dbound))
      (unless (andmap subtype t1 t2)
@@ -179,7 +184,7 @@
      t1]
     [((? Type? t1) (tc-result1: t2 f o))
      (if (subtype t1 t2)
-         (tc-error/expr "Expected result with filter ~a and object ~a, got ~a" f o t1)
+         (tc-error/expr "Expected result with filter ~a and ~a, got ~a" f (print-object o) t1)
          (tc-error/expr "Expected ~a, but got ~a" t2 t1))
      t1]
     [((? Type? t1) (? Type? t2))

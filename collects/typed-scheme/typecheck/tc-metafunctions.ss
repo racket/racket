@@ -134,6 +134,8 @@
   (match* (f1 f2 f3)
     [((T-FS:) f _) (ret t2 f o2)]
     [((F-FS:) _ f) (ret t3 f o3)]
+    ;; the student expansion
+    [(f (T-FS:) (F-FS:)) (mk f)]
     ;; skipping the general or/predicate rule because it's really complicated
     ;; or/predicate special case for one elem lists
     ;; note that we are relying on equal? on identifiers here
@@ -153,8 +155,6 @@
 			  (for/list ([f f2-])
 			    (make-ImpFilter f1+ f)))))]
     [(f f* f*) (mk f*)]
-    ;; the student expansion
-    [(f (T-FS:) (F-FS:)) (mk f)]
     [(_ _ _)
      ;; could intersect f2 and f3 here
      (mk (make-FilterSet null null))]))
