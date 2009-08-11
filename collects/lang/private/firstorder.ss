@@ -13,8 +13,11 @@
       (if (or (fo? v)
               (and (set!-transformer? v)
                    (fo? (set!-transformer-procedure v))))
-          (syntax-local-introduce 
-	   (fo-proc-id (if (fo? v) v (set!-transformer-procedure v))))
+          (syntax-property
+           (syntax-local-introduce 
+            (fo-proc-id (if (fo? v) v (set!-transformer-procedure v))))
+           'disappeared-use
+           (syntax-local-introduce id))
 	  id))))
 
 
