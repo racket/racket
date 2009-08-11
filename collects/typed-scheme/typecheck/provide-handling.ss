@@ -53,7 +53,7 @@
          (lambda (b)
            (with-syntax ([id internal-id]
                          [out-id external-id])
-             (cond [(type->contract (def-binding-ty b) (lambda () #f)) 
+             (cond [(type->contract (def-binding-ty b) (lambda () #f) #:out #t)
                     =>
                     (lambda (cnt)                                    
                       (with-syntax ([(export-id cnt-id) (generate-temporaries #'(id id))])

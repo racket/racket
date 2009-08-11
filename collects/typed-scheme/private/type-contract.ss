@@ -48,7 +48,7 @@
   (= (length l) (length (remove-duplicates l))))
 
 
-(define (type->contract ty fail)
+(define (type->contract ty fail #:out [out? #f])
   (define vars (make-parameter '()))
   (let/ec exit
     (let loop ([ty ty] [pos? #t])
@@ -78,6 +78,10 @@
                (match a
                  [(arr: dom (Values: (list (Result: rngs (LFilterSet: '() '()) (LEmpty:)) ...)) rst #f '())
                   (values (map t->c/neg dom) (map t->c rngs) (and rst (t->c/neg rst)))]
+                 [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f '())
+                  (if (and out? pos?)
+                      (values (map t->c/neg dom) (map t->c rngs) (and rst (t->c/neg rst)))
+                      (exit (fail)))]
                  [_ (exit (fail))]))
              (trace f)
              (with-syntax 
