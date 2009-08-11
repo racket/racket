@@ -21,9 +21,10 @@
 
 (provide defproc defproc* defstruct
          defparam defparam* defboolparam
-         defthing defthing* defthing/proc
+         defthing defthing* 
+         defthing/proc ; XXX unknown contract
          ;; private:
-         *defthing)
+         *defthing) ; XXX unknown contract
 
 (define dots0
   (make-element meta-color (list "...")))

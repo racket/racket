@@ -1,6 +1,7 @@
 #lang scheme/base
 (require "../struct.ss")
 
+; XXX unknown contracts
 (provide (struct-out exporting-libraries)
          current-signature)
 

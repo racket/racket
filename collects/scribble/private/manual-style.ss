@@ -7,35 +7,47 @@
          (only-in "../core.ss" make-style plain)
          "manual-utils.ss"
          scheme/list
+         scheme/contract
          scheme/string)
 
-(provide PLaneT etc
-         litchar
-         image (rename-out [image image/plain]) onscreen menuitem defterm
-         schemefont schemevalfont schemeresultfont schemeidfont schemevarfont
-         schemeparenfont schemekeywordfont schememetafont schememodfont
-         schemeerror schemeoutput
-         filepath exec envvar Flag DFlag PFlag DPFlag
-         indexed-file indexed-envvar
-         (rename-out [hyperlink link])
+(provide (rename-out [hyperlink link])
          (rename-out [other-doc other-manual])
          (rename-out [centered centerline])
+         image
+         (rename-out [image image/plain])
          itemize
-         procedure
-         idefterm
-         t inset-flow
-         pidefterm
-         hash-lang
-         commandline         
-         void-const undefined-const
-         aux-elem
-         math)
+         aux-elem)
+
+; XXX pre-content
+(define styling-f/c
+  (() () #:rest (listof any/c) . ->* . element?))
+(define-syntax-rule (provide-styling id ...)
+  (provide/contract [id styling-f/c] ...))
+(provide-styling onscreen defterm
+                 schememodfont schemeoutput ; XXX no docs
+                 schemeerror schemefont schemevalfont schemeresultfont schemeidfont schemevarfont
+                 schemeparenfont schemekeywordfont schememetafont
+                 filepath exec envvar Flag DFlag PFlag DPFlag math
+                 procedure
+                 indexed-file indexed-envvar idefterm pidefterm)
+(provide/contract
+ [PLaneT element?]
+ [void-const element?]
+ [undefined-const element?]
+ [hash-lang (-> element?)]
+ [etc string?]
+ [inset-flow (() () #:rest (listof any/c) . ->* . any/c)] ; XXX no docs and bad return contract
+ [litchar (() () #:rest (listof string?) . ->* . element?)] ; XXX docs wrong
+ [t (() () #:rest (listof any/c) . ->* . paragraph?)] ; XXX pre-content
+ [commandline (() () #:rest (listof any/c) . ->* . paragraph?)] ; XXX pre-content
+ [menuitem (string? string? . -> . element?)]) 
 
 (define PLaneT (make-element "planetName" '("PLaneT")))
 
 (define etc "etc.") ; so we can fix the latex space, one day
 
 (define (litchar . strs)
+  ; XXX Remove not-contract
   (unless (andmap string? strs)
     (raise-type-error 'litchar "strings" strs))
   (let ([s (string-append* (map (lambda (s) (regexp-replace* "\n" s " "))

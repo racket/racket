@@ -1,14 +1,21 @@
 #lang scheme/base
-(require "../decode.ss"
+(require scheme/contract
+         "../decode.ss"
          "../struct.ss"
          "../basic.ss"
          "manual-utils.ss"
          "manual-style.ss")
 
-(provide cite
-         bib-entry
-         (rename-out [a-bib-entry? bib-entry?])
-         bibliography)
+(define-struct a-bib-entry (key val))
+
+(provide/contract
+ [cite ((string?) () #:rest (listof string?) . ->* . element?)] ; XXX docs wrong
+ [bib-entry ((#:key string? #:title any/c) ; XXX bad contracts
+             (#:is-book? any/c #:author any/c #:location any/c #:date any/c #:url any/c)
+             . ->* .
+             a-bib-entry?)]
+ [rename a-bib-entry? bib-entry? (any/c . -> . boolean?)]
+ [bibliography (() (#:tag string?) #:rest (listof a-bib-entry?) . ->* . part?)]) 
 
 (define (cite key . keys)
   (make-element
@@ -26,8 +33,6 @@
                     ", "
                     (loop (cdr keys))))))
          "]")))
-
-(define-struct a-bib-entry (key val))
 
 (define (bib-entry #:key key
                    #:title title

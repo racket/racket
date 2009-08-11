@@ -7,6 +7,7 @@
          "../manual-struct.ss"
          "manual-ex.ss"
          scheme/string
+         scheme/contract
          scheme/list
          scheme/class
          scheme/stxparam
@@ -25,12 +26,15 @@
          with-exporting-libraries
          id-to-target-maker
          id-to-form-target-maker
-         defidentifier
          *sig-elem
          (struct-out sig)
          ;; public:
+         ; XXX unknown contract
          make-binding-redirect-elements
          sigelem)
+(provide/contract
+ ; XXX any/c should be boolean?
+ [defidentifier ((identifier?) (#:form? any/c #:index? any/c #:show-libs? any/c) . ->* . element?)])
 
 (define (gen-absolute-tag)
   `(abs ,(make-generated-tag)))

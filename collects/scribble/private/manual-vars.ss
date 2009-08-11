@@ -3,18 +3,20 @@
          "../scheme.ss"
          "../struct.ss"
          (only-in "../core.ss" style-name)
+         scheme/contract
          (for-syntax scheme/base
                      syntax/kerncase
                      syntax/boundmap)
          (for-label scheme/base
                     scheme/class))
 
+(define-struct (box-splice splice) ())
+
+(provide/contract
+ [struct (box-splice splice) ([run list?])]) ; XXX ugly copying
 (provide deftogether
          with-scheme-variables
-         with-togetherable-scheme-variables
-         (struct-out box-splice))
-
-(define-struct (box-splice splice) ())
+         with-togetherable-scheme-variables)
 
 (begin-for-syntax (define-struct deftogether-tag () #:omit-define-syntaxes))
 

@@ -146,10 +146,12 @@
 
 ;; ----------------------------------------
 
+; XXX unknown contracts
 (provide intern-taglet
          module-path-index->taglet
-         module-path-prefix->string
          doc-prefix)
+(provide/contract
+ [module-path-prefix->string (module-path? . -> . string?)])
 
 (require syntax/modcollapse
          ;; Needed to normalize planet version numbers:
@@ -242,7 +244,8 @@
             () 
             #:rest (listof pre-flow?)
             item?)])
-(provide item?)
+(provide/contract
+ [item? (any/c . -> . boolean?)])
 
 (define (itemlist #:style [style plain] . items)
   (let ([flows (map an-item-flow items)])
@@ -557,8 +560,15 @@
 
 ;; ----------------------------------------
 
-(provide section-index index index* as-index index-section
-         get-index-entries index-block)
+; XXX unknown contract
+(provide get-index-entries)
+(provide/contract
+ [index-block (-> delayed-block?)]
+ [index (((or/c string? (listof string?))) ()  #:rest (listof any/c) . ->* . index-element?)] ; XXX pre-content docs
+ [index* (((listof string?) (listof any/c)) ()  #:rest (listof any/c) . ->* . index-element?)] ; XXX pre-content docs and first any/c wrong in docs 
+ [as-index (() () #:rest (listof any/c) . ->* . index-element?)] ; XXX pre-content docs
+ [section-index (() () #:rest (listof string?) . ->* . part-index-decl?)]
+ [index-section (() (#:tag (or/c false/c string?)) . ->* . part?)])
 
 (define (section-index . elems)
   (make-part-index-decl (map content->string elems) elems))
@@ -730,8 +740,10 @@
 
 ;; ----------------------------------------
 
-(provide table-of-contents
-         local-table-of-contents)
+(provide/contract
+ [table-of-contents (-> delayed-block?)]
+ ; XXX Should have a style/c contract
+ [local-table-of-contents (() (#:style any/c) . ->* . delayed-block?)])
 
 (define (table-of-contents)
   (make-delayed-block

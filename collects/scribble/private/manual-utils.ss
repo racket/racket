@@ -2,13 +2,17 @@
 (require "../struct.ss"
          "../decode.ss"
          "../base.ss"
+         scheme/contract
          scheme/list)
 
-(provide spacer doc-prefix
-         to-flow
-         flow-spacer flow-empty-line
-         make-table-if-necessary
-         max-proto-width)
+(provide doc-prefix)
+(provide/contract
+ [spacer element?]
+ [to-flow (any/c . -> . flow?)] ; XXX element?
+ [flow-spacer flow?]
+ [flow-empty-line flow?]
+ [make-table-if-necessary (any/c list? . -> . (list/c (or/c omitable-paragraph? table?)))] ; XXX element?
+ [max-proto-width exact-nonnegative-integer?])
 
 (define spacer (hspace 1))
 

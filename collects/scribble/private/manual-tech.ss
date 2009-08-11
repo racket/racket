@@ -1,11 +1,16 @@
 #lang scheme/base
-(require "../decode.ss"
+(require scheme/contract
+         "../decode.ss"
          "../struct.ss"
          "../basic.ss"
          "manual-utils.ss"
          "manual-style.ss")
 
-(provide deftech tech techlink)
+(provide/contract
+ ; XXX boolean? and precontent?
+ [deftech (() (#:style? any/c) #:rest (listof any/c) . ->* . element?)]
+ [tech (() (#:doc (or/c module-path? false/c) #:tag-prefixes (or/c (listof string?) false/c)) #:rest (listof any/c) . ->* . element?)]
+ [techlink (() (#:doc (or/c module-path? false/c) #:tag-prefixes (or/c (listof string?) false/c)) #:rest (listof any/c) . ->* . element?)])
 
 (define (*tech make-elem style doc prefix s)
   (let* ([c (decode-content s)]

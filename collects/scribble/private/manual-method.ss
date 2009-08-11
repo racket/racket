@@ -6,11 +6,12 @@
          "manual-scheme.ss"
          (for-syntax scheme/base))
 
+(provide ;; public:
+         method xmethod)
+; XXX unknown contracts
 (provide *method **method
          method-tag
-         name-this-object
-         ;; public:
-         method xmethod)
+         name-this-object)
 
 (define-syntax-rule (method a b)
   (*method 'b (quote-syntax a)))
