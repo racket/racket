@@ -183,6 +183,7 @@
 [- (cl->* (->* (list -Integer) -Integer -Integer) (->* (list N) N N))]
 [max (->* (list N) N N)]
 [min (->* (list N) N N)]
+[vector? (make-pred-ty (-vec Univ))]
 [vector-ref (-poly (a) ((-vec a) N . -> . a))]
 [build-vector (-poly (a) (-Integer (-Integer . -> . a) . -> . (-vec a)))]
 [build-list (-poly (a) (-Integer (-Integer . -> . a) . -> . (-lst a)))]

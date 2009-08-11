@@ -4,7 +4,7 @@
 
 (require (except-in "../utils/utils.ss" extend))
 (require
- (rep type-rep)
+ (rep type-rep filter-rep object-rep)
  (typecheck internal-forms)
  (utils tc-utils require-contract)
  (env type-name-env)
@@ -64,19 +64,22 @@
         [(Base: sym cnt) cnt]
         [(Refinement: par p? cert)
          #`(and/c #,(t->c par) (flat-contract #,(cert p?)))]
-        [(Union: elems) 
-         (with-syntax 
-             ([cnts (map t->c elems)])
-           #;(printf "~a~n" (syntax-object->datum #'cnts))
-           #'(or/c . cnts))]
+        [(Union: elems)         
+         (let-values ([(vars notvars)
+                       (partition F? elems)])
+           (unless (>= 1 (length vars)) (exit (fail)))
+           (with-syntax 
+               ([cnts (append (map t->c vars) (map t->c notvars))])
+             #'(or/c . cnts)))]
         [(Function: arrs)
          (let ()           
            (define (f a)
              (define-values (dom* rngs* rst)
                (match a
-                 [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f '())
+                 [(arr: dom (Values: (list (Result: rngs (LFilterSet: '() '()) (LEmpty:)) ...)) rst #f '())
                   (values (map t->c/neg dom) (map t->c rngs) (and rst (t->c/neg rst)))]
                  [_ (exit (fail))]))
+             (trace f)
              (with-syntax 
                  ([(dom* ...) dom*]
                   [rng* (match rngs*
