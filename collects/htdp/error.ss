@@ -47,6 +47,24 @@
         [(2) (format "~and" i)]
         [(3) (format "~ard" i)])))
 
+;; spell-out : number-or-string -> string
+(define (spell-out arg-posn)
+  (cond
+    [(string? arg-posn) arg-posn]
+    [(number? arg-posn)
+     (case arg-posn
+       [(1) "first"]
+       [(2) "second"]
+       [(3) "third"]
+       [(4) "fourth"]
+       [(5) "fifth"]
+       [(6) "sixth"]
+       [(7) "seventh"]
+       [(8) "eighth"]
+       [(9) "ninth"]
+       [(10) "tenth"]
+       [else (number->ord arg-posn)])]))
+
 ;; Symbol (union true String) String X -> void
 (define (check-list-list pname condition pred given)
   (when (string? condition)
@@ -93,23 +111,6 @@
               expected 
               (spell-out arg-posn)
               given)))
-
-(define (spell-out arg-posn)
-  (cond
-    [(string? arg-posn) arg-posn]
-    [(number? arg-posn)
-     (case arg-posn
-       [(1) "first"]
-       [(2) "second"]
-       [(3) "third"]
-       [(4) "fourth"]
-       [(5) "fifth"]
-       [(6) "sixth"]
-       [(7) "seventh"]
-       [(8) "eighth"]
-       [(9) "ninth"]
-       [(10) "tenth"]
-       [else (format "~ath") arg-posn])]))
 
 ;; check-arity : sym num (list-of TST) -> void
 (define (check-arity name arg# args)
