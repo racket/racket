@@ -10,8 +10,11 @@
 
 (provide/contract
  [cite ((string?) () #:rest (listof string?) . ->* . element?)]
- [bib-entry ((#:key string? #:title any/c) ; XXX should be pre-content or #f
-             (#:is-book? any/c #:author any/c #:location any/c #:date any/c #:url any/c)
+ [bib-entry ((#:key string? #:title (or/c false/c pre-content?))
+             (#:is-book? boolean? #:author (or/c false/c pre-content?) 
+                         #:location (or/c false/c pre-content?) 
+                         #:date (or/c false/c pre-content?) 
+                         #:url (or/c false/c pre-content?))
              . ->* .
              a-bib-entry?)]
  [rename a-bib-entry? bib-entry? (any/c . -> . boolean?)]

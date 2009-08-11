@@ -651,9 +651,9 @@ Like @scheme[schemegrammar], but for typesetting multiple productions
 at once, aligned around the @litchar{=} and @litchar{|}.}
 
 @defproc[(defidentifier [id identifier?]
-                        [#:form? form? any/c #f]
-                        [#:index? index? any/c #t]
-                        [#:show-libs? show-libs? any/c #t])
+                        [#:form? form? boolean? #f]
+                        [#:index? index? boolean? #t]
+                        [#:show-libs? show-libs? boolean? #t])
          element?]{
 
 Typesets @scheme[id] as a Scheme identifier, and also establishes the
@@ -906,7 +906,7 @@ An alias of @scheme[hyperlink] for backward compatibility.}
 An alias of @scheme[other-doc] for backward compatibility.}
 
 @defproc[(deftech [pre-content pre-content?] ...
-                  [#:style? style? any/c #t]) element?]{
+                  [#:style? style? boolean? #t]) element?]{
 
 Produces an element for the @tech{decode}d @scheme[pre-content], and
 also defines a term that can be referenced elsewhere using
@@ -1031,12 +1031,12 @@ which is created with @scheme[bib-entry]. The entries are typeset in
 order as given.}
 
 @defproc[(bib-entry [#:key key string?]
-                    [#:title title any/c]
-                    [#:is-book? is-book? any/c #f]
-                    [#:author author any/c #f]
-                    [#:location location any/c #f]
-                    [#:date date any/c #f] 
-                    [#:url url any/c #f])
+                    [#:title title (or/c false/c pre-content?)]
+                    [#:is-book? is-book? boolean? #f]
+                    [#:author author (or/c false/c pre-content?) #f]
+                    [#:location location (or/c false/c pre-content?) #f]
+                    [#:date date (or/c false/c pre-content?) #f] 
+                    [#:url url (or/c false/c pre-content?) #f])
          bib-entry?]{
 
 Creates a bibliography entry. The @scheme[key] is used to refer to the

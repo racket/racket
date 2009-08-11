@@ -33,8 +33,7 @@
          make-binding-redirect-elements
          sigelem)
 (provide/contract
- ; XXX any/c should be boolean?
- [defidentifier ((identifier?) (#:form? any/c #:index? any/c #:show-libs? any/c) . ->* . element?)])
+ [defidentifier ((identifier?) (#:form? boolean? #:index? boolean? #:show-libs? boolean?) . ->* . element?)])
 
 (define (gen-absolute-tag)
   `(abs ,(make-generated-tag)))

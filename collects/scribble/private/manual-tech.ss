@@ -7,8 +7,7 @@
          "manual-style.ss")
 
 (provide/contract
- ; XXX boolean?
- [deftech (() (#:style? any/c) #:rest (listof pre-content?) . ->* . element?)]
+ [deftech (() (#:style? boolean?) #:rest (listof pre-content?) . ->* . element?)]
  [tech (() (#:doc (or/c module-path? false/c) #:tag-prefixes (or/c (listof string?) false/c)) #:rest (listof pre-content?) . ->* . element?)]
  [techlink (() (#:doc (or/c module-path? false/c) #:tag-prefixes (or/c (listof string?) false/c)) #:rest (listof pre-content?) . ->* . element?)])
 

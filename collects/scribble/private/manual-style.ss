@@ -34,7 +34,7 @@
  [undefined-const element?]
  [hash-lang (-> element?)]
  [etc string?]
- [inset-flow (() () #:rest (listof any/c) . ->* . any/c)] ; XXX no docs and bad return contract
+ [inset-flow (() () #:rest (listof pre-content?) . ->* . any/c)] ; XXX no docs and bad return contract
  [litchar (() () #:rest (listof string?) . ->* . element?)]
  [t (() () #:rest (listof pre-content?) . ->* . paragraph?)]
  [commandline (() () #:rest (listof pre-content?) . ->* . paragraph?)]
