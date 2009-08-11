@@ -365,20 +365,27 @@ all of the names in the tools library, for use defining keybindings
   
   (proc-doc/names
    drscheme:debug:show-backtrace-window
-   (string?
-    (or/c exn? 
-          (listof srcloc?)
-          (non-empty-listof (cons/c string? (listof srcloc?))))
-    . -> .
-    void?)
-   (error-message dis)
+   (->* (string?
+         (or/c exn? 
+               (listof srcloc?)
+               (non-empty-listof (cons/c string? (listof srcloc?)))))
+        ((or/c #f (is-a?/c drscheme:rep:text<%>)))
+        void?)
+   ((error-message dis)
+    ((rep #f)))
    @{Shows the backtrace window you get when clicking on the bug in
      DrScheme's REPL.
      
      The @scheme[error-message] argument is the text of the error,
      @scheme[dis] is the debug information, extracted from the
      continuation mark in the exception record, using
-     @scheme[errortrace-key].})
+     @scheme[errortrace-key].
+     
+     The @scheme[rep] argument should be non-@scheme[#f] if there are 
+     possibly stacktrace frames that contain unsaved versions of the 
+     definitions text or the repl from drscheme. Use
+     @scheme[drscheme:rep:current-rep] to get the rep.
+     })
  
   
   ;                           

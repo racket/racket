@@ -277,26 +277,28 @@ profile todo:
                          ((exn:srclocs-accessor exn) exn)
                          (if (null? stack)
                              '()
-                             (list (car stack))))])
+                             (list (car stack))))]
+           [rep (let ([rep (drscheme:rep:current-rep)])
+                  (and (is-a? rep drscheme:rep:text<%>)
+                       rep))])
       (print-planet-icon-to-stderr exn)
       (unless (null? stack)
-        (print-bug-to-stderr msg stack))
+        (print-bug-to-stderr msg stack rep))
       (display-srclocs-in-error src-locs)
       (display msg (current-error-port))
       (when (exn:fail:syntax? exn)
         (show-syntax-error-context (current-error-port) exn))
       (newline (current-error-port))
       (flush-output (current-error-port))
-      (let ([rep (drscheme:rep:current-rep)])
-        (when (and (is-a? rep drscheme:rep:text<%>)
-                   (eq? (current-error-port) 
-                        (send rep get-err-port)))
-          (parameterize ([current-eventspace drscheme:init:system-eventspace])
-            (queue-callback
-             (λ ()
-               ;; need to make sure that the user's eventspace is still the same
-               ;; and still running here?
-               (send rep highlight-errors src-locs stack))))))))
+      (when (and rep
+                 (eq? (current-error-port) 
+                      (send rep get-err-port)))
+        (parameterize ([current-eventspace drscheme:init:system-eventspace])
+          (queue-callback
+           (λ ()
+             ;; need to make sure that the user's eventspace is still the same
+             ;; and still running here?
+             (send rep highlight-errors src-locs stack)))))))
   
   ;; =User=
   (define (print-planet-icon-to-stderr exn)
@@ -356,12 +358,12 @@ profile todo:
       (get-output-string sp)))
   
   ;; =User=
-  (define (print-bug-to-stderr msg cms)
+  (define (print-bug-to-stderr msg cms rep)
     (when (port-writes-special? (current-error-port))
       (let ([note% (if (mf-bday?) mf-note% bug-note%)])
         (when note%
           (let ([note (new note%)])
-            (send note set-callback (λ () (show-backtrace-window msg cms)))
+            (send note set-callback (λ () (show-backtrace-window msg cms rep)))
             (write-special note (current-error-port))
             (display #\space (current-error-port)))))))
   
@@ -571,7 +573,7 @@ profile todo:
   ;;                         (listof srcloc?)
   ;;                         -> 
   ;;                         void
-  (define (show-backtrace-window error-text dis/exn)
+  (define (show-backtrace-window error-text dis/exn [rep #f])
     (let ([dis (if (exn? dis/exn)
                    (cms->srclocs (exn-continuation-marks dis/exn))
                    dis/exn)])
@@ -597,7 +599,7 @@ profile todo:
                       (cond
                         [(and (< n (vector-length di-vec))
                               (< n (+ index how-many-at-once)))
-                         (show-frame ec text (vector-ref di-vec n))
+                         (show-frame ec text (vector-ref di-vec n) rep)
                          (loop (+ n 1))]
                         [else
                          (set! index n)]))
@@ -658,10 +660,11 @@ profile todo:
   ;; show-frame : (instanceof editor-canvas%)
   ;;              (instanceof text%) 
   ;;              st-mark?
+  ;;              rep
   ;;              -> 
   ;;              void 
   ;; shows one frame of the continuation
-  (define (show-frame editor-canvas text di)
+  (define (show-frame editor-canvas text di rep)
     (let* ([debug-source (srcloc-source di)]
            [line (srcloc-line di)]
            [column (srcloc-column di)]
@@ -689,18 +692,24 @@ profile todo:
           (send text insert (render-bindings/snip bindings))))
       (send text insert #\newline)
       
-      (insert-context editor-canvas text debug-source start span)
+      (insert-context editor-canvas text debug-source start span rep)
       (send text insert #\newline)))
   
   ;; insert-context : (instanceof editor-canvas%)
   ;;                  (instanceof text%)
   ;;                  debug-info
   ;;                  number
+  ;;                  rep
   ;;                  -> 
   ;;                  void
-  (define (insert-context editor-canvas text file start span)
+  (define (insert-context editor-canvas text file start span rep)
     (let-values ([(from-text close-text)
                   (cond
+                    [(and rep (send rep port-name-matches? file))
+                     (values rep void)]
+                    [(and rep (send (send rep get-definitions-text) port-name-matches? file))
+                     (values (send rep get-definitions-text) void)]
+                    #;
                     [(symbol? file)
                      ;; can this case happen?
                      (let ([text (new text:basic%)])
