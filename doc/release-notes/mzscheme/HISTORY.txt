@@ -1,3 +1,6 @@
+Version 4.2.1.6
+Added print-syntax-width
+
 Version 4.2.1.5
 Added file-or-directory-identity
 

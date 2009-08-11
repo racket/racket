@@ -57,7 +57,13 @@ level, as indicated by @scheme[phase-expr].}
 
 Returns a list of identifiers that are bound normally,
 @scheme[for-syntax], and @scheme[for-template] to the primitive PLT
-Scheme forms for expressions and internal-definition positions (so the
-list does not include @scheme[#%require] or @scheme[#%provide]). This
-function is useful for generating a list of stopping points to provide
-to @scheme[local-expand].}
+Scheme forms for expressions, internal-definition positions, and
+module-level and top-level positions. This function is useful for
+generating a list of stopping points to provide to
+@scheme[local-expand].
+
+In addition to the identifiers listed in @secref[#:doc '(lib
+"scribblings/reference/reference.scrbl") "fully-expanded"], the list
+includes @scheme[letrec-syntaxes+values], which is the core form for
+local expand-time binding and can appear in the result of
+@scheme[local-expand].}

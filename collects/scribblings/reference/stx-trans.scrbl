@@ -178,7 +178,9 @@ literal data expressions without the respective explicit form are not
 wrapped with the explicit form. If @scheme[stop-ids] is @scheme[#f]
 instead of a list, then @scheme[stx] is expanded only as long as the
 outermost form of @scheme[stx] is a macro (i.e., expansion does not
-proceed to sub-expressions).
+proceed to sub-expressions). A fully expanded form can include the
+bindings listed in @secref["fully-expanded"] plus the
+@scheme[letrec-syntaxes+values] form.
 
 The optional @scheme[intdef-ctx] argument must be either @scheme[#f],
 the result of @scheme[syntax-local-make-definition-context], or a list

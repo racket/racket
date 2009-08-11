@@ -91,8 +91,9 @@
                 #%expression
                 #%plain-app
                 #%top
-                #%datum ; should this be here?
-                #%variable-reference))))
+                #%datum
+                #%variable-reference
+                module #%provide #%require))))
 
   (provide kernel-syntax-case
            kernel-syntax-case*

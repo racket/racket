@@ -252,6 +252,10 @@ in which case the relevant @tech{phase level} is 1 (for which
 comparisons are made using @scheme[free-transformer-identifier=?]
 instead of @scheme[free-identifier=?]).
 
+In addition to the grammar above, @scheme[letrec-syntaxes+values] can
+appear in a fully local-expanded expression, such as the result from
+@scheme[local-expand] when the stop list is empty.
+
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "expand-steps"]{Expansion Steps}
 
