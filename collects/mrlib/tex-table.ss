@@ -135,6 +135,7 @@
     ("succ" "≻")
     ("sim" "∼")
     ("perp" "⊥")
+    ("top" "⊤")
     ("preceq" "≼")
     ("succeq" "≽")
     ("simeq" "≃")
