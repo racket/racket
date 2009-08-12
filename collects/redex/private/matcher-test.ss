@@ -72,8 +72,8 @@
     
     (test-empty '(in-hole (name E_1 ((hide-hole hole) hole)) x)
                 `(,the-hole x)
-                (list (make-test-mtch (make-bindings (list (make-bind 'E_1 `(,the-hole ,the-hole)))) 
-                                      `(x ,the-hole)
+                (list (make-test-mtch (make-bindings (list (make-bind 'E_1 `(,the-not-hole ,the-hole)))) 
+                                      `(,the-hole x)
                                       none)))
     
 

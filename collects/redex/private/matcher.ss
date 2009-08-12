@@ -761,7 +761,7 @@ before the pattern compiler is invoked.
           (lambda (exp hole-info)
             (let ([matches (match-pat exp #f)])
               (and matches
-                   (map (λ (match) (make-mtch (mtch-bindings match) (mtch-context match) none))
+                   (map (λ (match) (make-mtch (mtch-bindings match) (hole->not-hole (mtch-context match)) none))
                         matches))))
           #f))]
       
@@ -1562,6 +1562,18 @@ before the pattern compiler is invoked.
     (define-struct hole () #:inspector #f)
     (define the-hole (make-hole))
     (values the-hole hole?)))
+(define-values (the-not-hole not-hole?)
+  (let ()
+    (define-struct not-hole () #:inspector #f)
+    (define the-not-hole (make-not-hole))
+    (values the-not-hole not-hole?)))
+
+(define hole->not-hole
+  (match-lambda
+    [(? hole?) the-not-hole]
+    [(list-rest f r)
+     (cons (hole->not-hole f) (hole->not-hole r))]
+    [x x]))
 
 (define (build-flat-context exp) exp)
 (define (build-cons-context e1 e2) (cons e1 e2))
@@ -1579,13 +1591,14 @@ before the pattern compiler is invoked.
          (cond
            [(pair? exp) 
             (cons (loop (car exp))
-                  (if done?
-                      (cdr exp)
-                      (loop (cdr exp))))]
-           
+                  (loop (cdr exp)))]
+           [(not-hole? exp)
+            the-hole]
            [(hole? exp)
-            (set! done? #t)
-            hole-stuff]
+            (if done?
+                the-hole
+                (begin (set! done? #t)
+                       hole-stuff))]
            [else exp])))]))
 
 ;;
@@ -1641,7 +1654,7 @@ before the pattern compiler is invoked.
          none? none
          
          make-repeat
-         the-hole hole?
+         the-not-hole the-hole hole?
          rewrite-ellipses
          build-compatible-context-language
          caching-enabled?)

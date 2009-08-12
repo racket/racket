@@ -8,7 +8,7 @@
 
 (define syn-err-test-namespace (make-base-namespace))
 (parameterize ([current-namespace syn-err-test-namespace])
-  (eval '(require "../reduction-semantics.ss")))
+  (eval '(require redex/reduction-semantics)))
 
 (define-syntax (test stx)
   (syntax-case stx ()

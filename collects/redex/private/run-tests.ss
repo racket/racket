@@ -12,7 +12,8 @@
     "keyword-macros-test.ss"
     "core-layout-test.ss" 
     "bitmap-test.ss" 
-    "pict-test.ss"))
+    "pict-test.ss"
+    "hole-test.ss"))
 
 (define-runtime-path here ".")
 
