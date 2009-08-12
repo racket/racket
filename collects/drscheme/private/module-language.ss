@@ -171,7 +171,20 @@
            (compile-context-preservation-enabled (module-language-settings-full-trace? settings))
            
            (when (module-language-settings-compilation-on? settings)
+             
+             (let ([annotations (drscheme:language:simple-settings-annotations settings)])
+               (case annotations
+                 [(none)
+                  (use-compiled-file-paths
+                   (cons (build-path "compiled" "drscheme")
+                         (use-compiled-file-paths)))]
+                 [(debug)
+                  (use-compiled-file-paths
+                   (cons (build-path "compiled" "drscheme" "errortrace")
+                         (use-compiled-file-paths)))]))
+             
              (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))
+             
              (manager-skip-file-handler
               (λ (p)
                 ;; iterate over all of the collection paths; if we find that this path is
