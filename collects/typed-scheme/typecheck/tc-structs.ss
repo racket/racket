@@ -51,7 +51,7 @@
   (syntax-case nm/par ()
     [nm (identifier? #'nm) (values #'nm #f #f (syntax-e #'nm) (make-F (syntax-e #'nm)))]
     [(nm par) (let* ([parent0 (parse-type #'par)]
-                     [parent (resolve-name parent0)])
+                     [parent (if (Name? parent0) (resolve-name parent0) (tc-error/stx #'par "parent type not a valid structure name: ~a" (syntax->datum #'par)))])
                 (values #'nm parent0 parent (syntax-e #'nm) (make-F (syntax-e #'nm))))]
     [_ (int-err "not a parent: ~a" (syntax->datum nm/par))]))
 
