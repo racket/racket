@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require scheme/contract (for-syntax scheme/base syntax/kerncase 
+                                     syntax/parse
                                      "../utils/tc-utils.ss"
                                      (prefix-in tr: "../private/typed-renaming.ss")))
 
@@ -30,23 +31,23 @@
      (tr:get-alternate #'id)]))
 
 (define-syntax (require/contract stx)
-  (syntax-case stx ()
-    [(require/contract nm cnt lib)
-     (identifier? #'nm)
-     (begin       
-       #`(begin (require (only-in lib [nm tmp]))     
-                (define-ignored nm 
-                  (contract cnt 
-                            (get-alternate tmp)
-                            '(interface for #,(syntax->datum #'nm))
-                            'never-happen
-                            (quote-syntax nm)))))]
-    [(require/contract (orig-nm nm) cnt lib)     
-     (begin 
-       #`(begin (require (only-in lib [orig-nm tmp]))
-                (define-ignored nm 
-                  (contract cnt 
-                            (get-alternate tmp) 
-                            '#,(syntax->datum #'nm)
-                            'never-happen
-                            (quote-syntax nm)))))]))
+  (define-syntax-class renameable
+    (pattern nm:id
+             #:with r ((make-syntax-introducer) #'nm)))
+  (syntax-parse stx
+    [(require/contract nm:renameable cnt lib)
+     #`(begin (require (only-in lib [nm nm.r]))
+              (define-ignored nm 
+                (contract cnt 
+                          (get-alternate nm.r)
+                          '(interface for #,(syntax->datum #'nm))
+                          'never-happen
+                          (quote-syntax nm))))]
+    [(require/contract (orig-nm:renameable nm:id) cnt lib)
+     #`(begin (require (only-in lib [orig-nm orig-nm.r]))
+              (define-ignored nm 
+                (contract cnt 
+                          (get-alternate orig-nm.r) 
+                          '#,(syntax->datum #'nm)
+                          'never-happen
+                          (quote-syntax nm))))]))
