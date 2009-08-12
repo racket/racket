@@ -148,11 +148,11 @@ The @schememodname[web-server/stuffers/hash] @tech{stuffers} rely on a key/value
 @(require (for-label file/md5))
 @defmodule[web-server/stuffers/hash]{
                                      
- @defthing[hash/c contract?]{
+ @defthing[hash-fun/c contract?]{
   Equivalent to @scheme[(bytes? . -> . bytes?)].
  }
           
- @defproc[(hash-stuffer [H hash/c]
+ @defproc[(hash-stuffer [H hash-fun/c]
                         [store store?])
           (stuffer/c bytes? bytes?)]{
   A content-addressed storage @tech{stuffer} that stores input bytes, @scheme[input], in @scheme[store] with the key @scheme[(H input)]
