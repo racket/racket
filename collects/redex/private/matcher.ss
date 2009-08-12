@@ -1557,16 +1557,12 @@ before the pattern compiler is invoked.
 
 |#
 (define (context? x) #t)
-(define-values (the-hole hole?)
+(define-values (the-hole the-not-hole hole?)
   (let ()
     (define-struct hole () #:inspector #f)
     (define the-hole (make-hole))
-    (values the-hole hole?)))
-(define-values (the-not-hole not-hole?)
-  (let ()
-    (define-struct not-hole () #:inspector #f)
-    (define the-not-hole (make-not-hole))
-    (values the-not-hole not-hole?)))
+    (define the-not-hole (make-hole))
+    (values the-hole the-not-hole hole?)))
 
 (define hole->not-hole
   (match-lambda
@@ -1592,11 +1588,11 @@ before the pattern compiler is invoked.
            [(pair? exp) 
             (cons (loop (car exp))
                   (loop (cdr exp)))]
-           [(not-hole? exp)
+           [(eq? the-not-hole exp)
             the-hole]
-           [(hole? exp)
+           [(eq? the-hole exp)
             (if done?
-                the-hole
+                exp
                 (begin (set! done? #t)
                        hole-stuff))]
            [else exp])))]))
