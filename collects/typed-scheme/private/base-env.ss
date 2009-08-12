@@ -472,6 +472,7 @@
 [round (N . -> . -Integer)]
 [seconds->date (-Integer . -> . (make-Name #'date))]
 [current-seconds (-> -Integer)]
+[current-print (-Param (Univ . -> . Univ) (Univ . -> . Univ))]
 [path->string (-> -Path -String)]
 
 [link-exists? (-> -Pathlike B)]
