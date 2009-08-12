@@ -196,8 +196,25 @@
   #;(syntax? Type/c . -> . tc-results?)
   (tc-expr/check form (ret expected)))
 
-;; tc-expr/check : syntax tc-results -> tc-results
 (define (tc-expr/check form expected)
+  (parameterize ([current-orig-stx form])
+    ;(printf "form: ~a~n" (syntax->datum form))
+    ;; the argument must be syntax
+    (unless (syntax? form) 
+      (int-err "bad form input to tc-expr: ~a" form))
+    ;; typecheck form
+    (let ([ty (cond [(type-ascription form) => (lambda (ann)
+                                                 (let ([r (tc-expr/check/internal form ann)])
+                                                   (check-below r expected)
+                                                   expected))]
+                    [else (tc-expr/check/internal form expected)])])
+      (match ty
+        [(tc-results: ts fs os)
+         (let ([ts* (do-inst form ts)])
+           (ret ts* fs os))]))))
+
+;; tc-expr/check : syntax tc-results -> tc-results
+(define (tc-expr/check/internal form expected)
   (parameterize ([current-orig-stx form])
     ;(printf "form: ~a~n" (syntax-object->datum form))
     ;; the argument must be syntax
