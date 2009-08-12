@@ -69,8 +69,7 @@
        (make lam-result (map list arg-list arg-types) null rest-ty drest 
              (tc-exprs/check (syntax->list body) ret-ty))))
     (when (or (not (= arg-len tys-len))
-              (and rest (and (not rest-ty)
-                             (not drest))))
+              (and (or rest-ty drest) (not rest)))
       (tc-error/delayed (expected-str tys-len rest-ty drest arg-len rest)))
     (cond
       [(not rest)

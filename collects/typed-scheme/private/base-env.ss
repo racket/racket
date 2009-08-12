@@ -409,9 +409,9 @@
 [exact->inexact (N . -> . N)]
 [inexact->exact (N . -> . N)]
 
-[real?     (Univ . -> . B)]
-[complex?  (Univ . -> . B)]
-[rational? (Univ . -> . B)]
+[real? (Univ . -> . B : (-LFS (list (-filter N)) (list)))]
+[complex? (Univ . -> . B : (-LFS (list (-filter N)) (list)))]
+[rational? (Univ . -> . B : (-LFS (list (-filter N)) (list)))]
 [floor    (-> N N)]
 [ceiling  (-> N N)]
 [truncate (-> N N)]
