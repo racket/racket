@@ -220,7 +220,8 @@
     (match expected
       [(tc-result1: (Function: _)) (tc/mono-lambda/type formals bodies expected)]
       [(tc-result1: (or (Poly: _ _) (PolyDots: _ _)))
-       (tc/plambda form formals bodies expected)]))
+       (tc/plambda form formals bodies expected)]
+      [(tc-result1: (Error:)) (tc/mono-lambda/type formals bodies #f)]))
   (match expected
     [(tc-result1: (and t (Poly-names: ns expected*)))
      (let* ([tvars (let ([p (syntax-property form 'typechecker:plambda)])

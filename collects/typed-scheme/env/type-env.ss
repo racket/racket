@@ -51,7 +51,7 @@
 
 (define (finish-register-type id)
   (unless (maybe-finish-register-type id)
-    (int-err "finishing type that was already finished: ~a" (syntax-e id))))
+    (tc-error/stx id "Duplicate defintion for ~a" (syntax-e id))))
 
 (define (check-all-registered-types)
   (module-identifier-mapping-for-each 
