@@ -557,6 +557,7 @@ conditions. The grammar for pattern directives follows:
                (code:line #:declare pattern-id syntax-class-id)
                (code:line #:declare pattern-id (syntax-class-id expr ...))
                (code:line #:with syntax-pattern expr)
+               (code:line #:attr attr-id expr)
                (code:line #:fail-when condition-expr message-expr)
                (code:line #:fail-unless condition-expr message-expr)]
 
@@ -598,6 +599,16 @@ given message); otherwise, it continues.
 
 }
 
+@specsubform[(code:line #:attr attr-id expr)]{
+
+Evaluates the @scheme[expr] in the context of all previous attribute
+bindings and binds the result to the attribute @scheme[attr-id]. The
+result need not be a syntax object; attributes can be bound to any
+kind of value.
+
+}
+
+
 @deftogether[[
 @defidform[~or]
 @defidform[~and]
@@ -605,7 +616,6 @@ given message); otherwise, it continues.
 @defidform[~once]
 @defidform[~optional]
 @defidform[~rest]
-@;{@defidform[~struct]}
 @defidform[~describe]
 @defidform[~!]
 @defidform[~bind]
@@ -613,6 +623,47 @@ given message); otherwise, it continues.
 
 Syntax pattern keywords, recognized by @scheme[syntax-parse].
 
+}
+
+@;{----------}
+
+@section{Pattern Variables and Attributes}
+
+@;{
+An @deftech{attribute} is either a @tech{pattern variable}, a
+@tech{nested attribute}, or a @tech{computed attribute}.
+
+A pattern consisting of an identifier not in the literals list is a
+@deftech{pattern variable}. Pattern variables cannot be used as
+ordinary variables; instead, they are used within @scheme[syntax],
+@scheme[quasisyntax], etc as part of a syntax template.
+
+Pattern variables have an @deftech{ellipsis depth} based on the number
+of ellipses the pattern variable occurs in front of in the
+pattern. For example, in the @tech{S-pattern} @scheme[(a (b c ...) ... d)], 
+the pattern variable @scheme[a] has depth 0, @scheme[b] has
+depth 1, @scheme[c] has depth 2, and @scheme[d] has depth 0. The
+ellipsis depth of a pattern variable in a pattern determines what
+ellipsis depths it may be used at in a template.
+
+Pattern variables annotated with syntax classes also bind
+@deftech{nested attributes}, one for each attribute exported by the
+syntax class. The names of the nested attributes are computed by
+combining the pattern variable name with the syntax class attributes'
+names. The ellipsis depth of a nested attribute is the sum of the
+pattern variable's depth and the depth of the attribute in the syntax
+class. @deftech{Computed attributes} are bound by @scheme[#:attr]
+clauses and @scheme[~bind] patterns.
+
+An attribute's ellipsis nesting depth is @emph{not} a guarantee that
+its value has that level of list nesting. In particular, @scheme[~or]
+and @scheme[~optional] patterns may result in attributes with fewer
+than expected levels of list nesting.
+
+@(myexamples
+  (syntax-parse #'(a b c)
+    [(~or (x:nat ...) _)
+     (attribute x)]))
 }
 
 @defform[(attribute attr-id)]{
@@ -625,9 +676,9 @@ nesting.
 
 The values returned by @scheme[attribute] never undergo additional
 wrapping as syntax objects, unlike values produced by some uses of
-@scheme[syntax], @scheme[quasisyntax], etc. Consequently, the
-@scheme[attribute] form is preferred when the attribute value is used
-as data, not placed in a syntax object.
+@scheme[syntax], @scheme[quasisyntax], etc. Therefore, use
+@scheme[attribute] when the attribute value is used as data, not
+placed in a syntax object.
 
 }
 
@@ -637,7 +688,7 @@ as data, not placed in a syntax object.
 
 Syntax classes provide an abstraction mechanism for the specification
 of syntax. Built-in syntax classes are supplied that recognize basic
-classes such as @scheme[identifier]s and @scheme[keyword]s.
+classes such as @scheme[identifier] and @scheme[keyword].
 Programmers can compose basic syntax classes to build specifications
 of more complex syntax, such as lists of distinct identifiers and
 formal arguments with keywords. Macros that manipulate the same
@@ -754,10 +805,9 @@ Keyword recognized by @scheme[define-syntax-class]. It may not be
 used as an expression.
 }
 
-
 @subsection{Attributes}
 
-A syntax class has a set of @deftech{attribute}s. Each attribute has a
+A syntax class has a set of @tech{attributes}. Each attribute has a
 name, an ellipsis depth, and a set of nested attributes. When an
 instance of the syntax class is parsed and bound to a pattern
 variable, additional pattern variables are bound for each of the
@@ -806,7 +856,7 @@ places. The most common example is the literals for fully expanded
 programs, which are used in many analysis and transformation
 tools. Specifying literals individually is burdensome and error-prone.
 As a remedy, @schememodname[syntax/parse] offers @deftech{literal
-set}s. A literal set is defined via @scheme[define-literal-set] and
+sets}. A literal set is defined via @scheme[define-literal-set] and
 used via the @scheme[#:literal-set] option of @scheme[syntax-parse].
 
 @defform/subs[(define-literal-set name-id (literal ...))
@@ -854,7 +904,8 @@ class.
   [#rx"^n" nat])
 (syntax-parse #'(a b c 1 2 3)
   #:conventions (xn-prefixes)
-  [(x0 x ... n0 n ...) (syntax->datum #'(x0 (x ...) n0 (n ...)))])
+  [(x0 x ... n0 n ...)
+   (syntax->datum #'(x0 (x ...) n0 (n ...)))])
 ]
 
 }
@@ -927,13 +978,14 @@ identifier based on their symbolic names rather than their bindings.
 
 @defidform[kernel-literals]{
 
-Literal set containing the identifiers for fully-expanded code. The
-set contains all of the forms listed by
+Literal set containing the identifiers for fully-expanded code
+(@secref[#:doc '(lib "scribblings/reference/reference.scrbl")
+"fully-expanded"]). The set contains all of the forms listed by
 @scheme[kernel-form-identifier-list], plus @scheme[module],
 @scheme[#%plain-module-begin], @scheme[#%require], and
 @scheme[#%provide].
 
-@;{See @secref[#:doc '(lib "scribblings/reference/reference.scrbl") 'fully-expanded].}
+@;{See @secref[#:doc '(lib "scribblings/reference/reference.scrbl") "fully-expanded"].}
 
 Note that the literal-set uses the names @scheme[#%plain-lambda] and
 @scheme[#%plain-app], not @scheme[lambda] and @scheme[#%app].

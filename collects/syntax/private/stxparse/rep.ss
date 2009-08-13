@@ -624,7 +624,8 @@
                                               (list '#:name #'#f)))])
          (make ehpat (map increase-depth (pattern-attrs head))
                head
-               (make rep:bounds #'min #'max #'name #'too-few #'too-many))))]))
+               (make rep:bounds #'min #'max #'name
+                     #'too-few-msg #'too-many-msg))))]))
 
 ;; -----
 
