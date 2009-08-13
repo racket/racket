@@ -250,6 +250,13 @@ A parameter whose value is called for each file that is loaded and
  @scheme[#f], then the file is compiled as usual. The default is
  @scheme[(lambda (x) #f)].}
 
+@defproc[(file-date-in-collection [p path?]) (or/c number? #f)]{
+ This is a function intended to be used with @scheme[manager-skip-file-handler].
+ It returns the date of the @tt{.ss} or @tt{.zo} file (whichever is newer)
+ for any path that is inside the collection hierarchy and returns
+ @scheme[#f] for any other path.
+}
+
 @; ----------------------------------------------------------------------
 
 @section{Compilation Manager Hook for Syntax Transformers}

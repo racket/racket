@@ -3,7 +3,8 @@
          syntax/modresolve
          setup/main-collects
          scheme/file
-         scheme/list)
+         scheme/list
+         scheme/path)
 
 (provide make-compilation-manager-load/use-compiled-handler
          managed-compile-zo
@@ -11,6 +12,7 @@
          trust-existing-zos
          manager-compile-notify-handler
          manager-skip-file-handler
+         file-date-in-collection
          (rename-out [trace manager-trace-handler]))
 
 (define manager-compile-notify-handler (make-parameter void))
@@ -18,6 +20,53 @@
 (define indent (make-parameter ""))
 (define trust-existing-zos (make-parameter #f))
 (define manager-skip-file-handler (make-parameter (λ (x) #f)))
+
+(define (file-date-in-collection p)
+  (let ([p-eles (explode-path (simplify-path p))])
+    (let c-loop ([collects-paths (current-library-collection-paths)])
+      (cond
+        [(null? collects-paths) #f]
+        [else
+         (let i-loop ([collects-eles (explode-path (car collects-paths))]
+                      [p-eles p-eles])
+           (cond
+             [(null? collects-eles)
+              ;; we're inside the collection hierarchy, so we just 
+              ;; use the date of the original file (or the zo, whichever
+              ;; is newer).
+              (let-values ([(base name dir) (split-path p)])
+                (let* ([ext (filename-extension p)]
+                       [pbytes (path->bytes name)]
+                       [zo-file-name 
+                        (and ext
+                             (bytes->path
+                              (bytes-append
+                               (subbytes 
+                                pbytes
+                                0
+                                (- (bytes-length pbytes)
+                                   (bytes-length ext)))
+                               #"zo")))]
+                       [zo-path (and zo-file-name
+                                     (build-path 
+                                      base
+                                      (car (use-compiled-file-paths))
+                                      zo-file-name))])
+                  (cond
+                    [(and zo-file-name (file-exists? zo-path))
+                     (max (file-or-directory-modify-seconds p)
+                          (file-or-directory-modify-seconds zo-file-name))]
+                    [else
+                     (file-or-directory-modify-seconds p)])))]
+             [(null? p-eles) 
+              ;; this case shouldn't happen... I think.
+              (c-loop (cdr collects-paths))]
+             [else
+              (cond
+                [(equal? (car p-eles) (car collects-eles))
+                 (i-loop (cdr collects-eles) (cdr p-eles))]
+                [else 
+                 (c-loop (cdr collects-paths))])]))]))))
 
 (define (trace-printf fmt . args)
   (let ([t (trace)])
