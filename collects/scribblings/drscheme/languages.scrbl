@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.ss"
+          (for-label errortrace/errortrace-lib))
 
 @title[#:tag "languages" #:style 'toc]{Languages}
 
@@ -32,23 +33,34 @@ of various libraries).
 
 @itemize[
  @item{@bold{Dynamic Properties}: 
-        The radio buttons corresond to various uses of the @schememodname[errortrace] library.
+        The radio buttons corresond to various uses of the @schememodname[errortrace/errortrace-lib] library.
+        
         The @italic{No Debugging or profiling} option means not to use the library at all.
+        
         The @italic{Debugging} option means @scheme[(current-compile (make-errortrace-compile-handler))] as well as
         adding @scheme[(build-path "compiled" "errortrace")] to @scheme[use-compiled-file-paths].
-        The @italic{Debugging and profiling} option means to use @schememodname[errotrace] library's 
+        
+        The @italic{Debugging and profiling} option means to use @schememodname[errortrace/errortrace-lib] library's 
         @scheme[profiling-enabled] in conjunction with @scheme[current-eval].
+        
         The @italic{Syntactic test suite coverage} option means to use @scheme[test-coverage-enabled]
         in conjunction with @scheme[current-eval].
 
+        The other two checkboxes save compiled @tt{.zo} files and adjust the JIT compiler. 
+        
         The @italic{populate compiled/ directories} option corresponds to 
-        @schemeblock[(current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))
+        @schemeblock[(current-load/use-compiled 
+                      (make-compilation-manager-load/use-compiled-handler))
                      (manager-skip-file-handler file-date-in-collection)]
+        plus adding either @scheme[(build-path "compiled" "drscheme")] or 
+        @scheme[(build-path "compiled" "drscheme" "errortrace")]
+        to the front of @scheme[use-compiled-file-paths], depending if the
+        @italic{Debugging} option is set or not.
         
         The @italic{Preserve stacktrace} option corresponds to 
-        @scheme[(compile-context-preservation-enabled #t)].
+        @schemeblock[(compile-context-preservation-enabled #t)]
         }
- @;@item{@bold{Output Syntax}: }
+ @item{@bold{Output Syntax}: The output syntax options correspond to settings in the @scheme[scheme/pretty] library and the @scheme[scheme/pconvert] library.}
  @item{@bold{Collection Paths}: This corresponds to setting the @scheme[current-library-collection-paths] parameter.}
  @item{@bold{Command-line arguments}: This corresponds to setting the @scheme[current-command-line-arguments] parameter.}
 ]
