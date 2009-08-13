@@ -23,6 +23,36 @@ Scheme module can be written as @scheme[(module ...)]. In any case,
 aside from comments, the @tech{definitions window} must contain
 exactly one module.
 
+In the details pane of the module langauge, some of the
+configuration options for the Module language that correspond
+to using various libraries and thus can be used without DrScheme. 
+Here's how, for the ones that are straightforward (the ones
+not mentioned here require more sophisticated configuration
+of various libraries).
+
+@itemize[
+ @item{@bold{Dynamic Properties}: 
+        The radio buttons corresond to various uses of the @schememodname[errortrace] library.
+        The @italic{No Debugging or profiling} option means not to use the library at all.
+        The @italic{Debugging} option means @scheme[(current-compile (make-errortrace-compile-handler))] as well as
+        adding @scheme[(build-path "compiled" "errortrace")] to @scheme[use-compiled-file-paths].
+        The @italic{Debugging and profiling} option means to use @schememodname[errotrace] library's 
+        @scheme[profiling-enabled] in conjunction with @scheme[current-eval].
+        The @italic{Syntactic test suite coverage} option means to use @scheme[test-coverage-enabled]
+        in conjunction with @scheme[current-eval].
+
+        The @italic{populate compiled/ directories} option corresponds to 
+        @schemeblock[(current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))
+                     (manager-skip-file-handler file-date-in-collection)]
+        
+        The @italic{Preserve stacktrace} option corresponds to 
+        @scheme[(compile-context-preservation-enabled #t)].
+        }
+ @;@item{@bold{Output Syntax}: }
+ @item{@bold{Collection Paths}: This corresponds to setting the @scheme[current-library-collection-paths] parameter.}
+ @item{@bold{Command-line arguments}: This corresponds to setting the @scheme[current-command-line-arguments] parameter.}
+]
+
 @; ----------------------------------------
 
 @section[#:tag "legacy"]{Legacy Languages}
