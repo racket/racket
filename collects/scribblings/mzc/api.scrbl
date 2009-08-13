@@ -65,14 +65,20 @@ If @scheme[verbose?] is @scheme[#t], the output file for each given
 file is reported through the current output port.}
 
 
-@defproc[(compile-collection-zos [collection string?] ...+)
+@defproc[(compile-collection-zos [collection string?] ...+
+                                 [#:skip-path skip-path (or/c path-string? #f) #f]
+                                 [#:skip-doc-sources? skip-docs? any/c #f])
          void?]{
 
 Compiles the specified collection's files to @filepath{.zo} files.
 The @filepath{.zo} files are placed into the collection's
 @filepath{compiled} directory. By default, all files with the
 extension @filepath{.ss} or @filepath{.scm} in a collection are
-compiled, as are all such files within subdirectories.
+compiled, as are all such files within subdirectories, execept that
+any file or directory whose path starts with @scheme[scheme-path] is
+skipped. (``Starts with'' means that the simplified path @scheme[_p]'s
+byte-string form after @scheme[(simplify-path _p #f)]starts with the
+byte-string form of @scheme[(simplify-path skip-path #f)].)
 
 The collection compiler reads the collection's @filepath{info.ss} file
 (see @secref[#:doc '(lib "scribblings/setup-plt/setup-plt.scrbl")
@@ -103,10 +109,11 @@ collection.  The following fields are used:
        contents of @scheme[compile-omit-paths].  Do not use this
        field; it is for backward compatibility.}
 
- @item{@indexed-scheme[scribblings] : A list of pairs, each of which starts
-       with a path for documentation source. The sources (and the
-       files that they require) are compiled in the same way as
-       @filepath{.ss} and @filepath{.scm} files.}
+ @item{@indexed-scheme[scribblings] : A list of pairs, each of which
+       starts with a path for documentation source. The sources (and
+       the files that they require) are compiled in the same way as
+       @filepath{.ss} and @filepath{.scm} files, unless the provided
+       @scheme[skip-docs?] argument is a true value.}
 
 ]
 
@@ -115,7 +122,10 @@ The compilation process for an individual file is driven by
 
 
 @defproc[(compile-directory-zos [path path-string?]
-                                [info ()])
+                                [info ()]
+                                [#:verbose verbose? any/c #f]
+                                [#:skip-path skip-path (or/c path-string? #f) #f]
+                                [#:skip-doc-sources? skip-docs? any/c #f])
          void?]{
 
 Like @scheme[compile-collection-zos], but compiles the given directory

@@ -696,7 +696,7 @@
                               (setup-fprintf (current-error-port) #f " deleting ~a" (build-path c p))
                               (delete-file (build-path c p))))))))
                   ;; Make .zos
-                  (compile-directory-zos dir info #:skip-path compile-skip-directory))
+                  (compile-directory-zos dir info #:skip-path compile-skip-directory #:skip-doc-sources? (not (make-docs))))
                 make-base-empty-namespace))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

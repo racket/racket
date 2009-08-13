@@ -144,7 +144,10 @@
         (let ([zo (append-zo-suffix b)])
           (compile-to-zo f zo n prefix verbose? mod?)))))
 
-  (define (compile-directory dir info #:verbose [verbose? #t] #:skip-path [orig-skip-path #f])
+  (define (compile-directory dir info 
+                             #:verbose [verbose? #t] 
+                             #:skip-path [orig-skip-path #f]
+                             #:skip-doc-sources? [skip-docs? #f])
     (define info* (or info (lambda (key mk-default) (mk-default))))
     (define omit-paths (omitted-paths dir c-get-info/full))
     (define skip-path (and orig-skip-path (path->bytes 
@@ -173,7 +176,9 @@
                       ;; Find all .ss/.scm files:
                       (filter extract-base-filename/ss (directory-list))
                       ;; Add specified doc sources:
-                      (map car (info* 'scribblings (lambda () null))))]
+                      (if skip-docs?
+                          null
+                          (map car (info* 'scribblings (lambda () null)))))]
                [sses (remove* omit-paths sses)])
           (for-each (make-caching-managed-compile-zo) sses)))
       (when (compile-subcollections)
@@ -183,13 +188,20 @@
         (for ([p (directory-list dir)])
           (let ([p* (build-path dir p)])
             (when (and (directory-exists? p*) (not (member p omit-paths)))
-              (compile-directory p* (c-get-info/full p*))))))))
+              (compile-directory p* (c-get-info/full p*) 
+                                 #:verbose verbose?
+                                 #:skip-path skip-path
+                                 #:skip-doc-sources? skip-docs?)))))))
 
-  (define (compile-collection-zos collection #:skip-path [skip-path #f] . cp)
+  (define (compile-collection-zos collection 
+                                  #:skip-path [skip-path #f]
+                                  #:skip-doc-sources? [skip-docs? #f] 
+                                  . cp)
     (compile-directory (apply collection-path collection cp)
                        (c-get-info (cons collection cp))
                        #:verbose #f
-                       #:skip-path skip-path))
+                       #:skip-path skip-path
+                       #:skip-doc-sources? skip-docs?))
 
   (define compile-directory-zos compile-directory)
 

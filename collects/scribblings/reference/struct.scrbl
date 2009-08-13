@@ -66,11 +66,14 @@ field), and field mutability.
 
 @index['("structures" "equality")]{Two} structure values are
 @scheme[eqv?] if and only if they are @scheme[eq?]. Two structure
-values are @scheme[equal?] if they are @scheme[eq?], or if they are
-instances of the same structure type, no fields are opaque, and the
-results of applying @scheme[struct->vector] to the structs are
+values are @scheme[equal?] if they are @scheme[eq?]. By default, two
+structure values are also @scheme[equal?] if they are instances of the
+same structure type, no fields are opaque, and the results of applying
+@scheme[struct->vector] to the structs are
 @scheme[equal?]. (Consequently, @scheme[equal?]  testing for
-structures depends on the current inspector.)
+structures may depend on the current inspector.) A structure type can
+override the default @scheme[equal?] definition through the
+@scheme[prop:equal+hash] property.
 
 @local-table-of-contents[]
 
