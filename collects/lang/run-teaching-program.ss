@@ -59,7 +59,7 @@
                             ,@(map (λ (x) `(require ,x)) teachpacks)
                             ,@body-exps
                             ,@(if enable-testing?
-                                  (if (null? body-exps) '() `((,#'run-tests) (,#'display-results)))
+                                  (if (null? body-exps) '() `((,#'test)))
                                   '()))))
               rep)))]
         [(require)

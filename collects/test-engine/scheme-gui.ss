@@ -1,7 +1,8 @@
 (module scheme-gui scheme/base
   
   (require mred framework scheme/class 
-           mzlib/pconvert mzlib/pretty)
+           mzlib/pconvert mzlib/pretty
+	   (for-syntax scheme/base))
   
   (require (except-in "scheme-tests.ss" test) "test-display.scm")
   
@@ -32,8 +33,13 @@
            text-snip))]
       [else (format "~v" value)]))
   
-  (define (test) (run-tests) (pop-up))
-  
+  (define-syntax (test stx) 
+    (syntax-case stx ()
+      [(_)
+       (syntax-property
+	#'(begin (run-tests) (pop-up))
+	'test-call #t)]))
+
   (define (pop-up)
     (let ([test-info (namespace-variable-value 'test~object #f builder (current-namespace))])
       (parameterize ([test-format format-value])

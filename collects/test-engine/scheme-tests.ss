@@ -225,7 +225,15 @@
     (namespace-set-variable-value! 'test~object te (current-namespace))
     te))
 
-(define (test) (run-tests) (display-results))
+(define-syntax (test stx) 
+  (syntax-case stx ()
+    [(_)
+     (syntax-property
+      #'(dynamic-wind
+	    values
+	    (lambda () (run-tests))
+	    (lambda () (display-results)))
+      'test-call #t)]))
 
 (define-syntax (run-tests stx)
   (syntax-case stx ()
