@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "common.ss"
-          (for-label errortrace/errortrace-lib))
+          (for-label errortrace/errortrace-lib
+                     compiler/cm))
 
 @title[#:tag "languages" #:style 'toc]{Languages}
 
