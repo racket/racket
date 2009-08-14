@@ -1,4 +1,10 @@
 ------------------------------------------------------------------------
+					  [Fri Aug 14 19:15:54 EDT 2009]
+
+* universe API: added a mechanism for displaying a different scene 
+  when the world is about to come to an end 
+
+------------------------------------------------------------------------
 Version 4.2.1				  [Wed Jul 22 11:15:54 EDT 2009]
 
 * universe API: added launch-many-worlds, fixed numerous small bugs
