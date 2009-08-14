@@ -206,7 +206,7 @@
     (let ([ty (cond [(type-ascription form) => (lambda (ann)
                                                  (let ([r (tc-expr/check/internal form ann)])
                                                    (check-below r expected)
-                                                   expected))]
+                                                   #;expected))]
                     [else (tc-expr/check/internal form expected)])])
       (match ty
         [(tc-results: ts fs os)
