@@ -18,7 +18,7 @@
   (unit 
     (import matrix^)
     (export matrix-render^)
-    (define visible? v?)
+    (define (visible? m) (and (object? m) (v? m)))
     (define visible-matrix v-m)
 
     ;; the graphical stuff follows  .. it is code based on image.ss 

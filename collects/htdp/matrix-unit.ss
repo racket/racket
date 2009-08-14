@@ -263,11 +263,12 @@
 (define (check-matrix tag M* i j)
   (define M (if (internal-matrix? M*)
                 M* 
-                (let ([r (visible-matrix M*)])
+                (let ([r (if (visible? M*) (visible-matrix M*) M*)])
                   (cond
                     [(internal-matrix? r) r]
+                    ;; this next line is suspicious! 
                     [(pair? r) (rectangle->imatrix r)]
-                    [else (check-arg tag #f 'matrix "first" M)]))))
+                    [else (check-arg tag #f 'matrix "first" M*)]))))
   (check-arg tag (natural? i) 'Nat "second" i)
   (check-arg tag (natural? j) 'Nat "third" j)
   ;; --- now that M is a matrix, i and j are natural numbers:
@@ -286,8 +287,10 @@
 ;; Nat -> String 
 (define (th n)
   (cond
+    [(= n 0) "th"]
     [(= n 1) "st"]
     [(= n 2) "nd"]
+    [(= n 3) "rd"]
     [(> n 3) "th"]
-    [else (error 'th "can't happen")]))
+    [else (error 'th "can't happen ~e" n)]))
 
