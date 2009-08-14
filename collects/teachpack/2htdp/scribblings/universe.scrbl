@@ -170,7 +170,7 @@ The design of a world program demands that you come up with a data
 		 (on-mouse key-expr)
 		 (on-draw draw-expr)
 		 (on-draw draw-expr width-expr height-expr)
-		 (stop-when stop-expr)	   
+		 (stop-when stop-expr) (stop-when stop-expr last-scene-expr)	   
 		 (check-with world?-expr)	   
 		 (record? boolean-expr)
 		 (on-receive rec-expr)
@@ -403,8 +403,7 @@ All @tech{MouseEvent}s are represented via strings:
 
  tell DrScheme to use a @scheme[width-expr] by @scheme[height-expr]
  canvas instead of one determine by the first generated @tech{scene}.
-}
-}
+}}
 
 @item{
 
@@ -417,7 +416,22 @@ All @tech{MouseEvent}s are represented via strings:
  tick events, @tech{KeyEvent}s, or @tech{MouseEvent}s are forwarded to
  the respective handlers. The @scheme[big-bang] expression returns this
  last world. 
-}}
+}
+
+@defform/none[#:literals (stop-when)
+         (stop-when last-world? last-picture)
+         #:contracts
+         ([last-world? (-> (unsyntax @tech{WorldState}) boolean?)]
+ 	  [last-picture (-> (unsyntax @tech{WorldState}) scene?)])]{
+ tell DrScheme to call the @scheme[last-world?] function whenever the canvas is
+ drawn. If this call produces @scheme[true], the world program is shut
+ down after displaying the world one last time, this time using the scene
+ rendered with @scheme[last-picture]. Specifically, the  clock is stopped; no more
+ tick events, @tech{KeyEvent}s, or @tech{MouseEvent}s are forwarded to
+ the respective handlers. The @scheme[big-bang] expression returns this
+ last world. 
+}
+}
 
 @item{
 
