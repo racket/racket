@@ -172,7 +172,8 @@
   (define (do-ret t)
     (match t 
       [(Values: (list (Result: ts _ _) ...)) (ret ts)]
-      [(ValuesDots: (list (Result: ts _ _) ...) dty dbound) (ret ts (for/list ([t ts]) (-FS null null)) (for/list ([t ts]) (make-Empty)) dty dbound)]))
+      [(ValuesDots: (list (Result: ts _ _) ...) dty dbound) (ret ts (for/list ([t ts]) (-FS null null)) (for/list ([t ts]) (make-Empty)) dty dbound)]
+      [_ (int-err "do-ret fails: ~a" t)]))
   (define f-ty (single-value f))
   ;; produces the first n-1 elements of the list, and the last element
   (define (split l) (let-values ([(f r) (split-at l (sub1 (length l)))])

@@ -190,7 +190,8 @@
     [((? Type? t1) (? Type? t2))
      (unless (subtype t1 t2)
        (tc-error/expr "Expected ~a, but got ~a" t2 t1))
-     expected]))
+     expected]
+    [(a b) (int-err "unexpected input for check-below: ~a ~a" a b)]))
 
 (define (tc-expr/check/type form expected)
   #;(syntax? Type/c . -> . tc-results?)
@@ -205,13 +206,13 @@
     ;; typecheck form
     (let ([ty (cond [(type-ascription form) => (lambda (ann)
                                                  (let ([r (tc-expr/check/internal form ann)])
-                                                   (check-below r expected)
-                                                   #;expected))]
+                                                   (check-below r expected)))]
                     [else (tc-expr/check/internal form expected)])])
       (match ty
         [(tc-results: ts fs os)
          (let ([ts* (do-inst form ts)])
-           (ret ts* fs os))]))))
+           (ret ts* fs os))]
+        [_ ty]))))
 
 ;; tc-expr/check : syntax tc-results -> tc-results
 (define (tc-expr/check/internal form expected)

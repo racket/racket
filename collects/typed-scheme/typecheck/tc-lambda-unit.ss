@@ -66,8 +66,8 @@
     (define (check-body)
       (with-lexical-env/extend 
        arg-list arg-types
-       (make lam-result (map list arg-list arg-types) null rest-ty drest 
-             (tc-exprs/check (syntax->list body) ret-ty))))
+       (make-lam-result (map list arg-list arg-types) null rest-ty drest 
+                        (tc-exprs/check (syntax->list body) ret-ty))))
     (when (or (not (= arg-len tys-len))
               (and (or rest-ty drest) (not rest)))
       (tc-error/delayed (expected-str tys-len rest-ty drest arg-len rest)))
@@ -221,7 +221,8 @@
       [(tc-result1: (Function: _)) (tc/mono-lambda/type formals bodies expected)]
       [(tc-result1: (or (Poly: _ _) (PolyDots: _ _)))
        (tc/plambda form formals bodies expected)]
-      [(tc-result1: (Error:)) (tc/mono-lambda/type formals bodies #f)]))
+      [(tc-result1: (Error:)) (tc/mono-lambda/type formals bodies #f)]
+      [_ (int-err "expected not an appropriate tc-result: ~a" expected)]))
   (match expected
     [(tc-result1: (and t (Poly-names: ns expected*)))
      (let* ([tvars (let ([p (syntax-property form 'typechecker:plambda)])
