@@ -8,9 +8,11 @@
   (list->string
     (with-input-from-file f 
       (lambda ()
-	(let loop ()
+	(let loop ([accu '()])
 	  (define nxt (read-char))
-	  (if (eof-object? nxt) '() (cons nxt (loop))))))))
+	  (if (eof-object? nxt)
+	      (reverse (if (char=? (car accu) #\newline) (cdr accu) accu))
+	      (loop (cons nxt accu))))))))
  
 (define (write-file f str)
   (check-arg 'read-file (string? f) "string" "first" f)
@@ -19,6 +21,8 @@
       (lambda () (printf "~a" str))
       #:exists 'truncate)
     result))
+
+;; -----------------------------------------------------------------------------
 
 (provide 
  read-file ;; String -> String

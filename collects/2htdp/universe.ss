@@ -103,7 +103,8 @@
 ;;      | (on-mouse Expr) 
 ;; -- on-mouse must specify a mouse event handler 
 ;;      | (stop-when Expr)
-;; -- stop-when must specify a boolean-valued function 
+;;      | (stop-when Expr Expr)
+;; -- stop-when must specify a predicate; it may specify a rendering function
 ;;      | (register Expr)
 ;; -- register must specify the internet address of a host (including LOCALHOST)
 ;;      | (name Expr)
@@ -124,7 +125,12 @@
   [on-mouse (function-with-arity 4)]
   [on-key (function-with-arity 2)]
   [on-receive (function-with-arity 2)]
-  [stop-when (function-with-arity 1)]
+  [stop-when (function-with-arity 
+              1
+              except
+              [(stop? last-picture)
+               #'(list (proc> 'stop-when (f2h stop?) 1)
+                       (proc> 'stop-when (f2h last-picture) 1))])]
   [register (lambda (tag)
               (lambda (p)
                 (syntax-case p ()

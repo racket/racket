@@ -49,6 +49,7 @@
    (clock-mixin
     (class* object% (start-stop<%>)
       (inspect #f)
+      
       (init-field
        world0            ;; World
        (name #f)         ;; (U #f Symbol)
@@ -62,8 +63,8 @@
        (on-receive #f)   ;; (U #f (World S-expression -> World))
        (on-draw #f)      ;; (U #f (World -> Scene) (list (World -> Scene) Nat Nat))
        (stop-when False) ;; World -> Boolean 
-       (record? #f)      ;; Boolean 
-       )
+       (record? #f))     ;; Boolean 
+      
       ;; -----------------------------------------------------------------------
       (field
        (world
@@ -106,18 +107,18 @@
         (parameterize ([current-custodian *rec*])
           ;; try to register with the server n times 
           (let try ([n TRIES])
-              (printf "trying to register with ~a ...\n" register)
-              (with-handlers ((tcp-eof? (lambda (x) (printf FMTcom register)))
-                              (exn:fail:network? 
-                               (lambda (x)
-                                 (if (= n 1) 
-                                     (printf FMTtry register TRIES)
-                                     (begin (sleep PAUSE) (try (- n 1)))))))
-                (define-values (in out) (tcp-connect register SQPORT))
-                (tcp-register in out name)
-                (printf "... successful registered and ready to receive\n")
-                (set! *out* out)
-                (thread (RECEIVE in))))))
+            (printf "trying to register with ~a ...\n" register)
+            (with-handlers ((tcp-eof? (lambda (x) (printf FMTcom register)))
+                            (exn:fail:network? 
+                             (lambda (x)
+                               (if (= n 1) 
+                                   (printf FMTtry register TRIES)
+                                   (begin (sleep PAUSE) (try (- n 1)))))))
+              (define-values (in out) (tcp-connect register SQPORT))
+              (tcp-register in out name)
+              (printf "... successful registered and ready to receive\n")
+              (set! *out* out)
+              (thread (RECEIVE in))))))
       
       (define/private (broadcast msg)
         (when *out* 
@@ -219,6 +220,9 @@
                  (unless changed-world?
                    (when draw (pdraw))
                    (when (pstop) 
+                     (when last-picture 
+                       (set! draw last-picture)
+                       (pdraw))
                      (callback-stop! 'name)
                      (enable-images-button)))
                  changed-world?))))))
@@ -244,7 +248,8 @@
       
       ;; -----------------------------------------------------------------------
       ;; stop-when 
-      (field [stop  stop-when])
+      (field [stop (if (procedure? stop-when) stop-when (first stop-when))]
+             [last-picture (if (pair? stop-when) (second stop-when) #f)])
       
       (define/private (pstop)
         (define result (stop (send world get)))
@@ -273,7 +278,7 @@
       ;; initialize the world and run 
       (super-new)
       (start!)
-      (when (stop-when (send world get)) (stop! (send world get)))))))
+      (when (stop (send world get)) (stop! (send world get)))))))
 
 ;; -----------------------------------------------------------------------------
 (define-runtime-path break-btn:path '(lib "icons/break.png"))
