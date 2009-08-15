@@ -232,7 +232,43 @@
   (check-arg 'mouse=? (mouse-event? m) 'MouseEvent "second" m)
   (string=? k m))
 
-(define (key-event? k) (string? k))
+(define KEYS 
+  '("left"
+    "right"
+    "up"
+    "down"
+    "release"
+    "start"
+    "cancel"
+    "clear"
+    "shift"
+    "control"
+    "menu"
+    "pause"
+    "capital"
+    "prior"
+    "next"
+    "end"
+    "home"
+    "escape"
+    "select"
+    "print"
+    "execute"
+    "snapshot"
+    "insert"
+    "help"
+    "numpad0" "numpad1" "numpad2" "numpad3" "numpad4" 
+    "numpad5" "numpad6" "numpad7" "numpad8" "numpad9" 
+    "numpad-enter" "multiply" "add" "separator" "subtract" "decimal" "divide"
+    "f1" "f2" "f3" "f4" "f5" "f6" "f7" "f8" "f9" "f10" "f11" "f12" "f13" 
+    "f14" "f15" "f16" "f17" "f18" "f19" "f20" "f21" "f22" "f23" "f24"
+    "numlock"
+    "scroll"
+    "wheel-up"
+    "wheel-down"))
+
+(define (key-event? k) 
+  (and (string? k) (or (= (string-length k) 1) (member k KEYS))))
 
 (define (key=? k m)
   (check-arg 'key=? (key-event? k) 'KeyEvent "first" k)
