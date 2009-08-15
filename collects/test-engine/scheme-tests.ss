@@ -201,22 +201,21 @@
 ;;                (src format scheme-val scheme-val scheme-val -> check-fail)
 ;;                ( -> scheme-val) scheme-val scheme-val object symbol? -> void
 (define (run-and-check check maker test expect range src test-info kind)
-  (match-let ([(list result result-val exn?)
-               (with-handlers ([exn? (lambda (e) (raise e)
-                                       (let ([display (error-display-handler)])
-                                         #;((error-display-handler) (exn-message e) e)
+  (match-let ([(list result result-val exn)
+               (with-handlers ([exn? (lambda (e)
+				       (let ([display (error-display-handler)])
                                          (list (make-unexpected-error src (test-format) expect
                                                                       (exn-message e) 
-                                                                      e) 'error (lambda () 
-                                                                                  (printf "~a~n" e)
-                                                                                  (display (exn-message e) e)))))])
+                                                                      e)
+					       'error
+					       e)))])
                  (let ([test-val (test)])
                    (cond [(check expect test-val range) (list #t test-val #f)]
                          [else 
                           (list (maker src (test-format) test-val expect range) test-val #f)])))])
     (cond [(check-fail? result)
-           (send (send test-info get-info) check-failed result (check-fail-src result) exn?)
-           #f]
+           (send (send test-info get-info) check-failed result (check-fail-src result) exn)
+           (raise exn)]
           [else
            #t])))
 
