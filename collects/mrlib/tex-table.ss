@@ -164,6 +164,8 @@
     ("vdash" "⊢")
     ("dashv" "⊣")
     
+    ("sqrt" "√")
+    
     ("skull" "☠") 
     ("smiley" "☺")
     ("blacksmiley" "☻")
