@@ -1302,7 +1302,8 @@
   ((text)
    ((start 0) (end #f)))
   @{Determines if the range in the editor from @scheme[start] to
-               @scheme[end] in @scheme[text] is a matched set of parenthesis.  If
+               @scheme[end] in @scheme[text] has at least one complete s-expression and
+               there are no incomplete s-expressions.  If
                @scheme[end] is @scheme[#f], it defaults to the last position of the
                @scheme[text].
                
