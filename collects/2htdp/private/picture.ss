@@ -203,8 +203,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
                                                      (+ dy (posn-y posn))
                                                      θ)])
                            (set! left (min new-x left))
-                           (set! right (max new-x right))
                            (set! top (min new-y top))
+                           (set! right (max new-x right))
                            (set! bottom (max new-y bottom))))
                        (cdr points))
              (values left top right bottom))))]
@@ -398,8 +398,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
             (λ (f)
               (send sl set-value (max min-scale (min max-scale (f (send sl get-value)))))
               (send c refresh))])
-    (new button% [label "√"] [callback (λ x (scale-adjust sub1))] [parent bp])
-    (new button% [label "²"] [callback (λ x (scale-adjust add1))] [parent bp])
+    (send (new button% [label "√"] [callback (λ x (scale-adjust sub1))] [parent bp]) min-width 100)
+    (send (new button% [label "²"] [callback (λ x (scale-adjust add1))] [parent bp]) min-width 100)
     (send f show #t)))
 
 ;; render-picture : normalized-shape dc dx dy -> void
@@ -603,6 +603,9 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 ;; rotate/places : string string I number -> I
 ;; rotates the I around the given point inside the I, using
 ;; the strings like overlay does.
+
+;; this function is bogus! It doesn't matter where you rotate it around. it still looks the same!
+
 (define/chk (rotate/places x-place y-place angle picture)
   (rotate/internal x-place y-place angle picture))
 
@@ -618,7 +621,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
       (set! top (if top (min this-top top) this-top))
       (set! right (if right (max this-right right) this-right))
       (set! bottom (if bottom (max this-bottom bottom) this-bottom))))
-  (let ([rotated (normalize-shape (make-rotate angle (picture-shape picture)) add-to-bounding-box)])
+  (let* ([rotated (normalize-shape (make-rotate angle (picture-shape picture)) add-to-bounding-box)])
     (make-picture (make-translate (- left) (- top) rotated)
                   (make-bb (- right left) (- bottom top) (- bottom top))
                   #f)))
@@ -690,3 +693,20 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 ;; see pin-line in slideshow
 ;; the initial strings in the second instance of add-curve are like the strings in add-line
 
+(let* ([first (rectangle 100 10 'solid 'red)]
+       [second 
+        (overlay/places 'center
+                        'center
+                        first
+                        (rotate/places 'center 'center 
+                                       (* pi 1/4)
+                                       first))]
+       [third 
+        (overlay/places 'center
+                        'center
+                        (frame second)
+                        (rotate/places 'center 'center 
+                                       (* pi 1/8)
+                                       (frame second)))])
+  (show-picture (frame (rotate (* pi 1/8)
+                               (rotate (* pi 1/8) first)))))

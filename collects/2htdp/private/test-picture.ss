@@ -18,7 +18,8 @@
                         (rotate/places 'center 'center 
                                        (* pi 1/8)
                                        (frame second)))])
-  (show-picture (frame third)))
+  (show-picture second
+                #;(frame third)))
 
 (define (round-numbers x)
   (let loop ([x x])
@@ -290,3 +291,76 @@
                         void))
       =>
       (round-numbers (make-translate 50 -100 (make-rotate (* pi 1/2) (picture-shape (rectangle 50 100 'solid 'blue))))))
+
+
+(test (round-numbers
+       (normalize-shape
+        (make-rotate
+         (* pi 1/4)
+         (make-translate 
+          100 100
+          (picture-shape (rectangle 100 10 'solid 'red))))
+        void))
+      =>
+      (round-numbers
+       (make-translate
+        (* 100 (sqrt 2))
+        0.0
+        (make-rotate
+         (* pi 1/4)
+         (picture-shape (rectangle 100 10 'solid 'red))))))
+
+(test (round-numbers
+       (normalize-shape
+        (make-rotate
+         (* pi 1/4)
+         (make-translate 
+          100 100
+          (make-rotate
+           (* pi 1/4)
+           (make-translate 
+            100 100
+            (picture-shape (rectangle 100 10 'solid 'red))))))
+        void))
+      =>
+      (round-numbers
+       (make-translate
+        200
+        0
+        (make-rotate
+         (* pi 1/2)
+         (picture-shape (rectangle 100 10 'solid 'red))))))
+
+(test (round-numbers
+       (normalize-shape
+        (make-rotate
+         (* pi 1/4)
+         (make-translate 
+          100 100
+          (make-rotate
+           (* pi 1/4)
+           (make-translate 
+            100 100
+            (picture-shape (rectangle 100 10 'solid 'red))))))
+        void))
+      =>
+      (round-numbers
+       (make-translate
+        (* (sqrt 2) 100 2)
+        0
+        (make-rotate
+         (* pi 1/2)
+         (picture-shape (rectangle 100 10 'solid 'red))))))
+
+(test (round-numbers
+       (normalize-shape
+        (picture-shape 
+         (rotate (* pi 1/8) (rotate (* pi 1/8) (rectangle 100 10 'solid 'red))))
+        void))
+      =>
+      (round-numbers
+       (normalize-shape
+        (picture-shape 
+         (rotate (* pi 1/4) (rectangle 100 10 'solid 'red)))
+        void)))
+
