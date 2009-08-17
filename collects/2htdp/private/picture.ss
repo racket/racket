@@ -693,20 +693,21 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 ;; see pin-line in slideshow
 ;; the initial strings in the second instance of add-curve are like the strings in add-line
 
-(let* ([first (rectangle 100 10 'solid 'red)]
-       [second 
-        (overlay/places 'center
-                        'center
-                        first
-                        (rotate/places 'center 'center 
-                                       (* pi 1/4)
-                                       first))]
-       [third 
-        (overlay/places 'center
-                        'center
-                        (frame second)
-                        (rotate/places 'center 'center 
-                                       (* pi 1/8)
-                                       (frame second)))])
-  (show-picture (frame (rotate (* pi 1/8)
-                               (rotate (* pi 1/8) first)))))
+(normalize-shape
+ (make-rotate
+  (* pi 1/4)
+  (make-translate 
+   100 100
+   (make-rotate
+    (* pi 1/4)
+    (make-translate 
+     100 100
+     (picture-shape (rectangle 100 10 'solid 'red))))))
+ void)
+
+(make-translate
+ (* (sqrt 2) 100 2)
+ 0
+ (make-rotate
+  (* pi 1/2)
+  (picture-shape (rectangle 100 10 'solid 'red))))
