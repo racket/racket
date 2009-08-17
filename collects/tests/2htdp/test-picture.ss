@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "../private/picture.ss" 
+(require "../../2htdp/private/picture.ss" 
          scheme/math
          tests/eli-tester)
 
