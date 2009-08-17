@@ -7,7 +7,8 @@
          fade-pict
          slide-pict
          sequence-animations
-         reverse-animations)
+         reverse-animations
+         animate-slide)
 
 (define (fail-gracefully t)
   (with-handlers ([exn:fail? (lambda (x) (values 0 0))])
@@ -21,12 +22,12 @@
 ;; Create a slide sequence where `mid' takes a number from 0.0 to 1.0.
 ;; The 0.0 slide will wit until you advance, but the remaining ones will
 ;; time out automatically to create the animation.
-(define (play #:title [title #f] #:layout [layout 'auto] mid)
-  (slide #:title title #:layout layout (mid 0))
+(define (play #:title [title #f] #:name [name title] #:layout [layout 'auto] mid)
+  (slide #:title title #:name name #:layout layout (mid 0))
   (if condense?
       (skip-slides 10)
       (map (lambda (n)
-             (slide #:title title #:layout layout #:timeout 0.05 (mid n)))
+             (slide #:title title #:name name #:layout layout #:timeout 0.05 (mid n)))
            (let ([cnt 10])
              (let loop ([n cnt])
                (if (zero? n)
@@ -39,7 +40,7 @@
 ;; arguments will be 0.0. The first argument goes from 0.0 to 1.0
 ;; for the first `play' sequence, and then it stays at 1.0 while
 ;; the second goes from 0.0 to 1.0 for the second sequence, etc.
-(define (play-n #:title [title #f] #:layout [layout 'auto]
+(define (play-n #:title [title #f] #:name [name title] #:layout [layout 'auto]
                 mid
                 #:skip-last? [skip-last? #f])
   (let ([n (procedure-arity mid)])
@@ -47,9 +48,10 @@
                [pre null])
       (if (null? post)
           (unless skip-last?
-            (slide #:title title #:layout layout (apply mid pre)))
+            (slide #:title title #:name name #:layout layout (apply mid pre)))
           (begin
             (play #:title title
+                  #:name name
                   #:layout layout 
                   (lambda (n)
                     (apply mid (append pre (list n) (cdr post)))))
@@ -166,3 +168,65 @@
   (let ([s (apply sequence-animations l)])
     (lambda (n)
       (s (- 1 n)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Like `slide', supports 'next and 'alts, but produces as a
+;; function of N number arguments (for N stages)
+(define (animate-slide . content)
+  (let ([n (let loop ([content content])
+             (cond
+               [(null? content) 1]
+               [(eq? (car content) 'next)
+                (add1 (loop (cdr content)))]
+               [(eq? (car content) 'alts)
+                (+ (apply + (map (lambda (alt)
+                                   (loop alt))
+                                 (cadr content)))
+                   (sub1 (loop (cddr content))))]
+               [else (loop (cdr content))]))])
+    (procedure-reduce-arity
+     (lambda ns
+       (let loop ([content content]
+                  [ns (cons 1.0 ns)]
+                  [k (lambda (p ns) (or p (blank)))])
+         (cond
+           [(null? content) (k #f ns)]
+           [(eq? 'next (car content))
+            (loop (cdr content)
+                  (cdr ns)
+                  k)]
+           [(eq? 'alts (car content))
+            (let aloop ([l (cadr content)]
+                        [p (blank)]
+                        [ns ns])
+              (if (null? l)
+                  (loop (cddr content)
+                        ns 
+                        (lambda (p2 ns)
+                          (k (if p2 (vc-append gap-size p p2) p) ns)))
+                  (loop (car l) 
+                        ns
+                        (lambda (p2 ns2)
+                          (aloop (cdr l)
+                                 (cellophane
+                                  (if p2
+                                      (ct-superimpose
+                                       p
+                                       p2)
+                                      p)
+                                  (if (null? (cdr l))
+                                      1.0
+                                      (- 1.0 (min 1.0 (* 2 (cadr ns2))))))
+                                 (if (null? (cdr l))
+                                     ns2
+                                     (let ([ns (cdr ns2)])
+                                       (cons (max 0.0 (* 2 (- (car ns) 0.5)))
+                                             (cdr ns)))))))))]
+           [else (vc-append
+                  gap-size
+                  (let ([p (cellophane (car content) (car ns))])
+                    (loop (cdr content) ns
+                          (lambda (p2 ns)
+                            (k (if p2 (vc-append gap-size p p2) p) ns)))))])))
+     (sub1 n))))
