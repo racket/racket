@@ -78,7 +78,7 @@
       (define/override (default-settings)
         (let ([super-defaults (super default-settings)])
           (make-module-language-settings
-           #t 'write 'mixed-fraction-e #f #t 'none ;; simple settings defaults 
+           #t 'write 'mixed-fraction-e #f #t 'debug;; simple settings defaults 
            
            '(default)
            #()
