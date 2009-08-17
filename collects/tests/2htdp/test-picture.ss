@@ -212,7 +212,7 @@
 ;;
 ;;  testing rotation bounding boxes.
 ;;
-
+#|
 (test (simple-bb (make-translate 0 0 (make-rotate (* pi 1/4) (picture-shape (rectangle 100 50 'solid 'red)))))
       =>
       (values 0.0
@@ -364,3 +364,4 @@
          (rotate (* pi 1/4) (rectangle 100 10 'solid 'red)))
         void)))
 
+|#

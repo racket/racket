@@ -32,7 +32,6 @@
          make-bb
          make-overlay
          make-translate
-         make-rotate
          make-ellipse
          make-text
          make-polygon)
@@ -105,79 +104,65 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 ;;  - (make-translate dx dy shape)
 (define-struct translate (dx dy shape) #:transparent #:omit-define-syntaxes)
 ;;
-;;  - (make-rotate angle shape)
-(define-struct rotate (angle shape) #:transparent #:omit-define-syntaxes)
-;;
 ;;  - atomic-shape
 
 ;; an atomic-shape is either:
 ;;
-;;  - (make-ellipse width height pen brush)
-(define-struct ellipse (width height pen brush) #:transparent #:omit-define-syntaxes)
+;;  - (make-ellipse width height angle pen brush)
+(define-struct ellipse (width height angle pen brush) #:transparent #:omit-define-syntaxes)
 ;;
-;;  - (make-text string font)
-(define-struct text (string font) #:omit-define-syntaxes)
+;;  - (make-text string angle font)
+(define-struct text (string angle font) #:omit-define-syntaxes)
 ;;
-;;  - (make-polygon (listof points) pen brush)
-(define-struct polygon (points pen brush))
+;;  - (make-polygon (listof points) angle pen brush)
+(define-struct polygon (points angle pen brush))
 ;;
-;;  - (is-a?/c bitmap%)
-
+;;  - (make-bitmap (is-a?/c bitmap%) angle)
+(define-struct bitmap (bitmap angle))
 
 ;; a normalized-shape (subtype of shape) is either
 ;;  - (make-overlay normalized-shape simple-shape)
 ;;  - simple-shape
 
 ;; a simple-shape (subtype of shape) is
-;;  - (make-translate dx dy (make-rotate angle atomic-shape))
+;;  - (make-translate dx dy atomic-shape)
 
 ;; picture-normalized-shape : picture -> normalized-shape
 (define (picture-normalized-shape picture)
   (unless (picture-normalized? picture)
-    (set-picture-shape! picture (normalize-shape (picture-shape picture) void))
+    (set-picture-shape! picture (normalize-shape (picture-shape picture) values))
     (set-picture-normalized?! picture #t))
   (picture-shape picture))
 
 ;; normalize-shape : shape (atomic-shape -> void) -> normalized-shape
 ;; normalizes 'shape', calling 'f' on each atomic shape in the normalized shape.
-(define (normalize-shape shape f)
+(define (normalize-shape shape [f values])
   (let loop ([shape shape]
-             [angle 0]
-             [translation (xy->c 0 0)]
+             [dx 0]
+             [dy 0]
              [bottom #f])
     (cond
       [(translate? shape)
        (loop (translate-shape shape)
-             angle
-             (+ translation 
-                (* (xy->c (translate-dx shape)
-                          (translate-dy shape))
-                   (make-polar 1 angle)))
-             bottom)]
-      [(rotate? shape)
-       (loop (rotate-shape shape)
-             (+ angle (rotate-angle shape))
-             translation
+             (+ dx (translate-dx shape))
+             (+ dy (translate-dy shape))
              bottom)]
       [(overlay? shape)
        (loop (overlay-bottom shape)
-             angle translation
+             dx dy
              (loop (overlay-top shape)
-                   angle translation bottom))]
+                   dx dy bottom))]
       [(atomic-shape? shape)
-       (let-values ([(dx dy) (c->xy translation)])
-         (let ([this-one (make-translate dx dy (make-rotate angle shape))]) 
-           (f this-one)
-           (if bottom
-               (make-overlay bottom this-one)
-               this-one)))])))
+       (let ([this-one (make-translate dx dy shape)]) 
+         (if bottom
+             (make-overlay bottom (f this-one))
+             (f this-one)))])))
 
 (define (atomic-shape? shape)
   (or (ellipse? shape)
       (text? shape)
       (polygon? shape)
-      (and (object? shape)
-           (is-a?/c shape bitmap%))))
+      (bitmap? shape)))
 
 ;; simple-bb : simple-shape -> (values number number number number)
 ;; returns the bounding box of 'shape' 
@@ -185,11 +170,11 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 (define (simple-bb shape)
   (let ([dx (translate-dx shape)]
         [dy (translate-dy shape)]
-        [θ (rotate-angle (translate-shape shape))]
-        [simple-shape (rotate-shape (translate-shape shape))])
+        [simple-shape (translate-shape shape)])
     (cond
       [(polygon? simple-shape)
-       (let ([points (polygon-points simple-shape)])
+       (let ([θ (polygon-angle simple-shape)]
+             [points (polygon-points simple-shape)])
          (let-values ([(x y) (rotate-point (+ dx (posn-x (car points)))
                                            (+ dy (posn-y (car points)))
                                            θ)])
@@ -415,11 +400,11 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 (define (render-simple-shape shape dc dx dy)
   (let ([dx (+ dx (translate-dx shape))]
         [dy (+ dy (translate-dy shape))]
-        [θ (rotate-angle (translate-shape shape))]
-        [atomic-shape (rotate-shape (translate-shape shape))])
+        [atomic-shape (translate-shape shape)])
     (cond
       [(ellipse? atomic-shape)
-       (let ([path (new dc-path%)])
+       (let ([path (new dc-path%)]
+             [θ (ellipse-angle atomic-shape)])
          (send path ellipse 0 0 (ellipse-width atomic-shape) (ellipse-height atomic-shape))
          (send path rotate θ)
          (send dc set-pen (ellipse-pen atomic-shape))
@@ -427,7 +412,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          (send dc draw-path path dx dy))]
       [(polygon? atomic-shape)
        (let ([path (new dc-path%)]
-             [points (polygon-points atomic-shape)])
+             [points (polygon-points atomic-shape)]
+             [θ (polygon-angle atomic-shape)])
          (send path move-to (posn-x (car points)) (posn-y (car points)))
          (let loop ([points (cdr points)])
            (unless (null? points)
@@ -439,8 +425,9 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          (send dc set-brush (polygon-brush atomic-shape))
          (send dc draw-path path dx dy))]
       [(text? atomic-shape)
-       (send dc set-font (text-font atomic-shape))
-       (send dc draw-text (text-string atomic-shape) dx dy #f 0 angle)])))
+       (let ([θ (text-angle atomic-shape)])
+         (send dc set-font (text-font atomic-shape))
+         (send dc draw-text (text-string atomic-shape) dx dy #f 0 angle))])))
 
 
 ;                                                                                   
@@ -539,7 +526,6 @@ and they all have good sample contracts. (It is amazing what we can do with kids
                               (+ (picture-baseline picture2) dy2)))
                 #f))
 
-
 ;; beside : picture picture picture ... -> picture
 ;; places pictures in a single horizontal row, top aligned
 (define/chk (beside picture1 picture2 . picture3)
@@ -615,17 +601,45 @@ and they all have good sample contracts. (It is amazing what we can do with kids
   (define top #f)
   (define right #f)
   (define bottom #f)
-  (define (add-to-bounding-box simple-shape)
-    (let-values ([(this-left this-top this-right this-bottom) (simple-bb simple-shape)])
-      (set! left (if left (min this-left left) this-left))
-      (set! top (if top (min this-top top) this-top))
-      (set! right (if right (max this-right right) this-right))
-      (set! bottom (if bottom (max this-bottom bottom) this-bottom))))
-  (let* ([rotated (normalize-shape (make-rotate angle (picture-shape picture)) add-to-bounding-box)])
+  (define (add-to-bounding-box/rotate simple-shape)
+    (let ([rotated-shape (apply-rotation angle simple-shape)])
+      (let-values ([(this-left this-top this-right this-bottom) (simple-bb rotated-shape)])
+        (set! left (if left (min this-left left) this-left))
+        (set! top (if top (min this-top top) this-top))
+        (set! right (if right (max this-right right) this-right))
+        (set! bottom (if bottom (max this-bottom bottom) this-bottom)))
+      rotated-shape))
+  (let* ([rotated (normalize-shape (picture-shape picture) add-to-bounding-box/rotate)])
     (make-picture (make-translate (- left) (- top) rotated)
                   (make-bb (- right left) (- bottom top) (- bottom top))
                   #f)))
 
+;; apply-rotation : angle simple-shape -> simple-shape
+(define (apply-rotation θ simple-shape)
+  (let ([shape (translate-shape simple-shape)])
+    (make-translate
+     (translate-dx simple-shape)
+     (translate-dy simple-shape)
+     (cond
+       [(ellipse? shape)
+        (make-ellipse (ellipse-width shape)
+                      (ellipse-height shape)
+                      (+ θ (ellipse-angle shape))
+                      (ellipse-pen shape)
+                      (ellipse-brush shape))]
+       [(text? shape)
+        (make-text (text-string shape)
+                   (+ θ (text-angle shape))
+                   (text-font shape))]
+       [(polygon? shape)
+        (make-polygon (polygon-points shape)
+                      (+ θ (polygon-angle shape))
+                      (polygon-pen shape)
+                      (polygon-brush shape))]
+       [(bitmap? shape)
+        (make-bitmap (bitmap-bitmap shape)
+                     (+ θ (bitmap-angle shape)))]))))
+  
 ;; stamp : I I -> I
 ;; treats the first I as if it were a mask and uses that mask to
 ;; mask out parts of the first I (the mask is solid; no alpha stuff
@@ -647,6 +661,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
                                     (make-posn width 0)
                                     (make-posn width height)
                                     (make-posn 0 height))
+                              0
                               (mode-color->pen mode color)
                               (mode-color->brush mode color))
                 (make-bb width
@@ -664,6 +679,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 
 (define/chk (ellipse width height mode color)
   (make-picture (make-ellipse width height 
+                              0
                               (mode-color->pen mode color)
                               (mode-color->brush mode color))
                 (make-bb width height height)
@@ -693,21 +709,3 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 ;; see pin-line in slideshow
 ;; the initial strings in the second instance of add-curve are like the strings in add-line
 
-(normalize-shape
- (make-rotate
-  (* pi 1/4)
-  (make-translate 
-   100 100
-   (make-rotate
-    (* pi 1/4)
-    (make-translate 
-     100 100
-     (picture-shape (rectangle 100 10 'solid 'red))))))
- void)
-
-(make-translate
- (* (sqrt 2) 100 2)
- 0
- (make-rotate
-  (* pi 1/2)
-  (picture-shape (rectangle 100 10 'solid 'red))))
