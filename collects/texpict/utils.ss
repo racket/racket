@@ -964,7 +964,7 @@
 		     (pict-descent new)
 		     (list (make-child p 0 0 x-factor y-factor))
 		     #f
-                     (pict-last new))))]
+                     (pict-last p))))]
      [(p factor) (scale p factor factor)]))
 
   (define cellophane
@@ -995,7 +995,7 @@
                        (pict-descent new)
                        (list (make-child p 0 0 1 1))
                        #f
-                       (pict-last new))))])]))
+                       (pict-last p))))])]))
 
   (define inset/clip
     (case-lambda
@@ -1023,7 +1023,7 @@
 		     (pict-descent new)
 		     (list (make-child p 0 0 1 1))
 		     #f
-                     (pict-last new))))]
+                     (pict-last p))))]
      [(p h v) (inset/clip p h v h v)]
      [(p a) (inset/clip p a a a a)]))
   
