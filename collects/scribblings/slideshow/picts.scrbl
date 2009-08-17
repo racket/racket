@@ -73,7 +73,7 @@ information from a pict.
                  [descent real?]
                  [children (listof child?)]
                  [panbox (or/c #f any/c)]
-                 [last (or/c #f pict?)])]{
+                 [last (or/c #f pict-path?)])]{
 
 A @scheme[pict] structure is normally not created directly with
 @scheme[make-pict]. Instead, functions like @scheme[text],
@@ -589,13 +589,14 @@ sub-pict) sub-pict)].}
 Shifts the given pict's bounding box to enclose the bounding boxes of
 all sub-picts (even @scheme[launder]ed picts).}
 
-@defproc[(use-last [pict pict?] [sub-pict pict?]) pict?]{
+@defproc[(use-last [pict pict?] [sub-pict pict-path?]) pict?]{
 
 Returns a pict like @scheme[pict], but with the last element (as
 reported by @scheme[pict-last]) set to @scheme[sub-pict]. The
-@scheme[sub-pict] must exist as a sub-pict within @scheme[pict].}
+@scheme[sub-pict] must exist as a sub-pict (or path of sub-picts)
+within @scheme[pict].}
 
-@defproc[(use-last* [pict pict?] [sub-pict pict?]) pict?]{
+@defproc[(use-last* [pict pict?] [sub-pict pict-path?]) pict?]{
 
 Propagates the last element of @scheme[sub-pict] to @scheme[pict].
 
@@ -642,7 +643,9 @@ list of @scheme[pict]s.}
 
 Creates a pict that has the same drawing and bounding box of
 @scheme[pict], but which hides all of its sub-picts so that they
-cannot be found with functions like @scheme[lt-find].}
+cannot be found with functions like @scheme[lt-find]. If @scheme[pict]
+has a last-line pict, then the laundered pict has a fresh last-line
+pict with the same shape and location.}
 
 @; ------------------------------------------------------------------------
 

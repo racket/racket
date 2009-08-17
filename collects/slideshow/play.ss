@@ -1,6 +1,7 @@
 #lang scheme/base
 (require slideshow/base
-         slideshow/pict)
+         slideshow/pict
+         scheme/list)
 
 (provide play play-n
          fade-pict
@@ -11,6 +12,8 @@
 (define (fail-gracefully t)
   (with-handlers ([exn:fail? (lambda (x) (values 0 0))])
     (t)))
+
+(define single-pict (lambda (p) (if (list? p) (last p) p)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Animation player
@@ -36,12 +39,15 @@
 ;; arguments will be 0.0. The first argument goes from 0.0 to 1.0
 ;; for the first `play' sequence, and then it stays at 1.0 while
 ;; the second goes from 0.0 to 1.0 for the second sequence, etc.
-(define (play-n #:title [title #f] #:layout [layout 'auto] mid)
+(define (play-n #:title [title #f] #:layout [layout 'auto]
+                mid
+                #:skip-last? [skip-last? #f])
   (let ([n (procedure-arity mid)])
     (let loop ([post (vector->list (make-vector n))]
                [pre null])
       (if (null? post)
-          (slide #:title title #:layout layout (apply mid pre))
+          (unless skip-last?
+            (slide #:title title #:layout layout (apply mid pre)))
           (begin
             (play #:title title
                   #:layout layout 
@@ -75,10 +81,12 @@
                      (+ aby (* (- bby aby) n)))]
               [orig 
                ;; Generate intermediate last-pict
-               (let ([ae (or (pict-last a) a)]
-                     [be (or (pict-last b) b)])
-                 (let-values ([(al at) (lt-find orig ae)]
-                              [(bl bt) (lt-find orig be)])
+               (let ([ap (or (pict-last a) a)]
+                     [bp (or (pict-last b) b)])
+                 (let-values ([(al at) (lt-find orig (if (pair? ap) (cons a ap) (list a ap)))]
+                              [(bl bt) (lt-find orig (if (pair? bp) (cons b bp) (list b bp)))]
+                              [(ae) (single-pict ap)]
+                              [(be) (single-pict bp)])
                    (let ([ar (+ al (pict-width ae))]
                          [ab (+ at (pict-height ae))]
                          [br (+ bl (pict-width be))]
@@ -97,7 +105,8 @@
                                  [bl (max t (min (btw abl bbl) b))])
                              (let ([p (blank (- r l) (- b t)
                                              (- tl t) (- b bl))])
-                               (use-last (pin-over orig l t p) p)))))))))])
+                               (let ([orig+p (pin-over orig l t p)])
+                                 (use-last orig+p p))))))))))])
           (let ([p (make-pict (pict-draw orig)
                               (pict-width orig)
                               (pict-height orig)

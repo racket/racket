@@ -2,6 +2,7 @@
   (require "mrpict.ss"
 	   mzlib/class
 	   mzlib/list
+           (only scheme/list last)
            mred
 	   mzlib/unit)
 
@@ -14,15 +15,21 @@
     (and (pict-last p) #t))
 
   (define (code-pict-bottom-line p)
-    (pict-last p))
+    (single-pict (pict-last p)))
+
+  (define (single-pict p)
+    (if (list? p)
+        (last p)
+        p))
 
   (define (make-code-append htl-append)
     (case-lambda
      [(a b) (let ([a-last (pict-last a)])
               (if a-last
-                  (let ([extension (htl-append (ghost a-last) b)])
+                  (let* ([a-dup (launder (ghost (single-pict a-last)))]
+                         [extension (htl-append a-dup b)])
                     (let ([p (let-values ([(x y) (lt-find a a-last)]
-                                          [(dx dy) (lt-find extension a-last)])
+                                          [(dx dy) (lt-find extension a-dup)])
                                (let ([ex (- x dx)]
                                      [ey (- y dy)])
                                  (if (negative? ey)
@@ -505,6 +512,9 @@
 	    [id
 	     (identifier? stx)
 	     (add-close (colorize-id (symbol->string (syntax-e stx)) mode) closes)]
+	    [kw
+	     (keyword? (syntax-e #'kw))
+	     (add-close (mode-colorize mode #f (tt (format "~s" (syntax-e stx)))) closes)]
 	    [(a . b)
              ;; Build a list that makes the "." explicit.
              (let ([p (let loop ([a (syntax-e stx)])

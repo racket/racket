@@ -171,8 +171,26 @@
 	(let ([b (extend-pict box 0 0 0 0 0 #f)])
 	  (set-pict-children! b null)
 	  (set-pict-panbox! b (pict-panbox box))
-          (set-pict-last! b #f)
-	  b))
+          ;; After laundering, we can't find the last-pos box.
+          ;; So create a new last-position box to preserve the
+          ;; original shape:
+          (let ([l (pict-last box)])
+            (set-pict-last! box #f) ; preserve invariants
+            (cond
+             [(not l) b]
+             [else 
+              (let-values ([(x y) (lt-find box l)]
+                           [(l) (let loop ([l l])
+                                  (if (pair? l)
+                                      (if (null? (cdr l))
+                                          (car l)
+                                          (loop (cdr l)))
+                                      l))])
+                (let ([b (blank (pict-width l) (pict-height l)
+                                (pict-ascent l) (pict-descent l))])
+                  (use-last/unchecked
+                   (pin-over box x y b)
+                   b)))]))))
 
       (define (lift p n)
 	(let* ([dh (- (max 0 (- n (pict-descent p))))]
@@ -227,7 +245,7 @@
 		       (pict-ascent c) (pict-descent c)
 		       (pict-children p)
 		       #f
-                       (or (pict-last c) c)))))
+                       (last* c)))))
 
       (define (panorama-box! p)
 	(let ([bb (pict-panbox p)])
@@ -305,23 +323,43 @@
 	       (put ,l ,b ,(pict-draw box)))))]))
 
       (define (use-last* p sub-p)
-        (use-last p (or (pict-last sub-p) sub-p)))
+        (use-last p (last* sub-p)))
+
+      (define (last* sub-p)
+        ;; Either use `sub-p' for last or create a path though `sub-p'
+        ;; to the last of `sub-p' (in case the last of `sub-p' is also
+        ;; in other places within `p')
+        (let ([l (pict-last sub-p)])
+          (cond
+           [(not l) sub-p]
+           [(eq? l sub-p) sub-p]
+           [(pair? l) (if (eq? (car l) sub-p)
+                          l
+                          (cons sub-p l))]
+           [else (list sub-p l)])))
 
       (define (use-last p sub-p)
-	(if (let floop ([p p])
+	(if (let floop ([p p] [sub-p sub-p])
               (or (eq? p sub-p)
-                  (ormap (lambda (c) (floop (child-pict c)))
+                  (and (pair? sub-p)
+                       (eq? p (car sub-p))
+                       (or (null? (cdr sub-p))
+                           (floop p (cdr sub-p))))
+                  (ormap (lambda (c) (floop (child-pict c) sub-p))
                          (pict-children p))))
-            (make-pict (pict-draw p)
-		       (pict-width p) (pict-height p)
-		       (pict-ascent p) (pict-descent p)
-		       (list (make-child p 0 0 1 1))
-		       #f
-                       sub-p)
+            (use-last/unchecked p sub-p)
             (error 'use-last
-                   "given new last pict: ~e not in the base pict: ~e"
+                   "given new last-pict path: ~e not in the base pict: ~e"
                    sub-p
                    p)))
+
+     (define (use-last/unchecked p sub-p)
+       (make-pict (pict-draw p)
+                  (pict-width p) (pict-height p)
+                  (pict-ascent p) (pict-descent p)
+                  (list (make-child p 0 0 1 1))
+                  #f
+                  sub-p))
 
       (define dash-frame 
 	(case-lambda
@@ -487,7 +525,7 @@
                                      (list (make-child first dx1 dy1 1 1)
                                            (make-child rest dx2 dy2 1 1))
                                      #f
-                                     (or (pict-last rest) rest)))])))])
+                                     (last* rest)))])))])
                    *-append))]
 	      [2max (lambda (a b c . rest) (max a b))]
 	      [zero (lambda (fw fh rw rh sep fd1 fd2 rd1 rd2 . args) 0)]
@@ -612,8 +650,7 @@
                                       ;; Find bottomost, rightmost of old last picts to be the
                                       ;;  new last pict.
                                       (let ([subs (map (lambda (box)
-                                                         (let ([last (or (pict-last box)
-                                                                         box)])
+                                                         (let ([last (last* box)])
                                                            (let-values ([(x y) (rb-find p last)])
                                                              (list last x y))))
                                                        boxes)])
@@ -873,10 +910,10 @@
 		       [else
 			(error who
 			       "expects two numbers or a sub-pict and a find procedure")])])
-	  (use-last (cons-picture*
-                     base
-                     `((place ,dx ,(- dy (pict-height target)) ,target)))
-                    (or (pict-last base) base))))
+	  (use-last/unchecked (cons-picture*
+                               base
+                               `((place ,dx ,(- dy (pict-height target)) ,target)))
+                              (last* base))))
 
       (define (place-over base dx dy target)
 	(place-it 'place-over #f base dx dy target))
