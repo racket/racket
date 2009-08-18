@@ -266,7 +266,7 @@
 	(make-parameter default-slide-assembler))
 
       (define-struct name-only (title))
-      (define-struct name+title (title name))
+      (define-struct name+title (name title))
 
       (define (one-slide/title/inset do-add-slide! use-assem? process v-sep skipped-pages s inset timeout . x) 
 	(let-values ([(x c)
@@ -483,7 +483,7 @@
                        (lambda (x)
                          (list
                           (cc-superimpose
-                           (apply-slide-inset inset (if (string? s)
+                           (apply-slide-inset inset (if (and s (not (name-only? s)))
                                                         titleless-page 
                                                         full-page))
                            (ct-superimpose

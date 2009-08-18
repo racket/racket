@@ -508,7 +508,10 @@
 				    (+ left space (get-span (car stxs)))
 				    (or (syntax-line (car stxs)) (add1 line))
 				    #t
-                                    (make-hash-table 'equal)))))])))))]
+                                    (let ([ht (make-hash-table 'equal)]
+                                          [v (hash-table-get col->width (+ space left) #f)])
+                                      (when v (hash-table-put! ht (+ space left) v))
+                                      ht)))))])))))]
 	    [id
 	     (identifier? stx)
 	     (add-close (colorize-id (symbol->string (syntax-e stx)) mode) closes)]

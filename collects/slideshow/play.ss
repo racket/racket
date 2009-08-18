@@ -22,13 +22,24 @@
 ;; Create a slide sequence where `mid' takes a number from 0.0 to 1.0.
 ;; The 0.0 slide will wit until you advance, but the remaining ones will
 ;; time out automatically to create the animation.
-(define (play #:title [title #f] #:name [name title] #:layout [layout 'auto] mid)
-  (slide #:title title #:name name #:layout layout (mid 0))
+(define (play #:title [title #f]
+              #:name [name title]
+              #:layout [layout 'auto] 
+              #:steps [N 10]
+              mid)
+  (slide #:title (if (procedure? title) (title 0) title) 
+         #:name name 
+         #:layout layout 
+         (mid 0))
   (if condense?
-      (skip-slides 10)
+      (skip-slides N)
       (map (lambda (n)
-             (slide #:title title #:name name #:layout layout #:timeout 0.05 (mid n)))
-           (let ([cnt 10])
+             (slide #:title (if (procedure? title) (title n) title)
+                    #:name name 
+                    #:layout layout 
+                    #:timeout 0.05 
+                    (mid n)))
+           (let ([cnt N])
              (let loop ([n cnt])
                (if (zero? n)
                    null
@@ -40,19 +51,29 @@
 ;; arguments will be 0.0. The first argument goes from 0.0 to 1.0
 ;; for the first `play' sequence, and then it stays at 1.0 while
 ;; the second goes from 0.0 to 1.0 for the second sequence, etc.
-(define (play-n #:title [title #f] #:name [name title] #:layout [layout 'auto]
-                mid
-                #:skip-last? [skip-last? #f])
+(define (play-n #:title [title #f] 
+                #:name [name title] 
+                #:layout [layout 'auto]
+                #:steps [N 10]
+                #:skip-last? [skip-last? #f]
+                mid)
   (let ([n (procedure-arity mid)])
     (let loop ([post (vector->list (make-vector n))]
                [pre null])
       (if (null? post)
           (unless skip-last?
-            (slide #:title title #:name name #:layout layout (apply mid pre)))
+            (slide #:title (if (procedure? title) (apply title pre) title)
+                   #:name name
+                   #:layout layout
+                   (apply mid pre)))
           (begin
-            (play #:title title
+            (play #:title (if (procedure? title)
+                              (lambda (n)
+                                (apply title (append pre (list n) (cdr post))))
+                              title)
                   #:name name
                   #:layout layout 
+                  #:steps N
                   (lambda (n)
                     (apply mid (append pre (list n) (cdr post)))))
             (loop (cdr post) (cons 1.0 pre)))))))
