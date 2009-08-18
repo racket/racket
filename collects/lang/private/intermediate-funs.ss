@@ -8,7 +8,7 @@
   (provide-and-document
    procedures
    (all-from-except beginner: lang/private/beginner-funs procedures
-                    + * - /)
+                    + * - / append)
 
    ("Numbers (relaxed conditions)"
     
@@ -17,6 +17,11 @@
     (- (number ... -> number) "to subtract from the first all remaining numbers")
     (/ (number ... -> number) "to divide the first by all remaining numbers")
     )
+
+   ("Lists"
+     (append ((listof any) ... -> (listof any))
+       "to create a single list from several, by juxtaposition of the items"))
+
    ("Higher-Order Functions"
     (map ((X ... -> Z) (listof X) ... -> (listof Z))
 	 "to construct a new list by applying a function to each item on one or more existing lists") 
