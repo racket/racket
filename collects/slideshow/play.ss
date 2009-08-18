@@ -28,14 +28,14 @@
               #:steps [N 10]
               mid)
   (slide #:title (if (procedure? title) (title 0) title) 
-         #:name name 
+         #:name (if (procedure? name) (name 0) name)
          #:layout layout 
          (mid 0))
   (if condense?
       (skip-slides N)
       (map (lambda (n)
              (slide #:title (if (procedure? title) (title n) title)
-                    #:name name 
+                    #:name (if (procedure? name) (name n) name)
                     #:layout layout 
                     #:timeout 0.05 
                     (mid n)))
@@ -63,7 +63,7 @@
       (if (null? post)
           (unless skip-last?
             (slide #:title (if (procedure? title) (apply title pre) title)
-                   #:name name
+                   #:name (if (procedure? name) (apply name pre) name)
                    #:layout layout
                    (apply mid pre)))
           (begin
@@ -71,7 +71,10 @@
                               (lambda (n)
                                 (apply title (append pre (list n) (cdr post))))
                               title)
-                  #:name name
+                  #:name (if (procedure? name)
+                             (lambda (n)
+                               (apply name (append pre (list n) (cdr post))))
+                             name)
                   #:layout layout 
                   #:steps N
                   (lambda (n)
