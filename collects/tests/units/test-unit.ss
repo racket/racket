@@ -1368,16 +1368,32 @@
 (test-syntax-error "define-values/invoke-unit/infer: doesn't export y"
   (define-values/invoke-unit/infer (export y-sig) (link u v)))
 
-(test-runtime-error exn? "unbound variable: x"
+(test-runtime-error exn? "define-values/invoke-unit/infer: unbound variable: x"
   (let ()
     (define-values/invoke-unit/infer (export) (link u v))
     x))
 (test-syntax-error "define-values/invoke-unit/infer: doesn't export y"
   (define-values/invoke-unit/infer (export y-sig) v))
-(test-runtime-error exn? "unbound variable: x"
+(test-runtime-error exn? "define-values/invoke-unit/infer: unbound variable: x"
    (let ()
      (define-values/invoke-unit/infer (export) v)
      x))
+
+(let ()
+  (define-signature s^ (a))
+  (define-signature t^ (b))
+  (define-unit u@
+    (import s^)
+    (export t^)
+    (init-depend s^)
+    (define b a))
+  (define-unit v@
+    (import)
+    (export s^)
+    (define a 2))
+  (define-values/invoke-unit/infer (export) (link v@ u@))
+  (test-runtime-error exn? "define-values/invoke-unit/infer: init-depend broken"
+    (define-values/invoke-unit/infer (export) (link u@ v@))))
 
 
 (define-unit u (import x-sig) (export) x)
