@@ -580,18 +580,71 @@ static void *allocate_big(const size_t request_size_bytes, int type)
   }
 }
 
-static void *allocate_medium(size_t sizeb, int type)
-{
-  NewGC *gc;
-  int sz = 8, pos = 0, n;
-  void *addr, *p;
+inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int pos) {
   mpage *page;
-  objhead *info;
+  int n;
 
-  if (sizeb > (1 << (LOG_APAGE_SIZE - 1)))
-    return allocate_big(sizeb, type);
+  page = malloc_mpage();
+  page->addr = malloc_pages(gc, APAGE_SIZE, APAGE_SIZE);
+  page->size = sz;
+  page->size_class = 1;
+  page->page_type = PAGE_BIG;
+  page->previous_size = PREFIX_SIZE;
+  page->live_size = sz;
+
+  for (n = page->previous_size; ((n + sz) <= APAGE_SIZE); n += sz) {
+    objhead *info = (objhead *)PTR(NUM(page->addr) + n);
+#ifdef MZ_USE_PLACES
+    memcpy(info, &GC_objhead_template, sizeof(objhead));
+#endif
+    info->dead = 1;
+    info->size = gcBYTES_TO_WORDS(sz);
+  }
+
+  /* push page onto linked list */
+  page->next = gc->med_pages[pos];
+  if (page->next)
+    page->next->prev = page;
+  gc->med_pages[pos] = page;
+  gc->med_freelist_pages[pos] = page;
+
+  pagemap_add(gc->page_maps, page);
+  return page;
+}
+
+inline static void *medium_page_realloc_dead_slot(NewGC *gc, const int sz, const int pos, const int type) {
+  int n;
+  mpage *page;
+
+  for (page = gc->med_freelist_pages[pos]; page; page = gc->med_freelist_pages[pos] = page->prev) {
+    for (n = page->previous_size; ((n + sz) <= APAGE_SIZE); n += sz) {
+      objhead * info = (objhead *)PTR(NUM(page->addr) + n);
+      if (info->dead) {
+        void *p;
+
+        page->previous_size = (n + sz);
+        page->live_size += sz;
+
+        info->dead = 0;
+        info->type = type;
+        p = OBJHEAD_TO_OBJPTR(info);
+        memset(p, 0, sz - OBJHEAD_SIZE);
+        return p;
+      }
+    }
+  }
+  return 0;
+}
+
+static void *allocate_medium(const size_t request_size_bytes, const int type)
+{
+  int sz = 8;
+  int pos = 0;
+
+  if (request_size_bytes > (1 << (LOG_APAGE_SIZE - 1)))
+    return allocate_big(request_size_bytes, type);
  
-  while (sz < sizeb) {
+  while (sz < request_size_bytes) {
     sz <<= 1;
     pos++;
   }
@@ -600,70 +653,26 @@ static void *allocate_medium(size_t sizeb, int type)
   sz += OBJHEAD_SIZE; /* room for objhead */
   sz = ALIGN_BYTES_SIZE(sz);
 
-  gc = GC_get_GC();
-  while (1) {
-    page = gc->med_freelist_pages[pos];
-    if (page) {
-      n = page->previous_size;
-      while (n <= (APAGE_SIZE - sz)) {
-        info = (objhead *)PTR(NUM(page->addr) + n);
-        if (info->dead) {
-#ifdef MZ_USE_PLACES
-          info->owner = GC_objhead_template.owner;
-          //memcpy(info, &GC_objhead_template, sizeof(objhead));
-#endif
-          info->dead = 0;
-          info->type = type;
-          page->previous_size = (n + sz);
-          page->live_size += sz;
-          p = OBJHEAD_TO_OBJPTR(info);
-          memset(p, 0, sz - OBJHEAD_SIZE);
-          return p;
-        }
-        n += sz;
-      }
-      gc->med_freelist_pages[pos] = page->prev;
-    } else
-      break;
-  }
-
-  page = malloc_mpage();
-  addr = malloc_pages(gc, APAGE_SIZE, APAGE_SIZE);
-  page->addr = addr;
-  page->size = sz;
-  page->size_class = 1;
-  page->page_type = PAGE_BIG;
-  page->previous_size = PREFIX_SIZE;
-  page->live_size = sz;
-  
-  for (n = page->previous_size; (n + sz) <= APAGE_SIZE; n += sz) {
-    info = (objhead *)PTR(NUM(page->addr) + n);
-#ifdef MZ_USE_PLACES
-    memcpy(info, &GC_objhead_template, sizeof(objhead));
-#endif
-    info->dead = 1;
-    info->size = gcBYTES_TO_WORDS(sz);
-  }
-
-  page->next = gc->med_pages[pos];
-  if (page->next)
-    page->next->prev = page;
-  gc->med_pages[pos] = page;
-  gc->med_freelist_pages[pos] = page;
-
-  pagemap_add(gc->page_maps, page);
-
-  n = page->previous_size;
-  info = (objhead *)PTR(NUM(page->addr) + n);
-  info->dead = 0;
-  info->type = type;
-
   {
-    void * objptr = OBJHEAD_TO_OBJPTR(info);
+    NewGC *gc = GC_get_GC();
+    void * objptr = medium_page_realloc_dead_slot(gc, sz, pos, type);
+    if (!objptr) {
+      mpage *page;
+      objhead *info;
+
+      page = create_new_medium_page(gc, sz, pos);
+      info = (objhead *)PTR(NUM(page->addr) + page->previous_size);
+
+      info->dead = 0;
+      info->type = type;
+
+      objptr = OBJHEAD_TO_OBJPTR(info);
+    }
     ASSERT_VALID_OBJPTR(objptr);
     return objptr;
   }
 }
+
 
 inline static mpage *gen0_create_new_mpage(NewGC *gc) {
   mpage *newmpage;
