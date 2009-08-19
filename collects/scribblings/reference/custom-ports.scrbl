@@ -62,9 +62,9 @@ The arguments implement the port as follows:
       @item{@scheme[eof];}
 
       @item{a procedure of arity four (representing a ``special''
-      result, as discussed further below) and optionally of arity zero,
-      but a procedure result is allowed only when
-      @scheme[peek] is not @scheme[#f];}
+      result, as discussed @elemref["special"]{further below}) and
+      optionally of arity zero, but a procedure result is allowed only
+      when @scheme[peek] is not @scheme[#f];}
 
       @item{a @techlink{pipe} input port that supplies bytes to be
       used as long as the pipe has content (see
@@ -91,9 +91,9 @@ The arguments implement the port as follows:
     If the result of a @scheme[read-in] call is not one of the above
     values, the @exnraise[exn:fail:contract]. If a returned integer is
     larger than the supplied byte string's length, the
-    @exnraise[exn:fail:contract]. If @scheme[peek] is
-    @scheme[#f] and a procedure for a special result is returned, the
-    @exnraise[exn:fail:contract].
+    @exnraise[exn:fail:contract]. If @scheme[peek] is @scheme[#f] and
+    a procedure for a @elemref["special"]{special} result is returned,
+    the @exnraise[exn:fail:contract].
 
     The @scheme[read-in] procedure can report an error by raising an
     exception, but only if no bytes are read. Similarly, no bytes
@@ -156,8 +156,8 @@ The arguments implement the port as follows:
 
      @item{a mutable byte string to receive peeked bytes;}
 
-     @item{a non-negative number of bytes (or specials) to skip before
-     peeking; and}
+     @item{a non-negative number of bytes (or
+     @elemref["special"]{specials}) to skip before peeking; and}
 
      @item{either @scheme[#f] or a progress event produced by
      @scheme[get-progress-evt].}
@@ -180,9 +180,9 @@ The arguments implement the port as follows:
     the progress event is ready. Also like @scheme[read-in],
     @scheme[peek] must not block indefinitely.
 
-    The skip count provided to @scheme[peek] is a number of
-    bytes (or specials) that must remain present in the port---in
-    addition to the peek results---when the peek results are
+    The skip count provided to @scheme[peek] is a number of bytes (or
+    @elemref["special"]{specials}) that must remain present in the
+    port---in addition to the peek results---when the peek results are
     reported. If a progress event is supplied, then the peek is
     effectively canceled when another process reads data before the
     given number can be skipped. If a progress event is not supplied
@@ -196,8 +196,9 @@ The arguments implement the port as follows:
     implemented automatically in terms of reads, but with several
     limitations. First, the automatic implementation is not
     thread-safe. Second, the automatic implementation cannot handle
-    special results (non-byte and non-eof), so @scheme[read-in] cannot
-    return a procedure for a special when @scheme[peek] is
+    @elemref["special"]{special} results (non-byte and non-eof), so
+    @scheme[read-in] cannot return a procedure for a
+    @elemref["special"]{special} when @scheme[peek] is
     @scheme[#f]. Finally, the automatic peek implementation is
     incompatible with progress events, so if @scheme[peek] is
     @scheme[#f], then @scheme[progress-evt] and @scheme[commit] must
@@ -249,10 +250,10 @@ The arguments implement the port as follows:
      that was previously peeked, but only if no other process removed
      data first. (The removed data does not need to be reported,
      because it has been peeked already.) More precisely, assuming
-     that @math{k_p} bytes, specials, and mid-stream @scheme[eof]s have
-     been previously peeked or skipped at the start of the port's
-     stream, @scheme[commit] must satisfy the following
-     constraints:
+     that @math{k_p} bytes, @elemref["special"]{specials}, and
+     mid-stream @scheme[eof]s have been previously peeked or skipped
+     at the start of the port's stream, @scheme[commit] must satisfy
+     the following constraints:
 
      @itemize[
 
@@ -333,8 +334,9 @@ The arguments implement the port as follows:
 
  ]
 
- When @scheme[read-in] or @scheme[peek] (or an event produced by one
- of these) returns a procedure, and the procedure is used to obtain a
+ @elemtag["special"]{@bold{``Special'' results:}} When
+ @scheme[read-in] or @scheme[peek] (or an event produced by one of
+ these) returns a procedure, and the procedure is used to obtain a
  non-byte result. (This non-byte result is @italic{not} intended to
  return a character or @scheme[eof]; in particular, @scheme[read-char]
  raises an exception if it encounters a special-result procedure, even
