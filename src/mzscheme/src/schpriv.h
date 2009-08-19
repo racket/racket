@@ -512,8 +512,8 @@ typedef struct {
 
 struct Scheme_Config {
   Scheme_Object so;
-  Scheme_Object *key;
-  Scheme_Object *cell;
+  Scheme_Object *key; /* NULL => cell is a Scheme_Parameterization* and next is NULL */
+  Scheme_Object *cell; /* value or thread cell (when key != NULL) or Scheme_Parameterization* (otherwise) */
   int depth;
   struct Scheme_Config *next;
 };

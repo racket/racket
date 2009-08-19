@@ -326,7 +326,14 @@ To embed PLT Scheme CGC in a program, follow these steps:
 
  @item{Access Scheme through @cppi{scheme_dynamic_require},
   @cppi{scheme_load}, @cppi{scheme_eval}, and/or other functions
-  described in this manual.}
+  described in this manual.
+
+  If the embedding program configures built-in parameters in a way
+  that should be considered part of the default configuration, then
+  call @cpp{scheme_seal_parameters} afterward. The snapshot of
+  parameter values taken by @cpp{scheme_seal_parameters} is used for
+  certain privileged operations, such as installing a @|PLaneT|
+  package.}
 
  @item{Compile the program and link it with the MzScheme libraries.}
 

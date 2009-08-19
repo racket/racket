@@ -162,12 +162,16 @@ subdirectory.
 
 #lang mzscheme
 
+;; This `resolver' no longer fits the normal protocol for a 
+;; module name resolver, because it accepts an extra argument in
+;; the second and third cases. The extra argument is a parameterization
+;; to use for installation actions.
 (define resolver
   (case-lambda
     [(name) (void)]
-    [(spec module-path stx) 
-     (resolver spec module-path stx #t)]
-    [(spec module-path stx load?)
+    [(spec module-path stx orig-paramz) 
+     (resolver spec module-path stx #t orig-paramz)]
+    [(spec module-path stx load? orig-paramz)
      ;; ensure these directories exist
      (make-directory* (PLANET-DIR))
      (make-directory* (CACHE-DIR))
@@ -175,7 +179,8 @@ subdirectory.
      (planet-resolve spec
                      (current-module-declare-name) ;; seems more reliable than module-path in v3.99
                      stx
-                     load?)]))
+                     load?
+                     orig-paramz)]))
 
 (require mzlib/match
          mzlib/file
@@ -321,7 +326,8 @@ subdirectory.
 ;; planet-resolve : PLANET-REQUEST (resolved-module-path | #f) syntax[PLANET-REQUEST] -> symbol
 ;; resolves the given request. Returns a name corresponding to the module in
 ;; the correct environment
-(define (planet-resolve spec rmp stx load?)
+(define (planet-resolve spec rmp stx load? orig-paramz)
+  ;; Need to send `orig-paramz' on to the right place
   (let-values ([(path pkg) (get-planet-module-path/pkg spec rmp stx)])
     (when load? (add-pkg-to-diamond-registry! pkg stx))
     (do-require path (pkg-path pkg) rmp stx load?)))

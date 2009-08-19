@@ -1074,6 +1074,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
   }
 #endif /* NO_FILE_SYSTEM_UTILS */
 
+  scheme_seal_parameters();
+
   fa_a = (FinishArgsAtoms *)scheme_malloc_atomic(sizeof(FinishArgsAtoms));
   fa = (FinishArgs *)scheme_malloc(sizeof(FinishArgs));
   fa->a = fa_a;

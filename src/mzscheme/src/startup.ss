@@ -5,9 +5,11 @@
 ;; needed to start up MzScheme --- especially to install the
 ;; default module-name resolver.
 
-;; MzScheme runs ((dynamic-require ''#%boot boot)) on startup. So,
-;; replace the content of this file to get a different set of initial
-;; module definitions and parameter values.
+;; MzScheme runs ((dynamic-require ''#%boot boot)) on startup. Then,
+;; after configuring all startup parameters, MzScheme may run
+;; ((dynamic-require ''#%boot seal)), and it may seal multiple
+;; times. So, replace the content of this file to get a different set
+;; of initial module definitions and parameter values.
 
 ;; When using makefiles, `make startup' in [the build directory for]
 ;; plt/src/mzscheme creates plt/src/mzscheme/src/cstartup.inc. Note
@@ -472,9 +474,9 @@
 ;; Handlers to install on startup
 
 (module #%boot '#%kernel
-  (#%require '#%min-stx '#%utils)
+  (#%require '#%min-stx '#%utils '#%paramz)
 
-  (#%provide boot)
+  (#%provide boot seal)
 
   (define-values (dll-suffix)
     (system-type 'so-suffix))
@@ -565,8 +567,10 @@
                 (let-values ([(c f) (loop (cdr l))])
                   (values (cons (car l) c) f)))))))
 
-  (define-values (make-standard-module-name-resolver)
-    (lambda (orig-namespace)
+  (define-values (orig-paramz) #f)
+
+  (define-values (standard-module-name-resolver)
+    (let-values ()
       (define-values (planet-resolver) #f)
       (define-values (standard-module-name-resolver)
         (case-lambda 
@@ -606,9 +610,11 @@
             (make-resolved-module-path (cadr s))]
            [(and (pair? s) (eq? (car s) 'planet))
             (unless planet-resolver
-              (parameterize ([current-namespace orig-namespace])
+              (with-continuation-mark
+                  parameterization-key
+                  orig-paramz
                 (set! planet-resolver (dynamic-require '(lib "planet/resolver.ss") 'planet-module-name-resolver))))
-            (planet-resolver s relto stx load?)]
+            (planet-resolver s relto stx load? orig-paramz)]
            [else
             (let ([get-dir (lambda ()
                              (or (and relto
@@ -791,6 +797,13 @@
 
   (define-values (boot)
     (lambda ()
-      (current-module-name-resolver (make-standard-module-name-resolver (current-namespace)))
+      (seal)
+      (current-module-name-resolver standard-module-name-resolver)
       (current-load/use-compiled default-load/use-compiled)
-      (current-reader-guard default-reader-guard))))
+      (current-reader-guard default-reader-guard)))
+
+  (define-values (seal)
+    (lambda ()
+      (set! orig-paramz
+            (reparameterize 
+             (continuation-mark-set-first #f parameterization-key))))))

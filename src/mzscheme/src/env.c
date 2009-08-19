@@ -208,6 +208,17 @@ static void boot_module_resolver()
   scheme_apply(boot, 0, NULL);
 }
 
+void scheme_seal_parameters()
+{
+  Scheme_Object *seal, *a[2];
+  a[0] = scheme_make_pair(scheme_intern_symbol("quote"),
+                          scheme_make_pair(scheme_intern_symbol("#%boot"),
+                                           scheme_null));
+  a[1] = scheme_intern_symbol("seal");
+  seal = scheme_dynamic_require(2, a);
+  scheme_apply(seal, 0, NULL);
+}
+
 void os_platform_init() {
 #ifdef UNIX_LIMIT_STACK
   struct rlimit rl;

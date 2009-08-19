@@ -65,7 +65,9 @@ Sets the path to be returned by @scheme[(find-system-path
 Initializes the @scheme[current-library-collection-paths] parameter
 using @scheme[find-library-collection-paths]. The
 @var{pre_extra_paths} and @var{post_extra-paths} arguments are
-propagated to @scheme[find-library-collection-paths].}
+propagated to @scheme[find-library-collection-paths].
+
+The function calls @cpp{scheme_seal_parameters} automatically.}
 
 @function[(void scheme_init_collection_paths
            [Scheme_Env* env]
@@ -73,3 +75,10 @@ propagated to @scheme[find-library-collection-paths].}
 
 Like @cpp{scheme_init_collection_paths_post}, but with @scheme[null]
 as the last argument.}
+
+
+@function[(void scheme_seal_parameters)]{
+
+Takes a snapshot of the current values of built-in parameters. These
+values are used for privileged actions, such as installing a @|PLaneT|
+package.}
