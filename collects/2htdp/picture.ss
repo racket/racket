@@ -8,7 +8,6 @@
          beside/places
          
          rotate
-         rotate/places
          
          frame
          

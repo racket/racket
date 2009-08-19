@@ -13,7 +13,6 @@
          beside/places
          
          rotate
-         rotate/places
          
          frame
          
@@ -25,7 +24,8 @@
          show-picture
          
          normalize-shape
-         
+         rotate-atomic
+         rotate-simple
          simple-bb
          make-picture picture-shape
          
@@ -34,9 +34,10 @@
          make-translate
          make-ellipse
          make-text
-         make-polygon)
+         make-polygon
+         make-point)
 
-(define-struct posn (x y) #:transparent)
+(define-struct point (x y) #:transparent)
 
 ;; when rendering these things in error messages,
 ;; they should come out as #<picture: {THE ACTUAL PICTURE}>
@@ -112,10 +113,10 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 (define-struct ellipse (width height angle pen brush) #:transparent #:omit-define-syntaxes)
 ;;
 ;;  - (make-text string angle font)
-(define-struct text (string angle font) #:omit-define-syntaxes)
+(define-struct text (string angle font) #:omit-define-syntaxes #:transparent)
 ;;
 ;;  - (make-polygon (listof points) angle pen brush)
-(define-struct polygon (points angle pen brush))
+(define-struct polygon (points angle pen brush) #:transparent)
 ;;
 ;;  - (make-bitmap (is-a?/c bitmap%) angle)
 (define-struct bitmap (bitmap angle))
@@ -164,38 +165,6 @@ and they all have good sample contracts. (It is amazing what we can do with kids
       (polygon? shape)
       (bitmap? shape)))
 
-;; simple-bb : simple-shape -> (values number number number number)
-;; returns the bounding box of 'shape' 
-;; (only called for rotated shapes, so bottom=baseline)
-(define (simple-bb shape)
-  (let ([dx (translate-dx shape)]
-        [dy (translate-dy shape)]
-        [simple-shape (translate-shape shape)])
-    (cond
-      [(polygon? simple-shape)
-       (let ([θ (polygon-angle simple-shape)]
-             [points (polygon-points simple-shape)])
-         (let-values ([(x y) (rotate-point (+ dx (posn-x (car points)))
-                                           (+ dy (posn-y (car points)))
-                                           θ)])
-           (let ([left x]
-                 [top y]
-                 [right x]
-                 [bottom y])
-             (for-each (λ (posn)
-                         (let-values ([(new-x new-y)
-                                       (rotate-point (+ dx (posn-x posn))
-                                                     (+ dy (posn-y posn))
-                                                     θ)])
-                           (set! left (min new-x left))
-                           (set! top (min new-y top))
-                           (set! right (max new-x right))
-                           (set! bottom (max new-y bottom))))
-                       (cdr points))
-             (values left top right bottom))))]
-      [else
-       (fprintf (current-error-port) "BAD\n")
-       (values 0 0 100 100)])))
 
 ;; rotate-point : x,y theta -> x,y
 (define (rotate-point x y θ)
@@ -235,7 +204,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 (define-syntax define/chk
   (λ (stx)
     (syntax-case stx ()
-      [(define/chk (fn-name args ... . final-arg) body)
+      [(define/chk (fn-name args ... . final-arg) body ...)
        (identifier? #'final-arg)
        (let ([len (length (syntax->list #'(args ...)))])
          (with-syntax ([(i ...) (build-list len values)])
@@ -243,12 +212,12 @@ and they all have good sample contracts. (It is amazing what we can do with kids
                (let ([args (check/normalize 'fn-name 'args args i)] ...
                      [final-arg (map/i (λ (x j) (check/normalize 'fn-name 'final-arg x (+ #,len j)))
                                        final-arg)])
-                 body))))]
-      [(define/chk (fn-name args ...) body)
+                 body ...))))]
+      [(define/chk (fn-name args ...) body ...)
        (with-syntax ([(i ...) (build-list (length (syntax->list #'(args ...))) add1)])
          #'(define (fn-name args ...)
              (let ([args (check/normalize 'fn-name 'args args i)] ...)
-               body)))])))
+               body ...)))])))
 
 (define (map/i f l)
   (let loop ([l l]
@@ -414,12 +383,12 @@ and they all have good sample contracts. (It is amazing what we can do with kids
        (let ([path (new dc-path%)]
              [points (polygon-points atomic-shape)]
              [θ (polygon-angle atomic-shape)])
-         (send path move-to (posn-x (car points)) (posn-y (car points)))
+         (send path move-to (point-x (car points)) (point-y (car points)))
          (let loop ([points (cdr points)])
            (unless (null? points)
-             (send path line-to (posn-x (car points)) (posn-y (car points)))
+             (send path line-to (point-x (car points)) (point-y (car points)))
              (loop (cdr points))))
-         (send path line-to (posn-x (car points)) (posn-y (car points)))
+         (send path line-to (point-x (car points)) (point-y (car points)))
          (send path rotate θ)
          (send dc set-pen (polygon-pen atomic-shape))
          (send dc set-brush (polygon-brush atomic-shape))
@@ -582,27 +551,14 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 ;; rotate : I number -> I
 ;; rotates the I around the top-left corner by the given angle
 ;; (in degrees)
-
+;; LINEAR TIME OPERATION (sigh)
 (define/chk (rotate angle picture)
-  (rotate/internal 'left 'top angle picture))
-
-;; rotate/places : string string I number -> I
-;; rotates the I around the given point inside the I, using
-;; the strings like overlay does.
-
-;; this function is bogus! It doesn't matter where you rotate it around. it still looks the same!
-
-(define/chk (rotate/places x-place y-place angle picture)
-  (rotate/internal x-place y-place angle picture))
-
-;; LINEAR TIME OPERATION!!
-(define (rotate/internal x-place y-place angle picture)
   (define left #f)
   (define top #f)
   (define right #f)
   (define bottom #f)
   (define (add-to-bounding-box/rotate simple-shape)
-    (let ([rotated-shape (apply-rotation angle simple-shape)])
+    (let ([rotated-shape (rotate-simple angle simple-shape)])
       (let-values ([(this-left this-top this-right this-bottom) (simple-bb rotated-shape)])
         (set! left (if left (min this-left left) this-left))
         (set! top (if top (min this-top top) this-top))
@@ -614,31 +570,67 @@ and they all have good sample contracts. (It is amazing what we can do with kids
                   (make-bb (- right left) (- bottom top) (- bottom top))
                   #f)))
 
-;; apply-rotation : angle simple-shape -> simple-shape
-(define (apply-rotation θ simple-shape)
-  (let ([shape (translate-shape simple-shape)])
+;; simple-bb : simple-shape -> (values number number number number)
+;; returns the bounding box of 'shape' 
+;; (only called for rotated shapes, so bottom=baseline)
+(define (simple-bb simple-shape)
+  (let ([dx (translate-dx simple-shape)]
+        [dy (translate-dy simple-shape)]
+        [atomic-shape (translate-shape simple-shape)])
+    (cond
+      [(polygon? atomic-shape)
+       (let ([θ (polygon-angle atomic-shape)]
+             [points (polygon-points atomic-shape)])
+         (let-values ([(x y) (rotate-point (point-x (car points)) (point-y (car points)) θ)])
+           (let ([left x]
+                 [top y]
+                 [right x]
+                 [bottom y])
+             (for-each (λ (point)
+                         (let-values ([(new-x new-y)
+                                       (rotate-point (point-x point) (point-y point) θ)])
+                           (set! left (min new-x left))
+                           (set! top (min new-y top))
+                           (set! right (max new-x right))
+                           (set! bottom (max new-y bottom))))
+                       (cdr points))
+             (values (+ dx left) (+ dy top) (+ dx right) (+ dy bottom)))))]
+      [else
+       (fprintf (current-error-port) "BAD\n")
+       (values 0 0 100 100)])))
+
+
+;; rotate-simple : angle simple-shape -> simple-shape
+(define (rotate-simple θ simple-shape)
+  (let-values ([(dx dy) (c->xy (* (make-polar 1 θ) 
+                                  (xy->c (translate-dx simple-shape)
+                                         (translate-dy simple-shape))))])
     (make-translate
-     (translate-dx simple-shape)
-     (translate-dy simple-shape)
-     (cond
-       [(ellipse? shape)
-        (make-ellipse (ellipse-width shape)
-                      (ellipse-height shape)
-                      (+ θ (ellipse-angle shape))
-                      (ellipse-pen shape)
-                      (ellipse-brush shape))]
-       [(text? shape)
-        (make-text (text-string shape)
-                   (+ θ (text-angle shape))
-                   (text-font shape))]
-       [(polygon? shape)
-        (make-polygon (polygon-points shape)
-                      (+ θ (polygon-angle shape))
-                      (polygon-pen shape)
-                      (polygon-brush shape))]
-       [(bitmap? shape)
-        (make-bitmap (bitmap-bitmap shape)
-                     (+ θ (bitmap-angle shape)))]))))
+     dx
+     dy
+     (rotate-atomic θ (translate-shape simple-shape)))))
+
+;; rotate-atomic : angle atomic-shape -> atomic-shape
+(define (rotate-atomic θ atomic-shape)
+  (cond
+    [(ellipse? atomic-shape)
+     (make-ellipse (ellipse-width atomic-shape)
+                   (ellipse-height atomic-shape)
+                   (+ θ (ellipse-angle atomic-shape))
+                   (ellipse-pen atomic-shape)
+                   (ellipse-brush atomic-shape))]
+    [(text? atomic-shape)
+     (make-text (text-string atomic-shape)
+                (+ θ (text-angle atomic-shape))
+                (text-font atomic-shape))]
+    [(polygon? atomic-shape)
+     (make-polygon (polygon-points atomic-shape)
+                   (+ θ (polygon-angle atomic-shape))
+                   (polygon-pen atomic-shape)
+                   (polygon-brush atomic-shape))]
+    [(bitmap? atomic-shape)
+     (make-bitmap (bitmap-bitmap atomic-shape)
+                  (+ θ (bitmap-angle atomic-shape)))]))
   
 ;; stamp : I I -> I
 ;; treats the first I as if it were a mask and uses that mask to
@@ -657,10 +649,10 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 ;;       rectangle
 
 (define/chk (rectangle width height mode color)
-  (make-picture (make-polygon (list (make-posn 0 0)
-                                    (make-posn width 0)
-                                    (make-posn width height)
-                                    (make-posn 0 height))
+  (make-picture (make-polygon (list (make-point 0 0)
+                                    (make-point width 0)
+                                    (make-point width height)
+                                    (make-point 0 height))
                               0
                               (mode-color->pen mode color)
                               (mode-color->brush mode color))
