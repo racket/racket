@@ -1,3 +1,5 @@
+#lang mzscheme
+
 #| resolver.ss -- PLaneT client
 
 1. Introduction
@@ -160,7 +162,6 @@ subdirectory.
 
 ||#
 
-#lang mzscheme
 
 ;; This `resolver' no longer fits the normal protocol for a 
 ;; module name resolver, because it accepts an extra argument in
@@ -198,7 +199,8 @@ subdirectory.
          "private/linkage.ss"
          "parsereq.ss"
          
-         "terse-info.ss") 
+         "terse-info.ss"
+         compiler/cm) 
 
 (provide (rename resolver planet-module-name-resolver)
          resolve-planet-path
@@ -327,10 +329,14 @@ subdirectory.
 ;; resolves the given request. Returns a name corresponding to the module in
 ;; the correct environment
 (define (planet-resolve spec rmp stx load? orig-paramz)
-  ;; Need to send `orig-paramz' on to the right place
-  (let-values ([(path pkg) (get-planet-module-path/pkg spec rmp stx)])
-    (when load? (add-pkg-to-diamond-registry! pkg stx))
-    (do-require path (pkg-path pkg) rmp stx load?)))
+  ;; install various parameters that can affect the compilation of a planet package back to their original state
+  (parameterize ([current-compile (call-with-parameterization orig-paramz current-compile)]
+                 [current-eval (call-with-parameterization orig-paramz current-eval)]
+                 [use-compiled-file-paths (call-with-parameterization orig-paramz use-compiled-file-paths)]
+                 [current-library-collection-paths (call-with-parameterization orig-paramz current-library-collection-paths)])
+    (let-values ([(path pkg) (get-planet-module-path/pkg spec rmp stx)])
+      (when load? (add-pkg-to-diamond-registry! pkg stx))
+      (do-require path (pkg-path pkg) rmp stx load?))))
 
 ;; resolve-planet-path : planet-require-spec -> path
 ;; retrieves the path to the given file in the planet package. downloads and
@@ -560,15 +566,20 @@ subdirectory.
                    (current-time))
            ;; oh man is this a bad hack!
            (parameterize ([current-namespace (make-namespace)])
+             (printf "new namespace\n")
              (let ([ipp (dynamic-require 'setup/plt-single-installer
                                          'install-planet-package)]
                    [rud (dynamic-require 'setup/plt-single-installer
-                                         'reindex-user-documentation)])
-               (ipp path the-dir (list owner (pkg-spec-name pkg)
-                                       extra-path maj min))
-               (unless was-nested?
-                 (printf "------------- Rebuilding documentation index -------------\n")
-                 (rud))))))
+                                         'reindex-user-documentation)]
+                   [msfh (dynamic-require 'compiler/cm 'manager-skip-file-handler)])
+               (printf "starting setup-plt ~s ~s\n" (manager-skip-file-handler) (msfh))
+               (parameterize ([msfh (manager-skip-file-handler)])
+                 (printf "starting setup-plt.2 ~s ~s\n" (manager-skip-file-handler) (msfh))
+                 (ipp path the-dir (list owner (pkg-spec-name pkg)
+                                         extra-path maj min))
+                 (unless was-nested?
+                   (printf "------------- Rebuilding documentation index -------------\n")
+                   (rud)))))))
         (planet-terse-log 'finish (pkg-spec->string pkg))
         (make-pkg (pkg-spec-name pkg) (pkg-spec-path pkg)
                   maj min the-dir 'normal)))))
