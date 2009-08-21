@@ -391,10 +391,12 @@
         (let*-values ([(line col pos) (port-next-location inp)]
                       [(xs) (get)])
           (cond [(not xs) xs]
-                [(null? xs) (make-special-comment #f)]
-                [(null? (cdr xs)) (car xs)]
-                [else (read-error line col pos
-                                  "too many escape expressions")]))
+                [(or (null? xs) (not (null? (cdr xs))))
+                 (read-error line col pos
+                             "a ~a|...| form in Scheme mode must have ~a"
+                             ch:command
+                             "exactly one escaped expression")]
+                [else (car xs)]))
         (get))))
 
   ;; called only when we must see a command in the input

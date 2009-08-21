@@ -636,6 +636,22 @@ bar}
 ---
 \foo{\" -\error-> #rx":1:6: read: expected a closing '\"'$"
 ---
+@|1 2|
+-@error->
+#rx"a @|...| form in Scheme mode must have exactly one escaped expression"
+---
+@||
+-@error->
+#rx"a @|...| form in Scheme mode must have exactly one escaped expression"
+---
+\|1 2|
+-\error->
+#rx"a \\\\|...| form in Scheme mode must have exactly one escaped expression"
+---
+\||
+-\error->
+#rx"a \\\\|...| form in Scheme mode must have exactly one escaped expression"
+---
 ;; -------------------- inside-reader
 ---
 foo bar baz  -@i->  "foo bar baz"
