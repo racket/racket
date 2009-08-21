@@ -408,13 +408,25 @@
              (read-error* 'eof "missing command")]
             ;; we have a command: adjust its location to include the dispatch
             ;; character
-            [else (datum->syntax #f (syntax-e cmd)
-                    (vector (syntax-source cmd)
-                            (syntax-line cmd)
-                            (cond [(syntax-column cmd) => sub1] [else #f])
-                            (cond [(syntax-position cmd) => sub1] [else #f])
-                            (cond [(syntax-span cmd) => add1] [else #f]))
-                    orig-stx)])))
+            [else
+             ;; (datum->syntax #f (syntax-e cmd)
+             ;;   (vector (syntax-source cmd)
+             ;;           (syntax-line cmd)
+             ;;           (cond [(syntax-column cmd) => sub1] [else #f])
+             ;;           (cond [(syntax-position cmd) => sub1] [else #f])
+             ;;           (cond [(syntax-span cmd) => add1] [else #f]))
+             ;;   orig-stx)
+             ;; The reasoning for the above is that in `@foo' the `@' is part
+             ;; of the syntax of the identifier, in a similar way to including
+             ;; the double quotes in the position information for a string
+             ;; syntax or the backslash in a mzscheme \foo identifier.  Another
+             ;; feature of this is that there needs to be some way to know what
+             ;; was the actual source of some syntax.  However, this is
+             ;; problematic in two ways: (a) it can be confusing that
+             ;; highlighting an identifier highlights the `@' too, and more
+             ;; importantly, it makes `@|foo|' be treated differently than
+             ;; `@foo'.  So we'll try to not do this adjusting.
+             cmd])))
 
   (define (get-rprefixes) ; return punctuation prefixes in reverse
     (let loop ([r '()])

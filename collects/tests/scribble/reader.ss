@@ -661,13 +661,21 @@ foo
 foo
 -@syntax-> (stx: line= 1 column= 0 position= 1 span= 3)
 ---
+\foo
+|foo|
+-@syntax->
+(stx: line= 1 column= 0 position= 1 span= 4)
+(stx: line= 2 column= 0 position= 6 span= 5)
+---
 (foo bar)
 -@syntax-> ((stx: line= 1 column= 1 position= 2 span= 3)
             (stx: line= 1 column= 5 position= 6 span= 3))
 ---
 ;; this test should break soon
 @foo
--@syntax-> (stx: line= 1 column= 0 position= 1 span= 4)
+-@syntax->
+(stx: line= 1 column= 1 position= 2 span= 3)
+;; NOT this: (stx: line= 1 column= 0 position= 1 span= 4)
 ---
 ;; -------------------- errors
 ---
