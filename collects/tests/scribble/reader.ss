@@ -609,49 +609,6 @@ bar}
 -@->
 (foo "bar" "\n" baz " bbb" "\n" x1 x2 " x3 x4" "\n" " waaaah")
 ---
-;; -------------------- errors
----
-(  -@error-> "inp:1:0: read: expected a `)' to close `('" ; check -@error->
----
-@foo{ -@error-> #rx":1:0: missing closing `}'$"
----
-\foo{ -\error-> #rx":1:0: missing closing `}'$"
----
-@foo{@bar{ -@error-> #rx":1:5: missing closing `}'$"
----
-\foo{\bar{ -\error-> #rx":1:5: missing closing `}'$"
----
-@foo{@bar{} -@error-> #rx":1:0: missing closing `}'$"
----
-@foo{@bar|{} -@error-> #rx":1:5: missing closing `}\\|'$"
----
-@foo{@bar|-{} -@error-> #rx":1:5: missing closing `}-\\|'$"
----
-@foo{@bar|-{} -@error-> #rx":1:5: missing closing `}-\\|'$"
----
-\foo{\bar|-{} -\error-> #rx":1:5: missing closing `}-\\|'$"
----
-@foo{@" -@error-> #rx":1:6: read: expected a closing '\"'$"
-;; " <-- (balance this file)
----
-\foo{\" -\error-> #rx":1:6: read: expected a closing '\"'$"
----
-@|1 2|
--@error->
-#rx"a @|...| form in Scheme mode must have exactly one escaped expression"
----
-@||
--@error->
-#rx"a @|...| form in Scheme mode must have exactly one escaped expression"
----
-\|1 2|
--\error->
-#rx"a \\\\|...| form in Scheme mode must have exactly one escaped expression"
----
-\||
--\error->
-#rx"a \\\\|...| form in Scheme mode must have exactly one escaped expression"
----
 ;; -------------------- inside-reader
 ---
 foo bar baz  -@i->  "foo bar baz"
@@ -698,6 +655,49 @@ foo
 \bar[]
 -\i->
 (foo 1 "bar" "\n" "  " "baz " (nested "\\form{}") "\n" "blah") "\n" (bar)
+---
+;; -------------------- errors
+---
+(  -@error-> "inp:1:0: read: expected a `)' to close `('" ; check -@error->
+---
+@foo{ -@error-> #rx":1:0: missing closing `}'$"
+---
+\foo{ -\error-> #rx":1:0: missing closing `}'$"
+---
+@foo{@bar{ -@error-> #rx":1:5: missing closing `}'$"
+---
+\foo{\bar{ -\error-> #rx":1:5: missing closing `}'$"
+---
+@foo{@bar{} -@error-> #rx":1:0: missing closing `}'$"
+---
+@foo{@bar|{} -@error-> #rx":1:5: missing closing `}\\|'$"
+---
+@foo{@bar|-{} -@error-> #rx":1:5: missing closing `}-\\|'$"
+---
+@foo{@bar|-{} -@error-> #rx":1:5: missing closing `}-\\|'$"
+---
+\foo{\bar|-{} -\error-> #rx":1:5: missing closing `}-\\|'$"
+---
+@foo{@" -@error-> #rx":1:6: read: expected a closing '\"'$"
+;; " <-- (balance this file)
+---
+\foo{\" -\error-> #rx":1:6: read: expected a closing '\"'$"
+---
+@|1 2|
+-@error->
+#rx"a @|...| form in Scheme mode must have exactly one escaped expression"
+---
+@||
+-@error->
+#rx"a @|...| form in Scheme mode must have exactly one escaped expression"
+---
+\|1 2|
+-\error->
+#rx"a \\\\|...| form in Scheme mode must have exactly one escaped expression"
+---
+\||
+-\error->
+#rx"a \\\\|...| form in Scheme mode must have exactly one escaped expression"
 ---
 ;; -------------------- some code tests
 ---
