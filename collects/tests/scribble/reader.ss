@@ -656,6 +656,19 @@ foo
 -\i->
 (foo 1 "bar" "\n" "  " "baz " (nested "\\form{}") "\n" "blah") "\n" (bar)
 ---
+;; -------------------- syntax information
+---
+foo
+-@syntax-> (stx: line= 1 column= 0 position= 1 span= 3)
+---
+(foo bar)
+-@syntax-> ((stx: line= 1 column= 1 position= 2 span= 3)
+            (stx: line= 1 column= 5 position= 6 span= 3))
+---
+;; this test should break soon
+@foo
+-@syntax-> (stx: line= 1 column= 0 position= 1 span= 4)
+---
 ;; -------------------- errors
 ---
 (  -@error-> "inp:1:0: read: expected a `)' to close `('" ; check -@error->
@@ -831,6 +844,32 @@ END-OF-TESTS
     (set! r (call-with-values (lambda () (eval x ns)) list)))
   (values r (read-all y read)))
 
+(define (x . (mk-syntax-test syntax-reader) . y)
+  (let ([x (read-all x (lambda (i) (syntax-reader 'test i)))]
+        [y (read-all y read)])
+    (define (check x y)
+      (cond [(or (equal? x y) (eq? y '_)) #t]
+            [(not (pair? y)) #f]
+            [(eq? 'stx: (car y)) (check-stx x (cdr y))]
+            [(pair? x) (and (check (car x) (car y)) (check (cdr x) (cdr y)))]
+            [(syntax? x) (check (syntax-e x) y)]
+            [else #f]))
+    (define (check-stx x y)
+      (cond [(null? y) #t]
+            [(null? (cdr y)) (check x (car y))]
+            [(check
+              ((case (car y)
+                 [(line=)     syntax-line]
+                 [(column=)   syntax-column]
+                 [(position=) syntax-position]
+                 [(span=)     syntax-span]
+                 [else (error 'syntax-test "unknown test form: ~e" (car y))])
+               x)
+              (cadr y))
+             (check-stx x (cddr y))]
+            [else #f]))
+    (values #t (check x y))))
+
 (define (x . (mk-error-test reader) . y)
   (define (get-exn-data e)
     (cons (exn-message e)
@@ -844,14 +883,16 @@ END-OF-TESTS
 
 ;; testers
 
-(define -@->       (mk-reader-test scr:read))
-(define -\\->      (mk-reader-test read/BS))
-(define -@i->      (mk-inside-reader-test scr:read-inside))
-(define -\\i->     (mk-inside-reader-test read-inside/BS))
-(define -@eval->   (mk-eval-test scr:read-syntax))
-(define -\\eval->  (mk-eval-test read-syntax/BS))
-(define -@error->  (mk-error-test scr:read))
-(define -\\error-> (mk-error-test read/BS))
+(define -@->        (mk-reader-test scr:read))
+(define -\\->       (mk-reader-test read/BS))
+(define -@i->       (mk-inside-reader-test scr:read-inside))
+(define -\\i->      (mk-inside-reader-test read-inside/BS))
+(define -@eval->    (mk-eval-test scr:read-syntax))
+(define -\\eval->   (mk-eval-test read-syntax/BS))
+(define -@syntax->  (mk-syntax-test scr:read-syntax))
+(define -\\syntax-> (mk-syntax-test read-syntax/BS))
+(define -@error->   (mk-error-test scr:read))
+(define -\\error->  (mk-error-test read/BS))
 
 ;; running the tests
 
@@ -863,6 +904,8 @@ END-OF-TESTS
                           (matching? (cdr x) (cdr y)))]
           [(and (regexp? x) (string? y)) (matching? y x)]
           [(and (string? x) (regexp? y)) (regexp-match? y x)]
+          [(procedure? x) (x y)]
+          [(procedure? y) (y x)]
           [else #f]))
   (test do
     (let* ([ts the-tests]
