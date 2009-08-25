@@ -766,12 +766,12 @@
              (set-snip-next! del-snip #f)
              (set-snip-prev! del-snip #f)
              
-             (set-snip-flags! del-snip (add-flag CAN-DISOWN (snip->flags del-snip)))
+             (set-snip-flags! del-snip (add-flag (snip->flags del-snip) CAN-DISOWN))
              (snip-set-admin del-snip #f)
-             (set-snip-flags! del-snip (remove-flag CAN-DISOWN (snip->flags del-snip)))
+             (set-snip-flags! del-snip (remove-flag (snip->flags del-snip) CAN-DISOWN))
              (unless del
                (when (send del-snip get-admin)
-                 (set-snip-flags! del-snip (remove-flag OWNED (snip->flags del-snip)))))
+                 (set-snip-flags! del-snip (remove-flag (snip->flags del-snip) OWNED))))
              
              (unless s-modified?
                (set-modified #t))
