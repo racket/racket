@@ -229,6 +229,9 @@ please adhere to these guidelines:
   (needs-execute-defns-edited
    "WARNING: The definitions window has changed. Click Run.")
   
+  (editor-changed-since-srcloc-recorded
+   "This editor has been changed since the source location was recorded, so the highlighted region may no longer correspond to the correct source location.")
+  
  (file-is-not-saved "The file \"~a\" is not saved.")
  (save "Save")
  (close-anyway "Close Anyway")

@@ -64,9 +64,13 @@
    
    hide-backtrace-window
    show-backtrace-window
+   show-backtrace-window/edition-pairs
    open-and-highlight-in-file
    
    small-planet-bitmap
+
+   srcloc->edition/pair
+   
    
    ;show-error-and-highlight
    ;print-bug-to-stderr

@@ -91,6 +91,20 @@ The @scheme[complete-program?] argument determines if the
 
 }}
 
+@defmethod[(evaluate-from-port [port input-port?]
+                               [complete-program? boolean?]
+                               [cleanup (-> void)])
+           any]{
+  Evaluates the program in the @scheme[port] argument. If @scheme[complete-program?]
+  is @scheme[#t], this method calls the
+  @method[drscheme:language:language<%> front-end/complete-program] to evaluate
+  the program. If it is @scheme[#f], it calls 
+  @method[drscheme:language:language<%> front-end/interaction] method.
+  When evaluation finishes, it calls @scheme[cleanup] on the user's main thread.
+
+  This method must be called from the drscheme main thread.
+}
+                 
 @defmethod[#:mode augment (after-many-evals) any]{
   Called from the drscheme main thread after
   @method[drscheme:rep:text% evaluate-from-port] finishes (no matter

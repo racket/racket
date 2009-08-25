@@ -1,5 +1,4 @@
-#reader scribble/reader
-#lang scheme/base
+#lang at-exp scheme/base
 
 #|
 
@@ -357,11 +356,56 @@ all of the names in the tools library, for use defining keybindings
   
   (proc-doc/names
    drscheme:debug:open-and-highlight-in-file
-   ((or/c srcloc? (listof srcloc?)) . -> . void?)
-   (debug-info)
+   (->* ((or/c srcloc? (listof srcloc?)))
+        ((or/c #f (cons/c (λ (x) (and (weak-box? x)
+                                      (let ([v (weak-box-value x)])
+                                        (or (not v)
+                                            (is-a?/c v editor<%>)))))
+                          number?)))
+       void?)
+   ((debug-info)
+    ((edition-pair #f)))
    @{This function opens a DrScheme to display
      @scheme[debug-info]. Only the src the position
-     and the span fields of the srcloc are considered.})
+     and the span fields of the srcloc are considered.
+     
+     The @scheme[edition-pair] is used to determine if a
+     warning message is shown when before opening the file.
+     If the @scheme[edition-pair] is not @scheme[#f], it is compared
+     with the result of @method[text:basic<%> get-edition-number]
+     of the editor that is loaded to determine if the file has been
+     edited since the source location was recorded. If so, it 
+     puts up a warning dialog message to that effect.})
+  
+  (proc-doc/names
+   drscheme:debug:show-backtrace-window/edition-pairs
+   (-> string?
+       (listof srcloc?)
+       (listof (or/c #f (cons/c (λ (x) (and (weak-box? x)
+                                            (let ([v (weak-box-value x)])
+                                              (or (not v)
+                                                  (is-a?/c v editor<%>)))))
+                                number?)))
+       (or/c #f (is-a?/c drscheme:rep:text<%>))
+       void?)
+   (error-message dis editions-pairs rep)
+   @{Shows the backtrace window you get when clicking on the bug in
+     DrScheme's REPL.
+     
+     The @scheme[error-message] argument is the text of the error,
+     @scheme[dis] is the debug information, extracted from the
+     continuation mark in the exception record, using
+     @scheme[errortrace-key].
+
+     The @scheme[editions] argument indicates the editions of any editors
+     that are open editing the files corresponding to the source locations
+     
+     The @scheme[rep] argument should be non-@scheme[#f] if there are 
+     possibly stacktrace frames that contain unsaved versions of the 
+     definitions text or the repl from drscheme. Use
+     @scheme[drscheme:rep:current-rep] to get the rep.
+     
+     })
   
   (proc-doc/names
    drscheme:debug:show-backtrace-window
@@ -376,15 +420,27 @@ all of the names in the tools library, for use defining keybindings
    @{Shows the backtrace window you get when clicking on the bug in
      DrScheme's REPL.
      
-     The @scheme[error-message] argument is the text of the error,
-     @scheme[dis] is the debug information, extracted from the
-     continuation mark in the exception record, using
-     @scheme[errortrace-key].
+     This function simply calls @scheme[drscheme:debug:show-backtrace-window/edition-pairs],
+     using @scheme[drscheme:debug:srcloc->edition/pair].
+     })
+  
+  (proc-doc/names
+   drscheme:debug:srcloc->edition/pair
+   (-> srcloc?
+       (or/c #f (is-a?/c drscheme:rep:text<%>))
+       (or/c #f (cons/c (λ (x) (and (weak-box? x)
+                                    (let ([v (weak-box-value x)])
+                                      (or (not v)
+                                          (is-a?/c v editor<%>)))))
+                        number?)))
+   (srcloc rep)
+   @{Constructs a edition pair from a source location,
+     returning the current edition of the editor editing
+     the source location (if any).
      
-     The @scheme[rep] argument should be non-@scheme[#f] if there are 
-     possibly stacktrace frames that contain unsaved versions of the 
-     definitions text or the repl from drscheme. Use
-     @scheme[drscheme:rep:current-rep] to get the rep.
+     The @scheme[rep] argument is used to map source locations, 
+     in the case that the source location corresponds to the definitions
+     window (when it has not been saved) or the interactions window.
      })
  
   

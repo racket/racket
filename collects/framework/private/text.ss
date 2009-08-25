@@ -94,7 +94,7 @@ WARNING: printf is rebound in the body of the unit to always
              position-location position-locations
              position-line line-start-position line-end-position
              get-extent get-filename run-after-edit-sequence)
-    
+
     (define port-name-identifier #f)
     (define/public (get-port-name)
       (let* ([b (box #f)]
@@ -541,14 +541,21 @@ WARNING: printf is rebound in the body of the unit to always
     (define (get-styles-fixed) styles-fixed?)
     (define (set-styles-fixed b) (set! styles-fixed? b))
     
+    (define edition 0)
+    (define/public (get-edition-number) edition)
+    
     (define/augment (on-insert start len)
       (begin-edit-sequence)
       (inner (void) on-insert start len))
     (define/augment (after-insert start len)
+      (set! edition (+ edition 1))
       (when styles-fixed?
         (change-style (get-fixed-style) start (+ start len) #f))
       (inner (void) after-insert start len)
       (end-edit-sequence))
+   (define/augment (after-delete start len)
+     (set! edition (+ edition 1))
+     (inner (void) after-delete start len))
     
     (define/public (move/copy-to-edit dest-edit start end dest-position)
       (split-snip start)

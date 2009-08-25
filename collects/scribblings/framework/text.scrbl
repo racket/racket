@@ -134,6 +134,14 @@
     @method[text:basic<%> port-name-matches?].
 
   }
+  @defmethod[(get-edition-number) exact-nonnegative-integer?]{
+     Returns a number that increments everytime something in
+     the editor changes. 
+     
+     The number is updated in @xmethod[text% after-insert] and
+     @xmethod[text% after-delete].
+  }
+  
 }
 @defmixin[text:basic-mixin (editor:basic<%> text%) (text:basic<%>)]{
   This mixin implements the basic functionality needed for 
