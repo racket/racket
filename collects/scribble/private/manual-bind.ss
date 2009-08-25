@@ -33,7 +33,8 @@
          make-binding-redirect-elements
          sigelem)
 (provide/contract
- [defidentifier ((identifier?) (#:form? boolean? #:index? boolean? #:show-libs? boolean?) . ->* . element?)])
+ ; XXX What is return type?
+ [defidentifier ((identifier?) (#:form? boolean? #:index? boolean? #:show-libs? boolean?) . ->* . any/c)])
 
 (define (gen-absolute-tag)
   `(abs ,(make-generated-tag)))
