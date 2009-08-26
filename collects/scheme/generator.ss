@@ -45,6 +45,7 @@
                    (lambda (x v) (not (eq? last current))))))])
          seq))]))
 
+;; use define-sequence-syntax to be more in sync with other for loop constructs
 (define-syntax in-generator
   (syntax-rules ()
     [(_ body0 bodies ...)
