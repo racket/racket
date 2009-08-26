@@ -1,11 +1,11 @@
 #lang scheme/base
 
-(require (for-syntax scheme/base))
+(require (for-syntax scheme/base)
+         scheme/control
+         scheme/stxparam)
 
-(require scheme/control)
-(require scheme/stxparam)
-
-(provide yield lambda-generator define-generator)
+(provide yield lambda-generator
+         define-generator in-generator)
 
 (define-syntax-parameter yield
   (lambda (stx)
@@ -38,12 +38,17 @@
                        ;; set! is ugly but can we do better?
                        (set! current next)
                        value))
-                   (lambda (x) (add1 x))
+                   add1
                    0
                    (lambda (x) (not (eq? last current)))
                    (lambda (v) (not (eq? last current)))
                    (lambda (x v) (not (eq? last current))))))])
          seq))]))
+
+(define-syntax in-generator
+  (syntax-rules ()
+    [(_ body0 bodies ...)
+     ((lambda-generator () body0 bodies ...))]))
 
 (define-syntax define-generator
   (syntax-rules ()
