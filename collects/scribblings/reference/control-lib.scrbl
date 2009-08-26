@@ -12,7 +12,7 @@ few extra convenience forms. These control operators are implemented
 in terms of @scheme[call-with-continuation-prompt],
 @scheme[call-with-composable-continuations], etc., and they generally
 work sensibly together. Many are redundant; for example,
-@scheme[reset] and @scheme[shift] are aliases.
+@scheme[reset] and @scheme[prompt] are aliases.
  
 @; ----------------------------------------------------------------------
 
