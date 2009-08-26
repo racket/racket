@@ -17,7 +17,7 @@
   (syntax-rules ()
     [(_ (args ...) body0 bodies ...)
      (lambda (args ...)
-       (let* ([last (lambda () (void))]
+       (let* ([last (gensym)]
               ;; current is a function that invokes user code and
               ;; produces values
               [current
@@ -38,8 +38,8 @@
                        ;; set! is ugly but can we do better?
                        (set! current next)
                        value))
-                   add1
-                   0
+                   void
+                   (void)
                    (lambda (x) (not (eq? last current)))
                    (lambda (v) (not (eq? last current)))
                    (lambda (x v) (not (eq? last current))))))])
