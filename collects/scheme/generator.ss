@@ -25,8 +25,7 @@
                  ;; a unique tag to jump to
                  (define tag (make-continuation-prompt-tag))
                  ;; give the value to the sequence
-                 (define next (lambda (value)
-                                (shift-at tag f (values value f))))
+                 (define (next value) (shift-at tag f (values value f)))
                  (syntax-parameterize ([yield (make-rename-transformer #'next)])
                    (reset-at tag body0 bodies ... (values #f last))))]
               [seq
