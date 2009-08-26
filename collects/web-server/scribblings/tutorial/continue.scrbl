@@ -341,19 +341,19 @@ web-server/insta
 
 @code:comment{phase-1: request -> html-response}
 (define (phase-1 request)
-  (local [(define (response-generator make-url)
+  (local [(define (response-generator embed/url)
             `(html 
               (body (h1 "Phase 1")
-                    (a ((href ,(make-url phase-2)))
+                    (a ((href ,(embed/url phase-2)))
                        "click me!"))))]
     (send/suspend/dispatch response-generator)))
 
 @code:comment{phase-2: request -> html-response}
 (define (phase-2 request)
-  (local [(define (response-generator make-url)
+  (local [(define (response-generator embed/url)
             `(html 
               (body (h1 "Phase 2")
-                    (a ((href ,(make-url phase-1)))
+                    (a ((href ,(embed/url phase-1)))
                        "click me!"))))]    
     (send/suspend/dispatch response-generator)))
 ]
@@ -366,15 +366,15 @@ cycle repeats.
 
 Let's look more closely at the @scheme[send/suspend/dispatch] mechanism.
 @scheme[send/suspend/dispatch] consumes a response-generating function, and it
-gives that response-generator a function called @scheme[make-url] that we'll
+gives that response-generator a function called @scheme[embed/url] that we'll
 use to build special URLs.  What makes these URLs special is this:
 when a web browser visits these URLs, our web application restarts,
 but not from start, but from the handler that we associate to the URL.
-In @scheme[phase-1], the use of @scheme[make-url] associates the link with @scheme[phase-2], and
+In @scheme[phase-1], the use of @scheme[embed/url] associates the link with @scheme[phase-2], and
 vice versa.
 
 We can be more sophisticated about the handlers associated with
-@scheme[make-url].  Because the handler is just a request-consuming function,
+@scheme[embed/url].  Because the handler is just a request-consuming function,
 it can be defined within a @scheme[local].  Consequently, a local-defined
 handler knows about all the variables that are in the scope of its
 definition.  Here's another loopy example:
@@ -389,10 +389,10 @@ web-server/insta
 @code:comment{Displays a number that's hyperlinked: when the link is pressed,}
 @code:comment{returns a new page with the incremented number.}
 (define (show-counter n request)
-  (local [(define (response-generator make-url)
+  (local [(define (response-generator embed/url)
             `(html (head (title "Counting example"))
                    (body 
-                    (a ((href ,(make-url next-number-handler)))
+                    (a ((href ,(embed/url next-number-handler)))
                        ,(number->string n)))))
                     
           (define (next-number-handler request)
@@ -542,13 +542,13 @@ should let us add comments.
 Each point in the diagram corresponds to a request-consuming handler.
 As we might suspect, we'll be using @scheme[send/suspend/dispatch] some more.
 Every arrow in the diagram will be realized as a URL that we generate
-with @scheme[make-url].
+with @scheme[embed/url].
 
 This has a slightly messy consequence: previously, we've been
 rendering the list of posts without any hyperlinks.  But since any
-function that generates a special dispatching URL uses make-url to do
+function that generates a special dispatching URL uses @scheme[embed/url] to do
 it, we'll need to adjust @scheme[render-posts] and @scheme[render-post] to consume and
-use @scheme[make-url] itself when it makes those hyperlinked titles.
+use @scheme[embed/url] itself when it makes those hyperlinked titles.
 
 Our web application now looks like:
 
