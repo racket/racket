@@ -757,7 +757,8 @@
 			    ;; run as low priority:
 			    (queue-callback
 			     (lambda ()
-			       (send c-frame next-one))
+                               (when (send f is-shown?)
+                                 (send c-frame next-one)))
 			     #f)))])))
 	      (cond
 	       [config:use-offscreen?

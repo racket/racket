@@ -1,14 +1,19 @@
 #lang scheme/base
 (require slideshow/base
          slideshow/pict
-         scheme/list)
+         scheme/list
+         scheme/math)
 
 (provide play play-n
          fade-pict
          slide-pict
          sequence-animations
          reverse-animations
-         animate-slide)
+         animate-slide
+         fast-start
+         fast-edges
+         fast-middle
+         split-phase)
 
 (define (fail-gracefully t)
   (with-handlers ([exn:fail? (lambda (x) (values 0 0))])
@@ -26,6 +31,7 @@
               #:name [name title]
               #:layout [layout 'auto] 
               #:steps [N 10]
+              #:delay [secs 0.05]
               mid)
   (slide #:title (if (procedure? title) (title 0) title) 
          #:name (if (procedure? name) (name 0) name)
@@ -37,7 +43,7 @@
              (slide #:title (if (procedure? title) (title n) title)
                     #:name (if (procedure? name) (name n) name)
                     #:layout layout 
-                    #:timeout 0.05 
+                    #:timeout secs
                     (mid n)))
            (let ([cnt N])
              (let loop ([n cnt])
@@ -55,6 +61,7 @@
                 #:name [name title] 
                 #:layout [layout 'auto]
                 #:steps [N 10]
+                #:delay [secs 0.05]
                 #:skip-last? [skip-last? #f]
                 mid)
   (let ([n (procedure-arity mid)])
@@ -77,6 +84,7 @@
                              name)
                   #:layout layout 
                   #:steps N
+                  #:delay secs
                   (lambda (n)
                     (apply mid (append pre (list n) (cdr post)))))
             (loop (cdr post) (cons 1.0 pre)))))))
@@ -254,3 +262,21 @@
                           (lambda (p2 ns)
                             (k (if p2 (vc-append gap-size p p2) p) ns)))))])))
      (sub1 n))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; [0,1] -> [0,1] functions
+
+(define (fast-start n)
+  (- 1 (* (- 1 n) (- 1 n))))
+
+(define (fast-edges n)
+  (+ 0.5 (* (sin (- (* n pi) (/ pi 2))) 0.5)))
+
+(define (fast-middle n)
+  (- 0.5 (/ (cos (* n pi)) 2)))
+
+(define (split-phase opt-n)
+  (values (* 2 (min opt-n 0.5))
+          (* 2 (- (max opt-n 0.5) 0.5))))
+
