@@ -43,6 +43,7 @@
              in-parallel
              stop-before
              stop-after
+             (rename *in-producer in-producer)
              (rename *in-indexed in-indexed)
              (rename *in-value in-value)
              
@@ -651,6 +652,22 @@
                                              poses
                                              vals))))))))
 
+  (define (in-producer producer stop . more)
+    (make-do-sequence
+     (lambda ()
+       (values (if (null? more)
+                 (lambda (_) (producer))
+                 (lambda (_) (apply producer more)))
+               void
+               (void)
+               void
+               (if (procedure? stop)
+                 (if (equal? 1 (procedure-arity stop))
+                   (lambda (x) (not (stop x)))
+                   (lambda xs (not (apply stop xs))))
+                 (lambda (x) (not (eq? x stop))))
+               void))))
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  running sequences outside of a loop:
 
@@ -1138,4 +1155,60 @@
         [((id) (_ expr))
          #'[(id)
             (:do-in ([(id) expr])
-                    #t () #t () #t #f ())]]))))
+                    #t () #t () #t #f ())]])))
+
+  (define-sequence-syntax *in-producer
+    (lambda () #'in-producer)
+    (lambda (stx)
+      (syntax-case stx ()
+        [((id) (_ producer stop more ...))
+         (with-syntax ([(more* ...) (generate-temporaries #'(more ...))])
+           #'[(id)
+              (:do-in
+               ;;outer bindings
+               ([(producer*) producer] [(more*) more] ...
+                [(stop?) (let ([s stop])
+                           (if (procedure? s) s (lambda (x) (eq? x s))))])
+               ;; outer check
+               #t
+               ;; loop bindings
+               ()
+               ;; pos check
+               #t
+               ;; inner bindings
+               ([(id) (producer* more* ...)])
+               ;; pre guard
+               (not (stop? id))
+               ;; post guard
+               #t
+               ;; loop args
+               ())])]
+        ;; multiple-values version
+        [((id ...) (_ producer stop more ...))
+         (with-syntax ([(more* ...) (generate-temporaries #'(more ...))])
+           #'[(id ...)
+              (:do-in
+               ;;outer bindings
+               ([(producer*) producer] [(more*) more] ...
+                [(stop?) (let ([s stop])
+                           (if (procedure? s)
+                             s
+                             (error 'in-producer
+                                    "stop condition for ~a, got: ~e"
+                                    "multiple values must be a predicate" s)))])
+               ;; outer check
+               #t
+               ;; loop bindings
+               ()
+               ;; pos check
+               #t
+               ;; inner bindings
+               ([(id ...) (producer* more* ...)])
+               ;; pre guard
+               (not (stop? id ...))
+               ;; post guard
+               #t
+               ;; loop args
+               ())])])))
+
+  )

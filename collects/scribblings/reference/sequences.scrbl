@@ -166,6 +166,16 @@ its value from @scheme[hash] (as opposed to using @scheme[hash] directly
 as a sequence to get the key and value as separate values for each
 element).}
 
+@defproc[(in-producer [producer procedure?] [stop any/c] [args any/c] ...)
+         sequence]{
+Returns a sequence that contains values from sequential calls to
+@scheme[producer].  @scheme[stop] identifies the value that marks the
+end of the sequence --- this value is not included in the sequence.
+@scheme[stop] can be a predicate or a value that is tested against the
+results with @scheme[eq?].  Note that you must use a predicate function
+if the stop value is itself a function, or if the @scheme[producer]
+returns multiple values.}
+
 @defproc[(in-value [v any/c]) sequence]{
 Returns a sequence that produces a single value: @scheme[v]. This form
 is mostly useful for @scheme[let]-like bindings in forms such as
