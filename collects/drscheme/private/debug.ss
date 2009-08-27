@@ -320,7 +320,7 @@ profile todo:
          (cons (make-weak-box (send rep get-definitions-text))
                (send (send rep get-definitions-text) get-edition-number))]
         [(path? src)
-         (let ([frame (send (group:get-the-frame-group) locate-frame src)])
+         (let ([frame (send (group:get-the-frame-group) locate-file src)])
            (and frame
                 (is-a? frame drscheme:unit:frame<%>)
                 (cons (make-weak-box (send frame get-definitions-text))
