@@ -215,9 +215,11 @@
   (test 13 next)
   (test #f more?))
 
-;; (test-generator [(0 1 2)] ((lambda-generator () (yield 0) (yield 1) (yield 2))))
-;; (test-generator [(0 1 2)] (in-generator (yield 0) (yield 1) (yield 2)))
-;; (test '((1 0) (2 1) (3 2)) 'indexed-generator (for/list ([(x i) (in-indexed (in-generator (yield 1) (yield 2) (yield 3)))])
-;;                                                         (list x i)))
+(test-generator [(0 1 2)] (in-generator (yield 0) (yield 1) (yield 2)))
+(let ([g (lambda () (in-generator (yield 0) (yield 1) (yield 2)))])
+  (test-generator [(0 1 2)] (g)))
+(test '((1 0) (2 1) (3 2)) 'indexed-generator
+      (for/list ([(x i) (in-indexed (in-generator (yield 1) (yield 2) (yield 3)))])
+        (list x i)))
 
 (report-errs)
