@@ -22,16 +22,18 @@
 
 (define-syntax-rule (generator body0 body ...)
   (let ([tag (make-continuation-prompt-tag)])
-    (define y
-      (let ([yield (lambda (r) (shift-at tag k (set! cont k) r))]) yield))
-    (splicing-syntax-parameterize ([yield (make-rename-transformer #'y)])
+    (define yielder
+      (let ([yield (lambda (val) (shift-at tag k (set! cont k) val))])
+        yield))
+    (splicing-syntax-parameterize ([yield (make-rename-transformer #'yielder)])
       (define (cont)
         (reset-at tag
-          (let ([r (begin body0 body ...)])
+          (let ([retval (begin body0 body ...)])
             ;; normal return:
-            (set! cont (lambda () r))
-            r))))
-    (lambda () (cont))))
+            (set! cont (lambda () retval))
+            retval))))
+    (define (generator) (cont))
+    generator))
 
 (define stop-value (gensym))
 
