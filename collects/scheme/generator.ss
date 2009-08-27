@@ -28,10 +28,10 @@
     (splicing-syntax-parameterize ([yield (make-rename-transformer #'yielder)])
       (define (cont)
         (reset-at tag
-          (let ([result (begin body0 body ...)])
+          (let ([retval (begin body0 body ...)])
             ;; normal return:
-            (set! cont (lambda () result))
-            result))))
+            (set! cont (lambda () retval))
+            retval))))
     (define (generator) (cont))
     generator))
 
