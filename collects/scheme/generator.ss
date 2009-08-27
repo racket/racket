@@ -2,63 +2,53 @@
 
 (require (for-syntax scheme/base)
          scheme/control
-         scheme/stxparam)
+         scheme/stxparam scheme/splicing)
 
-(provide yield lambda-generator
-         define-generator in-generator)
+(provide yield generator in-generator)
 
 (define-syntax-parameter yield
   (lambda (stx)
     (raise-syntax-error #f "yield is only bound inside a sequence generator")))
 
-;; better version of shift/reset using continuation tags also use a
-;; unique value to determine the end of the sequence instead of using #f
-(define-syntax lambda-generator
-  (syntax-rules ()
-    [(_ (args ...) body0 bodies ...)
-     (lambda (args ...)
-       (let* ([last (gensym)]
-              ;; current is a function that invokes user code and
-              ;; produces values
-              [current
-               (lambda ()
-                 ;; a unique tag to jump to
-                 (define tag (make-continuation-prompt-tag))
-                 ;; give the value to the sequence
-                 (define (next value) (shift-at tag f (values value f)))
-                 (syntax-parameterize ([yield (make-rename-transformer #'next)])
-                   (reset-at tag body0 bodies ... (values #f last))))]
-              [seq
-               (make-do-sequence
-                (lambda ()
-                  (values
-                   ;; produce a value and a continuation
-                   (lambda (i)
-                     (let-values ([(value next) (current)])
-                       ;; set! is ugly but can we do better?
-                       (set! current next)
-                       value))
-                   void
-                   (void)
-                   (lambda (x) (not (eq? last current)))
-                   (lambda (v) (not (eq? last current)))
-                   (lambda (x v) (not (eq? last current))))))])
-         seq))]))
+;; (define (procedure->generator proc)
+;;   (define tag (make-continuation-prompt-tag))
+;;   (define (cont)
+;;     (reset-at tag
+;;       (let ([r (proc (lambda (r) (shift-at tag k (set! cont k) r)))])
+;;         ;; normal return:
+;;         (set! cont (lambda () r))
+;;         r)))
+;;   (lambda () (cont)))
 
-;; use define-sequence-syntax to be more in sync with other for loop constructs
-(define-syntax in-generator
-  (syntax-rules ()
-    [(_ body0 bodies ...)
-     ((lambda-generator () body0 bodies ...))]))
+(define-syntax-rule (generator body0 body ...)
+  (let ([tag (make-continuation-prompt-tag)])
+    (define y
+      (let ([yield (lambda (r) (shift-at tag k (set! cont k) r))]) yield))
+    (splicing-syntax-parameterize ([yield (make-rename-transformer #'y)])
+      (define (cont)
+        (reset-at tag
+          (let ([r (begin body0 body ...)])
+            ;; normal return:
+            (set! cont (lambda () r))
+            r))))
+    (lambda () (cont))))
 
-(define-syntax define-generator
+(define stop-value (gensym))
+
+(define-sequence-syntax in-generator
   (syntax-rules ()
-    [(_ (name args ...) body0 bodies ...)
-     (define name (lambda-generator (args ...) body0 bodies ...))]))
+    [(_ body0 body ...)
+     (in-producer (generator body0 body ... stop-value) stop-value)])
+  (lambda (stx)
+    (syntax-case stx ()
+      [((id ...) (_ body0 body ...))
+       #'[(id ...)
+          (in-producer (generator body0 body ... stop-value) stop-value)]])))
 
 #|
-;; example
-(define-generator (blah)
-  (for ([x (in-range 0 10)])
-    (yield x)))
+;; examples
+(for/list ([i (in-generator (for-each yield '(1 2 3)) (yield 'four))]) i)
+(for*/list ([i (in-generator (for-each yield '(1 2 3)) (yield 'four))]
+            [j (in-generator (yield 'X) (yield '-))])
+  (list i j))
 |#
