@@ -712,8 +712,8 @@
         (bytes-append
          #"\n3 2.0 3 #\"hi\\0\"\n3 #\"bye\"\n80\n"
          #"(\n"
-         #" #\"0123456789abcdefghij0123456789ABCDEFGHIJ0123456789abcdefghij0123456\"\n"
-         #" #\"\\\"89ABCDEFGHIJ\"\n"
+         #" #\"0123456789abcdefghij0123456789ABCD\"\n"
+         #" #\"EFGHIJ0123456789abcdefghij0123456\\\"89ABCDEFGHIJ\"\n"
          #")"))
 
 (define fbo3 (make-object editor-stream-out-bytes-base%))

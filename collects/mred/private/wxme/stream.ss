@@ -712,7 +712,7 @@
           (let lloop ([amt (min 50 remain)][retry? #t])
             (let ([s (open-output-bytes)])
               (write (subbytes orig-s offset (+ offset amt)) s)
-              (let* ([v (get-output-bytes s)]
+              (let* ([v (get-output-bytes s #t)]
                      [len (bytes-length v)])
                 (if (len . <= . 71)
                     (if (and (len . < . 71) 
@@ -723,7 +723,7 @@
                           (send f write-bytes #"\n ")
                           (send f write-bytes v)
                           (loop (+ offset amt) (- remain amt))))
-                    (lloop (sub1 amt) #f)))))))
+                    (lloop (quotient amt 2) #f)))))))
       (send f write-bytes #"\n)")
       (set! col 1))
 
