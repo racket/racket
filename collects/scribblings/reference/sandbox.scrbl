@@ -312,10 +312,10 @@ hook is used after that initialization, so it can override settings.}
 
 @defparam[sandbox-reader proc (any/c . -> . any)]{
 
-A parameter that determines a function to reads all expressions from
+A parameter that specifies a function that reads all expressions from
 @scheme[(current-input-port)].  The function is used to read program
-source for an evaluator when a string. byte string, or port is
-supplies.  The reader function receives a value to be used as input
+source for an evaluator when a string, byte string, or port is
+supplied.  The reader function receives a value to be used as input
 source (i.e., the first argument to @scheme[read-syntax]), and it
 should return a list of @tech{syntax objects}.  The default reader
 calls @scheme[read-syntax], accumulating results in a list until it
