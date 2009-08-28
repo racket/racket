@@ -7,6 +7,7 @@
 (provide play play-n
          fade-pict
          slide-pict
+         fade-around-pict
          sequence-animations
          reverse-animations
          animate-slide
@@ -32,11 +33,13 @@
               #:layout [layout 'auto] 
               #:steps [N 10]
               #:delay [secs 0.05]
+              #:skip-first? [skip-first? #f]
               mid)
-  (slide #:title (if (procedure? title) (title 0) title) 
-         #:name (if (procedure? name) (name 0) name)
-         #:layout layout 
-         (mid 0))
+  (unless skip-first?
+    (slide #:title (if (procedure? title) (title 0) title) 
+           #:name (if (procedure? name) (name 0) name)
+           #:layout layout 
+           (mid 0)))
   (if condense?
       (skip-slides N)
       (map (lambda (n)
@@ -63,10 +66,12 @@
                 #:steps [N 10]
                 #:delay [secs 0.05]
                 #:skip-last? [skip-last? #f]
+                #:skip-first? [skip-first? #f]
                 mid)
   (let ([n (procedure-arity mid)])
     (let loop ([post (vector->list (make-vector n))]
-               [pre null])
+               [pre null]
+               [skip? skip-first?])
       (if (null? post)
           (unless skip-last?
             (slide #:title (if (procedure? title) (apply title pre) title)
@@ -85,9 +90,10 @@
                   #:layout layout 
                   #:steps N
                   #:delay secs
+                  #:skip-first? skip?
                   (lambda (n)
                     (apply mid (append pre (list n) (cdr post)))))
-            (loop (cdr post) (cons 1.0 pre)))))))
+            (loop (cdr post) (cons 1.0 pre) #f))))))
 
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -181,6 +187,18 @@
               (+ x1 (* (- x2 x1) n))
               (+ y1 (* (- y2 y1) n))
               p)))
+
+(define (fade-around-pict n base evolved)
+  (define tg1 (launder (ghost base)))
+  (define tg2 (launder (ghost base)))
+  (slide-pict
+   (fade-pict n
+              tg1
+              (evolved tg2))
+   base
+   tg1
+   tg2
+   n))
 
 ;; Concatenate a sequence of animations
 (define (sequence-animations . l)
