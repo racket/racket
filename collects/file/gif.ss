@@ -30,7 +30,7 @@
 (provide/doc
  (proc-doc gif-stream?
            (([v any/c]) () . ->d . [_ boolean?])
-           @{Returns @scheme[@t] if @scheme[v] is a GIF stream created by
+           @{Returns @scheme[#t] if @scheme[v] is a GIF stream created by
              @scheme[gif-write], @scheme[#f] otherwise.})
  (proc-doc image-ready-gif-stream?
            (([v any/c]) () . ->d . [_ boolean?])
