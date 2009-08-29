@@ -131,6 +131,9 @@
  (needs-execute-defns-edited
   "WARNUNG: Die Definitionen haben sich geändert. \"Start\" drücken.")
 
+ (editor-changed-since-srcloc-recorded
+  "Dieser Editor wurde geändert seit die Quelltext-Stellen zugeordnet wurden: die markierte Region entspricht möglicherweise nicht mehr der korrekten Stelle im Quelltext.")
+
  (file-is-not-saved "Die Datei \"~a\" ist nicht gespeichert.")
  (save "Speichern")
  (close-anyway "Trotzdem schließen")
