@@ -94,7 +94,8 @@ used as an ephemeron key (see @secref["ephemerons"]).
 
 @examples[(string->uninterned-symbol "Apple") 
           (eq? 'a (string->uninterned-symbol "a"))
-          (eq? (string->uninterned-symbol "a") (string->uninterned-symbol "a"))]}
+          (eq? (string->uninterned-symbol "a")
+               (string->uninterned-symbol "a"))]}
 
 
 @defproc[(string->unreadable-symbol [str string?]) symbol?]{Like
@@ -103,9 +104,10 @@ used as an ephemeron key (see @secref["ephemerons"]).
  twice with equivalent @scheme[str]s returns the same symbol, but
  @scheme[read] never produces the symbol.}
 
-@examples[(string->unreadble-symbol "Apple") 
+@examples[(string->unreadable-symbol "Apple") 
           (eq? 'a (string->unreadable-symbol "a"))
-          (eq? (string->unreadable-symbol "a") (string->unreadable-symbol "a"))]}
+          (eq? (string->unreadable-symbol "a")
+               (string->unreadable-symbol "a"))]}
 
 
 @defproc[(gensym [base (or/c string? symbol?) "g"]) symbol?]{Returns a
