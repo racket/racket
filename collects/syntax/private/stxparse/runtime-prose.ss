@@ -10,12 +10,24 @@
          (for-syntax "rep-data.ss")
          (for-syntax "../util/error.ss")
          "runtime.ss")
-(provide default-failure-handler)
+(provide syntax-patterns-fail
+         current-failure-handler)
+
+;; Failure reporting parameter & default
 
 (define (default-failure-handler stx0 f)
   (match (simplify-failure f)
     [(struct failure (x frontier frontier-stx expected))
      (report-failure stx0 x (last frontier) frontier-stx expected)]))
+
+(define current-failure-handler
+  (make-parameter default-failure-handler))
+
+(define ((syntax-patterns-fail stx0) f)
+  (let ([value ((current-failure-handler) stx0 f)])
+    (error 'current-failure-handler
+           "current-failure-handler: did not escape, produced ~e" value)))
+
 
 ;; report-failure : stx stx number stx Expectation -> (escapes)
 (define (report-failure stx0 x index frontier-stx expected)

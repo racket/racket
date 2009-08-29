@@ -87,7 +87,7 @@
        (unless (identifier? #'name)
          (raise-syntax-error #f "expected identifier" stx #'name))
        (with-syntax ([([entry (def ...)] ...)
-                      (for/list ([line (check-conventions-rules #'(rule ...))])
+                      (for/list ([line (check-conventions-rules #'(rule ...) stx)])
                         (let ([rx (car line)]
                               [sc (car (cadr line))]
                               [args (cadr (cadr line))])
@@ -111,7 +111,7 @@
      (begin
        (unless (identifier? #'name)
          (raise-syntax-error #f "expected identifier" stx #'name))
-       (let ([lits (check-literals-list #'(lit ...))])
+       (let ([lits (check-literals-list #'(lit ...) stx)])
          (with-syntax ([((internal external) ...) lits])
            #'(define-syntax name
                (make-literalset
@@ -189,10 +189,7 @@
                                        'report-errors-as
                                        (syntax-e #'report-as))))
         #`(let ([x expr])
-            (let ([fail (syntax-patterns-fail x)])
-              (with-enclosing-fail* fail
-                (parameterize ((current-expression (or (current-expression) x)))
-                  (parse:clauses x clauses)))))))]))
+            (parse:clauses x clauses))))]))
 
 (define-syntax with-patterns
   (syntax-rules ()
@@ -200,14 +197,3 @@
      (let () . b)]
     [(with-patterns ([p x] . more) . b)
      (syntax-parse x [p (with-patterns more . b)])]))
-
-;; Failure reporting parameter & default
-
-(define current-failure-handler
-  (make-parameter default-failure-handler))
-
-(define ((syntax-patterns-fail stx0) f)
-  (let ([value ((current-failure-handler) stx0 f)])
-    (error 'current-failure-handler
-           "current-failure-handler: did not escape, produced ~e" value)))
-

@@ -273,7 +273,8 @@ examining its structure. Syntax classes are useful for the same
 purpose, but @scheme[~and] can be lighter weight.
 
 @(interaction-eval #:eval the-eval
-  (begin (define (check-imports . _) #f)))
+  (begin (define import #f)
+         (define (check-imports . _) #f)))
 
 @myexamples[
 (syntax-parse #'(m (import one two))

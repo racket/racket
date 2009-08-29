@@ -6,6 +6,7 @@
          scheme/dict
          syntax/id-table
          syntax/stx
+         syntax/keyword
          "../util.ss"
          "rep-data.ss"
          "codegen-data.ss")
@@ -29,10 +30,10 @@
   (-> DeclEnv/c
       (values DeclEnv/c (listof syntax?)))]
  [check-literals-list
-  (-> syntax?
+  (-> syntax? syntax?
       (listof (list/c identifier? identifier?)))]
  [check-literal-sets-list
-  (-> syntax?
+  (-> syntax? syntax?
       (listof (listof (list/c identifier? identifier?))))]
  [append-lits+litsets
   (-> (listof (list/c identifier? identifier?))
@@ -104,7 +105,9 @@
 
 (define (parse-rhs/part1 stx strict? ctx)
   (define-values (chunks rest)
-    (chunk-kw-seq/no-dups stx rhs-directive-table #:context ctx))
+    (parse-keyword-options stx rhs-directive-table
+                           #:context ctx
+                           #:no-duplicates? #t))
   (define desc0 (assq '#:description chunks))
   (define trans0 (assq '#:transparent chunks))
   (define attrs0 (assq '#:attributes chunks))
@@ -506,16 +509,16 @@
 (define (parse-bind-clause clause)
   (syntax-case clause ()
     [(attr-decl expr)
-     (make clause:attr (check-attr-arity #'attr-decl) #'expr)]
+     (make clause:attr (check-attr-arity #'attr-decl #f) #'expr)]
     [_ (wrong-syntax clause "expected bind clause")]))
 
 (define (parse-pat:fail stx decls)
   (syntax-case stx ()
     [(_ . rest)
      (let-values ([(chunks rest)
-                   (chunk-kw-seq/no-dups #'rest
-                                         fail-directive-table
-                                         #:context stx)])
+                   (parse-keyword-options #'rest fail-directive-table
+                                          #:context stx
+                                          #:no-duplicates? #t)])
        ;; chunks has 0 or 1 of each of #:when, #:unless
        ;; if has both, second one is bad; report it
        (when (> (length chunks) 1)
@@ -572,13 +575,15 @@
   (syntax-case stx (~optional)
     [(~optional p . options)
      (let ([head (parse-head-pattern #'p decls)])
-       (with-syntax ([((too-many-msg) (name))
-                      (parse-kw-options #'options
-                                        (list (list '#:too-many values)
-                                              (list '#:name values))
-                                        (list (list '#:too-many #'#f)
-                                              (list '#:name #'#f))
-                                        #:context stx)])
+       (define chunks
+         (parse-keyword-options/eol #'options
+                                    (list (list '#:too-many check-expression)
+                                          (list '#:name check-expression))
+                                    #:context stx))
+       (with-syntax ([(too-many-msg)
+                      (options-select-one chunks '#:too-many #:default #'(#f))]
+                     [(name)
+                      (options-select-one chunks '#:name #:default #'(#f))])
          (make ehpat (map attr-make-uncertain (pattern-attrs head))
                head
                (make rep:optional #'name #'too-many-msg))))]))
@@ -587,15 +592,18 @@
   (syntax-case stx (~once)
     [(~once p . options)
      (let ([head (parse-head-pattern #'p decls)])
-       (with-syntax ([((too-few-msg) (too-many-msg) (name))
-                      (parse-kw-options #'options
-                                        (list (list '#:too-few values)
-                                              (list '#:too-many values)
-                                              (list '#:name values))
-                                        (list (list '#:too-few #'#f)
-                                              (list '#:too-many #'#f)
-                                              (list '#:name #'#f))
-                                        #:context stx)])
+       (define chunks
+         (parse-keyword-options/eol #'options
+                                    (list (list '#:too-few check-expression)
+                                          (list '#:too-many check-expression)
+                                          (list '#:name check-expression))
+                                    #:context stx))
+       (with-syntax ([(too-few-msg)
+                      (options-select-one chunks '#:too-few #:default #'(#f))]
+                     [(too-many-msg)
+                      (options-select-one chunks '#:too-many #:default #'(#f))]
+                     [(name)
+                      (options-select-one chunks '#:name #:default #'(#f))])
          (make ehpat (pattern-attrs head)
                head
                (make rep:once #'name #'too-few-msg #'too-many-msg))))]))
@@ -614,18 +622,21 @@
                        "expected exact nonnegative integer or +inf.0"))
        (when (> minN maxN)
          (wrong-syntax stx "minumum larger than maximum repetition constraint"))
-       (with-syntax ([((too-few-msg) (too-many-msg) (name))
-                      (parse-kw-options #'options
-                                        (list (list '#:too-few values)
-                                              (list '#:too-many values)
-                                              (list '#:name values))
-                                        (list (list '#:too-few #'#f)
-                                              (list '#:too-many #'#f)
-                                              (list '#:name #'#f)))])
-         (make ehpat (map increase-depth (pattern-attrs head))
-               head
-               (make rep:bounds #'min #'max #'name
-                     #'too-few-msg #'too-many-msg))))]))
+       (let ([chunks (parse-keyword-options #'options
+                                            (list (list '#:too-few check-expression)
+                                                  (list '#:too-many check-expression)
+                                                  (list '#:name check-expression))
+                                            #:context stx)])
+         (with-syntax ([(too-few-msg)
+                        (options-select-one chunks '#:too-few #:default #'(#f))]
+                       [(too-many-msg)
+                        (options-select-one chunks '#:too-many #:default #'(#f))]
+                       [(name)
+                        (options-select-one chunks '#:name #:default #'(#f))])
+           (make ehpat (map increase-depth (pattern-attrs head))
+                 head
+                 (make rep:bounds #'min #'max #'name
+                       #'too-few-msg #'too-many-msg)))))]))
 
 ;; -----
 
@@ -635,7 +646,7 @@
                                   #:decls [decls #f]
                                   #:allow-declare? [allow-declare? #t])
   (define-values (chunks rest)
-    (chunk-kw-seq stx pattern-directive-table))
+    (parse-keyword-options stx pattern-directive-table))
   (define-values (decls2 chunks2)
     (if allow-declare?
         (grab-decls chunks decls)
@@ -696,46 +707,39 @@
 
 ;; Keyword Options & Checkers
 
-;; check-lit-string : stx -> string
-(define (check-lit-string stx)
-  (let ([x (syntax-e stx)])
-    (unless (string? x)
-      (wrong-syntax stx "expected string literal"))
-    x))
-
-;; check-attr-arity-list : stx -> (listof SAttr)
-(define (check-attr-arity-list stx)
+;; check-attr-arity-list : stx stx -> (listof SAttr)
+(define (check-attr-arity-list stx ctx)
   (unless (stx-list? stx)
-    (wrong-syntax stx "expected list of attribute declarations"))
-  (let ([iattrs (map check-attr-arity (stx->list stx))])
+    (raise-syntax-error #f "expected list of attribute declarations" ctx stx))
+  (let ([iattrs (for/list ([x (stx->list stx)]) (check-attr-arity x ctx))])
     (iattrs->sattrs (append-iattrs (map list iattrs)))))
 
-;; check-attr-arity : stx -> IAttr
-(define (check-attr-arity stx)
+;; check-attr-arity : stx stx -> IAttr
+(define (check-attr-arity stx ctx)
   (syntax-case stx ()
     [attr
      (identifier? #'attr)
      (make-attr #'attr 0 #f)]
     [(attr depth)
      (begin (unless (identifier? #'attr)
-              (wrong-syntax #'attr "expected attribute name"))
+              (raise-syntax-error #f "expected attribute name" ctx #'attr))
             (unless (exact-nonnegative-integer? (syntax-e #'depth))
-              (wrong-syntax #'depth "expected depth (nonnegative integer)"))
+              (raise-syntax-error #f "expected depth (nonnegative integer)" ctx #'depth))
             (make-attr #'attr (syntax-e #'depth) #f))]
     [_
-     (wrong-syntax stx "expected attribute name with optional depth declaration")]))
+     (raise-syntax-error #f "expected attribute name with optional depth declaration" ctx stx)]))
 
-;; check-literals-list : syntax -> (listof (list id id))
-(define (check-literals-list stx)
+;; check-literals-list : stx stx -> (listof (list id id))
+(define (check-literals-list stx ctx)
   (unless (stx-list? stx)
-    (wrong-syntax stx "expected literals list"))
-  (let ([lits (map check-literal-entry (stx->list stx))])
+    (raise-syntax-error #f "expected literals list" ctx stx))
+  (let ([lits (for/list ([x (stx->list stx)]) (check-literal-entry x ctx))])
     (let ([dup (check-duplicate-identifier (map car lits))])
-      (when dup (wrong-syntax dup "duplicate literal identifier")))
+      (when dup (raise-syntax-error #f "duplicate literal identifier" ctx dup)))
     lits))
 
-;; check-literal-entry : syntax -> (list id id)
-(define (check-literal-entry stx)
+;; check-literal-entry : stx stx -> (list id id)
+(define (check-literal-entry stx ctx)
   (syntax-case stx ()
     [(internal external)
      (and (identifier? #'internal) (identifier? #'external))
@@ -744,96 +748,103 @@
      (identifier? #'id)
      (list #'id #'id)]
     [_
-     (wrong-syntax stx
-                   "expected literal (identifier or pair of identifiers)")]))
+     (raise-syntax-error #f "expected literal (identifier or pair of identifiers)" ctx stx)]))
 
-(define (check-literal-sets-list stx)
+(define (check-literal-sets-list stx ctx)
   (unless (stx-list? stx)
-    (wrong-syntax stx "expected literal-set list"))
-  (map check-literal-set-entry (stx->list stx)))
+    (raise-syntax-error #f "expected literal-set list" ctx stx))
+  (for/list ([x (stx->list stx)])
+    (check-literal-set-entry x ctx)))
 
-(define (check-literal-set-entry stx)
-  (define (elaborate litset-id context)
+(define (check-literal-set-entry stx ctx)
+  (define (elaborate litset-id lctx)
     (let ([litset (syntax-local-value litset-id (lambda () #f))])
       (unless (literalset? litset)
-        (wrong-syntax litset-id "expected identifier defined as a literal-set"))
-      (elaborate-litset litset context stx)))
+        (raise-syntax-error #f "expected identifier defined as a literal-set" ctx litset-id))
+      (elaborate-litset litset lctx stx)))
   (syntax-case stx ()
-    [(litset #:at context)
-     (and (identifier? #'litset) (identifier? #'context))
-     (elaborate #'litset #'context)]
+    [(litset #:at lctx)
+     (and (identifier? #'litset) (identifier? #'lctx))
+     (elaborate #'litset #'lctx)]
     [litset
      (identifier? #'litset)
      (elaborate #'litset #'litset)]
     [_
-     (wrong-syntax stx "expected literal-set entry")]))
+     (raise-syntax-error #f "expected literal-set entry" ctx stx)]))
 
-(define (elaborate-litset litset context ctx)
+(define (elaborate-litset litset lctx srcctx)
   (for/list ([entry (literalset-literals litset)])
-    (list (datum->syntax context (car entry) ctx)
+    (list (datum->syntax lctx (car entry) srcctx)
           (cadr entry))))
 
-(define (check-conventions-list stx)
+(define (check-conventions-list stx ctx)
   (unless (stx-list? stx)
-    (wrong-syntax stx "expected conventions list"))
-  (map check-conventions (stx->list stx)))
+    (raise-syntax-error #f "expected conventions list" ctx stx))
+  (for/list ([x (stx->list stx)])
+    (check-conventions x ctx)))
 
-(define (check-conventions stx)
+(define (check-conventions stx ctx)
   (define (elaborate conventions-id)
     (let ([cs (syntax-local-value conventions-id (lambda () #f))])
       (unless (conventions? cs)
-        (wrong-syntax conventions-id "expected identifier defined as a conventions"))
+        (raise-syntax-error #f "expected identifier defined as a conventions" ctx conventions-id))
       (conventions-rules cs)))
   (syntax-case stx ()
     [conventions
      (identifier? #'conventions)
      (elaborate #'conventions)]
     [_
-     (wrong-syntax stx "expected conventions entry")]))
+     (raise-syntax-error "expected conventions entry" ctx stx)]))
 
-(define (check-conventions-rules stx)
+(define (check-conventions-rules stx ctx)
   (unless (stx-list? stx)
-    (wrong-syntax stx "expected convention rule list"))
-  (map check-conventions-rule (stx->list stx)))
+    (raise-syntax-error #f "expected convention rule list" ctx stx))
+  (for/list ([x (stx->list stx)])
+    (check-conventions-rule x ctx)))
 
-(define (check-conventions-rule stx)
+(define (check-conventions-rule stx ctx)
   (define (check-conventions-pattern x blame)
     (cond [(symbol? x) (regexp (string-append "^" (regexp-quote (symbol->string x)) "$"))]
           [(regexp? x) x]
-          [else (wrong-syntax blame "expected identifier convention pattern")]))
+          [else (raise-syntax-error #f  "expected identifier convention pattern" ctx blame)]))
   (define (check-sc-expr x)
     (syntax-case x ()
       [sc (identifier? #'sc) (list #'sc null)]
       [(sc arg ...) (identifier? #'sc) (list #'sc #'(arg ...))]
-      [_ (wrong-syntax x "expected syntax class use")]))
+      [_ (raise-syntax-error #f "expected syntax class use" ctx x)]))
   (syntax-case stx ()
     [(rx sc)
      (list (check-conventions-pattern (syntax-e #'rx) #'rx)
            (check-sc-expr #'sc))]))
 
-;; parse-directive-table
-(define parse-directive-table
+;; common-parse-directive-table
+(define common-parse-directive-table
   (list (list '#:literals check-literals-list)
         (list '#:literal-sets check-literal-sets-list)
         (list '#:conventions check-conventions-list)))
 
+;; parse-directive-table
+(define parse-directive-table
+  (list* (list '#:context check-expression)
+         common-parse-directive-table))
+
 ;; rhs-directive-table
 (define rhs-directive-table
-  (list* (list '#:description values)
+  (list* (list '#:description check-expression)
          (list '#:transparent)
          (list '#:attributes check-attr-arity-list)
          (list '#:auto-nested-attributes)
-         parse-directive-table))
+         common-parse-directive-table))
 
 ;; pattern-directive-table
 (define pattern-directive-table
-  (list (list '#:declare check-id values)
-        (list '#:fail-when values values)
-        (list '#:fail-unless values values)
-        (list '#:with values values)
-        (list '#:attr check-attr-arity values)))
+  (list (list '#:declare check-identifier check-expression)
+        (list '#:fail-when check-expression check-expression)
+        (list '#:fail-unless check-expression check-expression)
+        (list '#:with check-expression check-expression)
+        (list '#:attr check-attr-arity check-expression)))
 
 ;; fail-directive-table
 (define fail-directive-table
-  (list (list '#:when values)
-        (list '#:unless values)))
+  (list (list '#:when check-expression)
+        (list '#:unless check-expression)))

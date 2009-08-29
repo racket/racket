@@ -37,16 +37,16 @@
 (define-syntax (m stx)
   (syntax-parse stx
     [(_ x)
-     #:declare x (static-of number? "identifier bound to number")
+     #:declare x (static number? "identifier bound to number")
      #`(quote #,(attribute x.value))]))
 
-(test-case "static-of: right error"
+(test-case "static: right error"
            (check-exn (lambda (exn)
                         (regexp-match? #rx"identifier bound to number"
                                        (exn-message exn)))
                       (lambda () (convert-syntax-error (m twelve)))))
 
-(test-case "static-of: works"
+(test-case "static: works"
            (check-equal? (convert-syntax-error (m zero))
                          0))
 

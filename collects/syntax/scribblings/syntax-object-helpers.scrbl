@@ -10,5 +10,6 @@
 @include-section["to-string.scrbl"]
 @include-section["free-vars.scrbl"]
 @include-section["strip-context.scrbl"]
+@include-section["keyword.scrbl"]
 @include-section["zodiac.scrbl"]
 

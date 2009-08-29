@@ -23,6 +23,7 @@
          in-stx-list
          in-stx-list/unwrap
 
+         #|
          parse-kw-options
          extract-kw-option
          chunk-kw-seq/no-dups
@@ -32,7 +33,8 @@
          check-id
          check-nat/f
          check-string
-         check-idlist)
+         check-idlist
+         |#)
 
 ;; Unwrapping syntax
 

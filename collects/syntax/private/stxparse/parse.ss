@@ -4,6 +4,7 @@
                      scheme/private/sc
                      syntax/stx
                      syntax/id-table
+                     syntax/keyword
                      "rep-data.ss"
                      "rep.ss"
                      "codegen-data.ss"
@@ -138,7 +139,12 @@
     [(parse:clauses x clauses)
      (let ()
        (define-values (chunks clauses-stx)
-         (chunk-kw-seq/no-dups #'clauses parse-directive-table))
+         (parse-keyword-options #'clauses parse-directive-table
+                                #:context stx
+                                #:no-duplicates? #t))
+       (define context
+         (let ([c (options-select-one chunks '#:context #:default #f)])
+           (if c (car c) #'#f)))
        (define-values (decls0 defs) (get-decls+defs chunks))
        (define (for-clause clause)
          (syntax-case clause ()
@@ -160,9 +166,10 @@
        (with-syntax ([(def ...) defs]
                      [(alternative ...)
                       (map for-clause (stx->list clauses-stx))])
-         #`(let ()
+         #`(let ([fail (syntax-patterns-fail #,context)])
              def ...
-             (try alternative ...))))]))
+             (with-enclosing-fail* fail
+               (try alternative ...)))))]))
 
 (define-for-syntax (wash-literal stx)
   (syntax-case stx ()
