@@ -48,7 +48,7 @@
      [else (at-next-keyword (cdr lst))]))
   (let ([lst (syntax->list stx)])
     (unless lst
-      (raise-syntax-error #f "bad syntax (misued of `.')" stx))
+      (raise-syntax-error #f "bad syntax (misuse of `.')" stx))
     (let*-values ([(lst) (cdr lst)]
                   [(prog-name-expr lst)
                    (extract-arg '#:program lst #'(find-system-path 'run-file))]
