@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require "mz.ss"
           (for-syntax scheme/base)
-          scribble/scheme)
+          scribble/scheme
+	  (for-label scheme/generator))
 
 @(define-syntax speed
    (syntax-rules ()
@@ -9,6 +10,12 @@
       @t{An @scheme[id] application can provide better performance for
          @elem[what]
          iteration when it appears directly in a @scheme[for] clause.}]))
+
+@(define generator-eval
+   (lambda ()
+     (let ([the-eval (make-base-eval)])
+       (the-eval '(require scheme/generator))
+       the-eval)))
 
 @title[#:tag "sequences"]{Sequences}
 
@@ -295,4 +302,61 @@ returns @scheme[#t] if more values are available for the sequence. The
 second returns the next element (which may be multiple values) from the
 sequence; if no more elements are available, the
 @exnraise[exn:fail:contract].}
+
+@section{Iterator Generators}
+@defmodule[scheme/generator]
+@defform[(generator body ...)]{ Create a function that returns a
+value, usually through @scheme[yield], each time it is invoked. When
+the generator runs out of values to yield the last value it computed
+will be returned for future invocations of the generator. Generators
+can be safely nested.
+
+@examples[#:eval (generator-eval)
+(define g (generator
+	    (let loop ([x '(a b c)])
+	      (if (null? x)
+		0
+		(begin
+		  (yield (car x))
+		  (loop (cdr x)))))))
+(g)
+(g)
+(g)
+(g)
+(g)
+]
+
+To use an existing generator as a sequence you should use @scheme[in-producer]
+with a stop-value known to the generator.
+
+@examples[#:eval (generator-eval)
+(define my-stop-value (gensym))
+(define my-generator (generator
+		       (let loop ([x '(a b c)])
+			 (if (null? x)
+			   my-stop-value
+			   (begin
+			     (yield (car x))
+			     (loop (cdr x)))))))
+
+(for/list ([i (in-producer my-generator my-stop-value)])
+  i)
+]}
+
+@defproc[(in-generator [expr any?] ...) sequence?]{ Return a generator
+that can be used as a sequence. @scheme[in-generator] takes care of the
+case when @scheme[expr] stops producing values so when the @scheme[expr]
+completes the generator will end.
+
+@examples[#:eval (generator-eval)
+(for/list ([i (in-generator 
+		(let loop ([x '(a b c)])
+		  (when (not (null? x))
+		    (yield (car x))
+		    (loop (cdr x)))))])
+  i)
+]}
+
+@defform[(yield expr)]{ Save the point of execution inside a generator
+and return a value.}
 
