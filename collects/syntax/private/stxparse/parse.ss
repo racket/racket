@@ -235,13 +235,13 @@
             (if (equal? d (quote datum))
                 k
                 (fail x
-                      #:expect (expectation-of-constant datum)
+                      #:expect (expectation pattern0)
                       #:fce fc)))]
        [#s(pat:literal attrs literal)
         #`(if (and (identifier? x) (free-identifier=? x (quote-syntax literal)))
               k
               (fail x
-                    #:expect (expectation-of-literal literal)
+                    #:expect (expectation pattern0)
                     #:fce fc))]
        [#s(pat:head attrs head tail)
         #`(parse:H x fc head rest index
@@ -276,17 +276,17 @@
                       (let ([part part-expr] ...)
                         (parse:S* (part ...) (part-fc ...) (part-pattern ...) k))
                       (fail x
-                            #:expect (expectation-of-compound kind0 (part-pattern ...))
+                            #:expect (expectation pattern0)
                             #:fce fc))))))]
        [#s(pat:cut attrs pattern)
         #`(with-enclosing-fail enclosing-cut-fail
             (parse:S x fc pattern k))]
-       [#s(pat:describe attrs description pattern)
+       [#s(pat:describe attrs description transparent? pattern)
         #`(let ([previous-fail enclosing-fail]
                 [previous-cut-fail enclosing-cut-fail])
             (define (new-fail failure)
               (fail x
-                    #:expect (expectation-of-thing description #f failure)
+                    #:expect (expectation-of-thing description transparent? failure)
                     #:fce fc))
             (with-enclosing-fail* new-fail
               (parse:S x #,(empty-frontier #'x) pattern
@@ -298,7 +298,7 @@
        [#s(pat:fail _ condition message)
         #`(if condition
               (fail x
-                    #:expect (expectation-of-message message)
+                    #:expect (expectation pattern0)
                     #:fce fc)
               k)])]))
 
@@ -347,12 +347,12 @@
   (syntax-case stx ()
     [(parse:H x fc head rest index k)
      (syntax-case #'head ()
-       [#s(hpat:describe _ description pattern)
+       [#s(hpat:describe _ description transparent? pattern)
         #`(let ([previous-fail enclosing-fail]
                 [previous-cut-fail enclosing-cut-fail])
             (define (new-fail failure)
               (fail x
-                    #:expect (expectation-of-thing description #f failure)
+                    #:expect (expectation-of-thing description transparent? failure)
                     #:fce fc))
             (with-enclosing-fail* new-fail
               (parse:H x #,(empty-frontier #'x) pattern
@@ -522,24 +522,30 @@
 
 ;; ----
 
+;; (expectation Pattern)
+(define-syntax (expectation stx)
+  (syntax-case stx ()
+    [(_ #s(pat:datum attrs datum))
+     #'(make-expect:atom 'datum)]
+    [(_ #s(pat:literal attrs literal))
+     #'(make-expect:literal (quote-syntax literal))]
+    ;; 2 pat:compound patterns
+    ;;[(_ #s(pat:compound attrs #:pair (head-pattern tail-pattern)))
+    ;; #'(make-expect:pair)]
+    [(_ #s(pat:compound attrs kind0 (part-pattern ...)))
+     #''ineffable]
+    [(_ #s(pat:fail _ condition message))
+     #'(expectation-of-message message)]
+    ))
+
+;; ----
+
 (define-syntax-rule (expectation-of-thing description transparent? chained)
   (make-expect:thing description transparent? chained))
 
 (define-syntax-rule (expectation-of-message message)
   (let ([msg message])
     (if msg (make-expect:message msg) 'ineffable)))
-
-(define-syntax-rule (expectation-of-constant constant)
-  (make-expect:atom 'constant))
-
-(define-syntax-rule (expectation-of-literal literal)
-  (make-expect:literal (quote-syntax literal)))
-
-(define-syntax expectation-of-compound
-  (syntax-rules ()
-    [(_ #:pair (head-pattern tail-pattern))
-     (make-expect:pair)]
-    [(_ _ _) 'ineffable]))
 
 (define-syntax expectation-of-reps/too-few
   (syntax-rules ()

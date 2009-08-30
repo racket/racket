@@ -578,15 +578,22 @@ pattern that the @scheme[#:declare] directive applies to.
 
 }
 
-@specsubform[(code:line #:with syntax-pattern expr)]{
+@specsubform[(code:line #:with syntax-pattern stx-expr)]{
+
+Evaluates the @scheme[stx-expr] in the context of all previous
+attribute bindings and matches it against the pattern. If the match
+succeeds, the pattern's attributes are added to environment for the
+evaluation of subsequent side conditions. If the @scheme[#:with] match
+fails, the matching process backtracks. Since a syntax object may
+match a pattern in several ways, backtracking may cause the same
+clause to be tried multiple times before the next clause is reached.
+}
+
+@specsubform[(code:line #:attr attr-id expr)]{
 
 Evaluates the @scheme[expr] in the context of all previous attribute
-bindings and matches it against the pattern. If the match succeeds,
-the pattern's attributes are added to environment for the evaluation
-of subsequent side conditions. If the @scheme[#:with] match fails, the
-matching process backtracks. Since a syntax object may match a pattern
-in several ways, backtracking may cause the same clause to be tried
-multiple times before the next clause is reached.
+bindings and binds it to the attribute named by @scheme[attr-id]. The
+value of @scheme[expr] need not be syntax.
 }
 
 @specsubform[(code:line #:fail-when condition-expr message-expr)]
@@ -735,8 +742,8 @@ depth (zero if not explicitly specified).
 If the attributes are not explicitly listed, they are inferred as the
 set of all pattern variables occurring in every variant of the syntax
 class. Pattern variables that occur at different ellipsis depths are
-not included, nor are nested attributes.
-
+not included. Only nested attributes from previously declared syntax
+classes are included.
 }
 
 @specsubform[(code:line #:description description)]{

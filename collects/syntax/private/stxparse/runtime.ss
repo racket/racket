@@ -2,6 +2,7 @@
 (require scheme/contract
          scheme/match
          scheme/stxparam
+         scheme/list
          (for-syntax scheme/base
                      syntax/stx
                      scheme/private/sc
@@ -238,19 +239,15 @@ An Expectation is one of
 ;; expect->alternatives : Expectation -> (listof Expectation)/#f
 ;; #f indicates 'ineffable somewhere in expectation
 (define (expect->alternatives e)
-  (define (loop e)
+  (define (loop-onto e rest)
     (cond [(expect:disj? e)
-           (union (expect->alternatives (expect:disj-a e))
-                  (expect->alternatives (expect:disj-b e)))]
-          [else (list e)]))
-  (let ([alts (loop e)])
+           (loop-onto (expect:disj-a e)
+                      (loop-onto (expect:disj-b e) rest))]
+          [else (cons e rest)]))
+  (let ([alts (remove-duplicates (loop-onto e null))])
     (if (for/or ([alt alts]) (eq? alt 'ineffable))
         #f
         alts)))
-
-;; FIXME: n^2 use of union above
-(define (union a b)
-  (append a (for/list ([x b] #:when (not (member x a))) x)))
 
 (define (expectation-of-null? e)
   (or (equal? e '#s(expect:atom ()))

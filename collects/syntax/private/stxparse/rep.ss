@@ -70,6 +70,7 @@
         (quote-syntax ~rep)
         (quote-syntax ~once)
         (quote-syntax ~optional)
+        (quote-syntax ~bounds)
         (quote-syntax ~rest)
         (quote-syntax ~struct)
         (quote-syntax ~!)
@@ -109,11 +110,14 @@
                            #:context ctx
                            #:no-duplicates? #t))
   (define desc0 (assq '#:description chunks))
-  (define trans0 (assq '#:transparent chunks))
+  ;; (define trans0 (assq '#:transparent chunks))
+  (define opaque0 (assq '#:opaque chunks))
   (define attrs0 (assq '#:attributes chunks))
   (define auto-nested0 (assq '#:auto-nested-attributes chunks))
   (define description (and desc0 (caddr desc0)))
-  (define transparent? (and trans0 #t))
+  (define opaque? (and opaque0 #t))
+  (define transparent? (not opaque?))
+  ;;(define transparent? (and trans0 #t))
   (define attributes
     (cond [(and attrs0 auto-nested0)
            (raise-syntax-error #f "cannot use both #:attributes and #:auto-nested-attributes"
@@ -406,11 +410,21 @@
 
 (define (parse-pat:describe stx decls allow-head?)
   (syntax-case stx ()
-    [(_ description pattern)
-     (let ([p (parse-some-pattern #'pattern decls allow-head?)])
-       (if (head-pattern? p)
-           (make hpat:describe (pattern-attrs p) #'description p)
-           (make pat:describe (pattern-attrs p) #'description p)))]))
+    [(_ . rest)
+     (let-values ([(chunks rest)
+                   (parse-keyword-options #'rest describe-option-table
+                                          #:no-duplicates? #t
+                                          #:context stx)])
+       (define trans0 (assq '#:transparent chunks))
+       (define transparent? (and trans0 #t))
+       (syntax-case rest ()
+         [(description pattern)
+          (let ([p (parse-some-pattern #'pattern decls allow-head?)])
+            (if (head-pattern? p)
+                (make hpat:describe (pattern-attrs p)
+                      #'description transparent? p)
+                (make pat:describe (pattern-attrs p)
+                      #'description transparent? p)))]))]))
 
 (define (parse-pat:or stx decls allow-head?)
   (define patterns (parse-cdr-patterns stx decls allow-head? #f))
@@ -500,17 +514,10 @@
 (define (parse-pat:bind stx decls)
   (syntax-case stx ()
     [(_ clause ...)
-     (parameterize ((current-syntax-context stx))
-       (let ([clauses (map parse-bind-clause (syntax->list #'(clause ...)))])
-         (make pat:bind
-           (append-iattrs (side-clauses-attrss clauses))
-           clauses)))]))
-
-(define (parse-bind-clause clause)
-  (syntax-case clause ()
-    [(attr-decl expr)
-     (make clause:attr (check-attr-arity #'attr-decl #f) #'expr)]
-    [_ (wrong-syntax clause "expected bind clause")]))
+     (let ([clauses (check-bind-clause-list #'(clause ...) stx)])
+       (make pat:bind
+         (append-iattrs (side-clauses-attrss clauses))
+         clauses))]))
 
 (define (parse-pat:fail stx decls)
   (syntax-case stx ()
@@ -576,17 +583,20 @@
     [(~optional p . options)
      (let ([head (parse-head-pattern #'p decls)])
        (define chunks
-         (parse-keyword-options/eol #'options
-                                    (list (list '#:too-many check-expression)
-                                          (list '#:name check-expression))
+         (parse-keyword-options/eol #'options optional-directive-table
+                                    #:no-duplicates? #t
                                     #:context stx))
+       #|
+       (define defaults
+         (car (options-select-one chunks '#:defaults #:default '(()))))
+       |#
        (with-syntax ([(too-many-msg)
                       (options-select-one chunks '#:too-many #:default #'(#f))]
                      [(name)
                       (options-select-one chunks '#:name #:default #'(#f))])
          (make ehpat (map attr-make-uncertain (pattern-attrs head))
                head
-               (make rep:optional #'name #'too-many-msg))))]))
+               (make rep:optional #'name #'too-many-msg #| defaults |#))))]))
 
 (define (parse-ehpat/once stx decls)
   (syntax-case stx (~once)
@@ -817,6 +827,19 @@
      (list (check-conventions-pattern (syntax-e #'rx) #'rx)
            (check-sc-expr #'sc))]))
 
+;; bind clauses
+(define (check-bind-clause-list stx ctx)
+  (unless (stx-list? stx)
+    (raise-syntax-error #f "expected sequence of bind clauses" ctx stx))
+  (for/list ([clause (stx->list stx)])
+    (check-bind-clause clause ctx)))
+
+(define (check-bind-clause clause ctx)
+  (syntax-case clause ()
+    [(attr-decl expr)
+     (make clause:attr (check-attr-arity #'attr-decl ctx) #'expr)]
+    [_ (raise-syntax-error #f "expected bind clause" ctx clause)]))
+
 ;; common-parse-directive-table
 (define common-parse-directive-table
   (list (list '#:literals check-literals-list)
@@ -832,6 +855,7 @@
 (define rhs-directive-table
   (list* (list '#:description check-expression)
          (list '#:transparent)
+         (list '#:opaque)
          (list '#:attributes check-attr-arity-list)
          (list '#:auto-nested-attributes)
          common-parse-directive-table))
@@ -848,3 +872,13 @@
 (define fail-directive-table
   (list (list '#:when check-expression)
         (list '#:unless check-expression)))
+
+;; describe-option-table
+(define describe-option-table
+  (list (list '#:transparent)))
+
+;; optional-directive-table
+(define optional-directive-table
+  (list (list '#:too-many check-expression)
+        (list '#:name check-expression)
+        #| (list '#:defaults check-bind-clause-list) |#))

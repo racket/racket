@@ -55,7 +55,7 @@
                 stx0
                 frontier-stx))]
         [else
-         (err #f stx0 stx0)]))
+         (err "bad syntax" stx0 stx0)]))
 
 ;; FIXME: try different selection/simplification algorithms/heuristics
 (define (simplify-failure f)
@@ -115,10 +115,11 @@
 ;; prose-for-expectation : Expectation syntax -> string/#f
 (define (prose-for-expectation e index stx)
   (cond [(expect? e)
-         (let ([parts
-                (for/list ([alt (expect->alternatives e)])
-                  (for-alternative alt index stx))])
-           (join-sep parts ";" "or"))]
+         (let ([alts (expect->alternatives e)])
+           (and alts
+                (join-sep (for/list ([alt alts])
+                            (for-alternative alt index stx))
+                          ";" "or")))]
         [(eq? e 'ineffable)
          #f]))
 

@@ -29,7 +29,7 @@ A SinglePattern is one of
   (make-pat:or SPBase (listof SinglePattern))
   (make-pat:compound SPBase Kind (listof SinglePattern))
   (make-pat:cut SPBase SinglePattern)
-  (make-pat:describe SPBase stx SinglePattern)
+  (make-pat:describe SPBase stx boolean SinglePattern)
   (make-pat:bind SPBase (listof clause:attr))
   (make-pat:fail SPBase stx stx)
 
@@ -52,7 +52,7 @@ A ListPattern is a subtype of SinglePattern; one of
 (define-struct pat:or (attrs patterns) #:prefab)
 (define-struct pat:compound (attrs kind patterns) #:prefab)
 (define-struct pat:cut (attrs pattern) #:prefab)
-(define-struct pat:describe (attrs description pattern) #:prefab)
+(define-struct pat:describe (attrs description transparent? pattern) #:prefab)
 (define-struct pat:bind (attrs clauses) #:prefab)
 (define-struct pat:fail (attrs when message) #:prefab)
 
@@ -62,13 +62,13 @@ A HeadPattern is one of
   (make-hpat:ssc HPBase id id boolean boolean)
   (make-hpat:seq HPBase ListPattern)
   (make-hpat:or HPBase (listof HeadPattern))
-  (make-hpat:describe HPBase stx/#f HeadPattern)
+  (make-hpat:describe HPBase stx/#f boolean HeadPattern)
 |#
 
 (define-struct hpat:ssc (attrs parser description bind-term? bind-attrs?) #:prefab)
 (define-struct hpat:seq (attrs inner) #:prefab)
 (define-struct hpat:or (attrs patterns) #:prefab)
-(define-struct hpat:describe (attrs description pattern) #:prefab)
+(define-struct hpat:describe (attrs description transparent? pattern) #:prefab)
 
 #|
 An EllipsisHeadPattern is
@@ -76,13 +76,13 @@ An EllipsisHeadPattern is
 
 A RepConstraint is one of
   (make-rep:once stx stx stx)
-  (make-rep:optional stx stx)
+  (make-rep:optional stx stx (listof clause:attr))
   (make-rep:bounds nat/#f nat/#f stx stx stx)
   #f
 |#
 (define-struct ehpat (attrs head repc) #:prefab)
 (define-struct rep:once (name under-message over-message) #:prefab)
-(define-struct rep:optional (name over-message) #:prefab)
+(define-struct rep:optional (name over-message #| defaults |#) #:prefab)
 (define-struct rep:bounds (min max name under-message over-message) #:prefab)
 
 
