@@ -40,7 +40,8 @@ This section describes the @scheme[syntax-parse] pattern matching
 form, syntax patterns, and attributes.
 
 @defform/subs[(syntax-parse stx-expr parse-option ... clause ...+)
-              ([parse-option (code:line #:literals (literal ...))
+              ([parse-option (code:line #:context context-expr)
+                             (code:line #:literals (literal ...))
                              (code:line #:literal-sets (literal-set ...))
                              (code:line #:conventions (convention-id ...))]
                [literal literal-id
@@ -57,7 +58,8 @@ subterms of the syntax object and that clause's side conditions and
 
 If the syntax object fails to match any of the patterns (or all
 matches fail the corresponding clauses' side conditions), a syntax
-error is raised.
+error is raised. If the @scheme[#:context] argument is given,
+@scheme[context-expr] is used in reporting the error.
 
 The @scheme[#:literals] option specifies identifiers that should match
 as literals, rather than simply being pattern variables. A literal in

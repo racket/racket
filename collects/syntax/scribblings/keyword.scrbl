@@ -214,7 +214,7 @@ the arity of the keyword.
 
 }
 
-@defproc[(options-select-one [options #, @techlink{options}]
+@defproc[(options-select-row [options #, @techlink{options}]
                              [keyword keyword?]
                              [#:default default any/c])
          any]{
@@ -225,6 +225,21 @@ the associated list of parsed argument values is returned. Otherwise,
 the @scheme[default] list is returned.
 
 }
+
+@defproc[(options-select-value [options #, @techlink{options}]
+                               [keyword keyword?]
+                               [#:default default any/c])
+         any]{
+
+Like @scheme[options-select], except that the given keyword must occur
+either zero or one times in @scheme[options]. If the keyword occurs,
+the associated list of parsed argument values must have exactly one
+element, and that element is returned. If the keyword does not occur
+in @scheme[options], the @scheme[default] value is returned.
+
+}
+
+
 
 @defproc[(check-identifier [stx syntax?] [ctx (or/c false/c syntax?)]) identifier?]{
 

@@ -590,17 +590,17 @@
          (parse-keyword-options/eol #'options optional-directive-table
                                     #:no-duplicates? #t
                                     #:context stx))
-       #|
-       (define defaults
-         (car (options-select-one chunks '#:defaults #:default '(()))))
-       |#
-       (with-syntax ([(too-many-msg)
-                      (options-select-one chunks '#:too-many #:default #'(#f))]
-                     [(name)
-                      (options-select-one chunks '#:name #:default #'(#f))])
+       (let ([too-many-msg
+              (options-select-value chunks '#:too-many #:default #'#f)]
+             [name
+              (options-select-value chunks '#:name #:default #'#f)]
+             #|
+             [defaults
+              (options-select-value chunks '#:defaults #:default '())]
+             |#)
          (make ehpat (map attr-make-uncertain (pattern-attrs head))
                head
-               (make rep:optional #'name #'too-many-msg #| defaults |#))))]))
+               (make rep:optional name too-many-msg #| defaults |#))))]))
 
 (define (parse-ehpat/once stx decls)
   (syntax-case stx (~once)
@@ -612,15 +612,15 @@
                                           (list '#:too-many check-expression)
                                           (list '#:name check-expression))
                                     #:context stx))
-       (with-syntax ([(too-few-msg)
-                      (options-select-one chunks '#:too-few #:default #'(#f))]
-                     [(too-many-msg)
-                      (options-select-one chunks '#:too-many #:default #'(#f))]
-                     [(name)
-                      (options-select-one chunks '#:name #:default #'(#f))])
+       (let ([too-few-msg
+              (options-select-value chunks '#:too-few #:default #'#f)]
+             [too-many-msg
+              (options-select-value chunks '#:too-many #:default #'#f)]
+             [name
+              (options-select-value chunks '#:name #:default #'#f)])
          (make ehpat (pattern-attrs head)
                head
-               (make rep:once #'name #'too-few-msg #'too-many-msg))))]))
+               (make rep:once name too-few-msg too-many-msg))))]))
 
 (define (parse-ehpat/bounds stx decls)
   (syntax-case stx (~bounds)
@@ -641,16 +641,16 @@
                                                   (list '#:too-many check-expression)
                                                   (list '#:name check-expression))
                                             #:context stx)])
-         (with-syntax ([(too-few-msg)
-                        (options-select-one chunks '#:too-few #:default #'(#f))]
-                       [(too-many-msg)
-                        (options-select-one chunks '#:too-many #:default #'(#f))]
-                       [(name)
-                        (options-select-one chunks '#:name #:default #'(#f))])
+         (let ([too-few-msg
+                (options-select-value chunks '#:too-few #:default #'#f)]
+               [too-many-msg
+                (options-select-value chunks '#:too-many #:default #'#f)]
+               [name
+                (options-select-value chunks '#:name #:default #'#f)])
            (make ehpat (map increase-depth (pattern-attrs head))
                  head
-                 (make rep:bounds #'min #'max #'name
-                       #'too-few-msg #'too-many-msg)))))]))
+                 (make rep:bounds #'min #'max
+                       name too-few-msg too-many-msg)))))]))
 
 ;; -----
 

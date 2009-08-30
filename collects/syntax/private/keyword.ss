@@ -7,7 +7,8 @@
 (provide parse-keyword-options
          parse-keyword-options/eol
          options-select
-         options-select-one
+         options-select-row
+         options-select-value
 
          check-expression
          check-identifier
@@ -141,16 +142,35 @@
              #:when (eq? kw (car chunk)))
     (cddr chunk)))
 
-;; options-select-one : Options keyword -> any
-(define (options-select-one chunks kw
-                            #:default default)
+;; options-select-row : Options keyword -> any
+(define (options-select-row chunks kw #:default default)
   (let ([results (options-select chunks kw)])
     (cond [(null? results)
            default]
           [(null? (cdr results))
            (car results)]
           [else
-           (error 'options-select-one "multiple occurrences of ~s keyword option" kw)])))
+           (error 'options-select-row
+                  "multiple occurrences of ~s keyword" kw)])))
+
+;; options-select-value : Options keyword -> any
+(define (options-select-value chunks kw #:default default)
+  (let ([results (options-select chunks kw)])
+    (cond [(null? results)
+           default]
+          [(null? (cdr results))
+           (let ([row (car results)])
+             (cond [(null? row)
+                    (error 'options-select-value
+                           "keyword ~s has no arguments" kw)]
+                   [(null? (cdr row))
+                    (car row)]
+                   [else
+                    (error 'options-select-value
+                           "keyword ~s has more than one argument" kw)]))]
+          [else
+           (error 'options-select-value
+                  "multiple occurrences of ~s keyword" kw)])))
 
 ;; Check Procedures
 

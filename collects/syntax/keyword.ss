@@ -48,7 +48,10 @@
  [options-select
   (-> options/c keyword?
       (listof list?))]
- [options-select-one
+ [options-select-row
+  (-> options/c keyword? #:default any/c
+      any/c)]
+ [options-select-value
   (-> options/c keyword? #:default any/c
       any/c)]
 

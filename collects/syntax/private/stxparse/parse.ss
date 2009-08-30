@@ -143,8 +143,7 @@
                                 #:context stx
                                 #:no-duplicates? #t))
        (define context
-         (let ([c (options-select-one chunks '#:context #:default #f)])
-           (if c (car c) #'x)))
+         (options-select-value chunks '#:context #:default #'x))
        (define-values (decls0 defs) (get-decls+defs chunks))
        (define (for-clause clause)
          (syntax-case clause ()
