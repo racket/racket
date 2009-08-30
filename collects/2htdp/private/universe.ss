@@ -37,6 +37,7 @@
        on-new            ;; Universe World -> Result
        on-msg            ;; Universe World Message -> Result
        tick              ;; Universe -> Result
+       (state #f)         ;; Boolean 
        (on-disconnect    ;; Universe World -> Result
         (lambda (u w) (make-bundle u '() '())))
        (to-string #f)    ;; Universe -> String 
@@ -45,7 +46,8 @@
       
       (field 
        [universe 
-        (new checked-cell% [msg "UniSt"] [value0 universe0] [ok? check-with])])
+        (new checked-cell% [msg "UniSt"] [value0 universe0] [ok? check-with] 
+             [display (and state "your server's state")])])
  
       ;; -----------------------------------------------------------------------
       ;; dealing with events

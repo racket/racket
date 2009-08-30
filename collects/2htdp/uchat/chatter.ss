@@ -482,6 +482,7 @@
             (on-receive receive)
             (check-with world?)
             (name n)
+	    (state true)
             (register LOCALHOST)))
 
 (define (run* _)

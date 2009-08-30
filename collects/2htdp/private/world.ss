@@ -52,7 +52,8 @@
       
       (init-field
        world0            ;; World
-       (name #f)         ;; (U #f Symbol)
+       (name #f)         ;; (U #f String)
+       (state #f)         ;; Boolean 
        (register #f)     ;; (U #f IP)
        (check-with True) ;; Any -> Boolean 
        (tick K))         ;; (U (World -> World) (list (World -> World) Nat))
@@ -67,8 +68,10 @@
       
       ;; -----------------------------------------------------------------------
       (field
-       (world
-        (new checked-cell% [msg "World"] [value0 world0] [ok? check-with])))
+       [world
+        (new checked-cell% [msg "World"] [value0 world0] [ok? check-with]
+             [display (and state (or name "your world program's state"))])])
+      
       
       ;; -----------------------------------------------------------------------
       (field [*out* #f] ;; (U #f OutputPort), where to send messages to 
@@ -198,7 +201,7 @@
         (send visible lock #t)
         (send visible end-edit-sequence))
       
-      ;; -----------------------------------------------------------------------
+      ;; ----------------------------------------------------------------------
       ;; callbacks 
       (field
        (key    on-key)
@@ -239,7 +242,7 @@
       ;; receive revents 
       (def/pub-cback (prec msg) rec)
       
-      ;; -----------------------------------------------------------------------
+      ;; ----------------------------------------------------------------------
       ;; draw : render this world 
       (define/private (pdraw) (show (ppdraw)))
       
@@ -256,7 +259,7 @@
         (check-result (name-of stop 'your-stop-when) boolean? "boolean" result)
         result)
       
-      ;; -----------------------------------------------------------------------
+      ;; ----------------------------------------------------------------------
       ;; start & stop
       (define/public (callback-stop! msg)
         (stop! (send world get)))

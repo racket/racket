@@ -92,7 +92,8 @@
 ;; Any -> Universe
 ;; run the chat server 
 (define (run _)
-  (universe '() 
+  (universe '()
+            (state true)
             (on-new new-chatter)
             (on-msg forward)))
 

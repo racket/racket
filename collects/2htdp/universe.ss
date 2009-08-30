@@ -36,6 +36,8 @@
 ;; -- on-tick must specify a tick handler; it may specify a clock-tick rate
 ;;      = (check-with Expr)
 ;; -- check-with must specify a predicate 
+;;      | (state Expr)
+;; -- state specifies whether to display the world's or universe's current state
 
 (define-keywords AllSpec
   [on-tick (function-with-arity
@@ -44,6 +46,13 @@
             [(x rate) 
              #'(list (proc> 'on-tick (f2h x) 1) 
                      (num> 'on-tick rate positive? "pos. number" "rate"))])]
+  [state (expr-with-check bool> "expected a boolean (show state or not)")
+         #;
+         (lambda (tag)
+           (lambda (p)
+             (syntax-case p ()
+               [(b) #`(bool> #,tag b)]
+               [_ (err tag p "expected a boolean (show state or not)")])))]
   [check-with (function-with-arity 1)])
 
 ;                                     
@@ -97,7 +106,7 @@
 ;; WorldSpec = AllSpec 
 ;;      | (on-draw Expr)
 ;;      | (on-draw Expr Expr Expr)
-;; -- on-draw must specify a rendering function; it may specify canvas dimensions
+;; -- on-draw must specify a rendering function; it may specify canvas dimension
 ;;      | (on-key Expr)
 ;; -- on-key must specify a key event handler 
 ;;      | (on-mouse Expr) 
@@ -131,21 +140,9 @@
               [(stop? last-picture)
                #'(list (proc> 'stop-when (f2h stop?) 1)
                        (proc> 'stop-when (f2h last-picture) 1))])]
-  [register (lambda (tag)
-              (lambda (p)
-                (syntax-case p ()
-                  [(host) #`(ip> #,tag host)]
-                  [_ (err tag p "expected a host (ip address)")])))]
-  [name (lambda (tag)
-          (lambda (p)
-            (syntax-case p ()
-              [(n) #`(string> #,tag n)]
-              [_ (err tag p "expected a string for the current world")])))]
-  [record? (lambda (tag)
-             (lambda (p)
-               (syntax-case p ()
-                 [(b) #`(bool> #,tag b)]
-                 [_ (err tag p "expected a boolean (to record or not to record?")])))])
+  [record? (expr-with-check bool> "expected a boolean (to record? or not)")]
+  [name (expr-with-check string> "expected a name (string) for the world")]
+  [register (expr-with-check ip> "expected a host (ip address)")])
 
 (define-syntax (big-bang stx)
   (syntax-case stx ()

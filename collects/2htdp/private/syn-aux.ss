@@ -1,6 +1,6 @@
 #lang scheme
 
-(provide define-keywords function-with-arity except err)
+(provide define-keywords function-with-arity expr-with-check except err)
 
 (require 
  (for-template "syn-aux-aux.ss" 
@@ -14,6 +14,15 @@
       (raise-syntax-error 'kw "used out of context" x))
     ...
     (define-for-syntax the-list (list (list 'kw (coerce ''kw)) ...))))
+
+(define-syntax (expr-with-check stx)
+  (syntax-case stx ()
+    [(_ check> msg)
+     #`(lambda (tag)
+         (lambda (p)
+           (syntax-case p ()
+             [(x) #`(check> #,tag x)]
+             [_ (err tag p msg)])))]))
 
 (define-syntax function-with-arity 
   (syntax-rules (except)
@@ -32,9 +41,9 @@
            [_ (err tag p)])))]))
 
 (define (err spec p . extra-spec)
+  (printf "~s\n" p)
   (raise-syntax-error (cadr spec)
-    (if (null? extra-spec)
-	"illegal specification"
-	(string-append "illegal specification: " (car extra-spec)))
-    #`(#,spec . #,p) p))
-
+                      (if (null? extra-spec)
+                          "illegal specification"
+                          (string-append "illegal specification: " (car extra-spec)))
+                      p))
