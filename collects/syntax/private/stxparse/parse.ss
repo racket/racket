@@ -144,7 +144,7 @@
                                 #:no-duplicates? #t))
        (define context
          (let ([c (options-select-one chunks '#:context #:default #f)])
-           (if c (car c) #'#f)))
+           (if c (car c) #'x)))
        (define-values (decls0 defs) (get-decls+defs chunks))
        (define (for-clause clause)
          (syntax-case clause ()
@@ -162,7 +162,7 @@
                              (convert-sides x #,sides
                                             (clause-success () (let () . rest)))))))]))
        (unless (and (stx-list? clauses-stx) (stx-pair? clauses-stx))
-         (wrong-syntax clauses-stx "expected non-empty sequence of clauses"))
+         (raise-syntax-error #f "expected non-empty sequence of clauses" stx))
        (with-syntax ([(def ...) defs]
                      [(alternative ...)
                       (map for-clause (stx->list clauses-stx))])
@@ -176,22 +176,6 @@
     [(a b) (list #'a #'b)]))
 (define-for-syntax (wash-literals stx)
   (wash-list wash-literal stx))
-
-#|
-;; (parse:clause id ([id id] ...) Clause) : expr
-(define-syntax (parse:clause stx)
-  (syntax-case stx ()
-    [(parse:clause x literals [p . rest])
-     (let-values ([(rest decls sides)
-                   (parse-pattern-directives
-                    #'rest #:decls (new-declenv (wash-literals #'literals)))])
-       (with-syntax ([rest rest]
-                     [fc (empty-frontier #'x)]
-                     [pattern (parse-whole-pattern #'p decls)])
-         #`(parse:S x fc pattern 
-                    (convert-sides x #,sides
-                                   (clause-success () (let () . rest))))))]))
-|#
 
 ;; (clause-success (IAttr ...) expr) : expr
 (define-syntax (clause-success stx)

@@ -15,7 +15,8 @@
    (define the-eval
      (parameterize ((sandbox-output 'string)
                     (sandbox-error-output 'string))
-       (make-evaluator 'scheme/base #:requires '(syntax/parse))))
+       (make-evaluator 'scheme/base
+                       #:requires '(syntax/parse (for-syntax scheme/base)))))
    (define-syntax-rule (myexamples e ...)
      (parameterize ((error-print-source-location #f))
        (examples #:eval the-eval e ...))))
@@ -81,7 +82,7 @@ default syntax classes to pattern variables that do not explicitly
 specify a syntax class.
 }
 
-@defform[(syntax-parser maybe-literals clause ...)]{
+@defform[(syntax-parser parse-option ... clause ...+)]{
 
 Like @scheme[syntax-parse], but produces a matching procedure. The
 procedure accepts a single argument, which should be a syntax object.
@@ -152,9 +153,10 @@ Here are the variants of @tech{S-pattern}:
 @specsubform[pvar-id]{
 
 If @scheme[pvar-id] has no syntax class (by @scheme[#:declare] or
-@scheme[#:convention]), the pattern matches anything. The pattern
-variable is bound to the matched subterm, unless the pattern variable
-is the wildcard (@scheme[_]), in which case no binding occurs.
+@scheme[#:convention]), the pattern matches anything. The
+@deftech{pattern variable} is bound to the matched subterm, unless the
+pattern variable is the wildcard (@scheme[_]), in which case no
+binding occurs.
 
 If @scheme[pvar-id] does have an associated syntax class, it behaves
 like the following form.
@@ -261,7 +263,7 @@ See @tech{EH-patterns} for more information.
 
 @specsubform[#:literals (~and) (~and S-pattern ...)]{
 
-Matches any syntax that matches all of the included patterns.
+Matches any term that matches all of the subpatterns.
 
 Attributes bound in subpatterns are available to subsequent
 subpatterns. The whole pattern binds all of the subpatterns'
@@ -272,11 +274,12 @@ term (including its lexical context, source location, etc) while also
 examining its structure. Syntax classes are useful for the same
 purpose, but @scheme[~and] can be lighter weight.
 
-@(interaction-eval #:eval the-eval
-  (begin (define import #f)
-         (define (check-imports . _) #f)))
-
 @myexamples[
+(define-syntax (import stx)
+  (raise-syntax-error #f "illegal use of import" stx))
+(eval:alts
+  (define (check-imports stx) ....)
+  (define (check-imports . _) #f))
 (syntax-parse #'(m (import one two))
   #:literals (import)
   [(_ (~and import-clause (import i ...)))
@@ -292,7 +295,8 @@ purpose, but @scheme[~and] can be lighter weight.
 
 @specsubform[#:literals (~or) (~or S-pattern ...)]{
 
-Matches any term that matches one of the included patterns.
+Matches any term that matches one of the included patterns. The
+alternatives are tried in order.
 
 The whole pattern binds @emph{all} of the subpatterns' attributes. An
 attribute that is not bound by the ``chosen'' subpattern has a value
@@ -462,6 +466,10 @@ Matches a head whose elements, if put in a list, would match the given
 (syntax-parse #'(1 2 3 4)
   [((~seq 1 2 3) 4) 'ok])
 ]
+
+See also the section on @tech{EH-patterns} for more interesting
+examples of @scheme[~seq].
+
 }
 
 @specsubform[#:literals (~or) (~or H-pattern ...)]{
@@ -607,16 +615,6 @@ given message); otherwise, it continues.
 
 }
 
-@specsubform[(code:line #:attr attr-id expr)]{
-
-Evaluates the @scheme[expr] in the context of all previous attribute
-bindings and binds the result to the attribute @scheme[attr-id]. The
-result need not be a syntax object; attributes can be bound to any
-kind of value.
-
-}
-
-
 @deftogether[[
 @defidform[~or]
 @defidform[~and]
@@ -637,42 +635,16 @@ Syntax pattern keywords, recognized by @scheme[syntax-parse].
 
 @section{Pattern Variables and Attributes}
 
-@;{
-An @deftech{attribute} is either a @tech{pattern variable}, a
-@tech{nested attribute}, or a @tech{computed attribute}.
+An @deftech{attribute} is a name bound by a syntax pattern. An
+attribute can be a @tech{pattern variable} itself, or it can be a
+@deftech{nested attribute} coming from the syntax class of some
+pattern variable. The name of a nested attribute is computed by
+concatenating the pattern variable name with the syntax class's
+exported attribute's name, separated by a dot (see the example below).
 
-A pattern consisting of an identifier not in the literals list is a
-@deftech{pattern variable}. Pattern variables cannot be used as
-ordinary variables; instead, they are used within @scheme[syntax],
-@scheme[quasisyntax], etc as part of a syntax template.
-
-Pattern variables have an @deftech{ellipsis depth} based on the number
-of ellipses the pattern variable occurs in front of in the
-pattern. For example, in the @tech{S-pattern} @scheme[(a (b c ...) ... d)], 
-the pattern variable @scheme[a] has depth 0, @scheme[b] has
-depth 1, @scheme[c] has depth 2, and @scheme[d] has depth 0. The
-ellipsis depth of a pattern variable in a pattern determines what
-ellipsis depths it may be used at in a template.
-
-Pattern variables annotated with syntax classes also bind
-@deftech{nested attributes}, one for each attribute exported by the
-syntax class. The names of the nested attributes are computed by
-combining the pattern variable name with the syntax class attributes'
-names. The ellipsis depth of a nested attribute is the sum of the
-pattern variable's depth and the depth of the attribute in the syntax
-class. @deftech{Computed attributes} are bound by @scheme[#:attr]
-clauses and @scheme[~bind] patterns.
-
-An attribute's ellipsis nesting depth is @emph{not} a guarantee that
-its value has that level of list nesting. In particular, @scheme[~or]
-and @scheme[~optional] patterns may result in attributes with fewer
-than expected levels of list nesting.
-
-@(myexamples
-  (syntax-parse #'(a b c)
-    [(~or (x:nat ...) _)
-     (attribute x)]))
-}
+Attribute names cannot be used directly as expressions (that is,
+attributes are not variables). Instead, an attribute's value can be
+gotten using the @scheme[attribute] special form.
 
 @defform[(attribute attr-id)]{
 
@@ -682,13 +654,76 @@ error is raised. If @scheme[attr-id] is an attribute with a nonzero
 ellipsis depth, then the result has the corresponding level of list
 nesting.
 
-The values returned by @scheme[attribute] never undergo additional
-wrapping as syntax objects, unlike values produced by some uses of
-@scheme[syntax], @scheme[quasisyntax], etc. Therefore, use
-@scheme[attribute] when the attribute value is used as data, not
-placed in a syntax object.
-
 }
+
+The value of an attribute need not be syntax. Non-syntax-valued
+attributes can be used to return a parsed representation of a subterm
+or the results of an analysis on the subterm. A non-syntax-valued
+attribute should be bound using the @scheme[#:attr] directive or a
+@scheme[~bind] pattern.
+
+@myexamples[
+(define-syntax-class table
+  (pattern ((key value) ...)
+           #:attr hash
+                  (for/hash ([k (syntax->datum #'(key ...))]
+                             [v (syntax->datum #'(value ...))])
+                    (values k v))))
+(syntax-parse #'((a 1) (b 2) (c 3))
+  [t:table
+   (attribute t.hash)])
+]
+
+A syntax-valued attribute is an attribute whose value is a syntax
+object or a syntax list of the appropriate @tech{ellipsis
+depth}. Syntax-valued attributes can be used within @scheme[syntax],
+@scheme[quasisyntax], etc as part of a syntax template. If a
+non-syntax-valued attribute is used in a syntax template, a runtime
+error is signalled.
+
+@myexamples[
+(syntax-parse #'((a 1) (b 2) (c 3))
+  [t:table
+   #'(t.key ...)])
+(syntax-parse #'((a 1) (b 2) (c 3))
+  [t:table
+   #'t.hash])
+]
+
+Every attribute has an associated @deftech{ellipsis depth} that
+determines how it can be used in a syntax template (see the discussion
+of ellipses in @scheme[syntax]). For a pattern variable, the ellipsis
+depth is the number of ellipses the pattern variable ``occurs under''
+in the pattern. For a nested attribute the depth is the sum of the
+pattern variable's depth and the depth of the attribute in the syntax
+class. Consider the following code:
+
+@schemeblock[
+(define-syntax-class quark
+  (pattern (a b ...)))
+(syntax-parse some-term
+  [(x (y:quark ...) ... z:quark)
+   some-code])
+]
+
+The syntax class @scheme[quark] exports two attributes: @scheme[a] at
+depth 0 and @scheme[b] at depth 1. The @scheme[syntax-parse] pattern
+has three pattern variables: @scheme[x] at depth 0, @scheme[y] at
+depth 2, and @scheme[z] at depth 0. Since @scheme[x] and @scheme[y]
+are annotated with the @scheme[quark] syntax class, the pattern also
+binds the following nested attributes: @scheme[y.a] at depth 2,
+@scheme[y.b] at depth 3, @scheme[z.a] at depth 0, and @scheme[z.b] at
+depth 1.
+
+An attribute's ellipsis nesting depth is @emph{not} a guarantee that
+its value has that level of list nesting. In particular, @scheme[~or]
+and @scheme[~optional] patterns may result in attributes with fewer
+than expected levels of list nesting.
+
+@(myexamples
+  (syntax-parse #'(1 2 3)
+    [(~or (x:id ...) _)
+     (attribute x)]))
 
 @;{----------}
 
@@ -992,8 +1027,6 @@ Literal set containing the identifiers for fully-expanded code
 @scheme[kernel-form-identifier-list], plus @scheme[module],
 @scheme[#%plain-module-begin], @scheme[#%require], and
 @scheme[#%provide].
-
-@;{See @secref[#:doc '(lib "scribblings/reference/reference.scrbl") "fully-expanded"].}
 
 Note that the literal-set uses the names @scheme[#%plain-lambda] and
 @scheme[#%plain-app], not @scheme[lambda] and @scheme[#%app].
