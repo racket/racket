@@ -159,7 +159,11 @@
 (define (check-literals-bound lits strict?)
   (when strict?
     (for ([p lits])
-      (unless (identifier-binding (cadr p))
+      ;; FIXME: hack...
+      (unless (or (identifier-binding (cadr p) 0)
+                  (identifier-binding (cadr p) 1)
+                  (identifier-binding (cadr p) #f)
+                  (identifier-binding (cadr p) (syntax-local-phase-level)))
         (wrong-syntax (cadr p) "unbound literal not allowed"))))
   lits)
 
