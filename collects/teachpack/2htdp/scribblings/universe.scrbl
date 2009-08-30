@@ -161,7 +161,8 @@ The design of a world program demands that you come up with a data
 
 @defform/subs[#:id big-bang
               #:literals 
-	      (on-tick on-draw on-key on-mouse on-receive stop-when check-with register record? name)
+	      (on-tick on-draw on-key on-mouse on-receive stop-when
+	      check-with register record? state name)
               (big-bang state-expr clause ...)
               ([clause
 		 (on-tick tick-expr)
@@ -173,6 +174,7 @@ The design of a world program demands that you come up with a data
 		 (stop-when stop-expr) (stop-when stop-expr last-scene-expr)	   
 		 (check-with world?-expr)	   
 		 (record? boolean-expr)
+		 (state boolean-expr)
 		 (on-receive rec-expr)
 		 (register IP-expr)
 		 (name name-expr)
@@ -452,6 +454,17 @@ All @tech{MouseEvent}s are represented via strings:
  interaction. The replay action also generates one png image per scene and
  an animated gif for the entire sequence.
 }}
+
+@item{
+
+@defform[(state boolean-expr)
+         #:contracts
+         ([boolean-expr boolean?])]{
+ tell DrScheme to display a separate window in which the current 
+ state is rendered each time it is updated. This is useful for beginners
+ who wish to see how their world evolves---without having to design a
+ rendering function---plus for the debugging of world programs. 
+}}
 ]
 
 The following example shows that @scheme[(run-simulation create-UFO-scene)] is
@@ -654,8 +667,8 @@ Each world-producing callback in a world program---those for handling clock
 @defproc[(make-package [w any/c][m sexp?]) package?]{
  create a @tech{Package} from a @tech{WorldState} and an @tech{S-expression}.}
 
-As mentioned, all event handlers may return @tech{WorldState}s or @tech{Package}s;
-here are the revised specifications: 
+As mentioned, all event handlers may return @tech{WorldState}s or
+@tech{Package}s; here are the revised specifications: 
 
 @defform/none[#:literals (on-tick)
               (on-tick tick-expr)
@@ -904,7 +917,7 @@ The @tech{server} itself is created with a description that includes the
 
 @defform/subs[#:id universe
               #:literals 
-	      (on-new on-msg on-tick on-disconnect to-string check-with)
+	      (on-new on-msg on-tick on-disconnect to-string check-with state)
               (universe state-expr clause ...)
               ([clause
 		 (on-new new-expr)
@@ -912,6 +925,7 @@ The @tech{server} itself is created with a description that includes the
 		 (on-tick tick-expr)
 		 (on-tick tick-expr rate-expr)
 		 (on-disconnect dis-expr)
+		 (state boolean-expr)
 		 (to-string render-expr)
 		 (check-with universe?-expr)
 		 ])]{
@@ -993,7 +1007,6 @@ optional handlers:
  tell DrScheme to apply @scheme[tick-expr] as above but use the specified
  clock tick rate instead of the default.
  }
-
 }
 
 @item{
@@ -1024,6 +1037,15 @@ optional handlers:
  ensure that what the event handlers produce is really an element of
  @tech{UniverseState}.}
 }
+
+@item{
+@defform/none[(state boolean-expr)
+         #:contracts
+         ([boolean-expr boolean?])]{
+ tell DrScheme to display a separate window in which the current 
+ state is rendered each time it is updated. This is mostly useful for
+ debugging server programs. 
+}}
 
 ]
 
