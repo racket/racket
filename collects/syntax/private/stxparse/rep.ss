@@ -208,24 +208,23 @@
 
 ;; parse-variant : stx boolean DeclEnv -> RHS
 (define (parse-variant stx splicing? decls0)
-  (parameterize ((current-syntax-context stx))
-    (syntax-case stx (pattern)
-      [(pattern p . rest)
-       (let-values ([(rest decls defs clauses)
-                     (parse-pattern-directives #'rest
-                                               #:allow-declare? #t
-                                               #:decls decls0)])
-         (unless (stx-null? rest)
-           (wrong-syntax (if (pair? rest) (car rest) rest)
-                         "unexpected terms after pattern directives"))
-         (let* ([pattern
-                 (parse-whole-pattern #'p decls splicing?)]
-                [attrs
-                 (append-iattrs
-                  (cons (pattern-attrs pattern)
-                        (side-clauses-attrss clauses)))]
-                [sattrs (iattrs->sattrs attrs)])
-           (make variant stx sattrs pattern clauses defs)))])))
+  (syntax-case stx (pattern)
+    [(pattern p . rest)
+     (let-values ([(rest decls defs clauses)
+                   (parse-pattern-directives #'rest
+                                             #:allow-declare? #t
+                                             #:decls decls0)])
+       (unless (stx-null? rest)
+         (wrong-syntax (if (pair? rest) (car rest) rest)
+                       "unexpected terms after pattern directives"))
+       (let* ([pattern
+               (parse-whole-pattern #'p decls splicing?)]
+              [attrs
+               (append-iattrs
+                (cons (pattern-attrs pattern)
+                      (side-clauses-attrss clauses)))]
+              [sattrs (iattrs->sattrs attrs)])
+         (make variant stx sattrs pattern clauses defs)))]))
 
 (define (side-clauses-attrss clauses)
   (for/list ([c clauses]
@@ -246,7 +245,7 @@
     (define excess-domain (declenv-domain-difference decls pvars))
     (when (pair? excess-domain)
       (wrong-syntax #f "declared pattern variables do not appear in pattern"
-                    #:extras excess-domain))
+                    #:extra excess-domain))
     pattern))
 
 ;; ----
@@ -493,6 +492,8 @@
        (begin
          (unless (stx-list? head)
            (wrong-syntax head "expected sequence of patterns"))
+         (unless (stx-pair? (stx-cdr head))
+           (wrong-syntax head "expected at least one pattern"))
          (for/list ([sub (cdr (stx->list head))])
            (parse-ellipsis-head-pattern sub decls)))]
       [_
@@ -618,11 +619,11 @@
        (unless (exact-nonnegative-integer? minN)
          (wrong-syntax #'min
                        "expected exact nonnegative integer"))
-       (unless (or (exact-nonnegative-integer? maxN) (= +inf.0 maxN))
+       (unless (or (exact-nonnegative-integer? maxN) (equal? maxN +inf.0))
          (wrong-syntax #'max
                        "expected exact nonnegative integer or +inf.0"))
        (when (> minN maxN)
-         (wrong-syntax stx "minumum larger than maximum repetition constraint"))
+         (wrong-syntax stx "minimum larger than maximum repetition constraint"))
        (let ([chunks (parse-keyword-options #'options
                                             (list (list '#:too-few check-expression)
                                                   (list '#:too-many check-expression)
