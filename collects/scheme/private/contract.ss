@@ -655,7 +655,6 @@ improve method arity mismatch contract violation error messages?
                                                 [id
                                                  (identifier? #'id)
                                                  #'id])])
-                          ;(printf "id ~s ~s\n" #'id-ref (syntax->datum #'id-ref))
                           (syntax-local-introduce
                            (syntax-local-lift-expression
                             #`(-contract contract-id
