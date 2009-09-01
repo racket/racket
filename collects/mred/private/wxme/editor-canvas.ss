@@ -356,12 +356,14 @@
         (thunk)))
 
   (define/override (on-set-focus)
+    (super on-set-focus)
     (if (eq? 'windows (system-type))
         (queue-window-callback
          this
          (lambda () (on-focus #t)))
         (on-focus #t)))
   (define/override (on-kill-focus)
+    (super on-kill-focus)
     (if (eq? 'windows (system-type))
         (queue-window-callback
          this
