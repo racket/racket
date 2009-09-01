@@ -2484,6 +2484,29 @@
    "(unit U@)")
   
   (test/spec-failed
+   'define/contract16a
+   '(begin
+      (eval '(module foo-dc16a scheme/base
+               (require scheme/contract)
+               (require scheme/unit)
+               (let ()
+                 (define/contract (foo n)
+                   (-> number? number?)
+                   (define-signature U^
+                     (x))
+                   (define-unit/contract U@
+                     (import)
+                     (export (U^ [x (-> number? number?)]))
+                     (define (x n) #t))
+                   (define-values/invoke-unit U@
+                     (import)
+                     (export U^))
+                   (x n))
+                 (foo 3))))
+      (eval '(require 'foo-dc16a)))
+   "(unit U@)")
+  
+  (test/spec-failed
    'define/contract17
    '(begin
       (eval '(module foo-dc17 scheme/base
