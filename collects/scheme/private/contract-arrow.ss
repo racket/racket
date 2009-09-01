@@ -1463,7 +1463,13 @@ v4 todo:
 
 (define (keywords-match mandatory-kwds optional-kwds val)
   (let-values ([(proc-mandatory proc-all) (procedure-keywords val)])
-    (and (equal? proc-mandatory mandatory-kwds)
+    (and ;; proc accepts all ctc's mandatory keywords
+         (andmap (λ (kwd) (member kwd proc-all))
+                 mandatory-kwds)
+         ;; proc's mandatory keywords are still mandatory in ctc
+         (andmap (λ (kwd) (member kwd mandatory-kwds))
+                 proc-mandatory)
+         ;; proc accepts (but does not require) ctc's optional keywords
          (andmap (λ (kwd) (and (member kwd proc-all)
                                (not (member kwd proc-mandatory))))
                  optional-kwds))))
