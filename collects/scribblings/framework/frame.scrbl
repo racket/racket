@@ -1,7 +1,10 @@
-#lang scribble/doc @(require scribble/manual
-scribble/extract scheme/include) @(require (for-label
-framework)) @(require (for-label scheme/gui)) @(require
-(for-syntax (prefix-in s: scribble/reader))) @title{Frame}
+#lang scribble/doc 
+@(require scribble/manual scribble/extract scheme/include)
+@(require (for-label framework))
+@(require (for-label scheme/gui))
+@(require (for-syntax (prefix-in s: scribble/reader)))
+
+@title{Frame}
 
 @definterface[frame:basic<%> (frame%)]{
   Classes matching this interface support the basic 
@@ -921,7 +924,7 @@ framework)) @(require (for-label scheme/gui)) @(require
     frame.
 
   }
-  @defmethod[(unhide-search [move-focus? boolean? #f]) void?]{
+  @defmethod[(unhide-search [move-focus? boolean?]) void?]{
     When the searching sub window is hidden, makes it visible. If 
     @scheme[move-focus?] is @scheme[#f], the focus is not moved,
     but if it is any other value, the focus is moved to the find
