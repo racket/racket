@@ -8,9 +8,9 @@
   (define out-proc (contract-proc out))
   (make-proj-contract
    (build-compound-type-name 'stuffer/c in out)
-   (λ (pos-blame neg-blame src-info orig-str)
-     (define in-app (in-proc pos-blame neg-blame src-info orig-str))
-     (define out-app (out-proc pos-blame neg-blame src-info orig-str))
+   (λ (pos-blame neg-blame src-info orig-str positive-position?)
+     (define in-app (in-proc pos-blame neg-blame src-info orig-str positive-position?))
+     (define out-app (out-proc pos-blame neg-blame src-info orig-str positive-position?))
      (λ (val)
        (unless (stuffer? val)
          (raise-contract-error
