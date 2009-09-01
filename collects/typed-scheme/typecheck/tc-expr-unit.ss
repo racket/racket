@@ -68,7 +68,7 @@
         ([inst (in-improper-stx inst)])
         (cond [(not inst) ty]
               [(not (or (Poly? ty) (PolyDots? ty)))
-               (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a" ty)]          
+               (tc-error/expr #:return (Un) "Cannot instantiate non-polymorphic type ~a" ty)]
               [(and (Poly? ty)
                     (not (= (length (syntax->list inst)) (Poly-n ty))))
                (tc-error/expr #:return (Un)
@@ -199,20 +199,34 @@
 
 (define (tc-expr/check form expected)
   (parameterize ([current-orig-stx form])
-    ;(printf "form: ~a~n" (syntax->datum form))
     ;; the argument must be syntax
     (unless (syntax? form) 
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
-    (let ([ty (cond [(type-ascription form) => (lambda (ann)
-                                                 (let ([r (tc-expr/check/internal form ann)])
-                                                   (check-below r expected)))]
-                    [else (tc-expr/check/internal form expected)])])
-      (match ty
-        [(tc-results: ts fs os)
-         (let ([ts* (do-inst form ts)])
-           (ret ts* fs os))]
-        [_ ty]))))
+    (let loop ([form form] [expected expected] [checked? #f])
+      (cond [(type-ascription form) 
+             => 
+             (lambda (ann)
+               (let* ([r (tc-expr/check/internal form ann)]
+                      [r* (check-below r expected)])
+                 ;; around again in case there is an instantiation
+                 ;; remove the ascription so we don't loop infinitely
+                 (loop (remove-ascription form) r* #t)))]
+            [(syntax-property form 'type-inst)
+             ;; check without property first
+             ;; to get the appropriate type to instantiate
+             (match (tc-expr (syntax-property form 'type-inst #f))
+               [(tc-results: ts fs os)
+                ;; do the instantiation on the old type
+                (let* ([ts* (do-inst form ts)]
+                       [ts** (ret ts* fs os)])
+                  ;; make sure the new type is ok
+                  (check-below ts** expected))]
+               ;; no annotations possible on dotted results
+               [ty ty])]
+            ;; nothing to see here
+            [checked? expected]
+            [else (tc-expr/check/internal form expected)]))))
 
 ;; tc-expr/check : syntax tc-results -> tc-results
 (define (tc-expr/check/internal form expected)

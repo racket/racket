@@ -462,8 +462,28 @@
      (ret (-Promise (tc-expr/t #'e)))]
     ;; special case for `list'
     [(#%plain-app list . args)
-     (let ([tys (map tc-expr/t (syntax->list #'args))])
-       (ret (apply -lst* tys)))]
+     (begin
+       ;(printf "calling list: ~a ~a~n" (syntax->datum #'args) (Type? expected))
+       (match expected
+         [(tc-result1: (Mu: var (Union: (or 
+                                         (list (Pair: elem-ty (F: var)) (Value: '()))
+                                         (list (Value: '()) (Pair: elem-ty (F: var)))))))
+          ;(printf "special case 1 ~a~n" elem-ty)
+          (for ([i (in-list (syntax->list #'args))])
+               (tc-expr/check i (ret elem-ty)))
+          expected]
+         [(tc-result1: (app untuple (? (lambda (ts) (and ts (= (length (syntax->list #'args))
+                                                               (length ts))))
+                                       ts)))    
+          ;(printf "special case 2 ~a~n" ts)
+          (for ([ac (in-list (syntax->list #'args))]
+                [exp (in-list ts)])
+               (tc-expr/check ac (ret exp)))
+          expected]
+         [_
+          ;(printf "not special case~n")
+          (let ([tys (map tc-expr/t (syntax->list #'args))])
+            (ret (apply -lst* tys)))]))]
     ;; special case for `list*'
     [(#%plain-app list* . args)
      (match-let* ([(list last tys-r ...) (reverse (map tc-expr/t (syntax->list #'args)))]
@@ -490,9 +510,24 @@
                         #'(let-values ([(x) fixed-args] ... [(rst) varg]) . body)
                         expected)))]
     [(#%plain-app f . args)
-     (let* ([f-ty (single-value #'f)]
-            [arg-tys (map single-value (syntax->list #'args))])
-       (tc/funapp #'f #'args f-ty arg-tys expected))]))
+     (let* ([f-ty (single-value #'f)])
+       (match f-ty
+         [(tc-result1: 
+           (and t (Function: 
+                   (list (and a (arr: (? (lambda (d) 
+                                           (= (length d) 
+                                              (length (syntax->list #'args))))
+                                         dom)
+                                      (Values: (list (Result: v (LFilterSet: '() '()) (LEmpty:))))
+                                      #f #f '()))))))
+          ;(printf "f dom: ~a ~a~n" (syntax->datum #'f) dom)
+          (let ([arg-tys (map (lambda (a t) (tc-expr/check a (ret t))) 
+                              (syntax->list #'args)
+                              dom)])
+            (tc/funapp #'f #'args f-ty arg-tys expected))]
+         [_
+          (let ([arg-tys (map single-value (syntax->list #'args))])
+            (tc/funapp #'f #'args f-ty arg-tys expected))]))]))
 
 ;(trace tc/app/internal)
 

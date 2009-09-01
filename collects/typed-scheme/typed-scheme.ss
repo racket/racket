@@ -78,7 +78,7 @@
                                         null)])]
            [with-syntax ([(pmb body2 ...) #'new-mod])]
            [begin (do-time "Local Expand Done")]
-           [with-syntax ([after-code (parameterize ([orig-module-stx stx]
+           [with-syntax ([after-code (parameterize ([orig-module-stx (or (orig-module-stx) stx)]
                                                     [expanded-module-stx #'new-mod])
                                        (type-check #'(body2 ...)))]
                          [check-syntax-help (syntax-property #'(void) 'disappeared-use (type-name-references))]
