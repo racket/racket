@@ -852,13 +852,13 @@ as well as a record of the source location where the
 contract was established and the name of the contract. They
 can then, in turn, pass that information
 to @scheme[raise-contract-error] to signal a good error
-message (see below for details on its behavior).
+message.
 
 Here is the first of those two projections, rewritten for
 use in the contract system:
 
 @schemeblock[
-(define (int-proj pos neg src-info name)
+(define (int-proj pos neg src-info name positive-position?)
   (lambda (x)
     (if (integer? x)
         x
@@ -873,7 +873,9 @@ use in the contract system:
 
 The first two new arguments specify who is to be blamed for
 positive and negative contract violations,
-respectively. Contracts, in this system, are always
+respectively. 
+
+Contracts, in this system, are always
 established between two parties. One party provides some
 value according to the contract, and the other consumes the
 value, also according to the contract. The first is called
@@ -887,9 +889,9 @@ to @scheme[raise-contract-error]).
 Compare that to the projection for our function contract:
 
 @schemeblock[
-(define (int->int-proj pos neg src-info name)
-  (let ([dom (int-proj neg pos src-info name)]
-        [rng (int-proj pos neg src-info name)])
+(define (int->int-proj pos neg src-info name positive-position?)
+  (let ([dom (int-proj neg pos src-info name (not positive-position?))]
+        [rng (int-proj pos neg src-info name positive-position?)])
     (lambda (f)
       (if (and (procedure? f)
                (procedure-arity-includes? f 1))
@@ -944,9 +946,9 @@ returns a contract for functions between them.
 
 @schemeblock[
 (define (make-simple-function-contract dom-proj range-proj)
-  (lambda (pos neg src-info name)
-    (let ([dom (dom-proj neg pos src-info name)]
-          [rng (range-proj pos neg src-info name)])
+  (lambda (pos neg src-info name positive-position?)
+    (let ([dom (dom-proj neg pos src-info name (not positive-position?))]
+          [rng (range-proj pos neg src-info name positive-position?)])
       (lambda (f)
         (if (and (procedure? f)
                  (procedure-arity-includes? f 1))
@@ -966,18 +968,20 @@ other, new kinds of value you might make, can be used with
 the contract library primitives below.
 
 @defproc[(make-proj-contract [name any/c]
-                             [proj (symbol? symbol? any/c any/c . -> . any/c)]
+                             [proj (or/c (-> symbol? symbol? any/c any/c any/c)
+                                         (-> symbol? symbol? any/c any/c boolean? any/c))]
                              [first-order-test (any/c . -> . any/c)])
          contract?]{
 
-The simplest way to build a contract. It can be less
-efficient than using other contract constructors described
-below, but it is the right choice for new contract
-constructors or first-time contract builders.
-
+Builds a new contract.
+                    
 The first argument is the name of the contract. It can be an
 arbitrary S-expression. The second is a projection (see
 above).
+
+If the projection only takes four arguments, then the
+positive position boolean is not passed to it (this is
+for backwards compatibility).
 
 The final argument is a predicate that is a
 conservative, first-order test of a value. It should be a

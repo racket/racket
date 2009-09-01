@@ -14,7 +14,7 @@
 (provide (for-syntax unit/c/core) unit/c)
 
 (define-for-syntax (contract-imports/exports import?)
-  (λ (table-stx import-tagged-infos import-sigs ctc-table pos neg src-info name)
+  (λ (table-stx import-tagged-infos import-sigs ctc-table pos neg src-info name positive-position?)
     (define def-table (make-bound-identifier-mapping))
     
     (define (convert-reference var vref ctc sig-ctc rename-bindings)
@@ -28,7 +28,8 @@
                      #,(if import? neg pos)
                      #,(if import? pos neg)
                      #,src-info
-                     #,name)
+                     #,name
+                     #,(if import? (not positive-position?) positive-position?))
                     #,stx)))])
         (if ctc
             #`(λ ()
@@ -146,7 +147,7 @@
                                       (map list (list 'e.x ...)
                                            (build-compound-type-name 'e.c ...)))
                                 ...)))
-              (λ (pos neg src-info name)
+              (λ (pos neg src-info name positive-position?)
                 (λ (unit-tmp)
                   (unless (unit? unit-tmp)
                     (raise-contract-error unit-tmp src-info pos name
@@ -178,7 +179,8 @@
                                              #'pos
                                              #'neg
                                              #'src-info
-                                             #'name)))
+                                             #'name
+                                             #'positive-position?)))
                                #,(contract-exports 
                                   #'export-table
                                   export-tagged-infos
@@ -187,7 +189,8 @@
                                   #'pos
                                   #'neg
                                   #'src-info
-                                  #'name)))))))
+                                  #'name
+                                  #'positive-position?)))))))
               (λ (v)
                 (and (unit? v)
                      (with-handlers ([exn:fail:contract? (λ () #f)])

@@ -33,8 +33,8 @@
            (let ([proj-x ((proj-get rngs-x) rngs-x)] ...)
              (make-proj-contract
               (build-compound-type-name 'unconstrained-domain-> ((name-get rngs-x) rngs-x) ...)
-              (λ (pos-blame neg-blame src-info orig-str)
-                (let ([p-app-x (proj-x pos-blame neg-blame src-info orig-str)] ...)
+              (λ (pos-blame neg-blame src-info orig-str positive-position?)
+                (let ([p-app-x (proj-x pos-blame neg-blame src-info orig-str positive-position?)] ...)
                   (λ (val)
                     (if (procedure? val)
                         (λ args
@@ -76,12 +76,12 @@
            [func (->-func ctc)]
            [dom-length (length (->-doms ctc))]
            [has-rest? (and (->-dom-rest ctc) #t)])
-      (lambda (pos-blame neg-blame src-info orig-str)
-        (let ([partial-doms (map (λ (dom) (dom neg-blame pos-blame src-info orig-str))
+      (lambda (pos-blame neg-blame src-info orig-str positive-position?)
+        (let ([partial-doms (map (λ (dom) (dom neg-blame pos-blame src-info orig-str (not positive-position?)))
                                  doms/c)]
-              [partial-ranges (map (λ (rng) (rng pos-blame neg-blame src-info orig-str))
+              [partial-ranges (map (λ (rng) (rng pos-blame neg-blame src-info orig-str positive-position?))
                                    rngs/c)]
-              [partial-kwds (map (λ (kwd) (kwd neg-blame pos-blame src-info orig-str))
+              [partial-kwds (map (λ (kwd) (kwd neg-blame pos-blame src-info orig-str (not positive-position?)))
                                  kwds/c)])
           (apply func
                  (λ (val)

@@ -344,10 +344,10 @@
                      `(object-contract 
                        ,(build-compound-type-name 'method-name method-ctc-var) ...
                        ,(build-compound-type-name 'field 'field-name field-ctc-var) ...)
-                     (lambda (pos-blame neg-blame src-info orig-str)
-                       (let ([method/app-var (method-var pos-blame neg-blame src-info orig-str)] 
+                     (lambda (pos-blame neg-blame src-info orig-str positive-position?)
+                       (let ([method/app-var (method-var pos-blame neg-blame src-info orig-str positive-position?)] 
                              ...
-                             [field/app-var (field-var pos-blame neg-blame src-info orig-str)]
+                             [field/app-var (field-var pos-blame neg-blame src-info orig-str positive-position?)]
                              ...)
                          (let ([field-names-list '(field-name ...)])
                            (lambda (val)

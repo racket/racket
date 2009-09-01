@@ -51,8 +51,8 @@ v4 todo:
            (let ([proj-x ((proj-get rngs-x) rngs-x)] ...)
              (make-proj-contract
               (build-compound-type-name 'unconstrained-domain-> ((name-get rngs-x) rngs-x) ...)
-              (λ (pos-blame neg-blame src-info orig-str)
-                (let ([p-app-x (proj-x pos-blame neg-blame src-info orig-str)] ...)
+              (λ (pos-blame neg-blame src-info orig-str positive-position?)
+                (let ([p-app-x (proj-x pos-blame neg-blame src-info orig-str positive-position?)] ...)
                   (λ (val)
                     (if (procedure? val)
                         (make-keyword-procedure
@@ -116,16 +116,16 @@ v4 todo:
            [dom-length (length (->-doms/c ctc))]
            [optionals-length (length (->-optional-doms/c ctc))]
            [has-rest? (and (->-dom-rest/c ctc) #t)])
-      (λ (pos-blame neg-blame src-info orig-str)
-        (let ([partial-doms (map (λ (dom) (dom neg-blame pos-blame src-info orig-str))
+      (λ (pos-blame neg-blame src-info orig-str positive-position?)
+        (let ([partial-doms (map (λ (dom) (dom neg-blame pos-blame src-info orig-str (not positive-position?)))
                                  doms-proj)]
-              [partial-optional-doms (map (λ (dom) (dom neg-blame pos-blame src-info orig-str))
+              [partial-optional-doms (map (λ (dom) (dom neg-blame pos-blame src-info orig-str (not positive-position?)))
                                           doms-optional-proj)]
-              [partial-ranges (map (λ (rng) (rng pos-blame neg-blame src-info orig-str))
+              [partial-ranges (map (λ (rng) (rng pos-blame neg-blame src-info orig-str positive-position?))
                                    rngs-proj)]
-              [partial-mandatory-kwds (map (λ (kwd) (kwd neg-blame pos-blame src-info orig-str))
+              [partial-mandatory-kwds (map (λ (kwd) (kwd neg-blame pos-blame src-info orig-str (not positive-position?)))
                                            mandatory-kwds-proj)]
-              [partial-optional-kwds (map (λ (kwd) (kwd neg-blame pos-blame src-info orig-str))
+              [partial-optional-kwds (map (λ (kwd) (kwd neg-blame pos-blame src-info orig-str (not positive-position?)))
                                           optional-kwds-proj)])
           (apply func
                  (λ (val mtd?)
@@ -851,7 +851,7 @@ v4 todo:
                   (list (+ mandatory-count i))]
                  [else
                   (cons (+ mandatory-count i) (loop (+ i 1)))]))])])
-    (λ (pos-blame neg-blame src-info orig-str)
+    (λ (pos-blame neg-blame src-info orig-str positive-position?)
       (let ([this->d-id (gensym '->d-tail-key)])
         (λ (val)
           (check-procedure val
@@ -885,7 +885,7 @@ v4 todo:
                                   [(or (null? building-kwd-args) (null? all-kwds)) '()]
                                   [else (if (eq? (car all-kwds)
                                                  (car building-kwd-args))
-                                            (cons (invoke-dep-ctc (car kwd-ctcs) dep-pre-args (car building-kwd-arg-vals) neg-blame pos-blame src-info orig-str)
+                                            (cons (invoke-dep-ctc (car kwd-ctcs) dep-pre-args (car building-kwd-arg-vals) neg-blame pos-blame src-info orig-str (not positive-position?))
                                                   (loop (cdr all-kwds) (cdr kwd-ctcs) (cdr building-kwd-args) (cdr building-kwd-arg-vals)))
                                             (loop (cdr all-kwds) (cdr kwd-ctcs) building-kwd-args building-kwd-arg-vals))]))
                               
@@ -902,17 +902,17 @@ v4 todo:
                                  (cond
                                    [(null? args) 
                                     (if (->d-rest-ctc ->d-stct)
-                                        (invoke-dep-ctc (->d-rest-ctc ->d-stct) dep-pre-args '() neg-blame pos-blame src-info orig-str)
+                                        (invoke-dep-ctc (->d-rest-ctc ->d-stct) dep-pre-args '() neg-blame pos-blame src-info orig-str (not positive-position?))
                                         '())]
                                    [(null? non-kwd-ctcs) 
                                     (if (->d-rest-ctc ->d-stct)
-                                        (invoke-dep-ctc (->d-rest-ctc ->d-stct) dep-pre-args args neg-blame pos-blame src-info orig-str)
+                                        (invoke-dep-ctc (->d-rest-ctc ->d-stct) dep-pre-args args neg-blame pos-blame src-info orig-str (not positive-position?))
                                         
                                         ;; ran out of arguments, but don't have a rest parameter.
                                         ;; procedure-reduce-arity (or whatever the new thing is
                                         ;; going to be called) should ensure this doesn't happen.
                                         (error 'shouldnt\ happen))]
-                                   [else (cons (invoke-dep-ctc (car non-kwd-ctcs) dep-pre-args (car args) neg-blame pos-blame src-info orig-str)
+                                   [else (cons (invoke-dep-ctc (car non-kwd-ctcs) dep-pre-args (car args) neg-blame pos-blame src-info orig-str (not positive-position?))
                                                (loop (cdr args)
                                                      (cdr non-kwd-ctcs)))])))))]
                           [rng (let ([rng (->d-range ->d-stct)])
@@ -975,7 +975,7 @@ v4 todo:
                                       (cons
                                        (invoke-dep-ctc (car result-contracts)
                                                        (if rng-underscore? #f dep-post-args)
-                                                       (car results) pos-blame neg-blame src-info orig-str)
+                                                       (car results) pos-blame neg-blame src-info orig-str positive-position?)
                                        (loop (cdr results) (cdr result-contracts)))]))))))]
                           [else
                            (thunk)])))))])
@@ -990,11 +990,11 @@ v4 todo:
              (->d-keywords ->d-stct))))))))
 
 ;; invoke-dep-ctc : (...? -> ctc) (or/c #f (listof tst)) val pos-blame neg-blame src-info orig-src -> tst
-(define (invoke-dep-ctc dep-ctc dep-args val pos-blame neg-blame src-info orig-str)
+(define (invoke-dep-ctc dep-ctc dep-args val pos-blame neg-blame src-info orig-str positive-position?)
   (let ([ctc (coerce-contract '->d (if dep-args
                                        (apply dep-ctc dep-args)
                                        dep-ctc))])
-    ((((proj-get ctc) ctc) pos-blame neg-blame src-info orig-str) val)))
+    ((((proj-get ctc) ctc) pos-blame neg-blame src-info orig-str positive-position?) val)))
 
 ;; build-dep-ctc-args : number (listof any) boolean (listof keyword) (listof keyword) (listof any)
 (define (build-dep-ctc-args non-kwd-ctc-count args rest-arg? all-kwds supplied-kwds supplied-args)
@@ -1233,9 +1233,9 @@ v4 todo:
                        (and rngs (map to-proj (get-case->-rng-ctcs ctc))))]
            [rst-ctcs (case->-rst-ctcs ctc)]
            [specs (case->-specs ctc)])
-      (λ (pos-blame neg-blame src-info orig-str)
-        (let ([projs (append (map (λ (f) (f neg-blame pos-blame src-info orig-str)) dom-ctcs)
-                             (map (λ (f) (f pos-blame neg-blame src-info orig-str)) rng-ctcs))]
+      (λ (pos-blame neg-blame src-info orig-str positive-position?)
+        (let ([projs (append (map (λ (f) (f neg-blame pos-blame src-info orig-str (not positive-position?))) dom-ctcs)
+                             (map (λ (f) (f pos-blame neg-blame src-info orig-str positive-position?)) rng-ctcs))]
               [chk
                (λ (val mtd?) 
                  (cond

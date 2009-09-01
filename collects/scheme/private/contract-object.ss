@@ -17,8 +17,8 @@
 #;
 (let* ([cm (syntax-parameterize ((making-a-method #t)) (-> any/c integer? integer?))]
        [cf (-> integer? integer?)]
-       [m-proj (((proj-get cm) cm) 'pos 'neg #'here "whatever")]
-       [f-proj (((proj-get cf) cf) 'pos 'neg #'here "whatever")]
+       [m-proj (((proj-get cm) cm) 'pos 'neg #'here "whatever" some-boolean)]
+       [f-proj (((proj-get cf) cf) 'pos 'neg #'here "whatever" some-boolean)]
        [cls (make-wrapper-class 'wrapper-class
                                 '(m)
                                 (list 
@@ -58,12 +58,12 @@
           [meth-param-projs (map (λ (x) ((proj-get x) x)) (object-contract-method-ctcs ctc))]
           [ctc-field-names (object-contract-fields ctc)]
           [field-param-projs (map (λ (x) ((proj-get x) x)) (object-contract-field-ctcs ctc))])
-      (λ (pos-blame neg-blame src-info orig-str)
-        (let* ([meth-projs (map (λ (x) (x pos-blame neg-blame src-info orig-str))
+      (λ (pos-blame neg-blame src-info orig-str positive-position?)
+        (let* ([meth-projs (map (λ (x) (x pos-blame neg-blame src-info orig-str positive-position?))
                                 meth-param-projs)]
                [meths (map (λ (p x) (p x)) meth-projs (object-contract-method-wrappers ctc))]
                [cls (make-wrapper-class 'wrapper-class meth-names meths ctc-field-names #f)]
-               [field-projs (map (λ (x) (x pos-blame neg-blame src-info orig-str)) field-param-projs)])
+               [field-projs (map (λ (x) (x pos-blame neg-blame src-info orig-str positive-position?)) field-param-projs)])
           (λ (val)
             
             (unless (object? val)

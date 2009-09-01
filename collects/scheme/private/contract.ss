@@ -646,7 +646,16 @@ improve method arity mismatch contract violation error messages?
                         ;; No: lift the contract creation:
                         (with-syntax ([contract-id contract-id]
                                       [id id]
-                                      [pos-module-source pos-module-source])
+                                      [pos-module-source pos-module-source]
+                                      [id-ref (syntax-case stx (set!)
+                                                [(set! whatever e)
+                                                 id] ;; just avoid an error here, signal the error later
+                                                [(id . x)
+                                                 #'id]
+                                                [id
+                                                 (identifier? #'id)
+                                                 #'id])])
+                          ;(printf "id ~s ~s\n" #'id-ref (syntax->datum #'id-ref))
                           (syntax-local-introduce
                            (syntax-local-lift-expression
                             #`(-contract contract-id
@@ -1282,7 +1291,7 @@ improve method arity mismatch contract violation error messages?
              (unpack-blame pos-blame)
              a-contract-raw
              name))
-    (((contract-proc a-contract) pos-blame neg-blame src-info (contract-name a-contract))
+    (((contract-proc a-contract) pos-blame neg-blame src-info (contract-name a-contract) #t)
      name)))
 
 (define-syntax (recursive-contract stx)
@@ -1290,11 +1299,11 @@ improve method arity mismatch contract violation error messages?
     [(_ arg)
      (syntax (make-proj-contract 
               '(recursive-contract arg) 
-              (λ (pos-blame neg-blame src str)
+              (λ (pos-blame neg-blame src str positive-position?)
                 (let ([ctc (coerce-contract 'recursive-contract arg)])
                   (let ([proc (contract-proc ctc)])
                     (λ (val)
-                      ((proc pos-blame neg-blame src str) val)))))
+                      ((proc pos-blame neg-blame src str positive-position?) val)))))
               #f))]))
 
 ;                                                                                                   
@@ -1438,8 +1447,8 @@ improve method arity mismatch contract violation error messages?
   (λ (ctc)
     (let ([c-proc ((proj-get (or/c-ho-ctc ctc)) (or/c-ho-ctc ctc))]
           [pred (or/c-pred ctc)])
-      (λ (pos-blame neg-blame src-info orig-str)
-        (let ([partial-contract (c-proc pos-blame neg-blame src-info orig-str)])
+      (λ (pos-blame neg-blame src-info orig-str positive-position?)
+        (let ([partial-contract (c-proc pos-blame neg-blame src-info orig-str positive-position?)])
           (λ (val)
             (cond
               [(pred val) val]
@@ -1477,8 +1486,8 @@ improve method arity mismatch contract violation error messages?
          [c-procs (map (λ (x) ((proj-get x) x)) ho-contracts)]
          [first-order-checks (map (λ (x) ((first-order-get x) x)) ho-contracts)]
          [predicates (map flat-contract-predicate (multi-or/c-flat-ctcs ctc))])
-    (λ (pos-blame neg-blame src-info orig-str)
-      (let ([partial-contracts (map (λ (c-proc) (c-proc pos-blame neg-blame src-info orig-str)) c-procs)])
+    (λ (pos-blame neg-blame src-info orig-str positive-position?)
+      (let ([partial-contracts (map (λ (c-proc) (c-proc pos-blame neg-blame src-info orig-str positive-position?)) c-procs)])
         (λ (val)
           (cond
             [(ormap (λ (pred) (pred val)) predicates)
@@ -1594,8 +1603,9 @@ improve method arity mismatch contract violation error messages?
                             (pos (opt/info-pos opt/info))
                             (neg (opt/info-neg opt/info))
                             (src-info (opt/info-src-info opt/info))
-                            (orig-str (opt/info-orig-str opt/info)))
-                (syntax (((proj-get lift-var) lift-var) pos neg src-info orig-str)))))
+                            (orig-str (opt/info-orig-str opt/info))
+                            (positive-position? (opt/info-orig-str opt/info)))
+                (syntax (((proj-get lift-var) lift-var) pos neg src-info orig-str positive-position?)))))
        #f
        lift-var
        (list #f)
@@ -2041,8 +2051,8 @@ improve method arity mismatch contract violation error messages?
                 (let ([proj (contract-proc ctc)])
                   (make-proj-contract
                    (build-compound-type-name 'name ctc)
-                   (λ (pos-blame neg-blame src-info orig-str)
-                     (let ([p-app (proj pos-blame neg-blame src-info orig-str)])
+                   (λ (pos-blame neg-blame src-info orig-str positive-position?)
+                     (let ([p-app (proj pos-blame neg-blame src-info orig-str positive-position?)])
                        (λ (val)
                          (unless (predicate? val)
                            (raise-contract-error
@@ -2204,8 +2214,8 @@ improve method arity mismatch contract violation error messages?
                      (let ([procs (contract-proc ctc-x)] ...)
                        (make-proj-contract
                         (build-compound-type-name 'name ctc-x ...)
-                        (λ (pos-blame neg-blame src-info orig-str)
-                          (let ([p-apps (procs pos-blame neg-blame src-info orig-str)] ...)
+                        (λ (pos-blame neg-blame src-info orig-str positive-position?)
+                          (let ([p-apps (procs pos-blame neg-blame src-info orig-str positive-position?)] ...)
                             (λ (v)
                               (if #,(if test-immutable?
                                         #'(and (predicate?-name v)
@@ -2234,8 +2244,8 @@ improve method arity mismatch contract violation error messages?
             (let ([procs (map contract-proc ctcs)])
               (make-proj-contract
                (apply build-compound-type-name 'name ctcs)
-               (λ (pos-blame neg-blame src-info orig-str)
-                 (let ([p-apps (map (λ (proc) (proc pos-blame neg-blame src-info orig-str)) procs)]
+               (λ (pos-blame neg-blame src-info orig-str positive-position?)
+                 (let ([p-apps (map (λ (proc) (proc pos-blame neg-blame src-info orig-str positive-position?)) procs)]
                        [count (length params)])
                    (λ (v)
                      (if (and (immutable? v)
@@ -2336,8 +2346,8 @@ improve method arity mismatch contract violation error messages?
            [ctc-proc (contract-proc ctc)])
       (make-proj-contract
        (build-compound-type-name 'promise/c ctc)
-       (λ (pos-blame neg-blame src-info orig-str)
-         (let ([p-app (ctc-proc pos-blame neg-blame src-info orig-str)])
+       (λ (pos-blame neg-blame src-info orig-str positive-position?)
+         (let ([p-app (ctc-proc pos-blame neg-blame src-info orig-str positive-position?)])
            (λ (val)
              (unless (promise? val)
                (raise-contract-error
@@ -2427,9 +2437,9 @@ improve method arity mismatch contract violation error messages?
   #:property proj-prop
   (λ (ctc)
     (let ([c-proc ((proj-get (parameter/c-ctc ctc)) (parameter/c-ctc ctc))])
-      (λ (pos-blame neg-blame src-info orig-str)
-        (let ([partial-neg-contract (c-proc neg-blame pos-blame src-info orig-str)]
-              [partial-pos-contract (c-proc pos-blame neg-blame src-info orig-str)])
+      (λ (pos-blame neg-blame src-info orig-str positive-position?)
+        (let ([partial-neg-contract (c-proc neg-blame pos-blame src-info orig-str (not positive-position?))]
+              [partial-pos-contract (c-proc pos-blame neg-blame src-info orig-str positive-position?)])
           (λ (val)
             (cond
               [(parameter? val)
@@ -2499,9 +2509,9 @@ improve method arity mismatch contract violation error messages?
     (let ([dom-proc ((proj-get (hash/c-dom ctc)) (hash/c-dom ctc))]
           [rng-proc ((proj-get (hash/c-rng ctc)) (hash/c-rng ctc))]
           [immutable (hash/c-immutable ctc)])
-      (λ (pos-blame neg-blame src-info orig-str)
-        (let ([partial-dom-contract (dom-proc pos-blame neg-blame src-info orig-str)]
-              [partial-rng-contract (rng-proc pos-blame neg-blame src-info orig-str)])
+      (λ (pos-blame neg-blame src-info orig-str positive-position?)
+        (let ([partial-dom-contract (dom-proc pos-blame neg-blame src-info orig-str positive-position?)]
+              [partial-rng-contract (rng-proc pos-blame neg-blame src-info orig-str positive-position?)])
           (λ (val)
             (unless (hash? val)
               (raise-contract-error val src-info pos-blame orig-str 
@@ -2541,9 +2551,9 @@ improve method arity mismatch contract violation error messages?
   (λ (ctc)
     (let ([dom-proc ((proj-get (immutable-hash/c-dom ctc)) (immutable-hash/c-dom ctc))]
           [rng-proc ((proj-get (immutable-hash/c-rng ctc)) (immutable-hash/c-rng ctc))])
-      (λ (pos-blame neg-blame src-info orig-str)
-        (let ([partial-dom-contract (dom-proc pos-blame neg-blame src-info orig-str)]
-              [partial-rng-contract (rng-proc pos-blame neg-blame src-info orig-str)])
+      (λ (pos-blame neg-blame src-info orig-str positive-position?)
+        (let ([partial-dom-contract (dom-proc pos-blame neg-blame src-info orig-str positive-position?)]
+              [partial-rng-contract (rng-proc pos-blame neg-blame src-info orig-str positive-position?)])
           (λ (val)
             (unless (and (hash? val)
                          (immutable? val))

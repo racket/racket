@@ -19,9 +19,9 @@
 (define (make-/proc method-proc? /h stx)
   (let-values ([(arguments-check build-proj check-val first-order-check wrapper)
                 (/h method-proc? stx)])
-    (let ([outer-args (syntax (val pos-blame neg-blame src-info orig-str name-id))])
+    (let ([outer-args (syntax (val pos-blame neg-blame src-info orig-str name-id positive-position?))])
       (with-syntax ([inner-check (check-val outer-args)]
-                    [(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+                    [(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                     [(val-args body) (wrapper outer-args)])
         (with-syntax ([inner-lambda
                        (set-inferred-name-from
@@ -39,7 +39,7 @@
                (syntax/loc stx
                  (make-proj-contract
                   name-id
-                  (lambda (pos-blame neg-blame src-info orig-str)
+                  (lambda (pos-blame neg-blame src-info orig-str positive-position?)
                     proj-code)
                   first-order-check))))))))))
 
@@ -55,9 +55,9 @@
     [(_ cases ...)
      (let-values ([(arguments-check build-projs check-val first-order-check wrapper) 
                    (case->/h method-proc? stx (syntax->list (syntax (cases ...))) select/h)])
-       (let ([outer-args (syntax (val pos-blame neg-blame src-info orig-str name-id))])
+       (let ([outer-args (syntax (val pos-blame neg-blame src-info orig-str name-id positive-position?))])
          (with-syntax ([(inner-check ...) (check-val outer-args)]
-                       [(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+                       [(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                        [(body ...) (wrapper outer-args)])
            (with-syntax ([inner-lambda 
                           (set-inferred-name-from
@@ -75,7 +75,7 @@
                   (syntax/loc stx
                     (make-proj-contract
                      (apply build-compound-type-name 'case-> name-id)
-                     (lambda (pos-blame neg-blame src-info orig-str)
+                     (lambda (pos-blame neg-blame src-info orig-str positive-position?)
                        proj-code)
                      first-order-check)))))))))]))
 
@@ -230,7 +230,7 @@
       [(null? cases) 
        (values 
         (lambda (outer-args body)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                         [body body]
                         [(name-ids ...) (reverse name-ids)])
             (syntax
@@ -249,10 +249,10 @@
                        (/h method-proc? (car cases))])
            (values
             (lambda (outer-args x) 
-              (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+              (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                             [new-id new-id])
                 (arguments-check 
-                 (syntax (val pos-blame neg-blame src-info orig-str new-id)) 
+                 (syntax (val pos-blame neg-blame src-info orig-str new-id positive-position?)) 
                  (arguments-checks 
                   outer-args
                   x))))
@@ -364,7 +364,7 @@
             (values
              (lambda (outer-args body)
                (with-syntax ([body body]
-                             [(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+                             [(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
                  (syntax
                   (let ([dom-contract-x (coerce-contract '-> dom)] ...)
                     (let ([dom-x (contract-proc dom-contract-x)] ...)
@@ -373,19 +373,19 @@
              
              ;; proj
              (lambda (outer-args inner-lambda)
-               (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+               (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                              [inner-lambda inner-lambda])
                  (syntax
-                  (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str)] ...)
+                  (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str (not positive-position?))] ...)
                     inner-lambda))))
              
              (lambda (outer-args)
-               (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+               (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
                  (syntax
                   (check-procedure val dom-length 0 '() '() #|keywords|# src-info pos-blame orig-str))))
              (syntax (check-procedure? dom-length))
              (lambda (outer-args)
-               (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+               (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
                  (syntax
                   ((arg-x ...)
                    (val (dom-projection-x arg-x) ...))))))]
@@ -399,7 +399,7 @@
               (values
                (lambda (outer-args body)
                  (with-syntax ([body body]
-                               [(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+                               [(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
                    (syntax
                     (let ([dom-contract-x (coerce-contract '-> dom)] 
                           ...
@@ -417,22 +417,22 @@
                
                ;; proj
                (lambda (outer-args inner-lambda)
-                 (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+                 (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                                [inner-lambda inner-lambda])
                    (syntax
-                    (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str)] 
+                    (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str (not positive-position?))] 
                           ...
-                          [rng-projection-x (rng-x pos-blame neg-blame src-info orig-str)] ...)
+                          [rng-projection-x (rng-x pos-blame neg-blame src-info orig-str positive-position?)] ...)
                       inner-lambda))))
                
                (lambda (outer-args)
-                 (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+                 (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
                    (syntax
                     (check-procedure val dom-length 0 '() '() #|keywords|# src-info pos-blame orig-str))))
                (syntax (check-procedure? dom-length))
                
                (lambda (outer-args)
-                 (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+                 (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
                    (syntax
                     ((arg-x ...)
                      (let-values ([(res-x ...) (val (dom-projection-x arg-x) ...)])
@@ -448,7 +448,7 @@
               (values
                (lambda (outer-args body)
                  (with-syntax ([body body]
-                               [(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+                               [(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
                    (syntax
                     (let ([dom-contract-x (coerce-contract '-> dom)] 
                           ...
@@ -461,21 +461,21 @@
                
                ;; proj
                (lambda (outer-args inner-lambda)
-                 (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+                 (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                                [inner-lambda inner-lambda])
                    (syntax
-                    (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str)] 
+                    (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str (not positive-position?))] 
                           ...
-                          [rng-projection-x (rng-x pos-blame neg-blame src-info orig-str)])
+                          [rng-projection-x (rng-x pos-blame neg-blame src-info orig-str positive-position?)])
                       inner-lambda))))
                
                (lambda (outer-args)
-                 (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+                 (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
                    (syntax
                     (check-procedure val dom-length 0 '() '() #|keywords|# src-info pos-blame orig-str))))
                (syntax (check-procedure? dom-length))
                (lambda (outer-args)
-                 (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+                 (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
                    (syntax
                     ((arg-x ...)
                      (let ([res-x (val (dom-projection-x arg-x) ...)])
@@ -509,7 +509,7 @@
                    [arity (length (syntax->list (syntax (dom ...))))])
        (values
         (lambda (outer-args body)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                         [body body]
                         [(name-dom-contract-x ...)
                          (if method-proc?
@@ -536,22 +536,22 @@
                    body))))))
         ;; proj
         (lambda (outer-args inner-lambda)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                         [inner-lambda inner-lambda])
             (syntax
-             (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str)] 
+             (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str (not positive-position?))] 
                    ...
-                   [dom-rest-projection-x (dom-rest-x neg-blame pos-blame src-info orig-str)]
-                   [rng-projection-x (rng-x pos-blame neg-blame src-info orig-str)] ...)
+                   [dom-rest-projection-x (dom-rest-x neg-blame pos-blame src-info orig-str (not positive-position?))]
+                   [rng-projection-x (rng-x pos-blame neg-blame src-info orig-str positive-position?)] ...)
                inner-lambda))))
         
         (lambda (outer-args)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
             (syntax
              (check-procedure/more val dom-length '() '() #|keywords|# src-info pos-blame orig-str))))
         (syntax (check-procedure/more? dom-length))
         (lambda (outer-args)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
             (syntax
              ((arg-x ... . arg-rest-x)
               (let-values ([(res-x ...)
@@ -577,7 +577,7 @@
        (values
         (lambda (outer-args body)
           (with-syntax ([body body]
-                        [(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+                        [(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                         [(name-dom-contract-x ...)
                          (if method-proc?
                              (cdr
@@ -599,21 +599,21 @@
                    body))))))
         ;; proj
         (lambda (outer-args inner-lambda)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                         [inner-lambda inner-lambda])
             (syntax
-             (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str)] 
+             (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str (not positive-position?))] 
                    ...
-                   [dom-projection-rest-x (dom-rest-x neg-blame pos-blame src-info orig-str)])
+                   [dom-projection-rest-x (dom-rest-x neg-blame pos-blame src-info orig-str (not positive-position?))])
                inner-lambda))))
         
         (lambda (outer-args)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
             (syntax
              (check-procedure/more val dom-length '() '() #|keywords|# src-info pos-blame orig-str))))
         (syntax (check-procedure/more? dom-length))
         (lambda (outer-args)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
             (syntax
              ((arg-x ... . arg-rest-x)
               (apply
@@ -636,7 +636,7 @@
        (values
         (lambda (outer-args body)
           (with-syntax ([body body]
-                        [(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+                        [(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                         [(name-dom-contract-x ...)
                          (if method-proc?
                              (cdr
@@ -654,21 +654,21 @@
         
         ;; proj
         (lambda (outer-args inner-lambda)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                         [inner-lambda inner-lambda])
             (syntax
-             (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str)] ...)
+             (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str (not positive-position?))] ...)
                inner-lambda))))
         
         (lambda (outer-args)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
             (syntax
              (check-procedure val arity 0 '() '() #|keywords|# src-info pos-blame orig-str))))
         
         (syntax (check-procedure? arity))
         
         (lambda (outer-args)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
             (syntax
              ((arg-x ...)
               (let ([arg-x (dom-projection-x arg-x)] ...) 
@@ -677,7 +677,8 @@
                     pos-blame
                     neg-blame
                     src-info
-                    orig-str)
+                    orig-str
+                    positive-position?)
                    (val arg-x ...))))))))))]))
 
 ;; ->d*/h : boolean stx -> (values (syntax -> syntax) (syntax -> syntax) (syntax -> syntax))
@@ -693,7 +694,7 @@
        (values
         (lambda (outer-args body)
           (with-syntax ([body body]
-                        [(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+                        [(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                         [(name-dom-contract-x ...)
                          (if method-proc?
                              (cdr
@@ -714,20 +715,20 @@
         
         ;; proj
         (lambda (outer-args inner-lambda)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                         [inner-lambda inner-lambda])
             (syntax
-             (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str)] ...)
+             (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str (not positive-position?))] ...)
                inner-lambda))))
         
         (lambda (outer-args)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
             (syntax
              (check-procedure val dom-length 0 '() '() #|keywords|# src-info pos-blame orig-str))))
         (syntax (check-procedure? dom-length))
         
         (lambda (outer-args)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
             (syntax
              ((arg-x ...)
               (call-with-values
@@ -745,7 +746,8 @@
                               pos-blame
                               neg-blame
                               src-info
-                              orig-str)
+                              orig-str
+                              positive-position?)
                              result))
                           rng-contracts
                           results))))))))))))]
@@ -761,7 +763,7 @@
        (values
         (lambda (outer-args body)
           (with-syntax ([body body]
-                        [(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+                        [(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                         [(name-dom-contract-x ...)
                          (if method-proc?
                              (cdr
@@ -786,22 +788,22 @@
         
         ;; proj
         (lambda (outer-args inner-lambda)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                         [inner-lambda inner-lambda])
             (syntax
-             (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str)] 
+             (let ([dom-projection-x (dom-x neg-blame pos-blame src-info orig-str (not positive-position?))] 
                    ...
-                   [dom-rest-projection-x (dom-rest-x neg-blame pos-blame src-info orig-str)])
+                   [dom-rest-projection-x (dom-rest-x neg-blame pos-blame src-info orig-str (not positive-position?))])
                inner-lambda))))
         
         (lambda (outer-args)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
             (syntax
              (check-procedure/more val arity '() '() #|keywords|# src-info pos-blame orig-str))))
         (syntax (check-procedure/more? arity))
         
         (lambda (outer-args)
-          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+          (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
             (syntax
              ((arg-x ... . rest-arg-x)
               (call-with-values
@@ -824,7 +826,8 @@
                               pos-blame
                               neg-blame
                               src-info
-                              orig-str)
+                              orig-str
+                              positive-position?)
                              result))
                           rng-contracts
                           results))))))))))))]))
@@ -877,14 +880,14 @@
          (values
           (lambda (outer-args body)
             (with-syntax ([body body]
-                          [(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+                          [(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
               (syntax
                (let ([name-id name-stx])
                  body))))
           (lambda (outer-args inner-lambda) inner-lambda)
           
           (lambda (outer-args)
-            (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+            (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                           [kind-of-thing (if method-proc? 'method 'procedure)])
               (syntax
                (begin 
@@ -893,14 +896,16 @@
           (syntax (check-procedure? arity))
           
           (lambda (outer-args)
-            (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+            (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
               (syntax-case* (syntax result-stuff) (any values) module-or-top-identifier=?
                 [(any)
                  (syntax
                   ((x ...)
                    (begin
                      (check-pre-expr->pp/h val pre-expr src-info neg-blame orig-str)
-                     (let ([dom-id ((contract-proc (coerce-contract 'stx-name dom)) neg-blame pos-blame src-info orig-str)]
+                     (let ([dom-id ((contract-proc (coerce-contract 'stx-name dom)) 
+                                    neg-blame pos-blame src-info orig-str
+                                    (not positive-position?))]
                            ...)
                        (val (dom-id x) ...)))))]
                 [((values (rng-ids rng-ctc) ...) post-expr)
@@ -911,12 +916,15 @@
                     ((x ...)
                      (begin
                        (check-pre-expr->pp/h val pre-expr src-info neg-blame orig-str)
-                       (let ([dom-id ((contract-proc (coerce-contract 'stx-name dom)) neg-blame pos-blame src-info orig-str)]
+                       (let ([dom-id ((contract-proc (coerce-contract 'stx-name dom)) 
+                                      neg-blame pos-blame src-info orig-str
+                                      (not positive-position?))]
                              ...)
                          (let-values ([(rng-ids ...) (val (dom-id x) ...)])
                            (check-post-expr->pp/h val post-expr src-info pos-blame orig-str)
                            (let ([rng-ids-x ((contract-proc (coerce-contract 'stx-name rng-ctc))
-                                             pos-blame neg-blame src-info orig-str)] ...)
+                                             pos-blame neg-blame src-info orig-str
+                                             positive-position?)] ...)
                              (values (rng-ids-x rng-ids) ...))))))))]
                 [((values (rng-ids rng-ctc) ...) post-expr)
                  (andmap identifier? (syntax->list (syntax (rng-ids ...))))
@@ -934,9 +942,13 @@
                   ((x ...)
                    (begin
                      (check-pre-expr->pp/h val pre-expr src-info neg-blame orig-str)
-                     (let ([dom-id ((contract-proc (coerce-contract 'stx-name dom)) neg-blame pos-blame src-info orig-str)]
+                     (let ([dom-id ((contract-proc (coerce-contract 'stx-name dom))
+                                    neg-blame pos-blame src-info orig-str
+                                    (not positive-position?))]
                            ...
-                           [rng-id ((contract-proc (coerce-contract 'stx-name rng)) pos-blame neg-blame src-info orig-str)])
+                           [rng-id ((contract-proc (coerce-contract 'stx-name rng)) 
+                                    pos-blame neg-blame src-info orig-str
+                                    positive-position?)])
                        (let ([res-id (rng-id (val (dom-id x) ...))])
                          (check-post-expr->pp/h val post-expr src-info pos-blame orig-str)
                          res-id)))))]
@@ -988,14 +1000,14 @@
          (values
           (lambda (outer-args body)
             (with-syntax ([body body]
-                          [(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+                          [(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
               (syntax
                (let ([name-id name-stx])
                  body))))
           (lambda (outer-args inner-lambda) inner-lambda)
           
           (lambda (outer-args)
-            (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args]
+            (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args]
                           [kind-of-thing (if method-proc? 'method 'procedure)])
               (syntax
                (begin 
@@ -1003,16 +1015,20 @@
           (syntax (check-procedure/more? arity))
           
           (lambda (outer-args)
-            (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id) outer-args])
+            (with-syntax ([(val pos-blame neg-blame src-info orig-str name-id positive-position?) outer-args])
               (syntax-case* (syntax result-stuff) (values any) module-or-top-identifier=?
                 [(any)
                  (syntax
                   ((x ... . rest-x)
                    (begin
                      (check-pre-expr->pp/h val pre-expr src-info neg-blame orig-str)
-                     (let ([dom-id ((contract-proc (coerce-contract 'stx-name dom)) neg-blame pos-blame src-info orig-str)]
+                     (let ([dom-id ((contract-proc (coerce-contract 'stx-name dom)) 
+                                    neg-blame pos-blame src-info orig-str
+                                    (not positive-position?))]
                            ...
-                           [rest-id ((contract-proc (coerce-contract 'stx-name rest-dom)) neg-blame pos-blame src-info orig-str)])
+                           [rest-id ((contract-proc (coerce-contract 'stx-name rest-dom))
+                                     neg-blame pos-blame src-info orig-str
+                                     (not positive-position?))])
                        (apply val (dom-id x) ... (rest-id rest-x))))))]
                 [(any . x)
                  (raise-syntax-error name "cannot have anything after any" stx (syntax result-stuff))]
@@ -1024,13 +1040,18 @@
                     ((x ... . rest-x)
                      (begin
                        (check-pre-expr->pp/h val pre-expr src-info neg-blame orig-str)
-                       (let ([dom-id ((contract-proc (coerce-contract 'stx-name dom)) neg-blame pos-blame src-info orig-str)]
+                       (let ([dom-id ((contract-proc (coerce-contract 'stx-name dom)) 
+                                      neg-blame pos-blame src-info orig-str
+                                      (not positive-position?))]
                              ...
-                             [rest-id ((contract-proc (coerce-contract 'stx-name rest-dom)) neg-blame pos-blame src-info orig-str)])
+                             [rest-id ((contract-proc (coerce-contract 'stx-name rest-dom)) 
+                                       neg-blame pos-blame src-info orig-str
+                                       (not positive-position?))])
                          (let-values ([(rng-ids ...) (apply val (dom-id x) ... (rest-id rest-x))])
                            (check-post-expr->pp/h val post-expr src-info pos-blame orig-str)
                            (let ([rng-ids-x ((contract-proc (coerce-contract 'stx-name rng-ctc))
-                                             pos-blame neg-blame src-info orig-str)] ...)
+                                             pos-blame neg-blame src-info orig-str
+                                             positive-position?)] ...)
                              (values (rng-ids-x rng-ids) ...))))))))]
                 [((values (rng-ids rng-ctc) ...) . whatever)
                  (and (andmap identifier? (syntax->list (syntax (rng-ids ...))))
@@ -1053,10 +1074,16 @@
                   ((x ... . rest-x)
                    (begin
                      (check-pre-expr->pp/h val pre-expr src-info neg-blame orig-str)
-                     (let ([dom-id ((contract-proc (coerce-contract 'stx-name dom)) neg-blame pos-blame src-info orig-str)]
+                     (let ([dom-id ((contract-proc (coerce-contract 'stx-name dom)) 
+                                    neg-blame pos-blame src-info orig-str
+                                    (not positive-position?))]
                            ...
-                           [rest-id ((contract-proc (coerce-contract 'stx-name rest-dom)) neg-blame pos-blame src-info orig-str)]
-                           [rng-id ((contract-proc (coerce-contract 'stx-name rng)) pos-blame neg-blame src-info orig-str)])
+                           [rest-id ((contract-proc (coerce-contract 'stx-name rest-dom)) 
+                                     neg-blame pos-blame src-info orig-str
+                                     (not positive-position?))]
+                           [rng-id ((contract-proc (coerce-contract 'stx-name rng)) 
+                                    pos-blame neg-blame src-info orig-str
+                                    positive-position?)])
                        (let ([res-id (rng-id (apply val (dom-id x) ... (rest-id rest-x)))])
                          (check-post-expr->pp/h val post-expr src-info pos-blame orig-str)
                          res-id)))))]

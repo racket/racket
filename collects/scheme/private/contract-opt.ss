@@ -65,9 +65,10 @@
                  (pos (opt/info-pos opt/info))
                  (neg (opt/info-neg opt/info))
                  (src-info (opt/info-src-info opt/info))
-                 (orig-str (opt/info-orig-str opt/info)))
+                 (orig-str (opt/info-orig-str opt/info))
+                 (positive-position? (opt/info-positive-position? opt/info)))
      (syntax (let ((ctc stx))
-               ((((proj-get ctc) ctc) pos neg src-info orig-str) val))))
+               ((((proj-get ctc) ctc) pos neg src-info orig-str positive-position?) val))))
    null
    null
    null
@@ -125,6 +126,7 @@
                                           #'neg
                                           #'src-info
                                           #'orig-str
+                                          #'positive-position?
                                           (syntax->list #'(opt-recursive-args ...))
                                           #f
                                           #f
@@ -138,7 +140,7 @@
            lifts
            #`(make-opt-contract
               (λ (ctc)
-                (λ (pos neg src-info orig-str)
+                (λ (pos neg src-info orig-str positive-position?)
                   #,(if (syntax-parameter-value #'define/opt-recursive-fn)
                         (with-syntax ([f (syntax-parameter-value #'define/opt-recursive-fn)])
                           (bind-superlifts

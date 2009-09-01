@@ -222,7 +222,8 @@ it around flattened out.
                                  ((((proj-get ctc) ctc) (contract/info-pos contract/info)
                                                         (contract/info-neg contract/info)
                                                         (contract/info-src-info contract/info)
-                                                        (contract/info-orig-str contract/info))
+                                                        (contract/info-orig-str contract/info)
+                                                        (contract/info-positive-position? contract/info))
                                   ctc-x)])
                            (update-parent-links parent ctc-field-val)
                            ctc-field-val)] ...)
@@ -235,8 +236,8 @@ it around flattened out.
                    (contract-get b selector-indicies)) ...))
            
            (define (lazy-contract-proj ctc)
-             (λ (pos-blame neg-blame src-info orig-str)
-               (let ([contract/info (make-contract/info ctc pos-blame neg-blame src-info orig-str)])
+             (λ (pos-blame neg-blame src-info orig-str positive-position?)
+               (let ([contract/info (make-contract/info ctc pos-blame neg-blame src-info orig-str positive-position?)])
                  (λ (val)
                    (unless (or (wrap-predicate val)
                                (opt-wrap-predicate val)
@@ -488,7 +489,7 @@ it around flattened out.
                          (list 'and '...)))]
          [else (apply build-compound-type-name name/dc fields)]))]))
 
-(define-struct contract/info (contract pos neg src-info orig-str))
+(define-struct contract/info (contract pos neg src-info orig-str positive-position?))
 (define-struct opt-contract/info (contract enforcer id))
 
 ;; parents : (listof wrap-parent)

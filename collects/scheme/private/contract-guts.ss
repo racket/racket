@@ -298,7 +298,7 @@
 
 (define (flat-proj ctc)
   (let ([pred? ((flat-get ctc) ctc)])
-    (λ (pos neg src-info orig-str)
+    (λ (pos neg src-info orig-str positive-position?)
       (λ (val)
         (if (pred? val)
             val
@@ -312,14 +312,19 @@
              val))))))
 
 (define (double-any-curried-proj ctc) double-any-curred-proj2)
-(define (double-any-curred-proj2 pos-blame neg-blame src-info orig-str) values)
+(define (double-any-curred-proj2 pos-blame neg-blame src-info orig-str positive-position?) values)
 
 
 (define-values (make-proj-contract)
   (let ()
     (define-struct proj-contract (the-name proj first-order-proc)
       #:property proj-prop
-      (λ (ctc) (proj-contract-proj ctc))
+      (λ (ctc) 
+        (let ([raw-proj (proj-contract-proj ctc)])
+          (if (procedure-arity-includes? raw-proj 5)
+              raw-proj
+              (λ (pos neg src-info name positive-position?)
+                (raw-proj pos neg src-info name)))))
       
       #:property name-prop
       (λ (ctc) (proj-contract-the-name ctc))
@@ -376,8 +381,8 @@
 
 (define (and-proj ctc)
   (let ([mk-pos-projs (map (λ (x) ((proj-get x) x)) (and/c-ctcs ctc))])
-    (lambda (pos neg src-info orig-str)
-      (let ([projs (map (λ (c) (c pos neg src-info orig-str)) mk-pos-projs)])
+    (lambda (pos neg src-info orig-str positive-position?)
+      (let ([projs (map (λ (c) (c pos neg src-info orig-str positive-position?)) mk-pos-projs)])
         (let loop ([projs (cdr projs)]
                    [proj (car projs)])
           (cond
@@ -435,7 +440,7 @@
 (define any/c (make-any/c))
 
 (define (none-curried-proj ctc)
-  (λ (pos-blame neg-blame src-info orig-str) 
+  (λ (pos-blame neg-blame src-info orig-str positive-position?) 
     (λ (val) 
       (raise-contract-error
        val
