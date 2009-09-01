@@ -82,7 +82,7 @@ A RepConstraint is one of
 |#
 (define-struct ehpat (attrs head repc) #:prefab)
 (define-struct rep:once (name under-message over-message) #:prefab)
-(define-struct rep:optional (name over-message #| defaults |#) #:prefab)
+(define-struct rep:optional (name over-message defaults) #:prefab)
 (define-struct rep:bounds (min max name under-message over-message) #:prefab)
 
 

@@ -61,7 +61,13 @@ a list^depth of syntax objects).
 
  [intersect-sattrss
   (-> (listof (listof sattr?))
-      (listof sattr?))])
+      (listof sattr?))]
+
+ [check-iattrs-subset
+  (-> (listof iattr?)
+      (listof iattr?)
+      (or/c syntax? false/c)
+      any)])
 
 ;; IAttr operations
 
@@ -168,3 +174,14 @@ a list^depth of syntax objects).
     (wrong-syntax (attr-name iattr)
                   "attribute may not be bound to syntax: ~s"
                   (attr-name sattr))))
+
+;; check-iattrs-subset : (listof IAttr) (listof IAttr) stx -> void
+(define (check-iattrs-subset little big ctx)
+  (define big-t (make-bound-id-table))
+  (for ([a big]) (bound-id-table-set! big-t (attr-name a) #t))
+  (for ([a little])
+    (unless (bound-id-table-ref big-t (attr-name a) #f)
+      (raise-syntax-error #f
+                          "attribute bound in defaults but not in pattern"
+                          ctx
+                          (attr-name a)))))

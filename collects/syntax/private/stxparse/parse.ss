@@ -136,24 +136,28 @@
 ;; (parse:clauses id (Clause ...))
 (define-syntax (parse:clauses stx)
   (syntax-case stx ()
-    [(parse:clauses x clauses)
+    [(parse:clauses x clauses ctx)
      (let ()
        (define-values (chunks clauses-stx)
          (parse-keyword-options #'clauses parse-directive-table
-                                #:context stx
+                                #:context #'ctx
                                 #:no-duplicates? #t))
        (define context
          (options-select-value chunks '#:context #:default #'x))
-       (define-values (decls0 defs) (get-decls+defs chunks))
+       (define-values (decls0 defs)
+         (get-decls+defs chunks #t #:context #'ctx))
        (define (for-clause clause)
          (syntax-case clause ()
            [[p . rest]
-            (let-values ([(rest decls sides)
-                          (parse-pattern-directives #'rest #:decls decls0)])
-              (define-values (decls2 defs2) (decls-create-defs decls))
+            (let-values ([(rest decls2 defs2 sides)
+                          (parse-pattern-directives #'rest
+                                                    #:allow-declare? #t
+                                                    #:decls decls0
+                                                    #:context #'ctx)])
               (with-syntax ([rest rest]
                             [fc (empty-frontier #'x)]
-                            [pattern (parse-whole-pattern #'p decls2)]
+                            [pattern
+                             (parse-whole-pattern #'p decls2 #:context #'ctx)]
                             [(local-def ...) defs2])
                 #`(let ()
                     local-def ...
@@ -432,7 +436,7 @@
                                    #:fce loop-fc)]
                             ...
                             [else
-                             (let-attributes ([a (rep:finalize attr-repc alt-id)] ...)
+                             (let-attributes ([a (rep:finalize a attr-repc alt-id)] ...)
                                (parse:S dx loop-fc tail k))]))))
              (let ([rel-rep 0] ...
                    [alt-id (rep:initial-value attr-repc)] ...)
@@ -468,39 +472,49 @@
                                   #:fce #,(frontier:add-index (wash #'fc)
                                                               #'index))))]))]))
 
-;; (rep:finalize RepConstraint expr) : expr
-(define-syntax (rep:finalize stx)
-  (syntax-case stx ()
-    [(_ #s(rep:once _ _ _) v) #'v]
-    [(_ #s(rep:optional _ _) v) #'v]
-    [(_ _ v) #'(reverse v)]))
-
 ;; (rep:initial-value RepConstraint) : expr
 (define-syntax (rep:initial-value stx)
   (syntax-case stx ()
     [(_ #s(rep:once _ _ _)) #'#f]
-    [(_ #s(rep:optional _ _)) #'#f]
+    [(_ #s(rep:optional _ _ _)) #'#f]
     [(_ _) #'null]))
+
+;; (rep:finalize RepConstraint expr) : expr
+(define-syntax (rep:finalize stx)
+  (syntax-case stx ()
+    [(_ a #s(rep:optional _ _ defaults) v)
+     (with-syntax ([#s(attr name _ _) #'a]
+                   [(#s(clause:attr da de) ...) #'defaults])
+       (let ([default
+              (for/or ([da (syntax->list #'(da ...))]
+                       [de (syntax->list #'(de ...))])
+                (with-syntax ([#s(attr dname _ _) da])
+                  (and (bound-identifier=? #'name #'dname) de)))])
+         (if default
+             #`(or v #,default)
+             #'v)))]
+    [(_ a #s(rep:once _ _ _) v) #'v]
+    [(_ a _ v) #'(reverse v)]))
 
 ;; (rep:min-number RepConstraint) : expr
 (define-syntax (rep:min-number stx)
   (syntax-case stx ()
     [(_ #s(rep:once _ _ _)) #'1]
-    [(_ #s(rep:optional _ _)) #'0]
+    [(_ #s(rep:optional _ _ _)) #'0]
     [(_ #s(rep:bounds min max _ _ _)) #'min]))
 
 ;; (rep:max-number RepConstraint) : expr
 (define-syntax (rep:max-number stx)
   (syntax-case stx ()
     [(_ #s(rep:once _ _ _)) #'1]
-    [(_ #s(rep:optional _ _)) #'1]
+    [(_ #s(rep:optional _ _ _)) #'1]
     [(_ #s(rep:bounds min max _ _ _)) #'max]))
 
 ;; (rep:combine RepConstraint expr expr) : expr
 (define-syntax (rep:combine stx)
   (syntax-case stx ()
     [(_ #s(rep:once _ _ _) a b) #'a]
-    [(_ #s(rep:optional _ _) a b) #'a]
+    [(_ #s(rep:optional _ _ _) a b) #'a]
     [(_ _ a b) #'(cons a b)]))
 
 ;; ----
@@ -534,7 +548,7 @@
   (syntax-rules ()
     [(_ rep #s(rep:once name too-few-msg too-many-msg))
      (expectation-of-message/too-few too-few-msg name)]
-    [(_ rep #s(rep:optional name too-many-msg))
+    [(_ rep #s(rep:optional name too-many-msg _))
      (error 'impossible)]
     [(_ rep #s(rep:bounds min max name too-few-msg too-many-msg))
      (expectation-of-message/too-few too-few-msg name)]))
@@ -543,7 +557,7 @@
   (syntax-rules ()
     [(_ rep #s(rep:once name too-few-msg too-many-msg))
      (expectation-of-message/too-many too-many-msg name)]
-    [(_ rep #s(rep:optional name too-many-msg))
+    [(_ rep #s(rep:optional name too-many-msg _))
      (expectation-of-message/too-many too-many-msg name)]
     [(_ rep #s(rep:bounds min max name too-few-msg too-many-msg))
      (expectation-of-message/too-many too-many-msg name)]))

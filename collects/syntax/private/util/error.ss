@@ -12,5 +12,5 @@
     (raise-syntax-error (if (symbol? blame) blame #f)
                         (apply format format-string args)
                         ctx
-                        (or stx ctx)
+                        stx
                         extras)))
