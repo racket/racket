@@ -1069,36 +1069,24 @@ WARNING: printf is rebound in the body of the unit to always
         (set! replace-start rs)
         (redo-search)))
     
-    (define/augment (on-insert start len)
-      (begin-edit-sequence)
-      (clear-all-regions) 
-      (inner (void) on-insert start len))
     (define/augment (after-insert start len)
       (unless updating-search?
         (content-changed))
-      (inner (void) after-insert start len)
-      (end-edit-sequence))
-    
-    (define/augment (on-delete start len)
-      (begin-edit-sequence)
-      (clear-all-regions)
-      (inner (void) on-delete start len))
+      (inner (void) after-insert start len))
     (define/augment (after-delete start len)
       (unless updating-search?
         (content-changed))
-      (inner (void) after-delete start len)
-      (end-edit-sequence))
-    
-    (define updating-search? #f)
+      (inner (void) after-delete start len))
     
     (define timer #f)
+    (define updating-search? #f)
     (define/private (content-changed)
       (when searching-str
         (unless timer
-          (set! timer
-                (new timer%
-                     [notify-callback
-                      (λ ()
+          (set! timer 
+                (new timer% 
+                     [notify-callback 
+                      (λ () 
                         (run-after-edit-sequence
                          (λ ()
                            (set! updating-search? #t)
@@ -1108,10 +1096,9 @@ WARNING: printf is rebound in the body of the unit to always
                                         (is-a? tlw frame:searchable<%>))
                                (send tlw search-text-changed)))
                            (set! updating-search? #f))
-                         'framework:search-results-changed))]
-                     [just-once? #t])))
-        (send timer stop)
-        (send timer start 200 #t)))
+                         'framework:search-results-changed))])))
+           (send timer stop)
+           (send timer start 150 #f)))
     
     (inherit get-top-level-window)
     (define/override (on-focus on?)
@@ -1135,23 +1122,34 @@ WARNING: printf is rebound in the body of the unit to always
         (set-replace-start (get-start-position)))
       
       (when searching-str
-        (let loop ([pos 0]
-                   [count 0])
-          (cond
-            [(do-search searching-str pos 'eof)
-             =>
-             (λ (next)
-               (cond
-                 [(<= next (get-start-position))
-                  (loop (+ next 1)
-                        (+ count 1))]
-                 [else
-                  (update-before-caret-search-hit-count count)]))]
-            [else
-             (update-before-caret-search-hit-count count)])))
+        (maybe-queue-search-position-update))
       
       (inner (void) after-set-position))
     
+    
+    ;; maybe-queue-editor-position-update : -> void
+    ;; updates the editor-position in the frame,
+    ;; but delays it until the next low-priority event occurs.
+    (define callback-running? #f)
+    (define/private (maybe-queue-search-position-update)
+      (run-after-edit-sequence 
+       (λ () 
+         (unless callback-running?
+           (set! callback-running? #t)
+           (queue-callback
+            (λ ()
+              (let ([count 0]
+                    [start-pos (get-start-position)])
+                (hash-for-each
+                 search-bubble-table
+                 (λ (k v)
+                   (when (<= (car k) start-pos)
+                     (set! count (+ count 1)))))
+                (update-before-caret-search-hit-count count))
+              (set! callback-running? #f))
+            #f)))
+       'framework:search-text:update-search-position))
+      
     (define/private (update-before-caret-search-hit-count c)
       (unless (equal? before-caret-search-hit-count c)
         (set! before-caret-search-hit-count c)

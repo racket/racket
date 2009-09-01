@@ -1721,19 +1721,25 @@
                 (send text-to-search set-search-anchor (send text-to-search get-start-position)))))))
       (super on-focus on?))
     
+    (define timer #f)
+    (define/private (update-search/trigger-jump/later)
+      (run-after-edit-sequence 
+       (λ () 
+         (unless timer
+           (set! timer (new timer%
+                            [notify-callback
+                             (λ ()
+                               (update-searching-str)
+                               (trigger-jump))])))
+         (send timer stop)
+         (send timer start 150 #t))
+       'framework:search-frame:changed-search-string))
+    
     (define/augment (after-insert x y)
-      (run-after-edit-sequence
-       (λ ()
-         (update-searching-str)
-         (trigger-jump))
-       'searching)
+      (update-search/trigger-jump/later)
       (inner (void) after-insert x y))
     (define/augment (after-delete x y)
-      (run-after-edit-sequence
-       (λ ()
-         (update-searching-str)
-         (trigger-jump))
-       'searching)
+      (update-search/trigger-jump/later)
       (inner (void) after-delete x y))
     
     (define/private (trigger-jump)
