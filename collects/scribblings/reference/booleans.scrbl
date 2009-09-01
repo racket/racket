@@ -107,7 +107,16 @@ converted to @scheme[#t] before being returned by
 
 Returns @scheme[#t] if @scheme[v] is an immutable @tech{string},
 @tech{byte string}, @tech{vector}, @tech{hash table}, or box,
-@scheme[#f] otherwise.}
+@scheme[#f] otherwise.
+
+@examples[
+(immutable? 'hello)
+(immutable? "a string")
+(immutable? (box 5))
+(immutable? #(0 1 2 3))
+(immutable? (make-hash))
+(immutable? (make-immutable-hash '([a b])))
+]}
 
 @defthing[prop:equal+hash struct-type-property?]{
 
@@ -174,7 +183,38 @@ transparent structures, @scheme[equal-hash-code] and
 values. For opaque structure types, @scheme[equal?] is the same as
 @scheme[eq?], and @scheme[equal-hash-code] and
 @scheme[equal-secondary-hash-code] results are based only on
-@scheme[eq-hash-code].}
+@scheme[eq-hash-code].
+
+@examples[
+(define (farm=? farm1 farm2 recursive-equal?)
+  (and (= (farm-apples farm1)
+	  (farm-apples farm2))
+       (= (farm-oranges farm1)
+	  (farm-oranges farm2))
+       (= (farm-sheep farm1)
+	  (farm-sheep farm2))))
+(define (farm-hash-1 farm recursive-equal-hash)
+  (+ (* 10000 (farm-apples farm))
+     (* 100 (farm-oranges farm))
+     (* 1 (farm-sheep farm))))
+
+(define (farm-hash-2 farm recursive-equal-hash)
+  (+ (* 10000 (farm-sheep farm))
+     (* 100 (farm-apples farm))
+     (* 1 (farm-oranges farm))))
+
+(define-struct farm (apples oranges sheep)
+	       #:property prop:equal+hash
+	                  (list farm=? farm-hash-1 farm-hash-2))
+(define east (make-farm 5 2 20))
+(define west (make-farm 18 6 14))
+(define north (make-farm 5 20 20))
+(define south (make-farm 18 6 14))
+
+(equal? east west)
+(equal? east north)
+(equal? west south)
+]}
 
 @section{Boolean Synonyms}
 
