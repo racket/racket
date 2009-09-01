@@ -294,7 +294,8 @@ profile todo:
       (display-srclocs-in-error src-locs src-locs-edition)
       (display msg (current-error-port))
       (when (exn:fail:syntax? exn)
-        (show-syntax-error-context (current-error-port) exn))
+        (unless (error-print-source-location)
+          (show-syntax-error-context (current-error-port) exn)))
       (newline (current-error-port))
       (flush-output (current-error-port))
       (when (and rep
