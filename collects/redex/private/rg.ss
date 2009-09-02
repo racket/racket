@@ -18,41 +18,34 @@
   (and (>= attempt preferred-production-threshold)
        (zero? (random 2))))
 
-;; unique-chars : (listof string) -> (listof char)
-(define (unique-chars strings)
-  (let ([uniq (make-hasheq)])
-    (for ([lit strings])
-         (for ([char lit])
-              (hash-set! uniq char #t)))
-    (hash-map uniq (λ (k v) k))))
-
 (define default-check-attempts 1000)
 
-(define ascii-chars-threshold 50)
-(define tex-chars-threshold 500)
-(define chinese-chars-threshold 2000)
+(define ascii-chars-threshold 1000)
+(define tex-chars-threshold 1500)
+(define chinese-chars-threshold 2500)
 
-(define (pick-var lang-chars lang-lits attempt [random random])
+(define (pick-var lang-lits attempt [random random])
   (let ([length (add1 (random-natural 4/5 random))])
-    (string->symbol (random-string lang-chars lang-lits length attempt random))))
+    (string->symbol (random-string lang-lits length attempt random))))
 
-(define (pick-char attempt lang-chars [random random])
-  (if (and (not (null? lang-chars)) 
-           (or (< attempt ascii-chars-threshold)
-               (not (exotic-choice? random))))
-      (pick-from-list lang-chars random)
-      (if (or (< attempt tex-chars-threshold) (not (exotic-choice? random)))
-          (let ([i (random (- #x7E #x20 1))]
-                [_ (- (char->integer #\_) #x20)])
-            (integer->char (+ #x20 (if (= i _) (add1 i) i))))
-          (if (or (< attempt chinese-chars-threshold) (not (exotic-choice? random)))
-              (car (string->list (pick-from-list (map cadr tex-shortcut-table) random)))
-              (integer->char (+ #x4E00 (random (- #x9FCF #x4E00))))))))
+(define (pick-char attempt [random random])
+  (cond [(or (< attempt ascii-chars-threshold) (not (exotic-choice? random)))
+         (let ([i (random (add1 (- (char->integer #\z) (char->integer #\a))))]
+               [cap? (zero? (random 2))])
+           (integer->char (+ i (char->integer (if cap? #\A #\a)))))]
+        [(or (< attempt tex-chars-threshold) (not (exotic-choice? random)))
+         (let ([i (random (- #x7E #x20 1))]
+               [_ (- (char->integer #\_) #x20)])
+           (integer->char (+ #x20 (if (= i _) (add1 i) i))))]
+        [(or (< attempt chinese-chars-threshold) (not (exotic-choice? random)))
+         (car (string->list (pick-from-list (map cadr tex-shortcut-table) random)))]
+        [else
+         (integer->char (+ #x4E00 (random (- #x9FCF #x4E00))))]))
 
-(define (random-string lang-chars lang-lits length attempt [random random])
+(define (random-string lang-lits length attempt [random random])
   (if (and (not (null? lang-lits)) (use-lang-literal? random))
       (pick-from-list lang-lits random)
-      (list->string (build-list length (λ (_) (pick-char attempt lang-chars random))))))
+      (list->string (build-list length (λ (_) (pick-char attempt random))))))
 
 (define (pick-any lang sexp [random random]) 
   (let ([c-lang (rg-lang-clang lang)]
@@ -61,8 +54,8 @@
         (values lang (pick-from-list (map nt-name (compiled-lang-lang c-lang)) random))
         (values sexp (nt-name (car (compiled-lang-lang c-sexp)))))))
 
-(define (pick-string lang-chars lang-lits attempt [random random])
-  (random-string lang-chars lang-lits (random-natural 1/5 random) attempt random))
+(define (pick-string lang-lits attempt [random random])
+  (random-string lang-lits (random-natural 1/5 random) attempt random))
 
 (define (pick-nt name cross? lang attempt pref-prods 
                  [random random]
@@ -172,11 +165,11 @@
          [min-size (apply min/f sizes)])
     (map cadr (filter (λ (x) (equal? min-size (car x))) (zip sizes (nt-rhs nt))))))
 
-(define-struct rg-lang (clang lits chars base-cases))
+(define-struct rg-lang (clang lits base-cases))
 (define (prepare-lang lang)
   (let ([lits (map symbol->string (compiled-lang-literals lang))]
         [parsed (parse-language lang)])
-    (make-rg-lang parsed lits (unique-chars lits) (find-base-cases parsed))))
+    (make-rg-lang parsed lits (find-base-cases parsed))))
 
 (define (generate lang decisions@ user-gen retries what)
   (define-values/invoke-unit decisions@
@@ -309,8 +302,7 @@
                         (λ (var _) (not (memq var vars)))
                         size attempt)]
         [`variable 
-         (values ((next-variable-decision)
-                  (rg-lang-chars lang) (rg-lang-lits lang) attempt)
+         (values ((next-variable-decision) (rg-lang-lits lang) attempt)
                  env)]
         [`variable-not-otherwise-mentioned
          (generate/pred 'variable
@@ -323,7 +315,7 @@
          (let-values ([(term env) (recur/pat 'variable)])
            (values (symbol-append prefix term) env))]
         [`string 
-         (values ((next-string-decision) (rg-lang-chars lang) (rg-lang-lits lang) attempt)
+         (values ((next-string-decision) (rg-lang-lits lang) attempt)
                  env)]
         [`(side-condition ,pat ,(? procedure? condition))
          (generate/pred (unparse-pattern pat) 
@@ -998,5 +990,5 @@
          proportion-before-threshold post-threshold-incr
          is-nt? nt-by-name min-prods
          generation-decisions decisions^ 
-         random-string unique-chars
+         random-string
          sexp find-base-cases)

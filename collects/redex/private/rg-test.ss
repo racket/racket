@@ -96,22 +96,20 @@
 (test (pick-integer 900 (make-random 0 0 1/5)) -7)
 (test (pick-real 9000 (make-random 0 0 0 .5 1 1/8)) 11.0)
 
-(let* ([lits '("bcd" "cbd")]
-       [chars (sort (unique-chars lits) char<=?)])
-  (test (pick-char 0 chars (make-random 1)) #\c)
-  (test (pick-char 50 chars (make-random 1 1)) #\c)
-  (test (pick-char 50 chars (make-random 0 65)) #\a)
-  (test (pick-char 500 chars (make-random 0 1 65)) #\a)
-  (test (pick-char 500 chars (make-random 0 0 3)) #\⇒)
-  (test (pick-char 2000 chars (make-random 0 0 1 3)) #\⇒)
-  (test (pick-char 2000 chars (make-random 0 0 0 1)) (integer->char #x4E01))
-  (test (pick-char 50 chars (make-random 0 (- (char->integer #\_) #x20))) #\`)
-  (test (random-string chars lits 3 0 (make-random 0 1)) "cbd")
-  (test (random-string chars lits 3 0 (make-random 1 2 1 0)) "dcb")
-  (test (pick-string chars lits 0 (make-random .5 1 2 1 0)) "dcb")
-  (test (pick-var chars lits 0 (make-random .01 1 2 1 0)) 'dcb)
-  (test (pick-char 0 null (make-random 65)) #\a)
-  (test (random-string null null 1 0 (make-random 65)) "a"))
+(let* ([lits '("bcd" "cbd")])
+  (test (pick-char 0 (make-random 0 0)) #\A)
+  (test (pick-char 0 (make-random 2 1)) #\c)
+  (test (pick-char 1000 (make-random 1 25 0)) #\Z)
+  (test (pick-char 1000 (make-random 0 65)) #\a)
+  (test (pick-char 1500 (make-random 0 1 65)) #\a)
+  (test (pick-char 1500 (make-random 0 0 3)) #\⇒)
+  (test (pick-char 2500 (make-random 0 0 1 3)) #\⇒)
+  (test (pick-char 2500 (make-random 0 0 0 1)) (integer->char #x4E01))
+  (test (pick-char 1000 (make-random 0 (- (char->integer #\_) #x20))) #\`)
+  (test (random-string lits 3 0 (make-random 0 1)) "cbd")
+  (test (random-string lits 3 0 (make-random 1 0 1 1 1 2 1)) "abc")
+  (test (pick-string lits 0 (make-random .5 1 0 1 1 1 2 1)) "abc")
+  (test (pick-var lits 0 (make-random .01 1 0 1 1 1 2 1)) 'abc))
 
 (let ()
   (define-language L
@@ -332,9 +330,8 @@
    (let/ec k 
      (generate-term/decisions 
       lang e 5 0 
-      (decisions #:str (list (λ (c l a) (k (cons (sort c char<=?) (sort l string<=?))))))))
-   (cons '(#\a #\b #\f #\o #\r)
-         '("bar" "foo"))))
+      (decisions #:str (list (λ (l a) (k (sort l string<=?)))))))
+   '("bar" "foo")))
 
 (let ()
   (define-language lang
@@ -518,7 +515,7 @@
   (test
    (generate-term/decisions
     L (side-condition x (number? (term x))) 0 0
-    (decisions #:var (λ (lang-chars lang-lits attempt)
+    (decisions #:var (λ (lang-lits attempt)
                        (if (>= attempt retry-threshold) 0 'x))))
    0)
   
@@ -527,7 +524,7 @@
         [finish (+ retry-threshold post-threshold-incr)])
     (generate-term/decisions
      L (side-condition x (number? (term x))) 0 start
-     (decisions #:var (λ (lang-chars lang-lits attempt)
+     (decisions #:var (λ (lang-lits attempt)
                         (set! attempts (cons attempt attempts))
                         (if (= attempt finish) 0 'x))))
     (test attempts (list finish retry-threshold start))))
