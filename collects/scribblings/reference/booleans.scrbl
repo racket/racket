@@ -188,11 +188,11 @@ values. For opaque structure types, @scheme[equal?] is the same as
 @examples[
 (define (farm=? farm1 farm2 recursive-equal?)
   (and (= (farm-apples farm1)
-	  (farm-apples farm2))
+          (farm-apples farm2))
        (= (farm-oranges farm1)
-	  (farm-oranges farm2))
+          (farm-oranges farm2))
        (= (farm-sheep farm1)
-	  (farm-sheep farm2))))
+          (farm-sheep farm2))))
 (define (farm-hash-1 farm recursive-equal-hash)
   (+ (* 10000 (farm-apples farm))
      (* 100 (farm-oranges farm))
@@ -204,8 +204,8 @@ values. For opaque structure types, @scheme[equal?] is the same as
      (* 1 (farm-oranges farm))))
 
 (define-struct farm (apples oranges sheep)
-	       #:property prop:equal+hash
-	                  (list farm=? farm-hash-1 farm-hash-2))
+               #:property prop:equal+hash
+               (list farm=? farm-hash-1 farm-hash-2))
 (define east (make-farm 5 2 20))
 (define west (make-farm 18 6 14))
 (define north (make-farm 5 20 20))
