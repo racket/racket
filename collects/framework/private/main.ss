@@ -96,7 +96,7 @@
 (preferences:add-callback 'framework:special-meta-key (λ (p v) (map-command-as-meta-key v)))
 (map-command-as-meta-key (preferences:get 'framework:special-meta-key))
 
-(preferences:set-default 'framework:fraction-snip-style 'mixed (λ (x) (memq x '(mixed improper))))
+(preferences:set-default 'framework:fraction-snip-style 'mixed (λ (x) (memq x '(mixed improper decimal))))
 
 (preferences:set-default 'framework:standard-style-list:font-name
                          (get-family-builtin-face 'modern)

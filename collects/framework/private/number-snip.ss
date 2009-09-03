@@ -466,7 +466,9 @@
                 (make-object checkable-menu-item% 
                   (string-constant show-decimal-expansion)
                   menu
-                  (λ (x y) (set-fraction-view 'decimal)))]
+                  (λ (x y) 
+                    (set-fraction-view 'decimal)
+                    (preferences:set 'framework:fraction-snip-style 'decimal)))]
                [mixed-fraction-item
                 (make-object checkable-menu-item% 
                   (string-constant show-mixed-fraction-view)
