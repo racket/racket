@@ -5,8 +5,7 @@
 	  scribble/struct
           (for-label scheme
                      teachpack/htdp/image
-                     teachpack/htdp/world
-                     lang/private/imageeq))
+                     teachpack/htdp/world))
 
 @teachpack["world"]{Simulations and Animations}
 

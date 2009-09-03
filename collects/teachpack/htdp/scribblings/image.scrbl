@@ -1,9 +1,7 @@
 #lang scribble/doc
 
 @(require scribble/manual "shared.ss"
-          (for-label scheme
-                     teachpack/htdp/image
-                     lang/private/imageeq))
+          (for-label scheme teachpack/htdp/image))
 
 @teachpack["image"]{Manipulating Images}
 
@@ -15,8 +13,6 @@ shapes. Additional primitives allow for the composition of images.
 
 @;-----------------------------------------------------------------------------
 @section{Images}
-
-@declare-exporting[lang/private/imageeq]
 
 @defproc[(image? [x any/c]) boolean?]{Is @scheme[x] an image?}
 
