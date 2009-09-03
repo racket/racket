@@ -15,7 +15,7 @@ that are intended for a more automated system.  This module is a
 language module---a typical checker that uses it looks like this:
 
 @schemeblock[
-   (module checker (lib "checker.ss" "handin-server")
+   (module checker handin-server/checker
      (check: :language  '(special intermediate)
              :users     pairs-or-singles-with-warning
              :coverage? #t
