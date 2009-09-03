@@ -17,6 +17,7 @@ plt/collects/tests/mzscheme/htdp-image.ss
          "error.ss")
 
 (provide-primitives
+         image?
          image-width
          image-height
          overlay

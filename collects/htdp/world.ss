@@ -71,7 +71,6 @@ Matthew
          mred
          htdp/error
          htdp/image
-         (only-in lang/htdp-beginner image?)
          mrlib/cache-image-snip
          lang/prim
          (for-syntax scheme/base))
