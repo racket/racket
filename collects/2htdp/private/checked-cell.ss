@@ -1,6 +1,6 @@
 #lang scheme/gui
 
-(require htdp/error)
+(require htdp/error mzlib/pconvert)
 
 (provide checked-cell%)
 
@@ -36,7 +36,19 @@
     (define/private (show-state)
       (define xbox (box #f)) ;; x coordinate (throw away)
       (define ybox (box 0))  ;; y coordinate for next snip
-      (define s (pretty-format value 80))
+      (define s
+        (pretty-format
+         (parameterize ([constructor-style-printing #t]
+                        [booleans-as-true/false #t]
+                        [abbreviate-cons-as-list 
+                         #t
+                         ;; is this beginner or beginner+quote
+                         #;
+                         (let ([o (open-output-string)])
+                           (print '(1) o)
+                           (regexp-match #rx"list" (get-output-string o)))])
+           (print-convert value)) 
+         40))
       ;; turn s into lines and display them in pb
       (send pb erase)
       (if (is-a? value snip%)

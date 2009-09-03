@@ -23,7 +23,7 @@
                                   5 85 
                                   (empty-scene width HEIGHT)))
           
-          ;; -----------------------------------------------------------------------------
+          ;; ----------------------------------------------------------------
           ;; World Number -> Message 
           ;; on receiving a message from server, place the ball at lower end or stop
           #|
@@ -59,7 +59,7 @@
     (big-bang WORLD0 
               (on-draw draw)
               (on-receive receive)
-              (on-tick move)
+              (on-tick move .01)
               (name t)
               (check-with (lambda (w) (or (symbol? w) (number? w))))
               (register LOCALHOST))))
