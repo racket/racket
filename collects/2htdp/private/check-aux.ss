@@ -1,8 +1,7 @@
 #lang scheme
 
 (require htdp/image
-         htdp/error
-         (only-in lang/htdp-beginner image?))
+         htdp/error)
 
 (provide (all-defined-out))
 

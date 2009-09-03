@@ -1,8 +1,6 @@
 #lang scheme
 
-(require htdp/image
-         htdp/error
-         "check-aux.ss")
+(require htdp/image htdp/error "check-aux.ss")
 
 ;                                                                        
 ;                                                                        
