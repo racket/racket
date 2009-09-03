@@ -417,11 +417,13 @@
             (ret ts fs os))])]
     ;; special case for keywords
     [(#%plain-app
-      (#%plain-app kpe kws num fn)
+      (#%plain-app cpce s:kp fn kpe kws num)      
       kw-list
       (#%plain-app list . kw-arg-list)
       . pos-args)
-     #:declare kpe (id-from 'keyword-procedure-extract 'scheme/private/kw)
+     #:declare cpce (id-from 'checked-procedure-check-and-extract 'scheme/private/kw)
+     #:declare s:kp (id-from 'struct:keyword-procedure 'scheme/private/kw)
+     #:declare kpe  (id-from 'keyword-procedure-extract 'scheme/private/kw)
      (match (tc-expr #'fn)
        [(tc-result1: (Function: arities)) 
         (tc-keywords form arities (type->list (tc-expr/t #'kws)) #'kw-arg-list #'pos-args expected)]
