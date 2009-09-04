@@ -6153,6 +6153,52 @@ so that propagation occurs.
                                  'neg))
                      (f 10)))
   
+  
+;                             
+;                             
+;                             
+;                             
+;                             
+;   ;;;;;;                    
+;        ;   ;                
+;        ;   ;                
+;        ;  ;;  ;;;;          
+;   ;;;;;;  ;  ;;;;;;         
+;        ;  ; ;;;             
+;        ;  ; ;;;             
+;        ; ;;  ;;;;;;         
+;   ;;;;;; ;    ;;;;          
+;
+;
+;
+;
+
+  (test/spec-passed
+   '∃1
+   '(contract (new-∃/c 'pair)
+              1
+              'pos
+              'neg))
+
+  (test/neg-blame
+   '∃2
+   '((contract (-> (new-∃/c 'pair) any/c)
+               (λ (x) x)
+               'pos
+               'neg)
+     1))
+  
+  (test/spec-passed/result
+   '∃3
+   '(let ([pair (new-∃/c 'pair)])
+      ((contract (-> (-> pair pair) any/c)
+                 (λ (f) (f 11))
+                 'pos
+                 'neg)
+       (λ (x) x)))
+   11)
+  
+  
 ;                                                                
 ;                                                                
 ;                                                                
@@ -6683,6 +6729,104 @@ so that propagation occurs.
       (eval 'provide/contract29-res))
    (list #t 3))
 
+  ;; for this test I have to be able to track back thru the requirees to find the right 
+  ;; name for the negative blame (currently it blames m3, but it should  blame m2).
+  #;
+  (test/spec-failed
+   'provide/contract30
+   '(begin
+      (eval '(module provide/contract30-m1 scheme/base
+               (require scheme/contract)
+               (provide/contract [f (-> integer? integer?)])
+               (define (f x) x)))
+      (eval '(module provide/contract30-m2 scheme/base
+               (require 'provide/contract30-m1)
+               (provide f)))
+      (eval '(module provide/contract30-m3 scheme/base
+               (require 'provide/contract30-m2)
+               (f #f)))
+      (eval '(require 'provide/contract30-m3)))
+   "'provide/contract30-m2")
+  
+  (test/spec-passed/result
+   'provide/contract31
+   '(begin
+      (eval '(module provide/contract31-m1 scheme/base
+               (require scheme/contract)
+               (provide/contract
+                #:∃ x
+                [f (-> (-> x x) 10)])
+               (define (f g) (g 10))))
+
+      (eval '(module provide/contract31-m2 scheme/base
+               (require scheme/contract 'provide/contract31-m1)
+               (provide provide/contract31-x)
+               (define provide/contract31-x (f (λ (x) x)))))
+      
+      (eval '(require 'provide/contract31-m2))
+      (eval 'provide/contract31-x))
+   10)
+  
+  (test/spec-passed/result
+   'provide/contract32
+   '(begin
+      (eval '(module provide/contract32-m1 scheme/base
+               (require scheme/contract)
+               (provide/contract
+                #:exists x
+                [f (-> (-> x x) 10)])
+               (define (f g) (g 10))))
+
+      (eval '(module provide/contract32-m2 scheme/base
+               (require scheme/contract 'provide/contract32-m1)
+               (provide provide/contract32-x)
+               (define provide/contract32-x (f (λ (x) x)))))
+      
+      (eval '(require 'provide/contract32-m2))
+      (eval 'provide/contract32-x))
+   10)
+  
+  (test/spec-passed/result
+   'provide/contract33
+   '(begin
+      (eval '(module provide/contract33-m1 scheme/base
+               (require scheme/contract)
+               (provide/contract
+                #:exists (x)
+                [f (-> (-> x x) 10)])
+               (define (f g) (g 10))))
+
+      (eval '(module provide/contract33-m2 scheme/base
+               (require scheme/contract 'provide/contract33-m1)
+               (provide provide/contract33-x)
+               (define provide/contract33-x (f (λ (x) x)))))
+      
+      (eval '(require 'provide/contract33-m2))
+      (eval 'provide/contract33-x))
+   10)
+  
+  (test/spec-passed/result
+   'provide/contract34
+   '(begin
+      (eval '(module provide/contract34-m1 scheme/base
+               (require scheme/contract)
+               (define x integer?)
+               (define g 11)
+               (provide/contract
+                [g x]
+                #:exists (x)
+                [f (-> (-> x x) 10)])
+               (define (f g) (g 10))))
+
+      (eval '(module provide/contract34-m2 scheme/base
+               (require scheme/contract 'provide/contract34-m1)
+               (provide provide/contract34-x)
+               (define provide/contract34-x (f (λ (x) x)))))
+      
+      (eval '(require 'provide/contract34-m2))
+      (eval 'provide/contract34-x))
+   10)
+      
   (contract-error-test
    #'(begin
        (eval '(module pce1-bug scheme/base

@@ -11,6 +11,10 @@ another. Programmers specify the behavior of a module exports via
 @scheme[provide/contract] and the contract system enforces those
 constraints.
 
+@note-lib[scheme/contract #:use-sources (scheme/private/contract-ds
+                                         scheme/private/contract
+                                         scheme/private/contract-guts)]
+
 @deftech{Contracts} come in two forms: those constructed by the
 various operations listed in this section of the manual, and various
 ordinary Scheme values that double as contracts, including 
@@ -33,10 +37,6 @@ appear and should return @scheme[#f] to indicate that the contract
 failed, and anything else to indicate it passed.}
 
 ]
-
-@note-lib[scheme/contract #:use-sources (scheme/private/contract-ds
-                                         scheme/private/contract
-                                         scheme/private/contract-guts)]
 
 @local-table-of-contents[]
 
@@ -368,6 +368,27 @@ Constructs a contract on a promise. The contract does not force the
 promise, but when the promise is forced, the contract checks that the
 result value meets the contract produced by @scheme[expr].}
 
+@defproc[(new-∃/c [name symbol?]) contract?]{
+  Constructs a new existential contract. 
+  
+  Existential contracts accept all values when in positive positions (e.g., function
+  returns) and wraps the value in an opaque struct, hiding the precise value. 
+  In negative positions (e.g. function inputs), 
+  it accepts only values that were previously accepted in negative positions (by checking
+  for the wrappers).
+  
+  For example, this contract:
+  @schemeblock[(let ([a (new-∃/c 'a)])
+                 (-> (-> a a)
+                     any/c))]
+  describes a function that accepts the identity function (or a non-terminating function)
+  and returns an arbitrary value. That is, the first use of the @scheme[a] appears in a
+  positive position and thus inputs to that function are wrapped with an opaque struct.
+  Then, when the function returns, it is checked to see if the result is wrapped, since
+  the second @scheme[a] appears in a negative position.
+  
+}
+
 @; ------------------------------------------------------------------------
 
 @section{Function Contracts}
@@ -669,7 +690,11 @@ lazy contract.}
   (struct id ((id contract-expr) ...))
   (struct (id identifier) ((id contract-expr) ...))
   (rename orig-id id contract-expr)
-  (id contract-expr)])]{
+  (id contract-expr)
+  (code:line #:∃ exists-variables)
+  (code:line #:exists exists-variables)]
+ [exists-variables identifier
+                   (identifier ...)])]{
 
 Can only appear at the top-level of a @scheme[module]. As with
 @scheme[provide], each @scheme[id] is provided from the module. In
@@ -699,7 +724,13 @@ referring to the parent struct. Unlike @scheme[define-struct],
 however, all of the fields (and their contracts) must be listed. The
 contract on the fields that the sub-struct shares with its parent are
 only used in the contract for the sub-struct's maker, and the selector
-or mutators for the super-struct are not provided.}
+or mutators for the super-struct are not provided.
+
+The @scheme[#:∃] and @scheme[#:exists] clauses define new abstract
+contracts. The variables are bound in the remainder of the @scheme[provide/contract]
+expression to new contracts that hide the values they accept and
+ensure that the exported functions are treated parametrically.
+}
 
 @defform/subs[
  (with-contract blame-id (wc-export ...) free-var-list body ...+)

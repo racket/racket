@@ -15,7 +15,8 @@ improve method arity mismatch contract violation error messages?
          define-struct/contract
          define/contract
          with-contract
-         current-contract-region)
+         current-contract-region
+         new-∃/c)
 
 (require (for-syntax scheme/base)
          (for-syntax "contract-opt-guts.ss")
@@ -683,9 +684,6 @@ improve method arity mismatch contract violation error messages?
            (quasisyntax/loc stx (#%expression #,stx)))))))
 
 
-;; (provide/contract p/c-ele ...)
-;; p/c-ele = (id expr) | (rename id id expr) | (struct id (id expr) ...)
-;; provides each `id' with the contract `expr'.
 (define-syntax (provide/contract provide-stx)
   (syntax-case provide-stx (struct)
     [(_ p/c-ele ...)
@@ -725,19 +723,62 @@ improve method arity mismatch contract violation error messages?
        ;; code-for-each-clause : (listof syntax) -> (listof syntax)
        ;; constructs code for each clause of a provide/contract
        (define (code-for-each-clause clauses)
-         (cond
+         (let loop ([clauses clauses]
+                    [exists-binders '()])
+           (cond
            [(null? clauses) null]
            [else
             (let ([clause (car clauses)])
               ;; compare raw identifiers for `struct' and `rename' just like provide does
               (syntax-case* clause (struct rename) (λ (x y) (eq? (syntax-e x) (syntax-e y))) 
+                [exists
+		 (or (eq? '#:exists (syntax-e #'exists)) (eq? '#:∃ (syntax-e #'exists)))
+                 (cond
+                   [(null? (cdr clauses))
+                    (raise-syntax-error 'provide/conract
+                                        (format "expected either a single variable or a sequence of variables to follow ~a, but found nothing"
+						(syntax-e #'exists))
+                                        provide-stx
+                                        clause)]
+                   [else
+                    (syntax-case (cadr clauses) ()
+		      [x
+		       (identifier? #'x)
+                       (with-syntax ([(x-gen) (generate-temporaries #'(x))])
+                         (cons (code-for-one-exists-id #'x #'x-gen)
+                               (loop (cddr clauses) 
+                                     (add-a-binder #'x #'x-gen exists-binders))))]
+                      [(x ...)
+                       (andmap identifier? (syntax->list #'(x ...)))
+                       (with-syntax ([(x-gen ...) (generate-temporaries #'(x ...))])
+                         (append (map code-for-one-exists-id 
+                                      (syntax->list #'(x ...))
+                                      (syntax->list #'(x-gen ...)))
+                                 (loop (cddr clauses)
+                                       (let loop ([binders exists-binders]
+                                                  [xs (syntax->list #'(x ...))]
+                                                  [x-gens (syntax->list #'(x-gen ...))])
+                                         (cond
+                                           [(null? xs) binders]
+                                           [else (loop (add-a-binder (car xs) (car x-gens) binders)
+                                                       (cdr xs)
+                                                       (cdr x-gens))])))))]
+                      [else
+                       (raise-syntax-error 'provide/contract
+					   (format "expected either a single variable or a sequence of variables to follow ~a"
+						   (syntax-e #'exists))
+                                           provide-stx
+                                           (cadr clauses))])])]
                 [(rename this-name new-name contract)
                  (and (identifier? (syntax this-name))
                       (identifier? (syntax new-name)))
                  (begin
                    (add-to-dups-table #'new-name)
-                   (cons (code-for-one-id provide-stx (syntax this-name) (syntax contract) (syntax new-name))
-                         (code-for-each-clause (cdr clauses))))]
+                   (cons (code-for-one-id provide-stx 
+                                          (syntax this-name) 
+                                          (add-exists-binders (syntax contract) exists-binders)
+                                          (syntax new-name))
+                         (loop (cdr clauses) exists-binders)))]
                 [(rename this-name new-name contract)
                  (identifier? (syntax this-name))
                  (raise-syntax-error 'provide/contract 
@@ -758,9 +799,10 @@ improve method arity mismatch contract violation error messages?
                  (let ([sc (build-struct-code provide-stx
                                               (syntax struct-name)
                                               (syntax->list (syntax (field-name ...)))
-                                              (syntax->list (syntax (contract ...))))])
+                                              (map (λ (x) (add-exists-binders x exists-binders))
+                                                   (syntax->list (syntax (contract ...)))))])
                    (add-to-dups-table #'struct-name)
-                   (cons sc (code-for-each-clause (cdr clauses))))]
+                   (cons sc (loop (cdr clauses) exists-binders)))]
                 [(struct name)
                  (identifier? (syntax name))
                  (raise-syntax-error 'provide/contract
@@ -801,8 +843,12 @@ improve method arity mismatch contract violation error messages?
                  (identifier? (syntax name))
                  (begin
                    (add-to-dups-table #'name)
-                   (cons (code-for-one-id provide-stx (syntax name) (syntax contract) #f)
-                         (code-for-each-clause (cdr clauses))))]
+                   (cons (code-for-one-id provide-stx 
+                                          (syntax name) 
+                                          (add-exists-binders (syntax contract)
+                                                              exists-binders)
+                                          #f)
+                         (loop (cdr clauses) exists-binders)))]
                 [(name contract)
                  (raise-syntax-error 'provide/contract
                                      "expected identifier"
@@ -812,7 +858,7 @@ improve method arity mismatch contract violation error messages?
                  (raise-syntax-error 'provide/contract
                                      "malformed clause"
                                      provide-stx
-                                     (syntax unk))]))]))
+                                     (syntax unk))]))])))
        
        ;; well-formed-struct-name? : syntax -> bool
        (define (well-formed-struct-name? stx)
@@ -1159,6 +1205,16 @@ improve method arity mismatch contract violation error messages?
                        field-contract-id
                        void?))))
        
+       ;; code-for-one-exists-id : syntax -> syntax
+       (define (code-for-one-exists-id x x-gen)
+         #`(define #,x-gen (new-∃/c '#,x)))
+
+       (define (add-exists-binders stx exists-binders)
+         #`(let #,exists-binders #,stx))
+       
+       (define (add-a-binder id id-gen binders)
+         (cons #`[#,id #,id-gen] binders))
+       
        ;; code-for-one-id : syntax syntax syntax (union syntax #f) -> syntax
        ;; given the syntax for an identifier and a contract,
        ;; builds a begin expression for the entire contract and provide
@@ -1209,7 +1265,9 @@ improve method arity mismatch contract violation error messages?
                                    
                                    #,@(if no-need-to-check-ctrct?
                                           (list)
-                                          (list #'(define contract-id (verify-contract 'provide/contract ctrct))))
+                                          (list #'(define contract-id 
+                                                    (let ([id ctrct]) ;; let is here to give the right name.
+                                                      (verify-contract 'provide/contract id)))))
                                    (define-syntax id-rename
                                      (make-provide/contract-transformer (quote-syntax contract-id)
                                                                         (quote-syntax id)
@@ -2571,3 +2629,33 @@ improve method arity mismatch contract violation error messages?
   #:property stronger-prop
   (λ (this that)
     #f))
+
+(define (∃-proj ctc)
+  (let ([in (∃/c-in ctc)]
+        [out (∃/c-out ctc)]
+        [pred? (∃/c-pred? ctc)])
+  (λ (pos-blame neg-blame src-info orig-str positive-position?)
+    (if positive-position?
+	in
+        (λ (val)
+          (if (pred? val)
+              (out val)
+              (raise-contract-error val src-info pos-blame orig-str 
+                                    "non-polymorphic value: ~e"
+                                    val)))))))
+
+(define-struct ∃/c (in out pred? name)
+  #:omit-define-syntaxes
+  #:property proj-prop ∃-proj
+  #:property name-prop (λ (ctc) (∃/c-name ctc))
+  #:property first-order-prop
+  (λ (ctc) (λ (x) #t)) ;; ???
+      
+  #:property stronger-prop
+  (λ (this that) #f))
+
+(define (new-∃/c raw-name)
+  (define name (string->symbol (format "~a/∃" raw-name)))
+  (define-values (struct-type constructor predicate accessor mutator)
+    (make-struct-type name #f 1 0))
+  (make-∃/c constructor (λ (x) (accessor x 0)) predicate raw-name))
