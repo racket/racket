@@ -2,8 +2,7 @@
 
   (require mzlib/class
            mred
-           htdp/image
-           lang/private/imageeq)
+           htdp/image)
   
   (provide to-symbol new-object call-back-canvas% overlay-x-y 
            inner->function image-eq? empty-list printer cons-l style-list)
