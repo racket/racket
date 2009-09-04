@@ -16,7 +16,8 @@ improve method arity mismatch contract violation error messages?
          define/contract
          with-contract
          current-contract-region
-         new-∃/c)
+         new-∃/c
+         ∃?)
 
 (require (for-syntax scheme/base)
          (for-syntax "contract-opt-guts.ss")
@@ -2654,8 +2655,10 @@ improve method arity mismatch contract violation error messages?
   #:property stronger-prop
   (λ (this that) #f))
 
+(define-struct ∃ ())
+
 (define (new-∃/c raw-name)
   (define name (string->symbol (format "~a/∃" raw-name)))
   (define-values (struct-type constructor predicate accessor mutator)
-    (make-struct-type name #f 1 0))
+    (make-struct-type name struct:∃ 1 0))
   (make-∃/c constructor (λ (x) (accessor x 0)) predicate raw-name))
