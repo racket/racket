@@ -195,6 +195,7 @@ please adhere to these guidelines:
  (cs-view-docs-from "~a from ~a")  ;; a completed version of the line above (cs-view-docs) is put into the first ~a and a list of modules (separated by commas) is put into the second ~a. Use check syntax and right-click on a documented variable (eg, 'require') to see this in use
   
  (cs-lexical-variable "lexical variable")
+ (cs-set!d-variable "set!’d variable")
  (cs-imported-variable "imported variable")
 
  ;;; info bar at botttom of drscheme frame
