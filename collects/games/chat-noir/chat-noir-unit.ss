@@ -6,7 +6,7 @@
          "../show-scribbling.ss"
          string-constants/string-constant
          (prefix-in x: lang/htdp-intermediate-lambda)
-         (prefix-in x: htdp/world))
+         (prefix-in y: htdp/world))
 
 (provide game@)
 (define orig-namespace (current-namespace))
