@@ -39,6 +39,8 @@
 (define drscheme-macro-stepper-director%
   (class macro-stepper-director%
     (init-field filename)
+    (define eventspace (current-eventspace))
+
     (define stepper #f)
     (inherit new-stepper)
 
@@ -48,16 +50,23 @@
 
     (define/override (add-trace events)
       (lazy-new-stepper)
-      (super add-trace events))
+      (parameterize ((current-eventspace eventspace))
+        (queue-callback
+         (lambda ()
+           (super add-trace events)))))
     (define/override (add-deriv deriv)
       (lazy-new-stepper)
-      (super add-deriv deriv))
+      (parameterize ((current-eventspace eventspace))
+        (queue-callback
+         (lambda ()
+           (super add-deriv deriv)))))
 
     (define/override (new-stepper-frame)
-      (new macro-stepper-frame%
-           (config (new macro-stepper-config/prefs%))
-           (filename filename)
-           (director this)))
+      (parameterize ((current-eventspace eventspace))
+        (new macro-stepper-frame%
+             (config (new macro-stepper-config/prefs%))
+             (filename filename)
+             (director this))))
 
     (super-new)))
 
@@ -77,6 +86,7 @@
     (define (phase2) (void))
 
     (define drscheme-eventspace (current-eventspace))
+    (define drscheme-custodian (current-custodian))
 
     (define-local-member-name check-language)
     
@@ -179,7 +189,7 @@
           (when current-stepper-director
             (send current-stepper-director add-obsoleted-warning)
             (set! current-stepper-director #f))
-          
+
           ;; setting the eval handler at this point disables CM,
           ;; so only do it when we are debugging
           (when debugging?
@@ -192,7 +202,11 @@
                  (current-module-name-resolver mnr))))))
 
         (define/private (make-stepper filename)
-          (new drscheme-macro-stepper-director% (filename filename)))
+          (parameterize ((current-eventspace
+                          (parameterize ((current-eventspace drscheme-eventspace)
+                                         (current-custodian drscheme-custodian))
+                            (make-eventspace))))
+            (new drscheme-macro-stepper-director% (filename filename))))
 
         (define/private (inner-eval original-eval-handler e-expr)
           (original-eval-handler e-expr))
@@ -234,10 +248,7 @@
                   the-module-resolver))
 
         (define/private (show-deriv director events)
-          (parameterize ([current-eventspace drscheme-eventspace])
-            (queue-callback
-             (lambda ()
-               (send director add-trace events)))))
+          (send director add-trace events))
         ))
 
     ;; Borrowed from mztake/debug-tool.ss
