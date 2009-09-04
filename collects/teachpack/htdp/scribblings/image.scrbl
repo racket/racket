@@ -16,6 +16,9 @@ shapes. Additional primitives allow for the composition of images.
 
 @defproc[(image? [x any/c]) boolean?]{Is @scheme[x] an image?}
 
+@defproc[(image=? [x image?] [y image?]) boolean?]{Are @scheme[x] and
+@scheme[y] the same image?}
+
 @;-----------------------------------------------------------------------------
 @section[#:tag "modes-colors"]{Modes and Colors}
 
