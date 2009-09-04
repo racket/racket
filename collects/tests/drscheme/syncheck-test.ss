@@ -166,26 +166,26 @@ trigger runtime errors in check syntax.
                  '(("("      default-color)
                    ("set!"   imported-syntax)
                    (" "      default-color)
-                   ("x"      lexically-bound-variable)
+                   ("x"      lexically-bound)
                    (" "      default-color)
                    ("1"      constant)
                    (") ("    default-color)
                    ("define" imported-syntax)
                    (" "      default-color)
-                   ("x"      lexically-bound-variable)
+                   ("x"      set!d)   ;; top-level doesn't help here ....
                    (" 2)"    default-color))
                  (list '((19 20) (6 7))))
      (build-test "(let ([x 1]) (set! x 2))"
                 '(("("    default-color)
                   ("let"   imported-syntax)
                   (" (["   default-color)
-                  ("x"     lexically-bound-variable)
+                  ("x"     set!d)
                   (" "     default-color)
                   ("1"     constant)
                   ("]) ("  default-color)
                   ("set!"  imported-syntax)
                   (" "     default-color)
-                  ("x"     lexically-bound-variable)
+                  ("x"     set!d)
                   (" "     default-color)
                   ("2"     constant)
                   ("))"    default-color))
@@ -874,8 +874,8 @@ trigger runtime errors in check syntax.
       (clear-definitions drs)
       (cond
         [(dir-test? test)
-         (type-in-definitions drs (format input (path->string relative)))]
-        [else (type-in-definitions drs input)])
+         (insert-in-definitions drs (format input (path->string relative)))]
+        [else (insert-in-definitions drs input)])
       (test:run-one (lambda () (send (send drs syncheck:get-button) command)))
       (wait-for-computation drs)
       
