@@ -1898,7 +1898,8 @@ If the namespace does not, they are colored the unbound color.
         (let ([handle-var-ref
                (λ (var index binders varsets)
                  (color-variable var index varsets)
-                 (document-variable var index)
+                 (when (syntax-original? var)
+                   (document-variable var index))
                  (connect-identifier var
                                      rename-ht
                                      binders
@@ -2152,7 +2153,7 @@ If the namespace does not, they are colored the unbound color.
                                 (and (not a)
                                      (not b)))))))])
         (cond
-          [(module-identifier-mapping-get varsets var (λ () #f))
+          [(get-ids varsets var (λ () #f))
            (color var set!d-variable-style-name)]
           [lexical? (color var lexically-bound-variable-style-name)]
           [(pair? b) (color var imported-variable-style-name)])))
@@ -2607,51 +2608,50 @@ If the namespace does not, they are colored the unbound color.
 ;                                                                                             
 
     
-    ;; document-variable : stx phase-level -> void
+    ;; document-variable : stx[identifier,original] phase-level -> void
     (define (document-variable stx phase-level)
-      (when (syntax-original? stx)
-        (let ([defs-text (currently-processing-definitions-text)])
-          (when defs-text
-            (let ([binding-info (identifier-binding stx phase-level)])
-              (when (and (pair? binding-info)
-                         (syntax-position stx)
-                         (syntax-span stx))
-                (let* ([start (- (syntax-position stx) 1)]
-                       [fin (+ start (syntax-span stx))]
-                       [source-editor (find-source-editor stx)]
-                       [xref (get-xref)])
-                  (when (and xref source-editor)
-                    (let ([definition-tag (xref-binding->definition-tag xref binding-info #f)])
-                      (when definition-tag
-                        (let-values ([(path tag) (xref-tag->path+anchor xref definition-tag)])
-                          (when path
-                            (let ([index-entry (xref-tag->index-entry xref definition-tag)])
-                              (when index-entry
-                                (send defs-text syncheck:add-background-color
-                                      source-editor "navajowhite" start fin (syntax-e stx))
-                                (send defs-text syncheck:add-menu
-                                      source-editor
-                                      start 
-                                      fin 
-                                      (syntax-e stx)
-                                      (λ (menu)
-                                        (instantiate menu-item% ()
-                                          (parent menu)
-                                          (label (build-docs-label (entry-desc index-entry)))
-                                          (callback
-                                           (λ (x y)
-                                              (let* ([url (path->url path)]
-                                                     [url2 (if tag
-                                                               (make-url (url-scheme url)
-                                                                         (url-user url)
-                                                                         (url-host url)
-                                                                         (url-port url)
-                                                                         (url-path-absolute? url)
-                                                                         (url-path url)
-                                                                         (url-query url)
-                                                                         tag)
-                                                               url)])
-                                                (send-url (url->string url2))))))))))))))))))))))
+      (let ([defs-text (currently-processing-definitions-text)])
+        (when defs-text
+          (let ([binding-info (identifier-binding stx phase-level)])
+            (when (and (pair? binding-info)
+                       (syntax-position stx)
+                       (syntax-span stx))
+              (let* ([start (- (syntax-position stx) 1)]
+                     [fin (+ start (syntax-span stx))]
+                     [source-editor (find-source-editor stx)]
+                     [xref (get-xref)])
+                (when (and xref source-editor)
+                  (let ([definition-tag (xref-binding->definition-tag xref binding-info #f)])
+                    (when definition-tag
+                      (let-values ([(path tag) (xref-tag->path+anchor xref definition-tag)])
+                        (when path
+                          (let ([index-entry (xref-tag->index-entry xref definition-tag)])
+                            (when index-entry
+                              (send defs-text syncheck:add-background-color
+                                    source-editor "navajowhite" start fin (syntax-e stx))
+                              (send defs-text syncheck:add-menu
+                                    source-editor
+                                    start 
+                                    fin 
+                                    (syntax-e stx)
+                                    (λ (menu)
+                                      (instantiate menu-item% ()
+                                        (parent menu)
+                                        (label (build-docs-label (entry-desc index-entry)))
+                                        (callback
+                                         (λ (x y)
+                                           (let* ([url (path->url path)]
+                                                  [url2 (if tag
+                                                            (make-url (url-scheme url)
+                                                                      (url-user url)
+                                                                      (url-host url)
+                                                                      (url-port url)
+                                                                      (url-path-absolute? url)
+                                                                      (url-path url)
+                                                                      (url-query url)
+                                                                      tag)
+                                                            url)])
+                                             (send-url (url->string url2)))))))))))))))))))))
     
     (define (build-docs-label desc)
       (let ([libs (exported-index-desc-from-libs desc)])
