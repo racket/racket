@@ -2740,6 +2740,70 @@
    '(let ()
       (define-struct/contract foo ([x number?] [y number?]) #:transparent)
       1))
+
+  (test/spec-passed
+    'define-struct/contract15
+    '(let ()
+       (define-struct foo (x))
+       (define-struct/contract (bar foo) ([z string?]))
+       (make-bar 2 "x")))
+
+  (test/spec-failed
+    'define-struct/contract16
+    '(let ()
+       (define-struct foo (x))
+       (define-struct/contract (bar foo) ([z string?]))
+       (make-bar 2 #f))
+    "top-level")
+
+  (test/spec-passed
+    'define-struct/contract17
+    '(let ()
+       (define-struct foo (x))
+       (define-struct/contract (bar foo) ([z string?]) #:mutable)
+       (set-bar-z! (make-bar 2 "x") "y")))
+
+  (test/spec-failed
+    'define-struct/contract18
+    '(let ()
+       (define-struct foo (x))
+       (define-struct/contract (bar foo) ([z string?]) #:mutable)
+       (set-bar-z! (make-bar 2 "x") #f))
+    "top-level")
+
+  (test/spec-passed
+    'define-struct/contract19
+    '(let ()
+       (define-struct foo (x))
+       (define-struct/contract (bar foo) ([z string?]))
+       (define-struct/contract (baz bar) ([x number?]))
+       (make-baz 2 "x" 5)))
+
+  (test/spec-failed
+    'define-struct/contract20
+    '(let ()
+       (define-struct foo (x))
+       (define-struct/contract (bar foo) ([z string?]))
+       (define-struct/contract (baz bar) ([x number?]))
+       (make-baz 2 "x" #f))
+    "top-level")
+
+  (test/spec-failed
+    'define-struct/contract21
+    '(let ()
+       (define-struct foo (x))
+       (define-struct/contract (bar foo) ([z string?]))
+       (define-struct/contract (baz bar) ([x number?]))
+       (make-baz 2 #f 3))
+    "top-level")
+
+  (test/spec-passed
+    'define-struct/contract21
+    '(let ()
+       (define-struct foo (x) #:mutable)
+       (define-struct/contract (bar foo) ([z string?]))
+       (set-foo-x! (make-bar 2 "x") #f)))
+
 ;                                                                                  
 ;                                                                                  
 ;                                                                                  
