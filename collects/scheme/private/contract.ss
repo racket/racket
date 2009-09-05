@@ -385,7 +385,7 @@ improve method arity mismatch contract violation error messages?
                                   #:guard (-contract (-> super-contracts ... non-auto-contracts ... symbol? any)
                                                      guard
                                                      
-                                                     blame-id blame-id
+                                                     (current-contract-region) blame-id
                                                      #'maker)))))))))]
     [(_ name . bad-fields)
      (identifier? #'name)
