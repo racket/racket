@@ -1000,6 +1000,14 @@
           (:-> 1 2))
          1)
         '(2))
+
+  (let ()
+    (define-language n-lang
+      [n number])
+    (test (apply-reduction-relation
+           (reduction-relation n-lang [--> any ,(length (redex-match n-lang n 1))])
+           11)
+          '(1)))
   
   (parameterize ([current-namespace syn-err-test-namespace])
     (eval (quote-syntax

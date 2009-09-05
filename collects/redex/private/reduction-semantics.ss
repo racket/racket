@@ -706,8 +706,8 @@
             #`
             (let ([case-id (gensym)])
               (make-rewrite-proc
-               (λ (lang)
-                 (let ([cp (compile-pattern lang `side-conditions-rewritten #t)]
+               (λ (lang-id)
+                 (let ([cp (compile-pattern lang-id `side-conditions-rewritten #t)]
                        compile-pattern-bindings ...)
                    (λ (main-exp exp f other-matches)
                      (let ([mtchs (match-pattern cp exp)])
