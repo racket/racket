@@ -2,6 +2,12 @@
 @(require "mz.ss")
 @(require (for-label syntax/modcollapse))
 
+@(define contract-eval
+   (lambda ()
+     (let ([the-eval (make-base-eval)])
+       (the-eval '(require scheme/contract))
+       the-eval)))
+
 @title[#:tag "contracts" #:style 'toc]{Contracts}
 
 @guideintro["contracts"]{contracts}
@@ -780,6 +786,9 @@ blame the context of the @scheme[define/contract] form for the positive
 positions and the @scheme[define/contract] form for the negative ones.}
 
 @defform*[[(define-struct/contract struct-id ([field contract-expr] ...)
+                                   struct-option ...)
+           (define-struct/contract (struct-id super-struct-id)
+                                   ([field contract-expr] ...)
                                    struct-option ...)]]{
 Works like @scheme[define-struct], except that the arguments to the constructor,
 accessors, and mutators are protected by contracts.  For the definitions of
@@ -788,7 +797,18 @@ accessors, and mutators are protected by contracts.  For the definitions of
 The @scheme[define-struct/contract] form only allows a subset of the
 @scheme[struct-option] keywords: @scheme[#:mutable], @scheme[#:transparent],
 @scheme[#:auto-value], @scheme[#:omit-define-syntaxes], and
-@scheme[#:omit-define-values].}
+@scheme[#:omit-define-values].
+
+@examples[#:eval (contract-eval)
+(define-struct/contract fish ([color number?]))
+(make-fish 5)
+(make-fish #f)
+
+(define-struct/contract (salmon fish) ([ocean symbol?]))
+(make-salmon 5 'atlantic)
+(make-salmon 5 #f)
+(make-salmon #f 'pacific)
+]}
 
 @defform*[[(contract contract-expr to-protect-expr
                      positive-blame-expr negative-blame-expr)
