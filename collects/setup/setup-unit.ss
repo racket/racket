@@ -234,11 +234,12 @@
   (define (planet->cc path owner pkg-file extra-path maj min)
     (unless (path? path)
       (error 'planet->cc "non-path when building package ~e" pkg-file))
-    (make-cc* #f
-              path
-              #f ; don't need root-dir; absolute paths in cache.ss will be ok
-              (get-planet-cache-path)
-              (list `(planet ,owner ,pkg-file ,@extra-path) maj min)))
+    (and (directory-exists? path)
+         (make-cc* #f
+                   path
+                   #f ; don't need root-dir; absolute paths in cache.ss will be ok
+                   (get-planet-cache-path)
+                   (list `(planet ,owner ,pkg-file ,@extra-path) maj min))))
 
   ;; planet-cc->sub-cc : cc (listof bytes [encoded path]) -> cc
   ;; builds a compilation job for the given subdirectory of the given cc this
