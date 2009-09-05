@@ -170,6 +170,8 @@
 
 (define-struct procedure-to-blame (proc syntax))
 
+(define contract-key (gensym 'contract-key))
+
 (define (make-procedure-contract name arg-contracts return-contract syntax)
   (let ((arg-count (length arg-contracts)))
     (make-contract
@@ -188,28 +190,36 @@
 	 (attach-name
 	  (object-name proc)
 	  (lambda args
-	    (if (not (= (length args) arg-count))
-		(begin
-		  (contract-violation proc self "wrong number of arguments" #f)
-		  (apply-contract return-contract (apply proc args)))
-		(let* ((old-violation-proc (contract-violation-proc))
-		       (arg-violation? #f)
-		       (args
-			(call-with-contract-violation-proc
-			 (lambda (obj contract message blame)
-			   (set! arg-violation? #t)
-			   (old-violation-proc obj contract message blame))
-			 (lambda ()
-			   (map apply-contract arg-contracts args))))
-		       (retval (apply proc args)))
-		  (if arg-violation?
-		      retval
-		      (call-with-contract-violation-proc
-		       (lambda (obj contract message _)
-			 ;; blame the procedure
-			 (old-violation-proc obj contract message blame-syntax))
-		       (lambda ()
-			 (apply-contract return-contract retval))))))))))
+	    (call-with-immediate-continuation-mark
+	     contract-key
+	     (lambda (maybe)
+	       (if (not (= (length args) arg-count))
+		   (begin
+		     (contract-violation proc self "wrong number of arguments" #f)
+		     (apply-contract return-contract (apply proc args)))
+		   (let* ((old-violation-proc (contract-violation-proc))
+			  (arg-violation? #f)
+			  (args
+			   (call-with-contract-violation-proc
+			    (lambda (obj contract message blame)
+			      (set! arg-violation? #t)
+			      (old-violation-proc obj contract message blame))
+			    (lambda ()
+			      (map apply-contract arg-contracts args)))))
+		     (if (eq? maybe return-contract)
+			 (apply proc args)
+			 (let ((retval
+				(with-continuation-mark 
+				 contract-key return-contract
+				 (apply proc args))))
+			   (if arg-violation?
+			       retval
+			       (call-with-contract-violation-proc
+				(lambda (obj contract message _)
+				  ;; blame the procedure
+				  (old-violation-proc obj contract message blame-syntax))
+				(lambda ()
+				  (apply-contract return-contract retval))))))))))))))
      syntax)))
 
 ;; Matthew has promised a better way of doing this in the future.
