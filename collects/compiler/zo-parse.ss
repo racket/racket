@@ -113,9 +113,12 @@
      (make-compilation-top ld prefix code)]))
 
 (define (read-resolve-prefix v)
-  (match v
-    [`(,i ,tv . ,sv)
-     (make-prefix i (vector->list tv) (vector->list sv))]))
+  (let-values ([(v unsafe?) (if (integer? (car v))
+                                (values v #f)
+                                (values (cdr v) #t))])
+    (match v
+      [`(,i ,tv . ,sv)
+       (make-prefix i (vector->list tv) (vector->list sv))])))
 
 (define (read-unclosed-procedure v)
   (define CLOS_HAS_REST 1)
