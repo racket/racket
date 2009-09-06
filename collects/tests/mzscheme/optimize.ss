@@ -63,17 +63,19 @@
 		      (check-error-message op (eval `(lambda (x) (,op x ,arg2))))
 		      (check-error-message op (eval `(lambda (x) (,op ,arg1 x))))
 		      (bin0 v op arg1 arg2))]
+	 [bin-int (lambda (v op arg1 arg2)
+                    (bin-exact v op arg1 arg2)
+                    (let* ([iv (if (number? v)
+                                   (exact->inexact v)
+                                   v)]
+                           [iv0 (if (and (memq op '(* /)) (zero? iv))
+                                    0
+                                    iv)])
+                      (bin0 iv op (exact->inexact arg1) arg2)
+                      (bin0 iv0 op arg1 (exact->inexact arg2))
+                      (bin0 iv op (exact->inexact arg1) (exact->inexact arg2))))]
 	 [bin (lambda (v op arg1 arg2)
-		(bin-exact v op arg1 arg2)
-		(let* ([iv (if (number? v)
-                               (exact->inexact v)
-                               v)]
-                       [iv0 (if (and (memq op '(* /)) (zero? iv))
-                                0
-                                iv)])
-		  (bin0 iv op (exact->inexact arg1) arg2)
-		  (bin0 iv0 op arg1 (exact->inexact arg2))
-		  (bin0 iv op (exact->inexact arg1) (exact->inexact arg2)))
+		(bin-int v op arg1 arg2)
                 (let ([iv (if (number? v)
                               (if (eq? op '*)
                                   (/ v (* 33333 33333))
@@ -265,6 +267,18 @@
     (bin -4 '/ -16 4)
     (bin -4 '/ 16 -4)
     (bin 4 '/ -16 -4)
+
+    (bin-int 3 'quotient 10 3)
+    (bin-int -3 'quotient 10 -3)
+    (bin-int 3 'quotient -10 -3)
+    (bin-int -3 'quotient -10 3)
+    (bin-exact 7 'quotient (* 7 (expt 2 100)) (expt 2 100))
+
+    (bin-int 1 'remainder 10 3)
+    (bin-int 1 'remainder 10 -3)
+    (bin-int -1 'remainder -10 -3)
+    (bin-int -1 'remainder -10 3)
+    (bin-exact 7 'remainder (+ 7 (expt 2 100)) (expt 2 100))
 
     (bin 3 'min 3 300)
     (bin -300 'min 3 -300)

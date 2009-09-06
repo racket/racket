@@ -808,6 +808,7 @@ print_to_string(Scheme_Object *obj,
     params.case_sens = 1;
     params.honu_mode = 0;
     params.inspector = scheme_false;
+    params.print_syntax = -1;
   } else {
     config = scheme_current_config();
 

@@ -471,6 +471,7 @@ typedef _uc		jit_insn;
 #define DIVLr(RS)			_O_Mrm		(0xf7		,_b11,_b110  ,_r4(RS)				)
 #define DIVLm(MD,MB,MI,MS)		_O_r_X		(0xf7		     ,_b110		,MD,MB,MI,MS		)
 
+#define DIVQr(RS)			_qO_Mrm		(0xf7		,_b11,_b110  ,_r8(RS)				)
 
 #define ENTERii(W, B)			_O_W_B		(0xc8						  ,_su16(W),_su8(B))
 #define HLT_()				_O		(0xf4								)
@@ -484,6 +485,8 @@ typedef _uc		jit_insn;
 
 #define IDIVLr(RS)			_O_Mrm		(0xf7		,_b11,_b111  ,_r4(RS)				)
 #define IDIVLm(MD,MB,MI,MS)		_O_r_X		(0xf7		     ,_b111		,MD,MB,MI,MS		)
+
+#define IDIVQr(RS)			_qO_Mrm		(0xf7		,_b11,_b111  ,_r8(RS)				)
 
 #define IMULBr(RS)			_O_Mrm		(0xf6		,_b11,_b101  ,_r1(RS)				)
 #define IMULBm(MD,MB,MI,MS)		_O_r_X		(0xf6		     ,_b101		,MD,MB,MI,MS		)

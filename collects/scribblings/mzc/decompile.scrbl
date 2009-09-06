@@ -76,7 +76,9 @@ Many forms in the decompiled code, such as @scheme[module],
  @schemeidfont{#%in}, which indicates that the JIT compiler will
  inline the operation. (Inlining information is not part of the
  bytecode, but is instead based on an enumeration of primitives that
- the JIT is known to handle specially.)}
+ the JIT is known to handle specially.) Operations from
+ @schememodname[scheme/unsafe/ops] are always inlined, so
+ @schemeidfont{#%in} is not shown for them.}
 
  @item{A form @scheme[(#%apply-values _proc _expr)] is equivalent to
  @scheme[(call-with-values (lambda () _expr) _proc)], but the run-time

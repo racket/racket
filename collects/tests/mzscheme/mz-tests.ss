@@ -11,6 +11,7 @@
 (load-relative "stx.ss")
 (load-relative "module.ss")
 (load-relative "number.ss")
+(load-relative "unsafe.ss")
 (load-relative "object.ss")
 (load-relative "struct.ss")
 (load-relative "unit.ss")

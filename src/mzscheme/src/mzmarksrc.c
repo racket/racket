@@ -884,6 +884,7 @@ resolve_prefix_val {
   gcMARK(rp->toplevels);
   gcMARK(rp->stxes);
   gcMARK(rp->delay_info_rpair);
+  gcMARK(rp->uses_unsafe);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
@@ -894,6 +895,7 @@ comp_prefix_val {
   Comp_Prefix *cp = (Comp_Prefix *)p;
   gcMARK(cp->toplevels);
   gcMARK(cp->stxes);
+  gcMARK(cp->uses_unsafe);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Comp_Prefix));

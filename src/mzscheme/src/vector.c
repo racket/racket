@@ -42,6 +42,12 @@ static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[]);
 
+static Scheme_Object *unsafe_vector_len (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_vector_ref (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_vector_set (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_struct_ref (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_struct_set (int argc, Scheme_Object *argv[]);
+
 void
 scheme_init_vector (Scheme_Env *env)
 {
@@ -120,6 +126,45 @@ scheme_init_vector (Scheme_Env *env)
                                                        1, 3,
                                                        0, -1), 
 			     env);
+}
+
+void
+scheme_init_unsafe_vector (Scheme_Env *env)
+{
+  Scheme_Object *p;
+
+  p = scheme_make_immed_prim(unsafe_vector_len, 
+			     "unsafe-vector-length", 
+			     1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("unsafe-vector-length", p, env);
+
+  p = scheme_make_immed_prim(unsafe_vector_ref, 
+			     "unsafe-vector-ref", 
+			     2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("unsafe-vector-ref", p, env);
+
+  p = scheme_make_immed_prim(unsafe_vector_set,
+			     "unsafe-vector-set!", 
+			     3, 3);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+  scheme_add_global_constant("unsafe-vector-set!", p, env);  
+  p = scheme_make_immed_prim(unsafe_vector_ref, 
+			     "unsafe-vector-ref", 
+			     2, 2);
+
+  p = scheme_make_immed_prim(unsafe_struct_ref, 
+			     "unsafe-struct-ref", 
+			     2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("unsafe-struct-ref", p, env);
+
+  p = scheme_make_immed_prim(unsafe_struct_set,
+			     "unsafe-struct-set!", 
+			     3, 3);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+  scheme_add_global_constant("unsafe-struct-set!", p, env);  
 }
 
 Scheme_Object *
@@ -474,4 +519,36 @@ static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[])
   }
 
   return SCHEME_MULTIPLE_VALUES;
+}
+
+/************************************************************/
+/*                        unsafe                            */
+/************************************************************/
+
+static Scheme_Object *unsafe_vector_len (int argc, Scheme_Object *argv[])
+{
+  long n = SCHEME_VEC_SIZE(argv[0]);
+  return scheme_make_integer(n);
+}
+
+static Scheme_Object *unsafe_vector_ref (int argc, Scheme_Object *argv[])
+{
+  return SCHEME_VEC_ELS(argv[0])[SCHEME_INT_VAL(argv[1])];
+}
+
+static Scheme_Object *unsafe_vector_set (int argc, Scheme_Object *argv[])
+{
+  SCHEME_VEC_ELS(argv[0])[SCHEME_INT_VAL(argv[1])] = argv[2];
+  return scheme_void;
+}
+
+static Scheme_Object *unsafe_struct_ref (int argc, Scheme_Object *argv[])
+{
+  return ((Scheme_Structure *)argv[0])->slots[SCHEME_INT_VAL(argv[1])];
+}
+
+static Scheme_Object *unsafe_struct_set (int argc, Scheme_Object *argv[])
+{
+  ((Scheme_Structure *)argv[0])->slots[SCHEME_INT_VAL(argv[1])] = argv[2];
+  return scheme_void;
 }

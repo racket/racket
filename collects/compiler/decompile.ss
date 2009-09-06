@@ -13,6 +13,7 @@
          (let ([ns (make-base-empty-namespace)])
            (parameterize ([current-namespace ns])
              (namespace-require ''#%kernel)
+             (namespace-require ''#%unsafe)
              (for/list ([l (namespace-mapped-symbols)])
                (cons l (with-handlers ([exn:fail? (lambda (x) #f)])
                          (compile l))))))]
@@ -320,7 +321,7 @@
                                       list list* vector vector-immutable box))]
              [(3) (memq (car a) '(eq? = <= < >= >
                                       bitwise-bit-set? char=?
-                                      + - * / min max bitwise-and bitwise-ior
+                                      + - * / quotient remainder min max bitwise-and bitwise-ior
                                       arithmetic-shift vector-ref string-ref bytes-ref
                                       set-mcar! set-mcdr! cons mcons
                                       list list* vector vector-immutable))]

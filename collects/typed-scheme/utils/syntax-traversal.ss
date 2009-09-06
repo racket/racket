@@ -14,7 +14,7 @@
       stx
       (loop (list-ref (syntax->list stx) (car locs)) (cdr locs)))))
 
-(define (syntax-loc stx) (list (syntax-position stx) (syntax-span stx)))
+(define (syntax-loc stx) (list (syntax-source stx) (syntax-position stx) (syntax-span stx)))
 
 ;; -------------------- the real stuff
 
@@ -35,16 +35,23 @@
           (and (pair? stx)
                (or (loop (car stx)) (loop (cdr stx)))))))))
 
-
+(define (unwind p)
+  (if (syntax? p)
+      (vector (vector (syntax-source p) (syntax-line p)) (unwind (syntax-e p)))
+      (if (pair? p)
+          (cons (unwind (car p)) (unwind (cdr p)))
+          p)))
 
 ;; Look for (the outermost) syntax in `orig' that has the same
 ;; location as `lookfor' which is coming from the expanded `orig',
 ;; given in `expanded'.
-(define (look-for-in-orig orig expanded lookfor)
+(define (look-for-in-orig orig expanded lookfor) lookfor)
+
+#|
   (define src (syntax-source orig))
-  ;(printf "orig : ~a~n" orig)
+  ;(printf "orig : ~a~n" (unwind orig))
   ;(printf "expanded : ~a~n" expanded)
-  ;(printf "lookfor : ~a~n" lookfor)
+  ;(printf "lookfor : ~a~n" (unwind lookfor))
   ;(printf "src : ~a~n" src)
   (let ([enclosing (enclosing-syntaxes-with-source expanded lookfor src)]
         [syntax-locs (make-hash)])
@@ -67,4 +74,6 @@
             #;(printf "chose branch two ~a~n" enclosing))))))
 
 ;(trace look-for-in-orig)
+|#
+
 

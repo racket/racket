@@ -35,6 +35,17 @@ static Scheme_Object *quotient (int argc, Scheme_Object *argv[]);
 static Scheme_Object *rem_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *quotient_remainder (int argc, Scheme_Object *argv[]);
 
+static Scheme_Object *fx_plus (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fx_minus (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fx_mult (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fx_div (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fx_rem (int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *fl_plus (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fl_minus (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fl_mult (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fl_div (int argc, Scheme_Object *argv[]);
+
 #define zeroi scheme_exact_zero
 
 void scheme_init_numarith(Scheme_Env *env)
@@ -69,17 +80,15 @@ void scheme_init_numarith(Scheme_Env *env)
   p = scheme_make_folding_prim(scheme_abs, "abs", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("abs", p, env);
+  
+  p = scheme_make_folding_prim(quotient, "quotient", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("quotient", p, env);
 
-  scheme_add_global_constant("quotient", 
-			     scheme_make_folding_prim(quotient,
-						      "quotient", 
-						      2, 2, 1),
-			     env);
-  scheme_add_global_constant("remainder", 
-			     scheme_make_folding_prim(rem_prim,
-						      "remainder", 
-						      2, 2, 1),
-			     env);
+  p = scheme_make_folding_prim(rem_prim, "remainder", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("remainder", p, env);
+
   scheme_add_global_constant("quotient/remainder", 
 			     scheme_make_prim_w_arity2(quotient_remainder,
 						       "quotient/remainder", 
@@ -91,6 +100,53 @@ void scheme_init_numarith(Scheme_Env *env)
 						      "modulo", 
 						      2, 2, 1),
 			     env);
+}
+
+void scheme_init_unsafe_numarith(Scheme_Env *env)
+{
+  Scheme_Object *p;
+
+  p = scheme_make_folding_prim(fx_plus, "unsafe-fx+", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("unsafe-fx+", p, env);
+
+  p = scheme_make_folding_prim(fx_minus, "unsafe-fx-", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNARY_INLINED);
+  scheme_add_global_constant("unsafe-fx-", p, env);
+
+  p = scheme_make_folding_prim(fx_mult, "unsafe-fx*", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("unsafe-fx*", p, env);
+
+  p = scheme_make_folding_prim(fx_div, "unsafe-fxquotient", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("unsafe-fxquotient", p, env);
+
+  p = scheme_make_folding_prim(fx_rem, "unsafe-fxremainder", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("unsafe-fxremainder", p, env);
+
+
+  p = scheme_make_folding_prim(fl_plus, "unsafe-fl+", 2, 2, 1);
+  if (scheme_can_inline_fp_op())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("unsafe-fl+", p, env);
+
+  p = scheme_make_folding_prim(fl_minus, "unsafe-fl-", 2, 2, 1);
+  if (scheme_can_inline_fp_op())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("unsafe-fl-", p, env);
+
+  p = scheme_make_folding_prim(fl_mult, "unsafe-fl*", 2, 2, 1);
+  if (scheme_can_inline_fp_op())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("unsafe-fl*", p, env);
+
+  p = scheme_make_folding_prim(fl_div, "unsafe-fl/", 2, 2, 1);
+  if (scheme_can_inline_fp_op())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("unsafe-fl/", p, env);
 }
 
 Scheme_Object *
@@ -707,3 +763,36 @@ quotient_remainder(int argc, Scheme_Object *argv[])
   a[1] = rem;
   return scheme_values(2, a);
 }
+
+/************************************************************************/
+/*                               Unsafe                                 */
+/************************************************************************/
+
+#define UNSAFE_FX(name, op, fold)                            \
+ static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
+ {                                                           \
+   long v;                                                   \
+   if (scheme_current_thread->constant_folding) return fold(argc, argv);     \
+   v = SCHEME_INT_VAL(argv[0]) op SCHEME_INT_VAL(argv[1]);   \
+   return scheme_make_integer(v);                            \
+ }
+
+UNSAFE_FX(fx_plus, +, plus)
+UNSAFE_FX(fx_minus, -, minus)
+UNSAFE_FX(fx_mult, *, mult)
+UNSAFE_FX(fx_div, /, quotient)
+UNSAFE_FX(fx_rem, %, rem_prim)
+
+#define UNSAFE_FL(name, op, fold)                            \
+ static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
+ {                                                           \
+   double v;                                                 \
+   if (scheme_current_thread->constant_folding) return fold(argc, argv);     \
+   v = SCHEME_DBL_VAL(argv[0]) op SCHEME_DBL_VAL(argv[1]);   \
+   return scheme_make_double(v);                             \
+ }
+
+UNSAFE_FL(fl_plus, +, plus)
+UNSAFE_FL(fl_minus, -, minus)
+UNSAFE_FL(fl_mult, *, mult)
+UNSAFE_FL(fl_div, /, div_prim)

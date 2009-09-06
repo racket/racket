@@ -69,7 +69,7 @@
                           [type-name-references null])]
            [begin (do-time "Initialized Envs")]
            ;; local-expand the module
-           ;; pmb = #%plain-module-begin                            
+           ;; pmb = #%plain-module-begin    
            [with-syntax ([new-mod 
                           (local-expand (syntax/loc stx
                                           (#%plain-module-begin 

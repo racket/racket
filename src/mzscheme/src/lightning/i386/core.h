@@ -171,64 +171,83 @@ struct jit_local_state {
 	(MOVLir(is, rs == _EAX ? _EDX : _EAX),		\
 	 IMULLr(rs == _EAX ? _EDX : rs))
 
-#define jit_divi_i_(result, d, rs, is)			\
+#define jit_divi_i_X(result, d, rs, is, MOVr, MOVi, SARi, nbits, IDIVr) \
 	(jit_might (d,    _EAX, PUSHLr(_EAX)),		\
 	jit_might (d,    _ECX, PUSHLr(_ECX)),		\
 	jit_might (d,    _EDX, PUSHLr(_EDX)),		\
-	jit_might (rs,   _EAX, MOVLrr(rs, _EAX)),	\
-	jit_might (rs,   _EDX, MOVLrr(rs, _EDX)),	\
-	MOVLir(is, _ECX),				\
-	SARLir(31, _EDX),				\
-	IDIVLr(_ECX),					\
-	jit_might(d,    result, MOVLrr(result, d)),	\
+	jit_might (rs,   _EAX, MOVr(rs, _EAX)),	        \
+	jit_might (rs,   _EDX, MOVr(rs, _EDX)),	        \
+	MOVr(is, _ECX), 				\
+	SARi(nbits, _EDX),				\
+	IDIVr(_ECX),					\
+	jit_might(d,    result, MOVr(result, d)),	\
 	jit_might(d,     _EDX,  POPLr(_EDX)),		\
 	jit_might(d,     _ECX,  POPLr(_ECX)),		\
 	jit_might(d,     _EAX,  POPLr(_EAX)))
 
-#define jit_divr_i_(result, d, s1, s2)			\
+#define jit_divi_i_(result, d, rs, is) \
+  jit_divi_i_X(result, d, rs, is, MOVLrr, MOVLir, SARLir, 31, IDIVLr)
+#define jit_divi_l_(result, d, rs, is) \
+  jit_divi_i_X(result, d, rs, is, MOVQrr, MOVQir, SARQir, 31, IDIVQr)
+
+#define jit_divr_i_X(result, d, s1, s2, MOVr, MOVi, SARi, nbits, IDIVr) \
 	(jit_might (d,    _EAX, PUSHLr(_EAX)),		\
 	jit_might (d,    _ECX, PUSHLr(_ECX)),		\
 	jit_might (d,    _EDX, PUSHLr(_EDX)),		\
 	((s1 == _ECX) ? PUSHLr(_ECX) : 0),		\
-	jit_might (s2,   _ECX, MOVLrr(s2, _ECX)),	\
+	jit_might (s2,   _ECX, MOVr(s2, _ECX)), 	\
 	((s1 == _ECX) ? POPLr(_EDX) :			\
-	jit_might (s1,   _EDX, MOVLrr(s1, _EDX))),	\
-	MOVLrr(_EDX, _EAX),				\
-	SARLir(31, _EDX),				\
-	IDIVLr(_ECX),					\
-	jit_might(d,    result, MOVLrr(result, d)),	\
+	jit_might (s1,   _EDX, MOVr(s1, _EDX))),	\
+	MOVr(_EDX, _EAX),				\
+        SARi(nbits, _EDX),                              \
+	IDIVr(_ECX),					\
+	jit_might(d,    result, MOVr(result, d)),	\
+	jit_might(d,     _EDX,  POPLr(_EDX)),		\
+	jit_might(d,     _ECX,  POPLr(_ECX)),		\
+	jit_might(d,     _EAX,  POPLr(_EAX)))
+
+#define jit_divr_i_(result, d, s1, s2) \
+  jit_divr_i_X(result, d, s1, s2, MOVLrr, MOVLir, SARLir, 31, IDIVLr)
+#define jit_divr_l_(result, d, s1, s2) \
+  jit_divr_i_X(result, d, s1, s2, MOVQrr, MOVQir, SARQir, 63, IDIVQr)
+
+#define jit_divi_ui_X(result, d, rs, is, MOVr, MOVi, XORr, DIVr)     \
+	(jit_might (d,    _EAX, PUSHLr(_EAX)),		\
+	jit_might (d,    _ECX, PUSHLr(_ECX)),		\
+	jit_might (d,    _EDX, PUSHLr(_EDX)),		\
+	jit_might (rs,   _EAX, MOVr(rs, _EAX)), 	\
+	MOVi(is, _ECX),  				\
+	XORr(_EDX, _EDX),				\
+	DIVr(_ECX),					\
+	jit_might(d,    result, MOVr(result, d)),	\
 	jit_might(d,     _EDX,  POPLr(_EDX)),		\
 	jit_might(d,     _ECX,  POPLr(_ECX)),		\
 	jit_might(d,     _EAX,  POPLr(_EAX)))
 
 #define jit_divi_ui_(result, d, rs, is)			\
+  jit_divi_ui_X(result, d, rs, is, MOVLrr, MOVLir, XORLrr, DIVLr)
+#define jit_divi_ul_(result, d, rs, is)			\
+  jit_divi_ui_X(result, d, rs, is, MOVQrr, MOVQir, XORQrr, DIVQr)
+
+#define jit_divr_ui_X(result, d, s1, s2, MOVr, XORr, DIVr)    \
 	(jit_might (d,    _EAX, PUSHLr(_EAX)),		\
 	jit_might (d,    _ECX, PUSHLr(_ECX)),		\
 	jit_might (d,    _EDX, PUSHLr(_EDX)),		\
-	jit_might (rs,   _EAX, MOVLrr(rs, _EAX)),	\
-	MOVLir(is, _ECX),				\
-	XORLrr(_EDX, _EDX),				\
-	DIVLr(_ECX),					\
-	jit_might(d,    result, MOVLrr(result, d)),	\
+	((s1 == _ECX) ? PUSHLr(_ECX) : 0),		\
+	jit_might (s2,   _ECX, MOVr(s2, _ECX)), 	\
+	((s1 == _ECX) ? POPLr(_EAX) :			\
+	jit_might (s1,   _EAX, MOVr(s1, _EAX))),	\
+	XORr(_EDX, _EDX),				\
+	DIVr(_ECX),					\
+	jit_might(d,    result, MOVr(result, d)),	\
 	jit_might(d,     _EDX,  POPLr(_EDX)),		\
 	jit_might(d,     _ECX,  POPLr(_ECX)),		\
 	jit_might(d,     _EAX,  POPLr(_EAX)))
 
 #define jit_divr_ui_(result, d, s1, s2)			\
-	(jit_might (d,    _EAX, PUSHLr(_EAX)),		\
-	jit_might (d,    _ECX, PUSHLr(_ECX)),		\
-	jit_might (d,    _EDX, PUSHLr(_EDX)),		\
-	((s1 == _ECX) ? PUSHLr(_ECX) : 0),		\
-	jit_might (s2,   _ECX, MOVLrr(s2, _ECX)),	\
-	((s1 == _ECX) ? POPLr(_EAX) :			\
-	jit_might (s1,   _EAX, MOVLrr(s1, _EAX))),	\
-	XORLrr(_EDX, _EDX),				\
-	DIVLr(_ECX),					\
-	jit_might(d,    result, MOVLrr(result, d)),	\
-	jit_might(d,     _EDX,  POPLr(_EDX)),		\
-	jit_might(d,     _ECX,  POPLr(_ECX)),		\
-	jit_might(d,     _EAX,  POPLr(_EAX)))
-
+  jit_divr_ui_X(result, d, s1, s2, MOVLrr, XORLrr, DIVLr)
+#define jit_divr_ul_(result, d, s1, s2)			\
+  jit_divr_ui_X(result, d, s1, s2, MOVQrr, XORQrr, DIVQr)
 
 /* ALU */
 #define jit_addi_i(d, rs, is)	jit_opi_((d), (rs),       ADDLir((is), (d)), 			LEALmr((is), (rs), 0, 0, (d))  )
@@ -253,6 +272,8 @@ struct jit_local_state {
 #define jit_orr_l(d, s1, s2)	jit_qopr_((d), (s1), (s2),  ORQrr((s1), (d)),  ORQrr((s2), (d)) )
 #define jit_subr_l(d, s1, s2)	jit_qopr_((d), (s1), (s2), (SUBQrr((s1), (d)), NEGQr(d)),	SUBQrr((s2), (d))	       )
 #define jit_xorr_l(d, s1, s2)	jit_qopr_((d), (s1), (s2), XORQrr((s1), (d)), XORQrr((s2), (d)) )
+
+#define jit_mulr_l(d, s1, s2)	jit_opo_((d), (s1), (s2), IMULQrr((s2), (d)), IMULQrr((s1), (d)), LEAQmr(0, (s1), (s2), 1, (d))  )
 
 /* These can sometimes use byte or word versions! */
 #define jit_ori_i(d, rs, is)	jit_op_ ((d), (rs),        jit_reduce(OR, (is), (d))	       )
@@ -294,8 +315,12 @@ struct jit_local_state {
 #define jit_modi_ui(d, rs, is)	jit_divi_ui_(_EDX, (d), (rs), (is))
 #define jit_divr_i(d, s1, s2)	jit_divr_i_(_EAX, (d), (s1), (s2))
 #define jit_divr_ui(d, s1, s2)	jit_divr_ui_(_EAX, (d), (s1), (s2))
+#define jit_divr_l(d, s1, s2)	jit_divr_l_(_EAX, (d), (s1), (s2))
+#define jit_divr_ul(d, s1, s2)	jit_divr_ul_(_EAX, (d), (s1), (s2))
 #define jit_modr_i(d, s1, s2)	jit_divr_i_(_EDX, (d), (s1), (s2))
 #define jit_modr_ui(d, s1, s2)	jit_divr_ui_(_EDX, (d), (s1), (s2))
+#define jit_modr_l(d, s1, s2)	jit_divr_l_(_EDX, (d), (s1), (s2))
+#define jit_modr_ul(d, s1, s2)	jit_divr_ul_(_EDX, (d), (s1), (s2))
 
 
 /* Shifts */

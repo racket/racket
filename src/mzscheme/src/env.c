@@ -52,6 +52,7 @@ static int env_uid_counter     = 0;
 /* globals READ-ONLY SHARED */
 static Scheme_Object *kernel_symbol;
 static Scheme_Env    *kernel_env;
+static Scheme_Env    *unsafe_env;
 
 #define MAX_CONST_LOCAL_POS 64
 #define MAX_CONST_LOCAL_TYPES 2
@@ -393,6 +394,39 @@ static void place_instance_init_pre_kernel(void *stack_base) {
 #endif
 }
 
+
+static void init_unsafe(Scheme_Env *env)
+{
+  scheme_defining_primitives = 1;
+
+  REGISTER_SO(unsafe_env);
+
+  unsafe_env = scheme_primitive_module(scheme_intern_symbol("#%unsafe"), env);
+
+  scheme_init_unsafe_number(unsafe_env);
+  scheme_init_unsafe_numarith(unsafe_env);
+  scheme_init_unsafe_numcomp(unsafe_env);
+  scheme_init_unsafe_list(unsafe_env);
+  scheme_init_unsafe_vector(unsafe_env);
+
+  scheme_finish_primitive_module(unsafe_env);
+  scheme_protect_primitive_provide(unsafe_env, NULL);
+
+  scheme_defining_primitives = 0;
+
+#if USE_COMPILED_STARTUP
+  if (builtin_ref_counter != (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT)) {
+    printf("Unsafe count %d doesn't match expected count %d\n",
+	   builtin_ref_counter - EXPECTED_PRIM_COUNT, EXPECTED_UNSAFE_COUNT);
+    abort();
+  }
+#endif
+}
+
+Scheme_Env *scheme_get_unsafe_env() {
+  return unsafe_env;
+}
+
 static Scheme_Env *place_instance_init_post_kernel() {
   Scheme_Env *env;
   /* error handling and buffers */
@@ -431,6 +465,8 @@ static Scheme_Env *place_instance_init_post_kernel() {
 #else
   init_dummy_foreign(env);
 #endif
+
+  init_unsafe(env);
 
   scheme_add_embedded_builtins(env);
 
@@ -608,7 +644,7 @@ static void make_kernel_env(void)
     printf("Primitive count %d doesn't match expected count %d\n"
 	   "Turn off USE_COMPILED_STARTUP in src/schminc.h\n",
 	   builtin_ref_counter, EXPECTED_PRIM_COUNT);
-    exit(1);
+    abort();
   }
 #endif
    
@@ -1248,22 +1284,28 @@ Scheme_Object **scheme_make_builtin_references_table(void)
   Scheme_Bucket **bs;
   Scheme_Env *kenv;
   long i;
+  int j;
 
   t = MALLOC_N(Scheme_Object *, (builtin_ref_counter + 1));
 #ifdef MEMORY_COUNTING_ON
   scheme_misc_count += sizeof(Scheme_Object *) * (builtin_ref_counter + 1);
 #endif
 
-  kenv = scheme_get_kernel_env();
-
-  ht = kenv->toplevel;
-
-  bs = ht->buckets;
-
-  for (i = ht->size; i--; ) {
-    Scheme_Bucket *b = bs[i];
-    if (b && (((Scheme_Bucket_With_Flags *)b)->flags & GLOB_HAS_REF_ID))
-      t[((Scheme_Bucket_With_Ref_Id *)b)->id] = (Scheme_Object *)b->val;
+  for (j = 0; j < 2; j++) {
+    if (!j)
+      kenv = scheme_get_kernel_env();
+    else
+      kenv = unsafe_env;
+    
+    ht = kenv->toplevel;
+    
+    bs = ht->buckets;
+    
+    for (i = ht->size; i--; ) {
+      Scheme_Bucket *b = bs[i];
+      if (b && (((Scheme_Bucket_With_Flags *)b)->flags & GLOB_HAS_REF_ID))
+        t[((Scheme_Bucket_With_Ref_Id *)b)->id] = (Scheme_Object *)b->val;
+    }
   }
 
   return t;
@@ -1276,18 +1318,24 @@ Scheme_Hash_Table *scheme_map_constants_to_globals(void)
   Scheme_Bucket **bs;
   Scheme_Env *kenv;
   long i;
-  
-  kenv = scheme_get_kernel_env();
-
-  ht = kenv->toplevel;
-  bs = ht->buckets;
+  int j;
 
   result = scheme_make_hash_table(SCHEME_hash_ptr);
-
-  for (i = ht->size; i--; ) {
-    Scheme_Bucket *b = bs[i];
-    if (b && (((Scheme_Bucket_With_Flags *)b)->flags & GLOB_IS_CONST)) {
-      scheme_hash_set(result, b->val, (Scheme_Object *)b);
+      
+  for (j = 0; j < 2; j++) {
+    if (!j)
+      kenv = scheme_get_kernel_env();
+    else
+      kenv = unsafe_env;
+    
+    ht = kenv->toplevel;
+    bs = ht->buckets;
+    
+    for (i = ht->size; i--; ) {
+      Scheme_Bucket *b = bs[i];
+      if (b && (((Scheme_Bucket_With_Flags *)b)->flags & GLOB_IS_CONST)) {
+        scheme_hash_set(result, b->val, (Scheme_Object *)b);
+      }
     }
   }
 
@@ -1711,6 +1759,38 @@ Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env
   scheme_hash_set(cp->stxes, var, o);
 
   return o;
+}
+
+void scheme_register_unsafe_in_prefix(Scheme_Comp_Env *env, 
+                                      Scheme_Compile_Info *rec, int drec,
+                                      Scheme_Env *menv)
+{
+  Scheme_Object *v, *insp;
+
+  if (rec && rec[drec].dont_mark_local_use) {
+    return;
+  }
+
+  insp = menv->module->insp;
+
+  v = env->prefix->uses_unsafe;
+  if (!v)
+    v = insp;
+  else if (!SAME_OBJ(v, insp)) {
+    Scheme_Hash_Tree *ht;
+
+    if (SCHEME_HASHTRP(v)) {
+      ht = (Scheme_Hash_Tree *)v;
+    } else {
+      ht = scheme_make_hash_tree(0);
+      ht = scheme_hash_tree_set(ht, v, scheme_true);
+    }
+    
+    if (!scheme_hash_tree_get(ht, insp)) {
+      ht = scheme_hash_tree_set(ht, insp, scheme_true);
+      env->prefix->uses_unsafe = (Scheme_Object *)ht;
+    }
+  }
 }
 
 /*========================================================================*/
@@ -2864,7 +2944,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   /* Used to have `&& !SAME_OBJ(modidx, modname)' below, but that was a bad
      idea, because it causes module instances to be preserved. */
   if (modname && !(flags & SCHEME_RESOLVE_MODIDS) 
-      && (!scheme_is_kernel_modname(modname) || (flags & SCHEME_REFERENCING))) {
+      && (!(scheme_is_kernel_modname(modname) || scheme_is_unsafe_modname(modname))
+          || (flags & SCHEME_REFERENCING))) {
     /* Create a module variable reference, so that idx is preserved: */
     return scheme_hash_module_variable(env->genv, modidx, find_id, 
 				       genv->module->insp,
@@ -2882,7 +2963,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 
   if ((flags & SCHEME_ELIM_CONST) && b && b->val 
       && (((Scheme_Bucket_With_Flags *)b)->flags & GLOB_IS_CONST)
-      && !(flags & SCHEME_GLOB_ALWAYS_REFERENCE))
+      && !(flags & SCHEME_GLOB_ALWAYS_REFERENCE)
+      && (!modname || scheme_is_kernel_modname(modname)))
     return (Scheme_Object *)b->val;
 
   ASSERT_IS_VARIABLE_BUCKET(b);
@@ -2890,6 +2972,15 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     ((Scheme_Bucket_With_Home *)b)->home = genv;
   
   return (Scheme_Object *)b;
+}
+
+Scheme_Object *scheme_extract_unsafe(Scheme_Object *o)
+{
+  Scheme_Env *home = ((Scheme_Bucket_With_Home *)o)->home;
+  if (home && home->module && scheme_is_unsafe_modname(home->module->modname))
+    return (Scheme_Object *)((Scheme_Bucket *)o)->val;
+  else
+    return NULL;
 }
 
 int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count)
@@ -3447,6 +3538,7 @@ Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify)
   rp->so.type = scheme_resolve_prefix_type;
   rp->num_toplevels = cp->num_toplevels;
   rp->num_stxes = cp->num_stxes;
+  rp->uses_unsafe = cp->uses_unsafe;
   
   if (rp->num_toplevels)
     tls = MALLOC_N(Scheme_Object*, rp->num_toplevels);
@@ -5407,14 +5499,27 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
     SCHEME_VEC_ELS(sv)[i] = ds;
   }
 
-  return scheme_make_pair(scheme_make_integer(rp->num_lifts), scheme_make_pair(tv, sv));
+  tv = scheme_make_pair(scheme_make_integer(rp->num_lifts), 
+                        scheme_make_pair(tv, sv));
+  
+  if (rp->uses_unsafe)
+    tv = scheme_make_pair(scheme_true, tv);
+
+  return tv;
 }
 
 static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
 {
   Resolve_Prefix *rp;
   Scheme_Object *tv, *sv, **a, *stx;
-  int i;
+  int i, uses_unsafe = 0;
+
+  if (!SCHEME_PAIRP(obj)) return NULL;
+
+  if (!SCHEME_INTP(SCHEME_CAR(obj))) {
+    uses_unsafe = 1;
+    obj = SCHEME_CDR(obj);
+  }
 
   if (!SCHEME_PAIRP(obj)) return NULL;
 
@@ -5435,6 +5540,8 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
   rp->num_toplevels = SCHEME_VEC_SIZE(tv);
   rp->num_stxes = SCHEME_VEC_SIZE(sv);
   rp->num_lifts = i;
+  if (uses_unsafe)
+    rp->uses_unsafe = scheme_true; /* reset in read_marshalled */
 
   i = rp->num_toplevels;
   a = MALLOC_N(Scheme_Object *, i);

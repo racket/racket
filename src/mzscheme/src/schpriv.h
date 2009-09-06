@@ -171,6 +171,7 @@ void scheme_init_symbol_table(void);
 void scheme_init_symbol_type(Scheme_Env *env);
 void scheme_init_type();
 void scheme_init_list(Scheme_Env *env);
+void scheme_init_unsafe_list(Scheme_Env *env);
 void scheme_init_stx(Scheme_Env *env);
 void scheme_init_module(Scheme_Env *env);
 void scheme_init_module_path_table(void);
@@ -180,10 +181,14 @@ void scheme_init_network(Scheme_Env *env);
 void scheme_init_file(Scheme_Env *env);
 void scheme_init_proc(Scheme_Env *env);
 void scheme_init_vector(Scheme_Env *env);
+void scheme_init_unsafe_vector(Scheme_Env *env);
 void scheme_init_string(Scheme_Env *env);
 void scheme_init_number(Scheme_Env *env);
 void scheme_init_numarith(Scheme_Env *env);
+void scheme_init_unsafe_numarith(Scheme_Env *env);
+void scheme_init_unsafe_number(Scheme_Env *env);
 void scheme_init_numcomp(Scheme_Env *env);
+void scheme_init_unsafe_numcomp(Scheme_Env *env);
 void scheme_init_numstr(Scheme_Env *env);
 void scheme_init_eval(Scheme_Env *env);
 void scheme_init_promise(Scheme_Env *env);
@@ -1828,6 +1833,7 @@ typedef struct Comp_Prefix
   int num_toplevels, num_stxes;
   Scheme_Hash_Table *toplevels; /* buckets for toplevel/module variables */
   Scheme_Hash_Table *stxes;     /* syntax objects */
+  Scheme_Object *uses_unsafe;   /* NULL, inspector, or hashtree of inspectors */
 } Comp_Prefix;
 
 typedef struct Scheme_Comp_Env
@@ -1900,6 +1906,7 @@ typedef struct Resolve_Prefix
   Scheme_Object **toplevels;
   Scheme_Object **stxes; /* simplified */
   Scheme_Object *delay_info_rpair; /* (rcons refcount Scheme_Load_Delay*) */
+  Scheme_Object *uses_unsafe; /* non-NULL => inspector or hashtree of inspectors for accessing #%unsafe bindings */
 } Resolve_Prefix;
 
 typedef struct Resolve_Info
@@ -2086,6 +2093,8 @@ Scheme_Object *scheme_lookup_binding(Scheme_Object *symbol, Scheme_Comp_Env *env
 				     Scheme_Env **_menv, int *_protected,
                                      Scheme_Object **_lexical_binding_id);
 
+Scheme_Object *scheme_extract_unsafe(Scheme_Object *o);
+
 Scheme_Object *scheme_add_env_renames(Scheme_Object *stx, Scheme_Comp_Env *env,
 				      Scheme_Comp_Env *upto);
 
@@ -2137,6 +2146,9 @@ Scheme_Object *scheme_register_toplevel_in_prefix(Scheme_Object *var, Scheme_Com
 						  Scheme_Compile_Info *rec, int drec);
 Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env,
 					     Scheme_Compile_Info *rec, int drec);
+void scheme_register_unsafe_in_prefix(Scheme_Comp_Env *env,
+                                      Scheme_Compile_Info *rec, int drec,
+                                      Scheme_Env *menv);
 
 void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object *a, 
                           Scheme_Env *exp_env, Scheme_Object *insp, 
@@ -2753,6 +2765,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
 						 int position, int want_pos,
 						 int *_protected, int *_unexported, 
                                                  Scheme_Env *from_env, int *_would_complain);
+void scheme_check_unsafe_accessible(Scheme_Object *insp, Scheme_Env *from_env);
 Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Scheme_Object *name);
 
 Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,
@@ -2769,7 +2782,7 @@ Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modid
 
 Scheme_Env *scheme_get_kernel_env();
 int scheme_is_kernel_env();
-
+Scheme_Env *scheme_get_unsafe_env();
 
 void scheme_install_initial_module_set(Scheme_Env *env);
 Scheme_Bucket_Table *scheme_clone_toplevel(Scheme_Bucket_Table *ht, Scheme_Env *home);
@@ -2781,6 +2794,7 @@ void scheme_clean_dead_env(Scheme_Env *env);
 Scheme_Module *scheme_extract_compiled_module(Scheme_Object *o);
 
 int scheme_is_kernel_modname(Scheme_Object *modname);
+int scheme_is_unsafe_modname(Scheme_Object *modname);
 
 void scheme_clear_modidx_cache(void);
 void scheme_clear_shift_cache(void);
@@ -3184,6 +3198,9 @@ unsigned short * scheme_ucs4_to_utf16(const mzchar *text, int start, int end,
 #define SCHEME_SYM_WEIRDP(o) (MZ_OPT_HASH_KEY(&((Scheme_Symbol *)(o))->iso) & 0x3)
 
 Scheme_Object *scheme_current_library_collection_paths(int argc, Scheme_Object *argv[]);
+
+int scheme_can_inline_fp_op();
+int scheme_can_inline_fp_comp();
 
 /*========================================================================*/
 /*                           places                                       */

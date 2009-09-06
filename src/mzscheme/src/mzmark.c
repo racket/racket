@@ -2218,6 +2218,7 @@ static int resolve_prefix_val_MARK(void *p) {
   gcMARK(rp->toplevels);
   gcMARK(rp->stxes);
   gcMARK(rp->delay_info_rpair);
+  gcMARK(rp->uses_unsafe);
 
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
@@ -2228,6 +2229,7 @@ static int resolve_prefix_val_FIXUP(void *p) {
   gcFIXUP(rp->toplevels);
   gcFIXUP(rp->stxes);
   gcFIXUP(rp->delay_info_rpair);
+  gcFIXUP(rp->uses_unsafe);
 
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
@@ -2246,6 +2248,7 @@ static int comp_prefix_val_MARK(void *p) {
   Comp_Prefix *cp = (Comp_Prefix *)p;
   gcMARK(cp->toplevels);
   gcMARK(cp->stxes);
+  gcMARK(cp->uses_unsafe);
 
   return
   gcBYTES_TO_WORDS(sizeof(Comp_Prefix));
@@ -2255,6 +2258,7 @@ static int comp_prefix_val_FIXUP(void *p) {
   Comp_Prefix *cp = (Comp_Prefix *)p;
   gcFIXUP(cp->toplevels);
   gcFIXUP(cp->stxes);
+  gcFIXUP(cp->uses_unsafe);
 
   return
   gcBYTES_TO_WORDS(sizeof(Comp_Prefix));

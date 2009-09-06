@@ -391,6 +391,7 @@
 "(module #%builtin '#%kernel"
 "(#%require '#%expobs"
 "(only '#%foreign) "
+"(only '#%unsafe) "
 " '#%paramz"
 " '#%network"
 " '#%utils"

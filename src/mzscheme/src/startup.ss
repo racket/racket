@@ -465,6 +465,7 @@
 (module #%builtin '#%kernel
   (#%require '#%expobs
              (only '#%foreign)  ; so it's attached, but doesn't depend on any exports
+             (only '#%unsafe)   ; ditto
              '#%paramz
              '#%network
              '#%utils

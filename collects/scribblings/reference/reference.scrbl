@@ -70,6 +70,7 @@ languages.}
 @include-section["security.scrbl"]
 @include-section["os.scrbl"]
 @include-section["memory.scrbl"]
+@include-section["unsafe.scrbl"]
 @include-section["running.scrbl"]
 
 @;------------------------------------------------------------------------

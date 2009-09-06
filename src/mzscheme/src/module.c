@@ -132,6 +132,7 @@ static Scheme_Object *kernel_modname;
 static Scheme_Object *kernel_symbol;
 static Scheme_Object *kernel_modidx;
 static Scheme_Module *kernel;
+static Scheme_Object *unsafe_modname;
 
 /* global read-only symbols */
 static Scheme_Object *module_symbol;
@@ -328,12 +329,14 @@ void scheme_init_module(Scheme_Env *env)
   REGISTER_SO(kernel_symbol);
   REGISTER_SO(kernel_modname);
   REGISTER_SO(kernel_modidx);
+  REGISTER_SO(unsafe_modname);
   kernel_symbol = scheme_intern_symbol("#%kernel");
   kernel_modname = scheme_intern_resolved_module_path(kernel_symbol);
   kernel_modidx = scheme_make_modidx(scheme_make_pair(quote_symbol,
                                                       scheme_make_pair(kernel_symbol, 
                                                                        scheme_null)),
                                      scheme_false, kernel_modname);
+  unsafe_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%unsafe"));
 
   REGISTER_SO(module_symbol);
   REGISTER_SO(module_begin_symbol);
@@ -578,6 +581,11 @@ void scheme_finish_kernel(Scheme_Env *env)
 int scheme_is_kernel_modname(Scheme_Object *modname)
 {
   return SAME_OBJ(modname, kernel_modname);
+}
+
+int scheme_is_unsafe_modname(Scheme_Object *modname)
+{
+  return SAME_OBJ(modname, unsafe_modname);
 }
 
 Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env)
@@ -3478,6 +3486,36 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
   }
 
   return NULL;
+}
+
+void scheme_check_unsafe_accessible(Scheme_Object *insp, Scheme_Env *from_env)
+{
+  Scheme_Env *unsafe_env;
+
+  unsafe_env = scheme_get_unsafe_env();
+
+  if (SCHEME_HASHTRP(insp)) {
+    Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)insp;
+    int i;
+    Scheme_Object *k, *v;
+
+    for (i = t->count; i--; ) {
+      scheme_hash_tree_index(t, i, &k, &v);
+      insp = k;
+      if (scheme_module_protected_wrt(unsafe_env->insp, insp)) {
+        break;
+      }
+    }
+
+    if (i < 0)
+      return;
+  }
+
+  if (scheme_module_protected_wrt(unsafe_env->insp, insp)) {
+    scheme_wrong_syntax("link", 
+                        NULL, NULL, 
+                        "attempt to access unsafe bindings from an untrusted context");
+  }
 }
 
 int scheme_module_export_position(Scheme_Object *modname, Scheme_Env *env, Scheme_Object *varname)

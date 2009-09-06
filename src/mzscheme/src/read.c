@@ -4681,7 +4681,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       break;
     case CPT_REFERENCE:
       l = read_compact_number(port);
-      RANGE_CHECK(l, < EXPECTED_PRIM_COUNT);
+      RANGE_CHECK(l, < (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT));
       return variable_references[l];
       break;
     case CPT_LOCAL:
@@ -5080,6 +5080,12 @@ static Scheme_Object *read_marshalled(int type, CPort *port)
 
   if (!l)
     scheme_ill_formed_code(port);
+
+  if (type == scheme_resolve_prefix_type) {
+    /* If unsafe_insp is set, need to use the one in port: */
+    if (((Resolve_Prefix *)l)->uses_unsafe)
+      ((Resolve_Prefix *)l)->uses_unsafe = port->insp;
+  }
 
   return l;
 }

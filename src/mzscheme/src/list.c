@@ -135,6 +135,15 @@ static Scheme_Object *make_hasheq_placeholder(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_hasheqv_placeholder(int argc, Scheme_Object *argv[]);
 static Scheme_Object *table_placeholder_p(int argc, Scheme_Object *argv[]);
 
+static Scheme_Object *unsafe_car (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_cdr (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_mcar (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_mcdr (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_set_mcar (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_set_mcdr (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_unbox (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_set_box (int argc, Scheme_Object *argv[]);
+
 #define BOX "box"
 #define BOXP "box?"
 #define UNBOX "unbox"
@@ -682,6 +691,46 @@ scheme_init_list (Scheme_Env *env)
 
   weak_symbol = scheme_intern_symbol("weak");
   equal_symbol = scheme_intern_symbol("equal");
+}
+
+void
+scheme_init_unsafe_list (Scheme_Env *env)
+{
+  Scheme_Object *p;
+  
+  scheme_null->type = scheme_null_type;
+
+  p = scheme_make_folding_prim(unsafe_car, "unsafe-car", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("unsafe-car", p, env);
+
+  p = scheme_make_folding_prim(unsafe_cdr, "unsafe-cdr", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("unsafe-cdr", p, env);
+
+  p = scheme_make_immed_prim(unsafe_mcar, "unsafe-mcar", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("unsafe-mcar", p, env);
+
+  p = scheme_make_immed_prim(unsafe_mcdr, "unsafe-mcdr", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant ("unsafe-mcdr", p, env);
+
+  p = scheme_make_immed_prim(unsafe_set_mcar, "unsafe-set-mcar!", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant ("unsafe-set-mcar!", p, env);
+
+  p = scheme_make_immed_prim(unsafe_set_mcdr, "unsafe-set-mcdr!", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant ("unsafe-set-mcdr!", p, env);
+  
+  p = scheme_make_immed_prim(unsafe_unbox, "unsafe-unbox", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;  
+  scheme_add_global_constant("unsafe-unbox", p, env);
+
+  p = scheme_make_immed_prim(unsafe_set_box, "unsafe-set-box!", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("unsafe-set-box!", p, env);
 }
 
 Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
@@ -2534,3 +2583,50 @@ void scheme_init_ephemerons(void)
 }
 
 #endif
+
+/************************************************************/
+/*                        unsafe                            */
+/************************************************************/
+
+static Scheme_Object *unsafe_car (int argc, Scheme_Object *argv[])
+{
+  return SCHEME_CAR(argv[0]);
+}
+
+static Scheme_Object *unsafe_cdr (int argc, Scheme_Object *argv[])
+{
+  return SCHEME_CDR(argv[0]);
+}
+
+static Scheme_Object *unsafe_mcar (int argc, Scheme_Object *argv[])
+{
+  return SCHEME_CAR(argv[0]);
+}
+
+static Scheme_Object *unsafe_mcdr (int argc, Scheme_Object *argv[])
+{
+  return SCHEME_CDR(argv[0]);
+}
+
+static Scheme_Object *unsafe_set_mcar (int argc, Scheme_Object *argv[])
+{
+  SCHEME_CAR(argv[0]) = argv[1];
+  return scheme_void;
+}
+
+static Scheme_Object *unsafe_set_mcdr (int argc, Scheme_Object *argv[])
+{
+  SCHEME_CDR(argv[0]) = argv[1];
+  return scheme_void;
+}
+
+static Scheme_Object *unsafe_unbox (int argc, Scheme_Object *argv[])
+{
+  return SCHEME_BOX_VAL(argv[0]);
+}
+
+static Scheme_Object *unsafe_set_box (int argc, Scheme_Object *argv[])
+{
+  SCHEME_BOX_VAL(argv[0]) = argv[1];
+  return scheme_void;
+}
