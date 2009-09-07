@@ -30,8 +30,8 @@ A SinglePattern is one of
   (make-pat:compound SPBase Kind (listof SinglePattern))
   (make-pat:cut SPBase SinglePattern)
   (make-pat:describe SPBase stx boolean SinglePattern)
-  (make-pat:bind SPBase (listof clause:attr))
   (make-pat:fail SPBase stx stx)
+  (make-pat:bind SPBase (listof clause:attr))
 
 A ListPattern is a subtype of SinglePattern; one of
   (make-pat:datum SPBase '())
@@ -53,9 +53,8 @@ A ListPattern is a subtype of SinglePattern; one of
 (define-struct pat:compound (attrs kind patterns) #:prefab)
 (define-struct pat:cut (attrs pattern) #:prefab)
 (define-struct pat:describe (attrs description transparent? pattern) #:prefab)
-(define-struct pat:bind (attrs clauses) #:prefab)
 (define-struct pat:fail (attrs when message) #:prefab)
-
+(define-struct pat:bind (attrs clauses) #:prefab)
 
 #|
 A HeadPattern is one of
@@ -63,12 +62,14 @@ A HeadPattern is one of
   (make-hpat:seq HPBase ListPattern)
   (make-hpat:or HPBase (listof HeadPattern))
   (make-hpat:describe HPBase stx/#f boolean HeadPattern)
+  (make-hpat:optional HPBase HeadPattern (listof clause:attr))
 |#
 
 (define-struct hpat:ssc (attrs parser description bind-term? bind-attrs?) #:prefab)
 (define-struct hpat:seq (attrs inner) #:prefab)
 (define-struct hpat:or (attrs patterns) #:prefab)
 (define-struct hpat:describe (attrs description transparent? pattern) #:prefab)
+(define-struct hpat:optional (attrs inner defaults) #:prefab)
 
 #|
 An EllipsisHeadPattern is
@@ -114,7 +115,8 @@ A Kind is one of
   (or (hpat:ssc? x)
       (hpat:seq? x)
       (hpat:or? x)
-      (hpat:describe? x)))
+      (hpat:describe? x)
+      (hpat:optional? x)))
 
 (define (ellipsis-head-pattern? x)
   (ehpat? x))
@@ -143,5 +145,5 @@ A Kind is one of
     (mk-get-attrs pat:name pat:any pat:sc pat:datum pat:literal pat:head
                   pat:dots pat:and pat:or pat:compound pat:cut pat:describe
                   pat:bind pat:fail
-                  hpat:ssc hpat:seq hpat:or hpat:describe
+                  hpat:ssc hpat:seq hpat:or hpat:describe hpat:optional
                   ehpat)))

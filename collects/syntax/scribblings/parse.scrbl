@@ -12,16 +12,31 @@
 @(define ellipses @scheme[...])
 
 @(begin
+   (define (fixup exn)
+     (let ([src (ormap values (exn:fail:syntax-exprs exn))])
+       (if src
+           (make-exn:fail:syntax
+            (format "~a at: ~a" (exn-message exn) (syntax->datum src))
+            (exn-continuation-marks exn)
+            (exn:fail:syntax-exprs exn))
+           exn)))
    (define the-eval
      (parameterize ((sandbox-output 'string)
-                    (sandbox-error-output 'string))
+                    (sandbox-error-output 'string)
+                    (sandbox-make-code-inspector current-code-inspector)
+                    (sandbox-eval-handlers
+                     (list #f
+                           (lambda (thunk)
+                             (with-handlers ([exn:fail:syntax?
+                                              (lambda (e) (raise (fixup e)))])
+                               (thunk))))))
        (make-evaluator 'scheme/base
                        #:requires '(syntax/parse (for-syntax scheme/base)))))
+   (the-eval '(error-print-source-location #f))
    (define-syntax-rule (myexamples e ...)
-     (parameterize ((error-print-source-location #f))
-       (examples #:eval the-eval e ...))))
+     (examples #:eval the-eval e ...)))
 
-@title[#:tag "stxparse"]{Parsing and classifying syntax}
+@title[#:tag "stxparse" #:style '(toc)]{Parsing and classifying syntax}
 
 The @schememodname[syntax/parse] library provides a framework for
 describing and parsing syntax. Using @schememodname[syntax/parse],
@@ -31,6 +46,8 @@ library also provides a pattern-matching form, @scheme[syntax-parse],
 which offers many improvements over @scheme[syntax-case].
 
 @defmodule[syntax/parse]
+
+@local-table-of-contents[]
 
 @;{----------}
 
@@ -59,25 +76,33 @@ subterms of the syntax object and that clause's side conditions and
 If the syntax object fails to match any of the patterns (or all
 matches fail the corresponding clauses' side conditions), a syntax
 error is raised. If the @scheme[#:context] argument is given,
-@scheme[context-expr] is used in reporting the error.
+@scheme[context-expr] is used in reporting the error; otherwise
+@scheme[stx-expr] is used.
+
+@(myexamples
+  (syntax-parse #'(a b 3)
+    [(x:id ...) 'ok])
+  (syntax-parse #'(a b 3)
+    #:context #'(lambda (a b 3) (+ a b))
+    [(x:id ...) 'ok]))
 
 The @scheme[#:literals] option specifies identifiers that should match
-as literals, rather than simply being pattern variables. A literal in
-the literals list has two components: the identifier used within the
-pattern to signify the positions to be matched (@scheme[pattern-id]),
-and the identifier expected to occur in those positions
-(@scheme[literal-id]). If the single-identifier form is used, the same
-identifier is used for both purposes.
+as @tech{literals}, rather than simply being @tech{pattern
+variables}. A literal in the literals list has two components: the
+identifier used within the pattern to signify the positions to be
+matched (@scheme[pattern-id]), and the identifier expected to occur in
+those positions (@scheme[literal-id]). If the single-identifier form
+is used, the same identifier is used for both purposes.
 
 @bold{Note:} Unlike @scheme[syntax-case], @scheme[syntax-parse]
 requires all literals to have a binding. To match identifiers by their
 symbolic names, consider using the @scheme[atom-in-list] syntax class
 instead.
 
-Many literals can be declared at once via one or more @tech{literal sets},
-imported with the @scheme[#:literal-sets] option. The literal-set
-definition determines the literal identifiers to recognize and the
-names used in the patterns to recognize those literals.
+Many literals can be declared at once via one or more @tech{literal
+sets}, imported with the @scheme[#:literal-sets] option. The
+literal-set definition determines the literal identifiers to recognize
+and the names used in the patterns to recognize those literals.
 
 The @scheme[#:conventions] option imports @tech{convention}s that give
 default syntax classes to pattern variables that do not explicitly
@@ -167,9 +192,9 @@ like the following form.
 @specsubform[pvar-id:syntax-class-id]{
 
 Matches only subterms specified by the @svar[syntax-class-id]. The
-syntax class's attributes are computed for the subterm and bound to
-the pattern variables formed by prefixing @svar[pvar-id.] to the
-name of the attribute. @svar[pvar-id] is bound to the matched
+syntax class's @tech{attributes} are computed for the subterm and
+bound to the pattern variables formed by prefixing @svar[pvar-id.] to
+the name of the attribute. @svar[pvar-id] is bound to the matched
 subterm.
 
 If @svar[pvar-id] is @scheme[_], no attributes are bound.
@@ -179,19 +204,27 @@ If @svar[pvar-id] is empty (that is, if the pattern is of the form
 bound, but their names are not prefixed first.
 
 @myexamples[
-(syntax-parse #'x
+(syntax-parse #'a
   [var:id (syntax-e #'var)])
 (syntax-parse #'12
   [var:id (syntax-e #'var)])
-(syntax-parse #'(x y z)
-  [var:id (syntax-e #'var)])]
+(define-syntax-class two
+  #:attributes (x y)
+  (pattern (x y)))
+(syntax-parse #'(a b)
+  [t:two (syntax->datum #'(t t.x t.y))])
+(syntax-parse #'(a b)
+  [t
+   #:declare t two
+   (syntax->datum #'(t t.x t.y))])]
+
 }
 
 @specsubform[literal-id]{
 
 An identifier that appears in the literals list is not a pattern
-variable; instead, it is a literal that matches any identifier
-@scheme[free-identifier=?] to it.
+variable; instead, it is a @deftech{literal} that matches any
+identifier @scheme[free-identifier=?] to it.
 
 Specifically, if @scheme[literal-id] is the ``pattern'' name of an
 entry in the literals list, then it represents a pattern that matches

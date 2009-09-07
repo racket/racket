@@ -306,7 +306,7 @@
 
 ;; parse-head-pattern : stx DeclEnv -> HeadPattern
 (define (parse-head-pattern stx decls)
-  (syntax-case stx (~or ~seq ~describe)
+  (syntax-case stx (~or ~seq ~describe ~optional)
     [id
      (and (identifier? #'id) (not (reserved? #'id)))
      (parse-pat:id stx decls #t)]
@@ -316,6 +316,8 @@
      (parse-hpat:seq stx #'rest decls)]
     [(~describe . rest)
      (parse-pat:describe stx decls #t)]
+    [(~optional . rest)
+     (parse-hpat:optional stx decls)]
     [_
      (parse-single-pattern stx decls)]))
 
@@ -567,7 +569,18 @@
     [else
      (wrong-syntax stx "expected proper list pattern")]))
 
+(define (parse-hpat:optional stx decls)
+  (define-values (head all-iattrs _name _tmm defaults)
+    (parse-optional-pattern stx decls h-optional-directive-table))
+  (make hpat:optional all-iattrs head defaults))
+
 (define (parse-ehpat/optional stx decls)
+  (define-values (head all-iattrs name too-many-msg defaults)
+    (parse-optional-pattern stx decls eh-optional-directive-table))
+  (make ehpat all-iattrs head
+        (make rep:optional name too-many-msg defaults)))
+
+(define (parse-optional-pattern stx decls optional-directive-table)
   (syntax-case stx (~optional)
     [(~optional p . options)
      (let ([head (parse-head-pattern #'p decls)])
@@ -587,8 +600,7 @@
          (define all-iattrs
            (union-iattrs (list pattern-iattrs defaults-iattrs)))
          (check-iattrs-subset defaults-iattrs pattern-iattrs stx)
-         (make ehpat all-iattrs head
-               (make rep:optional name too-many-msg defaults))))]))
+         (values head all-iattrs name too-many-msg defaults)))]))
 
 (define (parse-ehpat/once stx decls)
   (syntax-case stx (~once)
@@ -876,8 +888,12 @@
 (define describe-option-table
   (list (list '#:transparent)))
 
-;; optional-directive-table
-(define optional-directive-table
+;; eh-optional-directive-table
+(define eh-optional-directive-table
   (list (list '#:too-many check-expression)
         (list '#:name check-expression)
         (list '#:defaults check-bind-clause-list)))
+
+;; h-optional-directive-table
+(define h-optional-directive-table
+  (list (list '#:defaults check-bind-clause-list)))

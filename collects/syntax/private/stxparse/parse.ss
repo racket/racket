@@ -308,6 +308,17 @@
                (let ([sub-id alt-sub-id] ...)
                  (success pre ... id ...))))))]))
 
+;; (disjunct (clause:attr ...) id (expr ...) (id ...)) : expr
+(define-syntax (disjunct/sides stx)
+  (syntax-case stx ()
+    [(disjunct/sides clauses success (pre ...) (id ...))
+     (with-syntax ([(#s(clause:attr #s(attr sub-id _ _) _) ...) #'clauses])
+       (with-syntax ([(alt-sub-id ...) (generate-temporaries #'(sub-id ...))])
+         #`(let ([alt-sub-id (attribute sub-id)] ...)
+             (let ([id #f] ...)
+               (let ([sub-id alt-sub-id] ...)
+                 (success pre ... id ...))))))]))
+
 (begin-for-syntax
  ;; convert-list-pattern : ListPattern id -> SinglePattern
  ;; Converts '() datum pattern at end of list to bind (cons stx index)
@@ -382,6 +393,22 @@
                           #'pattern
                           #'#s(internal-rest-pattern rest index index0))])
             #'(parse:S x fc pattern k)))]
+       [#s(hpat:optional (a ...) pattern defaults)
+        (with-syntax ([(#s(attr id _ _) ...) #'(a ...)]
+                      [index0 (frontier->index-expr (wash #'fc))])
+          #`(let ([success
+                   (lambda (rest index fail id ...)
+                     (with-enclosing-fail fail
+                       (let-attributes ([a id] ...) k)))])
+              (try (parse:H x fc pattern rest index
+                            (success rest index enclosing-fail (attribute id) ...))
+                   (let ([rest x]
+                         [index index0])
+                     (convert-sides x defaults
+                       (clause-success ()
+                         (disjunct/sides defaults success
+                                         (rest index enclosing-fail)
+                                         (id ...))))))))]
        [_
         (with-syntax ([attrs (pattern-attrs (wash #'head))]
                       [index0 (frontier->index-expr (wash #'fc))])
