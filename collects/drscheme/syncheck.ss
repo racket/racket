@@ -2153,7 +2153,7 @@ If the namespace does not, they are colored the unbound color.
                                 (and (not a)
                                      (not b)))))))])
         (cond
-          [(get-ids varsets var (λ () #f))
+          [(get-ids varsets var)
            (color var set!d-variable-style-name)]
           [lexical? (color var lexically-bound-variable-style-name)]
           [(pair? b) (color var imported-variable-style-name)])))
