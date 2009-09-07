@@ -16,6 +16,10 @@
  check-error  ;; syntax : (check-error <expression> <expression>)
  )
 
+; for other modules implementing check-expect-like forms
+(provide
+ (for-syntax check-expect-maker))
+
 (define INEXACT-NUMBERS-FMT
   "check-expect cannot compare inexact numbers. Try (check-within test ~a range).")
 (define FUNCTION-FMT

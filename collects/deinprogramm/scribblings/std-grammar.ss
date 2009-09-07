@@ -49,6 +49,8 @@
 	 @#,scheme[(letrec ((id expr) (... ...)) expr)]
 	 @#,scheme[(let* ((id expr) (... ...)) expr) ]
 	 @#,scheme[(begin expr expr (... ...))]
+	 @#,scheme[(for-all ((id contract) (... ...)) expr)]
+	 @#,scheme[(==> expr expr)]
 	 expr-rule ...]
    [contract  id
 	      @#,scheme[(predicate expr)]
@@ -62,7 +64,8 @@
    ]
    [test-case @#,scheme[(check-expect expr expr)]
               @#,scheme[(check-within expr expr expr)]
-              @#,scheme[(check-error expr expr)]]
+              @#,scheme[(check-error expr expr)]
+	      @#,scheme[(check-property expr)]]
    #;(...
     [library-require @#,scheme[(require string)]
                      @#,scheme[(require (lib string string ...))]

@@ -4,7 +4,9 @@
 	 contract-violation?
 	 contract-violation-obj contract-violation-contract contract-violation-message
 	 contract-violation-blame contract-violation-srcloc
-	 contract-got? contract-got-value contract-got-format)
+	 contract-got? contract-got-value contract-got-format
+	 property-fail? property-fail-result
+	 property-error? make-property-error property-error-message property-error-exn)
 
 (require scheme/class
 	 (lib "test-engine/test-engine.scm")
@@ -96,6 +98,9 @@
 
 (define-struct contract-violation (obj contract message srcloc blame))
 
+(define-struct (property-fail check-fail) (result))
+(define-struct (property-error check-fail) (message exn))
+
 (define contract-test-info%
   (class* test-info-base% ()
 	 
@@ -129,5 +134,12 @@
       (inner (void) contract-failed obj contract message))
 
     (define/public (failed-contracts) (reverse contract-violations))
+    
+    (inherit add-check-failure)
+    (define/pubment (property-failed result src-info)
+      (add-check-failure (make-property-fail src-info (test-format) result) #f))
+
+    (define/pubment (property-error exn src-info)
+      (add-check-failure (make-property-error src-info (test-format) (exn-message exn) exn) exn))
 
     (super-instantiate ())))

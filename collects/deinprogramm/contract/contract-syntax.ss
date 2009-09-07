@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (provide :
-	 contract
+	 contract contract/arbitrary
 	 define-contract
 	 define/contract define-values/contract
 	 -> mixed one-of predicate combined property)
@@ -115,6 +115,14 @@
        #'(contract #f ?contr))
       ((_ ?name ?contr)
        (parse-contract (syntax->datum #'?name) #'?contr)))))
+
+(define-syntax contract/arbitrary
+  (lambda (stx)
+    (syntax-case stx ()
+      ((_ ?arb ?contr . ?rest)
+       #'(let ((contr (contract ?contr . ?rest)))
+	   (set-contract-arbitrary! contr ?arb)
+	   contr)))))
 
 (define-syntax define-contract
   (lambda (stx)

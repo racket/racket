@@ -333,6 +333,21 @@ Dieser Testfall überprüft, ob der erste @scheme[expr] einen Fehler produziert,
 wobei die Fehlermeldung der Zeichenkette entspricht, die der Wert des zweiten
 @scheme[expr] ist.}
 
+@defform[(check-property expr)]{
+
+Dieser Testfall überprüft experimentell, ob die Eigenschaft
+@scheme[expr] erfüllt ist.  Dazu werden zufällige Werte für die mit
+@scheme[for-all] quantifizierten Variablen eingesetzt: Damit wird
+überprüft, ob die Bedingung gilt.
+
+@emph{Wichtig:} @scheme[check-property] funktioniert nur für
+Eigenschaften, bei denen aus den Verträgen sinnvoll Werte generiert
+werden können.  Dies ist für die meisten eingebauten Verträge der
+Fall, aber nicht für Verträge, die mit @scheme[predicate],
+@scheme[property] oder @scheme[define-record-procedures]definiert
+wurden.  In diesen Fällen erzeugt @scheme[check-property] eine Fehlermeldung.
+}
+
 @section{Parametrische Record-Typ-Definitionen}
 
 @defform[(define-record-procedures-parametric (t p1 ...) c p (s1 ...))]{
@@ -394,6 +409,64 @@ Dann ist @scheme[(pare integer string)] der Vertrag für
 @; kommt.}
 
 @; ----------------------------------------
+
+@section{Eigenschaften}
+
+Eine @deftech{Eigenschaft} definiert eine Aussage über einen
+Scheme-Ausdruck, die experimentell überprüft werden kann.  Der
+einfachste Fall einer Eigenschaft ist ein boolescher Ausdruck.  Die
+folgende Eigenschaft gilt immer:
+
+@schemeblock[
+(= 1 1)
+]
+
+Es ist auch möglich, in einer Eigenschaft Variablen zu verwenden, für
+die verschiedene Werte eingesetzt werden.  Dafür müssen die Variablen
+gebunden und @deftech{quantifiziert} werden, d.h. es muß festgelegt
+werden, welchen Vertrag die Werte der Variable erfüllen sollen.
+Eigenschaften mit Variablen werden mit der @scheme[for-all]-Form erzeugt:
+
+@defform[(for-all ((id contract) ...) expr)]{
+Dies bindet die Variablen @scheme[id] in der Eigenschaft
+@scheme[expr].  Zu jeder Variable gehört ein Vertrag
+@scheme[contract], der von den Werten der Variable erfüllt werden
+muß.
+
+Beispiel:
+
+@schemeblock[
+(for-all ((x integer))
+  (= x (/ (* x 2) 2)))
+]
+}
+
+@defform[(expect expr expr)]{
+
+Ein @scheme[expect]-Ausdruck ergibt  eine Eigenschaft,  die dann gilt,
+wenn   die Werte von @scheme[expr] und   @scheme[expr] gleich sind, im
+gleichen Sinne wie bei @scheme[check-expect].}
+
+
+@defform[(expect-within expr expr expr)]{
+
+Wie @scheme[expect], aber entsprechend @scheme[check-within] mit einem
+weiteren Ausdruck, der als Wert eine Zahl @scheme[_delta] hat. Die
+resultierende Eigenschaft gilt, wenn jede Zahl im Resultat des ersten
+@scheme[expr] maximal um @scheme[_delta] von der entsprechenden Zahl
+im zweiten @scheme[expr] abweicht.}
+
+@defform[(==> expr expr)]{
+Der erste Operand ist ein boolescher Ausdruck, der zweite Operand eine
+Eigenschaft: @scheme[(==> c p)] legt fest, daß die Eigenschaft
+@scheme[p] nur erfüllt sein muß, wenn @scheme[c] (die
+@emph{Bedingung}) @scheme[#t] ergibt, also erfüllt ist.}
+ 
+@schemeblock[
+(for-all ((x integer))
+  (==> (even? x)
+       (= x (* 2 (/ x 2)))))
+]
 
 @section[#:tag "beginner-prim-ops"]{Primitive Operationen}
 

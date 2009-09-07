@@ -2,9 +2,13 @@
 
 (require syntax/docprovide)
 
-(require test-engine/scheme-tests)
+(require test-engine/scheme-tests
+	 (lib "test-info.scm" "test-engine")
+	 scheme/class)
 
 (require deinprogramm/contract/module-begin
+	 deinprogramm/contract/contract
+	 deinprogramm/contract/contract-test-engine
 	 deinprogramm/contract/contract-syntax)
 
 (require (for-syntax scheme/base)
@@ -12,7 +16,12 @@
 
 (require deinprogramm/define-record-procedures)
 
+(require (only-in lang/private/teachprims beginner-equal? beginner-equal~?))
+
 (require (for-syntax deinprogramm/syntax-checkers))
+
+(require (rename-in deinprogramm/quickcheck/quickcheck
+		    (property quickcheck:property)))
 
 (provide provide lib planet rename-out require #%datum #%module-begin #%top-interaction) ; so we can use this as a language
 
@@ -60,6 +69,11 @@
 
 (provide DMdA-advanced-lambda
 	 DMdA-advanced-define)
+
+(provide for-all ==>
+	 check-property
+	 expect
+	 expect-within)
 
 (provide quote)
 
@@ -844,18 +858,18 @@
       ""
       (string-append (car l) (strings-list->string (cdr l)))))
 
-(define-contract integer (predicate integer?))
-(define-contract number (predicate number?))
-(define-contract rational (predicate rational?))
-(define-contract real (predicate real?))
+(define integer (contract/arbitrary arbitrary-integer (predicate integer?)))
+(define number (contract/arbitrary arbitrary-real (predicate number?)))
+(define rational (contract/arbitrary arbitrary-rational (predicate rational?)))
+(define real (contract/arbitrary arbitrary-real (predicate real?)))
 
 (define (natural? x)
   (and (integer? x)
        (not (negative? x))))
 
-(define-contract natural (predicate natural?))
+(define natural (contract/arbitrary arbitrary-natural (predicate natural?)))
 
-(define-contract boolean (predicate boolean?))
+(define boolean (contract/arbitrary arbitrary-boolean (predicate boolean?)))
 
 (define (true? x)
   (eq? x #t))
@@ -863,12 +877,12 @@
 (define (false? x)
   (eq? x #f))
 
-(define-contract true (predicate true?))
-(define-contract false (predicate false?))
+(define-contract true (one-of #f))
+(define-contract false (one-of #f))
 
-(define-contract string (predicate string?))
-(define-contract symbol (predicate symbol?))
-(define-contract empty-list (predicate empty?))
+(define string (contract/arbitrary arbitrary-string (predicate string?)))
+(define symbol (contract/arbitrary arbitrary-symbol (predicate symbol?)))
+(define-contract empty-list (one-of empty))
 
 (define-contract unspecific (predicate (lambda (_) #t)))
 
@@ -951,3 +965,59 @@
 		    stx)))))))))
     (values (proc #f)
 	    (proc #t))))
+
+; QuickCheck
+
+(define-syntax (for-all stx)
+  (syntax-case stx ()
+    ((_ ((?id ?arb) ...) ?body)
+     (with-syntax ((((?id ?arb) ...)
+		    ;; #### check errors, idness
+		    (map (lambda (pr)
+			   (syntax-case pr ()
+			     ((?id ?contract)
+			      (with-syntax ((?error-call
+					     (syntax/loc #'?contract (error "Vertrag hat keinen Generator"))))
+				#'(?id
+				   (or (contract-arbitrary (contract ?contract))
+				       ?error-call))))))
+			 (syntax->list #'((?id ?arb) ...)))))
+       #'(quickcheck:property 
+	  ((?id ?arb) ...) ?body)))))
+
+(define-syntax (check-property stx)
+  (unless (memq (syntax-local-context) '(module top-level))
+    (raise-syntax-error
+     #f "`check-property' muss ganz außen stehen" stx))
+  (syntax-case stx ()
+    ((_ ?prop)
+     (stepper-syntax-property
+      (check-expect-maker stx #'check-property-error #'?prop '() 
+			  'comes-from-check-property)
+      'stepper-skip-completely
+      #t))
+    (_ (raise-syntax-error 'check-expect "`check-property' erwartet einen einzelnen Operanden"
+			   stx))))
+
+(define (check-property-error test src-info test-info)
+  (let ((info (send test-info get-info)))
+    (send info add-check)
+    (with-handlers ((exn?
+		     (lambda (e)
+		       (send info property-error e src-info)
+		       (raise e))))
+      (call-with-values
+	  (lambda ()
+	    (quickcheck-results (test)))
+	(lambda (ntest stamps result)
+	  (if (check-result? result)
+	      (begin
+		(send info property-failed result src-info)
+		#f)
+	      #t))))))
+
+(define (expect v1 v2)
+  (quickcheck:property () (beginner-equal? v1 v2)))
+
+(define (expect-within v1 v2 epsilon)
+  (quickcheck:property () (beginner-equal~? v1 v2 epsilon)))

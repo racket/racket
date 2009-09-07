@@ -58,17 +58,21 @@
       (set! total-tsts (add1 total-tsts))
       (inner (void) add-test))
 
+    (define/pubment (add-check-failure fail exn?)
+      (set! failed-cks (add1 failed-cks))
+      (set! failures (cons (make-failed-check fail exn?) failures))
+      (inner (void) add-check-failure fail exn?))
+
     ;; check-failed: (U check-fail (list (U string snip%))) src (U exn false) -> void
     (define/pubment (check-failed msg src exn?)
-      (set! failed-cks (add1 failed-cks))
-      (let ((fail 
+      (let ((fail
 	     ;; We'd like every caller to make a check-fail object,
 	     ;; but some (such as ProfessorJ's run time) cannot because
 	     ;; of phase problems.  Therefore, do the coercion here.
 	     (if (check-fail? msg)
 		 msg
 		 (make-message-error src #f msg))))
-	(set! failures (cons (make-failed-check fail exn?) failures))
+	(add-check-failure fail exn?)
 	(inner (void) check-failed fail src exn?)))
 
     (define/pubment (test-failed failed-info)
