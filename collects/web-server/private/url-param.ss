@@ -15,7 +15,7 @@
            (map path/param-param (url-path url))))
   (let/ec esc
     (for-each (lambda (p)
-                (with-handlers ([exn? void])
+                (with-handlers ([exn:fail? void])
                   (define l (read/string p))
                   (esc (cdr (assoc key l)))))
               ps)
@@ -38,7 +38,7 @@
                           (path/param-path f)
                           (list (write/string
                                  (list* (cons key val)
-                                        (with-handlers ([exn? (lambda _ empty)])
+                                        (with-handlers ([exn:fail? (lambda _ empty)])
                                           (filter (lambda (k*v) (not (equal? key (car k*v))))
                                                   (read/string (first (path/param-param f)))))))))
                          r))])])

@@ -16,7 +16,7 @@
           (values request? boolean?))])
 
 (define (ext:read-request conn host-port port-addresses)
-  (with-handlers ([exn? (lambda (exn)
+  (with-handlers ([exn:fail? (lambda (exn)
                           (kill-connection! conn)
                           (raise exn))])
     (read-request conn host-port port-addresses)))

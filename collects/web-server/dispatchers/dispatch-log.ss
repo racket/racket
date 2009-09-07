@@ -83,9 +83,9 @@
            (match-lambda
              [(list req)
               (loop
-               (with-handlers ([exn? (lambda (e)
+               (with-handlers ([exn:fail? (lambda (e)
                                        ((error-display-handler) "dispatch-log.ss: Error writing log entry" e)
-                                       (with-handlers ([exn? (lambda (e) #f)])
+                                       (with-handlers ([exn:fail? (lambda (e) #f)])
                                          (close-output-port log-p))
                                        #f)])
                  (define the-log-p

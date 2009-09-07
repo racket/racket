@@ -21,7 +21,7 @@
   (first (get-binding* key bindings (list default))))
 
 (define (get-binding* key bindings default)
-  (with-handlers ([exn? (lambda _ default)])
+  (with-handlers ([exn:fail? (lambda _ default)])
     (extract-binding/single key bindings)))
 
 (define (read-configuration-table table-file-name)

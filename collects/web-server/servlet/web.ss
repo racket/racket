@@ -148,7 +148,7 @@
 
 
 (define (with-errors-to-browser send/finish-or-back thunk)
-  (with-handlers ([exn? (lambda (exn)
+  (with-handlers ([exn:fail? (lambda (exn)
                           (send/finish-or-back
                            `(html (head (title "Servlet Error"))
                                   (body ([bgcolor "white"])

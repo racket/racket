@@ -130,7 +130,7 @@
           (error (lambda (a b c) (error 'digest-parser "Malformed digest: ~v ~v ~v" a b c)))))
 
 (define (do-digest-parse str)
-  (with-handlers ([exn? (lambda _ #f)])
+  (with-handlers ([exn:fail? (lambda _ #f)])
     (with-input-from-string 
      str 
      (lambda ()

@@ -149,7 +149,7 @@
 
 (define (ext:wrap f)
   (lambda (conn . args)
-    (with-handlers ([exn? (lambda (exn)
+    (with-handlers ([exn:fail? (lambda (exn)
                             (kill-connection! conn)
                             (raise exn))])
       (apply f conn args)
@@ -262,7 +262,7 @@
          (apply + (map (lambda (range)
                          (- (cdr range) (car range)))
                        converted-ranges)))
-        (with-handlers ([exn? (lambda (exn) (network-error 'output-file (exn-message exn)))])
+        (with-handlers ([exn:fail? (lambda (exn) (network-error 'output-file (exn-message exn)))])
           (call-with-input-file file-path
             (lambda (input)
               (if (= (length converted-ranges) 1)

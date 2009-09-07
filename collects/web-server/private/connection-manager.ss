@@ -45,7 +45,7 @@
 ;; kill this connection
 (define (kill-connection! conn)
   #;(printf "K: ~a~n" (connection-id conn))
-  (with-handlers ([exn? void])
+  (with-handlers ([exn:fail? void])
     (cancel-timer! (connection-timer conn)))
   (kill-connection-w/o-timer! conn))
 

@@ -41,7 +41,7 @@
 (define ((make-url->valid-path url->path) u)
   (let loop ([up (url-path u)])
     #;(printf "~S~n" `(url->valid-path ,(url->string u) ,up))
-    (with-handlers ([exn? (lambda (exn)
+    (with-handlers ([exn:fail? (lambda (exn)
                             #;((error-display-handler) (exn-message exn) exn)
                             (if (empty? up)
                                 (raise exn)

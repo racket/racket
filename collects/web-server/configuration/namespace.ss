@@ -15,7 +15,7 @@
   (define (get-name spec)
     (if (symbol? spec)
         spec
-        (with-handlers ([exn? (lambda _ #f)])
+        (with-handlers ([exn:fail? (lambda _ #f)])
           ((current-module-name-resolver) spec #f #f))))
   (define to-be-copied-module-names
     (map get-name 
@@ -28,7 +28,7 @@
     (parameterize ([current-namespace new-namespace])
       (namespace-require scheme/base-module-spec)
       (for-each (lambda (name)
-                  (with-handlers ([exn? void])
+                  (with-handlers ([exn:fail? void])
                     (when name
                       (namespace-attach-module server-namespace name))))
                 (append to-be-copied-module-names

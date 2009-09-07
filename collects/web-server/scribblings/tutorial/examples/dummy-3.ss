@@ -14,7 +14,7 @@
 (define (initialize-blog! home)
   (define db (sqlite:open home))
   (define the-blog (make-blog db))
-  (with-handlers ([exn? void])
+  (with-handlers ([exn:fail? void])
     (sqlite:exec/ignore db
                         (string-append
                          "CREATE TABLE posts "

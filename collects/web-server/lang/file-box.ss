@@ -12,7 +12,7 @@
   fb)
 
 (define (file-box-set? fb)
-  (with-handlers ([exn? (lambda _ #f)])
+  (with-handlers ([exn:fail? (lambda _ #f)])
     (file-unbox fb)
     #t))
 

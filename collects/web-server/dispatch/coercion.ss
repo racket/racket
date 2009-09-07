@@ -2,7 +2,7 @@
 
 (define (make-coerce-safe? coerce)
   (lambda (x)
-    (with-handlers ([exn? (lambda (x) #f)])
+    (with-handlers ([exn:fail? (lambda (x) #f)])
       (and (coerce x) #t))))
 
 (define-syntax (define-coercion-match-expander stx)
