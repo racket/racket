@@ -6,7 +6,7 @@
 
 @defmodule[syntax/name]
 
-@defproc[(syntax-local-infer-name [stx syntax?]) (or/c symbol? false/c)]{
+@defproc[(syntax-local-infer-name [stx syntax?]) any/c]{
 
 Similar to @scheme[syntax-local-name] except that @scheme[stx] is
 checked for an @scheme['inferred-name] property (which overrides any

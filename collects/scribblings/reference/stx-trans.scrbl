@@ -519,11 +519,11 @@ expanded.
 within a @scheme[module] form, or if it is not a run-time expression,
 then the @exnraise[exn:fail:contract]. }
 
-@defproc[(syntax-local-name) (or/c symbol? #f)]{
+@defproc[(syntax-local-name) any/c]{
 
 Returns an inferred name for the expression position being
-transformed, or @scheme[#f] if no such name is available. See also
-@secref["infernames"].
+transformed, or @scheme[#f] if no such name is available. A name is
+normally a symbol or an identifier. See also @secref["infernames"].
 
 @transform-time[]}
 
