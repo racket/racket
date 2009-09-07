@@ -14,8 +14,9 @@ between different processes.
 
 Returns two port values: the first port is an input port and the
 second is an output port. Data written to the output port is read from
-the input port, with no intermediate buffering. The ports do not need
-to be explicitly closed.
+the input port, with no intermediate buffering. Unlike some other
+kinds of ports, pipe ports do not need to be explicitly closed to be
+reclaimed by @seclink["gc-model"]{garbage collection}.
 
 If @scheme[limit] is @scheme[#f], the new pipe holds an unlimited
 number of unread bytes (i.e., limited only by the available
