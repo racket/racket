@@ -1,17 +1,51 @@
 #lang scheme/base
 
+(require "parse-type2.ss")
+(provide (all-from-out "parse-type2.ss"))
 
+#|
 
 (require (except-in "../utils/utils.ss" extend))
 (require (except-in (rep type-rep) make-arr)
          (rename-in (types convenience union utils) [make-arr* make-arr])
-         (utils tc-utils stxclass-util)
+         (utils tc-utils)
          syntax/stx (prefix-in c: scheme/contract)
-         stxclass stxclass/util
+         (except-in stxclass) stxclass/util
          (env type-environments type-name-env type-alias-env lexical-env)
          (prefix-in t: "base-types-extra.ss")
          scheme/match 
+         (for-syntax scheme/base stxclass stxclass/util)
          (for-template scheme/base "base-types-extra.ss"))
+
+(define (atom? v)
+  (or (number? v) (string? v) (boolean? v) (symbol? v) (keyword? v) (char? v) (bytes? v) (regexp? v)))
+
+(define-syntax-class (3d pred)
+  (pattern s           
+           #:with datum (syntax-e #'s)
+           #:when (pred #'datum)))
+
+(define-syntax (parse/get stx)
+  (syntax-parse stx
+    [(_ arg:expr attr:id pat)
+     (let* ([i (generate-temporary)]
+            [get-i (datum->syntax 
+		    i 
+		    (string->symbol 
+		     (string-append (symbol->string (syntax-e i)) 
+				    "."
+				    (symbol->string #'attr.datum))))])
+       (quasisyntax/loc stx
+         (syntax-parse arg 
+           [#,i #:declare #,i pat #'#,get-i])))]))
+
+
+
+(define-pred-stxclass atom atom?)
+(define-pred-stxclass byte-pregexp byte-pregexp?)
+(define-pred-stxclass byte-regexp byte-regexp?)
+(define-pred-stxclass regexp regexp?)
+(define-pred-stxclass bytes bytes?)
 
 (p/c [parse-type (syntax? . c:-> . Type/c)]
      [parse-type/id (syntax? c:any/c . c:-> . Type/c)] 
@@ -584,3 +618,4 @@
 (define parse-tc-results/id (parse/id parse-tc-results))
 
 (define parse-type/id (parse/id parse-type))
+|#

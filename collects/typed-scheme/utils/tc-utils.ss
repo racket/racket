@@ -54,7 +54,7 @@ don't depend on any other portion of the system
   ;(printf "exp: ~a~n" (syntax-object->datum emodule))
   ;(printf "stx (locate): ~a~n" (syntax-object->datum stx))
   (if (and (not (print-syntax?)) omodule emodule stx)
-      (look-for-in-orig omodule emodule stx)
+      (or (look-for-in-orig omodule emodule stx) stx)
       stx))
 
 (define (raise-typecheck-error msg stxs)

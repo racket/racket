@@ -20,6 +20,18 @@
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ check-subforms^)
 (export tc-expr^)
 
+(define-syntax-class (3d pred)
+  (pattern s           
+           #:with datum (syntax-e #'s)
+           #:when (pred #'datum)))
+
+
+(define-pred-stxclass atom atom?)
+(define-pred-stxclass byte-pregexp byte-pregexp?)
+(define-pred-stxclass byte-regexp byte-regexp?)
+(define-pred-stxclass regexp regexp?)
+(define-pred-stxclass bytes bytes?)
+
 
 ;; return the type of a literal value
 ;; scheme-value -> type

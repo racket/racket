@@ -5,9 +5,9 @@
 	 (rep type-rep)
 	 (rename-in (types comparison subtype union utils convenience)
                     [Un t:Un] [-> t:->])
-         (private base-types base-types-extra)
-         (for-template (private base-types base-types-extra))
-         (private parse-type)
+         (private base-types base-types-extra colon)
+         (for-template (private base-types base-types-extra base-env colon))
+         (private parse-type2)
          (schemeunit))
 
 (provide parse-type-tests)
@@ -20,9 +20,10 @@
 ;; the table is phase 0, so they don't compare correctly
 
 ;; The solution is to add the identifiers to the table at phase 0.
-;; We do this by going through the table, constructing new identifiers based on the symbol of the old identifier.
-;; This relies on the identifiers being bound at phase 0 in this module (which they are, because we have a
-;; phase 0 require of "base-env.ss").
+;; We do this by going through the table, constructing new identifiers based on the symbol
+;; of the old identifier.
+;; This relies on the identifiers being bound at phase 0 in this module (which they are, 
+;; because we have a phase 0 require of "base-env.ss").
 (for ([pr (type-alias-env-map cons)])
   (let ([nm (car pr)]
         [ty (cdr pr)])
@@ -64,6 +65,7 @@
    "parse-type tests" 
    [Number N]
    [Any Univ]
+   [(List Number String) (-Tuple (list N -String))]
    [(All (Number) Number) (-poly (a) a)]
    [(Number . Number) (-pair N N)]
    [(Listof Boolean) (make-Listof  B)]
@@ -72,6 +74,8 @@
    [(-> (values Number Boolean Number)) (t:-> (-values (list N B N)))]
    [(Number -> Number) (t:-> N N)]
    [(Number -> Number) (t:-> N N)]
+   ;; requires transformer time stuff that doesn't work
+   #;[(Refinement even?) (make-Refinement #'even?)]
    [(Number Number Number Boolean -> Number) (N N N B . t:-> . N)]
    [(Number Number Number * -> Boolean) ((list N N) N . ->* . B)]
    ;[((. Number) -> Number) (->* (list) N N)] ;; not legal syntax

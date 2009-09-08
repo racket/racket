@@ -1,8 +1,8 @@
 #lang scheme/base
 
-(require stxclass (for-syntax stxclass scheme/base stxclass/util))
+(require syntax/parse (for-syntax syntax/parse scheme/base stxclass/util))
 
-(provide (all-defined-out))
+(provide (except-out (all-defined-out) define-pred-stxclass))
 
 (define-syntax (parse/get stx)
   (syntax-parse stx
@@ -24,7 +24,12 @@
 (define-syntax-class (3d pred)
   (pattern s           
            #:with datum (syntax-e #'s)
-           #:when (pred #'datum)))
+           #:fail-unless (pred #'datum) #f))
+
+(define-syntax-rule (define-pred-stxclass name pred)
+  (define-syntax-class name #:attributes ()
+    (pattern x
+             #:fail-unless (pred (syntax-e #'x)) #f)))
 
 (define-pred-stxclass atom atom?)
 (define-pred-stxclass byte-pregexp byte-pregexp?)

@@ -42,7 +42,7 @@
         (parse-type prop)
         (parse-type/id stx prop)))
   ;(unless let-binding (error 'ohno))
-  ;(printf "let-binding: ~a~n" let-binding)
+  ;(printf "in type-annotation:~a~n" (syntax->datum stx))
   (cond       
     [(syntax-property stx type-label-symbol) => pt]
     [(syntax-property stx type-ascrip-symbol) => pt]

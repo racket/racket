@@ -227,7 +227,8 @@
     [(tc-result1: (and t (Poly-names: ns expected*)))
      (let* ([tvars (let ([p (syntax-property form 'typechecker:plambda)])
                      (when (and (pair? p) (eq? '... (car (last p))))
-                       (tc-error "Expected a polymorphic function without ..., but given function had ..."))
+                       (tc-error 
+                        "Expected a polymorphic function without ..., but given function had ..."))
                      (or (and p (map syntax-e (syntax->list p)))
                          ns))]
             [literal-tvars tvars]
@@ -271,10 +272,11 @@
                      (tc/mono-lambda/type formals bodies #f))])
           ;(printf "plambda: ~a ~a ~a ~n" literal-tvars new-tvars ty)
           (make-Poly literal-tvars ty))])]
-    [_ 
-     (unless (check-below (tc/plambda form formals bodies #f) expected)
-       (tc-error/expr #:return expected "Expected a value of type ~a, but got a polymorphic function." expected))
-     expected]))
+    [(tc-result1: t) 
+     (unless (check-below (tc/plambda form formals bodies #f) t)
+       (tc-error/expr #:return expected
+                      "Expected a value of type ~a, but got a polymorphic function." t))
+     t]))
 
 ;; typecheck a sequence of case-lambda clauses, which is possibly polymorphic
 ;; tc/lambda/internal syntax syntax-list syntax-list option[type] -> tc-result

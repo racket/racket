@@ -4,6 +4,7 @@
  scheme/list
  scheme/tcp
  scheme
+ scheme/unsafe/ops
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
  (only-in '#%kernel [apply kernel:apply])
@@ -731,3 +732,9 @@
 [pretty-format
  (cl->* (Univ . -> . -Void)
         (Univ -Integer . -> . -Void))]
+
+;; unsafe
+
+[unsafe-cdr (-poly (a b) 
+              (cl->*
+               (->acc (list (-pair a b)) b (list -cdr))))]

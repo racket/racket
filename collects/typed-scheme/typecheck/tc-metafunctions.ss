@@ -59,7 +59,7 @@
     [_ (make-LEmpty)]))
 
 (d/c (abstract-filter ids keys fs)
-  (-> (listof identifier?) (listof index/c) FilterSet? LFilterSet?)
+  (-> (listof identifier?) (listof index/c) FilterSet/c LatentFilterSet/c)
   (match fs
     [(FilterSet: f+ f-)
      (lcombine
@@ -89,7 +89,7 @@
      (make-FilterSet (apply append f+) (apply append f-))]))
 
 (d/c (apply-filter lfs t o)
-  (-> LFilterSet? Type/c Object? FilterSet?)
+  (-> LatentFilterSet/c Type/c Object? FilterSet/c)
   (match lfs
     [(LFilterSet: lf+ lf-)
      (combine
@@ -113,7 +113,7 @@
     [((LNotTypeFilter: t pi* _) _ (Path: pi x)) (list (make-NotTypeFilter t (append pi* pi) x))]))
 
 (define/contract (split-lfilters lf idx)  
-  (LFilterSet? index/c . -> . LFilterSet?)
+  (LatentFilterSet/c index/c . -> . LatentFilterSet/c)
   (define (idx= lf)
     (match lf
       [(LBot:) #t]
@@ -129,7 +129,7 @@
   (lambda (stx) #'(FilterSet: (list (Bot:)) _)))
 
 (d/c (combine-filter f1 f2 f3 t2 t3 o2 o3)
-  (FilterSet? FilterSet? FilterSet? Type? Type? Object? Object? . -> . tc-results?)
+  (FilterSet/c FilterSet/c FilterSet/c Type? Type? Object? Object? . -> . tc-results?)
   (define (mk f) (ret (Un t2 t3) f (make-Empty)))
   (match* (f1 f2 f3)
     [((T-FS:) f _) (ret t2 f o2)]

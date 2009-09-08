@@ -35,7 +35,7 @@
 (provide planet/multiple)
 
 (define-module schemeunit
-  (planet/multiple ("schematics" "schemeunit.plt" 2 3)
+  (planet/multiple ("schematics" "schemeunit.plt" 2 11)
                    "test.ss"
                    ;"graphical-ui.ss"
                    "text-ui.ss"

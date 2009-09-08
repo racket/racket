@@ -10,5 +10,7 @@
 		   #%top-interaction
 		   lambda
 		   #%app))
-(require "private/base-env.ss" "private/base-special-env.ss")
-(provide (rename-out [with-handlers: with-handlers]))
+(require "private/base-env.ss" "private/base-special-env.ss"
+         (for-syntax "private/base-types-extra.ss"))
+(provide (rename-out [with-handlers: with-handlers])
+         (for-syntax (all-from-out "private/base-types-extra.ss")))

@@ -15,7 +15,7 @@
    (λ (e)
      (and (LatentFilter? e) (not (LFilterSet? e))))))
 
-(provide Filter/c LatentFilter/c index/c)
+(provide Filter/c LatentFilter/c FilterSet/c LatentFilterSet/c index/c)
 
 (df Bot () [#:fold-rhs #:base])
 
@@ -86,3 +86,13 @@
                                 [else (listof LatentFilter/c)])])
                       ()
                       [result LFilterSet?])])
+
+(define FilterSet/c
+  (flat-named-contract
+   'FilterSet
+   (λ (e) (or (FilterSet? e) (NoFilter? e)))))
+
+(define LatentFilterSet/c
+  (flat-named-contract
+   'LatentFilterSet
+   (λ (e) (or (LFilterSet? e)))))

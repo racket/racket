@@ -20,6 +20,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 
 (provide (all-defined-out)
+         :
 	 (rename-out [define-typed-struct define-struct:]
                      [define-typed-struct/exec define-struct/exec:]))
 
@@ -34,26 +35,21 @@ This file defines two sorts of primitives. All of them are provided into any mod
           syntax/struct
           syntax/stx
           scheme/struct-info
+          (private internal)
 	  (except-in (utils utils tc-utils))
           (env type-name-env)
           "type-contract.ss"))
 
 (require (utils require-contract)
+         "colon.ss"
          (typecheck internal-forms)
          (except-in mzlib/contract ->)
          (only-in mzlib/contract [-> c->])
          mzlib/struct
-         "base-types.ss")
+         "base-types.ss"
+         "base-types-extra.ss")
 
 (define-for-syntax (ignore stx) (syntax-property stx 'typechecker:ignore #t))
-
-(define-for-syntax (internal stx)
-  (quasisyntax/loc stx
-    (define-values ()
-      (begin
-        (quote-syntax #,stx)
-        (#%plain-app values)))))
-
 
 
 (define-syntax (require/typed stx)
@@ -169,9 +165,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(pdefine: tvars (nm . formals) : ret-ty . body)
      (with-syntax* ([(tys ...) (types-of-formals #'formals stx)]
                     [type (syntax/loc #'ret-ty (All tvars (tys ... -> ret-ty)))])
-                   (syntax/loc stx
-                     (define: nm : type
-                       (plambda: tvars formals . body))))]))
+       (syntax/loc stx
+         (define: nm : type
+           (plambda: tvars formals . body))))]))
 
 (define-syntax (ann stx)
   (syntax-case stx (:)
@@ -179,30 +175,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
      (syntax-property #'arg 'type-ascription #'ty)]
     [(_ arg ty)
      (syntax-property #'arg 'type-ascription #'ty)]))
-
-(define-syntax (: stx)
-  (define stx*
-    ;; make it possible to add another colon after the id for clarity
-    ;; and in that case, a `->' on the RHS does not need to be
-    ;; explicitly parenthesized
-    (syntax-case stx (:)
-      [(: id : x ...)
-       (ormap (lambda (x) (eq? '-> (syntax-e x))) (syntax->list #'(x ...)))
-       (syntax/loc stx (: id (x ...)))]
-      [(: id : . more) (syntax/loc stx (: id . more))]
-      [_ stx]))
-  (define (err str . sub)
-    (apply raise-syntax-error '|type declaration| str stx sub))
-  (syntax-case stx* ()
-    [(_ id ty)
-     (identifier? #'id)
-     (syntax-property (internal (syntax/loc stx (:-internal id ty)))
-                      'disappeared-use #'id)]
-    [(_ id x ...)
-     (case (length (syntax->list #'(x ...)))
-       [(1)  (err "can only annotate identifiers with types" #'id)]
-       [(0)  (err "missing type")]
-       [else (err "bad syntax (multiple types after identifier)")])]))
 
 (define-syntax (inst stx)
   (syntax-case stx (:)
