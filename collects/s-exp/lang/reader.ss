@@ -1,1 +1,1 @@
-(module reader syntax/module-reader #:language read)
+(module reader syntax/module-reader #:language (lambda (p) (read-syntax (object-name p) p)))

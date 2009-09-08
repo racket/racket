@@ -42,6 +42,18 @@
     (lambda ()
       (fprintf (current-output-port) "setup-plt: bootstrapping from source...\n")))
 
+  (define-values (main-collects-relative->path)
+    (let ([main-collects #f])
+      (lambda (p)
+        ;; At this point, it's safe to try to load 'setup/private/main-collects
+        (unless main-collects
+          (set! main-collects ((dynamic-require 'setup/private/main-collects 'find-main-collects))))
+        (if (and (pair? p)
+                 (eq? 'collects (car p)))
+            (apply build-path main-collects
+                   (map bytes->path (cdr p)))
+            p))))
+
   (if (or (on? 'clean values)
 	  (on? 'make-zo not))
       ;; Don't use .zos, in case they're out of date, and don't load
@@ -87,7 +99,21 @@
 					       (lambda (path modname)
 						 (if (regexp-match #rx#"[.]zo$" (path->bytes path))
 						     ;; It's a .zo:
-						     (orig-load path modname)
+                                                     (begin0
+                                                      (orig-load path modname)
+                                                      ;; Force loading of all dependencies, which ensures
+                                                      ;; a rebuild if a #lang reader changes. (Otherwise,
+                                                      ;; the dependencies should be loaded already.)
+                                                      ;; We do not currently support "external" dependencies
+                                                      ;; (via cm-accomplice) during bootstrap.
+                                                      (let ([deps (with-input-from-file 
+                                                                      (bytes->path (regexp-replace #"[.]zo$" (path->bytes path) #".dep"))
+                                                                    read)])
+                                                        (for-each (lambda (dep)
+                                                                    (unless (and (pair? dep)
+                                                                                 (eq? (car dep) 'ext))
+                                                                      (dynamic-require (main-collects-relative->path dep) #f)))
+                                                                  (cdr deps))))
 						     ;; Not a .zo! Don't use .zo files at all...
 						     (escape (lambda ()
 							       ;; Try again without .zo
@@ -103,6 +129,7 @@
 		           ;; If something goes wrong, of course, give up on .zo files.
                            (parameterize ([uncaught-exception-handler
                                            (lambda (exn)
+                                             (printf "~s\n" (exn-message exn))
                                              (when (exn:break? exn) (exit 1))
                                              (if skip-zo?
                                                  (escape

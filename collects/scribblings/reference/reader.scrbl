@@ -827,6 +827,8 @@ certain grammars, such as that of R@superscript{6}RS
 By convention, @litchar{#lang} normally appears at the beginning of a
 file, possibly after comment forms, to specify the syntax of a module.
 
+@subsection{S-Expression Reader Language}
+
 @defmodulelang[s-exp]
 
 The @scheme[s-exp] ``language'' is a kind of meta-language. It
@@ -848,6 +850,19 @@ is equivalent to
 (module _name _module-path
   _form ...)
 ]
+
+@subsection{Chaining Reader Language}
+
+@defmodulelang[reader]
+
+The @scheme[reader] ``language'' is a kind of meta-language. It
+@scheme[read]s the S-expression that follows @litchar{#lang reader}
+and uses it as a module path (relative to the module being read) that
+effectively takes the place of @schememodname[reader]. In other words,
+the @schememodname[reader] meta-language generalizes the syntax of the
+module specified after @hash-lang[] to be a module path, and without
+the implicit addition of @litchar{/lang/reader} to the path.
+
 
 @section[#:tag "parse-honu"]{Honu Parsing}
 

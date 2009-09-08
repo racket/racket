@@ -127,9 +127,10 @@
           (lambda ()
             (close-output-port out)))))))
 
-(define (write-deps code mode path external-deps)
+(define (write-deps code mode path external-deps reader-deps)
   (let ([dep-path (path-add-suffix (get-compilation-path mode path) #".dep")]
-        [deps (remove-duplicates (get-deps code path))]
+        [deps (remove-duplicates (append (get-deps code path)
+                                         reader-deps))]
         [external-deps (remove-duplicates external-deps)])
     (with-compile-output dep-path
       (lambda (op)
@@ -170,6 +171,7 @@
   ;; External dependencies registered through reader guard and
   ;; accomplice-logged events:
   (define external-deps null)
+  (define reader-deps null)
   (define deps-sema (make-semaphore 1))
   (define done-key (gensym))
   (define (external-dep! p)
@@ -177,6 +179,11 @@
      deps-sema
      (lambda ()
        (set! external-deps (cons (path->bytes p) external-deps)))))
+  (define (reader-dep! p)
+    (call-with-semaphore
+     deps-sema
+     (lambda ()
+       (set! reader-deps (cons (path->bytes p) reader-deps)))))
 
   ;; Set up a logger to receive and filter accomplice events:
   (define accomplice-logger (make-logger))
@@ -213,7 +220,7 @@
                              (let ([p (resolved-module-path-name
                                        (module-path-index-resolve
                                         (module-path-index-join d #f)))])
-                               (when (path? p) (external-dep! p))))
+                               (when (path? p) (reader-dep! p))))
                            d))
                        rg))]
                    [current-logger accomplice-logger])
@@ -248,7 +255,7 @@
         ;; Note that we check time and write .deps before returning from
         ;; with-compile-output...
         (verify-times path zo-name)
-        (write-deps code mode path external-deps)))))
+        (write-deps code mode path external-deps reader-deps)))))
 
 (define depth (make-parameter 0))
 

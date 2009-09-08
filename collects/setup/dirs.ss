@@ -3,42 +3,16 @@
 (require scheme/promise
          (prefix-in config: config)
          compiler/private/winutf16
-         compiler/private/mach-o)
+         compiler/private/mach-o
+         "private/main-collects.ss")
 
 (provide (rename-out [config:absolute-installation? absolute-installation?]))
-
-;; path normalization is not really necessary by any existing code,
-;; but there might be applications that rely on these paths, so it's
-;; best to do some minor normalization.  This is similar to what
-;; "main-collects.ss" does. Don't use this with 'exec-file, however,
-;; because the treatment of an executable path can very depending
-;; on whether it has a path prefix or not.
-(define (system-path* what)
-  (simplify-path (cleanse-path (find-system-path what)) #f))
 
 ;; ----------------------------------------
 ;;  "collects"
 
 (define main-collects-dir
-  (delay
-    (let ([d (system-path* 'collects-dir)])
-      (cond
-       [(complete-path? d) d]
-       [(absolute-path? d)
-        ;; This happens only under Windows; add a drive
-        ;;  specification to make the path complete
-        (let ([exec (path->complete-path
-                     (find-executable-path (find-system-path 'exec-file))
-                     (system-path* 'orig-dir))])
-          (let-values ([(base name dir?) (split-path exec)])
-            (path->complete-path d base)))]
-       [else
-        ;; Relative to executable...
-        (parameterize ([current-directory (system-path* 'orig-dir)])
-          (let ([p (or (find-executable-path (find-system-path 'exec-file) d #t)
-                       ;; If we get here, then we can't find the directory
-                       #f)])
-            (and p (simplify-path p))))]))))
+  (delay (find-main-collects)))
 
 (provide find-collects-dir
          find-user-collects-dir

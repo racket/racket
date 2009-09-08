@@ -1,3 +1,4 @@
+; Don't change this module to #lang, since it's used by syntax/module-reader
 (module readerr mzscheme
   (provide raise-read-error
 	   raise-read-eof-error)
