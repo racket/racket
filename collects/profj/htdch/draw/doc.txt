@@ -1,2 +1,0 @@
-For the documentation of this package, see Help Desk. The source is located
-at plt/teachpacks/htdc/Docs. 

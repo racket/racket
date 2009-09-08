@@ -1,6 +1,0 @@
-package graphics;
-
-public abstract class Command {
-   abstract void issue( dynamic canvas );
-}
-
