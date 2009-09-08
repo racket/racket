@@ -561,7 +561,7 @@ plt/collects/tests/mzscheme/htdp-image.ss
       (cond
         [(zero? n) null]
         [else
-         (let ([angle (+ delta-angle (* 2 pi n (/ 1 points)))])
+         (let ([angle (+ delta-angle (/ (* 2 pi n) points))])
            (cons (make-object point% 
                    (+ radius (* radius (cos angle)))
                    (+ radius (* radius (sin angle))))
