@@ -7,7 +7,7 @@
                     [Un t:Un] [-> t:->])
          (private base-types base-types-extra colon)
          (for-template (private base-types base-types-extra base-env colon))
-         (private parse-type2)
+         (private parse-type)
          (schemeunit))
 
 (provide parse-type-tests)
