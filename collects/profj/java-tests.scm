@@ -3,10 +3,10 @@
 (require scheme/class
          mzlib/etc
          profj/display-java
-         "test-engine.scm"
-         "test-display.scm"
-         "test-info.scm"
-         "test-coverage.scm")
+         (lib "test-engine.scm" "test-engine")
+         (lib "test-display.scm" "test-engine")
+         (lib "test-info.scm" "test-engine")
+         (lib "test-coverage.scm" "test-engine"))
 
 (define (java-test-maker test-info-class style) 
   (class* test-engine% ()

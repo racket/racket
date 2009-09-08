@@ -10,7 +10,7 @@
   (require "parameters.ss" 
            "parsers/lexer.ss"
            (lib "test-engine/test-engine.scm")
-           (lib "test-engine/java-tests.scm")
+           "java-tests.scm"
            (lib "test-engine/test-coverage.scm")
            (except-in "ast.ss" for)
            "display-java.ss")
