@@ -6,7 +6,7 @@
     (fprintf a (current-error-port)))
   
   (define (installer plthome)
-    (let ((draw-path (build-path (collection-path "htdch" "colors"))))
+    (let ((draw-path (build-path (collection-path "profj" "htdch" "colors"))))
       (let ((javac
              (lambda (file)
                (parameterize ([current-load-relative-directory draw-path]

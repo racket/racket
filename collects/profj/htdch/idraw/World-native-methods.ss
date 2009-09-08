@@ -1,5 +1,5 @@
 #lang scheme 
-  (require (lib "htdch/draw/support.scm")
+  (require (lib "profj/htdch/draw/support.scm")
            mzlib/unit)
   
 (provide endOfTime-java.lang.String-native endOfWorld-java.lang.String-native bigBangO-double-native)

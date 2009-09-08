@@ -3,6 +3,7 @@
            (prefix io: profj/libs/java/io/installer)
            (prefix test: profj/libs/java/tester/installer)
            (prefix util: profj/libs/java/util/installer)
+           (prefix htdch: (lib "installer.scm" "profj" "htdch"))
            )
   (provide installer)
 
@@ -10,4 +11,5 @@
     (io:installer plthome)
     (lang:installer plthome)
     (test:installer plthome)
-    (util:installer plthome)))
+    (util:installer plthome)
+    (htdch:installer plthome)))

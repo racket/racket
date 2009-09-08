@@ -1,6 +1,6 @@
 package graphics;
 
-import scheme.lib.htdch.graphics.rename;
+import scheme.lib.profj.htdch.graphics.rename;
 import scheme.lib.mred.mred;
         
 public class DrawImage extends Command {

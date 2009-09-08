@@ -35,7 +35,7 @@
                               (map (lambda (p) (build-path p "profj" "libs"))
                                    (current-library-collection-paths))))
            (htdch-lib? (ormap (lambda (p) (same-base-dir? dir p))
-                              (map (lambda (p) (build-path p "htdch"))
+                              (map (lambda (p) (build-path p "profj" "htdch"))
                                    (current-library-collection-paths))))
            (scheme-lib? (ormap (lambda (p) (same-base-dir? dir p))
                                (current-library-collection-paths)))
@@ -43,7 +43,7 @@
                      (cond
                        (profj-lib? `(lib ,name "profj" "libs" ,@path))
                        (htdch-lib? 
-                        `(lib ,name "htdch" ,@(if scheme? (cdddr path) path)))
+                        `(lib ,name "profj" "htdch" ,@(if scheme? (cdddr path) path)))
                        (scheme-lib? `(lib ,name ,@(cddr path)))
                        ((and local? (not (to-file))) `(quote ,name))
                        (else `(file ,(path->string (build-path dir name)))))))
@@ -230,6 +230,7 @@
               (let* ([dir (find-directory path err)]
                      [class-list (get-class-list dir)]
                      [package-contents null])
+                (printf "~a~n~a~n" dir class-list)
                 (for-each (check-dup-import
                            (lambda (class)
                              (import-class class path dir file type-recs level (import-src imp) #t)
@@ -379,7 +380,7 @@
                 (send type-recs set-location! original-loc)))))
   
   ;(make-directory path bool)
-  (define-struct dir-path (path scheme?))
+  (define-struct dir-path (path scheme?) #:transparent)
   
   ;find-directory: (list string) ( -> void) -> dir-path
   (define (find-directory path fail)

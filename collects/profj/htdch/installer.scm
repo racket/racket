@@ -12,4 +12,4 @@
   (color:installer plthome)
   (draw:installer  plthome)
   (idraw:installer plthome)
-  (graph:installer plthome))
+  #;(graph:installer plthome))

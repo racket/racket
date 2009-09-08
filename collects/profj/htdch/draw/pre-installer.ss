@@ -3,7 +3,7 @@
   (provide pre-installer)
   
   (define (pre-installer plthome)
-    (let ((draw-path (build-path (collection-path "htdch" "draw"))))
+    (let ((draw-path (build-path (collection-path "profj" "htdch" "draw"))))
       (let ((javac
              (lambda (file)
                (parameterize ([current-load-relative-directory draw-path])

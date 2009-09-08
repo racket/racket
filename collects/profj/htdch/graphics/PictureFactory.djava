@@ -1,7 +1,7 @@
 package graphics;
 
 import scheme.lib.htdp.image;
-import scheme.lib.htdch.graphics.rename;
+import scheme.lib.profj.htdch.graphics.rename;
 
 public class PictureFactory {
 
