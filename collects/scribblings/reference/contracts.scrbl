@@ -836,7 +836,7 @@ If specified, @scheme[contract-source-info], indicates where the
 contract was assumed. Its value must be a either:
 @itemize[
 @item{a list of two elements: @scheme[srcloc] struct and
-either a string or @scheme[#f]. The srcloc struct inidates
+either a string or @scheme[#f]. The srcloc struct indicates
 where the contract was assumed. Its @tt{source} field
 should be a syntax object, and @scheme[module-path-index-resolve]
 is called on it to extract the path of syntax object.
