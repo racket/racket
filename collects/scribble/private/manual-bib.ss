@@ -3,6 +3,8 @@
          "../decode.ss"
          "../struct.ss"
          "../basic.ss"
+         (only-in "../core.ss" make-style)
+         "manual-sprop.ss"
          "manual-utils.ss"
          "manual-style.ss")
 
@@ -62,6 +64,8 @@
      (if date `(" " ,@(decode-content (list date)) ".") null)
      (if url `(" " ,(link url (tt url))) null)))))
 
+(define bib-style (make-style "SBibliography" scheme-properties))
+
 (define (bibliography #:tag [tag "doc-bibliography"] . citations)
   (make-unnumbered-part
    #f
@@ -72,7 +76,7 @@
    (make-flow
     (list
      (make-table
-      "SBibliography"
+      bib-style
       (map (lambda (c)
              (let ([key (a-bib-entry-key c)]
                    [val (a-bib-entry-val c)])

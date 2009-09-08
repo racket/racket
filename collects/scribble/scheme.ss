@@ -2,11 +2,9 @@
   (require "core.ss"
            "basic.ss"
            "search.ss"
-           "html-properties.ss"
-           "latex-properties.ss"
+           "private/manual-sprop.ss"
            mzlib/class
            mzlib/for
-           setup/main-collects
            syntax/modresolve
            syntax/modcode
            (for-syntax scheme/base))
@@ -53,12 +51,6 @@
                        variable-id?
                        make-element-id-transformer
                        element-id-transformer?))
-
-  (define scheme-properties
-    (let ([abs (lambda (s)
-                 (path->main-collects-relative (build-path (collection-path "scribble") s)))])
-      (list (make-css-addition (abs "scheme.css"))
-            (make-tex-addition (abs "scheme.tex")))))
 
   (define (make-scheme-style s #:tt? [tt? #t])
     (make-style s (if tt?
