@@ -1205,7 +1205,8 @@ If the namespace does not, they are colored the unbound color.
                                   (drscheme:debug:error-display-handler/stacktrace 
                                    msg 
                                    exn 
-                                   '())
+                                   '()
+                                   #:definitions-text definitions-text)
                                   
                                   (semaphore-post error-display-semaphore)))
                                

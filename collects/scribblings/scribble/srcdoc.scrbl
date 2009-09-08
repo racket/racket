@@ -71,10 +71,14 @@ to get core Scheme forms and basic Scribble functions to use in
 documentation expressions.}
 
 @defform*/subs[#:literals (-> ->* case->)
-               [(proc-doc/names id contract (arg-id ...) desc-expr)
-                (proc-doc/names id case-contract ((arg-id ...) ...) desc-expr)]
+               [(proc-doc/names id contract ((arg-id ...) ((arg-id default-expr) ...)) desc-expr)
+                (proc-doc/names id case-contract ((arg-id ...) ((arg-id default-expr) ...)) desc-expr)]
                ([contract (-> arg ... result)
                           (->* (mandatory ...) (optional ...) result)]
+                [mandatory contract-expr
+                           (code:line keyword contract-expr)]
+                [optional contract-expr
+                          (code:line keyword contract-expr)]
                 [case-contract (case-> (-> arg ... result) ...)])]{
                           
 When used in @scheme[provide/doc], exports @scheme[id] with the
@@ -84,7 +88,8 @@ just like using @scheme[provide/contract].
 The @scheme[arg-id]s specify the names of arguments, which are not
 normally written as part of a contract. They are combined with the
 contract expression to generate the description of the binding in the
-documentation via @scheme[defproc].
+documentation via @scheme[defproc]. The @scheme[(arg-id default-expr)]
+pairs specify the names and default values of the optional arguments.
 
 The @scheme[desc-expr] is a documentation-time expression that
 produces prose to describe the exported binding---that is, the last

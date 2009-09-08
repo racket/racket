@@ -272,7 +272,14 @@ profile todo:
   
   ;; error-display-handler/stacktrace : string any (listof srcloc) -> void
   ;; =User=
-  (define (error-display-handler/stacktrace msg exn [pre-stack #f])
+  (define (error-display-handler/stacktrace 
+           msg exn 
+           [pre-stack #f]
+           #:interactions-text [ints (drscheme:rep:current-rep)]
+           #:definitions-text [defs (let ([rep (drscheme:rep:current-rep)])
+                                      (and rep
+                                           (send rep get-definitions-text)))])
+                                                                     
     (let* ([stack (or pre-stack
                       (if (exn? exn)
                           (map cdr (filter cdr (continuation-mark-set->context (exn-continuation-marks exn))))
@@ -282,15 +289,12 @@ profile todo:
                          (if (null? stack)
                              '()
                              (list (car stack))))]
-           [rep (let ([rep (drscheme:rep:current-rep)])
-                  (and (is-a? rep drscheme:rep:text<%>)
-                       rep))]
-           [stack-editions (map (λ (x) (srcloc->edition/pair rep x)) stack)]
+           [stack-editions (map (λ (x) (srcloc->edition/pair defs ints x)) stack)]
            [src-locs-edition (and (pair? src-locs)
-                                  (srcloc->edition/pair rep (car src-locs)))])
+                                  (srcloc->edition/pair defs ints (car src-locs)))])
       (print-planet-icon-to-stderr exn)
       (unless (null? stack)
-        (print-bug-to-stderr msg stack stack-editions rep))
+        (print-bug-to-stderr msg stack stack-editions defs ints))
       (display-srclocs-in-error src-locs src-locs-edition)
       (display msg (current-error-port))
       (when (exn:fail:syntax? exn)
@@ -298,28 +302,29 @@ profile todo:
           (show-syntax-error-context (current-error-port) exn)))
       (newline (current-error-port))
       (flush-output (current-error-port))
-      (when (and rep
+      (when (and ints
                  (eq? (current-error-port) 
-                      (send rep get-err-port)))
+                      (send ints get-err-port)))
         (parameterize ([current-eventspace drscheme:init:system-eventspace])
           (queue-callback
            (λ ()
              ;; need to make sure that the user's eventspace is still the same
              ;; and still running here?
-             (send rep highlight-errors src-locs stack)))))))
+             (send ints highlight-errors src-locs stack)))))))
   
-  (define (srcloc->edition/pair rep srcloc)
+  (define (srcloc->edition/pair defs ints srcloc)
     (let ([src (srcloc-source srcloc)])
       (cond
         [(and (or (symbol? src)
                   (path? src))
-              (send rep port-name-matches? src))
-         (cons (make-weak-box rep) (send rep get-edition-number))]
+              ints
+              (send ints port-name-matches? src))
+         (cons (make-weak-box ints) (send ints get-edition-number))]
         [(and (or (symbol? src)
                   (path? src))
-              (send (send rep get-definitions-text) port-name-matches? src))
-         (cons (make-weak-box (send rep get-definitions-text))
-               (send (send rep get-definitions-text) get-edition-number))]
+              defs
+              (send defs port-name-matches? src))
+         (cons (make-weak-box defs) (send defs get-edition-number))]
         [(path? src)
          (let ([frame (send (group:get-the-frame-group) locate-file src)])
            (and frame
@@ -386,12 +391,12 @@ profile todo:
       (get-output-string sp)))
   
   ;; =User=
-  (define (print-bug-to-stderr msg cms editions rep)
+  (define (print-bug-to-stderr msg cms editions defs ints)
     (when (port-writes-special? (current-error-port))
       (let ([note% (if (mf-bday?) mf-note% bug-note%)])
         (when note%
           (let ([note (new note%)])
-            (send note set-callback (λ () (show-backtrace-window/edition-pairs msg cms editions rep)))
+            (send note set-callback (λ () (show-backtrace-window/edition-pairs msg cms editions defs ints)))
             (write-special note (current-error-port))
             (display #\space (current-error-port)))))))
   
@@ -601,13 +606,13 @@ profile todo:
   ;;                         (listof srcloc?)
   ;;                         -> 
   ;;                         void
-  (define (show-backtrace-window error-text dis/exn [rep #f])
+  (define (show-backtrace-window error-text dis/exn [rep #f] [defs #f])
     (let ([dis (if (exn? dis/exn)
                    (cms->srclocs (exn-continuation-marks dis/exn))
                    dis/exn)])
-    (show-backtrace-window/edition-pairs error-text dis (map (λ (x) #f) dis/exn) rep)))
+    (show-backtrace-window/edition-pairs error-text dis (map (λ (x) #f) dis/exn) defs rep)))
   
-  (define (show-backtrace-window/edition-pairs error-text dis editions rep)
+  (define (show-backtrace-window/edition-pairs error-text dis editions defs ints)
     (reset-backtrace-window)
     (letrec ([text (make-object (text:wide-snip-mixin text:hide-caret/selection%))]
              [mf-bday-note (when (mf-bday?)
@@ -631,7 +636,7 @@ profile todo:
                     (cond
                       [(and (< n (vector-length di-vec))
                             (< n (+ index how-many-at-once)))
-                       (show-frame ec text (vector-ref di-vec n) (vector-ref editions-vec n) rep)
+                       (show-frame ec text (vector-ref di-vec n) (vector-ref editions-vec n) defs ints)
                        (loop (+ n 1))]
                       [else
                        (set! index n)]))
@@ -692,11 +697,11 @@ profile todo:
   ;; show-frame : (instanceof editor-canvas%)
   ;;              (instanceof text%) 
   ;;              st-mark?
-  ;;              rep
+  ;;              def ints  // definitions and interactions texts
   ;;              -> 
   ;;              void 
   ;; shows one frame of the continuation
-  (define (show-frame editor-canvas text di edition rep)
+  (define (show-frame editor-canvas text di edition defs ints)
     (let* ([debug-source (srcloc-source di)]
            [fn (get-filename debug-source)]
            [line (srcloc-line di)]
@@ -724,31 +729,23 @@ profile todo:
           (send text insert (render-bindings/snip bindings))))
       (send text insert #\newline)
       
-      (insert-context editor-canvas text debug-source start span rep)
+      (insert-context editor-canvas text debug-source start span defs ints)
       (send text insert #\newline)))
   
   ;; insert-context : (instanceof editor-canvas%)
   ;;                  (instanceof text%)
   ;;                  debug-info
   ;;                  number
-  ;;                  rep
+  ;;                  defs ints // definitions and interactions texts
   ;;                  -> 
   ;;                  void
-  (define (insert-context editor-canvas text file start span rep)
+  (define (insert-context editor-canvas text file start span defs ints)
     (let-values ([(from-text close-text)
                   (cond
-                    [(and rep (send rep port-name-matches? file))
-                     (values rep void)]
-                    [(and rep (send (send rep get-definitions-text) port-name-matches? file))
-                     (values (send rep get-definitions-text) void)]
-                    #;
-                    [(symbol? file)
-                     ;; can this case happen?
-                     (let ([text (new text:basic%)])
-                       (if (send text load-file (symbol->string file))
-                           (values text 
-                                   (λ () (send text on-close)))
-                           (values #f (λ () (void)))))]
+                    [(and ints (send ints port-name-matches? file))
+                     (values ints void)]
+                    [(and defs (send defs port-name-matches? file))
+                     (values defs void)]
                     [(path? file)
                      (let ([file (with-handlers ((exn:fail? (λ (x) #f)))
                                    (normal-case-path (normalize-path file)))])

@@ -298,9 +298,14 @@ all of the names in the tools library, for use defining keybindings
   (proc-doc/names
    drscheme:debug:error-display-handler/stacktrace
    (->* (string? any/c)
-        ((or/c false/c (listof srcloc?)))
+        ((or/c false/c (listof srcloc?))
+         #:definitions-text (or/c #f (is-a?/c drscheme:unit:definitions-text<%>))
+         #:interactions-text (or/c #f (is-a?/c drscheme:rep:text<%>))
+         )
         any/c)
-   ((msg exn) ((stack #f)))
+   ((msg exn) ((stack #f)
+               (defs #f)
+               (ints #f)))
    @{Displays the error message represented by the string, adding
      embellishments like those that appears in the DrScheme REPL,
      specifically a clickable icon for the stack trace (if the srcloc location is not empty),
@@ -386,9 +391,10 @@ all of the names in the tools library, for use defining keybindings
                                               (or (not v)
                                                   (is-a?/c v editor<%>)))))
                                 number?)))
+       (or/c #f (is-a?/c drscheme:unit:definitions-text<%>))
        (or/c #f (is-a?/c drscheme:rep:text<%>))
        void?)
-   (error-message dis editions-pairs rep)
+   (error-message dis editions-pairs defs ints)
    @{Shows the backtrace window you get when clicking on the bug in
      DrScheme's REPL.
      
@@ -400,10 +406,14 @@ all of the names in the tools library, for use defining keybindings
      The @scheme[editions] argument indicates the editions of any editors
      that are open editing the files corresponding to the source locations
      
-     The @scheme[rep] argument should be non-@scheme[#f] if there are 
+     The @scheme[defs] argument should be non-@scheme[#f] if there are 
      possibly stacktrace frames that contain unsaved versions of the 
-     definitions text or the repl from drscheme. Use
-     @scheme[drscheme:rep:current-rep] to get the rep.
+     definitions window from drscheme. Similarly, the @scheme[ints] argument
+     should be non-@scheme[#f] if there are possibly stacktrace frames that contain
+     unsaved versions of the interactions window.
+ 
+     Use
+     @scheme[drscheme:rep:current-rep] to get the rep during evaluation of a program.
      
      })
   
@@ -413,10 +423,12 @@ all of the names in the tools library, for use defining keybindings
          (or/c exn? 
                (listof srcloc?)
                (non-empty-listof (cons/c string? (listof srcloc?)))))
-        ((or/c #f (is-a?/c drscheme:rep:text<%>)))
+        ((or/c #f (is-a?/c drscheme:rep:text<%>))
+         (or/c #f (is-a?/c drscheme:unit:definitions-text<%>)))
         void?)
    ((error-message dis)
-    ((rep #f)))
+    ((rep #f)
+     (defs #f)))
    @{Shows the backtrace window you get when clicking on the bug in
      DrScheme's REPL.
      
@@ -428,17 +440,20 @@ all of the names in the tools library, for use defining keybindings
    drscheme:debug:srcloc->edition/pair
    (-> srcloc?
        (or/c #f (is-a?/c drscheme:rep:text<%>))
-       (or/c #f (cons/c (λ (x) (and (weak-box? x)
-                                    (let ([v (weak-box-value x)])
-                                      (or (not v)
-                                          (is-a?/c v editor<%>)))))
+       (or/c #f (is-a?/c drscheme:unit:definitions-text<%>))
+       (or/c #f (cons/c (let ([weak-box-containing-an-editor?
+                               (λ (x) (and (weak-box? x)
+                                           (let ([v (weak-box-value x)])
+                                             (or (not v)
+                                                 (is-a?/c v editor<%>)))))])
+                          weak-box-containing-an-editor?)
                         number?)))
-   (srcloc rep)
+   (srcloc ints defs)
    @{Constructs a edition pair from a source location,
      returning the current edition of the editor editing
      the source location (if any).
      
-     The @scheme[rep] argument is used to map source locations, 
+     The @scheme[ints] and @scheme[defs] arguments are used to map source locations, 
      in the case that the source location corresponds to the definitions
      window (when it has not been saved) or the interactions window.
      })
