@@ -38,18 +38,18 @@
 (define (parse-all-type stx parse-type)
   ;(printf "parse-all-type: ~a ~n" (syntax->datum stx))
   (syntax-parse stx #:literals (t:All)
-    [(t:All (vars:id ... v:id dd:ddd) t)
+    [((~and kw t:All) (vars:id ... v:id dd:ddd) t)
      (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
             [tvars (map make-F vars)]
             [v (syntax-e #'v)]
             [tv (make-Dotted (make-F v))])
-       (add-type-name-reference #'t:All)
+       (add-type-name-reference #'kw)
        (parameterize ([current-tvars (extend-env (cons v vars) (cons tv tvars) (current-tvars))])
          (make-PolyDots (append vars (list v)) (parse-type #'t))))]
-    [(t:All (vars:id ...) t) 
+    [((~and kw t:All) (vars:id ...) t) 
      (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
             [tvars (map make-F vars)])
-       (add-type-name-reference #'t:All)
+       (add-type-name-reference #'kw)
        (parameterize ([current-tvars (extend-env vars tvars (current-tvars))])
          (make-Poly vars (parse-type #'t))))]
     [(t:All . rest) (tc-error "All: bad syntax")]))
@@ -67,7 +67,8 @@
      [(fst . rst)
       #:fail-unless (not (syntax->list #'rst)) #f
       (-pair (parse-type #'fst) (parse-type #'rst))]
-     [(t:Class (pos-args ...) ([fname fty . rest] ...) ([mname mty] ...))
+     [((~and kw t:Class) (pos-args ...) ([fname fty . rest] ...) ([mname mty] ...))
+      (add-type-name-reference #'kw)
       (make-Class
        (map parse-type (syntax->list #'(pos-args ...)))
        (map list
@@ -80,35 +81,39 @@
        (map list
             (map syntax-e (syntax->list #'(mname ...)))
             (map parse-type (syntax->list #'(mty ...)))))]
-     [(t:Refinement p?:id)
+     [((~and kw t:Refinement) p?:id)
+      (add-type-name-reference #'kw)
       (match (lookup-type/lexical #'p?)
         [(and t (Function: (list (arr: (list dom) _ #f #f '()))))
          (make-Refinement dom #'p? (syntax-local-certifier))]
         [t (tc-error "cannot declare refinement for non-predicate ~a" t)])]
-     [(t:Instance t)
+     [((~and kw t:Instance) t)
+      (add-type-name-reference #'kw)
       (let ([v (parse-type #'t)])
         (if (not (or (Mu? v) (Class? v) (Union? v) (Error? v)))
             (begin (tc-error/delayed "Argument to Instance must be a class type, got ~a" v)
                    (make-Instance (Un)))
             (make-Instance v)))]
-     [(t:List ts ...)
-      (add-type-name-reference (stx-car stx))
+     [((~and kw t:List) ts ...)
+      (add-type-name-reference #'kw)
       (-Tuple (map parse-type (syntax->list #'(ts ...))))]
-     [(cons fst rst)
+     [((~and kw cons) fst rst)
+      (add-type-name-reference #'kw)
       (-pair (parse-type #'fst) (parse-type #'rst))]
-     [(t:pred t) 
+     [((~and kw t:pred) t) 
+      (add-type-name-reference #'kw)
       (make-pred-ty (parse-type #'t))]
      ;; function types
-     [(dom t:-> rng : pred-ty)
-      (add-type-name-reference (cadr (syntax-e stx)))
+     [(dom (~and kw t:->) rng : pred-ty)
+      (add-type-name-reference #'kw)
       ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
       (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (parse-type #'pred-ty))]
-     [(dom ... rest ddd:star t:-> rng)
+     [(dom ... rest ddd:star (~and kw t:->) rng)
       #:fail-unless (eq? '* (syntax-e #'ddd))
-      (add-type-name-reference #'t:->)
+      (add-type-name-reference #'kw)
       (->* (map parse-type (syntax->list #'(dom ...))) (parse-type #'rest) (parse-values-type #'rng))]
-     [(dom ... rest _:ddd bound:id t:-> rng)
-      (add-type-name-reference #'t:->)
+     [(dom ... rest _:ddd bound:id (~and kw t:->) rng)
+      (add-type-name-reference #'kw)
       (let ([var (lookup (current-tvars) (syntax-e #'bound) (lambda (_) #f))])
         (if (not (Dotted? var))
             (tc-error/stx #'bound 
@@ -126,8 +131,8 @@
                                       (current-tvars))])
                                  (parse-type #'rest))
                                (syntax-e #'bound))))))]
-     [(dom ... rest _:ddd t:-> rng)
-      (add-type-name-reference #'->)
+     [(dom ... rest _:ddd (~and kw t:->) rng)
+      (add-type-name-reference #'kw)
       (let ([bounds (filter (compose Dotted? cdr)
                             (env-keys+vals (current-tvars)))])
         (when (null? bounds)
@@ -146,11 +151,12 @@
                              (parse-type #'rest))
                            var)))))]
      ;; has to be below the previous one
-     [(dom ... t:-> rng) 
-      (add-type-name-reference #'t:->)
+     [(dom ... (~and kw t:->) rng) 
+      (add-type-name-reference #'kw)
       (->* (map parse-type (syntax->list #'(dom ...)))
            (parse-values-type #'rng))]     
-     [(case-lambda tys ...) 
+     [((~and kw case-lambda) tys ...)
+      (add-type-name-reference #'kw)
       (make-Function 
        (for/list ([ty (syntax->list #'(tys ...))])
                  (let ([t (parse-type ty)])
@@ -159,14 +165,14 @@
                      [_ (tc-error/stx 
                          ty
                          "Component of case-lambda type was not a function clause")]))))]
-     [(t:Vectorof t)
-      (add-type-name-reference #'t:Vectorof)
+     [((~and kw t:Vectorof) t)
+      (add-type-name-reference #'kw)
       (make-Vector (parse-type #'t))]
-     [((~and name t:Rec) x:id t)
+     [((~and kw t:Rec) x:id t)
       #:fail-unless (enable-mu-parsing) "Recursive types not allowed"
       (let* ([var (syntax-e #'x)]
              [tvar (make-F var)])
-        (add-type-name-reference #'name)           
+        (add-type-name-reference #'kw)
         (parameterize ([current-tvars (extend-env 
                                        (list var) 
                                        (list tvar)
@@ -175,10 +181,11 @@
             (if (memq var (fv t))
                 (make-Mu var t)
                 t))))]
-     [(t:U ts ...)
-      (add-type-name-reference #'t:U)
+     [((~and kw t:U) ts ...)
+      (add-type-name-reference #'kw)
       (apply Un (map parse-type (syntax->list #'(ts ...))))]
-     [(quote t)
+     [((~and kw quote) t)
+      (add-type-name-reference #'kw)
       (-val (syntax-e #'t))]
      #;
      [(All-kw . rest)
@@ -193,17 +200,16 @@
       (error 'never-happen)]
      [(t:All . rest)      
       (parse-all-type stx parse-type)]
-     [(t:Opaque p?) 
-      (add-type-name-reference #'Opaque)
+     [((~and kw t:Opaque) p?) 
+      (add-type-name-reference #'kw)
       (make-Opaque #'p? (syntax-local-certifier))]
-     [(t:Parameter t) 
+     [((~and kw t:Parameter) t) 
       (let ([ty (parse-type #'t)])
-        (add-type-name-reference #'Parameter)
+        (add-type-name-reference #'kw)
         (-Param ty ty))]
-     [(t:Parameter t1 t2)
-      (begin
-        (add-type-name-reference #'t:Parameter)
-        (-Param (parse-type #'t1) (parse-type #'t2)))]
+     [((~and kw t:Parameter) t1 t2)      
+      (add-type-name-reference #'kw)
+      (-Param (parse-type #'t1) (parse-type #'t2))]
      
      [id:identifier
       (cond 
@@ -279,7 +285,8 @@
 (define (parse-values-type stx)
   (parameterize ([current-orig-stx stx])        
     (syntax-parse stx #:literals (values t:All)
-      [(values tys ... dty :ddd bound:id)       
+      [((~and kw values) tys ... dty :ddd bound:id)       
+       (add-type-name-reference #'kw)
        (let ([var (lookup (current-tvars) (syntax-e #'bound) (lambda (_) #f))])
          (if (not (Dotted? var))
              (tc-error/stx #'bound "Used a type variable (~a) not bound with ... as a bound on a ..." (syntax-e #'bound))             
@@ -289,8 +296,8 @@
                                                                         (current-tvars))])
                                 (parse-type #'dty))
                               (syntax-e #'bound))))]
-      [(values tys ... dty _:ddd)
-       (add-type-name-reference #'values)
+      [((~and kw values) tys ... dty _:ddd)
+       (add-type-name-reference #'kw)
        (let ([bounds (filter (compose Dotted? cdr) (env-keys+vals (current-tvars)))])
          (when (null? bounds)
            (tc-error/stx stx "No type variable bound with ... in scope for ... type"))
@@ -303,7 +310,8 @@
                                                                       (current-tvars))])
                               (parse-type #'dty))
                             var)))]
-      [(values tys ...) 
+      [((~and kw values) tys ...) 
+       (add-type-name-reference #'kw)
        (-values (map parse-type (syntax->list #'(tys ...))))]
       [(t:All . rest)
        (parse-all-type stx parse-values-type)]
@@ -312,7 +320,8 @@
 
 (define (parse-tc-results stx)
   (syntax-parse stx #:literals (values)
-    [(values t ...)
+    [((~and kw values) t ...)
+     (add-type-name-reference #'kw)
      (ret (map parse-type (syntax->list #'(t ...))) 
           (map (lambda (x) (make-NoFilter)) (syntax->list #'(t ...)))
           (map (lambda (x) (make-NoObject)) (syntax->list #'(t ...))))]
@@ -322,4 +331,3 @@
 
 (define parse-type/id (parse/id parse-type))
 
-;(parse-type #'(t:All (A) A t:-> A))
