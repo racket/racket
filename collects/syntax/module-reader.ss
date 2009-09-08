@@ -179,7 +179,7 @@
                                          (lambda (in)
                                            (let ([spec (regexp-try-match #px"^[ \t]+(.*?)(?=\\s|$)" in)])
                                              (and spec
-                                                  (let ([s (car spec)])
+                                                  (let ([s (cadr spec)])
                                                     (if (equal? s "")
                                                         #f
                                                         s)))))])
@@ -198,7 +198,7 @@
             (if parsed-spec
                 (begin ((current-reader-guard) parsed-spec)
                        (dynamic-require parsed-spec export-sym (mk-fail-thunk spec)))
-                (bad (cadr spec) #f)))))
+                (bad spec #f)))))
 
     (define (-get-info inp mod line col pos)
       (let ([r (get inp 'get-info (object-name inp) line col pos
