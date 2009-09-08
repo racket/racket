@@ -118,17 +118,16 @@
     [(_ [[proto result] ...] desc ...)
      (defproc* #:mode procedure #:within #f [[proto result] ...] desc ...)]
     [(_ #:mode m #:within cl [[proto result] ...] desc ...)
-     (let ([arg-contracts (list (arg-contracts proto) ...)])
-       (with-togetherable-scheme-variables
-        ()
-        ([proc proto] ...)
-        (*defproc 'm (quote-syntax/loc cl)
-                  (list (extract-proc-id proto) ...)
-                  '[proto ...]
-                  arg-contracts
-                  (list (arg-defaults proto) ...)
-                  (list (lambda () (result-contract result)) ...)
-                  (lambda () (list desc ...)))))]))
+     (with-togetherable-scheme-variables
+      ()
+      ([proc proto] ...)
+      (*defproc 'm (quote-syntax/loc cl)
+                (list (extract-proc-id proto) ...)
+                '[proto ...]
+                (list (arg-contracts proto) ...)
+                (list (arg-defaults proto) ...)
+                (list (lambda () (result-contract result)) ...)
+                (lambda () (list desc ...))))]))
 
 (define-struct arg
   (special? kw id optional? starts-optional? ends-optional? num-closers))
