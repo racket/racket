@@ -2,7 +2,6 @@
 #include "schpriv.h"
 
 /* READ ONLY SHARABLE GLOBALS */
-static Scheme_Object *place_main_symbol;
 
 #ifdef MZ_USE_PLACES
 
@@ -55,10 +54,9 @@ void scheme_init_place(Scheme_Env *env)
   register_traversers();
 #endif
   
-  place_main_symbol = scheme_intern_symbol("place-main");
   plenv = scheme_primitive_module(scheme_intern_symbol("#%place"), env);
 
-  PLACE_PRIM_W_ARITY("place",       scheme_place,       1, 2, plenv);
+  PLACE_PRIM_W_ARITY("place",       scheme_place,       1, 3, plenv);
   PLACE_PRIM_W_ARITY("place-sleep", scheme_place_sleep, 1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-wait",  scheme_place_wait,  1, 1, plenv);
   PLACE_PRIM_W_ARITY("place?",      scheme_place_p,     1, 1, plenv);
@@ -78,6 +76,7 @@ typedef struct Place_Start_Data {
   int argc;
   Scheme_Object *thunk;
   Scheme_Object *module;
+  Scheme_Object *function;
   Scheme_Object *channel;
   Scheme_Object *current_library_collection_paths;
 } Place_Start_Data;
@@ -114,9 +113,10 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   if (argc == 1) {
     place_data->thunk    = args[0];
   }
-  else if (argc == 2 ) {
+  else if (argc == 3 ) {
     place_data->module   = args[0];
-    place_data->channel  = args[1];
+    place_data->function = args[1];
+    place_data->channel  = args[2];
   }
   else {
     scheme_wrong_count_m("place", 1, 2, argc, args, 0);
@@ -249,7 +249,7 @@ static void *place_start_proc(void *data_arg) {
   } else {
     Scheme_Object *place_main;
     a[0] = scheme_places_deep_copy(place_data->module);
-    a[1] = place_main_symbol;
+    a[1] = scheme_places_deep_copy(place_data->function);
     place_main = scheme_dynamic_require(2, a);
 
     a[0] = scheme_places_deep_copy(place_data->channel);
