@@ -517,6 +517,7 @@ EXTRA_GMP_OBJ=
 # For MzScheme targets:
 OSX=".osx"
 NOT_OSX=""
+CGC_X86_64=""
 
 case $OS in
   SunOS)
@@ -562,6 +563,7 @@ case $OS in
     case `$UNAME -m` in
       #Required for CentOS 4.6
       x86_64)
+       CGC_X86_64="1"
        if test -d /usr/X11R6/lib64 ; then
          X_LIBS="$X_LIBS -L/usr/X11R6/lib64"
        fi
@@ -1119,7 +1121,11 @@ fi
 
 if test "${enable_places}" = "yes" ; then
   PREFLAGS="$PREFLAGS -DMZ_USE_PLACES"
-  PLACE_CGC_FLAGS="$GC_THREADS_FLAG -DPARALLEL_MARK -DTHREAD_LOCAL_ALLOC"
+  if test "${CGC_X86_64}" = "1" ; then
+    PLACE_CGC_FLAGS="$GC_THREADS_FLAG -DTHREAD_LOCAL_ALLOC"
+  else
+    PLACE_CGC_FLAGS="$GC_THREADS_FLAG -DPARALLEL_MARK -DTHREAD_LOCAL_ALLOC"
+  fi
   LDFLAGS="$LDFLAGS -pthread"
 fi
 
