@@ -13,6 +13,7 @@
          manager-compile-notify-handler
          manager-skip-file-handler
          file-date-in-collection
+         file-date-in-paths
          (rename-out [trace manager-trace-handler]))
 
 (define manager-compile-notify-handler (make-parameter void))
@@ -22,12 +23,15 @@
 (define manager-skip-file-handler (make-parameter (λ (x) #f)))
 
 (define (file-date-in-collection p)
+  (file-date-in-paths p (current-library-collection-paths)))
+
+(define (file-date-in-paths p paths)
   (let ([p-eles (explode-path (simplify-path p))])
-    (let c-loop ([collects-paths (current-library-collection-paths)])
+    (let c-loop ([paths paths])
       (cond
-        [(null? collects-paths) #f]
+        [(null? paths) #f]
         [else
-         (let i-loop ([collects-eles (explode-path (car collects-paths))]
+         (let i-loop ([collects-eles (explode-path (car paths))]
                       [p-eles p-eles])
            (cond
              [(null? collects-eles)
@@ -60,13 +64,13 @@
                      (file-or-directory-modify-seconds p)])))]
              [(null? p-eles) 
               ;; this case shouldn't happen... I think.
-              (c-loop (cdr collects-paths))]
+              (c-loop (cdr paths))]
              [else
               (cond
                 [(equal? (car p-eles) (car collects-eles))
                  (i-loop (cdr collects-eles) (cdr p-eles))]
                 [else 
-                 (c-loop (cdr collects-paths))])]))]))))
+                 (c-loop (cdr paths))])]))]))))
 
 (define (trace-printf fmt . args)
   (let ([t (trace)])

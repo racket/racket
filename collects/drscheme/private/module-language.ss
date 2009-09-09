@@ -5,15 +5,16 @@
          scheme/class
          scheme/list
          scheme/path
+         scheme/contract
          mred
          compiler/embed
          compiler/cm
          launcher
          framework
          string-constants
+         planet/config
          "drsig.ss"
-         "rep.ss"
-         scheme/contract)
+         "rep.ss")
 
 (define op (current-output-port))
 (define (oprintf . args) (apply fprintf op args))
@@ -184,7 +185,10 @@
                          (use-compiled-file-paths)))]))
              
              (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))
-             (manager-skip-file-handler file-date-in-collection)))))
+             (manager-skip-file-handler
+              (λ (p) (file-date-in-paths 
+                      p
+                      (cons (CACHE-DIR) (current-library-collection-paths)))))))))
       
       (define/override (get-one-line-summary)
         (string-constant module-language-one-line-summary))

@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require "common.ss"
           (for-label errortrace/errortrace-lib
-                     compiler/cm))
+                     compiler/cm
+                     planet/config))
 
 @title[#:tag "languages" #:style 'toc]{Languages}
 
@@ -52,7 +53,11 @@ of various libraries).
         The @italic{populate compiled/ directories} option corresponds to 
         @schemeblock[(current-load/use-compiled 
                       (make-compilation-manager-load/use-compiled-handler))
-                     (manager-skip-file-handler file-date-in-collection)]
+                     (manager-skip-file-handler
+                      (λ (p) 
+                        (file-date-in-paths 
+                         p
+                         (cons (CACHE-DIR) (current-library-collection-paths)))))]
         plus adding either @scheme[(build-path "compiled" "drscheme")] or 
         @scheme[(build-path "compiled" "drscheme" "errortrace")]
         to the front of @scheme[use-compiled-file-paths], depending if the

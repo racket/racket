@@ -251,9 +251,14 @@ A parameter whose value is called for each file that is loaded and
  @scheme[(lambda (x) #f)].}
 
 @defproc[(file-date-in-collection [p path?]) (or/c number? #f)]{
+  Calls @scheme[file-date-in-paths] with @scheme[p] and
+  @scheme[(current-library-collection-paths)].
+}
+
+@defproc[(file-date-in-paths [p path?] [paths (listof path?)]) (or/c number? #f)]{
  This is a function intended to be used with @scheme[manager-skip-file-handler].
  It returns the date of the @tt{.ss} or @tt{.zo} file (whichever is newer)
- for any path that is inside the collection hierarchy and returns
+ for any path that is inside the @scheme[paths] argument, and
  @scheme[#f] for any other path.
 }
 
