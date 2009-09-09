@@ -60,7 +60,9 @@
 
   (provide mouse-event-kind)
  
-  (define-contract mouse-event-kind (one-of "enter" "leave" "motion" "left-down" "left-up" "middle-down" "middle-up" "right-down" "right-up"))
+  (define mouse-event-kind
+    (contract
+     (one-of "enter" "leave" "motion" "left-down" "left-up" "middle-down" "middle-up" "right-down" "right-up")))
   
   ;; ---------------------------------------------------------------------------
   

@@ -29,7 +29,7 @@
 
 (provide (all-from-out deinprogramm/define-record-procedures))
 (provide (all-from-out test-engine/scheme-tests))
-(provide define-contract :
+(provide contract define-contract :
 	 -> mixed one-of predicate combined property)
 
 (provide number real rational integer natural
@@ -877,14 +877,14 @@
 (define (false? x)
   (eq? x #f))
 
-(define-contract true (one-of #f))
-(define-contract false (one-of #f))
+(define true (contract (one-of #f)))
+(define false (contract (one-of #f)))
 
 (define string (contract/arbitrary arbitrary-string (predicate string?)))
 (define symbol (contract/arbitrary arbitrary-symbol (predicate symbol?)))
-(define-contract empty-list (one-of empty))
+(define empty-list (contract (one-of empty)))
 
-(define-contract unspecific (predicate (lambda (_) #t)))
+(define unspecific (contract (predicate (lambda (_) #t))))
 
 ;; aus collects/lang/private/teach.ss
 

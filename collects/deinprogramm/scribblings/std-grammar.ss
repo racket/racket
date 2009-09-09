@@ -18,7 +18,7 @@
    #:literals (define define-record-procedures lambda cond if and or let letrec let* begin 
 		#;require lib planet
 		check-expect check-within check-error
-		define-contract :
+		contract :
 		predicate one-of mixed list %a %b %c
 		lit ...)
    (... [program (code:line def-or-expr ...)])
@@ -29,8 +29,8 @@
    [definition @#,scheme[(define id expr)]
      @#,scheme[(define-record-procedures id id id (id (... ...)))]
      @#,scheme[(define-record-procedures-parametric (id id (... ...)) id id (id (... ...)))]
-     @#,scheme[(define-contract id contract)]
-     @#,scheme[(: id contract)]
+     @#,scheme[(contract id contr)]
+     @#,scheme[(: id contr)]
      def-rule ...]
    prod ...
    [expr @#,scheme[(code:line (expr expr (... ...)) (code:comment @#,seclink["application"]{Prozedurapplikation}))]
@@ -49,18 +49,18 @@
 	 @#,scheme[(letrec ((id expr) (... ...)) expr)]
 	 @#,scheme[(let* ((id expr) (... ...)) expr) ]
 	 @#,scheme[(begin expr expr (... ...))]
-	 @#,scheme[(for-all ((id contract) (... ...)) expr)]
+	 @#,scheme[(for-all ((id contr) (... ...)) expr)]
 	 @#,scheme[(==> expr expr)]
 	 expr-rule ...]
-   [contract  id
+   [contr  id
 	      @#,scheme[(predicate expr)]
 	      @#,scheme[(one-of expr (... ...))]
-	      @#,scheme[(mixed contract (... ...))]
-	      @#,scheme[(code:line (contract (... ...) -> contract) (code:comment @#,seclink["proc-contract"]{Prozedur-Vertrag}))]
-	      @#,scheme[(list contract)]
+	      @#,scheme[(mixed contr (... ...))]
+	      @#,scheme[(code:line (contr (... ...) -> contr) (code:comment @#,seclink["proc-contract"]{Prozedur-Vertrag}))]
+	      @#,scheme[(list contr)]
 	      @#,scheme[(code:line %a %b %c (code:comment @#,seclink["contract-variable"]{Vertrags-Variable}))]
-	      @#,scheme[(combined contract (... ...))]
-	      @#,scheme[(property expr contract)]
+	      @#,scheme[(combined contr (... ...))]
+	      @#,scheme[(property expr contr)]
    ]
    [test-case @#,scheme[(check-expect expr expr)]
               @#,scheme[(check-within expr expr expr)]

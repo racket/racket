@@ -7,7 +7,7 @@
 	 .. ... .... ..... ......
 	 check-expect check-within check-error
 	 check-property for-all ==> expect expect-within
-	 : define-contract -> mixed one-of predicate combined property
+	 contract : define-contract -> mixed one-of predicate combined property
 	 number real rational integer natural boolean true false string empty-list
 	 chocolate-cookie)
 (provide cons)

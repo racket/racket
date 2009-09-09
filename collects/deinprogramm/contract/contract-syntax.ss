@@ -114,7 +114,9 @@
       ((_ ?contr)
        #'(contract #f ?contr))
       ((_ ?name ?contr)
-       (parse-contract (syntax->datum #'?name) #'?contr)))))
+       (stepper-syntax-property
+	(parse-contract (syntax->datum #'?name) #'?contr)
+	'stepper-skip-completely #t)))))
 
 (define-syntax contract/arbitrary
   (lambda (stx)

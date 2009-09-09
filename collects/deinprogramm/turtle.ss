@@ -24,16 +24,17 @@
    (lambda (grad)
      (* pi/180 grad)))
 
- (define-contract turtle (predicate (lambda (x)
-                                      (and (vector? x)
-                                           (= (vector-length x) 8)
-                                           (number? (vector-ref x 0))
-                                           (number? (vector-ref x 1))
-                                           (number? (vector-ref x 2))
-                                           (number? (vector-ref x 3))
-                                           (number? (vector-ref x 4))
-                                           (image? (vector-ref x 5))
-                                           (image-color? (vector-ref x 6))))))
+ (define turtle (contract
+		 (predicate (lambda (x)
+			      (and (vector? x)
+				   (= (vector-length x) 8)
+				   (number? (vector-ref x 0))
+				   (number? (vector-ref x 1))
+				   (number? (vector-ref x 2))
+				   (number? (vector-ref x 3))
+				   (number? (vector-ref x 4))
+				   (image? (vector-ref x 5))
+				   (image-color? (vector-ref x 6)))))))
 
  ; This function is only for internal use.
  ; (new-turtle-priv h w x y angle img color state)
@@ -211,7 +212,7 @@
  ; functions into one new function, that do
  ; one action of the turtle, then later the rest.
  ; Define the type alias tip = turtle -> turtle.
- (define-contract tip (turtle -> turtle))
+ (define tip (contract (turtle -> turtle)))
  (: do (tip ... -> tip))
  (define sequence (lambda l (comp_priv l)))
 

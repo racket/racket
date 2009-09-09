@@ -192,22 +192,14 @@ Wert des @scheme[begin]-Ausdrucks.
 
 @section{Verträge}
 
-@subsection{@scheme[define-contract]}
-@defform[(define-contract id contract)]
-@defform/none[(define-contract (id p1 ...) contract)]{
-Die erste Form führt einen neuen Vertrag ein:
-sie bindet den Namen @scheme[id] an den Vertrag @scheme[contract].
-
-Die zweite Form führt einen @deftech{parametrischen Vertrag} (wie
-@scheme[list]) ein, der über die Parameter @scheme[p1]
-... abstrahiert.  Der parametrische Vertrag kann dann als @scheme['(id
-a1 ...)] verwendet werden, wobei in @scheme[contract] für die
-Parameter @scheme[p1] ... die @scheme[a1] ... eingesetzt werden.
+@subsection{@scheme[contract]}
+@defform[(contract contr)]{
+Diese Form liefert den Vertrag mit der Notation @scheme[contr].
 }
 
 @subsection{Vertragserklärung}
-@defform[(: id contract)]{
-Diese Form erklärt @scheme[contract] zum gültigen Vertrag für @scheme[id].
+@defform[(: id contr)]{
+Diese Form erklärt @scheme[contr] zum gültigen Vertrag für @scheme[id].
 }
 
 @defidform[number]{
@@ -266,14 +258,14 @@ der @scheme[expr] ist.
 }
 
 @subsection{@scheme[mixed]}
-@defform[(mixed contract ...)]{
+@defform[(mixed contr ...)]{
 Dieser Vertrag ist für einen Wert gültig, wenn er für einen der Verträge
-@scheme[contract] gültig ist.
+@scheme[contr] gültig ist.
 }
 
 @subsection[#:tag "proc-contract"]{Prozedur-Vertrag}
 @defidform[->]{
-@defform/none[(contract ... -> contract)]{
+@defform/none[(contr ... -> contr)]{
 Dieser Vertrag ist dann für einen Wert gültig, wenn dieser eine
 Prozedur ist.  Er erklärt außerdem, daß die Verträge vor dem @scheme[->]
 für die Argumente der Prozedur gelten und der Vertrag nach dem @scheme[->]
@@ -282,9 +274,9 @@ für den Rückgabewert.
 }
 
 @subsection{@scheme[property]}
-@defform[(property expr contract)]{
+@defform[(property expr contr)]{
 Dieser Vertrag ist für ein Objekt @scheme[obj] gültig, wenn der
-Vertrag @scheme[contract] für @scheme[(expr obj)] gültig ist.
+Vertrag @scheme[contr] für @scheme[(expr obj)] gültig ist.
 
 (In der Regel ist @scheme[expr] ein Record-Selektor @scheme[s].  In
 dem Fall ist der Vertrag @scheme[(property s c)] für alle Records
@@ -293,9 +285,9 @@ Vertrag @scheme[c] erfüllt.)
 }
 
 @subsection{@scheme[list]} 
-@defform[(list contract)]{
+@defform[(list contr)]{
 Dieser Vertrag ist dann für einen Wert gültig, wenn dieser eine Liste ist,
-für dessen Elemente @scheme[contract] gültig ist.
+für dessen Elemente @scheme[contr] gültig ist.
 }
 
 @subsection[#:tag "contract-variable"]{Vertrags-Variablen} 
@@ -307,9 +299,9 @@ Dies ist eine Vertragsvariable: sie steht für einen Vertrag, der für jeden Wer
 }
 
 @subsection{@scheme[combined]}
-@defform[(combined contract ...)]{
+@defform[(combined contr ...)]{
 Dieser Vertrag ist für einen Wert gültig, wenn er für alle der Verträge
-@scheme[contract] gültig ist.
+@scheme[contr] gültig ist.
 }
 
 @section{Testfälle}
@@ -354,7 +346,7 @@ wurden.  In diesen Fällen erzeugt @scheme[check-property] eine Fehlermeldung.
 
 Die @scheme[define-record-procedures-parametric] ist wie
 @scheme[define-record-procedures] mit dem Unterschied, daß @scheme[t]
-an einen @tech{parametrischen Vertrag} gebunden wird: Es muß genauso viele
+an einen parametrischen Vertrag gebunden wird: Es muß genauso viele
 Parameter @scheme[p1] geben wie Selektoren @scheme[s1]; für diese
 Parameter werden die Verträge für die Felder substituiert.
 
@@ -427,10 +419,10 @@ gebunden und @deftech{quantifiziert} werden, d.h. es muß festgelegt
 werden, welchen Vertrag die Werte der Variable erfüllen sollen.
 Eigenschaften mit Variablen werden mit der @scheme[for-all]-Form erzeugt:
 
-@defform[(for-all ((id contract) ...) expr)]{
+@defform[(for-all ((id contr) ...) expr)]{
 Dies bindet die Variablen @scheme[id] in der Eigenschaft
 @scheme[expr].  Zu jeder Variable gehört ein Vertrag
-@scheme[contract], der von den Werten der Variable erfüllt werden
+@scheme[contr], der von den Werten der Variable erfüllt werden
 muß.
 
 Beispiel:
