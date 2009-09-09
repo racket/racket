@@ -397,8 +397,6 @@ static void place_instance_init_pre_kernel(void *stack_base) {
 
 static void init_unsafe(Scheme_Env *env)
 {
-  scheme_defining_primitives = 1;
-
   REGISTER_SO(unsafe_env);
 
   unsafe_env = scheme_primitive_module(scheme_intern_symbol("#%unsafe"), env);
@@ -411,8 +409,6 @@ static void init_unsafe(Scheme_Env *env)
 
   scheme_finish_primitive_module(unsafe_env);
   scheme_protect_primitive_provide(unsafe_env, NULL);
-
-  scheme_defining_primitives = 0;
 
 #if USE_COMPILED_STARTUP
   if (builtin_ref_counter != (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT)) {
@@ -465,8 +461,6 @@ static Scheme_Env *place_instance_init_post_kernel() {
 #else
   init_dummy_foreign(env);
 #endif
-
-  init_unsafe(env);
 
   scheme_add_embedded_builtins(env);
 
@@ -647,7 +641,9 @@ static void make_kernel_env(void)
     abort();
   }
 #endif
-   
+
+  init_unsafe(env);
+
   scheme_defining_primitives = 0;
 }
 
@@ -1293,7 +1289,7 @@ Scheme_Object **scheme_make_builtin_references_table(void)
 
   for (j = 0; j < 2; j++) {
     if (!j)
-      kenv = scheme_get_kernel_env();
+      kenv = kernel_env;
     else
       kenv = unsafe_env;
     
@@ -1324,7 +1320,7 @@ Scheme_Hash_Table *scheme_map_constants_to_globals(void)
       
   for (j = 0; j < 2; j++) {
     if (!j)
-      kenv = scheme_get_kernel_env();
+      kenv = kernel_env;
     else
       kenv = unsafe_env;
     

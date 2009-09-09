@@ -664,24 +664,26 @@ case $OS in
     fi
 
     # Force 32-bit build, for now
-    if test "${ORIG_CC}" = "" ; then
-       CC="${CC} -m32"
-       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
-    fi
-    if test "${ORIG_CPP}" = "" ; then
-       CPP="${CPP} -m32"
-       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPP="'"'"${CPP}"'"'
-    fi
-    if test "${ORIG_CXX}" = "" ; then
-       CXX="${CXX} -m32"
-       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CXX="'"'"${CXX}"'"'
-    fi
-    if test "${ORIG_CXXCPP}" = "" ; then
-       CXXCPP="${CXXCPP} -m32"
-       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPCXX="'"'"${CPPCXX}"'"'
-    fi
-    if test "${ORIG_CC_FOR_BUILD}" = "" ; then
-       CC_FOR_BUILD="${CC_FOR_BUILD} -m32"
+    if test `${UNAME} -m` = "i386" ; then
+      if test "${ORIG_CC}" = "" ; then
+         CC="${CC} -m32"
+         SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
+      fi
+      if test "${ORIG_CPP}" = "" ; then
+         CPP="${CPP} -m32"
+         SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPP="'"'"${CPP}"'"'
+      fi
+      if test "${ORIG_CXX}" = "" ; then
+         CXX="${CXX} -m32"
+         SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CXX="'"'"${CXX}"'"'
+      fi
+      if test "${ORIG_CXXCPP}" = "" ; then
+         CXXCPP="${CXXCPP} -m32"
+         SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPCXX="'"'"${CPPCXX}"'"'
+      fi
+      if test "${ORIG_CC_FOR_BUILD}" = "" ; then
+         CC_FOR_BUILD="${CC_FOR_BUILD} -m32"
+      fi
     fi
 
     if test "${enable_quartz}" = "yes" ; then
