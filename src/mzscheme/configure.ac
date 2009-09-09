@@ -895,7 +895,7 @@ fi
 
 LFS_CFLAGS=`getconf LFS_CFLAGS 2> /dev/null`
 if test "${LFS_CFLAGS}" != "" ; then
-  echo "Large-file support: ${LFS_FLAGS}"
+  echo "Large-file support: ${LFS_CFLAGS}"
   PREFLAGS="${PREFLAGS} ${LFS_CFLAGS}"  
 fi
 
