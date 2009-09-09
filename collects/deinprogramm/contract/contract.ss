@@ -231,6 +231,7 @@
 	   (contract-violation proc self "wrong number of parameters" #f)))
 	 (attach-name
 	  (object-name proc)
+	  (procedure-reduce-arity
 	  (lambda args
 	    (call-with-immediate-continuation-mark
 	     contract-key
@@ -261,7 +262,8 @@
 				  ;; blame the procedure
 				  (old-violation-proc obj contract message blame-syntax))
 				(lambda ()
-				  (apply-contract return-contract retval))))))))))))))
+				  (apply-contract return-contract retval)))))))))))
+	  (procedure-arity proc)))))
      syntax
      (delay
        (apply lift->arbitrary arbitrary-procedure return-contract arg-contracts)))))
