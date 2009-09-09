@@ -61,7 +61,7 @@ the Unix instructions below, but note the following:
    --enable-macprefix. BEWARE! The directory structure for a non-xonx
    build does not fit a typical Unix directory structure. For example,
    frameworks are written directly to a "lib" subdirectory, and
-   executables like "MrEd.app" are written directory to the prefix
+   executables like "MrEd.app" are written directly to the prefix
    directory. (Requiring --enable-macprefix with --prefix for a
    non-xonx build helps prevent accidental installation of a Mac-style
    directory structure on top of an existing Unix-style directory
