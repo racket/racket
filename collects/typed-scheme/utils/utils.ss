@@ -5,10 +5,10 @@ This file is for utilities that are of general interest,
 at least theoretically.
 |#
 
-(require (for-syntax scheme/base stxclass scheme/string)
+(require (for-syntax scheme/base syntax/parse scheme/string)
          scheme/contract mzlib/plt-match scheme/require-syntax scheme/provide-syntax
          mzlib/struct scheme/unit
-         (except-in stxclass id))
+         (except-in syntax/parse id))
 
 (provide with-syntax* syntax-map start-timing do-time reverse-begin printf/log
          with-logging-to-file log-file-name ==
@@ -286,7 +286,7 @@ at least theoretically.
           #:literals ()
           #:attributes (i)
           (pattern [rename out:id in:id cnt:expr]
-                   #:when (eq? (syntax-e #'rename) 'rename)
+                   #:fail-unless (eq? (syntax-e #'rename) 'rename) #f
                    #:with i #'(rename-out [out in]))
           (pattern [i:id cnt:expr]))
         (syntax-parse stx

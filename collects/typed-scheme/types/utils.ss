@@ -9,7 +9,7 @@
          scheme/list
          mzlib/trace
          scheme/contract
-         (for-syntax scheme/base stxclass))
+         (for-syntax scheme/base syntax/parse))
 
 (provide fv fv/list
          substitute

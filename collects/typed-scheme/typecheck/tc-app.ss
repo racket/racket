@@ -3,8 +3,13 @@
 (require (rename-in "../utils/utils.ss" [infer r:infer])
          "signatures.ss" "tc-metafunctions.ss"
          "tc-app-helper.ss" "find-annotation.ss"
-         stxclass scheme/match mzlib/trace scheme/list
-         (for-syntax stxclass scheme/base)
+         syntax/parse scheme/match mzlib/trace scheme/list 
+         ;; fixme - don't need to be bound in this phase - only to make syntax/parse happy
+         scheme/bool
+         (only-in scheme/private/class-internal make-object do-make-object)
+         (only-in '#%kernel [apply k:apply])
+         ;; end fixme
+         (for-syntax syntax/parse scheme/base (utils tc-utils))
          (private type-annotation)
          (types utils abbrev union subtype resolve convenience)
          (utils tc-utils)
@@ -14,7 +19,7 @@
          (r:infer infer)
          (for-template 
           (only-in '#%kernel [apply k:apply])
-          "internal-forms.ss" scheme/base 
+          "internal-forms.ss" scheme/base scheme/bool
           (only-in scheme/private/class-internal make-object do-make-object)))
 
 (import tc-expr^ tc-lambda^ tc-dots^ tc-let^)
@@ -417,12 +422,12 @@
             (ret ts fs os))])]
     ;; special case for keywords
     [(#%plain-app
-      (#%plain-app cpce s:kp fn kpe kws num)      
+      (#%plain-app cpce s-kp fn kpe kws num)      
       kw-list
       (#%plain-app list . kw-arg-list)
       . pos-args)
      #:declare cpce (id-from 'checked-procedure-check-and-extract 'scheme/private/kw)
-     #:declare s:kp (id-from 'struct:keyword-procedure 'scheme/private/kw)
+     #:declare s-kp (id-from 'struct:keyword-procedure 'scheme/private/kw)
      #:declare kpe  (id-from 'keyword-procedure-extract 'scheme/private/kw)
      (match (tc-expr #'fn)
        [(tc-result1: (Function: arities)) 
@@ -431,9 +436,9 @@
                                        "Cannot apply expression of type ~a, since it is not a function type" t)])]
     ;; even more special case for match
     [(#%plain-app (letrec-values ([(lp) (#%plain-lambda args . body)]) lp*) . actuals)
-     #:when expected 
-     #:when (not (andmap type-annotation (syntax->list #'args)))
-     #:when (free-identifier=? #'lp #'lp*)
+     #:fail-unless expected #f 
+     #:fail-unless (not (andmap type-annotation (syntax->list #'args))) #f
+     #:fail-unless (free-identifier=? #'lp #'lp*) #f
      (let-loop-check form #'lp #'actuals #'args #'body expected)]
     ;; special cases for classes
     [(#%plain-app make-object cl . args)     
@@ -442,11 +447,11 @@
      (check-do-make-object #'cl #'pos-args #'(names ...) #'(named-args ...))]
     ;; ormap/andmap of ... argument
     [(#%plain-app or/andmap:id f arg)
-     #:when (or (free-identifier=? #'or/andmap #'ormap)
-                (free-identifier=? #'or/andmap #'andmap))
-     #:when (with-handlers ([exn:fail? (lambda _ #f)])
-              (tc/dots #'arg)
-              #t)
+     #:fail-unless (or (free-identifier=? #'or/andmap #'ormap)
+                       (free-identifier=? #'or/andmap #'andmap)) #f
+     #:fail-unless (with-handlers ([exn:fail? (lambda _ #f)])
+                     (tc/dots #'arg)
+                     #t) #f
      (let-values ([(ty bound) (tc/dots #'arg)])
        (parameterize ([current-tvars (extend-env (list bound)
                                                  (list (make-DottedBoth (make-F bound)))
@@ -493,18 +498,18 @@
        (ret (foldr make-Pair last tys)))]
     ;; inference for ((lambda
     [(#%plain-app (#%plain-lambda (x ...) . body) args ...)
-     #:when (= (length (syntax->list #'(x ...)))
-               (length (syntax->list #'(args ...))))
+     #:fail-unless (= (length (syntax->list #'(x ...)))
+                      (length (syntax->list #'(args ...)))) #f
      (tc/let-values #'((x) ...) #'(args ...) #'body 
                     #'(let-values ([(x) args] ...) . body)
                     expected)]
     ;; inference for ((lambda with dotted rest    
     [(#%plain-app (#%plain-lambda (x ... . rst:id) . body) args ...)
-     #:when (<= (length (syntax->list #'(x ...)))
-                (length (syntax->list #'(args ...))))
+     #:fail-unless (<= (length (syntax->list #'(x ...)))
+                       (length (syntax->list #'(args ...)))) #f
     ;; FIXME - remove this restriction - doesn't work because the annotation 
     ;; on rst is not a normal annotation, may have * or ...
-     #:when (not (type-annotation #'rst))
+     #:fail-unless (not (type-annotation #'rst)) #f
      (let-values ([(fixed-args varargs) (split-at (syntax->list #'(args ...)) (length (syntax->list #'(x ...))))])
        (with-syntax ([(fixed-args ...) fixed-args]
                      [varg #`(#%plain-app list #,@varargs)])

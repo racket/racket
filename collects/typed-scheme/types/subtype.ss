@@ -1,14 +1,13 @@
 #lang scheme/base
-(require "../utils/utils.ss")
-
-(require (rep type-rep filter-rep object-rep rep-utils)
+(require "../utils/utils.ss"
+         (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
 	 (types utils comparison resolve abbrev)
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
          scheme/match
          mzlib/trace
-	 (for-syntax scheme/base stxclass))
+	 (for-syntax scheme/base syntax/parse))
 
 ;; exn representing failure of subtyping
 ;; s,t both types

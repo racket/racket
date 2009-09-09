@@ -6,7 +6,7 @@ don't depend on any other portion of the system
 |#
 
 (provide (all-defined-out))
-(require "syntax-traversal.ss" stxclass (for-syntax scheme/base stxclass) scheme/match)
+(require "syntax-traversal.ss" syntax/parse (for-syntax scheme/base syntax/parse) scheme/match)
 
 ;; a parameter representing the original location of the syntax being currently checked
 (define current-orig-stx (make-parameter #'here))
@@ -181,4 +181,4 @@ don't depend on any other portion of the system
 
 (define-syntax-class (id-from sym mod)
   (pattern i:id
-           #:when (id-from? #'i sym mod)))
+           #:fail-unless (id-from? #'i sym mod) #f))

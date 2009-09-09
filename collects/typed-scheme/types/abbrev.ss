@@ -9,7 +9,7 @@
          scheme/match         
          scheme/promise
          (prefix-in c: scheme/contract)
-         (for-syntax scheme/base stxclass)
+         (for-syntax scheme/base syntax/parse)
 	 (for-template scheme/base scheme/contract scheme/tcp))
 
 (provide (all-defined-out)
@@ -160,7 +160,7 @@
 
 (define-syntax (->* stx)
   (define-syntax-class c
-    (pattern x:id #:when (eq? ': (syntax-e #'x))))
+    (pattern x:id #:fail-unless (eq? ': (syntax-e #'x)) #f))
   (syntax-parse stx
     [(_ dom rng)       
      #'(make-Function (list (make-arr* dom rng)))]
@@ -177,7 +177,7 @@
 
 (define-syntax (-> stx)
   (define-syntax-class c
-    (pattern x:id #:when (eq? ': (syntax-e #'x))))
+    (pattern x:id #:fail-unless (eq? ': (syntax-e #'x)) #f))
   (syntax-parse stx
     [(_ dom ... rng _:c filters _:c objects)
      #'(->* (list dom ...) rng : filters : objects)]
@@ -216,7 +216,7 @@
 
 (define-syntax (->key stx)  
   (syntax-parse stx
-                [(_ ty:expr ... (~or (k:keyword kty:expr opt:boolean)) ... rng)
+                [(_ ty:expr ... (~seq k:keyword kty:expr opt:boolean) ... rng)
                  #'(make-Function
                     (list
                      (make-arr* (list ty ...)

@@ -8,7 +8,7 @@
          (types utils convenience union subtype)
          (private-in parse-type type-annotation)
          (rep type-rep)
-         (utils tc-utils stxclass-util)
+         (except-in (utils tc-utils stxclass-util) define-pred-stxclass 3d atom byte-pregexp byte-regexp regexp bytes)
          (env lexical-env)
          (only-in (env type-environments) lookup current-tvars extend-env)
          scheme/private/class-internal

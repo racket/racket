@@ -12,12 +12,14 @@
           scheme/list
           stxclass/util
           scheme/match
-          stxclass
+          (except-in syntax/parse id identifier keyword)
           scheme/base
           syntax/struct
           syntax/stx
           scheme/contract
-          (utils utils)))
+          (rename-in (except-in (utils utils stxclass-util) bytes byte-regexp regexp byte-pregexp #;pregexp)
+                     [id* id]
+                     [keyword* keyword])))
 
 (provide == defintern hash-id (for-syntax fold-target))
 
@@ -65,34 +67,36 @@
              #:with e #'#'ex))
   (lambda (stx)          
     (syntax-parse stx 
-      [(dform nm:id flds:idlist (~or [[#:key key-expr:expr]] #:opt 
-                                     [[#:intern intern?:expr]] #:opt
-                                     [[#:frees . frees:frees-pat]] #:opt
-                                     [[#:fold-rhs fold-rhs:fold-pat]] #:opt
-                                     [[#:contract cnt:expr]] #:opt
-                                     [no-provide?:no-provide-kw] #:opt) ...)
+      [(dform nm:id flds:idlist (~or 
+                                 (~optional [#:key key-expr:expr])
+                                 (~optional [#:intern intern?:expr])
+                                 (~optional [#:frees . frees:frees-pat])
+                                 (~optional [#:fold-rhs fold-rhs:fold-pat])
+                                 (~optional [#:contract cnt:expr])
+                                 (~optional no-provide?:no-provide-kw)) ...)
        (with-syntax* 
         ([ex (mk-id #'nm #'nm ":")]
          [fold-name (mk-id #f #'nm "-fold")]
-         [kw-stx (string->keyword (symbol->string #'nm.datum))]
+         [kw-stx (string->keyword (symbol->string (attribute nm.datum)))]
          [parent par]
          [(s:ty maker pred acc ...) (build-struct-names #'nm (syntax->list #'flds.fs) #f #t #'nm)]
          [*maker (mk-id #'nm "*" #'nm)]
          [**maker (mk-id #'nm "**" #'nm)]
          [*maker-cnt (if enable-contracts?
-                         (or #'cnt #'(flds.cnt ... . -> . pred))
+                         (or (attribute cnt) #'(flds.cnt ... . -> . pred))
                          #'any/c)]
          [ht-stx ht-stx]
-         [bfs-fold-rhs (cond [#'fold-rhs #`(procedure-rename
-                                            (lambda () #,#'fold-rhs.e)
-                                            'fold-name)]
+         [bfs-fold-rhs (cond [(attribute fold-rhs)
+                              #`(procedure-rename
+                                 (lambda () #,#'fold-rhs.e)
+                                 'fold-name)]
                              ;; otherwise we assume that everything is a type, 
                              ;; and recur on all the arguments
                              [else #'(procedure-rename
                                       (lambda () 
                                         #`(*maker (#,type-rec-id flds.i) ...))
                                       'fold-name)])]
-         [provides (if #'no-provide?
+         [provides (if (attribute no-provide?)
                        #'(begin)                                 
                        #`(begin 
                            (provide #;nm ex pred acc ...)
@@ -100,18 +104,18 @@
          [intern 
           (let ([mk (lambda (int) 
 		      (if key? 
-			  #`(defintern (**maker . flds.fs) maker #,int #:extra-arg key-expr)
+			  #`(defintern (**maker . flds.fs) maker #,int #:extra-arg #,(attribute key-expr))
 			  #`(defintern (**maker . flds.fs) maker #,int)))])
          (syntax-parse #'flds.fs
-              [_  #:when #'intern?
+              [_  #:fail-unless (attribute intern?) #f
                  (mk #'intern?)]
               [() (mk #'#f)]
               [(f) (mk #'f)]
               [_ (mk #'(list . flds.fs))]))]
          [(ign-pats ...) (if key? #'(_ _) #'(_))]
-         [frees-def (if #'frees #'frees.def #'(begin))]
+         [frees-def (if (attribute frees) #'frees.def #'(begin))]
          [frees 
-          (with-syntax ([(f1 f2) (if #'frees
+          (with-syntax ([(f1 f2) (if (attribute frees)
                                      #'(frees.f1 frees.f2)
                                      (list (combiner #'free-vars* #'flds.fs)
                                            (combiner #'free-idxs* #'flds.fs)))])
@@ -168,7 +172,7 @@
     (define-syntax-class clause
       (pattern  
        (k:keyword #:matcher mtch pats ... e:expr)
-       #:with kw #'k.datum
+       #:with kw (attribute k.datum)
        #:with val (list #'mtch 
                         (syntax/loc this-syntax (pats ...))
                         (lambda () #'e)
@@ -188,13 +192,13 @@
     (define-syntax-class (keyword-in kws)
       #:attributes (datum)
       (pattern k:keyword
-               #:when (memq #'k.datum kws)
-               #:with datum #'k.datum))
+               #:fail-unless (memq (attribute k.datum) kws) #f
+               #:with datum (attribute k.datum)))
     (define-syntax-class (sized-list kws)
       #:description (format "keyword expr pairs matching with keywords in the list ~a" kws)
-      (pattern ((~or [k e:expr]) ...)
+      (pattern ((~or (~seq k e:expr)) ...)
                #:declare k (keyword-in kws)
-               #:when (equal? (length (attribute k.datum)) (length (remove-duplicates (attribute k.datum))))
+               #:fail-unless (equal? (length (attribute k.datum)) (length (remove-duplicates (attribute k.datum)))) #f
                #:with mapping (for/hash ([k* (attribute k.datum)]
                                          [e* (attribute e)])
                                 (values k* e*))
@@ -225,26 +229,32 @@
     #:attributes (i lower-s first-letter key? (fld-names 1))
     #:transparent
     (pattern i:id
-             #:with lower-s (string-downcase (symbol->string #'i.datum))
+             #:with lower-s (string-downcase (symbol->string (attribute i.datum)))
              #:with (fld-names ...) default-flds
 	     #:with key? #'#f
              #:with first-letter (string-ref #'lower-s 0))
     (pattern [i:id #:d d-name:id]
              #:with (fld-names ...) default-flds
-             #:with lower-s (string-downcase (symbol->string #'i.datum))
+             #:with lower-s (string-downcase (symbol->string (attribute i.datum)))
 	     #:with key? #'#f
-             #:with first-letter (symbol->string #'d-name.datum))
+             #:with first-letter (symbol->string (attribute d-name.datum)))
     (pattern [i:id #:key]
              #:with (fld-names ...) (datum->syntax #f (append (syntax->list default-flds) 
                                                               (syntax->list #'(key))))
-             #:with lower-s (string-downcase (symbol->string #'i.datum))
+             #:with lower-s (string-downcase (symbol->string (attribute i.datum)))
 	     #:with key? #'#t
              #:with first-letter (string-ref #'lower-s 0)))
   (define-syntax-class type-name
     #:transparent
-    (pattern :type-name-base
+    #:attributes (i lower-s first-letter key? (fld-names 1) name keyword tmp-rec-id case printer ht rec-id d-id pred? (accs 1))
+    (pattern tnb:type-name-base
+             #:with i #'tnb.i
+             #:with lower-s (attribute tnb.lower-s)
+             #:with first-letter (attribute tnb.first-letter)
+             #:with key? #'tnb.key?
+             #:with (fld-names ...) #'(tnb.fld-names ...)
              #:with name #'i
-             #:with keyword (string->keyword (symbol->string (syntax-e #'i)))
+             #:with keyword (datum->syntax #f (string->keyword (symbol->string (syntax-e #'i))))
              #:with tmp-rec-id (generate-temporary)
              #:with case (mk-id #'i #'lower-s "-case")
              #:with printer (mk-id #'i "print-" #'lower-s "*")

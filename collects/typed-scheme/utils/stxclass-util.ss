@@ -1,8 +1,9 @@
 #lang scheme/base
 
-(require syntax/parse (for-syntax syntax/parse scheme/base stxclass/util))
+(require (except-in syntax/parse id keyword) (for-syntax syntax/parse scheme/base stxclass/util))
 
-(provide (except-out (all-defined-out) define-pred-stxclass))
+(provide (except-out (all-defined-out) id keyword)
+         (rename-out [id id*] [keyword keyword*]))
 
 (define-syntax (parse/get stx)
   (syntax-parse stx
@@ -27,12 +28,15 @@
            #:fail-unless (pred #'datum) #f))
 
 (define-syntax-rule (define-pred-stxclass name pred)
-  (define-syntax-class name #:attributes ()
+  (define-syntax-class name #:attributes (datum)
     (pattern x
-             #:fail-unless (pred (syntax-e #'x)) #f)))
+             #:fail-unless (pred (syntax-e #'x)) #f
+             #:with datum (syntax-e #'x))))
 
 (define-pred-stxclass atom atom?)
 (define-pred-stxclass byte-pregexp byte-pregexp?)
 (define-pred-stxclass byte-regexp byte-regexp?)
 (define-pred-stxclass regexp regexp?)
 (define-pred-stxclass bytes bytes?)
+(define-pred-stxclass id symbol?)
+(define-pred-stxclass keyword keyword?)

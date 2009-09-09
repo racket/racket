@@ -8,7 +8,7 @@
          syntax/free-vars
          mzlib/trace
          scheme/match
-         syntax/kerncase stxclass
+         syntax/kerncase syntax/parse
          (for-template 
           scheme/base
           "internal-forms.ss"))
@@ -92,7 +92,7 @@
 (define ((tc-expr-t/maybe-expected expected) e)
   (syntax-parse e #:literals (#%plain-lambda)
     [(#%plain-lambda () _)
-     #:when (and expected (syntax-property e 'typechecker:called-in-tail-position))
+     #:fail-unless (and expected (syntax-property e 'typechecker:called-in-tail-position)) #f
      (tc-expr/check e (ret (-> (tc-results->values expected))))]
     [_ (tc-expr e)]))
 
