@@ -410,6 +410,12 @@ fi
 
 COMPFLAGS=""
 
+ORIG_CC="${CC}"
+ORIG_CPP="${CPP}"
+ORIG_CXX="${CXX}"
+ORIG_CXXCPP="${CXXCPP}"
+SUB_CONFIGURE_EXTRAS=""
+
 if test "${enable_oskit}" = "no" ; then
   AC_PROG_CC
   AC_PROG_CPP
@@ -495,6 +501,7 @@ else
   WBUILD="sh \$(PLTSRCDIR)/wxxt/src/XWidgets/dummy.wbuild"
 fi
 
+ORIG_CC_FOR_BUILD="${CC_FOR_BUILD}"
 if test "$CC_FOR_BUILD" = "" ; then 
   CC_FOR_BUILD="$CC"
 fi
@@ -652,6 +659,27 @@ case $OS in
       else
         MROPTIONS="$MROPTIONS -no-cpp-precomp"
       fi
+    fi
+
+    # Force 32-bit build, for now
+    if test "${ORIG_CC}" = "" ; then
+       CC="${CC} -m32"
+       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CC="'"'"${CC}"'"'
+    fi
+    if test "${ORIG_CPP}" = "" ; then
+       CPP="${CPP} -m32"
+       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPP="'"'"${CPP}"'"'
+    fi
+    if test "${ORIG_CXX}" = "" ; then
+       CXX="${CXX} -m32"
+       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CXX="'"'"${CXX}"'"'
+    fi
+    if test "${ORIG_CXXCPP}" = "" ; then
+       CXXCPP="${CXXCPP} -m32"
+       SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} CPPCXX="'"'"${CPPCXX}"'"'
+    fi
+    if test "${ORIG_CC_FOR_BUILD}" = "" ; then
+       CC_FOR_BUILD="${CC_FOR_BUILD} -m32"
     fi
 
     if test "${enable_quartz}" = "yes" ; then
@@ -1455,6 +1483,7 @@ else
   FOREIGNTARGET="foreign-nothing"
   MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
 fi
+ac_configure_args="$ac_configure_args$SUB_CONFIGURE_EXTRAS"
 
 if test "${enable_mred}" = "yes" ; then
   if test "${enable_quartz}" = "yes" ; then

@@ -136,11 +136,17 @@ static CGSize sizes_buf[QUICK_UBUF_SIZE];
 static CGFontRef prev_cgf;
 static short cgf_txFont, cgf_txFace;
 
-/* This undocumented Quartz function controls how fonts are anti-aliased.
-   (I discovered it by running `nm' on the "QD" framework.)
-   Mode 0 is normal anti-aliasing, mode 1 is no anti-aliasing, and mode 2 is
-   4-bit pixel-aligned anti-aliasing (the old QuickDraw standard). */
+#if 0
+/* This undocumented Quartz function used to control how fonts are 
+   anti-aliased. (I discovered it by running `nm' on the "QD" framework.)
+   Mode 0 was normal anti-aliasing, mode 1 was no anti-aliasing, and mode 2 was
+   4-bit pixel-aligned anti-aliasing (the old QuickDraw standard). 
+   But with 10.5, mode 2 stopped working; with 10.6, this function was
+   replaced by CGContextSetFontRenderingStyle --- which is also undocumented,
+   and I didn't manage to guess how it works, and it's probably not in older
+   versions anyway. */
 extern "C" void CGContextSetFontRenderingMode(CGContextRef cg, int v);
+#endif
 
 //-----------------------------------------------------------------------------
 
@@ -309,8 +315,10 @@ void wxCanvasDC::DrawText(const char* text, double x, double y, Bool combine, Bo
 
 	if (smoothing == wxSMOOTHING_OFF)
 	  CGContextSetShouldAntialias(cg, FALSE);
+#if 0
 	else if (smoothing == wxSMOOTHING_PARTIAL)
 	  CGContextSetFontRenderingMode(cg, 2);
+#endif
 
 	qdp = cMacDC->macGrafPort();
 	SyncCGContextOriginWithPort(cg, qdp);

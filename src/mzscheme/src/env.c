@@ -2148,7 +2148,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
 	
 	/* The dot here is significant; it might gets stripped away when
 	   printing the symbol */
-	sprintf(buf + len, ".%d", env->id_counter);
+	sprintf(buf XFORM_OK_PLUS len, ".%d", env->id_counter);
 	
 	best_match = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
 

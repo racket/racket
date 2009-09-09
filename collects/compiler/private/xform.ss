@@ -45,8 +45,8 @@
         
         (define-struct tok (n line file) (make-inspector))
         (define-struct (sysheader-tok tok) ())
-        (define-struct (seq tok) (close in))
-        (define-struct (parens seq) ())
+        (define-struct (seq tok) (close in) (make-inspector))
+        (define-struct (parens seq) () (make-inspector))
         (define-struct (brackets seq) ())
         (define-struct (braces seq) ())
         (define-struct (callstage-parens parens) ())
@@ -830,9 +830,9 @@
                \| \|\| & && |:| ? % + - * / ^ >> << ~ 
                #csXFORM_OK_PLUS #csXFORM_OK_MINUS #csXFORM_TRUST_PLUS #csXFORM_TRUST_MINUS 
                = >>= <<= ^= += *= /= -= %= \|= &= ++ --
-               return sizeof if for while else switch case
+               return if for while else switch case
                asm __asm __asm__ __volatile __volatile__ volatile __extension__
-               __typeof
+               __typeof sizeof __builtin_object_size
 
                ;; These don't act like functions:
                setjmp longjmp _longjmp scheme_longjmp_setjmp scheme_mz_longjmp scheme_jit_longjmp
@@ -849,7 +849,7 @@
                isalpha isdigit isspace tolower toupper
                fread fwrite socket fcntl setsockopt connect send recv close
                __builtin_next_arg __builtin_saveregs 
-               __builtin_constant_p __builtin_memset
+               __builtin_constant_p
                __builtin___CFStringMakeConstantString
                __error __errno_location __toupper __tolower
                __attribute__ __mode__ ; not really functions in gcc
@@ -867,13 +867,26 @@
                         (hash-table-put! ht s #f))
                       non-functions)
             ht))
-        
+
+	(define args-unevaled '(sizeof __typeof __builtin_object_size))
+	(define args-unevaled-table
+          (let ([ht (make-hash-table)])
+            (for-each (lambda (s)
+                        (hash-table-put! ht s #t))
+                      args-unevaled)
+            ht))
+
         (define non-gcing-builtin-functions
           ;; The following don't need wrappers, but we need to check for
           ;;  nested function calls because it takes more than one argument:
           (append
-           '(memcpy memmove memcmp
-                    strcmp strcoll strcpy _mzstrcpy strcat memset
+           '(memcpy memmove memcmp memset
+		    __builtin___memmove_chk __inline_memmove_chk
+		    __builtin___memcpy_chk __inline_memcpy_chk
+		    __builtin___memset_chk __inline_memset_chk
+		    __builtin___memcmp_chk __inline_memcmp_chk
+                    strcmp strcoll strcpy _mzstrcpy strcat
+		     __builtin_memset
                     printf sprintf vsprintf vprintf
                     strncmp
                     read write)
@@ -2930,14 +2943,14 @@
                    (lookup-pointer-type (tok-n (car e)))
                    (assq (tok-n (car e)) c++-classes))))
         
-        (define (looks-like-call? e-)
+        (define (looks-like-call? e- nf?)
           ;; e- is a reversed expression
           (and (pair? e-)
                (parens? (car e-))
                ;; Something precedes
                (not (null? (cdr e-)))
                ;; Not an assignment, sizeof, if, string
-               (hash-table-get non-functions-table (tok-n (cadr e-)) (lambda () #t))
+               (or nf? (hash-table-get non-functions-table (tok-n (cadr e-)) #t))
                (not (string? (tok-n (cadr e-))))
                ;; Look back one more for if, etc. if preceding is paren
                (not (and (parens? (cadr e-))
@@ -3023,7 +3036,7 @@
                                             (if (null? (cdr el))
                                                 e-
                                                 (cdr e-)))]) ; skip comma
-                                  (and (looks-like-call? e-)
+                                  (and (looks-like-call? e- #f)
                                        (cast-or-call e- 
                                                      (lambda () #f) 
                                                      (lambda () 
@@ -3265,14 +3278,14 @@
                             live-vars
                             converted-sub?)]
                      [else (rloop (cdr result) (cons (car result) l))]))]
-                [(looks-like-call? e-)
+                [(looks-like-call? e- #f)
                  ;; Looks like a function call, maybe a cast:
                  (cast-or-call
                   e-
                   (lambda ()
                     ;; It's a cast:
                     (let-values ([(v live-vars)
-                                  (convert-paren-interior (car e-) vars &-vars c++-class live-vars complain-not-in #f)])
+                                  (convert-paren-interior (car e-) vars &-vars c++-class live-vars complain-not-in memcpy?)])
                       (loop (cddr e-)
                             (list* (cadr e-) v result)
                             live-vars
@@ -3335,7 +3348,7 @@
                                     [(sub-memcpy?)
                                      ;; memcpy, etc. call?
                                      (and (pair? (cdr e-))
-                                          (hash-table-get non-gcing-functions (tok-n (cadr e-)) (lambda () #f)))]
+                                          (hash-table-get non-gcing-functions (tok-n (cadr e-)) #f))]
                                     [(args live-vars)
                                      (convert-paren-interior args vars &-vars
                                                              c++-class
@@ -3469,6 +3482,9 @@
 				  (or converted-sub?
 				      (null? rest-)
 				      (not (memq (tok-n (car rest-)) '(return else)))))))))))]
+		[(and (looks-like-call? e- #t)
+		      (hash-table-get args-unevaled-table (tok-n (cadr e-)) #f))
+		 (loop (cddr e-) (cons (cadr e-) (cons (car e-) result)) live-vars converted-sub?)]
                 [(eq? 'goto (tok-n (car e-)))
                  ;; Goto - assume all vars are live
                  (loop (cdr e-) (cons (car e-) result) 
@@ -3662,7 +3678,7 @@
                                                        (or complain-not-in 
                                                            (and (brackets? (car e-))
                                                                 "array access"))
-                                                       #f)])
+                                                       memcpy?)])
                      (loop (cdr e-) (cons v result) live-vars #t)))]
                 [(and (assq (tok-n (car e-)) vars)
                       (not (assq (tok-n (car e-)) (live-var-info-vars live-vars))))
