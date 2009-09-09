@@ -150,7 +150,6 @@
       (check-pred procedure? proc)
       (check-equal? (proc 15) #t)
       (check-equal? (proc 16) #f)
-      (check-equal? (say-no (proc 12 15)) 'no)
       (check-equal? (say-no (proc "foo")) 'no))
     (let ((proc (say-no (apply-contract int->bool (lambda (x) (+ x 1))))))
       (check-equal? (say-no (proc 12)) 'no)))
@@ -177,7 +176,6 @@
       (check-pred procedure? proc)
       (check-equal? (proc 15) #t)
       (check-equal? (proc 16) #f)
-      (check-equal? (say-no (proc 12 15)) 'no)
       (check-equal? (say-no (proc "foo")) 'no))
     (let ((proc (say-no (apply-contract/blame int->bool (lambda (x) x)))))
       (call-with-contract-violation-proc
@@ -249,7 +247,6 @@
       (check-pred procedure? proc)
       (check-equal? (proc 15) #t)
       (check-equal? (proc 16) #f)
-      (check-equal? (say-no (proc 12 15)) 'no)
       (check-equal? (say-no (proc "foo")) 'no))
     (let ((proc (say-no (apply-contract int->bool (lambda (x) (+ x 1))))))
       (check-equal? (say-no (proc 12)) 'no))) 
