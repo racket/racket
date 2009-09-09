@@ -29,9 +29,24 @@
 			      (list ?contract-expr ...)
 			      ?stx)))
     ((one-of ?exp ...)
-     (with-syntax ((?stx (phase-lift stx))
+     (with-syntax ((((?temp ?exp) ...) 
+		    (map list
+			 (generate-temporaries #'(?exp ...)) (syntax->list #'(?exp ...))))
+		   (?stx (phase-lift stx))
 		   (?name name))
-       #'(make-case-contract '?name (list ?exp ...) ?stx)))
+       (with-syntax (((?check ...) 
+		      (map (lambda (lis)
+			     (with-syntax (((?temp ?exp) lis))
+			       (with-syntax ((?raise
+					      (syntax/loc 
+					       #'?exp
+					       (error 'contracts "hier kein Vertrag zulässig, nur normaler Wert"))))
+				 #'(when (contract? ?temp)
+				     ?raise))))
+			   (syntax->list #'((?temp ?exp) ...)))))
+       #'(let ((?temp ?exp) ...)
+	   ?check ...
+	   (make-case-contract '?name (list ?temp ...) ?stx)))))
     ((predicate ?exp)
      (with-syntax ((?stx (phase-lift stx))
 		   (?name name))
