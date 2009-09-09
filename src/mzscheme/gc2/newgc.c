@@ -147,6 +147,7 @@ inline static int is_master_gc(NewGC *gc) {
 #define WORD_SIZE (1 << LOG_WORD_SIZE)
 #define WORD_BITS (8 * WORD_SIZE)
 #define APAGE_SIZE (1 << LOG_APAGE_SIZE)
+#define HALF_PAGE_SIZE (1 << (LOG_APAGE_SIZE - 1))
 #define GENERATIONS 1
 
 /* the externals */
@@ -431,8 +432,7 @@ int GC_is_allocated(void *p)
 /* this is the maximum size of an object that will fit on a page, in words.
    the "- 3" is basically used as a fudge/safety factor, and has no real, 
    important meaning. */
-#define MAX_OBJECT_SIZEW (gcBYTES_TO_WORDS(APAGE_SIZE) - PREFIX_WSIZE - 3)
-#define MAX_OBJECT_SIZE  (gcWORDS_TO_BYTES(MAX_OBJECT_SIZEW))
+#define MAX_OBJECT_SIZE  (APAGE_SIZE - ((PREFIX_WSIZE + 3) * WORD_SIZE))
 
 #define ASSERT_TAG(tag) GC_ASSERT((tag) >= 0 && (tag) <= NUMBER_OF_TAGS)
 #define ASSERT_VALID_OBJPTR(objptr) GC_ASSERT(!((long)(objptr) & (0x3)))
@@ -641,7 +641,7 @@ static void *allocate_medium(const size_t request_size_bytes, const int type)
   int sz = 8;
   int pos = 0;
 
-  if (request_size_bytes > (1 << (LOG_APAGE_SIZE - 1)))
+  if (request_size_bytes > HALF_PAGE_SIZE)
     return allocate_big(request_size_bytes, type);
  
   while (sz < request_size_bytes) {
@@ -866,7 +866,7 @@ void *GC_malloc_one_tagged(size_t s)              { return allocate(s, PAGE_TAGG
 void *GC_malloc_one_xtagged(size_t s)             { return allocate(s, PAGE_XTAGGED); }
 void *GC_malloc_array_tagged(size_t s)            { return allocate(s, PAGE_TARRAY); }
 void *GC_malloc_atomic(size_t s)                  { return allocate(s, PAGE_ATOMIC); }
-void *GC_malloc_atomic_uncollectable(size_t s)    { void *p = ofm_malloc_zero(s); return p; }
+void *GC_malloc_atomic_uncollectable(size_t s)    { return ofm_malloc_zero(s); }
 void *GC_malloc_allow_interior(size_t s)          { return allocate_medium(s, PAGE_ARRAY); }
 void *GC_malloc_atomic_allow_interior(size_t s)   { return allocate_big(s, PAGE_ATOMIC); }
 void *GC_malloc_tagged_allow_interior(size_t s)   { return allocate_medium(s, PAGE_TAGGED); }
@@ -919,7 +919,7 @@ long GC_alloc_alignment()
   return APAGE_SIZE;
 }
 
-long GC_malloc_stays_put_threshold() { return gcWORDS_TO_BYTES(MAX_OBJECT_SIZEW); }
+long GC_malloc_stays_put_threshold() { return MAX_OBJECT_SIZE; }
 
 /* this function resizes generation 0 to the closest it can get (erring high)
    to the size we've computed as ideal */
@@ -1284,7 +1284,7 @@ inline static void repair_roots(NewGC *gc)
 
 static int is_finalizable_page(NewGC *gc, void *p)
 {
-  return (pagemap_find_page(gc->page_maps, p) ? 1 : 0);
+  return !!pagemap_find_page(gc->page_maps, p);
 }
 
 #include "fnls.c"
