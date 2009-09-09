@@ -893,6 +893,12 @@ if test "${enable_memtrace}" = "yes" ; then
   GC2OPTIONS="$GC2OPTIONS -DNEWGC_MEMORY_TRACE"
 fi
 
+LFS_CFLAGS=`getconf LFS_CFLAGS 2> /dev/null`
+if test "${LFS_CFLAGS}" != "" ; then
+  echo "Large-file support: ${LFS_FLAGS}"
+  PREFLAGS="${PREFLAGS} ${LFS_CFLAGS}"  
+fi
+
 ###### Get data sizes, stack direction, and endianness #######
 
 AC_CHECK_SIZEOF(char)
