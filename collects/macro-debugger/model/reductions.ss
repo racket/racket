@@ -270,23 +270,19 @@
     [(Wrap lift-deriv (e1 e2 first lifted-stx second))
      (R [#:pattern ?form]
         ;; lifted-stx has form (begin lift-n ... lift-1 orig-expr)
-        [#:let mid-stxs (reverse (stx->list (stx-cdr lifted-stx)))]
-        [#:let lifted-def-stxs (cdr mid-stxs)]
-        [#:let main-stx (car mid-stxs)]
-        [#:parameterize ((available-lift-stxs lifted-def-stxs)
+        [#:let avail (cdr (reverse (stx->list (stx-cdr lifted-stx))))]
+        [#:parameterize ((available-lift-stxs avail)
                          (visible-lift-stxs null))
           [#:pass1]
           [Expr ?form first]
           [#:do (when (pair? (available-lift-stxs))
                   (lift-error 'lift-deriv "available lifts left over"))]
-          [#:let begin-stx (stx-car lifted-stx)]
           [#:with-visible-form
            ;; If no lifts visible, then don't show begin-wrapping
            [#:when (pair? (visible-lift-stxs))
-                   [#:walk (datum->syntax lifted-stx
-                                          `(,begin-stx ,@(visible-lift-stxs) ,#'?form)
-                                          lifted-stx
-                                          lifted-stx)
+                   [#:walk (reform-begin-lifts lifted-stx
+                                               (visible-lift-stxs)
+                                               #'?form)
                            'capture-lifts]]]
           [#:pass2]
           [#:set-syntax lifted-stx]
@@ -298,9 +294,8 @@
         ;; (let-values ((last-v last-lifted))
         ;;   ...
         ;;     (let-values ((first-v first-lifted)) orig-expr))
-        [#:let first-e2 (wderiv-e2 first)]
-        [#:let lift-stxs (take-lift/let-stxs lifted-stx first-e2)]
-        [#:parameterize ((available-lift-stxs lift-stxs)
+        [#:let avail lifted-stx]
+        [#:parameterize ((available-lift-stxs avail)
                          (visible-lift-stxs null))
           [#:pass1]
           [Expr ?form first]
@@ -309,7 +304,7 @@
           [#:let visible-lifts (visible-lift-stxs)]
           [#:with-visible-form
            [#:left-foot]
-           [#:set-syntax (reconstruct-lift/let-stx visible-lifts #'?form)]
+           [#:set-syntax (reform-let-lifts lifted-stx visible-lifts #'?form)]
            [#:step 'capture-lifts]]
           [#:pass2]
           [#:set-syntax lifted-stx]
@@ -318,18 +313,6 @@
     ;; Skipped
     [#f
      (R)]))
-
-(define (take-lift/let-stxs lifted-stx base)
-  (let loop ([lifted-stx lifted-stx] [acc null])
-    (if (eq? lifted-stx base)
-        acc
-        (with-syntax ([(?let ?binding ?inner) lifted-stx])
-          (loop #'?inner (cons (list #'?let #'?binding) acc))))))
-(define (reconstruct-lift/let-stx lifts base)
-  (if (null? lifts)
-      base
-      (datum->syntax base
-                     `(,@(car lifts) ,(reconstruct-lift/let-stx (cdr lifts) base)))))
 
 ;; Expr/PhaseUp : Deriv -> RST
 (define (Expr/PhaseUp d)
@@ -378,11 +361,19 @@
          [#:rename/mark ?form me2 e2]
          [#:do (when opaque
                  (hash-set! opaque-table (syntax-e opaque) e2))]])]
+
     [(struct local-expansion (e1 e2 for-stx? me1 inner lifted me2 opaque))
-     (R [#:let begin-stx (stx-car lifted)]
-        [#:let lift-stxs (cdr (reverse (stx->list (stx-cdr lifted))))]
+     (R [#:let avail
+               (if for-stx?
+                   lifted
+                   (cdr (reverse (stx->list (stx-cdr lifted)))))]
+        [#:let recombine
+               (lambda (lifts form)
+                 (if for-stx?
+                     (reform-let-lifts lifted lifts form)
+                     (reform-begin-lifts lifted lifts form)))]
         [#:parameterize ((phase (if for-stx? (add1 (phase)) (phase)))
-                         (available-lift-stxs lift-stxs)
+                         (available-lift-stxs avail)
                          (visible-lift-stxs null))
          [#:set-syntax e1]
          [#:pattern ?form]
@@ -390,32 +381,34 @@
          [#:pass1]
          [Expr ?form inner]
          [#:do (when (pair? (available-lift-stxs))
-                 (lift-error 'local-expand/capture-lifts "available lifts left over"))]
+                 (lift-error 'local-expand/capture-lifts
+                             "available lifts left over"))]
          [#:let visible-lifts (visible-lift-stxs)]
          [#:with-visible-form
           [#:left-foot]
-          [#:set-syntax (datum->syntax lifted
-                                       `(,begin-stx ,@visible-lifts ,#'?form)
-                                       lifted lifted)]
+          [#:set-syntax (recombine visible-lifts #'?form)]
           [#:step 'splice-lifts visible-lifts]]
          [#:pass2]
          [#:set-syntax lifted]
          [#:rename/mark ?form me2 e2]
          [#:do (when opaque
                  (hash-set! opaque-table (syntax-e opaque) e2))]])]
-    [(struct local-lift (expr id))
+
+    [(struct local-lift (expr ids))
      ;; FIXME: add action
-     (R [#:do (unless (pair? (available-lift-stxs))
-                (lift-error 'local-lift "out of lifts!"))
-              (when (pair? (available-lift-stxs))
-                (let ([lift-d (car (available-lift-stxs))]
-                      [lift-stx (car (available-lift-stxs))])
-                  (when (visibility)
-                    (visible-lift-stxs (cons lift-stx (visible-lift-stxs))))
-                  (available-lift-stxs (cdr (available-lift-stxs)))))]
-        [#:reductions (list (walk expr id 'local-lift))])]
+     (R [#:do (take-lift!)]
+        [#:reductions (list (walk expr ids 'local-lift))])]
+
     [(struct local-lift-end (decl))
      ;; (walk/mono decl 'module-lift)
+     (R)]
+    [(struct local-lift-require (req expr mexpr))
+     ;; lift require
+     (R [#:set-syntax expr]
+        [#:pattern ?form]
+        [#:rename/mark ?form expr mexpr])]
+    [(struct local-lift-provide (prov))
+     ;; lift provide
      (R)]
     [(struct local-bind (names ?1 renames bindrhs))
      [R [! ?1]
@@ -561,9 +554,9 @@
      (R [#:pattern (?firstB . ?rest)]
         [#:pass1]
         [Expr ?firstB head]
+        [#:pass2]
         [#:rename ?firstB rename]
         [! ?1]
-        [#:pass2]
         [#:let begin-form #'?firstB]
         [#:let rest-forms #'?rest]
         [#:pattern ?forms]
@@ -609,10 +602,54 @@
         [Expr ?firstC head]
         [ModulePass ?rest rest])]))
 
+;; Lifts
+
+(define (take-lift!)
+  (define avail (available-lift-stxs))
+  (cond [(list? avail)
+         (unless (pair? avail)
+           (lift-error 'local-lift "out of lifts (begin)!"))
+         (when (pair? avail)
+           (let ([lift-stx (car avail)])
+             (available-lift-stxs (cdr avail))
+             (when (visibility)
+               (visible-lift-stxs
+                (cons lift-stx (visible-lift-stxs))))))]
+        [else
+         (syntax-case avail ()
+           [(?let-values ?lift ?rest)
+            (eq? (syntax-e #'?let-values) 'let-values)
+            (begin (available-lift-stxs #'?rest)
+                   (when (visibility)
+                     (visible-lift-stxs
+                      (cons (datum->syntax avail (list #'?let-values #'?lift)
+                                           avail avail)
+                            (visible-lift-stxs)))))]
+           [_
+            (lift-error 'local-lift "out of lifts (let)!")])]))
+
+(define (reform-begin-lifts orig-lifted lifts body)
+  (define begin-kw (stx-car orig-lifted))
+  (datum->syntax orig-lifted
+                 `(,begin-kw ,@lifts ,body)
+                 orig-lifted
+                 orig-lifted))
+
+(define (reform-let-lifts orig-lifted lifts body)
+  (if (null? lifts)
+      body
+      (reform-let-lifts orig-lifted
+                        (cdr lifts)
+                        (with-syntax ([(?let-values ?lift) (car lifts)])
+                          (datum->syntax (car lifts)
+                                         `(,#'?let-values ,#'?lift ,body)
+                                         (car lifts)
+                                         (car lifts))))))
 
 ;; lift-error
 (define (lift-error sym . args)
   (apply fprintf (current-error-port) args)
+  (newline (current-error-port))
   (when #f
     (apply error sym args)))
 

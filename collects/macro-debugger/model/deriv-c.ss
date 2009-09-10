@@ -31,11 +31,13 @@
 ;;   (make-mrule <Base(Stx)> ?Stx (listof LocalAction) ?exn ?Stx ?Deriv)
 (define-struct (mrule base) (me1 locals me2 ?2 etx next) #:transparent)
 
-;; A LocalAction is one of ???
+;; A LocalAction is one of:
 (define-struct (local-expansion node) (for-stx? me1 inner lifted me2 opaque)
   #:transparent)
-(define-struct local-lift (expr id) #:transparent)
+(define-struct local-lift (expr ids) #:transparent)
 (define-struct local-lift-end (decl) #:transparent)
+(define-struct local-lift-require (req expr mexpr) #:transparent)
+(define-struct local-lift-provide (prov) #:transparent)
 (define-struct local-bind (names ?1 renames bindrhs) #:transparent)
 
 ;; A PrimDeriv is one of

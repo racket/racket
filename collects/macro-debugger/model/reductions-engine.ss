@@ -324,7 +324,7 @@
                          #t))]
 
     [(R** f v p s ws [#:with-visible-form clause ...] . more)
-     #'(let ([k (RP p [#:set-syntax f] . more)])
+     #'(let ([k (RP p #| [#:set-syntax f] |# . more)])
          (if (visibility)
              (R** v v p s ws clause ... => k)
              (k f v s ws)))]

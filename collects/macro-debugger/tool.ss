@@ -211,6 +211,30 @@
         (define/private (inner-eval original-eval-handler e-expr)
           (original-eval-handler e-expr))
 
+        (define/private (expand+trace expr)
+          (parameterize ((trace-macro-limit (pref:macro-step-limit))
+                         (trace-limit-handler
+                          (lambda (c) (handle-macro-limit c))))
+            (trace* expr expand)))
+
+        (define/private (handle-macro-limit c)
+          (define option
+            (message-box/custom
+             "Macro stepper"
+             (string-append
+              "Macro expansion has taken a suspiciously large number of steps.\n"
+              "\n"
+              "Click Stop to stop macro expansion and see the steps taken "
+              "so far, or click Continue to let it run a bit longer.")
+             "Continue"
+             "Stop"
+             #f
+             (get-top-level-window)))
+          (case option
+            ((2)
+             (error "Macro expansion was stopped because it took too many steps."))
+            (else (* 2 c))))
+
         (define/private (make-handlers original-eval-handler
                                        original-module-name-resolver)
           (define filename (send (send (get-top-level-window) get-definitions-text)
@@ -230,7 +254,7 @@
                     (when eo (current-expand-observe eo))))))
           (define (the-eval expr)
             (if (and local-debugging? (syntax? expr))
-                (let-values ([(e-expr events derivp) (trace* expr expand)])
+                (let-values ([(e-expr events derivp) (expand+trace expr)])
                   (show-deriv director events)
                   (if (syntax? e-expr)
                       (inner-eval e-expr)

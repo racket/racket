@@ -11,7 +11,10 @@
          trace/result
          trace-verbose?
          events->token-generator
-         current-expand-observe)
+         current-expand-observe
+
+         trace-macro-limit
+         trace-limit-handler)
 
 (define current-expand-observe
   (dynamic-require ''#%expobs 'current-expand-observe))
@@ -52,22 +55,33 @@
         (set! pos (add1 pos))
         t))))
 
+(define trace-macro-limit (make-parameter #f))
+(define trace-limit-handler (make-parameter #f))
+
 ;; expand/events : stx (stx -> stx) -> stx/exn (list-of event)
 (define (expand/events sexpr expander)
-  (let ([events null])
-    (define (add! x)
-      (set! events (cons x events)))
-    (parameterize ((current-expand-observe
-                    (let ([c 0])
-                      (lambda (sig val)
-                        (set! c (add1 c))
-                        (add! (cons sig val))))))
-      (let ([result
-             (with-handlers ([(lambda (exn) #t)
-                              (lambda (exn)
-                                (add! (cons 'error exn))
-                                exn)])
-               (expander sexpr))])
-        (add! (cons 'EOF #f))
-        (values result
-                (reverse events))))))
+  (define events null)
+  (define counter 0)
+  (define (add! x y)
+    (set! events (cons (cons x y) events)))
+  (define add!/check
+    (let ([limit (trace-macro-limit)]
+          [handler (trace-limit-handler)])
+      (if (and limit handler (exact-positive-integer? limit))
+          (lambda (x y)
+            (add! x y)
+            (when (= x 8) ;; enter-macro
+              (set! counter (add1 counter))
+              (when (= counter limit)
+                (set! limit (handler counter)))))
+          add!)))
+  (parameterize ((current-expand-observe add!/check))
+    (let ([result
+           (with-handlers ([(lambda (exn) #t)
+                            (lambda (exn)
+                              (add! 'error exn)
+                              exn)])
+             (expander sexpr))])
+      (add! 'EOF #f)
+      (values result
+              (reverse events)))))

@@ -171,6 +171,10 @@
       (make local-lift (cdr $1) (car $1))]
      [(lift-statement)
       (make local-lift-end $1)]
+     [(lift-require)
+      (make local-lift-require (car $1) (cadr $1) (cddr $1))]
+     [(lift-provide)
+      (make local-lift-provide $1)]
      [(local-bind ! rename-list)
       (make local-bind $1 $2 $3 #f)]
      [(local-bind rename-list (? BindSyntaxes))

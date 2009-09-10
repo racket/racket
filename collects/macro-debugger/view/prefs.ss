@@ -6,7 +6,8 @@
          "../syntax-browser/prefs.ss"
          "../util/notify.ss"
          "../util/misc.ss")
-(provide macro-stepper-config-base%
+(provide pref:macro-step-limit
+         macro-stepper-config-base%
          macro-stepper-config/prefs%
          macro-stepper-config/prefs/readonly%)
 
@@ -28,6 +29,9 @@
 (preferences:set-default 'MacroStepper:ForceLetrecTransformation? #f boolean?)
 (preferences:set-default 'MacroStepper:SplitContext? #f boolean?)
 
+(preferences:set-default 'MacroStepper:MacroStepLimit 40000
+                         (lambda (x) (or (eq? x #f) (exact-positive-integer? x))))
+
 (pref:get/set pref:width MacroStepper:Frame:Width)
 (pref:get/set pref:height MacroStepper:Frame:Height)
 (pref:get/set pref:props-shown? MacroStepper:PropertiesShown?)
@@ -44,6 +48,8 @@
 (pref:get/set pref:debug-catch-errors? MacroStepper:DebugCatchErrors?)
 (pref:get/set pref:force-letrec-transformation? MacroStepper:ForceLetrecTransformation?)
 (pref:get/set pref:split-context? MacroStepper:SplitContext?)
+
+(pref:get/set pref:macro-step-limit MacroStepper:MacroStepLimit)
 
 (define macro-stepper-config-base%
   (class* syntax-prefs-base% (config<%>)
