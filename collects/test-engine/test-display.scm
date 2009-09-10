@@ -262,7 +262,7 @@
     ;; make-error-link: text% check-fail exn src editor -> void
     (define (make-error-link text reason exn dest src-editor)
       (make-link text reason dest src-editor)
-      (let ((start (send text get-end-position)))
+      #;(let ((start (send text get-end-position)))
         (send text insert (string-constant test-engine-trace-error))
 	(send text insert " ")
         (when (and src-editor current-rep)
