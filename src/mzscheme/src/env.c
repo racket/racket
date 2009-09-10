@@ -5092,10 +5092,11 @@ do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object *argv[]
   expr = scheme_make_pair(expr, SCHEME_VEC_ELS(vec)[0]);
   SCHEME_VEC_ELS(vec)[0] = expr;
 
+  SCHEME_EXPAND_OBSERVE_LOCAL_LIFT(scheme_get_expand_observe(), ids, orig_expr);
+
   rev_ids = scheme_null;
   for (; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
     id = SCHEME_CAR(ids);
-    SCHEME_EXPAND_OBSERVE_LOCAL_LIFT(scheme_get_expand_observe(), id, orig_expr);
     id = scheme_add_remove_mark(id, local_mark);
     rev_ids = scheme_make_pair(id, rev_ids);
   }
@@ -5184,6 +5185,7 @@ static Scheme_Object *local_lift_require(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env;
   Scheme_Object *local_mark, *mark, *data, *pr, *form;
+  Scheme_Object *orig_form, *req_form;
   long phase;
 
   if (!SCHEME_STXP(argv[1]))
@@ -5227,10 +5229,15 @@ static Scheme_Object *local_lift_require(int argc, Scheme_Object *argv[])
   pr = scheme_make_pair(form, SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[6]);
   SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[6] = pr;
 
-  form = argv[1];
+  req_form = form;
+  orig_form = argv[1];
+
+  form = orig_form;
   form = scheme_add_remove_mark(form, local_mark);
   form = scheme_add_remove_mark(form, mark);
   form = scheme_add_remove_mark(form, local_mark);
+
+  SCHEME_EXPAND_OBSERVE_LIFT_REQUIRE(scheme_get_expand_observe(), req_form, orig_form, form);
 
   return form;
 }
@@ -5269,6 +5276,8 @@ static Scheme_Object *local_lift_provide(int argc, Scheme_Object *argv[])
                                                                         0, 0),
                                                  scheme_make_pair(form, scheme_null)),
                                 form, scheme_false, 0, 0);
+
+  SCHEME_EXPAND_OBSERVE_LIFT_PROVIDE(scheme_get_expand_observe(), form);
 
   pr = scheme_make_pair(form, SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[7]);
   SCHEME_VEC_ELS(COMPILE_DATA(env)->lifts)[7] = pr;

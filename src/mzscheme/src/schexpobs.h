@@ -129,10 +129,15 @@ extern Scheme_Object *scheme_get_expand_observe();
 #define SCHEME_EXPAND_OBSERVE_MODULE_LIFT_END_LOOP(observer,stx) \
         _SCHEME_EXPOBS(observer,135,stx)
 
-#define SCHEME_EXPAND_OBSERVE_LOCAL_LIFT(obs,id,stx) \
-        _SCHEME_EXPOBS(obs,129,scheme_make_pair(id,stx))
+#define SCHEME_EXPAND_OBSERVE_LOCAL_LIFT(obs,ids,stx) \
+        _SCHEME_EXPOBS(obs,129,scheme_make_pair(ids,stx))
 #define SCHEME_EXPAND_OBSERVE_LIFT_STATEMENT(obs,stx) \
         _SCHEME_EXPOBS(obs,134,stx)
+#define SCHEME_EXPAND_OBSERVE_LIFT_REQUIRE(obs,req,form,mform) \
+        _SCHEME_EXPOBS(obs,150,scheme_make_pair(req,scheme_make_pair(form,mform)))
+#define SCHEME_EXPAND_OBSERVE_LIFT_PROVIDE(obs,form) \
+        _SCHEME_EXPOBS(obs,151,form)
+
 #define SCHEME_EXPAND_OBSERVE_ENTER_LOCAL(obs,stx) \
         _SCHEME_EXPOBS(obs,130,stx)
 #define SCHEME_EXPAND_OBSERVE_EXIT_LOCAL(obs,stx) \
@@ -168,5 +173,7 @@ extern Scheme_Object *scheme_get_expand_observe();
 
 #define SCHEME_EXPAND_OBSERVE_RENAME_ONE(obs,val) \
         _SCHEME_EXPOBS(obs,148,val)
+
+/* next: 152 */
 
 #endif
