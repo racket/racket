@@ -7,9 +7,12 @@
 @defmodule[syntax/modcode]
 
 @defproc[(get-module-code [module-path-v module-path?]
-                          [compiled-subdir (and/c path-string? relative-path?) "compiled"]
-                          [compile-proc (any/c . -> . any) compile] 
-                          [ext-proc (or/c false/c (path? boolean? . -> . any)) #f]
+                          [#:sub-path compiled-subdir0 (and/c path-string? relative-path?) "compiled"]
+                          [compiled-subdir (and/c path-string? relative-path?) compiled-subdir0]
+                          [#:compile compile-proc0 (any/c . -> . any) compile] 
+                          [compile-proc (any/c . -> . any) compile-proc0] 
+                          [#:extension-handler ext-proc0 (or/c false/c (path? boolean? . -> . any)) #f]
+                          [ext-proc (or/c false/c (path? boolean? . -> . any)) ext-proc0]
                           [#:choose choose-proc 
                            (path? path? path? 
                             . -> . 
