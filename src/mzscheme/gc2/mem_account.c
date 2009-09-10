@@ -338,7 +338,14 @@ inline static void mark_normal_obj(NewGC *gc, int type, void *ptr)
                            ignore them outright. In the case of custodians, we do need
                            to do the check; those differences are handled by replacing
                            the mark procedure in mark_table. */
-                        gc->mark_table[*(unsigned short*)ptr](ptr);
+                        unsigned short tag = *(unsigned short*)ptr;
+                        ASSERT_TAG(tag);
+                        if((unsigned long)gc->mark_table[tag] < PAGE_TYPES) {
+                          /* atomic */
+                        } else {
+                          GC_ASSERT(mark_table[tag]);
+                          gc->mark_table[tag](ptr);
+                        }
                         break;
                       }
     case PAGE_ATOMIC: break;
@@ -403,6 +410,12 @@ static void propagate_accounting_marks(NewGC *gc)
   PageMap pagemap = gc->page_maps;
   while(pop_ptr(&p) && !gc->kill_propagation_loop) {
     page = pagemap_find_page(pagemap, p);
+#ifdef MZ_USE_PLACES
+    if (!page) {
+      page = pagemap_find_page(MASTERGC->page_maps, p);
+    }
+#endif
+    GC_ASSERT(page);
     set_backtrace_source(p, page->page_type);
     GCDEBUG((DEBUGOUTF, "btc_account: popped off page %p:%p, ptr %p\n", page, page->addr, p));
     if(page->size_class) {

@@ -1483,7 +1483,7 @@ inline static void mark_stack_initialize() {
 
 inline static void push_ptr(void *ptr)
 {
-  /* This happens during propoagation if we go past the end of this MarkSegment*/
+  /* This happens during propagation if we go past the end of this MarkSegment*/
   if(mark_stack->top == MARK_STACK_END(mark_stack)) {
     /* test to see if we already have another stack page ready */
     if(mark_stack->next) {

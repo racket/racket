@@ -4071,7 +4071,7 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
   Scheme_Object *l, *new_cycle_list;
   int prep_namespace = 0;
 
-  if (SAME_OBJ(m, kernel))
+  if (is_builtin_modname(m->modname))
     return;
 
   for (l = cycle_list; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
