@@ -65,8 +65,10 @@
       (define gcc-cpp-flags 
 	(add-variant-flags (case (string->symbol (path->string (system-library-subpath #f)))
 			     [(parisc-hpux) '("-D_HPUX_SOURCE")]
-			     [(ppc-macosx i386-macosx) '("-DOS_X")]
+			     [(ppc-macosx) '("-DOS_X")]
+			     [(i386-macosx) '("-DOS_X" "-m32")]
 			     [(ppc-darwin) '("-DOS_X" "-DXONX")]
+			     [(i386-darwin) '("-DOS_X" "-DXONX" "-m32")]
 			     [else null])))
 
       (define gcc-compile-flags (append '("-c" "-O2" "-fPIC")

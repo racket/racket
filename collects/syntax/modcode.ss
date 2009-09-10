@@ -72,7 +72,10 @@
   (define-struct (exn:get-module-code exn) (path))
 
   (define (get-module-code path
-                           [sub-path "compiled"] [compiler compile] [extension-handler #f] 
+                           #:sub-path [sub-path0 "compiled"]
+                           #:compile [compile0 compile]
+                           #:extension-handler [ext-handler0 #f]
+                           [sub-path sub-path0] [compiler compile0] [extension-handler ext-handler0] 
                            #:choose [choose (lambda (src zo so) #f)]
                            #:notify [notify void]
                            #:source-reader [read-src-syntax read-syntax])

@@ -124,6 +124,8 @@
       (define win-gcc-linker-flags (list "--dll"))
       (define borland-linker-flags (list "/Tpd" "/c"))
 
+      (define mac-link-flags (list "-bundle" "-flat_namespace" "-undefined" "suppress"))
+
       (define (get-unix-link-flags)
 	(case (string->symbol (path->string (system-library-subpath #f)))
 	  [(sparc-solaris i386-solaris) (list "-G")]
@@ -138,8 +140,8 @@
 			    (format "-bE:~a/ext.exp" include-dir)
 			    "-bnoentry")]
 	  [(parisc-hpux) (list "-b")]
-	  [(ppc-macosx ppc-darwin i386-macosx i386-darwin) 
-	   (list "-bundle" "-flat_namespace" "-undefined" "suppress")]
+	  [(ppc-macosx ppc-darwin) mac-link-flags]
+          [(i386-macosx i386-darwin) (append mac-link-flags '("-m32"))]
 	  [(i386-cygwin) win-gcc-linker-flags]
 	  [else (list "-fPIC" "-shared")]))
 
