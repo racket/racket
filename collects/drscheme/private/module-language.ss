@@ -274,7 +274,7 @@
           (parameterize ([current-namespace (current-namespace)])
             ;; the prompt makes it continue after an error
             (call-with-continuation-prompt
-             (λ () (with-stack-checkpoint (dynamic-require modspec #f)))))
+             (λ () (with-stack-checkpoint (namespace-require modspec)))))
           (current-namespace (module->namespace modspec))
           (check-interactive-language))
         ;; here's where they're all combined with the module expression
