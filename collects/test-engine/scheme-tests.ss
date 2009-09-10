@@ -220,7 +220,7 @@
                           (list (maker src (test-format) test-val expect range) test-val #f)])))])
     (cond [(check-fail? result)
            (send (send test-info get-info) check-failed result (check-fail-src result) exn)
-           (raise exn)]
+           (when exn (raise exn))]
           [else
            #t])))
 
