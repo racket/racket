@@ -206,13 +206,14 @@
 ;;                ( -> scheme-val) scheme-val scheme-val object symbol? -> void
 (define (run-and-check check maker test expect range src test-info kind)
   (match-let ([(list result result-val exn)
-               (with-handlers ([exn? (lambda (e)
-				       (let ([display (error-display-handler)])
-                                         (list (make-unexpected-error src (test-format) expect
-                                                                      (exn-message e) 
-                                                                      e)
-					       'error
-					       e)))])
+               (with-handlers ([exn:fail?
+                                (lambda (e)
+                                  (let ([display (error-display-handler)])
+                                    (list (make-unexpected-error src (test-format) expect
+                                                                 (exn-message e) 
+                                                                 e)
+                                          'error
+                                          e)))])
                  (let ([test-val (test)])
                    (cond [(check expect test-val range) (list #t test-val #f)]
                          [else 
