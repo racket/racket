@@ -134,7 +134,7 @@ static Scheme_Object *write_local(Scheme_Object *obj);
 static Scheme_Object *read_local(Scheme_Object *obj);
 static Scheme_Object *read_local_unbox(Scheme_Object *obj);
 static Scheme_Object *write_resolve_prefix(Scheme_Object *obj);
-static Scheme_Object *read_resolve_prefix(Scheme_Object *obj);
+static Scheme_Object *read_resolve_prefix(Scheme_Object *obj, Scheme_Object *insp);
 
 static void skip_certain_things(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data);
 int scheme_is_module_begin_env(Scheme_Comp_Env *env);
@@ -624,7 +624,7 @@ static void make_kernel_env(void)
   scheme_install_type_writer(scheme_local_unbox_type, write_local);
   scheme_install_type_reader(scheme_local_unbox_type, read_local_unbox);
   scheme_install_type_writer(scheme_resolve_prefix_type, write_resolve_prefix);
-  scheme_install_type_reader(scheme_resolve_prefix_type, read_resolve_prefix);
+  scheme_install_type_reader2(scheme_resolve_prefix_type, read_resolve_prefix);
 
   REGISTER_SO(kernel_symbol);
   kernel_symbol = scheme_intern_symbol("#%kernel");
@@ -5513,7 +5513,7 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
   return tv;
 }
 
-static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
+static Scheme_Object *read_resolve_prefix(Scheme_Object *obj, Scheme_Object *insp)
 {
   Resolve_Prefix *rp;
   Scheme_Object *tv, *sv, **a, *stx;
@@ -5546,7 +5546,7 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
   rp->num_stxes = SCHEME_VEC_SIZE(sv);
   rp->num_lifts = i;
   if (uses_unsafe)
-    rp->uses_unsafe = scheme_true; /* reset in read_marshalled */
+    rp->uses_unsafe = insp;
 
   i = rp->num_toplevels;
   a = MALLOC_N(Scheme_Object *, i);

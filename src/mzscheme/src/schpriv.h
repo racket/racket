@@ -236,9 +236,10 @@ void scheme_free_dynamic_extensions(void);
 
 /* Type readers & writers for compiled code data */
 typedef Scheme_Object *(*Scheme_Type_Reader)(Scheme_Object *list);
+typedef Scheme_Object *(*Scheme_Type_Reader2)(Scheme_Object *list, Scheme_Object *insp);
 typedef Scheme_Object *(*Scheme_Type_Writer)(Scheme_Object *obj);
 
-extern Scheme_Type_Reader *scheme_type_readers;
+extern Scheme_Type_Reader2 *scheme_type_readers;
 extern Scheme_Type_Writer *scheme_type_writers;
 
 extern Scheme_Equal_Proc *scheme_type_equals;
@@ -1801,6 +1802,7 @@ extern Scheme_Object *scheme_default_global_print_handler;
 
 /* Type readers & writers for compiled code data */
 void scheme_install_type_reader(Scheme_Type type, Scheme_Type_Reader f);
+void scheme_install_type_reader2(Scheme_Type type, Scheme_Type_Reader2 f);
 void scheme_install_type_writer(Scheme_Type type, Scheme_Type_Writer f);
 
 Scheme_Object *scheme_make_default_readtable(void);
@@ -2544,6 +2546,8 @@ typedef struct Scheme_Unmarshal_Tables {
   struct CPort *rp;
   char *decoded;
 } Scheme_Unmarshal_Tables;
+
+Scheme_Object *scheme_get_cport_inspector(struct CPort *rp);
 
 Scheme_Object *scheme_unmarshal_wrap_get(Scheme_Unmarshal_Tables *ut, 
                                          Scheme_Object *wraps_key, 

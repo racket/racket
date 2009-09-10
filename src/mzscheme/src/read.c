@@ -5062,7 +5062,7 @@ static Scheme_Object *read_compact_quote(CPort *port, int embedded)
 static Scheme_Object *read_marshalled(int type, CPort *port)
 {
   Scheme_Object *l;
-  Scheme_Type_Reader reader;
+  Scheme_Type_Reader2 reader;
 
   l = read_compact(port, 1);
 
@@ -5076,16 +5076,10 @@ static Scheme_Object *read_marshalled(int type, CPort *port)
     scheme_ill_formed_code(port);
   }
 
-  l = reader(l);
+  l = reader(l, port->insp);
 
   if (!l)
     scheme_ill_formed_code(port);
-
-  if (type == scheme_resolve_prefix_type) {
-    /* If unsafe_insp is set, need to use the one in port: */
-    if (((Resolve_Prefix *)l)->uses_unsafe)
-      ((Resolve_Prefix *)l)->uses_unsafe = port->insp;
-  }
 
   return l;
 }
@@ -5539,6 +5533,11 @@ void scheme_unmarshal_wrap_set(Scheme_Unmarshal_Tables *ut,
 
   ut->rp->symtab[l] = v;
   ut->decoded[l] = 1;
+}
+
+Scheme_Object *scheme_get_cport_inspector(struct CPort *rp)
+{
+  return rp->insp;
 }
 
 /*========================================================================*/

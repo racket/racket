@@ -73,7 +73,7 @@ static Scheme_Object *syntax_recertify(int argc, Scheme_Object **argv);
 static Scheme_Object *lift_inactive_certs(Scheme_Object *o, int as_active);
 
 static Scheme_Object *write_free_id_info_prefix(Scheme_Object *obj);
-static Scheme_Object *read_free_id_info_prefix(Scheme_Object *obj);
+static Scheme_Object *read_free_id_info_prefix(Scheme_Object *obj, Scheme_Object *insp);
 
 static Scheme_Object *source_symbol; /* uninterned! */
 static Scheme_Object *share_symbol; /* uninterned! */
@@ -629,7 +629,7 @@ void scheme_init_stx(Scheme_Env *env)
 
 
   scheme_install_type_writer(scheme_free_id_info_type, write_free_id_info_prefix);
-  scheme_install_type_reader(scheme_free_id_info_type, read_free_id_info_prefix);
+  scheme_install_type_reader2(scheme_free_id_info_type, read_free_id_info_prefix);
 }
 
 void scheme_init_stx_places() {
@@ -7119,7 +7119,8 @@ static int ok_phase_index(Scheme_Object *o) {
   return ok_phase(o);
 }
 
-static Scheme_Object *datum_to_module_renames(Scheme_Object *a, Scheme_Hash_Table *ht, int lex_ok)
+static Scheme_Object *datum_to_module_renames(Scheme_Object *a, Scheme_Hash_Table *ht, int lex_ok,
+                                              Scheme_Unmarshal_Tables *ut)
 {
   int count, i;
   Scheme_Object *key, *p0, *p;
@@ -7138,7 +7139,10 @@ static Scheme_Object *datum_to_module_renames(Scheme_Object *a, Scheme_Hash_Tabl
     if (SCHEME_PAIRP(p) && SCHEME_INTP(SCHEME_CAR(p))) {
       /* reconstruct inspector info */
       Scheme_Object *insp;
-      insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
+      if (ut)
+        insp = scheme_get_cport_inspector(ut->rp);
+      else
+        insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
       if (!SAME_OBJ(scheme_make_integer(1), SCHEME_CAR(p))) {
         insp = CONS(scheme_make_inspector(insp), insp);
       }
@@ -7485,7 +7489,7 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
 	mns = SCHEME_CDR(mns);
       }
 
-      if (!datum_to_module_renames(a, mrn->ht, 0))
+      if (!datum_to_module_renames(a, mrn->ht, 0, ut))
         return_NULL;
 
       /* Extract free-id=? renames, if any */
@@ -7493,7 +7497,7 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
         Scheme_Hash_Table *ht;
         ht = scheme_make_hash_table(SCHEME_hash_ptr);
         mrn->free_id_renames = ht;
-        if (!datum_to_module_renames(SCHEME_CAR(mns), mrn->free_id_renames, 1))
+        if (!datum_to_module_renames(SCHEME_CAR(mns), mrn->free_id_renames, 1, ut))
           return_NULL;
         mns = SCHEME_CDR(mns);
       }
@@ -7650,7 +7654,10 @@ Scheme_Object *cert_marks_to_certs(Scheme_Object *cert_marks,
     cert_marks = a;
   }
 
-  insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
+  if (ut)
+    insp = scheme_get_cport_inspector(ut->rp);
+  else
+    insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
 
   while (SCHEME_PAIRP(cert_marks)) {
     a = SCHEME_CAR(cert_marks);
@@ -9168,9 +9175,9 @@ static Scheme_Object *write_free_id_info_prefix(Scheme_Object *obj)
   return vec;
 }
 
-static Scheme_Object *read_free_id_info_prefix(Scheme_Object *obj)
+static Scheme_Object *read_free_id_info_prefix(Scheme_Object *obj, Scheme_Object *insp)
 {
-  Scheme_Object *vec, *insp;
+  Scheme_Object *vec;
   int i;
 
   if (!SCHEME_VECTORP(obj)
@@ -9182,10 +9189,8 @@ static Scheme_Object *read_free_id_info_prefix(Scheme_Object *obj)
     SCHEME_VEC_ELS(vec)[i] = SCHEME_VEC_ELS(obj)[i];
   }
 
-  if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[7])) {
-    insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
+  if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[7]))
     SCHEME_VEC_ELS(vec)[7] = insp;
-  }
 
   vec->type = scheme_free_id_info_type;
     

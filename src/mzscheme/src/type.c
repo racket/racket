@@ -26,7 +26,7 @@
 #include "schpriv.h"
 #include <string.h>
 
-Scheme_Type_Reader *scheme_type_readers;
+Scheme_Type_Reader2 *scheme_type_readers;
 Scheme_Type_Writer *scheme_type_writers;
 Scheme_Equal_Proc *scheme_type_equals;
 Scheme_Primary_Hash_Proc *scheme_type_hash1s;
@@ -54,7 +54,7 @@ static void init_type_arrays()
   allocmax = maxtype + 100;
 
   type_names = MALLOC_N(char *, allocmax);
-  scheme_type_readers = MALLOC_N_ATOMIC(Scheme_Type_Reader, allocmax);
+  scheme_type_readers = MALLOC_N_ATOMIC(Scheme_Type_Reader2, allocmax);
   n = allocmax * sizeof(Scheme_Type_Reader);
   memset((char *)scheme_type_readers, 0, n);
 
@@ -295,10 +295,10 @@ Scheme_Type scheme_make_type(const char *name)
     memcpy(naya, type_names, maxtype * sizeof(char *));
     type_names = (char **)naya;
 
-    naya = scheme_malloc_atomic(n = allocmax * sizeof(Scheme_Type_Reader));
+    naya = scheme_malloc_atomic(n = allocmax * sizeof(Scheme_Type_Reader2));
     memset((char *)naya, 0, n);
-    memcpy(naya, scheme_type_readers, maxtype * sizeof(Scheme_Type_Reader));
-    scheme_type_readers = (Scheme_Type_Reader *)naya;
+    memcpy(naya, scheme_type_readers, maxtype * sizeof(Scheme_Type_Reader2));
+    scheme_type_readers = (Scheme_Type_Reader2 *)naya;
 
     naya = scheme_malloc_atomic(n = allocmax * sizeof(Scheme_Type_Writer));
     memset((char *)naya, 0, n);
@@ -344,6 +344,14 @@ char *scheme_get_type_name(Scheme_Type t)
 }
 
 void scheme_install_type_reader(Scheme_Type t, Scheme_Type_Reader f)
+{
+  if (t < 0 || t >= maxtype)
+    return;
+
+  scheme_type_readers[t] = (Scheme_Type_Reader2)f;
+}
+
+void scheme_install_type_reader2(Scheme_Type t, Scheme_Type_Reader2 f)
 {
   if (t < 0 || t >= maxtype)
     return;
