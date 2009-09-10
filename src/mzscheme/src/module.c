@@ -4066,6 +4066,7 @@ static void should_run_for_compile(Scheme_Env *menv)
 static void start_module(Scheme_Module *m, Scheme_Env *env, int restart, 
 			 Scheme_Object *syntax_idx, int eval_exp, int eval_run, long base_phase,
 			 Scheme_Object *cycle_list)
+/* eval_exp == -1 => make it ready, eval_exp == 1 => run exp-time, eval_exp = 0 => don't even make ready */
 {
   Scheme_Env *menv;
   Scheme_Object *l, *new_cycle_list;

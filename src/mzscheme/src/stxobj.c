@@ -3806,7 +3806,10 @@ static Scheme_Object *search_shared_pes(Scheme_Object *shared_pes,
   for (pr = shared_pes; !SCHEME_NULLP(pr); pr = SCHEME_CDR(pr)) {
     pt = (Scheme_Module_Phase_Exports *)SCHEME_CADR(SCHEME_CAR(pr));
 
-    EXPLAIN(fprintf(stderr, "%d     pes table\n", depth));
+    EXPLAIN(fprintf(stderr, "%d     pes table %s\n", depth, 
+                    pt->src_modidx
+                    ? scheme_write_to_string(scheme_module_resolve(pt->src_modidx, 0), NULL)
+                    : "?"));
 
     if (!pt->ht) {
       /* Lookup table (which is created lazily) not yet created, so do that now... */
@@ -3853,6 +3856,7 @@ static Scheme_Object *search_shared_pes(Scheme_Object *shared_pes,
             else
               phase = 0;
 
+            EXPLAIN(fprintf(stderr, "%d     srcname %s\n", depth, SCHEME_SYM_VAL(pt->provide_src_names[i])));
             get_names[0] = pt->provide_src_names[i];
             get_names[1] = idx;
             get_names[2] = glob_id;
