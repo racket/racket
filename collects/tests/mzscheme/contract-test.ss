@@ -2532,7 +2532,7 @@
   (test/spec-failed
    'define/contract18
    '(begin
-      (eval '(module foo-dc17 scheme/base
+      (eval '(module foo-dc18 scheme/base
                (require scheme/contract)
                (require scheme/unit)
                (let ()
