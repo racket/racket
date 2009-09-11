@@ -2804,6 +2804,16 @@
        (define-struct/contract (bar foo) ([z string?]))
        (set-foo-x! (make-bar 2 "x") #f)))
 
+  (test/spec-passed
+   'define-struct/contract22
+   '(define-struct/contract foo ([x number?] [y number?]) #:mutable #:transparent))
+
+  (test/spec-passed
+   'define-struct/contract23
+   '(define-struct/contract foo ([x number?] [y number?])
+                            #:mutable #:transparent
+                            #:property prop:custom-write
+                            (lambda (a b c) (void))))
 ;                                                                                  
 ;                                                                                  
 ;                                                                                  
