@@ -141,10 +141,11 @@ Vertrag.
 Aus der Datendefinition entsteht eine Vertragsdefinition folgender Form:
 
 @schemeblock[
-(define-contract ctr
-  (mixed #,(elem (scheme ctr) (subscript "1"))
-         ...
-         #,(elem (scheme ctr) (subscript "n"))))
+(define ctr
+  (contract
+    (mixed #,(elem (scheme ctr) (subscript "1"))
+           ...
+           #,(elem (scheme ctr) (subscript "n")))))
 ]
 
 Wenn die Prädikate für die einzelnen Sorten @elem[(scheme pred?)
