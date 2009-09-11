@@ -3225,7 +3225,8 @@ module browser threading seems wrong.
                        (label (string-constant module-browser-name-length))
                        (choices (list (string-constant module-browser-name-short)
                                       (string-constant module-browser-name-medium)
-                                      (string-constant module-browser-name-long)))
+                                      (string-constant module-browser-name-long)
+                                      (string-constant module-browser-name-very-long)))
                        (selection (preferences:get 'drscheme:module-browser:name-length))
                        (callback
                         (λ (x y)
@@ -3257,7 +3258,8 @@ module browser threading seems wrong.
                 (case i
                   [(0) 'short]
                   [(1) 'medium]
-                  [(2) 'long])))
+                  [(2) 'long]
+                  [(3) 'very-long])))
         
         (define/private (mouse-currently-over snips)
           (if (null? snips)

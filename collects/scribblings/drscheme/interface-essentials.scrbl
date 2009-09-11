@@ -706,6 +706,32 @@ file cannot be included in another debugging session.
 
 @; ----------------------------------------------------------------------
 
+@section[#:tag "module-browser"]{The Module Browser}
+
+The module browser shows you the structure of all of the files in your program.
+It can be opened via the @onscreen{Show} menu, or via the @onscreen{Module Browser ...} 
+menu item in the @onscreen{Scheme} menu.
+
+A module browser window contains a square for each
+  module. The squares are colored based on the number of
+  lines of code in the module. If a module has more lines of
+  code, it gets a darker color.
+  
+  In addition, for each normal import, a blue line drawn is
+  from the module to the importing module. Similarly, purple
+  lines are drawn for each for-syntax, for-template or for-meta import. In the initial
+  module layout, modules to the left import modules to the
+  right, but since modules can be moved around
+  interactively, that property might not be preserved.
+
+  To open the file corresponding to the module, right-click or
+  control-click (Mac OS X) on the box for that module.
+  
+  The module browser will also show you the phases that each
+  module is loaded in; choose the ``Long, with phases'' menu item
+  in the ``Names'' popup menu. The integers indicate the phases and
+  if @scheme[#f] is present, it means the module is loaded @scheme[for-label].
+
 @section[#:tag "create-exe"]{Creating Executables}
 
 DrScheme's @onscreen{Create Executable...} menu item lets you create

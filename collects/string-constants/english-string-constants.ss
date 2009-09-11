@@ -1196,6 +1196,7 @@ please adhere to these guidelines:
  (module-browser-name-short "Short")
  (module-browser-name-medium "Medium")
  (module-browser-name-long "Long")
+ (module-browser-name-very-long "Long, with phases")  ;; like 'Long' but shows the phases where this file is loaded
  (module-browser-open-all "Open all files shown here")
 
  (happy-birthday-matthias "Happy Birthday, Matthias!")

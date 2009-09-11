@@ -138,7 +138,7 @@
                            number-between-zero-and-one?))
 
 (preferences:set-default 'drscheme:module-browser:name-length 1 
-                         (λ (x) (memq x '(0 1 2))))
+                         (λ (x) (memq x '(0 1 2 3))))
 
 (let ([frame-width 600]
       [frame-height 650]

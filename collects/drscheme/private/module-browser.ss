@@ -113,6 +113,10 @@
                  dc-location-to-editor-location
                  find-snip
                  get-canvas)
+      
+        ;; require-depth-ht : hash[(list snip snip) -o> (listof integer)]
+        ;; maps parent/child snips (ie, those that match up to modules that require each other) to phase differences
+        (define require-depth-ht (make-hash))
         
         (define name-length 'long)
         (define/public (set-name-length nl)
@@ -192,10 +196,23 @@
           
           
           (set! max-lines #f)
-          
+          (compute-snip-require-phases)
           (remove-specially-linked)
           (render-snips)
           (end-edit-sequence))
+        
+        (define/private (compute-snip-require-phases)
+          (let ([ht (make-hash)]) ;; avoid infinite loops 
+            (for ([snip (in-list (get-top-most-snips))])
+              (let loop ([parent snip]
+                         [depth 0])    ;; depth is either an integer or #f (indicating for-label)
+                (unless (hash-ref ht (cons parent depth) #f)
+                  (hash-set! ht (cons parent depth) #t)
+                  (send parent add-require-phase depth)
+                  (for ([child (in-list (send parent get-children))])
+                    (for ([delta-depth (in-list (hash-ref require-depth-ht (list parent child)))])
+                      (loop child 
+                            (and depth delta-depth (+ delta-depth depth))))))))))
         
         ;; add-connection : string string (union symbol #f) number -> void
         ;; name-original and name-require and the identifiers for those paths and
@@ -210,6 +227,10 @@
                  [require-snip (find/create-snip name-require require-filename?)]
                  [original-level (send original-snip get-level)]
                  [require-level (send require-snip get-level)])
+            (let ([require-depth-key (list original-snip require-snip)])
+              (hash-set! require-depth-ht 
+                         require-depth-key
+                         (cons require-depth (hash-ref require-depth-ht require-depth-key '())))) 
             (case require-depth 
               [(0)
                (add-links original-snip require-snip
@@ -499,6 +520,13 @@
                     lines
                     pb)
         
+        (define require-phases '())
+        (define/public (add-require-phase d)
+          (unless (member d require-phases)
+            (set! last-name #f)
+            (set! last-size #f)
+            (set! require-phases (sort (cons d require-phases) < #:key (λ (x) (or x +inf.0))))))
+        
         (field [special-children (make-hasheq)])
         (define/public (is-special-key-child? key child)
           (let ([ht (hash-ref special-children key #f)])
@@ -591,7 +619,12 @@
                                             (cons (substring short-name 0 1)
                                                   (map (λ (x) (substring x 1 2))
                                                        ms)))])))))]
-                       [(long) word]))
+                       [(long) word]
+                       [(very-long)  
+                        (string-append
+                         word
+                         ": "
+                         (format "~s" require-phases))]))
                last-name])))
         
         (super-new)))
