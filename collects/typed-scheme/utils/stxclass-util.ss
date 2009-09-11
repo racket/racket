@@ -24,14 +24,14 @@
 
 (define-syntax-class (3d pred)
   (pattern s           
-           #:with datum (syntax-e #'s)
-           #:fail-unless (pred #'datum) #f))
+           #:attr datum (syntax-e #'s)
+           #:fail-unless (pred (attribute datum)) #f))
 
 (define-syntax-rule (define-pred-stxclass name pred)
   (define-syntax-class name #:attributes (datum)
     (pattern x
              #:fail-unless (pred (syntax-e #'x)) #f
-             #:with datum (syntax-e #'x))))
+             #:attr datum (syntax-e #'x))))
 
 (define-pred-stxclass atom atom?)
 (define-pred-stxclass byte-pregexp byte-pregexp?)

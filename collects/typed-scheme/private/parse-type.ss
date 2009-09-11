@@ -62,7 +62,6 @@
                          t:Vectorof t:mu t:Rec t:U t:All t:Opaque t:Parameter quote)
      [t
       #:declare t (3d Type?)
-      (printf "3d type ~a~n" #'t.datum)
       (attribute t.datum)]
      [(fst . rst)
       #:fail-unless (not (syntax->list #'rst)) #f

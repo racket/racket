@@ -26,8 +26,8 @@
   (define-syntax-class exp
     (pattern i
              #:fail-unless expected #f
-             #:with datum (syntax-e #'i)
-             #:fail-unless (subtype (-val #'datum) expected) #f))
+             #:attr datum (syntax-e #'i)
+             #:fail-unless (subtype (-val (attribute datum)) expected) #f))
   (syntax-parse v-stx 
     [i:exp expected]
     [i:boolean (-val (syntax-e #'i))]

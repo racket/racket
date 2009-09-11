@@ -172,15 +172,15 @@
     (define-syntax-class clause
       (pattern  
        (k:keyword #:matcher mtch pats ... e:expr)
-       #:with kw (attribute k.datum)
-       #:with val (list #'mtch 
+       #:attr kw (attribute k.datum)
+       #:attr val (list #'mtch 
                         (syntax/loc this-syntax (pats ...))
                         (lambda () #'e)
                         this-syntax))
       (pattern
        (k:keyword pats ... e:expr) 
-       #:with kw (syntax-e #'k)
-       #:with val (list (mk-matcher #'kw) 
+       #:attr kw (syntax-e #'k)
+       #:attr val (list (mk-matcher (attribute kw)) 
                         (syntax/loc this-syntax (pats ...))
                         (lambda () #'e)
                         this-syntax)))
@@ -193,13 +193,13 @@
       #:attributes (datum)
       (pattern k:keyword
                #:fail-unless (memq (attribute k.datum) kws) #f
-               #:with datum (attribute k.datum)))
+               #:attr datum (attribute k.datum)))
     (define-syntax-class (sized-list kws)
       #:description (format "keyword expr pairs matching with keywords in the list ~a" kws)
       (pattern ((~or (~seq k e:expr)) ...)
                #:declare k (keyword-in kws)
                #:fail-unless (equal? (length (attribute k.datum)) (length (remove-duplicates (attribute k.datum)))) #f
-               #:with mapping (for/hash ([k* (attribute k.datum)]
+               #:attr mapping (for/hash ([k* (attribute k.datum)]
                                          [e* (attribute e)])
                                 (values k* e*))
                ))
@@ -229,21 +229,21 @@
     #:attributes (i lower-s first-letter key? (fld-names 1))
     #:transparent
     (pattern i:id
-             #:with lower-s (string-downcase (symbol->string (attribute i.datum)))
+             #:attr lower-s (string-downcase (symbol->string (attribute i.datum)))
              #:with (fld-names ...) default-flds
 	     #:with key? #'#f
-             #:with first-letter (string-ref #'lower-s 0))
+             #:attr first-letter (string-ref (attribute lower-s) 0))
     (pattern [i:id #:d d-name:id]
              #:with (fld-names ...) default-flds
-             #:with lower-s (string-downcase (symbol->string (attribute i.datum)))
+             #:attr lower-s (string-downcase (symbol->string (attribute i.datum)))
 	     #:with key? #'#f
-             #:with first-letter (symbol->string (attribute d-name.datum)))
+             #:attr first-letter (symbol->string (attribute d-name.datum)))
     (pattern [i:id #:key]
              #:with (fld-names ...) (datum->syntax #f (append (syntax->list default-flds) 
                                                               (syntax->list #'(key))))
-             #:with lower-s (string-downcase (symbol->string (attribute i.datum)))
+             #:attr lower-s (string-downcase (symbol->string (attribute i.datum)))
 	     #:with key? #'#t
-             #:with first-letter (string-ref #'lower-s 0)))
+             #:attr first-letter (string-ref (attribute lower-s) 0)))
   (define-syntax-class type-name
     #:transparent
     #:auto-nested-attributes

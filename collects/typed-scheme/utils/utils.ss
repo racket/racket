@@ -233,7 +233,8 @@ at least theoretically.
     (cond [(string? v) v]
           [(symbol? v) (symbol->string v)]
           [(char? v) (string v)]
-          [(identifier? v) (symbol->string (syntax-e v))]))
+          [(identifier? v) (symbol->string (syntax-e v))]
+	  [else (error "not coerceable:" v)]))
   (datum->syntax kw (string->symbol (apply string-append (map f args)))))
 
 
