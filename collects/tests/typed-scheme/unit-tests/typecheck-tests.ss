@@ -12,7 +12,7 @@
          (utils tc-utils mutated-vars)
          (env type-name-env type-environments init-envs)
          (schemeunit)
-         stxclass)
+         syntax/parse)
 
 (require (for-syntax (utils tc-utils)
                      (typecheck typechecker)
@@ -21,7 +21,7 @@
          (for-template (private base-env base-types base-types-extra)))
 
 
-(require (for-syntax syntax/kerncase stxclass))
+(require (for-syntax syntax/kerncase syntax/parse))
 
 (provide typecheck-tests g tc-expr/expand)
 
