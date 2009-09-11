@@ -26,7 +26,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (require (except-in "../utils/utils.ss" extend))
 (require (for-syntax 
-          stxclass
+          syntax/parse
 	  stxclass/util
           scheme/base
           (rep type-rep)
@@ -64,28 +64,31 @@ This file defines two sorts of primitives. All of them are provided into any mod
     #:attributes (nm ty)
     (pattern [nm:opt-rename ty]))
   (define-syntax-class struct-clause
-    #:literals (struct)
+    ;#:literals (struct)
     #:attributes (nm (body 1))
-    (pattern [struct nm:opt-rename (body ...)]))
+    (pattern [struct nm:opt-rename (body ...)]
+             #:fail-unless (eq? 'struct (syntax-e #'struct)) #f))
   (define-syntax-class opaque-clause
-    #:literals (opaque)
+    ;#:literals (opaque)
     #:attributes (ty pred opt)
     (pattern [opaque ty:id pred:id]
+             #:fail-unless (eq? 'opaque (syntax-e #'opaque)) #f
              #:with opt #'())
     (pattern [opaque ty:id pred:id #:name-exists]
+             #:fail-unless (eq? 'opaque (syntax-e #'opaque)) #f
              #:with opt #'(#:name-exists)))
   (syntax-parse stx
-    [(_ lib (~or [sc:simple-clause] [strc:struct-clause] [oc:opaque-clause]) ...)
+    [(_ lib (~or sc:simple-clause strc:struct-clause oc:opaque-clause) ...)
      #'(begin 
 	 (require/opaque-type oc.ty oc.pred lib . oc.opt) ...
 	 (require/typed sc.nm sc.ty lib) ... 
 	 (require-typed-struct strc.nm (strc.body ...) lib) ...)]
-    [(_ nm:opt-rename ty lib (~or [#:struct-maker parent] #:opt) ...)
+    [(_ nm:opt-rename ty lib (~optional [~seq #:struct-maker parent]) ...)
      (with-syntax ([cnt* (generate-temporary #'nm.nm)]
-		   [sm (if #'parent
+		   [sm (if (attribute parent)
                            #'(#:struct-maker parent)
                            #'())])
-       (let ([prop-name (if #'parent
+       (let ([prop-name (if (attribute parent)
                             'typechecker:contract-def/maker
                             'typechecker:contract-def)])
          (quasisyntax/loc stx 
@@ -101,14 +104,14 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (define-syntax-class name-exists-kw
     (pattern #:name-exists))
   (syntax-parse stx
-    [(_ ty:id pred:id lib (~or [ne:name-exists-kw] #:opt) ...)
+    [(_ ty:id pred:id lib (~optional ne:name-exists-kw) ...)
      (register-type-name #'ty (make-Opaque #'pred (syntax-local-certifier)))
      (quasisyntax/loc stx
        (begin 
          #,(syntax-property #'(define pred-cnt (any/c . c-> . boolean?))
                             'typechecker:ignore #t)
          #,(internal #'(require/typed-internal pred (Any -> Boolean : (Opaque pred))))
-         #,(if #'ne
+         #,(if (attribute ne)
                (internal (syntax/loc stx (define-type-alias-internal ty (Opaque pred))))
                (syntax/loc stx (define-type-alias ty (Opaque pred))))
          #,(syntax-property #'(require/contract pred pred-cnt lib)

@@ -4,7 +4,7 @@
 
 (require (private base-types)
          (for-syntax 
-          (except-in stxclass id)
+          (except-in syntax/parse id)
           scheme/base
           (private type-contract)
           (types utils convenience)

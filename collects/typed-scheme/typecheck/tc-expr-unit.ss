@@ -8,11 +8,11 @@
          (types utils convenience union subtype)
          (private-in parse-type type-annotation)
          (rep type-rep)
-         (except-in (utils tc-utils stxclass-util) define-pred-stxclass 3d atom byte-pregexp byte-regexp regexp bytes)
+         (except-in (utils tc-utils stxclass-util))
          (env lexical-env)
          (only-in (env type-environments) lookup current-tvars extend-env)
          scheme/private/class-internal
-         (except-in stxclass id)
+         (except-in syntax/parse id)
          (only-in srfi/1 split-at))
 
 (require (for-template scheme/base scheme/private/class-internal))
@@ -20,36 +20,23 @@
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ check-subforms^)
 (export tc-expr^)
 
-(define-syntax-class (3d pred)
-  (pattern s           
-           #:with datum (syntax-e #'s)
-           #:when (pred #'datum)))
-
-
-(define-pred-stxclass atom atom?)
-(define-pred-stxclass byte-pregexp byte-pregexp?)
-(define-pred-stxclass byte-regexp byte-regexp?)
-(define-pred-stxclass regexp regexp?)
-(define-pred-stxclass bytes bytes?)
-
-
 ;; return the type of a literal value
 ;; scheme-value -> type
 (define (tc-literal v-stx [expected #f])
   (define-syntax-class exp
     (pattern i
-             #:when expected
+             #:fail-unless expected #f
              #:with datum (syntax-e #'i)
-             #:when (subtype (-val #'datum) expected)))
+             #:fail-unless (subtype (-val #'datum) expected) #f))
   (syntax-parse v-stx 
     [i:exp expected]
-    [i:boolean (-val #'i.datum)]
-    [i:identifier (-val #'i.datum)]
+    [i:boolean (-val (syntax-e #'i))]
+    [i:identifier (-val (syntax-e #'i))]
     [i:exact-integer -Integer]
     [i:number -Number]
     [i:str -String]
     [i:char -Char]
-    [i:keyword (-val #'i.datum)]
+    [i:keyword (-val (syntax-e #'i))]
     [i:bytes -Bytes]
     [i:byte-pregexp -Byte-PRegexp]
     [i:byte-regexp -Byte-Regexp]
@@ -57,7 +44,7 @@
     [(i ...) 
      (-Tuple (map tc-literal (syntax->list #'(i ...))))]
     [i #:declare i (3d vector?)
-       (make-Vector (apply Un (map tc-literal (vector->list #'i.datum))))]
+       (make-Vector (apply Un (map tc-literal (vector->list (syntax-e #'i)))))]
     [_ Univ]))
 
 
