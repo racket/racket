@@ -44,16 +44,16 @@
       [() #'empty-hash-table]
       [(e) #`(#,f e)]
       [(e ...) #`(combine-frees (list (#,f e) ...))]))
-  (define-syntax-class frees-pat
+  (define-splicing-syntax-class frees-pat
     #:transparent
     #:attributes (f1 f2 def)
-    (pattern (f1:expr f2:expr)
+    (pattern (~seq f1:expr f2:expr)
              #:with def #'(begin))
-    (pattern (#f)
+    (pattern #f
              #:with f1 #'empty-hash-table
              #:with f2 #'empty-hash-table
              #:with def #'(begin))
-    (pattern (e:expr)
+    (pattern e:expr
              #:with id (generate-temporary)
              #:with def #'(define id e)
              #:with f1 #'(id free-vars*)
@@ -70,7 +70,7 @@
       [(dform nm:id flds:idlist (~or 
                                  (~optional [#:key key-expr:expr])
                                  (~optional [#:intern intern?:expr])
-                                 (~optional [#:frees . frees:frees-pat])
+                                 (~optional [#:frees frees:frees-pat])
                                  (~optional [#:fold-rhs fold-rhs:fold-pat])
                                  (~optional [#:contract cnt:expr])
                                  (~optional no-provide?:no-provide-kw)) ...)
