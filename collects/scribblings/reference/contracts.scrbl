@@ -796,7 +796,7 @@ accessors, and mutators are protected by contracts.  For the definitions of
 
 The @scheme[define-struct/contract] form only allows a subset of the
 @scheme[struct-option] keywords: @scheme[#:mutable], @scheme[#:transparent],
-@scheme[#:auto-value], @scheme[#:omit-define-syntaxes], and
+@scheme[#:auto-value], @scheme[#:omit-define-syntaxes], @scheme[#:property] and
 @scheme[#:omit-define-values].
 
 @examples[#:eval (contract-eval)
