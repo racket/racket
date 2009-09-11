@@ -19,9 +19,10 @@
 This module provides test forms for use in Scheme programs, as well
 as parameters to configure the behavior of test reports.
 
-Each check form may only occur at the top-level or within the
-definitions of a local declaration; results are collected and reported
-by the test function.
+Each check form may only occur at the top-level; results are collected
+and reported by the test function.  Note that the check forms only
+register checks to be performed.  The checks are actually run by the
+@scheme[test] function.
 
 @defproc[(check-expect (test any/c) (expected any/c)) void?]{
 
