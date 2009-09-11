@@ -1,12 +1,13 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base
-                     stxclass
                      syntax/boundmap
                      syntax/name
+                     syntax/parse
                      "unit-compiletime.ss"
                      "unit-contract-syntax.ss"
                      "unit-syntax.ss")
+         (for-meta 2 scheme/base)
          scheme/contract
          "unit-utils.ss"
          "unit-runtime.ss")

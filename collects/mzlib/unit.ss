@@ -1,10 +1,10 @@
 (module unit mzscheme
   (require-for-syntax mzlib/list
-                      stxclass
                       syntax/boundmap
                       syntax/context
                       syntax/kerncase
                       syntax/name
+                      syntax/parse
                       syntax/struct
                       syntax/stx
                       "private/unit-contract-syntax.ss"
