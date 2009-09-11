@@ -112,7 +112,7 @@
               (convert-sides x sides (k iattrs . kargs)))]
        [#s(clause:with pattern expr (def ...))
         (with-syntax ([(p-iattr ...) (pattern-attrs (wash #'pattern))])
-          #`(let ([y (without-fails expr)])
+          #`(let ([y (datum->syntax #f (without-fails expr))])
               def ...
               (parse:S y #,(done-frontier #'x) pattern
                        (convert-sides x sides

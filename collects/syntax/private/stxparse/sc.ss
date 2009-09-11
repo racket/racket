@@ -177,7 +177,7 @@
   (syntax-case stx ()
     [(syntax-parse stx-expr . clauses)
      (quasisyntax/loc stx
-       (let ([x stx-expr])
+       (let ([x (datum->syntax #f stx-expr)])
          (parse:clauses x clauses #,stx)))]))
 
 (define-syntax (syntax-parser stx)
@@ -185,7 +185,8 @@
     [(syntax-parser . clauses)
      (quasisyntax/loc stx
        (lambda (x)
-         (parse:clauses x clauses #,stx)))]))
+         (let ([x (datum->syntax #f x)])
+           (parse:clauses x clauses #,stx))))]))
 
 (define-syntax with-patterns
   (syntax-rules ()

@@ -29,6 +29,7 @@
          char
 
          expr
+         expr/c
          static
          atom-in-list
 
@@ -65,7 +66,8 @@
            #:fail-unless (syntax-transforming?)
                          "not within the extent of a macro transformer"
            #:attr value (syntax-local-value #'x (lambda () notfound))
-           #:fail-when (eq? (attribute value) notfound) #f))
+           #:fail-when (eq? (attribute value) notfound) #f
+           #:fail-unless (pred (attribute value)) #f))
 
 (define-syntax-class (atom-in-list atoms name)
   #:attributes ()
@@ -103,6 +105,17 @@
   (pattern x
            #:fail-when (keyword? (syntax-e #'x)) #f))
 
+(define-syntax-class (expr/c ctc)
+  #:attributes (c)
+  (pattern x:expr
+           #:with c #`(contract #,ctc
+                                x
+                                (quote #,(string->symbol (or (build-src-loc-string #'x) "")))
+                                (quote #,(or '<this-macro>))
+                                (quote-syntax #,(syntax/loc #'x (<there>))))))
+
+;; Literal sets
+  
 (define-syntax kernel-literals
   (make-literalset
    (list* (quote-syntax module)
