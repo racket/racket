@@ -885,8 +885,9 @@ profile todo:
                          (send frame get-interactions-text))])
           (when frame
             (send frame show #t))
-          (when (let ([wbv (weak-box-value (car edition-pair))])
-                  (and wbv (eq? editor wbv)))
+          (when (and edition-pair
+                     (let ([wbv (weak-box-value (car edition-pair))])
+                       (and wbv (eq? editor wbv))))
             (unless (= (cdr edition-pair) (send editor get-edition-number))
               (message-box (string-constant drscheme)
                            (string-constant editor-changed-since-srcloc-recorded)
