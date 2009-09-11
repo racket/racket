@@ -1101,7 +1101,9 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 # define mz_patch_ucbranch_at(a, v) jit_patch_ucbranch_at(a, v)
 # ifdef _CALL_DARWIN
 #  define X86_ALIGN_STACK
-#  define STACK_ALIGN_WORDS 3
+#  ifndef JIT_X86_64
+#   define STACK_ALIGN_WORDS 3
+#  endif
 # endif
 # ifdef JIT_X86_64
 #  define X86_ALIGN_STACK
@@ -3260,7 +3262,8 @@ static int can_fast_double(int arith, int cmp, int two_args)
       || (arith == -1)
       || (arith == 2)
       || (arith == -2)
-      || (arith == 11))
+      || (arith == 11)
+      || (arith == 12))
     return 1;
 #endif
 #ifdef INLINE_FP_COMP
@@ -3308,6 +3311,25 @@ static int can_fast_double(int arith, int cmp, int two_args)
 #define jit_bantieqr_d_fppop(d, s1, s2) jit_bantieqr_d(d, s1, s2)
 #endif
 
+static int generate_alloc_double(mz_jit_state *jitter)
+{
+#ifdef INLINE_FP_OPS
+# ifdef CAN_INLINE_ALLOC
+  inline_alloc(jitter, sizeof(Scheme_Double), scheme_double_type, 0, 0, 1, 0);
+  CHECK_LIMIT();
+  jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
+  (void)jit_stxi_d_fppop(&((Scheme_Double *)0x0)->double_val, JIT_R0, JIT_FPR1);
+# else
+  (void)jit_sti_d_fppop(&double_result, JIT_FPR1);    
+  JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+  mz_prepare(0);
+  (void)mz_finish(malloc_double);
+  jit_retval(JIT_R0);
+# endif
+#endif
+  return 1;
+}
+
 static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int reversed, int two_args, int second_const,
                                  jit_insn **_refd, jit_insn **_refdt,
                                  int branch_short, int unsafe_fl)
@@ -3342,13 +3364,17 @@ static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int r
     (void)jit_movi_p(JIT_R0, scheme_make_integer(0));
   } else {
     /* Yes, they're doubles. */
-    jit_ldxi_d_fppush(JIT_FPR1, JIT_R0, &((Scheme_Double *)0x0)->double_val);
+    if (arith != 12) {
+      jit_ldxi_d_fppush(JIT_FPR1, JIT_R0, &((Scheme_Double *)0x0)->double_val);
+    }
     if (two_args) {
       jit_ldxi_d_fppush(JIT_FPR0, JIT_R1, &((Scheme_Double *)0x0)->double_val);
     } else if ((arith == -1) && !second_const && reversed) {
       reversed = 0;
     } else if (arith == 11) {
       /* abs needs no extra number */
+    } else if (arith == 12) {
+      /* exact->inexact needs no extra number */
     } else {
       double d = second_const;      
       jit_movi_d_fppush(JIT_FPR0, d);
@@ -3403,29 +3429,18 @@ static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int r
       case 11: /* abs */
         jit_abs_d_fppop(JIT_FPR1, JIT_FPR1);
         break;
+      case 12: /* exact->inexact */
+        no_alloc = 1;
+        break;
       default:
         break;
       }
       CHECK_LIMIT();
 
       if (!no_alloc) {
-#ifdef INLINE_FP_OPS
-# ifdef CAN_INLINE_ALLOC
-        inline_alloc(jitter, sizeof(Scheme_Double), scheme_double_type, 0, 0, 1, 0);
-        CHECK_LIMIT();
-        jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
-        (void)jit_stxi_d_fppop(&((Scheme_Double *)0x0)->double_val, JIT_R0, JIT_FPR1);
-# else
-        (void)jit_sti_d_fppop(&double_result, JIT_FPR1);    
-        JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-        mz_prepare(0);
-        (void)mz_finish(malloc_double);
-        jit_retval(JIT_R0);
-# endif
-#endif
+        generate_alloc_double(jitter);
         CHECK_LIMIT();
       }
-
     } else {
       /* The "anti" variants below invert the branch. Unlike the "un" 
          variants, the "anti" variants invert the comparison result
@@ -3499,6 +3514,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         arith = 9 -> min
         arith = 10 -> max
         arith = 11 -> abs
+        arith = 12 -> exact->inexact
         cmp = 0 -> = or zero?
         cmp = +/-1 -> >=/<=
         cmp = +/-2 -> >/< or positive/negative?
@@ -3639,6 +3655,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
     if (unsafe_fl || (!SCHEME_INTP(rand) && can_fast_double(arith, cmp, 1))) {
       /* Maybe they're both doubles... */
+      if (unsafe_fl) mz_rs_sync();
       generate_double_arith(jitter, arith, cmp, reversed, 1, 0, &refd, &refdt, branch_short, unsafe_fl);
       CHECK_LIMIT();
     }
@@ -3687,6 +3704,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
     if (unsafe_fl || can_fast_double(arith, cmp, 1)) {
       /* Maybe they're both doubles... */
+      if (unsafe_fl) mz_rs_sync();
       generate_double_arith(jitter, arith, cmp, reversed, 1, 0, &refd, &refdt, branch_short, unsafe_fl);
       CHECK_LIMIT();
     }
@@ -4045,6 +4063,15 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
             __START_INNER_TINY__(branch_short);
             mz_patch_branch(refc);
             __END_INNER_TINY__(branch_short);
+            CHECK_LIMIT();
+          } else if (arith == 12) {
+            /* exact->inexact */
+            jit_rshi_l(JIT_R0, JIT_R0, 1);
+            jit_extr_l_d_fppush(JIT_FPR0, JIT_R0);
+            CHECK_LIMIT();
+            __END_SHORT_JUMPS__(branch_short);
+            generate_alloc_double(jitter);
+            __START_SHORT_JUMPS__(branch_short);
             CHECK_LIMIT();
           }
         }
@@ -4728,6 +4755,9 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       return 1;
     } else if (IS_NAMED_PRIM(rator, "abs")) {
       generate_arith(jitter, rator, app->rand, NULL, 1, 11, 0, 0, NULL, 1, 0, 0);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "exact->inexact")) {
+      generate_arith(jitter, rator, app->rand, NULL, 1, 12, 0, 0, NULL, 1, 0, 0);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "bitwise-not")) {
       generate_arith(jitter, rator, app->rand, NULL, 1, 7, 0, 9, NULL, 1, 0, 0);

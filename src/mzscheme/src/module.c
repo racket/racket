@@ -844,8 +844,11 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 		: "dynamic-require-for-syntax" )
 	     : "dynamic-require");
 
-  if (SCHEME_TRUEP(name) && !SCHEME_SYMBOLP(name) && !SCHEME_VOIDP(name)) {
-    scheme_wrong_type(errname, "symbol, #f, or void", 1, argc, argv);
+  if (SCHEME_TRUEP(name) 
+      && !SCHEME_SYMBOLP(name) 
+      && !SAME_OBJ(name, scheme_make_integer(0))
+      && !SCHEME_VOIDP(name)) {
+    scheme_wrong_type(errname, "symbol, #f, 0, or void", 1, argc, argv);
     return NULL;
   }
 
@@ -991,10 +994,17 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
     }
   }
 
-  if (SCHEME_VOIDP(name))
-    start_module(m, env, 0, modidx, 1, 0, base_phase, scheme_null);
-  else
-    start_module(m, env, 0, modidx, 0, 1, base_phase, scheme_null);
+  start_module(m, env, 0, modidx, 
+               (SCHEME_VOIDP(name)
+                ? 1
+                : (SAME_OBJ(name, scheme_make_integer(0)) 
+                   ? -1
+                   : 0)), 
+               (SCHEME_VOIDP(name)
+                ? 0
+                : 1),
+               base_phase, 
+               scheme_null);
 
   if (SCHEME_SYMBOLP(name)) {
     Scheme_Bucket *b;

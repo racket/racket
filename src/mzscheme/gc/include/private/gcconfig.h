@@ -307,6 +307,10 @@
 #    define I386
 #    define mach_type_known
 #   endif
+#   if defined(__x86_64__)
+#    define X86_64
+#    define mach_type_known
+#   endif
 # endif
 # if defined(NeXT) && defined(mc68000)
 #   define M68K
@@ -2025,6 +2029,16 @@
 #	define HEURISTIC2
 	extern char etext[];
 #	define SEARCH_FOR_DATA_START
+#   endif
+#   ifdef DARWIN
+#     define DARWIN_DONT_PARSE_STACK
+#     define DYNAMIC_LOADING
+#     define DATASTART ((ptr_t) get_etext())
+#     define DATAEND	((ptr_t) get_end())
+#     define STACKBOTTOM ((ptr_t) 0xc0000000)
+#     define USE_MMAP
+#     define USE_MMAP_ANON
+#     define USE_ASM_PUSH_REGS
 #   endif
 # endif
 

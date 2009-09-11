@@ -67,6 +67,12 @@ the Unix instructions below, but note the following:
    directory structure on top of an existing Unix-style directory
    structure.)
 
+ * Under Mac OS X 10.6 and later, `configure' by default selects
+   32-bit mode for building MzScheme and MrEd. To build MzScheme in
+   64-bit mode (MrEd is not support in that mode), use the following
+   arguments to `configure': --enable-mac64, --enable-sgc, and
+   --disable-mred.
+
 ========================================================================
  Compiling for supported Unix variants (including Linux) or Cygwin
 ========================================================================

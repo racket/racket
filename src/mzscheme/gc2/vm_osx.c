@@ -35,10 +35,17 @@ static int designate_modified(void *p);
 int designate_modified(void *p);
 #endif
 
-#ifdef __POWERPC__
+#if defined(__POWERPC__)
 # define ARCH_thread_state_t ppc_thread_state_t
 # define ARCH_THREAD_STATE PPC_THREAD_STATE
 # define ARCH_THREAD_STATE_COUNT PPC_THREAD_STATE_COUNT
+#elif defined(__x86_64__)
+# define ARCH_thread_state_t x86_thread_state64_t
+# define ARCH_THREAD_STATE x86_THREAD_STATE64
+# define ARCH_THREAD_STATE_COUNT x86_THREAD_STATE64_COUNT
+# define USE_THREAD_STATE
+# include <mach/thread_status.h>
+# include <mach/exception.h>
 #else
 # define ARCH_thread_state_t i386_thread_state_t
 # define ARCH_THREAD_STATE i386_THREAD_STATE
@@ -209,7 +216,18 @@ kern_return_t GC_catch_exception_raise(mach_port_t port,
   /* kernel return value is in exception_data[0], faulting address in
      exception_data[1] */
   if(exception_data[0] == KERN_PROTECTION_FAILURE) {
-    if (designate_modified((void*)exception_data[1]))
+    void *p;
+#ifndef USE_THREAD_STATE
+    p = (void*)exception_data[1];
+#else
+    /* We have to do it this way for 64-bit mode: */
+    x86_exception_state64_t exc_state;
+    mach_msg_type_number_t exc_state_count = x86_EXCEPTION_STATE64_COUNT;
+    (void)thread_get_state(thread_port, x86_EXCEPTION_STATE64, (natural_t*)&exc_state,
+                           &exc_state_count);
+    p = (void *)exc_state.__faultvaddr;
+#endif
+    if (designate_modified(p))
       return KERN_SUCCESS;
     else
       return KERN_FAILURE;

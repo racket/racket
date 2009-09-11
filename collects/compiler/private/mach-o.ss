@@ -24,13 +24,18 @@
 
 (define move-link-edit? #t)
 
+(define exe-id
+  (if (equal? (path->bytes (system-library-subpath #f)) #"x86_64-macosx")
+      #xFeedFacf
+      #xFeedFace))
+
 (define (add-plt-segment file segdata)
   (let-values ([(p out) (open-input-output-file file #:exists 'update)])
     (dynamic-wind
         void
         (lambda ()
           (file-stream-buffer-mode out 'none)
-          (check-same #xFeedFace (read-ulong p))
+          (check-same exe-id (read-ulong p))
           (read-ulong p)
           (read-ulong p)
           (check-same #x2 (read-ulong p))
@@ -235,7 +240,7 @@
     (dynamic-wind
         void
         (lambda ()
-          (check-same #xFeedFace (read-ulong p))
+          (check-same exe-id (read-ulong p))
           (read-ulong p)
           (read-ulong p)
           (check-same #x2 (read-ulong p))

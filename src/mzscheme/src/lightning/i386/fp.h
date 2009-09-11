@@ -206,6 +206,16 @@ union jit_double_imm {
    : (FILDLm(0, _ESP, 0, 0), FSTPr ((rd) + 1))),       \
   POPLr((rs)))
 
+#define jit_extr_i_d_fppush(rd, rs)  \
+  (PUSHLr((rs)), FILDLm(0, _ESP, 0, 0), POPLr((rs)))
+#ifdef JIT_X86_64
+# define jit_extr_l_d_fppush(rd, rs)  \
+  (PUSHQr((rs)), FILDQm(0, _ESP, 0, 0), POPQr((rs)))
+#else
+# define jit_extr_l_d_fppush(rd, rs) jit_extr_i_d_fppush(rd, rs)
+#endif
+
+
 #define jit_stxi_f(id, rd, rs) jit_fxch ((rs), FPX(), FSTSm((id), (rd), 0, 0))
 #define jit_stxr_f(d1, d2, rs) jit_fxch ((rs), FPX(), FSTSm(0, (d1), (d2), 1))
 #define jit_stxi_d(id, rd, rs) jit_fxch ((rs), FPX(), FSTLm((id), (rd), 0, 0))

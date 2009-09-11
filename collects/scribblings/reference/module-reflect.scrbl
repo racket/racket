@@ -318,7 +318,7 @@ See also @scheme[module->language-info].}
 @section[#:tag "dynreq"]{Dynamic Module Access}
 
 @defproc[(dynamic-require [mod module-path?]
-                          [provided (or/c symbol? #f void?)]
+                          [provided (or/c symbol? #f 0 void?)]
                           [fail-thunk (-> any) (lambda () ....)])
          any]{
 
@@ -337,14 +337,20 @@ above the @tech{base phase}.
 
 When @scheme[provided] is a symbol, the value of the module's export
 with the given name is returned, and still the module is not
-@tech{visit}ed. If the module exports @scheme[provide] as syntax, then
-a use of the binding is expanded and evaluated in a fresh namespace to
-which the module is attached, which means that the module is
-@tech{visit}ed in the fresh namespace. If the module has no such
-exported variable or syntax, then @scheme[fail-thunk] is called; the
-default @scheme[fail-thunk] raises @scheme[exn:fail:contract]. If the
-variable named by @scheme[provided] is exported protected (see
-@secref["modprotect"]), then the @exnraise[exn:fail:contract].
+@tech{visit}ed or made @tech{available} in higher phases. If the
+module exports @scheme[provide] as syntax, then a use of the binding
+is expanded and evaluated in a fresh namespace to which the module is
+attached, which means that the module is @tech{visit}ed in the fresh
+namespace. If the module has no such exported variable or syntax, then
+@scheme[fail-thunk] is called; the default @scheme[fail-thunk] raises
+@scheme[exn:fail:contract]. If the variable named by @scheme[provided]
+is exported protected (see @secref["modprotect"]), then the
+@exnraise[exn:fail:contract].
+
+If @scheme[provided] is @scheme[0], then the module is
+@tech{instantiate}d but not @tech{visit}ed, the same as when
+@scheme[provided] is @scheme[#f]. With @scheme[0], however, the module
+is made @tech{available} in higher phases.
 
 If @scheme[provided] is @|void-const|, then the module is
 @tech{visit}ed but not @tech{instantiate}d (see @secref["mod-parse"]),

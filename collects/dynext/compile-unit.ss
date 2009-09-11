@@ -65,15 +65,15 @@
       (define gcc-cpp-flags 
 	(add-variant-flags (case (string->symbol (path->string (system-library-subpath #f)))
 			     [(parisc-hpux) '("-D_HPUX_SOURCE")]
-			     [(ppc-macosx) '("-DOS_X")]
+			     [(ppc-macosx x86_64-macosx) '("-DOS_X")]
 			     [(i386-macosx) '("-DOS_X" "-m32")]
-			     [(ppc-darwin) '("-DOS_X" "-DXONX")]
+			     [(ppc-darwin x86_64-darwin) '("-DOS_X" "-DXONX")]
 			     [(i386-darwin) '("-DOS_X" "-DXONX" "-m32")]
 			     [else null])))
 
       (define gcc-compile-flags (append '("-c" "-O2" "-fPIC")
 					(case (string->symbol (path->string (system-library-subpath #f)))
-					  [(ppc-macosx i386-macosx) '("-fno-common")]
+					  [(ppc-macosx i386-macosx x86_64-macosx) '("-fno-common")]
 					  [(ppc-darwin) '("-fno-common")]
 					  [(win32\\i386) '("-DAS_MSVC_EXTENSION")]
 					  [else null])

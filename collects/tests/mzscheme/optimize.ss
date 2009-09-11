@@ -236,6 +236,12 @@
     (un (expt 2 30) 'abs (- (expt 2 30)))
     (un (sub1 (expt 2 62)) 'abs (sub1 (expt 2 62)))
     (un (expt 2 62) 'abs (- (expt 2 62)))
+    
+    (un 1.0 'exact->inexact 1)
+    (un 1073741823.0 'exact->inexact (sub1 (expt 2 30)))
+    (un -1073741824.0 'exact->inexact (- (expt 2 30)))
+    (un 4611686018427387903.0 'exact->inexact (sub1 (expt 2 62)))
+    (un -4611686018427387904.0 'exact->inexact (- (expt 2 62)))
 
     (bin 11 '+ 4 7)
     (bin -3 '+ 4 -7)

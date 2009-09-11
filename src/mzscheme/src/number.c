@@ -477,11 +477,14 @@ scheme_init_number (Scheme_Env *env)
 						      "magnitude",
 						      1, 1, 1),
 			     env);
-  scheme_add_global_constant("exact->inexact", 
-			     scheme_make_folding_prim(scheme_exact_to_inexact,
-						      "exact->inexact",
-						      1, 1, 1),
-			     env);
+  
+  p = scheme_make_folding_prim(scheme_exact_to_inexact,
+                               "exact->inexact",
+                               1, 1, 1);
+  if (scheme_can_inline_fp_op())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("exact->inexact", p, env);
+
   scheme_add_global_constant("inexact->exact", 
 			     scheme_make_folding_prim(scheme_inexact_to_exact,
 						      "inexact->exact",
