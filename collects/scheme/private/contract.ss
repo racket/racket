@@ -131,6 +131,10 @@ improve method arity mismatch contract violation error messages?
 (define-syntax (define-struct/contract stx)
   (define-struct field-info (stx ctc [mutable? #:mutable] auto?))
   (define-struct s-info (auto-value-stx transparent? def-stxs? def-vals?))
+
+  (define syntax-error
+    (lambda v
+      (apply raise-syntax-error 'define-struct/contract v)))
   
   (define (build-struct-names name field-infos)
     (let ([name-str (symbol->string (syntax-case name ()
@@ -187,13 +191,9 @@ improve method arity mismatch contract violation error messages?
       (if p-list
           (begin 
             (when (null? p-list)
-              (raise-syntax-error 'define-struct/contract
-                                  "expected struct field"
-                                  f))
+              (syntax-error "expected struct field" f))
             (unless (identifier? (car p-list))
-              (raise-syntax-error 'define-struct/contract
-                                  "expected identifier"
-                                  f))
+              (syntax-error "expected identifier" f))
             (let loop ([rest (cdr p-list)]
                        [mutable? #f]
                        [auto? #f])
@@ -204,27 +204,21 @@ improve method arity mismatch contract violation error messages?
                         (cond
                           [(eq? elem '#:mutable)
                            (begin (when mutable?
-                                    (raise-syntax-error 'define-struct/contract
-                                                        "redundant #:mutable"
-                                                        (car rest)))
+                                    (syntax-error "redundant #:mutable"
+                                                  (car rest)))
                                   (loop (cdr rest) #t auto?))]
                           [(eq? elem '#:auto)
                            (begin (when auto?
-                                    (raise-syntax-error 'define-struct/contract
-                                                        "redundant #:mutable"
-                                                        (car rest)))
+                                    (syntax-error "redundant #:mutable"
+                                                  (car rest)))
                                   (loop (cdr rest) mutable? #t))]
-                          [else (raise-syntax-error 'define-struct/contract
-                                                    "expected #:mutable or #:auto"
-                                                    (car rest))])
-                        (raise-syntax-error 'define-struct/contract
-                                            "expected #:mutable or #:auto"
-                                            (car rest)))))))
+                          [else (syntax-error "expected #:mutable or #:auto"
+                                              (car rest))])
+                        (syntax-error "expected #:mutable or #:auto"
+                                      (car rest)))))))
           (if (identifier? f)
               (make-field-info f ctc #f #f)
-              (raise-syntax-error 'define-struct/contract
-                                  "expected struct field"
-                                  f)))))
+              (syntax-error "expected struct field" f)))))
   (define (check-kwds kwd-list field-infos)
     (let loop ([kwds kwd-list]
                [auto-value-stx #f]
@@ -236,50 +230,53 @@ improve method arity mismatch contract violation error messages?
           (make-s-info auto-value-stx transparent? def-stxs? def-vals?)
           (let ([kwd (syntax-e (car kwds))])
             (when (not (keyword? kwd))
-              (raise-syntax-error 'define-struct/contract
-                                  "expected a keyword"
-                                  (car kwds)))
+              (syntax-error "expected a keyword"
+                            (car kwds)))
             (cond
               [(eq? kwd '#:auto-value)
-               (when (null? (cdr kwd-list))
-                 (raise-syntax-error 'define-struct/contract
-                                     "expected a following expression"
-                                     (car kwds)))
-               (loop (cddr kwd-list) (cadr kwd-list)
+               (when (null? (cdr kwds))
+                 (syntax-error "expected a following expression"
+                               (car kwds)))
+               (loop (cddr kwds) (cadr kwds)
                      transparent? mutable? def-stxs? def-vals?)]
+              ;; let arbitrary properties through
+              [(eq? kwd '#:property)
+               (when (null? (cdr kwds))
+                 (syntax-error "expected a property"
+                               (car kwds)))
+               (when (null? (cddr kwds))
+                 (syntax-error "expected a value for the property"
+                               (car kwds)))
+               (loop (cdddr kwds) auto-value-stx
+                     mutable? transparent? def-stxs? def-vals?)]
               [(eq? kwd '#:mutable)
                (when mutable?
-                 (raise-syntax-error 'define-struct/contract
-                                     "redundant #:mutable"
-                                     (car kwds)))
+                 (syntax-error "redundant #:mutable"
+                               (car kwds)))
                (for ([finfo field-infos])
                  (set-field-info-mutable?! finfo #t))
-               (loop (cdr kwd-list) auto-value-stx
-                     transparent? #t def-stxs? def-vals?)]
+               (loop (cdr kwds) auto-value-stx
+                     #t transparent? def-stxs? def-vals?)]
               [(eq? kwd '#:transparent)
                (when transparent?
-                 (raise-syntax-error 'define-struct/contract
-                                     "redundant #:transparent"
-                                     (car kwds)))
-               (loop (cdr kwd-list) auto-value-stx
-                     #t mutable? def-stxs? def-vals?)]
+                 (syntax-error "redundant #:transparent"
+                               (car kwds)))
+               (loop (cdr kwds) auto-value-stx
+                     mutable? #t def-stxs? def-vals?)]
               [(eq? kwd '#:omit-define-syntaxes)
                (when (not def-stxs?)
-                 (raise-syntax-error 'define-struct/contract
-                                     "redundant #:omit-define-syntaxes"
-                                     (car kwds)))
-               (loop (cdr kwd-list) auto-value-stx
+                 (syntax-error "redundant #:omit-define-syntaxes"
+                               (car kwds)))
+               (loop (cdr kwds) auto-value-stx
                      transparent? mutable? #f def-vals?)]
               [(eq? kwd '#:omit-define-values)
                (when (not def-vals?)
-                 (raise-syntax-error 'define-struct/contract
-                                     "redundant #:omit-define-values"
-                                     (car kwds)))
-               (loop (cdr kwd-list) auto-value-stx
+                 (syntax-error "redundant #:omit-define-values"
+                               (car kwds)))
+               (loop (cdr kwds) auto-value-stx
                      transparent? mutable? def-stxs? #f)]
-              [else (raise-syntax-error 'define-struct/contract
-                                        "unexpected keyword"
-                                        (car kwds))])))))
+              [else (syntax-error "unexpected keyword"
+                                  (car kwds))])))))
   (syntax-case stx ()
     [(_ name ([field ctc] ...) kwds ...)
      (let ([fields (syntax->list #'(field ...))])
@@ -288,9 +285,8 @@ improve method arity mismatch contract violation error messages?
                      [(x y) (and (identifier? #'x)
                                  (identifier? #'y))]
                      [_ #f]))
-         (raise-syntax-error 'define-struct/contract
-                             "expected identifier for struct name or a sub-type relationship (subtype supertype)"
-                             #'name))
+         (syntax-error "expected identifier for struct name or a sub-type relationship (subtype supertype)"
+                       #'name))
        (let* ([field-infos (map check-field fields (syntax->list #'(ctc ...)))]
               [sinfo (check-kwds (syntax->list #'(kwds ...)) field-infos)]
               [names (build-struct-names #'name field-infos)]
@@ -319,9 +315,8 @@ improve method arity mismatch contract violation error messages?
                                      (loop (cdr fields)
                                            (cons (car fields) nautos)
                                            autos)
-                                     (raise-syntax-error 'define-struct/contract
-                                                         "non-auto field after auto fields"
-                                                         (field-info-stx (car fields)))))))])
+                                     (syntax-error "non-auto field after auto fields"
+                                                   (field-info-stx (car fields)))))))])
            (with-syntax ([ctc-bindings
                           (let ([val-bindings (if (s-info-def-vals? sinfo)
                                                   (cons (cadr names)
@@ -389,13 +384,11 @@ improve method arity mismatch contract violation error messages?
                                                      #'maker)))))))))]
     [(_ name . bad-fields)
      (identifier? #'name)
-     (raise-syntax-error 'define-struct/contract
-                         "expected a list of field name/contract pairs"
-                         #'bad-fields)]
+     (syntax-error "expected a list of field name/contract pairs"
+                   #'bad-fields)]
     [(_ . body)
-     (raise-syntax-error 'define-struct/contract
-                         "expected a structure name"
-                         #'body)]))
+     (syntax-error "expected a structure name"
+                   #'body)]))
 
 ;                                                                                         
 ;                                                                                         
