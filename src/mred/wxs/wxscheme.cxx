@@ -1918,18 +1918,44 @@ static Scheme_Object *file_type_and_creator(int argc, Scheme_Object **argv)
       err = FSpGetFInfo(&spec, &info);
       if (!err) {
 	if (argc > 1) {
-	  info.fdCreator = *(unsigned long *)SCHEME_BYTE_STR_VAL(argv[1]);
-	  info.fdType = *(unsigned long *)SCHEME_BYTE_STR_VAL(argv[2]);
+          Scheme_Object *proc;
+          Scheme_Object *a[3], *v;
+
+          proc = scheme_builtin_value("integer-bytes->integer");
+
+          a[0] = argv[1];
+          a[1] = scheme_false;
+          a[2] = scheme_true;
+          v = _scheme_apply(proc, 3, a);
+          scheme_get_unsigned_int_val(v, &info.fdCreator);
+
+          a[0] = argv[2];
+          v = _scheme_apply(proc, 3, a);
+          scheme_get_unsigned_int_val(v, &info.fdType);
+          
 	  err = FSpSetFInfo(&spec, &info);
 
 	  if (!err)
 	    return scheme_void;
 	  write_failed = 1;
 	} else {
-	  Scheme_Object *a[2];
+          Scheme_Object *proc;
+	  Scheme_Object *a[4], *s1, *s2;
 
-	  a[0] = scheme_make_sized_byte_string((char *)&info.fdCreator, 4, 1);
-	  a[1] = scheme_make_sized_byte_string((char *)&info.fdType, 4, 1);
+          proc = scheme_builtin_value("integer->integer-bytes");
+
+          a[0] = scheme_make_integer_value_from_unsigned(info.fdCreator);
+          a[1] = scheme_make_integer(4);
+          a[2] = scheme_false;
+          a[3] = scheme_true;
+          s1 = _scheme_apply(proc, 4, a);
+
+          a[0] = scheme_make_integer_value_from_unsigned(info.fdType);
+          s2 = _scheme_apply(proc, 4, a);
+ 
+	  a[0] = s1;
+	  a[1] = s2;
+
 	  return scheme_values(2, a);
 	}
       }
