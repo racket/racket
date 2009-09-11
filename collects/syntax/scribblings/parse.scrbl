@@ -603,7 +603,8 @@ conditions. The grammar for pattern directives follows:
                (code:line #:with syntax-pattern expr)
                (code:line #:attr attr-id expr)
                (code:line #:fail-when condition-expr message-expr)
-               (code:line #:fail-unless condition-expr message-expr)]
+               (code:line #:fail-unless condition-expr message-expr)
+               (code:line #:when condition-expr)]
 
 @specsubform[(code:line #:declare pvar-id syntax-class-id)]
 @specsubform[(code:line #:declare pvar-id (syntax-class-id expr ...))]{
@@ -647,6 +648,15 @@ attribute bindings. If the value is any non-false value for
 @scheme[#:fail-when] or if the value is @scheme[#f] for
 @scheme[#:fail-unless], the matching process backtracks (with the
 given message); otherwise, it continues.
+
+}
+
+@specsubform[(code:line #:when condition-expr)]{
+
+Evaluates the @scheme[condition-expr] in the context of all previous
+attribute bindings. If the value is @scheme[#f], the matching process
+backtracks. In other words, @scheme[#:when] is like
+@scheme[#:fail-unless] without the message argument.
 
 }
 
