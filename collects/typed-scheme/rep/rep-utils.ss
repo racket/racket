@@ -246,21 +246,16 @@
              #:with first-letter (string-ref #'lower-s 0)))
   (define-syntax-class type-name
     #:transparent
-    #:attributes (i lower-s first-letter key? (fld-names 1) name keyword tmp-rec-id case printer ht rec-id d-id pred? (accs 1))
-    (pattern tnb:type-name-base
-             #:with i #'tnb.i
-             #:with lower-s (attribute tnb.lower-s)
-             #:with first-letter (attribute tnb.first-letter)
-             #:with key? #'tnb.key?
-             #:with (fld-names ...) #'(tnb.fld-names ...)
+    #:auto-nested-attributes
+    (pattern :type-name-base
              #:with name #'i
              #:with keyword (datum->syntax #f (string->keyword (symbol->string (syntax-e #'i))))
              #:with tmp-rec-id (generate-temporary)
-             #:with case (mk-id #'i #'lower-s "-case")
-             #:with printer (mk-id #'i "print-" #'lower-s "*")
-             #:with ht (mk-id #'i #'lower-s "-name-ht")
-             #:with rec-id (mk-id #'i #'lower-s "-rec-id")
-             #:with d-id (mk-id #'i "d" #'first-letter)
+             #:with case (mk-id #'i (attribute lower-s) "-case")
+             #:with printer (mk-id #'i "print-" (attribute lower-s) "*")
+             #:with ht (mk-id #'i (attribute lower-s) "-name-ht")
+             #:with rec-id (mk-id #'i (attribute lower-s) "-rec-id")
+             #:with d-id (mk-id #'i "d" (attribute first-letter))
              #:with (_ _ pred? accs ...) 
                     (datum->syntax #f (build-struct-names #'name (syntax->list #'(fld-names ...)) #f #t #'name))))
   (syntax-parse stx
