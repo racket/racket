@@ -2,7 +2,7 @@
 
 (require (for-syntax scheme/base 
                      "term-fn.ss"
-                     stxclass/util/misc)
+                     syntax/private/util/misc)
          "matcher.ss")
 
 (provide term term-let term-let/error-name term-let-fn term-define-fn)

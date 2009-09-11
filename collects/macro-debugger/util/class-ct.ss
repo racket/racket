@@ -1,7 +1,8 @@
 #lang scheme/base
 (require (for-template scheme/base
                        scheme/class)
-         stxclass)
+         syntax/parse
+         syntax/stx)
 
 (provide static-interface?
          make-static-interface
@@ -77,27 +78,28 @@
 
 (define-syntax-class static-interface
   (pattern x
-           #:declare x (static-of 'static-interface static-interface?)
-           #:with value #'x.value))
+           #:declare x (static static-interface? 'static-interface)
+           #:attr value (attribute x.value)))
 
 (define-syntax-class checked-binding
   (pattern x
-           #:declare x (static-of 'checked-binding checked-binding?)
-           #:with value #'x.value))
-
+           #:declare x (static checked-binding? 'checked-binding)
+           #:attr value (attribute x.value)))
 
 (define-syntax-class interface-expander
   (pattern x
-           #:declare x (static-of 'interface-expander interface-expander?)
-           #:with value #'x.value))
+           #:declare x (static interface-expander? 'interface-expander)
+           #:attr value (attribute x.value)))
 
 (define-syntax-class method-entry
-  (pattern method:id
-           #:with methods (list #'method))
+  (pattern m:id
+           #:with (method ...) #'(m))
   (pattern (macro:interface-expander . args)
-           #:with methods
-                  (apply append
-                         (for/list ([m ((interface-expander-proc #'macro.value)
-                                        #'(macro . args))])
-                           (syntax-parse m
-                             [m:method-entry #'m.methods])))))
+           #:with (method ...)
+                  (with-syntax ([((m ...) ...)
+                                 (for/list ([m (stx->list
+                                                ((interface-expander-proc (attribute macro.value))
+                                                 #'(macro . args)))])
+                                   (syntax-parse m
+                                     [m:method-entry #'(m.method ...)]))])
+                    #'(m ... ...))))

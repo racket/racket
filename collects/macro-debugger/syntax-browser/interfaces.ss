@@ -19,12 +19,13 @@
   (lambda (stx)
     (syntax-case stx ()
       [(_ name ...)
-       (apply append
-              (for/list ([name (syntax->list #'(name ...))])
-                (list ;; (join "init-" #'name)
-                      (join "get-" name)
-                      (join "set-" name)
-                      (join "listen-" name))))])))
+       (datum->syntax #f
+         (apply append
+                (for/list ([name (syntax->list #'(name ...))])
+                  (list ;; (join "init-" #'name)
+                   (join "get-" name)
+                   (join "set-" name)
+                   (join "listen-" name)))))])))
 
 ;; Interfaces
 

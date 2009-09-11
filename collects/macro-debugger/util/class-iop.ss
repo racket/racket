@@ -1,7 +1,7 @@
 #lang scheme/base
 (require scheme/class
          (for-syntax scheme/base
-                     stxclass
+                     syntax/parse
                      "class-ct.ss"))
 (provide define-interface
          define-interface/dynamic
@@ -29,12 +29,10 @@
   (syntax-parse stx
     [(_ name:id (super:static-interface ...) (m:method-entry ...))
      (with-syntax ([((super-method ...) ...)
-                    (map static-interface-members
-                         (syntax->datum #'(super.value ...)))]
-                   [((mname ...) ...) #'(m.methods ...)])
+                    (map static-interface-members (attribute super.value))])
        #'(define-interface/dynamic name
-           (let ([name (interface (super ...) mname ... ...)]) name)
-           (super-method ... ... mname ... ...)))]))
+           (let ([name (interface (super ...) m.method ... ...)]) name)
+           (super-method ... ... m.method ... ...)))]))
 
 ;; define-interface/dynamic SYNTAX
 ;; (define-interface/dynamic NAME EXPR (IDENTIFIER ...))
@@ -75,7 +73,7 @@
 (define-syntax (send: stx)
   (syntax-parse stx
     [(send: obj:expr iface:static-interface method:id . args)
-     (begin (check-method-in-interface 'send: #'method #'iface.value)
+     (begin (check-method-in-interface 'send: #'method (attribute iface.value))
             (syntax/loc stx
               (send (check-object<:interface send: obj iface)
                     method . args)))]))
@@ -84,7 +82,7 @@
   (syntax-parse stx
     [(send*: obj:expr iface:static-interface (method:id . args) ...)
      (begin (for ([method (syntax->list #'(method ...))])
-              (check-method-in-interface 'send*: method #'iface.value))
+              (check-method-in-interface 'send*: method (attribute iface.value)))
             (syntax/loc stx 
               (send* (check-object<:interface send*: obj iface)
                 (method . args) ...)))]))
@@ -92,7 +90,7 @@
 (define-syntax (send/apply: stx)
   (syntax-parse stx
     [(send/apply: obj:expr iface:static-interface method:id . args)
-     (begin (check-method-in-interface 'send/apply: #'method #'iface.value)
+     (begin (check-method-in-interface 'send/apply: #'method (attribute iface.value))
             (syntax/loc stx 
               (send/apply (check-object<:interface send/apply obj iface)
                           method . args)))]))
@@ -103,7 +101,7 @@
 (define-syntax (check-object<:interface stx)
   (syntax-parse stx
     [(_ for-whom obj:checked-binding iface:static-interface)
-     (if (eq? (checked-binding-iface #'obj.value) #'iface.value)
+     (if (eq? (checked-binding-iface (attribute obj.value)) (attribute iface.value))
          #'obj
          (syntax/loc stx
            (check-object<:interface for-whom
@@ -127,7 +125,7 @@
 (define-syntax (define: stx)
   (syntax-parse stx
     [(_ name:id iface:static-interface expr)
-     (let ([si #'iface.value])
+     (let ([si (attribute iface.value)])
        (with-syntax ([(name-internal) (generate-temporaries #'(name))]
                      [(method ...) (static-interface-members si)]
                      [(name.method ...)
@@ -156,7 +154,7 @@
   ;; FIXME: rewrite as stxclass
   (define (arg->define stx temp)
     (syntax-case stx ()
-      [(arg : iface) 
+      [(arg : iface)
        (and (identifier? #'arg)
             (eq? ': (syntax-e #':)))
        #`(define: arg iface #,temp)]
