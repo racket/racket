@@ -52,6 +52,8 @@
 #endif
 #endif
 
+#define jit_extr_l_d(rd, rs)		jit_extr_i_d(rd, rs)
+
 #ifndef jit_addr_f
 #define jit_addr_f(rd,s1,s2)		jit_addr_d(rd,s1,s2)
 #define jit_subr_f(rd,s1,s2)		jit_subr_d(rd,s1,s2)

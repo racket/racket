@@ -221,4 +221,18 @@
                                   STFIWXrrr(7,JIT_SP,JIT_AUX),   \
                                   LWZrm((rd),-4,JIT_SP))
 
+/* Uses JIT_FPR5 as scratch: */
+#define jit_extr_i_d(rd, rs) (jit_movi_l(JIT_AUX, 0x43300000), \
+                              jit_stxi_l(-8, JIT_SP, JIT_AUX), \
+                              jit_movi_l(JIT_AUX, 0x80000000), \
+                              jit_stxi_l(-4, JIT_SP, JIT_AUX), \
+                              LFDrri(JIT_FPR(5), JIT_SP, -8),     \
+                              jit_movi_l(JIT_AUX, 0x43300000), \
+                              STWrm(JIT_AUX, -8, JIT_SP), \
+                              XORISrri(JIT_AUX, rs, 0x8000), \
+                              STWrm(JIT_AUX, -4, JIT_SP), \
+                              LFDrri(rd, JIT_SP, -8), \
+                              FSUBDrrr(rd, rd, JIT_FPR(5)))
+                              
+
 #endif /* __lightning_asm_h */

@@ -3309,6 +3309,7 @@ static int can_fast_double(int arith, int cmp, int two_args)
 #define jit_bantiltr_d_fppop(d, s1, s2) jit_bantiltr_d(d, s1, s2)
 #define jit_beqr_d_fppop(d, s1, s2)   jit_beqr_d(d, s1, s2)
 #define jit_bantieqr_d_fppop(d, s1, s2) jit_bantieqr_d(d, s1, s2)
+#define jit_extr_l_d_fppush(rd, rs)   jit_extr_l_d(rd, rs)
 #endif
 
 static int generate_alloc_double(mz_jit_state *jitter)
@@ -3320,7 +3321,7 @@ static int generate_alloc_double(mz_jit_state *jitter)
   jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
   (void)jit_stxi_d_fppop(&((Scheme_Double *)0x0)->double_val, JIT_R0, JIT_FPR1);
 # else
-  (void)jit_sti_d_fppop(&double_result, JIT_FPR1);    
+  (void)jit_sti_d_fppop(&double_result, JIT_FPR1);
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
   mz_prepare(0);
   (void)mz_finish(malloc_double);
@@ -4067,7 +4068,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           } else if (arith == 12) {
             /* exact->inexact */
             jit_rshi_l(JIT_R0, JIT_R0, 1);
-            jit_extr_l_d_fppush(JIT_FPR0, JIT_R0);
+            jit_extr_l_d_fppush(JIT_FPR1, JIT_R0);
             CHECK_LIMIT();
             __END_SHORT_JUMPS__(branch_short);
             generate_alloc_double(jitter);
