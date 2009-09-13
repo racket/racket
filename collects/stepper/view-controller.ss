@@ -11,7 +11,9 @@
          (prefix-in x: "private/mred-extensions.ss")
          "private/shared.ss"
          "private/model-settings.ss"
-         "xml-sig.ss")
+         "xml-sig.ss"
+         (only-in scheme/pretty pretty-print-show-inexactness))
+
 
 (import drscheme:tool^ xml^ stepper-frame^)
 (export view-controller^)
@@ -20,25 +22,18 @@
 
 (define (definitions-text->settings definitions-text)
   (send definitions-text get-next-settings))
-
-(define (settings->language-level settings)
-    (drscheme:language-configuration:language-settings-language settings))
   
 ;; the stored representation of a step
 (define-struct step (text kind posns) #:transparent)
 
 (define (go drscheme-frame program-expander selection-start selection-end)
   
-  ;; get the language-level name:
+  ;; get the language-level:
   (define language-settings (definitions-text->settings (send drscheme-frame get-definitions-text)))
-  (define language-level
-    (settings->language-level language-settings))
+  (define language-level (drscheme:language-configuration:language-settings-language language-settings))
+  (define simple-settings (drscheme:language-configuration:language-settings-settings language-settings))
   
   ;; VALUE CONVERSION CODE:
-  
-  (define simple-settings
-    (drscheme:language-configuration:language-settings-settings
-     language-settings))
   
   ;; render-to-string : TST -> string
   (define (render-to-string val)
@@ -99,8 +94,8 @@
                     [else 
                      ;; nope, keep running:
                      (begin (if (finished-stepping-step? new-step)
-                                (begin (message-box "Ran out of steps"
-                                                    "Reached the end of evaluation before finding the kind of step you were looking for.")
+                                (begin (message-box (string-constant stepper-no-such-step/title)
+                                                    (string-constant stepper-out-of-steps))
                                        (update-view/existing (- (length view-history) 1)))
                                 (semaphore-post semaphore)))])])])))
       (semaphore-wait new-semaphore)))
@@ -210,8 +205,8 @@
                      (wait-for-it))]
                 [#f (wait-for-it)])))]
       ['nomatch/seen-final
-       (message-box "Step Not Found"
-                    "Couldn't find a step matching that criterion.")
+       (message-box (string-constant stepper-no-such-step/title)
+                    (string-constant stepper-no-such-step))
        (update-view/existing (- (length view-history) 1))]))
   
   ;; prior-of-specified-kind: if the desired step is already in the list, display
@@ -222,8 +217,8 @@
       (if found-step
           (update-view/existing found-step)
           (begin
-            (message-box "Step Not Found"
-                         "Couldn't find an earlier step matching that criterion.")
+            (message-box (string-constant stepper-no-such-step/title)
+                         (string-constant stepper-no-such-step/earlier))
             (update-view/existing 0)))))
   
   ;; BUTTON/CHOICE BOX PROCEDURES
@@ -275,15 +270,15 @@
   (define (add-button name fun)
     (make-object button% name button-panel (lambda (_1 _2) (fun))))
   (define (add-choice-box name fun)
-    (new choice% [label "Jump..."]
+    (new choice% [label name]
          [choices (map first pulldown-choices)]
          [parent button-panel]
          [callback fun]))
   
   (define pulldown-choices
-    `(("to beginning"             ,jump-to-beginning)
-      ("to end"                   ,jump-to-end)
-      ("to beginning of selected" ,jump-to-selected)))
+    `((,(string-constant stepper-jump-to-beginning) ,jump-to-beginning)
+      (,(string-constant stepper-jump-to-end)       ,jump-to-end)
+      (,(string-constant stepper-jump-to-selected)  ,jump-to-selected)))
   
   (define previous-application-button (add-button (string-constant stepper-previous-application) previous-application))
   (define previous-button             (add-button (string-constant stepper-previous) previous))
@@ -347,18 +342,29 @@
   ;; on-screen. Runs on the user thread.
   ;; : (step-result -> void)
   (define (receive-result result)
-    (match-let*
-        ([(list step-text step-kind posns)
-          (match result
-            [(struct before-after-result (pre-exps post-exps kind pre-src post-src))
-             (list (new x:stepper-text% [left-side pre-exps] [right-side post-exps]) kind (list pre-src post-src))]
-            [(struct before-error-result (pre-exps err-msg pre-src))
-             (list (new x:stepper-text% [left-side pre-exps] [right-side err-msg]) 'finished-or-error (list pre-src))]
-            [(struct error-result (err-msg))
-             (list (new x:stepper-text% [left-side null] [right-side err-msg]) 'finished-or-error (list))]
-            [(struct finished-stepping ())
-             (list x:finished-text 'finished-or-error (list))])])
-      (hand-off-and-block step-text step-kind posns)))
+    ;; let's make sure this works:
+    (parameterize ([pretty-print-show-inexactness #t])
+      (match-let*
+          ([(list step-text step-kind posns)
+            (match result
+              [(struct before-after-result (pre-exps post-exps kind pre-src post-src))
+               (list (new x:stepper-text% 
+                          [left-side pre-exps]
+                          [right-side post-exps]
+                          ;; get this from the language level
+                          [show-inexactness? (send language-level stepper:show-inexactness?)])
+                     kind (list pre-src post-src))]
+              [(struct before-error-result (pre-exps err-msg pre-src))
+               (list (new x:stepper-text%
+                          [left-side pre-exps] 
+                          [right-side err-msg]
+                          [show-inexactness? (send language-level stepper:show-inexactness?)])
+                     'finished-or-error (list pre-src))]
+              [(struct error-result (err-msg))
+               (list (new x:stepper-text% [left-side null] [right-side err-msg]) 'finished-or-error (list))]
+              [(struct finished-stepping ())
+               (list x:finished-text 'finished-or-error (list))])])
+        (hand-off-and-block step-text step-kind posns))))
   
   ;; program-expander-prime : wrap the program-expander for a couple of reasons:
   ;; 1) we need to capture the custodian as the thread starts up:

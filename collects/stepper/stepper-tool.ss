@@ -11,6 +11,7 @@
          (prefix-in x: "private/mred-extensions.ss")
          "private/shared.ss"
          lang/stepper-language-interface
+         scheme/pretty
          "xml-sig.ss")
 
 (import drscheme:tool^ xml^ view-controller^)
@@ -18,7 +19,6 @@
   
   ;; tool magic here:
 (define (phase1)
-  
   ;; experiment with extending the language... parameter-like fields for stepper parameters
   (drscheme:language:extend-language-interface
    stepper-language<%>
@@ -26,21 +26,27 @@
      (class* superclass (stepper-language<%>)
        (public stepper:supported?)
        (define (stepper:supported?) #f)
+       
        (public stepper:enable-let-lifting?)
        (define (stepper:enable-let-lifting?) #f)
+       
        (public stepper:show-lambdas-as-lambdas?)
        (define (stepper:show-lambdas-as-lambdas?) #t)
+       
+       (public stepper:show-inexactness?)
+       (define (stepper:show-inexactness?) #t)
+       
        (public stepper:render-to-sexp)
        (define (stepper:render-to-sexp val settings language-level)
-         (parameterize ([current-print-convert-hook stepper-print-convert-hook])
+         (parameterize ([pretty-print-show-inexactness (stepper:show-inexactness?)]
+                        [current-print-convert-hook stepper-print-convert-hook])
            (set-print-settings
             language-level
             settings
             (lambda ()
               (simple-module-based-language-convert-value
                val
-               (drscheme:language:simple-settings-printing-style settings)
-               (drscheme:language:simple-settings-show-sharing settings))))))
+               settings)))))
        
        (super-instantiate ())))))
 
@@ -65,82 +71,82 @@
   
   ;; the stepper's frame:
   
-  (define stepper-frame%
-    (class (drscheme:frame:basics-mixin
-            (frame:frame:standard-menus-mixin frame:frame:basic%))
-      
-      (init-field drscheme-frame)
-      
-      ;; PRINTING-PROC
-      ;; I frankly don't think that printing (i.e., to a printer) works
-      ;; correctly. 2005-07-01, JBC
-      (public set-printing-proc)
-      
-      (define (set-printing-proc proc)
-        (set! printing-proc proc))
-      
-      (define (printing-proc item evt)
-        (message-box "error?" "shouldn't be called"))
-      
-      (define/private (file-menu:print a b) (printing-proc a b))
-      
-      ;; MENUS
-      
-      (define/override (edit-menu:between-find-and-preferences edit-menu)
-        (void))
-      (define/override (edit-menu:between-select-all-and-find edit-menu)
-        (void))
-      (define/override (file-menu:between-save-as-and-print file-menu)
-        (void))
-      
-      ;; CUSTODIANS
-      ;; The custodian is used to halt the stepped computation when the
-      ;; stepper window closes.  The custodian is captured when the stepped
-      ;; computation starts.
-      
-      (define custodian #f)
-      (define/public (set-custodian! cust)
-        (set! custodian cust))
-      (define/augment (on-close)
-        (when custodian
-          (custodian-shutdown-all custodian))
-        (send drscheme-frame on-stepper-close)
-        (inner (void) on-close))
-      
-      ;; WARNING BOXES:
-      
-      (define program-changed-warning-str
-        (string-constant stepper-program-has-changed))
-      (define window-closed-warning-str
-        (string-constant stepper-program-window-closed))
-      
-      (define warning-message-visible-already #f)
-      (define/private (add-warning-message warning-str)
-        (let ([warning-msg (new x:stepper-warning%
-                                [warning-str warning-str]
-                                [parent (get-area-container)])])
-          (send (get-area-container)
-                change-children
-                (if warning-message-visible-already
-                    (lambda (l)
-                      (list (car l) warning-msg (caddr l)))
-                    (lambda (l)
-                      (list (car l) warning-msg (cadr l)))))
-          (set! warning-message-visible-already #t)))
-      
-      (inherit get-area-container)
-      (define program-change-already-warned? #f)
-      (define/public (original-program-changed)
-        (unless program-change-already-warned?
-          (set! program-change-already-warned? #t)
-          (add-warning-message program-changed-warning-str)))
-      
-      (define/public (original-program-gone)
-        (add-warning-message window-closed-warning-str))
-      
-      (super-new [label "Stepper"] [parent #f]
-                 [width stepper-initial-width]
-                 [height stepper-initial-height])))
+(define stepper-frame%
+  (class (drscheme:frame:basics-mixin
+          (frame:frame:standard-menus-mixin frame:frame:basic%))
+    
+    (init-field drscheme-frame)
+    
+    ;; PRINTING-PROC
+    ;; I frankly don't think that printing (i.e., to a printer) works
+    ;; correctly. 2005-07-01, JBC
+    (public set-printing-proc)
+    
+    (define (set-printing-proc proc)
+      (set! printing-proc proc))
+    
+    (define (printing-proc item evt)
+      (message-box "error?" "shouldn't be called"))
+    
+    (define/private (file-menu:print a b) (printing-proc a b))
+    
+    ;; MENUS
+    
+    (define/override (edit-menu:between-find-and-preferences edit-menu)
+      (void))
+    (define/override (edit-menu:between-select-all-and-find edit-menu)
+      (void))
+    (define/override (file-menu:between-save-as-and-print file-menu)
+      (void))
+    
+    ;; CUSTODIANS
+    ;; The custodian is used to halt the stepped computation when the
+    ;; stepper window closes.  The custodian is captured when the stepped
+    ;; computation starts.
+    
+    (define custodian #f)
+    (define/public (set-custodian! cust)
+      (set! custodian cust))
+    (define/augment (on-close)
+      (when custodian
+        (custodian-shutdown-all custodian))
+      (send drscheme-frame on-stepper-close)
+      (inner (void) on-close))
+    
+    ;; WARNING BOXES:
+    
+    (define program-changed-warning-str
+      (string-constant stepper-program-has-changed))
+    (define window-closed-warning-str
+      (string-constant stepper-program-window-closed))
+    
+    (define warning-message-visible-already #f)
+    (define/private (add-warning-message warning-str)
+      (let ([warning-msg (new x:stepper-warning%
+                              [warning-str warning-str]
+                              [parent (get-area-container)])])
+        (send (get-area-container)
+              change-children
+              (if warning-message-visible-already
+                  (lambda (l)
+                    (list (car l) warning-msg (caddr l)))
+                  (lambda (l)
+                    (list (car l) warning-msg (cadr l)))))
+        (set! warning-message-visible-already #t)))
+    
+    (inherit get-area-container)
+    (define program-change-already-warned? #f)
+    (define/public (original-program-changed)
+      (unless program-change-already-warned?
+        (set! program-change-already-warned? #t)
+        (add-warning-message program-changed-warning-str)))
+    
+    (define/public (original-program-gone)
+      (add-warning-message window-closed-warning-str))
+    
+    (super-new [label "Stepper"] [parent #f]
+               [width stepper-initial-width]
+               [height stepper-initial-height])))
   
 
   ;; stepper-unit-frame<%> : the interface that the extended drscheme frame
@@ -314,37 +320,38 @@
   
   ;; COPIED FROM drscheme/private/language.ss
 ;; simple-module-based-language-convert-value : TST STYLE boolean -> TST
-(define (simple-module-based-language-convert-value value style show-sharing?)
-  (define ((leave-snips-alone-hook sh) expr basic-convert sub-convert)
-    (if (or (is-a? expr snip%)
-            ;; FIXME: internal in language.ss (to-snip-value? expr)
-            )
-        expr
-        (sh expr basic-convert sub-convert)))
-  ;; mflatt: MINOR HACK - work around temporary
-  ;;         print-convert problems
-  (define (stepper-print-convert v)
-    (or (and (procedure? v) (object-name v))
-        (print-convert v)))
-  
-  (case style
+(define (simple-module-based-language-convert-value value settings)
+  (case (drscheme:language:simple-settings-printing-style settings)
     [(write) value]
-    [(current-print) value]
     [(constructor)
      (parameterize
          ([constructor-style-printing #t]
-          [show-sharing show-sharing?]
+          [show-sharing (drscheme:language:simple-settings-show-sharing settings)]
           [current-print-convert-hook
            (leave-snips-alone-hook (current-print-convert-hook))])
        (stepper-print-convert value))]
     [(quasiquote)
      (parameterize
          ([constructor-style-printing #f]
-          [show-sharing show-sharing?]
+          [show-sharing (drscheme:language:simple-settings-show-sharing settings)]
           [current-print-convert-hook
            (leave-snips-alone-hook (current-print-convert-hook))])
        (stepper-print-convert value))]
     [else (error "Internal stepper error: time to resync with simple-module-based-language-convert-value")]))
+
+(define ((leave-snips-alone-hook sh) expr basic-convert sub-convert)
+  (if (or (is-a? expr snip%)
+          ;; FIXME: internal in language.ss (to-snip-value? expr)
+          )
+      expr
+      (sh expr basic-convert sub-convert)))
+  
+;; mflatt: MINOR HACK - work around temporary
+;;         print-convert problems
+(define (stepper-print-convert v)
+  (or (and (procedure? v) (object-name v))
+      (print-convert v)))
+  
 
 ;; set-print-settings ; settings ( -> TST) -> TST
 (define (set-print-settings language simple-settings thunk)
@@ -352,6 +359,7 @@
       (send language set-printing-parameters simple-settings thunk)
       ;; assume that the current print-convert context is fine
       ;; (error 'stepper-tool "language object does not contain set-printing-parameters method")
+      ;; 2009-09-11, JBC : Gee Whiz, why the heck is it okay to assume that !?
       (thunk)))
 
 ;; WE REALLY WANT TO GET RID OF THIS STUFF (2005-07-01, JBC)
