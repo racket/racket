@@ -1243,11 +1243,11 @@ please adhere to these guidelines:
  (stepper-name "ステッパ")
  (stepper-language-level-message "ステッパは \"~a\" 言語に対しては動作しません")
  (stepper-button-label "ステップ")
- (stepper-home "ホーム")
  (stepper-previous-application "|< アプリケーション")
  (stepper-previous "< ステップ")
  (stepper-next "ステップ >")
  (stepper-next-application "アプリケーション >|")
+ (stepper-jump-to-beginning "ホーム")
  (stepper-jump-to-end "終端まで")
 
  (debug-tool-button-name "デバッグ")

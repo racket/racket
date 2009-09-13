@@ -1063,7 +1063,6 @@ please adhere to these guidelines:
  (stepper-program-has-changed "ATENÇÃO: O programa foi modificado.")
  (stepper-program-window-closed "ATENÇÃO: A janela do programa desapareceu.")
 
- (stepper-home "Home")
  (stepper-name "Stepper")
  (stepper-language-level-message
   "The language level is set to \"~a\". Currently, the stepper works only for the \"~a\" through the \"~a\" language levels.")
@@ -1071,6 +1070,7 @@ please adhere to these guidelines:
  (stepper-previous-application "|< Application")
  (stepper-previous "< Step")
  (stepper-next "Step >")
+ (stepper-jump-to-beginning "Home")
  (stepper-next-application "Application >|")
  
 

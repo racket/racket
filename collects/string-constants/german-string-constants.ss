@@ -1154,7 +1154,7 @@
  (stepper-language-level-message
   "Der Stepper unterstützt die Sprachebene \"~a\" nicht.")
  (stepper-button-label "Stepper")
- (stepper-home "Anfang")
+ (stepper-jump-to-beginning "Anfang")
  (stepper-previous-application "|< Applikation")
  (stepper-previous "< Schritt")
  (stepper-next "Schritt >")

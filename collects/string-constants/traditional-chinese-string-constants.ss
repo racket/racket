@@ -1145,11 +1145,11 @@
   (stepper-name "单步执行器")
   (stepper-language-level-message "单步执行不支持语言“~a”。")
   (stepper-button-label "单步执行")
-  (stepper-home "源程序")
   (stepper-previous-application "|< 调用")
   (stepper-previous "< 上一步")
   (stepper-next "下一步 >")
   (stepper-next-application "调用 >|")
+  (stepper-jump-to-beginning "源程序")
   (stepper-jump-to-end "最终运行结果")
   
   (debug-tool-button-name "调试")

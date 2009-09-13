@@ -1124,7 +1124,6 @@ please adhere to these guidelines:
   (stepper-program-has-changed "ADVARSEL: Programmet er ændret.")
   (stepper-program-window-closed "ADVARSEL: Programvinduet er væk.")
   
-  (stepper-home "Hjem")
   (stepper-name "Stepper")
   (stepper-language-level-message
    "Sprogniveauet er sat til \"~a\". Indtil videre virker stepperen kun for sprogniveauerne fra \"~a\" til \"~a\".")
@@ -1133,6 +1132,7 @@ please adhere to these guidelines:
   (stepper-previous "< Step")
   (stepper-next "Step >")
   (stepper-next-application "Funktionskald >|")
+  (stepper-jump-to-beginning "Hjem")
   
   (debug-tool-button-name "Debug")
   

@@ -1243,7 +1243,7 @@
   (stepper-name "Pas à Pas")
   (stepper-language-level-message "Le Pas à Pas n'est pas disponible pour le langage \"~a\".")
   (stepper-button-label "Pas")
-  (stepper-home "Début")
+  (stepper-jump-to-beginning "Début")
   (stepper-previous-application "|< Application")
   (stepper-previous "< Pas")
   (stepper-next "Pas >")

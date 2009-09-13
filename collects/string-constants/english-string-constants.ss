@@ -1253,14 +1253,20 @@ please adhere to these guidelines:
  (stepper-name "Stepper")
  (stepper-language-level-message "The stepper does not work for language \"~a\".")
  (stepper-button-label "Step")
- (stepper-home "Home")
+
  (stepper-previous-application "|< Application")
  (stepper-previous "< Step")
  (stepper-next "Step >")
  (stepper-next-application "Application >|")
- (stepper-jump-to-end "End")
- (stepper-jump "Jump To ...")
- 
+ (stepper-jump "Jump...") ;; this one is changed.  action?
+ (stepper-out-of-steps "Reached the end of evaluation before finding the kind of step you were looking for.")
+ (stepper-no-such-step/title "Step Not Found")
+ (stepper-no-such-step "Couldn't find a step matching that criterion.")
+ (stepper-no-such-step/earlier "Couldn't find an earlier step matching that criterion.")
+ (stepper-jump-to-beginning "to beginning") ;; name changed from stepper-home to stepper-jump-to-beginning
+ (stepper-jump-to-end "to end") ;; content changed
+ (stepper-jump-to-selected "to beginning of selected") ;; new
+  
  (debug-tool-button-name "Debug")
 
  (dialog-back "Back")

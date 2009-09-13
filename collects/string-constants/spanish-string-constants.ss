@@ -974,13 +974,13 @@
  (stepper-program-has-changed "ADVERTENCIA: El programa ha cambiado.")
  (stepper-program-window-closed "ADVERTENCIA: La ventana del programa ha desaparecido.")
 
- (stepper-home "Hogar")
  (stepper-name "Stepper")
  (stepper-language-level-message
   "El nivel del lenguaje es \"~a\".  Actualmente el Stepper funciona para los niveles \"~a\" al \"~a\".")
  (stepper-button-label "Paso")
  (stepper-previous-application "|< Aplicación")
  (stepper-previous "< Paso")
+ (stepper-jump-to-beginning "Hogar")
  
  (dialog-back "Atrás")
  
