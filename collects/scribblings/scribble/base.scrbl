@@ -123,10 +123,14 @@ show the author(s) of a document, where each author is represented by
 @scheme[title] for the beginning of a document. See also
 @scheme[author+email].}
 
-@defproc[(author+email [author elem] [email string?]) element?]{
+@defproc[(author+email [author elem] 
+                       [email string?] 
+                       [#:obfuscate? obfuscate? any/c #f])
+         element?]{
 
-Combines an author name with an e-mail address, obscuring the e-mail
-address slightly to avoid address-harvesting robots.}
+Combines an author name with an e-mail address. If @scheme[obfuscate?]
+is true, then the result obscures the e-mail address slightly to avoid
+address-harvesting robots.}
 
 @; ------------------------------------------------------------------------
 

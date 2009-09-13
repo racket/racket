@@ -134,14 +134,16 @@
                                     (make-element #f (list "," nl)))
                        (list "," nl "and " (car r))))]))))
 
-(define (author+email name email)
+(define (author+email name email #:obfuscate? [obfuscate? #f])
   (make-element #f
                 (list
                  name
                  " <" 
-                 (regexp-replace* #rx"[.]"
-                                  (regexp-replace* #rx"@" email " at ")
-                                  " dot ")
+                 (if obfuscate?
+                     (regexp-replace* #rx"[.]"
+                                      (regexp-replace* #rx"@" email " at ")
+                                      " dot ")
+                     email)
                  ">")))
 
 ;; ----------------------------------------
