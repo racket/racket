@@ -33,8 +33,8 @@
 (define (find-help id)
   (let* ([lb (identifier-label-binding id)]
          [b (and (not lb) (identifier-binding id))]
-         [b (or lb b)]
-         [b (and (not (eq? 'lexical b)) b)]
+         [any-b (or lb b)]
+         [b (and (not (eq? 'lexical any-b)) any-b)]
          [xref (load-collections-xref
                 (lambda ()
                   (printf "Loading help index...\n")))])
@@ -46,9 +46,9 @@
                  "no documentation found for: ~e provided by: ~a"
                  (syntax-e id)
                  (module-path-index-resolve (caddr b)))))
-      (search-for-exports xref (syntax-e id)))))
+      (search-for-exports xref (syntax-e id) any-b))))
 
-(define (search-for-exports xref sym)
+(define (search-for-exports xref sym binding)
   (let ([idx (xref-index xref)]
         [libs null])
     (for ([entry (in-list idx)])
@@ -59,7 +59,10 @@
     (if (null? libs)
       (printf "Not found in any library's documentation: ~a\n" sym)
       (begin
-        (printf "No documentation for current binding, but provided by:\n")
+        (printf "~a, but provided by:\n"
+                (if binding
+                    "No documentation available for binding"
+                    "No current binding"))
         (let loop ([libs libs])
           (unless (null? libs)
             (unless (member (car libs) (cdr libs))
