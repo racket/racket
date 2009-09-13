@@ -24,7 +24,7 @@
 (send test-dc try-color (make-object color% 193 251 181) redex-highlight-color)
 
 (define error-delta (make-object style-delta% 'change-style 'italic))
-(send error-delta set-delta-foreground "RED")
+(define dont-care (send error-delta set-delta-foreground "RED"))
 
 (define snip-delta (make-object style-delta% 'change-alignment 'top))
 
