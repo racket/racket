@@ -89,7 +89,7 @@ The simplest kind of animated @tech{world} program is a time-based
  supply a function that creates a scene for each natural number. By handing
  this function to the teachpack displays the simulation. 
 
-@defproc[(run-simulation [create-image (-> natural-number/c scene)])
+@defproc[(animate [create-image (-> natural-number/c scene)])
          true]{
 
  opens a canvas and starts a clock that tick 28 times per second.  Every
@@ -97,7 +97,7 @@ The simplest kind of animated @tech{world} program is a time-based
  number of ticks passed since this function call. The results of these
  function calls are displayed in the canvas. The simulation runs until you
  click the @tt{Stop} button in DrScheme or close the window. At that
- point, @scheme[run-simulation] returns the number of ticks that have
+ point, @scheme[animate] returns the number of ticks that have
  passed. 
 }
 
@@ -110,8 +110,14 @@ Example:
   (overlay (circle 10 'solid 'green)
            (rectangle 40 4 'solid 'green)))
 
-(run-simulation create-UFO-scene)
+(animate create-UFO-scene)
 ]
+
+@defproc[(run-simulation [create-image (-> natural-number/c scene)])
+         true]{
+
+ @scheme[animate] was originally called @scheme[run-simulation], and this
+ binding is retained for backwards compatibility}
 
 @;-----------------------------------------------------------------------------
 @section[#:tag "interactive"]{Interactions}
