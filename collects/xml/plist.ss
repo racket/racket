@@ -126,10 +126,8 @@
     (write-xml 
      (make-document (make-prolog (list (make-p-i #f #f 'xml "version=\"1.0\" encoding=\"UTF-8\"")) 
                                  (make-document-type 'plist
-                                                     (if (eq? (system-type) 'macosx)
-                                                         (make-external-dtd/system 
-                                                          "file://localhost/System/Library/DTDs/PropertyList.dtd")
-                                                         #f)
+                                                     (make-external-dtd/system
+                                                      "http://www.apple.com/DTDs/PropertyList-1.0.dtd")
                                                      #f)
                                  empty)
                     (xexpr->xml `(plist ((version "0.9"))
