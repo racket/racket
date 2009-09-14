@@ -222,4 +222,22 @@
       (for/list ([(x i) (in-indexed (in-generator (yield 1) (yield 2) (yield 3)))])
         (list x i)))
 
+(let ([helper (lambda (i)
+                (yield (add1 i)))])
+  (test '(1 2 3) 'parameterized-yield
+        (for/list ([x (in-generator (helper 0) (helper 1) (helper 2))])
+                  x)))
+
+(let* ([helper (lambda (pred num)
+                 (for ([i (in-range 0 3)])
+                      (yield (pred (+ i num)))))]
+       [g1 (generator
+             (helper odd? 1)
+             (yield 'odd))]
+       [g2 (generator
+             (helper even? 1)
+             (yield 'even))])
+  (test '(#t #f #f #t #t #f odd even) 'yield-helper
+        (list (g1) (g2) (g1) (g2) (g1) (g2) (g1) (g2))))
+
 (report-errs)
