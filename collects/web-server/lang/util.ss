@@ -73,7 +73,7 @@
      [(mb forms ...)
       (with-syntax ([(pmb body ...)
                      (local-expand (quasisyntax/loc stx
-                                     (#%module-begin forms ...))
+                                     (#%module-begin (require web-server/lang/lang-api) forms ...))
                                    'module-begin 
                                    empty)])
         (define base-labeling (make-labeling (string->bytes/utf-8 (format "~a" (syntax->datum stx)))))      
