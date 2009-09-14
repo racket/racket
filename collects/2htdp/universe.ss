@@ -74,9 +74,12 @@
          LOCALHOST     ;; IP
          )
 
-#;
 (provide-higher-order-primitive
- run-simulation (create-scene) ; (Number Number Number (Nat -> Scene) -> true)
+ run-simulation (create-scene) ; (Nat -> Scene) -> Nat
+ )
+
+(provide-higher-order-primitive
+ animate (create-scene) ; (Nat -> Scene) -> Nat
  )
 
 (define MOUSE-EVTS 
@@ -170,6 +173,8 @@
 (define (run-simulation f)
   (check-proc 'run-simulation f 1 "first" "one argument")
   (big-bang 1 (on-tick add1) (on-draw f)))
+
+(define animate run-simulation)
 
 (define (run-movie r m*)
   (check-arg 'run-movie (positive? r) "positive number" "first" r)
