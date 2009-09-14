@@ -196,6 +196,21 @@
             [#f
              (let ([raw-bytes (apply bytes-append (read-to-eof in))])
                (values (parse-bindings raw-bytes) raw-bytes))])]))]
+    [(bytes-ci=? #"PUT" meth)
+     (local
+       [(define content-type (headers-assq* #"Content-Type" headers))
+        (define in (connection-i-port conn))]
+       (match (headers-assq* #"Content-Length" headers)
+         [(struct header (_ value))
+          (cond [(string->number (bytes->string/utf-8 value))
+                 => (lambda (len)
+                      (let ([raw-bytes (read-bytes len in)])
+                        (values empty raw-bytes)))]
+                [else
+                 (network-error 'read-bindings "Put request contained a non-numeric content-length")])]
+         [#f
+          (let ([raw-bytes (apply bytes-append (read-to-eof in))])
+            (values empty raw-bytes))]))]
     [meth
      (values empty #f)]))
 
