@@ -17,4 +17,7 @@
 (provide cons)
 (provide-and-document
  procedures
- (all-from assignments: deinprogramm/DMdA procedures))
+ (all-from-except assignments: deinprogramm/DMdA procedures
+		  quote
+		  symbol?))
+
