@@ -1086,6 +1086,7 @@
             (class* % (stepper-language<%>)
               (init-field stepper:supported)
               (define/override (stepper:supported?) stepper:supported)
+              (define/override (stepper:show-inexactness?) #f)
               (define/override (stepper:render-to-sexp val settings language-level)
                 (parameterize ([pc:current-print-convert-hook (make-print-convert-hook settings)])
                   (set-print-settings
