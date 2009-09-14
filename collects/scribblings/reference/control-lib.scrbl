@@ -6,6 +6,11 @@
 
 @note-lib-only[scheme/control]
 
+@(define control-eval
+         (let ([the-eval (make-base-eval)])
+          (the-eval '(require scheme/control))
+          the-eval))
+
 The @scheme[scheme/control] library provides various control operators
 from the research literature on higher-order control operators, plus a
 few extra convenience forms. These control operators are implemented
@@ -27,6 +32,12 @@ That is, @scheme[(abort v ...)] is equivalent to
 (abort-current-continuation
  (default-continuation-prompt-tag)
  (lambda () (values v ...)))
+]
+
+@examples[#:eval control-eval
+(prompt
+  (printf "start here\n")
+  (printf "answer is ~a\n" (+ 2 (abort 3))))
 ]}
 
 @; ----------------------------------------------------------------------
@@ -49,7 +60,16 @@ The essential reduction rules are:
 ]
 
 When @scheme[handler-expr] is omitted, @scheme[%] is the same as 
-@scheme[prompt].}
+@scheme[prompt].
+
+@examples[#:eval control-eval
+(% (+ 2 (fcontrol 5))
+   (lambda (v k)
+     (k v)))
+(% (+ 2 (fcontrol 5))
+   (lambda (v k)
+     v))
+]}
 
 @; ----------------------------------------------------------------------
 
@@ -223,3 +243,5 @@ In this library, @scheme[new-prompt] is an alias for
 @scheme[prompt0-at], and @scheme[cupto] is an alias for @scheme[control0-at].
 
 }
+
+@close-eval[control-eval]
