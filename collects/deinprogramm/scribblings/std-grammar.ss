@@ -68,6 +68,7 @@
 	      @#,scheme[(check-property expr)]]
    #;(...
     [library-require @#,scheme[(require string)]
+		     @#,scheme[(require module-id)]
                      @#,scheme[(require (lib string string ...))]
                      @#,scheme[(require (planet string package))]])
    (...

@@ -382,6 +382,11 @@ Dann ist @scheme[(pare integer string)] der Vertrag für
 @; ein @litchar{/} am Anfang oder Ende enthalten.}
 @; 
 @; 
+@; @defform/none[#:literals (require)
+@;               (require module-id)]{
+@; 
+@; Diese Form macht eine eingebaute Library mit dem Namen @scheme[module-id] verfügbar.}
+@;
 @; @defform/none[#:literals (require lib)
 @;               (require (lib string string ...))]{
 @; 
