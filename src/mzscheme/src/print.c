@@ -2362,7 +2362,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	    sprintf(quick_buffer, ":%ld", stx->srcloc->pos);
 	  print_utf8_string(pp, quick_buffer, 0, -1);
 	} else
-	  print_utf8_string(pp, "#<syntax", 0, 9);
+	  print_utf8_string(pp, "#<syntax", 0, 8);
         if (pp->print_syntax) {
           long slen;
           char *str;
