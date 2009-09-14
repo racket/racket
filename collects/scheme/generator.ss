@@ -8,7 +8,8 @@
 
 ;; (define-syntax-parameter yield
 ;;   (lambda (stx)
-;;     (raise-syntax-error #f "yield is only bound inside a sequence generator")))
+;;     (raise-syntax-error
+;;      #f "yield is only bound inside a sequence generator")))
 
 ;; (define (procedure->generator proc)
 ;;   (define tag (make-continuation-prompt-tag))
@@ -20,10 +21,27 @@
 ;;         r)))
 ;;   (lambda () (cont)))
 
+;; not using parameterization
+#;
+(define-syntax-rule (generator body0 body ...)
+  (let ([tag (make-continuation-prompt-tag)])
+    (define yielder
+      (let ([yield (lambda (value) (shift-at tag k (set! cont k) value))])
+        yield))
+    (splicing-syntax-parameterize ([yield (make-rename-transformer #'yielder)])
+      (define (cont)
+        (reset-at tag
+          (let ([retval (begin body0 body ...)])
+            ;; normal return:
+            (set! cont (lambda () retval))
+            retval))))
+    (define (generator) (cont))
+    generator))
+
 (define current-yielder
   (make-parameter
    (lambda (v)
-     (error 'yield "yield cannot be called when no generator is active"))))
+     (error 'yield "must be called in the context of a generator"))))
 
 (define (yield value)
   ((current-yielder) value))
@@ -36,28 +54,11 @@
       (define (yielder value)
         (shift-at yield-tag k (set! cont k) value))
       (reset-at yield-tag
-                (parameterize ([current-yielder yielder])
-                  (let ([retval (begin body0 body ...)])
-                    ;; normal return:
-                    (set! cont (lambda () retval))
-                    retval))))
-    (define (generator) (cont))
-    generator))
-
-;; not using parameterization
-#;
-(define-syntax-rule (generator body0 body ...)
-  (let ([tag (make-continuation-prompt-tag)])
-    (define yielder
-      (let ([yield (lambda (value) (shift-at tag k (set! cont k) value))])
-        yield))
-    (splicing-syntax-parameterize ([yield (make-rename-transformer #'yielder)])
-                                  (define (cont)
-                                    (reset-at tag
-                                              (let ([retval (begin body0 body ...)])
-                                                ;; normal return:
-                                                (set! cont (lambda () retval))
-                                                retval))))
+        (parameterize ([current-yielder yielder])
+          (let ([retval (begin body0 body ...)])
+            ;; normal return:
+            (set! cont (lambda () retval))
+            retval))))
     (define (generator) (cont))
     generator))
 
