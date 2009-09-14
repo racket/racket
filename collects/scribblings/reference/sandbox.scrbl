@@ -16,7 +16,7 @@
 The @schememodname[scheme/sandbox] module provides utilities for
 creating ``sandboxed'' evaluators, which are configured in a
 particular way and can have restricted resources (memory and time),
-filesystem and network access, and much.  Sandboxed evaluators can be
+filesystem and network access, and much more.  Sandboxed evaluators can be
 configured through numerous parameters --- and the defaults are set
 for the common use case where sandboxes are very limited.
 
