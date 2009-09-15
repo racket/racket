@@ -87,6 +87,19 @@ The essential reduction rules are:
 (prompt _E[(control _k _expr)]) => (prompt ((lambda (_k) _expr)
                                             (lambda (_v) _E[_v])))
   (code:comment @#,t{where @scheme[_E] has no @scheme[prompt]})
+]
+
+@examples[#:eval control-eval
+(prompt
+  (+ 2 (control k (k 5))))
+(prompt
+  (+ 2 (control k 5)))
+(prompt
+  (+ 2 (control k (+ 1 (control k1 (k1 6))))))
+(prompt
+  (+ 2 (control k (+ 1 (control k1 (k 6))))))
+(prompt
+  (+ 2 (control k (control k1 (control k2 (k2 6))))))
 ]}
 
 @; ----------------------------------------------------------------------
