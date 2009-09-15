@@ -1440,17 +1440,9 @@
                    #;[display-only-errors #t]
                    #;[store-steps #f]
                    #;[show-all-steps #t])
-      #;(run-tests '(check-expect forward-ref check-within #;check-within-bad #;check-error) #;'(#;check-expect #;check-expect-2 check-within check-within-bad check-error))
+      #;(run-tests '(check-expect forward-ref check-within check-within-bad check-error check-error-bad))
       #;(run-tests '(teachpack-universe))
-      #;(run-test 'bad-parens)
+      #;(run-tests '(check-expect check-within))
       (run-all-tests)))
   
 
-(define (hhh)
-  (run-one-test 'bogus 
-              m:mz "abc" 
-              `()))
-
-(run-one-test 'bogus 
-              m:mz "abc" 
-              `())

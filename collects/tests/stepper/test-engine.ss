@@ -263,12 +263,12 @@
 
 
 
-
+;; DEBUGGING TO TRY TO FIND OUT WHY THIS DOESN'T WORK IN AN AUTOMATED TESTER:
 ;; test-sequence : ll-model? string? steps? -> (void)
 ;; given a language model and an expression and a sequence of steps,
 ;; check to see whether the stepper produces the desired steps
 ;;define (test-sequence the-ll-model exp-str expected-steps error-box)
-(match mz
+#;(match mz
   [(struct ll-model (namespace-spec teachpack-specs render-settings show-lambdas-as-lambdas? enable-testing?))
    (let* ([p2 (open-input-string "134")]
           [module-id (gensym "stepper-module-name-")]

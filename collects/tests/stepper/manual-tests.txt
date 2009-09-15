@@ -12,13 +12,8 @@ warning when the program window disappears.
 
 Try stepping backward and forward through programs with correct and erroneous
 (syntax errors, runtime errors) executions.
-** clicking "end" on a run that ends in an error does not behave correctly ***
-
-Make sure that the step buttons are enabled and disabled as necessary.
-... I wish I had a model-checker here.
 
 Try programs which print snips (print-convert-test.ss)
-
 
 try programs that contain test cases; make sure that the popups behave sensibly.
 
