@@ -16,8 +16,14 @@
   ; the reconstructor gets the right invocation of the unit, it needs to be a 
   ; unit as well.  Pretty soon, everything is units.
 
-  (define-struct render-settings (true-false-printed? constructor-style-printing? abbreviate-cons-as-list? render-to-sexp lifting?
-                                                      all-bindings-mutable?))
+  (define-struct render-settings
+    (true-false-printed? 
+     constructor-style-printing?
+     abbreviate-cons-as-list?
+     render-to-sexp
+     lifting?
+     show-and/or-clauses-consumed?
+     all-bindings-mutable?))
   
   (provide/contract [check-global-defined (-> symbol? boolean?)]
                     [global-lookup (-> any/c any)]
@@ -28,6 +34,7 @@
                              [abbreviate-cons-as-list? boolean?]
                              [render-to-sexp (any/c . -> . any)]
                              [lifting? boolean?]
+			     [show-and/or-clauses-consumed? boolean?]
                              [all-bindings-mutable? boolean?])]
                     
                     
@@ -35,6 +42,7 @@
                     [get-render-settings ((any/c . -> . string?) ; render-to-string
                                           (any/c . -> . any) ; render-to-sexp
                                           boolean? ; lifting?
+					  boolean? ; show-and/or-clauses-consumed?
                                           . -> .
                                           render-settings?)]
                     
@@ -59,10 +67,10 @@
   
     ; FIXME : #f totally unacceptable as 'render-to-string'
   (define fake-beginner-render-settings
-    (make-render-settings #t #t #f (make-fake-render-to-sexp #t #t #f) #t #f))
+    (make-render-settings #t #t #f (make-fake-render-to-sexp #t #t #f) #t #t #f))
   
   (define fake-beginner-wla-render-settings
-    (make-render-settings #t #t #t (make-fake-render-to-sexp #t #t #t) #t #f))
+    (make-render-settings #t #t #t (make-fake-render-to-sexp #t #t #t) #t #t #f))
   
   (define fake-intermediate-render-settings
     fake-beginner-wla-render-settings)
@@ -80,13 +88,14 @@
                           (abbreviate-cons-as-list) 
                           print-convert
                           #f
-                          #f))
+                          #t
+			  #f))
   
   (define-struct test-struct () (make-inspector))
   
   ;; get-render-settings : infer aspects of the current language's print conversion by explicitly testing 
   ;;  assorted test expressions
-  (define (get-render-settings render-to-string render-to-sexp lifting?)
+  (define (get-render-settings render-to-string render-to-sexp lifting? show-and/or-clauses-consumed?)
     (let* ([true-false-printed? (string=? (render-to-string #t) "true")]
            [constructor-style-printing? (string=? (render-to-string (make-test-struct)) "(make-test-struct)")]
            [rendered-list (render-to-string '(3))]
@@ -101,6 +110,7 @@
        abbreviate-cons-as-list?
        render-to-sexp
        lifting?
+       show-and/or-clauses-consumed?
        #f)))
   
   (define (check-global-defined identifier)

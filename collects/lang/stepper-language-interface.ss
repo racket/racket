@@ -8,4 +8,6 @@
       stepper:supported?
       stepper:enable-let-lifting?
       stepper:show-lambdas-as-lambdas?
+      stepper:show-inexactness?
+      stepper:show-consumed-and/or-clauses?
       stepper:render-to-sexp)))

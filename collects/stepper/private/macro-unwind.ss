@@ -274,17 +274,19 @@
    
   (define ((unwind-and/or label) stx settings)
     (let ([user-source   (syntax-property stx 'user-source)]
-          [user-position (syntax-property stx 'user-position)]
-          [clause-padder
- 	   (if (render-settings-true-false-printed? settings)
- 	       (case label [(and) #'true] [(or) #'false])
- 	       (case label [(and) #'#t] [(or) #'#f]))])
+          [user-position (syntax-property stx 'user-position)])
       (with-syntax
           ([clauses
             (append
-             (build-list (stepper-syntax-property
-                          stx 'stepper-and/or-clauses-consumed)
-                         (lambda (dc) clause-padder))
+	     (if (render-settings-show-and/or-clauses-consumed? settings)
+		 (build-list (stepper-syntax-property
+			      stx 'stepper-and/or-clauses-consumed)
+			     (let ([clause-padder
+				    (if (render-settings-true-false-printed? settings)
+					(case label [(and) #'true] [(or) #'false])
+					(case label [(and) #'#t] [(or) #'#f]))])
+			       (lambda (dc) clause-padder)))
+		 '())
              (let loop ([stx stx])
                (if (and (eq? user-source
                              (syntax-property stx 'user-source))

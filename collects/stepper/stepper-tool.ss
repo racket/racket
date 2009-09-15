@@ -35,6 +35,9 @@
        
        (public stepper:show-inexactness?)
        (define (stepper:show-inexactness?) #t)
+
+       (public stepper:show-consumed-and/or-clauses?)
+       (define (stepper:show-consumed-and/or-clauses?) #t)
        
        (public stepper:render-to-sexp)
        (define (stepper:render-to-sexp val settings language-level)

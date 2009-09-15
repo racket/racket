@@ -390,7 +390,8 @@
   (model:go
    program-expander-prime receive-result
    (get-render-settings render-to-string render-to-sexp 
-                        (send language-level stepper:enable-let-lifting?))
+                        (send language-level stepper:enable-let-lifting?)
+			(send language-level stepper:show-consumed-and/or-clauses?))
    (send language-level stepper:show-lambdas-as-lambdas?)
    language-level
    run-on-drscheme-side
