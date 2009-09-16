@@ -125,11 +125,13 @@
     (define display-class test-display-textual%)
     (define display-rep #f)
     (define display-event-space #f)
+    (define silent-mode #t)
 
     (super-instantiate ())
 
     (define/public (refine-display-class d) (set! display-class d))
     (define/public (info-class) test-info-base%)
+    (define/public (set-silence! t) (set! silent-mode t))
 
     (define/public (add-analysis a) (send test-info add-analysis a))
 
@@ -169,7 +171,8 @@
       (send test-display display-success-summary port count))
 
     (define/public (display-untested port)
-      (send test-display display-untested-summary port))
+      (unless silent-mode
+        (send test-display display-untested-summary port)))
 
     (define/public (display-disabled port)
       (send test-display display-disabled-summary port))
