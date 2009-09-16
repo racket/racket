@@ -604,6 +604,8 @@
                      [else
                       (if ((char->integer c) . > . 127)
                           (case c
+                            [(#\uB0) "$^{\\circ}$"] ; degree
+                            [(#\uB2) "$^2$"]
                             [(#\u039A) "K"] ; kappa
                             [(#\u0391) "A"] ; alpha
                             [(#\u039F) "O"] ; omicron
