@@ -12,16 +12,16 @@ protect abstractions, ensuring that clients of your module
 cannot depend on the precise representation choices you make
 for your data structures.
 
-@ctc-section{Getting started, with a stack example}
+@ctc-section{Getting Started, with a Stack Example}
 
 @margin-note{
   You can type @scheme[#:exists] instead of @scheme[#:∃] if you 
 cannot easily type unicode characters; in DrScheme, typing
 @tt{\exists} followed by either alt-\ or control-\ (depending
-on your platform) will produce @scheme[∃].}.
+on your platform) will produce @scheme[∃].}
 The @scheme[provide/contract] form allows you to write
-@schemeblock[#:∃ name-of-a-new-contract] as one of its clauses. This declaration
-introduces the variable @scheme[name-of-a-new-contract], binding it to a new
+@schemeblock[#:∃ _name-of-a-new-contract] as one of its clauses. This declaration
+introduces the variable @scheme[_name-of-a-new-contract], binding it to a new
 contract that hides information about the values it protects.
 
 As an example, consider this (simple) implementation of a stack datastructure:

@@ -305,7 +305,7 @@ sequence; if no more elements are available, the
 
 @section{Iterator Generators}
 @defmodule[scheme/generator]
-@defform[(generator body ...)]{ Create a function that returns a
+@defform[(generator body ...)]{ Creates a function that returns a
 value, usually through @scheme[yield], each time it is invoked. When
 the generator runs out of values to yield the last value it computed
 will be returned for future invocations of the generator. Generators
@@ -326,7 +326,7 @@ can be safely nested.
 (g)
 ]
 
-To use an existing generator as a sequence you should use @scheme[in-producer]
+To use an existing generator as a sequence, you should use @scheme[in-producer]
 with a stop-value known to the generator.
 
 @examples[#:eval (generator-eval)
@@ -343,10 +343,10 @@ with a stop-value known to the generator.
   i)
 ]}
 
-@defproc[(in-generator [expr any?] ...) sequence?]{ Return a generator
-that can be used as a sequence. @scheme[in-generator] takes care of the
-case when @scheme[expr] stops producing values so when the @scheme[expr]
-completes the generator will end.
+@defproc[(in-generator [expr any?] ...) sequence?]{ Returns a generator
+that can be used as a sequence. The @scheme[in-generator] procedure takes care of the
+case when @scheme[expr] stops producing values, so when the @scheme[expr]
+completes, the generator will end.
 
 @examples[#:eval (generator-eval)
 (for/list ([i (in-generator 
@@ -357,6 +357,6 @@ completes the generator will end.
   i)
 ]}
 
-@defform[(yield expr)]{ Save the point of execution inside a generator
-and return a value.}
+@defform[(yield expr)]{ Saves the point of execution inside a generator
+and returns a value.}
 

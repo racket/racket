@@ -194,7 +194,7 @@ something. This kind of thing happens when a module exports
 a function, an object, a class or other values that enable
 values to flow in both directions.
 
-@ctc-section{Experimenting with examples}
+@ctc-section{Experimenting with Examples}
 
 All of the contracts and module in this chapter (excluding those just
 following) are written using the standard @tt{#lang} syntax for
