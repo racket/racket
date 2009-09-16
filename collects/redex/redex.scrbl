@@ -58,7 +58,7 @@
 @(define redex-eval (make-base-eval))
 @(interaction-eval #:eval redex-eval (require redex/reduction-semantics))
 
-@title{@bold{Redex}: Debugging Operational Semantics}
+@title{@bold{Redex}: Practical Semantics Engineering}
 
 @author["Robert Bruce Findler" "Casey Klein"]
 
