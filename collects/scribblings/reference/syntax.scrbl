@@ -1928,17 +1928,24 @@ Evaluation of @scheme[expr] side is @scheme[parameterize]d to set
 @scheme[current-namespace] as in @scheme[let-syntax].}
 
 @defexamples[#:eval (syntax-eval)
-(define-for-syntax foo 2)
-(define-syntax bar
-  (lambda (syntax-object)
-    (printf "foo is ~a\n" foo)
-    #'2))
-(bar)    
-(define-syntax (bar2 syntax-object)
-  (printf "foo is ~a\n" foo)
-  #'3)
-(bar2)  
-]
+(define-for-syntax helper 2)
+(define-syntax (make-two syntax-object)
+ (printf "helper is ~a\n" helper)
+ #'2)
+(make-two)
+(code:comment @#,t{`helper' is not bound in the runtime phase})
+helper
+
+(define-for-syntax (filter-ids ids)
+  (filter identifier? ids))
+(define-syntax (show-variables syntax-object)
+  (syntax-case syntax-object ()
+    [(_ expr ...)
+     (with-syntax ([(only-ids ...)
+                    (filter-ids (syntax->list #'(expr ...)))])
+       #'(list only-ids ...))]))
+(let ([a 1] [b 2] [c 3])
+  (show-variables a 5 2 b c))]
 
 @defform[(define-values-for-syntax (id ...) expr)]{
 
