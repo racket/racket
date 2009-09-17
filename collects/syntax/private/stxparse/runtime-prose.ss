@@ -1,5 +1,5 @@
 #lang scheme/base
-(require scheme/contract
+(require scheme/contract/base
          scheme/list
          scheme/match
          scheme/stxparam

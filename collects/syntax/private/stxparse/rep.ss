@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (for-template scheme/base)
          (for-template "runtime.ss")
-         scheme/contract
+         scheme/contract/base
          scheme/match
          scheme/dict
          syntax/id-table

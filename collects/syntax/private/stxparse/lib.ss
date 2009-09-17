@@ -11,7 +11,7 @@
                      "rep.ss"
                      (only-in "rep-data.ss" make-literalset))
          (for-template scheme/base
-                       scheme/contract))
+                       scheme/contract/base))
 
 (provide identifier
          boolean
