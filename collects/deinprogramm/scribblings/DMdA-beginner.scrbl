@@ -336,7 +336,7 @@ Dieser Testfall überprüft experimentell, ob die Eigenschaft
 Eigenschaften, bei denen aus den Verträgen sinnvoll Werte generiert
 werden können.  Dies ist für die meisten eingebauten Verträge der
 Fall, aber nicht für Verträge, die mit @scheme[predicate],
-@scheme[property] oder @scheme[define-record-procedures]definiert
+@scheme[property] oder @scheme[define-record-procedures] definiert
 wurden.  In diesen Fällen erzeugt @scheme[check-property] eine Fehlermeldung.
 }
 
