@@ -342,25 +342,26 @@ wurden.  In diesen Fällen erzeugt @scheme[check-property] eine Fehlermeldung.
 
 @section{Parametrische Record-Typ-Definitionen}
 
-@defform[(define-record-procedures-parametric (t p1 ...) c p (s1 ...))]{
+@defform[(define-record-procedures-parametric t cc c p (s1 ...))]{
 
 Die @scheme[define-record-procedures-parametric] ist wie
-@scheme[define-record-procedures] mit dem Unterschied, daß @scheme[t]
-an einen parametrischen Vertrag gebunden wird: Es muß genauso viele
-Parameter @scheme[p1] geben wie Selektoren @scheme[s1]; für diese
-Parameter werden die Verträge für die Felder substituiert.
+@scheme[define-record-procedures].  Zusäzlich wird der Bezeichner
+@scheme[cc] an einen Vertragskonstruktor gebunden: Dieser akzeptiert
+für jedes Feld einen Feld-Vertrag und liefert einen Vertrag, den nur
+Records des Record-Typs @scheme[t] erfüllen, bei dem die Feldinhalte
+die Feld-Verträge erfüllen.
 
 Beispiel:
 
 @schemeblock[
-(define-record-procedures-parametric (pare a b)
+(define-record-procedures-parametric pare pare-of
   make-pare pare?
   (pare-one pare-two))
 ]
 
-Dann ist @scheme[(pare integer string)] der Vertrag für
-@scheme[pare]-Records, bei dem die Felder die Verträge
-@scheme[integer] respektive @scheme[string] erfüllen müssen.
+Dann ist @scheme[(pare-of integer string)] der Vertrag für
+@scheme[pare]-Records, bei dem die Feldinhalte die Verträge
+@scheme[integer] bzw. @scheme[string] erfüllen müssen.
 }
 
 @; ----------------------------------------------------------------------
