@@ -27,9 +27,15 @@
 (require srfi/9
 	 "random.ss")
 
+(provide exn:assertion-violation?
+	 exn:assertion-violation-who
+	 exn:assertion-violation-irritants)
+
+(define-struct (exn:assertion-violation exn:fail) (who irritants) #:transparent)
+
 ; exceptions
 (define (assertion-violation who msg . irritants)
-  (apply error msg irritants))
+  (raise (make-exn:assertion-violation msg (current-continuation-marks) who irritants)))
 
 ; extended-ports
 (define make-string-output-port open-output-string)
@@ -41,4 +47,3 @@
 
 (require scheme/include)
 (include "quickcheck.scm")
-	 
