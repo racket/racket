@@ -190,7 +190,8 @@
     (init-field [alt-paths null]
                 ;; up-path is either a link "up", or #t which uses
                 ;; goes to start page (using cookies to get to the
-                ;; user start page)
+                ;; user start page). If it's a path, then it's also
+                ;; used for the "top" link on the page.
                 [up-path #f]
                 [script-path #f]
                 [script-file #f]
@@ -690,6 +691,7 @@
                 [(equal? x "index.html") (values x "the manual top")]
                 [(equal? x "../index.html") (values x "the documentation top")]
                 [(string? x) (values x #f)]
+                [(path? x) (values (url->string (path->url x)) #f)]
                 [else (error 'navigation "internal error ~e" x)]))
         (define title*
           (if (and tfrom (part? tfrom))
@@ -705,7 +707,9 @@
              ,@more)))))
       (define top-link
         (titled-url
-         "up" "../index.html"
+         "up" (if (path? up-path)
+                  (url->string (path->url up-path))
+                  "../index.html")
          `[onclick . ,(format "return GotoPLTRoot(\"~a\");" (version))]))
       (define navleft
         `(span ([class "navleft"])
