@@ -256,7 +256,17 @@
 		 (formatter (expected-error-value fail))
 		 (expected-error-message fail))]
 	 [(message-error? fail)
-	  (for-each print-formatted (message-error-strings fail))])
+	  (for-each print-formatted (message-error-strings fail))]
+         [(not-mem? fail)
+          (print "Actual value ~F differs from all given members in ~F."
+                 (formatter (not-mem-test fail))
+                 (formatter (not-mem-set fail)))]
+         [(not-range? fail)
+          (print "Actual value ~F is not between ~F and ~F, inclusive."
+                 (formatter (not-range-test fail))
+                 (formatter (not-range-min fail))
+                 (formatter (not-range-max fail)))]
+         )
 	(print-string "\n")))
     
     ;; make-error-link: text% check-fail exn src editor -> void

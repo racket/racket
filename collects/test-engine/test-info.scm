@@ -20,6 +20,10 @@
 (define-struct (incorrect-error check-fail) (expected message exn))
 ;; (make-expected-error src format string scheme-val)
 (define-struct (expected-error check-fail) (message value))
+;; (make-not-mem src format scheme-val scheme-val)
+(define-struct (not-mem check-fail) (test set))
+;; (make-not-range src format scheme-val scheme-val scheme-val)
+(define-struct (not-range check-fail) (test min max))
 
 ;; (make-message-error src format (listof string))
 (define-struct (message-error check-fail) (strings))
@@ -115,6 +119,16 @@
 	     (formatter (expected-error-value fail))
 	     (expected-error-message fail))]
      [(message-error? fail)
-      (for-each print-formatted (message-error-strings fail))])
+      (for-each print-formatted (message-error-strings fail))]
+     [(not-mem? fail)
+      (print "Actual value ~F differs from all given members in ~F."
+             (formatter (not-mem-test fail))
+             (formatter (not-mem-set fail)))]
+     [(not-range? fail)
+      (print "Actual value ~F is not between ~F and ~F, inclusive."
+             (formatter (not-range-test fail))
+             (formatter (not-range-min fail))
+             (formatter (not-range-max fail)))]
+     )
     (print-string "\n")))
 
