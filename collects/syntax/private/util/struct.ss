@@ -36,4 +36,6 @@
                     num-slots)
             stx)))
        (with-syntax ([constructor constructor])
-         #'(constructor expr ...)))]))
+         (syntax-property #'(constructor expr ...)
+                          'disappeared-use
+                          #'S)))]))

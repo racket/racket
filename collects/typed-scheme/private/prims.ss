@@ -27,7 +27,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (require (except-in "../utils/utils.ss" extend))
 (require (for-syntax 
           syntax/parse
-	  stxclass/util
+	  syntax/private/util
           scheme/base
           (rep type-rep)
           mzlib/match

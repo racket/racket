@@ -7,7 +7,6 @@
                     [one-of/c -one-of/c])
          (rep type-rep)
          scheme/contract scheme/match
-         stxclass/util
          (for-syntax scheme/base))
 
 (provide combine-filter apply-filter abstract-filter abstract-filters

@@ -5,7 +5,6 @@
 	 "rep-utils.ss" "object-rep.ss" "filter-rep.ss" "free-variance.ss"
          mzlib/trace scheme/match
          scheme/contract
-         stxclass/util
          (for-syntax scheme/base))
 
 (define name-table (make-weak-hasheq))
