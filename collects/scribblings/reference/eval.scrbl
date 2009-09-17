@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "mz.ss")
 
-@title{Evaluation and Compilation}
+@title[#:tag "eval"]{Evaluation and Compilation}
 
 @defparam[current-eval proc (any/c . -> . any)]{
 
@@ -248,8 +248,7 @@ Calls the current @tech{compiled-load handler} in tail position.}
 
 
 @defparam[current-load-relative-directory path 
-          (and/c path-string?
-                 complete-path?)]{     
+          (or/c (and/c path-string? complete-path?) #f)]{
 
 A parameter that is set by @scheme[load], @scheme[load-relative],
 @scheme[load-extension], @scheme[load-relative-extension], and the
