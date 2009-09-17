@@ -195,17 +195,17 @@
     scheme/mzscheme
     scheme/nest
     scheme/private/class-internal
-    scheme/private/contract-base
-    scheme/private/contract-arrow
-    scheme/private/contract-basic-opters
-    scheme/private/contract-ds
-    scheme/private/contract-ds-helpers
-    scheme/private/contract-exists
-    scheme/private/contract-guts
-    scheme/private/contract-helpers
-    scheme/private/contract-misc
-    scheme/private/contract-opt
-    scheme/private/contract-opt-guts
+    scheme/contract/private/base
+    scheme/contract/private/arrow
+    scheme/contract/private/basic-opters
+    scheme/contract/private/ds
+    scheme/contract/private/ds-helpers
+    scheme/contract/private/exists
+    scheme/contract/private/guts
+    scheme/contract/private/helpers
+    scheme/contract/private/misc
+    scheme/contract/private/opt
+    scheme/contract/private/opt-guts
     scheme/private/define-struct
     scheme/private/define-struct
     scheme/private/for

@@ -18,12 +18,12 @@ v4 todo:
 
 |#
 
-(require "contract-guts.ss"
-         "contract-opt.ss"
+(require "guts.ss"
+         "opt.ss"
          scheme/stxparam)
 (require (for-syntax scheme/base)
-         (for-syntax "contract-opt-guts.ss")
-         (for-syntax "contract-helpers.ss")
+         (for-syntax "opt-guts.ss")
+         (for-syntax "helpers.ss")
          (for-syntax syntax/stx)
          (for-syntax syntax/name))
 

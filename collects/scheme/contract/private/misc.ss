@@ -2,11 +2,11 @@
 
 (require (for-syntax scheme/base
                      scheme/struct-info
-                     "contract-helpers.ss"
-                     "contract-opt-guts.ss")
+                     "helpers.ss"
+                     "opt-guts.ss")
          scheme/promise
-         "contract-opt.ss"
-         "contract-guts.ss")
+         "opt.ss"
+         "guts.ss")
 
 (provide flat-rec-contract
          flat-murec-contract

@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "contract-guts.ss")
+(require "private/guts.ss")
 
 (provide new-∃/c
          ∃?)

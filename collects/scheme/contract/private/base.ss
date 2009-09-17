@@ -15,8 +15,8 @@ improve method arity mismatch contract violation error messages?
 
 (require (for-syntax scheme/base)
          scheme/stxparam
-         "contract-guts.ss"
-         "contract-helpers.ss")
+         "guts.ss"
+         "helpers.ss")
 
 (define-syntax-parameter current-contract-region (λ (stx) #'(#%variable-reference)))
 

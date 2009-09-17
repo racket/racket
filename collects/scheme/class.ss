@@ -1,7 +1,7 @@
 (module class mzscheme
 
-  (require "private/contract-object.ss")
-  (provide (all-from "private/contract-object.ss"))
+  (require "contract/private/object.ss")
+  (provide (all-from "contract/private/object.ss"))
   
   ;; All of the implementation is actually in private/class-internal.ss,
   ;;  which provides extra (private) functionality to contract.ss.

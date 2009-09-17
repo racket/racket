@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (provide (all-defined-out))
-(require scheme/private/contract-guts)
+(require scheme/contract/private/guts)
 
 (define empty-case-lambda/c
   (flat-named-contract '(case->)

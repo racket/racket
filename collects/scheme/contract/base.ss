@@ -3,31 +3,31 @@
 ;; A stripped down version of scheme/contract for use in
 ;; the PLT code base where appropriate.
 
-(require scheme/private/contract-arrow
-         scheme/private/contract-base
-         scheme/private/contract-misc
-         scheme/private/contract-provide
-         scheme/private/contract-guts
-         scheme/private/contract-ds
-         scheme/private/contract-opt)
+(require "private/arrow.ss"
+         "private/base.ss"
+         "private/misc.ss"
+         "private/provide.ss"
+         "private/guts.ss"
+         "private/ds.ss"
+         "private/opt.ss")
 
 (provide 
- opt/c define-opt/c ;(all-from-out "private/contract-opt.ss")
- (except-out (all-from-out scheme/private/contract-ds)
+ opt/c define-opt/c ;(all-from-out "private/opt.ss")
+ (except-out (all-from-out "private/ds.ss")
              lazy-depth-to-look)
  
- (except-out (all-from-out scheme/private/contract-arrow) 
+ (except-out (all-from-out "private/arrow.ss")
              making-a-method
              procedure-accepts-and-more?
              check-procedure
              check-procedure/more)
- (except-out (all-from-out scheme/private/contract-misc)
+ (except-out (all-from-out "private/misc.ss")
              check-between/c
              check-unary-between/c)
- (all-from-out scheme/private/contract-provide)
- (all-from-out scheme/private/contract-base))
+ (all-from-out "private/provide.ss")
+ (all-from-out "private/base.ss"))
 
-;; from contract-guts.ss
+;; from private/guts.ss
 
 (provide any
          and/c

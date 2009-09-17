@@ -17,9 +17,9 @@ another. Programmers specify the behavior of a module exports via
 @scheme[provide/contract] and the contract system enforces those
 constraints.
 
-@note-lib[scheme/contract #:use-sources (scheme/private/contract-ds
-                                         scheme/private/contract-base
-                                         scheme/private/contract-guts)]
+@note-lib[scheme/contract #:use-sources (scheme/contract/private/ds
+                                         scheme/contract/private/base
+                                         scheme/contract/private/guts)]
 
 @deftech{Contracts} come in two forms: those constructed by the
 various operations listed in this section of the manual, and various

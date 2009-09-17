@@ -1,11 +1,11 @@
 #lang scheme/base
 (require "contract-arrow.ss"
-         scheme/private/contract-guts
+         scheme/contract/private/guts
          scheme/private/class-internal
          "contract-arr-checks.ss")
 
 (require (for-syntax scheme/base
-                     scheme/private/contract-helpers
+                     scheme/contract/private/helpers
                      "contract-arr-obj-helpers.ss"))
 
 (provide mixin-contract

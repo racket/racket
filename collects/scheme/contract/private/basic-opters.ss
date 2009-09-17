@@ -1,10 +1,10 @@
 #lang scheme/base
 
-(require "contract-guts.ss"
-         "contract-opt.ss"
-         "contract-base.ss")
+(require "guts.ss"
+         "opt.ss"
+         "base.ss")
 (require (for-syntax scheme/base
-                     "contract-opt-guts.ss"))
+                     "opt-guts.ss"))
 
 ;;
 ;; opt/pred helper

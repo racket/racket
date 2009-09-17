@@ -29,22 +29,22 @@
 ;; except the arrow contracts
 ;;
 
-(require scheme/private/contract-base
-         scheme/private/contract-misc
-         scheme/private/contract-provide
-         scheme/private/contract-guts
-         scheme/private/contract-ds
-         scheme/private/contract-opt
-         scheme/private/contract-basic-opters)
+(require scheme/contract/private/base
+         scheme/contract/private/misc
+         scheme/contract/private/provide
+         scheme/contract/private/guts
+         scheme/contract/private/ds
+         scheme/contract/private/opt
+         scheme/contract/private/basic-opters)
 
 (provide 
  opt/c define-opt/c ;(all-from "private/contract-opt.ss")
- (except-out (all-from-out scheme/private/contract-ds)
+ (except-out (all-from-out scheme/contract/private/ds)
              lazy-depth-to-look)
  
- (all-from-out scheme/private/contract-base)
- (all-from-out scheme/private/contract-provide)
- (except-out (all-from-out scheme/private/contract-misc)
+ (all-from-out scheme/contract/private/base)
+ (all-from-out scheme/contract/private/provide)
+ (except-out (all-from-out scheme/contract/private/misc)
              check-between/c
              string-len/c
              check-unary-between/c)

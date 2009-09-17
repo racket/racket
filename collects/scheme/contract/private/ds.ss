@@ -17,13 +17,13 @@ it around flattened out.
 
 |#
 
-(require "contract-guts.ss"
-         "contract-opt.ss"
+(require "guts.ss"
+         "opt.ss"
          mzlib/etc)
 (require (for-syntax scheme/base)
-         (for-syntax "contract-ds-helpers.ss")
-         (for-syntax "contract-helpers.ss")
-         (for-syntax "contract-opt-guts.ss")
+         (for-syntax "ds-helpers.ss")
+         (for-syntax "helpers.ss")
+         (for-syntax "opt-guts.ss")
          (for-syntax mzlib/etc))
 
 (provide define-contract-struct

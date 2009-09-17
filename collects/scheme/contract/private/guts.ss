@@ -1,10 +1,10 @@
 #lang scheme/base
 
-(require "contract-helpers.ss"
+(require "helpers.ss"
          scheme/pretty)
 
 (require (for-syntax scheme/base
-                     "contract-helpers.ss"))
+                     "helpers.ss"))
 
 (provide raise-contract-error
          guilty-party

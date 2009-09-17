@@ -1,7 +1,7 @@
 #lang scheme/base
-(require "contract-arrow.ss"
-         "contract-guts.ss"
-         "class-internal.ss"
+(require "arrow.ss"
+         "guts.ss"
+         scheme/private/class-internal
          scheme/stxparam)
 
 (require (for-syntax scheme/base))

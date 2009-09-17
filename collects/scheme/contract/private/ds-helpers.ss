@@ -5,7 +5,7 @@
          build-enforcer-clauses
          generate-arglists)
 
-(require "contract-opt-guts.ss")
+(require "opt-guts.ss")
 (require (for-template scheme/base)
          (for-syntax scheme/base))
 

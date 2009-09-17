@@ -1,7 +1,7 @@
 #lang scheme/base
 (require syntax/private/boundmap ;; needs to be the private one, since the public one has contracts
          (for-template scheme/base)
-         (for-template "contract-guts.ss")
+         (for-template "guts.ss")
          (for-syntax scheme/base))
 
 (provide get-opter reg-opter! opter

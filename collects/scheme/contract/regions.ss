@@ -9,11 +9,11 @@
                      scheme/struct-info
                      syntax/define
                      syntax/kerncase
-                     (prefix-in a: "contract-helpers.ss"))
+                     (prefix-in a: "private/helpers.ss"))
          scheme/splicing
-         "contract-arrow.ss"
-         "contract-base.ss"
-         "contract-guts.ss")
+         "private/arrow.ss"
+         "private/base.ss"
+         "private/guts.ss")
 
 ;; These are useful for all below.
 

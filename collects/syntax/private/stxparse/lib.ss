@@ -5,7 +5,7 @@
          syntax/stx
          syntax/kerncase
          scheme/struct-info
-         scheme/private/contract-helpers
+         scheme/contract/private/helpers
          (for-syntax scheme/base
                      syntax/kerncase
                      "rep.ss"

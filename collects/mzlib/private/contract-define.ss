@@ -4,7 +4,7 @@
 
 (require (for-syntax scheme/base)
          (only-in scheme/contract contract)
-         (for-syntax (prefix-in a: scheme/private/contract-helpers)))
+         (for-syntax (prefix-in a: scheme/contract/private/helpers)))
 
 ;; First, we have the old define/contract implementation, which
 ;; is still used in mzlib/contract.

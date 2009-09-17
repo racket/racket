@@ -1,9 +1,9 @@
 #lang scheme/base
-(require "contract-guts.ss"
+(require "guts.ss"
          scheme/stxparam
          mzlib/etc)
 (require (for-syntax scheme/base)
-         (for-syntax "contract-opt-guts.ss")
+         (for-syntax "opt-guts.ss")
          (for-syntax mzlib/etc)
          (for-syntax scheme/stxparam))
 

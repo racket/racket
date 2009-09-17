@@ -4,11 +4,11 @@
 
 (require (for-syntax scheme/base
                      scheme/list
-                     (prefix-in a: "contract-helpers.ss"))
-         "contract-arrow.ss"
-         "contract-base.ss"
-         "contract-exists.ss"
-         "contract-guts.ss")
+                     (prefix-in a: "helpers.ss"))
+         "arrow.ss"
+         "base.ss"
+         scheme/contract/exists
+         "guts.ss")
 
 (define-syntax (verify-contract stx)
   (syntax-case stx ()
