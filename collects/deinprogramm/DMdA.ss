@@ -1008,7 +1008,18 @@
 		       (raise e))))
       (call-with-values
 	  (lambda ()
-	    (quickcheck-results (test)))
+	    (with-handlers
+		((exn:assertion-violation?
+		  (lambda (e)
+		    ;; minor kludge to produce comprehensible error message
+		    (if (eq? (exn:assertion-violation-who e) 'coerce->result-generator)
+			(raise (make-exn:fail (string-append "Wert muß Eigenschaft oder boolesch sein: "
+							     ((error-value->string-handler)
+							      (car (exn:assertion-violation-irritants e))
+							      100))
+					      (exn-continuation-marks e)))
+			(raise e)))))
+	      (quickcheck-results (test))))
 	(lambda (ntest stamps result)
 	  (if (check-result? result)
 	      (begin
