@@ -1002,7 +1002,7 @@
 (define (check-property-error test src-info test-info)
   (let ((info (send test-info get-info)))
     (send info add-check)
-    (with-handlers ((exn?
+    (with-handlers ((exn:fail?
 		     (lambda (e)
 		       (send info property-error e src-info)
 		       (raise e))))
