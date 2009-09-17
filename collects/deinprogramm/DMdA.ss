@@ -880,7 +880,7 @@
 (define true (contract (one-of #f)))
 (define false (contract (one-of #f)))
 
-(define string (contract/arbitrary arbitrary-string (predicate string?)))
+(define string (contract/arbitrary arbitrary-printable-ascii-string (predicate string?)))
 (define symbol (contract/arbitrary arbitrary-symbol (predicate symbol?)))
 (define empty-list (contract (one-of empty)))
 
