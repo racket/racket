@@ -289,10 +289,13 @@
                                  (std-path "scheme.css")
                                  (std-path "scribble-common.js")))
                          null)]
-        ;; up-path is #t, which makes it go to the (user's) start page
-        ;; (using cookies) -- except when it is the start page itself
-        ;; (one of the two)
-        [up-path     (not root?)]
+        ;; For main-directory, non-start files, up-path is #t, which makes the
+        ;; "up" link go to the (user's) start page using cookies. For other files,
+        ;; 
+        [up-path     (and (not root?)
+                          (if main?
+                              #t
+                              (build-path (find-user-doc-dir) "index.html")))]
         [search-box? #t]))))
 
 (define (pick-dest latex-dest doc)
