@@ -9,8 +9,12 @@ differences from v3:
 
 |#
 
-(require "private/contract-base.ss"
-         "private/contract-arrow.ss"
+(require "private/contract-arrow.ss"
+         "private/contract-base.ss"
+         "private/contract-exists.ss"
+         "private/contract-misc.ss"
+         "private/contract-provide.ss"
+         "private/contract-regions.ss"
          "private/contract-guts.ss"
          "private/contract-ds.ss"
          "private/contract-opt.ss"
@@ -26,10 +30,13 @@ differences from v3:
              procedure-accepts-and-more?
              check-procedure
              check-procedure/more)
- (except-out (all-from-out "private/contract-base.ss")
-             ∃?
+ (except-out (all-from-out "private/contract-exists.ss") ∃?)
+ (except-out (all-from-out "private/contract-misc.ss")
              check-between/c
-             check-unary-between/c))
+             check-unary-between/c)
+ (all-from-out "private/contract-regions.ss")
+ (all-from-out "private/contract-provide.ss")
+ (all-from-out "private/contract-base.ss"))
 
 ;; from contract-guts.ss
 

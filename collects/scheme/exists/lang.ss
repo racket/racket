@@ -1,6 +1,6 @@
 #lang scheme
 
-(require "../private/contract-base.ss")
+(require "../private/contract-exists.ss")
 
 ;; this code builds the list of predicates (in case it changes, this may need to be re-run)
 #;

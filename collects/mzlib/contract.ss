@@ -29,10 +29,9 @@
 ;; except the arrow contracts
 ;;
 
-(require (except-in scheme/private/contract-base
-                    define/contract
-                    with-contract
-                    define-struct/contract)
+(require scheme/private/contract-base
+         scheme/private/contract-misc
+         scheme/private/contract-provide
          scheme/private/contract-guts
          scheme/private/contract-ds
          scheme/private/contract-opt
@@ -43,7 +42,9 @@
  (except-out (all-from-out scheme/private/contract-ds)
              lazy-depth-to-look)
  
- (except-out (all-from-out scheme/private/contract-base)
+ (all-from-out scheme/private/contract-base)
+ (all-from-out scheme/private/contract-provide)
+ (except-out (all-from-out scheme/private/contract-misc)
              check-between/c
              string-len/c
              check-unary-between/c)

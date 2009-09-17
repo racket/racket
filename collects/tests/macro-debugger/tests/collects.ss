@@ -200,8 +200,10 @@
     scheme/private/contract-basic-opters
     scheme/private/contract-ds
     scheme/private/contract-ds-helpers
+    scheme/private/contract-exists
     scheme/private/contract-guts
     scheme/private/contract-helpers
+    scheme/private/contract-misc
     scheme/private/contract-opt
     scheme/private/contract-opt-guts
     scheme/private/define-struct

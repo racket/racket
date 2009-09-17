@@ -3,13 +3,29 @@
 (provide unpack-blame build-src-loc-string 
          mangle-id mangle-id-for-maker
          build-struct-names
+         lookup-struct-info
          nums-up-to
          add-name-prop
          all-but-last
          known-good-contract?)
 
 (require setup/main-collects
+         scheme/struct-info
          (for-template scheme/base))
+
+;; lookup-struct-info : syntax -> (union #f (list syntax syntax (listof syntax) ...))
+(define (lookup-struct-info stx provide-stx)
+  (let ([id (syntax-case stx ()
+              [(a b) (syntax a)]
+              [_ stx])])
+    (let ([v (syntax-local-value id (λ () #f))])
+      (if (struct-info? v)
+          (extract-struct-info v)
+          (raise-syntax-error 'provide/contract
+                              "expected a struct name" 
+                              provide-stx
+                              id)))))
+
 
 (define (add-name-prop name stx)
   (cond
