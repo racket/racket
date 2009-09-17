@@ -136,7 +136,7 @@ Returns one of three kinds of values, depending on the binding of
       ]
 
 If @scheme[id-stx] is bound to a @tech{rename-transformer}, the result
-from @scheme[identifier] binding is for the identifier in the
+from @scheme[identifier-binding] is for the identifier in the
 transformer, so that @scheme[identifier-binding] is consistent with
 @scheme[free-identifier=?].}
 
