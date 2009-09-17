@@ -8,7 +8,7 @@
                      "unit-contract-syntax.ss"
                      "unit-syntax.ss")
          (for-meta 2 scheme/base)
-         scheme/contract
+         scheme/contract/base
          "unit-utils.ss"
          "unit-runtime.ss")
 
