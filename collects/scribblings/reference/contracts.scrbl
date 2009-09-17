@@ -18,7 +18,7 @@ another. Programmers specify the behavior of a module exports via
 constraints.
 
 @note-lib[scheme/contract #:use-sources (scheme/private/contract-ds
-                                         scheme/private/contract
+                                         scheme/private/contract-base
                                          scheme/private/contract-guts)]
 
 @deftech{Contracts} come in two forms: those constructed by the

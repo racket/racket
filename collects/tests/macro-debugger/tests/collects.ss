@@ -195,7 +195,7 @@
     scheme/mzscheme
     scheme/nest
     scheme/private/class-internal
-    scheme/private/contract
+    scheme/private/contract-base
     scheme/private/contract-arrow
     scheme/private/contract-basic-opters
     scheme/private/contract-ds

@@ -1213,7 +1213,7 @@ improve method arity mismatch contract violation error messages?
               (let ([m (regexp-match #rx"^make-(.*)$" (format "~a" (syntax-e stx)))])
                 (cond
                   [m (cadr m)]
-                  [else (raise-syntax-error 'contract.ss
+                  [else (raise-syntax-error 'contract-base.ss
                                             "unable to cope with a struct maker whose name doesn't begin with `make-'"
                                             orig-stx)]))))
        

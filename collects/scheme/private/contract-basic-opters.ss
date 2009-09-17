@@ -2,7 +2,7 @@
 
 (require "contract-guts.ss"
          "contract-opt.ss"
-         "contract.ss")
+         "contract-base.ss")
 (require (for-syntax scheme/base
                      "contract-opt-guts.ss"))
 
