@@ -153,6 +153,7 @@
               (set! write (or (car c) write-string))
               (for-each loop (cdr c))
               (set! write old))]
+           #; ; no need for this hack yet
            [(with-writer-change)
             ;; the function gets the old writer and return a new one
             ;; (useful to sabe the current writer then restore it inside)
@@ -209,6 +210,7 @@
 (define/provide-special (add-prefix pfx))
 (define/provide-special (set-prefix pfx))
 (define/provide-special (with-writer writer))
+#; ; no need for this hack yet
 (define/provide-special (with-writer-change writer))
 
 (define make-spaces ; (efficiently)
