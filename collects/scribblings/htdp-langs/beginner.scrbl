@@ -243,6 +243,18 @@ A test case to check that the first @scheme[expr] signals an error,
 where the error messages matches the string produced by the second
 @scheme[expr].}
 
+@defform[(check-member-of expr expr)]{
+
+A test case to check that the first @scheme[expr] produces an element 
+in the list of the second @scheme[expr].}
+
+@defform[(check-range expr expr expr)]{
+
+A test case to check that the first @scheme[expr] produces a number
+inbetween the numbers produced by the second and third @scheme[expr]s,
+inclusive.}
+                                                               
+
 @; ----------------------------------------------------------------------
 
 @section{@scheme[empty]}

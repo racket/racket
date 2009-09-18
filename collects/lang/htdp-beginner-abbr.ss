@@ -39,6 +39,8 @@
            check-expect
            check-within
            check-error
+           check-member-of
+           check-range
 	   #%datum
            #%top-interaction
 	   empty true false)

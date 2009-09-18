@@ -172,6 +172,8 @@ The same as Beginning's @|beg-and| and @|beg-or|.}
 @defform[(check-expect expr expr)]
 @defform[(check-within expr expr expr)]
 @defform[(check-error expr expr)]
+@defform[(check-member-of expr expr)]
+@defform[(check-range expr expr expr)]
 )]{
 
 The same as Beginning's @|beg-check-expect|, etc.}

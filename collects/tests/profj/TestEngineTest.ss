@@ -1,7 +1,7 @@
 ;; The first three lines of this file were inserted by DrScheme. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
 #reader(lib "htdp-beginner-reader.ss" "lang")((modname TestEngineTest) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
-;;Expect 29 checks, 17 failures
+;;Expect 37 checks, 17 failures
 
 (define (count f)
   (cond
@@ -42,3 +42,16 @@
 (check-error (/ 1 0) "/: division by zero")
 (check-error 3 "some message") ;fails
 (check-error (first empty) "another message") ;fails
+
+(check-member-of (make-ball 1 1 'blue) (list (make-ball 1 2 'blue) (make-ball 1 1 'blue) (make-ball 1 2 'red) 'red))
+(check-member-of 1 (list 1 1 1 1))
+(check-member-of (make-ball 2 2 'blue) (list (make-ball 1 2 'blue) (make-ball 1 1 'blue) (make-ball 1 2 'red) 'red)) ;fails
+
+(check-range 5 0 10)
+(check-range 0 0 10)
+(check-range 10 0 10)
+(check-range 11 0 10) ;fails
+(check-range 5.01 0 10.5)
+(check-range 0.0 0 10.5)
+(check-range 10.5 0 10.5)
+(check-range 10.5001 0 10.5) ;fails

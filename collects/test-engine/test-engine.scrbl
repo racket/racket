@@ -46,6 +46,19 @@ It is an error to produce a function value.}
 Checks that evaluating the first expression signals an error, where
 the error message matches the string.}
 
+@defform[(check-member-of (test any/c) (expecteds (listof any/c)))]{
+
+Accepts two value-producing expressions, where the second expression
+must evaluate to a list of values. Structurally compares the first
+value to each value in the list.
+
+It is an error to produce a function value.}
+                                                                    
+@defform[(check-range (test number/c) (min number/c) (max number/c))]{
+                                       
+Accepts three number-producing expressions. Performs the following comparison:
+min <= test <= max.}
+
 @defproc[(test) void?]{
 
 Runs all of the tests specified by check forms in the current module
