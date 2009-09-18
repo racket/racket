@@ -525,11 +525,11 @@ no extension, @scheme[#f] is returned.}
                              [path (or/c path-string?  path-for-some-system?)])
          path-for-some-system?]{
 
-Finds a relative pathname with respect to @scheme[basepath] that names
-the same file or directory as @scheme[path]. Both @scheme[basepath]
+Finds a relative pathname with respect to @scheme[base] that names
+the same file or directory as @scheme[path]. Both @scheme[base]
 and @scheme[path] must be simplified in the sense of
 @scheme[simple-form-path].  If @scheme[path] is not a proper subpath
-of @scheme[basepath] (i.e., a subpath that is strictly longer),
+of @scheme[base] (i.e., a subpath that is strictly longer),
 @scheme[path] is returned.}
 
 @defproc[(normalize-path [path path-string?]
