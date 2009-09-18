@@ -43,9 +43,9 @@
 (check-error 3 "some message") ;fails
 (check-error (first empty) "another message") ;fails
 
-(check-member-of (make-ball 1 1 'blue) (list (make-ball 1 2 'blue) (make-ball 1 1 'blue) (make-ball 1 2 'red) 'red))
-(check-member-of 1 (list 1 1 1 1))
-(check-member-of (make-ball 2 2 'blue) (list (make-ball 1 2 'blue) (make-ball 1 1 'blue) (make-ball 1 2 'red) 'red)) ;fails
+(check-member-of (make-ball 1 1 'blue) (make-ball 1 2 'blue) (make-ball 1 1 'blue) (make-ball 1 2 'red) 'red)
+(check-member-of 1 1 1 1 1)
+(check-member-of (make-ball 2 2 'blue) (make-ball 1 2 'blue) (make-ball 1 1 'blue) (make-ball 1 2 'red) 'red) ;fails
 
 (check-range 5 0 10)
 (check-range 0 0 10)

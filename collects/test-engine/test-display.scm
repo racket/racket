@@ -258,9 +258,10 @@
 	 [(message-error? fail)
 	  (for-each print-formatted (message-error-strings fail))]
          [(not-mem? fail)
-          (print "Actual value ~F differs from all given members in ~F."
-                 (formatter (not-mem-test fail))
-                 (formatter (not-mem-set fail)))]
+          (print "Actual value ~F differs from all given members in "
+                 (formatter (not-mem-test fail)))
+          (for-each (lambda (a) (print " ~F" (formatter a))) (not-mem-set fail))
+          (print ".")]
          [(not-range? fail)
           (print "Actual value ~F is not between ~F and ~F, inclusive."
                  (formatter (not-range-test fail))

@@ -51,7 +51,7 @@
 (define-for-syntax CHECK-WITHIN-STR
   "check-within requires three expressions. Try (check-within test expected range).")
 (define-for-syntax CHECK-MEMBER-OF-STR
-  "check-member-of requires two expressions. Try (check-member-of test options).")
+  "check-member-of requires at least two expressions. Try (check-member-of test option options ...).")
 (define-for-syntax CHECK-RANGE-STR
   "chech-range requires three expressions. Try (check-range test min max).")
 
@@ -223,19 +223,18 @@
   (unless (check-context?)
     (raise-syntax-error 'check-member-of CHECK-EXPECT-DEFN-STR stx))
   (syntax-case stx ()
-    [(_ test actuals)
-     (check-expect-maker stx #'check-member-of-values-expected #`test (list #`actuals)
+    [(_ test actual actuals ...)
+     (check-expect-maker stx #'check-member-of-values-expected #`test (list #`actual #`(list actuals ...))
                          'comes-from-check-member-of)]
     [_ (raise-syntax-error 'check-member-of CHECK-MEMBER-OF-STR stx)]))
 
 ;; check-member-of-values-expected: (-> scheme-val) scheme-val src test-object -> void
-(define (check-member-of-values-expected test actuals src test-info)
-  (error-check (lambda (v) (list? v)) actuals LIST-FMT #t)
-  (error-check (lambda (v) (not (procedure? v))) actuals CHECK-MEMBER-OF-FUNCTION-FMT #f)
+(define (check-member-of-values-expected test first-actual actuals src test-info)
+  (error-check (lambda (v) (not (procedure? v))) first-actual CHECK-MEMBER-OF-FUNCTION-FMT #f)
   (send (send test-info get-info) add-check)
   (run-and-check (lambda (v2 v1 _) (memf (lambda (i) (beginner-equal? v1 i)) v2))
                  (lambda (src format v1 v2 _) (make-not-mem src format v1 v2))
-                 test actuals #f src test-info 'check-member-of))
+                 test (cons first-actual actuals) #f src test-info 'check-member-of))
 
 ;;check-range
 (define-syntax (check-range stx)

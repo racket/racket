@@ -243,10 +243,10 @@ A test case to check that the first @scheme[expr] signals an error,
 where the error messages matches the string produced by the second
 @scheme[expr].}
 
-@defform[(check-member-of expr expr)]{
+@defform[(check-member-of expr expr expr ...)]{
 
 A test case to check that the first @scheme[expr] produces an element 
-in the list of the second @scheme[expr].}
+that is equivalent to one of the following @scheme[expr]s.}
 
 @defform[(check-range expr expr expr)]{
 

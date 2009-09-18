@@ -46,11 +46,10 @@ It is an error to produce a function value.}
 Checks that evaluating the first expression signals an error, where
 the error message matches the string.}
 
-@defform[(check-member-of (test any/c) (expecteds (listof any/c)))]{
+@defform[(check-member-of (test any/c) (expected any/c) ...)]{
 
-Accepts two value-producing expressions, where the second expression
-must evaluate to a list of values. Structurally compares the first
-value to each value in the list.
+Accepts at least two value-producing expressions. Structurally compares the first
+value to each value subsequent value specified.
 
 It is an error to produce a function value.}
                                                                     
