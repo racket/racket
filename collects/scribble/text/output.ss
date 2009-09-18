@@ -153,6 +153,13 @@
               (set! write (or (car c) write-string))
               (for-each loop (cdr c))
               (set! write old))]
+           [(with-writer-change)
+            ;; the function gets the old writer and return a new one
+            ;; (useful to sabe the current writer then restore it inside)
+            (let ([old write])
+              (set! write ((car c) write))
+              (for-each loop (cdr c))
+              (set! write old))]
            [else (error 'output "unknown special value flag: ~e"
                         (special-flag x))]))]
       [else
@@ -202,6 +209,7 @@
 (define/provide-special (add-prefix pfx))
 (define/provide-special (set-prefix pfx))
 (define/provide-special (with-writer writer))
+(define/provide-special (with-writer-change writer))
 
 (define make-spaces ; (efficiently)
   (let ([t (make-hasheq)] [v (make-vector 80 #f)])
