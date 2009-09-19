@@ -759,7 +759,7 @@
                       [body-lines (regexp-split 
 				   #rx"\n" 
 				   (substring message-str (cdar m) (string-length message-str)))])
-		  (validate-header (regexp-replace #rx"[^\x0-\xFF]" header "_"))
+		  (validate-header (regexp-replace* #rx"[^\x0-\xFF]" header "_"))
                   (let* ([to* (sm-extract-addresses (extract-field "To" header))]
                          [to (map encode-for-header (map car to*))]
                          [cc* (sm-extract-addresses (extract-field "CC" header))]
