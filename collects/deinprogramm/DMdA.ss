@@ -985,8 +985,11 @@
 			      (raise-syntax-error #f "inkorrekte `for-all'-Klausel - sollte die Form (id contr) haben"
 						  pr))))
 			 (syntax->list #'(?clause ...)))))
-       #'(quickcheck:property 
-	  ((?id ?arb) ...) ?body)))
+
+       (stepper-syntax-property #'(quickcheck:property 
+				   ((?id ?arb) ...) ?body)
+				'stepper-skip-completely
+				#t)))
     ((_ ?something ?body)
      (raise-syntax-error #f "keine Klauseln der Form (id contr)"
 			 stx))
