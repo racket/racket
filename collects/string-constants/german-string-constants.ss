@@ -1097,6 +1097,7 @@
  (module-browser-name-short "Kurz")
  (module-browser-name-medium "Mittel")
  (module-browser-name-long "Lang")
+ (module-browser-name-very-long "Lang mit Phasen")  ;; like 'Long' but shows the phases where this file is loaded
  (module-browser-open-all "Alle hier angezeigten Datein öffnen")
 
  (happy-birthday-matthias "Happy Birthday, Matthias!")
