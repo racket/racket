@@ -1166,7 +1166,7 @@
  (stepper-no-such-step "Kein Schritt gefunden, der das Kriterium erfüllt.")
  (stepper-no-such-step/earlier "Kein früherer Schritt gefunden, der das Kriterium erfüllt.")
  (stepper-jump-to-beginning "an den Anfang") ;; name changed from stepper-home to stepper-jump-to-beginning
- (stepper-jump-to-end "ans Ande") ;; content changed
+ (stepper-jump-to-end "ans Ende") ;; content changed
  (stepper-jump-to-selected "an den Anfang des markierten Ausdrucks") ;; new
  
  (debug-tool-button-name "Debugger")
