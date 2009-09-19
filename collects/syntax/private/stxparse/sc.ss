@@ -26,8 +26,10 @@
          syntax-parser
 
          pattern
+         ~var
          ~and
          ~or
+         ~not
          ~seq
          ~bounds
          ~once

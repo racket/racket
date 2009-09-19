@@ -247,6 +247,13 @@
               (try (parse:S x fc subpattern
                             (disjunct subpattern success (enclosing-fail) (id ...)))
                    ...)))]
+       [#s(pat:not () subpattern)
+        #`(let ([fail-to-succeed (lambda (_failure) k)]
+                [outer-fail enclosing-fail])
+            (with-enclosing-fail* fail-to-succeed
+              (parse:S x fc subpattern
+                       (with-enclosing-fail outer-fail
+                         (fail x #:expect (expectation pattern0) #:fce fc)))))]
        [#s(pat:compound attrs kind0 (part-pattern ...))
         (let ([kind (get-kind (wash #'kind0))])
           (with-syntax ([(part ...) (generate-temporaries (kind-selectors kind))])
@@ -376,6 +383,10 @@
                                           #'null])))
                     k))
                 (fail x #:expect result #:fce fc)))]
+       [#s(hpat:and (a ...) head single)
+        #`(parse:H x fc head rest index
+                   (let ([lst (stx-list-take x index)])
+                     (parse:S lst fc single k)))]
        [#s(hpat:or (a ...) (subpattern ...))
         (with-syntax ([(#s(attr id _ _) ...) #'(a ...)])
           #`(let ([success
@@ -560,6 +571,8 @@
      #''ineffable]
     [(_ #s(pat:fail _ condition message))
      #'(expectation-of-message message)]
+    [(_ #s(pat:not _ pattern))
+     #''ineffable]
     ))
 
 ;; ----

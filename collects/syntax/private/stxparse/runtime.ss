@@ -11,8 +11,10 @@
                      "../util.ss"))
 
 (provide pattern
+         ~var
          ~and
          ~or
+         ~not
          ~seq
          ~bounds
          ~once
@@ -74,8 +76,10 @@
       (raise-syntax-error #f "keyword used out of context" stx))))
 
 (define-keyword pattern)
+(define-keyword ~var)
 (define-keyword ~and)
 (define-keyword ~or)
+(define-keyword ~not)
 (define-keyword ~seq)
 (define-keyword ~bounds)
 (define-keyword ~once)

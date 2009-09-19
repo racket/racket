@@ -73,8 +73,10 @@
   (list (quote-syntax _)
         (quote-syntax ||)
         (quote-syntax ...)
+        (quote-syntax ~var)
         (quote-syntax ~and)
         (quote-syntax ~or)
+        (quote-syntax ~not)
         (quote-syntax ~seq)
         (quote-syntax ~rep)
         (quote-syntax ~once)
@@ -252,10 +254,10 @@
 
 ;; parse-single-pattern : stx DeclEnv -> SinglePattern
 (define (parse-single-pattern stx decls)
-  (syntax-case stx (~and ~or ~rest ~struct ~! ~describe ~bind ~fail)
+  (syntax-case stx (~var ~and ~or ~not ~rest ~struct ~! ~describe ~bind ~fail)
     [wildcard
      (wildcard? #'wildcard)
-     (make pat:any null)]
+     (create-pat:any)]
     [reserved
      (reserved? #'reserved)
      (wrong-syntax stx "not allowed here")]
@@ -264,21 +266,23 @@
      (parse-pat:id stx decls #f)]
     [datum
      (atomic-datum? #'datum)
-     (make pat:datum null (syntax->datum #'datum))]
+     (create-pat:datum (syntax->datum #'datum))]
     [(~and . rest)
-     (parse-pat:and stx decls)]
+     (parse-pat:and stx decls #f)]
     [(~or . rest)
      (parse-pat:or stx decls #f)]
+    [(~not . rest)
+     (parse-pat:not stx decls)]
     [(head dots . tail)
      (dots? #'dots)
      (parse-pat:dots stx #'head #'tail decls)]
     [(~struct key . contents)
      (let ([lp (parse-single-pattern (syntax/loc stx contents) decls)]
            [key (syntax->datum #'key)])
-       (make pat:compound (pattern-attrs lp) `(#:pstruct ,key) (list lp)))]
+       (create-pat:compound `(#:pstruct ,key) (list lp)))]
     [(~! . rest)
      (let ([inner (parse-single-pattern (syntax/loc stx rest) decls)])
-       (make pat:cut (pattern-attrs inner) inner))]
+       (create-pat:cut inner))]
     [(~describe . rest)
      (parse-pat:describe stx decls #f)]
     [(~bind . rest)
@@ -291,25 +295,27 @@
      (parse-pat:pair stx #'head #'tail decls)]
     [#(a ...)
      (let ([lp (parse-single-pattern (syntax/loc stx (a ...)) decls)])
-       (make pat:compound (pattern-attrs lp) '#:vector (list lp)))]
+       (create-pat:compound '#:vector (list lp)))]
     [b
      (box? (syntax-e #'b))
      (let ([bp (parse-single-pattern (unbox (syntax-e #'b)) decls)])
-       (make pat:compound (pattern-attrs bp) '#:box (list bp)))]
+       (create-pat:compound '#:box (list bp)))]
     [s
      (and (struct? (syntax-e #'s)) (prefab-struct-key (syntax-e #'s)))
      (let* ([s (syntax-e #'s)]
             [key (prefab-struct-key s)]
             [contents (cdr (vector->list (struct->vector s)))])
        (let ([lp (parse-single-pattern (datum->syntax #f contents #'s) decls)])
-         (make pat:compound (pattern-attrs lp) `(#:pstruct ,key) (list lp))))]))
+         (create-pat:compound `(#:pstruct ,key) (list lp))))]))
 
 ;; parse-head-pattern : stx DeclEnv -> HeadPattern
 (define (parse-head-pattern stx decls)
-  (syntax-case stx (~or ~seq ~describe ~optional)
+  (syntax-case stx (~var ~and ~or ~seq ~describe ~optional)
     [id
      (and (identifier? #'id) (not (reserved? #'id)))
      (parse-pat:id stx decls #t)]
+    [(~and . rest)
+     (parse-pat:and stx decls #t)]
     [(~or . rest)
      (parse-pat:or stx decls #t)]
     [(~seq . rest)
@@ -342,7 +348,7 @@
   (define entry (declenv-lookup decls id))
   (match entry
     [(list 'literal internal-id literal-id)
-     (make pat:literal null literal-id)]
+     (create-pat:literal literal-id)]
     [(list 'stxclass _ _ _)
      (error 'parse-pat:id
             "(internal error) decls had leftover 'stxclass entry: ~s"
@@ -370,7 +376,7 @@
                               (stxclass-description sc)
                               (stxclass-attrs sc))]
              [else
-              (wrap/name name (make pat:any null))]))]))
+              (wrap/name name (create-pat:any))]))]))
 
 (define (parse-pat:id/s stx name parser description attrs)
   (define prefix (name->prefix name))
@@ -398,8 +404,7 @@
   (cond [(wildcard? id) pattern]
         [(epsilon? id) pattern]
         [else
-         (let ([a (make attr id 0 #t)])
-           (make pat:name (cons a (pattern-attrs pattern)) pattern (list id)))]))
+         (create-pat:name pattern (list id))]))
 
 ;; id-pattern-attrs : (listof SAttr) id/#f IdPrefix -> (listof IAttr)
 (define (id-pattern-attrs sattrs bind prefix)
@@ -436,31 +441,49 @@
          [(description pattern)
           (let ([p (parse-some-pattern #'pattern decls allow-head?)])
             (if (head-pattern? p)
-                (make hpat:describe (pattern-attrs p)
-                      #'description transparent? p)
-                (make pat:describe (pattern-attrs p)
-                      #'description transparent? p)))]))]))
+                (create-hpat:describe #'description transparent? p)
+                (create-pat:describe #'description transparent? p)))]))]))
 
 (define (parse-pat:or stx decls allow-head?)
   (define patterns (parse-cdr-patterns stx decls allow-head? #f))
   (cond [(null? (cdr patterns))
          (car patterns)]
         [else
-         (let ()
-           (define attrs (union-iattrs (map pattern-attrs patterns)))
-           (cond [(ormap head-pattern? patterns)
-                  (make-hpat:or attrs patterns)]
-                 [else
-                  (make-pat:or attrs patterns)]))]))
+         (cond [(ormap head-pattern? patterns)
+                (create-hpat:or patterns)]
+               [else
+                (create-pat:or patterns)])]))
 
-(define (parse-pat:and stx decls)
-  (define patterns (parse-cdr-patterns stx decls #f #t))
-  (make pat:and (append-iattrs (map pattern-attrs patterns)) patterns))
+(define (parse-pat:and stx decls allow-head?)
+  (define patterns (parse-cdr-patterns stx decls allow-head? #t))
+  (cond [(null? (cdr patterns))
+         (car patterns)]
+        [(ormap head-pattern? patterns)
+         ;; Check to make sure *all* are head patterns
+         (for ([pattern patterns]
+               [pattern-stx (stx->list (stx-cdr stx))])
+           (unless (head-pattern? pattern)
+             (wrong-syntax
+              pattern-stx
+              "single-term pattern not allowed after head pattern")))
+         (let ([p0 (car patterns)]
+               [lps (map head-pattern->list-pattern (cdr patterns))])
+           (create-hpat:and p0 (create-pat:and lps)))]
+        [else
+         (create-pat:and patterns)]))
+
+(define (parse-pat:not stx decls)
+  (syntax-case stx (~not)
+    [(~not pattern)
+     (let ([p (parse-single-pattern #'pattern decls)])
+       (create-pat:not p))]
+    [_
+     (wrong-syntax stx "expected a single subpattern")]))
 
 (define (parse-hpat:seq stx list-stx decls)
   (define pattern (parse-single-pattern list-stx decls))
   (check-list-pattern pattern stx)
-  (make hpat:seq (pattern-attrs pattern) pattern))
+  (create-hpat:seq pattern))
 
 (define (parse-cdr-patterns stx decls allow-head? allow-cut?)
   (unless (stx-list? stx)
@@ -477,7 +500,7 @@
 
 (define (parse-cut-in-and stx)
   (syntax-case stx (~!)
-    [~! (make pat:cut null (make pat:any null))]
+    [~! (create-pat:cut (create-pat:any))]
     [_ #f]))
 
 (define (parse-some-pattern stx decl allow-head?)
@@ -501,10 +524,7 @@
       [_
        (list (parse-ellipsis-head-pattern head decls))]))
   (define tailp (parse-single-pattern tail decls))
-  (define attrs
-    (append-iattrs (cons (pattern-attrs tailp)
-                         (map pattern-attrs headps))))
-  (make pat:dots attrs headps tailp))
+  (create-pat:dots headps tailp))
 
 (define (parse-pat:bind stx decls)
   (syntax-case stx ()
@@ -531,7 +551,7 @@
                         #`(not #,(caddr chunk)))))])
          (syntax-case rest ()
            [(message)
-            (make pat:fail null condition #'message)]
+            (create-pat:fail condition #'message)]
            [()
             (wrong-syntax stx "missing message expression")]
            [_
@@ -545,14 +565,11 @@
 (define (parse-pat:pair stx head tail decls)
   (define headp (parse-head-pattern head decls))
   (define tailp (parse-single-pattern tail decls))
-  (define attrs
-    (append-iattrs
-     (list (pattern-attrs headp) (pattern-attrs tailp))))
   ;; Only make pat:head if head is complicated; otherwise simple compound/pair
   ;; FIXME: Could also inline ~seq patterns from head...?
   (if (head-pattern? headp)
-      (make pat:head attrs headp tailp)
-      (make pat:compound attrs '#:pair (list headp tailp))))
+      (create-pat:head headp tailp)
+      (create-pat:compound '#:pair (list headp tailp))))
 
 (define (check-list-pattern pattern stx)
   (match pattern

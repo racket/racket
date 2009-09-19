@@ -1,5 +1,7 @@
 #lang scheme/base
-(require (for-syntax scheme/base
+(require "rep-attrs.ss"
+         "../util.ss"
+         (for-syntax scheme/base
                      syntax/stx
                      "../util.ss"))
 (provide (all-defined-out))
@@ -27,6 +29,7 @@ A SinglePattern is one of
   (make-pat:dots SPBase (listof EllipsisHeadPattern) SinglePattern)
   (make-pat:and SPBase (listof SinglePattern))
   (make-pat:or SPBase (listof SinglePattern))
+  (make-pat:not SPBase SinglePattern)
   (make-pat:compound SPBase Kind (listof SinglePattern))
   (make-pat:cut SPBase SinglePattern)
   (make-pat:describe SPBase stx boolean SinglePattern)
@@ -50,6 +53,7 @@ A ListPattern is a subtype of SinglePattern; one of
 (define-struct pat:dots (attrs heads tail) #:prefab)
 (define-struct pat:and (attrs patterns) #:prefab)
 (define-struct pat:or (attrs patterns) #:prefab)
+(define-struct pat:not (attrs pattern) #:prefab)
 (define-struct pat:compound (attrs kind patterns) #:prefab)
 (define-struct pat:cut (attrs pattern) #:prefab)
 (define-struct pat:describe (attrs description transparent? pattern) #:prefab)
@@ -60,6 +64,7 @@ A ListPattern is a subtype of SinglePattern; one of
 A HeadPattern is one of
   (make-hpat:ssc HPBase id id boolean boolean)
   (make-hpat:seq HPBase ListPattern)
+  (make-hpat:and HPBase HeadPattern SinglePattern)
   (make-hpat:or HPBase (listof HeadPattern))
   (make-hpat:describe HPBase stx/#f boolean HeadPattern)
   (make-hpat:optional HPBase HeadPattern (listof clause:attr))
@@ -68,6 +73,7 @@ A HeadPattern is one of
 (define-struct hpat:ssc (attrs parser description bind-term? bind-attrs?) #:prefab)
 (define-struct hpat:seq (attrs inner) #:prefab)
 (define-struct hpat:or (attrs patterns) #:prefab)
+(define-struct hpat:and (attrs head single) #:prefab)
 (define-struct hpat:describe (attrs description transparent? pattern) #:prefab)
 (define-struct hpat:optional (attrs inner defaults) #:prefab)
 
@@ -105,6 +111,7 @@ A Kind is one of
       (pat:dots? x)
       (pat:and? x)
       (pat:or? x)
+      (pat:not? x)
       (pat:compound? x)
       (pat:cut? x)
       (pat:describe? x)
@@ -114,6 +121,7 @@ A Kind is one of
 (define (head-pattern? x)
   (or (hpat:ssc? x)
       (hpat:seq? x)
+      (hpat:and? x)
       (hpat:or? x)
       (hpat:describe? x)
       (hpat:optional? x)))
@@ -143,7 +151,81 @@ A Kind is one of
                (cond [(pred x) (accessor x)] ...
                      [else (raise-type-error 'pattern-attrs "pattern" x)])))]))
     (mk-get-attrs pat:name pat:any pat:sc pat:datum pat:literal pat:head
-                  pat:dots pat:and pat:or pat:compound pat:cut pat:describe
-                  pat:bind pat:fail
-                  hpat:ssc hpat:seq hpat:or hpat:describe hpat:optional
+                  pat:dots pat:and pat:or pat:not pat:compound pat:cut
+                  pat:describe pat:bind pat:fail
+                  hpat:ssc hpat:seq hpat:and hpat:or hpat:describe
+                  hpat:optional
                   ehpat)))
+
+
+;; ----
+
+;; Helpers to handle attribute calculations
+;; Too complicated for a few pattern forms; those are handled in rep.ss
+
+(define (create-pat:any)
+  (make pat:any null))
+
+(define (create-pat:name pattern ids)
+  (let ([as (for/list ([id ids]) (make attr id 0 #t))])
+    (make pat:name (append as (pattern-attrs pattern)) pattern ids)))
+
+(define (create-pat:datum datum)
+  (make pat:datum null datum))
+
+(define (create-pat:literal literal)
+  (make pat:literal null literal))
+
+(define (create-pat:compound kind ps)
+  (make pat:compound (append-iattrs (map pattern-attrs ps)) kind ps))
+
+(define (create-pat:cut inner)
+  (make pat:cut (pattern-attrs inner) inner))
+
+(define (create-pat:describe description transparent? p)
+  (make pat:describe (pattern-attrs p) description transparent? p))
+
+(define (create-pat:and patterns)
+  (let ([attrs (append-iattrs (map pattern-attrs patterns))])
+    (make pat:and attrs patterns)))
+
+(define (create-pat:or patterns)
+  (let ([attrs (union-iattrs (map pattern-attrs patterns))])
+    (make pat:or attrs patterns)))
+
+(define (create-pat:not pattern)
+  (make pat:not null pattern))
+
+(define (create-pat:dots headps tailp)
+  (let ([attrs (append-iattrs (map pattern-attrs (cons tailp headps)))])
+    (make pat:dots attrs headps tailp)))
+
+(define (create-pat:fail condition message)
+  (make pat:fail null condition message))
+
+(define (create-pat:head headp tailp)
+  (let ([attrs (append-iattrs (map pattern-attrs (list headp tailp)))])
+    (make pat:head attrs headp tailp)))
+
+;; ----
+
+(define (create-hpat:seq lp)
+  (make hpat:seq (pattern-attrs lp) lp))
+
+(define (create-hpat:describe description transparent? p)
+  (make hpat:describe (pattern-attrs p) description transparent? p))
+
+(define (create-hpat:and hp sp)
+  (make hpat:and (append-iattrs (map pattern-attrs (list hp sp))) hp sp))
+
+(define (create-hpat:or patterns)
+  (let ([attrs (union-iattrs (map pattern-attrs patterns))])
+    (make hpat:or attrs patterns)))
+
+;; ----
+
+(define (head-pattern->list-pattern hp)
+  ;; simplification: just extract list pattern from hpat:seq
+  (if (hpat:seq? hp)
+      (hpat:seq-inner hp)
+      (create-pat:head hp (create-pat:datum '()))))

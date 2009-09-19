@@ -3,8 +3,7 @@
          scheme/match
          syntax/stx
          syntax/id-table
-         "../util.ss"
-         "rep-patterns.ss")
+         "../util.ss")
 (provide (struct-out attr))
 
 #|
