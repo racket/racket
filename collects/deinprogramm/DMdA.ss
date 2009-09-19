@@ -970,20 +970,29 @@
 
 (define-syntax (for-all stx)
   (syntax-case stx ()
-    ((_ ((?id ?arb) ...) ?body)
+    ((_ (?clause ...) ?body)
      (with-syntax ((((?id ?arb) ...)
-		    ;; #### check errors, idness
 		    (map (lambda (pr)
 			   (syntax-case pr ()
 			     ((?id ?contract)
+			      (identifier? #'?id)
 			      (with-syntax ((?error-call
 					     (syntax/loc #'?contract (error "Vertrag hat keinen Generator"))))
 				#'(?id
 				   (or (contract-arbitrary (contract ?contract))
-				       ?error-call))))))
-			 (syntax->list #'((?id ?arb) ...)))))
+				       ?error-call))))
+			     (_
+			      (raise-syntax-error #f "inkorrekte `for-all'-Klausel - sollte die Form (id contr) haben"
+						  pr))))
+			 (syntax->list #'(?clause ...)))))
        #'(quickcheck:property 
-	  ((?id ?arb) ...) ?body)))))
+	  ((?id ?arb) ...) ?body)))
+    ((_ ?something ?body)
+     (raise-syntax-error #f "keine Klauseln der Form (id contr)"
+			 stx))
+    ((_ ?thing1 ?thing2 ?thing3 ?things ...)
+     (raise-syntax-error #f "zuviele Operanden"
+			 stx))))
 
 (define-syntax (check-property stx)
   (unless (memq (syntax-local-context) '(module top-level))
@@ -996,7 +1005,7 @@
 			  'comes-from-check-property)
       'stepper-skip-completely
       #t))
-    (_ (raise-syntax-error 'check-expect "`check-property' erwartet einen einzelnen Operanden"
+    (_ (raise-syntax-error #f "`check-property' erwartet einen einzelnen Operanden"
 			   stx))))
 
 (define (check-property-error test src-info test-info)
