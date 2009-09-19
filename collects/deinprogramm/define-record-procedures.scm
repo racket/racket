@@ -144,21 +144,27 @@
 					       #'(at ?param (property ?accessor ?param))))
 					   (syntax->list #'(our-accessor ...))
 					   (syntax->list #'(?param ...)))))
-			 #'(begin
-			     ;; we use real-predicate to avoid infinite recursion if a contract
-			     ;; for ?type-name using ?predicate is inadvertently defined
-			     (define ?type-name (contract (predicate real-predicate)))
-			     (define (?contract-constructor-name ?param ...)
-			       (contract
-				(combined (at ?type-name (predicate real-predicate))
-					  component-contract ...))))))))
+			 (with-syntax ((base-contract
+					(stepper-syntax-property
+					 #'(define ?type-name (contract (predicate real-predicate)))
+					 'stepper-skip-completely
+					 #t))
+				       (constructor-contract
+					(stepper-syntax-property
+					 #'(define (?contract-constructor-name ?param ...)
+					     (contract
+					      (combined (at ?type-name (predicate real-predicate))
+							component-contract ...)))
+					 'stepper-skip-completely
+					 #t)))
+			   #'(begin
+			       ;; we use real-predicate to avoid infinite recursion if a contract
+			       ;; for ?type-name using ?predicate is inadvertently defined
+			       base-contract
+			       constructor-contract))))))
 		 (with-syntax ((defs
 				 (stepper-syntax-property
-				  (syntax/loc x defs) 'stepper-skip-completely #t))
-			       (contract
-				(stepper-syntax-property
-				 #'contract
-				 'stepper-skip-completely #t)))
+				  (syntax/loc x defs) 'stepper-skip-completely #t)))
 				 
 		   #'(begin
 		       contract
