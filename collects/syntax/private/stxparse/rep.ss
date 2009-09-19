@@ -751,7 +751,7 @@
     [(cons (list '#:fail-unless fu-stx unless-condition expr) rest)
      (cons (make clause:fail #`(not #,unless-condition) expr)
            (parse-pattern-sides rest decls))]
-    [(cons (list '#:when unless-condition) rest)
+    [(cons (list '#:when w-stx unless-condition) rest)
      ;; Bleh: when is basically fail-unless without the msg argument
      (cons (make clause:fail #`(not #,unless-condition) #'#f)
            (parse-pattern-sides rest decls))]
