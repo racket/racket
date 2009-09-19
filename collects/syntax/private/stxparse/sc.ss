@@ -27,6 +27,7 @@
 
          pattern
          ~var
+         ~literal
          ~and
          ~or
          ~not

@@ -202,20 +202,17 @@
             (parse:S x fc pattern k))]
        [#s(pat:any attrs)
         #'k]
-       [#s(pat:sc (a ...) parser description bind-term? bind-attrs?)
-        #`(let ([result (parser x)])
+       [#s(pat:var _attrs name  #f () ())
+        #'(let-attributes ([#s(attr name 0 #t) x])
+            k)]
+       [#s(pat:var _attrs name parser (arg ...) (nested-a ...))
+        #`(let ([result (parser x arg ...)])
             (if (ok? result)
-                (let/unpack ((a ...)
-                             #,(let ([bind-term? (syntax-e #'bind-term?)]
-                                     [bind-attrs? (syntax-e #'bind-attrs?)])
-                                 (cond [(and bind-term? bind-attrs?)
-                                        #'(cons x result)]
-                                       [bind-term? ;; not possible, I think
-                                        #'(list x)]
-                                       [bind-attrs?
-                                        #'result]
-                                       [else #'null])))
-                  k)
+                (let-attributes (#,@(if (identifier? #'name)
+                                        #'([#s(attr name 0 #t) x])
+                                        #'()))
+                  (let/unpack ((nested-a ...) result)
+                    k))
                 (fail x #:expect result #:fce fc)))]
        [#s(pat:datum attrs datum)
         #`(let ([d (syntax-e x)])
@@ -365,23 +362,17 @@
                        (with-enclosing-cut-fail previous-cut-fail
                          (with-enclosing-fail previous-fail
                            k)))))]
-       [#s(hpat:ssc (a ...) parser description bind-term? bind-attrs?)
+       [#s(hpat:var _attrs name parser (arg ...) (nested-a ...))
         #`(let ([result (parser x)])
             (if (ok? result)
                 (let ([rest (car result)]
                       [index (cadr result)])
-                  (let/unpack ((a ...)
-                               #,(let ([bind-term? (syntax-e #'bind-term?)]
-                                       [bind-attrs? (syntax-e #'bind-attrs?)])
-                                   (cond [(and bind-term? bind-attrs?)
-                                          #`(cons (stx-list-take x index) (cddr result))]
-                                         [bind-term?
-                                          #'(list (stx-list-take x index))]
-                                         [bind-attrs?
-                                          #'(cddr result)]
-                                         [else
-                                          #'null])))
-                    k))
+                  (let-attributes (#,@(if (identifier? #'name)
+                                          #'([#s(attr name 0 #t)
+                                              (stx-list-take x index)])
+                                          #'()))
+                    (let/unpack ((nested-a ...) (cddr result))
+                      k)))
                 (fail x #:expect result #:fce fc)))]
        [#s(hpat:and (a ...) head single)
         #`(parse:H x fc head rest index

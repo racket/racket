@@ -12,6 +12,7 @@
 
 (provide pattern
          ~var
+         ~literal
          ~and
          ~or
          ~not
@@ -77,6 +78,7 @@
 
 (define-keyword pattern)
 (define-keyword ~var)
+(define-keyword ~literal)
 (define-keyword ~and)
 (define-keyword ~or)
 (define-keyword ~not)
@@ -342,8 +344,11 @@ An Expectation is one of
                               #'name))))])))
 
 ;; (let/unpack (([id num] ...) expr) expr) : expr
+;; Special case: empty attrs need not match packed length
 (define-syntax (let/unpack stx)
   (syntax-case stx ()
+    [(let/unpack (() packed) body)
+     #'body]
     [(let/unpack ((a ...) packed) body)
      (with-syntax ([(tmp ...) (generate-temporaries #'(a ...))])
        #'(let-values ([(tmp ...) (apply values packed)])

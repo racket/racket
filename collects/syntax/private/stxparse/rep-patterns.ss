@@ -20,9 +20,8 @@ If identifier, it already includes the colon part, unless epsilon
 
 #|
 A SinglePattern is one of
-  (make-pat:name SPBase SinglePattern (listof identifier))
   (make-pat:any SPBase)
-  (make-pat:sc SPBase id id boolean boolean)
+  (make-pat:var SPBase id id (listof stx) (listof IAttr))
   (make-pat:datum SPBase datum)
   (make-pat:literal SPBase identifier)
   (make-pat:head SPBase HeadPattern SinglePattern)
@@ -44,9 +43,8 @@ A ListPattern is a subtype of SinglePattern; one of
   (make-pat:cut SPBase ListPattern)
 |#
 
-(define-struct pat:name (attrs pattern names) #:prefab)
 (define-struct pat:any (attrs) #:prefab)
-(define-struct pat:sc (attrs parser description bind-term? bind-attrs?) #:prefab)
+(define-struct pat:var (attrs name parser args nested-attrs) #:prefab)
 (define-struct pat:datum (attrs datum) #:prefab)
 (define-struct pat:literal (attrs id) #:prefab)
 (define-struct pat:head (attrs head tail) #:prefab)
@@ -61,8 +59,8 @@ A ListPattern is a subtype of SinglePattern; one of
 (define-struct pat:bind (attrs clauses) #:prefab)
 
 #|
-A HeadPattern is one of
-  (make-hpat:ssc HPBase id id boolean boolean)
+A HeadPattern is one of 
+  (make-pat:var SPBase id id (listof stx) (listof IAttr))
   (make-hpat:seq HPBase ListPattern)
   (make-hpat:and HPBase HeadPattern SinglePattern)
   (make-hpat:or HPBase (listof HeadPattern))
@@ -70,7 +68,7 @@ A HeadPattern is one of
   (make-hpat:optional HPBase HeadPattern (listof clause:attr))
 |#
 
-(define-struct hpat:ssc (attrs parser description bind-term? bind-attrs?) #:prefab)
+(define-struct hpat:var (attrs name parser args nested-attrs) #:prefab)
 (define-struct hpat:seq (attrs inner) #:prefab)
 (define-struct hpat:or (attrs patterns) #:prefab)
 (define-struct hpat:and (attrs head single) #:prefab)
@@ -102,9 +100,8 @@ A Kind is one of
 |#
 
 (define (pattern? x)
-  (or (pat:name? x)
-      (pat:any? x)
-      (pat:sc? x)
+  (or (pat:any? x)
+      (pat:var? x)
       (pat:datum? x)
       (pat:literal? x)
       (pat:head? x)
@@ -119,7 +116,7 @@ A Kind is one of
       (pat:fail? x)))
 
 (define (head-pattern? x)
-  (or (hpat:ssc? x)
+  (or (hpat:var? x)
       (hpat:seq? x)
       (hpat:and? x)
       (hpat:or? x)
@@ -150,10 +147,10 @@ A Kind is one of
            #'(lambda (x)
                (cond [(pred x) (accessor x)] ...
                      [else (raise-type-error 'pattern-attrs "pattern" x)])))]))
-    (mk-get-attrs pat:name pat:any pat:sc pat:datum pat:literal pat:head
-                  pat:dots pat:and pat:or pat:not pat:compound pat:cut
-                  pat:describe pat:bind pat:fail
-                  hpat:ssc hpat:seq hpat:and hpat:or hpat:describe
+    (mk-get-attrs pat:any pat:var pat:datum pat:literal pat:head pat:dots
+                  pat:and pat:or pat:not pat:compound
+                  pat:cut pat:describe pat:bind pat:fail
+                  hpat:var hpat:seq hpat:and hpat:or hpat:describe
                   hpat:optional
                   ehpat)))
 
@@ -166,9 +163,10 @@ A Kind is one of
 (define (create-pat:any)
   (make pat:any null))
 
-(define (create-pat:name pattern ids)
-  (let ([as (for/list ([id ids]) (make attr id 0 #t))])
-    (make pat:name (append as (pattern-attrs pattern)) pattern ids)))
+(define (create-pat:var name parser args nested-attrs)
+  (let ([attrs
+         (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
+    (make pat:var attrs name parser args nested-attrs)))
 
 (define (create-pat:datum datum)
   (make pat:datum null datum))
@@ -208,6 +206,11 @@ A Kind is one of
     (make pat:head attrs headp tailp)))
 
 ;; ----
+
+(define (create-hpat:var name parser args nested-attrs)
+  (let ([attrs
+         (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
+    (make hpat:var attrs name parser args nested-attrs)))
 
 (define (create-hpat:seq lp)
   (make hpat:seq (pattern-attrs lp) lp))
