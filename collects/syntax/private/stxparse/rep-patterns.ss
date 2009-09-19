@@ -60,7 +60,7 @@ A ListPattern is a subtype of SinglePattern; one of
 
 #|
 A HeadPattern is one of 
-  (make-pat:var SPBase id id (listof stx) (listof IAttr))
+  (make-hpat:var SPBase id id (listof stx) (listof IAttr))
   (make-hpat:seq HPBase ListPattern)
   (make-hpat:and HPBase HeadPattern SinglePattern)
   (make-hpat:or HPBase (listof HeadPattern))

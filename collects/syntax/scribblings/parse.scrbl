@@ -283,7 +283,8 @@ form, syntax patterns, and attributes.
                         (pattern-id literal-id)]
                [literal-set literal-set-id
                             [literal-set-id #:at context-id]]
-               [clause (syntax-pattern pattern-directive ... expr)])]{
+               [clause (syntax-pattern pattern-directive ... expr)])
+              #:contracts ([stx-expr syntax?])]{
 
 Evaluates @scheme[stx-expr], which should produce a syntax object, and
 matches it against the @scheme[clause]s in order. If some clause's
@@ -304,13 +305,13 @@ error is raised. If the @scheme[#:context] argument is given,
     #:context #'(lambda (a b 3) (+ a b))
     [(x:id ...) 'ok]))
 
-The @scheme[#:literals] option specifies identifiers that should match
-as @tech{literals}, rather than simply being @tech{pattern
-variables}. A literal in the literals list has two components: the
-identifier used within the pattern to signify the positions to be
-matched (@scheme[pattern-id]), and the identifier expected to occur in
-those positions (@scheme[literal-id]). If the single-identifier form
-is used, the same identifier is used for both purposes.
+The @scheme[#:literals] option specifies identifiers that should be
+treated as @tech{literals} rather than @tech{pattern variables}. An
+entry in the literals list has two components: the identifier used
+within the pattern to signify the positions to be matched
+(@scheme[pattern-id]), and the identifier expected to occur in those
+positions (@scheme[literal-id]). If the entry is a single identifier,
+that identifier is used for both purposes.
 
 @bold{Note:} Unlike @scheme[syntax-case], @scheme[syntax-parse]
 requires all literals to have a binding. To match identifiers by their
@@ -338,18 +339,23 @@ The grammar of @deftech{syntax patterns} accepted by
 @scheme[syntax-parse] and @scheme[syntax-parser] is given in the
 following table:
 
-@schemegrammar*[#:literals (_ ~or ~and ~seq ~rep ~once ~optional
+@schemegrammar*[#:literals (_ ~var ~literal ~or ~and ~not ~seq 
+                            ~rep ~once ~optional
                             ~rest ~struct ~! ~describe ~bind ~fail)
                 [S-pattern
                  pvar-id
                  pvar-id:syntax-class-id
                  literal-id
+                 (~var id)
+                 (~var id syntax-class)
+                 (~literal literal-id)
                  atomic-datum
                  (H-pattern . S-pattern)
                  ((~or EH-pattern ...+) #,ellipses . S-pattern)
                  (EH-pattern #,ellipses . S-pattern)
                  (~and S-pattern ...+)
                  (~or S-pattern ...+)
+                 (~not S-pattern)
                  #((unsyntax @svar[pattern-part]) ...)
                  #s(prefab-struct-key (unsyntax @svar[pattern-part]) ...)
                  (~rest S-pattern)
@@ -365,9 +371,12 @@ following table:
                  (~rest L-pattern)
                  (~! . L-pattern)]
                 [H-pattern
+                 pvar-id:splicing-syntax-class-id
+                 (~var id splicing-syntax-class)
                  (~seq . L-pattern)
+                 (~and H-pattern ...+)
                  (~or H-pattern ...+)
-                 (~optional H-pattern optional-option ...)
+                 (~optional H-pattern maybe-optional-option)
                  (~describe expr H-pattern)
                  S-pattern]
                 [EH-pattern
@@ -396,73 +405,117 @@ constrains it to match only terms that are proper lists.
 
 Here are the variants of @tech{S-pattern}:
 
-@specsubform[pvar-id]{
+@specsubform[id]{
 
-If @scheme[pvar-id] has no syntax class (by @scheme[#:declare] or
-@scheme[#:convention]), the pattern matches anything. The
-@deftech{pattern variable} is bound to the matched subterm, unless the
-pattern variable is the wildcard (@scheme[_]), in which case no
-binding occurs.
+An identifier can be either a @tech{pattern variable}, an
+@tech{annotated pattern variable}, or a @tech{literal}:
 
-If @scheme[pvar-id] does have an associated syntax class, it behaves
-like the following form.
+@itemize[
+
+@item{If @scheme[id] is the ``pattern'' name of an entry in the
+  literals list, it is a @tech{literal} pattern that behaves
+  like @scheme[(~literal id)].
+
+  @myexamples[
+    (syntax-parse #'(define x 12)
+      #:literals (define)
+      [(define var:id body:expr) 'ok])
+    (syntax-parse #'(lambda x 12)
+      #:literals (define)
+      [(define var:id body:expr) 'ok])
+    (syntax-parse #'(define x 12)
+      #:literals ([def define])
+      [(def var:id body:expr) 'ok])
+    (syntax-parse #'(lambda x 12)
+      #:literals ([def define])
+      [(def var:id body:expr) 'ok])
+  ]
 }
 
-@specsubform[pvar-id:syntax-class-id]{
+@item{If @scheme[id] is of the form @scheme[_pvar-id:syntax-class-id]
+  (that is, two names joined by a colon character), it is an
+  @tech{annotated pattern variable}, and the pattern is equivalent to
+  @scheme[(~var pvar-id syntax-class-id)].
 
-Matches only subterms specified by the @svar[syntax-class-id]. The
-syntax class's @tech{attributes} are computed for the subterm and
-bound to the pattern variables formed by prefixing @svar[pvar-id.] to
-the name of the attribute. @svar[pvar-id] is bound to the matched
-subterm.
+  @myexamples[
+    (syntax-parse #'a
+      [var:id (syntax-e #'var)])
+    (syntax-parse #'12
+      [var:id (syntax-e #'var)])
+    (define-syntax-class two
+      #:attributes (x y)
+      (pattern (x y)))
+  (syntax-parse #'(a b)
+    [t:two (syntax->datum #'(t t.x t.y))])
+  (syntax-parse #'(a b)
+    [t
+     #:declare t two
+     (syntax->datum #'(t t.x t.y))])
+  ]
+}
+
+@item{Otherwise, @scheme[id] is a @tech{pattern variable}, and the
+pattern is equivalent to @scheme[(~var id)].
+}
+]
+}
+
+@specsubform[#:literals (~var) (~var pvar-id)]{
+
+A @deftech{pattern variable}. If @scheme[pvar-id] has no syntax class
+(by @scheme[#:convention]), the pattern variable matches anything. The
+pattern variable is bound to the matched subterm, unless the pattern
+variable is the wildcard (@scheme[_]), in which case no binding
+occurs.
+
+If @scheme[pvar-id] does have an associated syntax class, it behaves
+like an @tech{annotated pattern variable} with the implicit syntax
+class inserted.
+}
+
+@specsubform/subs[#:literals (~var) (~var pvar-id syntax-class)
+                  ([syntax-class syntax-class-id
+                                 (syntax-class-id arg-expr ...)])]{
+
+An @deftech{annotated pattern variable}. The pattern matches only
+terms accepted by @svar[syntax-class-id] (parameterized by the
+@scheme[arg-expr]s, if present).
+
+The syntax class's @tech{attributes} are computed for the term and
+bound to the names formed by prefixing @svar[pvar-id.] to the name of
+the attribute. The name @svar[pvar-id] itself is bound to the whole
+term.
 
 If @svar[pvar-id] is @scheme[_], no attributes are bound.
 
-If @svar[pvar-id] is empty (that is, if the pattern is of the form
-@svar[:syntax-class-id]), then the syntax class's attributes are
-bound, but their names are not prefixed first.
-
 @myexamples[
 (syntax-parse #'a
-  [var:id (syntax-e #'var)])
+  [(~var var id) (syntax-e #'var)])
 (syntax-parse #'12
-  [var:id (syntax-e #'var)])
+  [(~var var id) (syntax-e #'var)])
 (define-syntax-class two
   #:attributes (x y)
   (pattern (x y)))
 (syntax-parse #'(a b)
-  [t:two (syntax->datum #'(t t.x t.y))])
-(syntax-parse #'(a b)
-  [t
-   #:declare t two
-   (syntax->datum #'(t t.x t.y))])]
-
+  [(~var t two) (syntax->datum #'(t t.x t.y))])
+(define-syntax-class (nat-less-than n)
+  (pattern x:nat #:when (< (syntax-e #'x) n)))
+(syntax-parse #'(1 2 3 4 5)
+  [((~var small (nat-less-than 4)) ... large:nat ...)
+   (list #'(small ...) #'(large ...))])
+]
 }
 
-@specsubform[literal-id]{
+@specsubform[#:literals (~literal) (~literal literal-id)]{
 
-An identifier that appears in the literals list is not a pattern
-variable; instead, it is a @deftech{literal} that matches any
-identifier @scheme[free-identifier=?] to it.
-
-Specifically, if @scheme[literal-id] is the ``pattern'' name of an
-entry in the literals list, then it represents a pattern that matches
-only identifiers @scheme[free-identifier=?] to the ``literal''
-name. These identifiers are often the same.
+A @deftech{literal} identifier pattern. Matches any identifier
+@scheme[free-identifier=?] to @scheme[literal-id].
 
 @myexamples[
 (syntax-parse #'(define x 12)
-  #:literals (define)
-  [(define var:id body:expr) 'ok])
+  [((~literal define) var:id body:expr) 'ok])
 (syntax-parse #'(lambda x 12)
-  #:literals (define)
-  [(define var:id body:expr) 'ok])
-(syntax-parse #'(define x 12)
-  #:literals ([def define])
-  [(def var:id body:expr) 'ok])
-(syntax-parse #'(lambda x 12)
-  #:literals ([def define])
-  [(def var:id body:expr) 'ok])
+  [((~literal define) var:id body:expr) 'ok])
 ]
 }
 
@@ -477,7 +530,6 @@ literals.
 (syntax-parse #'(a foo bar)
   [(x #:foo y) (syntax->datum #'y)])
 ]
-
 }
 
 @specsubform[(H-pattern . S-pattern)]{
@@ -496,8 +548,7 @@ and whose rest matches the second.
 See @tech{H-patterns} for more information.
 }
 
-@specsubform[#:literals (~or) ((~or EH-pattern ...+) #,ellipses . S-pattern)]
-@specsubform[(EH-pattern #,ellipses . S-pattern)]{
+@specsubform[#:literals (~or) ((~or EH-pattern ...+) #,ellipses . S-pattern)]{
 
 Matches any term that can be decomposed into a list head matching some
 number of repetitions of the @tech{EH-pattern} alternatives (subject
@@ -509,10 +560,13 @@ In other words, the whole pattern matches either the second pattern
 alternatives of the first pattern and whose tail recursively matches
 the whole sequence pattern.
 
-The @scheme[~or]-free variant is shorthand for the @scheme[~or]
-variant with just one alternative.
-
 See @tech{EH-patterns} for more information.
+}
+
+@specsubform[(EH-pattern #,ellipses . S-pattern)]{
+
+The @scheme[~or]-free variant of ellipses (@ellipses) pattern is
+equivalent to the @scheme[~or] variant with just one alternative.
 }
 
 @specsubform[#:literals (~and) (~and S-pattern ...)]{
@@ -563,6 +617,19 @@ to have a value if the whole pattern matches.
   [(~or x:id (~and x #f)) (syntax->datum #'x)])
 (syntax-parse #'#f
   [(~or x:id (~and x #f)) (syntax->datum #'x)])
+]
+}
+
+@specsubform[#:literals (~not) (~not S-pattern)]{
+
+Matches any term that does not match the subpattern. The subpattern's
+attributes are @emph{not} bound outside of the @scheme[~not]-pattern.
+
+@myexamples[
+(syntax-parse #'(x y z => u v)
+  #:literals (=>)
+  [((~and before (~not =>)) ... => after ...)
+   (list #'(before ...) #'(after ...))])
 ]
 }
 
@@ -726,6 +793,39 @@ examples of @scheme[~seq].
 
 }
 
+@specsubform[#:literals (~and) (~and H-pattern ...)]{
+
+Like the S-pattern version of @scheme[~and], but matches a term head
+instead.
+
+@myexamples[
+(syntax-parse #'(#:a 1 #:b 2 3 4 5)
+  [((~and (~seq (~seq k:keyword e:expr) ...)
+          (~seq keyword-stuff ...))
+    positional-stuff ...)
+   (syntax->datum #'((k ...) (e ...) (keyword-stuff ...)))])
+]
+
+The H-pattern of @scheme[~and] requires that all of the subpatterns be
+strictly @tech{H-patterns} and not @tech{S-patterns}. This is to
+prevent typos like the following, a variant of the previous example
+with the second @scheme[~seq] omitted:
+
+@myexamples[
+(syntax-parse #'(#:a 1 #:b 2 3 4 5)
+  [((~and (~seq (~seq k:keyword e:expr) ...)
+          (keyword-stuff ...))
+    positional-stuff ...)
+   (syntax->datum #'((k ...) (e ...) (keyword-stuff ...)))])
+(code:comment "If the example above were allowed, it would be equivalent to this:")
+(syntax-parse #'(#:a 1 #:b 2 3 4 5)
+  [((~and (~seq (~seq k:keyword e:expr) ...)
+          (~seq (keyword-stuff ...)))
+    positional-stuff ...)
+   (syntax->datum #'((k ...) (e ...) (keyword-stuff ...)))])
+]
+}
+
 @specsubform[#:literals (~or) (~or H-pattern ...)]{
 
 Like the S-pattern version of @scheme[~or], but matches a term head
@@ -741,11 +841,13 @@ instead.
 ]
 }
 
-@specsubform/subs[#:literals (~optional) (~optional H-pattern optional-option ...)
-                  ([optional-option (code:line #:defaults ([attr-id expr] ...))])]{
+@specsubform/subs[#:literals (~optional) (~optional H-pattern maybe-optional-option)
+                  ([maybe-optional-option
+                    (code:line)
+                    (code:line #:defaults ([attr-id expr] ...))])]{
 
 Matches either the given head subpattern or an empty head. If the
-@scheme[#:defaults] option is given, the following attribute bindings
+@scheme[#:defaults] option is given, the subsequent attribute bindings
 are used if the subpattern does not match. The default attributes must
 be a subset of the subpattern's attributes.
 
@@ -755,6 +857,9 @@ be a subset of the subpattern's attributes.
    (attribute x)])
 (syntax-parse #'(m a b c)
   [(_ (~optional (~seq #:foo x) #:defaults ([x #'#f])) y:id ...)
+   (attribute x)])
+(syntax-parse #'(m a b c)
+  [(_ (~optional (~seq #:foo x)) y:id ...)
    (attribute x)])
 ]
 
@@ -849,8 +954,8 @@ conditions. The grammar for pattern directives follows:
                (code:line #:declare pattern-id (syntax-class-id expr ...))
                (code:line #:with syntax-pattern expr)
                (code:line #:attr attr-id expr)
-               (code:line #:fail-when condition-expr message-expr)
                (code:line #:fail-unless condition-expr message-expr)
+               (code:line #:fail-when condition-expr message-expr)
                (code:line #:when condition-expr)]
 
 @specsubform[(code:line #:declare pvar-id syntax-class-id)]
@@ -887,15 +992,16 @@ bindings and binds it to the attribute named by @scheme[attr-id]. The
 value of @scheme[expr] need not be syntax.
 }
 
-@specsubform[(code:line #:fail-when condition-expr message-expr)]
 @specsubform[(code:line #:fail-unless condition-expr message-expr)]{
 
 Evaluates the @scheme[condition-expr] in the context of all previous
-attribute bindings. If the value is any non-false value for
-@scheme[#:fail-when] or if the value is @scheme[#f] for
-@scheme[#:fail-unless], the matching process backtracks (with the
-given message); otherwise, it continues.
+attribute bindings. If the value is any @scheme[#f], the matching
+process backtracks (with the given message); otherwise, it continues.
+}
 
+@specsubform[(code:line #:fail-when condition-expr message-expr)]{
+
+Like @scheme[#:fail-unless] with the condition negated.
 }
 
 @specsubform[(code:line #:when condition-expr)]{
@@ -908,8 +1014,11 @@ backtracks. In other words, @scheme[#:when] is like
 }
 
 @deftogether[[
+@defidform[~var]
+@defidform[~literal]
 @defidform[~or]
 @defidform[~and]
+@defidform[~not]
 @defidform[~seq]
 @defidform[~once]
 @defidform[~optional]
