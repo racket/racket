@@ -191,7 +191,7 @@
 
    (test-case
     "predicate"
-    (define integer (predicate integer?))
+    (define integer (contract (predicate integer?)))
     (check-equal? (say-no (apply-contract integer 5)) 5)
     (check-equal? (say-no (apply-contract integer "foo")) 'no))
 
