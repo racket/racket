@@ -191,10 +191,9 @@ The second pattern matches unparenthesized identifiers. The @scheme[e]
 attribute is bound using a @scheme[#:with] clause, which matches the
 pattern @scheme[e] against the syntax from evaluating @scheme[#'#f].
 
-Optional keyword arguments are supported via ``head patterns'' (called
-@tech{H-patterns} in the reference documentation). Unlike normal
-patterns, which match one term, head patterns can match a variable
-number of subterms in a list.
+Optional keyword arguments are supported via @tech{head
+patterns}. Unlike normal patterns, which match one term, head patterns
+can match a variable number of subterms in a list.
 
 Suppose @schemekeywordfont{mylet} accepted an optional
 @scheme[#:check] keyword with one argument, a procedure that would be
@@ -394,7 +393,7 @@ structures can share syntax class definitions.
                  (pattern syntax-pattern pattern-directive ...)])]{
 
 Defines @scheme[name-id] as a @deftech{syntax class}, which
-encapsulates one or more @tech{S-patterns}.
+encapsulates one or more @tech{single-term patterns}.
 
 When the @scheme[arg-id]s are present, they are bound as variables in
 the body. The body of the syntax-class definition contains a non-empty
@@ -449,7 +448,8 @@ These options have the same meaning as in @scheme[syntax-parse].
 }
 
 Each variant of a syntax class is specified as a separate
-@scheme[pattern]-form whose syntax pattern is an @tech{S-pattern}.
+@scheme[pattern]-form whose syntax pattern is a @tech{single-term
+pattern}.
 }
 
 @defform*[#:literals (pattern)
@@ -459,13 +459,13 @@ Each variant of a syntax class is specified as a separate
              stxclass-variant ...+)]]{
 
 Defines @scheme[name-id] as a @deftech{splicing syntax class},
-analogous to a @tech{syntax class} but encapsulating @tech{H-patterns}
-rather than @tech{S-patterns}.
+analogous to a @tech{syntax class} but encapsulating @tech{head
+patterns} rather than @tech{single-term patterns}.
 
 The options are the same as for @scheme[define-syntax-class].
 
 Each variant of a splicing syntax class is specified as a separate
-@scheme[pattern]-form whose syntax pattern is an @tech{H-pattern}.
+@scheme[pattern]-form whose syntax pattern is a @tech{head pattern}.
 }
 
 @defform[#:literals (pattern)
@@ -476,9 +476,9 @@ class. The variant accepts syntax matching the given syntax pattern
 with the accompanying @tech{pattern directives}.
 
 When used within @scheme[define-syntax-class], @scheme[syntax-pattern]
-should be an @tech{S-pattern}; within
-@scheme[define-splicing-syntax-class], it should be an
-@tech{H-pattern}.
+should be a @tech{single-term pattern}; within
+@scheme[define-splicing-syntax-class], it should be a @tech{head
+pattern}.
 
 The attributes of the variant are the attributes of the pattern
 together with all attributes bound by @scheme[#:with] clauses,

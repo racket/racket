@@ -227,6 +227,8 @@
               (fail x
                     #:expect (expectation pattern0)
                     #:fce fc))]
+       [#s(pat:ghost attrs ghost subpattern)
+        #'(parse:G x fc ghost (parse:S x fc subpattern k))]
        [#s(pat:head attrs head tail)
         #`(parse:H x fc head rest index
                    (parse:S rest #,(frontier:add-index (wash #'fc) #'index) tail k))]
@@ -269,9 +271,6 @@
                       (fail x
                             #:expect (expectation pattern0)
                             #:fce fc))))))]
-       [#s(pat:cut attrs pattern)
-        #`(with-enclosing-fail enclosing-cut-fail
-            (parse:S x fc pattern k))]
        [#s(pat:describe attrs description transparent? pattern)
         #`(let ([previous-fail enclosing-fail]
                 [previous-cut-fail enclosing-cut-fail])
@@ -283,15 +282,7 @@
               (parse:S x #,(empty-frontier #'x) pattern
                        (with-enclosing-cut-fail previous-cut-fail
                          (with-enclosing-fail previous-fail
-                           k)))))]
-       [#s(pat:bind _ clauses)
-        #'(convert-sides x clauses (clause-success () k))]
-       [#s(pat:fail _ condition message)
-        #`(if condition
-              (fail x
-                    #:expect (expectation pattern0)
-                    #:fce fc)
-              k)])]))
+                           k)))))])]))
 
 ;; (parse:S* (id ...) (FCE ...) (SinglePattern ...) expr) : expr
 (define-syntax parse:S*
@@ -322,6 +313,23 @@
              (let ([id #f] ...)
                (let ([sub-id alt-sub-id] ...)
                  (success pre ... id ...))))))]))
+
+
+;; (parse:G id FCE SinglePattern expr) : expr
+(define-syntax (parse:G stx)
+  (syntax-case stx ()
+    [(parse:G x fc pattern0 k)
+     (syntax-case #'pattern0 ()
+       [#s(ghost:cut _)
+        #`(with-enclosing-fail enclosing-cut-fail k)]
+       [#s(ghost:bind _ clauses)
+        #`(convert-sides x clauses (clause-success () k))]
+       [#s(ghost:fail _ condition message)
+        #`(if condition
+              (fail x
+                    #:expect (expectation pattern0)
+                    #:fce fc)
+              k)])]))
 
 (begin-for-syntax
  ;; convert-list-pattern : ListPattern id -> SinglePattern
@@ -560,11 +568,10 @@
     ;; #'(make-expect:pair)]
     [(_ #s(pat:compound attrs kind0 (part-pattern ...)))
      #''ineffable]
-    [(_ #s(pat:fail _ condition message))
-     #'(expectation-of-message message)]
     [(_ #s(pat:not _ pattern))
      #''ineffable]
-    ))
+    [(_ #s(ghost:fail _ condition message))
+     #'(expectation-of-message message)]))
 
 ;; ----
 
