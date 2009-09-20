@@ -22,7 +22,7 @@
     "srfi"
     "srpersist"
     "stepper"
-    "stxclass"
+    "stxparse"
     "syntax-color"
     "typed-scheme"
     "units"
