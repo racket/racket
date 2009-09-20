@@ -22,10 +22,11 @@
          ~optional
          ~rest
          ~struct
-         ~!
          ~describe
+         ~!
          ~bind
          ~fail
+         ~parse
 
          current-expression
          current-macro-name
@@ -88,10 +89,11 @@
 (define-keyword ~optional)
 (define-keyword ~rest)
 (define-keyword ~struct)
-(define-keyword ~!)
 (define-keyword ~describe)
+(define-keyword ~!)
 (define-keyword ~bind)
 (define-keyword ~fail)
+(define-keyword ~parse)
 
 ;; == Parameters & Syntax Parameters
 

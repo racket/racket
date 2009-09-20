@@ -55,6 +55,7 @@ A GhostPattern is one of
   (make-ghost:fail Base stx stx)
   (make-ghost:bind Base (listof clause:attr))
 * (make-ghost:and Base (listof GhostPattern))
+  (make-ghost:parse Base SinglePattern stx)
 
 ghost:and is desugared below in create-* procedures
 |#
@@ -63,6 +64,7 @@ ghost:and is desugared below in create-* procedures
 (define-struct ghost:fail (attrs when message) #:prefab)
 (define-struct ghost:bind (attrs clauses) #:prefab)
 (define-struct ghost:and (attrs patterns) #:prefab)
+(define-struct ghost:parse (attrs pattern expr) #:prefab)
 
 #|
 A HeadPattern is one of 
@@ -126,7 +128,8 @@ A Kind is one of
   (or (ghost:cut? x)
       (ghost:bind? x)
       (ghost:fail? x)
-      (ghost:and? x)))
+      (ghost:and? x)
+      (ghost:parse? x)))
 
 (define (head-pattern? x)
   (or (hpat:var? x)
@@ -163,7 +166,7 @@ A Kind is one of
                      [else (raise-type-error 'pattern-attrs "pattern" x)])))]))
     (mk-get-attrs pat:any pat:var pat:datum pat:literal pat:ghost pat:head
                   pat:dots pat:and pat:or pat:not pat:compound pat:describe
-                  ghost:cut ghost:bind ghost:fail ghost:and
+                  ghost:cut ghost:bind ghost:fail ghost:and ghost:parse
                   hpat:var hpat:seq hpat:ghost hpat:and hpat:or hpat:describe
                   hpat:optional
                   ehpat)))
@@ -232,6 +235,9 @@ A Kind is one of
 (define (create-ghost:and patterns)
   (let ([attrs (append-iattrs (map pattern-attrs patterns))])
     (make ghost:and attrs patterns)))
+
+(define (create-ghost:parse pattern expr)
+  (make ghost:parse (pattern-attrs pattern) pattern expr))
 
 ;; ----
 

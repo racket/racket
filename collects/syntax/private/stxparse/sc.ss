@@ -37,10 +37,11 @@
          ~optional
          ~rest
          ~struct
-         ~!
          ~describe
+         ~!
          ~bind
          ~fail
+         ~parse
 
          attribute
          this-syntax)

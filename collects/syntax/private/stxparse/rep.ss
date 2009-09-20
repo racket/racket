@@ -85,10 +85,11 @@
         (quote-syntax ~bounds)
         (quote-syntax ~rest)
         (quote-syntax ~struct)
-        (quote-syntax ~!)
         (quote-syntax ~describe)
+        (quote-syntax ~!)
         (quote-syntax ~bind)
-        (quote-syntax ~fail)))
+        (quote-syntax ~fail)
+        (quote-syntax ~parse)))
 
 (define (reserved? stx)
   (and (identifier? stx)
@@ -279,8 +280,8 @@
           [(not allow-head?) (ghost-pattern->single-pattern x)]
           [else
            (wrong-syntax stx "action pattern not allowed here")]))
-  (syntax-case stx (~var ~literal ~and ~or ~not ~rest ~struct
-                    ~! ~describe ~bind ~fail ~seq ~optional)
+  (syntax-case stx (~var ~literal ~and ~or ~not ~rest ~struct ~describe
+                    ~seq ~optional ~! ~bind ~fail ~parse)
     [wildcard
      (wildcard? #'wildcard)
      (create-pat:any)]
@@ -322,6 +323,9 @@
     [(~fail . rest)
      (check-ghost!
       (parse-pat:fail stx decls))]
+    [(~parse . rest)
+     (check-ghost!
+      (parse-pat:parse stx decls))]
     [(head dots . tail)
      (dots? #'dots)
      (parse-pat:dots stx #'head #'tail decls)]
@@ -630,7 +634,16 @@
            [()
             (wrong-syntax stx "missing message expression")]
            [_
-            (wrong-syntax stx "bad fail pattern")])))]))
+            (wrong-syntax stx "bad ~fail pattern")])))]))
+
+(define (parse-pat:parse stx decls)
+  (syntax-case stx (~parse)
+    [(~parse pattern expr)
+     (let ([p (parse-single-pattern #'pattern decls)])
+       (create-ghost:parse p #'expr))]
+    [_
+     (wrong-syntax stx "bad ~parse pattern")]))
+
 
 (define (parse-pat:rest stx decls)
   (syntax-case stx ()

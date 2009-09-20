@@ -83,9 +83,9 @@ When a special form in this manual refers to @svar[syntax-pattern]
 (eg, the description of the @scheme[syntax-parse] special form), it
 means specifically @tech{@Spattern}.
 
-@schemegrammar*[#:literals (_ ~var ~literal ~or ~and ~not ~seq 
-                            ~rep ~once ~optional
-                            ~rest ~struct ~! ~describe ~bind ~fail)
+@schemegrammar*[#:literals (_ ~var ~literal ~or ~and ~not ~rest ~struct
+                            ~describe ~seq ~optional ~rep ~once
+                            ~! ~bind ~fail ~parse)
                 [S-pattern
                  pvar-id
                  pvar-id:syntax-class-id
@@ -130,6 +130,7 @@ means specifically @tech{@Spattern}.
                  ~!
                  (~bind [attr-id expr] ...)
                  (~fail maybe-fail-condition message-expr)
+                 (~parse S-pattern stx-expr)
                  (@#,ref[~and a] A-pattern ...+)]
                 [proper-S-pattern
                  #, @elem{a @svar{S-pattern} that is not a @svar{A-pattern}}]
@@ -798,6 +799,13 @@ given message.
 Fail patterns can be used together with cut patterns to recognize
 specific ill-formed terms and address them with specially-created
 failure messages.
+}
+
+@specsubform[(@#,defhere[~parse] S-pattern stx-expr)
+             #:contracts ([stx-expr syntax?])]{
+
+Evaluates @scheme[stx-expr] to a syntax object and matches it against
+@scheme[S-pattern].
 }
 
 @specsubform[(@#,def[~and a] A-pattern ...+)]{

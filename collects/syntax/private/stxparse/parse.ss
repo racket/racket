@@ -329,7 +329,11 @@
               (fail x
                     #:expect (expectation pattern0)
                     #:fce fc)
-              k)])]))
+              k)]
+       [#s(ghost:parse _ pattern expr)
+        #`(let ([y (datum->syntax #f (without-fails expr))])
+            (parse:S y #,(frontier:add-subparse (wash #'fc) #'y)
+                     pattern k))])]))
 
 (begin-for-syntax
  ;; convert-list-pattern : ListPattern id -> SinglePattern

@@ -19,7 +19,7 @@
   (make-fce x (list #'(+ 0))))
 
 (define (done-frontier x)
-  (make-fce x (list #'(+ +inf.0))))
+  (make-fce x (list #'(+ 0) #'(+ +inf.0))))
 
 (define (frontier:add-car fc x)
   (make-fce x (cons #'(+ 0) (fce-indexes fc))))
@@ -48,6 +48,11 @@
   (frontier:add-car fc x))
 (define (frontier:add-unpstruct fc x)
   (frontier:add-car fc x))
+
+(define (frontier:add-subparse fc x)
+  (frontier:add-car
+   (frontier:add-index (frontier:add-car fc x) +inf.0)
+   x))
 
 ;; A DynamicFrontierContext (DFC) is a list of numbers.
 ;; More operations on DFCs in runtime.ss

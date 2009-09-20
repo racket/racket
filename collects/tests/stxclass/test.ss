@@ -198,6 +198,27 @@
 (tok (1 2) (~and x:two :two)
      (and (bound (x 0) (x.a 0) (a 0)) (s= x '(1 2)) (s= x.a 1) (s= a 1)))
 
+;; -- H patterns
+
+;; seq
+(tok (1 2 3) ((~seq 1 2) 3))
+(tok (1 2 3) (1 (~seq 2) 3))
+(tok (1 2 3) ((~seq) 1 2 3))
+
+;; or
+(tok (1 2 3) ((~or (~seq 1 2) 1) 3))
+(tok (1 2 3) ((~or 1 (~seq 1 2)) 3))
+(tok (1 2 3) ((~or (~seq 1) (~seq 1 2)) 3))
+(tok (1 2 3) ((~or (~seq 1) (~seq)) 1 2 3))
+(tok (1 2 3) ((~or (~seq 1) (~seq)) 1 2 3 (~or (~seq 4) (~seq))))
+
+;; describe
+(tok (1 2 3) ((~describe "one-two" (~seq 1 2)) 3))
+(terx (1 3 3) ((~describe "one-two" (~seq 1 2)) 3)
+      "one-two")
+
+;; -- A patterns
+
 ;; cut patterns
 (terx* (1 2 3) [(1 ~! 4) (1 2 3)]
        "4" (not "2"))
@@ -227,24 +248,15 @@
 (terx 1 (~and n:nat (~fail #:unless (even? (syntax-e #'n)) "wanted even number"))
       #rx"wanted even number")
 
-;; -- H patterns
+;; fail as S-pattern
+(terx 1 (~fail "grr")
+      #rx"grr")
 
-;; seq
-(tok (1 2 3) ((~seq 1 2) 3))
-(tok (1 2 3) (1 (~seq 2) 3))
-(tok (1 2 3) ((~seq) 1 2 3))
-
-;; or
-(tok (1 2 3) ((~or (~seq 1 2) 1) 3))
-(tok (1 2 3) ((~or 1 (~seq 1 2)) 3))
-(tok (1 2 3) ((~or (~seq 1) (~seq 1 2)) 3))
-(tok (1 2 3) ((~or (~seq 1) (~seq)) 1 2 3))
-(tok (1 2 3) ((~or (~seq 1) (~seq)) 1 2 3 (~or (~seq 4) (~seq))))
-
-;; describe
-(tok (1 2 3) ((~describe "one-two" (~seq 1 2)) 3))
-(terx (1 3 3) ((~describe "one-two" (~seq 1 2)) 3)
-      "one-two")
+(tok (1 2 3) (x:nat y:nat (~parse (~or 2 3) (+ (syntax-e #'x) (syntax-e #'y))) z:nat))
+(terx (1 2 3) (x:nat y:nat (~parse 4 (+ (syntax-e #'x) (syntax-e #'y))) z:nat)
+      "expected the literal 4")
+(terx (1 2 3) (x:nat y:nat (~parse (2 4) #'(x y)))
+      "expected the literal 2")
 
 ;; == Lib tests
 
