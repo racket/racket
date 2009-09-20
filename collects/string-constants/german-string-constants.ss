@@ -1097,6 +1097,7 @@
  (module-browser-name-short "Kurz")
  (module-browser-name-medium "Mittel")
  (module-browser-name-long "Lang")
+ (module-browser-name-very-long "Lang mit Phasen")  ;; like 'Long' but shows the phases where this file is loaded
  (module-browser-open-all "Alle hier angezeigten Datein öffnen")
 
  (happy-birthday-matthias "Happy Birthday, Matthias!")
@@ -1165,7 +1166,7 @@
  (stepper-no-such-step "Kein Schritt gefunden, der das Kriterium erfüllt.")
  (stepper-no-such-step/earlier "Kein früherer Schritt gefunden, der das Kriterium erfüllt.")
  (stepper-jump-to-beginning "an den Anfang") ;; name changed from stepper-home to stepper-jump-to-beginning
- (stepper-jump-to-end "ans Ande") ;; content changed
+ (stepper-jump-to-end "ans Ende") ;; content changed
  (stepper-jump-to-selected "an den Anfang des markierten Ausdrucks") ;; new
  
  (debug-tool-button-name "Debugger")
