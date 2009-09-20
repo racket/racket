@@ -11,7 +11,7 @@
          (types resolve)
          (only-in (env type-environments lexical-env) env? update-type/lexical env-map)
          scheme/contract scheme/match
-         stxclass/util mzlib/trace
+         mzlib/trace
          (for-syntax scheme/base))
 
 (provide env+)

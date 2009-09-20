@@ -72,7 +72,9 @@
               [fullspec (pkg-spec->full-pkg-spec pkg-spec stx)]
               [final-path (if (string=? tail "")
                               "main.ss"
-                              (string-append tail ".ss"))])
+                              (if (regexp-match #rx"[.]" tail)
+                                  tail
+                                  (string-append tail ".ss")))])
          (make-request fullspec final-path '())))]
     [_ (raise-syntax-error 'require (format "Illegal PLaneT invocation: ~e" (cdr spec)) stx)]))
 

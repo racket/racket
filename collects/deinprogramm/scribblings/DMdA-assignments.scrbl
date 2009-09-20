@@ -16,7 +16,7 @@ Abstraktion mit Zuweisungen} to go with the German textbook
 #:literals (define-record-procedures-2 define-record-procedures-parametric-2 set!)
 (
   (define-record-procedures-2 id id id (field-spec ...))
-  (define-record-procedures-parametric-2 (id id ...) id id (field-spec ...))
+  (define-record-procedures-parametric-2 id id id id id (field-spec ...))
 )
 (
   [field-spec id (id id)]
@@ -43,7 +43,7 @@ Mutators sein.
 
 @section{@scheme[define-record-procedures-parametric-2]}
 
-@defform[(define-record-procedures-parametric-2 (t p1 ...) c p (field-spec1 ...))]{
+@defform[(define-record-procedures-parametric-2 t cc c p (field-spec1 ...))]{
 Diese Form ist wie @scheme[define-record-procedures-2], nur parametrisch 
 wie @schemeidfont{define-record-procedures-parametric}.}
 

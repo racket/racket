@@ -5,7 +5,7 @@
          "tc-metafunctions.ss"
          mzlib/trace
          scheme/list
-         stxclass/util syntax/stx
+         syntax/private/util syntax/stx
          (rename-in scheme/contract [-> -->] [->* -->*] [one-of/c -one-of/c])
          (except-in (rep type-rep) make-arr)
          (rename-in (types convenience utils union)

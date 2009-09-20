@@ -5,7 +5,7 @@
          (rename-in (types convenience union utils) [make-arr* make-arr])
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: scheme/contract)
-         syntax/parse stxclass/util         
+         syntax/parse
          (env type-environments type-name-env type-alias-env lexical-env)
          (prefix-in t: (combine-in "base-types-extra.ss" "base-types.ss")) (only-in "colon.ss" :)
          scheme/match 

@@ -170,28 +170,10 @@ identifier as a binding, in which case it would get the value
 
 Here's how the syntax class would change:
 
-@schemeblock[
-(define-syntax-class binding
-  #:attributes (x e)
-  (pattern (x:id e:expr))
-  (pattern x:id
-           #:with e #'(quote #f)))
-]
-
-@bold{Note: } The syntax template @scheme[#'#f] in the definition
-above represents an expression that gets inserted by the macro. The
-expression will be interpreted at phase 0 with respect to the macro
-(@schemekeywordfont{mylet}), but the module containing
-@scheme[binding] is required at phase 1. The syntax template needs to
-be in the context of a binding of @scheme[quote] at phase 0 relative
-to the macro, which is phase -1 relative to the module it occurs
-in. That means importing @schememodname[scheme/base]
-@scheme[for-template] (phase -1).
-
 @SCHEMEBLOCK[
 (module example-syntax scheme/base
-  (require syntax/parse
-           (for-template scheme/base))
+  (require syntax/parse)
+  (require (for-template scheme/base))
   (provide binding)
   (define-syntax-class binding
     #:attributes (x e)
@@ -199,6 +181,9 @@ in. That means importing @schememodname[scheme/base]
     (pattern x:id
              #:with e #'(quote #f))))
 ]
+
+@bold{Note: } The @scheme[(require (for-template scheme/base))] is
+needed for the @scheme[quote] expression.
 
 If the syntax class definition were a local definition in the same
 module, the @scheme[for-template] would be unnecessary.

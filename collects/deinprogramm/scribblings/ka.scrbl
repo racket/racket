@@ -251,6 +251,8 @@ folgende Schablone:
   (lambda (lis)
     (proc-helper lis z)))
 
+(: proc ((list elem) ctr -> ...))
+
 (define proc-helper
   (lambda (lis acc)
     (cond
@@ -262,7 +264,8 @@ folgende Schablone:
 
 Hier ist @scheme[proc] der Name der zu definierenden Prozedur und
 @scheme[proc-helper] der Name der Hilfsprozedur mit Akkumulator.  Der
-Anfangswert für den Akkumulator ist der Wert von @scheme[z].  Der
+Anfangswert für den Akkumulator ist der Wert von @scheme[z].  Der Vertrag @scheme[ctr]
+ist der Vertrag für den Akkumulator.  Der
 Ausdruck @scheme[(... (first lis) ... acc ...)] 
 macht aus dem alten Zwischenergebnis @scheme[acc] das neue
 Zwischenergebnis.
@@ -275,6 +278,8 @@ Beispiel:
 (define invert
   (lambda (lis)
     (invert-helper lis empty)))
+
+(: invert ((list %a) (list %a) -> (list %a)))
 
 (define invert-helper
   (lambda (lis acc)

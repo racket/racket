@@ -16,7 +16,7 @@ Abstraktion - fortgeschritten} that goes with the German textbook
 #:literals (define-record-procedures-2 set!)
 (
   (define-record-procedures-2 id id id (field-spec ...))
-  (define-record-procedures-parametric-2 (id id ...) id id (field-spec ...))
+  (define-record-procedures-parametric-2 id id id id (field-spec ...))
 )
 (
   [field-spec id (id id)]

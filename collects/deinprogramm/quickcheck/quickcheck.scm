@@ -36,6 +36,15 @@
 (define choose-ascii-char
   (lift->generator integer->char (choose-integer 0 127)))
 
+(define choose-ascii-letter
+  (lift->generator (lambda (i)
+		     (string-ref
+		      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"))
+		   (choose-integer 0 51)))
+
+(define choose-printable-ascii-char
+  (lift->generator integer->char (choose-integer 32 127)))
+
 (define max-scalar-value #x10FFFF)
 (define gap-start #xD800)
 (define gap-end #xE000)
@@ -213,6 +222,16 @@
 		  (lambda (ch gen)
 		    (variant (char->integer ch) gen))))
 
+(define arbitrary-ascii-letter
+  (make-arbitrary choose-ascii-letter
+		  (lambda (ch gen)
+		    (variant (char->integer ch) gen))))
+
+(define arbitrary-printable-ascii-char
+  (make-arbitrary choose-printable-ascii-char
+		  (lambda (ch gen)
+		    (variant (char->integer ch) gen))))
+
 (define arbitrary-char
   (make-arbitrary (sized
 		   (lambda (n)
@@ -331,6 +350,9 @@
 (define arbitrary-ascii-string
   (arbitrary-sequence choose-string string->list arbitrary-ascii-char))
 
+(define arbitrary-printable-ascii-string
+  (arbitrary-sequence choose-string string->list arbitrary-printable-ascii-char))
+
 (define arbitrary-string
   (arbitrary-sequence choose-string string->list arbitrary-char))
 
@@ -338,7 +360,7 @@
   (arbitrary-sequence choose-symbol
 		      (lambda (symbol)
 			(string->list (symbol->string symbol)))
-		      arbitrary-ascii-char))
+		      arbitrary-ascii-letter))
 
 (define (arbitrary-procedure arbitrary-result . arbitrary-args)
   (let ((arbitrary-arg-tuple (apply arbitrary-tuple arbitrary-args)))

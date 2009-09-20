@@ -880,7 +880,7 @@
 (define true (contract (one-of #f)))
 (define false (contract (one-of #f)))
 
-(define string (contract/arbitrary arbitrary-string (predicate string?)))
+(define string (contract/arbitrary arbitrary-printable-ascii-string (predicate string?)))
 (define symbol (contract/arbitrary arbitrary-symbol (predicate symbol?)))
 (define empty-list (contract (one-of empty)))
 
@@ -1002,13 +1002,24 @@
 (define (check-property-error test src-info test-info)
   (let ((info (send test-info get-info)))
     (send info add-check)
-    (with-handlers ((exn?
+    (with-handlers ((exn:fail?
 		     (lambda (e)
 		       (send info property-error e src-info)
 		       (raise e))))
       (call-with-values
 	  (lambda ()
-	    (quickcheck-results (test)))
+	    (with-handlers
+		((exn:assertion-violation?
+		  (lambda (e)
+		    ;; minor kludge to produce comprehensible error message
+		    (if (eq? (exn:assertion-violation-who e) 'coerce->result-generator)
+			(raise (make-exn:fail (string-append "Wert muß Eigenschaft oder boolesch sein: "
+							     ((error-value->string-handler)
+							      (car (exn:assertion-violation-irritants e))
+							      100))
+					      (exn-continuation-marks e)))
+			(raise e)))))
+	      (quickcheck-results (test))))
 	(lambda (ntest stamps result)
 	  (if (check-result? result)
 	      (begin
