@@ -207,7 +207,7 @@
                     (do-execute drs-frame)
                     
                     (let ([got (fetch-output drs-frame)]
-                          [expected (format "Teachpack: ~a.\n1\nThis program should be tested."
+                          [expected (format "Teachpack: ~a.\n1"
                                             (path->string teachpack))])
                       (unless (equal? got expected)
                         (printf "FAILED built in teachpack test: ~a~n" (path->string teachpack))

@@ -645,23 +645,17 @@ This produces an ACK message
            void)
    
    ;; should produce a syntax object with a turn-down triangle.
-   (let ([printout
-          (regexp
-           (string-append (regexp-quote "({embedded \".")
-                          syntax-regexp-prefix
-                          (regexp-quote ":1:21>\"})")))])
-     (mktest "(write (list (syntax x)))" 
-             
-             (#rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
-              #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
-              #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:21>\"})"
-              #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
-              #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
-              #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:21>\"})")
-             'interactions
-             #f
-             void
-             void))
+   (mktest "(write (list (syntax x)))" 
+           (#rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21.*>\"})"
+            #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21.*>\"})"
+            #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:21.*>\"})"
+            #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21.*>\"})"
+            #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21.*>\"})"
+            #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:21.*>\"})")
+           'interactions
+           #f
+           void
+           void)
    
    ;; make sure syntax objects only go into good ports
    (mktest "(define-syntax (foo stx) (with-handlers ([exn:fail? (lambda (x) #'10)]) (syntax-local-value #'foot))) (foo)"
@@ -693,12 +687,12 @@ This produces an ACK message
    
    (mktest "(parameterize ([current-output-port (open-output-string)]) (fprintf (current-error-port) \"~e\" #'foot))"
            
-           (#rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
-            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
-            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:96>"
-            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
-            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
-            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:96>")
+           (#rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96.*>"
+            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96.*>"
+            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:96.*>"
+            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96.*>"
+            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96.*>"
+            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:96.*>")
            'interactions
            #f
            void

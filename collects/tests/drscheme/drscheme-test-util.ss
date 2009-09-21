@@ -41,7 +41,8 @@
            repl-in-edit-sequence?
            fetch-output
            has-error?
-           run-one/sync)
+           run-one/sync
+           alt-return-in-interactions)
   
   ;; save-drscheme-window-as : string -> void
   ;; use the "save as" dialog in drscheme to save the definitions
@@ -214,9 +215,28 @@
       (let ([canvas (get-canvas frame)])
 	(fw:test:new-window canvas)
 	(let ([editor (send canvas get-editor)])
-          (send editor set-caret-owner #f)
-          (if just-insert? (send editor insert str) (type-string str))))))
-
+          (cond
+            [just-insert? 
+             (let ([s (make-semaphore 0)])
+               (queue-callback
+                (λ () 
+                  (send editor set-caret-owner #f)
+                  (send editor insert str)
+                  (semaphore-post s)))
+               (unless (sync/timeout 3 s)
+                 (error who "callback didn't run for 3 seconds; trying to insert ~s" str/sexp)))]
+            [else 
+             (send editor set-caret-owner #f)
+             (type-string str)])))))
+  
+  (define (alt-return-in-interactions frame)
+    (verify-drscheme-frame-frontmost 'alt-return-in-interactions frame)
+    (let ([canvas (send frame get-interactions-canvas)])
+      (fw:test:new-window canvas)
+      (let ([editor (send canvas get-editor)])
+        (send editor set-caret-owner #f)
+        (fw:test:keystroke #\return '(alt)))))
+        
   ;; type-string : string -> void
   ;; to call test:keystroke repeatedly with the characters
   (define (type-string str)

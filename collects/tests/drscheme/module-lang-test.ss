@@ -1,8 +1,8 @@
-#reader scribble/reader
-#lang scheme/gui
+#lang at-exp scheme/gui
 (require "module-lang-test-utils.ss")
 (provide run-test)
 
+#;
 (error #<<--
 need to add tests cases that check the value of the use-compiled-file handler:
 
@@ -269,7 +269,7 @@ non-errortrace mode, not saving compiled files:
       @t{(f)}
       #<<--
 > (f)
-. . both in:
+. both in:
   f
   (f)
 --
