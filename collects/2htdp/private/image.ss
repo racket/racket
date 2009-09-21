@@ -37,8 +37,8 @@
 
 (define (place-image image x y scene)
   (check-image 'place-image image "first")
-  (check-arg 'place-image (number? x) 'integer "second" x)
-  (check-arg 'place-image (number? y) 'integer "third" y)
+  (check-arg 'place-image (real? x) 'real "second" x)
+  (check-arg 'place-image (real? y) 'real "third" y)
   (check-scene 'place-image scene "fourth")
   (let ([x (number->integer x)]
         [y (number->integer y)])
@@ -55,14 +55,14 @@
 (define (scene+line img x0 y0 x1 y1 c)
   ;; img and c are checked via calls to add-line from image.ss
   (check-arg 'scene+line (scene? img) "scene" "first" "plain image")
-  (check-arg 'scene+line (number? x0) "number" "second" x0)
-  (check-arg 'scene+line (number? y0) "number" "third" y0)
-  (check-arg 'scene+line (number? x1) "number" "fourth" x1)
-  (check-arg 'scene+line (number? y1) "number" "fifth" y1)
-  (let ([x0 (number->integer x0)]
-        [x1 (number->integer x1)]
-        [y0 (number->integer y0)]
-        [y1 (number->integer y1)])
+  (check-arg 'scene+line (real? x0) "number" "second" x0)
+  (check-arg 'scene+line (real? y0) "number" "third" y0)
+  (check-arg 'scene+line (real? x1) "number" "fourth" x1)
+  (check-arg 'scene+line (real? y1) "number" "fifth" y1)
+  (let ([x0 (number->integer x0 'scene+line 'second)]
+        [x1 (number->integer x1 'scene+line 'third)]
+        [y0 (number->integer y0 'scene+line 'fourth)]
+        [y1 (number->integer y1 'scene+line 'fifth)])
     (add-line-to-scene0 img x0 y0 x1 y1 c)))
 
 ;; Image Number Number Image -> Image 

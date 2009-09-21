@@ -30,7 +30,7 @@
            [timer (new timer% [notify-callback (lambda () (ptock))])])
     (define/override (start!)
       (unless (<= rate 0)
-        (send timer start (number->integer (* 1000 rate))))
+        (send timer start (number->integer (* 1000 rate) 'big-bang/universe 'clock-rate)))
       (super start!))
     (define/override (stop! w)
       (send timer stop)

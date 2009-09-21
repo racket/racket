@@ -41,8 +41,11 @@
 (define (internal-scene? i) 
   (and (= 0 (pinhole-x i)) (= 0 (pinhole-y i))))
 
-;; Number -> Integer
-(define (number->integer x)
+;; Number Symbol Symbol -> Integer
+(define (number->integer x . rst)
+  (define t (if (pair? rst) (car rst) ""))
+  (define p (if (and (pair? rst) (pair? (cdr rst))) (cadr rst) ""))
+  (check-arg t (and (number? x) (real? x)) "real number" p x)
   (inexact->exact (floor x)))
 
 ;; -----------------------------------------------------------------------------
@@ -160,7 +163,7 @@
 ;; Symbol Any String -> Void
 (define (check-pos t c r)
   (check-arg 
-   t (and (number? c) (>= (number->integer c) 0)) "positive integer" r c))
+   t (and (number? c) (>= (number->integer c t r) 0)) "positive integer" r c))
 
 ;; Symbol Any String String *-> Void
 (define (check-image tag i rank . other-message)
