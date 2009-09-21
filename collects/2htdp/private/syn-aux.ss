@@ -82,7 +82,6 @@
            [_ (err tag p)])))]))
 
 (define (err spec p . xtras)
-  (printf ">> ~s\n" p)
   (raise-syntax-error (cadr spec)
                       (if (null? xtras)
                           "illegal specification"
