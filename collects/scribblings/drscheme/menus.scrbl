@@ -364,18 +364,6 @@ background that signals the source location of an error.}
    (as a Unicode character) into the program. The @|lam-str| symbol is
    normally bound the same as @scheme[lambda].}
 
- @item{@defmenuitem{Insert Java Comment Box} Inserts a box that is
-   ignored by DrScheme. Unlike the @onscreen{Insert Comment Box} menu
-   item, this is designed for the ProfessorJ language levels. See
-   @secref["profj"].}
-
- @item{@defmenuitem{Insert Java Interactions Box} Inserts a box that
-   will allows Java expressions and statements within Scheme
-   programs. The result of the box is a Scheme value corresponding to
-   the result(s) of the Java expressions. At this time, Scheme values
-   cannot enter the box. The box will accept one Java statement or
-   expression per line.}
-
  @item{@defmenuitem{Insert XML Box} Inserts an XML; see
    @secref["xml-boxes"] for more information.}
 

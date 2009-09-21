@@ -17,6 +17,7 @@
     "plai"
     "planet"
     "plot"
+    "profj"
     "r6rs"
     "srfi"
     "srpersist"
