@@ -1,3 +1,5 @@
+#lang scheme
+
 #|
 
 Make sure there are tests that cover these parameters:
@@ -11,7 +13,6 @@ the settings above should match r5rs
 
 |#
 
-#lang scheme
 
 (require "drscheme-test-util.ss"
          tests/utils/gui
@@ -247,7 +248,6 @@ the settings above should match r5rs
 (define (beginner)
   (parameterize ([language (list "How to Design Programs" #rx"Beginning Student(;|$)")])
     (check-top-of-repl)
-    
     (generic-settings #t)
     (generic-output #f #f #f #f)
     (teaching-language-fraction-output)
@@ -258,10 +258,10 @@ the settings above should match r5rs
     (prepare-for-test-expression)
     
     (test-expression "'|.|" 
-                     "'|.|\nThis program should be tested."
+                     "'|.|"
                      "'|.|")
     (test-expression '("(equal? (list " image ") (list " image "))") 
-                     "true\nThis program should be tested."
+                     "true"
                      "true")
     
     (test-expression "(define x 1)(define x 2)"
@@ -269,11 +269,11 @@ the settings above should match r5rs
                      "define: cannot redefine name: x")
     
     (test-expression "(define-struct spider (legs))(make-spider 4)" 
-                     "(make-spider 4)\nThis program should be tested."
+                     "(make-spider 4)"
                      "define-struct: cannot redefine name: spider\n(make-spider 4)")
     
     (test-expression "(sqrt -1)" 
-                     "0+1i\nThis program should be tested."
+                     "0+1i"
                      "0+1i\n")
     
     (test-expression "class" 
@@ -282,7 +282,6 @@ the settings above should match r5rs
     (test-expression "shared"
                      "shared: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: shared")
-    
     (test-expression "(define (. x y) (* x y))" "read: illegal use of \".\"")
     (test-expression "'(1 . 2)"  "read: illegal use of \".\"")
     
@@ -300,13 +299,13 @@ the settings above should match r5rs
                      "reference to an identifier before its definition: time")
     
     (test-expression "true" 
-                     "true\nThis program should be tested."
+                     "true"
                      "true")
     (test-expression "mred^" 
                      "mred^: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: mred^")
     (test-expression "(eq? 'a 'A)" 
-                     "false\nThis program should be tested."
+                     "false"
                      "false")
     (test-expression "(set! x 1)"
                      "set!: name is not defined, not a parameter, and not a primitive name"
@@ -324,7 +323,7 @@ the settings above should match r5rs
     (test-expression "'(1)"
                      "quote: expected a name after a ', found something else")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
-                     "(cons (cons 1 empty) (cons (cons 1 empty) empty))\nThis program should be tested."
+                     "(cons (cons 1 empty) (cons (cons 1 empty) empty))"
                      "define: cannot redefine name: shrd\n(cons (cons 1 empty) (cons (cons 1 empty) empty))")
     (test-expression "(local ((define x x)) 1)"
                      "local: name is not defined, not a parameter, and not a primitive name"
@@ -335,43 +334,43 @@ the settings above should match r5rs
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
     (test-expression "(+ 1)" "procedure +: expects at least 2 arguments, given 1: 1")
     
-    (test-expression "1.0" "1\nThis program should be tested." "1")
-    (test-expression "#i1.0" "#i1.0\nThis program should be tested." "#i1.0")
+    (test-expression "1.0" "1" "1")
+    (test-expression "#i1.0" "#i1.0" "#i1.0")
     (test-expression "4/3" 
-                     "{number 4/3 \"1.3\" decimal}\nThis program should be tested."
+                     "{number 4/3 \"1.3\" decimal}"
                      "{number 4/3 \"1.3\" decimal}")
     (test-expression "1/3"
-                     "{number 1/3 \"0.3\" decimal}\nThis program should be tested."
+                     "{number 1/3 \"0.3\" decimal}"
                      "{number 1/3 \"0.3\" decimal}")
     (test-expression "-4/3" 
-                     "{number -4/3 \"-1.3\" decimal}\nThis program should be tested."
+                     "{number -4/3 \"-1.3\" decimal}"
                      "{number -4/3 \"-1.3\" decimal}")
     (test-expression "-1/3" 
-                     "{number -1/3 \"-0.3\" decimal}\nThis program should be tested."
+                     "{number -1/3 \"-0.3\" decimal}"
                      "{number -1/3 \"-0.3\" decimal}")
     (test-expression "3/2" 
-                     "{number 3/2 \"1.5\" decimal}\nThis program should be tested."
+                     "{number 3/2 \"1.5\" decimal}"
                      "{number 3/2 \"1.5\" decimal}")
     (test-expression "1/2" 
-                     "{number 1/2 \"0.5\" decimal}\nThis program should be tested."
+                     "{number 1/2 \"0.5\" decimal}"
                      "{number 1/2 \"0.5\" decimal}")
     (test-expression "-1/2" 
-                     "{number -1/2 \"-0.5\" decimal}\nThis program should be tested."
+                     "{number -1/2 \"-0.5\" decimal}"
                      "{number -1/2 \"-0.5\" decimal}")
     (test-expression "-3/2" 
-                     "{number -3/2 \"-1.5\" decimal}\nThis program should be tested."
+                     "{number -3/2 \"-1.5\" decimal}"
                      "{number -3/2 \"-1.5\" decimal}")
     (test-expression "+1/3i" 
-                     "0+1/3i\nThis program should be tested."
+                     "0+1/3i"
                      "0+1/3i")
     (test-expression "+1/2i" 
-                     "0+0.5i\nThis program should be tested."
+                     "0+0.5i"
                      "0+0.5i")
     (test-expression "779625/32258"
-                     "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}\nThis program should be tested."
+                     "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
     (test-expression "(exact? 1.5)" 
-                     "true\nThis program should be tested."
+                     "true"
                      "true")
     
     (test-expression "(let ([f (lambda (x) x)]) f)"
@@ -381,7 +380,7 @@ the settings above should match r5rs
                      "read: illegal use of comma")
     
     (test-expression "(list 1)" 
-                     "(cons 1 empty)\nThis program should be tested."
+                     "(cons 1 empty)"
                      "(cons 1 empty)")
     (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
     
@@ -391,7 +390,6 @@ the settings above should match r5rs
     (test-expression "(define-syntax app syntax-case)"
                      "define-syntax: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: define-syntax")))
-
 
 
 ;                                                                            
@@ -426,10 +424,10 @@ the settings above should match r5rs
     (prepare-for-test-expression)
     
     (test-expression "'|.|" 
-                     "'|.|\nThis program should be tested."
+                     "'|.|"
                      "'|.|")
     (test-expression '("(equal? (list " image ") (list " image "))") 
-                     "true\nThis program should be tested."
+                     "true"
                      "true")
     
     (test-expression "(define x 1)(define x 2)"
@@ -437,11 +435,11 @@ the settings above should match r5rs
                      "define: cannot redefine name: x")
     
     (test-expression "(define-struct spider (legs))(make-spider 4)"
-                     "(make-spider 4)\nThis program should be tested."
+                     "(make-spider 4)"
                      "define-struct: cannot redefine name: spider\n(make-spider 4)")
     
     (test-expression "(sqrt -1)" 
-                     "0+1i\nThis program should be tested."
+                     "0+1i"
                      "0+1i")
     
     (test-expression "class"
@@ -468,13 +466,13 @@ the settings above should match r5rs
                      "reference to an identifier before its definition: time")
     
     (test-expression "true" 
-                     "true\nThis program should be tested."
+                     "true"
                      "true")
     (test-expression "mred^" 
                      "mred^: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: mred^")
     (test-expression "(eq? 'a 'A)" 
-                     "false\nThis program should be tested."
+                     "false"
                      "false")
     (test-expression "(set! x 1)"
                      "set!: name is not defined, not a parameter, and not a primitive name"
@@ -486,10 +484,10 @@ the settings above should match r5rs
     (test-expression "(cons 1 2)" "cons: second argument must be of type <list>, given 1 and 2")
     (test-expression "(+ (list 1) 2)" "+: expects type <number> as 1st argument, given: (list 1); other arguments were: 2")
     (test-expression "'(1)" 
-                     "(list 1)\nThis program should be tested."
+                     "(list 1)"
                      "(list 1)")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
-                     "(list (list 1) (list 1))\nThis program should be tested."
+                     "(list (list 1) (list 1))"
                      "define: cannot redefine name: shrd\n(list (list 1) (list 1))")
     (test-expression "(local ((define x x)) 1)"
                      "local: name is not defined, not a parameter, and not a primitive name"
@@ -500,43 +498,43 @@ the settings above should match r5rs
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
     (test-expression "(+ 1)" "procedure +: expects at least 2 arguments, given 1: 1")
     
-    (test-expression "1.0" "1\nThis program should be tested." "1")
-    (test-expression "#i1.0" "#i1.0\nThis program should be tested." "#i1.0")
+    (test-expression "1.0" "1" "1")
+    (test-expression "#i1.0" "#i1.0" "#i1.0")
     (test-expression "4/3" 
-                     "{number 4/3 \"1.3\" decimal}\nThis program should be tested."
+                     "{number 4/3 \"1.3\" decimal}"
                      "{number 4/3 \"1.3\" decimal}")
     (test-expression "1/3" 
-                     "{number 1/3 \"0.3\" decimal}\nThis program should be tested."
+                     "{number 1/3 \"0.3\" decimal}"
                      "{number 1/3 \"0.3\" decimal}")
     (test-expression "-4/3" 
-                     "{number -4/3 \"-1.3\" decimal}\nThis program should be tested."
+                     "{number -4/3 \"-1.3\" decimal}"
                      "{number -4/3 \"-1.3\" decimal}")
     (test-expression "-1/3" 
-                     "{number -1/3 \"-0.3\" decimal}\nThis program should be tested."
+                     "{number -1/3 \"-0.3\" decimal}"
                      "{number -1/3 \"-0.3\" decimal}")
     (test-expression "3/2" 
-                     "{number 3/2 \"1.5\" decimal}\nThis program should be tested."
+                     "{number 3/2 \"1.5\" decimal}"
                      "{number 3/2 \"1.5\" decimal}")
     (test-expression "1/2" 
-                     "{number 1/2 \"0.5\" decimal}\nThis program should be tested."
+                     "{number 1/2 \"0.5\" decimal}"
                      "{number 1/2 \"0.5\" decimal}")
     (test-expression "-1/2" 
-                     "{number -1/2 \"-0.5\" decimal}\nThis program should be tested."
+                     "{number -1/2 \"-0.5\" decimal}"
                      "{number -1/2 \"-0.5\" decimal}")
     (test-expression "-3/2" 
-                     "{number -3/2 \"-1.5\" decimal}\nThis program should be tested."
+                     "{number -3/2 \"-1.5\" decimal}"
                      "{number -3/2 \"-1.5\" decimal}")
     (test-expression "+1/3i" 
-                     "0+1/3i\nThis program should be tested."
+                     "0+1/3i"
                      "0+1/3i")
     (test-expression "+1/2i" 
-                     "0+0.5i\nThis program should be tested."
+                     "0+0.5i"
                      "0+0.5i")
     (test-expression "779625/32258"
-                     "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}\nThis program should be tested."
+                     "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
     (test-expression "(exact? 1.5)" 
-                     "true\nThis program should be tested."
+                     "true"
                      "true")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" 
@@ -546,7 +544,7 @@ the settings above should match r5rs
                      "unquote: misuse of a comma or `unquote', not under a quasiquoting backquote")
     
     (test-expression "(list 1)" 
-                     "(list 1)\nThis program should be tested."
+                     "(list 1)"
                      "(list 1)")
     (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
     
@@ -589,10 +587,10 @@ the settings above should match r5rs
     (prepare-for-test-expression)
     
     (test-expression "'|.|" 
-                     "'|.|\nThis program should be tested."
+                     "'|.|"
                      "'|.|")
     (test-expression '("(equal? (list " image ") (list " image "))") 
-                     "true\nThis program should be tested."
+                     "true"
                      "true")
     
     (test-expression "(define x 1)(define x 2)"
@@ -600,11 +598,11 @@ the settings above should match r5rs
                      "define: cannot redefine name: x")
     
     (test-expression "(define-struct spider (legs))(make-spider 4)"
-                     "(make-spider 4)\nThis program should be tested."
+                     "(make-spider 4)"
                      "define-struct: cannot redefine name: spider\n(make-spider 4)")
     
     (test-expression "(sqrt -1)" 
-                     "0+1i\nThis program should be tested."
+                     "0+1i"
                      "0+1i")
     
     (test-expression "class" 
@@ -630,13 +628,13 @@ the settings above should match r5rs
                      #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
     
     (test-expression "true" 
-                     "true\nThis program should be tested."
+                     "true"
                      "true")
     (test-expression "mred^" 
                      "mred^: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: mred^")
     (test-expression "(eq? 'a 'A)" 
-                     "false\nThis program should be tested."
+                     "false"
                      "false")
     (test-expression "(set! x 1)"
                      "set!: name is not defined, not a parameter, and not a primitive name"
@@ -648,63 +646,63 @@ the settings above should match r5rs
     (test-expression "(cons 1 2)" "cons: second argument must be of type <list>, given 1 and 2")
     (test-expression "(+ (list 1) 2)" "+: expects type <number> as 1st argument, given: (list 1); other arguments were: 2")
     (test-expression "'(1)" 
-                     "(list 1)\nThis program should be tested."
+                     "(list 1)"
                      "(list 1)")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
-                     "(list (list 1) (list 1))\nThis program should be tested."
+                     "(list (list 1) (list 1))"
                      "define: cannot redefine name: shrd\n(list (list 1) (list 1))")
     (test-expression "(local ((define x x)) 1)" "local variable used before its definition: x")
     (test-expression "(letrec ([x x]) 1)" "local variable used before its definition: x")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
-    (test-expression "(+ 1)" "1\nThis program should be tested.")
+    (test-expression "(+ 1)" "1")
     
-    (test-expression "1.0" "1\nThis program should be tested." "1")
-    (test-expression "#i1.0" "#i1.0\nThis program should be tested." "#i1.0")
+    (test-expression "1.0" "1" "1")
+    (test-expression "#i1.0" "#i1.0" "#i1.0")
     (test-expression "4/3" 
-                     "{number 4/3 \"1.3\" decimal}\nThis program should be tested."
+                     "{number 4/3 \"1.3\" decimal}"
                      "{number 4/3 \"1.3\" decimal}")
     (test-expression "1/3" 
-                     "{number 1/3 \"0.3\" decimal}\nThis program should be tested."
+                     "{number 1/3 \"0.3\" decimal}"
                      "{number 1/3 \"0.3\" decimal}")
     (test-expression "-4/3" 
-                     "{number -4/3 \"-1.3\" decimal}\nThis program should be tested."
+                     "{number -4/3 \"-1.3\" decimal}"
                      "{number -4/3 \"-1.3\" decimal}")
     (test-expression "-1/3" 
-                     "{number -1/3 \"-0.3\" decimal}\nThis program should be tested."
+                     "{number -1/3 \"-0.3\" decimal}"
                      "{number -1/3 \"-0.3\" decimal}")
     (test-expression "3/2" 
-                     "{number 3/2 \"1.5\" decimal}\nThis program should be tested."
+                     "{number 3/2 \"1.5\" decimal}"
                      "{number 3/2 \"1.5\" decimal}")
     (test-expression "1/2" 
-                     "{number 1/2 \"0.5\" decimal}\nThis program should be tested."
+                     "{number 1/2 \"0.5\" decimal}"
                      "{number 1/2 \"0.5\" decimal}")
     (test-expression "-1/2" 
-                     "{number -1/2 \"-0.5\" decimal}\nThis program should be tested."
+                     "{number -1/2 \"-0.5\" decimal}"
                      "{number -1/2 \"-0.5\" decimal}")
     (test-expression "-3/2" 
-                     "{number -3/2 \"-1.5\" decimal}\nThis program should be tested."
+                     "{number -3/2 \"-1.5\" decimal}"
                      "{number -3/2 \"-1.5\" decimal}")
     (test-expression "+1/3i" 
-                     "0+1/3i\nThis program should be tested."
+                     "0+1/3i"
                      "0+1/3i")
     (test-expression "+1/2i" 
-                     "0+0.5i\nThis program should be tested."
+                     "0+0.5i"
                      "0+0.5i")
     (test-expression "779625/32258" 
-                     "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}\nThis program should be tested."
+                     "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
     (test-expression "(exact? 1.5)" 
-                     "true\nThis program should be tested."
+                     "true"
                      "true")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" 
-                     "function:f\nThis program should be tested."
+                     "function:f"
                      "function:f")
     (test-expression ",1"
                      "unquote: misuse of a comma or `unquote', not under a quasiquoting backquote")
     
     (test-expression "(list 1)" 
-                     "(list 1)\nThis program should be tested."
+                     "(list 1)"
                      "(list 1)")
     (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
     (test-expression "argv" 
@@ -749,21 +747,21 @@ the settings above should match r5rs
     (prepare-for-test-expression)
     
     (test-expression "'|.|"
-                     "'|.|\nThis program should be tested."
+                     "'|.|"
                      "'|.|")
     (test-expression '("(equal? (list " image ") (list " image "))") 
-                     "true\nThis program should be tested."
+                     "true"
                      "true")
     (test-expression "(define x 1)(define x 2)"
                      "x: this name was defined previously and cannot be re-defined"
                      "define: cannot redefine name: x")
     
     (test-expression "(define-struct spider (legs))(make-spider 4)"
-                     "(make-spider 4)\nThis program should be tested."
+                     "(make-spider 4)"
                      "define-struct: cannot redefine name: spider\n(make-spider 4)")
     
     (test-expression "(sqrt -1)" 
-                     "0+1i\nThis program should be tested."
+                     "0+1i"
                      "0+1i")
     
     (test-expression "class"
@@ -789,13 +787,13 @@ the settings above should match r5rs
                      #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
     
     (test-expression "true" 
-                     "true\nThis program should be tested."
+                     "true"
                      "true")
     (test-expression "mred^" 
                      "mred^: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: mred^")
     (test-expression "(eq? 'a 'A)" 
-                     "false\nThis program should be tested."
+                     "false"
                      "false")
     (test-expression "(set! x 1)"
                      "set!: name is not defined, not a parameter, and not a primitive name"
@@ -807,59 +805,59 @@ the settings above should match r5rs
     (test-expression "(cons 1 2)" "cons: second argument must be of type <list>, given 1 and 2")
     (test-expression "(+ (list 1) 2)" "+: expects type <number> as 1st argument, given: (list 1); other arguments were: 2")
     (test-expression "'(1)" 
-                     "(list 1)\nThis program should be tested."
+                     "(list 1)"
                      "(list 1)")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
-                     "(list (list 1) (list 1))\nThis program should be tested."
+                     "(list (list 1) (list 1))"
                      "define: cannot redefine name: shrd\n(list (list 1) (list 1))")
     (test-expression "(local ((define x x)) 1)" "local variable used before its definition: x")
     (test-expression "(letrec ([x x]) 1)" "local variable used before its definition: x")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
-    (test-expression "(+ 1)" "1\nThis program should be tested.")
+    (test-expression "(+ 1)" "1")
     
-    (test-expression "1.0" "1\nThis program should be tested." "1")
-    (test-expression "#i1.0" "#i1.0\nThis program should be tested." "#i1.0")
+    (test-expression "1.0" "1" "1")
+    (test-expression "#i1.0" "#i1.0" "#i1.0")
     (test-expression "4/3" 
-                     "{number 4/3 \"1.3\" decimal}\nThis program should be tested."
+                     "{number 4/3 \"1.3\" decimal}"
                      "{number 4/3 \"1.3\" decimal}")
     (test-expression "1/3" 
-                     "{number 1/3 \"0.3\" decimal}\nThis program should be tested."
+                     "{number 1/3 \"0.3\" decimal}"
                      "{number 1/3 \"0.3\" decimal}")
     (test-expression "-4/3" 
-                     "{number -4/3 \"-1.3\" decimal}\nThis program should be tested."
+                     "{number -4/3 \"-1.3\" decimal}"
                      "{number -4/3 \"-1.3\" decimal}")
     (test-expression "-1/3" 
-                     "{number -1/3 \"-0.3\" decimal}\nThis program should be tested."
+                     "{number -1/3 \"-0.3\" decimal}"
                      "{number -1/3 \"-0.3\" decimal}")
     (test-expression "3/2" 
-                     "{number 3/2 \"1.5\" decimal}\nThis program should be tested."
+                     "{number 3/2 \"1.5\" decimal}"
                      "{number 3/2 \"1.5\" decimal}")
     (test-expression "1/2" 
-                     "{number 1/2 \"0.5\" decimal}\nThis program should be tested."
+                     "{number 1/2 \"0.5\" decimal}"
                      "{number 1/2 \"0.5\" decimal}")
     (test-expression "-1/2" 
-                     "{number -1/2 \"-0.5\" decimal}\nThis program should be tested."
+                     "{number -1/2 \"-0.5\" decimal}"
                      "{number -1/2 \"-0.5\" decimal}")
     (test-expression "-3/2" 
-                     "{number -3/2 \"-1.5\" decimal}\nThis program should be tested."
+                     "{number -3/2 \"-1.5\" decimal}"
                      "{number -3/2 \"-1.5\" decimal}")
-    (test-expression "+1/3i" "0+1/3i\nThis program should be tested." "0+1/3i")
-    (test-expression "+1/2i" "0+0.5i\nThis program should be tested." "0+0.5i")
+    (test-expression "+1/3i" "0+1/3i" "0+1/3i")
+    (test-expression "+1/2i" "0+0.5i" "0+0.5i")
     (test-expression "779625/32258" 
-                     "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}\nThis program should be tested."
+                     "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
     (test-expression "(exact? 1.5)" 
-                     "true\nThis program should be tested."
+                     "true"
                      "true")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" 
-                     "(lambda (a1) ...)\nThis program should be tested."
+                     "(lambda (a1) ...)"
                      "(lambda (a1) ...)")
     (test-expression ",1"
                      "unquote: misuse of a comma or `unquote', not under a quasiquoting backquote")
     
     (test-expression "(list 1)" 
-                     "(list 1)\nThis program should be tested."
+                     "(list 1)"
                      "(list 1)")
     (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
     (test-expression "argv" 
@@ -903,21 +901,21 @@ the settings above should match r5rs
     (prepare-for-test-expression)
     
     (test-expression "'|.|" 
-                     "'|.|\nThis program should be tested."
+                     "'|.|"
                      "'|.|")
     (test-expression '("(equal? (list " image ") (list " image "))") 
-                     "true\nThis program should be tested."
+                     "true"
                      "true")
     (test-expression "(define x 1)(define x 2)"
                      "x: this name was defined previously and cannot be re-defined"
                      "define: cannot redefine name: x")
     
     (test-expression "(define-struct spider (legs))(make-spider 4)"
-                     "(make-spider 4)\nThis program should be tested."
+                     "(make-spider 4)"
                      "define-struct: cannot redefine name: spider\n(make-spider 4)")
     
     (test-expression "(sqrt -1)" 
-                     "0+1i\nThis program should be tested."
+                     "0+1i"
                      "0+1i")
     
     (test-expression "class"
@@ -942,81 +940,81 @@ the settings above should match r5rs
                      #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
     
     (test-expression "true" 
-                     "true\nThis program should be tested."
+                     "true"
                      "true")
     (test-expression "mred^" 
                      "mred^: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: mred^")
     (test-expression "(eq? 'a 'A)" 
-                     "false\nThis program should be tested."
+                     "false"
                      "false")
     (test-expression "(set! x 1)"
                      "x: name is not defined"
                      "set!: cannot set identifier before its definition: x")
     (test-expression "(define qqq 2) (set! qqq 1)" 
-                     "(void)\nThis program should be tested." 
+                     "(void)" 
                      "define: cannot redefine name: qqq\n(void)")
     (test-expression "(cond [(= 1 2) 3])" "cond: all question results were false")
     (test-expression "(cons 1 2)" "cons: second argument must be of type <list or cyclic list>, given 1 and 2")
     (test-expression "(+ (list 1) 2)" "+: expects type <number> as 1st argument, given: (list 1); other arguments were: 2")
     (test-expression "'(1)" 
-                     "(list 1)\nThis program should be tested."
+                     "(list 1)"
                      "(list 1)")
     (test-expression "(define shrd (list 1)) (list shrd shrd)"
-                     "(shared ((-1- (list 1))) (list -1- -1-))\nThis program should be tested."
+                     "(shared ((-1- (list 1))) (list -1- -1-))"
                      "define: cannot redefine name: shrd\n(shared ((-1- (list 1))) (list -1- -1-))")
     (test-expression "(local ((define x x)) 1)" "local variable used before its definition: x")
     (test-expression "(letrec ([x x]) 1)" "local variable used before its definition: x")
     (test-expression "(if 1 1 1)" "if: question result is not true or false: 1")
-    (test-expression "(+ 1)" "procedure +: expects at least 2 arguments, given 1: 1")
+    (test-expression "(+ 1)" "1")
     
-    (test-expression "1.0" "1\nThis program should be tested." "1")
-    (test-expression "#i1.0" "#i1.0\nThis program should be tested." "#i1.0")
+    (test-expression "1.0" "1" "1")
+    (test-expression "#i1.0" "#i1.0" "#i1.0")
     (test-expression "4/3" 
-                     "{number 4/3 \"1.3\" decimal}\nThis program should be tested."
+                     "{number 4/3 \"1.3\" decimal}"
                      "{number 4/3 \"1.3\" decimal}")
     (test-expression "1/3" 
-                     "{number 1/3 \"0.3\" decimal}\nThis program should be tested."
+                     "{number 1/3 \"0.3\" decimal}"
                      "{number 1/3 \"0.3\" decimal}")
     (test-expression "-4/3" 
-                     "{number -4/3 \"-1.3\" decimal}\nThis program should be tested."
+                     "{number -4/3 \"-1.3\" decimal}"
                      "{number -4/3 \"-1.3\" decimal}")
     (test-expression "-1/3" 
-                     "{number -1/3 \"-0.3\" decimal}\nThis program should be tested."
+                     "{number -1/3 \"-0.3\" decimal}"
                      "{number -1/3 \"-0.3\" decimal}")
     (test-expression "3/2" 
-                     "{number 3/2 \"1.5\" decimal}\nThis program should be tested."
+                     "{number 3/2 \"1.5\" decimal}"
                      "{number 3/2 \"1.5\" decimal}")
     (test-expression "1/2" 
-                     "{number 1/2 \"0.5\" decimal}\nThis program should be tested."
+                     "{number 1/2 \"0.5\" decimal}"
                      "{number 1/2 \"0.5\" decimal}")
     (test-expression "-1/2" 
-                     "{number -1/2 \"-0.5\" decimal}\nThis program should be tested."
+                     "{number -1/2 \"-0.5\" decimal}"
                      "{number -1/2 \"-0.5\" decimal}")
     (test-expression "-3/2" 
-                     "{number -3/2 \"-1.5\" decimal}\nThis program should be tested."
+                     "{number -3/2 \"-1.5\" decimal}"
                      "{number -3/2 \"-1.5\" decimal}")
     (test-expression "+1/3i" 
-                     "0+1/3i\nThis program should be tested."
+                     "0+1/3i"
                      "0+1/3i")
     (test-expression "+1/2i" 
-                     "0+0.5i\nThis program should be tested."
+                     "0+0.5i"
                      "0+0.5i")
     (test-expression "779625/32258" 
-                     "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}\nThis program should be tested."
+                     "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}"
                      "{number 779625/32258 \"24.1684233368466736933473866...\" decimal}")
     (test-expression "(exact? 1.5)" 
-                     "true\nThis program should be tested."
+                     "true"
                      "true")
     
     (test-expression "(let ([f (lambda (x) x)]) f)" 
-                     "(lambda (a1) ...)\nThis program should be tested."
+                     "(lambda (a1) ...)"
                      "(lambda (a1) ...)")
     (test-expression ",1"
                      "unquote: misuse of a comma or `unquote', not under a quasiquoting backquote")
     
     (test-expression "(list 1)" 
-                     "(list 1)\nThis program should be tested."
+                     "(list 1)"
                      "(list 1)")
     (test-expression "(car (list))" "car: expects argument of type <pair>; given empty")
     (test-expression "argv"
@@ -1076,7 +1074,7 @@ the settings above should match r5rs
 (define (fetch-output/should-be-tested . args)
   (regexp-replace (regexp
                    (string-append
-                    (regexp-quote "\nThis program should be tested.")
+                    (regexp-quote "")
                     "$"))
                   (apply fetch-output args)
                   ""))
@@ -1264,87 +1262,84 @@ the settings above should match r5rs
 ;;                -> void
 ;; types an expression in the definitions window, executes it and tests the output
 ;; types an expression in the REPL and tests the output from the REPL.
-(define test-expression
-  (case-lambda 
-    [(expression expected) (test-expression expression expected expected)]
-    [(expression defs-expected repl-expected)
-     (let* ([drs (wait-for-drscheme-frame)]
-            [interactions-text (send drs get-interactions-text)]
-            [definitions-text (send drs get-definitions-text)]
-            [handle-insertion
-             (lambda (item)
-               (cond
-                 [(eq? item 'image)
-                  (use-get/put-dialog 
-                   (lambda () (fw:test:menu-select "Insert" "Insert Image..."))
-                   (simplify-path (build-path (collection-path "icons") "recycle.png")))]
-                 [(string? item)
-                  (type-in-definitions drs item)]
-                 [(eq? item 'xml)
-                  (fw:test:menu-select "Insert" "Insert XML Box")
-                  (for-each fw:test:keystroke (string->list "<a><b>"))]
-                 [else (error 'handle-insertion "unknown thing to insert ~s" item)]))]
-            [check-expectation
-             (lambda (expected got)
-               (cond
-                 [(string? expected)
-                  (whitespace-string=? expected got)]
-                 [(regexp? expected)
-                  (regexp-match expected got)]
-                 [(procedure? expected)
-                  (expected got)]))]
-            [make-err-msg
-             (lambda (expected)
-               (cond
-                 [(string? expected)
-                  "FAILED: ~s ~s expected ~s to produce:\n  ~s\ngot:\n  ~s\ninstead~n"]
-                 [(regexp? expected)
-                  "FAILED: ~s ~s expected ~s to match ~s, got ~s instead~n"]
-                 [(procedure? expected)
-                  "FAILED: ~s ~s expected ~s to pass predicate ~s, got ~s~n"]))])
-       (clear-definitions drs)
-       (cond
-         [(pair? expression) (for-each handle-insertion expression)]
-         [else (handle-insertion expression)])
-       (do-execute drs)
-       
-       (let ([got
-              (fetch-output
-               drs
-               (send interactions-text paragraph-start-position 2)
-               (send interactions-text paragraph-end-position
-                     (- (send interactions-text last-paragraph) 1)))])
-         (when (regexp-match re:out-of-sync got)
-           (error 'text-expression "got out of sync message"))
-         (unless (check-expectation defs-expected got)
-           (printf (make-err-msg defs-expected) 
-                   'definitions (language) expression defs-expected got)))
-       
-       (let ([s (make-semaphore 0)])
-         (queue-callback
-          (λ ()
-            (send definitions-text select-all)
-            (send definitions-text copy)
-            (send interactions-text set-position
-                  (send interactions-text last-position)
-                  (send interactions-text last-position))
-            (send interactions-text paste)
-            (semaphore-post s)))
-         (semaphore-wait s))
-       
-       (let ([last-para (send interactions-text last-paragraph)])
-         (type-in-interactions drs (string #\newline))
-         (wait-for-computation drs)
-         (let ([got
-                (fetch-output
-                 drs
-                 (send interactions-text paragraph-start-position (+ last-para 1))
-                 (send interactions-text paragraph-end-position
-                       (- (send interactions-text last-paragraph) 1)))])
-           (when (regexp-match re:out-of-sync got)
-             (error 'text-expression "got out of sync message"))
-           (unless (check-expectation repl-expected got)
-             (printf (make-err-msg repl-expected) 'interactions (language) expression repl-expected got)))))]))
+(define (test-expression expression defs-expected [repl-expected defs-expected])
+  (let* ([drs (wait-for-drscheme-frame)]
+         [interactions-text (send drs get-interactions-text)]
+         [definitions-text (send drs get-definitions-text)]
+         [handle-insertion
+          (lambda (item)
+            (cond
+              [(eq? item 'image)
+               (use-get/put-dialog 
+                (lambda () (fw:test:menu-select "Insert" "Insert Image..."))
+                (simplify-path (build-path (collection-path "icons") "recycle.png")))]
+              [(string? item)
+               (type-in-definitions drs item)]
+              [(eq? item 'xml)
+               (fw:test:menu-select "Insert" "Insert XML Box")
+               (for-each fw:test:keystroke (string->list "<a><b>"))]
+              [else (error 'handle-insertion "unknown thing to insert ~s" item)]))]
+         [check-expectation
+          (lambda (expected got)
+            (cond
+              [(string? expected)
+               (whitespace-string=? expected got)]
+              [(regexp? expected)
+               (regexp-match expected got)]
+              [(procedure? expected)
+               (expected got)]))]
+         [make-err-msg
+          (lambda (expected)
+            (cond
+              [(string? expected)
+               "FAILED: ~s ~s expected ~s to produce:\n  ~s\ngot:\n  ~s\ninstead~n"]
+              [(regexp? expected)
+               "FAILED: ~s ~s expected ~s to match ~s, got ~s instead~n"]
+              [(procedure? expected)
+               "FAILED: ~s ~s expected ~s to pass predicate ~s, got ~s~n"]))])
+    (clear-definitions drs)
+    (cond
+      [(pair? expression) (for-each handle-insertion expression)]
+      [else (handle-insertion expression)])
+    (do-execute drs)
+    
+    (let ([got
+           (fetch-output
+            drs
+            (send interactions-text paragraph-start-position 2)
+            (send interactions-text paragraph-end-position
+                  (- (send interactions-text last-paragraph) 1)))])
+      (when (regexp-match re:out-of-sync got)
+        (error 'text-expression "got out of sync message"))
+      (unless (check-expectation defs-expected got)
+        (printf (make-err-msg defs-expected) 
+                'definitions (language) expression defs-expected got)))
+    
+    (let ([s (make-semaphore 0)])
+      (queue-callback
+       (λ ()
+         (send definitions-text select-all)
+         (send definitions-text copy)
+         (send interactions-text set-position
+               (send interactions-text last-position)
+               (send interactions-text last-position))
+         (send interactions-text paste)
+         (semaphore-post s)))
+      (semaphore-wait s))
+    
+    (let ([last-para (send interactions-text last-paragraph)])
+      (alt-return-in-interactions drs)
+      (wait-for-computation drs)
+      (let ([got
+             (fetch-output
+              drs
+              (send interactions-text paragraph-start-position (+ last-para 1))
+              (send interactions-text paragraph-end-position
+                    (- (send interactions-text last-paragraph) 1)))])
+        (when (regexp-match re:out-of-sync got)
+          (error 'text-expression "got out of sync message"))
+        (unless (check-expectation repl-expected got)
+          (printf (make-err-msg repl-expected) 'interactions (language) expression repl-expected got))))))
 
 
 (define-syntax (go stx)

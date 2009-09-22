@@ -124,13 +124,56 @@
                        (send interactions-text get-error-ranges))))])))))
 
 (define (run-test)
+  
+  (run-use-compiled-file-paths-tests)
+  
   (set-language-level! '("Module") #f)
   (test:set-radio-box-item! "Debugging")
   (let ([f (get-top-level-focus-window)])
     (test:button-push "OK")
     (wait-for-new-frame f))
-  
+
   (for-each single-test (reverse tests))
   (clear-definitions drs)
   (send (send drs get-definitions-text) set-modified #f)
   (for ([file temp-files]) (when (file-exists? file) (delete-file file))))
+
+(define (run-use-compiled-file-paths-tests)
+  
+  (define (setup-dialog/run proc)
+    (set-language-level! '("Module") #f)
+    (proc)
+    (let ([f (get-top-level-focus-window)])
+      (test:button-push "OK")
+      (wait-for-new-frame f))
+    (do-execute drs)
+    (fetch-output drs))
+    
+  (define (run-one-test radio-box expected [no-check-expected #f])
+    (let ([got (setup-dialog/run (λ () (test:set-radio-box-item! radio-box)))])
+      (unless (equal? got (format "~s" expected))
+        (error 'r-u-c-f-p-t "got ~s expected ~s"
+               got
+               expected)))
+    
+    (when no-check-expected
+      (let ([got (setup-dialog/run 
+                  (λ () 
+                    (test:set-radio-box-item! radio-box)
+                    (test:set-check-box! "Populate compiled/ directories (for faster loading)" #f)))])
+        (unless (equal? got (format "~s" no-check-expected))
+          (error 'r-u-c-f-p-t.2 "got ~s expected ~s"
+                 got
+                 expected)))))
+      
+  (define drs/compiled/et (build-path "compiled" "drscheme" "errortrace"))
+  (define drs/compiled (build-path "compiled" "drscheme"))
+  (define compiled/et (build-path "compiled" "errortrace"))
+  (define compiled (build-path "compiled"))
+  
+  (clear-definitions drs)
+  (insert-in-definitions drs "#lang scheme\n(use-compiled-file-paths)")
+  (run-one-test "No debugging or profiling" (list drs/compiled compiled) (list compiled))
+  (run-one-test "Debugging" (list drs/compiled/et compiled/et compiled) (list compiled/et compiled))
+  (run-one-test "Debugging and profiling" (list compiled))
+  (run-one-test "Syntactic test suite coverage" (list compiled)))
