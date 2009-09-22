@@ -91,7 +91,6 @@ static Scheme_Stx_Srcloc *empty_srcloc;
 
 static Scheme_Object *empty_simplified;
 
-static Scheme_Hash_Table *empty_hash_table;
 static THREAD_LOCAL Scheme_Hash_Table *quick_hash_table;
 
 static THREAD_LOCAL Scheme_Object *last_phase_shift;
@@ -216,8 +215,6 @@ typedef struct Scheme_Lexical_Rib {
   int *sealed;
   struct Scheme_Lexical_Rib *next;
 } Scheme_Lexical_Rib;
-
-static Module_Renames *krn;
 
 #define SCHEME_RENAMESP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_rename_table_type))
 #define SCHEME_RENAMES_SETP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_rename_table_set_type))
@@ -619,9 +616,6 @@ void scheme_init_stx(Scheme_Env *env)
   REGISTER_SO(quick_hash_table);
 
   REGISTER_SO(last_phase_shift);
-
-  REGISTER_SO(empty_hash_table);
-  empty_hash_table = scheme_make_hash_table(SCHEME_hash_ptr);
 
   REGISTER_SO(no_nested_inactive_certs);
   no_nested_inactive_certs = scheme_make_raw_pair(NULL, NULL);
@@ -1379,11 +1373,6 @@ Scheme_Object *scheme_make_module_rename(Scheme_Object *phase, int kind, Scheme_
   mr->marked_names = marked_names;
   mr->shared_pes = scheme_null;
   mr->unmarshal_info = scheme_null;
-
-  if (!krn) {
-    REGISTER_SO(krn);
-    krn = mr;
-  }
 
   return (Scheme_Object *)mr;
 }

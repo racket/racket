@@ -1657,8 +1657,6 @@ Scheme_Object *scheme_integer_sqrt_rem(const Scheme_Object *n, Scheme_Object **r
   }
 }
 
-int gcd_calls = 0;
-
 Scheme_Object *scheme_bignum_gcd(const Scheme_Object *n, const Scheme_Object *d)
 {
   bigdig *r_digs, *n_digs, *d_digs;
