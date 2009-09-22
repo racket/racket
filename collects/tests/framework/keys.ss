@@ -161,7 +161,7 @@
      (build-open-bracket-spec "(local []" 9 #\()
      ))
   
-  
+  (send-sexp-to-mred `(preferences:set 'framework:fixup-open-parens #t))
   (send-sexp-to-mred `(send (make-object frame:basic% "dummy to trick frame group") show #t))
   (wait-for-frame "dummy to trick frame group")
   
