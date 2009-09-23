@@ -7,6 +7,7 @@
          syntax/id-table
          syntax/stx
          syntax/keyword
+         syntax/private/util/misc
          "../util.ss"
          "rep-data.ss"
          "codegen-data.ss")
@@ -63,7 +64,8 @@
 (define (id-predicate kw)
   (lambda (stx)
     (and (identifier? stx)
-         (free-identifier=? stx kw))))
+         (free-identifier=? stx kw)
+         (begin (disappeared! stx) #t))))
 
 (define wildcard? (id-predicate (quote-syntax _)))
 (define epsilon?  (id-predicate (quote-syntax ||)))
@@ -99,6 +101,18 @@
 (define (safe-name? stx)
   (and (identifier? stx)
        (not (regexp-match? #rx"^~" (symbol->string (syntax-e stx))))))
+
+;; ---
+
+(define (disappeared! x)
+  (cond [(identifier? x)
+         (record-disappeared-uses (list x))]
+        [(and (stx-pair? x) (identifier? (stx-car x)))
+         (record-disappeared-uses (list (stx-car x)))]
+        [else
+         (raise-type-error 'disappeared!
+                           "identifier or syntax with leading identifier"
+                           x)]))
 
 ;; ---
 
@@ -141,8 +155,9 @@
   (define (gather-patterns stx)
     (syntax-case stx (pattern)
       [((pattern . _) . rest)
-       (cons (parse-variant (stx-car stx) splicing? decls)
-             (gather-patterns #'rest))]
+       (begin (disappeared! (stx-car stx))
+              (cons (parse-variant (stx-car stx) splicing? decls)
+                    (gather-patterns #'rest)))]
       [(bad-variant . rest)
        (wrong-syntax #'bad-variant "expected syntax-class variant")]
       [()
@@ -167,13 +182,14 @@
   (new-declenv literals #:conventions convention-rules))
 
 (define (check-literals-bound lits strict?)
+  (define phase (syntax-local-phase-level))
   (when strict?
     (for ([p lits])
       ;; FIXME: hack...
-      (unless (or (identifier-binding (cadr p) 0)
-                  (identifier-binding (cadr p) 1)
-                  (identifier-binding (cadr p) #f)
-                  (identifier-binding (cadr p) (syntax-local-phase-level)))
+      (unless (or (identifier-binding (cadr p) phase)
+                  (identifier-binding (cadr p) (add1 phase))
+                  (identifier-binding (cadr p) (sub1 phase))
+                  (identifier-binding (cadr p) #f))
         (wrong-syntax (cadr p) "unbound identifier not allowed as literal"))))
   lits)
 
@@ -222,6 +238,7 @@
                    (parse-pattern-directives #'rest
                                              #:allow-declare? #t
                                              #:decls decls0)])
+       (disappeared! stx)
        (unless (stx-null? rest)
          (wrong-syntax (if (pair? rest) (car rest) rest)
                        "unexpected terms after pattern directives"))
@@ -284,8 +301,10 @@
                     ~seq ~optional ~! ~bind ~fail ~parse)
     [wildcard
      (wildcard? #'wildcard)
-     (create-pat:any)]
+     (begin (disappeared! stx)
+            (create-pat:any))]
     [~!
+     (disappeared! stx)
      (check-ghost!
       (create-ghost:cut))]
     [reserved
@@ -298,37 +317,50 @@
      (atomic-datum? #'datum)
      (create-pat:datum (syntax->datum #'datum))]
     [(~var . rest)
+     (disappeared! stx)
      (parse-pat:var stx decls allow-head?)]
     [(~literal . rest)
+     (disappeared! stx)
      (parse-pat:literal stx decls)]
     [(~and . rest)
+     (disappeared! stx)
      (parse-pat:and stx decls allow-head? allow-ghost?)]
     [(~or . rest)
+     (disappeared! stx)
      (parse-pat:or stx decls allow-head?)]
     [(~not . rest)
+     (disappeared! stx)
      (parse-pat:not stx decls)]
     [(~rest . rest)
+     (disappeared! stx)
      (parse-pat:rest stx decls)]
     [(~describe . rest)
+     (disappeared! stx)
      (parse-pat:describe stx decls allow-head?)]
     [(~seq . rest)
+     (disappeared! stx)
      (check-head!
       (parse-hpat:seq stx #'rest decls))]
     [(~optional . rest)
+     (disappeared! stx)
      (check-head!
       (parse-hpat:optional stx decls))]
     [(~bind . rest)
+     (disappeared! stx)
      (check-ghost!
       (parse-pat:bind stx decls))]
     [(~fail . rest)
+     (disappeared! stx)
      (check-ghost!
       (parse-pat:fail stx decls))]
     [(~parse . rest)
+     (disappeared! stx)
      (check-ghost!
       (parse-pat:parse stx decls))]
     [(head dots . tail)
      (dots? #'dots)
-     (parse-pat:dots stx #'head #'tail decls)]
+     (begin (disappeared! #'dots)
+            (parse-pat:dots stx #'head #'tail decls))]
     [(head . tail)
      (let ([headp (parse-*-pattern #'head decls #t #t)]
            [tailp (parse-single-pattern #'tail decls)])
@@ -360,10 +392,13 @@
 (define (parse-ellipsis-head-pattern stx decls)
   (syntax-case stx (~bounds ~optional ~once)
     [(~optional . _)
+     (disappeared! stx)
      (parse-ehpat/optional stx decls)]
     [(~once . _)
+     (disappeared! stx)
      (parse-ehpat/once stx decls)]
     [(~bounds . _)
+     (disappeared! stx)
      (parse-ehpat/bounds stx decls)]
     [_
      (let ([head (parse-head-pattern stx decls)])
@@ -867,7 +902,8 @@
      (identifier? #'id)
      (list #'id #'id)]
     [_
-     (raise-syntax-error #f "expected literal (identifier or pair of identifiers)" ctx stx)]))
+     (raise-syntax-error #f "expected literal (identifier or pair of identifiers)"
+                         ctx stx)]))
 
 (define (check-literal-sets-list stx ctx)
   (unless (stx-list? stx)
@@ -877,9 +913,10 @@
 
 (define (check-literal-set-entry stx ctx)
   (define (elaborate litset-id lctx)
-    (let ([litset (syntax-local-value litset-id (lambda () #f))])
-      (unless (literalset? litset)
-        (raise-syntax-error #f "expected identifier defined as a literal-set" ctx litset-id))
+    (let ([litset (syntax-local-value/catch litset-id literalset?)])
+      (unless litset
+        (raise-syntax-error #f "expected identifier defined as a literal-set"
+                            ctx litset-id))
       (elaborate-litset litset lctx stx)))
   (syntax-case stx ()
     [(litset #:at lctx)
@@ -904,9 +941,10 @@
 
 (define (check-conventions stx ctx)
   (define (elaborate conventions-id)
-    (let ([cs (syntax-local-value conventions-id (lambda () #f))])
-      (unless (conventions? cs)
-        (raise-syntax-error #f "expected identifier defined as a conventions" ctx conventions-id))
+    (let ([cs (syntax-local-value/catch conventions-id conventions?)])
+      (unless cs
+        (raise-syntax-error #f "expected identifier defined as a conventions"
+                            ctx conventions-id))
       (conventions-rules cs)))
   (syntax-case stx ()
     [conventions

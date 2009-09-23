@@ -5,6 +5,7 @@
                      syntax/stx
                      syntax/id-table
                      syntax/keyword
+                     syntax/private/util/misc
                      "rep-data.ss"
                      "rep.ss"
                      "codegen-data.ss"
@@ -137,42 +138,43 @@
 (define-syntax (parse:clauses stx)
   (syntax-case stx ()
     [(parse:clauses x clauses ctx)
-     (let ()
-       (define-values (chunks clauses-stx)
-         (parse-keyword-options #'clauses parse-directive-table
-                                #:context #'ctx
-                                #:no-duplicates? #t))
-       (define context
-         (options-select-value chunks '#:context #:default #'x))
-       (define-values (decls0 defs)
-         (get-decls+defs chunks #t #:context #'ctx))
-       (define (for-clause clause)
-         (syntax-case clause ()
-           [[p . rest]
-            (let-values ([(rest decls2 defs2 sides)
-                          (parse-pattern-directives #'rest
-                                                    #:allow-declare? #t
-                                                    #:decls decls0
-                                                    #:context #'ctx)])
-              (with-syntax ([rest rest]
-                            [fc (empty-frontier #'x)]
-                            [pattern
-                             (parse-whole-pattern #'p decls2 #:context #'ctx)]
-                            [(local-def ...) defs2])
-                #`(let ()
-                    local-def ...
-                    (parse:S x fc pattern
-                             (convert-sides x #,sides
-                                            (clause-success () (let () . rest)))))))]))
-       (unless (and (stx-list? clauses-stx) (stx-pair? clauses-stx))
-         (raise-syntax-error #f "expected non-empty sequence of clauses" stx))
-       (with-syntax ([(def ...) defs]
-                     [(alternative ...)
-                      (map for-clause (stx->list clauses-stx))])
-         #`(let ([fail (syntax-patterns-fail #,context)])
-             def ...
-             (with-enclosing-fail* fail
-               (try alternative ...)))))]))
+     (with-disappeared-uses
+      (let ()
+        (define-values (chunks clauses-stx)
+          (parse-keyword-options #'clauses parse-directive-table
+                                 #:context #'ctx
+                                 #:no-duplicates? #t))
+        (define context
+          (options-select-value chunks '#:context #:default #'x))
+        (define-values (decls0 defs)
+          (get-decls+defs chunks #t #:context #'ctx))
+        (define (for-clause clause)
+          (syntax-case clause ()
+            [[p . rest]
+             (let-values ([(rest decls2 defs2 sides)
+                           (parse-pattern-directives #'rest
+                                                     #:allow-declare? #t
+                                                     #:decls decls0
+                                                     #:context #'ctx)])
+               (with-syntax ([rest rest]
+                             [fc (empty-frontier #'x)]
+                             [pattern
+                              (parse-whole-pattern #'p decls2 #:context #'ctx)]
+                             [(local-def ...) defs2])
+                 #`(let ()
+                     local-def ...
+                     (parse:S x fc pattern
+                              (convert-sides x #,sides
+                                             (clause-success () (let () . rest)))))))]))
+        (unless (and (stx-list? clauses-stx) (stx-pair? clauses-stx))
+          (raise-syntax-error #f "expected non-empty sequence of clauses" stx))
+        (with-syntax ([(def ...) defs]
+                      [(alternative ...)
+                       (map for-clause (stx->list clauses-stx))])
+          #`(let ([fail (syntax-patterns-fail #,context)])
+              def ...
+              (with-enclosing-fail* fail
+                (try alternative ...))))))]))
 
 (define-for-syntax (wash-literal stx)
   (syntax-case stx ()
