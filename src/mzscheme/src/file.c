@@ -4628,7 +4628,7 @@ static Scheme_Object *cleanse_path(int argc, Scheme_Object *argv[])
 				"cleanse-path",
 				&expanded,
 				1, 0,
-				SCHEME_GUARD_FILE_EXISTS, 
+				0, /* no security check, since the filesystem is not used */ 
                                 SCHEME_PLATFORM_PATH_KIND,
                                 0);
   
