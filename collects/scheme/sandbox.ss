@@ -4,7 +4,8 @@
          scheme/list
          scheme/string
          syntax/moddep
-         scheme/gui/dynamic)
+         scheme/gui/dynamic
+         planet/config)
 
 (provide gui?
          sandbox-init-hook
@@ -843,6 +844,7 @@
     [sandbox-path-permissions
      `(,@(map (lambda (p) `(read-bytecode ,p))
               (current-library-collection-paths))
+       (read-bytecode ,(PLANET-BASE-DIR))
        (exists ,(find-system-path 'addon-dir))
        ,@(compute-permissions allow)
        ,@(sandbox-path-permissions))]
