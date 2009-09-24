@@ -3,6 +3,7 @@
            "basic.ss"
            "search.ss"
            "private/manual-sprop.ss"
+           "private/on-demand.ss"
            mzlib/class
            mzlib/for
            syntax/modresolve
@@ -57,27 +58,27 @@
                       (cons 'tt-chars scheme-properties)
                       scheme-properties)))
 
-  (define output-color (make-scheme-style "ScmOut"))
-  (define input-color (make-scheme-style "ScmIn"))
-  (define input-background-color (make-scheme-style "ScmInBG"))
-  (define no-color (make-scheme-style "ScmPlain"))
-  (define reader-color (make-scheme-style "ScmRdr"))
-  (define result-color (make-scheme-style "ScmRes"))
-  (define keyword-color (make-scheme-style "ScmKw"))
-  (define comment-color (make-scheme-style "ScmCmt"))
-  (define paren-color (make-scheme-style "ScmPn"))
-  (define meta-color (make-scheme-style "ScmMeta"))
-  (define value-color (make-scheme-style "ScmVal"))
-  (define symbol-color (make-scheme-style "ScmSym"))
-  (define variable-color (make-scheme-style "ScmVar"))
-  (define opt-color (make-scheme-style "ScmOpt"))
-  (define error-color (make-scheme-style "ScmErr" #:tt? #f))
-  (define syntax-link-color (make-scheme-style "ScmStxLink"))
-  (define value-link-color (make-scheme-style "ScmValLink"))
-  (define module-color (make-scheme-style "ScmMod"))
-  (define module-link-color (make-scheme-style "ScmModLink"))
-  (define block-color (make-scheme-style "ScmBlk"))
-  (define highlighted-color (make-scheme-style "highlighted" #:tt? #f))
+  (define-on-demand output-color (make-scheme-style "ScmOut"))
+  (define-on-demand input-color (make-scheme-style "ScmIn"))
+  (define-on-demand input-background-color (make-scheme-style "ScmInBG"))
+  (define-on-demand no-color (make-scheme-style "ScmPlain"))
+  (define-on-demand reader-color (make-scheme-style "ScmRdr"))
+  (define-on-demand result-color (make-scheme-style "ScmRes"))
+  (define-on-demand keyword-color (make-scheme-style "ScmKw"))
+  (define-on-demand comment-color (make-scheme-style "ScmCmt"))
+  (define-on-demand paren-color (make-scheme-style "ScmPn"))
+  (define-on-demand meta-color (make-scheme-style "ScmMeta"))
+  (define-on-demand value-color (make-scheme-style "ScmVal"))
+  (define-on-demand symbol-color (make-scheme-style "ScmSym"))
+  (define-on-demand variable-color (make-scheme-style "ScmVar"))
+  (define-on-demand opt-color (make-scheme-style "ScmOpt"))
+  (define-on-demand error-color (make-scheme-style "ScmErr" #:tt? #f))
+  (define-on-demand syntax-link-color (make-scheme-style "ScmStxLink"))
+  (define-on-demand value-link-color (make-scheme-style "ScmValLink"))
+  (define-on-demand module-color (make-scheme-style "ScmMod"))
+  (define-on-demand module-link-color (make-scheme-style "ScmModLink"))
+  (define-on-demand block-color (make-scheme-style "ScmBlk"))
+  (define-on-demand highlighted-color (make-scheme-style "highlighted" #:tt? #f))
 
   (define current-keyword-list 
     (make-parameter null))

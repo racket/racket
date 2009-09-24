@@ -2,11 +2,13 @@
 
 (require "../html-properties.ss"
          "../latex-properties.ss"
-         setup/main-collects)
+         "on-demand.ss"
+         setup/main-collects
+         scheme/promise)
            
 (provide scheme-properties)
 
-(define scheme-properties
+(define-on-demand scheme-properties
   (let ([abs (lambda (s)
                (path->main-collects-relative (build-path (collection-path "scribble") s)))])
     (list (make-css-addition (abs "scheme.css"))

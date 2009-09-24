@@ -6,6 +6,7 @@
          "../scheme.ss"
          (only-in "../core.ss" make-style plain)
          "manual-utils.ss"
+         "on-demand.ss"
          scheme/list
          scheme/contract
          scheme/string)
@@ -28,10 +29,10 @@
                  onscreen defterm filepath exec envvar Flag DFlag PFlag DPFlag math
                  procedure
                  indexed-file indexed-envvar idefterm pidefterm)
+(provide void-const
+         undefined-const)
 (provide/contract
  [PLaneT element?]
- [void-const element?]
- [undefined-const element?]
  [hash-lang (-> element?)]
  [etc string?]
  [inset-flow (() () #:rest (listof pre-content?) . ->* . any/c)] ; XXX no docs and bad return contract
@@ -152,9 +153,9 @@
    (list (schememodfont "#lang"))
    `(part ,(doc-prefix '(lib "scribblings/guide/guide.scrbl") "hash-lang"))))
 
-(define void-const
+(define-on-demand void-const
   (schemeresultfont "#<void>"))
-(define undefined-const
+(define-on-demand undefined-const
   (schemeresultfont "#<undefined>"))
 
 (define (link url 

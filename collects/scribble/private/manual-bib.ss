@@ -3,6 +3,7 @@
          "../decode.ss"
          "../struct.ss"
          "../basic.ss"
+         "on-demand.ss"
          (only-in "../core.ss" make-style)
          "manual-sprop.ss"
          "manual-utils.ss"
@@ -64,7 +65,7 @@
      (if date `(" " ,@(decode-content (list date)) ".") null)
      (if url `(" " ,(link url (tt url))) null)))))
 
-(define bib-style (make-style "SBibliography" scheme-properties))
+(define-on-demand bib-style (make-style "SBibliography" scheme-properties))
 
 (define (bibliography #:tag [tag "doc-bibliography"] . citations)
   (make-unnumbered-part

@@ -9,7 +9,7 @@
 
 (provide omitted-paths)
 
-(require scheme/path scheme/list "../dirs.ss" "lib-roots.ss")
+(require scheme/path scheme/list scheme/promise "../dirs.ss" "lib-roots.ss")
 
 ;; An entry for each collections root that holds a hash table.  The hash table
 ;; maps a reversed list of subpath elements to the exploded omitted-paths
@@ -19,11 +19,12 @@
 ;; main collection tree (it is not used there for documentation, and there is
 ;; at least one place where it contains code: scribble/doc).
 (define roots
-  (map (lambda (p)
-         (list (explode-path (car p)) (make-hash)
-               ;; don't omit "doc" in the main tree
-               (not (equal? (find-collects-dir) (car p)))))
-       library-roots))
+  (delay
+    (map (lambda (p)
+           (list (explode-path (car p)) (make-hash)
+                 ;; don't omit "doc" in the main tree
+                 (not (equal? (find-collects-dir) (car p)))))
+         library-roots)))
 
 ;; if `x' has `y' as a prefix, return the tail,
 ;; eg (relative-from '(1 2 3 4) '(1 2)) => '(3 4)
@@ -89,7 +90,7 @@
          [r (ormap (lambda (root+table)
                      (let ([r (relative-from dir* (car root+table))])
                        (and r (cons (reverse r) root+table))))
-                   roots)]
+                   (force roots))]
          [r (and r (apply accumulate-omitted get-info/full r))])
     (unless r
       (error 'omitted-paths

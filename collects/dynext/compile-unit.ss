@@ -286,7 +286,7 @@
 							 (lambda (s) 
 							   ((current-make-compile-include-strings) s)) 
 							 includes))
-						 ((current-make-compile-include-strings) include-dir)
+						 ((current-make-compile-include-strings) (include-dir))
 						 ((current-make-compile-input-strings) in)
 						 ((current-make-compile-output-strings) out))])
 				   (unless quiet? 

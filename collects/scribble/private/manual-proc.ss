@@ -13,6 +13,7 @@
          "manual-bind.ss"
          "manual-method.ss"
          "manual-ex.ss"
+         "on-demand.ss"
          scheme/string
          scheme/list
          (for-syntax scheme/base)
@@ -26,9 +27,9 @@
          ;; private:
          *defthing) ; XXX unknown contract
 
-(define dots0
+(define-on-demand dots0
   (make-element meta-color (list "...")))
-(define dots1
+(define-on-demand dots1
   (make-element meta-color (list "...+")))
 
 (define (make-openers n)
