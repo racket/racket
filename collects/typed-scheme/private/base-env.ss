@@ -243,7 +243,6 @@
 [file-exists? (-> -Pathlike B)]
 
 [build-path ((list -Pathlike*) -Pathlike* . ->* . -Path)]
-[string->number (-> -String (-opt N))]
 [with-input-from-file
  (-poly (a) (cl-> [(-Pathlike  (-> a))  a]
                   [(-Pathlike (-> a) Sym) a]))]
@@ -382,10 +381,8 @@
   [-> -String -String]
   [-> -Bytes -Bytes])]
 
-
-
-
-[number->string (N . -> . -String)]
+[number->string (cl-> [(N) -String] [(N N) -String])]
+[string->number (cl-> [(-String) N] [(-String N) N])]
 
 [current-milliseconds (-> -Integer)]
 [modulo (cl->* (-Integer -Integer . -> . -Integer))]
