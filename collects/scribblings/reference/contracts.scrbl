@@ -19,7 +19,9 @@ constraints.
 
 @note-lib[scheme/contract #:use-sources (scheme/contract/private/ds
                                          scheme/contract/private/base
-                                         scheme/contract/private/guts)]
+                                         scheme/contract/private/guts
+                                         scheme/contract/private/misc
+                                         scheme/contract/private/provide)]
 
 @deftech{Contracts} come in two forms: those constructed by the
 various operations listed in this section of the manual, and various
