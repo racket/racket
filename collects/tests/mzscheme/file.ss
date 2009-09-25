@@ -1424,7 +1424,7 @@
   (err/rt-test (current-directory "tmp1") (fs-reject? 'current-directory))
   (err/rt-test (current-drive) (lambda (x)
 				 (or (exn:unsupported? x) ((fs-reject? 'current-drive) x))))
-  (err/rt-test (cleanse-path "tmp1") (fs-reject? 'cleanse-path))
+  (test #t path? (cleanse-path "tmp1")) ;; no security guard for cleanse
   (err/rt-test (resolve-path "tmp1") (fs-reject? 'resolve-path))
   (err/rt-test (simplify-path "../tmp1") (fs-reject? 'simplify-path))
   (err/rt-test (file-exists? "tmp1") (fs-reject? 'file-exists?))
