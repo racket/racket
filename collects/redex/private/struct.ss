@@ -11,7 +11,8 @@
          build-reduction-relation
          reduction-relation?
          empty-reduction-relation
-         make-rewrite-proc rewrite-proc? rewrite-proc-name rewrite-proc-lhs rewrite-proc-id
+         make-rewrite-proc rewrite-proc? rewrite-proc-name 
+         rewrite-proc-lhs rewrite-proc-lhs-src rewrite-proc-id
          (struct-out rule-pict))
 
 (define-struct rule-pict (arrow lhs rhs label side-conditions/pattern-binds fresh-vars))
@@ -24,15 +25,16 @@
 
 (define-values (make-rewrite-proc 
                 rewrite-proc? 
-                rewrite-proc-name rewrite-proc-lhs rewrite-proc-id)
+                rewrite-proc-name rewrite-proc-lhs rewrite-proc-lhs-src rewrite-proc-id)
   (let ()
     (define-values (type constructor predicate accessor mutator) 
-      (make-struct-type 'rewrite-proc #f 4 0 #f '() #f 0))
+      (make-struct-type 'rewrite-proc #f 5 0 #f '() #f 0))
     (values constructor 
             predicate 
             (make-struct-field-accessor accessor 1 'name)
             (make-struct-field-accessor accessor 2 'lhs)
-            (make-struct-field-accessor accessor 3 'id))))
+            (make-struct-field-accessor accessor 3 'lhs-src)
+            (make-struct-field-accessor accessor 4 'id))))
 
 ;; lang : compiled-language
 ;; make-procs = (listof (compiled-lang -> proc))
@@ -78,6 +80,7 @@
                                 ress))))
                         (rewrite-proc-name make-proc)
                         (rewrite-proc-lhs make-proc)
+                        (rewrite-proc-lhs-src make-proc)
                         (rewrite-proc-id make-proc))
                        (loop (cdr make-procs)
                              (+ i 1))))]))])

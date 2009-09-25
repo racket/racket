@@ -162,6 +162,7 @@
                                acc)))])))))
          (rewrite-proc-name make-proc)
          (rewrite-proc-lhs make-proc)
+         (rewrite-proc-lhs-src make-proc)
          (rewrite-proc-id make-proc)))
       (reduction-relation-make-procs red))
      (reduction-relation-rule-names red)
@@ -693,9 +694,11 @@
                                   'predicate
                                   #'#t)])
           (with-syntax ([side-conditions-rewritten (rw-sc from)]
-                        [lhs-w/extras (rw-sc #`(side-condition 
-                                                #,from
-                                                #,test-case-body-code))]
+                        [lhs-w/extras (rw-sc #`(side-condition #,from #,test-case-body-code))]
+                        [lhs-source (format "~a:~a:~a"
+                                            (syntax-source from)
+                                            (syntax-line from)
+                                            (syntax-column from))]
                         [name name]
                         [lang lang]
                         [(names ...) names]
@@ -733,6 +736,7 @@
                            other-matches)))))
                name
                (λ (lang) (let (test-case-compile-pattern-bindings ...) `lhs-w/extras))
+               lhs-source
                case-id)))))))
   
   (define (process-extras stx orig-name name-table extras)
@@ -926,6 +930,7 @@
                other-matches)))))
    (rewrite-proc-name child-make-proc)
    (λ (lang) (subst lhs-frm-id ((rewrite-proc-lhs child-make-proc) lang) rhs-from))
+   (rewrite-proc-lhs child-make-proc)
    (rewrite-proc-id child-make-proc)))
 
 (define relation-coverage (make-parameter #f))
@@ -989,7 +994,7 @@
                           (symbol->string (bind-name y))))))
 
 (define-values (struct:metafunc-proc make-metafunc-proc metafunc-proc? metafunc-proc-ref metafunc-proc-set!)
-  (make-struct-type 'metafunc-proc #f 10 0 #f null (current-inspector) 0))
+  (make-struct-type 'metafunc-proc #f 11 0 #f null (current-inspector) 0))
 (define metafunc-proc-pict-info (make-struct-field-accessor metafunc-proc-ref 1))
 (define metafunc-proc-lang (make-struct-field-accessor metafunc-proc-ref 2))
 (define metafunc-proc-multi-arg? (make-struct-field-accessor metafunc-proc-ref 3))
@@ -999,6 +1004,7 @@
 (define metafunc-proc-in-dom? (make-struct-field-accessor metafunc-proc-ref 7))
 (define metafunc-proc-dom-pat (make-struct-field-accessor metafunc-proc-ref 8))
 (define metafunc-proc-lhs-pats (make-struct-field-accessor metafunc-proc-ref 9))
+(define metafunc-proc-src-locs (make-struct-field-accessor metafunc-proc-ref 10))
 (define-struct metafunction (proc))
 
 (define-syntax (in-domain? stx)
@@ -1105,7 +1111,7 @@
                                   (tl-side-cond/binds ...))
                                  (parse-extras #'((stuff ...) ...))])
                       (with-syntax ([(((cp-let-bindings ...) rhs/wheres) ...)
-                                     (map (λ (sc/b rhs) 
+                                     (map (λ (sc/b rhs)
                                             (let-values ([(body-code cp-let-bindings) 
                                                           (bind-withs
                                                            syn-error-name '()  
@@ -1140,6 +1146,13 @@
                                                     #t
                                                     x))
                                             (syntax->list (syntax ((side-condition lhs rg-rhs/wheres) ...))))]
+                                      [(clause-src ...)
+                                       (map (λ (lhs)
+                                              (format "~a:~a:~a"
+                                                      (syntax-source lhs)
+                                                      (syntax-line lhs)
+                                                      (syntax-column lhs)))
+                                            pats)]
                                       [dom-side-conditions-rewritten
                                        (and dom-ctcs
                                             (rewrite-side-conditions/check-errs
@@ -1252,7 +1265,8 @@
                                          rhss
                                          (let ([name (lambda (x) (name-predicate x))]) name)
                                          dsc
-                                         rg-sc))
+                                         rg-sc
+                                         `(clause-src ...)))
                                       dsc
                                       `codom-side-conditions-rewritten
                                       'name
@@ -1279,7 +1293,7 @@
     ;; initial test determines if a contract is specified or not
     (cond
       [(pair? (syntax-e (car (syntax->list rest))))
-       (values #f #f #'any (check-clauses stx syn-error-name rest relation?))]
+       (values #f #f #'any (check-clauses stx syn-error-name (syntax->list rest) relation?))]
       [else
        (syntax-case rest ()
          [(id colon more ...)
@@ -2140,6 +2154,8 @@
          metafunc-proc-in-dom?
          metafunc-proc-dom-pat
          metafunc-proc-lhs-pats
+         metafunc-proc-src-locs
+         metafunc-proc?
          
          (struct-out binds))
 

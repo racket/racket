@@ -417,21 +417,21 @@
                             '(a (b (c (d e))))
                             none)))
     
-    (test-empty `(+ 1 (side-condition any ,(lambda (bindings) #t)))
+    (test-empty `(+ 1 (side-condition any ,(lambda (bindings) #t) #t))
                 '(+ 1 b)
                 (list (make-test-mtch (make-bindings (list (make-bind 'any 'b))) '(+ 1 b) none)))
-    (test-empty `(+ 1 (side-condition any ,(lambda (bindings) #f)))
+    (test-empty `(+ 1 (side-condition any ,(lambda (bindings) #f) #f))
                 '(+ 1 b)
                 #f)
     
-    (test-empty `(+ 1 (side-condition b ,(lambda (bindings) #t)))
+    (test-empty `(+ 1 (side-condition b ,(lambda (bindings) #t) #t))
                 '(+ 1 b)
                 (list (make-test-mtch (make-bindings '()) '(+ 1 b) none)))
-    (test-empty `(+ 1 (side-condition a ,(lambda (bindings) #t)))
+    (test-empty `(+ 1 (side-condition a ,(lambda (bindings) #t)) #t)
                 '(+ 1 b)
                 #f)
 
-    (test-empty `(side-condition (name x any) ,(lambda (bindings) (eq? (lookup-binding bindings 'x) 'a)))
+    (test-empty `(side-condition (name x any) ,(lambda (bindings) (eq? (lookup-binding bindings 'x) 'a)) (eq? (term x) 'a))
                 'a
                 (list 
                  (make-test-mtch (make-bindings (list (make-bind 'x 'a)
@@ -439,7 +439,7 @@
                             'a
                             none)))
 
-    (test-empty `(+ 1 (side-condition (name x any) ,(lambda (bindings) (eq? (lookup-binding bindings 'x) 'a))))
+    (test-empty `(+ 1 (side-condition (name x any) ,(lambda (bindings) (eq? (lookup-binding bindings 'x) 'a)) (eq? (term x) 'a)))
                 '(+ 1 a)
                 (list 
                  (make-test-mtch (make-bindings (list (make-bind 'x 'a)
@@ -447,16 +447,17 @@
                             '(+ 1 a)
                             none)))
 
-    (test-empty `(side-condition (name x any) ,(lambda (bindings) (eq? (lookup-binding bindings 'x) 'a)))
+    (test-empty `(side-condition (name x any) ,(lambda (bindings) (eq? (lookup-binding bindings 'x) 'a)) (eq? (term x) 'a))
                 'b
                 #f)
     
-    (test-empty `(+ 1 (side-condition (name x any) ,(lambda (bindings) (eq? (lookup-binding bindings 'x) 'a))))
+    (test-empty `(+ 1 (side-condition (name x any) ,(lambda (bindings) (eq? (lookup-binding bindings 'x) 'a)) (eq? (term x) 'a)))
                 '(+ 1 b)
                 #f)
     
     (test-empty `(side-condition ((any_1 ..._a) (any_2 ..._a))
-                                 ,(lambda (bindings) (error 'should-not-be-called)))
+                                 ,(lambda (bindings) (error 'should-not-be-called))
+                                 (error 'should-not-be-called))
                 '((1 2 3) (4 5))
                 #f)
     

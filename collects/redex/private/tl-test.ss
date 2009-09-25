@@ -1606,7 +1606,7 @@
     
     ; test shortcut in terms of shortcut
     (test (match ((rewrite-proc-lhs (third (reduction-relation-make-procs r))) grammar)
-            [`(((side-condition 5 ,(? procedure?)) 2) 1) #t]
+            [`(((side-condition 5 ,(? procedure?) ,_) 2) 1) #t]
             [else #f])
           #t))
   

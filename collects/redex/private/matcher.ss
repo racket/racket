@@ -211,7 +211,7 @@ before the pattern compiler is invoked.
        (loop p1)
        (loop p2)]
       [`(hide-hole ,p) (loop p)]
-      [`(side-condition ,p ,g)
+      [`(side-condition ,p ,g ,e)
        (loop p)]
       [`(cross ,s) (void)]
       [_
@@ -247,7 +247,7 @@ before the pattern compiler is invoked.
        [`(in-hole ,context ,contractum)
         (recur contractum)]
        [`(hide-hole ,arg) #f]
-       [`(side-condition ,pat ,condition)
+       [`(side-condition ,pat ,condition ,expr)
         (recur pat)]
        [(? list?)
         (ormap recur pattern)]
@@ -414,10 +414,10 @@ before the pattern compiler is invoked.
           (let ([m (loop p)])
             (lambda (l)
               `(hide-hole ,(m l))))]
-         [`(side-condition ,pat ,condition)
+         [`(side-condition ,pat ,condition ,expr)
           (let ([patf (loop pat)])
             (lambda (l)
-              `(side-condition ,(patf l) ,condition)))]
+              `(side-condition ,(patf l) ,condition ,expr)))]
          [(? list?)
           (let ([f/pats
                  (let l-loop ([pattern pattern])
@@ -505,7 +505,7 @@ before the pattern compiler is invoked.
      (recur context)]
     [`(hide-hole ,p)
      (recur p)]
-    [`(side-condition ,pat ,condition)
+    [`(side-condition ,pat ,condition ,expr)
      (recur pat)]
     [(? list?)
      #t]
@@ -554,7 +554,7 @@ before the pattern compiler is invoked.
      (recur context)]
     [`(hide-hole ,p)
      (recur p)]
-    [`(side-condition ,pat ,condition)
+    [`(side-condition ,pat ,condition ,expr)
      (recur pat)]
     [(? list?)
      #f]
@@ -765,7 +765,7 @@ before the pattern compiler is invoked.
                         matches))))
           #f))]
       
-      [`(side-condition ,pat ,condition)
+      [`(side-condition ,pat ,condition ,expr)
        (let-values ([(match-pat has-hole?) (compile-pattern/default-cache pat)])
          (values
           (lambda (exp hole-info)
@@ -1485,7 +1485,7 @@ before the pattern compiler is invoked.
            (loop pat (cons (make-bind name '()) ribs)))]
       [`(in-hole ,context ,contractum) (loop context (loop contractum ribs))]
       [`(hide-hole ,p) (loop p ribs)]
-      [`(side-condition ,pat ,test) (loop pat ribs)]
+      [`(side-condition ,pat ,test ,expr) (loop pat ribs)]
       [(? list?)
        (let-values ([(rewritten has-hole?) (rewrite-ellipses non-underscore-binder? pattern (lambda (x) (values x #f)))])
          (let i-loop ([r-exps rewritten]

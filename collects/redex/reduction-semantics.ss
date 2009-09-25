@@ -47,7 +47,8 @@
          generate-term
          check-metafunction
          check-metafunction-contract
-         check-reduction-relation)
+         check-reduction-relation
+         exn:fail:redex:generation-failure?)
 
 (provide/contract
  [current-traced-metafunctions (parameter/c (or/c 'all (listof symbol?)))]

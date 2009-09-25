@@ -267,7 +267,7 @@
         null)
   (test (generate-term/decisions lang d 5 0 (decisions #:seq (list (λ (_) 2))))
         '(4 4 4 4 (4 4) (4 4)))
-  (test (raised-exn-msg exn:fail:redex? (generate-term lang e 5 #:retries 42)) 
+  (test (raised-exn-msg exn:fail:redex:generation-failure? (generate-term lang e 5 #:retries 42)) 
         #rx"generate-term: unable to generate pattern e in 42")
   (test (generate-term/decisions lang f 5 0 (decisions #:seq (list (λ (_) 0)))) null)
   (test (generate-term/decisions 
@@ -319,7 +319,7 @@
     (decisions #:num (list (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 2))))
    '(1 1 2))
   (test
-   (raised-exn-msg exn:fail:redex? (generate-term lang b 5000))
+   (raised-exn-msg exn:fail:redex:generation-failure? (generate-term lang b 5000))
    #rx"unable"))
 
 (let ()
@@ -342,10 +342,10 @@
     (x variable))
   (test (generate-term lang b 5) 43)
   (test (generate-term lang (side-condition a (odd? (term a))) 5) 43)
-  (test (raised-exn-msg exn:fail:redex? (generate-term lang c 5))
-        #rx"unable to generate")
+  (test (raised-exn-msg exn:fail:redex:generation-failure? (generate-term lang c 5))
+        #px"unable to generate pattern \\(side-condition a\\_1 #<syntax:.*\\/rg-test\\.ss:\\d+:\\d+>\\)")
   (test (let/ec k
-          (generate-term lang (number_1 (side-condition any (k (term number_1)))) 5))
+          (generate-term lang (number_1 (side-condition 7 (k (term number_1)))) 5))
         'number_1)
   
   (test ; mismatch patterns work with side-condition failure/retry
@@ -665,7 +665,19 @@
              (redex-check lang (n) (eq? 42 (term n)) 
                           #:attempts 1
                           #:source mf)))
-          #rx"counterexample found after 1 attempt with clause #2:\n\\(0\\)\n"))
+          #px"counterexample found after 1 attempt with clause at .*:\\d+:\\d+:\n\\(0\\)\n"))
+  
+  (let ()
+    (define-metafunction lang
+      [(f) 
+       dontcare
+       (side-condition #f)])
+    (test (raised-exn-msg
+           exn:fail:redex:generation-failure?
+           (redex-check lang any #t 
+                        #:attempts 1
+                        #:source f))
+          #px"unable to generate LHS of clause at .*:\\d+:\\d+"))
   
   (let ()
     (define-metafunction lang
@@ -684,18 +696,29 @@
          (redex-check lang n #t #:source (reduction-relation lang (--> x 1))))
         #rx"x does not match n")
   (test (raised-exn-msg
-         exn:fail:redex?
+         exn:fail:redex:generation-failure?
          (redex-check lang (side-condition any #f) #t #:retries 42 #:attempts 1))
         #rx"^redex-check: unable .* in 42")
-  (test (raised-exn-msg
-         exn:fail:redex?
-         (redex-check lang any #t 
-                      #:source (reduction-relation 
-                                lang
-                                (--> (side-condition any #f) any))
-                      #:retries 42
-                      #:attempts 1))
-        #rx"^redex-check: unable .* in 42"))
+  (let-syntax ([test-gen-fail
+                (syntax-rules ()
+                  [(_ rhs expected)
+                   (test 
+                    (raised-exn-msg
+                     exn:fail:redex:generation-failure?
+                     (redex-check lang any #t 
+                                  #:source (reduction-relation 
+                                            lang
+                                            rhs)
+                                  #:retries 42
+                                  #:attempts 1))
+                    expected)])])
+    (test-gen-fail 
+     (--> (side-condition any #f) any)
+     #px"^redex-check: unable to generate LHS of clause at .*:\\d+:\\d+ in 42")
+    
+    (test-gen-fail
+     (--> (side-condition any #f) any impossible)
+     #rx"^redex-check: unable to generate LHS of impossible in 42")))
 
 ;; check-metafunction-contract
 (let ()
@@ -749,7 +772,7 @@
   
   ;; Unable to generate domain
   (test (raised-exn-msg
-         exn:fail:redex?
+         exn:fail:redex:generation-failure?
          (check-metafunction-contract j #:attempts 1 #:retries 42))
         #rx"^check-metafunction-contract: unable .* in 42"))
 
@@ -788,7 +811,11 @@
           #rx"counterexample found after 1 attempt with name:\n1\n")
     (test (output 
            (λ () (check-reduction-relation S (curry eq? 1))))
-          #rx"counterexample found after 1 attempt with unnamed:\n3\n"))
+          #px"counterexample found after 1 attempt with clause at .*:\\d+:\\d+:\n3\n"))
+  
+  (test (output 
+         (λ () (check-reduction-relation (reduction-relation L (--> 1 2) (--> 3 4 name)) (curry eq? 1))))
+        #px"counterexample found after 1 attempt with name:\n3\n")
   
   (let ([T (reduction-relation
             L
@@ -810,7 +837,7 @@
   
   (let ([U (reduction-relation L (--> (side-condition any #f) any))])
     (test (raised-exn-msg
-           exn:fail:redex?
+           exn:fail:redex:generation-failure?
            (check-reduction-relation U (λ (_) #t)))
           #rx"^check-reduction-relation: unable")))
 
@@ -847,13 +874,13 @@
   
   (test (output (λ () (check-metafunction m (λ (_) #t)))) #rx"no counterexamples")
   (test (output (λ () (check-metafunction m (curry eq? 1))))
-        #rx"check-metafunction:.*counterexample found after 1 attempt with clause #1")
+        #px"check-metafunction:.*counterexample found after 1 attempt with clause at .*:\\d+:\\d+")
   (test (raised-exn-msg
           exn:fail:contract?
           (check-metafunction m (λ (_) #t) #:attempts 'NaN))
         #rx"check-metafunction: expected")
   (test (raised-exn-msg
-         exn:fail:redex?
+         exn:fail:redex:generation-failure?
          (check-metafunction n (λ (_) #t) #:retries 42))
         #rx"check-metafunction: unable .* in 42"))
 

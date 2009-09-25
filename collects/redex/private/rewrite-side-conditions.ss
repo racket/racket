@@ -42,14 +42,18 @@
          (with-syntax ([pat (loop (syntax pre-pat))])
            (let-values ([(names names/ellipses) (extract-names all-nts what bind-names? (syntax pat))])
              (with-syntax ([(name ...) names]
-                           [(name/ellipses ...) names/ellipses])
+                           [(name/ellipses ...) names/ellipses]
+                           [src-loc (parameterize ([print-syntax-width 0])
+                                      (format "~s" #'exp))])
                (syntax/loc term
                  (side-condition
                   pat
                   ,(lambda (bindings)
                      (term-let
                       ([name/ellipses (lookup-binding bindings 'name)] ...)
-                      exp)))))))]
+                      exp))
+                  ; For use in error messages.
+                  src-loc)))))]
         [(side-condition a ...) (expected-exact 'side-condition 2 term)]
         [side-condition (expected-arguments 'side-condition term)]
         [(variable-except a ...) #`(variable-except #,@(map loop (syntax->list (syntax (a ...)))))]
@@ -101,7 +105,7 @@
                  (loop (syntax pat1)
                        (loop (syntax pat2) names depth)
                        depth)]
-                [(side-condition pat e)
+                [(side-condition pat . rest)
                  (loop (syntax pat) names depth)]
                 [(pat ...)
                  (let i-loop ([pats (syntax->list (syntax (pat ...)))]

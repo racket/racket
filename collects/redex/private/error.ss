@@ -4,4 +4,5 @@
   (let ([str (format "~a: ~a" name (apply format fmt args))])
     (raise (make-exn:fail:redex str (current-continuation-marks)))))
 (provide redex-error
-         exn:fail:redex?)
+         exn:fail:redex?
+         (struct-out exn:fail:redex))

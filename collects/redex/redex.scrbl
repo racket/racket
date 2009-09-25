@@ -1129,7 +1129,8 @@ sub-term---regenerating the sub-term if necessary. The optional keyword
 argument @scheme[retries-expr] (default @scheme[100]) bounds the number of times that 
 @scheme[generate-term] retries the generation of any sub-term. If 
 @scheme[generate-term] is unable to produce a satisfying term after 
-@scheme[retries-expr] attempts, it raises an error}
+@scheme[retries-expr] attempts, it raises an exception recognized by
+@scheme[exn:fail:redex:generation-failure?].}
 
 @defform/subs[(redex-check language @#,ttpattern property-expr kw-arg ...)
               ([kw-arg (code:line #:attempts attempts-expr)
@@ -1222,6 +1223,12 @@ when @scheme[relation] is a relation on @scheme[L] with @scheme[n] rules.}
                            [retries-expr natural-number/c])]{
 Like @scheme[check-reduction-relation] but for metafunctions.}
 
+@defproc[(exn:fail:redex:generation-failure? [v any/c]) boolean?]{
+  Recognizes the exceptions raised by @scheme[generate-term], 
+  @scheme[redex-check], etc. when those forms are unable to produce
+  a term matching some pattern.
+}
+                                                            
 @deftech{Debugging PLT Redex Programs}
 
 It is easy to write grammars and reduction rules that are
