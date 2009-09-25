@@ -1796,7 +1796,7 @@ Scheme_Object *scheme_stx_to_rename(Scheme_Object *stx)
 Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn, 
 				       Scheme_Object *old_midx, Scheme_Object *new_midx)
 {
-  Scheme_Object *nmrn, *a, *l, *nl;
+  Scheme_Object *nmrn, *a, *l, *nl, *first, *last;
 
   nmrn = scheme_make_module_rename(((Module_Renames *)mrn)->phase, 
                                    mzMOD_RENAME_NORMAL, 
@@ -1808,26 +1808,38 @@ Scheme_Object *scheme_stx_shift_rename(Scheme_Object *mrn,
   /* Manually copy unmarshal_infos, where we have to shift anyway: */
 
   l = ((Module_Renames *)mrn)->unmarshal_info;
-  nl = scheme_null;
+  first = scheme_null;
+  last = NULL;
   while (!SCHEME_NULLP(l)) {
     a = SCHEME_CAR(l);
     nl = scheme_make_pair(scheme_make_pair(scheme_modidx_shift(SCHEME_CAR(a), old_midx, new_midx),
 					   SCHEME_CDR(a)),
-			  nl);
+			  scheme_null);
+    if (last)
+      SCHEME_CDR(last) = nl;
+    else
+      first = nl;
+    last = nl;
     l = SCHEME_CDR(l);
   }
-  ((Module_Renames *)nmrn)->unmarshal_info = nl;
+  ((Module_Renames *)nmrn)->unmarshal_info = first;
 
   l = ((Module_Renames *)mrn)->shared_pes;
-  nl = scheme_null;
+  first = scheme_null;
+  last = NULL;
   while (!SCHEME_NULLP(l)) {
     a = SCHEME_CAR(l);
     nl = scheme_make_pair(scheme_make_pair(scheme_modidx_shift(SCHEME_CAR(a), old_midx, new_midx),
 					   SCHEME_CDR(a)),
-			  nl);
+			  scheme_null);
+    if (last)
+      SCHEME_CDR(last) = nl;
+    else
+      first = nl;
+    last = nl;
     l = SCHEME_CDR(l);
   }
-  ((Module_Renames *)nmrn)->shared_pes = nl;
+  ((Module_Renames *)nmrn)->shared_pes = first;
 
   if (((Module_Renames *)mrn)->needs_unmarshal) {
     ((Module_Renames *)nmrn)->needs_unmarshal = 1;
