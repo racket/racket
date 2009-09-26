@@ -2255,7 +2255,10 @@ WARNING: printf is rebound in the body of the unit to always
                  (set! unread-start-point (+ unread-start-point inserted-count))
                  
                  (insert (if (is-a? str/snp snip%)
-                             (send str/snp copy)
+                             (let ([s (send str/snp copy)])
+                               (if (is-a? s snip%)
+                                   s
+                                   (new snip%)))
                              str/snp)
                          old-insertion-point
                          old-insertion-point
