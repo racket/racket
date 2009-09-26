@@ -3863,6 +3863,44 @@ static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, 
   }
 }
 
+typedef struct Start_Module_Args {
+  Scheme_Env *menv;
+  Scheme_Env *env;
+  int eval_exp;
+  int eval_run;
+  long base_phase;
+  Scheme_Object *cycle_list;
+  Scheme_Object *syntax_idx;
+} Start_Module_Args;
+
+static void chain_start_module_w_push(Scheme_Env *menv, Scheme_Env *env, int eval_exp, int eval_run, 
+                                      long base_phase, Scheme_Object *cycle_list, Scheme_Object *syntax_idx)
+{
+  Start_Module_Args a;
+  
+  a.menv = menv;
+  a.env = env;
+  a.eval_exp = eval_exp;
+  a.eval_run = eval_run;
+  a.base_phase = base_phase;
+  a.cycle_list = cycle_list;
+  a.syntax_idx = syntax_idx;
+
+#ifdef MZ_USE_JIT
+  (void)scheme_module_start_start(&a, scheme_make_pair(menv->module->modname, scheme_false));
+#else
+  (void)scheme_module_start_finish(&a);
+#endif
+}
+
+void *scheme_module_start_finish(struct Start_Module_Args *a)
+{
+  chain_start_module(a->menv, a->env,
+                     a->eval_exp, a->eval_run, a->base_phase,
+                     a->cycle_list, a->syntax_idx);
+  return NULL;
+}
+
 static Scheme_Env *instantiate_module(Scheme_Module *m, Scheme_Env *env, int restart, Scheme_Object *syntax_idx)
 {
   Scheme_Env *menv;
@@ -4074,8 +4112,8 @@ static void should_run_for_compile(Scheme_Env *menv)
 }
 
 static void start_module(Scheme_Module *m, Scheme_Env *env, int restart, 
-			 Scheme_Object *syntax_idx, int eval_exp, int eval_run, long base_phase,
-			 Scheme_Object *cycle_list)
+                         Scheme_Object *syntax_idx, int eval_exp, int eval_run, long base_phase,
+                         Scheme_Object *cycle_list)
 /* eval_exp == -1 => make it ready, eval_exp == 1 => run exp-time, eval_exp = 0 => don't even make ready */
 {
   Scheme_Env *menv;
@@ -4113,7 +4151,7 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
     menv->did_starts = v;
   }
 
-  chain_start_module(menv, env, eval_exp, eval_run, base_phase, cycle_list, syntax_idx);
+  chain_start_module_w_push(menv, env, eval_exp, eval_run, base_phase, cycle_list, syntax_idx);
 
   if (restart) {
     if (menv->rename_set_ready) {
@@ -4224,6 +4262,15 @@ static void *eval_module_body_k(void)
 
 static void eval_module_body(Scheme_Env *menv, Scheme_Env *env)
 {
+#ifdef MZ_USE_JIT
+  (void)scheme_module_run_start(menv, env, scheme_make_pair(menv->module->modname, scheme_true));
+#else
+  (void)scheme_module_run_finish(menv, env);
+#endif
+}
+
+void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env)
+{
   Scheme_Thread *p;
   Scheme_Module *m = menv->module;
   Scheme_Object *body, **save_runstack;
@@ -4244,7 +4291,7 @@ static void eval_module_body(Scheme_Env *menv, Scheme_Env *env)
     p->ku.k.p1 = menv;
     p->ku.k.p2 = env;
     (void)scheme_enlarge_runstack(depth, eval_module_body_k);
-    return;
+    return NULL;
   }
 
   LOG_START_RUN(menv->module);
@@ -4309,6 +4356,8 @@ static void eval_module_body(Scheme_Env *menv, Scheme_Env *env)
   }
 
   LOG_END_RUN(menv->module);
+
+  return NULL;
 }
 
 static void run_module(Scheme_Env *menv, int set_ns)

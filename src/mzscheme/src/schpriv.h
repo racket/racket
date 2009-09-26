@@ -2351,6 +2351,15 @@ void scheme_finish_application(Scheme_App_Rec *app);
 Scheme_Object *scheme_jit_expr(Scheme_Object *);
 Scheme_Object *scheme_jit_closure(Scheme_Object *, Scheme_Object *context);
 
+struct Start_Module_Args;
+
+#ifdef MZ_USE_JIT
+void *scheme_module_run_start(Scheme_Env *menv, Scheme_Env *env, Scheme_Object *name);
+void *scheme_module_start_start(struct Start_Module_Args *a, Scheme_Object *name);
+#endif
+void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env);
+void *scheme_module_start_finish(struct Start_Module_Args *a);
+
 Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Compile_Info *rec, int drec);
 
 #define SCHEME_SYNTAX(obj)     SCHEME_PTR1_VAL(obj)

@@ -7182,6 +7182,24 @@ scheme_get_stack_trace(Scheme_Object *mark_set)
 	name = scheme_make_pair(scheme_false, loc);
       else
 	name = scheme_make_pair(SCHEME_VEC_ELS(name)[0], loc);
+    } else if (SCHEME_PAIRP(name)
+               && SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(name)), 
+                            scheme_resolved_module_path_type)) {
+      /* a resolved module path means that we're running a module body */
+      const char *what;
+
+      if (SCHEME_FALSEP(SCHEME_CDR(name)))
+        what = "[traversing imports]";
+      else
+        what = "[running body]";
+
+      name = SCHEME_CAR(name);
+      name = SCHEME_PTR_VAL(name);
+      loc = scheme_make_location(name, scheme_false, 
+                                 scheme_false, scheme_false, scheme_false);
+
+      name = scheme_intern_symbol(what);
+      name = scheme_make_pair(name, loc);
     } else {
       name = scheme_make_pair(name, scheme_false);
     }

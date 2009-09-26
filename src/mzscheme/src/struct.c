@@ -1238,7 +1238,7 @@ static Scheme_Object *check_equal_property_value_ok(int argc, Scheme_Object *arg
 
   if (!v) {
     scheme_arg_mismatch("guard-for-prop:equal+hash",
-                        "expected a list containing a recursive-equality procedure (arity 2)"
+                        "expected a list containing a recursive-equality procedure (arity 3)"
                         " and two recursive hash-code procedures (arity 2), given: ",
                         argv[0]);
   }

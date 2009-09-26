@@ -147,6 +147,7 @@ static void *struct_proc_extract_code;
 static void *bad_app_vals_target;
 static void *app_values_slow_code, *app_values_multi_slow_code, *app_values_tail_slow_code;
 static void *finish_tail_call_code, *finish_tail_call_fixup_code;
+static void *module_run_start_code, *module_start_start_code;
 
 typedef struct {
   MZTAG_IF_REQUIRED
@@ -8432,6 +8433,75 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     }
   }
 
+  /* *** module_run_start_code *** */
+  /* Pushes a module name onto the stack for stack traces. */
+  {
+    void *code_end;
+    int in;
+    
+    module_run_start_code = jit_get_ip().ptr;
+    jit_prolog(3);
+    in = jit_arg_p();
+    jit_getarg_p(JIT_R0, in); /* menv */
+    in = jit_arg_p();
+    jit_getarg_p(JIT_R1, in); /* env */
+    in = jit_arg_p();
+    jit_getarg_p(JIT_R2, in); /* &name */
+    CHECK_LIMIT();
+
+    /* Store the name where we can find it */
+    mz_push_locals();
+    mz_set_local_p(JIT_R2, JIT_LOCAL2);
+
+    jit_prepare(2);
+    jit_pusharg_p(JIT_R1);
+    jit_pusharg_p(JIT_R0);
+    (void)mz_finish(scheme_module_run_finish);
+    CHECK_LIMIT();
+    jit_retval(JIT_R0);
+    mz_pop_locals();
+    jit_ret();
+    CHECK_LIMIT();
+
+    if (jitter->retain_start) {
+      code_end = jit_get_ip().ptr;
+      add_symbol((unsigned long)module_run_start_code, (unsigned long)code_end - 1, scheme_eof, 0);
+    }
+  }
+
+  /* *** module_start_start_code *** */
+  /* Pushes a module name onto the stack for stack traces. */
+  {
+    void *code_end;
+    int in;
+    
+    module_start_start_code = jit_get_ip().ptr;
+    jit_prolog(2);
+    in = jit_arg_p();
+    jit_getarg_p(JIT_R0, in); /* a */
+    in = jit_arg_p();
+    jit_getarg_p(JIT_R1, in); /* &name */
+    CHECK_LIMIT();
+
+    /* Store the name where we can find it */
+    mz_push_locals();
+    mz_set_local_p(JIT_R1, JIT_LOCAL2);
+
+    jit_prepare(1);
+    jit_pusharg_p(JIT_R0);
+    (void)mz_finish(scheme_module_start_finish);
+    CHECK_LIMIT();
+    jit_retval(JIT_R0);
+    mz_pop_locals();
+    jit_ret();
+    CHECK_LIMIT();
+
+    if (jitter->retain_start) {
+      code_end = jit_get_ip().ptr;
+      add_symbol((unsigned long)module_start_start_code, (unsigned long)code_end - 1, scheme_eof, 0);
+    }
+  }
+
   return 1;
 }
 
@@ -9365,6 +9435,27 @@ Scheme_Object *scheme_native_stack_trace(void)
       }
 #endif
       name = find_symbol((unsigned long)q);
+    } else if (SCHEME_EOFP(name)) {
+      /* Stub (to mark start of running a module body, for example) */
+      /* JIT_LOCAL2 has the name to use */
+#ifdef MZ_USE_JIT_PPC
+      name = *(Scheme_Object **)((void **)p)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
+#endif
+#ifdef MZ_USE_JIT_I386
+      void *np;
+# ifdef MZ_USE_DWARF_LIBUNWIND
+      if (use_unw) {
+	np = (void *)unw_get_frame_pointer(&c);
+      } else
+# endif
+	np = *(void **)p;
+
+      if (STK_COMP((unsigned long)np, stack_end)
+	  && STK_COMP(stack_start, (unsigned long)np)) {
+        name = *(Scheme_Object **)((void **)np)[JIT_LOCAL2 >> JIT_LOG_WORD_SIZE];
+      } else
+        name = NULL;
+#endif
     }
 
     if (name && !SCHEME_NULLP(name)) { /* null is used to help unwind without a true name */
@@ -9374,8 +9465,7 @@ Scheme_Object *scheme_native_stack_trace(void)
       else
 	first = name;
       last = name;
-      if (set_next_push) {
-	stack_cache_stack[stack_cache_stack_pos].cache = name;
+      if (set_next_push) {	stack_cache_stack[stack_cache_stack_pos].cache = name;
 	set_next_push = 0;
       }
     }
@@ -9568,6 +9658,21 @@ static void release_native_code(void *fnlized, void *p)
   jit_notify_freed_code();
 }
 #endif
+
+typedef void *(*Module_Run_Proc)(Scheme_Env *menv, Scheme_Env *env, Scheme_Object **name);
+typedef void *(*Module_Start_Proc)(struct Start_Module_Args *a, Scheme_Object **name);
+
+void *scheme_module_run_start(Scheme_Env *menv, Scheme_Env *env, Scheme_Object *name)
+{
+  Module_Run_Proc proc = (Module_Run_Proc)module_run_start_code;
+  return proc(menv, env, &name);
+}
+
+void *scheme_module_start_start(struct Start_Module_Args *a, Scheme_Object *name)
+{
+  Module_Start_Proc proc = (Module_Start_Proc)module_start_start_code;
+  return proc(a, &name);
+}
 
 /**********************************************************************/
 /*                           Precise GC                               */

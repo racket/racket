@@ -2277,7 +2277,7 @@ void scheme_write_proc_context(Scheme_Object *port, int print_width,
       scheme_display_w_max(line, port, print_width);
       scheme_write_byte_string(":", 1, port);
       scheme_display_w_max(col, port, print_width);
-    } else {
+    } else if (pos && SCHEME_TRUEP(pos)) {
       /* Position */
       scheme_write_byte_string("::", 2, port);
       scheme_display_w_max(pos, port, print_width);

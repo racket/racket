@@ -5610,8 +5610,15 @@ static Scheme_Object *define_for_syntaxes_sfs(Scheme_Object *data, SFS_Info *inf
 static Scheme_Object *stx_val(Scheme_Object *name, Scheme_Object *_env)
 {
   Scheme_Env *env = (Scheme_Env *)_env;
+  Scheme_Object *r;
 
-  return scheme_tl_id_sym(env, name, NULL, 2, NULL, NULL);
+  r = scheme_tl_id_sym(env, name, NULL, 2, NULL, NULL);
+    printf("%s %s %p\n", 
+           scheme_write_to_string(name, NULL),
+           scheme_write_to_string(r, NULL),
+           env);
+    return r;
+
 }
 
 static Scheme_Object *
