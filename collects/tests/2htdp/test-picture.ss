@@ -12,7 +12,7 @@
      [else
       (loop (overlay/places 'center 'center
                             picture
-                            (rotate (* pi (/ 1 n)) picture))
+                            (rotate (* 180 (/ 1 n)) picture))
             (+ n 1))])))
 
 (define-syntax-rule 
@@ -24,7 +24,10 @@
 (define (round-numbers/proc x)
   (let loop ([x x])
     (cond
-      [(number? x) (/ (round (* 100. x)) 100)]
+      [(number? x) (let ([n (exact->inexact (/ (round (* 100. x)) 100))])
+                     (if (equal? n -0.0)
+                         0.0
+                         n))]
       [(pair? x) (cons (loop (car x)) (loop (cdr x)))]
       [(vector? x) (apply vector (map loop (vector->list x)))]
       [(let-values ([(a b) (struct-info x)]) a)
@@ -266,51 +269,48 @@
 ;;  testing rotating
 ;;
 
+(test (bring-between 123 360) => 123)
+(test (bring-between 365 360) => 5)
+(test (bring-between -5 360) => 355)
+(test (bring-between 720 360) => 0)
+(test (bring-between 720.5 360) => .5)
 
 (test (round-numbers
-       (simple-bb
-        (make-translate
-         50.0
-         0
-         (make-polygon
-          (list (make-point 0 0) (make-point 50 0) (make-point 50 100) (make-point 0 100))
-          pi
-          'pen
-          'brush))))
+       (normalize-shape (picture-shape (rotate 90 (rectangle 100 100 'solid 'blue)))
+                        values))
       =>
-      (values 0. -100. 50. 0.))
-
-
-(test (normalize-shape (picture-shape (rotate pi (rectangle 50 100 'solid 'blue)))
-                       values)
-      =>
-      (make-translate 50.0 100.0 (rotate-atomic pi (picture-shape (rectangle 50 100 'solid 'blue)))))
-
-(test (rotate-simple (* pi 1/2)
-                     (rotate-simple (* pi 1/2)
-                                    (make-translate 0 0
-                                                    (picture-shape (rectangle 50 100 'solid 'purple)))))
-      =>
-      (rotate-simple pi
-                     (make-translate 0 0 (picture-shape (rectangle 50 100 'solid 'purple)))))
-
-(test (normalize-shape (picture-shape (rotate (* pi 1/2) (rotate (* pi 1/2) (rectangle 50 100 'solid 'blue))))
-                       values)
-      =>
-      (make-translate 50.0 100.0 (rotate-atomic pi (picture-shape (rectangle 50 100 'solid 'blue)))))
+      (round-numbers (picture-shape (rectangle 100 100 'solid 'blue))))
 
 (test (round-numbers
-       (normalize-shape
-        (picture-shape
-         (rotate pi
-                 (overlay/xy (rectangle 50 50 'solid 'blue)
-                             50 50
-                             (rectangle 50 50 'solid 'red))))
-        values))
+       (normalize-shape (picture-shape (rotate 90 (rotate 90 (rectangle 50 100 'solid 'purple))))
+                        values))
       =>
-      (round-numbers 
-       (normalize-shape
-        (picture-shape
-         (overlay/xy (rectangle 50 50 'solid 'red)
-                     50 50
-                     (rectangle 50 50 'solid 'blue))))))
+      (round-numbers
+       (normalize-shape (picture-shape (rotate 180 (rectangle 50 100 'solid 'purple)))
+                        values)))
+
+(test (normalize-shape (picture-shape (rotate 90 (ellipse 10 10 'solid 'red))))
+      =>
+      (normalize-shape (picture-shape (ellipse 10 10 'solid 'red))))
+
+(test (normalize-shape (picture-shape (rotate 90 (ellipse 10 12 'solid 'red))))
+      =>
+      (normalize-shape (picture-shape (ellipse 12 10 'solid 'red))))
+
+(test (normalize-shape (picture-shape (rotate 135 (ellipse 10 12 'solid 'red))))
+      =>
+      (normalize-shape (picture-shape (rotate 45 (ellipse 12 10 'solid 'red)))))
+
+(require (only-in lang/htdp-advanced equal~?))
+
+(test (equal~? (rectangle 100 10 'solid 'red)
+               (rotate 90 (rectangle 10 100 'solid 'red))
+               0.1)
+      =>
+      #t)
+
+(test (equal~? (rectangle 100 10 'solid 'red)
+               (rotate 90 (rectangle 10.001 100.0001 'solid 'red))
+               0.1)
+      =>
+      #t)
