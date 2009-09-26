@@ -75,6 +75,9 @@
   (t '("a" "b" "c") eof "[abc]" "a b c" 0)
   (t '("a" "b" "c") eof "[abc]" "a b c" 0 #f)
   (t '("a" "b" "c") eof "[abc]" "a b c" 0 5)
+  (for-each (lambda (cvt)
+              (test '(#"\x80" #"\x80") regexp-match* (cvt #"\x80") #"a\x80z\x80q"))
+            (list values byte-regexp byte-pregexp))
   ;; --------------------
   (t regexp-match-positions*)
   (t '((1 . 2) (3 . 4) (5 . 6)) eof "[abc]" " a b c ")
@@ -92,6 +95,9 @@
   (t '((0 . 1) (2 . 3) (4 . 5)) eof "[abc]" "a b c" 0)
   (t '((0 . 1) (2 . 3) (4 . 5)) eof "[abc]" "a b c" 0 #f)
   (t '((0 . 1) (2 . 3) (4 . 5)) eof "[abc]" "a b c" 0 5)
+  (for-each (lambda (cvt)
+              (test '((1 . 2) (3 . 4)) regexp-match-positions* (cvt #"\x80") #"a\x80z\x80q"))
+            (list values byte-regexp byte-pregexp))
   ;; --------------------
   (t regexp-split)
   (t '("1" "2" "3" "4") eof "[abc]" "1a2b3c4")
@@ -109,6 +115,9 @@
   (t '("" "1" "2" "") eof   "[abc]" "a1b2c" 0)
   (t '("" "1" "2" "") eof   "[abc]" "a1b2c" 0 #f)
   (t '("" "1" "2" "") eof   "[abc]" "a1b2c" 0 5)
+  (for-each (lambda (cvt)
+              (test '(#"" #"a" #"z" #"q" #"") regexp-split (cvt #"\x80") #"\x80a\x80z\x80q\x80"))
+            (list values byte-regexp byte-pregexp))
   ;; --------------------
   (t regexp-match-peek-positions*)
   (err/rt-test (regexp-match-peek-positions* "[abc]" "a b c"))
