@@ -109,7 +109,10 @@
   (define (bstring-length s)
     (if (bytes? s) (bytes-length s) (string-length s)))
   (define no-empty-edge-matches
-    (make-regexp-tweaker (lambda (rx) (format "(?=.)(?:~a)(?<=.)" rx))))
+    (make-regexp-tweaker (lambda (rx) 
+                           (if (bytes? rx)
+                               (bytes-append #"(?=.)(?:" rx #")(?<=.)")
+                               (format "(?=.)(?:~a)(?<=.)" rx)))))
   (define (bstring->no-edge-regexp name pattern)
     (if (or (regexp? pattern) (byte-regexp? pattern)
             (string? pattern) (bytes? pattern))

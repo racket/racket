@@ -22,9 +22,10 @@ if (location.search.length > 0) {
     var param = paramstrs[i].split(/=/);
     // an empty "hq=" can be used to clear the cookie
     if (param[0] == "hq") {
-      SetCookie("PLT_PreQuery", ((param.length==2) ? unescape(param[1]) : ""));
+      SetCookie("PLT_ContextQuery",
+                ((param.length==2) ? unescape(param[1]) : ""));
     } else if (param[0] == "label") {
-      SetCookie("PLT_PreQueryLabel",
+      SetCookie("PLT_ContextQueryLabel",
                 ((param.length==2) ? unescape(param[1]) : ""));
     } else {
       newsearch = (newsearch == null)

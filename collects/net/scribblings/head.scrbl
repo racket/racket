@@ -118,8 +118,8 @@ strings or both byte strings, and the result is of the same type.}
 
 
 @defproc[(standard-message-header [from string?]
-                                  [to (listof -string?)]
-                                  [cc (listof strings?)]
+                                  [to (listof string?)]
+                                  [cc (listof string?)]
                                   [bcc (listof string?)]
                                   [subject string?])
           string?]{

@@ -50,7 +50,7 @@
             "to find the (first) element of the list that minimizes the output of the function")
     
     (argmax ((X -> real) (listof X) -> X)
-            "to find the (first) element of the list that minimizes the output of the function")
+            "to find the (first) element of the list that maximizes the output of the function")
     
     (memf ((X -> boolean) (listof X) -> (union false (listof X)))
 	  "to determine whether the first argument produces true for some value in the second argument")
