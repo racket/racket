@@ -24,7 +24,7 @@
 #ifndef NO_SCHEME_THREADS
 
 Scheme_Object *scheme_always_ready_evt;
-Scheme_Object *scheme_system_idle_channel;
+THREAD_LOCAL Scheme_Object *scheme_system_idle_channel;
 
 static Scheme_Object *make_sema(int n, Scheme_Object **p);
 static Scheme_Object *semap(int n, Scheme_Object **p);
@@ -196,9 +196,6 @@ void scheme_init_sema(Scheme_Env *env)
   o->type = scheme_thread_recv_evt_type;
   thread_recv_evt = o;
 
-  REGISTER_SO(scheme_system_idle_channel);
-  scheme_system_idle_channel = scheme_make_channel();
-
   scheme_add_evt(scheme_sema_type, sema_ready, NULL, NULL, 0);
   scheme_add_evt_through_sema(scheme_semaphore_repost_type, sema_for_repost, NULL);
   scheme_add_evt(scheme_channel_type, (Scheme_Ready_Fun)channel_get_ready, NULL, NULL, 1);
@@ -208,6 +205,11 @@ void scheme_init_sema(Scheme_Env *env)
   scheme_add_evt(scheme_always_evt_type, always_ready, NULL, NULL, 0);
   scheme_add_evt(scheme_never_evt_type, never_ready, NULL, NULL, 0);
   scheme_add_evt(scheme_thread_recv_evt_type, (Scheme_Ready_Fun)thread_recv_ready, NULL, NULL, 0);
+}
+
+void scheme_init_sema_places() {
+  REGISTER_SO(scheme_system_idle_channel);
+  scheme_system_idle_channel = scheme_make_channel();
 }
 
 Scheme_Object *scheme_make_sema(long v)

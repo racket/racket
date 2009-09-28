@@ -231,6 +231,7 @@ void scheme_init_port_places(void);
 void scheme_init_regexp_places(void);
 void scheme_init_stx_places(void);
 void scheme_init_fun_places(void);
+void scheme_init_sema_places(void);
 void scheme_init_print_global_constants(void);
 
 void register_network_evts();
@@ -333,7 +334,7 @@ extern Scheme_Object *scheme_stack_dump_key;
 
 extern Scheme_Object *scheme_default_prompt_tag;
 
-extern Scheme_Object *scheme_system_idle_channel;
+extern THREAD_LOCAL Scheme_Object *scheme_system_idle_channel;
 
 extern Scheme_Object *scheme_input_port_property, *scheme_output_port_property;
 
