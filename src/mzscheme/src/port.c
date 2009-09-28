@@ -350,7 +350,8 @@ static int flush_err;
 static THREAD_LOCAL Scheme_Custodian *new_port_cust; /* back-door argument */
 
 #if defined(FILES_HAVE_FDS)
-static int external_event_fd, put_external_event_fd;
+static THREAD_LOCAL int external_event_fd;
+static THREAD_LOCAL int put_external_event_fd;
 #endif
 
 static void register_port_wait();
@@ -561,21 +562,6 @@ scheme_init_port (Scheme_Env *env)
      custodian). */
 #endif
 
-#if defined(FILES_HAVE_FDS)
-# ifndef USE_OSKIT_CONSOLE
-  /* Set up a pipe for signalling external events: */
-  {
-    int fds[2];
-    if (!pipe(fds)) {
-      external_event_fd = fds[0];
-      put_external_event_fd = fds[1];
-      fcntl(external_event_fd, F_SETFL, MZ_NONBLOCKING);
-      fcntl(put_external_event_fd, F_SETFL, MZ_NONBLOCKING);
-    }
-  }
-# endif
-#endif
-
   register_port_wait();
 
   scheme_add_global_constant("subprocess", scheme_make_prim_w_arity2(subprocess, "subprocess", 4, -1, 4, 4), env);
@@ -650,6 +636,21 @@ void scheme_init_port_places(void)
 			     : scheme_make_file_output_port(stderr)
 #endif
 			     );
+
+#if defined(FILES_HAVE_FDS)
+# ifndef USE_OSKIT_CONSOLE
+  /* Set up a pipe for signalling external events: */
+  {
+    int fds[2];
+    if (!pipe(fds)) {
+      external_event_fd = fds[0];
+      put_external_event_fd = fds[1];
+      fcntl(external_event_fd, F_SETFL, MZ_NONBLOCKING);
+      fcntl(put_external_event_fd, F_SETFL, MZ_NONBLOCKING);
+    }
+  }
+# endif
+#endif
 }
 
 void scheme_init_port_config(void)
