@@ -1,18 +1,25 @@
 #lang scheme/base
-(require "../../2htdp/private/picture.ss" 
+(require "../../2htdp/private/image-core.ss" 
          scheme/math
          tests/eli-tester)
 
+(show-image
+ (overlay/xy (rectangle 100 10 'solid 'red)
+             0
+             10
+             (rectangle 100 10 'solid 'red)))
+
+
 #;
-(show-picture
- (let loop ([picture (rectangle 400 8 'solid 'red)]
+(show-image
+ (let loop ([image (rectangle 400 8 'solid 'red)]
             [n 2])
    (cond
-     [(= n 7) picture]
+     [(= n 7) image]
      [else
       (loop (overlay/places 'center 'center
-                            picture
-                            (rotate (* 180 (/ 1 n)) picture))
+                            image
+                            (rotate (* 180 (/ 1 n)) image))
             (+ n 1))])))
 
 (define-syntax-rule 
@@ -47,10 +54,10 @@
 (test (overlay (ellipse 100 100 'solid 'blue)
                (ellipse 120 120 'solid 'red))
       =>
-      (make-picture
+      (make-image
        (make-overlay
-        (make-translate 0 0 (picture-shape (ellipse 100 100 'solid 'blue)))
-        (make-translate 0 0 (picture-shape (ellipse 120 120 'solid 'red))))
+        (make-translate 0 0 (image-shape (ellipse 100 100 'solid 'blue)))
+        (make-translate 0 0 (image-shape (ellipse 120 120 'solid 'red))))
        (make-bb 120
                 120
                 120)
@@ -68,14 +75,14 @@
                   -25 25
                   (ellipse 100 50 'solid 'green))
       =>
-      (make-picture
+      (make-image
        (make-overlay
         (make-translate
          25 0
-         (picture-shape (ellipse 50 100 'solid 'red)))
+         (image-shape (ellipse 50 100 'solid 'red)))
         (make-translate
          0 25
-         (picture-shape (ellipse 100 50 'solid 'green))))
+         (image-shape (ellipse 100 50 'solid 'green))))
        (make-bb 100
                 100
                 100)
@@ -85,10 +92,10 @@
                   10 10
                   (ellipse 50 100 'solid 'red))
       =>
-      (make-picture
+      (make-image
        (make-overlay
-        (make-translate 0 0 (picture-shape (ellipse 100 50 'solid 'green)))
-        (make-translate 10 10 (picture-shape (ellipse 50 100 'solid 'red))))
+        (make-translate 0 0 (image-shape (ellipse 100 50 'solid 'green)))
+        (make-translate 10 10 (image-shape (ellipse 50 100 'solid 'red))))
        (make-bb 100
                 110
                 110)
@@ -97,10 +104,10 @@
 (test (overlay (ellipse 100 50 'solid 'green)
                (ellipse 50 100 'solid 'red))
       =>
-      (make-picture
+      (make-image
        (make-overlay
-        (make-translate 0 0 (picture-shape (ellipse 100 50 'solid 'green)))
-        (make-translate 0 0 (picture-shape (ellipse 50 100 'solid 'red))))
+        (make-translate 0 0 (image-shape (ellipse 100 50 'solid 'green)))
+        (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red))))
        (make-bb 100
                 100
                 100)
@@ -110,14 +117,14 @@
                (ellipse 120 120 'solid 'red)
                (ellipse 140 140 'solid 'green))
       =>
-      (make-picture
+      (make-image
        (make-overlay
         (make-translate 
          0 0
          (make-overlay
-          (make-translate 0 0 (picture-shape (ellipse 100 100 'solid 'blue)))
-          (make-translate 0 0 (picture-shape (ellipse 120 120 'solid 'red)))))
-        (make-translate 0 0 (picture-shape (ellipse 140 140 'solid 'green))))
+          (make-translate 0 0 (image-shape (ellipse 100 100 'solid 'blue)))
+          (make-translate 0 0 (image-shape (ellipse 120 120 'solid 'red)))))
+        (make-translate 0 0 (image-shape (ellipse 140 140 'solid 'green))))
        (make-bb 140 140 140)
        #f))
 
@@ -126,10 +133,10 @@
                       (ellipse 100 50 'solid 'green)
                       (ellipse 50 100 'solid 'red))
       =>
-      (make-picture
+      (make-image
        (make-overlay
-        (make-translate 0 25 (picture-shape (ellipse 100 50 'solid 'green)))
-        (make-translate 25 0 (picture-shape (ellipse 50 100 'solid 'red))))
+        (make-translate 0 25 (image-shape (ellipse 100 50 'solid 'green)))
+        (make-translate 25 0 (image-shape (ellipse 50 100 'solid 'red))))
        (make-bb 100 100 100)
        #f))
 
@@ -138,10 +145,10 @@
                       (ellipse 50 100 'solid 'red)
                       (ellipse 100 50 'solid 'green))
       =>
-      (make-picture
+      (make-image
        (make-overlay
-        (make-translate 25 0 (picture-shape (ellipse 50 100 'solid 'red)))
-        (make-translate 0 25 (picture-shape (ellipse 100 50 'solid 'green))))
+        (make-translate 25 0 (image-shape (ellipse 50 100 'solid 'red)))
+        (make-translate 0 25 (image-shape (ellipse 100 50 'solid 'green))))
        (make-bb 100 100 100)
        #f))
 
@@ -151,10 +158,10 @@
                       (ellipse 50 100 'solid 'red)
                       (ellipse 100 50 'solid 'green))
       =>
-      (make-picture
+      (make-image
        (make-overlay
-        (make-translate 50 0 (picture-shape (ellipse 50 100 'solid 'red)))
-        (make-translate 0 50 (picture-shape (ellipse 100 50 'solid 'green))))
+        (make-translate 50 0 (image-shape (ellipse 50 100 'solid 'red)))
+        (make-translate 0 50 (image-shape (ellipse 100 50 'solid 'green))))
        (make-bb 100 100 100)
        #f))
 
@@ -163,10 +170,10 @@
                       (ellipse 50 100 'solid 'red)
                       (ellipse 100 50 'solid 'green))
       =>
-      (make-picture
+      (make-image
        (make-overlay
-        (make-translate 50 0 (picture-shape (ellipse 50 100 'solid 'red)))
-        (make-translate 0 50 (picture-shape (ellipse 100 50 'solid 'green))))
+        (make-translate 50 0 (image-shape (ellipse 50 100 'solid 'red)))
+        (make-translate 0 50 (image-shape (ellipse 100 50 'solid 'green))))
        (make-bb 100 100 100)
        #f))
 
@@ -175,10 +182,10 @@
                      (ellipse 100 50 'solid 'blue))
       
       =>
-      (make-picture
+      (make-image
        (make-overlay
-        (make-translate 0 0 (picture-shape (ellipse 50 100 'solid 'red)))
-        (make-translate 50 0 (picture-shape (ellipse 100 50 'solid 'blue))))
+        (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red)))
+        (make-translate 50 0 (image-shape (ellipse 100 50 'solid 'blue))))
        (make-bb 150 100 100)
        #f))
 
@@ -187,10 +194,10 @@
                      (ellipse 100 50 'solid 'blue))
       
       =>
-      (make-picture
+      (make-image
        (make-overlay
-        (make-translate 0 0 (picture-shape (ellipse 50 100 'solid 'red)))
-        (make-translate 50 25 (picture-shape (ellipse 100 50 'solid 'blue))))
+        (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red)))
+        (make-translate 50 25 (image-shape (ellipse 100 50 'solid 'blue))))
        (make-bb 150 100 100)
        #f))
 
@@ -199,10 +206,10 @@
                      (ellipse 100 50 'solid 'blue))
       
       =>
-      (make-picture
+      (make-image
        (make-overlay
-        (make-translate 0 0 (picture-shape (ellipse 50 100 'solid 'red)))
-        (make-translate 50 50 (picture-shape (ellipse 100 50 'solid 'blue))))
+        (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red)))
+        (make-translate 50 50 (image-shape (ellipse 100 50 'solid 'blue))))
        (make-bb 150 100 100)
        #f))
 
@@ -219,49 +226,49 @@
 ;;  testing normalization
 ;;
 
-(test (normalize-shape (picture-shape (ellipse 50 100 'solid 'red))
+(test (normalize-shape (image-shape (ellipse 50 100 'solid 'red))
                        values)
       =>
-      (make-translate 0 0 (picture-shape (ellipse 50 100 'solid 'red))))
+      (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red))))
 
-(test (normalize-shape (make-overlay (picture-shape (ellipse 50 100 'solid 'red))
-                                     (picture-shape (ellipse 50 100 'solid 'blue)))
+(test (normalize-shape (make-overlay (image-shape (ellipse 50 100 'solid 'red))
+                                     (image-shape (ellipse 50 100 'solid 'blue)))
                        values)
       =>
-      (make-overlay (make-translate 0 0 (picture-shape (ellipse 50 100 'solid 'red)))
-                    (make-translate 0 0 (picture-shape (ellipse 50 100 'solid 'blue)))))
+      (make-overlay (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red)))
+                    (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'blue)))))
 
 (test (normalize-shape (make-overlay
-                        (make-overlay (picture-shape (ellipse 50 100 'solid 'red))
-                                      (picture-shape (ellipse 50 100 'solid 'blue)))
-                        (picture-shape (ellipse 50 100 'solid 'green)))
+                        (make-overlay (image-shape (ellipse 50 100 'solid 'red))
+                                      (image-shape (ellipse 50 100 'solid 'blue)))
+                        (image-shape (ellipse 50 100 'solid 'green)))
                        values)
       =>
       (make-overlay 
-       (make-overlay (make-translate 0 0 (picture-shape (ellipse 50 100 'solid 'red)))
-                     (make-translate 0 0 (picture-shape (ellipse 50 100 'solid 'blue))))
-       (make-translate 0 0 (picture-shape (ellipse 50 100 'solid 'green)))))
+       (make-overlay (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red)))
+                     (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'blue))))
+       (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'green)))))
 
 (test (normalize-shape (make-overlay
-                        (picture-shape (ellipse 50 100 'solid 'green))
-                        (make-overlay (picture-shape (ellipse 50 100 'solid 'red))
-                                      (picture-shape (ellipse 50 100 'solid 'blue))))
+                        (image-shape (ellipse 50 100 'solid 'green))
+                        (make-overlay (image-shape (ellipse 50 100 'solid 'red))
+                                      (image-shape (ellipse 50 100 'solid 'blue))))
                        values)
       =>
       (make-overlay 
-       (make-overlay (make-translate 0 0 (picture-shape (ellipse 50 100 'solid 'green)))
-                     (make-translate 0 0 (picture-shape (ellipse 50 100 'solid 'red))))
-       (make-translate 0 0 (picture-shape (ellipse 50 100 'solid 'blue)))))
+       (make-overlay (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'green)))
+                     (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red))))
+       (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'blue)))))
 
-(test (normalize-shape (make-translate 100 100 (picture-shape (ellipse 50 100 'solid 'blue)))
+(test (normalize-shape (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue)))
                        values)
       =>
-      (make-translate 100 100 (picture-shape (ellipse 50 100 'solid 'blue))))
+      (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue))))
 
-(test (normalize-shape (make-translate 10 20 (make-translate 100 100 (picture-shape (ellipse 50 100 'solid 'blue))))
+(test (normalize-shape (make-translate 10 20 (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue))))
                        values)
       =>
-      (make-translate 110 120 (picture-shape (ellipse 50 100 'solid 'blue))))
+      (make-translate 110 120 (image-shape (ellipse 50 100 'solid 'blue))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -276,30 +283,30 @@
 (test (bring-between 720.5 360) => .5)
 
 (test (round-numbers
-       (normalize-shape (picture-shape (rotate 90 (rectangle 100 100 'solid 'blue)))
+       (normalize-shape (image-shape (rotate 90 (rectangle 100 100 'solid 'blue)))
                         values))
       =>
-      (round-numbers (picture-shape (rectangle 100 100 'solid 'blue))))
+      (round-numbers (image-shape (rectangle 100 100 'solid 'blue))))
 
 (test (round-numbers
-       (normalize-shape (picture-shape (rotate 90 (rotate 90 (rectangle 50 100 'solid 'purple))))
+       (normalize-shape (image-shape (rotate 90 (rotate 90 (rectangle 50 100 'solid 'purple))))
                         values))
       =>
       (round-numbers
-       (normalize-shape (picture-shape (rotate 180 (rectangle 50 100 'solid 'purple)))
+       (normalize-shape (image-shape (rotate 180 (rectangle 50 100 'solid 'purple)))
                         values)))
 
-(test (normalize-shape (picture-shape (rotate 90 (ellipse 10 10 'solid 'red))))
+(test (normalize-shape (image-shape (rotate 90 (ellipse 10 10 'solid 'red))))
       =>
-      (normalize-shape (picture-shape (ellipse 10 10 'solid 'red))))
+      (normalize-shape (image-shape (ellipse 10 10 'solid 'red))))
 
-(test (normalize-shape (picture-shape (rotate 90 (ellipse 10 12 'solid 'red))))
+(test (normalize-shape (image-shape (rotate 90 (ellipse 10 12 'solid 'red))))
       =>
-      (normalize-shape (picture-shape (ellipse 12 10 'solid 'red))))
+      (normalize-shape (image-shape (ellipse 12 10 'solid 'red))))
 
-(test (normalize-shape (picture-shape (rotate 135 (ellipse 10 12 'solid 'red))))
+(test (normalize-shape (image-shape (rotate 135 (ellipse 10 12 'solid 'red))))
       =>
-      (normalize-shape (picture-shape (rotate 45 (ellipse 12 10 'solid 'red)))))
+      (normalize-shape (image-shape (rotate 45 (ellipse 12 10 'solid 'red)))))
 
 (require (only-in lang/htdp-advanced equal~?))
 

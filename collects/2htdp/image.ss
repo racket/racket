@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "private/picture.ss")
+(require "private/image-core.ss")
 (provide overlay
          overlay/places
          overlay/xy
