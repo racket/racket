@@ -21,8 +21,43 @@
          ellipse
          rectangle
          
+         show-image
          bring-between)
 
+
+(define (show-image g [extra-space 0])
+  (letrec ([f (new frame% [label ""])]
+           [c (new canvas% 
+                   [parent f]
+                   [min-width (+ extra-space (inexact->exact (floor (image-right g))))]
+                   [min-height (+ extra-space (inexact->exact (floor (image-bottom g))))]
+                   [paint-callback
+                    (λ (c dc)
+                      (send dc set-smoothing 'aligned)
+                      (let-values ([(w h) (send c get-client-size)])
+                        (let ([scale (send sl get-value)])
+                          (send dc set-scale scale scale)
+                          (render-image 
+                           g
+                           dc
+                           (inexact->exact (floor (- (/ w 2 scale) (/ (image-right g) 2))))
+                           (inexact->exact (floor (- (/ h 2 scale) (/ (image-bottom g) 2))))))))])]
+           [min-scale 1]
+           [max-scale 10]
+           [sl (new slider% 
+                    [label "Scale factor"] 
+                    [parent f] 
+                    [min-value min-scale]
+                    [max-value max-scale]
+                    [callback (λ ignore (send c refresh))])]
+           [bp (new horizontal-panel% [parent f] [alignment '(center center)] [stretchable-height #f])]
+           [scale-adjust
+            (λ (f)
+              (send sl set-value (max min-scale (min max-scale (f (send sl get-value)))))
+              (send c refresh))])
+    (send (new button% [label "√"] [callback (λ x (scale-adjust sub1))] [parent bp]) min-width 100)
+    (send (new button% [label "2"] [callback (λ x (scale-adjust add1))] [parent bp]) min-width 100)
+    (send f show #t)))
 
 
 ;                                                                                                 
@@ -364,12 +399,36 @@
                    (cdr points))
          (values left top right bottom)))]
     [else
+#|
+>>  (rotate theta (ellipse w h _ _))
+>> is
+>>  (let* {[cos2 (sqr (cos theta))]
+>>         [sin2 (sqr (sin theta))]
+>>         }
+>>    (make-bbox (+ (* w cos2) (* h sin2))
+>>               (+ (* w sin2) (* h cos2)))
+>>               ... ;; baseline is same as y, for non-text, right?
+>>               )
+>>
+|#
+     
      (let ([dx (translate-dx simple-shape)]
            [dy (translate-dy simple-shape)]
            [atomic-shape (translate-shape simple-shape)])
-       (fprintf (current-error-port) "BAD bounding box\n")
-       (values 0 0 100 100))]))
-
+       (cond
+         [(ellipse? atomic-shape)
+          (let* ([theta (degrees->radians (ellipse-angle atomic-shape))]
+                 [w (ellipse-width atomic-shape)]
+                 [h (ellipse-height atomic-shape)]
+                 [cos2 (sqr (cos theta))]
+                 [sin2 (sqr (sin theta))])
+            (values dx
+                    dy
+                    (+ dx (* w cos2) (* h sin2))
+                    (+ dy (* w sin2) (* h cos2))))]
+         [else
+          (fprintf (current-error-port) "BAD BOUNDING BOX\n")
+          (values 0 0 100 100)]))]))
 
 ;; rotate-simple : angle simple-shape -> simple-shape
 (define (rotate-simple θ simple-shape)

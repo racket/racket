@@ -371,40 +371,6 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 ;                                                                
 ;                                                         
 
-(define (show-image g [extra-space 0])
-  (letrec ([f (new frame% [label ""])]
-           [c (new canvas% 
-                   [parent f]
-                   [min-width (+ extra-space (inexact->exact (floor (image-right g))))]
-                   [min-height (+ extra-space (inexact->exact (floor (image-bottom g))))]
-                   [paint-callback
-                    (λ (c dc)
-                      (send dc set-smoothing 'aligned)
-                      (let-values ([(w h) (send c get-client-size)])
-                        (let ([scale (send sl get-value)])
-                          (send dc set-scale scale scale)
-                          (render-image 
-                           g
-                           dc
-                           (inexact->exact (floor (- (/ w 2 scale) (/ (image-right g) 2))))
-                           (inexact->exact (floor (- (/ h 2 scale) (/ (image-bottom g) 2))))))))])]
-           [min-scale 1]
-           [max-scale 10]
-           [sl (new slider% 
-                    [label "Scale factor"] 
-                    [parent f] 
-                    [min-value min-scale]
-                    [max-value max-scale]
-                    [callback (λ ignore (send c refresh))])]
-           [bp (new horizontal-panel% [parent f] [alignment '(center center)] [stretchable-height #f])]
-           [scale-adjust
-            (λ (f)
-              (send sl set-value (max min-scale (min max-scale (f (send sl get-value)))))
-              (send c refresh))])
-    (send (new button% [label "√"] [callback (λ x (scale-adjust sub1))] [parent bp]) min-width 100)
-    (send (new button% [label "2"] [callback (λ x (scale-adjust add1))] [parent bp]) min-width 100)
-    (send f show #t)))
-
 ;; render-image : normalized-shape dc dx dy -> void
 (define (render-image image dc dx dy)
   (let loop ([shape (send image get-normalized-shape)])
@@ -484,4 +450,4 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          image-bottom
          image-baseline
          
-         show-image)
+         render-image)

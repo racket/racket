@@ -2,10 +2,15 @@
 (require "../../2htdp/private/image-core.ss"
          "../../2htdp/private/image-more.ss"
          scheme/math
+         scheme/class
+         scheme/gui/base
          tests/eli-tester)
 
 ;(define-syntax-rule (test a => b) (begin a b))
 
+
+
+#;
 (show-image
  (overlay/xy (rectangle 100 10 'solid 'red)
              0
