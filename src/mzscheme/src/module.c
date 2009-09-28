@@ -338,6 +338,7 @@ void scheme_init_module(Scheme_Env *env)
                                                       scheme_make_pair(kernel_symbol, 
                                                                        scheme_null)),
                                      scheme_false, kernel_modname);
+  scheme_hash_key(kernel_modidx);
   unsafe_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%unsafe"));
 
   REGISTER_SO(module_symbol);
@@ -5567,6 +5568,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     REGISTER_SO(empty_self_modidx);
     REGISTER_SO(empty_self_modname);
     empty_self_modidx = scheme_make_modidx(scheme_false, scheme_false, scheme_false);
+    scheme_hash_key(empty_self_modidx);
     empty_self_modname = scheme_make_symbol("expanded module"); /* uninterned */
     empty_self_modname = scheme_intern_resolved_module_path(empty_self_modname);
   }
@@ -8827,7 +8829,7 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
       pt = (Scheme_Module_Phase_Exports *)scheme_hash_get(me->other_phases, pt_phase);
     
     if (pt) {
-      if (!pt->src_modidx)
+      if (!pt->src_modidx && me->src_modidx)
         pt->src_modidx = me->src_modidx;
       scheme_extend_module_rename_with_shared(rn, orig_idx, pt, pt->phase_index, src_phase_index, marks, 0);
     }
