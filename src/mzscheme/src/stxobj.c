@@ -611,11 +611,8 @@ void scheme_init_stx(Scheme_Env *env)
   REGISTER_SO(empty_simplified);
   empty_simplified = scheme_make_vector(2, scheme_false);
 
-  REGISTER_SO(nominal_ipair_cache);
 
-  REGISTER_SO(quick_hash_table);
 
-  REGISTER_SO(last_phase_shift);
 
   REGISTER_SO(no_nested_inactive_certs);
   no_nested_inactive_certs = scheme_make_raw_pair(NULL, NULL);
@@ -627,6 +624,9 @@ void scheme_init_stx(Scheme_Env *env)
 }
 
 void scheme_init_stx_places() {
+  REGISTER_SO(last_phase_shift);
+  REGISTER_SO(nominal_ipair_cache);
+  REGISTER_SO(quick_hash_table);
   REGISTER_SO(id_marks_ht);
   REGISTER_SO(than_id_marks_ht);
   REGISTER_SO(interned_skip_ribs);
