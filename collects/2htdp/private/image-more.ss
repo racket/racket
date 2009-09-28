@@ -421,11 +421,13 @@
                  [w (ellipse-width atomic-shape)]
                  [h (ellipse-height atomic-shape)]
                  [cos2 (sqr (cos theta))]
-                 [sin2 (sqr (sin theta))])
-            (values dx
-                    dy
-                    (+ dx (* w cos2) (* h sin2))
-                    (+ dy (* w sin2) (* h cos2))))]
+                 [sin2 (sqr (sin theta))]
+                 [new-w (+ (* w cos2) (* h sin2))]
+                 [new-h (+ (* w sin2) (* h cos2))])
+            (values (+ dx (/ (- new-w w) 2))
+                    (+ dy (/ (- new-h h) 2))
+                    (+ dx new-w (/ (- new-w w) 2))
+                    (+ dy new-h (/ (- new-h h) 2))))]
          [else
           (fprintf (current-error-port) "BAD BOUNDING BOX\n")
           (values 0 0 100 100)]))]))
