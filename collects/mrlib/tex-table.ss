@@ -88,6 +88,7 @@
     ("omega" "ω")
     ("eta" "η")
     ("xi" "ξ")
+    ("iota" "ι")
     ("Gamma" "Γ")
     ("Lambda" "Λ")
     ("Sigma" "Σ")
