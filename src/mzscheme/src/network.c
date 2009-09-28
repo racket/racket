@@ -226,182 +226,42 @@ void scheme_init_network(Scheme_Env *env)
 
   netenv = scheme_primitive_module(scheme_intern_symbol("#%network"), env);
 
-  scheme_add_global_constant("tcp-connect", 
-			     scheme_make_prim_w_arity2(tcp_connect,
-						       "tcp-connect", 
-						       2, 4,
-						       2, 2), 
-			     netenv);
-  scheme_add_global_constant("tcp-connect/enable-break", 
-			     scheme_make_prim_w_arity2(tcp_connect_break,
-						       "tcp-connect/enable-break", 
-						       2, 4,
-						       2, 2), 
-			     netenv);
-  scheme_add_global_constant("tcp-listen", 
-			     scheme_make_prim_w_arity(tcp_listen,
-						      "tcp-listen", 
-						      1, 4),
-			     netenv);
-  scheme_add_global_constant("tcp-close", 
-			     scheme_make_prim_w_arity(tcp_stop,
-						      "tcp-close", 
-						      1, 1), 
-			     netenv);
-  scheme_add_global_constant("tcp-accept-ready?", 
-			     scheme_make_prim_w_arity(tcp_accept_ready,
-						      "tcp-accept-ready?", 
-						      1, 1), 
-			     netenv);
-  scheme_add_global_constant("tcp-accept", 
-			     scheme_make_prim_w_arity2(tcp_accept,
-						       "tcp-accept", 
-						       1, 1,
-						       2, 2), 
-			     netenv);
-  scheme_add_global_constant("tcp-accept-evt", 
-			     scheme_make_prim_w_arity(tcp_accept_evt,
-						      "tcp-accept-evt", 
-						      1, 1), 
-			     netenv);
-  scheme_add_global_constant("tcp-accept/enable-break", 
-			     scheme_make_prim_w_arity2(tcp_accept_break,
-						       "tcp-accept/enable-break", 
-						       1, 1,
-						       2, 2), 
-			     netenv);
-  scheme_add_global_constant("tcp-listener?", 
-			     scheme_make_folding_prim(tcp_listener_p,
-						      "tcp-listener?", 
-						      1, 1, 1), 
-			     netenv);
-  scheme_add_global_constant("tcp-addresses", 
-			     scheme_make_prim_w_arity2(tcp_addresses,
-						       "tcp-addresses", 
-						       1, 2,
-						       2, 4), 
-			     netenv);
-  scheme_add_global_constant("tcp-abandon-port", 
-			     scheme_make_prim_w_arity(tcp_abandon_port,
-						      "tcp-abandon-port", 
-						      1, 1), 
-			     netenv);
-  scheme_add_global_constant("tcp-port?", 
-			     scheme_make_folding_prim(tcp_port_p,
-						      "tcp-port?", 
-						      1, 1, 1), 
-			     netenv);
+  GLOBAL_PRIM_W_ARITY2 ( "tcp-connect"               , tcp_connect              , 2 , 4 , 2 , 2 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY2 ( "tcp-connect/enable-break"  , tcp_connect_break        , 2 , 4 , 2 , 2 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "tcp-listen"                , tcp_listen               , 1 , 4 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "tcp-close"                 , tcp_stop                 , 1 , 1 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "tcp-accept-ready?"         , tcp_accept_ready         , 1 , 1 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY2 ( "tcp-accept"                , tcp_accept               , 1 , 1 , 2 , 2 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "tcp-accept-evt"            , tcp_accept_evt           , 1 , 1 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY2 ( "tcp-accept/enable-break"   , tcp_accept_break         , 1 , 1 , 2 , 2 , netenv ) ;
+  GLOBAL_FOLDING_PRIM  ( "tcp-listener?"             , tcp_listener_p           , 1 , 1 , 1 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY2 ( "tcp-addresses"             , tcp_addresses            , 1 , 2 , 2 , 4 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "tcp-abandon-port"          , tcp_abandon_port         , 1 , 1 , netenv ) ;
+  GLOBAL_FOLDING_PRIM  ( "tcp-port?"                 , tcp_port_p               , 1 , 1 , 1 , netenv ) ;
 
-  scheme_add_global_constant("udp-open-socket", 
-			     scheme_make_prim_w_arity(make_udp,
-						      "udp-open-socket", 
-						      0, 2), 
-			     netenv);
-  scheme_add_global_constant("udp-close", 
-			     scheme_make_prim_w_arity(udp_close,
-						      "udp-close", 
-						      1, 1), 
-			     netenv);
-  scheme_add_global_constant("udp?", 
-			     scheme_make_folding_prim(udp_p,
-						      "udp?", 
-						      1, 1, 1), 
-			     netenv);
-  scheme_add_global_constant("udp-bound?", 
-			     scheme_make_prim_w_arity(udp_bound_p,
-						      "udp-bound?", 
-						      1, 1), 
-			     netenv);
-  scheme_add_global_constant("udp-connected?", 
-			     scheme_make_prim_w_arity(udp_connected_p,
-						      "udp-connected?", 
-						      1, 1), 
-			     netenv);
+  GLOBAL_PRIM_W_ARITY  ( "udp-open-socket"           , make_udp                 , 0 , 2 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-close"                 , udp_close                , 1 , 1 , netenv ) ;
+  GLOBAL_FOLDING_PRIM  ( "udp?"                      , udp_p                    , 1 , 1 , 1 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-bound?"                , udp_bound_p              , 1 , 1 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-connected?"            , udp_connected_p          , 1 , 1 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-bind!"                 , udp_bind                 , 3 , 3 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-connect!"              , udp_connect              , 3 , 3 , netenv ) ;
 
-  scheme_add_global_constant("udp-bind!", 
-			     scheme_make_prim_w_arity(udp_bind,
-						      "udp-bind!", 
-						      3, 3), 
-			     netenv);
-  scheme_add_global_constant("udp-connect!", 
-			     scheme_make_prim_w_arity(udp_connect,
-						      "udp-connect!", 
-						      3, 3), 
-			     netenv);
+  GLOBAL_PRIM_W_ARITY  ( "udp-send-to"               , udp_send_to              , 4 , 6 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-send"                  , udp_send                 , 2 , 4 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-send-to*"              , udp_send_to_star         , 4 , 6 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-send*"                 , udp_send_star            , 2 , 4 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-send-to/enable-break"  , udp_send_to_enable_break , 4 , 6 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-send/enable-break"     , udp_send_enable_break    , 2 , 4 , netenv ) ;
 
-  scheme_add_global_constant("udp-send-to", 
-			     scheme_make_prim_w_arity(udp_send_to,
-						      "udp-send-to", 
-						      4, 6), 
-			     netenv);
-  scheme_add_global_constant("udp-send", 
-			     scheme_make_prim_w_arity(udp_send,
-						      "udp-send", 
-						      2, 4), 
-			     netenv);
-  scheme_add_global_constant("udp-send-to*", 
-			     scheme_make_prim_w_arity(udp_send_to_star,
-						      "udp-send-to*", 
-						      4, 6), 
-			     netenv);
-  scheme_add_global_constant("udp-send*", 
-			     scheme_make_prim_w_arity(udp_send_star,
-						      "udp-send*", 
-						      2, 4), 
-			     netenv);
-  scheme_add_global_constant("udp-send-to/enable-break", 
-			     scheme_make_prim_w_arity(udp_send_to_enable_break,
-						      "udp-send-to/enable-break", 
-						      4, 6), 
-			     netenv);
-  scheme_add_global_constant("udp-send/enable-break", 
-			     scheme_make_prim_w_arity(udp_send_enable_break,
-						      "udp-send/enable-break", 
-						      2, 4), 
-			     netenv);
-
-  scheme_add_global_constant("udp-receive!", 
-			     scheme_make_prim_w_arity(udp_receive,
-						      "udp-receive!", 
-						      2, 4), 
-			     netenv);
-  scheme_add_global_constant("udp-receive!*", 
-			     scheme_make_prim_w_arity(udp_receive_star,
-						      "udp-receive!*", 
-						      2, 4), 
-			     netenv);
-  scheme_add_global_constant("udp-receive!/enable-break", 
-			     scheme_make_prim_w_arity(udp_receive_enable_break,
-						      "udp-receive!/enable-break", 
-						      2, 4), 
-			     netenv);
-  scheme_add_global_constant("udp-receive-ready-evt", 
-			     scheme_make_prim_w_arity(udp_read_ready_evt,
-						      "udp-receive-ready-evt", 
-						      1, 1), 
-			     netenv);
-  scheme_add_global_constant("udp-send-ready-evt", 
-			     scheme_make_prim_w_arity(udp_write_ready_evt,
-						      "udp-send-ready-evt", 
-						      1, 1), 
-			     netenv);
-  scheme_add_global_constant("udp-receive!-evt", 
-			     scheme_make_prim_w_arity(udp_read_evt,
-						      "udp-receive!-evt", 
-						      2, 4), 
-			     netenv);
-  scheme_add_global_constant("udp-send-evt", 
-			     scheme_make_prim_w_arity(udp_write_evt,
-						      "udp-send-evt", 
-						      2, 4), 
-			     netenv);
-  scheme_add_global_constant("udp-send-to-evt", 
-			     scheme_make_prim_w_arity(udp_write_to_evt,
-						      "udp-send-to-evt", 
-						      4, 6), 
-			     netenv);
-
-  register_tcp_listener_sync();
+  GLOBAL_PRIM_W_ARITY  ( "udp-receive!"              , udp_receive              , 2 , 4 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-receive!*"             , udp_receive_star         , 2 , 4 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-receive!/enable-break" , udp_receive_enable_break , 2 , 4 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-receive-ready-evt"     , udp_read_ready_evt       , 1 , 1 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-send-ready-evt"        , udp_write_ready_evt      , 1 , 1 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-receive!-evt"          , udp_read_evt             , 2 , 4 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-send-evt"              , udp_write_evt            , 2 , 4 , netenv ) ;
+  GLOBAL_PRIM_W_ARITY  ( "udp-send-to-evt"           , udp_write_to_evt         , 4 , 6 , netenv ) ;
 
   scheme_finish_primitive_module(netenv);
 }
