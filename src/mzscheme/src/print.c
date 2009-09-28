@@ -862,7 +862,11 @@ print_to_string(Scheme_Object *obj,
     cycles = 1;
   else {
     int fast_checker_counter = 50;
+#ifdef MZ_USE_PLACES
+    cycles = -1;
+#else
     cycles = check_cycles_fast(obj, (PrintParams *)&params, &fast_checker_counter);
+#endif
     if (cycles == -1) {
       ht = scheme_make_hash_table(SCHEME_hash_ptr);
       cycles = check_cycles(obj, write, ht, (PrintParams *)&params);
