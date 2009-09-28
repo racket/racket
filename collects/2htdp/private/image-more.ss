@@ -1,41 +1,7 @@
 #lang scheme/base
 
-#|
-
-improvments/changes wrt to htdp/image:
-
-  - copying and pasting does not introduce jaggies
-  - equal comparisions are more efficient
-  - added rotation & scaling
-  - got rid of pinholes (see the new overlay, beside, and above functions)
-
-todo: sort out wxme library support (loading in text mode).
-
-;; when rendering these things in error messages,
-;; they should come out as #<picture: {THE ACTUAL PICTURE}>
-;; (automatically scale them down so they fit)
-
-;; redex randomized testing: see if normalization produces normalized shapes.
-;;        see if normalization always puts things in the right order
-
-;; need to change error messages to say "the width (second) argument"
-;; by passing "width (second)" to the check-arg function
-
-
-From Matthias: (to use to compare with this library)
-
-
-You asked about exercises and code snippets for HtDP/2e yesterday. I actually do have a bunch of stuff in
-
- svn: 2HtDP/SampleCode/
-
-and they all have good sample contracts. (It is amazing what we can do with kids who have just a few weeks of cs down; I would have never dared to write an editor after six weeks in Algol.)
-
-
-|#
-
-
-(require scheme/class
+(require "image-core.ss"
+         scheme/class
          scheme/gui/base
          htdp/error
          scheme/math
@@ -55,325 +21,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          ellipse
          rectangle
          
-         ;; internal stuff, for the test suite
-         
-         show-picture
-         
-         normalize-shape
-         rotate-atomic
-         rotate-simple
-         simple-bb
-         make-picture picture-shape
-         
-         make-bb
-         make-overlay
-         make-translate
-         make-ellipse
-         make-text
-         make-polygon
-         make-point
          bring-between)
 
-
-(define-for-syntax id-constructor-pairs '())
-(define-for-syntax (add-id-constructor-pair a b)
-  (set! id-constructor-pairs (cons (list a b) id-constructor-pairs)))
-
-(define-syntax (define-struct/reg-mk stx)
-  (syntax-case stx ()
-    [(_ id . rest)
-     (let ([build-name
-            (λ (fmt)
-              (datum->syntax #'id (string->symbol (format fmt (syntax->datum #'id)))))])
-       (add-id-constructor-pair (build-name "struct:~a")
-                                (build-name "make-~a"))
-       #'(define-struct id . rest))]))
-
-(define-syntax (define-id->constructor stx)
-  (syntax-case stx ()
-    [(_ fn)
-     #`(define (fn x)
-         (case x
-           #,@(map (λ (x) 
-                     (with-syntax ([(struct: maker) x])
-                       #`[(struct:) maker]))
-                   id-constructor-pairs)))]))
-
-(define-struct/reg-mk point (x y) #:transparent)
-
-
-;                                                                
-;                                                                
-;                                                                
-;                                                                
-;                                                                
-;                                                                
-;       ;;           ;;                  ;;           ;;;        
-;       ;;          ;;;                  ;;          ;;;         
-;    ;;;;;   ;;;;  ;;;;;  ;;;;        ;;;;;   ;;;;  ;;;;; ;; ;;; 
-;   ;;;;;;  ;;  ;;  ;;;; ;;  ;;      ;;;;;;  ;;  ;; ;;;;  ;;;;;; 
-;  ;;;  ;;    ;;;;  ;;;    ;;;;     ;;;  ;; ;;;;;;;; ;;   ;;  ;; 
-;  ;;;  ;;  ;;; ;;  ;;;  ;;; ;;     ;;;  ;; ;;;      ;;   ;;  ;; 
-;   ;;;;;; ;;;  ;;  ;;;;;;;  ;;      ;;;;;;  ;;; ;;  ;;   ;;  ;; 
-;    ;;;;;  ;;;;;;   ;;; ;;;;;;       ;;;;;   ;;;;   ;;   ;;  ;; 
-;                                                                
-;                                                                
-;                                                                
-;                                                         
-
-
-;; a picture is 
-;;  (make-picture shape bb boolean)
-;; NOTE: the shape field is mutated when normalized, as
-;;       is the normalized? field.
-(define (make-picture shape bb normalized?) (new picture% [shape shape] [bb bb] [normalized? normalized?]))
-(define (picture-shape p) (send p get-shape))
-(define (picture-bb p) (send p get-bb))
-(define (picture-normalized? p) (send p get-normalized?))
-(define (set-picture-shape! p s) (send p set-shape s))
-(define (set-picture-normalized?! p n?) (send p set-normalized? n?))
-(define (picture-right picture) (bb-right (picture-bb picture)))
-(define (picture-bottom picture) (bb-bottom (picture-bb picture)))
-(define (picture-baseline picture) (bb-baseline (picture-bb picture)))
-(define (picture? p) (is-a? p picture%))
-
-
-;; a bb is  (bounding box)
-;;  (make-bb number number number)
-(define-struct/reg-mk bb (right bottom baseline) #:transparent)
-
-;; a shape is either:
-;;
-;;  - (make-overlay shape shape)
-;;    the shapes are in the order passed to the overlay or beside,
-;;    which means the bottom one should be drawn first so as to appear
-;;    underneath the top one.
-(define-struct/reg-mk overlay (top bottom) #:transparent #:omit-define-syntaxes) 
-;;
-;;  - (make-translate dx dy shape)
-(define-struct/reg-mk translate (dx dy shape) #:transparent #:omit-define-syntaxes)
-;;
-;;  - atomic-shape
-
-;; an atomic-shape is either:
-;;  - polygon
-;;  - np-atomic-shape
-
-;; a np-atomic-shape is:
-;;
-;;  - (make-ellipse width height angle mode color)
-(define-struct/reg-mk ellipse (width height angle mode color) #:transparent #:omit-define-syntaxes)
-;;
-;;  - (make-text string angle font)
-(define-struct/reg-mk text (string angle font) #:omit-define-syntaxes #:transparent)
-;;
-;;  - (make-bitmap (is-a?/c bitmap%) angle)
-(define-struct/reg-mk bitmap (bitmap angle))
-
-;; a polygon is:
-;;
-;;  - (make-polygon (listof points) angle pen brush)
-(define-struct/reg-mk polygon (points mode color) #:transparent #:omit-define-syntaxes
-  #:property prop:equal+hash 
-  (list (λ (a b rec) (polygon-equal? a b rec)) (λ (x y) 42) (λ (x y) 3)))
-
-;; a normalized-shape (subtype of shape) is either
-;;  - (make-overlay normalized-shape simple-shape)
-;;  - simple-shape
-
-;; a simple-shape (subtype of shape) is
-;;  - (make-translate dx dy np-atomic-shape)
-;;  - polygon
-
-;; an angle is a number between 0 and 360 (degrees)
-
-(define (polygon-equal? p1 p2 eq-recur)
-  (and (eq-recur (polygon-mode p1) (polygon-mode p2))
-       (eq-recur (polygon-color p1) (polygon-color p2))
-       (let ([p1-points (polygon-points p1)]
-             [p2-points (polygon-points p2)])
-         (or (and (null? p1-points)
-                  (null? p2-points))
-             (and (not (or (null? p1-points)
-                           (null? p2-points)))
-                  (eq-recur (rotate-to-zero (closest-to-zero p1-points) p1-points)
-                            (rotate-to-zero (closest-to-zero p2-points) p2-points)))))))
-
-(define (rotate-to-zero zero-p points)
-  (let loop ([points points]
-             [acc null])
-    (cond
-      [(equal? (car points) zero-p)
-       (append points (reverse acc))]
-      [else
-       (loop (cdr points)
-             (cons (car points) acc))])))
-
-(define (closest-to-zero points)
-  (car (sort points < #:key (λ (p) (+ (point-x p) (point-y p))))))
-
-
-;                                                   
-;                                                   
-;                                                   
-;   ;;                                    ;;   ;;   
-;   ;;                                   ;;;;  ;    
-;   ;                                    ; ;; ;     
-;   ;;  ;;;;;;;;; ;;;;;   ;;;;;;  ;;;;   ; ;; ;     
-;   ;;  ;; ;;; ;;;;   ;;  ;; ;;  ;;; ;;   ;; ;      
-;   ;;  ;; ;;; ;;;  ;;;; ;;; ;;  ;;;;;;      ; ;;;  
-;   ;;  ;; ;;; ;;;;;  ;;   ;;;   ;;          ;;; ;; 
-;   ;;  ;; ;;; ;;;;;  ;;  ;;;;;  ;;;  ;     ; ;; ;; 
-;   ;;  ;; ;;; ;;;;;;;;;; ;;;;;;  ;;;;     ;;  ;;;  
-;                        ;;   ;;                    
-;                        ;;   ;                     
-;                         ;;;;                      
-
-(define-local-member-name get-shape set-shape get-bb get-normalized? set-normalized get-normalized-shape)
-
-(define picture%
-  (class* snip% (equal<%>)
-    (init-field shape bb normalized?)
-    (define/public (equal-to? that eq-recur) 
-      (eq-recur (get-normalized-shape)
-                (send that get-normalized-shape)))
-    (define/public (equal-hash-code-of y) 42)
-    (define/public (equal-secondary-hash-code-of y) 3)
-
-    (define/public (get-shape) shape)
-    (define/public (set-shape s) (set! shape s))
-    (define/public (get-bb) bb)
-    (define/public (get-normalized?) normalized?)
-    (define/public (set-normalized? n?) (set! normalized? n?))
-    
-    (define/public (get-normalized-shape)
-      (unless normalized?
-        (set! shape (normalize-shape shape values))
-        (set! normalized? #t))
-      shape)
-    
-    (define/override (copy) (make-picture shape bb normalized?))
-    (define/override (draw dc x y left top right bottom dx dy draw-caret?)
-      (render-picture this dc x y))
-    (define/override (get-extent dc x y [w #f] [h #f] [descent #f] [space #f] [lspace #f] [rspace #f])
-      (send (get-the-snip-class-list) add snip-class)
-      (let ([bottom (bb-bottom bb)])
-        (set-box/f! w (bb-right bb))
-        (set-box/f! h bottom)
-        (set-box/f! descent (- bottom (bb-baseline bb)))
-        (set-box/f! space 0)
-        (set-box/f! lspace 0)
-        (set-box/f! rspace 0)))
-
-    (define/override (write f) 
-      (send f put (string->bytes/utf-8 (format "~s" (list shape bb)))))
-    
-    (super-new)
-    
-    (inherit set-snipclass)
-    (set-snipclass snip-class)))
-
-(define scheme/base:read read)
-
-(define picture-snipclass% 
-  (class snip-class%
-    (define/override (read f)
-      (let* ([str (bytes->string/utf-8 (send f get-unterminated-bytes))]
-             [lst (parse 
-                   (scheme/base:read
-                    (open-input-string
-                     str)))])
-        (if lst
-            (make-picture (list-ref lst 0)
-                          (list-ref lst 1)
-                          #f)
-            (rectangle 20 20 'solid 'black))))
-    (super-new)))
-
-(provide snip-class) 
-(define snip-class (new picture-snipclass%))
-(send snip-class set-classname (format "~s" '(lib "picture.ss" "2htdp/private")))
-(send snip-class set-version 1)
-(send (get-the-snip-class-list) add snip-class)
-
-(define (set-box/f! b v) (when (box? b) (set-box! b v)))
- 
-(define (parse sexp)
-  (let/ec k
-    (let loop ([sexp sexp])
-      (cond
-        [(pair? sexp) (cons (loop (car sexp)) (loop (cdr sexp)))]
-        [(vector? sexp)
-         (if (= (vector-length sexp) 0)
-             (k #f)
-             (let ([constructor (id->constructor (vector-ref sexp 0))]
-                   [args (cdr (vector->list sexp))])
-               (if (and constructor
-                        (procedure-arity-includes? constructor (length args)))
-                   (apply constructor (map loop args))
-                   (k #f))))]
-        [else sexp]))))
-
-(define-id->constructor id->constructor)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; normalize-shape : shape (atomic-shape -> atomic-shape) -> normalized-shape
-;; normalizes 'shape', calling 'f' on each atomic shape in the normalized shape.
-(define (normalize-shape shape [f values])
-  (let loop ([shape shape]
-             [dx 0]
-             [dy 0]
-             [bottom #f])
-    (cond
-      [(translate? shape)
-       (loop (translate-shape shape)
-             (+ dx (translate-dx shape))
-             (+ dy (translate-dy shape))
-             bottom)]
-      [(overlay? shape)
-       (loop (overlay-bottom shape)
-             dx dy
-             (loop (overlay-top shape)
-                   dx dy bottom))]
-      [(polygon? shape)
-       (let ([this-one (make-polygon (map (λ (p)
-                                            (make-point (+ dx (point-x p))
-                                                        (+ dy (point-y p))))
-                                          (polygon-points shape))
-                                     (polygon-mode shape)
-                                     (polygon-color shape))])
-         (if bottom
-             (make-overlay bottom (f this-one))
-             (f this-one)))]
-      [(np-atomic-shape? shape)
-       (let ([this-one (make-translate dx dy shape)])
-         (if bottom
-             (make-overlay bottom (f this-one))
-             (f this-one)))]
-      [else 
-       (error 'normalize-shape "unknown shape ~s\n" shape)])))
-
-(define (atomic-shape? shape)
-  (or (ellipse? shape)
-      (text? shape)
-      (polygon? shape)
-      (bitmap? shape)))
-
-(define (np-atomic-shape? shape)
-  (or (ellipse? shape)
-      (text? shape)
-      (bitmap? shape)))
-
-;; rotate-point : x,y angle -> x,y
-(define (rotate-point x y θ)
-  (c->xy (* (make-polar 1 (degrees->radians θ)) 
-            (xy->c x y))))
-
-(define (xy->c x y) (make-rectangular x (- y)))
-(define (c->xy c) 
-  (values (real-part c)
-          (- (imag-part c))))
 
 
 ;                                                                                                 
@@ -454,10 +103,10 @@ and they all have good sample contracts. (It is amazing what we can do with kids
        (if (eq? sym 'center)
            'middle
            sym))]
-    [(picture picture1 picture2 picture3) 
+    [(image image1 image2 image3) 
      (check-arg fn-name
-                (picture? arg)
-                'picture
+                (image? arg)
+                'image
                 i
                 arg)
      arg]
@@ -509,107 +158,6 @@ and they all have good sample contracts. (It is amazing what we can do with kids
             argname)]))
 
 
-
-;                                                                
-;                                                                
-;                                                                
-;                                                                
-;                                                                
-;                                                                
-;                            ;;               ;;                 
-;                            ;;               ;;                 
-;   ;;;;  ;;;;   ;; ;;;   ;;;;;   ;;;;   ;;;;;;;  ;; ;;;  ;;;;;; 
-;   ;;;; ;;  ;;  ;;;;;;  ;;;;;;  ;;  ;;  ;;;; ;;  ;;;;;;  ;;;;;; 
-;   ;;  ;;;;;;;; ;;  ;; ;;;  ;; ;;;;;;;; ;;   ;;  ;;  ;; ;;;  ;; 
-;   ;;  ;;;      ;;  ;; ;;;  ;; ;;;      ;;   ;;  ;;  ;; ;;;  ;; 
-;   ;;   ;;; ;;  ;;  ;;  ;;;;;;  ;;; ;;  ;;   ;;  ;;  ;;  ;;;;;; 
-;   ;;    ;;;;   ;;  ;;   ;;;;;   ;;;;   ;;   ;;  ;;  ;;   ;;;;; 
-;                                                         ;; ;;; 
-;                                                         ;;;;;  
-;                                                                
-;                                                         
-
-(define (show-picture g [extra-space 0])
-  (letrec ([f (new frame% [label ""])]
-           [c (new canvas% 
-                   [parent f]
-                   [min-width (+ extra-space (inexact->exact (floor (picture-right g))))]
-                   [min-height (+ extra-space (inexact->exact (floor (picture-bottom g))))]
-                   [paint-callback
-                    (λ (c dc)
-                      (send dc set-smoothing 'aligned)
-                      (let-values ([(w h) (send c get-client-size)])
-                        (let ([scale (send sl get-value)])
-                          (send dc set-scale scale scale)
-                          (render-picture 
-                           g
-                           dc
-                           (inexact->exact (floor (- (/ w 2 scale) (/ (picture-right g) 2))))
-                           (inexact->exact (floor (- (/ h 2 scale) (/ (picture-bottom g) 2))))))))])]
-           [min-scale 1]
-           [max-scale 10]
-           [sl (new slider% 
-                    [label "Scale factor"] 
-                    [parent f] 
-                    [min-value min-scale]
-                    [max-value max-scale]
-                    [callback (λ ignore (send c refresh))])]
-           [bp (new horizontal-panel% [parent f] [alignment '(center center)] [stretchable-height #f])]
-           [scale-adjust
-            (λ (f)
-              (send sl set-value (max min-scale (min max-scale (f (send sl get-value)))))
-              (send c refresh))])
-    (send (new button% [label "√"] [callback (λ x (scale-adjust sub1))] [parent bp]) min-width 100)
-    (send (new button% [label "²"] [callback (λ x (scale-adjust add1))] [parent bp]) min-width 100)
-    (send f show #t)))
-
-;; render-picture : normalized-shape dc dx dy -> void
-(define (render-picture picture dc dx dy)
-  (let loop ([shape (send picture get-normalized-shape)])
-    (cond
-      [(overlay? shape)
-       (render-simple-shape (overlay-bottom shape) dc dx dy)
-       (loop (overlay-top shape))]
-      [else
-       (render-simple-shape shape dc dx dy)])))
-
-(define (render-simple-shape simple-shape dc dx dy)
-  (cond
-    [(polygon? simple-shape)
-     (let ([path (new dc-path%)]
-           [points (polygon-points simple-shape)])
-       (send path move-to (point-x (car points)) (point-y (car points)))
-       (let loop ([points (cdr points)])
-         (unless (null? points)
-           (send path line-to (point-x (car points)) (point-y (car points)))
-           (loop (cdr points))))
-       (send path line-to (point-x (car points)) (point-y (car points)))
-       (send dc set-pen (mode-color->pen (polygon-mode simple-shape) (polygon-color simple-shape)))
-       (send dc set-brush (mode-color->brush (polygon-mode simple-shape) (polygon-color simple-shape)))
-       (send dc draw-path path dx dy))]
-    [else
-     (let ([dx (+ dx (translate-dx simple-shape))]
-           [dy (+ dy (translate-dy simple-shape))]
-           [atomic-shape (translate-shape simple-shape)])
-       (cond
-         [(ellipse? atomic-shape)
-          (let ([path (new dc-path%)]
-                [θ (degrees->radians (ellipse-angle atomic-shape))])
-            (send path ellipse 0 0 (ellipse-width atomic-shape) (ellipse-height atomic-shape))
-            (send path rotate θ)
-            (send dc set-pen (mode-color->pen (ellipse-mode atomic-shape) (ellipse-color atomic-shape)))
-            (send dc set-brush (mode-color->brush (ellipse-mode atomic-shape) (ellipse-color atomic-shape)))
-            (send dc draw-path path dx dy))]
-         
-         [(text? atomic-shape)
-          (let ([θ (degrees->radians (text-angle atomic-shape))])
-            (send dc set-font (text-font atomic-shape))
-            (send dc draw-text (text-string atomic-shape) dx dy #f 0 angle))]))]))
-
-(define (degrees->radians θ)
-  (* θ 2 pi (/ 360)))
-
-
 ;                                              
 ;                                              
 ;                                              
@@ -627,28 +175,28 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 ;                                         ;;   
                                                                             
 
-;; bitmap : string -> picture
+;; bitmap : string -> image
 ;; gets one of the bitmaps that comes with drscheme, scales it down by 1/8 or something
 ;; so that later scaling /translation/whatever will look reasonable.
-;; (the error message for a bad argument will list all of the currently installed example pictures;
+;; (the error message for a bad argument will list all of the currently installed example images;
 ;; we may want to have some way teachers can stick new ones in there)
 
-;; overlay : picture picture picture ... -> picture
-;; places pictures on top of each other with their upper left corners aligned. last one goes on the bottom
+;; overlay : image image image ... -> image
+;; places images on top of each other with their upper left corners aligned. last one goes on the bottom
 
-(define/chk (overlay picture picture2 . picture3)
-  (overlay/internal 'left 'top picture (cons picture2 picture3)))
+(define/chk (overlay image image2 . image3)
+  (overlay/internal 'left 'top image (cons image2 image3)))
 
-;; overlay/places : string string picture picture picture ... -> picture
+;; overlay/places : string string image image image ... -> image
 ;; the first string has to be one of "center" "middle" "left" or "right" (or symbols)
 ;; the second string has to be one of "center" "middle" "top" "bottom" or "baseline" (or symbols)
-;; behaves like overlay, but lines up the pictures in the various places.
+;; behaves like overlay, but lines up the images in the various places.
 ;; overlay without string arguments is the same as passing "left" and "top"
 ;; for the two string arguments. Passing, eg, "center" "center" lines the
-;; pictures up at their centers.
+;; images up at their centers.
 
-(define/chk (overlay/places x-place y-place picture picture2 . picture3)
-  (overlay/internal x-place y-place picture (cons picture2 picture3)))
+(define/chk (overlay/places x-place y-place image image2 . image3)
+  (overlay/internal x-place y-place image (cons image2 image3)))
 
 (define (overlay/internal x-place y-place fst rst)
   (let loop ([fst fst]
@@ -670,51 +218,51 @@ and they all have good sample contracts. (It is amazing what we can do with kids
                           (if (< dy 0) 0 dy))
                (cdr rst)))])))
 
-(define (find-x-spot x-place picture)
+(define (find-x-spot x-place image)
   (case x-place
     [(left) 0]
-    [(middle) (/ (picture-right picture) 2)]
-    [(right) (picture-right picture)]))
+    [(middle) (/ (image-right image) 2)]
+    [(right) (image-right image)]))
 
-(define (find-y-spot y-place picture)
+(define (find-y-spot y-place image)
   (case y-place
     [(top) 0]
-    [(middle) (/ (picture-bottom picture) 2)]
-    [(bottom) (picture-bottom picture)]
-    [(baseline) (picture-baseline picture)]))
+    [(middle) (/ (image-bottom image) 2)]
+    [(bottom) (image-bottom image)]
+    [(baseline) (image-baseline image)]))
 
-;; overlay/xy : picture number number picture -> picture
-;; places pictures on top of each other with their upper-left corners offset by the two numbers
+;; overlay/xy : image number number image -> image
+;; places images on top of each other with their upper-left corners offset by the two numbers
 
-(define/chk (overlay/xy picture dx dy picture2) 
-  (overlay/δ picture
+(define/chk (overlay/xy image dx dy image2) 
+  (overlay/δ image
              (if (< dx 0) (- dx) 0)
              (if (< dy 0) (- dy) 0)
-             picture2
+             image2
              (if (< dx 0) 0 dx)
              (if (< dy 0) 0 dy)))
 
-(define (overlay/δ picture1 dx1 dy1 picture2 dx2 dy2)
-  (make-picture (make-overlay (make-translate dx1 dy1 (picture-shape picture1))
-                              (make-translate dx2 dy2 (picture-shape picture2)))
-                (make-bb (max (+ (picture-right picture1) dx1)
-                              (+ (picture-right picture2) dx2))
-                         (max (+ (picture-bottom picture1) dy1)
-                              (+ (picture-bottom picture2) dy2))
-                         (max (+ (picture-baseline picture1) dy1)
-                              (+ (picture-baseline picture2) dy2)))
-                #f))
+(define (overlay/δ image1 dx1 dy1 image2 dx2 dy2)
+  (make-image (make-overlay (make-translate dx1 dy1 (image-shape image1))
+                            (make-translate dx2 dy2 (image-shape image2)))
+              (make-bb (max (+ (image-right image1) dx1)
+                            (+ (image-right image2) dx2))
+                       (max (+ (image-bottom image1) dy1)
+                            (+ (image-bottom image2) dy2))
+                       (max (+ (image-baseline image1) dy1)
+                            (+ (image-baseline image2) dy2)))
+              #f))
 
-;; beside : picture picture picture ... -> picture
-;; places pictures in a single horizontal row, top aligned
-(define/chk (beside picture1 picture2 . picture3)
-  (beside/internal 'top picture1 (cons picture2 picture3)))
+;; beside : image image image ... -> image
+;; places images in a single horizontal row, top aligned
+(define/chk (beside image1 image2 . image3)
+  (beside/internal 'top image1 (cons image2 image3)))
 
-;; beside/places : string picture picture picture ... -> picture
-;; places pictures in a horizontal row where the vertical alignment is
+;; beside/places : string image image image ... -> image
+;; places images in a horizontal row where the vertical alignment is
 ;; covered by the string argument
-(define/chk (beside/places y-place picture1 picture2 . picture3)
-  (beside/internal y-place picture1 (cons picture2 picture3)))
+(define/chk (beside/places y-place image1 image2 . image3)
+  (beside/internal y-place image1 (cons image2 image3)))
 
 (define (beside/internal y-place fst rst)
   (let loop ([fst fst]
@@ -730,11 +278,11 @@ and they all have good sample contracts. (It is amazing what we can do with kids
                           0 
                           (if (< dy 0) (- dy) 0)
                           (car rst)
-                          (picture-right fst)
+                          (image-right fst)
                           (if (< dy 0) 0 dy))
                (cdr rst)))])))
 
-;; above : picture picture picture ... -> picture
+;; above : image image image ... -> image
 ;; above/places : string I I I ... -> I
 ;; like beside, but vertically
 
@@ -752,21 +300,21 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 ;                                                                                   
 ;       
 
-;; frame : picture -> picture
-;; draws a black frame around a picture where the bounding box is
-;; (useful for debugging pictures)
+;; frame : image -> image
+;; draws a black frame around a image where the bounding box is
+;; (useful for debugging images)
 
-(define/chk (frame picture)
-  (make-picture (make-overlay (picture-shape picture)
-                              (picture-shape 
-                               (rectangle (picture-right picture)
-                                          (picture-bottom picture)
-                                          'outline
-                                          'black)))
-                (make-bb (picture-right picture)
-                         (picture-bottom picture)
-                         (picture-baseline picture))
-                #f))
+(define/chk (frame image)
+  (make-image (make-overlay (image-shape image)
+                            (image-shape 
+                             (rectangle (image-right image)
+                                        (image-bottom image)
+                                        'outline
+                                        'black)))
+              (make-bb (image-right image)
+                       (image-bottom image)
+                       (image-baseline image))
+              #f))
 
 ;; scale : I number -> I
 ;; scales the I by the given factor
@@ -775,7 +323,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 ;; rotates the I around the top-left corner by the given angle
 ;; (in degrees)
 ;; LINEAR TIME OPERATION (sigh)
-(define/chk (rotate angle picture)
+(define/chk (rotate angle image)
   (define left #f)
   (define top #f)
   (define right #f)
@@ -788,10 +336,10 @@ and they all have good sample contracts. (It is amazing what we can do with kids
         (set! right (if right (max this-right right) this-right))
         (set! bottom (if bottom (max this-bottom bottom) this-bottom)))
       rotated-shape))
-  (let* ([rotated (normalize-shape (picture-shape picture) add-to-bounding-box/rotate)])
-    (make-picture (make-translate (- left) (- top) rotated)
-                  (make-bb (- right left) (- bottom top) (- bottom top))
-                  #f)))
+  (let* ([rotated (normalize-shape (image-shape image) add-to-bounding-box/rotate)])
+    (make-image (make-translate (- left) (- top) rotated)
+                (make-bb (- right left) (- bottom top) (- bottom top))
+                #f)))
 
 ;; simple-bb : simple-shape -> (values number number number number)
 ;; returns the bounding box of 'shape' 
@@ -873,6 +421,17 @@ and they all have good sample contracts. (It is amazing what we can do with kids
      (make-bitmap (bitmap-bitmap atomic-shape)
                   (bring-between (+ θ (bitmap-angle atomic-shape)) 360))]))
 
+;; rotate-point : x,y angle -> x,y
+(define (rotate-point x y θ)
+  (c->xy (* (make-polar 1 (degrees->radians θ)) 
+            (xy->c x y))))
+
+(define (xy->c x y) (make-rectangular x (- y)))
+(define (c->xy c) 
+  (values (real-part c)
+          (- (imag-part c))))
+
+
 ;; bring-between : number number -> number
 ;; returns a number that is much like the modulo of 'x' and 'upper-bound'
 ;; but does this by repeated subtraction, since modulo only works on integers
@@ -903,13 +462,13 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 ;;       rectangle
 
 (define/chk (rectangle width height mode color)
-  (make-picture (make-polygon (rectangle-points width height)
-                              mode
-                              color)
-                (make-bb width
-                         height
-                         height)
-                #f))
+  (make-image (make-polygon (rectangle-points width height)
+                            mode
+                            color)
+              (make-bb width
+                       height
+                       height)
+              #f))
 
 (define (rectangle-points width height)
   (list (make-point 0 0)
@@ -927,12 +486,12 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 ;;       regular-polygon
 
 (define/chk (ellipse width height mode color)
-  (make-picture (make-ellipse width height 
-                              0
-                              mode
-                              color)
-                (make-bb width height height)
-                #f))
+  (make-image (make-ellipse width height 
+                            0
+                            mode
+                            color)
+              (make-bb width height height)
+              #f))
 
 (define (mode-color->pen mode color)
   (send the-pen-list find-or-create-pen color 1 
