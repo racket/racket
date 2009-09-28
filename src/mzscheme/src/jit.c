@@ -9665,13 +9665,19 @@ typedef void *(*Module_Start_Proc)(struct Start_Module_Args *a, Scheme_Object **
 void *scheme_module_run_start(Scheme_Env *menv, Scheme_Env *env, Scheme_Object *name)
 {
   Module_Run_Proc proc = (Module_Run_Proc)module_run_start_code;
-  return proc(menv, env, &name);
+  if (proc)
+    return proc(menv, env, &name);
+  else
+    return scheme_module_run_finish(menv, env);
 }
 
 void *scheme_module_start_start(struct Start_Module_Args *a, Scheme_Object *name)
 {
   Module_Start_Proc proc = (Module_Start_Proc)module_start_start_code;
-  return proc(a, &name);
+  if (proc)
+    return proc(a, &name);
+  else
+    return scheme_module_start_finish(a);
 }
 
 /**********************************************************************/
