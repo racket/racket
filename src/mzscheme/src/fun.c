@@ -179,10 +179,8 @@ static THREAD_LOCAL Scheme_Object *cached_beg_stx;
 static THREAD_LOCAL Scheme_Object *cached_dv_stx;
 static THREAD_LOCAL Scheme_Object *cached_ds_stx;
 static THREAD_LOCAL int cached_stx_phase;
-
-/* NEED TO BE THREAD LOCAL */
-static Scheme_Cont *offstack_cont;
-static Scheme_Overflow *offstack_overflow;
+static THREAD_LOCAL Scheme_Cont *offstack_cont;
+static THREAD_LOCAL Scheme_Overflow *offstack_overflow;
 
 
 typedef void (*DW_PrePost_Proc)(void *);
@@ -223,14 +221,8 @@ scheme_init_fun (Scheme_Env *env)
   scheme_tail_call_waiting->type = scheme_tail_call_waiting_type;
 #endif
 
-  REGISTER_SO(cached_beg_stx);
-  REGISTER_SO(cached_dv_stx);
-  REGISTER_SO(cached_ds_stx);
   REGISTER_SO(scheme_procedure_p_proc);
   REGISTER_SO(scheme_procedure_arity_includes_proc);
-
-  REGISTER_SO(offstack_cont);
-  REGISTER_SO(offstack_overflow);
 
   o = scheme_make_folding_prim(procedure_p, "procedure?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(o) |= SCHEME_PRIM_IS_UNARY_INLINED;
@@ -567,6 +559,17 @@ scheme_init_fun (Scheme_Env *env)
   original_default_prompt->so.type = scheme_prompt_type;
   original_default_prompt->tag = scheme_default_prompt_tag;
 }
+
+void
+scheme_init_fun_places()
+{
+  REGISTER_SO(cached_beg_stx);
+  REGISTER_SO(cached_dv_stx);
+  REGISTER_SO(cached_ds_stx);
+  REGISTER_SO(offstack_cont);
+  REGISTER_SO(offstack_overflow);
+}
+
 
 Scheme_Object *
 scheme_make_void (void)

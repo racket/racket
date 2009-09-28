@@ -124,6 +124,8 @@ static void eval_exptime(Scheme_Object *names, int count,
 
 static Scheme_Module_Exports *make_module_exports();
 
+static Scheme_Object *scheme_sys_wraps_phase_worker(long p);
+
 #define cons scheme_make_pair
 
 
@@ -485,6 +487,12 @@ void scheme_finish_kernel(Scheme_Env *env)
   }
   scheme_seal_module_rename(rn, STX_SEAL_ALL);
 
+  REGISTER_SO(scheme_sys_wraps0);
+  REGISTER_SO(scheme_sys_wraps1);
+
+  scheme_sys_wraps0 = scheme_sys_wraps_phase_worker(0);
+  scheme_sys_wraps1 = scheme_sys_wraps_phase_worker(1);
+
   scheme_sys_wraps(NULL);
 
   REGISTER_SO(scheme_module_stx);
@@ -608,22 +616,11 @@ Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env)
   return scheme_sys_wraps_phase(scheme_make_integer(phase));
 }
 
-Scheme_Object *scheme_sys_wraps_phase(Scheme_Object *phase)
+static Scheme_Object *scheme_sys_wraps_phase_worker(long p)
 {
   Scheme_Object *rn, *w;
-  long p;
 
-  if (SCHEME_INTP(phase))
-    p = SCHEME_INT_VAL(phase);
-  else
-    p = -1;
-
-  if ((p == 0) && scheme_sys_wraps0)
-    return scheme_sys_wraps0;
-  if ((p == 1) && scheme_sys_wraps1)
-    return scheme_sys_wraps1;
-
-  rn = scheme_make_module_rename(phase, mzMOD_RENAME_NORMAL, NULL);
+  rn = scheme_make_module_rename(scheme_make_integer(p), mzMOD_RENAME_NORMAL, NULL);
 
   /* Add a module mapping for all kernel provides: */
   scheme_extend_module_rename_with_shared(rn, kernel_modidx, 
@@ -637,16 +634,23 @@ Scheme_Object *scheme_sys_wraps_phase(Scheme_Object *phase)
 
   w = scheme_datum_to_syntax(kernel_symbol, scheme_false, scheme_false, 0, 0);
   w = scheme_add_rename(w, rn);
-  if (p == 0) {
-    REGISTER_SO(scheme_sys_wraps0);
-    scheme_sys_wraps0 = w;
-  }
-  if (p == 1) {
-    REGISTER_SO(scheme_sys_wraps1);
-    scheme_sys_wraps1 = w;
-  }
 
   return w;
+}
+
+Scheme_Object *scheme_sys_wraps_phase(Scheme_Object *phase)
+{
+  long p;
+
+  if (SCHEME_INTP(phase))
+    p = SCHEME_INT_VAL(phase);
+  else
+    p = -1;
+
+  if (p == 0) return scheme_sys_wraps0;
+  if (p == 1) return scheme_sys_wraps1;
+
+  return scheme_sys_wraps_phase_worker(p);
 }
 
 void scheme_save_initial_module_set(Scheme_Env *env)

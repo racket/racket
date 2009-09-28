@@ -42,7 +42,7 @@ static THREAD_LOCAL char *quick_encode_buffer = NULL;
 static Scheme_Type_Printer *printers;
 static int printers_count;
 
-static Scheme_Hash_Table *cache_ht;
+static THREAD_LOCAL Scheme_Hash_Table *cache_ht;
 
 /* read-only globals */
 static char compacts[_CPT_COUNT_];
@@ -154,14 +154,19 @@ void scheme_init_print(Scheme_Env *env)
 #ifdef MZ_PRECISE_GC
   register_traversers();
 #endif
+}
 
-  REGISTER_SO(cache_ht);
+void scheme_init_print_global_constants()
+{
+	REGISTER_SO(global_constants_ht);
+	global_constants_ht = scheme_map_constants_to_globals();
 }
 
 void scheme_init_print_buffers_places() 
 {
   REGISTER_SO(quick_buffer);
   REGISTER_SO(quick_encode_buffer);
+  REGISTER_SO(cache_ht);
   
   quick_buffer = (char *)scheme_malloc_atomic(100);
   quick_encode_buffer = (char *)scheme_malloc_atomic(QUICK_ENCODE_BUFFER_SIZE);
@@ -2625,7 +2630,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         set_symtab_shared(mt, obj);
       }
     }
-  else if (scheme_type_writers[SCHEME_TYPE(obj)]
+  else if (SCHEME_TYPE(obj) <= _scheme_last_type_ && scheme_type_writers[SCHEME_TYPE(obj)]
 #if !NO_COMPACT
 	   && (compact || SAME_TYPE(SCHEME_TYPE(obj), scheme_compilation_top_type))
 #endif
@@ -2639,11 +2644,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	/* Doesn't happen: */
 	scheme_signal_error("internal error: bad type with writer");
 	return 0;
-      }
-
-      if (!global_constants_ht) {
-	REGISTER_SO(global_constants_ht);
-	global_constants_ht = scheme_map_constants_to_globals();
       }
 
       if (compact) {

@@ -417,7 +417,7 @@ Scheme_Object *scheme_none_symbol, *scheme_line_symbol, *scheme_block_symbol;
 static Scheme_Object *exact_symbol;
 
 #define READ_STRING_BYTE_BUFFER_SIZE 1024
-static char *read_string_byte_buffer;
+static THREAD_LOCAL char *read_string_byte_buffer;
 
 #define fail_err_symbol scheme_false
 
@@ -576,7 +576,6 @@ scheme_init_port (Scheme_Env *env)
 
   scheme_add_global_constant("shell-execute", scheme_make_prim_w_arity(sch_shell_execute, "shell-execute", 5, 5), env);
 
-  REGISTER_SO(read_string_byte_buffer);
 
   scheme_add_evt(scheme_progress_evt_type, (Scheme_Ready_Fun)progress_evt_ready, NULL, NULL, 1);
   scheme_add_evt(scheme_write_evt_type, (Scheme_Ready_Fun)rw_evt_ready, rw_evt_wakeup, NULL, 1);
@@ -584,6 +583,7 @@ scheme_init_port (Scheme_Env *env)
 
 void scheme_init_port_places(void)
 {
+  REGISTER_SO(read_string_byte_buffer);
   REGISTER_SO(scheme_orig_stdout_port);
   REGISTER_SO(scheme_orig_stderr_port);
   REGISTER_SO(scheme_orig_stdin_port);

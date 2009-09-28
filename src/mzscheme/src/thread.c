@@ -257,7 +257,7 @@ static THREAD_LOCAL Scheme_Object *recycle_cell;
 static THREAD_LOCAL Scheme_Object *maybe_recycle_cell;
 static THREAD_LOCAL int recycle_cc_count;
 	
-static mz_jmp_buf main_init_error_buf;
+static THREAD_LOCAL mz_jmp_buf main_init_error_buf;
 	
 #ifdef MZ_PRECISE_GC
 /* This is a trick to get the types right. Note that 
@@ -5198,8 +5198,8 @@ typedef struct Evt {
   int can_redirect;
 } Evt;
 
-static THREAD_LOCAL int evts_array_size;
-static THREAD_LOCAL Evt **evts;
+static int evts_array_size;
+static Evt **evts;
 
 void scheme_add_evt(Scheme_Type type,
 		    Scheme_Ready_Fun ready, 

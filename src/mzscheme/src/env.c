@@ -428,6 +428,7 @@ static Scheme_Env *place_instance_init_post_kernel() {
   /* error handling and buffers */
   /* this check prevents initializing orig ports twice for the first initial
    * place.  The kernel initializes orig_ports early. */
+  scheme_init_fun_places();
   if (!scheme_orig_stdout_port) {
     scheme_init_port_places();
   }
@@ -626,6 +627,8 @@ static void make_kernel_env(void)
   scheme_install_type_writer(scheme_resolve_prefix_type, write_resolve_prefix);
   scheme_install_type_reader2(scheme_resolve_prefix_type, read_resolve_prefix);
 
+  register_network_evts();
+
   REGISTER_SO(kernel_symbol);
   kernel_symbol = scheme_intern_symbol("#%kernel");
 
@@ -643,6 +646,8 @@ static void make_kernel_env(void)
 #endif
 
   init_unsafe(env);
+  
+  scheme_init_print_global_constants();
 
   scheme_defining_primitives = 0;
 }

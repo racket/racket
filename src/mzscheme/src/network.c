@@ -212,8 +212,6 @@ static int udp_evt_check_ready(Scheme_Object *uw, Scheme_Schedule_Info *sinfo);
 static void udp_evt_needs_wakeup(Scheme_Object *_uw, void *fds);
 #endif
 
-static void register_tcp_listener_sync();
-
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
@@ -2290,7 +2288,7 @@ tcp_accept_break(int argc, Scheme_Object *argv[])
   return scheme_call_enable_break(tcp_accept, argc, argv);
 }
 
-static void register_tcp_listener_sync()
+void register_network_evts()
 {
 #ifdef USE_TCP
   scheme_add_evt(scheme_listener_type, tcp_check_accept, tcp_accept_needs_wakeup, NULL, 0);
