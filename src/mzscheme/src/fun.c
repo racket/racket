@@ -559,6 +559,7 @@ scheme_init_fun (Scheme_Env *env)
     Scheme_Object *a[1];
     a[0] = scheme_intern_symbol("default");
     scheme_default_prompt_tag = make_prompt_tag(1, a);
+    scheme_hash_key(SCHEME_PTR_VAL(scheme_default_prompt_tag));
   }
 
   REGISTER_SO(original_default_prompt);
