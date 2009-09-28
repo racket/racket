@@ -3038,7 +3038,7 @@ extern char *scheme_convert_from_wchar(const wchar_t *ws);
 # define USE_SOCKETS_TCP
 #endif
 
-extern int scheme_active_but_sleeping;
+extern THREAD_LOCAL int scheme_active_but_sleeping;
 extern int scheme_file_open_count;
 
 typedef struct Scheme_Indexed_String {
