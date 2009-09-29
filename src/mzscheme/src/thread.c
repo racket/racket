@@ -192,7 +192,7 @@ extern int GC_is_marked(void *);
    to the target thread. */
 static THREAD_LOCAL Scheme_Thread *swap_target;
 
-static Scheme_Object *scheduled_kills;
+static THREAD_LOCAL Scheme_Object *scheduled_kills;
 
 Scheme_Object *scheme_parameterization_key;
 Scheme_Object *scheme_exn_handler_key;
