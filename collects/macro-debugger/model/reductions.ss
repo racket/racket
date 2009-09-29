@@ -118,12 +118,13 @@
         [#:pass1]
         [Expr ?inner inner]
         [#:pattern ?form]
+        [#:let oldform #'?form]
         [#:with-visible-form
          [#:left-foot]
          [#:set-syntax (stx-car (stx-cdr #'?form))]
          [#:step 'macro]]
         [#:pass2]
-        [#:set-syntax (stx-car (stx-cdr #'?form))]
+        [#:set-syntax (stx-car (stx-cdr oldform))]
         [#:rename ?form untag])]
     [(Wrap p:if (e1 e2 rs ?1 test then else))
      (R [! ?1]
