@@ -1,15 +1,9 @@
-Version 4.2.1.8
+Version 4.2.2, September 2009
 Added scheme/unsafe/ops
-
-Version 4.2.1.7
+Added print-syntax-width
+Added file-or-directory-identity
 Inside: embedding applications should call scheme_seal_parameters
  after initializing parameter values (currently used by Planet)
-
-Version 4.2.1.6
-Added print-syntax-width
-
-Version 4.2.1.5
-Added file-or-directory-identity
 
 Version 4.2.1, July 2009
 Added string->unreadable-symbol and symbol-interned?
