@@ -4,7 +4,7 @@
          (for-syntax scheme/base))
 
 (provide trace untrace
-         current-trace-print-args trace-apply
+         current-trace-print-args trace-call
          current-trace-notify
          current-prefix-out current-prefix-in)
 
