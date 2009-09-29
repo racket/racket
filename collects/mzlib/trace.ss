@@ -179,7 +179,7 @@
 ;;  the nesting depth:
 (define -:trace-level-key (gensym))
 
-(define trace-apply
+(define trace-call
   (make-keyword-procedure
    (lambda (id f kws vals . args)
      (do-traced id args kws vals f))
@@ -195,9 +195,7 @@
                   -:trace-level-key)]
          [level (if (null? levels) 0 (car levels))])
     ;; Tentatively push the new depth level:
-    (with-continuation-mark
-        -:trace-level-key
-      (add1 level)
+    (with-continuation-mark -:trace-level-key (add1 level)
       ;; Check for tail-call => car of levels replaced,
       ;;  which means that the first two new marks are
       ;;  not consecutive:
@@ -212,9 +210,7 @@
             ;;  call will.
             (begin
               (-:trace-print-args id args kws kw-vals (sub1 level))
-              (with-continuation-mark
-                  -:trace-level-key
-                (car levels)
+              (with-continuation-mark -:trace-level-key (car levels)
                 (if (null? kws)
                     (apply real-value args)
                     (keyword-apply real-value kws kw-vals args))))
@@ -224,22 +220,19 @@
             ;;  tail-call detection the next time around):
             (begin
               (-:trace-print-args id args kws kw-vals level)
-              (with-continuation-mark
-                  -:trace-level-key
-                level
-                (call-with-values (lambda () 
-                                    (with-continuation-mark
-                                        -:trace-level-key
-                                      (add1 level)
-                                      (if (null? kws)
-                                          (apply real-value args)
-                                          (keyword-apply real-value kws kw-vals args))))
-                                  (lambda results
-                                    (flush-output)
-                                    ;; Print the results:
-                                    (-:trace-print-results id results level)
-                                    ;; Return the results:
-                                    (apply values results))))))))))
+              (with-continuation-mark -:trace-level-key level
+                (call-with-values
+                    (lambda ()
+                      (with-continuation-mark -:trace-level-key (add1 level)
+                        (if (null? kws)
+                          (apply real-value args)
+                          (keyword-apply real-value kws kw-vals args))))
+                    (lambda results
+                      (flush-output)
+                      ;; Print the results:
+                      (-:trace-print-results id results level)
+                      ;; Return the results:
+                      (apply values results))))))))))
 
 (define-for-syntax (check-ids stx ids)
   (for ([id (in-list (syntax->list ids))])
