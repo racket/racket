@@ -210,7 +210,7 @@
            [enable-breaks?
             (parameterize-break #t (write-bytes (subbytes bytes start end) port))]
            [can-buffer/block?
-            (write-bytes (subbytes start end) port)]
+            (write-bytes (subbytes bytes start end) port)]
            [else
             (write-bytes-avail* (subbytes bytes start end) port)])))
     (lambda ()
