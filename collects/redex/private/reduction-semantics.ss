@@ -1480,7 +1480,7 @@
                                       (parameterize ([current-trace-print-args
                                                       (λ (name args kws kw-args level)
                                                         (ot name (car args) kws kw-args level))])
-                                        (trace-apply name metafunc '() '() exp))
+                                        (trace-call name metafunc exp))
                                       (metafunc exp)))])
         traced-metafunc)
       compiled-patterns

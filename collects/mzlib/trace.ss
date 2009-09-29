@@ -179,7 +179,12 @@
 ;;  the nesting depth:
 (define -:trace-level-key (gensym))
 
-(define (trace-apply id f kws kw-vals . args) (do-traced id args kws kw-vals f))
+(define trace-apply
+  (make-keyword-procedure
+   (lambda (id f kws vals . args)
+     (do-traced id args kws vals f))
+   (lambda (id f . args)
+     (do-traced id args '() '() f))))
 
 ;; Apply a traced procedure to arguments, printing arguments
 ;; and results. We set and inspect the -:trace-level-key continuation
@@ -236,58 +241,35 @@
                                     ;; Return the results:
                                     (apply values results))))))))))
 
-(define-syntax trace
-  (lambda (stx)
-    (syntax-case stx ()
-      [(_ id ...)
-       (let ([ids (syntax->list (syntax (id ...)))])
-         (for-each (lambda (id)
-                     (unless (identifier? id)
-                       (raise-syntax-error
-                        #f
-                        "not an identifier"
-                        stx
-                        id)))
-                   ids)
-         (with-syntax ([(traced-name ...)
-                        (map (lambda (id)
-                               (datum->syntax
-                                id
-                                (string->symbol
-                                 (string-append "traced-"
-                                                (symbol->string (syntax-e id))))
-                                #f))
-                             ids)])
-           #'(do-trace
-              '(id ...)
-              (list id ...)
-              (list (lambda (v) (set! id v)) ...)
-              (list
-               (let ([real-value id])
-                 (let ([traced-name
-                        (make-keyword-procedure
-                         (lambda (kws vals . args)
-                           (do-traced 'id args kws vals real-value))
-                         (lambda args
-                           (do-traced 'id args null null real-value)))])
-                   traced-name))
-               ...))))])))
+(define-for-syntax (check-ids stx ids)
+  (for ([id (in-list (syntax->list ids))])
+    (unless (identifier? id)
+      (raise-syntax-error #f "not an identifier" stx id)))
+  #t)
 
-(define-syntax untrace
-  (lambda (stx)
-    (syntax-case stx ()
-      [(_ id ...)
-       (let ([ids (syntax->list (syntax (id ...)))])
-         (for-each (lambda (id)
-                     (unless (identifier? id)
-                       (raise-syntax-error
-                        #f
-                        "not an identifier"
-                        stx
-                        id)))
-                   ids)
-         (syntax
-          (begin
-            (when (traced-proc? id)
-              (set! id (traced-proc-ref id 1)))
-            ...)))])))
+(define-syntax (trace stx)
+  (syntax-case stx ()
+    [(_ id ...) (check-ids stx #'(id ...))
+     (with-syntax ([(tid ...)
+                    (for/list ([id (in-list (syntax->list #'(id ...)))])
+                      (let ([tid (format "traced-~a" (syntax-e id))])
+                        (datum->syntax id (string->symbol tid) #f)))])
+       #'(do-trace
+          '(id ...)
+          (list id ...)
+          (list (lambda (v) (set! id v)) ...)
+          (list (let* ([real-value id]
+                       [tid (make-keyword-procedure
+                             (lambda (kws vals . args)
+                               (do-traced 'id args kws vals real-value))
+                             (lambda args
+                               (do-traced 'id args null null real-value)))])
+                  tid)
+                ...)))]))
+
+(define-syntax (untrace stx)
+  (syntax-case stx ()
+    [(_ id ...) (check-ids stx #'(id ...))
+     #'(begin (when (traced-proc? id)
+                (set! id (traced-proc-ref id 1)))
+              ...)]))

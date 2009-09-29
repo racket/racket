@@ -57,10 +57,11 @@ result is converted into a string using @scheme[pretty-print].  The
 parameter's default value prints the given string followed by a newline to
 @scheme[(current-output-port)].}
 
-@defproc[(trace-apply [id symbol?] [proc procedure?] [kws (listof keyword)] [kw-vals list?] [arg any/c] ...) any/c]{
+@defproc[(trace-call [id symbol?] [proc procedure?]
+                     [#:<kw> kw-arg any/c] ...) any/c]{
 
 Calls @scheme[proc] with the arguments supplied in
-@scheme[args], @scheme[kws], and @scheme[kw-vals]. Also prints out the
+@scheme[args], and possibly using keyword arguments. Also prints out the
 trace information during the call, as described above in the docs for
 @scheme[trace], using @scheme[id] as the name of @scheme[proc].
 
