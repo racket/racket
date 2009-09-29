@@ -17,13 +17,22 @@ along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 MA 02111-1307, USA. */
 
+#ifdef MZ_USE_PLACES
+# if _MSC_VER
+#  define THREAD_LOCAL __declspec(thread)
+# else
+#  define THREAD_LOCAL __thread
+# endif
+#else
+# define THREAD_LOCAL /* empty */
+#endif
 
 #define _FORCE_INLINES
 #define _EXTERN_INLINE /* empty */
 
 extern void *scheme_malloc_gmp(unsigned long, void **mem_pool);
 extern void scheme_free_gmp(void *, void **mem_pool);
-static void *mem_pool = 0;
+static THREAD_LOCAL void *mem_pool = 0;
 #define MALLOC(amt) scheme_malloc_gmp(amt, &mem_pool)
 #define FREE(p, s) scheme_free_gmp(p, &mem_pool)
 
@@ -5688,11 +5697,11 @@ unsigned char __clz_tab[] =
 
 typedef struct tmp_stack tmp_stack;
 
-static unsigned long max_total_allocation = 0;
-static unsigned long current_total_allocation = 0;
+static THREAD_LOCAL unsigned long max_total_allocation = 0;
+static THREAD_LOCAL unsigned long current_total_allocation = 0;
 
-static tmp_stack xxx = {&xxx, &xxx, 0};
-static tmp_stack *current = &xxx;
+static THREAD_LOCAL tmp_stack xxx = {0, 0, 0};
+static THREAD_LOCAL tmp_stack *current = 0;
 
 /* The rounded size of the header of each allocation block.  */
 #define HSIZ ((sizeof (tmp_stack) + __TMP_ALIGN - 1) & -__TMP_ALIGN)
@@ -5783,6 +5792,13 @@ __gmp_tmp_free (mark)
       FREE (tmp, (char *) tmp->end - (char *) tmp);
     }
   current->alloc_point = mark->alloc_point;
+}
+
+void scheme_init_gmp_places() {
+  xxx.end = &xxx;
+  xxx.alloc_point = &xxx;
+  xxx.prev = 0;
+  current = &xxx;
 }
 
 void scheme_gmp_tls_init(long *s) 

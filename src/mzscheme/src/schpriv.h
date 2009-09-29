@@ -232,6 +232,7 @@ void scheme_init_regexp_places(void);
 void scheme_init_stx_places(void);
 void scheme_init_fun_places(void);
 void scheme_init_sema_places(void);
+void scheme_init_gmp_places(void);
 void scheme_init_print_global_constants(void);
 
 void register_network_evts();

@@ -438,6 +438,7 @@ static Scheme_Env *place_instance_init_post_kernel() {
   scheme_init_regexp_places();
   scheme_init_stx_places();
   scheme_init_sema_places();
+  scheme_init_gmp_places();
 
   env = scheme_make_empty_env();
   scheme_set_param(scheme_current_config(), MZCONFIG_ENV, (Scheme_Object *)env); 
