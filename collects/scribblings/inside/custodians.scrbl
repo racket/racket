@@ -64,7 +64,16 @@ down, then @var{f} is called immediately, and the result is
 @function[(void scheme_custodian_check_available
            [Scheme_Custodian* m]
            [const-char* name]
-           [const-char* resname]
+           [const-char* resname])]{
+
+Checks whether @var{m} is already shut down, and raises an error if
+  so.  If @var{m} is @cpp{NULL}, the current custodian is used. The
+  @var{name} argument is used for error reporting. The @var{resname}
+  argument will likely be used for checking pre-set limits in the
+  future; pre-set limits will have symbolic names, and the
+  @var{resname} string will be compared to the symbols.}
+
+@function[(void scheme_remove_managed
            [Scheme_Custodian_Reference* mref]
            [Scheme_Object* o])]{
 
