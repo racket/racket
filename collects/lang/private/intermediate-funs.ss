@@ -19,7 +19,7 @@
     )
 
    ("Lists"
-     (append ((listof any) ... -> (listof any))
+     ((intermediate-append append) ((listof any) ... -> (listof any))
        "to create a single list from several, by juxtaposition of the items"))
 
    ("Higher-Order Functions"
