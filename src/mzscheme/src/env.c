@@ -397,6 +397,7 @@ static void place_instance_init_pre_kernel(void *stack_base) {
 
 static void init_unsafe(Scheme_Env *env)
 {
+  Scheme_Module_Phase_Exports *pt;
   REGISTER_SO(unsafe_env);
 
   unsafe_env = scheme_primitive_module(scheme_intern_symbol("#%unsafe"), env);
@@ -408,6 +409,8 @@ static void init_unsafe(Scheme_Env *env)
   scheme_init_unsafe_vector(unsafe_env);
 
   scheme_finish_primitive_module(unsafe_env);
+  pt = unsafe_env->module->me->rt;
+  scheme_populate_pt_ht(pt);
   scheme_protect_primitive_provide(unsafe_env, NULL);
 
 #if USE_COMPILED_STARTUP

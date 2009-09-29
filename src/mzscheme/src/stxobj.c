@@ -3792,6 +3792,20 @@ static int check_matching_marks(Scheme_Object *p, Scheme_Object *orig_id, Scheme
   }
 }
 
+
+void scheme_populate_pt_ht(Scheme_Module_Phase_Exports * pt) {
+  if (!pt->ht) {
+    /* Lookup table (which is created lazily) not yet created, so do that now... */
+    Scheme_Hash_Table *ht;
+    int i;
+    ht = scheme_make_hash_table(SCHEME_hash_ptr);
+    for (i = pt->num_provides; i--; ) {
+      scheme_hash_set(ht, pt->provides[i], scheme_make_integer(i));
+    }
+    pt->ht = ht;
+  }
+}
+
 static Scheme_Object *search_shared_pes(Scheme_Object *shared_pes, 
                                         Scheme_Object *glob_id, Scheme_Object *orig_id,
                                         Scheme_Object **get_names, int get_orig_name,
@@ -3815,11 +3829,7 @@ static Scheme_Object *search_shared_pes(Scheme_Object *shared_pes,
     if (!pt->ht) {
       /* Lookup table (which is created lazily) not yet created, so do that now... */
       EXPLAIN(fprintf(stderr, "%d     {create lookup}\n", depth));
-      ht = scheme_make_hash_table(SCHEME_hash_ptr);
-      for (i = pt->num_provides; i--; ) {
-        scheme_hash_set(ht, pt->provides[i], scheme_make_integer(i));
-      }
-      pt->ht = ht;
+      scheme_populate_pt_ht(pt);
     }
 
     pos = scheme_hash_get(pt->ht, glob_id);
