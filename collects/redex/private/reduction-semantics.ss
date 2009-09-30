@@ -994,18 +994,18 @@
                           (symbol->string (bind-name y))))))
 
 (define-values (struct:metafunc-proc make-metafunc-proc metafunc-proc? metafunc-proc-ref metafunc-proc-set!)
-  (make-struct-type 'metafunc-proc #f 11 0 #f null (current-inspector) 0))
+  (make-struct-type 'metafunc-proc #f 8 0 #f null (current-inspector) 0))
 (define metafunc-proc-pict-info (make-struct-field-accessor metafunc-proc-ref 1))
 (define metafunc-proc-lang (make-struct-field-accessor metafunc-proc-ref 2))
 (define metafunc-proc-multi-arg? (make-struct-field-accessor metafunc-proc-ref 3))
 (define metafunc-proc-name (make-struct-field-accessor metafunc-proc-ref 4))
-(define metafunc-proc-cps (make-struct-field-accessor metafunc-proc-ref 5))
-(define metafunc-proc-rhss (make-struct-field-accessor metafunc-proc-ref 6))
-(define metafunc-proc-in-dom? (make-struct-field-accessor metafunc-proc-ref 7))
-(define metafunc-proc-dom-pat (make-struct-field-accessor metafunc-proc-ref 8))
-(define metafunc-proc-lhs-pats (make-struct-field-accessor metafunc-proc-ref 9))
-(define metafunc-proc-src-locs (make-struct-field-accessor metafunc-proc-ref 10))
+(define metafunc-proc-in-dom? (make-struct-field-accessor metafunc-proc-ref 5))
+(define metafunc-proc-dom-pat (make-struct-field-accessor metafunc-proc-ref 6))
+(define metafunc-proc-cases (make-struct-field-accessor metafunc-proc-ref 7))
+
 (define-struct metafunction (proc))
+
+(define-struct metafunc-case (cp rhs lhs-pat src-loc))
 
 (define-syntax (in-domain? stx)
   (syntax-case stx ()
@@ -1194,20 +1194,22 @@
                                        [dsc `dom-side-conditions-rewritten]
                                        cp-let-bindings ... ...
                                        rg-cp-let-bindings ... ...)
-                                   (let ([rg-sc `(rg-side-conditions-rewritten ...)])
+                                   (let ([cases (map (λ (pat rhs-fn rg-lhs src)
+                                                       (make-metafunc-case
+                                                        (compile-pattern lang pat #t) rhs-fn rg-lhs src))
+                                                     sc
+                                                     (list rhs-fns ...)
+                                                     `(rg-side-conditions-rewritten ...)
+                                                     `(clause-src ...))]
+                                         [parent-cases 
+                                          #,(if prev-metafunction
+                                                #`(metafunc-proc-cases #,(term-fn-get-id (syntax-local-value prev-metafunction)))
+                                                #'null)])
                                      (build-metafunction 
                                       lang
-                                      sc
-                                      (list rhs-fns ...)
-                                      #,(if prev-metafunction
-                                            (let ([term-fn (syntax-local-value prev-metafunction)])
-                                              #`(metafunc-proc-cps #,(term-fn-get-id term-fn)))
-                                            #''())
-                                      #,(if prev-metafunction
-                                            (let ([term-fn (syntax-local-value prev-metafunction)])
-                                              #`(metafunc-proc-rhss #,(term-fn-get-id term-fn)))
-                                            #''())
-                                      (λ (f/dom cps rhss)
+                                      cases
+                                      parent-cases
+                                      (λ (f/dom)
                                         (make-metafunc-proc
                                          (let ([name (lambda (x) (f/dom x))]) name)
                                          ;; !! This code goes back to phase 1 to call `to-lw', but it's delayed
@@ -1234,14 +1236,14 @@
                                                        [((where/sc/lw ...) ...)
                                                         ;; Also for pict, extract where bindings
                                                         (map (λ (hm)
-                                                                (map
-                                                                 (λ (lst)
-                                                                    (syntax-case lst (side-condition where)
-                                                                      [(where pat exp)
-                                                                       #`(cons #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
-                                                                      [(side-condition x)
-                                                                       (to-lw/uq/proc #'x)]))
-                                                                 (reverse (syntax->list hm))))
+                                                               (map
+                                                                (λ (lst)
+                                                                  (syntax-case lst (side-condition where)
+                                                                    [(where pat exp)
+                                                                     #`(cons #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
+                                                                    [(side-condition x)
+                                                                     (to-lw/uq/proc #'x)]))
+                                                                (reverse (syntax->list hm))))
                                                              (syntax->list #'(... seq-of-tl-side-cond/binds)))]
                                                        
                                                        [(((rhs-bind-id/lw . rhs-bind-pat/lw/uq) ...) ...)
@@ -1249,7 +1251,7 @@
                                                         (map (λ (x) (map (λ (x) (cons (to-lw/proc (car x)) (to-lw/uq/proc (cdr x))))
                                                                          (extract-term-let-binds x)))
                                                              (syntax->list #'(... seq-of-rhs)))]
-
+                                                       
                                                        [(x-lhs-for-lw ...) #'(... seq-of-lhs-for-lw)])
                                                     #'(list (list x-lhs-for-lw
                                                                   (list (cons bind-id/lw bind-pat/lw) ...
@@ -1261,12 +1263,9 @@
                                          lang
                                          #t ;; multi-args?
                                          'name
-                                         cps
-                                         rhss
                                          (let ([name (lambda (x) (name-predicate x))]) name)
                                          dsc
-                                         rg-sc
-                                         `(clause-src ...)))
+                                         (append cases parent-cases)))
                                       dsc
                                       `codom-side-conditions-rewritten
                                       'name
@@ -1392,10 +1391,8 @@
                                      "expected a side-condition or where clause"
                                      (car stuff))])]))]))))
 
-(define (build-metafunction lang patterns rhss old-cps old-rhss wrap dom-contract-pat codom-contract-pat name relation?)
-  (let ([compiled-patterns (append old-cps
-                                   (map (λ (pat) (compile-pattern lang pat #t)) patterns))]
-        [dom-compiled-pattern (and dom-contract-pat (compile-pattern lang dom-contract-pat #f))]
+(define (build-metafunction lang cases parent-cases wrap dom-contract-pat codom-contract-pat name relation?)
+  (let ([dom-compiled-pattern (and dom-contract-pat (compile-pattern lang dom-contract-pat #f))]
         [codom-compiled-pattern (compile-pattern lang codom-contract-pat #f)])
     (values
      (wrap
@@ -1411,24 +1408,21 @@
                            (redex-error name
                                         "~s is not in my domain"
                                         `(,name ,@exp))))
-                       (let loop ([patterns compiled-patterns]
-                                  [rhss (append old-rhss rhss)]
-                                  [num (- (length old-cps))])
+                       (let loop ([cases (append cases parent-cases)]
+                                  [num (- (length parent-cases))])
                          (cond
-                           [(null? patterns) 
+                           [(null? cases) 
                             (if relation?
                                 (begin 
                                   (hash-set! cache exp #f)
                                   #f)
                                 (redex-error name "no clauses matched for ~s" `(,name . ,exp)))]
                            [else
-                            (let ([pattern (car patterns)]
-                                  [rhs (car rhss)])
+                            (let ([pattern (metafunc-case-cp (car cases))]
+                                  [rhs (metafunc-case-rhs (car cases))])
                               (let ([mtchs (match-pattern pattern exp)])
                                 (cond
-                                  [(not mtchs) (loop (cdr patterns)
-                                                     (cdr rhss)
-                                                     (+ num 1))]
+                                  [(not mtchs) (loop (cdr cases) (+ num 1))]
                                   [relation? 
                                    (let ([ans
                                           (ormap (λ (mtch) (ormap values (rhs traced-metafunc (mtch-bindings mtch))))
@@ -1440,9 +1434,7 @@
                                         (hash-set! cache exp #t)
                                         #t]
                                        [else
-                                        (loop (cdr patterns)
-                                              (cdr rhss)
-                                              (+ num 1))]))]
+                                        (loop (cdr cases) (+ num 1))]))]
                                   [else
                                    (let ([anss (apply append
                                                       (filter values
@@ -1452,9 +1444,7 @@
                                      (for-each (λ (ans) (hash-set! ht ans #t)) anss)
                                      (cond
                                        [(null? anss)
-                                        (loop (cdr patterns)
-                                              (cdr rhss)
-                                              (+ num 1))]
+                                        (loop (cdr cases) (+ num 1))]
                                        [(not (= 1 (hash-count ht)))
                                         (redex-error name "~a matched ~s ~a different ways and returned different results" 
                                                      (if (< num 0)
@@ -1482,12 +1472,10 @@
                                                         (ot name (car args) kws kw-args level))])
                                         (trace-call name metafunc exp))
                                       (metafunc exp)))])
-        traced-metafunc)
-      compiled-patterns
-      rhss)
+        traced-metafunc))
      (if dom-compiled-pattern
          (λ (exp) (and (match-pattern dom-compiled-pattern exp) #t))
-         (λ (exp) (and (ormap (λ (pat) (match-pattern pat exp)) compiled-patterns) 
+         (λ (exp) (and (ormap (λ (case) (match-pattern (metafunc-case-cp case) exp)) cases) 
                        #t))))))
 
 (define current-traced-metafunctions (make-parameter '()))
@@ -2149,13 +2137,11 @@
          metafunc-proc-pict-info
          metafunc-proc-name
          metafunc-proc-multi-arg?
-         metafunc-proc-cps
-         metafunc-proc-rhss
          metafunc-proc-in-dom?
          metafunc-proc-dom-pat
-         metafunc-proc-lhs-pats
-         metafunc-proc-src-locs
+         metafunc-proc-cases
          metafunc-proc?
+         (struct-out metafunc-case)
          
          (struct-out binds))
 

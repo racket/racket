@@ -445,16 +445,22 @@
       [(f (any_1 any_2 any_3)) 3])
     (define-metafunction/extension f empty-language
       [(g (any_1 any_2)) 2])
-    (test (term (g (1 2))) 2)
-    (test (term (g (1 2 3))) 3))
+    (define-metafunction/extension g empty-language
+      [(h (any_1)) 1])
+    (test (term (h (1))) 1)
+    (test (term (h (1 2))) 2)
+    (test (term (h (1 2 3))) 3))
   
   (let ()
     (define-metafunction empty-language
       [(f any_1 any_2 any_3) 3])
     (define-metafunction/extension f empty-language
       [(g any_1 any_2) 2])
-    (test (term (g 1 2)) 2)
-    (test (term (g 1 2 3)) 3))
+    (define-metafunction/extension g empty-language
+      [(h any_1) 1])
+    (test (term (h 1)) 1)
+    (test (term (h 1 2)) 2)
+    (test (term (h 1 2 3)) 3))
   
   (let ()
     (define-metafunction empty-language

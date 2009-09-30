@@ -767,7 +767,7 @@
                 (if source-stx
                     #`(let-values ([(metafunc/red-rel num-cases) 
                                     #,(cond [(and (identifier? source-stx) (metafunc source-stx))
-                                             => (λ (x) #`(values #,x (length (metafunc-proc-lhs-pats #,x))))]
+                                             => (λ (x) #`(values #,x (length (metafunc-proc-cases #,x))))]
                                             [else
                                              #`(let ([r (assert-rel 'redex-check #,source-stx)])
                                                  (values r (length (reduction-relation-make-procs r))))])])
@@ -858,7 +858,7 @@
   (let ([lang-gen (generate lang decisions@ custom retries what)])
     (let-values ([(pats srcs)
                   (cond [(metafunc-proc? mf/rr)
-                         (values (metafunc-proc-lhs-pats mf/rr)
+                         (values (map metafunc-case-lhs-pat (metafunc-proc-cases mf/rr))
                                  (metafunction-srcs mf/rr))]
                         [(reduction-relation? mf/rr)
                          (values (map (λ (rwp) ((rewrite-proc-lhs rwp) lang)) (reduction-relation-make-procs mf/rr))
@@ -911,8 +911,8 @@
        (reduction-relation-make-procs r)))
 
 (define (metafunction-srcs m)
-  (map (curry format "clause at ~a")
-       (metafunc-proc-src-locs m)))
+  (map (compose (curry format "clause at ~a") metafunc-case-src-loc)
+       (metafunc-proc-cases m)))
 
 (define-syntax (check-reduction-relation stx)
   (syntax-case stx ()
