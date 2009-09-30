@@ -45,6 +45,11 @@
 # include "unwind/libunwind.h"
 #endif
 
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Waddress"
+#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
+#endif
+
 #ifdef MZ_USE_JIT
 
 #ifdef __APPLE__
