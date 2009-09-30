@@ -296,11 +296,11 @@ flags:
 
 If at least one command-line argument is provided, and if the first
 one after any @tech{configuration option} is not a flag, then a
-@Flag{u}/@DFlag{require-script} flag is implicitly added before the
+@Flag{u}/@DFlag{--require-script} flag is implicitly added before the
 first non-flag argument.
 
 If no command-line arguments are supplied other than
-@tech{configuration options}, then the @Flag{i}/@DFlag{repl} flag is
+@tech{configuration options}, then the @Flag{i}/@DFlag{--repl} flag is
 effectively added.
 
 For MrEd under X11, the follow flags are recognized when they appear
