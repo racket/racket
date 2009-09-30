@@ -1062,33 +1062,38 @@ counters so that next time this function is called, it
 prints the test results for the next round of tests.
 }
 
-@defproc[(make-coverage [r reduction-relation?]) coverage?]{
-Constructs a structure to contain the per-case test coverage of
-the relation @scheme[r]. Use with @scheme[relation-coverage]
-and @scheme[covered-cases].
+@defform/subs[(make-coverage subject)
+              ([subject (code:line metafunction)
+                        (code:line relation-expr)])]{
+Constructs a structure (recognized by @scheme[coverage?])
+to contain per-case test coverage of the supplied metafunction
+or reduction relation. Use with @scheme[relation-coverage] and 
+@scheme[covered-cases].
 }
 
 @defproc[(coverage? [v any/c]) boolean?]{
 Returns @scheme[#t] for a value produced by @scheme[make-coverage]
 and @scheme[#f] for any other.}
 
-@defparam[relation-coverage c (or/c false/c coverage?)]{
-When @scheme[c] is a @scheme[coverage] structure, rather than 
-@scheme[#f] (the default), procedures such as
-@scheme[apply-reduction-relation], @scheme[traces], etc. count 
-the number applications of each case of the
-@scheme[reduction-relation], storing the results in @scheme[c].
-}
+@defparam[relation-coverage tracked (listof coverage?)]{
+Redex populates the coverage records in @scheme[tracked] (default @scheme[null]),
+counting the times that tests exercise each case of the associated metafunction
+and relations.}
 
 @defproc[(covered-cases 
           [c coverage?])
          (listof (cons/c string? natural-number/c))]{
 Extracts the coverage information recorded in @scheme[c], producing
-an association list mapping names to application counts.}
+an association list mapping names (or source locations, in the case of
+metafunctions or unnamed reduction-relation cases) to application counts.}
 
 @examples[
 #:eval redex-eval
        (define-language empty-lang)
+       
+       (define-metafunction empty-lang
+         [(plus number_1 number_2)
+          ,(+ (term number_1) (term number_2))])
        
        (define equals
          (reduction-relation 
@@ -1096,13 +1101,16 @@ an association list mapping names to application counts.}
           (--> (+) 0 "zero")
           (--> (+ number) number)
           (--> (+ number_1 number_2 number ...)
-               (+ ,(+ (term number_1) (term number_2))
+               (+ (plus number_1 number_2)
                   number ...)
                "add")))
-       (let ([coverage (make-coverage equals)])
-         (parameterize ([relation-coverage coverage])
+       (let ([equals-coverage (make-coverage equals)]
+             [plus-coverage (make-coverage plus)])
+         (parameterize ([relation-coverage (list equals-coverage 
+                                                 plus-coverage)])
            (apply-reduction-relation* equals (term (+ 1 2 3)))
-           (covered-cases coverage)))]
+           (values (covered-cases equals-coverage)
+                   (covered-cases plus-coverage))))]
 
 @defform/subs[(generate-term language @#,ttpattern size-exp kw-args ...)
               ([kw-args (code:line #:attempts attempts-expr)
@@ -1131,7 +1139,7 @@ argument @scheme[retries-expr] (default @scheme[100]) bounds the number of times
 @scheme[generate-term] is unable to produce a satisfying term after 
 @scheme[retries-expr] attempts, it raises an exception recognized by
 @scheme[exn:fail:redex:generation-failure?].}
-
+                                                            
 @defform/subs[(redex-check language @#,ttpattern property-expr kw-arg ...)
               ([kw-arg (code:line #:attempts attempts-expr)
                        (code:line #:source metafunction)

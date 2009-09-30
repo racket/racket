@@ -727,8 +727,14 @@
                                                   body-code)])
                                   (cond
                                     [really-matched
-                                     (when (relation-coverage)
-                                       (cover-case case-id name (relation-coverage)))
+                                     (for-each
+                                      (λ (c)
+                                        (let ([r (coverage-relation c)])
+                                          (when (and (reduction-relation? r)
+                                                     (memf (λ (r) (eq? case-id (rewrite-proc-id r)))
+                                                           (reduction-relation-make-procs r)))
+                                            (cover-case case-id c))))
+                                      (relation-coverage))
                                      (loop (cdr mtchs) 
                                            (map/mt (λ (x) (list name (f x))) really-matched acc))]
                                     [else 
@@ -933,27 +939,41 @@
    (rewrite-proc-lhs child-make-proc)
    (rewrite-proc-id child-make-proc)))
 
-(define relation-coverage (make-parameter #f))
+(define relation-coverage (make-parameter null))
 
-(define (cover-case id name cov)
-  (hash-update! (coverage-unwrap cov) id 
-                (λ (c) (cons (car c) (add1 (cdr c))))
-                (λ () (raise-user-error 
-                       'relation-coverage
-                       "coverage structure not initilized for this relation"))))
+(define (cover-case id cov)
+  (hash-update! (coverage-counts cov) id 
+                (λ (c) (cons (car c) (add1 (cdr c))))))
 
 (define (covered-cases cov)
-  (hash-map (coverage-unwrap cov) (λ (k v) v)))
+  (hash-map (coverage-counts cov) (λ (k v) v)))
 
-(define-struct coverage (unwrap))
+(define-struct coverage (relation counts))
 
-(define (fresh-coverage relation)
-  (let ([h (make-hasheq)])
-    (for-each 
-     (λ (rwp) 
-       (hash-set! h (rewrite-proc-id rwp) (cons (or (rewrite-proc-name rwp) "unnamed") 0)))
-     (reduction-relation-make-procs relation))
-    (make-coverage h)))
+(define-syntax (fresh-coverage stx)
+  (syntax-case stx ()
+    [(name subj-stx)
+     (with-syntax ([subj
+                    (cond [(and (identifier? (syntax subj-stx))
+                                (let ([tf (syntax-local-value (syntax subj-stx) (λ () #f))])
+                                  (and (term-fn? tf) (term-fn-get-id tf))))
+                           => values]
+                          [else (syntax (let ([r subj-stx])
+                                          (if (reduction-relation? r)
+                                              r
+                                              (raise-type-error 'name "reduction-relation" r))))])])
+       (syntax
+        (let ([h (make-hasheq)])
+          (cond [(metafunc-proc? subj)
+                 (for-each
+                  (λ (c) (hash-set! h (metafunc-case-id c) (cons (metafunc-case-src-loc c) 0)))
+                  (metafunc-proc-cases subj))]
+                [(reduction-relation? subj)
+                 (for-each 
+                  (λ (rwp) 
+                    (hash-set! h (rewrite-proc-id rwp) (cons (or (rewrite-proc-name rwp) (rewrite-proc-lhs-src rwp)) 0)))
+                  (reduction-relation-make-procs subj))])
+          (make-coverage subj h))))]))
 
 (define-syntax (test-match stx)
   (syntax-case stx ()
@@ -1005,7 +1025,7 @@
 
 (define-struct metafunction (proc))
 
-(define-struct metafunc-case (cp rhs lhs-pat src-loc))
+(define-struct metafunc-case (cp rhs lhs-pat src-loc id))
 
 (define-syntax (in-domain? stx)
   (syntax-case stx ()
@@ -1196,7 +1216,7 @@
                                        rg-cp-let-bindings ... ...)
                                    (let ([cases (map (λ (pat rhs-fn rg-lhs src)
                                                        (make-metafunc-case
-                                                        (compile-pattern lang pat #t) rhs-fn rg-lhs src))
+                                                        (compile-pattern lang pat #t) rhs-fn rg-lhs src (gensym)))
                                                      sc
                                                      (list rhs-fns ...)
                                                      `(rg-side-conditions-rewritten ...)
@@ -1398,6 +1418,16 @@
      (wrap
       (letrec ([cache (make-hash)]
                [not-in-cache (gensym)]
+               [log-coverage (λ (id)
+                               (when id
+                                 (for-each 
+                                  (λ (c)
+                                    (let ([r (coverage-relation c)])
+                                      (when (and (metafunc-proc? r)
+                                                 (findf (λ (c) (eq? id (metafunc-case-id c)))
+                                                        (metafunc-proc-cases r)))
+                                        (cover-case id c))))
+                                  (relation-coverage))))]
                [metafunc
                 (λ (exp)
                   (let ([cache-ref (hash-ref cache exp not-in-cache)])
@@ -1414,12 +1444,13 @@
                            [(null? cases) 
                             (if relation?
                                 (begin 
-                                  (hash-set! cache exp #f)
+                                  (hash-set! cache exp (cons #f #f))
                                   #f)
                                 (redex-error name "no clauses matched for ~s" `(,name . ,exp)))]
                            [else
                             (let ([pattern (metafunc-case-cp (car cases))]
-                                  [rhs (metafunc-case-rhs (car cases))])
+                                  [rhs (metafunc-case-rhs (car cases))]
+                                  [id (metafunc-case-id (car cases))])
                               (let ([mtchs (match-pattern pattern exp)])
                                 (cond
                                   [(not mtchs) (loop (cdr cases) (+ num 1))]
@@ -1431,7 +1462,8 @@
                                        (redex-error name "codomain test failed for ~s, call was ~s" ans `(,name ,@exp)))
                                      (cond
                                        [ans 
-                                        (hash-set! cache exp #t)
+                                        (hash-set! cache exp (cons #t id))
+                                        (log-coverage id)
                                         #t]
                                        [else
                                         (loop (cdr cases) (+ num 1))]))]
@@ -1459,10 +1491,12 @@
                                                          "codomain test failed for ~s, call was ~s"
                                                          ans 
                                                          `(,name ,@exp)))
-                                          (hash-set! cache exp ans)
+                                          (hash-set! cache exp (cons ans id))
+                                          (log-coverage id)
                                           ans)]))])))]))]
                       [else 
-                       cache-ref])))]
+                       (log-coverage (cdr cache-ref))
+                       (car cache-ref)])))]
                [ot (current-trace-print-args)]
                [traced-metafunc (lambda (exp)
                                   (if (or (eq? (current-traced-metafunctions) 'all)

@@ -1,7 +1,7 @@
-(module tl-test mzscheme
+(module tl-test scheme
   (require "../reduction-semantics.ss"
            "test-util.ss"
-           (only "matcher.ss" make-bindings make-bind)
+           (only-in "matcher.ss" make-bindings make-bind)
            scheme/match
            "struct.ss")
   
@@ -1616,33 +1616,121 @@
             [else #f])
           #t))
   
+  (let ([< (λ (c d) (string<? (car c) (car d)))])
+    
+    (let* ([R (reduction-relation
+               empty-language
+               (--> number (q ,(add1 (term number)))
+                    (side-condition (odd? (term number)))
+                    side-condition)
+               (--> 1 4 plain)
+               (==> 2 t
+                    shortcut)
+               with
+               [(--> (q a) b)
+                (==> a b)])]
+           [c (make-coverage R)])
+      (parameterize ([relation-coverage (list c)])
+        (apply-reduction-relation R 4)
+        (test (sort (covered-cases c) <)
+              '(("plain" . 0) ("shortcut" . 0) ("side-condition" . 0)))
+        
+        (apply-reduction-relation R 3)
+        (test (sort (covered-cases c) <)
+              '(("plain" . 0) ("shortcut" . 0) ("side-condition" . 1)))
+        
+        (apply-reduction-relation* R 1)
+        (test (sort (covered-cases c) <)
+              '(("plain" . 1) ("shortcut" . 1) ("side-condition" . 2)))))
+    
+    (let* ([S (reduction-relation
+               empty-language
+               (--> 1 1 uno))]
+           [S+ (extend-reduction-relation
+                S empty-language
+                (--> 2 2 dos))])
+      (let ([c (make-coverage S+)])
+        (parameterize ([relation-coverage (list c)])
+          (apply-reduction-relation S (term 1))
+          (test (sort (covered-cases c) <)
+                '(("dos" . 0) ("uno" . 1)))))
+      (let ([c (make-coverage S)])
+        (parameterize ([relation-coverage (list c)])
+          (apply-reduction-relation S+ (term 1))
+          (test (sort (covered-cases c) <)
+                '(("uno" . 1))))))
+    
+    (let* ([T (reduction-relation empty-language (--> any any))]
+           [c (make-coverage T)])
+      (parameterize ([relation-coverage (list c)])
+        (apply-reduction-relation T (term q))
+        (test (and (regexp-match #px"tl-test.ss:\\d+:\\d+" (caar (covered-cases c))) #t)
+              #t))))
+  
   (let* ([R (reduction-relation
              empty-language
-             (--> number (q ,(add1 (term number)))
-                  (side-condition (odd? (term number)))
-                  side-condition)
-             (--> 1 4)
-             (==> 2 t
-                  shortcut)
-             with
-             [(--> (q a) b)
-              (==> a b)])]
+             (--> any any id))]
          [c (make-coverage R)]
-         [< (λ (c d) (string<? (car c) (car d)))])
-    (parameterize ([relation-coverage c])
+         [c* (make-coverage R)])
+    (parameterize ([relation-coverage (list c c*)])
       (apply-reduction-relation R 4)
-      (test (sort (covered-cases c) <)
-            '(("shortcut" . 0) ("side-condition" . 0) ("unnamed" . 0)))
-      
-      (apply-reduction-relation R 3)
-      (test (sort (covered-cases c) <)
-            '(("shortcut" . 0) ("side-condition" . 1) ("unnamed" . 0)))
-      
-      (apply-reduction-relation* R 1)
-      (test (sort (covered-cases c) <)
-            '(("shortcut" . 1) ("side-condition" . 2) ("unnamed" . 1)))))
+      (test (covered-cases c) '(("id" . 1)))
+      (test (covered-cases c*) '(("id" . 1)))))
   
-  
+  (let* ([< (λ (c d) 
+              (let ([line-no (compose
+                              string->number
+                              second
+                              (curry regexp-match #px".*:(\\d+):\\d+"))])
+                (< (line-no (car c)) (line-no (car d)))))]
+         [src-ok? (curry regexp-match? #px"tl-test.ss:\\d+:\\d+")]
+         [sorted-counts (λ (cc) (map cdr (sort (covered-cases cc) <)))])
+    (define-metafunction empty-language
+      [(f 1) 1]
+      [(f 2) 2])
+    (define-metafunction/extension f empty-language
+      [(g 3) 3])
+    (define-relation empty-language
+      [(R number)
+       ,(even? (term number))]
+      [(R number)
+       ,(= 3 (term number))])
+    
+    (let ([fc (make-coverage f)]
+          [rc (make-coverage (reduction-relation empty-language (--> any any)))])
+      (parameterize ([relation-coverage (list rc fc)])
+        (term (f 2))
+        (test (andmap (compose src-ok? car) (covered-cases fc))
+              #t)
+        (test (sorted-counts fc) '(0 1))
+        
+        (term (f 1))
+        (term (f 1))
+        (test (sorted-counts fc) '(2 1))))
+    
+    (let ([c (make-coverage f)])
+      (parameterize ([relation-coverage (list c)])
+        (term (g 1))
+        (test (sorted-counts c) '(1 0))))
+    (let ([c (make-coverage g)])
+      (parameterize ([relation-coverage (list c)])
+        (term (f 1))
+        (test (sorted-counts c) '(1 0 0))))
+    
+    (let ([c (make-coverage R)])
+      (parameterize ([relation-coverage (list c)])
+        (term (R 2))
+        (term (R 3))
+        (term (R 5))
+        (test (sorted-counts c) '(1 1))))
+    
+    (let ([c (make-coverage f)]
+          [c* (make-coverage f)])
+      (parameterize ([relation-coverage (list c* c)])
+        (term (f 1))
+        (test (sorted-counts c) '(1 0))
+        (test (sorted-counts c*) '(1 0)))))
+
 ;                                                                       
 ;                                                                       
 ;                                                                       

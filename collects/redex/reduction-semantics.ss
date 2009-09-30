@@ -29,7 +29,8 @@
          define-relation
          metafunction
          in-domain?
-         caching-enabled?)
+         caching-enabled?
+         make-coverage)
 
 (provide (rename-out [test-match redex-match])
          term-match
@@ -69,6 +70,5 @@
                   (-> bindings? symbol? (-> any) any))]
  [variable-not-in (any/c symbol? . -> . symbol?)]
  [variables-not-in (any/c (listof symbol?) . -> . (listof symbol?))]
- [relation-coverage (parameter/c (or/c false/c coverage?))]
- [make-coverage (-> reduction-relation? coverage?)]
+ [relation-coverage (parameter/c (listof coverage?))]
  [covered-cases (-> coverage? (listof (cons/c string? natural-number/c)))])
