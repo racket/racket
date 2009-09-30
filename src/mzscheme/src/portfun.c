@@ -942,7 +942,7 @@ user_get_or_peek_bytes(Scheme_Input_Port *port,
     } else {
       char *vb;
       vb = scheme_malloc_atomic(size + 1);
-      memset(vb, size + 1, 0); /* must initialize for security */
+      memset(vb, 0, size + 1); /* must initialize for security */
       bstr = scheme_make_sized_byte_string(vb, size, 0);
     }
     a[0] = bstr;
