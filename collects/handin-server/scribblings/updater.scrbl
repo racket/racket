@@ -29,6 +29,6 @@ version, you build a new @filepath{.plt} file that contains a new
 version file, then copy these version and @filepath{.plt} files to
 your web page, and students will be notified automatically.  Note: to
 get this to work, you need to create your @filepath{.plt} file using
-mzc's @DFlag{--replace} flag, so it will be possible to overwrite
+mzc's @DFlag{replace} flag, so it will be possible to overwrite
 existing files.  (Also note that there is no way to delete files when
 a new @filepath{.plt} is installed.)
