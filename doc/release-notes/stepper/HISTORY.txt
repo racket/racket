@@ -1,7 +1,11 @@
 Stepper
 -------
 
-Changes for v4.1.1:
+Changes for v4.2.2:
+
+Minor bug fixes.
+
+Changes for v4.2.1:
 
 Minor bug fixes.
 
