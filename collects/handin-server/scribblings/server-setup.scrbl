@@ -219,7 +219,7 @@ This directory contains the following files and sub-directories:
   save until the new contents is ready.)  This is most useful for
   closing & opening submissions directories.}
 
-@item{@filepath{users.ss} (created if not present if a user is added):
+@item{@filepath{users.ss} (created if not present when a user is added):
   keeps the list of user accounts, along with the associated password
   (actually the MD5 hash of the password), and extra string fields as
   specified by the 'extra-fields configuration entry (in the same
