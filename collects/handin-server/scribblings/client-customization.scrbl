@@ -47,9 +47,27 @@ uniquely.  For example, @filepath{uu-cpsc2010} is a good name for CPSC
   generate a new (self-certifying) certificate and keep its key
   private.  (See @secref{server-setup}.)}
 
-@item{Run @commandline{mzc --collection-plt <name>.plt <name>} where
-  @tt{<name>} is the name that you chose for your directory (i.e.,
-  whatever you changed @filepath{handin-client} to).}
+@item{To create an installable package, run
+  @commandline{mzc --collection-plt <name>.plt <name>} where @tt{<name>}
+  is the name that you chose for your directory (i.e., whatever you
+  changed @filepath{handin-client} to).
+
+  This directory should exist in your @filepath{collects} directory:
+  this can be done by making sure that the copy is in the same place the
+  original client directory was (see @secref{wheres-the-collection}) or
+  by specifying a value for the @envvar{PLTCOLLECTS} environment
+  variable.  For example, if your customized collection directory is
+  called @filepath{cs101} and it is located at
+  @filepath{/home/joe/intro/cs101}, then you can run
+  @commandline{PLTCOLLECTS=/home/joe/intro: \
+               mzc --collection-plt cs101.plt cs101}
+  (Don't forget the colon at the end of the @envvar{PLTCOLLECTS} value:
+  it is important!)
+
+  Note that if you create an updated copy of the client package (that
+  is, students already have an older version installed), then you should
+  use the @DFlag{replace} to indicate that the package should replace
+  existing files instead of throwing an error.}
 
 @item{Distribute @filepath{<name>.plt} to students for installation
   into their copies of DrScheme.  The students need not have access to
