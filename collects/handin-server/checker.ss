@@ -40,9 +40,10 @@
 
 (provide user-data)
 (define (user-data user)
-  ;; the student always assumed to exist
+  ;; the student is always assumed to exist
   (cdr (get-preference (if (string? user) (string->symbol user) user)
-                       (lambda () #f) #f (build-path server-dir "users.ss"))))
+                       (lambda () #f) 'timestamp
+                       (build-path server-dir "users.ss"))))
 
 (provide user-substs)
 (define (user-substs user str)

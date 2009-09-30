@@ -24,9 +24,10 @@
 (define get-user-data
   (let ([users-file (build-path server-dir "users.ss")])
     (unless (file-exists? users-file)
-      (error 'get-user-data "users file missing at: ~a" users-file))
+      (log-line "WARNING: users file missing on startup: ~a" users-file))
     (lambda (user)
-      (get-preference (string->symbol user) (lambda () #f) #f users-file))))
+      (get-preference (string->symbol user) (lambda () #f) 'timestamp
+                      users-file))))
 
 (define (relativize-path p)
   (path->string (find-relative-path (normalize-path server-dir) p)))
