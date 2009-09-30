@@ -151,29 +151,28 @@
 
 ;; A traced-proc struct instance acts like a procedure,
 ;;  but preserves the original, too.
-(define-values (struct:traced-proc make-traced-proc traced-proc? traced-proc-ref traced-proc-set!)
+(define-values (struct:traced-proc make-traced-proc traced-proc?
+                traced-proc-ref traced-proc-set!)
   (make-struct-type 'traced-proc #f 2 0 #f null (current-inspector) 0))
+(define-struct traced-proc (proc orig)
+  )
 
 ;; Install traced versions of a given set of procedures.  The traced
 ;;  versions are also given, so that they can be constructed to have
 ;;  a nice name.
-(define (do-trace ids procs setters traced-procs)
-  (for-each (lambda (id proc)
-              (unless (procedure? proc)
-                (error 'trace
-                       "the value of ~s is not a procedure: ~e" id proc)))
-            ids procs)
-  (for-each (lambda (proc setter traced-proc)
-              (unless (traced-proc? proc)
-                (setter (make-traced-proc 
-                         (let-values ([(a) (procedure-arity proc)]
-                                      [(req allowed) (procedure-keywords proc)])
-                           (procedure-reduce-keyword-arity traced-proc
-                                                           a
-                                                           req
-                                                           allowed))
-                         proc))))
-            procs setters traced-procs))
+(define (set-traced! ids procs setters traced-procs)
+  (for ([id (in-list ids)] [proc (in-list procs)])
+    (unless (procedure? proc)
+      (error 'trace "the value of ~s is not a procedure: ~e" id proc)))
+  (for ([proc (in-list procs)]
+        [setter (in-list setters)]
+        [traced-proc (in-list traced-procs)])
+    (unless (traced-proc? proc)
+      (setter (make-traced-proc
+               (let-values ([(a) (procedure-arity proc)]
+                            [(req allowed) (procedure-keywords proc)])
+                 (procedure-reduce-keyword-arity traced-proc a req allowed))
+               proc)))))
 
 ;; Key used for a continuation mark to indicate
 ;;  the nesting depth:
@@ -247,7 +246,7 @@
                     (for/list ([id (in-list (syntax->list #'(id ...)))])
                       (let ([tid (format "traced-~a" (syntax-e id))])
                         (datum->syntax id (string->symbol tid) #f)))])
-       #'(do-trace
+       #'(set-traced!
           '(id ...)
           (list id ...)
           (list (lambda (v) (set! id v)) ...)

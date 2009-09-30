@@ -21,7 +21,7 @@ it will be found automatically when loading the source. Use the
 subdirectory, where it will be found automatically when loading the
 source file.
 
-The @DFlag{--c-source}/@Flag{c} mode for @|mzc| is like the
+The @DFlag{c-source}/@Flag{c} mode for @|mzc| is like the
 @DFlag{extension}/@Flag{e} mode, except that compilation stops with
 the generation of C code.
 
