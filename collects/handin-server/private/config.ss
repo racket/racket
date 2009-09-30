@@ -28,10 +28,11 @@
       (unless (and filetime (equal? filetime last-filetime))
         (set! last-filetime filetime)
         (set! raw-config
-              (with-handlers ([void (lambda (_)
+              (with-handlers ([void (lambda (e)
                                       (error 'get-conf
-                                             "could not read conf (~a)"
-                                             config-file))])
+                                             "could not read conf (~a): ~a"
+                                             config-file
+                                             (exn-message e)))])
                 (when raw-config
                   ;; can't use log-line from logger, since it makes a cycle
                   (fprintf (current-error-port)
