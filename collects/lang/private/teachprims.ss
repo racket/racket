@@ -183,6 +183,14 @@ namespace.
     (check-last 'append (cons a (cons b x)))
     (apply append a b x)))
 
+(define-teach intermediate append
+  (lambda x
+    (if (null? x)
+        null
+        (begin
+          (check-last 'append x)
+          (apply append x)))))
+
 (define-teach beginner error
   (lambda (sym str)
     (unless (and (symbol? sym)
@@ -342,6 +350,7 @@ namespace.
  beginner-cons
  beginner-list*
  beginner-append
+ intermediate-append
  beginner-error
  beginner-struct?
  beginner-exit

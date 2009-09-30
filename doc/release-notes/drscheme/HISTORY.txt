@@ -1,4 +1,22 @@
 ------------------------------
+        Version 4.2.2
+------------------------------
+
+  . DrScheme now (by default) automatically compiles your source
+    files, saving them in the compiled/drscheme/ subdirectory.
+
+  . Syntax coloring now works for languages using the @-reader
+    (ie, Scribble) 
+
+  . The yellow message in the interactions window is now moved to be
+    part of the DrScheme frame.
+
+  . The module browser now shows the phases that each given module 
+    is invoked in.
+
+  . Check Syntax colors set!'d variables in dark red.
+
+------------------------------
         Version 4.2.1
 ------------------------------
 

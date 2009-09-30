@@ -109,6 +109,13 @@
 (define-fx bitwise-length fxlength (a) nocheck)
 (define-fx bitwise-first-bit-set fxfirst-bit-set (a) nocheck)
 
+(define positive-fixnum-width-bounds
+  (string-append "exact integer in [0, " (number->string (- (fixnum-width) 1)) "]"))
+
+(define fixnum-width-bounds
+  (string-append "exact integer in [ " (number->string (- 1 (fixnum-width)))
+                 ", " (number->string (- (fixnum-width) 1)) "]"))
+
 (define (fxbit-set? n bit)
   (unless (fixnum? n)
     (raise-type-error 'fxbit-set? "fixnum" n))
@@ -124,7 +131,7 @@
     (raise-type-error 'fxcopy-bit "fixnum" n))
   (unless (and (exact-nonnegative-integer? pos)
                (< pos (fixnum-width)))
-    (raise-type-error 'fxcopy-bit "exact integer in [0, 30]" pos))
+    (raise-type-error 'fxcopy-bit positive-fixnum-width-bounds pos))
   (bitwise-copy-bit n pos bit))
 
 (define (fxcopy-bit-field n start end m)
@@ -132,7 +139,7 @@
     (raise-type-error 'fxcopy-bit-field "fixnum" n))
   (unless (and (exact-nonnegative-integer? end)
                (< end (fixnum-width)))
-    (raise-type-error 'fxcopy-bit-field "exact integer in [0, 30]" end))
+    (raise-type-error 'fxcopy-bit-field positive-fixnum-width-bounds end))
   (unless (fixnum? m)
     (raise-type-error 'fxcopy-bit-field "fixnum" m))
   (bitwise-copy-bit-field n start end m))
@@ -142,7 +149,7 @@
     (raise-type-error 'fxbit-field "fixnum" n))
   (unless (and (exact-nonnegative-integer? end)
                (< end (fixnum-width)))
-    (raise-type-error 'fxbit-field "exact integer in [0, 30]" end))
+    (raise-type-error 'fxbit-field positive-fixnum-width-bounds end))
   (bitwise-bit-field n start end))
 
 (define-syntax-rule (define-shifter fxarithmetic-shift r6rs:fxarithmetic-shift
@@ -156,7 +163,7 @@
         (let ([t1 a]
               [t2 b])
           (if (and (fixnum? a)
-                   (and (exact-integer? b) (<= lower-bound b 30)))
+                   (and (exact-integer? b) (<= lower-bound b (- (fixnum-width) 1))))
               (let ([v (arithmetic-shift a (adjust b))])
                 (if (fixnum? v)
                     v
@@ -165,7 +172,7 @@
     (define (r6rs:fxarithmetic-shift a b)
       (unless (fixnum? a)
         (raise-type-error 'fxarithmetic-shift "fixnum" a))
-      (unless (and (exact-integer? b) (<= lower-bound b 30))
+      (unless (and (exact-integer? b) (<= lower-bound b (- (fixnum-width) 1)))
         (raise-type-error 'fxarithmetic-shift bounds b))
       (let ([v (arithmetic-shift a (adjust b))])
         (if (fixnum? v)
@@ -173,11 +180,11 @@
             (implementation-restriction 'fxarithmetic-shift v))))))
 
 (define-shifter fxarithmetic-shift r6rs:fxarithmetic-shift
-  -30 "exact integer in [-30, 30]" values)
+  (- 1 (fixnum-width)) fixnum-width-bounds values)
 (define-shifter fxarithmetic-shift-left r6rs:fxarithmetic-shift-left
-  0 "exact integer in [0, 30]" values)
+  0 positive-fixnum-width-bounds values)
 (define-shifter fxarithmetic-shift-right r6rs:fxarithmetic-shift-right
-  0 "exact integer in [0, 30]" -)
+  0 positive-fixnum-width-bounds -)
 
 
 (define (fxrotate-bit-field n start end count)
@@ -185,10 +192,10 @@
     (raise-type-error 'fxrotate-bit-field "fixnum" n))
   (unless (and (exact-nonnegative-integer? end)
                (< end (fixnum-width)))
-    (raise-type-error 'fxrotate-bit-field "exact integer in [0, 30]" end))
+    (raise-type-error 'fxrotate-bit-field positive-fixnum-width-bounds end))
   (unless (and (exact-nonnegative-integer? count)
                (< count (fixnum-width)))
-    (raise-type-error 'fxrotate-bit-field "exact integer in [0, 30]" count))
+    (raise-type-error 'fxrotate-bit-field positive-fixnum-width-bounds count))
   (bitwise-rotate-bit-field n start end count))
 
 (define (fxreverse-bit-field n start end)
@@ -196,5 +203,5 @@
     (raise-type-error 'fxrotate-bit-field "fixnum" n))
   (unless (and (exact-nonnegative-integer? end)
                (< end (fixnum-width)))
-    (raise-type-error 'fxrotate-bit-field "exact integer in [0, 30]" end))
+    (raise-type-error 'fxrotate-bit-field positive-fixnum-width-bounds end))
   (bitwise-reverse-bit-field n start end))

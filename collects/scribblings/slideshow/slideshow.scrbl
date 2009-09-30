@@ -29,6 +29,7 @@ the manual are provided by the @schememodname[slideshow] language.}
 @include-section["picts.scrbl"]
 @include-section["slides.scrbl"]
 @include-section["code.scrbl"]
+@include-section["play.scrbl"]
 
 @(bibliography
   (bib-entry #:key "Findler06" 

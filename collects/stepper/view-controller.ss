@@ -247,8 +247,7 @@
 
   ;; jump-to-beginning : the action of the choice menu entry
   (define (jump-to-beginning)
-    (set! stepper-is-waiting? #f)
-    (update-view/existing 0))
+    (first-of-specified-kind (lambda (x) #t)))
   
   ;; jump-to-end : the action of the choice menu entry
   (define (jump-to-end)
@@ -324,16 +323,7 @@
   ;; based on view-controller state
   (define (en/dis-able-buttons)
      ;; let's just leave all the buttons enabled...
-     (void)
-     #;(let* ([can-go-back? (and view (> view 0))])
-      (send previous-button enable can-go-back?)
-      (send previous-application-button enable can-go-back?)
-      (send next-button
-            enable (or (find-later-step/boolean (lambda (x) #t) view)
-                       (not stepper-is-waiting?)))
-      (send next-application-button
-            enable (or (find-later-step/boolean application-step? view)
-                       (not stepper-is-waiting?)))))
+     (void))
   
   (define (print-current-view item evt)
     (send (send canvas get-editor) print))
@@ -351,7 +341,6 @@
                (list (new x:stepper-text% 
                           [left-side pre-exps]
                           [right-side post-exps]
-                          ;; get this from the language level
                           [show-inexactness? (send language-level stepper:show-inexactness?)])
                      kind (list pre-src post-src))]
               [(struct before-error-result (pre-exps err-msg pre-src))
@@ -361,7 +350,11 @@
                           [show-inexactness? (send language-level stepper:show-inexactness?)])
                      'finished-or-error (list pre-src))]
               [(struct error-result (err-msg))
-               (list (new x:stepper-text% [left-side null] [right-side err-msg]) 'finished-or-error (list))]
+               (list (new x:stepper-text% 
+                          [left-side null]
+                          [right-side err-msg]
+                          [show-inexactness? (send language-level stepper:show-inexactness?)]) 
+                     'finished-or-error (list))]
               [(struct finished-stepping ())
                (list x:finished-text 'finished-or-error (list))])])
         (hand-off-and-block step-text step-kind posns))))

@@ -20,7 +20,7 @@
 
 @section{Primary Slide Functions}
 
-@defproc[(slide [#:title title (or/c #f string?) #f]
+@defproc[(slide [#:title title (or/c #f string? pict?) #f]
                 [#:name  name (or/c #f string?) title]
                 [#:layout layout (or/c 'auto 'center 'top 'tall) 'auto]
                 [#:inset inset slide-inset? (make-slide-inset 0 0 0 0)]
@@ -28,7 +28,7 @@
                 [#:condense? condense? any/c (and timeout #t)]
                 [element (flat-rec-contract elem/c
                            (or/c pict? 
-                                (or/c 'next 'next! 'alts 'alts~ 'nothing)
+                                'next 'next! 'alts 'alts~ 'nothing
                                 comment?
                                 (listof (listof elem/c))))] ...)
           void?]{

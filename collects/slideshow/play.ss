@@ -12,6 +12,7 @@
          reverse-animations
          animate-slide
          fast-start
+         fast-end
          fast-edges
          fast-middle
          split-phase)
@@ -287,6 +288,9 @@
 
 (define (fast-start n)
   (- 1 (* (- 1 n) (- 1 n))))
+
+(define (fast-end n)
+  (* n n))
 
 (define (fast-edges n)
   (+ 0.5 (* (sin (- (* n pi) (/ pi 2))) 0.5)))
