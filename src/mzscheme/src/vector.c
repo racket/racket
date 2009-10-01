@@ -167,6 +167,8 @@ scheme_init_unsafe_vector (Scheme_Env *env)
   scheme_add_global_constant("unsafe-struct-set!", p, env);  
 }
 
+#define VECTOR_BYTES(size) (sizeof(Scheme_Vector) + ((size) - 1) * sizeof(Scheme_Object *))
+
 Scheme_Object *
 scheme_make_vector (long size, Scheme_Object *fill)
 {
@@ -179,12 +181,9 @@ scheme_make_vector (long size, Scheme_Object *fill)
   }
 
   if (size < 1024) {
-    vec = (Scheme_Object *)scheme_malloc_tagged(sizeof(Scheme_Vector) 
-						+ (size - 1) * sizeof(Scheme_Object *));
+    vec = (Scheme_Object *)scheme_malloc_tagged(VECTOR_BYTES(size));
   } else {
-    vec = (Scheme_Object *)scheme_malloc_fail_ok(scheme_malloc_tagged,
-						 sizeof(Scheme_Vector) 
-						 + (size - 1) * sizeof(Scheme_Object *));
+    vec = (Scheme_Object *)scheme_malloc_fail_ok(scheme_malloc_tagged, VECTOR_BYTES(size));
   }
 
   vec->type = scheme_vector_type;
@@ -215,7 +214,9 @@ make_vector (int argc, Scheme_Object *argv[])
 
   len = scheme_extract_index("make-vector", 0, argc, argv, -1, 0);
 
-  if (len == -1) {
+  if ((len == -1) 
+      /* also watch for overflow: */
+      || ((long)VECTOR_BYTES(len) < len)) {
     scheme_raise_out_of_memory("make-vector", "making vector of length %s",
 			       scheme_make_provided_string(argv[0], 1, NULL));
   }
