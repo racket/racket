@@ -1896,7 +1896,12 @@ expands to a definition of the first form where the @scheme[expr] is a
 Like @scheme[define-syntax], but creates a @tech{transformer binding}
 for each @scheme[id].  The @scheme[expr] should produce as many values
 as @scheme[id]s, and each value is bound to the corresponding
-@scheme[id]. }
+@scheme[id].
+
+When @scheme[expr] produces zero values for a top-level
+@scheme[define-syntaxes] (i.e., not in a module or internal-definition
+position), then the @scheme[id]s are effectively declared without
+binding; see @secref["macro-introduced-bindings"].
 
 @defexamples[#:eval (syntax-eval)
 (define-syntaxes (foo1 foo2 foo3)
@@ -1915,7 +1920,7 @@ as @scheme[id]s, and each value is bound to the corresponding
 (foo1)
 (foo2)
 (foo3)
-]
+]}
 
 @defform*[[(define-for-syntax id expr)
            (define-for-syntax (head args) body ...+)]]{
