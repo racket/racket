@@ -627,13 +627,14 @@
 
 (define session-count 0)
 
+(define default-context-length (error-print-context-length))
 (parameterize ([error-display-handler (lambda (msg exn) (log-line msg))]
+               [error-print-context-length 0]
                [current-directory server-dir])
-  (define (without-context f)
-    (lambda xs (parameterize ([error-print-context-length 0]) (apply f xs))))
   (run-server
    (get-conf 'port-number)
    (lambda (r w)
+     (error-print-context-length default-context-length)
      (set! connection-num (add1 connection-num))
      (when ((current-memory-use) . > . (get-conf 'session-memory-limit))
        (collect-garbage))
@@ -681,6 +682,4 @@
        (ssl-load-certificate-chain! l "server-cert.pem")
        (ssl-load-private-key! l "private-key.pem")
        l))
-   ssl-close
-   (without-context ssl-accept)
-   (without-context ssl-accept/enable-break)))
+   ssl-close ssl-accept ssl-accept/enable-break))
