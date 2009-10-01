@@ -22,7 +22,12 @@
          rectangle
          
          show-image
-         bring-between)
+         bring-between
+         
+         x-place?
+         y-place?
+         mode?
+         angle?)
 
 
 (define (show-image g [extra-space 0])
@@ -116,7 +121,7 @@
   (case argname
     [(x-place)
      (check-arg fn-name
-                (member arg '("left" left "right" right "middle" middle "center" center))
+                (x-place? arg)
                 'x-place
                 i
                 arg)
@@ -128,7 +133,7 @@
            sym))]
     [(y-place) 
      (check-arg fn-name
-                (member arg '("top" top "bottom" bottom "middle" middle "center" center "baseline" baseline))
+                (y-place? arg)
                 'y-place
                 i
                 arg)
@@ -147,7 +152,7 @@
      arg]
     [(mode)
      (check-arg fn-name
-                (member arg '(solid outline "solid" "outline"))
+                (mode? arg)
                 'mode
                 i
                 arg)
@@ -169,9 +174,7 @@
      arg]
     [(angle)
      (check-arg fn-name
-                (and (number? arg)
-                     (<= 0 arg)
-                     (< arg 360))
+                (angle? arg)
                 'angle\ in\ degrees
                 i arg)
      arg]
@@ -181,8 +184,6 @@
             (cond
               [(symbol? arg)
                (symbol->string arg)]
-              [(string? arg)
-               (symbol->string arg)]
               [else arg])])
        (if (send the-color-database find-color color-str)
            color-str
@@ -191,6 +192,18 @@
      (error 'check "the function ~a has an argument with an unknown name: ~s"
             fn-name
             argname)]))
+
+(define (y-place? arg)
+  (member arg '("top" top "bottom" bottom "middle" middle "center" center "baseline" baseline)))
+(define (x-place? arg)
+  (member arg '("left" left "right" right "middle" middle "center" center)))
+(define (mode? arg)
+  (member arg '(solid outline "solid" "outline")))
+(define (angle? arg)
+  (and (number? arg)
+       (real? arg)
+       (<= 0 arg)
+       (< arg 360)))
 
 
 ;                                              

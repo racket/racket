@@ -8,7 +8,7 @@
 
 ;(define-syntax-rule (test a => b) (begin a b))
 
-
+;; test case: (beside (text "a"...) (text "b" ...)) vs (text "ab")
 
 #;
 (show-image
@@ -329,3 +329,13 @@
                0.1)
       =>
       #t)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; misc tests
+;;
+
+(test (rectangle 100 10 'solid 'blue)
+      =>
+      (rectangle 100 10 "solid" "blue"))

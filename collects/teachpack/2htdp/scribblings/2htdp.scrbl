@@ -8,4 +8,5 @@
 @local-table-of-contents[]
 
 @include-section["batch-io.scrbl"]
+@include-section["image.scrbl"]
 @include-section["universe.scrbl"]
