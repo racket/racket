@@ -18,19 +18,6 @@
             (or (current-session) '-)
             (date->string (seconds->date (current-seconds)) #t))))
 
-(define (combine-outputs o1 o2)
-  (let-values ([(i o) (make-pipe)])
-    (thread
-     (lambda ()
-       (let loop ()
-         (let ([line (read-bytes-line i)])
-           (if (eof-object? line)
-             (begin (close-output-port o1) (close-output-port o2))
-             (begin (write-bytes line o1) (newline o1) (flush-output o1)
-                    (write-bytes line o2) (newline o2) (flush-output o2)
-                    (loop)))))))
-    o))
-
 ;; Implement a logger by making the current-error-port show prefix tags and
 ;; output the line on the output port
 (define (make-logger-port out log)
@@ -38,31 +25,36 @@
     (open-output-nowhere)
     (let ([prompt? #t]
           [sema (make-semaphore 1)]
-          [outp (cond [(not log) out]
-                      [(not out) log]
-                      [else (combine-outputs out log)])])
+          [outps (filter values (list out log))])
       (make-output-port
        'logger-output
-       outp
+       (car outps)
        (lambda (buf start end imm? break?)
          (dynamic-wind
            (lambda () (semaphore-wait sema))
            (lambda ()
              (if (= start end)
-               (begin (flush-output outp) 0)
+               (begin (for-each flush-output outps) 0)
                (let ([nl (regexp-match-positions #rx#"\n" buf start end)])
                  ;; may be problematic if this hangs...
-                 (when prompt? (display (prefix) outp) (set! prompt? #f))
-                 (if (not nl)
-                   (write-bytes-avail* buf outp start end)
-                   (let* ([nl (cdar nl)]
-                          [l  (write-bytes-avail* buf outp start nl)])
-                     (when (= l (- nl start))
-                       ;; pre-newline part written
-                       (flush-output outp) (set! prompt? #t))
-                     l)))))
+                 (when prompt?
+                   (let ([pfx (prefix)])
+                     (for ([p (in-list outps)]) (display pfx p)))
+                   (set! prompt? #f))
+                 (let* ([nl (if nl (cdar nl) end)]
+                        [ls (for/list ([p (in-list outps)])
+                              (write-bytes-avail* buf p start nl))]
+                        [l (car ls)])
+                   (when (and (pair? (cdr ls))
+                              (not (equal? (car ls) (cadr ls))))
+                     (display "WARNING: incomplete write to log file\n"
+                              (car outps)))
+                   (when (and nl (= l (- nl start)))
+                     ;; pre-newline part written
+                     (map flush-output outps) (set! prompt? #t))
+                   l))))
            (lambda () (semaphore-post sema))))
-       (lambda () (close-output-port outp))))))
+       (lambda () (map close-output-port outps))))))
 
 ;; Install this wrapper as the current error port
 (provide install-logger-port)
