@@ -93,7 +93,12 @@
              [acc (cond [(null? acc) acc]
                         [(not (car acc)) (cdr acc)]
                         [else acc])])
-        (make-Struct id pred (get-lineage (cert struct-name)) acc
+        (make-Struct id
+                     (syntax-property 
+                      pred 
+                      'disappeared-use (list struct-name))
+                     (get-lineage (cert struct-name))
+                     acc
                      (cond [(eq? '_ (syntax-e pats))                            
                             (map make-Dummy acc)]
                            [(syntax->list pats)
