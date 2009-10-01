@@ -5,14 +5,14 @@
 
 @declare-exporting[#:use-sources (handin-server/scribblings/hook-dummy)]
 
-You must prepare a special directory to host the handin server.  To
-run the server, you should either be in this directory, or you should
-set the @envvar{PLT_HANDINSERVER_DIR} environment variable.
+You must prepare a special directory to host the handin server.  To run
+the server, you should either be in this directory, or you should set
+the @envvar{PLT_HANDINSERVER_DIR} environment variable.
 
 This directory contains the following files and sub-directories:
 @itemize[
-@item{@filepath{server-cert.pem}: the server's certificate.  To create
-  a certificate and key with openssl:
+@item{@filepath{server-cert.pem}: the server's certificate.  To create a
+  certificate and key with openssl:
   @commandline{openssl req -new -nodes -x509 -days 365
                  -out server-cert.pem -keyout private-key.pem}}
 
@@ -22,7 +22,7 @@ This directory contains the following files and sub-directories:
   @filepath{private-key.pem} is kept private.}
 
 @item{@filepath{config.ss}: configuration options.  The file format is
-  @schemeblock[((<key> <val>) ...)]
+  @verbatim[#:indent 2]{((<key> <val>) ...)}
 
   The following keys can be used:
 
@@ -30,7 +30,7 @@ This directory contains the following files and sub-directories:
   @item{@indexed-scheme[active-dirs] --- a list of directories that
     are active submissions, relative to the current directory or
     absolute; the last path element for each of these (and
-    @scheme[inactive-dirs] below) should be unique, and is used to
+    @schemeid[inactive-dirs] below) should be unique, and is used to
     identify the submission (for example, in the client's submission
     dialog and in the status servlet).  If a specified directory does
     not exist, it will be created.}
@@ -75,9 +75,9 @@ This directory contains the following files and sub-directories:
     meaning no restriction, or a list of permitted strings.  Young
     students often choose exotic usernames that are impossible to
     remember, and forget capitalization, so the default is fairly
-    strict--- @scheme[#rx"^[a-z][a-z0-9]+$"]; a @scheme["+"] is always
-    disallowed in a username, since it is used in a submission
-    username to specify joint work.}
+    strict--- @scheme[#rx"^[a-z][a-z0-9]+$"]; a @litchar{+} is always
+    disallowed in a username, since it is used in a submission username
+    to specify joint work.}
 
   @item{@indexed-scheme[user-desc] --- a plain-words description of
     the acceptable username format (according to user-regexp above);
@@ -110,7 +110,7 @@ This directory contains the following files and sub-directories:
 
   @item{@indexed-scheme[log-file] --- a path (relative to handin
     server directory or absolute) that specifies a filename for the
-    handin server log (possibly combined with the @scheme[log-output]
+    handin server log (possibly combined with the @schemeid[log-output]
     option), or @scheme[#f] for no log file; defaults to
     @filepath{log}.}
 
@@ -124,30 +124,31 @@ This directory contains the following files and sub-directories:
     this list is a list of three values: the name of the field, the
     regexp (or @scheme[#f], or a list of permitted string values), and
     a string describing acceptable strings.  The default is
-    @schemeblock[
-      '(("Full Name" #f #f)
-        ("ID#" #f #f)
-        ("Email" #rx"^[^@<>\"`',]+@[a-zA-Z0-9_.-]+[.][a-zA-Z]+$"
-         "a valid email address"))]
+    @verbatim[#:indent 2]|{
+      (("Full Name" #f #f)
+       ("ID#" #f #f)
+       ("Email" #rx"^[^@<>\"`',]+@[a-zA-Z0-9_.-]+[.][a-zA-Z]+$"
+        "a valid email address"))
+    }|
     You can set this to a list of fields that you are interested in
     keeping, for example:
-    @schemeblock[
-      '(("Full Name"
-         #rx"^[A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)+$"
-         "full name, no punctuations, properly capitalized")
-        ("Utah ID Number"
-         #rx"^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$"
-         "Utah ID Number with exactly nine digits")
-        ("Email"
-         #rx"^[^@<>\"`',]+@cs\\.utah\\.edu$"
-         "A Utah CS email address"))]
+    @verbatim[#:indent 2]|{
+      (("Full Name"
+        #rx"^[A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)+$"
+        "full name, no punctuations, properly capitalized")
+       ("Utah ID Number"
+        #rx"^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$"
+        "Utah ID Number with exactly nine digits")
+       ("Email"
+        #rx"^[^@<>\"`',]+@cs\\.utah\\.edu$"
+        "A Utah CS email address"))}|
     The order of these fields will be used both on the client GUI side
     and in the @filepath{users.ss} file (see below).
 
     @; JBC: a hyperlink here for users.ss?
 
     The second item in a field description can also be the symbol
-    @scheme['-], which marks this field as one that is hidden from the
+    @schemeid[-], which marks this field as one that is hidden from the
     user interface: students will not see it and will not be able to
     provide or modify it; when a new student creates an account, such
     fields will be left empty.  This is useful for adding information
@@ -170,20 +171,19 @@ This directory contains the following files and sub-directories:
 
       The @scheme[operation] argument indicates the operation that is
       now taking place.  It can be one of the following:
-      @indexed-scheme['server-start],
-      @indexed-scheme['server-connect], @indexed-scheme['user-create],
-      @indexed-scheme['user-change], @indexed-scheme['login],
-      @indexed-scheme['submission-received],
+      @indexed-scheme['server-start], @indexed-scheme['server-connect],
+      @indexed-scheme['user-create], @indexed-scheme['user-change],
+      @indexed-scheme['login], @indexed-scheme['submission-received],
       @indexed-scheme['submission-committed],
       @indexed-scheme['submission-retrieved],
       @indexed-scheme['status-login], or
       @indexed-scheme['status-file-get].
 
-      The @scheme[connection-context] argument is a datum that
-      specifies the connection context (a number for handin
-      connections, a @scheme['wN] symbol for servlet connections, and
-      @scheme[#f] for other server operations).
-    
+      The @scheme[connection-context] argument is a datum that specifies
+      the connection context (a number for handin connections, a
+      @schemeid[wN] symbol for servlet connections, and @scheme[#f] for
+      other server operations).
+
       The @scheme[relevant-info] contains an alist of information
       relevant to this operation.  Currently, the hook is used in
       several places after an operation has completed.
@@ -207,96 +207,95 @@ This directory contains the following files and sub-directories:
                   alist))))]}}]
 
   Changes to @filepath{config.ss} are detected, the file will be
-  re-read, and options are reloaded.  A few options are fixed at
-  startup time: port numbers and log file specs are fixed as
-  configured at startup.  All other options will change the behavior
-  of the running server (but things like
-  @scheme[username-case-sensitive?]  it would be unwise to do so).
-  (For safety, options are not reloaded until the file parses
-  correctly, but make sure that you don't save a copy that has
-  inconsistent options: it is best to create a new configuration file
-  and move it over the old one, or use an editor that does so and not
-  save until the new contents is ready.)  This is most useful for
+  re-read, and options are reloaded.  A few options are fixed at startup
+  time: port numbers and log file specs are fixed as configured at
+  startup.  All other options will change the behavior of the running
+  server (but things like @schemeid[username-case-sensitive?]  it would
+  be unwise to do so).  (For safety, options are not reloaded until the
+  file parses correctly, but make sure that you don't save a copy that
+  has inconsistent options: it is best to create a new configuration
+  file and move it over the old one, or use an editor that does so and
+  not save until the new contents is ready.)  This is most useful for
   closing & opening submissions directories.}
 
 @item{@filepath{users.ss} (created if not present when a user is added):
   keeps the list of user accounts, along with the associated password
   (actually the MD5 hash of the password), and extra string fields as
-  specified by the 'extra-fields configuration entry (in the same
-  order).  The file format is
-  @schemeblock[
+  specified by the @schemeid[extra-fields] configuration entry (in the
+  same order).  The file format is
+  @verbatim[#:indent 2]{
     ((<username-sym> (<pw-md5-str> <extra-field> ...))
-     ...)]
+     ...)}
 
-  For example, the default @scheme['extra-field] setting will make this:
-  @schemeblock[
+  For example, the default @schemeid[extra-field] setting will make
+  this:
+  @verbatim[#:indent 2]{
     ((<username-sym> (<pw-md5-str> <full-name> <id> <email>))
-      ...)]
+      ...)}
 
-  Usernames that begin with ``solution'' are special.  They are used
-  by the HTTPS status server.  Independent of the
-  @scheme['user-regexp] and @scheme['username-case-sensitive?]
-  configuration items, usernames are not allowed to contain characters
-  that are illegal in Windows pathnames, and they cannot end or begin
-  in spaces or periods.
+  Usernames that begin with ``solution'' are special.  They are used by
+  the HTTPS status server.  Independent of the @schemeid[user-regexp]
+  and @schemeid[username-case-sensitive?] configuration items, usernames
+  are not allowed to contain characters that are illegal in Windows
+  pathnames, and they cannot end or begin in spaces or periods.
 
-  If the @scheme['allow-new-users] configuration allows new users, the
-  @filepath{users.ss} file can be updated by the server with new
-  users.  It can always be updated by the server to change passwords.
+  If the @schemeid[allow-new-users] configuration allows new users, the
+  @filepath{users.ss} file can be updated by the server with new users.
+  It can always be updated by the server to change passwords.
 
   If you have access to a standard Unix password file (from
   @filepath{/etc/passwd} or @filepath{/etc/shadow}), then you can
   construct a @filepath{users.ss} file that will allow users to use
-  their normal passwords.  To achieve this, use a list with 'unix as
-  the first element and the system's encrypted password string as the
-  second element.  Such passwords can be used, but when users change
-  them, a plain md5 hash will be used.
+  their normal passwords.  To achieve this, use a list with
+  @schemeid[unix] as the first element and the system's encrypted
+  password string as the second element.  Such passwords can be used,
+  but when users change them, a plain md5 hash will be used.
 
   You can combine this with other fields from the password file to
   create your @filepath{users.ss}, but make sure you have information
-  that matches your 'extra-fields specification.  For example, given
-  this system file:
-  @verbatim[#:indent 2]{
+  that matches your @schemeid[extra-fields] specification.  For example,
+  given this system file:
+  @verbatim[#:indent 2]|{
     foo:wRzN1u5q2SqRD:1203:1203:L.E. Foo        :/home/foo:/bin/tcsh
-    bar:$1$dKlU0OkJ$t63TzKz:1205:1205:Bar Z. Lie:/home/bar:/bin/bash}
+    bar:$1$dKlU0OkJ$t63TzKz:1205:1205:Bar Z. Lie:/home/bar:/bin/bash}|
   you can create this @filepath{users.ss} file:
-  @schemeblock[
+  @verbatim[#:indent 2]|{
     ((foo ((unix "wRzN1u5q2SqRD") "L.E. Foo" "?"))
-     (bar ((unix "$1$dKlU0OkJ$t63TzKz") "Bar Z. Lie" "?")))]
-  which can be combined with this setting for @scheme['extra-fields]
-  in your @filepath{config.ss}:
-  @schemeblock[
+     (bar ((unix "$1$dKlU0OkJ$t63TzKz") "Bar Z. Lie" "?")))}|
+  which can be combined with this setting for @schemeid[extra-fields] in
+  your @filepath{config.ss}:
+  @verbatim[#:indent 2]{
     ...
     (extra-fields (("Full Name" #f #f)
-                   ("TA" '("Alice" "Bob") "Your TA")))
-    ...]
+                   ("TA" ("Alice" "Bob") "Your TA")))
+    ...}
   and you can tell your students to use their department username and
   password, and use the @onscreen{Manage ...} dialog to properly set
   their TA name.
 
   Finally, a password value can be a list that begins with a
-  @scheme['plaintext] symbol, which will be used without encryption.
+  @schemeid[plaintext] symbol, which will be used without encryption.
   This may be useful for manually resetting a forgotten passwords.}
 
-@item{@filepath{log} (or any other name that the @scheme['log-file]
+@item{@filepath{log} (or any other name that the @schemeid[log-file]
   configuration option specifies (if any), created if not present,
-  appended otherwise): records connections and actions, where each
-  entry is of the form
+  appended otherwise): records connections and actions, where each entry
+  is of the form
   @verbatim{[<id>|<time>] <msg>}
-  where @scheme[<id>] is an integer representing the connection
-  (numbered consecutively from 1 when the server starts), ``@tt{-}''
-  for a message without a connection, and ``@tt{wN}'' for a message
-  from the status servlet.}
+  where @schemeid[<id>] is an integer representing the connection
+  (numbered consecutively from 1 when the server starts), ``@tt{-}'' for
+  a message without a connection, and ``@tt{wN}'' for a message from the
+  status servlet.}
 
 @item{Active and inactive assignment directories (which you can put in
   a nested directory for convenience, or specify a different absolute
   directory), as specified by the configuration file using the
-  @scheme['active-dirs] and @scheme['inactive-dirs].  A list of active
+  @schemeid[active-dirs] and @schemeid[inactive-dirs].  A list of active
   assignment directories (the last path element in each specified path
   is used as a label) is sent to the client tool when a student clicks
-  @onscreen{Handin}.  The assignment labels are ordered in the
-  student's menu using @scheme[string<?], and the first assignment is
-  the default selection.
+  @onscreen{Handin}.  The assignment labels are ordered in the student's
+  menu using @scheme[string<?], and the first assignment is the default
+  selection.
 
   Within each assignment directory, the student id is used for a
   sub-directory name.  Within each student sub-directory are
@@ -319,7 +318,7 @@ This directory contains the following files and sub-directories:
   the cleanup process for each student directory.
 
   Within a student directory, a @filepath{handin.scm} file (or some
-  other name if the @scheme[default-file-name] option is set) contains
+  other name if the @schemeid[default-file-name] option is set) contains
   the actual submission.  A @scheme[checker] procedure can change this
   default file name, and it can create additional files in an
   @filepath{ATTEMPT} directory (to be copied by the cleanup process);
@@ -417,12 +416,12 @@ This directory contains the following files and sub-directories:
   submitted): the most recent submission for
   @tt{<[in]active-assignment>} by @tt{<user(s)>} where <filename> was
   returned by the checker (or the value of the
-  @scheme[default-file-name] configuration option if there's no
+  @schemeid[default-file-name] configuration option if there's no
   checker).  If the submission is from multiple users, then
-  ``@tt{<user(s)>}'' is actually ``@tt{<user1>+<user2>}'' etc.  Also,
-  if the cleanup process was interrupted (by a machine failure, etc.),
-  the submission may actually be in @filepath{SUCCESS-n} as described
-  above, but will move up when the server performs a cleanup (or when
+  ``@tt{<user(s)>}'' is actually ``@tt{<user1>+<user2>}'' etc.  Also, if
+  the cleanup process was interrupted (by a machine failure, etc.), the
+  submission may actually be in @filepath{SUCCESS-n} as described above,
+  but will move up when the server performs a cleanup (or when
   restarted).}
 
 @item{@filepath{<[in]active-assignment>/<user(s)>/grade} (optional):
