@@ -907,6 +907,7 @@ void scheme_load_delayed_syntax(struct Resolve_Prefix *rp, long i);
 XFORM_NONGCING Scheme_Object *scheme_phase_index_symbol(int src_phase_index);
 
 Scheme_Object *scheme_explode_syntax(Scheme_Object *stx, Scheme_Hash_Table *ht);
+void scheme_populate_pt_ht(struct Scheme_Module_Phase_Exports * pt);
 
 /*========================================================================*/
 /*                   syntax run-time structures                           */

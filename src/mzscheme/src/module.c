@@ -338,7 +338,7 @@ void scheme_init_module(Scheme_Env *env)
                                                       scheme_make_pair(kernel_symbol, 
                                                                        scheme_null)),
                                      scheme_false, kernel_modname);
-  scheme_hash_key(kernel_modidx);
+  (void)scheme_hash_key(kernel_modidx);
   unsafe_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%unsafe"));
 
   REGISTER_SO(module_symbol);
@@ -5568,7 +5568,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     REGISTER_SO(empty_self_modidx);
     REGISTER_SO(empty_self_modname);
     empty_self_modidx = scheme_make_modidx(scheme_false, scheme_false, scheme_false);
-    scheme_hash_key(empty_self_modidx);
+    (void)scheme_hash_key(empty_self_modidx);
     empty_self_modname = scheme_make_symbol("expanded module"); /* uninterned */
     empty_self_modname = scheme_intern_resolved_module_path(empty_self_modname);
   }

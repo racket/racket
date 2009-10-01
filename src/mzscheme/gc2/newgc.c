@@ -206,7 +206,10 @@ static void *ofm_malloc_zero(size_t size) {
 
 inline static void check_used_against_max(NewGC *gc, size_t len) 
 {
-  gc->used_pages += (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
+  long delta;
+
+  delta = (len / APAGE_SIZE) + (((len % APAGE_SIZE) == 0) ? 0 : 1);
+  gc->used_pages += delta;
 
   if(gc->in_unsafe_allocation_mode) {
     if(gc->used_pages > gc->max_pages_in_heap)
@@ -219,8 +222,10 @@ inline static void check_used_against_max(NewGC *gc, size_t len)
         if(gc->used_pages > gc->max_pages_for_use) {
           /* too much memory allocated. 
            * Inform the thunk and then die semi-gracefully */
-          if(GC_out_of_memory)
+          if(GC_out_of_memory) {
+            gc->used_pages -= delta;
             GC_out_of_memory();
+          }
           out_of_memory();
         }
       }
@@ -537,6 +542,7 @@ static void *allocate_big(const size_t request_size_bytes, int type)
   NewGC *gc = GC_get_GC();
   mpage *bpage;
   size_t allocate_size;
+  void *addr;
 
 #ifdef NEWGC_BTC_ACCOUNT
   if(GC_out_of_memory) {
@@ -563,16 +569,20 @@ static void *allocate_big(const size_t request_size_bytes, int type)
     if (!gc->dumping_avoid_collection)
       garbage_collect(gc, 0);
   }
-  gc->gen0.current_size += allocate_size;
 
-  /* We not only need APAGE_SIZE alignment, we 
+  /* The following allocations may fail and escape if GC_out_of_memory is set.
+     We not only need APAGE_SIZE alignment, we 
      need everything consisently mapped within an APAGE_SIZE
      segment. So round up. */
-  bpage = malloc_mpage();
   if (type == PAGE_ATOMIC)
-    bpage->addr = malloc_dirty_pages(gc, round_to_apage_size(allocate_size), APAGE_SIZE);
+    addr = malloc_dirty_pages(gc, round_to_apage_size(allocate_size), APAGE_SIZE);
   else
-    bpage->addr = malloc_pages(gc, round_to_apage_size(allocate_size), APAGE_SIZE);
+    addr = malloc_pages(gc, round_to_apage_size(allocate_size), APAGE_SIZE);
+
+  gc->gen0.current_size += allocate_size;
+
+  bpage = malloc_mpage();
+  bpage->addr = addr;
   bpage->size = allocate_size;
   bpage->size_class = 2;
   bpage->page_type = type;
