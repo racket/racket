@@ -41,17 +41,18 @@
                    (let ([pfx (prefix)])
                      (for ([p (in-list outps)]) (display pfx p)))
                    (set! prompt? #f))
-                 (let* ([nl (if nl (cdar nl) end)]
+                 (let* ([nl  (and nl (cdar nl))]
+                        [end (or nl end)]
                         [ls (for/list ([p (in-list outps)])
-                              (write-bytes-avail* buf p start nl))]
+                              (write-bytes-avail* buf p start end))]
                         [l (car ls)])
                    (when (and (pair? (cdr ls))
                               (not (equal? (car ls) (cadr ls))))
                      (display "WARNING: incomplete write to log file\n"
                               (car outps)))
-                   (when (and nl (= l (- nl start)))
-                     ;; pre-newline part written
-                     (map flush-output outps) (set! prompt? #t))
+                   (when (= l (- end start))
+                     (map flush-output outps)
+                     (when nl (set! prompt? #t)))
                    l))))
            (lambda () (semaphore-post sema))))
        (lambda () (map close-output-port outps))))))
