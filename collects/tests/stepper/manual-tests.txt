@@ -1,6 +1,3 @@
-;; The first three lines of this file were inserted by DrScheme. They record metadata
-;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-beginner-reader.ss" "lang")((modname manual-tests) (read-case-sensitive #t) (teachpacks ((lib "universe.ss" "teachpack" "2htdp") (lib "prisoners-tp.ss" "installed-teachpacks"))) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ((lib "universe.ss" "teachpack" "2htdp") (lib "prisoners-tp.ss" "installed-teachpacks")))))
 open stepper, make sure it works for (+ 3 4).
 
 make sure that stepper button appears and disappears as necessary when
@@ -12,6 +9,8 @@ warning when the program window disappears.
 
 Try stepping backward and forward through programs with correct and erroneous
 (syntax errors, runtime errors) executions.
+
+Test programs with syntax errors
 
 Try programs which print snips (print-convert-test.ss)
 
