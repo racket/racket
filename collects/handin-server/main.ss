@@ -627,7 +627,10 @@
 
 (define session-count 0)
 
-(parameterize ([error-display-handler (lambda (msg exn) (log-line msg))])
+(parameterize ([error-display-handler (lambda (msg exn) (log-line msg))]
+               [current-directory server-dir])
+  (define (without-context f)
+    (lambda xs (parameterize ([error-print-context-length 0]) (apply f xs))))
   (run-server
    (get-conf 'port-number)
    (lambda (r w)
@@ -679,5 +682,5 @@
        (ssl-load-private-key! l "private-key.pem")
        l))
    ssl-close
-   ssl-accept
-   ssl-accept/enable-break))
+   (without-context ssl-accept)
+   (without-context ssl-accept/enable-break)))
