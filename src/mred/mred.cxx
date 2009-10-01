@@ -3200,6 +3200,8 @@ static void on_main_killed(Scheme_Thread *p)
 void MrEdApp::RealInit(void)
 {
   Scheme_Thread *thread;
+  int skip = 0;
+
   thread = scheme_get_current_thread();
 
   initialized = 1;
@@ -3212,11 +3214,11 @@ void MrEdApp::RealInit(void)
 
 #ifdef wx_xt
   if (wx_single_instance) {
-    exit_val = wxCheckSingleInstance(global_env);
+    skip = wxCheckSingleInstance(global_env);
   }
 #endif
 
-  if (!exit_val)
+  if (!exit_val && !skip)
     exit_val = mred_finish_cmd_line_run();
 
   scheme_kill_thread(thread);
