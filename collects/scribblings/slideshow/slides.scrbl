@@ -120,7 +120,10 @@ among the @scheme[element]s are decoded by performing the following
 substitutions: @litchar{---} @d=> @litchar["\u2014"], @litchar{--}
 @d=> @litchar["\u2013"], @litchar{``} @d=> @litchar["\u201C"],
 @litchar{''} @d=> @litchar["\u201D"], @litchar{'} @d=>
-@litchar["\u2019"].
+@litchar["\u2019"]. In addition, to better work with
+@schememodname[at-exp] notation, if an @scheme[element] is @scheme["\n"],
+then it is dropped along with any spaces at the start of the next
+element.
 
 Strings are split at spaces for word-wrapping to fit the page, and a
 space is added between elements. If a string element starts with one

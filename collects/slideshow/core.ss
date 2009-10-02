@@ -669,7 +669,7 @@
                                               [else vl-append])
                                             width
                                             (if decode?
-                                                (map decode s)
+                                                (decode s)
                                                 s))])
                         (if fill?
                             ((case align
@@ -684,7 +684,23 @@
       (define (decode s)
         (let loop ([s s])
           (cond
-           [(list? s) (map loop s)]
+           [(list? s) 
+            (map 
+             decode
+             ;; Remove "\n", and also cancel extra spaces after "\n":
+             (let loop ([s s])
+               (cond
+                [(null? s) null]
+                [(equal? (car s) "\n")
+                 (let nloop ([s (cdr s)])
+                   (if (and (pair? s)
+                            (string? (car s)))
+                       (let ([a (regexp-replace #rx"^ +" (car s) "")])
+                         (if (string=? a "")
+                             (nloop (cdr s))
+                             (loop (cons a (cdr s)))))
+                       (loop s)))]
+                [else (cons (car s) (loop (cdr s)))])))]
            [(not (string? s)) s]
            [(regexp-match-positions #rx"---" s)
             => (lambda (m)
