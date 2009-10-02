@@ -787,7 +787,7 @@ static information (see @scheme[syntax-local-value]) satisfying the
 given @scheme[predicate]. If the term does not match, the
 @scheme[description] argument is used to describe the expected syntax.
 
-When used outside of the dynamic extend of a macro transformer (see
+When used outside of the dynamic extent of a macro transformer (see
 @scheme[syntax-transforming?]), matching fails.
 
 The attribute @var[value] contains the value the name is bound to.
