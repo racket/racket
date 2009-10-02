@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------
-					  [Sat Aug 29 15:44:41 EDT 2009]
+Version 4.2.2				  [Sat Aug 29 15:44:41 EDT 2009]
 
 * universe API: 
   -- added a (state Boolean) option for world and server programs 

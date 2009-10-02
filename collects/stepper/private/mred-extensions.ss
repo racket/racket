@@ -148,7 +148,7 @@
                   (reformat-sexp width)
                   (end-edit-sequence)))])
     
-    (define highlight-table (make-weak-hash))
+    (define highlight-table (make-weak-hasheq))
     
     (define stripped-exps
       (map (lambda (exp) (strip-to-sexp exp highlight-table)) exps))
@@ -181,8 +181,6 @@
            ; the pretty-print-size-hook decides whether this object should be printed by the new pretty-print-hook
            [pretty-print-size-hook
             (lambda (value display? port)
-              (when (not highlight-table)
-                (fprintf (current-error-port) "hey! the highlight-table doesn't exist! (1)"))
               (let ([looked-up (hash-ref highlight-table value (lambda () #f))])
                 (cond
                   [(is-a? value snip%) 
@@ -203,8 +201,6 @@
            [pretty-print-print-hook
             ; this print-hook is called for confusable highlights and for images.
             (lambda (value display? port)
-              (when (not highlight-table)
-                (fprintf (current-error-port) "hey! the highlight-table doesn't exist! (2)"))
               (let ([to-display (cond 
                                   [(hash-ref highlight-table value (lambda () #f)) => car]
                                   [else value])])
@@ -223,14 +219,10 @@
               0)]
            [pretty-print-pre-print-hook
             (lambda (value p)
-              (when (not highlight-table)
-                (fprintf (current-error-port) "hey! the highlight-table doesn't exist! (3)"))
               (when (hash-ref highlight-table value (lambda () #f))
                 (set! highlight-begin (get-start-position))))]
            [pretty-print-post-print-hook
             (lambda (value p)
-              (when (not highlight-table)
-                (fprintf (current-error-port) "hey! the highlight-table doesn't exist! (4)"))
               (when (hash-ref highlight-table value (lambda () #f))
                 (let ([highlight-end (get-start-position)])
                   (unless highlight-begin
@@ -241,6 +233,7 @@
                   (set! highlight-begin #f))))]
            ;; mflatt: MAJOR HACK - this setting needs to come from the language
            ;;  somehow
+           ;; jbc : this could be fixed in the same way that inexact-number printing is handled....
            [read-case-sensitive #t]
            )
         (pretty-print sexp text-port)))
