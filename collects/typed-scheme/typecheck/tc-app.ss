@@ -143,17 +143,18 @@
 
 (define (let-loop-check form lp actuals args body expected)
   (syntax-parse #`(#,args #,body #,actuals) 
-    #:literals (#%plain-app if null?)
+    #:literals (#%plain-app if null? pair?)
     [((val acc ...)
-      ((if (#%plain-app null? val*) thn els))
+      ((~and inner-body (if (#%plain-app (~or pair? null?) val*) thn els)))
       (actual actuals ...))
+     #:fail-unless
      (and (free-identifier=? #'val #'val*)
-          (ormap (lambda (a) (find-annotation #'(if (#%plain-app null? val*) thn els) a))
-                 (syntax->list #'(acc ...))))
+          (ormap (lambda (a) (find-annotation #'inner-body a))
+                 (syntax->list #'(acc ...)))) #f
      (let* ([ts1 (generalize (tc-expr/t #'actual))]
             [ann-ts (for/list ([a (in-syntax #'(acc ...))]
                                [ac (in-syntax #'(actuals ...))])
-                      (or (find-annotation #'(if (#%plain-app null? val*) thn els) a)
+                      (or (find-annotation #'inner-body a)
                           (generalize (tc-expr/t ac))))]
             [ts (cons ts1 ann-ts)])
        ;; check that the actual arguments are ok here
@@ -164,7 +165,7 @@
        (tc/rec-lambda/check form args body lp ts expected)
        expected)]
     ;; special case when argument needs inference
-    [_
+    [_     
      (let ([ts (for/list ([ac (syntax->list actuals)]
                           [f (syntax->list args)])
                  (or 
