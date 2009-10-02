@@ -191,7 +191,8 @@ starter: mzstart.exe
 
 exn:
 	$(MAKE) $(srcdir)/src/schexn.h
-
+	$(MAKE) $(collectsdir)/scheme/private/kernstruct.ss
+                                       
 CSTARTUPDEST = cstartup.inc
 
 startup:
@@ -214,7 +215,10 @@ headers:
 	./mzscheme@CGC@ -cqu $(srcdir)/mkincludes.ss "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
 
 $(srcdir)/src/schexn.h: $(srcdir)/src/exnsrc.ss $(srcdir)/src/makeexn
-	./mzscheme@CGC@ -gqr $(srcdir)/src/makeexn < $(srcdir)/src/exnsrc.ss > $(srcdir)/src/schexn.h
+	./mzscheme@CGC@ -um $(srcdir)/src/makeexn > $(srcdir)/src/schexn.h
+$(collectsdir)/scheme/private/kernstruct.ss: $(srcdir)/src/exnsrc.ss $(srcdir)/src/makeexn
+	./mzscheme@CGC@ -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/scheme/private/kernstruct.ss
+
 
 $(srcdir)/src/$(CSTARTUPDEST): $(srcdir)/src/startup.ss $(srcdir)/src/schvers.h $(srcdir)/src/schminc.h
 	./mzscheme@CGC@ -cqu $(srcdir)/src/sstoinc.ss $(CSTARTUPEXTRA) < $(srcdir)/src/startup.ss > $(srcdir)/src/$(CSTARTUPDEST)

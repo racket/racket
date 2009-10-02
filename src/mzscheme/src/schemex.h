@@ -821,10 +821,6 @@ Scheme_Object *(*scheme_make_struct_type)(Scheme_Object *base,
 Scheme_Object *(*scheme_make_struct_instance)(Scheme_Object *stype,
 						     int argc,
 						     Scheme_Object **argv);
-Scheme_Object *(*scheme_make_struct_exptime)(Scheme_Object **names, int count,
-						    Scheme_Object *super_sym,
-						    Scheme_Object *super_exptime,
-						    int flags);
 int (*scheme_is_struct_instance)(Scheme_Object *type, Scheme_Object *v);
 Scheme_Object *(*scheme_struct_ref)(Scheme_Object *s, int pos);
 void (*scheme_struct_set)(Scheme_Object *s, int pos, Scheme_Object *v);

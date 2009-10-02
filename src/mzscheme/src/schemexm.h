@@ -569,7 +569,6 @@
 #define scheme_make_struct_names (scheme_extension_table->scheme_make_struct_names)
 #define scheme_make_struct_type (scheme_extension_table->scheme_make_struct_type)
 #define scheme_make_struct_instance (scheme_extension_table->scheme_make_struct_instance)
-#define scheme_make_struct_exptime (scheme_extension_table->scheme_make_struct_exptime)
 #define scheme_is_struct_instance (scheme_extension_table->scheme_is_struct_instance)
 #define scheme_struct_ref (scheme_extension_table->scheme_struct_ref)
 #define scheme_struct_set (scheme_extension_table->scheme_struct_set)

@@ -3465,7 +3465,7 @@ void scheme_init_exn(Scheme_Env *env)
 
   for (i = 0; i < MZEXN_OTHER; i++) {
     if (exn_table[i].count) {
-      Scheme_Object **values, *et;
+      Scheme_Object **values;
       int sp;
 
       values = scheme_make_struct_values(exn_table[i].type,
@@ -3479,12 +3479,6 @@ void scheme_init_exn(Scheme_Env *env)
       }
 
       sp = exn_table[i].super_pos;
-      et = scheme_make_struct_exptime(exn_table[i].names, exn_table[i].count,
-				      (sp >= 0) ? exn_table[sp].names[exn_table[sp].count - 1] : NULL,
-				      (sp >= 0) ? exn_table[sp].exptime : NULL,
-				      EXN_FLAGS);
-      exn_table[i].exptime = et;
-      scheme_add_global_keyword_symbol(exn_table[i].names[exn_table[i].count - 1], et, env);
     }
   }
 

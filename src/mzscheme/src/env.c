@@ -1859,13 +1859,6 @@ Scheme_Object *scheme_make_local(Scheme_Type type, int pos, int flags)
   return v;
 }
 
-static Scheme_Object *force_lazy_macro(Scheme_Object *val, long phase)
-{
-  Lazy_Macro_Fun f = (Lazy_Macro_Fun)SCHEME_PTR1_VAL(val);
-  Scheme_Object *data = SCHEME_PTR2_VAL(val);
-  return f(data, phase);
-}
-
 static Scheme_Local *get_frame_loc(Scheme_Comp_Env *frame,
 				   int i, int j, int p, int flags)
 /* Generates a Scheme_Local record for a static distance coodinate, and also
@@ -2777,8 +2770,6 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	  if (!(flags & SCHEME_ENV_CONSTANTS_OK)) {
 	    if (SAME_TYPE(SCHEME_TYPE(val), scheme_macro_type))
 	      return val;
-	    else if (SAME_TYPE(SCHEME_TYPE(val), scheme_lazy_macro_type))
-	      return force_lazy_macro(val, phase);
 	    else
 	      scheme_wrong_syntax(scheme_set_stx_string, NULL, find_id,
 				  "local syntax identifier cannot be mutated");
@@ -2895,8 +2886,6 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   }
   
   if (val) {
-    if (SAME_TYPE(SCHEME_TYPE(val), scheme_lazy_macro_type))
-      return force_lazy_macro(val, phase);
     return val;
   }
 

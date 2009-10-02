@@ -569,7 +569,6 @@
   scheme_extension_table->scheme_make_struct_names = scheme_make_struct_names;
   scheme_extension_table->scheme_make_struct_type = scheme_make_struct_type;
   scheme_extension_table->scheme_make_struct_instance = scheme_make_struct_instance;
-  scheme_extension_table->scheme_make_struct_exptime = scheme_make_struct_exptime;
   scheme_extension_table->scheme_is_struct_instance = scheme_is_struct_instance;
   scheme_extension_table->scheme_struct_ref = scheme_struct_ref;
   scheme_extension_table->scheme_struct_set = scheme_struct_set;

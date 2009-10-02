@@ -15,6 +15,7 @@
              "private/old-if.ss"
              "private/old-procs.ss"
              "private/map.ss" ; shadows #%kernel bindings
+             "private/kernstruct.ss"
              "promise.ss"
              (only "private/cond.ss" old-cond)
              "tcp.ss"
@@ -37,6 +38,7 @@
              identifier? ;; from "private/stx.ss"
              (all-from "private/qqstx.ss")
              (all-from "private/define.ss")
+             (all-from "private/kernstruct.ss")
              force delay promise?
              (all-from-except '#%kernel #%module-begin #%datum 
                               if make-empty-namespace

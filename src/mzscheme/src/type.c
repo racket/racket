@@ -160,7 +160,6 @@ scheme_init_type ()
   set_name(scheme_keyword_type, "<keyword>");
   set_name(scheme_syntax_compiler_type, "<syntax-compiler>");
   set_name(scheme_macro_type, "<macro>");
-  set_name(scheme_lazy_macro_type, "<lazy-macro>");
   set_name(scheme_vector_type, "<vector>");
   set_name(scheme_bignum_type, "<bignum-integer>");
   set_name(scheme_escaping_cont_type, "<escape-continuation>");
@@ -552,7 +551,6 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_void_type, char_obj);  /* small */
   GC_REG_TRAV(scheme_syntax_compiler_type, syntax_compiler);
   GC_REG_TRAV(scheme_macro_type, small_object);
-  GC_REG_TRAV(scheme_lazy_macro_type, second_of_cons);
   GC_REG_TRAV(scheme_box_type, small_object);
   GC_REG_TRAV(scheme_thread_type, thread_val);
   GC_REG_TRAV(scheme_prompt_type, prompt_val);

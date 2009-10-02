@@ -3814,7 +3814,6 @@ static Scheme_Object *search_shared_pes(Scheme_Object *shared_pes,
 {
   Scheme_Object *pr, *idx, *pos, *src, *best_match = NULL;
   Scheme_Module_Phase_Exports *pt;
-  Scheme_Hash_Table *ht;
   int i, phase, best_match_len = -1, skip = 0;
   Scheme_Object *marks_cache = NULL;
 

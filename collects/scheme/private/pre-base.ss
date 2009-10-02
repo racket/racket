@@ -13,7 +13,7 @@
              "modbeg.ss"
              "for.ss"
              "map.ss" ; shadows #%kernel bindings
-
+             "kernstruct.ss"
              '#%builtin) ; so it's attached
 
   (define-syntaxes (#%top-interaction)
@@ -73,6 +73,7 @@
              (all-from-except '#%kernel lambda λ #%app #%module-begin apply prop:procedure)
              (all-from "reqprov.ss")
              (all-from "for.ss")
+             (all-from "kernstruct.ss")
              #%top-interaction
 
              map for-each andmap ormap

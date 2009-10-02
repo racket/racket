@@ -175,15 +175,15 @@ void
 scheme_init_struct (Scheme_Env *env)
 {
   Scheme_Object **as_names;
-  Scheme_Object **as_values, *as_et;
+  Scheme_Object **as_values;
   int as_count;
 #ifdef TIME_SYNTAX
   Scheme_Object **ts_names;
-  Scheme_Object **ts_values, *ts_et;
+  Scheme_Object **ts_values;
   int ts_count;
 #endif
   Scheme_Object **loc_names;
-  Scheme_Object **loc_values, *loc_et;
+  Scheme_Object **loc_values;
   int loc_count;
   int i;
   Scheme_Object *guard;
@@ -217,9 +217,6 @@ scheme_init_struct (Scheme_Env *env)
 			       env);
   }
 
-  as_et = scheme_make_struct_exptime(as_names, as_count, NULL, NULL, BUILTIN_STRUCT_FLAGS);
-  scheme_add_global_keyword_symbol(as_names[as_count - 1], as_et, env);
-
 #ifdef TIME_SYNTAX
   /* Add date structure: */
   REGISTER_SO(scheme_date);
@@ -237,8 +234,6 @@ scheme_init_struct (Scheme_Env *env)
 			       env);
   }
 
-  ts_et = scheme_make_struct_exptime(ts_names, ts_count, NULL, NULL, BUILTIN_STRUCT_FLAGS);
-  scheme_add_global_keyword_symbol(ts_names[ts_count - 1], ts_et, env);
 #endif
 
   /* Add location structure: */
@@ -256,9 +251,6 @@ scheme_init_struct (Scheme_Env *env)
     scheme_add_global_constant(scheme_symbol_val(loc_names[i]), loc_values[i], 
 			       env);
   }
-
-  loc_et = scheme_make_struct_exptime(loc_names, loc_count, NULL, NULL, LOC_STRUCT_FLAGS);
-  scheme_add_global_keyword_symbol(loc_names[loc_count - 1], loc_et, env);
 
   REGISTER_SO(write_property);
   {
@@ -2832,126 +2824,6 @@ static Scheme_Object *make_name(const char *pre, const char *tn, int ltn,
     return scheme_intern_exact_symbol(name, total);
   else
     return (Scheme_Object *)name;
-}
-
-static Scheme_Object *get_phase_ids(Scheme_Object *_v, int phase)
-{
-  Scheme_Object **v = (Scheme_Object **)_v;
-  Scheme_Object *l, **names, *tp, *cns, *prd, *super_exptime, *w, *macro;
-  Scheme_Hash_Table *ht;
-  int count, i, flags;
-
-  ht = (Scheme_Hash_Table *)v[3];
-
-  if (!ht) {
-    ht = scheme_make_hash_table(SCHEME_hash_ptr);
-    v[3] = (Scheme_Object *)ht;
-  }
-
-  l = scheme_hash_get(ht, scheme_make_integer(phase));
-  if (l)
-    return l;
-
-  names = (Scheme_Object **)v[0];
-  count = SCHEME_INT_VAL(v[1]);
-  super_exptime = v[2];
-
-  w = scheme_sys_wraps((Scheme_Comp_Env *)(scheme_make_integer(phase)));
-
-  tp = names[0];
-  cns = names[1];
-  prd = names[2];
-
-  tp = scheme_datum_to_syntax(tp, scheme_false, w, 0, 0);
-  cns = scheme_datum_to_syntax(cns, scheme_false, w, 0, 0);
-  prd = scheme_datum_to_syntax(prd, scheme_false, w, 0, 0);
-
-  if (super_exptime) {
-    super_exptime = get_phase_ids(SCHEME_PTR2_VAL(super_exptime), phase);
-    super_exptime = SCHEME_PTR_VAL(super_exptime);
-    l = scheme_make_pair(scheme_datum_to_syntax(v[4], scheme_false, w, 0, 0), scheme_null);
-    super_exptime = SCHEME_CDR(SCHEME_CDR(SCHEME_CDR(super_exptime)));
-  } else {
-    l = scheme_make_pair(scheme_true, scheme_null);
-  }
-
-  if (count > 3) {
-    Scheme_Object *n, *gets, *sets;
-
-    if (super_exptime) {
-      gets = SCHEME_CAR(super_exptime);
-      sets = SCHEME_CADR(super_exptime);
-    } else {
-      gets = scheme_null;
-      sets = scheme_null;
-    }
-
-    flags = SCHEME_INT_VAL(v[5]);
-    
-    for (i = 3; i < count - 1; i++) {
-      n = names[i];
-      n = scheme_datum_to_syntax(n, scheme_false, w, 0, 0);
-      gets = scheme_make_pair(n, gets);
-
-      if (!(flags & SCHEME_STRUCT_NO_SET)) {
-	i++;
-	n = names[i];
-	n = scheme_datum_to_syntax(n, scheme_false, w, 0, 0);
-	sets = scheme_make_pair(n, sets);
-      } else
-	sets = scheme_make_pair(scheme_false, sets);
-    }
-
-    l = scheme_make_pair(gets, scheme_make_pair(sets, l));
-  } else {
-    if (super_exptime)
-      l = icons(SCHEME_CAR(super_exptime),
-		icons(SCHEME_CADR(super_exptime),
-		      l));
-    else
-      l = scheme_make_pair(scheme_null, scheme_make_pair(scheme_null, l));
-  }
-
-  l = scheme_make_pair(prd, l);
-  l = scheme_make_pair(cns, l);
-  l = scheme_make_pair(tp, l);
-
-  macro = scheme_alloc_small_object();
-  macro->type = scheme_macro_type;
-  SCHEME_PTR_VAL(macro) = l;
-
-  scheme_hash_set(ht, scheme_make_integer(phase), macro);
-
-  return macro;
-}
-
-Scheme_Object *scheme_make_struct_exptime(Scheme_Object **names, int count,
-					  Scheme_Object *super_sym,
-					  Scheme_Object *super_exptime,
-					  int flags)
-{
-  Scheme_Object *macro;
-  Scheme_Object **v;
-
-  if (!(flags & SCHEME_STRUCT_EXPTIME)) {
-    scheme_signal_error("struct exptime needs SCHEME_STRUCT_EXPTIME");
-    return NULL;
-  }
-
-  v = MALLOC_N(Scheme_Object*, 6);
-  v[0] = (Scheme_Object *)names;
-  v[1] = scheme_make_integer(count);
-  v[2] = super_exptime;
-  v[3] = NULL; /* hash table, filled in by get_phase_ids */
-  v[4] = super_sym;
-  v[5] = scheme_make_integer(flags);
-
-  macro = scheme_alloc_object();
-  macro->type = scheme_lazy_macro_type;
-  SCHEME_PTR1_VAL(macro) = (Scheme_Object *)get_phase_ids;
-  SCHEME_PTR2_VAL(macro) = (Scheme_Object *)v;
-
-  return macro;
 }
 
 /*========================================================================*/
