@@ -334,7 +334,7 @@
     [(96) 'case-lambda-sequence-type]
     [(97) 'begin0-sequence-type]
     [(100) 'module-type]
-    [(103) 'resolve-prefix-type]
+    [(102) 'resolve-prefix-type]
     [else (error 'int->type "unknown type: ~e" i)]))
 
 (define type-readers
