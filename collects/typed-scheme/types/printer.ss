@@ -11,6 +11,10 @@
 ;; do we use simple type aliases in printing
 (define print-aliases #t)
 
+(define special-dots-printing? (make-parameter #f))
+(define print-complex-filters? (make-parameter #f))
+(provide special-dots-printing? print-complex-filters?)
+
 ;; does t have a type name associated with it currently?
 ;; has-name : Type -> Maybe[Symbol]
 (define (has-name? t) 
@@ -31,8 +35,13 @@
   (define (fp . args) (apply fprintf port args))
   (match c
     [(LFilterSet: thn els) (fp "(")
-                           (for ([i thn]) (fp "~a " i)) (fp "|")
-                           (for ([i els]) (fp " ~a" i))
+                           (if (null? thn)
+                               (fp "LTop")
+                               (for ([i thn]) (fp "~a " i)))
+                           (fp "|")
+                           (if (null? els)
+                               (fp "LTop")
+                               (for ([i els]) (fp " ~a" i)))
                            (fp")")]
     [(LNotTypeFilter: type path idx) (fp "(! ~a @ ~a ~a)" type path idx)]
     [(LTypeFilter: type path idx) (fp "(~a @ ~a ~a)" type path idx)]
@@ -74,6 +83,10 @@
 ;; print-type : Type Port Boolean -> Void
 (define (print-type c port write?)
   (define (fp . args) (apply fprintf port args)) 
+  (define (fp/filter fmt ret . rest)
+    (if (print-complex-filters?)
+        (apply fp fmt ret rest)
+        (fp "-> ~a" ret)))
   (define (print-arr a)
     (match a
       [(top-arr:)
@@ -88,9 +101,10 @@
                 (fp "~a ~a " k t)
                 (fp "[~a ~a] " k t))]))
        (when rest
-         (fp "~a* " rest))
+         (fp "~a ~a " rest (if (special-dots-printing?) "...*" "*")))
        (when drest
-         (fp "~a ... ~a " (car drest) (cdr drest)))
+         (fp "~a ...~a~a " 
+             (car drest) (if (special-dots-printing?) "" " ") (cdr drest)))
        (match rng
          [(Values: (list (Result: t (LFilterSet: (list) (list)) (LEmpty:))))
           (fp "-> ~a" t)]
@@ -100,9 +114,9 @@
 				  (LEmpty:)))) 
           (fp "-> ~a : ~a" t ft)]
          [(Values: (list (Result: t fs (LEmpty:)))) 
-          (fp "-> ~a : ~a" t fs)]
+          (fp/filter "-> ~a : ~a" t fs)]
          [(Values: (list (Result: t lf lo)))
-          (fp "-> ~a : ~a ~a" t lf lo)]
+          (fp/filter "-> ~a : ~a ~a" t lf lo)]
          [_
           (fp "-> ~a" rng)])
        (fp ")")]))

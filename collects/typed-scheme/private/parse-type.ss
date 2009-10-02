@@ -28,12 +28,24 @@
 (define-syntax-class star
   #:description "*"
   (pattern star:id
-           #:fail-unless (eq? '* (syntax-e #'star)) "missing *"))
+           #:fail-unless (eq? '* (syntax-e #'star)) "missing *")
+  (pattern star:id
+           #:fail-unless (eq? '...* (syntax-e #'star)) "missing ...*"))
 
 (define-syntax-class ddd
   #:description "..."
   (pattern ddd:id
            #:fail-unless (eq? '... (syntax-e #'ddd)) "missing ..."))
+
+(define-splicing-syntax-class ddd/bound
+  #:description "... followed by variable name"
+  #:attributes (bound)
+  (pattern i:id
+           #:attr s (symbol->string (syntax-e #'i))
+           #:fail-unless ((string-length (attribute s)) . > . 3) #f
+           #:fail-unless (equal? "..." (substring (attribute s) 0 3)) "missing ..."
+           #:attr bound (datum->syntax #'i (string->symbol (substring (attribute s) 3)) #'i #'i))
+  (pattern (~seq _:ddd bound:id)))
 
 (define (parse-all-type stx parse-type)
   ;(printf "parse-all-type: ~a ~n" (syntax->datum stx))
@@ -108,10 +120,9 @@
       ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
       (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (parse-type #'pred-ty))]
      [(dom ... rest ddd:star (~and kw t:->) rng)
-      #:fail-unless (eq? '* (syntax-e #'ddd))
       (add-type-name-reference #'kw)
       (->* (map parse-type (syntax->list #'(dom ...))) (parse-type #'rest) (parse-values-type #'rng))]
-     [(dom ... rest _:ddd bound:id (~and kw t:->) rng)
+     [(dom ... rest :ddd/bound (~and kw t:->) rng)
       (add-type-name-reference #'kw)
       (let ([var (lookup (current-tvars) (syntax-e #'bound) (lambda (_) #f))])
         (if (not (Dotted? var))
@@ -284,7 +295,7 @@
 (define (parse-values-type stx)
   (parameterize ([current-orig-stx stx])        
     (syntax-parse stx #:literals (values t:All)
-      [((~and kw values) tys ... dty :ddd bound:id)       
+      [((~and kw values) tys ... dty :ddd/bound)
        (add-type-name-reference #'kw)
        (let ([var (lookup (current-tvars) (syntax-e #'bound) (lambda (_) #f))])
          (if (not (Dotted? var))
