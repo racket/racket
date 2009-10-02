@@ -104,6 +104,7 @@ static Scheme_Object *fx_xor (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_not (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_lshift (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_rshift (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fx_to_fl (int argc, Scheme_Object *argv[]);
 
 static double not_a_number_val;
 
@@ -519,6 +520,11 @@ void scheme_init_unsafe_number(Scheme_Env *env)
   p = scheme_make_folding_prim(fx_rshift, "unsafe-fxrshift", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("unsafe-fxrshift", p, env);
+
+  p = scheme_make_folding_prim(fx_to_fl, "unsafe-fx->fl", 1, 1, 1);
+  if (scheme_can_inline_fp_op())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("unsafe-fx->fl", p, env);
 }
 
 
@@ -2801,3 +2807,10 @@ static Scheme_Object *fx_not (int argc, Scheme_Object *argv[])
   return scheme_make_integer(v);
 }
 
+static Scheme_Object *fx_to_fl (int argc, Scheme_Object *argv[])
+{
+  long v;
+  if (scheme_current_thread->constant_folding) return scheme_exact_to_inexact(argc, argv);
+  v = SCHEME_INT_VAL(argv[0]);
+  return scheme_make_double(v);
+}

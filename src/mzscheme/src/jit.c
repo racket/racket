@@ -3660,7 +3660,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       if (for_branch) mz_rs_sync();
     }
 
-    if (unsafe_fl || (!SCHEME_INTP(rand) && can_fast_double(arith, cmp, 1))) {
+    if (unsafe_fl || (!unsafe_fx && !SCHEME_INTP(rand) && can_fast_double(arith, cmp, 1))) {
       /* Maybe they're both doubles... */
       if (unsafe_fl) mz_rs_sync();
       generate_double_arith(jitter, arith, cmp, reversed, 1, 0, &refd, &refdt, branch_short, unsafe_fl);
@@ -3709,7 +3709,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       CHECK_LIMIT();
     }
 
-    if (unsafe_fl || can_fast_double(arith, cmp, 1)) {
+    if (unsafe_fl || (!unsafe_fx && can_fast_double(arith, cmp, 1))) {
       /* Maybe they're both doubles... */
       if (unsafe_fl) mz_rs_sync();
       generate_double_arith(jitter, arith, cmp, reversed, 1, 0, &refd, &refdt, branch_short, unsafe_fl);
@@ -3753,6 +3753,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
     if (unsafe_fl
         || ((orig_args != 2) /* <- heuristic: we could generate code when an exact argument is
                                 given, but the extra FP code is probably not worthwhile. */
+            && !unsafe_fx
             && can_fast_double(arith, cmp, 0)
             /* watch out: divide by 0 is special: */
             && ((arith != -2) || v || reversed))) {
@@ -4765,6 +4766,9 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       return 1;
     } else if (IS_NAMED_PRIM(rator, "exact->inexact")) {
       generate_arith(jitter, rator, app->rand, NULL, 1, 12, 0, 0, NULL, 1, 0, 0);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fx->fl")) {
+      generate_arith(jitter, rator, app->rand, NULL, 1, 12, 0, 0, NULL, 1, 1, 0);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "bitwise-not")) {
       generate_arith(jitter, rator, app->rand, NULL, 1, 7, 0, 9, NULL, 1, 0, 0);

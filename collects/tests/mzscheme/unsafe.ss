@@ -119,6 +119,9 @@
   (test-bin 8 'unsafe-fxrshift 32 2)
   (test-bin 8 'unsafe-fxrshift 8 0)
 
+  (test-un 8.0 'unsafe-fx->fl 8)
+  (test-un -8.0 'unsafe-fx->fl -8)
+
   (test-un 5 'unsafe-car (cons 5 9))
   (test-un 9 'unsafe-cdr (cons 5 9))
   (test-un 15 'unsafe-mcar (mcons 15 19))

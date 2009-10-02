@@ -79,6 +79,11 @@ For @tech{fixnums}: Like @scheme[=], @scheme[<], @scheme[>],
 @tech{fixnums}.}
 
 
+@defproc[(unsafe-fx->fl [a fixnum?]) inexact-real?]{
+Like @scheme[exact->inexact], but constrained to consume @tech{fixnums}.
+}
+
+
 @deftogether[(
 @defproc[(unsafe-fl+ [a inexact-real?][b inexact-real?]) inexact-real?]
 @defproc[(unsafe-fl- [a inexact-real?][b inexact-real?]) inexact-real?]

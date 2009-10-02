@@ -70,13 +70,6 @@ offset_cpointer_obj {
   gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr));
 }
 
-second_of_cons {
- mark:
-  gcMARK(SCHEME_PTR2_VAL((Scheme_Object *)p));
- size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
-}
-
 twoptr_obj {
  mark:
   gcMARK(SCHEME_PTR1_VAL((Scheme_Object *)p));

@@ -1651,6 +1651,7 @@ extern int scheme_is_nan(double);
 #      define MZ_IS_NAN(d) _isnan(d)
 #     else
        /* USE_IEEE_FP_PREDS */
+#      include <math.h>
 #      define MZ_IS_INFINITY(d) (isinf(d))
 #      define MZ_IS_POS_INFINITY(d) (isinf(d) && (d > 0))
 #      define MZ_IS_NEG_INFINITY(d) (isinf(d) && (d < 0))

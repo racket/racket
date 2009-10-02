@@ -164,7 +164,7 @@ hyperlinked to the module path's definition as created by
 @scheme[defmodule].}
 
 @defform[(schememodlink datum pre-content-expr ...)]{
-Like @scheme[schememodlink], but separating the module path to link
+Like @scheme[schememod], but separating the module path to link
 from the content to be linked. The @scheme[datum] module path is always
 linked, even if it is not an identifier.}
 

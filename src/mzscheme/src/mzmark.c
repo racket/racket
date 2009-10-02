@@ -196,27 +196,6 @@ static int offset_cpointer_obj_FIXUP(void *p) {
 #define offset_cpointer_obj_IS_CONST_SIZE 1
 
 
-static int second_of_cons_SIZE(void *p) {
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
-}
-
-static int second_of_cons_MARK(void *p) {
-  gcMARK(SCHEME_PTR2_VAL((Scheme_Object *)p));
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
-}
-
-static int second_of_cons_FIXUP(void *p) {
-  gcFIXUP(SCHEME_PTR2_VAL((Scheme_Object *)p));
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));
-}
-
-#define second_of_cons_IS_ATOMIC 0
-#define second_of_cons_IS_CONST_SIZE 1
-
-
 static int twoptr_obj_SIZE(void *p) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Simple_Object));

@@ -29,9 +29,6 @@
 #ifdef USE_STACKAVAIL
 # include <malloc.c>
 #endif
-#ifdef USE_IEEE_FP_PREDS
-# include <math.h>
-#endif
 
 /* global_constants */
 Scheme_Object scheme_true[1];

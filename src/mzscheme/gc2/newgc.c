@@ -2106,23 +2106,26 @@ void GC_mark(const void *const_p)
 /* this is what actually does mark propagation */
 static inline void propagate_marks_worker(PageMap pagemap, Mark_Proc *mark_table, void *pp)
 {
-  void **start;
+  void **start, **end;
   int alloc_type;
-  objhead *info;
-  mpage *page;
-  int is_big_page = IS_BIG_PAGE_PTR(pp);
-  void *p = REMOVE_BIG_PAGE_PTR_TAG(pp);
+  void *p;
 
   /* we can assume a lot here -- like it's a valid pointer with a page --
      because we vet bad cases out in GC_mark, above */
-  if (is_big_page) {
+  if (IS_BIG_PAGE_PTR(pp)) {
+    mpage *page;
+    p = REMOVE_BIG_PAGE_PTR_TAG(pp);
     page = pagemap_find_page(pagemap, p);
     start = PPTR(BIG_PAGE_TO_OBJECT(page));
     alloc_type = page->page_type;
+    end = PAGE_END_VSS(page);
   } else {
+    objhead *info;
+    p = pp;
     info = OBJPTR_TO_OBJHEAD(p);
     start = p;
     alloc_type = info->type;
+    end = PPTR(info) + info->size;
   }
 
   set_backtrace_source(start, alloc_type);
@@ -2144,12 +2147,10 @@ static inline void propagate_marks_worker(PageMap pagemap, Mark_Proc *mark_table
       break;
     case PAGE_ARRAY: 
       {
-        void **end = is_big_page ? PAGE_END_VSS(page) : PPTR(info) + info->size;
         while(start < end) gcMARK(*start++); break;
       }
     case PAGE_TARRAY: 
       {
-        void **end = is_big_page ? PAGE_END_VSS(page) : PPTR(info) + info->size;
         const unsigned short tag = *(unsigned short *)start;
         ASSERT_TAG(tag);
         end -= INSET_WORDS;
