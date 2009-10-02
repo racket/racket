@@ -600,7 +600,7 @@
                       [name     ; field name 
                        string?  ; check
                        (announce "Name: ~a\n" name)  ; success action
-                       (warn "Package's info.ss file has no name field. Without a name, PLT Scheme will not compile your package.") ;failure action
+                       (warn "Package's info.ss file has no name field.") ;failure action
                        ]
                       [blurb 
                        (λ (b) (and (list? b) (andmap xexpr? b)))
