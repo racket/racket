@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "../utils/utils.ss" syntax/parse
-         scheme/contract scheme/trace
+         scheme/contract
          (rep type-rep)
          (private type-annotation)
          (for-template scheme/base))
@@ -65,4 +65,5 @@
     [e:core-expr
      (ormap find (syntax->list #'(e.expr ...)))]))
 
-;(trace find-annotation)
+; (require scheme/trace)
+; (trace find-annotation)
