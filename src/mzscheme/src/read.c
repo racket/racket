@@ -46,6 +46,7 @@
 #ifdef USE_STACKAVAIL
 # include <malloc.h>
 #endif
+#include "math.h"
 
 #define MAX_QUICK_SYMBOL_SIZE 64
 

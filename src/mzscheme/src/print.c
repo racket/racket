@@ -861,10 +861,10 @@ print_to_string(Scheme_Object *obj,
   if (params.print_graph)
     cycles = 1;
   else {
-    int fast_checker_counter = 50;
 #ifdef MZ_USE_PLACES
     cycles = -1;
 #else
+    int fast_checker_counter = 50;
     cycles = check_cycles_fast(obj, (PrintParams *)&params, &fast_checker_counter);
 #endif
     if (cycles == -1) {

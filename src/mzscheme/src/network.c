@@ -652,6 +652,7 @@ struct mz_addrinfo *scheme_get_host_address(const char *address, int id, int *er
   char buf[32], *service;
   int ok;
   GC_CAN_IGNORE struct mz_addrinfo *r, hints;
+  r = NULL;
 
   if (id) {
     service = buf;
