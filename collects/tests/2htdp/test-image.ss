@@ -10,6 +10,9 @@
 
 ;; test case: (beside (text "a"...) (text "b" ...)) vs (text "ab")
 
+(show-image (overlay (rectangle 200 20 'solid 'red)
+                     (scale 2 (rectangle 200 20 'solid 'blue))))
+
 #;
 (show-image
  (overlay/xy (rectangle 100 10 'solid 'red)
@@ -333,9 +336,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;; scaling tests
+;;
+
+(test (scale 2 (rectangle 100 10 'solid 'blue))
+      =>
+      (rectangle 200 20 'solid 'blue))
+
+(test (scale 3
+             (overlay/xy (rectangle 100 10 'solid 'blue)
+                         0
+                         20
+                         (rectangle 100 10 'solid 'red)))
+      =>
+      (overlay/xy (rectangle 300 30 'solid 'blue)
+                  0
+                  60
+                  (rectangle 300 30 'solid 'red)))
+
+(test (scale 3
+             (overlay/xy (rectangle 100 10 'solid 'blue)
+                         0
+                         20
+                         (overlay/xy (rectangle 100 10 'solid 'blue)
+                                     0
+                                     20
+                                     (rectangle 100 10 'solid 'purple))))
+      =>
+      (overlay/xy (rectangle 300 30 'solid 'blue)
+                  0
+                  60
+                  (overlay/xy (rectangle 300 30 'solid 'blue)
+                              0
+                              60
+                              (rectangle 300 30 'solid 'purple))))
+
+(test (scale/xy 3 4 (ellipse 30 60 'outline 'purple))
+      =>
+      (ellipse (* 30 3) (* 60 4) 'outline 'purple))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; misc tests
 ;;
 
 (test (rectangle 100 10 'solid 'blue)
       =>
       (rectangle 100 10 "solid" "blue"))
+
+

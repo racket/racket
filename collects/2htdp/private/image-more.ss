@@ -24,6 +24,9 @@
          show-image
          bring-between
          
+         scale
+         scale/xy
+         
          x-place?
          y-place?
          mode?
@@ -166,9 +169,10 @@
                 'non-negative-number
                 i arg)
      arg]
-    [(dx dy)
+    [(dx dy factor x-factor y-factor)
      (check-arg fn-name
-                (number? arg)
+                (and (number? arg)
+                     (real? arg))
                 'number
                 i arg)
      arg]
@@ -228,6 +232,20 @@
 ;; so that later scaling /translation/whatever will look reasonable.
 ;; (the error message for a bad argument will list all of the currently installed example images;
 ;; we may want to have some way teachers can stick new ones in there)
+
+;; scale : number image -> image
+(define/chk (scale factor image)
+  (scale-internal factor factor image))
+
+(define/chk (scale/xy x-factor y-factor image)
+  (scale-internal x-factor y-factor image))
+
+(define (scale-internal x-factor y-factor image)
+  (make-image (make-scale x-factor y-factor (image-shape image))
+              (make-bb (* x-factor (image-right image))
+                       (* y-factor (image-bottom image))
+                       (* y-factor (image-baseline image)))
+              #f))
 
 ;; overlay : image image image ... -> image
 ;; places images on top of each other with their upper left corners aligned. last one goes on the bottom

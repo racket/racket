@@ -61,11 +61,28 @@ Images can be rotated, scaled, and overlaid on top of each other, as described b
   lined up with each other.
 }
 
-@section{Rotating and Framing Images}
+@section{Rotating, Scaling, and Framing Images}
 
 @defproc[(rotate [angle angle?] [image image?]) image?]{
   Rotates @scheme[image] by @scheme[angle] degrees.                                                        
 }
+
+@defproc[(scale [factor real?] [image image?]) image?]{
+  Scales @scheme[image] by @scheme[factor]. For example,
+  scaling @scheme[(ellipse 40 60 "solid" "blue")] produces
+  @scheme[(ellipse 80 120 "solid" "blue")].
+}
+
+@defproc[(scale/xy [x-factor real?] [y-factor real?] [image image?]) image?]{
+  Scales @scheme[image] by @scheme[x-factor] horizontally and by 
+  @scheme[y-factor] vertically. For example,
+  @schemeblock[(scale/xy 3 
+                         2 
+                         (ellipse 40 60 "solid" "blue"))] 
+  produces
+  @scheme[(ellipse 120 120 "solid" "blue")].
+}
+
 
 @defproc[(frame [image image?]) image?]{
   Returns an image just like @scheme[image], except

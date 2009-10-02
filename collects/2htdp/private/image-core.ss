@@ -2,7 +2,11 @@
 
 #|
 
-(error 'fix-me-later)
+Need to test copy & paste. Also test that if the "if" 
+expression in image-snipclass%'s read
+method returns #f, then you get a black circle out.
+
+---
 
 improvments/changes wrt to htdp/image:
 
@@ -26,17 +30,7 @@ in the old library, these two images are the same:
 
 todo: sort out wxme library support (loading in text mode).
 
-;; when rendering these things in error messages,
-;; they should come out as #<image: {THE ACTUAL PICTURE}>
-;; (automatically scale them down so they fit)
-;; or should it be just the image directly?
-
-;; redex randomized testing: see if normalization produces normalized shapes.
-;;        see if normalization always puts things in the right order
-
-;; need to change error messages to say "the width (second) argument"
-;; by passing "width (second)" to the check-arg function
-
+------------
 
 From Matthias: (to use to compare with this library)
 
@@ -136,6 +130,9 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 ;;
 ;;  - (make-translate dx dy shape)
 (define-struct/reg-mk translate (dx dy shape) #:transparent #:omit-define-syntaxes)
+;;
+;;  - (make-scale x-factor y-factor shape)
+(define-struct/reg-mk scale (x y shape) #:transparent #:omit-define-syntaxes)
 ;;
 ;;  - atomic-shape
 
@@ -240,7 +237,10 @@ and they all have good sample contracts. (It is amazing what we can do with kids
     
     (define/override (copy) (make-image shape bb normalized?))
     (define/override (draw dc x y left top right bottom dx dy draw-caret?)
-      (render-image this dc x y))
+      (let ([smoothing (send dc get-smoothing)])
+        (send dc set-smoothing 'aligned)
+        (render-image this dc x y)
+        (send dc set-smoothing smoothing)))
     (define/override (get-extent dc x y [w #f] [h #f] [descent #f] [space #f] [lspace #f] [rspace #f])
       (send (get-the-snip-class-list) add snip-class)
       (let ([bottom (bb-bottom bb)])
@@ -273,7 +273,9 @@ and they all have good sample contracts. (It is amazing what we can do with kids
             (make-image (list-ref lst 0)
                         (list-ref lst 1)
                         #f)
-            (make-image (error 'fix-me-later)))))
+            (make-image (make-ellipse 100 100 0 'solid "black")
+                        (make-bb 100 100 100)
+                        #f))))
     (super-new)))
 
 (provide snip-class) 
@@ -308,22 +310,33 @@ and they all have good sample contracts. (It is amazing what we can do with kids
   (let loop ([shape shape]
              [dx 0]
              [dy 0]
+             [x-scale 1]
+             [y-scale 1]
              [bottom #f])
     (cond
       [(translate? shape)
        (loop (translate-shape shape)
-             (+ dx (translate-dx shape))
-             (+ dy (translate-dy shape))
+             (+ dx (* x-scale (translate-dx shape)))
+             (+ dy (* y-scale (translate-dy shape)))
+             x-scale
+             y-scale
+             bottom)]
+      [(scale? shape)
+       (loop (scale-shape shape)
+             dx
+             dy
+             (* x-scale (scale-x shape))
+             (* y-scale (scale-y shape))
              bottom)]
       [(overlay? shape)
        (loop (overlay-bottom shape)
-             dx dy
+             dx dy x-scale y-scale
              (loop (overlay-top shape)
-                   dx dy bottom))]
+                   dx dy x-scale y-scale bottom))]
       [(polygon? shape)
        (let ([this-one (make-polygon (map (λ (p)
-                                            (make-point (+ dx (point-x p))
-                                                        (+ dy (point-y p))))
+                                            (make-point (+ dx (* x-scale (point-x p)))
+                                                        (+ dy (* y-scale (point-y p)))))
                                           (polygon-points shape))
                                      (polygon-mode shape)
                                      (polygon-color shape))])
@@ -331,7 +344,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
              (make-overlay bottom (f this-one))
              (f this-one)))]
       [(np-atomic-shape? shape)
-       (let ([this-one (make-translate dx dy shape)])
+       (let ([this-one (make-translate dx dy (scale-np-atomic x-scale y-scale shape))])
          (if bottom
              (make-overlay bottom (f this-one))
              (f this-one)))]
@@ -350,6 +363,16 @@ and they all have good sample contracts. (It is amazing what we can do with kids
       (bitmap? shape)))
 
 
+(define (scale-np-atomic x-scale y-scale shape)
+  (cond
+    [(ellipse? shape)
+     (make-ellipse (* x-scale (ellipse-width shape))
+                   (* y-scale (ellipse-height shape))
+                   (ellipse-angle shape)
+                   (ellipse-mode shape)
+                   (ellipse-color shape))]
+    [(text? shape) (error 'scaling-text)]
+    [(bitmap? shape) (error 'scaling-a-bitmap)]))
 
 
 ;                                                                
@@ -437,6 +460,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          (struct-out point)
          make-overlay overlay? overlay-top overlay-bottom
          make-translate translate? translate-dx translate-dy translate-shape
+         make-scale scale-x scale-y scale-shape
          make-ellipse ellipse? ellipse-width ellipse-height ellipse-angle ellipse-mode ellipse-color
          make-text text? text-string text-angle text-font
          make-polygon polygon? polygon-points polygon-mode polygon-color
