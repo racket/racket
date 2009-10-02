@@ -1207,92 +1207,100 @@
                                       [seq-of-lhs #'(lhs ...)]
                                       [seq-of-tl-side-cond/binds #'(tl-side-cond/binds ...)]
                                       [seq-of-lhs-for-lw #'(lhs-for-lw ...)])
-                          (syntax-property
-                           #`(begin
-                               (define-values (name2 name-predicate)
-                                 (let ([sc `(side-conditions-rewritten ...)]
-                                       [dsc `dom-side-conditions-rewritten]
-                                       cp-let-bindings ... ...
-                                       rg-cp-let-bindings ... ...)
-                                   (let ([cases (map (λ (pat rhs-fn rg-lhs src)
-                                                       (make-metafunc-case
-                                                        (compile-pattern lang pat #t) rhs-fn rg-lhs src (gensym)))
-                                                     sc
-                                                     (list rhs-fns ...)
-                                                     `(rg-side-conditions-rewritten ...)
-                                                     `(clause-src ...))]
-                                         [parent-cases 
-                                          #,(if prev-metafunction
-                                                #`(metafunc-proc-cases #,(term-fn-get-id (syntax-local-value prev-metafunction)))
-                                                #'null)])
-                                     (build-metafunction 
-                                      lang
-                                      cases
-                                      parent-cases
-                                      (λ (f/dom)
-                                        (make-metafunc-proc
-                                         (let ([name (lambda (x) (f/dom x))]) name)
-                                         ;; !! This code goes back to phase 1 to call `to-lw', but it's delayed
-                                         ;;    through `let-syntax' instead of `unsyntax' so that `to-lw' isn't called
-                                         ;;    until all metafunction definitions have been processed.
-                                         ;;    It gets a little complicated because we want to use sequences from the
-                                         ;;    original `define-metafunction' (step 1) and sequences that are generated within
-                                         ;;    `let-syntax' (step 2). So we quote all the `...' in the `let-syntax' form ---
-                                         ;;    and also have to quote all uses step-1 pattern variables in case they produce
-                                         ;;    `...', which should be treated as literals at step 2. Hece the `seq-' bindings
-                                         ;;    above and a quoting `...' on each use of a `seq-' binding.
-                                         (...
-                                          (let-syntax 
-                                              ([generate-lws
-                                                (lambda (stx)
-                                                  (with-syntax
-                                                      ([(rhs/lw ...) (map to-lw/proc (syntax->list #'(... seq-of-rhs)))]
-                                                       [(((bind-id/lw . bind-pat/lw) ...) ...)
-                                                        ;; Also for pict, extract pattern bindings
-                                                        (map (λ (x) (map (λ (x) (cons (to-lw/proc (car x)) (to-lw/proc (cdr x))))
-                                                                         (extract-pattern-binds x)))
-                                                             (syntax->list #'(... seq-of-lhs)))]
-                                                       
-                                                       [((where/sc/lw ...) ...)
-                                                        ;; Also for pict, extract where bindings
-                                                        (map (λ (hm)
-                                                               (map
-                                                                (λ (lst)
-                                                                  (syntax-case lst (side-condition where)
-                                                                    [(where pat exp)
-                                                                     #`(cons #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
-                                                                    [(side-condition x)
-                                                                     (to-lw/uq/proc #'x)]))
-                                                                (reverse (syntax->list hm))))
-                                                             (syntax->list #'(... seq-of-tl-side-cond/binds)))]
-                                                       
-                                                       [(((rhs-bind-id/lw . rhs-bind-pat/lw/uq) ...) ...)
-                                                        ;; Also for pict, extract pattern bindings
-                                                        (map (λ (x) (map (λ (x) (cons (to-lw/proc (car x)) (to-lw/uq/proc (cdr x))))
-                                                                         (extract-term-let-binds x)))
-                                                             (syntax->list #'(... seq-of-rhs)))]
-                                                       
-                                                       [(x-lhs-for-lw ...) #'(... seq-of-lhs-for-lw)])
-                                                    #'(list (list x-lhs-for-lw
-                                                                  (list (cons bind-id/lw bind-pat/lw) ...
-                                                                        (cons rhs-bind-id/lw rhs-bind-pat/lw/uq) ...
-                                                                        where/sc/lw ...)
-                                                                  rhs/lw)
-                                                            ...)))])
-                                            (generate-lws)))
-                                         lang
-                                         #t ;; multi-args?
-                                         'name
-                                         (let ([name (lambda (x) (name-predicate x))]) name)
-                                         dsc
-                                         (append cases parent-cases)))
-                                      dsc
-                                      `codom-side-conditions-rewritten
-                                      'name
-                                      #,relation?))))
-                               (term-define-fn name name2))
-                           'disappeared-use
-                           (map syntax-local-introduce (syntax->list #'(original-names ...)))))))))))))))]
+                          (with-syntax ([defs #`(begin
+                                                  (define-values (name2 name-predicate)
+                                                    (let ([sc `(side-conditions-rewritten ...)]
+                                                          [dsc `dom-side-conditions-rewritten]
+                                                          cp-let-bindings ... ...
+                                                          rg-cp-let-bindings ... ...)
+                                                      (let ([cases (map (λ (pat rhs-fn rg-lhs src)
+                                                                          (make-metafunc-case
+                                                                           (compile-pattern lang pat #t) rhs-fn rg-lhs src (gensym)))
+                                                                        sc
+                                                                        (list rhs-fns ...)
+                                                                        `(rg-side-conditions-rewritten ...)
+                                                                        `(clause-src ...))]
+                                                            [parent-cases 
+                                                             #,(if prev-metafunction
+                                                                   #`(metafunc-proc-cases #,(term-fn-get-id (syntax-local-value prev-metafunction)))
+                                                                   #'null)])
+                                                        (build-metafunction 
+                                                         lang
+                                                         cases
+                                                         parent-cases
+                                                         (λ (f/dom)
+                                                           (make-metafunc-proc
+                                                            (let ([name (lambda (x) (f/dom x))]) name)
+                                                            ;; !! This code goes back to phase 1 to call `to-lw', but it's delayed
+                                                            ;;    through `let-syntax' instead of `unsyntax' so that `to-lw' isn't called
+                                                            ;;    until all metafunction definitions have been processed.
+                                                            ;;    It gets a little complicated because we want to use sequences from the
+                                                            ;;    original `define-metafunction' (step 1) and sequences that are generated within
+                                                            ;;    `let-syntax' (step 2). So we quote all the `...' in the `let-syntax' form ---
+                                                            ;;    and also have to quote all uses step-1 pattern variables in case they produce
+                                                            ;;    `...', which should be treated as literals at step 2. Hece the `seq-' bindings
+                                                            ;;    above and a quoting `...' on each use of a `seq-' binding.
+                                                            (...
+                                                             (let-syntax 
+                                                                 ([generate-lws
+                                                                   (lambda (stx)
+                                                                     (with-syntax
+                                                                         ([(rhs/lw ...) (map to-lw/proc (syntax->list #'(... seq-of-rhs)))]
+                                                                          [(((bind-id/lw . bind-pat/lw) ...) ...)
+                                                                           ;; Also for pict, extract pattern bindings
+                                                                           (map (λ (x) (map (λ (x) (cons (to-lw/proc (car x)) (to-lw/proc (cdr x))))
+                                                                                            (extract-pattern-binds x)))
+                                                                                (syntax->list #'(... seq-of-lhs)))]
+                                                                          
+                                                                          [((where/sc/lw ...) ...)
+                                                                           ;; Also for pict, extract where bindings
+                                                                           (map (λ (hm)
+                                                                                  (map
+                                                                                   (λ (lst)
+                                                                                     (syntax-case lst (side-condition where)
+                                                                                       [(where pat exp)
+                                                                                        #`(cons #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
+                                                                                       [(side-condition x)
+                                                                                        (to-lw/uq/proc #'x)]))
+                                                                                   (reverse (syntax->list hm))))
+                                                                                (syntax->list #'(... seq-of-tl-side-cond/binds)))]
+                                                                          
+                                                                          [(((rhs-bind-id/lw . rhs-bind-pat/lw/uq) ...) ...)
+                                                                           ;; Also for pict, extract pattern bindings
+                                                                           (map (λ (x) (map (λ (x) (cons (to-lw/proc (car x)) (to-lw/uq/proc (cdr x))))
+                                                                                            (extract-term-let-binds x)))
+                                                                                (syntax->list #'(... seq-of-rhs)))]
+                                                                          
+                                                                          [(x-lhs-for-lw ...) #'(... seq-of-lhs-for-lw)])
+                                                                       #'(list (list x-lhs-for-lw
+                                                                                     (list (cons bind-id/lw bind-pat/lw) ...
+                                                                                           (cons rhs-bind-id/lw rhs-bind-pat/lw/uq) ...
+                                                                                           where/sc/lw ...)
+                                                                                     rhs/lw)
+                                                                               ...)))])
+                                                               (generate-lws)))
+                                                            lang
+                                                            #t ;; multi-args?
+                                                            'name
+                                                            (let ([name (lambda (x) (name-predicate x))]) name)
+                                                            dsc
+                                                            (append cases parent-cases)))
+                                                         dsc
+                                                         `codom-side-conditions-rewritten
+                                                         'name
+                                                         #,relation?))))
+                                                  (term-define-fn name name2))])
+                            (syntax-property
+                             (if (eq? 'top-level (syntax-local-context))
+                                 ; Introduce the names before using them, to allow
+                                 ; metafunction definition at the top-level.
+                                 (syntax 
+                                  (begin 
+                                    (define-syntaxes (name2 name-predicate) (values))
+                                    defs))
+                                 (syntax defs))
+                             'disappeared-use
+                             (map syntax-local-introduce (syntax->list #'(original-names ...))))))))))))))))]
       [(_ prev-metafunction name lang clauses ...)
        (begin
          (unless (identifier? #'name)
