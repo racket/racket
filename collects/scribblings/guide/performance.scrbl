@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
-          "guide-utils.ss")
+          "guide-utils.ss"
+          (for-label scheme/unsafe/ops))
 
 @title[#:tag "performance"]{Performance}
 
@@ -261,6 +262,33 @@ hold every result of a flonum computation. Fortunately, the
 generational garbage collector (described later in @secref["gc-perf"])
 makes allocation for short-lived results reasonably cheap. Fixnums, in
 contrast are never boxed, so they are especially cheap to use.
+
+The @schememodname[scheme/unsafe/ops] library provides fixnum- and
+flonum-specific operations, and combinations of unchecked flonum
+operations allow the @tech{JIT} compiler to generate code that avoids
+boxing and unboxing intermediate results. Currently, only expressions
+involving a combination of unchecked flonum operations,
+@scheme[unsafe-fx->fl], constants, and variable references are
+optimized to avoid boxing. See also @secref["unchecked-unsafe"],
+especially the warnings about unsafety.
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "unchecked-unsafe"]{Unchecked, Unsafe Operations}
+
+The @schememodname[scheme/unsafe/ops] library provides functions that
+are like other functions in @schememodname[scheme/base], but they
+assume (instead of checking) that provided arguments are of the right
+type. For example, @scheme[unsafe-vector-ref] accesses an element from
+a vector without checking that its first argument is actually a vector
+and without checking that the given index is in bounds. For tight
+loops that use these functions, avoiding checks can sometimes speed
+the computation, though the benefits vary for different unchecked
+functions and different contexts.
+
+Beware that, as ``unsafe'' in the library and function names suggest,
+misusing the exports of @schememodname[scheme/unsafe/ops] can lead to
+crashes or memory corruption.
 
 @; ----------------------------------------------------------------------
 
