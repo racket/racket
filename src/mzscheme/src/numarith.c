@@ -40,11 +40,13 @@ static Scheme_Object *fx_minus (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_mult (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_div (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_rem (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fx_abs (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *fl_plus (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_minus (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_mult (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_div (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fl_abs (int argc, Scheme_Object *argv[]);
 
 #define zeroi scheme_exact_zero
 
@@ -127,6 +129,10 @@ void scheme_init_unsafe_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("unsafe-fxremainder", p, env);
 
+  p = scheme_make_folding_prim(fx_abs, "unsafe-fxabs", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("unsafe-fxabs", p, env);
+
 
   p = scheme_make_folding_prim(fl_plus, "unsafe-fl+", 2, 2, 1);
   if (scheme_can_inline_fp_op())
@@ -147,6 +153,11 @@ void scheme_init_unsafe_numarith(Scheme_Env *env)
   if (scheme_can_inline_fp_op())
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("unsafe-fl/", p, env);
+
+  p = scheme_make_folding_prim(fl_abs, "unsafe-flabs", 1, 1, 1);
+  if (scheme_can_inline_fp_op())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("unsafe-flabs", p, env);
 }
 
 Scheme_Object *
@@ -783,6 +794,15 @@ UNSAFE_FX(fx_mult, *, mult)
 UNSAFE_FX(fx_div, /, quotient)
 UNSAFE_FX(fx_rem, %, rem_prim)
 
+static Scheme_Object *fx_abs(int argc, Scheme_Object *argv[])
+{
+  long v;
+  if (scheme_current_thread->constant_folding) return scheme_abs(argc, argv);
+  v = SCHEME_INT_VAL(argv[0]);
+  if (v < 0) v = -v;
+  return scheme_make_integer(v);
+}
+
 #define UNSAFE_FL(name, op, fold)                            \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
@@ -796,3 +816,12 @@ UNSAFE_FL(fl_plus, +, plus)
 UNSAFE_FL(fl_minus, -, minus)
 UNSAFE_FL(fl_mult, *, mult)
 UNSAFE_FL(fl_div, /, div_prim)
+
+static Scheme_Object *fl_abs(int argc, Scheme_Object *argv[])
+{
+  double v;
+  if (scheme_current_thread->constant_folding) return scheme_abs(argc, argv);
+  v = SCHEME_DBL_VAL(argv[0]);
+  v = fabs(v);
+  return scheme_make_double(v);
+}

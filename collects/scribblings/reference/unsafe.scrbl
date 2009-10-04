@@ -34,10 +34,11 @@ can be prevented by adjusting the code inspector (see
 @defproc[(unsafe-fx* [a fixnum?][b fixnum?]) fixnum?]
 @defproc[(unsafe-fxquotient [a fixnum?][b fixnum?]) fixnum?]
 @defproc[(unsafe-fxremainder [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(unsafe-fxabs [a fixnum?]) fixnum?]
 )]{
 
 For @tech{fixnums}: Like @scheme[+], @scheme[-], @scheme[*],
-@scheme[quotient], and @scheme[remainder], but constrained to consume
+@scheme[quotient], @scheme[remainder], and @scheme[abs], but constrained to consume
 @tech{fixnums} and produce a @tech{fixnum} result. The mathematical
 operation on @scheme[a] and @scheme[b] must be representable as a
 @tech{fixnum}. In the case of @scheme[unsafe-fxquotient] and
@@ -89,11 +90,13 @@ Like @scheme[exact->inexact], but constrained to consume @tech{fixnums}.
 @defproc[(unsafe-fl- [a inexact-real?][b inexact-real?]) inexact-real?]
 @defproc[(unsafe-fl* [a inexact-real?][b inexact-real?]) inexact-real?]
 @defproc[(unsafe-fl/ [a inexact-real?][b inexact-real?]) inexact-real?]
+@defproc[(unsafe-flabs [a inexact-real?]) inexact-real?]
 )]{
 
 For real @tech{inexact numbers}: Like @scheme[+], @scheme[-],
-@scheme[*], and @scheme[/], but constrained to consume real @tech{inexact
-numbers}. The result is always a real @tech{inexact number}.}
+@scheme[*], @scheme[/], and @scheme[abs], but constrained to consume
+real @tech{inexact numbers}. The result is always a real @tech{inexact
+number}.}
 
 
 @deftogether[(

@@ -119,6 +119,13 @@
   (test-bin 8 'unsafe-fxrshift 32 2)
   (test-bin 8 'unsafe-fxrshift 8 0)
 
+  (test-un 5 unsafe-fxabs 5)
+  (test-un 5 unsafe-fxabs -5)
+  (test-un 5.0 unsafe-flabs 5.0)
+  (test-un 5.0 unsafe-flabs -5.0)
+  (test-un 0.0 unsafe-flabs -0.0)
+  (test-un +inf.0 unsafe-flabs -inf.0)
+
   (test-un 8.0 'unsafe-fx->fl 8)
   (test-un -8.0 'unsafe-fx->fl -8)
 
@@ -127,6 +134,7 @@
   (test-tri 9.0 '(lambda (x y z) (unsafe-fl+ y (unsafe-fl- x z))) 4.5 7.0 2.5)
   (test-bin 10.0 '(lambda (x y) (unsafe-fl+ (unsafe-fx->fl x) y)) 2 8.0)
   (test-bin 10.0 '(lambda (x y) (unsafe-fl+ (unsafe-fx->fl x) y)) 2 8.0)
+  (test-bin 9.5 '(lambda (x y) (unsafe-fl+ (unsafe-flabs x) y)) -2.0 7.5)
   (test-tri (/ 20.0 0.8) '(lambda (x y z) (unsafe-fl/ (unsafe-fl* x z) y)) 4.0 0.8 5.0)
   (test-tri (/ 0.8 20.0) '(lambda (x y z) (unsafe-fl/ y (unsafe-fl* x z))) 4.0 0.8 5.0)
   (test-tri #t '(lambda (x y z) (unsafe-fl< (unsafe-fl+ x y) z)) 1.2 3.4 5.0)

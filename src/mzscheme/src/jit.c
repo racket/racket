@@ -3197,6 +3197,7 @@ static int is_unboxable_op(Scheme_Object *obj, int flag)
   if (IS_NAMED_PRIM(obj, "unsafe-fl-")) return 1;
   if (IS_NAMED_PRIM(obj, "unsafe-fl*")) return 1;
   if (IS_NAMED_PRIM(obj, "unsafe-fl/")) return 1;
+  if (IS_NAMED_PRIM(obj, "unsafe-flabs")) return 1;
   if (IS_NAMED_PRIM(obj, "unsafe-fx->fl")) return 1;
 
   return 0;
@@ -4210,10 +4211,8 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
               /* watch out for most negative fixnum! */
               if (!unsafe_fx)
                 (void)jit_beqi_p(refslow, JIT_R0, (void *)(((long)1 << ((8 * JIT_WORD_SIZE) - 1)) | 0x1));
-              jit_rshi_l(JIT_R0, JIT_R0, 1);
-              jit_movi_l(JIT_R1, 0);
+              jit_movi_p(JIT_R1, scheme_make_integer(0));
               jit_subr_l(JIT_R0, JIT_R1, JIT_R0);
-              jit_lshi_l(JIT_R0, JIT_R0, 1);
               jit_ori_l(JIT_R0, JIT_R0, 0x1);
               __START_INNER_TINY__(branch_short);
               mz_patch_branch(refc);
@@ -4920,6 +4919,12 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       return 1;
     } else if (IS_NAMED_PRIM(rator, "abs")) {
       generate_arith(jitter, rator, app->rand, NULL, 1, 11, 0, 0, NULL, 1, 0, 0);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-fxabs")) {
+      generate_arith(jitter, rator, app->rand, NULL, 1, 11, 0, 0, NULL, 1, 1, 0);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-flabs")) {
+      generate_arith(jitter, rator, app->rand, NULL, 1, 11, 0, 0, NULL, 1, 0, 1);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "exact->inexact")) {
       generate_arith(jitter, rator, app->rand, NULL, 1, 12, 0, 0, NULL, 1, 0, 0);
