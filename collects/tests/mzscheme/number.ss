@@ -1154,6 +1154,9 @@
 (test 1 bitwise-bit-field (bitwise-not (expt 2 101)) 70 71)
 (test 7144187 bitwise-bit-field (expt 3 75) 0 24)
 
+(test 42 bitwise-bit-field 42 0 32)
+(test (sub1 (expt 2 32)) bitwise-bit-field -1 32 64)
+
 (arity-test bitwise-bit-field 3 3)
 (err/rt-test (bitwise-bit-field "a" 1 2))
 (err/rt-test (bitwise-bit-field 13 -1 2))
