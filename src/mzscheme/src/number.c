@@ -2679,7 +2679,7 @@ static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[])
               if (SCHEME_INTP(so)) {
                 if (v1 < (sizeof(long) * 8)) {
                   long res;
-                  res = ((SCHEME_INT_VAL(so) >> v1) & ((1 << v2) - 1));
+                  res = ((SCHEME_INT_VAL(so) >> v1) & (((long)1 << v2) - 1));
                   return scheme_make_integer(res);
                 } else if (SCHEME_INT_VAL(so) > 0) 
                   return scheme_make_integer(0);
@@ -2698,7 +2698,7 @@ static Scheme_Object *bitwise_bit_field (int argc, Scheme_Object *argv[])
                   /* Pull in more bits from next digit: */
                   d |= (((Scheme_Bignum *)so)->digits[vd + 1] << avail);
                 }
-                d = (d & ((1 << v2) - 1));
+                d = (d & (((bigdig)1 << v2) - 1));
                 return scheme_make_integer(d);
               }
             }
