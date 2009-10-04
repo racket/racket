@@ -162,9 +162,9 @@
        [(_ a b)
         (let ([t1 a]
               [t2 b])
-          (if (and (fixnum? a)
-                   (and (exact-integer? b) (<= lower-bound b (- (fixnum-width) 1))))
-              (let ([v (arithmetic-shift a (adjust b))])
+          (if (and (fixnum? t1)
+                   (and (exact-integer? t2) (<= lower-bound t2 (- (fixnum-width) 1))))
+              (let ([v (arithmetic-shift t1 (adjust t2))])
                 (if (fixnum? v)
                     v
                     (r6rs:fxarithmetic-shift t1 t2)))
