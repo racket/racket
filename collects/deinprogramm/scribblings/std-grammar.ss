@@ -29,7 +29,6 @@
    [definition @#,scheme[(define id expr)]
      @#,scheme[(define-record-procedures id id id (id (... ...)))]
      @#,scheme[(define-record-procedures-parametric (id id (... ...)) id id (id (... ...)))]
-     @#,scheme[(contract id contr)]
      @#,scheme[(: id contr)]
      def-rule ...]
    prod ...
@@ -49,6 +48,7 @@
 	 @#,scheme[(letrec ((id expr) (... ...)) expr)]
 	 @#,scheme[(let* ((id expr) (... ...)) expr) ]
 	 @#,scheme[(begin expr expr (... ...))]
+	 @#,scheme[(contract id contr)]
 	 @#,scheme[(for-all ((id contr) (... ...)) expr)]
 	 @#,scheme[(==> expr expr)]
 	 expr-rule ...]
