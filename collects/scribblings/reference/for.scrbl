@@ -323,19 +323,21 @@ parallel iterations.}
                                 step-expr])]{
 
 Iteratively evaluates the @scheme[expr]s for as long as
-@scheme[stop-expr?] returns @scheme[#f].
+@scheme[stop?-expr] returns @scheme[#f].
 
 To initialize the loop, the @scheme[init-expr]s are evaluated in order
 and bound to the corresponding @scheme[id]s. The @scheme[id]s are
 bound in all expressions within the form other than the
 @scheme[init-expr]s.
 
-After the @scheme[id]s are bound, @scheme[stop?-expr] is
+After the @scheme[id]s are bound, then @scheme[stop?-expr] is
 evaluated. If it produces @scheme[#f], each @scheme[expr] is evaluated
-for its side-effect. The @scheme[id]s are then updated with the values
-of the @scheme[step-expr]s, where the default @scheme[step-expr] for
-@scheme[id] is just @scheme[id]. Iteration continues by evaluating
-@scheme[stop?-expr].
+for its side-effect. The @scheme[id]s are then effectively updated
+with the values of the @scheme[step-expr]s, where the default
+@scheme[step-expr] for @scheme[id] is just @scheme[id]; more
+precisely, iteration continues with fresh locations for the
+@scheme[id]s that are initialized with the values of the corresponding
+@scheme[step-expr]s.
 
 When @scheme[stop?-expr] produces a true value, then the
 @scheme[finish-expr]s are evaluated in order, and the last one is
