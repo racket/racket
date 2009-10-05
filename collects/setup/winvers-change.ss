@@ -8,7 +8,7 @@
 ;; running MzScheme.exe on Windows -- "winvers.ss" uses a trick of making a
 ;; copy of the binary and restarting that copy for the actual change.
 
-#lang scheme
+#lang scheme/base
 
 (define verbose? #t)
 (define binary-extensions '("exe" "dll" "lib" "so" "def" "exp" #|"obj" "o"|#))

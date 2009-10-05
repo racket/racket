@@ -1,6 +1,8 @@
 ;; This is a wrapper around `winvers-change.ss' to patch binary files with the
 ;; current version number.
-#lang scheme
+
+#lang scheme/base
+
 (require mzlib/file "main-collects.ss" "dirs.ss")
 
 (define (make-copy)
