@@ -330,12 +330,12 @@ and bound to the corresponding @scheme[id]s. The @scheme[id]s are
 bound in all expressions within the form other than the
 @scheme[init-expr]s.
 
-After he @scheme[id]s are bound, then @scheme[stop?-expr] is
+After the @scheme[id]s are bound, @scheme[stop?-expr] is
 evaluated. If it produces @scheme[#f], each @scheme[expr] is evaluated
 for its side-effect. The @scheme[id]s are then updated with the values
 of the @scheme[step-expr]s, where the default @scheme[step-expr] for
 @scheme[id] is just @scheme[id]. Iteration continues by evaluating
-@scheme[cont?-expr].
+@scheme[stop?-expr].
 
 When @scheme[stop?-expr] produces a true value, then the
 @scheme[finish-expr]s are evaluated in order, and the last one is
