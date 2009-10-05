@@ -49,7 +49,7 @@
           [(regexp-match-positions xxxs dfile)
            (fprintf (current-error-port)
                     "Warning: ~a was not renamed!\n" (full-path))]))
-  (let-values ([(i o) (open-input-output-file file 'update)])
+  (let-values ([(i o) (open-input-output-file file #:exists 'update)])
     (define print? verbose?)
     (for ([subst (in-list substitutions)])
       (file-position i 0)
