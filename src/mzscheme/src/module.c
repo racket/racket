@@ -2218,7 +2218,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn,
     return 0;
 
   if (with_shared) {
-    if (!pt->src_modidx)
+    if (!pt->src_modidx && im->me->src_modidx)
       pt->src_modidx = im->me->src_modidx;
     scheme_extend_module_rename_with_shared(rn, idx, pt, 
                                             marshal_phase_index, 
@@ -8576,7 +8576,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
           && pt->num_provides
           && !do_copy_vars) {
         /* Simple "import everything" whose mappings can be shared via the exporting module: */
-        if (!pt->src_modidx)
+        if (!pt->src_modidx && me->src_modidx)
           pt->src_modidx = me->src_modidx;
         scheme_extend_module_rename_with_shared(rn, idx, pt, pt->phase_index, src_phase_index, context_marks, 1);
         skip_rename = 1;
