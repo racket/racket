@@ -52,16 +52,8 @@
     [pretty-print-size-hook pp-size-hook]
     [pretty-print-print-hook pp-print-hook]
     [pretty-print-current-style-table (pp-extend-style-table identifier-list)]
-    [pretty-print-columns columns]
-    ;; Printing parameters (mzscheme manual 7.9.1.4)
-    [print-unreadable #t]
-    [print-graph #f]
-    [print-struct #t]
-    [print-box #t]
-    [print-vector-length #t]
-    [print-hash-table #f]
-    [print-honu #f])
-   (pretty-print datum port)
+    [pretty-print-columns columns])
+   (pretty-print/defaults datum port)
    (new range%
         (range-builder range-builder)
         (identifier-list identifier-list))))

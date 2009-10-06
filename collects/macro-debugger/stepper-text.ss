@@ -107,16 +107,8 @@
   (parameterize 
    ([pretty-print-size-hook pp-size-hook]
     [pretty-print-print-hook pp-print-hook]
-    [pretty-print-current-style-table (pp-extend-style-table)]
-    ;; Printing parameters (mzscheme manual 7.9.1.4)
-    [print-unreadable #t]
-    [print-graph #f]
-    [print-struct #f]
-    [print-box #t]
-    [print-vector-length #t]
-    [print-hash-table #f]
-    [print-honu #f])
-   (pretty-print datum)))
+    [pretty-print-current-style-table (pp-extend-style-table)])
+   (pretty-print/defaults datum)))
 
 (define (->show-function show)
   (cond [(procedure? show)

@@ -1,6 +1,7 @@
 
 #lang scheme/base
 (require scheme/class
+         scheme/pretty
          macro-debugger/util/class-iop
          syntax/stx
          "interfaces.ss")
@@ -19,6 +20,18 @@
 ;; NOTE: Nulls are only wrapped when *not* list-terminators.  
 ;; If they were always wrapped, the pretty-printer would screw up
 ;; list printing (I think).
+
+(define (pretty-print/defaults datum [port (current-output-port)])
+  (parameterize
+    (;; Printing parameters (defaults from MzScheme and DrScheme 4.2.2.2)
+     [print-unreadable #t]
+     [print-graph #f]
+     [print-struct #t]
+     [print-box #t]
+     [print-vector-length #f]
+     [print-hash-table #t]
+     [print-honu #f])
+    (pretty-print datum port)))
 
 (define-struct syntax-dummy (val))
 
