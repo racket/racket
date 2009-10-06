@@ -3,7 +3,7 @@
            drscheme/tool
            "stepper-tool.ss"
            "xml-tool.ss"
-           "view-controller.ss"
+           "view-controller-non-blocking.ss"
            "private/shared.ss")
 
   (provide tool@)
@@ -21,5 +21,5 @@
       (import drscheme:tool^)
       (export STEPPER-TOOL)
       (link xml-tool@ 
-            view-controller@
+            view-controller-non-blocking@
             [((STEPPER-TOOL : drscheme:tool-exports^)) stepper-tool@]))))

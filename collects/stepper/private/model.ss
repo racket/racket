@@ -68,7 +68,6 @@
       (or/c render-settings? false/c) ; render-settings
       boolean?                        ; track-inferred-names?
       (or/c object? (symbols 'testing))   ;; FIXME: can do better: subclass of language%       ; the language level
-      (procedure? . -> . void?)       ; run-on-drscheme-side
       boolean?                        ; disable-error-handling (to allow debugging)
       . -> .
       void?)])
@@ -82,8 +81,7 @@
 ; go starts a stepper instance
 ; see provide stmt for contract
 (define (go program-expander receive-result render-settings
-            show-lambdas-as-lambdas? language-level run-on-drscheme-side
-            disable-error-handling)
+            show-lambdas-as-lambdas? language-level disable-error-handling)
   
   ;; finished-exps:
   ;;   (listof (list/c syntax-object? (or/c number? false?)( -> any)))
