@@ -176,8 +176,10 @@ typedef struct FSSpec mzFSSpec;
 # define THREAD_LOCAL /* empty */
 #endif
 
-#if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_X86_64)
-# define MZ_USE_JIT
+#ifndef MZ_DONT_USE_JIT
+# if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_X86_64)
+#  define MZ_USE_JIT
+# endif
 #endif
 
 /* Define _W64 for MSC if needed. */

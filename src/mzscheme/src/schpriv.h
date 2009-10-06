@@ -3219,8 +3219,13 @@ unsigned short * scheme_ucs4_to_utf16(const mzchar *text, int start, int end,
 
 Scheme_Object *scheme_current_library_collection_paths(int argc, Scheme_Object *argv[]);
 
+#ifdef MZ_USE_JIT
 int scheme_can_inline_fp_op();
 int scheme_can_inline_fp_comp();
+#else
+# define scheme_can_inline_fp_op() 0
+# define scheme_can_inline_fp_comp() 0
+#endif
 
 /*========================================================================*/
 /*                           places                                       */

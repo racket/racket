@@ -39,6 +39,8 @@ AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of bundled 
 
 AC_ARG_ENABLE(origtree,[  --enable-origtree       install with original directory structure])
 
+AC_ARG_ENABLE(jit,     [  --enable-jit            compile JIT support (enabled by default)], , enable_jit=yes)
+
 AC_ARG_ENABLE(foreign, [  --enable-foreign        compile foreign support (enabled by default)], , enable_foreign=yes)
 
 AC_ARG_ENABLE(places,  [  --enable-places         compile places support])
@@ -286,6 +288,8 @@ if test "$LIBTOOLPROG" != "" ; then
   echo "=== Libtool program: $LIBTOOLPROG"
 fi
 show_explicitly_enabled "${enable_orig}" "Original install tree"
+
+show_explicitly_disabled "${enable_jit}" JIT
 
 show_explicitly_disabled "${enable_foreign}" Foreign
 
@@ -1070,6 +1074,12 @@ if test "${enable_noopt}" = "yes" ; then
   AWKPRG='BEGIN { FS = "(^| )-O(0|1|2|3|4|5|6|7|8|9|())( |$)" } /.*/ { for (i = 1; i < NF; i++) printf "%s ", $i; print $NF }'
   CFLAGS=`echo "$CFLAGS" | awk "$AWKPRG"`
   CXXFLAGS=`echo "$CXXFLAGS" | awk "$AWKPRG"`
+fi
+
+################### JIT ####################
+
+if test "${enable_jit}" = "no" ; then
+   PREFLAGS="${PREFLAGS} -DMZ_DONT_USE_JIT"
 fi
 
 ################ X OpenGL ##################
