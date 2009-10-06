@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang scheme
 
 #| TODO -----------------------------------------------------------------------
         buttons: multiple points of returns: continuation functions 
@@ -340,11 +340,11 @@
    (servlet:send/suspend
     (lambda (url) 
       `(html 
-        (title ,title)
+        (head (title ,title))
         (body ([bgcolor "white"])
               (h3 ,title)
               (br)
-              (form ([action ,url][method "post"])                        
+              (form ([action ,url])                       
                     (table ,@(map build-row f))
                     ,@(add-submit-button (map second f)))))))))
 
@@ -358,16 +358,16 @@
           (lambda (loq) `(td (table (tr ,@(map rad loq)))))])
     (cond
       [(string? fe) 
-       `(tr (td ,fe) (td (input ([type "text"][name ,tag][value ""]))))]
+       `(tr (td ,fe) (td (input ([type "text"][name ,tag][value ""]) " ")))]
       [(password? fe)
        `(tr (td ,(fe-question fe)) 
-            (td (input ([type "password"][name ,tag]))))]
+            (td (input ([type "password"][name ,tag]) " ")))]
       [(numeric? fe)
        `(tr (td ,(fe-question fe)) 
-            (td (input ([type "text"][name ,tag]))))]
+            (td (input ([type "text"][name ,tag]) " ")))]
       [(check? fe)
        `(tr (td ,(fe-question fe))
-            (td (input ([type "checkbox"][name ,tag][value ,(fe-question fe)]))))]
+            (td (input ([type "checkbox"][name ,tag][value ,(fe-question fe)]) " ")))]
       [(yes-no? fe) 
        `(tr (td ,(fe-question fe))
             ,(make-radio (list (yes-no-positive fe) (yes-no-negative fe))))]
@@ -375,17 +375,19 @@
        `(tr (td ,(fe-question fe)) ,(make-radio (radio-labels fe)))]
       [(button? fe)
        `(tr (td) 
-            (td (input ([type "submit"][name ,tag][value ,(fe-question fe)]))))]
+            (td (input ([type "submit"][name ,tag][value ,(fe-question fe)]) " ")))]
       [else (error 'build-row "can't happen: ~e" fe)])))
 
 ; (listof Forms) -> (union Empty (list SUBMIT-BUTTON))
 (define (add-submit-button fes)
-  (if (pair? (cdr fes))
-      (if (ormap button? fes) '() (list SUBMIT-BUTTON))
-      (let ([fe (car fes)])
-        (if (or (string? fe) (password? fe) (numeric? fe))
-            '()
-            (list SUBMIT-BUTTON)))))
+  ; XXX Commented
+  #;(if (pair? (cdr fes))
+        (if (ormap button? fes) '() (list SUBMIT-BUTTON))
+        (let ([fe (car fes)])
+          (if (or (string? fe) (password? fe) (numeric? fe))
+              '()
+              (list SUBMIT-BUTTON))))
+  (list SUBMIT-BUTTON))
 
 ;;                   ;;            
 ;;;   ;                    ;            
@@ -481,76 +483,75 @@
                 "Couldn't find an available port between ~a and ~a~n"
                 starting-at (+ starting-at max-attempts))]))))
 
-
 ;; the current-server is a (make-parameter (or/c #f a-server))
 ;; where a-server is a server, defined below.
 (define current-server (make-parameter #f))
 
-
 ;; A server consists of the maintenance thread, the request and response channels.
-(define-struct server (th req-ch res-ch))
-
+(define-struct server (th req-ch))
 
 ;; A request is either a
 ;;   (make-req:standard f args)
 ;; or a
 ;;   (make-req:final f args)
 ;; where f is a function that consumes args.
-(define-struct req (func args))
-(define-struct (req:standard req) ())
-(define-struct (req:final req) ())
+(define-struct req (res-ch func args) #:prefab)
+(define-struct (req:standard req) () #:prefab)
+(define-struct (req:final req) () #:prefab)
 
 ;; If an exception happens when evaluating a request, we
 ;; return an error response.  exn holds the exception that happened.
 (define-struct error-res (exn))
-
 
 ;; ensure-standalone-server-running!: -> void
 ;; Initializes the current-server parameter.
 ;; Makes sure that the standalone server is up and running.
 (define (ensure-standalone-server-running!)
   (unless (current-server)
-    (let* ([req-ch (make-channel)]
-           [res-ch (make-channel)]
-           [server-loop 
-            (lambda ()
-              (servlet:adjust-timeout! +inf.0)
-              (let loop ()
-                (let ([msg (channel-get req-ch)])
-                  (match msg
-                    
-                    [(struct req:final (func args))
-                     (channel-put res-ch (with-handlers ([void make-error-res])
-                                           (apply func args)))]
-                    
-                    [(struct req:standard (func args))
-                     (channel-put res-ch (with-handlers ([void make-error-res])
-                                           (apply func args)))
-                     (loop)]))))]
-           [th 
-            (thread (lambda ()
-                      (let ([port (get-next-port)])
-                        (servlet:serve/servlet (lambda (start) (server-loop))
-                                               #:port port))))]
-           [a-server (make-server th req-ch res-ch)])
+    (local [(define req-ch (make-channel))
+            (define (server-loop)
+              (let ([msg (channel-get req-ch)])
+                (match msg
+                  [(struct req (res-ch func args))
+                   (define res 
+                     (with-handlers ([void make-error-res])
+                       (apply func args)))
+                   (channel-put res-ch res)
+                   (unless (req:final? msg)
+                     (server-loop))])))
+            (define th
+              (thread (lambda ()
+                        (let ([port (get-next-port)]
+                              [called? #f])
+                          (parameterize ([read-accept-dot #t])
+                            (servlet:serve/servlet 
+                             (lambda (req)
+                               (if (not called?)
+                                   (begin (set! called? #t)
+                                          (server-loop))
+                                   "The servlet has executed already."))
+                             #:banner? #f
+                             #:port port))))))
+            (define a-server (make-server th req-ch))]
       (current-server a-server))))
-
-
 
 ;; Each of the wrapped functions turns function calls into requests
 ;; to the server.
 (define (make-wrapped-function internal:function make-req)
   (lambda args
     (ensure-standalone-server-running!)
-    (let ([req (make-req internal:function args)])
-      (channel-put (server-req-ch (current-server)) req)
-      (let ([result (channel-get (server-res-ch (current-server)))])
-        (cond
-          [(error-res? result)
-           (raise (error-res-exn result))]
-          [else
-           result])))))
-
+    (match (current-server)
+      [(struct server (th req-ch))
+       (thread-resume th)
+       (let* ([res-ch (make-channel)]
+              [req (make-req res-ch internal:function args)])
+         (channel-put req-ch req)
+         (let ([result (channel-get res-ch)])
+           (cond
+             [(error-res? result)
+              (raise (error-res-exn result))]
+             [else
+              result])))])))
 
 ;; Provides wrappers around the internal functions to make the wrapped functions
 ;; run in the context of a standalone server.
