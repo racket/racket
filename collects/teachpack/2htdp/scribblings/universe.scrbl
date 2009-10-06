@@ -370,10 +370,10 @@ All @tech{MouseEvent}s are represented via strings:
 ]
 
 @defproc[(mouse-event? [x any]) boolean?]{
- determines whether @scheme[x] is a @tech{KeyEvent}}
+ determines whether @scheme[x] is a @tech{MouseEvent}}
 
 @defproc[(mouse=? [x mouse-event?][y mouse-event?]) boolean?]{
- compares two @tech{KeyEvent} for equality}
+ compares two @tech{MouseEvent}s for equality}
 
 @defform[(on-mouse clack-expr)
          #:contracts
