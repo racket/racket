@@ -42,6 +42,7 @@ The following API is provided to customize the server instance:
  This instructs the Web server to serve static files, such as stylesheet and images, from @scheme[path].
 }
 
+If you want more control over specific parameters, keep reading about @schememodname[web-server/servlet-env].
 
 @; ------------------------------------------------------------
 @include-section["servlet-env.scrbl"]

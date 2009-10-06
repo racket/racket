@@ -18,9 +18,20 @@
 
 @defmodule[web-server/servlet-env]{
 
-The @web-server provides a way to quickly configure and start a servlet.
+The @web-server provides a way to quickly configure and start a servlet with more customizability than @schememodname[web-server/insta] provides. This is provided by the @schememodname[web-server/servlet-env] module. Here is a simple example of its use:
+@schememod[
+scheme
+(require web-server/servlet
+         web-server/servlet-env)
 
-Here's a simple example:
+(define (start request)
+  `(html (head (title "Hello world!"))
+         (body (p "Hey out there!"))))
+                                      
+(serve/servlet start)
+]
+
+Unlike the @schememodname[web-server/insta] language, @scheme[start] is not a special identifier, so we could just as well have written the example as:
 @schememod[
 scheme
 (require web-server/servlet
@@ -32,6 +43,8 @@ scheme
 
 (serve/servlet my-app)
 ]
+
+Let's look at some of the customizations @scheme[serve/servlet] allows.
 
 Suppose you'd like to change the port to something else, change the last line to:
 @schemeblock[
@@ -55,7 +68,7 @@ suppose you wanted it to be @filepath{http://localhost:8000/hello.ss}:
 Suppose you wanted it to capture top-level requests:
 @schemeblock[
 (serve/servlet my-app
-               #:servlet-path "/")
+               #:servlet-regexp #rx"")
 ]
 Or, perhaps just some nice top-level name:
 @schemeblock[
