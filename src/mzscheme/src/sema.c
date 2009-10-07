@@ -59,7 +59,7 @@ static int pending_break(Scheme_Thread *p);
 
 int scheme_main_was_once_suspended;
 
-static Scheme_Object *system_idle_put_evt;
+static THREAD_LOCAL Scheme_Object *system_idle_put_evt;
 static Scheme_Object *thread_recv_evt;
 
 #ifdef MZ_PRECISE_GC
