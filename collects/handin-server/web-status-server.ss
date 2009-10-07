@@ -251,9 +251,11 @@
                (title ,msg))
          (body ,msg "; " (a ([href "/"]) "restarting") " in 3 seconds.")))
 
+(define default-context-length (error-print-context-length))
 (define ((run-servlet port))
   (serve/servlet
    (lambda (request)
+     (error-print-context-length default-context-length)
      (parameterize ([current-session (web-counter)])
        (login-page (aget (request-bindings request) 'handin) #f)))
    #:port port #:listen-ip #f #:ssl? #t #:command-line? #t
@@ -274,10 +276,12 @@
   (cond [(get-conf 'https-port-number)
          => (lambda (p)
               (define t
-                (thread (lambda ()
-                          (dynamic-wind
-                            (lambda () (log-line "*** starting web server"))
-                            (run-servlet p)
-                            (lambda () (log-line "*** web server died!"))))))
+                (parameterize ([error-print-context-length 0])
+                  (thread
+                   (lambda ()
+                     (dynamic-wind
+                       (lambda () (log-line "*** starting web server"))
+                       (run-servlet p)
+                       (lambda () (log-line "*** web server died!")))))))
               (lambda () (break-thread t)))]
         [else void]))
