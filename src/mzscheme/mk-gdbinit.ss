@@ -238,6 +238,18 @@ define psoq
       printf "cdr=\n"
       psox $CDR $arg1+1
     end
+    if ( $OT == <<scheme_raw_pair_type>> )
+      printf "scheme_pair\n"
+      set $SSO = ((Scheme_Simple_Object*) ($O))
+      set $CAR = $SSO->u.pair_val.car
+      set $CDR = $SSO->u.pair_val.cdr
+      indent $arg1
+      printf "car=\n"
+      psox $CAR $arg1+1
+      indent $arg1
+      printf "cdr=\n"
+      psox $CDR $arg1+1
+    end
     if ( $OT == <<scheme_vector_type>> )
       set $vector = ((struct Scheme_Vector *) $O)
       set $size = $vector->size
@@ -298,7 +310,7 @@ define psoq
       set $name = ($stx->srcloc->src)
       set $name = (char *)((Scheme_Simple_Object *)$name)->u.byte_str_val.string_val
       indent $arg1
-      printf "%s:%i:%i\n", $name, $srcloc->line, $srcloc->col
+      printf " %s:%i:%i\n", $name, $srcloc->line, $srcloc->col
     end
     if ( $OT == <<scheme_compilation_top_type>>)
       printf "scheme_compilation_top_type\n"
