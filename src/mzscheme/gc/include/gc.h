@@ -3,6 +3,7 @@
  * Copyright (c) 1991-1995 by Xerox Corporation.  All rights reserved.
  * Copyright 1996-1999 by Silicon Graphics.  All rights reserved.
  * Copyright 1999 by Hewlett-Packard Company.  All rights reserved.
+ * Copyright (C) 2007 Free Software Foundation, Inc
  *
  * THIS MATERIAL IS PROVIDED AS IS, WITH ABSOLUTELY NO WARRANTY EXPRESSED
  * OR IMPLIED.  ANY USE IS AT YOUR OWN RISK.
@@ -30,17 +31,14 @@
 
 # define _GC_H
 
-# include "gc_config_macros.h"
+# include "gc_version.h"
+	/* Define version numbers here to allow test on build machine	*/
+	/* for cross-builds.  Note that this defines the header		*/
+	/* version number, which may or may not match that of the	*/
+	/* dynamic library.  The GC_version variable can be used	*/
+	/* to obtain the latter.					*/
 
-# if defined(__STDC__) || defined(__cplusplus) || defined(_AIX)
-#   define GC_PROTO(args) args
-    typedef void * GC_PTR;
-#   define GC_CONST const
-# else
-#   define GC_PROTO(args) ()
-    typedef char * GC_PTR;
-#   define GC_CONST
-#  endif
+# include "gc_config_macros.h"
 
 # ifdef __cplusplus
     extern "C" {
@@ -61,8 +59,8 @@
   /* Win64 isn't really supported yet, but this is the first step. And	*/
   /* it might cause error messages to show up in more plausible places.	*/
   /* This needs basetsd.h, which is included by windows.h.	 	*/
-  typedef ULONG_PTR GC_word;
-  typedef LONG_PTR GC_word;
+  typedef unsigned long long GC_word;
+  typedef long long GC_signed_word;
 #endif
 
 /* Public read-only variables */
@@ -83,7 +81,7 @@ GC_API int GC_parallel;	/* GC is parallelized for performance on	*/
 
 /* Public R/W variables */
 
-GC_API GC_PTR (*GC_oom_fn) GC_PROTO((size_t bytes_requested));
+GC_API void * (*GC_oom_fn) (size_t bytes_requested);
 			/* When there is insufficient memory to satisfy */
 			/* an allocation request, we return		*/
 			/* (*GC_oom_fn)().  By default this just	*/
@@ -110,11 +108,6 @@ GC_API int GC_all_interior_pointers;
 			/* pointer recognition.				*/
 			/* MUST BE 0 or 1.				*/
 
-GC_API int GC_quiet;	/* Disable statistics output.  Only matters if	*/
-			/* collector has been compiled with statistics	*/
-			/* enabled.  This involves a performance cost,	*/
-			/* and is thus not the default.			*/
-
 GC_API int GC_finalize_on_demand;
 			/* If nonzero, finalizers will only be run in 	*/
 			/* response to an explicit GC_invoke_finalizers	*/
@@ -128,8 +121,10 @@ GC_API int GC_java_finalization;
 			/* it a bit safer to use non-topologically-	*/
 			/* ordered finalization.  Default value is	*/
 			/* determined by JAVA_FINALIZATION macro.	*/
+			/* Enables register_finalizer_unreachable to	*/
+			/* work correctly.				*/
 
-GC_API void (* GC_finalizer_notifier) GC_PROTO((void));
+GC_API void (* GC_finalizer_notifier)(void);
 			/* Invoked by the collector when there are 	*/
 			/* objects to be finalized.  Invoked at most	*/
 			/* once per GC cycle.  Never invoked unless 	*/
@@ -189,15 +184,16 @@ GC_API int GC_no_dls;
 GC_API GC_word GC_free_space_divisor;
 			/* We try to make sure that we allocate at 	*/
 			/* least N/GC_free_space_divisor bytes between	*/
-			/* collections, where N is the heap size plus	*/
+			/* collections, where N is twice the number	*/
+			/* of traced bytes, plus the number of untraced */
+			/* bytes (bytes in "atomic" objects), plus	*/
 			/* a rough estimate of the root set size.	*/
+			/* N approximates GC tracing work per GC.	*/
 			/* Initially, GC_free_space_divisor = 3.	*/
 			/* Increasing its value will use less space	*/
 			/* but more collection time.  Decreasing it	*/
 			/* will appreciably decrease collection time	*/
 			/* at the expense of space.			*/
-			/* GC_free_space_divisor = 1 will effectively	*/
-			/* disable collections.				*/
 
 GC_API GC_word GC_max_retries;
 			/* The maximum number of GCs attempted before	*/
@@ -205,7 +201,7 @@ GC_API GC_word GC_max_retries;
 			/* expansion fails.  Initially 0.		*/
 			
 
-GC_API char *GC_stackbottom;	/* Cool end of user stack.		*/
+GC_API char *GC_stackbottom;    /* Cool end of user stack.		*/
 				/* May be set in the client prior to	*/
 				/* calling any GC_ routines.  This	*/
 				/* avoids some overhead, and 		*/
@@ -241,13 +237,10 @@ GC_API unsigned long GC_time_limit;
 
 /* Public procedures */
 
-/* Initialize the collector.  This is only required when using thread-local
- * allocation, since unlike the regular allocation routines, GC_local_malloc
- * is not self-initializing.  If you use GC_local_malloc you should arrange
- * to call this somehow (e.g. from a constructor) before doing any allocation.
- * For win32 threads, it needs to be called explicitly.
+/* Initialize the collector.  Portable clients should call GC_INIT() from
+ * the main program instead.
  */
-GC_API void GC_init GC_PROTO((void));
+GC_API void GC_init(void);
 
 /*
  * general purpose allocation routines, with roughly malloc calling conv.
@@ -265,15 +258,15 @@ GC_API void GC_init GC_PROTO((void));
  * starting in 6.0.  GC_malloc_stubborn is an alias for GC_malloc unless
  * the collector is built with STUBBORN_ALLOC defined.
  */
-GC_API GC_PTR GC_malloc GC_PROTO((size_t size_in_bytes));
-GC_API GC_PTR GC_malloc_atomic GC_PROTO((size_t size_in_bytes));
-GC_API char *GC_strdup GC_PROTO((const char *str));
-GC_API GC_PTR GC_malloc_uncollectable GC_PROTO((size_t size_in_bytes));
-GC_API GC_PTR GC_malloc_stubborn GC_PROTO((size_t size_in_bytes));
+GC_API void * GC_malloc(size_t size_in_bytes);
+GC_API void * GC_malloc_atomic(size_t size_in_bytes);
+GC_API char * GC_strdup (const char *str);
+GC_API void * GC_malloc_uncollectable(size_t size_in_bytes);
+GC_API void * GC_malloc_stubborn(size_t size_in_bytes);
 
 /* The following is only defined if the library has been suitably	*/
 /* compiled:								*/
-GC_API GC_PTR GC_malloc_atomic_uncollectable GC_PROTO((size_t size_in_bytes));
+GC_API void * GC_malloc_atomic_uncollectable(size_t size_in_bytes);
 
 /* Explicitly deallocate an object.  Dangerous if used incorrectly.     */
 /* Requires a pointer to the base of an object.				*/
@@ -281,7 +274,7 @@ GC_API GC_PTR GC_malloc_atomic_uncollectable GC_PROTO((size_t size_in_bytes));
 /* An object should not be enable for finalization when it is 		*/
 /* explicitly deallocated.						*/
 /* GC_free(0) is a no-op, as required by ANSI C for free.		*/
-GC_API void GC_free GC_PROTO((GC_PTR object_addr));
+GC_API void GC_free(void * object_addr);
 
 /*
  * Stubborn objects may be changed only if the collector is explicitly informed.
@@ -298,8 +291,8 @@ GC_API void GC_free GC_PROTO((GC_PTR object_addr));
  * do so.  The same applies to dropping stubborn objects that are still
  * changeable.
  */
-GC_API void GC_change_stubborn GC_PROTO((GC_PTR));
-GC_API void GC_end_stubborn_change GC_PROTO((GC_PTR));
+GC_API void GC_change_stubborn(void *);
+GC_API void GC_end_stubborn_change(void *);
 
 /* Return a pointer to the base (lowest address) of an object given	*/
 /* a pointer to a location within the object.				*/
@@ -311,13 +304,13 @@ GC_API void GC_end_stubborn_change GC_PROTO((GC_PTR));
 /* object.								*/
 /* Note that a deallocated object in the garbage collected heap		*/
 /* may be considered valid, even if it has been deallocated with	*/
-/* GC_free.  								*/
-GC_API GC_PTR GC_base GC_PROTO((GC_PTR displaced_pointer));
+/* GC_free.								*/
+GC_API void * GC_base(void * displaced_pointer);
 
 /* Given a pointer to the base of an object, return its size in bytes.	*/
 /* The returned size may be slightly larger than what was originally	*/
 /* requested.								*/
-GC_API size_t GC_size GC_PROTO((GC_PTR object_addr));
+GC_API size_t GC_size(void * object_addr);
 
 /* For compatibility with C library.  This is occasionally faster than	*/
 /* a malloc followed by a bcopy.  But if you rely on that, either here	*/
@@ -327,35 +320,33 @@ GC_API size_t GC_size GC_PROTO((GC_PTR object_addr));
 /* If the argument is stubborn, the result will have changes enabled.	*/
 /* It is an error to have changes enabled for the original object.	*/
 /* Follows ANSI comventions for NULL old_object.			*/
-GC_API GC_PTR GC_realloc
-	GC_PROTO((GC_PTR old_object, size_t new_size_in_bytes));
+GC_API void * GC_realloc(void * old_object, size_t new_size_in_bytes);
 				   
 /* Explicitly increase the heap size.	*/
 /* Returns 0 on failure, 1 on success.  */
-GC_API int GC_expand_hp GC_PROTO((size_t number_of_bytes));
+GC_API int GC_expand_hp(size_t number_of_bytes);
 
 /* Limit the heap size to n bytes.  Useful when you're debugging, 	*/
 /* especially on systems that don't handle running out of memory well.	*/
 /* n == 0 ==> unbounded.  This is the default.				*/
-GC_API void GC_set_max_heap_size GC_PROTO((GC_word n));
+GC_API void GC_set_max_heap_size(GC_word n);
 
 /* Inform the collector that a certain section of statically allocated	*/
 /* memory contains no pointers to garbage collected memory.  Thus it 	*/
 /* need not be scanned.  This is sometimes important if the application */
 /* maps large read/write files into the address space, which could be	*/
 /* mistaken for dynamic library data segments on some systems.		*/
-GC_API void GC_exclude_static_roots GC_PROTO((GC_PTR start, GC_PTR finish));
+GC_API void GC_exclude_static_roots(void * low_address,
+				    void * high_address_plus_1);
 
 /* Clear the set of root segments.  Wizards only. */
-GC_API void GC_clear_roots GC_PROTO((void));
+GC_API void GC_clear_roots(void);
 
 /* Add a root segment.  Wizards only. */
-GC_API void GC_add_roots GC_PROTO((char * low_address,
-				   char * high_address_plus_1));
+GC_API void GC_add_roots(void * low_address, void * high_address_plus_1);
 
 /* Remove a root segment.  Wizards only. */
-GC_API void GC_remove_roots GC_PROTO((char * low_address, 
-    char * high_address_plus_1));
+GC_API void GC_remove_roots(void * low_address, void * high_address_plus_1);
 
 /* Add a displacement to the set of those considered valid by the	*/
 /* collector.  GC_register_displacement(n) means that if p was returned */
@@ -369,14 +360,14 @@ GC_API void GC_remove_roots GC_PROTO((char * low_address,
 /* retention.								*/
 /* This is a no-op if the collector has recognition of			*/
 /* arbitrary interior pointers enabled, which is now the default.	*/
-GC_API void GC_register_displacement GC_PROTO((GC_word n));
+GC_API void GC_register_displacement(size_t n);
 
 /* The following version should be used if any debugging allocation is	*/
 /* being done.								*/
-GC_API void GC_debug_register_displacement GC_PROTO((GC_word n));
+GC_API void GC_debug_register_displacement(size_t n);
 
 /* Explicitly trigger a full, world-stop collection. 	*/
-GC_API void GC_gcollect GC_PROTO((void));
+GC_API void GC_gcollect(void);
 
 /* Trigger a full world-stopped collection.  Abort the collection if 	*/
 /* and when stop_func returns a nonzero value.  Stop_func will be 	*/
@@ -387,32 +378,32 @@ GC_API void GC_gcollect GC_PROTO((void));
 /* aborted collections do no useful work; the next collection needs	*/
 /* to start from the beginning.						*/
 /* Return 0 if the collection was aborted, 1 if it succeeded.		*/
-typedef int (* GC_stop_func) GC_PROTO((void));
-GC_API int GC_try_to_collect GC_PROTO((GC_stop_func stop_func));
+typedef int (* GC_stop_func)(void);
+GC_API int GC_try_to_collect(GC_stop_func stop_func);
 
 /* Return the number of bytes in the heap.  Excludes collector private	*/
 /* data structures.  Includes empty blocks and fragmentation loss.	*/
 /* Includes some pages that were allocated but never written.		*/
-GC_API size_t GC_get_heap_size GC_PROTO((void));
+GC_API size_t GC_get_heap_size(void);
 
 /* Return a lower bound on the number of free bytes in the heap.	*/
-GC_API size_t GC_get_free_bytes GC_PROTO((void));
+GC_API size_t GC_get_free_bytes(void);
 
 /* Return the number of bytes allocated since the last collection.	*/
-GC_API size_t GC_get_bytes_since_gc GC_PROTO((void));
+GC_API size_t GC_get_bytes_since_gc(void);
 
 /* Return the total number of bytes allocated in this process.		*/
 /* Never decreases, except due to wrapping.				*/
-GC_API size_t GC_get_total_bytes GC_PROTO((void));
+GC_API size_t GC_get_total_bytes(void);
 
 /* Disable garbage collection.  Even GC_gcollect calls will be 		*/
 /* ineffective.								*/
-GC_API void GC_disable GC_PROTO((void));
+GC_API void GC_disable(void);
 
 /* Reenable garbage collection.  GC_disable() and GC_enable() calls 	*/
 /* nest.  Garbage collection is enabled if the number of calls to both	*/
 /* both functions is equal.						*/
-GC_API void GC_enable GC_PROTO((void));
+GC_API void GC_enable(void);
 
 /* Enable incremental/generational collection.	*/
 /* Not advisable unless dirty bits are 		*/
@@ -426,17 +417,20 @@ GC_API void GC_enable GC_PROTO((void));
 /* Causes GC_local_gcj_malloc() to revert to	*/
 /* locked allocation.  Must be called 		*/
 /* before any GC_local_gcj_malloc() calls.	*/
-GC_API void GC_enable_incremental GC_PROTO((void));
+/* For best performance, should be called as early as possible.	*/
+/* On some platforms, calling it later may have adverse effects.*/
+/* Safe to call before GC_INIT().  Includes a GC_init() call.	*/
+GC_API void GC_enable_incremental(void);
 
 /* Does incremental mode write-protect pages?  Returns zero or	*/
 /* more of the following, or'ed together:			*/
 #define GC_PROTECTS_POINTER_HEAP  1 /* May protect non-atomic objs.	*/
 #define GC_PROTECTS_PTRFREE_HEAP  2
-#define GC_PROTECTS_STATIC_DATA   4 /* Curently never.			*/
+#define GC_PROTECTS_STATIC_DATA   4 /* Currently never.			*/
 #define GC_PROTECTS_STACK	  8 /* Probably impractical.		*/
 
 #define GC_PROTECTS_NONE 0
-GC_API int GC_incremental_protection_needs GC_PROTO((void));
+GC_API int GC_incremental_protection_needs(void);
 
 /* Perform some garbage collection work, if appropriate.	*/
 /* Return 0 if there is no more work to be done.		*/
@@ -445,7 +439,7 @@ GC_API int GC_incremental_protection_needs GC_PROTO((void));
 /* progress requires it, e.g. if incremental collection is	*/
 /* disabled.  It is reasonable to call this in a wait loop	*/
 /* until it returns 0.						*/
-GC_API int GC_collect_a_little GC_PROTO((void));
+GC_API int GC_collect_a_little(void);
 
 /* Allocate an object of size lb bytes.  The client guarantees that	*/
 /* as long as the object is live, it will be referenced by a pointer	*/
@@ -461,24 +455,31 @@ GC_API int GC_collect_a_little GC_PROTO((void));
 /* for arrays likely to be larger than 100K or so.  For other systems,	*/
 /* or if the collector is not configured to recognize all interior	*/
 /* pointers, the threshold is normally much higher.			*/
-GC_API GC_PTR GC_malloc_ignore_off_page GC_PROTO((size_t lb));
-GC_API GC_PTR GC_malloc_atomic_ignore_off_page GC_PROTO((size_t lb));
+GC_API void * GC_malloc_ignore_off_page(size_t lb);
+GC_API void * GC_malloc_atomic_ignore_off_page(size_t lb);
 
 #if defined(__sgi) && !defined(__GNUC__) && _COMPILER_VERSION >= 720
 #   define GC_ADD_CALLER
 #   define GC_RETURN_ADDR (GC_word)__return_address
 #endif
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__GLIBC__)
 # include <features.h>
 # if (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 1 || __GLIBC__ > 2) \
-     && !defined(__ia64__)
+     && !defined(__ia64__) && !defined(__UCLIBC__)
 #   ifndef GC_HAVE_BUILTIN_BACKTRACE
 #     define GC_HAVE_BUILTIN_BACKTRACE
 #   endif
 # endif
 # if defined(__i386__) || defined(__x86_64__)
 #   define GC_CAN_SAVE_CALL_STACKS
+# endif
+#endif
+
+#if defined(_MSC_VER) && _MSC_VER >= 1200 /* version 12.0+ (MSVC 6.0+)  */ \
+    && !defined(_AMD64_)
+# ifndef GC_HAVE_NO_BUILTIN_BACKTRACE
+#   define GC_HAVE_BUILTIN_BACKTRACE
 # endif
 #endif
 
@@ -498,7 +499,7 @@ GC_API GC_PTR GC_malloc_atomic_ignore_off_page GC_PROTO((size_t lb));
 /* This may also be desirable if it is possible but expensive to	*/
 /* retrieve the call chain.						*/
 #if (defined(__linux__) || defined(__NetBSD__) || defined(__OpenBSD__) \
-     || defined(__FreeBSD__)) & !defined(GC_CAN_SAVE_CALL_STACKS)
+     || defined(__FreeBSD__) || defined(__DragonFly__)) & !defined(GC_CAN_SAVE_CALL_STACKS)
 # define GC_ADD_CALLER
 # if __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95) 
     /* gcc knows how to retrieve return address, but we don't know */
@@ -512,34 +513,30 @@ GC_API GC_PTR GC_malloc_atomic_ignore_off_page GC_PROTO((size_t lb));
 
 #ifdef GC_ADD_CALLER
 #  define GC_EXTRAS GC_RETURN_ADDR, __FILE__, __LINE__
-#  define GC_EXTRA_PARAMS GC_word ra, GC_CONST char * s, int i
+#  define GC_EXTRA_PARAMS GC_word ra, const char * s, int i
 #else
 #  define GC_EXTRAS __FILE__, __LINE__
-#  define GC_EXTRA_PARAMS GC_CONST char * s, int i
+#  define GC_EXTRA_PARAMS const char * s, int i
 #endif
 
 /* Debugging (annotated) allocation.  GC_gcollect will check 		*/
 /* objects allocated in this way for overwrites, etc.			*/
-GC_API GC_PTR GC_debug_malloc
-	GC_PROTO((size_t size_in_bytes, GC_EXTRA_PARAMS));
-GC_API GC_PTR GC_debug_malloc_atomic
-	GC_PROTO((size_t size_in_bytes, GC_EXTRA_PARAMS));
-GC_API char *GC_debug_strdup
-       GC_PROTO((const char *str, GC_EXTRA_PARAMS));
-GC_API GC_PTR GC_debug_malloc_uncollectable
-	GC_PROTO((size_t size_in_bytes, GC_EXTRA_PARAMS));
-GC_API GC_PTR GC_debug_malloc_stubborn
-	GC_PROTO((size_t size_in_bytes, GC_EXTRA_PARAMS));
-GC_API GC_PTR GC_debug_malloc_ignore_off_page
-	GC_PROTO((size_t size_in_bytes, GC_EXTRA_PARAMS));
-GC_API GC_PTR GC_debug_malloc_atomic_ignore_off_page
-	GC_PROTO((size_t size_in_bytes, GC_EXTRA_PARAMS));
-GC_API void GC_debug_free GC_PROTO((GC_PTR object_addr));
-GC_API GC_PTR GC_debug_realloc
-	GC_PROTO((GC_PTR old_object, size_t new_size_in_bytes,
-  		  GC_EXTRA_PARAMS));
-GC_API void GC_debug_change_stubborn GC_PROTO((GC_PTR));
-GC_API void GC_debug_end_stubborn_change GC_PROTO((GC_PTR));
+GC_API void * GC_debug_malloc(size_t size_in_bytes, GC_EXTRA_PARAMS);
+GC_API void * GC_debug_malloc_atomic(size_t size_in_bytes, GC_EXTRA_PARAMS);
+GC_API char * GC_debug_strdup(const char *str, GC_EXTRA_PARAMS);
+GC_API void * GC_debug_malloc_uncollectable
+	(size_t size_in_bytes, GC_EXTRA_PARAMS);
+GC_API void * GC_debug_malloc_stubborn
+	(size_t size_in_bytes, GC_EXTRA_PARAMS);
+GC_API void * GC_debug_malloc_ignore_off_page
+	(size_t size_in_bytes, GC_EXTRA_PARAMS);
+GC_API void * GC_debug_malloc_atomic_ignore_off_page
+	(size_t size_in_bytes, GC_EXTRA_PARAMS);
+GC_API void GC_debug_free (void * object_addr);
+GC_API void * GC_debug_realloc
+	(void * old_object, size_t new_size_in_bytes, GC_EXTRA_PARAMS);
+GC_API void GC_debug_change_stubborn(void *);
+GC_API void GC_debug_end_stubborn_change(void *);
 
 /* Routines that allocate objects with debug information (like the 	*/
 /* above), but just fill in dummy file and line number information.	*/
@@ -553,9 +550,9 @@ GC_API void GC_debug_end_stubborn_change GC_PROTO((GC_PTR));
 /*    platforms it may be more convenient not to recompile, e.g. for	*/
 /*    leak detection.  This can be accomplished by instructing the	*/
 /*    linker to replace malloc/realloc with these.			*/
-GC_API GC_PTR GC_debug_malloc_replacement GC_PROTO((size_t size_in_bytes));
-GC_API GC_PTR GC_debug_realloc_replacement
-	      GC_PROTO((GC_PTR object_addr, size_t size_in_bytes));
+GC_API void * GC_debug_malloc_replacement (size_t size_in_bytes);
+GC_API void * GC_debug_realloc_replacement
+	      (void * object_addr, size_t size_in_bytes);
   			 	 
 # ifdef GC_DEBUG
 #   define GC_MALLOC(sz) GC_debug_malloc(sz, GC_EXTRAS)
@@ -575,6 +572,8 @@ GC_API GC_PTR GC_debug_realloc_replacement
 	GC_debug_register_finalizer_ignore_self(p, f, d, of, od)
 #   define GC_REGISTER_FINALIZER_NO_ORDER(p, f, d, of, od) \
 	GC_debug_register_finalizer_no_order(p, f, d, of, od)
+#   define GC_REGISTER_FINALIZER_UNREACHABLE(p, f, d, of, od) \
+	GC_debug_register_finalizer_unreachable(p, f, d, of, od)
 #   define GC_MALLOC_STUBBORN(sz) GC_debug_malloc_stubborn(sz, GC_EXTRAS);
 #   define GC_CHANGE_STUBBORN(p) GC_debug_change_stubborn(p)
 #   define GC_END_STUBBORN_CHANGE(p) GC_debug_end_stubborn_change(p)
@@ -598,6 +597,8 @@ GC_API GC_PTR GC_debug_realloc_replacement
 	GC_register_finalizer_ignore_self(p, f, d, of, od)
 #   define GC_REGISTER_FINALIZER_NO_ORDER(p, f, d, of, od) \
 	GC_register_finalizer_no_order(p, f, d, of, od)
+#   define GC_REGISTER_FINALIZER_UNREACHABLE(p, f, d, of, od) \
+	GC_register_finalizer_unreachable(p, f, d, of, od)
 #   define GC_MALLOC_STUBBORN(sz) GC_malloc_stubborn(sz)
 #   define GC_CHANGE_STUBBORN(p) GC_change_stubborn(p)
 #   define GC_END_STUBBORN_CHANGE(p) GC_end_stubborn_change(p)
@@ -621,15 +622,14 @@ GC_API GC_PTR GC_debug_realloc_replacement
 /* with Alan Demers, Dan Greene, Carl Hauser, Barry Hayes, 		*/
 /* Christian Jacobi, and Russ Atkinson.  It's not perfect, and		*/
 /* probably nobody else agrees with it.	    Hans-J. Boehm  3/13/92	*/
-typedef void (*GC_finalization_proc)
-  	GC_PROTO((GC_PTR obj, GC_PTR client_data));
+typedef void (*GC_finalization_proc) (void * obj, void * client_data);
 
-GC_API void GC_register_finalizer
-    	GC_PROTO((GC_PTR obj, GC_finalization_proc fn, GC_PTR cd,
-		  GC_finalization_proc *ofn, GC_PTR *ocd));
+GC_API void GC_register_finalizer(void * obj, GC_finalization_proc fn,
+				  void * cd, GC_finalization_proc *ofn,
+				  void * *ocd);
 GC_API void GC_debug_register_finalizer
-    	GC_PROTO((GC_PTR obj, GC_finalization_proc fn, GC_PTR cd,
-		  GC_finalization_proc *ofn, GC_PTR *ocd));
+    	         (void * obj, GC_finalization_proc fn, void * cd,
+		  GC_finalization_proc *ofn, void * *ocd);
 	/* When obj is no longer accessible, invoke		*/
 	/* (*fn)(obj, cd).  If a and b are inaccessible, and	*/
 	/* a points to b (after disappearing links have been	*/
@@ -663,6 +663,16 @@ GC_API void GC_debug_register_finalizer
 	/* by cd will be considered accessible until the	*/
 	/* finalizer is invoked.				*/
 
+/* PLTSCHEME: eager finalizers do not care about cycles at all.
+   The intent is for guardian-like and will-like uses where
+   the object will always be made immediately live again, but
+   some action needed to be triggered by the object's (possibly
+   temporary) unreachableness. */
+GC_API void GC_register_eager_finalizer
+                 (void * obj, int eager_level,
+                  GC_finalization_proc fn, void * cd,
+		  GC_finalization_proc *ofn, void * *ocd);
+
 /* Another versions of the above follow.  It ignores		*/
 /* self-cycles, i.e. pointers from a finalizable object to	*/
 /* itself.  There is a stylistic argument that this is wrong,	*/
@@ -673,33 +683,45 @@ GC_API void GC_debug_register_finalizer
 /* Note that cd will still be viewed as accessible, even if it	*/
 /* refers to the object itself.					*/
 GC_API void GC_register_finalizer_ignore_self
-	GC_PROTO((GC_PTR obj, GC_finalization_proc fn, GC_PTR cd,
-		  GC_finalization_proc *ofn, GC_PTR *ocd));
+		(void * obj, GC_finalization_proc fn, void * cd,
+		 GC_finalization_proc *ofn, void * *ocd);
 GC_API void GC_debug_register_finalizer_ignore_self
-	GC_PROTO((GC_PTR obj, GC_finalization_proc fn, GC_PTR cd,
-		  GC_finalization_proc *ofn, GC_PTR *ocd));
+		(void * obj, GC_finalization_proc fn, void * cd,
+		 GC_finalization_proc *ofn, void * *ocd);
 
 /* Another version of the above.  It ignores all cycles.        */
 /* It should probably only be used by Java implementations.     */
 /* Note that cd will still be viewed as accessible, even if it	*/
 /* refers to the object itself.					*/
 GC_API void GC_register_finalizer_no_order
-	GC_PROTO((GC_PTR obj, GC_finalization_proc fn, GC_PTR cd,
-		  GC_finalization_proc *ofn, GC_PTR *ocd));
+	  	(void * obj, GC_finalization_proc fn, void * cd,
+	 	 GC_finalization_proc *ofn, void * *ocd);
 GC_API void GC_debug_register_finalizer_no_order
-	GC_PROTO((GC_PTR obj, GC_finalization_proc fn, GC_PTR cd,
-		  GC_finalization_proc *ofn, GC_PTR *ocd));
+		(void * obj, GC_finalization_proc fn, void * cd,
+		 GC_finalization_proc *ofn, void * *ocd);
 
-
-/* PLTSCHEME: eager finalizers do not care about cycles at all.
-   The intent is for guardian-like and will-like uses where
-   the object will always be made immediately live again, but
-   some action needed to be triggered by the object's (possibly
-   temporary) unreachableness. */
-GC_API void GC_register_eager_finalizer
-    	GC_PROTO((GC_PTR obj, int eager_level,
-                  GC_finalization_proc fn, GC_PTR cd,
-		  GC_finalization_proc *ofn, GC_PTR *ocd));
+/* This is a special finalizer that is useful when an object's  */
+/* finalizer must be run when the object is known to be no      */
+/* longer reachable, not even from other finalizable objects.   */
+/* It behaves like "normal" finalization, except that the 	*/
+/* finalizer is not run while the object is reachable from	*/
+/* other objects specifying unordered finalization.		*/
+/* Effectively it allows an object referenced, possibly		*/
+/* indirectly, from an unordered finalizable object to override */
+/* the unordered finalization request.				*/
+/* This can be used in combination with finalizer_no_order so   */
+/* as to release resources that must not be released while an   */
+/* object can still be brought back to life by other            */
+/* finalizers.                                                  */
+/* Only works if GC_java_finalization is set.  Probably only 	*/
+/* of interest when implementing a language that requires	*/
+/* unordered finalization (e.g. Java, C#).			*/
+GC_API void GC_register_finalizer_unreachable
+	         (void * obj, GC_finalization_proc fn, void * cd,
+		  GC_finalization_proc *ofn, void * *ocd);
+GC_API void GC_debug_register_finalizer_unreachable
+		 (void * obj, GC_finalization_proc fn, void * cd,
+		  GC_finalization_proc *ofn, void * *ocd);
 
 /* The following routine may be used to break cycles between	*/
 /* finalizable objects, thus causing cyclic finalizable		*/
@@ -708,7 +730,7 @@ GC_API void GC_register_eager_finalizer
 /* where p is a pointer that is not followed by finalization	*/
 /* code, and should not be considered in determining 		*/
 /* finalization order.						*/
-GC_API int GC_register_disappearing_link GC_PROTO((GC_PTR * /* link */));
+GC_API int GC_register_disappearing_link(void * * link );
 	/* Link should point to a field of a heap allocated 	*/
 	/* object obj.  *link will be cleared when obj is	*/
 	/* found to be inaccessible.  This happens BEFORE any	*/
@@ -724,12 +746,12 @@ GC_API int GC_register_disappearing_link GC_PROTO((GC_PTR * /* link */));
 	/* be allowed here, instead of just clearing a pointer. */
 	/* But this causes problems if that action alters, or 	*/
 	/* examines connectivity.				*/
-	/* Returns 1 if link was already registered, 0		*/
-	/* otherwise.						*/
+	/* Returns 1 if link was already registered, 0 if	*/
+	/* registration succeeded, 2 if it failed for lack of	*/
+	/* memory, and GC_oom_fn did not handle the problem.	*/
 	/* Only exists for backward compatibility.  See below:	*/
 	
-GC_API int GC_general_register_disappearing_link
-	GC_PROTO((GC_PTR * /* link */, GC_PTR obj));
+GC_API int GC_general_register_disappearing_link (void * * link, void * obj);
 	/* A slight generalization of the above. *link is	*/
 	/* cleared when obj first becomes inaccessible.  This	*/
 	/* can be used to implement weak pointers easily and	*/
@@ -747,15 +769,24 @@ GC_API int GC_general_register_disappearing_link
 	/* the object containing link.  Explicitly deallocating */
 	/* obj may or may not cause link to eventually be	*/
 	/* cleared.						*/
-GC_API int GC_unregister_disappearing_link GC_PROTO((GC_PTR * /* link */));
+	/* This can be used to implement certain types of	*/
+	/* weak pointers.  Note however that this generally	*/
+	/* requires that thje allocation lock is held (see	*/
+	/* GC_call_with_allock_lock() below) when the disguised	*/
+	/* pointer is accessed.  Otherwise a strong pointer	*/
+	/* could be recreated between the time the collector    */
+	/* decides to reclaim the object and the link is	*/
+	/* cleared.						*/
+
+GC_API int GC_unregister_disappearing_link (void * * link);
 	/* Returns 0 if link was not actually registered.	*/
 	/* Undoes a registration by either of the above two	*/
 	/* routines.						*/
 
 /* Returns !=0  if GC_invoke_finalizers has something to do. 		*/
-GC_API int GC_should_invoke_finalizers GC_PROTO((void));
+GC_API int GC_should_invoke_finalizers(void);
 
-GC_API int GC_invoke_finalizers GC_PROTO((void));
+GC_API int GC_invoke_finalizers(void);
 	/* Run finalizers for all objects that are ready to	*/
 	/* be finalized.  Return the number of finalizers	*/
 	/* that were run.  Normally this is also called		*/
@@ -763,13 +794,30 @@ GC_API int GC_invoke_finalizers GC_PROTO((void));
 	/* GC-finalize_on_demand is nonzero, it must be called	*/
 	/* explicitly.						*/
 
+/* Explicitly tell the collector that an object is reachable	*/
+/* at a particular program point.  This prevents the argument	*/
+/* pointer from being optimized away, even it is otherwise no	*/
+/* longer needed.  It should have no visible effect in the	*/
+/* absence of finalizers or disappearing links.  But it may be	*/
+/* needed to prevent finalizers from running while the		*/
+/* associated external resource is still in use.		*/
+/* The function is sometimes called keep_alive in other		*/
+/* settings.							*/
+# if defined(__GNUC__) && !defined(__INTEL_COMPILER)
+#   define GC_reachable_here(ptr) \
+    __asm__ volatile(" " : : "X"(ptr) : "memory");
+# else
+    GC_API void GC_noop1(GC_word x);
+#   define GC_reachable_here(ptr) GC_noop1((GC_word)(ptr));
+#endif
+
 /* GC_set_warn_proc can be used to redirect or filter warning messages.	*/
 /* p may not be a NULL pointer.						*/
-typedef void (*GC_warn_proc) GC_PROTO((char *msg, GC_word arg));
-GC_API GC_warn_proc GC_set_warn_proc GC_PROTO((GC_warn_proc p));
+typedef void (*GC_warn_proc) (char *msg, GC_word arg);
+GC_API GC_warn_proc GC_set_warn_proc(GC_warn_proc p);
     /* Returns old warning procedure.	*/
 
-GC_API GC_word GC_set_free_space_divisor GC_PROTO((GC_word value));
+GC_API GC_word GC_set_free_space_divisor(GC_word value);
     /* Set free_space_divisor.  See above for definition.	*/
     /* Returns old value.					*/
 	
@@ -784,15 +832,71 @@ GC_API GC_word GC_set_free_space_divisor GC_PROTO((GC_word value));
 # if defined(I_HIDE_POINTERS) || defined(GC_I_HIDE_POINTERS)
     typedef GC_word GC_hidden_pointer;
 #   define HIDE_POINTER(p) (~(GC_hidden_pointer)(p))
-#   define REVEAL_POINTER(p) ((GC_PTR)(HIDE_POINTER(p)))
+#   define REVEAL_POINTER(p) ((void *)(HIDE_POINTER(p)))
     /* Converting a hidden pointer to a real pointer requires verifying	*/
     /* that the object still exists.  This involves acquiring the  	*/
     /* allocator lock to avoid a race with the collector.		*/
 # endif /* I_HIDE_POINTERS */
 
-typedef GC_PTR (*GC_fn_type) GC_PROTO((GC_PTR client_data));
-GC_API GC_PTR GC_call_with_alloc_lock
-        	GC_PROTO((GC_fn_type fn, GC_PTR client_data));
+typedef void * (*GC_fn_type) (void * client_data);
+GC_API void * GC_call_with_alloc_lock (GC_fn_type fn, void * client_data);
+
+/* These routines are intended to explicitly notify the collector	*/
+/* of new threads.  Often this is unnecessary because thread creation	*/
+/* is implicitly intercepted by the collector, using header-file	*/
+/* defines, or linker-based interception.  In the long run the intent	*/
+/* is to always make redundant registration safe.  In the short run,	*/
+/* this is being implemented a platform at a time.			*/
+/* The interface is complicated by the fact that we probably will not 	*/
+/* ever be able to automatically determine the stack base for thread	*/
+/* stacks on all platforms.						*/
+
+/* Structure representing the base of a thread stack.  On most		*/
+/* platforms this contains just a single address.			*/
+struct GC_stack_base {
+	void * mem_base;	/* Base of memory stack.	*/
+#	if defined(__ia64) || defined(__ia64__)
+	  void * reg_base;	/* Base of separate register stack.	*/
+#	endif
+};
+
+typedef void * (*GC_stack_base_func)(struct GC_stack_base *sb, void *arg);
+
+/* Call a function with a stack base structure corresponding to		*/
+/* somewhere in the GC_call_with_stack_base frame.  This often can	*/
+/* be used to provide a sufficiently accurate stack base.  And we 	*/
+/* implement it everywhere.						*/
+GC_API void * GC_call_with_stack_base(GC_stack_base_func fn, void *arg);
+
+/* Register the current thread, with the indicated stack base, as	*/
+/* a new thread whose stack(s) should be traced by the GC.  If a 	*/
+/* platform does not implicitly do so, this must be called before a	*/
+/* thread can allocate garbage collected memory, or assign pointers	*/
+/* to the garbage collected heap.  Once registered, a thread will be	*/
+/* stopped during garbage collections.					*/
+/* Return codes:	*/
+#define GC_SUCCESS 0
+#define GC_DUPLICATE 1	/* Was already registered.	*/
+#define GC_NO_THREADS 2	/* No thread support in GC.  	*/
+#define GC_UNIMPLEMENTED 3	/* Not yet implemented on this platform. */
+GC_API int GC_register_my_thread(struct GC_stack_base *);
+
+/* Unregister the current thread.  The thread may no longer allocate	*/
+/* garbage collected memory or manipulate pointers to the		*/
+/* garbage collected heap after making this call.			*/
+/* Specifically, if it wants to return or otherwise communicate a 	*/
+/* pointer to the garbage-collected heap to another thread, it must	*/
+/* do this before calling GC_unregister_my_thread, most probably	*/
+/* by saving it in a global data structure.				*/
+GC_API int GC_unregister_my_thread(void);
+
+/* Attempt to fill in the GC_stack_base structure with the stack base	*/
+/* for this thread.  This appears to be required to implement anything	*/
+/* like the JNI AttachCurrentThread in an environment in which new	*/
+/* threads are not automatically registered with the collector.		*/
+/* It is also unfortunately hard to implement well on many platforms.	*/
+/* Returns GC_SUCCESS or GC_UNIMPLEMENTED.				*/
+GC_API int GC_get_stack_base(struct GC_stack_base *);
 
 /* The following routines are primarily intended for use with a 	*/
 /* preprocessor which inserts calls to check C pointer arithmetic.	*/
@@ -803,14 +907,14 @@ GC_API GC_PTR GC_call_with_alloc_lock
 /* Returns the first argument.  				*/
 /* Succeeds if neither p nor q points to the heap.		*/
 /* May succeed if both p and q point to between heap objects.	*/
-GC_API GC_PTR GC_same_obj GC_PROTO((GC_PTR p, GC_PTR q));
+GC_API void * GC_same_obj (void * p, void * q);
 
 /* Checked pointer pre- and post- increment operations.  Note that	*/
 /* the second argument is in units of bytes, not multiples of the	*/
 /* object size.  This should either be invoked from a macro, or the	*/
 /* call should be automatically generated.				*/
-GC_API GC_PTR GC_pre_incr GC_PROTO((GC_PTR *p, size_t how_much));
-GC_API GC_PTR GC_post_incr GC_PROTO((GC_PTR *p, size_t how_much));
+GC_API void * GC_pre_incr (void * *p, size_t how_much);
+GC_API void * GC_post_incr (void * *p, size_t how_much);
 
 /* Check that p is visible						*/
 /* to the collector as a possibly pointer containing location.		*/
@@ -820,14 +924,20 @@ GC_API GC_PTR GC_post_incr GC_PROTO((GC_PTR *p, size_t how_much));
 /* untyped allocations.  The idea is that it should be possible, though	*/
 /* slow, to add such a call to all indirect pointer stores.)		*/
 /* Currently useless for multithreaded worlds.				*/
-GC_API GC_PTR GC_is_visible GC_PROTO((GC_PTR p));
+GC_API void * GC_is_visible (void * p);
 
 /* Check that if p is a pointer to a heap page, then it points to	*/
 /* a valid displacement within a heap object.				*/
 /* Fail conspicuously if this property does not hold.			*/
 /* Uninteresting with GC_all_interior_pointers.				*/
 /* Always returns its argument.						*/
-GC_API GC_PTR GC_is_valid_displacement GC_PROTO((GC_PTR	p));
+GC_API void * GC_is_valid_displacement (void *	p);
+
+/* Explicitly dump the GC state.  This is most often called from the	*/
+/* debugger, or by setting the GC_DUMP_REGULARLY environment variable,	*/
+/* but it may be useful to call it from client code during debugging.	*/
+/* PLTSCHEME: use GC_API */
+GC_API void GC_dump(void);
 
 /* Safer, but slow, pointer addition.  Probably useful mainly with 	*/
 /* a preprocessor.  Useful only for heap pointers.			*/
@@ -863,82 +973,130 @@ GC_API GC_PTR GC_is_valid_displacement GC_PROTO((GC_PTR	p));
 
 /* Safer assignment of a pointer to a nonstack location.	*/
 #ifdef GC_DEBUG
-# if defined(__STDC__) || defined(_AIX)
 #   define GC_PTR_STORE(p, q) \
 	(*(void **)GC_is_visible(p) = GC_is_valid_displacement(q))
-# else
-#   define GC_PTR_STORE(p, q) \
-	(*(char **)GC_is_visible(p) = GC_is_valid_displacement(q))
-# endif
 #else /* !GC_DEBUG */
-#   define GC_PTR_STORE(p, q) *((p) = (q))
+#   define GC_PTR_STORE(p, q) (*(p) = (q))
 #endif
 
 /* Functions called to report pointer checking errors */
-GC_API void (*GC_same_obj_print_proc) GC_PROTO((GC_PTR p, GC_PTR q));
+GC_API void (*GC_same_obj_print_proc) (void * p, void * q);
 
-GC_API void (*GC_is_valid_displacement_print_proc)
-	GC_PROTO((GC_PTR p));
+GC_API void (*GC_is_valid_displacement_print_proc) (void * p);
 
-GC_API void (*GC_is_visible_print_proc)
-	GC_PROTO((GC_PTR p));
+GC_API void (*GC_is_visible_print_proc) (void * p);
 
 
 /* For pthread support, we generally need to intercept a number of 	*/
 /* thread library calls.  We do that here by macro defining them.	*/
 
-#if !defined(GC_USE_LD_WRAP) && \
-    (defined(GC_PTHREADS) || defined(GC_SOLARIS_THREADS))
+#if !defined(GC_USE_LD_WRAP) && !defined(GC_NO_THREAD_REDIRECTS) \
+    && defined(GC_PTHREADS)
 # include "gc_pthread_redirects.h"
 #endif
 
 # if defined(PCR) || defined(GC_SOLARIS_THREADS) || \
      defined(GC_PTHREADS) || defined(GC_WIN32_THREADS)
-   	/* Any flavor of threads except SRC_M3.	*/
+   	/* Any flavor of threads.	*/
 /* This returns a list of objects, linked through their first		*/
 /* word.  Its use can greatly reduce lock contention problems, since	*/
 /* the allocation lock can be acquired and released many fewer times.	*/
-/* lb must be large enough to hold the pointer field.			*/
 /* It is used internally by gc_local_alloc.h, which provides a simpler	*/
 /* programming interface on Linux.					*/
-GC_PTR GC_malloc_many(size_t lb);
-#define GC_NEXT(p) (*(GC_PTR *)(p)) 	/* Retrieve the next element	*/
+void * GC_malloc_many(size_t lb);
+#define GC_NEXT(p) (*(void * *)(p)) 	/* Retrieve the next element	*/
 					/* in returned list.		*/
-extern void GC_thr_init GC_PROTO((void));/* Needed for Solaris/X86	*/
 
-#endif /* THREADS && !SRC_M3 */
+#endif /* THREADS */
 
-#if defined(GC_WIN32_THREADS) && !defined(__CYGWIN32__) && !defined(__CYGWIN__)
+/* Register a callback to control the scanning of dynamic libraries.
+   When the GC scans the static data of a dynamic library, it will
+   first call a user-supplied routine with filename of the library and
+   the address and length of the memory region.  This routine should
+   return nonzero if that region should be scanned.  */
+GC_API void 
+GC_register_has_static_roots_callback
+  (int (*callback)(const char *, void *, size_t));
+
+
+#if defined(GC_WIN32_THREADS) && !defined(__CYGWIN32__) \
+	&& !defined(__CYGWIN__) \
+	&& !defined(GC_PTHREADS)
+
+#ifdef __cplusplus
+    }  /* Including windows.h in an extern "C" context no longer works. */
+#endif
+
+#ifndef GC_NO_THREAD_DECLS
 # include <windows.h>
 
+#ifdef __cplusplus
+    extern "C" {
+#endif
   /*
-   * All threads must be created using GC_CreateThread, so that they will be
-   * recorded in the thread table.  For backwards compatibility, this is not
-   * technically true if the GC is built as a dynamic library, since it can
-   * and does then use DllMain to keep track of thread creations.  But new code
-   * should be built to call GC_CreateThread.
+   * All threads must be created using GC_CreateThread or GC_beginthreadex,
+   * or must explicitly call GC_register_my_thread,
+   * so that they will be recorded in the thread table.
+   * For backwards compatibility, it is possible to build the GC
+   * with GC_DLL defined, and to call GC_use_DllMain().
+   * This implicitly registers all created threads, but appears to be
+   * less robust.
+   *
+   * Currently the collector expects all threads to fall through and
+   * terminate normally, or call GC_endthreadex() or GC_ExitThread,
+   * so that the thread is properly unregistered.  (An explicit call
+   * to GC_unregister_my_thread() should also work, but risks unregistering
+   * the thread twice.)
    */
    GC_API HANDLE WINAPI GC_CreateThread(
       LPSECURITY_ATTRIBUTES lpThreadAttributes,
       DWORD dwStackSize, LPTHREAD_START_ROUTINE lpStartAddress,
       LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId );
 
+#  if defined(_MSC_VER) && _MSC_VER >= 1200 && !defined(_UINTPTR_T_DEFINED)
+     typedef unsigned long uintptr_t;
+#  endif
+
+   GC_API uintptr_t GC_beginthreadex(
+     void *security, unsigned stack_size,
+     unsigned ( __stdcall *start_address )( void * ),
+     void *arglist, unsigned initflag, unsigned *thrdaddr);
+
+   GC_API void GC_endthreadex(unsigned retval);
+
+   GC_API void WINAPI GC_ExitThread(DWORD dwExitCode);
+
 # if defined(_WIN32_WCE)
   /*
    * win32_threads.c implements the real WinMain, which will start a new thread
    * to call GC_WinMain after initializing the garbage collector.
    */
-  int WINAPI GC_WinMain(
+  GC_API int WINAPI GC_WinMain(
       HINSTANCE hInstance,
       HINSTANCE hPrevInstance,
       LPWSTR lpCmdLine,
       int nCmdShow );
-
 #  ifndef GC_BUILD
 #    define WinMain GC_WinMain
-#    define CreateThread GC_CreateThread
 #  endif
 # endif /* defined(_WIN32_WCE) */
+#endif /* !GC_NO_THREAD_DECLS */
+
+  /*
+   * Use implicit thread registration via DllMain.
+   * Must be called before GC_INIT and other GC routines.
+   * Should be avoided if GC_beginthreadex and friends can be called
+   * instead.
+   */
+GC_API void GC_use_DllMain(void);
+
+# ifndef GC_NO_THREAD_REDIRECTS
+#   define CreateThread GC_CreateThread
+#   define ExitThread GC_ExitThread
+#   define _beginthreadex GC_beginthreadex
+#   define _endthreadex GC_endthreadex
+#   define _beginthread { > "Please use _beginthreadex instead of _beginthread" < }
+# endif /* !GC_NO_THREAD_REDIRECTS */
 
 #endif /* defined(GC_WIN32_THREADS)  && !cygwin */
 
@@ -947,26 +1105,11 @@ extern void GC_thr_init GC_PROTO((void));/* Needed for Solaris/X86	*/
   * before making any other GC_ calls.  On most platforms this is a
   * no-op and the collector self-initializes.  But a number of platforms
   * make that too hard.
+  * A GC_INIT call is required if the collector is built with THREAD_LOCAL_ALLOC
+  * defined and the initial allocation call is not to GC_malloc() or
+  * GC_malloc_atomic().
   */
-#if (defined(sparc) || defined(__sparc)) && defined(sun)
-    /*
-     * If you are planning on putting
-     * the collector in a SunOS 5 dynamic library, you need to call GC_INIT()
-     * from the statically loaded program section.
-     * This circumvents a Solaris 2.X (X<=4) linker bug.
-     */
-#   ifdef __cplusplus
-#     define GC_INIT() { extern int _end[], _etext[]; \
-		         extern "C" void GC_noop1(GC_word); \
-		         GC_noop1((GC_word)_end); \
-			 GC_noop1((GC_word)_etext); }
-#   else
-#     define GC_INIT() { extern int _end[], _etext[]; \
-		         extern void GC_noop(); \
-		         GC_noop(_end, _etext); }
-#   endif /* !__cplusplus */
-#else
-# if defined(__CYGWIN32__) || defined (_AIX)
+#if defined(__CYGWIN32__) || defined (_AIX)
     /*
      * Similarly gnu-win32 DLLs need explicit initialization from
      * the main program, as does AIX.
@@ -978,28 +1121,21 @@ extern void GC_thr_init GC_PROTO((void));/* Needed for Solaris/X86	*/
       extern int _bss_end__[];
 #     define GC_MAX(x,y) ((x) > (y) ? (x) : (y))
 #     define GC_MIN(x,y) ((x) < (y) ? (x) : (y))
-#     define GC_DATASTART ((GC_PTR) GC_MIN(_data_start__, _bss_start__))
-#     define GC_DATAEND	 ((GC_PTR) GC_MAX(_data_end__, _bss_end__))
-#     ifdef GC_DLL
-#       define GC_INIT() { GC_add_roots(GC_DATASTART, GC_DATAEND); }
-#     else
-#       define GC_INIT()
-#     endif
+#     define GC_DATASTART ((void *) GC_MIN(_data_start__, _bss_start__))
+#     define GC_DATAEND	 ((void *) GC_MAX(_data_end__, _bss_end__))
+#     define GC_INIT() { GC_add_roots(GC_DATASTART, GC_DATAEND); \
+			   GC_gcollect(); /* For blacklisting. */}
+	/* Required at least if GC is in dll.  And doesn't hurt. */
 #   endif
 #   if defined(_AIX)
       extern int _data[], _end[];
-#     define GC_DATASTART ((GC_PTR)((ulong)_data))
-#     define GC_DATAEND ((GC_PTR)((ulong)_end))
+#     define GC_DATASTART ((void *)((ulong)_data))
+#     define GC_DATAEND ((void *)((ulong)_end))
 #     define GC_INIT() { GC_add_roots(GC_DATASTART, GC_DATAEND); }
 #   endif
-# else
-#  if defined(__APPLE__) && defined(__MACH__) || defined(GC_WIN32_THREADS)
+#else
 #   define GC_INIT() { GC_init(); }
-#  else
-#   define GC_INIT()
-#  endif /* !__MACH && !GC_WIN32_THREADS */
-# endif /* !AIX && !cygwin */
-#endif /* !sparc */
+#endif
 
 #if !defined(_WIN32_WCE) \
     && ((defined(_MSDOS) || defined(_MSC_VER)) && (_M_IX86 >= 300) \
@@ -1014,13 +1150,13 @@ extern void GC_thr_init GC_PROTO((void));/* Needed for Solaris/X86	*/
 # include "gc_amiga_redirects.h"
 #endif
 
-#if defined(GC_REDIRECT_TO_LOCAL) && !defined(GC_LOCAL_ALLOC_H)
-#  include  "gc_local_alloc.h"
+#if defined(GC_REDIRECT_TO_LOCAL)
+  /* Now redundant; that's the default with THREAD_LOCAL_ALLOC */
 #endif
-typedef void (*GC_collect_start_callback_Proc)(void);
-typedef void (*GC_collect_end_callback_Proc)(void);
 
 /* PLTSCHEME: */
+typedef void (*GC_collect_start_callback_Proc)(void);
+typedef void (*GC_collect_end_callback_Proc)(void);
 GC_API void (*GC_custom_finalize)(void);
 GC_API void (*GC_push_last_roots)(void);
 GC_API void (*GC_push_last_roots_again)(void);

@@ -161,8 +161,10 @@ Linux/X86, but not on most other platforms.
 Since version 6.1, it should be possible to run the collector in leak
 detection mode on a program a.out under Linux/X86 as follows:
 <OL>
-<LI> Ensure that a.out is a single-threaded executable.  This doesn't yet work
-for multithreaded programs.
+<LI> <I>Ensure that a.out is a single-threaded executable, or you are using
+a very recent (7.0alpha7+) collector version on Linux.</i>
+On most platforms this does not
+work at all for multithreaded programs.
 <LI> If possible, ensure that the addr2line program is installed in
 /usr/bin.  (It comes with RedHat Linux.)
 <LI> If possible, compile a.out with full debug information.
@@ -171,11 +173,12 @@ no longer necessary to call GC_ routines explicitly, though that can also
 improve the quality of the leak reports.
 <LI> Build the collector and install it in directory <I>foo</i> as follows:
 <UL>
-<LI> configure --prefix=<I>foo</i> --enable-full-debug --enable-redirect-malloc
---disable-threads
-<LI> make
-<LI> make install
+<LI> <TT>configure --prefix=<I>foo</i> --enable-full-debug --enable-redirect-malloc
+--disable-threads</tt>
+<LI> <TT>make</tt>
+<LI> <TT>make install</tt>
 </ul>
+With a very recent collector on Linux, it may be safe to omit the <TT>--disable-threads</tt>.
 <LI> Set environment variables as follows:
 <UL>
 <LI> LD_PRELOAD=<I>foo</i>/lib/libgc.so
@@ -191,7 +194,7 @@ embarrassing.  It can generate
 mountains of leak reports if the application wasn't designed to avoid leaks,
 <I>e.g.</i> because it's always short-lived.
 </ol>
-This has not yet been thropughly tested on large applications, but it's known
+This has not yet been thoroughly tested on large applications, but it's known
 to do the right thing on at least some small ones.
 </body>
 </html>

@@ -27,34 +27,37 @@ For the version number, see doc/README or version.h.
 INSTALLATION:
 Under UN*X, Linux:
 Alternative 1 (the old way): type "make test" in this directory.
-	Link against gc.a.
+	Link against gc.a.  With the most recent GC distributions
+	you may have to copy Makefile.direct to Makefile first.
 
 Alternative 2 (the new way): type
 	"./configure --prefix=<dir>; make; make check; make install".
 	Link against <dir>/lib/libgc.a or <dir>/lib/libgc.so.
 	See README.autoconf for details
 
-Under OS/2 or Windows 95, 98, Me, NT, or 2000:
+Under Windows 95, 98, Me, NT, or 2000:
 copy the appropriate makefile to MAKEFILE, read it, and type "nmake test".
 (Under Windows, this assumes you have Microsoft command-line tools
-installed, and have DOS configured with enough environment space to run them.)
+installed, and suitably configured.)
 Read the machine specific README in the doc directory if one exists.
-The only way to develop code with the collector for Windows 3.1 is
-to develop under Windows NT or 95+, and then to use win32S.
 
-If you need thread support, you will need to either follow the special
-platform-dependent instructions (win32), or add a suitable define
-option as described in Makefile.
+If you need thread support, you will need to follow the special
+platform-dependent instructions (win32), or define GC_THREADS
+as described in Makefile (Makefile.direct), or possibly use
+--enable-threads=posix when running the configure script.
 
-If you wish to use the cord (structured string) library, type
-"make cords". (This requires an ANSI C compiler.  You may need
-to redefine CC in the Makefile. The CORD_printf implementation in
-cordprnt.c is known to be less than perfectly portable.  The rest
-of the package should still work.)
+If you wish to use the cord (structured string) library with the stand-alone
+Makefile.direct, type "make cords", after copying to "Makefile".
+(This requires an ANSI C compiler.  You may
+need to redefine CC in the Makefile. The CORD_printf implementation in
+cordprnt.c is known to be less than perfectly portable.  The rest of the
+package should still work.)
 
-If you wish to use the collector from C++, type
-"make c++".  These add further files to gc.a and to the include
-subdirectory.  See cord/cord.h and include/gc_cpp.h.
+If you wish to use the collector from C++, type "make c++", or use
+--enable-cplusplus with the configure script.   With Makefile.direct,
+hese add further files to gc.a and to the include subdirectory.  With the
+alternat build process,this generates libgccpp.
+See cord/cord.h and include/gc_cpp.h.
 
 TYPICAL USE:
 Include "gc.h" from the include subdirectory.  Link against the
@@ -67,7 +70,7 @@ Define GC_DEBUG before including gc.h for additional checking.
 
 More documentation on the collector interface can be found at
 http://www.hpl.hp.com/personal/Hans_Boehm/gc/gcinterface.html,
-in doc/README, and in include/gc.h .
+in doc/README and other files in the doc directory, and in include/gc.h .
 
 WARNINGS:
 

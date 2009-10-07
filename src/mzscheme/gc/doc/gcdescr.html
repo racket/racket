@@ -1,7 +1,7 @@
 <HTML>
 <HEAD>
     <TITLE> Conservative GC Algorithmic Overview </TITLE>
-    <AUTHOR> Hans-J. Boehm, HP Labs (Much of this was written at SGI)</author>
+    <AUTHOR> Hans-J. Boehm, HP Labs (Some of this was written at SGI)</author>
 </HEAD>
 <BODY>
 <H1> <I>This is under construction, and may always be.</i> </h1>
@@ -549,6 +549,67 @@ by using ld's function call wrapping mechanism under Linux.
 Recent versions of the collector support several facilites to enhance
 the processor-scalability and thread performance of the collector.
 These are discussed in more detail <A HREF="scale.html">here</a>.
+We briefly outline the data approach to thread-local allocation in the
+next section.
+<H2>Thread-local allocation</h2>
+If thread-local allocation is enabled, the collector keeps separate
+arrays of free lists for each thread.  Thread-local allocation
+is currently only supported on a few platforms.
+<P>
+The free list arrays associated
+with each thread are only used to satisfy requests for objects that
+are  both very small, and belong to one of a small number of well-known
+kinds.  These currently include "normal" and pointer-free objects.
+Depending onthe configuration, "gcj" objects may also be included.
+<P>
+Thread-local free list entries contain either a pointer to the first
+element of a free list, or they contain a counter of the number of
+allocation "granules" allocated so far.  Initially they contain the
+value one, i.e. a small counter value.
+<P>
+Thread-local allocation allocates directly through the global
+allocator, if the object is of a size or kind not covered by the
+local free lists.
+<P>
+If there is an appropriate local free list, the allocator checks whether it
+contains a sufficiently small counter value.  If so, the counter is simply
+incremented by the counter value, and the global allocator is used.
+In this way, the initial few allocations of a given size bypass the local
+allocator.  A thread that only allocates a handful of objects of a given
+size will not build up its own free list for that size.  This avoids
+wasting space for unpopular objects sizes or kinds.
+<P>
+Once the counter passes a threshold, <TT>GC_malloc_many</tt> is called
+to allocate roughly <TT>HBLKSIZE</tt> space and put it on the corresponding
+local free list.  Further allocations of that size and kind then use
+this free list, and no longer need to acquire the allocation lock.
+The allocation procedure is otherwise similar to the global free lists.
+The local free lists are also linked using the first word in the object.
+In most cases this means they require considerably less time.
+<P>
+Local free lists are treated buy most of the rest of the collector
+as though they were in-use reachable data.  This requires some care,
+since pointer-free objects are not normally traced, and hence a special
+tracing procedure is required to mark all objects on pointer-free and
+gcj local free lists.
+<P>
+On thread exit, any remaining thread-local free list entries are
+transferred back to the global free list.
+<P>
+Note that if the collector is configured for thread-local allocation,
+GC versions before 7 do not invoke the thread-local allocator by default.
+<TT>GC_malloc</tt> only uses thread-local allocation in version 7 and later.
+In earlier versions, <TT>GC_MALLOC</tt> (all caps) may be directed
+to use thread-local allocation by defining <TT>GC_REDIRECT_TO_LOCAL</tt>
+and then include <TT>gc_local_alloc.h</tt>.
+<P>
+For some more details see <A HREF="scale.html">here</a>, and the
+technical report entitled
+<A HREF="http://www.hpl.hp.com/techreports/2000/HPL-2000-165.html">
+``Fast Multiprocessor Memory Allocation and Garbage Collection''
+</a>
+<P>
+<HR>
 <P>
 Comments are appreciated.  Please send mail to
 <A HREF="mailto:boehm@acm.org"><TT>boehm@acm.org</tt></a> or

@@ -50,14 +50,14 @@ struct hblk *h;
 # ifdef STUBBORN_ALLOC
 /* Check whether a stubborn object from the given block appears on	*/
 /* the appropriate free list.						*/
-GC_bool GC_on_free_list(h)
+GC_bool GC_on_free_list(struct hblk *h)
 struct hblk *h;
 {
-    register hdr * hhdr = HDR(h);
-    register int sz = hhdr -> hb_sz;
+    hdr * hhdr = HDR(h);
+    int sz = BYTES_TO_WORDS(hhdr -> hb_sz);
     ptr_t p;
     
-    if (sz > MAXOBJSZ) return(FALSE);
+    if (sz > MAXOBJWORDS) return(FALSE);
     for (p = GC_sobjfreelist[sz]; p != 0; p = obj_link(p)) {
         if (HBLKPTR(p) == h) return(TRUE);
     }
@@ -70,9 +70,7 @@ int GC_n_changed_errors;
 int GC_n_clean;
 int GC_n_dirty;
 
-void GC_update_check_page(h, index)
-struct hblk *h;
-int index;
+void GC_update_check_page(struct hblk *h, int index)
 {
     page_entry *pe = GC_sums + index;
     register hdr * hhdr = HDR(h);
@@ -83,8 +81,7 @@ int index;
     pe -> new_sum = GC_checksum(h);
 #   if !defined(MSWIN32) && !defined(MSWINCE)
         if (pe -> new_sum != 0x80000000 && !GC_page_was_ever_dirty(h)) {
-            GC_printf1("GC_page_was_ever_dirty(0x%lx) is wrong\n",
-        	       (unsigned long)h);
+            GC_printf("GC_page_was_ever_dirty(%p) is wrong\n", h);
         }
 #   endif
     if (GC_page_was_dirty(h)) {
@@ -104,7 +101,7 @@ int index;
     	    /* Set breakpoint here */GC_n_dirty_errors++;
     	}
 #	ifdef STUBBORN_ALLOC
-    	  if ( hhdr -> hb_map != GC_invalid_map
+    	  if (!HBLK_IS_FREE(hhdr)
     	    && hhdr -> hb_obj_kind == STUBBORN
     	    && !GC_page_was_changed(h)
     	    && !GC_on_free_list(h)) {
@@ -118,14 +115,14 @@ int index;
     pe -> block = h + OFFSET;
 }
 
-word GC_bytes_in_used_blocks;
+unsigned long GC_bytes_in_used_blocks;
 
 void GC_add_block(h, dummy)
 struct hblk *h;
 word dummy;
 {
-   register hdr * hhdr = HDR(h);
-   register bytes = WORDS_TO_BYTES(hhdr -> hb_sz);
+   hdr * hhdr = HDR(h);
+   bytes = hhdr -> hb_sz;
    
    bytes += HBLKSIZE-1;
    bytes &= ~(HBLKSIZE-1);
@@ -134,15 +131,15 @@ word dummy;
 
 void GC_check_blocks()
 {
-    word bytes_in_free_blocks = GC_large_free_bytes;
+    unsigned long bytes_in_free_blocks = GC_large_free_bytes;
     
     GC_bytes_in_used_blocks = 0;
     GC_apply_to_all_blocks(GC_add_block, (word)0);
-    GC_printf2("GC_bytes_in_used_blocks = %ld, bytes_in_free_blocks = %ld ",
-    		GC_bytes_in_used_blocks, bytes_in_free_blocks);
-    GC_printf1("GC_heapsize = %ld\n", GC_heapsize);
+    GC_printf("GC_bytes_in_used_blocks = %lu, bytes_in_free_blocks = %lu ",
+    	      GC_bytes_in_used_blocks, bytes_in_free_blocks);
+    GC_printf("GC_heapsize = %lu\n", (unsigned long)GC_heapsize);
     if (GC_bytes_in_used_blocks + bytes_in_free_blocks != GC_heapsize) {
-    	GC_printf0("LOST SOME BLOCKS!!\n");
+    	GC_printf("LOST SOME BLOCKS!!\n");
     }
 }
 
@@ -173,18 +170,18 @@ void GC_check_dirty()
         }
     }
 out:
-    GC_printf2("Checked %lu clean and %lu dirty pages\n",
+    GC_printf("Checked %lu clean and %lu dirty pages\n",
     	      (unsigned long) GC_n_clean, (unsigned long) GC_n_dirty);
     if (GC_n_dirty_errors > 0) {
-        GC_printf1("Found %lu dirty bit errors\n",
-        	   (unsigned long)GC_n_dirty_errors);
+        GC_printf("Found %lu dirty bit errors\n",
+        	  (unsigned long)GC_n_dirty_errors);
     }
     if (GC_n_changed_errors > 0) {
-    	GC_printf1("Found %lu changed bit errors\n",
-        	   (unsigned long)GC_n_changed_errors);
-	GC_printf0("These may be benign (provoked by nonpointer changes)\n");
+    	GC_printf("Found %lu changed bit errors\n",
+        	  (unsigned long)GC_n_changed_errors);
+	GC_printf("These may be benign (provoked by nonpointer changes)\n");
 #	ifdef THREADS
-	    GC_printf0(
+	    GC_printf(
 	    "Also expect 1 per thread currently allocating a stubborn obj.\n");
 #	endif
     }

@@ -26,7 +26,6 @@ OPTIMIZE=optimize optimizetime optglobal optimizerdepth=100 optimizerpeephole op
 
 OPT= $(OPTIMIZE) CPU=$(CPU) math=$(MATH) NOSTACKCHECK VERBOSE \
 MAPHUNK NOVERSION NOICONS nodebug \
-DEFINE SILENT \
 parm=reg \
 DEFINE __USE_SYSBASE
 

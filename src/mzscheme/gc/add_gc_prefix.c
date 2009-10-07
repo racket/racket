@@ -1,5 +1,5 @@
 # include <stdio.h>
-# include "version.h"
+# include <gc.h>
  
 int main(argc, argv, envp)
 int argc;

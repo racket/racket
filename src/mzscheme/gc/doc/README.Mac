@@ -1,3 +1,8 @@
+The contents of this file are old and pertain to pre-MacOSX versions.
+You probably really wanted README.darwin.
+
+---------------------------------------------
+
 Patrick Beard's Notes for building GC v4.12 with CodeWarrior Pro 2:
 ----------------------------------------------------------------------------
 The current build environment for the collector is CodeWarrior Pro 2.

@@ -1,16 +1,3 @@
-6.5 update:
-I disabled incremental GC on Darwin in this version, since I couldn't
-get gctest to pass when the GC was built as a dynamic library.  Building
-with -DMPROTECT_VDB (and threads) on the command line should get you
-back to the old state.			- HB
-
-./configure --enable-cplusplus results in a "make check" failure, probably
-because the ::delete override ends up in a separate dl, and Darwin dynamic
-loader semantics appear to be such that this is not really visible to the
-main program, unlike on ELF systems.  Someone who understands dynamic
-loading needs to lookat this.  For now, gc_cpp.o needs to be linked
-statically, if needed.			- HB
-
 Darwin/MacOSX Support - December 16, 2003
 =========================================
 
@@ -94,6 +81,20 @@ Darwin/OS X port.
 
 -Brian Alliet
 brian@brianweb.net
+
+gc_cpp.h usage
+==============
+
+Replacement of operator new and delete is apparently not supported with
+dynamic libraries.  This means that applications using gc_cpp.h
+(including the built-in test) will probably not work correctly with
+the collector in a dynamic library, unless special care is taken.
+
+See
+http://article.gmane.org/gmane.comp.programming.garbage-collection.boehmgc/1421
+for some details.
+
+- Hans Boehm (based on information from Andrew Begel)
 
 
 Older Information (Most of this no longer applies to the current code)

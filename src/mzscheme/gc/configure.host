@@ -2,7 +2,7 @@
 
 # This shell script handles all host based configuration for the garbage
 # collector.
-# It sets various shell variables based on the host and the
+# It sets various shell variables based on the the host and the
 # configuration options.  You can modify this shell script without
 # needing to rerun autoconf.
 

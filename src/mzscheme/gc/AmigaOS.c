@@ -40,7 +40,7 @@
    Find the base of the stack.
 ******************************************************************/
 
-ptr_t GC_get_stack_base()
+ptr_t GC_get_main_stack_base()
 {
     struct Process *proc = (struct Process*)SysBase->ThisTask;
  

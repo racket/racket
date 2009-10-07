@@ -51,6 +51,11 @@ int APIENTRY WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance,
    WNDCLASS    wndclass;
    HANDLE      hAccel;
 
+#  ifdef THREAD_LOCAL_ALLOC
+     GC_INIT();  /* Required if GC is built with THREAD_LOCAL_ALLOC 	*/
+     		 /* Always safe, but this is used as a GC test.		*/
+#  endif
+
    if (!hPrevInstance)
    {
       wndclass.style          = CS_HREDRAW | CS_VREDRAW;
@@ -174,10 +179,35 @@ int screen_was_painted = 0;/* Screen has been painted at least once.	*/
 
 void update_cursor(void);
 
+INT_PTR CALLBACK AboutBoxCallback( HWND hDlg, UINT message,
+                           WPARAM wParam, LPARAM lParam )
+{
+   switch( message )
+   {
+      case WM_INITDIALOG:
+           SetFocus( GetDlgItem( hDlg, IDOK ) );
+           break;
+
+      case WM_COMMAND:
+           switch( wParam )
+           {
+              case IDOK:
+                   EndDialog( hDlg, TRUE );
+                   break;
+           }
+           break;
+
+      case WM_CLOSE:
+           EndDialog( hDlg, TRUE );
+           return TRUE;
+
+   }
+   return FALSE;
+}
+
 LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
                           WPARAM wParam, LPARAM lParam)
 {
-   static FARPROC lpfnAboutBox;
    static HANDLE  hInstance;
    HDC dc;
    PAINTSTRUCT ps;
@@ -192,7 +222,6 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
    {
       case WM_CREATE:
            hInstance = ( (LPCREATESTRUCT) lParam)->hInstance;
-           lpfnAboutBox = MakeProcInstance( (FARPROC) AboutBox, hInstance );
            dc = GetDC(hwnd);
            SelectObject(dc, GetStockObject(SYSTEM_FIXED_FONT));
            GetTextMetrics(dc, &tm);
@@ -209,7 +238,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
       	   if (wParam == QUIT) {
       	       SendMessage( hwnd, WM_CLOSE, 0, 0L );
       	   } else {
-      	       do_command(wParam);
+      	       do_command((int)wParam);
       	   }
       	   return(0);
       
@@ -249,7 +278,7 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
 
                case IDM_HELPABOUT:
                   if( DialogBox( hInstance, "ABOUTBOX",
-                                 hwnd, lpfnAboutBox ) )
+                                 hwnd, AboutBoxCallback ) )
                      InvalidateRect( hwnd, NULL, TRUE );
                   return( 0 );
 	       case IDM_HELPCONTENTS:
@@ -294,13 +323,14 @@ LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
       	           SetTextColor(dc, GetSysColor(COLOR_WINDOWTEXT));
       	           
       	           TextOut(dc, this_line.left, this_line.top,
-      	           	   plain, len);
-      	           TextOut(dc, this_line.left + len * char_width, this_line.top,
-      	           	   blanks, COLS - len);
+      	           	   plain, (int)len);
+      	           TextOut(dc, this_line.left + (int)len * char_width,
+		   	   this_line.top,
+      	           	   blanks, (int)(COLS - len));
       	           SetBkMode(dc, TRANSPARENT);
       	           SetTextColor(dc, RED);
       	           TextOut(dc, this_line.left, this_line.top,
-      	           	   control, strlen(control));
+      	           	   control, (int)strlen(control));
       	       }
       	   }
       	   EndPaint(hwnd, &ps);
@@ -336,31 +366,5 @@ void invalidate_line(int i)
     	/* major performance problem.					*/
     get_line_rect(i, COLS*char_width, &line);
     InvalidateRect(hwnd, &line, FALSE);
-}
-
-LRESULT CALLBACK AboutBox( HWND hDlg, UINT message,
-                           WPARAM wParam, LPARAM lParam )
-{
-   switch( message )
-   {
-      case WM_INITDIALOG:
-           SetFocus( GetDlgItem( hDlg, IDOK ) );
-           break;
-
-      case WM_COMMAND:
-           switch( wParam )
-           {
-              case IDOK:
-                   EndDialog( hDlg, TRUE );
-                   break;
-           }
-           break;
-
-      case WM_CLOSE:
-           EndDialog( hDlg, TRUE );
-           return TRUE;
-
-   }
-   return FALSE;
 }
 

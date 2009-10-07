@@ -5,10 +5,7 @@
 # include <string.h>
 # include <unistd.h>
 
-int main(argc, argv, envp)
-int argc;
-char ** argv;
-char ** envp;
+int main(int argc, char **argv, char **envp)
 {
     if (argc < 4) goto Usage;
     if (strcmp(MACH_TYPE, argv[1]) != 0) return(0);

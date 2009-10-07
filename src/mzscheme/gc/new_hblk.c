@@ -14,7 +14,7 @@
  *
  * This file contains the functions:
  *	ptr_t GC_build_flXXX(h, old_fl)
- *	void GC_new_hblk(n)
+ *	void GC_new_hblk(size)
  */
 /* Boehm, May 19, 1994 2:09 pm PDT */
 
@@ -24,37 +24,14 @@
 
 #ifndef SMALL_CONFIG
 /*
- * Build a free list for size 1 objects inside hblk h.  Set the last link to
+ * Build a free list for size 2 (words) cleared objects inside hblk h.
+ * Set the last link to
  * be ofl.  Return a pointer tpo the first free list entry.
  */
-ptr_t GC_build_fl1(h, ofl)
-struct hblk *h;
-ptr_t ofl;
+ptr_t GC_build_fl_clear2(struct hblk *h, ptr_t ofl)
 {
-    register word * p = h -> hb_body;
-    register word * lim = (word *)(h + 1);
-    
-    p[0] = (word)ofl;
-    p[1] = (word)(p);
-    p[2] = (word)(p+1);
-    p[3] = (word)(p+2);
-    p += 4;
-    for (; p < lim; p += 4) {
-        p[0] = (word)(p-1);
-        p[1] = (word)(p);
-        p[2] = (word)(p+1);
-        p[3] = (word)(p+2);
-    };
-    return((ptr_t)(p-1));
-}
-
-/* The same for size 2 cleared objects */
-ptr_t GC_build_fl_clear2(h, ofl)
-struct hblk *h;
-ptr_t ofl;
-{
-    register word * p = h -> hb_body;
-    register word * lim = (word *)(h + 1);
+    word * p = (word *)(h -> hb_body);
+    word * lim = (word *)(h + 1);
     
     p[0] = (word)ofl;
     p[1] = 0;
@@ -70,33 +47,11 @@ ptr_t ofl;
     return((ptr_t)(p-2));
 }
 
-/* The same for size 3 cleared objects */
-ptr_t GC_build_fl_clear3(h, ofl)
-struct hblk *h;
-ptr_t ofl;
-{
-    register word * p = h -> hb_body;
-    register word * lim = (word *)(h + 1) - 2;
-    
-    p[0] = (word)ofl;
-    p[1] = 0;
-    p[2] = 0;
-    p += 3;
-    for (; p < lim; p += 3) {
-        p[0] = (word)(p-3);
-        p[1] = 0;
-        p[2] = 0;
-    };
-    return((ptr_t)(p-3));
-}
-
 /* The same for size 4 cleared objects */
-ptr_t GC_build_fl_clear4(h, ofl)
-struct hblk *h;
-ptr_t ofl;
+ptr_t GC_build_fl_clear4(struct hblk *h, ptr_t ofl)
 {
-    register word * p = h -> hb_body;
-    register word * lim = (word *)(h + 1);
+    word * p = (word *)(h -> hb_body);
+    word * lim = (word *)(h + 1);
     
     p[0] = (word)ofl;
     p[1] = 0;
@@ -113,12 +68,10 @@ ptr_t ofl;
 }
 
 /* The same for size 2 uncleared objects */
-ptr_t GC_build_fl2(h, ofl)
-struct hblk *h;
-ptr_t ofl;
+ptr_t GC_build_fl2(struct hblk *h, ptr_t ofl)
 {
-    register word * p = h -> hb_body;
-    register word * lim = (word *)(h + 1);
+    word * p = (word *)(h -> hb_body);
+    word * lim = (word *)(h + 1);
     
     p[0] = (word)ofl;
     p[2] = (word)p;
@@ -131,12 +84,10 @@ ptr_t ofl;
 }
 
 /* The same for size 4 uncleared objects */
-ptr_t GC_build_fl4(h, ofl)
-struct hblk *h;
-ptr_t ofl;
+ptr_t GC_build_fl4(struct hblk *h, ptr_t ofl)
 {
-    register word * p = h -> hb_body;
-    register word * lim = (word *)(h + 1);
+    word * p = (word *)(h -> hb_body);
+    word * lim = (word *)(h + 1);
     
     p[0] = (word)ofl;
     p[4] = (word)p;
@@ -158,11 +109,7 @@ ptr_t ofl;
 /* This could be called without the main GC lock, if we ensure that	*/
 /* there is no concurrent collection which might reclaim objects that	*/
 /* we have not yet allocated.						*/
-ptr_t GC_build_fl(h, sz, clear, list)
-struct hblk *h;
-word sz;
-GC_bool clear;
-ptr_t list;
+ptr_t GC_build_fl(struct hblk *h, size_t sz, GC_bool clear, ptr_t list)
 {
   word *p, *prev;
   word *last_object;		/* points to last object in new hblk	*/
@@ -179,17 +126,10 @@ ptr_t list;
   /* the difference is less significant.				*/
 #  ifndef SMALL_CONFIG
     switch (sz) {
-        case 1: return GC_build_fl1(h, list);
         case 2: if (clear) {
         	    return GC_build_fl_clear2(h, list);
         	} else {
         	    return GC_build_fl2(h, list);
-        	}
-        case 3: if (clear) {
-         	    return GC_build_fl_clear3(h, list);
-        	} else {
-        	    /* It's messy to do better than the default here. */
-        	    break;
         	}
         case 4: if (clear) {
         	    return GC_build_fl_clear4(h, list);
@@ -205,8 +145,8 @@ ptr_t list;
     if (clear) BZERO(h, HBLKSIZE);
     
   /* Add objects to free list */
-    p = &(h -> hb_body[sz]);	/* second object in *h	*/
-    prev = &(h -> hb_body[0]);       	/* One object behind p	*/
+    p = (word *)(h -> hb_body) + sz;	/* second object in *h	*/
+    prev = (word *)(h -> hb_body);       	/* One object behind p	*/
     last_object = (word *)((char *)h + HBLKSIZE);
     last_object -= sz;
 			    /* Last place for last object to start */
@@ -228,36 +168,34 @@ ptr_t list;
       return ((ptr_t)p);
 }
 
+
 /*
- * Allocate a new heapblock for small objects of size n.
+ * Allocate a new heapblock for small objects of size gran granules.
  * Add all of the heapblock's objects to the free list for objects
  * of that size.
  * Set all mark bits if objects are uncollectable.
  * Will fail to do anything if we are out of memory.
  */
-void GC_new_hblk(sz, kind)
-register word sz;
-int kind;
+void GC_new_hblk(size_t gran, int kind)
 {
-    register struct hblk *h;	/* the new heap block			*/
-    register GC_bool clear = GC_obj_kinds[kind].ok_init;
+  struct hblk *h;	/* the new heap block			*/
+  GC_bool clear = GC_obj_kinds[kind].ok_init;
 
-#   ifdef PRINTSTATS
-	if ((sizeof (struct hblk)) > HBLKSIZE) {
-	    ABORT("HBLK SZ inconsistency");
-        }
-#   endif
+  /* Ignore gcc "no effect" warning on the following: */
+  GC_STATIC_ASSERT((sizeof (struct hblk)) == HBLKSIZE);
+  
   if (GC_debugging_started) clear = TRUE;
 
   /* Allocate a new heap block */
-    h = GC_allochblk(sz, kind, 0);
+    h = GC_allochblk(GRANULES_TO_BYTES(gran), kind, 0);
     if (h == 0) return;
 
   /* Mark all objects if appropriate. */
       if (IS_UNCOLLECTABLE(kind)) GC_set_hdr_marks(HDR(h));
 
   /* Build the free list */
-      GC_obj_kinds[kind].ok_freelist[sz] =
-	GC_build_fl(h, sz, clear, GC_obj_kinds[kind].ok_freelist[sz]);
+      GC_obj_kinds[kind].ok_freelist[gran] =
+	GC_build_fl(h, GRANULES_TO_WORDS(gran), clear,
+		    GC_obj_kinds[kind].ok_freelist[gran]);
 }
 

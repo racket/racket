@@ -3356,6 +3356,7 @@ regmatch(Regwork *rw, rxpos prog)
 	  no_start = no_end = 0;
 	save = is;
 	if (no_end) {
+          int found = 0;
 	  for (no = no_start; no <= no_end; no++) {
 	    if (is - rw->input_start >= no) {
 	      rw->input = save - no;
@@ -3363,15 +3364,15 @@ regmatch(Regwork *rw, rxpos prog)
 		if (is == save) {
 		  /* Match */
 		  if (!t) return 0;
+                  found = 1;
 		  break;
 		}
 	      }
 	    } else {
-	      no = no_end + 1;
 	      break;
 	    }
 	  }
-	  if (no > no_end) {
+	  if (!found) {
 	    /* No matches */
 	    if (t) return 0;
 	  }

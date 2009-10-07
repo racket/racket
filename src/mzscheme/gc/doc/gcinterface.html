@@ -106,7 +106,9 @@ On some platforms, it is necessary to invoke this
 <I>from the main executable, not from a dynamic library,</i> before
 the initial invocation of a GC routine.  It is recommended that this be done
 in portable code, though we try to ensure that it expands to a no-op
-on as many platforms as possible.
+on as many platforms as possible.  In GC 7.0, it was required if
+thread-local allocation is enabled in the collector build, and <TT>malloc</tt>
+is not redirected to <TT>GC_malloc</tt>.
 <DT> <B> void GC_gcollect(void) </b>
 <DD>
 Explicitly force a garbage collection.
@@ -165,7 +167,17 @@ advantage of the collector.  For details see
 <A HREF="http://www.hpl.hp.com/personal/Hans_Boehm/gc/gc_source/cordh.txt">cord.h</a>
 
 <H1>C++ Interface</h1>
-Usage of the collector from C++ is complicated by the fact that there
+The C++ interface is implemented as a thin layer on the C interface.
+Unfortunately, this thin layer appears to be very sensitive to variations
+in C++ implementations, particularly since it tries to replace the global
+::new operator, something that appears to not be well-standardized.
+Your platform may need minor adjustments in this layer (gc_cpp.cc, gc_cpp.h,
+and possibly gc_allocator.h).  Such changes do not require understanding
+of collector internals, though they may require a good understanding of
+your platform.  (Patches enhancing portability are welcome.
+But it's easy to break one platform by fixing another.)
+<P>
+Usage of the collector from C++ is also complicated by the fact that there
 are many "standard" ways to allocate memory in C++.  The default ::new
 operator, default malloc, and default STL allocators allocate memory
 that is not garbage collected, and is not normally "traced" by the
@@ -183,7 +195,7 @@ memory is referenced by pointers stored in one of
 </ul>
 "Traceable" objects are not necessarily reclaimed by the collector,
 but are scanned for pointers to collectable objects.
-They are allocated by <TT>GC_MALLOC_UNCOLLECTABLE</tt>, as described
+They are usually allocated by <TT>GC_MALLOC_UNCOLLECTABLE</tt>, as described
 above, and through some interfaces described below.
 <P>
 (On most platforms, the collector may not trace correctly from in-flight
@@ -194,39 +206,48 @@ proper repair requires platform hooks.)
 The easiest way to ensure that collectable objects are properly referenced
 is to allocate only collectable objects.  This requires that every
 allocation go through one of the following interfaces, each one of
-which replaces a standard C++ allocation mechanism:
+which replaces a standard C++ allocation mechanism.  Note that
+this requires that all STL containers be explicitly instantiated with
+<TT>gc_allocator</tt>.
 <DL>
 <DT> <B> STL allocators </b>
 <DD>
-Users of the <A HREF="http://www.sgi.com/tech/stl">SGI extended STL</a>
-can include <TT>new_gc_alloc.h</tt> before including
-STL header files.
-(<TT>gc_alloc.h</tt> corresponds to now obsolete versions of the
-SGI STL.)
-This defines SGI-style allocators
+<P>
+Recent versions of the collector include a hopefully standard-conforming
+allocator implementation in <TT>gc_allocator.h</tt>.  It defines
 <UL>
-<LI> alloc
-<LI> single_client_alloc
-<LI> gc_alloc
-<LI> single_client_gc_alloc
+<LI> <TT>traceable_allocator</tt>
+<LI> <TT>gc_allocator</tt>
 </ul>
 which may be used either directly to allocate memory or to instantiate
-container templates.  The first two allocate uncollectable but traced
+container templates. 
+The former allocates uncollectable but traced memory.
+The latter allocates garbage-collected memory.
+<P>
+These should work with any fully standard-conforming C++ compiler.
+<P>
+Users of the <A HREF="http://www.sgi.com/tech/stl">SGI extended STL</a>
+or its derivatives (including most g++ versions)
+may instead be able to include <TT>new_gc_alloc.h</tt> before including
+STL header files.  This is increasingly discouraged.
+(<TT>gc_alloc.h</tt> corresponds to now obsolete versions of the
+SGI STL.)  This interface is no longer recommended, but it has existed
+for much longer.
+<P>
+This defines SGI-style allocators
+<UL>
+<LI> <TT>alloc</tt>
+<LI> <TT>single_client_alloc</tt>
+<LI> <TT>gc_alloc</tt>
+<LI> <TT>single_client_gc_alloc</tt>
+</ul>
+The first two allocate uncollectable but traced
 memory, while the second two allocate collectable memory.
-The single_client versions are not safe for concurrent access by
+The <TT>single_client</tt> versions are not safe for concurrent access by
 multiple threads, but are faster.
 <P>
 For an example, click <A HREF="http://hpl.hp.com/personal/Hans_Boehm/gc/gc_alloc_exC.txt">here</a>.
-<P>
-Recent versions of the collector also include a more standard-conforming
-allocator implementation in <TT>gc_allocator.h</tt>.  It defines
-<UL>
-<LI> traceable_allocator
-<LI> gc_allocator
-</ul>
-Again the former allocates uncollectable but traced memory.
-This should work with any fully standard-conforming C++ compiler.
-<DT> <B> Class inheritance based interface </b>
+<DT> <B> Class inheritance based interface for new-based allocation</b>
 <DD>
 Users may include gc_cpp.h and then cause members of classes to
 be allocated in garbage collectable memory by having those classes

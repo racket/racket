@@ -53,9 +53,9 @@
 /* case correctly somehow.						*/
 # define GC_PROC_BYTES 100
 struct GC_ms_entry;
-typedef struct GC_ms_entry * (*GC_mark_proc) GC_PROTO((
+typedef struct GC_ms_entry * (*GC_mark_proc) (
 		GC_word * addr, struct GC_ms_entry * mark_stack_ptr,
-		struct GC_ms_entry * mark_stack_limit, GC_word env));
+		struct GC_ms_entry * mark_stack_limit, GC_word env);
 
 # define GC_LOG_MAX_MARK_PROCS 6
 # define GC_MAX_MARK_PROCS (1 << GC_LOG_MAX_MARK_PROCS)
@@ -106,8 +106,8 @@ typedef struct GC_ms_entry * (*GC_mark_proc) GC_PROTO((
 			/* held.					*/
 #define GC_INDIR_PER_OBJ_BIAS 0x10
 			
-extern GC_PTR GC_least_plausible_heap_addr;
-extern GC_PTR GC_greatest_plausible_heap_addr;
+extern void * GC_least_plausible_heap_addr;
+extern void * GC_greatest_plausible_heap_addr;
 			/* Bounds on the heap.  Guaranteed valid	*/
 			/* Likely to include future heap expansion.	*/
 
@@ -130,10 +130,10 @@ extern GC_PTR GC_greatest_plausible_heap_addr;
 /* which would tie the client code to a fixed collector version.)	*/
 /* Note that mark procedures should explicitly call FIXUP_POINTER()	*/
 /* if required.								*/
-struct GC_ms_entry *GC_mark_and_push
-		GC_PROTO((GC_PTR obj,
-			  struct GC_ms_entry * mark_stack_ptr,
-		          struct GC_ms_entry * mark_stack_limit, GC_PTR *src));
+struct GC_ms_entry *GC_mark_and_push(void * obj,
+			  	     struct GC_ms_entry * mark_stack_ptr,
+		          	     struct GC_ms_entry * mark_stack_limit,
+				     void * *src);
 
 #define GC_MARK_AND_PUSH(obj, msp, lim, src) \
 	(((GC_word)obj >= (GC_word)GC_least_plausible_heap_addr && \
@@ -146,29 +146,29 @@ extern size_t GC_debug_header_size;
        /* the GC_debug routines.                                       */
        /* Defined as a variable so that client mark procedures don't   */
        /* need to be recompiled for collector version changes.         */
-#define GC_USR_PTR_FROM_BASE(p) ((GC_PTR)((char *)(p) + GC_debug_header_size))
+#define GC_USR_PTR_FROM_BASE(p) ((void *)((char *)(p) + GC_debug_header_size))
 
 /* And some routines to support creation of new "kinds", e.g. with	*/
 /* custom mark procedures, by language runtimes.			*/
 /* The _inner versions assume the caller holds the allocation lock.	*/
 
 /* Return a new free list array.	*/
-void ** GC_new_free_list GC_PROTO((void));
-void ** GC_new_free_list_inner GC_PROTO((void));
+void ** GC_new_free_list(void);
+void ** GC_new_free_list_inner(void);
 
 /* Return a new kind, as specified. */
-int GC_new_kind GC_PROTO((void **free_list, GC_word mark_descriptor_template,
-		          int add_size_to_descriptor, int clear_new_objects));
+unsigned GC_new_kind(void **free_list, GC_word mark_descriptor_template,
+		int add_size_to_descriptor, int clear_new_objects);
 		/* The last two parameters must be zero or one. */
-int GC_new_kind_inner GC_PROTO((void **free_list,
-				GC_word mark_descriptor_template,
-		                int add_size_to_descriptor,
-				int clear_new_objects));
+unsigned GC_new_kind_inner(void **free_list,
+		      GC_word mark_descriptor_template,
+		      int add_size_to_descriptor,
+		      int clear_new_objects);
 
 /* Return a new mark procedure identifier, suitable for use as	*/
 /* the first argument in GC_MAKE_PROC.				*/
-int GC_new_proc GC_PROTO((GC_mark_proc));
-int GC_new_proc_inner GC_PROTO((GC_mark_proc));
+unsigned GC_new_proc(GC_mark_proc);
+unsigned GC_new_proc_inner(GC_mark_proc);
 
 /* Allocate an object of a given kind.  Note that in multithreaded	*/
 /* contexts, this is usually unsafe for kinds that have the descriptor	*/
@@ -176,11 +176,9 @@ int GC_new_proc_inner GC_PROTO((GC_mark_proc));
 /* the descriptor is not correct.  Even in the single-threaded case,	*/
 /* we need to be sure that cleared objects on a free list don't		*/
 /* cause a GC crash if they are accidentally traced.			*/
-/* ptr_t */char * GC_generic_malloc GC_PROTO((GC_word lb, int k));
+void * GC_generic_malloc(size_t lb, int k);
 
-/* FIXME - Should return void *, but that requires other changes.	*/
-
-typedef void (*GC_describe_type_fn) GC_PROTO((void *p, char *out_buf));
+typedef void (*GC_describe_type_fn) (void *p, char *out_buf);
 				/* A procedure which			*/
 				/* produces a human-readable 		*/
 				/* description of the "type" of object	*/
@@ -194,7 +192,7 @@ typedef void (*GC_describe_type_fn) GC_PROTO((void *p, char *out_buf));
 				/* global free list.			*/
 #	define GC_TYPE_DESCR_LEN 40
 
-void GC_register_describe_type_fn GC_PROTO((int kind, GC_describe_type_fn knd));
+void GC_register_describe_type_fn(int kind, GC_describe_type_fn knd);
 				/* Register a describe_type function	*/
 				/* to be used when printing objects	*/
 				/* of a particular kind.		*/

@@ -76,7 +76,6 @@ static int use_registered_statics;
 
 #if !defined(MZ_PRECISE_GC) && !defined(USE_SENORA_GC)
 extern MZ_DLLIMPORT void GC_init();
-extern MZ_DLLIMPORT unsigned long GC_get_stack_base();
 #endif
 
 void scheme_set_stack_base(void *base, int no_auto_statics)
@@ -180,9 +179,14 @@ extern unsigned long scheme_get_stack_base()
 #if !defined(MZ_PRECISE_GC) && !defined(USE_SENORA_GC)
   if (GC_stackbottom)
     return (unsigned long)GC_stackbottom;
-  else
+  else {
+    struct GC_stack_base b;
+    GC_get_stack_base(&b);
+    return (unsigned long)b.mem_base;
+  }
+#else
+  return (unsigned long)GC_get_stack_base();
 #endif
-    return (unsigned long)GC_get_stack_base();
 }
 
 void scheme_out_of_memory_abort()

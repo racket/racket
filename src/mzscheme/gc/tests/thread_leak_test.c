@@ -1,4 +1,6 @@
-#define GC_LINUX_THREADS
+#ifndef GC_THREADS
+#  define GC_THREADS
+#endif /* GC_THREADS */
 #include "leak_detector.h"
 #include <pthread.h>
 #include <stdio.h>
@@ -15,6 +17,7 @@ void * test(void * arg) {
     for (i = 1; i < 10; ++i) {
         free(p[i]);
     }
+    return 0;
 }       
 
 #define NTHREADS 5
@@ -24,6 +27,7 @@ main() {
     pthread_t t[NTHREADS];
     int code;
 
+    GC_INIT();
     for (i = 0; i < NTHREADS; ++i) {
 	if ((code = pthread_create(t + i, 0, test, 0)) != 0) {
     	    printf("Thread creation failed %d\n", code);
@@ -37,4 +41,5 @@ main() {
     CHECK_LEAKS();
     CHECK_LEAKS();
     CHECK_LEAKS();
+    return 0;
 }

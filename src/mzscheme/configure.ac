@@ -313,6 +313,8 @@ show_explicitly_enabled "${enable_gcov}" "gcov"
 
 show_explicitly_enabled "${enable_noopt}" "No-optimization"
 
+show_explicitly_enabled "${enable_mac64}" "64-bit Mac OS X"
+
 show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
 show_explicitly_enabled "${enable_userfw}" "Frameworks-to-user"
 
@@ -349,6 +351,7 @@ PNG_A='$(PNG_A)'
 
 PREFLAGS="$CPPFLAGS"
 PLACE_CGC_FLAGS=""
+LIBATOM="LIBATOM_NONE"
 
 ar_libtool_no_undefined=""
 LIBMZSCHEME_DEP=""
@@ -1142,6 +1145,7 @@ if test "${enable_places}" = "yes" ; then
     PLACE_CGC_FLAGS="$GC_THREADS_FLAG -DPARALLEL_MARK -DTHREAD_LOCAL_ALLOC"
   fi
   LDFLAGS="$LDFLAGS -pthread"
+  LIBATOM="LIBATOM_USE"
 fi
 
 ################ Xrender ##################
@@ -1423,6 +1427,7 @@ AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(INSTALL_ORIG_TREE)
 AC_SUBST(EXE_SUFFIX)
 AC_SUBST(PLACE_CGC_FLAGS)
+AC_SUBST(LIBATOM)
 
 AC_SUBST(MREDLINKER)
 AC_SUBST(LIBSFX)
@@ -1492,6 +1497,11 @@ makefiles="Makefile
 # Make sure the --enable-shared default is propagated:
 if test "${enable_shared}" = "yes" ; then
   ac_configure_args="$ac_configure_args --enable-shared"
+fi
+
+if test "${LIBATOM}" = "LIBATOM_USE" ; then
+  AC_CONFIG_AUX_DIR( mzscheme/gc/libatomic_ops )
+  AC_CONFIG_SUBDIRS( mzscheme/gc/libatomic_ops )
 fi
 
 FOREIGNTARGET=

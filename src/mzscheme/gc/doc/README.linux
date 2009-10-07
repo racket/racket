@@ -26,8 +26,8 @@ To use threads, you need to abide by the following requirements:
    pthread implementations (in particular it will *not* work with
    MIT pthreads).
 
-2) You must compile the collector with -DGC_LINUX_THREADS and -D_REENTRANT
-   specified in the Makefile.
+2) You must compile the collector with -DGC_LINUX_THREADS (or
+   just -DGC_THREADS) and -D_REENTRANT specified in the Makefile.
 
 3a) Every file that makes thread calls should define GC_LINUX_THREADS and 
    _REENTRANT and then include gc.h.  Gc.h redefines some of the
@@ -55,17 +55,16 @@ To use threads, you need to abide by the following requirements:
    conditions, this may cause unexpected heap growth.
 
 5) The combination of GC_LINUX_THREADS, REDIRECT_MALLOC, and incremental
-   collection fails in seemingly random places.  This hasn't been tracked
-   down yet, but is perhaps not completely astonishing.  The thread package
-   uses malloc, and thus can presumably get SIGSEGVs while inside the
-   package.  There is no real guarantee that signals are handled properly
-   at that point.
+   collection is probably not fully reliable, though it now seems to work
+   in simple cases.
 
 6) Thread local storage may not be viewed as part of the root set by the
    collector.  This probably depends on the linuxthreads version.  For the
    time being, any collectable memory referenced by thread local storage should
    also be referenced from elsewhere, or be allocated as uncollectable.
-   (This is really a bug that should be fixed somehow.)
+   (This is really a bug that should be fixed somehow.  The current GC
+   version probably gets things right if there are not too many tls locations
+   and if dlopen is not used.)
 
 
 M68K LINUX:

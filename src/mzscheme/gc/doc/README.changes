@@ -5,6 +5,9 @@ This has been maintained with varying diligence over the years.
 I made an attempt to include recent contributors here.  I apologize for any
 omissions.
 
+RECENT UPDATES ARE RECORDED IN ../ChangeLog FILE INSTEAD TO CONFORM TO
+MORE COMMON CONVENTIONS.
+
 -------------------------
 
   Version 1.3 and immediately preceding versions contained spurious
@@ -2077,16 +2080,13 @@ Since 6.3alpha5:
    Adrian Bunk for the patches).
  - Integrated NetBSD/OpenBSD patches from Marc Recht and Matthias Drochner.
 
-Since gc6.3alpha6:
+Since 6.3alpha6:
  - Compile test_cpp.cc with CXXCOMPILE instead of COMPILE.
  - Very large allocations could cause a collector hang.  Correct
    calculation of GC_collect_at_heapsize.
  - GC_print_hblkfreelist printed some bogus results if USE_MUNMAP
    was defined.
- - The generic GC_THREADS macro didn't work correctly on Solaris,
-   since the implementation failed to include gc_config_macros.h
-   before deciding whether or not to compile the rest of the file.
- - Threadlibs.c failed to expand the generic GC_THREADS macro.
+ - Include gc_config_macros.h in threadlibs.c.
  - Correct MacOSX thread stop code. (Thanks to Dick Porter.)
  - SMALL_OBJ definition was off by one.  This could cause crashes
    at startup.  (Thanks to Zoltan Varga for narrowing this down to
@@ -2096,12 +2096,12 @@ Since gc6.3alpha6:
  - Changed X86_64 implementation to use SA_SIGINFO in the MPROTECT_VDB
    implementation.  The old approach appears to have been broken by
    recent kernels.
- - Add GC_ATTR_UNUSED to eliminate a warning in gc_allocator.h.  (Thanks
+ - Added GC_ATTR_UNUSED to eliminate a warning in gc_allocator.h (Thanks
    to Andrew Begel.)
  - Fix GC_task_self declaration in os_dep.c.  (Thanks to Andrew Pinski.)
  - Increase INITIAL_BUF_SZ in os_dep.c for Solaris /proc reads.
 
-Since 6.3:
+Since gc6.3:
  - Merge gcconfig.h changes from gcc tree.
  - Unconditionally include gc_priv.h in solaris_pthreads.c, win32_threads.h,
    aix_irix_threads.c, and solaris_threads.c to get thread definitions.
@@ -2139,8 +2139,6 @@ Since 6.3:
    risk change for win32.  (Thanks to Ashley Bone for the crucial
    experimental data behind this, and to Rutger Ovidus for
    some further experiments.)
- - Fixed print_block_list to print the correct kind number for
-   STUBBORN.  (Thanks to Rutger Ovidus.)
  - GC_allochblk_nth incremented GC_words_wasted by bytes rather than
    words.
  - Consider GC_words_wasted in GC_adj_words_allocd only if it is within
@@ -2167,8 +2165,8 @@ Since 6.3:
  - Ignore GC_enable_incremental() requests when KEEP_BACK_PTRS is set.
    The GC itself will dirty lots of pages in this cases, probably making
    it counterproductive on all platforms.  And the DARWIN port crashes.
-
-Since GC6.4:
+ 
+Since gc6.4:
  - Integrated Paolo Molaro's patch to deal with EINTR in sem_wait.
  - Make GC_approx_sp() write to dummy location to ensure that stack
    is grown here, when sp looks reasonable, rather than later, when
@@ -2220,8 +2218,8 @@ Since GC6.4:
    in GC_remove_from_fl.
  - Fix stack_size assertion in GC_pthread_create.
  - Fix assertion in GC_steal_mark_stack.
-  
-Since 6.5
+
+Since gc6.5:
  - Fix CPU count detection for Irix and FreeBSD. (Thanks to Dan Bonachea.)
  - Integrate Dan Bonachea's patch for the IBM XLC compiler on Darwin.
  - Integrated Andreas Tobler's FreeBSD/PowerPC patch.
@@ -2260,11 +2258,9 @@ Since 6.6:
  - Remove spurious gc:: qualifier for operator delete[] in gc_cpp.h.
    (Thanks to Hanno Boeck.)
  - Changed a test for LINUX in config_macros.h to one for __linux__.
- - Fix ppc 64 test_and_set code by removing it.  (Thanks to Christian
-   Thalinger.)
  - Add prototypes for GC_finalizer_notifier and GC_thr_init.  (Thanks to
    David Ayers.)
- - Use ld instead of nonexistent ldz instruction in Darwin FindTopOfStack.
+ - Use ld instead of nonexitent ldz instruction in Darwin FindTopOfStack.
    (Thanks to Andreas Tobler.)
  - Add support for Darwin/X86.  (Thanks to Geoff Norton and the Mono
    developers.)
@@ -2277,14 +2273,294 @@ Since 6.6:
    for both stack and heap references.)  Thanks to Andrew McKinlay for the
    critical test case.
  - Integrated Tatsuya Bizenn's NETBSD threads support, with some
-   minimally tested changes.
+   untested changes.
  - Added GC_strdup and friends to make leak detection work correctly
    for strdup clients.  (Thanks to Jon Moore.)  Fixed the existing strdup
    with malloc redirection to handle a null malloc return correctly.
- - Fix Makefile.am, so it handles exe extensions under Cygwin correctly
-   for gctest.
 
+Since gc6.7:
+ - Added some support for Dragonfly BSD.  (Thanks to Joerg Sonnenberger and
+   Thomas Klausner.)
+ - Improvements to the HP/UX section of configure.in/configure.ac.
+   (Thanks to Andreas Tobler)
+ - GC_unix_get_mem could neglect to release the malloc lock on Irix, under
+   extremely unlikely circumstances.  Thanks to Jean-Baptiste Nivois for
+   some careful code reading.
+ - Added support for kFreeBSD + glibc (Thanks to Petr Salinger)
+ - Fix more MacOS threads memory leaks (Thanks to Allan Hsu)
+ - Added initial Solaris/X86-64 support (Thanks to Rainer Orth)
+
+Since gc6.8:
+ - Fix typo in PREFETCH implementation for X86_64.  (Thanks to Peter Wang.)
+ - Fix M68K LINUX port. (Thanks to Debian packagers.)
+ - __GNUC__ was misspelled as __GNUC in new_gc_alloc.h. (Thanks to Peter Wang.)
+ - Integrated Allan Hsu's patch for OS X VM deallocation problems.
+ - Applied FreeBSD/X86_64 patch.
+
+Since gc6.9:
+ - Remove GC_PROTO, VOLATILE, GC_PTR, and GC_CONST.  Assume ANSI C compiler
+   and use ANSI constructs unconditionally.
+ - Introduce #elif and #error in some of the appropriate places.
+ - Remove GC_printf cruft. Use stdargs.
+ - Remove separate Solaris threads support.  Use the more generic Posix
+   implementation.
+ - Use atomic_ops for atomic operations and memory barriers.
+ - Clean up MPROTECT_VDB implementation.  Use SA_SIGINFO wherever
+   possible.
+ - Remove broken SIGNALS stuff.
+ - Use size_t instead of word, where appropriate.
+ - Add .S.o rule to Makefile.am.
+ - Officially unsupport SunOS4, several old flavors of M68K (SunOS4,
+   A/UX, HP), IBM PC/RTs and RISCOS/Irix4.  (I doubt the old code worked.
+   If anyone cares, these should be easy to resurrect.)
+ - Add EXPECT() in some critical places.
+ - Redefined hb_sz and hb_body to deal with bytes rather than words.
+   This affected a great deal of code.  I would like to consistently use
+   byte offsets and sizes where there's not a convincing reason to do
+   otherwise.
+ - Redefined several other variables (GC_mem_found, GC_words_allocd)
+   etc. to use units of bytes.  Most of these were also renamed to
+   reflect that fact.
+ - Killed as many "register" declarations as possible.
+ - Partially replaced stubborn allocation with manual write barrier.
+   It's currently broken.
+ - Restructured mark code, to allow mark bits to be kept either on
+   a per allocation granule or per object basis.  The emphasis is
+   now on the -DUSE_MARK_BYTES option, since individual bits perform
+   quite badly on hyperthreaded P4s, and are probably suboptimal on
+   other architectures.  -DUSE_MARK_BITS is currently broken, and may
+   be resurrected only for the single-threaded case.  This significantly
+   reduced the cache footprint required by auxiliary GC data structures.
+   It also reduces space overhead for small heaps.  It probably slows
+   things down slightly if interior pointers are very common.
+ - As part of the above, we now maintain an approximate count of set
+   mark bits in each heap block.
+ - As part of the above, the semantics of hb_map changed drastically.
+   For MARK_BIT_PER_OBJ, it doesn't exist.  For MARK_BIT_PER_GRANULE,
+   it is purely a way to replace a mod instruction with a table lookup.
+   (Somewhat to my surprise, this still wins on modern hardware.)
+ - Removed PRINTSTATS, GATHERSTATS, and SILENT macros.  Everything is
+   now controlled by GC_print_stats variable and GC_PRINT_STATS
+   and new GC_PRINT_VERBOSE_STATS environment variables.
+ - Add GC_log_printf and use it consistently for logging output.
+ - Unconditionally count the objects we reclaim in the sweep phase.
+   For thread local allocation, we need that anyway, and we expect
+   that's increasingly the only case that matters.  And it simplifies
+   the code.  In general expect minor performance hacks that benefit
+   only the single-threaded case to disappear.
+ - Remove GC_quiet from gc.h and elsewhere.
+ - Changed the heap expansion heuristic, and the definition of
+   GC_free_space_divisor, to refer to live data size, instead of total
+   heap size.  I believe this is much more robust.  It wasn't previously
+   possible, because we didn't have access to live data size.
+ - Thread local allocation added the extra byte in twice: Once in
+   thread_local_alloc, and once in malloc_many.
+ - Removed GC_malloc_words_small and GC_gcj_fast_malloc.  A new
+   mechanism based on the thread local allocation data structures
+   is expected to be added instead.  This should allow inlined code
+   that is both fast and doesn't rely on collector internals.
+ - Changed both free lists and reclaim lists to be indexed by granules
+   instead of words, norming halving their size.
+ - MERGE_SIZE is now the only option, and the macro was removed.
+   (Without it, we need a memory reference to GC_all_interior_pointers
+   anyway.  Thus it costs us nothing.)
+ - Change GC_size_map to map to granules instead of words.  Make sure
+   that every possible size up to TINY_FREELISTS is present.
+ - Split of macros need for fast inline allocation into gc_tiny_fl.h
+   in anticipation of a new inline allocator that doesn't rely on GC
+   internals.
+ - Changed thread local allocation to use GRANULE_BYTES and TINY_FREELISTS
+   in anticipation of a merge with the inline allocation code.
+ - Removed ALIGN_DOUBLE.  This is mostly handled by GRANULE_BYTES.
+ - Make locking on most platforms conditional on GC_need_to_lock.
+
+Since gc7.0alpha1:
+ - GC_bytes_allocd was incremented by a possibly uninitialized variable
+   in GC_generic_malloc_inner.  (Bug introduced in gc7.0alpha1.  Thanks
+   to Ben Hutchings for tracking it down.)
+ - Win32 fixes.  (Thanks to Ben Hutchings and Maurizio Vairani.)
+ - Integrated Ben Hutchings' GetWriteWatch-based virtual dirty bit
+   implementation for win32.
+ - Removed pc_gc.tar and floppy targets in Makefile.direct.  Removed
+   pc_excludes file.
+ - No longer include GC_bytes_wasted when evaluating allocation progress.
+   Since we are now counting live memory, it no longer makes sense.
+ - Applied Davide Angelocola's configury patch.  There are now separate
+   Makefile.am's in the cord and tests subdirectory, more tests, etc.
+ - Renamed configure.in to configure.ac.
+ - Merged a very small number of Nathanael Nerode's configure.ac
+   cleanups from the gcc tree.  Unfortunately, that file is a bit
+   different from ours.
+ - Changed EINTR handling in sem_wait slightly.
+ - Restructure the root marking code.  Remove all traces of
+   USE_GENERIC_PUSH_REGS, and effectively make it the default.
+   Make it easier to pass a context pointer to the mark routine, in
+   case we ever want to do precise stack marking.
+ - Replace GC_start_blocking() and GC_end_blocking() with GC_do_blocking().
+   This remains undocumented, and only implemented for pthreads.  But it
+   removes an otherwise unavoidable race with stores of callee-save
+   registers.
+ - Fix GC_n_mark_bits for the default MARK_BIT_PER_GRANULE case.  This
+   resulted in bogus complaints in heap dumps.
+ - Upgrade to libatomic_ops-1.0, and update build structure to match.
+ - Remove SRC_M3 support. Clean up lock initialization code in misc.c.
+ - Removed gc_local_alloc.h.  If THREAD_LOCAL_ALLOC is defined, the
+   thread local allocation routines are now called automatically.
+ - Renamed gc_inl.h back to gc_inline.h.  Changed the interface appreciably
+   since locking has turned into a dominant issue, and in-line allocation
+   only makes sense if it's no worse than thread-local allocation.
+   Gc_inline.h is now also used to implement thread-local allocation.
+ - Finished replacing stubborn allocation with manual write barrier.
+   Untested.
+ - Use thread-local allocation code by default.
+ - Added GC_register_my_thread and friends for Posix and win32.
+ - Patch for GWW_VDB from Ben Hutchings.
+ - Removed explicit THREAD_LOCAL_ALLOC tests, since that now always
+   redefines GC_malloc.
+ - Removed now unused AIX memory allocation code.
+ - Various minor fixes for bugs introduced in 7.0alpha1.
+
+Since gc7.0alpha2
+ - Added support for dlopen-based interception of pthread functions.
+   This is only half done.  The gc.h redefinitions currently interfere.
+ - Integrated major automake overhaul from Petter Urkedal.
+
+Since gc7.0alpha3
+   (various 6.5, 6.6 changes)
+ - Removed GC_brief_async_signal_safe_sleep and used atomic_ops instead.
+   (Thanks to Ben Maurer.)
+ - Integrated build patches from David Angelocola and Petter Urkedal.
+ - Fix dynamic-linker-based pthread call redirection.
+ - Renamed RS6000 to POWERPC/AIX.
+ - Allow recovery from SIGSEGV in marker on Linux.  This works around
+   a race in thread stack marking if /proc is used to find roots.  We do
+   that by default with malloc redirection and threads.  This involved
+   moving some GC_find_limit and SETJMP related declarations to gc_priv.h.
+ - Added doc/porting.html file.
+ - Added ADD_HEAP_GUARD_PAGES for sbrk/*nix platforms to debug extreme
+   memory overwrite errors.
+ - Added trivial NO_INCREMENTAL flag to facilitate debugging.
+ - Added GC_getattr_np-based GC_get_stack_base (untested).
+ - Separated thread local allocation into a separate file and added the
+   beginning of win32 support for that.
+
+Since gc7.0alpha4
+   (more 6.6, 6.7 changes)
+ - Some Solaris fixes, including some more general changes in how
+   the assembly pieces of mach_dep.c are handled.
+ - Removed a lot of SOLARIS_THREADS-specific code that was only
+   needed with the old implementation.  This included many (mostly no-op)
+   versions of GC_is_fresh.
+ - Don't use atomic_ops in gc_locks.h unless we need threads.
+ - Fixed USE_MARK_BITS, which is once againthe default without PARALLEL_MARK.
+ - Removed Solaris GC_INIT hack.  It's a workaround for a long dead bug,
+   and it seemed to be wrong anyway.
+ - Changed win32_threads.c to require preprocessor-based interception
+   of thread routines by default.  A client call to GC_use_DllMain is
+   now required to get the old behavior in which DllMain is used to implicitly
+   register threads.  This was doen for uniformity with other platforms, and
+   because the DllMain solution seemed to require very tricky code which,
+   at least in the past, imposed hard bounds onthe number of threads.
+ - Many small changes to make thread support work again on Cygwin.
+ - Moved definition of allocator lock etc. to pthread_support.c and
+   win32_threads.c for those two cases.
+ - Got rid of the FASTLOCK() machinery.  It doesn't seem useful on modern
+   platforms.
+ - Cleaned up the uncollectable allocation routines, speeding up the
+   slower paths.  The code did enough unnecessary work off the critical path
+   that the underlying logic was getting hard to extract.
+ - No longer turn off THREAD_LOCAL_ALLOC with DBG_HDRS_ALL.  Indications
+   are it just works, and I think the reasons for it not working disappeared
+   a while ago.
+ - Fixed bugs in hb_n_marks calculation and assertion.
+ - Don't use __builtin_expect for pre-3.0 gcc.
+ - Define GWW_VDB only for recent Microsoft tool chains.
+ - Add overview.html to doc directory.
+ - Fix NT_STATIC_THREADS_MAKEFILE, various compiler warnings.
+ - Made thread local allocation sort of work with Cygwin.  The code should
+   be there to deal with other Windows variants, But non-Cygwin Windows
+   threads need more bug fixes.
+
+Since gc7.0alpha5
+   (more 6.7 changes)
+ - Declare GC_dump() in gc.h.
+ - Add --enable-large-config, which just defines the LARGE_CONFIG macro.
+ - Make GlobalAlloc address alignment a bit more intuitive.  (Thanks to
+   Charles Mills.)
+ - Use #elif in the definitions of GET_MEM.
+ - Overhaul porting.html.  Remove corresponding text from README.
+ - Fix typo in DARWIN section of gcconfig.h.
+ - Fix Darwin thread memory leak.  (Thanks to Bruce Mitchener.)
+ - Update x86 AO_test_and_set implementation to use "=q".
+ - Add $(EXEEXT) to many tests in tests/tests.am.  (Corresponds to a
+   6.7 fix, which no longer applied.)
+ - Fix Darwin/PPC port.
+ - Fix Cygwin/threads port.
+ - Fix gcj malloc support.
+ - For GNU-style make, don't build libatomic_ops unless threads are requested.
+   This should allow single-threaded builds on platforms which do not
+   currently support libatomic_ops.
+ - Clean up and hopefully fix the CFLAGS calculation for GNU build.
+   (Substantially improves things on HP/UX.)
+ - Integrated Andrei Polushin's Visual C++ patches.  These provide for
+   stack traces, better C++ debug support, and better log file handling.
+   Note that these change the location of the log file to a the path of the
+   executable with a .log extension.  To get the old behavior back, define
+   OLD_WIN32_LOG_FILE.  For the time being, I'm checking his project
+   files and the like into a windows-untested subdirectory.  They
+   are almost certainly already out of date, but better than what we had
+   before.
+ - Fixed some win32 threads bugs, and added support for _beginthreadex.
+ - Fix zero size thread local allocation so that explicit deallocation
+   works correctly.
+ - Removed serious bug in GC_malloc_uncollectable(large size).
+ - Do not try to do thread-local gcj allocation in incremental mode.  There
+   are races in setting up the descriptor.
+ - Add GC_INIT() to middle.c, fix some more GC_printfn calls.
+ - Some assertions erroneously used I_HOLD_LOCK() negatively, eventhough
+   it can now spuriously return TRUE.
+ - Rename SUNOS5 macro and OS name to SOLARIS and SUNOS5DL to SOLARISDL.
+ - On Linux and some Un*x variants, allocate memory by first trying sbrk,
+   and then switching to mmap if that fails.
+ - Fixed /proc/x/maps reading to deal with asynchronous deletions.
+ - Fix REDIRECT_MALLOC with threads on Linux.  It now usually seems to work
+   with ugly hacks that include having calloc behave differently when it is
+   called from ld.so or the pthreads library.  A reasonable amount of
+   infrastructure was added to support some of this.  Thanks to Roland McGrath
+   for ideas and information.
+ - Import various updated build scripts.
+ - Add GC_register_has_static_roots_callback.  (Thanks to Andrew Haley.)
+ - Fix serious bugs in GC_malloc_atomic_uncollectable().
+ - Return GC_SUCCESS form GC_get_stack_base().
+ - Fix several atomic_ops problems on IA64 with HP Compiler.
+ - Update to atomic_ops-1.2.
+ - Fix hb_n_marks description and reclaim.c assertion.
+ - Various additional win32 threads fixes.
+ - Enable GC_ASSERTIONS for Debug build with NT_THREADS_MAKEFILE.
+
+[gc7.0alpha7 was released and version bumped to gc7.0alpha8]
+
+Since first gc7.0alpha8 version:
+ [ Some gc6.9 changes ]
+ - Change FindTopOfStack decl in darwin_stop_world.c.
+ - Move some static tests from misc.c to gcconfig.h.  Use #error.
+ - Add GC_print_free_list() function.  (Thanks to Bruce Hoult.)
+ - Add GC_GNU_THREADS support on HURD. (Thanks to Aleksey Demakov,
+   Barry DeFreese, and possibly other Debian maintainers.)
+ - __GNUC__ was misspelled as __GNUC in thread_local_alloc.h.
+   (Thanks to Peter Wang.)
+ - Integrated various MacOSX patches and tried to reconcile them.
+   Thanks to Allan Hsu, several contributers at Apple, and probably
+   others.
+ - Added some casts to powerpc.h in libatomic_ops to silence warnings.
+
+FOR FURTHER UPDATES SEE ../ChangeLog FILE.
+  
 To do:
+ - REDIRECT_MALLOC and threads combination should work on more platforms,
+   and needs more testing on Linux.
+ - Clone marker inner loop to support arch-dependent prefetching,
+   and counting of objects marked for finalization.
  - The USE_MUNMAP code should really use a separate data structure
    indexed by physical page to keep track of time since last use of
    a page.  Using hblk headers means we lose track of ages when
@@ -2315,3 +2591,4 @@ To do:
    it looks like the whole object is treated as dirty if any part of it
    is.
  
+FOR FURTHER UPDATES SEE ../ChangeLog FILE.

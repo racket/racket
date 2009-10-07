@@ -65,26 +65,27 @@ typedef struct {
   PCR_Any ed_client_data;
 } enumerate_data;
 
-void GC_enumerate_block(h, ed)
-register struct hblk *h;
-enumerate_data * ed;
+void GC_enumerate_block(struct hblk *h; enumerate_data * ed)
 {
     register hdr * hhdr;
     register int sz;
-    word *p;
-    word * lim;
+    ptr_t p;
+    ptr_t lim;
+    word descr;
+#   error This code was updated without testing.
+#   error and its precursor was clearly broken.
     
     hhdr = HDR(h);
+    descr = hhdr -> hb_descr;
     sz = hhdr -> hb_sz;
-    if (sz >= 0 && ed -> ed_pointerfree
-    	|| sz <= 0 && !(ed -> ed_pointerfree)) return;
-    if (sz < 0) sz = -sz;
-    lim = (word *)(h+1) - sz;
-    p = (word *)h;
+    if (descr != 0 && ed -> ed_pointerfree
+    	|| descr == 0 && !(ed -> ed_pointerfree)) return;
+    lim = (ptr_t)(h+1) - sz;
+    p = (ptr_t)h;
     do {
         if (PCR_ERes_IsErr(ed -> ed_fail_code)) return;
         ed -> ed_fail_code =
-            (*(ed -> ed_proc))(p, WORDS_TO_BYTES(sz), ed -> ed_client_data);
+            (*(ed -> ed_proc))(p, sz, ed -> ed_client_data);
         p+= sz;
     } while (p <= lim);
 }

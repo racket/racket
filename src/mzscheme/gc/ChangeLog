@@ -1,0 +1,711 @@
+2008-05-03  Hans Boehm <Hans.Boehm@hp.com>
+
+	* doc/gcinterface.html: Improve C++ interface documentation.
+
+2008-03-10  Hans Boehm <Hans.Boehm@hp.com>
+
+	* allchblk.c (GC_allochblk): Check for overflow during size
+	rounding.
+	* tests/huge_test.c: New.
+	* Makefile.direct, tests/tests.am: Add huge_test.c
+	* Makefile.in: Regenerate.
+
+2008-02-29  Hans Boehm <Hans.Boehm@hp.com>
+
+	* pthread_support.c: Fix typo in comment.
+	* os_dep.c (GC_win32_get_mem): Add heap section only if
+	allocation succeeded.
+
+2008-02-28  Hans Boehm <Hans.Boehm@hp.com>
+
+	* malloc.c: (free replacement) Fix caller address space check.
+
+2008-02-25  Hans Boehm <Hans.Boehm@hp.com>
+
+	* finalize.c (GC_grow_table): Dereference table in null-check.
+
+2008-02-24  Hans Boehm <Hans.Boehm@hp.com>
+
+	* win32_threads.c (GC_delete_gc_thread, GC_delete_thread):
+	Consistently call CloseHandle. (GC_suspend): Call
+	GC_delete_gc_thread.
+	* tests/test.c: Don't reference GC_print_stats if not exported.
+
+2008-02-20  Hans Boehm <Hans.Boehm@hp.com>
+
+	* tests/test.c (run_one_test): Don't mention pthread_self().
+	* misc.c: Declare GC_thr_init().
+
+2008-02-20  Hans Boehm <Hans.Boehm@hp.com>
+
+	* allchblk.c (add_to_fl): disable assertions with USE_MUNMAP,
+	and refine assertions to handle huge unmergable blocks.
+	(GC_allochblk_nth): Add comment.
+
+2008-02-20  Hans Boehm <Hans.Boehm@hp.com>
+
+	* include/private/gcconfig.h: Add misssing FREEBSD macro
+	consistency test.
+
+2008-02-20  Hans Boehm <Hans.Boehm@hp.com>
+
+	* allchblk.c (GC_enough_large_bytes_left): No longer take
+	parameters; return free list index bound.
+	(GC_merge_unmapped): Don't access nexthdr until after null test.
+	(Fixes bug in 1/29/08 check-in.)  (GC_allochblk): Calculate
+	when splitting is allowable only once here, not when considering each
+	block. (GC_allchblk_nth): Accept new may_split parameter.
+	Avoid some redundant tests for exact size matches.
+	* alloc.c (GC_should_collect): Cache min_bytes_allocd.
+	(GC_maybe_gc): Make locking assertion testable.
+	* mark_rts.c: Fix indentation.
+	* pthread_stop_world.c: Replace old GC_err_printf1 reference.
+	* tests/test.c: Remove (void) casts.  Optionally print some
+	timing information.
+
+2008-02-15  Hans Boehm <Hans.Boehm@hp.com>
+
+	* windows-untested/gc.def: Remove CreateThread line.
+	* windows-untested/README: New file.
+	* win32_threads.c (GC_use_DllMain): Force collector initialization.
+	(GC_init_parallel): Reformat comment.
+	* include/gc.h (GC_use_DllMain): Clarify usage rules in comment.
+	* mark.c (GC_mark_from): Slightly simplify GC_DS_PER_OBJECT code.
+	* include/gc_cpp.h: Add matching placement delete overloads
+	everywhere.
+	* include/private/gc_locks.h (NO_THREAD): Add cast.
+	* include/private/gcconfig.h: Add test for __HP_aCC.
+	* configure.ac, tests/tests.am:  Avoid libgccpp on HP/UX.
+	* Makefile.in, configure: Regenerate.
+
+2008-02-11  Hans Boehm <Hans.Boehm@hp.com> (partly David Leonard)
+
+	* doc/README.win32: Fix typo.
+	* configure.ac: Fix printing of enable-shared result.
+	* configure: Regenerate.
+
+2008-02-08  Hans Boehm <Hans.Boehm@hp.com>
+
+	* misc.c (GC_init_inner): Assert !GC_need_to_lock only when
+	defined.  (GC_call_with_stack_base): Add GC_API.
+	* os_dep.c (GC_get_stack_base): Add GC_API.
+	* win32_threads.c: (GC_register_my_thread, GC_unregister_my_thread):
+	Add GC_API.
+	* include/gc.h: Add GC_API annotations.
+	* include/private/gc_locks.h: Define UNCOND_LOCK etc. also for
+	PCR.
+	* include/private/gc_pmark.h: Fix comments.
+
+2008-02-06  Hans Boehm <Hans.Boehm@hp.com> (mostly from Henning Makholm)
+
+	* include/private/gc_priv.h, mark_rts.c, typd_mlc.c:
+	Add GC_push_typed_structures() to push GC_ext_descriptors.
+
+2008-01-31  Hans Boehm <Hans.Boehm@hp.com> (mostly from Andreas Tobler)
+
+	* tests/test.c: Call GC_INIT for DARWIN; test system type using
+	gcconfig.h-defined macros.
+
+2008-01-29  Hans Boehm <Hans.Boehm@hp.com>
+
+	* allchblk.c (GC_merge_unmapped, GC_freehblk): Refuse to create
+	blocks large enough that their size, when interpreted as a signed
+	value, would be negative.
+	* include/private/gc_priv.h: Comment hb_sz range limit.
+
+2008-01-29  Hans Boehm <Hans.Boehm@hp.com>  (with help from Manuel Serrano)
+	
+	* mark.c (GC_push_next_marked): correct comment.
+	* Makefile.direct: document NO_PROC_STAT.
+	* include/private/gcconfig.h: Accomodate NO_PROC_STAT.
+
+2008-01-10  Hans Boehm <Hans.Boehm@hp.com>
+	
+	* include/gc_version.h, configure.ac, doc/README:
+	Change to version 7.1alpha3.
+	* configure: Regenerate.
+
+[7.1alpha2]
+
+2008-01-10  Hans Boehm <Hans.Boehm@hp.com>
+	
+	* include/gc_version.h, configure.ac, doc/README:
+	Change to version 7.1alpha2.
+	* configure: Regenerate.
+
+2008-01-10  Hans Boehm <Hans.Boehm@hp.com>
+	
+	* Makefile.am: Mention atomic_ops.c and atomic_ops_sysdeps.S
+	again.  Refer to build directory as ".".
+	* Makefile.in: Regenerate.
+	
+2008-01-10  Hans Boehm <Hans.Boehm@hp.com>
+
+	* configure.ac: Ignore --enable-parallel-mark on Darwin for now.
+	* configure: Regenerate.
+	* darwin_stop_world.c: Add FIXME comment for parallel marker.
+
+2008-01-09  Hans Boehm <Hans.Boehm@hp.com>
+
+	* include/private/gc_priv.h: Update MAX_ROOT_SETS
+	and LOG_PHT_ENTRIES to handle larger heaps.
+
+2008-01-03  Hans Boehm <Hans.Boehm@hp.com>
+
+	* include/gc.h (GC_INIT,GC_init): Update comments.
+
+2008-01-03  Hans Boehm <Hans.Boehm@hp.com> (based on a patch from
+	John Bowman, and an ancient patch from Fergus Henderson)
+
+	* allchblk.c, alloc.c, include/private/gc_priv.h:
+	Track GC_bytes_dropped and use in GC triggering decisions.
+	* alloc.c (min_bytes_allocd): Weight atomic blocks less.
+
+2008-01-02  Hans Boehm <Hans.Boehm@hp.com>
+
+	* alloc.c (GC_add_to_heap): Call GC_install_header(p) AFTER
+	adjusting p.
+
+2007-12-23  Hans Boehm <Hans.Boehm@hp.com>
+
+	* Makefile.am: Add NT_X64_THREADS_MAKEFILE.
+ 
+2007-12-23  Hans Boehm <Hans.Boehm@hp.com> (Really mostly Friedrich Dominicus)
+
+	* NT_X64_STATIC_THREADS_MAKEFILE: Clean up obsolete comment.
+	* alloc.c: Add declaration for GC_add_current_malloc_heap.
+	* win32_threads.c (GC_beginthreadex): Clean up error
+	return code.
+	* doc/README.win64, NT_X64_THREADS_MAKEFILE, Makefile.direct:
+	Add NT_X64_THREADS_MAKEFILE.
+
+2007-12-21  Hans Boehm <Hans.Boehm@hp.com>
+
+	* alloc.c: Define GC_version instead of in version.h.
+	* version.h: Remove.
+	* include/gc_version.h: Move most of version.h here.
+	* include/gc.h: Include gc_version.h.
+	* gcname.c, add_gc_prefix.c: include gc.h instead of version.h.
+	* Makefile.direct, Makefile.dj, Makefile.am, include/include.am:
+	Adjust for version.h rename.
+	* Makefile.in: Regenerate.
+
+2007-12-21  Hans Boehm <Hans.Boehm@hp.com> (Really mostly russ sludge dot net)
+
+	* configure.ac: Put libatomic_ops links in build directory.
+	* configure: Regenerate.
+	* Makefile.am: Dont mention atomic_ops.c and atomic_ops_sysdeps.S
+	as nodist sources.
+
+2007-12-20  Hans Boehm <Hans.Boehm@hp.com>
+
+	* include/gc.h, doc/README.macros: Add GC_NO_THREAD_REDIRECTS,
+	GC_NO_THREAD_DECLS, don't test explicitly for GC_SOLARIS_THREADS.
+
+2007-12-20  Hans Boehm <Hans.Boehm@hp.com>
+	
+	* alloc.c: Deal correctly with address wrapping for 
+	GC_greatest_plausible_heap_addr and GC_least_plausible_heap_addr.
+	* finalize.c, include/gc.h (GC_register_disappearing_link,
+	GC_register_finalizer_inner): Improve out-of-memory handling.
+	* include/private/gc_pmark.h: Fix comment spelling.
+
+2007-12-18  Hans Boehm <Hans.Boehm@hp.com> (really mainly Peter Wang)
+
+	* include/gc_inline.h, include/gc_tiny_fl.h: cleanups to make usable
+	in other contexts.
+
+2007-12-18  Hans Boehm <Hans.Boehm@hp.com> (really Radek Polak)
+
+	* include/gc.h: Don't define GC_HAVE_BUILTIN_BACKTRACE for uclibc.
+
+2007-12-18  Hans Boehm <Hans.Boehm@hp.com>
+
+	* gc_cpp.cc: Don't include gc_cpp.h from local directory.
+
+2007-12-18  Hans Boehm <Hans.Boehm@hp.com> (really Adam Megacz)
+
+	* allchblk.c, configure.ac (add --enable-munmap)
+	* configure: Regenerate.
+
+2007-12-10  Andreas Tobler  <a.tobler@schweiz.org>
+
+	* dyn_load.c (GC_dyld_image_add): Remove ifdef clause and use the macro
+	GC_GETSECTBYNAME instead.
+	* include/private/gc_priv.h: Define GC_GETSECTBYNAME according to the
+	architecture (Darwin).
+
+2007-10-24  Hans Boehm <Hans.Boehm@hp.com>
+
+	* reclaim.c (GC_bytes_found): Expand comment.
+	* thread_local_alloc.c (GC_malloc_atomic, GC_gcj_malloc): Pass
+	granules, not bytes, to GC_FAST_MALLOC_GRANS.
+	* include/gc.h: Never include gc_local_alloc.h.
+	* tests/test.c: Add size zero allocation tests.
+
+2007-10-23  Hans Boehm <Hans.Boehm@hp.com>
+
+	* malloc.c: Update GC_large_allocd_bytes on explicit deallocation.
+	* allchblk.c: Sanity check GC_max_large_allocd_bytes.
+
+2007-10-23  Hans Boehm <Hans.Boehm@hp.com> (Really Manuel Serrano)
+
+	* Makefile.direct: Invoke $(MAKE) instead of make.
+
+2007-10-23  Hans Boehm <Hans.Boehm@hp.com>
+
+	* doc/scale.html: Reflect gc7 thread local allocation behavior.
+
+2007-10-23  Hans Boehm <Hans.Boehm@hp.com> (really Petter Urkedal)
+
+	* include/extra/gc.h, include/extra/gc_cpp.h: New.
+	* include/include.am: Install gc.h and gc_cpp.h in $(prefix)/include
+	again.
+	* Makefile.in: Regenerate.
+
+2007-08-15  Hans Boehm <Hans.Boehm@hp.com> (really Samuel Thibault)
+	
+	* pthread_support.c (GC_thr_init): Use sysconf(_SC_NPROCESSORS_ONLN)
+	for HURD.
+
+2007-08-14  Hans Boehm <Hans.Boehm@hp.com> (really David Daney)
+
+	* include/private/gcconfig.h: Add Linux/mips-64 support.
+
+2007-08-14  Hans Boehm <Hans.Boehm@hp.com> (really mostly Samuel Thibault)
+
+	* dbg_mlc.c: Use random() on all glibc systems.
+	* mach_dep.c (GC_with_callee_saves_pushed): Don't use getcontext() on
+	HURD.  Add comment.
+	* pthread_stop_world.c (GC_suspend_handler, GC_stop_init): Accomodate
+	systems without SA_SIGINFO.
+
+2007-08-14  Hans Boehm <Hans.Boehm@hp.com> (partly really Henrik Theiling)
+
+	* include/gc.h (GC_PTR_STORE): Fix non-DEBUG parentheses.
+	* tests/test.c (run_one_test): Add GC_PTR_STORE test.
+	No longer test for RS6000.
+
+2007-08-03  Hans Boehm <Hans.Boehm@hp.com>
+	
+	* alloc.c, backgraph.c, headers.c, include/private/gc_priv.h:
+	Maintain GC_our_memory and GC_n_memory.
+	* dbg_mlc.c (GC_print_smashed_obj): Improve message.
+	(GC_print_all_smashed_proc): Pass client object address instead of
+	base.
+	* dyn_load.c (sort_heap_sects): New.  (GC_register_map_entries):
+	Register sections that are contiguous and merged with our heap.
+	* malloc.c, os_dep.c (GC_text_mapping): Check for just base name
+	of libraries.
+	* malloc.c (calloc): Check for special callers even with
+	USE_PROC_FOR_LIBRARIES. Move assertion.  Add rudimentary
+	malloc/free tracing.
+	* misc.c: No longer call GC_init_lib_bounds explicitly.
+	* thread_local_alloc.c (GC_malloc, GC_malloc_atomic): Always
+	initialize on demand.
+	* tests/test.c: Call GC_INIT only when required.
+
+2007-08-03  Hans Boehm <Hans.Boehm@hp.com>
+
+	* Makefile.direct: Remove comment fragment.
+	* tests/tests.am: Add smashtest.
+	* Makefile.in: Regenerate.
+	* configure.ac: Define GC_USE_DLOPEN_WRAP with redirect-malloc.
+	* configure: Regenerate.
+	* pthread_support.c: Fix comment spelling.
+	* include/private/gcconfig.h: Define USE_PROC_FOR_LIBRARIES with
+	GC_LINUX_THREADS and REDIRECT_MALLOC.
+	* tests/smash_test.c: Initial check-in.
+	* obj_map.c: Print log entry to correct file.
+	* include/private/thread_local_alloc.h: Add TlsAlloc error check.
+
+2007-07-23  Hans Boehm <Hans.Boehm@hp.com>
+
+	* alloc.c (GC_stopped_mark): Call GC_add_current_malloc_heap()
+	while world is still running.
+	* os_dep.c (GC_is_heap_base): Don't call GC_add_current_malloc_heap()
+	with world stopped.
+	* include/gc.h (GC_INIT for cygwin): Always call GC_add_roots.
+	* misc.c (GC_init/GC_init_inner): Perform all work in
+	GC_init_inner.
+	* Makefile.direct: Expand -DUSE_MUNMAP comment.
+
+2007-07-23  Hans Boehm <Hans.Boehm@hp.com> (really Jim Marshall)
+
+	* include/gc.h: Define uintptr_t explicitly for VC++6.
+	* msvc_dbg.c (GetModuleBase): Revert to strcat if strcat_s doesn't
+	exist.
+
+2007-07-02  Hans Boehm <Hans.Boehm@hp.com>
+	
+	* version.h, configure.ac, doc/README: Change to version 7.1alpha1.
+	* configure: Regenerate.
+
+2007-07-02  Hans Boehm <Hans.Boehm@hp.com>
+	
+	* version.h, configure.ac, doc/README: Change to version 7.0.
+	* configure: Regenerate.
+
+2007-07-02  Hans Boehm <Hans.Boehm@hp.com>
+
+	* include/gc_config_macros.h: Also check for IA64 when setting
+	GC_HPUX_THREADS.
+	* mallocx.c: Change my_bytes_allocd to signed_word.
+	* include/gc_pthread_redirects.h: Remove obsolete Solaris threads
+	(as opposed to pthreads) support.
+
+2007-07-02  Hans Boehm <Hans.Boehm@hp.com>
+
+	* mach_dep.c (GC_with_callee_saves_pushed): Don't use getcontext()
+	on ARM/Linux.  Check getcontext() return value.
+
+2007-06-29  Hans Boehm <Hans.Boehm@hp.com>
+
+	* backgraph.c (per_object_func): Make argument types consistent.
+	(GC_traverse_back_graph): Mark GC_deepest_obj.
+	
+2007-06-29  Hans Boehm <Hans.Boehm@hp.com>
+
+	* finalize.c (GC_finalize): Change dl_size and fo_size to size_t.
+	* os_dep.c (GC_win32_get_mem): Add GC_mem_top_down option.
+
+2007-06-28  Hans Boehm <Hans.Boehm@hp.com>
+
+	* doc/README.win32, doc/README, README.QUICK: Fix some of the worst
+	anachronisms.
+	* dyn_load.c: Partially support cygwin, but don't enable it yet.
+
+2007-06-28  Hans Boehm <Hans.Boehm@hp.com>
+
+	* Makefile.am: Use -no-undefined for libgc.
+	* Makefile.in: Regenerate.
+	* Makefile.direct: Document USE_PROC_FOR_LIBRARIES.
+	* dyn_load.c (GC_register_map_entries): Rename prot_buf to prot
+	consistently.
+	* misc.c: Fix some WARN calls.  Move GC_is_initialized setting and
+	GC_thr_init() call.
+	* os_dep.c: Consistently use WARN where appropriate.
+	* thread_local_alloc.c: Revert change to GC_WIN32_THREADS test.  Instead
+	remove inappropriate pthread.h include.
+	* doc/README.linux: Remove some anachronisms.
+
+2007-06-23  Hans Boehm <Hans.Boehm@hp.com>
+
+	* alloc.c: Also use GC_check_tls on non-Linux systems.
+	* mallocx.c (GC_reclaim_generic): Remove bogus declaration.
+	* include/private/gc_priv.h (GC_reclaim_generic): Declare correctly
+	with prototype.
+
+2007-06-19  Hans Boehm <Hans.Boehm@hp.com>
+
+	* alloc.c (GC_adj_bytes_allocd): Avoid (long) casts, fix comment.
+	(GC_print_heap_sects): Use size_t instead of unsigned long.
+	* thread_local_alloc.c (GC_lookup_thread): Define in the correct
+	context.
+	* win32_threads.c, include/gc_config_macros.h: The last of Romano
+	Paolo Tenca's patch.  Move stdint.h include to gc_config_macros.h.
+	* include/gc_inline.h: Avoid gc_priv.h dependencies.
+	* tests/test.c (check_heap_stats): Replace unsigned long with size_t.
+
+2007-06-12  Hans Boehm <Hans.Boehm@hp.com>
+
+	* aclocal.m4: Regenerate to update date.
+
+2007-06-10  Hans Boehm <Hans.Boehm@hp.com>
+
+	* NT_X64_STATIC_THREADS_MAKEFILE: Replace obsolete -debugtype:cv.
+	* mark_rts.c (GC_push_roots): Fix kind type.
+
+2007-06-06  Hans Boehm <Hans.Boehm@hp.com>
+
+	* doc/README.win64: New file.
+	* doc/doc.am, Makefile.direct: Add README.win64.
+	* Makefile.in: Regenerate.
+
+2007-06-06  Hans Boehm <Hans.Boehm@hp.com>
+
+	* Makefile.am, Makefile.direct: Add NT_X64_STATIC_THREADS_MAKEFILE.
+	* Makefile.in: Regenerate.
+	* NT_X64_STATIC_THREADS_MAKEFILE: Fix warning flags.
+	* allochblk.c, alloc.c, blacklst.c, dbg_malc.c, dyn_load.c,
+	finalize.c, headers.c, mach_dep.c, malloc.c, mark.c, misc.c,
+	obj_map.c, os_dep.c, ptr_chck.c, reclaim.c, typd_mlc.c,
+	win32_threads.c, cord/de_win.c, include/gc_mark.h,
+	include/private/gc_hdrs.h, include/private/gc_pmark.h,
+	include/private/gc_priv.h, tests/test_cpp.cc:
+	Replace old style function declarations.  Clean up integral types.
+	Remove register declarations.  The change in malloc.c and the
+	"int descr" declaration in mark.c are the most likely to have
+	been real bugs outside of win64.
+	* msvc_dbg.c: Disable on win64.
+	* win32_threads.c: Add AMD64 support.
+	* include/gc.h: no backtrace on AMD64 for now.
+
+2007-06-06  Hans Boehm <Hans.Boehm@hp.com>
+
+	* msvc_dbg.c(GetModuleBase): Replace strcat with strcat_s.
+
+2007-06-06  Hans Boehm <Hans.Boehm@hp.com>
+	
+	* include/gc.h: (GC_word, GC_signed_word): Fix win64 definitions.
+	Don't include windows.h in an extern "C" context.
+	* include/private/gcconfig.h: Fix win64/X86_64 configuration.
+	* tests/test.c: Eliminate more old style function definitions.
+	Cleanup pointer and integer casts for win64.
+	* tests/test_cpp.cc: Don't include gc_priv.h.
+	* NT_STATIC_THREADS_MAKEFILE: Restrict suffixes for VC++ 2005.
+	* NT_X64_STATIC_THREADS_MAKEFILE: New.
+
+2007-06-06  Hans Boehm <Hans.Boehm@hp.com> (Really mostly Romano Paolo Tenca)
+
+	* win32_threads.c: Separate out DEBUG_WIN32_PTHREADS_STACK.  Ignore
+	FINISHED threads for suspension.  (GC_pthread_join): Add
+	pthread_self() cast.  (GC_pthread_start_inner): Execute cleanup
+	handler when popping it.
+	* include/private/gc_locks.h: Inline THREAD_EQUAL for
+	GC_WIN32_PTHREADS.  Define USE_PTHREAD_LOCKS only if we have
+	pthreads.
+
+2007-05-23  Hans Boehm <Hans.Boehm@hp.com> (Really mostly Romano Paolo Tenca)
+
+	* gc_dlopen.c, thread_local_alloc.c, threadlibs.c, win32_threads.c,
+	tests/test.c: Accomodate GC_WIN32_PTHREADS.
+	* include/gc.h: Don't include windows.h for GC_WIN32_PTHREADS.
+	* include/gc_config_macros.h: Define both PTHREADS and
+	GC_WIN32_THREADS.
+	* include/private/gc_locks.h: Nonstandard definitions of
+	NUMERIC_THREAD_ID for GC_WIN32_PTHREADS.
+	* doc/README.win32, Makefile.direct: Include documentation
+	for GC_WIN32_PTHREADS.
+	* Makefile.direct: Remove some anachronisms in the documentation.
+
+2007-05-23  Hans Boehm <Hans.Boehm@hp.com>
+
+	* Makefile.am: Move includes to bottom.  Add better library
+	dependencies.  Increment library version.  Remove "SUBDIRS += .".
+	* cord/cord.am, tests/tests.am: Add better library dependencies.
+	Remove now unnecessary dependencies.
+	* Makefile.in: Regenerate.
+	* include/gc.h (GC_begin_thread_ex, GC_endthreadex, GC_ExitThread):
+	Move to define on all Windows platforms.  (_beginthread): define
+	to generate error if used.
+
+2007-05-22  Hans Boehm <Hans.Boehm@hp.com>
+
+	* include/private/gc_locks.h: Format to 80 columns.
+
+2007-05-22  Hans Boehm <Hans.Boehm@hp.com>
+	
+	* malloc.c(GC_free): Ignore bad frees on MSWIN32 with REDIRECT_MALLOC.
+	* NT_MAKEFILE: msvc_dbg.h is in include/private.  Don't use cvars
+	rc.
+	* misc.c (WIN32 GC_write): Define GC_need_to_lock in single-threaded
+	case.
+	* win32_threads.c: Test for __MINGW32__ in addition to _MINGW_VER.
+	(GC_CreateThread, GC_beginthreadex): Deallocate args even if we fail.
+	* include/gc.h: Add GC_reachable_here().  (GC_WinMain): Add GC_API.
+	(GC_beginthreadex, GC_endthreadex, GC_ExitThread): Declare.
+	* tests/test.c: Add GC_reachable_here() call.
+
+2007-05-21  Hans Boehm <Hans.Boehm@hp.com>
+
+	* alloc.c (GC_try_to_collect): Call GC_init if necessary.
+	* tests/thread_leak_test.c: Don't unconditionally define
+	GC_LINUX_THREADS.
+
+2007-05-21  Andreas Tobler  <a.tobler@schweiz.org>
+
+	* Makefile.am: Remove extra_ldflags_libgc definition.
+	* Makefile.in: Regenerate.
+
+2007-05-17  Hans Boehm <Hans.Boehm@hp.com>
+
+	* include/private/gc_priv.h: Define AO_REQUIRE_CAS.
+
+2007-05-16  Hans Boehm <Hans.Boehm@hp.com>
+
+	* finalize.c (GC_unreachable_finalize_mark_proc): Don't return void
+	value.
+
+2007-05-15  Hans Boehm <Hans.Boehm@hp.com>
+
+	* configure.ac, version.h, doc/README: Change version to 7.0alpha10.
+	* configure: Regenerate.
+
+[7.0alpha9 release]
+
+2007-05-15  Hans Boehm <Hans.Boehm@hp.com>
+
+	* configure.ac, version.h, doc/README: Change version to 7.0alpha9.
+	* configure: Regenerate.
+
+2007-05-15  Hans Boehm <Hans.Boehm@hp.com>
+
+	* Makefile.am: Include NT_STSTIC_THREADS_MAKEFILE in dist.
+	* Makefile.in: Regenerate.
+	* include/private/gc_locks.h: GC_compare_and_exchange, GC_atomic_add:
+	remove. NUMERIC_THREAD_ID, THREAD_EQUAL: New.  GC_lock_holder: now
+	unsigned long.  I_DONT_HOLD_LOCK, I_HOLD_LOCK: Update.
+	* pthread_stop_world.c, pthread_support.c, win32_threads.c: Use
+	NUMERIC_THREAD_ID, THREAD_EQUAL.
+	* include/private/gcconfig.h: GENERIC_COMPARE_AND_SWAP: Remove.
+	* include/private/thread_local_alloc.h: Don't USE_COMPILER_TLS on
+	ARM.
+
+2007-05-11  Hans Boehm <Hans.Boehm@hp.com>
+
+	* dbg_mlc.c, include/gc.h, finalize.c: Merge Alexandre Oliva's
+	GC_debug_register_finalizer_unreachable() patch from gcc tree.
+	* thread_local_alloc.c (GC_malloc, GC_malloc_atomic): Add assertions
+	to check GC has been initialized.
+
+2007-05-10  Hans Boehm <Hans.Boehm@hp.com>
+
+	* include/gc_cpp.h: Documentation updates.
+	* include/gc_config_macros.h: Don't check for __ppc__ to set
+	DARWIN_THREADS.
+	* Makefile.am: Include configure_atomic_ops.sh in dist.
+	* Makefile.in: Regenerate.
+
+2007-05-08  Hans Boehm <Hans.Boehm@hp.com>
+
+	* Makefile.am: Dont distribute copied atomic_ops files.  Include
+	libatomic_ops with "make dist".
+	* Makefile.in: Regenerate.
+	* configure: Regenerate.
+	* configure.ac: Enable THREAD_LOCAL_ALLOC for Cygwin with threads.
+	* win32_threads.c: Report error for Cygwin + GC_DLL.
+
+2007-05-08  Hans Boehm <Hans.Boehm@hp.com>
+
+	* Makefile.direct: Update THREAD_LOCAL_ALLOC documentation.
+	* cord/de_win.c: Rename and move AboutBox.  Call GC_INIT.  Remove
+	MakeProcInstance anachronism.
+	* doc/README.macros: Officially remove elif prohibition.
+	Remove documentation for defunct SRC_M3 support.
+	* include/gc.h: Remove more SRC_M3 references.
+	* include/private/gcconfig.h: Remove still more SRC_M3 references.
+	GC_SOLARIS_THREADS no longer needs to be checked separately.
+	
+2007-05-08  Hans Boehm <Hans.Boehm@hp.com>
+
+	* thread_local_alloc.c, include/private/thread_local_alloc.h:
+	Spell __declspec correctly.
+	* NT_STATIC_THREADS_MAKEFILE: Enable thread-local allocation.
+
+2007-05-07  Hans Boehm <Hans.Boehm@hp.com>
+
+	* doc/README.win32: Adjust GC_win32_dll_threads rules again.
+
+2007-05-07  Hans Boehm <Hans.Boehm@hp.com>
+
+	* mark.c (GC_mark_some wrapper): Restructure for readability, handle
+	GC_started_thread_while_stopped.
+	* misc.c (Win32 GC_write): Lock GC_write_cs only if needed.
+	* win32_threads.c: (client_has_run): remove,
+	GC_started_thread_while_stopped, GC_attached_thread: add.
+	(GC_push_all_stacks): Add verbose output.
+	(DllMain): Avoid initializing collector or the like.
+	Never update both thread tables.
+	* doc/README.win32: Adjust GC_win32_dll_threads rules.
+
+2007-05-07  Hans Boehm <Hans.Boehm@hp.com>
+
+	* pthread_stop_world.c (GC_push_all_stacks): Print thread count with
+	GC_PRINT_VERBOSE_STATS.
+
+2007-05-01  Hans Boehm <Hans.Boehm@hp.com>
+		(and Manuel Serrano, Craig McDaniel)
+
+	* configure.ac: Comment out redundant
+	  AC_DEFINE(NO_EXECUTE_PERMISSION).
+	* configure: Regenerate.
+	* sparc_mach_dep.S: Remove single quote in comment.
+	* include/private/gcconfig.h: Fix DATAEND for NONSTOP.
+	* win32_threads.c: Include stdint.h for Mingw.  Add GC_API for DllMain.
+	(GC_use_DllMain): Fix assertion.
+
+2007-02-14  Andreas Tobler  <a.tobler@schweiz.org>
+
+	* configure.ac: Introduce extra_ldflags_libgc. Use it for Darwin.
+	* configure: Regenerate.
+	* Makefile.am (libgc_la_LDFLAGS): Use extra_ldflags_libgc.
+	* Makefile.in: Regenerate.
+	* include/private/gcconfig.h: Enable MPROTECT_VDB for all Darwin
+	targets. Remove comments.
+	Prepare ppc64 support for Darwin.
+
+2007-01-29  Andreas Tobler  <a.tobler@schweiz.org>
+
+	* darwin_stop_world.c: Clean up and reformat code.
+
+2007-01-28  Andreas Tobler  <a.tobler@schweiz.org>
+
+	* darwin_stop_world.c (GC_push_all_stacks): Fix compiler warnings.
+	Make i unsigned.
+	(GC_stop_world): Likewise. Remove unused GC_thread p.
+	(GC_start_world): Likewise.
+
+	* os_dep.c: Define GC_darwin_register_mach_handler_thread extern.
+	Remove double SIG_HNDLR_PTR definition.
+	(GC_forward_exception): Fix compiler warnings, make i unsigned.
+	Initialize thread_state to NULL.
+	(catch_exception_raise): Fix compiler warnings, make i unsigned.
+
+2007-01-25  Petr Salinger and Hans Boehm <Hans.Boehm@hp.com>
+
+	* include/private/gc_priv.h (NEED_FIND_LIMIT, FREEBSD variant):
+	also define for X86_64.
+	* configure.ac: Move generic gnu (Hurd) case to below kfreebsd case.
+	* configure: Regenerate.
+	* README.changes: Point to ChangeLog.
+
+2007-01-25  Andreas Tobler  <a.tobler@schweiz.org>
+
+	* darwin_stop_world.c: Move THREAD_FLD defines to ...
+	* include/private/gc_priv.h: ... here.
+	Fix THREAD_STATE definitions for ppc64.
+	* os_dep.c (catch_exception_raise): Use THREAD_FLD for exc_state member
+	access.
+
+2007-01-18  Andreas Tobler  <a.tobler@schweiz.org>
+
+	* os_dep.c (if defined(MPROTECT_VDB) && defined(DARWIN)): Clean up and
+	reformat code.
+	Correct email reference.
+
+2007-01-11  Andreas Tobler  <a.tobler@schweiz.org>
+
+	* configure.ac (i?86*-*-darwin*): Replaced HAS_I386_THREAD_STATE_* with
+	HAS_X86_THREAD_STATE32_*.
+	(x86_64-*-darwin*): Extended the above check for x86_64-*-darwin* with
+	HAS_X86_THREAD_STATE64_*.
+	Added value 1 in the above AC_DEFINE's. Important for the upcoming
+	Leopard.
+	* configure: Regenerated.
+	* include/private/gcconfig.h: Modified X86_64 define for Darwin.
+	Removed __x86_64__ check in POWERPC section. Added base definitions
+	for the X86_64 Darwin port.
+	* include/private/gc_priv.h: Added GC_MACH_HEADER and GC_MACH_SECTION
+	to distinguish between 32 and 64-bit applications. Added definitions
+	for X86_64 Darwin.
+	* darwin_stop_world.c: Added HAS_X86_THREAD_STATE64___RAX. And
+	replaced HAS_I386_THREAD_STATE___EAX with HAS_X86_THREAD_STATE32___EAX.
+	(GC_push_all_stacks): Added code for X86_64 Darwin. Even for the
+	!DARWIN_DONT_PARSE_STACK. Maybe obsolete.
+	* dyn_load.c (GC_dyld_name_for_hdr): Use GC_MACH_HEADER.
+	(GC_dyld_image_add): Use GC_MACH_HEADER and GC_MACH_SECTION.
+	Distinguish between getsectbynamefromheader_64 and
+	getsectbynamefromheader.
+	* os_dep.c (catch_exception_raise): Introduce exception definition for
+	X86_64 Darwin. Replaced old i386_EXCEPTION_STATE_* definition with
+	x86_EXCEPTION_STATE32_*. Add X86_64 for exc_state.faultvaddr.
+
+2007-01-09  Andreas Tobler  <a.tobler@schweiz.org>
+
+	* libtool.m4: Update to version from libtool-1.5.22.
+	* ltmain.sh: Likewise.
+	* ChangeLog: Created.
+
+See doc/README.changes for earlier changes.
+

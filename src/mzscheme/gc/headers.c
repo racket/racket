@@ -33,16 +33,74 @@ bottom_index * GC_all_bottom_indices_end = 0;
 				/* bottom_index.		  */
  
 /* Non-macro version of header location routine */
-hdr * GC_find_header(h)
-ptr_t h;
+hdr * GC_find_header(ptr_t h)
 {
 #   ifdef HASH_TL
-	register hdr * result;
+	hdr * result;
 	GET_HDR(h, result);
 	return(result);
 #   else
 	return(HDR_INNER(h));
 #   endif
+}
+
+/* Handle a header cache miss.  Returns a pointer to the	*/
+/* header corresponding to p, if p can possibly be a valid	*/
+/* object pointer, and 0 otherwise.				*/
+/* GUARANTEED to return 0 for a pointer past the first page	*/
+/* of an object unless both GC_all_interior_pointers is set	*/
+/* and p is in fact a valid object pointer.			*/
+#ifdef PRINT_BLACK_LIST
+  hdr * GC_header_cache_miss(ptr_t p, hdr_cache_entry *hce, ptr_t source)
+#else
+  hdr * GC_header_cache_miss(ptr_t p, hdr_cache_entry *hce)
+#endif
+{
+  hdr *hhdr;
+  HC_MISS();
+  GET_HDR(p, hhdr);
+  if (IS_FORWARDING_ADDR_OR_NIL(hhdr)) {
+    if (GC_all_interior_pointers) {
+      if (hhdr != 0) {
+	ptr_t current = p;
+	    
+	current = (ptr_t)HBLKPTR(current);
+	do {
+	    current = current - HBLKSIZE*(word)hhdr;
+	    hhdr = HDR(current);
+	} while(IS_FORWARDING_ADDR_OR_NIL(hhdr));
+	/* current points to near the start of the large object */
+	if (hhdr -> hb_flags & IGNORE_OFF_PAGE
+	    || HBLK_IS_FREE(hhdr))
+	    return 0;
+	if (p - current >= (ptrdiff_t)(hhdr->hb_sz)) {
+	    GC_ADD_TO_BLACK_LIST_NORMAL(p, source);
+	    /* Pointer past the end of the block */
+	    return 0;
+	}
+      } else {
+	GC_ADD_TO_BLACK_LIST_NORMAL(p, source);
+      }
+      return hhdr;
+      /* Pointers past the first page are probably too rare	*/
+      /* to add them to the cache.  We don't.			*/
+      /* And correctness relies on the fact that we don't.	*/
+    } else {
+      if (hhdr == 0) {
+	GC_ADD_TO_BLACK_LIST_NORMAL(p, source);
+      }
+      return 0;
+    }
+  } else {
+    if (HBLK_IS_FREE(hhdr)) {
+      GC_ADD_TO_BLACK_LIST_NORMAL(p, source);
+      return 0;
+    } else {
+      hce -> block_addr = (word)(p) >> LOG_HBLKSIZE;
+      hce -> hce_hdr = hhdr; 
+      return hhdr;
+    }
+  } 
 }
  
 /* Routines to dynamically allocate collector data structures that will */
@@ -53,18 +111,12 @@ static ptr_t scratch_free_ptr = 0;
 /* GC_scratch_last_end_ptr is end point of last obtained scratch area.  */
 /* GC_scratch_end_ptr is end point of current scratch area.		*/
  
-ptr_t GC_scratch_alloc(bytes)
-register word bytes;
+ptr_t GC_scratch_alloc(size_t bytes)
 {
     register ptr_t result = scratch_free_ptr;
 
-#   ifdef ALIGN_DOUBLE
-#	define GRANULARITY (2 * sizeof(word))
-#   else
-#	define GRANULARITY sizeof(word)
-#   endif
-    bytes += GRANULARITY-1;
-    bytes &= ~(GRANULARITY-1);
+    bytes += GRANULE_BYTES-1;
+    bytes &= ~(GRANULE_BYTES-1);
     scratch_free_ptr += bytes;
     if (scratch_free_ptr <= GC_scratch_end_ptr) {
         return(result);
@@ -80,22 +132,25 @@ register word bytes;
 		bytes_to_get &= ~(GC_page_size - 1);
 #	    endif
    	    result = (ptr_t)GET_MEM(bytes_to_get);
+	    GC_add_to_our_memory(result, bytes_to_get);
             scratch_free_ptr -= bytes;
 	    GC_scratch_last_end_ptr = result + bytes;
             return(result);
         }
         result = (ptr_t)GET_MEM(bytes_to_get);
+        GC_add_to_our_memory(result, bytes_to_get);
         if (result == 0) {
-#	    ifdef PRINTSTATS
-                GC_printf0("Out of memory - trying to allocate less\n");
-#	    endif
+	    if (GC_print_stats)
+                GC_printf("Out of memory - trying to allocate less\n");
             scratch_free_ptr -= bytes;
 	    bytes_to_get = bytes;
 #	    ifdef USE_MMAP
 		bytes_to_get += GC_page_size - 1;
 		bytes_to_get &= ~(GC_page_size - 1);
 #	    endif
-            return((ptr_t)GET_MEM(bytes_to_get));
+            result = (ptr_t)GET_MEM(bytes_to_get);
+            GC_add_to_our_memory(result, bytes_to_get);
+	    return result;
         }
         scratch_free_ptr = result;
         GC_scratch_end_ptr = scratch_free_ptr + bytes_to_get;
@@ -107,7 +162,7 @@ register word bytes;
 static hdr * hdr_free_list = 0;
 
 /* Return an uninitialized header */
-static hdr * alloc_hdr()
+static hdr * alloc_hdr(void)
 {
     register hdr * result;
     
@@ -120,21 +175,18 @@ static hdr * alloc_hdr()
     return(result);
 }
 
-static void free_hdr(hhdr)
-hdr * hhdr;
+static void free_hdr(hdr * hhdr)
 {
     hhdr -> hb_next = (struct hblk *) hdr_free_list;
     hdr_free_list = hhdr;
 }
-
-hdr * GC_invalid_header;
 
 #ifdef USE_HDR_CACHE
   word GC_hdr_cache_hits = 0;
   word GC_hdr_cache_misses = 0;
 #endif
  
-void GC_init_headers()
+void GC_init_headers(void)
 {
     register unsigned i;
     
@@ -143,14 +195,11 @@ void GC_init_headers()
     for (i = 0; i < TOP_SZ; i++) {
         GC_top_index[i] = GC_all_nils;
     }
-    GC_invalid_header = alloc_hdr();
-    GC_invalidate_map(GC_invalid_header);
 }
 
 /* Make sure that there is a bottom level index block for address addr  */
 /* Return FALSE on failure.						*/
-static GC_bool get_index(addr)
-word addr;
+static GC_bool get_index(word addr)
 {
     word hi = (word)(addr) >> (LOG_BOTTOM_SZ + LOG_HBLKSIZE);
     bottom_index * r;
@@ -159,7 +208,7 @@ word addr;
     bottom_index *pi;
     
 #   ifdef HASH_TL
-      unsigned i = TL_HASH(hi);
+      word i = TL_HASH(hi);
       bottom_index * old;
       
       old = p = GC_top_index[i];
@@ -201,8 +250,7 @@ word addr;
 /* Install a header for block h.	*/
 /* The header is uninitialized.	  	*/
 /* Returns the header or 0 on failure.	*/
-struct hblkhdr * GC_install_header(h)
-register struct hblk * h;
+struct hblkhdr * GC_install_header(struct hblk *h)
 {
     hdr * result;
     
@@ -216,12 +264,10 @@ register struct hblk * h;
 }
 
 /* Set up forwarding counts for block h of size sz */
-GC_bool GC_install_counts(h, sz)
-register struct hblk * h;
-register word sz; /* bytes */
+GC_bool GC_install_counts(struct hblk *h, size_t sz/* bytes */)
 {
-    register struct hblk * hbp;
-    register int i;
+    struct hblk * hbp;
+    word i;
     
     for (hbp = h; (char *)hbp < (char *)h + sz; hbp += BOTTOM_SZ) {
         if (!get_index((word) hbp)) return(FALSE);
@@ -235,8 +281,7 @@ register word sz; /* bytes */
 }
 
 /* Remove the header for block h */
-void GC_remove_header(h)
-register struct hblk * h;
+void GC_remove_header(struct hblk *h)
 {
     hdr ** ha;
     
@@ -246,9 +291,7 @@ register struct hblk * h;
 }
 
 /* Remove forwarding counts for h */
-void GC_remove_counts(h, sz)
-register struct hblk * h;
-register word sz; /* bytes */
+void GC_remove_counts(struct hblk *h, size_t sz/* bytes */)
 {
     register struct hblk * hbp;
     
@@ -259,18 +302,17 @@ register word sz; /* bytes */
 
 /* Apply fn to all allocated blocks */
 /*VARARGS1*/
-void GC_apply_to_all_blocks(fn, client_data)
-void (*fn) GC_PROTO((struct hblk *h, word client_data));
-word client_data;
+void GC_apply_to_all_blocks(void (*fn)(struct hblk *h, word client_data),
+			    word client_data)
 {
-    register int j;
-    register bottom_index * index_p;
+    signed_word j;
+    bottom_index * index_p;
     
     for (index_p = GC_all_bottom_indices; index_p != 0;
          index_p = index_p -> asc_link) {
         for (j = BOTTOM_SZ-1; j >= 0;) {
             if (!IS_FORWARDING_ADDR_OR_NIL(index_p->index[j])) {
-                if (index_p->index[j]->hb_map != GC_invalid_map) {
+                if (!HBLK_IS_FREE(index_p->index[j])) {
                     (*fn)(((struct hblk *)
                   	      (((index_p->key << LOG_BOTTOM_SZ) + (word)j)
                   	       << LOG_HBLKSIZE)),
@@ -280,7 +322,7 @@ word client_data;
              } else if (index_p->index[j] == 0) {
                 j--;
              } else {
-                j -= (word)(index_p->index[j]);
+                j -= (signed_word)(index_p->index[j]);
              }
          }
      }
@@ -288,8 +330,7 @@ word client_data;
 
 /* Get the next valid block whose address is at least h	*/
 /* Return 0 if there is none.				*/
-struct hblk * GC_next_used_block(h)
-struct hblk * h;
+struct hblk * GC_next_used_block(struct hblk *h)
 {
     register bottom_index * bi;
     register word j = ((word)h >> LOG_HBLKSIZE) & (BOTTOM_SZ-1);
@@ -307,7 +348,7 @@ struct hblk * h;
             if (IS_FORWARDING_ADDR_OR_NIL(hhdr)) {
                 j++;
             } else {
-                if (hhdr->hb_map != GC_invalid_map) {
+                if (!HBLK_IS_FREE(hhdr)) {
                     return((struct hblk *)
                   	      (((bi -> key << LOG_BOTTOM_SZ) + j)
                   	       << LOG_HBLKSIZE));
@@ -325,8 +366,7 @@ struct hblk * h;
 /* Get the last (highest address) block whose address is 	*/
 /* at most h.  Return 0 if there is none.			*/
 /* Unlike the above, this may return a free block.		*/
-struct hblk * GC_prev_block(h)
-struct hblk * h;
+struct hblk * GC_prev_block(struct hblk *h)
 {
     register bottom_index * bi;
     register signed_word j = ((word)h >> LOG_HBLKSIZE) & (BOTTOM_SZ-1);

@@ -54,24 +54,23 @@ extern mark_proc GC_mark_procs[MAX_MARK_PROCS];
   	(((word)1 << (WORDSZ - GC_DS_TAG_BITS - GC_LOG_MAX_MARK_PROCS)) - 1)
 
 
-extern word GC_n_mark_procs;
+extern unsigned GC_n_mark_procs;
 
 /* Number of mark stack entries to discard on overflow.	*/
 #define GC_MARK_STACK_DISCARDS (INITIAL_MARK_STACK_SIZE/8)
 
 typedef struct GC_ms_entry {
-    GC_word * mse_start;   /* First word of object */
+    ptr_t mse_start;   /* First word of object, word aligned  */
     GC_word mse_descr;	/* Descriptor; low order two bits are tags,	*/
-    			/* identifying the upper 30 bits as one of the	*/
-    			/* following:					*/
+    			/* as described in gc_mark.h.  			*/
 } mse;
 
-extern word GC_mark_stack_size;
+extern size_t GC_mark_stack_size;
 
 extern mse * GC_mark_stack_limit;
 
 #ifdef PARALLEL_MARK
-  extern mse * VOLATILE GC_mark_stack_top;
+  extern mse * volatile GC_mark_stack_top;
 #else
   extern mse * GC_mark_stack_top;
 #endif
@@ -117,11 +116,6 @@ extern mse * GC_mark_stack;
 					/* once it returns to 0, it	*/
 					/* stays zero for the cycle.	*/
     /* GC_mark_stack_top is also protected by mark lock.	*/
-    extern mse * VOLATILE GC_first_nonempty;
-					/* Lowest entry on mark stack	*/
-					/* that may be nonempty.	*/
-					/* Updated only by initiating 	*/
-					/* thread.			*/
     /*
      * GC_notify_all_marker() is used when GC_help_wanted is first set,
      * when the last helper becomes inactive,
@@ -134,21 +128,9 @@ extern mse * GC_mark_stack;
 
 /* Return a pointer to within 1st page of object.  	*/
 /* Set *new_hdr_p to corr. hdr.				*/
-#ifdef __STDC__
-  ptr_t GC_find_start(ptr_t current, hdr *hhdr, hdr **new_hdr_p);
-#else
-  ptr_t GC_find_start();
-#endif
+ptr_t GC_find_start(ptr_t current, hdr *hhdr, hdr **new_hdr_p);
 
-mse * GC_signal_mark_stack_overflow GC_PROTO((mse *msp));
-
-# ifdef GATHERSTATS
-#   define ADD_TO_ATOMIC(sz) GC_atomic_in_use += (sz)
-#   define ADD_TO_COMPOSITE(sz) GC_composite_in_use += (sz)
-# else
-#   define ADD_TO_ATOMIC(sz)
-#   define ADD_TO_COMPOSITE(sz)
-# endif
+mse * GC_signal_mark_stack_overflow(mse *msp);
 
 /* Push the object obj with corresponding heap block header hhdr onto 	*/
 /* the mark stack.							*/
@@ -156,10 +138,7 @@ mse * GC_signal_mark_stack_overflow GC_PROTO((mse *msp));
 { \
     register word _descr = (hhdr) -> hb_descr; \
         \
-    if (_descr == 0) { \
-    	ADD_TO_ATOMIC((hhdr) -> hb_sz); \
-    } else { \
-        ADD_TO_COMPOSITE((hhdr) -> hb_sz); \
+    if (_descr != 0) { \
         mark_stack_top++; \
         if (mark_stack_top >= mark_stack_limit) { \
           mark_stack_top = GC_signal_mark_stack_overflow(mark_stack_top); \
@@ -177,95 +156,212 @@ mse * GC_signal_mark_stack_overflow GC_PROTO((mse *msp));
 		       source, exit_label) \
 { \
     hdr * my_hhdr; \
-    ptr_t my_current = current; \
  \
-    GET_HDR(my_current, my_hhdr); \
-    if (IS_FORWARDING_ADDR_OR_NIL(my_hhdr)) { \
-	 hdr * new_hdr = GC_invalid_header; \
-         my_current = GC_find_start(my_current, my_hhdr, &new_hdr); \
-         my_hhdr = new_hdr; \
-    } \
-    PUSH_CONTENTS_HDR(my_current, mark_stack_top, mark_stack_limit, \
-		  source, exit_label, my_hhdr);	\
-exit_label: ; \
-}
-
-/* As above, but use header cache for header lookup.	*/
-# define HC_PUSH_CONTENTS(current, mark_stack_top, mark_stack_limit, \
-		       source, exit_label) \
-{ \
-    hdr * my_hhdr; \
-    ptr_t my_current = current; \
- \
-    HC_GET_HDR(my_current, my_hhdr, source); \
-    PUSH_CONTENTS_HDR(my_current, mark_stack_top, mark_stack_limit, \
-		  source, exit_label, my_hhdr);	\
+    HC_GET_HDR(current, my_hhdr, source, exit_label); \
+    PUSH_CONTENTS_HDR(current, mark_stack_top, mark_stack_limit, \
+		  source, exit_label, my_hhdr, TRUE);	\
 exit_label: ; \
 }
 
 /* Set mark bit, exit if it was already set.	*/
 
-# ifdef USE_MARK_BYTES
-    /* Unlike the mark bit case, there is a race here, and we may set	*/
-    /* the bit twice in the concurrent case.  This can result in the	*/
-    /* object being pushed twice.  But that's only a performance issue.	*/
-#   define SET_MARK_BIT_EXIT_IF_SET(hhdr,displ,exit_label) \
+# ifdef USE_MARK_BITS
+#   ifdef PARALLEL_MARK
+      /* The following may fail to exit even if the bit was already set.    */
+      /* For our uses, that's benign:                                       */
+#     define OR_WORD_EXIT_IF_SET(addr, bits, exit_label) \
+        { \
+          if (!(*(addr) & (mask))) { \
+            AO_or((AO_t *)(addr), (mask); \
+          } else { \
+            goto label; \
+          } \
+        }
+#   else
+#     define OR_WORD_EXIT_IF_SET(addr, bits, exit_label) \
+        { \
+           word old = *(addr); \
+           word my_bits = (bits); \
+           if (old & my_bits) goto exit_label; \
+           *(addr) = (old | my_bits); \
+         }
+#   endif /* !PARALLEL_MARK */
+#   define SET_MARK_BIT_EXIT_IF_SET(hhdr,bit_no,exit_label) \
     { \
-        register VOLATILE char * mark_byte_addr = \
-				hhdr -> hb_marks + ((displ) >> 1); \
-        register char mark_byte = *mark_byte_addr; \
+        word * mark_word_addr = hhdr -> hb_marks + divWORDSZ(bit_no); \
+      \
+        OR_WORD_EXIT_IF_SET(mark_word_addr, (word)1 << modWORDSZ(bit_no), \
+                            exit_label); \
+    }
+# endif
+
+
+#ifdef USE_MARK_BYTES
+# if defined(I386) && defined(__GNUC__)
+#  define LONG_MULT(hprod, lprod, x, y) { \
+	asm("mull %2" : "=a"(lprod), "=d"(hprod) : "g"(y), "0"(x)); \
+   }
+# else /* No in-line X86 assembly code */
+#  define LONG_MULT(hprod, lprod, x, y) { \
+	unsigned long long prod = (unsigned long long)x \
+				  * (unsigned long long)y; \
+	hprod = prod >> 32;  \
+	lprod = (unsigned32)prod;  \
+   }
+# endif
+
+  /* There is a race here, and we may set				*/
+  /* the bit twice in the concurrent case.  This can result in the	*/
+  /* object being pushed twice.  But that's only a performance issue.	*/
+# define SET_MARK_BIT_EXIT_IF_SET(hhdr,bit_no,exit_label) \
+    { \
+        char * mark_byte_addr = (char *)hhdr -> hb_marks + (bit_no); \
+        char mark_byte = *mark_byte_addr; \
           \
 	if (mark_byte) goto exit_label; \
 	*mark_byte_addr = 1;  \
     } 
-# else
-#   define SET_MARK_BIT_EXIT_IF_SET(hhdr,displ,exit_label) \
-    { \
-        register word * mark_word_addr = hhdr -> hb_marks + divWORDSZ(displ); \
-          \
-        OR_WORD_EXIT_IF_SET(mark_word_addr, (word)1 << modWORDSZ(displ), \
-			    exit_label); \
-    } 
-# endif /* USE_MARK_BYTES */
+#endif /* USE_MARK_BYTES */
 
+#ifdef PARALLEL_MARK
+# define INCR_MARKS(hhdr) \
+	AO_store(&(hhdr -> hb_n_marks), AO_load(&(hhdr -> hb_n_marks))+1);
+#else
+# define INCR_MARKS(hhdr) ++(hhdr -> hb_n_marks)
+#endif
+
+#ifdef ENABLE_TRACE
+# define TRACE(source, cmd) \
+	if (GC_trace_addr != 0 && (ptr_t)(source) == GC_trace_addr) cmd
+# define TRACE_TARGET(target, cmd) \
+	if (GC_trace_addr != 0 && (target) == *(ptr_t *)GC_trace_addr) cmd
+#else
+# define TRACE(source, cmd)
+# define TRACE_TARGET(source, cmd)
+#endif
 /* If the mark bit corresponding to current is not set, set it, and 	*/
-/* push the contents of the object on the mark stack.  For a small 	*/
-/* object we assume that current is the (possibly interior) pointer	*/
-/* to the object.  For large objects we assume that current points	*/
-/* to somewhere inside the first page of the object.  If		*/
-/* GC_all_interior_pointers is set, it may have been previously 	*/
-/* adjusted to make that true.						*/
+/* push the contents of the object on the mark stack.  Current points	*/
+/* to the bginning of the object.  We rely on the fact that the 	*/
+/* preceding header calculation will succeed for a pointer past the 	*/
+/* first page of an object, only if it is in fact a valid pointer	*/
+/* to the object.  Thus we can omit the otherwise necessary tests	*/
+/* here.  Note in particular that the "displ" value is the displacement	*/
+/* from the beginning of the heap block, which may itself be in the	*/
+/* interior of a large object.						*/
+#ifdef MARK_BIT_PER_GRANULE
 # define PUSH_CONTENTS_HDR(current, mark_stack_top, mark_stack_limit, \
-		           source, exit_label, hhdr) \
+		           source, exit_label, hhdr, do_offset_check) \
 { \
-    int displ;  /* Displacement in block; first bytes, then words */ \
-    int map_entry; \
-    \
-    displ = HBLKDISPL(current); \
-    map_entry = MAP_ENTRY((hhdr -> hb_map), displ); \
-    displ = BYTES_TO_WORDS(displ); \
-    if (map_entry > CPP_MAX_OFFSET) { \
-	if (map_entry == OFFSET_TOO_BIG) { \
-	  map_entry = displ % (hhdr -> hb_sz); \
-	  displ -= map_entry; \
-	  if (displ + (hhdr -> hb_sz) > BYTES_TO_WORDS(HBLKSIZE) \
-	      && displ != 0) { \
-	    GC_ADD_TO_BLACK_LIST_NORMAL((word)current, source); \
+    size_t displ = HBLKDISPL(current); /* Displacement in block; in bytes. */\
+    /* displ is always within range.  If current doesn't point to	*/ \
+    /* first block, then we are in the all_interior_pointers case, and	*/ \
+    /* it is safe to use any displacement value.			*/ \
+    size_t gran_displ = BYTES_TO_GRANULES(displ); \
+    size_t gran_offset = hhdr -> hb_map[gran_displ];	\
+    size_t byte_offset = displ & (GRANULE_BYTES - 1); \
+    ptr_t base = current;  \
+    /* The following always fails for large block references. */ \
+    if (EXPECT((gran_offset | byte_offset) != 0, FALSE))  { \
+	if (hhdr -> hb_large_block) { \
+	  /* gran_offset is bogus.	*/ \
+	  size_t obj_displ; \
+	  base = (ptr_t)(hhdr -> hb_block); \
+	  obj_displ = (ptr_t)(current) - base;  \
+	  if (obj_displ != displ) { \
+	    GC_ASSERT(obj_displ < hhdr -> hb_sz); \
+	    /* Must be in all_interior_pointer case, not first block */ \
+	    /* already did validity check on cache miss.	     */ \
+	    ; \
+	  } else { \
+	    if (do_offset_check && !GC_valid_offsets[obj_displ]) { \
+	      GC_ADD_TO_BLACK_LIST_NORMAL(current, source); \
+	      goto exit_label; \
+	    } \
+	  } \
+	  gran_displ = 0; \
+	  GC_ASSERT(hhdr -> hb_sz > HBLKSIZE || \
+		    hhdr -> hb_block == HBLKPTR(current)); \
+	  GC_ASSERT((ptr_t)(hhdr -> hb_block) <= (ptr_t) current); \
+	} else { \
+	  size_t obj_displ = GRANULES_TO_BYTES(gran_offset) \
+		      	     + byte_offset; \
+	  if (do_offset_check && !GC_valid_offsets[obj_displ]) { \
+	    GC_ADD_TO_BLACK_LIST_NORMAL(current, source); \
 	    goto exit_label; \
 	  } \
-	} else { \
-          GC_ADD_TO_BLACK_LIST_NORMAL((word)current, source); goto exit_label; \
+	  gran_displ -= gran_offset; \
+	  base -= obj_displ; \
 	} \
-    } else { \
-        displ -= map_entry; \
     } \
-    GC_ASSERT(displ >= 0 && displ < MARK_BITS_PER_HBLK); \
-    SET_MARK_BIT_EXIT_IF_SET(hhdr, displ, exit_label); \
-    GC_STORE_BACK_PTR((ptr_t)source, (ptr_t)HBLKPTR(current) \
-				      + WORDS_TO_BYTES(displ)); \
-    PUSH_OBJ(((word *)(HBLKPTR(current)) + displ), hhdr, \
-    	     mark_stack_top, mark_stack_limit) \
+    GC_ASSERT(hhdr == GC_find_header(base)); \
+    GC_ASSERT(gran_displ % BYTES_TO_GRANULES(hhdr -> hb_sz) == 0); \
+    TRACE(source, GC_log_printf("GC:%d: passed validity tests\n",GC_gc_no)); \
+    SET_MARK_BIT_EXIT_IF_SET(hhdr, gran_displ, exit_label); \
+    TRACE(source, GC_log_printf("GC:%d: previously unmarked\n",GC_gc_no)); \
+    TRACE_TARGET(base, \
+	GC_log_printf("GC:%d: marking %p from %p instead\n", GC_gc_no, \
+		      base, source)); \
+    INCR_MARKS(hhdr); \
+    GC_STORE_BACK_PTR((ptr_t)source, base); \
+    PUSH_OBJ(base, hhdr, mark_stack_top, mark_stack_limit); \
 }
+#endif /* MARK_BIT_PER_GRANULE */
+
+#ifdef MARK_BIT_PER_OBJ
+# define PUSH_CONTENTS_HDR(current, mark_stack_top, mark_stack_limit, \
+		           source, exit_label, hhdr, do_offset_check) \
+{ \
+    size_t displ = HBLKDISPL(current); /* Displacement in block; in bytes. */\
+    unsigned32 low_prod, high_prod, offset_fraction; \
+    unsigned32 inv_sz = hhdr -> hb_inv_sz; \
+    ptr_t base = current;  \
+    LONG_MULT(high_prod, low_prod, displ, inv_sz); \
+    /* product is > and within sz_in_bytes of displ * sz_in_bytes * 2**32 */ \
+    if (EXPECT(low_prod >> 16 != 0, FALSE))  { \
+	    FIXME: fails if offset is a multiple of HBLKSIZE which becomes 0 \
+	if (inv_sz == LARGE_INV_SZ) { \
+	  size_t obj_displ; \
+	  base = (ptr_t)(hhdr -> hb_block); \
+	  obj_displ = (ptr_t)(current) - base;  \
+	  if (obj_displ != displ) { \
+	    GC_ASSERT(obj_displ < hhdr -> hb_sz); \
+	    /* Must be in all_interior_pointer case, not first block */ \
+	    /* already did validity check on cache miss.	     */ \
+	    ; \
+	  } else { \
+	    if (do_offset_check && !GC_valid_offsets[obj_displ]) { \
+	      GC_ADD_TO_BLACK_LIST_NORMAL(current, source); \
+	      goto exit_label; \
+	    } \
+	  } \
+	  GC_ASSERT(hhdr -> hb_sz > HBLKSIZE || \
+		    hhdr -> hb_block == HBLKPTR(current)); \
+	  GC_ASSERT((ptr_t)(hhdr -> hb_block) < (ptr_t) current); \
+	} else { \
+	  /* Accurate enough if HBLKSIZE <= 2**15.	*/ \
+	  GC_ASSERT(HBLKSIZE <= (1 << 15)); \
+	  size_t obj_displ = (((low_prod >> 16) + 1) * (hhdr -> hb_sz)) >> 16; \
+	  if (do_offset_check && !GC_valid_offsets[obj_displ]) { \
+	    GC_ADD_TO_BLACK_LIST_NORMAL(current, source); \
+	    goto exit_label; \
+	  } \
+	  base -= obj_displ; \
+	} \
+    } \
+    /* May get here for pointer to start of block not at	*/ \
+    /* beginning of object.  If so, it's valid, and we're fine. */ \
+    GC_ASSERT(high_prod >= 0 && high_prod <= HBLK_OBJS(hhdr -> hb_sz)); \
+    TRACE(source, GC_log_printf("GC:%d: passed validity tests\n",GC_gc_no)); \
+    SET_MARK_BIT_EXIT_IF_SET(hhdr, high_prod, exit_label); \
+    TRACE(source, GC_log_printf("GC:%d: previously unmarked\n",GC_gc_no)); \
+    TRACE_TARGET(base, \
+	GC_log_printf("GC:%d: marking %p from %p instead\n", GC_gc_no, \
+		      base, source)); \
+    INCR_MARKS(hhdr); \
+    GC_STORE_BACK_PTR((ptr_t)source, base); \
+    PUSH_OBJ(base, hhdr, mark_stack_top, mark_stack_limit); \
+}
+#endif /* MARK_BIT_PER_OBJ */
 
 #if defined(PRINT_BLACK_LIST) || defined(KEEP_BACK_PTRS)
 #   define PUSH_ONE_CHECKED_STACK(p, source) \
@@ -286,13 +382,13 @@ exit_label: ; \
 # if NEED_FIXUP_POINTER
     /* Try both the raw version and the fixed up one.	*/
 #   define GC_PUSH_ONE_STACK(p, source) \
-      if ((ptr_t)(p) >= (ptr_t)GC_least_plausible_heap_addr 	\
-	 && (ptr_t)(p) < (ptr_t)GC_greatest_plausible_heap_addr) {	\
+      if ((p) >= (ptr_t)GC_least_plausible_heap_addr 	\
+	 && (p) < (ptr_t)GC_greatest_plausible_heap_addr) {	\
 	 PUSH_ONE_CHECKED_STACK(p, source);	\
       } \
       FIXUP_POINTER(p); \
-      if ((ptr_t)(p) >= (ptr_t)GC_least_plausible_heap_addr 	\
-	 && (ptr_t)(p) < (ptr_t)GC_greatest_plausible_heap_addr) {	\
+      if ((p) >= (ptr_t)GC_least_plausible_heap_addr 	\
+	 && (p) < (ptr_t)GC_greatest_plausible_heap_addr) {	\
 	 PUSH_ONE_CHECKED_STACK(p, source);	\
       }
 # else /* !NEED_FIXUP_POINTER */
@@ -306,22 +402,22 @@ exit_label: ; \
 
 /*
  * As above, but interior pointer recognition as for
- * normal for heap pointers.
+ * normal heap pointers.
  */
 # define GC_PUSH_ONE_HEAP(p,source) \
     FIXUP_POINTER(p); \
-    if ((ptr_t)(p) >= (ptr_t)GC_least_plausible_heap_addr 	\
-	 && (ptr_t)(p) < (ptr_t)GC_greatest_plausible_heap_addr) {	\
+    if ((p) >= (ptr_t)GC_least_plausible_heap_addr 	\
+	 && (p) < (ptr_t)GC_greatest_plausible_heap_addr) {	\
 	    GC_mark_stack_top = GC_mark_and_push( \
-			    (GC_PTR)(p), GC_mark_stack_top, \
-			    GC_mark_stack_limit, (GC_PTR *)(source)); \
+			    (void *)(p), GC_mark_stack_top, \
+			    GC_mark_stack_limit, (void * *)(source)); \
     }
 
 /* Mark starting at mark stack entry top (incl.) down to	*/
 /* mark stack entry bottom (incl.).  Stop after performing	*/
 /* about one page worth of work.  Return the new mark stack	*/
 /* top entry.							*/
-mse * GC_mark_from GC_PROTO((mse * top, mse * bottom, mse *limit));
+mse * GC_mark_from(mse * top, mse * bottom, mse *limit);
 
 #define MARK_FROM_MARK_STACK() \
 	GC_mark_stack_top = GC_mark_from(GC_mark_stack_top, \
@@ -331,7 +427,11 @@ mse * GC_mark_from GC_PROTO((mse * top, mse * bottom, mse *limit));
 /*
  * Mark from one finalizable object using the specified
  * mark proc. May not mark the object pointed to by 
- * real_ptr. That is the job of the caller, if appropriate
+ * real_ptr. That is the job of the caller, if appropriate.
+ * Note that this is called with the mutator running, but
+ * with us holding the allocation lock.  This is safe only if the
+ * mutator needs tha allocation lock to reveal hidden pointers.
+ * FIXME: Why do we need the GC_mark_state test below?
  */
 # define GC_MARK_FO(real_ptr, mark_proc) \
 { \

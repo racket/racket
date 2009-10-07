@@ -5,6 +5,7 @@
 # TARGTYPE "Win32 (x86) Application" 0x0101
 # TARGTYPE "Win32 (x86) Dynamic-Link Library" 0x0102
 
+AO_VERSION=1.2
 !IF "$(CFG)" == ""
 CFG=gctest - Win32 Release
 !MESSAGE No configuration specified.  Defaulting to cord - Win32 Debug.
@@ -108,16 +109,19 @@ CLEAN :
 	-@erase ".\Release\typd_mlc.sbr"
 	-@erase ".\Release\win32_threads.obj"
 	-@erase ".\Release\win32_threads.sbr"
+	-@erase ".\Release\msvc_dbg.obj"
+	-@erase ".\Release\msvc_dbg.sbr"
 
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /c
-# ADD CPP /nologo /MD /W3 /GX /O2 /I include /D "NDEBUG" /D "SILENT" /D "GC_BUILD" /D "WIN32" /D "_WINDOWS" /D "ALL_INTERIOR_POINTERS" /D "__STDC__" /D "GC_WIN32_THREADS" /FR /YX /c
-CPP_PROJ=/nologo /MD /W3 /GX /O2 /I include /D "NDEBUG" /D "SILENT" /D "GC_BUILD" /D\
+# ADD CPP /nologo /MD /W3 /GX /O2 /I include /D "NDEBUG" /D "GC_BUILD" /D "WIN32" /D "_WINDOWS" /D "ALL_INTERIOR_POINTERS" /D "__STDC__" /D "GC_WIN32_THREADS" /FR /YX /c
+CPP_PROJ=/nologo /MD /W3 /GX /O2 /I include /D "NDEBUG" /D "GC_BUILD" /D\
  "WIN32" /D "_WINDOWS" /D "ALL_INTERIOR_POINTERS" /D "__STDC__" /D\
- "GC_WIN32_THREADS" /FR"$(INTDIR)/" /Fp"$(INTDIR)/gc.pch" /YX /Fo"$(INTDIR)/" /c 
+ "GC_WIN32_THREADS" /FR"$(INTDIR)/" /Fp"$(INTDIR)/gc.pch" \
+ /Ilibatomic_ops-$(AO_VERSION)/src /YX /Fo"$(INTDIR)/" /c 
 CPP_OBJS=.\Release/
 CPP_SBRS=.\Release/
 
@@ -173,6 +177,7 @@ BSC32_SBRS= \
 	".\Release\reclaim.sbr" \
 	".\Release\stubborn.sbr" \
 	".\Release\typd_mlc.sbr" \
+	".\Release\msvc_dbg.sbr" \
 	".\Release\win32_threads.sbr"
 
 ".\Release\gc.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
@@ -211,6 +216,7 @@ LINK32_OBJS= \
 	".\Release\reclaim.obj" \
 	".\Release\stubborn.obj" \
 	".\Release\typd_mlc.obj" \
+	".\Release\msvc_dbg.obj" \
 	".\Release\win32_threads.obj"
 
 ".\Release\gc.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
@@ -290,17 +296,20 @@ CLEAN :
 	-@erase ".\Debug\vc40.pdb"
 	-@erase ".\Debug\win32_threads.obj"
 	-@erase ".\Debug\win32_threads.sbr"
+	-@erase ".\Debug\msvc_dbg.obj"
+	-@erase ".\Debug\msvc_dbg.sbr"
 
 "$(OUTDIR)" :
     if not exist "$(OUTDIR)/$(NULL)" mkdir "$(OUTDIR)"
 
 CPP=cl.exe
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /Zi /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /c
-# ADD CPP /nologo /MDd /W3 /Gm /GX /Zi /Od /I include /D "_DEBUG" /D "SILENT" /D "GC_BUILD" /D "WIN32" /D "_WINDOWS" /D "ALL_INTERIOR_POINTERS" /D "__STDC__" /D "GC_WIN32_THREADS" /FR /YX /c
-CPP_PROJ=/nologo /MDd /W3 /Gm /GX /Zi /Od /I include /D "_DEBUG" /D "SILENT" /D "GC_BUILD"\
- /D "WIN32" /D "_WINDOWS" /D "ALL_INTERIOR_POINTERS" /D "__STDC__" /D\
+# ADD CPP /nologo /MDd /W3 /Gm /GX /Zi /Od /I include /D "_DEBUG" /D "GC_BUILD" /D "WIN32" /D "_WINDOWS" /D "ALL_INTERIOR_POINTERS" /D "__STDC__" /D "GC_WIN32_THREADS" /FR /YX /c
+CPP_PROJ=/nologo /MDd /W3 /Gm /GX /Zi /Od /I include /D "_DEBUG" /D "GC_BUILD"\
+ /D "WIN32" /D "_WINDOWS" /D "ALL_INTERIOR_POINTERS" \
+ /D "GC_ASSERTIONS" /D "__STDC__" /D\
  "GC_WIN32_THREADS" /FR"$(INTDIR)/" /Fp"$(INTDIR)/gc.pch" /YX /Fo"$(INTDIR)/"\
- /Fd"$(INTDIR)/" /c 
+ /Ilibatomic_ops-$(AO_VERSION)/src /Fd"$(INTDIR)/" /c 
 CPP_OBJS=.\Debug/
 CPP_SBRS=.\Debug/
 
@@ -356,6 +365,7 @@ BSC32_SBRS= \
 	".\Debug\reclaim.sbr" \
 	".\Debug\stubborn.sbr" \
 	".\Debug\typd_mlc.sbr" \
+	".\Debug\msvc_dbg.sbr" \
 	".\Debug\win32_threads.sbr"
 
 ".\Debug\gc.bsc" : "$(OUTDIR)" $(BSC32_SBRS)
@@ -394,6 +404,7 @@ LINK32_OBJS= \
 	".\Debug\reclaim.obj" \
 	".\Debug\stubborn.obj" \
 	".\Debug\typd_mlc.obj" \
+	".\Debug\msvc_dbg.obj" \
 	".\Debug\win32_threads.obj"
 
 ".\Debug\gc.dll" : "$(OUTDIR)" $(DEF_FILE) $(LINK32_OBJS)
@@ -433,7 +444,8 @@ CPP=cl.exe
 # ADD CPP /nologo /MD /W3 /GX /O2 /I include /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "ALL_INTERIOR_POINTERS" /D "__STDC__" /D "GC_WIN32_THREADS" /YX /c
 CPP_PROJ=/nologo /MD /W3 /GX /O2 /I include /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D\
  "ALL_INTERIOR_POINTERS" /D "__STDC__" /D "GC_WIN32_THREADS"\
- /Fp"$(INTDIR)/gctest.pch" /YX /Fo"$(INTDIR)/" /c 
+ /Ilibatomic_ops-$(AO_VERSION)/src /Fp"$(INTDIR)/gctest.pch" \
+ /YX /Fo"$(INTDIR)/" /c 
 CPP_OBJS=.\gctest\Release/
 CPP_SBRS=.\.
 
@@ -519,7 +531,7 @@ CPP=cl.exe
 # ADD CPP /nologo /MDd /W3 /Gm /GX /Zi /Od /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "ALL_INTERIOR_POINTERS" /D "__STDC__" /D "GC_WIN32_THREADS" /FR /YX /c
 CPP_PROJ=/nologo /MDd /W3 /Gm /GX /Zi /Od /I include /D "_DEBUG" /D "WIN32" /D "_WINDOWS"\
  /D "ALL_INTERIOR_POINTERS" /D "__STDC__" /D "GC_WIN32_THREADS" /FR"$(INTDIR)/"\
- /Fp"$(INTDIR)/gctest.pch" /YX /Fo"$(INTDIR)/" /Fd"$(INTDIR)/" /c 
+ /Ilibatomic_ops-$(AO_VERSION)/src /Fp"$(INTDIR)/gctest.pch" /YX /Fo"$(INTDIR)/" /Fd"$(INTDIR)/" /c 
 CPP_OBJS=.\gctest\Debug/
 CPP_SBRS=.\gctest\Debug/
 
@@ -609,7 +621,7 @@ CPP=cl.exe
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /c
 # ADD CPP /nologo /MD /W3 /GX /O2 /I "." /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "ALL_INTERIOR_POINTERS" /YX /c
 CPP_PROJ=/nologo /MD /W3 /GX /O2 /I "." /I include /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D\
- "ALL_INTERIOR_POINTERS" /Fp"$(INTDIR)/cord.pch" /YX /Fo"$(INTDIR)/" /c 
+ /Ilibatomic_ops-$(AO_VERSION)/src "ALL_INTERIOR_POINTERS" /Fp"$(INTDIR)/cord.pch" /YX /Fo"$(INTDIR)/" /c 
 CPP_OBJS=.\cord\Release/
 CPP_SBRS=.\.
 
@@ -702,7 +714,7 @@ CPP=cl.exe
 # ADD CPP /nologo /MDd /W3 /Gm /GX /Zi /Od /I "." /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "ALL_INTERIOR_POINTERS" /YX /c
 CPP_PROJ=/nologo /MDd /W3 /Gm /GX /Zi /Od /I "." /I include /D "_DEBUG" /D "WIN32" /D\
  "_WINDOWS" /D "ALL_INTERIOR_POINTERS" /Fp"$(INTDIR)/cord.pch" /YX\
- /Fo"$(INTDIR)/" /Fd"$(INTDIR)/" /c 
+ /Ilibatomic_ops-$(AO_VERSION)/src /Fo"$(INTDIR)/" /Fd"$(INTDIR)/" /c 
 CPP_OBJS=.\cord\Debug/
 CPP_SBRS=.\.
 
@@ -1860,6 +1872,56 @@ NODEP_CPP_WIN32=\
 ".\Debug\win32_threads.obj" : $(SOURCE) $(DEP_CPP_WIN32) "$(INTDIR)"
 
 ".\Debug\win32_threads.sbr" : $(SOURCE) $(DEP_CPP_WIN32) "$(INTDIR)"
+
+
+!ENDIF 
+
+# End Source File
+################################################################################
+# Begin Source File
+
+SOURCE=.\msvc_dbg.c
+
+!IF  "$(CFG)" == "gc - Win32 Release"
+
+DEP_CPP_WIN32=\
+	".\include\private\gcconfig.h"\
+	".\include\gc.h"\
+	".\include\private\gc_hdrs.h"\
+	".\include\private\gc_priv.h"\
+	".\include\private\msvc_dbg.h"\
+	{$(INCLUDE)}"\sys\TYPES.H"\
+	
+NODEP_CPP_WIN32=\
+	".\th\PCR_Th.h"\
+	".\th\PCR_ThCrSec.h"\
+	".\th\PCR_ThCtl.h"\
+	
+
+".\Release\msvc_dbg.obj" : $(SOURCE) $(DEP_CPP_WIN32) "$(INTDIR)"
+
+".\Release\msvc_dbg.sbr" : $(SOURCE) $(DEP_CPP_WIN32) "$(INTDIR)"
+
+
+!ELSEIF  "$(CFG)" == "gc - Win32 Debug"
+
+DEP_CPP_WIN32=\
+	".\include\private\gcconfig.h"\
+	".\include\gc.h"\
+	".\include\private\gc_hdrs.h"\
+	".\include\private\gc_priv.h"\
+	".\include\private\msvc_dbg.h"\
+	{$(INCLUDE)}"\sys\TYPES.H"\
+	
+NODEP_CPP_WIN32=\
+	".\th\PCR_Th.h"\
+	".\th\PCR_ThCrSec.h"\
+	".\th\PCR_ThCtl.h"\
+	
+
+".\Debug\msvc_dbg.obj" : $(SOURCE) $(DEP_CPP_WIN32) "$(INTDIR)"
+
+".\Debug\msvc_dbg.sbr" : $(SOURCE) $(DEP_CPP_WIN32) "$(INTDIR)"
 
 
 !ENDIF 

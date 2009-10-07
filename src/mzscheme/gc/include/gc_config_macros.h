@@ -5,11 +5,13 @@
  * Some tests for old macros.  These violate our namespace rules and will
  * disappear shortly.  Use the GC_ names.
  */
-#if defined(SOLARIS_THREADS) || defined(_SOLARIS_THREADS)
-# define GC_SOLARIS_THREADS
-#endif
-#if defined(_SOLARIS_PTHREADS)
-# define GC_SOLARIS_PTHREADS
+#if defined(SOLARIS_THREADS) || defined(_SOLARIS_THREADS) \
+    || defined(_SOLARIS_PTHREADS) || defined(GC_SOLARIS_PTHREADS)
+  /* We no longer support old style Solaris threads.		*/
+  /* GC_SOLARIS_THREADS now means pthreads.			*/
+# ifndef GC_SOLARIS_THREADS
+#   define GC_SOLARIS_THREADS
+# endif
 #endif
 #if defined(IRIX_THREADS)
 # define GC_IRIX_THREADS
@@ -39,11 +41,11 @@
 #endif
 
 #if !defined(_REENTRANT) && (defined(GC_SOLARIS_THREADS) \
-		             || defined(GC_SOLARIS_PTHREADS) \
 			     || defined(GC_HPUX_THREADS) \
 			     || defined(GC_AIX_THREADS) \
 			     || defined(GC_LINUX_THREADS) \
-			     || defined(GC_NETBSD_THREADS))
+			     || defined(GC_NETBSD_THREADS) \
+			     || defined(GC_GNU_THREADS))
 # define _REENTRANT
 	/* Better late than never.  This fails if system headers that	*/
 	/* depend on this were previously included.			*/
@@ -57,14 +59,20 @@
 # define _POSIX4A_DRAFT10_SOURCE 1
 #endif
 
-# if defined(GC_SOLARIS_PTHREADS) || defined(GC_FREEBSD_THREADS) || \
+# if defined(GC_SOLARIS_THREADS) || defined(GC_FREEBSD_THREADS) || \
 	defined(GC_IRIX_THREADS) || defined(GC_LINUX_THREADS) || \
 	defined(GC_HPUX_THREADS) || defined(GC_OSF1_THREADS) || \
 	defined(GC_DGUX386_THREADS) || defined(GC_DARWIN_THREADS) || \
         defined(GC_AIX_THREADS) || defined(GC_NETBSD_THREADS) || \
-        (defined(GC_WIN32_THREADS) && defined(__CYGWIN32__))
+        (defined(GC_WIN32_THREADS) && defined(__CYGWIN32__)) || \
+	defined(GC_GNU_THREADS)
 #   define GC_PTHREADS
 # endif
+
+#if defined(GC_WIN32_PTHREADS)
+#   define GC_WIN32_THREADS
+#   define GC_PTHREADS
+#endif
 
 #if defined(GC_THREADS) && !defined(GC_PTHREADS)
 # if defined(__linux__)
@@ -72,7 +80,8 @@
 #   define GC_PTHREADS
 # endif
 # if !defined(__linux__) && (defined(_PA_RISC1_1) || defined(_PA_RISC2_0) \
-                         || defined(hppa) || defined(__HPPA))
+                         || defined(hppa) || defined(__HPPA)) \
+			 || (defined(__ia64) && defined(_HPUX_SOURCE))
 #   define GC_HPUX_THREADS
 #   define GC_PTHREADS
 # endif
@@ -84,15 +93,16 @@
 #   define GC_IRIX_THREADS
 #   define GC_PTHREADS
 # endif
-# if defined(__sparc) && !defined(__linux__)
-#   define GC_SOLARIS_PTHREADS
+# if defined(__sparc) && !defined(__linux__) \
+     || defined(sun) && (defined(i386) || defined(__i386__))
+#   define GC_SOLARIS_THREADS
 #   define GC_PTHREADS
 # endif
-# if defined(__APPLE__) && defined(__MACH__) && defined(__ppc__)
+# if defined(__APPLE__) && defined(__MACH__)
 #   define GC_DARWIN_THREADS
 #   define GC_PTHREADS
 # endif
-# if !defined(GC_PTHREADS) && defined(__FreeBSD__)
+# if !defined(GC_PTHREADS) && (defined(__FreeBSD__) || defined(__DragonFly__))
 #   define GC_FREEBSD_THREADS
 #   define GC_PTHREADS
 # endif
@@ -110,20 +120,25 @@
 # endif
 #endif /* GC_THREADS */
 
-#if defined(GC_THREADS) && !defined(GC_PTHREADS) && \
-    (defined(_WIN32) || defined(_MSC_VER) || defined(__CYGWIN__) \
+#if defined(GC_THREADS) && !defined(GC_PTHREADS) && !defined(GC_WIN32_THREADS) \
+    && (defined(_WIN32) || defined(_MSC_VER) || defined(__CYGWIN__) \
      || defined(__MINGW32__) || defined(__BORLANDC__) \
      || defined(_WIN32_WCE))
 # define GC_WIN32_THREADS
-#endif
-
-#if defined(GC_SOLARIS_PTHREADS) && !defined(GC_SOLARIS_THREADS)
-#   define GC_SOLARIS_THREADS
+# if defined(__CYGWIN__)
+#   define GC_PTHREADS
+# endif
 #endif
 
 # define __GC
 # ifndef _WIN32_WCE
 #   include <stddef.h>
+#   if defined(__MINGW32__)
+#     include <stdint.h>
+      /* We mention uintptr_t.					    */
+      /* Perhaps this should be included in pure msft environments  */
+      /* as well?						    */
+#   endif
 # else /* ! _WIN32_WCE */
 /* Yet more kluges for WinCE */
 #   include <stdlib.h>		/* size_t is defined here */

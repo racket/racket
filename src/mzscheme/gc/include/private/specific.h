@@ -13,6 +13,7 @@
  */
 
 #include <errno.h>
+#include "atomic_ops.h"
 
 /* Called during key creation or setspecific.		*/
 /* For the GC we already hold lock.			*/
@@ -34,7 +35,7 @@
 /* value.  This invariant must be preserved at ALL times, since		*/
 /* asynchronous reads are allowed.					*/
 typedef struct thread_specific_entry {
-	unsigned long qtid;	/* quick thread id, only for cache */
+	volatile AO_t qtid;	/* quick thread id, only for cache */
 	void * value;
 	struct thread_specific_entry *next;
 	pthread_t thread;

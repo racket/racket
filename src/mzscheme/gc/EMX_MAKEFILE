@@ -18,10 +18,9 @@ CC= gcc
 CXX=g++
 # Needed only for "make c++", which adds the c++ interface
 
-CFLAGS= -O -DALL_INTERIOR_POINTERS -DSILENT
+CFLAGS= -O -DALL_INTERIOR_POINTERS
 # Setjmp_test may yield overly optimistic results when compiled
 # without optimization.
-# -DSILENT disables statistics printing, and improves performance.
 # -DCHECKSUMS reports on erroneously clear dirty bits, and unexpectedly
 #   altered stubborn objects, at substantial performance cost.
 # -DFIND_LEAK causes the collector to assume that all inaccessible
@@ -74,7 +73,7 @@ all: gc.a gctest.exe
 $(OBJS) test.o: $(srcdir)/gc_priv.h $(srcdir)/gc_hdrs.h $(srcdir)/gc.h \
     $(srcdir)/gcconfig.h $(srcdir)/gc_typed.h
 # The dependency on Makefile is needed.  Changing
-# options such as -DSILENT affects the size of GC_arrays,
+# options affects the size of GC_arrays,
 # invalidating all .o files that rely on gc_priv.h
 
 mark.o typd_mlc.o finalize.o: $(srcdir)/include/gc_mark.h $(srcdir)/include/private/gc_pmark.h

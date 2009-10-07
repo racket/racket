@@ -40,6 +40,7 @@
 #define GC_ALLOCATOR_H
 
 #include "gc.h"
+#include <new> // for placement new
 
 #if defined(__GNUC__)
 #  define GC_ATTR_UNUSED __attribute__((unused))
@@ -64,6 +65,7 @@ struct GC_type_traits {
 # define GC_DECLARE_PTRFREE(T) \
 template<> struct GC_type_traits<T> { GC_true_type GC_is_ptr_free; }
 
+GC_DECLARE_PTRFREE(char);
 GC_DECLARE_PTRFREE(signed char);
 GC_DECLARE_PTRFREE(unsigned char);
 GC_DECLARE_PTRFREE(signed short);
@@ -74,6 +76,7 @@ GC_DECLARE_PTRFREE(signed long);
 GC_DECLARE_PTRFREE(unsigned long);
 GC_DECLARE_PTRFREE(float);
 GC_DECLARE_PTRFREE(double);
+GC_DECLARE_PTRFREE(long double);
 /* The client may want to add others.	*/
 
 // In the following GC_Tp is GC_true_type iff we are allocating a
@@ -106,13 +109,11 @@ public:
   };
 
   gc_allocator()  {}
-# ifndef _MSC_VER
-    // I'm not sure why this is needed here in addition to the following.
-    // The standard specifies it for the standard allocator, but VC++ rejects
-    // it.	-HB
     gc_allocator(const gc_allocator&) throw() {}
-# endif
+# if !(GC_NO_MEMBER_TEMPLATES || 0 < _MSC_VER && _MSC_VER <= 1200)
+  // MSVC++ 6.0 do not support member templates
   template <class GC_Tp1> gc_allocator(const gc_allocator<GC_Tp1>&) throw() {}
+# endif
   ~gc_allocator() throw() {}
 
   pointer address(reference GC_x) const { return &GC_x; }
@@ -187,11 +188,12 @@ public:
   };
 
   traceable_allocator() throw() {}
-# ifndef _MSC_VER
     traceable_allocator(const traceable_allocator&) throw() {}
-# endif
+# if !(GC_NO_MEMBER_TEMPLATES || 0 < _MSC_VER && _MSC_VER <= 1200)
+  // MSVC++ 6.0 do not support member templates
   template <class GC_Tp1> traceable_allocator
 	  (const traceable_allocator<GC_Tp1>&) throw() {}
+# endif
   ~traceable_allocator() throw() {}
 
   pointer address(reference GC_x) const { return &GC_x; }

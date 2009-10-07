@@ -6,8 +6,8 @@ broken in the meantime.  Patches are appreciated.
 
 For historical reasons,
 the collector test program "gctest" is linked as a GUI application,
-but does not open any windows.  Its output appears in the file
-"gc.log".  It may be started from the file manager.  The hour glass
+but does not open any windows.  Its output normally appears in the file
+"gctest.exe.log".  It may be started from the file manager.  The hour glass
 cursor may appear as long as it's running.  If it is started from the
 command line, it will usually run in the background.  Wait a few
 minutes (a few seconds on a modern machine) before you check the output.
@@ -36,6 +36,8 @@ To work around this problem, build the collector with -DUSE_GLOBAL_ALLOC.
 This is currently incompatible with -DUSE_MUNMAP.  (Thanks to Jonathan
 Clark for tracking this down.  There's some chance this may be fixed
 in 6.1alpha4, since we now separate heap sections with an unused page.)
+
+[Threads and incremental collection are discussed near the end, below.]
 
 Microsoft Tools
 ---------------
@@ -66,6 +68,19 @@ absence of thread support).
 
 GNU Tools
 ---------
+The collector should be buildable under Cygwin with either the old standard
+Makefile, or possibly with the "configure --disable-shared;make" machinery.
+(For the latter use --enable-threads=posix for thread support.) The major issue
+here seems to be that dynamic library support is not currently enabled for
+Cygwin.  (This is probably fixable without a great deal of difficulty by
+reusing the standard WIN32 code.  But it requires some tweaking.)  As a result
+of this, "configure; make; make check" currently does not completely succeed,
+though the static library appears to be OK when used only from the main
+programs, and correspondingly the Makefile.direct self tests succeed.
+
+Mingw32 builds are not regularly tested, and may or may not work.
+The following paragraph is probably obsolete:
+
 For GNU-win32, use the regular makefile, possibly after uncommenting
 the line "include Makefile.DLLs".  The latter should be necessary only
 if you want to package the collector as a DLL.
@@ -73,9 +88,6 @@ if you want to package the collector as a DLL.
 believed to work only for b18, not b19, probably due to linker changes
 in b19.  This is probably fixable with a different definition of
 DATASTART and DATAEND in gcconfig.h.
-
-The collector should also be buildable under Cygwin with either the
-old standard Makefile, or with the "configure;make" machinery.
 
 Borland Tools
 -------------
@@ -94,65 +106,6 @@ The Makefile is set up to assume Borland 4.5.  If you have another
 version, change the line near the top.  By default, it does not
 require the assembler.  If you do have the assembler, I recommend
 removing the -DUSE_GENERIC.
-
-Incremental Collection
-----------------------
-There is some support for incremental collection.  This is
-currently pretty simple-minded.  Pages are protected.  Protection
-faults are caught by a handler installed at the bottom of the handler
-stack.  This is both slow and interacts poorly with a debugger.
-Whenever possible, I recommend adding a call to
-GC_enable_incremental at the last possible moment, after most
-debugging is complete.  Unlike the UNIX versions, no system
-calls are wrapped by the collector itself.  It may be necessary
-to wrap ReadFile calls that use a buffer in the heap, so that the
-call does not encounter a protection fault while it's running.
-(As usual, none of this is an issue unless GC_enable_incremental
-is called.)
-
-Note that incremental collection is disabled with -DSMALL_CONFIG.
-
-Threads
--------
-
-James Clark has contributed the necessary code to support win32 threads
-with the collector in a DLL.
-Use NT_THREADS_MAKEFILE (a.k.a gc.mak) instead of NT_MAKEFILE
-to build this version.  Note that this requires some files whose names
-are more than 8 + 3 characters long.  Thus you should unpack the tar file
-so that long file names are preserved.  To build the garbage collector
-test with VC++ from the command line, use
-
-nmake /F ".\gc.mak" CFG="gctest - Win32 Release"
-
-This requires that the subdirectory gctest\Release exist.
-The test program and DLL will reside in the Release directory.
-
-This version relies on the collector residing in a dll.
-
-This version currently supports incremental collection only if it is
-enabled before any additional threads are created.
-
-Since 6.3alpha2, threads are also better supported in static library builds
-with Microsoft tools (use NT_STATIC_THREADS_MAKEFILE) and with the GNU
-tools.  In all cases,the collector must be built with GC_WIN32_THREADS
-defined, even if the Cygwin pthreads interface is used.
-(NT_STATIC_THREADS_MAKEFILE does this implicitly.  Under Cygwin,
-./configure --enable-threads=posix defines GC_WIN32_THREADS.)  Threads must be
-created with GC_CreateThread.  This can be accomplished by
-including gc.h and then calling CreateThread, which is redefined
-by gc.h.
-
-For the statically linked versions, it is required that GC_init()
-be called before other GC calls, since there seems to be no implicit way
-to initialize the allocation lock.  The easiest way to ensure this in
-portable code is to call GC_INIT() from the main executable (not
-a dynamic library) before calling any other GC_ routines.
-
-We strongly advise against using the TerminateThread() win32 API call,
-especially with the garbage collector.  Any use is likely to provoke a
-crash in the GC, since it makes it impossible for the collector to
-correctly track threads.
 
 
 Watcom compiler
@@ -190,26 +143,79 @@ important, otherwise resulting programs will not run.
 
 Ivan Demakov (email: ivan@tgrad.nsk.su)
 
-Win32S
-------
+Incremental Collection
+----------------------
+There is some support for incremental collection.  By default, the
+collector chooses between explicit page protection, anf GetWriteWatch-based
+write tracking automatically, depending on the platform.
 
-[The following is probably obsolete.  The win32s support is still in the
-collector, but I doubt anyone cares, or has tested it recently.]
+The former is slow and interacts poorly with a debugger.
+Pages are protected.  Protection faults are caught by a handler
+installed at the bottom of the handler
+stack.  Whenever possible, I recommend adding a call to
+GC_enable_incremental at the last possible moment, after most
+debugging is complete.  No system
+calls are wrapped by the collector itself.  It may be necessary
+to wrap ReadFile calls that use a buffer in the heap, so that the
+call does not encounter a protection fault while it's running.
+(As usual, none of this is an issue unless GC_enable_incremental
+is called.)
 
-The collector runs under both win32s and win32, but with different semantics.
-Under win32, all writable pages outside of the heaps and stack are
-scanned for roots.  Thus the collector sees pointers in DLL data
-segments.  Under win32s, only the main data segment is scanned.
-(The main data segment should always be scanned.  Under some
-versions of win32s, other regions may also be scanned.)
-Thus all accessible objects should be accessible from local variables
-or variables in the main data segment.  Alternatively, other data
-segments (e.g. in DLLs) may be registered with the collector by
-calling GC_init() and then GC_register_root_section(a), where
-a is the address of some variable inside the data segment.  (Duplicate
-registrations are ignored, but not terribly quickly.)
+Note that incremental collection is disabled with -DSMALL_CONFIG.
 
-(There are two reasons for this.  We didn't want to see many 16:16
-pointers.  And the VirtualQuery call has different semantics under
-the two systems, and under different versions of win32s.)
+Threads
+-------
+
+This version of the collector by default handles threads similarly
+to other platforms.  James Clark's code which tracks threads attached
+to the collector DLL still exists, but requires that both
+- the collector is built in a DLL with GC_DLL defined, and
+- GC_use_DllMain() is called before GC initialization, which
+  in turn must happen before creating additional threads.
+We generally recommend avoiding this if possible, since it seems to
+be less than 100% reliable.
+
+Use NT_THREADS_MAKEFILE (a.k.a gc.mak) instead of NT_MAKEFILE
+to build a version that supports both kinds of thread tracking.
+To build the garbage collector
+test with VC++ from the command line, use
+
+nmake /F ".\gc.mak" CFG="gctest - Win32 Release"
+
+This requires that the subdirectory gctest\Release exist.
+The test program and DLL will reside in the Release directory.
+
+This version currently supports incremental collection only if it is
+enabled before any additional threads are created.
+
+Since 6.3alpha2, threads are also better supported in static library builds
+with Microsoft tools (use NT_STATIC_THREADS_MAKEFILE) and with the GNU
+tools.  In all cases,the collector must be built with GC_WIN32_THREADS
+defined, even if the Cygwin pthreads interface is used.
+(NT_STATIC_THREADS_MAKEFILE does this implicitly.  Under Cygwin,
+./configure --enable-threads=posix defines GC_WIN32_THREADS.)
+
+For the normal, non-dll-based thread tracking to work properly,
+threads should be created with GC_CreateThread or GC_beginthreadex,
+and exit normally or call GC_endthreadex or GC_ExitThread.  (For
+Cygwin, use standard pthread calls instead.)  As in the pthread
+case, including gc.h will redefine CreateThread, _beginthreadex,
+_endthreadex, and ExitThread to call the GC_ versions instead.
+
+Note that, as usual, GC_CreateThread tends to introduce resource leaks
+that are avoided by GC_beginthreadex.  There is currently no equivalent of
+_beginthread, and it should not be used.
+
+GC_INIT should be called from the main executable before other GC calls.
+
+We strongly advise against using the TerminateThread() win32 API call,
+especially with the garbage collector.  Any use is likely to provoke a
+crash in the GC, since it makes it impossible for the collector to
+correctly track threads.
+
+To build the collector for Mingw32 Pthreads, use Makefile.direct and
+explicitly set GC_WIN32_PTHREADS.  Use -DPTW32_STATIC_LIB for the static
+threads library.  Note that the DEBUG_WIN32_PTHREADS support in
+win32_threads.c is currently broken and looking for someone to debug it.
+(This information and the port came from Romano Paolo Tenca).
 

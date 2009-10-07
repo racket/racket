@@ -19,12 +19,6 @@ relatively easy to adapt to new compilers with a different set of predefined
 macros.  Currently these macros generally identify platforms instead of
 features.  In many cases, this is a mistake.
 
-3) The code currently avoids #elif, eventhough that would make it more
-readable.  This was done since #elif would need to be understood by ALL
-compilers used to build the collector, and that hasn't always been the case.
-It makes sense to reconsider this decision at some point, since #elif has been
-standardized at least since 1989.
-
 Many of the tested configuration macros are at least somewhat defined in
 either include/private/gcconfig.h or in Makefile.direct.  Here is an attempt
 at defining some of the remainder:  (Thanks to Walter Bright for suggesting
@@ -32,6 +26,16 @@ this.  This is a work in progress)
 
 MACRO		EXPLANATION
 -----		-----------
+
+GC_DEBUG	Tested by gc.h.  Causes all-upper-case macros to
+		expand to calls to debug versions of collector routines.
+
+GC_NO_THREAD_REDIRECTS Tested by gc.h.  Prevents redirection of thread
+		creation routines etc. to GC_ versions.  Requires the
+		programmer to explicitly handle thread registration.
+
+GC_NO_THREAD_DECLS Tested by gc.h. MS Windows only.  Do not declare
+		Windows thread creation routines and do not include windows.h.  
 
 __DMC__	Always #define'd by the Digital Mars compiler. Expands
 		to the compiler version number in hex, i.e. 0x810 is
@@ -78,12 +82,6 @@ SUNOS5SIGS	Solaris-like signal handling.  This is probably misnamed,
 
 PCR		Set if the collector is being built as part of the Xerox
 		Portable Common Runtime.
-
-SRC_M3		Set if the collector is being built as a replacement of the
-		one in the DEC/Compaq SRC Modula-3 runtime.  I suspect this
-		was last used around 1994, and no doubt broke a long time ago.
-		It's there primarily incase someone wants to port to a similar
-		system.
 
 USE_COMPILER_TLS  Assume the existence of __thread-style thread-local
 		storage.  Set automatically for thread-local allocation with

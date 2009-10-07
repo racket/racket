@@ -22,9 +22,8 @@ built-in "new" and "delete".
 Authors: John R. Ellis and Jesse Hull
 
 **************************************************************************/
-/* Boehm, December 20, 1994 7:26 pm PST */
 
-#include "gc_cpp.h"
+#include <gc_cpp.h>
 
 void* operator new( size_t size ) {
     return GC_MALLOC_UNCOLLECTABLE( size );}
@@ -55,6 +54,12 @@ void* operator new( size_t size,
 #else
 	return GC_debug_malloc_uncollectable(size, szFileName, nLine);
 #endif
+}
+
+// This new operator is used by VC++ 7.0 and later in Debug builds.
+void* operator new[](size_t size, int nBlockUse, const char* szFileName, int nLine)
+{
+    return operator new(size, nBlockUse, szFileName, nLine);
 }
 
 #endif /* _MSC_VER */

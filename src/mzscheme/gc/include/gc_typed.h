@@ -47,7 +47,7 @@ typedef GC_word * GC_bitmap;
 
 typedef GC_word GC_descr;
 
-GC_API GC_descr GC_make_descriptor GC_PROTO((GC_bitmap bm, size_t len));
+GC_API GC_descr GC_make_descriptor(GC_bitmap bm, size_t len);
 		/* Return a type descriptor for the object whose layout	*/
 		/* is described by the argument.			*/
 		/* The least significant bit of the first word is one	*/
@@ -74,19 +74,17 @@ GC_API GC_descr GC_make_descriptor GC_PROTO((GC_bitmap bm, size_t len));
 /* ...									*/
 /* T_descr = GC_make_descriptor(T_bitmap, GC_WORD_LEN(T));		*/
 
-GC_API GC_PTR GC_malloc_explicitly_typed
-			GC_PROTO((size_t size_in_bytes, GC_descr d));
+GC_API void * GC_malloc_explicitly_typed(size_t size_in_bytes, GC_descr d);
 		/* Allocate an object whose layout is described by d.	*/
 		/* The resulting object MAY NOT BE PASSED TO REALLOC.	*/
 		/* The returned object is cleared.			*/
 
-GC_API GC_PTR GC_malloc_explicitly_typed_ignore_off_page
-                        GC_PROTO((size_t size_in_bytes, GC_descr d));
+GC_API void * GC_malloc_explicitly_typed_ignore_off_page
+                        (size_t size_in_bytes, GC_descr d);
 		
-GC_API GC_PTR GC_calloc_explicitly_typed
-			GC_PROTO((size_t nelements,
-  				  size_t element_size_in_bytes,
-  				  GC_descr d));
+GC_API void * GC_calloc_explicitly_typed(size_t nelements,
+  				         size_t element_size_in_bytes,
+  				         GC_descr d);
   	/* Allocate an array of nelements elements, each of the	*/
   	/* given size, and with the given descriptor.		*/
   	/* The elemnt size must be a multiple of the byte	*/

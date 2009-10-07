@@ -10,7 +10,7 @@ OBJS= alloc.obj reclaim.obj allchblk.obj misc.obj mach_dep.obj os_dep.obj mark_r
 CORDOBJS= cord\cordbscs.obj cord\cordxtra.obj cord\cordprnt.obj
 
 CC= icc
-CFLAGS= /O /Q /DSILENT /DSMALL_CONFIG /DALL_INTERIOR_POINTERS
+CFLAGS= /O /Q /DSMALL_CONFIG /DALL_INTERIOR_POINTERS
 # Use /Ti instead of /O for debugging
 # Setjmp_test may yield overly optimistic results when compiled
 # without optimization.

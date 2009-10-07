@@ -29,11 +29,10 @@ EXE_SUFFIX=.exe
 srcdir= .
 VPATH= $(srcdir)
 
-CFLAGS= -gstabs+ -O2 -I$(srcdir)/include -DATOMIC_UNCOLLECTABLE -DNO_SIGNALS -DALL_INTERIOR_POINTERS -DNO_EXECUTE_PERMISSION -DSILENT
+CFLAGS= -gstabs+ -O2 -I$(srcdir)/include -DATOMIC_UNCOLLECTABLE -DALL_INTERIOR_POINTERS -DNO_EXECUTE_PERMISSION
 
 # Setjmp_test may yield overly optimistic results when compiled
 # without optimization.
-# -DSILENT disables statistics printing, and improves performance.
 # -DFIND_LEAK causes GC_find_leak to be initially set.
 #   This causes the collector to assume that all inaccessible
 #   objects should have been explicitly deallocated, and reports exceptions.
@@ -166,10 +165,10 @@ CORD_SRCS=  cord/cordbscs.c cord/cordxtra.c cord/cordprnt.c cord/de.c cord/cordt
 CORD_OBJS=  cord/cordbscs.o cord/cordxtra.o cord/cordprnt.o
 
 SRCS= $(CSRCS) mips_sgi_mach_dep.S rs6000_mach_dep.s alpha_mach_dep.S \
-    sparc_mach_dep.S include/gc.h include/gc_typed.h \
+    sparc_mach_dep.S include/gc.h include/gc_version.h include/gc_typed.h \
     include/private/gc_hdrs.h include/private/gc_priv.h \
     include/private/gcconfig.h include/private/gc_mark.h \
-    include/gc_inl.h include/gc_inline.h gc.man \
+    include/gc_inline.h gc.man \
     threadlibs.c if_mach.c if_not_there.c gc_cpp.cc include/gc_cpp.h \
     include/weakpointer.h include/private/gc_locks.h \
     gcc_support.c mips_ultrix_mach_dep.s include/gc_alloc.h \
@@ -177,7 +176,7 @@ SRCS= $(CSRCS) mips_sgi_mach_dep.S rs6000_mach_dep.s alpha_mach_dep.S \
     include/private/solaris_threads.h include/gc_backptr.h \
     hpux_test_and_clear.s include/gc_gcj.h \
     include/gc_local_alloc.h include/private/dbg_mlc.h \
-    include/private/specific.h powerpc_darwin_mach_dep.s \
+    include/private/specific.h \
     include/leak_detector.h $(CORD_SRCS)
 
 OTHER_FILES= Makefile PCR-Makefile OS2_MAKEFILE NT_MAKEFILE BCC_MAKEFILE \
@@ -190,7 +189,7 @@ OTHER_FILES= Makefile PCR-Makefile OS2_MAKEFILE NT_MAKEFILE BCC_MAKEFILE \
            Mac_files/MacOS_config.h Mac_files/MacOS_Test_config.h \
            add_gc_prefix.c README.solaris2 README.sgi README.hp README.uts \
 	   win32_threads.c NT_THREADS_MAKEFILE gc.mak README.dj Makefile.dj \
-	   README.alpha README.linux README.MacOSX version.h Makefile.DLLs \
+	   README.alpha README.linux README.MacOSX Makefile.DLLs \
 	   WCC_MAKEFILE nursery.c include/gc_nursery.h include/gc_copy_descr.h
 
 CORD_INCLUDE_FILES= $(srcdir)/include/gc.h $(srcdir)/include/cord.h \
@@ -221,7 +220,7 @@ $(OBJS) test.o dyn_load.o dyn_load_sunos53.o: \
     $(srcdir)/include/private/gcconfig.h $(srcdir)/include/gc_typed.h \
     Makefile
 # The dependency on Makefile is needed.  Changing
-# options such as -DSILENT affects the size of GC_arrays,
+# options affects the size of GC_arrays,
 # invalidating all .o files that rely on gc_priv.h
 
 mark.o typd_mlc.o finalize.o: $(srcdir)/include/gc_mark.h
@@ -229,16 +228,16 @@ mark.o typd_mlc.o finalize.o: $(srcdir)/include/gc_mark.h
 base_lib gc.a: $(OBJS) dyn_load.o $(UTILS)
 	echo > base_lib
 	rm -f on_sparc_sunos5_1
-	./if_mach SPARC SUNOS5 touch on_sparc_sunos5_1
-	./if_mach SPARC SUNOS5 $(AR) rus gc.a $(OBJS) dyn_load.o
+	./if_mach SPARC SOLARIS touch on_sparc_sunos5_1
+	./if_mach SPARC SOLARIS $(AR) rus gc.a $(OBJS) dyn_load.o
 	./if_not_there on_sparc_sunos5_1 $(AR) ru gc.a $(OBJS) dyn_load.o
 	-./if_not_there on_sparc_sunos5_1 $(RANLIB) gc.a
 #	ignore ranlib failure; that usually means it doesn't exist, and isn't needed
 
 cords: $(CORD_OBJS) cord/cordtest$(EXE_SUFFIX) $(UTILS)
 	rm -f on_sparc_sunos5_3
-	./if_mach SPARC SUNOS5 touch on_sparc_sunos5_3
-	./if_mach SPARC SUNOS5 $(AR) rus gc.a $(CORD_OBJS)
+	./if_mach SPARC SOLARIS touch on_sparc_sunos5_3
+	./if_mach SPARC SOLARIS $(AR) rus gc.a $(CORD_OBJS)
 	./if_not_there on_sparc_sunos5_3 $(AR) ru gc.a $(CORD_OBJS)
 	-./if_not_there on_sparc_sunos5_3 $(RANLIB) gc.a
 
@@ -254,8 +253,8 @@ base_lib $(UTILS)
 
 c++: gc_cpp.o $(srcdir)/include/gc_cpp.h test_cpp$(EXE_SUFFIX)
 	rm -f on_sparc_sunos5_4
-	./if_mach SPARC SUNOS5 touch on_sparc_sunos5_4
-	./if_mach SPARC SUNOS5 $(AR) rus gc.a gc_cpp.o
+	./if_mach SPARC SOLARIS touch on_sparc_sunos5_4
+	./if_mach SPARC SOLARIS $(AR) rus gc.a gc_cpp.o
 	./if_not_there on_sparc_sunos5_4 $(AR) ru gc.a gc_cpp.o
 	-./if_not_there on_sparc_sunos5_4 $(RANLIB) gc.a
 	./test_cpp$(EXE_SUFFIX) 1
@@ -285,15 +284,14 @@ liblinuxgc.so: $(OBJS) dyn_load.o
 	ln liblinuxgc.so libgc.so
 
 mach_dep.o: $(srcdir)/mach_dep.c $(srcdir)/mips_sgi_mach_dep.S $(srcdir)/mips_ultrix_mach_dep.s \
-            $(srcdir)/rs6000_mach_dep.s $(srcdir)/powerpc_darwin_mach_dep.s $(UTILS)
+            $(srcdir)/rs6000_mach_dep.s $(UTILS)
 	rm -f mach_dep.o
 	./if_mach MIPS IRIX5 $(AS) -o mach_dep.o $(srcdir)/mips_sgi_mach_dep.S
 	./if_mach MIPS RISCOS $(AS) -o mach_dep.o $(srcdir)/mips_ultrix_mach_dep.s
 	./if_mach MIPS ULTRIX $(AS) -o mach_dep.o $(srcdir)/mips_ultrix_mach_dep.s
-	./if_mach RS6000 "" $(AS) -o mach_dep.o $(srcdir)/rs6000_mach_dep.s
-	./if_mach POWERPC MACOSX $(AS) -o mach_dep.o $(srcdir)/powerpc_darwin_mach_dep.s
+	./if_mach POWERPC AIX $(AS) -o mach_dep.o $(srcdir)/rs6000_mach_dep.s
 	./if_mach ALPHA "" $(AS) -o mach_dep.o $(srcdir)/alpha_mach_dep.S
-	./if_mach SPARC SUNOS5 $(AS) -o mach_dep.o $(srcdir)/sparc_mach_dep.S
+	./if_mach SPARC SOLARIS $(AS) -o mach_dep.o $(srcdir)/sparc_mach_dep.S
 	./if_mach SPARC SUNOS4 $(AS) -o mach_dep.o $(srcdir)/sparc_sunos4_mach_dep.s
 	./if_not_there mach_dep.o $(CC) -c $(SPECIALCFLAGS) $(srcdir)/mach_dep.c
 
@@ -304,7 +302,7 @@ mark_rts.o: $(srcdir)/mark_rts.c if_mach if_not_there $(UTILS)
 #	Work-around for DEC optimizer tail recursion elimination bug.
 #  The ALPHA-specific line should be removed if gcc is used.
 
-alloc.o: version.h
+alloc.o: include/gc_version.h
 
 cord/cordbscs.o: $(srcdir)/cord/cordbscs.c $(CORD_INCLUDE_FILES)
 	$(CC) $(CFLAGS) -c -I$(srcdir) $(srcdir)/cord/cordbscs.c

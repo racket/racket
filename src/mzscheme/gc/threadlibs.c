@@ -11,11 +11,17 @@ int main()
 	       "-Wl,--wrap -Wl,pthread_sigmask -Wl,--wrap -Wl,sleep\n");
 #   endif
 #   if defined(GC_LINUX_THREADS) || defined(GC_IRIX_THREADS) \
-	|| defined(GC_SOLARIS_PTHREADS) \
-	|| defined(GC_DARWIN_THREADS) || defined(GC_AIX_THREADS)
+	|| defined(GC_DARWIN_THREADS) || defined(GC_AIX_THREADS) \
+	|| defined(GC_GNU_THREADS)
+#       ifdef GC_USE_DLOPEN_WRAP
+	  printf("-ldl ");
+#	endif
         printf("-lpthread\n");
 #   endif
 #   if defined(GC_FREEBSD_THREADS)
+#       ifdef GC_USE_DLOPEN_WRAP
+	  printf("-ldl ");
+#	endif
 #       if (__FREEBSD_version >= 500000)
           printf("-lpthread\n");
 #       else
@@ -29,11 +35,20 @@ int main()
 #   if defined(GC_HPUX_THREADS) || defined(GC_OSF1_THREADS)
 	printf("-lpthread -lrt\n");
 #   endif
-#   if defined(GC_SOLARIS_THREADS) && !defined(GC_SOLARIS_PTHREADS)
-        printf("-lthread -ldl\n");
+#   if defined(GC_SOLARIS_THREADS)
+        printf("-lthread -lposix4\n");
+		/* Is this right for recent versions? */
 #   endif
 #   if defined(GC_WIN32_THREADS) && defined(CYGWIN32)
         printf("-lpthread\n");
+#   endif
+#   if defined(GC_WIN32_PTHREADS)
+#      ifdef PTW32_STATIC_LIB
+	 /* assume suffix s for static version of the win32 pthread library */
+         printf("-lpthreadGC2s -lws2_32\n");
+#      else
+         printf("-lpthreadGC2\n");
+#      endif
 #   endif
 #   if defined(GC_OSF1_THREADS)
 	printf("-pthread -lrt"); /* DOB: must be -pthread, not -lpthread */

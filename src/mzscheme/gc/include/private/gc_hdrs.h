@@ -28,7 +28,7 @@ typedef struct hblkhdr hdr;
  * This defines HDR, GET_HDR, and SET_HDR, the main macros used to
  * retrieve and set object headers.
  *
- * Since 5.0 alpha 5, we can also take advantage of a header lookup
+ * We take advantage of a header lookup
  * cache.  This is a locally declared direct mapped cache, used inside
  * the marker.  The HC_GET_HDR macro uses and maintains this
  * cache.  Assuming we get reasonable hit rates, this shaves a few
@@ -60,22 +60,6 @@ typedef struct hblkhdr hdr;
 
 /* #define COUNT_HDR_CACHE_HITS  */
 
-extern hdr * GC_invalid_header; /* header for an imaginary block 	*/
-				/* containing no objects.		*/
-
-
-/* Check whether p and corresponding hhdr point to long or invalid	*/
-/* object.  If so, advance hhdr	to					*/
-/* beginning of	block, or set hhdr to GC_invalid_header.		*/
-#define ADVANCE(p, hhdr, source) \
-	    { \
-	      hdr * new_hdr = GC_invalid_header; \
-              p = GC_find_start(p, hhdr, &new_hdr); \
-	      hhdr = new_hdr; \
-    	    }
-
-#ifdef USE_HDR_CACHE
-
 # ifdef COUNT_HDR_CACHE_HITS
     extern word GC_hdr_cache_hits;
     extern word GC_hdr_cache_misses;
@@ -96,7 +80,7 @@ extern hdr * GC_invalid_header; /* header for an imaginary block 	*/
 # define DECLARE_HDR_CACHE \
 	hdr_cache_entry hdr_cache[HDR_CACHE_SIZE]
 
-# define INIT_HDR_CACHE BZERO(hdr_cache, sizeof(hdr_cache));
+# define INIT_HDR_CACHE BZERO(hdr_cache, sizeof(hdr_cache))
 
 # define HCE(h) hdr_cache + (((word)(h) >> LOG_HBLKSIZE) & (HDR_CACHE_SIZE-1))
 
@@ -105,43 +89,32 @@ extern hdr * GC_invalid_header; /* header for an imaginary block 	*/
 
 # define HCE_HDR(h) ((hce) -> hce_hdr)
 
+#ifdef PRINT_BLACK_LIST
+  hdr * GC_header_cache_miss(ptr_t p, hdr_cache_entry *hce, ptr_t source);
+# define HEADER_CACHE_MISS(p, hce, source) \
+	  GC_header_cache_miss(p, hce, source)
+#else
+  hdr * GC_header_cache_miss(ptr_t p, hdr_cache_entry *hce);
+# define HEADER_CACHE_MISS(p, hce, source) GC_header_cache_miss(p, hce)
+#endif
 
-/* Analogous to GET_HDR, except that in the case of large objects, it	*/
-/* Returns the header for the object beginning, and updates p.		*/
-/* Returns GC_invalid_header instead of 0.  All of this saves a branch	*/
-/* in the fast path.							*/
-# define HC_GET_HDR(p, hhdr, source) \
+/* Set hhdr to the header for p.  Analogous to GET_HDR below,		*/
+/* except that in the case of large objects, it				*/
+/* gets the header for the object beginning, if GC_all_interior_ptrs	*/
+/* is set.								*/
+/* Returns zero if p points to somewhere other than the first page	*/
+/* of an object, and it is not a valid pointer to the object.		*/
+# define HC_GET_HDR(p, hhdr, source, exit_label) \
 	{ \
 	  hdr_cache_entry * hce = HCE(p); \
-	  if (HCE_VALID_FOR(hce, p)) { \
+	  if (EXPECT(HCE_VALID_FOR(hce, p), 1)) { \
 	    HC_HIT(); \
 	    hhdr = hce -> hce_hdr; \
 	  } else { \
-	    HC_MISS(); \
-	    GET_HDR(p, hhdr); \
-            if (IS_FORWARDING_ADDR_OR_NIL(hhdr)) { \
-	      ADVANCE(p, hhdr, source); \
-	    } else { \
-	      hce -> block_addr = (word)(p) >> LOG_HBLKSIZE; \
-	      hce -> hce_hdr = hhdr; \
-	    } \
+	    hhdr = HEADER_CACHE_MISS(p, hce, source); \
+	    if (0 == hhdr) goto exit_label; \
 	  } \
 	}
-
-#else /* !USE_HDR_CACHE */
-
-# define DECLARE_HDR_CACHE
-
-# define INIT_HDR_CACHE
-
-# define HC_GET_HDR(p, hhdr, source) \
-	{ \
-	  GET_HDR(p, hhdr); \
-          if (IS_FORWARDING_ADDR_OR_NIL(hhdr)) { \
-	    ADVANCE(p, hhdr, source); \
-	  } \
-	}
-#endif
 
 typedef struct bi {
     hdr * index[BOTTOM_SZ];
@@ -225,9 +198,9 @@ typedef struct bi {
 			    
 /* Is the result a forwarding address to someplace closer to the	*/
 /* beginning of the block or NIL?					*/
-# define IS_FORWARDING_ADDR_OR_NIL(hhdr) ((unsigned long) (hhdr) <= MAX_JUMP)
+# define IS_FORWARDING_ADDR_OR_NIL(hhdr) ((size_t) (hhdr) <= MAX_JUMP)
 
 /* Get an HBLKSIZE aligned address closer to the beginning of the block */
 /* h.  Assumes hhdr == HDR(h) and IS_FORWARDING_ADDR(hhdr).		*/
-# define FORWARDED_ADDR(h, hhdr) ((struct hblk *)(h) - (unsigned long)(hhdr))
+# define FORWARDED_ADDR(h, hhdr) ((struct hblk *)(h) - (size_t)(hhdr))
 # endif /*  GC_HEADERS_H */

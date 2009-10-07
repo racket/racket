@@ -71,18 +71,6 @@ extern void * GC_debug_gcj_malloc(size_t lb,
 				  void * ptr_to_struct_containing_descr,
 				  GC_EXTRA_PARAMS);
 
-/* Similar to the above, but the size is in words, and we don't	*/
-/* adjust it.  The size is assumed to be such that it can be 	*/
-/* allocated as a small object.					*/
-/* Unless it is known that the collector is not configured 	*/
-/* with USE_MARK_BYTES and unless it is known that the object	*/
-/* has weak alignment requirements, lw must be even.		*/
-extern void * GC_gcj_fast_malloc(size_t lw,
-				 void * ptr_to_struct_containing_descr);
-extern void * GC_debug_gcj_fast_malloc(size_t lw,
-				 void * ptr_to_struct_containing_descr,
-				 GC_EXTRA_PARAMS);
-
 /* Similar to GC_gcj_malloc, but assumes that a pointer to near the	*/
 /* beginning of the resulting object is always maintained.		*/
 extern void * GC_gcj_malloc_ignore_off_page(size_t lb,
@@ -94,18 +82,11 @@ extern int GC_gcj_kind;
 
 extern int GC_gcj_debug_kind;
 
-# if defined(GC_LOCAL_ALLOC_H) && defined(GC_REDIRECT_TO_LOCAL)
-    --> gc_local_alloc.h should be included after this.  Otherwise
-    --> we undo the redirection.
-# endif
-
 # ifdef GC_DEBUG
 #   define GC_GCJ_MALLOC(s,d) GC_debug_gcj_malloc(s,d,GC_EXTRAS)
-#   define GC_GCJ_FAST_MALLOC(s,d) GC_debug_gcj_fast_malloc(s,d,GC_EXTRAS)
 #   define GC_GCJ_MALLOC_IGNORE_OFF_PAGE(s,d) GC_debug_gcj_malloc(s,d,GC_EXTRAS)
 # else
 #   define GC_GCJ_MALLOC(s,d) GC_gcj_malloc(s,d)
-#   define GC_GCJ_FAST_MALLOC(s,d) GC_gcj_fast_malloc(s,d)
 #   define GC_GCJ_MALLOC_IGNORE_OFF_PAGE(s,d) \
 	GC_gcj_malloc_ignore_off_page(s,d)
 # endif
