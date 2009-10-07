@@ -26,8 +26,8 @@
     (unless (file-exists? users-file)
       (log-line "WARNING: users file missing on startup: ~a" users-file))
     (lambda (user)
-      (get-preference (string->symbol user) (lambda () #f) 'timestamp
-                      users-file))))
+      (and user (get-preference (string->symbol user) (lambda () #f) 'timestamp
+                                users-file)))))
 
 (define (relativize-path p)
   (path->string (find-relative-path (normalize-path server-dir) p)))
