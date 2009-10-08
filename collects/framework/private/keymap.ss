@@ -30,7 +30,7 @@
                          (parameterize ([read-accept-reader #t])
                            (call-with-input-file path read)))])
          (match sexp
-           [`(module ,name ,(? valid-key-bindings-lang?)
+           [`(module ,name ,(? valid-keybindings-lang?)
                ,@(x ...)) 
             (let ([km (dynamic-require spec '#%keymap)])
               (hash-set! user-keybindings-files spec km)
