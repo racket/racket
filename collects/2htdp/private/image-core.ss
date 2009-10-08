@@ -424,10 +424,19 @@ and they all have good sample contracts. (It is amazing what we can do with kids
            [atomic-shape (translate-shape simple-shape)])
        (cond
          [(ellipse? atomic-shape)
-          (let ([path (new dc-path%)]
-                [θ (degrees->radians (ellipse-angle atomic-shape))])
-            (send path ellipse 0 0 (ellipse-width atomic-shape) (ellipse-height atomic-shape))
+          (let* ([path (new dc-path%)]
+                 [w (ellipse-width atomic-shape)]
+                 [h (ellipse-height atomic-shape)]
+                 [θ (degrees->radians (ellipse-angle atomic-shape))]
+                 [cos2 (sqr (cos θ))]
+                 [sin2 (sqr (sin θ))]
+                 [rotated-width (+ (* w cos2) (* h sin2))]
+                 [rotated-height (+ (* w sin2) (* h cos2))])
+            
+            (send path ellipse 0 0 w h)
+            (send path translate (- (/ w 2)) (- (/ h 2)))
             (send path rotate θ)
+            (send path translate (/ rotated-width 2) (/ rotated-height 2))
             (send dc set-pen (mode-color->pen (ellipse-mode atomic-shape) (ellipse-color atomic-shape)))
             (send dc set-brush (mode-color->brush (ellipse-mode atomic-shape) (ellipse-color atomic-shape)))
             (send dc draw-path path dx dy))]

@@ -10,8 +10,7 @@
 
 ;; test case: (beside (text "a"...) (text "b" ...)) vs (text "ab")
 
-(show-image (overlay (rectangle 200 20 'solid 'red)
-                     (scale 2 (rectangle 200 20 'solid 'blue))))
+(show-image (frame (rotate 30 (ellipse 200 400 'solid 'purple))))
 
 #;
 (show-image
