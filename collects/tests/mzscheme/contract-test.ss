@@ -1607,7 +1607,7 @@
    '((contract (->d () 
                     ([a number?])
                     #:rest rest any/c 
-                    any
+                    [_ any/c]
                     #:post-cond (equal? (list a rest) (list the-unsupplied-arg '())))
                (λ ([a 1] . rest) 1)
                'pos

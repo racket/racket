@@ -707,7 +707,11 @@ v4 todo:
                 [(post-cond leftover) 
                  (syntax-case leftover ()
                    [(#:post-cond post-cond . leftover)
-                    (values #'post-cond #'leftover)]
+                    (begin
+                      (syntax-case range (any)
+                        [any (raise-syntax-error #f "cannot have a #:post-cond with any as the range" stx #'post-cond)]
+                        [_ (void)])
+                      (values #'post-cond #'leftover))]
                    [_ (values #f leftover)])])
     (syntax-case leftover ()
       [() 
@@ -929,7 +933,8 @@ v4 todo:
                                                src-info
                                                neg-blame
                                                orig-str
-                                               "#:pre-cond violation")))
+                                               "#:pre-cond violation~a"
+                                               (build-values-string ", argument" dep-pre-args))))
                      (call-with-immediate-continuation-mark
                       ->d-tail-key
                       (λ (first-mark)
@@ -955,7 +960,12 @@ v4 todo:
                                                           src-info
                                                           pos-blame
                                                           orig-str
-                                                          "#:post-cond violation")))
+                                                          "#:post-cond violation~a~a"
+                                                          (build-values-string ", argument" dep-pre-args)
+                                                          (build-values-string (if (null? dep-pre-args)
+                                                                                   ", result"
+                                                                                   "\n result")
+                                                                               orig-results))))
                                 
                                 (unless (= range-count (length orig-results))
                                   (raise-contract-error val
@@ -988,6 +998,20 @@ v4 todo:
              arity 
              (->d-mandatory-keywords ->d-stct)
              (->d-keywords ->d-stct))))))))
+
+(define (build-values-string desc dep-pre-args)
+  (cond
+    [(null? dep-pre-args) ""]
+    [(null? (cdr dep-pre-args)) (format "~a was: ~e" desc (car dep-pre-args))]
+    [else
+     (apply
+      string-append
+      (format "~as were:" desc)
+      (let loop ([lst dep-pre-args])
+        (cond
+          [(null? lst) '()]
+          [else (cons (format "\n  ~e" (car lst))
+                      (loop (cdr lst)))])))]))
 
 ;; invoke-dep-ctc : (...? -> ctc) (or/c #f (listof tst)) val pos-blame neg-blame src-info orig-src -> tst
 (define (invoke-dep-ctc dep-ctc dep-args val pos-blame neg-blame src-info orig-str positive-position?)
