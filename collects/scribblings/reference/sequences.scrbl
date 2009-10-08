@@ -17,6 +17,9 @@
        (the-eval '(require scheme/generator))
        the-eval)))
 
+@(define (info-on-seq where what)
+   @margin-note{See @secref[where] for information on using @|what| as sequences.})
+
 @title[#:tag "sequences"]{Sequences}
 
 @guideintro["sequences"]{sequences}
@@ -85,6 +88,7 @@ element. @speed[in-naturals "integer"]}
 
 @defproc[(in-list [lst list?]) sequence?]{
 Returns a sequence equivalent to @scheme[lst].
+@info-on-seq["pairs" "lists"]
 @speed[in-list "list"]}
 
 @defproc[(in-vector [vec vector?]
@@ -95,6 +99,8 @@ Returns a sequence equivalent to @scheme[lst].
 
 Returns a sequence equivalent to @scheme[vec] when no optional
 arguments are supplied.
+
+@info-on-seq["vectors" "vectors"]
 
 The optional arguments @scheme[start], @scheme[stop], and
 @scheme[step] are analogous to @scheme[in-range], except that a
@@ -124,6 +130,8 @@ demanded from the sequence.
 Returns a sequence equivalent to @scheme[str] when no optional
 arguments are supplied.
 
+@info-on-seq["strings" "strings"]
+
 The optional arguments @scheme[start], @scheme[stop], and
 @scheme[step] are as in @scheme[in-vector].
 
@@ -136,6 +144,8 @@ The optional arguments @scheme[start], @scheme[stop], and
          sequence?]{
 Returns a sequence equivalent to @scheme[bstr] when no optional
 arguments are supplied.
+
+@info-on-seq["bytestrings" "byte strings"]
 
 The optional arguments @scheme[start], @scheme[stop], and
 @scheme[step] are as in @scheme[in-vector].
@@ -159,7 +169,9 @@ mode is @scheme['any], whereas the default mode of @scheme[read-line]
 is @scheme['linefeed].}
 
 @defproc[(in-hash [hash hash?]) sequence?]{
-Returns a sequence equivalent to @scheme[hash].}
+Returns a sequence equivalent to @scheme[hash].
+
+@info-on-seq["hashtables" "hash tables"]}
 
 @defproc[(in-hash-keys [hash hash?]) sequence?]{
 Returns a sequence whose elements are the keys of @scheme[hash].}
