@@ -29,7 +29,6 @@
               [sexp (and (file-exists? path)
                          (parameterize ([read-accept-reader #t])
                            (call-with-input-file path read)))])
-         (printf "sexp ~s\n" sexp)
          (match sexp
            [`(module ,name ,(? valid-key-bindings-lang?)
                ,@(x ...)) 
