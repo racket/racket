@@ -78,7 +78,7 @@
          #:read-only? [read-only? #f]
          #:attributes [attrs empty])
   (text-or-password 
-   #:password? #f
+   #:password? #t
    #:value value
    #:size size
    #:max-length max-length
