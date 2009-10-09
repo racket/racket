@@ -190,10 +190,12 @@ expression can be useful in cases such as the above, where the base
 language module is chosen based on the input.  To make this more
 convenient, you can omit the @scheme[module-path] and instead specify
 it via a @scheme[#:language] expression.  This expression can evaluate
-to a datum which is used as a language, or it can evaluate to a thunk.
-In the latter case, the thunk will be invoked to return such a datum
+to a datum or syntax object that is used as a language, or it can evaluate to a thunk.
+In the latter case, the thunk is invoked to obtain such a datum
 before reading the module body begins, in a dynamic extent where
-@scheme[current-input-port] is the source input.  Using this, the last
+@scheme[current-input-port] is the source input. A syntax object is converted
+using @scheme[syntax->datum] when a datum is needed (for @scheme[read] instead of @scheme[read-syntax]). 
+Using @scheme[#:language], the last
 example above can be written more concisely:
 @schemeblock[
 (module reader syntax/module-reader

@@ -69,7 +69,10 @@
                   [w1 #,~wrapper1]
                   [w2 #,~wrapper2]
                   [whole? #,~whole-body-readers?]
-                  [rd (lambda (in) (wrap-internal lang in read whole? w1 stx?
+                  [rd (lambda (in) (wrap-internal (if (and (not stx?) (syntax? lang))
+                                                      (syntax->datum lang) 
+                                                      lang)
+                                                  in read whole? w1 stx?
                                                   modpath src line col pos))]
                   [r (cond [(not w2) (rd in)]
                            [(ar? w2 3) (w2 in rd stx?)]
