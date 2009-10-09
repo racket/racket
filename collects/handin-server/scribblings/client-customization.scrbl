@@ -57,11 +57,10 @@ uniquely.  For example, @filepath{uu-cpsc2010} is a good name for CPSC
   original client directory was (see @secref{wheres-the-collection}) or
   by specifying a value for the @envvar{PLTCOLLECTS} environment
   variable.  For example, if your customized collection directory is
-  called @filepath{cs101} and it is located at
-  @filepath{/home/joe/intro/cs101}, then you can run
-  @commandline{PLTCOLLECTS=/home/joe/intro: \
-               mzc --collection-plt cs101.plt cs101}
-  (Don't forget the colon at the end of the @envvar{PLTCOLLECTS} value:
+  called @filepath{cs1} and it is located at
+  @filepath{/home/joe/intro/cs1}, then you can run
+  @commandline{PLTCOLLECTS=/home/joe/intro: mzc --collection-plt cs1.plt cs1}
+  (Don't forget the colon at the end of the @envvar{PLTCOLLECTS} value;
   it is important!)
 
   Note that if you create an updated copy of the client package (that

@@ -5,7 +5,7 @@
    @t{(Effective only when saving a textual version of
       the submission files: when @scheme[:create-text?] is on.)})
 
-@title{checker}
+@title{Checker}
 
 @defmodulelang[handin-server/checker]{
 

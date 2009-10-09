@@ -1,7 +1,7 @@
 #lang setup/infotab
 
 ;; Modify these definitions to enable & customize the tool.
-;; (Detailed instructions are in the handin-server collection's doc.txt)
+;; (Detailed instructions are in the handin-server collection's docs.)
 ;; Also replace the "server-cert.pem" files.
 
 ;; Your course name (used for menus, button label, collection name etc)

@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.ss")
 
-@title[#:tag "wheres-the-collection"]{Where is the collection?}
+@title[#:tag "wheres-the-collection"]{Where is the Collection?}
 
 If you obtained the server and client by installing a @filepath{.plt}
 file, then the @filepath{handin-server} and @filepath{handin-client}

@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "common.ss")
 
-@title{Utils}
+@title{Utilities}
 
 @defmodule[handin-server/utils]
 
