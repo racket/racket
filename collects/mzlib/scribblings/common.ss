@@ -2,11 +2,13 @@
 
 (require (for-syntax scheme/base)
          scribble/manual
-         (for-label mzscheme))
+         (for-label mzscheme
+		    (only-in scheme/base exn:fail exn:fail:unsupported exn:fail:contract)))
 
 (provide mzlib
          (all-from-out scribble/manual)
-         (for-label (all-from-out mzscheme)))
+         (for-label (all-from-out mzscheme)
+		    (all-from-out scheme/base)))
 
 (define-syntax (mzlib stx)
   (syntax-case stx ()

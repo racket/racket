@@ -12,7 +12,8 @@
                               make-base-empty-namespace
                               make-hash make-hasheq make-weak-hash make-weak-hasheq
                               make-immutable-hash
-                              make-immutable-hasheq)))
+                              make-immutable-hasheq
+			      exn:fail exn:fail:contract)))
 
 @(define-syntax-rule (def-base base-define base-define-struct
                                base-if base-cond base-case base-top-interaction
@@ -50,7 +51,7 @@ The @schememodname[mzscheme] language provides nearly the same
 bindings as the @schememodname[mzscheme] module of PLT Scheme
 @|old-vers| and earlier.}
 
-Unlike old version, the @schememodname[mzscheme] language does not
+Unlike @|old-vers|, the @schememodname[mzscheme] language does not
 include @scheme[set-car!]  or @scheme[set-cdr!], and @scheme[cons]
 makes immutable pairs, as in @scheme[scheme/base]; those changes make
 modules built on @schememodname[mzscheme] reasonably compatible with
