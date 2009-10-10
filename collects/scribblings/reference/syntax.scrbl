@@ -1355,8 +1355,8 @@ expression. (In other words, variable reference is lexically scoped.)
 When multiple identifiers appear in a @scheme[kw-formals], they must
 be distinct according to @scheme[bound-identifier=?].
 
-If the procedure procedure by @scheme[lambda] is applied to fewer or
-more by-position or arguments than it accepts, to by-keyword arguments
+If the procedure produced by @scheme[lambda] is applied to fewer or
+more by-position or by-keyword arguments than it accepts, to by-keyword arguments
 that it does not accept, or without required by-keyword arguments, then
 the @exnraise[exn:fail:contract].
 
