@@ -711,6 +711,7 @@ please adhere to these guidelines:
   
  (user-defined-keybinding-error "Error running keybinding ~a\n\n~a")
  (user-defined-keybinding-malformed-file "The file ~a does not contain a module written in the framework/keybinding-lang language.")  
+ (user-defined-keybinding-malformed-file/found-lang "The file ~a does not contain a module written in the framework/keybinding-lang language. Instead, found the language ~s")  
   
  ;; menu items in the "special" menu
  (insert-text-box-item "Insert Text Box")
