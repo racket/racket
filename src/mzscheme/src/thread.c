@@ -3531,7 +3531,7 @@ static int check_sleep(int need_activity, int sleep_now)
       scheme_notify_multithread(0);
     
 #if defined(USING_FDS)
-    INIT_DECL_FDSET(set, 3);
+    INIT_DECL_FDSET(set, set1, set2);
     set1 = (fd_set *) MZ_GET_FDSET(set, 1);
     set2 = (fd_set *) MZ_GET_FDSET(set, 2);
 

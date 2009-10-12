@@ -59,7 +59,6 @@ static int mzerrno = 0;
 #else
 # include <errno.h>
 #endif
-#include "schfd.h"
 
 #ifdef USE_UNIX_SOCKETS_TCP
 # include <netinet/in.h>
@@ -92,6 +91,8 @@ struct SOCKADDR_IN {
 # define mz_AFNOSUPPORT WSAEAFNOSUPPORT
 extern int scheme_stupid_windows_machine;
 #endif
+
+#include "schfd.h"
 
 #define TCP_BUFFER_SIZE 4096
 
@@ -157,13 +158,19 @@ typedef struct Scheme_UDP {
 
 #if defined(WINDOWS_PROCESSES) || defined(WINDOWS_FILE_HANDLES)
 # define DECL_OS_FDSET(n) fd_set n[1]
-# define INIT_DECL_OS_FDSET(n) /* empty */
+# define INIT_DECL_OS_FDSET(r, w, e) /* empty */
+# define INIT_DECL_OS_RD_FDSET(r) /* empty */
+# define INIT_DECL_OS_WR_FDSET(r) /* empty */
+# define INIT_DECL_OS_ER_FDSET(r) /* empty */
 # define MZ_OS_FD_ZERO(p) FD_ZERO(p)
 # define MZ_OS_FD_SET(n, p) FD_SET(n, p)
 # define MZ_OS_FD_CLR(n, p) FD_CLR(n, p)
 #else
 # define DECL_OS_FDSET(n) DECL_FDSET(n, 1)
-# define INIT_DECL_OS_FDSET(n) INIT_DECL_FDSET(n, 1)
+# define INIT_DECL_OS_FDSET(r, w, e) INIT_DECL_FDSET(r, w, e)
+# define INIT_DECL_OS_RD_FDSET(r) INIT_DECL_RD_FDSET(r)
+# define INIT_DECL_OS_WR_FDSET(r) INIT_DECL_WR_FDSET(r)
+# define INIT_DECL_OS_ER_FDSET(r) INIT_DECL_ER_FDSET(r)
 # define MZ_OS_FD_ZERO(p) MZ_FD_ZERO(p)
 # define MZ_OS_FD_SET(n, p) MZ_FD_SET(n, p)
 # define MZ_OS_FD_CLR(n, p) MZ_FD_CLR(n, p)
@@ -816,8 +823,8 @@ static int tcp_check_accept(Scheme_Object *_listener)
   struct timeval time = {0, 0};
   int sr, i;
 
-  INIT_DECL_OS_FDSET(readfds);
-  INIT_DECL_OS_FDSET(exnfds);
+  INIT_DECL_OS_RD_FDSET(readfds);
+  INIT_DECL_OS_ER_FDSET(exnfds);
 
   if (LISTENER_WAS_CLOSED(listener))
     return 1;
@@ -880,8 +887,8 @@ static int tcp_check_connect(Scheme_Object *connector_p)
   struct timeval time = {0, 0};
   int sr;
 
-  INIT_DECL_OS_FDSET(writefds);
-  INIT_DECL_OS_FDSET(exnfds);
+  INIT_DECL_OS_WR_FDSET(writefds);
+  INIT_DECL_OS_ER_FDSET(exnfds);
 
   s = *(tcp_t *)connector_p;
 
@@ -935,8 +942,8 @@ static int tcp_check_write(Scheme_Object *port)
     struct timeval time = {0, 0};
     int sr;
     
-    INIT_DECL_OS_FDSET(writefds);
-    INIT_DECL_OS_FDSET(exnfds);
+    INIT_DECL_OS_WR_FDSET(writefds);
+    INIT_DECL_OS_ER_FDSET(exnfds);
     
     s = data->tcp;
     
@@ -1034,8 +1041,8 @@ static int tcp_byte_ready (Scheme_Input_Port *port)
   DECL_OS_FDSET(exfds);
   struct timeval time = {0, 0};
 
-  INIT_DECL_OS_FDSET(readfds);
-  INIT_DECL_OS_FDSET(exfds);
+  INIT_DECL_OS_RD_FDSET(readfds);
+  INIT_DECL_OS_ER_FDSET(exfds);
 #endif
 
   if (port->closed)
@@ -2807,8 +2814,8 @@ static int udp_check_send(Scheme_Object *_udp)
     struct timeval time = {0, 0};
     int sr;
     
-    INIT_DECL_OS_FDSET(writefds);
-    INIT_DECL_OS_FDSET(exnfds);
+    INIT_DECL_OS_WR_FDSET(writefds);
+    INIT_DECL_OS_ER_FDSET(exnfds);
     
     MZ_OS_FD_ZERO(writefds);
     MZ_OS_FD_SET(udp->s, writefds);
@@ -3039,8 +3046,8 @@ static int udp_check_recv(Scheme_Object *_udp)
     struct timeval time = {0, 0};
     int sr;
     
-    INIT_DECL_OS_FDSET(readfds);
-    INIT_DECL_OS_FDSET(exnfds);
+    INIT_DECL_OS_RD_FDSET(readfds);
+    INIT_DECL_OS_ER_FDSET(exnfds);
     
     MZ_OS_FD_ZERO(readfds);
     MZ_OS_FD_SET(udp->s, readfds);

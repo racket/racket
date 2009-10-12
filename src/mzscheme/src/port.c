@@ -77,7 +77,6 @@ static int mzerrno = 0;
 extern int osk_not_console; /* set by cmd-line flag */
 #endif
 #include <math.h> /* for fmod , used by default_sleep */
-#include "schfd.h"
 
 #ifndef MZ_BINARY
 # define MZ_BINARY 0
@@ -114,6 +113,8 @@ static void init_thread_memory();
 # define OS_MUTEX_TYPE CRITICAL_SECTION
 # define OS_THREAD_TYPE HANDLE
 #endif
+
+#include "schfd.h"
 
 #ifdef WINDOWS_FILE_HANDLES
 
@@ -305,6 +306,8 @@ Scheme_Object scheme_eof[1];
 THREAD_LOCAL Scheme_Object *scheme_orig_stdout_port;
 THREAD_LOCAL Scheme_Object *scheme_orig_stderr_port;
 THREAD_LOCAL Scheme_Object *scheme_orig_stdin_port;
+
+THREAD_LOCAL fd_set *scheme_fd_set;
 
 Scheme_Object *(*scheme_make_stdin)(void) = NULL;
 Scheme_Object *(*scheme_make_stdout)(void) = NULL;
@@ -676,6 +679,13 @@ Scheme_Object * scheme_make_eof (void)
 /* Implement fd arrays (FD_SET, etc) with a runtime-determined size.
    Also implement special hooks for Windows "descriptors", like
    even queues and semaphores. */
+
+void scheme_alloc_global_fdset() {
+#ifdef USE_FAR_MZ_FDCALLS
+  REGISTER_SO(scheme_fd_set);
+  scheme_fd_set = scheme_alloc_fdset_array(3, 0);
+#endif
+}
 
 #ifdef USE_DYNAMIC_FDSET_SIZE
 static int dynamic_fd_size;
@@ -4925,8 +4935,8 @@ fd_byte_ready (Scheme_Input_Port *port)
     DECL_FDSET(exnfds, 1);
     struct timeval time = {0, 0};
 
-    INIT_DECL_FDSET(readfds, 1);
-    INIT_DECL_FDSET(exnfds, 1);
+    INIT_DECL_RD_FDSET(readfds);
+    INIT_DECL_ER_FDSET(exnfds);
 
     MZ_FD_ZERO(readfds);
     MZ_FD_ZERO(exnfds);
@@ -5938,8 +5948,8 @@ fd_write_ready (Scheme_Object *port)
     struct timeval time = {0, 0};
     int sr;
 
-    INIT_DECL_FDSET(writefds, 1);
-    INIT_DECL_FDSET(exnfds, 1);
+    INIT_DECL_WR_FDSET(writefds);
+    INIT_DECL_ER_FDSET(exnfds);
 
     MZ_FD_ZERO(writefds);
     MZ_FD_ZERO(exnfds);
@@ -8147,7 +8157,7 @@ static void default_sleep(float v, void *fds)
     if (external_event_fd) {
       DECL_FDSET(readfds, 1);
 
-      INIT_DECL_FDSET(readfds, 1);
+      INIT_DECL_RD_FDSET(readfds);
 
       MZ_FD_ZERO(readfds);
       MZ_FD_SET(external_event_fd, readfds);

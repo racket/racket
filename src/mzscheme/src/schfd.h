@@ -1,8 +1,19 @@
 
 #ifdef USE_FAR_MZ_FDCALLS
-# define DECL_FDSET(n, c) static fd_set *n
-# define INIT_DECL_FDSET(n, c) (n = (n ? (fd_set *)scheme_init_fdset_array(n, c) : (fd_set *)scheme_alloc_fdset_array(c, 1)))
+extern THREAD_LOCAL fd_set *scheme_fd_set;
+# define DECL_FDSET(n, c) fd_set *n
+# define INIT_DECL_FDSET(r, w, e) { \
+    r = MZ_GET_FDSET(scheme_fd_set, 0 ); \
+    w = MZ_GET_FDSET(scheme_fd_set, 1 ); \
+    e = MZ_GET_FDSET(scheme_fd_set, 2 ); \
+  }
+# define INIT_DECL_RD_FDSET(r) r = MZ_GET_FDSET(scheme_fd_set, 0 )
+# define INIT_DECL_WR_FDSET(r) r = MZ_GET_FDSET(scheme_fd_set, 1 )
+# define INIT_DECL_ER_FDSET(r) r = MZ_GET_FDSET(scheme_fd_set, 2 )
 #else
 # define DECL_FDSET(n, c) fd_set n[c]
-# define INIT_DECL_FDSET(n, c) /* empty */
+# define INIT_DECL_FDSET(r, w, e) /* empty */
+# define INIT_DECL_RD_FDSET(r) /* empty */
+# define INIT_DECL_WR_FDSET(r) /* empty */
+# define INIT_DECL_ER_FDSET(r) /* empty */
 #endif
