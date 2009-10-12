@@ -291,8 +291,10 @@
                      (let ([m (with-input-from-file f
                                 (lambda () (read-bytes mlen)))])
                        (ormap (lambda (magic)
-                                (equal? magic
-                                        (subbytes m 0 (bytes-length magic))))
+                                (and (>= (bytes-length m) (bytes-length magic))
+                                     (equal? magic
+                                             (subbytes m 0
+                                                       (bytes-length magic)))))
                               magics))
                      (or (not file)
                          (> (file-or-directory-modify-seconds f) time)))
