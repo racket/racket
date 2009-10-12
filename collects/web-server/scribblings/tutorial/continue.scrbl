@@ -1,4 +1,4 @@
-#lang scribble/doc
+6#lang scribble/doc
 @(require scribble/manual
           (for-label scheme)
           (for-label web-server/servlet)
