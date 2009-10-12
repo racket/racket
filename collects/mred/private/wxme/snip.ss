@@ -1319,13 +1319,21 @@
                   (begin
                     (when (snip-class-link-name s)
                       (let ([c (find (snip-class-link-name s))])
-                        (when (or (not c)
-                                  ((send c get-version) . < . (snip-class-link-reading-version s)))
-                          ;; unknown class/version;
-                          ;; since we #f out sl->name, error is only shown once
-                          (log-error (format "unknown snip class: ~e or version: ~e" 
-                                             (snip-class-link-name s)
-                                             (snip-class-link-reading-version s))))
+                        (cond
+                          [(not c)
+                           (log-error (format "unknown snip class: ~e (version: ~e)" 
+                                              (snip-class-link-name s)
+                                              (snip-class-link-reading-version s)))]
+                          [((send c get-version) . < . (snip-class-link-reading-version s))
+                           ;; unknown class/version;
+                           ;; since we #f out sl->name, error is only shown once
+                           (log-error (format "unknown snip class: ~e; found version: ~e, need at least version ~e" 
+                                              (snip-class-link-name s)
+                                              (send c get-version)
+                                              (snip-class-link-reading-version s)))]
+                          [else
+                           ;; no prolems
+                           (void)])
                         (set-snip-class-link-name! s #f)
                         (set-snip-class-link-c! s c)))
                     (snip-class-link-c s))))
