@@ -1702,7 +1702,7 @@ Recognized specially within forms like @scheme[cond]. A
 
 @guideintro["and+or"]{@scheme[and]}
 
-If no @scheme[expr]s are provided, then result is @scheme[#f].
+If no @scheme[expr]s are provided, then result is @scheme[#t].
 
 If a single @scheme[expr] is provided, then it is in tail position, so
 the results of the @scheme[and] expression are the results of the
@@ -1726,7 +1726,7 @@ respect to the original @scheme[and] form.
 
 @guideintro["and+or"]{@scheme[or]}
 
-If no @scheme[expr]s are provided, then result is @scheme[#t].
+If no @scheme[expr]s are provided, then result is @scheme[#f].
 
 If a single @scheme[expr] is provided, then it is in tail position, so
 the results of the @scheme[and] expression are the results of the
