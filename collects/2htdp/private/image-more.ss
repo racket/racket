@@ -449,21 +449,24 @@
          (values left top right bottom)))]
     [else
      (let ([dx (translate-dx simple-shape)]
-           [dy (translate-dy simple-shape)]
-           [atomic-shape (translate-shape simple-shape)])
-       (cond
-         [(ellipse? atomic-shape)
-          (let-values ([(w h) (ellipse-rotated-size (ellipse-width atomic-shape)
-                                                    (ellipse-height atomic-shape)
-                                                    (ellipse-angle atomic-shape))])
-            (values dx
-                    dy
-                    (+ dx w)
-                    (+ dy h)))]
-         [else
-          (fprintf (current-error-port) "BAD BOUNDING BOX\n")
-          (values 0 0 100 100)]))]))
+           [dy (translate-dy simple-shape)])
+       (let-values ([(l t r b) (atomic-bb (translate-shape simple-shape))])
+         (values (+ l dx)
+                 (+ t dy)
+                 (+ r dx)
+                 (+ b dy))))]))
 
+(define (atomic-bb atomic-shape)
+  (cond
+    [(ellipse? atomic-shape)
+     (let-values ([(w h) (ellipse-rotated-size (ellipse-width atomic-shape)
+                                               (ellipse-height atomic-shape)
+                                               (ellipse-angle atomic-shape))])
+       (values 0 0 w h))]
+    [else
+     (fprintf (current-error-port) "BAD BOUNDING BOX\n")
+     (values 0 0 100 100)]))
+  
 ;; rotate-simple : angle simple-shape -> simple-shape
 (define (rotate-simple θ simple-shape)
   (cond
@@ -475,13 +478,19 @@
                    (polygon-mode simple-shape)
                    (polygon-color simple-shape))]
     [else
-     (let-values ([(dx dy) (c->xy (* (make-polar 1 (degrees->radians θ))
-                                     (xy->c (translate-dx simple-shape)
-                                            (translate-dy simple-shape))))])
-       (make-translate
-        dx
-        dy
-        (rotate-atomic θ (translate-shape simple-shape))))]))
+     (let* ([unrotated (translate-shape simple-shape)]
+            [rotated (rotate-atomic θ unrotated)])
+       (let-values ([(dx dy) (c->xy (- (* (make-polar 1 (degrees->radians θ))
+                                          (+ (xy->c (translate-dx simple-shape)
+                                                    (translate-dy simple-shape))
+                                             (center-point unrotated)))
+                                       (center-point unrotated)))])
+         (make-translate dx dy rotated)))]))
+
+(define (center-point atomic-shape)
+  (let-values ([(l t r b) (atomic-bb atomic-shape)])
+    (xy->c (/ (- r l) 2)
+           (/ (- b t) 2))))
 
 ;; rotate-atomic : angle np-atomic-shape -> np-atomic-shape
 (define (rotate-atomic θ atomic-shape)
@@ -530,7 +539,8 @@
 
 ;; bring-between : number number -> number
 ;; returns a number that is much like the modulo of 'x' and 'upper-bound'
-;; but does this by repeated subtraction, since modulo only works on integers
+;; but does this by repeated subtraction (or addition if it is negative), 
+;; since modulo only works on integers
 (define (bring-between x upper-bound)
   (let loop ([x x])
     (cond

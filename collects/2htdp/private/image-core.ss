@@ -489,7 +489,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
     [(outline) (send the-brush-list find-or-create-brush "black" 'transparent)]
     [(solid) (send the-brush-list find-or-create-brush color 'solid)]))
 
-(provide make-image image-shape
+(provide make-image image-shape image-bb image-normalized? image%
          
          (struct-out bb)
          (struct-out point)
