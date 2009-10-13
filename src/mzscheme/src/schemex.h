@@ -57,7 +57,7 @@ Scheme_Object *(*scheme_current_break_cell)();
 # ifndef MZ_USE_PLACES
 Scheme_Thread *scheme_current_thread;
 # endif
-volatile int scheme_fuel_counter;
+THREAD_LOCAL volatile int scheme_fuel_counter;
 #else
 Scheme_Thread **scheme_current_thread_ptr;
 volatile int *scheme_fuel_counter_ptr;

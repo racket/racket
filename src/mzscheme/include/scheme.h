@@ -1491,7 +1491,7 @@ typedef void (*Scheme_Invoke_Proc)(Scheme_Env *env, long phase_shift,
 #  define scheme_fuel_counter (*scheme_fuel_counter_ptr)
 # endif
 #else
-MZ_EXTERN volatile int scheme_fuel_counter;
+MZ_EXTERN THREAD_LOCAL volatile int scheme_fuel_counter;
 #endif
 
 #ifdef FUEL_AUTODECEREMENTS

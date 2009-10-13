@@ -365,7 +365,7 @@ extern THREAD_LOCAL MZ_MARK_POS_TYPE scheme_current_cont_mark_pos;
 # define MZ_CONT_MARK_POS (scheme_current_thread->cont_mark_pos)
 #endif
 
-extern volatile int scheme_fuel_counter;
+extern THREAD_LOCAL volatile int scheme_fuel_counter;
 
 extern THREAD_LOCAL Scheme_Thread *scheme_main_thread;
 
@@ -419,9 +419,8 @@ void scheme_forget_subthread(struct Scheme_Thread_Memory *);
 void scheme_suspend_remembered_threads(void);
 void scheme_resume_remembered_threads(void);
 #endif
-#if defined(USE_WIN32_THREAD_TIMER) || defined(USE_PTHREAD_THREAD_TIMER)
-void scheme_start_itimer_thread(long usec);
-#endif
+
+void scheme_kickoff_green_thread_time_slice_timer(long usec);
 
 #ifdef UNIX_PROCESSES
 void scheme_block_child_signals(int block);

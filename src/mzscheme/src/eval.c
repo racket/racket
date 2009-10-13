@@ -147,7 +147,7 @@
 #define EMBEDDED_DEFINES_START_ANYWHERE 0
 
 /* globals */
-volatile int scheme_fuel_counter;
+THREAD_LOCAL volatile int scheme_fuel_counter;
 
 int scheme_startup_use_jit = 1;
 void scheme_set_startup_use_jit(int v) { scheme_startup_use_jit =  v; }

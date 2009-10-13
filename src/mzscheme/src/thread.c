@@ -54,11 +54,6 @@
 #  include <be/net/socket.h>
 # endif
 #endif
-#ifdef USE_ITIMER
-# include <sys/types.h>
-# include <sys/time.h>
-# include <signal.h>
-#endif
 #ifdef USE_WINSOCK_TCP
 # ifdef USE_TCP
 #  include <winsock.h>
@@ -3636,28 +3631,6 @@ void scheme_out_of_fuel(void)
   scheme_current_thread->ran_some = 1;
 }
 
-#ifdef USE_ITIMER
-static int itimer_handler_installed = 0;
-
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
-static void timer_expired(int ignored)
-{
-  scheme_fuel_counter = 0;
-  scheme_jit_stack_boundary = (unsigned long)-1;
-#  ifdef SIGSET_NEEDS_REINSTALL
-  MZ_SIGSET(SIGPROF, timer_expired);
-#  endif
-}
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
-
-#endif
-
 static void init_schedule_info(Scheme_Schedule_Info *sinfo, Scheme_Thread *false_pos_ok, 
 			       double sleep_end)
 {
@@ -4251,26 +4224,7 @@ void scheme_thread_block(float sleep_time)
   scheme_fuel_counter = p->engine_weight;
   scheme_jit_stack_boundary = scheme_stack_boundary;
 
-#ifdef USE_ITIMER
-  {
-    struct itimerval t, old;
-
-    if (!itimer_handler_installed) {
-      itimer_handler_installed = 1;
-      MZ_SIGSET(SIGPROF, timer_expired);
-    }
-
-    t.it_value.tv_sec = 0;
-    t.it_value.tv_usec = MZ_THREAD_QUANTUM_USEC;
-    t.it_interval.tv_sec = 0;
-    t.it_interval.tv_usec = 0;
-
-    setitimer(ITIMER_PROF, &t, &old);
-  }
-#endif
-#if defined(USE_WIN32_THREAD_TIMER) || defined(USE_PTHREAD_THREAD_TIMER)
-  scheme_start_itimer_thread(MZ_THREAD_QUANTUM_USEC);
-#endif
+  scheme_kickoff_green_thread_time_slice_timer(MZ_THREAD_QUANTUM_USEC);
 
   /* Check scheduled_kills early and often. */
   check_scheduled_kills();

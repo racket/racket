@@ -8422,7 +8422,7 @@ static long ITimer(void)
 END_XFORM_SKIP;
 #endif
 
-void scheme_start_itimer_thread(long usec)
+static void scheme_start_itimer_thread(long usec)
 {
   DWORD id;
 
@@ -8441,65 +8441,137 @@ void scheme_start_itimer_thread(long usec)
 #ifdef USE_PTHREAD_THREAD_TIMER
 
 #include <pthread.h>
+typedef struct ITimer_Data {
+  int itimer;
+  int state;
+  pthread_t thread;
+  pthread_mutex_t mutex;
+  pthread_cond_t cond;
+  int delay;
+  volatile int * fuel_counter_ptr;
+  volatile unsigned long * jit_stack_boundary_ptr;
+} ITimer_Data;
 
-static int itimer = 0, itimer_continue = 0;
-static pthread_mutex_t itimer_mutex;
-static pthread_cond_t itimer_cond;
-static volatile long itimer_delay;
+static THREAD_LOCAL ITimer_Data itimerdata;
 
 #ifdef MZ_XFORM
 START_XFORM_SKIP;
 #endif
-static void *run_itimer(void *p)
-{
-  while (1) {
-    usleep(itimer_delay);
-    scheme_fuel_counter = 0;
-    scheme_jit_stack_boundary = (unsigned long)-1;
 
-    pthread_mutex_lock(&itimer_mutex);
-    if (itimer_continue) {
-      itimer_continue = 0;
+static void *green_thread_timer(void *data)
+{
+  ITimer_Data *itimer_data;
+  itimer_data = (ITimer_Data *)data;
+  
+  while (1) {
+    usleep(itimer_data->delay);
+    *(itimer_data->fuel_counter_ptr) = 0;
+    *(itimer_data->jit_stack_boundary_ptr) = (unsigned long)-1;
+
+    pthread_mutex_lock(&itimer_data->mutex);
+    if (itimer_data->state) {
+      itimer_data->state = 0;
     } else {
-      itimer_continue = -1;
-      pthread_cond_wait(&itimer_cond, &itimer_mutex);
+      itimer_data->state = -1;
+      pthread_cond_wait(&itimer_data->cond, &itimer_data->mutex);
     }
-    pthread_mutex_unlock(&itimer_mutex);
+    pthread_mutex_unlock(&itimer_data->mutex);
   }
+  return NULL;
 }
+
 #ifdef MZ_XFORM
 END_XFORM_SKIP;
 #endif
 
-void scheme_start_itimer_thread(long usec)
-{
-  itimer_delay = usec;
+static void start_green_thread_timer(long usec) {
+  itimerdata.delay = usec;
+  itimerdata.fuel_counter_ptr = &scheme_fuel_counter;
+  itimerdata.jit_stack_boundary_ptr = &scheme_jit_stack_boundary;
+  pthread_mutex_init(&itimerdata.mutex, NULL);
+  pthread_cond_init(&itimerdata.cond, NULL);
+  pthread_create(&itimerdata.thread, NULL, green_thread_timer, &itimerdata);
+  itimerdata.itimer = 1;
+}
 
-  if (!itimer) {
-    pthread_t t;
-    pthread_mutex_init(&itimer_mutex, NULL);
-    pthread_cond_init(&itimer_cond, NULL);
-    pthread_create(&t, NULL, run_itimer,  NULL);
-    itimer = 1;
-  } else {
-    pthread_mutex_lock(&itimer_mutex);
-    if (!itimer_continue) {
+static void kickoff_green_thread_timer(long usec) {
+    pthread_mutex_lock(&itimerdata.mutex);
+    itimerdata.delay = usec;
+    if (!itimerdata.state) {
       /* itimer thread is currently running working */
-      itimer_continue = 1;
-    } else if (itimer_continue < 0) {
+      itimerdata.state = 1;
+    } else if (itimerdata.state < 0) {
       /* itimer thread is waiting on cond */
-      itimer_continue = 0;
-      pthread_cond_signal(&itimer_cond);
+      itimerdata.state = 0;
+      pthread_cond_signal(&itimerdata.cond);
     } else {
       /* itimer thread is working, and we've already
          asked it to continue */
     }
-    pthread_mutex_unlock(&itimer_mutex);
+    pthread_mutex_unlock(&itimerdata.mutex);
+}
+
+static void scheme_start_itimer_thread(long usec)
+{
+  if (!itimerdata.itimer) {
+    start_green_thread_timer(usec);
+  } else {
+    kickoff_green_thread_timer(usec);
   }
 }
 
 #endif
 
+#ifdef USE_ITIMER
+
+#ifdef MZ_XFORM
+START_XFORM_SKIP;
+#endif
+
+static void itimer_expired(int ignored)
+{
+  scheme_fuel_counter = 0;
+  scheme_jit_stack_boundary = (unsigned long)-1;
+#  ifdef SIGSET_NEEDS_REINSTALL
+  MZ_SIGSET(SIGPROF, itimer_expired);
+#  endif
+}
+
+static void kickoff_itimer(long usec) {
+  struct itimerval t;
+  struct itimerval old;
+  static int itimer_handler_installed = 0;
+
+  if (!itimer_handler_installed) {
+    itimer_handler_installed = 1;
+    MZ_SIGSET(SIGPROF, itimer_expired);
+  }
+
+  t.it_value.tv_sec = 0;
+  t.it_value.tv_usec = usec;
+  t.it_interval.tv_sec = 0;
+  t.it_interval.tv_usec = 0;
+
+  setitimer(ITIMER_PROF, &t, &old);
+}
+
+#ifdef MZ_XFORM
+END_XFORM_SKIP;
+#endif
+
+#endif
+
+void scheme_kickoff_green_thread_time_slice_timer(long usec) {
+#ifdef USE_ITIMER
+  kickoff_itimer(usec);
+#elif defined(USE_WIN32_THREAD_TIMER)
+  scheme_start_itimer_thread(usec);
+#elif defined(USE_PTHREAD_THREAD_TIMER)
+  scheme_start_itimer_thread(usec);
+#else
+  #error scheme_start_green_thread_time_slice_timer NOT IMPLEMENTED
+#endif
+}
 
 #ifdef OS_X
 

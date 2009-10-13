@@ -36,4 +36,9 @@
 
 #define USE_GETRUSAGE
 
-#define USE_ITIMER
+#if defined MZ_USE_PLACES
+# undef USE_ITIMER
+# define USE_PTHREAD_THREAD_TIMER
+#else
+# define USE_ITIMER
+#endif

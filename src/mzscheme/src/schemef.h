@@ -71,7 +71,7 @@ MZ_EXTERN Scheme_Object *scheme_current_break_cell();
 # ifndef MZ_USE_PLACES
 MZ_EXTERN THREAD_LOCAL Scheme_Thread *scheme_current_thread;
 # endif
-MZ_EXTERN volatile int scheme_fuel_counter;
+MZ_EXTERN THREAD_LOCAL volatile int scheme_fuel_counter;
 #else
 MZ_EXTERN Scheme_Thread **scheme_current_thread_ptr;
 MZ_EXTERN volatile int *scheme_fuel_counter_ptr;
