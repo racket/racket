@@ -270,8 +270,10 @@
           (stop! (if re-raise e (send world get)))))
       
       (define/public (start!)
-        (when draw (show-canvas))
-        (when register (register-with-host)))
+        (queue-callback
+         (lambda ()
+           (when draw (show-canvas))
+           (when register (register-with-host)))))
       
       (define/public (stop! w)
         (set! live #f)
