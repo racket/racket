@@ -1,5 +1,10 @@
 #lang scheme/unit
 
+;; this version of the view-controller (will) just collect the steps up front rather
+;; than blocking until the user presses the "next" button.
+
+;; contracts are bogus all over the place.
+
 (require scheme/class
          scheme/match
          scheme/list
@@ -48,86 +53,47 @@
   ;; channel for incoming views
   (define view-channel (make-async-channel))
   
-  ;; the semaphore associated with the view at the end of the
-  ;; view-history note that because these are fresh semaphores for every
-  ;; step, posting to a semaphore multiple times is no problem.
-  (define release-for-next-step #f)
-  
   ;; the list of available views
   (define view-history null)
+  
+  ;; the number of available steps
+  (define num-steps-available 0)
   
   ;; the view in the stepper window
   (define view #f)
   
-  ;; whether the stepper is waiting for a new view to become available
-  ;; possible values: #f, or a predicate on steps.
-  (define stepper-is-waiting? (lambda (x) #t))
-  
   ;; hand-off-and-block : (-> text%? any (listof (or/c posn-info? false?)) void?)
-  ;; hand-off-and-block generates a new semaphore, hands off a thunk to
-  ;; drscheme's eventspace, and blocks on the new semaphore.  The thunk
-  ;; adds the text% to the waiting queue, and checks to see if the
-  ;; stepper is waiting for a new step.  If so, takes that new text% out
-  ;; of the queue and puts it on the list of available ones.  If the
-  ;; stepper is waiting for a new step, it checks to see whether this is
-  ;; of the kind that the stepper wants.  If so, display it.  otherwise,
-  ;; release the stepped program to continue execution.
-  (define (hand-off-and-block text kind posns)
-    (let ([new-semaphore (make-semaphore)])
-      (run-on-drscheme-side
-       (lambda ()
-         (async-channel-put view-channel
-                            (list (make-step text kind posns) new-semaphore))
-         (match stepper-is-waiting?
-           [#f (void)]
-           [step-pred 
-            (match (async-channel-try-get view-channel)
-             [#f (error
-                  'check-for-stepper-waiting
-                  "queue is empty, even though a step was just added")]
-             [(list new-step semaphore)
-              (add-view-step new-step semaphore)
-              (cond [(step-pred new-step)
-                     ;; got the desired step; show the user:
-                     (begin (set! stepper-is-waiting? #f)
-                            (update-view/existing (- (length view-history) 1)))]
-                    [else 
-                     ;; nope, keep running:
-                     (begin (if (finished-stepping-step? new-step)
-                                (begin (message-box (string-constant stepper-no-such-step/title)
-                                                    (string-constant stepper-out-of-steps))
-                                       (update-view/existing (- (length view-history) 1)))
-                                (semaphore-post semaphore)))])])])))
-      (semaphore-wait new-semaphore)))
+  ;; puts the step on the channel, to be fetched by the aggregator
+  (define (hand-off result)
+    (async-channel-put view-channel result))
   
-  ;; run-on-drscheme-side : runs a thunk in the drscheme eventspace.
-  ;; Passed to 'go' so that display-break-stuff can work.  This would be
-  ;; cleaner with two-way provides.
-  (define (run-on-drscheme-side thunk)
-    (parameterize ([current-eventspace drscheme-eventspace])
-      (queue-callback thunk)))
-  
-  
-  ;; add-view-triple : set the release-semaphore to be the new one, add
-  ;; the view to the list.
-  (define (add-view-step view-step semaphore)
-    (set! release-for-next-step semaphore)
-    (set! view-history (append view-history (list view-step)))
-    (update-status-bar))
+  ;; wait for steps to show up on the channel.  When they do, add them to the list.
+  (define (start-listener-thread)
+    (thread
+     (lambda ()
+       (let loop ()
+         (let* ([new-result (async-channel-get view-channel)]
+                [new-step (format-result new-result)])
+           (set! view-history (append view-history (list new-step)))
+           (set! num-steps-available (length view-history)))
+         (update-status-bar)
+         (loop)))))
+    
   
   ;; find-later-step : given a predicate on history-entries, search through
   ;; the history for the first step that satisfies the predicate and whose 
   ;; number is greater than n (or -1 if n is #f), return # of step on success,
-  ;; on failure return 'nomatch or 'nomatch/seen-final if we went past the final step
+  ;; on failure return (list 'nomatch last-step) or (list 'nomatch/seen-final last-step) 
+  ;; if we went past the final step
   (define (find-later-step p n)
     (let* ([n-as-num (or n -1)])
       (let loop ([step 0] 
                  [remaining view-history]
                  [seen-final? #f])
-        (cond [(null? remaining) (cond [seen-final? 'nomatch/seen-final]
-                                       [else 'nomatch])]
+        (cond [(null? remaining) (cond [seen-final? (list 'nomatch/seen-final (- step 1))]
+                                       [else (list 'nomatch (- step 1))])]
               [(and (> step n-as-num) (p (car remaining))) step]
-              [else (loop (+ step 1) 
+              [else (loop (+ step 1)
                           (cdr remaining)
                           (or seen-final? (finished-stepping-step? (car remaining))))]))))
   
@@ -143,7 +109,7 @@
     (let* ([to-search (reverse (take view-history n))])
       (let loop ([step (- n 1)]
                  [remaining to-search])
-        (cond [(null? remaining) #f]
+        (cond [(null? remaining) 'nomatch]
               [(p (car remaining)) step]
               [else (loop (- step 1) (cdr remaining))]))))
   
@@ -179,47 +145,33 @@
     (next-of-specified-kind/helper right-kind? #f))
   
   ;; next-of-specified-kind/helper : if the desired step is already in the list, display
-  ;; it; otherwise, wait for it.
+  ;; it; otherwise, give up.
   (define (next-of-specified-kind/helper right-kind? starting-step)
-    (set! stepper-is-waiting? #f)
     (match (find-later-step right-kind? starting-step)
       [(? number? n)
        (update-view/existing n)]
-      ['nomatch
-       (begin
-            ;; each step has its own semaphore, so releasing one twice is
-            ;; no problem.
-            (when release-for-next-step
-              (semaphore-post release-for-next-step))
-            (when stepper-is-waiting?
-              (error 'try-to-get-view
-                     "try-to-get-view should not be reachable when already waiting for new step"))
-            (let ([wait-for-it (lambda ()
-                                 (set! stepper-is-waiting? right-kind?)
-                                 (en/dis-able-buttons))])
-              (match (async-channel-try-get view-channel)
-                [(list new-step semaphore)
-                 (add-view-step new-step semaphore)
-                 (if (right-kind? (list-ref view-history (+ view 1)))
-                     (update-view/existing (+ view 1))
-                     (wait-for-it))]
-                [#f (wait-for-it)])))]
-      ['nomatch/seen-final
+      [(list 'nomatch step)
        (message-box (string-constant stepper-no-such-step/title)
                     (string-constant stepper-no-such-step))
-       (update-view/existing (- (length view-history) 1))]))
+       (when (>= num-steps-available 0)
+         (update-view/existing step))]
+      [(list 'nomatch/seen-final step)
+       (message-box (string-constant stepper-no-such-step/title)
+                    (string-constant stepper-no-such-step))
+       (when (>= num-steps-available 0)
+         (update-view/existing step))]))
   
   ;; prior-of-specified-kind: if the desired step is already in the list, display
   ;; it; otherwise, put up a dialog and jump to the first step.
   (define (prior-of-specified-kind right-kind?)
-    (set! stepper-is-waiting? #f)
-    (let* ([found-step (find-earlier-step right-kind? view)])
-      (if found-step
-          (update-view/existing found-step)
-          (begin
-            (message-box (string-constant stepper-no-such-step/title)
-                         (string-constant stepper-no-such-step/earlier))
-            (update-view/existing 0)))))
+    (match (find-earlier-step right-kind? view)
+      [(? number? found-step)
+       (update-view/existing found-step)]
+      ['nomatch
+       (message-box (string-constant stepper-no-such-step/title)
+                    (string-constant stepper-no-such-step/earlier))
+       (when (>= num-steps-available 0)
+         (update-view/existing 0))]))
   
   ;; BUTTON/CHOICE BOX PROCEDURES
  
@@ -291,7 +243,6 @@
   ;; counting steps...
   (define status-text
     (new text%))
-  (define _2 (send status-text insert ""))
   
   (define status-canvas
     (new editor-canvas%
@@ -311,53 +262,56 @@
       (send canvas set-editor e)
       (send e reset-width canvas)
       (send e set-position (send e last-position))
-      (update-status-bar)
       (send e end-edit-sequence))
-    (en/dis-able-buttons))
+    (update-status-bar))
   
+  
+  ;; update the X/Y display in the upper right corner of the stepper;
+  ;; this should be one-at-a-time.
   (define (update-status-bar)
+    (call-with-semaphore update-status-bar-semaphore update-status-bar/inner))
+    
+  (define (update-status-bar/inner)
+    (send status-text begin-edit-sequence)
+    (send status-text lock #f)
     (send status-text delete 0 (send status-text last-position))
-    (send status-text insert (format "~a/~a" view (length view-history))))
+    (send status-text insert (format "~a/~a" view (length view-history)))
+    (send status-text lock #t)
+    (send status-text end-edit-sequence))
   
-  ;; en/dis-able-buttons : set enable & disable the stepper buttons,
-  ;; based on view-controller state
-  (define (en/dis-able-buttons)
-     ;; let's just leave all the buttons enabled...
-     (void))
+  (define update-status-bar-semaphore (make-semaphore 1))
   
   (define (print-current-view item evt)
     (send (send canvas get-editor) print))
   
-  ;; receive-result takes a result from the model and renders it
-  ;; on-screen. Runs on the user thread.
-  ;; : (step-result -> void)
-  (define (receive-result result)
-    ;; let's make sure this works:
-    (parameterize ([pretty-print-show-inexactness #t])
-      (match-let*
-          ([(list step-text step-kind posns)
-            (match result
-              [(struct before-after-result (pre-exps post-exps kind pre-src post-src))
-               (list (new x:stepper-text% 
-                          [left-side pre-exps]
-                          [right-side post-exps]
-                          [show-inexactness? (send language-level stepper:show-inexactness?)])
-                     kind (list pre-src post-src))]
-              [(struct before-error-result (pre-exps err-msg pre-src))
-               (list (new x:stepper-text%
-                          [left-side pre-exps] 
-                          [right-side err-msg]
-                          [show-inexactness? (send language-level stepper:show-inexactness?)])
-                     'finished-or-error (list pre-src))]
-              [(struct error-result (err-msg))
-               (list (new x:stepper-text% 
-                          [left-side null]
-                          [right-side err-msg]
-                          [show-inexactness? (send language-level stepper:show-inexactness?)]) 
-                     'finished-or-error (list))]
-              [(struct finished-stepping ())
-               (list x:finished-text 'finished-or-error (list))])])
-        (hand-off-and-block step-text step-kind posns))))
+
+  ;; translates a result into a step
+  ;; format-result : result -> step?
+  (define (format-result result)
+    (match result
+      [(struct before-after-result (pre-exps post-exps kind pre-src post-src))
+       (make-step (new x:stepper-text% 
+                       [left-side pre-exps]
+                       [right-side post-exps]
+                       [show-inexactness? (send language-level stepper:show-inexactness?)])
+                  kind 
+                  (list pre-src post-src))]
+      [(struct before-error-result (pre-exps err-msg pre-src))
+       (make-step (new x:stepper-text%
+                       [left-side pre-exps] 
+                       [right-side err-msg]
+                       [show-inexactness? (send language-level stepper:show-inexactness?)])
+                  'finished-or-error 
+                  (list pre-src))]
+      [(struct error-result (err-msg))
+       (make-step (new x:stepper-text% 
+                       [left-side null]
+                       [right-side err-msg]
+                       [show-inexactness? (send language-level stepper:show-inexactness?)]) 
+                  'finished-or-error 
+                  (list))]
+      [(struct finished-stepping ())
+       (make-step x:finished-text 'finished-or-error (list))]))
   
   ;; program-expander-prime : wrap the program-expander for a couple of reasons:
   ;; 1) we need to capture the custodian as the thread starts up:
@@ -375,19 +329,19 @@
   (send button-panel stretchable-width #f)
   (send button-panel stretchable-height #f)
   (send canvas stretchable-height #t)
-  (en/dis-able-buttons)
   (send (send s-frame edit-menu:get-undo-item) enable #f)
   (send (send s-frame edit-menu:get-redo-item) enable #f)
   
   ;; START THE MODEL
+  (start-listener-thread)
   (model:go
-   program-expander-prime receive-result
+   program-expander-prime 
+   hand-off
    (get-render-settings render-to-string render-to-sexp 
                         (send language-level stepper:enable-let-lifting?)
 			(send language-level stepper:show-consumed-and/or-clauses?))
    (send language-level stepper:show-lambdas-as-lambdas?)
    language-level
-   run-on-drscheme-side
    #f)
   (send s-frame show #t)
   
