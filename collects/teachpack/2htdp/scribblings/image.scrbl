@@ -1,7 +1,8 @@
 #lang scribble/doc
 
 @(require (for-label (except-in 2htdp/image image?)
-                     lang/htdp-beginner)
+                     lang/htdp-beginner
+                     scheme/gui/base)
           "shared.ss"
           scribble/manual)
 
@@ -10,9 +11,10 @@
 @defmodule[#:require-form beginner-require 2htdp/image]
 
 The image teachpack provides a number of basic image construction functions, along with
-combinators for building more complex images out of existing images. It includes
-support for various polygons, ellipses and circles, and text, as well as supporting bitmaps.
-Images can be rotated, scaled, and overlaid on top of each other, as described below.
+combinators for building more complex images out of existing images. Basic images include
+various polygons, ellipses and circles, and text, as well as bitmaps (typically bitmaps 
+come about via the @onscreen{Insert Image...} menu item in DrScheme.
+Existing images can be rotated, scaled, and overlaid on top of each other.
 
 @emph{This library is currently a work in progress. 
       I don't expect the existing primitives to change, but more will be added
@@ -102,7 +104,10 @@ This section lists predicates for the basic structures provided by the image lib
  Determines if @scheme[x] is an image. Images are returned by functions
  like @scheme[ellipse] and @scheme[rectangle] and
  accepted by functions like @scheme[overlay] and @scheme[beside].
-}
+
+ Additionally, images inserted into a DrScheme window are treated as
+ bitmap images, as are instances of @scheme[image-snip%] and @scheme[bitmap%].
+ }
 
 @defproc[(mode? [x any/c]) boolean?]{
  Determines if @scheme[x] is a mode suitable for

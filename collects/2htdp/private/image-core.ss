@@ -113,7 +113,10 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 (define (image-right image) (bb-right (image-bb image)))
 (define (image-bottom image) (bb-bottom (image-bb image)))
 (define (image-baseline image) (bb-baseline (image-bb image)))
-(define (image? p) (is-a? p image%))
+(define (image? p) 
+  (or (is-a? p image%)
+      (is-a? p image-snip%)
+      (is-a? p bitmap%)))
 
 
 ;; a bb is  (bounding box)
@@ -149,9 +152,9 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 ;;    NOTE: font can't be the raw mred font or else copy & paste won't work
 (define-struct/reg-mk text (string angle font) #:omit-define-syntaxes #:transparent)
 ;;
-;;  - (make-bitmap (is-a?/c bitmap%) angle)
+;;  - (make-bitmap (is-a?/c bitmap%) angle positive-real (or/c #f (is-a?/c bitmap%)))
 ;;    NOTE: bitmap copying needs to happen in 'write' and 'read' methods
-(define-struct/reg-mk bitmap (bitmap angle) #:omit-define-syntaxes #:transparent)
+(define-struct/reg-mk bitmap (raw-bitmap raw-mask angle scale rendered-bitmap) #:omit-define-syntaxes #:transparent)
 
 ;; a polygon is:
 ;;
@@ -252,7 +255,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
         (set-box/f! rspace 0)))
 
     (define/override (write f) 
-      (send f put (string->bytes/utf-8 (format "~s" (list shape bb)))))
+      (let ([bytes (string->bytes/utf-8 (format "~s" (list shape bb)))])
+        (send f put (bytes-length bytes) bytes)))
     
     (super-new)
     
@@ -264,11 +268,18 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 (define image-snipclass% 
   (class snip-class%
     (define/override (read f)
-      (let* ([str (bytes->string/utf-8 (send f get-unterminated-bytes))]
-             [lst (parse 
-                   (scheme/base:read
-                    (open-input-string
-                     str)))])
+      (let* ([bytes (send f get-unterminated-bytes)]
+             [str 
+              (and bytes
+                   (with-handlers ((exn:fail? (λ (x) #f)))
+                     (bytes->string/utf-8 bytes)))]
+             [lst 
+              (and str
+                   (with-handlers ((exn:fail:read? (λ (x) #f)))
+                     (parse 
+                      (scheme/base:read
+                       (open-input-string
+                        str)))))])
         (if lst
             (make-image (list-ref lst 0)
                         (list-ref lst 1)
@@ -280,7 +291,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 
 (provide snip-class) 
 (define snip-class (new image-snipclass%))
-(send snip-class set-classname (format "~s" '(lib "image-core.ss" "2htdp/private")))
+(send snip-class set-classname (format "~s" '(lib "image-core.ss" "2htdp" "private")))
 (send snip-class set-version 1)
 (send (get-the-snip-class-list) add snip-class)
 
@@ -371,8 +382,16 @@ and they all have good sample contracts. (It is amazing what we can do with kids
                    (ellipse-angle shape)
                    (ellipse-mode shape)
                    (ellipse-color shape))]
-    [(text? shape) (error 'scaling-text)]
-    [(bitmap? shape) (error 'scaling-a-bitmap)]))
+    [(text? shape) 
+     (unless (and (= 1 x-scale)
+                  (= 1 y-scale))
+       (fprintf (current-error-port) "scaling text, ignoring\n"))
+     shape]
+    [(bitmap? shape) 
+     (unless (and (= 1 x-scale)
+                  (= 1 y-scale))
+       (fprintf (current-error-port) "scaling a bitmap, ignoring\n"))
+     shape]))
 
 
 ;                                                                
@@ -425,43 +444,50 @@ and they all have good sample contracts. (It is amazing what we can do with kids
        (cond
          [(ellipse? atomic-shape)
           (let* ([path (new dc-path%)]
-                 [w (ellipse-width atomic-shape)]
-                 [h (ellipse-height atomic-shape)]
-                 [θ (degrees->radians (ellipse-angle atomic-shape))]
-                 [cos2 (sqr (cos θ))]
-                 [sin2 (sqr (sin θ))]
-                 [rotated-width (+ (* w cos2) (* h sin2))]
-                 [rotated-height (+ (* w sin2) (* h cos2))])
-            
-            (send path ellipse 0 0 w h)
-            (send path translate (- (/ w 2)) (- (/ h 2)))
-            (send path rotate θ)
-            (send path translate (/ rotated-width 2) (/ rotated-height 2))
-            (send dc set-pen (mode-color->pen (ellipse-mode atomic-shape) (ellipse-color atomic-shape)))
-            (send dc set-brush (mode-color->brush (ellipse-mode atomic-shape) (ellipse-color atomic-shape)))
-            (send dc draw-path path dx dy))]
-         
+                 [ew (ellipse-width atomic-shape)]
+                 [eh (ellipse-height atomic-shape)]
+                 [θ (ellipse-angle atomic-shape)])
+            (let-values ([(rotated-width rotated-height) (ellipse-rotated-size ew eh θ)])
+              (send path ellipse 0 0 ew eh)
+              (send path translate (- (/ ew 2)) (- (/ eh 2)))
+              (send path rotate θ)
+              (send path translate (/ rotated-width 2) (/ rotated-height 2))
+              (send dc set-pen (mode-color->pen (ellipse-mode atomic-shape) (ellipse-color atomic-shape)))
+              (send dc set-brush (mode-color->brush (ellipse-mode atomic-shape) (ellipse-color atomic-shape)))
+              (send dc draw-path path dx dy)))]
+         [(bitmap? atomic-shape)
+          (send dc draw-bitmap 
+                (bitmap-raw-bitmap atomic-shape)
+                dx dy
+                'solid
+                (send the-color-database find-color "black")
+                (bitmap-raw-mask atomic-shape))]
          [(text? atomic-shape)
           (let ([θ (degrees->radians (text-angle atomic-shape))])
             (send dc set-font (text-font atomic-shape))
             (send dc draw-text (text-string atomic-shape) dx dy #f 0 angle))]))]))
 
+(define (ellipse-rotated-size ew eh θ)
+  (let* ([t1 (atan (/ eh ew (exact->inexact (tan θ))))]
+         ; a*cos(t1),b*sin(t1) is the point on *original* ellipse which gets rotated to top.
+         [t2 (atan (/ (* (- eh) (tan θ)) ew))] ; the original point rotated to right side.
+         [rotated-height (+ (* ew (sin θ) (cos t1)) (* eh (cos θ) (sin t1)))]
+         [rotated-width  (- (* ew (cos θ) (cos t2)) (* eh (sin θ) (sin t2)))])
+    (values (abs rotated-width)
+            (abs rotated-height))))
+
 (define (degrees->radians θ)
   (* θ 2 pi (/ 360)))
 
-
 (define (mode-color->pen mode color)
-  (send the-pen-list find-or-create-pen color 1 
-        (case mode
-          [(outline) 'solid]
-          [(solid) 'transparent])))
+  (case mode
+    [(outline) (send the-pen-list find-or-create-pen color 1 'solid)]
+    [(solid) (send the-pen-list find-or-create-pen color 1 'solid)]))
 
 (define (mode-color->brush mode color)
-  (send the-brush-list find-or-create-brush color 
-        (case mode
-          [(outline) 'transparent]
-          [(solid) 'solid])))
-
+  (case mode
+    [(outline) (send the-brush-list find-or-create-brush "black" 'transparent)]
+    [(solid) (send the-brush-list find-or-create-brush color 'solid)]))
 
 (provide make-image image-shape
          
@@ -473,10 +499,11 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          make-ellipse ellipse? ellipse-width ellipse-height ellipse-angle ellipse-mode ellipse-color
          make-text text? text-string text-angle text-font
          make-polygon polygon? polygon-points polygon-mode polygon-color
-         make-bitmap bitmap? bitmap-bitmap bitmap-angle
+         make-bitmap bitmap? bitmap-raw-bitmap bitmap-raw-mask bitmap-angle bitmap-scale bitmap-rendered-bitmap
           
          degrees->radians
          normalize-shape
+         ellipse-rotated-size
          
          image?
          image-right

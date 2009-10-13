@@ -10,7 +10,7 @@
 
 ;; test case: (beside (text "a"...) (text "b" ...)) vs (text "ab")
 
-(show-image (frame (rotate 30 (ellipse 200 400 'solid 'purple))))
+;(show-image (frame (rotate 210 (ellipse 200 400 'solid 'purple))))
 
 #;
 (show-image
@@ -318,6 +318,10 @@
       =>
       (normalize-shape (image-shape (rotate 45 (ellipse 12 10 'solid 'red)))))
 
+(test (rotate -90 (ellipse 200 400 'solid 'purple))
+      =>
+      (rotate 90 (ellipse 200 400 'solid 'purple)))
+
 (require (only-in lang/htdp-advanced equal~?))
 
 (test (equal~? (rectangle 100 10 'solid 'red)
@@ -384,3 +388,37 @@
       (rectangle 100 10 "solid" "blue"))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  bitmap tests
+;;
+
+(define (fill-bitmap b color)
+  (let ([bdc (make-object bitmap-dc% b)])
+    (send bdc set-brush color 'solid)
+    (send bdc set-pen color 1 'solid)
+    (send bdc draw-rectangle 0 0 (send b get-width) (send b get-height))
+    (send bdc set-bitmap #f)))
+
+(define blue-10x20-bitmap (make-object bitmap% 10 20))
+(fill-bitmap blue-10x20-bitmap "blue")
+(define blue-20x10-bitmap (make-object bitmap% 20 10))
+(fill-bitmap blue-20x10-bitmap "blue")
+(define blue-20x40-bitmap (make-object bitmap% 20 40))
+(fill-bitmap blue-20x40-bitmap "blue")
+
+(test (image-right (image-snip->image (make-object image-snip% blue-10x20-bitmap)))
+      => 
+      10)
+(test (image-bottom (image-snip->image (make-object image-snip% blue-10x20-bitmap)))
+      => 
+      20)
+(test (image-baseline (image-snip->image (make-object image-snip% blue-10x20-bitmap)))
+      => 
+      20)
+(test (scale 2 (make-object image-snip% blue-10x20-bitmap))
+      =>
+      (image-snip->image (make-object image-snip% blue-20x40-bitmap)))
+(test (rotate 90 (make-object image-snip% blue-10x20-bitmap))
+      =>
+      (image-snip->image (make-object image-snip% blue-20x10-bitmap)))

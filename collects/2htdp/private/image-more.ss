@@ -24,6 +24,9 @@
          show-image
          bring-between
          
+         image-snip->image
+         bitmap->image
+         
          scale
          scale/xy
          
@@ -152,7 +155,10 @@
                 'image
                 i
                 arg)
-     arg]
+     (cond
+       [(is-a? arg image-snip%) (image-snip->image arg)]
+       [(is-a? arg bitmap%) (bitmap->image arg)]
+       [else arg])]
     [(mode)
      (check-arg fn-name
                 (mode? arg)
@@ -181,7 +187,9 @@
                 (angle? arg)
                 'angle\ in\ degrees
                 i arg)
-     arg]
+     (if (< arg 0)
+         (+ arg 360)
+         arg)]
     [(color)
      (check-color fn-name i arg)
      (let ([color-str 
@@ -206,9 +214,19 @@
 (define (angle? arg)
   (and (number? arg)
        (real? arg)
-       (<= 0 arg)
-       (< arg 360)))
+       (< -360 arg 360)))
 
+(define (bitmap->image bm [mask-bm (send bm get-loaded-mask)])
+  (make-image (make-bitmap bm mask-bm 0 1 #f)
+              (make-bb (send bm get-width)
+                       (send bm get-height)
+                       (send bm get-height))
+              #f))
+
+(define (image-snip->image is)
+  (bitmap->image (send is get-bitmap)
+                 (or (send is get-bitmap-mask)
+                     (send (send is get-bitmap) get-loaded-mask))))
 
 ;                                              
 ;                                              
@@ -430,35 +448,18 @@
                    (cdr points))
          (values left top right bottom)))]
     [else
-#|
->>  (rotate theta (ellipse w h _ _))
->> is
->>  (let* {[cos2 (sqr (cos theta))]
->>         [sin2 (sqr (sin theta))]
->>         }
->>    (make-bbox (+ (* w cos2) (* h sin2))
->>               (+ (* w sin2) (* h cos2)))
->>               ... ;; baseline is same as y, for non-text, right?
->>               )
->>
-|#
-     
      (let ([dx (translate-dx simple-shape)]
            [dy (translate-dy simple-shape)]
            [atomic-shape (translate-shape simple-shape)])
        (cond
          [(ellipse? atomic-shape)
-          (let* ([theta (degrees->radians (ellipse-angle atomic-shape))]
-                 [w (ellipse-width atomic-shape)]
-                 [h (ellipse-height atomic-shape)]
-                 [cos2 (sqr (cos theta))]
-                 [sin2 (sqr (sin theta))]
-                 [new-w (+ (* w cos2) (* h sin2))]
-                 [new-h (+ (* w sin2) (* h cos2))])
-            (values (+ dx (/ (- new-w w) 2))
-                    (+ dy (/ (- new-h h) 2))
-                    (+ dx new-w (/ (- new-w w) 2))
-                    (+ dy new-h (/ (- new-h h) 2))))]
+          (let-values ([(w h) (ellipse-rotated-size (ellipse-width atomic-shape)
+                                                    (ellipse-height atomic-shape)
+                                                    (ellipse-angle atomic-shape))])
+            (values dx
+                    dy
+                    (+ dx w)
+                    (+ dy h)))]
          [else
           (fprintf (current-error-port) "BAD BOUNDING BOX\n")
           (values 0 0 100 100)]))]))
@@ -510,8 +511,11 @@
                 (bring-between (+ θ (text-angle atomic-shape)) 360)
                 (text-font atomic-shape))]
     [(bitmap? atomic-shape)
-     (make-bitmap (bitmap-bitmap atomic-shape)
-                  (bring-between (+ θ (bitmap-angle atomic-shape)) 360))]))
+     (make-bitmap (bitmap-raw-bitmap atomic-shape)
+                  (bitmap-raw-mask atomic-shape)
+                  (bring-between (+ θ (bitmap-angle atomic-shape)) 360)
+                  (bitmap-scale atomic-shape)
+                  #f)]))
 
 ;; rotate-point : x,y angle -> x,y
 (define (rotate-point x y θ)
