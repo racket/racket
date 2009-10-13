@@ -73,7 +73,7 @@ structure type:
  [(struct hat (23 'bowler)) "top"])
 ]
 
-Unquoted, non-constructor identifiers in an pattern are @tech{pattern
+Unquoted, non-constructor identifiers in a pattern are @tech{pattern
 variables} that are bound in the result expressions:
 
 @interaction[
