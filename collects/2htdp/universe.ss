@@ -152,7 +152,7 @@
   ;; -- should the session be recorded and turned into PNGs and an animated GIF
   [record? (expr-with-check bool> "expected a boolean (to record? or not)")]
   [name (expr-with-check string> "expected a name (string) for the world")]
-  ;; -- register must specify the internet address of a host (including LOCALHOST)
+  ;; -- register must specify the internet address of a host (e.g., LOCALHOST)
   [register (expr-with-check ip> "expected a host (ip address)")])
 
 (define-syntax (big-bang stx)
@@ -162,12 +162,13 @@
     [(big-bang w clause ...)
      (let* ([rec? #'#f]
             [->rec? 
-             (lambda (kw)
+             (lambda (kw E)
                (when (free-identifier=? kw #'record?)
-                 (syntax-case #'E ()
+                 (syntax-case E ()
                    [(V) (set! rec? #'V)]
-                   [_ (err 'record? stx)])))]
-            [args (->args stx (syntax (clause ...)) AllSpec WldSpec ->rec? "world")])
+                   [_ (err '#'record? stx)])))]
+            [args 
+             (->args stx (syntax (clause ...)) AllSpec WldSpec ->rec? "world")])
        #`(parameterize ([current-eventspace (make-eventspace)])
            (let ([o (new (if #,rec? aworld% world%) [world0 w] #,@args)])
              (send o last))))]))
@@ -257,8 +258,9 @@
     [(universe) (raise-syntax-error #f "not a legal universe description" stx)]
     [(universe u) (raise-syntax-error #f "not a legal universe description" stx)]
     [(universe u bind ...)
-     (let* ([args (->args stx (syntax (bind ...)) AllSpec UniSpec void "universe")]
-            [domain (map (compose syntax-e car) args)])
+     (let*
+         ([args (->args stx (syntax (bind ...)) AllSpec UniSpec void "universe")]
+          [domain (map (compose syntax-e car) args)])
        (cond
          [(not (memq 'on-new domain))
           (raise-syntax-error #f "missing on-new clause" stx)]
