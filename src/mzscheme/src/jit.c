@@ -1321,7 +1321,7 @@ static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut
   jit_movi_l(JIT_R2, a_word);
   jit_stxi_l(sizeof(long), JIT_V1, JIT_R2);
 #else
-  GC_initial_words(a_words, amt);
+  GC_initial_words((char *)a_words, amt);
   jit_movi_l(JIT_R2, a_words[0]);
   jit_str_l(JIT_V1, JIT_R2);
 
