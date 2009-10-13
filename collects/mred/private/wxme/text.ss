@@ -2544,32 +2544,38 @@
         'guess ;; FIXME: docs say that this is more specific
         (do-insert-file (method-name 'text% 'insert-file) f format replace-styles?)))
 
-  (define/private (do-insert-file who f format clear-styles?)
-    (let ([format
+  (define/private (do-insert-file who f fmt clear-styles?)
+    (let ([fmt
            (cond
-            [(or (eq? 'guess format) (eq? 'same format) (eq? 'copy format))
+            [(or (eq? 'guess fmt) (eq? 'same fmt) (eq? 'copy fmt))
              (if (not (detect-wxme-file who f #t))
                  'text
                  'standard)]
-            [else format])])
+            [else fmt])])
 
       (let ([fileerr?
              (cond
-              [(eq? 'standard format)
+              [(eq? 'standard fmt)
                (if (not (detect-wxme-file who f #f))
                    (error who "not a WXME file")
                    (let* ([b (make-object editor-stream-in-file-base% f)]
                           [mf (make-object editor-stream-in% b)])
-                     (not (and (read-editor-version mf b #f #t)
-                               (read-editor-global-header mf)
-                               (send mf ok?)
-                               (read-from-file mf clear-styles?)
-                               (read-editor-global-footer mf)
-                               (begin
-                                 ;; if STD-STYLE wasn't loaded, re-create it:
-                                 (send s-style-list new-named-style "Standard" (send s-style-list basic-style))
-                                 (send mf ok?))))))]
-              [(or (eq? format 'text) (eq? format 'text-force-cr))
+                     (or (and (not (read-editor-version mf b #f #t))
+                              'read-editor-version-failed)
+                         (and (not (read-editor-global-header mf))
+                              'read-editor-global-head-failed)
+                         (and (not (send mf ok?))
+                              'mf-not-ok)
+                         (and (not (read-from-file mf clear-styles?))
+                              'read-from-file-failed)
+                         (and (not (read-editor-global-footer mf))
+                              'read-editor-gobal-footer-failed)
+                         (begin
+                           ;; if STD-STYLE wasn't loaded, re-create it:
+                           (send s-style-list new-named-style "Standard" (send s-style-list basic-style))
+                           (and (not (send mf ok?))
+                                'mf-not-okay-after-adding-standard-style)))))]
+              [(or (eq? fmt 'text) (eq? fmt 'text-force-cr))
                (let ([s (make-string 1024)])
                  (let loop ([saved-cr? #f])
                    (let ([len (read-string! s f)])
@@ -2587,9 +2593,11 @@
                #f])])
         
         (when fileerr?
-          (error who "error loading the file"))
+          (error who "error loading the file~a" (if (boolean? fileerr?)
+                                                    ""
+                                                    (format " (~a)" fileerr?))))
 
-        format)))
+        fmt)))
 
   (def/override (save-port [output-port? f]
                            [(symbol-in guess same copy standard text text-force-cr) [format 'same]]
