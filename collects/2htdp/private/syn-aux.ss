@@ -39,7 +39,7 @@
 (define (clauses-use-kwd stx:list ->rec? legal-clause kwd-in?)
   (map (lambda (stx)
          (syntax-case stx ()
-           [(kw . E) (kwd-in? #'kw) (begin (->rec? #'kw) (cons #'kw stx))]
+           [(kw . E) (kwd-in? #'kw) (begin (->rec? #'kw #'E) (cons #'kw stx))]
            [_ (raise-syntax-error #f legal-clause stx)]))
        stx:list))
 
