@@ -9,11 +9,11 @@
 ;; This is the scheme represtenatation of the soundfile that is handeled by
 ;; libsndfile.
 
-;; In libsndfile the sndfile object is represenetd as a pointer when
-;; translating scheme->c the struct will just return the pointer when
+;; In libsndfile the sndfile object is represented as a pointer. When
+;; translating scheme->c the struct will just return the pointer. When
 ;; translating from c->scheme, ie. creating the object in scheme it will be
-;; wraped by an object finilazer that uses the libsndfile fuction sf_close that
-;; return a 0 upon sucsessfull termination or an error.
+;; wrapped by an object finalizer that uses the libsndfile fuction sf_close that
+;; returns a 0 upon successful termination or an error.
 (define-struct sndfile (ptr [info #:mutable]))
 (define _sndfile
   (make-ctype _pointer sndfile-ptr
