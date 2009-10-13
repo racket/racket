@@ -1,5 +1,5 @@
 #lang scheme/base
-(require "../../2htdp/private/image-core.ss"
+(require "../../mrlib/image-core.ss"
          "../../2htdp/private/image-more.ss"
          scheme/math
          scheme/class

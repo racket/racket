@@ -11,8 +11,7 @@
   ;; to ensure this guy is loaded (and the snipclass installed) in the drscheme namespace & eventspace
   ;; these things are for effect only!
   (require mrlib/cache-image-snip
-           #;
-           (prefix foo htdp/matrix))
+           (prefix image-core: mrlib/image-core))
   
   (define op (current-output-port))
   (define (oprintf . args) (apply fprintf op args))
@@ -184,6 +183,7 @@
             '(lib "mzlib/foreign.ss")
             '(lib "mred/mred.ss")
             '(lib "mrlib/cache-image-snip.ss")
+            '(lib "mrlib/image-core.ss")
 	    '(lib "mrlib/matrix-snip.ss")
             '(lib "mzlib/pconvert-prop.ss")
             '(lib "planet/terse-info.ss")))

@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "image-core.ss"
+(require mrlib/image-core
          scheme/class
          scheme/gui/base
          htdp/error

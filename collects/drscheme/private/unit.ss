@@ -24,6 +24,7 @@ module browser threading seems wrong.
            mrlib/include-bitmap
            mrlib/switchable-button
            mrlib/cache-image-snip
+           (prefix-in image-core: mrlib/image-core)
            mrlib/include-bitmap
            mrlib/close-icon
            net/sendurl
@@ -166,6 +167,7 @@ module browser threading seems wrong.
                  (send text split-snip (+ pos 1))
                  (let ([snip (send text find-snip pos 'after-or-none)])
                    (when (or (is-a? snip image-snip%)
+                             (is-a? snip image-core:image%)
                              (is-a? snip cache-image-snip%))
                      (add-sep)
                      (new menu-item%

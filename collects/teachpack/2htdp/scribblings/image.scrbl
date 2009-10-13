@@ -71,7 +71,7 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 
 @defproc[(scale [factor real?] [image image?]) image?]{
   Scales @scheme[image] by @scheme[factor]. For example,
-  scaling @scheme[(ellipse 40 60 "solid" "blue")] produces
+  scaling @scheme[(ellipse 40 60 "solid" "blue")] by @scheme[2] produces
   @scheme[(ellipse 80 120 "solid" "blue")].
 }
 
