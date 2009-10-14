@@ -269,7 +269,7 @@ void scheme_jit_fill_threadlocal_table();
    JIT world into a C stack slot. On x86_64, it is loaded into the
    callee-saved R14 (and the old value is saved on the C stack). */
 
-#if JIT_THREAD_LOCAL
+#ifdef JIT_THREAD_LOCAL
 # define tl_MZ_RUNSTACK                    0
 # define tl_MZ_RUNSTACK_START              1
 # define tl_GC_gen0_alloc_page_ptr         2
@@ -286,7 +286,13 @@ void scheme_jit_fill_threadlocal_table();
 
 static THREAD_LOCAL void *thread_local_pointers[NUM_tl_VARS];
 
+#ifdef MZ_XFORM
+START_XFORM_SKIP;
+#endif
 static void *get_threadlocal_table() { return &thread_local_pointers; }
+#ifdef MZ_XFORM
+END_XFORM_SKIP;
+#endif
 
 # ifdef JIT_X86_64
 #  define JIT_R10 JIT_R(10)
@@ -1253,7 +1259,7 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #  define mz_pop_threadlocal() mz_get_local_p(JIT_R14, JIT_LOCAL4)
 #  define mz_push_threadlocal() (mz_set_local_p(JIT_R14, JIT_LOCAL4), \
                                  PUSHQr(JIT_R0), PUSHQr(JIT_R1), PUSHQr(JIT_R2), PUSHQr(JIT_R2), \
-                                 mz_get_threadlocal(), jit_retval(JIT_R0), <jit_movr_p(JIT_R14, JIT_R0), \
+                                 mz_get_threadlocal(), jit_retval(JIT_R0), jit_movr_p(JIT_R14, JIT_R0), \
                                  POPQr(JIT_R2), POPQr(JIT_R2), POPQr(JIT_R1), POPQr(JIT_R0))
 #  define mz_repush_threadlocal() mz_set_local_p(JIT_R14, JIT_LOCAL4)
 # else
