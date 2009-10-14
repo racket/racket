@@ -123,8 +123,8 @@ _jit_epilog(jit_state *jit)
      - R0      = return address for the function
      - R25-R20 = parameters (order is reversed, 1st argument is R25)
   
-   The +32 in frame_size computation is to accound for the parameter area of
-   a function frame. The +12 is to make room for two local variables (a
+   The +32 in frame_size computation is to account for the parameter area of
+   a function frame. The +12 is to make room for three local variables (a
    MzScheme-specific change).
 
    On PPC the frame must have space to host the arguments of any callee.

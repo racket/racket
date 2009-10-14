@@ -256,6 +256,79 @@ int jit_code_size;
 # define RECORD_CODE_SIZE(s) /* empty */
 #endif
 
+void scheme_jit_fill_threadlocal_table();
+
+/* If JIT_THREAD_LOCAL is defined, then access to global variables
+   goes through a thread_local_pointers table. Call
+   scheme_jit_fill_threadlocal_table() to fill the table in a new
+   OS-level thread. Use mz_tl_ldii_p(), etc., with `tl_MZ_RUNSTACK',
+   etc., to access variables that can be thread local. (JIT-generated
+   code accesses only a handful, so we can just enumerate them.)
+
+   On x86, the thread-local table pointer is loaded on entry to the
+   JIT world into a C stack slot. On x86_64, it is loaded into the
+   callee-saved R14 (and the old value is saved on the C stack). */
+
+#if JIT_THREAD_LOCAL
+# define tl_MZ_RUNSTACK                    0
+# define tl_MZ_RUNSTACK_START              1
+# define tl_GC_gen0_alloc_page_ptr         2
+# define tl_scheme_current_thread          3
+# define tl_scheme_current_cont_mark_pos   4
+# define tl_scheme_current_cont_mark_stack 5
+# define tl_stack_cache_stack_pos          6
+# define tl_retry_alloc_r1                 7
+# define tl_fixup_runstack_base            8
+# define tl_fixup_already_in_place         9
+# define tl_double_result                  10
+# define tl_save_fp                        11
+# define NUM_tl_VARS                       12
+
+static THREAD_LOCAL void *thread_local_pointers[NUM_tl_VARS];
+
+static void *get_threadlocal_table() { return &thread_local_pointers; }
+
+# ifdef JIT_X86_64
+#  define JIT_R10 JIT_R(10)
+#  define JIT_R14 JIT_R(14)
+#  define mz_tl_addr(reg, addr) jit_ldxi_p(reg, JIT_R14, WORDS_TO_BYTES(addr))
+#  define mz_tl_addr_tmp(tmp_reg, addr) (mz_tl_addr(JIT_R10, addr))
+#  define mz_tl_addr_untmp(tmp_reg) (void)0
+#  define mz_tl_tmp_reg(tmp_reg) JIT_R10
+# else
+#  define mz_tl_addr(reg, addr) (mz_get_local_p(reg, JIT_LOCAL4), jit_ldxi_p(reg, reg, WORDS_TO_BYTES(addr)))
+#  define mz_tl_addr_tmp(tmp_reg, addr) (PUSHQr(tmp_reg), mz_tl_addr(tmp_reg, addr))
+#  define mz_tl_addr_untmp(tmp_reg) POPQr(tmp_reg)
+#  define mz_tl_tmp_reg(tmp_reg) tmp_reg
+# endif
+
+# define mz_tl_sti_p(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), jit_str_p(mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
+# define mz_tl_sti_l(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), jit_str_l(mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
+# define mz_tl_ldi_p(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_p(reg, reg))
+# define mz_tl_ldi_l(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_l(reg, reg))
+# define mz_tl_sti_d_fppop(addr, reg, tmp_reg) (mz_tl_addr(tmp_reg, addr), jit_str_d_fppop(tmp_reg, reg))
+# define mz_tl_ldi_d_fppush(reg, addr, tmp_reg) (mz_tl_addr(tmp_reg, addr), jit_ldr_d_fppush(reg, tmp_reg))
+#else
+# define mz_tl_sti_p(addr, reg, tmp_reg) jit_sti_p(addr, reg)
+# define mz_tl_sti_l(addr, reg, tmp_reg) jit_sti_l(addr, reg)
+# define mz_tl_ldi_p(reg, addr) jit_ldi_p(reg, addr)
+# define mz_tl_ldi_l(reg, addr) jit_ldi_l(reg, addr)
+# define mz_tl_sti_d_fppop(addr, reg, tmp_reg) jit_sti_d_fppop(addr, reg)
+# define mz_tl_ldi_d_fppush(reg, addr, tmp_reg) jit_ldi_d_fppush(reg, addr)
+# define tl_MZ_RUNSTACK (&MZ_RUNSTACK)
+# define tl_MZ_RUNSTACK_START (&MZ_RUNSTACK_START)
+# define tl_GC_gen0_alloc_page_ptr (&GC_gen0_alloc_page_ptr)
+# define tl_scheme_current_thread (&scheme_current_thread)
+# define tl_scheme_current_cont_mark_pos (&scheme_current_cont_mark_pos)
+# define tl_scheme_current_cont_mark_stack (&scheme_current_cont_mark_stack)
+# define tl_stack_cache_stack_pos (&stack_cache_stack_pos)
+# define tl_retry_alloc_r1 (&retry_alloc_r1)
+# define tl_fixup_runstack_base (&fixup_runstack_base)
+# define tl_fixup_already_in_place (&fixup_already_in_place)
+# define tl_double_result (&double_result)
+# define tl_save_fp (&save_fp)
+#endif
+
 typedef struct {
   Scheme_Native_Closure_Data nc;
   Scheme_Native_Closure_Data *case_lam;
@@ -270,15 +343,15 @@ typedef struct {
 } Stack_Cache_Elem;
 
 #define STACK_CACHE_SIZE 32
-static Stack_Cache_Elem stack_cache_stack[STACK_CACHE_SIZE];
-long stack_cache_stack_pos = 0;
+static THREAD_LOCAL Stack_Cache_Elem stack_cache_stack[STACK_CACHE_SIZE];
+static THREAD_LOCAL long stack_cache_stack_pos = 0;
 
 #define IS_NAMED_PRIM(p, nm) (!strcmp(((Scheme_Primitive_Proc *)p)->name, nm))
 
 #include "codetab.inc"
 
-static Scheme_Object **fixup_runstack_base;
-static int fixup_already_in_place;
+static THREAD_LOCAL Scheme_Object **fixup_runstack_base;
+static THREAD_LOCAL int fixup_already_in_place;
 
 static Scheme_Object *_scheme_tail_apply_from_native_fixup_args(Scheme_Object *rator,
                                                                 int argc,
@@ -649,11 +722,11 @@ static Scheme_Object *tail_call_with_values_from_multiple_result(Scheme_Object *
   return scheme_tail_apply(f, num_rands, p->ku.multiple.array);
 }
 
-static Scheme_Object *clear_runstack(long amt, Scheme_Object *sv)
+static Scheme_Object *clear_runstack(Scheme_Object **rs, long amt, Scheme_Object *sv)
 {
   int i;
   for (i = 0; i < amt; i++) {
-    MZ_RUNSTACK[i] = NULL;
+    rs[i] = NULL;
   }
   return sv;
 }
@@ -684,7 +757,7 @@ static Scheme_Object *apply_checked_fail(Scheme_Object **args)
 # define JIT_STACK_FRAME JIT_FP
 #endif
 
-#define JIT_UPDATE_THREAD_RSPTR() jit_sti_p(&MZ_RUNSTACK, JIT_RUNSTACK)
+#define JIT_UPDATE_THREAD_RSPTR() mz_tl_sti_p(tl_MZ_RUNSTACK, JIT_RUNSTACK, JIT_R0)
 #define JIT_UPDATE_THREAD_RSPTR_IF_NEEDED() \
     if (jitter->need_set_rs) {   \
       JIT_UPDATE_THREAD_RSPTR(); \
@@ -1014,7 +1087,7 @@ static int stack_safety(mz_jit_state *jitter, int cnt, int offset)
 static void *top;
 int check_location;
 # define CONFIRM_RUNSTACK() (jit_movi_l(JIT_R0, __LINE__), jit_sti_l(&check_location, JIT_R0), \
-                             jit_ldi_p(JIT_R0, &MZ_RUNSTACK), top = (_jit.x.pc), jit_bner_p(top, JIT_RUNSTACK, JIT_R0))
+                             mz_tl_ldi_p(JIT_R0, tl_MZ_RUNSTACK), top = (_jit.x.pc), jit_bner_p(top, JIT_RUNSTACK, JIT_R0))
 #else
 # define CONFIRM_RUNSTACK() 0
 #endif
@@ -1028,14 +1101,28 @@ int check_location;
 #define mz_retain(x) mz_retain_it(jitter, x)
 #define mz_remap(x) mz_remap_it(jitter, x)
 
+/* Stack alignment, fixed up by mz_push_locals():
+    - On PPC, jit_prolog() generates an aligned stack.
+      It also leaves room for 3 locals.
+    - On x86, jit_prolog() pushes three words after the
+      old EBP. So, for 16-byte alignment, the stack is
+      one word past proper alignment; push 3 to realign
+      (which leaves room for three locals)
+    - On x86_64, jit_prolog() pushes three words after
+      the old RBP. So, for 16-byte alignment, the stack
+      is one word past alignment. Push 1 to realign (but
+      mz_push_locals() pushes 3, because we need at least
+      two locals). 
+*/
+
 /* 
    mz_prolog() and mz_epilog() bracket an internal "function" using a
    lighter-weight ABI that keeps all Rx and Vx registers as-is on
-   entry and exit. Some of those functions are registered in a special
-   way with add_symbol() so that the backtrace function can follow the
-   lightweight ABI to get back to the calling code. The lightweight
-   ABI does not support nested calls (at least not on all platforms;
-   see LOCAL2 below).
+   entry and exit, as well as the frame pointer. Some of those
+   functions are registered in a special way with add_symbol() so that
+   the backtrace function can follow the lightweight ABI to get back
+   to the calling code. The lightweight ABI does not support nested
+   calls (at least not on all platforms; see LOCAL2 below).
 
    LOCAL2 and LOCAL3 are available for temporary storage on the C
    stack using mz_get_local() and mz_set_local() under certain
@@ -1055,6 +1142,10 @@ int check_location;
      such functions (assuming that they're called from a function that
      pushes locals, and that nothing else is using LOCAL2).
 */
+
+#ifdef JIT_THREAD_LOCAL
+# define NEED_LOCAL4
+#endif
 
 #ifdef MZ_USE_JIT_PPC
 /* JIT_LOCAL1, JIT_LOCAL2, and JIT_LOCAL3 are offsets in the stack frame. */
@@ -1117,22 +1208,36 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #  define STACK_ALIGN_WORDS 1
 # endif
 # ifdef X86_ALIGN_STACK
-   /* Maintain 4-byte stack alignment. */
+   /* Maintain 16-byte stack alignment. */
 #  define mz_prolog(x) (ADDQiBr(-(STACK_ALIGN_WORDS * JIT_WORD_SIZE), JIT_SP))
 #  define mz_epilog_without_jmp() ADDQiBr((STACK_ALIGN_WORDS + 1) * JIT_WORD_SIZE, JIT_SP)
 #  define mz_epilog(x) (ADDQiBr(STACK_ALIGN_WORDS * JIT_WORD_SIZE, JIT_SP), RET_())
-#  define LOCAL_FRAME_SIZE 3
+#  ifdef NEED_LOCAL4
+#   ifdef JIT_X86_64
+#    define LOCAL_FRAME_SIZE 5
+#   else
+#    define LOCAL_FRAME_SIZE 7
+#   endif
+#   define JIT_LOCAL4 -(JIT_WORD_SIZE * 7)
+#  else
+#   define LOCAL_FRAME_SIZE 3
+#  endif
 #  define JIT_LOCAL3 -(JIT_WORD_SIZE * 6)
 # else
 #  define mz_prolog(x) /* empty */
 #  define mz_epilog(x) RET_()
 #  define mz_epilog_without_jmp() ADDQir(JIT_WORD_SIZE, JIT_SP)
-#  define LOCAL_FRAME_SIZE 2
+#  ifdef NEED_LOCAL4
+#   define LOCAL_FRAME_SIZE 3
+#   define JIT_LOCAL4 -(JIT_WORD_SIZE * 6)
+#  else
+#   define LOCAL_FRAME_SIZE 2
+#  endif
 #  define JIT_LOCAL3 JIT_LOCAL2
 # endif
 # define mz_push_locals() SUBQir((LOCAL_FRAME_SIZE << JIT_LOG_WORD_SIZE), JIT_SP)
 # define mz_pop_locals() ADDQir((LOCAL_FRAME_SIZE << JIT_LOG_WORD_SIZE), JIT_SP)
-#define _jit_prolog_again(jitter, n, ret_addr_reg) (PUSHQr(ret_addr_reg), jit_base_prolog())
+# define _jit_prolog_again(jitter, n, ret_addr_reg) (PUSHQr(ret_addr_reg), jit_base_prolog())
 # ifdef MZ_USE_JIT_X86_64
 #  define jit_shuffle_saved_regs() (MOVQrr(_ESI, _R12), MOVQrr(_EDI, _R13))
 #  define jit_unshuffle_saved_regs() (MOVQrr(_R12, _ESI), MOVQrr(_R13, _EDI))
@@ -1140,6 +1245,31 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #  define jit_shuffle_saved_regs() /* empty */
 #  define jit_unshuffle_saved_regs() /* empty */
 # endif
+#endif
+
+#ifdef JIT_THREAD_LOCAL
+# define mz_get_threadlocal() (mz_prepare(0), (void)mz_finish(get_threadlocal_table), jit_retval(JIT_R0))
+# ifdef JIT_X86_64
+#  define mz_pop_threadlocal() mz_get_local_p(JIT_R14, JIT_LOCAL4)
+#  define mz_push_threadlocal() (mz_set_local_p(JIT_R14, JIT_LOCAL4), \
+                                 PUSHQr(JIT_R0), PUSHQr(JIT_R1), PUSHQr(JIT_R2), PUSHQr(JIT_R2), \
+                                 mz_get_threadlocal(), jit_retval(JIT_R0), <jit_movr_p(JIT_R14, JIT_R0), \
+                                 POPQr(JIT_R2), POPQr(JIT_R2), POPQr(JIT_R1), POPQr(JIT_R0))
+#  define mz_repush_threadlocal() mz_set_local_p(JIT_R14, JIT_LOCAL4)
+# else
+#  define mz_pop_threadlocal() /* empty */
+#  define mz_push_threadlocal() (PUSHQr(JIT_R0), PUSHQr(JIT_R1), PUSHQr(JIT_R2), PUSHQr(JIT_R2), \
+                                 mz_get_threadlocal(), jit_retval(JIT_R0), mz_set_local_p(JIT_R0, JIT_LOCAL4), \
+                                 POPQr(JIT_R2), POPQr(JIT_R2), POPQr(JIT_R1), POPQr(JIT_R0))
+#  define mz_repush_threadlocal() (PUSHQr(JIT_R0), jit_ldr_p(JIT_R0, _EBP), \
+                                   jit_ldxi_p(JIT_R0, JIT_R0, JIT_LOCAL4), \
+                                   jit_stxi_p(JIT_LOCAL4, _EBP, JIT_R0), \
+                                   POPQr(JIT_R0))
+# endif
+#else
+# define mz_pop_threadlocal() /* empty */
+# define mz_push_threadlocal() /* empty */
+# define mz_repush_threadlocal() /* empty */
 #endif
 
 #define mz_patch_branch(a) mz_patch_branch_at(a, (_jit.x.pc))
@@ -1218,12 +1348,12 @@ static void *retry_alloc_code;
 static void *retry_alloc_code_keep_r0_r1;
 static void *retry_alloc_code_keep_fpr1;
 
-static void *retry_alloc_r1; /* set by prepare_retry_alloc() */
+static THREAD_LOCAL void *retry_alloc_r1; /* set by prepare_retry_alloc() */
 
 static int generate_alloc_retry(mz_jit_state *jitter, int i);
 
 #ifdef JIT_USE_FP_OPS
-static double save_fp;
+static THREAD_LOCAL double save_fp;
 #endif
 
 static void *prepare_retry_alloc(void *p, void *p2)
@@ -1310,7 +1440,7 @@ static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut
   __START_TINY_JUMPS__(1);
   mz_patch_branch(ref);
   jit_addi_ul(JIT_R2, JIT_V1, sz);
-  (void)jit_sti_l(&GC_gen0_alloc_page_ptr, JIT_R2);
+  (void)mz_tl_sti_l(tl_GC_gen0_alloc_page_ptr, JIT_R2, JIT_R0);
 #if !defined(MZ_USE_PLACES)
   a_word = GC_initial_word(amt);
   jit_movi_l(JIT_R2, a_word);
@@ -1383,10 +1513,9 @@ static void *malloc_double(void)
 #ifdef CAN_INLINE_ALLOC
 static void *make_list_code, *make_list_star_code;
 #else
-static Scheme_Object *make_list(long n)
+static Scheme_Object *make_list(GC_CAN_IGNORE Scheme_Object **rs, long n)
 {
   GC_CAN_IGNORE Scheme_Object *l = scheme_null;
-  GC_CAN_IGNORE Scheme_Object **rs = MZ_RUNSTACK;
   
   while (n--) {
     l = cons(rs[n], l);
@@ -1394,9 +1523,8 @@ static Scheme_Object *make_list(long n)
 
   return l;
 }
-static Scheme_Object *make_list_star(long n)
+static Scheme_Object *make_list_star(GC_CAN_IGNORE Scheme_Object **rs, long n)
 {
-  GC_CAN_IGNORE Scheme_Object **rs = MZ_RUNSTACK;
   GC_CAN_IGNORE Scheme_Object *l = rs[--n];
   
   while (n--) {
@@ -2019,6 +2147,7 @@ static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
   mz_finishr_direct_prim(JIT_V1, noncm_prim_indirect);
   CHECK_LIMIT();
   /*  Return: */
+  mz_pop_threadlocal();
   mz_pop_locals();
   jit_ret();
 
@@ -2051,7 +2180,7 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   /* Right kind of function. Extract data and check stack depth: */
   jit_ldxi_p(JIT_R0, JIT_V1, &((Scheme_Native_Closure *)0x0)->code);
   jit_ldxi_i(JIT_R2, JIT_R0, &((Scheme_Native_Closure_Data *)0x0)->max_let_depth);
-  jit_ldi_p(JIT_R1, &MZ_RUNSTACK_START);
+  mz_tl_ldi_p(JIT_R1, tl_MZ_RUNSTACK_START);
   jit_subr_ul(JIT_R1, JIT_RUNSTACK, JIT_R1);
   ref4 = jit_bltr_ul(jit_forward(), JIT_R1, JIT_R2);
   CHECK_LIMIT();
@@ -2145,9 +2274,9 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   if (direct_native > 1) { /* => some_args_already_in_place */
     /* Need to shuffle argument lists. Since we can pass only
        three arguments, use static variables for the others. */
-    jit_sti_p(&fixup_runstack_base, JIT_RUNSTACK_BASE);
+    mz_tl_sti_p(tl_fixup_runstack_base, JIT_RUNSTACK_BASE, JIT_R0);
     mz_get_local_p(JIT_R1, JIT_LOCAL2);
-    jit_sti_l(&fixup_already_in_place, JIT_R1);
+    mz_tl_sti_l(tl_fixup_already_in_place, JIT_R1, JIT_R0);
   }
   if (num_rands >= 0) {
     jit_movi_i(JIT_R0, num_rands);
@@ -2183,6 +2312,7 @@ static int generate_finish_tail_call(mz_jit_state *jitter, int direct_native)
   }
   CHECK_LIMIT();
   /* Return: */
+  mz_pop_threadlocal();
   mz_pop_locals();
   jit_ret();
 
@@ -2240,7 +2370,7 @@ static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok
   }
 
   /* Get new argc: */
-  (void)jit_ldi_p(JIT_R1, &scheme_current_thread);
+  (void)mz_tl_ldi_p(JIT_R1, tl_scheme_current_thread);
   jit_ldxi_l(JIT_R2, JIT_R1, &((Scheme_Thread *)0x0)->ku.apply.tail_num_rands);
   if (num_rands >= 0) {
     jit_movi_l(JIT_V1, 0);
@@ -2248,7 +2378,7 @@ static int generate_retry_call(mz_jit_state *jitter, int num_rands, int multi_ok
   /* Thread is in R1. New argc is in R2. Old argc to cancel is in V1. */
 
   /* Enough room on runstack? */
-  jit_ldi_p(JIT_R0, &MZ_RUNSTACK_START);
+  mz_tl_ldi_p(JIT_R0, tl_MZ_RUNSTACK_START);
   jit_subr_ul(JIT_R0, JIT_RUNSTACK, JIT_R0); /* R0 is space left (in bytes) */
   jit_subr_l(JIT_R2, JIT_R2, JIT_V1);
   jit_lshi_l(JIT_R2, JIT_R2, JIT_LOG_WORD_SIZE);
@@ -2305,9 +2435,10 @@ static int generate_clear_previous_args(mz_jit_state *jitter, int num_rands)
 static int generate_clear_slow_previous_args(mz_jit_state *jitter)
 {
   CHECK_LIMIT();
-  mz_prepare(2);
+  mz_prepare(3);
   jit_pusharg_p(JIT_R0);
   jit_pusharg_l(JIT_V1);
+  jit_pusharg_l(JIT_RUNSTACK);
   (void)mz_finish(clear_runstack);
   jit_retval(JIT_R0);
   return 1;
@@ -2354,7 +2485,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     jit_ldxi_p(JIT_R2, JIT_V1, &((Scheme_Native_Closure *)0x0)->code);
     jit_ldxi_i(JIT_R2, JIT_R2, &((Scheme_Native_Closure_Data *)0x0)->max_let_depth);
   }
-  jit_ldi_p(JIT_R1, &MZ_RUNSTACK_START);
+  mz_tl_ldi_p(JIT_R1, tl_MZ_RUNSTACK_START);
   jit_subr_ul(JIT_R1, JIT_RUNSTACK, JIT_R1);
   ref4 = jit_bltr_ul(jit_forward(), JIT_R1, JIT_R2);
   CHECK_LIMIT();
@@ -2384,7 +2515,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
       jit_movr_p(JIT_V1, JIT_R0);
     }
     refr = jit_patchable_movi_p(JIT_R1, jit_forward());
-    jit_shuffle_saved_regs(); /* maybe copies V regsiters to be restored */
+    jit_shuffle_saved_regs(); /* maybe copies V registers to be restored */
     _jit_prolog_again(jitter, 3, JIT_R1); /* saves V registers (or copied V registers) */
     if (num_rands >= 0) {
       if (nontail_self) { jit_movr_p(JIT_R1, JIT_R0); }
@@ -2405,6 +2536,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     }
     CHECK_LIMIT();
     mz_push_locals();
+    mz_repush_threadlocal();
     if (!nontail_self) {
       jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
       if (direct_native) {
@@ -3377,6 +3509,7 @@ static int can_fast_double(int arith, int cmp, int two_args)
 #define jit_negr_d_fppop(rd,rs)       jit_negr_d(rd,rs)
 #define jit_abs_d_fppop(rd,rs)        jit_abs_d(rd,rs)
 #define jit_sti_d_fppop(id, rs)       jit_sti_d(id, rs)
+#define jit_str_d_fppop(id, rd, rs)   jit_str_d(id, rd, rs)
 #define jit_stxi_d_fppop(id, rd, rs)  jit_stxi_d(id, rd, rs)
 #define jit_bger_d_fppop(d, s1, s2)   jit_bger_d(d, s1, s2)
 #define jit_bantiger_d_fppop(d, s1, s2) jit_bantiger_d(d, s1, s2)
@@ -3412,7 +3545,7 @@ static int generate_alloc_double(mz_jit_state *jitter)
   jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
   (void)jit_stxi_d_fppop(&((Scheme_Double *)0x0)->double_val, JIT_R0, JIT_FPR0);
 # else
-  (void)jit_sti_d_fppop(&double_result, JIT_FPR0);
+  (void)mz_tl_sti_d_fppop(tl_double_result, JIT_FPR0, JIT_R0);
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
   mz_prepare(0);
   (void)mz_finish(malloc_double);
@@ -5818,8 +5951,9 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 #else
       JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
       jit_movi_l(JIT_R0, c);
-      mz_prepare(1);
+      mz_prepare(2);
       jit_pusharg_l(JIT_R0);
+      jit_pusharg_l(JIT_RUNSTACK);
       if (star)
         (void)mz_finish(make_list_star);
       else
@@ -6214,18 +6348,18 @@ static int generate_non_tail_mark_pos_prefix(mz_jit_state *jitter)
      argument to generate_non_tail(), so that it can skip this prefix
      and suffix. In case this prefix needs to adjust the runstack,
      the result indicates the number of pushed values. */
-  jit_ldi_l(JIT_R2, &scheme_current_cont_mark_pos);
+  mz_tl_ldi_l(JIT_R2, tl_scheme_current_cont_mark_pos);
   jit_addi_l(JIT_R2, JIT_R2, 2);
-  jit_sti_l(&scheme_current_cont_mark_pos, JIT_R2);
+  mz_tl_sti_l(tl_scheme_current_cont_mark_pos, JIT_R2, JIT_R0);
   return 0 /* = number of pushed items */;
 }
 
 static void generate_non_tail_mark_pos_suffix(mz_jit_state *jitter)
 /* dsync'd ok */
 {
-  jit_ldi_l(JIT_R2, &scheme_current_cont_mark_pos);
+  mz_tl_ldi_l(JIT_R2, tl_scheme_current_cont_mark_pos);
   jit_subi_l(JIT_R2, JIT_R2, 2);
-  jit_sti_l(&scheme_current_cont_mark_pos, JIT_R2);
+  mz_tl_sti_l(tl_scheme_current_cont_mark_pos, JIT_R2, JIT_R0);
 }
 
 static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi_ok, int mark_pos_ends)
@@ -6251,7 +6385,7 @@ static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi
       LOG_IT(("non-tail\n"));
       if (mark_pos_ends)
 	generate_non_tail_mark_pos_prefix(jitter);
-      jit_ldi_p(JIT_R2, &scheme_current_cont_mark_stack);
+      mz_tl_ldi_p(JIT_R2, tl_scheme_current_cont_mark_stack);
       if (!jitter->local1_busy) {
         using_local1 = 1;
         jitter->local1_busy = 1;
@@ -6288,7 +6422,7 @@ static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi
         mz_popr_p(JIT_R2); /* no sync */
         jit_rshi_l(JIT_R2, JIT_R2, 0x1); /* pointer back to integer */
       }
-      jit_sti_p(&scheme_current_cont_mark_stack, JIT_R2);
+      mz_tl_sti_p(tl_scheme_current_cont_mark_stack, JIT_R2, JIT_R0);
       if (mark_pos_ends)
 	generate_non_tail_mark_pos_suffix(jitter);
       CHECK_LIMIT();
@@ -6486,7 +6620,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  mz_popr_p(JIT_V1); /* sync'd below... */
 	  mz_popr_p(JIT_V1);
 	  mz_popr_p(JIT_V1);
-	  jit_ldi_p(JIT_R0, &scheme_current_thread);
+	  mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
 	  CHECK_LIMIT();
 	  jit_ldxi_l(JIT_V1, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
 	  jit_lshi_l(JIT_V1, JIT_V1, 0x1);
@@ -6522,7 +6656,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  __START_TINY_JUMPS__(1);
 	  ref = jit_bnei_p(jit_forward(), JIT_R0, 0x0);
 	  CHECK_LIMIT();
-	  jit_ldi_p(JIT_R0, &scheme_current_thread);
+	  mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
 	  jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R0, JIT_R1);
 	  jit_rshi_ul(JIT_R2, JIT_R2, 0x1);
 	  jit_stxi_l(&((Scheme_Thread *)0x0)->ku.multiple.count, JIT_R0, JIT_R2);
@@ -6630,10 +6764,10 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           /* Multiple-values case: ------------ */
           mz_patch_branch(ref);
           /* Get new argc: */
-          (void)jit_ldi_p(JIT_R1, &scheme_current_thread);
+          (void)mz_tl_ldi_p(JIT_R1, tl_scheme_current_thread);
           jit_ldxi_l(JIT_R2, JIT_R1, &((Scheme_Thread *)0x0)->ku.multiple.count);
           /* Enough room on runstack? */
-          jit_ldi_p(JIT_R0, &MZ_RUNSTACK_START);
+          mz_tl_ldi_p(JIT_R0, tl_MZ_RUNSTACK_START);
           if (is_tail) {
             jit_subr_ul(JIT_R0, JIT_RUNSTACK_BASE, JIT_R0);
           } else {
@@ -6677,7 +6811,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           (void)jit_jmpi(refloop);
           CHECK_LIMIT();
           mz_patch_branch(ref3);
-          (void)jit_ldi_p(JIT_R0, &scheme_current_thread);
+          (void)mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
           jit_ldxi_l(JIT_R0, JIT_R0, &((Scheme_Thread *)0x0)->ku.multiple.count);
           
           /* Perform call --------------------- */
@@ -7075,7 +7209,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	/* Did we get multiple results? If not, go to error: */
 	ref = jit_bnei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
 	/* Load count and result array: */
-	jit_ldi_p(JIT_R2, &scheme_current_thread);
+	mz_tl_ldi_p(JIT_R2, tl_scheme_current_thread);
 	jit_ldxi_l(JIT_R1, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.count);
 	jit_ldxi_p(JIT_R2, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.array);
 	CHECK_LIMIT();
@@ -7367,12 +7501,14 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 /*                          procedure codegen                             */
 /*========================================================================*/
 
+#define NATIVE_ARG_COUNT 3
+
 static void generate_function_prolog(mz_jit_state *jitter, void *code, int max_let_depth)
 {
   int in;
   START_JIT_DATA();
 
-  jit_prolog(3);
+  jit_prolog(NATIVE_ARG_COUNT);
     
   in = jit_arg_p();
   jit_getarg_p(JIT_R0, in); /* closure */
@@ -7380,8 +7516,11 @@ static void generate_function_prolog(mz_jit_state *jitter, void *code, int max_l
   jit_getarg_i(JIT_R1, in); /* argc */
   in = jit_arg_p();
   jit_getarg_p(JIT_R2, in); /* argv */
+  
+  mz_push_locals();
+  mz_push_threadlocal();
 
-  jit_ldi_p(JIT_RUNSTACK, &MZ_RUNSTACK);
+  mz_tl_ldi_p(JIT_RUNSTACK, tl_MZ_RUNSTACK);
 
   END_JIT_DATA(1);
 }
@@ -7391,8 +7530,6 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
   int i, cnt;
   jit_insn *ref;
   int set_ref;
-
-  mz_push_locals();
 
   /* If rands == runstack and there are no rest args, set runstack
      base to runstack + rands (and don't copy rands), otherwise set
@@ -7477,36 +7614,38 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* *** check_arity_code *** */
   /* Called as a function: */
   check_arity_code = (Native_Check_Arity_Proc)jit_get_ip().ptr;
-  jit_prolog(3); /* only need 1 argument, but return path overlaps with proc conventions */
+  jit_prolog(NATIVE_ARG_COUNT); /* only need 2 arguments, but return path overlaps with proc conventions */
   in = jit_arg_p();
   jit_getarg_p(JIT_R0, in); /* closure */
   in = jit_arg_p();
   jit_getarg_i(JIT_R2, in); /* argc */
   mz_push_locals();
+  mz_push_threadlocal();
   jit_movi_i(JIT_R1, -1);
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
   jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->arity_code);
-  jit_jmpr(JIT_V1); /* leads to a jit_ret() that assumes 3 arguments */
+  jit_jmpr(JIT_V1); /* leads to a jit_ret() that assumes NATIVE_ARG_COUNT arguments */
   CHECK_LIMIT();
 
   /* *** get_arity_code *** */
   /* Called as a function: */
   get_arity_code = (Native_Get_Arity_Proc)jit_get_ip().ptr;
-  jit_prolog(3); /* only need 1 argument, but return path overlaps with proc conventions */
+  jit_prolog(NATIVE_ARG_COUNT); /* only need 1 argument, but return path overlaps with proc conventions */
   in = jit_arg_p();
   jit_getarg_p(JIT_R0, in); /* closure */
   mz_push_locals();
+  mz_push_threadlocal();
   jit_movi_i(JIT_R1, -1);
   (void)jit_movi_p(JIT_R2, 0x0);
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
   jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->arity_code);
-  jit_jmpr(JIT_V1); /* leads to a jit_ret() that assumes 3 arguments */
+  jit_jmpr(JIT_V1); /* leads to a jit_ret() that assumes NATIVE_ARG_COUNT arguments */
   CHECK_LIMIT();
 
   /* *** bad_result_arity_code *** */
   /* Jumped-to from non-tail contexts  */
   bad_result_arity_code = (Native_Get_Arity_Proc)jit_get_ip().ptr;
-  jit_ldi_p(JIT_R2, &scheme_current_thread);
+  mz_tl_ldi_p(JIT_R2, tl_scheme_current_thread);
   jit_ldxi_l(JIT_R1, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.count);
   jit_ldxi_p(JIT_R2, JIT_R2, &((Scheme_Thread *)0x0)->ku.multiple.array);
   CHECK_LIMIT();
@@ -7785,7 +7924,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
      code is not yet compiled. See generate_function_prolog
      for the state of registers on entry */
   on_demand_jit_code = jit_get_ip().ptr;
-  jit_prolog(3);
+  jit_prolog(NATIVE_ARG_COUNT);
   in = jit_arg_p();
   jit_getarg_p(JIT_R0, in); /* closure */
   in = jit_arg_i();
@@ -7793,8 +7932,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   in = jit_arg_p();
   jit_getarg_p(JIT_R2, in); /* argv */
   CHECK_LIMIT();
-  jit_ldi_p(JIT_RUNSTACK, &MZ_RUNSTACK);
   mz_push_locals();
+  mz_push_threadlocal();
+  mz_tl_ldi_p(JIT_RUNSTACK, tl_MZ_RUNSTACK);
   on_demand_jit_arity_code = jit_get_ip().ptr; /* <<<- arity variant starts here */
   jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(3));
   CHECK_RUNSTACK_OVERFLOW();
@@ -7821,7 +7961,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
      yet ready: */
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
   jit_ldxi_i(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->max_let_depth);
-  jit_ldi_p(JIT_V2, &MZ_RUNSTACK_START);
+  mz_tl_ldi_p(JIT_V2, tl_MZ_RUNSTACK_START);
   jit_subr_ul(JIT_V2, JIT_RUNSTACK, JIT_V2);
   ref2 = jit_bltr_ul(jit_forward(), JIT_V2, JIT_V1);
   CHECK_LIMIT();
@@ -7845,13 +7985,14 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_pusharg_p(JIT_R0);
   (void)mz_finish(_scheme_apply_multi_from_native);
   CHECK_LIMIT();
+  mz_pop_threadlocal();
   mz_pop_locals();
   jit_ret();
   CHECK_LIMIT();
   register_helper_func(jitter, on_demand_jit_code);
 
   /* *** app_values_tail_slow_code *** */
-  /* RELIES ON jit_prolog(3) FROM ABOVE */
+  /* RELIES ON jit_prolog(NATIVE_ARG_COUNT) FROM ABOVE */
   /* Rator in V1, arguments are in thread's multiple-values cells. */
   app_values_tail_slow_code = jit_get_ip().ptr;
   JIT_UPDATE_THREAD_RSPTR();
@@ -7861,12 +8002,13 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_retval(JIT_R0);
   VALIDATE_RESULT(JIT_R0);
   /* Return: */
+  mz_pop_threadlocal();
   mz_pop_locals();
   jit_ret();  
   CHECK_LIMIT();
 
   /* *** finish_tail_call_[fixup_]code *** */
-  /* RELIES ON jit_prolog(3) FROM ABOVE */
+  /* RELIES ON jit_prolog(NATIVE_ARG_COUNT) FROM ABOVE */
   finish_tail_call_code = jit_get_ip().ptr;
   generate_finish_tail_call(jitter, 0);
   CHECK_LIMIT();
@@ -7902,9 +8044,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_movr_p(JIT_R(3), JIT_AUX);
 #endif
   /* Decrement stack_cache_stack_pos */
-  jit_ldi_l(JIT_R1, &stack_cache_stack_pos);
+  mz_tl_ldi_l(JIT_R1, tl_stack_cache_stack_pos);
   jit_subi_i(JIT_R2, JIT_R1, 1);
-  jit_sti_l(&stack_cache_stack_pos, JIT_R2);
+  mz_tl_sti_l(tl_stack_cache_stack_pos, JIT_R2, JIT_R0);
   CHECK_LIMIT();
   /* Extract old return address and jump to it */
   jit_lshi_l(JIT_R1, JIT_R1, (JIT_LOG_WORD_SIZE + 2));
@@ -8695,7 +8837,7 @@ static int generate_alloc_retry(mz_jit_state *jitter, int i)
 {
 #ifdef JIT_USE_FP_OPS
   if (i == 2) {
-    (void)jit_sti_d_fppop(&save_fp, JIT_FPR1);
+    (void)mz_tl_sti_d_fppop(tl_save_fp, JIT_FPR1, JIT_R2);
   }
 #endif
   JIT_UPDATE_THREAD_RSPTR();
@@ -8712,11 +8854,11 @@ static int generate_alloc_retry(mz_jit_state *jitter, int i)
   (void)mz_finish(prepare_retry_alloc);
   jit_retval(JIT_R0);
   if (i == 1) {
-    jit_ldi_l(JIT_R1, &retry_alloc_r1);
+    mz_tl_ldi_l(JIT_R1, tl_retry_alloc_r1);
   }
 #ifdef JIT_USE_FP_OPS
   if (i == 2) {
-    (void)jit_ldi_d_fppush(JIT_FPR1, &save_fp);
+    (void)mz_tl_ldi_d_fppush(JIT_FPR1, tl_save_fp, JIT_R2);
   }
 #endif
   return 1;
@@ -8965,6 +9107,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   /* r == 2 => tail call performed */
   if (r != 2) {
     jit_movr_p(JIT_RET, JIT_R0);
+    mz_pop_threadlocal();
     mz_pop_locals();
     jit_ret();
   }
@@ -9075,6 +9218,7 @@ Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, in
 
   if (!check_arity_code) {
     /* Create shared code used for stack-overflow handling, etc.: */
+    scheme_jit_fill_threadlocal_table();
     generate_one(NULL, do_generate_common, NULL, 0, NULL, NULL);
     generate_one(NULL, do_generate_more_common, NULL, 0, NULL, NULL);
   }
@@ -9160,10 +9304,12 @@ static int generate_simple_arity_check(mz_jit_state *jitter, int num_params, int
     ref2 = jit_blti_i(jit_forward(), JIT_R2, num_params);
   CHECK_LIMIT();
   jit_movi_i(JIT_RET, 1);
+  mz_pop_threadlocal();
   mz_pop_locals();
   jit_ret();
   mz_patch_branch(ref2);
   jit_movi_i(JIT_RET, 0);
+  mz_pop_threadlocal();
   mz_pop_locals();
   jit_ret();
   CHECK_LIMIT();
@@ -9179,10 +9325,12 @@ static int generate_simple_arity_check(mz_jit_state *jitter, int num_params, int
     mz_prepare(1);
     jit_pusharg_p(JIT_R0);
     (void)mz_nonrs_finish(scheme_box);
+    mz_pop_threadlocal();
     mz_pop_locals();
     jit_ret();
   } else {
     jit_movr_p(JIT_RET, JIT_R0);
+    mz_pop_threadlocal();
     mz_pop_locals();
     jit_ret();
   }
@@ -9863,6 +10011,31 @@ void *scheme_module_start_start(struct Start_Module_Args *a, Scheme_Object *name
     return proc(a, &name);
   else
     return scheme_module_start_finish(a);
+}
+/**********************************************************************/
+/*                       thread-local table                           */
+/**********************************************************************/
+
+void scheme_jit_fill_threadlocal_table() {
+#ifdef JIT_THREAD_LOCAL
+  thread_local_pointers[tl_MZ_RUNSTACK] = (&MZ_RUNSTACK);
+  thread_local_pointers[tl_MZ_RUNSTACK_START] = (&MZ_RUNSTACK_START);
+  thread_local_pointers[tl_scheme_current_thread] = (&scheme_current_thread);
+  thread_local_pointers[tl_scheme_current_cont_mark_pos] = (&scheme_current_cont_mark_pos);
+  thread_local_pointers[tl_scheme_current_cont_mark_stack] = (&scheme_current_cont_mark_stack);
+  thread_local_pointers[tl_stack_cache_stack_pos] = (&stack_cache_stack_pos);
+# ifdef CAN_INLINE_ALLOC
+  thread_local_pointers[tl_GC_gen0_alloc_page_ptr] = (&GC_gen0_alloc_page_ptr);
+  thread_local_pointers[tl_retry_alloc_r1] = (&retry_alloc_r1);
+  thread_local_pointers[tl_save_fp] = (&save_fp);
+#else
+# ifdef INLINE_FP_OPS
+  thread_local_pointers[tl_double_result] = (&double_result);
+#  endif
+# endif
+  thread_local_pointers[tl_fixup_runstack_base] = (&fixup_runstack_base);
+  thread_local_pointers[tl_fixup_already_in_place] = (&fixup_already_in_place);
+#endif
 }
 
 /**********************************************************************/
