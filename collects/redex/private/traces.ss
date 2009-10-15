@@ -855,7 +855,8 @@
     (send text set-autowrap-bitmap #f)
     (send text set-max-width 'none)
     (send text freeze-colorer)
-    (send text stop-colorer (not scheme-colors?))
+    (unless scheme-colors?
+      (send text stop-colorer #t))
     (send es format-expr)
     es))
 

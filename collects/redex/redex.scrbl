@@ -1349,7 +1349,10 @@ filled in for the remaining colors.
 The @scheme[scheme-colors?] argument, if @scheme[#t] causes
 @scheme[traces] to color the contents of each of the windows according
 to DrScheme's Scheme mode color Scheme. If it is @scheme[#f],
-@scheme[traces] just uses black for the color scheme.
+@scheme[traces] just uses black for the color scheme. 
+In addition, Scheme-mode parenthesis highlighting is
+enabled when @scheme[scheme-colors?]
+is @scheme[#t] and not when it is @scheme[#f].
 
 The @scheme[term-filter] function is called each time a new node is
 about to be inserted into the graph. If the filter returns false, the
