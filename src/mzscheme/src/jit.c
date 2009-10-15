@@ -345,12 +345,21 @@ typedef struct {
   void *orig_return_address;
   void *stack_frame;
   Scheme_Object *cache;
-  void *filler;
+  void *orig_result;
 } Stack_Cache_Elem;
 
 #define STACK_CACHE_SIZE 32
 static THREAD_LOCAL Stack_Cache_Elem stack_cache_stack[STACK_CACHE_SIZE];
 static THREAD_LOCAL long stack_cache_stack_pos = 0;
+
+static void *decrement_cache_stack_pos(void *p)
+{
+  Stack_Cache_Elem *r;
+  r = stack_cache_stack + stack_cache_stack_pos;
+  stack_cache_stack_pos--;
+  r->orig_result = p;
+  return r;
+}
 
 #define IS_NAMED_PRIM(p, nm) (!strcmp(((Scheme_Primitive_Proc *)p)->name, nm))
 
@@ -1218,6 +1227,7 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #  define mz_prolog(x) (ADDQiBr(-(STACK_ALIGN_WORDS * JIT_WORD_SIZE), JIT_SP))
 #  define mz_epilog_without_jmp() ADDQiBr((STACK_ALIGN_WORDS + 1) * JIT_WORD_SIZE, JIT_SP)
 #  define mz_epilog(x) (ADDQiBr(STACK_ALIGN_WORDS * JIT_WORD_SIZE, JIT_SP), RET_())
+#  define JIT_LOCAL3 -(JIT_WORD_SIZE * 6)
 #  ifdef NEED_LOCAL4
 #   ifdef JIT_X86_64
 #    define LOCAL_FRAME_SIZE 5
@@ -1228,18 +1238,17 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #  else
 #   define LOCAL_FRAME_SIZE 3
 #  endif
-#  define JIT_LOCAL3 -(JIT_WORD_SIZE * 6)
 # else
 #  define mz_prolog(x) /* empty */
 #  define mz_epilog(x) RET_()
 #  define mz_epilog_without_jmp() ADDQir(JIT_WORD_SIZE, JIT_SP)
+#  define JIT_LOCAL3 JIT_LOCAL2
 #  ifdef NEED_LOCAL4
 #   define LOCAL_FRAME_SIZE 3
 #   define JIT_LOCAL4 -(JIT_WORD_SIZE * 6)
 #  else
 #   define LOCAL_FRAME_SIZE 2
 #  endif
-#  define JIT_LOCAL3 JIT_LOCAL2
 # endif
 # define mz_push_locals() SUBQir((LOCAL_FRAME_SIZE << JIT_LOG_WORD_SIZE), JIT_SP)
 # define mz_pop_locals() ADDQir((LOCAL_FRAME_SIZE << JIT_LOG_WORD_SIZE), JIT_SP)
@@ -8046,19 +8055,24 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
      is such a register for PPC. */
   stack_cache_pop_code = jit_get_ip().ptr;
   jit_movr_p(JIT_R0, JIT_RET);
+  /* Decrement stack_cache_stack_pos (using a function,
+     in case of thread-local vars) and get record pointer.
+     Use jit_normal_finish(), because jit_finish() shuffles
+     callee-saved registers to match the mz protocol 
+     (on x86_64). */
+  mz_prepare(1);
+  jit_pusharg_p(JIT_R0);
+  (void)jit_normal_finish(decrement_cache_stack_pos);
+  jit_retval(JIT_R1); /* = pointer to a stack_cache_stack element */
 #ifdef MZ_USE_JIT_PPC
   jit_movr_p(JIT_R(3), JIT_AUX);
 #endif
-  /* Decrement stack_cache_stack_pos */
-  mz_tl_ldi_l(JIT_R1, tl_stack_cache_stack_pos);
-  jit_subi_i(JIT_R2, JIT_R1, 1);
-  mz_tl_sti_l(tl_stack_cache_stack_pos, JIT_R2, JIT_R0);
   CHECK_LIMIT();
   /* Extract old return address and jump to it */
-  jit_lshi_l(JIT_R1, JIT_R1, (JIT_LOG_WORD_SIZE + 2));
-  jit_addi_l(JIT_R1, JIT_R1, (int)&((Stack_Cache_Elem *)0x0)->orig_return_address);
-  (void)jit_movi_p(JIT_R2, &stack_cache_stack);
-  jit_ldxr_p(JIT_R2, JIT_R2, JIT_R1);
+  jit_ldxi_l(JIT_R0, JIT_R1, (int)&((Stack_Cache_Elem *)0x0)->orig_result);
+  jit_movi_p(JIT_R2, NULL);
+  jit_stxi_l((int)&((Stack_Cache_Elem *)0x0)->orig_result, JIT_R1, JIT_R2);
+  jit_ldxi_l(JIT_R2, JIT_R1, (int)&((Stack_Cache_Elem *)0x0)->orig_return_address);
   jit_movr_p(JIT_RET, JIT_R0);
 #ifdef MZ_USE_JIT_PPC
   jit_movr_p(JIT_AUX, JIT_R(3));
@@ -9804,7 +9818,8 @@ Scheme_Object *scheme_native_stack_trace(void)
       else
 	first = name;
       last = name;
-      if (set_next_push) {	stack_cache_stack[stack_cache_stack_pos].cache = name;
+      if (set_next_push) {
+	stack_cache_stack[stack_cache_stack_pos].cache = name;
 	set_next_push = 0;
       }
     }

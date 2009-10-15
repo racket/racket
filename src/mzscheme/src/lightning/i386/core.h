@@ -374,6 +374,7 @@ struct jit_local_state {
 #ifdef JIT_X86_64
 # define jit_pusharg_i(rs)	(_jitl.argssize++, MOVQrr(rs, JIT_CALLTMPSTART + _jitl.argssize - 1))
 # define jit_finish(sub)        (jit_shift_args(), (void)jit_calli((sub)), jit_restore_locals())
+# define jit_normal_finish(sub) jit_calli((sub))
 # define jit_reg_is_arg(reg) ((reg == _EDI) || (reg ==_ESI) || (reg == _EDX))
 # define jit_finishr(reg)	((jit_reg_is_arg((reg)) ? MOVQrr(reg, JIT_REXTMP) : (void)0), \
                                  jit_shift_args(), \
@@ -397,6 +398,7 @@ struct jit_local_state {
 # define jit_pusharg_i(rs)	PUSHLr(rs)
 # define jit_finish(sub)        ((void)jit_calli((sub)), ADDLir(sizeof(long) * _jitl.argssize, JIT_SP), _jitl.argssize = 0)
 # define jit_finishr(reg)	(jit_callr((reg)), ADDLir(sizeof(long) * _jitl.argssize, JIT_SP), _jitl.argssize = 0)
+# define jit_normal_finish(sub) jit_finish(sub)
 #endif
 #define jit_pusharg_l(rs) jit_pusharg_i(rs)
 #define jit_retval_i(rd)	((void)jit_movr_i ((rd), _EAX))

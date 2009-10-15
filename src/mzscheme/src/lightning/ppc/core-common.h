@@ -441,6 +441,8 @@ static jit_state 			_jit;
 #define jit_finish(sub)			jit_calli(sub)
 #endif
 
+#define jit_normal_finish(sub)          jit_finish(sub)
+
 #ifndef jit_finishr
 #define jit_finishr(reg)		jit_callr(reg)
 #endif
