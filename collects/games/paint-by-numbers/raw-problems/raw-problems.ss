@@ -1,3 +1,5 @@
+#lang scheme/base
+
 #|
 
 raw-problems.ss
@@ -12,6 +14,8 @@ The cols and rows types are specified in sig.ss
 
 |#
 
+(provide raw-problems)
+(define raw-problems
 `(
 
   ("Izay (1)"
@@ -75,3 +79,4 @@ The cols and rows types are specified in sig.ss
     (2 4 2) (2 5) (5) (3) (3)))
 
   )
+)

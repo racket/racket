@@ -1,14 +1,13 @@
+#lang scheme
+
+;; AFAICT, the input to the thing is long gone.
+
 #!/bin/sh
 
 string=? ; exec mzscheme -qr $0
 
 ;; this builds raw-kajitani.ss from full-kajitani
 ;; raw-kajitani.ss is used in build-problems.ss
-
-(require-library "pretty.ss")
-(require-library "function.ss")
-(require-library "errortrace.ss" "errortrace")
-(require-library "string.ss")
 
 (define (make-strings-mutable sexp)
   (cond
@@ -29,40 +28,41 @@ string=? ; exec mzscheme -qr $0
 					 "allowed-email")
 	 read)))
 
-(define counters (make-hash-table))
+(define counters (make-hasheq))
 
-(define email-ht (make-hash-table))
-(for-each (lambda (email) (hash-table-put! email-ht (string->symbol email) null))
+(define email-ht (make-hasheq))
+(for-each (lambda (email) (hash-set! email-ht (string->symbol email) null))
           allowed-emails)
 
 (define kajitani-sets
-  (let ([ht (make-hash-table)])
+  (let ([ht (make-hasheq)])
     (for-each
      (lambda (kaj-set)
-       (let ([email (cadddr kaj-set)])
-         (when (string? email)
-           (string-lowercase! email))
+       (let* ([raw-email (cadddr kaj-set)]
+              [email (if (string? raw-email)
+                         (string-downcase raw-email)
+                         raw-email)])
          (when (member email allowed-emails)
            (let ([email-sym (string->symbol email)])
-             (hash-table-put! email-ht email-sym
+             (hash-set! email-ht email-sym
                               (cons
                                (car kaj-set)
-                               (hash-table-get email-ht email-sym))))
+                               (hash-ref email-ht email-sym))))
            
            (let ([tag (string->symbol (format "~ax~a" (car (car kaj-set)) (cadr (car kaj-set))))]
                  [rows/cols (list (caddr (car kaj-set)) (cdr kaj-set))])
-             (hash-table-put!
+             (hash-set!
               ht
               tag
               (cons
                rows/cols
-               (hash-table-get
+               (hash-ref
                 ht
                 tag
                 (lambda ()
                   null))))))))
      raw-kajitani)
-    (hash-table-map ht (lambda (x l) (list x (reverse l))))))
+    (hash-map ht (lambda (x l) (list x (reverse l))))))
      
 (printf "stats by email~n")
 (let ([total 0])
@@ -76,7 +76,7 @@ string=? ; exec mzscheme -qr $0
 		 len
 		 ;v
 		 ))))
-   (sort (hash-table-map email-ht list)
+   (sort (hash-map email-ht list)
          (lambda (x y) (> (length (cadr x)) (length (cadr y))))))
 
   

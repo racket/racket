@@ -1,6 +1,9 @@
+#lang scheme/base
+(provide raw-misc)
+
 #|
 
-raw-problems.ss
+raw-misc.ss
 
 This file contains the built-in problems in a raw format. It is
 intended to be processed by the solver which will produce
@@ -12,9 +15,8 @@ type:
 The cols and rows types are specified in sig.ss
 
 |#
-
+(define raw-misc
 `(
-
   ("Happy Happy Joy Joy"
    ((5) (9) (2 7) (4 8) (4 7) (6 7) (7 7) (7 6) (7 5) (5 1 4) (4 2 3) (2 4 1) (9) (5))
    ((4) (8) (10) (12) (1 8 1) (2 5 2) (4 3 3) (5 4) (7 5) (8 3) (9 1) (10 1) (10) (8) (4)))
@@ -36,3 +38,4 @@ The cols and rows types are specified in sig.ss
    ((1) (2 2) (1 1) (1) (2 2) (1)))
 
   )
+)

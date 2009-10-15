@@ -1,18 +1,13 @@
-#!/bin/sh
-
-string=? ; exec mred -qmvr $0
+#lang scheme/gui
 
 ;;; these come from:
 ;;; http://www.ask.ne.jp/~hattori/puzzle/menu.html
 ;;; We must cite him in the game somewhere...
 
-(require-library "pretty.ss")
-(require-library "errortrace.ss" "errortrace")
-
 (define pixel-size 10)
 
-(define (main n)
-  (let ([grid (calculate-grid (build-path "hattori" (format "~a.gif" n)))])
+(define (main-n n)
+  (let ([grid (calculate-grid (build-path 'up "hattori" (format "~a.gif" n)))])
     (display-grid grid)
     (pretty-print
      (build-problem 
@@ -162,14 +157,15 @@ string=? ; exec mred -qmvr $0
 	(map on-off->blocks (transpose on-off-lists))
 	on-off-lists))
 
-(call-with-output-file "raw-hattori.ss"
-  (lambda (port)
-    (parameterize ([current-output-port port])
-      (printf "`(~n")
-      (let loop ([n 1])
-	(when (<= n 139)
-	  (main n)
-	  (loop (+ n 1))))
-      (printf ")")))
-  'text
-  'truncate)
+(provide main)
+(define (main)
+  (call-with-output-file "raw-hattori.ss"
+    (lambda (port)
+      (parameterize ([current-output-port port])
+        (printf "`(~n")
+        (let loop ([n 1])
+          (when (<= n 139)
+            (main-n n)
+            (loop (+ n 1))))
+        (printf ")")))
+    #:exists 'truncate))

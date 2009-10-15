@@ -1,4 +1,7 @@
-(("Kajitani 15x15"
+#lang scheme/base
+(provide raw-kajitani)
+(define raw-kajitani
+'(("Kajitani 15x15"
   "k15x15"
   (("19980519-KHA (1)"
     ((2 2)
@@ -14474,4 +14477,4 @@
      (12)
      (7)
      ()
-     ())))))
+     ()))))))

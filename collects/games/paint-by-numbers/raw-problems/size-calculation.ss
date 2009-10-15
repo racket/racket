@@ -1,10 +1,6 @@
-(require-library "function.ss")
-(require-library "pretty.ss")
+#lang scheme
 
-(define raw-hattori (call-with-input-file 
-			(build-path (collection-path "games" "paint-by-numbers")
-				    "raw-hattori.ss")
-		      (lambda (x) (eval (read x)))))
+(require "raw-hattori.ss")
 
 (define (num-possibilities size col)
   (let* ([col-len (length col)]

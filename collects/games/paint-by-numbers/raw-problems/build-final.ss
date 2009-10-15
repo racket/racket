@@ -1,6 +1,6 @@
-#!/bin/sh
+#lang mzscheme
+
 #| 
-exec mzscheme -qr $0 "$@"
 
 This script constructs the contents of the problems directory
 from the solutions directory. This process merely consists of
@@ -30,7 +30,7 @@ in ...
         
         (define set-name ,set-name)
         
-        (define problems (list ,@problems)))
+        (define problems (list ,problems ...)))
      `(unit/sig paint-by-numbers:problem-set^
         (import paint-by-numbers:problem^)
         
@@ -68,4 +68,6 @@ in ...
 (copy-file (build-path 'up "solution-sets" "directory")
            (build-path 'up "problems" "directory"))
 
-(for-each shrink-file (call-with-input-file (build-path 'up "problems" "directory") read))
+(provide main)
+(define (main)
+  (for-each shrink-file (call-with-input-file (build-path 'up "problems" "directory") read)))

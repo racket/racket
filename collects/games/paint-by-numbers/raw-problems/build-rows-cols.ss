@@ -1,6 +1,7 @@
-#!/bin/sh
-
-string=? ; exec mred -mvgqr $0 "$@"
+#lang mzscheme
+(require mred
+         mzlib/class)
+(define argv (current-command-line-arguments))
 
 (when (equal? (vector) argv)
   (error 'build-rows-cols.ss
