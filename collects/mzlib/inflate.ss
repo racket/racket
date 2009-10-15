@@ -908,7 +908,7 @@
 						       (if original-filename
 							   (values (bytes->path original-filename) #t)
 							   (values "unzipped" #f))])
-					   (values (open-output-file (name-filter fn orig?) 'truncate)
+					   (values (open-output-file (name-filter fn orig?) #:exists 'truncate)
 						   #t)))])
 	    (dynamic-wind
 	     void
@@ -923,7 +923,7 @@
     (case-lambda
      [(src) (gunzip src (lambda (name from-file?) name))]
      [(src name-filter)
-      (let ([in (open-input-file src 'binary)])
+      (let ([in (open-input-file src #:mode 'binary)])
 	(dynamic-wind
 	 void
 	 (lambda () (do-gunzip in #f name-filter))
