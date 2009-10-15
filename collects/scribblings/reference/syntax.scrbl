@@ -2195,7 +2195,7 @@ continuation's initial frame. If the frame already has a mark for the
 key, it is replaced. Finally, the @scheme[result-expr] is evaluated;
 the continuation for evaluating @scheme[result-expr] is the
 continuation of the @scheme[with-continuation-mark] expression (so the
-result of the @scheme[resultbody-expr] is the result of the
+result of the @scheme[result-expr] is the result of the
 @scheme[with-continuation-mark] expression, and @scheme[result-expr]
 is in tail position for the @scheme[with-continuation-mark]
 expression).
