@@ -1948,7 +1948,7 @@
                         (extract-patterns #'(pattern ...))])
            (values
              #'(begin
-                 (define honu-literal (lambda () (error 'honu-literal "you suck")))
+                 (define honu-literal (lambda () (error 'honu-literal "cant use this")))
                  ...
                  (define-honu-syntax name
                                      (lambda (stx ctx)
