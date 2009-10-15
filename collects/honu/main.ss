@@ -7,6 +7,8 @@
              syntax/define
              syntax/context
              syntax/name
+             syntax/parse
+             scheme/pretty
              "private/ops.ss"
              "private/util.ss"
              "private/contexts.ss"
@@ -213,190 +215,190 @@
      ;; The given syntax sequence must not be empty
      (let ()
        (define (parse-expr-seq stx)
-	 (define (start-expr stx) 
+         (define (start-expr stx) 
            (let ([trans (get-transformer stx)])
-	     (if trans
-		 (let-values ([(expr rest) (trans stx the-expression-context)])
-		   (if (stx-null? rest)
-		       (list expr)
-		       (cons expr (start-operator rest))))
-		 (syntax-case* stx (#%parens #%braces #%angles) delim-identifier=?
-		   [(v)
-		    (or (number? (syntax-e #'v))
-			(identifier? #'v)
-			(string? (syntax-e #'v)))
-		    (if (operator? #'v)
-			(raise-syntax-error
-			 #f
-			 "operator alone is not an expression and cannot start an expression"
-			 #'v)
-			(list #'v))]
-		   [((#%parens . pexpr))
-                    ;; parens as an expression
-		    (if (stx-null? #'pexpr)
-			(raise-syntax-error
-			 #f
-			 "missing expression inside parentheses as expression"
-			 (stx-car stx))
-			(list (parse-expr #'pexpr)))]
-                   [((#%parens . pexpr) expr . more)
-                    (get-transformer #'pexpr)
-                    ;; Expand pexpr in an expression-or-type context, and make a cast 
-                    ;; if it's a type.
-                    (let ([trans (get-transformer #'pexpr)])
-                      (let-values ([(expr-or-type rest) (trans #'pexpr the-type-or-expression-context)])
-                        (if (honu-type? expr-or-type)
-                            ;; parens as a unary prefix operator
-                            (cons (make-cast-prefix (stx-car (stx-car stx)) expr-or-type)
-                                  (start-expr #'(expr . more)))
-                            ;; must have been an expression
-                            (cons expr-or-type
-                                  (start-operator #'(expr . more))))))]
-		   [((#%braces . pexpr))
-		    (if (stx-null? #'pexpr)
-			(raise-syntax-error
-			 #f
-			 "missing expression inside braces as expression"
-			 (stx-car stx))
-			(list #'(honu-unparsed-block #f obj 'obj #f #f . pexpr)))]
-		   [(op . more)
-		    (and (identifier? #'op)
-                         (memq (syntax-e #'op) unary-prefix-ops))
-		    (cons (make-prefix (stx-car stx)) (start-expr #'more))]
-		   [(expr then . more)
-		    (append (start-expr (list #'expr))
-			    (start-operator #'(then . more)))]
-		   [(bad . rest)
-		    (raise-syntax-error
-		     'expression
-		     "unknown expression form"
-		     #'bad)]))))
-	 (define (start-operator stx)
-	   (unless (or (and (stx-pair? (stx-car stx))
+             (if trans
+               (let-values ([(expr rest) (trans stx the-expression-context)])
+                 (if (stx-null? rest)
+                   (list expr)
+                   (cons expr (start-operator rest))))
+               (syntax-case* stx (#%parens #%braces #%angles) delim-identifier=?
+                             [(v)
+                              (or (number? (syntax-e #'v))
+                                  (identifier? #'v)
+                                  (string? (syntax-e #'v)))
+                              (if (operator? #'v)
+                                (raise-syntax-error
+                                  #f
+                                  "operator alone is not an expression and cannot start an expression"
+                                  #'v)
+                                (list #'v))]
+                             [((#%parens . pexpr))
+                              ;; parens as an expression
+                              (if (stx-null? #'pexpr)
+                                (raise-syntax-error
+                                  #f
+                                  "missing expression inside parentheses as expression"
+                                  (stx-car stx))
+                                (list (parse-expr #'pexpr)))]
+                             [((#%parens . pexpr) expr . more)
+                              (get-transformer #'pexpr)
+                              ;; Expand pexpr in an expression-or-type context, and make a cast 
+                              ;; if it's a type.
+                              (let ([trans (get-transformer #'pexpr)])
+                                (let-values ([(expr-or-type rest) (trans #'pexpr the-type-or-expression-context)])
+                                  (if (honu-type? expr-or-type)
+                                    ;; parens as a unary prefix operator
+                                    (cons (make-cast-prefix (stx-car (stx-car stx)) expr-or-type)
+                                          (start-expr #'(expr . more)))
+                                    ;; must have been an expression
+                                    (cons expr-or-type
+                                          (start-operator #'(expr . more))))))]
+                             [((#%braces . pexpr))
+                              (if (stx-null? #'pexpr)
+                                (raise-syntax-error
+                                  #f
+                                  "missing expression inside braces as expression"
+                                  (stx-car stx))
+                                (list #'(honu-unparsed-block #f obj 'obj #f #f . pexpr)))]
+                             [(op . more)
+                              (and (identifier? #'op)
+                                   (memq (syntax-e #'op) unary-prefix-ops))
+                              (cons (make-prefix (stx-car stx)) (start-expr #'more))]
+                             [(expr then . more)
+                              (append (start-expr (list #'expr))
+                                      (start-operator #'(then . more)))]
+                             [(bad . rest)
+                              (raise-syntax-error
+                                'expression
+                                "unknown expression form"
+                                #'bad)]))))
+         (define (start-operator stx)
+           (unless (or (and (stx-pair? (stx-car stx))
                             (let ([id (stx-car (stx-car stx))])
                               (or (delim-identifier=? #'#%brackets id)
                                   (delim-identifier=? #'#%parens id)
                                   (delim-identifier=? #'#%angles id))))
                        (and (identifier? (stx-car stx))
-			    (hash-ref op-table
+                            (hash-ref op-table
                                       (syntax-e (stx-car stx))
                                       (lambda () #f))))
-	     (raise-syntax-error
-	      'expression
-	      "expected an operator, but found something else"
-	      (stx-car stx)))
-	   ;; Check for postfix operator, first (or parens as a
+             (raise-syntax-error
+               'expression
+               "expected an operator, but found something else"
+               (stx-car stx)))
+           ;; Check for postfix operator, first (or parens as a
            ;;  an "infix" operator)
-	   (cond
-	    [(stx-pair? (stx-car stx))
-	     ;; Convert vector index or application to a binary operator:
-	     (let ([opl (let ([id (stx-car (stx-car stx))])
-                          ;; Note that we don't check for whether #%brackets, etc. is
-                          ;;  bound as a transformer, which means that you can't
-                          ;;  change the parsing of [], (), or <> as an "infix" operator.
-                          (cond
-                           [(delim-identifier=? #'#%brackets id)
-                            (let ([index-expr (parse-expr (stx-cdr (stx-car stx)))])
+           (cond
+             [(stx-pair? (stx-car stx))
+              ;; Convert vector index or application to a binary operator:
+              (let ([opl (let ([id (stx-car (stx-car stx))])
+                           ;; Note that we don't check for whether #%brackets, etc. is
+                           ;;  bound as a transformer, which means that you can't
+                           ;;  change the parsing of [], (), or <> as an "infix" operator.
+                           (cond
+                             [(delim-identifier=? #'#%brackets id)
+                              (let ([index-expr (parse-expr (stx-cdr (stx-car stx)))])
+                                (list (make-infix id)
+                                      index-expr))]
+                             [(delim-identifier=? #'#%parens id)
+                              (let ([arg-exprs (parse-arg-list (stx-cdr (stx-car stx)))])
+                                (list (make-infix id)
+                                      arg-exprs))]
+                             [(delim-identifier=? #'#%angles id)
                               (list (make-infix id)
-                                    index-expr))]
-                           [(delim-identifier=? #'#%parens id)
-			    (let ([arg-exprs (parse-arg-list (stx-cdr (stx-car stx)))])
-			      (list (make-infix id)
-				    arg-exprs))]
-                           [(delim-identifier=? #'#%angles id)
-                            (list (make-infix id)
-                                  ;; These are normally type expressions, so
-                                  ;;  leave parsing to honu-type-ap:
-                                  (stx-cdr (stx-car stx)))]
-                           [else (error "internal error parsing expr")]))])
-	       (if (stx-null? (stx-cdr stx))
-		   opl
-		   (append opl (start-operator (stx-cdr stx)))))]
-	    [(memq (syntax-e (stx-car stx)) unary-postfix-ops)
-	     (if (stx-null? (stx-cdr stx))
-		 (list (make-postfix (stx-car stx)))
-		 (cons (make-postfix (stx-car stx))
-		       (start-operator (stx-cdr stx))))]
-	    [else
-	     ;; Otherwise, must be infix
-	     (cons (make-infix (stx-car stx))
-		   (start-expr (stx-cdr stx)))]))
-	 (start-expr stx))
+                                    ;; These are normally type expressions, so
+                                    ;;  leave parsing to honu-type-ap:
+                                    (stx-cdr (stx-car stx)))]
+                             [else (error "internal error parsing expr")]))])
+                (if (stx-null? (stx-cdr stx))
+                  opl
+                  (append opl (start-operator (stx-cdr stx)))))]
+             [(memq (syntax-e (stx-car stx)) unary-postfix-ops)
+              (if (stx-null? (stx-cdr stx))
+                (list (make-postfix (stx-car stx)))
+                (cons (make-postfix (stx-car stx))
+                      (start-operator (stx-cdr stx))))]
+             [else
+               ;; Otherwise, must be infix
+               (cons (make-infix (stx-car stx))
+                     (start-expr (stx-cdr stx)))]))
+         (start-expr stx))
 
        (define (parse-expr stx)
          (let group ([seq (parse-expr-seq stx)])
-	   ;; seq is a list that mixes exprs with ops.
-	   ;; Find leftmost oper with maximal precedence
-	   (if (null? (cdr seq))
-	       (car seq)
-	       (let loop ([seq seq][before null][op #f][since null])
-		 (cond
-		  [(null? seq)
-		   (cond
-		    [(cast-prefix? op)
+           ;; seq is a list that mixes exprs with ops.
+           ;; Find leftmost oper with maximal precedence
+           (if (null? (cdr seq))
+             (car seq)
+             (let loop ([seq seq][before null][op #f][since null])
+               (cond
+                 [(null? seq)
+                  (cond
+                    [(cast-prefix? op)
                      (let ([after (reverse since)])
                        (group (append (reverse before)
                                       (list (quasisyntax/loc (op-id op)
-                                              (op-cast #,(op-id op) 
-                                                       #,(let ([t (cast-prefix-type op)])
-                                                           (list (honu-type-stx t)
-                                                                 (honu-type-name-stx t)
-                                                                 (honu-type-pred-stx t)
-                                                                 (honu-type-protect-stx t)))
-                                                       #,(car after))))
+                                                             (op-cast #,(op-id op) 
+                                                                      #,(let ([t (cast-prefix-type op)])
+                                                                          (list (honu-type-stx t)
+                                                                                (honu-type-name-stx t)
+                                                                                (honu-type-pred-stx t)
+                                                                                (honu-type-protect-stx t)))
+                                                                      #,(car after))))
                                       (cdr after))))]
-		    [(prefix? op)
+                    [(prefix? op)
                      (let ([after (reverse since)])
                        (group (append (reverse before)
                                       (list (quasisyntax/loc (op-id op)
-                                              (op-app #,(op-id op) #%prefix #,(car after))))
+                                                             (op-app #,(op-id op) #%prefix #,(car after))))
                                       (cdr after))))]
-		    [(postfix? op)
-		     (let ([after (reverse since)]
+                    [(postfix? op)
+                     (let ([after (reverse since)]
                            [before (reverse before)])
-		       (group (append (cdr before)
-				      (list (quasisyntax/loc (op-id op)
-					      (op-app #,(op-id op) #%postfix #,(car before))))
-				      after)))]
-		    [(infix? op)
-		     (let ([after (reverse since)])
-		       (group (append (reverse (cdr before))
-				      (list (quasisyntax/loc (op-id op)
-					      (op-app #,(op-id op) #,(car before) #,(car after))))
-				      (cdr after))))]
-		    [else (error 'parse-expr "not an op!: ~s ~s ~s" op before since)])]
-		  [(not (op? (stx-car seq)))
-		   (loop (cdr seq) before op (cons (car seq) since))]
-		  [((if (prefix? op) >= >)
-                    (hash-ref precedence-table (prec-key (car seq)) (lambda () 0))
-                    (hash-ref precedence-table (prec-key op) (lambda () 0)))
-		   (loop (cdr seq) 
-			 (if op
-			     (append since (list op) before)
-			     since)
-			 (car seq) null)]
-		  [else
-		   (loop (cdr seq) before op (cons (car seq) since))])))))
+                       (group (append (cdr before)
+                                      (list (quasisyntax/loc (op-id op)
+                                                             (op-app #,(op-id op) #%postfix #,(car before))))
+                                      after)))]
+                    [(infix? op)
+                     (let ([after (reverse since)])
+                       (group (append (reverse (cdr before))
+                                      (list (quasisyntax/loc (op-id op)
+                                                             (op-app #,(op-id op) #,(car before) #,(car after))))
+                                      (cdr after))))]
+                    [else (error 'parse-expr "not an op!: ~s ~s ~s" op before since)])]
+                 [(not (op? (stx-car seq)))
+                  (loop (cdr seq) before op (cons (car seq) since))]
+                 [((if (prefix? op) >= >)
+                   (hash-ref precedence-table (prec-key (car seq)) (lambda () 0))
+                   (hash-ref precedence-table (prec-key op) (lambda () 0)))
+                  (loop (cdr seq) 
+                        (if op
+                          (append since (list op) before)
+                          since)
+                        (car seq) null)]
+                 [else
+                   (loop (cdr seq) before op (cons (car seq) since))])))))
 
        (define (parse-arg-list stxs)
-	 (if (stx-null? stxs)
-	     stxs
-	     (let-values ([(val-stxs after-expr terminator) (extract-until stxs (list #'\,))])
-	       (when (and val-stxs
-			  (stx-null? (stx-cdr after-expr)))
-		 (raise-syntax-error
-		  'procedure\ call
-		  "missing expression after comma"
-		  (stx-car after-expr)))
-	       (when (null? val-stxs)
-		 (raise-syntax-error
-		  'procedure\ call
-		  "missing expression before token"
-		  (stx-car after-expr)))
-	       (if val-stxs
-		   (cons (parse-expr val-stxs)
-			 (parse-arg-list (stx-cdr after-expr)))
-		   (list (parse-expr stxs))))))
+         (if (stx-null? stxs)
+           stxs
+           (let-values ([(val-stxs after-expr terminator) (extract-until stxs (list #'\,))])
+             (when (and val-stxs
+                        (stx-null? (stx-cdr after-expr)))
+               (raise-syntax-error
+                 'procedure\ call
+                 "missing expression after comma"
+                 (stx-car after-expr)))
+             (when (null? val-stxs)
+               (raise-syntax-error
+                 'procedure\ call
+                 "missing expression before token"
+                 (stx-car after-expr)))
+             (if val-stxs
+               (cons (parse-expr val-stxs)
+                     (parse-arg-list (stx-cdr after-expr)))
+               (list (parse-expr stxs))))))
 
        parse-expr))
 
@@ -1907,6 +1909,64 @@
 	     (h-return expr))
            (stx-cdr after-expr))))))
 
+  (define-for-syntax (extract-conventions pattern)
+    (let loop ([out '()]
+               [in pattern])
+      (syntax-case in (:)
+        [(any : attribute rest ...)
+         (loop (cons #'(any expr) out)
+               #'(rest ...))
+         #;
+         (loop (cons #'(any attribute) out)
+               #'(rest ...))]
+        [(foo rest1 rest ...)
+         (loop out #'(rest1 rest ...))]
+        [(foo) out])))
+
+  (define-for-syntax (extract-patterns pattern)
+    (let loop ([out '()]
+               [in pattern])
+      (syntax-case in (:)
+        [(any : attribute rest ...)
+         (loop (cons #'any out)
+                #'(rest ...))]
+        [(foo rest1 rest ...)
+         (loop (cons #'foo out)
+               #'(rest1 rest ...))]
+        [(foo) (reverse (cons #'foo out))])))
+
+  (define-honu-syntax honu-macro
+    (lambda (stx ctx)
+      (syntax-case stx (#%braces)
+        [(_ (#%parens honu-literal ...)
+            (#%braces (#%braces name pattern ...))
+            (#%braces (#%braces template ...))
+            . rest)
+         (with-syntax ([(conventions ...)
+                        (extract-conventions #'(pattern ...))]
+                       [(raw-patterns ...)
+                        (extract-patterns #'(pattern ...))])
+           (values
+             #'(begin
+                 (define honu-literal (lambda () (error 'honu-literal "you suck")))
+                 ...
+                 (define-honu-syntax name
+                                     (lambda (stx ctx)
+                                       (define-conventions honu-conventions conventions ...)
+                                       #;
+                                       (printf "Hello from ~a transformer. Syntax is ~a\n" 'name (syntax->datum stx))
+                                       (syntax-parse stx
+                                                     #:literals (honu-literal ...)
+                                                     #:conventions (honu-conventions)
+                                                     [(name raw-patterns ... . rrest)
+                                                      (values
+                                                        #'(honu-unparsed-block
+                                                            #f obj 'obj #f ctx
+                                                            template ...)
+                                                        #'rrest)]))))
+             #'rest))])
+      ))
+
   (define-honu-syntax honu-if
     (lambda (stx ctx)
       (define (get-block-or-statement kw rest)
@@ -2042,8 +2102,10 @@
 
   (define-syntax (#%dynamic-honu-module-begin stx)
     ;; (printf "honu raw sexp ~a\n" (syntax->datum stx))
-    #`(#%plain-module-begin
-	(honu-unparsed-begin #,@(stx-cdr stx))))
+    (let ([result #`(#%plain-module-begin
+                     (honu-unparsed-begin #,@(stx-cdr stx)))])
+      ;; (pretty-print (syntax->datum (expand result)))
+      result))
   
   (define-syntax (\; stx) (raise-syntax-error '\; "out of context" stx))
   
@@ -2095,6 +2157,7 @@
            (rename-out (set! =)
                        (honu-return return)
                        (honu-if if)
+                       (honu-macro macro)
                        (honu-time time)
                        (honu-class class)
                        (honu+ +)
