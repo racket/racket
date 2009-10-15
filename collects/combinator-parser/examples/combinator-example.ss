@@ -37,8 +37,13 @@
   (define-simple-terminals keywords
     (lam (O_paren "(") (C_paren ")")))
   
+  (define string->symbol*
+    (case-lambda
+      [(one) (string->symbol one)]
+      [(one two three) (error 'string->symbol* "Cannot accept so many arguments")]))
+  
   (define-terminals ids
-    ((id "variable" string->symbol) (number (lambda (x) (read (open-input-string x))))))
+    ((id "variable" string->symbol*) (number (lambda (x) (read (open-input-string x))))))
   
   (define app
     (sequence (O_paren (repeat (eta expr)) C_paren)  

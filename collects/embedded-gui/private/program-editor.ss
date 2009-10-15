@@ -72,15 +72,15 @@ is being reset.
       ;  (super on-insert start len)
       ;  (end-edit-sequence))
       
-      (define/override (after-insert start len)
+      (define/augment (after-insert start len)
         (alert-of-modify)
         ;(begin-edit-sequence)
-        (super after-insert start len)
+        #;(super after-insert start len)
         ;(end-edit-sequence)
         )
-      (define/override (after-delete start len)
+      (define/augment (after-delete start len)
         (alert-of-modify)
-        (super after-delete start len))
+        #;(super after-delete start len))
       (super-new)))
   
   (define program-editor%
