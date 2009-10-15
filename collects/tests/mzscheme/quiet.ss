@@ -10,12 +10,14 @@
 (namespace-variable-value 'real-error-port #f
   (lambda ()
     (let ([err  (current-error-port)]
+          [out (current-output-port)]
           [exit (exit-handler)]
           [errh (uncaught-exception-handler)]
           [esch (error-escape-handler)]
           [cust (current-custodian)]
           [orig-thread (current-thread)])
       (namespace-set-variable-value! 'real-error-port err)
+      (namespace-set-variable-value! 'fake-error-port out)
       (namespace-set-variable-value! 'last-error #f)
       ;; we're loading this for the first time:
       ;; make real errors show by remembering the exn
