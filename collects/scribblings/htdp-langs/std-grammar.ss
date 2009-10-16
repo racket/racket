@@ -19,6 +19,8 @@
    form ...
    [test-case @#,scheme[(check-expect expr expr)]
               @#,scheme[(check-within expr expr expr)]
+	      @#,scheme[(check-member-of expr expr (... ...))]
+	      @#,scheme[(check-range expr expr expr)]
               @#,scheme[(check-error expr expr)]]
    (...
     [library-require @#,scheme[(require string)]
