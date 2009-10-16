@@ -319,6 +319,17 @@ der als Wert eine Zahl @scheme[_delta] hat. Der Testfall überprüft, daß jede 
 des ersten @scheme[expr] maximal um @scheme[_delta] 
 von der entsprechenden Zahl im zweiten @scheme[expr] abweicht.}
 
+@defform[(check-member-of expr expr ...)]{
+
+Ähnlich wie @scheme[check-expect]: Der Testfall überprüft, daß das Resultat
+des ersten Operanden gleich dem Wert eines der folgenden Operanden ist.}
+
+@defform[(check-range expr expr expr)]{
+
+Ähnlich wie @scheme[check-expect]: Alle drei Operanden müssen ein
+Zahlen.  Der Testfall überprüft, ob die erste Zahl zwischen der
+zweiten und der dritten liegt (inklusive).}
+
 @defform[(check-error expr expr)]{
 
 Dieser Testfall überprüft, ob der erste @scheme[expr] einen Fehler produziert,

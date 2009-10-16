@@ -1,7 +1,7 @@
 #lang scheme/base
 
 ; DeinProgramm version of collects/test-engine/test-display.ss
-; synched with SVN rev 11385
+; synched with SVN rev 16065
 
 (provide contract-test-display%)
 
@@ -231,6 +231,16 @@
 		 (expected-error-message fail))]
 	 [(message-error? fail)
 	  (for-each print-formatted (message-error-strings fail))]
+         [(not-mem? fail)
+          (print "Tatsächlicher Wert ~F ist keins der Elemente "
+                 (formatter (not-mem-test fail)))
+          (for-each (lambda (a) (print " ~F" (formatter a))) (not-mem-set fail))
+          (print ".")]
+         [(not-range? fail)
+          (print "Tatsächlicher Wert ~F liegt nicht zwischen ~F und ~F (inklusive)."
+                 (formatter (not-range-test fail))
+                 (formatter (not-range-min fail))
+                 (formatter (not-range-max fail)))]
 	 [(property-fail? fail)
 	  (print-string "Eigenschaft falsifizierbar mit")
 	  (for-each (lambda (arguments)

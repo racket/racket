@@ -228,7 +228,7 @@
 	  ((not (procedure? proc))
 	   (contract-violation proc self #f #f))
 	  ((not (procedure-arity-includes? proc arg-count)) ; #### variable arity
-	   (contract-violation proc self "wrong number of parameters" #f)))
+	   (contract-violation proc self "falsche Anzahl von Parametern" #f)))
 	 (attach-name
 	  (object-name proc)
 	  (procedure-reduce-arity
@@ -238,7 +238,7 @@
 	     (lambda (maybe)
 	       (if (not (= (length args) arg-count))
 		   (begin
-		     (contract-violation proc self "wrong number of arguments" #f)
+		     (contract-violation proc self "falsche Anzahl von Argumenten" #f)
 		     (apply-contract return-contract (apply proc args)))
 		   (let* ((old-violation-proc (contract-violation-proc))
 			  (arg-violation? #f)
