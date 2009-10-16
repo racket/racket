@@ -6,7 +6,8 @@
            mzlib/unit
            mzlib/class
            mred
-           framework)
+           framework
+           "README")
   
   (provide tool@)
 
@@ -43,6 +44,15 @@
                   (lambda (l)
                     (cons button (remq button l)))))))
       
-      (when (getenv "PLTDRTESTS")
-        (printf "PLTDRTESTS: installing unit frame mixin\n")
-        (drscheme:get/extend:extend-unit-frame tool-mixin)))))
+      (define tests (getenv "PLTDRTESTS")) 
+      
+      (cond
+        [(not tests) (void)]
+        [(member tests all-tests)
+         ((dynamic-require 'tests/drscheme/run-tests 'run-test-suite)
+          tests
+          #t)]
+        [else
+         (printf "PLTDRTESTS: installing unit frame mixin\n")
+         (drscheme:get/extend:extend-unit-frame tool-mixin)]))))
+

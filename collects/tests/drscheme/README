@@ -1,4 +1,7 @@
-(#|
+#lang scheme/base
+(provide all-tests)
+(define all-tests (map symbol->string '(
+#|
 
 This directory contains code for testing DrScheme. To run the tests,
 load run-test.ss. It will return a function that accepts the names of
@@ -50,4 +53,4 @@ the function, all tests will be run.
 
 |# syncheck-test.ss #|
 
-|#)
+|#)))
