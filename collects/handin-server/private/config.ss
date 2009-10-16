@@ -27,18 +27,26 @@
     (let ([filetime (file-or-directory-modify-seconds config-file)])
       (unless (and filetime (equal? filetime last-filetime))
         (set! last-filetime filetime)
-        (set! raw-config
-              (with-handlers ([void (lambda (e)
-                                      (error 'get-conf
-                                             "could not read conf (~a): ~a"
-                                             config-file
-                                             (exn-message e)))])
-                (when raw-config
-                  ;; can't use log-line from logger, since it makes a cycle
-                  (fprintf (current-error-port)
-                           (format "loading configuration from ~a\n"
-                                   config-file)))
-                (with-input-from-file config-file read)))
+        (with-handlers
+            ([void (lambda (e)
+                     (raise-user-error 'get-conf "could not read conf (~a): ~a"
+                                       config-file (exn-message e)))])
+          (when raw-config
+            ;; can't use log-line from logger, since it makes a cycle,
+            ;; but make sure it's written in one shot; in any case, don't
+            ;; write anything if this is the first read, since the logger
+            ;; is not initialized yet (and if there's an error at this
+            ;; stage, the server will exit)
+            (fprintf (current-error-port)
+                     (format "reloading configuration from ~a\n"
+                             config-file)))
+          (let ([c (with-input-from-file config-file read)])
+            (if (and (list? c)
+                     (andmap (lambda (x)
+                               (and (pair? x) (symbol? (car x))))
+                             c))
+              (set! raw-config c)
+              (error "malformed configuration file content"))))
         (set! config-cache (make-hasheq)))))
   (hash-ref config-cache key
     (lambda ()
