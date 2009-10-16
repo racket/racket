@@ -1203,6 +1203,17 @@
          '(x y z))
         (list '(x1 y1 z1 x y z)))
   
+  ;; test that redex match can be used in a side-condition 
+  ;; with the same language that is used to define the 
+  ;; reduction relation.
+  (test (apply-reduction-relation
+         (reduction-relation
+          empty-language
+          (--> any_1 3
+               (side-condition (redex-match empty-language (any_1 any_2) (term any_1)))))
+         '(a b))
+        '(3))
+  
   (test (apply-reduction-relation
          (reduction-relation
           empty-language

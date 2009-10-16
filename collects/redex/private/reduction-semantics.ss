@@ -688,7 +688,7 @@
                       ;; are (morally) the same as the compile-pattern-bindings
                       (bind-withs orig-name
                                   #'#t 
-                                  lang
+                                  #'lang-id2
                                   lang-nts
                                   sides/withs/freshs
                                   'predicate
@@ -741,7 +741,7 @@
                                      (loop (cdr mtchs) acc)]))]))
                            other-matches)))))
                name
-               (λ (lang) (let (test-case-compile-pattern-bindings ...) `lhs-w/extras))
+               (λ (lang-id2) (let (test-case-compile-pattern-bindings ...) `lhs-w/extras))
                lhs-source
                case-id)))))))
   
