@@ -52,8 +52,14 @@ positions are initialized with the given @scheme[b]s.
                 immutable?)]{
  Returns an immutable byte string with the same content
  as @scheme[bstr], returning @scheme[bstr] itself if @scheme[bstr] is
- immutable.}
+ immutable.
 
+@examples[
+(bytes->immutable-bytes (bytes 65 65 65))
+(define b (bytes->immutable-bytes (make-bytes 5 65)))
+(bytes->immutable-bytes b)
+(eq? (bytes->immutable-bytes b) b)
+]}
 
 @defproc[(byte? [v any/c]) boolean?]{ Returns @scheme[#t] if @scheme[v] is
  a byte (i.e., an exact integer between @scheme[0] and @scheme[255]
@@ -211,7 +217,11 @@ string.
  reading characters from a port; see @secref["encodings"] for more
  details.)  If @scheme[err-char] is @scheme[#f], and if the
  @scheme[start] to @scheme[end] substring of @scheme[bstr] is not a
- valid UTF-8 encoding overall, then the @exnraise[exn:fail:contract].}
+ valid UTF-8 encoding overall, then the @exnraise[exn:fail:contract].
+ 
+@examples[
+(bytes->string/utf-8 (bytes #xc3 #xa7 #xc3 #xb0 #xc3 #xb6 #xc2 #xa3))
+]}
 
 @defproc[(bytes->string/locale [bstr bytes?]
                                [err-char (or/c #f char?) #f]
@@ -237,7 +247,11 @@ string.
  @scheme[integer->char], so the decoding always succeeds.
  The @scheme[err-char]
  argument is ignored, but present for consistency with the other
- operations.}
+ operations.
+ 
+@examples[
+(bytes->string/latin-1 (bytes #xfe #xd3 #xd1 #xa5))
+]}
 
 @defproc[(string->bytes/utf-8 [str string?]
                               [err-byte (or/c #f byte?) #f]
@@ -247,7 +261,14 @@ string.
  Produces a byte string by encoding the @scheme[start] to @scheme[end]
  substring of @scheme[str] via UTF-8 (always succeeding). The
  @scheme[err-byte] argument is ignored, but included for consistency with
- the other operations.}
+ the other operations.
+@examples[
+(define b
+ (bytes->string/utf-8 (bytes #xc3 #xa7 #xc3 #xb0 #xc3 #xb6 #xc2 #xa3)))
+
+(string->bytes/utf-8 b)
+(bytes->string/utf-8 (string->bytes/utf-8 b))
+]}
 
 @defproc[(string->bytes/locale [str string?]
                                [err-byte (or/c #f byte?) #f]
@@ -275,7 +296,15 @@ string.
  If @scheme[err-byte] is @scheme[#f], and if the
  @scheme[start] to @scheme[end] substring of @scheme[str] has a character
  with a value greater than @scheme[255], then the
- @exnraise[exn:fail:contract].}
+ @exnraise[exn:fail:contract].
+ 
+@examples[
+(define b
+ (bytes->string/latin-1 (bytes #xfe #xd3 #xd1 #xa5)))
+
+(string->bytes/latin-1 b)
+(bytes->string/latin-1 (string->bytes/latin-1 b))
+]}
 
 @defproc[(string-utf-8-length [str string?]
                               [start exact-nonnegative-integer? 0]
@@ -283,7 +312,13 @@ string.
          exact-nonnegative-integer?]{
  Returns the length in bytes of the UTF-8 encoding of @scheme[str]'s
  substring from @scheme[start] to @scheme[end], but without actually
- generating the encoded bytes.}
+ generating the encoded bytes.
+ 
+@examples[
+(string-utf-8-length 
+  (bytes->string/utf-8 (bytes #xc3 #xa7 #xc3 #xb0 #xc3 #xb6 #xc2 #xa3)))
+(string-utf-8-length "hello")
+]}
 
 @defproc[(bytes-utf-8-length [bstr bytes?]
                              [err-char (or/c #f char?) #f]
@@ -295,7 +330,12 @@ string.
  actually generating the decoded characters. If @scheme[err-char] is
  @scheme[#f] and the substring is not a UTF-8 encoding overall, the
  result is @scheme[#f]. Otherwise, @scheme[err-char] is used to resolve
- decoding errors as in @scheme[bytes->string/utf-8].}
+ decoding errors as in @scheme[bytes->string/utf-8].
+ 
+@examples[
+(bytes-utf-8-length (bytes #xc3 #xa7 #xc3 #xb0 #xc3 #xb6 #xc2 #xa3))
+(bytes-utf-8-length (make-bytes 5 65))
+]}
 
 @defproc[(bytes-utf-8-ref [bstr bytes?]
                           [skip exact-nonnegative-integer? 0]
@@ -310,7 +350,16 @@ string.
  @scheme[err-char] is @scheme[#f]), or if the substring decoding produces
  fewer than @scheme[skip] characters, the result is @scheme[#f]. If
  @scheme[err-char] is not @scheme[#f], it is used to resolve decoding
- errors as in @scheme[bytes->string/utf-8].}
+ errors as in @scheme[bytes->string/utf-8].
+ 
+@examples[
+(bytes-utf-8-ref (bytes #xc3 #xa7 #xc3 #xb0 #xc3 #xb6 #xc2 #xa3) 0)
+(bytes-utf-8-ref (bytes #xc3 #xa7 #xc3 #xb0 #xc3 #xb6 #xc2 #xa3) 1)
+(bytes-utf-8-ref (bytes #xc3 #xa7 #xc3 #xb0 #xc3 #xb6 #xc2 #xa3) 2)
+(bytes-utf-8-ref (bytes 65 66 67 68) 0)
+(bytes-utf-8-ref (bytes 65 66 67 68) 1)
+(bytes-utf-8-ref (bytes 65 66 67 68) 2)
+]}
 
 @defproc[(bytes-utf-8-index [bstr bytes?]
                             [skip exact-nonnegative-integer? 0]
@@ -327,7 +376,16 @@ string.
  @scheme[err-char] is @scheme[#f]), or if the substring decoding produces
  fewer than @scheme[skip] characters, the result is @scheme[#f]. If
  @scheme[err-char] is not @scheme[#f], it is used to resolve decoding
- errors as in @scheme[bytes->string/utf-8].}
+ errors as in @scheme[bytes->string/utf-8].
+
+@examples[
+(bytes-utf-8-index (bytes #xc3 #xa7 #xc3 #xb0 #xc3 #xb6 #xc2 #xa3) 0)
+(bytes-utf-8-index (bytes #xc3 #xa7 #xc3 #xb0 #xc3 #xb6 #xc2 #xa3) 1)
+(bytes-utf-8-index (bytes #xc3 #xa7 #xc3 #xb0 #xc3 #xb6 #xc2 #xa3) 2)
+(bytes-utf-8-index (bytes 65 66 67 68) 0)
+(bytes-utf-8-index (bytes 65 66 67 68) 1)
+(bytes-utf-8-index (bytes 65 66 67 68) 2)
+]}
 
 @; ----------------------------------------
 @section{Bytes to Bytes Encoding Conversion}
@@ -413,7 +471,9 @@ depending on the @exec{iconv} library that is installed; the
 number), in the user's path, in the system directory, or in the
 current executable's directory at run time, and the DLL must either
 supply @tt{_errno} or link to @filepath{msvcrt.dll} for @tt{_errno};
-otherwise, only the guaranteed combinations are available.}
+otherwise, only the guaranteed combinations are available.
+
+Use @scheme[bytes-convert] with the result to convert byte strings.}
 
 
 @defproc[(bytes-close-converter [converter bytes-converter?]) void]{
@@ -495,7 +555,15 @@ third result of @scheme[bytes-convert] is @scheme['complete]). This
 state can affect both further processing of input and further
 generation of output, but only for conversions that involve ``shift
 sequences'' to change modes within a stream. To terminate an input
-sequence and reset the converter, use @scheme[bytes-convert-end].}
+sequence and reset the converter, use @scheme[bytes-convert-end].
+
+@examples[
+(define convert (bytes-open-converter "UTF-8" "UTF-16"))
+(bytes-convert convert (bytes 65 66 67 68))
+(bytes 195 167 195 176 195 182 194 163)
+(bytes-convert convert (bytes 195 167 195 176 195 182 194 163))
+(bytes-close-converter convert)
+]}
 
 
 @defproc[(bytes-convert-end [converter bytes-converter?]
@@ -536,8 +604,15 @@ The result of @scheme[bytes-convert-end] is two values:
 @defproc[(bytes-converter? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a @tech{byte converter} produced
-by @scheme[bytes-open-converter], @scheme[#f] otherwise.}
+by @scheme[bytes-open-converter], @scheme[#f] otherwise.
 
+@examples[
+(bytes-converter? (bytes-open-converter "UTF-8" "UTF-16"))
+(bytes-converter? (bytes-open-converter "whacky" "not likely"))
+(define b (bytes-open-converter "UTF-8" "UTF-16"))
+(bytes-close-converter b)
+(bytes-converter? b)
+]}
 
 @defproc[(locale-string-encoding) any]{
 
