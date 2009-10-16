@@ -63,10 +63,16 @@
         ([exn? (current-check-handler)])
       (thunk))))
 
+;; top-level-check-around : ( -> a) -> a
+(define top-level-check-around
+  (lambda (thunk)
+    (check-around thunk)
+    (void)))
+
 ;; parameter current-check-around : (( -> a) -> a)
 (define current-check-around
   (make-parameter
-   check-around
+   top-level-check-around
    (lambda (v)
      (if (procedure? v)
          v

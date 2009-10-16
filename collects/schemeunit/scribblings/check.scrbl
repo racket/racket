@@ -339,4 +339,7 @@ trace.  }
 Parameter containing the function that handles the execution
 of checks.  The default value wraps the evaluation of
 @scheme[thunk] in a @scheme[with-handlers] call that calls
-@scheme[current-check-handler] if an exception is raised.  }
+@scheme[current-check-handler] if an exception is raised and then
+(when an exception is not raised) discards the result, returning
+@scheme[(void)]. 
+}
