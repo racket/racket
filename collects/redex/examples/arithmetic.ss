@@ -38,5 +38,10 @@
    [(--> (in-hole e-ctxt_1 a) (in-hole e-ctxt_1 b))
     (c--> a b)]))
 
+(define traces-file
+  (make-temporary-file "traces~a.ps"))
+
 (traces/ps reductions (term (- (* (sqrt 36) (/ 1 2)) (+ 1 2)))
-           "/home/mflatt/Desktop/p.ps")
+           traces-file)
+
+(printf "Traces are in ~a~n" traces-file)
