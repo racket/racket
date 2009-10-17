@@ -2283,7 +2283,8 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
 Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int argc,
 				   Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
                                    int *_flags)
-/* If not app, app2, or app3, just return a known procedure, if any */
+/* If not app, app2, or app3, just return a known procedure, if any,
+   and do not check arity. */
 {
   int offset = 0, single_use = 0;
   Scheme_Object *bad_app = NULL;
@@ -2325,7 +2326,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
     *_flags = SCHEME_CLOSURE_DATA_FLAGS(data);
       
-    if (data->num_params == argc) {
+    if ((data->num_params == argc) || (!app && !app2 && !app3)) {
       sz = scheme_closure_body_size(data, 1);
 
       if ((sz >= 0) && (single_use || (sz <= (info->inline_fuel * (argc + 2))))) {
@@ -2357,7 +2358,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
       *_flags = (CLOS_PRESERVES_MARKS | CLOS_SINGLE_RESULT);
   }
 
-  if (le && SCHEME_PROCP(le)) {
+  if (le && SCHEME_PROCP(le) && (app || app2 || app3)) {
     Scheme_Object *a[1];
     a[0] = le;
     if (!scheme_check_proc_arity(NULL, argc, 0, 1, a))  {
