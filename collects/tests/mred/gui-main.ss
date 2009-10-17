@@ -12,7 +12,7 @@
 		    (sleep 1/2)
 		    (loop #t)))))]
 	 [wait
-	  (opt-lambda (test desc-string [time 5])
+	  (lambda (test desc-string [time 5])
 	    (let ([int 1/2])
 	      (let loop ([sofar 0])
 		(cond

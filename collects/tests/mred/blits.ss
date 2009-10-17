@@ -1,3 +1,4 @@
+#lang scheme/gui
 
 (define ok-frame (make-object frame% "Ok"))
 (define ok-panel #f)
@@ -57,14 +58,14 @@
 
 (define targets
   (list
-   (build-path (collection-path "frtime") "clock.png")
-   (self-mask (build-path (collection-path "frtime") "clock.png"))
+   (build-path (collection-path "frtime") "tool" "clock.png")
+   (self-mask (build-path (collection-path "frtime") "tool" "clock.png"))
    (build-path (collection-path "icons") "foot-up.png")
    (build-path (collection-path "icons") "mred.xbm")
    (self-mask (build-path (collection-path "icons") "mred.xbm"))
    (plus-mask (build-path (collection-path "icons") "mred.xbm")
 	      (build-path (collection-path "icons") "PLT-206.png"))
-   (plus-mask (build-path (collection-path "frtime") "clock.png")
+   (plus-mask (build-path (collection-path "frtime") "tool" "clock.png")
 	      (build-path (collection-path "icons") "mred.xbm"))
    (build-path (collection-path "icons") "htdp-icon.gif")
    ))
