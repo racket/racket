@@ -1,12 +1,10 @@
 #lang scheme
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2))
-         "2.ss")
+(require schemeunit/test schemeunit/text-ui "2.ss")
 
 (define s0 (initialize (flat-contract integer?) =))
 (define s2 (push (push s0 2) 1))
 
-(test/text-ui
+(run-tests
  (test-suite
   "stack"
   (test-true

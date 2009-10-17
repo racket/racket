@@ -1,14 +1,12 @@
 #lang scheme
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2)))
-(require "1.ss" "1b.ss")
+(require schemeunit/test schemeunit/text-ui "1.ss" "1b.ss")
 
 (add (make-basic-customer 'mf "matthias" "brookstone"))
 (add (make-basic-customer 'rf "robby" "beverly hills park"))
 (add (make-basic-customer 'fl "matthew" "pepper clouds town"))
 (add (make-basic-customer 'sk "shriram" "i city"))
 
-(test/text-ui
+(run-tests
  (test-suite 
   "manager"
   (test-equal? "id lookup" "matthias" (name 'mf))
