@@ -1,6 +1,7 @@
 (module contract-opt-tests mzscheme
   (require mzlib/contract
-           (planet "test.ss" ("schematics" "schemeunit.plt" 2 1)))
+           schemeunit
+           schemeunit/text-ui)
     
   (define (exn:fail:contract-violation? exn)
     (if (regexp-match #rx"broke" (exn-message exn)) #t #f))
@@ -102,7 +103,7 @@
      
      (test-exn
       "flat-contract 2"
-      (match-msg "expected procedure")
+      (match-msg "expected a flat")
       (λ ()
         (contract (opt/c (flat-contract (λ (x y) #f))) 1 'pos 'neg)))
      
@@ -112,23 +113,17 @@
                   (contract (opt/c (cons/c number? (flat-contract (λ (x) (= x 2)))))
                             (cons 1 2) 'pos 'neg)))
      
-     (test-exn
-      "cons/c 2"
-      (match-msg "expected two flat")
-      (λ ()
-        (contract (opt/c (cons/c number? (-> number? any))) (cons 1 2) 'pos 'neg)))
-     
      (test-case
-      "cons-immutable/c 1"
+      "cons/c 1"
       (check-pred (λ (x) (and (= (car x) 1) (= (cdr x) 2)))
-                  (contract (opt/c (cons-immutable/c number? (flat-contract (λ (x) (= x 2)))))
-                            (cons-immutable 1 2) 'pos 'neg)))
+                  (contract (opt/c (cons/c number? (flat-contract (λ (x) (= x 2)))))
+                            (cons 1 2) 'pos 'neg)))
      
      (test-case
-      "cons-immutable/c 2"
+      "cons/c 2"
       (check-pred (λ (x) (and (= (car x) 1) (= ((cdr x) 1) 2)))
-                  (contract (opt/c (cons-immutable/c number? (-> number? any)))
-                            (cons-immutable 1 (λ (x) 2)) 'pos 'neg)))
+                  (contract (opt/c (cons/c number? (-> number? any)))
+                            (cons 1 (λ (x) 2)) 'pos 'neg)))
      
      (test-case
       "between/c 1"
@@ -265,26 +260,25 @@
                   (opt/c (cons/c boolean? (flat-contract integer?)))))
   
      (test-case
-      "cons-immutable/c name 1"
-      (check-name '(cons-immutable/c boolean? integer?)
-                  (opt/c (cons-immutable/c boolean? (flat-contract integer?)))))
+      "cons/c name 1"
+      (check-name '(cons/c boolean? integer?)
+                  (opt/c (cons/c boolean? (flat-contract integer?)))))
      
      (test-case
-      "cons-immutable/c name 2"
-      (check-name '(cons-immutable/c boolean? integer?) 
-                  (opt/c (cons-immutable/c boolean? (flat-contract integer?)))))
+      "cons/c name 2"
+      (check-name '(cons/c boolean? integer?) 
+                  (opt/c (cons/c boolean? (flat-contract integer?)))))
      
      (test-case
-      "cons-immutable/c name 3"
-      (check-name '(cons-immutable/c boolean? integer?) 
-                  (opt/c (cons-immutable/c boolean? (flat-contract integer?)))))
+      "cons/c name 3"
+      (check-name '(cons/c boolean? integer?) 
+                  (opt/c (cons/c boolean? (flat-contract integer?)))))
      
      (test-case
-      "cons-immutable/c name 4"
-      (check-name '(cons-immutable/c (-> boolean? boolean?) integer?)
-                  (opt/c (cons-immutable/c (-> boolean? boolean?) integer?))))
+      "cons/c name 4"
+      (check-name '(cons/c (-> boolean? boolean?) integer?)
+                  (opt/c (cons/c (-> boolean? boolean?) integer?))))
      
      ))
   
-  (require (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2 1)))
-  (test/text-ui opt-tests))
+  (run-tests opt-tests))
