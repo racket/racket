@@ -1,3 +1,4 @@
+
 (require
  mzlib/etc
  mzlib/class
@@ -7,15 +8,15 @@
  "../aligned-pasteboard.ss"
  "../aligned-editor-container.ss")
 
-(printf "running tests for pasteboard-lib.ss~n")
+;; (printf "running tests for pasteboard-lib.ss~n")
 
 ;;pasteboard-root: ((is-a?/c aligned-pasteboard<%>) -> (is-a?/c aligned-pasteboard<%>))
 ;;gets the top most aligned pasteboard in the tree of pasteboards and containers
 
 (let*
-    ([pb1 (instantiate aligned-vertical-pasteboard% ())]
-     [pb2 (instantiate aligned-horizontal-pasteboard% ())]
-     [pb3 (instantiate aligned-vertical-pasteboard% ())]
+    ([pb1 (instantiate vertical-pasteboard% ())]
+     [pb2 (instantiate horizontal-pasteboard% ())]
+     [pb3 (instantiate vertical-pasteboard% ())]
      [es2 (instantiate aligned-editor-snip% () (editor pb2))]
      [es3 (instantiate aligned-editor-snip% () (editor pb3))]
      
@@ -42,9 +43,9 @@
   )
 
 (let*
-    ([pb1 (instantiate aligned-vertical-pasteboard% ())]
-     [pb2 (instantiate aligned-horizontal-pasteboard% ())]
-     [pb3 (instantiate aligned-vertical-pasteboard% ())]
+    ([pb1 (instantiate vertical-pasteboard% ())]
+     [pb2 (instantiate horizontal-pasteboard% ())]
+     [pb3 (instantiate vertical-pasteboard% ())]
      [es1 (instantiate aligned-editor-snip% () (editor pb1))]
      [es3 (instantiate aligned-editor-snip% () (editor pb3))]
      
@@ -73,9 +74,9 @@
 ;;pasteboard-parent: ((is-a?/c pasteboard%) . -> . (is-a?/c aligned-editor-container<%>))
 ;;gets the canvas or snip that the pasteboard is displayed in
 (let*
-    ([pb1 (instantiate aligned-vertical-pasteboard% ())]
-     [pb2 (instantiate aligned-horizontal-pasteboard% ())]
-     [pb3 (instantiate aligned-vertical-pasteboard% ())]
+    ([pb1 (instantiate vertical-pasteboard% ())]
+     [pb2 (instantiate horizontal-pasteboard% ())]
+     [pb3 (instantiate vertical-pasteboard% ())]
      [es2 (instantiate aligned-editor-snip% () (editor pb2))]
      [es3 (instantiate aligned-editor-snip% () (editor pb3))]
      
@@ -102,9 +103,9 @@
   )
 
 (let*
-    ([pb1 (instantiate aligned-vertical-pasteboard% ())]
-     [pb2 (instantiate aligned-horizontal-pasteboard% ())]
-     [pb3 (instantiate aligned-vertical-pasteboard% ())]
+    ([pb1 (instantiate vertical-pasteboard% ())]
+     [pb2 (instantiate horizontal-pasteboard% ())]
+     [pb3 (instantiate vertical-pasteboard% ())]
      [es2 (instantiate aligned-editor-snip% () (editor pb2))]
      [es3 (instantiate aligned-editor-snip% () (editor pb3))]
      
@@ -130,10 +131,11 @@
    es3)
   )
 
+#|
 ;;num-sizeable: ((is-a?/c aligned-pasteboard<%>) . -> . number?)
 ;;the number of snips in the pasteboard that can be resized
 (let*
-    ([pb1 (instantiate aligned-vertical-pasteboard% ())]
+    ([pb1 (instantiate vertical-pasteboard% ())]
      [es1 (instantiate editor-snip% () (editor (instantiate text% ())))]
      [es2 (instantiate editor-snip% () (editor (instantiate text% ())))]
      [es3 (instantiate editor-snip% () (editor (instantiate text% ())))]
@@ -164,11 +166,11 @@
   )
 
 (let*
-    ([pb1 (instantiate aligned-vertical-pasteboard% ())]
-     [es1 (instantiate aligned-editor-snip% () (editor (instantiate aligned-vertical-pasteboard% ())))]
-     [es2 (instantiate aligned-editor-snip% () (editor (instantiate aligned-vertical-pasteboard% ())))]
-     [es3 (instantiate aligned-editor-snip% () (editor (instantiate aligned-vertical-pasteboard% ())))]
-     [es4 (instantiate aligned-editor-snip% () (editor (instantiate aligned-vertical-pasteboard% ())))]
+    ([pb1 (instantiate vertical-pasteboard% ())]
+     [es1 (instantiate aligned-editor-snip% () (editor (instantiate vertical-pasteboard% ())))]
+     [es2 (instantiate aligned-editor-snip% () (editor (instantiate vertical-pasteboard% ())))]
+     [es3 (instantiate aligned-editor-snip% () (editor (instantiate vertical-pasteboard% ())))]
+     [es4 (instantiate aligned-editor-snip% () (editor (instantiate vertical-pasteboard% ())))]
      
      [frame (instantiate frame% () (label "l") (width 10) (height 10))]
      [canvas (instantiate aligned-editor-canvas% () (parent frame) (editor pb1))])
@@ -202,3 +204,4 @@
   )
 
 (printf "tests done~n")
+|#

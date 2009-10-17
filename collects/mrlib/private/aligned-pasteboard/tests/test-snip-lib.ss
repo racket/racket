@@ -1,3 +1,4 @@
+
 (require
  mzlib/etc
  mzlib/class
@@ -7,14 +8,14 @@
  "../aligned-editor-container.ss"
  "test-macro.ss")
 
-(printf "running tests for snip-lib.ss~n")
+;;(printf "running tests for snip-lib.ss~n")
 
 ;;snip-width: ((is-a?/c aligned-pasteboard<%>) (is-a?/c snip%) . -> . number?)
 ;;the width of a snip in the given pasteboard
 (let*
-    ([pb1 (instantiate aligned-vertical-pasteboard% ())]
+    ([pb1 (instantiate vertical-pasteboard% ())]
      [es1 (instantiate editor-snip% () (editor pb1))]
-     [pb2 (instantiate aligned-vertical-pasteboard% ())]
+     [pb2 (instantiate vertical-pasteboard% ())]
      
      [frame (instantiate frame% () (label "l") (width 10) (height 10))]
      [canvas (instantiate aligned-editor-canvas% () (parent frame) (editor pb2))])
@@ -25,15 +26,15 @@
   (sleep/yield 1)
   (test
    equal?
-   (snip-width pb2 es1)
-   20)
+   (snip-width #;pb2 es1)
+   20.0)
   
   (send es1 resize 200 90)
   (sleep/yield 1)
   (test
    equal?
-   (snip-width pb2 es1)
-   200)
+   (snip-width #;pb2 es1)
+   200.0)
   
   (send frame show false)
   )
@@ -41,9 +42,9 @@
 ;;snip-height: ((is-a?/c aligned-pasteboard<%>) (is-a?/c snip%) . -> . number?)
 ;;the height of a snip in the given pasteboard
 (let*
-    ([pb1 (instantiate aligned-vertical-pasteboard% ())]
+    ([pb1 (instantiate vertical-pasteboard% ())]
      [es1 (instantiate editor-snip% () (editor pb1))]
-     [pb2 (instantiate aligned-vertical-pasteboard% ())]
+     [pb2 (instantiate vertical-pasteboard% ())]
      
      [frame (instantiate frame% () (label "l") (width 10) (height 10))]
      [canvas (instantiate aligned-editor-canvas% () (parent frame) (editor pb2))])
@@ -54,15 +55,15 @@
   (sleep/yield 1)
   (test
    equal?
-   (snip-height pb2 es1)
-   20)
+   (snip-height #;pb2 es1)
+   20.0)
   
   (send es1 resize 200 90)
   (sleep/yield 1)
   (test
    equal?
-   (snip-height pb2 es1)
-   90)
+   (snip-height #;pb2 es1)
+   90.0)
   
   (send frame show false)
   )
@@ -95,11 +96,11 @@
   )
 
 (let*
-    ([pb1 (instantiate aligned-horizontal-pasteboard% ())]
-     [pb2 (instantiate aligned-horizontal-pasteboard% ())]
-     [pb3 (instantiate aligned-horizontal-pasteboard% ())]
-     [pb4 (instantiate aligned-horizontal-pasteboard% ())]
-     [pb5 (instantiate aligned-horizontal-pasteboard% ())]
+    ([pb1 (instantiate horizontal-pasteboard% ())]
+     [pb2 (instantiate horizontal-pasteboard% ())]
+     [pb3 (instantiate horizontal-pasteboard% ())]
+     [pb4 (instantiate horizontal-pasteboard% ())]
+     [pb5 (instantiate horizontal-pasteboard% ())]
      [es2 (instantiate aligned-editor-snip% () (editor pb2))]
      [es3 (instantiate aligned-editor-snip% () (editor pb3))]
      [es4 (instantiate aligned-editor-snip% () (editor pb4))]
@@ -139,7 +140,7 @@
 ;;fold-snip: (lambda (b?) ((any? b? . -> . b?) b? (is-a?/c snip%) . -> . b?))
 ;;the application of f on all snips from snip to the end in a foldl foldr mannor
 (let*
-    ([pb1 (instantiate aligned-vertical-pasteboard% ())]
+    ([pb1 (instantiate vertical-pasteboard% ())]
      [es1 (instantiate editor-snip% () (editor (instantiate text% ())))]
      [es2 (instantiate editor-snip% () (editor (instantiate text% ())))]
      [es3 (instantiate editor-snip% () (editor (instantiate text% ())))]
@@ -163,10 +164,10 @@
    =
    (fold-snip
     (lambda (snip total-height)
-      (+ (snip-height pb1 snip)
+      (+ (snip-height #;pb1 snip)
          total-height))
     0
-    es4)
+    es1)
    400)
   
   (send frame show false)
@@ -176,7 +177,7 @@
 ;;for-each-snip: (((is-a?/c snip%) . -> . (void)) (is-a/c? snip%) . -> . (void))
 ;;applies the function to all the snips
 (let*
-    ([pb1 (instantiate aligned-vertical-pasteboard% ())]
+    ([pb1 (instantiate vertical-pasteboard% ())]
      [es1 (instantiate editor-snip% () (editor (instantiate text% ())))]
      [es2 (instantiate editor-snip% () (editor (instantiate text% ())))]
      [es3 (instantiate editor-snip% () (editor (instantiate text% ())))]
@@ -195,7 +196,7 @@
   (for-each-snip
    (lambda (snip)
      (set! count (add1 count)))
-   es4)
+   es1)
   
   (test
    =
@@ -204,4 +205,4 @@
   
   (send frame show false)
   )
-(printf "tests done~n")
+;;(printf "tests done~n")

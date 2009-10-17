@@ -1,5 +1,5 @@
 (module test-macro mzscheme
-  
+  (require mzlib/etc)
   (provide test)
   
   ;; test: (lambda (a?) ((a? a? . -> . boolean?) a? a? . -> . (void))
@@ -11,6 +11,7 @@
               (with-handlers
                   ([exn? identity])
                 actual)])
-         (and (not (exn? result))
-              (test result expected))))))
+         (unless (and (not (exn? result))
+                      (test result expected))
+           (fprintf (current-error-port) "test failed: ~s != ~s\n" result expected))))))
   )
