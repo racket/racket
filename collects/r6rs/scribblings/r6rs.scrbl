@@ -9,12 +9,14 @@
                      rnrs/conditions-6
                      rnrs/io/simple-6
                      rnrs/r5rs-6
+                     rnrs/hashtables-6
                      r6rs
                      (only-in scheme/base
                               lib
                               current-library-collection-paths
                               parameterize
-                              uncaught-exception-handler)))
+                              uncaught-exception-handler
+                              make-hash)))
 
 @(define guide-src '(lib "scribblings/guide/guide.scrbl"))
 
@@ -1116,7 +1118,11 @@ See also @secref["conformance"].
              (hashtable-clear! #f "r6rs-lib-Z-H-14.html" "node_idx_1204")
              (equal-hash #f "r6rs-lib-Z-H-14.html" "node_idx_1218")]
 
-A hashtable is a dictionary in the sense of @schememodname[scheme/dict].
+A hashtable is a dictionary in the sense of
+@schememodname[scheme/dict], and hash table operations interact with
+threads in the same way for hash tables created with
+@scheme[make-hash] (e.g., @scheme[hashtable-ref] and
+@scheme[hashtable-set!] are thread-safe).
 
 @r6rs-module[rnrs/enums-6 (rnrs enums (6))
              "r6rs-lib-Z-H-15.html" "node_idx_1226" "Enumerations"
