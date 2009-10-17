@@ -3,7 +3,9 @@
 exec mred  "$0" "$@"
 |#
 #lang scheme
-(require plot mzlib/md5)
+(require plot mzlib/md5 scheme/runtime-path)
+
+(define-runtime-path here "./")
 
 (define (read-file file)
   (with-input-from-file file (lambda () (read-bytes (file-size file)))))
@@ -11,8 +13,10 @@ exec mred  "$0" "$@"
 (define-syntax run-test
   (syntax-rules ()
     [(_ description (plot args ...) file-name)
-     (let* ([result-file-name      (string-append file-name "-out.png")]
-            [expected-file-name    (string-append file-name ".png")])
+     (let* ([result-file-name
+             (build-path here (string-append file-name "-out.png"))]
+            [expected-file-name
+             (build-path here (string-append file-name ".png"))])
        (plot args ... #:out-file result-file-name)
        ;; WILL COMPARE by MD5 hash.
        (printf "testing \"~a\" ... " description)
