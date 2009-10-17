@@ -1,3 +1,4 @@
+#lang scheme
 
 (require mzlib/list net/head)
 
@@ -24,4 +25,5 @@
 		   #f)
 		  rest))))))
 
-(with-output-to-file "mailbox" (lambda () (write mailbox) (newline)) 'truncate)
+(with-output-to-file "mailbox" (lambda () (write mailbox) (newline)) 
+                     #:exists 'truncate)
