@@ -182,11 +182,13 @@ add this test:
      "ab\n"
      "ab\n(97 #\"b\" #\"\\n\" #\"\\2\")"))
   
-  (define drs-frame (wait-for-drscheme-frame))
-  (define interactions-text (send drs-frame get-interactions-text))
-  (set-language-level! (list #rx"Pretty Big"))
+  (define drs-frame #f)
+  (define interactions-text #f)
   
   (define (run-test)
+    (set! drs-frame (wait-for-drscheme-frame))
+    (set! interactions-text  (send drs-frame get-interactions-text))
+    (set-language-level! (list #rx"Pretty Big"))
     (output-err-port-checking) ;; must come first
     ;(long-io/execute-test)
     (reading-test)

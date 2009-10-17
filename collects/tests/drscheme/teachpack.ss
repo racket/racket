@@ -9,8 +9,8 @@
   
   (provide run-test)
   
-  (define drs-frame (wait-for-drscheme-frame))
-  (define interactions-text (send drs-frame get-interactions-text))
+  (define drs-frame 'not-yet-drs-frame)
+  (define interactions-text 'not-yet-interactions-text)
   
   (define good-teachpack-name "teachpack-tmp~a")
   
@@ -233,6 +233,8 @@
         [else #f])))
   
   (define (run-test)
+    (set! drs-frame (wait-for-drscheme-frame))
+    (set! interactions-text (send drs-frame get-interactions-text))
     ;(good-tests)
     ;(bad-tests)
     (test-built-in-teachpacks)))

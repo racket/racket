@@ -43,19 +43,22 @@
                     tests)))
 
 (define temp-files '())
+(define init-temp-files void)
+
 (define (write-test-modules* name code)
-  (let ([file (build-path (this-expression-source-directory) (format "~a.ss" name))])
-    (set! temp-files (cons file temp-files))
-    (with-output-to-file file #:exists 'truncate
-      (lambda () (printf "~s\n" code)))))
+  (set! init-temp-files
+        (let ([old init-temp-files])
+          (λ ()
+            (let ([file (build-path (this-expression-source-directory) (format "~a.ss" name))])
+              (set! temp-files (cons file temp-files))
+              (with-output-to-file file #:exists 'truncate
+                (lambda () (printf "~s\n" code))))
+            (old)))))
+
 (define-syntax write-test-modules
   (syntax-rules (module)
     [(_ (module name lang x ...) ...)
      (begin (write-test-modules* 'name '(module name lang x ...)) ...)]))
-
-(define drs (wait-for-drscheme-frame))
-(define interactions-text (send drs get-interactions-text))
-(define definitions-text (send drs get-definitions-text))
 
 (define (single-test test)
   (let/ec k
@@ -123,7 +126,16 @@
                        error-ranges-expected
                        (send interactions-text get-error-ranges))))])))))
 
+
+(define drs 'not-yet-drs-frame)
+(define interactions-text 'not-yet-interactions-text)
+(define definitions-text 'not-yet-definitions-text)
+
 (define (run-test)
+  (set! drs (wait-for-drscheme-frame))
+  (set! interactions-text  (send drs get-interactions-text))
+  (set! definitions-text (send drs get-definitions-text))
+  (init-temp-files)
   
   (run-use-compiled-file-paths-tests)
   

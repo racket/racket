@@ -18,67 +18,23 @@
       [(section . <= . 29) '("How to Design Programs" "Intermediate Student with lambda")]
       [else '("How to Design Programs" "Advanced Student")]))
 
-  (define sample-solutions-teachpack-filename
-    (build-path (collection-path "tests" "drscheme") "sample-solutions-testsuite-tp.scm"))
-  
-  (define sample-solutions-dir
-    (let ([try1
-           (collection-path "solutions")]
-          [try2
-           (build-path (collection-path "mzlib")
-                       'up
-                       'up
-                       'up
-                       "robby"
-                       "collects"
-                       "solutions")])
-      (cond
-        [(directory-exists? try1) try1]
-        [else try2])))
-  
-  (unless (directory-exists? sample-solutions-dir)
-    (error 'sample-solutions.ss "expected directory ~s to exist" sample-solutions-dir))
-  
-  (set! sample-solutions-dir (normalize-path sample-solutions-dir))
-  
-  (define toc (call-with-input-file (build-path sample-solutions-dir "toc.ss") read))
   (define default-toc-entry '(#f ()))
   
-  (define labels
-    (let* ([all-info (call-with-input-file (build-path (collection-path "solutions") 
-                                                       'up 'up "proj" "book" "solutions"
-                                                       "labels.scm") read)]
-           [ex-labels (filter (lambda (x) (and (string=? (substring (car x) 0 3) "ex:")
-                                               (> (string-length (car x)) 3)))
-                              all-info)])
-      (map (lambda (x) 
-             (cons (string-append (substring (car x) 3 (string-length (car x))) ".scm")
-                   (cdr x)))
-           ex-labels)))
-  
-  (define (filename->section filename)
+  (define (filename->section labels filename)
     (let* ([label (car (memf (lambda (x) (string=? (car x) filename)) labels))]
            [section (car (cadr label))])
       section))
          
-  (define sample-solutions
-    (sort
-     (filter (lambda (x)
-               (and (> (string-length x) 3)
-                    (string=? "scm" (substring x (- (string-length x) 3) (string-length x)))
-                    (memf (lambda (y) (string=? (car y) x)) labels)))
-             (directory-list sample-solutions-dir))
-     (lambda (fx fy)
-       (< (filename->section fx) (filename->section fy)))))
-
   (define separator-sexp "should be")
   
-  (define (test-single-file filename)
-    (let* ([toc-entry (let ([lookup (assoc (string->symbol filename) toc)])
+  (define ((test-single-file labels sample-solutions-dir toc) filename)
+    (let* ([sample-solutions-teachpack-filename
+            (build-path (collection-path "tests" "drscheme") "sample-solutions-testsuite-tp.scm")]
+           [toc-entry (let ([lookup (assoc (string->symbol filename) toc)])
                         (if lookup
                             (cdr lookup)
                             default-toc-entry))]
-           [section (filename->section filename)]
+           [section (filename->section labels filename)]
            [language (section->language section)]
            [errors-ok? (car toc-entry)]
            [teachpacks (cadr toc-entry)])
@@ -248,4 +204,53 @@
          (zero? (send c blue))))
     
   (define (run-test)
-    (for-each test-single-file sample-solutions)))
+    (define sample-solutions-dir
+      (let ([try1
+             (with-handlers ((exn:fail? (λ (x) #f)))
+               (collection-path "solutions"))]
+            [try2
+             (build-path (collection-path "mzlib")
+                         'up
+                         'up
+                         'up
+                         "robby"
+                         "collects"
+                         "solutions")])
+        (cond
+          [(and try1 (directory-exists? try1)) try1]
+          [else try2])))
+    
+    (define stupid-internal-definitions-syntax
+      (unless (directory-exists? sample-solutions-dir)
+        (error 'sample-solutions.ss "expected directory ~s to exist" sample-solutions-dir)))
+    
+    (define stupid-internal-definitions-syntax2
+      (set! sample-solutions-dir (normalize-path sample-solutions-dir)))
+    
+    (define toc (call-with-input-file (build-path sample-solutions-dir "toc.ss") read))
+    
+    
+  
+  (define labels
+    (let* ([all-info (call-with-input-file (build-path (collection-path "solutions") 
+                                                       'up 'up "proj" "book" "solutions"
+                                                       "labels.scm") read)]
+           [ex-labels (filter (lambda (x) (and (string=? (substring (car x) 0 3) "ex:")
+                                               (> (string-length (car x)) 3)))
+                              all-info)])
+      (map (lambda (x) 
+             (cons (string-append (substring (car x) 3 (string-length (car x))) ".scm")
+                   (cdr x)))
+           ex-labels)))
+    
+    (define sample-solutions
+      (sort
+       (filter (lambda (x)
+                 (and (> (string-length x) 3)
+                      (string=? "scm" (substring x (- (string-length x) 3) (string-length x)))
+                      (memf (lambda (y) (string=? (car y) x)) labels)))
+               (directory-list sample-solutions-dir))
+       (lambda (fx fy)
+         (< (filename->section labels fx) (filename->section labels fy)))))
+    
+    (for-each (test-single-file labels sample-solutions-dir toc) sample-solutions)))

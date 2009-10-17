@@ -2,32 +2,6 @@
 (require "module-lang-test-utils.ss")
 (provide run-test)
 
-#;
-(error #<<--
-need to add tests cases that check the value of the use-compiled-file handler:
-
-non-errortrace mode, saving compiled-files
-
-> (list (build-path "compiled" "drscheme") (build-path "compiled"))
-
-non-errortrace mode, not saving compiled files:
-
-  the default, eg (list (build-path "compiled"))
-
-> >> errortrace mode, saving compiled files:
-> >>
-> >>   (list (build-path "compiled" "drscheme" "errortrace")
-> >>         (build-path "compiled" "errortrace"))
-> >>
-> >> errortrace mode, not saving compiled files:
-> >>
-> >>   (list (build-path "compiled" "errortrace"))
-> >>
-> >> And the two lists should also include (list (build-path
-> >> "compiled")) at the end.
---
-)
-
 ;; set up for tests that need external files
 (write-test-modules
  (module module-lang-test-tmp1 mzscheme
