@@ -1,4 +1,6 @@
-(require "sort.scm"
+#lang scheme/base
+
+(require "sort.ss"
          "vector-util.scm"
          srfi/27)
 
@@ -52,17 +54,20 @@
 	     (not (vector-sorted? my< v1)))
 	 (list v v1 v2 v3 v4))))
 
-(define (do-test max-size)
-  (let lp ((i 0))
-    (let ((i (cond ((= i 1000)
-		    (write-char #\.)
-		    (flush-output (current-output-port))
-		    0)
-		   (else (+ i 1))))
-	  (v (random-vector (random-integer max-size))))
-      (cond ((unstable-sort-test v) => (lambda (x) (cons 'u x)))
-	    ((stable-sort-test   v) => (lambda (x) (cons 's x)))
-	    (else (lp i))))))
+(define (do-test max-size [max-iterations #f])
+  (let lp ((i 0)
+           (total-iterations 0))
+    (when (or (not max-iterations)
+              (< total-iterations max-iterations))
+      (let ((i (cond ((= i 1000)
+                      (write-char #\.)
+                      (flush-output (current-output-port))
+                      0)
+                     (else (+ i 1))))
+            (v (random-vector (random-integer max-size))))
+        (cond ((unstable-sort-test v) => (lambda (x) (cons 'u x)))
+              ((stable-sort-test   v) => (lambda (x) (cons 's x)))
+              (else (lp i (+ total-iterations 1))))))))
 
 (define (random-vector size)
   (let ((v (make-vector size)))
@@ -74,3 +79,6 @@
     (do ((i (- (vector-length v) 1) (- i 1)))
 	((< i 0))
       (vector-set! v i (- (random-integer range) half)))))
+
+
+(do-test 100 10000)
