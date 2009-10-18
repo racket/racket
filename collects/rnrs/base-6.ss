@@ -523,6 +523,9 @@
      (syntax/loc stx (r5rs:lambda args (let () . body)))]))
 
 (define-for-syntax (check-label id orig-stx def)
+  ;; This test shouldn't be needed, and it interferes
+  ;;  with macro-introduced bindings:
+  #;
   (when (eq? 'module (syntax-local-context))
     (when (identifier-binding id #f)
       (raise-syntax-error
