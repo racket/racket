@@ -73,5 +73,6 @@
       (test-case case-name case-body ...) ...))))
 
 (define-simple-check (check-regexp-match regex string)
-  (regexp-match regex string))
+  (and (string? string) 
+       (regexp-match regex string)))
 
