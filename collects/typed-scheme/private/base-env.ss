@@ -7,6 +7,7 @@
  scheme/unsafe/ops
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
+ "extra-procs.ss"
  (only-in '#%kernel [apply kernel:apply])
  scheme/promise
  (only-in string-constants/private/only-once maybe-print-message)
@@ -85,7 +86,9 @@
        [(-Port) -Sexp]
        [() -Sexp])]
 [ormap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c))]
-[andmap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c))]
+[andmap (-polydots (a c b) (cl->*
+                              ;(make-pred-ty (list (make-pred-ty (list a) B d) (-lst a)) B (-lst d))
+                              (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c)))]
 [newline (cl-> [() -Void]
                [(-Port) -Void])]
 [not (-> Univ B)]
@@ -638,6 +641,9 @@
 [find-system-path (Sym . -> . -Path)]
 
 [object-name (Univ . -> . Univ)]
+
+[path? (make-pred-ty -Path)]
+
 ;; scheme/cmdline
 
 [parse-command-line
@@ -706,6 +712,20 @@
 [some-system-path->string (-Path . -> . -String)]
 [string->some-system-path 
  (-String (Un (-val 'unix) (-val 'windows)) . -> . -Path)]
+
+;; scheme/file
+[fold-files 
+ (-poly 
+  (a) 
+  (let ([funarg* (-Path (one-of/c 'file 'dir 'link) a . -> . (-values (list a Univ)))]
+        [funarg (-Path (one-of/c 'file 'dir 'link) a . -> . a)])
+    (cl->*
+     (funarg a . -> . a)
+     (funarg a (-opt -Pathlike) . -> . a)
+     (funarg a (-opt -Pathlike) Univ . -> . a)
+     (funarg* a . -> . a)
+     (funarg* a (-opt -Pathlike) . -> . a)
+     (funarg* a (-opt -Pathlike) Univ . -> . a))))]
 
 ;; scheme/math
 

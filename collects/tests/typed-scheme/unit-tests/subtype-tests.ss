@@ -125,6 +125,8 @@
    
    ;; polymorphic function types should be subtypes of the function top
    [(-poly (a) (a . -> . a)) top-func]   
+
+   [(cl->* (-Number . -> . -String) (-Boolean . -> . -String)) ((Un -Number -Boolean) . -> . -String)]
    ))
 
 (define-go 

@@ -179,6 +179,18 @@
 
 ;(trace subtypes*/varargs)
 
+(define (combine-arrs arrs)
+  (match arrs
+    [(list (arr: dom1 rng1 #f #f '()) (arr: dom rng #f #f '()) ...)
+     (cond
+      [(null? dom) (make-arr dom1 rng1 #f #f '())]
+      ((not (apply = (length dom1) (map length dom)))
+       #f)
+      ((not (foldl type-equal? rng1 rng))
+       #f)
+      [else (make-arr (apply map (lambda args (make-Union args)) (cons dom1 dom)) rng1 #f #f '())])]
+    [_ #f]))
+
 
 ;; the algorithm for recursive types transcribed directly from TAPL, pg 305
 ;; List[(cons Number Number)] type type -> List[(cons Number Number)]
@@ -218,6 +230,12 @@
 	      [(list (Value: (? string? n)) (Base: 'String _)) A0]
 	      ;; tvars are equal if they are the same variable
 	      [(list (F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]
+              ;; special-case for case-lambda/union
+              [(list (Function: arr1) (Function: (list arr2)))
+               (when (null? arr1) (fail! s t))
+               (or (arr-subtype*/no-fail A0 (combine-arrs arr1) arr2)
+                   (supertype-of-one/arr A0 arr2 arr1)
+                   (fail! s t))]
 	      ;; case-lambda
 	      [(list (Function: arr1) (Function: arr2))
 	       (when (null? arr1) (fail! s t))
