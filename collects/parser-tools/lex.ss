@@ -93,6 +93,8 @@
 					       name))
 				       re-act-lst
 				       name-lst)))
+             (when (null? spec/re-act-lst)
+               (raise-syntax-error (if src-pos? 'lexer/src-pos 'lexer) "expected at least one action" stx))
              (let-values (((trans start action-names no-look disappeared-uses)
                            (build-lexer re-actname-lst)))
                (when (vector-ref action-names start) ;; Start state is final
@@ -185,10 +187,16 @@
       ((_ name-form body-form)
        (let-values (((name body)
                      (normalize-definition (syntax (define-syntax name-form body-form)) #'lambda)))
+         
          #`(define-syntax #,name 
-             (let ((certifier (syntax-local-certifier)))
+             (let ((certifier (syntax-local-certifier))
+                   (func #,body))
+               (unless (procedure? func)
+                 (raise-syntax-error 'define-lex-trans "expected a procedure as the transformer, got ~e" func))
+               (unless (procedure-arity-includes? func 1)
+                 (raise-syntax-error 'define-lex-trans "expected a procedure that accepts 1 argument as the transformer, got ~e" func))
                (make-lex-trans (lambda (stx)
-                                 (certifier (#,body stx) 'a)))))))
+                                 (certifier (func stx) 'a)))))))
       (_
        (raise-syntax-error
         #f
