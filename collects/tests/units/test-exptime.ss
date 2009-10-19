@@ -1,4 +1,4 @@
-(require-for-syntax mzlib/unit-exptime)
+(require (for-syntax mzlib/unit-exptime))
 (require "test-harness.ss"
          ;unit
          mzlib/unit)
