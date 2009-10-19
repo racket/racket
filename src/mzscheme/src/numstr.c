@@ -1734,6 +1734,8 @@ static Scheme_Object *bytes_to_integer (int argc, Scheme_Object *argv[])
 #endif
     break;
   }
+
+  /* throw an error here */
 }
 
 #define MZ_U8HI 0

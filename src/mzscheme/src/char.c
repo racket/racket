@@ -269,8 +269,7 @@ Scheme_Object *scheme_make_char(mzchar ch)
 
 Scheme_Object *scheme_make_char_or_nul(mzchar v)
 {
-  if ((v >= 0) 
-      && (v <= 0x10FFFF)
+  if ((v <= 0x10FFFF)
       && ((v < 0xD800) || (v > 0xDFFF)))
     return scheme_make_char(v);
 

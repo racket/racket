@@ -103,7 +103,7 @@ inline static void *alloc_cache_find_pages(FreeBlock *blockfree, size_t len, siz
   return NULL;
 }
 
-static void alloc_cache_return_mem(VM *vm, void *p, size_t len, int zeroed)
+static void alloc_cache_return_mem(VM *vm, char *p, size_t len, int zeroed)
 {
   int i;
   FreeBlock *blockfree = vm->freeblocks;
@@ -186,7 +186,7 @@ static void vm_flush_freed_pages(VM *vm)
 
 static void *vm_malloc_pages(VM *vm, size_t len, size_t alignment, int dirty_ok)
 {
-  void *r;
+  char *r;
   FreeBlock *blockfree = vm->freeblocks;
 
   if (!page_size)
@@ -206,7 +206,7 @@ static void *vm_malloc_pages(VM *vm, size_t len, size_t alignment, int dirty_ok)
     if (alignment) {
       /* We allocated too large so we can choose the alignment. */
       size_t extra    = alignment;
-      void *real_r    = (void *)(((unsigned long)r + (alignment - 1)) & (~(alignment - 1)));
+      char *real_r    = (char*)(((unsigned long)r + (alignment - 1)) & (~(alignment - 1)));
       long pre_extra  = real_r - r;
 
       /* in front extra */

@@ -2774,7 +2774,6 @@ static char *locale_recase(int to_up,
   s = in XFORM_OK_PLUS id;
   wl = mz_mbsnrtowcs(NULL, &s, iilen, 0, &state);
   s = NULL;
-  if (wl < 0) return NULL;
 
   /* Allocate space */
   if (wl < MZ_WC_BUF_SIZE) {
@@ -2788,7 +2787,6 @@ static char *locale_recase(int to_up,
   s = in XFORM_OK_PLUS id;
   wl2 = mz_mbsnrtowcs(wc, &s, iilen, wl + 1, &state);
   s = NULL;
-  if (wl2 < 0) return NULL; /* Very strange! */
 
   wc[wl] = 0; /* just in case */
 
@@ -2813,7 +2811,6 @@ static char *locale_recase(int to_up,
   ws = wc;
   ml = mz_wcsnrtombs(NULL, (const wchar_t **)&ws, wl, 0, &state);
   ws = NULL;
-  if (ml < 0) return NULL;
 
   /* Allocate space */
   *oolen = ml;
@@ -2827,7 +2824,6 @@ static char *locale_recase(int to_up,
   ws = wc;
   ml2 = mz_wcsnrtombs(out + od, (const wchar_t **)&ws, wl, ml + 1, &state);
   ws = NULL;
-  if (ml2 < 0) return NULL; /* Very strange! */
 
   out[od + ml] = 0;
 

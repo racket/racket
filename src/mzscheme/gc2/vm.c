@@ -15,7 +15,7 @@ static inline size_t vm_round_up_to_page_size(size_t len, size_t page_size) {
 
 #if !( defined(_WIN32) || defined(OSKIT) )
 typedef struct {
-  void *start;
+  char *start;
   long len;
   short age;
   short zeroed;

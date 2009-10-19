@@ -183,7 +183,8 @@ void GC_set_collect_inform_callback(void (*func)(int major_gc, long pre_used, lo
 /*****************************************************************************/
 static void garbage_collect(NewGC*, int);
 
-static void out_of_memory()
+/* do not use the gc parameter or check if its NULL in the future */
+static void out_of_memory(NewGC* gc)
 {
   if (GC_report_out_of_memory)
     GC_report_out_of_memory();
@@ -193,7 +194,7 @@ static void out_of_memory()
 
 static void *ofm_malloc(size_t size) {
   void *ptr = malloc(size);
-  if (!ptr) out_of_memory();
+  if (!ptr) out_of_memory(NULL);
   return ptr;
 }
 
@@ -226,7 +227,7 @@ inline static void check_used_against_max(NewGC *gc, size_t len)
             gc->used_pages -= delta;
             GC_out_of_memory();
           }
-          out_of_memory();
+          out_of_memory(NULL);
         }
       }
     }
@@ -244,7 +245,7 @@ static void *malloc_pages(NewGC *gc, size_t len, size_t alignment)
   void *ptr;
   check_used_against_max(gc, len);
   ptr = vm_malloc_pages(gc->vm, len, alignment, 0);
-  if (!ptr) out_of_memory();
+  if (!ptr) out_of_memory(NULL);
   return ptr;
 }
 
@@ -253,7 +254,7 @@ static void *malloc_dirty_pages(NewGC *gc, size_t len, size_t alignment)
   void *ptr;
   check_used_against_max(gc, len);
   ptr = vm_malloc_pages(gc->vm, len, alignment, 1);
-  if (!ptr) out_of_memory();
+  if (!ptr) out_of_memory(NULL);
   return ptr;
 }
 
@@ -701,7 +702,7 @@ static void *allocate_medium(const size_t request_size_bytes, const int type)
 inline static mpage *gen0_create_new_mpage(NewGC *gc) {
   mpage *newmpage;
 
-  newmpage = malloc_mpage(gc);
+  newmpage = malloc_mpage();
   newmpage->addr = malloc_dirty_pages(gc, GEN0_PAGE_SIZE, APAGE_SIZE);
   newmpage->size_class = 0;
   newmpage->size = PREFIX_SIZE;
