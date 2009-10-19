@@ -71,4 +71,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          y-place?
          image?
          mode?
-         angle?)
+         angle?
+         
+         image-width
+         image-height)

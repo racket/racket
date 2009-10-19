@@ -33,7 +33,10 @@
          x-place?
          y-place?
          mode?
-         angle?)
+         angle?
+         
+         image-width
+         image-height)
 
 
 (define (show-image g [extra-space 0])
@@ -165,9 +168,14 @@
                 'mode
                 i
                 arg)
-     (if (string? arg)
-         (string->symbol arg)
-         arg)]
+     (let ([sym (if (string? arg)
+                    (string->symbol arg)
+                    arg)])
+       sym
+       #;
+       (if (eq? sym 'outline)
+           1
+           sym))]
     [(width height)
      (check-arg fn-name
                 (and (number? arg)
@@ -580,7 +588,13 @@
   (list (make-point 0 0)
         (make-point width 0)
         (make-point width height)
-        (make-point 0 height)))
+        (make-point 0 height))
+  
+  #;
+  (list (make-point 0 0)
+        (make-point (- width 1) 0)
+        (make-point (- width 1) (- height 1))
+        (make-point 0 (- height 1))))
   
 
 ;;       circle
@@ -623,3 +637,5 @@
 ;; see pin-line in slideshow
 ;; the initial strings in the second instance of add-curve are like the strings in add-line
 
+(define/chk (image-width image) (image-right image))
+(define/chk (image-height image) (image-bottom image))
