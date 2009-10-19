@@ -431,6 +431,46 @@
                            "expected (identifier contract)"
                            (car args))])))
 
+(define-syntax (with-contract-helper stx)
+  (syntax-case stx ()
+    [(_ ())
+     #'(begin)]
+    [(_ (p0 p ...))
+     (raise-syntax-error 'with-contract
+                         "no definition found for identifier"
+                         #'p0)]
+    [(_ (p ...) body0 body ...)
+     (let ([expanded-body0 (local-expand #'body0
+                                         (syntax-local-context)
+                                         (kernel-form-identifier-list))])
+       (define (filter-ids to-filter to-remove)
+         (filter (λ (i1)
+                   (not (memf (λ (i2)
+                                (bound-identifier=? i1 i2))
+                              to-remove)))
+                 to-filter))
+       (syntax-case expanded-body0 (begin define-values define-syntaxes)
+         [(begin sub ...)
+          (syntax/loc stx
+            (with-contract-helper (p ...) sub ... body ...))]
+         [(define-syntaxes (id ...) expr)
+          (let ([ids (syntax->list #'(id ...))])
+            (with-syntax ([def expanded-body0]
+                          [unused-ps (filter-ids (syntax->list #'(p ...)) ids)])
+              (with-syntax ()
+                (syntax/loc stx
+                  (begin def (with-contract-helper unused-ps body ...))))))]
+         [(define-values (id ...) expr)
+          (let ([ids (syntax->list #'(id ...))])
+            (with-syntax ([def expanded-body0]
+                          [unused-ps (filter-ids (syntax->list #'(p ...)) ids)])
+              (syntax/loc stx
+                (begin def (with-contract-helper unused-ps body ...)))))]
+         [else
+          (quasisyntax/loc stx
+            (begin #,expanded-body0
+                   (with-contract-helper (p ...) body ...)))]))]))
+
 (define-syntax (with-contract stx)
   (when (eq? (syntax-local-context) 'expression)
     (raise-syntax-error 'with-contract
@@ -525,7 +565,7 @@
                         (quote-syntax free-ctc-id)
                         (quote-syntax blame-id)
                         (quote-syntax blame-stx)) ...))
-             new-stx
+             (with-contract-helper (marked-p ...) new-stx)
              (define-values (ctc-id ...)
                (values (verify-contract 'with-contract ctc) ...))
              (define-values ()
