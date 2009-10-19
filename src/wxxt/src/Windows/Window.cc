@@ -2513,19 +2513,22 @@ wxWindow *wxWindow::FindChildByWidget(Widget w)
   wxChildNode *node, *next;
   wxWindow *r;
 
-  if ((w == X->frame)
-      || (w == X->handle))
-    return this;
+  if (X) {
+    if ((w == X->frame)
+        || (w == X->handle))
+      return this;
+  }
 
-
-  for (node = children->First(); node; node = next) {
-    wxWindow *child;
-    next = node->Next();
-    child = (wxWindow*)(node->Data());
-    if (child) {
-      r = child->FindChildByWidget(w);
-      if (r)
-        return r;
+  if (children) {
+    for (node = children->First(); node; node = next) {
+      wxWindow *child;
+      next = node->Next();
+      child = (wxWindow*)(node->Data());
+      if (child) {
+        r = child->FindChildByWidget(w);
+        if (r)
+          return r;
+      }
     }
   }
 
