@@ -7,8 +7,8 @@
           (for-label planet/config)
           (for-label planet/util))
 
-@(define-syntax-rule (eg (code resl) ...) 
-   (interaction 
+@(define-syntax-rule (eg (code resl) ...)
+   (interaction
      (eval:alts code resl)
      ...))
 

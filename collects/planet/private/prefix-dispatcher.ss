@@ -122,7 +122,3 @@
                             (λ (e) else-clause)])
              (((get-prefix-dispatcher (list (list option (λ () result)) ...))
                elt)))))]))
-   
-    
-    
-  

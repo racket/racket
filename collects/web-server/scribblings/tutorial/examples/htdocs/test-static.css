@@ -1,15 +1,12 @@
 body {
-
   margin-left: 10%;
-
   margin-right: 10%;
-
 }
 
-p { font-family: sans-serif }
+p { font-family: sans-serif; }
 
-h1 { color: green }
+h1 { color: green; }
 
-h2 { font-size: small }
+h2 { font-size: small; }
 
-span.hot { color: red }
+span.hot { color: red; }
