@@ -29,6 +29,7 @@
 #lang scheme/base
 
 (require
+ scheme/runtime-path
  (lib "list.ss" "srfi" "1")
  (file "check.ss")
  (file "result.ss")
@@ -49,6 +50,8 @@
 
 (define-check (bad)
   (fail-check))
+
+(define-runtime-path check-file "check.ss")
 
 (define check-tests
   (test-suite
@@ -288,7 +291,7 @@
           (cns (current-namespace)))
       (parameterize ((current-namespace destns))
         (namespace-require '(for-syntax scheme/base))
-        (namespace-require '(file "check.ss"))
+        (namespace-require `(file ,(path->string check-file)))
         ;; First check that the right check macro got
         ;; used: ie that it didn't just compile the thing
         ;; as an application.
@@ -303,7 +306,7 @@
         ;; is writable
         (let ((stx-string "(check = 1 2)"))
           (write (compile (read-syntax
-                           (string->path "file")
+                           check-file
                            (open-input-string stx-string)))
                  (open-output-string))))))
    

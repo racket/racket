@@ -2,7 +2,8 @@
 
 (require (for-syntax scheme/base))
 
-(require srfi/1
+(require scheme/runtime-path
+         srfi/1
          srfi/13)
 
 (require (file "test.ss")
@@ -24,6 +25,8 @@
     "Example 3"
     #t)))
 
+(define-runtime-path test-file "test.ss")
+
 (define-check (check-test-results test successes failures errors)
   (let ((results (run-test test)))
     (check = (length results) (+ successes failures errors))
@@ -44,7 +47,7 @@
   (let ((destns (make-base-namespace))
         (cns (current-namespace)))
     (parameterize ((current-namespace destns))
-      (namespace-require '(file "test.ss"))
+      (namespace-require `(file ,(path->string test-file)))
       (check-exn (lambda (e)
                    (check-pred exn:fail:syntax? e)
                    (check string-contains (exn-message e) msg))
