@@ -743,7 +743,6 @@ ensure that the exported functions are treated parametrically.
 @defform/subs[
  (with-contract blame-id (wc-export ...) free-var-list body ...+)
  ([wc-export
-   id
    (id contract-expr)]
   [free-var-list
    code:blank
@@ -752,10 +751,9 @@ ensure that the exported functions are treated parametrically.
 Generates a local contract boundary.  The @scheme[contract-expr]
 form cannot appear in expression position.  The @scheme[body] of the
 form allows definition/expression interleaving like a @scheme[module]
-body.  Names bound within the @scheme[body] must be exported to be
-accessible from outside the @scheme[with-contract] form.  Such
-@scheme[id]s can either be paired with a @scheme[contract-expr] or
-exported without a contract.
+body.  All names defined within the @scheme[with-contract] form are
+visible externally, but those names listed in the @scheme[wc-export]
+list are protected with the corresponding contract.
 
 The @scheme[blame-id] is used for the positive positions of
 contracts paired with exported @scheme[id]s.  Contracts broken

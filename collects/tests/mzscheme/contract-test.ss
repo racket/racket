@@ -2940,9 +2940,30 @@
   (test/spec-passed
    'with-contract9
    '(let ()
-      (with-contract region1 (f)
+      (with-contract region1 ()
         (define f 3))
       f))
+  
+  (test/spec-failed
+   'with-contract10
+   '(let ()
+      (with-contract r
+        ([x number?])
+        (define x 3)
+        (define-values () 
+          (begin (set! x #f) (values))))
+      x)
+   "(region r)")
+  
+  (test/spec-failed
+   'with-contract11
+   '(let ()
+      (with-contract r
+        ([x number?])
+        (define x 3))
+      (set! x #f)
+      x)
+   "top-level")
 
 ;                                                                                                                         
 ;                                                                                                                         
