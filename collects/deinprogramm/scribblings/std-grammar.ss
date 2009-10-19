@@ -48,7 +48,7 @@
 	 @#,scheme[(letrec ((id expr) (... ...)) expr)]
 	 @#,scheme[(let* ((id expr) (... ...)) expr) ]
 	 @#,scheme[(begin expr expr (... ...))]
-	 @#,scheme[(contract id contr)]
+	 @#,scheme[(contract contr)]
 	 @#,scheme[(for-all ((id contr) (... ...)) expr)]
 	 @#,scheme[(==> expr expr)]
 	 expr-rule ...]
@@ -73,7 +73,7 @@
 		     @#,scheme[(require module-id)]
                      @#,scheme[(require (lib string string ...))]
                      @#,scheme[(require (planet string package))]])
-   (...
+   #;(...
     [package @#,scheme[(string string number number)]])))
 
 (define prim-nonterms
