@@ -78,8 +78,13 @@ Returns the next floating-point value in the stream.
 @defmethod[(get-unterminated-bytes [len (or/c (box/c exact-nonnegative-integer?) false/c) #f])
            (or/c bytes? false/c)]{
 
-Returns the next byte string from the stream.  Reading from a bad
- stream returns @scheme[#f] or @scheme[""].
+Returns the next byte string from the stream.  This is
+the recommended way to read bytes back in from a stream;
+use @method[editor-stream-in% put] with two arguments
+(passing along the length of the bytes) to write out the bytes
+to match this method.
+
+Reading from a bad stream returns @scheme[#f] or @scheme[#""].
 
 Note that when @method[editor-stream-out% put] is not given a byte
  length, it includes an extra byte for a nul terminator; use
