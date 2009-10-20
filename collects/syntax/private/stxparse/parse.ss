@@ -1,6 +1,5 @@
 #lang scheme/base
 (require (for-syntax scheme/base
-                     scheme/match
                      scheme/private/sc
                      syntax/stx
                      syntax/id-table
@@ -12,7 +11,6 @@
                      "../util.ss")
          scheme/stxparam
          scheme/list
-         scheme/match
          syntax/stx
          "runtime.ss"
          "runtime-prose.ss")
@@ -106,11 +104,12 @@
     [(convert-sides x (side0 . sides) (k iattrs . kargs))
      (syntax-case #'side0 ()
        [#s(clause:fail condition message)
-        #`(if (without-fails condition)
-              (fail x
-                    #:expect (expectation-of-message message)
-                    #:fce #,(done-frontier #'x))
-              (convert-sides x sides (k iattrs . kargs)))]
+        #`(let ([c (without-fails condition)])
+            (if c
+                (fail (if (syntax? c) c x)
+                      #:expect (expectation-of-message message)
+                      #:fce #,(frontier:add-subparse (done-frontier #'x) #'(if (syntax? c) c x)))
+                (convert-sides x sides (k iattrs . kargs))))]
        [#s(clause:with pattern expr (def ...))
         (with-syntax ([(p-iattr ...) (pattern-attrs (wash #'pattern))])
           #`(let ([y (datum->syntax #f (without-fails expr))])
@@ -327,11 +326,12 @@
        [#s(ghost:bind _ clauses)
         #`(convert-sides x clauses (clause-success () k))]
        [#s(ghost:fail _ condition message)
-        #`(if condition
-              (fail x
-                    #:expect (expectation pattern0)
-                    #:fce fc)
-              k)]
+        #`(let ([c (without-fails condition)])
+            (if c
+                (fail (if (syntax? c) c x)
+                      #:expect (expectation pattern0)
+                      #:fce #,(frontier:add-subparse (wash #'fc) #'(if (syntax? c) c x)))
+                k))]
        [#s(ghost:parse _ pattern expr)
         #`(let ([y (datum->syntax #f (without-fails expr))])
             (parse:S y #,(frontier:add-subparse (wash #'fc) #'y)

@@ -1,6 +1,5 @@
 #lang scheme/base
 (require scheme/contract/base
-         scheme/match
          scheme/stxparam
          scheme/list
          (for-syntax scheme/base
@@ -180,8 +179,8 @@
 
 (define ok? list?)
 
-(define-struct failure (stx frontier frontier-stx expectation) #:transparent)
-(define-struct join-failures (f1 f2) #:transparent)
+(define-struct failure (stx frontier frontier-stx expectation) #:prefab)
+(define-struct join-failures (f1 f2) #:prefab)
 
 ;; (try expr ...)
 (define-syntax (try stx)

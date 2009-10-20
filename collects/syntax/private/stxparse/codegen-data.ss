@@ -1,6 +1,5 @@
 #lang scheme/base
-(require scheme/match
-         syntax/stx
+(require syntax/stx
          (for-template scheme/base
                        syntax/stx
                        scheme/stxparam
@@ -71,9 +70,9 @@
   (fce-stx fc))
 
 (define (frontier->index-expr fc)
-  (match fc
-    [(struct fce (stx indexes))
-     #`#,(stx-car indexes)]))
+  (syntax-case fc ()
+    [#s(fce stx (index0 index ...))
+     #'index0]))
 
 ;; --------
 

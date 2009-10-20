@@ -1,6 +1,5 @@
 #lang scheme/base
 (require scheme/contract/base
-         scheme/match
          syntax/stx
          syntax/id-table
          "../util.ss")
@@ -115,9 +114,10 @@ a list^depth of syntax objects).
   (make attr (attr-name a) (attr-depth a) #f))
 
 (define (iattr->sattr a)
-  (match a
-    [(struct attr (name depth syntax?))
-     (make attr (syntax-e name) depth syntax?)]))
+  (let ([name (attr-name a)]
+        [depth (attr-depth a)]
+        [syntax? (attr-syntax? a)])
+     (make attr (syntax-e name) depth syntax?)))
 
 (define (iattrs->sattrs as)
   (map iattr->sattr as))
@@ -155,12 +155,13 @@ a list^depth of syntax objects).
       (let ([remap-name (syntax-e (attr-name iattr))])
         (hash-set! ht remap-name iattr)))
     (let loop ([relsattrs relsattrs])
-      (match relsattrs
-        ['() null]
-        [(cons sattr rest)
-         (let ([iattr (hash-ref ht (attr-name sattr) #f)])
-           (check-iattr-satisfies-sattr iattr sattr)
-           (cons iattr (loop rest)))]))))
+      (if (null? relsattrs)
+          null
+          (let ([sattr (car relsattrs)]
+                [rest (cdr relsattrs)])
+            (let ([iattr (hash-ref ht (attr-name sattr) #f)])
+              (check-iattr-satisfies-sattr iattr sattr)
+              (cons iattr (loop rest))))))))
 
 (define (check-iattr-satisfies-sattr iattr sattr)
   (unless iattr

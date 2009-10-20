@@ -2,7 +2,7 @@
 (require (for-template scheme/base)
          (for-template "runtime.ss")
          scheme/contract/base
-         scheme/match
+         "minimatch.ss"
          scheme/dict
          syntax/id-table
          syntax/stx
@@ -425,7 +425,7 @@
      (parse-pat:id/s id parser null attrs)]
     [(list 'splicing-parser parser description attrs)
      (parse-pat:id/h id parser null attrs)]
-    [#f
+    ['#f
      (when #f ;; FIXME: enable?
        (unless (safe-name? id)
          (wrong-syntax id "expected identifier not starting with ~ character")))
@@ -442,7 +442,7 @@
          (wrong-syntax #'name "expected identifier"))
        #'name]
       [_
-       (wrong-syntax stx "bad ~var form")]))
+       (wrong-syntax stx "bad ~~var form")]))
   (define-values (scname args)
     (syntax-case stx (~var)
       [(~var _name)
@@ -454,7 +454,7 @@
        (identifier? #'sc)
        (values #'sc (syntax->list #'(arg ...)))]
       [_
-       (wrong-syntax stx "bad ~var form")]))
+       (wrong-syntax stx "bad ~~var form")]))
   (cond [(and (epsilon? name0) (not scname))
          (wrong-syntax name0 "illegal pattern variable name")]
         [(and (wildcard? name0) (not scname))
@@ -525,7 +525,7 @@
        (wrong-syntax #'lit "expected identifier"))
      (create-pat:literal #'lit)]
     [_
-     (wrong-syntax stx "bad ~literal pattern")]))
+     (wrong-syntax stx "bad ~~literal pattern")]))
 
 (define (parse-pat:describe stx decls allow-head?)
   (syntax-case stx ()
@@ -669,7 +669,7 @@
            [()
             (wrong-syntax stx "missing message expression")]
            [_
-            (wrong-syntax stx "bad ~fail pattern")])))]))
+            (wrong-syntax stx "bad ~~fail pattern")])))]))
 
 (define (parse-pat:parse stx decls)
   (syntax-case stx (~parse)
@@ -677,7 +677,7 @@
      (let ([p (parse-single-pattern #'pattern decls)])
        (create-ghost:parse p #'expr))]
     [_
-     (wrong-syntax stx "bad ~parse pattern")]))
+     (wrong-syntax stx "bad ~~parse pattern")]))
 
 
 (define (parse-pat:rest stx decls)
@@ -687,15 +687,15 @@
 
 (define (check-list-pattern pattern stx)
   (match pattern
-    [(struct pat:datum (_base '()))
+    [#s(pat:datum _base '())
      #t]
-    [(struct pat:head (_base _head tail))
+    [#s(pat:head _base _head tail)
      (check-list-pattern tail stx)]
-    [(struct pat:dots (_base _head tail))
+    [#s(pat:dots _base _head tail)
      (check-list-pattern tail stx)]
-    [(struct pat:compound (_base '#:pair (list _head tail)))
+    [#s(pat:compound _base '#:pair (list _head tail))
      (check-list-pattern tail stx)]
-    [else
+    [_
      (wrong-syntax stx "expected proper list pattern")]))
 
 (define (parse-hpat:optional stx decls)
@@ -853,7 +853,7 @@
     (match chunks
       [(cons (cons '#:declare decl-stx) rest)
        (loop rest (add-decl decl-stx decls))]
-      [else (values decls chunks)]))
+      [_ (values decls chunks)]))
   (loop chunks decls))
 
 

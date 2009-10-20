@@ -500,8 +500,8 @@ follows:
                (code:line #:declare pattern-id (syntax-class-id expr ...))
                (code:line #:with syntax-pattern expr)
                (code:line #:attr attr-id expr)
-               (code:line #:fail-unless condition-expr message-expr)
                (code:line #:fail-when condition-expr message-expr)
+               (code:line #:fail-unless condition-expr message-expr)
                (code:line #:when condition-expr)]
 
 @specsubform[(code:line #:declare pvar-id syntax-class-id)]
@@ -536,16 +536,18 @@ bindings and binds it to the attribute named by @scheme[attr-id]. The
 value of @scheme[expr] need not be syntax.
 }
 
-@specsubform[(code:line #:fail-unless condition-expr message-expr)]{
-
-Evaluates the @scheme[condition-expr] in the context of all previous
-attribute bindings. If the value is any @scheme[#f], the matching
-process backtracks (with the given message); otherwise, it continues.
-}
-
 @specsubform[(code:line #:fail-when condition-expr message-expr)]{
 
-Like @scheme[#:fail-unless] with the condition negated.
+Evaluates the @scheme[condition-expr] in the context of all previous
+attribute bindings. If the value is any true value (not @scheme[#f]),
+the matching process backtracks (with the given message); otherwise,
+it continues. If the value of the condition expression is a syntax
+object, it is indicated as the cause of the error.
+}
+
+@specsubform[(code:line #:fail-unless condition-expr message-expr)]{
+
+Like @scheme[#:fail-when] with the condition negated.
 }
 
 @specsubform[(code:line #:when condition-expr)]{

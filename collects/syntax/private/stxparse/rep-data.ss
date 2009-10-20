@@ -1,6 +1,5 @@
 #lang scheme/base
 (require scheme/contract/base
-         scheme/match
          scheme/dict
          syntax/stx
          syntax/id-table

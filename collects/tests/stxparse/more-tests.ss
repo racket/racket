@@ -179,7 +179,7 @@
        (syntax-parser
         [(~fail . x) 'ok])
        #rx"^syntax-parser: "
-       #rx"bad fail pattern")
+       #rx"bad ~fail pattern")
 
 (tcerr "check-list-pattern"
        (syntax-parser
