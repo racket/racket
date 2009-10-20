@@ -195,6 +195,7 @@
   (cs-view-docs-from "~a dans ~a")  ;; a completed version of the line above (cs-view-docs) is put into the first ~a and a list of modules (separated by commas) is put into the second ~a. Use check syntax and right-click on a documented variable (eg, 'require') to see this in use
 
   (cs-lexical-variable "variables lexicales")
+  (cs-set!d-variable "variables modifiées à l'aide de set!")
   (cs-imported-variable "variables importées")
 
   ;;; info bar at botttom of drscheme frame
@@ -229,6 +230,9 @@
   (needs-execute-defns-edited
    "ATTENTION : la fenêtre de définition a changé. Cliquez sur Exécuter.")
 
+  (editor-changed-since-srcloc-recorded
+   "Le contenu de cet éditeur a changé depuis que la position du code source a été enregistrée, donc la section de code surlignée peut ne plus correspondre à la position correcte.")
+  
   (file-is-not-saved "Le fichier \"~a\" n'a pas été sauvegardé.")
   (save "Sauvegarder")
   (close-anyway "Fermer quand même")
@@ -707,7 +711,8 @@
   
   (user-defined-keybinding-error "Erreur durant l'exécution du raccourci clavier ~a\n\n~a")
   (user-defined-keybinding-malformed-file "Le fichier ~a ne contient pas un module écrit dans le langage framework/keybinding-lang.")  
-  
+  (user-defined-keybinding-malformed-file/found-lang "Le fichier ~a ne contient pas un module écrit dans le langage framework/keybinding-lang. Le langage ~s a été trouvé à la place.")  
+
   ;; menu items in the "special" menu
   (insert-text-box-item "Insérer une boite texte")
   (insert-image-item "Insérer une image...")
@@ -804,6 +809,7 @@
   ;;; tools
   (invalid-tool-spec "La spécification d'outil qui se trouve dans le fichier info.ss de la collection ~a est invalide. Espérait soit une chaîne de caractères, soit une liste de chaînes de caractères, trouvé : ~e")
   (error-invoking-tool-title "Erreur durant l'invocation de l'outil ~s;~s")
+  (error-loading-tool-title "Erreur durant le chargement de l'outil ~s\n~a") ;; ~s filled with a path, ~a filled with an error message from an exn
   (tool-tool-names-same-length
    "`tool-names' et `tools' ne sont pas des listes de la même longueur, dans le fichier info.ss pour ~s. Trouvé ~e et ~e")
   (tool-tool-icons-same-length
@@ -1008,7 +1014,11 @@
   (decimal-notation-for-rationals "Utiliser la notation décimale pour les nombres rationnels")
   (enforce-primitives-group-box-label "Définitions initiales")
   (enforce-primitives-check-box-label "Interdire la redéfinition des définition initiales")
-  (automatically-compile? "Compiler automatiquement les fichiers source ?")
+  (automatically-compile "Peupler les répertoires \"compiled/\" (pour un chargement plus rapide)")
+  (preserve-stacktrace-information "Préserver la trace de la pile (ceci invalide certaines optimizations du compilateur JIT)")
+  (expression-level-stacktrace "Traçage de la pile au niveau des expressions")
+  (function-level-stacktrace "Traçage de la pile au niveau des fonctions")
+  
 
   ; used in the bottom left of the drscheme frame as the label
   ; used the popup menu from the just above; greyed out and only
@@ -1116,7 +1126,7 @@
   (tracing-tracing-nothing-to-show "Aucun résultat de traçage n'est disponible. Assurez-vous que votre language supporte le traçage et que le traçage est en place")
 
   ;;; repl stuff
-  (evaluation-terminated "Evaluation terminée.")
+  (evaluation-terminated "Évaluation terminée.")
   (evaluation-terminated-explanation
    "Le tâche d'évaluation n'est plus en exécution, toute évaluation est donc impossible jusqu'à la prochaine exécution.")
   
@@ -1124,8 +1134,8 @@
   ; constants.
   ; The first two show up only when the user calls 'exit' (possibly with a status code).
   ; The third shows up when the program runs out of memory.
-  (exited-successfully "Evaluation terminée avec succès.")
-  (exited-with-error-code "Evaluation terminée avec le code d'erreur ~a.") ;; ~a is filled in with a number between 1 and 255
+  (exited-successfully "Évaluation terminée avec succès.")
+  (exited-with-error-code "Évaluation terminée avec le code d'erreur ~a.") ;; ~a is filled in with a number between 1 and 255
   (program-ran-out-of-memory "Le programme est à cours de mémoire.")
   (last-stack-frame "Montrer le dernier appel de fonction sur la pile.")
   (last-stack-frames "Montrer les derniers ~a appels de fonction sur la pile.")
@@ -1187,6 +1197,7 @@
   (module-browser-name-short "courts")
   (module-browser-name-medium "moyens")
   (module-browser-name-long "longs")
+  (module-browser-name-very-long "longs, avec phases")  ;; like 'Long' but shows the phases where this file is loaded
   (module-browser-open-all "Ouvrir tous les fichiers montrés ici")
   
   (happy-birthday-matthias "Joyeux anniversaire, Matthias !")
@@ -1243,12 +1254,19 @@
   (stepper-name "Pas à Pas")
   (stepper-language-level-message "Le Pas à Pas n'est pas disponible pour le langage \"~a\".")
   (stepper-button-label "Pas")
-  (stepper-jump-to-beginning "Début")
+  
   (stepper-previous-application "|< Application")
   (stepper-previous "< Pas")
   (stepper-next "Pas >")
   (stepper-next-application "Application >|")
-  (stepper-jump-to-end "Fin")
+  (stepper-jump "Sauter...") ;; this one is changed.  action?
+  (stepper-out-of-steps "Arrivé à la fin de l'évaluation sans trouver le type de pas que vous recherchiez.")
+  (stepper-no-such-step/title "Pas non trouvé")
+  (stepper-no-such-step "Impossible de trouver un pas qui satisfasse ce critère.")
+  (stepper-no-such-step/earlier "Impossible de trouver un pas précédent qui satisfasse ce critère.")
+  (stepper-jump-to-beginning "au début") ;; name changed from stepper-home to stepper-jump-to-beginning
+  (stepper-jump-to-end "à la fin") ;; content changed
+  (stepper-jump-to-selected "au début de la sélection") ;; new
   
   (debug-tool-button-name "Déboguer")
   
@@ -1291,7 +1309,8 @@
   ;; Profj
   (profj-java "Java")
   (profj-java-mode "mode Java")
-  
+  (profj-java-coverage "Couvrage Java") ;; shows up in the preferences dialog under 'Color'
+
   (profj-beginner-lang "Débutant")
   (profj-beginner-lang-one-line-summary "Langage Java restreint pour l'enseignement des etudiants niveau débutant")
   (profj-full-lang "Complet")
@@ -1362,6 +1381,62 @@
   ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
   (test-engine-enable-tests "Revalider les tests")
   (test-engine-disable-tests "Invalider les tests")
+  
+  (test-engine-ran-1-test "1 test exécuté.")
+  (test-engine-ran-1-check "1 \"check\" exécuté.")
+  ;; ditto, only plural
+  (test-engine-ran-n-tests "~a tests exécutés.")
+  (test-engine-ran-n-checks "~a \"check\"s exécutés.")
+  (test-engine-1-test-passed "Le test est réussi !")
+  (test-engine-1-check-passed "Le \"check\" est réussi !")
+  (test-engine-both-tests-passed "Les deux tests ont réussi !")
+  (test-engine-both-checks-passed "Les deux \"check\"s ont réussi !")
+  (test-engine-all-tests-passed "Tous les tests ont réussi !")
+  (test-engine-all-checks-passed "Tous les \"check\"s ont réussi !")
+  (test-engine-all-n-tests-passed "Tous les ~a tests ont réussi !")
+  (test-engine-all-n-checks-passed "Tous les ~a \"check\"s ont réussi !")
+  (test-engine-0-tests-passed "0 tests ont réussi.")
+  (test-engine-0-checks-passed "0 \"check\"s ont réussi.")
+  (test-engine-m-of-n-tests-failed "~a tests parmi ~a ont échoué.")
+  (test-engine-m-of-n-checks-failed "~a \"check\"s parmi ~a ont échoué.")
+  (test-engine-must-be-tested "Ce programme doit être testé !")
+  (test-engine-is-unchecked "Ce programme n'est pas \"check\"é !")
+  (test-engine-tests-disabled "Tests invalidés.")
+  (test-engine-should-be-tested "Ce programme devrait être testé.")
+  (test-engine-at-line-column "à la ligne ~a, colonne ~a")
+  (test-engine-in-at-line-column "dans ~a, ligne ~a, colonne ~a")
+  ; as in "column (unknown)"
+  (test-engine-unknown "(inconnue)")
+  (test-engine-trace-error "Trace erronée")
+
+  ; The ~F is special marker for the offending values, which may be
+  ; printed specially in DrScheme.
+  (test-engine-check-encountered-error
+   "check-expect a rencontré l'erreur suivante au lieu de la valeur attendue, ~F. ~n   :: ~a")
+  (test-engine-actual-value-differs-error
+   "La valeur actuelle ~F est différente de ~F, la valeur attendue.")
+  (test-engine-actual-value-not-within-error
+   "La valeur actualle ~F n'est pas à moins de ~v de la valeur attendue ~F.")
+  (test-engine-encountered-error-error
+   "check-error a rencontré l'erreur suivante au lieu du ~a attendu~n   :: ~a")
+  (test-engine-expected-error-error
+   "check-error attendait l'erreur suivante au lieu de la valeur ~F reçue.~n ~a")
+
+  ; section header
+  (test-engine-check-failures "Échecs de \"check\"s :")
+  ; section header
+  (test-engine-contract-violations "Violations de contrats :")
+
+  ; part of one phrase "contract <at line ...> to blame: procedure <...>
+  (test-engine-contract "Le contract")
+  (test-engine-to-blame "blame la procédure")
+
+  (test-engine-no-contract-violations "Pas de violation de contrat.")
+  (test-engine-1-contract-violation "1 violation de contrat.")
+  (test-engine-n-contract-violations "~a violations de contracts.")
+
+  ; as in got <value>, contract <at ...>
+  (test-engine-got "reçu")
   
   (profjWizward-insert-java-class "Insérer une classe Java")
   (profjWizard-insert-java-union "Insérer un union Java")
