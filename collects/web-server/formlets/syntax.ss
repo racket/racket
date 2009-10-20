@@ -34,11 +34,11 @@
           #,@(map circ-of (syntax->list #'(n ...))))))]
     [(t ([k v] ...) n ...)
      (quasisyntax/loc stx
-       (tag-xexpr 't '([k v] ...)
+       (tag-xexpr `t `([k v] ...)
                  #,(circ-of (syntax/loc stx (#%# n ...)))))]
     [(t n ...)
      (quasisyntax/loc stx
-       (tag-xexpr 't empty
+       (tag-xexpr `t empty
                  #,(circ-of (syntax/loc stx (#%# n ...)))))]))
 
 (define-syntax (formlet stx)
