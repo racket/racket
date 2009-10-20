@@ -9,6 +9,7 @@
 [Any Univ]
 [Port -Port]
 [Path -Path]
+[Path-String -Pathlike]
 [Regexp -Regexp]
 [PRegexp -PRegexp]
 [Char -Char]

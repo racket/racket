@@ -172,10 +172,10 @@
       
       ;; definitions just need to typecheck their bodies
       [(define-values (var ...) expr)
-       (let* ([vars (syntax->list #'(var ...))]
-              [ts (map lookup-type vars)])
-         (tc-expr/check #'expr (ret ts)))
-       (void)]
+       (begin (let* ([vars (syntax->list #'(var ...))]
+                     [ts (map lookup-type vars)])
+                (tc-expr/check #'expr (ret ts)))
+              (void))]
       
       ;; to handle the top-level, we have to recur into begins
       [(begin) (void)]

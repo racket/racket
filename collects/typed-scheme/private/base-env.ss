@@ -125,11 +125,11 @@
                      [((a b c . -> . c) c (-lst a) (-lst b)) c]
                      [((a b c d . -> . d) d (-lst a) (-lst b) (-lst d)) d]))]
 [filter (-poly (a b) (cl->*
-                      ((make-pred-ty (list a) B b)
+                      ((make-pred-ty (list a) Univ b)
                        (-lst a)
                        . -> .
                        (-lst b))
-                      ((a . -> . B) (-lst a) . -> . (-lst a))))]
+                      ((a . -> . Univ) (-lst a) . -> . (-lst a))))]
 [filter-map (-polydots (c a b)
                        ((list
                          ((list a) (b b) . ->... . (-opt c))
@@ -247,11 +247,15 @@
 
 [build-path ((list -Pathlike*) -Pathlike* . ->* . -Path)]
 [with-input-from-file
- (-poly (a) (cl-> [(-Pathlike  (-> a))  a]
-                  [(-Pathlike (-> a) Sym) a]))]
+ (-poly (a) (->key -Pathlike (-> a) #:mode (one-of/c 'binary 'text) #f a))]
 [with-output-to-file
- (-poly (a) (cl-> [(-Pathlike  (-> a))  a]
-                  [(-Pathlike (-> a) Sym) a]))]
+ (-poly (a) (->key -Pathlike (-> a) 
+                   #:exists (one-of/c 'error 'append 'update 'can-update
+                           'replace 'truncate
+                           'must-truncate 'truncate/replace)
+                   #f
+                   #:mode (one-of/c 'binary 'text) #f 
+                   a))]
 
 [random (cl-> [(-Integer) -Integer] [() N])]
 
@@ -689,6 +693,9 @@
 [boolean=? (B B . -> . B)]
 [symbol=? (Sym Sym . -> . B)]
 [false? (make-pred-ty (-val #f))]
+
+;; scheme/port
+[port->lines (-> -Input-Port (-lst -String))]
 
 ;; with-stx.ss
 [generate-temporaries ((Un (-Syntax Univ) (-lst Univ)) . -> . (-lst (-Syntax Sym)))]

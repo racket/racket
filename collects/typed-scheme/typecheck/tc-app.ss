@@ -187,7 +187,7 @@
   (define-values (fixed-args tail) (split (syntax->list args)))
 
   (match f-ty
-    [(tc-result1: (Function: (list (arr: doms rngs rests drests '()) ...)))
+    [(tc-result1: (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ...)))
      (when (null? doms)
        (tc-error/expr #:return (ret (Un))
                       "empty case-lambda given as argument to apply"))
@@ -232,7 +232,7 @@
                 (printf/log "Non-poly apply, ... arg\n")
                 (do-ret (car rngs*))]
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
-    [(tc-result1: (Poly: vars (Function: (list (arr: doms rngs rests drests '()) ..1))))
+    [(tc-result1: (Poly: vars (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
      (let*-values ([(arg-tys) (map tc-expr/t fixed-args)]
                    [(tail-ty tail-bound) (with-handlers ([exn:fail:syntax? (lambda _ (values (tc-expr/t tail) #f))])
                                            (tc/dots tail))])
@@ -431,6 +431,16 @@
      #:declare s-kp (id-from 'struct:keyword-procedure 'scheme/private/kw)
      #:declare kpe  (id-from 'keyword-procedure-extract 'scheme/private/kw)
      (match (tc-expr #'fn)
+       [(tc-result1: (Poly: vars 
+                            (Function: (list (and ar (arr: dom rng (and rest #f) (and drest #f) kw-formals))))))
+        (=> fail)
+        (unless (null? (fv/list kw-formals))
+          (fail))
+        (match (map single-value (syntax->list #'pos-args))
+          [(list (tc-result1: argtys-t) ...)
+           (let* ([subst (infer vars argtys-t dom rng (fv rng) (and expected (tc-results->values expected)))])
+             (tc-keywords form (list (subst-all subst ar))
+                          (type->list (tc-expr/t #'kws)) #'kw-arg-list #'pos-args expected))])]
        [(tc-result1: (Function: arities)) 
         (tc-keywords form arities (type->list (tc-expr/t #'kws)) #'kw-arg-list #'pos-args expected)]
        [(tc-result1: t) (tc-error/expr #:return (ret (Un))
@@ -590,11 +600,14 @@
        (string-append "No function domains matched in function application:\n"
                       (domain-mismatches t doms rests drests rngs argtys-t #f #f))))]
     ;; polymorphic functions without dotted rest
-    [((tc-result1: (and t
-                      (or (Poly: vars 
-                                 (Function: (list (and arrs (arr: doms rngs rests (and drests #f) '())) ...)))
-                          (PolyDots: vars
-                                     (Function: (list (and arrs (arr: doms rngs rests (and drests #f) '())) ...))))))
+    [((tc-result1: 
+       (and t
+            (or (Poly: 
+                 vars 
+                 (Function: (list (and arrs (arr: doms rngs rests (and drests #f) (list (Keyword: _ _ #f) ...))) ...)))
+                (PolyDots: 
+                 vars
+                 (Function: (list (and arrs (arr: doms rngs rests (and drests #f) (list (Keyword: _ _ #f) ...))) ...))))))
       (list (tc-result1: argtys-t) ...))
      (handle-clauses (doms rngs rests arrs) f-stx args-stx
                      ;; only try inference if the argument lengths are appropriate

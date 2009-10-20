@@ -49,6 +49,8 @@
      (restrict t u)]
     [(t (NotTypeFilter: u (list) _))
      (remove t u)]
+    [((Union: ts) lo)
+     (apply Un (map (lambda (t) (update t lo)) ts))]
     [(t* lo)
      (int-err "update along ill-typed path: ~a ~a ~a" t t* lo)]))
 
