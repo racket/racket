@@ -1,6 +1,7 @@
 
 (module tcp '#%kernel
-  (#%require '#%network)
+  (#%require (all-except '#%network tcp-addresses)
+             (rename '#%network c:tcp-addresses tcp-addresses))
 
   (#%provide tcp-connect 
              tcp-connect/enable-break 
@@ -13,4 +14,15 @@
              tcp-listener? 
              tcp-addresses 
              tcp-abandon-port 
-             tcp-port?))
+             tcp-port?)
+      
+  (define-values (tcp-addresses) 
+    (case-lambda
+      [(socket) (tcp-addresses socket #f)]
+      [(socket port-numbers?) 
+        (if (tcp-port? socket)
+          (c:tcp-addresses socket port-numbers?)
+          (if (tcp-listener? socket)
+              (c:tcp-addresses socket port-numbers?)
+              (raise-type-error 'tcp-addresses "tcp-port or tcp-listener" socket)))])))
+

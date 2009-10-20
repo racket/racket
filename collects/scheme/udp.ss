@@ -22,4 +22,13 @@
              udp-send-ready-evt 
              udp-receive!-evt 
              udp-send-evt 
-             udp-send-to-evt))
+             udp-send-to-evt
+             udp-addresses)
+      
+  (define-values (udp-addresses)
+    (case-lambda
+      [(x) (udp-addresses x #f)]
+      [(socket port-numbers?)
+        (if (udp? socket)
+            (tcp-addresses socket port-numbers?)
+            (raise-type-error 'udp-addresses "udp socket" socket))])))

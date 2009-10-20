@@ -1,4 +1,4 @@
-
+(require mzlib/os)
 (load-relative "loadtest.ss")
 
 (Section 'file)
@@ -290,12 +290,13 @@
 (err/rt-test (open-output-file (build-path (current-directory) "baddir" "x"))
 	    exn:fail:filesystem?)
 
-(when (file-exists? "tmp4")
-  (delete-file "tmp4"))
-(let ([p (open-output-file "tmp4")])
+(define tempfilename (make-temporary-file))
+(when (file-exists? tempfilename)
+  (delete-file tempfilename))
+(let ([p (open-output-file tempfilename)])
   (err/rt-test (write-special 'foo p) exn:application:mismatch?)
   (test #t integer? (port-file-identity p))
-  (let ([q (open-input-file "tmp4")])
+  (let ([q (open-input-file tempfilename)])
     (test (port-file-identity p) port-file-identity q)
     (close-input-port q)
     (err/rt-test (file-position q) exn:fail?)
@@ -305,23 +306,23 @@
   (err/rt-test (port-file-identity p) exn:fail?))
 (err/rt-test (let ([c (make-custodian)])
 	       (let ([p (parameterize ([current-custodian c])
-				      (open-output-file "tmp4" #:exists 'replace))])
+				      (open-output-file tempfilename #:exists 'replace))])
 		 (custodian-shutdown-all c)
 		 (display 'hi p)))
 	    exn:fail?)
-(err/rt-test (open-output-file "tmp4" #:exists 'error) exn:fail:filesystem?)
-(define p (open-output-file "tmp4" #:exists 'replace))
+(err/rt-test (open-output-file tempfilename #:exists 'error) exn:fail:filesystem?)
+(define p (open-output-file tempfilename #:exists 'replace))
 (display 7 p)
 (display "" p)
 (close-output-port p)
-(close-output-port (open-output-file "tmp4" #:exists 'truncate))
-(define p (open-input-file "tmp4"))
+(close-output-port (open-output-file tempfilename #:exists 'truncate))
+(define p (open-input-file tempfilename))
 (test eof read p)
 (close-input-port p)
-(define p (open-output-file "tmp4" #:exists 'replace))
+(define p (open-output-file tempfilename #:exists 'replace))
 (display 7 p)
 (close-output-port p)
-(define p (open-output-file "tmp4" #:exists 'append))
+(define p (open-output-file tempfilename #:exists 'append))
 (display 7 p)
 (close-output-port p)
 (err/rt-test (display 9 p) exn:fail?)
@@ -330,39 +331,39 @@
 
 (err/rt-test (let ([c (make-custodian)])
 	       (let ([p (parameterize ([current-custodian c])
-				      (open-input-file "tmp4"))])
+				      (open-input-file tempfilename))])
 		 (custodian-shutdown-all c)
 		 (read p)))
 	    exn:fail?)
-(define p (open-input-file "tmp4"))
+(define p (open-input-file tempfilename))
 (test 77 read p)
 (close-input-port p)
 (err/rt-test (read p) exn:fail?)
 (err/rt-test (read-char p) exn:fail?)
 (err/rt-test (char-ready? p) exn:fail?)
 
-(define-values (in-p out-p) (open-input-output-file "tmp4" #:exists 'update))
+(define-values (in-p out-p) (open-input-output-file tempfilename #:exists 'update))
 (test #\7 read-char in-p)
 (close-output-port out-p)
 (test #\7 read-char in-p)
 (test eof read-char in-p)
 (close-input-port in-p)
 
-(define p (open-output-file "tmp4" #:exists 'update))
+(define p (open-output-file tempfilename #:exists 'update))
 (display 6 p)
 (close-output-port p)
-(test 2 file-size "tmp4")
-(define p (open-input-file "tmp4"))
+(test 2 file-size tempfilename)
+(define p (open-input-file tempfilename))
 (test 67 read p)
 (test eof read p)
 (close-input-port p)
 
-(define p (open-output-file "tmp4" #:exists 'update))
+(define p (open-output-file tempfilename #:exists 'update))
 (file-position p 1)
 (display 68 p)
 (close-output-port p)
-(test 3 file-size "tmp4")
-(define p (open-input-file "tmp4"))
+(test 3 file-size tempfilename)
+(define p (open-input-file tempfilename))
 (test 0 file-position p)
 (test 668 read p)
 (test 3 file-position p)
@@ -381,12 +382,12 @@
 (test 3 file-position p)
 (close-input-port p)
 
-(close-output-port (open-output-file "tmp4" #:exists 'truncate/replace))
-(define p (open-input-file "tmp4"))
+(close-output-port (open-output-file tempfilename #:exists 'truncate/replace))
+(define p (open-input-file tempfilename))
 (test eof read p)
 (close-input-port p)
 
-(define-values (in-p out-p) (open-input-output-file "tmp4" #:exists 'update))
+(define-values (in-p out-p) (open-input-output-file tempfilename #:exists 'update))
 (fprintf out-p "hi~n")
 (flush-output out-p)
 (test eof read-char in-p)
@@ -401,7 +402,7 @@
 (test 1 file-position out-p)
 (write-char #\x out-p)
 (close-output-port out-p)
-(test 'hx with-input-from-file "tmp4" read)
+(test 'hx with-input-from-file tempfilename read)
 
 (arity-test call-with-input-file 2 2)
 (arity-test call-with-output-file 2 2)
@@ -1257,10 +1258,15 @@
 ;;----------------------------------------------------------------------
 ;; TCP
 
+(define (listen-port x)
+  (let-values ([(la lp pa pp) (tcp-addresses x #t)])
+    lp))
+
 (let ([do-once
        (lambda (evt?)
-	 (let* ([pn 40001]
-		[l (tcp-listen pn 5 #t)])
+	 (let* (
+	  [l (tcp-listen 0 5 #t)]
+    [pn (listen-port l)])
 	   (let-values ([(r1 w1) (tcp-connect "localhost" pn)]
 			[(r2 w2) (if evt?
 				     (apply values (sync (tcp-accept-evt l)))
@@ -1289,7 +1295,8 @@
 
 ;; Check that `tcp-accept-evt' uses the right custodian
 (let ()
-  (define l (tcp-listen 40000 5 #t))
+  (define l (tcp-listen 0 5 #t))
+  (define port (listen-port l))
   (define c (make-custodian))
   
   (define-values (i o) (values #f #f))
@@ -1300,8 +1307,7 @@
        (parameterize ([current-custodian c])
          (set!-values (i o) (apply values (sync (tcp-accept-evt l))))))))
   
-  (define-values (ci co) (tcp-connect "localhost" 40000))
-  
+  (define-values (ci co) (tcp-connect "localhost" port))
   (sync t)
   
   (custodian-shutdown-all c)

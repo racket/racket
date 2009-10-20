@@ -557,13 +557,17 @@
       (test #f semaphore-try-wait? s)
       (test #f semaphore-try-wait? s2))))
 
+(define (listen-port x)
+  (let-values ([(la lp pa pp) (tcp-addresses x #t)])
+    lp))
+
 (let ([s (make-semaphore)]
       [s-t (make-semaphore)]
-      [portnum (+ 40000 (random 100))]) ; so parallel tests work ok
+	    [l (tcp-listen 0 5 #t)])
   (let ([t (thread
 	    (lambda ()
 	      (sync s-t)))]
-	[l (tcp-listen portnum 5 #t)]
+  [portnum (listen-port l)] ; so parallel tests work ok
 	[orig-thread (current-thread)])
     (let-values ([(r w) (make-pipe)])
       

@@ -36,21 +36,28 @@
 (err/rt-test (udp-send udp1 us1) exn:fail:network?)
 
 (define udp2 (udp-open-socket "127.0.0.1"))
-(test (void) udp-bind! udp2 "127.0.0.1" 40007)
+
+(define (local-bind-port x) 
+  (let-values ([(la lp pa pp) (udp-addresses x #t)])
+   lp))
+
+(test (void) udp-bind! udp2 "127.0.0.1" 0)
+(define port (local-bind-port udp2))
 (test-values '(#f #f #f) (lambda () (udp-receive!* udp2 us1)))
 
-(test (void) udp-send-to udp1 "127.0.0.1" 40007 #"Hiya.")
+(test (void) udp-send-to udp1 "127.0.0.1" port #"Hiya.")
+
 (define recv-got (call-with-values (lambda () (udp-receive! udp2 us1)) list))
 (test 5 car recv-got)
 (test "127.0.0.1" cadr recv-got)
 (define udp1-port (caddr recv-got))
 (test #"Hiya.\0\0\0\0\0" values us1)
 
-(test (void) udp-send-to udp1 "127.0.0.1" 40007 #"...another?..." 3 11)
+(test (void) udp-send-to udp1 "127.0.0.1" port  #"...another?..." 3 11)
 (test-values (list 8 "127.0.0.1" udp1-port) (lambda () (udp-receive! udp2 us1 1)))
 (test #"Hanother?\0" values us1)
 
-(test (void) udp-connect! udp1 "127.0.0.1" 40007)
+(test (void) udp-connect! udp1 "127.0.0.1" port )
 (test #t udp-connected? udp1)
 (test #f udp-connected? udp2)
 
@@ -75,7 +82,7 @@
 (sleep 0.05)
 (flush-udp-errors udp1)
 (test-values '(#f #f #f) (lambda () (udp-receive!* udp2 us1)))
-(err/rt-test (udp-send-to udp1 "127.0.0.1" 40007 #"not ok -- currently connected") exn:fail:network?)
+(err/rt-test (udp-send-to udp1 "127.0.0.1" port  #"not ok -- currently connected") exn:fail:network?)
 (test #t udp-send* udp1 #"lots of stuff")
 (sleep 0.05)
 (flush-udp-errors udp1)
@@ -96,7 +103,7 @@
 (test #t evt? udp2-r)
 (test #f sync/timeout 0.05 udp2-r)
 
-(test (void) sync (udp-send-to-evt udp1 "127.0.0.1" 40007 #"here's more"))
+(test (void) sync (udp-send-to-evt udp1 "127.0.0.1" port #"here's more"))
 (sleep 0.05)
 (test udp2-r sync udp2-r)
 (test udp2-r sync udp2-r)
@@ -156,7 +163,7 @@
 
 ;; udp1 is now closed...
 (err/rt-test (udp-bind! udp1 "127.0.0.1" 40008) exn:fail:network?)
-(err/rt-test (udp-connect! udp1 "127.0.0.1" 40007) exn:fail:network?)
+(err/rt-test (udp-connect! udp1 "127.0.0.1" port) exn:fail:network?)
 (err/rt-test (udp-send-to udp1 "127.0.0.1" 40000 #"hello") exn:fail:network?)
 (err/rt-test (udp-send udp1 #"hello") exn:fail:network?)
 (err/rt-test (udp-receive! udp1 (make-bytes 10)) exn:fail:network?)
@@ -170,4 +177,4 @@
 (let ([w (udp-receive-ready-evt udp1)])
   (test w sync w))
 (test #t evt? (udp-receive!-evt udp1 us1))
-(test #t evt? (udp-send-to-evt udp1 "127.0.0.1" 40007 #"here's more"))
+(test #t evt? (udp-send-to-evt udp1 "127.0.0.1" port #"here's more"))

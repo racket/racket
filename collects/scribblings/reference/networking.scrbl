@@ -14,14 +14,16 @@ For information about TCP in general, see @italic{TCP/IP Illustrated,
  Volume 1} by W. Richard Stevens.
 
 @defproc[(tcp-listen [port-no (and/c exact-nonnegative-integer?
-                                     (integer-in 1 65535))]
+                                     (integer-in 0 65535))]
                      [max-allow-wait exact-nonnegative-integer? 4]
                      [reuse? any/c #f]
                      [hostname (or/c string? #f) #f]) 
          tcp-listener?]
 
 Creates a ``listening'' server on the local machine at the port number
-specified by @scheme[port-no]. The @scheme[max-allow-wait] argument
+specified by @scheme[port-no]. If @scheme[port-no] is 0 the socket binds
+to an ephemeral port, which can be determined by calling 
+@scheme[tcp-addresses].  The @scheme[max-allow-wait] argument
 determines the maximum number of client connections that can be
 waiting for acceptance. (When @scheme[max-allow-wait] clients are
 waiting acceptance, no new client connections can be made.)
@@ -222,7 +224,7 @@ connections, so @scheme[tcp-abandon-port] is equivalent to
 @scheme[close-input-port] on input @tech{TCP ports}.}
 
 
-@defproc[(tcp-addresses [tcp-port tcp-port?]
+@defproc[(tcp-addresses [tcp-port (or/c tcp-port? tcp-listener?)]
                         [port-numbers? any/c #f]) 
          (or/c (values string? string?)
                (values string? (integer-in 1 65535) 
@@ -283,11 +285,13 @@ non-@scheme[#f], then the socket's protocol family is IPv4.}
 @defproc[(udp-bind! [udp-socket udp?]
                     [hostname-string (or/c string? #f)]
                     [port-no (and/c exact-nonnegative-integer?
-                                    (integer-in 1 65535))])
+                                    (integer-in 0 65535))])
          void?]{
 
 Binds an unbound @scheme[udp-socket] to the local port number
-@scheme[port-no].
+@scheme[port-no].  If @scheme[port-no] is 0 the @scheme[udp-socket] is
+bound to an ephemeral port, which can be determined by calling
+@scheme[udp-addresses].
 
 If @scheme[hostname-string] is @scheme[#f], then the socket
 accepts connections to all of the listening machine's IP
@@ -560,3 +564,25 @@ bytes start-pos end-pos)], and the synchronization result is a list of
 three values, corresponding to the three results from
 @scheme[udp-receive!]. (No bytes are received and the @scheme[bstr]
 content is not modified if the event is not chosen.)}
+
+@defproc[(udp-addresses [udp-port udp?]
+                        [port-numbers? any/c #f]) 
+         (or/c (values string? string?)
+               (values string? (integer-in 1 65535) 
+                       string? (integer-in 1 65535)))]{
+
+Returns two strings when @scheme[port-numbers?] is @scheme[#f] (the
+default). The first string is the Internet address for the local
+machine a viewed by the given @tech{UDP socket}'s connection. (For most
+machines, the answer corresponds to the current machine's only
+Internet address, but when a machine serves multiple addresses, the
+result is connection-specific.) The second string is the Internet
+address for the other end of the connection.
+
+If @scheme[port-numbers?] is true, then four results are returned: a
+string for the local machine's address, an exact integer between
+@scheme[1] and @scheme[65535] for the local machine's port number, a
+string for the remote machine's address, and an exact integer between
+@scheme[1] and @scheme[65535] for the remote machine's port number.
+
+If the given port has been closed, the @exnraise[exn:fail:network].}
