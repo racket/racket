@@ -186,7 +186,15 @@ implements the interface must be derived from @scheme[object%].
 Otherwise, the implementation requirement of the resulting interface
 is the most specific requirement from its superinterfaces. If the
 superinterfaces specify inconsistent derivation requirements, the
-@exnraise[exn:fail:object].}
+@exnraise[exn:fail:object].
+
+@defexamples[
+#:eval class-eval
+(define file-interface
+  (interface () open close read-byte write-byte))
+(define directory-interface
+  (interface (file-interface) file-list parent-directory))
+]}
 
 @defform[(interface* (super-interface-expr ...) 
                      ([property-expr val-expr] ...)
@@ -203,7 +211,13 @@ instantiated by instances of the class. Specifically, the property is
 attached to a structure type with zero immediate fields, which is
 extended to produce the internal structure type for instances of the
 class (so that no information about fields is accessible to the
-structure type property's guard, if any).}
+structure type property's guard, if any).
+
+@defexamples[
+#:eval class-eval
+(define i (interface* () ([prop:custom-write (lambda (obj port write?) (void))])
+                      method1 method2 method3))
+]}
 
 @; ------------------------------------------------------------------------
 
@@ -353,14 +367,36 @@ calling subclass augmentations of methods (see
 
 @defform[(class superclass-expr class-clause ...)]{
 
-Like @scheme[class*], but omits the @scheme[interface-expr]s, for the case that none are needed.}
+Like @scheme[class*], but omits the @scheme[interface-expr]s, for the case that none are needed.
+
+@defexamples[
+#:eval class-eval
+(define book-class
+  (class object%
+    (field (pages 5))
+    (define/public (letters)
+      (* pages 500))
+    (super-new)))
+]}
 
 @defidform[this]{
 
 @index['("self")]{Within} a @scheme[class*] form, @scheme[this] refers
 to the current object (i.e., the object being initialized or whose
 method was called). Use outside the body of a @scheme[class*] form is
-a syntax error.}
+a syntax error.
+
+@defexamples[
+#:eval class-eval
+(define (describe obj)
+  (printf "Hello ~a\n" obj))
+(define table
+  (class object%
+    (define/public (describe-self)
+      (describe this))
+    (super-new)))
+(send (new table) describe-self)
+]}
 
 @defclassforms[
   [(inspect inspector-expr) ()]
