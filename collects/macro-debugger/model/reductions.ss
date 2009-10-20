@@ -300,8 +300,6 @@
                          (visible-lift-stxs null))
           [#:pass1]
           [Expr ?form first]
-          [#:do (when (pair? (available-lift-stxs))
-                  (lift-error 'lift/let-deriv "available lifts left over"))]
           [#:let visible-lifts (visible-lift-stxs)]
           [#:with-visible-form
            [#:left-foot]
@@ -381,9 +379,6 @@
          [#:rename/unmark ?form e1 me1]
          [#:pass1]
          [Expr ?form inner]
-         [#:do (when (pair? (available-lift-stxs))
-                 (lift-error 'local-expand/capture-lifts
-                             "available lifts left over"))]
          [#:let visible-lifts (visible-lift-stxs)]
          [#:with-visible-form
           [#:left-foot]
@@ -608,8 +603,14 @@
 (define (take-lift!)
   (define avail (available-lift-stxs))
   (cond [(list? avail)
+         #|
+         ;; This check is wrong! (and thus disabled)
+         ;; If a syntax error occurs between the time a lift is "thrown"
+         ;; and when it is "caught", no lifts will be available to take.
+         ;; But that's not a bug, so don't complain.
          (unless (pair? avail)
            (lift-error 'local-lift "out of lifts (begin)!"))
+         |#
          (when (pair? avail)
            (let ([lift-stx (car avail)])
              (available-lift-stxs (cdr avail))
