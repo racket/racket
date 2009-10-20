@@ -569,7 +569,7 @@ bytes in the port's stream.}
                               [mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one)])
          evt?]{
  
-Like @scheme[read-line], but returns a byte string instead of a
+Like @scheme[read-line-evt], but returns a byte string instead of a
 string.}
 
 @defproc*[([(peek-bytes-evt [k exact-nonnegative-integer?][skip exact-nonnegative-integer?]
