@@ -462,6 +462,9 @@ static Scheme_Env *place_instance_init_post_kernel() {
   scheme_init_parameterization(env);
   scheme_init_expand_observe(env);
   scheme_init_place(env);
+#if defined(MZ_USE_PLACES)
+  scheme_jit_fill_threadlocal_table();
+#endif
 
 #ifndef DONT_USE_FOREIGN
   scheme_init_foreign(env);

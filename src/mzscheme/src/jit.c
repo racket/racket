@@ -268,6 +268,9 @@ void scheme_jit_fill_threadlocal_table();
    On x86, the thread-local table pointer is loaded on entry to the
    JIT world into a C stack slot. On x86_64, it is loaded into the
    callee-saved R14 (and the old value is saved on the C stack). */
+#ifdef MZ_USE_PLACES
+#define JIT_THREAD_LOCAL
+#endif
 
 #ifdef JIT_THREAD_LOCAL
 # define tl_MZ_RUNSTACK                    0

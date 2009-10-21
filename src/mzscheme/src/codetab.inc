@@ -20,10 +20,10 @@ extern MZ_DLLIMPORT int GC_is_marked(void *);
 #define NODE_STARTS_OFFSET 1
 #define NODE_GCABLE_OFFSET 2
 
-static void **tree;
+static THREAD_LOCAL void **tree;
+static THREAD_LOCAL int during_set;
 
 static int do_clear_symbols(void **t, unsigned long start, int offset, unsigned long addr, int clearing);
-static int during_set;
 
 static void *find_symbol(unsigned long v)
 {

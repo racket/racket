@@ -2356,6 +2356,7 @@ void scheme_finish_application(Scheme_App_Rec *app);
 
 Scheme_Object *scheme_jit_expr(Scheme_Object *);
 Scheme_Object *scheme_jit_closure(Scheme_Object *, Scheme_Object *context);
+void scheme_jit_fill_threadlocal_table();
 
 struct Start_Module_Args;
 
