@@ -58,8 +58,12 @@
 
 (define (poly-fail t argtypes #:name [name #f] #:expected [expected #f])
   (match t
-    [(or (Poly-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests '()) ...)))
-         (PolyDots-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests '()) ...))))
+    [(or (Poly-names: 
+          msg-vars 
+          (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)) ...)))
+         (PolyDots-names:
+          msg-vars
+          (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests (list (Keyword: _ _ #f) ...)) ...))))
      (let ([fcn-string (if name
                            (format "function ~a" (syntax->datum name))
                            "function")])

@@ -239,7 +239,7 @@
        (let loop ([doms* doms] [rngs* rngs] [rests* rests] [drests* drests])
          (cond [(null? doms*)
                 (match f-ty 
-                  [(tc-result1: (Poly-names: _ (Function: (list (arr: doms rngs rests drests '()) ..1))))
+                  [(tc-result1: (Poly-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
                    (tc-error/expr #:return (ret (Un))
                                  (string-append 
                                   "Bad arguments to polymorphic function in apply:~n"
@@ -284,14 +284,14 @@
      (tc-error/expr #:return (ret (Un))
                     "Function has no cases")]
     [(tc-result1: (PolyDots: (and vars (list fixed-vars ... dotted-var))
-                            (Function: (list (arr: doms rngs rests drests '()) ..1))))
+                            (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
      (let*-values ([(arg-tys) (map tc-expr/t fixed-args)]
                    [(tail-ty tail-bound) (with-handlers ([exn:fail:syntax? (lambda _ (values (tc-expr/t tail) #f))])
                                            (tc/dots tail))])
        (let loop ([doms* doms] [rngs* rngs] [rests* rests] [drests* drests])
          (cond [(null? doms*)
                 (match f-ty 
-                  [(tc-result1: (PolyDots-names: _ (Function: (list (arr: doms rngs rests drests '()) ..1))))
+                  [(tc-result1: (PolyDots-names: _ (Function: (list (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...)) ..1))))
                    (tc-error/expr #:return (ret (Un))
                                  (string-append 
                                   "Bad arguments to polymorphic function in apply:~n"
@@ -543,7 +543,7 @@
                                               (length (syntax->list #'args))))
                                          dom)
                                       (Values: (list (Result: v (LFilterSet: '() '()) (LEmpty:))))
-                                      #f #f '()))))))
+                                      #f #f (list (Keyword: _ _ #f) ...)))))))
           ;(printf "f dom: ~a ~a~n" (syntax->datum #'f) dom)
           (let ([arg-tys (map (lambda (a t) (tc-expr/check a (ret t))) 
                               (syntax->list #'args)
@@ -625,7 +625,7 @@
     ;; polymorphic ... type
     [((tc-result1: (and t (PolyDots: 
                            (and vars (list fixed-vars ... dotted-var))
-                           (Function: (list (and arrs (arr: doms rngs (and #f rests) (cons dtys dbounds) '())) ...)))))
+                           (Function: (list (and arrs (arr: doms rngs (and #f rests) (cons dtys dbounds) (list (Keyword: _ _ #f) ...))) ...)))))
       (list (tc-result1: argtys-t) ...))
      (handle-clauses (doms dtys dbounds rngs arrs) f-stx args-stx
                      (lambda (dom dty dbound rng arr) (and (<= (length dom) (length argtys))
