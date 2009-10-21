@@ -185,8 +185,10 @@
 [/ (cl->* (->* (list N) N N))]
 [+ (cl->* (->* '() -Integer -Integer) (->* '() N N))]
 [- (cl->* (->* (list -Integer) -Integer -Integer) (->* (list N) N N))]
-[max (->* (list N) N N)]
-[min (->* (list N) N N)]
+[max (cl->* (->* (list -Integer) -Integer -Integer)
+            (->* (list N) N N))]
+[min (cl->* (->* (list -Integer) -Integer -Integer)
+            (->* (list N) N N))]
 [vector? (make-pred-ty (-vec Univ))]
 [vector-ref (-poly (a) ((-vec a) N . -> . a))]
 [build-vector (-poly (a) (-Integer (-Integer . -> . a) . -> . (-vec a)))]
@@ -510,11 +512,11 @@
                            ((-HT a b) -Integer . -> . b))]
 #;[hash-table-index (-poly (a b) ((-HT a b) a b . -> . -Void))]
 
-[bytes (->* (list) N -Bytes)]
-[bytes-ref (-> -Bytes N N)]
+[bytes (->* (list) -Integer -Bytes)]
+[bytes-ref (-> -Bytes -Integer -Integer)]
 [bytes-append (->* (list -Bytes) -Bytes -Bytes)]
-[subbytes (cl-> [(-Bytes N) -Bytes] [(-Bytes N N) -Bytes])]
-[bytes-length (-> -Bytes N)]
+[subbytes (cl-> [(-Bytes -Integer) -Bytes] [(-Bytes -Integer -Integer) -Bytes])]
+[bytes-length (-> -Bytes -Integer)]
 [read-bytes-line (cl-> [() -Bytes]
                        [(-Input-Port) -Bytes]
                        [(-Input-Port Sym) -Bytes])]
@@ -694,9 +696,6 @@
 [symbol=? (Sym Sym . -> . B)]
 [false? (make-pred-ty (-val #f))]
 
-;; scheme/port
-[port->lines (-> -Input-Port (-lst -String))]
-
 ;; with-stx.ss
 [generate-temporaries ((Un (-Syntax Univ) (-lst Univ)) . -> . (-lst (-Syntax Sym)))]
 [check-duplicate-identifier ((-lst (-Syntax Sym)) . -> . (-opt (-Syntax Sym)))]
@@ -705,6 +704,10 @@
 [real->decimal-string (N [-Nat] . ->opt .  -String)]
 
 [current-continuation-marks (-> -Cont-Mark-Set)]
+
+;; scheme/port
+[port->lines (cl->* (-Input-Port . -> . (-lst -String))
+                    (->  (-lst -String)))]
 
 ;; scheme/path
 

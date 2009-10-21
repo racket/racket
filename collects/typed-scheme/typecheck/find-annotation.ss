@@ -3,6 +3,7 @@
 (require "../utils/utils.ss" syntax/parse
          scheme/contract
          (rep type-rep)
+         (env lexical-env)
          (private type-annotation)
          (for-template scheme/base))
 
@@ -55,7 +56,7 @@
        #:with (#%plain-app reverse n:id) #'c.e
        #:with (v) #'(c.v ...) 
        #:fail-unless (free-identifier=? name #'n) #f
-       (type-annotation #'v)]
+       (or (type-annotation #'v) (lookup-type/lexical #'v #:fail (lambda _ #f)))]
       [_ #f]))
   (syntax-parse stx
     #:literals (let-values)

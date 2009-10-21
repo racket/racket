@@ -12,7 +12,7 @@
          (typecheck tc-envops tc-metafunctions)
          syntax/kerncase
          mzlib/trace
-         mzlib/plt-match)
+         scheme/match)
 
 ;; if typechecking   
 (import tc-expr^)

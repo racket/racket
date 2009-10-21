@@ -443,12 +443,15 @@
                           (type->list (tc-expr/t #'kws)) #'kw-arg-list #'pos-args expected))])]
        [(tc-result1: (Function: arities)) 
         (tc-keywords form arities (type->list (tc-expr/t #'kws)) #'kw-arg-list #'pos-args expected)]
+       [(tc-result1: (Poly: _ (Function: _)))
+        (tc-error/expr #:return (ret (Un))
+                       "Inference for polymorphic keyword functions not supported")]
        [(tc-result1: t) (tc-error/expr #:return (ret (Un))
                                        "Cannot apply expression of type ~a, since it is not a function type" t)])]
     ;; even more special case for match
     [(#%plain-app (letrec-values ([(lp) (#%plain-lambda args . body)]) lp*) . actuals)
      #:fail-unless expected #f 
-     #:fail-unless (not (andmap type-annotation (syntax->list #'args))) #f
+     #:fail-unless (not (andmap type-annotation (syntax->list #'(lp . args)))) #f
      #:fail-unless (free-identifier=? #'lp #'lp*) #f
      (let-loop-check form #'lp #'actuals #'args #'body expected)]
     ;; special cases for classes
@@ -510,7 +513,9 @@
     ;; inference for ((lambda
     [(#%plain-app (#%plain-lambda (x ...) . body) args ...)
      #:fail-unless (= (length (syntax->list #'(x ...)))
-                      (length (syntax->list #'(args ...)))) #f
+                      (length (syntax->list #'(args ...)))) 
+     #f
+     #:fail-when (andmap type-annotation (syntax->list #'(x ...))) #f
      (tc/let-values #'((x) ...) #'(args ...) #'body 
                     #'(let-values ([(x) args] ...) . body)
                     expected)]
@@ -520,7 +525,8 @@
                        (length (syntax->list #'(args ...)))) #f
     ;; FIXME - remove this restriction - doesn't work because the annotation 
     ;; on rst is not a normal annotation, may have * or ...
-     #:fail-unless (not (type-annotation #'rst)) #f
+     #:fail-when (type-annotation #'rst) #f
+     #:fail-when (andmap type-annotation (syntax->list #'(x ...))) #f
      (let-values ([(fixed-args varargs) (split-at (syntax->list #'(args ...)) (length (syntax->list #'(x ...))))])
        (with-syntax ([(fixed-args ...) fixed-args]
                      [varg #`(#%plain-app list #,@varargs)])
@@ -599,7 +605,7 @@
        #:return (or expected (ret (Un)))
        (string-append "No function domains matched in function application:\n"
                       (domain-mismatches t doms rests drests rngs argtys-t #f #f))))]
-    ;; polymorphic functions without dotted rest
+    ;; polymorphic functions without dotted rest, and without mandatory keyword args
     [((tc-result1: 
        (and t
             (or (Poly: 

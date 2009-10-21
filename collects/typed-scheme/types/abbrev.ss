@@ -10,7 +10,7 @@
          scheme/promise
          (prefix-in c: scheme/contract)
          (for-syntax scheme/base syntax/parse)
-	 (for-template scheme/base scheme/contract scheme/tcp))
+	 (for-template scheme/base scheme/contract scheme/promise scheme/tcp))
 
 (provide (all-defined-out)
          (rename-out [make-Listof -lst]))
