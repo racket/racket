@@ -456,6 +456,8 @@
 		(car l)))
 (st "Yes & No" frame get-label)
 
+(send frame show #f)
+
 (define (test-controls parent frame)
   (define side-effect #f)
   

@@ -5,10 +5,13 @@
            (lib "class.ss")
            "../pict.ss"
            "../reduction-semantics.ss")
-
+  
   (provide test done)
   
   (define-struct failed-test (panel))
+  
+  (define show-diffs?-env "PLT_REDEX_TEST_NOSHOW_DIFFS")
+  (define show-diffs? (not (getenv show-diffs?-env)))
   
   (define tests 0)
   (define failed '())
@@ -50,8 +53,10 @@
       (send bdc set-bitmap #f)
       (let ([diff-bitmap (compute-diffs old-bitmap new-bitmap)])
         (when diff-bitmap
-          (let ([failed-panel (make-failed-panel line-number bitmap-filename old-bitmap new-bitmap diff-bitmap)])
-            (set! failed (append failed (list (make-failed-test failed-panel)))))))))
+          (if show-diffs?
+              (let ([failed-panel (make-failed-panel line-number bitmap-filename old-bitmap new-bitmap diff-bitmap)])
+                (set! failed (append failed (list (make-failed-test failed-panel)))))
+              (set! failed (append failed (list #f))))))))
   
   (define (compute-diffs old-bitmap new-bitmap)
     (let* ([w (max (send old-bitmap get-width)
@@ -128,7 +133,7 @@
          (set! test-result-single-panel sp)
          (send f show #t)
          sp)]))
-         
+  
   (define (make-failed-panel line-number filename old-bitmap new-bitmap diff-bitmap)
     (define f (new vertical-panel% [parent (get-test-result-single-panel)]))
     (define msg (new message% [label (format "line ~a" line-number)] [parent f]))

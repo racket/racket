@@ -17,6 +17,8 @@
 
 (define-runtime-path here ".")
 
+(putenv "PLT_REDEX_TEST_NOSHOW_DIFFS" "yes")
+
 (define (flush)
   ;; these flushes are here for running under cygwin, 
   ;; which somehow makes mzscheme think it isn't using

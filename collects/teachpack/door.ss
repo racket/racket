@@ -26,7 +26,7 @@
   
   (define (center base state y)
     (define w (pict-width state))
-    (define d (quotient (- width w) 2))
+    (define d (quotient (round (- width w)) 2))
     (pin-over base d y state))
   
   (define nx 
