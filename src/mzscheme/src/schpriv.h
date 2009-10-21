@@ -3253,6 +3253,8 @@ typedef struct Scheme_Place {
 } Scheme_Place;
 
 Scheme_Env *scheme_place_instance_init();
+void scheme_place_instance_destroy();
+void kill_green_thread_timer();
 
 /*========================================================================*/
 /*                           engine                                       */

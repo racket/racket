@@ -8444,6 +8444,7 @@ static void scheme_start_itimer_thread(long usec)
 typedef struct ITimer_Data {
   int itimer;
   int state;
+  int die;
   pthread_t thread;
   pthread_mutex_t mutex;
   pthread_cond_t cond;
@@ -8464,16 +8465,21 @@ static void *green_thread_timer(void *data)
   itimer_data = (ITimer_Data *)data;
   
   while (1) {
+    if (itimer_data->die) {
+      return NULL;
+    }
     usleep(itimer_data->delay);
     *(itimer_data->fuel_counter_ptr) = 0;
     *(itimer_data->jit_stack_boundary_ptr) = (unsigned long)-1;
 
     pthread_mutex_lock(&itimer_data->mutex);
-    if (itimer_data->state) {
-      itimer_data->state = 0;
-    } else {
-      itimer_data->state = -1;
-      pthread_cond_wait(&itimer_data->cond, &itimer_data->mutex);
+    if (!itimer_data->die) {
+      if (itimer_data->state) {
+        itimer_data->state = 0;
+      } else {
+        itimer_data->state = -1;
+        pthread_cond_wait(&itimer_data->cond, &itimer_data->mutex);
+      }
     }
     pthread_mutex_unlock(&itimer_data->mutex);
   }
@@ -8485,6 +8491,7 @@ END_XFORM_SKIP;
 #endif
 
 static void start_green_thread_timer(long usec) {
+  itimerdata.die = 0;
   itimerdata.delay = usec;
   itimerdata.fuel_counter_ptr = &scheme_fuel_counter;
   itimerdata.jit_stack_boundary_ptr = &scheme_jit_stack_boundary;
@@ -8492,6 +8499,23 @@ static void start_green_thread_timer(long usec) {
   pthread_cond_init(&itimerdata.cond, NULL);
   pthread_create(&itimerdata.thread, NULL, green_thread_timer, &itimerdata);
   itimerdata.itimer = 1;
+}
+
+void kill_green_thread_timer() {
+    void *rc;
+    pthread_mutex_lock(&itimerdata.mutex);
+    itimerdata.die = 1;
+    if (!itimerdata.state) {
+      /* itimer thread is currently running working */
+    } else if (itimerdata.state < 0) {
+      /* itimer thread is waiting on cond */
+      pthread_cond_signal(&itimerdata.cond);
+    } else {
+      /* itimer thread is working, and we've already
+         asked it to continue */
+    }
+    pthread_mutex_unlock(&itimerdata.mutex);
+    pthread_join(itimerdata.thread, &rc);
 }
 
 static void kickoff_green_thread_timer(long usec) {

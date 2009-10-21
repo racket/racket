@@ -254,6 +254,7 @@ static void *place_start_proc(void *data_arg) {
 
     a[0] = scheme_places_deep_copy(place_data->channel);
     scheme_apply(place_main, 1, a);
+    scheme_place_instance_destroy();
   }
 
   return scheme_true;

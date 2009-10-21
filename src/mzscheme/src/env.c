@@ -495,6 +495,12 @@ Scheme_Env *scheme_place_instance_init(void *stack_base) {
   return place_instance_init_post_kernel();
 }
 
+void scheme_place_instance_destroy() {
+#if defined(USE_PTHREAD_THREAD_TIMER) && defined(MZ_USE_PLACES)
+  kill_green_thread_timer();
+#endif
+}
+
 static void make_kernel_env(void)
 {
   Scheme_Env *env;
