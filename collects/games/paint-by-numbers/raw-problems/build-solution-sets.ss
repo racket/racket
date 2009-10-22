@@ -28,8 +28,8 @@ The col and row type specs are in sig.ss and the solution type is:
          (prefix solve: "../solve.ss"))
 
 (if (equal? (vector) argv)
-    (fprintf (current-error-port) "pass any command line argument to skip the solver~n~n")
-    (fprintf (current-error-port) "skipping the solver~n"))
+    (printf "pass any command line argument to skip the solver~n~n")
+    (printf "skipping the solver~n"))
 
 (define memory-limit (* 1024 1024 400)) ;; in bytes (500 megs)
 
@@ -156,12 +156,12 @@ The col and row type specs are in sig.ss and the solution type is:
          (let loop ([n (- progress-bar-max dots-printed)])
            (cond
              [(zero? n) (void)]
-             [else (display "." (current-error-port))
+             [else (display ".")
                    (loop (- n 1))]))
-         (newline (current-error-port))]
+         (newline)]
         [else
          (let ([dots-to-print (floor (- (* progress-bar-max (/ counter (- max 1))) dots-printed))])
-           '(fprintf (current-error-port) "~spercentage: ~a ~a ~a ~a~n"
+           '(printf "~spercentage: ~a ~a ~a ~a~n"
                      cleanup
                      dots-to-print
                      counter
@@ -172,19 +172,19 @@ The col and row type specs are in sig.ss and the solution type is:
              (cond
                [(zero? n) (void)]
                [else
-                (display "." (current-error-port))
+                (display ".")
                 (loop (- n 1))]))
-           (flush-output (current-error-port)))]))))
+           (flush-output))]))))
 
 (define (setup-progress max cleanup)
-  (display guide-string (current-error-port))
-  (newline (current-error-port))
+  (display guide-string)
+  (newline)
   (build-progress-outputer max cleanup))
 
 (define (solve name rows cols)
   (cond
     [(equal? argv (vector))
-     (fprintf (current-error-port) "Solving ~s; memory limit ~a~n"
+     (printf "Solving ~s; memory limit ~a~n"
               name (format-memory-txt memory-limit))
      (let ([row-count (length rows)]
            [col-count (length cols)])
@@ -240,8 +240,8 @@ The col and row type specs are in sig.ss and the solution type is:
                   (update-memory-display)
                   (semaphore-post done)))])
        (semaphore-wait done)
-       (newline (current-error-port))
-       (newline (current-error-port))
+       (newline)
+       (newline)
        (if sucessful?
            board
            #f))]

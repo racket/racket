@@ -20,13 +20,14 @@
                (read-editor-snip text? vers stream elim-whitespace? xml-editor%)))
 
            (define/override (generate-special editor src line col pos)
-             (let* ([port (send editor get-content-port)]
-                    [xml (read-xml port)]
-                    [xexpr (xml->xexpr (document-element xml))]
-                    [clean-xexpr (if (send editor get-data)
-                                     (eliminate-whitespace-in-empty-tags xexpr)
-                                     xexpr)])
-               (list 'quasiquote clean-xexpr)))
+             (parameterize ([permissive-xexprs #t])
+               (let* ([port (send editor get-content-port)]
+                      [xml (read-xml port)]
+                      [xexpr (xml->xexpr (document-element xml))]
+                      [clean-xexpr (if (send editor get-data)
+                                       (eliminate-whitespace-in-empty-tags xexpr)
+                                       xexpr)])
+                 (list 'quasiquote clean-xexpr))))
 
            (super-new))))
 

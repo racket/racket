@@ -12,7 +12,7 @@
   (set! test-count (add1 test-count))
   (unless (equal? expect got)
     (let ([s (format "~a: expected ~e; got ~e" name expect got)])
-      (printf "ERROR: ~a~n" s)
+      (fprintf (current-error-port) "ERROR: ~a~n" s)
       (set! errs (cons s errs)))))
 
 (define-syntax mismatch
@@ -53,9 +53,9 @@
   (if (null? errs)
       (printf "Passed all ~a tests~n" test-count)
       (begin
-	(printf "~a Error(s) in ~a tests~n" (length errs) test-count)
+	(fprintf (current-error-port) "~a Error(s) in ~a tests~n" (length errs) test-count)
 	(for-each
 	 (lambda (s)
-	   (printf "~a~n" s))
+	   (fprintf (current-error-port) "~a~n" s))
 	 (reverse errs)))))
 
