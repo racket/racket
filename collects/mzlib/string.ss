@@ -6,8 +6,17 @@
          read-from-string
          read-from-string-all
          expr->string
-         (except-out (all-from-out scheme/base) regexp-try-match)
+         
+         real->decimal-string
+         regexp-quote
+         regexp-replace-quote
+         regexp-match*
+         regexp-match-positions*
+         regexp-match-peek-positions*
+         regexp-split
+         regexp-match-exact?
          (rename-out [regexp-try-match regexp-match/fail-without-reading])
+
          glob->regexp)
 
 (define ((make-string-do! translate who) s)
