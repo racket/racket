@@ -253,6 +253,12 @@
           (check-same-stx 'rename/no-step real-from from))
          (R** f v p s ws [#:rename pvar to] . more))]
 
+    ;; Add to definite binders
+    [(R** f v p s ws [#:binders ids] . more)
+     #:declare ids (expr/c #'(listof identifier))
+     #'(begin (learn-binders (flatten-identifiers (with-syntax1 ([p f]) ids)))
+              (R** f v p s ws . more))]
+
     ;; Add to definite uses
     [(R** f v p s ws [#:learn ids] . more)
      #:declare ids (expr/c #'(listof identifier?))
@@ -550,3 +556,15 @@
          (cons (wrongness (stx-car a) (stx-car b))
                (wrongness (stx-cdr a) (stx-cdr b)))]
         [else (stx->datum a)]))
+
+
+;; flatten-identifiers : syntaxlike -> (list-of identifier)
+(define (flatten-identifiers stx)
+  (syntax-case stx ()
+    [id (identifier? #'id) (list #'id)]
+    [() null]
+    [(x . y) (append (flatten-identifiers #'x) (flatten-identifiers #'y))]
+    [else (error 'flatten-identifers "neither syntax list nor identifier: ~s"
+                 (if (syntax? stx)
+                     (syntax->datum stx)
+                     stx))]))

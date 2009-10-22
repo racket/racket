@@ -5,7 +5,7 @@
          framework/framework
          scheme/list
          scheme/match
-         syntax/boundmap
+         syntax/id-table
          macro-debugger/util/class-iop
          "interfaces.ss"
          "controller.ss"
@@ -107,18 +107,12 @@
             (send -text change-style clickback-style a b)))))
 
     (define/public (add-syntax stx
-                               #:binder-table [alpha-table #f]
+                               #:binders [binders null]
                                #:shift-table [shift-table #f]
                                #:definites [definites null]
                                #:hi-colors [hi-colors null]
                                #:hi-stxss [hi-stxss null]
                                #:substitutions [substitutions null])
-      (define (get-binders id)
-        (define binder
-          (module-identifier-mapping-get alpha-table id (lambda () #f)))
-        (if shift-table
-            (cons binder (hash-ref shift-table binder null))
-            (list binder)))
       (let ([display (internal-add-syntax stx)]
             [definite-table (make-hasheq)])
         (let ([range (send: display display<%> get-range)]
@@ -141,22 +135,32 @@
           (when shift-table
             (for ([shifted-definite (hash-ref shift-table definite null)])
               (hash-set! definite-table shifted-definite #t))))
-        (when alpha-table
-          (let ([range (send: display display<%> get-range)]
-                [start (send: display display<%> get-start-position)])
-            (let* ([binders0
-                    (module-identifier-mapping-map alpha-table (lambda (k v) k))]
-                   [binders
-                    (apply append (map get-binders binders0))])
-              (send: display display<%> underline-syntaxes binders))
-            (for ([id (send: range range<%> get-identifier-list)])
-              (define definite? (hash-ref definite-table id #f))
-              (when #f ;; DISABLED
-                (add-binding-billboard start range id definite?))
-              (for ([binder (get-binders id)])
-                (for ([binder-r (send: range range<%> get-ranges binder)])
-                  (for ([id-r (send: range range<%> get-ranges id)])
-                    (add-binding-arrow start binder-r id-r definite?)))))))
+        (let ([binder-table (make-free-id-table)])
+          (define range (send: display display<%> get-range))
+          (define start (send: display display<%> get-start-position))
+          (define (get-binders id)
+            (let ([binder (free-id-table-ref binder-table id #f)])
+              (cond [(not binder) null]
+                    [shift-table (cons binder (get-shifted binder))]
+                    [else (list binder)])))
+          (define (get-shifted id)
+            (hash-ref shift-table id null))
+          ;; Populate table
+          (for ([binder binders])
+            (free-id-table-set! binder-table binder binder))
+          ;; Underline binders (and shifted binders)
+          (send: display display<%> underline-syntaxes
+                 (append (apply append (map get-shifted binders))
+                         binders))
+          ;; Make arrows (& billboards, when enabled)
+          (for ([id (send: range range<%> get-identifier-list)])
+            (define definite? (hash-ref definite-table id #f))
+            (when #f ;; DISABLED
+              (add-binding-billboard start range id definite?))
+            (for ([binder (get-binders id)])
+              (for ([binder-r (send: range range<%> get-ranges binder)])
+                (for ([id-r (send: range range<%> get-ranges id)])
+                  (add-binding-arrow start binder-r id-r definite?))))))
         (void)))
 
     (define/private (add-binding-arrow start binder-r id-r definite?)

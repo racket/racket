@@ -66,7 +66,7 @@
       (check-steps deriv policy))))
 
 (define (check-steps deriv policy)
-  (define-values (steps defs stx exn)
+  (define-values (steps binders uses stx exn)
     (parameterize ((macro-policy policy)) (reductions+ deriv)))
   (check-pred syntax? stx)
   (check-eq? exn #f)

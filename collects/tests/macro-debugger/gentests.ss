@@ -61,7 +61,7 @@
         [else #f]))
 
 (define (check-hide d policy expect-ok?)
-  (let-values ([(steps defs stx2 exn)
+  (let-values ([(steps binders uses stx2 exn)
                 (parameterize ((macro-policy policy))
                   (reductions+ d))])
     (check-pred list? steps)

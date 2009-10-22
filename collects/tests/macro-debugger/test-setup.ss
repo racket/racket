@@ -127,7 +127,7 @@
 
 ;; Specialized macro hiding tests
 (define (stx/hide-policy d policy)
-  (define-values (_steps _uses stx _exn)
+  (define-values (_steps _binders _uses stx _exn)
     (parameterize ((macro-policy policy))
       (reductions+ d)))
   stx)

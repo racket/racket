@@ -47,12 +47,12 @@
 
     (define deriv #f)
     (define deriv-hidden? #f)
-    (define binders #f)
     (define shift-table #f)
 
     (define raw-steps #f)
     (define raw-steps-estx #f) ;; #f if raw-steps-exn is exn
     (define raw-steps-exn #f) ;; #f if raw-steps-estx is syntax
+    (define raw-steps-binders #f)
     (define raw-steps-definites #f)
     (define raw-steps-oops #f)
 
@@ -75,9 +75,9 @@
     (define-guarded-getters (recache-deriv!)
       [get-deriv deriv]
       [get-deriv-hidden? deriv-hidden?]
-      [get-binders binders]
       [get-shift-table shift-table])
     (define-guarded-getters (recache-raw-steps!)
+      [get-raw-steps-binders raw-steps-binders]
       [get-raw-steps-definites raw-steps-definites]
       [get-raw-steps-exn raw-steps-exn]
       [get-raw-steps-oops raw-steps-oops])
@@ -95,6 +95,7 @@
       (set! raw-steps #f)
       (set! raw-steps-estx #f)
       (set! raw-steps-exn #f)
+      (set! raw-steps-binders #f)
       (set! raw-steps-definites #f)
       (set! raw-steps-oops #f))
 
@@ -108,7 +109,6 @@
       (invalidate-synth!)
       (set! deriv #f)
       (set! deriv-hidden? #f)
-      (set! binders #f)
       (set! shift-table #f))
 
     ;; recache! : -> void
@@ -141,7 +141,6 @@
                               (module-identifier-mapping-put! alpha-table id id))
                             binder-ids)
                   (set! deriv d)
-                  (set! binders alpha-table)
                   (set! shift-table (compute-shift-table d)))))))))
 
     ;; recache-synth! : -> void
@@ -158,12 +157,13 @@
             (with-handlers ([(lambda (e) #t)
                              (lambda (e)
                                (set! raw-steps-oops e))])
-              (let-values ([(raw-steps* definites* estx* error*)
+              (let-values ([(raw-steps* binders* definites* estx* error*)
                             (parameterize ((macro-policy show-macro?))
                               (reductions+ deriv))])
                 (set! raw-steps raw-steps*)
                 (set! raw-steps-estx estx*)
                 (set! raw-steps-exn error*)
+                (set! raw-steps-binders binders*)
                 (set! raw-steps-definites definites*)))))))
 
     ;; recache-steps! : -> void
@@ -283,7 +283,7 @@
       (recache-steps!)
       (cond [(syntax? raw-steps-estx)
              (send: displayer step-display<%> add-syntax raw-steps-estx
-                    #:binders binders
+                    #:binders raw-steps-binders
                     #:shift-table shift-table
                     #:definites raw-steps-definites)]
             [(exn? raw-steps-exn)
@@ -297,10 +297,9 @@
              (let ([step (cursor:next steps)])
                (if step
                    (send: displayer step-display<%> add-step step
-                          #:binders binders
                           #:shift-table shift-table)
                    (send: displayer step-display<%> add-final raw-steps-estx raw-steps-exn
-                          #:binders binders
+                          #:binders raw-steps-binders
                           #:shift-table shift-table
                           #:definites raw-steps-definites)))]
             [else (display-oops #t)]))

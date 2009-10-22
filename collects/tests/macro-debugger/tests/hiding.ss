@@ -11,7 +11,7 @@
   (syntax-rules ()
     [(th form hidden-e2 policy)
      (test-case (format "~s" 'form)
-       (let-values ([(steps defs stx exn)
+       (let-values ([(steps binders uses stx exn)
                      (parameterize ((macro-policy policy))
                        (reductions+ (trace/k 'form)))])
          (check-pred syntax? stx)

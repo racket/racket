@@ -81,42 +81,41 @@
         (add-text "\n")))
 
     (define/public (add-step step
-                             #:binders binders
                              #:shift-table [shift-table #f])
       (cond [(step? step)
-             (show-step step binders shift-table)]
+             (show-step step shift-table)]
             [(misstep? step)
-             (show-misstep step binders shift-table)]
+             (show-misstep step shift-table)]
             [(prestep? step)
-             (show-prestep step binders shift-table)]
+             (show-prestep step shift-table)]
             [(poststep? step)
-             (show-poststep step binders shift-table)]))
+             (show-poststep step shift-table)]))
 
     (define/public (add-syntax stx
-                               #:binders [binders #f]
-                               #:shift-table [shift-table #f]
-                               #:definites [definites null])
+                               #:binders [binders null]
+                               #:definites [definites null]
+                               #:shift-table [shift-table #f])
       (send: sbview sb:syntax-browser<%> add-syntax stx
-             #:binder-table binders
-             #:shift-table shift-table
-             #:definites definites))
+             #:binders binders
+             #:definites definites
+             #:shift-table shift-table))
 
     (define/public (add-final stx error
                               #:binders binders
-                              #:shift-table [shift-table #f]
-                              #:definites definites)
+                              #:definites definites
+                              #:shift-table [shift-table #f])
       (when stx
         (send*: sbview sb:syntax-browser<%>
           (add-text "Expansion finished\n")
           (add-syntax stx
-                      #:binder-table binders
-                      #:shift-table shift-table
-                      #:definites definites)))
+                      #:binders binders
+                      #:definites definites
+                      #:shift-table shift-table)))
       (when error
         (add-error error)))
 
     ;; show-lctx : Step -> void
-    (define/private (show-lctx step binders shift-table)
+    (define/private (show-lctx step shift-table)
       (define state (protostep-s1 step))
       (define lctx (state-lctx state))
       (when (pair? lctx)
@@ -126,7 +125,7 @@
                  "while executing macro transformer in:\n")
           (insert-syntax/redex (bigframe-term bf)
                                (bigframe-foci bf)
-                               binders
+                               (state-binders state)
                                shift-table
                                (state-uses state)
                                (state-frontier state)))))
@@ -141,15 +140,15 @@
        (step-type->string (protostep-type step))))
 
     ;; show-step : Step -> void
-    (define/private (show-step step binders shift-table)
+    (define/private (show-step step shift-table)
       (let-values ([(common-context state1 state2)
                     (factor-common-context (protostep-s1 step)
                                            (step-s2 step))])
-        (show-state/redex state1 binders shift-table)
+        (show-state/redex state1 shift-table)
         (separator step)
-        (show-state/contractum state2 binders shift-table)
-        (show-common-context common-context state1 binders shift-table)
-        (show-lctx step binders shift-table)))
+        (show-state/contractum state2 shift-table)
+        (show-common-context common-context state1 shift-table)
+        (show-lctx step shift-table)))
 
     (define/private (factor-common-context state1 state2)
       (if (send: config config<%> get-split-context?)
@@ -173,7 +172,7 @@
         (make-state e2 foci2 ctx2z lctx2 binders2 uses2 frontier2 seq2))
       (values common-ctx state1z state2z))
 
-    (define/private (show-common-context ctx state1 binders shift-table)
+    (define/private (show-common-context ctx state1 shift-table)
       (match-define
        (struct state (_ _ _ _ _ uses1 frontier1 _)) state1)
       (when (pair? ctx)
@@ -182,43 +181,43 @@
           (send*: sbview sb:syntax-browser<%>
             (add-text "\nin context:\n")
             (add-syntax the-syntax
-                        #:binder-table binders
-                        #:shift-table shift-table
                         #:definites uses1
+                        #:binders (state-binders state1)
+                        #:shift-table shift-table
                         #:substitutions (list (cons hole-stx "[ HOLE ]")))))))
 
-    (define/private (show-state/redex state binders shift-table)
+    (define/private (show-state/redex state shift-table)
       (insert-syntax/redex (state-term state)
                            (state-foci state)
-                           binders
+                           (state-binders state)
                            shift-table
                            (state-uses state)
                            (state-frontier state)))
 
-    (define/private (show-state/contractum state binders shift-table)
+    (define/private (show-state/contractum state shift-table)
       (insert-syntax/contractum (state-term state)
                                 (state-foci state)
-                                binders
+                                (state-binders state)
                                 shift-table
                                 (state-uses state)
                                 (state-frontier state)))
 
     ;; show-prestep : Step -> void
-    (define/private (show-prestep step binders shift-table)
+    (define/private (show-prestep step shift-table)
       (separator/small step)
-      (show-state/redex (protostep-s1 step) binders shift-table)
-      (show-lctx step binders shift-table))
+      (show-state/redex (protostep-s1 step) shift-table)
+      (show-lctx step shift-table))
 
     ;; show-poststep : Step -> void
-    (define/private (show-poststep step binders shift-table)
+    (define/private (show-poststep step shift-table)
       (separator/small step)
-      (show-state/contractum (protostep-s1 step) binders shift-table)
-      (show-lctx step binders shift-table))
+      (show-state/contractum (protostep-s1 step) shift-table)
+      (show-lctx step shift-table))
 
     ;; show-misstep : Step -> void
-    (define/private (show-misstep step binders shift-table)
+    (define/private (show-misstep step shift-table)
       (define state (protostep-s1 step))
-      (show-state/redex state binders shift-table)
+      (show-state/redex state shift-table)
       (separator step)
       (send*: sbview sb:syntax-browser<%>
         (add-error-text (exn-message (misstep-exn step)))
@@ -226,10 +225,10 @@
       (when (exn:fail:syntax? (misstep-exn step))
         (for ([e (exn:fail:syntax-exprs (misstep-exn step))])
           (send: sbview sb:syntax-browser<%> add-syntax e
-                 #:binder-table binders
-                 #:shift-table shift-table
-                 #:definites (or (state-uses state) null))))
-      (show-lctx step binders shift-table))
+                 #:binders (or (state-binders state) null)
+                 #:definites (or (state-uses state) null)
+                 #:shift-table shift-table)))
+      (show-lctx step shift-table))
 
     ;; insert-syntax/color
     (define/private (insert-syntax/color stx foci binders shift-table
@@ -238,7 +237,7 @@
       (define highlight-frontier? (send: config config<%> get-highlight-frontier?))
       (send: sbview sb:syntax-browser<%> add-syntax stx
              #:definites (or definites null)
-             #:binder-table binders
+             #:binders binders
              #:shift-table shift-table
              #:hi-colors (list hi-color
                                "WhiteSmoke")

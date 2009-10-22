@@ -37,6 +37,7 @@
  [marking-table (parameter/c (or/c hash? false/c))]
  [current-binders (parameter/c (listof identifier?))]
  [current-definites (parameter/c (listof identifier?))]
+ [current-binders (parameter/c (listof identifier?))]
  [current-frontier (parameter/c (listof syntax?))]
  [sequence-number (parameter/c (or/c false/c exact-nonnegative-integer?))]
  [phase (parameter/c exact-nonnegative-integer?)]
@@ -48,6 +49,7 @@
  [block-value-bindings (parameter/c (listof syntaxish?))]
  [block-expressions (parameter/c syntaxish?)]
 
+ [learn-binders ((listof identifier?) . -> . any)]
  [learn-definites ((listof identifier?) . -> . any)]
 
  [add-frontier ((listof syntax?) . -> . any)]
@@ -82,7 +84,6 @@
 (define marking-table (make-parameter #f))
 
 ;; current-binders : parameterof (listof identifier)
-;; FIXME: not yet used
 (define current-binders (make-parameter null))
 
 ;; current-definites : parameter of (list-of identifier)
@@ -159,6 +160,10 @@
 (define (learn-definites ids)
   (current-definites
    (append ids (current-definites))))
+
+(define (learn-binders ids)
+  (current-binders
+   (append ids (current-binders))))
 
 (define (get-frontier) (or (current-frontier) null))
 
@@ -322,8 +327,8 @@
 
 (define (current-state-with e fs)
   (make state e (foci fs) (context) (big-context)
-        (current-binders) (current-definites) (current-frontier)
-        (sequence-number)))
+        (current-binders) (current-definites)
+        (current-frontier) (sequence-number)))
 
 (define (walk e1 e2 type
               #:foci1 [foci1 e1]
