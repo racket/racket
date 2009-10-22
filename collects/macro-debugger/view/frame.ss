@@ -33,6 +33,7 @@
     (define obsoleted? #f)
 
     (inherit get-area-container
+             get-size
              set-label
              get-menu%
              get-menu-item%
@@ -53,10 +54,16 @@
                          " - Macro stepper")
           "Macro stepper"))
 
+    ;; Grrr... we get a spurious on-size event sometime after the
+    ;; frame is created, probably when the window-manager gets around
+    ;; to doing something. Avoid unnecessary updates.
+    (define-values (w0 h0) (get-size))
     (define/override (on-size w h)
       (send: config config<%> set-width w)
       (send: config config<%> set-height h)
-      (send: widget widget<%> update/preserve-view))
+      (unless (and (= w0 w) (= h0 h))
+        (send: widget widget<%> update/preserve-view))
+      (set!-values (w0 h0) (values w h)))
 
     (define warning-panel
       (new horizontal-panel%
