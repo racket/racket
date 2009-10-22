@@ -19,8 +19,8 @@
                                                      (eq? (car g) 'planet))
                                                 (error "#lang planet disbled")
                                                 (old g))))])
-                          ;; FIXME: set the reader guard to disable access to 
-                          ;; untrusted planet packages.
+                          ;; FIXME: do something so that we don't
+                          ;; have to disable all planet packages.
                           (read-language p (lambda () #f))))]
             [sync-ports (lambda ()
                           (read-bytes (- (file-position p) init) in))])
