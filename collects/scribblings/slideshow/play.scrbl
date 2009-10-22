@@ -97,7 +97,10 @@ from @scheme[0.0] to @scheme[1.0], and so on.
 For example,
 
 @schemeblock[
-(play-n (lambda (n1 n2) (cellophane (t "Hello") (* n1 (- 1.0 n2)))))
+(play-n 
+ (lambda (n1 n2)
+   (cellophane (t "Hello")
+               (* n1 (- 1.0 n2)))))
 ]
 
 generates an animation to fade in the word ``Hello,'' and then pauses
