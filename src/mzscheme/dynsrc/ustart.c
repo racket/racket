@@ -10,6 +10,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <stdio.h>
 
 /* The config string after : is replaced with ! followed by a sequence
    of little-endian 4-byte ints:
@@ -95,9 +96,9 @@ static int is_x_flag(char *s)
   return 0;
 }
 
-static void write_str(int fd, char *s)
+static int write_str(int fd, char *s)
 {
-  write(fd, s, strlen(s));
+  return write(fd, s, strlen(s));
 }
 
 #if 0
@@ -330,7 +331,13 @@ int main(int argc, char **argv)
 
   fd = open(me, O_RDONLY, 0);
   lseek(fd, prog_end, SEEK_SET);
-  read(fd, data, end - prog_end);
+  {
+    int expected_length = end - prog_end;
+    if (expected_length != read(fd, data, expected_length)) {
+      printf("read failed to read all %i bytes from file %s\n", expected_length, me);
+      abort();
+    }
+  }
   close(fd);
   
   exe_path = data;

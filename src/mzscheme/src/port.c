@@ -8350,8 +8350,11 @@ static void default_sleep(float v, void *fds)
 #if defined(FILES_HAVE_FDS)
   /* Clear external event flag */
   if (external_event_fd) {
+    int rc;
     char buf[10];
-    read(external_event_fd, buf, 10);
+    do {
+      rc = read(external_event_fd, buf, 10);
+    } while ((rc == -1) && errno == EINTR);
   }
 #endif
 }

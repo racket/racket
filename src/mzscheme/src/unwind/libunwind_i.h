@@ -215,10 +215,10 @@ do {									\
 # define dprintf(format...)
 #endif
 
-static ALWAYS_INLINE void
+static ALWAYS_INLINE int
 print_error (const char *string)
 {
-  write (2, string, strlen (string));
+  return write (2, string, strlen (string));
 }
 
 #define mi_init		UNWI_ARCH_OBJ(mi_init)

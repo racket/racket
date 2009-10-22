@@ -5836,7 +5836,8 @@ void scheme_gmp_tls_snapshot(long *s, long *save)
 
 void scheme_gmp_tls_restore_snapshot(long *s, void *data, long *save, int do_free)
 {
-  long other[6];
+  /* silence gcc "may be used uninitialized in this function" warnings */
+  long other[6] = {0,0,0,0,0,0};
   void *other_data;
 
   if (do_free == 2) {

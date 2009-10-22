@@ -362,6 +362,11 @@ XFORM_NONGCING static void WRAP_POS_SET_FIRST(Wrap_Pos *w)
       w->a = a;
     }
   }
+  /* silence gcc "may be used uninitialized in this function" warnings */
+  else {
+    w->a = NULL;
+    w->is_limb = 0;
+  }
 }
 
 XFORM_NONGCING static MZ_INLINE void DO_WRAP_POS_INC(Wrap_Pos *w)

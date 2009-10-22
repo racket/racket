@@ -1676,23 +1676,41 @@ static Scheme_Object *bytes_to_integer (int argc, Scheme_Object *argv[])
 
   switch(slen) {
   case 2:
-    if (sgned)
-      return scheme_make_integer(((short *)str)[0]);
-    else
-      return scheme_make_integer(((unsigned short *)str)[0]);
+    if (sgned) {
+      short val;
+      memcpy(&val, str, sizeof(short));
+      return scheme_make_integer(val);
+      }
+    else {
+      unsigned short val;
+      memcpy(&val, str, sizeof(unsigned short));
+      return scheme_make_integer(val);
+      }
     break;
   case 4:
-    if (sgned)
-      return scheme_make_integer_value(((int *)str)[0]);
-    else
-      return scheme_make_integer_value_from_unsigned(((unsigned int *)str)[0]);
+    if (sgned) {
+      int val;
+      memcpy(&val, str, sizeof(int));
+      return scheme_make_integer_value(val);
+      }
+    else {
+      unsigned int val;
+      memcpy(&val, str, sizeof(unsigned int));
+      return scheme_make_integer_value_from_unsigned(val);
+      }
     break;
   default:
 #ifdef SIXTY_FOUR_BIT_INTEGERS
-    if (sgned)
-      return scheme_make_integer_value(((long *)str)[0]);
-    else
-      return scheme_make_integer_value_from_unsigned(((unsigned long *)str)[0]);
+    if (sgned) {
+      long val;
+      memcpy(&val, str, sizeof(long));
+      return scheme_make_integer_value(val);
+      }
+    else {
+      unsigned long val;
+      memcpy(&val, str, sizeof(unsigned long));
+      return scheme_make_integer_value_from_unsigned(val);
+      }
     break;
 #else
 # ifndef NO_LONG_LONG_TYPE
@@ -1875,19 +1893,21 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
   case 2:
     {
       if (sgned) {
-	*(unsigned short *)str = (unsigned short)(val);
+        unsigned short value = val;
+        memcpy(str, &value, sizeof(unsigned short));
       } else {
-	*(short *)str = (short)(val);
+        short value = val;
+        memcpy(str, &value, sizeof(short));
       }
     }
     break;
   case 4:
     if (sgned) {
-      unsigned int sv = val;
-      *(unsigned int *)str = sv;
+        unsigned int value = val;
+        memcpy(str, &value, sizeof(unsigned int));
     } else {
-      int sv = val;
-      *(int *)str = sv;
+        int value = val;
+        memcpy(str, &value, sizeof(int));
     }
     break;
   default:
