@@ -11,9 +11,13 @@
     [(with-unlock text . body)
      (let* ([t text]
             [locked? (send t is-locked?)])
-       (send t lock #f)
+       (send* t
+         (lock #f)
+         (begin-edit-sequence #f))
        (begin0 (let () . body)
-               (send t lock locked?)))]))
+         (send* t
+           (end-edit-sequence)
+           (lock locked?))))]))
 
 ;; make-text-port : text (-> number) -> port
 ;; builds a port from a text object.  

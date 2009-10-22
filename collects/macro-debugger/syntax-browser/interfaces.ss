@@ -109,6 +109,9 @@
   (;; get-ranges : datum -> (list-of (cons number number))
    get-ranges
 
+   ;; get-treeranges : -> (listof TreeRange)
+   get-treeranges
+
    ;; all-ranges : (list-of Range)
    ;; Sorted outermost-first
    all-ranges
@@ -120,6 +123,8 @@
 ;; A Range is (make-range datum number number)
 (define-struct range (obj start end))
 
+;; A TreeRange is (make-treerange syntax nat nat (listof TreeRange))
+(define-struct treerange (obj start end subs))
 
 ;; syntax-prefs<%>
 (define-interface syntax-prefs<%> ()

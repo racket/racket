@@ -29,8 +29,10 @@
     (let-values ([(line column position) (port-next-location port)])
       (sub1 position)))
   (define (pp-pre-hook obj port)
+    (send range-builder push! obj (current-position))
     (send range-builder set-start obj (current-position)))
   (define (pp-post-hook obj port)
+    (send range-builder pop! (flat=>stx obj) (current-position))
     (let ([start (send range-builder get-start obj)]
           [end (current-position)]
           [stx (flat=>stx obj)])
@@ -110,15 +112,39 @@
       (hash-set! starts obj n))
 
     (define/public (get-start obj)
-      (hash-ref starts obj (lambda _ #f)))
+      (hash-ref starts obj #f))
 
     (define/public (add-range obj range)
       (hash-set! ranges obj (cons range (get-ranges obj))))
 
     (define (get-ranges obj)
-      (hash-ref ranges obj (lambda () null)))
+      (hash-ref ranges obj null))
 
     (define/public (range:get-ranges) ranges)
+
+    ;; ----
+
+    (define/public (get-subs)
+      working-subs)
+
+    (define working-start #f)
+    (define working-subs null)
+    (define saved-starts null)
+    (define saved-subss null)
+
+    (define/public (push! obj start)
+      (set! saved-starts (cons working-start saved-starts))
+      (set! saved-subss (cons working-subs saved-subss))
+      (set! working-start start)
+      (set! working-subs null))
+
+    (define/public (pop! stx end)
+      (define latest (make-treerange stx working-start end (reverse working-subs)))
+      (set! working-start (car saved-starts))
+      (set! working-subs (car saved-subss))
+      (set! saved-starts (cdr saved-starts))
+      (set! saved-subss (cdr saved-subss))
+      (set! working-subs (cons latest working-subs)))
 
     (super-new)))
 
@@ -130,24 +156,31 @@
     (super-new)
 
     (define ranges (hash-copy (send range-builder range:get-ranges)))
+    (define subs (reverse (send range-builder get-subs)))
 
     (define/public (get-ranges obj)
-      (hash-ref ranges obj (lambda _ null)))
+      (hash-ref ranges obj null))
+
+    (define/public (get-treeranges)
+      subs)
 
     (define/public (all-ranges)
-      sorted-ranges)
+      (force sorted-ranges))
 
     (define/public (get-identifier-list)
       identifier-list)
 
     (define sorted-ranges
-      (sort 
-       (apply append 
-              (hash-map
-               ranges
-               (lambda (k vs)
-                 (map (lambda (v) (make-range k (car v) (cdr v))) vs))))
-       (lambda (x y)
-         (>= (- (range-end x) (range-start x))
-             (- (range-end y) (range-start y))))))))
+      (delay
+        (sort 
+         (apply append 
+                (hash-map
+                 ranges
+                 (lambda (k vs)
+                   (map (lambda (v) (make-range k (car v) (cdr v))) vs))))
+         (lambda (x y)
+           (>= (- (range-end x) (range-start x))
+               (- (range-end y) (range-start y)))))))
+    ))
 
+  

@@ -1,44 +1,76 @@
 #lang scheme/base
 (require scheme/class
          scheme/gui
-         scheme/match
+         scheme/list
          macro-debugger/util/class-iop
+         (only-in mzlib/etc begin-with-definitions)
          "pretty-printer.ss"
          "interfaces.ss"
          "util.ss")
 (provide print-syntax-to-editor
          code-style)
 
+(define TIME-PRINTING? #f)
+
+(define-syntax-rule (now)
+  (if TIME-PRINTING?
+      (current-inexact-milliseconds)
+      0))
+
+(define eprintf
+  (if TIME-PRINTING?
+      (let ([eport (current-error-port)])
+        (lambda (fmt . args) (apply fprintf eport fmt args)))
+      void))
+
 ;; FIXME: assumes text never moves
 
 ;; print-syntax-to-editor : syntax text controller<%> config number number
 ;;                          -> display<%>
 (define (print-syntax-to-editor stx text controller config columns insertion-point)
-  (define output-port (open-output-string/count-lines))
-  (define range
-    (pretty-print-syntax stx output-port 
-                         (send: controller controller<%> get-primary-partition)
-                         (send: config config<%> get-colors)
-                         (send: config config<%> get-suffix-option)
-                         columns))
-  (define output-string (get-output-string output-port))
-  (define output-length (sub1 (string-length output-string))) ;; skip final newline
-  (fixup-parentheses output-string range)
-  (let ([display
-         (new display%
-              (text text)
-              (controller controller)
-              (config config)
-              (range range)
-              (start-position insertion-point)
-              (end-position (+ insertion-point output-length)))])
-    (send text begin-edit-sequence)
-    (send text insert output-length output-string insertion-point)
-    (add-clickbacks text range controller insertion-point)
-    (set-standard-font text config insertion-point (+ insertion-point output-length))
-    (send display initialize)
-    (send text end-edit-sequence)
-    display))
+  (begin-with-definitions
+   (define **entry (now))
+   (define output-port (open-output-string/count-lines))
+   (define range
+     (pretty-print-syntax stx output-port 
+                          (send: controller controller<%> get-primary-partition)
+                          (send: config config<%> get-colors)
+                          (send: config config<%> get-suffix-option)
+                          columns))
+   (define **range (now))
+   (define output-string (get-output-string output-port))
+   (define output-length (sub1 (string-length output-string))) ;; skip final newline
+   (fixup-parentheses output-string range)
+   (define **fixup (now))
+   (define display
+     (new display%
+          (text text)
+          (controller controller)
+          (config config)
+          (range range)
+          (base-style (standard-font text config))
+          (start-position insertion-point)
+          (end-position (+ insertion-point output-length))))
+   (send text begin-edit-sequence)
+   (define **editing (now))
+   (send text insert output-length output-string insertion-point)
+   (define **inserted (now))
+   (add-clickbacks text range controller insertion-point)
+   (define **clickbacks (now))
+   (send display initialize)
+   (define **colorize (now))
+   (send text end-edit-sequence)
+   (define **finished (now))
+   (when TIME-PRINTING?
+     (eprintf "** pretty-print: ~s\n" (- **range **entry))
+     (eprintf "** fixup, begin-edit-sequence: ~s\n" (- **editing **range))
+     (eprintf "** > insert: ~s\n" (- **inserted **editing))
+     (eprintf "** > clickback: ~s\n" (- **clickbacks **inserted))
+     (eprintf "** > colorize: ~s\n" (- **colorize **clickbacks))
+     (eprintf "** finish: ~s\n" (- **finished **colorize))
+     (eprintf "** total: ~s\n" (- **finished **entry))
+     (eprintf "\n"))
+   display))
 
 ;; add-clickbacks : text% range% controller<%> number -> void
 (define (add-clickbacks text range controller insertion-point)
@@ -51,11 +83,8 @@
               (send: controller selection-manager<%>
                      set-selected-syntax stx))))))
 
-;; set-standard-font : text% config number number -> void
-(define (set-standard-font text config start end)
-  (send text change-style
-        (code-style text (send: config config<%> get-syntax-font-size))
-        start end))
+(define (standard-font text config)
+  (code-style text (send: config config<%> get-syntax-font-size)))
 
 ;; display%
 (define display%
@@ -64,6 +93,7 @@
                  [config config<%>]
                  [range range<%>])
     (init-field text
+                base-style
                 start-position
                 end-position)
 
@@ -71,6 +101,7 @@
 
     ;; initialize : -> void
     (define/public (initialize)
+      (send text change-style base-style start-position end-position #f)
       (apply-primary-partition-styles)
       (refresh))
 
@@ -125,26 +156,30 @@
     ;; Changes the foreground color according to the primary partition.
     ;; Only called once, when the syntax is first drawn.
     (define/private (apply-primary-partition-styles)
+      (define style-list (send text get-style-list))
       (define (color-style color)
         (let ([delta (new style-delta%)])
           (send delta set-delta-foreground color)
-          delta))
+          (send style-list find-or-create-style base-style delta)))
       (define color-styles
         (list->vector (map color-style (send: config config<%> get-colors))))
       (define overflow-style (color-style "darkgray"))
       (define color-partition
         (send: controller mark-manager<%> get-primary-partition))
       (define offset start-position)
-      (for-each
-       (lambda (range)
-         (let ([stx (range-obj range)]
-               [start (range-start range)]
-               [end (range-end range)])
-           (send text change-style
-                 (primary-style stx color-partition color-styles overflow-style)
-                 (+ offset start)
-                 (+ offset end))))
-       (send: range range<%> all-ranges)))
+      ;; Optimization: don't call change-style when new style = old style
+      (let tr*loop ([trs (send: range range<%> get-treeranges)] [old-style #f])
+        (for ([tr trs])
+          (define stx (treerange-obj tr))
+          (define start (treerange-start tr))
+          (define end (treerange-end tr))
+          (define subs (treerange-subs tr))
+          (define new-style
+            (primary-style stx color-partition color-styles overflow-style))
+          (unless (eq? old-style new-style)
+            (send text change-style new-style (+ offset start) (+ offset end) #f))
+          (tr*loop subs new-style)))
+      (void))
 
     ;; primary-style : syntax partition (vector-of style-delta%) style-delta%
     ;;               -> style-delta%
