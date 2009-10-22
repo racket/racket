@@ -43,7 +43,7 @@
     (define/public (refresh)
       (send* text
         (lock #f)
-        (begin-edit-sequence)
+        (begin-edit-sequence #f)
         (erase))
       (if (syntax? selected-syntax)
           (refresh/mode mode)

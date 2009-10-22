@@ -309,7 +309,7 @@
       (define text (send: sbview sb:syntax-browser<%> get-text))
       (define position-of-interest 0)
       (define multiple-terms? (> (length (cursor->list terms)) 1))
-      (send text begin-edit-sequence)
+      (send text begin-edit-sequence #f)
       (send: sbview sb:syntax-browser<%> erase-all)
 
       (update:show-prefix)

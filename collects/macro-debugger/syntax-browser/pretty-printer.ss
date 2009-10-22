@@ -29,13 +29,15 @@
     (let-values ([(line column position) (port-next-location port)])
       (sub1 position)))
   (define (pp-pre-hook obj port)
-    (send range-builder push! obj (current-position))
+    (when (flat=>stx obj)
+      (send range-builder push! (current-position)))
     (send range-builder set-start obj (current-position)))
   (define (pp-post-hook obj port)
-    (send range-builder pop! (flat=>stx obj) (current-position))
+    (define stx (flat=>stx obj))
+    (when stx
+      (send range-builder pop! stx (current-position)))
     (let ([start (send range-builder get-start obj)]
-          [end (current-position)]
-          [stx (flat=>stx obj)])
+          [end (current-position)])
       (when (and start stx)
         (send range-builder add-range stx (cons start end)))))
   (define (pp-extend-style-table identifier-list)
@@ -132,7 +134,7 @@
     (define saved-starts null)
     (define saved-subss null)
 
-    (define/public (push! obj start)
+    (define/public (push! start)
       (set! saved-starts (cons working-start saved-starts))
       (set! saved-subss (cons working-subs saved-subss))
       (set! working-start start)
@@ -182,5 +184,3 @@
            (>= (- (range-end x) (range-start x))
                (- (range-end y) (range-start y)))))))
     ))
-
-  

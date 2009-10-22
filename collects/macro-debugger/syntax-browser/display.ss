@@ -51,7 +51,7 @@
           (base-style (standard-font text config))
           (start-position insertion-point)
           (end-position (+ insertion-point output-length))))
-   (send text begin-edit-sequence)
+   (send text begin-edit-sequence #f)
    (define **editing (now))
    (send text insert output-length output-string insertion-point)
    (define **inserted (now))
@@ -110,7 +110,7 @@
     (define/public (refresh)
       (with-unlock text
         (send* text 
-          (begin-edit-sequence)
+          (begin-edit-sequence #f)
           (change-style unhighlight-d start-position end-position))
         (apply-extra-styles)
         (let ([selected-syntax
