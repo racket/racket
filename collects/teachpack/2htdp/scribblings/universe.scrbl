@@ -971,9 +971,9 @@ The mandatory clauses of a @scheme[universe] server description are
  @defform[(on-msg msg-expr)
           #:contracts
           ([msg-expr (-> (unsyntax @tech{UniverseState}) iworld? sexp? bundle?)])]{
- tell DrScheme to apply @scheme[msg-expr] to the current state of the universe, the world
- @scheme[w] that sent the message, and the message itself. Note that
- @scheme[w] is guaranteed to be on the list @scheme[low]. 
+ tell DrScheme to apply @scheme[msg-expr] to the current state of the
+ universe, the world 
+ @scheme[w] that sent the message, and the message itself. 
  }
 }]
  All proper event handlers produce a @emph{bundle}.  The state in the
