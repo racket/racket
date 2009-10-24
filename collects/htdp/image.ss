@@ -109,7 +109,7 @@ plt/collects/tests/mzscheme/htdp-image.ss
 
 (define (check-sizes who w h)
   (unless (and (< 0 w 10000) (< 0 h 10000))
-    (error (format "cannot make ~a x ~a image" w h))))
+    (error who (format "cannot make ~a x ~a image" w h))))
 
 (define (mode? x)
   (member x '(solid "solid" outline "outline")))
