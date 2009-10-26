@@ -308,7 +308,7 @@ which renders as
 @; ----------------------------------------
 @section{Text Mode vs. Scheme Mode for Arguments}
 
-When @litchar{[}...@litchar{]} sounds the arguments of an
+When @litchar{[}...@litchar{]} surrounds the arguments of an
 operation, the argument expressions are in Scheme mode rather than
 text mode. Even in Scheme mode, @litchar["@"] can be used to apply
 operations; once the @"@" syntax is enabled through a
