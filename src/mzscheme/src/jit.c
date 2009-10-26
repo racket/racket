@@ -3818,6 +3818,8 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
     }
     --jitter->unbox;
     jitter->unbox_depth -= (rand2 ? 2 : 1);
+    if (for_branch)
+      mz_rs_sync(); /* needed if arguments were unboxed */
     generate_double_arith(jitter, arith, cmp, 0, !!rand2, 0,
                           &refd, &refdt, branch_short, 1, 1, jitter->unbox);
     CHECK_LIMIT();
