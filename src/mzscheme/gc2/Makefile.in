@@ -48,6 +48,7 @@ OBJS =  salloc.@LTO@ \
 	eval.@LTO@ \
 	file.@LTO@ \
 	fun.@LTO@ \
+	future.@LTO@ \
 	hash.@LTO@ \
 	jit.@LTO@ \
 	list.@LTO@ \
@@ -92,6 +93,7 @@ XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/eval.c \
 	$(XSRCDIR)/file.c \
 	$(XSRCDIR)/fun.c \
+	$(XSRCDIR)/future.c \
 	$(XSRCDIR)/hash.c \
 	$(XSRCDIR)/jit.c \
 	$(XSRCDIR)/list.c \
@@ -174,6 +176,8 @@ $(XSRCDIR)/file.c: ../src/file.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/file.c $(SRCDIR)/file.c
 $(XSRCDIR)/fun.c: ../src/fun.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/fun.c $(SRCDIR)/fun.c
+$(XSRCDIR)/future.c: ../src/future.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/future.c $(SRCDIR)/future.c
 $(XSRCDIR)/hash.c: ../src/hash.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/hash.c $(SRCDIR)/hash.c
 $(XSRCDIR)/jit.c: ../src/jit.@LTO@ $(XFORMDEP) $(LIGHTNINGDEP)
@@ -255,6 +259,8 @@ file.@LTO@: $(XSRCDIR)/file.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/file.c -o file.@LTO@
 fun.@LTO@: $(XSRCDIR)/fun.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/fun.c -o fun.@LTO@
+future.@LTO@: $(XSRCDIR)/future.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/future.c -o future.@LTO@
 hash.@LTO@: $(XSRCDIR)/hash.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/hash.c -o hash.@LTO@
 jit.@LTO@: $(XSRCDIR)/jit.c

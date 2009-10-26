@@ -32,6 +32,9 @@
 #include "schminc.h"
 #include "schmach.h"
 #include "schexpobs.h"
+#ifdef FUTURES_ENABLED
+# include "future.h"
+#endif
 
 #define GLOBAL_TABLE_SIZE 500
 #define TABLE_CACHE_MAX_SIZE 2048
@@ -464,6 +467,9 @@ static Scheme_Env *place_instance_init_post_kernel() {
   scheme_init_place(env);
 #if defined(MZ_USE_PLACES)
   scheme_jit_fill_threadlocal_table();
+#endif
+#ifdef FUTURES_ENABLED 
+  scheme_init_futures(env);
 #endif
 
 #ifndef DONT_USE_FOREIGN

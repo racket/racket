@@ -41,6 +41,9 @@
 
 #include "schpriv.h"
 #include "schmach.h"
+#ifdef FUTURES_ENABLED
+# include "future.h"
+#endif
 #ifdef MZ_USE_DWARF_LIBUNWIND
 # include "unwind/libunwind.h"
 #endif
@@ -268,8 +271,8 @@ void scheme_jit_fill_threadlocal_table();
    On x86, the thread-local table pointer is loaded on entry to the
    JIT world into a C stack slot. On x86_64, it is loaded into the
    callee-saved R14 (and the old value is saved on the C stack). */
-#ifdef MZ_USE_PLACES
-#define JIT_THREAD_LOCAL
+#if defined(MZ_USE_PLACES) || defined(FUTURES_ENABLED)
+# define JIT_THREAD_LOCAL
 #endif
 
 #ifdef JIT_THREAD_LOCAL
@@ -2127,22 +2130,72 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
 }
 
 /* Support for intercepting direct calls to primitives: */
-#if 1
-# define mz_prepare_direct_prim(n) mz_prepare(n)
-# define mz_finishr_direct_prim(reg, proc) mz_finishr(reg)
-# define mz_direct_only(p) p
-#else
+#ifdef FUTURES_ENABLED
 # define mz_prepare_direct_prim(n) mz_prepare(n)
 # define mz_finishr_direct_prim(reg, proc) (jit_pusharg_p(reg), (void)mz_finish(proc))
 # define mz_direct_only(p) /* skip this arg, so that total count <= 3 args */
 static Scheme_Object *noncm_prim_indirect(Scheme_Prim proc, int argc)
 {
+  RTCALL_INT_OBJARR_OBJ(proc, argc, MZ_RUNSTACK);
   return proc(argc, MZ_RUNSTACK);
 }
 static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc, Scheme_Object *self)
 {
+  RTCALL_INT_POBJ_OBJ_OBJ(proc, argc, MZ_RUNSTACK, self);
   return proc(argc, MZ_RUNSTACK, self);
 }
+
+/* Various specific 'futurized' versions of primitives that may 
+   be invoked directly from JIT code and are not considered thread-safe 
+   (are not invoked via apply_multi_from_native, etc.) */
+
+static Scheme_Object *ts_scheme_apply_multi_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
+{
+  /* RTCALL_OBJ_INT_POBJ_OBJ(_scheme_apply_multi_from_native, rator, argc, argv); */
+  Scheme_Object *ret;
+  if (rtcall_obj_int_pobj_obj(_scheme_apply_multi_from_native, 
+                              rator, 
+                              argc, 
+                              argv, 
+                              ret)) {
+    return ret;
+  }
+
+  return _scheme_apply_multi_from_native(rator, argc, argv);
+}
+
+static Scheme_Object *ts_scheme_apply_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
+{
+  /* RTCALL_OBJ_INT_POBJ_OBJ(_scheme_apply_from_native, rator, argc, argv); */
+  Scheme_Object *ret;
+  if (rtcall_obj_int_pobj_obj(_scheme_apply_from_native, 
+                              rator, 
+                              argc, 
+                              argv, 
+                              ret)) {
+    return ret;
+  }
+  
+  return _scheme_apply_from_native(rator, argc, argv);
+}
+
+static void ts_on_demand(void)
+{
+  /* RTCALL_VOID_VOID(on_demand); */
+  if (rtcall_void_void(on_demand)) {
+    return;
+  }
+
+  on_demand();
+}
+#else
+/* futures not enabled */
+# define mz_prepare_direct_prim(n) mz_prepare(n)
+# define mz_finishr_direct_prim(reg, proc) mz_finishr(reg)
+# define mz_direct_only(p) p
+# define ts_scheme_apply_multi_from_native _scheme_apply_multi_from_native
+# define ts_scheme_apply_from_native _scheme_apply_from_native
+# define ts_on_demand on_demand
 #endif
 
 static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
@@ -2719,9 +2772,9 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   jit_pusharg_p(JIT_V1);
   if (num_rands < 0) { jit_movr_p(JIT_V1, JIT_R0); } /* save argc to manually pop runstack */
   if (multi_ok) {
-    (void)mz_finish(_scheme_apply_multi_from_native);
+    (void)mz_finish(ts_scheme_apply_multi_from_native);
   } else {
-    (void)mz_finish(_scheme_apply_from_native);
+    (void)mz_finish(ts_scheme_apply_from_native);
   }
   CHECK_LIMIT();
   mz_patch_ucbranch(ref5);
@@ -7965,7 +8018,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
   jit_stxi_p(WORDS_TO_BYTES(2), JIT_RUNSTACK, JIT_R2);
   JIT_UPDATE_THREAD_RSPTR();
-  (void)jit_calli(on_demand); /* DARWIN: stack needs to be 16-byte aligned */
+  (void)jit_calli(ts_on_demand); /* DARWIN: stack needs to be 16-byte aligned */
   CHECK_LIMIT();
   /* Restore registers and runstack, and jump to arity checking
      of newly-created code when argv == runstack (i.e., a tail call): */
@@ -8003,7 +8056,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_pusharg_p(JIT_R2);
   jit_pusharg_p(JIT_R1);
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish(_scheme_apply_multi_from_native);
+  (void)mz_finish(ts_scheme_apply_multi_from_native);
   CHECK_LIMIT();
   mz_pop_threadlocal();
   mz_pop_locals();
@@ -8452,9 +8505,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       jit_pusharg_p(JIT_V1);
       jit_pusharg_p(JIT_R0);
       if (ii == 1) {
-        (void)mz_finish(_scheme_apply_multi_from_native);
+        (void)mz_finish(ts_scheme_apply_multi_from_native);
       } else {
-        (void)mz_finish(_scheme_apply_from_native);
+        (void)mz_finish(ts_scheme_apply_from_native);
       }
       jit_retval(JIT_R0);
       VALIDATE_RESULT(JIT_R0);
@@ -9152,7 +9205,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
-static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv)
+void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv)
 {
   Scheme_Native_Closure_Data *ndata = nc->code;
   Scheme_Closure_Data *data;
@@ -9233,7 +9286,7 @@ static void on_demand()
   argc = MZ_RUNSTACK[1];
   argv = (Scheme_Object **)MZ_RUNSTACK[2];
 
-  on_demand_generate_lambda((Scheme_Native_Closure *)c, SCHEME_INT_VAL(argc), argv);
+  scheme_on_demand_generate_lambda((Scheme_Native_Closure *)c, SCHEME_INT_VAL(argc), argv);
 }
 
 Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, int clear_code_after_jit,
@@ -9271,7 +9324,7 @@ Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, in
 
 #if 0
   /* Compile immediately: */
-  on_demand_generate_lambda(ndata);
+  scheme_on_demand_generate_lambda(ndata);
 #endif
 
   return ndata;

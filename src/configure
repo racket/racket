@@ -1349,6 +1349,7 @@ Optional Features:
   --enable-jit            compile JIT support (enabled by default)
   --enable-foreign        compile foreign support (enabled by default)
   --enable-places         compile places support
+  --enable-futures        compile futures support
   --enable-cgcdefault     use CGC (Boehm or Senora) as default build
   --enable-sgc            use Senora GC instead of the Boehm GC
   --enable-sgcdebug       use Senora GC for debugging
@@ -1903,6 +1904,11 @@ if test "${enable_places+set}" = set; then
   enableval=$enable_places;
 fi
 
+# Check whether --enable-futures was given.
+if test "${enable_futures+set}" = set; then
+  enableval=$enable_futures;
+fi
+
 
 # Check whether --enable-cgcdefault was given.
 if test "${enable_cgcdefault+set}" = set; then
@@ -2249,6 +2255,9 @@ show_explicitly_enabled "${enable_orig}" "Original install tree"
 show_explicitly_disabled "${enable_jit}" JIT
 
 show_explicitly_disabled "${enable_foreign}" Foreign
+
+show_explicitly_enabled "${enable_places}" Places
+show_explicitly_enabled "${enable_futures}" Futures
 
 show_explicitly_enabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
@@ -10711,6 +10720,13 @@ if test "${enable_places}" = "yes" ; then
   fi
   LDFLAGS="$LDFLAGS -pthread"
   LIBATOM="LIBATOM_USE"
+fi
+
+############### futures ###################
+
+if test "${enable_futures}" = "yes" ; then
+  PREFLAGS="$PREFLAGS -DFUTURES_ENABLED"
+  LDFLAGS="$LDFLAGS -pthread"
 fi
 
 ################ Xrender ##################

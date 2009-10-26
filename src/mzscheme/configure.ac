@@ -44,6 +44,7 @@ AC_ARG_ENABLE(jit,     [  --enable-jit            compile JIT support (enabled b
 AC_ARG_ENABLE(foreign, [  --enable-foreign        compile foreign support (enabled by default)], , enable_foreign=yes)
 
 AC_ARG_ENABLE(places,  [  --enable-places         compile places support])
+AC_ARG_ENABLE(futures, [  --enable-futures        compile futures support])
 
 AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC (Boehm or Senora) as default build])
 AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of the Boehm GC])
@@ -292,6 +293,9 @@ show_explicitly_enabled "${enable_orig}" "Original install tree"
 show_explicitly_disabled "${enable_jit}" JIT
 
 show_explicitly_disabled "${enable_foreign}" Foreign
+
+show_explicitly_enabled "${enable_places}" Places
+show_explicitly_enabled "${enable_futures}" Futures
 
 show_explicitly_enabled "${enable_sgc}" SGC
 show_explicitly_enabled "${enable_sgcdebug}" "SGC debug mode"
@@ -1146,6 +1150,13 @@ if test "${enable_places}" = "yes" ; then
   fi
   LDFLAGS="$LDFLAGS -pthread"
   LIBATOM="LIBATOM_USE"
+fi
+
+############### futures ###################
+
+if test "${enable_futures}" = "yes" ; then
+  PREFLAGS="$PREFLAGS -DFUTURES_ENABLED"
+  LDFLAGS="$LDFLAGS -pthread"
 fi
 
 ################ Xrender ##################

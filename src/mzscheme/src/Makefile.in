@@ -24,6 +24,7 @@ OBJS =  salloc.@LTO@ \
 	eval.@LTO@ \
 	file.@LTO@ \
 	fun.@LTO@ \
+	future.@LTO@ \
         gmp.@LTO@ \
 	hash.@LTO@ \
 	jit.@LTO@ \
@@ -66,6 +67,7 @@ SRCS =  $(srcdir)/salloc.c \
 	$(srcdir)/eval.c \
 	$(srcdir)/file.c \
 	$(srcdir)/fun.c \
+	$(srcdir)/future.c \
 	$(srcdir)/gmp/gmp.c \
 	$(srcdir)/hash.c \
 	$(srcdir)/jit.c \
@@ -170,6 +172,8 @@ file.@LTO@: $(srcdir)/file.c
 	$(CC) $(CFLAGS) -c $(srcdir)/file.c -o file.@LTO@
 fun.@LTO@: $(srcdir)/fun.c
 	$(CC) $(CFLAGS) -c $(srcdir)/fun.c -o fun.@LTO@
+future.@LTO@: $(srcdir)/future.c
+	$(CC) $(CFLAGS) -c $(srcdir)/future.c -o future.@LTO@
 gmp.@LTO@: $(srcdir)/gmp/gmp.c $(srcdir)/gmp/gmplonglong.h
 	$(CC) $(CFLAGS) -c $(srcdir)/gmp/gmp.c -o gmp.@LTO@
 hash.@LTO@: $(srcdir)/hash.c
@@ -262,6 +266,8 @@ file.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../inclu
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c 
 fun.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/schmap.inc
+future.@LTO@: $(srcdir)/schpriv.h $(srcdir)/future.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
 hash.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
 jit.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
