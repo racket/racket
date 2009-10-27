@@ -15,9 +15,9 @@
            'horizontal-left-align
            'horizontal))
 
-(provide reduction-rule-style/c)
+(provide reduction-rule-style/c render-term term->pict)
 
-(provide/contract 
+(provide/contract
  [render-reduction-relation
   (->d ([rel reduction-relation?])
        ([file (or/c false/c path-string?)]

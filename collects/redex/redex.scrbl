@@ -1596,12 +1596,14 @@ Slideshow (see
 This section documents two classes of operations, one for
 direct use of creating postscript figures for use in papers
 and for use in DrScheme to easily adjust the typesetting:
+@scheme[render-term],
 @scheme[render-language],
 @scheme[render-reduction-relation], 
 @scheme[render-metafunctions], and
 @scheme[render-lw], 
 and one
 for use in combination with other libraries that operate on picts
+@scheme[term->pict],
 @scheme[language->pict],
 @scheme[reduction-relation->pict],
 @scheme[metafunction->pict], and
@@ -1609,6 +1611,24 @@ for use in combination with other libraries that operate on picts
 The primary difference between these functions is that the former list
 sets @scheme[dc-for-text-size] and the latter does not.
 
+@defproc[(render-term [lang compiled-lang?] [term any/c] [file (or/c #f path-string?)]) 
+         (if file void? pict?)]{
+  Renders the term @scheme[term]. If @scheme[file] is @scheme[#f],
+  it produces a pict; if @scheme[file] is a path,  it saves
+  Encapsulated PostScript in the provided filename. See
+  @scheme[render-language] for details on the construction of the pict.
+  }
+
+                               
+@defproc[(term->pict [lang compiled-lang?] [term any/c]) pict?]{
+ Produces a pict like @scheme[render-term], but without
+ adjusting @scheme[dc-for-text-size].
+
+ This function is primarily designed to be used with
+ Slideshow or with other tools that combine picts together.
+}
+
+                               
 @defproc[(render-language [lang compiled-lang?]
                           [file (or/c false/c path-string?) #f]
                           [#:nts nts (or/c false/c (listof (or/c string? symbol?)))
@@ -1634,7 +1654,7 @@ are otherwise setting @scheme[dc-for-text-size].  }
          pict?]{
 
 Produce a pict like @scheme[render-language], but without
-adjust @scheme[dc-for-text-size].
+adjusting @scheme[dc-for-text-size].
 
 This function is primarily designed to be used with
 Slideshow or with other tools that combine picts together.

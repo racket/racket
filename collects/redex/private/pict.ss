@@ -12,7 +12,10 @@
          "core-layout.ss")
 (require (for-syntax scheme/base))
 
-(provide language->pict
+(provide render-term 
+         term->pict
+         
+         language->pict
          render-language
          render-language-nts
          
@@ -974,3 +977,39 @@
      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
        (metafunctions->pict/proc mfs name))]))
      
+
+;                              
+;                              
+;                              
+;                              
+;    ;                         
+;    ;                         
+;   ;;;     ;;;   ; ;;   ;;;;; 
+;    ;     ;   ;  ;;  ;  ; ; ; 
+;    ;     ;;;;;  ;   ;  ; ; ; 
+;    ;     ;      ;      ; ; ; 
+;    ;     ;   ;  ;      ; ; ; 
+;     ;;    ;;;   ;      ; ; ; 
+;                              
+;                              
+;
+
+(define-syntax (render-term stx)
+  (syntax-case stx ()
+    [(_ lang term)
+     #'(render-term/proc lang (to-lw term))]
+    [(_ lang term filename)
+     #'(render-term/proc lang (to-lw term) filename)]))
+
+(define-syntax (term->pict stx)
+  (syntax-case stx ()
+    [(_ lang term)
+     #'(do-term->pict lang (to-lw term))]))
+
+(define (render-term/proc lang lw [filename #f])
+  (if filename
+      (save-as-ps (λ () (do-term->pict lang lw)) filename)
+      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
+        (do-term->pict lang lw))))
+
+(define (do-term->pict lang lw) (lw->pict (language-nts lang) lw))
