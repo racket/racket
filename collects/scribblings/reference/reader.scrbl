@@ -212,7 +212,7 @@ which specifies its parsing as an exact or inexact number; see
 @secref["numbers"] for information on number exactness. As the
 non-terminal names suggest, a number that has no exactness specifier
 and matches only @nunterm{inexact-number} is normally parsed as an
-inexact number, otherwise it is parsed as an excat number. If the
+inexact number, otherwise it is parsed as an exact number. If the
 @scheme[read-decimal-as-inexact] @tech{parameter} is set to @scheme[#f], then
 all numbers without an exactness specifier are instead parsed as
 exact.
