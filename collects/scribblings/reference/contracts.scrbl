@@ -146,7 +146,7 @@ Accepts a flat contracts or a predicate and returns a flat contract
 that checks the inverse of the argument.}
 
 
-@defproc[(=/c [z number?]) flat-contract?]{
+@defproc[(=/c [z real?]) flat-contract?]{
 
 Returns a flat contract that requires the input to be a number and
 @scheme[=] to @scheme[z].}
@@ -158,18 +158,18 @@ Returns a flat contract that requires the input to be a number and
 @scheme[<] to @scheme[n].}
 
 
-@defproc[(>/c [n number?]) flat-contract?]{
+@defproc[(>/c [n real?]) flat-contract?]{
 Like @scheme[</c], but for @scheme[>].}
 
 
-@defproc[(<=/c [n number?]) flat-contract?]{
+@defproc[(<=/c [n real?]) flat-contract?]{
 Like @scheme[</c], but for @scheme[<=].}
 
 
-@defproc[(>=/c [n number?]) flat-contract?]{
+@defproc[(>=/c [n real?]) flat-contract?]{
 Like @scheme[</c], but for @scheme[>=].}
 
-@defproc[(between/c [n number?] [m number?])
+@defproc[(between/c [n real?] [m real?])
 flat-contract?]{ Returns a flat contract that requires the
 input to be a between @scheme[n] and @scheme[m] or equal to
 one of them.}

@@ -506,7 +506,7 @@
     (let ([n (between/c-low ctc)]
           [m (between/c-high ctc)])
       (λ (x) 
-        (and (number? x)
+        (and (real? x)
              (<= n x m))))))
 
 (define-syntax (check-unary-between/c stx)
@@ -527,10 +527,10 @@
   (check-unary-between/c '>=/c x)
   (make-between/c x +inf.0))
 (define (check-between/c x y)
-  (unless (number? x)
-    (error 'between/c "expected a number as first argument, got ~e, other arg ~e" x y))
-  (unless (number? y)
-    (error 'between/c "expected a number as second argument, got ~e, other arg ~e" y x)))
+  (unless (real? x)
+    (error 'between/c "expected a real number as first argument, got ~e, other arg ~e" x y))
+  (unless (real? y)
+    (error 'between/c "expected a real number as second argument, got ~e, other arg ~e" y x)))
 (define (between/c x y)
   (check-between/c x y)
   (make-between/c x y))
@@ -604,7 +604,7 @@
                         (that (opt/info-that opt/info)))
             (values
              (syntax 
-              (if (and (number? val) (comparison val m)) 
+              (if (and (real? val) (comparison val m)) 
                   val
                   (raise-contract-error
                    val
@@ -673,11 +673,11 @@
 (define (</c x)
   (flat-named-contract
    `(</c ,x)
-   (λ (y) (and (number? y) (< y x)))))
+   (λ (y) (and (real? y) (< y x)))))
 (define (>/c x)
   (flat-named-contract
    `(>/c ,x)
-   (λ (y) (and (number? y) (> y x)))))
+   (λ (y) (and (real? y) (> y x)))))
 
 (define natural-number/c
   (flat-named-contract
