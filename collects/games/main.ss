@@ -39,7 +39,12 @@
        (with-handlers ([exn? (lambda (e)
                                (message-box (format "Error in \"~a\""
                                                     (game-name game))
-                                            (exn-message e) f '(ok)))])
+                                            (let ([ep (open-output-string)])
+                                              (parameterize ([current-error-port ep])
+                                                ((error-display-handler) (exn-message e) e))
+                                              (get-output-string ep))
+                                            f
+                                            '(ok)))])
          (run))))))
 
 (define games
