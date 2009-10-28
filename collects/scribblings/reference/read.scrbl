@@ -107,7 +107,7 @@ See @secref["readtables"] for an extended example that uses
 
 @defproc[(read-language [in input-port? (current-input-port)]
                         [fail-thunk (-> any) (lambda () (error ...))])
-         any]{
+         (any/c . -> . any)]{
 
 Reads @scheme[in] in the same way as @scheme[read], but stopping as
 soon as a @tech{reader language} (or its absence) is determined.
