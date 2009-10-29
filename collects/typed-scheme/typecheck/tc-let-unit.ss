@@ -94,6 +94,9 @@
     [(#%plain-lambda () _)
      #:fail-unless (and expected (syntax-property e 'typechecker:called-in-tail-position)) #f
      (tc-expr/check e (ret (-> (tc-results->values expected))))]
+    [_ 
+     #:fail-unless (and expected (syntax-property e 'typechecker:called-in-tail-position)) #f
+     (tc-expr/check e expected)]
     [_ (tc-expr e)]))
 
 (define (tc/let-values namess exprs body form [expected #f])
