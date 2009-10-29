@@ -102,7 +102,7 @@
                  (contract (or/c #f (listof (list/c string?
                                                     (is-a?/c bitmap%)
                                                     (-> (is-a?/c drscheme:unit:frame<%>) any))))
-                           (info-result 'drscheme:toolbar-buttons)
+                           (info-result 'drscheme:toolbar-buttons #f)
                            (get-lang-name pos)
                            'drscheme/private/module-language-tools)))))))
 

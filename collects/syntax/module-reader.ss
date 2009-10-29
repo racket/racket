@@ -50,6 +50,8 @@
                    (err "must specify either both #:read and #:read-syntax, or none"))
                  (when (and ~whole-body-readers? (not (and ~read ~read-syntax)))
                    (err "got a #:whole-body-readers? without #:read and #:read-syntax"))])
+      ;; FIXME: a lot of the generated code is constant and should be lifted 
+      ;; out of the template:
       (quasisyntax/loc stx
         (#%module-begin
          #,@body
@@ -112,24 +114,24 @@
          (define (get-info-getter props)
            (define lang (car  props))
            (define data (cadr props))
-           (define (default-info what)
+           (define (default-info what defval)
              (case what
                [(module-language) (car props)]
                ;; ... more?
-               [else #f]))
+               [else defval]))
            (define info
              (let* ([#,<lang-id> lang] ;\ visible in
                     [#,<data-id> data] ;/ user-code
                     [info #,~info])
-               (if (or (not info) (and (procedure? info) (ar? info 2)))
+               (if (or (not info) (and (procedure? info) (ar? info 3)))
                    info
                    (raise-type-error 'syntax/module-reader
-                                     "info procedure of 1 or 0 arguments" info))))
-           (define (language-info what)
+                                     "info procedure of 3 arguments" info))))
+           (define (language-info what defval)
              (if info
-                 (let ([r (info what default-info)])
-                   (if (eq? r default-info) (default-info what) r))
-                 (default-info what)))
+                 (let ([r (info what defval default-info)])
+                   (if (eq? r default-info) (default-info what defval) r))
+                 (default-info what defval)))
            language-info))))
     (syntax-case stx ()
       [(_ lang body ...)
@@ -206,7 +208,7 @@
     (define (-get-info inp mod line col pos)
       (let ([r (get inp 'get-info (object-name inp) line col pos
                     (lambda (spec) (lambda () (lambda (inp mod line col pos)
-                                                (lambda (tag) #f)))))])
+                                                (lambda (tag defval) defval)))))])
         (convert-get-info (r inp mod line col pos))))
 
     (define (read-fn in read-sym args src mod line col pos convert)

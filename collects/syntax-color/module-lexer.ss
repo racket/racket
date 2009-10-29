@@ -36,7 +36,7 @@
              start-pos
              end-pos
              0
-             (or (let ([v (get-info 'color-lexer)])
+             (or (let ([v (get-info 'color-lexer #f)])
                    (and v
                         (if (procedure-arity-includes? v 3)
                             (cons v #f)

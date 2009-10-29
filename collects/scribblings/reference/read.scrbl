@@ -107,7 +107,7 @@ See @secref["readtables"] for an extended example that uses
 
 @defproc[(read-language [in input-port? (current-input-port)]
                         [fail-thunk (-> any) (lambda () (error ...))])
-         (any/c . -> . any)]{
+         (any/c any/c . -> . any)]{
 
 Reads @scheme[in] in the same way as @scheme[read], but stopping as
 soon as a @tech{reader language} (or its absence) is determined.
@@ -119,16 +119,16 @@ a @schemeidfont{read} or @schemeidfont{read-syntax} form as
 @scheme[read] and @scheme[read-syntax] do, @scheme[read-language]
 dispatches to a @schemeidfont{get-info} function (if any) exported by
 the same module. The result of the @schemeidfont{get-info} function is
-the result of @scheme[read-language] if it is a function of one
-argument; if @schemeidfont{get-info} produces any other kind of
+the result of @scheme[read-language] if it is a function of two
+arguments; if @schemeidfont{get-info} produces any other kind of
 result, the @exnraise[exn:fail:contract].
 
 The function produced by @schemeidfont{get-info} reflects information
-about the expected syntax of the input stream. The argument to the
+about the expected syntax of the input stream. The first argument to the
 function serves as a key on such information; acceptable keys and the
 interpretation of results is up to external tools, such as DrScheme.
 If no information is available for a given key, the result should be
-@scheme[#f].
+the second argument.
 
 The @schemeidfont{get-info} function itself is applied to five
 arguments: the input port being read, the module path from which the
@@ -138,7 +138,8 @@ integer or @scheme[#f]), and position (positive exact integer or
 @scheme[#f]) of the start of the @litchar{#lang} or @litchar{#!}
 form. The @schemeidfont{get-info} function may further read from the
 given input port to determine its result, but it should read no
-further than necessary.
+further than necessary. The @schemeidfont{get-info} function should
+not read from the port after returning a function.
 
 If @scheme[in] starts with a @tech{reader language} specification but
 the relevant module does not export @schemeidfont{get-info} (but
@@ -146,8 +147,13 @@ perhaps does export @schemeidfont{read} and
 @schemeidfont{read-syntax}), then the result of @scheme[read-language]
 is @scheme[#f].
 
-If @scheme[in] does not specify a @tech{reader language}, then
-@scheme[fail-thunk] is called. The default @scheme[fail-thunk] raises
+If @scheme[in] has a @litchar{#lang} or @litchar{#!} specification,
+but parsing and resolving the specification raises an exception, the
+exception is propagated by @scheme[read-language].
+
+If @scheme[in] does not specify a @tech{reader language} with
+@litchar{#lang} or @litchar{#!}, then @scheme[fail-thunk] is
+called. The default @scheme[fail-thunk] raises
 @scheme[exn:fail:contract].}
 
 

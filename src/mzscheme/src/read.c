@@ -5657,8 +5657,8 @@ static Scheme_Object *readtable_call(int w_char, int ch, Scheme_Object *proc, Re
 
   if (get_info) {
     a[0] = v;
-    if (!scheme_check_proc_arity(NULL, 1, 0, 1, a)) {
-      scheme_wrong_type("read-language", "procedure (arity 1)", -1, -1, a);
+    if (!scheme_check_proc_arity(NULL, 2, 0, 1, a)) {
+      scheme_wrong_type("read-language", "procedure (arity 2)", -1, -1, a);
     }
   }
 

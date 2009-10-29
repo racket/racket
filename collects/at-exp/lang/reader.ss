@@ -24,8 +24,8 @@
                       wrap-reader
                       wrap-reader
                       (lambda (proc)
-                        (lambda (key)
+                        (lambda (key defval)
                           (case key
                             [(color-lexer)
                              (dynamic-require 'syntax-color/scribble-lexer 'scribble-lexer)]
-                            [else (and proc (proc key))]))))))
+                            [else (if proc (proc key defval) defval)]))))))

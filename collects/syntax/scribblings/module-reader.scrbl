@@ -76,10 +76,11 @@ using:
 
 Similarly, the @scheme[#:info] keyword supplies a procedure to be used
 by a @scheme[get-info] export (see @scheme[read-language]). The
-procedure produced by @scheme[info-expr] should consume two arguments:
-a key symbol and a default info-getting procedure (to be called with
-the key for default handling). If @scheme[#:info] is not supplied, the
-default info-getting procedure is used.
+procedure produced by @scheme[info-expr] should consume three
+arguments: a key value, a default result, and a default info-getting
+procedure (to be called with the key and default result for default
+handling). If @scheme[#:info] is not supplied, the default
+info-getting procedure is used.
 
 You can also use the (optional) module @scheme[body] forms to provide more
 definitions that might be needed to implement your reader functions.
