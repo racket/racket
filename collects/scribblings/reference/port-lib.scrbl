@@ -10,6 +10,11 @@
 
 @section{Port String and List Conversions}
 
+@defproc[(port->list [r (input-port? . -> . any/c) read] [in input-port? (current-input-port)])
+         (listof any/c)]{
+Returns a list whose elements are produced by calling @scheme[r]
+on @scheme[in] until it produces @scheme[eof].}
+
 @defproc[(port->string [in input-port? (current-input-port)]) string?]{
 
 Reads all characters from @scheme[in] and returns them as a string.}

@@ -152,21 +152,27 @@ The optional arguments @scheme[start], @scheme[stop], and
 
 @speed[in-bytes "byte string"]}
 
+@defproc[(in-port [r (input-port? . -> . any/c) read] 
+		  [in input-port? (current-input-port)])
+	 sequence?]{
+Returns a sequence whose elements are produced by calling @scheme[r]
+on @scheme[in] until it produces @scheme[eof].}
+
 @defproc[(in-input-port-bytes [in input-port?]) sequence?]{
-Returns a sequence equivalent to @scheme[in].}
+Returns a sequence equivalent to @scheme[(in-port read-byte in)].}
 
 @defproc[(in-input-port-chars [in input-port?]) sequence?]{ Returns a
-sequence whose elements are read as characters form @scheme[in] (as
-opposed to using @scheme[in] directly as a sequence to get bytes).}
+sequence whose elements are read as characters form @scheme[in]
+(equivalent to @scheme[(in-port read-char in)]).}
 
 @defproc[(in-lines [in input-port? (current-input-port)]
                    [mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
          sequence?]{
 
-Returns a sequence whose elements are the result of @scheme[(read-line
-in mode)] until an end-of-file is encountered. Note that the default
-mode is @scheme['any], whereas the default mode of @scheme[read-line]
-is @scheme['linefeed].}
+Returns a sequence equivalent to @scheme[(in-port (lambda (p)
+(read-line p mode)) in)]. Note that the default mode is @scheme['any],
+whereas the default mode of @scheme[read-line] is
+@scheme['linefeed]. }
 
 @defproc[(in-hash [hash hash?]) sequence?]{
 Returns a sequence equivalent to @scheme[hash].

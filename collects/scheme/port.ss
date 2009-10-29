@@ -8,6 +8,7 @@
            port->bytes
            port->lines
            port->bytes-lines
+	   port->list
            display-lines
 
            with-output-to-string
@@ -38,6 +39,14 @@
   
   (define (port->bytes-lines [p (current-input-port)] #:line-mode [mode 'any])
     (port->x-lines 'port->bytes-lines p mode read-bytes-line))
+
+  (define (port->list [r read] [p (current-input-port)])
+    (unless (input-port? p)
+      (raise-type-error 'port->list "input-port" p))
+    (unless (and (procedure? r)
+                 (procedure-arity-includes? r 1))
+      (raise-type-error 'port->list "procedure (arity 1)" r))
+    (for/list ([v (in-port r p)]) v))
 
   (define (display-lines l [p (current-output-port)] #:separator [newline #"\n"])
     (unless (list? l)

@@ -10,6 +10,9 @@
 ;; ----------------------------------------
 
 (let* ([p (lambda () (open-input-string "hello\r\nthere"))])
+  (test '(hello there) port->list read (p))
+  (test '(#\h #\e #\l #\l #\o #\return #\newline #\t #\h #\e #\r #\e)
+	port->list read-char (p))
   (test "hello\r\nthere" port->string (p))
   (test #"hello\r\nthere" port->bytes (p))
   (test '("hello" "there") port->lines (p))

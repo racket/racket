@@ -10,6 +10,9 @@
 (define tmp-name "tmp0-filelib")
 (when (file-exists? tmp-name) (delete-file tmp-name))
 (display-lines-to-file '("a" "b" "c") tmp-name #:separator #"\r\n" #:mode 'binary)
+(test '(a b c) file->list tmp-name)
+(test '("a\r" "b\r" "c\r") file->list tmp-name read-line)
+(test '("a" "b" "c") file->list tmp-name (lambda (p) (read-line p 'any)))
 (test "a\r\nb\r\nc\r\n" file->string tmp-name #:mode 'binary)
 (test #"a\r\nb\r\nc\r\n" file->bytes tmp-name)
 (test '("a" "b" "c") file->lines tmp-name)
@@ -92,6 +95,21 @@
 		(when (member name '("filelib-link.ss" "loop-link"))
 		  (test kind name 'link))
 		(add1 accum))
+	      0
+	      #f
+	      #f)
+
+	(test (+ 2 (length rel2))
+	      fold-files 
+	      (lambda (name kind accum)
+		(test kind values (cond
+				   [(link-exists? name) 'link]
+				   [(file-exists? name) 'file]
+				   [(directory-exists? name) 'dir]
+				   [else '???]))
+		(when (member name '("filelib-link.ss" "loop-link"))
+		  (test kind name 'link))
+		(values (add1 accum) #t))
 	      0
 	      #f
 	      #f)

@@ -724,11 +724,10 @@ directory, returns a list such that
 ]}
 
 
-@defproc[(fold-files [proc (and/c (path? (or/c 'file 'dir 'link) any/c 
+@defproc[(fold-files [proc (or/c (path? (or/c 'file 'dir 'link) any/c 
                                    . -> . any/c)
-                                  (or/c procedure?
-                                        ((path? 'dir any/c) 
-                                         . -> . (values any/c any/c))))]
+                                 (path? (or/c 'file 'dir 'link) any/c 
+                                   . -> . (values any/c any/c)))]
                      [init-val any/c]
                      [start-path (or/c path-string? #f) #f]
                      [follow-links? any/c #t])
@@ -777,7 +776,9 @@ new accumulated result.  There is an exception for the case of a
 directory (when the second argument is @scheme['dir]): in this case
 the procedure may return two values, the second indicating whether the
 recursive scan should include the given directory or not.  If it
-returns a single value, the directory is scanned.
+returns a single value, the directory is scanned.  In the cases of 
+files or links (when the second argument is @scheme['file] or 
+@scheme['link]), a second value is permitted but ignored.
 
 If the @scheme[start-path] is provided but no such path exists, or if
 paths disappear during the scan, then an exception is raised.}

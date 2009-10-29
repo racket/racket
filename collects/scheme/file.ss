@@ -12,6 +12,7 @@
          find-files
          pathlist-closure
 
+	 file->list
          file->string
          file->bytes
          file->value
@@ -21,7 +22,7 @@
          write-to-file
          display-lines-to-file)
 
-(require "private/portlines.ss")
+(require "private/portlines.ss" "port.ss")
 
 ;; utility: sorted dirlist so functions are deterministic
 (define (sorted-dirlist [dir (current-directory)])
@@ -289,21 +290,20 @@
 
 ;; fold-files : (pathname sym alpha -> alpha) alpha pathname/#f -> alpha
 (define (fold-files f init [path #f] [follow-links? #t])
+  (define-syntax-rule (discard-second-val e)
+    (call-with-values (λ () e) (λ (acc [extra #f]) acc)))
   (define (do-path path acc)
-    (cond [(and (not follow-links?) (link-exists? path)) (f path 'link acc)]
+    (cond [(and (not follow-links?) (link-exists? path)) (discard-second-val (f path 'link acc))]
           [(directory-exists? path)
            (call-with-values (lambda () (f path 'dir acc))
-             (letrec ([descend
-                       (case-lambda
-                        [(acc)
-                         (do-paths (map (lambda (p) (build-path path p))
-                                        (sorted-dirlist path))
-                                   acc)]
-                        [(acc descend?)
-                         (if descend? (descend acc) acc)])])
-               descend))]
-          [(file-exists? path) (f path 'file acc)]
-          [(link-exists? path) (f path 'link acc)] ; dangling links
+                             (lambda (acc [descend? #t])
+                               (if descend?
+                                   (do-paths (map (lambda (p) (build-path path p))
+                                                  (sorted-dirlist path))
+                                             acc)
+                                   acc)))]
+          [(file-exists? path) (discard-second-val (f path 'file acc))]
+          [(link-exists? path) (discard-second-val (f path 'link acc))] ; dangling links
           [else (error 'fold-files "path disappeared: ~e" path)]))
   (define (do-paths paths acc)
     (cond [(null? paths) acc]
@@ -387,6 +387,15 @@
      f 
      #:mode file-mode
      read)))
+
+(define (file->list f [r read] #:mode [file-mode 'binary])
+  (check-path 'file->list f)
+  (check-file-mode 'file->list file-mode)
+  (let ([sz (file-size f)])
+    (call-with-input-file* 
+     f 
+     #:mode file-mode
+     (lambda (p) (port->list r p)))))
 
 (define (file->x-lines who f line-mode file-mode read-line)
   (check-path who f)
