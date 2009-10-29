@@ -302,13 +302,6 @@
    -> {(cond (else 3))}
    -> {3})
 
-(t 'identical-clauses m:upto-int/lam
-   (cond [(= 1 1) true] [(= 1 1) true])
-   :: (cond [{(= 1 1)} true] [(= 1 1) true])
-   -> (cond [{true} true] [(= 1 1) true])
-   :: {(cond [true true] [(= 1 1) true])}
-   -> {true})
-
 ;;  reconstruct can't handle 'begin'
 #;
 (m:mz "(cond [#f 3 4] [#t (+ 3 4) (+ 4 9)])"
@@ -1450,7 +1443,6 @@
       #;(run-tests '(check-expect forward-ref check-within check-within-bad check-error check-error-bad))
       #;(run-tests '(teachpack-universe))
       #;(run-tests '(check-expect check-within))
-      (run-tests '(identical-clauses))
-      #;(run-all-tests)))
+      (run-all-tests)))
   
 

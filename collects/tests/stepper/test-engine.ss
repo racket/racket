@@ -178,8 +178,6 @@
             show-lambdas-as-lambdas?
             ;; language level:
             'testing
-            ;; run-in-drscheme thunk:
-            (lambda (thunk) (thunk))
             (disable-stepper-error-handling))))
     (error-display-handler current-error-display-handler)))
 
