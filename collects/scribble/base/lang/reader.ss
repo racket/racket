@@ -10,6 +10,9 @@ scribble/base/lang
          (case key
            [(color-lexer)
             (dynamic-require 'syntax-color/scribble-lexer 'scribble-inside-lexer)]
+           [(drscheme:toolbar-buttons)
+            (dynamic-require 'scribble/drscheme-buttons 'drscheme-buttons)]
            [else (default key)]))
 
 (require (prefix-in scribble: "../../reader.ss"))
+

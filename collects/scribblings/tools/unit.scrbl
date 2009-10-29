@@ -684,6 +684,18 @@ Registers the toolbar button @scheme[tb]. This is required
 so that the toolbar buttons properly switch orientation when 
 the toolbar's position is moved.
 }
+
+@defmethod[(register-toolbar-buttons [tbs (listof (is-a?/c switchable-button%))]) void?]{
+Simultaneously registers the toolbar buttons @scheme[tbs]. This is required
+so that the toolbar buttons properly switch orientation when 
+the toolbar's position is moved.
+}
+
+@defmethod[(unregister-toolbar-button [tb (is-a?/c switchable-button%)]) void?]{
+Unregisters the toolbar button @scheme[tb]. Use this method to ensure
+that the button is not referenced by this frame and thus can be gc'd.
+}
+
 }
 
 

@@ -7,7 +7,8 @@
         [prefix drscheme:frame: drscheme:frame^]
         [prefix drscheme:rep: drscheme:rep^]
         [prefix drscheme:debug: drscheme:debug^]
-        [prefix drscheme:tracing: drscheme:tracing^])
+        [prefix drscheme:tracing: drscheme:tracing^]
+        [prefix drscheme:module-language-tools: drscheme:module-language-tools^])
 (export drscheme:get/extend^)
 
 (define make-extender
@@ -44,10 +45,11 @@
          built)))))
 
 (define (get-base-tab%)
-  (drscheme:tracing:tab-mixin
-   (drscheme:debug:test-coverage-tab-mixin
-    (drscheme:debug:profile-tab-mixin
-     drscheme:unit:tab%))))
+  (drscheme:module-language-tools:tab-mixin
+   (drscheme:tracing:tab-mixin
+    (drscheme:debug:test-coverage-tab-mixin
+     (drscheme:debug:profile-tab-mixin
+      drscheme:unit:tab%)))))
 
 (define-values (extend-tab get-tab) (make-extender get-base-tab% 'tab%))
 
@@ -64,9 +66,10 @@
   (make-extender get-base-definitions-canvas% 'definitions-canvas%))  
 
 (define (get-base-unit-frame%) 
-  (drscheme:tracing:frame-mixin
-   (drscheme:debug:profile-unit-frame-mixin
-    drscheme:unit:frame%)))
+  (drscheme:module-language-tools:frame-mixin
+   (drscheme:tracing:frame-mixin
+    (drscheme:debug:profile-unit-frame-mixin
+     drscheme:unit:frame%))))
 
 (define-values (extend-unit-frame get-unit-frame)
   (make-extender get-base-unit-frame% 'drscheme:unit:frame))
@@ -79,9 +82,10 @@
   (make-extender get-base-interactions-text% 'interactions-text%))
 
 (define (get-base-definitions-text%)
-  (drscheme:debug:test-coverage-definitions-text-mixin
-   (drscheme:debug:profile-definitions-text-mixin
-    (drscheme:unit:get-definitions-text%))))
+  (drscheme:module-language-tools:definitions-text-mixin
+   (drscheme:debug:test-coverage-definitions-text-mixin
+    (drscheme:debug:profile-definitions-text-mixin
+     (drscheme:unit:get-definitions-text%)))))
 
 (define-values (extend-definitions-text get-definitions-text)
   (make-extender get-base-definitions-text% 'definitions-text%))

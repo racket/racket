@@ -20,7 +20,8 @@
          "unit.ss"
          "tracing.ss"
          "get-extend.ss"
-         "help-desk.ss")
+         "help-desk.ss"
+         "module-language-tools.ss")
 
 (provide drscheme@)
 
@@ -39,8 +40,8 @@
           drscheme:tracing^)
   (link init@ tools@ modes@ text@ eval@ frame@ rep@ language@
         module-overview@ unit@ debug@ multi-file-search@ get-extend@
-        language-configuration@ font@ module-language@ help-desk@ 
-        tracing@ app@
+        language-configuration@ font@ module-language@ module-language-tools@
+        help-desk@ tracing@ app@
         main@))
 
 (define-unit/new-import-export drscheme@

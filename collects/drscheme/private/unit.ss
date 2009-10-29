@@ -62,6 +62,7 @@ module browser threading seems wrong.
             [prefix drscheme:eval: drscheme:eval^]
             [prefix drscheme:init: drscheme:init^]
             [prefix drscheme:module-language: drscheme:module-language^]
+            [prefix drscheme:module-language-tools: drscheme:module-language-tools^]
             [prefix drscheme:modes: drscheme:modes^]
             [prefix drscheme:debug: drscheme:debug^])
     (export (rename drscheme:unit^
@@ -1399,6 +1400,8 @@ module browser threading seems wrong.
         
         get-language-menu
         register-toolbar-button
+        register-toolbar-buttons
+        unregister-toolbar-button
         get-tabs))
     
 
@@ -1868,19 +1871,23 @@ module browser threading seems wrong.
           (and (not (toolbar-is-hidden?))
                (eq? (cdr (preferences:get 'drscheme:toolbar-state))
                     'left)))
-        
+
         (define/private (orient/show bar-at-beginning?)
           (let ([vertical? (or (toolbar-is-left?) (toolbar-is-right?))])
             (begin-container-sequence)
             (show-info)
             
-            (let ([bpo (send button-panel get-orientation)])
-              (unless (equal? bpo (not vertical?))
-                (send button-panel set-orientation (not vertical?))
-                
-                ;; have to be careful to avoid reversing the list when the orientation is already proper
-                (send button-panel change-children reverse)))
-            
+            ;; orient the button panel and all panels inside it.
+            (let loop ([obj button-panel])
+              (when (is-a? obj area-container<%>)
+                (when (or (is-a? obj vertical-panel%)
+                          (is-a? obj horizontal-panel%))
+                  (unless (equal? (send obj get-orientation) (not vertical?))
+                    (send obj set-orientation (not vertical?))
+                    ;; have to be careful to avoid reversing the list when the orientation is already proper
+                    (send obj change-children reverse)))
+                (for-each loop (send obj get-children))))
+                    
             (orient)
             
             (send top-outer-panel stretchable-height vertical?)
@@ -1903,6 +1910,14 @@ module browser threading seems wrong.
         (define/public (register-toolbar-button b)
           (set! toolbar-buttons (cons b toolbar-buttons))
           (orient))
+        
+        (define/public (register-toolbar-buttons bs)
+          (set! toolbar-buttons (append bs toolbar-buttons))
+          (orient))
+        
+        (define/public (unregister-toolbar-button b)
+          (set! toolbar-buttons (remq b toolbar-buttons))
+          (void))
         
         (define/private (orient)
           (let ([vertical? (or (toolbar-is-left?) (toolbar-is-right?))])
