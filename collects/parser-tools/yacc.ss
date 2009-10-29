@@ -320,6 +320,9 @@
 
             (define (make-parser start-number)
               (lambda (get-token)
+                (unless (and (procedure? get-token)
+                             (procedure-arity-includes? get-token 0))
+                  (error 'get-token "expected a nullary procedure, got ~e" get-token))
                 (let parsing-loop ((stack (make-empty-stack start-number))
                                    (ip (get-token)))
                   (let-values (((tok val start-pos end-pos)
