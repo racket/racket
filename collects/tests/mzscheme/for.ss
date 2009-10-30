@@ -132,7 +132,7 @@
 (test-generator [(65 66 67)] (in-input-port-bytes (open-input-bytes #"ABC")))
 
 (test-generator [(1 2 3)] (in-port read (open-input-string "1 2 3")))
-(test-generator [(123 4)] (in-port read (open-input-string "123 4")))
+(test-generator [((123) 4)] (in-port read (open-input-string "(123) 4")))
 (test-generator [(65 66 67)] (in-port read-byte (open-input-string "ABC")))
 
 (test-generator [(0 1 2 3 4 5)] (in-sequences (in-range 6)))
