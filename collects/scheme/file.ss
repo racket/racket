@@ -22,7 +22,7 @@
          write-to-file
          display-lines-to-file)
 
-(require "private/portlines.ss" "port.ss")
+(require "private/portlines.ss")
 
 ;; utility: sorted dirlist so functions are deterministic
 (define (sorted-dirlist [dir (current-directory)])
@@ -382,7 +382,10 @@
 (define (file->list f [r read] #:mode [file-mode 'binary])
   (check-path 'file->list f)
   (check-file-mode 'file->list file-mode)
-  (call-with-input-file* f #:mode file-mode (lambda (p) (port->list r p))))
+  (unless (and (procedure? r) (procedure-arity-includes? r 1))
+    (raise-type-error 'file->list "procedure (arity 1)" r))
+  (call-with-input-file* f #:mode file-mode
+    (lambda (p) (for/list ([v (in-port r p)]) v))))
 
 (define (file->x-lines who f line-mode file-mode read-line)
   (check-path who f)
