@@ -323,6 +323,7 @@ transcript.
                (for-each (lambda (l) (printf "~a~s\n" Section-prefix l))
                          (reverse errs))
                (when final? (exit 1))))
+      (flush-output)
       (when final? (exit (if ok? 0 1)))
       (printf "(Other messages report successful tests of~a.)\n"
               " error-handling behavior")
