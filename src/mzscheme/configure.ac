@@ -549,7 +549,7 @@ case $OS in
     EXTRALIBS="-Wl,-brtl,-bE:\$(srcdir)/../mzscheme/include/mzscheme.exp"
     ;;
   FreeBSD)
-    LIBS="$LIBS -rdynamic"
+    LIBS="$LIBS -rdynamic -pthread"
     DYN_CFLAGS="-fPIC"
     ;;
   OpenBSD)
