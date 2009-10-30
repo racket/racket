@@ -12,12 +12,12 @@
          find-files
          pathlist-closure
 
-	 file->list
          file->string
          file->bytes
          file->value
          file->lines
          file->bytes-lines
+         file->list
          display-to-file
          write-to-file
          display-lines-to-file)
@@ -357,21 +357,15 @@
   (check-path who f)
   (check-file-mode who file-mode)
   (let ([sz (file-size f)])
-    (call-with-input-file* 
-     f 
-     #:mode file-mode
-     (lambda (in)
-       ;; There's a good chance that `file-size' gets all the data:
-       (let ([s (read-x sz in)])
-         ;; ... but double-check:
-         (let ([more (let loop ()
-                       (let ([l (read-x 4096 in)])
-                         (if (eof-object? l)
-                             null
-                             (cons l (loop)))))])
-           (if (null? more)
-               s
-               (apply x-append (cons s more)))))))))
+    (call-with-input-file* f #:mode file-mode
+      (lambda (in)
+        ;; There's a good chance that `file-size' gets all the data:
+        (let ([s (read-x sz in)])
+          ;; ... but double-check:
+          (let ([more (let loop ()
+                        (let ([l (read-x 4096 in)])
+                          (if (eof-object? l) null (cons l (loop)))))])
+            (if (null? more) s (apply x-append (cons s more)))))))))
 
 (define (file->string f #:mode [mode 'binary])
   (file->x 'file->string f mode read-string string-append))
@@ -382,29 +376,19 @@
 (define (file->value f #:mode [file-mode 'binary])
   (check-path 'file->value f)
   (check-file-mode 'file->value file-mode)
-  (let ([sz (file-size f)])
-    (call-with-input-file* 
-     f 
-     #:mode file-mode
-     read)))
+  (call-with-input-file* f #:mode file-mode read))
 
 (define (file->list f [r read] #:mode [file-mode 'binary])
   (check-path 'file->list f)
   (check-file-mode 'file->list file-mode)
-  (let ([sz (file-size f)])
-    (call-with-input-file* 
-     f 
-     #:mode file-mode
-     (lambda (p) (port->list r p)))))
+  (call-with-input-file* f #:mode file-mode (lambda (p) (port->list r p))))
 
 (define (file->x-lines who f line-mode file-mode read-line)
   (check-path who f)
   (check-mode who line-mode)
   (check-file-mode who file-mode)
-  (call-with-input-file* 
-   f 
-   #:mode file-mode
-   (lambda (p) (port->x-lines who p line-mode read-line))))
+  (call-with-input-file* f #:mode file-mode
+    (lambda (p) (port->x-lines who p line-mode read-line))))
 
 (define (file->lines f #:line-mode [line-mode 'any] #:mode [file-mode 'binary])
   (file->x-lines 'file->lines f line-mode file-mode read-line))
@@ -419,29 +403,19 @@
     (raise-type-error who "'binary or 'text" mode))
   (unless (memq exists '(error append update replace truncate truncate/replace))
     (raise-type-error who "'error, 'append, 'update, 'replace, 'truncate, or 'truncate/replace" exists))
-  (call-with-output-file* 
-   f
-   #:mode mode
-   #:exists exists
-   write))
+  (call-with-output-file* f #:mode mode #:exists exists write))
 
-(define (display-to-file s f 
-                         #:mode [mode 'binary]
-                         #:exists [exists 'error])
+(define (display-to-file s f #:mode [mode 'binary] #:exists [exists 'error])
   (->file 'display-to-file f mode exists (lambda (p) (display s p))))
 
-(define (write-to-file s f 
-                       #:mode [mode 'binary]
-                       #:exists [exists 'error])
+(define (write-to-file s f #:mode [mode 'binary] #:exists [exists 'error])
   (->file 'write-to-file f mode exists (lambda (p) (write s p))))
 
-(define (display-lines-to-file l f 
+(define (display-lines-to-file l f
                                #:mode [mode 'binary]
                                #:exists [exists 'error]
                                #:separator [newline #"\n"])
   (unless (list? l)
     (raise-type-error 'display-lines-to-file "list" l))
   (->file 'display-lines-to-file f mode exists
-          (lambda (p)
-            (do-lines->port l p newline))))
-
+          (lambda (p) (do-lines->port l p newline))))
