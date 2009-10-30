@@ -31,8 +31,8 @@
              (rename *in-vector in-vector)
              (rename *in-string in-string)
              (rename *in-bytes in-bytes)
-             in-input-port-bytes
-             in-input-port-chars
+             (rename *in-input-port-bytes in-input-port-bytes)
+             (rename *in-input-port-chars in-input-port-chars)
              (rename *in-port in-port)
              (rename *in-lines in-lines)
              in-hash
@@ -452,27 +452,20 @@
             void
             void))
 
-  (define (in-input-port-bytes l)
-    (unless (input-port? l)
-      (raise-type-error 'in-input-port-bytes "input-port" l))
-    (make-do-sequence (lambda () (:input-port-gen l))))
+  (define (in-input-port-bytes p)
+    (unless (input-port? p)
+      (raise-type-error 'in-input-port-bytes "input-port" p))
+    (make-do-sequence (lambda () (:input-port-gen p))))
 
-  (define (:input-port-gen v)
-    (values read-byte
-            values
-            v
-            void
+  (define (:input-port-gen p)
+    (values read-byte values p void
             (lambda (x) (not (eof-object? x)))
             void))
 
-  (define (in-input-port-chars v)
-    (unless (input-port? v)
-      (raise-type-error 'in-input-port-chars "input-port" v))
-    (make-do-sequence
-     (lambda ()
-       (values read-char values v void
-               (lambda (x) (not (eof-object? x)))
-               void))))
+  (define (in-input-port-chars p)
+    (unless (input-port? p)
+      (raise-type-error 'in-input-port-chars "input-port" p))
+    (in-producer (lambda () (read-char p)) eof))
 
   (define in-port
     (case-lambda
@@ -1260,6 +1253,30 @@
                        "'linefeed, 'return, 'return-linefeed, 'any, or 'any-one"
                        mode*))
                     (lambda () (read-line p* mode*)))
+                  eof)]])))
+
+  (define-sequence-syntax *in-input-port-bytes
+    (lambda () #'in-input-port-bytes)
+    (lambda (stx)
+      (syntax-case stx ()
+        [[(id) (_ p)]
+         #'[(id) (*in-producer
+                  (let ([p* p])
+                    (unless (input-port? p*)
+                      (raise-type-error 'in-input-port-bytes "input-port" p*))
+                    (lambda () (read-byte p*)))
+                  eof)]])))
+
+  (define-sequence-syntax *in-input-port-chars
+    (lambda () #'in-input-port-chars)
+    (lambda (stx)
+      (syntax-case stx ()
+        [[(id) (_ p)]
+         #'[(id) (*in-producer
+                  (let ([p* p])
+                    (unless (input-port? p*)
+                      (raise-type-error 'in-input-port-chars "input-port" p*))
+                    (lambda () (read-char p*)))
                   eof)]])))
 
   )
