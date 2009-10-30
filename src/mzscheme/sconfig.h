@@ -340,8 +340,8 @@
 # include "uconfig.h"
 # undef HAS_STANDARD_IOB
 
-#undef USE_ITIMER
-#define USE_PTHREAD_THREAD_TIMER
+# undef USE_ITIMER
+# define USE_PTHREAD_THREAD_TIMER
 
 # define HAS_BSD_IOB
 
