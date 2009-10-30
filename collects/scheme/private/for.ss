@@ -33,8 +33,8 @@
              (rename *in-bytes in-bytes)
              in-input-port-bytes
              in-input-port-chars
-             in-port
-             in-lines
+             (rename *in-port in-port)
+             (rename *in-lines in-lines)
              in-hash
              in-hash-keys
              in-hash-values
@@ -482,11 +482,7 @@
        (unless (and (procedure? r) (procedure-arity-includes? r 1))
          (raise-type-error 'in-port "procedure (arity 1)" r))
        (unless (input-port? p) (raise-type-error 'in-port "input-port" p))
-       (make-do-sequence
-        (lambda ()
-          (values r values p void
-                  (lambda (x) (not (eof-object? x)))
-                  void)))]))
+       (in-producer (lambda () (r p)) eof)]))
 
   (define in-lines
     (case-lambda
@@ -499,12 +495,7 @@
           'in-lines
           "'linefeed, 'return, 'return-linefeed, 'any, or 'any-one"
           mode))
-       (make-do-sequence
-        (lambda ()
-          (values (lambda (p) (read-line p m))
-                  values p void
-                  (lambda (x) (not (eof-object? x)))
-                  void)))]))
+       (in-producer (lambda () (read-line p mode)) eof)]))
 
   (define (in-hash ht)
     (unless (hash? ht) (raise-type-error 'in-hash "hash" ht))
@@ -1230,5 +1221,45 @@
                #t
                ;; loop args
                ())])])))
+
+  ;; Some iterators that are implemented using `*in-producer' (note: do not use
+  ;; `in-producer', since in this module it is the procedure version).
+
+  (define-sequence-syntax *in-port
+    (lambda () #'in-port)
+    (lambda (stx)
+      (syntax-case stx ()
+        [[(id) (_)]   #'[(id) (*in-port read (current-input-port))]]
+        [[(id) (_ r)] #'[(id) (*in-port r (current-input-port))]]
+        [[(id) (_ r p)]
+         #'[(id) (*in-producer
+                  (let ([r* r] [p* p])
+                    (unless (and (procedure? r*)
+                                 (procedure-arity-includes? r* 1))
+                      (raise-type-error 'in-port "procedure (arity 1)" r*))
+                    (unless (input-port? p*)
+                      (raise-type-error 'in-port "input-port" p*))
+                    (lambda () (r* p*)))
+                  eof)]])))
+
+  (define-sequence-syntax *in-lines
+    (lambda () #'in-lines)
+    (lambda (stx)
+      (syntax-case stx ()
+        [[(id) (_)]   #'[(id) (*in-lines (current-input-port) 'any)]]
+        [[(id) (_ p)] #'[(id) (*in-lines p 'any)]]
+        [[(id) (_ p mode)]
+         #'[(id) (*in-producer
+                  (let ([p* p] [mode* mode])
+                    (unless (input-port? p*)
+                      (raise-type-error 'in-lines "input-port" p*))
+                    (unless (memq mode* '(linefeed return return-linefeed any
+                                          any-one))
+                      (raise-type-error
+                       'in-lines
+                       "'linefeed, 'return, 'return-linefeed, 'any, or 'any-one"
+                       mode*))
+                    (lambda () (read-line p* mode*)))
+                  eof)]])))
 
   )
