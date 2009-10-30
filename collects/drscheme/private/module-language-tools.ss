@@ -91,7 +91,16 @@
       (define/public (move-to-new-language)
         (let* ([port (open-input-text-editor this)]
                [info-result (with-handlers ((exn:fail? (λ (x) #f)))
-                              (read-language port (λ () #f)))])
+                              (parameterize ([current-reader-guard
+                                              (let ([old (current-reader-guard)])
+                                                (lambda (g)
+                                                  (if (and (pair? g)
+                                                           (eq? (car g) 'planet))
+                                                      (error "#lang planet disbled")
+                                                      (old g))))])
+                                ;; FIXME: do something so that we don't
+                                ;; have to disable all planet packages.
+                                (read-language port (lambda () #f))))])
           (let-values ([(line col pos) (port-next-location port)])
             (unless (equal? (get-text 0 pos) hash-lang-language)
               (set! hash-lang-language (get-text 0 pos))
