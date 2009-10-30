@@ -7,15 +7,17 @@
 
 (define timeout-thread #f)
 
-(namespace-variable-value 'real-error-port #f
+(namespace-variable-value 'real-output-port #f
   (lambda ()
-    (let ([err  (current-error-port)]
+    (let ([outp (current-output-port)]
+          [errp (current-error-port)]
           [exit (exit-handler)]
           [errh (uncaught-exception-handler)]
           [esch (error-escape-handler)]
           [cust (current-custodian)]
           [orig-thread (current-thread)])
-      (namespace-set-variable-value! 'real-error-port err)
+      (namespace-set-variable-value! 'real-output-port outp)
+      (namespace-set-variable-value! 'real-error-port  errp)
       (namespace-set-variable-value! 'last-error #f)
       ;; we're loading this for the first time:
       ;; make real errors show by remembering the exn

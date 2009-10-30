@@ -51,19 +51,17 @@ transcript.
 (defvar building-flat-tests? #f)
 (defvar in-drscheme?         #f)
 
-;; used for quiet testing (quiet.ss) to really show something
+;; used when quiet testing (through "quiet.ss") to really show something
+(defvar real-output-port #f)
 (defvar real-error-port #f)
-(define (eprintf* fmt . args)
-  (let ([msg (apply format fmt args)]
-        [err (or real-error-port (current-error-port))])
-    (display msg err)
-    (flush-output err)))
 
 (define Section-prefix
   (namespace-variable-value 'Section-prefix #f (lambda () "")))
 
 (define (Section . args)
-  (eprintf* "~aSection~s\n" Section-prefix args)
+  (let ([p (or real-output-port (current-output-port))])
+    (fprintf p "~aSection~s\n" Section-prefix args)
+    (flush-output p))
   (set! cur-section args)
   #t)
 
@@ -86,7 +84,8 @@ transcript.
                              [(S sandbox-memory-limit) 100]) ; 100mb per box
                 ((S make-evaluator) '(begin) #:requires (list 'scheme)))))])
     (e `(load-relative "testing.ss"))
-    (e `(define real-error-port (quote ,real-error-port)))
+    (e `(define real-output-port (quote ,real-output-port)))
+    (e `(define real-error-port  (quote ,real-error-port)))
     (e `(define Section-prefix ,Section-prefix))
     (e `(load-relative (quote ,file)))
     (let ([l (e '(list number-of-tests
@@ -304,25 +303,30 @@ transcript.
 
 (define (report-errs . final?)
   (let* ([final? (and (pair? final?) (car final?))]
-         [printf (if final? eprintf* printf)]
          [ok?    (null? errs)])
-    (printf "\n~aPerformed ~a expression tests (~a ~a, ~a ~a)\n"
-            Section-prefix
-            (+ number-of-tests number-of-error-tests)
-            number-of-tests "value expressions"
-            number-of-error-tests "exn expressions")
-    (printf "~aand ~a exception field tests.\n\n"
-            Section-prefix
-            number-of-exn-tests)
-    (if ok?
-      (printf "~aPassed all tests.\n" Section-prefix)
-      (begin (printf "~aErrors were:\n~a(Section (got expected (call)))\n"
-                     Section-prefix Section-prefix)
-             (for-each (lambda (l) (printf "~a~s\n" Section-prefix l)) (reverse errs))
-             (when final? (exit 1))))
-    (when final? (exit (if ok? 0 1)))
-    (printf "(Other messages report successful tests of~a.)\n"
-            " error-handling behavior")))
+    (parameterize ([current-output-port
+                    (cond [(not ok?) (or real-error-port (current-error-port))]
+                          [final? (or real-output-port (current-output-port))]
+                          [else (current-output-port)])])
+      (printf "\n~aPerformed ~a expression tests (~a ~a, ~a ~a)\n"
+              Section-prefix
+              (+ number-of-tests number-of-error-tests)
+              number-of-tests "value expressions"
+              number-of-error-tests "exn expressions")
+      (printf "~aand ~a exception field tests.\n\n"
+              Section-prefix
+              number-of-exn-tests)
+      (if ok?
+        (printf "~aPassed all tests.\n" Section-prefix)
+        (begin (printf "~aErrors were:\n~a(Section (got expected (call)))\n"
+                       Section-prefix Section-prefix)
+               (for-each (lambda (l) (printf "~a~s\n" Section-prefix l))
+                         (reverse errs))
+               (when final? (exit 1))))
+      (when final? (exit (if ok? 0 1)))
+      (printf "(Other messages report successful tests of~a.)\n"
+              " error-handling behavior")
+      (flush-output))))
 
 (define type? exn:application:type?)
 (define arity? exn:application:arity?)
