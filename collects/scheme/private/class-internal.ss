@@ -1831,8 +1831,8 @@
 
     ;; -- Check superclass --
     (unless (class? super)
-      (obj-error 'class* "superclass expression returned a non-class: ~a~a" 
-		 super
+      (obj-error 'class* "superclass expression ~e returned a non-class: ~a" 
+                 super
 		 (for-class name)))
 
     (when any-localized?
@@ -1919,7 +1919,8 @@
 	  (let loop ([ids public-names][p (class-method-width super)])
 	    (unless (null? ids)
 	      (when (hash-ref method-ht (car ids) #f)
-		(obj-error 'class* "superclass already contains method: ~a~a" 
+		(obj-error 'class* "superclass ~e already contains method: ~a~a" 
+               super
 			   (car ids)
 			   (for-class name)))
 	      (hash-set! method-ht (car ids) p)
@@ -1928,7 +1929,8 @@
 	  (let loop ([ids public-field-names][p (class-field-width super)])
 	    (unless (null? ids)
 	      (when (hash-ref field-ht (car ids) #f)
-		(obj-error 'class* "superclass already contains field: ~a~a" 
+		(obj-error 'class* "superclass ~e already contains field: ~a~a" 
+               super
 			   (car ids)
 			   (for-class name)))
 	      (hash-set! field-ht (car ids) p)
@@ -1937,7 +1939,8 @@
 	;; Check that superclass has expected fields
 	(for-each (lambda (id)
 		    (unless (hash-ref field-ht id #f)
-		      (obj-error 'class* "superclass does not provide field: ~a~a" 
+		      (obj-error 'class* "superclass ~e does not provide field: ~a~a" 
+                 super
 				 id
 				 (for-class name))))
 		  inherit-field-names)
@@ -2120,8 +2123,9 @@
 					      (or (vector-ref vec (sub1 (vector-length vec)))
 						  (obj-error 'class* 
 							     (string-append
-							      "superclass method for override, overment, inherit/super, "
+							      "superclass ~e method for override, overment, inherit/super, "
 							      "or rename-super is not overrideable: ~a~a")
+                                 super
 							     mname
 							     (for-class name)))
 					      (vector-ref (class-methods super) index))))
@@ -2152,8 +2156,9 @@
                                                       (unless aug-ok?
                                                         (obj-error 'class* 
                                                                    (string-append
-                                                                    "superclass method for augride, augment, inherit/inner, "
+                                                                    "superclass ~e method for augride, augment, inherit/inner, "
                                                                     "or rename-inner method is not augmentable: ~a~a")
+                                                                   super
                                                                    mname
                                                                    (for-class name))))))])
                                            (for-each (check-aug #f) 
