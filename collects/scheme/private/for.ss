@@ -24,7 +24,7 @@
              for/hasheq for*/hasheq
 
              for/fold/derived for*/fold/derived
-             
+
              (rename *in-range in-range)
              (rename *in-naturals in-naturals)
              (rename *in-list in-list)
@@ -33,13 +33,13 @@
              (rename *in-bytes in-bytes)
              in-input-port-bytes
              in-input-port-chars
-	     in-port
+             in-port
              in-lines
              in-hash
              in-hash-keys
              in-hash-values
              in-hash-pairs
-             
+
              in-sequences
              in-cycle
              in-parallel
@@ -48,7 +48,7 @@
              (rename *in-producer in-producer)
              (rename *in-indexed in-indexed)
              (rename *in-value in-value)
-             
+
              sequence?
              sequence-generate
              prop:sequence
@@ -486,32 +486,40 @@
                void))))
 
   (define in-lines
-    (case-lambda
-     [() (in-lines (current-input-port))]
-     [(v) (in-lines v 'any)]
-     [(v mode)
-      (unless (input-port? v) (raise-type-error 'in-lines "input-port" v))
-      (unless (memq mode '(linefeed return return-linefeed any any-one))
-        (raise-type-error 'in-lines "('linefeed, 'return, 'return-linefeed, 'any, or 'any-one)" mode))
-      (make-do-sequence (lambda ()
-                          (values (lambda (v) (read-line v mode))
-                                  values
-                                  v
-                                  void
-                                  (lambda (x) (not (eof-object? x)))
-                                  void)))]))
+    (let ([mk (lambda (p m)
+                (make-do-sequence
+                 (lambda ()
+                   (values (lambda (p) (read-line p m))
+                           values p void
+                           (lambda (x) (not (eof-object? x)))
+                           void))))])
+      (case-lambda
+        [() (in-lines (current-input-port) 'any)]
+        [(p) (in-lines p 'any)]
+        [(p mode)
+         (unless (input-port? p) (raise-type-error 'in-lines "input-port" p))
+         (unless (memq mode '(linefeed return return-linefeed any any-one))
+           (raise-type-error
+            'in-lines
+            "'linefeed, 'return, 'return-linefeed, 'any, or 'any-one"
+            mode))
+         (mk p mode)])))
 
   (define in-port
-    (case-lambda 
-     [() (in-port read (current-input-port))]
-     [(r) (in-port r (current-input-port))]
-     [(r p)
-      (unless (input-port? p) (raise-type-error 'in-port "input-port" p))
-      (make-do-sequence
-       (lambda ()
-	 (values r values p void
-		 (lambda (x) (not (eof-object? x)))
-		 void)))]))
+    (let ([mk (lambda (p r)
+                (make-do-sequence
+                 (lambda ()
+                   (values r values p void
+                           (lambda (x) (not (eof-object? x)))
+                           void))))])
+      (case-lambda
+        [() (mk (current-input-port) read)]
+        [(r) (mk (current-input-port) r)]
+        [(r p)
+         (unless (and (procedure? r) (procedure-arity-includes? r 1))
+           (raise-type-error 'in->port "procedure (arity 1)" r))
+         (unless (input-port? p) (raise-type-error 'in-port "input-port" p))
+         (mk p r)])))
 
   (define (in-hash ht)
     (unless (hash? ht) (raise-type-error 'in-hash "hash" ht))
