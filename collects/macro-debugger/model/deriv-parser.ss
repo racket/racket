@@ -102,8 +102,8 @@
       ($2 $1 $3)])
     (CheckImmediateMacro/Inner
     (#:args le1 e2)
-     [()
-      (make p:stop le1 e2 null #f)]
+     [(!)
+      (make p:stop le1 e2 null $1)]
      [(visit Resolves (? MacroStep) return (? CheckImmediateMacro/Inner))
       ($3 $1 $2 ($5 $4 e2))]
      [(visit Resolves tag (? MacroStep) return (? CheckImmediateMacro/Inner))
