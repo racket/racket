@@ -290,20 +290,21 @@
 
 ;; fold-files : (pathname sym alpha -> alpha) alpha pathname/#f -> alpha
 (define (fold-files f init [path #f] [follow-links? #t])
-  (define-syntax-rule (discard-second-val e)
-    (call-with-values (λ () e) (λ (acc [extra #f]) acc)))
+  (define-syntax-rule (keep-fst e)
+    (call-with-values (lambda () e) (case-lambda [(v) v] [(v _) v])))
   (define (do-path path acc)
-    (cond [(and (not follow-links?) (link-exists? path)) (discard-second-val (f path 'link acc))]
+    (cond [(and (not follow-links?) (link-exists? path))
+           (keep-fst (f path 'link acc))]
           [(directory-exists? path)
            (call-with-values (lambda () (f path 'dir acc))
-                             (lambda (acc [descend? #t])
-                               (if descend?
-                                   (do-paths (map (lambda (p) (build-path path p))
-                                                  (sorted-dirlist path))
-                                             acc)
-                                   acc)))]
-          [(file-exists? path) (discard-second-val (f path 'file acc))]
-          [(link-exists? path) (discard-second-val (f path 'link acc))] ; dangling links
+               (lambda (acc [descend? #t])
+                 (if descend?
+                   (do-paths (map (lambda (p) (build-path path p))
+                                  (sorted-dirlist path))
+                             acc)
+                   acc)))]
+          [(file-exists? path) (keep-fst (f path 'file acc))]
+          [(link-exists? path) (keep-fst (f path 'link acc))] ; dangling links
           [else (error 'fold-files "path disappeared: ~e" path)]))
   (define (do-paths paths acc)
     (cond [(null? paths) acc]
