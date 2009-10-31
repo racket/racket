@@ -30,11 +30,14 @@
      (list? (any -> boolean)
        "to determine whether some value is a list")
 
+    ((advanced-list* list*) (any ... (listof any) -> (listof any)) 
+     "to construct a list by adding multiple items to a list")
+
     ((advanced-cons cons) (X (listof X) -> (listof X))
-			  "to construct a list")
+     "to construct a list")
 
     ((advanced-append append) ((listof any) ... -> (listof any))
-			      "to create a single list from several"))
+     "to create a single list from several"))
    
    ("Misc"
     (force (delay -> any) "to find the delayed value; see also delay")
