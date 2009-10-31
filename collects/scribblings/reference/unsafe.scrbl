@@ -130,7 +130,7 @@ Unsafe variants of @scheme[car], @scheme[cdr], @scheme[mcar],
 @deftogether[(
 @defproc[(unsafe-vector-length [v vector?]) fixnum?]
 @defproc[(unsafe-vector-ref [v vector?][k fixnum?]) any/c]
-@defproc[(unsafe-vector-set! [v vector?][k fixnum?][val any/c]) any/c]
+@defproc[(unsafe-vector-set! [v vector?][k fixnum?][val any/c]) void?]
 )]{
 
 Unsafe versions of @scheme[vector-length], @scheme[vector-ref], and
@@ -139,10 +139,35 @@ Unsafe versions of @scheme[vector-length], @scheme[vector-ref], and
 fixnum).}
 
 
+@deftogether[(
+@defproc[(unsafe-string-length [str string?]) fixnum?]
+@defproc[(unsafe-string-ref [str string?][k fixnum?])
+         (and/c char? (lambda (ch) (<= 0 (char->integer ch) 255)))]
+@defproc[(unsafe-string-set! [str (and/c string? (not/c immutable?))][k fixnum?][ch char?]) void?]
+)]{
+
+Unsafe versions of @scheme[string-length], @scheme[string-ref], and
+@scheme[string-set!]. The @scheme[unsafe-string-ref] procedure can be used
+only when the result will be a Latin-1 character. A string's size can
+never be larger than a @tech{fixnum} (so even @scheme[string-length]
+always returns a fixnum).}
+
+
+@deftogether[(
+@defproc[(unsafe-bytes-length [bstr bytes?]) fixnum?]
+@defproc[(unsafe-bytes-ref [bstr bytes?][k fixnum?]) byte?]
+@defproc[(unsafe-bytes-set! [bstr (and/c bytes? (not/c immutable?))][k fixnum?][b byte?]) void?]
+)]{
+
+Unsafe versions of @scheme[bytes-length], @scheme[bytes-ref], and
+@scheme[bytes-set!]. A bytes's size can never be larger than a
+@tech{fixnum} (so even @scheme[bytes-length] always returns a
+fixnum).}
+
 
 @deftogether[(
 @defproc[(unsafe-struct-ref [v any/c][k fixnum?]) any/c]
-@defproc[(unsafe-struct-set! [v any/c][k fixnum?][val any/c]) any/c]
+@defproc[(unsafe-struct-set! [v any/c][k fixnum?][val any/c]) void?]
 )]{
 
 Unsafe field access and update for an instance of a structure

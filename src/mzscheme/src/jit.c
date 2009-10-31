@@ -5056,6 +5056,25 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       jit_ori_l(JIT_R0, JIT_R0, 0x1);
             
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-string-length")
+               || IS_NAMED_PRIM(rator, "unsafe-bytes-length")) {
+      LOG_IT(("inlined string-length\n"));
+
+      mz_runstack_skipped(jitter, 1);
+
+      generate_non_tail(app->rand, jitter, 0, 1);
+      CHECK_LIMIT();
+
+      mz_runstack_unskipped(jitter, 1);
+
+      if (IS_NAMED_PRIM(rator, "unsafe-string-length"))
+        (void)jit_ldxi_i(JIT_R0, JIT_R0, &SCHEME_CHAR_STRLEN_VAL(0x0));
+      else
+        (void)jit_ldxi_i(JIT_R0, JIT_R0, &SCHEME_BYTE_STRLEN_VAL(0x0));
+      jit_lshi_l(JIT_R0, JIT_R0, 1);
+      jit_ori_l(JIT_R0, JIT_R0, 0x1);
+      
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "unbox")) {
       GC_CAN_IGNORE jit_insn *reffail, *ref;
 
@@ -5657,7 +5676,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
                || IS_NAMED_PRIM(rator, "unsafe-vector-ref")
                || IS_NAMED_PRIM(rator, "unsafe-struct-ref")
 	       || IS_NAMED_PRIM(rator, "string-ref")
-	       || IS_NAMED_PRIM(rator, "bytes-ref")) {
+               || IS_NAMED_PRIM(rator, "unsafe-string-ref")
+	       || IS_NAMED_PRIM(rator, "bytes-ref")
+	       || IS_NAMED_PRIM(rator, "unsafe-bytes-ref")) {
       int simple;
       int which, unsafe = 0, base_offset = ((int)&SCHEME_VEC_ELS(0x0));
 
@@ -5672,7 +5693,13 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         base_offset = ((int)&((Scheme_Structure *)0x0)->slots);
       } else if (IS_NAMED_PRIM(rator, "string-ref"))
 	which = 1;
-      else
+      else if (IS_NAMED_PRIM(rator, "unsafe-string-ref")) {
+        which = 1;
+        unsafe = 1;
+      } else if (IS_NAMED_PRIM(rator, "unsafe-bytes-ref")) {
+        which = 2;
+        unsafe = 1;
+      } else
 	which = 2;
 
       LOG_IT(("inlined vector-/string-/bytes-ref\n"));
@@ -5684,16 +5711,38 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
         CHECK_LIMIT();
 
-        mz_rs_sync();
+        if (!unsafe)
+          mz_rs_sync();
 
         if (!which) {
           /* vector-ref is relatively simple and worth inlining */
           generate_vector_op(jitter, 0, 0, base_offset, unsafe);
           CHECK_LIMIT();
 	} else if (which == 1) {
-	  (void)jit_calli(string_ref_check_index_code);
+          if (unsafe) {
+            jit_rshi_ul(JIT_R1, JIT_R1, 1);
+            jit_lshi_ul(JIT_R1, JIT_R1, LOG_MZCHAR_SIZE);
+            jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
+            jit_ldxr_p(JIT_R0, JIT_R0, JIT_R1);
+            (void)jit_movi_p(JIT_R1, scheme_char_constants);
+            jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
+            jit_ldxr_p(JIT_R0, JIT_R1, JIT_R0);
+            CHECK_LIMIT();
+          } else {
+            (void)jit_calli(string_ref_check_index_code);
+          }
 	} else {
-	  (void)jit_calli(bytes_ref_check_index_code);
+          if (unsafe) {
+            jit_rshi_ul(JIT_R1, JIT_R1, 1);
+            jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
+            jit_ldxr_c(JIT_R0, JIT_R0, JIT_R1);
+            jit_extr_uc_ul(JIT_R0, JIT_R0);
+	    jit_lshi_l(JIT_R0, JIT_R0, 0x1);
+	    jit_ori_l(JIT_R0, JIT_R0, 0x1);
+            CHECK_LIMIT();
+          } else {
+            (void)jit_calli(bytes_ref_check_index_code);
+          }
 	}
       } else {
 	long offset;
@@ -5718,9 +5767,26 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
           generate_vector_op(jitter, 0, 1, base_offset, unsafe);
           CHECK_LIMIT();
 	} else if (which == 1) {
-	  (void)jit_calli(string_ref_code);
+          if (unsafe) {
+            jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
+            jit_ldxr_p(JIT_R0, JIT_R0, JIT_V1);
+            (void)jit_movi_p(JIT_R1, scheme_char_constants);
+            jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
+            jit_ldxr_p(JIT_R0, JIT_R1, JIT_R0);
+            CHECK_LIMIT();
+          } else {
+            (void)jit_calli(string_ref_code);
+          }
 	} else {
-	  (void)jit_calli(bytes_ref_code);
+          if (unsafe) {
+            jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
+            jit_ldxr_c(JIT_R0, JIT_R0, JIT_V1);
+            jit_extr_uc_ul(JIT_R0, JIT_R0);
+	    jit_lshi_l(JIT_R0, JIT_R0, 0x1);
+	    jit_ori_l(JIT_R0, JIT_R0, 0x1);
+          } else {
+            (void)jit_calli(bytes_ref_code);
+          }
 	}
 
         mz_runstack_unskipped(jitter, 2);
@@ -5889,7 +5955,9 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         || IS_NAMED_PRIM(rator, "unsafe-vector-set!")
         || IS_NAMED_PRIM(rator, "unsafe-struct-set!")
 	|| IS_NAMED_PRIM(rator, "string-set!")
-	|| IS_NAMED_PRIM(rator, "bytes-set!")) {
+	|| IS_NAMED_PRIM(rator, "unsafe-string-set!")
+	|| IS_NAMED_PRIM(rator, "bytes-set!")
+	|| IS_NAMED_PRIM(rator, "unsafe-bytes-set!")) {
       int simple, constval;
       int which, unsafe = 0, base_offset = ((int)&SCHEME_VEC_ELS(0x0));
       int pushed;
@@ -5905,7 +5973,13 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         base_offset = ((int)&((Scheme_Structure *)0x0)->slots);
       } else if (IS_NAMED_PRIM(rator, "string-set!"))
 	which = 1;
-      else
+      else if (IS_NAMED_PRIM(rator, "unsafe-string-set!")) {
+	which = 1;
+        unsafe = 1;
+      } else if (IS_NAMED_PRIM(rator, "unsafe-bytes-set!")) {
+        which = 2;
+        unsafe = 1;
+      } else
 	which = 2;
 
       LOG_IT(("inlined vector-set!\n"));
@@ -5970,9 +6044,28 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
           generate_vector_op(jitter, 1, 0, base_offset, unsafe);
           CHECK_LIMIT();
 	} else if (which == 1) {
-	  (void)jit_calli(string_set_check_index_code);
+          if (unsafe) {
+            jit_rshi_ul(JIT_R1, JIT_R1, 1);
+            jit_lshi_ul(JIT_R1, JIT_R1, LOG_MZCHAR_SIZE);
+            jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
+            jit_ldr_p(JIT_R2, JIT_RUNSTACK);
+            jit_ldxi_i(JIT_R2, JIT_R2, &((Scheme_Small_Object *)0x0)->u.char_val);
+            jit_stxr_p(JIT_R1, JIT_R0, JIT_R2);
+            (void)jit_movi_p(JIT_R0, scheme_void);
+          } else {
+            (void)jit_calli(string_set_check_index_code);
+          }
 	} else {
-	  (void)jit_calli(bytes_set_check_index_code);
+          if (unsafe) {
+            jit_rshi_ul(JIT_R1, JIT_R1, 1);
+            jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_BYTE_STR_VAL((Scheme_Object *)0x0));
+            jit_ldr_p(JIT_R2, JIT_RUNSTACK);
+            jit_rshi_ul(JIT_R2, JIT_R2, 1);
+            jit_stxr_c(JIT_R1, JIT_R0, JIT_R2);
+            (void)jit_movi_p(JIT_R0, scheme_void);
+          } else {
+            (void)jit_calli(bytes_set_check_index_code);
+          }
 	}
       } else {
 	long offset;
@@ -5988,9 +6081,25 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
           generate_vector_op(jitter, 1, 1, base_offset, unsafe);
           CHECK_LIMIT();
 	} else if (which == 1) {
-	  (void)jit_calli(string_set_code);
+          if (unsafe) {
+            jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
+            jit_ldr_p(JIT_R2, JIT_RUNSTACK);
+            jit_ldxi_i(JIT_R2, JIT_R2, &((Scheme_Small_Object *)0x0)->u.char_val);
+            jit_stxr_p(JIT_V1, JIT_R0, JIT_R2);
+            (void)jit_movi_p(JIT_R0, scheme_void);
+          } else {
+            (void)jit_calli(string_set_code);
+          }
 	} else {
-	  (void)jit_calli(bytes_set_code);
+          if (unsafe) {
+            jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
+            jit_ldr_p(JIT_R2, JIT_RUNSTACK);
+            jit_rshi_ul(JIT_R2, JIT_R2, 1);
+            jit_stxr_c(JIT_V1, JIT_R0, JIT_R2);
+            (void)jit_movi_p(JIT_R0, scheme_void);
+          } else {
+            (void)jit_calli(bytes_set_code);
+          }
 	}
       }
       

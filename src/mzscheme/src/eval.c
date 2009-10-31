@@ -2957,6 +2957,18 @@ int scheme_compiled_duplicate_ok(Scheme_Object *fb)
 	  || SCHEME_PRIMP(fb));
 }
 
+static int equivalent_exprs(Scheme_Object *a, Scheme_Object *b)
+{
+  if (SAME_OBJ(a, b))
+    return 1;
+  if (SAME_TYPE(SCHEME_TYPE(a), scheme_local_type)
+      && SAME_TYPE(SCHEME_TYPE(b), scheme_local_type)
+      && (SCHEME_LOCAL_POS(a) == SCHEME_LOCAL_POS(b)))
+    return 1;
+
+  return 0;
+}
+
 static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info)
 {
   Scheme_Branch_Rec *b;
@@ -3038,6 +3050,12 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info)
       && (SCHEME_LOCAL_POS(t) == SCHEME_LOCAL_POS(tb))
       && SCHEME_FALSEP(fb)) {
     return t;
+  }
+
+  /* Try optimize: (if <omitable-expr> v v) => v */
+  if (scheme_omittable_expr(t, 1, 20, 0, NULL)
+      && equivalent_exprs(tb, fb)) {
+    return tb;
   }
 
   /* Convert: (if (if M N #f) M2 K) => (if M (if N M2 K) K)

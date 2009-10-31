@@ -165,9 +165,25 @@
   (test-bin 5 'unsafe-vector-ref #(1 5 7) 1)
   (test-un 3 'unsafe-vector-length #(1 5 7))
   (let ([v (vector 0 3 7)])
-    (test-tri 5 'unsafe-vector-set! v 2 5 
+    (test-tri (list (void) 5) 'unsafe-vector-set! v 2 5 
               #:pre (lambda () (vector-set! v 2 0)) 
-              #:post (lambda (x) (vector-ref v 2))
+              #:post (lambda (x) (list x (vector-ref v 2)))
+              #:literal-ok? #f))
+
+  (test-bin 53 'unsafe-bytes-ref #"157" 1)
+  (test-un 3 'unsafe-bytes-length #"157")
+  (let ([v (bytes 0 3 7)])
+    (test-tri (list (void) 135) 'unsafe-bytes-set! v 2 135
+              #:pre (lambda () (bytes-set! v 2 0)) 
+              #:post (lambda (x) (list x (bytes-ref v 2)))
+              #:literal-ok? #f))
+
+  (test-bin #\5 'unsafe-string-ref "157" 1)
+  (test-un 3 'unsafe-string-length "157")
+  (let ([v (string #\0 #\3 #\7)])
+    (test-tri (list (void) #\5) 'unsafe-string-set! v 2 #\5 
+              #:pre (lambda () (string-set! v 2 #\0)) 
+              #:post (lambda (x) (list x (string-ref v 2)))
               #:literal-ok? #f))
 
   (let ()

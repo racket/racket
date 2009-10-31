@@ -553,6 +553,11 @@
                 (quote-syntax no!))
            ''ok)
 
+(test-comp '(lambda (x) (if x x #f))
+           '(lambda (x) x))
+(test-comp '(lambda (x) (if (cons 1 x) 78 78))
+           '(lambda (x) 78))
+
 (test-comp '(values 10)
            10)
 (test-comp '(let ([x (values 10)])
