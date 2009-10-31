@@ -432,7 +432,7 @@ a single pict; the assembling function takes a string for the title
 (or @scheme[#f]), a separation for the title (if any) and pict, and a
 pict for the slide content (not counting the title).
 
-The result is of the assembler is @scheme[lt-superimpose]d with the
+The result is of the assembler is @scheme[ct-superimpose]d with the
 client area, but the result pict might draw outside the client region
 to paint the screen margins, too.
 
