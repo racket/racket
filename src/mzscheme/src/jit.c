@@ -5723,7 +5723,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
             jit_rshi_ul(JIT_R1, JIT_R1, 1);
             jit_lshi_ul(JIT_R1, JIT_R1, LOG_MZCHAR_SIZE);
             jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
-            jit_ldxr_p(JIT_R0, JIT_R0, JIT_R1);
+            jit_ldxr_i(JIT_R0, JIT_R0, JIT_R1);
             (void)jit_movi_p(JIT_R1, scheme_char_constants);
             jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
             jit_ldxr_p(JIT_R0, JIT_R1, JIT_R0);
@@ -5769,7 +5769,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	} else if (which == 1) {
           if (unsafe) {
             jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
-            jit_ldxr_p(JIT_R0, JIT_R0, JIT_V1);
+            jit_ldxr_i(JIT_R0, JIT_R0, JIT_V1);
             (void)jit_movi_p(JIT_R1, scheme_char_constants);
             jit_lshi_ul(JIT_R0, JIT_R0, JIT_LOG_WORD_SIZE);
             jit_ldxr_p(JIT_R0, JIT_R1, JIT_R0);
@@ -6050,7 +6050,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
             jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
             jit_ldr_p(JIT_R2, JIT_RUNSTACK);
             jit_ldxi_i(JIT_R2, JIT_R2, &((Scheme_Small_Object *)0x0)->u.char_val);
-            jit_stxr_p(JIT_R1, JIT_R0, JIT_R2);
+            jit_stxr_i(JIT_R1, JIT_R0, JIT_R2);
             (void)jit_movi_p(JIT_R0, scheme_void);
           } else {
             (void)jit_calli(string_set_check_index_code);
@@ -6085,7 +6085,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
             jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
             jit_ldr_p(JIT_R2, JIT_RUNSTACK);
             jit_ldxi_i(JIT_R2, JIT_R2, &((Scheme_Small_Object *)0x0)->u.char_val);
-            jit_stxr_p(JIT_V1, JIT_R0, JIT_R2);
+            jit_stxr_i(JIT_V1, JIT_R0, JIT_R2);
             (void)jit_movi_p(JIT_R0, scheme_void);
           } else {
             (void)jit_calli(string_set_code);
