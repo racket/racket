@@ -2537,7 +2537,6 @@ module browser threading seems wrong.
         
         (define/override (update-shown)
           (super update-shown)
-          
           (let ([new-children
                  (foldl
                   (λ (shown? children sofar)
@@ -2549,10 +2548,9 @@ module browser threading seems wrong.
                         definitions-shown?)
                   (list interactions-canvases
                         definitions-canvases))]
+                [old-children (send resizable-panel get-children)]
                 [p (preferences:get 'drscheme:unit-window-size-percentage)])
-            
             (update-defs/ints-resize-corner)
-            
             (send definitions-item set-label 
                   (if definitions-shown?
                       (string-constant hide-definitions-menu-item-label)
@@ -2561,48 +2559,60 @@ module browser threading seems wrong.
                   (if interactions-shown?
                       (string-constant hide-interactions-menu-item-label)
                       (string-constant show-interactions-menu-item-label)))
-            
             (send resizable-panel begin-container-sequence)
             
             ;; this might change the unit-window-size-percentage, so save/restore it
             (send resizable-panel change-children (λ (l) new-children))
             
             (preferences:set 'drscheme:unit-window-size-percentage p)
-            
             ;; restore preferred interactions/definitions sizes
             (when (and (= 1 (length definitions-canvases))
                        (= 1 (length interactions-canvases))
                        (= 2 (length new-children)))
               (with-handlers ([exn:fail? (λ (x) (void))])
                 (send resizable-panel set-percentages
-                      (list p (- 1 p))))))
-          
-          (send resizable-panel end-container-sequence)
-          
-          (when (ormap (λ (child)
-                         (and (is-a? child editor-canvas%)
-                              (not (send child has-focus?))))
-                       (send resizable-panel get-children))
-            (let loop ([children (send resizable-panel get-children)])
-              (cond
-                [(null? children) (void)]
-                [else (let ([child (car children)])
-                        (if (is-a? child editor-canvas%)
-                            (send child focus)
-                            (loop (cdr children))))])))
-          
-          
-          (for-each
-           (λ (get-item)
-             (let ([item (get-item)])
-               (when item
-                 (send item enable definitions-shown?))))
-           (list (λ () (file-menu:get-revert-item))
-                 (λ () (file-menu:get-save-item))
-                 (λ () (file-menu:get-save-as-item))
-                 ;(λ () (file-menu:save-as-text-item)) ; Save As Text...
-                 (λ () (file-menu:get-print-item))))
-          (send file-menu:print-interactions-item enable interactions-shown?))
+                      (list p (- 1 p)))))
+            
+            (send resizable-panel end-container-sequence)
+            (when (ormap (λ (child)
+                           (and (is-a? child editor-canvas%)
+                                (not (send child has-focus?))))
+                         (send resizable-panel get-children))
+              (let ([new-focus
+                     (let loop ([children (send resizable-panel get-children)])
+                       (cond
+                         [(null? children) (void)]
+                         [else (let ([child (car children)])
+                                 (if (is-a? child editor-canvas%)
+                                     child
+                                     (loop (cdr children))))]))]
+                    [old-focus
+                     (ormap (λ (x) (and (is-a? x editor-canvas%) (send x has-focus?) x))
+                            old-children)])
+                
+                ;; conservatively, only scroll when the focus stays in the same place.
+                (when old-focus
+                  (when (eq? old-focus new-focus)
+                    (let ([ed (send old-focus get-editor)])
+                      (when ed
+                        (send ed scroll-to-position 
+                              (send ed get-start-position)
+                              #f
+                              (send ed get-end-position))))))
+                
+                (send new-focus focus)))
+            
+            (for-each
+             (λ (get-item)
+               (let ([item (get-item)])
+                 (when item
+                   (send item enable definitions-shown?))))
+             (list (λ () (file-menu:get-revert-item))
+                   (λ () (file-menu:get-save-item))
+                   (λ () (file-menu:get-save-as-item))
+                   ;(λ () (file-menu:save-as-text-item)) ; Save As Text...
+                   (λ () (file-menu:get-print-item))))
+            (send file-menu:print-interactions-item enable interactions-shown?)))
         
         (define/augment (can-close?)
           (and (andmap (lambda (tab)
