@@ -305,23 +305,26 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(let ([f1 "tmp1.ss"]
-      [f2 "tmp2.ss"]
+(let ([f1 (make-temporary-file)]
+      [f2 (make-temporary-file)]
       [exn:fail-cycle? (lambda (exn)
                          (and (exn:fail? exn)
                               (regexp-match? #rx"cycle" (exn-message exn))))])
+  (let-values ([(b1 tmp1 mbd1?) (split-path f1)]
+               [(b2 tmp2 mbd2?) (split-path f2)])
+              
   (with-output-to-file f1
     #:exists 'truncate/replace
     (lambda ()
-      (write `(module tmp1 mzscheme (require ,f2)))))
+      (write `(module ,(string->symbol (path->string tmp1)) mzscheme (require (file ,(path->string f2)))))))
   (with-output-to-file f2
     #:exists 'truncate/replace
     (lambda ()
-      (write `(module tmp2 mzscheme (require ,f1)))))
-  (err/rt-test (dynamic-require (build-path (current-directory) f1) #f) exn:fail-cycle?)
-  (err/rt-test (dynamic-require (build-path (current-directory) f2) #f) exn:fail-cycle?)
+      (write `(module ,(string->symbol (path->string tmp2)) mzscheme (require (file ,(path->string f1)))))))
+  (err/rt-test (dynamic-require f1 #f) exn:fail-cycle?)
+  (err/rt-test (dynamic-require f2 #f) exn:fail-cycle?)
   (delete-file f1)
-  (delete-file f2))
+  (delete-file f2)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
