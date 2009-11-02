@@ -28,8 +28,8 @@
                          [key_len : _int = (bytes-length key)]
                          [data : _bytes]
                          [data_len : _int = (bytes-length data)]
-                         [md : _int = 0]
-                         [md_len : _int = 0]
+                         [md : _pointer = #f]
+                         [md_len : _uint = 0]
                          f->
                          _pointer))
       (lambda (key data) (error 'HMAC-SHA1/raw "libcrypto could not load"))))
