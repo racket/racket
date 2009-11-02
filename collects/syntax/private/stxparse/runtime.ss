@@ -11,6 +11,7 @@
 
 (provide pattern
          ~var
+         ~datum
          ~literal
          ~and
          ~or
@@ -20,7 +21,6 @@
          ~once
          ~optional
          ~rest
-         ~struct
          ~describe
          ~!
          ~bind
@@ -78,6 +78,7 @@
 
 (define-keyword pattern)
 (define-keyword ~var)
+(define-keyword ~datum)
 (define-keyword ~literal)
 (define-keyword ~and)
 (define-keyword ~or)
@@ -87,7 +88,6 @@
 (define-keyword ~once)
 (define-keyword ~optional)
 (define-keyword ~rest)
-(define-keyword ~struct)
 (define-keyword ~describe)
 (define-keyword ~!)
 (define-keyword ~bind)

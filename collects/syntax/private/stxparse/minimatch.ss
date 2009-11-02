@@ -1,14 +1,23 @@
 #lang scheme/base
-(require (for-syntax scheme/base))
+(require (for-syntax scheme/base scheme/path))
 (provide match)
 
-(define-syntax-rule (match stx clause ...)
-  (let ([x stx]) (match-c x clause ...)))
+(define-syntax (match stx)
+  (syntax-case stx ()
+    [(match e clause ...)
+     #`(let ([x e])
+         (match-c x
+           clause ...
+           [_ (error 'minimatch "match at ~s:~s:~s failed: ~e"
+                     '#,(syntax-source stx)
+                     '#,(syntax-line stx)
+                     '#,(syntax-column stx)
+                     x)]))]))
 
 (define-syntax match-c
   (syntax-rules ()
     [(match-c x)
-     (error 'minimatch "match failed: ~s" x)]
+     (error 'minimatch)]
     [(match-c x [pattern result ...] clause ...)
      (let ([fail (lambda () (match-c x clause ...))])
        (match-p x pattern (let () result ...) (fail)))]))

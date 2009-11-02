@@ -76,6 +76,7 @@
         (quote-syntax ||)
         (quote-syntax ...)
         (quote-syntax ~var)
+        (quote-syntax ~datum)
         (quote-syntax ~literal)
         (quote-syntax ~and)
         (quote-syntax ~or)
@@ -86,7 +87,6 @@
         (quote-syntax ~optional)
         (quote-syntax ~bounds)
         (quote-syntax ~rest)
-        (quote-syntax ~struct)
         (quote-syntax ~describe)
         (quote-syntax ~!)
         (quote-syntax ~bind)
@@ -297,7 +297,7 @@
           [(not allow-head?) (ghost-pattern->single-pattern x)]
           [else
            (wrong-syntax stx "action pattern not allowed here")]))
-  (syntax-case stx (~var ~literal ~and ~or ~not ~rest ~struct ~describe
+  (syntax-case stx (~var ~literal ~datum ~and ~or ~not ~rest ~describe
                     ~seq ~optional ~! ~bind ~fail ~parse)
     [wildcard
      (wildcard? #'wildcard)
@@ -319,6 +319,12 @@
     [(~var . rest)
      (disappeared! stx)
      (parse-pat:var stx decls allow-head?)]
+    [(~datum . rest)
+     (disappeared! stx)
+     (syntax-case stx (~datum)
+       [(~datum d)
+        (create-pat:datum (syntax->datum #'d))]
+       [_ (wrong-syntax stx "bad ~~datum form")])]
     [(~literal . rest)
      (disappeared! stx)
      (parse-pat:literal stx decls)]

@@ -16,7 +16,7 @@
 ;; Failure reporting parameter & default
 
 (define (default-failure-handler stx0 f)
-  (match f
+  (match (simplify-failure f)
     [#s(failure x frontier frontier-stx expectation)
      (report-failure stx0 x (last frontier) frontier-stx expectation)]))
 

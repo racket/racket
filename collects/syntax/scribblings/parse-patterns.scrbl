@@ -83,7 +83,7 @@ When a special form in this manual refers to @svar[syntax-pattern]
 (eg, the description of the @scheme[syntax-parse] special form), it
 means specifically @tech{@Spattern}.
 
-@schemegrammar*[#:literals (_ ~var ~literal ~or ~and ~not ~rest ~struct
+@schemegrammar*[#:literals (_ ~var ~literal ~or ~and ~not ~rest ~datum
                             ~describe ~seq ~optional ~rep ~once
                             ~! ~bind ~fail ~parse)
                 [S-pattern
@@ -94,6 +94,7 @@ means specifically @tech{@Spattern}.
                  (@#,ref[~var s+] id syntax-class)
                  (~literal literal-id)
                  atomic-datum
+                 (~datum datum)
                  (H-pattern . S-pattern)
                  (A-pattern . S-pattern)
                  ((@#,ref[~or eh] EH-pattern ...+) #,ellipses . S-pattern)
@@ -334,6 +335,33 @@ literals.
   [(x #:foo y) (syntax->datum #'y)])
 (syntax-parse #'(a foo bar)
   [(x #:foo y) (syntax->datum #'y)])
+]
+}
+
+@specsubform[(@#,defhere[~datum] datum)]{
+
+Matches syntax whose S-expression contents (obtained by
+@scheme[syntax->datum]) is @scheme[equal?] to the given
+@scheme[datum].
+
+@myexamples[
+(syntax-parse #'(a #:foo bar)
+  [(x (~datum #:foo) y) (syntax->datum #'y)])
+(syntax-parse #'(a foo bar)
+  [(x (~datum #:foo) y) (syntax->datum #'y)])
+]
+
+The @scheme[~datum] form is useful for recognizing identifiers
+symbolically, in contrast to the @scheme[~literal] form, which
+recognizes them by binding.
+
+@myexamples[
+(syntax-parse (let ([define 'something-else]) #'(define x y))
+  [((~datum define) var:id e:expr) 'yes]
+  [_ 'no])
+(syntax-parse (let ([define 'something-else]) #'(define x y))
+  [((~literal define) var:id e:expr) 'yes]
+  [_ 'no])
 ]
 }
 

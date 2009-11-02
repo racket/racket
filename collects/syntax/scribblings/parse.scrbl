@@ -170,6 +170,11 @@ identifier as a binding, in which case it would get the value
 
 Here's how the syntax class would change:
 
+@margin-note{The @scheme[(require (for-template scheme/base))] is
+needed for the @scheme[quote] expression. If the syntax class
+definition were a local definition in the same module, the
+@scheme[for-template] would be unnecessary.}
+@;
 @SCHEMEBLOCK[
 (module example-syntax scheme/base
   (require syntax/parse)
@@ -181,11 +186,6 @@ Here's how the syntax class would change:
     (pattern x:id
              #:with e #'(quote #f))))
 ]
-
-@bold{Note: } The @scheme[(require (for-template scheme/base))] is
-needed for the @scheme[quote] expression. If the syntax class
-definition were a local definition in the same module, the
-@scheme[for-template] would be unnecessary.
 
 The second pattern matches unparenthesized identifiers. The @scheme[e]
 attribute is bound using a @scheme[#:with] clause, which matches the
@@ -321,6 +321,12 @@ failures; otherwise @scheme[stx-expr] is used.
                   ([literal literal-id
                             [pattern-id literal-id]])]{
 
+@margin-note{
+  Unlike @scheme[syntax-case], @scheme[syntax-parse] requires all
+  literals to have a binding. To match identifiers by their symbolic
+  names, consider using the @scheme[~datum] pattern form instead.
+}
+@;
 The @scheme[#:literals] option specifies identifiers that should be
 treated as @tech{literals} rather than @tech{pattern variables}. An
 entry in the literals list has two components: the identifier used
@@ -328,11 +334,6 @@ within the pattern to signify the positions to be matched
 (@scheme[pattern-id]), and the identifier expected to occur in those
 positions (@scheme[literal-id]). If the entry is a single identifier,
 that identifier is used for both purposes.
-
-@bold{Note:} Unlike @scheme[syntax-case], @scheme[syntax-parse]
-requires all literals to have a binding. To match identifiers by their
-symbolic names, consider using the @scheme[atom-in-list] syntax class
-instead.
 }
 
 @specsubform/subs[(code:line #:literal-sets (literal-set ...))

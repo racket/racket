@@ -216,7 +216,7 @@
                     k))
                 (fail x #:expect result #:fce fc)))]
        [#s(pat:datum attrs datum)
-        #`(let ([d (syntax-e x)])
+        #`(let ([d (syntax->datum x)])
             (if (equal? d (quote datum))
                 k
                 (fail x

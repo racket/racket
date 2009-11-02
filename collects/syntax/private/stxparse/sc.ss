@@ -25,6 +25,7 @@
 
          pattern
          ~var
+         ~datum
          ~literal
          ~and
          ~or
@@ -34,7 +35,6 @@
          ~once
          ~optional
          ~rest
-         ~struct
          ~describe
          ~!
          ~bind
