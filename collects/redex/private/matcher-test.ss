@@ -101,6 +101,11 @@
     (test-empty '((number_!_1 ...) (number_!_1 ...)) 
                 '((17 2 3 1 5) (1 2 3 1 5))
                 (list (make-test-mtch (make-bindings (list)) '((17 2 3 1 5) (1 2 3 1 5)) none)))
+    (test-empty '((number_!_1 number_!_1) ... number_!_1 ...) '((1 1) (2 2) 1 3) #f)
+    (test-empty '((number_!_1 number_!_1) ... number_!_1 ...) '((1 1) (2 3) 1 2) #f)
+    (test-empty '((number_!_1 number_!_1) ... number_!_1 ...)
+                '((1 1) (2 3) 1 4)
+                (list (make-test-mtch (make-bindings (list)) '((1 1) (2 3) 1 4) none)))
     
     (test-ellipses '(a) '(a))
     (test-ellipses '(a ...) `(,(make-repeat 'a '() #f #f)))
@@ -114,21 +119,21 @@
     (test-ellipses '((1 (name x a)) ...)
                    `(,(make-repeat '(1 (name x a)) (list (make-bind 'x '())) #f #f)))
     (test-ellipses '((any (name x a)) ...)
-                   `(,(make-repeat '(any (name x a)) (list (make-bind 'x '())
-                                                           (make-bind 'any '())) 
+                   `(,(make-repeat '(any (name x a)) (list (make-bind 'any '())
+                                                           (make-bind 'x '())) 
                                    #f #f)))
     (test-ellipses '((number (name x a)) ...)
-                   `(,(make-repeat '(number (name x a)) (list (make-bind 'x '())
-                                                              (make-bind 'number '())) 
+                   `(,(make-repeat '(number (name x a)) (list (make-bind 'number '())
+                                                              (make-bind 'x '())) 
                                    #f #f)))
     (test-ellipses '((variable (name x a)) ...)
-                   `(,(make-repeat '(variable (name x a)) (list (make-bind 'x '())
-                                                                (make-bind 'variable '()))
+                   `(,(make-repeat '(variable (name x a)) (list (make-bind 'variable '())
+                                                                (make-bind 'x '()))
                                    #f #f)))
     (test-ellipses '(((name x a) (name y b)) ...)
-                   `(,(make-repeat '((name x a) (name y b)) (list (make-bind 'y '()) (make-bind 'x '())) #f #f)))
+                   `(,(make-repeat '((name x a) (name y b)) (list (make-bind 'x '()) (make-bind 'y '())) #f #f)))
     (test-ellipses '((name x (name y b)) ...)
-                   `(,(make-repeat '(name x (name y b)) (list (make-bind 'y '()) (make-bind 'x '())) #f #f)))
+                   `(,(make-repeat '(name x (name y b)) (list (make-bind 'x '()) (make-bind 'y '())) #f #f)))
     (test-ellipses '((in-hole (name x a) (name y b)) ...)
                    `(,(make-repeat '(in-hole (name x a) (name y b)) 
                                    (list (make-bind 'x '()) (make-bind 'y '())) #f #f)))
@@ -620,6 +625,10 @@
                   "compile-pattern"
                   equal?)
     
+    (test-ellipsis-binding '((number_1 number_2) ...) '((1 2)))
+    (test-ellipsis-binding '((name x number_1) ...) '(1 2))
+    (test-ellipsis-binding '(((number_1 ...) (number_2 ...)) ...) '(((1) (2))))
+    
     (cond
       [(= failures 0)
        (fprintf (current-error-port) "matcher-test.ss: all ~a tests passed.\n" test-count)]
@@ -740,6 +749,27 @@
   
   (define (test-suite:non-underscore-binder? x)
     (memq x '(number any variable string)))
+  
+  ;; test-ellipsis-binding: sexp sexp -> boolean
+  ;; Checks that `extract-empty-bindings' produces bindings in the same order
+  ;; as the matcher, as required by `collapse-single-multiples'
+  (define (test-ellipsis-binding pat exp)
+    (define (binding-names bindings)
+      (map (λ (b)
+             (cond [(bind? b) (bind-name b)]
+                   [(mismatch-bind? b) (mismatch-bind-name b)]))
+           bindings))
+    (run-test
+     `(test-ellipsis-binding ,pat)
+     (binding-names
+      (bindings-table-unchecked
+       (mtch-bindings
+        (car 
+         ((compiled-pattern-cp
+           (compile-pattern (compile-language 'pict-stuff-not-used '() '()) pat #t))
+          exp
+          #t)))))
+     (binding-names (extract-empty-bindings test-suite:non-underscore-binder? pat))))
   
   ;; run-test/cmp : sexp any any (any any -> boolean)
   ;; compares ans with expected. If failure,
