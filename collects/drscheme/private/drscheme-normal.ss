@@ -229,6 +229,25 @@
     (set-splash-event-callback eli-event)
     (send splash-canvas refresh)))
 
+;; assumes that the width & height of all of the bitmaps
+;; in this list are the same.
+(define plt-logo-evolution
+  (map (λ (x) (make-object bitmap% (build-path (collection-path "icons") x)))
+       '("plt-logo-red-flat.png"
+         "plt-logo-red-gradient.png"
+         "plt-logo-red-diffuse.png"
+         "plt-logo-red-shiny.png")))
+
+(define (logo-index val range)
+  (min (max (floor (* (length plt-logo-evolution) (/ val range))) 0)
+       (- (length plt-logo-evolution) 1)))
+
+(define (splash-evolution dc val range w h)
+  (send dc draw-bitmap 
+        (list-ref plt-logo-evolution (logo-index val range))
+        0
+        0))
+
 (start-splash
  (cond
    [(or prince-kuhio-day? kamehameha-day?)
@@ -241,7 +260,15 @@
     (build-path (collection-path "icons") "texas-plt-bw.gif")]
    [(and halloween? high-color?)
     (build-path (collection-path "icons") "PLT-pumpkin.png")]
-   [high-color?  
+   [(and high-color?  
+         (send (car plt-logo-evolution) ok?))
+    (set-refresh-splash-on-gauge-change?! (λ (val range) 
+                                            (not (equal? (logo-index val range)
+                                                         (logo-index (- val 1) range)))))
+    (vector splash-evolution
+            (send (car plt-logo-evolution) get-width)
+            (send (car plt-logo-evolution) get-height))]
+   [high-color?
     (build-path (collection-path "icons") "PLT-206.png")]
    [(= (get-display-depth) 1)
     (build-path (collection-path "icons") "pltbw.gif")]

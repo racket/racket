@@ -18,6 +18,7 @@
          set-splash-char-observer
          set-splash-event-callback
          get-splash-event-callback
+         set-refresh-splash-on-gauge-change?!
          get-splash-width
          get-splash-height)
 
@@ -43,6 +44,9 @@
 
 (define (set-splash-event-callback cb) (set! splash-event-callback cb))
 (define (get-splash-event-callback cb) splash-event-callback)
+
+(define (refresh-splash-on-gauge-change? start range) #f)
+(define (set-refresh-splash-on-gauge-change?! f) (set! refresh-splash-on-gauge-change? f))
 
 (define (refresh-splash)
   
@@ -185,8 +189,9 @@
     (set! splash-current-width (+ splash-current-width 1))
     (when (<= splash-current-width splash-max-width)
       (send gauge set-value splash-current-width)
-      (unless (member gauge (send gauge-panel get-children))
-        ;; when the gauge is not visible, we'll redraw the canvas
+      (when (or (not (member gauge (send gauge-panel get-children)))
+                ;; when the gauge is not visible, we'll redraw the canvas
+                (refresh-splash-on-gauge-change? splash-current-width splash-max-width))
         (refresh-splash)))
     (old-load f expected)))
 
