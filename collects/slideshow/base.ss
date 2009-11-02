@@ -1,6 +1,7 @@
 
-(module base scheme
+(module base scheme/base
   (require "slide.ss"
+           scheme/gui/base
            (only-in "core.ss"
                     sliderec?
                     just-a-comment?))
@@ -11,7 +12,10 @@
     [(macosx)
      (current-main-font '("Gill Sans" . swiss))]
     [(windows)
-     (current-main-font '("Tahoma" . swiss))])
+     (current-main-font '("Tahoma" . swiss))]
+    [(unix)
+     (when (member " Gill Sans" (get-face-list))
+       (current-main-font '(" Gill Sans" . swiss)))])
   (current-para-width (* 3/4 client-w))
 
   (current-titlet (lambda (s)
