@@ -1,7 +1,8 @@
 #lang scheme
 
 (require htdp/error
-         lang/prim)
+         lang/prim
+         (only-in scheme/base [file-size s:file-size]))
 
 (provide
  create-dir ; path -> Directory
@@ -14,16 +15,12 @@
  dir-files
  
  ; structure 
- (rename-out (fil? file?)
-             (make-fil make-file)
-             (fil-name file-name)
-             (fil-content file-content)
-             (fil-size file-size))
+ file? make-file file-name file-content file-size
  )
 
 ;; Structures: 
 (define-struct dir (name dirs files) #:transparent)
-(define-struct fil (name size content) #:transparent)
+(define-struct file (name size content) #:transparent)
 
 (define-primitive create-dir create-dir/proc)
 
@@ -45,9 +42,9 @@
            (make-dir
             (string->symbol (path->string (my-split-path d)))
             (explore (map (lambda (x) (build-path d x)) ds))
-            (map make-fil
+            (map make-file
                  (map (compose string->symbol path->string) fs)
-                 (map (lambda (x) (if (file-exists? x) (file-size x) 0))
+                 (map (lambda (x) (if (file-exists? x) (s:file-size x) 0))
                       (map (lambda (x) (build-path d x)) fs))
                  (map (lambda (x) (if (link-exists? x) 'link null)) fs)))))
        dirs))
@@ -76,6 +73,6 @@
 ;; option to expand the library ... 
 ;; cache it ... 
 (define (get-file-content f)
-  (read-string (fil-size f) 
-               (open-input-file (symbol->string (fil-name f)))))
+  (read-string (file-size f) 
+               (open-input-file (symbol->string (file-name f)))))
 

@@ -2,7 +2,8 @@
 
 @(require scribble/manual "shared.ss"
           (for-label (except-in scheme/base file-size)
-                     teachpack/htdp/dir))
+                     teachpack/htdp/dir
+                     scheme/contract))
 
 @teachpack["dir"]{Working with Files and Directories}
 
@@ -11,14 +12,14 @@
 The teachpack provides structures and operations for working with files and
 directories: 
 
-@defstruct[dir ([name string?][dirs (list-of dir?)][files (list-of file?)])]{}
+@defstruct[dir ([name symbol?][dirs (listof dir?)][files (listof file?)])]{}
 
-@defstruct[file ([name string?][content (list-of char?)])]{}
+@defstruct[file ([name symbol?][size integer?][content (listof char?)])]{}
 
-@defproc[(create-dir [path string?]) dir?]{
+@defproc[(create-dir [path symbol?]) dir?]{
  Turns the directory found at @scheme[path] on your computer into an instance of @scheme[dir?].}
 
-Sample: Set teachpack to <code>dir.ss</code> and click RUN:
+Sample: Set teachpack to @filepath{dir.ss} and click RUN:
 @(begin
 #reader scribble/comment-reader
 (schemeblock
@@ -38,4 +39,4 @@ Using ``.'' usually means the directory in which your program is
 located. In this case, the directory contains no sub-directories and six
 files. 
  
-Note: Softlinks are always treated as if they were empty files.
+Note: Soft links are always treated as if they were empty files.
