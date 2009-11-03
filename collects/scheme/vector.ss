@@ -1,11 +1,11 @@
 #lang scheme/base
 
-(require scheme/unsafe/ops scheme/list)
 (provide vector-copy vector-map vector-map! vector-append
          vector-take vector-drop vector-split-at
          vector-take-right vector-drop-right vector-split-at-right
          vector-filter vector-filter-not
          vector-count vector-argmin vector-argmax)
+(require scheme/unsafe/ops)
 
 ;; unchecked version of `vector-copy'
 ;; used at the implementation of many functions in this file
@@ -42,10 +42,6 @@
      target i
      (apply f (map (lambda (vec) (unsafe-vector-ref vec i)) vs)))))
 
-;; like scheme_make_args_string in the C code
-(define (make-args-string l)
-  (apply string-append (add-between l " ")))
-
 ;; check that `v' is a vector
 ;; that `v' and all the `vs' have the same length
 ;; and that `f' takes |v + vs| args
@@ -68,8 +64,16 @@
       (unless (= len (unsafe-vector-length e))
         (raise
          (make-exn:fail:contract
-          (format "~e: all vectors must have same size; arguments were: ~e"
-                  name (make-args-string (list* f v vs)))
+          (format "~e: all vectors must have same size; ~a"
+                  name
+                  (let ([args (list* f v vs)])
+                    (if ((length args) . < . 10)
+                      (apply string-append
+                             "arguments were:"
+                             (for/list ([i (list* f v vs)])
+                               (format " ~e" i)))
+                      (format "given ~a arguments total"
+                              (sub1 (length args))))))
           (current-continuation-marks)))))
     len))
 
@@ -87,9 +91,7 @@
 ;; check that `v' is a vector and that `f' takes one arg
 ;; uses name for error reporting
 (define (one-arg-check f v name)
-  (unless (procedure? f)
-    (raise-type-error name "procedure" 0 f))
-  (unless (procedure-arity-includes? f 1)
+  (unless (and (procedure? f) (procedure-arity-includes? f 1))
     (raise-type-error name "procedure (arity 1)" 0 f)))
 
 (define (vector-filter f v)
@@ -160,15 +162,18 @@
             (vector-copy* v (unsafe-fx- len n) len))))
 
 (define (vector-append v . vs)
-  (for ([e (in-list (cons v vs))]
-        [i (in-naturals)])
-    (unless (vector? e)
-      (raise-type-error 'vector-append "vector" e i)))
-  (let* ([len (apply + (map unsafe-vector-length (cons v vs)))]
-         [new-v (make-vector len)])
-    (for ([e (apply in-sequences (in-vector v) (map in-vector vs))]
-          [i (in-range len)])
-      (unsafe-vector-set! new-v i e))
+  (let* ([vs (cons v vs)]
+         [lens (for/list ([e (in-list vs)] [i (in-naturals)])
+                 (if (vector? e)
+                   (unsafe-vector-length e)
+                   (raise-type-error 'vector-append "vector" e i)))]
+         [new-v (make-vector (apply + lens))])
+    (let loop ([start 0] [lens lens] [vs vs])
+      (when (pair? lens)
+        (let ([len (car lens)] [v (car vs)])
+          (for ([i (in-range len)])
+            (unsafe-vector-set! new-v (+ i start) (unsafe-vector-ref v i)))
+          (loop (+ start len) (cdr lens) (cdr vs)))))
     new-v))
 
 ;; copied from `scheme/list'
