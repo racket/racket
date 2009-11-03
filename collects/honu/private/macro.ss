@@ -4,7 +4,7 @@
          (for-syntax "debug.ss")
          (for-syntax scheme/base))
 
-(provide (all-defined-out))
+(provide honu-macro)
 
 (define-for-syntax (extract-conventions pattern)
   (let loop ([out '()]

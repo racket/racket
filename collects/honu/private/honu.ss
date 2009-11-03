@@ -1911,38 +1911,6 @@
 	     (h-return expr))
            (stx-cdr after-expr))))))
 
-    
-
-  (define-honu-syntax honu-for2
-                      (lambda (stx ctx)
-                        (printf "for2: Try to match against pattern ~a. Literals ~a\n" '(name raw-patterns ... . rrest) '(honu-literal ...))
-                        (printf "for2: stx is ~a\n" (syntax->datum stx))
-                        ;; (printf "head is ~a\n" (stx-car stx))
-                        ;; (printf "= is ~a\n" =)
-                        (printf "for2: my matcher ~a\n"
-                                (syntax-case stx (to do set!)
-                                  [(for2 q set! v to m do bb ... end) (syntax->datum #'(bb ...))]
-                                  [(for2 v ...) 'ok3]
-                                  #;
-                                  [(for2 v (... ...)) (syntax->datum #'(v (... ...)))]
-                                  [else 'bad]))
-                        #'1
-                        #;
-                        (let ([result (syntax-case stx ()
-                                        [(for2 raw-patterns ...)
-                                         #'(honu-unparsed-block
-                                             #f obj 'obj #f ctx
-                                             template ...)])])
-                          (printf "result was ~a\n" result))
-                        #;
-                        (syntax-case stx (honu-literal ...)
-                          [(name raw-patterns ... . rrest)
-                           (values
-                             #'(honu-unparsed-block
-                                 #f obj 'obj #f ctx
-                                 template ...)
-                             #'rrest)])))
-
   (define-honu-syntax honu-if
     (lambda (stx ctx)
       (define (get-block-or-statement kw rest)
