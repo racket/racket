@@ -4,11 +4,12 @@
     (PLANET-SERVER-NAME       "planet.plt-scheme.org")
     (PLANET-SERVER-PORT       270)
     (PLANET-CODE-VERSION      "300")
-    (PLANET-BASE-DIR         (if (getenv "PLTPLANETDIR")
-                                 (string->path (getenv "PLTPLANETDIR"))
-                                 (build-path (find-system-path 'addon-dir)
-                                             "planet"
-                                             (PLANET-CODE-VERSION))))
+    (PLANET-BASE-DIR         (let ([plt-planet-dir-env-var (getenv "PLTPLANETDIR")])
+                               (if plt-planet-dir-env-var
+                                   (string->path plt-planet-dir-env-var)
+                                   (build-path (find-system-path 'addon-dir)
+                                               "planet"
+                                               (PLANET-CODE-VERSION)))))
     (PLANET-DIR               (build-path (PLANET-BASE-DIR) (version)))
     (CACHE-DIR                (build-path (PLANET-DIR) "cache"))
     (UNINSTALLED-PACKAGE-CACHE (build-path (PLANET-BASE-DIR) "packages"))
@@ -19,6 +20,8 @@
     (DEFAULT-PACKAGE-LANGUAGE (version))
     
     (USE-HTTP-DOWNLOADS?       #t)
-    (HTTP-DOWNLOAD-SERVLET-URL "http://planet.plt-scheme.org/servlets/planet-servlet.ss")
+    (HTTP-DOWNLOAD-SERVLET-URL (let ([plt-planet-url-env-var (getenv "PLTPLANETURL")])
+                                 (or plt-planet-url-env-var
+                                     "http://planet.plt-scheme.org/servlets/planet-servlet.ss")))
     (PLANET-ARCHIVE-FILTER     #f)))
     

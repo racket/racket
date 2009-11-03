@@ -518,8 +518,10 @@ this parameter to @scheme[#f] is not recommended.}
 
 @defparam[HTTP-DOWNLOAD-SERVLET-URL url string?]{
 The URL  for the servlet that will provide PLaneT packages if 
-@scheme[USE-HTTP-DOWNLOADS?] is @scheme[#t], represented as a string.  The default
-value is @scheme["http://planet.plt-scheme.org/servlets/planet-servlet.ss"].}
+@scheme[USE-HTTP-DOWNLOADS?] is @scheme[#t], represented as a string.  
+This defaults to the value of the @indexed-envvar{PLTPLANETURL} environment
+variable if it is set and otherwise is
+@scheme["http://planet.plt-scheme.org/servlets/planet-servlet.ss"].}
 
 @defparam[PLANET-SERVER-NAME host string?]{
 The name of the PLaneT server to which the client should connect if
