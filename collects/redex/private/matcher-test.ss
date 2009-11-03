@@ -631,13 +631,13 @@
     
     (cond
       [(= failures 0)
-       (fprintf (current-error-port) "matcher-test.ss: all ~a tests passed.\n" test-count)]
+       (printf "matcher-test.ss: all ~a tests passed.\n" test-count)]
       [else
-       (fprintf (current-error-port) "matcher-test.ss: ~a test~a failed.\n" 
-                failures
-                (if (= failures 1)
-                    ""
-                    "s"))]))
+       (printf "matcher-test.ss: ~a test~a failed.\n" 
+               failures
+               (if (= failures 1)
+                   ""
+                   "s"))]))
 
   ;; mk-hasheq : (listof (cons sym any)) -> hash-table
   ;; builds a hash table that has the bindings in assoc-list
