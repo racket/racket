@@ -39,7 +39,7 @@
 ;; magic strings and their associated images.  There should not be a string
 ;; in this list that is a prefix of another.
 (define magic-images
-  (list (magic-img "larval" "PLT-206-larval.png")
+  (list #;(magic-img "larval" "PLT-206-larval.png")
         (magic-img "mars"   "PLT-206-mars.jpg")))
 
 (define (load-magic-images)
@@ -238,13 +238,83 @@
          "plt-logo-red-diffuse.png"
          "plt-logo-red-shiny.png")))
 
+;; the currently being drawing bitmap (for the splash-evolution startup screen)
+(define splash-evolution-bitmap (car plt-logo-evolution))
+
+;; a scratch bitmap that is used for the interpolations between the bitmaps in plt-logo-evolution
+(define interpolate-evolution-bitmap #f)
+(define interpolate-evolution-bdc (make-object bitmap-dc%))
+
+;; number of greyscale stages (between the logos above)
+(define stages 4)
+
+;; number of increments (per cycle) to dedicate to 
+;; an unfaded version of the logos. must be > 0.
+(define pause-time 4)
+
+(define stage-bitmaps
+  (cond
+    [(send (car plt-logo-evolution) ok?)
+     (let ([bdc (make-object bitmap-dc%)]
+           [w (send (car plt-logo-evolution) get-width)]
+           [h (send (car plt-logo-evolution) get-height)])
+       (set! interpolate-evolution-bitmap (make-object bitmap% w h))
+       (let loop ([i 0])
+         (cond
+           [(= stages i) '()]
+           [else
+            (let ([bm (make-object bitmap% w h)]
+                  [grey (floor (* 255 (/ (+ i 1) (+ stages 1))))])
+              (send bdc set-bitmap bm)
+              (send bdc set-pen "black" 1 'transparent)
+              (send bdc set-brush (make-object color% grey grey grey) 'solid)
+              (send bdc draw-rectangle 0 0 w h)
+              (send bdc set-bitmap #f)
+              (cons bm (loop (+ i 1))))])))]
+    [else '()]))
+
 (define (logo-index val range)
-  (min (max (floor (* (length plt-logo-evolution) (/ val range))) 0)
-       (- (length plt-logo-evolution) 1)))
+  (let ([low-end 0]
+        [high-end (* (+ stages pause-time) 
+                     (- (length plt-logo-evolution) 1))])
+    (min (max (floor (* (+ high-end 1) (/ val range))) 
+              low-end)
+         high-end)))
+
+(define (update-bitmap-stage val range)
+  (let* ([index (logo-index val range)]
+         [q (quotient index (+ stages pause-time))]
+         [m (modulo index (+ stages pause-time))])
+    (cond
+      [(< m pause-time)
+       (set! splash-evolution-bitmap (list-ref plt-logo-evolution q))
+       (when (= q (+ stages pause-time -1))
+         (set! stage-bitmaps 'cleared-out-stage-bitmaps)
+         (set! splash-evolution-bitmap 'cleared-out-splash-evolution-bitmap)
+         (set! plt-logo-evolution 'cleared-out-plt-logo-evolution))]
+      [else
+       (let* ([before-inc (- m pause-time)]
+              [after-inc (- (- (length stage-bitmaps) 1) before-inc)])
+         (send interpolate-evolution-bdc set-bitmap interpolate-evolution-bitmap)
+         (send interpolate-evolution-bdc clear)
+         (send interpolate-evolution-bdc draw-bitmap 
+               (list-ref plt-logo-evolution q)
+               0 0
+               'solid
+               (send the-color-database find-color "black")
+               (list-ref stage-bitmaps before-inc))
+         (send interpolate-evolution-bdc draw-bitmap 
+               (list-ref plt-logo-evolution (+ q 1))
+               0 0
+               'solid
+               (send the-color-database find-color "black")
+               (list-ref stage-bitmaps after-inc))
+         (send interpolate-evolution-bdc set-bitmap #f)
+         (set! splash-evolution-bitmap interpolate-evolution-bitmap))])))
 
 (define (splash-evolution dc val range w h)
   (send dc draw-bitmap 
-        (list-ref plt-logo-evolution (logo-index val range))
+        splash-evolution-bitmap
         0
         0))
 
@@ -262,9 +332,14 @@
     (build-path (collection-path "icons") "PLT-pumpkin.png")]
    [(and high-color?  
          (send (car plt-logo-evolution) ok?))
-    (set-refresh-splash-on-gauge-change?! (λ (val range) 
-                                            (not (equal? (logo-index val range)
-                                                         (logo-index (- val 1) range)))))
+    (set-refresh-splash-on-gauge-change?! 
+     (λ (val range) 
+       (cond
+         [(equal? (logo-index val range) (logo-index (- val 1) range))
+          #f]
+         [else
+          (update-bitmap-stage val range)
+          #t])))
     (vector splash-evolution
             (send (car plt-logo-evolution) get-width)
             (send (car plt-logo-evolution) get-height))]
