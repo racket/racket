@@ -75,7 +75,7 @@
     (build-path (collection-path "icons")
                 (if (< (get-display-depth) 8)
                     "pltbw.gif"
-                    "PLT-206.png"))))
+                    "plt-logo-red-shiny.png"))))
 
 
 

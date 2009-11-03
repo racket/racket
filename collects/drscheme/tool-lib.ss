@@ -29,8 +29,6 @@ all of the names in the tools library, for use defining keybindings
 (require/doc (for-label errortrace/errortrace-key))
 
 (define-values/invoke-unit/infer drscheme@)
-(shutdown-splash)
-(close-splash)
 (provide-signature-elements drscheme:tool-cm^) ;; provide all of the classes & interfaces
 
 (provide drscheme:unit:program-editor-mixin)

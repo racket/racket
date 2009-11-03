@@ -20,7 +20,8 @@
          get-splash-event-callback
          set-refresh-splash-on-gauge-change?!
          get-splash-width
-         get-splash-height)
+         get-splash-height
+         refresh-splash)
 
 (define splash-bitmap #f)
 (define splash-cache-bitmap #f)
