@@ -2082,5 +2082,5 @@
   (define-syntax (honu-end stx)
     (raise-syntax-error #f "ignore this" stx))
 
-  
-
+  (define-syntax (honu-top stx)
+    (raise-syntax-error #f "interactive use is not yet supported"))
