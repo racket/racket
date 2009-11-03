@@ -239,7 +239,7 @@ are a few examples, using @scheme[:] prefixed SRE syntax:
 
 @defform[(lexer-src-pos (trigger action-expr) ...)]{
 
-Like @scheme[lexer], but for each @scheme[_action-result] produces by
+Like @scheme[lexer], but for each @scheme[_action-result] produced by
 an @scheme[action-expr], returns @scheme[(make-position-token
 _action-result start-pos end-pos)] instead of simply
 @scheme[_action-result].}

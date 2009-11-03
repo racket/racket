@@ -62,7 +62,7 @@ supplied. Functions like @scheme[proceedings-location],
 @scheme[author-name], and @scheme[authors] help produce elements in a
 standard format.
 
-An element produces by a function like @scheme[author-name] tracks
+An element produced by a function like @scheme[author-name] tracks
 first, last names, and name suffixes separately, so that names can be
 ordered and rendered correctly. When a string is provided as an author
 name, the last non-empty sequence of ASCII alphabetic characters after

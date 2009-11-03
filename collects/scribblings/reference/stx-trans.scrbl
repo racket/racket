@@ -333,7 +333,7 @@ Binds each identifier in @scheme[id-list] within the
 @scheme[expr] when the identifiers correspond to
 @scheme[define-values] bindings, and supply a compile-time expression
 when the identifiers correspond to @scheme[define-syntaxes] bindings;
-the later case, the number of values produces by the expression should
+the later case, the number of values produced by the expression should
 match the number of identifiers, otherwise the
 @exnraise[exn:fail:contract:arity].
 
