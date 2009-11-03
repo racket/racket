@@ -8,7 +8,7 @@
          vector-count vector-argmin vector-argmax)
 
 ;; unchecked version of `vector-copy'
-;; used ad the implementation of many functions in this file
+;; used at the implementation of many functions in this file
 (define (vector-copy* v start end)
   (define new-v (make-vector (- end start)))
   (vector-copy! new-v 0 v start end)
@@ -23,13 +23,15 @@
     (unless (and (<= 0 start) (< start len))
       (raise-mismatch-error
        'vector-copy
-       (format "starting index ~e out of range [~e, ~e] for vector"
-               start 0 len) v))
+       (format "start index ~e out of range [~e, ~e] for vector ~e"
+               start 0 len v)
+       v))
     (unless (and (<= start end) (<= end len))
       (raise-mismatch-error
        'vector-copy
-       (format "ending index ~e out of range [~e, ~e] for vector ~e"
-               start len) v))
+       (format "end index ~e out of range [~e, ~e] for vector ~e"
+               end start len v)
+       v))
     (vector-copy* v start end)))
 
 ;; do vector-map, putting the result in `target'
@@ -52,7 +54,10 @@
   (unless (procedure? f)
     (raise-type-error name "procedure" 0 f))
   (unless (procedure-arity-includes? f (add1 (length vs)))
-    (raise-type-error name "procedure that accepts ~e arguments" 0 f))
+    (raise-type-error
+     name
+     (format "procedure (arity ~a)" (add1 (length vs)))
+     0 f))
   (unless (vector? v)
     (raise-type-error name "vector" 1 v))
   (let ([len (unsafe-vector-length v)])
@@ -64,7 +69,7 @@
         (raise
          (make-exn:fail:contract
           (format "~e: all vectors must have same size; arguments were: ~e"
-                  (make-args-string (list* f v vs)))
+                  name (make-args-string (list* f v vs)))
           (current-continuation-marks)))))
     len))
 
@@ -85,7 +90,7 @@
   (unless (procedure? f)
     (raise-type-error name "procedure" 0 f))
   (unless (procedure-arity-includes? f 1)
-    (raise-type-error name "procedure that accepts 1 argument" 0 f)))
+    (raise-type-error name "procedure (arity 1)" 0 f)))
 
 (define (vector-filter f v)
   (one-arg-check f v 'vector-filter)
