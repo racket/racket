@@ -299,10 +299,7 @@
          (send interpolate-evolution-bdc clear)
          (send interpolate-evolution-bdc draw-bitmap 
                (list-ref plt-logo-evolution q)
-               0 0
-               'solid
-               (send the-color-database find-color "black")
-               (list-ref stage-bitmaps before-inc))
+               0 0)
          (send interpolate-evolution-bdc draw-bitmap 
                (list-ref plt-logo-evolution (+ q 1))
                0 0
