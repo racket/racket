@@ -11,7 +11,7 @@
            scheme/tcp
            scheme/udp
            scheme/list
-	   scheme/vector
+           scheme/vector
            scheme/string
            scheme/function
            scheme/path
@@ -37,8 +37,8 @@
                          scheme/tcp
                          scheme/udp
                          scheme/list
-			 scheme/vector
-			 scheme/string
+                         scheme/vector
+                         scheme/string
                          scheme/function
                          scheme/path
                          scheme/file
