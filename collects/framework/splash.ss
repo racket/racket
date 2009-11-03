@@ -185,15 +185,14 @@
          (= (date-month date) 12))))
 
 (define (splash-load-handler old-load f expected)
-  (let ([finalf (splitup-path f)])
-    (set! splash-current-width (+ splash-current-width 1))
-    (when (<= splash-current-width splash-max-width)
-      (send gauge set-value splash-current-width)
-      (when (or (not (member gauge (send gauge-panel get-children)))
-                ;; when the gauge is not visible, we'll redraw the canvas
-                (refresh-splash-on-gauge-change? splash-current-width splash-max-width))
-        (refresh-splash)))
-    (old-load f expected)))
+  (set! splash-current-width (+ splash-current-width 1))
+  (when (<= splash-current-width splash-max-width)
+    (send gauge set-value splash-current-width)
+    (when (or (not (member gauge (send gauge-panel get-children)))
+              ;; when the gauge is not visible, we'll redraw the canvas
+              (refresh-splash-on-gauge-change? splash-current-width splash-max-width))
+      (refresh-splash)))
+  (old-load f expected))
 
 (let-values ([(make-compilation-manager-load/use-compiled-handler
                manager-trace-handler)
@@ -276,20 +275,6 @@
      default)))
 (define (splash-set-preference name value)
   (put-preferences (list name) (list value)))
-
-(define (splitup-path f)
-  (let*-values ([(absf) (if (relative-path? f)
-                            (build-path (current-directory) f)
-                            f)]
-                [(base name _1) (split-path absf)])
-    
-    (if base
-        (let-values ([(base2 name2 _2) (split-path base)])
-          (if base2
-              (let-values ([(base3 name3 _2) (split-path base2)])
-                (build-path name3 name2 name))
-              (build-path name2 name)))
-        name)))
 
 (define quit-on-close? #t)
 
