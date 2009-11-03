@@ -186,11 +186,11 @@
                                           (car l)
                                           (loop (cdr l)))
                                       l))])
-                (let ([b (blank (pict-width l) (pict-height l)
-                                (pict-ascent l) (pict-descent l))])
+                (let ([b2 (blank (pict-width l) (pict-height l)
+                                 (pict-ascent l) (pict-descent l))])
                   (use-last/unchecked
-                   (pin-over box x y b)
-                   b)))]))))
+                   (pin-over b x y b2)
+                   b2)))]))))
 
       (define (lift p n)
 	(let* ([dh (- (max 0 (- n (pict-descent p))))]
