@@ -28,15 +28,16 @@
                          [key_len : _int = (bytes-length key)]
                          [data : _bytes]
                          [data_len : _int = (bytes-length data)]
-                         [md : _pointer = #f]
-                         [md_len : _uint = 0]
-                         f->
-                         _pointer))
+                         [md : (_bytes o 20)]
+                         [md_len : (_ptr o _uint)]
+                         f-> _bytes
+                         f-> md))
       (lambda (key data) (error 'HMAC-SHA1/raw "libcrypto could not load"))))
 
 (define (HMAC-SHA1 key data)
+  (HMAC-SHA1/raw key data)
   ; It returns the same pointer always
-  (bytes-copy
+  #;(bytes-copy
    ; A SHA1 is 20 bytes, including 0s
    (make-sized-byte-string (HMAC-SHA1/raw key data) 20)))
 
