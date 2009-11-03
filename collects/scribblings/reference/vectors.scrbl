@@ -145,3 +145,155 @@ _i)] is the value produced by @scheme[(proc _i)].
 (build-vector 5 add1)
 ]}
 
+@; ----------------------------------------
+@section{Additional Vector Functions}
+
+@note-lib[scheme/vector]
+@(define vec-eval (make-base-eval))
+@(interaction-eval #:eval vec-eval
+                   (require scheme/vector))
+
+@defproc[(vector-map [proc procedure?] [vec vector?] ...+) 
+         vector?]{
+
+Applies @scheme[proc] to the elements of the @scheme[vec]s from the
+ first elements to the last. The @scheme[proc] argument must accept
+ the same number of arguments as the number of supplied @scheme[vec]s,
+ and all @scheme[vec]s must have the same number of elements.  The
+ result is a fresh vector containing each result of @scheme[proc] in
+ order.
+
+@mz-examples[#:eval vec-eval
+(vector-map + #(1 2) #(3 4))]
+}
+
+@defproc[(vector-map! [proc procedure?] [vec vector?] ...+) 
+         vector?]{
+
+Applies @scheme[proc] to the elements of the @scheme[vec]s from the
+ first elements to the last. The @scheme[proc] argument must accept
+ the same number of arguments as the number of supplied @scheme[vec]s,
+ and all @scheme[vec]s must have the same number of elements.  The
+ each result of @scheme[proc] is inserted into the first @scheme[vec]
+ at the index that the arguments to @scheme[proc] was taken from.  The
+ result is the first @scheme[vec].
+
+@mz-examples[#:eval vec-eval
+(define v #(1 2 3 4))
+(vector-map! add1 v)
+v
+]}
+
+@defproc[(vector-append [lst list?] ...) list?]{
+
+Creates a fresh vector that contains all
+of the elements of the given vectors in order. 
+
+@mz-examples[#:eval vec-eval
+(vector-append #(1 2) #(3 4))]
+}
+
+
+@defproc[(vector-take [vec vector?] [pos exact-nonnegative-integer?]) list?]{
+Returns a fresh vector whose elements are the first @scheme[pos] elements of
+@scheme[vec].  If @scheme[vec] has fewer than
+@scheme[pos] elements, the @exnraise[exn:fail:contract].
+
+@mz-examples[#:eval vec-eval
+ (vector-take #(1 2 3 4) 2)
+]}
+
+@defproc[(vector-take-right [vec vector?] [pos exact-nonnegative-integer?]) list?]{
+Returns a fresh vector whose elements are the last @scheme[pos] elements of
+@scheme[vec].  If @scheme[vec] has fewer than
+@scheme[pos] elements, the @exnraise[exn:fail:contract].
+
+@mz-examples[#:eval vec-eval
+ (vector-take-right #(1 2 3 4) 2)
+]}
+
+@defproc[(vector-drop [vec vector?] [pos exact-nonnegative-integer?]) vector?]{
+Returns a fresh vector whose elements are the elements of @scheme[vec]
+ after the first @scheme[pos] elements.  If @scheme[vec] has fewer
+ than @scheme[pos] elements, the @exnraise[exn:fail:contract].
+
+@mz-examples[#:eval vec-eval
+ (vector-drop #(1 2 3 4) 2)
+]}
+
+@defproc[(vector-drop-right [vec vector?] [pos exact-nonnegative-integer?]) vector?]{
+Returns a fresh vector whose elements are the elements of @scheme[vec]
+ before the first @scheme[pos] elements.  If @scheme[vec] has fewer
+ than @scheme[pos] elements, the @exnraise[exn:fail:contract].
+
+@mz-examples[#:eval vec-eval
+ (vector-drop-right #(1 2 3 4) 2)
+]}
+
+@defproc[(vector-split-at [vec vector?] [pos exact-nonnegative-integer?])
+         (values vector? vector?)]{
+Returns the same result as
+
+@schemeblock[(values (vector-take vec pos) (vector-drop vec pos))]
+
+except that it can be faster.
+
+@mz-examples[#:eval vec-eval
+ (vector-split-at #(1 2 3 4 5) 2)
+]}
+
+@defproc[(vector-split-at-right [vec vector?] [pos exact-nonnegative-integer?])
+         (values vector? vector?)]{
+Returns the same result as
+
+@schemeblock[(values (vector-take-right vec pos) (vector-drop-right vec pos))]
+
+except that it can be faster.
+
+@mz-examples[#:eval vec-eval
+ (vector-split-at-right #(1 2 3 4 5) 2)
+]}
+
+
+@defproc[(vector-copy [vec vector?] [start exact-nonnegative-integer?
+0] [end exact-nonnegative-integer? (vector-length v)]) vector?]{
+Creates a fresh vector of size @scheme[(- end start)], with all of the
+elements of @scheme[vec] from @scheme[start] (inclusive) to
+@scheme[end] (exclusive).
+
+@mz-examples[#:eval vec-eval
+ (vector-copy #(1 2 3 4))
+ (vector-copy #(1 2 3 4) 3)
+ (vector-copy #(1 2 3 4) 2 3)
+]
+}
+
+@defproc[(vector-filter [pred procedure?] [vec vector?]) vector?]{
+Returns a fresh vector with the elements of @scheme[vec] for which
+ @scheme[pred] produces a true value. The @scheme[pred] procedure is
+ applied to each element from first to last.
+
+@mz-examples[#:eval vec-eval
+  (vector-filter even? '(1 2 3 4 5 6))
+]}
+
+@defproc[(vector-filter-not [pred procedure?] [vec vector?]) vector?]{
+
+Like @scheme[vector-filter], but the meaning of the @scheme[pred] predicate
+is reversed: the result is a vector of all items for which @scheme[pred]
+returns @scheme[#f].
+
+@mz-examples[#:eval vec-eval
+  (vector-filter-not even? '(1 2 3 4 5 6))
+]}
+
+
+@defproc[(vector-count [proc procedure?] [lst list?] ...+)
+         list?]{
+
+Returns @scheme[(vector-length (vector-filter proc lst ...))], but
+without building the intermediate list.}
+
+vector-count
+vector-argmin
+vector-argmax
