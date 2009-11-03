@@ -337,9 +337,18 @@
          [else
           (update-bitmap-stage val range)
           #t])))
-    (vector splash-evolution
-            (send (car plt-logo-evolution) get-width)
-            (send (car plt-logo-evolution) get-height))]
+    (let ([gc-bm (make-object bitmap% (build-path (collection-path "icons") "recycle.png") 'png/mask)]
+          [w (send (car plt-logo-evolution) get-width)]
+          [h (send (car plt-logo-evolution) get-height)])
+      (when (send gc-bm ok?)
+        (let* ([gc-w (send gc-bm get-width)]
+               [gc-h (send gc-bm get-height)]
+               [off-bm (make-object bitmap% gc-w gc-h)]
+               [bdc (make-object bitmap-dc% off-bm)])
+          (send bdc clear)
+          (send bdc set-bitmap #f)
+          (register-collecting-blit (get-splash-canvas) (- w gc-w 2) 2 gc-w gc-h gc-bm off-bm)))
+      (vector splash-evolution w h))]
    [high-color?
     (build-path (collection-path "icons") "PLT-206.png")]
    [(= (get-display-depth) 1)
