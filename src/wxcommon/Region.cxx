@@ -439,7 +439,7 @@ void wxRegion::SetPolygon(int n, wxPoint points[], double xoffset, double yoffse
 
 void wxRegion::SetPath(wxPath *p, double xoffset, double yoffset, int fillStyle)
 {
-  double **ptss, xs, ys;
+  double **ptss;
   int *lens, cnt, i, total_cnt, j, k;
   wxPoint *a;
 
@@ -450,8 +450,7 @@ void wxRegion::SetPath(wxPath *p, double xoffset, double yoffset, int fillStyle)
     no_prgn = 1;
   }
 
-  dc->GetUserScale(&xs, &ys);
-  cnt = p->ToPolygons(&lens, &ptss, xs, ys);
+  cnt = p->ToPolygons(&lens, &ptss, 1.0, 1.0);
 
   if (!cnt)
     return;
@@ -469,8 +468,8 @@ void wxRegion::SetPath(wxPath *p, double xoffset, double yoffset, int fillStyle)
 
   for (i = 0, k = 0; i < cnt; i++) {
     for (j = 0; j < lens[i]; j += 2) {
-      a[k].x = ptss[i][j] + xoffset;
-      a[k].y = ptss[i][j+1] + yoffset;
+      a[k].x = ptss[i][j];
+      a[k].y = ptss[i][j+1];
       k++;
     }
   }
