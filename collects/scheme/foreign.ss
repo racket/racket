@@ -62,13 +62,13 @@
 
 (provide* ctype-sizeof ctype-alignof compiler-sizeof
           (unsafe malloc) (unsafe free) (unsafe end-stubborn-change)
-          cpointer? ptr-equal? ptr-add (unsafe ptr-ref) (unsafe ptr-set!)
+          cpointer? ptr-equal? ptr-add (unsafe ptr-ref) (unsafe ptr-set!) (unsafe cast)
           ptr-offset ptr-add! offset-ptr? set-ptr-offset!
           ctype? make-ctype make-cstruct-type (unsafe make-sized-byte-string) ctype->layout
           _void _int8 _uint8 _int16 _uint16 _int32 _uint32 _int64 _uint64
           _fixint _ufixint _fixnum _ufixnum
           _float _double _double*
-          _bool _pointer _scheme _fpointer function-ptr
+          _bool _pointer _gcpointer _scheme _fpointer function-ptr
           (unsafe memcpy) (unsafe memmove) (unsafe memset)
           (unsafe malloc-immobile-cell) (unsafe free-immobile-cell))
 
@@ -1256,6 +1256,49 @@
 
 ;; Similar to the above, but can tolerate null pointers (#f).
 (define* _cpointer/null (cpointer-maker #t))
+
+(define (cast p from-type to-type)
+  (unless (ctype? from-type)
+    (raise-type-error 'cast "ctype" from-type))
+  (unless (ctype? to-type)
+    (raise-type-error 'cast "ctype" to-type))
+  (unless (= (ctype-sizeof to-type)
+             (ctype-sizeof from-type))
+    (raise-mismatch-error (format "representation sizes of types differ: ~e to "
+                                  from-type)
+                          to-type))
+  (let ([p2 (malloc from-type)])
+    (ptr-set! p2 from-type p)
+    (ptr-ref p2 to-type)))
+
+(define* (_or-null ctype)
+  (let ([coretype (ctype-coretype ctype)])
+    (unless (memq coretype '(pointer gcpointer fpointer))
+      (raise-type-error '_or-null "ctype buit on pointer, gcpointer, or fpointer" ctype))
+    (make-ctype
+     (case coretype
+       [(pointer) _pointer]
+       [(gcpointer) _gcpointer]
+       [(fpointer) _fpointer])
+     (lambda (v) (and v (cast _pointer v)))
+     (lambda (v) (and v (cast ctype v))))))
+
+(define* (_gcable ctype)
+  (unless (memq (ctype-coretype ctype) '(pointer gcpointer))
+    (raise-type-error '_or-null "pointer ctype" ctype))
+  (let loop ([ctype ctype])
+     (if (eq? ctype 'pointer)
+         _gcpointer
+         (make-ctype
+          (loop (ctype-basetype ctype))
+          (ctype-scheme->c ctype)
+          (ctype-c->scheme ctype)))))
+
+(define (ctype-coretype c)
+  (let loop ([c (ctype-basetype c)])
+    (if (symbol? c)
+        c
+        (loop c))))
 
 ;; A macro version of the above two functions, using the defined name for a tag
 ;; string, and defining a predicate too.  The name should look like `_foo', the

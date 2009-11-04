@@ -667,7 +667,21 @@ Creates a C-pointer object that encapsulates @var{ptr} and uses
  the original @var{ptr} from the Scheme object, and
  @cppi{SCHEME_CPTR_TYPE} extracts the type tag.
  The @cppi{SCHEME_CPTR_OFFSETVAL} macro returns @cpp{0} 
- for the result Scheme object.}
+ for the result Scheme object.
+
+ The @var{ptr} can refer to either memory managed by the garbage
+ collector or by some other memory manager. Beware, however, of
+ retaining a @var{ptr} that refers to memory released by another
+ memory manager, since the enclosing memory range might later become
+ managed by the garbage collector (in which case @var{ptr} might
+ become an invalid pointer that can crash the garbage collector).}
+
+@function[(Scheme_Object* scheme_make_external_cptr
+           [void* ptr]
+           [const-Scheme_Object* typetag])]{
+
+Like @cpp{scheme_make_cptr}, but @var{ptr} is never treated as
+referencing memory managed by the garbage collector.}
 
 @function[(Scheme_Object* scheme_make_offset_cptr
            [void* ptr]
@@ -677,7 +691,20 @@ Creates a C-pointer object that encapsulates @var{ptr} and uses
 Creates a C-pointer object that encapsulates both @var{ptr} and @var{offset}.
  The @cppi{SCHEME_CPTR_OFFSETVAL} macro returns @var{offset} 
  for the result Scheme object (and the macro be used to change the offset,
- since it also works on objects with no offset).}
+ since it also works on objects with no offset).
+
+ The @var{ptr} can refer to either memory managed by the garbage
+ collector or by some other memory manager; see also 
+ @cpp{scheme_make_cptr}.}
+
+@function[(Scheme_Object* scheme_make_offset_external_cptr
+           [void* ptr]
+           [long offset]
+           [const-Scheme_Object* typetag])]{
+
+ Like @cpp{scheme_make_offset_cptr}, but @var{ptr} is never treated as
+referencing memory managed by the garbage collector.}
+
 
 @function[(void scheme_set_type_printer
            [Scheme_Type type]

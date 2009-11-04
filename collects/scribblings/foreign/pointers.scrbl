@@ -260,8 +260,8 @@ specification is required at minimum:
 ]
 
 If no mode is specified, then @scheme['nonatomic] allocation is used
-when the type is any pointer-based type, and @scheme['atomic]
-allocation is used otherwise.}
+when the type is a @scheme[_gcpointer]- or @scheme[_scheme]-based
+type, and @scheme['atomic] allocation is used otherwise.}
 
 
 @defproc[(free [cptr cpointer?]) void]{

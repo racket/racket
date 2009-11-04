@@ -54,6 +54,20 @@ Like @scheme[list->cblock], but for Scheme vectors.}
 
 @section{Unsafe Miscellaneous Operations}
 
+@defproc[(cast [v any/c][from-type ctype?][to-type ctype?]) any/c]{
+
+Converts @scheme[v] from a value matching @scheme[from-type] to a
+value matching @scheme[to-type], where @scheme[(ctype-size from-type)]
+matches @scheme[(ctype-size to-type)].
+
+The conversion is equivalent to
+
+@schemeblock[
+  (let ([p (malloc from-type)])
+    (ptr-set! p from-type v)
+    (ptr-ref p to-type))
+]}
+
 @defproc[(cblock->list [cblock any/c][type ctype?][length exact-nonnegative-integer?])
          list?]{
 

@@ -564,7 +564,7 @@ typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data)
 
 typedef struct Scheme_Cptr
 {
-  Scheme_Object so;
+  Scheme_Inclhash_Object so; /* 0x1 => an external pointer (not GCable) */
   void *val;
   Scheme_Object *type;
 } Scheme_Cptr;
@@ -577,6 +577,7 @@ typedef struct Scheme_Offset_Cptr
 #define SCHEME_CPTR_VAL(obj) (((Scheme_Cptr *)(obj))->val)
 #define SCHEME_CPTR_TYPE(obj) (((Scheme_Cptr *)(obj))->type)
 #define SCHEME_CPTR_OFFSET(obj) (SAME_TYPE(_SCHEME_TYPE(obj), scheme_offset_cpointer_type) ? ((Scheme_Offset_Cptr *)obj)->offset : 0)
+#define SCHEME_CPTR_FLAGS(obj) MZ_OPT_HASH_KEY(&((Scheme_Cptr *)(obj))->so)
 
 #define SCHEME_SET_IMMUTABLE(obj)  ((MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(obj)) |= 0x1))
 #define SCHEME_SET_CHAR_STRING_IMMUTABLE(obj) SCHEME_SET_IMMUTABLE(obj)

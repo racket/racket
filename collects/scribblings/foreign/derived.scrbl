@@ -9,12 +9,12 @@ The unsafe @scheme[cpointer-has-tag?] and @scheme[cpointer-push-tag!]
 operations manage tags to distinguish pointer types.
 
 @defproc*[([(_cpointer [tag any/c]
-                       [ptr-type ctype? _pointer]
+                       [ptr-type ctype? _xpointer]
                        [scheme-to-c (any/c . -> . any/c) values]
                        [c-to-scheme (any/c . -> . any/c) values])
             ctype]
            [(_cpointer/null [tag any/c]
-                            [ptr-type ctype? _pointer]
+                            [ptr-type ctype? _xpointer]
                             [scheme-to-c (any/c . -> . any/c) values]
                             [c-to-scheme (any/c . -> . any/c) values])
             ctype])]{

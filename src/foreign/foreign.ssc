@@ -707,6 +707,13 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
    'ctype "void*"
    'macro "FFIANYPTR"
    'offset "FFIANYPTR"
+   'c->s  "scheme_make_foreign_external_cpointer")
+
+@(defctype 'gcpointer
+   'ftype "gcpointer"
+   'ctype "void*"
+   'macro "FFIANYPTR"
+   'offset "FFIANYPTR"
    'c->s  "scheme_make_foreign_cpointer")
 
 @; This is probably not needed
@@ -721,7 +728,7 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
 /* This is used for passing and Scheme_Object* value as is.  Useful for
  * functions that know about Scheme_Object*s, like MzScheme's. */
 @(defctype 'scheme
-   'ftype "pointer"
+   'ftype "gcpointer"
    'ctype "Scheme_Object*"
    'pred (lambda (x aux) "1")
    's->c (lambda (x aux) x)
@@ -758,6 +765,8 @@ typedef union _ForeignAny {
   [basetype    "Scheme_Object*"]
   [scheme_to_c "Scheme_Object*"]
   [c_to_scheme "Scheme_Object*"]]
+
+static ffi_type ffi_type_gcpointer;
 
 #define CTYPE_BASETYPE(x)  (((ctype_struct*)(x))->basetype)
 #define CTYPE_USERP(x)     (CTYPE_BASETYPE(x) != NULL && SCHEME_CTYPEP(CTYPE_BASETYPE(x)))
@@ -950,6 +959,9 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
 #define scheme_make_foreign_cpointer(x) \
   ((x==NULL)?scheme_false:scheme_make_cptr(x,NULL))
 
+#define scheme_make_foreign_external_cpointer(x) \
+  ((x==NULL)?scheme_false:scheme_make_external_cptr(x,NULL))
+
 @cdefine[cpointer? 1]{
   return SCHEME_FFIANYPTRP(argv[0]) ? scheme_true : scheme_false;
 }
@@ -999,7 +1011,7 @@ static Scheme_Object *C2SCHEME(Scheme_Object *type, void *src,
     else
       return _scheme_apply(CTYPE_USER_C2S(type), 1, (Scheme_Object**)(&res));
   } else if (CTYPE_PRIMLABEL(type) == FOREIGN_fpointer) {
-    return scheme_make_foreign_cpointer(*(void **)W_OFFSET(src, delta));
+    return scheme_make_foreign_external_cpointer(*(void **)W_OFFSET(src, delta));
   } else switch (CTYPE_PRIMLABEL(type)) {
     @(map-types
       @list{case FOREIGN_@|cname|: return @;
@@ -1307,7 +1319,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
   if ((num == 0) && (size == 0)) scheme_signal_error(MYNAME": no size given");
   size = ((size==0) ? 1 : size) * ((num==0) ? 1 : num);
   if (mode == NULL)
-    mf = (base != NULL && CTYPE_PRIMTYPE(base) == &ffi_type_pointer)
+    mf = (base != NULL && CTYPE_PRIMTYPE(base) == &ffi_type_gcpointer)
       ? scheme_malloc : scheme_malloc_atomic;
   else if (SAME_OBJ(mode, nonatomic_sym))     mf = scheme_malloc;
   else if (SAME_OBJ(mode, atomic_sym))        mf = scheme_malloc_atomic;
@@ -1324,7 +1336,10 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
   if (failok) res = scheme_malloc_fail_ok(mf,size); else res = mf(size);
   if (((from != NULL) || (foff != 0)) && (res != NULL))
     memcpy(res, W_OFFSET(from, foff), size);
-  return scheme_make_foreign_cpointer(res);
+  if (SAME_OBJ(mode, raw_sym))
+    return scheme_make_foreign_external_cpointer(res);
+  else
+    return scheme_make_foreign_cpointer(res);
 }
 
 /* (end-stubborn-change ptr) */
@@ -1359,7 +1374,7 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
 
 /* (malloc-immobile-cell v) */
 @cdefine[malloc-immobile-cell 1]{
-  return scheme_make_foreign_cpointer(scheme_malloc_immobile_box(argv[0]));
+  return scheme_make_foreign_external_cpointer(scheme_malloc_immobile_box(argv[0]));
 }
 
 /* (free-immobile-cell b) */
@@ -1410,10 +1425,16 @@ static Scheme_Object *do_ptr_add(const char *who, int is_bang,
     ((Scheme_Offset_Cptr*)(argv[0]))->offset += noff;
     return scheme_void;
   } else {
-    return scheme_make_offset_cptr
-             (SCHEME_FFIANYPTR_VAL(argv[0]),
-              SCHEME_FFIANYPTR_OFFSET(argv[0]) + noff,
-              (SCHEME_CPTRP(argv[0])) ? SCHEME_CPTR_TYPE(argv[0]) : NULL);
+    if (SCHEME_CPTRP(argv[0]) && (SCHEME_CPTR_FLAGS(argv[0]) & 0x1))
+      return scheme_make_offset_external_cptr
+        (SCHEME_FFIANYPTR_VAL(argv[0]),
+         SCHEME_FFIANYPTR_OFFSET(argv[0]) + noff,
+         (SCHEME_CPTRP(argv[0])) ? SCHEME_CPTR_TYPE(argv[0]) : NULL);
+    else
+      return scheme_make_offset_cptr
+        (SCHEME_FFIANYPTR_VAL(argv[0]),
+         SCHEME_FFIANYPTR_OFFSET(argv[0]) + noff,
+         (SCHEME_CPTRP(argv[0])) ? SCHEME_CPTR_TYPE(argv[0]) : NULL);
   }
 }
 
@@ -2112,6 +2133,7 @@ void scheme_init_foreign(Scheme_Env *env)
   Scheme_Env *menv;
   ctype_struct *t;
   Scheme_Object *s;
+  memcpy(&ffi_type_gcpointer, &ffi_type_pointer, sizeof(ffi_type_pointer));
   menv = scheme_primitive_module(scheme_intern_symbol("#%foreign"), env);
   @(maplines
      (lambda (x)

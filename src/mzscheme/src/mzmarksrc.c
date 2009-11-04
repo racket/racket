@@ -56,7 +56,9 @@ quotesyntax_obj {
 
 cpointer_obj {
  mark:
-  gcMARK(SCHEME_CPTR_VAL(p));
+  if (!(SCHEME_CPTR_FLAGS(p) & 0x1)) {
+    gcMARK(SCHEME_CPTR_VAL(p));
+  }
   gcMARK(SCHEME_CPTR_TYPE(p));
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Cptr));
@@ -64,7 +66,9 @@ cpointer_obj {
 
 offset_cpointer_obj {
  mark:
-  gcMARK(SCHEME_CPTR_VAL(p));
+  if (!(SCHEME_CPTR_FLAGS(p) & 0x1)) {
+    gcMARK(SCHEME_CPTR_VAL(p));
+  }
   gcMARK(SCHEME_CPTR_TYPE(p));
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Offset_Cptr));

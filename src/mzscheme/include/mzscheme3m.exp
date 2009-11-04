@@ -311,6 +311,8 @@ scheme_get_unsigned_long_long_val
 scheme_real_to_double
 scheme_make_cptr
 scheme_make_offset_cptr
+scheme_make_external_cptr
+scheme_make_offset_external_cptr
 scheme_get_proc_name
 scheme_utf8_decode
 scheme_utf8_decode_as_prefix

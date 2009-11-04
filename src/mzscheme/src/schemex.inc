@@ -337,6 +337,8 @@
   scheme_extension_table->scheme_real_to_double = scheme_real_to_double;
   scheme_extension_table->scheme_make_cptr = scheme_make_cptr;
   scheme_extension_table->scheme_make_offset_cptr = scheme_make_offset_cptr;
+  scheme_extension_table->scheme_make_external_cptr = scheme_make_external_cptr;
+  scheme_extension_table->scheme_make_offset_external_cptr = scheme_make_offset_external_cptr;
   scheme_extension_table->scheme_get_proc_name = scheme_get_proc_name;
   scheme_extension_table->scheme_utf8_decode = scheme_utf8_decode;
   scheme_extension_table->scheme_utf8_decode_as_prefix = scheme_utf8_decode_as_prefix;
