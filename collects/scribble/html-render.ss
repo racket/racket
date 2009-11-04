@@ -89,6 +89,7 @@
 (define current-no-links (make-parameter #f))
 (define extra-breaking? (make-parameter #f))
 (define current-version (make-parameter (version)))
+(define current-part-files (make-parameter #f))
 
 (define (toc-part? d)
   (part-style? d 'toc))
@@ -1285,14 +1286,22 @@
       (collecting-whole-page))
 
     (define/override (start-collect ds fns ci)
-      (map (lambda (d fn)
-             (parameterize ([collecting-sub
-                             (if (part-style? d 'non-toc)
-                                 1
-                                 0)])
-               (super start-collect (list d) (list fn) ci)))
-           ds
-           fns))
+      (parameterize ([current-part-files (make-hash)])
+        (map (lambda (d fn)
+               (parameterize ([collecting-sub
+                               (if (part-style? d 'non-toc)
+                                   1
+                                   0)])
+                 (super start-collect (list d) (list fn) ci)))
+             ds
+             fns)))
+
+    (define/private (check-duplicate-filename orig-s)
+      (let ([s (string-downcase (path->string orig-s))])
+        (when (hash-ref (current-part-files) s #f)
+          (error 'htmls-render "multiple parts have the same filename (modulo case): ~e"
+                 orig-s))
+        (hash-set! (current-part-files) s #t)))
 
     (define/override (collect-part d parent ci number)
       (let ([prev-sub (collecting-sub)])
@@ -1302,10 +1311,11 @@
                        [collecting-whole-page (prev-sub . <= . 1)])
           (if (and (current-part-whole-page? d)
                    (not (eq? d (current-top-part))))
-            (let ([filename (derive-filename d ci #f)])
-              (parameterize ([current-output-file
-                              (build-path (path-only (current-output-file))
-                                          filename)])
+            (let* ([filename (derive-filename d ci #f)]
+                   [full-filename (build-path (path-only (current-output-file))
+                                              filename)])
+              (check-duplicate-filename full-filename)
+              (parameterize ([current-output-file full-filename])
                 (super collect-part d parent ci number)))
             (super collect-part d parent ci number)))))
 
