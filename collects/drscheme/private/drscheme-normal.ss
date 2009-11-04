@@ -109,7 +109,7 @@
 (define interpolate-evolution-bdc (make-object bitmap-dc%))
 
 ;; number of greyscale stages (between the logos above)
-(define stages 5)
+(define stages 0)
 
 ;; number of increments (per cycle) to dedicate to 
 ;; an unfaded version of the logos. must be > 0.
@@ -153,11 +153,7 @@
          [m (modulo index (+ stages pause-time))])
     (cond
       [(< m pause-time)
-       (set! splash-evolution-bitmap (list-ref plt-logo-evolution q))
-       (when (= q (+ stages pause-time -1))
-         (set! stage-bitmaps 'cleared-out-stage-bitmaps)
-         (set! splash-evolution-bitmap 'cleared-out-splash-evolution-bitmap)
-         (set! plt-logo-evolution 'cleared-out-plt-logo-evolution))]
+       (set! splash-evolution-bitmap (list-ref plt-logo-evolution q))]
       [else
        (let* ([before-inc (- m pause-time)]
               [after-inc (- (- (length stage-bitmaps) 1) before-inc)])
@@ -220,17 +216,25 @@
          (thread
           (λ () 
             (let loop ([i 0])
-              (when (<= i evolution-last-stage)
-                (let* ([now (current-milliseconds)]
-                       [next-stage-start (+ start-time (* last-times-delta (/ i (+ evolution-last-stage 1))))]
-                       [delta (- next-stage-start now)])
-                  (sleep (max 0 (/ delta 1000))))
-                (parameterize ([current-eventspace (get-splash-eventspace)])
-                  (queue-callback
-                   (λ () 
-                     (update-bitmap-stage/index i)
-                     (refresh-splash))))
-                (loop (+ i 1))))))
+              (cond
+                [(<= i evolution-last-stage)
+                 (let* ([now (current-milliseconds)]
+                        [next-stage-start (+ start-time (* last-times-delta (/ i (+ evolution-last-stage 1))))]
+                        [delta (- next-stage-start now)])
+                   (sleep (max 0 (/ delta 1000))))
+                 (parameterize ([current-eventspace (get-splash-eventspace)])
+                   (queue-callback
+                    (λ () 
+                      (update-bitmap-stage/index i)
+                      (refresh-splash))))
+                 (loop (+ i 1))]
+                [else
+                 (parameterize ([current-eventspace (get-splash-eventspace)])
+                   (queue-callback
+                    (λ () 
+                      (set! stage-bitmaps 'cleared-out-stage-bitmaps)
+                      (set! splash-evolution-bitmap 'cleared-out-splash-evolution-bitmap)
+                      (set! plt-logo-evolution 'cleared-out-plt-logo-evolution))))]))))
          (vector splash-evolution w h)]
         [else
          (build-path (collection-path "icons") "plt-logo-red-shiny.png")]))]
