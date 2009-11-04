@@ -15,14 +15,16 @@
 ;; to open. See also main.ss.
 (current-command-line-arguments (apply vector files-to-open))
 
-(define-values (texas-independence-day? prince-kuhio-day? kamehameha-day? halloween?)
+(define-values (texas-independence-day? prince-kuhio-day? kamehameha-day? halloween? weekend?)
   (let* ([date (seconds->date (current-seconds))]
          [month (date-month date)]
-         [day (date-day date)])
+         [day (date-day date)]
+         [dow (date-week-day date)])
     (values (and (= 3 month) (= 2 day))
             (and (= 3 month) (= 26 day))
             (and (= 6 month) (= 11 day))
-            (and (= 10 month) (= 31 day)))))
+            (and (= 10 month) (= 31 day))
+            (or (= dow 6) (= dow 0)))))
 
 (define high-color? ((get-display-depth) . > . 8))
 (define special-state #f)
@@ -89,101 +91,7 @@
                 (begin (set! special-state match)
                        (magic-image-bitmap match))))))))))
 
-(define eb-today? (eb-bday?))
-(when eb-today? (install-eb))
-
-;; assumes that the width & height of all of the bitmaps
-;; in this list are the same.
-(define plt-logo-evolution
-  (map icons-bitmap
-       '("plt-logo-red-flat.png"
-         "plt-logo-red-gradient.png"
-         "plt-logo-red-diffuse.png"
-         "plt-logo-red-shiny.png")))
-
-;; the currently being drawing bitmap (for the splash-evolution startup screen)
-(define splash-evolution-bitmap (car plt-logo-evolution))
-
-;; a scratch bitmap that is used for the interpolations between the bitmaps in plt-logo-evolution
-(define interpolate-evolution-bitmap #f)
-(define interpolate-evolution-bdc (make-object bitmap-dc%))
-
-;; number of greyscale stages (between the logos above)
-(define stages 0)
-
-;; number of increments (per cycle) to dedicate to 
-;; an unfaded version of the logos. must be > 0.
-(define pause-time 2)
-
-(define stage-bitmaps
-  (cond
-    [(send (car plt-logo-evolution) ok?)
-     (let ([bdc (make-object bitmap-dc%)]
-           [w (send (car plt-logo-evolution) get-width)]
-           [h (send (car plt-logo-evolution) get-height)])
-       (set! interpolate-evolution-bitmap (make-object bitmap% w h))
-       (let loop ([i 0])
-         (cond
-           [(= stages i) '()]
-           [else
-            (let ([bm (make-object bitmap% w h)]
-                  [grey (floor (* 255 (/ (+ i 1) (+ stages 1))))])
-              (send bdc set-bitmap bm)
-              (send bdc set-pen "black" 1 'transparent)
-              (send bdc set-brush (make-object color% grey grey grey) 'solid)
-              (send bdc draw-rectangle 0 0 w h)
-              (send bdc set-bitmap #f)
-              (cons bm (loop (+ i 1))))])))]
-    [else '()]))
-
-(define evolution-last-stage 
-  (* (+ stages pause-time) 
-     (- (length plt-logo-evolution) 1)))
-
-(define (logo-index val range)
-  (min (max (floor (* (+ evolution-last-stage 1) (/ val range))) 
-            0)
-       evolution-last-stage))
-
-(define (update-bitmap-stage val range)
-  (update-bitmap-stage/index (logo-index val range)))
-
-(define (update-bitmap-stage/index index)
-  (let* ([q (quotient index (+ stages pause-time))]
-         [m (modulo index (+ stages pause-time))])
-    (cond
-      [(< m pause-time)
-       (set! splash-evolution-bitmap (list-ref plt-logo-evolution q))]
-      [else
-       (let* ([before-inc (- m pause-time)]
-              [after-inc (- (- (length stage-bitmaps) 1) before-inc)])
-         (send interpolate-evolution-bdc set-bitmap interpolate-evolution-bitmap)
-         (send interpolate-evolution-bdc clear)
-         (send interpolate-evolution-bdc draw-bitmap 
-               (list-ref plt-logo-evolution q)
-               0 0)
-         (send interpolate-evolution-bdc draw-bitmap 
-               (list-ref plt-logo-evolution (+ q 1))
-               0 0
-               'solid
-               (send the-color-database find-color "black")
-               (list-ref stage-bitmaps after-inc))
-         (send interpolate-evolution-bdc set-bitmap #f)
-         (set! splash-evolution-bitmap interpolate-evolution-bitmap))])))
-
-(define (splash-evolution dc val range w h)
-  (send dc draw-bitmap 
-        splash-evolution-bitmap
-        0
-        0))
-
-(define start-time (current-milliseconds))
-(define last-times-delta 
-  (let ([pref (get-preference 'plt:drscheme-splash-timing)])
-    (and pref
-         (pair? pref)
-         (equal? (car pref) (version))
-         (cdr pref))))
+(when (eb-bday?) (install-eb))
 
 (start-splash
  (cond
@@ -197,49 +105,10 @@
     (build-path (collection-path "icons") "texas-plt-bw.gif")]
    [(and halloween? high-color?)
     (build-path (collection-path "icons") "PLT-pumpkin.png")]
-   [(and high-color?  
-         (send (car plt-logo-evolution) ok?))
-    (let ([gc-bm (make-object bitmap% (build-path (collection-path "icons") "recycle.png") 'png/mask)]
-          [w (send (car plt-logo-evolution) get-width)]
-          [h (send (car plt-logo-evolution) get-height)])
-      (when (send gc-bm ok?)
-        (let* ([gc-w (send gc-bm get-width)]
-               [gc-h (send gc-bm get-height)]
-               [off-bm (make-object bitmap% gc-w gc-h)]
-               [bdc (make-object bitmap-dc% off-bm)])
-          (send bdc clear)
-          (send bdc set-bitmap #f)
-          (unless eb-today?
-            (register-collecting-blit (get-splash-canvas) (- w gc-w 2) 2 gc-w gc-h gc-bm off-bm))))
-      (cond
-        [last-times-delta
-         (thread
-          (λ () 
-            (let loop ([i 0])
-              (cond
-                [(<= i evolution-last-stage)
-                 (let* ([now (current-milliseconds)]
-                        [next-stage-start (+ start-time (* last-times-delta (/ i (+ evolution-last-stage 1))))]
-                        [delta (- next-stage-start now)])
-                   (sleep (max 0 (/ delta 1000))))
-                 (parameterize ([current-eventspace (get-splash-eventspace)])
-                   (queue-callback
-                    (λ () 
-                      (update-bitmap-stage/index i)
-                      (refresh-splash))))
-                 (loop (+ i 1))]
-                [else
-                 (parameterize ([current-eventspace (get-splash-eventspace)])
-                   (queue-callback
-                    (λ () 
-                      (set! stage-bitmaps 'cleared-out-stage-bitmaps)
-                      (set! splash-evolution-bitmap 'cleared-out-splash-evolution-bitmap)
-                      (set! plt-logo-evolution 'cleared-out-plt-logo-evolution))))]))))
-         (vector splash-evolution w h)]
-        [else
-         (build-path (collection-path "icons") "plt-logo-red-shiny.png")]))]
+   [(and high-color? weekend?)
+    (build-path (collection-path "icons") "plt-logo-red-shiny.png")]
    [high-color?
-    (build-path (collection-path "icons") "PLT-206.png")]
+    (build-path (collection-path "icons") "plt-logo-red-diffuse.png")]
    [(= (get-display-depth) 1)
     (build-path (collection-path "icons") "pltbw.gif")]
    [else
@@ -267,10 +136,5 @@
         (send f show #t)))))
 
 (dynamic-require 'drscheme/tool-lib #f)
-
-(define end-time (current-milliseconds))
 (shutdown-splash)
 (close-splash)
-(put-preferences '(plt:drscheme-splash-timing)
-                 (list (cons (version) (* .8 (- end-time start-time))))
-                 void) ;; swallow errors 
