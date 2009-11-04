@@ -54,7 +54,7 @@
                         (syntax-line (quote-syntax s))
                         's '(p ...))
        (check-exn (lambda (exn)
-                    (erx rx (exn-message exn)) ...)
+                    (erx rx (exn-message exn)) ... #t)
                   (lambda ()
                     (syntax-parse (quote-syntax s)
                       [p 'ok] ...)))
@@ -63,7 +63,7 @@
 (define-syntax erx
   (syntax-rules (not)
     [(erx (not rx) msg)
-     (check-false (regexp-match? rx msg))]
+     (check (compose not regexp-match?) rx msg)]
     [(erx rx msg)
      (check regexp-match? rx msg)]))
 
@@ -220,8 +220,8 @@
 ;; -- A patterns
 
 ;; cut patterns
-(terx* (1 2 3) [(1 ~! 4) (1 2 3)]
-       "4" (not "2"))
+(terx* (1 2 3) [(1 ~! 4) (1 _:nat 3)]
+       "4" (not "exact nonnegative integer"))
 
 ;; cut-in-and
 (terx* 1 [(~and a:nat ~! 2) b:nat]

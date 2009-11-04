@@ -36,7 +36,7 @@
          kernel-literals)
 
 (define-syntax-rule (define-pred-stxclass name pred)
-  (define-syntax-class name #:attributes ()
+  (define-syntax-class name #:attributes () #:opaque
     (pattern x
              #:fail-unless (pred (syntax-e #'x)) #f)))
 

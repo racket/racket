@@ -1,7 +1,6 @@
 #lang scheme/base
 
-(require (planet schematics/schemeunit:2:9/test)
-         (planet schematics/schemeunit:2:9/graphical-ui)
+(require schemeunit
          syntax/parse
          (for-syntax scheme/base syntax/parse))
 
@@ -95,15 +94,15 @@
 
 ;; Tests
 
-(define tests
-  (test-suite "Syntax grammars"
-    (test-suite "sc attrs"
+(begin ;; define tests
+  (begin ;; test-suite "Syntax grammars"
+    (begin ;; test-suite "sc attrs"
       (test-sc-attrs one ([a 0]))
       (test-sc-attrs two ([a 0] [b 0]))
       (test-sc-attrs three ([a 0] [b 0] [c 0]))
       (test-sc-attrs two-or-three/tag ([a 0] [a.a 0] [a.b 0]))
       (test-sc-attrs id-num ([x 0] [n 0])))
-    (test-suite "parse-sc"
+    (begin ;; test-suite "parse-sc"
       (test-parse-sc one #'1 ([a 0 1]))
       (test-parse-sc two #'(1 2) ([a 0 1] [b 0 2]))
       (test-parse-sc three #'(1 2 3) ([a 0 1] [b 0 2] [c 0 3]))
@@ -113,7 +112,7 @@
                      ([x 0 this] [n 0 12]))
       (test-parse-sc id-string #'(that "here")
                      ([x 0 that] [label 0 "here"])))
-    (test-suite "with-patterns"
+    (begin ;; test-suite "with-patterns"
       (test-patterns (t:two-to-four/untagged ...) #'((1 2 3) (4 5) (6 7 8))
         (check-equal? (syntax->datum #'(t.a ...)) '(1 4 6)))
       (test-patterns (t:two-to-four/untagged ...) #'((1 2 3) (4 5) (6 7 8))

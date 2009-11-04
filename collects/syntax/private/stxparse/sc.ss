@@ -19,6 +19,7 @@
 
          debug-rhs
          debug-pattern
+         debug-parse
 
          syntax-parse
          syntax-parser
@@ -174,6 +175,14 @@
     [(debug-pattern p)
      (let ([p (parse-whole-pattern #'p (new-declenv null) #:context stx)])
        #`(quote #,p))]))
+
+(define-syntax-rule (debug-parse x p)
+  (let/ec escape
+    (parameterize ((current-failure-handler
+                    (lambda (_ f)
+                      (escape (failure->sexpr f)
+                              (failure->sexpr (simplify-failure f))))))
+      (syntax-parse x [p 'success]))))
 
 (define-syntax (syntax-parse stx)
   (syntax-case stx ()

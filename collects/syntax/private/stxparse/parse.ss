@@ -36,14 +36,13 @@
 
 ;; ----
 
+;; An FCE is expr[DFC]
+
 ;; (fail expr #:expect expr #:fce FCE) : expr
 (define-syntax (fail stx)
   (syntax-case stx ()
     [(fail x #:expect p #:fce fce)
-     (let ([fc-expr (frontier->dfc-expr (wash #'fce))]
-           [fstx-expr (frontier->fstx-expr (wash #'fce))])
-       #`(enclosing-fail
-          (make-failure x #,fc-expr #,fstx-expr p)))]))
+     #'(enclosing-fail (make-failure x fce p))]))
 
 ;; (parse:rhs RHS (SAttr ...) (id ...) id boolean)
 ;;   : expr[(values ParseFunction DescriptionFunction)]
@@ -73,15 +72,13 @@
 (define-syntax (parse:variant stx)
   (syntax-case stx ()
     [(parse:variant x relsattrs variant #f)
-     (with-syntax ([#s(variant _ _ pattern _ (def ...)) #'variant]
-                   [fc (empty-frontier #'x)])
-       #`(let ()
+     (with-syntax ([#s(variant _ _ pattern _ (def ...)) #'variant])
+       #`(let ([fc (dfc-empty x)])
            def ...
            (parse:S x fc pattern (variant-success x relsattrs variant ()))))]
     [(parse:variant x relsattrs variant #t)
-     (with-syntax ([#s(variant _ _ pattern _ (def ...)) #'variant]
-                   [fc (empty-frontier #'x)])
-       #`(let ()
+     (with-syntax ([#s(variant _ _ pattern _ (def ...)) #'variant])
+       #`(let ([fc (dfc-empty x)])
            def ...
            (parse:H x fc pattern rest index
                     (variant-success x relsattrs variant (rest index)))))]))
@@ -104,17 +101,19 @@
     [(convert-sides x (side0 . sides) (k iattrs . kargs))
      (syntax-case #'side0 ()
        [#s(clause:fail condition message)
-        #`(let ([c (without-fails condition)])
+        #`(let* ([c (without-fails condition)]
+                 [fc (dfc-add-post (dfc-empty x) (if (syntax? c) c x))])
             (if c
                 (fail (if (syntax? c) c x)
                       #:expect (expectation-of-message message)
-                      #:fce #,(frontier:add-subparse (done-frontier #'x) #'(if (syntax? c) c x)))
+                      #:fce fc)
                 (convert-sides x sides (k iattrs . kargs))))]
        [#s(clause:with pattern expr (def ...))
         (with-syntax ([(p-iattr ...) (pattern-attrs (wash #'pattern))])
-          #`(let ([y (datum->syntax #f (without-fails expr))])
+          #`(let* ([y (datum->syntax #f (without-fails expr))]
+                   [fc (dfc-add-post (dfc-empty x) y)])
               def ...
-              (parse:S y #,(done-frontier #'x) pattern
+              (parse:S y fc pattern
                        (convert-sides x sides
                                       (k (p-iattr ... . iattrs) . kargs)))))]
        [#s(clause:attr a expr)
@@ -156,11 +155,10 @@
                                                      #:decls decls0
                                                      #:context #'ctx)])
                (with-syntax ([rest rest]
-                             [fc (empty-frontier #'x)]
                              [pattern
                               (parse-whole-pattern #'p decls2 #:context #'ctx)]
                              [(local-def ...) defs2])
-                 #`(let ()
+                 #`(let ([fc (dfc-empty x)])
                      local-def ...
                      (parse:S x fc pattern
                               (convert-sides x #,sides
@@ -194,9 +192,9 @@
   (syntax-case stx ()
     [(parse:S x fc pattern0 k)
      (syntax-case #'pattern0 ()
-       [#s(internal-rest-pattern rest index index0)
+       [#s(internal-rest-pattern rest rest-fc)
         #`(let ([rest x]
-                [index (- #,(frontier->index-expr (wash #'fc)) index0)])
+                [rest-fc fc])
             k)]
        [#s(pat:name attrs pattern (name ...))
         #`(let-attributes ([#s(attr name 0 #t) x] ...)
@@ -231,8 +229,8 @@
        [#s(pat:ghost attrs ghost subpattern)
         #'(parse:G x fc ghost (parse:S x fc subpattern k))]
        [#s(pat:head attrs head tail)
-        #`(parse:H x fc head rest index
-                   (parse:S rest #,(frontier:add-index (wash #'fc) #'index) tail k))]
+        #`(parse:H x fc head rest rest-fc
+                   (parse:S rest rest-fc tail k))]
        [#s(pat:dots attrs head tail)
         #`(parse:dots x fc head tail k)]
        [#s(pat:and attrs subpatterns)
@@ -258,17 +256,16 @@
         (let ([kind (get-kind (wash #'kind0))])
           (with-syntax ([(part ...) (generate-temporaries (kind-selectors kind))])
             (with-syntax ([predicate (kind-predicate kind)]
-                          [(part-fc ...)
-                           (for/list ([fproc (kind-frontier-procs kind)]
-                                      [part-var (syntax->list #'(part ...))])
-                             (fproc (wash #'fc) part-var))]
+                          [(part-fc ...) (generate-temporaries #'(part ...))]
+                          [(part-fc-proc ...) (kind-frontier-procs kind)]
                           [(part-expr ...)
                            (for/list ([selector (kind-selectors kind)])
                              (selector #'x #'datum))])
               #`(let ([datum (syntax-e x)])
                   (if (predicate datum)
                       (let ([part part-expr] ...)
-                        (parse:S* (part ...) (part-fc ...) (part-pattern ...) k))
+                        (let ([part-fc (part-fc-proc fc part)] ...)
+                          (parse:S* (part ...) (part-fc ...) (part-pattern ...) k)))
                       (fail x
                             #:expect (expectation pattern0)
                             #:fce fc))))))]
@@ -280,10 +277,11 @@
                     #:expect (expectation-of-thing description transparent? failure)
                     #:fce fc))
             (with-enclosing-fail* new-fail
-              (parse:S x #,(empty-frontier #'x) pattern
-                       (with-enclosing-cut-fail previous-cut-fail
-                         (with-enclosing-fail previous-fail
-                           k)))))])]))
+              (let ([new-fc (dfc-empty x)])
+                (parse:S x new-fc pattern
+                         (with-enclosing-cut-fail previous-cut-fail
+                           (with-enclosing-fail previous-fail
+                             k))))))])]))
 
 ;; (parse:S* (id ...) (FCE ...) (SinglePattern ...) expr) : expr
 (define-syntax parse:S*
@@ -326,16 +324,17 @@
        [#s(ghost:bind _ clauses)
         #`(convert-sides x clauses (clause-success () k))]
        [#s(ghost:fail _ condition message)
-        #`(let ([c (without-fails condition)])
+        #`(let* ([c (without-fails condition)]
+                 [fc* (dfc-add-post fc (if (syntax? c) c x))])
             (if c
                 (fail (if (syntax? c) c x)
                       #:expect (expectation pattern0)
-                      #:fce #,(frontier:add-subparse (wash #'fc) #'(if (syntax? c) c x)))
+                      #:fce fc*)
                 k))]
        [#s(ghost:parse _ pattern expr)
-        #`(let ([y (datum->syntax #f (without-fails expr))])
-            (parse:S y #,(frontier:add-subparse (wash #'fc) #'y)
-                     pattern k))])]))
+        #`(let* ([y (datum->syntax #f (without-fails expr))]
+                 [fc* (dfc-add-post fc y)])
+            (parse:S y fc* pattern k))])]))
 
 (begin-for-syntax
  ;; convert-list-pattern : ListPattern id -> SinglePattern
@@ -348,6 +347,9 @@
      [#s(pat:name attrs pattern names)
       (with-syntax ([pattern (convert-list-pattern #'pattern end-pattern)])
         #'#s(pat:name attrs pattern names))]
+     [#s(pat:ghost attrs ghost tail)
+      (with-syntax ([tail (convert-list-pattern #'tail end-pattern)])
+        #'#s(pat:ghost attrs ghost tail))]
      [#s(pat:head attrs head tail)
       (with-syntax ([tail (convert-list-pattern #'tail end-pattern)])
         #'#s(pat:head attrs head tail))]
@@ -361,7 +363,7 @@
 ;; (parse:H id FCE HeadPattern id id expr) : expr
 (define-syntax (parse:H stx)
   (syntax-case stx ()
-    [(parse:H x fc head rest index k)
+    [(parse:H x fc head rest rest-fc k)
      (syntax-case #'head ()
        [#s(hpat:describe _ description transparent? pattern)
         #`(let ([previous-fail enclosing-fail]
@@ -370,70 +372,66 @@
               (fail x
                     #:expect (expectation-of-thing description transparent? failure)
                     #:fce fc))
-            (with-enclosing-fail* new-fail
-              (parse:H x #,(empty-frontier #'x) pattern
-                       rest index
+            (let ([fc* (dfc-empty x)])
+              (with-enclosing-fail* new-fail
+                (parse:H x fc* pattern rest rest-fc
                        (with-enclosing-cut-fail previous-cut-fail
                          (with-enclosing-fail previous-fail
-                           k)))))]
+                           k))))))]
        [#s(hpat:var _attrs name parser (arg ...) (nested-a ...))
         #`(let ([result (parser x)])
             (if (ok? result)
-                (let ([rest (car result)]
-                      [index (cadr result)])
+                (let* ([rest (car result)]
+                       [local-fc (cadr result)]
+                       [rest-fc (dfc-append fc local-fc)])
                   (let-attributes (#,@(if (identifier? #'name)
                                           #'([#s(attr name 0 #t)
-                                              (stx-list-take x index)])
+                                              (stx-list-take x (dfc->index local-fc))])
                                           #'()))
                     (let/unpack ((nested-a ...) (cddr result))
                       k)))
                 (fail x #:expect result #:fce fc)))]
        [#s(hpat:and (a ...) head single)
-        #`(parse:H x fc head rest index
-                   (let ([lst (stx-list-take x index)])
+        #`(parse:H x fc head rest rest-fc
+                   (let ([lst (stx-list-take x (dfc-difference fc rest-fc))])
                      (parse:S lst fc single k)))]
        [#s(hpat:or (a ...) (subpattern ...))
         (with-syntax ([(#s(attr id _ _) ...) #'(a ...)])
           #`(let ([success
-                   (lambda (rest index fail id ...)
+                   (lambda (rest rest-fc fail id ...)
                      (with-enclosing-fail fail
                        (let-attributes ([a id] ...) k)))])
-              (try (parse:H x fc subpattern rest index
+              (try (parse:H x fc subpattern rest rest-fc
                             (disjunct subpattern success
-                                      (rest index enclosing-fail) (id ...)))
+                                      (rest rest-fc enclosing-fail) (id ...)))
                    ...)))]
        [#s(hpat:seq attrs pattern)
-        (with-syntax ([index0 (frontier->index-expr (wash #'fc))])
-          (with-syntax ([pattern
-                         (convert-list-pattern
-                          #'pattern
-                          #'#s(internal-rest-pattern rest index index0))])
-            #'(parse:S x fc pattern k)))]
+        (with-syntax ([pattern
+                       (convert-list-pattern
+                        #'pattern
+                        #'#s(internal-rest-pattern rest rest-fc))])
+          #'(parse:S x fc pattern k))]
        [#s(hpat:optional (a ...) pattern defaults)
-        (with-syntax ([(#s(attr id _ _) ...) #'(a ...)]
-                      [index0 (frontier->index-expr (wash #'fc))])
+        (with-syntax ([(#s(attr id _ _) ...) #'(a ...)])
           #`(let ([success
-                   (lambda (rest index fail id ...)
+                   (lambda (rest rest-fc fail id ...)
                      (with-enclosing-fail fail
                        (let-attributes ([a id] ...) k)))])
-              (try (parse:H x fc pattern rest index
-                            (success rest index enclosing-fail (attribute id) ...))
+              (try (parse:H x fc pattern rest rest-fc
+                            (success rest rest-fc enclosing-fail (attribute id) ...))
                    (let ([rest x]
-                         [index index0])
+                         [rest-fc fc])
                      (convert-sides x defaults
                        (clause-success ()
                          (disjunct/sides defaults success
-                                         (rest index enclosing-fail)
+                                         (rest rest-fc enclosing-fail)
                                          (id ...))))))))]
        [_
-        (with-syntax ([attrs (pattern-attrs (wash #'head))]
-                      [index0 (frontier->index-expr (wash #'fc))])
+        (with-syntax ([attrs (pattern-attrs (wash #'head))])
           #'(parse:S x fc
                      #s(pat:compound attrs
                                      #:pair
-                                     (head #s(internal-rest-pattern
-                                              rest index
-                                              index0)))
+                                     (head #s(internal-rest-pattern rest rest-fc)))
                      k))])]))
 
 ;; (parse:dots id FCE EHPattern SinglePattern expr) : expr
@@ -462,34 +460,33 @@
                      [(rel-rep ...) rel-rep-ids]
                      [(rel-repc ...) rel-repcs]
                      [(a ...) attrs]
-                     [(attr-repc ...) attr-repcs]
-                     [loop-fc (frontier:add-index (wash #'fc) #'index)])
+                     [(attr-repc ...) attr-repcs])
          (define-pattern-variable alt-map #'((id . alt-id) ...))
          (define-pattern-variable loop-k
-           #'(dots-loop dx (+ index index2) enclosing-fail rel-rep ... alt-id ...))
+           #'(dots-loop dx loop-fc* enclosing-fail rel-rep ... alt-id ...))
          #`(let ()
-             (define (dots-loop dx index loop-fail rel-rep ... alt-id ...)
+             (define (dots-loop dx loop-fc loop-fail rel-rep ... alt-id ...)
                (with-enclosing-fail loop-fail
-                 (try (parse:EH dx loop-fc head head-repc index2 alt-map head-rep
+                 (try (parse:EH dx loop-fc head head-repc loop-fc* alt-map head-rep
                                 loop-k)
                       ...
                       (cond [(< rel-rep (rep:min-number rel-repc))
                              (fail dx
                                    #:expect (expectation-of-reps/too-few rel-rep rel-repc)
-                                   #:fce loop-fc)]
+                                   #:fce (dfc-add-pre loop-fc #f))]
                             ...
                             [else
                              (let-attributes ([a (rep:finalize a attr-repc alt-id)] ...)
                                (parse:S dx loop-fc tail k))]))))
              (let ([rel-rep 0] ...
                    [alt-id (rep:initial-value attr-repc)] ...)
-               (dots-loop x 0 enclosing-fail rel-rep ... alt-id ...)))))]))
+               (dots-loop x fc enclosing-fail rel-rep ... alt-id ...)))))]))
 
 ;; (parse:EH id FCE EHPattern id id ((id . id) ...)
 ;;           RepConstraint/#f expr) : expr
 (define-syntax (parse:EH stx)
   (syntax-case stx ()
-    [(parse:EH x fc head repc index alts rep k0)
+    [(parse:EH x fc head repc fc* alts rep k0)
      (let ()
        (define-pattern-variable k
          (let* ([main-attrs (wash-iattrs (pattern-attrs (wash #'head)))]
@@ -506,14 +503,13 @@
              #`(let ([alt-id (rep:combine repc (attribute id) alt-id)] ...)
                  k0))))
        (syntax-case #'repc ()
-         [#f #`(parse:H x fc head x index k)]
-         [_  #`(parse:H x fc head x index
+         [#f #`(parse:H x fc head x fc* k)]
+         [_  #`(parse:H x fc head x fc*
                         (if (< rep (rep:max-number repc))
                             (let ([rep (add1 rep)]) k)
                             (fail x
                                   #:expect (expectation-of-reps/too-many rep repc)
-                                  #:fce #,(frontier:add-index (wash #'fc)
-                                                              #'index))))]))]))
+                                  #:fce fc*)))]))]))
 
 ;; (rep:initial-value RepConstraint) : expr
 (define-syntax (rep:initial-value stx)
