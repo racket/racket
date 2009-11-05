@@ -1,10 +1,9 @@
+#lang scheme/base
 
-(module launcher mzscheme
-  (require mzlib/unit)
+(require scheme/unit
+         "launcher-sig.ss"
+         "launcher-unit.ss")
 
-  (require "launcher-sig.ss"
-	   "launcher-unit.ss")
-  
-  (define-values/invoke-unit/infer launcher@)
+(define-values/invoke-unit/infer launcher@)
 
-  (provide-signature-elements launcher^))
+(provide-signature-elements launcher^)
