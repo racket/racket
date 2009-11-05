@@ -1629,7 +1629,13 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
         tmp = (void*)(SCHEME_FFIANYPTR_VAL(val));
         toff = SCHEME_FFIANYPTR_OFFSET(val);
         if (_offset) *_offset = toff;
-        (((void**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
+        if (basetype_p == NULL || (tmp == NULL && toff == 0)) {
+          (((void**)W_OFFSET(dst,delta))[0]) = (_offset ? tmp : (void*)W_OFFSET(tmp, toff));
+          return NULL;
+        } else {
+          *basetype_p = FOREIGN_gcpointer;
+          return _offset ? tmp : (void*)W_OFFSET(tmp, toff);
+        }
       } else {
         scheme_wrong_type("Scheme->C","gcpointer",0,1,&(val));
         return NULL; /* hush the compiler */
@@ -1644,7 +1650,13 @@ static void* SCHEME2C(Scheme_Object *type, void *dst, long delta,
       if (1) {
         Scheme_Object* tmp;
         tmp = (Scheme_Object*)(val);
-        (((Scheme_Object**)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
+        if (basetype_p == NULL || tmp == NULL) {
+          (((Scheme_Object**)W_OFFSET(dst,delta))[0]) = tmp;
+          return NULL;
+        } else {
+          *basetype_p = FOREIGN_scheme;
+          return tmp;
+        }
       } else {
         scheme_wrong_type("Scheme->C","scheme",0,1,&(val));
         return NULL; /* hush the compiler */

@@ -1280,8 +1280,8 @@
        [(pointer) _pointer]
        [(gcpointer) _gcpointer]
        [(fpointer) _fpointer])
-     (lambda (v) (and v (cast _pointer v)))
-     (lambda (v) (and v (cast ctype v))))))
+     (lambda (v) (and v (cast v _pointer _pointer)))
+     (lambda (v) (and v (cast v _pointer ctype))))))
 
 (define* (_gcable ctype)
   (unless (memq (ctype-coretype ctype) '(pointer gcpointer))
@@ -1298,7 +1298,7 @@
   (let loop ([c (ctype-basetype c)])
     (if (symbol? c)
         c
-        (loop c))))
+        (loop (ctype-basetype c)))))
 
 ;; A macro version of the above two functions, using the defined name for a tag
 ;; string, and defining a predicate too.  The name should look like `_foo', the

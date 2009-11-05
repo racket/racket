@@ -538,7 +538,8 @@ Scheme_Object *utf16_pointer_to_ucs4_string(unsigned short *utf)
                               [s->c  (get 's->c)]
                               [c->s  (get 'c->s)]
                               [offset (get 'offset)]
-                              [ptr?  (equal? "pointer" ftype)])
+                              [ptr? (or (equal? "pointer" ftype)
+                                        (equal? "gcpointer" ftype))])
                          body ...))
                      types)))]))
 
