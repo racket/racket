@@ -33,5 +33,6 @@
                      clear-continuations!
                      continuation-store!
                      continuation-lookup
+                     continuation-lookup
                      ; Specific
                      instance-expiration-handler))

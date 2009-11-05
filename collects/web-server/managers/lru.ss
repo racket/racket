@@ -100,7 +100,7 @@
                   k-id
                   (list salt k expiration-handler initial-count))
        (list k-id salt)]))
-  (define (continuation-lookup instance-id a-k-id a-salt)
+  (define (continuation-lookup* instance-id a-k-id a-salt peek?)
     (match (instance-lookup instance-id)
       [(struct instance ((struct k-table (next-id-fn htable))))
        (match
@@ -111,8 +111,9 @@
                                (current-continuation-marks)
                                instance-expiration-handler))))
          [(list salt k expiration-handler count)
-          (hash-set! htable a-k-id
-                     (list salt k expiration-handler (add1 count)))
+          (unless peek?
+            (hash-set! htable a-k-id
+                       (list salt k expiration-handler (add1 count))))
           (if (or (not (eq? salt a-salt))
                   (not k))
               (raise (make-exn:fail:servlet-manager:no-continuation
@@ -122,6 +123,10 @@
                           expiration-handler
                           instance-expiration-handler)))
               k)])]))
+  (define (continuation-lookup instance-id a-k-id a-salt)
+    (continuation-lookup* instance-id a-k-id a-salt #f))
+  (define (continuation-peek instance-id a-k-id a-salt)
+    (continuation-lookup* instance-id a-k-id a-salt #t))
   
   (define (wrap f)
     (lambda args
@@ -133,6 +138,7 @@
                       (wrap clear-continuations!)
                       (wrap continuation-store!)
                       (wrap continuation-lookup)
+                      (wrap continuation-peek)
                       ; Specific
                       instance-expiration-handler
                       ; Private

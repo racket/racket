@@ -24,7 +24,8 @@ the users and implementers of managers.
                     [adjust-timeout! (number? number? . -> . void)]
                     [clear-continuations! (number? . -> . void)]
                     [continuation-store! (number? any/c expiration-handler/c . -> . (list/c number? number?))]
-                    [continuation-lookup (number? number? number? . -> . any/c)])]{
+                    [continuation-lookup (number? number? number? . -> . any/c)]
+                    [continuation-peek (number? number? number? . -> . any/c)])]{
  @scheme[create-instance] is called to initialize a instance, to hold the
  continuations of one servlet session. It is passed
  a function to call when the instance is expired. It runs the id of the
@@ -43,6 +44,10 @@ the users and implementers of managers.
 
  @scheme[continuation-lookup] finds the continuation value associated with
  the instance-id, continuation-id, and nonce triple it is given.
+ 
+ @scheme[continuation-peek] is identical to @scheme[continuation-lookup] except that
+ its use must not affect the resource management policy decisions on the instance or
+ continuation accessed. It is intended to be used by debuggers and benchmarks.
 }
 
 @defstruct[(exn:fail:servlet-manager:no-instance exn:fail)
