@@ -129,7 +129,7 @@
 
    (test-case
     "case"
-    (define foo-or-bar (make-case-contract 'foo-or-bar '("foo" "bar") 'foo-or-bar-marker))
+    (define foo-or-bar (make-case-contract 'foo-or-bar '("foo" "bar") equal? 'foo-or-bar-marker))
     (check-equal? (say-no (apply-contract foo-or-bar #f))
 		  'no)
     (check-equal? (say-no (apply-contract foo-or-bar "foo"))

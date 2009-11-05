@@ -194,7 +194,7 @@
    syntax
    #f))
 
-(define (make-case-contract name cases syntax)
+(define (make-case-contract name cases =? syntax)
   (make-contract
    name
    (lambda (self obj)
@@ -203,12 +203,12 @@
 	((null? cases)
 	 (contract-violation obj self #f #f)
 	 obj)
-	((equal? (car cases) obj)
+	((=? (car cases) obj)
 	 obj)
 	(else
 	 (loop (cdr cases))))))
    syntax
-   (delay (apply arbitrary-one-of equal? cases))))
+   (delay (apply arbitrary-one-of =? cases))))
 
 (define-struct procedure-to-blame (proc syntax))
 

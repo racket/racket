@@ -10,7 +10,8 @@
 	 scheme/promise
 	 (for-syntax scheme/base)
 	 (for-syntax syntax/stx)
-	 (for-syntax stepper/private/shared))
+	 (for-syntax stepper/private/shared)
+	 (only-in lang/private/teachprims beginner-equal?))
 
 (define-for-syntax (phase-lift stx)
   (with-syntax ((?stx stx))
@@ -46,7 +47,7 @@
 			   (syntax->list #'((?temp ?exp) ...)))))
        #'(let ((?temp ?exp) ...)
 	   ?check ...
-	   (make-case-contract '?name (list ?temp ...) ?stx)))))
+	   (make-case-contract '?name (list ?temp ...) beginner-equal? ?stx)))))
     ((predicate ?exp)
      (with-syntax ((?stx (phase-lift stx))
 		   (?name name))
