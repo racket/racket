@@ -996,6 +996,8 @@
 (test '() image->alpha-color-list (rectangle 10 0 'solid 'red))
 (test '() image->alpha-color-list (rectangle 0 0 'solid 'red))
 
+(test 0 image-width (overlay (circle 0 'solid 'red) (circle 0 'solid 'red)))
+(test 0 image-height (overlay (circle 0 'solid 'red) (circle 0 'solid 'red)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
