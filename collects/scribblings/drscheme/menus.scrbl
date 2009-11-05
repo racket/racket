@@ -358,7 +358,13 @@ background that signals the source location of an error.}
   
  @item{@defmenuitem{Insert Large Letters...} Opens a dialog for a line of
    text, and inserts a large version of the text (using semicolons and
-   spaces).}
+   spaces).
+          
+   Most of the dialog is self-explanatory: type in the top space to 
+   preview the semicolons in the bottom area. The numbers in the font
+   choice item show the (relative) widths of the letter ``w'' in the
+   given font to help you pick out the more boldfaced fonts (which
+   tend to look better).}
 
  @item{@defmenuitem{Insert @|lam-str|} Inserts the symbol @|lam-str|
    (as a Unicode character) into the program. The @|lam-str| symbol is

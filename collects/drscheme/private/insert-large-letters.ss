@@ -70,19 +70,24 @@
                         [parent dlg]
                         [stretchable-height #f]))
   (define: font-choice : (Instance Choice%)
-    (new choice%
-         [label (string-constant fonts)]
-         [parent info-bar]
-         [choices (get-face-list)]
-         [callback
-          (λ: ([x : Any] [y : Any])
-            (let ([old (preferences:get 'drscheme:large-letters-font)])
-              (preferences:set 'drscheme:large-letters-font
-                               (cons (send font-choice get-string-selection)
-                                     (if old
-                                         (cdr old)
-                                         (send (get-default-font) get-point-size))))
-              (update-txt (send text-field get-value))))]))
+    (let ([tmp-bdc (make-object bitmap-dc% (make-object bitmap% 1 1 #f))])
+      (new choice%
+           [label (string-constant fonts)]
+           [parent info-bar]
+           [choices (map (λ: ((x : String)) (format "~a~a" x (get-w-size tmp-bdc x))) 
+                         (get-face-list))]
+           [callback
+            (λ: ([x : Any] [y : Any])
+                (let ([old (preferences:get 'drscheme:large-letters-font)]
+                      [choice (send font-choice get-selection)])
+                  (when choice
+                    (preferences:set 'drscheme:large-letters-font
+                                     (cons (list-ref (get-face-list)
+                                                     choice)
+                                           (if old
+                                               (cdr old)
+                                               (send (get-default-font) get-point-size))))
+                    (update-txt (send text-field get-value)))))])))
   
   (: count (Instance Message%))
   (define count (new message% [label (format columns-string 1000)] [parent info-bar]))
@@ -122,18 +127,31 @@
       (send dark-msg set-bm bm)))
   
   
-  
-  
   ;; CHANGE - get-face can return #f
   (let ([face (send (get-chosen-font) get-face)])
     (when face
-      (send font-choice set-string-selection face)))
+      (let loop ([i 0]
+                 [faces (get-face-list)])
+        (cond
+          [(null? faces) (void)]
+          [else (cond
+                  [(equal? face (car faces))
+                   (send font-choice set-selection i)]
+                  [else
+                   (loop (+ i 1) (cdr faces))])]))))
   
   (send txt auto-wrap #f)
   (update-txt " ")
   (send text-field focus)
   (send dlg show #t)
   (and ok? (send text-field get-value)))
+
+(: get-w-size ((Instance Bitmap-DC%) String -> String))
+(define (get-w-size dc face-name)
+  (let ([font (send the-font-list find-or-create-font 24 face-name 'default 'normal 'normal)])
+    (let-values ([(w h a d) (send dc get-text-extent "w" font)])
+      (format " (~a)" (floor (inexact->exact w))))))
+  
 
 (: get-max-line-width ((Instance Scheme:Text%) -> Number))
 (define (get-max-line-width txt)
