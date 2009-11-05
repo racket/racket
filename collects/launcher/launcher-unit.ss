@@ -1,9 +1,9 @@
-
 #lang scheme/unit
 
 (require scheme/path
          scheme/file
          scheme/list
+         scheme/string
 
          compiler/embed
          setup/dirs
@@ -33,22 +33,20 @@
              (eq? kind 'mzscheme)))
     (let ([bin-dir (find-console-bin-dir)])
       (and bin-dir
-           (file-exists? (build-path 
-                          bin-dir 
-                          (format "~a~a" kind (variant-suffix variant #f))))))]
+           (file-exists?
+            (build-path bin-dir
+                        (format "~a~a" kind (variant-suffix variant #f))))))]
    [(eq? 'macosx (system-type))
     ;; kind must be mred, because mzscheme case is caught above
-    (directory-exists? (build-path (find-gui-bin-dir) 
-                                   (format "~a~a.app" 
-                                           cased-kind-name 
+    (directory-exists? (build-path (find-gui-bin-dir)
+                                   (format "~a~a.app"
+                                           cased-kind-name
                                            (variant-suffix variant #f))))]
    [(eq? 'windows (system-type))
-    (file-exists? (build-path (if (eq? kind 'mzscheme)
-                                  (find-console-bin-dir)
-                                  (find-gui-bin-dir))
-                              (format "~a~a.exe" 
-                                      cased-kind-name 
-                                      (variant-suffix variant #t))))]
+    (file-exists?
+     (build-path
+      (if (eq? kind 'mzscheme) (find-console-bin-dir) (find-gui-bin-dir))
+      (format "~a~a.exe" cased-kind-name (variant-suffix variant #t))))]
    [else (error "unknown system type")]))
 
 (define (available-variants kind)
@@ -99,106 +97,75 @@
   (memq v '(script-3m script-cgc)))
 
 (define (add-file-suffix path variant mred?)
-  (let ([s (variant-suffix variant (case (system-type)
-                                     [(unix) #f]
-                                     [(windows) #t]
-                                     [(macosx) (and mred?
-                                                    (not (script-variant? variant)))]))])
+  (let ([s (variant-suffix
+            variant
+            (case (system-type)
+              [(unix) #f]
+              [(windows) #t]
+              [(macosx) (and mred? (not (script-variant? variant)))]))])
     (if (string=? "" s)
-        path
+      path
+      (path-replace-suffix
+       path
+       (string->bytes/utf-8
         (if (and (eq? 'windows (system-type))
                  (regexp-match #rx#"[.]exe$" (path->bytes path)))
-            (path-replace-suffix path (string->bytes/utf-8
-                                       (format "~a.exe" s)))
-            (path-replace-suffix path (string->bytes/utf-8 s))))))
+          (format "~a.exe" s)
+          s))))))
 
 (define (string-append/spaces f flags)
-  (if (null? flags)
-      ""
-      (string-append
-       (f (car flags))
-       " "
-       (string-append/spaces f (cdr flags)))))
+  (string-append* (append-map (lambda (x) (list (f x) " ")) flags)))
 
 (define (str-list->sh-str flags)
-  (letrec ([trans
-            (lambda (s)
-              (cond
-               [(regexp-match "(.*)'(.*)" s)
-                => (lambda (m)
-                     (string-append (trans (cadr m))
-                                    "\"'\""
-                                    (trans (caddr m))))]
-               [else (format "'~a'" s)]))])
-    (string-append/spaces trans flags)))
+  (string-append/spaces
+   (lambda (s)
+     (string-append "'" (regexp-replace* #rx"'" s "'\"'\"'") "'"))
+   flags))
 
 (define (str-list->dos-str flags)
-  (letrec ([trans
-            (lambda (s)
-              (if (or (regexp-match (string #\[ #\space #\newline #\tab #\return #\vtab #\]) s)
-                      (regexp-match "\"" s)
-                      (regexp-match "\\\\" s))
-                  (list->string
-                   (let loop ([l (string->list s)][wrote-slash 0])
-                     (cond
-                      [(null? l) null]
-                      [(char-whitespace? (car l))
-                       (append
-                        (string->list (make-string wrote-slash #\\))
-                        (list #\" (car l) #\")
-                        (loop (cdr l) 0))]
-                      [else
-                       (case (car l)
-                         [(#\\) (cons #\\ (loop (cdr l) (add1 wrote-slash)))]
-                         [(#\") (append
-                                 (string->list (make-string wrote-slash #\\))
-                                 `(#\" #\\ #\" #\")
-                                 (loop (cdr l) 0))]
-                         [else (cons (car l) (loop (cdr l) 0))])])))
-                  s))])
-    (string-append/spaces trans flags)))
+  (define (trans s)
+    (if (not (regexp-match? #rx"[ \n\t\r\v\"\\]" s))
+      s
+      (list->string
+       (let loop ([l (string->list s)] [slashes '()])
+         (cond [(null? l) '()]
+               [(char-whitespace? (car l))
+                `(,@slashes #\" ,(car l) #\" ,@(loop (cdr l) '()))]
+               [(eq? #\\ (car l))
+                `(#\\ ,@(loop (cdr l) (cons #\\ slashes)))]
+               [(eq? #\" (car l))
+                `(,@slashes #\" #\\ #\" #\" ,@(loop (cdr l) '()))]
+               [else `(,(car l) ,@(loop (cdr l) '()))])))))
+  (string-append/spaces trans flags))
 
 (define one-arg-x-flags '((xa "-display")
                           (xb "-geometry")
-                          (xc "-bg" "-background") 
-                          (xd "-fg" "-foregound") 
+                          (xc "-bg" "-background")
+                          (xd "-fg" "-foregound")
                           (xe "-font")
                           (xf "-name")
                           (xg "-selectionTimeout")
                           (xh "-title")
                           (xi "-xnllanguage")
                           (xj "-xrm")))
-(define no-arg-x-flags '((xk "-iconic") 
-                         (xl "-rv" "-reverse") 
-                         (xm "+rv") 
+(define no-arg-x-flags '((xk "-iconic")
+                         (xl "-rv" "-reverse")
+                         (xm "+rv")
                          (xn "-synchronous")
                          (xo "-singleInstance")))
 
 (define (skip-x-flags flags)
   (let ([xfmem (lambda (flag) (lambda (xf) (member flag (cdr xf))))])
     (let loop ([f flags])
-      (if (null? f)
-          null
-          (if (ormap (xfmem (car f)) one-arg-x-flags)
-              (if (null? (cdr f))
-                  null
-                  (loop (cddr f)))
-              (if (ormap (xfmem (car f)) no-arg-x-flags)
-                  (loop (cdr f))
-                  f))))))
+      (cond [(null? f) null]
+            [(ormap (xfmem (car f)) one-arg-x-flags)
+             (if (null? (cdr f)) null (loop (cddr f)))]
+            [(ormap (xfmem (car f)) no-arg-x-flags) (loop (cdr f))]
+            [else f]))))
 
 (define (output-x-arg-getter exec args)
-  (let ([or-flags
-         (lambda (l)
-           (if (null? (cdr l))
-               (car l)
-               (string-append
-                (car l)
-                (apply
-                 string-append
-                 (map (lambda (s) (string-append " | " s)) (cdr l))))))])
-    (apply
-     string-append
+  (let ([or-flags (lambda (l) (string-append* (add-between l " | ")))])
+    (string-append*
      (append
       (list "# Find X flags and shift them to the front\n"
             "findxend() {\n"
@@ -229,16 +196,16 @@
                 " fi\n"
                 " findxend ${1+\"$@\"}\n"
                 "}\nfindxend ${1+\"$@\"}\n")
-               exec 
-               (apply
-                string-append
+               exec
+               (string-append*
                 (append
-                 (map
-                  (lambda (f) (format " ${~a+\"~a\"} ${~a+\"$~a\"}" (car f) (cadr f) (car f) (car f)))
-                  one-arg-x-flags)
-                 (map
-                  (lambda (f) (format " ${~a+\"~a\"}" (car f) (cadr f)))
-                  no-arg-x-flags)))
+                 (map (lambda (f)
+                        (format " ${~a+\"~a\"} ${~a+\"$~a\"}"
+                                (car f) (cadr f) (car f) (car f)))
+                      one-arg-x-flags)
+                 (map (lambda (f)
+                        (format " ${~a+\"~a\"}" (car f) (cadr f)))
+                      no-arg-x-flags)))
                args))))))
 
 (define (protect-shell-string s)
@@ -251,11 +218,9 @@
 (define (relativize bindir-explode dest-explode)
   (let loop ([b bindir-explode] [d dest-explode])
     (if (and (pair? b) (equal? (car b) (car d)))
-        (loop (cdr b) (cdr d))
-        (let ([p (append (map (lambda (x) 'up) (cdr d)) b)])
-          (if (null? p) 
-              #f
-              (apply build-path p))))))
+      (loop (cdr b) (cdr d))
+      (let ([p (append (map (lambda (x) 'up) (cdr d)) b)])
+        (if (null? p) #f (apply build-path p))))))
 
 (define (make-relative-path-header dest bindir)
   ;; rely only on binaries in /usr/bin:/bin
@@ -310,10 +275,7 @@
          "\n"
          "bindir=\"$D"
          (let ([s (relativize bindir-explode dest-explode)])
-           (if s
-               (string-append "/" 
-                              (protect-shell-string s))
-               ""))
+           (if s (string-append "/" (protect-shell-string s)) ""))
          "\"\n"
          "PATH=\"$saveP\"\n")
         ;; fallback to absolute path header
@@ -328,7 +290,7 @@
                                 (script-variant? variant)
                                 (assq 'exe-name aux))])
                     (and m
-                         (format "~a~a.app/Contents/MacOS/~a~a" 
+                         (format "~a~a.app/Contents/MacOS/~a~a"
                                  (cdr m) (variant-suffix variant #t)
                                  (cdr m) (variant-suffix variant #t))))]
          [x-flags? (and (eq? kind 'mred)
@@ -396,94 +358,85 @@
 (define (make-windows-launcher kind variant flags dest aux)
   (if (not (and (let ([m (assq 'independent? aux)])
                   (and m (cdr m)))))
-      ;; Normal launcher: 
-      (make-embedding-executable dest (eq? kind 'mred) #f
-                                 null null null
-                                 flags
-                                 aux
-                                 #t
-                                 variant)
-      ;; Independent launcher (needed for Setup PLT):
-      (begin
-        (install-template dest kind "mzstart.exe" "mrstart.exe")
-        (let ([bstr (bytes->utf-16-bytes
-                     (string->bytes/utf-8 (str-list->dos-str flags)))]
-              [p (open-input-file dest)]
-              [m (utf-16-regexp #"<Command Line: Replace This")]
-              [x (utf-16-regexp #"<Executable Directory: Replace This")]
-              [v (utf-16-regexp #"<Executable Variant: Replace This")])
-          (let* ([exedir (bytes->utf-16-bytes
-                          (bytes-append
-                           (path->bytes (let ([bin-dir (if (eq? kind 'mred)
-                                                           (find-gui-bin-dir)
-                                                           (find-console-bin-dir))])
-                                          (if (let ([m (assq 'relative? aux)])
-                                                (and m (cdr m)))
-                                              (or (relativize (normalize+explode-path bin-dir)
-                                                              (normalize+explode-path dest))
-                                                  (build-path 'same))
-                                              bin-dir)))
-                           ;; null wchar marks end of executable directory
-                           #"\0\0"))]
-                 [find-it ; Find the magic start
-                  (lambda (magic s)
-                    (file-position p 0)
-                    (let ([m (regexp-match-positions magic p)])
-                      (if m
-                          (car m)
-                          (begin
-                            (close-input-port p)
-                            (when (file-exists? dest)
-                              (delete-file dest))
-                            (error 
-                             'make-windows-launcher 
-                             (format
-                              "Couldn't find ~a position in template" s))))))]
-                 [exedir-poslen (find-it x "executable path")]
-                 [command-poslen (find-it m "command-line")]
-                 [variant-poslen (find-it v "variant")]
-                 [pos-exedir (car exedir-poslen)]
-                 [len-exedir (- (cdr exedir-poslen) (car exedir-poslen))]
-                 [pos-command (car command-poslen)]
-                 [len-command (- (cdr command-poslen) (car command-poslen))]
-                 [pos-variant (car variant-poslen)]
-                 [space (char->integer #\space)]
-                 [write-magic
-                  (lambda (p s pos len)
-                    (file-position p pos)
-                    (display s p)
-                    (display (make-bytes (- len (bytes-length s)) space) p))]
-                 [check-len
-                  (lambda (len s es)
-                    (when (> (bytes-length s) len)
-                      (when (file-exists? dest)
-                        (delete-file dest))
-                      (error
-                       (format
-                        "~a exceeds limit of ~a characters with ~a characters: ~a"
-                        es len (string-length s) s))))])
-            (close-input-port p)
-            (check-len len-exedir exedir "executable home directory")
-            (check-len len-command bstr "collection/file name")
-            (let ([p (open-output-file dest #:exists 'update)])
-              (write-magic p exedir pos-exedir len-exedir)
-              (write-magic p (bytes-append bstr #"\0\0") pos-command len-command)
-              (let* ([suffix (variant-suffix (current-launcher-variant) #t)]
-                     [suffix-bytes (bytes-append
-                                    (list->bytes
-                                     (apply append
-                                            (map (lambda (c) (list c 0))
-                                                 (bytes->list (string->bytes/latin-1 suffix)))))
-                                    #"\0\0")])
-                (write-magic p suffix-bytes pos-variant (bytes-length suffix-bytes)))
-              (close-output-port p)))))))
+    ;; Normal launcher:
+    (make-embedding-executable
+     dest (eq? kind 'mred) #f null null null flags aux #t variant)
+    ;; Independent launcher (needed for Setup PLT):
+    (begin
+      (install-template dest kind "mzstart.exe" "mrstart.exe")
+      (let ([bstr (bytes->utf-16-bytes
+                   (string->bytes/utf-8 (str-list->dos-str flags)))]
+            [p (open-input-file dest)]
+            [m (utf-16-regexp #"<Command Line: Replace This")]
+            [x (utf-16-regexp #"<Executable Directory: Replace This")]
+            [v (utf-16-regexp #"<Executable Variant: Replace This")])
+        (let* ([exedir (bytes->utf-16-bytes
+                        (bytes-append
+                         (path->bytes (let ([bin-dir (if (eq? kind 'mred)
+                                                       (find-gui-bin-dir)
+                                                       (find-console-bin-dir))])
+                                        (if (let ([m (assq 'relative? aux)])
+                                              (and m (cdr m)))
+                                          (or (relativize (normalize+explode-path bin-dir)
+                                                          (normalize+explode-path dest))
+                                              (build-path 'same))
+                                          bin-dir)))
+                         ;; null wchar marks end of executable directory
+                         #"\0\0"))]
+               [find-it ; Find the magic start
+                (lambda (magic s)
+                  (file-position p 0)
+                  (let ([m (regexp-match-positions magic p)])
+                    (if m
+                      (car m)
+                      (begin
+                        (close-input-port p)
+                        (when (file-exists? dest) (delete-file dest))
+                        (error 'make-windows-launcher
+                               "Couldn't find ~a position in template" s)))))]
+               [exedir-poslen (find-it x "executable path")]
+               [command-poslen (find-it m "command-line")]
+               [variant-poslen (find-it v "variant")]
+               [pos-exedir (car exedir-poslen)]
+               [len-exedir (- (cdr exedir-poslen) (car exedir-poslen))]
+               [pos-command (car command-poslen)]
+               [len-command (- (cdr command-poslen) (car command-poslen))]
+               [pos-variant (car variant-poslen)]
+               [space (char->integer #\space)]
+               [write-magic
+                (lambda (p s pos len)
+                  (file-position p pos)
+                  (display s p)
+                  (display (make-bytes (- len (bytes-length s)) space) p))]
+               [check-len
+                (lambda (len s es)
+                  (when (> (bytes-length s) len)
+                    (when (file-exists? dest) (delete-file dest))
+                    (error
+                     (format
+                      "~a exceeds limit of ~a characters with ~a characters: ~a"
+                      es len (string-length s) s))))])
+          (close-input-port p)
+          (check-len len-exedir exedir "executable home directory")
+          (check-len len-command bstr "collection/file name")
+          (let ([p (open-output-file dest #:exists 'update)])
+            (write-magic p exedir pos-exedir len-exedir)
+            (write-magic p (bytes-append bstr #"\0\0") pos-command len-command)
+            (let* ([suffix (variant-suffix (current-launcher-variant) #t)]
+                   [suffix-bytes
+                    (bytes-append
+                     (list->bytes
+                      (append-map (lambda (c) (list c 0))
+                                  (bytes->list (string->bytes/latin-1 suffix))))
+                     #"\0\0")])
+              (write-magic p suffix-bytes pos-variant (bytes-length suffix-bytes)))
+            (close-output-port p)))))))
 
 ;; OS X launcher code:
 
                                         ; make-macosx-launcher : symbol (listof str) pathname ->
 (define (make-macosx-launcher kind variant flags dest aux)
-  (if (or (eq? kind 'mzscheme)
-          (script-variant? variant))
+  (if (or (eq? kind 'mzscheme) (script-variant? variant))
       ;; MzScheme or script launcher is the same as for Unix
       (make-unix-launcher kind variant flags dest aux)
       ;; MrEd "launcher" is a stand-alone executable
@@ -496,28 +449,23 @@
 
 (define (make-macos-launcher kind variant flags dest aux)
   (install-template dest kind "GoMr" "GoMr")
-  (let ([p (open-input-file dest)])
-    (let ([m (regexp-match-positions #rx#"<Insert offset here>" p)])
-      ;; fast-forward to the end:
-      (let ([s (make-bytes 4096)])
-        (let loop ()
-          (if (eof-object? (read-bytes! s p))
-              (file-position p)
-              (loop))))
-      (let ([data-fork-size (file-position p)])
-        (close-input-port p)
-        (let ([p (open-output-file dest #:exists 'update)]
-              [str (str-list->sh-str (append
-                                      (if (eq? kind 'mred)
-                                          null
-                                          '("-Z"))
-                                      flags))])
-          (file-position p (caar m))
-          (display (integer->integer-bytes (string-length str) 4 #t #t) p)
-          (display (integer->integer-bytes data-fork-size 4 #t #t) p)
-          (file-position p data-fork-size)
-          (display str p)
-          (close-output-port p))))))
+  (let* ([p (open-input-file dest)]
+         [m (regexp-match-positions #rx#"<Insert offset here>" p)])
+    ;; fast-forward to the end:
+    (let ([s (make-bytes 4096)])
+      (let loop ()
+        (if (eof-object? (read-bytes! s p)) (file-position p) (loop))))
+    (let ([data-fork-size (file-position p)])
+      (close-input-port p)
+      (let ([p (open-output-file dest #:exists 'update)]
+            [str (str-list->sh-str
+                  (append (if (eq? kind 'mred) null '("-Z")) flags))])
+        (file-position p (caar m))
+        (display (integer->integer-bytes (string-length str) 4 #t #t) p)
+        (display (integer->integer-bytes data-fork-size 4 #t #t) p)
+        (file-position p data-fork-size)
+        (display str p)
+        (close-output-port p)))))
 
 (define (get-maker)
   (case (system-type)
@@ -526,73 +474,61 @@
     [(macos)   make-macos-launcher]
     [(macosx)  make-macosx-launcher]))
 
-(define make-mred-launcher
-  (lambda (flags dest [aux null])
-    (let ([variant (current-launcher-variant)])
-      ((get-maker) 'mred variant flags dest aux))))
+(define (make-mred-launcher flags dest [aux null])
+  ((get-maker) 'mred (current-launcher-variant) flags dest aux))
 
-(define make-mzscheme-launcher
-  (lambda (flags dest [aux null])
-    (let ([variant (current-launcher-variant)])
-      ((get-maker) 'mzscheme variant flags dest aux))))
+(define (make-mzscheme-launcher flags dest [aux null])
+  ((get-maker) 'mzscheme (current-launcher-variant) flags dest aux))
 
 (define (strip-suffix s)
   (path-replace-suffix s #""))
 
 (define (build-aux-from-path aux-root)
-  (let ([aux-root (if (string? aux-root)
-                      (string->path aux-root)
-                      aux-root)])
-    (let ([try (lambda (key suffix)
-                 (let ([p (path-replace-suffix aux-root suffix)])
-                   (if (file-exists? p)
-                       (list (cons key p))
-                       null)))])
-      (append
-       (try 'icns #".icns")
-       (try 'ico #".ico")
-       (try 'independent? #".lch")
-       (let ([l (try 'creator #".creator")])
-         (if (null? l)
-             l
-             (with-handlers ([exn:fail:filesystem? (lambda (x) null)])
-               (with-input-from-file (cdar l)
-                 (lambda () 
-                   (let ([s (read-string 4)])
-                     (if s
-                         (list (cons (caar l) s))
-                         null)))))))
-       (let ([l (try 'file-types #".filetypes")])
-         (if (null? l)
-             l
-             (with-handlers ([exn:fail:filesystem? (lambda (x) null)])
-               (with-input-from-file (cdar l)
-                 (lambda () 
-                   (let ([d (read)])
-                     (let-values ([(local-dir base dir?) (split-path aux-root)])
-                       (let ([icon-files
-                              (apply
-                               append
-                               (map (lambda (spec)
-                                      (let ([m (assoc "CFBundleTypeIconFile" spec)])
-                                        (if m
-                                            (list (build-path 
-                                                   (path->complete-path local-dir)
-                                                   (format "~a.icns" (cadr m))))
-                                            null)))
-                                    d))])
-                         (list
-                          (cons 'file-types d)
-                          (cons 'resource-files (remove-duplicates icon-files)))))))))))
-       (let ([l (try 'file-types #".utiexports")])
-         (if (null? l)
-             l
-             (with-handlers ([exn:fail:filesystem? (lambda (x) null)])
-               (with-input-from-file (cdar l)
-                 (lambda () 
-                   (let ([d (read)])
-                     (list
-                      (cons 'uti-exports d))))))))))))
+  (let ([aux-root (if (string? aux-root) (string->path aux-root) aux-root)])
+    (define (try key suffix)
+      (let ([p (path-replace-suffix aux-root suffix)])
+        (if (file-exists? p) (list (cons key p)) null)))
+    (append
+     (try 'icns #".icns")
+     (try 'ico #".ico")
+     (try 'independent? #".lch")
+     (let ([l (try 'creator #".creator")])
+       (if (null? l)
+         l
+         (with-handlers ([exn:fail:filesystem? (lambda (x) null)])
+           (with-input-from-file (cdar l)
+             (lambda ()
+               (let ([s (read-string 4)])
+                 (if s (list (cons (caar l) s)) null)))))))
+     (let ([l (try 'file-types #".filetypes")])
+       (if (null? l)
+         l
+         (with-handlers ([exn:fail:filesystem? (lambda (x) null)])
+           (with-input-from-file (cdar l)
+             (lambda ()
+               (let*-values ([(d) (read)]
+                             [(local-dir base dir?) (split-path aux-root)]
+                             [(icon-files)
+                              (append-map
+                               (lambda (spec)
+                                 (let ([m (assoc "CFBundleTypeIconFile" spec)])
+                                   (if m
+                                     (list (build-path
+                                            (path->complete-path local-dir)
+                                            (format "~a.icns" (cadr m))))
+                                     null)))
+                               d)])
+                 (list (cons 'file-types d)
+                       (cons 'resource-files
+                             (remove-duplicates icon-files)))))))))
+     (let ([l (try 'file-types #".utiexports")])
+       (if (null? l)
+         l
+         (with-handlers ([exn:fail:filesystem? (lambda (x) null)])
+           (with-input-from-file (cdar l)
+             (lambda ()
+               (let ([d (read)])
+                 (list (cons 'uti-exports d)))))))))))
 
 (define (make-mred-program-launcher file collection dest)
   (make-mred-launcher (list "-l-" (string-append collection "/" file))
@@ -609,34 +545,28 @@
                                        (strip-suffix file)))))
 
 (define (unix-sfx file mred?)
-  (list->string
-   (map
-    (lambda (c)
-      (if (char-whitespace? c)
-          #\-
-          (char-downcase c)))
-    (string->list file))))
+  (string-downcase (regexp-replace* #px"\\s" file "-")))
 
 (define (sfx file mred?)
-  (case (system-type) 
+  (case (system-type)
     [(unix) (unix-sfx file mred?)]
-    [(windows) (string-append (if mred? file (unix-sfx file mred?))
-                              ".exe")]
+    [(windows)
+     (string-append (if mred? file (unix-sfx file mred?)) ".exe")]
     [else file]))
 
 (define (program-launcher-path name mred?)
   (let* ([variant (current-launcher-variant)]
-         [mac-script? (and (eq? (system-type) 'macosx) 
+         [mac-script? (and (eq? (system-type) 'macosx)
                            (script-variant? variant))])
-    (let ([p (add-file-suffix 
-              (build-path 
+    (let ([p (add-file-suffix
+              (build-path
                (if (or mac-script? (not mred?))
                    (find-console-bin-dir)
                    (find-gui-bin-dir))
                ((if mac-script? unix-sfx sfx) name mred?))
               variant
               mred?)])
-      (if (and (eq? (system-type) 'macosx) 
+      (if (and (eq? (system-type) 'macosx)
                (not (script-variant? variant)))
           (path-replace-suffix p #".app")
           p))))
@@ -646,10 +576,10 @@
 
 (define (mzscheme-program-launcher-path name)
   (case (system-type)
-    [(macosx) (add-file-suffix 
-               (build-path (find-console-bin-dir) (unix-sfx name #f))
-               (current-launcher-variant)
-               #f)]
+    [(macosx)
+     (add-file-suffix (build-path (find-console-bin-dir) (unix-sfx name #f))
+                      (current-launcher-variant)
+                      #f)]
     [else (program-launcher-path name #f)]))
 
 (define (mred-launcher-is-directory?)
@@ -677,42 +607,39 @@
   (embedding-executable-add-suffix path #f))
 
 (define (mred-launcher-put-file-extension+style+filters)
-  (put-file-extension+style+filters 
+  (put-file-extension+style+filters
    (if (and (eq? 'macosx (system-type))
             (script-variant? (current-launcher-variant)))
-       'unix
-       (system-type))))
+     'unix
+     (system-type))))
 
 (define (mzscheme-launcher-put-file-extension+style+filters)
-  (put-file-extension+style+filters 
-   (if (eq? 'macosx (system-type))
-       'unix
-       (system-type))))
+  (put-file-extension+style+filters
+   (if (eq? 'macosx (system-type)) 'unix (system-type))))
 
-(define mred-launcher-up-to-date?
-  (lambda (dest [aux null])
-    (mzscheme-launcher-up-to-date? dest aux)))
+(define (mred-launcher-up-to-date? dest [aux null])
+  (mzscheme-launcher-up-to-date? dest aux))
 
-(define mzscheme-launcher-up-to-date?
-  (lambda (dest [aux null])
-    (cond
-     ;; When running Setup PLT under Windows, the
-     ;;  launcher process stays running until MzScheme
-     ;;  completes, which means that it cannot be
-     ;;  overwritten at that time. So we assume
-     ;;  that a Setup-PLT-style independent launcher
-     ;;  is always up-to-date.
-     [(eq? 'windows (system-type))
-      (and (let ([m (assq 'independent? aux)])
-             (and m (cdr m)))
-           (file-exists? dest))]
-     ;; For any other setting, we could implement
-     ;;  a fancy check, but for now always re-create
-     ;;  launchers.
-     [else #f])))
+(define (mzscheme-launcher-up-to-date? dest [aux null])
+  (cond
+    ;; When running Setup PLT under Windows, the
+    ;;  launcher process stays running until MzScheme
+    ;;  completes, which means that it cannot be
+    ;;  overwritten at that time. So we assume
+    ;;  that a Setup-PLT-style independent launcher
+    ;;  is always up-to-date.
+    [(eq? 'windows (system-type))
+     (and (let ([m (assq 'independent? aux)]) (and m (cdr m)))
+          (file-exists? dest))]
+    ;; For any other setting, we could implement
+    ;;  a fancy check, but for now always re-create
+    ;;  launchers.
+    [else #f]))
 
 (define (install-mred-program-launcher file collection name)
-  (make-mred-program-launcher file collection (mred-program-launcher-path name)))
+  (make-mred-program-launcher file collection
+                              (mred-program-launcher-path name)))
 
 (define (install-mzscheme-program-launcher file collection name)
-  (make-mzscheme-program-launcher file collection (mzscheme-program-launcher-path name)))
+  (make-mzscheme-program-launcher file collection
+                                  (mzscheme-program-launcher-path name)))
