@@ -23,6 +23,14 @@
   (interface ()
     enable-macro-stepper?))
 
+(define-local-member-name allow-macro-stepper?)
+(define-local-member-name run-macro-stepper)
+
+(define frame/supports-macro-stepper<%>
+  (interface ()
+    allow-macro-stepper?
+    run-macro-stepper))
+
 (define (drscheme-macro-stepper-frame-mixin %)
   (class %
     (define/override (get-macro-stepper-widget%)
@@ -72,8 +80,9 @@
 
 
 (define tool@
-  (unit (import drscheme:tool^)
-        (export drscheme:tool-exports^)
+  (unit
+    (import drscheme:tool^)
+    (export drscheme:tool-exports^)
 
     (define (phase1)
       (drscheme:language:extend-language-interface
@@ -90,7 +99,7 @@
 
     (define-local-member-name check-language)
     
-    (define macro-debugger-bitmap 
+    (define macro-debugger-bitmap
       (make-object bitmap%
         (build-path (collection-path "icons") "macro-stepper.png")
         'png/mask))
@@ -101,9 +110,10 @@
         'png/mask))
 
     (define (macro-debugger-unit-frame-mixin %)
-      (class %
+      (class* % (frame/supports-macro-stepper<%>)
         (super-new)
         (inherit get-button-panel
+                 get-language-menu
                  get-interactions-text
                  get-definitions-text)
 
@@ -118,7 +128,7 @@
                (bitmap macro-debugger-bitmap)
                (alternate-bitmap macro-debugger-up-bitmap)
                (parent macro-debug-panel)
-               (callback (λ (button) (execute #t)))))
+               (callback (lambda (button) (run-macro-stepper)))))
         (inherit register-toolbar-button)
         (register-toolbar-button macro-debug-button)
 
@@ -128,6 +138,17 @@
         (define/augment (disable-evaluation)
           (send macro-debug-button enable #f)
           (inner (void) disable-evaluation))
+
+        (define macro-debug-menu-item
+          (let ([lang-menu (get-language-menu)])
+            (new separator-menu-item% (parent lang-menu))
+            (new menu-item%
+                 (label "Macro Stepper")
+                 (parent lang-menu)
+                 (callback (lambda _ (run-macro-stepper))))))
+
+        (define/public-final (run-macro-stepper)
+          (execute #t))
 
         (define/override (execute-callback)
           (execute #f))
@@ -143,16 +164,24 @@
           (inner (void) on-tab-change old new))
 
         (define/public (check-language)
+          (enable/disable-stuff (allow-macro-stepper?)))
+
+        (define/public (allow-macro-stepper?)
           (let ([lang
                  (drscheme:language-configuration:language-settings-language
                   (send (get-definitions-text) get-next-settings))])
-            (if (send lang enable-macro-stepper?)
-                (unless (send macro-debug-button is-shown?)
-                        (send macro-debug-panel
-                              add-child macro-debug-button))
-                (when (send macro-debug-button is-shown?)
-                      (send macro-debug-panel
-                            delete-child macro-debug-button)))))
+            (send lang enable-macro-stepper?)))
+
+        (define/private (enable/disable-stuff enable?)
+          (if enable?
+              (begin (send macro-debug-menu-item enable #t)
+                     (unless (send macro-debug-button is-shown?)
+                       (send macro-debug-panel
+                             add-child macro-debug-button)))
+              (begin (send macro-debug-menu-item enable #f)
+                     (when (send macro-debug-button is-shown?)
+                       (send macro-debug-panel
+                             delete-child macro-debug-button)))))
 
         (send (get-button-panel) change-children
               (lambda (_)
@@ -297,4 +326,18 @@
     (drscheme:get/extend:extend-definitions-text
      macro-debugger-definitions-text-mixin)
 
+    (define (add-macro-stepper-key-bindings keymap)
+      (send keymap add-function
+            "macro stepper"
+            (lambda (obj evt)
+              (when (is-a? obj editor<%>)
+                (let ([canvas (send obj get-canvas)])
+                  (when canvas
+                    (let ([frame (send canvas get-top-level-window)])
+                      (when (is-a? frame frame/supports-macro-stepper<%>)
+                        (when (send frame allow-macro-stepper?)
+                          (send frame run-macro-stepper)))))))))
+      (send keymap map-function "c:c;c:m" "macro stepper"))
+
+    (add-macro-stepper-key-bindings (drscheme:rep:get-drs-bindings-keymap))
     ))
