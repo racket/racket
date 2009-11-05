@@ -457,6 +457,38 @@ all of the names in the tools library, for use defining keybindings
      })
  
   
+  
+;                                                              
+;                                                              
+;                                                              
+;   ;;             ;;                  ;;;               ;;    
+;   ;;             ;;                   ;;               ;;    
+;   ;;             ;;                   ;;               ;;    
+;   ;;;;;;  ;;;;   ;;  ;;;;;         ;;;;;  ;;;;    ;;;; ;;  ;;
+;   ;;  ;; ;;; ;;  ;;  ;;  ;;       ;; ;;; ;;; ;;  ;;  ; ;; ;  
+;   ;;  ;; ;;;;;;  ;;  ;;  ;;  ;;;;;;;  ;; ;;;;;;  ;;;;  ;;;;  
+;   ;;  ;; ;;      ;;  ;;  ;;  ;;;;;;;  ;; ;;      ;;;;  ;;;;; 
+;   ;;  ;; ;;;  ;  ;;  ;;  ;;       ;;  ;; ;;;  ; ;  ;;  ;; ;; 
+;   ;; ;;;  ;;;;   ;;  ;;;;;        ;;;;;;  ;;;;  ;;;;   ;; ;;;
+;                      ;;                                      
+;                      ;;                                      
+;                      ;;                                      
+
+  (proc-doc/names
+   drscheme:help-desk:help-desk
+   (->* ()
+        ((or/c #f string?)
+         (or/c #f string? (list/c string? string?)))
+       any)
+   (()
+    ((search-key #f)
+     (search-context #f)))
+   @{if @scheme[search-key] is a string, calls @scheme[perform-search] with
+        @scheme[search-key] and @scheme[search-context].
+        
+        Otherwise, calls @scheme[send-main-page] with no arguments.})
+  
+  
   ;                           
   ;                           
   ;                           
