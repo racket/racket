@@ -1,10 +1,11 @@
-v4.2.3
-
   * added support for collecting metafunction coverage, using the
     'relation-coverage' parameter. This includes a backwards
     incompatible change: the parameter's value is now a list of
     coverage structures, to allow coverage collection for multiple 
     metafunctions and reduction relations at once.
+
+  * redex/reduction-semantics exports the names `hole' and `in-hole'
+    (and `term' no longer captures those names).
 
   * minor bug fixes
 

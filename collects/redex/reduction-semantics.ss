@@ -11,6 +11,7 @@
 
 (provide reduction-relation 
          --> fresh with ;; keywords for reduction-relation
+         hole in-hole ;; keywords for term
          extend-reduction-relation
          reduction-relation?
          

@@ -485,6 +485,14 @@ for two @scheme[term-let]-bound identifiers bound to lists of
 different lengths to appear together inside an ellipsis.
 }
 
+@defidform[hole]{ Recognized specially within
+  @scheme[term]. A @scheme[hole] form is an
+  error elsewhere.  }
+
+@defidform[in-hole]{ Recognized specially within
+  @scheme[reduction-relation]. An @scheme[in-hole] form is an
+  error elsewhere.  }
+
 @defform/subs[(term-let ([tl-pat expr] ...) body)
               ([tl-pat identifier (tl-pat-ele ...)]
                [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{

@@ -9,4 +9,4 @@
   (make-struct-type 'term-fn #f 1 0))
 (define term-fn-get-id (make-struct-field-accessor term-fn-get 0))
 
-(define-struct term-id (id))
+(define-struct term-id (id depth))

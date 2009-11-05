@@ -1,4 +1,4 @@
-(module term-test mzscheme
+(module term-test scheme
   (require "term.ss"
            "matcher.ss"
            "test-util.ss")
@@ -67,10 +67,7 @@
           (term ((in-hole E x) ...)))
         (term (1 2 3)))
   
-  (fprintf (current-error-port) "term-test.ss commented out test that fails; matches PR 8765\n")
-  
-  #;
-  (test (term-let-fn ((metafun (λ (x) x)))
+  (test (term-let-fn ((metafun car))
                      (term-let ((x 'whatever)
                                 ((y ...) '(4 5 6)))
                        (term (((metafun x) y) ...))))
@@ -80,5 +77,27 @@
                      (term-let (((y ...) '(4 5 6)))
                        (term ((y (metafun 1)) ...))))
         '((4 1) (5 1) (6 1)))
+  
+  (test (term-let-fn ((f (compose add1 car)))
+                     (term-let (((x ...) '(1 2 3))
+                                ((y ...) '(a b c)))
+                               (term (((f x) y) ...))))
+        '((2 a) (3 b) (4 c)))
+  
+  (test (term-let-fn ((f (curry foldl + 0)))
+                     (term-let (((x ...) '(1 2 3)))
+                               (term (f x ...))))
+        6)
+  
+  (test (term-let-fn ((f (compose add1 car)))
+                     (term-let (((x ...) '(1 2 3))
+                                (((y ...) ...) '((a b c) (d e f) (g h i))))
+                               (term ((((f x) y) ...) ...))))
+        '(((2 a) (3 b) (4 c)) ((2 d) (3 e) (4 f)) ((2 g) (3 h) (4 i))))
+  
+  (test (term-let-fn ((f (curry foldl + 0)))
+                     (term-let ((((x ...) ...) '((1 2) (3 4 5) (6))))
+                               (term ((f x ...) ...))))
+        '(3 12 6))
   
   (print-tests-passed 'term-test.ss))
