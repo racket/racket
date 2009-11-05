@@ -338,7 +338,7 @@ wobei die Fehlermeldung der Zeichenkette entspricht, die der Wert des zweiten
 
 @defform[(check-property expr)]{
 
-Dieser Testfall überprüft experimentell, ob die Eigenschaft
+Dieser Testfall überprüft experimentell, ob die @tech{Eigenschaft}
 @scheme[expr] erfüllt ist.  Dazu werden zufällige Werte für die mit
 @scheme[for-all] quantifizierten Variablen eingesetzt: Damit wird
 überprüft, ob die Bedingung gilt.
