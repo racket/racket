@@ -242,11 +242,14 @@
   (test '(a b) rd '(a b a b a b))
   (test '(a b) rd '(a a a b b b))
   (test '(a b) rd '(a b b a)) ; keeps first occurrences
+  (test '("a" "b") rd '("a" "A" "b" "B" "a") #:key string-downcase)
   (let ([long (for/list ([i (in-range 300)]) i)])
     (test long rd long)
     (test long rd (append long long))
     (test long rd (append long (reverse long))) ; keeps first
-    (test long rd (append* (map (lambda (x) (list x x)) long)))))
+    (test long rd (append* (map (lambda (x) (list x x)) long)))
+    (test long rd (append long (map (lambda (x) (- x)) long)) #:key abs)
+    (test long rd (append long (map (lambda (x) (- x)) long)) = #:key abs)))
 
 ;; ---------- filter and filter-not ----------
 (let ()

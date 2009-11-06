@@ -618,7 +618,10 @@ traversal.
   (flatten 'a)
 ]}
 
-@defproc[(remove-duplicates [lst list?] [same? (any/c any/c . -> . any/c) equal?])
+@defproc[(remove-duplicates [lst list?]
+                            [same? (any/c any/c . -> . any/c) equal?]
+                            [#:key extract-key (any/c . -> . any/c)
+                                   (lambda (x) x)])
          list?]{
 
 Returns a list that has all items in @scheme[lst], but without
@@ -626,6 +629,10 @@ duplicate items, where @scheme[same?] determines whether two elements
 of the list are equivalent.  The resulting list is in the same order
 as @scheme[lst], and for any item that occurs multiple times, the
 first one is kept.
+
+The @scheme[#:key] argument @scheme[extract-key] is used to extract a
+ key value from each list element, so two items are considered equal if
+ @scheme[(same? (extract-key x) (extract-key y))] is true.
 
 @mz-examples[#:eval list-eval
   (remove-duplicates '(a b b a))
