@@ -4,8 +4,8 @@
          get-info)
 
 (define (get-info . args)
-  (lambda (key)
+  (lambda (key defval)
     (case key
       [(color-lexer)
        (dynamic-require 'syntax-color/scribble-lexer 'scribble-inside-lexer)]
-      [else #f])))
+      [else defval])))
