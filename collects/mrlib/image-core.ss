@@ -7,7 +7,7 @@ teachpack that has to be shared between drscheme
 and the user's program to make copy and paste
 work right.
 
-Most of the exports are jsut for use in 2htdp/image
+Most of the exports are just for use in 2htdp/image
 (technically, 2htdp/private/image-more). The main
 use of this library is the snip class addition it
 does (and any code that that does not depend on
@@ -125,7 +125,7 @@ has been moved out).
 
 ;; a polygon is:
 ;;
-;;  - (make-polygon (listof points) angle pen brush)
+;;  - (make-polygon (listof vector) mode color)
 (define-struct/reg-mk polygon (points mode color) #:transparent #:omit-define-syntaxes
   #:property prop:equal+hash 
   (list (λ (a b rec) (polygon-equal? a b rec)) (λ (x y) 42) (λ (x y) 3)))
@@ -139,6 +139,8 @@ has been moved out).
 ;;  - polygon
 
 ;; an angle is a number between 0 and 360 (degrees)
+
+;; a mode is either 'solid or 'outline (indicating a pen width for outline mode)
 
 (define (polygon-equal? p1 p2 eq-recur)
   (and (eq-recur (polygon-mode p1) (polygon-mode p2))
@@ -312,12 +314,15 @@ has been moved out).
              (loop (overlay-top shape)
                    dx dy x-scale y-scale bottom))]
       [(polygon? shape)
-       (let ([this-one (make-polygon (map (λ (p)
-                                            (make-point (+ dx (* x-scale (point-x p)))
-                                                        (+ dy (* y-scale (point-y p)))))
-                                          (polygon-points shape))
-                                     (polygon-mode shape)
-                                     (polygon-color shape))])
+       (let* ([scaled-points
+               (map (λ (p)
+                      (make-point (+ dx (* x-scale (point-x p)))
+                                  (+ dy (* y-scale (point-y p)))))
+                    (polygon-points shape))]
+              [this-one 
+               (make-polygon scaled-points
+                             (polygon-mode shape)
+                             (polygon-color shape))])
          (if bottom
              (make-overlay bottom (f this-one))
              (f this-one)))]
@@ -330,16 +335,14 @@ has been moved out).
        (error 'normalize-shape "unknown shape ~s\n" shape)])))
 
 (define (atomic-shape? shape)
-  (or (ellipse? shape)
-      (text? shape)
-      (polygon? shape)
-      (bitmap? shape)))
+  (or (polygon? shape)
+      (np-atomic-shape? shape)))
 
 (define (np-atomic-shape? shape)
   (or (ellipse? shape)
       (text? shape)
-      (bitmap? shape)))
-
+      (bitmap? shape)
+      (point? shape)))
 
 (define (scale-np-atomic x-scale y-scale shape)
   (cond
@@ -396,10 +399,16 @@ has been moved out).
      (let ([path (new dc-path%)]
            [points (polygon-points simple-shape)])
        (send path move-to (point-x (car points)) (point-y (car points)))
-       (let loop ([points (cdr points)])
+       (let loop ([point (make-rectangular (point-x (car points)) (point-y (car points)))]
+                  [points (cdr points)])
          (unless (null? points)
-           (send path line-to (point-x (car points)) (point-y (car points)))
-           (loop (cdr points))))
+           (let* ([vec (make-rectangular (- (point-x (car points))
+                                            (real-part point))
+                                         (- (point-y (car points))
+                                            (imag-part point)))]
+                  [endpoint (+ point vec (make-polar -1 (angle vec)))])
+           (send path line-to (real-part endpoint) (imag-part endpoint))
+           (loop endpoint (cdr points)))))
        (send path line-to (point-x (car points)) (point-y (car points)))
        (send dc set-pen (mode-color->pen (polygon-mode simple-shape) (polygon-color simple-shape)))
        (send dc set-brush (mode-color->brush (polygon-mode simple-shape) (polygon-color simple-shape)))
@@ -413,7 +422,7 @@ has been moved out).
           (let* ([path (new dc-path%)]
                  [ew (ellipse-width atomic-shape)]
                  [eh (ellipse-height atomic-shape)]
-                 [θ (ellipse-angle atomic-shape)])
+                 [θ (degrees->radians (ellipse-angle atomic-shape))])
             (let-values ([(rotated-width rotated-height) (ellipse-rotated-size ew eh θ)])
               (send path ellipse 0 0 ew eh)
               (send path translate (- (/ ew 2)) (- (/ eh 2)))
@@ -435,26 +444,40 @@ has been moved out).
             (send dc draw-text (text-string atomic-shape) dx dy #f 0 angle))]))]))
 
 (define (ellipse-rotated-size ew eh θ)
-  (let* ([t1 (atan (/ eh ew (exact->inexact (tan θ))))]
-         ; a*cos(t1),b*sin(t1) is the point on *original* ellipse which gets rotated to top.
-         [t2 (atan (/ (* (- eh) (tan θ)) ew))] ; the original point rotated to right side.
-         [rotated-height (+ (* ew (sin θ) (cos t1)) (* eh (cos θ) (sin t1)))]
-         [rotated-width  (- (* ew (cos θ) (cos t2)) (* eh (sin θ) (sin t2)))])
-    (values (abs rotated-width)
-            (abs rotated-height))))
+  (cond
+    [(and (zero? ew) (zero? eh))
+     (values 0 0)]
+    [(zero? eh)
+     (values (* (cos θ) ew)
+             (* (sin θ) ew))]
+    [(zero? ew)
+     (values (* (sin θ) eh)
+             (* (cos θ) eh))]
+    [else
+     (let* ([t1 (atan (/ eh ew (exact->inexact (tan θ))))]
+            ; a*cos(t1),b*sin(t1) is the point on *original* ellipse which gets rotated to top.
+            [t2 (atan (/ (* (- eh) (tan θ)) ew))] ; the original point rotated to right side.
+            [rotated-height (+ (* ew (sin θ) (cos t1)) (* eh (cos θ) (sin t1)))]
+            [rotated-width  (- (* ew (cos θ) (cos t2)) (* eh (sin θ) (sin t2)))])
+       (values (abs rotated-width)
+               (abs rotated-height)))]))
 
 (define (degrees->radians θ)
   (* θ 2 pi (/ 360)))
 
 (define (mode-color->pen mode color)
-  (case mode
-    [(outline) (send the-pen-list find-or-create-pen color 1 'solid)]
-    [(solid) (send the-pen-list find-or-create-pen color 1 'solid)]))
+  (cond
+    [(eq? mode 'solid)
+     (send the-pen-list find-or-create-pen "black" 1 'transparent)]
+    [else
+     (send the-pen-list find-or-create-pen color 1 'solid)]))
 
 (define (mode-color->brush mode color)
-  (case mode
-    [(outline) (send the-brush-list find-or-create-brush "black" 'transparent)]
-    [(solid) (send the-brush-list find-or-create-brush color 'solid)]))
+  (cond
+    [(eq? mode 'solid)
+     (send the-brush-list find-or-create-brush color 'solid)]
+    [else
+     (send the-brush-list find-or-create-brush "black" 'transparent)]))
 
 (provide make-image image-shape image-bb image-normalized? image%
          
@@ -467,7 +490,7 @@ has been moved out).
          make-text text? text-string text-angle text-font
          make-polygon polygon? polygon-points polygon-mode polygon-color
          make-bitmap bitmap? bitmap-raw-bitmap bitmap-raw-mask bitmap-angle bitmap-scale bitmap-rendered-bitmap
-          
+         
          degrees->radians
          normalize-shape
          ellipse-rotated-size
@@ -478,3 +501,6 @@ has been moved out).
          image-baseline
          
          render-image)
+
+;; method names
+(provide get-shape get-bb get-normalized?)

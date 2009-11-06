@@ -66,12 +66,16 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          
          ellipse
          rectangle
+         regular-polygon
+         star
+         triangle
          
          x-place?
          y-place?
          image?
          mode?
          angle?
+         side-count?
          
          image-width
          image-height)

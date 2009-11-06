@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require mrlib/image-core
+(require "../../mrlib/image-core.ss"
          scheme/class
          scheme/gui/base
          htdp/error
@@ -34,9 +34,16 @@
          y-place?
          mode?
          angle?
+         side-count?
          
          image-width
-         image-height)
+         image-height
+         
+         regular-polygon
+         triangle 
+         star
+         
+         swizzle)
 
 
 (define (show-image g [extra-space 0])
@@ -168,26 +175,26 @@
                 'mode
                 i
                 arg)
-     (let ([sym (if (string? arg)
-                    (string->symbol arg)
-                    arg)])
-       sym
-       #;
-       (if (eq? sym 'outline)
-           1
-           sym))]
+     (if (string? arg)
+         (string->symbol arg)
+         arg)]
     [(width height)
      (check-arg fn-name
-                (and (number? arg)
+                (and (real? arg)
                      (not (negative? arg)))
-                'non-negative-number
+                'non-negative-real-number
                 i arg)
      arg]
-    [(dx dy factor x-factor y-factor)
+    [(dx dy factor x-factor y-factor side-length)
      (check-arg fn-name
-                (and (number? arg)
-                     (real? arg))
-                'number
+                (real? arg)
+                'real\ number
+                i arg)
+     arg]
+    [(side-count)
+     (check-arg fn-name
+                (side-count? arg)
+                'side-count
                 i arg)
      arg]
     [(angle)
@@ -220,9 +227,11 @@
 (define (mode? arg)
   (member arg '(solid outline "solid" "outline")))
 (define (angle? arg)
-  (and (number? arg)
-       (real? arg)
+  (and (real? arg)
        (< -360 arg 360)))
+(define (side-count? i)
+  (and (integer? i)
+       (3 . <= .  i)))
 
 (define (bitmap->image bm [mask-bm (send bm get-loaded-mask)])
   (make-image (make-bitmap bm mask-bm 0 1 #f)
@@ -464,15 +473,15 @@
                  (+ r dx)
                  (+ b dy))))]))
 
+
 (define (atomic-bb atomic-shape)
   (cond
     [(ellipse? atomic-shape)
      (let-values ([(w h) (ellipse-rotated-size (ellipse-width atomic-shape)
                                                (ellipse-height atomic-shape)
-                                               (ellipse-angle atomic-shape))])
+                                               (degrees->radians (ellipse-angle atomic-shape)))])
        (values 0 0 w h))]
     [else
-     (fprintf (current-error-port) "BAD BOUNDING BOX\n")
      (values 0 0 100 100)]))
   
 ;; rotate-simple : angle simple-shape -> simple-shape
@@ -588,13 +597,7 @@
   (list (make-point 0 0)
         (make-point width 0)
         (make-point width height)
-        (make-point 0 height))
-  
-  #;
-  (list (make-point 0 0)
-        (make-point (- width 1) 0)
-        (make-point (- width 1) (- height 1))
-        (make-point 0 (- height 1))))
+        (make-point 0 height)))
   
 
 ;;       circle
@@ -603,7 +606,48 @@
 ;;       line
 ;;       star
 ;;       text
-;;       regular-polygon
+
+(define/chk (triangle side-length mode color)
+  (make-polygon/star side-length 3 mode color values))
+(define/chk (regular-polygon side-length side-count mode color)
+  (make-polygon/star side-length side-count mode color values))
+(define/chk (star side-length mode color)
+  (make-polygon/star side-length 5 mode color swizzle))
+
+(define (make-polygon/star side-length side-count mode color adjust)
+  (let ([poly (make-polygon 
+               (adjust (regular-polygon-points side-length side-count))
+               mode
+               color)])
+    (let-values ([(l t r b) (simple-bb poly)])
+      (printf "l ~s t ~s r ~s b ~s\n" l t r b)
+      (make-image (make-translate (- l) (- t) poly)
+                  (make-bb (- r l) (- b t) (- b t))
+                  #f))))
+
+;; swizzle : (listof X)[odd-length] -> (listof X)
+;; returns a list with the same elements, 
+;; but reordered so the even elements come first 
+;; and then the odd elements afterwards
+(define (swizzle l)
+  (let ([v (list->vector l)])
+    (let loop ([i 0])
+      (cond
+        [(= i (vector-length v)) '()]
+        [else
+         (cons (vector-ref v (modulo (* i 2) (vector-length v)))
+               (loop (+ i 1)))]))))
+
+;; regular-polygon-points : number number -> (listof point)
+(define (regular-polygon-points side-length side-count)
+  (let loop ([p (make-rectangular 0 0)]
+             [i 0])
+    (cond
+      [(= i side-count) '()]
+      [else (cons (make-point (real-part p) (imag-part p)) 
+                  (loop (+ p (make-polar side-length
+                                         (* -1 (* 2 pi) (/ i side-count))))
+                        (+ i 1)))])))
 
 (define/chk (ellipse width height mode color)
   (make-image (make-ellipse width height 

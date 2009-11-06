@@ -4,13 +4,18 @@
          scheme/math
          scheme/class
          scheme/gui/base
-         tests/eli-tester)
+         schemeunit)
 
-;(define-syntax-rule (test a => b) (begin a b))
+(define-syntax-rule (test a => b) (check-equal? a b))
 
 ;; test case: (beside (text "a"...) (text "b" ...)) vs (text "ab")
 
 ;(show-image (frame (rotate 30 (ellipse 200 400 'solid 'purple))))
+
+(define-simple-check (check-close a b)
+  (and (number? a)
+       (number? b)
+       (< (abs (- a b)) 0.001)))
 
 #;
 (show-image
@@ -62,6 +67,84 @@
           (struct-type-make-constructor struct-type)
           (map loop (cdr (vector->list (struct->vector x))))))]
       [else x])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; width and height
+;;
+
+(test (image-width (rectangle 10 20 'solid 'blue))
+      =>
+      10)
+(test (image-height (rectangle 10 20 'solid 'blue))
+      =>
+      20)
+(test (image-width (rectangle 0 100 'solid 'blue))
+      =>
+      0)
+(test (image-height (rectangle 0 100 'solid 'blue))
+      =>
+      100)
+(test (image-width (rectangle 100 0 'solid 'blue))
+      =>
+      100)
+(test (image-height (rectangle 100 0 'solid 'blue))
+      =>
+      0)
+
+(check-close (image-width (rotate 45 (rectangle 100 0 'solid 'blue)))
+             (* (sin (* pi 1/4)) 100))
+(check-close (image-height (rotate 45 (rectangle 100 0 'solid 'blue)))
+             (* (sin (* pi 1/4)) 100))
+(check-close (image-width (rotate 45 (rectangle 0 100 'solid 'blue)))
+             (* (sin (* pi 1/4)) 100))
+(check-close (image-height (rotate 45 (rectangle 0 100 'solid 'blue)))
+             (* (sin (* pi 1/4)) 100))
+
+(test (image-width (scale 4 (rectangle 10 10 'outline 'black)))
+      =>
+      40)
+(test (image-width (rotate 90 (scale 4 (rectangle 10 10 'outline 'black))))
+      =>
+      40.0)
+
+(test (image-width (scale 4 (rectangle 10 10 'solid 'black)))
+      =>
+      40)
+(test (image-width (rotate 90 (scale 4 (rectangle 10 10 'solid 'black))))
+      =>
+      40.0)
+
+
+(test (image-width (ellipse 10 20 'solid 'blue))
+      =>
+      10)
+(test (image-height (ellipse 10 20 'solid 'blue))
+      =>
+      20)
+(test (image-width (ellipse 0 100 'solid 'blue))
+      =>
+      0)
+(test (image-height (ellipse 0 100 'solid 'blue))
+      =>
+      100)
+(test (image-width (ellipse 100 0 'solid 'blue))
+      =>
+      100)
+(test (image-height (ellipse 100 0 'solid 'blue))
+      =>
+      0)
+
+(test (image-width (rotate 30 (ellipse 100 0 'solid 'blue)))
+      =>
+      (* (cos (* pi 1/6)) 100))
+(test (image-height (rotate 30 (ellipse 100 0 'solid 'blue)))
+      =>
+      (* (sin (* pi 1/6)) 100))
+(check-close (image-width (rotate 30 (ellipse 0 100 'solid 'blue)))
+             (* (sin (* pi 1/6)) 100))
+(check-close (image-height (rotate 30 (ellipse 0 100 'solid 'blue)))
+             (* (cos (* pi 1/6)) 100))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -446,3 +529,15 @@
       =>
       (image-snip->image (make-object image-snip% blue-20x10-bitmap)))
 |#
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  regular polygon
+;;
+
+(check-equal? (round-numbers (regular-polygon 100 4 'outline 'green))
+              (round-numbers (rectangle 100 100 'outline 'green)))
+
+(check-equal? (swizzle (list 0 1 2 3 4))
+              (list 0 2 4 1 3))

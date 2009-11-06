@@ -30,6 +30,33 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
   Constructs a rectangle with the given width, height, mode, and color.
 }
 
+@defproc[(regular-polygon [side-length (and/c positive? real?)] 
+                          [side-count side-count?]
+                          [mode mode?]
+                          [color (or/c symbol? string?)])
+         image?]{
+  Constructs a regular polygon with @scheme[side-count] sides.
+}
+
+@defproc[(star [side-length (and/c positive? real?)] 
+               [mode mode?]
+               [color (or/c symbol? string?)])
+         image?]{
+  Constructs a star with five points. The @scheme[side-length] argument 
+  determines the side length of the enclosing pentagon.
+}
+
+@defproc[(triangle [side-length (and/c positive? real?)] 
+                   [mode mode?]
+                   [color (or/c symbol? string?)])
+         image?]{
+  Constructs a upward-pointing equilateral triangle. 
+  The @scheme[side-length] argument 
+  determines the 
+  length of the side of the triangle.
+}
+
+                
 @section{Overlaying Images}
 
 @defproc[(overlay [i1 image?] [i2 image?] [is image?] ...) image?]{
@@ -96,6 +123,16 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
   certain sub-images appear within some larger image.
 }
 
+@section{Image Properties}
+
+@defproc[(image-width [i image?]) (and/c number? positive?)]{
+  Returns the width of @scheme[i].
+}
+
+@defproc[(image-height [i image?]) (and/c number? positive?)]{
+  Returns the height of @scheme[i].
+}
+
 @section{Image Predicates}
 
 This section lists predicates for the basic structures provided by the image library.
@@ -150,6 +187,11 @@ This section lists predicates for the basic structures provided by the image lib
   Determines if @scheme[x] is an angle, namely
   a real number between @scheme[0] (inclusive)
   and @scheme[360] (exclusive).
+}
+
+@defproc[(side-count? [x any/c]) boolean?]{
+  Determines if @scheme[x] is an integer 
+  greater than or equal to @scheme[3].
 }
 
 @section{Equality Testing of Images}
