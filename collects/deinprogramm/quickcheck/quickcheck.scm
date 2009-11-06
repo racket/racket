@@ -265,7 +265,7 @@
 				   (arbitrary-generator arbitrary-integer)
 				   (arbitrary-generator arbitrary-integer))
 		  (lambda (r gen)
-		    (let ((fr (rationalize r 1/1000)))
+		    (let ((fr (rationalize (inexact->exact r) 1/1000)))
 		      (coarbitrary arbitrary-integer
 				   (numerator fr)
 				   (coarbitrary arbitrary-integer
