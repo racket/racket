@@ -941,8 +941,10 @@ Compare that to the projection for our function contract:
 
 @schemeblock[
 (define (int->int-proj pos neg src-info name positive-position?)
-  (let ([dom (int-proj neg pos src-info name (not positive-position?))]
-        [rng (int-proj pos neg src-info name positive-position?)])
+  (let ([dom (int-proj neg pos src-info 
+                       name (not positive-position?))]
+        [rng (int-proj pos neg src-info
+                       name positive-position?)])
     (lambda (f)
       (if (and (procedure? f)
                (procedure-arity-includes? f 1))
@@ -998,8 +1000,10 @@ returns a contract for functions between them.
 @schemeblock[
 (define (make-simple-function-contract dom-proj range-proj)
   (lambda (pos neg src-info name positive-position?)
-    (let ([dom (dom-proj neg pos src-info name (not positive-position?))]
-          [rng (range-proj pos neg src-info name positive-position?)])
+    (let ([dom (dom-proj neg pos src-info 
+                         name (not positive-position?))]
+          [rng (range-proj pos neg src-info
+                           name positive-position?)])
       (lambda (f)
         (if (and (procedure? f)
                  (procedure-arity-includes? f 1))
@@ -1021,7 +1025,7 @@ the contract library primitives below.
 @defproc[(make-proj-contract [name any/c]
                              [proj (or/c (-> symbol? symbol? any/c any/c any/c)
                                          (-> symbol? symbol? any/c any/c boolean? any/c))]
-                             [first-order-test (any/c . -> . any/c)])
+                             [first-order-test (-> any/c any/c)])
          contract?]{
 
 Builds a new contract.
@@ -1043,8 +1047,13 @@ when the projection is invoked. If it returns true,
 the value may or may not violate the contract, but any
 violations must not be signaled immediately. 
 
-From the example above, the predicate should accept unary
-functions, but reject all other values.}
+This function is a convenience function, implemented 
+using @scheme[proj-prop], @scheme[name-prop], 
+@scheme[first-order-prop], and @scheme[stronger-prop].
+Consider using those directly (as well as @scheme[flat-prop] as necessary), 
+as they allow more flexibility
+and generally produce more efficient contracts.
+}
 
 @defproc[(build-compound-type-name [c/s any/c] ...) any]{
 
@@ -1110,6 +1119,91 @@ to build an actual error message.}
 %           flat-prop flat-pred? flat-get
 %           first-order-prop first-order-get
 %           contract-stronger?
+}
+
+@subsection{Contracts as structs}
+
+A contract is an arbitrary struct that has all of the 
+struct properties 
+(see @secref["structprops"] in the reference manual)
+in this section
+(except that @scheme[flat-prop] is optional). 
+
+Generally speaking, the contract should be a struct with 
+fields that specialize the contract in some way and then
+properties that implement all of the details of checking
+the contract and reporting errors, etc. 
+
+For example, an @scheme[between/c] contract is a struct that
+holds the bounds on the number and then has the properties below
+that inspect the bounds and take the corresponding action
+(the @scheme[proj-prop] checks the numbers, the @scheme[name-prop]
+     constructs a name to print out for the contract, etc.).
+
+@deftogether[(@defthing[proj-prop struct-type-property?]
+              @defproc[(proj-pred? [v any/c]) boolean?]{}
+              @defproc[(proj-get [v proj-pred?])
+                       (-> proj-prop?
+                           (-> symbol? symbol? (or/c #f syntax?) string? boolean?
+                               (-> any/c any/c)))]{})]{
+
+This is the workhorse property that implements the contract. 
+The property should be bound to a function that accepts
+the struct and then returns a projection, as described 
+in the docs for @scheme[make-proj-contract] above.
+
+
+}
+@deftogether[(@defthing[name-prop struct-type-property?]{}
+              @defproc[(name-pred? [v any/c]) boolean?]{}
+              @defproc[(name-get [v name-pred?]) (-> name-pred? printable/c)]{})]{
+                                                                               
+This property should be a function that accepts the struct and returns
+     an s-expression representing the name of the property.
+     
+     @mz-examples[#:eval (contract-eval)
+                         (write (between/c 1 10))
+                         (let ([c (between/c 1 10)])
+                           ((name-get c) c))]
+                                                                               
+}
+@deftogether[(@defthing[stronger-prop struct-type-property?]{}
+              @defproc[(stronger-pred? [v any/c]) boolean?]{}
+              @defproc[(stronger-get [v stronger-pred?]) (-> stronger-pred? stronger-pred? boolean?)]{})]{
+
+This property is used when optimizing contracts, in order to tell if some contract is stronger than another one.
+In some situations, if a contract that is already in place is stronger than one about to be put in place,
+then the new one is ignored.
+                                                                                                    
+}
+
+@deftogether[(@defthing[flat-prop struct-type-property?]{}
+              @defproc[(flat-pred? [v any/c]) boolean?]{}
+              @defproc[(flat-get [v flat-pred?]) (-> flat-pred? (-> any/c boolean?))]{})]{
+
+This property should only be present if the contract is a flat contract. In the case that it is
+     a flat contract, the value of the property should be a predicate that determines if the
+     contract holds.
+     
+     @mz-examples[#:eval (contract-eval)
+                         (flat-pred? (-> integer? integer?))
+                         (let ([c (between/c 1 10)]
+                               [pred ((flat-get c) c)])
+                           (list (pred 9)
+                                 (pred 11)))]
+}
+
+@deftogether[(@defthing[first-order-prop struct-type-property?]{}
+              @defproc[(first-order-pred? [v any/c]) boolean?]{}
+              @defproc[(first-order-get [v proj-pred?]) (-> first-order-pred? (-> any/c boolean?))]{})]{
+
+This property is used with @scheme[or/c] to determine which branch of the 
+     @scheme[or/c] applies. These don't have to be precise (i.e., returning @scheme[#f] is always safe),
+     but the more often a contract can honestly return @scheme[#t], the more often 
+     it will work with @scheme[or/c].
+     
+     For example, function contracts typically check arity in their @scheme[first-order-prop]s.
+
 }
 
 @; ------------------------------------------------------------------------
