@@ -40,10 +40,13 @@
                   #:name [name (build-compound-type-name 'apply/c c)])
    (make-proj-contract
     name
-    (lambda (pos neg src name2)
+    (lambda (pos neg src name2 positive-position?)
       (lambda (p)
         (let* ([ctc (coerce-contract 'apply/c c)]
-               [thunk (lambda () ((((proj-get ctc) ctc) pos neg src name2) p))])
+               [thunk
+                (lambda ()
+                  ((((proj-get ctc) ctc)
+                    pos neg src name2 positive-position?) p))])
           (make-keyword-procedure
            (lambda (keys vals . args) (keyword-apply (thunk) keys vals args))
            (case-lambda
