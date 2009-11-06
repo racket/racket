@@ -189,6 +189,8 @@
 ;;                           (append l (car ls) (loop (cdr ls))))))]))
 
 (define (remove-duplicates l [=? equal?] #:key [key #f])
+  ;; `no-key' is used to optimize the case for long lists, it could be done for
+  ;; shorter ones too, but that adds a ton of code to the result (about 2k).
   (define-syntax-rule (no-key x) x)
   (unless (list? l) (raise-type-error 'remove-duplicates "list" l))
   (let ([h (cond [(< (length l) 40) #f]
