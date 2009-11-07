@@ -1,7 +1,6 @@
 #lang s-exp "env-lang.ss"
 
 (require
- scheme/list
  scheme/tcp
  scheme
  scheme/unsafe/ops
@@ -130,15 +129,8 @@
                        . -> .
                        (-lst b))
                       ((a . -> . Univ) (-lst a) . -> . (-lst a))))]
-[filter-map (-polydots (c a b)
-                       ((list
-                         ((list a) (b b) . ->... . (-opt c))
-                         (-lst a))
-                        ((-lst b) b) . ->... . (-lst c)))]
-[take   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
-[drop   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
-[last   (-poly (a) ((-lst a) . -> . a))]
-[add-between (-poly (a b) ((-lst a) b . -> . (-lst (Un a b))))]
+[filter-not (-poly (a b) (cl->*
+                          ((a . -> . Univ) (-lst a) . -> . (-lst a))))]
 [remove  (-poly (a) (a (-lst a) . -> . (-lst a)))]
 [remq    (-poly (a) (a (-lst a) . -> . (-lst a)))]
 [remv    (-poly (a) (a (-lst a) . -> . (-lst a)))]
@@ -189,9 +181,6 @@
             (->* (list N) N N))]
 [min (cl->* (->* (list -Integer) -Integer -Integer)
             (->* (list N) N N))]
-[vector? (make-pred-ty (-vec Univ))]
-[vector-ref (-poly (a) ((-vec a) N . -> . a))]
-[build-vector (-poly (a) (-Integer (-Integer . -> . a) . -> . (-vec a)))]
 [build-list (-poly (a) (-Integer (-Integer . -> . a) . -> . (-lst a)))]
 [reverse (-poly (a) (-> (-lst a) (-lst a)))]
 [append (-poly (a) (->* (list) (-lst a) (-lst a)))]
@@ -406,11 +395,6 @@
 ;; this is a hack
 
 [match:error ((list) Univ . ->* . (Un))]
-
-[vector-set! (-poly (a) (-> (-vec a) N a -Void))]
-
-[vector->list (-poly (a) (-> (-vec a) (-lst a)))]
-[list->vector (-poly (a) (-> (-lst a) (-vec a)))]
 [exact? (N . -> . B)]
 [inexact? (N . -> . B)]
 [exact->inexact (N . -> . N)]
@@ -450,22 +434,42 @@
 [bitwise-not (null -Integer . ->* . -Integer)]
 [bitwise-xor (null -Integer . ->* . -Integer)]
 
-[vector (-poly (a) (->* (list) a (-vec a)))]
 [make-string (cl-> [(-Integer) -String] [(-Integer -Char) -String])]
 [abs (N . -> . N)]
 [substring (cl-> [(-String -Integer) -String]
                  [(-String -Integer -Integer) -String])]
 [string-length (-String . -> . -Integer)]
 [string-set! (-String -Integer -Char . -> . -Void)]
-[make-vector (-poly (a) (cl-> [(-Integer) (-vec -Integer)]
-			      [(-Integer a) (-vec a)]))]
 
 [file-exists? (-Pathlike . -> . B)]
 [string->symbol (-String . -> . Sym)]
 [symbol->string (Sym . -> . -String)]
 [string->keyword (-String . -> . -Keyword)]
 [keyword->string (-Keyword . -> . -String)]
+
+;; vectors
+[vector? (make-pred-ty (-vec Univ))]
+[vector-ref (-poly (a) ((-vec a) N . -> . a))]
+[build-vector (-poly (a) (-Integer (-Integer . -> . a) . -> . (-vec a)))]
+
+[vector-set! (-poly (a) (-> (-vec a) N a -Void))]
+
+[vector->list (-poly (a) (-> (-vec a) (-lst a)))]
+[list->vector (-poly (a) (-> (-lst a) (-vec a)))]
 [vector-length (-poly (a) ((-vec a) . -> . -Integer))]
+[make-vector (-poly (a) (cl-> [(-Integer) (-vec -Integer)]
+			      [(-Integer a) (-vec a)]))]
+[vector (-poly (a) (->* (list) a (-vec a)))]
+[vector-immutable (-poly (a) (->* (list) a (-vec a)))]
+[vector->vector-immutable (-poly (a) (-> (-vec a) (-vec a)))]
+[vector-fill! (-poly (a) (-> (-vec a) a -Void))]
+[vector-copy! (-poly (a) 
+                     (cl->* ((-vec a) -Integer (-vec a) . -> . -Void)
+                            ((-vec a) -Integer (-vec a) -Integer . -> . -Void)
+                            ((-vec a) -Integer (-vec a) -Integer -Integer . -> . -Void)))]
+;; [vector->values no good type here]
+
+
 
 [call-with-input-file (-poly (a) (-String (-Input-Port . -> . a) #:mode (Un (-val 'binary) (-val 'text)) #f . ->key .  a))]
 [call-with-output-file (-poly (a) (-String (-Output-Port . -> . a)
@@ -663,6 +667,29 @@
                       . -> . b))))]
 
 ;; scheme/list
+[count (-polydots (a b)
+                  ((list
+                    ((list a) (b b) . ->... . Univ)
+                    (-lst a))
+                   ((-lst b) b) 
+                   . ->... . 
+                   -Integer))]
+[filter-map (-polydots (c a b)
+                       ((list
+                         ((list a) (b b) . ->... . (-opt c))
+                         (-lst a))
+                        ((-lst b) b) . ->... . (-lst c)))]
+[take   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
+[drop   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
+[take-right   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
+[drop-right   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
+[split-at
+ (-poly (a) ((list (-lst a)) -Integer . ->* . (-values (list (-lst a) (-lst a)))))]
+[split-at-right
+ (-poly (a) ((list (-lst a)) -Integer . ->* . (-values (list (-lst a) (-lst a)))))]
+[last   (-poly (a) ((-lst a) . -> . a))]
+[add-between (-poly (a b) ((-lst a) b . -> . (-lst (Un a b))))]
+
 [last-pair (-poly (a) ((-mu x (Un a (-val '()) (-pair a x)))
                        . -> . 
                        (Un (-pair a a) (-pair a (-val '())))))]
@@ -674,8 +701,6 @@
 [append-map
  (-polydots (c a b) ((list ((list a) (b b) . ->... . (-lst c)) (-lst a))
                      ((-lst b) b) . ->... .(-lst c)))]
-[split-at
- (-poly (a) ((list (-lst a)) -Integer . ->* . (-values (list (-lst a) (-lst a)))))]
 [append*
  (-poly (a) ((-lst (-lst a)) . -> . (-lst a)))]
 
@@ -765,3 +790,40 @@
 [unsafe-cdr (-poly (a b) 
               (cl->*
                (->acc (list (-pair a b)) b (list -cdr))))]
+
+;; scheme/vector
+[vector-count (-polydots (a b)
+                         ((list
+                           ((list a) (b b) . ->... . Univ)
+                           (-vec a))
+                          ((-vec b) b)
+                          . ->... . 
+                          -Integer))]
+[vector-filter (-poly (a b) (cl->*
+                             ((make-pred-ty (list a) Univ b)
+                              (-vec a)
+                              . -> .
+                              (-vec b))
+                             ((a . -> . Univ) (-vec a) . -> . (-vec a))))]
+
+[vector-filter-not
+ (-poly (a b) (cl->* ((a . -> . Univ) (-vec a) . -> . (-vec a))))]
+[vector-copy
+ (-poly (a)  
+        (cl->* ((-vec a) . -> . (-vec a))
+               ((-vec a) -Integer . -> . (-vec a))
+               ((-vec a) -Integer -Integer . -> . (-vec a))))]
+[vector-map (-polydots (c a b) ((list ((list a) (b b) . ->... . c) (-vec a))
+                         ((-vec b) b) . ->... .(-vec c)))]
+[vector-map! (-polydots (a b) ((list ((list a) (b b) . ->... . a) (-vec a))
+                               ((-vec b) b) . ->... .(-vec a)))]
+[vector-append (-poly (a) (->* (list) (-vec a) (-vec a)))]
+[vector-take   (-poly (a) ((-vec a) -Integer . -> . (-vec a)))]
+[vector-drop   (-poly (a) ((-vec a) -Integer . -> . (-vec a)))]
+[vector-take-right   (-poly (a) ((-vec a) -Integer . -> . (-vec a)))]
+[vector-drop-right   (-poly (a) ((-vec a) -Integer . -> . (-vec a)))]
+[vector-split-at
+ (-poly (a) ((list (-vec a)) -Integer . ->* . (-values (list (-vec a) (-vec a)))))]
+[vector-split-at-right
+ (-poly (a) ((list (-vec a)) -Integer . ->* . (-values (list (-vec a) (-vec a)))))]
+

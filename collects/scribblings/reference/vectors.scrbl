@@ -274,7 +274,7 @@ Returns a fresh vector with the elements of @scheme[vec] for which
  applied to each element from first to last.
 
 @mz-examples[#:eval vec-eval
-  (vector-filter even? '(1 2 3 4 5 6))
+  (vector-filter even? #(1 2 3 4 5 6))
 ]}
 
 @defproc[(vector-filter-not [pred procedure?] [vec vector?]) vector?]{
@@ -284,7 +284,7 @@ is reversed: the result is a vector of all items for which @scheme[pred]
 returns @scheme[#f].
 
 @mz-examples[#:eval vec-eval
-  (vector-filter-not even? '(1 2 3 4 5 6))
+  (vector-filter-not even? #(1 2 3 4 5 6))
 ]}
 
 
@@ -292,8 +292,32 @@ returns @scheme[#f].
          list?]{
 
 Returns @scheme[(vector-length (vector-filter proc lst ...))], but
-without building the intermediate list.}
+without building the intermediate list.
 
-vector-count
-vector-argmin
-vector-argmax
+@mz-examples[#:eval vec-eval
+(vector-count even? #(1 2 3 4 5))
+(vector-count = #(1 2 3 4 5) #(5 4 3 2 1))]
+}
+
+
+@defproc[(vector-argmin [proc (-> any/c real?)] [vec vector?]) any/c]{
+
+This returns the first element in the non-empty vector @scheme[vec] that minimizes
+the result of @scheme[proc]. 
+
+@mz-examples[#:eval vec-eval
+(vector-argmin car #((3 pears) (1 banana) (2 apples)))
+(vector-argmin car #((1 banana) (1 orange)))
+]
+}
+
+@defproc[(vector-argmax [proc (-> any/c real?)] [vec vector?]) any/c]{
+
+This returns the first element in the non-empty vector @scheme[vec] that maximizes
+the result of @scheme[proc]. 
+
+@mz-examples[#:eval vec-eval
+(vector-argmax car #((3 pears) (1 banana) (2 apples)))
+(vector-argmax car #((3 pears) (3 oranges)))
+]
+}
