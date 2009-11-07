@@ -88,17 +88,11 @@
 
 ;; Only trims left and right spaces:
 (define (trim-spaces str)
-  (trim-right (trim-left str)))
+  (regexp-replace #rx"[ \t\r\n\v]+$"
+                  (regexp-replace #rx"^[ \t\r\n\v]+" str "")
+                  ""))
 
-(define re:left-spaces (regexp "^[ \t\r\n\v]+"))
-(define (trim-left str)
-  (regexp-replace re:left-spaces str ""))
-
-(define re:right-spaces (regexp "[ \t\r\n\v]+$"))
-(define (trim-right str)
-  (regexp-replace re:right-spaces str ""))
-
-(define re:comments (regexp "^[^\"]*(\"[^\"]*\")*[^\"]*(\\(.*\\))"))
+(define re:comments #rx"^[^\"]*(\"[^\"]*\")*[^\"]*(\\(.*\\))")
 (define (trim-comments str)
   (let ([positions (regexp-match-positions re:comments str)])
     (if positions
@@ -106,15 +100,7 @@
                      (substring str (cdaddr positions) (string-length str)))
       str)))
 
-(define (lowercase str)
-  (let loop ([out ""] [rest str] [size (string-length str)])
-    (cond [(zero? size) out]
-          [else
-           (loop (string-append out (string
-                                     (char-downcase
-                                      (string-ref rest 0))))
-                 (substring rest 1 size)
-                 (sub1 size))])))
+(define (lowercase str) (string-downcase str))
 
 (define warning
   void
