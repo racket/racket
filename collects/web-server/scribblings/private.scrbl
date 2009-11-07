@@ -17,4 +17,3 @@ Some of these are documented here.
 @include-section["mod-map.scrbl"]
 @include-section["url-param.scrbl"]
 @include-section["gzip.scrbl"]
-@include-section["util.scrbl"]
