@@ -39,6 +39,8 @@
     (λ (r)
       (unless (and (real? r) (positive? r))
         (raise-type-error 'order-of-magnitude "positive real number" r))
+      (when (= r +inf.0)
+        (raise-type-error 'order-of-magnitude "non-infinite" r))
       (let* ([q (inexact->exact r)]
              [m
               (floor
