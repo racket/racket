@@ -31,4 +31,4 @@
 (define (hex-color-string? s) (and (string? s) (hex-digit-string? s)))
 
 (define (empty-property-error p)
-  (error (format "Empty value for property ~a" p))))
+  (error (format "Empty value for property ~a" p)))
