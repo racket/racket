@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
 
-(Section 'list)
+(Section 'vector)
 
 (require scheme/vector)
 
