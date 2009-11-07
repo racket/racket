@@ -22,6 +22,7 @@
          rectangle
          
          show-image
+         save-image
          bring-between
          
          image-snip->image
@@ -79,6 +80,17 @@
     (send (new button% [label "√"] [callback (λ x (scale-adjust sub1))] [parent bp]) min-width 100)
     (send (new button% [label "2"] [callback (λ x (scale-adjust add1))] [parent bp]) min-width 100)
     (send f show #t)))
+
+(define (save-image image filename)
+  (let* ([bm (make-object bitmap% 
+               (inexact->exact (ceiling (+ 1 (image-width image)))) 
+               (inexact->exact (ceiling (+ 1 (image-height image)))))]
+         [bdc (make-object bitmap-dc% bm)])
+    (send bdc set-smoothing 'aligned)
+    (send bdc clear)
+    (render-image image bdc 0 0)
+    (send bdc set-bitmap #f)
+    (send bm save-file filename 'png)))
 
 
 ;                                                                                                 
@@ -197,6 +209,12 @@
                 'side-count
                 i arg)
      arg]
+    [(step-count)
+     (check-arg fn-name
+                (step-count? arg)
+                'step-count
+                i arg)
+     arg]
     [(angle)
      (check-arg fn-name
                 (angle? arg)
@@ -232,6 +250,9 @@
 (define (side-count? i)
   (and (integer? i)
        (3 . <= .  i)))
+(define (step-count? i)
+  (and (integer? i)
+       (1 . <= .  i)))
 
 (define (bitmap->image bm [mask-bm (send bm get-loaded-mask)])
   (make-image (make-bitmap bm mask-bm 0 1 #f)
@@ -609,10 +630,15 @@
 
 (define/chk (triangle side-length mode color)
   (make-polygon/star side-length 3 mode color values))
+
 (define/chk (regular-polygon side-length side-count mode color)
   (make-polygon/star side-length side-count mode color values))
+
+(define/chk (star-polygon side-length side-count step-count mode color)
+  (make-polygon/star side-length side-count mode color (λ (l) (swizzle l step-count))))
+
 (define/chk (star side-length mode color)
-  (make-polygon/star side-length 5 mode color swizzle))
+  (make-polygon/star side-length 5 mode color (λ (l) (swizzle l 2))))
 
 (define (make-polygon/star side-length side-count mode color adjust)
   (let ([poly (make-polygon 
@@ -620,22 +646,21 @@
                mode
                color)])
     (let-values ([(l t r b) (simple-bb poly)])
-      (printf "l ~s t ~s r ~s b ~s\n" l t r b)
       (make-image (make-translate (- l) (- t) poly)
                   (make-bb (- r l) (- b t) (- b t))
                   #f))))
 
 ;; swizzle : (listof X)[odd-length] -> (listof X)
 ;; returns a list with the same elements, 
-;; but reordered so the even elements come first 
-;; and then the odd elements afterwards
-(define (swizzle l)
+;; but reordered according to the step. Eg, if the step
+;; is 2, we get the even elements and then the odd ones.
+(define (swizzle l step)
   (let ([v (list->vector l)])
     (let loop ([i 0])
       (cond
         [(= i (vector-length v)) '()]
         [else
-         (cons (vector-ref v (modulo (* i 2) (vector-length v)))
+         (cons (vector-ref v (modulo (* i step) (vector-length v)))
                (loop (+ i 1)))]))))
 
 ;; regular-polygon-points : number number -> (listof point)

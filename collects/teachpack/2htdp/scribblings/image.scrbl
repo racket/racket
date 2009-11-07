@@ -4,6 +4,7 @@
                      lang/htdp-beginner
                      scheme/gui/base)
           "shared.ss"
+          "image-util.ss"
           scribble/manual)
 
 @teachpack["image"]{Images}
@@ -24,10 +25,16 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 
 @defproc[(ellipse [width real?] [height real?] [mode mode?] [color (or/c symbol? string?)]) image?]{
   Constructs an ellipsis with the given width, height, mode, and color.
+  
+  @image-examples[(ellipse 40 20 "outline" "black")
+                  (ellipse 20 40 "solid" "blue")]
+  
 }
 
 @defproc[(rectangle [width real?] [height real?] [mode mode?] [color (or/c symbol? string?)]) image?]{
   Constructs a rectangle with the given width, height, mode, and color.
+  @image-examples[(rectangle 40 20 "outline" 'black)
+                  (rectangle 20 40 "solid" 'blue)]
 }
 
 @defproc[(regular-polygon [side-length (and/c positive? real?)] 
@@ -36,6 +43,10 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
                           [color (or/c symbol? string?)])
          image?]{
   Constructs a regular polygon with @scheme[side-count] sides.
+
+  @image-examples[(regular-polygon 30 3 "outline" "red")
+                  (regular-polygon 20 4 "outline" "blue")
+                  (regular-polygon 20 6 "solid" "red")]
 }
 
 @defproc[(star [side-length (and/c positive? real?)] 
@@ -44,6 +55,9 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
          image?]{
   Constructs a star with five points. The @scheme[side-length] argument 
   determines the side length of the enclosing pentagon.
+
+  @image-examples[(star 40 "solid" "gray")]
+  
 }
 
 @defproc[(triangle [side-length (and/c positive? real?)] 
@@ -54,62 +68,124 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
   The @scheme[side-length] argument 
   determines the 
   length of the side of the triangle.
+
+@image-examples[(triangle 40 "solid" "tan")]
 }
 
-                
 @section{Overlaying Images}
 
 @defproc[(overlay [i1 image?] [i2 image?] [is image?] ...) image?]{
   Overlays all of its arguments building a single image. The first argument goes
   on top of the second argument, which goes on top of the third argument, etc.
   The images are all lined up on their upper-right corners
-}
+
+  @image-examples[(overlay (ellipse 60 30 "solid" "purple")
+                           (rectangle 30 60 "solid" "orange"))
+                  (overlay (ellipse 10 10 "solid" "red")
+                           (ellipse 30 30 "solid" "black")
+                           (ellipse 50 50 "solid" "red")
+                           (ellipse 70 70 "solid" "black"))]
+  
+  }
 
 @defproc[(overlay/places [x-place x-place?] [y-place y-place?] [i1 image?] [i2 image?] [is image?]) image?]{
   Overlays all of its image arguments, much like the @scheme[overlay] function, but using
   @scheme[x-place] and @scheme[y-place] to determine where the images are lined up. For example, if
   @scheme[x-place] and @scheme[y-place] are both @scheme["middle"], then the images are lined up
   on their centers.
-}
+
+  @image-examples[(overlay/places "middle" "middle"
+                                  (rectangle 30 60 "solid" "orange")
+                                  (ellipse 60 30 "solid" "purple"))
+                  (overlay/places "right" "bottom"
+                                  (rectangle 20 20 "solid" "red")
+                                  (rectangle 30 30 "solid" "black")
+                                  (rectangle 40 40 "solid" "red")
+                                  (rectangle 50 50 "solid" "black"))]
+                                  
+  
+  }
 
 @defproc[(overlay/xy [i1 image?] [x real?] [y real?] [i2 image?]) image?]{
   Constructs an image by overlaying @scheme[i1] on top of @scheme[i2] after
   shifting @scheme[i2] over by @scheme[x] pixels to the right and @scheme[y] 
   pixels down.
+  @image-examples[(overlay/xy (ellipse 40 40 "outline" "black")
+                              25 
+                              25
+                              (ellipse 10 10 "solid" "forestgreen"))
+                  (overlay/xy (rectangle 10 10 "outline" "red")
+                              10 0
+                              (rectangle 10 10 "outline" "black"))
+                  (overlay/xy (rectangle 10 10 "solid" "red")
+                              10 10
+                              (rectangle 10 10 "solid" "black"))
+                  (overlay/xy (rectangle 10 10 "solid" "red")
+                              -10 -10
+                              (rectangle 10 10 "solid" "black"))]
 }
 
 @defproc[(beside [i1 image?] [i2 image?] [is image?] ...) image?]{
   Constructs an image by placing all of the argument images in a
   horizontal row, aligned along their top edges.
-}
+
+  @image-examples[(beside (ellipse 20 70 "solid" "gray")
+                          (ellipse 20 50 "solid" "darkgray")
+                          (ellipse 20 30 "solid" "dimgray")
+                          (ellipse 20 10 "solid" "black"))]
+                          
+  
+  }
 
 @defproc[(beside/places [y-place y-place?] [i1 image?] [i2 image?] [is image?] ...) image?]{
   Constructs an image by placing all of the argument images in a horizontal row, lined
   up as indicated by the @scheme[y-place] argument. For example, if @scheme[y-place]
   is @scheme["middle"], then the images are placed side by side with their centers 
   lined up with each other.
-}
+
+  @image-examples[(beside/places "bottom"
+                                 (ellipse 20 70 "solid" "lightsteelblue")
+                                 (ellipse 20 50 "solid" "mediumslateblue")
+                                 (ellipse 20 30 "solid" "slateblue")
+                                 (ellipse 20 10 "solid" "navy"))
+                  
+                  (beside/places "center"
+                                 (ellipse 20 70 "solid" "mediumorchid")
+                                 (ellipse 20 50 "solid" "darkorchid")
+                                 (ellipse 20 30 "solid" "purple")
+                                 (ellipse 20 10 "solid" "indigo"))]
+                                 
+  
+  }
 
 @section{Rotating, Scaling, and Framing Images}
 
 @defproc[(rotate [angle angle?] [image image?]) image?]{
   Rotates @scheme[image] by @scheme[angle] degrees.                                                        
+
+          @image-examples[(rotate 45 (ellipse 60 20 "solid" "olivedrab"))
+                          (rotate 5 (rectangle 50 50 "outline" "black"))]
+          
 }
 
 @defproc[(scale [factor real?] [image image?]) image?]{
-  Scales @scheme[image] by @scheme[factor]. For example,
-  scaling @scheme[(ellipse 40 60 "solid" "blue")] by @scheme[2] produces
-  @scheme[(ellipse 80 120 "solid" "blue")].
+  Scales @scheme[image] by @scheme[factor]. 
+         
+         @image-examples[(scale 2 (ellipse 20 30 "solid" "blue"))
+                         (ellipse 40 60 "solid" "blue")]
+  
+  
+  
 }
 
 @defproc[(scale/xy [x-factor real?] [y-factor real?] [image image?]) image?]{
   Scales @scheme[image] by @scheme[x-factor] horizontally and by 
-  @scheme[y-factor] vertically. For example,
-  @schemeblock[(scale/xy 3 
-                         2 
-                         (ellipse 40 60 "solid" "blue"))] 
-  produces
-  @scheme[(ellipse 120 120 "solid" "blue")].
+  @scheme[y-factor] vertically. 
+  
+  @image-examples[(scale/xy 3 
+                            2 
+                            (ellipse 20 30 "solid" "blue")) 
+                  (ellipse 60 60 "solid" "blue")]
 }
 
 
@@ -118,9 +194,17 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
   with a black, single pixel frame drawn around the 
   bounding box of the image.
   
+  @image-examples[(frame (ellipse 20 20 "outline" "black"))]
+  
   Generally speaking, this function is useful to 
   debug image constructions, i.e., to see where
   certain sub-images appear within some larger image.
+  
+  @image-examples[(beside/places "bottom"
+                                 (ellipse 20 70 "solid" "lightsteelblue")
+                                 (frame (ellipse 20 50 "solid" "mediumslateblue"))
+                                 (ellipse 20 30 "solid" "slateblue")
+                                 (ellipse 20 10 "solid" "navy"))]
 }
 
 @section{Image Properties}
