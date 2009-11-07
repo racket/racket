@@ -200,7 +200,6 @@
               (if (or (getenv "PLTDRCM")
                       (getenv "PLTDRDEBUG"))
                   (parameterize ([current-namespace (make-base-namespace)])
-                    (printf "hello?\n")
                     (values
                      (dynamic-require 'compiler/cm 'make-compilation-manager-load/use-compiled-handler)
                      (dynamic-require 'compiler/cm 'manager-trace-handler)))
@@ -210,8 +209,7 @@
    (let ([old-load (current-load)])
      (λ (f expected)
        (splash-load-handler old-load f expected))))
-  (printf ">> ~s\n" (list  make-compilation-manager-load/use-compiled-handler
-                           manager-trace-handler))
+  
   (when (and make-compilation-manager-load/use-compiled-handler
              manager-trace-handler)
     (printf "PLTDRCM/PLTDRDEBUG: reinstalling CM load handler after setting splash load handler\n")
