@@ -1,7 +1,9 @@
 (module term-test scheme
   (require "term.ss"
            "matcher.ss"
-           "test-util.ss")
+           "test-util.ss"
+           errortrace/errortrace-lib
+           errortrace/errortrace-key)
   
   (reset-count)
   (test (term 1) 1)
@@ -99,5 +101,62 @@
                      (term-let ((((x ...) ...) '((1 2) (3 4 5) (6))))
                                (term ((f x ...) ...))))
         '(3 12 6))
+
+  (define-namespace-anchor here)
+  (define ns (namespace-anchor->namespace here))
+  
+  (define (runtime-error-source sexp src)
+    (let/ec return
+      (cadar
+       (continuation-mark-set->list
+        (exn-continuation-marks
+         (with-handlers ((exn:fail? values))
+           (parameterize ([current-namespace ns])
+             (parameterize ([current-compile (make-errortrace-compile-handler)])
+               (eval (read-syntax src (open-input-string (format "~s" sexp))))))
+           (return 'no-source)))
+        errortrace-key))))
+  
+  (let ([src 'term-template])
+    (test
+     (runtime-error-source
+      '(term-let ([(x ...) '(a b c)]
+                  [((y ...) ...) '((1 2) (4 5 6) (7 8 9))])
+                 (term (((x y) ...) ...)))
+      src)
+     src))
+  
+  (let ([src 'term-template-metafunc])
+    (test
+     (runtime-error-source 
+      '(term-let-fn ((f car))
+                    (term-let ([(x ...) '(a b c)]
+                               [((y ...) ...) '((1 2) (4 5 6) (7 8 9))])
+                              (term ((((f x) y) ...) ...))))
+      src)
+     src))
+  
+  (let ([src 'term-let-rhs])
+    (test
+     (runtime-error-source
+      '(term-let ([(x ...) 'a])
+                 3)
+      src)
+     src))
+  
+  (define (syntax-error-sources sexp src)
+    (let ([p (read-syntax src (open-input-string (format "~s" sexp)))])
+      (with-handlers ((exn:srclocs? (λ (x) (map srcloc-source ((exn:srclocs-accessor x) x)))))
+        (parameterize ([current-namespace ns])
+          (expand p))
+        null)))
+  
+  (let ([src 'term-template])
+    (test 
+     (syntax-error-sources
+      '(term-let ([(x ...) '(a b c)])
+                 (term x))
+      src)
+     (list src)))
   
   (print-tests-passed 'term-test.ss))

@@ -65,7 +65,8 @@
        (and (identifier? (syntax x))
             (term-id? (syntax-local-value (syntax x) (λ () #f))))
        (let ([id (syntax-local-value/catch (syntax x) (λ (x) #t))])
-         (values (term-id-id id) (term-id-depth id)))]
+         (values (datum->syntax (term-id-id id) (syntax-e (term-id-id id)) (syntax x))
+                 (term-id-depth id)))]
       [(unquote x)
        (values (syntax (unsyntax x)) 0)]
       [(unquote . x)
@@ -101,10 +102,7 @@
                                           (i-loop (cdr xs))])
                               (values (cons fst rst)
                                       (max fst-max-depth rst-max-depth))))]))])
-         
-         (with-syntax ([x-rewrite x-rewrite])
-           (values (syntax/loc stx x-rewrite)
-                   max-depth)))]
+         (values (datum->syntax stx x-rewrite stx) max-depth))]
       
       [_ (values stx 0)]))
   
@@ -180,13 +178,15 @@
        (with-syntax ([(orig-names ...) orig-names]
                      [(new-names ...) new-names]
                      [(depths ...) depths]
-                     [new-x1 new-x1])
+                     [new-x1 new-x1]
+                     [no-match (syntax/loc (syntax rhs1)
+                                 (error 'error-name "term ~s does not match pattern ~s" rhs1 'x1))])
          (syntax
           (syntax-case rhs1 ()
             [new-x1 
              (let-syntax ([orig-names (make-term-id #'new-names (syntax-e #'depths))] ...)
                (term-let/error-name error-name ((x rhs) ...) body1 body2 ...))]
-            [_ (error 'error-name "term ~s does not match pattern ~s" rhs1 'x1)]))))]
+            [_ no-match]))))]
     [(_ error-name () body1 body2 ...)
      (syntax
       (begin body1 body2 ...))]
