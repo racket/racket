@@ -897,6 +897,19 @@ Returns the hyperbolic cosine of @scheme[z].}
 
 Returns the hyperbolic tangent of @scheme[z].}
 
+@defproc[(order-of-magnitude [r (and/c real? positive?)]) (and/c exact? integer?)]{
+Computes the greatest exact integer @scheme[m] such that:
+@schemeblock[(<= (expt 10 m)
+                 (inexact->exact r))]
+Hence also
+@schemeblock[(< (inexact->exact r)
+                (expt 10 (add1 m)))].
+
+@mz-examples[#:eval math-eval 
+                    (order-of-magnitude 999)
+                    (order-of-magnitude 1000)]
+}
+
 @; ----------------------------------------------------------------------
 
 @close-eval[math-eval]

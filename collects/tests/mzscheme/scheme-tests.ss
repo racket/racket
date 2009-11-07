@@ -3,6 +3,7 @@
 
 (load-in-sandbox "for.ss")
 (load-in-sandbox "list.ss")
+(load-in-sandbox "math.ss")
 (load-in-sandbox "vector.ss")
 (load-in-sandbox "function.ss")
 (load-in-sandbox "dict.ss")
