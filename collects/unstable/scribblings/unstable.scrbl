@@ -78,6 +78,8 @@ Keep documentation and tests up to date.
 @include-section["net.scrbl"]
 @include-section["path.scrbl"]
 @include-section["string.scrbl"]
+@include-section["struct.scrbl"]
+@include-section["syntax.scrbl"]
 
 @;{--------}
 

@@ -4,7 +4,7 @@
                      syntax/stx
                      syntax/id-table
                      syntax/keyword
-                     syntax/private/util/misc
+                     unstable/syntax
                      "rep-data.ss"
                      "rep.ss"
                      "codegen-data.ss"

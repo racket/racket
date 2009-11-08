@@ -8,7 +8,7 @@
          (for-syntax syntax/stx)
          (for-syntax scheme/private/sc)
          (for-syntax "rep-data.ss")
-         (for-syntax "../util/error.ss")
+         (for-syntax "../util.ss")
          "runtime.ss")
 (provide syntax-patterns-fail
          current-failure-handler

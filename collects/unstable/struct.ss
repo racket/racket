@@ -1,7 +1,7 @@
 #lang scheme/base
+;; owner: ryanc
 (require (for-syntax scheme/base
                      scheme/struct-info))
-
 (provide make)
 
 ;; (make struct-name field-expr ...)

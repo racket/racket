@@ -10,7 +10,7 @@
          scheme/contract         
          (for-syntax 
           scheme/list
-          (only-in syntax/private/util/misc generate-temporary)
+          (only-in unstable/syntax generate-temporary)
           scheme/match
           (except-in syntax/parse id identifier keyword)
           scheme/base
