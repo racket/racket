@@ -6,8 +6,7 @@
          (for-syntax scheme/base)
          "image-toc.ss")
 
-(provide image-examples
-         exp->filename)
+(provide image-examples)
 
 (define-syntax (image-examples stx)
   (syntax-case stx ()
@@ -31,21 +30,25 @@
                                                        "s"))))
                (map (λ (x exp) 
                       (list x 
-                            (let ([fn (format "2htdp/scribblings/img/~a" (exp->filename exp))])
-                              (if (file-exists? fn)
-                                  (schemeblock #,(image fn))
-                                  (make-paragraph
-                                   error-color 
-                                   (format "missing image! ~a" (exp->filename exp)))))))
+                            (let ([line (exp->line exp)])
+                              (case (car line)
+                                [(val)
+                                 (schemeblock #,(schemeresult #,(cadr line)))]
+                                [(image)
+                                 (let ([fn (format "2htdp/scribblings/img/~a" (cadr line))])
+                                   (if (file-exists? fn)
+                                       (schemeblock #,(image fn))
+                                       (make-paragraph
+                                        error-color 
+                                        (format "missing image! ~a" (cadr line)))))]))))
                     expr-paras
                     val-list+outputs)))))
 
-(define (exp->filename exp) 
+(define (exp->line exp)
   (let ([fn (assoc exp mapping)])
     (cond 
-      [fn 
-       (cadr fn)]
+      [fn (cdr fn)]
       [else
        (unless (getenv "PLTSHOWIMAGES")
          (fprintf (current-error-port) "exp->filename: unknown exp ~s\n" exp))
-       "unk.png"])))
+       (list 'image "unk.png")])))

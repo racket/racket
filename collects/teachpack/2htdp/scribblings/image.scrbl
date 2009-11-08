@@ -286,11 +286,21 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 
 @defproc[(image-width [i image?]) (and/c number? positive?)]{
   Returns the width of @scheme[i].
+                       
+  @image-examples[(image-width (ellipse 30 40 "solid" "orange"))
+                  (image-width (circle 30 "solid" "orange"))
+                  (image-width (beside (circle 20 "solid" "orange")
+                                       (circle 20 "solid" "purple")))]
 }
 
 @defproc[(image-height [i image?]) (and/c number? positive?)]{
   Returns the height of @scheme[i].
-}
+  
+  @image-examples[(image-height (ellipse 30 40 "solid" "orange"))
+                  (image-height (circle 30 "solid" "orange"))
+                  (image-height (overlay (circle 20 "solid" "orange")
+                                         (circle 30 "solid" "purple")))]
+  }
 
 @section{Image Predicates}
 
@@ -367,7 +377,7 @@ are equal. Similarly, constructing a 20x10 rectangle and
 then rotating it by 90 degress is equal to a 10x20 rectangle
 (provided they have the same color and mode).
 
-Equality testing contains a two surprises, though:
+Equality testing may contain a few nuances, though:
 @itemize[
   @item{Overlaying two images in opposite orders is never equal. For example,
         these two images are not @scheme[equal]:
@@ -390,4 +400,18 @@ Equality testing contains a two surprises, though:
          small roundoff errors that make the images draw slightly differently. 
          
          To combat this problem, use @scheme[equal~?] to compare the images,
-         or @scheme[check-within] for test suites involving images.}]
+         or @scheme[check-within] for test suites involving images.}
+   @item{In order to make equality on images created with 
+         @scheme[text] and @scheme[text/font]
+         work well, each string passed to either of those functions results
+         in a number of horizontally aligned images, one for each letter in the
+         string. This means that, for example
+         @schemeblock[(equal? (beside/places "baseline"
+                                             (text "a" 18 "black")
+                                             (text "b" 18 "black"))
+                              (text "ab" 18 "black"))]
+         is true, but that subtle aspects of font drawing may be wrong, since
+         the underlying toolkit only gets a single letter at a time, instead
+         of the entire word (or sentence).
+         }
+]
