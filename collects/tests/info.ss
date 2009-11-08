@@ -26,6 +26,7 @@
     "syntax-color"
     "typed-scheme"
     "units"
+    "unstable"
     "xml"
     "html"
     "web-server"))
