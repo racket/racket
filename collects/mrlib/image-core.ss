@@ -151,8 +151,11 @@ has been moved out).
                   (null? p2-points))
              (and (not (or (null? p1-points)
                            (null? p2-points)))
-                  (eq-recur (rotate-to-zero (closest-to-zero p1-points) p1-points)
-                            (rotate-to-zero (closest-to-zero p2-points) p2-points)))))))
+                  (or (eq-recur (rotate-to-zero (closest-to-zero p1-points) p1-points)
+                                (rotate-to-zero (closest-to-zero p2-points) p2-points))
+                      (let ([p1-rev (reverse p1-points)])
+                        (eq-recur (rotate-to-zero (closest-to-zero p1-rev) p1-rev)
+                                  (rotate-to-zero (closest-to-zero p2-points) p2-points)))))))))
 
 (define (rotate-to-zero zero-p points)
   (let loop ([points points]
@@ -412,7 +415,7 @@ has been moved out).
        (send path line-to (point-x (car points)) (point-y (car points)))
        (send dc set-pen (mode-color->pen (polygon-mode simple-shape) (polygon-color simple-shape)))
        (send dc set-brush (mode-color->brush (polygon-mode simple-shape) (polygon-color simple-shape)))
-       (send dc draw-path path dx dy))]
+       (send dc draw-path path dx dy 'winding))]
     [else
      (let ([dx (+ dx (translate-dx simple-shape))]
            [dy (+ dy (translate-dy simple-shape))]

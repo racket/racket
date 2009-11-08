@@ -70,6 +70,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;; circle vs ellipse
+;;
+
+(check-equal? (ellipse 40 40 'outline 'black)
+              (circle 20 'outline 'black))
+(check-equal? (ellipse 60 60 'solid 'red)
+              (circle 30 'solid 'red))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; width and height
 ;;
 
@@ -536,8 +547,9 @@
 ;;  regular polygon
 ;;
 
+;; note: the regular-polygon and the rectangle generate the points in reverse directions.
 (check-equal? (round-numbers (regular-polygon 100 4 'outline 'green))
               (round-numbers (rectangle 100 100 'outline 'green)))
 
-(check-equal? (swizzle (list 0 1 2 3 4))
+(check-equal? (swizzle (list 0 1 2 3 4) 2)
               (list 0 2 4 1 3))

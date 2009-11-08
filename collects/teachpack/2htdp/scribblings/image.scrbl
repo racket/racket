@@ -23,7 +23,19 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 
 @section{Basic Images}
 
-@defproc[(ellipse [width real?] [height real?] [mode mode?] [color (or/c symbol? string?)]) image?]{
+@defproc[(circle [radius (and/c real? positive?)] 
+                 [mode mode?]
+                 [color (or/c symbol? string?)])
+         image?]{
+  Constructs a circle with the given radius, height, mode, and color.
+  
+  @image-examples[(circle 30 "outline" "red")
+                  (circle 20 "solid" "blue")]
+  
+}
+
+
+@defproc[(ellipse [width (and/c real? positive?)] [height (and/c real? positive?)] [mode mode?] [color (or/c symbol? string?)]) image?]{
   Constructs an ellipsis with the given width, height, mode, and color.
   
   @image-examples[(ellipse 40 20 "outline" "black")
@@ -49,17 +61,6 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
                   (regular-polygon 20 6 "solid" "red")]
 }
 
-@defproc[(star [side-length (and/c positive? real?)] 
-               [mode mode?]
-               [color (or/c symbol? string?)])
-         image?]{
-  Constructs a star with five points. The @scheme[side-length] argument 
-  determines the side length of the enclosing pentagon.
-
-  @image-examples[(star 40 "solid" "gray")]
-  
-}
-
 @defproc[(triangle [side-length (and/c positive? real?)] 
                    [mode mode?]
                    [color (or/c symbol? string?)])
@@ -72,6 +73,38 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 @image-examples[(triangle 40 "solid" "tan")]
 }
 
+@defproc[(star [side-length (and/c real? positive?)] 
+               [mode mode?]
+               [color (or/c symbol? string?)])
+         image?]{
+  Constructs a star with five points. The @scheme[side-length] argument 
+  determines the side length of the enclosing pentagon.
+
+  @image-examples[(star 40 "solid" "gray")]
+  
+}
+
+@defproc[(star-polygon [side-length (and/c real? positive?)]
+                       [side-count side-count?]
+                       [step-count step-count?]
+                       [mode mode?]
+                       [color (or/c symbol? string?)])
+         image?]{
+ 
+  Constructs an arbitrary regular star polygon (a generalization of the regular polygons). 
+  The polygon is enclosed by a regular polygon with @scheme[side-count] sides each
+  @scheme[side-length] long. The polygon is actually constructed by going from vertex to
+  vertex around the regular polgon, but skipping over every @scheme[step-count] verticies.
+  
+  For examples, if @scheme[side-count] is @scheme[5] and @scheme[step-count] is @scheme[2],
+  then this function produces a shape just like @scheme[star].
+  
+  @image-examples[(star-polygon 40 5 2 "solid" "seagreen")
+                  (star-polygon 40 7 3 "outline" "darkred")
+                  (star-polygon 20 10 3 "solid" "cornflowerblue")]
+ 
+}
+                
 @section{Overlaying Images}
 
 @defproc[(overlay [i1 image?] [i2 image?] [is image?] ...) image?]{

@@ -18,9 +18,6 @@
          
          frame
          
-         ellipse
-         rectangle
-         
          show-image
          save-image
          bring-between
@@ -40,9 +37,14 @@
          image-width
          image-height
          
+         circle
+         ellipse
+         rectangle
+         
          regular-polygon
          triangle 
          star
+         star-polygon
          
          swizzle)
 
@@ -190,7 +192,7 @@
      (if (string? arg)
          (string->symbol arg)
          arg)]
-    [(width height)
+    [(width height radius)
      (check-arg fn-name
                 (and (real? arg)
                      (not (negative? arg)))
@@ -621,11 +623,7 @@
         (make-point 0 height)))
   
 
-;;       circle
-;;       ellipse
-;;       triangle
 ;;       line
-;;       star
 ;;       text
 
 (define/chk (triangle side-length mode color)
@@ -635,6 +633,16 @@
   (make-polygon/star side-length side-count mode color values))
 
 (define/chk (star-polygon side-length side-count step-count mode color)
+  (check-arg 'star-polygon
+             (step-count . < . side-count)
+             (format "number that is smaller than the side-count (~a)" side-count)
+             3
+             step-count)
+  (check-arg 'star-polygon
+             (= 1 (gcd side-count step-count))
+             (format "number that is relatively prime to the side-count (~a)" side-count)
+             3
+             step-count)
   (make-polygon/star side-length side-count mode color (λ (l) (swizzle l step-count))))
 
 (define/chk (star side-length mode color)
@@ -649,6 +657,11 @@
       (make-image (make-translate (- l) (- t) poly)
                   (make-bb (- r l) (- b t) (- b t))
                   #f))))
+
+(define (gcd a b)
+  (cond
+    [(zero? b) a]
+    [else (gcd b (modulo a b))]))
 
 ;; swizzle : (listof X)[odd-length] -> (listof X)
 ;; returns a list with the same elements, 
@@ -681,6 +694,12 @@
                             color)
               (make-bb width height height)
               #f))
+
+(define/chk (circle radius mode color)
+  (let ([w/h (* 2 radius)])
+    (make-image (make-ellipse w/h w/h 0 mode color)
+                (make-bb w/h w/h w/h)
+                #f)))
 
 (define (mode-color->pen mode color)
   (send the-pen-list find-or-create-pen color 1 

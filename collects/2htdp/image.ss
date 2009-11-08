@@ -64,10 +64,12 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          scale
          scale/xy
          
+         circle
          ellipse
          rectangle
          regular-polygon
          star
+         star-polygon
          triangle
          
          x-place?
