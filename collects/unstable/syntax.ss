@@ -2,6 +2,7 @@
 ;; owner: ryanc
 (require syntax/kerncase
          syntax/stx
+         unstable/struct
          (for-syntax scheme/base
                      scheme/private/sc))
 
@@ -37,7 +38,7 @@
           [(prefab-struct-key x)
            => (lambda (key)
                 (apply make-prefab-struct key
-                       (loop (cdr (vector->list (struct->vector x))))))]
+                       (loop (struct->list x))))]
           [else x])))
 
 ;; Defining pattern variables

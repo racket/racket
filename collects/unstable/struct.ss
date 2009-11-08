@@ -2,7 +2,8 @@
 ;; owner: ryanc
 (require (for-syntax scheme/base
                      scheme/struct-info))
-(provide make)
+(provide make
+         struct->list)
 
 ;; (make struct-name field-expr ...)
 ;; Checks that correct number of fields given.
@@ -39,3 +40,16 @@
          (syntax-property #'(constructor expr ...)
                           'disappeared-use
                           #'S)))]))
+
+(define dummy-value (box 'dummy))
+
+;; struct->list : struct? #:false-on-opaque? bool -> (listof any/c)
+(define (struct->list s #:false-on-opaque? [false-on-opaque? #f])
+  (let ([vec (struct->vector s dummy-value)])
+    (and (for/and ([elem (in-vector vec)])
+           (cond [(eq? elem dummy-value)
+                  (unless false-on-opaque?
+                    (raise-type-error 'struct->list "non-opaque struct" s))
+                  #f]
+                 [else #t]))
+         (cdr (vector->list vec)))))

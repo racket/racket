@@ -8,6 +8,7 @@
          syntax/stx
          syntax/keyword
          unstable/syntax
+         unstable/struct
          "../util.ss"
          "rep-data.ss"
          "codegen-data.ss")
@@ -390,7 +391,7 @@
      (and (struct? (syntax-e #'s)) (prefab-struct-key (syntax-e #'s)))
      (let* ([s (syntax-e #'s)]
             [key (prefab-struct-key s)]
-            [contents (cdr (vector->list (struct->vector s)))])
+            [contents (struct->list s)])
        (let ([lp (parse-single-pattern (datum->syntax #f contents #'s) decls)])
          (create-pat:compound `(#:pstruct ,key) (list lp))))]))
 

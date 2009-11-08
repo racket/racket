@@ -1,5 +1,6 @@
 #lang scheme/base
-(require (for-syntax scheme/base scheme/path))
+(require unstable/struct
+         (for-syntax scheme/base unstable/struct))
 (provide match)
 
 (define-syntax (match stx)
@@ -48,7 +49,7 @@
     [(match-p x s success failure)
      (prefab-struct-key (syntax-e #'s))
      (with-syntax ([key (prefab-struct-key (syntax-e #'s))]
-                   [(p ...) (cdr (vector->list (struct->vector (syntax-e #'s))))])
+                   [(p ...) (struct->list (syntax-e #'s))])
        #'(let ([xkey (prefab-struct-key x)])
            (if (equal? xkey 'key)
                (let ([xps (cdr (vector->list (struct->vector x)))])

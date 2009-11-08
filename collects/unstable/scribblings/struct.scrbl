@@ -24,5 +24,28 @@ is raised at compile time.
   (make triple 3 4 5)
   (make triple 2 4)
 ]
+}
 
+@defproc[(struct->list [v any/c]
+                       [#:false-on-opaque? false-on-opaque? boolean? #f])
+         (or/c list? #f)]{
+
+Returns a list containing the struct instance @scheme[v]'s
+fields. Unlike @scheme[struct->vector], the struct name itself is not
+included.
+
+The struct instance @scheme[v] must be fully accessible using the
+current inspector. If any fields are inaccessible, either an error is
+raised or @scheme[#f] is returned, depending on the value of
+@scheme[false-on-opaque?]. The default is to raise an error.
+
+@examples[#:eval the-eval
+(define-struct open (u v) #:transparent)
+(struct->list (make-open 'a 'b))
+(struct->list #s(pre 1 2 3))
+(define-struct secret (x y))
+(struct->list (make-secret 17 22))
+(struct->list (make-secret 17 22) #:false-on-opaque? #t)
+(struct->list 'not-a-struct #:false-on-opaque? #t)
+]
 }

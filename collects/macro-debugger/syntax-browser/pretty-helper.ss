@@ -4,6 +4,7 @@
          scheme/pretty
          macro-debugger/util/class-iop
          syntax/stx
+         unstable/struct
          "interfaces.ss")
 (provide (all-defined-out))
 
@@ -140,7 +141,7 @@
 ;; unfold-pstruct : prefab-struct -> (values (list -> prefab-struct) list)
 (define (unfold-pstruct obj)
   (define key (prefab-struct-key obj))
-  (define fields (cdr (vector->list (struct->vector obj))))
+  (define fields (struct->list obj))
   (values (lambda (new-fields)
             (apply make-prefab-struct key new-fields))
           fields))

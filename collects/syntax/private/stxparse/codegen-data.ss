@@ -3,6 +3,7 @@
          (for-template scheme/base
                        syntax/stx
                        scheme/stxparam
+                       unstable/struct
                        "runtime.ss"))
 (provide (all-defined-out))
 
@@ -16,7 +17,7 @@
                     (let ([xkey (prefab-struct-key x)])
                       (and xkey (equal? xkey (quote key)))))
                 (list (lambda (s d)
-                        #`(datum->syntax #,s (cdr (vector->list (struct->vector #,d))) #,s)))
+                        #`(datum->syntax #,s (struct->list #,d) #,s)))
                 (list #'dfc-add-unpstruct))]))
 
 ;; A Kind is
