@@ -3,7 +3,9 @@
          scribble/core
          scribble/manual
          scribble/scheme
-         (for-syntax scheme/base))
+         (for-syntax scheme/base)
+         "image-toc.ss")
+
 (provide image-examples
          exp->filename)
 
@@ -38,8 +40,11 @@
                     expr-paras
                     val-list+outputs)))))
 
-(define (exp->filename exp)
-  (regexp-replace*
-   #rx"[() '\\/\"]"
-   (format "~s.png" exp)
-   "_"))
+(define (exp->filename exp) 
+  (let ([fn (assoc exp mapping)])
+    (cond 
+      [fn 
+       (cadr fn)]
+      [else
+       (fprintf (current-error-port) "exp->filename: unknown exp ~s\n" exp)
+       "unk.png"])))

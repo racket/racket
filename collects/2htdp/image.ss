@@ -71,6 +71,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          star
          star-polygon
          triangle
+         text
+         text/font
          
          x-place?
          y-place?

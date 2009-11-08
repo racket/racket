@@ -46,6 +46,9 @@
          star
          star-polygon
          
+         text
+         text/font
+         
          swizzle)
 
 
@@ -235,6 +238,26 @@
        (if (send the-color-database find-color color-str)
            color-str
            "black"))]
+    [(string)
+     (check-arg fn-name (string? arg) 'string i arg)
+     arg]
+    [(font-size)
+     (check-arg fn-name (and (integer? arg) (<= 1 arg 255)) 'font-size i arg)
+     arg]
+    [(face)
+     (check-arg fn-name (or (not arg) (string? arg)) 'face i arg)
+     arg]
+    [(family)
+     (check-arg fn-name (memq arg '(default decorative roman script swiss modern symbol system)) 'family i arg)
+     arg]
+    [(style)
+     (check-arg fn-name (memq arg '(normal italic slant)) 'style i arg)
+     arg]
+    [(weight)
+     (check-arg fn-name (memq arg '(normal bold light)) 'weight i arg)
+     arg]
+    [(underline)
+     (and arg #t)]
     [else
      (error 'check "the function ~a has an argument with an unknown name: ~s"
             fn-name
@@ -558,7 +581,14 @@
     [(text? atomic-shape)
      (make-text (text-string atomic-shape)
                 (bring-between (+ θ (text-angle atomic-shape)) 360)
-                (text-font atomic-shape))]
+                (text-y-scale atomic-shape)
+                (text-color atomic-shape)
+                (text-size  atomic-shape)
+                (text-face  atomic-shape)
+                (text-family atomic-shape)
+                (text-style atomic-shape)
+                (text-weight  atomic-shape)
+                (text-underline atomic-shape))]
     [(bitmap? atomic-shape)
      (make-bitmap (bitmap-raw-bitmap atomic-shape)
                   (bitmap-raw-mask atomic-shape)
@@ -625,6 +655,35 @@
 
 ;;       line
 ;;       text
+
+;; this is just so that 'text' objects can be sized.
+(define text-sizing-bm (make-object bitmap-dc% (make-object bitmap% 1 1)))
+
+(define/chk (text string font-size color)
+  (mk-text string font-size color #f 'swiss 'normal 'normal #f))
+
+(define/chk (text/font string font-size color face family style weight underline)
+  (mk-text string font-size color face family style weight underline))
+
+(define (mk-text str font-size color face family style weight underline)
+  (cond
+    [(<= (string-length str) 1)
+     (mk-single-text str font-size color face family style weight underline)]
+    [else
+     (let ([letters (string->list str)])
+       (beside/internal
+        'baseline
+        (mk-single-text (string (car letters)) font-size color face family style weight underline)
+        (map (λ (letter)
+               (mk-single-text (string letter) font-size color face family style weight underline))
+             (cdr letters))))]))
+
+(define (mk-single-text letter font-size color face family style weight underline)
+  (let ([text (make-text letter 0 1 color font-size face family style weight underline)])
+    (let-values ([(w h a d) (send text-sizing-bm get-text-extent letter (text->font text))])
+      (make-image text
+                  (make-bb w h d)
+                  #f))))
 
 (define/chk (triangle side-length mode color)
   (make-polygon/star side-length 3 mode color values))

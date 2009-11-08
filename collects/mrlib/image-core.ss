@@ -13,6 +13,16 @@ use of this library is the snip class addition it
 does (and any code that that does not depend on
 has been moved out).
 
+
+-- in the middle of text:
+
+  - bounding boxes
+  - rotating (and bounding boxes)
+  - hbl append(?)
+  - this doesn't work (how to test?)
+(beside/places "baseline"
+                 (text "ijy" 12 'black)
+                 (text "ijy" 24 'black))
 |#
 
 (require scheme/class
@@ -115,9 +125,11 @@ has been moved out).
 ;;  - (make-ellipse width height angle mode color)
 (define-struct/reg-mk ellipse (width height angle mode color) #:transparent #:omit-define-syntaxes)
 ;;
-;;  - (make-text string angle font)
+;;  - (make-text string angle number color
+;;               number (or/c #f string) family (or/c 'normal 'italic) (or/c 'normal 'light 'bold) boolean)
 ;;    NOTE: font can't be the raw mred font or else copy & paste won't work
-(define-struct/reg-mk text (string angle font) #:omit-define-syntaxes #:transparent)
+(define-struct/reg-mk text (string angle y-scale color size face family style weight underline) 
+  #:omit-define-syntaxes #:transparent)
 ;;
 ;;  - (make-bitmap (is-a?/c bitmap%) angle positive-real (or/c #f (is-a?/c bitmap%)))
 ;;    NOTE: bitmap copying needs to happen in 'write' and 'read' methods
@@ -355,11 +367,20 @@ has been moved out).
                    (ellipse-angle shape)
                    (ellipse-mode shape)
                    (ellipse-color shape))]
-    [(text? shape) 
-     (unless (and (= 1 x-scale)
-                  (= 1 y-scale))
-       (fprintf (current-error-port) "scaling text, ignoring\n"))
-     shape]
+    [(text? shape)
+     ;; should probably do something different here so that
+     ;; the y-scale is always greater than 1
+     ;; (or else always smaller than 1)
+     (make-text (text-string shape)
+                (text-angle shape)
+                (* (text-y-scale shape) (/ y-scale x-scale))
+                (text-color shape)
+                (* (text-size shape) x-scale)
+                (text-face shape)
+                (text-family shape)
+                (text-style shape)
+                (text-weight shape)
+                (text-underline shape))]
     [(bitmap? shape) 
      (unless (and (= 1 x-scale)
                   (= 1 y-scale))
@@ -388,13 +409,21 @@ has been moved out).
 
 ;; render-image : normalized-shape dc dx dy -> void
 (define (render-image image dc dx dy)
-  (let loop ([shape (send image get-normalized-shape)])
-    (cond
-      [(overlay? shape)
-       (render-simple-shape (overlay-bottom shape) dc dx dy)
-       (loop (overlay-top shape))]
-      [else
-       (render-simple-shape shape dc dx dy)])))
+  (let ([pen (send dc get-pen)]
+        [brush (send dc get-brush)]
+        [font (send dc get-font)]
+        [fg (send dc get-text-foreground)])
+    (let loop ([shape (send image get-normalized-shape)])
+      (cond
+        [(overlay? shape)
+         (render-simple-shape (overlay-bottom shape) dc dx dy)
+         (loop (overlay-top shape))]
+        [else
+         (render-simple-shape shape dc dx dy)]))
+    (send dc set-pen pen)
+    (send dc set-brush brush)
+    (send dc set-font font)
+    (send dc set-text-foreground fg)))
 
 (define (render-simple-shape simple-shape dc dx dy)
   (cond
@@ -442,9 +471,31 @@ has been moved out).
                 (send the-color-database find-color "black")
                 (bitmap-raw-mask atomic-shape))]
          [(text? atomic-shape)
-          (let ([θ (degrees->radians (text-angle atomic-shape))])
-            (send dc set-font (text-font atomic-shape))
-            (send dc draw-text (text-string atomic-shape) dx dy #f 0 angle))]))]))
+          (let ([θ (degrees->radians (text-angle atomic-shape))]
+                [font (send dc get-font)])
+            (send dc set-font (text->font atomic-shape))
+            (send dc set-text-foreground 
+                  (or (send the-color-database find-color (text-color atomic-shape))
+                      (send the-color-database find-color "black")))
+            (send dc draw-text (text-string atomic-shape) dx dy #f 0 θ))]))]))
+
+(define (text->font text)
+  (cond
+    [(text-face text)
+     (send the-font-list find-or-create-font
+           (text-size text)
+           (text-face text)
+           (text-family text)
+           (text-style text) 
+           (text-weight text)
+           (text-underline text))]
+    [else
+     (send the-font-list find-or-create-font
+           (text-size text)
+           (text-family text)
+           (text-style text) 
+           (text-weight text)
+           (text-underline text))]))
 
 (define (ellipse-rotated-size ew eh θ)
   (cond
@@ -490,7 +541,8 @@ has been moved out).
          make-translate translate? translate-dx translate-dy translate-shape
          make-scale scale-x scale-y scale-shape
          make-ellipse ellipse? ellipse-width ellipse-height ellipse-angle ellipse-mode ellipse-color
-         make-text text? text-string text-angle text-font
+         make-text text? text-string text-angle text-y-scale text-color
+         text-angle text-size text-face text-family text-style text-weight text-underline
          make-polygon polygon? polygon-points polygon-mode polygon-color
          make-bitmap bitmap? bitmap-raw-bitmap bitmap-raw-mask bitmap-angle bitmap-scale bitmap-rendered-bitmap
          
@@ -502,6 +554,8 @@ has been moved out).
          image-right
          image-bottom
          image-baseline
+         
+         text->font
          
          render-image)
 

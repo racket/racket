@@ -104,6 +104,42 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
                   (star-polygon 20 10 3 "solid" "cornflowerblue")]
  
 }
+
+@defproc[(text [string string?] [font-size (and/c integer? (<=/c 1 255))] [color (or/c symbol? string?)])
+         image?]{
+                
+  Constructs an image that draws the given string, using the font size and color.
+                 
+  @image-examples[(text "Hello" 24 "olive")
+                  (text "Goodbye" 36 "indigo")]
+}
+
+@defproc[(text/font [string string?] [font-size (and/c integer? (<=/c 1 255))] [color (or/c symbol? string?)]
+                    [face (or/c string? #f)]
+                    [family (or/c 'default 'decorative 'roman 'script 'swiss 'modern 'symbol 'system)]
+                    [style (or/c 'normal 'italic 'slant)]
+                    [weight (or/c 'normal 'bold 'light)]
+                    [underline? any/c])
+         image?]{
+                
+  Constructs an image that draws the given string, using a complete font specification.
+  
+  The @scheme[face] and the @scheme[family] combine to give the complete typeface. If 
+  @scheme[face] is available on the system, it is used, but if not then a default typeface
+  based on the @scheme[family] is chosen. The @scheme[style] controls if the face is italic
+  or not (under Windows and Mac OS X, @scheme['slant] and @scheme['italic] are the same),
+  the @scheme[weight] controls if it is boldface (or light), and @scheme[underline?]
+  determines if the face is underlined. For more details on these arguments, see @scheme[face%],
+  which ultimately is what this code uses to draw the font.
+                 
+  @image-examples[(text/font "Hello" 24 "olive"
+                             "Gill Sans" 'swiss 'normal 'bold #f)
+                  (text/font "Goodbye" 18 "indigo"
+                             #f 'modern 'italic 'normal #f)
+                  (text/font "not really a link" 18 "blue"
+                             #f 'roman 'normal 'normal #t)]
+}
+
                 
 @section{Overlaying Images}
 
@@ -186,7 +222,11 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
                                  (ellipse 20 70 "solid" "mediumorchid")
                                  (ellipse 20 50 "solid" "darkorchid")
                                  (ellipse 20 30 "solid" "purple")
-                                 (ellipse 20 10 "solid" "indigo"))]
+                                 (ellipse 20 10 "solid" "indigo"))
+                                                                  
+                  (beside/places "baseline"
+                                 (text "ijy" 18 "black")
+                                 (text "ijy" 24 "black"))]
                                  
   
   }
