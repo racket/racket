@@ -21,11 +21,16 @@ A @deftech{hash table} (or simply @deftech{hash}) maps each of its
 keys to a single value. For a given hash table, keys are equivalent
 via @scheme[equal?], @scheme[eqv?], or @scheme[eq?], and keys are
 retained either strongly or weakly (see @secref["weakbox"]). A hash
-table is also either mutable or immutable. Immutable tables support
-constant-time access and update, just like mutable hash tables; the
-constant on immutable operations is usually larger, but the
-functional nature of immutable hash tables can pay off in certain
-algorithms.
+table is also either mutable or immutable. Immutable hash tables
+support effectively constant-time access and update, just like mutable
+hash tables; the constant on immutable operations is usually larger,
+but the functional nature of immutable hash tables can pay off in
+certain algorithms.
+
+@margin-note{Immutable hash tables actually provide @math{O(log N)}
+access and update. Since @math{N} is limited by the address space so
+that @math{log N} is limited to less than 30 or 62 (depending on the
+platform), @math{log N} can be treated reasonably as a constant.}
 
 A hash table can be used as a two-valued @tech{sequence} (see
 @secref["sequences"]). The keys and values of the hash table serve as
@@ -51,7 +56,7 @@ a table-specific semaphore as needed. Three caveats apply, however:
 
   @item{If a thread is terminated while applying @scheme[hash-ref],
   @scheme[hash-set!], @scheme[hash-remove!], @scheme[hash-ref!],
-  or @scheme[has-update!] to a hash table that
+  or @scheme[hash-update!] to a hash table that
   uses @scheme[equal?] or @scheme[eqv?] key comparisons, all current
   and future operations on the hash table may block indefinitely.}
 
