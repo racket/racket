@@ -92,9 +92,11 @@
    (list
     '(overlay
       (ellipse 10 10 "solid" "red")
-      (ellipse 30 30 "solid" "black")
+      (ellipse 20 20 "solid" "black")
+      (ellipse 30 30 "solid" "red")
+      (ellipse 40 40 "solid" "black")
       (ellipse 50 50 "solid" "red")
-      (ellipse 70 70 "solid" "black"))
+      (ellipse 60 60 "solid" "black"))
     "20.png")
    (list
     '(overlay

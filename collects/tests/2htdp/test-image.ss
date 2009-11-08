@@ -553,3 +553,14 @@
 
 (check-equal? (swizzle (list 0 1 2 3 4) 2)
               (list 0 2 4 1 3))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  misc stuff
+;;
+
+(check-equal? (beside/places "baseline"
+                             (text "a" 18 "black")
+                             (text "b" 18 "black"))
+              (text "ab" 18 "black"))

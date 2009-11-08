@@ -129,7 +129,7 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
   based on the @scheme[family] is chosen. The @scheme[style] controls if the face is italic
   or not (under Windows and Mac OS X, @scheme['slant] and @scheme['italic] are the same),
   the @scheme[weight] controls if it is boldface (or light), and @scheme[underline?]
-  determines if the face is underlined. For more details on these arguments, see @scheme[face%],
+  determines if the face is underlined. For more details on these arguments, see @scheme[font%],
   which ultimately is what this code uses to draw the font.
                  
   @image-examples[(text/font "Hello" 24 "olive"
@@ -151,9 +151,11 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
   @image-examples[(overlay (ellipse 60 30 "solid" "purple")
                            (rectangle 30 60 "solid" "orange"))
                   (overlay (ellipse 10 10 "solid" "red")
-                           (ellipse 30 30 "solid" "black")
+                           (ellipse 20 20 "solid" "black")
+                           (ellipse 30 30 "solid" "red")
+                           (ellipse 40 40 "solid" "black")
                            (ellipse 50 50 "solid" "red")
-                           (ellipse 70 70 "solid" "black"))]
+                           (ellipse 60 60 "solid" "black"))]
   
   }
 
@@ -325,6 +327,10 @@ This section lists predicates for the basic structures provided by the image lib
 @scheme['center],
 @scheme["baseline"], or
 @scheme['baseline].
+
+The baseline of an image is the place where the bottoms any letters line up, not counting descenders, e.g. the tail on ``y'' or ``g'' or ``j''.
+
+
 }
 
 @defproc[(x-place? [x any/c]) boolean?]{

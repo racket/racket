@@ -46,5 +46,6 @@
       [fn 
        (cadr fn)]
       [else
-       (fprintf (current-error-port) "exp->filename: unknown exp ~s\n" exp)
+       (unless (getenv "PLTSHOWIMAGES")
+         (fprintf (current-error-port) "exp->filename: unknown exp ~s\n" exp))
        "unk.png"])))

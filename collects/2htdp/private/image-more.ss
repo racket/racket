@@ -680,9 +680,9 @@
 
 (define (mk-single-text letter font-size color face family style weight underline)
   (let ([text (make-text letter 0 1 color font-size face family style weight underline)])
-    (let-values ([(w h a d) (send text-sizing-bm get-text-extent letter (text->font text))])
+    (let-values ([(w h d a) (send text-sizing-bm get-text-extent letter (text->font text))])
       (make-image text
-                  (make-bb w h d)
+                  (make-bb w h (- h d))
                   #f))))
 
 (define/chk (triangle side-length mode color)
