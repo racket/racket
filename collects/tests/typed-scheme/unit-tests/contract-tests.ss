@@ -6,7 +6,7 @@
          (private type-contract)	 
 	 (rep type-rep filter-rep object-rep)
          (types utils union convenience)
-         (utils tc-utils mutated-vars)
+         (utils tc-utils)
          (schemeunit))
 
 (define-syntax-rule (t e)

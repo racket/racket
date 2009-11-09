@@ -9,7 +9,8 @@
          (rename-in (types utils union convenience)
                     [Un t:Un]
                     [-> t:->])
-         (utils tc-utils mutated-vars)
+         (utils tc-utils)
+         unstable/mutated-vars
          (env type-name-env type-environments init-envs)
          (schemeunit)
          syntax/parse)
