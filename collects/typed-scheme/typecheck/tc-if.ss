@@ -8,7 +8,7 @@
                     [remove *remove])
          (env lexical-env type-environments)
          (r:infer infer)
-	 (utils tc-utils mutated-vars)
+	 (utils tc-utils)
          (typecheck tc-envops tc-metafunctions)
          syntax/kerncase
          mzlib/trace

@@ -11,7 +11,8 @@
          (types utils convenience)
          (private parse-type type-annotation type-contract)
          (env type-env init-envs type-name-env type-alias-env lexical-env)
-         (utils tc-utils mutated-vars)
+	 unstable/mutated-vars
+         (utils tc-utils)
          "provide-handling.ss"
          "def-binding.ss"
          (for-template

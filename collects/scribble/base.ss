@@ -120,7 +120,7 @@
 
 (provide/contract 
  [author (->* (content?) () #:rest (listof content?) block?)]
- [author+email (-> content? string? element?)])
+ [author+email (->* (content? string?) (#:obfuscate? any/c) element?)])
 
 (define (author . auths)
   (make-paragraph 

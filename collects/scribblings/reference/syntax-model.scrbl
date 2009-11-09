@@ -229,7 +229,7 @@ the binding (according to @scheme[free-identifier=?]) matters.}
          (id ...+ . id)
          id]]
 
-A fully-expanded @tech{syntax object} corresponds to a @deftech{parse}
+A @deftech{fully-expanded} @tech{syntax object} corresponds to a @deftech{parse}
 of a program (i.e., a @deftech{parsed} program), and @tech{lexical
 information} on its @tech{identifiers} indicates the
 @tech{parse}.

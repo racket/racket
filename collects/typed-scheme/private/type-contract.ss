@@ -17,7 +17,7 @@
  mzlib/trace
  scheme/list
  (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
- (for-template scheme/base scheme/contract (utils poly-c) (only-in scheme/class object% is-a?/c subclass?/c)))
+ (for-template scheme/base scheme/contract unstable/poly-c (only-in scheme/class object% is-a?/c subclass?/c)))
 
 (define (define/fixup-contract? stx)
   (or (syntax-property stx 'typechecker:contract-def)

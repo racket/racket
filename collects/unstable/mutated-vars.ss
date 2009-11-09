@@ -1,8 +1,7 @@
 #lang scheme/base
 
 (require (for-template scheme/base)
-         syntax/boundmap syntax/kerncase
-         mzlib/trace)
+         syntax/boundmap syntax/kerncase)
 
 ;; mapping telling whether an identifer is mutated
 ;; maps id -> boolean
@@ -33,11 +32,11 @@
                                          (fmv/list #'b))]
     [(letrec-values ([_ e] ...) . b) (begin (fmv/list #'(e ...))
                                             (fmv/list #'b))]
+    [(letrec-syntaxes+values _ ([_ e] ...) . b) (begin (fmv/list #'(e ...))
+						       (fmv/list #'b))]
     [(#%expression e) (find-mutated-vars #'e)]
     ;; all the other forms don't have any expression subforms (like #%top)
     [_ (void)]))
-
-;(trace find-mutated-vars)
 
 ;; checks to see if a particular variable is ever set!'d
 ;; is-var-mutated? : identifier -> boolean
