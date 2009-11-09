@@ -80,7 +80,7 @@ Returns the next floating-point value in the stream.
 
 Returns the next byte string from the stream.  This is
 the recommended way to read bytes back in from a stream;
-use @method[editor-stream-in% put] with two arguments
+use @method[editor-stream-out% put] with two arguments
 (passing along the length of the bytes) to write out the bytes
 to match this method.
 
