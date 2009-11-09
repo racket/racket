@@ -143,7 +143,7 @@
                      (regexp-replace* #rx"[.]"
                                       (regexp-replace* #rx"@" email " at ")
                                       " dot ")
-                     email)
+                     (hyperlink (string-append "mailto:" email) email))
                  ">")))
 
 ;; ----------------------------------------

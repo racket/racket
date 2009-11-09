@@ -12,7 +12,7 @@
 @defmodule[unstable/poly-c]
 
 @author[@author+email["Sam Tobin-Hochstadt" "samth@ccs.neu.edu"]
-	@author+email["Carl Eastlund" "cce@ccs.neu.edu" #:obfuscate? #t]]
+	@author+email["Carl Eastlund" "cce@ccs.neu.edu"]]
 
 
 @defform[(poly/c ([id+ id-] ...) cnt)]{
