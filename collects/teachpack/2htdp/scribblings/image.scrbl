@@ -413,5 +413,13 @@ Equality testing may contain a few nuances, though:
          is true, but that subtle aspects of font drawing may be wrong, since
          the underlying toolkit only gets a single letter at a time, instead
          of the entire word (or sentence).
+         
+         The most obvious way that this shows up is in the handling of ligatures.
+         For example, the letter combinations ``ff'' and ``fi'' and ``fl'' are
+         generally drawn intertwined when they appear together, and thus an ``f''
+         drawn separately from an ``i'' looks different than the ligature ``fi''.
+         For example, here is how 24 point Times font looks when the word ``difficult''
+         is drawn, first with ligatures and then without:
+         @centerline{@image["2htdp/scribblings/ligature.png"]}.
          }
 ]
