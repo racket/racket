@@ -2,6 +2,7 @@
 (require scheme/class
          (for-syntax scheme/base
                      syntax/parse
+                     unstable/syntax
                      "class-ct.ss"))
 (provide define-interface
          define-interface/dynamic
@@ -130,8 +131,7 @@
                      [(method ...) (static-interface-members si)]
                      [(name.method ...)
                       (map (lambda (m)
-                             (datum->syntax #'name
-                                            (string->symbol (format "~a.~a" (syntax-e #'name) m))))
+                             (format-id #'name "~a.~a" (syntax-e #'name) m))
                            (static-interface-members si))])
          #`(begin (define name-internal
                     (check-object<:interface define: expr iface))

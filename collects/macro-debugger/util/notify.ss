@@ -1,6 +1,6 @@
 
 #lang scheme/base
-(require (for-syntax scheme/base)
+(require (for-syntax scheme/base unstable/syntax)
          scheme/list
          scheme/class
          macro-debugger/util/class-iop
@@ -18,30 +18,27 @@
          check-box/notify-box
          choice/notify-box)
 
-(define-for-syntax (join . args)
-  (define (->string x)
-    (cond [(string? x) x]
-          [(symbol? x) (symbol->string x)]
-          [(identifier? x) (symbol->string (syntax-e x))]
-          [else (error '->string)]))
-  (string->symbol (apply string-append (map ->string args))))
-
 (define-syntax override/return-false
   (syntax-rules ()
     [(override/return-false m ...)
      (begin (define/override (m) #f) ...)]))
 
+(define-for-syntax (mk-init name)
+  (format-id name "init-~a" (syntax-e name)))
+(define-for-syntax (mk-get name)
+  (format-id name "get-~a" (syntax-e name)))
+(define-for-syntax (mk-set name)
+  (format-id name "set-~a" (syntax-e name)))
+(define-for-syntax (mk-listen name)
+  (format-id name "listen-~a" (syntax-e name)))
+
 (define-syntax (field/notify stx)
   (syntax-case stx ()
     [(field/notify name value)
-     (with-syntax ([init-name
-                    (datum->syntax #'name (join "init-" #'name))]
-                   [get-name
-                    (datum->syntax #'name (join "get-" #'name))]
-                   [set-name
-                    (datum->syntax #'name (join "set-" #'name))]
-                   [listen-name
-                    (datum->syntax #'name (join "listen-" #'name))])
+     (with-syntax ([init-name (mk-init #'name)]
+                   [get-name (mk-get #'name)]
+                   [set-name (mk-set #'name)]
+                   [listen-name (mk-listen #'name)])
        #'(begin (field [name (init-name)])
                 (define/public (init-name) value)
                 (define/public-final (get-name)
@@ -54,14 +51,10 @@
 (define-syntax (notify-methods stx)
   (syntax-case stx ()
     [(notify-methods name)
-     (with-syntax ([init-name
-                    (datum->syntax #'name (join "init-" #'name))]
-                   [get-name
-                    (datum->syntax #'name (join "get-" #'name))]
-                   [set-name
-                    (datum->syntax #'name (join "set-" #'name))]
-                   [listen-name
-                    (datum->syntax #'name (join "listen-" #'name))])
+     (with-syntax ([init-name (mk-init #'name)]
+                   [get-name (mk-get #'name)]
+                   [set-name (mk-set #'name)]
+                   [listen-name (mk-listen #'name)])
        #'(begin (field [name (init-name)])
                 (define/public (init-name)
                   (new notify-box% (value #f)))
@@ -75,15 +68,13 @@
 (define-syntax (connect-to-pref stx)
   (syntax-case stx ()
     [(connect-to-pref name pref)
-     (with-syntax ([init-name
-                    (datum->syntax #'name (join "init-" #'name))])
+     (with-syntax ([init-name (mk-init #'name)])
        #'(define/override (init-name) (notify-box/pref pref)))]))
 
 (define-syntax (connect-to-pref/readonly stx)
   (syntax-case stx ()
     [(connect-to-pref/readonly name pref)
-     (with-syntax ([init-name
-                    (datum->syntax #'name (join "init-" #'name))])
+     (with-syntax ([init-name (mk-init #'name)])
        #'(define/override (init-name) (notify-box/pref/readonly pref)))]))
 
 (define-syntax (define/listen stx)
@@ -91,12 +82,9 @@
     [(define/listen name value)
      (unless (identifier? #'name)
        (raise-syntax-error 'define/listen "expected identifier" #'name))
-     (with-syntax ([get-name
-                    (datum->syntax #'name (join "get-" #'name))]
-                   [set-name
-                    (datum->syntax #'name (join "set-" #'name))]
-                   [listen-name
-                    (datum->syntax #'name (join "listen-" #'name))])
+     (with-syntax ([get-name (mk-get #'name)]
+                   [set-name (mk-set #'name)]
+                   [listen-name (mk-listen #'name)])
        #'(begin
            (define name value)
            (define listeners null)

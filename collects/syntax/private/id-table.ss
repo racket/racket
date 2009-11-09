@@ -1,5 +1,6 @@
 #lang scheme/base
-(require (for-syntax scheme/base)
+(require (for-syntax scheme/base
+                     unstable/syntax)
          scheme/dict)
 (provide id-table-position?)
 
@@ -40,9 +41,6 @@
       (apply f args))
     name)
    arity))
-
-(define-for-syntax (format-id stx fmt . args)
-  (datum->syntax stx (string->symbol (apply format fmt args))))
 
 (define-syntax (make-code stx)
   (syntax-case stx ()

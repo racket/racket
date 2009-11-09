@@ -1,7 +1,8 @@
 
 #lang scheme/base
-(require (for-syntax scheme/base)
-         (for-syntax mzlib/etc)
+(require (for-syntax scheme/base
+                     mzlib/etc
+                     unstable/syntax)
          "yacc-ext.ss")
 (provide ! ? !!
          define-production-splitter
@@ -50,26 +51,18 @@
            (raise-syntax-error 'split "bad grammar option or alternate" #'other)])
         (values options (reverse alts)))))
 
-(define-for-syntax (symbol+ . args)
-  (define (norm x)
-    (cond [(identifier? x) (norm (syntax-e x))]
-          [(string? x) x]
-          [(number? x) (number->string x)]
-          [(symbol? x) (symbol->string x)]))
-  (string->symbol (apply string-append (map norm args))))
-
 (define-for-syntax (I symbol)
   (syntax-local-introduce
    (syntax-local-get-shadower (datum->syntax #f symbol))))
 
 (define-for-syntax ($name n)
-  (I (symbol+ '$ n)))
+  (I (format-symbol "$~a" n)))
 
-(define-for-syntax (interrupted-name s)
-  (I (symbol+ s '/Interrupted)))
+(define-for-syntax (interrupted-name id)
+  (I (format-symbol "~a/Interrupted" (syntax-e id))))
 
-(define-for-syntax (skipped-name s)
-  (I (symbol+ s '/Skipped)))
+(define-for-syntax (skipped-name id)
+  (I (format-symbol "~a/Skipped" (syntax-e id))))
 
 (define-for-syntax (elaborate-skipped-tail head tail position args mk-action)
   (define-values (new-tail new-arguments)
@@ -149,7 +142,7 @@
       [((? NT) . parts-rest)
        (cons 
         ;; NT is interrupted
-        (elaborate-skipped-tail (I (symbol+ #'NT '/Interrupted))
+        (elaborate-skipped-tail (interrupted-name #'NT)
                                 #'parts-rest
                                 (add1 position)
                                 (cons ($name position) args)
@@ -163,7 +156,7 @@
 
 (define-for-syntax (generate-action-name nt pos)
   (syntax-local-get-shadower
-   (datum->syntax #f (symbol+ 'action-for- nt '/ pos))))
+   (format-id #f "action-for-~a/~a" (syntax-e nt) pos)))
 
 (define-for-syntax ((make-rewrite-alt+def nt args-spec) alt pos)
   (define pattern (car alt))
@@ -265,8 +258,8 @@
                       interrupted-alternates]
                      [skip-spec (assq '#:skipped options)]
                      [args-spec (assq '#:args options)]
-                     [name/Skipped (I (symbol+ #'name '/Skipped))]
-                     [name/Interrupted (I (symbol+ #'name '/Interrupted))]
+                     [name/Skipped (skipped-name #'name)]
+                     [name/Interrupted (interrupted-name #'name)]
                      [%action ((syntax-local-certifier) #'%action)])
          #`(begin
              (definitions #,@action-definitions)
@@ -284,11 +277,11 @@
      #'(begin)]
     [(skipped-token-values name . more)
      (identifier? #'name)
-     (with-syntax ([name/Skipped (I (symbol+ #'name '/Skipped))])
+     (with-syntax ([name/Skipped (skipped-name #'name)])
        #'(begin (productions (name/Skipped [() #f]))
                 (skipped-token-values . more)))]
     [(skipped-token-values (name value) . more)
-     (with-syntax ([name/Skipped (I (symbol+ #'name '/Skipped))])
+     (with-syntax ([name/Skipped (skipped-name #'name)])
        #'(begin (productions (name/Skipped [() value]))
                 (skipped-token-values . more)))]))
 

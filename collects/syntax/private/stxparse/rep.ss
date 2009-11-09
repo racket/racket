@@ -9,7 +9,6 @@
          syntax/keyword
          unstable/syntax
          unstable/struct
-         "../util.ss"
          "rep-data.ss"
          "codegen-data.ss")
 
@@ -499,7 +498,7 @@
 (define (name->prefix id)
   (cond [(wildcard? id) #f]
         [(epsilon? id) id]
-        [else (datum->syntax id (format-symbol "~a." (syntax-e id)))]))
+        [else (format-id id "~a." (syntax-e id))]))
 
 (define (name->bind id)
   (cond [(wildcard? id) #f]
@@ -521,7 +520,7 @@
 
 ;; prefix-attr-name : id symbol -> id
 (define (prefix-attr-name prefix name)
-  (datum->syntax prefix (format-symbol "~a~a" (syntax-e prefix) name)))
+  (format-id prefix "~a~a" (syntax-e prefix) name))
 
 ;; ----
 

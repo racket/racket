@@ -1,9 +1,9 @@
 #lang scheme/base
 (require "rep-attrs.ss"
-         "../util.ss"
+         unstable/struct
          (for-syntax scheme/base
                      syntax/stx
-                     "../util.ss"))
+                     unstable/syntax))
 (provide (all-defined-out))
 
 #|
@@ -157,10 +157,8 @@ A Kind is one of
          (with-syntax
              ([([pred accessor] ...)
                (for/list ([s (stx->list #'(struct ...))])
-                 (list (datum->syntax
-                        s (format-symbol "~a?" (syntax-e s)))
-                       (datum->syntax
-                        s (format-symbol "~a-attrs" (syntax-e s)))))])
+                 (list (format-id s "~a?" (syntax-e s))
+                       (format-id s "~a-attrs" (syntax-e s))))])
            #'(lambda (x)
                (cond [(pred x) (accessor x)] ...
                      [else (raise-type-error 'pattern-attrs "pattern" x)])))]))

@@ -1,9 +1,10 @@
 #lang scheme/base
 (require (for-syntax scheme/base
                      scheme/private/sc
+                     unstable/syntax
+                     unstable/struct
                      "rep-data.ss"
-                     "rep.ss"
-                     "../util.ss")
+                     "rep.ss")
          syntax/stx
          "parse.ss"
          "runtime.ss"

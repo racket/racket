@@ -190,5 +190,36 @@ Like @scheme[format], but produces a symbol.
 @examples[#:eval the-eval
   (format-symbol "make-~s" 'triple)
 ]
+}
 
+@defproc[(format-id [lctx (or/c syntax? #f)]
+                    [#:source src (or/c syntax? #f) #f]
+                    [#:props props (or/c syntax? #f) #f]
+                    [#:cert cert (or/c syntax? #f) #f]
+                    [fmt string?] [v any/c] ...)
+         identifier?]{
+
+Like @scheme[format-symbol], but converts the symbol into an
+identifier using @scheme[lctx] for the lexical context, @scheme[src]
+for the source location, @scheme[props] for the properties, and
+@scheme[cert] for the inactive certificates. (See
+@scheme[datum->syntax].)
+
+@examples[#:eval the-eval
+(define-syntax (make-pred stx)
+  (syntax-case stx ()
+    [(make-pred name)
+     (format-id #'name "~a?" (syntax-e #'name))]))
+(make-pred pair)
+(make-pred none-such)
+(define-syntax (better-make-pred stx)
+  (syntax-case stx ()
+    [(better-make-pred name)
+     (format-id #'name #:source #'name
+                "~a?" (syntax-e #'name))]))
+(better-make-pred none-such)
+]
+
+(Scribble doesn't show it, but the DrScheme pinpoints the location of
+the second error but not of the first.)
 }

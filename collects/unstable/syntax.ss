@@ -21,6 +21,7 @@
          record-disappeared-uses
 
          format-symbol
+         format-id
 
          current-syntax-context
          wrong-syntax)
@@ -95,8 +96,17 @@
 ;; Symbol Formatting
 
 (define (format-symbol fmt . args)
-  (let ([args (for/list ([arg args]) (if (syntax? arg) (syntax->datum arg) arg))])
-    (string->symbol (apply format fmt args))))
+  (string->symbol (apply format fmt args)))
+
+(define (format-id lctx
+                   #:source [src #f]
+                   #:props [props #f]
+                   #:cert [cert #f]
+                   fmt . args)
+  (let* ([str (apply format fmt args)]
+         [sym (string->symbol str)])
+    (datum->syntax lctx sym src props cert)))
+
 
 ;; Error reporting
 
