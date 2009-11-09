@@ -10,6 +10,6 @@ scribble/sigplan/lang
          (case key
            [(color-lexer)
             (dynamic-require 'syntax-color/scribble-lexer 'scribble-inside-lexer)]
-           [else (default defval key)]))
+           [else (default key defval)]))
 
 (require (prefix-in scribble: "../../reader.ss"))
