@@ -1344,7 +1344,7 @@ The preceding subsection dictates that our server program starts like this:
 
 ;; [Listof iworld?] iworld? -> Result 
 ;; add world @scheme[iw] to the universe, when server is in state @scheme[u]
-(define (add-world u @scheme[iw]) ...)
+(define (add-world u iw) ...)
 
 ;; [Listof iworld?] iworld? StopMessage -> Result
 ;; world @scheme[iw] sent message @scheme[m] when server is in state @scheme[u] 
@@ -1393,7 +1393,7 @@ The protocol tells us that @emph{add-world} just adds the given
 @(begin
 #reader scribble/comment-reader
 [schemeblock
-(define (add-world univ state wrld)
+(define (add-world univ wrld)
   (local ((define univ* (append univ (list wrld))))
     (make-bundle univ*
                  (list (make-mail (first univ*) 'it-is-your-turn))
