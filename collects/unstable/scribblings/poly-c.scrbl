@@ -30,3 +30,34 @@ positive position flow out of the corresponding negative position.
 (f 17)
 ]
 }
+
+@defproc[(apply/c [cnt any/c] 
+		  [#:name name any/c 
+		  (build-compound-type-name 'apply/c c)]) contract?]{
+Produces a procedure contract that is like @scheme[cnt], but any delayed
+evalutation in @scheme[cnt] is re-done on every
+application of the contracted function.
+}
+
+@defproc[(memory/c [#:name name any/c "memory/c"]
+		   [#:from from any/c (format "~a:from" name)]
+		   [#:to to any/c (format "~a:to" name)]
+		   [#:weak weak? any/c #t]
+		   [#:equal equal (or/c 'eq 'eqv 'equal) 'eq]
+		   [#:table make-table  (-> hash?)
+		   (case equal		
+                     [(eq) (if weak? make-weak-hasheq make-hasheq)]
+                     [(eqv) (if weak? make-weak-hasheqv make-hasheqv)]
+                     [(equal) (if weak? make-weak-hash make-hash)])]
+		   )
+		    (values flat-contract? flat-contract?)]{
+
+Produces a pair of contracts.  The first contract remembers all values
+that flow into it, and rejects nothing.  The second accepts only
+values that have previously been passed to the first contract.  
+
+If @scheme[weak?] is not @scheme[#f], the first contract holds onto
+the values only weakly.  @scheme[from] and @scheme[to] are the names
+of the of the two contracts. }
+
+
