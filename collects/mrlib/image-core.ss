@@ -432,15 +432,16 @@ has been moved out).
            [points (polygon-points simple-shape)])
        (send path move-to (point-x (car points)) (point-y (car points)))
        (let loop ([point (make-rectangular (point-x (car points)) (point-y (car points)))]
+                  [last-point (car points)]
                   [points (cdr points)])
          (unless (null? points)
            (let* ([vec (make-rectangular (- (point-x (car points))
-                                            (real-part point))
+                                            (point-x last-point))
                                          (- (point-y (car points))
-                                            (imag-part point)))]
+                                            (point-y last-point)))]
                   [endpoint (+ point vec (make-polar -1 (angle vec)))])
-           (send path line-to (real-part endpoint) (imag-part endpoint))
-           (loop endpoint (cdr points)))))
+             (send path line-to (real-part endpoint) (imag-part endpoint))
+             (loop endpoint (car points) (cdr points)))))
        (send path line-to (point-x (car points)) (point-y (car points)))
        (send dc set-pen (mode-color->pen (polygon-mode simple-shape) (polygon-color simple-shape)))
        (send dc set-brush (mode-color->brush (polygon-mode simple-shape) (polygon-color simple-shape)))
