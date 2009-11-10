@@ -349,6 +349,11 @@ has been moved out).
       [else 
        (error 'normalize-shape "unknown shape ~s\n" shape)])))
 
+(define (simple-shape? shape)
+  (or (and (translate? shape)
+           (np-atomic-shape? (translate-shape shape)))
+      (polygon? shape)))
+
 (define (atomic-shape? shape)
   (or (polygon? shape)
       (np-atomic-shape? shape)))
@@ -460,17 +465,18 @@ has been moved out).
               (send path ellipse 0 0 ew eh)
               (send path translate (- (/ ew 2)) (- (/ eh 2)))
               (send path rotate θ)
-              (send path translate (/ rotated-width 2) (/ rotated-height 2))
               (send dc set-pen (mode-color->pen (ellipse-mode atomic-shape) (ellipse-color atomic-shape)))
               (send dc set-brush (mode-color->brush (ellipse-mode atomic-shape) (ellipse-color atomic-shape)))
               (send dc draw-path path dx dy)))]
          [(bitmap? atomic-shape)
-          (send dc draw-bitmap 
-                (bitmap-raw-bitmap atomic-shape)
-                dx dy
-                'solid
-                (send the-color-database find-color "black")
-                (bitmap-raw-mask atomic-shape))]
+          (let ([bm (bitmap-raw-bitmap atomic-shape)]) 
+            (send dc draw-bitmap 
+                  bm
+                  (- dx (/ (send bm get-width) 2))
+                  (- dy (/ (send bm get-height) 2))
+                  'solid
+                  (send the-color-database find-color "black")
+                  (bitmap-raw-mask atomic-shape)))]
          [(text? atomic-shape)
           (let ([θ (degrees->radians (text-angle atomic-shape))]
                 [font (send dc get-font)])
@@ -478,7 +484,13 @@ has been moved out).
             (send dc set-text-foreground 
                   (or (send the-color-database find-color (text-color atomic-shape))
                       (send the-color-database find-color "black")))
-            (send dc draw-text (text-string atomic-shape) dx dy #f 0 θ))]))]))
+            (let-values ([(w h _1 _2) (send dc get-text-extent (text-string atomic-shape))])
+              (let ([p (- (make-rectangular dx dy)
+                          (* (make-polar 1 (- θ)) (make-rectangular (/ w 2) (/ h 2))))])
+                (send dc draw-text (text-string atomic-shape) 
+                      (real-part p)
+                      (imag-part p) 
+                      #f 0 θ))))]))]))
 
 (define (text->font text)
   (cond
@@ -562,3 +574,5 @@ has been moved out).
 
 ;; method names
 (provide get-shape get-bb get-normalized?)
+
+(provide np-atomic-shape? atomic-shape? simple-shape?)

@@ -340,14 +340,14 @@
 (test (normalize-shape (image-shape (ellipse 50 100 'solid 'red))
                        values)
       =>
-      (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red))))
+      (make-translate 25 50 (make-ellipse 50 100 0 'solid "red")))
 
 (test (normalize-shape (make-overlay (image-shape (ellipse 50 100 'solid 'red))
                                      (image-shape (ellipse 50 100 'solid 'blue)))
                        values)
       =>
-      (make-overlay (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red)))
-                    (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'blue)))))
+      (make-overlay (image-shape (ellipse 50 100 'solid 'red))
+                    (image-shape (ellipse 50 100 'solid 'blue))))
 
 (test (normalize-shape (make-overlay
                         (make-overlay (image-shape (ellipse 50 100 'solid 'red))
@@ -356,9 +356,9 @@
                        values)
       =>
       (make-overlay 
-       (make-overlay (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red)))
-                     (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'blue))))
-       (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'green)))))
+       (make-overlay (make-translate 25 50 (make-ellipse 50 100 0 'solid "red"))
+                     (make-translate 25 50 (make-ellipse 50 100 0 'solid "blue")))
+       (make-translate 25 50 (make-ellipse 50 100 0 'solid "green"))))
 
 (test (normalize-shape (make-overlay
                         (image-shape (ellipse 50 100 'solid 'green))
@@ -367,19 +367,19 @@
                        values)
       =>
       (make-overlay 
-       (make-overlay (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'green)))
-                     (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red))))
-       (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'blue)))))
+       (make-overlay (make-translate 25 50 (make-ellipse 50 100 0 'solid "green"))
+                     (make-translate 25 50 (make-ellipse 50 100 0 'solid "red")))
+       (make-translate 25 50 (make-ellipse 50 100 0 'solid "blue"))))
 
 (test (normalize-shape (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue)))
                        values)
       =>
-      (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue))))
+      (make-translate 125 150 (make-ellipse 50 100 0 'solid "blue")))
 
 (test (normalize-shape (make-translate 10 20 (make-translate 100 100 (image-shape (ellipse 50 100 'solid 'blue))))
                        values)
       =>
-      (make-translate 110 120 (image-shape (ellipse 50 100 'solid 'blue))))
+      (make-translate 135 170 (make-ellipse 50 100 0 'solid "blue")))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -415,13 +415,13 @@
       =>
       (round-numbers (normalize-shape (image-shape (ellipse 12 10 'solid 'red)))))
 
-(test (normalize-shape (image-shape (rotate 135 (ellipse 10 12 'solid 'red))))
+(test (round-numbers (normalize-shape (image-shape (rotate 135 (ellipse 10 12 'solid 'red)))))
       =>
-      (normalize-shape (image-shape (rotate 45 (ellipse 12 10 'solid 'red)))))
+      (round-numbers (normalize-shape (image-shape (rotate 45 (ellipse 12 10 'solid 'red))))))
 
-(test (rotate -90 (ellipse 200 400 'solid 'purple))
+(test (round-numbers (rotate -90 (ellipse 200 400 'solid 'purple)))
       =>
-      (rotate 90 (ellipse 200 400 'solid 'purple)))
+      (round-numbers (rotate 90 (ellipse 200 400 'solid 'purple))))
 
 (require (only-in lang/htdp-advanced equal~?))
 
@@ -565,8 +565,10 @@
                              (text "b" 18 "black"))
               (text "ab" 18 "black"))
 
-(check-equal? (image-width (rotate 45 (text "One" 18 'black)))
-              (let ([t (text "One" 18 'black)])
-                (image-width (rotate 45 (rectangle (image-width t) 
-                                                   (image-height t)
-                                                   'solid 'black)))))
+(check-equal? (round-numbers
+               (image-width (rotate 45 (text "One" 18 'black))))
+              (round-numbers
+               (let ([t (text "One" 18 'black)])
+                 (image-width (rotate 45 (rectangle (image-width t) 
+                                                    (image-height t)
+                                                    'solid 'black))))))

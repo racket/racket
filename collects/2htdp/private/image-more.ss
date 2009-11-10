@@ -1,56 +1,12 @@
 #lang scheme/base
 
 (require "../../mrlib/image-core.ss"
+         scheme/contract
          scheme/class
          scheme/gui/base
          htdp/error
          scheme/math
          (for-syntax scheme/base))
-
-(provide overlay
-         overlay/places
-         overlay/xy
-         
-         beside
-         beside/places
-         
-         rotate
-         
-         frame
-         
-         show-image
-         save-image
-         bring-between
-         
-         image-snip->image
-         bitmap->image
-         
-         scale
-         scale/xy
-         
-         x-place?
-         y-place?
-         mode?
-         angle?
-         side-count?
-         
-         image-width
-         image-height
-         
-         circle
-         ellipse
-         rectangle
-         
-         regular-polygon
-         triangle 
-         star
-         star-polygon
-         
-         text
-         text/font
-         
-         swizzle)
-
 
 (define (show-image g [extra-space 0])
   (letrec ([f (new frame% [label ""])]
@@ -471,17 +427,17 @@
 ;; (in degrees)
 ;; LINEAR TIME OPERATION (sigh)
 (define/chk (rotate angle image)
-  (define left #f)
-  (define top #f)
-  (define right #f)
-  (define bottom #f)
+  (define left +inf.0)
+  (define top +inf.0)
+  (define right -inf.0)
+  (define bottom -inf.0)
   (define (add-to-bounding-box/rotate simple-shape)
     (let ([rotated-shape (rotate-simple angle simple-shape)])
       (let-values ([(this-left this-top this-right this-bottom) (simple-bb rotated-shape)])
-        (set! left (if left (min this-left left) this-left))
-        (set! top (if top (min this-top top) this-top))
-        (set! right (if right (max this-right right) this-right))
-        (set! bottom (if bottom (max this-bottom bottom) this-bottom)))
+        (set! left (min this-left left))
+        (set! top (min this-top top))
+        (set! right (max this-right right))
+        (set! bottom (max this-bottom bottom)))
       rotated-shape))
   (let* ([rotated (normalize-shape (image-shape image) add-to-bounding-box/rotate)])
     (make-image (make-translate (- left) (- top) rotated)
@@ -523,11 +479,29 @@
 (define (atomic-bb atomic-shape)
   (cond
     [(ellipse? atomic-shape)
-     (let-values ([(w h) (ellipse-rotated-size (ellipse-width atomic-shape)
-                                               (ellipse-height atomic-shape)
-                                               (degrees->radians (ellipse-angle atomic-shape)))])
-       (values 0 0 w h))]
+     (let ([θ (ellipse-angle atomic-shape)])
+       (let-values ([(w h) (ellipse-rotated-size (ellipse-width atomic-shape)
+                                                 (ellipse-height atomic-shape)
+                                                 (degrees->radians θ))])
+         
+         (values (- (/ w 2))
+                 (- (/ h 2))
+                 (/ w 2)
+                 (/ h 2))))]
+    [(text? atomic-shape)
+     (let*-values ([(w h a d) (send text-sizing-bm get-text-extent 
+                                    (text-string atomic-shape) 
+                                    (text->font atomic-shape))]
+                   [(ax ay) (rotate-point (- (/ w 2)) (- (/ h 2)) (text-angle atomic-shape))]
+                   [(bx by) (rotate-point (- (/ w 2)) (/ h 2) (text-angle atomic-shape))]
+                   [(cx cy) (rotate-point (/ w 2) (- (/ h 2)) (text-angle atomic-shape))]
+                   [(dx dy) (rotate-point (/ w 2) (/ h 2) (text-angle atomic-shape))])
+       (values (min ax bx cx dx)
+               (min ay by cy dy)
+               (max ax bx cx dx)
+               (max ay by cy dy)))]
     [else
+     (fprintf (current-error-port) "using bad bounding box for ~s\n" (image-shape atomic-shape))
      (values 0 0 100 100)]))
   
 ;; rotate-simple : angle simple-shape -> simple-shape
@@ -543,11 +517,10 @@
     [else
      (let* ([unrotated (translate-shape simple-shape)]
             [rotated (rotate-atomic θ unrotated)])
-       (let-values ([(dx dy) (c->xy (- (* (make-polar 1 (degrees->radians θ))
-                                          (+ (xy->c (translate-dx simple-shape)
-                                                    (translate-dy simple-shape))
-                                             (center-point unrotated)))
-                                       (center-point unrotated)))])
+       (let-values ([(dx dy) 
+                     (c->xy (* (make-polar 1 (degrees->radians θ))
+                               (xy->c (translate-dx simple-shape)
+                                      (translate-dy simple-shape))))])
          (make-translate dx dy rotated)))]))
 
 (define (center-point atomic-shape)
@@ -681,7 +654,7 @@
 (define (mk-single-text letter font-size color face family style weight underline)
   (let ([text (make-text letter 0 1 color font-size face family style weight underline)])
     (let-values ([(w h d a) (send text-sizing-bm get-text-extent letter (text->font text))])
-      (make-image text
+      (make-image (make-translate (/ w 2) (/ h 2) text)
                   (make-bb w h (- h d))
                   #f))))
 
@@ -747,16 +720,17 @@
                         (+ i 1)))])))
 
 (define/chk (ellipse width height mode color)
-  (make-image (make-ellipse width height 
-                            0
-                            mode
-                            color)
+  (make-image (make-translate (/ width 2) (/ height 2)
+                              (make-ellipse width height 
+                                            0
+                                            mode
+                                            color))
               (make-bb width height height)
               #f))
 
 (define/chk (circle radius mode color)
   (let ([w/h (* 2 radius)])
-    (make-image (make-ellipse w/h w/h 0 mode color)
+    (make-image (make-translate radius radius (make-ellipse w/h w/h 0 mode color))
                 (make-bb w/h w/h w/h)
                 #f)))
 
@@ -786,3 +760,54 @@
 
 (define/chk (image-width image) (image-right image))
 (define/chk (image-height image) (image-bottom image))
+
+
+(provide overlay
+         overlay/places
+         overlay/xy
+         
+         beside
+         beside/places
+         
+         rotate
+         
+         frame
+         
+         show-image
+         save-image
+         bring-between
+         
+         image-snip->image
+         bitmap->image
+         
+         scale
+         scale/xy
+         
+         x-place?
+         y-place?
+         mode?
+         angle?
+         side-count?
+         
+         image-width
+         image-height
+         
+         circle
+         ellipse
+         rectangle
+         
+         regular-polygon
+         triangle 
+         star
+         star-polygon
+         
+         text
+         text/font
+         
+         swizzle
+         
+         rotate-point)
+
+(provide/contract
+ [atomic-bb (-> atomic-shape? (values real? real? real? real?))]
+ [center-point (-> np-atomic-shape? number?)])
