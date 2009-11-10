@@ -41,8 +41,8 @@
             [(_ x rate) 
              #'(list (proc> 'on-tick (f2h x) 1) 
                      (num> 'on-tick rate (lambda (x)
-					   (and (real? x) (positive? x)))
-		       "pos. number" "rate"))])]
+                                           (and (real? x) (positive? x)))
+                           "pos. number" "rate"))])]
   ;; -- state specifies whether to display the current state 
   [state (expr-with-check bool> "expected a boolean (show state or not)")]
   ;; -- check-with must specify a predicate 
@@ -169,9 +169,12 @@
                    [_ (err '#'record? stx)])))]
             [args 
              (->args stx (syntax (clause ...)) AllSpec WldSpec ->rec? "world")])
-       #`(parameterize ([current-eventspace (make-eventspace)])
-           (let ([o (new (if #,rec? aworld% world%) [world0 w] #,@args)])
-             (send o last))))]))
+       #`(let* ([esp (make-eventspace)]
+                [thd (eventspace-handler-thread esp)])
+           (with-handlers ((exn:break? (lambda (x) (break-thread thd))))
+             (parameterize ([current-eventspace esp])
+               (let ([o (new (if #,rec? aworld% world%) [world0 w] #,@args)])
+                 (send o last))))))]))
 
 (define (run-simulation f)
   (check-proc 'run-simulation f 1 "first" "one argument")
@@ -267,6 +270,9 @@
          [(not (memq 'on-msg domain))
           (raise-syntax-error #f "missing on-msg clause" stx)]
          [else ; (and (memq #'on-new domain) (memq #'on-msg domain))
-          #`(parameterize ([current-eventspace (make-eventspace)])
-              (send (new universe% [universe0 u] #,@args) last))]))]))
+          #`(let* ([esp (make-eventspace)]
+                   [thd (eventspace-handler-thread esp)])
+              (with-handlers ((exn:break? (lambda (x) (break-thread thd))))
+                (parameterize ([current-eventspace esp])
+                  (send (new universe% [universe0 u] #,@args) last))))]))]))
 
