@@ -79,13 +79,22 @@
   (define w (image-width img))  
   (define h (image-height img))
   (cond
-    [(and (<= 0 x0) (< x0 w) (<= 0 x1) (< x1 w) (<= 0 y0) (< y0 w) (<= 0 y1) (< y1 w))
+    [(and (<= 0 x0) (< x0 w) (<= 0 y0) (< y0 w)
+          (<= 0 x1) (< x1 w) (<= 0 y1) (< y1 w))
+     ;; everything is inside 
      (add-line img x0 y0 x1 y1 c)]
-    [(= x0 x1) ;; vertical 
+    [(and (or (> 0 x0) (>= x0 w)) (or (> 0 y0) (>= y0 w))
+          (or (> 0 x1) (>= x1 w)) (or (> 0 y1) (>= y1 w)))
+     ;; everythhing is outside 
+     img]
+    [(= x0 x1) 
+     ;; vertical 
      (if (<= 0 x0 w) (add-line img x0 (app y0 h) x0 (app y1 h) c) img)]
-    [(= y0 y1) ;; horizontal 
+    [(= y0 y1) 
+     ;; horizontal 
      (if (<= 0 y0 h) (add-line img (app x0 w) y0 (app x1 w) y0 c) img)]
     [else 
+     ;; partial off-screen 
      (local ((define lin (points->line x0 y0 x1 y1))
              (define dir (direction x0 y0 x1 y1))
              (define-values (upp low lft rgt) (intersections lin w h))
@@ -125,7 +134,7 @@
    (string-append 
     (if (<= y0 y1) "lower" "upper") "-" (if (<= x0 x1) "right" "left"))))
 
-#| TESTS
+#| TESTS 
 'direction 
 (equal? (direction 10 10 0 0) 'upper-left)
 (equal? (direction 10 10 20 20) 'lower-right)
@@ -186,8 +195,3 @@
          list)
         (list false false 10 80))
 |#
-
-;; -----------------------------------------------------------------------------
-
-;                                                                               
-;                                                                               
