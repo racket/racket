@@ -658,6 +658,15 @@
                   (make-bb w h (- h d))
                   #f))))
 
+(define/chk (isosceles-triangle side-length angle mode color)
+  (let ([left-corner (make-polar side-length (+ (* pi 1/2) (/ (degrees->radians angle) 2)))]
+        [right-corner (make-polar side-length (- (* pi 1/2) (/ (degrees->radians angle) 2)))])
+    (make-a-polygon (list (make-point 0 0)
+                          (make-point (real-part right-corner) (imag-part right-corner))
+                          (make-point (real-part left-corner) (imag-part left-corner)))
+                    mode
+                    color)))
+
 (define/chk (triangle side-length mode color)
   (make-polygon/star side-length 3 mode color values))
 
@@ -681,15 +690,15 @@
   (make-polygon/star side-length 5 mode color (λ (l) (swizzle l 2))))
 
 (define (make-polygon/star side-length side-count mode color adjust)
-  (let ([poly (make-polygon 
-               (adjust (regular-polygon-points side-length side-count))
-               mode
-               color)])
+  (make-a-polygon (adjust (regular-polygon-points side-length side-count)) 
+                  mode color))
+
+(define (make-a-polygon points mode color)
+  (let ([poly (make-polygon points mode color)])
     (let-values ([(l t r b) (simple-bb poly)])
       (make-image (make-translate (- l) (- t) poly)
                   (make-bb (- r l) (- b t) (- b t))
                   #f))))
-
 (define (gcd a b)
   (cond
     [(zero? b) a]
@@ -798,6 +807,7 @@
          
          regular-polygon
          triangle 
+         isosceles-triangle
          star
          star-polygon
          

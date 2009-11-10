@@ -73,6 +73,23 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 @image-examples[(triangle 40 "solid" "tan")]
 }
 
+@defproc[(isosceles-triangle [side-length (and/c positive? real?)] 
+                             [angle angle?]
+                             [mode mode?]
+                             [color (or/c symbol? string?)])
+         image?]{
+
+ Creates a triangle with two equal-length sides, of length @scheme[side-length]
+ where the angle between those sides is @scheme[angle]. The third
+ leg is straight, horizontally. If the angle is less than 
+ @scheme[180], then the triangle will point up and if the @scheme[angle]
+ is more, then the triangle will point down. 
+ 
+ @image-examples[(isosceles-triangle 200 170 "solid" "seagreen")
+                 (isosceles-triangle 60 30 "solid" "aquamarine")
+                 (isosceles-triangle 60 330 "solid" "lightseagreen")]
+}
+                
 @defproc[(star [side-length (and/c real? positive?)] 
                [mode mode?]
                [color (or/c symbol? string?)])

@@ -28,18 +28,18 @@
       (ellipse 20 30 "solid" "slateblue")
       (ellipse 20 10 "solid" "navy"))
     'image
-    "38.png")
-   (list '(frame (ellipse 20 20 "outline" "black")) 'image "37.png")
-   (list '(ellipse 60 60 "solid" "blue") 'image "36.png")
-   (list '(scale/xy 3 2 (ellipse 20 30 "solid" "blue")) 'image "35.png")
-   (list '(ellipse 40 60 "solid" "blue") 'image "34.png")
-   (list '(scale 2 (ellipse 20 30 "solid" "blue")) 'image "33.png")
-   (list '(rotate 5 (rectangle 50 50 "outline" "black")) 'image "32.png")
-   (list '(rotate 45 (ellipse 60 20 "solid" "olivedrab")) 'image "31.png")
+    "41.png")
+   (list '(frame (ellipse 20 20 "outline" "black")) 'image "40.png")
+   (list '(ellipse 60 60 "solid" "blue") 'image "39.png")
+   (list '(scale/xy 3 2 (ellipse 20 30 "solid" "blue")) 'image "38.png")
+   (list '(ellipse 40 60 "solid" "blue") 'image "37.png")
+   (list '(scale 2 (ellipse 20 30 "solid" "blue")) 'image "36.png")
+   (list '(rotate 5 (rectangle 50 50 "outline" "black")) 'image "35.png")
+   (list '(rotate 45 (ellipse 60 20 "solid" "olivedrab")) 'image "34.png")
    (list
     '(beside/places "baseline" (text "ijy" 18 "black") (text "ijy" 24 "black"))
     'image
-    "30.png")
+    "33.png")
    (list
     '(beside/places
       "center"
@@ -48,7 +48,7 @@
       (ellipse 20 30 "solid" "purple")
       (ellipse 20 10 "solid" "indigo"))
     'image
-    "29.png")
+    "32.png")
    (list
     '(beside/places
       "bottom"
@@ -57,7 +57,7 @@
       (ellipse 20 30 "solid" "slateblue")
       (ellipse 20 10 "solid" "navy"))
     'image
-    "28.png")
+    "31.png")
    (list
     '(beside
       (ellipse 20 70 "solid" "gray")
@@ -65,7 +65,7 @@
       (ellipse 20 30 "solid" "dimgray")
       (ellipse 20 10 "solid" "black"))
     'image
-    "27.png")
+    "30.png")
    (list
     '(overlay/xy
       (rectangle 10 10 "solid" "red")
@@ -73,7 +73,7 @@
       -10
       (rectangle 10 10 "solid" "black"))
     'image
-    "26.png")
+    "29.png")
    (list
     '(overlay/xy
       (rectangle 10 10 "solid" "red")
@@ -81,7 +81,7 @@
       10
       (rectangle 10 10 "solid" "black"))
     'image
-    "25.png")
+    "28.png")
    (list
     '(overlay/xy
       (rectangle 10 10 "outline" "red")
@@ -89,7 +89,7 @@
       0
       (rectangle 10 10 "outline" "black"))
     'image
-    "24.png")
+    "27.png")
    (list
     '(overlay/xy
       (ellipse 40 40 "outline" "black")
@@ -97,7 +97,7 @@
       25
       (ellipse 10 10 "solid" "forestgreen"))
     'image
-    "23.png")
+    "26.png")
    (list
     '(overlay/places
       "right"
@@ -107,7 +107,7 @@
       (rectangle 40 40 "solid" "red")
       (rectangle 50 50 "solid" "black"))
     'image
-    "22.png")
+    "25.png")
    (list
     '(overlay/places
       "middle"
@@ -115,7 +115,7 @@
       (rectangle 30 60 "solid" "orange")
       (ellipse 60 30 "solid" "purple"))
     'image
-    "21.png")
+    "24.png")
    (list
     '(overlay
       (ellipse 10 10 "solid" "red")
@@ -125,31 +125,34 @@
       (ellipse 50 50 "solid" "red")
       (ellipse 60 60 "solid" "black"))
     'image
-    "20.png")
+    "23.png")
    (list
     '(overlay
       (ellipse 60 30 "solid" "purple")
       (rectangle 30 60 "solid" "orange"))
     'image
-    "19.png")
+    "22.png")
    (list
     '(text/font "not really a link" 18 "blue" #f 'roman 'normal 'normal #t)
     'image
-    "18.png")
+    "21.png")
    (list
     '(text/font "Goodbye" 18 "indigo" #f 'modern 'italic 'normal #f)
     'image
-    "17.png")
+    "20.png")
    (list
     '(text/font "Hello" 24 "olive" "Gill Sans" 'swiss 'normal 'bold #f)
     'image
-    "16.png")
-   (list '(text "Goodbye" 36 "indigo") 'image "15.png")
-   (list '(text "Hello" 24 "olive") 'image "14.png")
-   (list '(star-polygon 20 10 3 "solid" "cornflowerblue") 'image "13.png")
-   (list '(star-polygon 40 7 3 "outline" "darkred") 'image "12.png")
-   (list '(star-polygon 40 5 2 "solid" "seagreen") 'image "11.png")
-   (list '(star 40 "solid" "gray") 'image "10.png")
+    "19.png")
+   (list '(text "Goodbye" 36 "indigo") 'image "18.png")
+   (list '(text "Hello" 24 "olive") 'image "17.png")
+   (list '(star-polygon 20 10 3 "solid" "cornflowerblue") 'image "16.png")
+   (list '(star-polygon 40 7 3 "outline" "darkred") 'image "15.png")
+   (list '(star-polygon 40 5 2 "solid" "seagreen") 'image "14.png")
+   (list '(star 40 "solid" "gray") 'image "13.png")
+   (list '(isosceles-triangle 60 330 "solid" "lightseagreen") 'image "12.png")
+   (list '(isosceles-triangle 60 30 "solid" "aquamarine") 'image "11.png")
+   (list '(isosceles-triangle 200 170 "solid" "seagreen") 'image "10.png")
    (list '(triangle 40 "solid" "tan") 'image "9.png")
    (list '(regular-polygon 20 6 "solid" "red") 'image "8.png")
    (list '(regular-polygon 20 4 "outline" "blue") 'image "7.png")
