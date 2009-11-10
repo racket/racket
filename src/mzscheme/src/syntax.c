@@ -569,6 +569,7 @@ lambda_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *ere
 {
   Scheme_Object *args, *body, *fn;
   Scheme_Comp_Env *newenv;
+  Scheme_Expand_Info erec1;
 
   SCHEME_EXPAND_OBSERVE_PRIM_LAMBDA(erec[drec].observer);
 
@@ -594,12 +595,15 @@ lambda_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *ere
 
   fn = SCHEME_STX_CAR(form);
 
+  scheme_init_expand_recs(erec, drec, &erec1, 1);
+  erec1.value_name = scheme_false;
+
   return scheme_datum_to_syntax(cons(fn,
 				      cons(args,
 					    scheme_expand_block(body,
 								newenv,
-								erec, 
-								drec))),
+								&erec1, 
+								0))),
 				form, form, 
 				0, 2);
 }
