@@ -831,9 +831,43 @@ follows.
  specified by @scheme[phase-level] (where @scheme[#f] corresponds to the
  @tech{label phase level}). In particular, an @scheme[_id] or @scheme[rename-out] form as
  a @scheme[provide-spec] refers to a binding at @scheme[phase-level], an
- @scheme[all-define-out] exports only @scheme[phase-level]
+ @scheme[all-defined-out] exports only @scheme[phase-level]
  definitions, and an @scheme[all-from-out] exports bindings
- imported with a shift by @scheme[phase-level].}
+ imported with a shift by @scheme[phase-level].
+
+ @examples[#:eval (syntax-eval)
+   (module nest scheme
+     (define-for-syntax eggs 2)
+     (define chickens 3)
+     (provide (for-syntax eggs)
+              chickens))
+   (require 'nest)
+   (define-syntax (test-eggs stx)
+     (printf "Eggs are ~a\n" eggs)
+     #'0)
+   (test-eggs)
+   chickens
+
+   (module broken-nest scheme
+     (define eggs 2)
+     (define chickens 3)
+     (provide (for-syntax eggs)
+              chickens))
+
+   (module nest2 scheme
+    (define-for-syntax eggs 2)
+    (provide (for-syntax eggs)))
+   (require (for-meta 2 scheme/base)
+            (for-syntax 'nest2))
+   (define-syntax (test stx)
+    (define-syntax (show-eggs stx)
+     (printf "Eggs are ~a\n" eggs)
+     #'0)
+    (begin
+     (show-eggs)
+     #'0))
+    (test)
+ ]}
 
  @specsubform[#:literals (for-syntax) 
               (for-syntax provide-spec ...)]{Same as
