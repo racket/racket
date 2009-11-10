@@ -321,3 +321,5 @@ the result of @scheme[proc].
 (vector-argmax car #((3 pears) (3 oranges)))
 ]
 }
+
+@close-eval[vec-eval]

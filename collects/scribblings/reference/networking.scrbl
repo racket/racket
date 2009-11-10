@@ -18,7 +18,7 @@ For information about TCP in general, see @italic{TCP/IP Illustrated,
                      [max-allow-wait exact-nonnegative-integer? 4]
                      [reuse? any/c #f]
                      [hostname (or/c string? #f) #f]) 
-         tcp-listener?]
+         tcp-listener?]{
 
 Creates a ``listening'' server on the local machine at the port number
 specified by @scheme[port-no]. If @scheme[port-no] is 0 the socket binds
