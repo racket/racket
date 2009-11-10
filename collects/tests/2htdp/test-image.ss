@@ -557,10 +557,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;  misc stuff
+;;  text
 ;;
 
 (check-equal? (beside/places "baseline"
                              (text "a" 18 "black")
                              (text "b" 18 "black"))
               (text "ab" 18 "black"))
+
+(check-equal? (image-width (rotate 45 (text "One" 18 'black)))
+              (let ([t (text "One" 18 'black)])
+                (image-width (rotate 45 (rectangle (image-width t) 
+                                                   (image-height t)
+                                                   'solid 'black)))))
