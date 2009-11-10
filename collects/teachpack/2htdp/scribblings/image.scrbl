@@ -236,7 +236,7 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 @section{Rotating, Scaling, and Framing Images}
 
 @defproc[(rotate [angle angle?] [image image?]) image?]{
-  Rotates @scheme[image] by @scheme[angle] degrees.                                                        
+  Rotates @scheme[image] by @scheme[angle] degrees in a counter-clockwise direction.
 
           @image-examples[(rotate 45 (ellipse 60 20 "solid" "olivedrab"))
                           (rotate 5 (rectangle 50 50 "outline" "black"))]
