@@ -61,7 +61,7 @@
            tests)))
 
 (define (dr p)
-  ((compile-zos #f) (list p) 'auto)
+  #;((compile-zos #f) (list p) 'auto)
   (parameterize ([current-namespace (make-base-empty-namespace)])    
     (dynamic-require `(file ,(path->string p)) #f)))
 
