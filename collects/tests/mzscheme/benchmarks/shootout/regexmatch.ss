@@ -38,7 +38,7 @@
 	      (else
 	       (set! phonelines (cons line phonelines))
 	       (loop (read-line)))))
-      (set! phonelines (reverse! phonelines))
+      (set! phonelines (reverse phonelines))
       (do ([n (string->number n) (sub1 n)])
 	  ((negative? n))
 	(let loop ((phones phonelines)

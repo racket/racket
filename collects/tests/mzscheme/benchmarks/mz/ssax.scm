@@ -1,4 +1,4 @@
-(require (planet "ssax.ss" ("lizorkin" "ssax.plt" 1 3)))
+(require (planet "ssax.ss" ("lizorkin" "ssax.plt" 2)))
 
 (collect-garbage)
 (time (void (ssax:xml->sxml

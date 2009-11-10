@@ -8,9 +8,11 @@
 
 ;; It relies on list-library.ss. 
 
+(load "listlib.ss")
+
 ;; representations of fields, states, and collections of states
 (define null '())
-(define-structure (entry x y who))
+(define-struct entry ( x y who))
 (define entry-field
   (lambda (an-entry)
     (list (entry-x an-entry) (entry-y an-entry))))

@@ -1,6 +1,6 @@
-(require (lib "scheme-lexer.ss" "syntax-color"))
+(require (lib "scheme-lexer.ss" "syntax-color") scheme/gui/base)
 
-(define path "~/proj/plt/collects/framework/private/frame.ss")
+(define path (build-path (collection-path "framework" "private") "frame.ss"))
 
 (define content 
   (with-input-from-file path
