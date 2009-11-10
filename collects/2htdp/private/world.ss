@@ -53,7 +53,7 @@
       (init-field
        world0            ;; World
        (name #f)         ;; (U #f String)
-       (state #f)         ;; Boolean 
+       (state #f)        ;; Boolean 
        (register #f)     ;; (U #f IP)
        (check-with True) ;; Any -> Boolean 
        (tick K))         ;; (U (World -> World) (list (World -> World) Nat))

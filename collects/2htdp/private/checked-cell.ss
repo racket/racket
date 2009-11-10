@@ -83,7 +83,9 @@
     ;; -> ok?
     (define/public (get) value)
     
-    (super-new)))
+    (super-new)
+    
+    (when pb (show-state))))
 
 ; (define c (new checked-cell% [msg "World"] [value0 1] [ok? positive?]))
 ; (send c set "tick" 10)
