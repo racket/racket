@@ -8595,8 +8595,6 @@ void scheme_kickoff_green_thread_time_slice_timer(long usec) {
   scheme_start_itimer_thread(usec);
 #elif defined(USE_PTHREAD_THREAD_TIMER)
   scheme_start_itimer_thread(usec);
-#else
-  #error scheme_start_green_thread_time_slice_timer NOT IMPLEMENTED
 #endif
 }
 
