@@ -379,7 +379,7 @@
                          (with-enclosing-fail previous-fail
                            k))))))]
        [#s(hpat:var _attrs name parser (arg ...) (nested-a ...))
-        #`(let ([result (parser x)])
+        #`(let ([result (parser x arg ...)])
             (if (ok? result)
                 (let* ([rest (car result)]
                        [local-fc (cadr result)]

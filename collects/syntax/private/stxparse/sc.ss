@@ -81,7 +81,7 @@
      (identifier? #'name)
      (defstxclass stx #'name #'() #'rhss #t)]
     [(define-splicing-syntax-class (name arg ...) . rhss)
-     (andmap identifier? #'(name arg ...))
+     (andmap identifier? (syntax->list #'(name arg ...)))
      (defstxclass stx #'name #'(arg ...) #'rhss #t)]))
 
 (define-syntax (define-conventions stx)
