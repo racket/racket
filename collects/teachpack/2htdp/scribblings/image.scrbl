@@ -128,7 +128,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
 
   @image-examples[(regular-polygon 30 3 "outline" "red")
                   (regular-polygon 20 4 "outline" "blue")
-                  (regular-polygon 20 6 "solid" "red")]
+                  (regular-polygon 20 8 "solid" "red")]
 }
 
 @defproc[(star [side-length (and/c real? (not/c negative?))] 
@@ -163,6 +163,15 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
  
 }
 
+@defproc[(line [x1 real?] [y1 real?] [color (or/c symbol? string?)]) image?]{
+  Constructs an image representing a line segment that connects the points
+  (0,0) to (x1,y1).
+  
+  @image-examples[(line 30 30 "black")
+                  (line -30 20 "red")
+                  (line 30 -20 "red")]
+}
+                
 @defproc[(text [string string?] [font-size (and/c integer? (<=/c 1 255))] [color (or/c symbol? string?)])
          image?]{
                 
@@ -459,6 +468,10 @@ Equality testing may contain a few nuances, though:
          
          To combat this problem, use @scheme[equal~?] to compare the images,
          or @scheme[check-within] for test suites involving images.}
+   
+   @item{Combining a series of line segments to form a polygon produces
+         an image that is different than the polygon.}
+   
    @item{In order to make equality on images created with 
          @scheme[text] and @scheme[text/font]
          work well, each string passed to either of those functions results
@@ -476,7 +489,7 @@ Equality testing may contain a few nuances, though:
          For example, the letter combinations ``ff'' and ``fi'' and ``fl'' are
          generally drawn intertwined when they appear together, and thus an ``f''
          drawn separately from an ``i'' looks different than the ligature ``fi''.
-         For example, here is how 24 point Times font looks when the word ``difficult''
+         For example, here is how 24 point Times font looks when the word ``refill''
          is drawn, first with ligatures and then without:
          @centerline{@image["2htdp/scribblings/ligature.png"]}.
          }

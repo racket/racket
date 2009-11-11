@@ -633,3 +633,21 @@
                        0.01)
               #t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; lines
+;;
+
+(check-equal? (image-width (line 10 20 'black))
+              11)
+(check-equal? (image-height (line 10 20 'black))
+              21)
+
+(check-equal? (round-numbers (rotate 90 (line 10 20 'black)))
+              (round-numbers (line 20 -10 'black)))
+
+(check-equal? (round-numbers (line 20 30 "red"))
+              (round-numbers (rotate 180 (line 20 30 "red"))))
+
+(check-equal? (round-numbers (line -30 20 "red"))
+              (round-numbers (line 30 -20 "red")))

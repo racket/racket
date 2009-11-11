@@ -46,7 +46,11 @@
     (read in)))
 
 (for-each handle-image expressions)
-(printf "\n")
+(cond
+  [(null? mapping)
+   (error 'image-gen "didn't find any images; probably this means that you need to delete .zo files and try again")]
+  [else
+   (printf "\n")])
 
 (call-with-output-file "image-toc.ss"
   (λ (port)

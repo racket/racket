@@ -118,6 +118,7 @@ has been moved out).
 
 ;; an atomic-shape is either:
 ;;  - polygon
+;;  - line-segment
 ;;  - np-atomic-shape
 
 ;; a np-atomic-shape is:
@@ -142,6 +143,18 @@ has been moved out).
   #:property prop:equal+hash 
   (list (λ (a b rec) (polygon-equal? a b rec)) (λ (x y) 42) (λ (x y) 3)))
 
+;; a line-segment is
+;;
+;;  - (make-line-segment point point color)
+(define-struct/reg-mk line-segment (start end color) #:transparent #:omit-define-syntaxes
+  #:property prop:equal+hash 
+  (list (λ (a b rec) (and (or (and (rec (line-segment-start a) (line-segment-start b))
+                                   (rec (line-segment-end a) (line-segment-end b)))
+                              (and (rec (line-segment-start a) (line-segment-end b))
+                                   (rec (line-segment-end a) (line-segment-start b))))
+                          (rec (line-segment-color a) (line-segment-color b))))
+        (λ (x y) 42) 
+        (λ (x y) 3)))
 ;; a normalized-shape (subtype of shape) is either
 ;;  - (make-overlay normalized-shape simple-shape)
 ;;  - simple-shape
@@ -149,6 +162,7 @@ has been moved out).
 ;; a simple-shape (subtype of shape) is
 ;;  - (make-translate dx dy np-atomic-shape)
 ;;  - polygon
+;;  - line-segment
 
 ;; an angle is a number between 0 and 360 (degrees)
 
@@ -317,6 +331,9 @@ has been moved out).
              [x-scale 1]
              [y-scale 1]
              [bottom #f])
+    (define (scale-point p)
+      (make-point (+ dx (* x-scale (point-x p)))
+                  (+ dy (* y-scale (point-y p)))))
     (cond
       [(translate? shape)
        (loop (translate-shape shape)
@@ -338,15 +355,18 @@ has been moved out).
              (loop (overlay-top shape)
                    dx dy x-scale y-scale bottom))]
       [(polygon? shape)
-       (let* ([scaled-points
-               (map (λ (p)
-                      (make-point (+ dx (* x-scale (point-x p)))
-                                  (+ dy (* y-scale (point-y p)))))
-                    (polygon-points shape))]
-              [this-one 
-               (make-polygon scaled-points
+       (let* ([this-one 
+               (make-polygon (map scale-point (polygon-points shape))
                              (polygon-mode shape)
                              (polygon-color shape))])
+         (if bottom
+             (make-overlay bottom (f this-one))
+             (f this-one)))]
+      [(line-segment? shape)
+       (let ([this-one 
+              (make-line-segment (scale-point (line-segment-start shape))
+                                 (scale-point (line-segment-end shape))
+                                 (line-segment-color shape))])
          (if bottom
              (make-overlay bottom (f this-one))
              (f this-one)))]
@@ -361,10 +381,12 @@ has been moved out).
 (define (simple-shape? shape)
   (or (and (translate? shape)
            (np-atomic-shape? (translate-shape shape)))
-      (polygon? shape)))
+      (polygon? shape)
+      (line-segment? shape)))
 
 (define (atomic-shape? shape)
   (or (polygon? shape)
+      (line-segment? shape)
       (np-atomic-shape? shape)))
 
 (define (np-atomic-shape? shape)
@@ -460,6 +482,15 @@ has been moved out).
        (send dc set-pen (mode-color->pen (polygon-mode simple-shape) (polygon-color simple-shape)))
        (send dc set-brush (mode-color->brush (polygon-mode simple-shape) (polygon-color simple-shape)))
        (send dc draw-path path dx dy 'winding))]
+    [(line-segment? simple-shape)
+     (let ([path (new dc-path%)]
+           [start (line-segment-start simple-shape)]
+           [end (line-segment-end simple-shape)])
+       (send dc set-pen (line-segment-color simple-shape) 1 'solid)
+       (send dc set-brush "black" 'transparent)
+       (send dc draw-line
+             (+ dx (point-x start)) (+ dy (point-y start))
+             (+ dx (point-x end)) (+ dy (point-y end))))]
     [else
      (let ([dx (+ dx (translate-dx simple-shape))]
            [dy (+ dy (translate-dy simple-shape))]
@@ -566,6 +597,8 @@ has been moved out).
          make-text text? text-string text-angle text-y-scale text-color
          text-angle text-size text-face text-family text-style text-weight text-underline
          make-polygon polygon? polygon-points polygon-mode polygon-color
+         make-line-segment line-segment? line-segment-start line-segment-end line-segment-color
+
          make-bitmap bitmap? bitmap-raw-bitmap bitmap-raw-mask bitmap-angle bitmap-scale bitmap-rendered-bitmap
          
          degrees->radians

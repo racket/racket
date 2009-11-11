@@ -158,7 +158,7 @@
                 'non-negative-real-number
                 i arg)
      arg]
-    [(dx dy factor x-factor y-factor)
+    [(dx dy x1 y1 x2 y2 factor x-factor y-factor)
      (check-arg fn-name
                 (real? arg)
                 'real\ number
@@ -449,6 +449,15 @@
 ;; (only called for rotated shapes, so bottom=baseline)
 (define (simple-bb simple-shape)
   (cond
+    [(line-segment? simple-shape)
+     (let ([x1 (point-x (line-segment-start simple-shape))]
+           [y1 (point-y (line-segment-start simple-shape))]
+           [x2 (point-x (line-segment-end simple-shape))]
+           [y2 (point-y (line-segment-end simple-shape))])
+       (values (min x1 x2)
+               (min y1 y2)
+               (max x1 x2)
+               (max y1 y2)))]
     [(polygon? simple-shape)
      (let ([points (polygon-points simple-shape)])
        (let* ([fx (point-x (car points))]
@@ -492,10 +501,10 @@
      (let*-values ([(w h a d) (send text-sizing-bm get-text-extent 
                                     (text-string atomic-shape) 
                                     (text->font atomic-shape))]
-                   [(ax ay) (rotate-point (- (/ w 2)) (- (/ h 2)) (text-angle atomic-shape))]
-                   [(bx by) (rotate-point (- (/ w 2)) (/ h 2) (text-angle atomic-shape))]
-                   [(cx cy) (rotate-point (/ w 2) (- (/ h 2)) (text-angle atomic-shape))]
-                   [(dx dy) (rotate-point (/ w 2) (/ h 2) (text-angle atomic-shape))])
+                   [(ax ay) (rotate-xy (- (/ w 2)) (- (/ h 2)) (text-angle atomic-shape))]
+                   [(bx by) (rotate-xy (- (/ w 2)) (/ h 2) (text-angle atomic-shape))]
+                   [(cx cy) (rotate-xy (/ w 2) (- (/ h 2)) (text-angle atomic-shape))]
+                   [(dx dy) (rotate-xy (/ w 2) (/ h 2) (text-angle atomic-shape))])
        (values (min ax bx cx dx)
                (min ay by cy dy)
                (max ax bx cx dx)
@@ -507,10 +516,14 @@
 ;; rotate-simple : angle simple-shape -> simple-shape
 (define (rotate-simple θ simple-shape)
   (cond
+    [(line-segment? simple-shape)
+     (make-line-segment (rotate-point (line-segment-start simple-shape)
+                                       θ)
+                        (rotate-point (line-segment-end simple-shape)
+                                      θ)
+                        (line-segment-color simple-shape))]
     [(polygon? simple-shape)
-     (make-polygon (map (λ (p)
-                          (let-values ([(xn yn) (rotate-point (point-x p) (point-y p) θ)])
-                            (make-point xn yn)))
+     (make-polygon (map (λ (p) (rotate-point p θ))
                         (polygon-points simple-shape))
                    (polygon-mode simple-shape)
                    (polygon-color simple-shape))]
@@ -569,8 +582,13 @@
                   (bitmap-scale atomic-shape)
                   #f)]))
 
-;; rotate-point : x,y angle -> x,y
-(define (rotate-point x y θ)
+;; rotate-point : point angle -> point
+(define (rotate-point p θ)
+  (let-values ([(x y) (rotate-xy (point-x p) (point-y p) θ)])
+    (make-point x y)))
+
+;; rotate-xy : x,y angle -> x,y
+(define (rotate-xy x y θ)
   (c->xy (* (make-polar 1 (degrees->radians θ)) 
             (xy->c x y))))
 
@@ -634,8 +652,35 @@
         (make-point 0 height)))
   
 
+(define/chk (line x1 y1 color)
+  (let-values ([(shape w h) (line-shape x1 y1 color)])
+    (make-image shape
+                (make-bb w h h)
+                #f)))
+
+(define (line-shape x1 y1 color)
+  (let ([dx (- (min x1 0))]
+        [dy (- (min y1 0))]
+        [w (+ (abs x1) 1)]
+        [h (+ (abs y1) 1)])
+    (values (make-translate
+             dx dy
+             (make-line-segment (make-point 0 0)
+                                (make-point x1 y1)
+                                color))
+            w h)))
+  #|
+(define/chk (add-line image x1 y1 x2 y2 color)
+  (make-image (make-overlay
+               (make-translate 
+                x1 y1
+                (make-line-segment (make-point 0 0)
+                                   (make-point x2 y2)
+                                   color))
+               (make-bb w h h)
+               #f))
+|#
 ;;       line
-;;       text
 
 ;; this is just so that 'text' objects can be sized.
 (define text-sizing-bm (make-object bitmap-dc% (make-object bitmap% 1 1)))
@@ -829,12 +874,14 @@
          star
          star-polygon
          
+         line
+         
          text
          text/font
          
          swizzle
          
-         rotate-point)
+         rotate-xy)
 
 (provide/contract
  [atomic-bb (-> atomic-shape? (values real? real? real? real?))]
