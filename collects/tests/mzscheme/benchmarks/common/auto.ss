@@ -202,6 +202,13 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 extract-mzscheme-times
                 clean-up-nothing
                 mutable-pair-progs)
+     (make-impl 'mzscheme3m
+                mk-mzscheme
+                (lambda (bm)
+                  (system (format "mzscheme3m -u ~a.ss" bm)))
+                extract-mzscheme-times
+                clean-up-nothing
+                mutable-pair-progs)
      (make-impl 'plt-r5rs
                 mk-plt-r5rs
                 (lambda (bm)
@@ -272,7 +279,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 clean-up-nothing
                 '(fft))))
 
-  (define obsolte-impls '(mzscheme mzscheme-j mzschemecgc-tl mzc))
+  (define obsolte-impls '(mzscheme mzscheme-j mzschemecgc-tl mzc mz-old))
 
   (define benchmarks
     '(conform
