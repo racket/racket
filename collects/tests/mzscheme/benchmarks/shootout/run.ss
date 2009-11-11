@@ -1,4 +1,5 @@
 (module run mzscheme
+  (require (only scheme/runtime-path define-runtime-path))
   (define input-map
     `(
       ("ackermann.ss" "11")
@@ -41,8 +42,11 @@
       ("wordfreq.ss")
       ))
 
+  (define-runtime-path here ".")
+
   (define (dynreq f)
-    (dynamic-require f #f))
+    (parameterize ([current-load-relative-directory here])
+      (dynamic-require f #f)))
 
   (define (mk-fasta n suffix)
     (let ([f (build-path (find-system-path 'temp-dir) (string-append "fasta-" suffix))])
