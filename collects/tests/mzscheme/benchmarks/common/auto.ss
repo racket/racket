@@ -12,7 +12,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
            mzlib/inflate
            mzlib/date
            dynext/file
-           syntax/toplevel)
+           syntax/toplevel
+           scheme/runtime-path)
 
   ;; Implementaton-specific control functions ------------------------------
 
@@ -343,19 +344,23 @@ exec mzscheme -qu "$0" ${1+"$@"}
     (process-command-line benchmarks
                           (map impl-name impls) obsolte-impls
                           3))
+
+  (define-runtime-path bm-directory ".")
   
   ;; Benchmark-specific setup --------------------
 
-  (when (memq 'dynamic actual-benchmarks-to-run )
-    (unless (file-exists? "dynamic-input.txt")
-      (gunzip "dynamic-input.txt.gz")))
+  (parameterize ([current-directory bm-directory])
+    (when (memq 'dynamic actual-benchmarks-to-run)
+      (unless (file-exists? "dynamic-input.txt")
+        (gunzip "dynamic-input.txt.gz"))))
 
   ;; Run benchmarks -------------------------------
 
   (rprintf "; ~a\n" (date->string (seconds->date (current-seconds)) #t))
 
-  (for-each (lambda (impl)
-              (map (lambda (bm)
-                     (run-benchmark impl bm))
-                   actual-benchmarks-to-run))
-            actual-implementations-to-run))
+  (parameterize ([current-directory bm-directory])
+    (for-each (lambda (impl)
+                (map (lambda (bm)
+                       (run-benchmark impl bm))
+                     actual-benchmarks-to-run))
+              actual-implementations-to-run)))

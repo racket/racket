@@ -85,8 +85,9 @@
   (define iters
     (let ([len (vector-length (current-command-line-arguments))])
       (unless (<= 1 len 2)
-        (error 'run "provide ~athe name of a benchmark on the command line and an optional iteration count"
-               (if (zero? len) "" "ONLY ")))
+        (printf "provide ~athe name of a benchmark on the command line and an optional iteration count\n"
+                (if (zero? len) "" "ONLY "))
+        (exit))
       (if (= len 2)
           (string->number (vector-ref (current-command-line-arguments) 1))
           1)))
