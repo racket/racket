@@ -11,7 +11,7 @@
 ;;   "impure" = they have text waiting
 ;;   "pure" = the MIME headers have been read
 
-(require scheme/port
+(require scheme/port scheme/string
          "url-structs.ss"
          "uri-codec.ss"
          "url-sig.ss"
@@ -433,21 +433,13 @@
 
 (define (combine-path-strings absolute? path/params)
   (cond [(null? path/params) ""]
-        [else (let ([p (join "/" (map join-params path/params))])
+        [else (let ([p (string-join (map join-params path/params) "/")])
                 (if absolute? (string-append "/" p) p))]))
 
 (define (join-params s)
-  (join ";" (map path-segment-encode
-                 (cons (path/param-path s) (path/param-param s)))))
-
-(define (join sep strings)
-  (cond [(null? strings) ""]
-        [(null? (cdr strings)) (car strings)]
-        [else
-         (let loop ([strings (cdr strings)] [r (list (car strings))])
-           (if (null? strings)
-             (apply string-append (reverse r))
-             (loop (cdr strings) (list* (car strings) sep r))))]))
+  (string-join (map path-segment-encode
+                    (cons (path/param-path s) (path/param-param s)))
+               ";"))
 
 (define (path->url path)
   (let ([url-path
