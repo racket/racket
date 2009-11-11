@@ -1,4 +1,6 @@
 
+do-not-run-me-yet
+
 ;; Runs 3 threads perfoming the test suite simultaneously. Each
 ;;  thread creates a directory sub<n> to run in, so that filesystem
 ;;  tests don't collide.
@@ -36,6 +38,7 @@
                    [cust (list-ref custodians (sub1 n))]
                    [ql (namespace-variable-value 'quiet-load #f
                                                  (lambda () #f))])
+               (namespace-attach-module (current-namespace) 'scheme/init ns)
                (parameterize ([current-custodian cust])
                  (thread
                   (lambda ()
@@ -43,7 +46,7 @@
                      n
                      (lambda ()
                        (parameterize ([current-namespace ns])
-                         (namespace-require '(for-syntax scheme/base))
+                         (namespace-require '(lib "scheme/init"))
                          (eval `(define Section-prefix ,(format "~a:" n)))
                          (when ql
                            (eval `(define quiet-load (quote ,ql))))

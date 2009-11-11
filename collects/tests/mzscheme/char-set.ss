@@ -52,8 +52,8 @@
 (test #t char-set-contains? char-set:letter+digit #\A)
 (test #t char-set-contains? char-set:letter+digit #\Z)
 
-;; As of Unicode 4.1:
-(test 91395 char-set-size char-set:letter)
+;; As of Unicode 5.0:
+(test 93217 char-set-size char-set:letter)
 
 (test #t char-set= char-set:letter+digit (char-set-union char-set:letter char-set:digit))
 ;; Slow!:
@@ -109,9 +109,8 @@
 
 ;; Iterating over character sets ----------------------------------------
 
-;; The number 270 comes from "grep Nd UnicodeData.txt | wc -l"
-;; in Unicode 4.1
-(test 270 char-set-size char-set:digit)
+;; As of Unicode 5.0
+(test 388 char-set-size char-set:digit)
 
 (test #t char-set=
       char-set:digit

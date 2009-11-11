@@ -3,11 +3,11 @@
 ;; printouts.
 
 (module helpers mzscheme
-  (require mzlib/package)
+  (require scheme/package)
 
   (provide identifier-syntax with-implicit
-	   (rename package module)
-	   (rename open import))
+	   (rename define-package module)
+	   (rename open-package import))
 
   (define-syntax (identifier-syntax stx)
     (syntax-case stx ()
@@ -25,8 +25,8 @@
 	 body)])))
     
 
-(require helpers)
-(require-for-syntax helpers)
+(require 'helpers)
+(require (for-syntax 'helpers))
 
 ;; Make evaluation print the result, for testing
 (let ([eh (current-eval)])
@@ -35,8 +35,6 @@
 		    (unless (void? v)
 		      (printf "~s~n" v))
 		    v))))
-
-(read-case-sensitive #t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; From "Extending the Scope of Syntactic Abstraction"
@@ -49,7 +47,7 @@
     (define z 5))
   (let ((y x) (z 0))
     (import M)
-    (setter 3) 
+    (setter 3)
     (list x y z)))
 "(3 1 0) is correct"
 
