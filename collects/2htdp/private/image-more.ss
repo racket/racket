@@ -151,14 +151,14 @@
      (if (string? arg)
          (string->symbol arg)
          arg)]
-    [(width height radius)
+    [(width height radius side-length side-length1 side-length2)
      (check-arg fn-name
                 (and (real? arg)
                      (not (negative? arg)))
                 'non-negative-real-number
                 i arg)
      arg]
-    [(dx dy factor x-factor y-factor side-length)
+    [(dx dy factor x-factor y-factor)
      (check-arg fn-name
                 (real? arg)
                 'real\ number
@@ -611,13 +611,21 @@
 ;;       rectangle
 
 (define/chk (rectangle width height mode color)
-  (make-image (make-polygon (rectangle-points width height)
-                            mode
-                            color)
-              (make-bb width
-                       height
-                       height)
-              #f))
+  (make-a-polygon (rectangle-points width height) mode color))
+
+(define/chk (square side-length mode color)
+  (make-a-polygon (rectangle-points side-length side-length) mode color))
+
+(define/chk (rhombus side-length angle mode color)
+  (let* ([left-corner (make-polar side-length (+ (* pi 1/2) (/ (degrees->radians angle) 2)))]
+         [right-corner (make-polar side-length (- (* pi 1/2) (/ (degrees->radians angle) 2)))]
+         [bottom-corner (+ left-corner right-corner)])
+    (make-a-polygon (list (make-point 0 0)
+                          (make-point (real-part right-corner) (imag-part right-corner))
+                          (make-point (real-part bottom-corner) (imag-part bottom-corner))
+                          (make-point (real-part left-corner) (imag-part left-corner)))
+                    mode
+                    color)))
 
 (define (rectangle-points width height)
   (list (make-point 0 0)
@@ -666,6 +674,13 @@
                           (make-point (real-part left-corner) (imag-part left-corner)))
                     mode
                     color)))
+
+(define/chk (right-triangle side-length1 side-length2 mode color)
+  (make-a-polygon (list (make-point 0 (- side-length2))
+                        (make-point 0 0)
+                        (make-point side-length1 0))
+                  mode
+                  color))
 
 (define/chk (triangle side-length mode color)
   (make-polygon/star side-length 3 mode color values))
@@ -804,10 +819,13 @@
          circle
          ellipse
          rectangle
+         square
+         rhombus
          
          regular-polygon
          triangle 
          isosceles-triangle
+         right-triangle
          star
          star-polygon
          

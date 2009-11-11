@@ -23,7 +23,7 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 
 @section{Basic Images}
 
-@defproc[(circle [radius (and/c real? positive?)] 
+@defproc[(circle [radius (and/c real? (not/c negative?))] 
                  [mode mode?]
                  [color (or/c symbol? string?)])
          image?]{
@@ -35,7 +35,10 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 }
 
 
-@defproc[(ellipse [width (and/c real? positive?)] [height (and/c real? positive?)] [mode mode?] [color (or/c symbol? string?)]) image?]{
+@defproc[(ellipse [width (and/c real? (not/c negative?))]
+                  [height (and/c real? (not/c negative?))]
+                  [mode mode?] 
+                  [color (or/c symbol? string?)]) image?]{
   Constructs an ellipsis with the given width, height, mode, and color.
   
   @image-examples[(ellipse 40 20 "outline" "black")
@@ -43,25 +46,7 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
   
 }
 
-@defproc[(rectangle [width real?] [height real?] [mode mode?] [color (or/c symbol? string?)]) image?]{
-  Constructs a rectangle with the given width, height, mode, and color.
-  @image-examples[(rectangle 40 20 "outline" 'black)
-                  (rectangle 20 40 "solid" 'blue)]
-}
-
-@defproc[(regular-polygon [side-length (and/c positive? real?)] 
-                          [side-count side-count?]
-                          [mode mode?]
-                          [color (or/c symbol? string?)])
-         image?]{
-  Constructs a regular polygon with @scheme[side-count] sides.
-
-  @image-examples[(regular-polygon 30 3 "outline" "red")
-                  (regular-polygon 20 4 "outline" "blue")
-                  (regular-polygon 20 6 "solid" "red")]
-}
-
-@defproc[(triangle [side-length (and/c positive? real?)] 
+@defproc[(triangle [side-length (and/c real? (not/c negative?))] 
                    [mode mode?]
                    [color (or/c symbol? string?)])
          image?]{
@@ -73,7 +58,19 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 @image-examples[(triangle 40 "solid" "tan")]
 }
 
-@defproc[(isosceles-triangle [side-length (and/c positive? real?)] 
+@defproc[(right-triangle [side-length1 (and/c real? (not/c negative?))]
+                         [side-length2 (and/c real? (not/c negative?))]
+                         [mode mode?]
+                         [color (or/c symbol? string?)])
+         image?]{
+                 
+  Constructs a triangle with a right angle where the two sides adjacent
+  to the right angle have lengths @scheme[side-length1] and @scheme[side-length2].
+
+  @image-examples[(right-triangle 36 48 "solid" "black")]
+}
+                
+@defproc[(isosceles-triangle [side-length (and/c real? (not/c negative?))] 
                              [angle angle?]
                              [mode mode?]
                              [color (or/c symbol? string?)])
@@ -89,8 +86,52 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
                  (isosceles-triangle 60 30 "solid" "aquamarine")
                  (isosceles-triangle 60 330 "solid" "lightseagreen")]
 }
-                
-@defproc[(star [side-length (and/c real? positive?)] 
+
+
+@defproc[(square [side-length (and/c real? (not/c negative?))]
+                 [mode mode?]
+                 [color (or/c symbol? string?)])
+         image?]{
+
+ Constructs a square.
+ 
+ @image-examples[(square 40 "solid" "slateblue")
+                 (square 50 "outline" "darkmagenta")]
+
+}
+
+@defproc[(rectangle [width real?] [height real?] [mode mode?] [color (or/c symbol? string?)]) image?]{
+  Constructs a rectangle with the given width, height, mode, and color.
+  @image-examples[(rectangle 40 20 "outline" "black")
+                  (rectangle 20 40 "solid" "blue")]
+}
+
+@defproc[(rhombus [side-length (and/c real? (not/c negative?))]
+                  [angle angle?]
+                  [mode mode?]
+                  [color (or/c symbol? string?)])
+         image?]{
+                 
+Constructs a four sided polygon with all equal sides and thus where opposite angles are equal to each
+other. The top and bottom pair of angles is @scheme[angle] and the left and right are @scheme[(- 180 angle)].
+
+@image-examples[(rhombus 40 45 "solid" "magenta")
+                (rhombus 80 150 "solid" "mediumpurple")]
+}
+
+@defproc[(regular-polygon [side-length (and/c real? (not/c negative?))] 
+                          [side-count side-count?]
+                          [mode mode?]
+                          [color (or/c symbol? string?)])
+         image?]{
+  Constructs a regular polygon with @scheme[side-count] sides.
+
+  @image-examples[(regular-polygon 30 3 "outline" "red")
+                  (regular-polygon 20 4 "outline" "blue")
+                  (regular-polygon 20 6 "solid" "red")]
+}
+
+@defproc[(star [side-length (and/c real? (not/c negative?))] 
                [mode mode?]
                [color (or/c symbol? string?)])
          image?]{
@@ -101,7 +142,7 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
   
 }
 
-@defproc[(star-polygon [side-length (and/c real? positive?)]
+@defproc[(star-polygon [side-length (and/c real? (not/c negative?))]
                        [side-count side-count?]
                        [step-count step-count?]
                        [mode mode?]

@@ -67,11 +67,14 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          circle
          ellipse
          rectangle
+         square
+         rhombus
          regular-polygon
          star
          star-polygon
          triangle
          isosceles-triangle
+         right-triangle
          text
          text/font
          

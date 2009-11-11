@@ -70,6 +70,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;;  compare-all-rotations
+;;
+
+(check-equal? (compare-all-rotations '() '() equal?)
+              #t)
+(check-equal? (compare-all-rotations '(1) '(1) equal?)
+              #t)
+(check-equal? (compare-all-rotations '(1) '(2) equal?)
+              #f)
+(check-equal? (compare-all-rotations '(1 2 3) '(1 2 3) equal?)
+              #t)
+(check-equal? (compare-all-rotations '(1 2 3) '(2 3 1) equal?)
+              #t)
+(check-equal? (compare-all-rotations '(1 2 3) '(3 1 2) equal?)
+              #t)
+(check-equal? (compare-all-rotations '(1 2 3 4) '(4 1 2 3) equal?)
+              #t)
+(check-equal? (compare-all-rotations '(1 2 3 5) '(4 1 2 3) equal?)
+              #f)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; circle vs ellipse
 ;;
 
@@ -393,11 +415,9 @@
 (test (bring-between 720 360) => 0)
 (test (bring-between 720.5 360) => .5)
 
-(test (round-numbers
-       (normalize-shape (image-shape (rotate 90 (rectangle 100 100 'solid 'blue)))
-                        values))
+(test (round-numbers (rotate 90 (rectangle 100 100 'solid 'blue)))
       =>
-      (round-numbers (image-shape (rectangle 100 100 'solid 'blue))))
+      (round-numbers (rectangle 100 100 'solid 'blue)))
 
 (test (round-numbers
        (normalize-shape (image-shape (rotate 90 (rotate 90 (rectangle 50 100 'solid 'purple))))
@@ -572,3 +592,44 @@
                  (image-width (rotate 45 (rectangle (image-width t) 
                                                     (image-height t)
                                                     'solid 'black))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; triangle
+;;
+
+(check-equal? (round-numbers (rotate 180 (isosceles-triangle 60 330 "solid" "lightseagreen")))
+              (round-numbers (isosceles-triangle 60 30 "solid" "lightseagreen")))
+
+(check-equal? (triangle 40 'outline 'black)
+              (regular-polygon 40 3 'outline 'black))
+
+(check-equal? (equal~? (rotate (+ 180 45) (right-triangle 50 50 'solid 'black))
+                       (isosceles-triangle 50 90 'solid 'black)
+                       0.001)
+              #t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; square
+;;
+
+(check-equal? (square 10 'solid 'black)
+              (rectangle 10 10 'solid 'black))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; rhombus
+;;
+
+(check-equal? (equal~? (rhombus 10 90 'solid 'black)
+                       (square 10 'solid 'black)
+                       0.01)
+              #t)
+
+(check-equal? (equal~? (rhombus 50 150 'solid 'black)
+                       (rotate 90 (rhombus 50 30 'solid 'black))
+                       0.01)
+              #t)
+

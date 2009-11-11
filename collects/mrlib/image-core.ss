@@ -163,25 +163,34 @@ has been moved out).
                   (null? p2-points))
              (and (not (or (null? p1-points)
                            (null? p2-points)))
-                  (or (eq-recur (rotate-to-zero (closest-to-zero p1-points) p1-points)
-                                (rotate-to-zero (closest-to-zero p2-points) p2-points))
-                      (let ([p1-rev (reverse p1-points)])
-                        (eq-recur (rotate-to-zero (closest-to-zero p1-rev) p1-rev)
-                                  (rotate-to-zero (closest-to-zero p2-points) p2-points)))))))))
+                  (or (compare-all-rotations p1-points p2-points eq-recur)
+                      (compare-all-rotations p1-points (reverse p2-points) eq-recur)))))))
 
-(define (rotate-to-zero zero-p points)
-  (let loop ([points points]
-             [acc null])
-    (cond
-      [(equal? (car points) zero-p)
-       (append points (reverse acc))]
-      [else
-       (loop (cdr points)
-             (cons (car points) acc))])))
 
-(define (closest-to-zero points)
-  (car (sort points < #:key (λ (p) (+ (point-x p) (point-y p))))))
-
+;; returns #t when there is some rotation of l1 that is equal to l2
+(define (compare-all-rotations l1 l2 compare)
+  (cond
+    [(and (null? l1) (null? l2)) #t]
+    [else
+     (let ([v1 (list->vector l1)]
+           [v2 (list->vector l2)])
+       (and (= (vector-length v1) 
+               (vector-length v2))
+            (let o-loop ([init 0])
+              (cond
+                [(= init (vector-length v1)) #f]
+                [else
+                 (or (let i-loop ([i 0])
+                       (cond
+                         [(= i (vector-length v2)) 
+                          #t]
+                         [else
+                          (let ([j (modulo (+ init i) (vector-length v1))])
+                            (and (compare (vector-ref v1 j)
+                                          (vector-ref v2 i))
+                                 (i-loop (+ i 1))))]))
+                     (o-loop (+ init 1)))]))))]))
+        
 
 ;                                                   
 ;                                                   
@@ -569,7 +578,7 @@ has been moved out).
          image-baseline
          
          text->font
-         
+         compare-all-rotations
          render-image)
 
 ;; method names
