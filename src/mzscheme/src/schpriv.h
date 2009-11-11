@@ -1149,12 +1149,14 @@ typedef struct Scheme_Cont_Mark {
 } Scheme_Cont_Mark;
 
 typedef struct Scheme_Cont_Mark_Chain {
-  Scheme_Object so;
+  Scheme_Inclhash_Object iso; /* 0x1 => next is from different meta-continuation */
   Scheme_Object *key;
   Scheme_Object *val;
   MZ_MARK_POS_TYPE pos;
   struct Scheme_Cont_Mark_Chain *next;
 } Scheme_Cont_Mark_Chain;
+
+#define SCHEME_MARK_CHAIN_FLAG(c) MZ_OPT_HASH_KEY(&(c)->iso)
 
 typedef struct Scheme_Cont_Mark_Set {
   Scheme_Object so;
