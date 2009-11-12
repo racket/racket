@@ -42,5 +42,14 @@
 ;; is-var-mutated? : identifier -> boolean
 (define (is-var-mutated? id) (module-identifier-mapping-get table id (lambda _ #f)))
 
-(provide find-mutated-vars is-var-mutated?)
+;; Eli:
+;; - The `for-template' doesn't look like it's needed.
+;; - This is the *worst* looking interface I've seen in a while.  Seems very
+;;   specific to some unclear optimization needs.  (Either that, or translated
+;;   from C.)
+;; - Besides weird, identifiers maps are (IIRC) not weak, which makes this even
+;;   less general.
+;; - What's with the typed-scheme literals?  If they were needed, then
+;;   typed-scheme is probably broken now.
 
+(provide find-mutated-vars is-var-mutated?)

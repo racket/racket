@@ -14,6 +14,7 @@
         ((error-display-handler) (exn-message exn) exn)
         (get-output-string (current-error-port)))
       (format "~s\n" exn)))
+;; Eli: (or/c exn any)??
 
 (provide/contract
  [network-error ((symbol? string?) (listof any/c) . ->* . (void))]

@@ -40,6 +40,11 @@
          (syntax-property #'(constructor expr ...)
                           'disappeared-use
                           #'S)))]))
+;; Eli: You give a good point for this, but I'd prefer if the optimizer would
+;;   detect these, so you'd get the same warnings for constructors too when you
+;;   use `-W warning'.  (And then, if you really want these things to be
+;;   errors, then perhaps something at the mzscheme level should make it throw
+;;   errors instead of warnings.)
 
 (define dummy-value (box 'dummy))
 
@@ -53,3 +58,8 @@
                   #f]
                  [else #t]))
          (cdr (vector->list vec)))))
+;; Eli: Why is there that `false-on-opaque?' business instead of having
+;;   an interface similar to `struct->vector'?  I'd prefer an optional
+;;   on-opaque value, and have it throw an error if it's opaque and no
+;;   value is given.  Also, `gensym' seems much better to me than a box
+;;   for a unique value.

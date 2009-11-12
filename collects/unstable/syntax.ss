@@ -41,6 +41,9 @@
                 (apply make-prefab-struct key
                        (loop (struct->list x))))]
           [else x])))
+;; Eli: Is there any difference between this (with the default) and
+;;   `syntax->datum'?  If not, then maybe add the optional (or keyword) to
+;;   there instead?
 
 ;; Defining pattern variables
 
@@ -82,6 +85,7 @@
 (define-syntax-rule (with-temporaries (temp-name ...) . body)
   (with-syntax ([(temp-name ...) (generate-temporaries (quote-syntax (temp-name ...)))])
     . body))
+;; Eli: +1 to this, not sure about the next two
 
 ;; generate-temporary : any -> identifier
 (define (generate-temporary [stx 'g])
@@ -106,7 +110,16 @@
   (let* ([str (apply format fmt args)]
          [sym (string->symbol str)])
     (datum->syntax lctx sym src props cert)))
-
+;; Eli: This looks very *useful*, but I'd like to see it more convenient to
+;;   "preserve everything".  Maybe add a keyword argument that when #t makes
+;;   all the others use values lctx, and when syntax makes the others use that
+;;   syntax?  Also, I'd prefer it if each of these keywords would also accept a
+;;   syntax instead of a value, to copy the value from.
+;;   Finally, if you get to add this, then another useful utility in the same
+;;   spirit is one that concatenates symbols and/or strings and/or identifiers
+;;   into a new identifier.  I considered something like that, which expects a
+;;   single syntax among its inputs, and will use it for the context etc, or
+;;   throw an error if there's more or less than 1.
 
 ;; Error reporting
 
@@ -122,3 +135,4 @@
                         ctx
                         stx
                         extras)))
+;; Eli: The `report-error-as' thing seems arbitrary to me.

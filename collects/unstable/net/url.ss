@@ -22,6 +22,15 @@
      new-path
      empty
      (url-fragment in-url))))
+;; Eli: if it also removes the query, this it's a bad name, and it's
+;;   questionable whether it is general enough.  Why not make it into a
+;;   keyworded function that can change any part, which sounds like a much more
+;;   useful utility?  Some `foo' that would allow:
+;;     (define (url-replace-path proc in-url)
+;;       (foo in-url #:path (proc (url-path in-url)) #:query '()))
+;;   or even accept a changing function for all keywords:
+;;     (define (url-replace-path proc in-url)
+;;       (foo in-url #:path proc #:query '()))
 
 ;; ripped this off from url-unit.ss
 (define (url-path->string strs)
@@ -42,3 +51,7 @@
               [(up)   ".."]
               [else (error 'maybe-join-params
                            "bad value from path/param-path: ~e" s)])))))
+;; Eli: I don't know what this is supposed to be doing -- I don't see any
+;;   "maybe"ness), it throws away the `path/param-param's, and it accepts
+;;   strings too (which makes me wonder how is this related to the url
+;;   library).
