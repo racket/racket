@@ -43,12 +43,13 @@
   (let loop ([prev 0])
     (let ([candidate 
            (format "~a~a.png" 
-                   (number->string (abs (equal-hash-code exp)) 16)  ;; abs to avoid filenames beginning with hyphens
+                   (number->string (exp->number exp) 16)  ;; abs to avoid filenames beginning with hyphens
                    (if (zero? prev) 
                        ""
-                       (format "-~a" (string->number prev 16))))])
+                       (format "-~a" (number->string prev 16))))])
       (cond
         [(anywhere? candidate mapping)
+         (printf "dup!\n")
          (loop (+ prev 1))]
         [else
          candidate]))))
@@ -59,7 +60,23 @@
       [(pair? sexp) (or (loop (car sexp))
                         (loop (cdr sexp)))]
       [else (equal? x sexp)])))
-                     
+
+;(define a-prime (- (expt 2 127) 1)) ;; Lucas found this in 1876. (too long filenames)
+(define a-prime (/ (- (expt 2 59) 1) 179951)) ;; found by Landry in 1867
+;(define a-prime 113) ;; has too many collisions
+(define base 256)
+
+(define (exp->number exp)
+  (let ([digits (map char->integer (string->list (format "~s" exp)))])
+    (when (ormap (λ (x) (not (<= 0 x (- base 1)))) digits)
+      (error 'exp->number "found a char that was bigger than ~a in ~s" (- base 1) exp))
+    (let loop ([n 1]
+               [digits digits])
+      (cond
+        [(null? digits) (modulo n a-prime)]
+        [else (loop (+ (car digits) (* n base))
+                    (cdr digits))]))))
+
 (define (read/write result)
   (let-values ([(in out) (make-pipe)])
     (thread (λ () (write result out) (close-output-port out)))
