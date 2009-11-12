@@ -359,7 +359,12 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
   Rotates @scheme[image] by @scheme[angle] degrees in a counter-clockwise direction.
 
           @image-examples[(rotate 45 (ellipse 60 20 "solid" "olivedrab"))
-                          (rotate 5 (rectangle 50 50 "outline" "black"))]
+                          (rotate 5 (rectangle 50 50 "outline" "black"))
+                          (rotate 45
+                                  (beside/places
+                                   "center"
+                                   (rectangle 40 20 "solid" "darkseagreen")
+                                   (rectangle 20 100 "solid" "darkseagreen")))]
           
 }
 

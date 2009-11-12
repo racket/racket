@@ -38,6 +38,15 @@
    (list '(ellipse 40 60 "solid" "blue") 'image "196bfa7b9c4.png")
    (list '(scale 2 (ellipse 20 30 "solid" "blue")) 'image "2d9ba9032e.png")
    (list
+    '(rotate
+      45
+      (beside/places
+       "center"
+       (rectangle 40 20 "solid" "darkseagreen")
+       (rectangle 20 100 "solid" "darkseagreen")))
+    'image
+    "292b77d2270.png")
+   (list
     '(rotate 5 (rectangle 50 50 "outline" "black"))
     'image
     "13b344ed2ff.png")
