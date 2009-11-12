@@ -1,8 +1,7 @@
-
 ; Uses the curses.so extension. Run with
 ;    mzscheme -r curses-demo.ss
 
-; To get append-extension-suffix, which adds .so or .ddl as
+; To get append-extension-suffix, which adds .so or .dll as
 ; approrpiate for the current platform:
 (require dynext/file)
 
@@ -17,7 +16,3 @@
 (refresh)
 
 (get)
-
-
-
-

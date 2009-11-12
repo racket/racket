@@ -2,7 +2,9 @@
   Extension that uses the curses library.
 
   Link the extension to the curses library like this:
-     mzc --ld hello.so hello.o -lcurses
+     mzc --xform curses.c
+     mzc --3m --cc curses.3m.c
+     mzc --3m --ld curses.so curses_3m.o -lcurses
 
   For obvious reasons, this library doesn't interact well
   with MzScheme's read-eval-print loop. The example file
@@ -39,7 +41,8 @@ static Scheme_Object *sch_put(int argc, Scheme_Object **argv)
 static Scheme_Object *sch_get(int argc, Scheme_Object **argv)
 {
   /* Gets keyboard input */
-  int c = getch();
+  int c;
+  c = getch();
   return scheme_make_character(c);
 }
 
@@ -84,9 +87,11 @@ Scheme_Object *scheme_reload(Scheme_Env *env)
      allocating call. They're not needed for plain old (conservatively
      collected) Mzscheme. See makeadder3m.c for more info. */
   Scheme_Object *v;
+  /* Old annotations, are they needed?
   MZ_GC_DECL_REG(1);
   MZ_GC_VAR_IN_REG(0, env);
   MZ_GC_REG();
+  */
 
   v = scheme_make_prim_w_arity(sch_clear, "clear", 0, 0),
   scheme_add_global("clear", v, env);
