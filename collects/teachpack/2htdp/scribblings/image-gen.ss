@@ -1,6 +1,7 @@
 #lang scheme/gui
 
 (require 2htdp/private/image-more
+         lang/posn
          mrlib/image-core)
 
 (define-namespace-anchor anchor)

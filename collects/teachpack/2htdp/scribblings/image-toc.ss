@@ -208,6 +208,32 @@
    (list '(line -30 20 "red") 'image "69aaaa680d.png")
    (list '(line 30 30 "black") 'image "8e1ebaaf82.png")
    (list
+    '(polygon
+      (list
+       (make-posn 0 0)
+       (make-posn 0 40)
+       (make-posn 20 40)
+       (make-posn 20 60)
+       (make-posn 40 60)
+       (make-posn 40 20)
+       (make-posn 20 20)
+       (make-posn 20 0))
+      "solid"
+      "plum")
+    'image
+    "150e1d5e9f.png")
+   (list
+    '(polygon
+      (list
+       (make-posn 0 0)
+       (make-posn -10 20)
+       (make-posn 60 0)
+       (make-posn -10 -20))
+      "solid"
+      "burlywood")
+    'image
+    "25354f2b84e.png")
+   (list
     '(star-polygon 20 10 3 "solid" "cornflowerblue")
     'image
     "2cc717fb347.png")

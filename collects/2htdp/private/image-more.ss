@@ -6,6 +6,7 @@
          scheme/gui/base
          htdp/error
          scheme/math
+         lang/posn
          (for-syntax scheme/base))
 
 (define (show-image g [extra-space 0])
@@ -214,6 +215,17 @@
      arg]
     [(underline)
      (and arg #t)]
+    [(posns)
+     (check-arg fn-name
+                (and (list? arg)
+                     (andmap posn? arg))
+                'list-of-posns
+                i arg)
+     (check-arg fn-name
+                (>= (length arg) 3)
+                'list-of-at-least-three-posns
+                i arg)
+     arg]
     [else
      (error 'check "the function ~a has an argument with an unknown name: ~s"
             fn-name
@@ -653,6 +665,11 @@
 
 ;;       rectangle
 
+(define/chk (polygon posns mode color)
+  (make-a-polygon (map (λ (p) (make-point (posn-x p) (posn-y p))) posns)
+                  mode
+                  color))
+
 (define/chk (rectangle width height mode color)
   (make-a-polygon (rectangle-points width height) mode color))
 
@@ -901,6 +918,7 @@
          square
          rhombus
          
+         polygon
          regular-polygon
          triangle 
          isosceles-triangle

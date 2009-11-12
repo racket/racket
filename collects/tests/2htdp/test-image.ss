@@ -1,6 +1,7 @@
 #lang scheme/base
 (require "../../mrlib/image-core.ss"
          "../../2htdp/private/image-more.ss"
+         lang/posn
          scheme/math
          scheme/class
          scheme/gui/base
@@ -178,6 +179,27 @@
              (* (sin (* pi 1/6)) 100))
 (check-close (image-height (rotate 30 (ellipse 0 100 'solid 'blue)))
              (* (cos (* pi 1/6)) 100))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  polygon equality
+;;
+
+(check-equal? (polygon (list (make-posn 0 0)
+                             (make-posn 10 10)
+                             (make-posn 10 0))
+                       "solid" "plum")
+              (polygon (list (make-posn 10 10)
+                             (make-posn 10 0)
+                             (make-posn 0 0))
+                       "solid" "plum"))
+
+(check-equal? (polygon (list (make-posn 0 0)
+                             (make-posn 0 10)
+                             (make-posn 10 10)
+                             (make-posn 10 0))
+                       "solid" "plum")
+              (rectangle 10 10 "solid" "plum"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

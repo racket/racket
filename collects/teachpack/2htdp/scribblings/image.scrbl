@@ -1,8 +1,10 @@
 #lang scribble/doc
 
 @(require (for-label (except-in 2htdp/image image?)
-                     lang/htdp-beginner
+                     ;lang/htdp-beginner;(only-in  beginner-require)
+                     lang/posn
                      scheme/gui/base)
+          lang/posn
           "shared.ss"
           "image-util.ss"
           scribble/manual)
@@ -161,6 +163,28 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                   (star-polygon 40 7 3 "outline" "darkred")
                   (star-polygon 20 10 3 "solid" "cornflowerblue")]
  
+}
+                
+@defproc[(polygon [verticies (listof posn?)] 
+                  [mode mode?]
+                  [color (or/c symbol? string?)])
+         image?]{
+  Constructs a polygon connecting the given verticies.
+  
+  @image-examples[(polygon (list (make-posn 0 0)
+                                 (make-posn -10 20)
+                                 (make-posn 60 0)
+                                 (make-posn -10 -20))
+                           "solid" "burlywood")
+                  (polygon (list (make-posn 0 0)
+                                 (make-posn 0 40)
+                                 (make-posn 20 40)
+                                 (make-posn 20 60)
+                                 (make-posn 40 60)
+                                 (make-posn 40 20)
+                                 (make-posn 20 20)
+                                 (make-posn 20 0))
+                           "solid" "plum")]
 }
 
 @defproc[(line [x1 real?] [y1 real?] [color (or/c symbol? string?)]) image?]{

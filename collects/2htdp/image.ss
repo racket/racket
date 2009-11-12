@@ -71,6 +71,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          square
          rhombus
          regular-polygon
+         polygon
          star
          star-polygon
          triangle
