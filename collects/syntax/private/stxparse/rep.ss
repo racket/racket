@@ -198,9 +198,8 @@
   (for/fold ([decls decls0] [defs null])
       ([(k v) (in-dict (declenv-table decls0))]
        #:when (memq (car v) '(stxclass splicing-stxclass)))
-    (let-values ([(parser description attrs new-defs) (create-aux-def v)])
-      (values (declenv-put-parser decls k parser description attrs
-                                  (eq? (car v) 'splicing-stxclass))
+    (let-values ([(parser description attrs new-defs splicing?) (create-aux-def v)])
+      (values (declenv-put-parser decls k parser description attrs splicing?)
               (append new-defs defs)))))
 
 ;; create-aux-def : DeclEntry -> (values id id (listof SAttr) (listof stx))
@@ -217,9 +216,10 @@
                           [(arg ...) args])
               (values #'parser #'description (stxclass-attrs sc)
                       (list #'(define (parser x) (sc-parser x arg ...))
-                            #'(define (description) (description arg ...)))))
+                            #'(define (description) (description arg ...)))
+                      (stxclass/h? sc)))
             (values #'sc-parser #'sc-description (stxclass-attrs sc)
-                    null))))))
+                    null (stxclass/h? sc)))))))
 
 (define (append-lits+litsets lits litsets)
   (define seen (make-bound-id-table lits))
