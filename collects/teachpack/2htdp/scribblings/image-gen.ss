@@ -27,19 +27,39 @@
 
 (define (handle-image exp)
   (printf ".") (flush-output)
-  (let ([i (length mapping)])
-    (let ([result (parameterize ([current-namespace image-ns]) (eval exp))])
-      (cond
-        [(image? result)
-         (let ([fn (format "~a.png" i)])
-           (set! mapping (cons `(list ',exp 'image ,fn) mapping))
-           (save-image result (build-path "img" fn)))]
-        [else
-         (unless (equal? result (read/write result))
-           (error 'handle-image "expression ~s produced ~s, which I can't write"
-                  exp result))
-         (set! mapping (cons `(list ',exp 'val ,result) mapping))]))))
+  (let ([result (parameterize ([current-namespace image-ns]) (eval exp))])
+    (cond
+      [(image? result)
+       (let ([fn (exp->filename exp)])
+         (set! mapping (cons `(list ',exp 'image ,fn) mapping))
+         (save-image result (build-path "img" fn)))]
+      [else
+       (unless (equal? result (read/write result))
+         (error 'handle-image "expression ~s produced ~s, which I can't write"
+                exp result))
+       (set! mapping (cons `(list ',exp 'val ,result) mapping))])))
 
+(define (exp->filename exp)
+  (let loop ([prev 0])
+    (let ([candidate 
+           (format "~a~a.png" 
+                   (number->string (abs (equal-hash-code exp)) 16)  ;; abs to avoid filenames beginning with hyphens
+                   (if (zero? prev) 
+                       ""
+                       (format "-~a" (string->number prev 16))))])
+      (cond
+        [(anywhere? candidate mapping)
+         (loop (+ prev 1))]
+        [else
+         candidate]))))
+
+(define (anywhere? x sexp)
+  (let loop ([sexp sexp])
+    (cond
+      [(pair? sexp) (or (loop (car sexp))
+                        (loop (cdr sexp)))]
+      [else (equal? x sexp)])))
+                     
 (define (read/write result)
   (let-values ([(in out) (make-pipe)])
     (thread (λ () (write result out) (close-output-port out)))

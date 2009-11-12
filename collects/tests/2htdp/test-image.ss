@@ -651,3 +651,61 @@
 
 (check-equal? (round-numbers (line -30 20 "red"))
               (round-numbers (line 30 -20 "red")))
+
+(check-equal? (image-width (add-line (rectangle 100 200 'solid 'black)
+                                     10 10 90 190 "red"))
+              100)
+(check-equal? (image-height (add-line (rectangle 100 200 'solid 'black)
+                                     10 10 90 190 "red"))
+              200)
+(check-equal? (image-width (add-line (rectangle 100 200 'solid 'black)
+                                      10 10 200 200 "red"))
+              200)
+(check-equal? (image-height (add-line (rectangle 100 200 'solid 'black)
+                                      10 10 200 200 "red"))
+              200)
+
+(check-equal? (image-width (add-line (rectangle 100 200 'solid 'black)
+                                     10 10 300 300 "red"))
+              300)
+(check-equal? (image-height (add-line (rectangle 100 200 'solid 'black)
+                                      10 10 300 300 "red"))
+              300)
+
+(check-equal? (image-width (add-line (rectangle 100 200 'solid 'black)
+                                     -10 10 100 200 "red"))
+              110)
+(check-equal? (image-height (add-line (rectangle 100 200 'solid 'black)
+                                     -10 10 100 200 "red"))
+              200)
+
+(check-equal? (image-width (add-line (rectangle 100 200 'solid 'black)
+                                     10 -10 100 200 "red"))
+              100)
+(check-equal? (image-height (add-line (rectangle 100 200 'solid 'black)
+                                      10 -10 100 200 "red"))
+              210)
+
+(check-equal? (image-width (add-line (rectangle 100 200 'solid 'black)
+                                     100 200 10 -10 "red"))
+              100)
+(check-equal? (image-height (add-line (rectangle 100 200 'solid 'black)
+                                      100 200 10 -10 "red"))
+              210)
+
+(check-equal? (image-width (add-line (rectangle 100 200 'solid 'black)
+                                     100 200 -10 10 "red"))
+              110)
+(check-equal? (image-height (add-line (rectangle 100 200 'solid 'black)
+                                      100 200 -10 10 "red"))
+              200)
+
+(let* ([txt (text "H" 24 'black)]
+       [bl (image-baseline txt)])
+  (check-equal? (image-baseline (add-line txt 0 0 100 100 'red))
+                bl))
+
+(let* ([txt (text "H" 24 'black)]
+       [bl (image-baseline txt)])
+  (check-equal? (image-baseline (add-line txt 0 -10 100 100 'red))
+                (+ bl 10)))

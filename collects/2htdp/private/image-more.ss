@@ -669,18 +669,26 @@
                                 (make-point x1 y1)
                                 color))
             w h)))
-  #|
+
 (define/chk (add-line image x1 y1 x2 y2 color)
-  (make-image (make-overlay
-               (make-translate 
-                x1 y1
-                (make-line-segment (make-point 0 0)
-                                   (make-point x2 y2)
-                                   color))
-               (make-bb w h h)
-               #f))
-|#
-;;       line
+  (let* ([dx (abs (min 0 x1 x2))]
+         [dy (abs (min 0 y1 y2))]
+         [bottom (max (+ y1 dy)
+                      (+ y2 dy)
+                      (+ dy (image-bottom image)))]
+         [right (max (+ x1 dx)
+                     (+ x2 dx)
+                     (+ dx (image-right image)))]
+         [baseline (+ dy (image-baseline image))])
+    ;(printf "dx ~s orig-right ~s\n" dx (image-right image))
+    (make-image (make-translate
+                 dx dy
+                 (make-overlay
+                  (make-line-segment (make-point x1 y1) (make-point x2 y2) color)
+                  (image-shape image)))
+                (make-bb right bottom baseline)
+                #f)))
+
 
 ;; this is just so that 'text' objects can be sized.
 (define text-sizing-bm (make-object bitmap-dc% (make-object bitmap% 1 1)))
@@ -875,6 +883,7 @@
          star-polygon
          
          line
+         add-line
          
          text
          text/font

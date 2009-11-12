@@ -126,8 +126,8 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
          image?]{
   Constructs a regular polygon with @scheme[side-count] sides.
 
-  @image-examples[(regular-polygon 30 3 "outline" "red")
-                  (regular-polygon 20 4 "outline" "blue")
+  @image-examples[(regular-polygon 50 3 "outline" "red")
+                  (regular-polygon 40 4 "outline" "blue")
                   (regular-polygon 20 8 "solid" "red")]
 }
 
@@ -171,7 +171,26 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                   (line -30 20 "red")
                   (line 30 -20 "red")]
 }
-                
+
+@defproc[(add-line [image image?]
+                   [x1 real?] [y1 real?]
+                   [x2 real?] [y2 real?]
+                   [color (or/c symbol? string?)])
+         image?]{
+
+  Adds a line to the image @scheme[image], starting from the point (@scheme[x1],@scheme[y1])
+  and going to the point (@scheme[x2],@scheme[y2]).
+  
+  @image-examples[(add-line (ellipse 40 40 "outline" "maroon")
+                            0 40 40 0 "maroon")
+                  (add-line (ellipse 80 60 "outline" "darkolivegreen")
+                            (+ 40 (* 40 (cos (* pi 1/4))))
+                            (+ 30 (* 30 (sin (* pi 1/4))))
+                            (+ 40 (* 40 (cos (* pi 5/4))))
+                            (+ 30 (* 30 (sin (* pi 5/4))))
+                            "darkolivegreen")]
+}
+
 @defproc[(text [string string?] [font-size (and/c integer? (<=/c 1 255))] [color (or/c symbol? string?)])
          image?]{
                 
