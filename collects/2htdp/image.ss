@@ -56,8 +56,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          beside
          beside/places
 
-         ;above
-         ;above/places
+         above
+         above/places
          
          rotate
          frame

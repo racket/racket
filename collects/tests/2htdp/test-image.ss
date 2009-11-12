@@ -353,6 +353,49 @@
                      (ellipse 50 100 'solid 'red)
                      (ellipse 100 50 'solid 'blue)))
 
+(test (above/places 'left
+                     (ellipse 50 100 'solid 'red)
+                     (ellipse 100 50 'solid 'blue))
+      
+      =>
+      (make-image
+       (make-overlay
+        (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red)))
+        (make-translate 0 100 (image-shape (ellipse 100 50 'solid 'blue))))
+       (make-bb 100 150 150)
+       #f))
+
+(test (above/places 'center
+                     (ellipse 50 100 'solid 'red)
+                     (ellipse 100 50 'solid 'blue))
+      
+      =>
+      (make-image
+       (make-overlay
+        (make-translate 25 0 (image-shape (ellipse 50 100 'solid 'red)))
+        (make-translate 0 100 (image-shape (ellipse 100 50 'solid 'blue))))
+       (make-bb 100 150 100)
+       #f))
+
+(test (above/places 'right
+                     (ellipse 50 100 'solid 'red)
+                     (ellipse 100 50 'solid 'blue))
+      
+      =>
+      (make-image
+       (make-overlay
+        (make-translate 50 0 (image-shape (ellipse 50 100 'solid 'red)))
+        (make-translate 0 100 (image-shape (ellipse 100 50 'solid 'blue))))
+       (make-bb 100 150 150)
+       #f))
+
+(test (above (ellipse 50 100 'solid 'red)
+              (ellipse 100 50 'solid 'blue))
+      =>
+      (above/places 'left
+                    (ellipse 50 100 'solid 'red)
+                    (ellipse 100 50 'solid 'blue)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

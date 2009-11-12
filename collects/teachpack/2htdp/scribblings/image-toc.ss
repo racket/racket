@@ -28,21 +28,47 @@
       (ellipse 20 30 "solid" "slateblue")
       (ellipse 20 10 "solid" "navy"))
     'image
-    "33aaed94.png")
-   (list '(frame (ellipse 20 20 "outline" "black")) 'image "b3e371c.png")
-   (list '(ellipse 60 60 "solid" "blue") 'image "80c7ec4.png")
-   (list '(scale/xy 3 2 (ellipse 20 30 "solid" "blue")) 'image "1bebb5af.png")
-   (list '(ellipse 40 60 "solid" "blue") 'image "3f9b7651.png")
-   (list '(scale 2 (ellipse 20 30 "solid" "blue")) 'image "1a14c856.png")
-   (list '(rotate 5 (rectangle 50 50 "outline" "black")) 'image "24e78945.png")
+    "101f7aee.png")
+   (list '(frame (ellipse 20 20 "outline" "black")) 'image "fe8415.png")
+   (list '(ellipse 60 60 "solid" "blue") 'image "21849ba8.png")
+   (list '(scale/xy 3 2 (ellipse 20 30 "solid" "blue")) 'image "209d169e.png")
+   (list '(ellipse 40 60 "solid" "blue") 'image "3a36050a.png")
+   (list '(scale 2 (ellipse 20 30 "solid" "blue")) 'image "24575fbb.png")
+   (list '(rotate 5 (rectangle 50 50 "outline" "black")) 'image "15a961ce.png")
    (list
     '(rotate 45 (ellipse 60 20 "solid" "olivedrab"))
     'image
-    "36abd0a6.png")
+    "3d04f6fd.png")
+   (list
+    '(above/places
+      "center"
+      (ellipse 70 20 "solid" "yellowgreen")
+      (ellipse 50 20 "solid" "olivedrab")
+      (ellipse 30 20 "solid" "darkolivegreen")
+      (ellipse 10 20 "solid" "darkgreen"))
+    'image
+    "36ef7bca.png")
+   (list
+    '(above/places
+      "right"
+      (ellipse 70 20 "solid" "gold")
+      (ellipse 50 20 "solid" "goldenrod")
+      (ellipse 30 20 "solid" "darkgoldenrod")
+      (ellipse 10 20 "solid" "sienna"))
+    'image
+    "23f846d.png")
+   (list
+    '(above
+      (ellipse 70 20 "solid" "gray")
+      (ellipse 50 20 "solid" "darkgray")
+      (ellipse 30 20 "solid" "dimgray")
+      (ellipse 10 20 "solid" "black"))
+    'image
+    "2d2a2d07.png")
    (list
     '(beside/places "baseline" (text "ijy" 18 "black") (text "ijy" 24 "black"))
     'image
-    "128db302.png")
+    "3e8ce4fa.png")
    (list
     '(beside/places
       "center"
@@ -51,7 +77,7 @@
       (ellipse 20 30 "solid" "purple")
       (ellipse 20 10 "solid" "indigo"))
     'image
-    "120469a1.png")
+    "2f5a1e0f.png")
    (list
     '(beside/places
       "bottom"
@@ -60,7 +86,7 @@
       (ellipse 20 30 "solid" "slateblue")
       (ellipse 20 10 "solid" "navy"))
     'image
-    "1cdad38e.png")
+    "22d7c488.png")
    (list
     '(beside
       (ellipse 20 70 "solid" "gray")
@@ -68,7 +94,7 @@
       (ellipse 20 30 "solid" "dimgray")
       (ellipse 20 10 "solid" "black"))
     'image
-    "5965553.png")
+    "2821cf32.png")
    (list
     '(overlay/xy
       (rectangle 10 10 "solid" "red")
@@ -76,7 +102,7 @@
       -10
       (rectangle 10 10 "solid" "black"))
     'image
-    "2e92034e.png")
+    "19758cc2.png")
    (list
     '(overlay/xy
       (rectangle 10 10 "solid" "red")
@@ -84,7 +110,7 @@
       10
       (rectangle 10 10 "solid" "black"))
     'image
-    "107a175b.png")
+    "234ab918.png")
    (list
     '(overlay/xy
       (rectangle 10 10 "outline" "red")
@@ -92,7 +118,7 @@
       0
       (rectangle 10 10 "outline" "black"))
     'image
-    "f404e3c.png")
+    "153ef52.png")
    (list
     '(overlay/xy
       (ellipse 40 40 "outline" "black")
@@ -100,7 +126,7 @@
       25
       (ellipse 10 10 "solid" "forestgreen"))
     'image
-    "28fdf75c.png")
+    "171dc432.png")
    (list
     '(overlay/places
       "right"
@@ -110,7 +136,7 @@
       (rectangle 40 40 "solid" "red")
       (rectangle 50 50 "solid" "black"))
     'image
-    "1331b42e.png")
+    "2a64c8fc.png")
    (list
     '(overlay/places
       "middle"
@@ -118,7 +144,7 @@
       (rectangle 30 60 "solid" "orange")
       (ellipse 60 30 "solid" "purple"))
     'image
-    "10078cfc.png")
+    "31d2c2a.png")
    (list
     '(overlay
       (ellipse 10 10 "solid" "red")
@@ -128,27 +154,27 @@
       (ellipse 50 50 "solid" "red")
       (ellipse 60 60 "solid" "black"))
     'image
-    "975b778.png")
+    "9369ffc.png")
    (list
     '(overlay
       (ellipse 60 30 "solid" "purple")
       (rectangle 30 60 "solid" "orange"))
     'image
-    "cd2e82.png")
+    "2854877a.png")
    (list
     '(text/font "not really a link" 18 "blue" #f 'roman 'normal 'normal #t)
     'image
-    "11536865.png")
+    "33752adc.png")
    (list
     '(text/font "Goodbye" 18 "indigo" #f 'modern 'italic 'normal #f)
     'image
-    "2c27a4ab.png")
+    "4abf45f.png")
    (list
     '(text/font "Hello" 24 "olive" "Gill Sans" 'swiss 'normal 'bold #f)
     'image
-    "3a5f8054.png")
-   (list '(text "Goodbye" 36 "indigo") 'image "f6b7cc9.png")
-   (list '(text "Hello" 24 "olive") 'image "116768e2.png")
+    "6d66aef.png")
+   (list '(text "Goodbye" 36 "indigo") 'image "3f338d3a.png")
+   (list '(text "Hello" 24 "olive") 'image "382436e0.png")
    (list
     '(add-line
       (ellipse 80 60 "outline" "darkolivegreen")
@@ -158,45 +184,45 @@
       (+ 30 (* 30 (sin (* pi 5/4))))
       "darkolivegreen")
     'image
-    "3c068285.png")
+    "39450ab.png")
    (list
     '(add-line (ellipse 40 40 "outline" "maroon") 0 40 40 0 "maroon")
     'image
-    "370a84fa.png")
-   (list '(line 30 -20 "red") 'image "35ca3e57.png")
-   (list '(line -30 20 "red") 'image "149f7bed.png")
-   (list '(line 30 30 "black") 'image "216299fe.png")
+    "30639356.png")
+   (list '(line 30 -20 "red") 'image "260e5662.png")
+   (list '(line -30 20 "red") 'image "316a330b.png")
+   (list '(line 30 30 "black") 'image "6ad4614.png")
    (list
     '(star-polygon 20 10 3 "solid" "cornflowerblue")
     'image
-    "1564e03e.png")
-   (list '(star-polygon 40 7 3 "outline" "darkred") 'image "33ded4e2.png")
-   (list '(star-polygon 40 5 2 "solid" "seagreen") 'image "35eefac.png")
-   (list '(star 40 "solid" "gray") 'image "194b0e44.png")
-   (list '(regular-polygon 20 8 "solid" "red") 'image "1343ddbd.png")
-   (list '(regular-polygon 40 4 "outline" "blue") 'image "36dc3be7.png")
-   (list '(regular-polygon 50 3 "outline" "red") 'image "110659e0.png")
-   (list '(rhombus 80 150 "solid" "mediumpurple") 'image "1817baf0.png")
-   (list '(rhombus 40 45 "solid" "magenta") 'image "eab359b.png")
-   (list '(rectangle 20 40 "solid" "blue") 'image "3f241026.png")
-   (list '(rectangle 40 20 "outline" "black") 'image "2c0ddeae.png")
-   (list '(square 50 "outline" "darkmagenta") 'image "97be4d.png")
-   (list '(square 40 "solid" "slateblue") 'image "5da309d.png")
+    "38814728.png")
+   (list '(star-polygon 40 7 3 "outline" "darkred") 'image "2f234f2e.png")
+   (list '(star-polygon 40 5 2 "solid" "seagreen") 'image "1176673d.png")
+   (list '(star 40 "solid" "gray") 'image "350feeaa.png")
+   (list '(regular-polygon 20 8 "solid" "red") 'image "ff15c8e.png")
+   (list '(regular-polygon 40 4 "outline" "blue") 'image "d27a587.png")
+   (list '(regular-polygon 50 3 "outline" "red") 'image "5dc8ec6.png")
+   (list '(rhombus 80 150 "solid" "mediumpurple") 'image "69207aa.png")
+   (list '(rhombus 40 45 "solid" "magenta") 'image "8a14504.png")
+   (list '(rectangle 20 40 "solid" "blue") 'image "1e727939.png")
+   (list '(rectangle 40 20 "outline" "black") 'image "30572a1c.png")
+   (list '(square 50 "outline" "darkmagenta") 'image "2cad7a84.png")
+   (list '(square 40 "solid" "slateblue") 'image "2ee6db0a.png")
    (list
     '(isosceles-triangle 60 330 "solid" "lightseagreen")
     'image
-    "2fa1cd58.png")
+    "175cca09.png")
    (list
     '(isosceles-triangle 60 30 "solid" "aquamarine")
     'image
-    "1ea53369.png")
+    "3f15cd12.png")
    (list
     '(isosceles-triangle 200 170 "solid" "seagreen")
     'image
-    "1a19d76d.png")
-   (list '(right-triangle 36 48 "solid" "black") 'image "17923882.png")
-   (list '(triangle 40 "solid" "tan") 'image "264fff73.png")
-   (list '(ellipse 20 40 "solid" "blue") 'image "33bc4cc8.png")
-   (list '(ellipse 40 20 "outline" "black") 'image "3603dbc6.png")
-   (list '(circle 20 "solid" "blue") 'image "90999b2.png")
-   (list '(circle 30 "outline" "red") 'image "115c97e6.png")))
+    "117fbb0d.png")
+   (list '(right-triangle 36 48 "solid" "black") 'image "28384a91.png")
+   (list '(triangle 40 "solid" "tan") 'image "3fb58822.png")
+   (list '(ellipse 20 40 "solid" "blue") 'image "4bfb85c.png")
+   (list '(ellipse 40 20 "outline" "black") 'image "118c2c14.png")
+   (list '(circle 20 "solid" "blue") 'image "2496a152.png")
+   (list '(circle 30 "outline" "red") 'image "3f0d4b2.png")))

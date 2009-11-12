@@ -386,8 +386,33 @@
                (cdr rst)))])))
 
 ;; above : image image image ... -> image
-;; above/places : string I I I ... -> I
-;; like beside, but vertically
+;; places images in a single vertical row, left aligned
+(define/chk (above image1 image2 . image3)
+  (above/internal 'left image1 (cons image2 image3)))
+
+;; beside/places : string image image image ... -> image
+;; places images in a horizontal row where the vertical alignment is
+;; covered by the string argument
+(define/chk (above/places x-place image1 image2 . image3)
+  (above/internal x-place image1 (cons image2 image3)))
+
+(define (above/internal x-place fst rst)
+  (let loop ([fst fst]
+             [rst rst])
+    (cond
+      [(null? rst) fst]
+      [else
+       (let* ([snd (car rst)]
+              [fst-x-spot (find-x-spot x-place fst)]
+              [snd-x-spot (find-x-spot x-place (car rst))]
+              [dx (- fst-x-spot snd-x-spot)])
+         (loop (overlay/δ fst
+                          (if (< dx 0) (- dx) 0) 
+                          0
+                          (car rst)
+                          (if (< dx 0) 0 dx)
+                          (image-bottom fst))
+               (cdr rst)))])))
 
 
 ;                                                                                   
@@ -842,9 +867,10 @@
 (provide overlay
          overlay/places
          overlay/xy
-         
          beside
          beside/places
+         above
+         above/places
          
          rotate
          

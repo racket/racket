@@ -319,6 +319,40 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
   
   }
 
+
+@defproc[(above [i1 image?] [i2 image?] [is image?] ...) image?]{
+  Constructs an image by placing all of the argument images in a
+  vertical row, aligned along their left edges.
+
+  @image-examples[(above (ellipse 70 20 "solid" "gray")
+                         (ellipse 50 20 "solid" "darkgray")
+                         (ellipse 30 20 "solid" "dimgray")
+                         (ellipse 10 20 "solid" "black"))]
+                          
+  
+  }
+
+@defproc[(above/places [y-place y-place?] [i1 image?] [i2 image?] [is image?] ...) image?]{
+  Constructs an image by placing all of the argument images in a vertical row, lined
+  up as indicated by the @scheme[x-place] argument. For example, if @scheme[x-place]
+  is @scheme["middle"], then the images are placed above each other with their centers 
+  lined up.
+
+  @image-examples[(above/places "right"
+                                 (ellipse 70 20 "solid" "gold")
+                                 (ellipse 50 20 "solid" "goldenrod")
+                                 (ellipse 30 20 "solid" "darkgoldenrod")
+                                 (ellipse 10 20 "solid" "sienna"))
+                  
+                  (above/places "center"
+                                 (ellipse 70 20 "solid" "yellowgreen")
+                                 (ellipse 50 20 "solid" "olivedrab")
+                                 (ellipse 30 20 "solid" "darkolivegreen")
+                                 (ellipse 10 20 "solid" "darkgreen"))]
+                                 
+  
+  }
+
 @section{Rotating, Scaling, and Framing Images}
 
 @defproc[(rotate [angle angle?] [image image?]) image?]{
