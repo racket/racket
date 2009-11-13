@@ -248,11 +248,14 @@
        (1 . <= .  i)))
 
 (define (bitmap->image bm [mask-bm (send bm get-loaded-mask)])
-  (make-image (make-bitmap bm mask-bm 0 1 #f)
-              (make-bb (send bm get-width)
-                       (send bm get-height)
-                       (send bm get-height))
-              #f))
+  (let ([w (send bm get-width)]
+        [h (send bm get-height)])
+    (make-image (make-translate
+                 (/ w 2)
+                 (/ h 2)
+                 (make-bitmap bm mask-bm 0 1 #f))
+                (make-bb w h h)
+                #f)))
 
 (define (image-snip->image is)
   (bitmap->image (send is get-bitmap)
