@@ -50,25 +50,34 @@
            (display ")>" port)])))
 
 ;; A promise value can hold
-;; - (list <value> ...): forced promise (possibly multiple-values, usually one)
+;; - (list <value> ...): forced promise (possibly multiple-values)
+;;        - composable promises deal with only one value
 ;; - <promise>: a shared (redirected) promise that points at another one
+;;        - possible only with composable promises
 ;; - <thunk>: usually a delayed promise,
 ;;        - can also hold a `running' thunk that will throw a reentrant error
 ;;        - can also hold a raising-a-value thunk on exceptions and other
 ;;          `raise'd values (actually, applicable structs for printouts)
+;; First, a generic struct, which is used for all promise-like values
 (define-struct promise ([val #:mutable])
   #:property prop:custom-write promise-printer)
+;; Then, a subtype for composable promises
+(define-struct (composable-promise promise) ())
 
-;; Creates a `composable' promise
-;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
-(define-syntax (lazy stx)
+;; template for all delay-like constructs
+(define-for-syntax (make-delayer stx maker)
   (syntax-case stx ()
     [(_ expr)
      (with-syntax ([proc (syntax-property (syntax/loc stx (lambda () expr))
-                                          'inferred-name (syntax-local-name))])
-       (syntax/loc stx (make-promise proc)))]))
+                                          'inferred-name (syntax-local-name))]
+                   [make maker])
+       (syntax/loc stx (make proc)))]))
 
-;; Creates a promise that does not compose
+;; Creates a composable promise
+;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
+(define-syntax (lazy stx) (make-delayer stx #'make-composable-promise))
+
+;; Creates a (generic) promise that does not compose
 ;;   X = (force (delay X)) = (force (lazy (delay X)))
 ;;                         = (force (lazy^n (delay X)))
 ;;   X = (force (force (delay (delay X)))) != (force (delay (delay X)))
@@ -76,11 +85,7 @@
 ;; sequence of `(lazy^n o delay)^m o lazy^k' requires m+1 `force's (for k>0)
 ;; (This is not needed with a lazy language (see the above URL for details),
 ;; but provided for regular delay/force uses.)
-(define-syntax (delay stx)
-  (syntax-case stx ()
-    [(_ expr)
-     (syntax/loc stx
-       (lazy (make-promise (call-with-values (lambda () expr) list))))]))
+(define-syntax (delay stx) (make-delayer stx #'make-promise))
 
 ;; For simplicity and efficiency this code uses thunks in promise values for
 ;; exceptions: this way, we don't need to tag exception values in some special
@@ -98,47 +103,81 @@
                                   (error 'force "reentrant promise ~v" name)
                                   (error 'force "reentrant promise")))))
 
-;; force iterates on lazy promises (forbids dependency cycles)
+;; force/composable iterates on composable promises
 ;; * (force X) = X for non promises
-;; * does not deal with multiple values, except for `delay' promises at the
-;;   leaves
+;; * does not deal with multiple values in the composable case
+(define (force/composable root)
+  (let ([p (pref root)])
+    (cond
+      [(procedure? p)
+       ;; mark the root as running: avoids cycles, and no need to keep banging
+       ;; the root promise value; it makes this non-r5rs, but the only
+       ;; practical uses of these things could be ones that use state to avoid
+       ;; an infinite loop.  (See the generic forcer below.)
+       ;; (careful: avoid holding a reference to the thunk, to allow
+       ;; safe-for-space loops)
+       (pset! root (make-running (object-name p)))
+       (call-with-exception-handler
+        (lambda (e) (pset! root (make-reraise e)) e)
+        (lambda ()
+          ;; iterate carefully through chains of composable promises
+          (let loop ([v (p)]) ; does not handle multiple values!
+            (cond [(composable-promise? v)
+                   (let ([p* (pref v)])
+                     (pset! v root) ; share with root
+                     (cond [(procedure? p*) (loop (p*))]
+                           ;; it must be a list of one value (because
+                           ;; composable promises never hold multiple values),
+                           ;; or a composable promise
+                           [(pair? p*) (pset! root p*) (unsafe-car p*)]
+                           ;; note: for the promise case we could jump only to
+                           ;; the last `let' (for `p*'), but that makes the
+                           ;; code heavier, and runs slower (probably goes over
+                           ;; some inlining/unfolding threshold).
+                           [else (loop p*)]))]
+                  ;; reached a non-composable promise: share and force it now
+                  [(promise? v) (pset! root v) (force/generic v)]
+                  ;; error here for "library approach" (see above URL)
+                  [else (pset! root (list v)) v]))))]
+      ;; try to make the order efficient, with common cases first
+      [(pair? p) (if (null? (unsafe-cdr p)) (unsafe-car p) (apply values p))]
+      ;; follow all sharings (and shortcut directly to the right force)
+      [(composable-promise? p) (force/composable p) (force/generic p)]
+      [(null? p) (values)]
+      [else (error 'force "composable promise with invalid contents: ~e" p)])))
 
-(define (force-proc p root)
-  (let loop1 ([v (p)]) ; does not handle multiple values!
-    (if (promise? v)
-      (let loop2 ([promise* v])
-        (let ([p* (pref promise*)])
-          (pset! promise* root) ; share with root
-          (cond [(procedure? p*) (loop1 (p*))]
-                [(promise? p*) (loop2 p*)]
-                [else (pset! root p*)
-                      (cond [(null? p*) (values)]
-                            [(null? (unsafe-cdr p*)) (unsafe-car p*)]
-                            [else (apply values p*)])])))
-      (begin ; error here for "library approach" (see above URL)
-        (pset! root (list v))
-        v))))
+;; generic force for "old-style" promises -- they're still useful in
+;; that they allow multiple values.  In general, this is slower, but has
+;; more features.  (They could allow self loops, but this means holding
+;; on to the procedure and its resources while it is running, and lose
+;; the ability to know that it is running; the second can be resolved
+;; with a new kind of `running' value that can be used again, but the
+;; first cannot be solved.  I still didn't ever see any use for them, so
+;; they're still forbidden.)
+(define (force/generic promise)
+  (let ([p (pref promise)])
+    (cond
+      [(procedure? p)
+       (pset! promise (make-running (object-name p)))
+       (call-with-exception-handler
+        (lambda (e) (pset! promise (make-reraise e)) e)
+        (lambda ()
+          (let ([vs (call-with-values p list)])
+            (pset! promise vs)
+            (cond [(null? vs) (values)]
+                  [(null? (unsafe-cdr vs)) (unsafe-car vs)]
+                  [else (apply values vs)]))))]
+      ;; try to make the order efficient, with common cases first
+      [(pair? p) (if (null? (unsafe-cdr p)) (unsafe-car p) (apply values p))]
+      [(null? p) (values)]
+      [else (error 'force "generic promise with invalid contents: ~e" p)])))
 
+;; dispatcher for composable promises, generic promises, and other values
 (define (force promise)
-  (if (promise? promise)
-    (let loop ([p (pref promise)])
-      (cond [(procedure? p)
-             ;; mark the root as running: avoids cycles, and no need to keep
-             ;; banging the root promise value; it makes this non-r5rs, but
-             ;; the only practical uses of these things could be ones that use
-             ;; state to avoid an infinite loop.
-             ;; (careful: avoid holding a reference to the thunk, to allow
-             ;; safe-for-space loops)
-             (pset! promise (make-running (object-name p)))
-             (call-with-exception-handler
-               (lambda (e) (pset! promise (make-reraise e)) e)
-               (lambda () (force-proc p promise)))]
-            [(promise? p) (loop (pref p))]
-            [(null? p) (values)]
-            [(null? (unsafe-cdr p)) (unsafe-car p)]
-            [else (apply values p)]))
-    ;; different from srfi-45: identity for non-promises
-    promise))
+  (cond [(composable-promise? promise) (force/composable promise)]
+        [(promise? promise) (force/generic promise)]
+        ;; different from srfi-45: identity for non-promises
+        [else promise]))
 
 (define (promise-forced? promise)
   (if (promise? promise)
@@ -152,3 +191,12 @@
     (raise-type-error 'promise-running? "promise" promise)))
 
 )
+
+#|
+Simple code for timings:
+  (define (c n) (lazy (if (zero? n) (delay 'hey!) (c (sub1 n)))))
+  (for ([i (in-range 9)])
+    (collect-garbage) (collect-garbage) (collect-garbage)
+    (time (for ([i (in-range 10000)]) (force (c 2000)))))
+Also, run (force (c -1)) and check constant space
+|#
