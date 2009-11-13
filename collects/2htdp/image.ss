@@ -88,6 +88,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          mode?
          angle?
          side-count?
+         color?
          
          image-width
          image-height

@@ -1,7 +1,8 @@
 #lang scribble/doc
 
-@(require (for-label (except-in 2htdp/image image?)
-                     ;lang/htdp-beginner;(only-in  beginner-require)
+@(require (for-label (only-in scheme/contract and/c or/c any/c not/c)
+                     2htdp/image
+                     (except-in lang/htdp-beginner make-posn posn? posn-x posn-y image?)
                      lang/posn
                      scheme/gui/base)
           lang/posn
@@ -16,18 +17,14 @@
 The image teachpack provides a number of basic image construction functions, along with
 combinators for building more complex images out of existing images. Basic images include
 various polygons, ellipses and circles, and text, as well as bitmaps (typically bitmaps 
-come about via the @onscreen{Insert Image...} menu item in DrScheme.
+come about via the @onscreen{Insert Image...} menu item in DrScheme).
 Existing images can be rotated, scaled, and overlaid on top of each other.
-
-@emph{This library is currently a work in progress. 
-      I don't expect the existing primitives to change, but more will be added
-      (and bugs will be fixed...).}
 
 @section{Basic Images}
 
-@defproc[(circle [radius (and/c real? (not/c negative?))] 
+@defproc[(circle [radius (and/c real? (not/c negative?))]
                  [mode mode?]
-                 [color (or/c symbol? string?)])
+                 [color color?])
          image?]{
   Constructs a circle with the given radius, height, mode, and color.
   
@@ -40,7 +37,7 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 @defproc[(ellipse [width (and/c real? (not/c negative?))]
                   [height (and/c real? (not/c negative?))]
                   [mode mode?] 
-                  [color (or/c symbol? string?)]) image?]{
+                  [color color?]) image?]{
   Constructs an ellipsis with the given width, height, mode, and color.
   
   @image-examples[(ellipse 40 20 "outline" "black")
@@ -50,7 +47,7 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 
 @defproc[(triangle [side-length (and/c real? (not/c negative?))] 
                    [mode mode?]
-                   [color (or/c symbol? string?)])
+                   [color color?])
          image?]{
   Constructs a upward-pointing equilateral triangle. 
   The @scheme[side-length] argument 
@@ -63,7 +60,7 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 @defproc[(right-triangle [side-length1 (and/c real? (not/c negative?))]
                          [side-length2 (and/c real? (not/c negative?))]
                          [mode mode?]
-                         [color (or/c symbol? string?)])
+                         [color color?])
          image?]{
                  
   Constructs a triangle with a right angle where the two sides adjacent
@@ -75,7 +72,7 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 @defproc[(isosceles-triangle [side-length (and/c real? (not/c negative?))] 
                              [angle angle?]
                              [mode mode?]
-                             [color (or/c symbol? string?)])
+                             [color color?])
          image?]{
 
  Creates a triangle with two equal-length sides, of length @scheme[side-length]
@@ -92,7 +89,7 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 
 @defproc[(square [side-length (and/c real? (not/c negative?))]
                  [mode mode?]
-                 [color (or/c symbol? string?)])
+                 [color color?])
          image?]{
 
  Constructs a square.
@@ -102,7 +99,7 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 
 }
 
-@defproc[(rectangle [width real?] [height real?] [mode mode?] [color (or/c symbol? string?)]) image?]{
+@defproc[(rectangle [width real?] [height real?] [mode mode?] [color color?]) image?]{
   Constructs a rectangle with the given width, height, mode, and color.
   @image-examples[(rectangle 40 20 "outline" "black")
                   (rectangle 20 40 "solid" "blue")]
@@ -111,7 +108,7 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 @defproc[(rhombus [side-length (and/c real? (not/c negative?))]
                   [angle angle?]
                   [mode mode?]
-                  [color (or/c symbol? string?)])
+                  [color color?])
          image?]{
                  
 Constructs a four sided polygon with all equal sides and thus where opposite angles are equal to each
@@ -124,7 +121,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
 @defproc[(regular-polygon [side-length (and/c real? (not/c negative?))] 
                           [side-count side-count?]
                           [mode mode?]
-                          [color (or/c symbol? string?)])
+                          [color color?])
          image?]{
   Constructs a regular polygon with @scheme[side-count] sides.
 
@@ -135,7 +132,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
 
 @defproc[(star [side-length (and/c real? (not/c negative?))] 
                [mode mode?]
-               [color (or/c symbol? string?)])
+               [color color?])
          image?]{
   Constructs a star with five points. The @scheme[side-length] argument 
   determines the side length of the enclosing pentagon.
@@ -148,7 +145,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                        [side-count side-count?]
                        [step-count step-count?]
                        [mode mode?]
-                       [color (or/c symbol? string?)])
+                       [color color?])
          image?]{
  
   Constructs an arbitrary regular star polygon (a generalization of the regular polygons). 
@@ -167,7 +164,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                 
 @defproc[(polygon [verticies (listof posn?)] 
                   [mode mode?]
-                  [color (or/c symbol? string?)])
+                  [color color?])
          image?]{
   Constructs a polygon connecting the given verticies.
   
@@ -187,7 +184,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                            "solid" "plum")]
 }
 
-@defproc[(line [x1 real?] [y1 real?] [color (or/c symbol? string?)]) image?]{
+@defproc[(line [x1 real?] [y1 real?] [color color?]) image?]{
   Constructs an image representing a line segment that connects the points
   (0,0) to (x1,y1).
   
@@ -199,7 +196,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
 @defproc[(add-line [image image?]
                    [x1 real?] [y1 real?]
                    [x2 real?] [y2 real?]
-                   [color (or/c symbol? string?)])
+                   [color color?])
          image?]{
 
   Adds a line to the image @scheme[image], starting from the point (@scheme[x1],@scheme[y1])
@@ -215,7 +212,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                             "darkolivegreen")]
 }
 
-@defproc[(text [string string?] [font-size (and/c integer? (<=/c 1 255))] [color (or/c symbol? string?)])
+@defproc[(text [string string?] [font-size (and/c integer? (<=/c 1 255))] [color color?])
          image?]{
                 
   Constructs an image that draws the given string, using the font size and color.
@@ -224,7 +221,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                   (text "Goodbye" 36 "indigo")]
 }
 
-@defproc[(text/font [string string?] [font-size (and/c integer? (<=/c 1 255))] [color (or/c symbol? string?)]
+@defproc[(text/font [string string?] [font-size (and/c integer? (<=/c 1 255))] [color color?]
                     [face (or/c string? #f)]
                     [family (or/c 'default 'decorative 'roman 'script 'swiss 'modern 'symbol 'system)]
                     [style (or/c 'normal 'italic 'slant)]
@@ -258,8 +255,8 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
   on top of the second argument, which goes on top of the third argument, etc.
   The images are all lined up on their upper-right corners
 
-  @image-examples[(overlay (ellipse 60 30 "solid" "purple")
-                           (rectangle 30 60 "solid" "orange"))
+  @image-examples[(overlay (rectangle 30 60 "solid" "orange")
+                           (ellipse 60 30 "solid" "purple"))
                   (overlay (ellipse 10 10 "solid" "red")
                            (ellipse 20 20 "solid" "black")
                            (ellipse 30 30 "solid" "red")
@@ -279,10 +276,10 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                                   (rectangle 30 60 "solid" "orange")
                                   (ellipse 60 30 "solid" "purple"))
                   (overlay/places "right" "bottom"
-                                  (rectangle 20 20 "solid" "red")
-                                  (rectangle 30 30 "solid" "black")
-                                  (rectangle 40 40 "solid" "red")
-                                  (rectangle 50 50 "solid" "black"))]
+                                  (rectangle 20 20 "solid" "silver")
+                                  (rectangle 30 30 "solid" "seagreen")
+                                  (rectangle 40 40 "solid" "silver")
+                                  (rectangle 50 50 "solid" "seagreen"))]
                                   
   
   }
@@ -291,19 +288,23 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
   Constructs an image by overlaying @scheme[i1] on top of @scheme[i2] after
   shifting @scheme[i2] over by @scheme[x] pixels to the right and @scheme[y] 
   pixels down.
-  @image-examples[(overlay/xy (ellipse 40 40 "outline" "black")
-                              25 
-                              25
-                              (ellipse 10 10 "solid" "forestgreen"))
-                  (overlay/xy (rectangle 10 10 "outline" "red")
-                              10 0
-                              (rectangle 10 10 "outline" "black"))
-                  (overlay/xy (rectangle 10 10 "solid" "red")
-                              10 10
-                              (rectangle 10 10 "solid" "black"))
-                  (overlay/xy (rectangle 10 10 "solid" "red")
-                              -10 -10
-                              (rectangle 10 10 "solid" "black"))]
+  @image-examples[(overlay/xy (rectangle 20 20 "outline" "black")
+                              20 0
+                              (rectangle 20 20 "outline" "black"))
+                  (overlay/xy (rectangle 20 20 "solid" "red")
+                              20 20
+                              (rectangle 20 20 "solid" "black"))
+                  (overlay/xy (rectangle 20 20 "solid" "red")
+                              -20 -20
+                              (rectangle 20 20 "solid" "black"))
+                  (overlay/xy 
+                   (overlay/xy (ellipse 40 40 "outline" "black")
+                               10
+                               15
+                               (ellipse 10 10 "solid" "forestgreen"))
+                   20
+                   15
+                   (ellipse 10 10 "solid" "forestgreen"))]
 }
 
 @defproc[(beside [i1 image?] [i2 image?] [is image?] ...) image?]{
@@ -481,6 +482,22 @@ This section lists predicates for the basic structures provided by the image lib
  @scheme['solid], @scheme["solid"], @scheme['outline],
  or @scheme["outline"], indicating if the shape is
  filled in or not.
+}
+
+@defproc[(color? [x any/c]) boolean?]{
+
+  Determines if @scheme[x] represents a color. Both strings and symbols are allowed as colors.
+  For example,
+  @scheme["magenta"], @scheme["black"], @scheme['orange], and @scheme['purple]
+  are allowed. Colors are not case-sensitive, so 
+  @scheme["Magenta"], @scheme["Black"], @scheme['Orange], and @scheme['Purple]
+  are also allowed, and are the same colors as in the previous sentence.
+
+  If a color is not recognized, black is used in its place.
+  
+  The complete list of colors is available in the documentation for
+  @scheme[color-database<%>].
+                                      
 }
 
 @defproc[(y-place? [x any/c]) boolean?]{

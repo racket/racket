@@ -246,6 +246,7 @@
 (define (step-count? i)
   (and (integer? i)
        (1 . <= .  i)))
+(define (color? c) (or (symbol? c) (string? c)))
 
 (define (bitmap->image bm [mask-bm (send bm get-loaded-mask)])
   (let ([w (send bm get-width)]
@@ -911,6 +912,7 @@
          mode?
          angle?
          side-count?
+         color?
          
          image-width
          image-height

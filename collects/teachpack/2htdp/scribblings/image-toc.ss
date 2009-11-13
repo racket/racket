@@ -116,46 +116,50 @@
     "28c73238138.png")
    (list
     '(overlay/xy
-      (rectangle 10 10 "solid" "red")
-      -10
-      -10
-      (rectangle 10 10 "solid" "black"))
-    'image
-    "1d4f067776.png")
-   (list
-    '(overlay/xy
-      (rectangle 10 10 "solid" "red")
-      10
-      10
-      (rectangle 10 10 "solid" "black"))
-    'image
-    "fecb6311a8.png")
-   (list
-    '(overlay/xy
-      (rectangle 10 10 "outline" "red")
-      10
-      0
-      (rectangle 10 10 "outline" "black"))
-    'image
-    "12795bb439c.png")
-   (list
-    '(overlay/xy
-      (ellipse 40 40 "outline" "black")
-      25
-      25
+      (overlay/xy
+       (ellipse 40 40 "outline" "black")
+       10
+       15
+       (ellipse 10 10 "solid" "forestgreen"))
+      20
+      15
       (ellipse 10 10 "solid" "forestgreen"))
     'image
-    "255506ac6ca.png")
+    "10847861f4b.png")
+   (list
+    '(overlay/xy
+      (rectangle 20 20 "solid" "red")
+      -20
+      -20
+      (rectangle 20 20 "solid" "black"))
+    'image
+    "133309751d2.png")
+   (list
+    '(overlay/xy
+      (rectangle 20 20 "solid" "red")
+      20
+      20
+      (rectangle 20 20 "solid" "black"))
+    'image
+    "15717b87d30.png")
+   (list
+    '(overlay/xy
+      (rectangle 20 20 "outline" "black")
+      20
+      0
+      (rectangle 20 20 "outline" "black"))
+    'image
+    "1f0b671ed7b.png")
    (list
     '(overlay/places
       "right"
       "bottom"
-      (rectangle 20 20 "solid" "red")
-      (rectangle 30 30 "solid" "black")
-      (rectangle 40 40 "solid" "red")
-      (rectangle 50 50 "solid" "black"))
+      (rectangle 20 20 "solid" "silver")
+      (rectangle 30 30 "solid" "seagreen")
+      (rectangle 40 40 "solid" "silver")
+      (rectangle 50 50 "solid" "seagreen"))
     'image
-    "1bc43bb84a.png")
+    "201133dd679.png")
    (list
     '(overlay/places
       "middle"
@@ -176,10 +180,10 @@
     "26c4c403875.png")
    (list
     '(overlay
-      (ellipse 60 30 "solid" "purple")
-      (rectangle 30 60 "solid" "orange"))
+      (rectangle 30 60 "solid" "orange")
+      (ellipse 60 30 "solid" "purple"))
     'image
-    "2813b45d923.png")
+    "4e85791a5.png")
    (list
     '(text/font "not really a link" 18 "blue" #f 'roman 'normal 'normal #t)
     'image
