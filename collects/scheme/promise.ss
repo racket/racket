@@ -44,9 +44,6 @@
              (for-each (lambda (x) (fprintf port fmt x)) p))
            (display ")>" port)])))
 
-(define-struct promise (val)
-  #:mutable
-  #:property prop:custom-write promise-printer)
 ;; A promise value can hold
 ;; - (list <value> ...): forced promise (possibly multiple-values, usually one)
 ;; - <promise>: a shared (redirected) promise that points at another one
@@ -54,6 +51,8 @@
 ;;        - can also hold a `running' thunk that will throw a reentrant error
 ;;        - can also hold a raising-a-value thunk on exceptions and other
 ;;          `raise'd values (actually, applicable structs for printouts)
+(define-struct promise ([val #:mutable])
+  #:property prop:custom-write promise-printer)
 
 ;; Creates a `composable' promise
 ;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
@@ -121,8 +120,8 @@
       (cond [(procedure? p)
              ;; mark the root as running: avoids cycles, and no need to keep
              ;; banging the root promise value; it makes this non-r5rs, but
-             ;; only practical uses of these things could be ones that use
-             ;; state.
+             ;; the only practical uses of these things could be ones that use
+             ;; state to avoid an infinite loop.
              ;; (careful: avoid holding a reference to the thunk, to allow
              ;; safe-for-space loops)
              (set-promise-val! promise (make-running (object-name p)))
