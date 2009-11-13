@@ -12,9 +12,9 @@ Robby
 
 |#
 
-(require (planet "reduction-semantics.ss" ("robby" "redex.plt" 2 4)))
-(set-cache-size! #f)
-(require (planet "beginner.ss" ("robby" "redex.plt" 2 4) "examples"))
+(require redex/reduction-semantics)
+(caching-enabled? #f)
+(require redex/examples/beginner)
 (collect-garbage)
 (printf "Now\n")
 (time (begin (run-tests) (run-tests) (run-tests)))
