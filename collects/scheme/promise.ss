@@ -1,7 +1,8 @@
 (module promise '#%kernel
 (#%require "private/small-scheme.ss" "private/more-scheme.ss" "private/define.ss"
            (rename "private/define-struct.ss" define-struct define-struct*)
-           (for-syntax '#%kernel "private/stxcase-scheme.ss"))
+           (for-syntax '#%kernel "private/stxcase-scheme.ss")
+           '#%unsafe)
 (#%provide lazy delay force promise? promise-forced? promise-running?)
 
 ;; This module implements "lazy" (composable) promises and a `force'
@@ -15,8 +16,12 @@
 ;; that `force' is identity for non promise values), and `force'+`lazy'
 ;; are sufficient for implementing the lazy language.
 
+;; unsafe accessors
+(define-syntax pref  (syntax-rules () [(_ p) (unsafe-struct-ref p 0)]))
+(define-syntax pset! (syntax-rules () [(_ p x) (unsafe-struct-set! p 0 x)]))
+
 (define (promise-printer promise port write?)
-  (let loop ([p (promise-val promise)])
+  (let loop ([p (pref promise)])
     (cond [(reraise? p)
            (let ([v (reraise-val p)])
              (if (exn? v)
@@ -33,7 +38,7 @@
            (cond [(object-name p)
                   => (lambda (n) (fprintf port "#<promise:~a>" n))]
                  [else (display "#<promise>" port)])]
-          [(promise? p) (loop (promise-val p))] ; hide sharing
+          [(promise? p) (loop (pref p))] ; hide sharing
           ;; values
           [(null? p) (fprintf port "#<promise!(values)>")]
           [(null? (cdr p))
@@ -102,21 +107,21 @@
   (let loop1 ([v (p)]) ; does not handle multiple values!
     (if (promise? v)
       (let loop2 ([promise* v])
-        (let ([p* (promise-val promise*)])
-          (set-promise-val! promise* root) ; share with root
+        (let ([p* (pref promise*)])
+          (pset! promise* root) ; share with root
           (cond [(procedure? p*) (loop1 (p*))]
                 [(promise? p*) (loop2 p*)]
-                [else (set-promise-val! root p*)
+                [else (pset! root p*)
                       (cond [(null? p*) (values)]
-                            [(null? (cdr p*)) (car p*)]
+                            [(null? (unsafe-cdr p*)) (unsafe-car p*)]
                             [else (apply values p*)])])))
       (begin ; error here for "library approach" (see above URL)
-        (set-promise-val! root (list v))
+        (pset! root (list v))
         v))))
 
 (define (force promise)
   (if (promise? promise)
-    (let loop ([p (promise-val promise)])
+    (let loop ([p (pref promise)])
       (cond [(procedure? p)
              ;; mark the root as running: avoids cycles, and no need to keep
              ;; banging the root promise value; it makes this non-r5rs, but
@@ -124,26 +129,26 @@
              ;; state to avoid an infinite loop.
              ;; (careful: avoid holding a reference to the thunk, to allow
              ;; safe-for-space loops)
-             (set-promise-val! promise (make-running (object-name p)))
+             (pset! promise (make-running (object-name p)))
              (call-with-exception-handler
-               (lambda (e) (set-promise-val! promise (make-reraise e)) e)
+               (lambda (e) (pset! promise (make-reraise e)) e)
                (lambda () (force-proc p promise)))]
-            [(promise? p) (loop (promise-val p))]
+            [(promise? p) (loop (pref p))]
             [(null? p) (values)]
-            [(null? (cdr p)) (car p)]
+            [(null? (unsafe-cdr p)) (unsafe-car p)]
             [else (apply values p)]))
     ;; different from srfi-45: identity for non-promises
     promise))
 
 (define (promise-forced? promise)
   (if (promise? promise)
-    (let ([p (promise-val promise)])
+    (let ([p (pref promise)])
       (or (not (procedure? p)) (reraise? p))) ; #f when running
     (raise-type-error 'promise-forced? "promise" promise)))
 
 (define (promise-running? promise)
   (if (promise? promise)
-    (running? (promise-val promise))
+    (running? (pref promise))
     (raise-type-error 'promise-running? "promise" promise)))
 
 )
