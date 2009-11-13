@@ -44,4 +44,16 @@
 (traces/ps reductions (term (- (* (sqrt 36) (/ 1 2)) (+ 1 2)))
            traces-file)
 
-(printf "Traces are in ~a~n" traces-file)
+;; Check for the command line flag --no-print
+;; If it's set, don't print the temporary file name,
+;; This flag is so that DrDr can avoid seeing a change here. 
+;; -- samth
+(define print-name?
+  (let ([print? #t])
+    (command-line
+     #:once-each
+     ["--no-print" "omit printing of file name" (set! print? #f)])
+    print?))
+
+(when print-name?
+  (printf "Traces are in ~a~n" traces-file))

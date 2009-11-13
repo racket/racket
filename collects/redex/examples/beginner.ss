@@ -565,13 +565,14 @@ reflects the (broken) spec).
         args ...
         (show-test-results)))]))
 
-(define (run-tests)
+(define (run-tests [run-struct-test? #t])
   (tests
-   (test
-    '((define-struct s ())
-      (s? (make-s)))
-    '((define-struct s ())
-      true))
+   (when run-struct-test?
+     (test
+      '((define-struct s ())
+	(s? (make-s)))
+      '((define-struct s ())
+	true)))
    
    (test
     '((define-struct s (a b))
