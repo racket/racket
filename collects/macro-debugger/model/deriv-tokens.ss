@@ -56,6 +56,9 @@
    rename-list          ; (list-of syntax)
 
    IMPOSSIBLE           ; useful for error-handling clauses that have no NoError counterpart
+
+   top-begin            ; identifier
+   top-non-begin        ; .
    ))
 
 (define-tokens renames-tokens
@@ -160,6 +163,14 @@
     (149 . prim-varref)
     (150 . ,token-lift-require)
     (151 . ,token-lift-provide)
+
+    ;; Emitted from Scheme
+    (start . ,token-start)
+    (visit . ,token-visit)
+    (return . ,token-return)
+    (next . ,token-next)
+    (top-begin . ,token-top-begin)
+    (top-non-begin . ,token-top-non-begin)
     ))
 
 (define (tokenize sig-n val pos)

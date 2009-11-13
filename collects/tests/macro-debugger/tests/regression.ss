@@ -188,4 +188,19 @@
                     (trace `(module m mzscheme
                               (require ',freshname)
                               (meval (+ 1 2)))))))
+
+    (test-case "macro def within begin"
+      (let ([rs (reductions
+                 (trace '(begin
+                           (define-syntax-rule (m x e)
+                             (define x e))
+                           (m y 12))))])
+        (check-pred list? rs)
+        (check-false (ormap misstep? rs))
+        (check-true (for/or ([step rs])
+                      (equal? (syntax->datum (state-e (protostep-s1 step)))
+                              '(m y 12))
+                      (equal? (syntax->datum (state-e (step-s2 step)))
+                              '(define y 12)))
+                    "looking for m => define")))
       ))

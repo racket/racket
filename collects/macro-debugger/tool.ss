@@ -244,7 +244,7 @@
           (parameterize ((trace-macro-limit (pref:macro-step-limit))
                          (trace-limit-handler
                           (lambda (c) (handle-macro-limit c))))
-            (trace* expr expand)))
+            (trace* expr)))
 
         (define/private (handle-macro-limit c)
           (define option

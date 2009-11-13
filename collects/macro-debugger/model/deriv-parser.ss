@@ -1,6 +1,7 @@
 
 #lang scheme/base
 (require (for-syntax scheme/base)
+         syntax/stx
          "yacc-ext.ss"
          "yacc-interrupted.ss"
          "deriv.ss"
@@ -38,7 +39,7 @@
             (src-pos)
             (tokens basic-tokens prim-tokens renames-tokens)
             (end EOF)
-            #;(debug "/tmp/ryan/DEBUG-PARSER.txt")
+            #|(debug "/tmp/ryan/DEBUG-PARSER.txt")|#
             (error deriv-error))
 
    ;; tokens
@@ -60,15 +61,46 @@
     rename-one
     rename-list
     tag
-    IMPOSSIBLE)
+    IMPOSSIBLE
+    start
+    top-non-begin)
 
     ;; Entry point
    (productions
     (Expansion
      [(start EE/Lifts) $2]
-     [(start EE/Lifts/Interrupted) $2]))
+     [(start EE/Lifts/Interrupted) $2]
+     [(start ExpandCTE) $2]
+     [(start ExpandCTE/Interrupted) $2]))
 
    (productions/I
+
+    (ExpandCTE
+     [(visit start (? CheckImmediateMacro/Lifts) top-non-begin start (? EE) return)
+      (make ecte $1 $7 $3 $6)]
+     [(visit start CheckImmediateMacro/Lifts top-begin (? NextExpandCTEs) return)
+      (begin
+        (unless (list? $5)
+          (error "NextExpandCTEs returned non-list ~s" $5))
+        (make ecte $1 $6 $3
+              (make p:begin $4 $6 (list (stx-car $4)) #f
+                    (make lderiv (cdr (stx->list $4))
+                          (and $6 (cdr (stx->list $6)))
+                          #f
+                          $5))))])
+
+    (CheckImmediateMacro/Lifts
+     [((? CheckImmediateMacro))
+      $1]
+     [(CheckImmediateMacro lift-loop)
+      (let ([e1 (wderiv-e1 $1)]
+            [e2 $2])
+        (make lift-deriv e1 e2 $1 $2 (make p:stop $2 $2 null #f)))])
+
+    (NextExpandCTEs
+     (#:skipped null)
+     [() null]
+     [(next (? ExpandCTE) (? NextExpandCTEs)) (cons $2 $3)])
 
     ;; Expand with possible lifting
     (EE/Lifts

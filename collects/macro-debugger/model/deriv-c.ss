@@ -170,3 +170,9 @@
 ;;   (make-p:require-for-template <Base>)
 ;;   (make-p:provide <Base>)
 ;;   #f
+
+
+;; ECTE represents expand/compile-time-evals
+;; (make-ecte stx ?stx Deriv Deriv)
+
+(define-struct (ecte deriv) (first second) #:transparent)

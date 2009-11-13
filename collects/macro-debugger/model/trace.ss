@@ -12,6 +12,7 @@
          trace-verbose?
          events->token-generator
          current-expand-observe
+         expand/compile-time-evals
 
          trace-macro-limit
          trace-limit-handler)
@@ -22,18 +23,18 @@
 (define trace-verbose? (make-parameter #f))
 
 ;; trace : stx -> Deriv
-(define (trace stx)
-  (let-values ([(result events derivp) (trace* stx expand)])
+(define (trace stx [expander expand/compile-time-evals])
+  (let-values ([(result events derivp) (trace* stx expander)])
     (force derivp)))
 
 ;; trace/result : stx -> stx/exn Deriv
-(define (trace/result stx)
-  (let-values ([(result events derivp) (trace* stx expand)])
+(define (trace/result stx [expander expand/compile-time-evals])
+  (let-values ([(result events derivp) (trace* stx expander)])
     (values result
             (force derivp))))
 
 ;; trace* : stx (stx -> stx) -> stx/exn (list-of event) (promise-of Deriv)
-(define (trace* stx expander)
+(define (trace* stx [expander expand/compile-time-evals])
   (let-values ([(result events) (expand/events stx expander)])
     (values result
             events
@@ -70,7 +71,7 @@
       (if (and limit handler (exact-positive-integer? limit))
           (lambda (x y)
             (add! x y)
-            (when (= x 8) ;; enter-macro
+            (when (eqv? x 8) ;; enter-macro
               (set! counter (add1 counter))
               (when (= counter limit)
                 (set! limit (handler counter)))))
@@ -85,3 +86,67 @@
       (add! 'EOF #f)
       (values result
               (reverse events)))))
+
+
+(require syntax/stx
+         syntax/kerncase)
+
+(define (emit sig [val #f])
+  ((current-expand-observe) sig val))
+
+(define (expand/compile-time-evals stx)
+  (define (expand/cte stx)
+    (define _ (emit 'visit stx))
+    (define e1 (expand-syntax-to-top-form stx))
+    (define e2
+      (syntax-case e1 (begin)
+        [(begin expr ...)
+         (begin
+           (emit 'top-begin e1)
+           (with-syntax ([(expr ...) 
+                          ;;left-to-right part of this map is important:
+                          (map (lambda (e)
+                                 (emit 'next)
+                                 (expand/cte e))
+                               (syntax->list #'(expr ...)))]
+                         [beg (stx-car e1)])
+             (datum->syntax e1 (syntax-e (syntax (beg expr ...))) e1 e1)))]
+        [else
+         (begin
+           (emit 'top-non-begin)
+           (let ([e (expand-syntax e1)])
+             (parameterize ((current-expand-observe void))
+               (eval-compile-time-part e))
+             e))]))
+    (emit 'return e2)
+    e2)
+  (emit 'start)
+  (expand/cte (namespace-syntax-introduce (datum->syntax #f stx))))
+
+;; eval-compile-time-part : syntax boolean -> void
+;; compiles the syntax it receives as an argument and evaluates the compile-time part of it.
+;; pre: there are no top-level begins in stx.
+(define (eval-compile-time-part stx)
+  (define (eval/compile stx)
+    (eval (compile-syntax stx)))
+  (kernel-syntax-case stx #f
+    [(#%require req ...)
+     (for ([req (syntax->list #'(req ...))])
+       (namespace-require/expansion-time (syntax->datum req)))]
+    [(module . _)
+     (eval/compile stx)]
+    [(define-syntaxes . _)
+     (eval/compile stx)]
+    [(define-values-for-syntax . _)
+     (eval/compile stx)]
+    [(define-values (id ...) . _)
+     (with-syntax ([defvals (stx-car stx)]
+                   [undefined (letrec ([x x]) x)])
+       (for ([id (syntax->list #'(id ...))])
+         (with-syntax ([id id])
+           (eval/compile #'(defvals (id) undefined)))))
+     ;; Following doesn't work (namespace mismatch)
+     ;; (eval/compile #'(define-values (id ...) (let ([id #f] ...) (values id ...))))
+     ]
+    [_else
+     (void)]))

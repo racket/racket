@@ -6,6 +6,9 @@
 (provide trace/ns
          trace/t
          trace/k
+
+         testing-namespace
+
          hide-all-policy
          hide-none-policy
 
@@ -24,9 +27,12 @@
 (define (trace/k expr)
   (trace/ns expr #t))
 
+;; Use just 'expand', not 'expand/compile-time-evals',
+;; for test backward compatibility
+;; FIXME: add tests that use 'expand/compile-time-evals'
 (define (trace/ns expr kernel?)
   (parameterize ((current-namespace (choose-namespace kernel?)))
-    (trace expr)))
+    (trace expr expand)))
 
 (define (choose-namespace kernel?)
   (if kernel? kernel-namespace testing-namespace))

@@ -271,6 +271,15 @@
                    (error 'reductions "unknown tagged syntax: ~s" tagged-stx)))]
         [Expr ?form next])]
 
+    ;; expand/compile-time-evals
+
+    [(Wrap ecte (e1 e2 first second))
+     (R [#:pattern ?form]
+        [#:pass1]
+        [Expr ?form first]
+        [#:pass2]
+        [Expr ?form second])]
+
     ;; Lifts
 
     [(Wrap lift-deriv (e1 e2 first lifted-stx second))

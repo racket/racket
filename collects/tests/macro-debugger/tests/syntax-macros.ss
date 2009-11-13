@@ -44,7 +44,7 @@
 
   (test "lift"
         (lift 'a)
-        [#:steps (local-lift #rx"^lifted" (lift 'a))
+        [#:steps (local-lift (#rx"^lifted") (lift 'a))
                  (macro (#%expression #rx"^lifted"))
                  (tag-top (#%expression (#%top . #rx"^lifted")))
                  (capture-lifts (begin (define-values (#rx"^lifted") 'a)
@@ -53,7 +53,7 @@
         #:no-hidden-steps)
   (test "lift with id"
         (lift (id 'a))
-        [#:steps (local-lift #rx"^lifted" (lift (id 'a)))
+        [#:steps (local-lift (#rx"^lifted") (lift (id 'a)))
                  (macro (#%expression #rx"^lifted"))
                  (tag-top (#%expression (#%top . #rx"^lifted")))
                  (capture-lifts (begin (define-values (#rx"^lifted") (id 'a))
@@ -64,7 +64,7 @@
 
   (test "lift with Tid"
         (lift (Tid 'a))
-        [#:steps (local-lift #rx"^lifted" (lift (Tid 'a)))
+        [#:steps (local-lift (#rx"^lifted") (lift (Tid 'a)))
                  (macro (#%expression #rx"^lifted"))
                  (tag-top (#%expression (#%top . #rx"^lifted")))
                  (capture-lifts (begin (define-values (#rx"^lifted") (Tid 'a))
@@ -76,40 +76,40 @@
 
   (test "Tlift"
         (Tlift 'a)
-        [#:steps (local-lift #rx"^lifted" (Tlift 'a))
+        [#:steps (local-lift (#rx"^lifted") (Tlift 'a))
                  (macro (#%expression #rx"^lifted"))
                  (tag-top (#%expression (#%top . #rx"^lifted")))
                  (capture-lifts (begin (define-values (#rx"^lifted") 'a)
                                        (#%expression (#%top . #rx"^lifted"))))]
-        [#:hidden-steps (local-lift #rx"^lifted" (Tlift 'a))
+        [#:hidden-steps (local-lift (#rx"^lifted") (Tlift 'a))
                         (macro (#%expression #rx"^lifted"))
                         (capture-lifts (begin (define-values (#rx"^lifted") 'a)
                                               (#%expression #rx"^lifted")))])
 
   (test "Tlift with id"
         (Tlift (id 'a))
-        [#:steps (local-lift #rx"^lifted" (Tlift (id 'a)))
+        [#:steps (local-lift (#rx"^lifted") (Tlift (id 'a)))
                  (macro (#%expression #rx"^lifted"))
                  (tag-top (#%expression (#%top . #rx"^lifted")))
                  (capture-lifts (begin (define-values (#rx"^lifted") (id 'a))
                                        (#%expression (#%top . #rx"^lifted"))))
                  (macro (begin (define-values (#rx"^lifted") 'a)
                                (#%expression (#%top . #rx"^lifted"))))]
-        [#:hidden-steps (local-lift #rx"^lifted" (Tlift (id 'a)))
+        [#:hidden-steps (local-lift (#rx"^lifted") (Tlift (id 'a)))
                         (macro (#%expression #rx"^lifted"))
                         (capture-lifts (begin (define-values (#rx"^lifted") (id 'a))
                                               (#%expression #rx"^lifted")))])
 
   (test "Tlift with Tid"
         (Tlift (Tid 'a))
-        [#:steps (local-lift #rx"^lifted" (Tlift (Tid 'a)))
+        [#:steps (local-lift (#rx"^lifted") (Tlift (Tid 'a)))
                  (macro (#%expression #rx"^lifted"))
                  (tag-top (#%expression (#%top . #rx"^lifted")))
                  (capture-lifts (begin (define-values (#rx"^lifted") (Tid 'a))
                                        (#%expression (#%top . #rx"^lifted"))))
                  (macro (begin (define-values (#rx"^lifted") 'a)
                                (#%expression (#%top . #rx"^lifted"))))]
-        [#:steps (local-lift #rx"^lifted" (Tlift (Tid 'a)))
+        [#:steps (local-lift (#rx"^lifted") (Tlift (Tid 'a)))
                  (macro (#%expression #rx"^lifted"))
                  (capture-lifts (begin (define-values (#rx"^lifted") (Tid 'a))
                                        (#%expression #rx"^lifted")))
