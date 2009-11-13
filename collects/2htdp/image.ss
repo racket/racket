@@ -90,4 +90,5 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          side-count?
          
          image-width
-         image-height)
+         image-height
+         image-baseline)

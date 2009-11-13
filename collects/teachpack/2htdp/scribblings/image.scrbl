@@ -451,6 +451,17 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                                          (circle 30 "solid" "purple")))]
   }
 
+@defproc[(image-baseline [i image?]) (and/c number? positive?)]{
+  Returns the distance from the top of the image to its baseline. 
+  Unless the image was constructed with @scheme[text] or @scheme[text/font],
+  this will be the same as its height.
+  
+  @image-examples[(image-baseline (text "Hello" 24 "black"))
+                  (image-height (text "Hello" 24 "black"))
+                  (image-baseline (rectangle 100 100 "solid" "black"))
+                  (image-height (rectangle 100 100 "solid" "black"))]
+}
+
 @section{Image Predicates}
 
 This section lists predicates for the basic structures provided by the image library.

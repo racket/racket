@@ -36,11 +36,11 @@
                                  (schemeblock #,(schemeresult #,(cadr line)))]
                                 [(image)
                                  (let ([fn (format "2htdp/scribblings/img/~a" (cadr line))])
-                                   (if (file-exists? fn)
-                                       (schemeblock #,(image fn))
-                                       (make-paragraph
-                                        error-color 
-                                        (format "missing image! ~a" (cadr line)))))]))))
+                                   (schemeblock #,(image fn)))]
+                                [(missing)
+                                 (make-paragraph
+                                  error-color 
+                                  "missing result; need to re-run image-gen.ss")]))))
                     expr-paras
                     val-list+outputs)))))
 
@@ -51,4 +51,4 @@
       [else
        (unless (getenv "PLTSHOWIMAGES")
          (fprintf (current-error-port) "exp->filename: unknown exp ~s\n" exp))
-       (list 'image "unk.png")])))
+       (list 'missing)])))
