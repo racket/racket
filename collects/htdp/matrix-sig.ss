@@ -45,5 +45,5 @@ matrix-render ;; [Matrix X] -> [Rectangle String]
 matrix-minor ;; Matrix Nat Nat -> Matrix 
 ;; create a matrix minor from M at (i,j)
 
-matrix-set! ;; [Matrix X] Nat Nat X -> [Matrix X]
+;; matrix-set! ;; [Matrix X] Nat Nat X -> [Matrix X]
 ;; set the matrix at (i,j)
