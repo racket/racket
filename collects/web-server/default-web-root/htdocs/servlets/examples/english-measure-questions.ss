@@ -1,6 +1,5 @@
 ;; Data file for quiz.ss, written by Don Felgar
-
-'("This is a quiz on English weights and measures.  Good luck!"
+("This is a quiz on English weights and measures.  Good luck!"
   (
    ("How many imperial gallons in a firkin?"
     ("4" "5" "8" "9")

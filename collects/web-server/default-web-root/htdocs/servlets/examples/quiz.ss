@@ -33,9 +33,9 @@
 (define question-answer caddr)
 (define question-explanation cadddr)
 
-(define quiz (with-input-from-file *data-file* read))
-(define quiz-intro (car quiz))
-(define all-questions (cadr quiz))
+(define quiz (file->value *data-file*))
+(define quiz-intro (first quiz))
+(define all-questions (second quiz))
 
 ;; ask-question: question number number -> (listof (cons symbol string))
 ;; Page for asking quiz question.
