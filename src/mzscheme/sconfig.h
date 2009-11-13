@@ -337,16 +337,14 @@
 #  error Unported platform.
 # endif
 
-# include "uconfig.h"
-# undef HAS_STANDARD_IOB
-
-/* pthreads always enabled via configure': */
-# undef USE_ITIMER
-# define USE_PTHREAD_THREAD_TIMER
-
-/* initial pthread's stack size doesn't use rlimit: */
+/* pthreads always enabled via configure', and
+   initial pthread's stack size doesn't use rlimit: */
 # define ASSUME_FIXED_STACK_SIZE
 # define FIXED_STACK_SIZE 1048576
+# define USE_PTHREAD_INSTEAD_OF_ITIMER
+
+# include "uconfig.h"
+# undef HAS_STANDARD_IOB
 
 # define HAS_BSD_IOB
 
