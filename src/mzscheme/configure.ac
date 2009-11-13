@@ -551,6 +551,8 @@ case $OS in
   FreeBSD)
     LIBS="$LIBS -rdynamic -pthread"
     DYN_CFLAGS="-fPIC"
+    # With pthreads enabled, initial thread's stack size doesn't use rlimit:
+    MZOPTIONS="$MZOPTIONS -DASSUME_FIXED_STACK_SIZE -DFIXED_STACK_SIZE=1048576"
     ;;
   OpenBSD)
     LIBS="$LIBS -rdynamic -Wl,--export-dynamic"
@@ -1136,10 +1138,6 @@ if test "${enable_pthread}" = "yes" ; then
   PREFLAGS="$PREFLAGS -D_THREAD_SAFE"
   X_EXTRA_LIBS="$X_EXTRA_LIBS -pthread"
   MZOPTIONS="$MZOPTIONS -DUSE_PTHREAD_INSTEAD_OF_ITIMER"
-  # Historically needed for FreeBSD, where the initial thread stack was
-  #  only 1MB when pthreads linked in:
-  # MZOPTIONS="$MZOPTIONS -DASSUME_FIXED_STACK_SIZE -DFIXED_STACK_SIZE=1048576"
-  GC2OPTIONS="$GC2OPTIONS -DNO_GC_SIGNALS"
 fi
 
 ############### places ###################
