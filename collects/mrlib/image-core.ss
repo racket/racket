@@ -245,6 +245,38 @@ has been moved out).
         (set! normalized? #t))
       shape)
     
+    (inherit get-admin)
+    (define scroll-step #f)
+    (define/private (calc-scroll-step)
+      (unless scroll-step
+        ;; try to set scroll step by font size of the standard style
+        (let ([admin (get-admin)])
+          (when admin
+            (let* ([ed (send admin get-editor)]
+                   [sl (send ed get-style-list)]
+                   [standard (send sl find-named-style "Standard")])
+              (when standard
+                (let ([dc (make-object bitmap-dc% (make-object bitmap% 1 1))])
+                  (let-values ([(w h d a) (send dc get-text-extent "X" (send standard get-font))])
+                    (set! scroll-step (+ h
+                                         (if (is-a? ed text%)
+                                             (send ed get-line-spacing)
+                                             0)))))))))
+        (printf "scroll-step: ~s\n" scroll-step)
+        ;; if that didn't happen, set it to 12.
+        (unless scroll-step (set! scroll-step 12))))
+    
+    (define/override (get-num-scroll-steps)
+      (calc-scroll-step)
+      (inexact->exact (ceiling (/ (bb-bottom bb) scroll-step))))
+    (define/override (get-scroll-step-offset offset)
+      (calc-scroll-step)
+      (min (inexact->exact (ceiling (* offset scroll-step))) 
+           (bb-bottom bb)))
+    (define/override (find-scroll-step y)
+      (calc-scroll-step)
+      (inexact->exact (ceiling (/ y scroll-step))))
+               
     (define/override (copy) (make-image shape bb normalized?))
     (define/override (draw dc x y left top right bottom dx dy draw-caret?)
       (let ([smoothing (send dc get-smoothing)])
