@@ -253,7 +253,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
 @defproc[(overlay [i1 image?] [i2 image?] [is image?] ...) image?]{
   Overlays all of its arguments building a single image. The first argument goes
   on top of the second argument, which goes on top of the third argument, etc.
-  The images are all lined up on their upper-right corners
+  The images are all lined up on their upper-left corners.
 
   @image-examples[(overlay (rectangle 30 60 "solid" "orange")
                            (ellipse 60 30 "solid" "purple"))
@@ -266,7 +266,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
   
   }
 
-@defproc[(overlay/places [x-place x-place?] [y-place y-place?] [i1 image?] [i2 image?] [is image?]) image?]{
+@defproc[(overlay/places [x-place x-place?] [y-place y-place?] [i1 image?] [i2 image?] [is image?] ...) image?]{
   Overlays all of its image arguments, much like the @scheme[overlay] function, but using
   @scheme[x-place] and @scheme[y-place] to determine where the images are lined up. For example, if
   @scheme[x-place] and @scheme[y-place] are both @scheme["middle"], then the images are lined up
