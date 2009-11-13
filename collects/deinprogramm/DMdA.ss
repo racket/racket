@@ -72,8 +72,7 @@
 
 (provide for-all ==>
 	 check-property
-	 expect
-	 expect-within)
+	 expect expect-within expect-member-of expect-range)
 
 (provide quote)
 
@@ -1042,5 +1041,30 @@
 (define (expect v1 v2)
   (quickcheck:property () (beginner-equal? v1 v2)))
 
+(define (ensure-real who n val)
+  (unless (real? val)
+    (raise
+     (make-exn:fail:contract
+      (string->immutable-string
+       (format "~a Argument ~e zu `~a' keine reelle Zahl." n val who))
+      (current-continuation-marks)))))
+
 (define (expect-within v1 v2 epsilon)
+  (ensure-real 'expect-within "Drittes" epsilon)
   (quickcheck:property () (beginner-equal~? v1 v2 epsilon)))
+
+(define (expect-range val min max)
+  (ensure-real 'expect-range "Erstes" val)
+  (ensure-real 'expect-range "Zweites" min)
+  (ensure-real 'expect-range "Drittes" max)
+  (quickcheck:property ()
+		       (and (<= min val)
+			    (<= val max))))
+
+(define (expect-member-of val . candidates)
+  (quickcheck:property () 
+		       (ormap (lambda (cand)
+				(beginner-equal? val cand))
+			      candidates)))
+
+  

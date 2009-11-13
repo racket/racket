@@ -326,8 +326,8 @@ des ersten Operanden gleich dem Wert eines der folgenden Operanden ist.}
 
 @defform[(check-range expr expr expr)]{
 
-Ähnlich wie @scheme[check-expect]: Alle drei Operanden müssen ein
-Zahlen.  Der Testfall überprüft, ob die erste Zahl zwischen der
+Ähnlich wie @scheme[check-expect]: Alle drei Operanden müssen 
+Zahlen sein.  Der Testfall überprüft, ob die erste Zahl zwischen der
 zweiten und der dritten liegt (inklusive).}
 
 @defform[(check-error expr expr)]{
@@ -464,6 +464,20 @@ weiteren Ausdruck, der als Wert eine Zahl @scheme[_delta] hat. Die
 resultierende Eigenschaft gilt, wenn jede Zahl im Resultat des ersten
 @scheme[expr] maximal um @scheme[_delta] von der entsprechenden Zahl
 im zweiten @scheme[expr] abweicht.}
+
+@defform[(expect-member-of expr expr ...)]{
+
+Wie @scheme[expect], aber entsprechend @scheme[check-member-of] mit
+weiteren Ausdrücken, die mit dem ersten verglichen werden.  Die
+resultierende Eigenschaft gilt, wenn das erste Argument gleich 
+einem der anderen Argumente ist.}
+
+@defform[(expect-range expr expr expr)]{
+
+Wie @scheme[expect], aber entsprechend @scheme[check-range]: Die
+Argumente müssen Zahlen sein.  Die Eigenschaft gilt, wenn die erste Zahl
+zwischen der zweiten und dritten Zahl liegt (inklusive).}
+
 
 @defform[(==> expr expr)]{
 Der erste Operand ist ein boolescher Ausdruck, der zweite Operand eine
