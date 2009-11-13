@@ -289,10 +289,14 @@
 	"to compute the number of items on a list")
       (memq (any (listof any) -> (union false list))
 	"to determine whether some value is on some list"
-	" (comparing values with eq?)")
+	" if so, it produces the suffix of the list that starts with x"
+	" if not, it produces false."
+	" (It compares values with the eq? predicate.)")
       (memv (any (listof any) -> (union false list))
 	"to determine whether some value is on the list"
-	" (comparing values with eqv?)")
+	" if so, it produces the suffix of the list that starts with x"
+	" if not, it produces false."
+	" (it compares values with the eqv? predicate.)")
       ((beginner-member member) (any (listof any) -> boolean)
 	"to determine whether some value is on the list"
 	" (comparing values with equal?)")
@@ -468,11 +472,14 @@
       ((beginner-struct? struct?) (any -> boolean)
        "to determine whether some value is a structure")
       ((beginner-equal? equal?) (any any -> boolean)
-	"to determine whether two values are structurally equal")
+	"to determine whether two values are structurally equal"
+	" where basic values are compared with the eqv? predicate")
       (eq? (any any -> boolean)
-	"to compare two values")
+	"to determine whether two values are equivalent from the"
+	"  computer's perspective (intensional)")
       (eqv? (any any -> boolean)
-	"to compare two values")
+	"to determine whether two values are equivalent from the"
+	"  perspective of all functions that can be applied to it (extensional)")
       ((beginner-=~ =~) (real real non-negative-real -> boolean)
 	"to check whether two real numbers are within some amount (the third argument) of either other")
       ((beginner-equal~? equal~?) (any any non-negative-real -> boolean)
