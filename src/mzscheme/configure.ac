@@ -551,8 +551,6 @@ case $OS in
   FreeBSD)
     LIBS="$LIBS -rdynamic -pthread"
     DYN_CFLAGS="-fPIC"
-    # With pthreads enabled, initial thread's stack size doesn't use rlimit:
-    MZOPTIONS="$MZOPTIONS -DASSUME_FIXED_STACK_SIZE -DFIXED_STACK_SIZE=1048576"
     ;;
   OpenBSD)
     LIBS="$LIBS -rdynamic -Wl,--export-dynamic"

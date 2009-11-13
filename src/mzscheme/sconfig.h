@@ -340,8 +340,13 @@
 # include "uconfig.h"
 # undef HAS_STANDARD_IOB
 
+/* pthreads always enabled via configure': */
 # undef USE_ITIMER
 # define USE_PTHREAD_THREAD_TIMER
+
+/* initial pthread's stack size doesn't use rlimit: */
+# define ASSUME_FIXED_STACK_SIZE
+# define FIXED_STACK_SIZE 1048576
 
 # define HAS_BSD_IOB
 
