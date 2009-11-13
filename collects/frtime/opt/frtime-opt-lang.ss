@@ -171,7 +171,17 @@
 
   (provide #%app #%top #%datum require require-for-syntax provide define)
   (provide display) ;; for debugging
-
+  
+  #;(require frtime/frlibs/list
+           frtime/frlibs/etc
+           frtime/frlibs/math
+           frtime/frlibs/date)
+  
+  #;(provide (all-from frtime/frlibs/list)
+           (all-from frtime/frlibs/etc)
+           (all-from frtime/frlibs/math)
+           (all-from frtime/frlibs/date))
+  
   ;; this define-struct macro defines a lowered equiv for all the
   ;; accessor functions
   (define-syntax (my-define-struct stx)

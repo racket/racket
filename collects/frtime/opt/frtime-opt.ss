@@ -113,7 +113,7 @@
     (syntax-case stx ()
       [(_ FORMS ...)
        (let* (;; get a list of all the symbols provided by the frtime-opt-lang module
-              [lang-symbols (all-provided-ids #'frtime/frtime-opt-lang stx)]
+              [lang-symbols (all-provided-ids #'frtime/opt/frtime-opt-lang stx)]
               ;; convert those symbols into an equiv-map by pairing up functions
               ;; with their lowered equivalents
               [lang-equiv-map (symbol-list-to-equiv-map lang-symbols)]
@@ -122,7 +122,7 @@
               [equiv-map-stx (equiv-map-to-stx lang-equiv-map)])
          #`(#%plain-module-begin 
             (require-for-syntax #,(so->d->so stx #`mzscheme))
-            (require #,(so->d->so stx #`frtime/frtime-opt-lang))
+            (require #,(so->d->so stx #`frtime/opt/frtime-opt-lang))
             (optimize-module #,equiv-map-stx FORMS ...)))]))
   
   
@@ -192,8 +192,8 @@
                      (module-exports-id? mod-stx (make-lowered-equiv-id id-stx)))
                    id-stx-list)))
     
-    (syntax-case stx (require)
-      [(_ EQUIV-MAP (require SPEC) FORMS ...)
+    (syntax-case stx (#%require)
+      [(_ EQUIV-MAP (#%require SPEC) FORMS ...)
        ;; In the code below, we must convert syntax objects to datums, and then
        ;; back again.  Otherwise the generated require statement doesn't 
        ;; seem to work properly (it doesn't import the correct identifiers).
@@ -300,7 +300,7 @@
                      (optimize-module #,new-equiv-map-stx FORMS ...)))]
          )]
       
-      [(_ EQUIV-MAP (require SPECS ...) FORMS ...)
+      [(_ EQUIV-MAP (#%require SPECS ...) FORMS ...)
        ;; Process each require spec individually.
        #`(optimize-require EQUIV-MAP (require SPECS) ... FORMS ...)]
       ))
