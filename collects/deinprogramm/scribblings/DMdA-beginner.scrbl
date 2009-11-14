@@ -242,6 +242,9 @@ Vertrag für Zeichenketten.
 Vertrag für die leere Liste.
 }
 
+@defform/none[contract]{
+Vertrag  Verträge.}
+
 @subsection{@scheme[predicate]}
 @defform[(predicate expr)]{
 Bei diesem Vertrag muß @scheme[expr] als Wert ein Prädikat haben, also
