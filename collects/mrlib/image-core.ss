@@ -262,7 +262,6 @@ has been moved out).
                                          (if (is-a? ed text%)
                                              (send ed get-line-spacing)
                                              0)))))))))
-        (printf "scroll-step: ~s\n" scroll-step)
         ;; if that didn't happen, set it to 12.
         (unless scroll-step (set! scroll-step 12))))
     
