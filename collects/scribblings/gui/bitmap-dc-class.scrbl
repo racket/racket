@@ -111,7 +111,7 @@ and @method[bitmap-dc% get-argb-pixels].
                             [width (integer-in 1 10000)]
                             [height (integer-in 1 10000)]
                             [pixels bytes?]
-                            [alpha? any/c @scheme[#f]])
+                            [alpha? any/c #f])
            void?]{
 
 
