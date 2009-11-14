@@ -29,44 +29,44 @@
 ;; * (force X) = X for non promises
 ;; * does not deal with multiple values in the composable case
 (define (force/composable root)
-  (let ([p (pref root)])
+  (let ([v (pref root)])
     (cond
-      [(procedure? p)
+      [(procedure? v)
        ;; mark the root as running: avoids cycles, and no need to keep banging
        ;; the root promise value; it makes this non-r5rs, but the only
        ;; practical uses of these things could be ones that use state to avoid
        ;; an infinite loop.  (See the generic forcer below.)
        ;; (careful: avoid holding a reference to the thunk, to allow
        ;; safe-for-space loops)
-       (pset! root (make-running (object-name p)))
+       (pset! root (make-running (object-name v)))
        (call-with-exception-handler
         (lambda (e) (pset! root (make-reraise e)) e)
         (lambda ()
           ;; iterate carefully through chains of composable promises
-          (let loop ([v (p)]) ; does not handle multiple values!
+          (let loop ([v (v)]) ; does not handle multiple values!
             (cond [(composable-promise? v)
-                   (let ([p* (pref v)])
+                   (let ([v* (pref v)])
                      (pset! v root) ; share with root
-                     (cond [(procedure? p*) (loop (p*))]
+                     (cond [(procedure? v*) (loop (v*))]
                            ;; it must be a list of one value (because
                            ;; composable promises never hold multiple values),
                            ;; or a composable promise
-                           [(pair? p*) (pset! root p*) (unsafe-car p*)]
+                           [(pair? v*) (pset! root v*) (unsafe-car v*)]
                            ;; note: for the promise case we could jump only to
-                           ;; the last `let' (for `p*'), but that makes the
+                           ;; the last `let' (for `v*'), but that makes the
                            ;; code heavier, and runs slower (probably goes over
                            ;; some inlining/unfolding threshold).
-                           [else (loop p*)]))]
+                           [else (loop v*)]))]
                   ;; reached a non-composable promise: share and force it now
-                  [(promise? v) (pset! root v) (force/generic v)]
+                  [(promise? v) (pset! root v) (force v)]
                   ;; error here for "library approach" (see above URL)
                   [else (pset! root (list v)) v]))))]
       ;; try to make the order efficient, with common cases first
-      [(pair? p) (if (null? (unsafe-cdr p)) (unsafe-car p) (apply values p))]
+      [(pair? v) (if (null? (unsafe-cdr v)) (unsafe-car v) (apply values v))]
       ;; follow all sharings (and shortcut directly to the right force)
-      [(composable-promise? p) (force/composable p) (force/generic p)]
-      [(null? p) (values)]
-      [else (error 'force "composable promise with invalid contents: ~e" p)])))
+      [(composable-promise? v) (force/composable v) (force v)]
+      [(null? v) (values)]
+      [else (error 'force "composable promise with invalid contents: ~e" v)])))
 
 ;; generic force for "old-style" promises -- they're still useful in
 ;; that they allow multiple values.  In general, this is slower, but has
@@ -77,22 +77,22 @@
 ;; first cannot be solved.  I still didn't ever see any use for them, so
 ;; they're still forbidden.)
 (define (force/generic promise)
-  (let ([p (pref promise)])
+  (let ([v (pref promise)])
     (cond
-      [(procedure? p)
-       (pset! promise (make-running (object-name p)))
+      [(procedure? v)
+       (pset! promise (make-running (object-name v)))
        (call-with-exception-handler
         (lambda (e) (pset! promise (make-reraise e)) e)
         (lambda ()
-          (let ([vs (call-with-values p list)])
+          (let ([vs (call-with-values v list)])
             (pset! promise vs)
             (cond [(null? vs) (values)]
                   [(null? (unsafe-cdr vs)) (unsafe-car vs)]
                   [else (apply values vs)]))))]
       ;; try to make the order efficient, with common cases first
-      [(pair? p) (if (null? (unsafe-cdr p)) (unsafe-car p) (apply values p))]
-      [(null? p) (values)]
-      [else (error 'force "generic promise with invalid contents: ~e" p)])))
+      [(pair? v) (if (null? (unsafe-cdr v)) (unsafe-car v) (apply values v))]
+      [(null? v) (values)]
+      [else (error 'force "generic promise with invalid contents: ~e" v)])))
 
 ;; dispatcher for composable promises, generic promises, and other values
 (define (force promise)
@@ -105,33 +105,33 @@
 
 ;; generic promise printer
 (define (promise-printer promise port write?)
-  (let loop ([p (pref promise)])
-    (cond [(reraise? p)
-           (let ([v (reraise-val p)])
-             (if (exn? v)
-               (fprintf port (if write? "#<promise!exn!~s>" "#<promise!exn!~a>")
-                        (exn-message v))
-               (fprintf port (if write? "#<promise!~s>" "#<promise!~a>")
-                        `(raise ,v))))]
-          [(running? p)
-           (let ([n (running-name p)])
-             (if n
-               (fprintf port "#<promise:!running!~a>" n)
-               (fprintf port "#<promise:!running>")))]
-          [(procedure? p)
-           (cond [(object-name p)
-                  => (lambda (n) (fprintf port "#<promise:~a>" n))]
-                 [else (display "#<promise>" port)])]
-          [(promise? p) (loop (pref p))] ; hide sharing
-          ;; values
-          [(null? p) (fprintf port "#<promise!(values)>")]
-          [(null? (cdr p))
-           (fprintf port (if write? "#<promise!~s>" "#<promise!~a>") (car p))]
-          [else
-           (display "#<promise!(values" port)
-           (let ([fmt (if write? " ~s" " ~a")])
-             (for-each (lambda (x) (fprintf port fmt x)) p))
-           (display ")>" port)])))
+  (let loop ([v (pref promise)])
+    (cond
+      [(reraise? v)
+       (let ([r (reraise-val v)])
+         (if (exn? r)
+           (fprintf port (if write? "#<promise!exn!~s>" "#<promise!exn!~a>")
+                    (exn-message r))
+           (fprintf port (if write? "#<promise!raise!~s>" "#<promise!raise!~a>")
+                    r)))]
+      [(running? v)
+       (let ([r (running-name v)])
+         (if r
+           (fprintf port "#<promise:!running!~a>" r)
+           (fprintf port "#<promise:!running>")))]
+      [(procedure? v)
+       (cond [(object-name v)
+              => (lambda (n) (fprintf port "#<promise:~a>" n))]
+             [else (display "#<promise>" port)])]
+      [(promise? v) (loop (pref v))] ; hide sharing
+      ;; values
+      [(null? v) (fprintf port "#<promise!(values)>")]
+      [(null? (cdr v))
+       (fprintf port (if write? "#<promise!~s>" "#<promise!~a>") (car v))]
+      [else (display "#<promise!(values" port)
+            (let ([fmt (if write? " ~s" " ~a")])
+              (for-each (lambda (x) (fprintf port fmt x)) v))
+            (display ")>" port)])))
 
 ;; property value for the right forcer to use
 (define-values [prop:force promise-forcer]
@@ -230,7 +230,7 @@
   #:property prop:procedure (lambda (this)
                               (let ([name (running-name this)])
                                 (if name
-                                  (error 'force "reentrant promise ~v" name)
+                                  (error 'force "reentrant promise ~e" name)
                                   (error 'force "reentrant promise")))))
 
 ;; ----------------------------------------------------------------------------
@@ -238,8 +238,8 @@
 
 (define (promise-forced? promise)
   (if (promise? promise)
-    (let ([p (pref promise)])
-      (or (not (procedure? p)) (reraise? p))) ; #f when running
+    (let ([v (pref promise)])
+      (or (not (procedure? v)) (reraise? v))) ; #f when running
     (raise-type-error 'promise-forced? "promise" promise)))
 
 (define (promise-running? promise)
