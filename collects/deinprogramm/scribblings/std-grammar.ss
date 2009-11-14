@@ -60,7 +60,6 @@
 	      @#,scheme[(list contr)]
 	      @#,scheme[(code:line %a %b %c (code:comment @#,seclink["contract-variable"]{Vertrags-Variable}))]
 	      @#,scheme[(combined contr (... ...))]
-	      @#,scheme[(property expr contr)]
 	      @#,scheme[contract]
    ]
    [test-case @#,scheme[(check-expect expr expr)]

@@ -243,7 +243,10 @@ Vertrag für die leere Liste.
 }
 
 @defform/none[contract]{
-Vertrag  Verträge.}
+Vertrag für Verträge.}
+
+@defidform[property]{
+Vertrag für Eigenschaften.}
 
 @subsection{@scheme[predicate]}
 @defform[(predicate expr)]{
@@ -274,17 +277,6 @@ Prozedur ist.  Er erklärt außerdem, daß die Verträge vor dem @scheme[->]
 für die Argumente der Prozedur gelten und der Vertrag nach dem @scheme[->]
 für den Rückgabewert.
 }}
-}
-
-@subsection{@scheme[property]}
-@defform[(property expr contr)]{
-Dieser Vertrag ist für ein Objekt @scheme[obj] gültig, wenn der
-Vertrag @scheme[contr] für @scheme[(expr obj)] gültig ist.
-
-(In der Regel ist @scheme[expr] ein Record-Selektor @scheme[s].  In
-dem Fall ist der Vertrag @scheme[(property s c)] für alle Records
-gültig, bei denen der Wert des zu @scheme[s] gehörigen Felds den
-Vertrag @scheme[c] erfüllt.)
 }
 
 @subsection{@scheme[list]} 

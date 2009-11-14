@@ -9,7 +9,7 @@
 (require deinprogramm/contract/module-begin
 	 deinprogramm/contract/contract
 	 deinprogramm/contract/contract-test-engine
-	 deinprogramm/contract/contract-syntax)
+	 (except-in deinprogramm/contract/contract-syntax property))
 
 (require (for-syntax scheme/base)
 	 (for-syntax stepper/private/shared))
@@ -30,14 +30,15 @@
 (provide (all-from-out deinprogramm/define-record-procedures))
 (provide (all-from-out test-engine/scheme-tests))
 (provide contract define-contract :
-	 -> mixed one-of predicate combined property)
+	 -> mixed one-of predicate combined)
 
 (provide number real rational integer natural
 	 boolean true false
 	 string symbol
 	 empty-list
 	 chocolate-cookie
-	 unspecific)
+	 unspecific
+	 property)
 
 (define-syntax provide/rename
   (syntax-rules ()
@@ -1067,4 +1068,7 @@
 				(beginner-equal? val cand))
 			      candidates)))
 
-  
+(define property (contract (predicate (lambda (x)
+					(or (boolean? x)
+					    (property? x))))))
+

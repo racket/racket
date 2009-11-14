@@ -18,6 +18,7 @@
 	 arbitrary-symbol
 	 arbitrary-procedure
 	 property
+	 property?
 	 ==>
 	 label
 	 classify
