@@ -1,9 +1,11 @@
 (module promise '#%kernel
-(#%require "private/small-scheme.ss" "private/more-scheme.ss" "private/define.ss"
+(#%require "private/small-scheme.ss"
+           "private/more-scheme.ss"
+           "private/define.ss"
            (rename "private/define-struct.ss" define-struct define-struct*)
            (for-syntax '#%kernel "private/stxcase-scheme.ss")
            '#%unsafe)
-(#%provide lazy delay force promise? promise-forced? promise-running?)
+(#%provide force promise? promise-forced? promise-running?)
 
 ;; This module implements "lazy" (composable) promises and a `force'
 ;; that is iterated through them.
@@ -20,88 +22,8 @@
 (define-syntax pref  (syntax-rules () [(_ p) (unsafe-struct-ref p 0)]))
 (define-syntax pset! (syntax-rules () [(_ p x) (unsafe-struct-set! p 0 x)]))
 
-(define (promise-printer promise port write?)
-  (let loop ([p (pref promise)])
-    (cond [(reraise? p)
-           (let ([v (reraise-val p)])
-             (if (exn? v)
-               (fprintf port (if write? "#<promise!exn!~s>" "#<promise!exn!~a>")
-                        (exn-message v))
-               (fprintf port (if write? "#<promise!~s>" "#<promise!~a>")
-                        `(raise ,v))))]
-          [(running? p)
-           (let ([n (running-name p)])
-             (if n
-               (fprintf port "#<promise:!running!~a>" n)
-               (fprintf port "#<promise:!running>")))]
-          [(procedure? p)
-           (cond [(object-name p)
-                  => (lambda (n) (fprintf port "#<promise:~a>" n))]
-                 [else (display "#<promise>" port)])]
-          [(promise? p) (loop (pref p))] ; hide sharing
-          ;; values
-          [(null? p) (fprintf port "#<promise!(values)>")]
-          [(null? (cdr p))
-           (fprintf port (if write? "#<promise!~s>" "#<promise!~a>") (car p))]
-          [else
-           (display "#<promise!(values" port)
-           (let ([fmt (if write? " ~s" " ~a")])
-             (for-each (lambda (x) (fprintf port fmt x)) p))
-           (display ")>" port)])))
-
-;; A promise value can hold
-;; - (list <value> ...): forced promise (possibly multiple-values)
-;;        - composable promises deal with only one value
-;; - <promise>: a shared (redirected) promise that points at another one
-;;        - possible only with composable promises
-;; - <thunk>: usually a delayed promise,
-;;        - can also hold a `running' thunk that will throw a reentrant error
-;;        - can also hold a raising-a-value thunk on exceptions and other
-;;          `raise'd values (actually, applicable structs for printouts)
-;; First, a generic struct, which is used for all promise-like values
-(define-struct promise ([val #:mutable])
-  #:property prop:custom-write promise-printer)
-;; Then, a subtype for composable promises
-(define-struct (composable-promise promise) ())
-
-;; template for all delay-like constructs
-(define-for-syntax (make-delayer stx maker)
-  (syntax-case stx ()
-    [(_ expr)
-     (with-syntax ([proc (syntax-property (syntax/loc stx (lambda () expr))
-                                          'inferred-name (syntax-local-name))]
-                   [make maker])
-       (syntax/loc stx (make proc)))]))
-
-;; Creates a composable promise
-;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
-(define-syntax (lazy stx) (make-delayer stx #'make-composable-promise))
-
-;; Creates a (generic) promise that does not compose
-;;   X = (force (delay X)) = (force (lazy (delay X)))
-;;                         = (force (lazy^n (delay X)))
-;;   X = (force (force (delay (delay X)))) != (force (delay (delay X)))
-;; so each sequence of `(lazy^n o delay)^m' requires m `force's and a
-;; sequence of `(lazy^n o delay)^m o lazy^k' requires m+1 `force's (for k>0)
-;; (This is not needed with a lazy language (see the above URL for details),
-;; but provided for regular delay/force uses.)
-(define-syntax (delay stx) (make-delayer stx #'make-promise))
-
-;; For simplicity and efficiency this code uses thunks in promise values for
-;; exceptions: this way, we don't need to tag exception values in some special
-;; way and test for them -- we just use a thunk that will raise the exception.
-;; But it's still useful to refer to the exception value, so use an applicable
-;; struct for them.  The same goes for a promise that is being forced: we use a
-;; thunk that will throw a "reentrant promise" error -- and use an applicable
-;; struct so it is identifiable.
-(define-struct reraise (val)
-  #:property prop:procedure (lambda (this) (raise (reraise-val this))))
-(define-struct running (name)
-  #:property prop:procedure (lambda (this)
-                              (let ([name (running-name this)])
-                                (if name
-                                  (error 'force "reentrant promise ~v" name)
-                                  (error 'force "reentrant promise")))))
+;; ----------------------------------------------------------------------------
+;; Forcers
 
 ;; force/composable iterates on composable promises
 ;; * (force X) = X for non promises
@@ -174,10 +96,145 @@
 
 ;; dispatcher for composable promises, generic promises, and other values
 (define (force promise)
-  (cond [(composable-promise? promise) (force/composable promise)]
-        [(promise? promise) (force/generic promise)]
-        ;; different from srfi-45: identity for non-promises
-        [else promise]))
+  (if (promise? promise)
+    ((promise-forcer promise) promise) ; dispatch to specific forcer
+    promise)) ; different from srfi-45: identity for non-promises
+
+;; ----------------------------------------------------------------------------
+;; Struct definitions
+
+;; generic promise printer
+(define (promise-printer promise port write?)
+  (let loop ([p (pref promise)])
+    (cond [(reraise? p)
+           (let ([v (reraise-val p)])
+             (if (exn? v)
+               (fprintf port (if write? "#<promise!exn!~s>" "#<promise!exn!~a>")
+                        (exn-message v))
+               (fprintf port (if write? "#<promise!~s>" "#<promise!~a>")
+                        `(raise ,v))))]
+          [(running? p)
+           (let ([n (running-name p)])
+             (if n
+               (fprintf port "#<promise:!running!~a>" n)
+               (fprintf port "#<promise:!running>")))]
+          [(procedure? p)
+           (cond [(object-name p)
+                  => (lambda (n) (fprintf port "#<promise:~a>" n))]
+                 [else (display "#<promise>" port)])]
+          [(promise? p) (loop (pref p))] ; hide sharing
+          ;; values
+          [(null? p) (fprintf port "#<promise!(values)>")]
+          [(null? (cdr p))
+           (fprintf port (if write? "#<promise!~s>" "#<promise!~a>") (car p))]
+          [else
+           (display "#<promise!(values" port)
+           (let ([fmt (if write? " ~s" " ~a")])
+             (for-each (lambda (x) (fprintf port fmt x)) p))
+           (display ")>" port)])))
+
+;; property value for the right forcer to use
+(define-values [prop:force promise-forcer]
+  (let-values ([(prop pred? get) ; no need for the predicate
+                (make-struct-type-property 'forcer
+                  (lambda (v info)
+                    (unless (and (procedure? v)
+                                 (procedure-arity-includes? v 1))
+                      (raise-type-error 'prop:force "a unary function" v))
+                    v))])
+    (values prop get)))
+
+;; A promise value can hold
+;; - (list <value> ...): forced promise (possibly multiple-values)
+;;        - composable promises deal with only one value
+;; - <promise>: a shared (redirected) promise that points at another one
+;;        - possible only with composable promises
+;; - <thunk>: usually a delayed promise,
+;;        - can also hold a `running' thunk that will throw a reentrant error
+;;        - can also hold a raising-a-value thunk on exceptions and other
+;;          `raise'd values (actually, applicable structs for printouts)
+;; First, a generic struct, which is used for all promise-like values
+(define-struct promise ([val #:mutable])
+  #:property prop:custom-write promise-printer
+  #:property prop:force force/generic)
+;; Then, a subtype for composable promises
+(define-struct (composable-promise promise) ()
+  #:property prop:force force/composable)
+
+;; template for all delay-like constructs
+;; (with simple keyword matching: keywords is an alist with default exprs)
+(define-for-syntax (make-delayer stx maker keywords)
+  ;; no `cond', `and', `or', `let', `define', etc here
+  (letrec-values
+      ([(exprs+kwds)
+        (lambda (stxs exprs kwds)
+          (if (null? stxs)
+            (values (reverse exprs) (reverse kwds))
+            (if (not (keyword? (syntax-e (car stxs))))
+              (exprs+kwds (cdr stxs) (cons (car stxs) exprs) kwds)
+              (if (if (pair? (cdr stxs))
+                    (if (assq (syntax-e (car stxs)) keywords)
+                      (not (assq (syntax-e (car stxs)) kwds))
+                      #f)
+                    #f)
+                (exprs+kwds (cddr stxs) exprs
+                            (cons (cons (syntax-e (car stxs)) (cadr stxs))
+                                  kwds))
+                (values #f #f)))))]
+       [(stxs) (syntax->list stx)]
+       [(exprs kwds) (exprs+kwds (if stxs (cdr stxs) '()) '() '())]
+       [(kwd-args) (if kwds
+                     (map (lambda (k)
+                            (let-values ([(x) (assq (car k) kwds)])
+                              (if x (cdr x) (cdr k))))
+                          keywords)
+                     #f)])
+    (syntax-case stx ()
+      [_ (pair? exprs) ; throw a syntax error if anything is wrong
+         (with-syntax ([(expr ...) exprs]
+                       [(kwd-arg ...) kwd-args])
+           (with-syntax ([proc (syntax-property
+                                (syntax/loc stx (lambda () expr ...))
+                                'inferred-name (syntax-local-name))]
+                         [make maker])
+             (syntax/loc stx (make proc kwd-arg ...))))])))
+
+;; Creates a composable promise
+;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
+(#%provide (rename lazy* lazy))
+(define lazy make-composable-promise)
+(define-syntax (lazy* stx) (make-delayer stx #'lazy '()))
+
+;; Creates a (generic) promise that does not compose
+;;   X = (force (delay X)) = (force (lazy (delay X)))
+;;                         = (force (lazy^n (delay X)))
+;;   X = (force (force (delay (delay X)))) != (force (delay (delay X)))
+;; so each sequence of `(lazy^n o delay)^m' requires m `force's and a
+;; sequence of `(lazy^n o delay)^m o lazy^k' requires m+1 `force's (for k>0)
+;; (This is not needed with a lazy language (see the above URL for details),
+;; but provided for regular delay/force uses.)
+(#%provide (rename delay* delay))
+(define delay make-promise)
+(define-syntax (delay* stx) (make-delayer stx #'delay '()))
+
+;; For simplicity and efficiency this code uses thunks in promise values for
+;; exceptions: this way, we don't need to tag exception values in some special
+;; way and test for them -- we just use a thunk that will raise the exception.
+;; But it's still useful to refer to the exception value, so use an applicable
+;; struct for them.  The same goes for a promise that is being forced: we use a
+;; thunk that will throw a "reentrant promise" error -- and use an applicable
+;; struct so it is identifiable.
+(define-struct reraise (val)
+  #:property prop:procedure (lambda (this) (raise (reraise-val this))))
+(define-struct running (name)
+  #:property prop:procedure (lambda (this)
+                              (let ([name (running-name this)])
+                                (if name
+                                  (error 'force "reentrant promise ~v" name)
+                                  (error 'force "reentrant promise")))))
+
+;; ----------------------------------------------------------------------------
+;; Utilities
 
 (define (promise-forced? promise)
   (if (promise? promise)
