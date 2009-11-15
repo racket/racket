@@ -17,20 +17,20 @@ Returns @scheme[#t] if @scheme[v] is a promise, @scheme[#f]
 otherwise.}
 
 
-@defform[(delay expr)]{
+@defform[(delay body ...+)]{
 
-Creates a promise that, when @scheme[force]d, evaluates @scheme[expr]
-to produce its value.}
+Creates a promise that, when @scheme[force]d, evaluates the
+@scheme[body]s to produce its value.}
 
 
-@defform[(lazy expr)]{
+@defform[(lazy body ...+)]{
 
-Like @scheme[delay], except that if @scheme[expr] produces a promise,
-then this promise is @scheme[force]d to obtain a value.  In other
-words, this form creates a kind of a composable promise, which is
-mostly useful for implementing lazy libraries and languages.  Also
-note that the @scheme[expr] in this case is restricted to one that
-produces a single value.}
+Like @scheme[delay], except that if the last @scheme[body] produces a
+promise, then this promise is @scheme[force]d to obtain a value.  In
+other words, this form creates a kind of a composable promise, which
+is mostly useful for implementing lazy libraries and languages.  Also
+note that the last @scheme[body] in this case is restricted to one
+that produces a single value.}
 
 
 @defproc[(force [v any/c]) any]{
