@@ -626,7 +626,6 @@
 (syntax-test #'(delay))
 (syntax-test #'(delay . 1))
 (syntax-test #'(delay 1 . 2))
-(syntax-test #'(delay 1 2))
 
 (test '(list 3 4) 'quasiquote `(list ,(+ 1 2) 4))
 (test '(list a (quote a)) 'quasiquote (let ((name 'a)) `(list ,name ',name)))
