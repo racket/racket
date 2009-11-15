@@ -4,23 +4,17 @@
          scheme/list
          scheme/class
          scheme/gui)
-(provide define/listen
-         field/notify
+(provide field/notify
          notify-methods
          connect-to-pref
          connect-to-pref/readonly
-         override/return-false
          notify-box%
          notify-box/pref
+         notify-box/pref/readonly
          menu-option/notify-box
          menu-group/notify-box
          check-box/notify-box
          choice/notify-box)
-
-(define-syntax override/return-false
-  (syntax-rules ()
-    [(override/return-false m ...)
-     (begin (define/override (m) #f) ...)]))
 
 (define-for-syntax (mk-init name)
   (format-id name "init-~a" (syntax-e name)))
@@ -76,6 +70,7 @@
      (with-syntax ([init-name (mk-init #'name)])
        #'(define/override (init-name) (notify-box/pref/readonly pref)))]))
 
+#|
 (define-syntax (define/listen stx)
   (syntax-case stx ()
     [(define/listen name value)
@@ -93,6 +88,7 @@
              (for-each (lambda (listener) (listener new-value)) listeners))
            (define/public-final (listen-name listener)
              (set! listeners (cons listener listeners)))))]))
+|#
 
 (define notify-box%
   (class object%

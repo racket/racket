@@ -25,6 +25,11 @@
          unstable/gui/notify)
 (provide macro-stepper-frame-mixin)
 
+(define-syntax override/return-false
+  (syntax-rules ()
+    [(override/return-false m ...)
+     (begin (define/override (m) #f) ...)]))
+
 (define (macro-stepper-frame-mixin base-frame%)
   (class* base-frame% (stepper-frame<%>)
     (init-field config)
