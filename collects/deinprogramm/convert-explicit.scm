@@ -5,8 +5,6 @@
       (write-string "#<empty-list>" port))))
   (make-inspector))
 
-(define the-empty-list (make-:empty-list))
-
 ;; essentially copied from define-record-procedures.scm
 (define (write-list l port write?)
   (let ((pp? (and (pretty-printing)
@@ -58,32 +56,37 @@
   ((prop:custom-write write-list))
   (make-inspector))
 
-;; doesn't handle cycles
 (define (convert-explicit v)
-  (cond
-   ((null? v) the-empty-list)
-   ((pair? v)				; need to check for sharing
-    (make-:list
-     (let recur ((v v))
-       (cond
-	((null? v)
-	 v)
-	((not (pair? v))
-	 (convert-explicit v))
-	(else
-	 (cons (convert-explicit (car v))
-	       (recur (cdr v))))))))
-   ((deinprogramm-struct? v)
-    (let*-values (((ty skipped?) (struct-info v))
-		  ((name-symbol
-		    init-field-k auto-field-k accessor-proc mutator-proc immutable-k-list
-		    super-struct-type skipped?)
-		   (struct-type-info ty)))
-      (apply (struct-type-make-constructor ty)
-	     (map convert-explicit
-		  (map (lambda (index)
-			 (accessor-proc v index))
-		       (iota (+ init-field-k auto-field-k)))))))
-   (else
-    v)))
+  (let ((hash (make-hasheq)))
+    (let recur ((v v))
+      (cond
+       ((null? v) (make-:empty-list)) ; prevent silly printing of sharing
+       ((pair? v)
+	(make-:list
+	 (let recur ((v v))
+	   (cond
+	    ((null? v)
+	     v)
+	    ((not (pair? v))
+	     (recur v))
+	    (else
+	     (cons (recur (car v))
+		   (recur (cdr v))))))))
+       ((deinprogramm-struct? v)
+	(or (hash-ref hash v #f)
+	    (let*-values (((ty skipped?) (struct-info v))
+			  ((name-symbol
+			    init-field-k auto-field-k accessor-proc mutator-proc immutable-k-list
+			    super-struct-type skipped?)
+			   (struct-type-info ty)))
+	      (let* ((indices (iota (+ init-field-k auto-field-k)))
+		     (val (apply (struct-type-make-constructor ty) indices)))
+		(hash-set! hash v val)
+		(for-each (lambda (index)
+			    (mutator-proc val index 
+					  (recur (accessor-proc v index))))
+			  indices)
+		val))))
+       (else
+	v)))))
 
