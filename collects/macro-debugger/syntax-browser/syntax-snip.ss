@@ -1,13 +1,13 @@
-
 #lang scheme/base
 (require scheme/class
-         macro-debugger/util/class-iop
+         (rename-in unstable/class-iop
+                    [send/i send:])
          scheme/match
          scheme/list
          mzlib/string
          mred
          framework
-         "../util/notify.ss"
+         unstable/gui/notify
          "interfaces.ss"
          "display.ss"
          "controller.ss"

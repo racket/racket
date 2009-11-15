@@ -1,7 +1,7 @@
 #lang scheme/base
 (require scheme/class
          scheme/gui
-         "../util/notify.ss"
+         unstable/gui/notify
          "interfaces.ss"
          "partition.ss")
 (provide smart-keymap%

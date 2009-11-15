@@ -3,8 +3,8 @@
 (require scheme/class
          framework/framework
          "interfaces.ss"
-         "../util/notify.ss"
-         "../util/misc.ss")
+         unstable/gui/notify
+         unstable/gui/prefs)
 (provide prefs-base%
          syntax-prefs-base%
          syntax-prefs%

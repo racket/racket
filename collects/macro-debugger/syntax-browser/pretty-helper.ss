@@ -1,8 +1,8 @@
-
 #lang scheme/base
 (require scheme/class
          scheme/pretty
-         macro-debugger/util/class-iop
+         (rename-in unstable/class-iop
+                    [send/i send:])
          syntax/stx
          unstable/struct
          "interfaces.ss")

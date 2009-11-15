@@ -1,6 +1,6 @@
 #lang scheme/base
 (require scheme/class
-         macro-debugger/util/class-iop
+         unstable/class-iop
          (for-syntax scheme/base))
 (provide (all-defined-out))
 

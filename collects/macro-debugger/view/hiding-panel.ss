@@ -1,14 +1,15 @@
-
 #lang scheme/base
 (require scheme/class
-         macro-debugger/util/class-iop
+         (rename-in unstable/class-iop
+                    [send/i send:]
+                    [init-field/i init-field:])
          scheme/gui
          scheme/list
          syntax/boundmap
          "interfaces.ss"
          "../model/hiding-policies.ss"
          "../util/mpi.ss"
-         "../util/notify.ss")
+         unstable/gui/notify)
 (provide macro-hiding-prefs-widget%)
 
 (define mode:disable "Disable")

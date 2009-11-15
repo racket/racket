@@ -6,8 +6,7 @@
          path-get
          pathseg-get
          path-replace
-         pathseg-replace
-         find-subterm-paths)
+         pathseg-replace)
 
 ;; A Path is a (list-of PathSeg)
 ;; where the PathSegs are listed outermost to innermost
@@ -117,25 +116,3 @@
 
 (define (sd x)
   (syntax->datum (datum->syntax #f x)))
-
-;;=======
-
-;; find-subterm-paths : syntax syntax -> (list-of Path)
-(define (find-subterm-paths subterm term)
-  (let outer-loop ([term term])
-    (cond [(eq? subterm term)
-           (list null)]
-          [(stx-pair? term)
-           ;; Optimized for lists...
-           (let loop ([term term] [n 0])
-             (if (stx-pair? term)
-                 (let* ([seg0 (make-ref n)])
-                   (append (map (lambda (p) (cons seg0 p)) (outer-loop (stx-car term)))
-                           (if (eq? subterm (stx-cdr term))
-                               (list (list (make-tail n)))
-                               (loop (stx-cdr term) (add1 n)))))
-                 (let ([seg0 (make-tail n)])
-                   (map (lambda (p) (cons seg0 p))
-                        (outer-loop term)))))]
-          ;; FIXME: more structured cases here: box, vector, ...
-          [else null])))

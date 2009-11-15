@@ -1,7 +1,7 @@
-
 #lang scheme/base
 (require scheme/class
-         macro-debugger/util/class-iop
+         (rename-in unstable/class-iop
+                    [send/i send:])
          scheme/pretty
          scheme/gui
          framework/framework

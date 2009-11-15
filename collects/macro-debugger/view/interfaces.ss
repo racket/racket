@@ -1,6 +1,5 @@
-
 #lang scheme/base
-(require macro-debugger/util/class-iop
+(require unstable/class-iop
          (prefix-in sb: "../syntax-browser/interfaces.ss"))
 (provide (all-defined-out))
 

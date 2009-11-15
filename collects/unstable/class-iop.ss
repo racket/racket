@@ -3,20 +3,21 @@
          (for-syntax scheme/base
                      syntax/parse
                      unstable/syntax
-                     "class-ct.ss"))
+                     "private/class-iop-ct.ss"))
 (provide define-interface
          define-interface/dynamic
          define-interface-expander
 
-         send:
-         send*:
-         send/apply:
+         (rename-out [send: send/i]
+                     [send*: send*/i]
+                     [send/apply: send/apply/i]
 
-         define:
-         lambda:
-         init:
-	 init-field:
-         init-private:)
+                     [define: define/i]
+                     #| lambda: |#
+
+                     [init: init/i]
+                     [init-field: init-field/i]
+                     [init-private: init-private/i]))
 
 ;; Configuration
 (define-for-syntax warn-on-dynamic-interfaces? #f)
@@ -65,7 +66,7 @@
 (begin-for-syntax
   (define (check-method-in-interface for-whom method si)
     (unless (member (syntax-e method) (static-interface-members si))
-      (raise-syntax-error for-whom
+      (raise-syntax-error (syntax-e for-whom)
                           "method not in static interface"
                           method))))
 
@@ -74,7 +75,7 @@
 (define-syntax (send: stx)
   (syntax-parse stx
     [(send: obj:expr iface:static-interface method:id . args)
-     (begin (check-method-in-interface 'send: #'method (attribute iface.value))
+     (begin (check-method-in-interface #'send: #'method (attribute iface.value))
             (syntax/loc stx
               (send (check-object<:interface send: obj iface)
                     method . args)))]))
@@ -83,7 +84,7 @@
   (syntax-parse stx
     [(send*: obj:expr iface:static-interface (method:id . args) ...)
      (begin (for ([method (syntax->list #'(method ...))])
-              (check-method-in-interface 'send*: method (attribute iface.value)))
+              (check-method-in-interface #'send*: method (attribute iface.value)))
             (syntax/loc stx 
               (send* (check-object<:interface send*: obj iface)
                 (method . args) ...)))]))
@@ -91,9 +92,9 @@
 (define-syntax (send/apply: stx)
   (syntax-parse stx
     [(send/apply: obj:expr iface:static-interface method:id . args)
-     (begin (check-method-in-interface 'send/apply: #'method (attribute iface.value))
+     (begin (check-method-in-interface #'send/apply: #'method (attribute iface.value))
             (syntax/loc stx 
-              (send/apply (check-object<:interface send/apply obj iface)
+              (send/apply (check-object<:interface send/apply: obj iface)
                           method . args)))]))
 
 ;;

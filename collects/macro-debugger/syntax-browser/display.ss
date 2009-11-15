@@ -2,7 +2,9 @@
 (require scheme/class
          scheme/gui
          scheme/list
-         macro-debugger/util/class-iop
+         (rename-in unstable/class-iop
+                    [send/i send:]
+                    [init-field/i init-field:])
          (only-in mzlib/etc begin-with-definitions)
          "pretty-printer.ss"
          "interfaces.ss"

@@ -1,8 +1,8 @@
-
 #lang scheme/base
 (require scheme/pretty
          scheme/class
-         macro-debugger/util/class-iop
+         (rename-in unstable/class-iop
+                    [send/i send:])
          "interfaces.ss"
          "debug-format.ss"
          "prefs.ss"

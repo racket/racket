@@ -1,4 +1,3 @@
-
 #lang scheme/base
 (require scheme/class
          mred
@@ -6,7 +5,8 @@
          scheme/list
          scheme/match
          syntax/id-table
-         macro-debugger/util/class-iop
+         (rename-in unstable/class-iop
+                    [send/i send:])
          "interfaces.ss"
          "controller.ss"
          "display.ss"

@@ -5,7 +5,7 @@
          scheme/gui
          drscheme/arrow
          framework/framework
-         "../util/notify.ss")
+         unstable/gui/notify)
 
 (provide text:hover<%>
          text:hover-identifier<%>

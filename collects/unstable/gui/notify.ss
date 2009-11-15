@@ -3,7 +3,6 @@
 (require (for-syntax scheme/base unstable/syntax)
          scheme/list
          scheme/class
-         macro-debugger/util/class-iop
          scheme/gui)
 (provide define/listen
          field/notify

@@ -4,8 +4,8 @@
          framework/framework
          "interfaces.ss"
          "../syntax-browser/prefs.ss"
-         "../util/notify.ss"
-         "../util/misc.ss")
+         unstable/gui/notify
+         unstable/gui/prefs)
 (provide pref:macro-step-limit
          macro-stepper-config-base%
          macro-stepper-config/prefs%

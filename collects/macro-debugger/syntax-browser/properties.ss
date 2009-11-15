@@ -1,8 +1,8 @@
-
 #lang scheme/base
 (require scheme/class
          scheme/gui
-         macro-debugger/util/class-iop
+         (rename-in unstable/class-iop
+                    [send/i send:])
          "interfaces.ss"
          "util.ss"
          "../util/mpi.ss")

@@ -1,6 +1,10 @@
 #lang scheme/base
 (require scheme/class
-         macro-debugger/util/class-iop
+         (rename-in unstable/class-iop
+                    [define/i define:]
+                    [send/i send:]
+                    [send*/i send*:]
+                    [init-field/i init-field:])
          scheme/gui
          framework/framework
          scheme/list

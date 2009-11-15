@@ -1,7 +1,9 @@
-
 #lang scheme/base
 (require scheme/class
-         macro-debugger/util/class-iop
+         (rename-in unstable/class-iop
+                    [send/i send:]
+                    [send*/i send*:]
+                    [init-field/i init-field:])
          scheme/unit
          scheme/list
          scheme/match
@@ -20,7 +22,7 @@
          "../model/trace.ss"
          "../model/steps.ss"
          "cursor.ss"
-         "../util/notify.ss")
+         unstable/gui/notify)
 (provide stepper-keymap%
          stepper-syntax-widget%)
 

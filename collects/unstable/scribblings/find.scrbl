@@ -60,7 +60,7 @@ mutable table.
                      [#:default default any/c (lambda () (error ....))])
          any/c]{
 
-Like @scheme[find-first], but only returns the first match. If no
+Like @scheme[find], but only returns the first match. If no
 matches are found, @scheme[default] is applied as a thunk if it is a
 procedure or returned otherwise.
 

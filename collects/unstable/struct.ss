@@ -49,7 +49,7 @@
 (define dummy-value (box 'dummy))
 
 ;; struct->list : struct?
-;;                #:on-opaque? (or/c 'error 'return-false 'skip)
+;;                #:on-opaque (or/c 'error 'return-false 'skip)
 ;;             -> (listof any/c)
 (define (struct->list s
                       #:on-opaque [on-opaque 'error])

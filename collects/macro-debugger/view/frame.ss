@@ -1,7 +1,8 @@
-
 #lang scheme/base
 (require scheme/class
-         macro-debugger/util/class-iop
+         (rename-in unstable/class-iop
+                    [define/i define:]
+                    [send/i send:])
          scheme/unit
          scheme/list
          scheme/file
@@ -21,7 +22,7 @@
          "../model/trace.ss"
          "../model/steps.ss"
          "cursor.ss"
-         "../util/notify.ss")
+         unstable/gui/notify)
 (provide macro-stepper-frame-mixin)
 
 (define (macro-stepper-frame-mixin base-frame%)

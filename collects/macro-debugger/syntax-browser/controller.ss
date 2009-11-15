@@ -1,10 +1,11 @@
-
 #lang scheme/base
 (require scheme/class
-         macro-debugger/util/class-iop
+         (rename-in unstable/class-iop
+                    [send/i send:]
+                    [init-field/i init-field:])
          "interfaces.ss"
          "partition.ss"
-         "../util/notify.ss")
+         unstable/gui/notify)
 (provide controller%)
 
 ;; displays-manager-mixin
