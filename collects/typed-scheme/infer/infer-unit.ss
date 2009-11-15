@@ -1,7 +1,7 @@
 #lang scheme/unit
 
-(require (except-in "../utils/utils.ss"))
-(require (rep free-variance type-rep filter-rep rep-utils)
+(require "../utils/utils.ss"
+	 (rep free-variance type-rep filter-rep rep-utils)
 	 (types convenience union subtype remove-intersect resolve)
 	 (except-in (utils tc-utils) make-env)
 	 (env type-name-env)
@@ -12,6 +12,7 @@
          scheme/match
          mzlib/etc
          mzlib/trace
+	 unstable/sequence unstable/list
          scheme/list)
 
 (import dmap^ constraints^ promote-demote^)

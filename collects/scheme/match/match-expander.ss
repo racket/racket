@@ -47,8 +47,10 @@
                 legacy-xform
                 (lambda (stx)
                   (syntax-case stx (set!)
-                    [(nm args (... ...)) #'(macro-xform args (... ...))]
-                    [nm #'macro-xform]))
+                    [(nm . args) #'(macro-xform . args)]
+                    [nm (identifier? #'nm) #'macro-xform]
+                    [(set! . _)
+                     (raise-syntax-error #f "match expander cannot be target of a set!" stx)]))
                 (syntax-local-certifier))))
            (syntax/loc stx
              (define-syntax id

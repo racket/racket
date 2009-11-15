@@ -1,6 +1,6 @@
 #lang scheme/unit
 
-(require (rename-in "../utils/utils.ss" [infer r:infer] [extend r:extend])
+(require (rename-in "../utils/utils.ss" [infer r:infer])
          "signatures.ss"
          "tc-metafunctions.ss"
          mzlib/trace

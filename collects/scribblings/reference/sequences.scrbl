@@ -4,13 +4,6 @@
           scribble/scheme
 	  (for-label scheme/generator))
 
-@(define-syntax speed
-   (syntax-rules ()
-     [(_ id what)
-      @t{An @scheme[id] application can provide better performance for
-         @elem[what]
-         iteration when it appears directly in a @scheme[for] clause.}]))
-
 @(define generator-eval
    (lambda ()
      (let ([the-eval (make-base-eval)])

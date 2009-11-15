@@ -13,7 +13,7 @@
 	  (r:infer infer)
 	  (utils tc-utils)
 	  (rep type-rep)
-	  (except-in (utils utils) infer extend)
+	  (except-in (utils utils) infer)
           (only-in (r:infer infer-dummy) infer-param)
           scheme/nest
           syntax/kerncase
@@ -36,11 +36,7 @@
 (define-syntax (module-begin stx)
   (define module-name (syntax-property stx 'enclosing-module-name))
   ;(printf "BEGIN: ~a~n" (syntax->datum stx))
-  (with-logging-to-file 
-   (build-path (find-system-path 'temp-dir) "ts-poly.log")
-   #;
-   (log-file-name (syntax-source stx) module-name)
-   (syntax-case stx ()
+  (syntax-case stx ()
      [(mb forms ...)
       (nest
           ([begin (set-box! typed-context? #t)
@@ -90,7 +86,7 @@
         #;(printf "tried to create ~a types~n" (all-count!))
         #;(printf "created ~a union types~n" (union-count!))
         ;; reconstruct the module with the extra code
-        #'(#%module-begin transformed-body ... after-code check-syntax-help))])))
+        #'(#%module-begin transformed-body ... after-code check-syntax-help))]))
 
 (define-syntax (top-interaction stx)
   (syntax-case stx ()

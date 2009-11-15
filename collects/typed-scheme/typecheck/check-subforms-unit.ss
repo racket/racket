@@ -1,7 +1,7 @@
 #lang scheme/unit
 
-(require (except-in "../utils/utils.ss" extend))
-(require syntax/kerncase
+(require "../utils/utils.ss"
+	 syntax/kerncase
          scheme/match
          "signatures.ss" "tc-metafunctions.ss"
          (types utils convenience union subtype)

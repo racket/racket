@@ -24,7 +24,10 @@
          format-id
 
          current-syntax-context
-         wrong-syntax)
+         wrong-syntax
+         
+         with-syntax*
+         syntax-map)
 
 ;; Unwrapping syntax
 
@@ -158,8 +161,9 @@
         [(identifier? x) (syntax-e x)]
         [(keyword? x) (keyword->string x)]
         [(number? x) x]
+	[(char? x) x]
         [else (raise-type-error err
-                                "string, symbol, identifier, keyword, or number"
+                                "string, symbol, identifier, keyword, character, or number"
                                 x)]))
 
 ;; Error reporting
@@ -177,3 +181,12 @@
                         stx
                         extras)))
 ;; Eli: The `report-error-as' thing seems arbitrary to me.
+
+(define-syntax (with-syntax* stx)
+  (syntax-case stx ()
+    [(_ (cl) body ...) #'(with-syntax (cl) body ...)]
+    [(_ (cl cls ...) body ...)
+     #'(with-syntax (cl) (with-syntax* (cls ...) body ...))]))
+
+(define (syntax-map f . stxls)
+  (apply map f (map syntax->list stxls)))

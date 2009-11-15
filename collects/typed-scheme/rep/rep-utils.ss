@@ -6,6 +6,7 @@
          syntax/boundmap
          "free-variance.ss"
          "interning.ss"
+	 unstable/syntax
          mzlib/etc
          scheme/contract         
          (for-syntax 
@@ -17,6 +18,7 @@
           syntax/struct
           syntax/stx
           scheme/contract
+	  unstable/syntax
           (rename-in (except-in (utils utils stxclass-util) bytes byte-regexp regexp byte-pregexp #;pregexp)
                      [id* id]
                      [keyword* keyword])))
@@ -75,13 +77,13 @@
                                  (~optional [#:contract cnt:expr])
                                  (~optional no-provide?:no-provide-kw)) ...)
        (with-syntax* 
-        ([ex (mk-id #'nm #'nm ":")]
-         [fold-name (mk-id #f #'nm "-fold")]
+        ([ex (format-id #'nm "~a:" #'nm)]
+         [fold-name (format-id #f "~a-fold" #'nm)]
          [kw-stx (string->keyword (symbol->string (attribute nm.datum)))]
          [parent par]
          [(s:ty maker pred acc ...) (build-struct-names #'nm (syntax->list #'flds.fs) #f #t #'nm)]
-         [*maker (mk-id #'nm "*" #'nm)]
-         [**maker (mk-id #'nm "**" #'nm)]
+         [*maker (format-id #'nm "*~a" #'nm)]
+         [**maker (format-id #'nm "**~a" #'nm)]
          [*maker-cnt (if enable-contracts?
                          (or (attribute cnt) #'(flds.cnt ... . -> . pred))
                          #'any/c)]
@@ -251,12 +253,12 @@
              #:with name #'i
              #:with keyword (datum->syntax #f (string->keyword (symbol->string (syntax-e #'i))))
              #:with tmp-rec-id (generate-temporary)
-             #:with case (mk-id #'i (attribute lower-s) "-case")
-             #:with printer (mk-id #'i "print-" (attribute lower-s) "*")
-             #:with ht (mk-id #'i (attribute lower-s) "-name-ht")
-             #:with rec-id (mk-id #'i (attribute lower-s) "-rec-id")
-             #:with d-id (mk-id #'i "d" (attribute first-letter))
-             #:with (_ _ pred? accs ...) 
+             #:with case (format-id #'i "~a-case" (attribute lower-s))
+             #:with printer (format-id #'i "print-~a*" (attribute lower-s))
+             #:with ht (format-id #'i "~a-name-ht" (attribute lower-s))
+             #:with rec-id (format-id #'i "~a-rec-id" (attribute lower-s))
+             #:with d-id (format-id #'i "d~a" (attribute first-letter))
+             #:with (_ _ pred? accs ...)
                     (datum->syntax #f (build-struct-names #'name (syntax->list #'(fld-names ...)) #f #t #'name))))
   (syntax-parse stx
     [(_ i:type-name ...)

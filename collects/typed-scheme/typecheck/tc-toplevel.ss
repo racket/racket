@@ -3,6 +3,7 @@
 
 (require (rename-in "../utils/utils.ss" [infer r:infer]))
 (require syntax/kerncase
+	 unstable/list
          mzlib/etc
          scheme/match
          "signatures.ss"

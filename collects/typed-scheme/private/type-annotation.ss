@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require (except-in "../utils/utils.ss" extend))
-(require (rep type-rep)
+(require "../utils/utils.ss" 
+	 (rep type-rep)
 	 (utils tc-utils)
 	 (env type-env)
          (except-in (types subtype union convenience resolve utils) -> ->*)

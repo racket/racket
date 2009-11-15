@@ -327,7 +327,7 @@ If the @scheme[immutable] argument is @scheme[#f] or
 and the @scheme[key] and @scheme[val] arguments must also be flat
 contracts. 
 
-If @scheme[immtable] is @scheme[#t], then the other arguments do not
+If @scheme[immutable] is @scheme[#t], then the other arguments do not
 have to be flat contracts, the result is not a flat contract, and
 checking this contract involves making a copy of the hash-table.
 }

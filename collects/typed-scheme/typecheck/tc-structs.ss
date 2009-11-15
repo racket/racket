@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require (except-in "../utils/utils.ss" extend))
-(require (rep type-rep)
+(require "../utils/utils.ss" 
+	 (rep type-rep)
          (private parse-type)
 	 (types convenience utils union resolve abbrev)
 	 (env type-env type-environments type-name-env)

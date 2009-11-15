@@ -1,7 +1,7 @@
 #lang scheme/unit
 
-(require (except-in "../utils/utils.ss" extend))
-(require "signatures.ss"
+(require "../utils/utils.ss" 
+	 "signatures.ss"
          (utils tc-utils)
          (env type-environments)
          (types utils)

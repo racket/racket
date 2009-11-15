@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require (except-in "../utils/utils.ss" extend))
-(require (rep type-rep rep-utils)
+(require "../utils/utils.ss" 
+	 (rep type-rep rep-utils)
 	 (types union subtype resolve convenience utils)
          scheme/match mzlib/trace)
 

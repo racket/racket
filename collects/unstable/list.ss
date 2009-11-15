@@ -28,3 +28,14 @@
 
 (provide/contract
  [list-prefix? (list? list? . -> . boolean?)])
+
+(define (filter-multiple l . fs)
+  (apply values
+         (map (lambda (f) (filter f l)) fs)))
+
+;; Listof[A] Listof[B] B -> Listof[B]
+;; pads out t to be as long as s
+(define (extend s t extra)
+  (append t (build-list (- (length s) (length t)) (lambda _ extra))))
+
+(provide filter-multiple extend)

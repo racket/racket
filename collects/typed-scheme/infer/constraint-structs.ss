@@ -1,8 +1,6 @@
 #lang scheme/base
 
-(require (except-in "../utils/utils.ss" extend))
-(require (rep type-rep)
-         scheme/contract)
+(require "../utils/utils.ss" (rep type-rep) scheme/contract)
 
 ;; S, T types
 ;; X a var
@@ -31,9 +29,9 @@
 ;; don't want to rule them out too early
 (define-struct cset (maps) #:prefab)
 
-(provide/contract (struct c ([S Type?] [X symbol?] [T Type?]))
-                  (struct dcon ([fixed (listof c?)] [rest (or/c c? false/c)]))
-                  (struct dcon-exact ([fixed (listof c?)] [rest c?]))
-                  (struct dcon-dotted ([type c?] [bound symbol?]))
-                  (struct dmap ([map (hashof symbol? (or/c dcon? dcon-exact? dcon-dotted?))]))
-                  (struct cset ([maps (listof (cons/c (hashof symbol? c?) dmap?))])))
+(p/c (struct c ([S Type?] [X symbol?] [T Type?]))
+     (struct dcon ([fixed (listof c?)] [rest (or/c c? false/c)]))
+     (struct dcon-exact ([fixed (listof c?)] [rest c?]))
+     (struct dcon-dotted ([type c?] [bound symbol?]))
+     (struct dmap ([map (hash/c symbol? (or/c dcon? dcon-exact? dcon-dotted?))]))
+     (struct cset ([maps (listof (cons/c (hash/c symbol? c?) dmap?))])))

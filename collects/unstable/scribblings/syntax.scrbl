@@ -2,6 +2,7 @@
 @(require scribble/struct
           scribble/decode
           scribble/eval
+	  "utils.ss"
           (for-label scheme/base
                      scheme/contract
                      unstable/syntax))
@@ -183,7 +184,7 @@ or similar, has no effect.
 @;{----}
 
 @defproc[(format-symbol [fmt string?]
-                        [v (or/c string? symbol? identifier? keyword? number?)] ...)
+                        [v (or/c string? symbol? identifier? keyword? char? number?)] ...)
          symbol?]{
 
 Like @scheme[format], but produces a symbol. The format string must
@@ -200,7 +201,7 @@ are automatically converted to symbols.
                     [#:props props (or/c syntax? #f) #f]
                     [#:cert cert (or/c syntax? #f) #f]
                     [fmt string?]
-                    [v (or/c string? symbol? identifier? keyword? number?)] ...)
+                    [v (or/c string? symbol? identifier? keyword? char? number?)] ...)
          identifier?]{
 
 Like @scheme[format-symbol], but converts the symbol into an
@@ -229,4 +230,26 @@ in the argument list are automatically converted to symbols.
 
 (Scribble doesn't show it, but the DrScheme pinpoints the location of
 the second error but not of the first.)
+}
+
+@addition{Sam Tobin-Hochstadt}
+                     
+@defform[(with-syntax* ([pattern stx-expr] ...)
+           body ...+)]{
+Similar to @scheme[with-syntax], but the pattern variables are bound in the remaining
+@scheme[stx-expr]s as well as the @scheme[body]s, and the @scheme[pattern]s need not 
+bind distinct pattern variables; later bindings shadow earlier bindings.
+
+@examples[#:eval the-eval
+(with-syntax* ([(x y) (list #'val1 #'val2)]
+               [nest #'((x) (y))])
+  #'nest)
+]
+}
+
+@defproc[(syntax-map [f (-> syntax? A)] [stxl syntax?] ...) (listof A)]{
+Performs @scheme[(map f (syntax->list stxl) ...)].
+
+@examples[#:eval the-eval
+(syntax-map syntax-e #'(a b c))]
 }

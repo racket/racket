@@ -4,6 +4,7 @@
          "signatures.ss" "tc-metafunctions.ss"
          "tc-app-helper.ss" "find-annotation.ss"
          syntax/parse scheme/match mzlib/trace scheme/list 
+	 unstable/sequence
          ;; fixme - don't need to be bound in this phase - only to make syntax/parse happy
          scheme/bool
          (only-in scheme/private/class-internal make-object do-make-object)
@@ -677,7 +678,7 @@
              [(and rest (< (length t-a) (length dom)))
               (tc-error/expr #:return (ret t-r)
                              "Wrong number of arguments, expected at least ~a and got ~a" (length dom) (length t-a))])
-       (for ([dom-t (if rest (in-list-forever dom rest) (in-list dom))] [a (syntax->list args-stx)] [arg-t (in-list t-a)])
+       (for ([dom-t (if rest (in-sequence-forever dom rest) (in-list dom))] [a (syntax->list args-stx)] [arg-t (in-list t-a)])
          (parameterize ([current-orig-stx a]) (check-below arg-t dom-t))))
      (let* (;; Listof[Listof[LFilterSet]]
             [lfs-f (for/list ([lf lf-r])

@@ -1,8 +1,9 @@
 #lang scheme/unit
 
-(require (except-in "../utils/utils.ss" extend))
-(require "signatures.ss" "constraint-structs.ss"
+(require "../utils/utils.ss" 
+	 "signatures.ss" "constraint-structs.ss"
 	 (utils tc-utils)
+	 unstable/sequence
          scheme/match)
 
 (import constraints^)
@@ -35,7 +36,7 @@
        (fail! fixed1 fixed2))
      (make-dcon
       (for/list ([c1 fixed1]
-                 [c2 (in-list-forever fixed2 rest)])
+                 [c2 (in-sequence-forever fixed2 rest)])
         (c-meet c1 c2 (c-X c1)))
       #f)]
     [((struct dcon (fixed1 rest)) (struct dcon (fixed2 #f)))
@@ -47,7 +48,7 @@
                        (values fixed2 fixed1 rest2 rest1))])
        (make-dcon
         (for/list ([c1 longer]
-                   [c2 (in-list-forever shorter srest)])
+                   [c2 (in-sequence-forever shorter srest)])
           (c-meet c1 c2 (c-X c1)))
         (c-meet lrest srest (c-X lrest))))]
     [((struct dcon-dotted (c1 bound1)) (struct dcon-dotted (c2 bound2)))

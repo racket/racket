@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require (except-in "../utils/utils.ss" extend))
-(require (only-in srfi/1/list s:member)
+(require "../utils/utils.ss" 
+	 (only-in srfi/1/list s:member)
          syntax/kerncase syntax/boundmap
          (env type-name-env type-alias-env)
          mzlib/trace

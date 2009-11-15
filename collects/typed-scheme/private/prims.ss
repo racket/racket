@@ -24,8 +24,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
 	 (rename-out [define-typed-struct define-struct:]
                      [define-typed-struct/exec define-struct/exec:]))
 
-(require (except-in "../utils/utils.ss" extend))
-(require (for-syntax 
+(require "../utils/utils.ss"
+	 (for-syntax 
           syntax/parse
 	  syntax/private/util
           scheme/base

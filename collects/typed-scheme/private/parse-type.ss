@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require (except-in "../utils/utils.ss" extend))
-(require (except-in (rep type-rep) make-arr)
+(require "../utils/utils.ss"
+	 (except-in (rep type-rep) make-arr)
          (rename-in (types convenience union utils) [make-arr* make-arr])
          (utils tc-utils stxclass-util)
          syntax/stx (prefix-in c: scheme/contract)
