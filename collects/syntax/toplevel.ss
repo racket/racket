@@ -1,5 +1,5 @@
 
-(module toplevel mzscheme
+(module toplevel scheme/base
   (require "kerncase.ss")
   
   (provide eval-compile-time-part-of-top-level
@@ -42,7 +42,7 @@
                         (map expand-syntax-top-level-with-compile-time-evals
                              (syntax->list (syntax (expr ...))))]
                        [(beg . _) e])
-           (datum->syntax-object e (syntax-e (syntax (beg expr ...))) e e))]
+           (datum->syntax e (syntax-e (syntax (beg expr ...))) e e))]
         [else 
          (let ([e (expand-syntax e)])
            (compile-and-eval-compile-time-part e #f)
@@ -63,7 +63,7 @@
         [(#%require req ...)
 	 (begin0
 	  (when compile? (compile-syntax stx))
-	  (for-each (lambda (req) (namespace-require/expansion-time (syntax-object->datum req)))
+	  (for-each (lambda (req) (namespace-require/expansion-time (syntax->datum req)))
 		    (syntax->list (syntax (req ...)))))]
         [(module . _)
          (eval/compile stx)]
