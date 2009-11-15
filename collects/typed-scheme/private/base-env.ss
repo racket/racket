@@ -733,6 +733,9 @@
 ;; scheme/port
 [port->lines (cl->* (-Input-Port . -> . (-lst -String))
                     (->  (-lst -String)))]
+[with-output-to-string
+  (-> (-> Univ) -String)]
+[open-output-nowhere (-> -Output-Port)]
 
 ;; scheme/path
 
