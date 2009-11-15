@@ -100,26 +100,65 @@
 ;; Symbol Formatting
 
 (define (format-symbol fmt . args)
-  (string->symbol (apply format fmt args)))
+  (define (convert x) (->atom x 'format-symbol))
+  (check-restricted-format-string 'format-symbol fmt)
+  (let ([args (map convert args)])
+    (string->symbol (apply format fmt args))))
 
 (define (format-id lctx
                    #:source [src #f]
                    #:props [props #f]
                    #:cert [cert #f]
                    fmt . args)
-  (let* ([str (apply format fmt args)]
+  (define (convert x) (->atom x 'format-id))
+  (check-restricted-format-string 'format-id fmt)
+  (let* ([args (map convert args)]
+         [str (apply format fmt args)]
          [sym (string->symbol str)])
     (datum->syntax lctx sym src props cert)))
 ;; Eli: This looks very *useful*, but I'd like to see it more convenient to
 ;;   "preserve everything".  Maybe add a keyword argument that when #t makes
 ;;   all the others use values lctx, and when syntax makes the others use that
-;;   syntax?  Also, I'd prefer it if each of these keywords would also accept a
-;;   syntax instead of a value, to copy the value from.
+;;   syntax?
 ;;   Finally, if you get to add this, then another useful utility in the same
 ;;   spirit is one that concatenates symbols and/or strings and/or identifiers
 ;;   into a new identifier.  I considered something like that, which expects a
 ;;   single syntax among its inputs, and will use it for the context etc, or
 ;;   throw an error if there's more or less than 1.
+
+#|
+(define (id-append #:source [src #f]
+                   #:props [props #f]
+                   #:cert [cert #f]
+                   . args)
+  (define stxs (filter syntax? args))
+  (define lctx
+    (cond [(and (pair? stxs) (null? (cdr stxs)))
+           (car stxs)]
+          [(error 'id-append "expected exactly one identifier in arguments: ~e" args)]))
+  (define (convert x) (->atom x 'id-append))
+  (define sym (string->symbol (apply string-append (map convert args))))
+  (datum->syntax lctx sym src props cert))
+|#
+
+(define (restricted-format-string? fmt)
+  (regexp-match? #rx"^(?:[^~]|~[aAn~%])*$" fmt))
+
+(define (check-restricted-format-string who fmt)
+  (unless (restricted-format-string? fmt)
+    (raise-type-error who
+                      "format string using only ~a placeholders"
+                      fmt)))
+
+(define (->atom x err)
+  (cond [(string? x) x]
+        [(symbol? x) x]
+        [(identifier? x) (syntax-e x)]
+        [(keyword? x) (keyword->string x)]
+        [(number? x) x]
+        [else (raise-type-error err
+                                "string, symbol, identifier, keyword, or number"
+                                x)]))
 
 ;; Error reporting
 

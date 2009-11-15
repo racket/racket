@@ -82,6 +82,7 @@ Keep documentation and tests up to date.
 @include-section["syntax.scrbl"]
 @include-section["poly-c.scrbl"]
 @include-section["mutated-vars.scrbl"]
+@include-section["find.scrbl"]
 
 @;{--------}
 

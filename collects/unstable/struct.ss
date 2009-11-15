@@ -48,18 +48,36 @@
 
 (define dummy-value (box 'dummy))
 
-;; struct->list : struct? #:false-on-opaque? bool -> (listof any/c)
-(define (struct->list s #:false-on-opaque? [false-on-opaque? #f])
+;; struct->list : struct?
+;;                #:on-opaque? (or/c 'error 'return-false 'skip)
+;;             -> (listof any/c)
+(define (struct->list s
+                      #:on-opaque [on-opaque 'error])
+  (define error-on-opaque? (eq? on-opaque 'error))
   (let ([vec (struct->vector s dummy-value)])
-    (and (for/and ([elem (in-vector vec)])
-           (cond [(eq? elem dummy-value)
-                  (unless false-on-opaque?
-                    (raise-type-error 'struct->list "non-opaque struct" s))
-                  #f]
-                 [else #t]))
-         (cdr (vector->list vec)))))
+    ;; go through vector backwards, don't traverse 0 (struct name)
+    (let loop ([index (sub1 (vector-length vec))]
+               [elems null]
+               [any-opaque? #f])
+      (cond [(positive? index)
+             (let ([elem (vector-ref vec index)])
+               (cond [(eq? elem dummy-value)
+                      (when error-on-opaque?
+                        (raise-type-error 'struct->list "non-opaque struct" s))
+                      (loop (sub1 index) elems #t)]
+                     [else (loop (sub1 index) (cons elem elems) any-opaque?)]))]
+            [else
+             (cond [(and any-opaque? (eq? on-opaque 'return-false))
+                    #f]
+                   [else elems])]))))
 ;; Eli: Why is there that `false-on-opaque?' business instead of having
 ;;   an interface similar to `struct->vector'?  I'd prefer an optional
 ;;   on-opaque value, and have it throw an error if it's opaque and no
 ;;   value is given.  Also, `gensym' seems much better to me than a box
 ;;   for a unique value.
+
+;; ryanc: I've never seen any code that wanted the on-opaque filler
+;;   value except printers, whereas lots of code assumes the struct is
+;;   fully transparent and wants all of the fields. #:false-on-opaque?
+;;   also lets this act as a predicate-plus (like member, assoc, etc)
+;;   for fully-transparent structs.

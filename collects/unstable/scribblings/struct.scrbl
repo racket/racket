@@ -27,25 +27,29 @@ is raised at compile time.
 }
 
 @defproc[(struct->list [v any/c]
-                       [#:false-on-opaque? false-on-opaque? boolean? #f])
+                       [#:on-opaque on-opaque (or/c 'error 'return-false 'skip) 'error])
          (or/c list? #f)]{
 
 Returns a list containing the struct instance @scheme[v]'s
 fields. Unlike @scheme[struct->vector], the struct name itself is not
 included.
 
-The struct instance @scheme[v] must be fully accessible using the
-current inspector. If any fields are inaccessible, either an error is
-raised or @scheme[#f] is returned, depending on the value of
-@scheme[false-on-opaque?]. The default is to raise an error.
+If any fields of @scheme[v] are inaccessible via the current inspector
+the behavior of @scheme[struct->list] is determined by
+@scheme[on-opaque]. If @scheme[on-opaque] is @scheme['error] (the
+default), an error is raised. If it is @scheme['return-false],
+@scheme[struct->list] returns @scheme[#f]. If it is @scheme['skip],
+the inaccessible fields are omitted from the list.
 
 @examples[#:eval the-eval
 (define-struct open (u v) #:transparent)
 (struct->list (make-open 'a 'b))
 (struct->list #s(pre 1 2 3))
-(define-struct secret (x y))
-(struct->list (make-secret 17 22))
-(struct->list (make-secret 17 22) #:false-on-opaque? #t)
-(struct->list 'not-a-struct #:false-on-opaque? #t)
+(define-struct (secret open) (x y))
+(struct->list (make-secret 0 1 17 22))
+(struct->list (make-secret 0 1 17 22) #:on-opaque 'return-false)
+(struct->list (make-secret 0 1 17 22) #:on-opaque 'skip)
+(struct->list 'not-a-struct #:on-opaque 'return-false)
+(struct->list 'not-a-struct #:on-opaque 'skip)
 ]
 }

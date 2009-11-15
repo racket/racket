@@ -182,13 +182,16 @@ or similar, has no effect.
 
 @;{----}
 
-@defproc[(format-symbol [fmt string?] [v any/c] ...)
+@defproc[(format-symbol [fmt string?]
+                        [v (or/c string? symbol? identifier? keyword? number?)] ...)
          symbol?]{
 
-Like @scheme[format], but produces a symbol.
+Like @scheme[format], but produces a symbol. The format string must
+use only @litchar{~a} placeholders. Identifiers in the argument list
+are automatically converted to symbols.
 
 @examples[#:eval the-eval
-  (format-symbol "make-~s" 'triple)
+  (format-symbol "make-~a" 'triple)
 ]
 }
 
@@ -196,7 +199,8 @@ Like @scheme[format], but produces a symbol.
                     [#:source src (or/c syntax? #f) #f]
                     [#:props props (or/c syntax? #f) #f]
                     [#:cert cert (or/c syntax? #f) #f]
-                    [fmt string?] [v any/c] ...)
+                    [fmt string?]
+                    [v (or/c string? symbol? identifier? keyword? number?)] ...)
          identifier?]{
 
 Like @scheme[format-symbol], but converts the symbol into an
@@ -204,6 +208,9 @@ identifier using @scheme[lctx] for the lexical context, @scheme[src]
 for the source location, @scheme[props] for the properties, and
 @scheme[cert] for the inactive certificates. (See
 @scheme[datum->syntax].)
+
+The format string must use only @litchar{~a} placeholders. Identifiers
+in the argument list are automatically converted to symbols.
 
 @examples[#:eval the-eval
 (define-syntax (make-pred stx)
