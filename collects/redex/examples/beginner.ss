@@ -551,7 +551,7 @@ reflects the (broken) spec).
 (define (show-test-results)
   (cond
     [(= failed-tests 0) 
-     (fprintf (current-error-port) "passed all ~a tests\n" total-tests)]
+     (fprintf (current-output-port) "passed all ~a tests\n" total-tests)]
     [else
      (fprintf (current-error-port) "failed ~a out of ~a tests\n" failed-tests total-tests)]))
 
