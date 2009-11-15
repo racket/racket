@@ -932,7 +932,7 @@ The @scheme[basetype] argument specifies the base type to use.}
 @defproc[(_bitmask [symbols (or symbol? list?)][basetype ctype? _uint]) ctype?]{
 
 Similar to @scheme[_enum], but the resulting mapping translates a list
-of symbols to a number and back, using @scheme[bitwise-or].  A single
+of symbols to a number and back, using @scheme[bitwise-ior].  A single
 symbol is equivalent to a list containing just the symbol.  The
 default @scheme[basetype] is @scheme[_uint], since high bits are often
 used for flags.}
