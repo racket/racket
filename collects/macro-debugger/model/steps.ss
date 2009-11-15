@@ -1,8 +1,7 @@
 
 #lang scheme/base
 (require "deriv.ss"
-         "deriv-util.ss"
-         "deriv-find.ss")
+         "deriv-util.ss")
 (provide (struct-out protostep)
          (struct-out step)
          (struct-out misstep)

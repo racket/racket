@@ -7,6 +7,8 @@
          scheme/gui
          framework/framework
          syntax/boundmap
+         syntax/stx
+         unstable/find
          "interfaces.ss"
          "prefs.ss"
          "extensions.ss"
@@ -15,7 +17,6 @@
          "step-display.ss"
          "../model/deriv.ss"
          "../model/deriv-util.ss"
-         "../model/deriv-find.ss"
          "../model/deriv-parser.ss"
          "../model/trace.ss"
          "../model/reductions-config.ss"
@@ -135,13 +136,8 @@
               (when (not d)
                 (set! deriv-hidden? #t))
               (when d
-                (let ([alpha-table (make-module-identifier-mapping)]
-                      [binder-ids (extract-all-fresh-names d)])
-                  (for-each (lambda (id)
-                              (module-identifier-mapping-put! alpha-table id id))
-                            binder-ids)
-                  (set! deriv d)
-                  (set! shift-table (compute-shift-table d)))))))))
+                (set! deriv d)
+                (set! shift-table (compute-shift-table d))))))))
 
     ;; recache-synth! : -> void
     (define/private (recache-synth!)
@@ -317,3 +313,29 @@
             [else
              (error 'term-record::display-oops "internal error")]))
     ))
+
+
+;; compute-shift-table : deriv -> hash[id => (listof id)]
+(define (compute-shift-table d)
+  (define ht (make-hasheq))
+  (define module-forms
+    (find p:module? d #:stop-on-found? #t))
+  (define module-shift-renamers
+    (for/list ([mf module-forms])
+      (let ([shift (p:module-shift mf)]
+            [body (p:module-body mf)])
+        (and shift body
+             (with-syntax ([(_module _name _lang shifted-body) shift])
+               (add-rename-mapping ht (wderiv-e2 body) #'shifted-body))))))
+  ht)
+
+(define (add-rename-mapping ht from to)
+  (define (loop from to)
+    (cond [(and (stx-pair? from) (stx-pair? to))
+           (loop (stx-car from) (stx-car to))
+           (loop (stx-cdr from) (stx-cdr to))]
+          [(and (identifier? from) (identifier? to))
+           (hash-set! ht from (cons to (hash-ref ht from null)))]
+          [else (void)]))
+  (loop from to)
+  (void))

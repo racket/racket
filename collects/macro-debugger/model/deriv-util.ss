@@ -4,6 +4,7 @@
          (for-syntax scheme/private/struct-info)
          scheme/list
          scheme/match
+         unstable/struct
          "deriv.ss")
 
 (provide make
@@ -68,33 +69,3 @@
 (define (wderivlist-es2 xs)
   (let ([es2 (map wderiv-e2 xs)])
     (and (andmap syntax? es2) es2)))
-
-;; ----
-
-(define-syntax (make stx)
-  (syntax-case stx ()
-    [(make S expr ...)
-     (unless (identifier? #'S)
-       (raise-syntax-error #f "not an identifier" stx #'S))
-     (let ()
-       (define (no-info) (raise-syntax-error #f "not a struct" stx #'S))
-       (define info
-         (extract-struct-info
-          (syntax-local-value #'S no-info)))
-       (define constructor (list-ref info 1))
-       (define accessors (list-ref info 3))
-       (unless (identifier? #'constructor)
-         (raise-syntax-error #f "constructor not available for struct" stx #'S))
-       (unless (andmap identifier? accessors)
-         (raise-syntax-error #f "incomplete info for struct type" stx #'S))
-       (let ([num-slots (length accessors)]
-             [num-provided (length (syntax->list #'(expr ...)))])
-         (unless (= num-provided num-slots)
-           (raise-syntax-error
-            #f
-            (format "wrong number of arguments for struct ~s (expected ~s)"
-                    (syntax-e #'S)
-                    num-slots)
-            stx)))
-       (with-syntax ([constructor constructor])
-         #'(constructor expr ...)))]))

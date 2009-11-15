@@ -15,7 +15,6 @@
          "hiding-panel.ss"
          "../model/deriv.ss"
          "../model/deriv-util.ss"
-         "../model/deriv-find.ss"
          "../model/deriv-parser.ss"
          "../model/trace.ss"
          "../model/reductions-config.ss"

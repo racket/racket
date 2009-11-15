@@ -18,7 +18,6 @@
 	 (prefix-in sb: "../syntax-browser/interfaces.ss")
          "../model/deriv.ss"
          "../model/deriv-util.ss"
-         "../model/deriv-find.ss"
          "../model/trace.ss"
          "../model/reductions.ss"
          "../model/steps.ss"
