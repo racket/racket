@@ -81,3 +81,6 @@
 ;;   fully transparent and wants all of the fields. #:false-on-opaque?
 ;;   also lets this act as a predicate-plus (like member, assoc, etc)
 ;;   for fully-transparent structs.
+
+;; Eli: Your change to `#:on-opaque' looks good enough to me (and leaves room
+;;   for extension if needed).  (BTW, the contract still has `?'.)

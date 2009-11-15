@@ -139,6 +139,8 @@
   (define (convert x) (->atom x 'id-append))
   (define sym (string->symbol (apply string-append (map convert args))))
   (datum->syntax lctx sym src props cert))
+;; Eli: Yes, that looks nice (with the same comments as above on the keyword
+;;   args).  It makes more sense with the restriction on the format string.
 |#
 
 (define (restricted-format-string? fmt)

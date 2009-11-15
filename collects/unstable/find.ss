@@ -54,7 +54,10 @@
     (for/fold ([acc acc]) ([elem (in-list xs)])
       (loop elem acc)))
   (reverse (loop x null)))
-
+;; Eli: This looks borderline too generic to be useful, also in the fact that
+;;   the documentation tends to explain things in terms of the implementation
+;;   (eg, the description of #:stop).  In any case, you should definitely
+;;   rename it -- `find' is too common in different ways (see srfi-1 or cltl).
 
 (define (find-first pred x
                     #:stop [stop #f]
@@ -67,3 +70,4 @@
     (if (procedure? default)
         (default)
         default)))
+;; Eli: Note that this is documented "Like `find-first'".
