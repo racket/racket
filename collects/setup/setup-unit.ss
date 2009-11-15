@@ -649,8 +649,8 @@
                              (append (directory-list dir)
                                      (info 'virtual-sources (lambda () null)))))])
                   (for ([p (directory-list c)])
-                    (when (and (regexp-match #rx#".zo$" (path-element->bytes p))
-                               (not (hash-ref ok-zo-files p #f)))
+                    (when (and (regexp-match #rx#".(zo|dep)$" (path-element->bytes p))
+                               (not (hash-ref ok-zo-files (path-replace-suffix p #".zo") #f)))
                       (setup-fprintf (current-error-port) #f " deleting ~a" (build-path c p))
                       (delete-file (build-path c p))))))))
           ;; Make .zos
