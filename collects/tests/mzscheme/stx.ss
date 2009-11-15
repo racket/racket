@@ -470,7 +470,7 @@
         b)))
 
 (test '('#%kernel case-lambda (lib "scheme/init") case-lambda 0 0 0)  identifier-binding* #'case-lambda)
-(test '(scheme/promise delay (lib "scheme/init") delay 0 0 0)  identifier-binding* #'delay)
+(test '(scheme/promise delay* (lib "scheme/init") delay 0 0 0)  identifier-binding* #'delay)
 (test '('#%kernel #%module-begin (lib "scheme/init") #%plain-module-begin 0 0 0)  identifier-binding* #'#%plain-module-begin)
 (require (only-in scheme/base [#%plain-module-begin #%pmb]))
 (test '('#%kernel #%module-begin scheme/base #%plain-module-begin 0 0 0)  identifier-binding* #'#%pmb)
