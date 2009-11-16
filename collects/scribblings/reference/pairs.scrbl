@@ -1,11 +1,32 @@
 #lang scribble/doc
 @(require "mz.ss"
           scribble/scheme
+          scheme/generator
+          scheme/list
           (for-syntax scheme/base))
+
+@(define (generate-c_r-example proc)
+  (define (make-it start n)
+    (generator
+      (let loop ([start start]
+                 [n n])
+        (yield (list* n start))
+        (yield (append start (list n)))
+        (when (< (length (flatten start)) 8)
+          (loop (list* n start) (add1 n))
+          (loop (list start n) (add1 n))
+          ))))
+  (define (example proc)
+    (define maker (make-it '() 1))
+    (let loop ([value (maker)])
+      (with-handlers ([exn? (lambda (e) (loop (maker)))])
+        (proc value)
+        value)))
+  (example proc))
 
 @(define-syntax (defc_r stx)
    (syntax-case stx ()
-     [(_ x ...)
+     [(_ x ... example)
       (let ([xs (map syntax-e (syntax->list #'(x ...)))])
         (let ([name (string->symbol
                      (string-append
@@ -37,9 +58,10 @@
                                                              span)))
                                       (datum->syntax #'here c 
                                                      (list (syntax-source stx) 1 pos (add1 pos) 1))))]
+                        [example (datum->syntax #'here (syntax->datum #'example))]
                         [equiv equiv])
             #'(defproc (name [v contract]) any/c
-                "Returns " (to-element 'equiv)))))]))
+                "Returns " (to-element 'equiv) (mz-examples (name example))))))]))
 
 
 @title[#:tag "pairs"]{Pairs and Lists}
@@ -393,7 +415,7 @@ Returns a list that is like @scheme[lst], omitting the first element
 
 Returns @scheme[(remove v lst eq?)].
 @mz-examples[
-(remq 2 (list 1 2 3 4 5))
+(remq (list 1 2) (list 1 2 3 4 5))
 ]}
 
 
@@ -412,7 +434,7 @@ Returns @scheme[(remove v lst eqv?)].
 Like @scheme[remove], but removes from @scheme[lst] every instance of
 every element of @scheme[v-lst].
 @mz-examples[
-(remove* 2 (list 1 2 3 2 4 5 2))
+(remove* (list 1 2) (list 1 2 3 2 4 5 2))
 ]}
 
 
@@ -422,7 +444,7 @@ every element of @scheme[v-lst].
 Returns @scheme[(remove* v-lst lst eq?)].
 
 @mz-examples[
-(remq* 2 (list 1 2 3 2 4 5 2))
+(remq* (list 1 2) (list 1 2 3 2 4 5 2))
 ]}
 
 
@@ -431,7 +453,7 @@ Returns @scheme[(remove* v-lst lst eq?)].
 
 Returns @scheme[(remove* v-lst lst eqv?)].
 @mz-examples[
-(remv* 2 (list 1 2 3 2 4 5 2))
+(remv* (list 1 2) (list 1 2 3 2 4 5 2))
 ]}
 
 
@@ -594,34 +616,34 @@ Like @scheme[assoc], but finds an element using the predicate
 @; ----------------------------------------
 @section{Pair Accessor Shorthands}
 
-@defc_r[a a]
-@defc_r[a d]
-@defc_r[d a]
-@defc_r[d d]
-@defc_r[a a a]
-@defc_r[a a d]
-@defc_r[a d a]
-@defc_r[a d d]
-@defc_r[d a a]
-@defc_r[d a d]
-@defc_r[d d a]
-@defc_r[d d d]
-@defc_r[a a a a]
-@defc_r[a a a d]
-@defc_r[a a d a]
-@defc_r[a a d d]
-@defc_r[a d a a]
-@defc_r[a d a d]
-@defc_r[a d d a]
-@defc_r[a d d d]
-@defc_r[d a a a]
-@defc_r[d a a d]
-@defc_r[d a d a]
-@defc_r[d a d d]
-@defc_r[d d a a]
-@defc_r[d d a d]
-@defc_r[d d d a]
-@defc_r[d d d d]
+@defc_r[a a '((1 2) 3 4)]
+@defc_r[a d '((1 2) 3 4)]
+@defc_r[d a '((7 6 5 4 3 2 1) 8 9)]
+@defc_r[d d '(2 1)]
+@defc_r[a a a '(((6 5 4 3 2 1) 7) 8 9)]
+@defc_r[a a d '(9 (7 6 5 4 3 2 1) 8)]
+@defc_r[a d a '((7 6 5 4 3 2 1) 8 9)]
+@defc_r[a d d '(3 2 1)]
+@defc_r[d a a '(((6 5 4 3 2 1) 7) 8 9)]
+@defc_r[d a d '(9 (7 6 5 4 3 2 1) 8)]
+@defc_r[d d a '((7 6 5 4 3 2 1) 8 9)]
+@defc_r[d d d '(3 2 1)]
+@defc_r[a a a a '((((5 4 3 2 1) 6) 7) 8 9)]
+@defc_r[a a a d '(9 ((6 5 4 3 2 1) 7) 8)]
+@defc_r[a a d a '((7 (5 4 3 2 1) 6) 8 9)]
+@defc_r[a a d d '(9 8 (6 5 4 3 2 1) 7)]
+@defc_r[a d a a '(((6 5 4 3 2 1) 7) 8 9)]
+@defc_r[a d a d '(9 (7 6 5 4 3 2 1) 8)]
+@defc_r[a d d a '((7 6 5 4 3 2 1) 8 9)]
+@defc_r[a d d d '(4 3 2 1)]
+@defc_r[d a a a '((((5 4 3 2 1) 6) 7) 8 9)]
+@defc_r[d a a d '(9 ((6 5 4 3 2 1) 7) 8)]
+@defc_r[d a d a '((7 (5 4 3 2 1) 6) 8 9)]
+@defc_r[d a d d '(9 8 (6 5 4 3 2 1) 7)]
+@defc_r[d d a a '(((6 5 4 3 2 1) 7) 8 9)]
+@defc_r[d d a d '(9 (7 6 5 4 3 2 1) 8)]
+@defc_r[d d d a '((7 6 5 4 3 2 1) 8 9)]
+@defc_r[d d d d '(4 3 2 1)]
 
 @; ----------------------------------------
 @section{Additional List Functions and Synonyms}
