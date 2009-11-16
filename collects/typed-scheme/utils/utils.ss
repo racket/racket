@@ -11,7 +11,7 @@ at least theoretically.
 	 scheme/pretty mzlib/pconvert syntax/parse)
 
 ;; to move to unstable
-(provide == debug reverse-begin)
+(provide debug reverse-begin)
 
 (provide
  ;; timing
@@ -139,14 +139,6 @@ at least theoretically.
               (last-time t)
               (printf "Timing ~a at ~a@~a~n" msg diff t)))]))
       (values (lambda _ #'(void)) (lambda _ #'(void)))))
-
-
-(define-match-expander
-  ==
-  (lambda (stx)
-    (syntax-case stx ()
-      [(_ val)
-       #'(? (lambda (x) (equal? val x)))])))
 
 ;; custom printing
 ;; this requires lots of work for two reasons:

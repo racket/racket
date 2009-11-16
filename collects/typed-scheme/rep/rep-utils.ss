@@ -2,11 +2,11 @@
 (require "../utils/utils.ss")
 
 (require mzlib/struct 
-         mzlib/plt-match
+         scheme/match
          syntax/boundmap
          "free-variance.ss"
          "interning.ss"
-	 unstable/syntax
+	 unstable/syntax unstable/match
          mzlib/etc
          scheme/contract         
          (for-syntax 

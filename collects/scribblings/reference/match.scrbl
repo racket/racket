@@ -423,7 +423,7 @@ A predicate for the exception raised by in the case of a match failure.
 @defform*[((define-match-expander id proc-expr)
            (define-match-expander id proc-expr proc-expr))]{
 
-Binds @scheme[id] to a pattern transformer.
+Binds @scheme[id] to a @deftech{match expander}.
 
 The first @scheme[proc-expr] subexpression must evaluate to a
  transformer that produces a @scheme[_pat] for @scheme[match].

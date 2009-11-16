@@ -33,7 +33,7 @@
     [i:boolean (-val (syntax-e #'i))]
     [i:identifier (-val (syntax-e #'i))]
     [i:exact-integer -Integer]
-    [i:number -Number]
+    [(~var i (3d real?)) -Number]
     [i:str -String]
     [i:char -Char]
     [i:keyword (-val (syntax-e #'i))]
