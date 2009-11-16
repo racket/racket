@@ -31,5 +31,5 @@ files:
 
  htdp/matrix-unit.ss 	  : the matrix functionality 
 
- htdp/Tests/matrix-test.ss: a textual test 
- htdp/Tests/matrix-client.ss a test with embedded images 
+ htdp/tests/matrix-test.ss: a textual test 
+ htdp/tests/matrix-client.ss a test with embedded images 

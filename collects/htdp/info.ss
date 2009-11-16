@@ -6,4 +6,4 @@
     ;; TEMPORARY DISABLE THESE FILES UNTIL FIXED
     ;; "matrix.ss" "matrix-client.ss" "matrix-invisible.ss"
     ;; "matrix-render-sig.ss" "matrix-sig.ss" "matrix-unit.ss"
-    "Test"))
+    "tests"))
