@@ -1,6 +1,6 @@
 #lang scheme/base
 (require "../../mrlib/image-core.ss"
-         "../../2htdp/private/image-more.ss"
+         "../private/image-more.ss"
          lang/posn
          scheme/math
          scheme/class
