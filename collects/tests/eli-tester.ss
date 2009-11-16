@@ -7,7 +7,7 @@
   (syntax-case stx ()
     [(_ expr)
      ;; catch syntax errors while expanding, turn them into runtime errors
-     (with-handlers ([exn? (lambda (e) #`(list 'error #,(exn-message e) #,e))])
+     (with-handlers ([exn? (lambda (e) #`(list 'error #,(exn-message e) #f))])
        (define-values (_ opaque)
          (syntax-local-expand-expression
           #'(with-handlers

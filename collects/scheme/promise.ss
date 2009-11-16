@@ -3,7 +3,7 @@
            "private/more-scheme.ss"
            "private/define.ss"
            (rename "private/define-struct.ss" define-struct define-struct*)
-           (for-syntax '#%kernel "private/stxcase-scheme.ss")
+           (for-syntax '#%kernel "private/stxcase-scheme.ss" "private/name.ss")
            '#%unsafe)
 (#%provide force promise? promise-forced? promise-running?)
 
@@ -189,14 +189,19 @@
                             (let-values ([(x) (assq (car k) kwds)])
                               (if x (cdr x) (cdr k))))
                           keywords)
-                     #f)])
+                     #f)]
+       ;; some strange bug with `syntax-local-expand-expression' makes this not
+       ;; work well with identifiers, so turn the name into a symbol to work
+       ;; around this for now
+       [(name0) (syntax-local-infer-name stx)]
+       [(name) (if (syntax? name0) (syntax-e name0) name0)])
     (syntax-case stx ()
       [_ (pair? exprs) ; throw a syntax error if anything is wrong
          (with-syntax ([(expr ...) exprs]
                        [(kwd-arg ...) kwd-args])
            (with-syntax ([proc (syntax-property
                                 (syntax/loc stx (lambda () expr ...))
-                                'inferred-name (syntax-local-name))]
+                                'inferred-name name)]
                          [make maker])
              (syntax/loc stx (make proc kwd-arg ...))))])))
 
