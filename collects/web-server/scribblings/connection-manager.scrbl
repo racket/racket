@@ -45,7 +45,7 @@ for doing this.
 @defproc[(adjust-connection-timeout! [c connection?]
                                      [t number?])
          void]{
- Calls @scheme[reset-timer!] with the timer behind @scheme[c] with @scheme[t].
+ Calls @scheme[increment-timer!] with the timer behind @scheme[c] with @scheme[t].
 }
 
 }

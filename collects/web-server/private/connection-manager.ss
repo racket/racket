@@ -59,4 +59,4 @@
 ;; adjust-connection-timeout!: connection number -> void
 ;; change the expiration time for this connection
 (define (adjust-connection-timeout! conn time)
-  (reset-timer! (connection-timer conn) time))
+  (increment-timer! (connection-timer conn) time))
