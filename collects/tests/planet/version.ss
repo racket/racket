@@ -1,6 +1,6 @@
 #lang scheme
 
-(require "planet-shared.ss")
+(require planet/private/planet-shared)
 
 (define-syntax (test stx)
   (syntax-case stx ()

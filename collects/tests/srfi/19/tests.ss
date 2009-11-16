@@ -4,7 +4,7 @@
 
   ;; Updated to SchemeUnit 2 syntax by Dave Gurnell -- 2007-09-14
 
-  (require (file "time.ss"))
+  (require srfi/19/time)
 
   (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
            (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2)))
