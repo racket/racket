@@ -1078,12 +1078,12 @@ Once you have designed a world program, add a function definition
 (define (main n)
   (big-bang ... (name n) ...))
 ))
- Then in DrScheme's Interactions area, use @scheme[launch-with-many-worlds]
+ Then in DrScheme's Interactions area, use @scheme[launch-many-worlds]
  to create several distinctively named worlds: 
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-> (launch-with-many-worlds (main "matthew") 
+> (launch-many-worlds (main "matthew") 
                            (main "kathi") 
                            (main "h3"))
 10
