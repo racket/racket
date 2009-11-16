@@ -9,8 +9,17 @@
   (for ([v (list (delay 1) (lazy 1) (delay (delay 1)) (lazy (lazy 1)))])
     (test (promise? v) => #t)))
 
+(define (test-syntax)
+  (test (delay) =error> "bad syntax"
+        (lazy)  =error> "bad syntax"
+        (delay #:foo 1 2) =error> "bad syntax"
+        (force (delay/thread #:group #f)) =error> "bad syntax"
+        (force (delay/thread #:group #f 1)) => 1
+        (force (delay/thread 1 #:group #f 2)) => 2
+        (force (delay/thread #:groupie #f 1)) =error> "bad syntax"))
+
 ;; basic delay/lazy/force tests
-(define (basic-promise-tests)
+(define (test-basic-promises)
   (define thunk1 (lambda () 1))
   (define promise1 (delay 1))
   (define ? #f)
@@ -68,7 +77,7 @@
   (t* (force (lazy  (lazy  (lazy  (force (delay (delay ?))))))))
   (t* (force (lazy  (lazy  (delay (force (lazy (delay ?)))))))))
 
-(define (basic-promise-behavior-tests)
+(define (test-basic-promise-behavior)
   (define (force+catch p) (with-handlers ([exn? values]) (force p)))
   ;; results are cached
   (let* ([c 0] [p (delay (set! c (add1 c)) c)])
@@ -97,8 +106,78 @@
           (force p)           => '(#f #t)
           (forced+running? p) => '(#t #f))))
 
+(define (test-printout)
+  (letrec ([foo (delay (set! s (format "~a" foo)) 3)] [s #f])
+    (test (format "~a" foo) => "#<promise:foo>"
+          (force foo) => 3
+          s => "#<promise:!running!foo>"
+          (format "~a" foo) => "#<promise!3>"))
+  (let ([foo (delay (values 1 2 3))])
+    (test (format "~a" foo) => "#<promise:foo>"
+          (force foo) => (values 1 2 3)
+          (format "~a" foo) => "#<promise!(values 1 2 3)>"))
+  (let ([foo (delay (error "boom"))])
+    (test (format "~a" foo) => "#<promise:foo>"
+          (force foo) => (error "boom")
+          (format "~a" foo) => "#<promise!exn!boom>"
+          (format "~s" foo) => "#<promise!exn!\"boom\">"))
+  (let ([foo (delay (raise 3))])
+    (test (format "~a" foo) => "#<promise:foo>"
+          (force foo) => (raise 3)
+          (format "~a" foo) => "#<promise!raise!3>")))
+
+(define (test-delay/name)
+  (let* ([x 1] [p (delay/name (set! x (add1 x)) x)])
+    (test (promise? p)
+          x => 1
+          (force p) => 2
+          x => 2
+          (format "~a" p) => "#<promise:p>"
+          (force p) => 3
+          x => 3)))
+
+(define (test-delay/sync)
+  (letrec ([p (delay/sync (force p))])
+    (test (force p) =error> "reentrant"))
+  (let* ([ch (make-channel)]
+         [p (delay/sync (channel-get ch) (channel-get ch) 99)])
+    (test (format "~a" p) => "#<promise:p>")
+    (thread (lambda () (force p) (channel-get ch)))
+    (channel-put ch 'x)
+    (test (format "~a" p) => "#<promise:!running!p>")
+    (channel-put ch 'x)
+    (channel-put ch 'x)
+    (test (format "~a" p) => "#<promise!99>"
+          (force p) => 99)))
+
+(define (test-delay/thread)
+  (define-syntax-rule (t delayer)
+    (begin (let* ([ch (make-channel)]
+                  [p (delayer (channel-get ch) 99)])
+             (thread (lambda () (channel-put ch 'x)))
+             (test (force p) => 99))
+           (test (force (delayer (+ 1 "2"))) =error> "expects type")))
+  (t delay/sync)
+  (t delay/idle)
+  (let* ([ch (make-channel)] [p (delay/idle #:wait-for ch 99)])
+    (test (format "~a" p) => "#<promise:p>"
+          (force p) => 99
+          (format "~a" p) => "#<promise!99>"))
+  (let* ([ch (make-channel)]
+         [p (delay/idle #:wait-for ch (channel-get ch) 99)])
+    (channel-put ch 'x)
+    (test (format "~a" p) => "#<promise:!running!p>"
+          (channel-put ch 'x)
+          (force p) => 99
+          (format "~a" p) => "#<promise!99>")))
+
 (provide promise-tests)
 (define (promise-tests)
-  (test do (test-types)
-        do (basic-promise-tests)
-        do (basic-promise-behavior-tests)))
+  (test do (test-syntax)
+        do (test-types)
+        do (test-basic-promises)
+        do (test-basic-promise-behavior)
+        do (test-printout)
+        do (test-delay/name)
+        do (test-delay/sync)
+        do (test-delay/thread)))
