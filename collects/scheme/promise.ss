@@ -68,6 +68,13 @@
       [(null? v) (values)]
       [else (error 'force "composable promise with invalid contents: ~e" v)])))
 
+(define (reify-result v)
+  (cond
+    [(pair? v) (if (null? (unsafe-cdr v)) (unsafe-car v) (apply values v))]
+    [(null? v) (values)]
+    [(reraise? v) (v)]
+    [else (error 'force "promise with invalid contents: ~e" v)]))
+
 ;; generic force for "old-style" promises -- they're still useful in
 ;; that they allow multiple values.  In general, this is slower, but has
 ;; more features.  (They could allow self loops, but this means holding
@@ -77,22 +84,16 @@
 ;; first cannot be solved.  I still didn't ever see any use for them, so
 ;; they're still forbidden.)
 (define (force/generic promise)
-  (let ([v (pref promise)])
-    (cond
-      [(procedure? v)
-       (pset! promise (make-running (object-name v)))
-       (call-with-exception-handler
-        (lambda (e) (pset! promise (make-reraise e)) e)
-        (lambda ()
-          (let ([vs (call-with-values v list)])
-            (pset! promise vs)
-            (cond [(null? vs) (values)]
-                  [(null? (unsafe-cdr vs)) (unsafe-car vs)]
-                  [else (apply values vs)]))))]
-      ;; try to make the order efficient, with common cases first
-      [(pair? v) (if (null? (unsafe-cdr v)) (unsafe-car v) (apply values v))]
-      [(null? v) (values)]
-      [else (error 'force "generic promise with invalid contents: ~e" v)])))
+  (reify-result
+   (let ([v (pref promise)])
+     (if (procedure? v)
+       (begin
+         (pset! promise (make-running (object-name v)))
+         (call-with-exception-handler
+          (lambda (e) (pset! promise (make-reraise e)) e)
+          (lambda ()
+            (let ([vs (call-with-values v list)]) (pset! promise vs) vs))))
+       v))))
 
 ;; dispatcher for composable promises, generic promises, and other values
 (define (force promise)
