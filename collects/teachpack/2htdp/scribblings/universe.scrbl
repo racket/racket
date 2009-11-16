@@ -1020,10 +1020,11 @@ optional handlers:
           #:contracts
           ([dis-expr (-> (unsyntax @tech{UniverseState}) iworld? bundle?)])]{
  tell DrScheme to invoke @scheme[dis-expr] every time a participating
- @tech{world} drops its connection to the server. The first two arguments
- are the current list of participating worlds and the state of the
- universe; the third one is the world that got disconnected. 
- }
+ @tech{world} drops its connection to the server. The first argument
+ is the current state of the universe server, while the second argument is
+ the (representation of the) world that got disconnected. The resulting
+ bundle usually includes this second argument in the third field, telling
+ drscheme not to wait for messages from this world anymore.}
 }
 
 @item{
