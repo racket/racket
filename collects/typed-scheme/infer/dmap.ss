@@ -3,8 +3,7 @@
 (require "../utils/utils.ss" 
 	 "signatures.ss" "constraint-structs.ss"
 	 (utils tc-utils)
-	 unstable/sequence
-         scheme/match)
+	 unstable/sequence unstable/hash scheme/match)
 
 (import constraints^)
 (export dmap^)

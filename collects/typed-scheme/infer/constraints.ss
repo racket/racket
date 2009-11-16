@@ -4,7 +4,7 @@
 	 (types convenience utils union subtype)
 	 (rep type-rep)
 	 (utils tc-utils)
-	 unstable/sequence
+	 unstable/sequence unstable/hash
          "signatures.ss" "constraint-structs.ss"
          scheme/match)
 

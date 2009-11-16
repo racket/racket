@@ -522,7 +522,7 @@ The following @tech{style properties} are currently recognized:
 ]}
 
 
-@defstruct[compound-paragraph ([style any/c]
+@defstruct[compound-paragraph ([style style?]
                                [blocks (listof block?)])]{
 
 A @techlink{compound paragraph} has a @tech{style} and a list of

@@ -85,6 +85,7 @@ Keep documentation and tests up to date.
 @include-section["find.scrbl"]
 @include-section["class-iop.scrbl"]
 @include-section["sequence.scrbl"]
+@include-section["hash.scrbl"]
 
 @;{--------}
 

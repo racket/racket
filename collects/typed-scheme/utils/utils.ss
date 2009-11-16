@@ -6,13 +6,12 @@ at least theoretically.
 |#
 
 (require (for-syntax scheme/base syntax/parse scheme/string)
-         scheme/contract mzlib/plt-match scheme/require-syntax scheme/provide-syntax
-         mzlib/struct scheme/unit
-	 scheme/pretty mzlib/pconvert
-	 (except-in syntax/parse id))
+         scheme/contract scheme/match scheme/require-syntax 
+	 scheme/provide-syntax mzlib/struct scheme/unit
+	 scheme/pretty mzlib/pconvert syntax/parse)
 
 ;; to move to unstable
-(provide == hash-union debug reverse-begin)
+(provide == debug reverse-begin)
 
 (provide
  ;; timing
@@ -185,17 +184,6 @@ at least theoretically.
                #'([prop:custom-write (lambda (a b c) (if (custom-printer) (printer a b c) (pseudo-printer a b c)))]) 
                #'([prop:custom-write pseudo-printer]))
          #f)]))
-
-;; map map (key val val -> val) -> map
-(define (hash-union h1 h2 f)
-  (for/fold ([h* h1])
-    ([(k v2) h2])
-    (let* ([v1 (hash-ref h1 k #f)]
-           [new-val (if v1
-                        (f k v1 v2)
-                        v2)])      
-    (hash-set h* k new-val))))
-
 
 
 ;; turn contracts on and off - off by default for performance.
