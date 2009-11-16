@@ -2358,7 +2358,7 @@ Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, long fd, char *path)
                      FILE_SHARE_READ | FILE_SHARE_WRITE,
                      NULL,
                      OPEN_EXISTING,
-                     0,
+                     FILE_FLAG_BACKUP_SEMANTICS,
                      NULL);
     if (fd == INVALID_HANDLE_VALUE) {
       errid = GetLastError();
