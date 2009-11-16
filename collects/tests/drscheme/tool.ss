@@ -7,7 +7,7 @@
            mzlib/class
            mred
            framework
-           "README")
+           "README.ss")
   
   (provide tool@)
 

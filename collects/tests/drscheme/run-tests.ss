@@ -4,7 +4,7 @@
 (require scheme/class
          scheme/gui/base 
          framework
-         "README")
+         "README.ss")
 
 (provide ask-test-suite run-test-suite)
 
