@@ -1,3 +1,5 @@
+#include "future.h"
+
 /* For non-tail calls, the native context has already
    incremented MZ_CONT_MARK_POS. Counter
    scheme_do_eval()'s increment, because this
@@ -30,8 +32,10 @@ static MZ_INLINE Scheme_Object *PRIM_APPLY_NAME_FAST(Scheme_Object *rator,
   }
   
   f = (Scheme_Primitive_Closure_Proc *)prim->prim_val;
+	LOG_PRIM_START(f);
   v = f(argc, argv, (Scheme_Object *)prim);
-  
+	LOG_PRIM_END(f);  
+
 #if PRIM_CHECK_VALUE
   if (v == SCHEME_TAIL_CALL_WAITING) {
     int i;
@@ -68,6 +72,9 @@ Scheme_Object *PRIM_APPLY_NAME(Scheme_Object *rator,
   {
     GC_CAN_IGNORE Scheme_Object *v;
     MZ_CONT_MARK_POS -= 2;
+
+		LOG_PRIM_W_NAME("_scheme_apply");
+
     v = _scheme_apply(rator, argc, argv);
     MZ_CONT_MARK_POS += 2;
     return v;
@@ -75,13 +82,17 @@ Scheme_Object *PRIM_APPLY_NAME(Scheme_Object *rator,
 #else
 # if PRIM_CHECK_VALUE
   {
+		LOG_PRIM_W_NAME("_scheme_apply_multi");
+
     GC_CAN_IGNORE Scheme_Object *v;
     MZ_CONT_MARK_POS -= 2;
     v = _scheme_apply_multi(rator, argc, argv);
     MZ_CONT_MARK_POS += 2;
     return v;
   }
-# else
+# else 
+	LOG_PRIM_W_NAME("_scheme_tail_apply");
+
   return _scheme_tail_apply(rator, argc, argv);
 # endif
 #endif

@@ -78,6 +78,10 @@ START_XFORM_SUSPEND;
 # endif
 #endif
 
+#ifdef INSTRUMENT_PRIMITIVES 
+extern int g_print_prims;
+#endif
+
 #ifdef MZ_XFORM
 END_XFORM_SUSPEND;
 #endif

@@ -261,11 +261,13 @@ error.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../incl
         $(srcdir)/../src/stypes.h  
 eval.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c \
-          $(srcdir)/schmach.h $(srcdir)/mzstkchk.h $(srcdir)/schrunst.h
+          $(srcdir)/schmach.h $(srcdir)/mzstkchk.h $(srcdir)/schrunst.h \
+				$(srcdir)/future.h
 file.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c 
 fun.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
-        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/schmap.inc
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/schmap.inc \
+				$(srcdir)/future.h
 future.@LTO@: $(srcdir)/schpriv.h $(srcdir)/future.h $(SCONFIG) $(srcdir)/../include/scheme.h \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
 hash.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
@@ -279,7 +281,8 @@ jit.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../includ
         $(srcdir)/lightning/ppc/core.h $(srcdir)/lightning/ppc/core-common.h \
         $(srcdir)/lightning/ppc/asm.h $(srcdir)/lightning/ppc/asm-common.h \
         $(srcdir)/lightning/ppc/funcs.h $(srcdir)/lightning/ppc/funcs-common.h \
-        $(srcdir)/lightning/ppc/fp.h $(srcdir)/lightning/ppc/fp-common.h
+        $(srcdir)/lightning/ppc/fp.h $(srcdir)/lightning/ppc/fp-common.h \
+				$(srcdir)/future.h
 list.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
         $(srcdir)/../src/stypes.h  
 module.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \

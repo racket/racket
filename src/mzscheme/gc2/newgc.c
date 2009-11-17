@@ -32,10 +32,24 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include "pthread.h"
 #include "platforms.h"
 #include "gc2.h"
-#include "gc2_dump.h"
+#include "gc2_dump.h" 
 
+/*
+#ifdef FUTURES_ENABLED 
+extern pthread_t g_rt_threadid;
+
+#ifdef DEBUG_FUTURES
+extern void dump_state(void);
+#endif
+#endif
+*/
+
+#if defined(FUTURES_ENABLED) || defined(INSTRUMENT_PRIMITIVES)
+#include "../src/future.h"
+#endif
 
 /* the number of tags to use for tagged objects */
 #define NUMBER_OF_TAGS 512
@@ -771,7 +785,15 @@ inline static void *allocate(const size_t request_size, const int type)
       GC_gen0_alloc_page_end    = NUM(new_mpage->addr) + GEN0_PAGE_SIZE;
     }
     else {
+			#ifdef INSTRUMENT_PRIMITIVES 
+			LOG_PRIM_START(((void*)garbage_collect));			
+			#endif
+
       garbage_collect(gc, 0);
+
+			#ifdef INSTRUMENT_PRIMITIVES 
+			LOG_PRIM_END(((void*)garbage_collect));
+			#endif
     }
     newptr = GC_gen0_alloc_page_ptr + allocate_size;
     ASSERT_VALID_OBJPTR(newptr);
@@ -3055,6 +3077,14 @@ extern double scheme_get_inexact_milliseconds(void);
 
 static void garbage_collect(NewGC *gc, int force_full)
 {
+	#ifdef FUTURES_ENABLED
+	//Sanity check for FUTURES 
+	if (g_rt_threadid != 0 && pthread_self() != g_rt_threadid)
+	{
+		printf("garbage_collect invoked on wrong thread!!!\n");
+	}	
+	#endif
+
   unsigned long old_mem_use = gc->memory_in_use;
   unsigned long old_gen0    = gc->gen0.current_size;
   int next_gc_full;

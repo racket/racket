@@ -142,7 +142,9 @@
 #include "schmach.h"
 #ifdef MACOS_STACK_LIMIT
 #include <Memory.h>
-#endif
+#endif 
+
+#include "future.h"
 
 #define EMBEDDED_DEFINES_START_ANYWHERE 0
 
@@ -7694,6 +7696,10 @@ void scheme_escape_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Obj
 
  */
 
+#ifdef INSTRUMENT_PRIMITIVES
+extern int g_print_prims;
+#endif
+
 #ifdef REGISTER_POOR_MACHINE
 # define USE_LOCAL_RUNSTACK 0
 # define DELAY_THREAD_RUNSTACK_UPDATE 0
@@ -7852,8 +7858,10 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       }
 
       f = prim->prim_val;
-      v = f(num_rands, rands, (Scheme_Object *)prim);
+			LOG_PRIM_START(f);
 
+      v = f(num_rands, rands, (Scheme_Object *)prim);
+			LOG_PRIM_END(f);
       DEBUG_CHECK_TYPE(v);
     } else if (type == scheme_closure_type) {
       Scheme_Closure_Data *data;

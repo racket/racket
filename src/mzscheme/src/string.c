@@ -1872,6 +1872,10 @@ format(int argc, Scheme_Object *argv[])
   return scheme_make_sized_utf8_string(s, len);
 }
 
+#ifdef INSTRUMENT_PRIMITIVES
+extern int g_print_prims;
+#endif
+
 static Scheme_Object *
 sch_printf(int argc, Scheme_Object *argv[])
 {

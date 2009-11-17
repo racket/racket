@@ -2,6 +2,7 @@
 #define SCHEME_FUTURES_H
 
 #ifndef UNIT_TEST
+#include "schpriv.h"
 typedef Scheme_Object*(*prim_t)(int, Scheme_Object**);
 #else
 #define Scheme_Object void
@@ -23,6 +24,11 @@ int scheme_make_prim_w_arity(prim_t func, char *name, int arg1, int arg2);
 #include <stdio.h>
 
 extern pthread_t g_rt_threadid;
+extern Scheme_Object *start_primitive_tracking(int argc, Scheme_Object *argv[]);
+extern Scheme_Object *end_primitive_tracking(int argc, Scheme_Object *argv[]);
+extern Scheme_Object *future(int argc, Scheme_Object *argv[]);
+extern Scheme_Object *touch(int argc, Scheme_Object *argv[]);
+extern Scheme_Object *num_processors(int argc, Scheme_Object *argv[]);
 extern void scheme_init_futures(Scheme_Env *env);
 extern int future_do_runtimecall(void *func, int sigtype, void *args, void *retval);
 extern void futures_init(void);
@@ -57,10 +63,16 @@ typedef struct {
 	} calldata;
 } rtcall_args_t;
 
+#define PENDING 0
+#define RUNNING 1
+#define WAITING_FOR_PRIM 2
+#define FINISHED 3
+
 typedef struct future {
 	int id;
 	pthread_t threadid;
-   	int pending;
+	int status;
+  int pending;
 	int work_completed;
 	pthread_cond_t can_continue_cv;
 
@@ -115,6 +127,41 @@ extern future_t *get_last_future(void);
 extern void clear_futures(void);
 #endif
 
+//Primitive instrumentation stuff 
+#ifdef INSTRUMENT_PRIMITIVES 
+extern int g_print_prims;
+extern void print_ms_and_us(void);
+#define LOG_PRIM_START(p) \
+	if (g_print_prims) \
+	{ \
+		printf("%p ", p); \
+		print_ms_and_us(); \
+		printf("\n"); \
+	} 
+
+#define LOG_PRIM_END(p) 
+/*
+#define LOG_PRIM_END(p) \
+	if (g_print_prims) \
+	{ \
+		print_ms_and_us(); \
+		printf("\n"); \
+	}
+*/
+
+#define LOG_PRIM_W_NAME(name) \
+	if (g_print_prims) \
+	{ \
+		printf("%s ", name); \
+		print_ms_and_us(); \
+		printf("\n"); \
+	} 
+#else
+#define LOG_PRIM_START(p) 
+#define LOG_PRIM_END(p) 
+#define LOG_PRIM_W_NAME(name) 
+#endif
+
 //Signature flags for primitive invocations
 //Here the convention is SIG_[arg1type]_[arg2type]..._[return type]
 #define SIG_VOID_VOID 1 						//void -> void
@@ -161,7 +208,7 @@ extern int rtcall_obj_int_pobj_obj(
 	Scheme_Object *a, 
 	int b, 
 	Scheme_Object **c, 
-	Scheme_Object *retval);
+	Scheme_Object **retval);
 
 
 /*

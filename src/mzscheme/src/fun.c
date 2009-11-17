@@ -2388,16 +2388,27 @@ Scheme_Object *_scheme_apply_multi_with_prompt(Scheme_Object *rator, int num_ran
   return do_apply_with_prompt(rator, num_rands, rands, 1, 0);
 }
 
+#ifdef INSTRUMENT_PRIMITIVES
+extern int g_print_prims;
+#endif
 
 Scheme_Object *
 scheme_tail_apply (Scheme_Object *rator, int num_rands, Scheme_Object **rands)
 {
+
   /* NOTE: apply_values_execute (in syntax.c) and
      tail_call_with_values_from_multiple_result (in jit.c)
      assume that this function won't allocate when 
      num_rands <= p->tail_buffer_size. */
   int i;
   Scheme_Thread *p = scheme_current_thread;
+
+	#ifdef INSTRUMENT_PRIMITIVES 
+	if (g_print_prims)
+	{
+		printf("scheme_tail_apply\n");
+	}
+	#endif
 
   p->ku.apply.tail_rator = rator;
   p->ku.apply.tail_num_rands = num_rands;

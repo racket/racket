@@ -41,9 +41,7 @@
 
 #include "schpriv.h"
 #include "schmach.h"
-#ifdef FUTURES_ENABLED
 # include "future.h"
-#endif
 #ifdef MZ_USE_DWARF_LIBUNWIND
 # include "unwind/libunwind.h"
 #endif
@@ -143,7 +141,7 @@ static void *vector_ref_code, *vector_ref_check_index_code, *vector_set_code, *v
 static void *string_ref_code, *string_ref_check_index_code, *string_set_code, *string_set_check_index_code;
 static void *bytes_ref_code, *bytes_ref_check_index_code, *bytes_set_code, *bytes_set_check_index_code;
 static void *syntax_e_code;
-static void *on_demand_jit_code;
+void *on_demand_jit_code;
 static void *on_demand_jit_arity_code;
 static void *get_stack_pointer_code;
 static void *stack_cache_pop_code;
@@ -2129,6 +2127,10 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   return ref2;
 }
 
+#ifdef INSTRUMENT_PRIMITIVES
+extern int g_print_prims;
+#endif
+
 /* Support for intercepting direct calls to primitives: */
 #ifdef FUTURES_ENABLED
 # define mz_prepare_direct_prim(n) mz_prepare(n)
@@ -2136,13 +2138,25 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
 # define mz_direct_only(p) /* skip this arg, so that total count <= 3 args */
 static Scheme_Object *noncm_prim_indirect(Scheme_Prim proc, int argc)
 {
+	Scheme_Object *ret;
+	LOG_PRIM_START(proc);
+
   RTCALL_INT_OBJARR_OBJ(proc, argc, MZ_RUNSTACK);
-  return proc(argc, MZ_RUNSTACK);
+  ret = proc(argc, MZ_RUNSTACK);
+	LOG_PRIM_END(proc);
+
+	return ret;
 }
 static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc, Scheme_Object *self)
 {
+	Scheme_Object *ret;
+	LOG_PRIM_START(proc);
+
   RTCALL_INT_POBJ_OBJ_OBJ(proc, argc, MZ_RUNSTACK, self);
-  return proc(argc, MZ_RUNSTACK, self);
+  ret = proc(argc, MZ_RUNSTACK, self);
+	
+	LOG_PRIM_END(proc);
+	return ret;
 }
 
 /* Various specific 'futurized' versions of primitives that may 
@@ -2152,13 +2166,13 @@ static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc
 static Scheme_Object *ts_scheme_apply_multi_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
 {
   /* RTCALL_OBJ_INT_POBJ_OBJ(_scheme_apply_multi_from_native, rator, argc, argv); */
-  Scheme_Object *ret;
+  Scheme_Object *retptr;
   if (rtcall_obj_int_pobj_obj(_scheme_apply_multi_from_native, 
                               rator, 
                               argc, 
                               argv, 
-                              ret)) {
-    return ret;
+                              &retptr)) {
+    return retptr;
   }
 
   return _scheme_apply_multi_from_native(rator, argc, argv);
@@ -2167,13 +2181,13 @@ static Scheme_Object *ts_scheme_apply_multi_from_native(Scheme_Object *rator, in
 static Scheme_Object *ts_scheme_apply_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
 {
   /* RTCALL_OBJ_INT_POBJ_OBJ(_scheme_apply_from_native, rator, argc, argv); */
-  Scheme_Object *ret;
+  Scheme_Object *retptr;
   if (rtcall_obj_int_pobj_obj(_scheme_apply_from_native, 
                               rator, 
                               argc, 
                               argv, 
-                              ret)) {
-    return ret;
+                              &retptr)) {
+    return retptr;
   }
   
   return _scheme_apply_from_native(rator, argc, argv);

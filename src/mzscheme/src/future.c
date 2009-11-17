@@ -3,6 +3,10 @@
 # include "schpriv.h"
 #endif
 
+#ifdef INSTRUMENT_PRIMITIVES 
+int g_print_prims = 0;
+#endif
+
 #ifdef FUTURES_ENABLED
 
 #include "future.h"
@@ -12,8 +16,12 @@
 # include "./tests/unit_test.h"
 #endif 
 
-#define THREAD_POOL_SIZE 1
+extern void *on_demand_jit_code;
+
+#define THREAD_POOL_SIZE 2
 static pthread_t g_pool_threads[THREAD_POOL_SIZE];
+static int g_num_avail_threads = 0;
+static unsigned long g_cur_cpu_mask = 1;
 
 future_t *g_future_queue = NULL;
 int g_next_futureid = 0;
@@ -33,8 +41,6 @@ static pthread_cond_t g_future_pending_cv = PTHREAD_COND_INITIALIZER;
 
 //Functions
 #ifndef UNIT_TEST
-static Scheme_Object *future(int argc, Scheme_Object *argv[]);
-static Scheme_Object *touch(int argc, Scheme_Object **argv);
 static void *worker_thread_future_loop(void *arg);
 static void *invoke_rtcall(future_t *future);
 static future_t *enqueue_future(void);
@@ -54,7 +60,7 @@ Scheme_Object *future_touch(int futureid)
     Scheme_Object *args[1] = { &futureid };
     return touch(1, args);
 }
-#endif
+#endif 
 
 void *g_funcargs[5];
 void *func_retval = NULL;
@@ -83,16 +89,20 @@ void debug_assert_context(future_t *future)
 	rtcall_context_t *context = future->context;
 	if (MZ_RUNSTACK_START != future->context->mz_runstack_start)
 	{
-		printf("MZ_RUNSTACK_START was %p, but future runstack start should be %p.\n", 
+		printf("Future %d (thread %p) reports MZ_RUNSTACK_START was %p, but future runstack start should be %p.\n", 
+			future->id, 
+			future->threadid, 
 			MZ_RUNSTACK_START, 
-			context->mz_runstack_start);
+			future->runstack_start);
 	}
 
 	if (MZ_RUNSTACK != context->mz_runstack)
 	{
-		printf("MZ_RUNSTACK was %p, but future runstack should be %p.\n", 
+		printf("Future %d (thread %p) reports MZ_RUNSTACK was %p, but future runstack should be %p.\n", 
+			future->id, 
+			future->threadid, 
 			MZ_RUNSTACK, 
-			context->mz_runstack);
+			future->runstack);
 	}
 }
 
@@ -103,7 +113,6 @@ void debug_kill_context(void)
 	free(future->context);
 	future->context = NULL;
 }
-#endif
 
 static Scheme_Object **get_thread_runstack(void)
 {
@@ -115,6 +124,50 @@ static Scheme_Object **get_thread_runstack_start(void)
 {
 	return MZ_RUNSTACK_START;
 }
+
+void dump_state(void)
+{
+	future_t *f;
+	pthread_mutex_lock(&g_future_queue_mutex);
+	printf("\n");
+	printf("FUTURES STATE:\n");
+	printf("-------------------------------------------------------------\n");
+	if (NULL == g_future_queue)
+	{
+		printf("No futures currently running.  %d thread(s) available in the thread pool.\n\n", g_num_avail_threads);
+		pthread_mutex_unlock(&g_future_queue_mutex);
+		return;
+	}
+
+	for (f = g_future_queue; f != NULL; f = f->next)
+	{
+		printf("Future %d [Thread: %p, Runstack start = %p, Runstack = %p]: ", f->id, f->threadid, f->runstack_start, f->runstack);		
+		fflush(stdout);
+		switch (f->status)
+		{
+			case PENDING: 
+				printf("Waiting to be assigned to thread\n");
+				break;
+			case RUNNING: 
+				printf("Executing JIT code\n");
+				break;
+			case WAITING_FOR_PRIM:
+				printf("Waiting for runtime primitive invocation (prim=%p)\n", (void*)f->rt_prim);
+				break;
+			case FINISHED: 
+				printf("Finished work, waiting for cleanup\n");
+				break;
+		}
+
+		fflush(stdout);
+		printf("%d thread(s) available in the thread pool.\n", g_num_avail_threads);
+		printf("\n");
+		fflush(stdout);
+	}
+
+	pthread_mutex_unlock(&g_future_queue_mutex);
+}
+#endif
 
 
 /**********************************************************************/
@@ -144,6 +197,15 @@ void scheme_init_futures(Scheme_Env *env)
 		newenv);
 
 	scheme_add_global_constant(
+		"num-processors", 
+		scheme_make_prim_w_arity(
+			num_processors, 
+			"num-processors", 
+			0, 
+			0), 
+		newenv);
+
+	scheme_add_global_constant(
 		"touch", 
 		scheme_make_prim_w_arity(
 			touch, 
@@ -151,6 +213,26 @@ void scheme_init_futures(Scheme_Env *env)
 			1, 
 			1), 
 		newenv);
+
+	#ifdef INSTRUMENT_PRIMITIVES
+	scheme_add_global_constant(
+		"start-primitive-tracking", 
+		scheme_make_prim_w_arity(
+			start_primitive_tracking, 
+			"start-primitive-tracking", 
+			0,
+			0), 
+		newenv);
+
+	scheme_add_global_constant(
+		"end-primitive-tracking", 
+		scheme_make_prim_w_arity(
+			end_primitive_tracking, 
+			"end-primitive-tracking", 
+			0,
+			0), 
+		newenv);
+	#endif
 
 	scheme_finish_primitive_module(newenv);
 	scheme_protect_primitive_provide(newenv, NULL);
@@ -164,15 +246,17 @@ void futures_init(void)
 {
 	int i;
 	pthread_t threadid;
-    g_rt_threadid = pthread_self();
+  g_rt_threadid = pthread_self();
 
-    //Create the worker thread pool.  These threads will
-    //'queue up' and wait for futures to become available    
-    for (i = 0; i < THREAD_POOL_SIZE; i++)
-    {
-        pthread_create(&threadid, NULL, worker_thread_future_loop, NULL);
-        g_pool_threads[i] = threadid;
-    }
+  //Create the worker thread pool.  These threads will
+  //'queue up' and wait for futures to become available    
+  for (i = 0; i < THREAD_POOL_SIZE - 1; i++)
+  {
+      pthread_create(&threadid, NULL, worker_thread_future_loop, NULL);
+      g_pool_threads[i] = threadid;
+  }
+
+	g_num_avail_threads = THREAD_POOL_SIZE;
 }
 
 
@@ -180,13 +264,59 @@ void futures_init(void)
 /* Primitive implementations                    					  */
 /**********************************************************************/
 
+#ifdef INSTRUMENT_PRIMITIVES
+long start_ms = 0;
+
+Scheme_Object *start_primitive_tracking(int argc, Scheme_Object *argv[])
+{
+	//Get the start time
+	struct timeval now;
+	long ms;
+  gettimeofday(&now, NULL);
+	
+	start_ms = now.tv_usec / 1000.0;
+	
+	g_print_prims = 1;
+	printf("Primitive tracking started at ");
+	print_ms_and_us();
+	printf("\n");
+	return scheme_void;
+}
+
+Scheme_Object *end_primitive_tracking(int argc, Scheme_Object *argv[])
+{
+	g_print_prims = 0;
+	printf("Primitive tracking ended at ");
+	print_ms_and_us();
+	printf("\n");
+	return scheme_void;
+}
+
+void print_ms_and_us()
+{
+  struct timeval now;
+	long ms, us;
+  gettimeofday(&now, NULL);
+
+	//ms = (now.tv_sec * 1000.0) - start_ms;
+	ms = (now.tv_usec / 1000) - start_ms;
+	us = now.tv_usec - (ms * 1000) - (start_ms * 1000);
+  printf("%ld.%ld", ms, us);
+}
+#endif
+
 Scheme_Object *future(int argc, Scheme_Object *argv[])
 {
 	START_XFORM_SKIP;
+
+		#ifdef DEBUG_FUTURES 
+		LOG_THISCALL;
+		dump_state();
+		#endif
+
     int init_runstack_size, main_runstack_size;
-    int futureid = ++g_next_futureid;
+		int futureid;
     future_t *ft;
-    Scheme_Object **old_rs, **old_rs_start;
     Scheme_Native_Closure *nc;
     Scheme_Native_Closure_Data *ncd;
     Scheme_Object *lambda = argv[0];
@@ -198,34 +328,41 @@ Scheme_Object *future(int argc, Scheme_Object *argv[])
     pthread_mutex_lock(&g_future_queue_mutex);
     ft = enqueue_future();
     pthread_cond_init(&ft->can_continue_cv, NULL);
+		futureid = ++g_next_futureid;
     ft->id = futureid;
     ft->orig_lambda = lambda;
     ft->pending = 1;
    
-    //Allocate the runstack and copy the runtime thread's
-    //runstack
-		init_runstack_size = MZ_RUNSTACK - MZ_RUNSTACK_START;
+    //Allocate a new scheme stack for the future 
+		//init_runstack_size = MZ_RUNSTACK - MZ_RUNSTACK_START;
+		init_runstack_size = 1000;
+
+		#ifdef DEBUG_FUTURES
+		printf("Allocating Scheme stack of %d bytes for future %d.\n", init_runstack_size, futureid); 
+		#endif
 
     ft->runstack_start = scheme_alloc_runstack(init_runstack_size);
     ft->runstack = ft->runstack_start + init_runstack_size;
-    //memcpy(ft->runstack_start, MZ_RUNSTACK_START, main_runstack_size);
 
-    pthread_mutex_unlock(&g_future_queue_mutex);
+    //pthread_mutex_unlock(&g_future_queue_mutex);
 
-    //JIT compile the code
+    //JIT compile the code if not already jitted
     //Temporarily repoint MZ_RUNSTACK
     //to the worker thread's runstack -
     //in case the JIT compiler uses the stack address
     //when generating code
-    //old_rs = MZ_RUNSTACK;
-    //old_rs_start = MZ_RUNSTACK_START;
-    //MZ_RUNSTACK = ft->runstack;
-    //MZ_RUNSTACK_START = ft->runstack_start;
-    scheme_on_demand_generate_lambda(nc, 0, NULL);
-    //MZ_RUNSTACK = old_rs;
-    //MZ_RUNSTACK_START = old_rs_start;
+		if (ncd->code == on_demand_jit_code)
+		{
+			printf("JIT compiling code.\n");
+			scheme_on_demand_generate_lambda(nc, 0, NULL);
+			printf("Code pointer is now %p, and on_demand_jit_code is %p.\n", ncd->code, on_demand_jit_code);
+		}
+		else
+		{
+			printf("Code pointer was %p, and on_demand_jit_code was %p.  Code is already JIT compiled.\n", ncd->code, on_demand_jit_code);
+		}
 
-		pthread_mutex_lock(&g_future_queue_mutex);
+		//pthread_mutex_lock(&g_future_queue_mutex);
 		ft->code = (void*)ncd->code;
 		pthread_mutex_unlock(&g_future_queue_mutex);
 
@@ -239,15 +376,26 @@ Scheme_Object *future(int argc, Scheme_Object *argv[])
 }
 
 
+Scheme_Object *num_processors(int argc, Scheme_Object *argv[])
+{
+	return scheme_make_integer(THREAD_POOL_SIZE);
+}
+
+
 Scheme_Object *touch(int argc, Scheme_Object *argv[])
 {
 	START_XFORM_SKIP;
     Scheme_Object *retval = NULL;
     void *rtcall_retval = NULL;
-	future_t *ft;
-	int futureid;
+		future_t *ft;
+		int futureid;
 
-	futureid = SCHEME_INT_VAL(argv[0]);
+		futureid = SCHEME_INT_VAL(argv[0]);
+
+		#ifdef DEBUG_FUTURES 
+		LOG("touch (future %d)", futureid);	
+		dump_state();
+		#endif
 
     pthread_mutex_lock(&g_future_queue_mutex);
     ft = get_future(futureid);
@@ -280,6 +428,8 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
                 free(ft);
             }
 
+						//Increment the number of available pool threads
+						g_num_avail_threads++;	
             pthread_mutex_unlock(&g_future_queue_mutex);
         }
         else if (ft->rt_prim != NULL)
@@ -288,7 +438,9 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
             //Release the lock so other threads can manipulate the queue
             //while the runtime call executes
             pthread_mutex_unlock(&g_future_queue_mutex);
+						LOG("Invoking primitive %p on behalf of future %d...", ft->rt_prim, ft->id);
             rtcall_retval = invoke_rtcall(ft);
+						LOG("done.\n");
             pthread_mutex_lock(&g_future_queue_mutex);
 
             ft->rt_prim_retval = rtcall_retval;
@@ -300,6 +452,10 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
             //can continue running machine code
             pthread_cond_signal(&ft->can_continue_cv);
             pthread_mutex_unlock(&g_future_queue_mutex);
+
+						#ifdef DEBUG_FUTURES 
+						dump_state();
+						#endif
 
             goto wait_for_rtcall_or_completion;
         }
@@ -323,26 +479,42 @@ void *worker_thread_future_loop(void *arg)
 	Scheme_Object *v;
 	Scheme_Object* (*jitcode)(Scheme_Object*, int, Scheme_Object**);
 
+	//Set processor affinity
+	pthread_mutex_lock(&g_future_queue_mutex);
+	if (pthread_setaffinity_np(pthread_self(), sizeof(g_cur_cpu_mask), &g_cur_cpu_mask))
+	{
+		printf(
+			"Could not set CPU affinity (%lu) for thread %p!\n", 
+			++g_cur_cpu_mask, 
+			pthread_self());
+	}
+
+	pthread_mutex_unlock(&g_future_queue_mutex);
+
     wait_for_work:
-        LOG("Waiting for new future work...");
+        //LOG("Waiting for new future work...");
         pthread_mutex_lock(&g_future_pending_mutex);
         pthread_cond_wait(&g_future_pending_cv, &g_future_pending_mutex);
 
-        LOG("Got a signal that a future is pending...");
+        //LOG("Got a signal that a future is pending...");
         
         //Work is available for this thread
         pthread_mutex_lock(&g_future_queue_mutex);
         future_t *ft = get_pending_future();
         ft->pending = 0;
+				ft->status = RUNNING;
         ft->threadid = pthread_self();
 
-		//Initialize the runstack for this thread 
-		//MZ_RUNSTACK AND MZ_RUNSTACK_START should be thread-local
-		MZ_RUNSTACK = ft->runstack;
-		MZ_RUNSTACK_START = ft->runstack_start;		
+				//Decrement the number of available pool threads 
+				g_num_avail_threads--;
 
-		//Set up the JIT compiler for this thread 
-		scheme_jit_fill_threadlocal_table();
+				//Initialize the runstack for this thread 
+				//MZ_RUNSTACK AND MZ_RUNSTACK_START should be thread-local
+				MZ_RUNSTACK = ft->runstack;
+				MZ_RUNSTACK_START = ft->runstack_start;		
+
+				//Set up the JIT compiler for this thread 
+				scheme_jit_fill_threadlocal_table();
         
         jitcode = (Scheme_Object* (*)(Scheme_Object*, int, Scheme_Object**))(ft->code);
         pthread_mutex_unlock(&g_future_queue_mutex);
@@ -355,12 +527,17 @@ void *worker_thread_future_loop(void *arg)
         //From this thread's perspective, this call will never return
         //until all the work to be done in the future has been completed,
         //including runtime calls.
+				LOG("Running JIT code at %p...\n", ft->code);
         v = jitcode(ft->orig_lambda, 0, NULL);
+				LOG("Finished running JIT code at %p.\n", ft->code);
 
         //Set the return val in the descriptor
         pthread_mutex_lock(&g_future_queue_mutex);
         ft->work_completed = 1;
         ft->retval = v;
+
+				//Update the status 
+				ft->status = FINISHED;
         pthread_mutex_unlock(&g_future_queue_mutex);
 
         goto wait_for_work;
@@ -400,14 +577,17 @@ int future_do_runtimecall(
     //pthread_mutex_lock(&future->mutex);
     pthread_mutex_lock(&g_future_queue_mutex);
 
-	//Update the stack pointer for this future 
-	//to be in sync with MZ_RUNSTACK - the runtime thread 
-	//will use this value to temporarily swap its stack 
-	//for the worker thread's
-	future->runstack = MZ_RUNSTACK;
+		//Update the stack pointer for this future 
+		//to be in sync with MZ_RUNSTACK - the runtime thread 
+		//will use this value to temporarily swap its stack 
+		//for the worker thread's
+		future->runstack = MZ_RUNSTACK;
     future->rt_prim = func;
     future->rt_prim_sigtype = sigtype;
     future->rt_prim_args = args;
+
+		//Update the future's status to waiting 
+		future->status = WAITING_FOR_PRIM;
 
     //Wait for the signal that the RT call is finished
     pthread_cond_wait(&future->can_continue_cv, &g_future_queue_mutex);
@@ -441,19 +621,20 @@ int rtcall_void_void(void (*f)())
 	LOG_RTCALL_VOID_VOID(f);
 
 	#ifdef DEBUG_FUTURES
-	debug_save_context();
+	//debug_save_context();
 	#endif
 
 	data.prim = f;
 
 	future = get_my_future();
 	future->rt_prim_sigtype = SIG_VOID_VOID;
+	future->rt_prim = (void*)f;
 	future->calldata.void_void = data;
 
 	future_do_runtimecall((void*)f, SIG_VOID_VOID, NULL, NULL);
 
 	#ifdef DEBUG_FUTURES
-	debug_kill_context();
+	//debug_kill_context();
 	#endif
 
 	return 1;
@@ -466,7 +647,7 @@ int rtcall_obj_int_pobj_obj(
 	Scheme_Object *a, 
 	int b, 
 	Scheme_Object **c, 
-	Scheme_Object *retval)
+	Scheme_Object **retval)
 {
 	START_XFORM_SKIP;
 	future_t *future;
@@ -480,7 +661,7 @@ int rtcall_obj_int_pobj_obj(
 	LOG_RTCALL_OBJ_INT_POBJ_OBJ(f, a, b, c);
 
 	#ifdef DEBUG_FUTURES
-	debug_save_context();
+	//debug_save_context();
 	#endif
 
 	data.prim = f;
@@ -490,13 +671,14 @@ int rtcall_obj_int_pobj_obj(
 	
 	future = get_my_future();
 	future->rt_prim_sigtype = SIG_OBJ_INT_POBJ_OBJ;
+	future->rt_prim = (void*)f;
 	future->calldata.obj_int_pobj_obj = data;
 
 	future_do_runtimecall((void*)f, SIG_OBJ_INT_POBJ_OBJ, NULL, NULL);
-	*retval = *(future->calldata.obj_int_pobj_obj.retval);
+	*retval = future->calldata.obj_int_pobj_obj.retval;
 
 	#ifdef DEBUG_FUTURES
-	debug_kill_context();
+	//debug_kill_context();
 	#endif
 
 	return 1;
@@ -519,7 +701,7 @@ void *invoke_rtcall(future_t *future)
 	MZ_RUNSTACK = future->runstack;
 	MZ_RUNSTACK_START = future->runstack_start;
 	#ifdef DEBUG_FUTURES
-	debug_assert_context(future);
+	//debug_assert_context(future);
 	g_rtcall_count++;
 	#endif
 
@@ -708,46 +890,47 @@ future_t *get_my_future(void)
 future_t *get_future_by_threadid(pthread_t threadid)
 {
 	START_XFORM_SKIP;
-    future_t *ft = g_future_queue;
-    if (NULL == ft)
+  future_t *ft = g_future_queue;
+  if (NULL == ft)
+	{
+			printf("Couldn't find a future with thread ID %p!\n", threadid);
+      return NULL;
+	}
+	
+	while (1)
+	{
+		if (ft->threadid == threadid)
 		{
-        return ft;
-		}
-    
-    while (ft->threadid != threadid)
-		{
-        ft = ft->next;
-		}
-
-    //Sanity check
-    if (ft->threadid != threadid)
-		{
-        return NULL;
+			return ft;
 		}
 
-    return ft;
-		END_XFORM_SKIP;
+		ft = ft->next;
+	}
+
+	printf("Couldn't find a future with thread ID %p!\n", threadid);
+	return NULL;
+	END_XFORM_SKIP;
 }
 
 
 future_t *get_future(int futureid)
 {
 	START_XFORM_SKIP;
-    future_t *ft = g_future_queue;
-    if (NULL == ft)
+  future_t *ft = g_future_queue;
+  if (NULL == ft)
 	{
-        return ft;
+    return ft;
 	}
     
-    while (ft->id != futureid)
+  while (ft->id != futureid)
 	{
-        ft = ft->next;
+    ft = ft->next;
 	}
 
     //Sanity check
-    if (ft->id != futureid)
+  if (ft->id != futureid)
 	{
-        return NULL;
+    return NULL;
 	}
 
     return ft;
