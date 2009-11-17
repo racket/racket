@@ -1,6 +1,7 @@
 #lang scheme/base
 (require scheme/contract
-         scheme/match)
+         scheme/match
+         scheme/promise)
 (require "util.ss"
          web-server/http)
 (provide/contract
@@ -31,21 +32,13 @@
 ;; 1. Can we determine the mime type based on file contents?
 ;; 2. Assuming that 7-bit ASCII is correct for mime-type
 (define (make-path->mime-type a-path)
-  ;; it would be nice to just use delay/force -- but this can be called by
-  ;; multiple threads at the same time, causing a "reentrant promise" error.
-  (define sema (make-semaphore 1))
-  (define MIME-TYPE-TABLE #f)
+  (define MIME-TYPE-TABLE
+    (delay/sync
+     (read-mime-types a-path)))
   (lambda (path)
     (match (path->bytes path)
       [(regexp #rx#".*\\.([^\\.]*$)" (list _ sffx))
-       (hash-ref (or MIME-TYPE-TABLE
-                     (dynamic-wind
-                       (lambda () (semaphore-wait sema))
-                       (lambda () (or MIME-TYPE-TABLE ; maybe already read
-                                      (begin (set! MIME-TYPE-TABLE
-                                                   (read-mime-types a-path))
-                                             MIME-TYPE-TABLE)))
-                       (lambda () (semaphore-post sema))))
+       (hash-ref (force MIME-TYPE-TABLE)
                  (lowercase-symbol! sffx)
                  TEXT/HTML-MIME-TYPE)]
       [_ TEXT/HTML-MIME-TYPE])))
