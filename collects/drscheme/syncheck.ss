@@ -22,6 +22,7 @@ If the namespace does not, they are colored the unbound color.
          scheme/contract
          scheme/class
          scheme/list
+         scheme/promise
          drscheme/tool
          syntax/toplevel
          syntax/boundmap
@@ -97,25 +98,8 @@ If the namespace does not, they are colored the unbound color.
     (define (printf . args) (apply fprintf o args))
     
     
-    (define xref 'not-yet-loaded-xref)
-    (define (get-xref) 
-      (cond
-        [(equal? xref 'failed-to-load) #f]
-        [else
-         (when (symbol? xref)
-           (error 'get-xref "xref has not yet been loaded"))
-         xref]))
-    (define (force-xref th) 
-      (cond
-        [(equal? xref 'failed-to-load)
-         (void)]
-        [(symbol? xref)
-         (th)
-         (with-handlers ((exn? (λ (exn) (set! xref 'failed-to-load))))
-           (set! xref (load-collections-xref)))]
-        [else
-         (void)]))
-        
+    (define xref (delay/idle (load-collections-xref)))
+    (define (get-xref) (force xref))
     
     
     ;;;  ;;; ;;; ;;;;; 
@@ -1260,7 +1244,6 @@ If the namespace does not, they are colored the unbound color.
                                       definitions-text
                                       (λ ()
                                         (open-status-line 'drscheme:check-syntax)
-                                        (force-xref (λ () (update-status-line 'drscheme:check-syntax status-loading-docs-index)))
                                         (update-status-line 'drscheme:check-syntax status-coloring-program)
                                         (parameterize ([currently-processing-definitions-text definitions-text])
                                           (expanded-expression user-namespace user-directory sexp jump-to-id))
