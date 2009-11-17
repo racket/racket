@@ -68,7 +68,7 @@ MZ_EXTERN Scheme_Object *scheme_current_break_cell();
 /*========================================================================*/
 
 #ifndef LINK_EXTENSIONS_BY_TABLE
-# ifndef MZ_USE_PLACES
+# if !defined(MZ_USE_PLACES) || !defined(FUTURES_ENABLED)
 MZ_EXTERN THREAD_LOCAL Scheme_Thread *scheme_current_thread;
 # endif
 MZ_EXTERN THREAD_LOCAL volatile int scheme_fuel_counter;

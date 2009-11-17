@@ -478,7 +478,7 @@ extern int rtcall_obj_int_pobj_obj(
 
 #endif 
 
-#ifdef LOG_ARGS 
+#if 1 
 #define LOG(a...) do { fprintf(stderr, "%x:%s:%s:%d ", (unsigned) pthread_self(), __FILE__, __FUNCTION__, __LINE__); fprintf(stderr, a); fprintf(stderr, "\n"); fflush(stdout); } while(0)
 #define LOG_THISCALL LOG(__FUNCTION__)
 

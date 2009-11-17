@@ -2201,6 +2201,21 @@ static Scheme_Object *ts_scheme_apply_from_native(Scheme_Object *rator, int argc
   return _scheme_apply_from_native(rator, argc, argv);
 }
 
+static Scheme_Object *ts_scheme_tail_apply_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
+{
+  /* RTCALL_OBJ_INT_POBJ_OBJ(_scheme_tail_apply_from_native, rator, argc, argv); */
+  Scheme_Object *retptr;
+  if (rtcall_obj_int_pobj_obj(_scheme_tail_apply_from_native, 
+                              rator, 
+                              argc, 
+                              argv, 
+                              &retptr)) {
+    return retptr;
+  }
+  
+  return _scheme_tail_apply_from_native(rator, argc, argv);
+}
+
 static void ts_on_demand(void)
 {
   /* RTCALL_VOID_VOID(on_demand); */
@@ -2400,7 +2415,7 @@ static int generate_finish_tail_call(mz_jit_state *jitter, int direct_native)
   if (direct_native > 1) { /* => some_args_already_in_place */
     (void)mz_finish(_scheme_tail_apply_from_native_fixup_args);
   } else {
-    (void)mz_finish(_scheme_tail_apply_from_native);
+    (void)mz_finish(ts_scheme_tail_apply_from_native);
   }
   CHECK_LIMIT();
   /* Return: */
