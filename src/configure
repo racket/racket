@@ -10724,7 +10724,7 @@ fi
 ############### futures ###################
 
 if test "${enable_futures}" = "yes" ; then
-  PREFLAGS="$PREFLAGS -DFUTURES_ENABLED"
+  PREFLAGS="$PREFLAGS -DFUTURES_ENABLED -DUSE_PTHREAD_INSTEAD_OF_ITIMER"
   LDFLAGS="$LDFLAGS -pthread"
 fi
 
