@@ -19,7 +19,7 @@
   scheme_extension_table->scheme_inherit_cells = scheme_inherit_cells;
   scheme_extension_table->scheme_current_break_cell = scheme_current_break_cell;
 #ifndef LINK_EXTENSIONS_BY_TABLE
-# ifndef MZ_USE_PLACES
+# if !defined(MZ_USE_PLACES) || !defined(FUTURES_ENABLED)
   scheme_extension_table->scheme_current_thread = scheme_current_thread;
 # endif
   scheme_extension_table->scheme_fuel_counter = scheme_fuel_counter;

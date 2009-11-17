@@ -2232,6 +2232,7 @@ static void ts_on_demand(void)
 # define mz_direct_only(p) p
 # define ts_scheme_apply_multi_from_native _scheme_apply_multi_from_native
 # define ts_scheme_apply_from_native _scheme_apply_from_native
+# define ts_scheme_tail_apply_from_native _scheme_tail_apply_from_native
 # define ts_on_demand on_demand
 #endif
 

@@ -2222,7 +2222,7 @@ START future;
 
 future {
  mark:
-  future_t *c = (future_t *)p;
+  future_t *f = (future_t *)p;
   gcMARK(f->runstack);
   gcMARK(f->runstack_start);
   gcMARK(f->orig_thread);

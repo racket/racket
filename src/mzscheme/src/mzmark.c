@@ -5419,7 +5419,7 @@ static int future_SIZE(void *p) {
 }
 
 static int future_MARK(void *p) {
-  future_t *c = (future_t *)p;
+  future_t *f = (future_t *)p;
   gcMARK(f->runstack);
   gcMARK(f->runstack_start);
   gcMARK(f->orig_thread);
@@ -5433,7 +5433,7 @@ static int future_MARK(void *p) {
 }
 
 static int future_FIXUP(void *p) {
-  future_t *c = (future_t *)p;
+  future_t *f = (future_t *)p;
   gcFIXUP(f->runstack);
   gcFIXUP(f->runstack_start);
   gcFIXUP(f->orig_thread);

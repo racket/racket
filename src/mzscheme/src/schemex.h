@@ -54,7 +54,7 @@ Scheme_Object *(*scheme_current_break_cell)();
 /*                                threads                                 */
 /*========================================================================*/
 #ifndef LINK_EXTENSIONS_BY_TABLE
-# ifndef MZ_USE_PLACES
+# if !defined(MZ_USE_PLACES) || !defined(FUTURES_ENABLED)
 Scheme_Thread *scheme_current_thread;
 # endif
 volatile int scheme_fuel_counter;
