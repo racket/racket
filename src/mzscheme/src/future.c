@@ -367,7 +367,7 @@ Scheme_Object *future(int argc, Scheme_Object *argv[])
     pthread_cond_signal(&g_future_pending_cv);
     pthread_mutex_unlock(&g_future_queue_mutex);
 
-    return scheme_make_integer(futureid);
+		return (Scheme_Object*)ft;
     END_XFORM_SKIP;
 }
 
@@ -399,28 +399,13 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
     Scheme_Object *retval = NULL;
     void *rtcall_retval = NULL;
 		future_t *ft;
-		int futureid;
 
-		futureid = SCHEME_INT_VAL(argv[0]);
+		ft = (future_t*)argv[0];
 
 		#ifdef DEBUG_FUTURES 
 		LOG("touch (future %d)", futureid);	
 		dump_state();
-		
-		if (SCHEME_INTP(argv[0]))
-		{
-			printf("Future id passed to touch was %d, is a Scheme integer.\n", futureid);		
-		}
-		else
-		{
-			printf("Arg passed to touch was a %d.\n", SCHEME_TYPE(argv[0]));
-		}
-		fflush(stdout);
 		#endif
-
-    pthread_mutex_lock(&g_future_queue_mutex);
-    ft = get_future(futureid);
-    pthread_mutex_unlock(&g_future_queue_mutex);
 
     //Spin waiting for primitive calls or a return value from
     //the worker thread
@@ -888,6 +873,7 @@ future_t *enqueue_future(void)
     future_t *last = get_last_future();
     future_t *ft = (future_t*)malloc(sizeof(future_t));
     memset(ft, 0, sizeof(future_t));
+		ft->so.type = scheme_future_type;
     if (NULL == last)
     {
         g_future_queue = ft;

@@ -5422,9 +5422,9 @@ static int future_MARK(void *p) {
   future_t *f = (future_t *)p;
   gcMARK(f->runstack);
   gcMARK(f->runstack_start);
-  gcMARK(f->orig_thread);
+  gcMARK(f->orig_lambda);
   gcMARK(f->rt_prim_args);
-  gcMARK(f->rt_prim_result);
+  gcMARK(f->rt_prim_retval);
   gcMARK(f->retval);
   gcMARK(f->prev);
   gcMARK(f->next);
@@ -5436,9 +5436,9 @@ static int future_FIXUP(void *p) {
   future_t *f = (future_t *)p;
   gcFIXUP(f->runstack);
   gcFIXUP(f->runstack_start);
-  gcFIXUP(f->orig_thread);
+  gcFIXUP(f->orig_lambda);
   gcFIXUP(f->rt_prim_args);
-  gcFIXUP(f->rt_prim_result);
+  gcFIXUP(f->rt_prim_retval);
   gcFIXUP(f->retval);
   gcFIXUP(f->prev);
   gcFIXUP(f->next);

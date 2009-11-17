@@ -2,7 +2,7 @@
 #ifndef __mzscheme_gc_2__
 #define __mzscheme_gc_2__
 
-#ifdef MZ_USE_PLACES
+#if defined(MZ_USE_PLACES) || defined(FUTURES_ENABLED)
 # if _MSC_VER
 #  define THREAD_LOCAL __declspec(thread)
 # else
