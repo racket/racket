@@ -10234,13 +10234,15 @@ void scheme_jit_fill_threadlocal_table() {
   thread_local_pointers[tl_GC_gen0_alloc_page_ptr] = (&GC_gen0_alloc_page_ptr);
   thread_local_pointers[tl_retry_alloc_r1] = (&retry_alloc_r1);
   thread_local_pointers[tl_save_fp] = (&save_fp);
-#else
-# ifdef INLINE_FP_OPS
+# else
+#  ifdef INLINE_FP_OPS
   thread_local_pointers[tl_double_result] = (&double_result);
 #  endif
 # endif
   thread_local_pointers[tl_fixup_runstack_base] = (&fixup_runstack_base);
   thread_local_pointers[tl_fixup_already_in_place] = (&fixup_already_in_place);
+  thread_local_pointers[tl_scheme_fuel_counter] = (&scheme_fuel_counter);
+  thread_local_pointers[tl_scheme_jit_stack_boundary] = (&scheme_jit_stack_boundary);
 #endif
 }
 
