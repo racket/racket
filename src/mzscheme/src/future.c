@@ -433,6 +433,10 @@ Scheme_Object *future(int argc, Scheme_Object *argv[])
     Scheme_Native_Closure *nc;
     Scheme_Native_Closure_Data *ncd;
     Scheme_Object *lambda = argv[0];
+
+		//Input validation
+		scheme_check_proc_arity("future", 0, 0, argc, argv);
+
     nc = (Scheme_Native_Closure*)lambda;
     ncd = nc->code;
 
@@ -510,6 +514,11 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
     Scheme_Object *retval = NULL;
     void *rtcall_retval = NULL;
 		future_t *ft;
+
+		if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_future_type))
+		{
+			scheme_wrong_type("touch", "future", 0, argc, argv);
+		}
 
 		ft = (future_t*)argv[0];
 
