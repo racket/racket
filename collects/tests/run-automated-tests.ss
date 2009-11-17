@@ -31,9 +31,12 @@
 ;;   special flag that means that errors raised by the test suite are
 ;;   ignored, and should only be used by the mzscheme tests.)
 (define tests
-  '([no-handler load "mzscheme/quiet.ss" (lib "scheme/init")]
+  `([no-handler load "mzscheme/quiet.ss" (lib "scheme/init")]
     ;; [require "planet/lang.ss"]
-    [require "typed-scheme/run.ss"]
+    ;; typed scheme tests use too much memory for the cgc
+    ,@(if (eq? 'cgc (system-type 'gc))
+	  '()
+	  '([require "typed-scheme/run.ss"]))
     [require "match/plt-match-tests.ss"]
     ;; [require "stepper/automatic-tests.ss" (lib "scheme/base")]
     [require "lazy/main.ss"]
