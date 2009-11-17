@@ -262,7 +262,7 @@ void scheme_jit_fill_threadlocal_table();
 /* If JIT_THREAD_LOCAL is defined, then access to global variables
    goes through a thread_local_pointers table. Call
    scheme_jit_fill_threadlocal_table() to fill the table in a new
-   OS-level thread. Use mz_tl_ldii_p(), etc., with `tl_MZ_RUNSTACK',
+   OS-level thread. Use mz_tl_ldi_p(), etc., with `tl_MZ_RUNSTACK',
    etc., to access variables that can be thread local. (JIT-generated
    code accesses only a handful, so we can just enumerate them.)
 
@@ -286,7 +286,9 @@ void scheme_jit_fill_threadlocal_table();
 # define tl_fixup_already_in_place         9
 # define tl_double_result                  10
 # define tl_save_fp                        11
-# define NUM_tl_VARS                       12
+# define tl_scheme_fuel_counter            12
+# define tl_scheme_jit_stack_boundary      13
+# define NUM_tl_VARS                       14
 
 static THREAD_LOCAL void *thread_local_pointers[NUM_tl_VARS];
 
@@ -314,15 +316,19 @@ END_XFORM_SKIP;
 
 # define mz_tl_sti_p(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), jit_str_p(mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
 # define mz_tl_sti_l(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), jit_str_l(mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
+# define mz_tl_sti_i(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), jit_str_i(mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
 # define mz_tl_ldi_p(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_p(reg, reg))
 # define mz_tl_ldi_l(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_l(reg, reg))
+# define mz_tl_ldi_i(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_i(reg, reg))
 # define mz_tl_sti_d_fppop(addr, reg, tmp_reg) (mz_tl_addr(tmp_reg, addr), jit_str_d_fppop(tmp_reg, reg))
 # define mz_tl_ldi_d_fppush(reg, addr, tmp_reg) (mz_tl_addr(tmp_reg, addr), jit_ldr_d_fppush(reg, tmp_reg))
 #else
 # define mz_tl_sti_p(addr, reg, tmp_reg) jit_sti_p(addr, reg)
 # define mz_tl_sti_l(addr, reg, tmp_reg) jit_sti_l(addr, reg)
+# define mz_tl_sti_i(addr, reg, tmp_reg) jit_sti_i(addr, reg)
 # define mz_tl_ldi_p(reg, addr) jit_ldi_p(reg, addr)
 # define mz_tl_ldi_l(reg, addr) jit_ldi_l(reg, addr)
+# define mz_tl_ldi_i(reg, addr) jit_ldi_i(reg, addr)
 # define mz_tl_sti_d_fppop(addr, reg, tmp_reg) jit_sti_d_fppop(addr, reg)
 # define mz_tl_ldi_d_fppush(reg, addr, tmp_reg) jit_ldi_d_fppush(reg, addr)
 # define tl_MZ_RUNSTACK (&MZ_RUNSTACK)
@@ -337,6 +343,8 @@ END_XFORM_SKIP;
 # define tl_fixup_already_in_place (&fixup_already_in_place)
 # define tl_double_result (&double_result)
 # define tl_save_fp (&save_fp)
+# define tl_scheme_fuel_counter (&scheme_fuel_counter)
+# define tl_scheme_jit_stack_boundary (&scheme_jit_stack_boundary)
 #endif
 
 typedef struct {
@@ -2274,12 +2282,11 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
      At this point, V1 = closure and R0 = code. */
 
   /* Check for thread swap: */
-  (void)jit_movi_p(JIT_R1, &scheme_fuel_counter);
-  jit_ldr_i(JIT_R2, JIT_R1);
+  (void)mz_tl_ldi_i(JIT_R2, tl_scheme_fuel_counter);
   ref5 = jit_blei_i(jit_forward(), JIT_R2, 0);
 #ifndef FUEL_AUTODECEREMENTS
   jit_subi_p(JIT_R2, JIT_R2, 0x1);
-  jit_str_i(JIT_R1, JIT_R2);
+  (void)mz_tl_sti_i(tl_scheme_fuel_counter, JIT_R2);
 #endif
   CHECK_LIMIT();
 
@@ -2576,18 +2583,16 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   CHECK_LIMIT();
 
   /* Before inlined native, check stack depth: */
-  (void)jit_movi_p(JIT_R1, &scheme_jit_stack_boundary); /* assumes USE_STACK_BOUNDARY_VAR */
-  jit_ldr_l(JIT_R1, JIT_R1);
+  (void)mz_tl_ldi_i(JIT_R1, tl_scheme_jit_stack_boundary); /* assumes USE_STACK_BOUNDARY_VAR */
   ref9 = jit_bltr_ul(jit_forward(), JIT_STACK, JIT_R1); /* assumes down-growing stack */
   CHECK_LIMIT();
 
 #ifndef FUEL_AUTODECEREMENTS
   /* Finally, check for thread swap: */
-  (void)jit_movi_p(JIT_R1, &scheme_fuel_counter);
-  jit_ldr_i(JIT_R2, JIT_R1);
+  (void)mz_tl_ldi_i(JIT_R2, tl_scheme_fuel_counter);
   ref11 = jit_blei_i(jit_forward(), JIT_R2, 0);
   jit_subi_p(JIT_R2, JIT_R2, 0x1);
-  jit_str_i(JIT_R1, JIT_R2);
+  (void)mz_tl_sti_i(tl_scheme_fuel_counter, JIT_R2);
 #endif
 
   /* Fast inlined-native jump ok (proc will check argc, if necessary) */
@@ -2836,12 +2841,11 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
   __START_TINY_OR_SHORT_JUMPS__(jmp_tiny, jmp_short);
 
   /* Check for thread swap: */
-  (void)jit_movi_p(JIT_R1, &scheme_fuel_counter);
-  jit_ldr_i(JIT_R2, JIT_R1);
+  (void)mz_tl_ldi_i(JIT_R2, tl_scheme_fuel_counter);
   refslow = jit_blei_i(jit_forward(), JIT_R2, 0);
 #ifndef FUEL_AUTODECEREMENTS
   jit_subi_p(JIT_R2, JIT_R2, 0x1);
-  jit_str_i(JIT_R1, JIT_R2);
+  (void)mz_tl_sti_i(tl_scheme_fuel_counter, JIT_R2);
 #endif
 
   __END_TINY_OR_SHORT_JUMPS__(jmp_tiny, jmp_short);

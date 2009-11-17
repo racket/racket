@@ -944,7 +944,13 @@ void *scheme_malloc_gcable_code(long size)
         VirtualProtect((void *)page, length, PAGE_EXECUTE_READWRITE, &old);
       }
 # else
-      mprotect ((void *) page, length, PROT_READ | PROT_WRITE | PROT_EXEC);
+      {
+        int r;
+        r = mprotect ((void *) page, length, PROT_READ | PROT_WRITE | PROT_EXEC);
+        if (r == -1) {
+          scheme_log_abort("mprotect for generate-code page failed; aborting");
+        }
+      }
 # endif
 
       /* See if we can extend the previously mprotect'ed memory area towards
