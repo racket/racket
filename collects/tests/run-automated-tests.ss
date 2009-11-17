@@ -31,19 +31,16 @@
 ;;   special flag that means that errors raised by the test suite are
 ;;   ignored, and should only be used by the mzscheme tests.)
 (define tests
-  `([no-handler load "mzscheme/quiet.ss" (lib "scheme/init")]
+  '(;[no-handler load "mzscheme/quiet.ss" (lib "scheme/init")]
     ;; [require "planet/lang.ss"]
-    ;; typed scheme tests use too much memory for the cgc
-    ,@(if (eq? 'cgc (system-type 'gc))
-	  '()
-	  '([require "typed-scheme/run.ss"]))
-    [require "match/plt-match-tests.ss"]
-    ;; [require "stepper/automatic-tests.ss" (lib "scheme/base")]
+    [require "typed-scheme/nightly-run.ss"]
+;    [require "match/plt-match-tests.ss"]
+ ;   ;; [require "stepper/automatic-tests.ss" (lib "scheme/base")]
     [require "lazy/main.ss"]
-    [require "scribble/main.ss"]
-    [require "net/main.ss"]
-    [require "file/main.ss"]
-    [require "profile/main.ss"]
+   ; [require "scribble/main.ss"]
+    ;[require "net/main.ss"]
+;    [require "file/main.ss"]
+ ;   [require "profile/main.ss"]
     ))
 
 (require scheme/runtime-path)
@@ -85,6 +82,6 @@
                                   (abort 1 "error: ~a" (exn-message exn)))])
             (thunk))))
       (kill-thread timeout-thread)
-      (echo "all tests passed."))))
+      (echo "no failures found."))))
 
 (exit exit-code)
