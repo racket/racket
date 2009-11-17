@@ -20,10 +20,13 @@
 (provide (all-from-out htdp/image))
 
 (provide
- ;; Scene is Image with pinhole in origin 
+ ;; type Scene = Image with pinhole in origin 
  nw:rectangle ;; Number Number Mode Color -> Image
+ ;; create a rectangle with pinhole in the upper-left corner 
  place-image  ;; Image Number Number Scene -> Scene
+ ;; place image at (x,y) in given scene 
  empty-scene  ;; Number Number -> Scene 
+ ;; create an empty scene of size width x height (!= (nw:rectangle width height))
  scene+line   ;; Scene Number Number Number Number Color -> Scene 
  ;; cut all pieces that are outside the given rectangle 
  )
