@@ -41,6 +41,9 @@
 #include "schpriv.h"
 #include "schmach.h"
 #include "schgc.h"
+#ifdef FUTURES_ENABLED
+# include "future.h"
+#endif
 #ifndef PALMOS_STUFF
 # include <time.h>
 #endif
@@ -7342,6 +7345,10 @@ static void get_ready_for_GC()
 {
   start_this_gc_time = scheme_get_process_milliseconds();
 
+#ifdef FUTURES_ENABLED
+  scheme_future_block_until_gc();
+#endif
+
   scheme_zero_unneeded_rands(scheme_current_thread);
 
   scheme_clear_modidx_cache();
@@ -7409,6 +7416,10 @@ static void done_with_GC()
 
   end_this_gc_time = scheme_get_process_milliseconds();
   scheme_total_gc_time += (end_this_gc_time - start_this_gc_time);
+
+#ifdef FUTURES_ENABLED
+  scheme_future_continue_after_gc();
+#endif
 }
 
 #ifdef MZ_PRECISE_GC

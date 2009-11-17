@@ -524,6 +524,9 @@ extern int rtcall_obj_int_pobj_obj(
 #define LOG_RTCALL_ENV_ENV_VOID(a,b) 
 #endif
 
+void scheme_future_block_until_gc();
+void scheme_future_continue_after_gc();
+
 
 #ifdef UNIT_TEST
 //These forwarding decls only need to be here to make 
