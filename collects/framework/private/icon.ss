@@ -30,25 +30,25 @@
   (import mred^)
   (export framework:icon^)
   
-  (define eof-bitmap (delay (let ([bm (make-object bitmap% eof-bitmap-path)])
+  (define eof-bitmap (delay/sync (let ([bm (make-object bitmap% eof-bitmap-path)])
                               (unless (send bm ok?)
                                 (error 'eof-bitmap "not ok ~s\n" eof-bitmap-path))
                               bm)))
   (define (get-eof-bitmap) (force eof-bitmap))
   
-  (define anchor-bitmap (delay (make-object bitmap% anchor-bitmap-path)))
+  (define anchor-bitmap (delay/sync (make-object bitmap% anchor-bitmap-path)))
   (define (get-anchor-bitmap) (force anchor-bitmap))
   
-  (define lock-bitmap (delay (make-object bitmap% lock-bitmap-path)))
+  (define lock-bitmap (delay/sync (make-object bitmap% lock-bitmap-path)))
   (define (get-lock-bitmap) (force lock-bitmap))
   
-  (define unlock-bitmap (delay (make-object bitmap% unlock-bitmap-path)))
+  (define unlock-bitmap (delay/sync (make-object bitmap% unlock-bitmap-path)))
   (define (get-unlock-bitmap) (force unlock-bitmap))
   
-  (define autowrap-bitmap (delay (make-object bitmap% return-bitmap-path)))
+  (define autowrap-bitmap (delay/sync (make-object bitmap% return-bitmap-path)))
   (define (get-autowrap-bitmap) (force autowrap-bitmap))
   
-  (define paren-highlight-bitmap (delay (make-object bitmap% paren-bitmap-path)))
+  (define paren-highlight-bitmap (delay/sync (make-object bitmap% paren-bitmap-path)))
   (define (get-paren-highlight-bitmap) (force paren-highlight-bitmap))
   
   (define-syntax (make-get-cursor stx)
@@ -57,7 +57,7 @@
        (syntax
         (begin
           (define id 
-            (let ([ans (delay 
+            (let ([ans (delay/sync 
                          (let* ([msk-b (make-object bitmap% mask-path)]
                                 [csr-b (make-object bitmap% csr-path)])
                            (if (and (send msk-b ok?)
@@ -72,8 +72,8 @@
   (make-get-cursor get-up/down-cursor up-down-mask-path up-down-csr-path 'size-n/s)
   (make-get-cursor get-left/right-cursor left-right-mask-path left-right-csr-path 'size-e/w)
   
-  (define mrf-on-bitmap (delay (make-object bitmap% mrf-bitmap-path)))
-  (define gc-on-bitmap (delay (make-object bitmap% gc-on-bitmap-path)))
+  (define mrf-on-bitmap (delay/sync (make-object bitmap% mrf-bitmap-path)))
+  (define gc-on-bitmap (delay/sync (make-object bitmap% gc-on-bitmap-path)))
   
   (define (make-off-bitmap onb)
     (let* ([bitmap (make-object bitmap%
@@ -84,8 +84,8 @@
       (send bdc set-bitmap #f)
       bitmap))
   
-  (define mrf-off-bitmap (delay (make-off-bitmap (force mrf-on-bitmap))))
-  (define gc-off-bitmap (delay (make-off-bitmap (force gc-on-bitmap))))
+  (define mrf-off-bitmap (delay/sync (make-off-bitmap (force mrf-on-bitmap))))
+  (define gc-off-bitmap (delay/sync (make-off-bitmap (force gc-on-bitmap))))
   
   (define (get-gc-on-bitmap)
     (force
