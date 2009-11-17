@@ -1,7 +1,8 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base scheme/require-transform scheme/list
-                     "private/at-syntax.ss"))
+                     "private/at-syntax.ss")
+         "require-syntax.ss")
 
 (provide matching-identifiers-in)
 (define-syntax matching-identifiers-in
@@ -63,3 +64,28 @@
                       [else (error 'filtered-in "bad result: ~e" s2)])))
             imports)
            sources))]))))
+
+(provide path-up)
+(define-require-syntax (path-up stx)
+  (syntax-case stx ()
+    [(_ path-stx)
+     (let ([s (syntax-e #'path-stx)]) (and (string? s) (module-path? s)))
+     (let* ([src (syntax-source stx)]
+            [dirname (lambda (path)
+                       (let-values ([(dir name dir?) (split-path path)]) dir))]
+            [srcdir (if (and (path-string? src) (complete-path? src))
+                      (dirname src)
+                      (or (current-load-relative-directory) 
+                          (current-directory)))])
+       (define path (syntax-e #'path-stx))
+       (unless (complete-path? srcdir) (error 'path-up "internal error"))
+       (parameterize ([current-directory srcdir])
+         (let loop ([dir srcdir] [path (string->path path)])
+           (if (file-exists? path)
+             (datum->syntax stx (path->string path) stx)
+             (let ([dir (dirname dir)])
+               (if dir
+                 (loop dir (build-path 'up path))
+                 (raise-syntax-error 'path-up
+                                     "file no found in any parent directory"
+                                     stx #'path-stx)))))))]))

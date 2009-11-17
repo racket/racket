@@ -1075,6 +1075,54 @@ aliens
   will get the @scheme[scheme/base] bindings that match the regexp,
   and renamed to use ``camel case.''}
 
+@defform[(path-up rel-string)]{
+
+This specifies a path to a module named @scheme[rel-string] in a
+similar way to using @scheme[rel-string] directly, except that if the
+required module file is not found there, it is searched in the parent
+directory (in @filepath{../@scheme[_rel-string]}), and then in
+the grand-parent directory, going all the way up to the root.  (Note
+that the usual caveats hold for a macro that depends on files that it
+looks for to determine its expansion: the resulting path becomes part
+of the compiled form.)
+
+This form is useful in setting up a ``project environment''.  For
+example, you can write a @filepath{config.ss} file in the root
+directory of your project with:
+@verbatim[#:indent 2]{
+  #lang scheme/base
+  (require scheme/require-syntax (for-syntax "utils/in-here.ss"))
+  ;; require form for my utilities
+  (provide utils-in)
+  (define-require-syntax utils-in in-here-transformer)
+}
+and in @filepath{utils/in-here.ss} in the root:
+@verbatim[#:indent 2]{
+  #lang scheme/base
+  (require scheme/runtime-path)
+  (provide in-here-transformer)
+  (define-runtime-path here ".")
+  (define (in-here-transformer stx)
+    (syntax-case stx ()
+      [(_ sym)
+       (identifier? #'sym)
+       (let ([path (build-path here (format "~a.ss" (syntax-e #'sym)))])
+         (datum->syntax stx `(file ,(path->string path)) stx))]))
+}
+Finally, you can use it via @scheme[path-up]:
+@schemeblock[
+  (require scheme/require (path-up "config.ss") (utils-in foo))]
+Note that the order of requires in this form is important, as each of
+the first two bind the identifier used in the following.
+
+An alternative in this scenario is to use @scheme[path-up] directly to
+get to the utility module:
+@schemeblock[
+  (require scheme/require (path-up "utils/foo.ss"))]
+but then you need to be careful with subdirectories that are called
+@filepath{utils}, which will override the one in the project's root.
+In other words, the previous method requires a single unique name.}
+
 @; --------------------
 
 @subsection{Additional @scheme[provide] Forms}
