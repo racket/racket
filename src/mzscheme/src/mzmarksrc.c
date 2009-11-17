@@ -2218,4 +2218,25 @@ END jit;
 
 /**********************************************************************/
 
+START future;
+
+future {
+ mark:
+  future_t *c = (future_t *)p;
+  gcMARK(f->runstack);
+  gcMARK(f->runstack_start);
+  gcMARK(f->orig_thread);
+  gcMARK(f->rt_prim_args);
+  gcMARK(f->rt_prim_result);
+  gcMARK(f->retval);
+  gcMARK(f->prev);
+  gcMARK(f->next);
+ size:
+  gcBYTES_TO_WORDS(sizeof(future_t));
+}
+
+END future;
+
+/**********************************************************************/
+
 #define GC_REG_TRAV(type, base) GC_register_traversers(type, base ## _SIZE, base ## _MARK, base ## _FIXUP, base ## _IS_CONST_SIZE, base ## _IS_ATOMIC)

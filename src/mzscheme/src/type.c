@@ -268,6 +268,8 @@ scheme_init_type ()
   set_name(scheme_logger_type, "<logger>");
   set_name(scheme_log_reader_type, "<log-receiver>");
 
+  set_name(scheme_future_type, "<future>");
+
   set_name(_scheme_values_types_, "<resurrected>");
   set_name(_scheme_compiled_values_types_, "<internal>");
 

@@ -5411,4 +5411,47 @@ static int native_unclosed_proc_plus_case_FIXUP(void *p) {
 
 /**********************************************************************/
 
+#ifdef MARKS_FOR_FUTURE_C
+
+static int future_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(future_t));
+}
+
+static int future_MARK(void *p) {
+  future_t *c = (future_t *)p;
+  gcMARK(f->runstack);
+  gcMARK(f->runstack_start);
+  gcMARK(f->orig_thread);
+  gcMARK(f->rt_prim_args);
+  gcMARK(f->rt_prim_result);
+  gcMARK(f->retval);
+  gcMARK(f->prev);
+  gcMARK(f->next);
+  return
+  gcBYTES_TO_WORDS(sizeof(future_t));
+}
+
+static int future_FIXUP(void *p) {
+  future_t *c = (future_t *)p;
+  gcFIXUP(f->runstack);
+  gcFIXUP(f->runstack_start);
+  gcFIXUP(f->orig_thread);
+  gcFIXUP(f->rt_prim_args);
+  gcFIXUP(f->rt_prim_result);
+  gcFIXUP(f->retval);
+  gcFIXUP(f->prev);
+  gcFIXUP(f->next);
+  return
+  gcBYTES_TO_WORDS(sizeof(future_t));
+}
+
+#define future_IS_ATOMIC 0
+#define future_IS_CONST_SIZE 1
+
+
+#endif  /* FUTURE */
+
+/**********************************************************************/
+
 #define GC_REG_TRAV(type, base) GC_register_traversers(type, base ## _SIZE, base ## _MARK, base ## _FIXUP, base ## _IS_CONST_SIZE, base ## _IS_ATOMIC)

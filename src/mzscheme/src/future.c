@@ -988,4 +988,24 @@ void clear_futures(void)
   g_future_queue = NULL;
 }
 
+/**********************************************************************/
+/*                           Precise GC                               */
+/**********************************************************************/
+
+#ifdef MZ_PRECISE_GC
+
+START_XFORM_SKIP;
+
+#define MARKS_FOR_FUTURE_C
+#include "mzmark.c"
+
+static void register_traversers(void)
+{
+  GC_REG_TRAV(scheme_future_type, future);
+}
+
+END_XFORM_SKIP;
+
+#endif
+
 #endif

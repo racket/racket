@@ -69,6 +69,8 @@ typedef struct {
 #define FINISHED 3
 
 typedef struct future {
+  Scheme_Object so;
+
 	int id;
 	pthread_t threadid;
 	int status;
