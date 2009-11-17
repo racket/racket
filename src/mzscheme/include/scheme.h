@@ -166,7 +166,7 @@ typedef struct FSSpec mzFSSpec;
 
 #define MZ_EXTERN extern MZ_DLLSPEC
 
-#ifdef MZ_USE_PLACES
+#if defined(MZ_USE_PLACES) || defined(FUTURES_ENABLED)
 # if _MSC_VER
 #  define THREAD_LOCAL __declspec(thread)
 # else
