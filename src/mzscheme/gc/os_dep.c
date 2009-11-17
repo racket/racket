@@ -1860,7 +1860,7 @@ ptr_t GC_unix_sbrk_get_mem(word bytes)
 /* By default, we try both sbrk and mmap, in that order. */
 ptr_t GC_unix_get_mem(word bytes)
 {
-    static GC_bool sbrk_failed = FALSE;
+    static GC_bool sbrk_failed = TRUE; /* PLTSCHEME: don't use sbrk */
     ptr_t result = 0;
 
     if (!sbrk_failed) result = GC_unix_sbrk_get_mem(bytes);
