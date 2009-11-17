@@ -37,7 +37,16 @@ static pthread_cond_t g_future_pending_cv = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t gc_ok_m = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t gc_ok_c = PTHREAD_COND_INITIALIZER;
 static int gc_not_ok;
+#ifdef MZ_PRECISE_GC
 extern THREAD_LOCAL unsigned long GC_gen0_alloc_page_ptr;
+#endif
+
+future_t **g_current_ft;
+Scheme_Object ***g_scheme_current_runstack;
+Scheme_Object ***g_scheme_current_runstack_start;
+
+static void register_traversers(void);
+extern void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv);
 
 static void start_gc_not_ok();
 static void end_gc_not_ok();
@@ -295,6 +304,10 @@ void futures_init(void)
   g_rt_threadid = pthread_self();
 	g_signal_handle = scheme_get_signal_handle();
 
+	#ifdef MZ_PRECISE_GC
+	register_traversers();
+	#endif
+
   //Create the worker thread pool.  These threads will
   //'queue up' and wait for futures to become available   
 	pthread_attr_init(&attr);
@@ -303,6 +316,11 @@ void futures_init(void)
   {
       pthread_create(&threadid, &attr, worker_thread_future_loop, &i);
       sema_wait(&ready_sema);
+	
+			scheme_register_static(g_current_ft, sizeof(void*));
+			scheme_register_static(g_scheme_current_runstack, sizeof(void*));
+			scheme_register_static(g_scheme_current_runstack_start, sizeof(void*));	
+
       g_pool_threads[i] = threadid;
   }
 
@@ -328,9 +346,12 @@ void scheme_future_block_until_gc()
 {
   int i;
 
-  for (i = 0; i < THREAD_POOL_SIZE; i++) {
-    *(g_fuel_pointers[i]) = 0;
-    *(g_stack_boundary_pointers[i]) += INITIAL_C_STACK_SIZE;
+  for (i = 0; i < THREAD_POOL_SIZE; i++) { 
+		if (g_fuel_pointers[i] != NULL)
+		{
+			*(g_fuel_pointers[i]) = 0;
+    	*(g_stack_boundary_pointers[i]) += INITIAL_C_STACK_SIZE;
+		}    
   }
   asm("mfence");
 
@@ -346,8 +367,12 @@ void scheme_future_continue_after_gc()
   int i;
 
   for (i = 0; i < THREAD_POOL_SIZE; i++) {
-    *(g_fuel_pointers[i]) = 1;
-    *(g_stack_boundary_pointers[i]) -= INITIAL_C_STACK_SIZE;
+		if (g_fuel_pointers[i] != NULL)
+		{
+			*(g_fuel_pointers[i]) = 1;
+    	*(g_stack_boundary_pointers[i]) -= INITIAL_C_STACK_SIZE;
+		}
+    
   }
 }
 
@@ -402,13 +427,12 @@ Scheme_Object *future(int argc, Scheme_Object *argv[])
 		LOG_THISCALL;
 		#endif
 
-    int init_runstack_size, main_runstack_size;
+    int init_runstack_size;
 		int futureid;
     future_t *ft;
     Scheme_Native_Closure *nc;
     Scheme_Native_Closure_Data *ncd;
     Scheme_Object *lambda = argv[0];
-    Scheme_Type type = SCHEME_TYPE(lambda);
     nc = (Scheme_Native_Closure*)lambda;
     ncd = nc->code;
 
@@ -429,8 +453,13 @@ Scheme_Object *future(int argc, Scheme_Object *argv[])
 		printf("Allocating Scheme stack of %d bytes for future %d.\n", init_runstack_size, futureid); 
 		#endif
 
-    ft->runstack_start = scheme_alloc_runstack(init_runstack_size);
-    ft->runstack = ft->runstack_start + init_runstack_size;
+		{
+			Scheme_Object **rs_start, **rs;
+			rs_start = scheme_alloc_runstack(init_runstack_size);
+			rs = rs_start XFORM_OK_PLUS init_runstack_size;
+			ft->runstack_start = rs_start;
+    	ft->runstack = rs;
+		}   
 
     //pthread_mutex_unlock(&g_future_queue_mutex);
 
@@ -584,14 +613,16 @@ void *worker_thread_future_loop(void *arg)
         scheme_fuel_counter = 1;
         scheme_jit_stack_boundary = ((unsigned long)&v) - INITIAL_C_STACK_SIZE;
 
-        g_fuel_pointers[id] = &scheme_scheme_fuel_counter;
-        g_stack_boundary_pointers[id] = &scheme_scheme_jit_stack_boundary;
+        g_fuel_pointers[id] = &scheme_fuel_counter;
+        g_stack_boundary_pointers[id] = &scheme_jit_stack_boundary;
 
+				#ifdef MZ_PRECISE_GC
         GC_gen0_alloc_page_ptr = 1; /* weirdly, disables inline allocation */
+				#endif
 
-        REGISTER_SO(current_ft);
-        REGISTER_SO(scheme_current_runstack);
-        REGISTER_SO(scheme_current_runstack_start);
+				g_current_ft = &current_ft;
+				g_scheme_current_runstack = &scheme_current_runstack;
+				g_scheme_current_runstack_start = &scheme_current_runstack_start;
         sema_signal(&ready_sema);
 
     wait_for_work:
@@ -782,7 +813,7 @@ int rtcall_obj_int_pobj_obj(
 		#endif
 
 	printf("scheme_fuel_counter = %d\n", scheme_fuel_counter);
-	printf("scheme_jit_stack_boundary = %p\n", scheme_jit_stack_boundary);
+	printf("scheme_jit_stack_boundary = %p\n", (void*)scheme_jit_stack_boundary);
 	printf("scheme_current_runstack = %p\n", scheme_current_runstack);
 	printf("scheme_current_runstack_start = %p\n", scheme_current_runstack_start);
 	printf("stack address = %p\n", &future);
@@ -970,8 +1001,9 @@ void *invoke_rtcall(future_t *future)
 
 future_t *enqueue_future(void)
 {
-    future_t *last = get_last_future();
-    future_t *ft = MALLOC_ONE_TAGGED(future_t);
+    future_t *last, *ft;
+		last = get_last_future();
+		ft = MALLOC_ONE_TAGGED(future_t);     
     ft->so.type = scheme_future_type;
     if (NULL == last)
     {
@@ -1016,7 +1048,7 @@ future_t *get_future_by_threadid(pthread_t threadid)
   future_t *ft = g_future_queue;
   if (NULL == ft)
 	{
-			printf("Couldn't find a future with thread ID %p!\n", threadid);
+			printf("Couldn't find a future with thread ID %p!\n", (void*)threadid);
       return NULL;
 	}
 	
@@ -1030,7 +1062,7 @@ future_t *get_future_by_threadid(pthread_t threadid)
 		ft = ft->next;
 	}
 
-	printf("Couldn't find a future with thread ID %p!\n", threadid);
+	printf("Couldn't find a future with thread ID %p!\n", (void*)threadid);
 	return NULL;
 	END_XFORM_SKIP;
 }
