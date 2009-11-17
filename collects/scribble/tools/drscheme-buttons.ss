@@ -5,7 +5,8 @@
          scheme/class
          mrlib/bitmap-label
          scheme/system
-         setup/xref)
+         setup/xref
+         net/sendurl)
 
 (provide drscheme-buttons)
 
@@ -24,7 +25,8 @@
      (let* ([t (send drs-frame get-definitions-text)]
             [fn (send t get-filename)])
        (if (and fn (not (send t is-modified?)))
-           (let ([p (open-output-string)])
+           (let-values ([(p) (open-output-string)]
+                        [(base name dir?) (split-path fn)])
              (parameterize ([current-namespace (make-base-namespace)]
                             [current-output-port p]
                             [current-error-port p]
@@ -32,19 +34,26 @@
                              (list->vector 
                               (append
                                extra-cmdline
+                               (list "--dest" (path->string base))
                                (list mode (if (path? fn) (path->string fn) fn))))])
                (namespace-attach-module (namespace-anchor->empty-namespace anchor) 'setup/xref)
                (dynamic-require 'scribble/run #f)
-               (let-values ([(base name dir?) (split-path fn)])
-                 (system (format "open ~a" (path-replace-suffix name suffix)))))
+               (cond
+                 [(equal? label "HTML")
+                  (system (format "firefox ~a" (path-replace-suffix name suffix)))
+                  (send-url/file (path-replace-suffix fn suffix))]
+                 [else (system (format "open ~a" (path-replace-suffix name suffix)))]))
              (message-box "Scribble" (get-output-string p) drs-frame))
            (message-box "Not Named" "Cannot render unsaved file"))))))
 
 (define drscheme-buttons
-  (case (system-type)
-    [(macosx)
-     ;; really this is only to guard the "open" system call above.
-     (list (make-render-button "PDF" pdf.png "--pdf" #".pdf" null)
-           (make-render-button "HTML" html.png "--html" #".html" '("++xref-in" "setup/xref" "load-collections-xref")))]
-    [else
-     '()]))
+  (let ([html-button
+         (make-render-button "HTML" html.png "--html" #".html" 
+                             '("++xref-in" "setup/xref" "load-collections-xref"))]
+        [pdf-button
+         ;; only available on OSX currently
+         ;; when we have a general way of opening pdfs, can use that
+         (make-render-button "PDF" pdf.png "--pdf" #".pdf" null)])
+    (case (system-type)
+      [(macosx) (list html-button pdf-button)]
+      [else (list html-button)])))
