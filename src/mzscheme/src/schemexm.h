@@ -633,6 +633,8 @@
 #define scheme_make_args_string (scheme_extension_table->scheme_make_args_string)
 #define scheme_system_library_subpath (scheme_extension_table->scheme_system_library_subpath)
 #define scheme_signal_received (scheme_extension_table->scheme_signal_received)
+#define scheme_signal_received_at (scheme_extension_table->scheme_signal_received_at)
+#define scheme_get_signal_handle (scheme_extension_table->scheme_get_signal_handle)
 #define scheme_char_strlen (scheme_extension_table->scheme_char_strlen)
 #ifdef MZ_PRECISE_GC
 #pragma GC_VARIABLE_STACK_THOUGH_TABLE

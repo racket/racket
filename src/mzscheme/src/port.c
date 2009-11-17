@@ -8369,20 +8369,39 @@ END_XFORM_SKIP;
 START_XFORM_SKIP;
 #endif
 
-void scheme_signal_received(void)
+void scheme_signal_received_at(void *h)
 /* Ensure that MzScheme wakes up if asleep. */
 {
 #if defined(FILES_HAVE_FDS)
-  if (put_external_event_fd) {
+  int put_ext_event_fd = *(int *)h;
+  if (put_ext_event_fd) {
     int v;
     do {
-      v = write(put_external_event_fd, "!", 1);
+      v = write(put_ext_event_fd, "!", 1);
     } while ((v == -1) && (errno == EINTR));
   }
 #endif
 #if defined(WINDOWS_PROCESSES) || defined(WINDOWS_FILE_HANDLES)
-  ReleaseSemaphore(scheme_break_semaphore, 1, NULL);
+  ReleaseSemaphore(*(OS_SEMAPHORE_TYPE *)h, 1, NULL);
 #endif
+}
+
+void *scheme_get_signal_handle()
+{
+#if defined(FILES_HAVE_FDS)
+  return &put_external_event_fd;
+#else
+# if defined(WINDOWS_PROCESSES) || defined(WINDOWS_FILE_HANDLES)
+  return &scheme_break_semaphore;
+# else
+  return NULL;
+# endif
+#endif
+}
+
+void scheme_signal_received(void)
+{
+  scheme_signal_received_at(scheme_get_signal_handle());
 }
 
 #ifdef MZ_XFORM

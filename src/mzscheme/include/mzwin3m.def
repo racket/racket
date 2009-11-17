@@ -579,4 +579,6 @@ EXPORTS
  scheme_make_args_string
  scheme_system_library_subpath
  scheme_signal_received
+ scheme_signal_received_at
+ scheme_get_signal_handle
  scheme_char_strlen

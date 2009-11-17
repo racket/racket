@@ -899,6 +899,8 @@ char *(*scheme_make_provided_string)(Scheme_Object *o, int count, int *len);
 char *(*scheme_make_args_string)(char *s, int which, int argc, Scheme_Object **argv, long *len);
 const char *(*scheme_system_library_subpath)();
 void (*scheme_signal_received)(void);
+void (*scheme_signal_received_at)(void *);
+void *(*scheme_get_signal_handle)();
 int (*scheme_char_strlen)(const mzchar *s);
 #ifndef SCHEME_EX_INLINE
 } Scheme_Extension_Table;

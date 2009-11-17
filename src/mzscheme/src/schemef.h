@@ -1089,5 +1089,7 @@ MZ_EXTERN char *scheme_make_args_string(char *s, int which, int argc, Scheme_Obj
 MZ_EXTERN const char *scheme_system_library_subpath();
 
 MZ_EXTERN void scheme_signal_received(void);
+MZ_EXTERN void scheme_signal_received_at(void *);
+MZ_EXTERN void *scheme_get_signal_handle();
 
 MZ_EXTERN int scheme_char_strlen(const mzchar *s);
