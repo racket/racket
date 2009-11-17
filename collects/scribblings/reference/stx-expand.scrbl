@@ -15,6 +15,27 @@ enriched with @scheme[namespace-syntax-introduce], just as for
 @scheme[eval]. Use @scheme[syntax->datum] to convert the returned
 syntax object into a printable datum.}
 
+Here's an example of using @scheme[expand] on a module:
+
+@schemeblock[
+(parameterize ([current-namespace (make-base-namespace)])
+ (expand
+  (datum->syntax
+   #f
+   '(module foo scheme
+      (define a 3)
+      (+ a 4)))))]
+
+Here's an example of using @scheme[expand] on a non-top-level form:
+
+@schemeblock[
+(define-namespace-anchor anchor)
+(parameterize ([current-namespace
+                (namespace-anchor->namespace anchor)])
+ (expand
+  (datum->syntax
+   #f
+   '(delay (+ 1 2)))))]
 
 @defproc[(expand-syntax [stx syntax?]) syntax?]{
 
