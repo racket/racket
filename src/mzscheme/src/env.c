@@ -67,10 +67,9 @@ static Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][MAX_CONST_LOCAL_TYPES][M
 #define SCHEME_TOPLEVEL_FLAGS_MASK 0x3
 static Scheme_Object *toplevels[MAX_CONST_TOPLEVEL_DEPTH][MAX_CONST_TOPLEVEL_POS][SCHEME_TOPLEVEL_FLAGS_MASK + 1];
 
-/* globals THREAD_LOCAL 
- * if locked theses are probably sharable*/
-static THREAD_LOCAL Scheme_Hash_Table *toplevels_ht;
-static THREAD_LOCAL Scheme_Hash_Table *locals_ht[2];
+/* If locked, these are probably sharable: */
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *toplevels_ht);
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *locals_ht[2]);
 
 /* local functions */
 static void make_kernel_env(void);
@@ -468,9 +467,7 @@ static Scheme_Env *place_instance_init_post_kernel() {
 #if defined(MZ_USE_PLACES)
   scheme_jit_fill_threadlocal_table();
 #endif
-#ifdef FUTURES_ENABLED 
   scheme_init_futures(env);
-#endif
 
 #ifndef DONT_USE_FOREIGN
   scheme_init_foreign(env);
@@ -502,8 +499,8 @@ Scheme_Env *scheme_place_instance_init(void *stack_base) {
 }
 
 void scheme_place_instance_destroy() {
-#if defined(USE_PTHREAD_THREAD_TIMER) && defined(MZ_USE_PLACES)
-  kill_green_thread_timer();
+#if defined(MZ_USE_PLACES)
+  scheme_kill_green_thread_timer();
 #endif
 }
 

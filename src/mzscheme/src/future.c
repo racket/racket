@@ -7,7 +7,39 @@
 int g_print_prims = 0;
 #endif
 
-#ifdef FUTURES_ENABLED
+#ifndef FUTURES_ENABLED
+
+/* Futures not enabled, but make a stub module */
+
+static Scheme_Object *future(int argc, Scheme_Object *argv[])
+{
+  scheme_signal_error("future: not enabled");
+  return NULL;
+}
+
+static Scheme_Object *touch(int argc, Scheme_Object *argv[])
+{
+  scheme_signal_error("touch: not enabled");
+  return NULL;
+}
+
+# define FUTURE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
+
+void scheme_init_futures(Scheme_Env *env)
+{
+  Scheme_Env *newenv;
+  
+  newenv = scheme_primitive_module(scheme_intern_symbol("#%futures"), 
+                                   env);
+
+  FUTURE_PRIM_W_ARITY("future",      future,       1, 1, newenv);
+  FUTURE_PRIM_W_ARITY("touch",       touch,        1, 1, newenv);
+
+  scheme_finish_primitive_module(newenv);
+  scheme_protect_primitive_provide(newenv, NULL);
+}
+
+#else
 
 #include "future.h"
 #include <stdlib.h>
@@ -38,7 +70,7 @@ static pthread_mutex_t gc_ok_m = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t gc_ok_c = PTHREAD_COND_INITIALIZER;
 static int gc_not_ok;
 #ifdef MZ_PRECISE_GC
-extern THREAD_LOCAL unsigned long GC_gen0_alloc_page_ptr;
+THREAD_LOCAL_DECL(extern unsigned long GC_gen0_alloc_page_ptr);
 #endif
 
 future_t **g_current_ft;
@@ -51,7 +83,7 @@ extern void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc
 static void start_gc_not_ok();
 static void end_gc_not_ok();
 
-static THREAD_LOCAL future_t *current_ft;
+THREAD_LOCAL_DECL(static future_t *current_ft);
 
 //Stuff for scheme runstack 
 //Some of these may mimic defines in thread.c, but are redefined here 
@@ -605,6 +637,8 @@ void *worker_thread_future_loop(void *arg)
 	Scheme_Object* (*jitcode)(Scheme_Object*, int, Scheme_Object**);
         future_t *ft;
         int id = *(int *)arg;
+
+        scheme_init_os_thread();
 
 	//Set processor affinity
 	/*pthread_mutex_lock(&g_future_queue_mutex);

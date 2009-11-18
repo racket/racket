@@ -149,23 +149,23 @@
 #define EMBEDDED_DEFINES_START_ANYWHERE 0
 
 /* globals */
-THREAD_LOCAL volatile int scheme_fuel_counter;
+THREAD_LOCAL_DECL(volatile int scheme_fuel_counter);
 
 int scheme_startup_use_jit = 1;
 void scheme_set_startup_use_jit(int v) { scheme_startup_use_jit =  v; }
 
 /* THREAD LOCAL SHARED */
 #ifdef USE_STACK_BOUNDARY_VAR
-THREAD_LOCAL unsigned long scheme_stack_boundary;
-THREAD_LOCAL unsigned long volatile scheme_jit_stack_boundary;
+THREAD_LOCAL_DECL(unsigned long scheme_stack_boundary);
+THREAD_LOCAL_DECL(unsigned long volatile scheme_jit_stack_boundary);
 #endif
-static THREAD_LOCAL Scheme_Object *quick_stx;
+THREAD_LOCAL_DECL(static Scheme_Object *quick_stx);
 
 /* global counters */
 /* FIXME needs to be atomically incremented */
 int scheme_overflow_count;
 int get_overflow_count() { return scheme_overflow_count; }
-int THREAD_LOCAL scheme_continuation_application_count;
+THREAD_LOCAL_DECL(int scheme_continuation_application_count);
 
 /* read-only globals */
 Scheme_Object *scheme_eval_waiting;
@@ -8795,18 +8795,18 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	{
 	  GC_CAN_IGNORE Scheme_Quote_Syntax *qs = (Scheme_Quote_Syntax *)obj;
 	  Scheme_Object **globs;
-	  int i, c, p;
+	  int i, c, pos;
 
 	  i = qs->position;
 	  c = qs->depth;
-	  p = qs->midpoint;
+	  pos = qs->midpoint;
 
 	  globs = (Scheme_Object **)RUNSTACK[c];
-	  v = globs[i+p+1];
+	  v = globs[i+pos+1];
 	  if (!v) {
-	    v = globs[p];
+	    v = globs[pos];
 	    v = scheme_delayed_rename((Scheme_Object **)v, i);
-	    globs[i+p+1] = v;
+	    globs[i+pos+1] = v;
 	  }
 
 	  goto returnv_never_multi;

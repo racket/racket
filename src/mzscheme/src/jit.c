@@ -288,9 +288,8 @@ void scheme_jit_fill_threadlocal_table();
 # define tl_save_fp                        11
 # define tl_scheme_fuel_counter            12
 # define tl_scheme_jit_stack_boundary      13
-# define NUM_tl_VARS                       14
 
-static THREAD_LOCAL void *thread_local_pointers[NUM_tl_VARS];
+THREAD_LOCAL_DECL(static void *thread_local_pointers[NUM_tl_VARS]);
 
 #ifdef MZ_XFORM
 START_XFORM_SKIP;
@@ -352,17 +351,11 @@ typedef struct {
   Scheme_Native_Closure_Data *case_lam;
 } Scheme_Native_Closure_Data_Plus_Case;
 
-/* This structure must be 4 words: */
-typedef struct {
-  void *orig_return_address;
-  void *stack_frame;
-  Scheme_Object *cache;
-  void *orig_result;
-} Stack_Cache_Elem;
+/* The Stack_Cache_Elem structure type (define in schthread.h)
+   must have a size of  4 words. */
 
-#define STACK_CACHE_SIZE 32
-static THREAD_LOCAL Stack_Cache_Elem stack_cache_stack[STACK_CACHE_SIZE];
-static THREAD_LOCAL long stack_cache_stack_pos = 0;
+THREAD_LOCAL_DECL(static Stack_Cache_Elem stack_cache_stack[STACK_CACHE_SIZE]);
+THREAD_LOCAL_DECL(static long stack_cache_stack_pos = 0);
 
 static void *decrement_cache_stack_pos(void *p)
 {
@@ -377,8 +370,8 @@ static void *decrement_cache_stack_pos(void *p)
 
 #include "codetab.inc"
 
-static THREAD_LOCAL Scheme_Object **fixup_runstack_base;
-static THREAD_LOCAL int fixup_already_in_place;
+THREAD_LOCAL_DECL(static Scheme_Object **fixup_runstack_base);
+THREAD_LOCAL_DECL(static int fixup_already_in_place);
 
 static Scheme_Object *_scheme_tail_apply_from_native_fixup_args(Scheme_Object *rator,
                                                                 int argc,
@@ -1365,7 +1358,7 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #endif
 
 #ifdef CAN_INLINE_ALLOC
-extern THREAD_LOCAL unsigned long GC_gen0_alloc_page_ptr;
+THREAD_LOCAL_DECL(extern unsigned long GC_gen0_alloc_page_ptr);
 long GC_initial_word(int sizeb);
 void GC_initial_words(char *buffer, int sizeb);
 long GC_compute_alloc_size(long sizeb);
@@ -1375,12 +1368,12 @@ static void *retry_alloc_code;
 static void *retry_alloc_code_keep_r0_r1;
 static void *retry_alloc_code_keep_fpr1;
 
-static THREAD_LOCAL void *retry_alloc_r1; /* set by prepare_retry_alloc() */
+THREAD_LOCAL_DECL(static void *retry_alloc_r1); /* set by prepare_retry_alloc() */
 
 static int generate_alloc_retry(mz_jit_state *jitter, int i);
 
 #ifdef JIT_USE_FP_OPS
-static THREAD_LOCAL double save_fp;
+THREAD_LOCAL_DECL(static double save_fp);
 #endif
 
 static void *prepare_retry_alloc(void *p, void *p2)

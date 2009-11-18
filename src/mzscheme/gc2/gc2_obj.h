@@ -1,4 +1,5 @@
-#include "../src/schpriv.h"
+#ifndef GC2_OBJHEAD_H
+#define GC2_OBJHEAD_H
 
 #if defined(MZ_PRECISE_GC) && !defined(USE_COMPACT_3M_GC)
 
@@ -32,5 +33,7 @@ XFORM_NONGCING extern int GC_is_allocated(void *p);
 
 #define OBJHEAD_HAS_HASH_BITS
 #define OBJHEAD_HASH_BITS(p) (OBJPTR_TO_OBJHEAD(p)->hash)
+
+#endif
 
 #endif

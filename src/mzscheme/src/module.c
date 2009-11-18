@@ -198,11 +198,11 @@ static Scheme_Bucket_Table *initial_toplevel;
 static Scheme_Object *empty_self_modidx;
 static Scheme_Object *empty_self_modname;
 
-static THREAD_LOCAL Scheme_Bucket_Table *starts_table;
+THREAD_LOCAL_DECL(static Scheme_Bucket_Table *starts_table);
 
 /* caches */
-static THREAD_LOCAL Scheme_Modidx *modidx_caching_chain;
-static THREAD_LOCAL Scheme_Object *global_shift_cache;
+THREAD_LOCAL_DECL(static Scheme_Modidx *modidx_caching_chain);
+THREAD_LOCAL_DECL(static Scheme_Object *global_shift_cache);
 #define GLOBAL_SHIFT_CACHE_SIZE 40
 #ifdef USE_SENORA_GC
 # define SHIFT_CACHE_NULL scheme_false

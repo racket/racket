@@ -35,6 +35,7 @@
     "error"
     "eval"
     "file"
+    "future"
     "fun"
     "hash"
     "jit"

@@ -35,14 +35,14 @@
 int (*scheme_check_print_is_obj)(Scheme_Object *o);
 
 #define QUICK_ENCODE_BUFFER_SIZE 256
-static THREAD_LOCAL char *quick_buffer = NULL;
-static THREAD_LOCAL char *quick_encode_buffer = NULL;
+THREAD_LOCAL_DECL(static char *quick_buffer = NULL);
+THREAD_LOCAL_DECL(static char *quick_encode_buffer = NULL);
 
 /* FIXME places possible race condition on growing printer size */
 static Scheme_Type_Printer *printers;
 static int printers_count;
 
-static THREAD_LOCAL Scheme_Hash_Table *cache_ht;
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *cache_ht);
 
 /* read-only globals */
 static char compacts[_CPT_COUNT_];

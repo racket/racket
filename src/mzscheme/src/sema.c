@@ -24,7 +24,7 @@
 #ifndef NO_SCHEME_THREADS
 
 Scheme_Object *scheme_always_ready_evt;
-THREAD_LOCAL Scheme_Object *scheme_system_idle_channel;
+THREAD_LOCAL_DECL(Scheme_Object *scheme_system_idle_channel);
 
 static Scheme_Object *make_sema(int n, Scheme_Object **p);
 static Scheme_Object *semap(int n, Scheme_Object **p);
@@ -59,7 +59,7 @@ static int pending_break(Scheme_Thread *p);
 
 int scheme_main_was_once_suspended;
 
-static THREAD_LOCAL Scheme_Object *system_idle_put_evt;
+THREAD_LOCAL_DECL(static Scheme_Object *system_idle_put_evt);
 static Scheme_Object *thread_recv_evt;
 
 #ifdef MZ_PRECISE_GC

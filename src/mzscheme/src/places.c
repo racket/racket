@@ -9,7 +9,7 @@
 
 
 mz_proc_thread *scheme_master_proc_thread;
-THREAD_LOCAL mz_proc_thread *proc_thread_self;
+THREAD_LOCAL_DECL(mz_proc_thread *proc_thread_self);
 
 Scheme_Object *scheme_place(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]);

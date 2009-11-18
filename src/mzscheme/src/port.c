@@ -303,11 +303,11 @@ typedef struct Scheme_FD {
 
 /* globals */
 Scheme_Object scheme_eof[1];
-THREAD_LOCAL Scheme_Object *scheme_orig_stdout_port;
-THREAD_LOCAL Scheme_Object *scheme_orig_stderr_port;
-THREAD_LOCAL Scheme_Object *scheme_orig_stdin_port;
+THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stdout_port);
+THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stderr_port);
+THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stdin_port);
 
-THREAD_LOCAL fd_set *scheme_fd_set;
+THREAD_LOCAL_DECL(fd_set *scheme_fd_set);
 
 Scheme_Object *(*scheme_make_stdin)(void) = NULL;
 Scheme_Object *(*scheme_make_stdout)(void) = NULL;
@@ -350,11 +350,11 @@ int scheme_force_port_closed;
 static int flush_out;
 static int flush_err;
 
-static THREAD_LOCAL Scheme_Custodian *new_port_cust; /* back-door argument */
+THREAD_LOCAL_DECL(static Scheme_Custodian *new_port_cust); /* back-door argument */
 
 #if defined(FILES_HAVE_FDS)
-static THREAD_LOCAL int external_event_fd;
-static THREAD_LOCAL int put_external_event_fd;
+THREAD_LOCAL_DECL(static int external_event_fd);
+THREAD_LOCAL_DECL(static int put_external_event_fd);
 #endif
 
 static void register_port_wait();
@@ -420,7 +420,7 @@ Scheme_Object *scheme_none_symbol, *scheme_line_symbol, *scheme_block_symbol;
 static Scheme_Object *exact_symbol;
 
 #define READ_STRING_BYTE_BUFFER_SIZE 1024
-static THREAD_LOCAL char *read_string_byte_buffer;
+THREAD_LOCAL_DECL(static char *read_string_byte_buffer);
 
 #define fail_err_symbol scheme_false
 
@@ -8475,7 +8475,7 @@ typedef struct ITimer_Data {
   volatile unsigned long * jit_stack_boundary_ptr;
 } ITimer_Data;
 
-static THREAD_LOCAL ITimer_Data itimerdata;
+THREAD_LOCAL_DECL(static ITimer_Data *itimerdata);
 
 #ifdef MZ_XFORM
 START_XFORM_SKIP;
@@ -8485,6 +8485,8 @@ static void *green_thread_timer(void *data)
 {
   ITimer_Data *itimer_data;
   itimer_data = (ITimer_Data *)data;
+
+  scheme_init_os_thread();
   
   while (1) {
     if (itimer_data->die) {
@@ -8512,54 +8514,63 @@ static void *green_thread_timer(void *data)
 END_XFORM_SKIP;
 #endif
 
-static void start_green_thread_timer(long usec) {
-  itimerdata.die = 0;
-  itimerdata.delay = usec;
-  itimerdata.fuel_counter_ptr = &scheme_fuel_counter;
-  itimerdata.jit_stack_boundary_ptr = &scheme_jit_stack_boundary;
-  pthread_mutex_init(&itimerdata.mutex, NULL);
-  pthread_cond_init(&itimerdata.cond, NULL);
-  pthread_create(&itimerdata.thread, NULL, green_thread_timer, &itimerdata);
-  itimerdata.itimer = 1;
+static void start_green_thread_timer(long usec) 
+{
+  itimerdata->die = 0;
+  itimerdata->delay = usec;
+  itimerdata->fuel_counter_ptr = &scheme_fuel_counter;
+  itimerdata->jit_stack_boundary_ptr = &scheme_jit_stack_boundary;
+  pthread_mutex_init(&itimerdata->mutex, NULL);
+  pthread_cond_init(&itimerdata->cond, NULL);
+  pthread_create(&itimerdata->thread, NULL, green_thread_timer, itimerdata);
+  itimerdata->itimer = 1;
 }
 
-void kill_green_thread_timer() {
-    void *rc;
-    pthread_mutex_lock(&itimerdata.mutex);
-    itimerdata.die = 1;
-    if (!itimerdata.state) {
-      /* itimer thread is currently running working */
-    } else if (itimerdata.state < 0) {
-      /* itimer thread is waiting on cond */
-      pthread_cond_signal(&itimerdata.cond);
-    } else {
-      /* itimer thread is working, and we've already
-         asked it to continue */
-    }
-    pthread_mutex_unlock(&itimerdata.mutex);
-    pthread_join(itimerdata.thread, &rc);
+static void kill_green_thread_timer() 
+{
+  void *rc;
+  pthread_mutex_lock(&itimerdata->mutex);
+  itimerdata->die = 1;
+  if (!itimerdata->state) {
+    /* itimer thread is currently running working */
+  } else if (itimerdata->state < 0) {
+    /* itimer thread is waiting on cond */
+    pthread_cond_signal(&itimerdata->cond);
+  } else {
+    /* itimer thread is working, and we've already
+       asked it to continue */
+  }
+  pthread_mutex_unlock(&itimerdata->mutex);
+  pthread_join(itimerdata->thread, &rc);
+  itimerdata = NULL;
 }
 
-static void kickoff_green_thread_timer(long usec) {
-    pthread_mutex_lock(&itimerdata.mutex);
-    itimerdata.delay = usec;
-    if (!itimerdata.state) {
-      /* itimer thread is currently running working */
-      itimerdata.state = 1;
-    } else if (itimerdata.state < 0) {
-      /* itimer thread is waiting on cond */
-      itimerdata.state = 0;
-      pthread_cond_signal(&itimerdata.cond);
-    } else {
-      /* itimer thread is working, and we've already
-         asked it to continue */
-    }
-    pthread_mutex_unlock(&itimerdata.mutex);
+static void kickoff_green_thread_timer(long usec) 
+{
+  pthread_mutex_lock(&itimerdata->mutex);
+  itimerdata->delay = usec;
+  if (!itimerdata->state) {
+    /* itimer thread is currently running working */
+    itimerdata->state = 1;
+  } else if (itimerdata->state < 0) {
+    /* itimer thread is waiting on cond */
+    itimerdata->state = 0;
+    pthread_cond_signal(&itimerdata->cond);
+  } else {
+    /* itimer thread is working, and we've already
+       asked it to continue */
+  }
+  pthread_mutex_unlock(&itimerdata->mutex);
 }
 
 static void scheme_start_itimer_thread(long usec)
 {
-  if (!itimerdata.itimer) {
+  if (!itimerdata) {
+    itimerdata = (ITimer_Data *)malloc(sizeof(ITimer_Data));
+    memset(itimerdata, 0, sizeof(ITimer_Data));
+  }
+
+  if (!itimerdata->itimer) {
     start_green_thread_timer(usec);
   } else {
     kickoff_green_thread_timer(usec);
@@ -8617,6 +8628,13 @@ void scheme_kickoff_green_thread_time_slice_timer(long usec) {
 #endif
 }
 
+void scheme_kill_green_thread_timer()
+{
+#if defined(USE_PTHREAD_THREAD_TIMER)
+  kill_green_thread_timer();
+#endif
+}
+
 #ifdef OS_X
 
 /* Sleep-in-thread support needed for GUIs Mac OS X.
@@ -8669,6 +8687,7 @@ static void (*sleep_sleep)(float seconds, void *fds);
 
 static void *do_watch()
 {
+  scheme_init_os_thread();
   while (1) {
     pt_sema_wait(&sleeping_sema);
 

@@ -3,3 +3,8 @@ EXPORTS
  GC_malloc_atomic
  GC_malloc_stubborn
  GC_malloc_uncollectable
+ GC_register_traversers
+ GC_resolve
+ GC_mark
+ GC_fixup
+ GC_fixup_self

@@ -91,8 +91,8 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[]);
 #define REGISTER_SO(x) MZ_REGISTER_STATIC(x)
 
 extern long scheme_total_gc_time;
-extern THREAD_LOCAL int scheme_cont_capture_count;
-extern THREAD_LOCAL int scheme_continuation_application_count;
+THREAD_LOCAL_DECL(extern int scheme_cont_capture_count);
+THREAD_LOCAL_DECL(extern int scheme_continuation_application_count);
 
 int scheme_num_types(void);
 
@@ -224,6 +224,7 @@ void scheme_init_foreign_globals();
 void scheme_init_foreign(Scheme_Env *env);
 #endif
 void scheme_init_place(Scheme_Env *env);
+void scheme_init_futures(Scheme_Env *env);
 
 void scheme_init_print_buffers_places(void);
 void scheme_init_eval_places(void);
@@ -307,9 +308,9 @@ extern Scheme_Object *scheme_equal_prim;
 
 extern Scheme_Object *scheme_def_exit_proc;
 
-extern THREAD_LOCAL Scheme_Object *scheme_orig_stdout_port;
-extern THREAD_LOCAL Scheme_Object *scheme_orig_stdin_port;
-extern THREAD_LOCAL Scheme_Object *scheme_orig_stderr_port;
+THREAD_LOCAL_DECL(extern Scheme_Object *scheme_orig_stdout_port);
+THREAD_LOCAL_DECL(extern Scheme_Object *scheme_orig_stdin_port);
+THREAD_LOCAL_DECL(extern Scheme_Object *scheme_orig_stderr_port);
 
 extern Scheme_Object *scheme_arity_at_least, *scheme_make_arity_at_least;
 
@@ -335,7 +336,7 @@ extern Scheme_Object *scheme_stack_dump_key;
 
 extern Scheme_Object *scheme_default_prompt_tag;
 
-extern THREAD_LOCAL Scheme_Object *scheme_system_idle_channel;
+THREAD_LOCAL_DECL(extern Scheme_Object *scheme_system_idle_channel);
 
 extern Scheme_Object *scheme_input_port_property, *scheme_output_port_property;
 
@@ -350,10 +351,10 @@ extern Scheme_Object *scheme_reduced_procedure_struct;
 #define RUNSTACK_IS_GLOBAL
 
 #ifdef RUNSTACK_IS_GLOBAL
-extern THREAD_LOCAL Scheme_Object **scheme_current_runstack;
-extern THREAD_LOCAL Scheme_Object **scheme_current_runstack_start;
-extern THREAD_LOCAL MZ_MARK_STACK_TYPE scheme_current_cont_mark_stack;
-extern THREAD_LOCAL MZ_MARK_POS_TYPE scheme_current_cont_mark_pos;
+THREAD_LOCAL_DECL(extern Scheme_Object **scheme_current_runstack);
+THREAD_LOCAL_DECL(extern Scheme_Object **scheme_current_runstack_start);
+THREAD_LOCAL_DECL(extern MZ_MARK_STACK_TYPE scheme_current_cont_mark_stack);
+THREAD_LOCAL_DECL(extern MZ_MARK_POS_TYPE scheme_current_cont_mark_pos);
 # define MZ_RUNSTACK scheme_current_runstack
 # define MZ_RUNSTACK_START scheme_current_runstack_start
 # define MZ_CONT_MARK_STACK scheme_current_cont_mark_stack
@@ -365,13 +366,13 @@ extern THREAD_LOCAL MZ_MARK_POS_TYPE scheme_current_cont_mark_pos;
 # define MZ_CONT_MARK_POS (scheme_current_thread->cont_mark_pos)
 #endif
 
-extern THREAD_LOCAL volatile int scheme_fuel_counter;
+THREAD_LOCAL_DECL(extern volatile int scheme_fuel_counter);
 
-extern THREAD_LOCAL Scheme_Thread *scheme_main_thread;
+THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_main_thread);
 
 #ifdef MZ_USE_PLACES
-extern THREAD_LOCAL Scheme_Thread *scheme_current_thread;
-extern THREAD_LOCAL Scheme_Thread *scheme_first_thread;
+THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_current_thread);
+THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_first_thread);
 #define scheme_eval_wait_expr (scheme_current_thread->ku.eval.wait_expr)
 #define scheme_tail_rator (scheme_current_thread->ku.apply.tail_rator)
 #define scheme_tail_num_rands (scheme_current_thread->ku.apply.tail_num_rands)
@@ -383,10 +384,10 @@ extern THREAD_LOCAL Scheme_Thread *scheme_first_thread;
 #define scheme_multiple_array (scheme_current_thread->ku.multiple.array)
 #include "mzrt.h"
 extern mz_proc_thread *scheme_master_proc_thread;
-extern THREAD_LOCAL mz_proc_thread *proc_thread_self;
+THREAD_LOCAL_DECL(extern mz_proc_thread *proc_thread_self);
 #endif
 
-extern THREAD_LOCAL int scheme_no_stack_overflow;
+THREAD_LOCAL_DECL(extern int scheme_no_stack_overflow);
 
 typedef struct Scheme_Thread_Set {
   Scheme_Object so;
@@ -398,7 +399,7 @@ typedef struct Scheme_Thread_Set {
   Scheme_Object *current;
 } Scheme_Thread_Set;
 
-extern THREAD_LOCAL Scheme_Thread_Set *scheme_thread_set_top;
+THREAD_LOCAL_DECL(extern Scheme_Thread_Set *scheme_thread_set_top);
 
 #define SCHEME_TAIL_COPY_THRESHOLD 5
 
@@ -1081,8 +1082,8 @@ void scheme_notify_code_gc(void);
 
 Scheme_Object *scheme_handle_stack_overflow(Scheme_Object *(*k)(void));
 
-extern THREAD_LOCAL struct Scheme_Overflow_Jmp *scheme_overflow_jmp;
-extern THREAD_LOCAL void *scheme_overflow_stack_start;
+THREAD_LOCAL_DECL(extern struct Scheme_Overflow_Jmp *scheme_overflow_jmp);
+THREAD_LOCAL_DECL(extern void *scheme_overflow_stack_start);
 
 #ifdef MZ_PRECISE_GC
 # define PROMPT_STACK(id) &__gc_var_stack__
@@ -1284,10 +1285,10 @@ typedef struct Scheme_Overflow {
     || defined(BEOS_FIND_STACK_BOUNDS) || defined(OSKIT_FIXED_STACK_BOUNDS) \
     || defined(PALM_FIND_STACK_BOUNDS)
 # define USE_STACK_BOUNDARY_VAR
-extern THREAD_LOCAL unsigned long scheme_stack_boundary;
+THREAD_LOCAL_DECL(extern unsigned long scheme_stack_boundary);
 /* Same as scheme_stack_boundary, but set to an extreme value when feul auto-expires,
    so that JIT-generated code can check just one variable: */
-extern THREAD_LOCAL unsigned long volatile scheme_jit_stack_boundary;
+THREAD_LOCAL_DECL(extern unsigned long volatile scheme_jit_stack_boundary);
 #endif
 
 typedef struct Scheme_Meta_Continuation {
@@ -1459,7 +1460,7 @@ typedef struct {
   bigdig *digits;
 } Scheme_Bignum;
 
-#if MZ_PRECISE_GC
+#ifdef MZ_PRECISE_GC
 # define SCHEME_BIGPOS(b) (MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) & 0x1)
 # define SCHEME_SET_BIGPOS(b, v) MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) = ((v) | SCHEME_BIGINLINE(b))
 # define SCHEME_BIGINLINE(b) (MZ_OPT_HASH_KEY(&((Scheme_Bignum *)b)->iso) & 0x2)
@@ -3047,7 +3048,7 @@ extern char *scheme_convert_from_wchar(const wchar_t *ws);
 # define USE_SOCKETS_TCP
 #endif
 
-extern THREAD_LOCAL int scheme_active_but_sleeping;
+THREAD_LOCAL_DECL(extern int scheme_active_but_sleeping);
 extern int scheme_file_open_count;
 
 typedef struct Scheme_Indexed_String {
@@ -3256,7 +3257,7 @@ typedef struct Scheme_Place {
 
 Scheme_Env *scheme_place_instance_init();
 void scheme_place_instance_destroy();
-void kill_green_thread_timer();
+void scheme_kill_green_thread_timer();
 
 /*========================================================================*/
 /*                           engine                                       */

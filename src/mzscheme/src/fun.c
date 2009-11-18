@@ -89,8 +89,8 @@ Scheme_Object *scheme_tail_call_waiting;
 Scheme_Object *scheme_inferred_name_symbol;
 Scheme_Object *scheme_default_prompt_tag;
 
-THREAD_LOCAL int scheme_cont_capture_count;
-static THREAD_LOCAL int scheme_prompt_capture_count;
+THREAD_LOCAL_DECL(int scheme_cont_capture_count);
+THREAD_LOCAL_DECL(static int scheme_prompt_capture_count);
 
 
 /* locals */
@@ -169,18 +169,18 @@ static Scheme_Object *abort_continuation_proc;
 
 static Scheme_Object *internal_call_cc_prim;
 
-/* CACHES NEED TO BE THREAD LOCAL */
-static THREAD_LOCAL Scheme_Prompt *available_prompt;
-static THREAD_LOCAL Scheme_Prompt *available_cws_prompt;
-static THREAD_LOCAL Scheme_Prompt *available_regular_prompt;
-static THREAD_LOCAL Scheme_Dynamic_Wind *available_prompt_dw;
-static THREAD_LOCAL Scheme_Meta_Continuation *available_prompt_mc;
-static THREAD_LOCAL Scheme_Object *cached_beg_stx;
-static THREAD_LOCAL Scheme_Object *cached_dv_stx;
-static THREAD_LOCAL Scheme_Object *cached_ds_stx;
-static THREAD_LOCAL int cached_stx_phase;
-static THREAD_LOCAL Scheme_Cont *offstack_cont;
-static THREAD_LOCAL Scheme_Overflow *offstack_overflow;
+/* Caches need to be thread-local: */
+THREAD_LOCAL_DECL(static Scheme_Prompt *available_prompt);
+THREAD_LOCAL_DECL(static Scheme_Prompt *available_cws_prompt);
+THREAD_LOCAL_DECL(static Scheme_Prompt *available_regular_prompt);
+THREAD_LOCAL_DECL(static Scheme_Dynamic_Wind *available_prompt_dw);
+THREAD_LOCAL_DECL(static Scheme_Meta_Continuation *available_prompt_mc);
+THREAD_LOCAL_DECL(static Scheme_Object *cached_beg_stx);
+THREAD_LOCAL_DECL(static Scheme_Object *cached_dv_stx);
+THREAD_LOCAL_DECL(static Scheme_Object *cached_ds_stx);
+THREAD_LOCAL_DECL(static int cached_stx_phase);
+THREAD_LOCAL_DECL(static Scheme_Cont *offstack_cont);
+THREAD_LOCAL_DECL(static Scheme_Overflow *offstack_overflow);
 
 
 typedef void (*DW_PrePost_Proc)(void *);
@@ -1833,8 +1833,8 @@ static void initialize_prompt(Scheme_Thread *p, Scheme_Prompt *prompt, void *sta
 
 typedef Scheme_Object *(*Overflow_K_Proc)(void);
 
-THREAD_LOCAL Scheme_Overflow_Jmp *scheme_overflow_jmp;
-THREAD_LOCAL void *scheme_overflow_stack_start;
+THREAD_LOCAL_DECL(Scheme_Overflow_Jmp *scheme_overflow_jmp);
+THREAD_LOCAL_DECL(void *scheme_overflow_stack_start);
 
 MZ_DO_NOT_INLINE(void scheme_really_create_overflow(void *stack_base));
 

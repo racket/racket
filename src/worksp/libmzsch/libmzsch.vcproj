@@ -247,6 +247,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Mzscheme\Src\Future.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Mzscheme\Src\gmp\gmp.c"
 				>
 			</File>

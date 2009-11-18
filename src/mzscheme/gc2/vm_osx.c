@@ -250,12 +250,16 @@ kern_return_t catch_exception_raise(mach_port_t port,
 /* this is the thread which forwards of exceptions read from the exception
    server off to our exception catchers and then back out to the other
    thread */
-void exception_thread(void)
+void exception_thread(void *shared_thread_state)
 {
   mach_msg_header_t *message;
   mach_msg_header_t *reply;
   kern_return_t retval;
-  
+
+#ifdef USE_THREAD_LOCAL
+  pthread_setspecific(scheme_thread_local_key, shared_thread_state);
+#endif
+
   /* allocate the space for the message and reply */
   message = (mach_msg_header_t*)malloc(sizeof(mach_exc_msg_t));
   reply = (mach_msg_header_t*)malloc(sizeof(mach_reply_msg_t));
@@ -313,8 +317,7 @@ static void macosx_init_exception_handler()
   }
 
 #ifdef PPC_HAND_ROLLED_THREAD 
-  /* Old hand-rolled thread creation. pthread_create is fine for our
-     purposes. */
+  /* Old hand-rolled thread creation. */
  {
    /* set up the subthread */
    mach_port_t exc_thread;
@@ -347,7 +350,11 @@ static void macosx_init_exception_handler()
 #else
  {
    pthread_t th;
-   pthread_create(&th, NULL, (void *(*)(void *))exception_thread, NULL);
+   void *data = NULL;
+#ifdef USE_THREAD_LOCAL
+   data = pthread_getspecific(scheme_thread_local_key);
+#endif
+   pthread_create(&th, NULL, (void *(*)(void *))exception_thread, data);
  }
 #endif
 }

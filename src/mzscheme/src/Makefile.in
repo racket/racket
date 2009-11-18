@@ -240,39 +240,42 @@ SCONFIG =   $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h
 
 # More dependencies
 
-salloc.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+COMMON_HEADERS = $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+                 $(srcdir)/../include/schthread.h 
+
+salloc.@LTO@: $(COMMON_HEADERS) \
             $(srcdir)/../gc/gc.h $(srcdir)/mzmark.c
-bignum.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+bignum.@LTO@: $(COMMON_HEADERS) \
           $(srcdir)/../src/stypes.h    
-bool.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+bool.@LTO@: $(COMMON_HEADERS) \
           $(srcdir)/../src/stypes.h $(srcdir)/mzeqchk.inc
-builtin.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h  \
+builtin.@LTO@: $(COMMON_HEADERS)  \
         $(srcdir)/../src/stypes.h  $(srcdir)/schminc.h $(srcdir)/startup.inc $(srcdir)/cstartup.inc
-char.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+char.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  $(srcdir)/schuchar.inc
-complex.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h  \
+complex.@LTO@: $(COMMON_HEADERS)  \
          $(srcdir)/../src/stypes.h    
-dynext.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h  \
+dynext.@LTO@: $(COMMON_HEADERS)  \
          $(srcdir)/../src/stypes.h $(srcdir)/../src/schemex.h \
          $(srcdir)/schvers.h $(srcdir)/../gc/gc.h $(srcdir)/schemex.h
-env.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h  \
+env.@LTO@: $(COMMON_HEADERS)  \
         $(srcdir)/../src/stypes.h  $(srcdir)/schminc.h $(srcdir)/mzmark.c
-error.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+error.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  
-eval.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+eval.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c \
           $(srcdir)/schmach.h $(srcdir)/mzstkchk.h $(srcdir)/schrunst.h \
 				$(srcdir)/future.h
-file.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+file.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c 
-fun.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+fun.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/schmap.inc \
 				$(srcdir)/future.h
 future.@LTO@: $(srcdir)/schpriv.h $(srcdir)/future.h $(SCONFIG) $(srcdir)/../include/scheme.h \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
-hash.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+hash.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
-jit.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+jit.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/codetab.inc $(srcdir)/mzmark.c \
         $(srcdir)/lightning/i386/core.h $(srcdir)/lightning/i386/core-common.h \
         $(srcdir)/lightning/i386/asm.h $(srcdir)/lightning/i386/asm-common.h \
@@ -283,53 +286,53 @@ jit.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../includ
         $(srcdir)/lightning/ppc/funcs.h $(srcdir)/lightning/ppc/funcs-common.h \
         $(srcdir)/lightning/ppc/fp.h $(srcdir)/lightning/ppc/fp-common.h \
 				$(srcdir)/future.h
-list.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+list.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  
-module.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+module.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark.c
-network.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+network.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark.c
-numarith.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+numarith.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h $(srcdir)/nummacs.h
-number.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+number.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h $(srcdir)/nummacs.h
-numcomp.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+numcomp.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h $(srcdir)/nummacs.h
-numstr.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+numstr.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h  $(srcdir)/random.inc $(srcdir)/newrandom.inc
-places.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+places.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark.c
-port.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+port.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark.c
-portfun.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+portfun.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark.c
-print.@LTO@: $(srcdir)/../include/scheme.h $(srcdir)/../src/stypes.h $(srcdir)/../src/schcpt.h \
-          $(srcdir)/schpriv.h $(srcdir)/schexn.h $(srcdir)/schvers.h $(SCONFIG) $(srcdir)/mzmark.c
-thread.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+print.@LTO@: $(COMMON_HEADERS) $(srcdir)/../src/stypes.h $(srcdir)/../src/schcpt.h \
+          $(srcdir)/schvers.h $(SCONFIG) $(srcdir)/mzmark.c
+thread.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark.c
-rational.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+rational.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h    
-read.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+read.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/schcpt.h $(srcdir)/schvers.h $(srcdir)/schminc.h \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
-regexp.@LTO@:  $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+regexp.@LTO@:  $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/schrx.h
-setjmpup.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+setjmpup.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h   $(srcdir)/schmach.h
-string.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+string.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h    $(srcdir)/schvers.h $(srcdir)/mzmark.c $(srcdir)/strops.inc \
          $(srcdir)/schustr.inc
-struct.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+struct.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
-stxobj.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+stxobj.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark.c
-symbol.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+symbol.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h   
-syntax.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+syntax.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
-sema.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+sema.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
-type.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+type.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
-vector.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
+vector.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/../src/stypes.h

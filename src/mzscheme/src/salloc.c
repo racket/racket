@@ -54,9 +54,13 @@ static void **dgc_array;
 static int *dgc_count;
 static int dgc_size;
 
+#ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
+pthread_key_t scheme_thread_local_key;
+#endif
+
 extern int scheme_num_copied_stacks;
 static unsigned long scheme_primordial_os_thread_stack_base;
-static THREAD_LOCAL unsigned long scheme_os_thread_stack_base;
+THREAD_LOCAL_DECL(static unsigned long scheme_os_thread_stack_base);
 
 static Scheme_Report_Out_Of_Memory_Proc more_report_out_of_memory;
 
@@ -151,6 +155,14 @@ int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void 
   void *stack_start;
   int volatile return_code;
 
+#ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
+  if (pthread_key_create(&scheme_thread_local_key, NULL)) {
+    fprintf(stderr, "pthread key create failed");
+    abort();
+  }
+  scheme_init_os_thread();
+#endif
+
   scheme_set_stack_base(PROMPT_STACK(stack_start), no_auto_statics);
 
   return_code = _main(data);
@@ -201,6 +213,34 @@ void scheme_set_report_out_of_memory(Scheme_Report_Out_Of_Memory_Proc p)
 {
   more_report_out_of_memory = p;
 }
+
+#ifdef OS_X
+#include <mach/mach.h>
+#endif
+
+#ifdef MZ_XFORM
+START_XFORM_SKIP;
+#endif
+void scheme_init_os_thread()
+{
+#ifdef USE_THREAD_LOCAL
+  Thread_Local_Variables *vars;
+  vars = (Thread_Local_Variables *)malloc(sizeof(Thread_Local_Variables));
+  memset(vars, 0, sizeof(Thread_Local_Variables));
+  pthread_setspecific(scheme_thread_local_key, vars);
+# ifdef OS_X
+  /* A hack that smehow avoids a problem with calling vm_allocate()
+     later. There must be some deeper bug that I have't found, yet. */
+  if (1) {
+    void *r;
+    vm_allocate(mach_task_self(), (vm_address_t*)&r, 4096, TRUE);
+  }
+# endif
+#endif
+}
+#ifdef MZ_XFORM
+END_XFORM_SKIP;
+#endif
 
 /************************************************************************/
 /*                           memory utils                               */
@@ -998,7 +1038,7 @@ typedef struct Finalization {
   struct Finalization *next, *prev;
 } Finalization;
 
-typedef struct {
+typedef struct Finalizations {
   MZTAG_IF_REQUIRED
   short lifetime;
   Finalization *scheme_first, *scheme_last;
@@ -1066,8 +1106,8 @@ static void do_next_finalization(void *o, void *data)
 
 /* Makes gc2 xformer happy: */
 typedef void (*finalizer_function)(void *p, void *data);
-static THREAD_LOCAL int traversers_registered;
-static THREAD_LOCAL Finalizations **save_fns_ptr;
+THREAD_LOCAL_DECL(static int traversers_registered);
+THREAD_LOCAL_DECL(static Finalizations **save_fns_ptr);
 
 static void add_finalizer(void *v, void (*f)(void*,void*), void *data, 
 			  int prim, int ext,

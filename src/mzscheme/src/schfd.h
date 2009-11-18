@@ -1,6 +1,6 @@
 
 #ifdef USE_FAR_MZ_FDCALLS
-extern THREAD_LOCAL fd_set *scheme_fd_set;
+THREAD_LOCAL_DECL(extern fd_set *scheme_fd_set);
 # define DECL_FDSET(n, c) fd_set *n
 # define INIT_DECL_FDSET(r, w, e) { \
     r = MZ_GET_FDSET(scheme_fd_set, 0 ); \

@@ -166,16 +166,6 @@ typedef struct FSSpec mzFSSpec;
 
 #define MZ_EXTERN extern MZ_DLLSPEC
 
-#if defined(MZ_USE_PLACES) || defined(FUTURES_ENABLED)
-# if _MSC_VER
-#  define THREAD_LOCAL __declspec(thread)
-# else
-#  define THREAD_LOCAL __thread
-# endif
-#else
-# define THREAD_LOCAL /* empty */
-#endif
-
 #ifndef MZ_DONT_USE_JIT
 # if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_X86_64)
 #  define MZ_USE_JIT
@@ -908,6 +898,11 @@ typedef struct Scheme_Cont_Frame_Data {
 /*                              threads                                   */
 /*========================================================================*/
 
+#ifdef MZ_PRECISE_GC
+# include "../gc2/gc2_obj.h"
+#endif
+#include "schthread.h"
+
 typedef void (Scheme_Close_Custodian_Client)(Scheme_Object *o, void *data);
 typedef void (*Scheme_Exit_Closer_Func)(Scheme_Object *, Scheme_Close_Custodian_Client *, void *);
 typedef Scheme_Object *(*Scheme_Custodian_Extractor)(Scheme_Object *o);
@@ -1492,7 +1487,7 @@ typedef void (*Scheme_Invoke_Proc)(Scheme_Env *env, long phase_shift,
 #  define scheme_fuel_counter (*scheme_fuel_counter_ptr)
 # endif
 #else
-MZ_EXTERN THREAD_LOCAL volatile int scheme_fuel_counter;
+THREAD_LOCAL_DECL(MZ_EXTERN volatile int scheme_fuel_counter);
 #endif
 
 #ifdef FUEL_AUTODECEREMENTS
@@ -1701,8 +1696,8 @@ MZ_EXTERN void scheme_set_logging(int syslog_level, int stderr_level);
 MZ_EXTERN int scheme_get_allow_set_undefined();
 
 #ifndef MZ_USE_PLACES
-MZ_EXTERN THREAD_LOCAL Scheme_Thread *scheme_current_thread;
-MZ_EXTERN THREAD_LOCAL Scheme_Thread *scheme_first_thread;
+THREAD_LOCAL_DECL(MZ_EXTERN Scheme_Thread *scheme_current_thread);
+THREAD_LOCAL_DECL(MZ_EXTERN Scheme_Thread *scheme_first_thread);
 #endif
 MZ_EXTERN Scheme_Thread *scheme_get_current_thread();
 MZ_EXTERN long scheme_get_multiple_count();

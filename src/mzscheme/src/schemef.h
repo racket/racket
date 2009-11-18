@@ -67,14 +67,14 @@ MZ_EXTERN Scheme_Object *scheme_current_break_cell();
 /*                                threads                                 */
 /*========================================================================*/
 
-#ifndef LINK_EXTENSIONS_BY_TABLE
-# if !defined(MZ_USE_PLACES) || !defined(FUTURES_ENABLED)
-MZ_EXTERN THREAD_LOCAL Scheme_Thread *scheme_current_thread;
-# endif
-MZ_EXTERN THREAD_LOCAL volatile int scheme_fuel_counter;
-#else
+#ifndef USE_THREAD_LOCAL
+# ifndef LINK_EXTENSIONS_BY_TABLE
+MZ_EXTERN Scheme_Thread *scheme_current_thread;
+MZ_EXTERN volatile int scheme_fuel_counter;
+# else
 MZ_EXTERN Scheme_Thread **scheme_current_thread_ptr;
 MZ_EXTERN volatile int *scheme_fuel_counter_ptr;
+# endif
 #endif
 
 MZ_EXTERN Scheme_Thread *scheme_get_current_thread();
@@ -407,7 +407,9 @@ MZ_EXTERN void scheme_gc_ptr_ok(void *p);
 MZ_EXTERN void scheme_collect_garbage(void);
 
 #ifdef MZ_PRECISE_GC
-MZ_EXTERN THREAD_LOCAL void **GC_variable_stack;
+# ifndef USE_THREAD_LOCAL
+MZ_EXTERN void **GC_variable_stack;
+# endif
 MZ_EXTERN void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark, Fixup_Proc fixup,
 				      int is_constant_size, int is_atomic);
 MZ_EXTERN void *GC_resolve(void *p);

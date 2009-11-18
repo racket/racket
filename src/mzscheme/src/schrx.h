@@ -5,8 +5,6 @@
    once, anyway.) */
 /* #define INDIRECT_TO_PROGRAM */
 
-typedef long rxpos;
-
 struct Regwork;
 
 typedef int (*Scheme_Regexp_Matcher)(struct Regwork *rw);

@@ -140,40 +140,40 @@ extern int scheme_jit_malloced;
 
 static int buffer_init_size = INIT_TB_SIZE;
 
-THREAD_LOCAL Scheme_Thread *scheme_current_thread = NULL;
-THREAD_LOCAL Scheme_Thread *scheme_main_thread = NULL;
-THREAD_LOCAL Scheme_Thread *scheme_first_thread = NULL;
+THREAD_LOCAL_DECL(Scheme_Thread *scheme_current_thread = NULL);
+THREAD_LOCAL_DECL(Scheme_Thread *scheme_main_thread = NULL);
+THREAD_LOCAL_DECL(Scheme_Thread *scheme_first_thread = NULL);
 
 Scheme_Thread *scheme_get_current_thread() { return scheme_current_thread; }
 long scheme_get_multiple_count() { return scheme_current_thread->ku.multiple.count; }
 Scheme_Object **scheme_get_multiple_array() { return scheme_current_thread->ku.multiple.array; }
 void scheme_set_current_thread_ran_some() { scheme_current_thread->ran_some = 1; }
 
-THREAD_LOCAL Scheme_Thread_Set *scheme_thread_set_top;
+THREAD_LOCAL_DECL(Scheme_Thread_Set *scheme_thread_set_top);
 
-static THREAD_LOCAL int num_running_threads = 1;
+THREAD_LOCAL_DECL(static int num_running_threads); /* not counting original */
 
 #ifdef LINK_EXTENSIONS_BY_TABLE
 Scheme_Thread **scheme_current_thread_ptr;
 volatile int *scheme_fuel_counter_ptr;
 #endif
-static THREAD_LOCAL int swap_no_setjmp = 0;
+THREAD_LOCAL_DECL(static int swap_no_setjmp = 0);
 
-static THREAD_LOCAL int thread_swap_count;
-static THREAD_LOCAL int did_gc_count;
+THREAD_LOCAL_DECL(static int thread_swap_count);
+THREAD_LOCAL_DECL(static int did_gc_count);
 
 static int init_load_on_demand = 1;
 
 #ifdef RUNSTACK_IS_GLOBAL
-THREAD_LOCAL Scheme_Object **scheme_current_runstack_start;
-THREAD_LOCAL Scheme_Object **scheme_current_runstack;
-THREAD_LOCAL MZ_MARK_STACK_TYPE scheme_current_cont_mark_stack;
-THREAD_LOCAL MZ_MARK_POS_TYPE scheme_current_cont_mark_pos;
+THREAD_LOCAL_DECL(Scheme_Object **scheme_current_runstack_start);
+THREAD_LOCAL_DECL(Scheme_Object **scheme_current_runstack);
+THREAD_LOCAL_DECL(MZ_MARK_STACK_TYPE scheme_current_cont_mark_stack);
+THREAD_LOCAL_DECL(MZ_MARK_POS_TYPE scheme_current_cont_mark_pos);
 #endif
 
-static THREAD_LOCAL Scheme_Custodian *main_custodian;
-static THREAD_LOCAL Scheme_Custodian *last_custodian;
-static THREAD_LOCAL Scheme_Hash_Table *limited_custodians = NULL;
+THREAD_LOCAL_DECL(static Scheme_Custodian *main_custodian);
+THREAD_LOCAL_DECL(static Scheme_Custodian *last_custodian);
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *limited_custodians = NULL);
 
 static Scheme_Object *initial_inspector;
 
@@ -188,9 +188,9 @@ extern int GC_is_marked(void *);
 /* On swap, put target in a static variable, instead of on the stack,
    so that the swapped-out thread is less likely to have a pointer
    to the target thread. */
-static THREAD_LOCAL Scheme_Thread *swap_target;
+THREAD_LOCAL_DECL(static Scheme_Thread *swap_target);
 
-static THREAD_LOCAL Scheme_Object *scheduled_kills;
+THREAD_LOCAL_DECL(static Scheme_Object *scheduled_kills);
 
 Scheme_Object *scheme_parameterization_key;
 Scheme_Object *scheme_exn_handler_key;
@@ -213,16 +213,16 @@ void (*scheme_wakeup_on_input)(void *fds);
 int (*scheme_check_for_break)(void);
 void (*scheme_on_atomic_timeout)(void);
 
-static THREAD_LOCAL int do_atomic = 0;
-static THREAD_LOCAL int missed_context_switch = 0;
-static THREAD_LOCAL int have_activity = 0;
-THREAD_LOCAL int scheme_active_but_sleeping = 0;
-static THREAD_LOCAL int thread_ended_with_activity;
-THREAD_LOCAL int scheme_no_stack_overflow;
+THREAD_LOCAL_DECL(static int do_atomic = 0);
+THREAD_LOCAL_DECL(static int missed_context_switch = 0);
+THREAD_LOCAL_DECL(static int have_activity = 0);
+THREAD_LOCAL_DECL(int scheme_active_but_sleeping = 0);
+THREAD_LOCAL_DECL(static int thread_ended_with_activity);
+THREAD_LOCAL_DECL(int scheme_no_stack_overflow);
 
-static THREAD_LOCAL int needs_sleep_cancelled;
+THREAD_LOCAL_DECL(static int needs_sleep_cancelled);
 
-static THREAD_LOCAL int tls_pos = 0;
+THREAD_LOCAL_DECL(static int tls_pos = 0);
 
 #ifdef MZ_PRECISE_GC
 extern long GC_get_memory_use(void *c);
@@ -245,17 +245,18 @@ typedef struct Thread_Cell {
 static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
 static Scheme_Object *client_symbol, *server_symbol;
 
-static THREAD_LOCAL Scheme_Object *nested_exn_handler;
+THREAD_LOCAL_DECL(static Scheme_Object *the_nested_exn_handler);
 
-static THREAD_LOCAL Scheme_Object *closers;
+THREAD_LOCAL_DECL(static Scheme_Object *cust_closers);
 
-static THREAD_LOCAL Scheme_Object *thread_swap_callbacks,  *thread_swap_out_callbacks;
+THREAD_LOCAL_DECL(static Scheme_Object *thread_swap_callbacks);
+THREAD_LOCAL_DECL(static Scheme_Object *thread_swap_out_callbacks);
 
-static THREAD_LOCAL Scheme_Object *recycle_cell;
-static THREAD_LOCAL Scheme_Object *maybe_recycle_cell;
-static THREAD_LOCAL int recycle_cc_count;
-	
-static THREAD_LOCAL mz_jmp_buf main_init_error_buf;
+THREAD_LOCAL_DECL(static Scheme_Object *recycle_cell);
+THREAD_LOCAL_DECL(static Scheme_Object *maybe_recycle_cell);
+THREAD_LOCAL_DECL(static int recycle_cc_count);
+
+THREAD_LOCAL_DECL(static mz_jmp_buf main_init_error_buf);
 	
 #ifdef MZ_PRECISE_GC
 /* This is a trick to get the types right. Note that 
@@ -1888,7 +1889,7 @@ static void run_closers(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void
 {
   Scheme_Object *l;
 
-  for (l = closers; SCHEME_RPAIRP(l); l = SCHEME_CDR(l)) {
+  for (l = cust_closers; SCHEME_RPAIRP(l); l = SCHEME_CDR(l)) {
     Scheme_Exit_Closer_Func cf;
     cf = (Scheme_Exit_Closer_Func)SCHEME_CAR(l);
     cf(o, f, data);
@@ -1915,18 +1916,18 @@ static void run_atexit_closers(void)
 
 void scheme_add_atexit_closer(Scheme_Exit_Closer_Func f)
 {
-  if (!closers) {
+  if (!cust_closers) {
 #ifdef USE_ON_EXIT_FOR_ATEXIT
     on_exit(run_atexit_closers, NULL);
 #else
     atexit(run_atexit_closers);
 #endif
 
-    REGISTER_SO(closers);
-    closers = scheme_null;
+    REGISTER_SO(cust_closers);
+    cust_closers = scheme_null;
   }
 
-  closers = scheme_make_raw_pair((Scheme_Object *)f, closers);
+  cust_closers = scheme_make_raw_pair((Scheme_Object *)f, cust_closers);
 }
 
 void scheme_schedule_custodian_close(Scheme_Custodian *c)
@@ -3374,13 +3375,13 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
   if (p != scheme_main_thread)
     scheme_weak_suspend_thread(p);
 
-  if (!nested_exn_handler) {
-    REGISTER_SO(nested_exn_handler);
-    nested_exn_handler = scheme_make_prim_w_arity(def_nested_exn_handler,
-                                                  "nested-thread-exception-handler",
-                                                  1, 1);
+  if (!the_nested_exn_handler) {
+    REGISTER_SO(the_nested_exn_handler);
+    the_nested_exn_handler = scheme_make_prim_w_arity(def_nested_exn_handler,
+                                                      "nested-thread-exception-handler",
+                                                      1, 1);
   }
-  scheme_set_cont_mark(scheme_exn_handler_key, nested_exn_handler);
+  scheme_set_cont_mark(scheme_exn_handler_key, the_nested_exn_handler);
 
   /* Call thunk, catch escape: */
   np->error_buf = &newbuf;
@@ -7568,7 +7569,7 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
     case 8:
       SCHEME_VEC_ELS(v)[7] = scheme_make_integer(scheme_num_read_syntax_objects);
     case 7:
-      SCHEME_VEC_ELS(v)[6] = scheme_make_integer(num_running_threads);
+      SCHEME_VEC_ELS(v)[6] = scheme_make_integer(num_running_threads+1);
     case 6:
       SCHEME_VEC_ELS(v)[5] = scheme_make_integer(scheme_overflow_count);
     case 5:

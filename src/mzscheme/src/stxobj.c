@@ -82,25 +82,25 @@ static Scheme_Object *lexical_symbol;
 static Scheme_Object *protected_symbol;
 static Scheme_Object *nominal_id_symbol;
 
-static THREAD_LOCAL Scheme_Object *nominal_ipair_cache;
+THREAD_LOCAL_DECL(static Scheme_Object *nominal_ipair_cache);
 
-static THREAD_LOCAL Scheme_Object *mark_id = scheme_make_integer(0);
-static THREAD_LOCAL Scheme_Object *current_rib_timestamp = scheme_make_integer(0);
+THREAD_LOCAL_DECL(static Scheme_Object *mark_id);
+THREAD_LOCAL_DECL(static Scheme_Object *current_rib_timestamp);
 
 static Scheme_Stx_Srcloc *empty_srcloc;
 
 static Scheme_Object *empty_simplified;
 
-static THREAD_LOCAL Scheme_Hash_Table *quick_hash_table;
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *quick_hash_table);
 
-static THREAD_LOCAL Scheme_Object *last_phase_shift;
+THREAD_LOCAL_DECL(static Scheme_Object *last_phase_shift);
 
-static THREAD_LOCAL Scheme_Object *unsealed_dependencies;
+THREAD_LOCAL_DECL(static Scheme_Object *unsealed_dependencies);
 
-static THREAD_LOCAL Scheme_Hash_Table *id_marks_ht; /* a cache */
-static THREAD_LOCAL Scheme_Hash_Table *than_id_marks_ht; /* a cache */
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *id_marks_ht); /* a cache */
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *than_id_marks_ht); /* a cache */
 
-static THREAD_LOCAL Scheme_Bucket_Table *interned_skip_ribs;
+THREAD_LOCAL_DECL(static Scheme_Bucket_Table *interned_skip_ribs);
 
 static Scheme_Object *no_nested_inactive_certs;
 
@@ -602,6 +602,9 @@ void scheme_init_stx(Scheme_Env *env)
   nominal_id_symbol = scheme_intern_symbol("nominal-id");
 
   REGISTER_SO(mark_id);
+  REGISTER_SO(current_rib_timestamp);
+  mark_id = scheme_make_integer(0);
+  current_rib_timestamp = scheme_make_integer(0);
 
   REGISTER_SO(empty_srcloc);
   empty_srcloc = MALLOC_ONE_RT(Scheme_Stx_Srcloc);

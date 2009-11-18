@@ -2,16 +2,6 @@
 #ifndef __mzscheme_gc_2__
 #define __mzscheme_gc_2__
 
-#if defined(MZ_USE_PLACES) || defined(FUTURES_ENABLED)
-# if _MSC_VER
-#  define THREAD_LOCAL __declspec(thread)
-# else
-#  define THREAD_LOCAL __thread
-# endif
-#else
-# define THREAD_LOCAL /* empty */
-#endif
-
 /***************************************************************************/
 /***   See README for a general overview of the interface architecture.  ***/
 /***************************************************************************/
@@ -288,7 +278,7 @@ GC2_EXTERN void GC_finalization_weak_ptr(void **p, int offset);
 /* Cooperative GC                                                          */
 /***************************************************************************/
 
-GC2_EXTERN THREAD_LOCAL void **GC_variable_stack;
+THREAD_LOCAL_DECL(GC2_EXTERN void **GC_variable_stack);
 /*
    See the general overview in README. */
 

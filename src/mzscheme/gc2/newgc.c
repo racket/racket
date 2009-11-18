@@ -27,13 +27,16 @@
    the nursery and pages being compacted.
 */
 
-#define MZ_PRECISE_GC 1 /* required for mz includes to work right */
+#define MZ_PRECISE_GC /* required for mz includes to work right */
+#define XFORM_OK_ASSIGN /* annotation used when thread-local variables are needed */
+#define SKIP_THREAD_LOCAL_XFORM_DECL
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include "pthread.h"
 #include "platforms.h"
+#include "../src/schpriv.h"
 #include "gc2.h"
 #include "gc2_dump.h" 
 
@@ -98,9 +101,9 @@ static const char *type_name[PAGE_TYPES] = {
 #ifdef MZ_USE_PLACES
 static NewGC *MASTERGC;
 static NewGCMasterInfo *MASTERGCINFO;
-static THREAD_LOCAL objhead GC_objhead_template;
+THREAD_LOCAL_DECL(static objhead GC_objhead_template);
 #endif
-static THREAD_LOCAL NewGC *GC;
+THREAD_LOCAL_DECL(static NewGC *GC);
 #define GCTYPE NewGC
 #define GC_get_GC() (GC)
 #define GC_set_GC(gc) (GC = gc)
@@ -471,8 +474,8 @@ int GC_is_allocated(void *p)
    The size count helps us trigger collection quickly when we're running out of space; see
    the test in allocate_big. 
 */
-THREAD_LOCAL unsigned long GC_gen0_alloc_page_ptr = 0;
-THREAD_LOCAL unsigned long GC_gen0_alloc_page_end = 0;
+THREAD_LOCAL_DECL(unsigned long GC_gen0_alloc_page_ptr = 0);
+THREAD_LOCAL_DECL(unsigned long GC_gen0_alloc_page_end = 0);
 
 /* miscellaneous variables */
 static const char *zero_sized[4]; /* all 0-sized allocs get this */
@@ -1242,7 +1245,7 @@ static void *get_backtrace(mpage *page, void *ptr)
 /* With the exception of the "traverse" macro and resultant simplification,  */
 /* this code is entirely lifted from compact.c                               */
 /*****************************************************************************/
-THREAD_LOCAL void **GC_variable_stack;
+THREAD_LOCAL_DECL(void **GC_variable_stack);
 
 void **GC_get_variable_stack()
 { 
@@ -1514,7 +1517,7 @@ inline static void reset_weak_finalizers(NewGC *gc)
 #define MARK_STACK_START(ms) ((void **)(void *)&ms[1])
 #define MARK_STACK_END(ms) ((void **)((char *)ms + STACK_PART_SIZE))
 
-static THREAD_LOCAL MarkSegment *mark_stack = NULL;
+THREAD_LOCAL_DECL(static MarkSegment *mark_stack = NULL);
 
 inline static MarkSegment* mark_stack_create_frame() {
   MarkSegment *mark_frame = (MarkSegment*)ofm_malloc(STACK_PART_SIZE);

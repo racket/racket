@@ -469,7 +469,8 @@
              '#%paramz
              '#%network
              '#%utils
-             (only '#%place)))
+             (only '#%place)
+             (only '#%futures)))
 
 ;; ----------------------------------------
 ;; Handlers to install on startup

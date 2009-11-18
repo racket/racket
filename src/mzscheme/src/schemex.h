@@ -53,14 +53,14 @@ Scheme_Object *(*scheme_current_break_cell)();
 /*========================================================================*/
 /*                                threads                                 */
 /*========================================================================*/
-#ifndef LINK_EXTENSIONS_BY_TABLE
-# if !defined(MZ_USE_PLACES) || !defined(FUTURES_ENABLED)
+#ifndef USE_THREAD_LOCAL
+# ifndef LINK_EXTENSIONS_BY_TABLE
 Scheme_Thread *scheme_current_thread;
-# endif
 volatile int scheme_fuel_counter;
-#else
+# else
 Scheme_Thread **scheme_current_thread_ptr;
 volatile int *scheme_fuel_counter_ptr;
+# endif
 #endif
 Scheme_Thread *(*scheme_get_current_thread)();
 void (*scheme_start_atomic)(void);
@@ -329,7 +329,9 @@ void (*scheme_dont_gc_ptr)(void *p);
 void (*scheme_gc_ptr_ok)(void *p);
 void (*scheme_collect_garbage)(void);
 #ifdef MZ_PRECISE_GC
+# ifndef USE_THREAD_LOCAL
 void **GC_variable_stack;
+# endif
 void (*GC_register_traversers)(short tag, Size_Proc size, Mark_Proc mark, Fixup_Proc fixup,
 				      int is_constant_size, int is_atomic);
 void *(*GC_resolve)(void *p);

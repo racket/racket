@@ -216,10 +216,9 @@ static void set_copy(void *s_c, void *c)
 # define get_copy(s_c) (s_c)
 # define set_copy(s_c, c) s_c = c
 
-#define STACK_COPY_CACHE_SIZE 10
-static THREAD_LOCAL void *stack_copy_cache[STACK_COPY_CACHE_SIZE];
-static THREAD_LOCAL long stack_copy_size_cache[STACK_COPY_CACHE_SIZE];
-static THREAD_LOCAL int scc_pos;
+THREAD_LOCAL_DECL(static void *stack_copy_cache[STACK_COPY_CACHE_SIZE]);
+THREAD_LOCAL_DECL(static long stack_copy_size_cache[STACK_COPY_CACHE_SIZE]);
+THREAD_LOCAL_DECL(static int scc_pos);
 #define SCC_OK_EXTRA_AMT 100
 
 START_XFORM_SKIP;

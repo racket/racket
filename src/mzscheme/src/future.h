@@ -29,7 +29,6 @@ extern Scheme_Object *end_primitive_tracking(int argc, Scheme_Object *argv[]);
 extern Scheme_Object *future(int argc, Scheme_Object *argv[]);
 extern Scheme_Object *touch(int argc, Scheme_Object *argv[]);
 extern Scheme_Object *num_processors(int argc, Scheme_Object *argv[]);
-extern void scheme_init_futures(Scheme_Env *env);
 extern int future_do_runtimecall(void *func, int sigtype, void *args, void *retval);
 extern void futures_init(void);
 
