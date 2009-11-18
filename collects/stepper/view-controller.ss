@@ -53,6 +53,9 @@
   ;; channel for incoming views
   (define view-channel (make-async-channel))
   
+  ;; the first-step semaphore
+  (define first-step-sema (make-semaphore 0))
+  
   ;; the list of available views
   (define view-history null)
   
@@ -75,7 +78,9 @@
          (let* ([new-result (async-channel-get view-channel)]
                 [new-step (format-result new-result)])
            (set! view-history (append view-history (list new-step)))
-           (set! num-steps-available (length view-history)))
+           (set! num-steps-available (length view-history))
+           ;; this is only necessary the first time, but it's cheap:
+           (semaphore-post first-step-sema))
          (update-status-bar)
          (loop)))))
     
@@ -219,12 +224,17 @@
   (define button-panel
     (make-object horizontal-panel% (send s-frame get-area-container)))
   (define (add-button name fun)
-    (make-object button% name button-panel (lambda (_1 _2) (fun))))
+    (new button% 
+         [label name] 
+         [parent button-panel] 
+         [callback (lambda (_1 _2) (fun))]
+         [enabled #f]))
   (define (add-choice-box name fun)
     (new choice% [label name]
          [choices (map first pulldown-choices)]
          [parent button-panel]
-         [callback fun]))
+         [callback fun]
+         [enabled #f]))
   
   (define pulldown-choices
     `((,(string-constant stepper-jump-to-beginning) ,jump-to-beginning)
@@ -237,6 +247,7 @@
   (define next-application-button     (add-button (string-constant stepper-next-application) next-application))
   (define jump-button                 (add-choice-box (string-constant stepper-jump) jump-to))
     
+  
   (define canvas
     (make-object x:stepper-canvas% (send s-frame get-area-container)))
   
@@ -281,9 +292,16 @@
   
   (define update-status-bar-semaphore (make-semaphore 1))
   
+  (define (enable-all-buttons)
+    (send previous-application-button enable #t)
+    (send previous-button enable #t)
+    (send next-button enable #t)
+    (send next-application-button enable #t)
+    (send jump-button enable #t))
+
+  
   (define (print-current-view item evt)
     (send (send canvas get-editor) print))
-  
 
   ;; translates a result into a step
   ;; format-result : result -> step?
@@ -343,7 +361,15 @@
    (send language-level stepper:show-lambdas-as-lambdas?)
    language-level
    #f)
+  
   (send s-frame show #t)
+  
+  ;; turn on the buttons and display the first step when it shows up:
+  (thread
+   (lambda ()
+     (semaphore-wait first-step-sema)
+     (jump-to-beginning)
+     (enable-all-buttons)))
   
   s-frame)
 
