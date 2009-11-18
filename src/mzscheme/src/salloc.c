@@ -65,6 +65,9 @@ THREAD_LOCAL Thread_Local_Variables scheme_thread_locals;
 extern int scheme_num_copied_stacks;
 static unsigned long scheme_primordial_os_thread_stack_base;
 THREAD_LOCAL_DECL(static unsigned long scheme_os_thread_stack_base);
+#ifdef USE_THREAD_LOCAL
+Thread_Local_Variables *scheme_vars; /* for debugging */
+#endif
 
 static Scheme_Report_Out_Of_Memory_Proc more_report_out_of_memory;
 
@@ -164,7 +167,12 @@ int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void 
     fprintf(stderr, "pthread key create failed");
     abort();
   }
+#endif
+
   scheme_init_os_thread();
+
+#ifdef USE_THREAD_LOCAL
+  scheme_vars = scheme_get_thread_local_variables();
 #endif
 
   scheme_set_stack_base(PROMPT_STACK(stack_start), no_auto_statics);

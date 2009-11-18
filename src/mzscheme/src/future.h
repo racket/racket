@@ -80,6 +80,7 @@ typedef struct future {
 	int work_completed;
 	pthread_cond_t *can_continue_cv;
 
+        long runstack_size;
 	Scheme_Object **runstack;
 	Scheme_Object **runstack_start;
 	Scheme_Object *orig_lambda;

@@ -50,7 +50,7 @@ void scheme_init_futures(Scheme_Env *env)
 
 extern void *on_demand_jit_code;
 
-#define THREAD_POOL_SIZE 3
+#define THREAD_POOL_SIZE 1
 #define INITIAL_C_STACK_SIZE 500000
 static pthread_t g_pool_threads[THREAD_POOL_SIZE];
 static int *g_fuel_pointers[THREAD_POOL_SIZE];
@@ -59,6 +59,7 @@ static int g_num_avail_threads = 0;
 static unsigned long g_cur_cpu_mask = 1;
 static void *g_signal_handle = NULL;
 
+static struct NewGC *g_shared_GC;
 future_t *g_future_queue = NULL;
 int g_next_futureid = 0;
 pthread_t g_rt_threadid = 0;
@@ -86,7 +87,7 @@ static void register_traversers(void);
 extern void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv);
 
 static void start_gc_not_ok();
-static void end_gc_not_ok();
+static void end_gc_not_ok(future_t *ft);
 
 THREAD_LOCAL_DECL(static future_t *current_ft);
 
@@ -310,6 +311,7 @@ void futures_init(void)
   for (i = 0; i < THREAD_POOL_SIZE; i++)
   {
       gc_counter_ptr = &scheme_did_gc_count;
+      g_shared_GC = GC;
       pthread_create(&threadid, &attr, worker_thread_future_loop, &i);
       sema_wait(&ready_sema);
 	
@@ -337,8 +339,14 @@ static void start_gc_not_ok()
 #endif
 }
 
-static void end_gc_not_ok()
+static void end_gc_not_ok(future_t *ft)
 {
+  if (ft) {
+    scheme_set_runstack_limits(ft->runstack_start, 
+                               ft->runstack_size,
+                               ft->runstack - ft->runstack_start,
+                               ft->runstack_size);
+  }
   pthread_mutex_lock(&gc_ok_m);
   --gc_not_ok;
   pthread_cond_signal(&gc_ok_c);
@@ -465,6 +473,7 @@ Scheme_Object *future(int argc, Scheme_Object *argv[])
 			rs = rs_start XFORM_OK_PLUS init_runstack_size;
 			ft->runstack_start = rs_start;
     	ft->runstack = rs;
+    	ft->runstack_size = init_runstack_size;
 		}   
 
     //pthread_mutex_unlock(&g_future_queue_mutex);
@@ -603,6 +612,8 @@ void *worker_thread_future_loop(void *arg)
 
         scheme_init_os_thread();
 
+        GC = g_shared_GC;
+
 	//Set processor affinity
 	/*pthread_mutex_lock(&g_future_queue_mutex);
 	if (pthread_setaffinity_np(pthread_self(), sizeof(g_cur_cpu_mask), &g_cur_cpu_mask))
@@ -635,7 +646,7 @@ void *worker_thread_future_loop(void *arg)
         pthread_mutex_lock(&g_future_queue_mutex);
 				while (!(ft = get_pending_future()))
 				{
-          end_gc_not_ok();
+          end_gc_not_ok(NULL);
 					pthread_cond_wait(&g_future_pending_cv, &g_future_queue_mutex);
           start_gc_not_ok();
 				}
@@ -679,12 +690,15 @@ void *worker_thread_future_loop(void *arg)
         ft->work_completed = 1;
         ft->retval = v;
 
+        ft->runstack = NULL;
+        ft->runstack_start = NULL;
+
 				//Update the status 
 				ft->status = FINISHED;
 				scheme_signal_received_at(g_signal_handle);
         pthread_mutex_unlock(&g_future_queue_mutex);
 
-        end_gc_not_ok();
+        end_gc_not_ok(NULL);
 
         goto wait_for_work;
 
@@ -737,7 +751,7 @@ int future_do_runtimecall(
 
     //Wait for the signal that the RT call is finished
                 future->can_continue_cv = &worker_can_continue_cv;
-    end_gc_not_ok();
+    end_gc_not_ok(future);
     pthread_cond_wait(&worker_can_continue_cv, &g_future_queue_mutex);
     start_gc_not_ok();
 

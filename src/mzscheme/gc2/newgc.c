@@ -1698,8 +1698,13 @@ static int designate_modified_gc(NewGC *gc, void *p)
       page->mprotected = 0;
       vm_protect_pages(page->addr, (page->size_class > 1) ? round_to_apage_size(page->size) : APAGE_SIZE, 1);
       page->back_pointers = 1;
-      return 1;
     }
+    /* For a single mutator thread, we shouldn't get here
+       (and a `return 1' in the braces above would make more
+       sense). With multiple mutators, though, two threads might
+       hit the same page at effectively the same time, and only
+       the first one of them will handle the signal. */
+    return 1;
   } else {
     if (gc->primoridal_gc) {
       return designate_modified_gc(gc->primoridal_gc, p);
