@@ -2302,7 +2302,7 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   ref5 = jit_blei_i(jit_forward(), JIT_R2, 0);
 #ifndef FUEL_AUTODECEREMENTS
   jit_subi_p(JIT_R2, JIT_R2, 0x1);
-  (void)mz_tl_sti_i(tl_scheme_fuel_counter, JIT_R2);
+  (void)mz_tl_sti_i(tl_scheme_fuel_counter, JIT_R2, JIT_R1);
 #endif
   CHECK_LIMIT();
 
@@ -2608,7 +2608,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   (void)mz_tl_ldi_i(JIT_R2, tl_scheme_fuel_counter);
   ref11 = jit_blei_i(jit_forward(), JIT_R2, 0);
   jit_subi_p(JIT_R2, JIT_R2, 0x1);
-  (void)mz_tl_sti_i(tl_scheme_fuel_counter, JIT_R2);
+  (void)mz_tl_sti_i(tl_scheme_fuel_counter, JIT_R2, JIT_R1);
 #endif
 
   /* Fast inlined-native jump ok (proc will check argc, if necessary) */
@@ -2861,7 +2861,7 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
   refslow = jit_blei_i(jit_forward(), JIT_R2, 0);
 #ifndef FUEL_AUTODECEREMENTS
   jit_subi_p(JIT_R2, JIT_R2, 0x1);
-  (void)mz_tl_sti_i(tl_scheme_fuel_counter, JIT_R2);
+  (void)mz_tl_sti_i(tl_scheme_fuel_counter, JIT_R2, JIT_R1);
 #endif
 
   __END_TINY_OR_SHORT_JUMPS__(jmp_tiny, jmp_short);

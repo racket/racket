@@ -611,9 +611,9 @@ static int jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
 
 #ifdef JIT_X86_64
 # define jit_ldi_l(d, is) (_u32P((long)(is)) ? _jit_ldi_l(d, is) : (jit_movi_l(d, is), jit_ldr_l(d, d)))
-# define jit_sti_l(id, rs) (_u32P((long)(id)) ? _jit_sti_l(id, rs) : (jit_movi_l(JIT_REXTMP, id), MOVQrQm(rs, 0, JIT_REXTMP, 0, 0)))
-# define jit_ldi_i(d, is) (_s32P((long)(is)) ? _jit_ldi_i(d, is) : (jit_movi_l(d, is), jit_ldr_i(d, d)))
-# define jit_sti_i(id, rs) (_s32P((long)(id)) ? _jit_ldi_i(id, rs) : (jit_movi_l(JIT_REXTMP, id), MOVQrm(d, JIT_REXTMP)))
+# define jit_sti_l(id, rs) (_u32P((long)(id)) ? _jit_sti_l(id, rs) : (jit_movi_l(JIT_REXTMP, (long)(id)), MOVQrQm(rs, 0, JIT_REXTMP, 0, 0)))
+# define jit_ldi_i(d, is) (_u32P((long)(is)) ? _jit_ldi_i(d, is) : (jit_movi_l(d, is), jit_ldr_i(d, d)))
+# define jit_sti_i(id, rs) (_u32P((long)(id)) ? _jit_sti_i(id, rs) : (jit_movi_l(JIT_REXTMP, (long)(id)), MOVQrm(rs, 0, JIT_REXTMP, 0, 0)))
 #else
 # define jit_ldi_l(d, is) _jit_ldi_l(d, is)
 # define jit_sti_l(id, rs) _jit_sti_l(id, rs)
