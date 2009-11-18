@@ -311,7 +311,7 @@
 (define/chk (overlay image image2 . image3)
   (overlay/internal 'left 'top image (cons image2 image3)))
 
-;; overlay/places : string string image image image ... -> image
+;; overlay/align : string string image image image ... -> image
 ;; the first string has to be one of "center" "middle" "left" or "right" (or symbols)
 ;; the second string has to be one of "center" "middle" "top" "bottom" or "baseline" (or symbols)
 ;; behaves like overlay, but lines up the images in the various places.
@@ -319,7 +319,7 @@
 ;; for the two string arguments. Passing, eg, "center" "center" lines the
 ;; images up at their centers.
 
-(define/chk (overlay/places x-place y-place image image2 . image3)
+(define/chk (overlay/align x-place y-place image image2 . image3)
   (overlay/internal x-place y-place image (cons image2 image3)))
 
 (define (overlay/internal x-place y-place fst rst)
@@ -382,10 +382,10 @@
 (define/chk (beside image1 image2 . image3)
   (beside/internal 'top image1 (cons image2 image3)))
 
-;; beside/places : string image image image ... -> image
+;; beside/align : string image image image ... -> image
 ;; places images in a horizontal row where the vertical alignment is
 ;; covered by the string argument
-(define/chk (beside/places y-place image1 image2 . image3)
+(define/chk (beside/align y-place image1 image2 . image3)
   (beside/internal y-place image1 (cons image2 image3)))
 
 (define (beside/internal y-place fst rst)
@@ -411,10 +411,10 @@
 (define/chk (above image1 image2 . image3)
   (above/internal 'left image1 (cons image2 image3)))
 
-;; beside/places : string image image image ... -> image
+;; beside/align : string image image image ... -> image
 ;; places images in a horizontal row where the vertical alignment is
 ;; covered by the string argument
-(define/chk (above/places x-place image1 image2 . image3)
+(define/chk (above/align x-place image1 image2 . image3)
   (above/internal x-place image1 (cons image2 image3)))
 
 (define (above/internal x-place fst rst)
@@ -931,12 +931,12 @@
        #`(make-object image-snip% (make-object bitmap% #,path 'unknown/mask)))]))
 
 (provide overlay
-         overlay/places
+         overlay/align
          overlay/xy
          beside
-         beside/places
+         beside/align
          above
-         above/places
+         above/align
          
          rotate
          

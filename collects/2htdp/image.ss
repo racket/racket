@@ -50,14 +50,14 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          "private/image-more.ss")
 
 (provide overlay
-         overlay/places
+         overlay/align
          overlay/xy
          
          beside
-         beside/places
+         beside/align
 
          above
-         above/places
+         above/align
          
          rotate
          frame

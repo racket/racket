@@ -277,20 +277,20 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
   
   }
 
-@defproc[(overlay/places [x-place x-place?] [y-place y-place?] [i1 image?] [i2 image?] [is image?] ...) image?]{
+@defproc[(overlay/align [x-place x-place?] [y-place y-place?] [i1 image?] [i2 image?] [is image?] ...) image?]{
   Overlays all of its image arguments, much like the @scheme[overlay] function, but using
   @scheme[x-place] and @scheme[y-place] to determine where the images are lined up. For example, if
   @scheme[x-place] and @scheme[y-place] are both @scheme["middle"], then the images are lined up
   on their centers.
 
-  @image-examples[(overlay/places "middle" "middle"
-                                  (rectangle 30 60 "solid" "orange")
-                                  (ellipse 60 30 "solid" "purple"))
-                  (overlay/places "right" "bottom"
-                                  (rectangle 20 20 "solid" "silver")
-                                  (rectangle 30 30 "solid" "seagreen")
-                                  (rectangle 40 40 "solid" "silver")
-                                  (rectangle 50 50 "solid" "seagreen"))]
+  @image-examples[(overlay/align "middle" "middle"
+                                 (rectangle 30 60 "solid" "orange")
+                                 (ellipse 60 30 "solid" "purple"))
+                  (overlay/align "right" "bottom"
+                                 (rectangle 20 20 "solid" "silver")
+                                 (rectangle 30 30 "solid" "seagreen")
+                                 (rectangle 40 40 "solid" "silver")
+                                 (rectangle 50 50 "solid" "seagreen"))]
                                   
   
   }
@@ -330,27 +330,27 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
   
   }
 
-@defproc[(beside/places [y-place y-place?] [i1 image?] [i2 image?] [is image?] ...) image?]{
+@defproc[(beside/align [y-place y-place?] [i1 image?] [i2 image?] [is image?] ...) image?]{
   Constructs an image by placing all of the argument images in a horizontal row, lined
   up as indicated by the @scheme[y-place] argument. For example, if @scheme[y-place]
   is @scheme["middle"], then the images are placed side by side with their centers 
   lined up with each other.
 
-  @image-examples[(beside/places "bottom"
-                                 (ellipse 20 70 "solid" "lightsteelblue")
-                                 (ellipse 20 50 "solid" "mediumslateblue")
-                                 (ellipse 20 30 "solid" "slateblue")
-                                 (ellipse 20 10 "solid" "navy"))
+  @image-examples[(beside/align "bottom"
+                                (ellipse 20 70 "solid" "lightsteelblue")
+                                (ellipse 20 50 "solid" "mediumslateblue")
+                                (ellipse 20 30 "solid" "slateblue")
+                                (ellipse 20 10 "solid" "navy"))
                   
-                  (beside/places "center"
-                                 (ellipse 20 70 "solid" "mediumorchid")
-                                 (ellipse 20 50 "solid" "darkorchid")
-                                 (ellipse 20 30 "solid" "purple")
-                                 (ellipse 20 10 "solid" "indigo"))
-                                                                  
-                  (beside/places "baseline"
-                                 (text "ijy" 18 "black")
-                                 (text "ijy" 24 "black"))]
+                  (beside/align "center"
+                                (ellipse 20 70 "solid" "mediumorchid")
+                                (ellipse 20 50 "solid" "darkorchid")
+                                (ellipse 20 30 "solid" "purple")
+                                (ellipse 20 10 "solid" "indigo"))
+                  
+                  (beside/align "baseline"
+                                (text "ijy" 18 "black")
+                                (text "ijy" 24 "black"))]
                                  
   
   }
@@ -368,23 +368,23 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
   
   }
 
-@defproc[(above/places [y-place y-place?] [i1 image?] [i2 image?] [is image?] ...) image?]{
+@defproc[(above/align [y-place y-place?] [i1 image?] [i2 image?] [is image?] ...) image?]{
   Constructs an image by placing all of the argument images in a vertical row, lined
   up as indicated by the @scheme[x-place] argument. For example, if @scheme[x-place]
   is @scheme["middle"], then the images are placed above each other with their centers 
   lined up.
 
-  @image-examples[(above/places "right"
-                                 (ellipse 70 20 "solid" "gold")
-                                 (ellipse 50 20 "solid" "goldenrod")
-                                 (ellipse 30 20 "solid" "darkgoldenrod")
-                                 (ellipse 10 20 "solid" "sienna"))
+  @image-examples[(above/align "right"
+                               (ellipse 70 20 "solid" "gold")
+                               (ellipse 50 20 "solid" "goldenrod")
+                               (ellipse 30 20 "solid" "darkgoldenrod")
+                               (ellipse 10 20 "solid" "sienna"))
                   
-                  (above/places "center"
-                                 (ellipse 70 20 "solid" "yellowgreen")
-                                 (ellipse 50 20 "solid" "olivedrab")
-                                 (ellipse 30 20 "solid" "darkolivegreen")
-                                 (ellipse 10 20 "solid" "darkgreen"))]
+                  (above/align "center"
+                               (ellipse 70 20 "solid" "yellowgreen")
+                               (ellipse 50 20 "solid" "olivedrab")
+                               (ellipse 30 20 "solid" "darkolivegreen")
+                               (ellipse 10 20 "solid" "darkgreen"))]
                                  
   
   }
@@ -397,7 +397,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
           @image-examples[(rotate 45 (ellipse 60 20 "solid" "olivedrab"))
                           (rotate 5 (rectangle 50 50 "outline" "black"))
                           (rotate 45
-                                  (beside/places
+                                  (beside/align
                                    "center"
                                    (rectangle 40 20 "solid" "darkseagreen")
                                    (rectangle 20 100 "solid" "darkseagreen")))]
@@ -436,11 +436,11 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
   debug image constructions, i.e., to see where
   certain sub-images appear within some larger image.
   
-  @image-examples[(beside/places "bottom"
-                                 (ellipse 20 70 "solid" "lightsteelblue")
-                                 (frame (ellipse 20 50 "solid" "mediumslateblue"))
-                                 (ellipse 20 30 "solid" "slateblue")
-                                 (ellipse 20 10 "solid" "navy"))]
+  @image-examples[(beside/align "bottom"
+                                (ellipse 20 70 "solid" "lightsteelblue")
+                                (frame (ellipse 20 50 "solid" "mediumslateblue"))
+                                (ellipse 20 30 "solid" "slateblue")
+                                (ellipse 20 10 "solid" "navy"))]
 }
 
 @section{Image Properties}
@@ -598,9 +598,9 @@ Equality testing may contain a few nuances, though:
          work well, each string passed to either of those functions results
          in a number of horizontally aligned images, one for each letter in the
          string. This means that, for example
-         @schemeblock[(equal? (beside/places "baseline"
-                                             (text "a" 18 "black")
-                                             (text "b" 18 "black"))
+         @schemeblock[(equal? (beside/align "baseline"
+                                            (text "a" 18 "black")
+                                            (text "b" 18 "black"))
                               (text "ab" 18 "black"))]
          is true, but that subtle aspects of font drawing may be wrong, since
          the underlying toolkit only gets a single letter at a time, instead

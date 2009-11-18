@@ -25,14 +25,14 @@
    (list '(image-width (circle 30 "solid" "orange")) 'val 60)
    (list '(image-width (ellipse 30 40 "solid" "orange")) 'val 30)
    (list
-    '(beside/places
+    '(beside/align
       "bottom"
       (ellipse 20 70 "solid" "lightsteelblue")
       (frame (ellipse 20 50 "solid" "mediumslateblue"))
       (ellipse 20 30 "solid" "slateblue")
       (ellipse 20 10 "solid" "navy"))
     'image
-    "5d9d7eb8c7.png")
+    "f7f1480d58.png")
    (list '(frame (ellipse 20 20 "outline" "black")) 'image "6a5a617f28.png")
    (list '(ellipse 60 60 "solid" "blue") 'image "d92d6a49f1.png")
    (list
@@ -44,12 +44,12 @@
    (list
     '(rotate
       45
-      (beside/places
+      (beside/align
        "center"
        (rectangle 40 20 "solid" "darkseagreen")
        (rectangle 20 100 "solid" "darkseagreen")))
     'image
-    "292b77d2270.png")
+    "fdaad0760b.png")
    (list
     '(rotate 5 (rectangle 50 50 "outline" "black"))
     'image
@@ -59,23 +59,23 @@
     'image
     "28daec71a64.png")
    (list
-    '(above/places
+    '(above/align
       "center"
       (ellipse 70 20 "solid" "yellowgreen")
       (ellipse 50 20 "solid" "olivedrab")
       (ellipse 30 20 "solid" "darkolivegreen")
       (ellipse 10 20 "solid" "darkgreen"))
     'image
-    "29c8557c53a.png")
+    "166bb7bc683.png")
    (list
-    '(above/places
+    '(above/align
       "right"
       (ellipse 70 20 "solid" "gold")
       (ellipse 50 20 "solid" "goldenrod")
       (ellipse 30 20 "solid" "darkgoldenrod")
       (ellipse 10 20 "solid" "sienna"))
     'image
-    "2865c0c88d9.png")
+    "2758748ad7f.png")
    (list
     '(above
       (ellipse 70 20 "solid" "gray")
@@ -85,27 +85,27 @@
     'image
     "aac8b78b6e.png")
    (list
-    '(beside/places "baseline" (text "ijy" 18 "black") (text "ijy" 24 "black"))
+    '(beside/align "baseline" (text "ijy" 18 "black") (text "ijy" 24 "black"))
     'image
-    "11477a8292d.png")
+    "2187216ca96.png")
    (list
-    '(beside/places
+    '(beside/align
       "center"
       (ellipse 20 70 "solid" "mediumorchid")
       (ellipse 20 50 "solid" "darkorchid")
       (ellipse 20 30 "solid" "purple")
       (ellipse 20 10 "solid" "indigo"))
     'image
-    "1dd3a9fcdbb.png")
+    "2dd0a2a4517.png")
    (list
-    '(beside/places
+    '(beside/align
       "bottom"
       (ellipse 20 70 "solid" "lightsteelblue")
       (ellipse 20 50 "solid" "mediumslateblue")
       (ellipse 20 30 "solid" "slateblue")
       (ellipse 20 10 "solid" "navy"))
     'image
-    "fe15a0a20c.png")
+    "eb99639e31.png")
    (list
     '(beside
       (ellipse 20 70 "solid" "gray")
@@ -151,7 +151,7 @@
     'image
     "1f0b671ed7b.png")
    (list
-    '(overlay/places
+    '(overlay/align
       "right"
       "bottom"
       (rectangle 20 20 "solid" "silver")
@@ -159,15 +159,15 @@
       (rectangle 40 40 "solid" "silver")
       (rectangle 50 50 "solid" "seagreen"))
     'image
-    "201133dd679.png")
+    "969a9aa483.png")
    (list
-    '(overlay/places
+    '(overlay/align
       "middle"
       "middle"
       (rectangle 30 60 "solid" "orange")
       (ellipse 60 30 "solid" "purple"))
     'image
-    "13b365251d3.png")
+    "bf08c71801.png")
    (list
     '(overlay
       (ellipse 10 10 "solid" "red")

@@ -33,7 +33,7 @@
    (cond
      [(= n 7) image]
      [else
-      (loop (overlay/places 'center 'center
+      (loop (overlay/align 'center 'center
                             image
                             (rotate (* 180 (/ 1 n)) image))
             (+ n 1))])))
@@ -283,7 +283,7 @@
        (make-bb 140 140 140)
        #f))
 
-(test (overlay/places 'middle
+(test (overlay/align 'middle
                       'middle
                       (ellipse 100 50 'solid 'green)
                       (ellipse 50 100 'solid 'red))
@@ -295,7 +295,7 @@
        (make-bb 100 100 100)
        #f))
 
-(test (overlay/places 'middle
+(test (overlay/align 'middle
                       'middle
                       (ellipse 50 100 'solid 'red)
                       (ellipse 100 50 'solid 'green))
@@ -308,7 +308,7 @@
        #f))
 
 
-(test (overlay/places 'right
+(test (overlay/align 'right
                       'bottom
                       (ellipse 50 100 'solid 'red)
                       (ellipse 100 50 'solid 'green))
@@ -320,7 +320,7 @@
        (make-bb 100 100 100)
        #f))
 
-(test (overlay/places 'right
+(test (overlay/align 'right
                       'baseline
                       (ellipse 50 100 'solid 'red)
                       (ellipse 100 50 'solid 'green))
@@ -332,7 +332,7 @@
        (make-bb 100 100 100)
        #f))
 
-(test (beside/places 'top
+(test (beside/align 'top
                      (ellipse 50 100 'solid 'red)
                      (ellipse 100 50 'solid 'blue))
       
@@ -344,7 +344,7 @@
        (make-bb 150 100 100)
        #f))
 
-(test (beside/places 'center
+(test (beside/align 'center
                      (ellipse 50 100 'solid 'red)
                      (ellipse 100 50 'solid 'blue))
       
@@ -356,7 +356,7 @@
        (make-bb 150 100 100)
        #f))
 
-(test (beside/places 'baseline
+(test (beside/align 'baseline
                      (ellipse 50 100 'solid 'red)
                      (ellipse 100 50 'solid 'blue))
       
@@ -371,11 +371,11 @@
 (test (beside (ellipse 50 100 'solid 'red)
               (ellipse 100 50 'solid 'blue))
       =>
-      (beside/places 'top
+      (beside/align 'top
                      (ellipse 50 100 'solid 'red)
                      (ellipse 100 50 'solid 'blue)))
 
-(test (above/places 'left
+(test (above/align 'left
                      (ellipse 50 100 'solid 'red)
                      (ellipse 100 50 'solid 'blue))
       
@@ -387,7 +387,7 @@
        (make-bb 100 150 150)
        #f))
 
-(test (above/places 'center
+(test (above/align 'center
                      (ellipse 50 100 'solid 'red)
                      (ellipse 100 50 'solid 'blue))
       
@@ -399,7 +399,7 @@
        (make-bb 100 150 100)
        #f))
 
-(test (above/places 'right
+(test (above/align 'right
                      (ellipse 50 100 'solid 'red)
                      (ellipse 100 50 'solid 'blue))
       
@@ -414,7 +414,7 @@
 (test (above (ellipse 50 100 'solid 'red)
               (ellipse 100 50 'solid 'blue))
       =>
-      (above/places 'left
+      (above/align 'left
                     (ellipse 50 100 'solid 'red)
                     (ellipse 100 50 'solid 'blue)))
 
@@ -645,7 +645,7 @@
 ;;  text
 ;;
 
-(check-equal? (beside/places "baseline"
+(check-equal? (beside/align "baseline"
                              (text "a" 18 "black")
                              (text "b" 18 "black"))
               (text "ab" 18 "black"))
