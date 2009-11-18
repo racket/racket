@@ -220,6 +220,9 @@ void scheme_set_report_out_of_memory(Scheme_Report_Out_Of_Memory_Proc p)
 
 #ifdef OS_X
 #include <mach/mach.h>
+# ifdef MZ_PRECISE_GC
+extern void GC_attach_current_thread_exceptions_to_handler();
+# endif
 #endif
 
 #ifdef MZ_XFORM
@@ -239,6 +242,11 @@ void scheme_init_os_thread()
     void *r;
     vm_allocate(mach_task_self(), (vm_address_t*)&r, 4096, TRUE);
   }
+# endif
+#endif
+#ifdef OS_X
+# ifdef MZ_PRECISE_GC
+  GC_attach_current_thread_exceptions_to_handler();
 # endif
 #endif
 }

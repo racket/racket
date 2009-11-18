@@ -181,7 +181,8 @@ typedef struct Thread_Local_Variables {
   int num_running_threads_;
   int swap_no_setjmp_;
   int thread_swap_count_;
-  int did_gc_count_;
+  int scheme_did_gc_count_;
+  int worker_gc_counter_;
   struct Scheme_Object **scheme_current_runstack_start_;
   struct Scheme_Object **scheme_current_runstack_;
   MZ_MARK_STACK_TYPE scheme_current_cont_mark_stack_;
@@ -344,7 +345,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define num_running_threads XOA (scheme_get_thread_local_variables()->num_running_threads_)
 #define swap_no_setjmp XOA (scheme_get_thread_local_variables()->swap_no_setjmp_)
 #define thread_swap_count XOA (scheme_get_thread_local_variables()->thread_swap_count_)
-#define did_gc_count XOA (scheme_get_thread_local_variables()->did_gc_count_)
+#define scheme_did_gc_count XOA (scheme_get_thread_local_variables()->scheme_did_gc_count_)
+#define worker_gc_counter XOA (scheme_get_thread_local_variables()->worker_gc_counter_)
 #define scheme_current_runstack_start XOA (scheme_get_thread_local_variables()->scheme_current_runstack_start_)
 #define scheme_current_runstack XOA (scheme_get_thread_local_variables()->scheme_current_runstack_)
 #define scheme_current_cont_mark_stack XOA (scheme_get_thread_local_variables()->scheme_current_cont_mark_stack_)

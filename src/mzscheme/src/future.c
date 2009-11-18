@@ -75,10 +75,12 @@ static int gc_not_ok;
 THREAD_LOCAL_DECL(extern unsigned long GC_gen0_alloc_page_ptr);
 #endif
 
-future_t **g_current_ft;
-Scheme_Object ***g_scheme_current_runstack;
-Scheme_Object ***g_scheme_current_runstack_start;
-void **g_jit_future_storage;
+static future_t **g_current_ft;
+static Scheme_Object ***g_scheme_current_runstack;
+static Scheme_Object ***g_scheme_current_runstack_start;
+static void **g_jit_future_storage;
+static int *gc_counter_ptr;
+THREAD_LOCAL_DECL(static int worker_gc_counter);
 
 static void register_traversers(void);
 extern void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv);
@@ -307,6 +309,7 @@ void futures_init(void)
 	pthread_attr_setstacksize(&attr, INITIAL_C_STACK_SIZE); 
   for (i = 0; i < THREAD_POOL_SIZE; i++)
   {
+      gc_counter_ptr = &scheme_did_gc_count;
       pthread_create(&threadid, &attr, worker_thread_future_loop, &i);
       sema_wait(&ready_sema);
 	
@@ -326,6 +329,12 @@ static void start_gc_not_ok()
   pthread_mutex_lock(&gc_ok_m);
   gc_not_ok++;
   pthread_mutex_unlock(&gc_ok_m);
+#ifdef MZ_PRECISE_GC
+  if (worker_gc_counter != *gc_counter_ptr) {
+    GC_gen0_alloc_page_ptr = 0; /* forces future to ask for memory */
+    worker_gc_counter = *gc_counter_ptr;
+  }
+#endif
 }
 
 static void end_gc_not_ok()
@@ -581,7 +590,6 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
     return retval;
 }
 
-
 //Entry point for a worker thread allocated for
 //executing futures.  This function will never terminate
 //(until the process dies).
@@ -615,10 +623,6 @@ void *worker_thread_future_loop(void *arg)
 
         g_fuel_pointers[id] = &scheme_fuel_counter;
         g_stack_boundary_pointers[id] = &scheme_jit_stack_boundary;
-
-				#ifdef MZ_PRECISE_GC
-        GC_gen0_alloc_page_ptr = 0; /* disables inline allocation */
-				#endif
 
 				g_current_ft = &current_ft;
 				g_scheme_current_runstack = &scheme_current_runstack;
@@ -744,6 +748,7 @@ int future_do_runtimecall(
     future->rt_prim = NULL;
 
     retval = future->rt_prim_retval;
+    future->rt_prim_retval = NULL;
     pthread_mutex_unlock(&g_future_queue_mutex);
     return 1;
 }
@@ -777,27 +782,34 @@ int rtcall_void_void(void (*f)())
 }
 
 
-int rtcall_void_pvoid(void (*f)(), void **retval)
+int rtcall_alloc_void_pvoid(void (*f)(), void **retval)
 {
 	START_XFORM_SKIP;
 	future_t *future;
 	prim_data_t data;
-	memset(&data, 0, sizeof(prim_data_t));
-	if (!IS_WORKER_THREAD)
-	{
-		return 0;
-	}
 
-	data.void_pvoid = f;
-	data.sigtype = SIG_VOID_PVOID;
+        while (1) {
+          memset(&data, 0, sizeof(prim_data_t));
+          if (!IS_WORKER_THREAD)
+            {
+              return 0;
+            }
 
-	future = get_my_future();
-	future->rt_prim = (void*)f;
-	future->prim_data = data;
+          data.alloc_void_pvoid = f;
+          data.sigtype = SIG_ALLOC_VOID_PVOID;
 
-	future_do_runtimecall((void*)f, NULL);
+          future = get_my_future();
+          future->rt_prim = (void*)f;
+          future->prim_data = data;
 
-        *retval = future->prim_data.retval;
+          future_do_runtimecall((void*)f, NULL);
+
+          *retval = future->alloc_retval;
+          future->alloc_retval = NULL;
+
+          if (*gc_counter_ptr == future->alloc_retval_counter)
+            break;
+        }
 
 	return 1;
 	END_XFORM_SKIP;
@@ -840,6 +852,7 @@ int rtcall_obj_int_pobj_obj(
 
 	future_do_runtimecall((void*)f, NULL);
 	*retval = future->prim_data.retval;
+        future->prim_data.retval = NULL;
 
 	return 1;
 	END_XFORM_SKIP;
@@ -880,6 +893,7 @@ int rtcall_int_pobj_obj(
 
 	future_do_runtimecall((void*)f, NULL);
 	*retval = future->prim_data.retval;
+        future->prim_data.retval = NULL;
 
 	return 1;
 	END_XFORM_SKIP;
@@ -962,6 +976,7 @@ int rtcall_int_pobj_obj_obj(
 
 	future_do_runtimecall((void*)f, NULL);
 	*retval = future->prim_data.retval;
+        future->prim_data.retval = NULL;
 
 	return 1;
 	END_XFORM_SKIP;
@@ -995,11 +1010,12 @@ void *invoke_rtcall(future_t *future)
       pret = &dummy_ret;
       break;
 		}
-    case SIG_VOID_PVOID:
+    case SIG_ALLOC_VOID_PVOID:
 		{
-			prim_void_pvoid_t func = pdata->void_pvoid;
+			prim_alloc_void_pvoid_t func = pdata->alloc_void_pvoid;
 			ret = func();
-                        pdata->retval = ret;
+                        future->alloc_retval = ret;
+                        future->alloc_retval_counter = scheme_did_gc_count;
                         break;
 		}
     case SIG_OBJ_INT_POBJ_OBJ:

@@ -279,25 +279,16 @@ void exception_thread(void *shared_thread_state)
   }
 }
 
-/* this initializes the subsystem (sets the exception port, starts the
-   exception handling thread, etc) */
-static void macosx_init_exception_handler() 
+void GC_attach_current_thread_exceptions_to_handler()
 {
   mach_port_t thread_self, exc_port_s;
   mach_msg_type_name_t type;
   kern_return_t retval;
 
-  /* get ids for ourself */
-  if(!task_self) task_self = mach_task_self();
-  thread_self = mach_thread_self();
+  if (!task_self) return;
 
-  /* allocate the port we're going to get exceptions on */
-  retval = mach_port_allocate(task_self, MACH_PORT_RIGHT_RECEIVE, &exc_port);
-  if(retval != KERN_SUCCESS) {
-    GCPRINT(GCOUTF, "Couldn't allocate exception port: %s\n", 
-	   mach_error_string(retval));
-    abort();
-  }
+  /* get ids for ourself */
+  thread_self = mach_thread_self();
 
   /* extract out the send rights for that port, which the OS needs */
   retval = mach_port_extract_right(task_self, exc_port, MACH_MSG_TYPE_MAKE_SEND,
@@ -315,6 +306,25 @@ static void macosx_init_exception_handler()
     GCPRINT(GCOUTF, "Couldn't set exception ports: %s\n", mach_error_string(retval));
     abort();
   }
+}
+
+/* this initializes the subsystem (sets the exception port, starts the
+   exception handling thread, etc) */
+static void macosx_init_exception_handler() 
+{
+  kern_return_t retval;
+
+  if(!task_self) task_self = mach_task_self();
+
+  /* allocate the port we're going to get exceptions on */
+  retval = mach_port_allocate(task_self, MACH_PORT_RIGHT_RECEIVE, &exc_port);
+  if(retval != KERN_SUCCESS) {
+    GCPRINT(GCOUTF, "Couldn't allocate exception port: %s\n", 
+	   mach_error_string(retval));
+    abort();
+  }
+
+  GC_attach_current_thread_exceptions_to_handler();
 
 #ifdef PPC_HAND_ROLLED_THREAD 
   /* Old hand-rolled thread creation. */

@@ -33,7 +33,7 @@ extern int future_do_runtimecall(void *func, void *retval);
 extern void futures_init(void);
 
 typedef void (*prim_void_void_t)(void);
-typedef void *(*prim_void_pvoid_t)(void);
+typedef void *(*prim_alloc_void_pvoid_t)(void);
 typedef Scheme_Object* (*prim_obj_int_pobj_obj_t)(Scheme_Object*, int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_t)(int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_obj_t)(int, Scheme_Object**, Scheme_Object*);
@@ -43,7 +43,7 @@ typedef struct {
 	unsigned int sigtype;
 
 	prim_void_void_t void_void;
-	prim_void_pvoid_t void_pvoid;
+	prim_alloc_void_pvoid_t alloc_void_pvoid;
 	prim_obj_int_pobj_obj_t obj_int_pobj_obj;
 	prim_int_pobj_obj_t int_pobj_obj;
 	prim_int_pobj_obj_obj_t int_pobj_obj_obj;
@@ -90,6 +90,8 @@ typedef struct future {
 	void *rt_prim_retval;
 
 	prim_data_t prim_data;
+  void *alloc_retval;
+  int alloc_retval_counter;
 
 	Scheme_Object *retval;
 	struct future *prev;
@@ -152,7 +154,7 @@ extern void print_ms_and_us(void);
 //Signature flags for primitive invocations
 //Here the convention is SIG_[arg1type]_[arg2type]..._[return type]
 #define SIG_VOID_VOID 1 						//void -> void
-#define SIG_VOID_PVOID 2 						//void -> void*
+#define SIG_ALLOC_VOID_PVOID 2 						//void -> void*
 #define SIG_OBJ_INT_POBJ_OBJ 3 			//Scheme_Object* -> int -> Scheme_Object** -> Scheme_Object*
 #define SIG_INT_OBJARR_OBJ 4 				//int -> Scheme_Object*[] -> Scheme_Object
 #define SIG_INT_POBJ_OBJ_OBJ 17			//int -> Scheme_Object** -> Scheme_Object* -> Scheme_Object* 
@@ -169,7 +171,7 @@ extern void print_ms_and_us(void);
 															}
 
 extern int rtcall_void_void(void (*f)());
-extern int rtcall_void_pvoid(void (*f)(), void **retval);
+extern int rtcall_alloc_void_pvoid(void (*f)(), void **retval);
 extern int rtcall_obj_int_pobj_obj(
 	Scheme_Object* (*f)(Scheme_Object*, int, Scheme_Object**), 
 	Scheme_Object *a, 
@@ -195,7 +197,7 @@ extern int rtcall_int_pobj_obj(
 #define LOG_THISCALL LOG(__FUNCTION__)
 
 #define LOG_RTCALL_VOID_VOID(f) LOG("(function=%p)", f)
-#define LOG_RTCALL_VOID_PVOID(f) LOG("(function=%p)", f)
+#define LOG_RTCALL_ALLOC_VOID_PVOID(f) LOG("(function=%p)", f)
 #define LOG_RTCALL_OBJ_INT_POBJ_OBJ(f,a,b,c) LOG("(function = %p, a=%p, b=%d, c=%p)", f, a, b, c)
 #define LOG_RTCALL_OBJ_INT_POBJ_VOID(a,b,c) LOG("(%p, %d, %p)", a, b,c)
 #define LOG_RTCALL_INT_OBJARR_OBJ(a,b) LOG("(%d, %p)", a, b)
@@ -218,7 +220,7 @@ extern int rtcall_int_pobj_obj(
 #define LOG_THISCALL
 
 #define LOG_RTCALL_VOID_VOID(f)
-#define LOG_RTCALL_VOID_PVOID(f)
+#define LOG_RTCALL_ALLOC_VOID_PVOID(f)
 #define LOG_RTCALL_OBJ_INT_POBJ_OBJ(f,a,b,c)
 #define LOG_RTCALL_OBJ_INT_POBJ_VOID(a,b,c)
 #define LOG_RTCALL_INT_OBJARR_OBJ(a,b)

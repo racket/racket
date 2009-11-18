@@ -2256,8 +2256,8 @@ static void *ts_prepare_retry_alloc(void *p, void *p2)
   LOG_PRIM_START(&prepare_retry_alloc);
   jit_future_storage[0] = p;
   jit_future_storage[1] = p2;
-  if (rtcall_void_pvoid(GC_make_jit_nursery_page,
-                        &ret)) {
+  if (rtcall_alloc_void_pvoid(GC_make_jit_nursery_page,
+                              &ret)) {
     GC_gen0_alloc_page_ptr = ret;
     retry_alloc_r1 = jit_future_storage[1];
     p = jit_future_storage[0];
@@ -2284,6 +2284,7 @@ static void *ts_prepare_retry_alloc(void *p, void *p2)
 # define ts_scheme_apply_from_native _scheme_apply_from_native
 # define ts_scheme_tail_apply_from_native _scheme_tail_apply_from_native
 # define ts_on_demand on_demand
+# define ts_prepare_retry_alloc prepare_retry_alloc
 #endif
 
 static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)

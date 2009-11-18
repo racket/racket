@@ -160,7 +160,7 @@ volatile int *scheme_fuel_counter_ptr;
 THREAD_LOCAL_DECL(static int swap_no_setjmp = 0);
 
 THREAD_LOCAL_DECL(static int thread_swap_count);
-THREAD_LOCAL_DECL(static int did_gc_count);
+THREAD_LOCAL_DECL(int scheme_did_gc_count);
 
 static int init_load_on_demand = 1;
 
@@ -7390,7 +7390,7 @@ static void get_ready_for_GC()
     scheme_current_thread->gmp_tls_data = data;
   }
 
-  did_gc_count++;
+  scheme_did_gc_count++;
 }
 
 extern int GC_words_allocd;
@@ -7575,7 +7575,7 @@ static Scheme_Object *current_stats(int argc, Scheme_Object *argv[])
     case 5:
       SCHEME_VEC_ELS(v)[4] = scheme_make_integer(thread_swap_count);
     case 4:
-      SCHEME_VEC_ELS(v)[3] = scheme_make_integer(did_gc_count);
+      SCHEME_VEC_ELS(v)[3] = scheme_make_integer(scheme_did_gc_count);
     case 3:
       SCHEME_VEC_ELS(v)[2] = scheme_make_integer(gcend);
     case 2:
