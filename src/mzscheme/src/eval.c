@@ -145,6 +145,9 @@
 #endif 
 #ifdef FUTURES_ENABLED
 # include "future.h"
+#else
+# define LOG_PRIM_START(x) /* empty */
+# define LOG_PRIM_END(x) /* empty */
 #endif
 
 #define EMBEDDED_DEFINES_START_ANYWHERE 0
@@ -7859,10 +7862,11 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       }
 
       f = prim->prim_val;
-			LOG_PRIM_START(f);
 
+      LOG_PRIM_START(f);
       v = f(num_rands, rands, (Scheme_Object *)prim);
-			LOG_PRIM_END(f);
+      LOG_PRIM_END(f);
+
       DEBUG_CHECK_TYPE(v);
     } else if (type == scheme_closure_type) {
       Scheme_Closure_Data *data;
