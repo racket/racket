@@ -1047,8 +1047,9 @@ inline static void resize_gen0(NewGC *gc, unsigned long new_size)
   {
     mpage *work = gc->thread_local_pages;
     while(work) {
+			mpage *next = work->next;
       gen0_free_jit_nursery_page(gc, work);
-      work = work->next;
+      work = next;
     }
 
     gc->thread_local_pages = NULL;
