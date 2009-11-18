@@ -409,6 +409,11 @@ GC2_EXTERN void GC_switch_back_from_master(void *gc);
    Switches to back to gc from the master GC
 */
 
+GC2_EXTERN void *GC_make_jit_nursery_page();
+/*
+   obtains a nursery page from the GC for thread local allocation
+*/
+
 
 # ifdef __cplusplus
 };

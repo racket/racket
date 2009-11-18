@@ -54,6 +54,13 @@ typedef struct {
 
 typedef long rxpos;
 
+struct gmp_tmp_stack
+{
+  void *end;
+  void *alloc_point;
+  struct gmp_tmp_stack *prev;
+};
+
 #ifndef MZ_PRECISE_GC
 typedef long objhead;
 #endif
@@ -196,6 +203,11 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *maybe_recycle_cell_;
   int recycle_cc_count_;
   mz_jmp_buf main_init_error_buf_;
+  void *gmp_mem_pool_;
+  unsigned long max_total_allocation_;
+  unsigned long current_total_allocation_;
+  struct gmp_tmp_stack gmp_tmp_xxx_;
+  struct gmp_tmp_stack *gmp_tmp_current_;
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
@@ -203,21 +215,21 @@ typedef struct Thread_Local_Variables {
 # include <pthread.h>
 MZ_EXTERN pthread_key_t scheme_thread_local_key;
 # define scheme_get_thread_local_variables() ((Thread_Local_Variables *)pthread_getspecific(scheme_thread_local_key))
-# if defined(MZ_PRECISE_GC) && !defined(SKIP_THREAD_LOCAL_XFORM_DECL)
+#ifdef MZ_XFORM
 XFORM_GC_VARIABLE_STACK_THROUGH_GETSPECIFIC;
 # endif
 #else
 /* Using `THREAD_LOCAL' variable: */
 MZ_EXTERN THREAD_LOCAL Thread_Local_Variables scheme_thread_locals;
 # define scheme_get_thread_local_variables() (&scheme_thread_locals)
-# if defined(MZ_PRECISE_GC) && !defined(SKIP_THREAD_LOCAL_XFORM_DECL)
+#ifdef MZ_XFORM
 XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 # endif
 #endif
 
 /* **************************************** */
 
-#ifdef MZ_PRECISE_GC
+#ifdef MZ_XFORM
 # define XOA XFORM_OK_ASSIGN
 #else
 # define XOA /* empty */
@@ -350,6 +362,11 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define maybe_recycle_cell XOA (scheme_get_thread_local_variables()->maybe_recycle_cell_)
 #define recycle_cc_count XOA (scheme_get_thread_local_variables()->recycle_cc_count_)
 #define main_init_error_buf XOA (scheme_get_thread_local_variables()->main_init_error_buf_)
+#define gmp_mem_pool XOA (scheme_get_thread_local_variables()->gmp_mem_pool_)
+#define max_total_allocation XOA (scheme_get_thread_local_variables()->max_total_allocation_)
+#define current_total_allocation XOA (scheme_get_thread_local_variables()->current_total_allocation_)
+#define gmp_tmp_xxx XOA (scheme_get_thread_local_variables()->gmp_tmp_xxx_)
+#define gmp_tmp_current XOA (scheme_get_thread_local_variables()->gmp_tmp_current_)
 
 /* **************************************** */
 

@@ -28,8 +28,6 @@
 */
 
 #define MZ_PRECISE_GC /* required for mz includes to work right */
-#define XFORM_OK_ASSIGN /* annotation used when thread-local variables are needed */
-#define SKIP_THREAD_LOCAL_XFORM_DECL
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -39,20 +37,6 @@
 #include "../src/schpriv.h"
 #include "gc2.h"
 #include "gc2_dump.h" 
-
-/*
-#ifdef FUTURES_ENABLED 
-extern pthread_t g_rt_threadid;
-
-#ifdef DEBUG_FUTURES
-extern void dump_state(void);
-#endif
-#endif
-*/
-
-#if defined(FUTURES_ENABLED) || defined(INSTRUMENT_PRIMITIVES)
-#include "../src/future.h"
-#endif
 
 /* the number of tags to use for tagged objects */
 #define NUMBER_OF_TAGS 512
@@ -719,22 +703,50 @@ static void *allocate_medium(const size_t request_size_bytes, const int type)
 }
 
 
-inline static mpage *gen0_create_new_mpage(NewGC *gc) {
+inline static mpage *gen0_create_new_nursery_mpage(NewGC *gc, const size_t page_size) {
   mpage *newmpage;
 
   newmpage = malloc_mpage();
-  newmpage->addr = malloc_dirty_pages(gc, GEN0_PAGE_SIZE, APAGE_SIZE);
+  newmpage->addr = malloc_dirty_pages(gc, page_size, APAGE_SIZE);
   newmpage->size_class = 0;
   newmpage->size = PREFIX_SIZE;
-  pagemap_add_with_size(gc->page_maps, newmpage, GEN0_PAGE_SIZE);
+  pagemap_add_with_size(gc->page_maps, newmpage, page_size);
 
   return newmpage;
 }
 
-inline static void gen0_free_mpage(NewGC *gc, mpage *page) {
-  pagemap_remove_with_size(gc->page_maps, page, GEN0_PAGE_SIZE);
-  free_pages(gc, page->addr, GEN0_PAGE_SIZE);
+inline static void gen0_free_nursery_mpage(NewGC *gc, mpage *page, size_t page_size) {
+  pagemap_remove_with_size(gc->page_maps, page, page_size);
+  free_pages(gc, page->addr, page_size);
   free_mpage(page);
+}
+
+void *GC_make_jit_nursery_page() {
+  NewGC *gc = GC_get_GC();
+  mpage *new_mpage;
+
+  {
+    new_mpage = gen0_create_new_nursery_mpage(gc, APAGE_SIZE);
+
+    /* push page */
+    new_mpage->next = gc->thread_local_pages;
+    new_mpage->next->prev = new_mpage;
+    gc->thread_local_pages = new_mpage;
+  }
+
+  return new_mpage->addr;
+}
+
+inline static void gen0_free_jit_nursery_page(NewGC *gc, mpage *page) {
+  gen0_free_nursery_mpage(gc, page, APAGE_SIZE);
+}
+
+inline static mpage *gen0_create_new_mpage(NewGC *gc) {
+  return gen0_create_new_nursery_mpage(gc, GEN0_PAGE_SIZE);
+}
+
+inline static void gen0_free_mpage(NewGC *gc, mpage *page) {
+  gen0_free_nursery_mpage(gc, page, GEN0_PAGE_SIZE);
 }
 
 //#define OVERFLOWS_GEN0(ptr) ((ptr) > (NUM(gc->gen0.curr_alloc_page->addr) + GEN0_PAGE_SIZE))
@@ -978,6 +990,7 @@ long GC_malloc_stays_put_threshold() { return MAX_OBJECT_SIZE; }
    to the size we've computed as ideal */
 inline static void resize_gen0(NewGC *gc, unsigned long new_size)
 {
+
   mpage *work = gc->gen0.pages;
   mpage *prev = NULL;
   unsigned long alloced_size = 0;
@@ -1026,6 +1039,15 @@ inline static void resize_gen0(NewGC *gc, unsigned long new_size)
   /* set the two size variables */
   gc->gen0.max_size = alloced_size;
   gc->gen0.current_size = 0;
+
+  {
+    mpage *work = gc->thread_local_pages;
+    while(work) {
+      gen0_free_jit_nursery_page(gc, work);
+    }
+
+    gc->thread_local_pages = NULL;
+  }
 }
 
 inline static void reset_nursery(NewGC *gc)
@@ -1722,6 +1744,7 @@ static void NewGC_initialize(NewGC *newgc, NewGC *parentgc) {
     newgc->fixup_table = parentgc->fixup_table;
   }
   else {
+
 #ifdef MZ_USE_PLACES
     NewGCMasterInfo_initialize();
 #endif
@@ -3080,14 +3103,6 @@ extern double scheme_get_inexact_milliseconds(void);
 
 static void garbage_collect(NewGC *gc, int force_full)
 {
-	#ifdef FUTURES_ENABLED
-	//Sanity check for FUTURES 
-	if (g_rt_threadid != 0 && pthread_self() != g_rt_threadid)
-	{
-		printf("garbage_collect invoked on wrong thread!!!\n");
-	}	
-	#endif
-
   unsigned long old_mem_use = gc->memory_in_use;
   unsigned long old_gen0    = gc->gen0.current_size;
   int next_gc_full;

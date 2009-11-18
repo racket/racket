@@ -29,14 +29,3 @@
 #ifndef GC_ALIGN_EIGHT
 # define GC_ALIGN_EIGHT
 #endif
-
-#ifdef MZ_USE_PLACES
-# if _MSC_VER
-#  define THREAD_LOCAL __declspec(thread)
-# else
-#  define THREAD_LOCAL __thread
-# endif
-#else
-# define THREAD_LOCAL /* empty */
-#endif
-

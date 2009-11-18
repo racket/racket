@@ -14,7 +14,6 @@
 /* This file should be linked with any MzScheme extension dynamic
    object. */
 
-
 #include "escheme.h"
 #ifdef INCLUDE_WITHOUT_PATHS
 # include "schvers.h"

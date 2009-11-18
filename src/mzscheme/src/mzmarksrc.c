@@ -2226,8 +2226,10 @@ future {
   gcMARK(f->runstack);
   gcMARK(f->runstack_start);
   gcMARK(f->orig_lambda);
-  gcMARK(f->rt_prim_args);
   gcMARK(f->rt_prim_retval);
+  gcMARK(f->prim_data.p);
+  gcMARK(f->prim_data.argv);
+  gcMARK(f->prim_data.retval);
   gcMARK(f->retval);
   gcMARK(f->prev);
   gcMARK(f->next);

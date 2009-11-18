@@ -98,16 +98,10 @@ MA 02111-1307, USA.
 #undef HAVE_ALLOCA
 
 #if ! defined (HAVE_ALLOCA) || USE_STACK_ALLOC
-struct tmp_stack
-{
-  void *end;
-  void *alloc_point;
-  struct tmp_stack *prev;
-};
 
 struct tmp_marker
 {
-  struct tmp_stack *which_chunk;
+  struct gmp_tmp_stack *which_chunk;
   void *alloc_point;
 };
 

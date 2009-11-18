@@ -173,6 +173,7 @@ typedef struct NewGC {
   objhead       saved_GC_objhead_template;
 #endif
 
+ struct mpage *thread_local_pages;
 
   /* Callbacks */
   void (*GC_collect_start_callback)(void);

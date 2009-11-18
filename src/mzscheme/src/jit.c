@@ -10265,8 +10265,8 @@ void scheme_jit_fill_threadlocal_table() {
 # endif
   thread_local_pointers[tl_fixup_runstack_base] = (&fixup_runstack_base);
   thread_local_pointers[tl_fixup_already_in_place] = (&fixup_already_in_place);
-  thread_local_pointers[tl_scheme_fuel_counter] = (&scheme_fuel_counter);
-  thread_local_pointers[tl_scheme_jit_stack_boundary] = (&scheme_jit_stack_boundary);
+  thread_local_pointers[tl_scheme_fuel_counter] = (void *) (&scheme_fuel_counter);
+  thread_local_pointers[tl_scheme_jit_stack_boundary] = (void *) (&scheme_jit_stack_boundary);
 #endif
 }
 

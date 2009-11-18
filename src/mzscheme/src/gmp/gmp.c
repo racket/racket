@@ -17,30 +17,19 @@ along with the GNU MP Library; see the file COPYING.LIB.  If not, write to
 the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 MA 02111-1307, USA. */
 
-#ifdef MZ_USE_PLACES
-# if _MSC_VER
-#  define THREAD_LOCAL __declspec(thread)
-# else
-#  define THREAD_LOCAL __thread
-# endif
-#else
-# define THREAD_LOCAL /* empty */
-#endif
-
 #define _FORCE_INLINES
 #define _EXTERN_INLINE /* empty */
 
-extern void *scheme_malloc_gmp(unsigned long, void **mem_pool);
-extern void scheme_free_gmp(void *, void **mem_pool);
-static THREAD_LOCAL void *mem_pool = 0;
-#define MALLOC(amt) scheme_malloc_gmp(amt, &mem_pool)
-#define FREE(p, s) scheme_free_gmp(p, &mem_pool)
-
-#include "../../sconfig.h"
-#include "mzconfig.h"
+#include "../schpriv.h"
 #include "gmp.h"
 #include "gmp-impl.h"
 #include "gmplonglong.h"
+
+extern void *scheme_malloc_gmp(unsigned long, void **mem_pool);
+extern void scheme_free_gmp(void *, void **mem_pool);
+THREAD_LOCAL_DECL(static void *gmp_mem_pool);
+#define MALLOC(amt) scheme_malloc_gmp(amt, &gmp_mem_pool)
+#define FREE(p, s) scheme_free_gmp(p, &gmp_mem_pool)
 
 #define GMP_NAIL_BITS 0
 #define GMP_LIMB_BITS BITS_PER_MP_LIMB
@@ -5695,13 +5684,13 @@ unsigned char __clz_tab[] =
 
 #ifndef HAVE_ALLOCA
 
-typedef struct tmp_stack tmp_stack;
+typedef struct gmp_tmp_stack tmp_stack;
 
-static THREAD_LOCAL unsigned long max_total_allocation = 0;
-static THREAD_LOCAL unsigned long current_total_allocation = 0;
+THREAD_LOCAL_DECL(static unsigned long max_total_allocation);
+THREAD_LOCAL_DECL(static unsigned long current_total_allocation);
 
-static THREAD_LOCAL tmp_stack xxx = {0, 0, 0};
-static THREAD_LOCAL tmp_stack *current = 0;
+THREAD_LOCAL_DECL(static tmp_stack gmp_tmp_xxx);
+THREAD_LOCAL_DECL(static tmp_stack *gmp_tmp_current = 0);
 
 /* The rounded size of the header of each allocation block.  */
 #define HSIZ ((sizeof (tmp_stack) + __TMP_ALIGN - 1) & -__TMP_ALIGN)
@@ -5718,7 +5707,7 @@ __gmp_tmp_alloc (size)
 {
   void *that;
 
-  if (size > (char *) current->end - (char *) current->alloc_point)
+  if (size > (char *) gmp_tmp_current->end - (char *) gmp_tmp_current->alloc_point)
     {
       void *chunk;
       tmp_stack *header;
@@ -5749,12 +5738,12 @@ __gmp_tmp_alloc (size)
       header = (tmp_stack *) chunk;
       header->end = (char *) chunk + chunk_size;
       header->alloc_point = (char *) chunk + HSIZ;
-      header->prev = current;
-      current = header;
+      header->prev = gmp_tmp_current;
+      gmp_tmp_current = header;
     }
 
-  that = current->alloc_point;
-  current->alloc_point = (char *) that + size;
+  that = gmp_tmp_current->alloc_point;
+  gmp_tmp_current->alloc_point = (char *) that + size;
   return that;
 }
 
@@ -5769,8 +5758,8 @@ __gmp_tmp_mark (mark)
      tmp_marker *mark;
 #endif
 {
-  mark->which_chunk = current;
-  mark->alloc_point = current->alloc_point;
+  mark->which_chunk = gmp_tmp_current;
+  mark->alloc_point = gmp_tmp_current->alloc_point;
 }
 
 /* Free everything allocated since <mark> was assigned by __gmp_tmp_mark */
@@ -5782,49 +5771,49 @@ __gmp_tmp_free (mark)
      tmp_marker *mark;
 #endif
 {
-  while (mark->which_chunk != current)
+  while (mark->which_chunk != gmp_tmp_current)
     {
       tmp_stack *tmp;
 
-      tmp = current;
-      current = tmp->prev;
+      tmp = gmp_tmp_current;
+      gmp_tmp_current = tmp->prev;
       current_total_allocation -= (((char *) (tmp->end) - (char *) tmp) - HSIZ);
       FREE (tmp, (char *) tmp->end - (char *) tmp);
     }
-  current->alloc_point = mark->alloc_point;
+  gmp_tmp_current->alloc_point = mark->alloc_point;
 }
 
 void scheme_init_gmp_places() {
-  xxx.end = &xxx;
-  xxx.alloc_point = &xxx;
-  xxx.prev = 0;
-  current = &xxx;
+  gmp_tmp_xxx.end = &gmp_tmp_xxx;
+  gmp_tmp_xxx.alloc_point = &gmp_tmp_xxx;
+  gmp_tmp_xxx.prev = 0;
+  gmp_tmp_current = &gmp_tmp_xxx;
 }
 
 void scheme_gmp_tls_init(long *s) 
 {
   s[0] = 0;
   s[1] = 0;
-  s[2] = (long)&xxx;
-  ((tmp_marker *)(s + 3))->which_chunk = &xxx;
-  ((tmp_marker *)(s + 3))->alloc_point = &xxx;
+  s[2] = (long)&gmp_tmp_xxx;
+  ((tmp_marker *)(s + 3))->which_chunk = &gmp_tmp_xxx;
+  ((tmp_marker *)(s + 3))->alloc_point = &gmp_tmp_xxx;
 }
 
 void *scheme_gmp_tls_load(long *s) 
 {
   s[0] = (long)current_total_allocation;
   s[1] = (long)max_total_allocation;
-  s[2] = (long)current;
-  return mem_pool;
+  s[2] = (long)gmp_tmp_current;
+  return gmp_mem_pool;
 }
 
 void scheme_gmp_tls_unload(long *s, void *data)
 {
   current_total_allocation = (unsigned long)s[0];
   max_total_allocation = (unsigned long)s[1];
-  current = (tmp_stack *)s[2];
+  gmp_tmp_current = (tmp_stack *)s[2];
   s[0] = 0;
-  mem_pool = data;
+  gmp_mem_pool = data;
 }
 
 void scheme_gmp_tls_snapshot(long *s, long *save)
