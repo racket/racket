@@ -431,7 +431,7 @@ xsrc/wxs_win.cc: $(srcdir)/../wxs/wxs_win.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
 xsrc/wxJPEG.cc: $(srcdir)/../../wxcommon/wxJPEG.cxx $(XFORMDEP) $(XFORMPRECOMPDEP)
 	$(XFORMWP) xsrc/wxJPEG.cc $(srcdir)/../../wxcommon/wxJPEG.cxx
 
-GCPREINC = -include $(srcdir)/../../mzscheme/gc2/gc2.h
+GCPREINC = -DSCHEME_THREADLOCAL_H -include $(srcdir)/../../mzscheme/gc2/gc2.h
 POSTFLAGS = $(OPTIONS) @COMPFLAGS@ @PROFFLAGS@ @CFLAGS@
 XXPOSTFLAGS = $(OPTIONS) @COMPFLAGS@ @PROFFLAGS@ @CXXFLAGS@
 
