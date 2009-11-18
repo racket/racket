@@ -899,7 +899,11 @@ typedef struct Scheme_Cont_Frame_Data {
 /*========================================================================*/
 
 #ifdef MZ_PRECISE_GC
-# include "../gc2/gc2_obj.h"
+# ifdef INCLUDE_WITHOUT_PATHS
+#  include "schgc2obj.h"
+# else
+#  include "../gc2/gc2_obj.h"
+# endif
 #endif
 #include "schthread.h"
 

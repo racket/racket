@@ -58,5 +58,6 @@
 (copy-if-newer mzsrcdir "include/mzscheme3m.exp")
 (copy-if-newer mzsrcdir "gc2/gc2.h" "schemegc2.h")
 (copy-if-newer mzsrcdir "gc2/gc2.h" "schemegc2.h")
+(copy-if-newer mzsrcdir "gc2/gc2-obj.h" "schgc2obj.h")
 
 (printf "Done.\n")
