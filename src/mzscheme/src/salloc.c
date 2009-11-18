@@ -54,8 +54,12 @@ static void **dgc_array;
 static int *dgc_count;
 static int dgc_size;
 
-#ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
+#ifdef USE_THREAD_LOCAL
+# ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
 pthread_key_t scheme_thread_local_key;
+# else
+THREAD_LOCAL Thread_Local_Variables scheme_thread_locals;
+# endif
 #endif
 
 extern int scheme_num_copied_stacks;
@@ -223,7 +227,7 @@ START_XFORM_SKIP;
 #endif
 void scheme_init_os_thread()
 {
-#ifdef USE_THREAD_LOCAL
+#ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
   Thread_Local_Variables *vars;
   vars = (Thread_Local_Variables *)malloc(sizeof(Thread_Local_Variables));
   memset(vars, 0, sizeof(Thread_Local_Variables));
