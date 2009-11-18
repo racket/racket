@@ -6,8 +6,9 @@
          scheme/gui/base
          htdp/error
          scheme/math
-         lang/posn
-         (for-syntax scheme/base))
+         (for-syntax scheme/base
+                     scheme/list)
+         lang/posn)
 
 (define (show-image g [extra-space 0])
   (letrec ([f (new frame% [label ""])]
@@ -43,8 +44,9 @@
     (send (new button% [label "2"] [callback (λ x (scale-adjust add1))] [parent bp]) min-width 100)
     (send f show #t)))
 
-(define (save-image image filename)
-  (let* ([bm (make-object bitmap% 
+(define (save-image pre-image filename)
+  (let* ([image (to-img pre-image)]
+         [bm (make-object bitmap% 
                (inexact->exact (ceiling (+ 1 (image-width image)))) 
                (inexact->exact (ceiling (+ 1 (image-height image)))))]
          [bdc (make-object bitmap-dc% bm)])
@@ -139,10 +141,7 @@
                 'image
                 i
                 arg)
-     (cond
-       [(is-a? arg image-snip%) (image-snip->image arg)]
-       [(is-a? arg bitmap%) (bitmap->image arg)]
-       [else arg])]
+     (to-img arg)]
     [(mode)
      (check-arg fn-name
                 (mode? arg)
@@ -247,6 +246,12 @@
   (and (integer? i)
        (1 . <= .  i)))
 (define (color? c) (or (symbol? c) (string? c)))
+
+(define (to-img arg)
+  (cond
+    [(is-a? arg image-snip%) (image-snip->image arg)]
+    [(is-a? arg bitmap%) (bitmap->image arg)]
+    [else arg]))
 
 (define (bitmap->image bm [mask-bm (send bm get-loaded-mask)])
   (let ([w (send bm get-width)]
@@ -884,6 +889,46 @@
 (define/chk (image-width image) (image-right image))
 (define/chk (image-height image) (image-bottom image))
 
+(define-syntax (bitmap stx)
+  (syntax-case stx ()
+    [(_ arg)
+     (let* ([arg (syntax->datum #'arg)]
+            [path
+             (cond
+               [(and (pair? arg)
+                     (eq? (car arg) 'planet))
+                (raise-syntax-error 'bitmap "planet paths not yet supported" stx)]
+               [(symbol? arg)
+                (let ([pieces (regexp-split #rx"/" (symbol->string arg))])
+                  (cond
+                    [(null? pieces)
+                     (raise-syntax-error 'bitmap "expected a path with a / in it" stx)]
+                    [else
+                     (let loop ([cps (current-library-collection-paths)])
+                       (cond
+                         [(null? cps)
+                          (raise-syntax-error 'bitmap
+                                              (format "could not find the ~a collection" (car pieces))
+                                              stx)]
+                         [else
+                          (if (and (directory-exists? (car cps))
+                                   (member (build-path (car pieces))
+                                           (directory-list (car cps))))
+                              (let ([candidate (apply build-path (car cps) pieces)])
+                                (if (file-exists? candidate)
+                                    candidate
+                                    (raise-syntax-error 'bitmap 
+                                                        (format "could not find ~a in the ~a collection"
+                                                                (apply string-append (add-between (cdr pieces) "/"))
+                                                                (car pieces))
+                                                        stx)))
+                              (loop (cdr cps)))]))]))]
+               [(string? arg)
+                (path->complete-path 
+                 arg
+                 (or (current-load-relative-directory)
+                     (current-directory)))])])
+       #`(make-object image-snip% (make-object bitmap% #,path 'unknown/mask)))]))
 
 (provide overlay
          overlay/places
@@ -936,6 +981,8 @@
          
          text
          text/font
+         
+         bitmap
          
          swizzle
          

@@ -184,6 +184,8 @@
       (ellipse 60 30 "solid" "purple"))
     'image
     "4e85791a5.png")
+   (list '(bitmap icons/b-run.png) 'image "13aef4074e9.png")
+   (list '(bitmap icons/stop-16x16.png) 'image "72aef3dc67.png")
    (list
     '(text/font "not really a link" 18 "blue" #f 'roman 'normal 'normal #t)
     'image

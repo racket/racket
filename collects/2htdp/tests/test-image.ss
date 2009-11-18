@@ -774,3 +774,14 @@
        [bl (image-baseline txt)])
   (check-equal? (image-baseline (add-line txt 0 -10 100 100 'red))
                 (+ bl 10)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  bitmaps
+;;
+
+(check-equal? (image-width (bitmap icons/stop-16x16.png))
+              16)
+(check-equal? (image-height (bitmap icons/stop-16x16.png))
+              16)

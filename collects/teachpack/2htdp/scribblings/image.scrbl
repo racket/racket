@@ -247,6 +247,17 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                              #f 'roman 'normal 'normal #t)]
 }
 
+@defform/subs[(bitmap bitmap-spec)
+              ([bitmap-spec rel-string
+                            id])]{
+                                  
+  Loads the bitmap specified by @scheme[bitmap-spec]. If @scheme[bitmap-spec] is a string, it is treated as a 
+  relative path. If it is an identifier, it is treated like a require spec and used to refer to a file
+  in a collection.
+  
+  @image-examples[(bitmap icons/stop-16x16.png)
+                  (bitmap icons/b-run.png)]
+}
                 
 @section{Overlaying Images}
 
