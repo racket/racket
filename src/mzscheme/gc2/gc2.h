@@ -2,6 +2,12 @@
 #ifndef __mzscheme_gc_2__
 #define __mzscheme_gc_2__
 
+#ifdef INCLUDE_WITHOUT_PATHS
+# include "schthread.h"
+#else
+# include "../include/schthread.h"
+#endif
+
 /***************************************************************************/
 /***   See README for a general overview of the interface architecture.  ***/
 /***************************************************************************/
