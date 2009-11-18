@@ -79,6 +79,7 @@
 	(hash-table-put! used-symbols (string->symbol "GC_set_variable_stack") 1)
         (hash-table-put! used-symbols (string->symbol "memset") 1)
 	(hash-table-put! used-symbols (string->symbol "scheme_thread_local_key") 1)
+	(hash-table-put! used-symbols (string->symbol "scheme_thread_locals") 1)
 	(hash-table-put! used-symbols (string->symbol "pthread_getspecific") 1)
         
         ;; For dependency tracking:
