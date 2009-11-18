@@ -6,11 +6,13 @@
          scheme/gui/base
          htdp/error
          scheme/math
-         lang/posn
-         (for-syntax scheme/base))
+         (for-syntax scheme/base
+                     scheme/list)
+         lang/posn)
 
-(define (show-image g [extra-space 0])
-  (letrec ([f (new frame% [label ""])]
+(define (show-image arg [extra-space 0])
+  (letrec ([g (to-img arg)]
+           [f (new frame% [label ""])]
            [c (new canvas% 
                    [parent f]
                    [min-width (+ extra-space (inexact->exact (floor (image-right g))))]
@@ -43,8 +45,9 @@
     (send (new button% [label "2"] [callback (λ x (scale-adjust add1))] [parent bp]) min-width 100)
     (send f show #t)))
 
-(define (save-image image filename)
-  (let* ([bm (make-object bitmap% 
+(define (save-image pre-image filename)
+  (let* ([image (to-img pre-image)]
+         [bm (make-object bitmap% 
                (inexact->exact (ceiling (+ 1 (image-width image)))) 
                (inexact->exact (ceiling (+ 1 (image-height image)))))]
          [bdc (make-object bitmap-dc% bm)])
@@ -139,10 +142,7 @@
                 'image
                 i
                 arg)
-     (cond
-       [(is-a? arg image-snip%) (image-snip->image arg)]
-       [(is-a? arg bitmap%) (bitmap->image arg)]
-       [else arg])]
+     (to-img arg)]
     [(mode)
      (check-arg fn-name
                 (mode? arg)
@@ -248,20 +248,25 @@
        (1 . <= .  i)))
 (define (color? c) (or (symbol? c) (string? c)))
 
-(define (bitmap->image bm [mask-bm (send bm get-loaded-mask)])
-  (let ([w (send bm get-width)]
-        [h (send bm get-height)])
-    (make-image (make-translate
-                 (/ w 2)
-                 (/ h 2)
-                 (make-bitmap bm mask-bm 0 1 #f))
-                (make-bb w h h)
-                #f)))
+(define (to-img arg)
+  (cond
+    [(is-a? arg image-snip%) (image-snip->image arg)]
+    [(is-a? arg bitmap%) (bitmap->image arg)]
+    [else arg]))
 
 (define (image-snip->image is)
   (bitmap->image (send is get-bitmap)
                  (or (send is get-bitmap-mask)
                      (send (send is get-bitmap) get-loaded-mask))))
+
+(define (bitmap->image bm [mask-bm (send bm get-loaded-mask)])
+  (let ([w (send bm get-width)]
+        [h (send bm get-height)])
+    (make-image (make-translate (/ w 2)
+                                (/ h 2)
+                                (make-bitmap bm mask-bm 0 1 1 #f #f))
+                (make-bb w h h)
+                #f)))
 
 ;                                              
 ;                                              
@@ -306,7 +311,7 @@
 (define/chk (overlay image image2 . image3)
   (overlay/internal 'left 'top image (cons image2 image3)))
 
-;; overlay/places : string string image image image ... -> image
+;; overlay/align : string string image image image ... -> image
 ;; the first string has to be one of "center" "middle" "left" or "right" (or symbols)
 ;; the second string has to be one of "center" "middle" "top" "bottom" or "baseline" (or symbols)
 ;; behaves like overlay, but lines up the images in the various places.
@@ -314,7 +319,7 @@
 ;; for the two string arguments. Passing, eg, "center" "center" lines the
 ;; images up at their centers.
 
-(define/chk (overlay/places x-place y-place image image2 . image3)
+(define/chk (overlay/align x-place y-place image image2 . image3)
   (overlay/internal x-place y-place image (cons image2 image3)))
 
 (define (overlay/internal x-place y-place fst rst)
@@ -377,10 +382,10 @@
 (define/chk (beside image1 image2 . image3)
   (beside/internal 'top image1 (cons image2 image3)))
 
-;; beside/places : string image image image ... -> image
+;; beside/align : string image image image ... -> image
 ;; places images in a horizontal row where the vertical alignment is
 ;; covered by the string argument
-(define/chk (beside/places y-place image1 image2 . image3)
+(define/chk (beside/align y-place image1 image2 . image3)
   (beside/internal y-place image1 (cons image2 image3)))
 
 (define (beside/internal y-place fst rst)
@@ -406,10 +411,10 @@
 (define/chk (above image1 image2 . image3)
   (above/internal 'left image1 (cons image2 image3)))
 
-;; beside/places : string image image image ... -> image
+;; beside/align : string image image image ... -> image
 ;; places images in a horizontal row where the vertical alignment is
 ;; covered by the string argument
-(define/chk (above/places x-place image1 image2 . image3)
+(define/chk (above/align x-place image1 image2 . image3)
   (above/internal x-place image1 (cons image2 image3)))
 
 (define (above/internal x-place fst rst)
@@ -519,14 +524,14 @@
     [else
      (let ([dx (translate-dx simple-shape)]
            [dy (translate-dy simple-shape)])
-       (let-values ([(l t r b) (atomic-bb (translate-shape simple-shape))])
+       (let-values ([(l t r b) (np-atomic-bb (translate-shape simple-shape))])
          (values (+ l dx)
                  (+ t dy)
                  (+ r dx)
                  (+ b dy))))]))
 
 
-(define (atomic-bb atomic-shape)
+(define (np-atomic-bb atomic-shape)
   (cond
     [(ellipse? atomic-shape)
      (let ([θ (ellipse-angle atomic-shape)])
@@ -539,21 +544,29 @@
                  (/ w 2)
                  (/ h 2))))]
     [(text? atomic-shape)
-     (let*-values ([(w h a d) (send text-sizing-bm get-text-extent 
-                                    (text-string atomic-shape) 
-                                    (text->font atomic-shape))]
-                   [(ax ay) (rotate-xy (- (/ w 2)) (- (/ h 2)) (text-angle atomic-shape))]
-                   [(bx by) (rotate-xy (- (/ w 2)) (/ h 2) (text-angle atomic-shape))]
-                   [(cx cy) (rotate-xy (/ w 2) (- (/ h 2)) (text-angle atomic-shape))]
-                   [(dx dy) (rotate-xy (/ w 2) (/ h 2) (text-angle atomic-shape))])
-       (values (min ax bx cx dx)
-               (min ay by cy dy)
-               (max ax bx cx dx)
-               (max ay by cy dy)))]
+     (let-values ([(w h a d) (send text-sizing-bm get-text-extent 
+                                   (text-string atomic-shape) 
+                                   (text->font atomic-shape))])
+       (rotated-rectangular-bounding-box w h (text-angle atomic-shape)))]
+    [(bitmap? atomic-shape)
+     (let ([bb (bitmap-raw-bitmap atomic-shape)])
+       (rotated-rectangular-bounding-box (send bb get-width)
+                                         (send bb get-height)
+                                         (bitmap-angle atomic-shape)))]
     [else
-     (fprintf (current-error-port) "using bad bounding box for ~s\n" (image-shape atomic-shape))
+     (fprintf (current-error-port) "using bad bounding box for ~s\n" atomic-shape)
      (values 0 0 100 100)]))
   
+(define (rotated-rectangular-bounding-box w h θ)
+  (let*-values ([(ax ay) (rotate-xy (- (/ w 2)) (- (/ h 2)) θ)]
+                [(bx by) (rotate-xy (- (/ w 2)) (/ h 2) θ)]
+                [(cx cy) (rotate-xy (/ w 2) (- (/ h 2)) θ)]
+                [(dx dy) (rotate-xy (/ w 2) (/ h 2) θ)])
+    (values (min ax bx cx dx)
+            (min ay by cy dy)
+            (max ax bx cx dx)
+            (max ay by cy dy))))
+
 ;; rotate-simple : angle simple-shape -> simple-shape
 (define (rotate-simple θ simple-shape)
   (cond
@@ -577,8 +590,8 @@
                                       (translate-dy simple-shape))))])
          (make-translate dx dy rotated)))]))
 
-(define (center-point atomic-shape)
-  (let-values ([(l t r b) (atomic-bb atomic-shape)])
+(define (center-point np-atomic-shape)
+  (let-values ([(l t r b) (np-atomic-bb np-atomic-shape)])
     (xy->c (/ (- r l) 2)
            (/ (- b t) 2))))
 
@@ -620,7 +633,9 @@
      (make-bitmap (bitmap-raw-bitmap atomic-shape)
                   (bitmap-raw-mask atomic-shape)
                   (bring-between (+ θ (bitmap-angle atomic-shape)) 360)
-                  (bitmap-scale atomic-shape)
+                  (bitmap-x-scale atomic-shape)
+                  (bitmap-y-scale atomic-shape)
+                  #f
                   #f)]))
 
 ;; rotate-point : point angle -> point
@@ -884,14 +899,54 @@
 (define/chk (image-width image) (image-right image))
 (define/chk (image-height image) (image-bottom image))
 
+(define-syntax (bitmap stx)
+  (syntax-case stx ()
+    [(_ arg)
+     (let* ([arg (syntax->datum #'arg)]
+            [path
+             (cond
+               [(and (pair? arg)
+                     (eq? (car arg) 'planet))
+                (raise-syntax-error 'bitmap "planet paths not yet supported" stx)]
+               [(symbol? arg)
+                (let ([pieces (regexp-split #rx"/" (symbol->string arg))])
+                  (cond
+                    [(null? pieces)
+                     (raise-syntax-error 'bitmap "expected a path with a / in it" stx)]
+                    [else
+                     (let loop ([cps (current-library-collection-paths)])
+                       (cond
+                         [(null? cps)
+                          (raise-syntax-error 'bitmap
+                                              (format "could not find the ~a collection" (car pieces))
+                                              stx)]
+                         [else
+                          (if (and (directory-exists? (car cps))
+                                   (member (build-path (car pieces))
+                                           (directory-list (car cps))))
+                              (let ([candidate (apply build-path (car cps) pieces)])
+                                (if (file-exists? candidate)
+                                    candidate
+                                    (raise-syntax-error 'bitmap 
+                                                        (format "could not find ~a in the ~a collection"
+                                                                (apply string-append (add-between (cdr pieces) "/"))
+                                                                (car pieces))
+                                                        stx)))
+                              (loop (cdr cps)))]))]))]
+               [(string? arg)
+                (path->complete-path 
+                 arg
+                 (or (current-load-relative-directory)
+                     (current-directory)))])])
+       #`(make-object image-snip% (make-object bitmap% #,path 'unknown/mask)))]))
 
 (provide overlay
-         overlay/places
+         overlay/align
          overlay/xy
          beside
-         beside/places
+         beside/align
          above
-         above/places
+         above/align
          
          rotate
          
@@ -937,10 +992,12 @@
          text
          text/font
          
+         bitmap
+         
          swizzle
          
          rotate-xy)
 
 (provide/contract
- [atomic-bb (-> atomic-shape? (values real? real? real? real?))]
+ [np-atomic-bb (-> np-atomic-shape? (values real? real? real? real?))]
  [center-point (-> np-atomic-shape? number?)])

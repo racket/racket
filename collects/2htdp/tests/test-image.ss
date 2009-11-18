@@ -1,6 +1,7 @@
 #lang scheme/base
 (require "../../mrlib/image-core.ss"
          "../private/image-more.ss"
+         "../../mrlib/private/image-core-bitmap.ss"
          lang/posn
          scheme/math
          scheme/class
@@ -33,7 +34,7 @@
    (cond
      [(= n 7) image]
      [else
-      (loop (overlay/places 'center 'center
+      (loop (overlay/align 'center 'center
                             image
                             (rotate (* 180 (/ 1 n)) image))
             (+ n 1))])))
@@ -283,7 +284,7 @@
        (make-bb 140 140 140)
        #f))
 
-(test (overlay/places 'middle
+(test (overlay/align 'middle
                       'middle
                       (ellipse 100 50 'solid 'green)
                       (ellipse 50 100 'solid 'red))
@@ -295,7 +296,7 @@
        (make-bb 100 100 100)
        #f))
 
-(test (overlay/places 'middle
+(test (overlay/align 'middle
                       'middle
                       (ellipse 50 100 'solid 'red)
                       (ellipse 100 50 'solid 'green))
@@ -308,7 +309,7 @@
        #f))
 
 
-(test (overlay/places 'right
+(test (overlay/align 'right
                       'bottom
                       (ellipse 50 100 'solid 'red)
                       (ellipse 100 50 'solid 'green))
@@ -320,7 +321,7 @@
        (make-bb 100 100 100)
        #f))
 
-(test (overlay/places 'right
+(test (overlay/align 'right
                       'baseline
                       (ellipse 50 100 'solid 'red)
                       (ellipse 100 50 'solid 'green))
@@ -332,7 +333,7 @@
        (make-bb 100 100 100)
        #f))
 
-(test (beside/places 'top
+(test (beside/align 'top
                      (ellipse 50 100 'solid 'red)
                      (ellipse 100 50 'solid 'blue))
       
@@ -344,7 +345,7 @@
        (make-bb 150 100 100)
        #f))
 
-(test (beside/places 'center
+(test (beside/align 'center
                      (ellipse 50 100 'solid 'red)
                      (ellipse 100 50 'solid 'blue))
       
@@ -356,7 +357,7 @@
        (make-bb 150 100 100)
        #f))
 
-(test (beside/places 'baseline
+(test (beside/align 'baseline
                      (ellipse 50 100 'solid 'red)
                      (ellipse 100 50 'solid 'blue))
       
@@ -371,11 +372,11 @@
 (test (beside (ellipse 50 100 'solid 'red)
               (ellipse 100 50 'solid 'blue))
       =>
-      (beside/places 'top
+      (beside/align 'top
                      (ellipse 50 100 'solid 'red)
                      (ellipse 100 50 'solid 'blue)))
 
-(test (above/places 'left
+(test (above/align 'left
                      (ellipse 50 100 'solid 'red)
                      (ellipse 100 50 'solid 'blue))
       
@@ -387,7 +388,7 @@
        (make-bb 100 150 150)
        #f))
 
-(test (above/places 'center
+(test (above/align 'center
                      (ellipse 50 100 'solid 'red)
                      (ellipse 100 50 'solid 'blue))
       
@@ -399,7 +400,7 @@
        (make-bb 100 150 100)
        #f))
 
-(test (above/places 'right
+(test (above/align 'right
                      (ellipse 50 100 'solid 'red)
                      (ellipse 100 50 'solid 'blue))
       
@@ -414,7 +415,7 @@
 (test (above (ellipse 50 100 'solid 'red)
               (ellipse 100 50 'solid 'blue))
       =>
-      (above/places 'left
+      (above/align 'left
                     (ellipse 50 100 'solid 'red)
                     (ellipse 100 50 'solid 'blue)))
 
@@ -645,7 +646,7 @@
 ;;  text
 ;;
 
-(check-equal? (beside/places "baseline"
+(check-equal? (beside/align "baseline"
                              (text "a" 18 "black")
                              (text "b" 18 "black"))
               (text "ab" 18 "black"))
@@ -774,3 +775,59 @@
        [bl (image-baseline txt)])
   (check-equal? (image-baseline (add-line txt 0 -10 100 100 'red))
                 (+ bl 10)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  bitmaps
+;;
+
+(check-equal? (clamp-1 0 3 5) 3)
+(check-equal? (clamp-1 0 0 5) 0)
+(check-equal? (clamp-1 0 -2 5) 0)
+(check-equal? (clamp-1 0 4 5) 4)
+(check-equal? (clamp-1 0 7 5) 4)
+
+(check-equal? (build-bytes 5 sqr) (list->bytes '(0 1 4 9 16)))
+
+
+(define onePixel (list->bytes '(255 0 0 255)))
+;(call-with-values (λ () (scale onePixel 1 1 100)) show-bitmap)
+
+(define blue2x1 (list->bytes '(255 0 0 255   255 0 255 0)))
+;(call-with-values (λ () (scale blue2x1 2 1 20)) show-bitmap)
+
+(define blue2x2 (list->bytes '(255 0 0 255   255 0 0 255   255 0 0 255   255 0 0 255)))
+(define gray2x2 (list->bytes '(255 100 100 100   255 100 100 100   255 100 100 100   255 100 100 100)))
+;; Some blue x green checkerboards:
+(define checker2x2 (list->bytes '(255 0 0 255   255 0 255 0
+                                  255 0 255 0   255 0 0 255)))
+(define checker3x3 (list->bytes '(255 0 0 255   255 0 255 0    255 0 0 255
+                                  255 0 255 0   255 0 0 255    255 0 255 0
+                                  255 0 0 255   255 0 255 0    255 0 0 255 )))
+  
+
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 0 0) (list->bytes '(255 0 0 255)))
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 1 1) (list->bytes '(255 0 0 255)))
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 2 2) (list->bytes '(255 0 0 255)))
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 1 2) (list->bytes '(255 0 255 0)))
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 0 3) (list->bytes '(  0 0 0 255)))
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 -1 -1) (list->bytes '(  0 0 0 255)))
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 -1 1) (list->bytes '(  0 0 255 0)))
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 1 19) (list->bytes '(  0 0 255 0)))
+
+
+(check-equal? (bytes->list (interpolate checker2x2 2 2 1 0))
+              '(255 0 255 0))
+(check-equal? (bytes->list (interpolate checker3x3 3 3 0 0))
+              '(255 0 0 255))
+(check-equal? (bytes->list (interpolate checker3x3 3 3 0 1))
+              '(255 0 255 0))
+(check-equal? (bytes->list (interpolate checker3x3 3 3 0 2))
+              '(255 0 0 255))
+(check-equal? (bytes->list (interpolate checker3x3 3 3 0.5 0))
+              '(255 0 128 128))
+
+(check-equal? (image-width (bitmap icons/stop-16x16.png))
+              16)
+(check-equal? (image-height (bitmap icons/stop-16x16.png))
+              16)
