@@ -1378,6 +1378,7 @@ static int generate_alloc_retry(mz_jit_state *jitter, int i);
 THREAD_LOCAL_DECL(static double save_fp);
 #endif
 
+
 static void *prepare_retry_alloc(void *p, void *p2)
 {
   /* Alocate enough to trigger a new page */
@@ -2233,6 +2234,25 @@ static void ts_on_demand(void)
 
   on_demand();
 }
+
+	#ifdef MZ_PRECISE_GC
+	static void *ts_prepare_retry_alloc(void *p, void *p2)
+	{
+		void *ret;
+		LOG_PRIM_START(&prepare_retry_alloc);
+		if (rtcall_pvoid_pvoid_pvoid(prepare_retry_alloc, 
+																	p, 
+																	p2, 
+																	&ret))
+		{
+			return ret;
+		}
+
+		ret = prepare_retry_alloc(p, p2);
+		LOG_PRIM_END(&prepare_retry_alloc);
+		return ret;
+	}
+	#endif
 #else
 /* futures not enabled */
 # define mz_prepare_direct_prim(n) mz_prepare(n)
@@ -9080,7 +9100,7 @@ static int generate_alloc_retry(mz_jit_state *jitter, int i)
     jit_pusharg_p(JIT_R0);
     jit_pusharg_p(JIT_R0);
   }
-  (void)mz_finish(prepare_retry_alloc);
+  (void)mz_finish(ts_prepare_retry_alloc);
   jit_retval(JIT_R0);
   if (i == 1) {
     mz_tl_ldi_l(JIT_R1, tl_retry_alloc_r1);

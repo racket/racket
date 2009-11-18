@@ -29,21 +29,38 @@ extern Scheme_Object *end_primitive_tracking(int argc, Scheme_Object *argv[]);
 extern Scheme_Object *future(int argc, Scheme_Object *argv[]);
 extern Scheme_Object *touch(int argc, Scheme_Object *argv[]);
 extern Scheme_Object *num_processors(int argc, Scheme_Object *argv[]);
-extern int future_do_runtimecall(void *func, int sigtype, void *args, void *retval);
+extern int future_do_runtimecall(void *func, void *retval);
 extern void futures_init(void);
+
+typedef void (*prim_void_void_t)(void);
+typedef Scheme_Object* (*prim_obj_int_pobj_obj_t)(Scheme_Object*, int, Scheme_Object**);
+typedef Scheme_Object* (*prim_int_pobj_obj_t)(int, Scheme_Object**);
+typedef Scheme_Object* (*prim_int_pobj_obj_obj_t)(int, Scheme_Object**, Scheme_Object*);
+typedef void* (*prim_pvoid_pvoid_pvoid_t)(void*, void*);
 
 typedef struct { 
 	unsigned int sigtype;
 
-	Scheme_Object* (*prim_obj_int_pobj_obj)(Scheme_Object* rator, int argc, Scheme_Object** argv);
-	Scheme_Object* (*prim_int_pobj_obj)(int argc, Scheme_Object** argv);
-	Scheme_Object* (*prim_int_pobj_obj_obj)(int argc, Scheme_Object** argv, Scheme_Object* p);
-	void (*prim_void_void)(void);
+	prim_void_void_t void_void;
+	prim_obj_int_pobj_obj_t obj_int_pobj_obj;
+	prim_int_pobj_obj_t int_pobj_obj;
+	prim_int_pobj_obj_obj_t int_pobj_obj_obj;
+	prim_pvoid_pvoid_pvoid_t pvoid_pvoid_pvoid;
+
+	//Scheme_Object* (*prim_obj_int_pobj_obj)(Scheme_Object* rator, int argc, Scheme_Object** argv);
+	//Scheme_Object* (*prim_int_pobj_obj)(int argc, Scheme_Object** argv);
+	//Scheme_Object* (*prim_int_pobj_obj_obj)(int argc, Scheme_Object** argv, Scheme_Object* p);
+	//void (*prim_void_void)(void);
+	//void* (*prim_pvoid_pvoid_pvoid)(void *a, void *b);
 
 	Scheme_Object *p;
 	int argc;
 	Scheme_Object **argv;
 	Scheme_Object *retval;	
+
+	void *a;
+	void *b;
+	void *c;
 
 } prim_data_t;
 
@@ -135,7 +152,8 @@ extern void print_ms_and_us(void);
 #define SIG_VOID_VOID 1 						//void -> void
 #define SIG_OBJ_INT_POBJ_OBJ 2 			//Scheme_Object* -> int -> Scheme_Object** -> Scheme_Object*
 #define SIG_INT_OBJARR_OBJ 3 				//int -> Scheme_Object*[] -> Scheme_Object
-#define SIG_INT_POBJ_OBJ_OBJ 17			//int -> Scheme_Object** -> Scheme_Object* -> Scheme_Object*
+#define SIG_INT_POBJ_OBJ_OBJ 17			//int -> Scheme_Object** -> Scheme_Object* -> Scheme_Object* 
+#define SIG_PVOID_PVOID_PVOID	18		//void* -> void* -> void*
 
 //Helper macros for argument marshaling
 #ifdef FUTURES_ENABLED
