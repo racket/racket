@@ -589,12 +589,12 @@ static int jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
 #define jit_stxr_s(d1, d2, rs)		MOVWrm(jit_reg16(rs), 0,    (d1), (d2), 1)
 #define jit_stxi_s(id, rd, rs)		MOVWrm(jit_reg16(rs), (id), (rd), 0,    0)
 
-#define jit_ldi_i(d, is)		MOVLmr((is), 0,    0,    0,  (d))
+#define _jit_ldi_i(d, is)		MOVLmr((is), 0,    0,    0,  (d))
 #define jit_ldr_i(d, rs)		MOVLmr(0,    (rs), 0,    0,  (d))
 #define jit_ldxr_i(d, s1, s2)		MOVLmr(0,    (s1), (s2), 1,  (d))
 #define jit_ldxi_i(d, rs, is)		MOVLmr((is), (rs), 0,    0,  (d))
 
-#define jit_sti_i(id, rs)		MOVLrm((rs), (id), 0,    0,    0)
+#define _jit_sti_i(id, rs)		MOVLrm((rs), (id), 0,    0,    0)
 #define jit_str_i(rd, rs)		MOVLrm((rs), 0,    (rd), 0,    0)
 #define jit_stxr_i(d1, d2, rs)		MOVLrm((rs), 0,    (d1), (d2), 1)
 #define jit_stxi_i(id, rd, rs)		MOVLrm((rs), (id), (rd), 0,    0)
@@ -612,9 +612,13 @@ static int jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
 #ifdef JIT_X86_64
 # define jit_ldi_l(d, is) (_u32P((long)(is)) ? _jit_ldi_l(d, is) : (jit_movi_l(d, is), jit_ldr_l(d, d)))
 # define jit_sti_l(id, rs) (_u32P((long)(id)) ? _jit_sti_l(id, rs) : (jit_movi_l(JIT_REXTMP, id), MOVQrQm(rs, 0, JIT_REXTMP, 0, 0)))
+# define jit_ldi_i(d, is) (_s32P((long)(is)) ? _jit_ldi_i(d, is) : (jit_movi_l(d, is), jit_ldr_i(d, d)))
+# define jit_sti_i(id, rs) (_s32P((long)(id)) ? _jit_ldi_i(id, rs) : (jit_movi_l(JIT_REXTMP, id), MOVQrm(d, JIT_REXTMP)))
 #else
 # define jit_ldi_l(d, is) _jit_ldi_l(d, is)
 # define jit_sti_l(id, rs) _jit_sti_l(id, rs)
+# define jit_ldi_i(d, is) _jit_ldi_i(d, is)
+# define jit_sti_i(id, rs) _jit_sti_i(id, rs)
 #endif
 
 

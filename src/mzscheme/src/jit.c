@@ -27,7 +27,7 @@
      visible to the GC.
 
   3) Immediate operands must be 32-bit values on x86_64, except with
-     jit_movi, jit_sti, jit_ld, jit_bXi, jit_calli, and jit_finishi.
+     jit_movi, jit_sti, jit_ldi, jit_bXi, jit_calli, and jit_finishi.
 
   4) Function calls are limited to 3 arguments (i.e., jit_prepare()
      must never be called with a number greater than 3). This limit
@@ -2599,7 +2599,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   CHECK_LIMIT();
 
   /* Before inlined native, check stack depth: */
-  (void)mz_tl_ldi_i(JIT_R1, tl_scheme_jit_stack_boundary); /* assumes USE_STACK_BOUNDARY_VAR */
+  (void)mz_tl_ldi_p(JIT_R1, tl_scheme_jit_stack_boundary); /* assumes USE_STACK_BOUNDARY_VAR */
   ref9 = jit_bltr_ul(jit_forward(), JIT_STACK, JIT_R1); /* assumes down-growing stack */
   CHECK_LIMIT();
 
