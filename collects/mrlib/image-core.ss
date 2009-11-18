@@ -586,23 +586,66 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 
 (define (calc-renered-bitmap bitmap)
   (unless (bitmap-rendered-bitmap bitmap)
+    ;; fill in the rendered bitmap with the raw bitmaps.
+    (set-bitmap-rendered-bitmap! bitmap (bitmap-raw-bitmap bitmap))
+    (set-bitmap-rendered-mask! bitmap (bitmap-raw-mask bitmap))
     (cond
       [(and (= 1 (bitmap-x-scale bitmap))
             (= 1 (bitmap-y-scale bitmap))
             (= 0 (bitmap-angle bitmap)))
-       (set-bitmap-rendered-bitmap! bitmap (bitmap-raw-bitmap bitmap))
-       (set-bitmap-rendered-mask! bitmap (bitmap-raw-mask bitmap))]
+       ;; if there's no scaling or rotation, we can just keep that bitmap.
+       (void)]
+      [(<= (* (bitmap-x-scale bitmap) 
+              (bitmap-y-scale bitmap))
+           1)
+       ;; since we prefer to rotate big things, we rotate first
+       (do-rotate bitmap)
+       (do-scale bitmap)]
       [else
-       (let ([θ (degrees->radians (bitmap-angle bitmap))])
-         (let-values ([(bytes w h) (bitmap->bytes (bitmap-raw-bitmap bitmap) (bitmap-raw-mask bitmap))])
-           (let-values ([(rotated-bytes rotated-w rotated-h)
-                         (rotate-bytes bytes w h θ)])
-             (set-bitmap-rendered-bitmap!
-              bitmap
-              (bytes->bitmap rotated-bytes rotated-w rotated-h))
-             (set-bitmap-rendered-mask!
-              bitmap
-              (send (bitmap-rendered-bitmap bitmap) get-loaded-mask)))))])))
+       ;; since we prefer to rotate big things, we scale first
+       (do-scale bitmap)
+       (do-rotate bitmap)])))
+
+(define (do-rotate bitmap)
+  (let ([θ (degrees->radians (bitmap-angle bitmap))])
+    (let-values ([(bytes w h) (bitmap->bytes (bitmap-rendered-bitmap bitmap) (bitmap-rendered-mask bitmap))])
+      (let-values ([(rotated-bytes rotated-w rotated-h)
+                    (rotate-bytes bytes w h θ)])
+        (set-bitmap-rendered-bitmap!
+         bitmap
+         (bytes->bitmap rotated-bytes rotated-w rotated-h))
+        (set-bitmap-rendered-mask!
+         bitmap
+         (send (bitmap-rendered-bitmap bitmap) get-loaded-mask))))))
+
+(define (do-scale bitmap)
+  (let* ([bdc (make-object bitmap-dc%)]
+         [orig-bm (bitmap-rendered-bitmap bitmap)]
+         [orig-mask (bitmap-rendered-mask bitmap)]
+         [orig-w (send orig-bm get-width)]
+         [orig-h (send orig-bm get-height)]
+         [x-scale (bitmap-x-scale bitmap)]
+         [y-scale (bitmap-y-scale bitmap)]
+         [scale-w (* x-scale (send orig-bm get-width))]
+         [scale-h (* y-scale (send orig-bm get-height))]
+         [new-bm (make-object bitmap% scale-w scale-h)]
+         [new-mask (make-object bitmap% scale-w scale-h)])
+    (send new-bm set-loaded-mask new-mask)
+    
+    (send bdc set-bitmap new-bm)
+    (send bdc set-scale x-scale y-scale)
+    (send bdc clear)
+    (send bdc draw-bitmap orig-bm 0 0)
+
+    (send bdc set-bitmap new-mask)
+    (send bdc set-scale x-scale y-scale)
+    (send bdc clear)
+    (send bdc draw-bitmap orig-mask 0 0)
+    
+    (send bdc set-bitmap #f)
+    
+    (set-bitmap-rendered-bitmap! bitmap new-bm)
+    (set-bitmap-rendered-mask! bitmap new-mask)))
 
 (define (text->font text)
   (cond
