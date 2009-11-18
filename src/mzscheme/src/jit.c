@@ -2144,8 +2144,16 @@ static Scheme_Object *noncm_prim_indirect(Scheme_Prim proc, int argc)
 	Scheme_Object *ret;
 	LOG_PRIM_START(proc);
 
-  RTCALL_INT_OBJARR_OBJ(proc, argc, MZ_RUNSTACK);
-  ret = proc(argc, MZ_RUNSTACK);
+	if (rtcall_int_pobj_obj(proc, 
+													argc, 
+													MZ_RUNSTACK, 
+													&ret))
+	{
+		LOG_PRIM_END(proc);
+		return ret;
+	}
+
+	ret = proc(argc, MZ_RUNSTACK);
 	LOG_PRIM_END(proc);
 
 	return ret;
@@ -2155,10 +2163,19 @@ static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc
 	Scheme_Object *ret;
 	LOG_PRIM_START(proc);
 
-  RTCALL_INT_POBJ_OBJ_OBJ(proc, argc, MZ_RUNSTACK, self);
-  ret = proc(argc, MZ_RUNSTACK, self);
-	
+	if (rtcall_int_pobj_obj_obj(proc, 
+													argc, 
+													MZ_RUNSTACK, 
+													self,  
+													&ret))
+	{
+		LOG_PRIM_END(proc);
+		return ret;
+	}
+
+	ret = proc(argc, MZ_RUNSTACK, self);
 	LOG_PRIM_END(proc);
+
 	return ret;
 }
 
@@ -2168,7 +2185,6 @@ static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc
 
 static Scheme_Object *ts_scheme_apply_multi_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
 {
-  /* RTCALL_OBJ_INT_POBJ_OBJ(_scheme_apply_multi_from_native, rator, argc, argv); */
   Scheme_Object *retptr;
   if (rtcall_obj_int_pobj_obj(_scheme_apply_multi_from_native, 
                               rator, 
@@ -2183,7 +2199,6 @@ static Scheme_Object *ts_scheme_apply_multi_from_native(Scheme_Object *rator, in
 
 static Scheme_Object *ts_scheme_apply_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
 {
-  /* RTCALL_OBJ_INT_POBJ_OBJ(_scheme_apply_from_native, rator, argc, argv); */
   Scheme_Object *retptr;
   if (rtcall_obj_int_pobj_obj(_scheme_apply_from_native, 
                               rator, 
@@ -2198,7 +2213,6 @@ static Scheme_Object *ts_scheme_apply_from_native(Scheme_Object *rator, int argc
 
 static Scheme_Object *ts_scheme_tail_apply_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
 {
-  /* RTCALL_OBJ_INT_POBJ_OBJ(_scheme_tail_apply_from_native, rator, argc, argv); */
   Scheme_Object *retptr;
   if (rtcall_obj_int_pobj_obj(_scheme_tail_apply_from_native, 
                               rator, 
@@ -2213,7 +2227,6 @@ static Scheme_Object *ts_scheme_tail_apply_from_native(Scheme_Object *rator, int
 
 static void ts_on_demand(void)
 {
-  /* RTCALL_VOID_VOID(on_demand); */
   if (rtcall_void_void(on_demand)) {
     return;
   }
