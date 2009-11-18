@@ -10,8 +10,9 @@
                      scheme/list)
          lang/posn)
 
-(define (show-image g [extra-space 0])
-  (letrec ([f (new frame% [label ""])]
+(define (show-image arg [extra-space 0])
+  (letrec ([g (to-img arg)]
+           [f (new frame% [label ""])]
            [c (new canvas% 
                    [parent f]
                    [min-width (+ extra-space (inexact->exact (floor (image-right g))))]
@@ -253,20 +254,19 @@
     [(is-a? arg bitmap%) (bitmap->image arg)]
     [else arg]))
 
-(define (bitmap->image bm [mask-bm (send bm get-loaded-mask)])
-  (let ([w (send bm get-width)]
-        [h (send bm get-height)])
-    (make-image (make-translate
-                 (/ w 2)
-                 (/ h 2)
-                 (make-bitmap bm mask-bm 0 1 #f))
-                (make-bb w h h)
-                #f)))
-
 (define (image-snip->image is)
   (bitmap->image (send is get-bitmap)
                  (or (send is get-bitmap-mask)
                      (send (send is get-bitmap) get-loaded-mask))))
+
+(define (bitmap->image bm [mask-bm (send bm get-loaded-mask)])
+  (let ([w (send bm get-width)]
+        [h (send bm get-height)])
+    (make-image (make-translate (/ w 2)
+                                (/ h 2)
+                                (make-bitmap bm mask-bm 0 1 1 #f #f))
+                (make-bb w h h)
+                #f)))
 
 ;                                              
 ;                                              
@@ -524,14 +524,14 @@
     [else
      (let ([dx (translate-dx simple-shape)]
            [dy (translate-dy simple-shape)])
-       (let-values ([(l t r b) (atomic-bb (translate-shape simple-shape))])
+       (let-values ([(l t r b) (np-atomic-bb (translate-shape simple-shape))])
          (values (+ l dx)
                  (+ t dy)
                  (+ r dx)
                  (+ b dy))))]))
 
 
-(define (atomic-bb atomic-shape)
+(define (np-atomic-bb atomic-shape)
   (cond
     [(ellipse? atomic-shape)
      (let ([θ (ellipse-angle atomic-shape)])
@@ -544,21 +544,29 @@
                  (/ w 2)
                  (/ h 2))))]
     [(text? atomic-shape)
-     (let*-values ([(w h a d) (send text-sizing-bm get-text-extent 
-                                    (text-string atomic-shape) 
-                                    (text->font atomic-shape))]
-                   [(ax ay) (rotate-xy (- (/ w 2)) (- (/ h 2)) (text-angle atomic-shape))]
-                   [(bx by) (rotate-xy (- (/ w 2)) (/ h 2) (text-angle atomic-shape))]
-                   [(cx cy) (rotate-xy (/ w 2) (- (/ h 2)) (text-angle atomic-shape))]
-                   [(dx dy) (rotate-xy (/ w 2) (/ h 2) (text-angle atomic-shape))])
-       (values (min ax bx cx dx)
-               (min ay by cy dy)
-               (max ax bx cx dx)
-               (max ay by cy dy)))]
+     (let-values ([(w h a d) (send text-sizing-bm get-text-extent 
+                                   (text-string atomic-shape) 
+                                   (text->font atomic-shape))])
+       (rotated-rectangular-bounding-box w h (text-angle atomic-shape)))]
+    [(bitmap? atomic-shape)
+     (let ([bb (bitmap-raw-bitmap atomic-shape)])
+       (rotated-rectangular-bounding-box (send bb get-width)
+                                         (send bb get-height)
+                                         (bitmap-angle atomic-shape)))]
     [else
-     (fprintf (current-error-port) "using bad bounding box for ~s\n" (image-shape atomic-shape))
+     (fprintf (current-error-port) "using bad bounding box for ~s\n" atomic-shape)
      (values 0 0 100 100)]))
   
+(define (rotated-rectangular-bounding-box w h θ)
+  (let*-values ([(ax ay) (rotate-xy (- (/ w 2)) (- (/ h 2)) θ)]
+                [(bx by) (rotate-xy (- (/ w 2)) (/ h 2) θ)]
+                [(cx cy) (rotate-xy (/ w 2) (- (/ h 2)) θ)]
+                [(dx dy) (rotate-xy (/ w 2) (/ h 2) θ)])
+    (values (min ax bx cx dx)
+            (min ay by cy dy)
+            (max ax bx cx dx)
+            (max ay by cy dy))))
+
 ;; rotate-simple : angle simple-shape -> simple-shape
 (define (rotate-simple θ simple-shape)
   (cond
@@ -582,8 +590,8 @@
                                       (translate-dy simple-shape))))])
          (make-translate dx dy rotated)))]))
 
-(define (center-point atomic-shape)
-  (let-values ([(l t r b) (atomic-bb atomic-shape)])
+(define (center-point np-atomic-shape)
+  (let-values ([(l t r b) (np-atomic-bb np-atomic-shape)])
     (xy->c (/ (- r l) 2)
            (/ (- b t) 2))))
 
@@ -625,7 +633,9 @@
      (make-bitmap (bitmap-raw-bitmap atomic-shape)
                   (bitmap-raw-mask atomic-shape)
                   (bring-between (+ θ (bitmap-angle atomic-shape)) 360)
-                  (bitmap-scale atomic-shape)
+                  (bitmap-x-scale atomic-shape)
+                  (bitmap-y-scale atomic-shape)
+                  #f
                   #f)]))
 
 ;; rotate-point : point angle -> point
@@ -989,5 +999,5 @@
          rotate-xy)
 
 (provide/contract
- [atomic-bb (-> atomic-shape? (values real? real? real? real?))]
+ [np-atomic-bb (-> np-atomic-shape? (values real? real? real? real?))]
  [center-point (-> np-atomic-shape? number?)])

@@ -1,6 +1,7 @@
 #lang scheme/base
 (require "../../mrlib/image-core.ss"
          "../private/image-more.ss"
+         "../../mrlib/private/image-core-bitmap.ss"
          lang/posn
          scheme/math
          scheme/class
@@ -775,11 +776,56 @@
   (check-equal? (image-baseline (add-line txt 0 -10 100 100 'red))
                 (+ bl 10)))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  bitmaps
 ;;
+
+(check-equal? (clamp-1 0 3 5) 3)
+(check-equal? (clamp-1 0 0 5) 0)
+(check-equal? (clamp-1 0 -2 5) 0)
+(check-equal? (clamp-1 0 4 5) 4)
+(check-equal? (clamp-1 0 7 5) 4)
+
+(check-equal? (build-bytes 5 sqr) (list->bytes '(0 1 4 9 16)))
+
+
+(define onePixel (list->bytes '(255 0 0 255)))
+;(call-with-values (λ () (scale onePixel 1 1 100)) show-bitmap)
+
+(define blue2x1 (list->bytes '(255 0 0 255   255 0 255 0)))
+;(call-with-values (λ () (scale blue2x1 2 1 20)) show-bitmap)
+
+(define blue2x2 (list->bytes '(255 0 0 255   255 0 0 255   255 0 0 255   255 0 0 255)))
+(define gray2x2 (list->bytes '(255 100 100 100   255 100 100 100   255 100 100 100   255 100 100 100)))
+;; Some blue x green checkerboards:
+(define checker2x2 (list->bytes '(255 0 0 255   255 0 255 0
+                                  255 0 255 0   255 0 0 255)))
+(define checker3x3 (list->bytes '(255 0 0 255   255 0 255 0    255 0 0 255
+                                  255 0 255 0   255 0 0 255    255 0 255 0
+                                  255 0 0 255   255 0 255 0    255 0 0 255 )))
+  
+
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 0 0) (list->bytes '(255 0 0 255)))
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 1 1) (list->bytes '(255 0 0 255)))
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 2 2) (list->bytes '(255 0 0 255)))
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 1 2) (list->bytes '(255 0 255 0)))
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 0 3) (list->bytes '(  0 0 0 255)))
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 -1 -1) (list->bytes '(  0 0 0 255)))
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 -1 1) (list->bytes '(  0 0 255 0)))
+(check-equal? (bmbytes-ref/safe checker3x3 3 3 1 19) (list->bytes '(  0 0 255 0)))
+
+
+(check-equal? (bytes->list (interpolate checker2x2 2 2 1 0))
+              '(255 0 255 0))
+(check-equal? (bytes->list (interpolate checker3x3 3 3 0 0))
+              '(255 0 0 255))
+(check-equal? (bytes->list (interpolate checker3x3 3 3 0 1))
+              '(255 0 255 0))
+(check-equal? (bytes->list (interpolate checker3x3 3 3 0 2))
+              '(255 0 0 255))
+(check-equal? (bytes->list (interpolate checker3x3 3 3 0.5 0))
+              '(255 0 128 128))
 
 (check-equal? (image-width (bitmap icons/stop-16x16.png))
               16)

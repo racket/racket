@@ -23,11 +23,14 @@ has been moved out).
 (beside/places "baseline"
                  (text "ijy" 12 'black)
                  (text "ijy" 24 'black))
+  - /places => /align
+
 |#
 
 (require scheme/class
          scheme/gui/base
          scheme/math
+         "private/image-core-bitmap.ss"
          (for-syntax scheme/base))
 
 (define-for-syntax id-constructor-pairs '())
@@ -134,7 +137,8 @@ has been moved out).
 ;;
 ;;  - (make-bitmap (is-a?/c bitmap%) angle positive-real (or/c #f (is-a?/c bitmap%)))
 ;;    NOTE: bitmap copying needs to happen in 'write' and 'read' methods
-(define-struct/reg-mk bitmap (raw-bitmap raw-mask angle scale rendered-bitmap) #:omit-define-syntaxes #:transparent)
+(define-struct/reg-mk bitmap (raw-bitmap raw-mask angle x-scale y-scale [rendered-bitmap #:mutable] [rendered-mask #:mutable])
+  #:omit-define-syntaxes #:transparent)
 
 ;; a polygon is:
 ;;
@@ -449,10 +453,12 @@ has been moved out).
                 (text-weight shape)
                 (text-underline shape))]
     [(bitmap? shape) 
-     (unless (and (= 1 x-scale)
-                  (= 1 y-scale))
-       (fprintf (current-error-port) "scaling a bitmap, ignoring\n"))
-     shape]))
+     (make-bitmap (bitmap-raw-bitmap shape)
+                  (bitmap-raw-mask shape)
+                  (bitmap-angle shape)
+                  (* x-scale (bitmap-x-scale shape))
+                  (* y-scale (bitmap-y-scale shape))
+                  #f #f)]))
 
 
 ;                                                                
@@ -540,14 +546,14 @@ has been moved out).
               (send dc set-brush (mode-color->brush (ellipse-mode atomic-shape) (ellipse-color atomic-shape)))
               (send dc draw-path path dx dy)))]
          [(bitmap? atomic-shape)
-          (let ([bm (bitmap-raw-bitmap atomic-shape)]) 
+          (let ([bm (get-rendered-bitmap atomic-shape)]) 
             (send dc draw-bitmap 
                   bm
                   (- dx (/ (send bm get-width) 2))
                   (- dy (/ (send bm get-height) 2))
                   'solid
                   (send the-color-database find-color "black")
-                  (bitmap-raw-mask atomic-shape)))]
+                  (get-rendered-mask atomic-shape)))]
          [(text? atomic-shape)
           (let ([θ (degrees->radians (text-angle atomic-shape))]
                 [font (send dc get-font)])
@@ -562,6 +568,41 @@ has been moved out).
                       (real-part p)
                       (imag-part p) 
                       #f 0 θ))))]))]))
+
+#|
+
+the mask bitmap and the original bitmap are all together in a single bytes!
+
+|#
+
+
+(define (get-rendered-bitmap bitmap)
+  (calc-renered-bitmap bitmap)
+  (bitmap-rendered-bitmap bitmap))
+
+(define (get-rendered-mask bitmap)
+  (calc-renered-bitmap bitmap)
+  (bitmap-rendered-mask bitmap))
+
+(define (calc-renered-bitmap bitmap)
+  (unless (bitmap-rendered-bitmap bitmap)
+    (cond
+      [(and (= 1 (bitmap-x-scale bitmap))
+            (= 1 (bitmap-y-scale bitmap))
+            (= 0 (bitmap-angle bitmap)))
+       (set-bitmap-rendered-bitmap! bitmap (bitmap-raw-bitmap bitmap))
+       (set-bitmap-rendered-mask! bitmap (bitmap-raw-mask bitmap))]
+      [else
+       (let ([θ (degrees->radians (bitmap-angle bitmap))])
+         (let-values ([(bytes w h) (bitmap->bytes (bitmap-raw-bitmap bitmap) (bitmap-raw-mask bitmap))])
+           (let-values ([(rotated-bytes rotated-w rotated-h)
+                         (rotate-bytes bytes w h θ)])
+             (set-bitmap-rendered-bitmap!
+              bitmap
+              (bytes->bitmap rotated-bytes rotated-w rotated-h))
+             (set-bitmap-rendered-mask!
+              bitmap
+              (send (bitmap-rendered-bitmap bitmap) get-loaded-mask)))))])))
 
 (define (text->font text)
   (cond
@@ -617,6 +658,9 @@ has been moved out).
     [else
      (send the-brush-list find-or-create-brush "black" 'transparent)]))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 (provide make-image image-shape image-bb image-normalized? image%
          
          (struct-out bb)
@@ -630,7 +674,8 @@ has been moved out).
          make-polygon polygon? polygon-points polygon-mode polygon-color
          make-line-segment line-segment? line-segment-start line-segment-end line-segment-color
 
-         make-bitmap bitmap? bitmap-raw-bitmap bitmap-raw-mask bitmap-angle bitmap-scale bitmap-rendered-bitmap
+         make-bitmap bitmap? bitmap-raw-bitmap bitmap-raw-mask bitmap-angle bitmap-x-scale bitmap-y-scale 
+         bitmap-rendered-bitmap bitmap-rendered-mask
          
          degrees->radians
          normalize-shape
