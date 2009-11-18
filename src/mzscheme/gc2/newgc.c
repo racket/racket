@@ -702,7 +702,6 @@ static void *allocate_medium(const size_t request_size_bytes, const int type)
   }
 }
 
-
 inline static mpage *gen0_create_new_nursery_mpage(NewGC *gc, const size_t page_size) {
   mpage *newmpage;
 
@@ -1047,7 +1046,7 @@ inline static void resize_gen0(NewGC *gc, unsigned long new_size)
   {
     mpage *work = gc->thread_local_pages;
     while(work) {
-			mpage *next = work->next;
+      mpage *next = work->next;
       gen0_free_jit_nursery_page(gc, work);
       work = next;
     }
@@ -2115,7 +2114,7 @@ void GC_mark(const void *const_p)
         /* Allocate and prep the page */
         work = malloc_mpage();
         work->addr = malloc_dirty_pages(gc, APAGE_SIZE, APAGE_SIZE);
-        work->generation = 1;
+        work->generation = 1; 
         work->page_type = type;
         work->size = work->previous_size = PREFIX_SIZE;
         work->marked_on = 1;

@@ -281,8 +281,6 @@ typedef struct {
 static void register_traversers(void);
 #endif
 
-static void prepare_this_thread_for_GC(Scheme_Thread *t);
-
 static Scheme_Object *custodian_require_mem(int argc, Scheme_Object *args[]);
 static Scheme_Object *custodian_limit_mem(int argc, Scheme_Object *args[]);
 static Scheme_Object *custodian_can_mem(int argc, Scheme_Object *args[]);
@@ -3279,7 +3277,7 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
 
   /* zero out anything we need now, because nestee disables
      GC cleaning for this thread: */
-  prepare_this_thread_for_GC(p);
+  scheme_prepare_this_thread_for_GC(p);
 
   if (!p->runstack_owner) {
     Scheme_Thread **owner;
@@ -4428,7 +4426,7 @@ void scheme_weak_suspend_thread(Scheme_Thread *r)
 
   r->running |= MZTHREAD_SUSPENDED;
 
-  prepare_this_thread_for_GC(r);
+  scheme_prepare_this_thread_for_GC(r);
 
   if (r == scheme_current_thread) {
     select_thread();
@@ -7329,7 +7327,7 @@ static void prepare_thread_for_GC(Scheme_Object *t)
   scheme_clean_list_stack(p);
 }
 
-static void prepare_this_thread_for_GC(Scheme_Thread *p)
+void scheme_prepare_this_thread_for_GC(Scheme_Thread *p)
 {
   if (p == scheme_current_thread) {
 #ifdef RUNSTACK_IS_GLOBAL

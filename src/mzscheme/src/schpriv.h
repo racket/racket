@@ -428,6 +428,8 @@ void scheme_block_child_signals(int block);
 void scheme_check_child_done(void);
 #endif
 
+void scheme_prepare_this_thread_for_GC(Scheme_Thread *t);
+
 Scheme_Object **scheme_alloc_runstack(long len);
 void scheme_set_runstack_limits(Scheme_Object **rs, long len, long start, long end);
 

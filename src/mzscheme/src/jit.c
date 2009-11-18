@@ -211,6 +211,7 @@ static void *generate_lambda_simple_arity_check(int num_params, int has_rest, in
 static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Data *ndata, 
 				 int is_method);
 static void on_demand();
+static void on_demand_with_args(Scheme_Object **);
 static int generate_non_tail_mark_pos_prefix(mz_jit_state *jitter);
 static void generate_non_tail_mark_pos_suffix(mz_jit_state *jitter);
 static void *generate_shared_call(int num_rands, mz_jit_state *old_jitter, int multi_ok, int is_tail, 
@@ -2235,7 +2236,7 @@ static Scheme_Object *ts_scheme_tail_apply_from_native(Scheme_Object *rator, int
 static void ts_on_demand(void)
 {
   START_XFORM_SKIP;
-  if (rtcall_void_void(on_demand)) {
+  if (rtcall_void_void_3args(on_demand_with_args)) {
     return;
   }
 
@@ -9471,16 +9472,21 @@ void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
   ndata->max_let_depth = max_depth;
 }
 
-static void on_demand()
+static void on_demand_with_args(Scheme_Object **in_argv)
 {
   /* On runstack: closure (nearest), argc, argv (deepest) */
   Scheme_Object *c, *argc, **argv;
 
-  c = MZ_RUNSTACK[0];
-  argc = MZ_RUNSTACK[1];
-  argv = (Scheme_Object **)MZ_RUNSTACK[2];
+  c = in_argv[0];
+  argc = in_argv[1];
+  argv = (Scheme_Object **)in_argv[2];
 
   scheme_on_demand_generate_lambda((Scheme_Native_Closure *)c, SCHEME_INT_VAL(argc), argv);
+}
+
+static void on_demand()
+{
+  return on_demand_with_args(MZ_RUNSTACK);
 }
 
 Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, int clear_code_after_jit,
