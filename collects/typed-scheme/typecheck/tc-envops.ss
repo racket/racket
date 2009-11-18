@@ -21,7 +21,7 @@
         [(zero? i) (cons (f (car l)) (cdr l))]
         [else (cons (car l) (replace-nth (cdr l) (sub1 i) f))]))
 
-(trace replace-nth)
+;(trace replace-nth)
 
 (define/contract (update t lo)
   (Type/c Filter/c . -> . Type/c)
