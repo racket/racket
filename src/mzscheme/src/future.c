@@ -66,6 +66,8 @@ pthread_t g_rt_threadid = 0;
 static pthread_mutex_t g_future_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t g_future_pending_cv = PTHREAD_COND_INITIALIZER;
 
+THREAD_LOCAL_DECL(static pthread_cond_t worker_can_continue_cv);
+
 static pthread_mutex_t gc_ok_m = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t gc_ok_c = PTHREAD_COND_INITIALIZER;
 static int gc_not_ok;
@@ -76,6 +78,7 @@ THREAD_LOCAL_DECL(extern unsigned long GC_gen0_alloc_page_ptr);
 future_t **g_current_ft;
 Scheme_Object ***g_scheme_current_runstack;
 Scheme_Object ***g_scheme_current_runstack_start;
+void **g_jit_future_storage;
 
 static void register_traversers(void);
 extern void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv);
@@ -310,6 +313,7 @@ void futures_init(void)
 			scheme_register_static(g_current_ft, sizeof(void*));
 			scheme_register_static(g_scheme_current_runstack, sizeof(void*));
 			scheme_register_static(g_scheme_current_runstack_start, sizeof(void*));	
+                        scheme_register_static(g_jit_future_storage, 2 * sizeof(void*));
 
       g_pool_threads[i] = threadid;
   }
@@ -433,7 +437,6 @@ Scheme_Object *future(int argc, Scheme_Object *argv[])
     //Create the future descriptor and add to the queue as 'pending'    
     pthread_mutex_lock(&g_future_queue_mutex);
     ft = enqueue_future();
-    pthread_cond_init(&ft->can_continue_cv, NULL);
 		futureid = ++g_next_futureid;
     ft->id = futureid;
     ft->orig_lambda = lambda;
@@ -564,7 +567,7 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
 
             //Signal the waiting worker thread that it
             //can continue running machine code
-            pthread_cond_signal(&ft->can_continue_cv);
+            pthread_cond_signal(ft->can_continue_cv);
             pthread_mutex_unlock(&g_future_queue_mutex);
 
             goto wait_for_rtcall_or_completion;
@@ -605,6 +608,8 @@ void *worker_thread_future_loop(void *arg)
 	pthread_mutex_unlock(&g_future_queue_mutex);
 	*/
 
+        pthread_cond_init(&worker_can_continue_cv, NULL);
+
         scheme_fuel_counter = 1;
         scheme_jit_stack_boundary = ((unsigned long)&v) - INITIAL_C_STACK_SIZE;
 
@@ -612,12 +617,13 @@ void *worker_thread_future_loop(void *arg)
         g_stack_boundary_pointers[id] = &scheme_jit_stack_boundary;
 
 				#ifdef MZ_PRECISE_GC
-        GC_gen0_alloc_page_ptr = 1; /* weirdly, disables inline allocation */
+        GC_gen0_alloc_page_ptr = 0; /* disables inline allocation */
 				#endif
 
 				g_current_ft = &current_ft;
 				g_scheme_current_runstack = &scheme_current_runstack;
 				g_scheme_current_runstack_start = &scheme_current_runstack_start;
+                                g_jit_future_storage = &jit_future_storage[0];
         sema_signal(&ready_sema);
 
     wait_for_work:
@@ -726,8 +732,9 @@ int future_do_runtimecall(
 		scheme_signal_received_at(g_signal_handle);
 
     //Wait for the signal that the RT call is finished
+                future->can_continue_cv = &worker_can_continue_cv;
     end_gc_not_ok();
-    pthread_cond_wait(&future->can_continue_cv, &g_future_queue_mutex);
+    pthread_cond_wait(&worker_can_continue_cv, &g_future_queue_mutex);
     start_gc_not_ok();
 
 		//Fetch the future instance again, in case the GC has moved the pointer
@@ -764,6 +771,33 @@ int rtcall_void_void(void (*f)())
 	future->prim_data = data;
 
 	future_do_runtimecall((void*)f, NULL);
+
+	return 1;
+	END_XFORM_SKIP;
+}
+
+
+int rtcall_void_pvoid(void (*f)(), void **retval)
+{
+	START_XFORM_SKIP;
+	future_t *future;
+	prim_data_t data;
+	memset(&data, 0, sizeof(prim_data_t));
+	if (!IS_WORKER_THREAD)
+	{
+		return 0;
+	}
+
+	data.void_pvoid = f;
+	data.sigtype = SIG_VOID_PVOID;
+
+	future = get_my_future();
+	future->rt_prim = (void*)f;
+	future->prim_data = data;
+
+	future_do_runtimecall((void*)f, NULL);
+
+        *retval = future->prim_data.retval;
 
 	return 1;
 	END_XFORM_SKIP;
@@ -960,6 +994,13 @@ void *invoke_rtcall(future_t *future)
 
       pret = &dummy_ret;
       break;
+		}
+    case SIG_VOID_PVOID:
+		{
+			prim_void_pvoid_t func = pdata->void_pvoid;
+			ret = func();
+                        pdata->retval = ret;
+                        break;
 		}
     case SIG_OBJ_INT_POBJ_OBJ:
 		{

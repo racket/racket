@@ -271,7 +271,7 @@ void scheme_jit_fill_threadlocal_table();
    On x86, the thread-local table pointer is loaded on entry to the
    JIT world into a C stack slot. On x86_64, it is loaded into the
    callee-saved R14 (and the old value is saved on the C stack). */
-#if defined(MZ_USE_PLACES) || defined(FUTURES_ENABLED)
+#ifdef USE_THREAD_LOCAL
 # define JIT_THREAD_LOCAL
 #endif
 
@@ -1436,7 +1436,7 @@ static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut
 
   __START_TINY_JUMPS__(1);
   reffail = _jit.x.pc;
-  jit_ldi_p(JIT_V1, &GC_gen0_alloc_page_ptr);
+  mz_tl_ldi_p(JIT_V1, tl_GC_gen0_alloc_page_ptr);
   jit_subi_l(JIT_R2, JIT_V1, 1);
   jit_andi_l(JIT_R2, JIT_R2, (algn - 1));
   ref = jit_blti_l(jit_forward(), JIT_R2, (algn - sz));
@@ -2186,6 +2186,7 @@ static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc
 
 static Scheme_Object *ts_scheme_apply_multi_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
 {
+  START_XFORM_SKIP;
   Scheme_Object *retptr;
   if (rtcall_obj_int_pobj_obj(_scheme_apply_multi_from_native, 
                               rator, 
@@ -2196,10 +2197,12 @@ static Scheme_Object *ts_scheme_apply_multi_from_native(Scheme_Object *rator, in
   }
 
   return _scheme_apply_multi_from_native(rator, argc, argv);
+  END_XFORM_SKIP;
 }
 
 static Scheme_Object *ts_scheme_apply_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
 {
+  START_XFORM_SKIP;
   Scheme_Object *retptr;
   if (rtcall_obj_int_pobj_obj(_scheme_apply_from_native, 
                               rator, 
@@ -2210,10 +2213,12 @@ static Scheme_Object *ts_scheme_apply_from_native(Scheme_Object *rator, int argc
   }
   
   return _scheme_apply_from_native(rator, argc, argv);
+  END_XFORM_SKIP;
 }
 
 static Scheme_Object *ts_scheme_tail_apply_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
 {
+  START_XFORM_SKIP;
   Scheme_Object *retptr;
   if (rtcall_obj_int_pobj_obj(_scheme_tail_apply_from_native, 
                               rator, 
@@ -2224,35 +2229,52 @@ static Scheme_Object *ts_scheme_tail_apply_from_native(Scheme_Object *rator, int
   }
   
   return _scheme_tail_apply_from_native(rator, argc, argv);
+  END_XFORM_SKIP;
 }
 
 static void ts_on_demand(void)
 {
+  START_XFORM_SKIP;
   if (rtcall_void_void(on_demand)) {
     return;
   }
 
   on_demand();
+  END_XFORM_SKIP;
 }
 
-	#ifdef MZ_PRECISE_GC
-	static void *ts_prepare_retry_alloc(void *p, void *p2)
-	{
-		void *ret;
-		LOG_PRIM_START(&prepare_retry_alloc);
-		if (rtcall_pvoid_pvoid_pvoid(prepare_retry_alloc, 
-																	p, 
-																	p2, 
-																	&ret))
-		{
-			return ret;
-		}
+#ifdef MZ_PRECISE_GC
+static void *get_new_local_memory(void *p, void *p2)
+{
+  return GC_make_jit_nursery_page();
+}
 
-		ret = prepare_retry_alloc(p, p2);
-		LOG_PRIM_END(&prepare_retry_alloc);
-		return ret;
-	}
-	#endif
+static void *ts_prepare_retry_alloc(void *p, void *p2)
+{
+  START_XFORM_SKIP;
+  void *ret;
+  LOG_PRIM_START(&prepare_retry_alloc);
+  jit_future_storage[0] = p;
+  jit_future_storage[1] = p2;
+  if (rtcall_void_pvoid(GC_make_jit_nursery_page,
+                        &ret)) {
+    GC_gen0_alloc_page_ptr = ret;
+    retry_alloc_r1 = jit_future_storage[1];
+    p = jit_future_storage[0];
+    jit_future_storage[0] = NULL;
+    jit_future_storage[1] = NULL;
+    return p;
+  }
+
+  jit_future_storage[0] = NULL;
+  jit_future_storage[1] = NULL;
+  
+  ret = prepare_retry_alloc(p, p2);
+  LOG_PRIM_END(&prepare_retry_alloc);
+  return ret;
+  END_XFORM_SKIP;
+}
+#endif
 #else
 /* futures not enabled */
 # define mz_prepare_direct_prim(n) mz_prepare(n)

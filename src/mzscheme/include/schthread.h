@@ -75,6 +75,10 @@ typedef long objhead;
 
 /* **************************************** */
 
+#if FUTURES_ENABLED
+# include <pthread.h>
+#endif
+
 typedef struct Thread_Local_Variables {
   void **GC_variable_stack_;
   objhead GC_objhead_template_;
@@ -208,6 +212,10 @@ typedef struct Thread_Local_Variables {
   unsigned long current_total_allocation_;
   struct gmp_tmp_stack gmp_tmp_xxx_;
   struct gmp_tmp_stack *gmp_tmp_current_;
+#if FUTURES_ENABLED
+  pthread_cond_t worker_can_continue_cv_;
+  void *jit_future_storage_[2];
+#endif
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
@@ -367,6 +375,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define current_total_allocation XOA (scheme_get_thread_local_variables()->current_total_allocation_)
 #define gmp_tmp_xxx XOA (scheme_get_thread_local_variables()->gmp_tmp_xxx_)
 #define gmp_tmp_current XOA (scheme_get_thread_local_variables()->gmp_tmp_current_)
+#define worker_can_continue_cv XOA (scheme_get_thread_local_variables()->worker_can_continue_cv_)
+#define jit_future_storage XOA (scheme_get_thread_local_variables()->jit_future_storage_)
 
 /* **************************************** */
 

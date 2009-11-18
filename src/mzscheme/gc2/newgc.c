@@ -721,24 +721,28 @@ inline static void gen0_free_nursery_mpage(NewGC *gc, mpage *page, size_t page_s
   free_mpage(page);
 }
 
+/* Needs to be consistent with GC_alloc_alignment(): */
+#define THREAD_LOCAL_PAGE_SIZE APAGE_SIZE
+
 void *GC_make_jit_nursery_page() {
   NewGC *gc = GC_get_GC();
   mpage *new_mpage;
 
   {
-    new_mpage = gen0_create_new_nursery_mpage(gc, APAGE_SIZE);
+    new_mpage = gen0_create_new_nursery_mpage(gc, THREAD_LOCAL_PAGE_SIZE);
 
     /* push page */
     new_mpage->next = gc->thread_local_pages;
-    new_mpage->next->prev = new_mpage;
+    if (new_mpage->next)
+      new_mpage->next->prev = new_mpage;
     gc->thread_local_pages = new_mpage;
   }
 
-  return new_mpage->addr;
+  return (void *)(NUM(new_mpage->addr) + new_mpage->size);
 }
 
 inline static void gen0_free_jit_nursery_page(NewGC *gc, mpage *page) {
-  gen0_free_nursery_mpage(gc, page, APAGE_SIZE);
+  gen0_free_nursery_mpage(gc, page, THREAD_LOCAL_PAGE_SIZE);
 }
 
 inline static mpage *gen0_create_new_mpage(NewGC *gc) {
@@ -800,15 +804,15 @@ inline static void *allocate(const size_t request_size, const int type)
       GC_gen0_alloc_page_end    = NUM(new_mpage->addr) + GEN0_PAGE_SIZE;
     }
     else {
-			#ifdef INSTRUMENT_PRIMITIVES 
-			LOG_PRIM_START(((void*)garbage_collect));			
-			#endif
-
+#ifdef INSTRUMENT_PRIMITIVES 
+      LOG_PRIM_START(((void*)garbage_collect));			
+#endif
+      
       garbage_collect(gc, 0);
 
-			#ifdef INSTRUMENT_PRIMITIVES 
-			LOG_PRIM_END(((void*)garbage_collect));
-			#endif
+#ifdef INSTRUMENT_PRIMITIVES 
+      LOG_PRIM_END(((void*)garbage_collect));
+#endif
     }
     newptr = GC_gen0_alloc_page_ptr + allocate_size;
     ASSERT_VALID_OBJPTR(newptr);
@@ -1044,6 +1048,7 @@ inline static void resize_gen0(NewGC *gc, unsigned long new_size)
     mpage *work = gc->thread_local_pages;
     while(work) {
       gen0_free_jit_nursery_page(gc, work);
+      work = work->next;
     }
 
     gc->thread_local_pages = NULL;
