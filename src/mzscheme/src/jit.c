@@ -41,7 +41,9 @@
 
 #include "schpriv.h"
 #include "schmach.h"
+#ifdef FUTURES_ENABLED
 # include "future.h"
+#endif
 #ifdef MZ_USE_DWARF_LIBUNWIND
 # include "unwind/libunwind.h"
 #endif

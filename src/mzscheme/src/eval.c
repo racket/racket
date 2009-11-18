@@ -143,8 +143,9 @@
 #ifdef MACOS_STACK_LIMIT
 #include <Memory.h>
 #endif 
-
-#include "future.h"
+#ifdef FUTURES_ENABLED
+# include "future.h"
+#endif
 
 #define EMBEDDED_DEFINES_START_ANYWHERE 0
 
