@@ -88,7 +88,6 @@ typedef struct future {
 
 	//Runtime call stuff
 	void *rt_prim;
-	void *rt_prim_retval;
 
 	prim_data_t prim_data;
   void *alloc_retval;

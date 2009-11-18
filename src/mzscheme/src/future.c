@@ -580,7 +580,6 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
 						LOG("done.\n");
             pthread_mutex_lock(&g_future_queue_mutex);
 
-            ft->rt_prim_retval = rtcall_retval;
             ft->rt_prim = NULL;
 
             //Signal the waiting worker thread that it
@@ -717,7 +716,8 @@ int future_do_runtimecall(
     //void *args,
     void *retval)
 {
-		future_t *future;
+  START_XFORM_SKIP;
+  future_t *future;
 
     //If already running on the main thread
     //or no future is involved, do nothing
@@ -730,7 +730,7 @@ int future_do_runtimecall(
     }
 
     //Fetch the future descriptor for this thread
-    future = get_my_future();
+    future = current_ft;
 
     //set up the arguments for the runtime call
     //to be picked up by the main rt thread
@@ -755,16 +755,16 @@ int future_do_runtimecall(
     pthread_cond_wait(&worker_can_continue_cv, &g_future_queue_mutex);
     start_gc_not_ok();
 
-		//Fetch the future instance again, in case the GC has moved the pointer
-		future = get_my_future();
+    //Fetch the future instance again, in case the GC has moved the pointer
+    future = current_ft;
 
     //Clear rt call fields before releasing the lock on the descriptor
     future->rt_prim = NULL;
 
-    retval = future->rt_prim_retval;
-    future->rt_prim_retval = NULL;
     pthread_mutex_unlock(&g_future_queue_mutex);
+
     return 1;
+    END_XFORM_SKIP;
 }
 
 
@@ -785,11 +785,12 @@ int rtcall_void_void(void (*f)())
 	data.void_void = f;
 	data.sigtype = SIG_VOID_VOID;
 
-	future = get_my_future();
+	future = current_ft;
 	future->rt_prim = (void*)f;
 	future->prim_data = data;
 
 	future_do_runtimecall((void*)f, NULL);
+        future = current_ft;
 
 	return 1;
 	END_XFORM_SKIP;
@@ -812,11 +813,12 @@ int rtcall_alloc_void_pvoid(void (*f)(), void **retval)
           data.alloc_void_pvoid = f;
           data.sigtype = SIG_ALLOC_VOID_PVOID;
 
-          future = get_my_future();
+          future = current_ft;
           future->rt_prim = (void*)f;
           future->prim_data = data;
 
           future_do_runtimecall((void*)f, NULL);
+          future = current_ft;
 
           *retval = future->alloc_retval;
           future->alloc_retval = NULL;
@@ -860,11 +862,12 @@ int rtcall_obj_int_pobj_obj(
 	data.argv = argv;
 	data.sigtype = SIG_OBJ_INT_POBJ_OBJ;
 	
-	future = get_my_future();
+	future = current_ft;
 	future->rt_prim = (void*)f;
 	future->prim_data = data;
 
 	future_do_runtimecall((void*)f, NULL);
+        future = current_ft;
 	*retval = future->prim_data.retval;
         future->prim_data.retval = NULL;
 
@@ -901,11 +904,12 @@ int rtcall_int_pobj_obj(
 	data.argv = argv;
 	data.sigtype = SIG_INT_OBJARR_OBJ;
 	
-	future = get_my_future();
+	future = current_ft;
 	future->rt_prim = (void*)f;
 	future->prim_data = data;
 
 	future_do_runtimecall((void*)f, NULL);
+        future = current_ft;
 	*retval = future->prim_data.retval;
         future->prim_data.retval = NULL;
 
@@ -942,11 +946,12 @@ int rtcall_pvoid_pvoid_pvoid(
 	data.b = b;
 	data.sigtype = SIG_PVOID_PVOID_PVOID;
 
-	future = get_my_future();
+	future = current_ft;
 	future->rt_prim = (void*)f;
 	future->prim_data = data;
 
 	future_do_runtimecall((void*)f, NULL);
+        future = current_ft;
 	*retval = future->prim_data.c;
 
 	return 1;
@@ -984,11 +989,12 @@ int rtcall_int_pobj_obj_obj(
 	data.p = p;
 	data.sigtype = SIG_INT_POBJ_OBJ_OBJ;
 	
-	future = get_my_future();
+	future = current_ft;
 	future->rt_prim = (void*)f;
 	future->prim_data = data;
 
 	future_do_runtimecall((void*)f, NULL);
+        future = current_ft;
 	*retval = future->prim_data.retval;
         future->prim_data.retval = NULL;
 
@@ -1002,7 +1008,6 @@ int rtcall_int_pobj_obj_obj(
 void *invoke_rtcall(future_t *future)
 {
   void *pret = NULL, *dummy_ret;
-	prim_data_t *pdata;
 
 	//Temporarily use the worker thread's runstack 
 	Scheme_Object *ret;
@@ -1013,12 +1018,11 @@ void *invoke_rtcall(future_t *future)
 	g_rtcall_count++;
 	#endif
 
-	pdata = &future->prim_data;
 	switch (future->prim_data.sigtype)
   {
     case SIG_VOID_VOID:
 		{
-			prim_void_void_t func = pdata->void_void;
+			prim_void_void_t func = future->prim_data.void_void;
 			func();
 
       pret = &dummy_ret;
@@ -1026,7 +1030,7 @@ void *invoke_rtcall(future_t *future)
 		}
     case SIG_ALLOC_VOID_PVOID:
 		{
-			prim_alloc_void_pvoid_t func = pdata->alloc_void_pvoid;
+			prim_alloc_void_pvoid_t func = future->prim_data.alloc_void_pvoid;
 			ret = func();
                         future->alloc_retval = ret;
                         future->alloc_retval_counter = scheme_did_gc_count;
@@ -1034,61 +1038,61 @@ void *invoke_rtcall(future_t *future)
 		}
     case SIG_OBJ_INT_POBJ_OBJ:
 		{
-			prim_obj_int_pobj_obj_t func = pdata->obj_int_pobj_obj;
+			prim_obj_int_pobj_obj_t func = future->prim_data.obj_int_pobj_obj;
 			ret = func(
-				pdata->p, 
-				pdata->argc, 
-				pdata->argv);
+				future->prim_data.p, 
+				future->prim_data.argc, 
+				future->prim_data.argv);
 
-			pdata->retval = ret;
+			future->prim_data.retval = ret;
 
-			/*pdata->retval = pdata->prim_obj_int_pobj_obj(
-				pdata->p, 
-				pdata->argc, 
-				pdata->argv); */
+			/*future->prim_data.retval = future->prim_data.prim_obj_int_pobj_obj(
+				future->prim_data.p, 
+				future->prim_data.argc, 
+				future->prim_data.argv); */
                     
 			break;
 		}
     case SIG_INT_OBJARR_OBJ:
 		{
-			prim_int_pobj_obj_t func = pdata->int_pobj_obj;
+			prim_int_pobj_obj_t func = future->prim_data.int_pobj_obj;
 			ret = func(
-				pdata->argc, 
-				pdata->argv);			
+				future->prim_data.argc, 
+				future->prim_data.argv);			
 
-			pdata->retval = ret;
+			future->prim_data.retval = ret;
 
-			/*pdata->retval = pdata->prim_int_pobj_obj(
-				pdata->argc, 
-				pdata->argv);
+			/*future->prim_data.retval = future->prim_data.prim_int_pobj_obj(
+				future->prim_data.argc, 
+				future->prim_data.argv);
       */
 			break;
 		}
 		case SIG_INT_POBJ_OBJ_OBJ:
 		{
-			prim_int_pobj_obj_obj_t func = pdata->int_pobj_obj_obj;
+			prim_int_pobj_obj_obj_t func = future->prim_data.int_pobj_obj_obj;
 			ret = func(
-				pdata->argc, 
-				pdata->argv, 
-				pdata->p);
+				future->prim_data.argc, 
+				future->prim_data.argv, 
+				future->prim_data.p);
 
-			pdata->retval = ret;
-			/*pdata->retval = pdata->prim_int_pobj_obj_obj(
-				pdata->argc, 
-				pdata->argv, 
-				pdata->p);
+			future->prim_data.retval = ret;
+			/*future->prim_data.retval = future->prim_data.prim_int_pobj_obj_obj(
+				future->prim_data.argc, 
+				future->prim_data.argv, 
+				future->prim_data.p);
 			*/      
 			break;
 		}
 		case SIG_PVOID_PVOID_PVOID: 
 		{			
-			prim_pvoid_pvoid_pvoid_t func = pdata->pvoid_pvoid_pvoid;
-			pret = func(pdata->a, pdata->b);
+			prim_pvoid_pvoid_pvoid_t func = future->prim_data.pvoid_pvoid_pvoid;
+			pret = func(future->prim_data.a, future->prim_data.b);
 
-			pdata->c = pret;
-			/*pdata->c = pdata->prim_pvoid_pvoid_pvoid(
-				pdata->a, 
-				pdata->b);
+			future->prim_data.c = pret;
+			/*future->prim_data.c = future->prim_data.prim_pvoid_pvoid_pvoid(
+				future->prim_data.a, 
+				future->prim_data.b);
 			*/			
 			break;
 		}
@@ -1137,14 +1141,6 @@ future_t *get_pending_future(void)
     }
 
     return NULL;
-	END_XFORM_SKIP;
-}
-
-
-future_t *get_my_future(void)
-{
-	START_XFORM_SKIP;
-    return get_future_by_threadid(pthread_self());
 	END_XFORM_SKIP;
 }
 
