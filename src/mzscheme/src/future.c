@@ -32,8 +32,9 @@ void scheme_init_futures(Scheme_Env *env)
   newenv = scheme_primitive_module(scheme_intern_symbol("#%futures"), 
                                    env);
 
-  FUTURE_PRIM_W_ARITY("future",      future,       1, 1, newenv);
-  FUTURE_PRIM_W_ARITY("touch",       touch,        1, 1, newenv);
+  FUTURE_PRIM_W_ARITY("future",           future,           1, 1, newenv);
+  FUTURE_PRIM_W_ARITY("touch",            touch,            1, 1, newenv);
+  FUTURE_PRIM_W_ARITY("processor-count",  processor_count,  1, 1, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -50,7 +51,7 @@ void scheme_init_futures(Scheme_Env *env)
 
 extern void *on_demand_jit_code;
 
-#define THREAD_POOL_SIZE 7
+#define THREAD_POOL_SIZE 12
 #define INITIAL_C_STACK_SIZE 500000
 static pthread_t g_pool_threads[THREAD_POOL_SIZE];
 static int *g_fuel_pointers[THREAD_POOL_SIZE];
@@ -250,10 +251,10 @@ void scheme_init_futures(Scheme_Env *env)
                              newenv);
 
   scheme_add_global_constant(
-                             "num-processors", 
+                             "processor-count", 
                              scheme_make_prim_w_arity(
-                                                      num_processors, 
-                                                      "num-processors", 
+                                                      processor_count, 
+                                                      "processor-count", 
                                                       0, 
                                                       0), 
                              newenv);
@@ -291,6 +292,7 @@ void scheme_init_futures(Scheme_Env *env)
   scheme_protect_primitive_provide(newenv, NULL);
 
   REGISTER_SO(g_future_queue);
+  REGISTER_SO(g_future_waiting_atomic);
 }
 
 
@@ -537,13 +539,6 @@ Scheme_Object *future(int argc, Scheme_Object *argv[])
 }
 
 
-Scheme_Object *num_processors(int argc, Scheme_Object *argv[])
-/* Called in runtime thread */
-{
-  return scheme_make_integer(THREAD_POOL_SIZE);
-}
-
-
 int future_ready(Scheme_Object *obj)
 /* Called in runtime thread by Scheme scheduler */
 {
@@ -650,6 +645,51 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
     }
 
   return retval;
+}
+
+#ifdef linux 
+#include <unistd.h>
+#elif OS_X 
+#include <sys/sysctl.h>
+#elif WINDOWS 
+#include <windows.h>
+#endif 
+
+Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
+/* Called in runtime thread */
+{
+  int cpucount = 0;
+
+  #ifdef linux 
+  cpucount = sysconf(_SC_NPROCESSORS_ONLN);
+  #elif OS_X 
+  nt mib[4];
+  size_t len; 
+
+  /* set the mib for hw.ncpu */
+  mib[0] = CTL_HW;
+  mib[1] = HW_AVAILCPU;  // alternatively, try HW_NCPU;
+
+  /* get the number of CPUs from the system */
+  sysctl(mib, 2, &cpucount, &len, NULL, 0);
+  if (cpucount < 1) 
+  {
+    mib[1] = HW_NCPU;
+    sysctl(mib, 2, &cpucount, &len, NULL, 0);
+    if(cpucount < 1)
+    {
+      cpucount = 1;
+    }
+  }
+  #elif WINDOWS 
+  SYSTEM_INFO sysinfo;
+  GetSystemInfo(&sysinfo);
+  cpucount = sysinfo.dwNumberOfProcessors;
+  #else
+  cpucount = THREAD_POOL_SIZE;
+  #endif
+
+  return scheme_make_integer(cpucount);
 }
 
 //Entry point for a worker thread allocated for
@@ -786,7 +826,7 @@ void scheme_check_future_work()
     }
     pthread_mutex_unlock(&g_future_queue_mutex);
 
-    if (ft) {
+    if (ft && ft->rt_prim && ft->rt_prim_is_atomic) {
       invoke_rtcall(ft);
     } else
       break;

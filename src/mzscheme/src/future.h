@@ -28,7 +28,7 @@ extern Scheme_Object *start_primitive_tracking(int argc, Scheme_Object *argv[]);
 extern Scheme_Object *end_primitive_tracking(int argc, Scheme_Object *argv[]);
 extern Scheme_Object *future(int argc, Scheme_Object *argv[]);
 extern Scheme_Object *touch(int argc, Scheme_Object *argv[]);
-extern Scheme_Object *num_processors(int argc, Scheme_Object *argv[]);
+extern Scheme_Object *processor_count(int argc, Scheme_Object *argv[]);
 extern void futures_init(void);
 
 typedef void (*prim_void_void_3args_t)(Scheme_Object **);
