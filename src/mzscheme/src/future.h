@@ -109,7 +109,6 @@ extern void clear_futures(void);
 #endif
 
 //Primitive instrumentation stuff 
-#ifdef INSTRUMENT_PRIMITIVES 
 extern int g_print_prims;
 extern void print_ms_and_us(void);
 #define LOG_PRIM_START(p) \
@@ -137,11 +136,6 @@ extern void print_ms_and_us(void);
 		print_ms_and_us(); \
 		printf("\n"); \
 	} 
-#else
-#define LOG_PRIM_START(p) 
-#define LOG_PRIM_END(p) 
-#define LOG_PRIM_W_NAME(name) 
-#endif
 
 //Signature flags for primitive invocations
 //Here the convention is SIG_[arg1type]_[arg2type]..._[return type]

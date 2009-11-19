@@ -3,9 +3,9 @@
 # include "schpriv.h"
 #endif
 
-#ifdef INSTRUMENT_PRIMITIVES 
+//This will be TRUE if primitive tracking has been enabled 
+//by the program
 int g_print_prims = 0;
-#endif
 
 #ifndef FUTURES_ENABLED
 
@@ -29,6 +29,18 @@ static Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
   return NULL;
 }
 
+static Scheme_Object *start_primitive_tracking(int argc, Scheme_Object *argv[])
+{
+  scheme_signal_error("start-primitive-tracking: not enabled");
+  return NULL;
+}
+
+static Scheme_Object *end_primitive_tracking(int argc, Scheme_Object *argv[])
+{
+  scheme_signal_error("end-primitive-tracking: not enabled");
+  return NULL;
+}
+
 # define FUTURE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
 
 void scheme_init_futures(Scheme_Env *env)
@@ -41,6 +53,8 @@ void scheme_init_futures(Scheme_Env *env)
   FUTURE_PRIM_W_ARITY("future",           future,           1, 1, newenv);
   FUTURE_PRIM_W_ARITY("touch",            touch,            1, 1, newenv);
   FUTURE_PRIM_W_ARITY("processor-count",  processor_count,  1, 1, newenv);
+  FUTURE_PRIM_W_ARITY("start-primitive-tracking",  start_primitive_tracking,  0, 0, newenv);
+  FUTURE_PRIM_W_ARITY("end-primitive-tracking",  end_primitive_tracking,  0, 0, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -274,7 +288,6 @@ void scheme_init_futures(Scheme_Env *env)
                                                       1), 
                              newenv);
 
-#ifdef INSTRUMENT_PRIMITIVES
   scheme_add_global_constant(
                              "start-primitive-tracking", 
                              scheme_make_prim_w_arity(
@@ -292,7 +305,6 @@ void scheme_init_futures(Scheme_Env *env)
                                                       0,
                                                       0), 
                              newenv);
-#endif
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -436,8 +448,7 @@ void scheme_future_gc_pause()
 /* Primitive implementations                    					  */
 /**********************************************************************/
 
-#ifdef INSTRUMENT_PRIMITIVES
-long start_ms = 0;
+static long start_ms = 0;
 
 Scheme_Object *start_primitive_tracking(int argc, Scheme_Object *argv[])
 {
@@ -475,7 +486,6 @@ void print_ms_and_us()
   us = now.tv_usec - (ms * 1000) - (start_ms * 1000);
   printf("%ld.%ld", ms, us);
 }
-#endif
 
 Scheme_Object *future(int argc, Scheme_Object *argv[])
 /* Called in runtime thread */

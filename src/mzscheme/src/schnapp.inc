@@ -31,9 +31,13 @@ static MZ_INLINE Scheme_Object *PRIM_APPLY_NAME_FAST(Scheme_Object *rator,
   }
   
   f = (Scheme_Primitive_Closure_Proc *)prim->prim_val;
+  #ifdef FUTURES_ENABLED
   LOG_PRIM_START(f);
+  #endif
   v = f(argc, argv, (Scheme_Object *)prim);
+  #ifdef FUTURES_ENABLED  
   LOG_PRIM_END(f);  
+  #endif
 
 #if PRIM_CHECK_VALUE
   if (v == SCHEME_TAIL_CALL_WAITING) {
