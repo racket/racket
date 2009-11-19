@@ -154,7 +154,7 @@
        lst]
       ;; below we can assume an unsorted list
       ;; inlined case, for optimization of short lists
-      [(< n 3)
+      [(<= n 3)
        (if (= n 2)
          ;; (because of the above test, we can assume that the input is
          ;; unsorted)
