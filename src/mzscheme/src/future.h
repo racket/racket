@@ -242,7 +242,7 @@ extern int rtcall_int_pobj_obj(
 
 void scheme_future_block_until_gc();
 void scheme_future_continue_after_gc();
-
+void scheme_check_future_work();
 
 #ifdef UNIT_TEST
 //These forwarding decls only need to be here to make 

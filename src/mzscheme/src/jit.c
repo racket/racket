@@ -9511,7 +9511,8 @@ static void on_demand_with_args(Scheme_Object **in_argv)
   argc = in_argv[1];
   argv = (Scheme_Object **)in_argv[2];
 
-  scheme_on_demand_generate_lambda((Scheme_Native_Closure *)c, SCHEME_INT_VAL(argc), argv);
+  if (((Scheme_Native_Closure *)c)->code->code == on_demand_jit_code)
+    scheme_on_demand_generate_lambda((Scheme_Native_Closure *)c, SCHEME_INT_VAL(argc), argv);
 }
 
 static void on_demand()

@@ -50,7 +50,7 @@ void scheme_init_futures(Scheme_Env *env)
 
 extern void *on_demand_jit_code;
 
-#define THREAD_POOL_SIZE 1
+#define THREAD_POOL_SIZE 7
 #define INITIAL_C_STACK_SIZE 500000
 static pthread_t g_pool_threads[THREAD_POOL_SIZE];
 static int *g_fuel_pointers[THREAD_POOL_SIZE];
@@ -103,7 +103,7 @@ THREAD_LOCAL_DECL(static future_t *current_ft);
 #ifndef UNIT_TEST
 static void *worker_thread_future_loop(void *arg);
 static void invoke_rtcall(future_t *future);
-static future_t *enqueue_future(void);
+static future_t *enqueue_future(future_t *ft);;
 static future_t *get_pending_future(void);
 static future_t *get_my_future(void);
 static future_t *get_last_future(void);
@@ -455,8 +455,9 @@ Scheme_Object *future(int argc, Scheme_Object *argv[])
   ncd = nc->code;
 
   //Create the future descriptor and add to the queue as 'pending'    
-  pthread_mutex_lock(&g_future_queue_mutex);
-  ft = enqueue_future();
+  ft = MALLOC_ONE_TAGGED(future_t);     
+  ft->so.type = scheme_future_type;
+
   futureid = ++g_next_futureid;
   ft->id = futureid;
   ft->orig_lambda = lambda;
@@ -479,8 +480,6 @@ Scheme_Object *future(int argc, Scheme_Object *argv[])
     ft->runstack_size = init_runstack_size;
   }   
 
-  //pthread_mutex_unlock(&g_future_queue_mutex);
-
   //JIT compile the code if not already jitted
   //Temporarily repoint MZ_RUNSTACK
   //to the worker thread's runstack -
@@ -491,9 +490,10 @@ Scheme_Object *future(int argc, Scheme_Object *argv[])
       scheme_on_demand_generate_lambda(nc, 0, NULL);
     }
 
-  //pthread_mutex_lock(&g_future_queue_mutex);
   ft->code = (void*)ncd->code;
 
+  pthread_mutex_lock(&g_future_queue_mutex);
+  enqueue_future(ft);
   //Signal that a future is pending
   pthread_cond_signal(&g_future_pending_cv);
   pthread_mutex_unlock(&g_future_queue_mutex);
@@ -683,6 +683,8 @@ void *worker_thread_future_loop(void *arg)
         
   //Work is available for this thread
   ft->status = RUNNING;
+  pthread_mutex_unlock(&g_future_queue_mutex);
+
   ft->threadid = pthread_self();
 
   //Decrement the number of available pool threads 
@@ -697,7 +699,6 @@ void *worker_thread_future_loop(void *arg)
   scheme_jit_fill_threadlocal_table();
         
   jitcode = (Scheme_Object* (*)(Scheme_Object*, int, Scheme_Object**))(ft->code);
-  pthread_mutex_unlock(&g_future_queue_mutex);
 
   current_ft = ft;
 
@@ -736,6 +737,15 @@ void *worker_thread_future_loop(void *arg)
 
   return NULL;
   END_XFORM_SKIP;
+}
+
+void scheme_check_future_work()
+/* Called in the runtime thread by the scheduler */
+{
+  /* Check for work that future threads need from the runtime thread
+     and that can be done in any Scheme thread (e.g., get a new page
+     for allocation). */
+  
 }
 
 
@@ -1146,13 +1156,11 @@ void invoke_rtcall(future_t *future)
 /* Helpers for manipulating the futures queue                         */
 /**********************************************************************/
 
-future_t *enqueue_future(void)
+future_t *enqueue_future(future_t *ft)
 /* Called in runtime thread */
 {
-  future_t *last, *ft;
+  future_t *last;
   last = get_last_future();
-  ft = MALLOC_ONE_TAGGED(future_t);     
-  ft->so.type = scheme_future_type;
   if (NULL == last)
     {
       g_future_queue = ft;

@@ -4107,6 +4107,10 @@ void scheme_thread_block(float sleep_time)
   /* Check scheduled_kills early and often. */
   check_scheduled_kills();
 
+#ifdef FUTURES_ENABLED
+  scheme_check_future_work();
+#endif
+
   if (!do_atomic && (sleep_end >= 0.0)) {
     find_next_thread(&next);
   } else
