@@ -1,13 +1,10 @@
-
 #lang scheme/base
-(require (for-syntax scheme/base)
+;; owner: ryanc
+(require (for-syntax scheme/base syntax/parse)
          framework/framework)
 (provide pref:get/set)
 
-(define-syntax pref:get/set
-  (syntax-rules ()
-    [(_ get/set prop)
-     (define get/set
-       (case-lambda
-         [() (preferences:get 'prop)]
-         [(newval) (preferences:set 'prop newval)]))]))
+(define (pref:get/set sym)
+  (case-lambda
+    [() (preferences:get sym)]
+    [(v) (preferences:set sym v)]))

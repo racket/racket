@@ -54,7 +54,7 @@
       (cursor:next terms))
 
     ;; current-step-index : notify of number/#f
-    (field/notify current-step-index (new notify-box% (value #f)))
+    (define-notify current-step-index (new notify-box% (value #f)))
 
     ;; add-deriv : Deriv -> void
     (define/public (add-deriv d)
@@ -166,8 +166,6 @@
        (lambda (_) (refresh/re-reduce)))
       (listen-one-by-one?
        (lambda (_) (refresh/re-reduce)))
-      (listen-force-letrec-transformation?
-       (lambda (_) (refresh/resynth)))
       (listen-extra-navigation?
        (lambda (show?) (show-extra-navigation show?))))
 

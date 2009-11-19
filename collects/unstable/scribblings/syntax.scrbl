@@ -15,6 +15,8 @@
 
 @defmodule[unstable/syntax]
 
+@unstable[@author+email["Ryan Culpepper" "ryanc@plt-scheme.org"]]
+
 @defparam[current-syntax-context stx (or/c syntax? false/c)]{
 
 The current contextual syntax object, defaulting to @scheme[#f].  It

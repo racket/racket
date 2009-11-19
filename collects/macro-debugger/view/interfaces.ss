@@ -14,7 +14,6 @@
                       one-by-one?
                       extra-navigation?
                       debug-catch-errors?
-                      force-letrec-transformation?
                       split-context?)))
 
 (define-interface widget<%> ()

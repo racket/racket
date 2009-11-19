@@ -7,8 +7,8 @@
   (make-compound-paragraph 
    plain
    (list (apply author authors)
-	 @para{This library is @emph{unstable}
-	       ; compatibility will not be maintained.
+	 @para{This library is @emph{unstable};
+               compatibility will not be maintained.
 	       See @secref{unstable} for more information.})))
 
 (define (addition name)

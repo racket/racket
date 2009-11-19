@@ -212,17 +212,16 @@
                               "One term at a time"
                               (get-field one-by-one? config))
       (menu-option/notify-box extras-menu
+                              "Extra navigation"
+                              (get-field extra-navigation? config))
+      #|
+      (menu-option/notify-box extras-menu
                               "Suppress warnings"
                               (get-field suppress-warnings? config))
       (menu-option/notify-box extras-menu
-                              "Extra navigation"
-                              (get-field extra-navigation? config))
-      (menu-option/notify-box extras-menu
-                              "Force block->letrec transformation"
-                              (get-field force-letrec-transformation? config))
-      (menu-option/notify-box extras-menu
                               "(Debug) Catch internal errors?"
-                              (get-field debug-catch-errors? config)))
+                              (get-field debug-catch-errors? config))
+      |#)
 
     ;; fixup-menu : menu -> void
     ;; Delete separators at beginning/end and duplicates in middle

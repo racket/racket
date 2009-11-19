@@ -1,5 +1,6 @@
 #lang scribble/manual
 @(require scribble/eval
+          "utils.ss"
           (for-label unstable/struct
                      scheme/contract
                      scheme/base))
@@ -10,6 +11,8 @@
 @(the-eval '(require unstable/struct))
 
 @defmodule[unstable/struct]
+
+@unstable[@author+email["Ryan Culpepper" "ryanc@plt-scheme.org"]]
 
 @defform[(make struct-id expr ...)]{
 

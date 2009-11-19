@@ -8,3 +8,4 @@
 @local-table-of-contents[]
 
 @include-section["gui/notify.scrbl"]
+@include-section["gui/prefs.scrbl"]

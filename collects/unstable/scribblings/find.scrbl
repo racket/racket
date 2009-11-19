@@ -1,5 +1,6 @@
 #lang scribble/manual
 @(require scribble/eval
+          "utils.ss"
           (for-label unstable/find
                      scheme/contract
                      scheme/shared
@@ -12,6 +13,8 @@
 @(the-eval '(require scheme/shared))
 
 @defmodule[unstable/find]
+
+@unstable[@author+email["Ryan Culpepper" "ryanc@plt-scheme.org"]]
 
 @defproc[(find [pred (-> any/c any/c)]
                [x any/c]

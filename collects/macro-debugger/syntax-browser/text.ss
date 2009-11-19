@@ -108,7 +108,7 @@
 
 (define text:hover-identifier-mixin
   (mixin (text:hover<%>) (text:hover-identifier<%>)
-    (field/notify hovered-identifier (new notify-box% (value #f)))
+    (define-notify hovered-identifier (new notify-box% (value #f)))
 
     (define idlocs null)
 

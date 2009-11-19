@@ -1,5 +1,6 @@
 #lang scribble/manual
 @(require scribble/eval
+          "utils.ss"
           (for-label unstable/class-iop
                      scheme/class
                      scheme/contract
@@ -11,6 +12,8 @@
 @(the-eval '(require scheme/class unstable/class-iop))
 
 @defmodule[unstable/class-iop]
+
+@unstable[@author+email["Ryan Culpepper" "ryanc@plt-scheme.org"]]
 
 @defform[(define-interface name-id (super-ifc-id ...) (method-id ...))]{
 

@@ -19,14 +19,9 @@
 (provide syntax-snip%
          syntax-value-snip%)
 
-(define syntax-snip-config-base%
-  (class prefs-base%
-    (notify-methods props-shown?)
-    (super-new)))
-
 (define syntax-snip-config%
-  (class syntax-snip-config-base%
-    (define/override (init-props-shown?) (new notify-box% (value #f)))
+  (class prefs-base%
+    (define-notify props-shown? (new notify-box% (value #f)))
     (super-new)))
 
 ;; syntax-value-snip%

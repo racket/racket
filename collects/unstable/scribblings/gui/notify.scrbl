@@ -1,20 +1,35 @@
 #lang scribble/manual
-@(require (for-label unstable/gui/notify
+@(require scribble/eval
+          "../utils.ss"
+          (for-label unstable/gui/notify
                      scheme/contract
                      scheme/class
                      scheme/base))
 
 @title[#:tag "gui-notify"]{Notify-boxes}
 
+@(define the-eval (make-base-eval))
+@(the-eval '(require scheme/class unstable/private/notify))
+
 @defmodule[unstable/gui/notify]
+
+@unstable[@author+email["Ryan Culpepper" "ryanc@plt-scheme.org"]]
 
 @defclass[notify-box% object% ()]{
 
 A notify-box contains a mutable cell. The notify-box notifies its
 listeners when the contents of the cell is changed.
 
+@examples[#:eval the-eval
+(define nb (new notify-box% (value 'apple)))
+(send nb get)
+(send nb set 'orange)
+(send nb listen (lambda (v) (printf "New value: ~s\n" v)))
+(send nb set 'potato)
+]
+
 @defconstructor[([value any/c])]{
-  Creates a notify-box with the initial value @scheme[value].
+  Creates a notify-box initially containing @scheme[value].
 }
 @defmethod[(get) any/c]{
   Gets the value currently stored in the notify-box.
@@ -35,23 +50,58 @@ listeners when the contents of the cell is changed.
 }
 
 @defproc[(notify-box/pref
-          [proc (case-> (-> any/c) (-> any/c void?))])
+          [proc (case-> (-> any/c) (-> any/c void?))]
+          [#:readonly? readonly? boolean? #f])
          (is-a?/c notify-box%)]{
 
-Creates a notify-box with an initial value of @scheme[(proc)] that
-invokes @scheme[proc] on the new value when the notify-box is updated.
+Creates a notify-box with an initial value of @scheme[(proc)]. Unless
+@scheme[readonly?] is true, @scheme[proc] is invoked on the new value
+when the notify-box is updated.
 
-Useful for making a notify-box tied to a preference or parameter.
+Useful for tying a notify-box to a preference or parameter. Of course,
+changes made directly to the underlying parameter or state are not
+reflected in the notify-box.
+
+@examples[#:eval the-eval
+(define animal (make-parameter 'ant))
+(define nb (notify-box/pref animal))
+(send nb listen (lambda (v) (printf "New value: ~s\n" v)))
+(send nb set 'bee)
+(animal 'cow)
+(send nb get)
+(send nb set 'deer)
+(animal)
+]
 }
 
-@defproc[(notify-box/pref/readonly [proc (-> any/c)])
-         (is-a?/c notify-box%)]{
+@defform[(define-notify name value-expr)
+         #:contracts ([value-expr (is-a?/c notify-box%)])]{
 
-Creates a notify-box with an initial value of @scheme[(proc)].
+Class-body form. Declares @scheme[name] as a field and
+@schemeidfont{get-@scheme[name]}, @schemeidfont{set-@scheme[name]},
+and @schemeidfont{listen-@scheme[name]} as methods that delegate to
+the @method[notify-box% get], @method[notify-box% set], and
+@method[notify-box% listen] methods of @scheme[value].
 
-Useful for making a notify-box that takes its initial value from a
-preference or parameter but does not update the preference or
-parameter.
+The @scheme[value-expr] argument must evaluate to a notify-box, not
+just the initial contents for a notify box.
+
+Useful for aggregating many notify-boxes together into one
+``configuration'' object.
+
+@examples[#:eval the-eval
+(define config%
+  (class object%
+    (define-notify food (new notify-box% (value 'apple)))
+    (define-notify animal (new notify-box% (value 'ant)))
+    (super-new)))
+(define c (new config%))
+(send c listen-food
+        (lambda (v) (when (eq? v 'honey) (send c set-animal 'bear))))
+(let ([food (get-field food c)])
+  (send food set 'honey))
+(send c get-animal)
+]
 }
 
 @defproc[(menu-option/notify-box 
@@ -107,4 +157,3 @@ Returns a list of @scheme[checkable-menu-item%] controls tied to
 @scheme[notify-box] to its label and invokes @scheme[notify-box]'s
 listeners.
 }
-
