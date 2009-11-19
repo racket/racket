@@ -486,8 +486,9 @@
 
     (PrimSet
      (#:args e1 e2 rs)
-     [(prim-set! ! Resolves next (? EE))
-      (make p:set! e1 e2 rs $2 $3 $5)]
+     ;; Unrolled to avoid shift/reduce
+     [(prim-set! ! resolve Resolves ! next (? EE))
+      (make p:set! e1 e2 rs $2 (cons $3 $4) $5 $7)]
      [(prim-set! Resolves (? MacroStep) (? EE))
       (make p:set!-macro e1 e2 rs #f ($3 e1 $2 $4))])
 

@@ -235,10 +235,11 @@
      (R [! ?1]
         [#:pattern ?form]
         [Expr ?form deriv])]
-    [(Wrap p:set! (e1 e2 rs ?1 id-rs rhs))
+    [(Wrap p:set! (e1 e2 rs ?1 id-rs ?2 rhs))
      (R [! ?1]
         [#:pattern (?set! ?var ?rhs)]
         [#:learn id-rs]
+        [! ?2]
         [Expr ?rhs rhs])]
 
     ;; Macros
