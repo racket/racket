@@ -524,6 +524,23 @@ int future_ready(Scheme_Object *obj)
   return ret;
 }
 
+static void dequeue_future(future_t *ft)
+{
+  if (ft->prev == NULL)
+    {
+      //Set next to be the head of the queue
+      g_future_queue = ft->next;
+      if (g_future_queue != NULL)
+        g_future_queue->prev = NULL;
+    }
+  else
+    {
+      ft->prev->next = ft->next;
+      if (NULL != ft->next)
+        ft->next->prev = ft->prev;
+    }
+}
+
 
 Scheme_Object *touch(int argc, Scheme_Object *argv[])
 /* Called in runtime thread */
@@ -543,6 +560,24 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
   dump_state();
 #endif
 
+  pthread_mutex_lock(&g_future_queue_mutex);
+  if (ft->status == PENDING) {
+    ft->status = RUNNING;
+    pthread_mutex_unlock(&g_future_queue_mutex);
+
+    retval = _scheme_apply(ft->orig_lambda, 0, NULL);
+
+    pthread_mutex_lock(&g_future_queue_mutex);
+    ft->work_completed = 1;
+    ft->retval = retval;
+    ft->status = FINISHED;
+    dequeue_future(ft);
+    pthread_mutex_unlock(&g_future_queue_mutex);
+
+    return retval;
+  }
+  pthread_mutex_unlock(&g_future_queue_mutex);
+
   //Spin waiting for primitive calls or a return value from
   //the worker thread
  wait_for_rtcall_or_completion:
@@ -553,22 +588,9 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
       retval = ft->retval;
 
       LOG("Successfully touched future %d\n", ft->id);
-      fflush(stdout);
+      // fflush(stdout);
 
-      //Destroy the future descriptor
-      if (ft->prev == NULL)
-        {
-          //Set next to be the head of the queue
-          g_future_queue = ft->next;
-          if (g_future_queue != NULL)
-            g_future_queue->prev = NULL;
-        }
-      else
-        {
-          ft->prev->next = ft->next;
-          if (NULL != ft->next)
-            ft->next->prev = ft->prev;
-        }
+      dequeue_future(ft);
 
       //Increment the number of available pool threads
       g_num_avail_threads++;	

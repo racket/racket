@@ -773,6 +773,10 @@ static Scheme_Object *apply_checked_fail(Scheme_Object **args)
 #define JIT_RUNSTACK JIT_V0
 #define JIT_RUNSTACK_BASE JIT_V2
 
+#define JIT_RUNSTACK_BASE_OR_ALT(alt) JIT_RUNSTACK_BASE
+#define mz_ld_runstack_base_alt(JIT_R2) /* empty */
+#define mz_st_runstack_base_alt(JIT_R2) /* empty */
+
 #ifdef MZ_USE_JIT_PPC
 # define JIT_STACK 1
 # define JIT_STACK_FRAME 1
@@ -794,7 +798,7 @@ static Scheme_Object *apply_checked_fail(Scheme_Object **args)
 
 #if 0
 /* Debugging: checking for runstack overflow. A CHECK_RUNSTACK_OVERFLOW() should
-   be included after each decrement of JIT_RUNTACK. Failure is "reported" by
+   be included after each decrement of JIT_RUNSTACK. Failure is "reported" by
    going into an immediate loop. */
 static void *top;
 static void *cr_tmp;
@@ -2365,7 +2369,8 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   if (num_rands >= 0) {
     /* Fixed argc: */
     if (num_rands) {
-      jit_subi_p(JIT_R2, JIT_RUNSTACK_BASE, WORDS_TO_BYTES(num_rands)); 
+      mz_ld_runstack_base_alt(JIT_R2);
+      jit_subi_p(JIT_R2, JIT_RUNSTACK_BASE_OR_ALT(JIT_R2), WORDS_TO_BYTES(num_rands)); 
       CHECK_RUNSTACK_OVERFLOW();
       for (i = num_rands; i--; ) {
         jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(i));
@@ -2374,7 +2379,11 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
       }
       jit_movr_p(JIT_RUNSTACK, JIT_R2);
     } else {
+#ifdef JIT_RUNSTACK_BASE
       jit_movr_p(JIT_RUNSTACK, JIT_RUNSTACK_BASE);
+#else
+      mz_get_local_p(JIT_RUNSTACK, JIT_RUNSTACK_BASE_LOCAL);
+#endif
     }
     if (direct_native > 1) { /* => some_args_already_in_place */
       mz_get_local_p(JIT_R1, JIT_LOCAL2);
@@ -2437,7 +2446,8 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   if (direct_native > 1) { /* => some_args_already_in_place */
     /* Need to shuffle argument lists. Since we can pass only
        three arguments, use static variables for the others. */
-    mz_tl_sti_p(tl_fixup_runstack_base, JIT_RUNSTACK_BASE, JIT_R0);
+    mz_ld_runstack_base_alt(JIT_R1);
+    mz_tl_sti_p(tl_fixup_runstack_base, JIT_RUNSTACK_BASE_OR_ALT(JIT_R0), JIT_R1);
     mz_get_local_p(JIT_R1, JIT_LOCAL2);
     mz_tl_sti_l(tl_fixup_already_in_place, JIT_R1, JIT_R0);
   }
@@ -2686,11 +2696,13 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
         jit_movi_i(JIT_R1, num_rands); /* argc */
         jit_movr_p(JIT_R2, JIT_RUNSTACK); /* argv */
       }
-      jit_addi_p(JIT_RUNSTACK_BASE, JIT_RUNSTACK, WORDS_TO_BYTES(num_rands));
+      jit_addi_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_RUNSTACK, WORDS_TO_BYTES(num_rands));
+      mz_st_runstack_base_alt(JIT_V1);
     } else {
       /* R2 is closure, V1 is argc */
       jit_lshi_l(JIT_R1, JIT_V1, JIT_LOG_WORD_SIZE);
-      jit_addr_p(JIT_RUNSTACK_BASE, JIT_RUNSTACK, JIT_R1);
+      jit_addr_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_R0), JIT_RUNSTACK, JIT_R1);
+      mz_st_runstack_base_alt(JIT_R0);
       jit_movr_p(JIT_R0, JIT_R2); /* closure */
       jit_movr_i(JIT_R1, JIT_V1); /* argc */
       jit_movr_p(JIT_R2, JIT_RUNSTACK); /* argv */
@@ -2922,7 +2934,8 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
   __END_TINY_OR_SHORT_JUMPS__(jmp_tiny, jmp_short);
 
   /* Copy args to runstack after closure data: */
-  jit_subi_p(JIT_R2, JIT_RUNSTACK_BASE, WORDS_TO_BYTES(num_rands + closure_size + args_already_in_place)); 
+  mz_ld_runstack_base_alt(JIT_R2);
+  jit_subi_p(JIT_R2, JIT_RUNSTACK_BASE_OR_ALT(JIT_R2), WORDS_TO_BYTES(num_rands + closure_size + args_already_in_place)); 
   if (num_rands) {
     jit_stxi_p(WORDS_TO_BYTES(num_rands - 1 + closure_size + args_already_in_place), JIT_R2, JIT_R0);
     for (i = num_rands - 1; i--; ) {
@@ -7022,7 +7035,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           /* We definitely have stack space for one argument, because we
              just used it for the rator. */
           if (is_tail) {
-            jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK_BASE, WORDS_TO_BYTES(1));
+            mz_ld_runstack_base_alt(JIT_RUNSTACK);
+            jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK_BASE_OR_ALT(JIT_RUNSTACK), WORDS_TO_BYTES(1));
           } else {
             jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
           }
@@ -7040,7 +7054,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           /* Enough room on runstack? */
           mz_tl_ldi_p(JIT_R0, tl_MZ_RUNSTACK_START);
           if (is_tail) {
-            jit_subr_ul(JIT_R0, JIT_RUNSTACK_BASE, JIT_R0);
+            mz_ld_runstack_base_alt(JIT_R0);
+            jit_subr_ul(JIT_R0, JIT_RUNSTACK_BASE_OR_ALT(JIT_R0), JIT_R0);
           } else {
             jit_subr_ul(JIT_R0, JIT_RUNSTACK, JIT_R0); 
           }
@@ -7067,7 +7082,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           }
           CHECK_LIMIT();
           if (is_tail) {
-            jit_subr_ul(JIT_RUNSTACK, JIT_RUNSTACK_BASE, JIT_R2);
+            mz_ld_runstack_base_alt(JIT_RUNSTACK);
+            jit_subr_ul(JIT_RUNSTACK, JIT_RUNSTACK_BASE_OR_ALT(JIT_RUNSTACK), JIT_R2);
           } else {
             jit_subr_ul(JIT_RUNSTACK, JIT_RUNSTACK, JIT_R2);
           }
@@ -7809,8 +7825,11 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
      one jump. Skip this optimization when the procedure has
      rest args, because we'll have to copy anyway. */
   if (!has_rest && num_params) {
-    jit_lshi_l(JIT_RUNSTACK_BASE, JIT_R1, JIT_LOG_WORD_SIZE);
-    jit_addr_p(JIT_RUNSTACK_BASE, JIT_R2, JIT_RUNSTACK_BASE);
+    jit_lshi_l(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_R1, JIT_LOG_WORD_SIZE);
+    jit_addr_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_R2, JIT_RUNSTACK_BASE);
+#ifndef JIT_RUNSTACK_BASE
+    mz_set_local_p(JIT_V1, JIT_RUNSTACK_BASE_LOCAL);
+#endif
     __START_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
     ref = jit_beqr_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
     __END_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
@@ -7819,7 +7838,11 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
     ref = 0;
     set_ref = 0;
   }
+#ifdef JIT_RUNSTACK_BASE
   jit_movr_p(JIT_RUNSTACK_BASE, JIT_RUNSTACK);
+#else
+  mz_set_local_p(JIT_RUNSTACK, JIT_RUNSTACK_BASE_LOCAL);
+#endif
 
   /* Make stack room for arguments: */
   cnt = num_params;
@@ -8228,21 +8251,25 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   CHECK_LIMIT();
   ref = jit_bner_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
   /* Also, check that the runstack is big enough with the revised
-     max_let_depth. We can use JIT_V2 here because RUNSTACK_BASE is not
-     yet ready: */
+     max_let_depth. */
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
   jit_ldxi_i(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->max_let_depth);
-  mz_tl_ldi_p(JIT_V2, tl_MZ_RUNSTACK_START);
-  jit_subr_ul(JIT_V2, JIT_RUNSTACK, JIT_V2);
-  ref2 = jit_bltr_ul(jit_forward(), JIT_V2, JIT_V1);
+  mz_set_local_p(JIT_R2, JIT_LOCAL2);
+  mz_tl_ldi_p(JIT_R2, tl_MZ_RUNSTACK_START);
+  jit_subr_ul(JIT_R2, JIT_RUNSTACK, JIT_V2);
+  jit_subr_ul(JIT_V1, JIT_R2, JIT_V1);
+  mz_get_local_p(JIT_R2, JIT_LOCAL2);
+  ref2 = jit_blti_l(jit_forward(), JIT_V1, 0);
   CHECK_LIMIT();
   /* This is the tail-call fast path: */
+  /* Set runstack base to end of arguments on runstack: */
+  jit_movr_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_R1);
+  jit_lshi_ul(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_LOG_WORD_SIZE);
+  jit_addr_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_RUNSTACK_BASE, JIT_RUNSTACK);
+  mz_st_runstack_base_alt(JIT_V1);
+  /* Extract function and jump: */
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
   jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->arity_code);
-  /* Set runstack base to end of arguments on runstack: */
-  jit_movr_p(JIT_RUNSTACK_BASE, JIT_R1);
-  jit_lshi_ul(JIT_RUNSTACK_BASE, JIT_RUNSTACK_BASE, JIT_LOG_WORD_SIZE);
-  jit_addr_p(JIT_RUNSTACK_BASE, JIT_RUNSTACK_BASE, JIT_RUNSTACK);
   jit_jmpr(JIT_V1);
   CHECK_LIMIT();
   /* Slower path (non-tail) when argv != runstack. */
