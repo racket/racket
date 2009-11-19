@@ -61,8 +61,8 @@ static unsigned long g_cur_cpu_mask = 1;
 static void *g_signal_handle = NULL;
 
 static struct NewGC *g_shared_GC;
-future_t *g_future_queue = NULL;
-future_t *g_future_waiting_atomic = NULL;
+static future_t *g_future_queue = NULL;
+static future_t *g_future_waiting_atomic = NULL;
 int g_next_futureid = 0;
 pthread_t g_rt_threadid = 0;
 
@@ -86,13 +86,15 @@ static void **g_jit_future_storage;
 static int *gc_counter_ptr;
 THREAD_LOCAL_DECL(static int worker_gc_counter);
 
+#ifdef MZ_PRECISE_GC
 static void register_traversers(void);
+#endif
 extern void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv);
 
 static void start_gc_not_ok(int with_lock);
 static void end_gc_not_ok(future_t *ft, int with_lock);
 
-static int future_do_runtimecall(void *func, int is_atomic, void *retval);
+static void future_do_runtimecall(void *func, int is_atomic);
 
 THREAD_LOCAL_DECL(static future_t *current_ft);
 
@@ -110,7 +112,6 @@ static void *worker_thread_future_loop(void *arg);
 static void invoke_rtcall(future_t *future);
 static future_t *enqueue_future(future_t *ft);;
 static future_t *get_pending_future(void);
-static future_t *get_my_future(void);
 static future_t *get_last_future(void);
 #else
 //Garbage stubs for unit testing 
@@ -549,7 +550,7 @@ int future_ready(Scheme_Object *obj)
   int ret = 0;
   future_t *ft = (future_t*)obj;
   pthread_mutex_lock(&g_future_queue_mutex);
-  if (ft->work_completed || ft->rt_prim != NULL)
+  if (ft->work_completed || ft->rt_prim)
     {
       ret = 1;
     }
@@ -630,7 +631,7 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
       g_num_avail_threads++;	
       pthread_mutex_unlock(&g_future_queue_mutex);
     }
-  else if (ft->rt_prim != NULL)
+  else if (ft->rt_prim)
     {
       //Invoke the primitive and stash the result
       //Release the lock so other threads can manipulate the queue
@@ -682,6 +683,8 @@ void *worker_thread_future_loop(void *arg)
   */
 
   pthread_cond_init(&worker_can_continue_cv, NULL);
+
+  scheme_use_rtcall = 1;
 
   scheme_fuel_counter = 1;
   scheme_jit_stack_boundary = ((unsigned long)&v) - INITIAL_C_STACK_SIZE;
@@ -795,12 +798,8 @@ void scheme_check_future_work()
 //i.e. if we are already running on the runtime thread.  Otherwise returns
 //1, and 'retval' is set to point to the return value of the runtime
 //call invocation.
-int future_do_runtimecall(
-                          void *func,
-                          int is_atomic,
-                          //int sigtype,
-                          //void *args,
-                          void *retval)
+void future_do_runtimecall(void *func,
+                           int is_atomic)
 /* Called in future thread */
 {
   START_XFORM_SKIP;
@@ -813,7 +812,7 @@ int future_do_runtimecall(
     {
       //Should never get here!  This check should be done 
       //by the caller using the macros defined in scheme-futures.h!
-      return 0;
+      return;
     }
 
   //Fetch the future descriptor for this thread
@@ -829,6 +828,7 @@ int future_do_runtimecall(
   //will use this value to temporarily swap its stack 
   //for the worker thread's
   future->runstack = MZ_RUNSTACK;
+  future->prim_func = func;
   future->rt_prim = 1;
   future->rt_prim_is_atomic = is_atomic;
 
@@ -853,7 +853,6 @@ int future_do_runtimecall(
 
   pthread_mutex_unlock(&g_future_queue_mutex);
 
-  return 1;
   END_XFORM_SKIP;
 }
 
@@ -861,244 +860,43 @@ int future_do_runtimecall(
 /**********************************************************************/
 /* Functions for primitive invocation                   			  */
 /**********************************************************************/
-int rtcall_void_void_3args(void (*f)())
+void rtcall_void_void_3args(void (*f)())
 /* Called in future thread */
 {
   START_XFORM_SKIP;
-  future_t *future;
-  prim_data_t data;
 
-  if (!IS_WORKER_THREAD)
-    {
-      return 0;
-    }
+  current_ft->prim_protocol = SIG_VOID_VOID_3ARGS;
 
-  memset(&data, 0, sizeof(prim_data_t));
-  data.void_void_3args = f;
-  data.sigtype = SIG_VOID_VOID_3ARGS;
+  future_do_runtimecall((void*)f, 1);
 
-  future = current_ft;
-  future->prim_data = data;
-
-  future_do_runtimecall((void*)f, 1, NULL);
-  future = current_ft;
-
-  return 1;
   END_XFORM_SKIP;
 }
 
-
-int rtcall_alloc_void_pvoid(void (*f)(), void **retval)
+void *rtcall_alloc_void_pvoid(void (*f)())
 /* Called in future thread */
 {
   START_XFORM_SKIP;
   future_t *future;
-  prim_data_t data;
-
-  if (!IS_WORKER_THREAD)
-    {
-      return 0;
-    }
+  void *retval;
 
   while (1) {
-    memset(&data, 0, sizeof(prim_data_t));
+    current_ft->prim_protocol = SIG_ALLOC_VOID_PVOID;
 
-    data.alloc_void_pvoid = f;
-    data.sigtype = SIG_ALLOC_VOID_PVOID;
+    future_do_runtimecall((void*)f, 1);
 
     future = current_ft;
-    future->prim_data = data;
-
-    future_do_runtimecall((void*)f, 1, NULL);
-    future = current_ft;
-
-    *retval = future->alloc_retval;
+    retval = future->alloc_retval;
     future->alloc_retval = NULL;
 
     if (*gc_counter_ptr == future->alloc_retval_counter)
       break;
   }
 
-  return 1;
+  return retval;
   END_XFORM_SKIP;
 }
 
-
-int rtcall_obj_int_pobj_obj(
-                            prim_obj_int_pobj_obj_t f, 
-                            Scheme_Object *rator, 
-                            int argc, 
-                            Scheme_Object **argv, 
-                            Scheme_Object **retval)
-/* Called in future thread */
-{
-  START_XFORM_SKIP;
-  future_t *future;
-  prim_data_t data;
-  if (!IS_WORKER_THREAD)	
-    {
-      return 0;
-    }
-
-  memset(&data, 0, sizeof(prim_data_t));
-
-#ifdef DEBUG_FUTURES
-  printf("scheme_fuel_counter = %d\n", scheme_fuel_counter);
-  printf("scheme_jit_stack_boundary = %p\n", (void*)scheme_jit_stack_boundary);
-  printf("scheme_current_runstack = %p\n", scheme_current_runstack);
-  printf("scheme_current_runstack_start = %p\n", scheme_current_runstack_start);
-  printf("stack address = %p\n", &future);
-#endif
-
-  data.obj_int_pobj_obj = f;
-  data.p = rator;
-  data.argc = argc;
-  data.argv = argv;
-  data.sigtype = SIG_OBJ_INT_POBJ_OBJ;
-	
-  future = current_ft;
-  future->prim_data = data;
-
-  future_do_runtimecall((void*)f, 0, NULL);
-  future = current_ft;
-  *retval = future->prim_data.retval;
-  future->prim_data.retval = NULL;
-
-  return 1;
-  END_XFORM_SKIP;
-}
-
-
-int rtcall_int_pobj_obj(
-                        prim_int_pobj_obj_t f, 
-                        int argc, 
-                        Scheme_Object **argv, 
-                        Scheme_Object **retval)
-/* Called in future thread */
-{
-  START_XFORM_SKIP;
-  future_t *future;
-  prim_data_t data;
-  if (!IS_WORKER_THREAD)	
-    {
-      return 0;
-    }
-
-  memset(&data, 0, sizeof(prim_data_t));
-
-#ifdef DEBUG_FUTURES
-  printf("scheme_fuel_counter = %d\n", scheme_fuel_counter);
-  printf("scheme_jit_stack_boundary = %p\n", (void*)scheme_jit_stack_boundary);
-  printf("scheme_current_runstack = %p\n", scheme_current_runstack);
-  printf("scheme_current_runstack_start = %p\n", scheme_current_runstack_start);
-  printf("stack address = %p\n", &future);
-#endif
-
-  data.int_pobj_obj = f;
-  data.argc = argc;
-  data.argv = argv;
-  data.sigtype = SIG_INT_OBJARR_OBJ;
-	
-  future = current_ft;
-  future->prim_data = data;
-
-  future_do_runtimecall((void*)f, 0, NULL);
-  future = current_ft;
-  *retval = future->prim_data.retval;
-  future->prim_data.retval = NULL;
-
-  return 1;
-  END_XFORM_SKIP;
-}
-
-
-int rtcall_pvoid_pvoid_pvoid(
-                             prim_pvoid_pvoid_pvoid_t f,
-                             void *a, 
-                             void *b, 
-                             void **retval)
-/* Called in future thread */
-{
-  START_XFORM_SKIP;
-  future_t *future;
-  prim_data_t data;
-
-  if (!IS_WORKER_THREAD)
-    {
-      return 0;
-    }
-
-  memset(&data, 0, sizeof(prim_data_t));
-	
-#ifdef DEBUG_FUTURES
-  printf("scheme_fuel_counter = %d\n", scheme_fuel_counter);
-  printf("scheme_jit_stack_boundary = %p\n", (void*)scheme_jit_stack_boundary);
-  printf("scheme_current_runstack = %p\n", scheme_current_runstack);
-  printf("scheme_current_runstack_start = %p\n", scheme_current_runstack_start);
-  printf("stack address = %p\n", &future);
-#endif
-
-  data.pvoid_pvoid_pvoid = f;
-  data.a = a;
-  data.b = b;
-  data.sigtype = SIG_PVOID_PVOID_PVOID;
-
-  future = current_ft;
-  future->prim_data = data;
-
-  future_do_runtimecall((void*)f, 0, NULL);
-  future = current_ft;
-  *retval = future->prim_data.c;
-
-  return 1;
-  END_XFORM_SKIP;
-}
-
-
-int rtcall_int_pobj_obj_obj(
-                            prim_int_pobj_obj_obj_t f, 
-                            int argc, 
-                            Scheme_Object **argv, 
-                            Scheme_Object *p, 
-                            Scheme_Object **retval)
-/* Called in future thread */
-{
-  START_XFORM_SKIP;
-  future_t *future;
-  prim_data_t data;
-
-  if (!IS_WORKER_THREAD)	
-    {
-      return 0;
-    }
-
-  memset(&data, 0, sizeof(prim_data_t));
-
-#ifdef DEBUG_FUTURES
-  printf("scheme_fuel_counter = %d\n", scheme_fuel_counter);
-  printf("scheme_jit_stack_boundary = %p\n", (void*)scheme_jit_stack_boundary);
-  printf("scheme_current_runstack = %p\n", scheme_current_runstack);
-  printf("scheme_current_runstack_start = %p\n", scheme_current_runstack_start);
-  printf("stack address = %p\n", &future);
-#endif
-
-  data.int_pobj_obj_obj = f;
-  data.argc = argc;
-  data.argv = argv;
-  data.p = p;
-  data.sigtype = SIG_INT_POBJ_OBJ_OBJ;
-	
-  future = current_ft;
-  future->prim_data = data;
-
-  future_do_runtimecall((void*)f, 0, NULL);
-  future = current_ft;
-  *retval = future->prim_data.retval;
-  future->prim_data.retval = NULL;
-
-  return 1;
-  END_XFORM_SKIP;
-}
+#include "jit_ts_future_glue.c"
 
 //Does the work of actually invoking a primitive on behalf of a 
 //future.  This function is always invoked on the main (runtime) 
@@ -1112,11 +910,11 @@ void invoke_rtcall(future_t *future)
 
   future->rt_prim = 0;
 
-  switch (future->prim_data.sigtype)
+  switch (future->prim_protocol)
     {
     case SIG_VOID_VOID_3ARGS:
       {
-        prim_void_void_3args_t func = future->prim_data.void_void_3args;
+        prim_void_void_3args_t func = (prim_void_void_3args_t)future->prim_func;
 
         func(future->runstack);
 
@@ -1125,77 +923,17 @@ void invoke_rtcall(future_t *future)
     case SIG_ALLOC_VOID_PVOID:
       {
         void *ret;
-        prim_alloc_void_pvoid_t func = future->prim_data.alloc_void_pvoid;
+        prim_alloc_void_pvoid_t func = (prim_alloc_void_pvoid_t)future->prim_func;
         ret = func();
         future->alloc_retval = ret;
         ret = NULL;
         future->alloc_retval_counter = scheme_did_gc_count;
         break;
       }
-    case SIG_OBJ_INT_POBJ_OBJ:
-      {
-        Scheme_Object *ret;
-        prim_obj_int_pobj_obj_t func = future->prim_data.obj_int_pobj_obj;
-        ret = func(
-                   future->prim_data.p, 
-                   future->prim_data.argc, 
-                   future->prim_data.argv);
-
-        future->prim_data.retval = ret;
-
-        /*future->prim_data.retval = future->prim_data.prim_obj_int_pobj_obj(
-          future->prim_data.p, 
-          future->prim_data.argc, 
-          future->prim_data.argv); */
-                    
-        break;
-      }
-    case SIG_INT_OBJARR_OBJ:
-      {
-        Scheme_Object *ret;
-        prim_int_pobj_obj_t func = future->prim_data.int_pobj_obj;
-        ret = func(
-                   future->prim_data.argc, 
-                   future->prim_data.argv);			
-
-        future->prim_data.retval = ret;
-
-        /*future->prim_data.retval = future->prim_data.prim_int_pobj_obj(
-          future->prim_data.argc, 
-          future->prim_data.argv);
-        */
-        break;
-      }
-    case SIG_INT_POBJ_OBJ_OBJ:
-      {
-        Scheme_Object *ret;
-        prim_int_pobj_obj_obj_t func = future->prim_data.int_pobj_obj_obj;
-        ret = func(
-                   future->prim_data.argc, 
-                   future->prim_data.argv, 
-                   future->prim_data.p);
-
-        future->prim_data.retval = ret;
-        /*future->prim_data.retval = future->prim_data.prim_int_pobj_obj_obj(
-          future->prim_data.argc, 
-          future->prim_data.argv, 
-          future->prim_data.p);
-        */      
-        break;
-      }
-    case SIG_PVOID_PVOID_PVOID: 
-      {		
-        void *pret = NULL;
-        prim_pvoid_pvoid_pvoid_t func = future->prim_data.pvoid_pvoid_pvoid;
-        pret = func(future->prim_data.a, future->prim_data.b);
-
-        future->prim_data.c = pret;
-        /*future->prim_data.c = future->prim_data.prim_pvoid_pvoid_pvoid(
-          future->prim_data.a, 
-          future->prim_data.b);
-        */			
-        break;
-      }
+# include "jit_ts_runtime_glue.c"
+    default:
+      scheme_signal_error("unknown protocol %d", future->prim_protocol);
+      break;
     }
 
   pthread_mutex_lock(&g_future_queue_mutex);

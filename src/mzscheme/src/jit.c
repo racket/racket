@@ -2157,104 +2157,42 @@ extern int g_print_prims;
 # define mz_direct_only(p) /* skip this arg, so that total count <= 3 args */
 static Scheme_Object *noncm_prim_indirect(Scheme_Prim proc, int argc)
 {
-	Scheme_Object *ret;
-	LOG_PRIM_START(proc);
+  START_XFORM_SKIP;
 
-	if (rtcall_int_pobj_obj(proc, 
-													argc, 
-													MZ_RUNSTACK, 
-													&ret))
-	{
-		LOG_PRIM_END(proc);
-		return ret;
-	}
+  if (scheme_use_rtcall)
+    return scheme_rtcall_iS_s(proc, 
+                              argc, 
+                              MZ_RUNSTACK);
+  else 
+    return proc(argc, MZ_RUNSTACK);
 
-	ret = proc(argc, MZ_RUNSTACK);
-	LOG_PRIM_END(proc);
-
-	return ret;
+  END_XFORM_SKIP;
 }
 static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc, Scheme_Object *self)
 {
-	Scheme_Object *ret;
-	LOG_PRIM_START(proc);
+  START_XFORM_SKIP;
 
-	if (rtcall_int_pobj_obj_obj(proc, 
-													argc, 
-													MZ_RUNSTACK, 
-													self,  
-													&ret))
-	{
-		LOG_PRIM_END(proc);
-		return ret;
-	}
+  if (scheme_use_rtcall)
+    return scheme_rtcall_iSs_s(proc, argc, MZ_RUNSTACK, self);
+  else
+    return proc(argc, MZ_RUNSTACK, self);
 
-	ret = proc(argc, MZ_RUNSTACK, self);
-	LOG_PRIM_END(proc);
-
-	return ret;
+  END_XFORM_SKIP;
 }
 
 /* Various specific 'futurized' versions of primitives that may 
    be invoked directly from JIT code and are not considered thread-safe 
    (are not invoked via apply_multi_from_native, etc.) */
 
-static Scheme_Object *ts_scheme_apply_multi_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
-{
-  START_XFORM_SKIP;
-  Scheme_Object *retptr;
-  if (rtcall_obj_int_pobj_obj(_scheme_apply_multi_from_native, 
-                              rator, 
-                              argc, 
-                              argv, 
-                              &retptr)) {
-    return retptr;
-  }
-
-  return _scheme_apply_multi_from_native(rator, argc, argv);
-  END_XFORM_SKIP;
-}
-
-static Scheme_Object *ts_scheme_apply_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
-{
-  START_XFORM_SKIP;
-  Scheme_Object *retptr;
-  if (rtcall_obj_int_pobj_obj(_scheme_apply_from_native, 
-                              rator, 
-                              argc, 
-                              argv, 
-                              &retptr)) {
-    return retptr;
-  }
-  
-  return _scheme_apply_from_native(rator, argc, argv);
-  END_XFORM_SKIP;
-}
-
-static Scheme_Object *ts_scheme_tail_apply_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
-{
-  START_XFORM_SKIP;
-  Scheme_Object *retptr;
-  if (rtcall_obj_int_pobj_obj(_scheme_tail_apply_from_native, 
-                              rator, 
-                              argc, 
-                              argv, 
-                              &retptr)) {
-    return retptr;
-  }
-  
-  return _scheme_tail_apply_from_native(rator, argc, argv);
-  END_XFORM_SKIP;
-}
+#include "jit_ts.c"
 
 static void ts_on_demand(void)
 {
   START_XFORM_SKIP;
-  if (rtcall_void_void_3args(on_demand_with_args)) {
-    return;
-  }
-
-  on_demand();
+  if (scheme_use_rtcall)
+    rtcall_void_void_3args(on_demand_with_args);
+  else
+    on_demand();
   END_XFORM_SKIP;
 }
 
@@ -2264,10 +2202,11 @@ static void *ts_prepare_retry_alloc(void *p, void *p2)
   START_XFORM_SKIP;
   void *ret;
   LOG_PRIM_START(&prepare_retry_alloc);
-  jit_future_storage[0] = p;
-  jit_future_storage[1] = p2;
-  if (rtcall_alloc_void_pvoid(GC_make_jit_nursery_page,
-                              &ret)) {
+
+  if (scheme_use_rtcall) {
+    jit_future_storage[0] = p;
+    jit_future_storage[1] = p2;
+    ret = rtcall_alloc_void_pvoid(GC_make_jit_nursery_page);
     GC_gen0_alloc_page_ptr = ret;
     retry_alloc_r1 = jit_future_storage[1];
     p = jit_future_storage[0];
@@ -2276,9 +2215,6 @@ static void *ts_prepare_retry_alloc(void *p, void *p2)
     return p;
   }
 
-  jit_future_storage[0] = NULL;
-  jit_future_storage[1] = NULL;
-  
   ret = prepare_retry_alloc(p, p2);
   LOG_PRIM_END(&prepare_retry_alloc);
   return ret;
@@ -2290,9 +2226,6 @@ static void *ts_prepare_retry_alloc(void *p, void *p2)
 # define mz_prepare_direct_prim(n) mz_prepare(n)
 # define mz_finishr_direct_prim(reg, proc) mz_finishr(reg)
 # define mz_direct_only(p) p
-# define ts_scheme_apply_multi_from_native _scheme_apply_multi_from_native
-# define ts_scheme_apply_from_native _scheme_apply_from_native
-# define ts_scheme_tail_apply_from_native _scheme_tail_apply_from_native
 # define ts_on_demand on_demand
 # define ts_prepare_retry_alloc prepare_retry_alloc
 #endif
@@ -2540,9 +2473,9 @@ static int generate_finish_tail_call(mz_jit_state *jitter, int direct_native)
   jit_pusharg_i(JIT_R0);
   jit_pusharg_p(JIT_V1);
   if (direct_native > 1) { /* => some_args_already_in_place */
-    (void)mz_finish(_scheme_tail_apply_from_native_fixup_args);
+    (void)mz_finish(ts__scheme_tail_apply_from_native_fixup_args);
   } else {
-    (void)mz_finish(ts_scheme_tail_apply_from_native);
+    (void)mz_finish(ts__scheme_tail_apply_from_native);
   }
   CHECK_LIMIT();
   /* Return: */
@@ -2840,9 +2773,9 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   mz_prepare(1);
   jit_pusharg_p(JIT_R0);
   if (multi_ok) {
-    (void)mz_finish(scheme_force_value_same_mark);
+    (void)mz_finish(ts_scheme_force_value_same_mark);
   } else {
-    (void)mz_finish(scheme_force_one_value_same_mark);
+    (void)mz_finish(ts_scheme_force_one_value_same_mark);
   }
   ref5 = jit_jmpi(jit_forward());
   CHECK_LIMIT();
@@ -2894,9 +2827,9 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     mz_prepare(1);
     jit_pusharg_p(JIT_R0);
     if (multi_ok) {
-      (void)mz_finish(scheme_force_value_same_mark);
+      (void)mz_finish(ts_scheme_force_value_same_mark);
     } else {
-      (void)mz_finish(scheme_force_one_value_same_mark);
+      (void)mz_finish(ts_scheme_force_one_value_same_mark);
     }
     CHECK_LIMIT();
     ref8 = jit_jmpi(jit_forward());
@@ -2940,9 +2873,9 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   jit_pusharg_p(JIT_V1);
   if (num_rands < 0) { jit_movr_p(JIT_V1, JIT_R0); } /* save argc to manually pop runstack */
   if (multi_ok) {
-    (void)mz_finish(ts_scheme_apply_multi_from_native);
+    (void)mz_finish(ts__scheme_apply_multi_from_native);
   } else {
-    (void)mz_finish(ts_scheme_apply_from_native);
+    (void)mz_finish(ts__scheme_apply_from_native);
   }
   CHECK_LIMIT();
   mz_patch_ucbranch(ref5);
@@ -3793,7 +3726,7 @@ static int generate_alloc_double(mz_jit_state *jitter)
   (void)mz_tl_sti_d_fppop(tl_double_result, JIT_FPR0, JIT_R0);
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
   mz_prepare(0);
-  (void)mz_finish(malloc_double);
+  (void)mz_finish(ts_malloc_double);
   jit_retval(JIT_R0);
 # endif
 #endif
@@ -5375,7 +5308,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
       mz_prepare(1);
       jit_pusharg_p(JIT_R0);
-      (void)mz_finish(scheme_box);
+      (void)mz_finish(ts_scheme_box);
       jit_retval(JIT_R0);
 #endif
 
@@ -6061,7 +5994,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       mz_prepare(2);
       jit_pusharg_p(JIT_R1);
       jit_pusharg_p(JIT_R0);
-      (void)mz_finish(scheme_make_mutable_pair);
+      (void)mz_finish(ts_scheme_make_mutable_pair);
       jit_retval(JIT_R0);
 #endif
 
@@ -6311,9 +6244,9 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       jit_pusharg_l(JIT_R0);
       jit_pusharg_l(JIT_RUNSTACK);
       if (star)
-        (void)mz_finish(make_list_star);
+        (void)mz_finish(ts_make_list_star);
       else
-        (void)mz_finish(make_list);
+        (void)mz_finish(ts_make_list);
       jit_retval(JIT_R0);
 #endif
 
@@ -6376,7 +6309,7 @@ static int generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry)
     jit_pusharg_p(JIT_R1);
     jit_pusharg_p(JIT_R0);
   }
-  (void)mz_finish(scheme_make_pair);
+  (void)mz_finish(ts_scheme_make_pair);
   jit_retval(JIT_R0);
 #endif
 
@@ -6433,25 +6366,25 @@ static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
     mz_prepare(1);
     jit_pusharg_p(JIT_R0);
     if (imm)
-      (void)mz_finish(make_one_element_ivector);
+      (void)mz_finish(ts_make_one_element_ivector);
     else
-      (void)mz_finish(make_one_element_vector);
+      (void)mz_finish(ts_make_one_element_vector);
   } else if (c == 2) {
     mz_prepare(2);
     jit_pusharg_p(JIT_R1);
     jit_pusharg_p(JIT_R0);
     if (imm)
-      (void)mz_finish(make_two_element_ivector);
+      (void)mz_finish(ts_make_two_element_ivector);
     else
-      (void)mz_finish(make_two_element_vector);
+      (void)mz_finish(ts_make_two_element_vector);
   } else {
     jit_movi_l(JIT_R1, c);
     mz_prepare(1);
     jit_pusharg_l(JIT_R1);
     if (imm)
-      (void)mz_finish(make_ivector);
+      (void)mz_finish(ts_make_ivector);
     else
-      (void)mz_finish(make_vector);
+      (void)mz_finish(ts_make_vector);
   }
   jit_retval(JIT_R0);
 #endif
@@ -6539,9 +6472,9 @@ static int generate_closure(Scheme_Closure_Data *data,
         mz_prepare(1);
         jit_pusharg_l(JIT_R0);
         if (immediately_filled) {
-          (void)mz_finish(GC_malloc_one_small_dirty_tagged);
+          (void)mz_finish(ts_GC_malloc_one_small_dirty_tagged);
         } else {
-          (void)mz_finish(GC_malloc_one_small_tagged);
+          (void)mz_finish(ts_GC_malloc_one_small_tagged);
         }
         jit_retval(JIT_R0);
         memcpy(&init_word, &example_so, sizeof(long));
@@ -6566,7 +6499,7 @@ static int generate_closure(Scheme_Closure_Data *data,
   (void)jit_patchable_movi_p(JIT_R0, code); /* !! */
 #endif
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish(scheme_make_native_closure);
+  (void)mz_finish(ts_scheme_make_native_closure);
   jit_retval(JIT_R0);
 
   return 1;
@@ -6665,7 +6598,7 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter, int t
   (void)jit_patchable_movi_p(JIT_R0, ndata); /* !! */
 #endif
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish(scheme_make_native_case_closure);
+  (void)mz_finish(ts_scheme_make_native_case_closure);
   jit_retval(JIT_R1);
   CHECK_LIMIT();
 
@@ -7061,7 +6994,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  jit_pusharg_p(JIT_R0);
 	  jit_pusharg_p(JIT_R2);
 	  CHECK_LIMIT();
-	  (void)mz_finish(call_set_global_bucket);
+	  (void)mz_finish(ts_call_set_global_bucket);
 	  CHECK_LIMIT();
 	  (void)jit_movi_p(target, scheme_void);
 	  END_JIT_DATA(7);
@@ -7227,7 +7160,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
 	  mz_prepare(1);
 	  jit_pusharg_p(JIT_R2);
-	  (void)mz_finish(scheme_make_envunbox);
+	  (void)mz_finish(ts_scheme_make_envunbox);
 	  jit_retval(JIT_R0);
 	  jit_stxi_p(WORDS_TO_BYTES(pos), JIT_RUNSTACK, JIT_R0);
 	  CHECK_LIMIT();
@@ -7254,7 +7187,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
           mz_prepare(1);
 	  jit_pusharg_p(JIT_R2);
-	  (void)mz_finish(make_global_ref);
+	  (void)mz_finish(ts_make_global_ref);
 	  CHECK_LIMIT();
           jit_retval(target);
           VALIDATE_RESULT(target);
@@ -7594,7 +7527,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	CHECK_LIMIT();
 	jit_movi_i(JIT_V1, lv->count);
 	jit_pusharg_i(JIT_V1);
-	(void)mz_finish(lexical_binding_wrong_return_arity);
+	(void)mz_finish(ts_lexical_binding_wrong_return_arity);
 	CHECK_LIMIT();
 
 	/* Continue with expected values; R2 has value array: */
@@ -7642,7 +7575,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  (void)jit_movi_p(JIT_R0, scheme_undefined);
 	  mz_prepare(1);
 	  jit_pusharg_p(JIT_R0);
-	  (void)mz_finish(scheme_make_envunbox);
+	  (void)mz_finish(ts_scheme_make_envunbox);
 	  jit_retval(JIT_R0);
 	  jit_stxi_p(WORDS_TO_BYTES(i), JIT_RUNSTACK, JIT_R0);
 	}
@@ -7768,7 +7701,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       mz_prepare(2);
       jit_pusharg_p(JIT_R0);
       jit_pusharg_p(JIT_V1);
-      (void)mz_finish(scheme_set_cont_mark);
+      (void)mz_finish(ts_scheme_set_cont_mark);
       CHECK_LIMIT();
 
       END_JIT_DATA(18);
@@ -8021,7 +7954,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   CHECK_LIMIT();
   jit_movi_i(JIT_V1, 1);
   jit_pusharg_i(JIT_V1);
-  (void)mz_finish(call_wrong_return_arity);
+  (void)mz_finish(ts_call_wrong_return_arity);
   CHECK_LIMIT();
 
   /* *** unbound_global_code *** */
@@ -8029,7 +7962,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   JIT_UPDATE_THREAD_RSPTR();
   mz_prepare(1);
   jit_pusharg_p(JIT_R2);
-  (void)mz_finish(scheme_unbound_global);
+  (void)mz_finish(ts_scheme_unbound_global);
   CHECK_LIMIT();
 
   /* *** quote_syntax_code *** */
@@ -8067,7 +8000,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   mz_prepare(2);
   jit_pusharg_l(JIT_R1);
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish(scheme_delayed_rename);
+  (void)mz_finish(ts_scheme_delayed_rename);
   CHECK_LIMIT();
   jit_retval(JIT_R0);
   /* Restore global array into JIT_R1, and put computed element at i+p+1: */
@@ -8130,28 +8063,28 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_pusharg_i(JIT_R1);
     switch (i) {
     case 0:
-      (void)mz_finish(scheme_checked_car);
+      (void)mz_finish(ts_scheme_checked_car);
       break;
     case 1:
-      (void)mz_finish(scheme_checked_cdr);
+      (void)mz_finish(ts_scheme_checked_cdr);
       break;
     case 2:
-      (void)mz_finish(scheme_checked_caar);
+      (void)mz_finish(ts_scheme_checked_caar);
       break;
     case 3:
-      (void)mz_finish(scheme_checked_cadr);
+      (void)mz_finish(ts_scheme_checked_cadr);
       break;
     case 4:
-      (void)mz_finish(scheme_checked_cdar);
+      (void)mz_finish(ts_scheme_checked_cdar);
       break;
     case 5:
-      (void)mz_finish(scheme_checked_cddr);
+      (void)mz_finish(ts_scheme_checked_cddr);
       break;
     case 6:
-      (void)mz_finish(scheme_checked_mcar);
+      (void)mz_finish(ts_scheme_checked_mcar);
       break;
     case 7:
-      (void)mz_finish(scheme_checked_mcdr);
+      (void)mz_finish(ts_scheme_checked_mcdr);
       break;
     }
     CHECK_LIMIT();
@@ -8185,10 +8118,10 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_pusharg_i(JIT_R1);
     switch (i) {
     case 0:
-      (void)mz_finish(scheme_checked_set_mcar);
+      (void)mz_finish(ts_scheme_checked_set_mcar);
       break;
     case 1:
-      (void)mz_finish(scheme_checked_set_mcdr);
+      (void)mz_finish(ts_scheme_checked_set_mcdr);
       break;
     }
     CHECK_LIMIT();
@@ -8200,8 +8133,8 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   bad_unbox_code = jit_get_ip().ptr;
   mz_prolog(JIT_R1);
   jit_prepare(1);
-  jit_pusharg_i(JIT_R0);
-  (void)mz_finish(scheme_unbox);
+  jit_pusharg_p(JIT_R0);
+  (void)mz_finish(ts_scheme_unbox);
   CHECK_LIMIT();
   register_sub_func(jitter, bad_unbox_code, scheme_false);
 
@@ -8211,7 +8144,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   mz_prolog(JIT_R1);
   jit_prepare(1);
   jit_pusharg_i(JIT_R0);
-  (void)mz_finish(scheme_vector_length);
+  (void)mz_finish(ts_scheme_vector_length);
   CHECK_LIMIT();
   register_sub_func(jitter, bad_vector_length_code, scheme_false);
 
@@ -8353,7 +8286,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_pusharg_p(JIT_R2);
   jit_pusharg_p(JIT_R1);
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish(ts_scheme_apply_multi_from_native);
+  (void)mz_finish(ts__scheme_apply_multi_from_native);
   CHECK_LIMIT();
   mz_pop_threadlocal();
   mz_pop_locals();
@@ -8368,7 +8301,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   JIT_UPDATE_THREAD_RSPTR();
   mz_prepare(1);
   jit_pusharg_p(JIT_V1);
-  (void)mz_finish(tail_call_with_values_from_multiple_result);
+  (void)mz_finish(ts_tail_call_with_values_from_multiple_result);
   jit_retval(JIT_R0);
   VALIDATE_RESULT(JIT_R0);
   /* Return: */
@@ -8441,7 +8374,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   JIT_UPDATE_THREAD_RSPTR();
   mz_prepare(1);
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish(raise_bad_call_with_values);
+  (void)mz_finish(ts_raise_bad_call_with_values);
   /* Doesn't return */
   CHECK_LIMIT();
 
@@ -8457,9 +8390,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     mz_prepare(1);
     jit_pusharg_p(JIT_V1);
     if (i) {
-      (void)mz_finish(call_with_values_from_multiple_result_multi);
+      (void)mz_finish(ts_call_with_values_from_multiple_result_multi);
     } else {
-      (void)mz_finish(call_with_values_from_multiple_result);
+      (void)mz_finish(ts_call_with_values_from_multiple_result);
     }
     jit_retval(JIT_R0);
     VALIDATE_RESULT(JIT_R0);
@@ -8570,28 +8503,28 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 	switch (ii) {
 	case 0:
 	  if (!iii) {
-	    (void)mz_finish(scheme_checked_vector_ref);
+	    (void)mz_finish(ts_scheme_checked_vector_ref);
 	  } else {
-	    (void)mz_finish(scheme_checked_vector_set);
+	    (void)mz_finish(ts_scheme_checked_vector_set);
 	  }
 	  break;
 	case 1:
 	  if (!iii) {
-	    (void)mz_finish(scheme_checked_string_ref);
+	    (void)mz_finish(ts_scheme_checked_string_ref);
 	    /* might return, if char was outside Latin-1 */
 	    jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
 	    JIT_UPDATE_THREAD_RSPTR();
 	    jit_retval(JIT_R0);
 	    mz_epilog(JIT_R2);
 	  } else {
-	    (void)mz_finish(scheme_checked_string_set);
+	    (void)mz_finish(ts_scheme_checked_string_set);
 	  }
 	  break;
 	case 2:
 	  if (!iii) {
-	    (void)mz_finish(scheme_checked_byte_string_ref);
+	    (void)mz_finish(ts_scheme_checked_byte_string_ref);
 	  } else {
-	    (void)mz_finish(scheme_checked_byte_string_set);
+	    (void)mz_finish(ts_scheme_checked_byte_string_set);
 	  }
 	  break;
 	}
@@ -8704,7 +8637,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_prepare(2);
     jit_pusharg_p(JIT_RUNSTACK);
     jit_pusharg_i(JIT_R1);
-    (void)mz_finish(scheme_checked_syntax_e);
+    (void)mz_finish(ts_scheme_checked_syntax_e);
     jit_retval(JIT_R0);
     jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
     mz_epilog(JIT_R2);
@@ -8802,9 +8735,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       jit_pusharg_p(JIT_V1);
       jit_pusharg_p(JIT_R0);
       if (ii == 1) {
-        (void)mz_finish(ts_scheme_apply_multi_from_native);
+        (void)mz_finish(ts__scheme_apply_multi_from_native);
       } else {
-        (void)mz_finish(ts_scheme_apply_from_native);
+        (void)mz_finish(ts__scheme_apply_from_native);
       }
       jit_retval(JIT_R0);
       VALIDATE_RESULT(JIT_R0);
@@ -9044,8 +8977,8 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     jit_movi_i(JIT_V1, 5);
     jit_prepare(2);
     jit_pusharg_p(JIT_RUNSTACK);
-    jit_pusharg_p(JIT_V1);
-    (void)mz_finish(scheme_extract_checked_procedure);
+    jit_pusharg_i(JIT_V1);
+    (void)mz_finish(ts_scheme_extract_checked_procedure);
     jit_retval(JIT_R0);
     VALIDATE_RESULT(JIT_R0);
     mz_epilog(JIT_V1);
@@ -9112,7 +9045,7 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     JIT_UPDATE_THREAD_RSPTR();
     jit_prepare(1);
     jit_pusharg_p(JIT_RUNSTACK);
-    (void)mz_finish(apply_checked_fail);
+    (void)mz_finish(ts_apply_checked_fail);
     CHECK_LIMIT();
     jit_retval(JIT_R0);
     VALIDATE_RESULT(JIT_R0);
@@ -9353,7 +9286,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     jit_pusharg_p(JIT_R2);
     jit_pusharg_i(JIT_R1);
     CHECK_LIMIT();
-    (void)mz_finish(scheme_build_list_offset);
+    (void)mz_finish(ts_scheme_build_list_offset);
     jit_retval(JIT_V1);
 #ifndef JIT_PRECISE_GC
     if (data->closure_size)
@@ -9667,10 +9600,10 @@ static int generate_simple_arity_check(mz_jit_state *jitter, int num_params, int
   /* Not negative, so report run-time arity mismatch */
   mz_prepare(3);
   jit_pusharg_p(JIT_R2);
-  jit_pusharg_p(JIT_R1);
+  jit_pusharg_i(JIT_R1);
   jit_pusharg_p(JIT_R0);
   CHECK_LIMIT();
-  (void)mz_nonrs_finish(wrong_argument_count);
+  (void)mz_nonrs_finish(ts_wrong_argument_count);
   CHECK_LIMIT();
 
   /* Arity check or reporting. If argv is NULL, it's a reporting request */
@@ -9705,7 +9638,7 @@ static int generate_simple_arity_check(mz_jit_state *jitter, int num_params, int
   if (is_method) {
     mz_prepare(1);
     jit_pusharg_p(JIT_R0);
-    (void)mz_nonrs_finish(scheme_box);
+    (void)mz_nonrs_finish(ts_scheme_box);
     mz_pop_threadlocal();
     mz_pop_locals();
     jit_ret();
@@ -9805,10 +9738,10 @@ static int generate_case_lambda_dispatch(mz_jit_state *jitter, Scheme_Case_Lambd
     JIT_UPDATE_THREAD_RSPTR();
     mz_prepare(3);
     jit_pusharg_p(JIT_R2);
-    jit_pusharg_p(JIT_R1);
+    jit_pusharg_i(JIT_R1);
     jit_pusharg_p(JIT_R0);
     CHECK_LIMIT();
-    (void)mz_finish(wrong_argument_count);
+    (void)mz_finish(ts_wrong_argument_count);
     CHECK_LIMIT();
   }
 

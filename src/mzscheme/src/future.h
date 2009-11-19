@@ -38,39 +38,12 @@ typedef Scheme_Object* (*prim_int_pobj_obj_t)(int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_obj_t)(int, Scheme_Object**, Scheme_Object*);
 typedef void* (*prim_pvoid_pvoid_pvoid_t)(void*, void*);
 
-typedef struct { 
-	unsigned int sigtype;
-
-	prim_void_void_3args_t void_void_3args;
-	prim_alloc_void_pvoid_t alloc_void_pvoid;
-	prim_obj_int_pobj_obj_t obj_int_pobj_obj;
-	prim_int_pobj_obj_t int_pobj_obj;
-	prim_int_pobj_obj_obj_t int_pobj_obj_obj;
-	prim_pvoid_pvoid_pvoid_t pvoid_pvoid_pvoid;
-
-	//Scheme_Object* (*prim_obj_int_pobj_obj)(Scheme_Object* rator, int argc, Scheme_Object** argv);
-	//Scheme_Object* (*prim_int_pobj_obj)(int argc, Scheme_Object** argv);
-	//Scheme_Object* (*prim_int_pobj_obj_obj)(int argc, Scheme_Object** argv, Scheme_Object* p);
-	//void (*prim_void_void)(void);
-	//void* (*prim_pvoid_pvoid_pvoid)(void *a, void *b);
-
-	Scheme_Object *p;
-	int argc;
-	Scheme_Object **argv;
-	Scheme_Object *retval;	
-
-	void *a;
-	void *b;
-	void *c;
-
-} prim_data_t;
-
 #define PENDING 0
 #define RUNNING 1
 #define WAITING_FOR_PRIM 2
 #define FINISHED 3
 
-typedef struct future {
+typedef struct future_t {
   Scheme_Object so;
 
   int id;
@@ -89,14 +62,32 @@ typedef struct future {
   int rt_prim; /* flag to indicate waiting for a prim call */
   int rt_prim_is_atomic;
 
-  prim_data_t prim_data;
   void *alloc_retval;
   int alloc_retval_counter;
 
+  void *prim_func;
+  int prim_protocol;
+  Scheme_Object *arg_s0;
+  Scheme_Object **arg_S0;
+  Scheme_Bucket *arg_b0;
+  int arg_i0;
+  long arg_l0;
+  Scheme_Native_Closure_Data *arg_n0;
+  Scheme_Object *arg_s1;
+  Scheme_Object **arg_S1;
+  int arg_i1;
+  long arg_l1;
+  Scheme_Object **arg_s2;
+  Scheme_Object **arg_S2;
+  int arg_i2;
+
+  Scheme_Object *retval_s;
+  MZ_MARK_STACK_TYPE retval_m;
+
   Scheme_Object *retval;
-  struct future *prev;
-  struct future *next;
-  struct future *next_waiting_atomic;
+  struct future_t *prev;
+  struct future_t *next;
+  struct future_t *next_waiting_atomic;
 } future_t;
 
 #ifdef UNIT_TEST
@@ -156,10 +147,8 @@ extern void print_ms_and_us(void);
 //Here the convention is SIG_[arg1type]_[arg2type]..._[return type]
 #define SIG_VOID_VOID_3ARGS 1 						//void -> void, copy 3 args from runstack
 #define SIG_ALLOC_VOID_PVOID 2 						//void -> void*
-#define SIG_OBJ_INT_POBJ_OBJ 3 			//Scheme_Object* -> int -> Scheme_Object** -> Scheme_Object*
-#define SIG_INT_OBJARR_OBJ 4 				//int -> Scheme_Object*[] -> Scheme_Object
-#define SIG_INT_POBJ_OBJ_OBJ 17			//int -> Scheme_Object** -> Scheme_Object* -> Scheme_Object* 
-#define SIG_PVOID_PVOID_PVOID	18		//void* -> void* -> void*
+
+# include "jit_ts_protos.h"
 
 //Helper macros for argument marshaling
 #ifdef FUTURES_ENABLED
@@ -171,20 +160,8 @@ extern void print_ms_and_us(void);
 																/*GDB_BREAK;*/ \
 															}
 
-extern int rtcall_void_void_3args(void (*f)());
-extern int rtcall_alloc_void_pvoid(void (*f)(), void **retval);
-extern int rtcall_obj_int_pobj_obj(
-	Scheme_Object* (*f)(Scheme_Object*, int, Scheme_Object**), 
-	Scheme_Object *a, 
-	int b, 
-	Scheme_Object **c, 
-	Scheme_Object **retval);
-
-extern int rtcall_int_pobj_obj(
-	Scheme_Object* (*f)(int, Scheme_Object**), 
-	int argc, 
-	Scheme_Object **argv, 
-	Scheme_Object **retval);
+extern void rtcall_void_void_3args(void (*f)());
+extern void *rtcall_alloc_void_pvoid(void (*f)());
 
 #else 
 
