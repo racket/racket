@@ -5429,6 +5429,7 @@ static int future_MARK(void *p) {
   gcMARK(f->retval);
   gcMARK(f->prev);
   gcMARK(f->next);
+  gcMARK(f->next_waiting_atomic);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
@@ -5444,6 +5445,7 @@ static int future_FIXUP(void *p) {
   gcFIXUP(f->retval);
   gcFIXUP(f->prev);
   gcFIXUP(f->next);
+  gcFIXUP(f->next_waiting_atomic);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }

@@ -2232,6 +2232,7 @@ future {
   gcMARK(f->retval);
   gcMARK(f->prev);
   gcMARK(f->next);
+  gcMARK(f->next_waiting_atomic);
  size:
   gcBYTES_TO_WORDS(sizeof(future_t));
 }

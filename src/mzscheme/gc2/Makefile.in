@@ -332,6 +332,7 @@ gc2.@LTO@: \
 		$(srcdir)/gc2_obj.h \
 		$(srcdir)/immobile_boxes.c \
 		$(srcdir)/../include/scheme.h \
+		$(srcdir)/../include/schthread.h \
 		$(srcdir)/../include/../sconfig.h \
 		$(srcdir)/../include/../uconfig.h \
 		$(srcdir)/../include/../src/stypes.h \

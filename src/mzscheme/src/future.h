@@ -29,7 +29,6 @@ extern Scheme_Object *end_primitive_tracking(int argc, Scheme_Object *argv[]);
 extern Scheme_Object *future(int argc, Scheme_Object *argv[]);
 extern Scheme_Object *touch(int argc, Scheme_Object *argv[]);
 extern Scheme_Object *num_processors(int argc, Scheme_Object *argv[]);
-extern int future_do_runtimecall(void *func, void *retval);
 extern void futures_init(void);
 
 typedef void (*prim_void_void_3args_t)(Scheme_Object **);
@@ -74,28 +73,30 @@ typedef struct {
 typedef struct future {
   Scheme_Object so;
 
-	int id;
-	pthread_t threadid;
-	int status;
-	int work_completed;
-	pthread_cond_t *can_continue_cv;
+  int id;
+  pthread_t threadid;
+  int status;
+  int work_completed;
+  pthread_cond_t *can_continue_cv;
 
-        long runstack_size;
-	Scheme_Object **runstack;
-	Scheme_Object **runstack_start;
-	Scheme_Object *orig_lambda;
-	void *code;
+  long runstack_size;
+  Scheme_Object **runstack;
+  Scheme_Object **runstack_start;
+  Scheme_Object *orig_lambda;
+  void *code;
 
-	//Runtime call stuff
-	void *rt_prim;
+  //Runtime call stuff
+  int rt_prim; /* flag to indicate waiting for a prim call */
+  int rt_prim_is_atomic;
 
-	prim_data_t prim_data;
+  prim_data_t prim_data;
   void *alloc_retval;
   int alloc_retval_counter;
 
-	Scheme_Object *retval;
-	struct future *prev;
-	struct future *next;
+  Scheme_Object *retval;
+  struct future *prev;
+  struct future *next;
+  struct future *next_waiting_atomic;
 } future_t;
 
 #ifdef UNIT_TEST
@@ -243,6 +244,7 @@ extern int rtcall_int_pobj_obj(
 void scheme_future_block_until_gc();
 void scheme_future_continue_after_gc();
 void scheme_check_future_work();
+void scheme_future_gc_pause();
 
 #ifdef UNIT_TEST
 //These forwarding decls only need to be here to make 

@@ -55,12 +55,14 @@ extern void *on_demand_jit_code;
 static pthread_t g_pool_threads[THREAD_POOL_SIZE];
 static int *g_fuel_pointers[THREAD_POOL_SIZE];
 static unsigned long *g_stack_boundary_pointers[THREAD_POOL_SIZE];
+static int *g_need_gc_pointers[THREAD_POOL_SIZE];
 static int g_num_avail_threads = 0;
 static unsigned long g_cur_cpu_mask = 1;
 static void *g_signal_handle = NULL;
 
 static struct NewGC *g_shared_GC;
 future_t *g_future_queue = NULL;
+future_t *g_future_waiting_atomic = NULL;
 int g_next_futureid = 0;
 pthread_t g_rt_threadid = 0;
 
@@ -71,7 +73,8 @@ THREAD_LOCAL_DECL(static pthread_cond_t worker_can_continue_cv);
 
 static pthread_mutex_t gc_ok_m = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t gc_ok_c = PTHREAD_COND_INITIALIZER;
-static int gc_not_ok;
+static pthread_cond_t gc_done_c = PTHREAD_COND_INITIALIZER;
+static int gc_not_ok, wait_for_gc;
 #ifdef MZ_PRECISE_GC
 THREAD_LOCAL_DECL(extern unsigned long GC_gen0_alloc_page_ptr);
 #endif
@@ -86,8 +89,10 @@ THREAD_LOCAL_DECL(static int worker_gc_counter);
 static void register_traversers(void);
 extern void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv);
 
-static void start_gc_not_ok();
-static void end_gc_not_ok(future_t *ft);
+static void start_gc_not_ok(int with_lock);
+static void end_gc_not_ok(future_t *ft, int with_lock);
+
+static int future_do_runtimecall(void *func, int is_atomic, void *retval);
 
 THREAD_LOCAL_DECL(static future_t *current_ft);
 
@@ -328,11 +333,18 @@ void futures_init(void)
   g_num_avail_threads = THREAD_POOL_SIZE;
 }
 
-static void start_gc_not_ok()
+static void start_gc_not_ok(int with_lock)
 {
-  pthread_mutex_lock(&gc_ok_m);
+  if (with_lock)
+    pthread_mutex_lock(&gc_ok_m);
+
+  while (wait_for_gc) {
+    pthread_cond_wait(&gc_done_c, &gc_ok_m);
+  }
+
   gc_not_ok++;
-  pthread_mutex_unlock(&gc_ok_m);
+  if (with_lock)
+    pthread_mutex_unlock(&gc_ok_m);
 #ifdef MZ_PRECISE_GC
   if (worker_gc_counter != *gc_counter_ptr) {
     GC_gen0_alloc_page_ptr = 0; /* forces future to ask for memory */
@@ -341,7 +353,7 @@ static void start_gc_not_ok()
 #endif
 }
 
-static void end_gc_not_ok(future_t *ft)
+static void end_gc_not_ok(future_t *ft, int with_lock)
 {
   if (ft) {
     scheme_set_runstack_limits(ft->runstack_start, 
@@ -349,19 +361,26 @@ static void end_gc_not_ok(future_t *ft)
                                ft->runstack - ft->runstack_start,
                                ft->runstack_size);
   }
-  pthread_mutex_lock(&gc_ok_m);
+  if (with_lock)
+    pthread_mutex_lock(&gc_ok_m);
   --gc_not_ok;
   pthread_cond_signal(&gc_ok_c);
-  pthread_mutex_unlock(&gc_ok_m);
+  if (with_lock)
+    pthread_mutex_unlock(&gc_ok_m);
 }
 
 void scheme_future_block_until_gc()
 {
   int i;
 
+  pthread_mutex_lock(&gc_ok_m);
+  wait_for_gc = 1;
+  pthread_mutex_unlock(&gc_ok_m);
+
   for (i = 0; i < THREAD_POOL_SIZE; i++) { 
     if (g_fuel_pointers[i] != NULL)
       {
+        *(g_need_gc_pointers[i]) = 1;
         *(g_fuel_pointers[i]) = 0;
     	*(g_stack_boundary_pointers[i]) += INITIAL_C_STACK_SIZE;
       }    
@@ -382,11 +401,26 @@ void scheme_future_continue_after_gc()
   for (i = 0; i < THREAD_POOL_SIZE; i++) {
     if (g_fuel_pointers[i] != NULL)
       {
+        *(g_need_gc_pointers[i]) = 0;
         *(g_fuel_pointers[i]) = 1;
     	*(g_stack_boundary_pointers[i]) -= INITIAL_C_STACK_SIZE;
       }
     
   }
+
+  pthread_mutex_lock(&gc_ok_m);
+  wait_for_gc = 0;
+  pthread_cond_broadcast(&gc_done_c);
+  pthread_mutex_unlock(&gc_ok_m);
+}
+
+void scheme_future_gc_pause()
+/* Called in future thread */
+{
+  pthread_mutex_lock(&gc_ok_m);
+  end_gc_not_ok(current_ft, 0);
+  start_gc_not_ok(0); /* waits until wait_for_gc is 0 */
+  pthread_mutex_unlock(&gc_ok_m);  
 }
 
 /**********************************************************************/
@@ -605,14 +639,6 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
       LOG("Invoking primitive %p on behalf of future %d...", ft->rt_prim, ft->id);
       invoke_rtcall(ft);
       LOG("done.\n");
-      pthread_mutex_lock(&g_future_queue_mutex);
-
-      ft->rt_prim = NULL;
-
-      //Signal the waiting worker thread that it
-      //can continue running machine code
-      pthread_cond_signal(ft->can_continue_cv);
-      pthread_mutex_unlock(&g_future_queue_mutex);
 
       goto wait_for_rtcall_or_completion;
     }
@@ -660,6 +686,7 @@ void *worker_thread_future_loop(void *arg)
   scheme_fuel_counter = 1;
   scheme_jit_stack_boundary = ((unsigned long)&v) - INITIAL_C_STACK_SIZE;
 
+  g_need_gc_pointers[id] = &scheme_future_need_gc_pause;
   g_fuel_pointers[id] = &scheme_fuel_counter;
   g_stack_boundary_pointers[id] = &scheme_jit_stack_boundary;
 
@@ -670,13 +697,13 @@ void *worker_thread_future_loop(void *arg)
   sema_signal(&ready_sema);
 
  wait_for_work:
-  start_gc_not_ok();
+  start_gc_not_ok(1);
   pthread_mutex_lock(&g_future_queue_mutex);
   while (!(ft = get_pending_future()))
     {
-      end_gc_not_ok(NULL);
+      end_gc_not_ok(NULL, 1);
       pthread_cond_wait(&g_future_pending_cv, &g_future_queue_mutex);
-      start_gc_not_ok();
+      start_gc_not_ok(1);
     }
 
   LOG("Got a signal that a future is pending...");
@@ -731,7 +758,7 @@ void *worker_thread_future_loop(void *arg)
   scheme_signal_received_at(g_signal_handle);
   pthread_mutex_unlock(&g_future_queue_mutex);
 
-  end_gc_not_ok(NULL);
+  end_gc_not_ok(NULL, 1);
 
   goto wait_for_work;
 
@@ -745,9 +772,24 @@ void scheme_check_future_work()
   /* Check for work that future threads need from the runtime thread
      and that can be done in any Scheme thread (e.g., get a new page
      for allocation). */
+  future_t *ft;
+
+  while (1) {
+    /* Try to get a future waiting on a atomic operation */
+    pthread_mutex_lock(&g_future_queue_mutex);
+    ft = g_future_waiting_atomic;
+    if (ft) {
+      g_future_waiting_atomic = ft->next_waiting_atomic;
+    }
+    pthread_mutex_unlock(&g_future_queue_mutex);
+
+    if (ft) {
+      invoke_rtcall(ft);
+    } else
+      break;
+  }
   
 }
-
 
 //Returns 0 if the call isn't actually executed by this function,
 //i.e. if we are already running on the runtime thread.  Otherwise returns
@@ -755,6 +797,7 @@ void scheme_check_future_work()
 //call invocation.
 int future_do_runtimecall(
                           void *func,
+                          int is_atomic,
                           //int sigtype,
                           //void *args,
                           void *retval)
@@ -786,7 +829,13 @@ int future_do_runtimecall(
   //will use this value to temporarily swap its stack 
   //for the worker thread's
   future->runstack = MZ_RUNSTACK;
-  future->rt_prim = func;
+  future->rt_prim = 1;
+  future->rt_prim_is_atomic = is_atomic;
+
+  if (is_atomic) {
+    future->next_waiting_atomic = g_future_waiting_atomic;
+    g_future_waiting_atomic = future;
+  }
 
   //Update the future's status to waiting 
   future->status = WAITING_FOR_PRIM;
@@ -795,15 +844,12 @@ int future_do_runtimecall(
 
   //Wait for the signal that the RT call is finished
   future->can_continue_cv = &worker_can_continue_cv;
-  end_gc_not_ok(future);
+  end_gc_not_ok(future, 1);
   pthread_cond_wait(&worker_can_continue_cv, &g_future_queue_mutex);
-  start_gc_not_ok();
+  start_gc_not_ok(1);
 
   //Fetch the future instance again, in case the GC has moved the pointer
   future = current_ft;
-
-  //Clear rt call fields before releasing the lock on the descriptor
-  future->rt_prim = NULL;
 
   pthread_mutex_unlock(&g_future_queue_mutex);
 
@@ -834,7 +880,7 @@ int rtcall_void_void_3args(void (*f)())
   future = current_ft;
   future->prim_data = data;
 
-  future_do_runtimecall((void*)f, NULL);
+  future_do_runtimecall((void*)f, 1, NULL);
   future = current_ft;
 
   return 1;
@@ -863,7 +909,7 @@ int rtcall_alloc_void_pvoid(void (*f)(), void **retval)
     future = current_ft;
     future->prim_data = data;
 
-    future_do_runtimecall((void*)f, NULL);
+    future_do_runtimecall((void*)f, 1, NULL);
     future = current_ft;
 
     *retval = future->alloc_retval;
@@ -913,7 +959,7 @@ int rtcall_obj_int_pobj_obj(
   future = current_ft;
   future->prim_data = data;
 
-  future_do_runtimecall((void*)f, NULL);
+  future_do_runtimecall((void*)f, 0, NULL);
   future = current_ft;
   *retval = future->prim_data.retval;
   future->prim_data.retval = NULL;
@@ -956,7 +1002,7 @@ int rtcall_int_pobj_obj(
   future = current_ft;
   future->prim_data = data;
 
-  future_do_runtimecall((void*)f, NULL);
+  future_do_runtimecall((void*)f, 0, NULL);
   future = current_ft;
   *retval = future->prim_data.retval;
   future->prim_data.retval = NULL;
@@ -1000,7 +1046,7 @@ int rtcall_pvoid_pvoid_pvoid(
   future = current_ft;
   future->prim_data = data;
 
-  future_do_runtimecall((void*)f, NULL);
+  future_do_runtimecall((void*)f, 0, NULL);
   future = current_ft;
   *retval = future->prim_data.c;
 
@@ -1045,7 +1091,7 @@ int rtcall_int_pobj_obj_obj(
   future = current_ft;
   future->prim_data = data;
 
-  future_do_runtimecall((void*)f, NULL);
+  future_do_runtimecall((void*)f, 0, NULL);
   future = current_ft;
   *retval = future->prim_data.retval;
   future->prim_data.retval = NULL;
@@ -1063,6 +1109,8 @@ void invoke_rtcall(future_t *future)
 #ifdef DEBUG_FUTURES
   g_rtcall_count++;
 #endif
+
+  future->rt_prim = 0;
 
   switch (future->prim_data.sigtype)
     {
@@ -1149,6 +1197,12 @@ void invoke_rtcall(future_t *future)
         break;
       }
     }
+
+  pthread_mutex_lock(&g_future_queue_mutex);
+  //Signal the waiting worker thread that it
+  //can continue running machine code
+  pthread_cond_signal(future->can_continue_cv);
+  pthread_mutex_unlock(&g_future_queue_mutex);
 }
 
 

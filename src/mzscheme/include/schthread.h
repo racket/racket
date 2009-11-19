@@ -91,6 +91,7 @@ typedef struct Thread_Local_Variables {
   volatile int scheme_fuel_counter_;
   unsigned long scheme_stack_boundary_;
   unsigned long volatile scheme_jit_stack_boundary_;
+  volatile int scheme_future_need_gc_pause_;
   struct Scheme_Object *quick_stx_;
   int scheme_continuation_application_count_;
   int scheme_cont_capture_count_;
@@ -253,6 +254,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_fuel_counter XOA (scheme_get_thread_local_variables()->scheme_fuel_counter_)
 #define scheme_stack_boundary XOA (scheme_get_thread_local_variables()->scheme_stack_boundary_)
 #define scheme_jit_stack_boundary XOA (scheme_get_thread_local_variables()->scheme_jit_stack_boundary_)
+#define scheme_future_need_gc_pause XOA (scheme_get_thread_local_variables()->scheme_future_need_gc_pause_)
 #define quick_stx XOA (scheme_get_thread_local_variables()->quick_stx_)
 #define scheme_continuation_application_count XOA (scheme_get_thread_local_variables()->scheme_continuation_application_count_)
 #define scheme_cont_capture_count XOA (scheme_get_thread_local_variables()->scheme_cont_capture_count_)

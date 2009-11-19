@@ -293,6 +293,8 @@ void scheme_jit_fill_threadlocal_table();
 # define tl_save_fp                        tl_delta(save_fp)
 # define tl_scheme_fuel_counter            tl_delta(scheme_fuel_counter)
 # define tl_scheme_jit_stack_boundary      tl_delta(scheme_jit_stack_boundary)
+# define tl_jit_future_storage             tl_delta(jit_future_storage)
+# define tl_scheme_future_need_gc_pause    tl_delta(scheme_future_need_gc_pause)
 
 #ifdef MZ_XFORM
 START_XFORM_SKIP;
@@ -2295,6 +2297,60 @@ static void *ts_prepare_retry_alloc(void *p, void *p2)
 # define ts_prepare_retry_alloc prepare_retry_alloc
 #endif
 
+static int generate_pause_for_gc_and_retry(mz_jit_state *jitter,
+                                           int in_short_jumps,
+                                           int gc_reg, /* must not be JIT_R1 */
+                                           GC_CAN_IGNORE jit_insn *refagain)
+{
+#ifdef FUTURES_ENABLED
+  GC_CAN_IGNORE jit_insn *refslow = 0, *refpause;
+  int i;
+
+  /* expose gc_reg to GC */
+  mz_tl_sti_p(tl_jit_future_storage, gc_reg, JIT_R1);
+
+  /* Save non-preserved registers. Use a multiple of 4 to avoid
+     alignment problems. */
+  jit_pushr_l(JIT_R1);
+  jit_pushr_l(JIT_R2);
+  jit_pushr_l(JIT_R0);
+  jit_pushr_l(JIT_R0);
+  CHECK_LIMIT();
+
+  mz_tl_ldi_i(JIT_R0, tl_scheme_future_need_gc_pause);
+  refpause = jit_bgti_i(jit_forward(), JIT_R0, 0);
+  
+  for (i = 0; i < 2; i++) {
+    /* Restore non-preserved registers, and also move the gc-exposed
+       register back. */
+    if (i == 1) {
+      mz_patch_branch(refpause);
+      jit_prepare(0);
+      mz_finish(scheme_future_gc_pause);
+    }
+    jit_popr_l(JIT_R0);
+    jit_popr_l(JIT_R0);
+    jit_popr_l(JIT_R2);
+    CHECK_LIMIT();
+    mz_tl_ldi_p(gc_reg, tl_jit_future_storage);
+    jit_movi_p(JIT_R1, NULL);
+    mz_tl_sti_p(tl_jit_future_storage, JIT_R1, JIT_R2);
+    jit_popr_l(JIT_R1);
+    CHECK_LIMIT();
+    if (!i)
+      refslow = jit_jmpi(jit_forward());
+    else
+      (void)jit_jmpi(refagain);
+  }
+
+  mz_patch_ucbranch(refslow);
+  
+  return 1;
+#else
+  return 1;
+#endif
+}
+
 static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
 {
   /* JIT_V1 must have the target function pointer.
@@ -2433,12 +2489,17 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
 
   /* The slow way: */
   /*  V1 and RUNSTACK must be intact! */
+  mz_patch_branch(ref5);
+  generate_pause_for_gc_and_retry(jitter,
+                                  num_rands < 100,  /* in short jumps */
+                                  JIT_V1, /* expose V1 to GC */
+                                  refagain); /* retry code pointer */
+  CHECK_LIMIT();
   if (!direct_native) {
     mz_patch_branch(ref);
     mz_patch_branch(ref2);
   }
   mz_patch_branch(ref4);
-  mz_patch_branch(ref5);
   CHECK_LIMIT();
   if (need_set_rs) {
     JIT_UPDATE_THREAD_RSPTR();
@@ -2851,13 +2912,18 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   }
 
   /* The slow way: */
+  mz_patch_branch(ref9);
+  generate_pause_for_gc_and_retry(jitter,
+                                  1,  /* in short jumps */
+                                  JIT_V1, /* expose V1 to GC */
+                                  refagain); /* retry code pointer */
+  CHECK_LIMIT();
   if (!direct_native) {
     mz_patch_branch(ref);
     mz_patch_branch(ref2);
     mz_patch_branch(ref7);
   }
-  mz_patch_branch(ref4);
-  mz_patch_branch(ref9);
+  mz_patch_branch(ref4);  
 #ifndef FUEL_AUTODECEREMENTS
   mz_patch_branch(ref11);
 #endif
@@ -2907,12 +2973,11 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
 
 static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, int num_rands, jit_insn *slow_code,
                                    int args_already_in_place)
+/* Last argument is in R0 */
 {
-  jit_insn *refslow;
+  jit_insn *refslow, *refagain;
   int i, jmp_tiny, jmp_short;
   int closure_size = jitter->self_closure_size;
-
-  /* Last argument is in R0 */
 
 #ifdef JIT_PRECISE_GC
   closure_size += 1; /* Skip procedure pointer, too */
@@ -2922,6 +2987,8 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
   jmp_short = num_rands < 100;
 
   __START_TINY_OR_SHORT_JUMPS__(jmp_tiny, jmp_short);
+
+  refagain = _jit.x.pc;
 
   /* Check for thread swap: */
   (void)mz_tl_ldi_i(JIT_R2, tl_scheme_fuel_counter);
@@ -2954,6 +3021,11 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
   __START_TINY_OR_SHORT_JUMPS__(jmp_tiny, jmp_short);
   mz_patch_branch(refslow);
   __END_TINY_OR_SHORT_JUMPS__(jmp_tiny, jmp_short);
+  generate_pause_for_gc_and_retry(jitter,
+                                  0,  /* in short jumps */
+                                  JIT_R0, /* expose R0 to GC */
+                                  refagain); /* retry code pointer */
+  CHECK_LIMIT();
 
   if (args_already_in_place) {
     jit_movi_l(JIT_R2, args_already_in_place);
@@ -8256,7 +8328,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_ldxi_i(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->max_let_depth);
   mz_set_local_p(JIT_R2, JIT_LOCAL2);
   mz_tl_ldi_p(JIT_R2, tl_MZ_RUNSTACK_START);
-  jit_subr_ul(JIT_R2, JIT_RUNSTACK, JIT_V2);
+  jit_subr_ul(JIT_R2, JIT_RUNSTACK, JIT_R2);
   jit_subr_ul(JIT_V1, JIT_R2, JIT_V1);
   mz_get_local_p(JIT_R2, JIT_LOCAL2);
   ref2 = jit_blti_l(jit_forward(), JIT_V1, 0);
