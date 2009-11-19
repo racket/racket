@@ -5,6 +5,7 @@ case SIG_siS_s:
      retval = 
      f(future->arg_s0, future->arg_i1, future->arg_S2);
      future->retval_s = retval;
+     send_special_result(future, retval);
      break;
   }
 case SIG_iSs_s:
@@ -14,6 +15,7 @@ case SIG_iSs_s:
      retval = 
      f(future->arg_i0, future->arg_S1, future->arg_s2);
      future->retval_s = retval;
+     send_special_result(future, retval);
      break;
   }
 case SIG_s_s:
@@ -23,6 +25,7 @@ case SIG_s_s:
      retval = 
      f(future->arg_s0);
      future->retval_s = retval;
+     send_special_result(future, retval);
      break;
   }
 case SIG_n_s:
@@ -32,6 +35,7 @@ case SIG_n_s:
      retval = 
      f(future->arg_n0);
      future->retval_s = retval;
+     send_special_result(future, retval);
      break;
   }
 case SIG__s:
@@ -41,6 +45,7 @@ case SIG__s:
      retval = 
      f();
      future->retval_s = retval;
+     send_special_result(future, retval);
      break;
   }
 case SIG_ss_s:
@@ -50,6 +55,7 @@ case SIG_ss_s:
      retval = 
      f(future->arg_s0, future->arg_s1);
      future->retval_s = retval;
+     send_special_result(future, retval);
      break;
   }
 case SIG_ss_m:
@@ -59,6 +65,7 @@ case SIG_ss_m:
      retval = 
      f(future->arg_s0, future->arg_s1);
      future->retval_m = retval;
+     
      break;
   }
 case SIG_Sl_s:
@@ -68,6 +75,7 @@ case SIG_Sl_s:
      retval = 
      f(future->arg_S0, future->arg_l1);
      future->retval_s = retval;
+     send_special_result(future, retval);
      break;
   }
 case SIG_l_s:
@@ -77,6 +85,7 @@ case SIG_l_s:
      retval = 
      f(future->arg_l0);
      future->retval_s = retval;
+     send_special_result(future, retval);
      break;
   }
 case SIG_bsi_v:
@@ -85,6 +94,7 @@ case SIG_bsi_v:
      
      
      f(future->arg_b0, future->arg_s1, future->arg_i2);
+     
      
      break;
   }
@@ -95,6 +105,7 @@ case SIG_iiS_v:
      
      f(future->arg_i0, future->arg_i1, future->arg_S2);
      
+     
      break;
   }
 case SIG_ss_v:
@@ -103,6 +114,7 @@ case SIG_ss_v:
      
      
      f(future->arg_s0, future->arg_s1);
+     
      
      break;
   }
@@ -113,6 +125,7 @@ case SIG_b_v:
      
      f(future->arg_b0);
      
+     
      break;
   }
 case SIG_sl_s:
@@ -122,6 +135,7 @@ case SIG_sl_s:
      retval = 
      f(future->arg_s0, future->arg_l1);
      future->retval_s = retval;
+     send_special_result(future, retval);
      break;
   }
 case SIG_iS_s:
@@ -131,6 +145,7 @@ case SIG_iS_s:
      retval = 
      f(future->arg_i0, future->arg_S1);
      future->retval_s = retval;
+     send_special_result(future, retval);
      break;
   }
 case SIG_S_s:
@@ -140,6 +155,7 @@ case SIG_S_s:
      retval = 
      f(future->arg_S0);
      future->retval_s = retval;
+     send_special_result(future, retval);
      break;
   }
 case SIG_s_v:
@@ -148,6 +164,7 @@ case SIG_s_v:
      
      
      f(future->arg_s0);
+     
      
      break;
   }
@@ -158,6 +175,7 @@ case SIG_iSi_s:
      retval = 
      f(future->arg_i0, future->arg_S1, future->arg_i2);
      future->retval_s = retval;
+     send_special_result(future, retval);
      break;
   }
 case SIG_siS_v:
@@ -166,6 +184,17 @@ case SIG_siS_v:
      
      
      f(future->arg_s0, future->arg_i1, future->arg_S2);
+     
+     
+     break;
+  }
+case SIG_z_p:
+  {
+     prim_z_p f = (prim_z_p)future->prim_func;
+     void* retval;
+     retval = 
+     f(future->arg_z0);
+     future->retval_p = retval;
      
      break;
   }

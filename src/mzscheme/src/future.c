@@ -84,6 +84,7 @@ static void *g_signal_handle = NULL;
 static struct NewGC *g_shared_GC;
 static future_t *g_future_queue = NULL;
 static future_t *g_future_waiting_atomic = NULL;
+static Scheme_Object *g_thread_skeleton;
 int g_next_futureid = 0;
 pthread_t g_rt_threadid = 0;
 
@@ -104,6 +105,7 @@ static future_t **g_current_ft;
 static Scheme_Object ***g_scheme_current_runstack;
 static Scheme_Object ***g_scheme_current_runstack_start;
 static void **g_jit_future_storage;
+static Scheme_Object **g_current_thread;
 static int *gc_counter_ptr;
 THREAD_LOCAL_DECL(static int worker_gc_counter);
 
@@ -340,6 +342,11 @@ void futures_init(void)
          are all place-specific. */
       gc_counter_ptr = &scheme_did_gc_count;
       g_shared_GC = GC;
+
+      /* Make enough of a thread record to deal with multiple values. */
+      g_thread_skeleton = (Scheme_Object *)MALLOC_ONE_TAGGED(Scheme_Thread);
+      g_thread_skeleton->type = scheme_thread_type;
+
       pthread_create(&threadid, &attr, worker_thread_future_loop, &i);
       sema_wait(&ready_sema);
 	
@@ -347,6 +354,7 @@ void futures_init(void)
       scheme_register_static(g_scheme_current_runstack, sizeof(void*));
       scheme_register_static(g_scheme_current_runstack_start, sizeof(void*));	
       scheme_register_static(g_jit_future_storage, 2 * sizeof(void*));
+      scheme_register_static(g_current_thread, sizeof(void*));
 
       g_pool_threads[i] = threadid;
     }
@@ -382,6 +390,9 @@ static void end_gc_not_ok(future_t *ft, int with_lock)
                                ft->runstack - ft->runstack_start,
                                ft->runstack_size);
   }
+
+  /* FIXME: clear scheme_current_thread->ku.multiple.array ? */
+
   if (with_lock)
     pthread_mutex_lock(&gc_ok_m);
   --gc_not_ok;
@@ -724,6 +735,7 @@ void *worker_thread_future_loop(void *arg)
   scheme_init_os_thread();
 
   GC = g_shared_GC;
+  scheme_current_thread = g_thread_skeleton;
 
   //Set processor affinity
   /*pthread_mutex_lock(&g_future_queue_mutex);
@@ -753,6 +765,7 @@ void *worker_thread_future_loop(void *arg)
   g_scheme_current_runstack = &scheme_current_runstack;
   g_scheme_current_runstack_start = &scheme_current_runstack_start;
   g_jit_future_storage = &jit_future_storage[0];
+  g_current_thread = &scheme_current_thread;
   sema_signal(&ready_sema);
 
  wait_for_work:
@@ -952,7 +965,30 @@ void *rtcall_alloc_void_pvoid(void (*f)())
   END_XFORM_SKIP;
 }
 
+static void receive_special_result(future_t *f, Scheme_Object *retval)
+{
+  if (SAME_OBJ(retval, SCHEME_MULTIPLE_VALUES)) {
+    Scheme_Thread *p = scheme_current_thread;
+
+    p->ku.multiple.array = f->multiple_array;
+    p->ku.multiple.count = f->multiple_count;
+    f->multiple_array = NULL;
+  }
+}
+
 #include "jit_ts_future_glue.c"
+
+static void send_special_result(future_t *f, Scheme_Object *retval)
+{
+  if (SAME_OBJ(retval, SCHEME_MULTIPLE_VALUES)) {
+    Scheme_Thread *p = scheme_current_thread;
+
+    f->multiple_array = p->ku.multiple.array;
+    f->multiple_count = p->ku.multiple.count;
+    if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
+      p->values_buffer = NULL;
+  }
+}
 
 //Does the work of actually invoking a primitive on behalf of a 
 //future.  This function is always invoked on the main (runtime) 

@@ -9,6 +9,8 @@
    v = void 
    b = Scheme_Bucket*
    n = Scheme_Native_Closure_Data* 
+   p = void*, CGC only
+   z = size_t
    m = MZ_MARK_STACK_TYPE */
 
 define_ts_siS_s(_scheme_apply_multi_from_native)
@@ -34,8 +36,8 @@ define_ts_l_s(make_ivector)
 define_ts_l_s(make_vector)
 #endif
 #ifdef JIT_PRECISE_GC
-define_ts_l_s(GC_malloc_one_small_dirty_tagged)
-define_ts_l_s(GC_malloc_one_small_tagged)
+define_ts_z_p(GC_malloc_one_small_dirty_tagged)
+define_ts_z_p(GC_malloc_one_small_tagged)
 #endif
 define_ts_n_s(scheme_make_native_closure)
 define_ts_n_s(scheme_make_native_case_closure)

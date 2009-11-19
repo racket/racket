@@ -8,8 +8,10 @@
     [(#\b) "Scheme_Bucket*"]
     [(#\n) "Scheme_Native_Closure_Data*"]
     [(#\m) "MZ_MARK_STACK_TYPE"]
+    [(#\p) "void*"]
     [(#\i) "int"]
     [(#\l) "long"]
+    [(#\z) "size_t"]
     [(#\v) "void"]
     [else (error 'char->type "unknown: ~e" c)]))
 
@@ -77,7 +79,8 @@
      future_do_runtimecall((void*)f, 0);
      future = current_ft;
      @(if (string=? result-type "void") "" @string-append{retval = @|fretval|;})
-     @(if (string=? result-type "void") "" @string-append{@|fretval| = NULL;})
+     @(if (string=? result-type "void") "" @string-append{@|fretval| = 0;})
+     @(if (string=? result-type "Scheme_Object*") @string-append{receive_special_result(future, retval);} "")
      @(if (string=? result-type "void") "" "return retval;")
      END_XFORM_SKIP;
    }
@@ -104,6 +107,7 @@
                  @string-append{future->arg_@|(string t)|@|(number->string i)|})
              ", "));
          @(if (string=? result-type "void") "" @string-append{future->retval_@(substring ts (sub1 (string-length ts))) = retval;})
+         @(if (string=? result-type "Scheme_Object*") @string-append{send_special_result(future, retval);} "")
          break;
       }
    })
@@ -144,7 +148,8 @@
     S_s
     s_v
     iSi_s
-    siS_v))
+    siS_v
+    z_p))
 
 (with-output-to-file "jit_ts_def.c"
   #:exists 'replace

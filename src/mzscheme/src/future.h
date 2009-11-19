@@ -72,17 +72,22 @@ typedef struct future_t {
   Scheme_Bucket *arg_b0;
   int arg_i0;
   long arg_l0;
+  size_t arg_z0;
   Scheme_Native_Closure_Data *arg_n0;
   Scheme_Object *arg_s1;
   Scheme_Object **arg_S1;
   int arg_i1;
   long arg_l1;
-  Scheme_Object **arg_s2;
+  Scheme_Object *arg_s2;
   Scheme_Object **arg_S2;
   int arg_i2;
 
   Scheme_Object *retval_s;
+  void *retval_p; /* use only with conservative GC */
   MZ_MARK_STACK_TYPE retval_m;
+
+  Scheme_Object **multiple_array;
+  int multiple_count;
 
   Scheme_Object *retval;
   struct future_t *prev;

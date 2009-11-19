@@ -188,3 +188,13 @@ static void ts_ ## id(Scheme_Object* g40, int g41, Scheme_Object** g42) \
      id(g40, g41, g42); \
   END_XFORM_SKIP; \
 }
+#define define_ts_z_p(id) \
+static void* ts_ ## id(size_t g43) \
+{ \
+  START_XFORM_SKIP; \
+  if (scheme_use_rtcall) \
+    return scheme_rtcall_z_p(id, g43); \
+  else \
+    return id(g43); \
+  END_XFORM_SKIP; \
+}

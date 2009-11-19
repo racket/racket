@@ -5433,6 +5433,7 @@ static int future_MARK(void *p) {
   gcMARK(f->arg_S2);
   gcMARK(f->retval_s);
   gcMARK(f->retval);
+  gcMARK(f->multiple_array);
   gcMARK(f->prev);
   gcMARK(f->next);
   gcMARK(f->next_waiting_atomic);
@@ -5455,6 +5456,7 @@ static int future_FIXUP(void *p) {
   gcFIXUP(f->arg_S2);
   gcFIXUP(f->retval_s);
   gcFIXUP(f->retval);
+  gcFIXUP(f->multiple_array);
   gcFIXUP(f->prev);
   gcFIXUP(f->next);
   gcFIXUP(f->next_waiting_atomic);
