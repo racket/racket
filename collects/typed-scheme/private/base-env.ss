@@ -8,7 +8,7 @@
  '#%paramz
  "extra-procs.ss"
  (only-in '#%kernel [apply kernel:apply])
- scheme/promise
+ scheme/promise scheme/system
  (only-in string-constants/private/only-once maybe-print-message)
  (only-in scheme/match/runtime match:error matchable? match-equality-test)
  (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])))
@@ -830,3 +830,9 @@
 [vector-split-at-right
  (-poly (a) ((list (-vec a)) -Integer . ->* . (-values (list (-vec a) (-vec a)))))]
 
+
+;; scheme/system
+[system (-String . -> . -Boolean)]
+[system* ((list -Pathlike) -String . ->* . -Boolean)]
+[system/exit-code (-String . -> . -Integer)]
+[system*/exit-code ((list -Pathlike) -String . ->* . -Integer)]
