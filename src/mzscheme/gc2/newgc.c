@@ -32,7 +32,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "pthread.h"
 #include "platforms.h"
 #include "../src/schpriv.h"
 #include "gc2.h"
@@ -1544,8 +1543,6 @@ inline static void reset_weak_finalizers(NewGC *gc)
 #define MARK_STACK_START(ms) ((void **)(void *)&ms[1])
 #define MARK_STACK_END(ms) ((void **)((char *)ms + STACK_PART_SIZE))
 
-THREAD_LOCAL_DECL(static MarkSegment *mark_stack = NULL);
-
 inline static MarkSegment* mark_stack_create_frame() {
   MarkSegment *mark_frame = (MarkSegment*)ofm_malloc(STACK_PART_SIZE);
   mark_frame->next = NULL;
@@ -1553,41 +1550,41 @@ inline static MarkSegment* mark_stack_create_frame() {
   return mark_frame;
 }
 
-inline static void mark_stack_initialize() {
+inline static void mark_stack_initialize(NewGC *gc) {
   /* This happens at the very beginning */
-  if(!mark_stack) {
-    mark_stack = mark_stack_create_frame();
-    mark_stack->prev = NULL;
+  if(!gc->mark_stack) {
+    gc->mark_stack = mark_stack_create_frame();
+    gc->mark_stack->prev = NULL;
   }
 }
 
-inline static void push_ptr(void *ptr)
+inline static void push_ptr(NewGC *gc, void *ptr)
 {
   /* This happens during propagation if we go past the end of this MarkSegment*/
-  if(mark_stack->top == MARK_STACK_END(mark_stack)) {
+  if(gc->mark_stack->top == MARK_STACK_END(gc->mark_stack)) {
     /* test to see if we already have another stack page ready */
-    if(mark_stack->next) {
+    if(gc->mark_stack->next) {
       /* we do, so just use it */
-      mark_stack = mark_stack->next;
-      mark_stack->top = MARK_STACK_START(mark_stack);
+      gc->mark_stack = gc->mark_stack->next;
+      gc->mark_stack->top = MARK_STACK_START(gc->mark_stack);
     } else {
       /* we don't, so we need to allocate one */
-      mark_stack->next = mark_stack_create_frame();
-      mark_stack->next->prev = mark_stack;
-      mark_stack = mark_stack->next;
+      gc->mark_stack->next = mark_stack_create_frame(gc);
+      gc->mark_stack->next->prev = gc->mark_stack;
+      gc->mark_stack = gc->mark_stack->next;
     }
   }
 
   /* at this point, we're guaranteed to be good to push pointers */
-  *(mark_stack->top++) = ptr;
+  *(gc->mark_stack->top++) = ptr;
 }
 
-inline static int pop_ptr(void **ptr)
+inline static int pop_ptr(NewGC *gc, void **ptr)
 {
-  if(mark_stack->top == MARK_STACK_START(mark_stack)) {
-    if(mark_stack->prev) {
+  if(gc->mark_stack->top == MARK_STACK_START(gc->mark_stack)) {
+    if(gc->mark_stack->prev) {
       /* if there is a previous page, go to it */
-      mark_stack = mark_stack->prev;
+      gc->mark_stack = gc->mark_stack->prev;
     } else {
       /* if there isn't a previous page, then we've hit the bottom of the stack */
       return 0;
@@ -1595,41 +1592,41 @@ inline static int pop_ptr(void **ptr)
   }
 
   /* if we get here, we're guaranteed to have data */
-  *ptr = *(--mark_stack->top);
+  *ptr = *(--gc->mark_stack->top);
   return 1;
 }
 
-inline static void clear_stack_pages(void)
+inline static void clear_stack_pages(NewGC *gc)
 {
-  if(mark_stack) {
+  if(gc->mark_stack) {
     MarkSegment *temp;
     MarkSegment *base;
     int keep = 2;
 
     /* go to the head of the list */
-    for(; mark_stack->prev; mark_stack = mark_stack->prev) {}
+    for(; gc->mark_stack->prev; gc->mark_stack = gc->mark_stack->prev) {}
     /* then go through and clear them out */
-    base = mark_stack;
-    for(; mark_stack; mark_stack = temp) {
-      temp = mark_stack->next;
+    base = gc->mark_stack;
+    for(; gc->mark_stack; gc->mark_stack = temp) {
+      temp = gc->mark_stack->next;
       if(keep) { 
         keep--; 
         if (!keep)
-          mark_stack->next = NULL;
+          gc->mark_stack->next = NULL;
       } else 
-        free(mark_stack);
+        free(gc->mark_stack);
     }
-    mark_stack = base;
-    mark_stack->top = MARK_STACK_START(mark_stack);
+    gc->mark_stack = base;
+    gc->mark_stack->top = MARK_STACK_START(gc->mark_stack);
   }
 }
 
-inline static void reset_pointer_stack(void)
+inline static void reset_pointer_stack(NewGC *gc)
 {
   /* go to the head of the list */
-  for(; mark_stack->prev; mark_stack = mark_stack->prev) {}
+  for(; gc->mark_stack->prev; gc->mark_stack = gc->mark_stack->prev) {}
   /* reset the stack */
-  mark_stack->top = MARK_STACK_START(mark_stack);
+  gc->mark_stack->top = MARK_STACK_START(gc->mark_stack);
 }
 
 static inline void propagate_marks_worker(PageMap pagemap, Mark_Proc *mark_table, void *p);
@@ -1769,7 +1766,7 @@ static void NewGC_initialize(NewGC *newgc, NewGC *parentgc) {
   NewGCMasterInfo_get_next_id(newgc);
 #endif
 
-  mark_stack_initialize();
+  mark_stack_initialize(newgc);
 
 #ifdef SIXTY_FOUR_BIT_INTEGERS
   newgc->page_maps = ofm_malloc_zero(PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***)); 
@@ -2033,7 +2030,7 @@ void GC_mark(const void *const_p)
       GCDEBUG((DEBUGOUTF, "Marking %p on big page %p\n", p, page));
       /* Finally, we want to add this to our mark queue, so we can 
          propagate its pointers */
-      push_ptr(TAG_AS_BIG_PAGE_PTR(p));
+      push_ptr(gc, TAG_AS_BIG_PAGE_PTR(p));
     } else {
       /* A medium page. */
       objhead *info = MED_OBJHEAD(p, page->size);
@@ -2046,7 +2043,7 @@ void GC_mark(const void *const_p)
       p = OBJHEAD_TO_OBJPTR(info);
       backtrace_new_page_if_needed(gc, page);
       record_backtrace(page, p);
-      push_ptr(p);
+      push_ptr(gc, p);
     }
   } else {
     objhead *ohead = OBJPTR_TO_OBJHEAD(p);
@@ -2071,7 +2068,7 @@ void GC_mark(const void *const_p)
         page->previous_size = PREFIX_SIZE;
         page->live_size += ohead->size;
         record_backtrace(page, p);
-        push_ptr(p);
+        push_ptr(gc, p);
       } else GCDEBUG((DEBUGOUTF, "Not marking %p (it's old; %p / %i)\n",
                       p, page, page->previous_size));
     } else {
@@ -2158,7 +2155,7 @@ void GC_mark(const void *const_p)
         /* set forwarding pointer */
         GCDEBUG((DEBUGOUTF,"Marking %p (moved to %p on page %p)\n", p, newp, work));
         *(void**)p = newp;
-        push_ptr(newp);
+        push_ptr(gc, newp);
       }
     }
   }
@@ -2233,7 +2230,7 @@ static void propagate_marks(NewGC *gc)
   PageMap pagemap = gc->page_maps;
   Mark_Proc *mark_table = gc->mark_table;
 
-  while(pop_ptr(&p)) {
+  while(pop_ptr(gc, &p)) {
     GCDEBUG((DEBUGOUTF, "Popped pointer %p\n", p));
     propagate_marks_worker(pagemap, mark_table, p);
   }
@@ -2606,7 +2603,7 @@ static void mark_backpointers(NewGC *gc)
           if(work->size_class) {
             /* must be a big page */
             work->size_class = 3;
-            push_ptr(TAG_AS_BIG_PAGE_PTR(BIG_PAGE_TO_OBJECT(work)));
+            push_ptr(gc, TAG_AS_BIG_PAGE_PTR(BIG_PAGE_TO_OBJECT(work)));
           } else {
             if(work->page_type != PAGE_ATOMIC) {
               void **start = PAGE_START_VSS(work);
@@ -2620,7 +2617,7 @@ static void mark_backpointers(NewGC *gc)
                      internal_mark. This is because we need every object
                      in the older heap to be marked out of and noted as
                      marked before we do anything else */
-                  push_ptr(OBJHEAD_TO_OBJPTR(start));
+                  push_ptr(gc, OBJHEAD_TO_OBJPTR(start));
                 }
                 start += info->size;
               }
@@ -2649,7 +2646,7 @@ static void mark_backpointers(NewGC *gc)
             if(!info->dead) {
               info->mark = 1;
               /* This must be a push_ptr (see above) */
-              push_ptr(OBJHEAD_TO_OBJPTR(info));
+              push_ptr(gc, OBJHEAD_TO_OBJPTR(info));
             }
             start += info->size;
           }
@@ -3210,7 +3207,7 @@ static void garbage_collect(NewGC *gc, int force_full)
      system clear them later. Better then freeing them, at least. If we're
      not doing accounting, though, there is no "later" where they'll get
      removed */
-  clear_stack_pages();  
+  clear_stack_pages(gc);  
 #endif
 
   TIME_STEP("marked");

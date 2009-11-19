@@ -277,27 +277,27 @@ void scheme_jit_fill_threadlocal_table();
 #endif
 
 #ifdef JIT_THREAD_LOCAL
-# define tl_MZ_RUNSTACK                    0
-# define tl_MZ_RUNSTACK_START              1
-# define tl_GC_gen0_alloc_page_ptr         2
-# define tl_scheme_current_thread          3
-# define tl_scheme_current_cont_mark_pos   4
-# define tl_scheme_current_cont_mark_stack 5
-# define tl_stack_cache_stack_pos          6
-# define tl_retry_alloc_r1                 7
-# define tl_fixup_runstack_base            8
-# define tl_fixup_already_in_place         9
-# define tl_double_result                  10
-# define tl_save_fp                        11
-# define tl_scheme_fuel_counter            12
-# define tl_scheme_jit_stack_boundary      13
-
-THREAD_LOCAL_DECL(static void *thread_local_pointers[NUM_tl_VARS]);
+# define BOTTOM_VARIABLE GC_variable_stack
+# define tl_delta(id) ((unsigned long)&(id) - (unsigned long)&BOTTOM_VARIABLE)
+# define tl_MZ_RUNSTACK                    tl_delta(MZ_RUNSTACK)
+# define tl_MZ_RUNSTACK_START              tl_delta(MZ_RUNSTACK_START)
+# define tl_GC_gen0_alloc_page_ptr         tl_delta(GC_gen0_alloc_page_ptr)
+# define tl_scheme_current_thread          tl_delta(scheme_current_thread)
+# define tl_scheme_current_cont_mark_pos   tl_delta(scheme_current_cont_mark_pos)
+# define tl_scheme_current_cont_mark_stack tl_delta(scheme_current_cont_mark_stack)
+# define tl_stack_cache_stack_pos          tl_delta(stack_cache_stack_pos)
+# define tl_retry_alloc_r1                 tl_delta(retry_alloc_r1)
+# define tl_fixup_runstack_base            tl_delta(fixup_runstack_base)
+# define tl_fixup_already_in_place         tl_delta(fixup_already_in_place)
+# define tl_double_result                  tl_delta(double_result)
+# define tl_save_fp                        tl_delta(save_fp)
+# define tl_scheme_fuel_counter            tl_delta(scheme_fuel_counter)
+# define tl_scheme_jit_stack_boundary      tl_delta(scheme_jit_stack_boundary)
 
 #ifdef MZ_XFORM
 START_XFORM_SKIP;
 #endif
-static void *get_threadlocal_table() { return &thread_local_pointers; }
+static void *get_threadlocal_table() { return &BOTTOM_VARIABLE; }
 #ifdef MZ_XFORM
 END_XFORM_SKIP;
 #endif
@@ -305,17 +305,18 @@ END_XFORM_SKIP;
 # ifdef JIT_X86_64
 #  define JIT_R10 JIT_R(10)
 #  define JIT_R14 JIT_R(14)
-#  define mz_tl_addr(reg, addr) jit_ldxi_p(reg, JIT_R14, WORDS_TO_BYTES(addr))
+#  define mz_tl_addr(reg, addr) LEAQmQr((addr), (JIT_R14), 0, 0, (reg))
 #  define mz_tl_addr_tmp(tmp_reg, addr) (mz_tl_addr(JIT_R10, addr))
 #  define mz_tl_addr_untmp(tmp_reg) (void)0
 #  define mz_tl_tmp_reg(tmp_reg) JIT_R10
 # else
-#  define mz_tl_addr(reg, addr) (mz_get_local_p(reg, JIT_LOCAL4), jit_ldxi_p(reg, reg, WORDS_TO_BYTES(addr)))
+#  define mz_tl_addr(reg, addr) (mz_get_local_p(reg, JIT_LOCAL4), jit_addi_p(reg, reg, addr))
 #  define mz_tl_addr_tmp(tmp_reg, addr) (PUSHQr(tmp_reg), mz_tl_addr(tmp_reg, addr))
 #  define mz_tl_addr_untmp(tmp_reg) POPQr(tmp_reg)
 #  define mz_tl_tmp_reg(tmp_reg) tmp_reg
 # endif
 
+/* A given tmp_reg doesn't have to be unused; it just has to be distinct from other arguments. */
 # define mz_tl_sti_p(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), jit_str_p(mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
 # define mz_tl_sti_l(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), jit_str_l(mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
 # define mz_tl_sti_i(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), jit_str_i(mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
@@ -1214,6 +1215,13 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #endif
 }
 #else
+/* From frame pointer, -1 is saved frame pointer, -2 is saved ESI/R12,
+   and -3 is saved EDI/R13. On entry to a procedure, prolog pushes 4
+   since the call (which also pushed), so if the stack was 16-bytes
+   aligned before the call, it is current stack pointer is 1 word
+   (either 4 or 8 bytes) below alignment (need to push 3 or 1 words to
+   re-align). Also, for a call without a prolog, th stack pointer is
+   1 word (for the return address) below alignment. */
 # define JIT_LOCAL1 -(JIT_WORD_SIZE * 4)
 # define JIT_LOCAL2 -(JIT_WORD_SIZE * 5)
 # define mz_set_local_p(x, l) jit_stxi_p((l), JIT_FP, (x))
@@ -2245,11 +2253,6 @@ static void ts_on_demand(void)
 }
 
 #ifdef MZ_PRECISE_GC
-static void *get_new_local_memory(void *p, void *p2)
-{
-  return GC_make_jit_nursery_page();
-}
-
 static void *ts_prepare_retry_alloc(void *p, void *p2)
 {
   START_XFORM_SKIP;
@@ -10296,27 +10299,6 @@ void *scheme_module_start_start(struct Start_Module_Args *a, Scheme_Object *name
 /**********************************************************************/
 
 void scheme_jit_fill_threadlocal_table() {
-#ifdef JIT_THREAD_LOCAL
-  thread_local_pointers[tl_MZ_RUNSTACK] = (&MZ_RUNSTACK);
-  thread_local_pointers[tl_MZ_RUNSTACK_START] = (&MZ_RUNSTACK_START);
-  thread_local_pointers[tl_scheme_current_thread] = (&scheme_current_thread);
-  thread_local_pointers[tl_scheme_current_cont_mark_pos] = (&scheme_current_cont_mark_pos);
-  thread_local_pointers[tl_scheme_current_cont_mark_stack] = (&scheme_current_cont_mark_stack);
-  thread_local_pointers[tl_stack_cache_stack_pos] = (&stack_cache_stack_pos);
-# ifdef CAN_INLINE_ALLOC
-  thread_local_pointers[tl_GC_gen0_alloc_page_ptr] = (&GC_gen0_alloc_page_ptr);
-  thread_local_pointers[tl_retry_alloc_r1] = (&retry_alloc_r1);
-  thread_local_pointers[tl_save_fp] = (&save_fp);
-# else
-#  ifdef INLINE_FP_OPS
-  thread_local_pointers[tl_double_result] = (&double_result);
-#  endif
-# endif
-  thread_local_pointers[tl_fixup_runstack_base] = (&fixup_runstack_base);
-  thread_local_pointers[tl_fixup_already_in_place] = (&fixup_already_in_place);
-  thread_local_pointers[tl_scheme_fuel_counter] = (void *) (&scheme_fuel_counter);
-  thread_local_pointers[tl_scheme_jit_stack_boundary] = (void *) (&scheme_jit_stack_boundary);
-#endif
 }
 
 /**********************************************************************/

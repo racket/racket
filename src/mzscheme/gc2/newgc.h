@@ -112,6 +112,8 @@ typedef struct NewGC {
   struct mpage *med_pages[NUM_MED_PAGE_SIZES];
   struct mpage *med_freelist_pages[NUM_MED_PAGE_SIZES];
 
+  MarkSegment *mark_stack;
+
   /* Finalization */
   Fnl *run_queue;
   Fnl *last_in_queue;

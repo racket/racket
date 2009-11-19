@@ -247,7 +247,7 @@ inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr)
       if(info->btc_mark == gc->old_btc_mark) {
         info->btc_mark = gc->new_btc_mark;
         account_memory(gc, gc->current_mark_owner, gcBYTES_TO_WORDS(page->size));
-        push_ptr(TAG_AS_BIG_PAGE_PTR(ptr));
+        push_ptr(gc, TAG_AS_BIG_PAGE_PTR(ptr));
       }
     } else {
       /* medium page */
@@ -257,7 +257,7 @@ inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr)
         info->btc_mark = gc->new_btc_mark;
         account_memory(gc, gc->current_mark_owner, info->size);
         ptr = OBJHEAD_TO_OBJPTR(info);
-        push_ptr(ptr);
+        push_ptr(gc, ptr);
       }
     }
   } else {
@@ -266,7 +266,7 @@ inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr)
     if(info->btc_mark == gc->old_btc_mark) {
       info->btc_mark = gc->new_btc_mark;
       account_memory(gc, gc->current_mark_owner, info->size);
-      push_ptr(ptr);
+      push_ptr(gc, ptr);
     }
   }
 }
@@ -341,12 +341,12 @@ static void propagate_accounting_marks(NewGC *gc)
   PageMap pagemap = gc->page_maps;
   Mark_Proc *mark_table = gc->mark_table;
 
-  while(pop_ptr(&p) && !gc->kill_propagation_loop) {
+  while(pop_ptr(gc, &p) && !gc->kill_propagation_loop) {
     /* GCDEBUG((DEBUGOUTF, "btc_account: popped off page %p:%p, ptr %p\n", page, page->addr, p)); */
     propagate_marks_worker(pagemap, mark_table, p); 
   }
   if(gc->kill_propagation_loop)
-    reset_pointer_stack();
+    reset_pointer_stack(gc);
 }
 
 inline static void BTC_initialize_mark_table(NewGC *gc) {
@@ -428,7 +428,7 @@ static void BTC_do_accounting(NewGC *gc)
     gc->new_btc_mark = !gc->new_btc_mark;
   }
 
-  clear_stack_pages();
+  clear_stack_pages(gc);
 }
 
 inline static void BTC_add_account_hook(int type,void *c1,void *c2,unsigned long b)

@@ -41,7 +41,6 @@ extern void scheme_init_os_thread();
 
 #define STACK_COPY_CACHE_SIZE 10
 #define BIGNUM_CACHE_SIZE 16
-#define NUM_tl_VARS 14
 #define STACK_CACHE_SIZE 32
 
 /* This structure must be 4 words: */
@@ -85,7 +84,6 @@ typedef struct Thread_Local_Variables {
   struct NewGC *GC_;
   unsigned long GC_gen0_alloc_page_ptr_;
   unsigned long GC_gen0_alloc_page_end_;
-  struct MarkSegment *mark_stack_;
   void *bignum_cache_[BIGNUM_CACHE_SIZE];
   int cache_count_;
   struct Scheme_Hash_Table *toplevels_ht_;
@@ -113,7 +111,6 @@ typedef struct Thread_Local_Variables {
   struct future_t *current_ft_;
   void **codetab_tree_;
   int during_set_;
-  void *thread_local_pointers_[NUM_tl_VARS];
   Stack_Cache_Elem stack_cache_stack_[STACK_CACHE_SIZE];
   long stack_cache_stack_pos_;
   struct Scheme_Object **fixup_runstack_base_;
@@ -249,7 +246,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define GC_gen0_alloc_page_ptr XOA (scheme_get_thread_local_variables()->GC_gen0_alloc_page_ptr_)
 #define GC_gen0_alloc_page_end XOA (scheme_get_thread_local_variables()->GC_gen0_alloc_page_end_)
 #define GC_variable_stack XOA (scheme_get_thread_local_variables()->GC_variable_stack_)
-#define mark_stack XOA (scheme_get_thread_local_variables()->mark_stack_)
 #define bignum_cache XOA (scheme_get_thread_local_variables()->bignum_cache_)
 #define cache_count XOA (scheme_get_thread_local_variables()->cache_count_)
 #define toplevels_ht XOA (scheme_get_thread_local_variables()->toplevels_ht_)

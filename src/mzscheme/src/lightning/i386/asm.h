@@ -627,6 +627,7 @@ typedef _uc		jit_insn;
 #define LAHF_()				_O		(0x9f								)
 #define LEALmr(MD, MB, MI, MS, RD)	_O_r_X		(0x8d		     ,_r4(RD)		,MD,MB,MI,MS		)
 #define LEAQmr(MD, MB, MI, MS, RD)	_qO_r_X		(0x8d		     ,_r8(RD)		,MD,MB,MI,MS		)
+#define LEAQmQr(MD, MB, MI, MS, RD)	_qO_r_XB	(0x8d		     ,_r8(RD)		,MD,MB,MI,MS		)
 #define LEAVE_()			_O		(0xc9								)
 
 
