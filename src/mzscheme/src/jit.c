@@ -2150,6 +2150,8 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
 extern int g_print_prims;
 #endif
 
+#include "jit_ts.c"
+
 /* Support for intercepting direct calls to primitives: */
 #ifdef FUTURES_ENABLED
 # define mz_prepare_direct_prim(n) mz_prepare(n)
@@ -2183,8 +2185,6 @@ static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc
 /* Various specific 'futurized' versions of primitives that may 
    be invoked directly from JIT code and are not considered thread-safe 
    (are not invoked via apply_multi_from_native, etc.) */
-
-#include "jit_ts.c"
 
 static void ts_on_demand(void)
 {

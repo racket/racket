@@ -75,6 +75,9 @@ define_ts_S_s(apply_checked_fail)
 define_ts_iSi_s(scheme_build_list_offset)
 define_ts_siS_v(wrong_argument_count)
 #else
+# define ts__scheme_apply_multi_from_native _scheme_apply_multi_from_native
+# define ts__scheme_apply_from_native _scheme_apply_from_native
+# define ts__scheme_tail_apply_from_native _scheme_tail_apply_from_native
 # define ts__scheme_tail_apply_from_native_fixup_args _scheme_tail_apply_from_native_fixup_args
 # define ts_scheme_force_value_same_mark scheme_force_value_same_mark
 # define ts_scheme_force_one_value_same_mark scheme_force_one_value_same_mark
