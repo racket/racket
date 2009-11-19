@@ -23,6 +23,12 @@ static Scheme_Object *touch(int argc, Scheme_Object *argv[])
   return NULL;
 }
 
+static Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
+{
+  scheme_signal_error("processor-count: not enabled");
+  return NULL;
+}
+
 # define FUTURE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
 
 void scheme_init_futures(Scheme_Env *env)
@@ -660,10 +666,10 @@ Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
 {
   int cpucount = 0;
 
-  #ifdef linux 
+#ifdef linux 
   cpucount = sysconf(_SC_NPROCESSORS_ONLN);
-  #elif OS_X 
-  nt mib[4];
+#elif OS_X 
+  int mib[4];
   size_t len; 
 
   /* set the mib for hw.ncpu */
@@ -681,13 +687,13 @@ Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
       cpucount = 1;
     }
   }
-  #elif WINDOWS 
+#elif WINDOWS 
   SYSTEM_INFO sysinfo;
   GetSystemInfo(&sysinfo);
   cpucount = sysinfo.dwNumberOfProcessors;
-  #else
+#else
   cpucount = THREAD_POOL_SIZE;
-  #endif
+#endif
 
   return scheme_make_integer(cpucount);
 }
