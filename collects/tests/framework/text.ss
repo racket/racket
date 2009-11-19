@@ -161,3 +161,40 @@
          #:exists 'truncate)
        (send t load-file)
        (length (send t get-highlighted-ranges)))))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  print-to-dc
+;;
+
+(test
+ 'print-to-dc
+ (λ (x) (equal? x 'no-error))
+ (λ ()
+   (send-sexp-to-mred
+    '(let* ([t (new text:basic%)]
+            [bmp (make-object bitmap% 100 40)]
+            [dc (new bitmap-dc% (bitmap bmp))])
+       (send t insert "Hello world")
+       (send dc clear)
+       (send t print-to-dc dc 1)
+       'no-error))))
+
+
+(test
+ 'print-to-dc2
+ (λ (x) (equal? x 'no-error))
+ (λ ()
+   (send-sexp-to-mred
+    `(let* ([f (new frame% [label ""])]
+            [t (new text:basic%)]
+            [ec (new editor-canvas% [parent f] [editor t])]
+            [bmp (make-object bitmap% 100 40)]
+            [dc (new bitmap-dc% (bitmap bmp))])
+       (send t insert "Hello world")
+       (send t highlight-range 2 5 "orange")
+       (send f reflow-container)
+       (send dc clear)
+       (send t print-to-dc dc 1)
+       'no-error))))
