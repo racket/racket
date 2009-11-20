@@ -20,19 +20,29 @@
   (unless (exact-nonnegative-integer? start)
     (raise-type-error 'vector-copy "non-negative exact integer" 1 start))
   (let ([len (vector-length v)])
-    (unless (and (<= 0 start) (< start len))
-      (raise-mismatch-error
-       'vector-copy
-       (format "start index ~e out of range [~e, ~e] for vector ~e"
-               start 0 len v)
-       v))
-    (unless (and (<= start end) (<= end len))
-      (raise-mismatch-error
-       'vector-copy
-       (format "end index ~e out of range [~e, ~e] for vector ~e"
-               end start len v)
-       v))
-    (vector-copy* v start end)))
+    (cond
+      [(= len 0)
+       (unless (and (= start 0)
+                    (= end 0))
+         (raise-mismatch-error
+          'vector-copy
+          (format "start index and end index must both be 0 for empty vectors, got ~e and ~e"
+                  start len)))
+       (vector)]
+      [else
+       (unless (and (<= 0 start) (< start len))
+         (raise-mismatch-error
+          'vector-copy
+          (format "start index ~e out of range [~e, ~e] for vector ~e"
+                  start 0 len v)
+          v))
+       (unless (and (<= start end) (<= end len))
+         (raise-mismatch-error
+          'vector-copy
+          (format "end index ~e out of range [~e, ~e] for vector ~e"
+                  end start len v)
+          v))
+       (vector-copy* v start end)])))
 
 ;; do vector-map, putting the result in `target'
 ;; length is passed to save the computation
