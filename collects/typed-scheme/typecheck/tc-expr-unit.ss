@@ -36,7 +36,7 @@
     [(~var i (3d exact-positive-integer?)) -ExactPositiveInteger]
     [(~var i (3d exact-nonnegative-integer?)) -ExactNonnegativeInteger]
     [(~var i (3d exact-integer?)) -Integer]
-    [(~var i (3d (lambda (e) (and (exact? e) (rational? e))))) -ExactRational]
+    [(~var i (3d (lambda (e) (and (number? e) (exact? e) (rational? e))))) -ExactRational]
     [(~var i (3d inexact-real?)) -Flonum]
     [(~var i (3d real?)) -Real]
     [(~var i (3d number?)) -Number]

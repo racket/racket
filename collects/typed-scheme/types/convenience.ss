@@ -30,6 +30,7 @@
     (let loop ([t* t])
       (match t*
         [(Value: '()) (-lst Univ)]
+	[(Value: 0) -Nat]
         [(Mu: var (Union: (list (Value: '()) (Pair: _ (F: var))))) t*]
         [(Pair: t1 (Value: '())) (-lst t1)]
         [(Pair: t1 t2)

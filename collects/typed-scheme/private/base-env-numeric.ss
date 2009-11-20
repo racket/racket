@@ -11,19 +11,31 @@
  scheme/promise scheme/system
  (only-in string-constants/private/only-once maybe-print-message)
  (only-in scheme/match/runtime match:error matchable? match-equality-test)
- (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])))
+ (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R])))
 
 ;; numeric operations
 [modulo (cl->* (-Integer -Integer . -> . -Integer))]
 [=  (->* (list N N) N B)]
-[>= (->* (list N N) N B)]
-[<  (->* (list N N) N B)]
-[<= (->* (list N N) N B)]
-[>  (->* (list N N) N B)]
+[>= (->* (list R R) R B)]
+[<  (->* (list R R) R B)]
+[<= (->* (list R R) R B)]
+[>  (->* (list R R) R B)]
 [zero? (N . -> . B)]
-[* (cl->* (->* '() -Integer -Integer) (->* '() N N))]
+[* (cl->* (->* '() -ExactPositiveInteger -ExactPositiveInteger)
+          (->* '() -Nat -Nat)
+	  (->* '() -Integer -Integer)
+          (->* '() -ExactRational -ExactRational)
+          ;; Reals are just Rat + Int
+          (->* '() -Real -Flonum)
+	  (->* '() N N))]
 [/ (cl->* (->* (list N) N N))]
-[+ (cl->* (->* '() -Integer -Integer) (->* '() N N))]
+[+ (cl->* (->* '() -ExactPositiveInteger -ExactPositiveInteger)
+          (->* '() -Nat -Nat)
+	  (->* '() -Integer -Integer)
+          (->* '() -ExactRational -ExactRational)
+          ;; Reals are just Rat + Int
+          (->* '() -Real -Flonum)
+	  (->* '() N N))]
 [- (cl->* (->* (list -Integer) -Integer -Integer) (->* (list N) N N))]
 [max (cl->* (->* (list -Integer) -Integer -Integer)
             (->* (list N) N N))]

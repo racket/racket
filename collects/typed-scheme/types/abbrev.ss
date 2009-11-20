@@ -113,7 +113,7 @@
 (define -Flonum (make-Base 'Flonum #'inexact-real?))
 
 (define -ExactRational 
-  (make-Base 'Exact-Rational #'(and/c rational? exact?)))
+  (make-Base 'Exact-Rational #'(and/c number? rational? exact?)))
 (define -Integer (make-Base 'Integer #'exact-integer?))
 (define -ExactPositiveInteger
   (make-Base 'Exact-Positive-Integer #'exact-positive-integer?))

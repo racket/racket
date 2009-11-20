@@ -3,7 +3,7 @@
           scribble/scheme
           scheme/generator
           scheme/list
-          (for-syntax scheme/base))
+          (for-syntax scheme/base unstable/syntax))
 
 @(define (generate-c_r-example proc)
   (define (make-it start n)
@@ -23,17 +23,12 @@
         (proc value)
         value)))
   (example proc))
-
+@(provide defc_r)
 @(define-syntax (defc_r stx)
    (syntax-case stx ()
      [(_ x ... example)
       (let ([xs (map syntax-e (syntax->list #'(x ...)))])
-        (let ([name (string->symbol
-                     (string-append
-                      "c"
-                      (apply string-append (map symbol->string xs))
-                      "r"))]
-              [contract (let loop ([l (reverse xs)])
+        (let ([contract (let loop ([l (reverse xs)])
                           (cond
                             [(null? (cdr l)) 'pair?]
                             [(eq? (car l) 'a) `(cons/c ,(loop (cdr l)) any/c)]
@@ -43,7 +38,9 @@
                          [(null? l) 'p]
                          [(eq? (car l) 'a) `(car ,(loop (cdr l)))]
                          [(eq? (car l) 'd) `(cdr ,(loop (cdr l)))]))])
-          (with-syntax ([name name]
+          (with-syntax ([name (format-id 
+                               stx #:source stx 
+                               "c~ar" (apply string-append (map symbol->string xs)))]
                         [contract (let loop ([c contract] [pos 0])
                                     (if (pair? c)
                                       (let* ([a (loop (car c) (add1 pos))]
@@ -60,8 +57,9 @@
                                                      (list (syntax-source stx) 1 pos (add1 pos) 1))))]
                         [example (datum->syntax #'here (syntax->datum #'example))]
                         [equiv equiv])
-            #'(defproc (name [v contract]) any/c
-                "Returns " (to-element 'equiv) (mz-examples (name example))))))]))
+            (quasisyntax/loc stx
+              (defproc (name [v contract]) any/c
+                "Returns " (to-element 'equiv) (mz-examples (#,(syntax-e #'name) #,(syntax->datum #'example))))))))]))
 
 
 @title[#:tag "pairs"]{Pairs and Lists}

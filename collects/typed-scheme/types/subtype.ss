@@ -228,6 +228,11 @@
 	      [((Base: 'Exact-Rational _) (Base: 'Number _)) A0]
 	      [((Base: 'Exact-Positive-Integer _) (Base: 'Exact-Rational _)) A0]
 	      [((Base: 'Exact-Positive-Integer _) (Base: 'Number _)) A0]
+	      [((Base: 'Exact-Positive-Integer _) (Base: 'Exact-Nonnegative-Integer _)) A0]
+	      [((Base: 'Exact-Positive-Integer _) (Base: 'Integer _)) A0]
+	      [((Base: 'Exact-Nonnegative-Integer _) (Base: 'Number _)) A0]
+	      [((Base: 'Exact-Nonnegative-Integer _) (Base: 'Exact-Rational _)) A0]
+	      [((Base: 'Exact-Nonnegative-Integer _) (Base: 'Integer _)) A0]
 
 	      ;; values are subtypes of their "type"
 	      [((Value: (? integer? n)) (Base: 'Integer _)) A0]
