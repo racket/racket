@@ -20,35 +20,25 @@
 [<  (->* (list R R) R B)]
 [<= (->* (list R R) R B)]
 [>  (->* (list R R) R B)]
-[zero? (N . -> . B)]
-[* (cl->* (->* '() -ExactPositiveInteger -ExactPositiveInteger)
-          (->* '() -Nat -Nat)
-	  (->* '() -Integer -Integer)
-          (->* '() -ExactRational -ExactRational)
-          (->* '() -Flonum -Flonum)
-          (->* '() -Real -Real)
-	  (->* '() N N))]
-[/ (cl->* (->* (list -Integer) -Integer -ExactRational)
-          (->* (list -ExactRational) -ExactRational -ExactRational)
-          (->* (list -Flonum) -Flonum -Flonum)
-          (->* (list -Real) -Real -Real)
-          (->* (list N) N N))]
-[+ (cl->* (->* '() -ExactPositiveInteger -ExactPositiveInteger)
-          (->* '() -Nat -Nat)
-	  (->* '() -Integer -Integer)
-          (->* '() -ExactRational -ExactRational)
-          (->* '() -Flonum -Flonum)
-          (->* '() -Real -Real)
-	  (->* '() N N))]
-[- (cl->* (->* (list -Integer) -Integer -Integer)
-          (->* (list -ExactRational) -ExactRational -ExactRational)
-          (->* (list -Flonum) -Flonum -Flonum)
-          (->* (list -Real) -Real -Real)
-          (->* (list N) N N))]
-[max (cl->* (->* (list -Integer) -Integer -Integer)
-            (->* (list N) N N))]
-[min (cl->* (->* (list -Integer) -Integer -Integer)
-            (->* (list N) N N))]
+[zero? (make-pred-ty (list N) B -Zero)]
+[* (apply cl->* 
+            (for/list ([t (list -Pos -Nat -Integer -ExactRational -Flonum -Real N)])
+              (->* (list) t t)))]
+[/ (apply cl->* 
+            (for/list ([t (list -Integer -ExactRational -Flonum -Real N)])
+              (->* (list t) t t)))]
+[+ (apply cl->* 
+            (for/list ([t (list -Pos -Nat -Integer -ExactRational -Flonum -Real N)])
+              (->* (list) t t)))]
+[- (apply cl->* 
+            (for/list ([t (list -Integer -ExactRational -Flonum -Real N)])
+              (->* (list t) t t)))]
+[max (apply cl->* 
+            (for/list ([t (list -Pos -Nat -Integer -ExactRational -Flonum -Real N)])
+              (->* (list t) t t)))]
+[min (apply cl->* 
+            (for/list ([t (list -Pos -Nat -Integer -ExactRational -Flonum -Real N)])
+              (->* (list t) t t)))]
 [positive? (-> N B)]
 [negative? (-> N B)]
 [odd? (-> -Integer B)]
@@ -100,8 +90,12 @@
 [denominator (N . -> . -Integer)]
 [rationalize (N N . -> . N)]
 [expt (cl->* (-Integer -Integer . -> . -Integer) (N N . -> . N))]
-[sqrt (N . -> . N)]
-[log  (N . -> . N)]
+[sqrt (cl->*
+       (-Real . -> . -Real)
+       (N . -> . N))]
+[log (cl->*
+      (-Pos . -> . -Real)
+      (N . -> . N))]
 [exp  (N . -> . N)]
 [cos  (N . -> . N)]
 [sin  (N . -> . N)]
@@ -118,7 +112,13 @@
 
 [sgn (-Real . -> . -Real)]
 [pi N]
-[sqr (N . -> . N)]
+[sqr (cl->* (-> -Pos -Pos)
+            (-> -Nat -Nat)                          
+            (-> -Integer -Integer)
+            (-> -ExactRational -ExactRational)
+            (-> -Flonum -Flonum)
+            (-> -Real -Real)
+            (-> N N))]
 [sgn (N . -> . N)]
 [conjugate (N . -> . N)]
 [sinh (N . -> . N)]

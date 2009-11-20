@@ -46,7 +46,9 @@
     (define path (build-path (this-expression-source-directory) dir))  
     (define tests
       (for/list ([p (directory-list path)]
-                 #:when (scheme-file? p))
+                 #:when (scheme-file? p)
+		 ;; skip backup files
+		 #:when (not (regexp-match #rx".*~" (path->string p))))
         (test-case
          (path->string p)
          (test
