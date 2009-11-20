@@ -343,7 +343,6 @@ static long sch_vsprintf(char *s, long maxlen, const char *msg, va_list args, ch
 	case 'f':
 	  {
 	    double f;
-	    j++;
 	    f = dbls[dp++];
 	    sprintf(buf, "%f", f);
 	    t = buf;

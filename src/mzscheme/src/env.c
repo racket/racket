@@ -1361,6 +1361,37 @@ Scheme_Hash_Table *scheme_map_constants_to_globals(void)
   return result;
 }
 
+const char *scheme_look_for_primitive(void *code)
+{
+  Scheme_Bucket_Table *ht;
+  Scheme_Bucket **bs;
+  Scheme_Env *kenv;
+  long i;
+  int j;
+
+  for (j = 0; j < 2; j++) {
+    if (!j)
+      kenv = kernel_env;
+    else
+      kenv = unsafe_env;
+    
+    ht = kenv->toplevel;
+    bs = ht->buckets;
+    
+    for (i = ht->size; i--; ) {
+      Scheme_Bucket *b = bs[i];
+      if (b && b->val) {
+        if (SCHEME_PRIMP(b->val)) {
+          if (SCHEME_PRIM(b->val) == code)
+            return ((Scheme_Primitive_Proc *)b->val)->name;
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
+
 /*========================================================================*/
 /*        compile-time env, constructors and simple queries               */
 /*========================================================================*/

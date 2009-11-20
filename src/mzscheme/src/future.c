@@ -5,7 +5,6 @@
 
 //This will be TRUE if primitive tracking has been enabled 
 //by the program
-int g_print_prims = 0;
 
 #ifndef FUTURES_ENABLED
 
@@ -29,18 +28,6 @@ static Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
   return NULL;
 }
 
-static Scheme_Object *start_primitive_tracking(int argc, Scheme_Object *argv[])
-{
-  scheme_signal_error("start-primitive-tracking: not enabled");
-  return NULL;
-}
-
-static Scheme_Object *end_primitive_tracking(int argc, Scheme_Object *argv[])
-{
-  scheme_signal_error("end-primitive-tracking: not enabled");
-  return NULL;
-}
-
 # define FUTURE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
 
 void scheme_init_futures(Scheme_Env *env)
@@ -53,8 +40,6 @@ void scheme_init_futures(Scheme_Env *env)
   FUTURE_PRIM_W_ARITY("future",           future,           1, 1, newenv);
   FUTURE_PRIM_W_ARITY("touch",            touch,            1, 1, newenv);
   FUTURE_PRIM_W_ARITY("processor-count",  processor_count,  1, 1, newenv);
-  FUTURE_PRIM_W_ARITY("start-primitive-tracking",  start_primitive_tracking,  0, 0, newenv);
-  FUTURE_PRIM_W_ARITY("end-primitive-tracking",  end_primitive_tracking,  0, 0, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -299,24 +284,6 @@ void scheme_init_futures(Scheme_Env *env)
                                                       1), 
                              newenv);
 
-  scheme_add_global_constant(
-                             "start-primitive-tracking", 
-                             scheme_make_prim_w_arity(
-                                                      start_primitive_tracking, 
-                                                      "start-primitive-tracking", 
-                                                      0,
-                                                      0), 
-                             newenv);
-
-  scheme_add_global_constant(
-                             "end-primitive-tracking", 
-                             scheme_make_prim_w_arity(
-                                                      end_primitive_tracking, 
-                                                      "end-primitive-tracking", 
-                                                      0,
-                                                      0), 
-                             newenv);
-
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
 
@@ -467,33 +434,6 @@ void scheme_future_gc_pause()
 /**********************************************************************/
 /* Primitive implementations                    					  */
 /**********************************************************************/
-
-Scheme_Object *start_primitive_tracking(int argc, Scheme_Object *argv[])
-{
-  g_print_prims = 1;
-  return scheme_void;
-}
-
-Scheme_Object *end_primitive_tracking(int argc, Scheme_Object *argv[])
-{
-  g_print_prims = 0;
-  return scheme_void;
-}
-
-void scheme_log_future_to_runtime(const char *who, void *p)
-/* Called in future thread */
-{
-  START_XFORM_SKIP;
-
-  if (g_print_prims) {
-    if (p)
-      fprintf(stderr, "%p at %lf\n", p, scheme_get_inexact_milliseconds());
-    else
-      fprintf(stderr, "%s at %lf\n", who, scheme_get_inexact_milliseconds());
-  }
-  
-  END_XFORM_SKIP;
-}
 
 Scheme_Object *future(int argc, Scheme_Object *argv[])
 /* Called in runtime thread */
@@ -947,19 +887,24 @@ void future_do_runtimecall(void *func,
 /**********************************************************************/
 /* Functions for primitive invocation                   			  */
 /**********************************************************************/
-void rtcall_void_void_3args(void (*f)())
+void scheme_rtcall_void_void_3args(const char *who, int src_type, void (*f)())
 /* Called in future thread */
 {
   START_XFORM_SKIP;
+  future_t *future = current_ft;
 
-  current_ft->prim_protocol = SIG_VOID_VOID_3ARGS;
+  future->prim_protocol = SIG_VOID_VOID_3ARGS;
+
+  future->time_of_request = scheme_get_inexact_milliseconds();
+  future->source_of_request = who;
+  future->source_type = src_type;
 
   future_do_runtimecall((void*)f, 1);
 
   END_XFORM_SKIP;
 }
 
-void *rtcall_alloc_void_pvoid(void (*f)())
+void *scheme_rtcall_alloc_void_pvoid(const char *who, int src_type, void (*f)())
 /* Called in future thread */
 {
   START_XFORM_SKIP;
@@ -967,7 +912,12 @@ void *rtcall_alloc_void_pvoid(void (*f)())
   void *retval;
 
   while (1) {
-    current_ft->prim_protocol = SIG_ALLOC_VOID_PVOID;
+    future = current_ft;
+    future->time_of_request = scheme_get_inexact_milliseconds();
+    future->source_of_request = who;
+    future->source_type = src_type;
+  
+    future->prim_protocol = SIG_ALLOC_VOID_PVOID;
 
     future_do_runtimecall((void*)f, 1);
 
@@ -1034,6 +984,25 @@ static void do_invoke_rtcall(future_t *future)
 
   future->rt_prim = 0;
 
+  if (scheme_log_level_p(scheme_main_logger, SCHEME_LOG_DEBUG)) {
+    const char *src;
+
+    src = future->source_of_request;
+    if (future->source_type == FSRC_RATOR) {
+      int len;
+      src = scheme_get_proc_name(future->arg_s0, &len, 1);
+    } else if (future->source_type == FSRC_PRIM) {
+      const char *src2;
+      src2 = scheme_look_for_primitive(future->prim_func);
+      if (src2) src = src2;
+    }
+
+    scheme_log(scheme_main_logger, SCHEME_LOG_DEBUG, 0,
+               "future: waiting for runtime at %f: %s",
+               future->time_of_request,
+               src);
+  }
+  
   switch (future->prim_protocol)
     {
     case SIG_VOID_VOID_3ARGS:

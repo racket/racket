@@ -39,14 +39,13 @@
   (define args (make-arg-list arg-types arg-names))
   (define ts (symbol->string t))
   (for-each display
-   @list{#define define_ts_@|ts|(id) \
+   @list{#define define_ts_@|ts|(id, src_type) \
      static @|result-type| ts_ ## id(@|args|) \
      { \
        START_XFORM_SKIP; \
-       if (scheme_use_rtcall) { \
-         LOG_PRIM_START(id); \
-         @|return| scheme_rtcall_@|t|(id, @(string-join arg-names ", ")); \
-       } else \
+       if (scheme_use_rtcall) \
+         @|return| scheme_rtcall_@|t|("[" #id "]", src_type, id, @(string-join arg-names ", ")); \
+       else \
          @|return| id(@(string-join arg-names ", ")); \
        END_XFORM_SKIP; \
      }})
@@ -62,15 +61,20 @@
   (for-each
    display
    @list{
-    @|result-type| scheme_rtcall_@|ts|(prim_@|ts| f@|(if (null? arg-types) "" ",")| @|args|) 
+    @|result-type| scheme_rtcall_@|ts|(const char *who, int src_type, prim_@|ts| f@|(if (null? arg-types) "" ",")| @|args|) 
    {
      START_XFORM_SKIP;
      future_t *future;
+     double tm;
      @(if (string=? result-type "void") "" @string-append{@|result-type| retval;})
 
      future = current_ft;
      future->prim_protocol = SIG_@|ts|;
      future->prim_func = f;
+     tm = scheme_get_inexact_milliseconds();
+     future->time_of_request = tm;
+     future->source_of_request = who;
+     future->source_type = src_type;
      @(string-join
        (for/list ([t (in-string (type->arg-string t))]
                   [a arg-names]
@@ -127,7 +131,7 @@
   (display
    @string-append{typedef @|result-type| (*prim_@|ts|)(@(string-join arg-types ", "));})
   (newline)
-  (display @string-append{@|result-type| scheme_rtcall_@|ts|(prim_@|ts| f@(if (null? arg-types) "" ",") @|args|);})
+  (display @string-append{@|result-type| scheme_rtcall_@|ts|(const char *who, int src_type, prim_@|ts| f@(if (null? arg-types) "" ",") @|args|);})
   (newline))
 
 (define types

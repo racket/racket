@@ -32,7 +32,7 @@ extern Scheme_Object *processor_count(int argc, Scheme_Object *argv[]);
 extern void futures_init(void);
 
 typedef void (*prim_void_void_3args_t)(Scheme_Object **);
-typedef void *(*prim_alloc_void_pvoid_t)(void);
+typedef void *(*prim_alloc_void_pvoid_t)();
 typedef Scheme_Object* (*prim_obj_int_pobj_obj_t)(Scheme_Object*, int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_t)(int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_obj_t)(int, Scheme_Object**, Scheme_Object*);
@@ -42,6 +42,10 @@ typedef void* (*prim_pvoid_pvoid_pvoid_t)(void*, void*);
 #define RUNNING 1
 #define WAITING_FOR_PRIM 2
 #define FINISHED 3
+
+#define FSRC_OTHER 0
+#define FSRC_RATOR 1
+#define FSRC_PRIM 2
 
 typedef struct future_t {
   Scheme_Object so;
@@ -61,6 +65,9 @@ typedef struct future_t {
   //Runtime call stuff
   int rt_prim; /* flag to indicate waiting for a prim call */
   int rt_prim_is_atomic;
+  double time_of_request;
+  const char *source_of_request;
+  int source_type;
 
   void *alloc_retval;
   int alloc_retval_counter;
@@ -120,12 +127,6 @@ extern void clear_futures(void);
 
 //Primitive instrumentation stuff 
 
-extern void scheme_log_future_to_runtime(const char *who, void *addr);
-#define LOG_PRIM_START(p) scheme_log_future_to_runtime(# p, NULL)
-#define LOG_PRIM_END(p) /* empty */
-#define LOG_PRIM_W_NAME(name) scheme_log_future_to_runtime(name, NULL)
-#define LOG_PRIM_W_ADDR(addr) scheme_log_future_to_runtime(NULL, addr)
-
 //Signature flags for primitive invocations
 //Here the convention is SIG_[arg1type]_[arg2type]..._[return type]
 #define SIG_VOID_VOID_3ARGS 1 						//void -> void, copy 3 args from runstack
@@ -143,8 +144,8 @@ extern void scheme_log_future_to_runtime(const char *who, void *addr);
 																/*GDB_BREAK;*/ \
 															}
 
-extern void rtcall_void_void_3args(void (*f)());
-extern void *rtcall_alloc_void_pvoid(void (*f)());
+extern void scheme_rtcall_void_void_3args(const char *who, int src_type, void (*f)());
+extern void *scheme_rtcall_alloc_void_pvoid(const char *who, int src_type, void (*f)());
 
 #else 
 
