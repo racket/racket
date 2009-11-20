@@ -14,9 +14,9 @@
 
 ;; Solution: Rather than map stx to (syntax-e stx), in the cases where
 ;; (syntax-e stx) is confusable, map it to a different, unique, value.
-;;   - stx is identifier : map it to an uninterned symbol w/ same rep
-;;     (Symbols are useful: see pretty-print's style table)
-;;   - else : map it to a syntax-dummy object
+;; Use syntax-dummy, and extend pretty-print-remap-stylable to look inside.
+
+;; Old solution: same, except map identifiers to uninterned symbols instead
 
 ;; NOTE: Nulls are only wrapped when *not* list-terminators.  
 ;; If they were always wrapped, the pretty-printer would screw up
@@ -35,6 +35,7 @@
     (pretty-print datum port)))
 
 (define-struct syntax-dummy (val))
+(define-struct (id-syntax-dummy syntax-dummy) (remap))
 
 ;; A SuffixOption is one of
 ;; - 'never             -- never
@@ -58,16 +59,20 @@
 ;; table : syntax maybe-partition% maybe-num SuffixOption -> (values s-expr hashtable hashtable)
 (define (table stx partition limit suffixopt)
   (define (make-identifier-proxy id)
+    (define sym (syntax-e id))
     (case suffixopt
-      ((never) (unintern (syntax-e id)))
+      ((never)
+       (make-id-syntax-dummy sym sym))
       ((always)
        (let ([n (send: partition partition<%> get-partition id)])
-         (if (zero? n) (unintern (syntax-e id)) (suffix (syntax-e id) n))))
+         (if (zero? n)
+             (make-id-syntax-dummy sym sym)
+             (make-id-syntax-dummy (suffix sym n) sym))))
       ((over-limit)
        (let ([n (send: partition partition<%> get-partition id)])
          (if (<= n limit)
-             (unintern (syntax-e id))
-             (suffix (syntax-e id) n))))))
+             (make-id-syntax-dummy sym sym)
+             (make-id-syntax-dummy (suffix sym n) sym))))))
 
   (let/ec escape
     (let ([flat=>stx (make-hasheq)]
@@ -111,7 +116,7 @@
                        (refold (map loop fields)))
                      obj))]
               [(symbol? obj)
-               (unintern obj)]
+               (make-id-syntax-dummy obj obj)]
               [(null? obj)
                (make-syntax-dummy obj)]
               [(boolean? obj)
@@ -169,8 +174,5 @@
   '(quote quasiquote unquote unquote-splicing syntax))
 ;; FIXME: quasisyntax unsyntax unsyntax-splicing
 
-(define (unintern sym)
-  (string->uninterned-symbol (symbol->string sym)))
-
 (define (suffix sym n)
-  (string->uninterned-symbol (format "~a:~a" sym n)))
+  (string->symbol (format "~a:~a" sym n)))

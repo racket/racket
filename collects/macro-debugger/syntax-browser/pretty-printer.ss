@@ -1,6 +1,3 @@
-
-;; FIXME: Need to disable printing of structs with custom-write property
-
 #lang scheme/base
 (require scheme/list
          scheme/class
@@ -10,15 +7,14 @@
          "interfaces.ss")
 (provide pretty-print-syntax)
 
-;; pretty-print-syntax :
-;;   syntax port partition (listof string) SuffixOption number
-;;   -> range%
+;; FIXME: Need to disable printing of structs with custom-write property
+
+;; pretty-print-syntax : syntax port partition number SuffixOption number
+;;                    -> range%
 (define (pretty-print-syntax stx port primary-partition colors suffix-option columns)
   (define range-builder (new range-builder%))
   (define-values (datum ht:flat=>stx ht:stx=>flat)
-    (syntax->datum/tables stx primary-partition
-                          (length colors)
-                          suffix-option))
+    (syntax->datum/tables stx primary-partition colors suffix-option))
   (define identifier-list
     (filter identifier? (hash-map ht:stx=>flat (lambda (k v) k))))
   (define (flat=>stx obj)
@@ -40,13 +36,6 @@
           [end (current-position)])
       (when (and start stx)
         (send range-builder add-range stx (cons start end)))))
-  (define (pp-extend-style-table identifier-list)
-    (let* ([syms (map (lambda (x) (stx=>flat x)) identifier-list)]
-           [like-syms (map syntax-e identifier-list)])
-      (pretty-print-extend-style-table (pp-better-style-table)
-                                       syms
-                                       like-syms)))
-
 
   (unless (syntax? stx)
     (raise-type-error 'pretty-print-syntax "syntax" stx))
@@ -55,7 +44,8 @@
     [pretty-print-post-print-hook pp-post-hook]
     [pretty-print-size-hook pp-size-hook]
     [pretty-print-print-hook pp-print-hook]
-    [pretty-print-current-style-table (pp-extend-style-table identifier-list)]
+    [pretty-print-remap-stylable pp-remap-stylable]
+    [pretty-print-current-style-table (pp-better-style-table)]
     [pretty-print-columns columns])
    (pretty-print/defaults datum port)
    (new range%
@@ -79,9 +69,13 @@
            (string-length (get-output-string ostring)))]
         [else #f]))
 
+(define (pp-remap-stylable obj)
+  (and (id-syntax-dummy? obj) (id-syntax-dummy-remap obj)))
+
 (define (pp-better-style-table)
   (basic-style-list)
-  #; ;; Messes up formatting too much :(
+  #|
+  ;; Messes up formatting too much :(
   (let* ([pref (pref:tabify)]
          [table (car pref)]
          [begin-rx (cadr pref)]
@@ -91,7 +85,8 @@
       (pretty-print-extend-style-table
        (basic-style-list)
        (map car style-list)
-       (map cdr style-list)))))
+       (map cdr style-list))))
+  |#)
 
 (define (basic-style-list)
   (pretty-print-extend-style-table
