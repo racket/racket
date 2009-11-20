@@ -105,6 +105,8 @@ typedef struct future_t {
   Scheme_Object *retval;
   struct future_t *prev;
   struct future_t *next;
+
+  int waiting_atomic;
   struct future_t *next_waiting_atomic;
 } future_t;
 

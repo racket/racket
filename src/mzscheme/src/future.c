@@ -799,15 +799,18 @@ void scheme_check_future_work()
     ft = g_future_waiting_atomic;
     if (ft) {
       g_future_waiting_atomic = ft->next_waiting_atomic;
+      ft->next_waiting_atomic = NULL;
+      ft->waiting_atomic = 0;
     }
     pthread_mutex_unlock(&g_future_queue_mutex);
 
-    if (ft && ft->rt_prim && ft->rt_prim_is_atomic) {
-      invoke_rtcall(ft);
+    if (ft) {
+      if (ft->rt_prim && ft->rt_prim_is_atomic) {
+        invoke_rtcall(ft);
+      }
     } else
       break;
   }
-  
 }
 
 //Returns 0 if the call isn't actually executed by this function,
@@ -849,8 +852,11 @@ void future_do_runtimecall(void *func,
   future->rt_prim_is_atomic = is_atomic;
 
   if (is_atomic) {
-    future->next_waiting_atomic = g_future_waiting_atomic;
-    g_future_waiting_atomic = future;
+    if (!future->waiting_atomic) {
+      future->next_waiting_atomic = g_future_waiting_atomic;
+      g_future_waiting_atomic = future;
+      future->waiting_atomic = 1;
+    }
   }
 
   //Update the future's status to waiting 
@@ -861,11 +867,12 @@ void future_do_runtimecall(void *func,
   //Wait for the signal that the RT call is finished
   future->can_continue_cv = &worker_can_continue_cv;
   end_gc_not_ok(future);
-  pthread_cond_wait(&worker_can_continue_cv, &g_future_queue_mutex);
+  while (future->can_continue_cv) {
+    pthread_cond_wait(&worker_can_continue_cv, &g_future_queue_mutex);
+    //Fetch the future instance again, in case the GC has moved the pointer
+    future = current_ft;
+  }
   start_gc_not_ok();
-
-  //Fetch the future instance again, in case the GC has moved the pointer
-  future = current_ft;
 
   pthread_mutex_unlock(&g_future_queue_mutex);
 
@@ -907,7 +914,7 @@ void *scheme_rtcall_alloc_void_pvoid(const char *who, int src_type, void (*f)())
 
   while (1) {
     future = current_ft;
-    future->time_of_request = scheme_get_inexact_milliseconds();
+    future->time_of_request = 0; /* takes too long?: scheme_get_inexact_milliseconds(); */
     future->source_of_request = who;
     future->source_type = src_type;
   
@@ -1029,6 +1036,7 @@ static void do_invoke_rtcall(future_t *future)
   //Signal the waiting worker thread that it
   //can continue running machine code
   pthread_cond_signal(future->can_continue_cv);
+  future->can_continue_cv= NULL;
   pthread_mutex_unlock(&g_future_queue_mutex);
 }
 
@@ -1045,6 +1053,7 @@ static void invoke_rtcall(future_t * volatile future)
     //Signal the waiting worker thread that it
     //can continue running machine code
     pthread_cond_signal(future->can_continue_cv);
+    future->can_continue_cv = NULL;
     pthread_mutex_unlock(&g_future_queue_mutex);
     scheme_longjmp(*savebuf, 1);
   } else {
