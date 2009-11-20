@@ -721,6 +721,7 @@ void *worker_thread_future_loop(void *arg)
   pthread_mutex_unlock(&g_future_queue_mutex);
 
   ft->threadid = pthread_self();
+  ft->thread_short_id = id;
 
   //Decrement the number of available pool threads 
   g_num_avail_threads--;
@@ -992,7 +993,8 @@ static void do_invoke_rtcall(future_t *future)
     }
 
     scheme_log(scheme_main_logger, SCHEME_LOG_DEBUG, 0,
-               "future: waiting for runtime at %f: %s",
+               "future: %d waiting for runtime at %f: %s",
+               (long)future->thread_short_id,
                future->time_of_request,
                src);
   }

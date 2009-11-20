@@ -177,6 +177,7 @@ Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)
   %c = unicode char
   %d = int
   %ld = long int
+  %lx = long int
   %o = int, octal
   %f = double
   %% = percent
@@ -333,9 +334,14 @@ static long sch_vsprintf(char *s, long maxlen, const char *msg, va_list args, ch
 	case 'l':
 	  {
 	    long d;
+            int as_hex;
+            as_hex = (msg[j] == 'x');
 	    j++;
 	    d = ints[ip++];
-	    sprintf(buf, "%ld", d);
+            if (as_hex)
+              sprintf(buf, "%lx", d);
+            else
+              sprintf(buf, "%ld", d);
 	    t = buf;
 	    tlen = strlen(t);
 	  }

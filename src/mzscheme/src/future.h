@@ -52,6 +52,7 @@ typedef struct future_t {
 
   int id;
   pthread_t threadid;
+  int thread_short_id;
   int status;
   int work_completed;
   pthread_cond_t *can_continue_cv;

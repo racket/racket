@@ -726,6 +726,12 @@ void *GC_make_jit_nursery_page() {
   NewGC *gc = GC_get_GC();
   mpage *new_mpage;
 
+  if((gc->gen0.current_size + THREAD_LOCAL_PAGE_SIZE) >= gc->gen0.max_size) {
+    if (!gc->dumping_avoid_collection)
+      garbage_collect(gc, 0);
+  }
+  gc->gen0.current_size += THREAD_LOCAL_PAGE_SIZE;
+
   {
     new_mpage = gen0_create_new_nursery_mpage(gc, THREAD_LOCAL_PAGE_SIZE);
 
