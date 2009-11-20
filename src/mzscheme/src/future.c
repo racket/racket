@@ -866,13 +866,13 @@ void future_do_runtimecall(void *func,
 
   //Wait for the signal that the RT call is finished
   future->can_continue_cv = &worker_can_continue_cv;
-  end_gc_not_ok(future);
   while (future->can_continue_cv) {
+    end_gc_not_ok(future);
     pthread_cond_wait(&worker_can_continue_cv, &g_future_queue_mutex);
+    start_gc_not_ok();
     //Fetch the future instance again, in case the GC has moved the pointer
     future = current_ft;
   }
-  start_gc_not_ok();
 
   pthread_mutex_unlock(&g_future_queue_mutex);
 
