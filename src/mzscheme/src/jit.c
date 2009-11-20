@@ -312,17 +312,34 @@ END_XFORM_SKIP;
 #  define mz_tl_addr_tmp(tmp_reg, addr) (mz_tl_addr(JIT_R10, addr))
 #  define mz_tl_addr_untmp(tmp_reg) (void)0
 #  define mz_tl_tmp_reg(tmp_reg) JIT_R10
+#  define _mz_tl_str_p(addr, tmp_reg, reg) jit_str_p(tmp_reg, reg)
+#  define _mz_tl_str_l(addr, tmp_reg, reg) jit_str_l(tmp_reg, reg)
+#  define _mz_tl_str_i(addr, tmp_reg, reg) jit_str_i(tmp_reg, reg)
 # else
-#  define mz_tl_addr(reg, addr) (mz_get_local_p(reg, JIT_LOCAL4), jit_addi_p(reg, reg, addr))
-#  define mz_tl_addr_tmp(tmp_reg, addr) (PUSHQr(tmp_reg), mz_tl_addr(tmp_reg, addr))
-#  define mz_tl_addr_untmp(tmp_reg) POPQr(tmp_reg)
-#  define mz_tl_tmp_reg(tmp_reg) tmp_reg
+#  define THREAD_LOCAL_USES_JIT_V2
+#  ifdef THREAD_LOCAL_USES_JIT_V2
+#   define mz_tl_addr(reg, addr) (jit_addi_p(reg, JIT_V2, addr))
+#   define mz_tl_addr_tmp(tmp_reg, addr) (void)0
+#   define mz_tl_addr_untmp(tmp_reg) 0
+#   define mz_tl_tmp_reg(tmp_reg) (void)0
+#   define _mz_tl_str_p(addr, tmp_reg, reg) jit_stxi_p(addr, JIT_V2, reg)
+#   define _mz_tl_str_l(addr, tmp_reg, reg) jit_stxi_l(addr, JIT_V2, reg)
+#   define _mz_tl_str_i(addr, tmp_reg, reg) jit_stxi_i(addr, JIT_V2, reg)
+#  else
+#   define mz_tl_addr(reg, addr) (mz_get_local_p(reg, JIT_LOCAL4), jit_addi_p(reg, reg, addr))
+#   define mz_tl_addr_tmp(tmp_reg, addr) (PUSHQr(tmp_reg), mz_tl_addr(tmp_reg, addr))
+#   define mz_tl_addr_untmp(tmp_reg) POPQr(tmp_reg)
+#   define mz_tl_tmp_reg(tmp_reg) tmp_reg
+#   define _mz_tl_str_p(addr, tmp_reg, reg) jit_str_p(tmp_reg, reg)
+#   define _mz_tl_str_l(addr, tmp_reg, reg) jit_str_l(tmp_reg, reg)
+#   define _mz_tl_str_i(addr, tmp_reg, reg) jit_str_i(tmp_reg, reg)
+#  endif
 # endif
 
 /* A given tmp_reg doesn't have to be unused; it just has to be distinct from other arguments. */
-# define mz_tl_sti_p(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), jit_str_p(mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
-# define mz_tl_sti_l(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), jit_str_l(mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
-# define mz_tl_sti_i(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), jit_str_i(mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
+# define mz_tl_sti_p(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), _mz_tl_str_p(addr, mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
+# define mz_tl_sti_l(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), _mz_tl_str_l(addr, mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
+# define mz_tl_sti_i(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), _mz_tl_str_i(addr, mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
 # define mz_tl_ldi_p(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_p(reg, reg))
 # define mz_tl_ldi_l(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_l(reg, reg))
 # define mz_tl_ldi_i(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_i(reg, reg))
@@ -780,11 +797,18 @@ static Scheme_Object *apply_checked_fail(Scheme_Object **args)
 /*========================================================================*/
 
 #define JIT_RUNSTACK JIT_V0
-#define JIT_RUNSTACK_BASE JIT_V2
 
-#define JIT_RUNSTACK_BASE_OR_ALT(alt) JIT_RUNSTACK_BASE
-#define mz_ld_runstack_base_alt(JIT_R2) /* empty */
-#define mz_st_runstack_base_alt(JIT_R2) /* empty */
+#ifndef THREAD_LOCAL_USES_JIT_V2
+# define JIT_RUNSTACK_BASE JIT_V2
+# define JIT_RUNSTACK_BASE_OR_ALT(alt) JIT_RUNSTACK_BASE
+# define mz_ld_runstack_base_alt(reg) /* empty */
+# define mz_st_runstack_base_alt(reg) /* empty */
+#else
+# define JIT_RUNSTACK_BASE_OR_ALT(alt) alt
+# define JIT_RUNSTACK_BASE_LOCAL JIT_LOCAL4
+# define mz_ld_runstack_base_alt(reg) mz_get_local_p(reg, JIT_RUNSTACK_BASE_LOCAL)
+# define mz_st_runstack_base_alt(reg) mz_set_local_p(reg, JIT_RUNSTACK_BASE_LOCAL)
+#endif
 
 #ifdef MZ_USE_JIT_PPC
 # define JIT_STACK 1
@@ -1302,13 +1326,19 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #  define mz_repush_threadlocal() mz_set_local_p(JIT_R14, JIT_LOCAL4)
 # else
 #  define mz_pop_threadlocal() /* empty */
+#  ifdef THREAD_LOCAL_USES_JIT_V2
+#   define _mz_install_threadlocal(reg) jit_movr_p(JIT_V2, reg)
+#   define mz_repush_threadlocal() /* empty */
+#  else
+#   define _mz_install_threadlocal(reg) mz_set_local_p(reg, JIT_LOCAL4)
+#   define mz_repush_threadlocal() (PUSHQr(JIT_R0), jit_ldr_p(JIT_R0, _EBP), \
+                                    jit_ldxi_p(JIT_R0, JIT_R0, JIT_LOCAL4), \
+                                    jit_stxi_p(JIT_LOCAL4, _EBP, JIT_R0), \
+                                    POPQr(JIT_R0))
+#  endif
 #  define mz_push_threadlocal() (PUSHQr(JIT_R0), PUSHQr(JIT_R1), PUSHQr(JIT_R2), PUSHQr(JIT_R2), \
-                                 mz_get_threadlocal(), jit_retval(JIT_R0), mz_set_local_p(JIT_R0, JIT_LOCAL4), \
+                                 mz_get_threadlocal(), jit_retval(JIT_R0), _mz_install_threadlocal(JIT_R0), \
                                  POPQr(JIT_R2), POPQr(JIT_R2), POPQr(JIT_R1), POPQr(JIT_R0))
-#  define mz_repush_threadlocal() (PUSHQr(JIT_R0), jit_ldr_p(JIT_R0, _EBP), \
-                                   jit_ldxi_p(JIT_R0, JIT_R0, JIT_LOCAL4), \
-                                   jit_stxi_p(JIT_LOCAL4, _EBP, JIT_R0), \
-                                   POPQr(JIT_R0))
 # endif
 #else
 # define mz_pop_threadlocal() /* empty */
@@ -2451,7 +2481,7 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
     /* Need to shuffle argument lists. Since we can pass only
        three arguments, use static variables for the others. */
     mz_ld_runstack_base_alt(JIT_R1);
-    mz_tl_sti_p(tl_fixup_runstack_base, JIT_RUNSTACK_BASE_OR_ALT(JIT_R0), JIT_R1);
+    mz_tl_sti_p(tl_fixup_runstack_base, JIT_RUNSTACK_BASE_OR_ALT(JIT_R1), JIT_R0);
     mz_get_local_p(JIT_R1, JIT_LOCAL2);
     mz_tl_sti_l(tl_fixup_already_in_place, JIT_R1, JIT_R0);
   }
@@ -7841,7 +7871,7 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
      rest args, because we'll have to copy anyway. */
   if (!has_rest && num_params) {
     jit_lshi_l(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_R1, JIT_LOG_WORD_SIZE);
-    jit_addr_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_R2, JIT_RUNSTACK_BASE);
+    jit_addr_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_R2, JIT_RUNSTACK_BASE_OR_ALT(JIT_V1));
 #ifndef JIT_RUNSTACK_BASE
     mz_set_local_p(JIT_V1, JIT_RUNSTACK_BASE_LOCAL);
 #endif
@@ -8280,7 +8310,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* Set runstack base to end of arguments on runstack: */
   jit_movr_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_R1);
   jit_lshi_ul(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_LOG_WORD_SIZE);
-  jit_addr_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_RUNSTACK_BASE, JIT_RUNSTACK);
+  jit_addr_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_RUNSTACK);
   mz_st_runstack_base_alt(JIT_V1);
   /* Extract function and jump: */
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
