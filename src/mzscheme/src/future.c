@@ -612,6 +612,7 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
 #ifdef linux 
 #include <unistd.h>
 #elif OS_X 
+#include <sys/param.h>
 #include <sys/sysctl.h>
 #elif WINDOWS 
 #include <windows.h>
@@ -625,24 +626,12 @@ Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
 #ifdef linux 
   cpucount = sysconf(_SC_NPROCESSORS_ONLN);
 #elif OS_X 
-  int mib[4];
-  size_t len; 
+  size_t size = sizeof(cpucount) ;
 
-  /* set the mib for hw.ncpu */
-  mib[0] = CTL_HW;
-  mib[1] = HW_AVAILCPU;  // alternatively, try HW_NCPU;
-
-  /* get the number of CPUs from the system */
-  sysctl(mib, 2, &cpucount, &len, NULL, 0);
-  if (cpucount < 1) 
-  {
-    mib[1] = HW_NCPU;
-    sysctl(mib, 2, &cpucount, &len, NULL, 0);
-    if(cpucount < 1)
-    {
-      cpucount = 1;
-    }
-  }
+  if (sysctlbyname("hw.ncpu", &cpucount, &size, NULL, 0))
+	{
+	  cpucount = 1;
+	}
 #elif WINDOWS 
   SYSTEM_INFO sysinfo;
   GetSystemInfo(&sysinfo);
