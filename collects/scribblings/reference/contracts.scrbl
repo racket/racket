@@ -61,16 +61,19 @@ Constructs a @tech{flat contract} from @scheme[predicate]. A value
 satisfies the contract if the predicate returns a true value.}
 
 
-@defproc[(flat-named-contract [type-name any/c][predicate (any/c . -> . any)])
+@defproc[(flat-named-contract [type-name any/c] [predicate (or/c flat-contract? (any/c . -> . any))])
          flat-contract?]{
 
-Like @scheme[flat-contract], but the first argument must be the
+On predicates like @scheme[flat-contract], but the first argument must be the
 (quoted) name of a contract used for error reporting. 
 For example, 
 @schemeblock[(flat-named-contract
               'odd-integer 
               (lambda (x) (and (integer? x) (odd? x))))]
 turns the predicate into a contract with the name @tt{odd-integer}.
+
+On flat contracts, the new flat contract is the same as the old except for
+the name.
 }
 
 @defthing[any/c flat-contract?]{
