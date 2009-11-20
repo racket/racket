@@ -153,6 +153,15 @@ void *g_funcargs[5];
 void *func_retval = NULL;
 
 
+#ifdef MZ_PRECISE_GC
+# define scheme_future_setjmp(newbuf) scheme_jit_setjmp((newbuf).jb)
+# define scheme_future_longjmp(newbuf, v) scheme_jit_longjmp((newbuf).jb, v)
+#else
+# define scheme_future_setjmp(newbuf) scheme_setjmp(newbuf)
+# define scheme_future_longjmp(newbuf, v) scheme_longjmp(newbuf, v)
+#endif
+
+
 /**********************************************************************/
 /* Helpers for debugging                    						  */
 /**********************************************************************/
@@ -582,7 +591,9 @@ int future_ready(Scheme_Object *obj)
 }
 
 static void dequeue_future(future_t *ft)
+/* called from both future and runtime threads */
 {
+  START_XFORM_SKIP;
   if (ft->prev == NULL)
     {
       //Set next to be the head of the queue
@@ -596,6 +607,7 @@ static void dequeue_future(future_t *ft)
       if (NULL != ft->next)
         ft->next->prev = ft->prev;
     }
+  END_XFORM_SKIP;
 }
 
 
@@ -647,8 +659,6 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
       LOG("Successfully touched future %d\n", ft->id);
       // fflush(stdout);
 
-      dequeue_future(ft);
-
       //Increment the number of available pool threads
       g_num_avail_threads++;	
       pthread_mutex_unlock(&g_future_queue_mutex);
@@ -670,6 +680,10 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
       pthread_mutex_unlock(&g_future_queue_mutex);
       goto wait_for_rtcall_or_completion;
     }
+
+  if (!retval) {
+    scheme_signal_error("touch: future previously aborted");
+  }
 
   return retval;
 }
@@ -731,6 +745,7 @@ void *worker_thread_future_loop(void *arg)
   Scheme_Object* (*jitcode)(Scheme_Object*, int, Scheme_Object**);
   future_t *ft;
   int id = *(int *)arg;
+  mz_jmp_buf newbuf;
 
   scheme_init_os_thread();
 
@@ -811,7 +826,15 @@ void *worker_thread_future_loop(void *arg)
   //If jitcode asks the runrtime thread to do work, then
   //a GC can occur.
   LOG("Running JIT code at %p...\n", ft->code);    
-  v = jitcode(ft->orig_lambda, 0, NULL);
+
+  scheme_current_thread->error_buf = &newbuf;
+  if (scheme_future_setjmp(newbuf)) {
+    /* failed */
+    v = NULL;
+  } else {
+    v = jitcode(ft->orig_lambda, 0, NULL);
+  }
+
   LOG("Finished running JIT code at %p.\n", ft->code);
 
   // Get future again, since a GC may have occurred
@@ -827,6 +850,8 @@ void *worker_thread_future_loop(void *arg)
 
   //Update the status 
   ft->status = FINISHED;
+  dequeue_future(ft);
+
   scheme_signal_received_at(g_signal_handle);
   pthread_mutex_unlock(&g_future_queue_mutex);
 
@@ -922,6 +947,11 @@ void future_do_runtimecall(void *func,
 
   pthread_mutex_unlock(&g_future_queue_mutex);
 
+  if (future->no_retval) {
+    future->no_retval = 0;
+    scheme_future_longjmp(*scheme_current_thread->error_buf, 1);
+  }
+
   END_XFORM_SKIP;
 }
 
@@ -993,7 +1023,7 @@ static void send_special_result(future_t *f, Scheme_Object *retval)
 //Does the work of actually invoking a primitive on behalf of a 
 //future.  This function is always invoked on the main (runtime) 
 //thread.
-void invoke_rtcall(future_t *future)
+static void do_invoke_rtcall(future_t *future)
 /* Called in runtime thread */
 {
 #ifdef DEBUG_FUTURES
@@ -1033,6 +1063,27 @@ void invoke_rtcall(future_t *future)
   //can continue running machine code
   pthread_cond_signal(future->can_continue_cv);
   pthread_mutex_unlock(&g_future_queue_mutex);
+}
+
+static void invoke_rtcall(future_t * volatile future)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  mz_jmp_buf newbuf, * volatile savebuf;
+
+  savebuf = p->error_buf;
+  p->error_buf = &newbuf;
+  if (scheme_setjmp(newbuf)) {
+    pthread_mutex_lock(&g_future_queue_mutex);
+    future->no_retval = 1;
+    //Signal the waiting worker thread that it
+    //can continue running machine code
+    pthread_cond_signal(future->can_continue_cv);
+    pthread_mutex_unlock(&g_future_queue_mutex);
+    scheme_longjmp(*savebuf, 1);
+  } else {
+    do_invoke_rtcall(future);
+  }
+  p->error_buf = savebuf;
 }
 
 

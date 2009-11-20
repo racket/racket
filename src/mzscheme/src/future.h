@@ -85,6 +85,7 @@ typedef struct future_t {
   Scheme_Object *retval_s;
   void *retval_p; /* use only with conservative GC */
   MZ_MARK_STACK_TYPE retval_m;
+  int no_retval;
 
   Scheme_Object **multiple_array;
   int multiple_count;
