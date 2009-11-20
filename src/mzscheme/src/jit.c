@@ -2168,11 +2168,12 @@ static Scheme_Object *noncm_prim_indirect(Scheme_Prim proc, int argc)
 {
   START_XFORM_SKIP;
 
-  if (scheme_use_rtcall)
+  if (scheme_use_rtcall) {
+    LOG_PRIM_W_ADDR(proc);
     return scheme_rtcall_iS_s(proc, 
                               argc, 
                               MZ_RUNSTACK);
-  else 
+  } else 
     return proc(argc, MZ_RUNSTACK);
 
   END_XFORM_SKIP;
@@ -2181,9 +2182,10 @@ static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc
 {
   START_XFORM_SKIP;
 
-  if (scheme_use_rtcall)
+  if (scheme_use_rtcall) {
+    LOG_PRIM_W_ADDR(proc);
     return scheme_rtcall_iSs_s(proc, argc, MZ_RUNSTACK, self);
-  else
+  } else
     return proc(argc, MZ_RUNSTACK, self);
 
   END_XFORM_SKIP;
@@ -2196,9 +2198,10 @@ static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc
 static void ts_on_demand(void)
 {
   START_XFORM_SKIP;
-  if (scheme_use_rtcall)
+  if (scheme_use_rtcall) {
+    LOG_PRIM_START(on_demand);
     rtcall_void_void_3args(on_demand_with_args);
-  else
+  } else
     on_demand();
   END_XFORM_SKIP;
 }
@@ -2208,9 +2211,9 @@ static void *ts_prepare_retry_alloc(void *p, void *p2)
 {
   START_XFORM_SKIP;
   void *ret;
-  LOG_PRIM_START(&prepare_retry_alloc);
 
   if (scheme_use_rtcall) {
+    LOG_PRIM_START(prepare_retry_alloc);
     jit_future_storage[0] = p;
     jit_future_storage[1] = p2;
     ret = rtcall_alloc_void_pvoid(GC_make_jit_nursery_page);

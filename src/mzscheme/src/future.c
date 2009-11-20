@@ -468,43 +468,31 @@ void scheme_future_gc_pause()
 /* Primitive implementations                    					  */
 /**********************************************************************/
 
-static long start_ms = 0;
-
 Scheme_Object *start_primitive_tracking(int argc, Scheme_Object *argv[])
 {
-  //Get the start time
-  struct timeval now;
-  long ms;
-  gettimeofday(&now, NULL);
-	
-  start_ms = now.tv_usec / 1000.0;
-	
   g_print_prims = 1;
-  printf("Primitive tracking started at ");
-  print_ms_and_us();
-  printf("\n");
   return scheme_void;
 }
 
 Scheme_Object *end_primitive_tracking(int argc, Scheme_Object *argv[])
 {
   g_print_prims = 0;
-  printf("Primitive tracking ended at ");
-  print_ms_and_us();
-  printf("\n");
   return scheme_void;
 }
 
-void print_ms_and_us()
+void scheme_log_future_to_runtime(const char *who, void *p)
+/* Called in future thread */
 {
-  struct timeval now;
-  long ms, us;
-  gettimeofday(&now, NULL);
+  START_XFORM_SKIP;
 
-  //ms = (now.tv_sec * 1000.0) - start_ms;
-  ms = (now.tv_usec / 1000) - start_ms;
-  us = now.tv_usec - (ms * 1000) - (start_ms * 1000);
-  printf("%ld.%ld", ms, us);
+  if (g_print_prims) {
+    if (p)
+      fprintf(stderr, "%p at %lf\n", p, scheme_get_inexact_milliseconds());
+    else
+      fprintf(stderr, "%s at %lf\n", who, scheme_get_inexact_milliseconds());
+  }
+  
+  END_XFORM_SKIP;
 }
 
 Scheme_Object *future(int argc, Scheme_Object *argv[])

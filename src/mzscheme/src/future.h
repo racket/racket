@@ -119,33 +119,12 @@ extern void clear_futures(void);
 #endif
 
 //Primitive instrumentation stuff 
-extern int g_print_prims;
-extern void print_ms_and_us(void);
-#define LOG_PRIM_START(p) \
-	if (g_print_prims) \
-	{ \
-		printf("%p ", p); \
-		print_ms_and_us(); \
-		printf("\n"); \
-	} 
 
-#define LOG_PRIM_END(p) 
-/*
-#define LOG_PRIM_END(p) \
-	if (g_print_prims) \
-	{ \
-		print_ms_and_us(); \
-		printf("\n"); \
-	}
-*/
-
-#define LOG_PRIM_W_NAME(name) \
-	if (g_print_prims) \
-	{ \
-		printf("%s ", name); \
-		print_ms_and_us(); \
-		printf("\n"); \
-	} 
+extern void scheme_log_future_to_runtime(const char *who, void *addr);
+#define LOG_PRIM_START(p) scheme_log_future_to_runtime(# p, NULL)
+#define LOG_PRIM_END(p) /* empty */
+#define LOG_PRIM_W_NAME(name) scheme_log_future_to_runtime(name, NULL)
+#define LOG_PRIM_W_ADDR(addr) scheme_log_future_to_runtime(NULL, addr)
 
 //Signature flags for primitive invocations
 //Here the convention is SIG_[arg1type]_[arg2type]..._[return type]

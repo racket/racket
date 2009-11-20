@@ -7860,13 +7860,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
       f = prim->prim_val;
 
-      #ifdef FUTURES_ENABLED
-      LOG_PRIM_START(f);
-      #endif
       v = f(num_rands, rands, (Scheme_Object *)prim);
-      #ifdef FUTURES_ENABLED      
-      LOG_PRIM_END(f);
-      #endif
 
       DEBUG_CHECK_TYPE(v);
     } else if (type == scheme_closure_type) {
