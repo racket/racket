@@ -1,7 +1,15 @@
 #lang s-exp "type-env-lang.ss"
 
 [Number -Number]
+[Complex -Number]
 [Integer -Integer]
+[Real -Real]
+[Exact-Rational -ExactRational]
+[Flonum -Flonum]
+[Exact-Positive-Integer -ExactPositiveInteger]
+[Exact-Nonnegative-Integer -ExactNonnegativeInteger]
+[Natural -ExactNonnegativeInteger]
+
 [Void -Void]
 [Boolean -Boolean]
 [Symbol -Symbol]

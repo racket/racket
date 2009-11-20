@@ -5,7 +5,7 @@
 	 (types utils comparison resolve abbrev)
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
-         scheme/match
+         scheme/match unstable/match	 
          mzlib/trace
 	 (for-syntax scheme/base syntax/parse))
 
@@ -210,34 +210,46 @@
        [else
 	(let* ([A0 (remember s t A)])
 	  (parameterize ([current-seen A0])
-            (match (list s t)
-	      [(list _ (Univ:)) A0]
+            (match* (s t)
+	      [(_ (Univ:)) A0]
 	      ;; error is top and bot
-	      [(list _ (Error:)) A0]
-	      [(list (Error:) _) A0]
+	      [(_ (Error:)) A0]
+	      [((Error:) _) A0]
 	      ;; (Un) is bot
-	      [(list _ (Union: (list))) (fail! s t)]
-	      [(list (Union: (list)) _) A0]
+	      [(_ (Union: (list))) (fail! s t)]
+	      [((Union: (list)) _) A0]
 	      ;; value types              
-	      [(list (Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
-	      ;; integers are numbers too
-	      [(list (Base: 'Integer _) (Base: 'Number _)) A0]
+	      [((Value: v1) (Value: v2)) (=> unmatch) (if (equal? v1 v2) A0 (unmatch))]
+	      ;; now we encode the numeric hierarchy - bletch	      
+	      [((Base: 'Integer _) (Base: 'Number _)) A0]
+	      [((Base: 'Flonum _)  (== -Real type-equal?)) A0]
+	      [((Base: 'Integer _)  (== -Real type-equal?)) A0]
+	      [((Base: 'Flonum _)  (Base: 'Number _)) A0]
+	      [((Base: 'Exact-Rational _) (Base: 'Number _)) A0]
+	      [((Base: 'Exact-Positive-Integer _) (Base: 'Exact-Rational _)) A0]
+	      [((Base: 'Exact-Positive-Integer _) (Base: 'Number _)) A0]
+
 	      ;; values are subtypes of their "type"
-	      [(list (Value: (? integer? n)) (Base: 'Integer _)) A0]
-	      [(list (Value: (? number? n)) (Base: 'Number _)) A0]
-	      [(list (Value: (? boolean? n)) (Base: 'Boolean _)) A0]
-	      [(list (Value: (? symbol? n)) (Base: 'Symbol _)) A0]
-	      [(list (Value: (? string? n)) (Base: 'String _)) A0]
+	      [((Value: (? integer? n)) (Base: 'Integer _)) A0]
+	      [((Value: (? exact-nonnegative-integer? n)) (Base: 'Exact-Nonnegative-Integer _)) A0]
+	      [((Value: (? exact-positive-integer? n)) (Base: 'Exact-Positive-Integer _)) A0]	      
+	      [((Value: (? inexact-real? n)) (Base: 'Flonum _)) A0]
+	      [((Value: (? real? n)) (== -Real type-equal?)) A0]
+	      [((Value: (? number? n)) (Base: 'Number _)) A0]
+
+	      [((Value: (? boolean? n)) (Base: 'Boolean _)) A0]
+	      [((Value: (? symbol? n)) (Base: 'Symbol _)) A0]
+	      [((Value: (? string? n)) (Base: 'String _)) A0]
 	      ;; tvars are equal if they are the same variable
-	      [(list (F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]
+	      [((F: t) (F: t*)) (if (eq? t t*) A0 (fail! s t))]
               ;; special-case for case-lambda/union
-              [(list (Function: arr1) (Function: (list arr2)))
+              [((Function: arr1) (Function: (list arr2)))
                (when (null? arr1) (fail! s t))
                (or (arr-subtype*/no-fail A0 (combine-arrs arr1) arr2)
                    (supertype-of-one/arr A0 arr2 arr1)
                    (fail! s t))]
 	      ;; case-lambda
-	      [(list (Function: arr1) (Function: arr2))
+	      [((Function: arr1) (Function: arr2))
 	       (when (null? arr1) (fail! s t))
 	       (let loop-arities ([A* A0]
 				  [arr2 arr2])
@@ -246,65 +258,65 @@
 		  [(supertype-of-one/arr A* (car arr2) arr1) => (lambda (A) (loop-arities A (cdr arr2)))]
 		  [else (fail! s t)]))]
 	      ;; recur structurally on pairs
-	      [(list (Pair: a d) (Pair: a* d*))
+	      [((Pair: a d) (Pair: a* d*))
 	       (let ([A1 (subtype* A0 a a*)])
 		 (and A1 (subtype* A1 d d*)))]
 	      ;; quantification over two types preserves subtyping
-	      [(list (Poly: ns b1) (Poly: ms b2)) 
+	      [((Poly: ns b1) (Poly: ms b2)) 
 	       (=> unmatch)
 	       (unless (= (length ns) (length ms)) 
 		       (unmatch))
 					;(printf "Poly: ~n~a ~n~a~n" b1 (subst-all (map list ms (map make-F ns)) b2))
 	       (subtype* A0 b1 (subst-all (map list ms (map make-F ns)) b2))]
-	      [(list (Refinement: par _ _) t)
+	      [((Refinement: par _ _) t)
                (subtype* A0 par t)]
 	      ;; use unification to see if we can use the polytype here
-	      [(list (Poly: vs b) s)
+	      [((Poly: vs b) s)
 	       (=> unmatch)
 	       (if (unify vs (list b) (list s)) A0 (unmatch))]              
-	      [(list s (Poly: vs b))
+	      [(s (Poly: vs b))
 	       (=> unmatch)
 	       (if (null? (fv b)) (subtype* A0 s b) (unmatch))]
 	      ;; rec types, applications and names (that aren't the same
-	      [(list (? needs-resolving? s) other)
+	      [((? needs-resolving? s) other)
                (let ([s* (resolve-once s)])
                  (if (Type? s*) ;; needed in case this was a name that hasn't been resolved yet
                      (subtype* A0 s* other)
                      (fail! s t)))]
-	      [(list other (? needs-resolving? t))
+	      [(other (? needs-resolving? t))
                (let ([t* (resolve-once t)])
                  (if (Type? t*) ;; needed in case this was a name that hasn't been resolved yet
                      (subtype* A0 other t*)
                      (fail! s t)))]
 	      ;; for unions, we check the cross-product
-	      [(list (Union: es) t) (and (andmap (lambda (elem) (subtype* A0 elem t)) es) A0)]
-	      [(list s (Union: es)) (and (ormap (lambda (elem) (subtype*/no-fail A0 s elem)) es) A0)]
+	      [((Union: es) t) (and (andmap (lambda (elem) (subtype* A0 elem t)) es) A0)]
+	      [(s (Union: es)) (and (ormap (lambda (elem) (subtype*/no-fail A0 s elem)) es) A0)]
 	      ;; subtyping on immutable structs is covariant
-	      [(list (Struct: nm _ flds #f _ _ _) (Struct: nm _ flds* #f _ _ _))
+	      [((Struct: nm _ flds #f _ _ _) (Struct: nm _ flds* #f _ _ _))
 	       (subtypes* A0 flds flds*)]
-	      [(list (Struct: nm _ flds proc _ _ _) (Struct: nm _ flds* proc* _ _ _))
+	      [((Struct: nm _ flds proc _ _ _) (Struct: nm _ flds* proc* _ _ _))
 	       (subtypes* A0 (cons proc flds) (cons proc* flds*))]
 	      ;; subtyping on structs follows the declared hierarchy
-	      [(list (Struct: nm (? Type? parent) flds proc _ _ _) other) 
+	      [((Struct: nm (? Type? parent) flds proc _ _ _) other) 
 					;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)
 	       (subtype* A0 parent other)]
 	      ;; Promises are covariant
-	      [(list (Struct: 'Promise _ (list t) _ _ _ _) (Struct: 'Promise _ (list t*) _ _ _ _)) (subtype* A0 t t*)]
+	      [((Struct: 'Promise _ (list t) _ _ _ _) (Struct: 'Promise _ (list t*) _ _ _ _)) (subtype* A0 t t*)]
 	      ;; subtyping on values is pointwise
-	      [(list (Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
+	      [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
               ;; trivial case for Result
-              [(list (Result: t f o) (Result: t* f o))
+              [((Result: t f o) (Result: t* f o))
                (subtype* A0 t t*)]
               ;; we can ignore interesting results
-              [(list (Result: t f o) (Result: t* (LFilterSet: (list) (list)) (LEmpty:)))
+              [((Result: t f o) (Result: t* (LFilterSet: (list) (list)) (LEmpty:)))
                (subtype* A0 t t*)]
 	      ;; subtyping on other stuff
-	      [(list (Syntax: t) (Syntax: t*))
+	      [((Syntax: t) (Syntax: t*))
 	       (subtype* A0 t t*)]
-	      [(list (Instance: t) (Instance: t*))
+	      [((Instance: t) (Instance: t*))
 	       (subtype* A0 t t*)]
 	      ;; otherwise, not a subtype
-	      [_ (fail! s t) #;(printf "failed")])))]))))
+	      [(_ _) (fail! s t) #;(printf "failed")])))]))))
 
   (define (type-compare? a b)
   (and (subtype a b) (subtype b a)))

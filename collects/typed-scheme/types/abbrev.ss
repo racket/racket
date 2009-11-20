@@ -67,9 +67,6 @@
 
 (define -Listof (-poly (list-elem) (make-Listof list-elem)))
 
-
-(define -Number (make-Base 'Number #'number?))
-(define -Integer (make-Base 'Integer #'exact-integer?))
 (define -Boolean (make-Base 'Boolean #'boolean?))
 (define -Symbol (make-Base 'Symbol #'symbol?))
 (define -Void (make-Base 'Void #'void?))
@@ -96,15 +93,11 @@
 (define Univ (make-Univ))
 (define Err (make-Error))
 
-(define -Nat -Integer)
-(define -Real -Number)
-
 (define -Port (*Un -Output-Port -Input-Port))
 
 (define -Pathlike (*Un -String -Path))
 (define -Pathlike* (*Un -String -Path (-val 'up) (-val 'same)))
 (define -Pattern (*Un -Bytes -Regexp -PRegexp -Byte-Regexp -Byte-PRegexp -String))
-(define -Byte -Number)
 
 (define -no-lfilter (make-LFilterSet null null))
 (define -no-filter (make-FilterSet null null))
@@ -113,6 +106,26 @@
 
 (define -car (make-CarPE))
 (define -cdr (make-CdrPE))
+
+;; Numeric hierarchy
+(define -Number (make-Base 'Number #'number?))
+
+(define -Flonum (make-Base 'Flonum #'inexact-real?))
+
+(define -ExactRational 
+  (make-Base 'Exact-Rational #'(and/c rational? exact?)))
+(define -Integer (make-Base 'Integer #'exact-integer?))
+(define -ExactPositiveInteger
+  (make-Base 'Exact-Positive-Integer #'exact-positive-integer?))
+
+(define -Zero (-val 0))
+(define -Real (*Un -Flonum -ExactRational))
+(define -ExactNonnegativeInteger (*Un -Zero -ExactPositiveInteger))
+(define -Nat -ExactNonnegativeInteger)
+
+(define -Byte -Number)
+
+
 
 ;; convenient syntax
 
