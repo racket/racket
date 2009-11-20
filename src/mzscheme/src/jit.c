@@ -2246,6 +2246,8 @@ static int generate_pause_for_gc_and_retry(mz_jit_state *jitter,
   GC_CAN_IGNORE jit_insn *refslow = 0, *refpause;
   int i;
 
+  mz_rs_sync();
+
   /* expose gc_reg to GC */
   mz_tl_sti_p(tl_jit_future_storage, gc_reg, JIT_R1);
 
@@ -2265,6 +2267,7 @@ static int generate_pause_for_gc_and_retry(mz_jit_state *jitter,
        register back. */
     if (i == 1) {
       mz_patch_branch(refpause);
+      JIT_UPDATE_THREAD_RSPTR_FOR_BRANCH_IF_NEEDED();
       jit_prepare(0);
       mz_finish(scheme_future_gc_pause);
     }
