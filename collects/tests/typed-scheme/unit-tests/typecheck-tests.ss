@@ -19,7 +19,7 @@
                      (typecheck typechecker)
 	             (env type-env)
 	             (private base-env))
-         (for-template (private base-env base-types base-types-extra)))
+         (for-template (private base-env base-types-new base-types-extra)))
 
 
 (require (for-syntax syntax/kerncase syntax/parse))
@@ -255,7 +255,7 @@
         [tc-err (5 4)]
         [tc-err (apply 5 '(2))]
         [tc-err (map (lambda: ([x : Any] [y : Any]) 1) '(1))]
-        [tc-e (map add1 '(1)) (-lst -Integer)]
+        [tc-e (map add1 '(1)) (-lst -Pos)]
         
         [tc-e/t (let ([x 5])
                 (if (eq? x 1)

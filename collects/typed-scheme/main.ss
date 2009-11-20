@@ -2,7 +2,7 @@
            
 
 
-(providing (libs (except scheme/base #%module-begin #%top-interaction with-handlers lambda #%app)
+(providing (libs (except scheme/base #%module-begin #%top-interaction with-handlers number? lambda #%app)
                  (except "private/prims.ss")
                  (except "private/base-types.ss")
                  (except "private/base-types-extra.ss"))
@@ -12,5 +12,5 @@
 		   #%app))
 (require "private/base-env.ss" "private/base-special-env.ss"
          (for-syntax "private/base-types-extra.ss"))
-(provide (rename-out [with-handlers: with-handlers])
+(provide (rename-out [with-handlers: with-handlers] [real? number?])
          (for-syntax (all-from-out "private/base-types-extra.ss")))

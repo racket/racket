@@ -11,7 +11,7 @@
  scheme/promise scheme/system
  (only-in string-constants/private/only-once maybe-print-message)
  (only-in scheme/match/runtime match:error matchable? match-equality-test)
- (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R])))
+ (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-ExactPositiveInteger -Pos])))
 
 ;; numeric operations
 [modulo (cl->* (-Integer -Integer . -> . -Integer))]
@@ -25,18 +25,26 @@
           (->* '() -Nat -Nat)
 	  (->* '() -Integer -Integer)
           (->* '() -ExactRational -ExactRational)
-          ;; Reals are just Rat + Int
-          (->* '() -Real -Flonum)
+          (->* '() -Flonum -Flonum)
+          (->* '() -Real -Real)
 	  (->* '() N N))]
-[/ (cl->* (->* (list N) N N))]
+[/ (cl->* (->* (list -Integer) -Integer -ExactRational)
+          (->* (list -ExactRational) -ExactRational -ExactRational)
+          (->* (list -Flonum) -Flonum -Flonum)
+          (->* (list -Real) -Real -Real)
+          (->* (list N) N N))]
 [+ (cl->* (->* '() -ExactPositiveInteger -ExactPositiveInteger)
           (->* '() -Nat -Nat)
 	  (->* '() -Integer -Integer)
           (->* '() -ExactRational -ExactRational)
-          ;; Reals are just Rat + Int
-          (->* '() -Real -Flonum)
+          (->* '() -Flonum -Flonum)
+          (->* '() -Real -Real)
 	  (->* '() N N))]
-[- (cl->* (->* (list -Integer) -Integer -Integer) (->* (list N) N N))]
+[- (cl->* (->* (list -Integer) -Integer -Integer)
+          (->* (list -ExactRational) -ExactRational -ExactRational)
+          (->* (list -Flonum) -Flonum -Flonum)
+          (->* (list -Real) -Real -Real)
+          (->* (list N) N N))]
 [max (cl->* (->* (list -Integer) -Integer -Integer)
             (->* (list N) N N))]
 [min (cl->* (->* (list -Integer) -Integer -Integer)
@@ -45,9 +53,18 @@
 [negative? (-> N B)]
 [odd? (-> -Integer B)]
 [even? (-> -Integer B)]
-[add1 (cl->* (-> -Integer -Integer)
+[add1 (cl->* (-> -Pos -Pos)
+             (-> -Nat -Nat)                          
+             (-> -Integer -Integer)
+             (-> -ExactRational -ExactRational)
+             (-> -Flonum -Flonum)
+             (-> -Real -Real)
              (-> N N))]
-[sub1 (cl->* (-> -Integer -Integer)
+[sub1 (cl->* (-> -Pos -Nat)
+             (-> -Integer -Integer)
+             (-> -ExactRational -ExactRational)
+             (-> -Flonum -Flonum)
+             (-> -Real -Real)
              (-> N N))]
 [quotient (-Integer -Integer . -> . -Integer)]
 [remainder (-Integer -Integer . -> . -Integer)]
@@ -56,16 +73,20 @@
 
 [exact? (N . -> . B)]
 [inexact? (N . -> . B)]
-[exact->inexact (N . -> . N)]
-[inexact->exact (N . -> . N)]
+[exact->inexact (cl->* 
+                 (-Real . -> . -Flonum)
+                 (N . -> . N))]
+[inexact->exact (cl->*
+                 (-Real . -> . -ExactRational)
+                 (N . -> . N))]
 
 [number? (make-pred-ty N)]
 [integer? (Univ . -> . B : (-LFS (list (-filter N)) (list (-not-filter -Integer))))]
 [exact-integer? (make-pred-ty -Integer)]
 
-[real? (Univ . -> . B : (-LFS (list (-filter N)) (list)))]
-[complex? (Univ . -> . B : (-LFS (list (-filter N)) (list)))]
-[rational? (Univ . -> . B : (-LFS (list (-filter N)) (list)))]
+[real? (make-pred-ty -Real)]
+[complex? (make-pred-ty N)]
+[rational? (make-pred-ty -Real)]
 [floor    (-> N N)]
 [ceiling  (-> N N)]
 [truncate (-> N N)]

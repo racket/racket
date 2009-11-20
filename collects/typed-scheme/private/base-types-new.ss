@@ -1,6 +1,6 @@
 #lang s-exp "type-env-lang.ss"
 
-[Number -Real]
+[Number -Number]
 [Complex -Number]
 [Integer -Integer]
 [Real -Real]
