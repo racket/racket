@@ -90,6 +90,10 @@ typedef struct future_t {
   Scheme_Object **multiple_array;
   int multiple_count;
 
+  Scheme_Object *tail_rator;
+  Scheme_Object **tail_rands;
+  int num_tail_rands;
+
   Scheme_Object *retval;
   struct future_t *prev;
   struct future_t *next;

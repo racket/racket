@@ -2,6 +2,7 @@
 static Scheme_Object* ts_ ## id(Scheme_Object* g7, int g8, Scheme_Object** g9) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
     return scheme_rtcall_siS_s(id, g7, g8, g9); \
   else \
@@ -12,6 +13,7 @@ static Scheme_Object* ts_ ## id(Scheme_Object* g7, int g8, Scheme_Object** g9) \
 static Scheme_Object* ts_ ## id(int g10, Scheme_Object** g11, Scheme_Object* g12) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
     return scheme_rtcall_iSs_s(id, g10, g11, g12); \
   else \
@@ -22,6 +24,7 @@ static Scheme_Object* ts_ ## id(int g10, Scheme_Object** g11, Scheme_Object* g12
 static Scheme_Object* ts_ ## id(Scheme_Object* g13) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
     return scheme_rtcall_s_s(id, g13); \
   else \
@@ -32,6 +35,7 @@ static Scheme_Object* ts_ ## id(Scheme_Object* g13) \
 static Scheme_Object* ts_ ## id(Scheme_Native_Closure_Data* g14) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
     return scheme_rtcall_n_s(id, g14); \
   else \
@@ -42,6 +46,7 @@ static Scheme_Object* ts_ ## id(Scheme_Native_Closure_Data* g14) \
 static Scheme_Object* ts_ ## id() \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
     return scheme_rtcall__s(id, ); \
   else \
@@ -52,6 +57,7 @@ static Scheme_Object* ts_ ## id() \
 static Scheme_Object* ts_ ## id(Scheme_Object* g15, Scheme_Object* g16) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
     return scheme_rtcall_ss_s(id, g15, g16); \
   else \
@@ -62,6 +68,7 @@ static Scheme_Object* ts_ ## id(Scheme_Object* g15, Scheme_Object* g16) \
 static MZ_MARK_STACK_TYPE ts_ ## id(Scheme_Object* g17, Scheme_Object* g18) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
     return scheme_rtcall_ss_m(id, g17, g18); \
   else \
@@ -72,6 +79,7 @@ static MZ_MARK_STACK_TYPE ts_ ## id(Scheme_Object* g17, Scheme_Object* g18) \
 static Scheme_Object* ts_ ## id(Scheme_Object** g19, long g20) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
     return scheme_rtcall_Sl_s(id, g19, g20); \
   else \
@@ -82,6 +90,7 @@ static Scheme_Object* ts_ ## id(Scheme_Object** g19, long g20) \
 static Scheme_Object* ts_ ## id(long g21) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
     return scheme_rtcall_l_s(id, g21); \
   else \
@@ -92,6 +101,7 @@ static Scheme_Object* ts_ ## id(long g21) \
 static void ts_ ## id(Scheme_Bucket* g22, Scheme_Object* g23, int g24) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
      scheme_rtcall_bsi_v(id, g22, g23, g24); \
   else \
@@ -102,6 +112,7 @@ static void ts_ ## id(Scheme_Bucket* g22, Scheme_Object* g23, int g24) \
 static void ts_ ## id(int g25, int g26, Scheme_Object** g27) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
      scheme_rtcall_iiS_v(id, g25, g26, g27); \
   else \
@@ -112,6 +123,7 @@ static void ts_ ## id(int g25, int g26, Scheme_Object** g27) \
 static void ts_ ## id(Scheme_Object* g28, Scheme_Object* g29) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
      scheme_rtcall_ss_v(id, g28, g29); \
   else \
@@ -122,6 +134,7 @@ static void ts_ ## id(Scheme_Object* g28, Scheme_Object* g29) \
 static void ts_ ## id(Scheme_Bucket* g30) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
      scheme_rtcall_b_v(id, g30); \
   else \
@@ -132,6 +145,7 @@ static void ts_ ## id(Scheme_Bucket* g30) \
 static Scheme_Object* ts_ ## id(Scheme_Object* g31, long g32) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
     return scheme_rtcall_sl_s(id, g31, g32); \
   else \
@@ -142,6 +156,7 @@ static Scheme_Object* ts_ ## id(Scheme_Object* g31, long g32) \
 static Scheme_Object* ts_ ## id(int g33, Scheme_Object** g34) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
     return scheme_rtcall_iS_s(id, g33, g34); \
   else \
@@ -152,6 +167,7 @@ static Scheme_Object* ts_ ## id(int g33, Scheme_Object** g34) \
 static Scheme_Object* ts_ ## id(Scheme_Object** g35) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
     return scheme_rtcall_S_s(id, g35); \
   else \
@@ -162,6 +178,7 @@ static Scheme_Object* ts_ ## id(Scheme_Object** g35) \
 static void ts_ ## id(Scheme_Object* g36) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
      scheme_rtcall_s_v(id, g36); \
   else \
@@ -172,6 +189,7 @@ static void ts_ ## id(Scheme_Object* g36) \
 static Scheme_Object* ts_ ## id(int g37, Scheme_Object** g38, int g39) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
     return scheme_rtcall_iSi_s(id, g37, g38, g39); \
   else \
@@ -182,6 +200,7 @@ static Scheme_Object* ts_ ## id(int g37, Scheme_Object** g38, int g39) \
 static void ts_ ## id(Scheme_Object* g40, int g41, Scheme_Object** g42) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
      scheme_rtcall_siS_v(id, g40, g41, g42); \
   else \
@@ -192,6 +211,7 @@ static void ts_ ## id(Scheme_Object* g40, int g41, Scheme_Object** g42) \
 static void* ts_ ## id(size_t g43) \
 { \
   START_XFORM_SKIP; \
+  LOG_PRIM_START(&id); \
   if (scheme_use_rtcall) \
     return scheme_rtcall_z_p(id, g43); \
   else \

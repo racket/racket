@@ -380,6 +380,12 @@ static void *decrement_cache_stack_pos(void *p)
 THREAD_LOCAL_DECL(static Scheme_Object **fixup_runstack_base);
 THREAD_LOCAL_DECL(static int fixup_already_in_place);
 
+/* FIXME?: If _scheme_tail_apply_from_native_fixup_args is called from
+   a future thread, then the wrong thread-local `fixup_runstack_base'
+   was set. But exercising this code seems to be impossible, maybe
+   because current bytecode optimizations never produce the case that
+   _scheme_tail_apply_from_native_fixup_args() was design to support. */
+
 static Scheme_Object *_scheme_tail_apply_from_native_fixup_args(Scheme_Object *rator,
                                                                 int argc,
                                                                 Scheme_Object **argv)
@@ -3274,7 +3280,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
           && !(SCHEME_LOCAL_FLAGS(v) & SCHEME_LOCAL_OTHER_CLEARS)) {
         int pos;
         pos = mz_remap(SCHEME_LOCAL_POS(v));
-        if (pos == (jitter->depth + args_already_in_place))
+        if (pos == (jitter->depth + jitter->extra_pushed + args_already_in_place))
           args_already_in_place++;
         else
           break;

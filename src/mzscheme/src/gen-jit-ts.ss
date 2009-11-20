@@ -43,6 +43,7 @@
      static @|result-type| ts_ ## id(@|args|) \
      { \
        START_XFORM_SKIP; \
+       LOG_PRIM_START(&id); \
        if (scheme_use_rtcall) \
          @|return| scheme_rtcall_@|t|(id, @(string-join arg-names ", ")); \
        else \

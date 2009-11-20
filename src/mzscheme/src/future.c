@@ -1003,6 +1003,12 @@ static void receive_special_result(future_t *f, Scheme_Object *retval)
     p->ku.multiple.array = f->multiple_array;
     p->ku.multiple.count = f->multiple_count;
     f->multiple_array = NULL;
+  } else if (SAME_OBJ(retval, SCHEME_TAIL_CALL_WAITING)) {
+    Scheme_Thread *p = scheme_current_thread;
+
+    p->ku.apply.tail_rator = f->tail_rator;
+    p->ku.apply.tail_rands = f->tail_rands;
+    p->ku.apply.tail_num_rands = f->num_tail_rands;
   }
 }
 
@@ -1017,6 +1023,14 @@ static void send_special_result(future_t *f, Scheme_Object *retval)
     f->multiple_count = p->ku.multiple.count;
     if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
       p->values_buffer = NULL;
+  } else if (SAME_OBJ(retval, SCHEME_TAIL_CALL_WAITING)) {
+    Scheme_Thread *p = scheme_current_thread;
+
+    f->tail_rator = p->ku.apply.tail_rator;
+    f->tail_rands = p->ku.apply.tail_rands;
+    f->num_tail_rands = p->ku.apply.tail_num_rands;
+    p->ku.apply.tail_rator = NULL;
+    p->ku.apply.tail_rands = NULL;
   }
 }
 

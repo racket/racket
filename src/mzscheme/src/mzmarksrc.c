@@ -2237,6 +2237,8 @@ future {
   gcMARK(f->retval_s);
   gcMARK(f->retval);
   gcMARK(f->multiple_array);
+  gcMARK(f->tail_rator);
+  gcMARK(f->tail_rands);
   gcMARK(f->prev);
   gcMARK(f->next);
   gcMARK(f->next_waiting_atomic);
