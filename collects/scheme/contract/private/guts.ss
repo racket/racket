@@ -361,10 +361,16 @@
 (define (flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
 (define (check-flat-named-contract predicate) (coerce-flat-contract 'flat-named-contract predicate))
 (define (flat-named-contract name predicate)
-  (unless (and (procedure? predicate)
-               (procedure-arity-includes? predicate 1))
-    (error 'flat-named-contract "expected a procedure of arity 1 as second argument, got ~e" predicate))
-  (make-predicate-contract name predicate))
+  (cond
+    [(and (procedure? predicate)
+          (procedure-arity-includes? predicate 1))
+     (make-predicate-contract name predicate)]
+    [(flat-contract? predicate)
+     (make-predicate-contract name (flat-contract-predicate predicate))]
+    [else
+     (error 'flat-named-contract 
+            "expected a flat contract or procedure of arity 1 as second argument, got ~e" 
+            predicate)]))
 
 ;; build-compound-type-name : (union contract symbol) ... -> (-> sexp)
 (define (build-compound-type-name . fs)
