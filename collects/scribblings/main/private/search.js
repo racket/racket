@@ -343,7 +343,7 @@ function UrlToManual(url) {
 //   "L:schem" (only module names that match `schem')
 
 function CompileTerm(term) {
-  var op = ((term.search(/^[LMT]:/) == 0) && term.substring(0,1));
+  var op = ((term.search(/^[NLMT]:/) == 0) && term.substring(0,1));
   if (op) term = term.substring(2);
   term = term.toLowerCase();
   switch(op) {
