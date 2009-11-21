@@ -1,5 +1,5 @@
 #;
-(exn-pred exn:fail:contract? #rx".*contract.*\\(-> Number Number\\).*")
+(exn-pred exn:fail:contract? #rx".*violator.*contract.*\\(-> Number Number\\).*")
 
 #lang scheme/load
 
@@ -8,11 +8,11 @@
   (define (f x) (add1 x))
   (provide f))
 
-(module n scheme
+(module violator scheme
   (require 'm)
   (f 'foo))
 
 (module o typed-scheme
-  (require 'n))
+  (require 'violator))
 
 (require 'o)
