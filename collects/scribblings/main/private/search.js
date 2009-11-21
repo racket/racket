@@ -342,11 +342,18 @@ function UrlToManual(url) {
 //   "L:scheme" (no exact matches except for the `scheme' module)
 //   "L:schem" (only module names that match `schem')
 
+// Additional "hidden" operators:
+//   "A:{ foo bar }" -- an `and' query
+//   "O:{ foo bar }" -- an `or' query
+//   "Q:foo" -- stands for just "foo", useful for quoting Q:} inside the above
+// Note: they're "hidden" because the syntax might change, and it's intended
+// mostly for context queries.
+
 function CompileTerm(term) {
-  var op = ((term.search(/^[NLMT]:/) == 0) && term.substring(0,1));
+  var op = ((term.search(/^[NLMTQ]:/) == 0) && term.substring(0,1));
   if (op) term = term.substring(2);
   term = term.toLowerCase();
-  switch(op) {
+  switch (op) {
   case "N":
     op = CompileTerm(term);
     // return C_exact if it's not found, so it doesn't disqualify exact matches
@@ -370,6 +377,7 @@ function CompileTerm(term) {
       else if (x[1].search(/\/index\.html$/) > 0) return C_rexact;
       else return C_exact;
     }
+  /* a case for "Q" is not needed -- same as the default case below */
   default:
     var words = term.split(/\b/);
     for (var i=0; i<words.length; i++)
@@ -385,6 +393,51 @@ function CompileTerm(term) {
       return r;
     }
   }
+}
+
+function CompileAndTerms(preds) {
+  return function(x) {
+    var r = C_max;
+    for (var i=0; i<preds.length; i++) {
+      r = Math.min(r, preds[i](x));
+      if (r <= C_min) return r;
+    }
+    return r;
+  };
+}
+
+function CompileOrTerms(preds) {
+  return function(x) {
+    var r = C_min;
+    for (var i=0; i<preds.length; i++) {
+      r = Math.max(r, preds[i](x));
+      if (r >= C_max) return r;
+    }
+    return r;
+  };
+}
+
+function CompileTermsR(terms, nested) {
+  var term, result = new Array();
+  while (terms.length > 0) {
+    term = terms.pop();
+    switch (term) {
+    case "A:{": result.push(CompileTermsR(terms, CompileAndTerms)); break;
+    case "O:{": result.push(CompileTermsR(terms, CompileOrTerms));  break;
+    default:
+      // "}" has terminates a compound, otherwise it's an ordinary search term
+      if (nested && (term == "}")) return nested(result);
+      else result.push(CompileTerm(term));
+    }
+  }
+  // all compound operators are implicitly terminated at the end
+  if (nested) return nested(result);
+  else return result;
+}
+
+function CompileTerms(terms, nested) {
+  terms.reverse();
+  return CompileTermsR(terms, nested)
 }
 
 function Id(x) {
@@ -421,8 +474,7 @@ function Search(data, term, is_pre, K) {
   var t = false;
   var killer = function() { if (t) clearTimeout(t); };
   // term comes with normalized spaces (trimmed, and no double spaces)
-  var preds = (term=="") ? [] : term.split(/ /);
-  for (var i=0; i<preds.length; i++) preds[i] = CompileTerm(preds[i]);
+  var preds = (term=="") ? [] : CompileTerms(term.split(/ /), false);
   if (preds.length == 0) {
     var ret = is_pre ? [0,data] : [0,[]];
     if (K) { K(ret); return killer; }
