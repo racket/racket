@@ -22,25 +22,27 @@
   (let ([len (vector-length v)])
     (cond
       [(= len 0)
-       (unless (and (= start 0)
-                    (= end 0))
-         (raise-mismatch-error
-          'vector-copy
-          (format "start index and end index must both be 0 for empty vectors, got ~e and ~e"
-                  start len)))
+       (unless (= start 0)
+         (raise-mismatch-error 'vector-copy
+                               "start index must be 0 for empty vector, got "
+                               start))
+       (unless (= end 0)
+         (raise-mismatch-error 'vector-copy
+                               "end index must be 0 for empty vector, got "
+                               end))
        (vector)]
       [else
        (unless (and (<= 0 start) (< start len))
          (raise-mismatch-error
           'vector-copy
-          (format "start index ~e out of range [~e, ~e] for vector ~e"
-                  start 0 len v)
+          (format "start index ~e out of range [~e, ~e] for vector: "
+                  start 0 len)
           v))
        (unless (and (<= start end) (<= end len))
          (raise-mismatch-error
           'vector-copy
-          (format "end index ~e out of range [~e, ~e] for vector ~e"
-                  end start len v)
+          (format "end index ~e out of range [~e, ~e] for vector: "
+                  end start len)
           v))
        (vector-copy* v start end)])))
 
@@ -143,7 +145,7 @@
     (unless (<= 0 n len)
       (raise-mismatch-error
        name
-       (format "index out of range [~e, ~e] for vector" 0 len)
+       (format "index out of range [~e, ~e] for vector " 0 len)
        v))
     len))
 
