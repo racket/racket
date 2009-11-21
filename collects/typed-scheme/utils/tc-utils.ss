@@ -58,9 +58,9 @@ don't depend on any other portion of the system
       stx))
 
 (define (raise-typecheck-error msg stxs)
-  (raise (make-exn:fail:syntax (string-append "typecheck: " msg)
-                               (current-continuation-marks)
-                               stxs)))
+  (if (null? (cdr stxs))
+      (raise-syntax-error 'typecheck msg (car stxs))
+      (raise-syntax-error 'typecheck msg #f #f stxs)))
 
 (define delayed-errors null)
 

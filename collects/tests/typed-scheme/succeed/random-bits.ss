@@ -351,7 +351,7 @@
     (define: w-sqr1 : Nb 209)   ; w^2 mod m1
     (define: w-sqr2 : Nb 22853) ; w^2 mod m2
 
-    (define: (lc [i0 : Nb] [i1 : Nb] [i2 : Nb] [j0 : Nb] [j1 : Nb] [j2 : Nb] [m : Nb ] [w-sqr : Nb ]): Nb ; linear combination
+    (define: (lc [i0 : Natural] [i1 : Natural] [i2 : Natural] [j0 : Natural] [j1 : Natural] [j2 : Natural] [m : Nb] [w-sqr : Nb ]): Nb ; linear combination
       (let ((a0h (quotient (vector-ref A i0) w))
             (a0l (modulo   (vector-ref A i0) w))
             (a1h (quotient (vector-ref A i1) w))

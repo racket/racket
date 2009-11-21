@@ -1,66 +1,89 @@
 #lang s-exp "env-lang.ss"
 
-(require
- scheme/tcp
- scheme
- scheme/unsafe/ops
- (only-in rnrs/lists-6 fold-left)
- '#%paramz
- "extra-procs.ss"
- (only-in '#%kernel [apply kernel:apply])
- scheme/promise scheme/system
- (only-in string-constants/private/only-once maybe-print-message)
- (only-in scheme/match/runtime match:error matchable? match-equality-test)
- (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-ExactPositiveInteger -Pos])))
+(begin
+  (require
+   scheme/tcp
+   scheme
+   scheme/unsafe/ops
+   (only-in rnrs/lists-6 fold-left)
+   '#%paramz
+   "extra-procs.ss"
+   (only-in '#%kernel [apply kernel:apply])
+   scheme/promise scheme/system
+   (only-in string-constants/private/only-once maybe-print-message)
+   (only-in scheme/match/runtime match:error matchable? match-equality-test)
+   (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym] [-Real R] [-ExactPositiveInteger -Pos])))
+  
+  (define-for-syntax all-num-types (list -Pos -Nat -Integer -ExactRational -Flonum -Real N))
 
-;; numeric operations
-[modulo (cl->* (-Integer -Integer . -> . -Integer))]
-[=  (->* (list N N) N B)]
-[>= (->* (list R R) R B)]
-[<  (->* (list R R) R B)]
-[<= (->* (list R R) R B)]
-[>  (->* (list R R) R B)]
+  (define-for-syntax fl-comp (-> -Flonum -Flonum B))
+  (define-for-syntax fl-op (-> -Flonum -Flonum -Flonum))
+  (define-for-syntax fl-unop (-> -Flonum -Flonum))
+
+  (define-for-syntax real-comp (->* (list R R) R B))
+  )
+
+;; numeric predicates
 [zero? (make-pred-ty (list N) B -Zero)]
-[* (apply cl->* 
-            (for/list ([t (list -Pos -Nat -Integer -ExactRational -Flonum -Real N)])
-              (->* (list) t t)))]
-[/ (apply cl->* 
-            (for/list ([t (list -Integer -ExactRational -Flonum -Real N)])
-              (->* (list t) t t)))]
-[+ (apply cl->* 
-            (for/list ([t (list -Pos -Nat -Integer -ExactRational -Flonum -Real N)])
-              (->* (list) t t)))]
+[number? (make-pred-ty N)]
+[integer? (Univ . -> . B : (-LFS (list (-filter -Real)) (list (-not-filter -Integer))))]
+[exact-integer? (make-pred-ty -Integer)]
+[real? (make-pred-ty -Real)]
+[complex? (make-pred-ty N)]
+[rational? (make-pred-ty -Real)]
+
+[positive? (-> -Real B)]
+[negative? (-> -Real B)]
+
+[odd? (-> -Integer B)]
+[even? (-> -Integer B)]
+
+[modulo (cl->* (-Integer -Integer . -> . -Integer))]
+
+[=  (->* (list N N) N B)]
+
+[>= real-comp]
+[<  real-comp]
+[<= real-comp]
+[>  real-comp]
+
+
+[* (apply cl->* (for/list ([t all-num-types]) (->* (list) t t)))]
+[+ (apply cl->* (for/list ([t all-num-types]) (->* (list) t t)))]
+
 [- (apply cl->* 
             (for/list ([t (list -Integer -ExactRational -Flonum -Real N)])
               (->* (list t) t t)))]
-[max (apply cl->* 
-            (for/list ([t (list -Pos -Nat -Integer -ExactRational -Flonum -Real N)])
-              (->* (list t) t t)))]
-[min (apply cl->* 
-            (for/list ([t (list -Pos -Nat -Integer -ExactRational -Flonum -Real N)])
-              (->* (list t) t t)))]
-[positive? (-> N B)]
-[negative? (-> N B)]
-[odd? (-> -Integer B)]
-[even? (-> -Integer B)]
+[/ (apply cl->* 
+	  (->* (list -Integer) -Integer -ExactRational)
+	  (for/list ([t (list -ExactRational -Flonum -Real N)])
+	    (->* (list t) t t)))]
+
+[max (apply cl->* (for/list ([t all-num-types]) (->* (list t) t t)))]
+[min (apply cl->* (for/list ([t all-num-types]) (->* (list t) t t)))]
+
+
 [add1 (cl->* (-> -Pos -Pos)
-             (-> -Nat -Nat)                          
+             (-> -Nat -Pos)
              (-> -Integer -Integer)
              (-> -ExactRational -ExactRational)
              (-> -Flonum -Flonum)
              (-> -Real -Real)
              (-> N N))]
+
 [sub1 (cl->* (-> -Pos -Nat)
              (-> -Integer -Integer)
              (-> -ExactRational -ExactRational)
              (-> -Flonum -Flonum)
              (-> -Real -Real)
              (-> N N))]
+
 [quotient (-Integer -Integer . -> . -Integer)]
 [remainder (-Integer -Integer . -> . -Integer)]
 [quotient/remainder 
  (make-Function (list (make-arr (list -Integer -Integer) (-values (list -Integer -Integer)))))]
 
+;; exactness
 [exact? (N . -> . B)]
 [inexact? (N . -> . B)]
 [exact->inexact (cl->* 
@@ -70,13 +93,6 @@
                  (-Real . -> . -ExactRational)
                  (N . -> . N))]
 
-[number? (make-pred-ty N)]
-[integer? (Univ . -> . B : (-LFS (list (-filter N)) (list (-not-filter -Integer))))]
-[exact-integer? (make-pred-ty -Integer)]
-
-[real? (make-pred-ty -Real)]
-[complex? (make-pred-ty N)]
-[rational? (make-pred-ty -Real)]
 [floor    (-> N N)]
 [ceiling  (-> N N)]
 [truncate (-> N N)]
@@ -124,4 +140,17 @@
 [sinh (N . -> . N)]
 [cosh (N . -> . N)]
 [tanh (N . -> . N)]
-;; end numeric ops
+;; unsafe numeric ops
+
+[unsafe-flabs fl-unop]
+
+[unsafe-fl+ fl-op]
+[unsafe-fl- fl-op]
+[unsafe-fl* fl-op]
+[unsafe-fl/ fl-op]
+
+[unsafe-fl= fl-comp]
+[unsafe-fl<= fl-comp]
+[unsafe-fl>= fl-comp]
+[unsafe-fl> fl-comp]
+[unsafe-fl< fl-comp]

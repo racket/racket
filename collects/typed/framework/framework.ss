@@ -19,8 +19,8 @@
                          [last-paragraph (-> Number)]
                          [delete (Number Number -> Void)]
                          [auto-wrap (Any -> Void)]
-                         [paragraph-end-position (Number -> Number)]
-                         [paragraph-start-position (Number -> Number)]
+                         [paragraph-end-position (Number -> Natural)]
+                         [paragraph-start-position (Number -> Natural)]
                          [get-start-position (-> Number)]
                          [get-end-position (-> Number)]
                          [insert (String Number Number -> Void)])))

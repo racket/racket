@@ -23,7 +23,7 @@
                              ()))
 (dt Choice% (Class ()
                    ([parent Any] [label String] [choices (Listof Any)] [callback Any])
-                   ([get-selection (-> (Option Integer))]
+                   ([get-selection (-> (Option Natural))]
                     [set-selection (Integer -> Any)]
                     [get-string-selection (-> (Option String))]
                     [set-string-selection (String -> Void)])))

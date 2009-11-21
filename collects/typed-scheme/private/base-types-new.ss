@@ -1,11 +1,11 @@
 #lang s-exp "type-env-lang.ss"
 
-[Number -Number]
 [Complex -Number]
+[Number -Number]
 [Integer -Integer]
 [Real -Real]
 [Exact-Rational -ExactRational]
-[Flonum -Flonum]
+[Float -Flonum]
 [Exact-Positive-Integer -ExactPositiveInteger]
 [Exact-Nonnegative-Integer -ExactNonnegativeInteger]
 [Natural -ExactNonnegativeInteger]
@@ -41,5 +41,6 @@
 [HashTable (-poly (a b) (-HT a b))]
 [Promise (-poly (a) (-Promise a))]
 [Pair (-poly (a b) (-pair a b))]
+[MPair (-poly (a b) (-mpair a b))]
 [Boxof (-poly (a) (make-Box a))]
 [Continuation-Mark-Set -Cont-Mark-Set]

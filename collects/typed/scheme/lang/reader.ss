@@ -1,6 +1,6 @@
 #lang s-exp syntax/module-reader
 
-typed-scheme
+typed/scheme
 
 #:read r:read
 #:read-syntax r:read-syntax

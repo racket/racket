@@ -20,6 +20,7 @@
 
 (define -App make-App)
 (define -pair make-Pair)
+(define -mpair make-MPair)
 (define -val make-Value)
 (define -Param make-Param)
 (define -box make-Box)

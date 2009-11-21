@@ -1,9 +1,9 @@
 #;
-(exn-pred exn:fail:contract? #rx".*contract.*\\(-> number\\? number\\?\\).*")
+(exn-pred exn:fail:contract? #rx".*contract.*\\(-> Number Number\\).*")
 
 #lang scheme/load
 
-(module m typed-scheme
+(module m typed/scheme
   (: f (Number -> Number))
   (define (f x) (add1 x))
   (provide f))
