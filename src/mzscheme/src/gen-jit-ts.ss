@@ -64,11 +64,12 @@
     @|result-type| scheme_rtcall_@|ts|(const char *who, int src_type, prim_@|ts| f@|(if (null? arg-types) "" ",")| @|args|) 
    {
      START_XFORM_SKIP;
+     Scheme_Future_Thread_State *fts = scheme_future_thread_state;
      future_t *future;
      double tm;
      @(if (string=? result-type "void") "" @string-append{@|result-type| retval;})
 
-     future = current_ft;
+     future = fts->current_ft;
      future->prim_protocol = SIG_@|ts|;
      future->prim_func = f;
      tm = scheme_get_inexact_milliseconds();
@@ -81,8 +82,8 @@
                   [i (in-naturals)])
          @string-append{    future->arg_@|(string t)|@|(number->string i)| = @|a|;})
        "\n")
-     future_do_runtimecall((void*)f, 0);
-     future = current_ft;
+     future_do_runtimecall(fts, (void*)f, 0);
+     future = fts->current_ft;
      @(if (string=? result-type "void") "" @string-append{retval = @|fretval|;})
      @(if (string=? result-type "void") "" @string-append{@|fretval| = 0;})
      @(if (string=? result-type "Scheme_Object*") @string-append{receive_special_result(future, retval);} "")

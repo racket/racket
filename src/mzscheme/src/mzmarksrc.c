@@ -2223,8 +2223,6 @@ START future;
 future {
  mark:
   future_t *f = (future_t *)p;
-  gcMARK(f->runstack);
-  gcMARK(f->runstack_start);
   gcMARK(f->orig_lambda);
   gcMARK(f->arg_s0);
   gcMARK(f->arg_S0);

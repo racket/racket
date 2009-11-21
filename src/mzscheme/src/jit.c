@@ -144,7 +144,7 @@ static void *vector_ref_code, *vector_ref_check_index_code, *vector_set_code, *v
 static void *string_ref_code, *string_ref_check_index_code, *string_set_code, *string_set_check_index_code;
 static void *bytes_ref_code, *bytes_ref_check_index_code, *bytes_set_code, *bytes_set_check_index_code;
 static void *syntax_e_code;
-void *on_demand_jit_code;
+void *scheme_on_demand_jit_code;
 static void *on_demand_jit_arity_code;
 static void *get_stack_pointer_code;
 static void *stack_cache_pop_code;
@@ -296,6 +296,7 @@ void scheme_jit_fill_threadlocal_table();
 # define tl_scheme_jit_stack_boundary      tl_delta(scheme_jit_stack_boundary)
 # define tl_jit_future_storage             tl_delta(jit_future_storage)
 # define tl_scheme_future_need_gc_pause    tl_delta(scheme_future_need_gc_pause)
+# define tl_scheme_use_rtcall              tl_delta(scheme_use_rtcall)
 
 #ifdef MZ_XFORM
 START_XFORM_SKIP;
@@ -2194,6 +2195,27 @@ extern int g_print_prims;
 # define mz_prepare_direct_prim(n) mz_prepare(n)
 # define mz_finishr_direct_prim(reg, proc) (jit_pusharg_p(reg), (void)mz_finish(proc))
 # define mz_direct_only(p) /* skip this arg, so that total count <= 3 args */
+/* Inlines check of scheme_use_rtcall: */
+# define mz_generate_direct_prim(direct_only, first_arg, reg, prim_indirect) \
+  { \
+     GC_CAN_IGNORE jit_insn *refdirect, *refcont; \
+     int argstate; \
+     jit_save_argstate(argstate); \
+     mz_tl_ldi_i(JIT_R0, tl_scheme_use_rtcall); \
+     __START_TINY_JUMPS__(1); \
+     refdirect = jit_beqi_i(jit_forward(), JIT_R0, 0); \
+     first_arg; \
+     mz_finishr_direct_prim(reg, prim_indirect); \
+     refcont = jit_jmpi(jit_forward()); \
+     CHECK_LIMIT(); \
+     mz_patch_branch(refdirect); \
+     jit_restore_argstate(argstate); \
+     direct_only; \
+     first_arg; \
+     mz_finishr(reg); \
+     mz_patch_ucbranch(refcont); \
+     __END_TINY_JUMPS__(1); \
+  }
 static Scheme_Object *noncm_prim_indirect(Scheme_Prim proc, int argc)
 {
   START_XFORM_SKIP;
@@ -2239,7 +2261,7 @@ static void ts_on_demand(void)
 static void *ts_prepare_retry_alloc(void *p, void *p2)
 {
   START_XFORM_SKIP;
-  void *ret;
+  unsigned long ret;
 
   if (scheme_use_rtcall) {
     jit_future_storage[0] = p;
@@ -2265,6 +2287,8 @@ static void *ts_prepare_retry_alloc(void *p, void *p2)
 # define mz_direct_only(p) p
 # define ts_on_demand on_demand
 # define ts_prepare_retry_alloc prepare_retry_alloc
+# define mz_generate_direct_prim(direct_only, first_arg, reg, prim_indirect) \
+  (mz_direct_only(direct_only), first_arg, mz_finishr_direct_prim(reg, prim_indirect))
 #endif
 
 static int generate_pause_for_gc_and_retry(mz_jit_state *jitter,
@@ -2339,9 +2363,12 @@ static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
   jit_movi_i(JIT_R1, num_rands);
   mz_prepare_direct_prim(2); /* a prim takes 3 args, but a NONCM prim ignores the 3rd */
   CHECK_LIMIT();
-  mz_direct_only(jit_pusharg_p(JIT_RUNSTACK));
-  jit_pusharg_i(JIT_R1);
-  mz_finishr_direct_prim(JIT_V1, noncm_prim_indirect);
+  {
+    /* May use JIT_R0 and create local branch: */
+    mz_generate_direct_prim(jit_pusharg_p(JIT_RUNSTACK),
+                            jit_pusharg_i(JIT_R1),
+                            JIT_V1, noncm_prim_indirect);
+  }
   CHECK_LIMIT();
   /*  Return: */
   mz_pop_threadlocal();
@@ -2544,9 +2571,12 @@ static int generate_direct_prim_non_tail_call(mz_jit_state *jitter, int num_rand
   jit_movi_i(JIT_R1, num_rands);
   mz_prepare_direct_prim(2); /* a prim takes 3 args, but a NONCM prim ignores the 3rd */
   CHECK_LIMIT();
-  mz_direct_only(jit_pusharg_p(JIT_RUNSTACK));
-  jit_pusharg_i(JIT_R1);
-  mz_finishr_direct_prim(JIT_V1, noncm_prim_indirect);
+  {
+    /* May use JIT_R0 and create local branch: */
+    mz_generate_direct_prim(jit_pusharg_p(JIT_RUNSTACK),
+                            jit_pusharg_i(JIT_R1),
+                            JIT_V1, noncm_prim_indirect);
+  }
   CHECK_LIMIT();
   jit_retval(JIT_R0);
   VALIDATE_RESULT(JIT_R0);
@@ -2839,9 +2869,14 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     mz_prepare_direct_prim(3);
     jit_pusharg_p(JIT_V1);
     if (num_rands < 0) { jit_movr_p(JIT_V1, JIT_R0); } /* save argc to manually pop runstack */
-    mz_direct_only(jit_pusharg_p(JIT_RUNSTACK));
-    jit_pusharg_i(JIT_R2);
-    mz_finishr_direct_prim(JIT_R1, prim_indirect);
+    {
+      __END_SHORT_JUMPS__(1);
+      /* May use JIT_R0 and create local branch: */
+      mz_generate_direct_prim(jit_pusharg_p(JIT_RUNSTACK),
+                              jit_pusharg_i(JIT_R2),
+                              JIT_R1, prim_indirect);
+      __START_SHORT_JUMPS__(1);
+    }
     CHECK_LIMIT();
     jit_retval(JIT_R0);
     VALIDATE_RESULT(JIT_R0);
@@ -8232,9 +8267,12 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       }
       JIT_UPDATE_THREAD_RSPTR();
       mz_prepare_direct_prim(2);
-      mz_direct_only(jit_pusharg_p(JIT_RUNSTACK));
-      jit_pusharg_p(JIT_R1);
-      mz_finishr_direct_prim(JIT_R2, noncm_prim_indirect);
+      {
+        /* May use JIT_R0 and create local branch: */
+        mz_generate_direct_prim(jit_pusharg_p(JIT_RUNSTACK),
+                                jit_pusharg_p(JIT_R1),
+                                JIT_R2, noncm_prim_indirect);
+      }
       CHECK_LIMIT();
       jit_retval(JIT_R0);
       VALIDATE_RESULT(JIT_R0);
@@ -8262,7 +8300,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* Used as the code stub for a closure whose
      code is not yet compiled. See generate_function_prolog
      for the state of registers on entry */
-  on_demand_jit_code = jit_get_ip().ptr;
+  scheme_on_demand_jit_code = jit_get_ip().ptr;
   jit_prolog(NATIVE_ARG_COUNT);
   in = jit_arg_p();
   jit_getarg_p(JIT_R0, in); /* closure */
@@ -8332,7 +8370,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   mz_pop_locals();
   jit_ret();
   CHECK_LIMIT();
-  register_helper_func(jitter, on_demand_jit_code);
+  register_helper_func(jitter, scheme_on_demand_jit_code);
 
   /* *** app_values_tail_slow_code *** */
   /* RELIES ON jit_prolog(NATIVE_ARG_COUNT) FROM ABOVE */
@@ -9556,7 +9594,7 @@ static void on_demand_with_args(Scheme_Object **in_argv)
   argc = in_argv[1];
   argv = (Scheme_Object **)in_argv[2];
 
-  if (((Scheme_Native_Closure *)c)->code->code == on_demand_jit_code)
+  if (((Scheme_Native_Closure *)c)->code->code == scheme_on_demand_jit_code)
     scheme_on_demand_generate_lambda((Scheme_Native_Closure *)c, SCHEME_INT_VAL(argc), argv);
 }
 
@@ -9591,7 +9629,7 @@ Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, in
     ndata->iso.so.type = scheme_rt_native_code_plus_case;
 #endif
   }
-  ndata->code = on_demand_jit_code;
+  ndata->code = scheme_on_demand_jit_code;
   ndata->u.tail_code = on_demand_jit_arity_code;
   ndata->arity_code = on_demand_jit_arity_code;
   ndata->u2.orig_code = data;
@@ -9861,7 +9899,7 @@ static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Da
 
 static int lambda_has_been_jitted(Scheme_Native_Closure_Data *ndata)
 {
-  return (ndata->code != on_demand_jit_code);
+  return (ndata->code != scheme_on_demand_jit_code);
 }
 
 int scheme_native_arity_check(Scheme_Object *closure, int argc)

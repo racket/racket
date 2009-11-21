@@ -23,16 +23,8 @@ int scheme_make_prim_w_arity(prim_t func, char *name, int arg1, int arg2);
 #include "pthread.h"
 #include <stdio.h>
 
-extern pthread_t g_rt_threadid;
-extern Scheme_Object *start_primitive_tracking(int argc, Scheme_Object *argv[]);
-extern Scheme_Object *end_primitive_tracking(int argc, Scheme_Object *argv[]);
-extern Scheme_Object *future(int argc, Scheme_Object *argv[]);
-extern Scheme_Object *touch(int argc, Scheme_Object *argv[]);
-extern Scheme_Object *processor_count(int argc, Scheme_Object *argv[]);
-extern void futures_init(void);
-
 typedef void (*prim_void_void_3args_t)(Scheme_Object **);
-typedef void *(*prim_alloc_void_pvoid_t)();
+typedef unsigned long (*prim_alloc_void_pvoid_t)();
 typedef Scheme_Object* (*prim_obj_int_pobj_obj_t)(Scheme_Object*, int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_t)(int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_obj_t)(int, Scheme_Object**, Scheme_Object*);
@@ -57,9 +49,6 @@ typedef struct future_t {
   int work_completed;
   pthread_cond_t *can_continue_cv;
 
-  long runstack_size;
-  Scheme_Object **runstack;
-  Scheme_Object **runstack_start;
   Scheme_Object *orig_lambda;
   void *code;
 
@@ -70,7 +59,7 @@ typedef struct future_t {
   const char *source_of_request;
   int source_type;
 
-  void *alloc_retval;
+  unsigned long alloc_retval;
   int alloc_retval_counter;
 
   void *prim_func;
@@ -110,24 +99,6 @@ typedef struct future_t {
   struct future_t *next_waiting_atomic;
 } future_t;
 
-#ifdef UNIT_TEST
-//If unit testing, expose internal functions and vars to
-//the test suite
-extern future_t *g_future_queue;
-extern int g_next_futureid;
-extern pthread_t g_rt_threadid;
-
-extern void *worker_thread_future_loop(void *arg);
-extern void *invoke_rtcall(future_t *future);
-extern future_t *enqueue_future(void);
-extern future_t *get_pending_future(void);
-extern future_t *get_my_future(void);
-extern future_t *get_future_by_threadid(pthread_t threadid);
-extern future_t *get_future(int futureid);
-extern future_t *get_last_future(void);
-extern void clear_futures(void);
-#endif
-
 //Primitive instrumentation stuff 
 
 //Signature flags for primitive invocations
@@ -147,8 +118,8 @@ extern void clear_futures(void);
 																/*GDB_BREAK;*/ \
 															}
 
-extern void scheme_rtcall_void_void_3args(const char *who, int src_type, void (*f)());
-extern void *scheme_rtcall_alloc_void_pvoid(const char *who, int src_type, void (*f)());
+extern void scheme_rtcall_void_void_3args(const char *who, int src_type, prim_void_void_3args_t f);
+extern unsigned long scheme_rtcall_alloc_void_pvoid(const char *who, int src_type, prim_alloc_void_pvoid_t f);
 
 #else 
 
@@ -204,6 +175,9 @@ extern void *scheme_rtcall_alloc_void_pvoid(const char *who, int src_type, void 
 #define LOG_RTCALL_INT_POBJ_OBJ_OBJ(a,b,c)
 #define LOG_RTCALL_ENV_ENV_VOID(a,b) 
 #endif
+
+extern void *scheme_on_demand_jit_code;
+extern void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv);
 
 void scheme_future_block_until_gc();
 void scheme_future_continue_after_gc();
