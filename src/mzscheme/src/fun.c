@@ -7971,10 +7971,12 @@ long scheme_get_milliseconds(void)
 #endif
 }
 
+#ifdef MZ_XFORM
+START_XFORM_SKIP;
+#endif
 double scheme_get_inexact_milliseconds(void)
 /* this function can be called from any OS thread */
 {
-  START_XFORM_SKIP;
 #ifdef USE_MACTIME
   {
     UnsignedWide time;
@@ -7999,8 +8001,11 @@ double scheme_get_inexact_milliseconds(void)
 #  endif
 # endif
 #endif
-  END_XFORM_SKIP;
 }
+#ifdef MZ_XFORM
+END_XFORM_SKIP;
+#endif
+
 
 long scheme_get_process_milliseconds(void)
 {
