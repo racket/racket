@@ -110,7 +110,6 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Overflow *offstack_overflow_;
   struct Scheme_Overflow_Jmp *scheme_overflow_jmp_;
   void *scheme_overflow_stack_start_;
-  struct future_t *current_ft_;
   void **codetab_tree_;
   int during_set_;
   Stack_Cache_Elem stack_cache_stack_[STACK_CACHE_SIZE];
@@ -181,7 +180,9 @@ typedef struct Thread_Local_Variables {
   int swap_no_setjmp_;
   int thread_swap_count_;
   int scheme_did_gc_count_;
-  int worker_gc_counter_;
+  struct Scheme_Future_State *scheme_future_state_;
+  struct Scheme_Future_Thread_State *scheme_future_thread_state_;
+  void *jit_future_storage_[2];
   struct Scheme_Object **scheme_current_runstack_start_;
   struct Scheme_Object **scheme_current_runstack_;
   MZ_MARK_STACK_TYPE scheme_current_cont_mark_stack_;
@@ -212,10 +213,6 @@ typedef struct Thread_Local_Variables {
   unsigned long current_total_allocation_;
   struct gmp_tmp_stack gmp_tmp_xxx_;
   struct gmp_tmp_stack *gmp_tmp_current_;
-#if FUTURES_ENABLED
-  pthread_cond_t worker_can_continue_cv_;
-  void *jit_future_storage_[2];
-#endif
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
@@ -274,7 +271,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define offstack_overflow XOA (scheme_get_thread_local_variables()->offstack_overflow_)
 #define scheme_overflow_jmp XOA (scheme_get_thread_local_variables()->scheme_overflow_jmp_)
 #define scheme_overflow_stack_start XOA (scheme_get_thread_local_variables()->scheme_overflow_stack_start_)
-#define current_ft XOA (scheme_get_thread_local_variables()->current_ft_)
 #define codetab_tree XOA (scheme_get_thread_local_variables()->codetab_tree_)
 #define during_set XOA (scheme_get_thread_local_variables()->during_set_)
 #define thread_local_pointers XOA (scheme_get_thread_local_variables()->thread_local_pointers_)
@@ -346,7 +342,9 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define swap_no_setjmp XOA (scheme_get_thread_local_variables()->swap_no_setjmp_)
 #define thread_swap_count XOA (scheme_get_thread_local_variables()->thread_swap_count_)
 #define scheme_did_gc_count XOA (scheme_get_thread_local_variables()->scheme_did_gc_count_)
-#define worker_gc_counter XOA (scheme_get_thread_local_variables()->worker_gc_counter_)
+#define scheme_future_state XOA (scheme_get_thread_local_variables()->scheme_future_state_)
+#define scheme_future_thread_state XOA (scheme_get_thread_local_variables()->scheme_future_thread_state_)
+#define jit_future_storage XOA (scheme_get_thread_local_variables()->jit_future_storage_)
 #define scheme_current_runstack_start XOA (scheme_get_thread_local_variables()->scheme_current_runstack_start_)
 #define scheme_current_runstack XOA (scheme_get_thread_local_variables()->scheme_current_runstack_)
 #define scheme_current_cont_mark_stack XOA (scheme_get_thread_local_variables()->scheme_current_cont_mark_stack_)
@@ -377,8 +375,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define current_total_allocation XOA (scheme_get_thread_local_variables()->current_total_allocation_)
 #define gmp_tmp_xxx XOA (scheme_get_thread_local_variables()->gmp_tmp_xxx_)
 #define gmp_tmp_current XOA (scheme_get_thread_local_variables()->gmp_tmp_current_)
-#define worker_can_continue_cv XOA (scheme_get_thread_local_variables()->worker_can_continue_cv_)
-#define jit_future_storage XOA (scheme_get_thread_local_variables()->jit_future_storage_)
 
 /* **************************************** */
 

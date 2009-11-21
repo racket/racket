@@ -417,7 +417,7 @@ int GC_is_allocated(void *p)
 /* struct objhead is defined in gc2_obj.h */
 /* Make sure alloction starts out double-word aligned. 
    The header on each allocated object is one word, so to make
-   the content double-word aligned, we deeper. */
+   the content double-word aligned, we may need a prefix. */
 #ifdef GC_ALIGN_SIXTEEN
 # ifdef SIXTY_FOUR_BIT_INTEGERS
 #  define PREFIX_WSIZE 1
@@ -722,7 +722,7 @@ inline static void gen0_free_nursery_mpage(NewGC *gc, mpage *page, size_t page_s
 /* Needs to be consistent with GC_alloc_alignment(): */
 #define THREAD_LOCAL_PAGE_SIZE APAGE_SIZE
 
-void *GC_make_jit_nursery_page() {
+unsigned long GC_make_jit_nursery_page() {
   NewGC *gc = GC_get_GC();
   mpage *new_mpage;
 
@@ -742,7 +742,19 @@ void *GC_make_jit_nursery_page() {
     gc->thread_local_pages = new_mpage;
   }
 
-  return (void *)(NUM(new_mpage->addr) + new_mpage->size);
+  if (!new_mpage->size) {
+    /* To avoid roundoff problems, the JIT needs the
+       result to be not a multiple of THREAD_LOCAL_PAGE_SIZE,
+       so add a prefix if alignment didn't force one. */
+#if defined(GC_ALIGN_SIXTEEN)
+    new_mpage->size = 16;
+#elif defined(GC_ALIGN_EIGHT)
+    new_mpage->size = 8;
+#else
+    new_mpage->size = WORD_SIZE;
+#endif
+  }
+  return (NUM(new_mpage->addr) + new_mpage->size);
 }
 
 inline static void gen0_free_jit_nursery_page(NewGC *gc, mpage *page) {

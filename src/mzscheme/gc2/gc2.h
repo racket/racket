@@ -2,10 +2,12 @@
 #ifndef __mzscheme_gc_2__
 #define __mzscheme_gc_2__
 
-#ifdef INCLUDE_WITHOUT_PATHS
-# include "schthread.h"
-#else
-# include "../include/schthread.h"
+#ifndef GC2_JUST_MACROS
+# ifdef INCLUDE_WITHOUT_PATHS
+#  include "schthread.h"
+# else
+#  include "../include/schthread.h"
+# endif
 #endif
 
 /***************************************************************************/
@@ -409,9 +411,12 @@ GC2_EXTERN void GC_switch_back_from_master(void *gc);
    Switches to back to gc from the master GC
 */
 
-GC2_EXTERN void *GC_make_jit_nursery_page();
+GC2_EXTERN unsigned long GC_make_jit_nursery_page();
 /*
-   obtains a nursery page from the GC for thread local allocation
+   Obtains a nursery page from the GC for thread local allocation.
+   The result is an unsigned long because it's not a valid
+   pointer to a GCable object. The result becomes invalid (i.e. it's collected)
+   with the next GC.
 */
 
 
