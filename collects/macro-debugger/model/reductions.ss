@@ -156,8 +156,8 @@
     [(Wrap p:lambda (e1 e2 rs ?1 renames body))
      (R [! ?1]
         [#:pattern (?lambda ?formals . ?body)]
-        [#:binders #'?formals]
         [#:rename (?formals . ?body) renames 'rename-lambda]
+        [#:binders #'?formals]
         [Block ?body body])]
     [(Wrap p:case-lambda (e1 e2 rs ?1 clauses))
      (R [! ?1]
