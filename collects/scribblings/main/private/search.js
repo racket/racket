@@ -439,20 +439,21 @@ function Search(data, term, is_pre, K) {
       var r, min = C_max, max = C_min;
       for (var j=0; j<preds.length; j++) {
         r = preds[j](data[i]); min = Math.min(r, min); max = Math.max(r, max);
+        if (min <= C_min) break; // get out if it's hopeless
       }
       if (max >= C_rexact && min >= C_exact) exacts.push(data[i]);
       else if (min > C_wordmatch) matches.push(data[i]);
       else if (min > C_fail)  wordmatches.push(data[i]);
       fuel--; i++;
     }
-    if (i<data.length) t = setTimeout(DoChunk,15);
+    if (i<data.length) t = setTimeout(DoChunk,5);
     else {
       r = [exacts.length, exacts.concat(matches).concat(wordmatches)];
       if (K) K(r); else return r;
     }
   };
   if (!K) return DoChunk();
-  else { progress(0); t = setTimeout(DoChunk,15); return killer; }
+  else { progress(0); t = setTimeout(DoChunk,5); return killer; }
 }
 
 function GetContextHTML() {
