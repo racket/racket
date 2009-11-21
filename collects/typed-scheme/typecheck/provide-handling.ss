@@ -8,6 +8,8 @@
          (private type-contract typed-renaming)
          (rep type-rep)
 	 (utils tc-utils)
+         scheme/contract/private/provide
+         unstable/syntax
          "def-binding.ss")
 
 (require (for-template scheme/base
@@ -56,8 +58,19 @@
              (cond [(type->contract (def-binding-ty b) (lambda () #f) #:out #t)
                     =>
                     (lambda (cnt)                                    
-                      (with-syntax ([(export-id cnt-id) (generate-temporaries #'(id id))])
+                      (with-syntax ([(export-id cnt-id) (generate-temporaries #'(id id))]
+                                    [module-source (generate-temporary 'module-source)]
+                                    ;; don't actually need to verify - this is generated
+                                    [the-contract (generate-temporary 'generated-contract)])
                         #`(begin 
+                            (define module-source (#%variable-reference))
+                            (define the-contract #,cnt)
+                            (define-syntax cnt-id
+                              (make-provide/contract-transformer
+                               (quote-syntax the-contract)
+                               (quote-syntax id)
+                               (quote-syntax module-source)))
+                            #;
                             (define/contract cnt-id #,cnt id)
                             (define-syntax export-id
                               (if (unbox typed-context?)
