@@ -1,6 +1,6 @@
  Scheme_Object* scheme_rtcall_siS_s(const char *who, int src_type, prim_siS_s f, Scheme_Object* g44, int g45, Scheme_Object** g46)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -22,11 +22,10 @@
   future->retval_s = 0;
   receive_special_result(future, retval);
   return retval;
-  END_XFORM_SKIP;
 }
  Scheme_Object* scheme_rtcall_iSs_s(const char *who, int src_type, prim_iSs_s f, int g47, Scheme_Object** g48, Scheme_Object* g49)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -48,11 +47,10 @@
   future->retval_s = 0;
   receive_special_result(future, retval);
   return retval;
-  END_XFORM_SKIP;
 }
  Scheme_Object* scheme_rtcall_s_s(const char *who, int src_type, prim_s_s f, Scheme_Object* g50)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -72,11 +70,10 @@
   future->retval_s = 0;
   receive_special_result(future, retval);
   return retval;
-  END_XFORM_SKIP;
 }
  Scheme_Object* scheme_rtcall_n_s(const char *who, int src_type, prim_n_s f, Scheme_Native_Closure_Data* g51)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -96,11 +93,10 @@
   future->retval_s = 0;
   receive_special_result(future, retval);
   return retval;
-  END_XFORM_SKIP;
 }
  Scheme_Object* scheme_rtcall__s(const char *who, int src_type, prim__s f )
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -120,11 +116,10 @@
   future->retval_s = 0;
   receive_special_result(future, retval);
   return retval;
-  END_XFORM_SKIP;
 }
  Scheme_Object* scheme_rtcall_ss_s(const char *who, int src_type, prim_ss_s f, Scheme_Object* g52, Scheme_Object* g53)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -145,11 +140,10 @@
   future->retval_s = 0;
   receive_special_result(future, retval);
   return retval;
-  END_XFORM_SKIP;
 }
  MZ_MARK_STACK_TYPE scheme_rtcall_ss_m(const char *who, int src_type, prim_ss_m f, Scheme_Object* g54, Scheme_Object* g55)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -170,11 +164,10 @@
   future->retval_m = 0;
   
   return retval;
-  END_XFORM_SKIP;
 }
  Scheme_Object* scheme_rtcall_Sl_s(const char *who, int src_type, prim_Sl_s f, Scheme_Object** g56, long g57)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -195,11 +188,10 @@
   future->retval_s = 0;
   receive_special_result(future, retval);
   return retval;
-  END_XFORM_SKIP;
 }
  Scheme_Object* scheme_rtcall_l_s(const char *who, int src_type, prim_l_s f, long g58)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -219,11 +211,10 @@
   future->retval_s = 0;
   receive_special_result(future, retval);
   return retval;
-  END_XFORM_SKIP;
 }
  void scheme_rtcall_bsi_v(const char *who, int src_type, prim_bsi_v f, Scheme_Bucket* g59, Scheme_Object* g60, int g61)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -245,11 +236,10 @@
   
   
   
-  END_XFORM_SKIP;
 }
  void scheme_rtcall_iiS_v(const char *who, int src_type, prim_iiS_v f, int g62, int g63, Scheme_Object** g64)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -271,11 +261,10 @@
   
   
   
-  END_XFORM_SKIP;
 }
  void scheme_rtcall_ss_v(const char *who, int src_type, prim_ss_v f, Scheme_Object* g65, Scheme_Object* g66)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -296,11 +285,10 @@
   
   
   
-  END_XFORM_SKIP;
 }
  void scheme_rtcall_b_v(const char *who, int src_type, prim_b_v f, Scheme_Bucket* g67)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -320,11 +308,10 @@
   
   
   
-  END_XFORM_SKIP;
 }
  Scheme_Object* scheme_rtcall_sl_s(const char *who, int src_type, prim_sl_s f, Scheme_Object* g68, long g69)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -345,11 +332,10 @@
   future->retval_s = 0;
   receive_special_result(future, retval);
   return retval;
-  END_XFORM_SKIP;
 }
  Scheme_Object* scheme_rtcall_iS_s(const char *who, int src_type, prim_iS_s f, int g70, Scheme_Object** g71)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -370,11 +356,10 @@
   future->retval_s = 0;
   receive_special_result(future, retval);
   return retval;
-  END_XFORM_SKIP;
 }
  Scheme_Object* scheme_rtcall_S_s(const char *who, int src_type, prim_S_s f, Scheme_Object** g72)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -394,11 +379,10 @@
   future->retval_s = 0;
   receive_special_result(future, retval);
   return retval;
-  END_XFORM_SKIP;
 }
  void scheme_rtcall_s_v(const char *who, int src_type, prim_s_v f, Scheme_Object* g73)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -418,11 +402,10 @@
   
   
   
-  END_XFORM_SKIP;
 }
  Scheme_Object* scheme_rtcall_iSi_s(const char *who, int src_type, prim_iSi_s f, int g74, Scheme_Object** g75, int g76)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -444,11 +427,10 @@
   future->retval_s = 0;
   receive_special_result(future, retval);
   return retval;
-  END_XFORM_SKIP;
 }
  void scheme_rtcall_siS_v(const char *who, int src_type, prim_siS_v f, Scheme_Object* g77, int g78, Scheme_Object** g79)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -470,11 +452,10 @@
   
   
   
-  END_XFORM_SKIP;
 }
  void* scheme_rtcall_z_p(const char *who, int src_type, prim_z_p f, size_t g80)
+   XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future;
   double tm;
@@ -494,5 +475,4 @@
   future->retval_p = 0;
   
   return retval;
-  END_XFORM_SKIP;
 }

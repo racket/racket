@@ -298,13 +298,7 @@ void scheme_jit_fill_threadlocal_table();
 # define tl_scheme_future_need_gc_pause    tl_delta(scheme_future_need_gc_pause)
 # define tl_scheme_use_rtcall              tl_delta(scheme_use_rtcall)
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-static void *get_threadlocal_table() { return &BOTTOM_VARIABLE; }
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
+static void *get_threadlocal_table() XFORM_SKIP_PROC { return &BOTTOM_VARIABLE; }
 
 # ifdef JIT_X86_64
 #  define JIT_R10 JIT_R(10)
@@ -2216,10 +2210,9 @@ extern int g_print_prims;
      mz_patch_ucbranch(refcont); \
      __END_TINY_JUMPS__(1); \
   }
-static Scheme_Object *noncm_prim_indirect(Scheme_Prim proc, int argc)
+static Scheme_Object *noncm_prim_indirect(Scheme_Prim proc, int argc) 
+  XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
-
   if (scheme_use_rtcall)
     return scheme_rtcall_iS_s("[prim_indirect]",
                               FSRC_PRIM,
@@ -2228,39 +2221,31 @@ static Scheme_Object *noncm_prim_indirect(Scheme_Prim proc, int argc)
                               MZ_RUNSTACK);
   else 
     return proc(argc, MZ_RUNSTACK);
-
-  END_XFORM_SKIP;
 }
-static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc, Scheme_Object *self)
+static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc, Scheme_Object *self) 
+  XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
-
   if (scheme_use_rtcall)
     return scheme_rtcall_iSs_s("[prim_indirect]", FSRC_PRIM, proc, argc, MZ_RUNSTACK, self);
   else
     return proc(argc, MZ_RUNSTACK, self);
-
-  END_XFORM_SKIP;
 }
 
 /* Various specific 'futurized' versions of primitives that may 
    be invoked directly from JIT code and are not considered thread-safe 
    (are not invoked via apply_multi_from_native, etc.) */
 
-static void ts_on_demand(void)
+static void ts_on_demand(void) XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   if (scheme_use_rtcall) {
     scheme_rtcall_void_void_3args("[jit_on_demand]", FSRC_OTHER, on_demand_with_args);
   } else
     on_demand();
-  END_XFORM_SKIP;
 }
 
 #ifdef MZ_PRECISE_GC
-static void *ts_prepare_retry_alloc(void *p, void *p2)
+static void *ts_prepare_retry_alloc(void *p, void *p2) XFORM_SKIP_PROC
 {
-  START_XFORM_SKIP;
   unsigned long ret;
 
   if (scheme_use_rtcall) {
@@ -2277,7 +2262,6 @@ static void *ts_prepare_retry_alloc(void *p, void *p2)
 
   ret = prepare_retry_alloc(p, p2);
   return ret;
-  END_XFORM_SKIP;
 }
 #endif
 #else
@@ -10316,11 +10300,8 @@ void scheme_dump_stack_trace(void)
 }
 #endif
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 void scheme_flush_stack_cache()
+  XFORM_SKIP_PROC
 {
   void **p;
 
@@ -10332,6 +10313,7 @@ void scheme_flush_stack_cache()
 }
 
 void scheme_jit_longjmp(mz_jit_jmp_buf b, int v)
+  XFORM_SKIP_PROC
 {
   unsigned long limit;
   void **p;
@@ -10350,15 +10332,12 @@ void scheme_jit_longjmp(mz_jit_jmp_buf b, int v)
 }
 
 void scheme_jit_setjmp_prepare(mz_jit_jmp_buf b)
+  XFORM_SKIP_PROC
 {
   void *p;
   p = &p;
   b->stack_frame = (unsigned long)p;
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 void scheme_clean_native_symtab(void)
 {

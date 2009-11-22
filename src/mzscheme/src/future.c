@@ -485,10 +485,9 @@ int future_ready(Scheme_Object *obj)
 }
 
 static void dequeue_future(Scheme_Future_State *fs, future_t *ft)
+  XFORM_SKIP_PROC
 /* called from both future and runtime threads */
 {
-  START_XFORM_SKIP;
-
   if (ft->prev == NULL)
     fs->future_queue = ft->next;
   else
@@ -503,8 +502,6 @@ static void dequeue_future(Scheme_Future_State *fs, future_t *ft)
   ft->prev = NULL;
 
   --fs->future_queue_count;
-
-  END_XFORM_SKIP;
 }
 
 Scheme_Object *touch(int argc, Scheme_Object *argv[])
@@ -619,10 +616,10 @@ Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
 //executing futures.  This function will never terminate
 //(until the process dies).
 void *worker_thread_future_loop(void *arg)
+  XFORM_SKIP_PROC
 /* Called in future thread; runtime thread is blocked until ready_sema
   is signaled. */
 {
-  START_XFORM_SKIP;
   /* valid only until signaling */
   future_thread_params_t *params = (future_thread_params_t *)arg;
   Scheme_Future_Thread_State *fts = params->fts;
@@ -742,7 +739,6 @@ void *worker_thread_future_loop(void *arg)
   goto wait_for_work;
 
   return NULL;
-  END_XFORM_SKIP;
 }
 
 void scheme_check_future_work()
@@ -783,9 +779,9 @@ void scheme_check_future_work()
 static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
                                   void *func,
                                   int is_atomic)
+  XFORM_SKIP_PROC
 /* Called in future thread */
 {
-  START_XFORM_SKIP;
   future_t *future;
   Scheme_Future_State *fs = scheme_future_state;
 
@@ -829,8 +825,6 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
     future->no_retval = 0;
     scheme_future_longjmp(*scheme_current_thread->error_buf, 1);
   }
-
-  END_XFORM_SKIP;
 }
 
 
@@ -838,9 +832,9 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
 /* Functions for primitive invocation                   			  */
 /**********************************************************************/
 void scheme_rtcall_void_void_3args(const char *who, int src_type, prim_void_void_3args_t f)
+  XFORM_SKIP_PROC
 /* Called in future thread */
 {
-  START_XFORM_SKIP;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   future_t *future = fts->current_ft;
 
@@ -855,14 +849,12 @@ void scheme_rtcall_void_void_3args(const char *who, int src_type, prim_void_void
   future_do_runtimecall(fts, (void*)f, 1);
 
   future->arg_S0 = NULL;
-
-  END_XFORM_SKIP;
 }
 
 unsigned long scheme_rtcall_alloc_void_pvoid(const char *who, int src_type, prim_alloc_void_pvoid_t f)
+  XFORM_SKIP_PROC
 /* Called in future thread */
 {
-  START_XFORM_SKIP;
   future_t *future;
   unsigned long retval;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
@@ -887,10 +879,10 @@ unsigned long scheme_rtcall_alloc_void_pvoid(const char *who, int src_type, prim
   }
 
   return retval;
-  END_XFORM_SKIP;
 }
 
 static void receive_special_result(future_t *f, Scheme_Object *retval)
+  XFORM_SKIP_PROC
 /* Called in future thread */
 {
   if (SAME_OBJ(retval, SCHEME_MULTIPLE_VALUES)) {
@@ -1041,9 +1033,9 @@ future_t *enqueue_future(Scheme_Future_State *fs, future_t *ft)
 }
 
 future_t *get_pending_future(Scheme_Future_State *fs)
+  XFORM_SKIP_PROC
 /* Called in future thread */
 {
-  START_XFORM_SKIP;
   future_t *f;
 
   for (f = fs->future_queue; f != NULL; f = f->next) {
@@ -1052,7 +1044,6 @@ future_t *get_pending_future(Scheme_Future_State *fs)
   }
 
   return NULL;
-  END_XFORM_SKIP;
 }
 
 /**********************************************************************/

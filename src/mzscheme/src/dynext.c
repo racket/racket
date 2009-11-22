@@ -463,18 +463,11 @@ static Scheme_Object *do_load_extension(const char *filename,
 #endif
 }
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 void scheme_register_extension_global(void *ptr, long size)
+  XFORM_SKIP_PROC
 {
   GC_add_roots((char *)ptr, (char *)(((char *)ptr) + size + 1));
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 static Scheme_Object *load_extension(int argc, Scheme_Object **argv)
 {

@@ -56,11 +56,8 @@ Scheme_Object *scheme_integer_to_rational(const Scheme_Object *n)
   return make_rational(n, one, 0);
 }
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 Scheme_Object *scheme_make_small_rational(long n, Small_Rational *s)
+ XFORM_SKIP_PROC
 {
   s->so.type = scheme_rational_type;
   s->num = scheme_make_integer(n);
@@ -70,6 +67,7 @@ Scheme_Object *scheme_make_small_rational(long n, Small_Rational *s)
 }
 
 Scheme_Object *scheme_make_small_bn_rational(Scheme_Object *n, Small_Rational *s)
+  XFORM_SKIP_PROC
 {
   s->so.type = scheme_rational_type;
   s->num = n;
@@ -77,10 +75,6 @@ Scheme_Object *scheme_make_small_bn_rational(Scheme_Object *n, Small_Rational *s
 
   return (Scheme_Object *)s;
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 int scheme_is_rational_positive(const Scheme_Object *o)
 {

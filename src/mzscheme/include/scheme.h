@@ -1658,6 +1658,7 @@ extern void *scheme_malloc_envunbox(size_t);
 # define XFORM_END_SKIP /**/
 # define XFORM_START_SUSPEND /**/
 # define XFORM_END_SUSPEND /**/
+# define XFORM_SKIP_PROC /**/
 # define XFORM_START_TRUST_ARITH /**/
 # define XFORM_END_TRUST_ARITH /**/
 # define XFORM_CAN_IGNORE /**/

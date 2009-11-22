@@ -730,6 +730,7 @@
           (printf "#define XFORM_END_SKIP /**/~n")
           (printf "#define XFORM_START_SUSPEND /**/~n")
           (printf "#define XFORM_END_SUSPEND /**/~n")
+          (printf "#define XFORM_SKIP_PROC /**/~n")
           ;; For avoiding warnings:
           (printf "#define XFORM_OK_PLUS +~n")
           (printf "#define XFORM_OK_MINUS -~n")
@@ -1522,43 +1523,45 @@
                          null
                          e))))]
             [(function? e)
-             (let ([name (register-proto-information e)])
-	       (when (eq? (tok-n (car e)) '__xform_nongcing__)
-		 (hash-table-put! non-gcing-functions name #t))
-               (when show-info? (printf "/* FUNCTION ~a */~n" name))
-               (if (or (positive? suspend-xform)
-                       (not pgc?)
-                       (and where 
-                            (regexp-match re:h where)
-                            (let loop ([e e][prev #f])
-                              (cond
-                                [(null? e) #t]
-                                [(and (eq? '|::| (tok-n (car e)))
-                                      prev
-                                      (eq? (tok-n prev) (tok-n (cadr e))))
-                                 ;; inline constructor: need to convert
-                                 #f]
-                                [else (loop (cdr e) (car e))]))))
-                   ;; Not pgc, xform suspended,
-                   ;; or still in headers and probably a simple inlined function
-                   (let ([palm-static? (and palm? (eq? 'static (tok-n (car e))))])
-                     (when palm?
-                       (fprintf map-port "(~aimpl ~s)~n" 
-                                (if palm-static? "s" "")
-                                name)
-                       (call-graph name e))
-                     (append
-                      (if palm-static?
-                          ;; Need to make sure prototype is there for section
-                          (add-segment-label
-                           name
-                           (let loop ([e e])
-                             (if (braces? (car e))
-                                 (list (make-tok semi #f #f))
-                                 (cons (car e) (loop (cdr e))))))
-                          null)
-                      e))
-                   (convert-function e name)))]
+             (if (skip-function? e)
+                 e
+                 (let ([name (register-proto-information e)])
+                   (when (eq? (tok-n (car e)) '__xform_nongcing__)
+                     (hash-table-put! non-gcing-functions name #t))
+                   (when show-info? (printf "/* FUNCTION ~a */~n" name))
+                   (if (or (positive? suspend-xform)
+                           (not pgc?)
+                           (and where 
+                                (regexp-match re:h where)
+                                (let loop ([e e][prev #f])
+                                  (cond
+                                   [(null? e) #t]
+                                   [(and (eq? '|::| (tok-n (car e)))
+                                         prev
+                                         (eq? (tok-n prev) (tok-n (cadr e))))
+                                    ;; inline constructor: need to convert
+                                    #f]
+                                   [else (loop (cdr e) (car e))]))))
+                       ;; Not pgc, xform suspended,
+                       ;; or still in headers and probably a simple inlined function
+                       (let ([palm-static? (and palm? (eq? 'static (tok-n (car e))))])
+                         (when palm?
+                           (fprintf map-port "(~aimpl ~s)~n" 
+                                    (if palm-static? "s" "")
+                                    name)
+                           (call-graph name e))
+                         (append
+                          (if palm-static?
+                              ;; Need to make sure prototype is there for section
+                              (add-segment-label
+                               name
+                               (let loop ([e e])
+                                 (if (braces? (car e))
+                                     (list (make-tok semi #f #f))
+                                     (cons (car e) (loop (cdr e))))))
+                              null)
+                          e))
+                       (convert-function e name))))]
             [(var-decl? e)
              (when show-info? (printf "/* VAR */~n"))
              (if (and can-drop-vars?
@@ -1709,12 +1712,16 @@
                      (and (braces? v)
                           (let ([v (list-ref e (sub1 ll))])
                             (or (parens? v)
+                                (eq? (tok-n v) 'XFORM_SKIP_PROC)
                                 ;; `const' can appear between the arg parens
                                 ;;  and the function body; this happens in the
                                 ;;  OS X headers
                                 (and (eq? 'const (tok-n v))
                                      (positive? (sub1 ll))
                                      (parens? (list-ref e (- ll 2))))))))))))
+
+        (define (skip-function? e)
+          (ormap (lambda (v) (eq? (tok-n v) 'XFORM_SKIP_PROC)) e))
         
         ;; Recognize a top-level variable declaration:
         (define (var-decl? e)

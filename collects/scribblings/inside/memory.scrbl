@@ -550,6 +550,17 @@ The following macros can be used (with care!) to navigate
    MZ_PRECISE_GC} and @cpp{#endif}; a semi-colon by itself at the
  top level is not legal in C.}
 
+@item{@cppdef{XFORM_SKIP_PROC}: annotate a function so that its body
+      is skipped in the same way as bracketing it with
+      @cpp{XFORM_START_SKIP} and @cpp{XFORM_END_SKIP}.
+
+    Example:
+
+  @verbatim[#:indent 2]{
+    int foo(int c, ...) XFORM_END_SKIP {
+    }
+  }}
+
 @item{@cppdef{XFORM_HIDE_EXPR}: a macro that takes wraps an expression to
   disable processing of the expression.
 

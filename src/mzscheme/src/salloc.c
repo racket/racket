@@ -178,11 +178,7 @@ static int do_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, vo
   return return_code;
 }
 
-#ifdef MZ_PRECISE_GC
-START_XFORM_SKIP;
-#endif
-
-int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void *data)
+int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void *data) XFORM_SKIP_PROC
 {
 #ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
 # ifdef INLINE_GETSPECIFIC_ASSEMBLY_CODE
@@ -233,10 +229,6 @@ int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void 
   return do_main_stack_setup(no_auto_statics, _main, data);
 }
 
-#ifdef MZ_PRECISE_GC
-END_XFORM_SKIP;
-#endif
-
 void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics)
 {
   scheme_set_stack_base(base, no_auto_statics);
@@ -283,10 +275,7 @@ extern void GC_attach_current_thread_exceptions_to_handler();
 # endif
 #endif
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-void scheme_init_os_thread()
+void scheme_init_os_thread() XFORM_SKIP_PROC
 {
 #ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
   Thread_Local_Variables *vars;
@@ -300,9 +289,6 @@ void scheme_init_os_thread()
 # endif
 #endif
 }
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 /************************************************************************/
 /*                           memory utils                               */
@@ -577,11 +563,7 @@ void *scheme_malloc_uncollectable(size_t size_in_bytes)
 }
 #endif
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
-void scheme_register_static(void *ptr, long size)
+void scheme_register_static(void *ptr, long size) XFORM_SKIP_PROC
 {
 #if defined(MZ_PRECISE_GC) || defined(USE_SENORA_GC)
   /* Always register for precise and Senora GC: */
@@ -594,10 +576,6 @@ void scheme_register_static(void *ptr, long size)
 # endif
 #endif
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 #ifdef USE_TAGGED_ALLOCATION
 

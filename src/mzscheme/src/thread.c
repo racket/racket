@@ -1550,14 +1550,11 @@ Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_F
   return kill_self;
 }
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 typedef void (*Scheme_For_Each_Func)(Scheme_Object *);
 
 static void for_each_managed(Scheme_Type type, Scheme_For_Each_Func cf)
-     /* This function must not allocate. */
+  XFORM_SKIP_PROC
+/* This function must not allocate. */
 {
   Scheme_Custodian *m;
   int i;
@@ -1599,10 +1596,6 @@ static void for_each_managed(Scheme_Type type, Scheme_For_Each_Func cf)
     m = CUSTODIAN_FAM(m->global_prev);
   }
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 void scheme_close_managed(Scheme_Custodian *m)
 /* The trick is that we may need to kill the thread
@@ -2436,11 +2429,8 @@ void *scheme_tls_get(int pos)
     return p->user_tls[pos];
 }
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 Scheme_Object **scheme_alloc_runstack(long len)
+  XFORM_SKIP_PROC
 {
 #ifdef MZ_PRECISE_GC
   long sz;
@@ -2458,6 +2448,7 @@ Scheme_Object **scheme_alloc_runstack(long len)
 }
 
 void scheme_set_runstack_limits(Scheme_Object **rs, long len, long start, long end)
+  XFORM_SKIP_PROC
 /* With 3m, we can tell the GC not to scan the unused parts, and we
    can have the fixup function zero out the unused parts; that avoids
    writing and scanning pages that could be skipped for a minor
@@ -2473,10 +2464,6 @@ void scheme_set_runstack_limits(Scheme_Object **rs, long len, long start, long e
   memset(rs + end, 0, (len - end) * sizeof(Scheme_Object *));
 #endif
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 /*========================================================================*/
 /*                     thread creation and swapping                       */
@@ -6842,11 +6829,8 @@ static Scheme_Object *current_thread_initial_stack_size(int argc, Scheme_Object 
 /*                              namespaces                                */
 /*========================================================================*/
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 Scheme_Env *scheme_get_env(Scheme_Config *c)
+  XFORM_SKIP_PROC
 {
   Scheme_Object *o;
 
@@ -6856,10 +6840,6 @@ Scheme_Env *scheme_get_env(Scheme_Config *c)
   o = scheme_get_param(c, MZCONFIG_ENV);
   return (Scheme_Env *)o;
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 void scheme_add_namespace_option(Scheme_Object *key, void (*f)(Scheme_Env *))
 {

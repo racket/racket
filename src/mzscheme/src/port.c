@@ -206,11 +206,8 @@ static int *malloc_refcount()
   return (int *)malloc(sizeof(int));
 }
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 static int dec_refcount(int *refcount)
+  XFORM_SKIP_PROC
 {
   int rc;
 
@@ -226,10 +223,6 @@ static int dec_refcount(int *refcount)
 
   return rc;
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 #else
 
@@ -693,11 +686,8 @@ static int dynamic_fd_size;
 # define STORED_ACTUAL_FDSET_LIMIT
 # define FDSET_LIMIT(fd) (*(int *)((char *)fd XFORM_OK_PLUS dynamic_fd_size))
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 void *scheme_alloc_fdset_array(int count, int permanent)
+  XFORM_SKIP_PROC
 {
   /* Note: alloc only at the end, because this function
      isn't annotated. We skip annotation so that it's
@@ -721,10 +711,6 @@ void *scheme_alloc_fdset_array(int count, int permanent)
   else
     return scheme_malloc_atomic(count * (dynamic_fd_size + sizeof(long)));
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 void *scheme_init_fdset_array(void *fdarray, int count)
 {
@@ -1184,11 +1170,8 @@ void scheme_remember_subthread(struct Scheme_Thread_Memory *tm, void *t)
   tm->subhandle = t;
 }
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 void scheme_forget_thread(struct Scheme_Thread_Memory *tm)
+  XFORM_SKIP_PROC
 {
   if (tm->prev)
     tm->prev->next = tm->next;
@@ -1207,11 +1190,13 @@ void scheme_forget_thread(struct Scheme_Thread_Memory *tm)
 }
 
 void scheme_forget_subthread(struct Scheme_Thread_Memory *tm)
+  XFORM_SKIP_PROC
 {
   tm->subhandle = NULL;
 }
 
 void scheme_suspend_remembered_threads(void)
+  XFORM_SKIP_PROC
 {
   Scheme_Thread_Memory *tm, *next, *prev = NULL;
   int keep;
@@ -1249,6 +1234,7 @@ void scheme_suspend_remembered_threads(void)
 }
 
 void scheme_resume_remembered_threads(void)
+  XFORM_SKIP_PROC
 {
   Scheme_Thread_Memory *tm;
 
@@ -1258,10 +1244,6 @@ void scheme_resume_remembered_threads(void)
     ResumeThread((HANDLE)tm->handle);
   }
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 #endif
 
@@ -5442,11 +5424,8 @@ make_fd_input_port(int fd, Scheme_Object *name, int regfile, int win_textmode, i
 
 # ifdef WINDOWS_FILE_HANDLES
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 static long WindowsFDReader(Win_FD_Input_Thread *th)
+  XFORM_SKIP_PROC
 {
   DWORD toget, got;
   int perma_eof = 0;
@@ -5502,6 +5481,7 @@ static long WindowsFDReader(Win_FD_Input_Thread *th)
 }
 
 static void WindowsFDICleanup(Win_FD_Input_Thread *th)
+  XFORM_SKIP_PROC
 {
   int rc;
 
@@ -5515,10 +5495,6 @@ static void WindowsFDICleanup(Win_FD_Input_Thread *th)
   free(th->buffer);
   free(th);
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 # endif
 
@@ -6649,11 +6625,8 @@ static void flush_if_output_fds(Scheme_Object *o, Scheme_Close_Custodian_Client 
 
 #ifdef WINDOWS_FILE_HANDLES
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 static long WindowsFDWriter(Win_FD_Output_Thread *oth)
+  XFORM_SKIP_PROC
 {
   DWORD towrite, wrote, start;
   int ok, more_work = 0, err_no;
@@ -6717,6 +6690,7 @@ static long WindowsFDWriter(Win_FD_Output_Thread *oth)
 }
 
 static void WindowsFDOCleanup(Win_FD_Output_Thread *oth)
+  XFORM_SKIP_PROC
 {
   int rc;
 
@@ -6731,10 +6705,6 @@ static void WindowsFDOCleanup(Win_FD_Output_Thread *oth)
     free(oth->buffer);
   free(oth);
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 #endif
 
@@ -6827,11 +6797,8 @@ static int MyPipe(int *ph, int near_index) {
 
 static int need_to_check_children;
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 void scheme_block_child_signals(int block)
+  XFORM_SKIP_PROC
 {
   sigset_t sigs;
 
@@ -6844,6 +6811,7 @@ void scheme_block_child_signals(int block)
 }
 
 static void child_done(int ingored)
+  XFORM_SKIP_PROC
 {
   need_to_check_children = 1;
   scheme_signal_received();
@@ -6852,10 +6820,6 @@ static void child_done(int ingored)
   MZ_SIGSET(SIGCHLD, child_done);
 # endif
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 static int sigchld_installed = 0;
 
@@ -8115,16 +8079,12 @@ void scheme_notify_sleep_progress()
 /******************** Main sleep function  *****************/
 /* The simple select() stuff is buried in Windows complexity. */
 
+static void default_sleep(float v, void *fds)
+#ifdef OS_X
+  XFORM_SKIP_PROC
+#endif
 /* This sleep function is not allowed to allocate in OS X, because it
    is called in a non-main thread. */
-
-#ifdef OS_X
-# ifdef MZ_XFORM
-START_XFORM_SKIP;
-# endif
-#endif
-
-static void default_sleep(float v, void *fds)
 {
   /* REMEMBER: don't allocate in this function (at least not GCable
      memory) for OS X. Not that FD setups are ok, because they use
@@ -8359,17 +8319,8 @@ static void default_sleep(float v, void *fds)
 #endif
 }
 
-#ifdef OS_X
-# ifdef MZ_XFORM
-END_XFORM_SKIP;
-# endif
-#endif
-
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 void scheme_signal_received_at(void *h)
+  XFORM_SKIP_PROC
 /* Ensure that MzScheme wakes up if asleep. */
 {
 #if defined(FILES_HAVE_FDS)
@@ -8387,6 +8338,7 @@ void scheme_signal_received_at(void *h)
 }
 
 void *scheme_get_signal_handle()
+  XFORM_SKIP_PROC
 {
 #if defined(FILES_HAVE_FDS)
   return &put_external_event_fd;
@@ -8400,13 +8352,10 @@ void *scheme_get_signal_handle()
 }
 
 void scheme_signal_received(void)
+  XFORM_SKIP_PROC
 {
   scheme_signal_received_at(scheme_get_signal_handle());
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 int scheme_get_external_event_fd(void)
 {
@@ -8423,11 +8372,8 @@ static HANDLE itimer;
 static OS_SEMAPHORE_TYPE itimer_semaphore;
 static long itimer_delay;
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 static long ITimer(void)
+  XFORM_SKIP_PROC
 {
   WaitForSingleObject(itimer_semaphore, INFINITE);
 
@@ -8439,10 +8385,6 @@ static long ITimer(void)
     }
   }
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 static void scheme_start_itimer_thread(long usec)
 {
@@ -8477,11 +8419,8 @@ typedef struct ITimer_Data {
 
 THREAD_LOCAL_DECL(static ITimer_Data *itimerdata);
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 static void *green_thread_timer(void *data)
+  XFORM_SKIP_PROC
 {
   ITimer_Data *itimer_data;
   itimer_data = (ITimer_Data *)data;
@@ -8509,10 +8448,6 @@ static void *green_thread_timer(void *data)
   }
   return NULL;
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 static void start_green_thread_timer(long usec) 
 {
@@ -8581,11 +8516,8 @@ static void scheme_start_itimer_thread(long usec)
 
 #ifdef USE_ITIMER
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 static void itimer_expired(int ignored)
+  XFORM_SKIP_PROC
 {
   scheme_fuel_counter = 0;
   scheme_jit_stack_boundary = (unsigned long)-1;
@@ -8594,7 +8526,9 @@ static void itimer_expired(int ignored)
 #  endif
 }
 
-static void kickoff_itimer(long usec) {
+static void kickoff_itimer(long usec) 
+  XFORM_SKIP_PROC
+{
   struct itimerval t;
   struct itimerval old;
   static int itimer_handler_installed = 0;
@@ -8611,10 +8545,6 @@ static void kickoff_itimer(long usec) {
 
   setitimer(ITIMER_PROF, &t, &old);
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 #endif
 

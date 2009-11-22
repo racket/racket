@@ -41,13 +41,12 @@
   (for-each display
    @list{#define define_ts_@|ts|(id, src_type) \
      static @|result-type| ts_ ## id(@|args|) \
+        XFORM_SKIP_PROC \
      { \
-       START_XFORM_SKIP; \
        if (scheme_use_rtcall) \
          @|return| scheme_rtcall_@|t|("[" #id "]", src_type, id, @(string-join arg-names ", ")); \
        else \
          @|return| id(@(string-join arg-names ", ")); \
-       END_XFORM_SKIP; \
      }})
    (newline))
 
@@ -62,8 +61,8 @@
    display
    @list{
     @|result-type| scheme_rtcall_@|ts|(const char *who, int src_type, prim_@|ts| f@|(if (null? arg-types) "" ",")| @|args|) 
+      XFORM_SKIP_PROC
    {
-     START_XFORM_SKIP;
      Scheme_Future_Thread_State *fts = scheme_future_thread_state;
      future_t *future;
      double tm;
@@ -88,7 +87,6 @@
      @(if (string=? result-type "void") "" @string-append{@|fretval| = 0;})
      @(if (string=? result-type "Scheme_Object*") @string-append{receive_special_result(future, retval);} "")
      @(if (string=? result-type "void") "" "return retval;")
-     END_XFORM_SKIP;
    }
    })
    (newline))
