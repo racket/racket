@@ -157,19 +157,10 @@ int scheme_main_setup(int no_auto_statics, Scheme_Env_Main _main, int argc, char
   return scheme_main_stack_setup(no_auto_statics, call_with_basic, &d);
 }
 
-int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void *data)
+static int do_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void *data)
 {
   void *stack_start;
   int volatile return_code;
-
-#ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
-  if (pthread_key_create(&scheme_thread_local_key, NULL)) {
-    fprintf(stderr, "pthread key create failed");
-    abort();
-  }
-#endif
-
-  scheme_init_os_thread();
 
 #ifdef USE_THREAD_LOCAL
   scheme_vars = scheme_get_thread_local_variables();
@@ -186,6 +177,65 @@ int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void 
 
   return return_code;
 }
+
+#ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+#endif
+
+int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void *data)
+{
+#ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
+# ifdef INLINE_GETSPECIFIC_ASSEMBLY_CODE
+  /* Our [highly questionable] strategy for inlining pthread_getspecific() is taken from 
+     the Go implementation (see "http://golang.org/src/libcgo/darwin_386.c").
+     In brief, we assume that thread-local variables are going to be
+     accessed via the gs segment register at offset 0x48 (i386) or 0x60 (x86_64),
+     and we also hardwire the therad-local key 0x108. Here we have to try to get
+     that particular key and double-check that it worked. */
+  pthread_key_t unwanted[16];
+  int num_unwanted = 0;
+# endif
+
+  while (1) {
+    if (pthread_key_create(&scheme_thread_local_key, NULL)) {
+      fprintf(stderr, "pthread key create failed\n");
+      abort();
+    }
+# ifdef INLINE_GETSPECIFIC_ASSEMBLY_CODE
+    if (scheme_thread_local_key == 0x108)
+      break;
+    else {
+      if (num_unwanted == 16) {
+        fprintf(stderr, "pthread key create never produced 0x108 for inline hack\n");
+        abort();
+      }
+      unwanted[num_unwanted++] = scheme_thread_local_key;
+    }
+# else
+    break;
+# endif
+  }
+
+# ifdef INLINE_GETSPECIFIC_ASSEMBLY_CODE
+  pthread_setspecific(scheme_thread_local_key, (void *)0xaced);
+  if (scheme_get_thread_local_variables() != (Thread_Local_Variables *)0xaced) {
+    fprintf(stderr, "pthread getspecific inline hack failed\n");
+    abort();
+  }
+  while (num_unwanted--) {
+    pthread_key_delete(unwanted[num_unwanted]);
+  }
+# endif  
+#endif
+
+  scheme_init_os_thread();
+
+  return do_main_stack_setup(no_auto_statics, _main, data);
+}
+
+#ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+#endif
 
 void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics)
 {
@@ -243,14 +293,6 @@ void scheme_init_os_thread()
   vars = (Thread_Local_Variables *)malloc(sizeof(Thread_Local_Variables));
   memset(vars, 0, sizeof(Thread_Local_Variables));
   pthread_setspecific(scheme_thread_local_key, vars);
-# ifdef OS_X
-  /* A hack that smehow avoids a problem with calling vm_allocate()
-     later. There must be some deeper bug that I have't found, yet. */
-  if (1) {
-    void *r;
-    vm_allocate(mach_task_self(), (vm_address_t*)&r, 4096, TRUE);
-  }
-# endif
 #endif
 #ifdef OS_X
 # ifdef MZ_PRECISE_GC

@@ -585,20 +585,22 @@
         ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
         (define per-block-push? #t)
-        (define gc-var-stack-through-table?
+        (define gc-var-stack-mode
           (ormap (lambda (e)
-                   (and (pragma? e)
-                        (regexp-match #rx"GC_VARIABLE_STACK_THOUGH_TABLE" (pragma-s e))))
-                 e-raw))
-        (define gc-var-stack-through-thread-local?
-          (ormap (lambda (e)
-                   (and (tok? e)
-                        (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL)))
-                 e-raw))
-        (define gc-var-stack-through-getspecific?
-          (ormap (lambda (e)
-                   (and (tok? e)
-                        (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_GETSPECIFIC)))
+                   (cond
+                    [(and (pragma? e)
+                          (regexp-match #rx"GC_VARIABLE_STACK_THOUGH_TABLE" (pragma-s e)))
+                     'table]
+                    [(and (tok? e)
+                          (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL))
+                     'thread-local]
+                    [(and (tok? e)
+                          (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_GETSPECIFIC))
+                     'getspecific]
+                    [(and (tok? e)
+                          (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION))
+                     'function]
+                    [else #f]))
                  e-raw))
         
         ;; The code produced by xform uses a number of macros. These macros
@@ -608,12 +610,14 @@
         
         (when (and pgc? (not precompiled-header))
           ;; Setup GC_variable_stack macro
-          (printf (cond
-                   [gc-var-stack-through-table?
+          (printf (case gc-var-stack-mode
+                   [(table)
                     "#define GC_VARIABLE_STACK (scheme_extension_table->GC_variable_stack)~n"]
-                   [gc-var-stack-through-getspecific?
+                   [(getspecific)
                     "#define GC_VARIABLE_STACK (((Thread_Local_Variables *)pthread_getspecific(scheme_thread_local_key))->GC_variable_stack_)~n"]
-                   [gc-var-stack-through-thread-local?
+                   [(function)
+                    "#define GC_VARIABLE_STACK ((scheme_get_thread_local_variables())->GC_variable_stack_)~n"]
+                   [(thread-local)
                     "#define GC_VARIABLE_STACK ((&scheme_thread_locals)->GC_variable_stack_)~n"]
                    [else "#define GC_VARIABLE_STACK GC_variable_stack~n"]))
 
@@ -1075,8 +1079,7 @@
                 
                 (set! non-gcing-functions (hash-table-copy (list-ref l 7)))
 
-                (set! gc-var-stack-through-thread-local? (list-ref l 8))
-                (set! gc-var-stack-through-getspecific? (list-ref l 9))))))
+                (set! gc-var-stack-mode (list-ref l 8))))))
         
         ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;; Pretty-printing output
@@ -1611,6 +1614,7 @@
         (define (threadlocal-decl? e)
           (and (pair? e)
                (or (eq? 'XFORM_GC_VARIABLE_STACK_THROUGH_GETSPECIFIC (tok-n (car e)))
+                   (eq? 'XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION (tok-n (car e)))
                    (eq? 'XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL (tok-n (car e))))))
         
         (define (access-modifier? e)
@@ -4003,8 +4007,7 @@
                     (marshall non-pointer-types)
                     (marshall struct-defs)
 		    non-gcing-functions
-                    gc-var-stack-through-thread-local?
-                    gc-var-stack-through-getspecific?)])
+                    (list 'quote gc-var-stack-mode))])
               (with-output-to-file (change-suffix file-out #".zo")
                 (lambda ()
                   (let ([orig (current-namespace)])
