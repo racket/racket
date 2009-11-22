@@ -770,7 +770,7 @@
              (snip-set-admin del-snip #f)
              (set-snip-flags! del-snip (remove-flag (snip->flags del-snip) CAN-DISOWN))
              (unless del
-               (when (send del-snip get-admin)
+               (unless (send del-snip get-admin)
                  (set-snip-flags! del-snip (remove-flag (snip->flags del-snip) OWNED))))
              
              (unless s-modified?
