@@ -265,7 +265,7 @@ void futures_init(void)
 static void init_future_thread(Scheme_Future_State *fs, int i)
 {
   Scheme_Future_Thread_State *fts;
-  future_thread_params_t params;
+  GC_CAN_IGNORE future_thread_params_t params;
   pthread_t threadid;
   GC_CAN_IGNORE pthread_attr_t attr;
 
