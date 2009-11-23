@@ -1865,7 +1865,6 @@ void GC_construct_child_gc() {
 }
 
 static inline void save_globals_to_gc(NewGC *gc) {
-  gc->saved_mark_stack              = mark_stack;
   gc->saved_GC_variable_stack       = GC_variable_stack;
   gc->saved_GC_gen0_alloc_page_ptr  = GC_gen0_alloc_page_ptr;
   gc->saved_GC_gen0_alloc_page_end  = GC_gen0_alloc_page_end;
@@ -1873,7 +1872,6 @@ static inline void save_globals_to_gc(NewGC *gc) {
 }
 
 static inline void restore_globals_from_gc(NewGC *gc) {
-  mark_stack              = gc->saved_mark_stack;
   GC_variable_stack       = gc->saved_GC_variable_stack;
   GC_gen0_alloc_page_ptr  = gc->saved_GC_gen0_alloc_page_ptr;
   GC_gen0_alloc_page_end  = gc->saved_GC_gen0_alloc_page_end;

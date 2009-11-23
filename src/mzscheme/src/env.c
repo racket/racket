@@ -144,7 +144,7 @@ int scheme_is_module_begin_env(Scheme_Comp_Env *env);
 Scheme_Env *scheme_engine_instance_init();
 Scheme_Env *scheme_place_instance_init();
 static void place_instance_init_pre_kernel();
-static Scheme_Env *place_instance_init_post_kernel();
+static Scheme_Env *place_instance_init_post_kernel(int initial_main_os_thread);
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -361,7 +361,7 @@ Scheme_Env *scheme_engine_instance_init() {
   place_instance_init_pre_kernel(stack_base);
   make_kernel_env();
   scheme_init_parameterization_readonly_globals();
-  env = place_instance_init_post_kernel();
+  env = place_instance_init_post_kernel(1);
 
   return env;
 }
@@ -428,7 +428,7 @@ Scheme_Env *scheme_get_unsafe_env() {
   return unsafe_env;
 }
 
-static Scheme_Env *place_instance_init_post_kernel() {
+static Scheme_Env *place_instance_init_post_kernel(int initial_main_os_thread) {
   Scheme_Env *env;
   /* error handling and buffers */
   /* this check prevents initializing orig ports twice for the first initial
@@ -442,7 +442,7 @@ static Scheme_Env *place_instance_init_post_kernel() {
   scheme_init_logger();
   scheme_init_eval_places();
   scheme_init_regexp_places();
-  scheme_init_stx_places();
+  scheme_init_stx_places(initial_main_os_thread);
   scheme_init_sema_places();
   scheme_init_gmp_places();
   scheme_alloc_global_fdset();
@@ -497,7 +497,7 @@ static Scheme_Env *place_instance_init_post_kernel() {
 
 Scheme_Env *scheme_place_instance_init(void *stack_base) {
   place_instance_init_pre_kernel(stack_base);
-  return place_instance_init_post_kernel();
+  return place_instance_init_post_kernel(0);
 }
 
 void scheme_place_instance_destroy() {

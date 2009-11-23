@@ -230,7 +230,7 @@ void scheme_init_print_buffers_places(void);
 void scheme_init_eval_places(void);
 void scheme_init_port_places(void);
 void scheme_init_regexp_places(void);
-void scheme_init_stx_places(void);
+void scheme_init_stx_places(int initial_main_os_thread);
 void scheme_init_fun_places(void);
 void scheme_init_sema_places(void);
 void scheme_init_gmp_places(void);

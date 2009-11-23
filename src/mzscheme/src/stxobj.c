@@ -631,7 +631,7 @@ void scheme_init_stx(Scheme_Env *env)
   scheme_install_type_reader2(scheme_free_id_info_type, read_free_id_info_prefix);
 }
 
-void scheme_init_stx_places() {
+void scheme_init_stx_places(int initial_main_os_thread) {
   REGISTER_SO(last_phase_shift);
   REGISTER_SO(nominal_ipair_cache);
   REGISTER_SO(quick_hash_table);
@@ -639,6 +639,14 @@ void scheme_init_stx_places() {
   REGISTER_SO(than_id_marks_ht);
   REGISTER_SO(interned_skip_ribs);
   REGISTER_SO(unsealed_dependencies);
+  
+  if (!initial_main_os_thread) {
+    REGISTER_SO(mark_id);
+    REGISTER_SO(current_rib_timestamp);
+    mark_id = scheme_make_integer(0);
+    current_rib_timestamp = scheme_make_integer(0);
+  }
+
   interned_skip_ribs = scheme_make_weak_equal_table();
 }
 
