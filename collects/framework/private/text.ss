@@ -475,7 +475,7 @@ WARNING: printf is rebound in the body of the unit to always
                            [top (rectangle-top rectangle)]
                            [right (if (number? (rectangle-right rectangle))
                                       (rectangle-right rectangle)
-                                      view-x)]
+                                      (+ view-x view-width))]
                            [bottom (rectangle-bottom rectangle)]
                            [width (max 0 (- right left))]
                            [height (max 0 (- bottom top))])
