@@ -33,13 +33,13 @@ doing these checks.
      (define-syntax foo (syntax-rules () [(_ . pattern) template]))]))
 
 (define-syntax-rule (sort-internal-body v *<? n has-getkey? getkey)
-  (let ([n/2 (ceiling (/ n 2))])
+  (let* ([n/2+ (ceiling (/ n 2))] [n/2- (- n n/2+)])
     (define-syntax-rule (<? x y)
       (if has-getkey? (*<? (getkey x) (getkey y)) (*<? x y)))
     (define-syntax-rule (ref n) (vector-ref v n))
     (define-syntax-rule (set! n x) (vector-set! v n x))
 
-    (define-syntax-rule (merge lo? A1 A2 B1 B2 C1 C2)
+    (define-syntax-rule (merge lo? A1 A2 B1 B2 C1)
       (let ([b2 B2])
         (let loop ([a1 A1] [b1 B1] [c1 C1])
           (let ([x (ref a1)] [y (ref b1)])
@@ -56,24 +56,21 @@ doing these checks.
                              (loop (add1 a1) (add1 c1))))
                          (loop a1 b1 c1)))))))))
 
-    (define (copying-mergesort Alo Ahi Blo Bhi)
-      (unless (= (- Ahi Alo) (- Bhi Blo)) (error "poof!!!"))
-      (cond [(< Alo (sub1 Ahi))
-             (let ([Amid1 (floor (/ (+ Alo Ahi) 2))]
-                   [Amid2 (ceiling (/ (+ Alo Ahi) 2))]
-                   [Bmid1 (floor (/ (+ Blo Bhi) 2))]
-                   [Bmid2 (ceiling (/ (+ Blo Bhi) 2))])
-               (copying-mergesort Amid1 Ahi Bmid1 Bhi)
-               (copying-mergesort Alo Amid1 Amid2 Ahi)
-               (merge #t Amid2 Ahi Bmid1 Bhi Blo Bhi))]
-            [(= Alo (sub1 Ahi))
-             (set! Blo (ref Alo))]))
+    (define (copying-mergesort Alo Blo n)
+      (cond [(n . > . 1)
+             (let* ([n/2+ (ceiling (/ n 2))] [n/2- (- n n/2+)])
+               (let ([Amid1 (+ Alo n/2-)]
+                     [Amid2 (+ Alo n/2+)]
+                     [Bmid1 (+ Blo n/2-)])
+                 (copying-mergesort Amid1 Bmid1 n/2+)
+                 (copying-mergesort Alo Amid2 n/2-)
+                 (merge #t Amid2 (+ Alo n) Bmid1 (+ Blo n) Blo)))]
+            [(= 1 n) (set! Blo (ref Alo))]))
 
-    (let ([Alo 0] [Amid1 (- n n/2)] [Amid2 n/2] [Ahi n]
-          [B1lo n] [B1hi (+ n n/2)])
-      (copying-mergesort Amid1 Ahi B1lo B1hi)
-      (copying-mergesort Alo Amid1 Amid2 Ahi)
-      (merge #f B1lo B1hi Amid2 Ahi Alo Ahi))))
+    (let ([Alo 0] [Amid1 n/2-] [Amid2 n/2+] [Ahi n] [B1lo n])
+      (copying-mergesort Amid1 B1lo n/2+)
+      (copying-mergesort Alo Amid2 n/2-)
+      (merge #f B1lo (+ B1lo n/2+) Amid2 Ahi Alo))))
 
 (define sort-internals (make-hasheq))
 (define _
