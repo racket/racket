@@ -865,6 +865,9 @@ source location information from compiled files.
 
 @section{Building New Contract Combinators}
 
+@emph{@bold{Note:}
+ The interface in this section is unstable and subject to change.}
+
 Contracts are represented internally as functions that
 accept information about the contract (who is to blame,
 source locations, etc) and produce projections (in the
@@ -1125,6 +1128,9 @@ to build an actual error message.}
 }
 
 @subsection{Contracts as structs}
+
+@emph{@bold{Note:}
+ The interface in this section is unstable and subject to change.}
 
 A contract is an arbitrary struct that has all of the 
 struct properties 
