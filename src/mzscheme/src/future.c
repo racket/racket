@@ -6,26 +6,94 @@
 //This will be TRUE if primitive tracking has been enabled 
 //by the program
 
+static Scheme_Object *future_p(int argc, Scheme_Object *argv[])
+{
+  if (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_future_type))
+    return scheme_true;
+  else
+    return scheme_false;
+}
+
+#ifdef MZ_PRECISE_GC
+static void register_traversers(void);
+#endif
+
 #ifndef FUTURES_ENABLED
 
-/* Futures not enabled, but make a stub module */
+/* Futures not enabled, but make a stub module and implementation */
+
+typedef struct future_t {
+  Scheme_Object so;
+  Scheme_Object *running_sema;
+  Scheme_Object *orig_lambda;
+  Scheme_Object *retval;
+  int no_retval;
+} future_t;
 
 static Scheme_Object *future(int argc, Scheme_Object *argv[])
 {
-  scheme_signal_error("future: not enabled");
-  return NULL;
+  future_t *ft;
+
+  scheme_check_proc_arity("future", 0, 0, argc, argv);
+
+  ft = MALLOC_ONE_TAGGED(future_t);
+  ft->so.type = scheme_future_type;
+
+  ft->orig_lambda = argv[0];
+
+  return (Scheme_Object *)ft;
 }
 
 static Scheme_Object *touch(int argc, Scheme_Object *argv[])
 {
-  scheme_signal_error("touch: not enabled");
+  future_t * volatile ft;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_future_type))
+    scheme_wrong_type("touch", "future", 0, argc, argv);
+
+  ft = (future_t *)argv[0];
+
+  while (1) {
+    if (ft->retval) return ft->retval;
+    if (ft->no_retval)
+      scheme_signal_error("touch: future previously aborted");
+    
+    if (ft->running_sema) {
+      scheme_wait_sema(ft->running_sema, 0);
+      scheme_post_sema(ft->running_sema);
+    } else {
+      Scheme_Object *sema;
+      mz_jmp_buf newbuf, * volatile savebuf;
+      Scheme_Thread *p = scheme_current_thread;
+      
+      /* In case another Scheme thread touchs the future. */
+      sema = scheme_make_sema(0);
+      ft->running_sema = sema;
+      
+      savebuf = p->error_buf;
+      p->error_buf = &newbuf;
+      if (scheme_setjmp(newbuf)) {
+        ft->no_retval = 1;
+        scheme_post_sema(ft->running_sema);
+        scheme_longjmp(*savebuf, 1);
+      } else {
+        GC_CAN_IGNORE Scheme_Object *retval, *proc;
+        proc = ft->orig_lambda;
+        ft->orig_lambda = NULL; /* don't hold on to proc */
+        retval = _scheme_apply(proc, 0, NULL);
+        ft->retval = retval;
+        scheme_post_sema(ft->running_sema);
+        p->error_buf = savebuf;
+      }
+    }
+  }
+
   return NULL;
 }
 
 static Scheme_Object *processor_count(int argc, Scheme_Object *argv[])
 {
-  scheme_signal_error("processor-count: not enabled");
-  return NULL;
+  return scheme_make_integer(1);
 }
 
 # define FUTURE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
@@ -37,12 +105,17 @@ void scheme_init_futures(Scheme_Env *env)
   newenv = scheme_primitive_module(scheme_intern_symbol("#%futures"), 
                                    env);
 
+  FUTURE_PRIM_W_ARITY("future?",          future_p,         1, 1, newenv);
   FUTURE_PRIM_W_ARITY("future",           future,           1, 1, newenv);
   FUTURE_PRIM_W_ARITY("touch",            touch,            1, 1, newenv);
   FUTURE_PRIM_W_ARITY("processor-count",  processor_count,  1, 1, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
+
+#ifdef MZ_PRECISE_GC
+  register_traversers();
+#endif
 }
 
 #else
@@ -104,10 +177,6 @@ THREAD_LOCAL_DECL(void *jit_future_storage[2]);
 
 #ifdef MZ_PRECISE_GC
 THREAD_LOCAL_DECL(extern unsigned long GC_gen0_alloc_page_ptr);
-#endif
-
-#ifdef MZ_PRECISE_GC
-static void register_traversers(void);
 #endif
 
 static void start_gc_not_ok(Scheme_Future_State *fs);
@@ -202,6 +271,16 @@ void scheme_init_futures(Scheme_Env *env)
 
   v = scheme_intern_symbol("#%futures");
   newenv = scheme_primitive_module(v, env);
+
+  scheme_add_global_constant(
+                             "future?", 
+                             scheme_make_folding_prim(
+                                                      future_p, 
+                                                      "future?", 
+                                                      1, 
+                                                      1,
+                                                      1), 
+                             newenv);
 
   scheme_add_global_constant(
                              "future", 
@@ -1000,6 +1079,7 @@ static void invoke_rtcall(Scheme_Future_State * volatile fs, future_t * volatile
   if (scheme_setjmp(newbuf)) {
     pthread_mutex_lock(&fs->future_mutex);
     future->no_retval = 1;
+    future->work_completed = 1;
     //Signal the waiting worker thread that it
     //can continue running machine code
     pthread_cond_signal(future->can_continue_cv);
@@ -1046,6 +1126,8 @@ future_t *get_pending_future(Scheme_Future_State *fs)
   return NULL;
 }
 
+#endif
+
 /**********************************************************************/
 /*                           Precise GC                               */
 /**********************************************************************/
@@ -1059,11 +1141,13 @@ START_XFORM_SKIP;
 
 static void register_traversers(void)
 {
+#ifdef FUTURES_ENABLED
   GC_REG_TRAV(scheme_future_type, future);
+#else
+  GC_REG_TRAV(scheme_future_type, sequential_future);
+#endif
 }
 
 END_XFORM_SKIP;
-
-#endif
 
 #endif

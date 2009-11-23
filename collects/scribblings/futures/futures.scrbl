@@ -9,16 +9,18 @@
           scribble/struct
           (for-label scheme/base
                      scheme/contract
-                     '#%futures))
+                     scheme/future))
 
 @; ----------------------------------------------------------------------
 
-PLT's future support is only enabled if you pass
-@DFlag{enable-futures} to @exec{configure} when you build PLT (and that
-build currently only works with @exec{mzscheme}, not with
-@exec{mred}).
+PLT's parallel-future support is only enabled if you pass
+@DFlag{enable-futures} to @exec{configure} when you build PLT (and
+that build currently only works with @exec{mzscheme}, not with
+@exec{mred}). When parallel-future support is not enabled,
+@scheme[future] just remembers the given thunk to call sequentially
+on a later @scheme[touch].
 
-@defmodule['#%futures]{}
+@defmodule[scheme/future]{}
 
 @defproc[(future [thunk (-> any)]) future?]{
   Starts running @scheme[thunk] in parallel.
@@ -31,5 +33,9 @@ build currently only works with @exec{mzscheme}, not with
 
 @defproc[(future? [x any/c]) boolean?]{
   Returns @scheme[#t] if @scheme[x] is a future.                               
+}
+
+@defproc[(processor-count) exact-positive-integer?]{
+  Returns the number of processors available on the current system.
 }
 

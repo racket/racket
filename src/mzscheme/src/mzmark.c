@@ -5413,6 +5413,8 @@ static int native_unclosed_proc_plus_case_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_FUTURE_C
 
+#ifdef FUTURES_ENABLED
+
 static int future_SIZE(void *p) {
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
@@ -5467,6 +5469,37 @@ static int future_FIXUP(void *p) {
 #define future_IS_ATOMIC 0
 #define future_IS_CONST_SIZE 1
 
+
+#else
+
+static int sequential_future_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(future_t));
+}
+
+static int sequential_future_MARK(void *p) {
+  future_t *f = (future_t *)p;
+  gcMARK(f->orig_lambda);
+  gcMARK(f->running_sema);
+  gcMARK(f->retval);
+  return
+  gcBYTES_TO_WORDS(sizeof(future_t));
+}
+
+static int sequential_future_FIXUP(void *p) {
+  future_t *f = (future_t *)p;
+  gcFIXUP(f->orig_lambda);
+  gcFIXUP(f->running_sema);
+  gcFIXUP(f->retval);
+  return
+  gcBYTES_TO_WORDS(sizeof(future_t));
+}
+
+#define sequential_future_IS_ATOMIC 0
+#define sequential_future_IS_CONST_SIZE 1
+
+
+#endif
 
 #endif  /* FUTURE */
 

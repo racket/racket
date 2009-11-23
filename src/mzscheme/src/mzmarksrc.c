@@ -2220,6 +2220,8 @@ END jit;
 
 START future;
 
+#ifdef FUTURES_ENABLED
+
 future {
  mark:
   future_t *f = (future_t *)p;
@@ -2243,6 +2245,20 @@ future {
  size:
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
+
+#else
+
+sequential_future {
+ mark:
+  future_t *f = (future_t *)p;
+  gcMARK(f->orig_lambda);
+  gcMARK(f->running_sema);
+  gcMARK(f->retval);
+ size:
+  gcBYTES_TO_WORDS(sizeof(future_t));
+}
+
+#endif
 
 END future;
 
