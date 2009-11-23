@@ -65,7 +65,13 @@
                (not (directory-exists? base)))
       (make-directory* base))
     (unless (directory-exists? dir)
-      (make-directory dir))))
+      (with-handlers ([exn:fail:filesystem?
+                       (lambda (x)
+                         (unless (and (regexp-match #rx"cannot make directory:.+File exists"
+                                                    (exn-message x))
+                                      (directory-exists? dir))
+                           (raise x)))])
+        (make-directory dir)))))
 
 (define (make-temporary-file [template "mztmp~a"] [copy-from #f] [base-dir #f])
   (with-handlers ([exn:fail:contract?
