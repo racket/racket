@@ -1431,7 +1431,12 @@
         (counter 0)
 		   
       )
-    
+
+      ;; This shouldnt do anything, but it fixes drawing in 
+      ;; Snow Leopard. Bug in the game or in Snow Leopard?
+      (glEnable GL_LIGHT2)
+      (glDisable GL_LIGHT2)
+              
       (glEnable  GL_BLEND)
       (do ((iy 0 (+ iy 1))) ((= iy ey))
         (set! x (* (- t) (- (/ ex 2.0) 0.5)))
@@ -1461,7 +1466,7 @@
           (set! xt nx)
           (set! yt ny)
           (set! zt nz)
-          
+
           (if (and (equal? gamestate 'PLAYING)
                    (= cposx ix) (= cposy iy))
             (begin

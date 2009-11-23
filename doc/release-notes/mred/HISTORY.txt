@@ -1,3 +1,9 @@
+Version 4.2.3, November 2009
+
+Minor bug fixes
+
+----------------------------------------------------------------------
+
 Version 4.2.2, September 2009
 
 Minor bug fixes

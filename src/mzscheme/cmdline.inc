@@ -5,7 +5,9 @@
 
 #define SDESC "Set! works on undefined identifiers"
 
-char *cmdline_exe_hack = "[Replace me for EXE hack                                       ]";
+char *cmdline_exe_hack = 
+  ("[Replace me for EXE hack                                       "
+   "                                                              ]");
 
 #ifdef MZ_PRECISE_GC
 # define GC_PRECISION_TYPE "3"

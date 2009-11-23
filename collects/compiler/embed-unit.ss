@@ -1008,10 +1008,12 @@
                                         mac-mred-collects-path-adjust
                                         values)
                                     collects-path)))
+      (define word-size (if (fixnum? (expt 2 32)) 8 4))
       (unless (or long-cmdline?
-                  ((apply + (length cmdline) (map (lambda (s)
-                                                    (bytes-length (string->bytes/utf-8 s)))
-                                                  cmdline)) . < . 50))
+                  ((apply +
+                          (map (lambda (s)
+                                 (+ word-size (bytes-length (string->bytes/utf-8 s))))
+                               cmdline)) . < . 60))
         (error 'create-embedding-executable "command line too long"))
       (check-collects-path 'create-embedding-executable collects-path collects-path-bytes)
       (let ([exe (find-exe mred? variant)])
