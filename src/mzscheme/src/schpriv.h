@@ -235,6 +235,9 @@ void scheme_init_fun_places(void);
 void scheme_init_sema_places(void);
 void scheme_init_gmp_places(void);
 void scheme_init_print_global_constants(void);
+void scheme_init_logger(void);
+Scheme_Logger *scheme_get_main_logger(void);
+void scheme_init_logger_config(void);
 
 void register_network_evts();
 
@@ -2943,8 +2946,6 @@ typedef struct Scheme_Log_Reader {
   Scheme_Object *sema;
   Scheme_Object *head, *tail;
 } Scheme_Log_Reader;
-
-extern Scheme_Logger *scheme_main_logger;
 
 char *scheme_optimize_context_to_string(Scheme_Object *context);
 

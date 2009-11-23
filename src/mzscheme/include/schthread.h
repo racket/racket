@@ -216,6 +216,7 @@ typedef struct Thread_Local_Variables {
   unsigned long current_total_allocation_;
   struct gmp_tmp_stack gmp_tmp_xxx_;
   struct gmp_tmp_stack *gmp_tmp_current_;
+  struct Scheme_Logger *scheme_main_logger_;
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
@@ -398,6 +399,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define current_total_allocation XOA (scheme_get_thread_local_variables()->current_total_allocation_)
 #define gmp_tmp_xxx XOA (scheme_get_thread_local_variables()->gmp_tmp_xxx_)
 #define gmp_tmp_current XOA (scheme_get_thread_local_variables()->gmp_tmp_current_)
+#define scheme_main_logger XOA (scheme_get_thread_local_variables()->scheme_main_logger_)
 
 /* **************************************** */
 
