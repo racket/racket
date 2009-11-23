@@ -63,7 +63,7 @@
        ((null? v) (make-:empty-list)) ; prevent silly printing of sharing
        ((pair? v)
 	(make-:list
-	 (let recur ((v v))
+	 (let list-recur ((v v))
 	   (cond
 	    ((null? v)
 	     v)
@@ -71,7 +71,7 @@
 	     (recur v))
 	    (else
 	     (cons (recur (car v))
-		   (recur (cdr v))))))))
+		   (list-recur (cdr v))))))))
        ((deinprogramm-struct? v)
 	(or (hash-ref hash v #f)
 	    (let*-values (((ty skipped?) (struct-info v))
