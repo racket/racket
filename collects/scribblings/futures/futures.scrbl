@@ -7,16 +7,16 @@
 @(require scribble/manual
           scribble/urls
           scribble/struct
-          scheme/class
           (for-label scheme/base
-                     scheme/gui/base
-                     scheme/class
-                     scheme/contract))
+                     scheme/contract
+                     '#%futures))
 
 @; ----------------------------------------------------------------------
 
-PLT's future support is only enabled if you pass @tt{--enable-futures} to @tt{configure} when
-you build PLT (and that build currently only works with @tt{mzscheme}, not with @tt{mred}).
+PLT's future support is only enabled if you pass
+@DFlag{enable-futures} to @exec{configure} when you build PLT (and that
+build currently only works with @exec{mzscheme}, not with
+@exec{mred}).
 
 @defmodule['#%futures]{}
 
