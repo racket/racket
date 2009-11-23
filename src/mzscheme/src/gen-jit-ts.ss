@@ -81,11 +81,12 @@
                   [i (in-naturals)])
          @string-append{    future->arg_@|(string t)|@|(number->string i)| = @|a|;})
        "\n")
+     @(if (equal? arg-types '("Scheme_Object*")) @string-append{send_special_result(future, @(car arg-names));} "")
      future_do_runtimecall(fts, (void*)f, 0);
      future = fts->current_ft;
      @(if (string=? result-type "void") "" @string-append{retval = @|fretval|;})
      @(if (string=? result-type "void") "" @string-append{@|fretval| = 0;})
-     @(if (string=? result-type "Scheme_Object*") @string-append{receive_special_result(future, retval);} "")
+     @(if (string=? result-type "Scheme_Object*") @string-append{receive_special_result(future, retval, 1);} "")
      @(if (string=? result-type "void") "" "return retval;")
    }
    })
@@ -104,6 +105,7 @@
       {
          prim_@|ts| f = (prim_@|ts|)future->prim_func;
          @(if (string=? result-type "void") "" @string-append{@|result-type| retval;})
+         @(if (equal? arg-types '("Scheme_Object*")) @string-append{receive_special_result(future, future->arg_s0, 1);} "")
          @(if (string=? result-type "void") "" "retval = ")
          f(@(string-join
               (for/list ([t (in-string (type->arg-string t))]

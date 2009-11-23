@@ -16,7 +16,6 @@
 define_ts_siS_s(_scheme_apply_multi_from_native, FSRC_RATOR)
 define_ts_siS_s(_scheme_apply_from_native, FSRC_RATOR)
 define_ts_siS_s(_scheme_tail_apply_from_native, FSRC_RATOR)
-define_ts_siS_s(_scheme_tail_apply_from_native_fixup_args, FSRC_RATOR)
 define_ts_s_s(scheme_force_value_same_mark, FSRC_OTHER)
 define_ts_s_s(scheme_force_one_value_same_mark, FSRC_OTHER)
 #if defined(INLINE_FP_OPS) && !defined(CAN_INLINE_ALLOC)

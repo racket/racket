@@ -2254,6 +2254,7 @@ sequential_future {
   gcMARK(f->orig_lambda);
   gcMARK(f->running_sema);
   gcMARK(f->retval);
+  gcMARK(f->multiple_array);
  size:
   gcBYTES_TO_WORDS(sizeof(future_t));
 }

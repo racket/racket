@@ -16,11 +16,12 @@
       future->arg_s0 = g44;
     future->arg_i1 = g45;
     future->arg_S2 = g46;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
-  receive_special_result(future, retval);
+  receive_special_result(future, retval, 1);
   return retval;
 }
  Scheme_Object* scheme_rtcall_iSs_s(const char *who, int src_type, prim_iSs_s f, int g47, Scheme_Object** g48, Scheme_Object* g49)
@@ -41,11 +42,12 @@
       future->arg_i0 = g47;
     future->arg_S1 = g48;
     future->arg_s2 = g49;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
-  receive_special_result(future, retval);
+  receive_special_result(future, retval, 1);
   return retval;
 }
  Scheme_Object* scheme_rtcall_s_s(const char *who, int src_type, prim_s_s f, Scheme_Object* g50)
@@ -64,11 +66,12 @@
   future->source_of_request = who;
   future->source_type = src_type;
       future->arg_s0 = g50;
+  send_special_result(future, g50);
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
-  receive_special_result(future, retval);
+  receive_special_result(future, retval, 1);
   return retval;
 }
  Scheme_Object* scheme_rtcall_n_s(const char *who, int src_type, prim_n_s f, Scheme_Native_Closure_Data* g51)
@@ -87,11 +90,12 @@
   future->source_of_request = who;
   future->source_type = src_type;
       future->arg_n0 = g51;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
-  receive_special_result(future, retval);
+  receive_special_result(future, retval, 1);
   return retval;
 }
  Scheme_Object* scheme_rtcall__s(const char *who, int src_type, prim__s f )
@@ -110,11 +114,12 @@
   future->source_of_request = who;
   future->source_type = src_type;
   
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
-  receive_special_result(future, retval);
+  receive_special_result(future, retval, 1);
   return retval;
 }
  Scheme_Object* scheme_rtcall_ss_s(const char *who, int src_type, prim_ss_s f, Scheme_Object* g52, Scheme_Object* g53)
@@ -134,11 +139,12 @@
   future->source_type = src_type;
       future->arg_s0 = g52;
     future->arg_s1 = g53;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
-  receive_special_result(future, retval);
+  receive_special_result(future, retval, 1);
   return retval;
 }
  MZ_MARK_STACK_TYPE scheme_rtcall_ss_m(const char *who, int src_type, prim_ss_m f, Scheme_Object* g54, Scheme_Object* g55)
@@ -158,6 +164,7 @@
   future->source_type = src_type;
       future->arg_s0 = g54;
     future->arg_s1 = g55;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   retval = future->retval_m;
@@ -182,11 +189,12 @@
   future->source_type = src_type;
       future->arg_S0 = g56;
     future->arg_l1 = g57;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
-  receive_special_result(future, retval);
+  receive_special_result(future, retval, 1);
   return retval;
 }
  Scheme_Object* scheme_rtcall_l_s(const char *who, int src_type, prim_l_s f, long g58)
@@ -205,11 +213,12 @@
   future->source_of_request = who;
   future->source_type = src_type;
       future->arg_l0 = g58;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
-  receive_special_result(future, retval);
+  receive_special_result(future, retval, 1);
   return retval;
 }
  void scheme_rtcall_bsi_v(const char *who, int src_type, prim_bsi_v f, Scheme_Bucket* g59, Scheme_Object* g60, int g61)
@@ -230,6 +239,7 @@
       future->arg_b0 = g59;
     future->arg_s1 = g60;
     future->arg_i2 = g61;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   
@@ -255,6 +265,7 @@
       future->arg_i0 = g62;
     future->arg_i1 = g63;
     future->arg_S2 = g64;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   
@@ -279,6 +290,7 @@
   future->source_type = src_type;
       future->arg_s0 = g65;
     future->arg_s1 = g66;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   
@@ -302,6 +314,7 @@
   future->source_of_request = who;
   future->source_type = src_type;
       future->arg_b0 = g67;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   
@@ -326,11 +339,12 @@
   future->source_type = src_type;
       future->arg_s0 = g68;
     future->arg_l1 = g69;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
-  receive_special_result(future, retval);
+  receive_special_result(future, retval, 1);
   return retval;
 }
  Scheme_Object* scheme_rtcall_iS_s(const char *who, int src_type, prim_iS_s f, int g70, Scheme_Object** g71)
@@ -350,11 +364,12 @@
   future->source_type = src_type;
       future->arg_i0 = g70;
     future->arg_S1 = g71;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
-  receive_special_result(future, retval);
+  receive_special_result(future, retval, 1);
   return retval;
 }
  Scheme_Object* scheme_rtcall_S_s(const char *who, int src_type, prim_S_s f, Scheme_Object** g72)
@@ -373,11 +388,12 @@
   future->source_of_request = who;
   future->source_type = src_type;
       future->arg_S0 = g72;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
-  receive_special_result(future, retval);
+  receive_special_result(future, retval, 1);
   return retval;
 }
  void scheme_rtcall_s_v(const char *who, int src_type, prim_s_v f, Scheme_Object* g73)
@@ -396,6 +412,7 @@
   future->source_of_request = who;
   future->source_type = src_type;
       future->arg_s0 = g73;
+  send_special_result(future, g73);
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   
@@ -421,11 +438,12 @@
       future->arg_i0 = g74;
     future->arg_S1 = g75;
     future->arg_i2 = g76;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   retval = future->retval_s;
   future->retval_s = 0;
-  receive_special_result(future, retval);
+  receive_special_result(future, retval, 1);
   return retval;
 }
  void scheme_rtcall_siS_v(const char *who, int src_type, prim_siS_v f, Scheme_Object* g77, int g78, Scheme_Object** g79)
@@ -446,6 +464,7 @@
       future->arg_s0 = g77;
     future->arg_i1 = g78;
     future->arg_S2 = g79;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   
@@ -469,6 +488,7 @@
   future->source_of_request = who;
   future->source_type = src_type;
       future->arg_z0 = g80;
+  
   future_do_runtimecall(fts, (void*)f, 0);
   future = fts->current_ft;
   retval = future->retval_p;

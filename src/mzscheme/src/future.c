@@ -1,7 +1,24 @@
+/*
+  MzScheme
+  Copyright (c) 2006-2009 PLT Scheme Inc.
 
-#ifndef UNIT_TEST
-# include "schpriv.h"
-#endif
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Library General Public
+    License as published by the Free Software Foundation; either
+    version 2 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Library General Public License for more details.
+
+    You should have received a copy of the GNU Library General Public
+    License along with this library; if not, write to the Free
+    Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+    Boston, MA 02110-1301 USA.
+*/
+
+#include "schpriv.h"
 
 //This will be TRUE if primitive tracking has been enabled 
 //by the program
@@ -27,6 +44,8 @@ typedef struct future_t {
   Scheme_Object *running_sema;
   Scheme_Object *orig_lambda;
   Scheme_Object *retval;
+  int multiple_count;
+  Scheme_Object **multiple_array;
   int no_retval;
 } future_t;
 
@@ -54,7 +73,14 @@ static Scheme_Object *touch(int argc, Scheme_Object *argv[])
   ft = (future_t *)argv[0];
 
   while (1) {
-    if (ft->retval) return ft->retval;
+    if (ft->retval) {
+      if (SAME_OBJ(ft->retval, SCHEME_MULTIPLE_VALUES)) {
+        Scheme_Thread *p = scheme_current_thread;
+        p->ku.multiple.array = ft->multiple_array;
+        p->ku.multiple.count = ft->multiple_count;
+      }
+      return ft->retval;
+    }
     if (ft->no_retval)
       scheme_signal_error("touch: future previously aborted");
     
@@ -80,8 +106,13 @@ static Scheme_Object *touch(int argc, Scheme_Object *argv[])
         GC_CAN_IGNORE Scheme_Object *retval, *proc;
         proc = ft->orig_lambda;
         ft->orig_lambda = NULL; /* don't hold on to proc */
-        retval = _scheme_apply(proc, 0, NULL);
+        retval = scheme_apply_multi(proc, 0, NULL);
         ft->retval = retval;
+        if (SAME_OBJ(retval, SCHEME_MULTIPLE_VALUES)) {
+          ft->multiple_array = p->ku.multiple.array;
+          ft->multiple_count = p->ku.multiple.count;
+          p->ku.multiple.array = NULL;
+        }
         scheme_post_sema(ft->running_sema);
         p->error_buf = savebuf;
       }
@@ -123,9 +154,6 @@ void scheme_init_futures(Scheme_Env *env)
 #include "future.h"
 #include <stdlib.h>
 #include <string.h>
-#ifdef UNIT_TEST
-# include "./tests/unit_test.h"
-#endif 
 
 static Scheme_Object *future(int argc, Scheme_Object *argv[]);
 static Scheme_Object *touch(int argc, Scheme_Object *argv[]);
@@ -188,6 +216,8 @@ static void *worker_thread_future_loop(void *arg);
 static void invoke_rtcall(Scheme_Future_State * volatile fs, future_t * volatile future);
 static future_t *enqueue_future(Scheme_Future_State *fs, future_t *ft);;
 static future_t *get_pending_future(Scheme_Future_State *fs);
+static void receive_special_result(future_t *f, Scheme_Object *retval, int clear);
+static void send_special_result(future_t *f, Scheme_Object *retval);
 
 #ifdef MZ_PRECISE_GC
 # define scheme_future_setjmp(newbuf) scheme_jit_setjmp((newbuf).jb)
@@ -605,7 +635,8 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
     ft->status = RUNNING;
     pthread_mutex_unlock(&fs->future_mutex);
 
-    retval = _scheme_apply(ft->orig_lambda, 0, NULL);
+    retval = scheme_apply_multi(ft->orig_lambda, 0, NULL);
+    send_special_result(ft, retval);
 
     pthread_mutex_lock(&fs->future_mutex);
     ft->work_completed = 1;
@@ -613,6 +644,8 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
     ft->status = FINISHED;
     dequeue_future(fs, ft);
     pthread_mutex_unlock(&fs->future_mutex);
+
+    receive_special_result(ft, retval, 0);
 
     return retval;
   }
@@ -653,6 +686,8 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
   if (!retval) {
     scheme_signal_error("touch: future previously aborted");
   }
+
+  receive_special_result(ft, retval, 0);
 
   return retval;
 }
@@ -793,17 +828,23 @@ void *worker_thread_future_loop(void *arg)
     v = NULL;
   } else {
     v = jitcode(ft->orig_lambda, 0, NULL);
+    if (SAME_OBJ(v, SCHEME_TAIL_CALL_WAITING)) {
+      v = scheme_ts_scheme_force_value_same_mark(v);
+    }
   }
 
   LOG("Finished running JIT code at %p.\n", ft->code);
 
   // Get future again, since a GC may have occurred
   ft = fts->current_ft;
-
+  
   //Set the return val in the descriptor
   pthread_mutex_lock(&fs->future_mutex);
   ft->work_completed = 1;
   ft->retval = v;
+
+  /* In case of multiple values: */
+  send_special_result(ft, v);
 
   //Update the status 
   ft->status = FINISHED;
@@ -960,28 +1001,35 @@ unsigned long scheme_rtcall_alloc_void_pvoid(const char *who, int src_type, prim
   return retval;
 }
 
-static void receive_special_result(future_t *f, Scheme_Object *retval)
+static void receive_special_result(future_t *f, Scheme_Object *retval, int clear)
   XFORM_SKIP_PROC
-/* Called in future thread */
+/* Called in future or runtime thread */
 {
   if (SAME_OBJ(retval, SCHEME_MULTIPLE_VALUES)) {
     Scheme_Thread *p = scheme_current_thread;
 
     p->ku.multiple.array = f->multiple_array;
     p->ku.multiple.count = f->multiple_count;
-    f->multiple_array = NULL;
+    if (clear)
+      f->multiple_array = NULL;
   } else if (SAME_OBJ(retval, SCHEME_TAIL_CALL_WAITING)) {
     Scheme_Thread *p = scheme_current_thread;
 
     p->ku.apply.tail_rator = f->tail_rator;
     p->ku.apply.tail_rands = f->tail_rands;
     p->ku.apply.tail_num_rands = f->num_tail_rands;
+    if (clear) {
+      f->tail_rator = NULL;
+      f->tail_rands = NULL;
+    }
   }
 }
 
 #include "jit_ts_future_glue.c"
 
 static void send_special_result(future_t *f, Scheme_Object *retval)
+  XFORM_SKIP_PROC
+/* Called in future or runtime thread */
 {
   if (SAME_OBJ(retval, SCHEME_MULTIPLE_VALUES)) {
     Scheme_Thread *p = scheme_current_thread;
@@ -990,6 +1038,7 @@ static void send_special_result(future_t *f, Scheme_Object *retval)
     f->multiple_count = p->ku.multiple.count;
     if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
       p->values_buffer = NULL;
+    p->ku.multiple.array = NULL;
   } else if (SAME_OBJ(retval, SCHEME_TAIL_CALL_WAITING)) {
     Scheme_Thread *p = scheme_current_thread;
 
@@ -1019,8 +1068,11 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
     src = future->source_of_request;
     if (future->source_type == FSRC_RATOR) {
       int len;
-      if (SCHEME_PROCP(future->arg_s0))
-        src = scheme_get_proc_name(future->arg_s0, &len, 1);
+      if (SCHEME_PROCP(future->arg_s0)) {
+        const char *src2;
+        src2 = scheme_get_proc_name(future->arg_s0, &len, 1);
+        if (src2) src = src2;
+      }
     } else if (future->source_type == FSRC_PRIM) {
       const char *src2;
       src2 = scheme_look_for_primitive(future->prim_func);
@@ -1069,6 +1121,20 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
   pthread_mutex_unlock(&fs->future_mutex);
 }
 
+static void *do_invoke_rtcall_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Future_State *fs = (Scheme_Future_State *)p->ku.k.p1;
+  future_t *future = (future_t *)p->ku.k.p2;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+  
+  do_invoke_rtcall(fs, future);
+
+  return scheme_void;
+}
+
 static void invoke_rtcall(Scheme_Future_State * volatile fs, future_t * volatile future)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -1087,7 +1153,15 @@ static void invoke_rtcall(Scheme_Future_State * volatile fs, future_t * volatile
     pthread_mutex_unlock(&fs->future_mutex);
     scheme_longjmp(*savebuf, 1);
   } else {
-    do_invoke_rtcall(fs, future);
+    if (future->rt_prim_is_atomic) {
+      do_invoke_rtcall(fs, future);
+    } else {
+      /* call with continuation barrier. */
+      p->ku.k.p1 = fs;
+      p->ku.k.p2 = future;
+
+      (void)scheme_top_level_do(do_invoke_rtcall_k, 1);
+    }
   }
   p->error_buf = savebuf;
 }

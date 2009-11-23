@@ -108,6 +108,8 @@ typedef struct future_t {
 
 # include "jit_ts_protos.h"
 
+extern Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v);
+
 //Helper macros for argument marshaling
 #ifdef FUTURES_ENABLED
 

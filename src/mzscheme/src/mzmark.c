@@ -5482,6 +5482,7 @@ static int sequential_future_MARK(void *p) {
   gcMARK(f->orig_lambda);
   gcMARK(f->running_sema);
   gcMARK(f->retval);
+  gcMARK(f->multiple_array);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
@@ -5491,6 +5492,7 @@ static int sequential_future_FIXUP(void *p) {
   gcFIXUP(f->orig_lambda);
   gcFIXUP(f->running_sema);
   gcFIXUP(f->retval);
+  gcFIXUP(f->multiple_array);
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
 }

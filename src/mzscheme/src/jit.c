@@ -392,28 +392,6 @@ static void *decrement_cache_stack_pos(void *p)
 THREAD_LOCAL_DECL(static Scheme_Object **fixup_runstack_base);
 THREAD_LOCAL_DECL(static int fixup_already_in_place);
 
-/* FIXME?: If _scheme_tail_apply_from_native_fixup_args is called from
-   a future thread, then the wrong thread-local `fixup_runstack_base'
-   was set. But exercising this code seems to be impossible, maybe
-   because current bytecode optimizations never produce the case that
-   _scheme_tail_apply_from_native_fixup_args() was design to support. */
-
-static Scheme_Object *_scheme_tail_apply_from_native_fixup_args(Scheme_Object *rator,
-                                                                int argc,
-                                                                Scheme_Object **argv)
-{
-  int already = fixup_already_in_place, i;
-  Scheme_Object **base;
-
-  base = fixup_runstack_base XFORM_OK_MINUS argc XFORM_OK_MINUS already;
-
-  /* Need to shift argc to end of base: */
-  for (i = 0; i < argc; i++) {
-    base[already + i] = argv[i];
-  }
-
-  return _scheme_tail_apply_from_native(rator, argc + already, base);
-}
 static Scheme_Object *make_global_ref(Scheme_Object *var)
 {
   GC_CAN_IGNORE Scheme_Object *o;
@@ -2210,6 +2188,7 @@ extern int g_print_prims;
      mz_patch_ucbranch(refcont); \
      __END_TINY_JUMPS__(1); \
   }
+
 static Scheme_Object *noncm_prim_indirect(Scheme_Prim proc, int argc) 
   XFORM_SKIP_PROC
 {
@@ -2222,6 +2201,7 @@ static Scheme_Object *noncm_prim_indirect(Scheme_Prim proc, int argc)
   else 
     return proc(argc, MZ_RUNSTACK);
 }
+
 static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc, Scheme_Object *self) 
   XFORM_SKIP_PROC
 {
@@ -2264,6 +2244,12 @@ static void *ts_prepare_retry_alloc(void *p, void *p2) XFORM_SKIP_PROC
   return ret;
 }
 #endif
+
+Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v)
+{
+  return ts_scheme_force_value_same_mark(v);
+}
+
 #else
 /* futures not enabled */
 # define mz_prepare_direct_prim(n) mz_prepare(n)
@@ -2274,6 +2260,23 @@ static void *ts_prepare_retry_alloc(void *p, void *p2) XFORM_SKIP_PROC
 # define mz_generate_direct_prim(direct_only, first_arg, reg, prim_indirect) \
   (mz_direct_only(direct_only), first_arg, mz_finishr_direct_prim(reg, prim_indirect))
 #endif
+
+static Scheme_Object *_scheme_tail_apply_from_native_fixup_args(Scheme_Object *rator,
+                                                                int argc,
+                                                                Scheme_Object **argv)
+{
+  int already = fixup_already_in_place, i;
+  Scheme_Object **base;
+
+  base = fixup_runstack_base XFORM_OK_MINUS argc XFORM_OK_MINUS already;
+
+  /* Need to shift argc to end of base: */
+  for (i = 0; i < argc; i++) {
+    base[already + i] = argv[i];
+  }
+
+  return ts__scheme_tail_apply_from_native(rator, argc + already, base);
+}
 
 static int generate_pause_for_gc_and_retry(mz_jit_state *jitter,
                                            int in_short_jumps,
@@ -2524,7 +2527,7 @@ static int generate_finish_tail_call(mz_jit_state *jitter, int direct_native)
   jit_pusharg_i(JIT_R0);
   jit_pusharg_p(JIT_V1);
   if (direct_native > 1) { /* => some_args_already_in_place */
-    (void)mz_finish(ts__scheme_tail_apply_from_native_fixup_args);
+    (void)mz_finish(_scheme_tail_apply_from_native_fixup_args);
   } else {
     (void)mz_finish(ts__scheme_tail_apply_from_native);
   }
