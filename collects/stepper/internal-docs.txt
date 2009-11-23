@@ -212,6 +212,12 @@ stepper-skipto/discard :
  Abstraktion", where procedures are wrapped in a contract-checking
  context that has no impact on the reduction semantics.)
 
+stepper-replace :
+
+  This is like stepper-skipto/discard, except that it makes the
+  stepper replace the expression the property is attached to by the
+  value of the property.
+
 stepper-else :
  [ #t ] : Initially applied to the 'true' that the cond macro
   replaces a beginner's 'else' with, it is later transferred

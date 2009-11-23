@@ -67,8 +67,11 @@ where a @scheme[host-table-sexpr] is:
    (mime-types ,path-string?)
    (password-authentication ,path-string?)))]
 
-In this syntax, the @scheme['messages] paths are relative to the @scheme['configuration-root] directory.
-All the paths in @scheme['paths] are relative to @scheme['host-root] (other than @scheme['host-root] obviously.)
+In this syntax, the @scheme['messages] paths are relative to the
+@scheme['configuration-root] directory.  All the paths in
+@scheme['paths] except for @scheme['servlet-root] are relative to
+@scheme['host-root] (other than @scheme['host-root] obviously.)
+The @scheme['servlet-root] path is relative to @scheme['file-root].
 
 Allowable @scheme['log-format]s are those accepted by @scheme[log-format->format].
 
