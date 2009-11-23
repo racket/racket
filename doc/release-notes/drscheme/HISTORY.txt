@@ -1,9 +1,15 @@
 ------------------------------
+        Version 4.2.3
+------------------------------
+
+  . minor bug fixes
+
+------------------------------
         Version 4.2.2
 ------------------------------
 
   . DrScheme now (by default) automatically compiles your source
-    files, saving them in the compiled/drscheme/ subdirectory.
+   files, saving them in the compiled/drscheme/ subdirectory.
 
   . Syntax coloring now works for languages using the @-reader
     (ie, Scribble) 
