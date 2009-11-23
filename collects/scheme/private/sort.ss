@@ -33,7 +33,7 @@ doing these checks.
      (define-syntax foo (syntax-rules () [(_ . pattern) template]))]))
 
 (define-syntax-rule (sort-internal-body v *<? n has-getkey? getkey)
-  (let* ([n/2+ (ceiling (/ n 2))] [n/2- (- n n/2+)])
+  (let* ([n/2- (arithmetic-shift n -1)] [n/2+ (- n n/2-)])
     (define-syntax-rule (<? x y)
       (if has-getkey? (*<? (getkey x) (getkey y)) (*<? x y)))
     (define-syntax-rule (ref n) (vector-ref v n))
@@ -56,20 +56,37 @@ doing these checks.
                              (loop (add1 a1) (add1 c1))))
                          (loop a1 b1 c1)))))))))
 
+    (define-syntax-rule (copying-insertionsort Alo Blo n)
+      (let iloop ([i 0] [A Alo])
+        (when (< i n)
+          (let ([ref-i (ref A)])
+            (let jloop ([j (+ Blo i)])
+              (let ([ref-j-1 (ref (sub1 j))])
+                (if (and (> j Blo) (<? ref-i ref-j-1))
+                  (begin (set! j ref-j-1) (jloop (sub1 j)))
+                  (begin (set! j ref-i) (iloop (add1 i) (add1 A))))))))))
+
     (define (copying-mergesort Alo Blo n)
-      (cond [(n . > . 1)
-             (let* ([n/2+ (ceiling (/ n 2))] [n/2- (- n n/2+)])
-               (let ([Amid1 (+ Alo n/2-)]
-                     [Amid2 (+ Alo n/2+)]
-                     [Bmid1 (+ Blo n/2-)])
-                 (copying-mergesort Amid1 Bmid1 n/2+)
-                 (copying-mergesort Alo Amid2 n/2-)
-                 (merge #t Amid2 (+ Alo n) Bmid1 (+ Blo n) Blo)))]
-            [(= 1 n) (set! Blo (ref Alo))]))
+      ;; n is never 0, smaller values are more frequent
+      (cond
+        [(= n 1) (set! Blo (ref Alo))]
+        [(= n 2) (let ([x (ref Alo)] [y (ref (add1 Alo))])
+                   (if (<? y x)
+                     (begin (set! Blo y) (set! (add1 Blo) x))
+                     (begin (set! Blo x) (set! (add1 Blo) y))))]
+        [(n . < . 16) ; not much difference up to ~30
+         (copying-insertionsort Alo Blo n)]
+        [else (let* ([n/2- (arithmetic-shift n -1)] [n/2+ (- n n/2-)])
+                (let ([Amid1 (+ Alo n/2-)]
+                      [Amid2 (+ Alo n/2+)]
+                      [Bmid1 (+ Blo n/2-)])
+                  (copying-mergesort Amid1 Bmid1 n/2+)
+                  (copying-mergesort Alo Amid2 n/2-)
+                  (merge #t Amid2 (+ Alo n) Bmid1 (+ Blo n) Blo)))]))
 
     (let ([Alo 0] [Amid1 n/2-] [Amid2 n/2+] [Ahi n] [B1lo n])
       (copying-mergesort Amid1 B1lo n/2+)
-      (copying-mergesort Alo Amid2 n/2-)
+      (unless (zero? n/2-) (copying-mergesort Alo Amid2 n/2-))
       (merge #f B1lo (+ B1lo n/2+) Amid2 Ahi Alo))))
 
 (define sort-internals (make-hasheq))
