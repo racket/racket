@@ -24,6 +24,14 @@ doing these checks.
 
 |#
 
+(#%require (rename '#%unsafe i+ unsafe-fx+)
+           (rename '#%unsafe i- unsafe-fx-)
+           (rename '#%unsafe i= unsafe-fx=)
+           (rename '#%unsafe i< unsafe-fx<)
+           (rename '#%unsafe i<= unsafe-fx<=)
+           (rename '#%unsafe i>> unsafe-fxrshift)
+           (rename '#%unsafe vref unsafe-vector-ref)
+           (rename '#%unsafe vset! unsafe-vector-set!))
 
 (define sort (let ()
 
@@ -33,11 +41,11 @@ doing these checks.
      (define-syntax foo (syntax-rules () [(_ . pattern) template]))]))
 
 (define-syntax-rule (sort-internal-body v *<? n has-getkey? getkey)
-  (let* ([n/2- (arithmetic-shift n -1)] [n/2+ (- n n/2-)])
+  (let* ([n/2- (i>> n 1)] [n/2+ (i- n n/2-)])
     (define-syntax-rule (<? x y)
       (if has-getkey? (*<? (getkey x) (getkey y)) (*<? x y)))
-    (define-syntax-rule (ref n) (vector-ref v n))
-    (define-syntax-rule (set! n x) (vector-set! v n x))
+    (define-syntax-rule (ref n) (vref v n))
+    (define-syntax-rule (set! n x) (vset! v n x))
 
     (define-syntax-rule (merge lo? A1 A2 B1 B2 C1)
       (let ([b2 B2])
@@ -45,49 +53,49 @@ doing these checks.
           (let ([x (ref a1)] [y (ref b1)])
             (if (if lo? (not (<? y x)) (<? x y))
               (begin (set! c1 x)
-                     (let ([a1 (add1 a1)] [c1 (add1 c1)])
-                       (when (< c1 b1) (loop a1 b1 c1))))
+                     (let ([a1 (i+ a1 1)] [c1 (i+ c1 1)])
+                       (when (i< c1 b1) (loop a1 b1 c1))))
               (begin (set! c1 y)
-                     (let ([b1 (add1 b1)] [c1 (add1 c1)])
-                       (if (<= b2 b1)
+                     (let ([b1 (i+ b1 1)] [c1 (i+ c1 1)])
+                       (if (i<= b2 b1)
                          (let loop ([a1 a1] [c1 c1])
-                           (when (< c1 b1)
+                           (when (i< c1 b1)
                              (set! c1 (ref a1))
-                             (loop (add1 a1) (add1 c1))))
+                             (loop (i+ a1 1) (i+ c1 1))))
                          (loop a1 b1 c1)))))))))
 
     (define-syntax-rule (copying-insertionsort Alo Blo n)
       (let iloop ([i 0] [A Alo])
-        (when (< i n)
+        (when (i< i n)
           (let ([ref-i (ref A)])
-            (let jloop ([j (+ Blo i)])
-              (let ([ref-j-1 (ref (sub1 j))])
-                (if (and (> j Blo) (<? ref-i ref-j-1))
-                  (begin (set! j ref-j-1) (jloop (sub1 j)))
-                  (begin (set! j ref-i) (iloop (add1 i) (add1 A))))))))))
+            (let jloop ([j (i+ Blo i)])
+              (let ([ref-j-1 (ref (i- j 1))])
+                (if (and (i< Blo j) (<? ref-i ref-j-1))
+                  (begin (set! j ref-j-1) (jloop (i- j 1)))
+                  (begin (set! j ref-i) (iloop (i+ i 1) (i+ A 1))))))))))
 
     (define (copying-mergesort Alo Blo n)
-      ;; n is never 0, smaller values are more frequent
       (cond
-        [(= n 1) (set! Blo (ref Alo))]
-        [(= n 2) (let ([x (ref Alo)] [y (ref (add1 Alo))])
-                   (if (<? y x)
-                     (begin (set! Blo y) (set! (add1 Blo) x))
-                     (begin (set! Blo x) (set! (add1 Blo) y))))]
-        [(n . < . 16) ; not much difference up to ~30
-         (copying-insertionsort Alo Blo n)]
-        [else (let* ([n/2- (arithmetic-shift n -1)] [n/2+ (- n n/2-)])
-                (let ([Amid1 (+ Alo n/2-)]
-                      [Amid2 (+ Alo n/2+)]
-                      [Bmid1 (+ Blo n/2-)])
+        ;; n is never 0, smaller values are more frequent
+        [(i= n 1) (set! Blo (ref Alo))]
+        [(i= n 2) (let ([x (ref Alo)] [y (ref (i+ Alo 1))])
+                    (if (<? y x)
+                      (begin (set! Blo y) (set! (i+ Blo 1) x))
+                      (begin (set! Blo x) (set! (i+ Blo 1) y))))]
+        ;; insertion sort for small chunks (not much difference up to ~30)
+        [(i< n 16) (copying-insertionsort Alo Blo n)]
+        [else (let* ([n/2- (i>> n 1)] [n/2+ (i- n n/2-)])
+                (let ([Amid1 (i+ Alo n/2-)]
+                      [Amid2 (i+ Alo n/2+)]
+                      [Bmid1 (i+ Blo n/2-)])
                   (copying-mergesort Amid1 Bmid1 n/2+)
                   (copying-mergesort Alo Amid2 n/2-)
-                  (merge #t Amid2 (+ Alo n) Bmid1 (+ Blo n) Blo)))]))
+                  (merge #t Amid2 (i+ Alo n) Bmid1 (i+ Blo n) Blo)))]))
 
     (let ([Alo 0] [Amid1 n/2-] [Amid2 n/2+] [Ahi n] [B1lo n])
       (copying-mergesort Amid1 B1lo n/2+)
       (unless (zero? n/2-) (copying-mergesort Alo Amid2 n/2-))
-      (merge #f B1lo (+ B1lo n/2+) Amid2 Ahi Alo))))
+      (merge #f B1lo (i+ B1lo n/2+) Amid2 Ahi Alo))))
 
 (define sort-internals (make-hasheq))
 (define _
@@ -102,16 +110,16 @@ doing these checks.
     (precomp string-ci<? string-ci<=?)
     (precomp keyword<?)))
 
-(define sort-internal
-  (case-lambda
-    [(<? vec n)
+(define-syntax sort-internal
+  (syntax-rules ()
+    [(_ <? vec n)
      (let ([si (hash-ref sort-internals <? #f)])
        (if si
          ;; use a precompiled function if found
          (si vec n)
          ;; otherwise, use the generic code
          (let () (sort-internal-body vec <? n #f #f))))]
-    [(<? vec n getkey)
+    [(_ <? vec n getkey)
      (let () (sort-internal-body vec <? n #t getkey))]))
 
 (define-syntax-rule (sort-body lst *<? has-getkey? getkey cache-keys?)
