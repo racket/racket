@@ -59,17 +59,21 @@ doing these checks.
     (define (copying-mergesort Alo Ahi Blo Bhi)
       (unless (= (- Ahi Alo) (- Bhi Blo)) (error "poof!!!"))
       (cond [(< Alo (sub1 Ahi))
-             (let ([Amid (/ (+ Alo Ahi) 2)] [Bmid (/ (+ Blo Bhi) 2)])
-               (copying-mergesort Amid Ahi Bmid Bhi)
-               (copying-mergesort Alo Amid Amid Ahi)
-               (merge #t Amid Ahi Bmid Bhi Blo Bhi))]
+             (let ([Amid1 (floor (/ (+ Alo Ahi) 2))]
+                   [Amid2 (ceiling (/ (+ Alo Ahi) 2))]
+                   [Bmid1 (floor (/ (+ Blo Bhi) 2))]
+                   [Bmid2 (ceiling (/ (+ Blo Bhi) 2))])
+               (copying-mergesort Amid1 Ahi Bmid1 Bhi)
+               (copying-mergesort Alo Amid1 Amid2 Ahi)
+               (merge #t Amid2 Ahi Bmid1 Bhi Blo Bhi))]
             [(= Alo (sub1 Ahi))
              (set! Blo (ref Alo))]))
 
-    (let ([Alo 0] [Amid n/2] [Ahi n] [B1lo n] [B1hi (+ n n/2)])
-      (copying-mergesort Amid Ahi B1lo B1hi)
-      (copying-mergesort Alo Amid Amid Ahi)
-      (merge #f B1lo B1hi Amid Ahi Alo Ahi))))
+    (let ([Alo 0] [Amid1 (- n n/2)] [Amid2 n/2] [Ahi n]
+          [B1lo n] [B1hi (+ n n/2)])
+      (copying-mergesort Amid1 Ahi B1lo B1hi)
+      (copying-mergesort Alo Amid1 Amid2 Ahi)
+      (merge #f B1lo B1hi Amid2 Ahi Alo Ahi))))
 
 (define sort-internals (make-hasheq))
 (define _
@@ -107,7 +111,7 @@ doing these checks.
       [cache-keys?
        ;; decorate while converting to a vector, and undecorate when going
        ;; back, always do this for consistency
-       (let ([vec (make-vector (+ n (/ n 2)))])
+       (let ([vec (make-vector (+ n (ceiling (/ n 2))))])
          ;; list -> decorated-vector
          (let loop ([i 0] [lst lst])
            (when (pair? lst)
@@ -154,7 +158,7 @@ doing these checks.
                  (if (<? c a) (list b c a) (list b a c)))
                ;; a<=b, so c<b (b<=c is impossible due to above test)
                (if (<? c a) (list c a b) (list a c b))))))]
-      [else (let ([vec (make-vector (+ n (/ n 2)))])
+      [else (let ([vec (make-vector (+ n (ceiling (/ n 2))))])
               ;; list -> vector
               (let loop ([i 0] [lst lst])
                 (when (pair? lst)
