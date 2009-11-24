@@ -27,7 +27,7 @@
      visible to the GC.
 
   3) Immediate operands must be 32-bit values on x86_64, except with
-     jit_movi, jit_sti, jit_ld, jit_bXi, jit_calli, and jit_finishi.
+     jit_movi, jit_sti, jit_ldi, jit_bXi, jit_calli, and jit_finishi.
 
   4) Function calls are limited to 3 arguments (i.e., jit_prepare()
      must never be called with a number greater than 3). This limit
@@ -38,6 +38,7 @@
      in that order. So don't set JIT_R2 before getting the third
      argument, etc.
 */
+
 
 #include "schpriv.h"
 #include "schmach.h"
@@ -143,7 +144,7 @@ static void *vector_ref_code, *vector_ref_check_index_code, *vector_set_code, *v
 static void *string_ref_code, *string_ref_check_index_code, *string_set_code, *string_set_check_index_code;
 static void *bytes_ref_code, *bytes_ref_check_index_code, *bytes_set_code, *bytes_set_check_index_code;
 static void *syntax_e_code;
-static void *on_demand_jit_code;
+void *scheme_on_demand_jit_code;
 static void *on_demand_jit_arity_code;
 static void *get_stack_pointer_code;
 static void *stack_cache_pop_code;
@@ -211,6 +212,7 @@ static void *generate_lambda_simple_arity_check(int num_params, int has_rest, in
 static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Data *ndata, 
 				 int is_method);
 static void on_demand();
+static void on_demand_with_args(Scheme_Object **);
 static int generate_non_tail_mark_pos_prefix(mz_jit_state *jitter);
 static void generate_non_tail_mark_pos_suffix(mz_jit_state *jitter);
 static void *generate_shared_call(int num_rands, mz_jit_state *old_jitter, int multi_ok, int is_tail, 
@@ -264,67 +266,87 @@ void scheme_jit_fill_threadlocal_table();
 /* If JIT_THREAD_LOCAL is defined, then access to global variables
    goes through a thread_local_pointers table. Call
    scheme_jit_fill_threadlocal_table() to fill the table in a new
-   OS-level thread. Use mz_tl_ldii_p(), etc., with `tl_MZ_RUNSTACK',
+   OS-level thread. Use mz_tl_ldi_p(), etc., with `tl_MZ_RUNSTACK',
    etc., to access variables that can be thread local. (JIT-generated
    code accesses only a handful, so we can just enumerate them.)
 
    On x86, the thread-local table pointer is loaded on entry to the
    JIT world into a C stack slot. On x86_64, it is loaded into the
    callee-saved R14 (and the old value is saved on the C stack). */
-#if defined(MZ_USE_PLACES) || defined(FUTURES_ENABLED)
+#ifdef USE_THREAD_LOCAL
 # define JIT_THREAD_LOCAL
 #endif
 
 #ifdef JIT_THREAD_LOCAL
-# define tl_MZ_RUNSTACK                    0
-# define tl_MZ_RUNSTACK_START              1
-# define tl_GC_gen0_alloc_page_ptr         2
-# define tl_scheme_current_thread          3
-# define tl_scheme_current_cont_mark_pos   4
-# define tl_scheme_current_cont_mark_stack 5
-# define tl_stack_cache_stack_pos          6
-# define tl_retry_alloc_r1                 7
-# define tl_fixup_runstack_base            8
-# define tl_fixup_already_in_place         9
-# define tl_double_result                  10
-# define tl_save_fp                        11
-# define NUM_tl_VARS                       12
+# define BOTTOM_VARIABLE GC_variable_stack
+# define tl_delta(id) ((unsigned long)&(id) - (unsigned long)&BOTTOM_VARIABLE)
+# define tl_MZ_RUNSTACK                    tl_delta(MZ_RUNSTACK)
+# define tl_MZ_RUNSTACK_START              tl_delta(MZ_RUNSTACK_START)
+# define tl_GC_gen0_alloc_page_ptr         tl_delta(GC_gen0_alloc_page_ptr)
+# define tl_scheme_current_thread          tl_delta(scheme_current_thread)
+# define tl_scheme_current_cont_mark_pos   tl_delta(scheme_current_cont_mark_pos)
+# define tl_scheme_current_cont_mark_stack tl_delta(scheme_current_cont_mark_stack)
+# define tl_stack_cache_stack_pos          tl_delta(stack_cache_stack_pos)
+# define tl_retry_alloc_r1                 tl_delta(retry_alloc_r1)
+# define tl_fixup_runstack_base            tl_delta(fixup_runstack_base)
+# define tl_fixup_already_in_place         tl_delta(fixup_already_in_place)
+# define tl_double_result                  tl_delta(double_result)
+# define tl_save_fp                        tl_delta(save_fp)
+# define tl_scheme_fuel_counter            tl_delta(scheme_fuel_counter)
+# define tl_scheme_jit_stack_boundary      tl_delta(scheme_jit_stack_boundary)
+# define tl_jit_future_storage             tl_delta(jit_future_storage)
+# define tl_scheme_future_need_gc_pause    tl_delta(scheme_future_need_gc_pause)
+# define tl_scheme_use_rtcall              tl_delta(scheme_use_rtcall)
 
-static THREAD_LOCAL void *thread_local_pointers[NUM_tl_VARS];
-
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-static void *get_threadlocal_table() { return &thread_local_pointers; }
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
+static void *get_threadlocal_table() XFORM_SKIP_PROC { return &BOTTOM_VARIABLE; }
 
 # ifdef JIT_X86_64
 #  define JIT_R10 JIT_R(10)
 #  define JIT_R14 JIT_R(14)
-#  define mz_tl_addr(reg, addr) jit_ldxi_p(reg, JIT_R14, WORDS_TO_BYTES(addr))
+#  define mz_tl_addr(reg, addr) LEAQmQr((addr), (JIT_R14), 0, 0, (reg))
 #  define mz_tl_addr_tmp(tmp_reg, addr) (mz_tl_addr(JIT_R10, addr))
 #  define mz_tl_addr_untmp(tmp_reg) (void)0
 #  define mz_tl_tmp_reg(tmp_reg) JIT_R10
+#  define _mz_tl_str_p(addr, tmp_reg, reg) jit_str_p(tmp_reg, reg)
+#  define _mz_tl_str_l(addr, tmp_reg, reg) jit_str_l(tmp_reg, reg)
+#  define _mz_tl_str_i(addr, tmp_reg, reg) jit_str_i(tmp_reg, reg)
 # else
-#  define mz_tl_addr(reg, addr) (mz_get_local_p(reg, JIT_LOCAL4), jit_ldxi_p(reg, reg, WORDS_TO_BYTES(addr)))
-#  define mz_tl_addr_tmp(tmp_reg, addr) (PUSHQr(tmp_reg), mz_tl_addr(tmp_reg, addr))
-#  define mz_tl_addr_untmp(tmp_reg) POPQr(tmp_reg)
-#  define mz_tl_tmp_reg(tmp_reg) tmp_reg
+#  define THREAD_LOCAL_USES_JIT_V2
+#  ifdef THREAD_LOCAL_USES_JIT_V2
+#   define mz_tl_addr(reg, addr) (jit_addi_p(reg, JIT_V2, addr))
+#   define mz_tl_addr_tmp(tmp_reg, addr) (void)0
+#   define mz_tl_addr_untmp(tmp_reg) 0
+#   define mz_tl_tmp_reg(tmp_reg) (void)0
+#   define _mz_tl_str_p(addr, tmp_reg, reg) jit_stxi_p(addr, JIT_V2, reg)
+#   define _mz_tl_str_l(addr, tmp_reg, reg) jit_stxi_l(addr, JIT_V2, reg)
+#   define _mz_tl_str_i(addr, tmp_reg, reg) jit_stxi_i(addr, JIT_V2, reg)
+#  else
+#   define mz_tl_addr(reg, addr) (mz_get_local_p(reg, JIT_LOCAL4), jit_addi_p(reg, reg, addr))
+#   define mz_tl_addr_tmp(tmp_reg, addr) (PUSHQr(tmp_reg), mz_tl_addr(tmp_reg, addr))
+#   define mz_tl_addr_untmp(tmp_reg) POPQr(tmp_reg)
+#   define mz_tl_tmp_reg(tmp_reg) tmp_reg
+#   define _mz_tl_str_p(addr, tmp_reg, reg) jit_str_p(tmp_reg, reg)
+#   define _mz_tl_str_l(addr, tmp_reg, reg) jit_str_l(tmp_reg, reg)
+#   define _mz_tl_str_i(addr, tmp_reg, reg) jit_str_i(tmp_reg, reg)
+#  endif
 # endif
 
-# define mz_tl_sti_p(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), jit_str_p(mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
-# define mz_tl_sti_l(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), jit_str_l(mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
+/* A given tmp_reg doesn't have to be unused; it just has to be distinct from other arguments. */
+# define mz_tl_sti_p(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), _mz_tl_str_p(addr, mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
+# define mz_tl_sti_l(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), _mz_tl_str_l(addr, mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
+# define mz_tl_sti_i(addr, reg, tmp_reg) (mz_tl_addr_tmp(tmp_reg, addr), _mz_tl_str_i(addr, mz_tl_tmp_reg(tmp_reg), reg), mz_tl_addr_untmp(tmp_reg))
 # define mz_tl_ldi_p(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_p(reg, reg))
 # define mz_tl_ldi_l(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_l(reg, reg))
+# define mz_tl_ldi_i(reg, addr) (mz_tl_addr(reg, addr), jit_ldr_i(reg, reg))
 # define mz_tl_sti_d_fppop(addr, reg, tmp_reg) (mz_tl_addr(tmp_reg, addr), jit_str_d_fppop(tmp_reg, reg))
 # define mz_tl_ldi_d_fppush(reg, addr, tmp_reg) (mz_tl_addr(tmp_reg, addr), jit_ldr_d_fppush(reg, tmp_reg))
 #else
 # define mz_tl_sti_p(addr, reg, tmp_reg) jit_sti_p(addr, reg)
 # define mz_tl_sti_l(addr, reg, tmp_reg) jit_sti_l(addr, reg)
+# define mz_tl_sti_i(addr, reg, tmp_reg) jit_sti_i(addr, reg)
 # define mz_tl_ldi_p(reg, addr) jit_ldi_p(reg, addr)
 # define mz_tl_ldi_l(reg, addr) jit_ldi_l(reg, addr)
+# define mz_tl_ldi_i(reg, addr) jit_ldi_i(reg, addr)
 # define mz_tl_sti_d_fppop(addr, reg, tmp_reg) jit_sti_d_fppop(addr, reg)
 # define mz_tl_ldi_d_fppush(reg, addr, tmp_reg) jit_ldi_d_fppush(reg, addr)
 # define tl_MZ_RUNSTACK (&MZ_RUNSTACK)
@@ -339,6 +361,8 @@ END_XFORM_SKIP;
 # define tl_fixup_already_in_place (&fixup_already_in_place)
 # define tl_double_result (&double_result)
 # define tl_save_fp (&save_fp)
+# define tl_scheme_fuel_counter (&scheme_fuel_counter)
+# define tl_scheme_jit_stack_boundary (&scheme_jit_stack_boundary)
 #endif
 
 typedef struct {
@@ -346,17 +370,11 @@ typedef struct {
   Scheme_Native_Closure_Data *case_lam;
 } Scheme_Native_Closure_Data_Plus_Case;
 
-/* This structure must be 4 words: */
-typedef struct {
-  void *orig_return_address;
-  void *stack_frame;
-  Scheme_Object *cache;
-  void *orig_result;
-} Stack_Cache_Elem;
+/* The Stack_Cache_Elem structure type (define in schthread.h)
+   must have a size of  4 words. */
 
-#define STACK_CACHE_SIZE 32
-static THREAD_LOCAL Stack_Cache_Elem stack_cache_stack[STACK_CACHE_SIZE];
-static THREAD_LOCAL long stack_cache_stack_pos = 0;
+THREAD_LOCAL_DECL(static Stack_Cache_Elem stack_cache_stack[STACK_CACHE_SIZE]);
+THREAD_LOCAL_DECL(static long stack_cache_stack_pos = 0);
 
 static void *decrement_cache_stack_pos(void *p)
 {
@@ -371,8 +389,14 @@ static void *decrement_cache_stack_pos(void *p)
 
 #include "codetab.inc"
 
-static THREAD_LOCAL Scheme_Object **fixup_runstack_base;
-static THREAD_LOCAL int fixup_already_in_place;
+THREAD_LOCAL_DECL(static Scheme_Object **fixup_runstack_base);
+THREAD_LOCAL_DECL(static int fixup_already_in_place);
+
+/* FIXME?: If _scheme_tail_apply_from_native_fixup_args is called from
+   a future thread, then the wrong thread-local `fixup_runstack_base'
+   was set. But exercising this code seems to be impossible, maybe
+   because current bytecode optimizations never produce the case that
+   _scheme_tail_apply_from_native_fixup_args() was design to support. */
 
 static Scheme_Object *_scheme_tail_apply_from_native_fixup_args(Scheme_Object *rator,
                                                                 int argc,
@@ -768,7 +792,18 @@ static Scheme_Object *apply_checked_fail(Scheme_Object **args)
 /*========================================================================*/
 
 #define JIT_RUNSTACK JIT_V0
-#define JIT_RUNSTACK_BASE JIT_V2
+
+#ifndef THREAD_LOCAL_USES_JIT_V2
+# define JIT_RUNSTACK_BASE JIT_V2
+# define JIT_RUNSTACK_BASE_OR_ALT(alt) JIT_RUNSTACK_BASE
+# define mz_ld_runstack_base_alt(reg) /* empty */
+# define mz_st_runstack_base_alt(reg) /* empty */
+#else
+# define JIT_RUNSTACK_BASE_OR_ALT(alt) alt
+# define JIT_RUNSTACK_BASE_LOCAL JIT_LOCAL4
+# define mz_ld_runstack_base_alt(reg) mz_get_local_p(reg, JIT_RUNSTACK_BASE_LOCAL)
+# define mz_st_runstack_base_alt(reg) mz_set_local_p(reg, JIT_RUNSTACK_BASE_LOCAL)
+#endif
 
 #ifdef MZ_USE_JIT_PPC
 # define JIT_STACK 1
@@ -791,7 +826,7 @@ static Scheme_Object *apply_checked_fail(Scheme_Object **args)
 
 #if 0
 /* Debugging: checking for runstack overflow. A CHECK_RUNSTACK_OVERFLOW() should
-   be included after each decrement of JIT_RUNTACK. Failure is "reported" by
+   be included after each decrement of JIT_RUNSTACK. Failure is "reported" by
    going into an immediate loop. */
 static void *top;
 static void *cr_tmp;
@@ -1212,6 +1247,13 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #endif
 }
 #else
+/* From frame pointer, -1 is saved frame pointer, -2 is saved ESI/R12,
+   and -3 is saved EDI/R13. On entry to a procedure, prolog pushes 4
+   since the call (which also pushed), so if the stack was 16-bytes
+   aligned before the call, it is current stack pointer is 1 word
+   (either 4 or 8 bytes) below alignment (need to push 3 or 1 words to
+   re-align). Also, for a call without a prolog, the stack pointer is
+   1 word (for the return address) below alignment. */
 # define JIT_LOCAL1 -(JIT_WORD_SIZE * 4)
 # define JIT_LOCAL2 -(JIT_WORD_SIZE * 5)
 # define mz_set_local_p(x, l) jit_stxi_p((l), JIT_FP, (x))
@@ -1279,13 +1321,19 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #  define mz_repush_threadlocal() mz_set_local_p(JIT_R14, JIT_LOCAL4)
 # else
 #  define mz_pop_threadlocal() /* empty */
+#  ifdef THREAD_LOCAL_USES_JIT_V2
+#   define _mz_install_threadlocal(reg) jit_movr_p(JIT_V2, reg)
+#   define mz_repush_threadlocal() /* empty */
+#  else
+#   define _mz_install_threadlocal(reg) mz_set_local_p(reg, JIT_LOCAL4)
+#   define mz_repush_threadlocal() (PUSHQr(JIT_R0), jit_ldr_p(JIT_R0, _EBP), \
+                                    jit_ldxi_p(JIT_R0, JIT_R0, JIT_LOCAL4), \
+                                    jit_stxi_p(JIT_LOCAL4, _EBP, JIT_R0), \
+                                    POPQr(JIT_R0))
+#  endif
 #  define mz_push_threadlocal() (PUSHQr(JIT_R0), PUSHQr(JIT_R1), PUSHQr(JIT_R2), PUSHQr(JIT_R2), \
-                                 mz_get_threadlocal(), jit_retval(JIT_R0), mz_set_local_p(JIT_R0, JIT_LOCAL4), \
+                                 mz_get_threadlocal(), jit_retval(JIT_R0), _mz_install_threadlocal(JIT_R0), \
                                  POPQr(JIT_R2), POPQr(JIT_R2), POPQr(JIT_R1), POPQr(JIT_R0))
-#  define mz_repush_threadlocal() (PUSHQr(JIT_R0), jit_ldr_p(JIT_R0, _EBP), \
-                                   jit_ldxi_p(JIT_R0, JIT_R0, JIT_LOCAL4), \
-                                   jit_stxi_p(JIT_LOCAL4, _EBP, JIT_R0), \
-                                   POPQr(JIT_R0))
 # endif
 #else
 # define mz_pop_threadlocal() /* empty */
@@ -1359,7 +1407,7 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #endif
 
 #ifdef CAN_INLINE_ALLOC
-extern THREAD_LOCAL unsigned long GC_gen0_alloc_page_ptr;
+THREAD_LOCAL_DECL(extern unsigned long GC_gen0_alloc_page_ptr);
 long GC_initial_word(int sizeb);
 void GC_initial_words(char *buffer, int sizeb);
 long GC_compute_alloc_size(long sizeb);
@@ -1369,13 +1417,14 @@ static void *retry_alloc_code;
 static void *retry_alloc_code_keep_r0_r1;
 static void *retry_alloc_code_keep_fpr1;
 
-static THREAD_LOCAL void *retry_alloc_r1; /* set by prepare_retry_alloc() */
+THREAD_LOCAL_DECL(static void *retry_alloc_r1); /* set by prepare_retry_alloc() */
 
 static int generate_alloc_retry(mz_jit_state *jitter, int i);
 
 #ifdef JIT_USE_FP_OPS
-static THREAD_LOCAL double save_fp;
+THREAD_LOCAL_DECL(static double save_fp);
 #endif
+
 
 static void *prepare_retry_alloc(void *p, void *p2)
 {
@@ -1434,7 +1483,7 @@ static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut
 
   __START_TINY_JUMPS__(1);
   reffail = _jit.x.pc;
-  jit_ldi_p(JIT_V1, &GC_gen0_alloc_page_ptr);
+  mz_tl_ldi_p(JIT_V1, tl_GC_gen0_alloc_page_ptr);
   jit_subi_l(JIT_R2, JIT_V1, 1);
   jit_andi_l(JIT_R2, JIT_R2, (algn - 1));
   ref = jit_blti_l(jit_forward(), JIT_R2, (algn - sz));
@@ -2129,74 +2178,159 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   return ref2;
 }
 
+#ifdef INSTRUMENT_PRIMITIVES
+extern int g_print_prims;
+#endif
+
+#include "jit_ts.c"
+
 /* Support for intercepting direct calls to primitives: */
 #ifdef FUTURES_ENABLED
 # define mz_prepare_direct_prim(n) mz_prepare(n)
 # define mz_finishr_direct_prim(reg, proc) (jit_pusharg_p(reg), (void)mz_finish(proc))
 # define mz_direct_only(p) /* skip this arg, so that total count <= 3 args */
-static Scheme_Object *noncm_prim_indirect(Scheme_Prim proc, int argc)
+/* Inlines check of scheme_use_rtcall: */
+# define mz_generate_direct_prim(direct_only, first_arg, reg, prim_indirect) \
+  { \
+     GC_CAN_IGNORE jit_insn *refdirect, *refcont; \
+     int argstate; \
+     jit_save_argstate(argstate); \
+     mz_tl_ldi_i(JIT_R0, tl_scheme_use_rtcall); \
+     __START_TINY_JUMPS__(1); \
+     refdirect = jit_beqi_i(jit_forward(), JIT_R0, 0); \
+     first_arg; \
+     mz_finishr_direct_prim(reg, prim_indirect); \
+     refcont = jit_jmpi(jit_forward()); \
+     CHECK_LIMIT(); \
+     mz_patch_branch(refdirect); \
+     jit_restore_argstate(argstate); \
+     direct_only; \
+     first_arg; \
+     mz_finishr(reg); \
+     mz_patch_ucbranch(refcont); \
+     __END_TINY_JUMPS__(1); \
+  }
+static Scheme_Object *noncm_prim_indirect(Scheme_Prim proc, int argc) 
+  XFORM_SKIP_PROC
 {
-  RTCALL_INT_OBJARR_OBJ(proc, argc, MZ_RUNSTACK);
-  return proc(argc, MZ_RUNSTACK);
+  if (scheme_use_rtcall)
+    return scheme_rtcall_iS_s("[prim_indirect]",
+                              FSRC_PRIM,
+                              proc, 
+                              argc, 
+                              MZ_RUNSTACK);
+  else 
+    return proc(argc, MZ_RUNSTACK);
 }
-static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc, Scheme_Object *self)
+static Scheme_Object *prim_indirect(Scheme_Primitive_Closure_Proc proc, int argc, Scheme_Object *self) 
+  XFORM_SKIP_PROC
 {
-  RTCALL_INT_POBJ_OBJ_OBJ(proc, argc, MZ_RUNSTACK, self);
-  return proc(argc, MZ_RUNSTACK, self);
+  if (scheme_use_rtcall)
+    return scheme_rtcall_iSs_s("[prim_indirect]", FSRC_PRIM, proc, argc, MZ_RUNSTACK, self);
+  else
+    return proc(argc, MZ_RUNSTACK, self);
 }
 
 /* Various specific 'futurized' versions of primitives that may 
    be invoked directly from JIT code and are not considered thread-safe 
    (are not invoked via apply_multi_from_native, etc.) */
 
-static Scheme_Object *ts_scheme_apply_multi_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
+static void ts_on_demand(void) XFORM_SKIP_PROC
 {
-  /* RTCALL_OBJ_INT_POBJ_OBJ(_scheme_apply_multi_from_native, rator, argc, argv); */
-  Scheme_Object *ret;
-  if (rtcall_obj_int_pobj_obj(_scheme_apply_multi_from_native, 
-                              rator, 
-                              argc, 
-                              argv, 
-                              ret)) {
-    return ret;
-  }
-
-  return _scheme_apply_multi_from_native(rator, argc, argv);
+  if (scheme_use_rtcall) {
+    scheme_rtcall_void_void_3args("[jit_on_demand]", FSRC_OTHER, on_demand_with_args);
+  } else
+    on_demand();
 }
 
-static Scheme_Object *ts_scheme_apply_from_native(Scheme_Object *rator, int argc, Scheme_Object **argv)
+#ifdef MZ_PRECISE_GC
+static void *ts_prepare_retry_alloc(void *p, void *p2) XFORM_SKIP_PROC
 {
-  /* RTCALL_OBJ_INT_POBJ_OBJ(_scheme_apply_from_native, rator, argc, argv); */
-  Scheme_Object *ret;
-  if (rtcall_obj_int_pobj_obj(_scheme_apply_from_native, 
-                              rator, 
-                              argc, 
-                              argv, 
-                              ret)) {
-    return ret;
-  }
-  
-  return _scheme_apply_from_native(rator, argc, argv);
-}
+  unsigned long ret;
 
-static void ts_on_demand(void)
-{
-  /* RTCALL_VOID_VOID(on_demand); */
-  if (rtcall_void_void(on_demand)) {
-    return;
+  if (scheme_use_rtcall) {
+    jit_future_storage[0] = p;
+    jit_future_storage[1] = p2;
+    ret = scheme_rtcall_alloc_void_pvoid("[acquire_gc_page]", FSRC_OTHER, GC_make_jit_nursery_page);
+    GC_gen0_alloc_page_ptr = ret;
+    retry_alloc_r1 = jit_future_storage[1];
+    p = jit_future_storage[0];
+    jit_future_storage[0] = NULL;
+    jit_future_storage[1] = NULL;
+    return p;
   }
 
-  on_demand();
+  ret = prepare_retry_alloc(p, p2);
+  return ret;
 }
+#endif
 #else
 /* futures not enabled */
 # define mz_prepare_direct_prim(n) mz_prepare(n)
 # define mz_finishr_direct_prim(reg, proc) mz_finishr(reg)
 # define mz_direct_only(p) p
-# define ts_scheme_apply_multi_from_native _scheme_apply_multi_from_native
-# define ts_scheme_apply_from_native _scheme_apply_from_native
 # define ts_on_demand on_demand
+# define ts_prepare_retry_alloc prepare_retry_alloc
+# define mz_generate_direct_prim(direct_only, first_arg, reg, prim_indirect) \
+  (mz_direct_only(direct_only), first_arg, mz_finishr_direct_prim(reg, prim_indirect))
 #endif
+
+static int generate_pause_for_gc_and_retry(mz_jit_state *jitter,
+                                           int in_short_jumps,
+                                           int gc_reg, /* must not be JIT_R1 */
+                                           GC_CAN_IGNORE jit_insn *refagain)
+{
+#ifdef FUTURES_ENABLED
+  GC_CAN_IGNORE jit_insn *refslow = 0, *refpause;
+  int i;
+
+  mz_rs_sync();
+
+  /* expose gc_reg to GC */
+  mz_tl_sti_p(tl_jit_future_storage, gc_reg, JIT_R1);
+
+  /* Save non-preserved registers. Use a multiple of 4 to avoid
+     alignment problems. */
+  jit_pushr_l(JIT_R1);
+  jit_pushr_l(JIT_R2);
+  jit_pushr_l(JIT_R0);
+  jit_pushr_l(JIT_R0);
+  CHECK_LIMIT();
+
+  mz_tl_ldi_i(JIT_R0, tl_scheme_future_need_gc_pause);
+  refpause = jit_bgti_i(jit_forward(), JIT_R0, 0);
+  
+  for (i = 0; i < 2; i++) {
+    /* Restore non-preserved registers, and also move the gc-exposed
+       register back. */
+    if (i == 1) {
+      mz_patch_branch(refpause);
+      JIT_UPDATE_THREAD_RSPTR_FOR_BRANCH_IF_NEEDED();
+      jit_prepare(0);
+      mz_finish(scheme_future_gc_pause);
+    }
+    jit_popr_l(JIT_R0);
+    jit_popr_l(JIT_R0);
+    jit_popr_l(JIT_R2);
+    CHECK_LIMIT();
+    mz_tl_ldi_p(gc_reg, tl_jit_future_storage);
+    jit_movi_p(JIT_R1, NULL);
+    mz_tl_sti_p(tl_jit_future_storage, JIT_R1, JIT_R2);
+    jit_popr_l(JIT_R1);
+    CHECK_LIMIT();
+    if (!i)
+      refslow = jit_jmpi(jit_forward());
+    else
+      (void)jit_jmpi(refagain);
+  }
+
+  mz_patch_ucbranch(refslow);
+  
+  return 1;
+#else
+  return 1;
+#endif
+}
 
 static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
 {
@@ -2213,9 +2347,12 @@ static int generate_direct_prim_tail_call(mz_jit_state *jitter, int num_rands)
   jit_movi_i(JIT_R1, num_rands);
   mz_prepare_direct_prim(2); /* a prim takes 3 args, but a NONCM prim ignores the 3rd */
   CHECK_LIMIT();
-  mz_direct_only(jit_pusharg_p(JIT_RUNSTACK));
-  jit_pusharg_i(JIT_R1);
-  mz_finishr_direct_prim(JIT_V1, noncm_prim_indirect);
+  {
+    /* May use JIT_R0 and create local branch: */
+    mz_generate_direct_prim(jit_pusharg_p(JIT_RUNSTACK),
+                            jit_pusharg_i(JIT_R1),
+                            JIT_V1, noncm_prim_indirect);
+  }
   CHECK_LIMIT();
   /*  Return: */
   mz_pop_threadlocal();
@@ -2260,12 +2397,11 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
      At this point, V1 = closure and R0 = code. */
 
   /* Check for thread swap: */
-  (void)jit_movi_p(JIT_R1, &scheme_fuel_counter);
-  jit_ldr_i(JIT_R2, JIT_R1);
+  (void)mz_tl_ldi_i(JIT_R2, tl_scheme_fuel_counter);
   ref5 = jit_blei_i(jit_forward(), JIT_R2, 0);
 #ifndef FUEL_AUTODECEREMENTS
   jit_subi_p(JIT_R2, JIT_R2, 0x1);
-  jit_str_i(JIT_R1, JIT_R2);
+  (void)mz_tl_sti_i(tl_scheme_fuel_counter, JIT_R2, JIT_R1);
 #endif
   CHECK_LIMIT();
 
@@ -2273,7 +2409,8 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   if (num_rands >= 0) {
     /* Fixed argc: */
     if (num_rands) {
-      jit_subi_p(JIT_R2, JIT_RUNSTACK_BASE, WORDS_TO_BYTES(num_rands)); 
+      mz_ld_runstack_base_alt(JIT_R2);
+      jit_subi_p(JIT_R2, JIT_RUNSTACK_BASE_OR_ALT(JIT_R2), WORDS_TO_BYTES(num_rands)); 
       CHECK_RUNSTACK_OVERFLOW();
       for (i = num_rands; i--; ) {
         jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(i));
@@ -2282,7 +2419,11 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
       }
       jit_movr_p(JIT_RUNSTACK, JIT_R2);
     } else {
+#ifdef JIT_RUNSTACK_BASE
       jit_movr_p(JIT_RUNSTACK, JIT_RUNSTACK_BASE);
+#else
+      mz_get_local_p(JIT_RUNSTACK, JIT_RUNSTACK_BASE_LOCAL);
+#endif
     }
     if (direct_native > 1) { /* => some_args_already_in_place */
       mz_get_local_p(JIT_R1, JIT_LOCAL2);
@@ -2332,12 +2473,17 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
 
   /* The slow way: */
   /*  V1 and RUNSTACK must be intact! */
+  mz_patch_branch(ref5);
+  generate_pause_for_gc_and_retry(jitter,
+                                  num_rands < 100,  /* in short jumps */
+                                  JIT_V1, /* expose V1 to GC */
+                                  refagain); /* retry code pointer */
+  CHECK_LIMIT();
   if (!direct_native) {
     mz_patch_branch(ref);
     mz_patch_branch(ref2);
   }
   mz_patch_branch(ref4);
-  mz_patch_branch(ref5);
   CHECK_LIMIT();
   if (need_set_rs) {
     JIT_UPDATE_THREAD_RSPTR();
@@ -2345,7 +2491,8 @@ static int generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   if (direct_native > 1) { /* => some_args_already_in_place */
     /* Need to shuffle argument lists. Since we can pass only
        three arguments, use static variables for the others. */
-    mz_tl_sti_p(tl_fixup_runstack_base, JIT_RUNSTACK_BASE, JIT_R0);
+    mz_ld_runstack_base_alt(JIT_R1);
+    mz_tl_sti_p(tl_fixup_runstack_base, JIT_RUNSTACK_BASE_OR_ALT(JIT_R1), JIT_R0);
     mz_get_local_p(JIT_R1, JIT_LOCAL2);
     mz_tl_sti_l(tl_fixup_already_in_place, JIT_R1, JIT_R0);
   }
@@ -2377,9 +2524,9 @@ static int generate_finish_tail_call(mz_jit_state *jitter, int direct_native)
   jit_pusharg_i(JIT_R0);
   jit_pusharg_p(JIT_V1);
   if (direct_native > 1) { /* => some_args_already_in_place */
-    (void)mz_finish(_scheme_tail_apply_from_native_fixup_args);
+    (void)mz_finish(ts__scheme_tail_apply_from_native_fixup_args);
   } else {
-    (void)mz_finish(_scheme_tail_apply_from_native);
+    (void)mz_finish(ts__scheme_tail_apply_from_native);
   }
   CHECK_LIMIT();
   /* Return: */
@@ -2408,9 +2555,12 @@ static int generate_direct_prim_non_tail_call(mz_jit_state *jitter, int num_rand
   jit_movi_i(JIT_R1, num_rands);
   mz_prepare_direct_prim(2); /* a prim takes 3 args, but a NONCM prim ignores the 3rd */
   CHECK_LIMIT();
-  mz_direct_only(jit_pusharg_p(JIT_RUNSTACK));
-  jit_pusharg_i(JIT_R1);
-  mz_finishr_direct_prim(JIT_V1, noncm_prim_indirect);
+  {
+    /* May use JIT_R0 and create local branch: */
+    mz_generate_direct_prim(jit_pusharg_p(JIT_RUNSTACK),
+                            jit_pusharg_i(JIT_R1),
+                            JIT_V1, noncm_prim_indirect);
+  }
   CHECK_LIMIT();
   jit_retval(JIT_R0);
   VALIDATE_RESULT(JIT_R0);
@@ -2562,18 +2712,16 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   CHECK_LIMIT();
 
   /* Before inlined native, check stack depth: */
-  (void)jit_movi_p(JIT_R1, &scheme_jit_stack_boundary); /* assumes USE_STACK_BOUNDARY_VAR */
-  jit_ldr_l(JIT_R1, JIT_R1);
+  (void)mz_tl_ldi_p(JIT_R1, tl_scheme_jit_stack_boundary); /* assumes USE_STACK_BOUNDARY_VAR */
   ref9 = jit_bltr_ul(jit_forward(), JIT_STACK, JIT_R1); /* assumes down-growing stack */
   CHECK_LIMIT();
 
 #ifndef FUEL_AUTODECEREMENTS
   /* Finally, check for thread swap: */
-  (void)jit_movi_p(JIT_R1, &scheme_fuel_counter);
-  jit_ldr_i(JIT_R2, JIT_R1);
+  (void)mz_tl_ldi_i(JIT_R2, tl_scheme_fuel_counter);
   ref11 = jit_blei_i(jit_forward(), JIT_R2, 0);
   jit_subi_p(JIT_R2, JIT_R2, 0x1);
-  jit_str_i(JIT_R1, JIT_R2);
+  (void)mz_tl_sti_i(tl_scheme_fuel_counter, JIT_R2, JIT_R1);
 #endif
 
   /* Fast inlined-native jump ok (proc will check argc, if necessary) */
@@ -2596,11 +2744,13 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
         jit_movi_i(JIT_R1, num_rands); /* argc */
         jit_movr_p(JIT_R2, JIT_RUNSTACK); /* argv */
       }
-      jit_addi_p(JIT_RUNSTACK_BASE, JIT_RUNSTACK, WORDS_TO_BYTES(num_rands));
+      jit_addi_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_RUNSTACK, WORDS_TO_BYTES(num_rands));
+      mz_st_runstack_base_alt(JIT_V1);
     } else {
       /* R2 is closure, V1 is argc */
       jit_lshi_l(JIT_R1, JIT_V1, JIT_LOG_WORD_SIZE);
-      jit_addr_p(JIT_RUNSTACK_BASE, JIT_RUNSTACK, JIT_R1);
+      jit_addr_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_R0), JIT_RUNSTACK, JIT_R1);
+      mz_st_runstack_base_alt(JIT_R0);
       jit_movr_p(JIT_R0, JIT_R2); /* closure */
       jit_movr_i(JIT_R1, JIT_V1); /* argc */
       jit_movr_p(JIT_R2, JIT_RUNSTACK); /* argv */
@@ -2677,9 +2827,9 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   mz_prepare(1);
   jit_pusharg_p(JIT_R0);
   if (multi_ok) {
-    (void)mz_finish(scheme_force_value_same_mark);
+    (void)mz_finish(ts_scheme_force_value_same_mark);
   } else {
-    (void)mz_finish(scheme_force_one_value_same_mark);
+    (void)mz_finish(ts_scheme_force_one_value_same_mark);
   }
   ref5 = jit_jmpi(jit_forward());
   CHECK_LIMIT();
@@ -2703,9 +2853,14 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     mz_prepare_direct_prim(3);
     jit_pusharg_p(JIT_V1);
     if (num_rands < 0) { jit_movr_p(JIT_V1, JIT_R0); } /* save argc to manually pop runstack */
-    mz_direct_only(jit_pusharg_p(JIT_RUNSTACK));
-    jit_pusharg_i(JIT_R2);
-    mz_finishr_direct_prim(JIT_R1, prim_indirect);
+    {
+      __END_SHORT_JUMPS__(1);
+      /* May use JIT_R0 and create local branch: */
+      mz_generate_direct_prim(jit_pusharg_p(JIT_RUNSTACK),
+                              jit_pusharg_i(JIT_R2),
+                              JIT_R1, prim_indirect);
+      __START_SHORT_JUMPS__(1);
+    }
     CHECK_LIMIT();
     jit_retval(JIT_R0);
     VALIDATE_RESULT(JIT_R0);
@@ -2731,9 +2886,9 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     mz_prepare(1);
     jit_pusharg_p(JIT_R0);
     if (multi_ok) {
-      (void)mz_finish(scheme_force_value_same_mark);
+      (void)mz_finish(ts_scheme_force_value_same_mark);
     } else {
-      (void)mz_finish(scheme_force_one_value_same_mark);
+      (void)mz_finish(ts_scheme_force_one_value_same_mark);
     }
     CHECK_LIMIT();
     ref8 = jit_jmpi(jit_forward());
@@ -2749,13 +2904,18 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   }
 
   /* The slow way: */
+  mz_patch_branch(ref9);
+  generate_pause_for_gc_and_retry(jitter,
+                                  1,  /* in short jumps */
+                                  JIT_V1, /* expose V1 to GC */
+                                  refagain); /* retry code pointer */
+  CHECK_LIMIT();
   if (!direct_native) {
     mz_patch_branch(ref);
     mz_patch_branch(ref2);
     mz_patch_branch(ref7);
   }
-  mz_patch_branch(ref4);
-  mz_patch_branch(ref9);
+  mz_patch_branch(ref4);  
 #ifndef FUEL_AUTODECEREMENTS
   mz_patch_branch(ref11);
 #endif
@@ -2772,9 +2932,9 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   jit_pusharg_p(JIT_V1);
   if (num_rands < 0) { jit_movr_p(JIT_V1, JIT_R0); } /* save argc to manually pop runstack */
   if (multi_ok) {
-    (void)mz_finish(ts_scheme_apply_multi_from_native);
+    (void)mz_finish(ts__scheme_apply_multi_from_native);
   } else {
-    (void)mz_finish(ts_scheme_apply_from_native);
+    (void)mz_finish(ts__scheme_apply_from_native);
   }
   CHECK_LIMIT();
   mz_patch_ucbranch(ref5);
@@ -2805,12 +2965,11 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
 
 static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, int num_rands, jit_insn *slow_code,
                                    int args_already_in_place)
+/* Last argument is in R0 */
 {
-  jit_insn *refslow;
+  jit_insn *refslow, *refagain;
   int i, jmp_tiny, jmp_short;
   int closure_size = jitter->self_closure_size;
-
-  /* Last argument is in R0 */
 
 #ifdef JIT_PRECISE_GC
   closure_size += 1; /* Skip procedure pointer, too */
@@ -2821,19 +2980,21 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
 
   __START_TINY_OR_SHORT_JUMPS__(jmp_tiny, jmp_short);
 
+  refagain = _jit.x.pc;
+
   /* Check for thread swap: */
-  (void)jit_movi_p(JIT_R1, &scheme_fuel_counter);
-  jit_ldr_i(JIT_R2, JIT_R1);
+  (void)mz_tl_ldi_i(JIT_R2, tl_scheme_fuel_counter);
   refslow = jit_blei_i(jit_forward(), JIT_R2, 0);
 #ifndef FUEL_AUTODECEREMENTS
   jit_subi_p(JIT_R2, JIT_R2, 0x1);
-  jit_str_i(JIT_R1, JIT_R2);
+  (void)mz_tl_sti_i(tl_scheme_fuel_counter, JIT_R2, JIT_R1);
 #endif
 
   __END_TINY_OR_SHORT_JUMPS__(jmp_tiny, jmp_short);
 
   /* Copy args to runstack after closure data: */
-  jit_subi_p(JIT_R2, JIT_RUNSTACK_BASE, WORDS_TO_BYTES(num_rands + closure_size + args_already_in_place)); 
+  mz_ld_runstack_base_alt(JIT_R2);
+  jit_subi_p(JIT_R2, JIT_RUNSTACK_BASE_OR_ALT(JIT_R2), WORDS_TO_BYTES(num_rands + closure_size + args_already_in_place)); 
   if (num_rands) {
     jit_stxi_p(WORDS_TO_BYTES(num_rands - 1 + closure_size + args_already_in_place), JIT_R2, JIT_R0);
     for (i = num_rands - 1; i--; ) {
@@ -2852,6 +3013,11 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
   __START_TINY_OR_SHORT_JUMPS__(jmp_tiny, jmp_short);
   mz_patch_branch(refslow);
   __END_TINY_OR_SHORT_JUMPS__(jmp_tiny, jmp_short);
+  generate_pause_for_gc_and_retry(jitter,
+                                  0,  /* in short jumps */
+                                  JIT_R0, /* expose R0 to GC */
+                                  refagain); /* retry code pointer */
+  CHECK_LIMIT();
 
   if (args_already_in_place) {
     jit_movi_l(JIT_R2, args_already_in_place);
@@ -3166,7 +3332,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
           && !(SCHEME_LOCAL_FLAGS(v) & SCHEME_LOCAL_OTHER_CLEARS)) {
         int pos;
         pos = mz_remap(SCHEME_LOCAL_POS(v));
-        if (pos == (jitter->depth + args_already_in_place))
+        if (pos == (jitter->depth + jitter->extra_pushed + args_already_in_place))
           args_already_in_place++;
         else
           break;
@@ -3619,7 +3785,7 @@ static int generate_alloc_double(mz_jit_state *jitter)
   (void)mz_tl_sti_d_fppop(tl_double_result, JIT_FPR0, JIT_R0);
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
   mz_prepare(0);
-  (void)mz_finish(malloc_double);
+  (void)mz_finish(ts_malloc_double);
   jit_retval(JIT_R0);
 # endif
 #endif
@@ -4417,7 +4583,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
               /* watch out for most negative fixnum! */
               if (!unsafe_fx)
                 (void)jit_beqi_p(refslow, JIT_R0, (void *)(((long)1 << ((8 * JIT_WORD_SIZE) - 1)) | 0x1));
-              jit_movi_p(JIT_R1, scheme_make_integer(0));
+              (void)jit_movi_p(JIT_R1, scheme_make_integer(0));
               jit_subr_l(JIT_R0, JIT_R1, JIT_R0);
               jit_ori_l(JIT_R0, JIT_R0, 0x1);
               __START_INNER_TINY__(branch_short);
@@ -5201,7 +5367,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
       mz_prepare(1);
       jit_pusharg_p(JIT_R0);
-      (void)mz_finish(scheme_box);
+      (void)mz_finish(ts_scheme_box);
       jit_retval(JIT_R0);
 #endif
 
@@ -5887,7 +6053,7 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       mz_prepare(2);
       jit_pusharg_p(JIT_R1);
       jit_pusharg_p(JIT_R0);
-      (void)mz_finish(scheme_make_mutable_pair);
+      (void)mz_finish(ts_scheme_make_mutable_pair);
       jit_retval(JIT_R0);
 #endif
 
@@ -6137,9 +6303,9 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       jit_pusharg_l(JIT_R0);
       jit_pusharg_l(JIT_RUNSTACK);
       if (star)
-        (void)mz_finish(make_list_star);
+        (void)mz_finish(ts_make_list_star);
       else
-        (void)mz_finish(make_list);
+        (void)mz_finish(ts_make_list);
       jit_retval(JIT_R0);
 #endif
 
@@ -6202,7 +6368,7 @@ static int generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry)
     jit_pusharg_p(JIT_R1);
     jit_pusharg_p(JIT_R0);
   }
-  (void)mz_finish(scheme_make_pair);
+  (void)mz_finish(ts_scheme_make_pair);
   jit_retval(JIT_R0);
 #endif
 
@@ -6259,25 +6425,25 @@ static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
     mz_prepare(1);
     jit_pusharg_p(JIT_R0);
     if (imm)
-      (void)mz_finish(make_one_element_ivector);
+      (void)mz_finish(ts_make_one_element_ivector);
     else
-      (void)mz_finish(make_one_element_vector);
+      (void)mz_finish(ts_make_one_element_vector);
   } else if (c == 2) {
     mz_prepare(2);
     jit_pusharg_p(JIT_R1);
     jit_pusharg_p(JIT_R0);
     if (imm)
-      (void)mz_finish(make_two_element_ivector);
+      (void)mz_finish(ts_make_two_element_ivector);
     else
-      (void)mz_finish(make_two_element_vector);
+      (void)mz_finish(ts_make_two_element_vector);
   } else {
     jit_movi_l(JIT_R1, c);
     mz_prepare(1);
     jit_pusharg_l(JIT_R1);
     if (imm)
-      (void)mz_finish(make_ivector);
+      (void)mz_finish(ts_make_ivector);
     else
-      (void)mz_finish(make_vector);
+      (void)mz_finish(ts_make_vector);
   }
   jit_retval(JIT_R0);
 #endif
@@ -6365,9 +6531,9 @@ static int generate_closure(Scheme_Closure_Data *data,
         mz_prepare(1);
         jit_pusharg_l(JIT_R0);
         if (immediately_filled) {
-          (void)mz_finish(GC_malloc_one_small_dirty_tagged);
+          (void)mz_finish(ts_GC_malloc_one_small_dirty_tagged);
         } else {
-          (void)mz_finish(GC_malloc_one_small_tagged);
+          (void)mz_finish(ts_GC_malloc_one_small_tagged);
         }
         jit_retval(JIT_R0);
         memcpy(&init_word, &example_so, sizeof(long));
@@ -6392,7 +6558,7 @@ static int generate_closure(Scheme_Closure_Data *data,
   (void)jit_patchable_movi_p(JIT_R0, code); /* !! */
 #endif
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish(scheme_make_native_closure);
+  (void)mz_finish(ts_scheme_make_native_closure);
   jit_retval(JIT_R0);
 
   return 1;
@@ -6491,7 +6657,7 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter, int t
   (void)jit_patchable_movi_p(JIT_R0, ndata); /* !! */
 #endif
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish(scheme_make_native_case_closure);
+  (void)mz_finish(ts_scheme_make_native_case_closure);
   jit_retval(JIT_R1);
   CHECK_LIMIT();
 
@@ -6887,7 +7053,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  jit_pusharg_p(JIT_R0);
 	  jit_pusharg_p(JIT_R2);
 	  CHECK_LIMIT();
-	  (void)mz_finish(call_set_global_bucket);
+	  (void)mz_finish(ts_call_set_global_bucket);
 	  CHECK_LIMIT();
 	  (void)jit_movi_p(target, scheme_void);
 	  END_JIT_DATA(7);
@@ -6933,7 +7099,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           /* We definitely have stack space for one argument, because we
              just used it for the rator. */
           if (is_tail) {
-            jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK_BASE, WORDS_TO_BYTES(1));
+            mz_ld_runstack_base_alt(JIT_RUNSTACK);
+            jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK_BASE_OR_ALT(JIT_RUNSTACK), WORDS_TO_BYTES(1));
           } else {
             jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
           }
@@ -6951,7 +7118,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           /* Enough room on runstack? */
           mz_tl_ldi_p(JIT_R0, tl_MZ_RUNSTACK_START);
           if (is_tail) {
-            jit_subr_ul(JIT_R0, JIT_RUNSTACK_BASE, JIT_R0);
+            mz_ld_runstack_base_alt(JIT_R0);
+            jit_subr_ul(JIT_R0, JIT_RUNSTACK_BASE_OR_ALT(JIT_R0), JIT_R0);
           } else {
             jit_subr_ul(JIT_R0, JIT_RUNSTACK, JIT_R0); 
           }
@@ -6978,7 +7146,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           }
           CHECK_LIMIT();
           if (is_tail) {
-            jit_subr_ul(JIT_RUNSTACK, JIT_RUNSTACK_BASE, JIT_R2);
+            mz_ld_runstack_base_alt(JIT_RUNSTACK);
+            jit_subr_ul(JIT_RUNSTACK, JIT_RUNSTACK_BASE_OR_ALT(JIT_RUNSTACK), JIT_R2);
           } else {
             jit_subr_ul(JIT_RUNSTACK, JIT_RUNSTACK, JIT_R2);
           }
@@ -7050,7 +7219,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  jit_ldxi_p(JIT_R2, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
 	  mz_prepare(1);
 	  jit_pusharg_p(JIT_R2);
-	  (void)mz_finish(scheme_make_envunbox);
+	  (void)mz_finish(ts_scheme_make_envunbox);
 	  jit_retval(JIT_R0);
 	  jit_stxi_p(WORDS_TO_BYTES(pos), JIT_RUNSTACK, JIT_R0);
 	  CHECK_LIMIT();
@@ -7077,7 +7246,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
           JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
           mz_prepare(1);
 	  jit_pusharg_p(JIT_R2);
-	  (void)mz_finish(make_global_ref);
+	  (void)mz_finish(ts_make_global_ref);
 	  CHECK_LIMIT();
           jit_retval(target);
           VALIDATE_RESULT(target);
@@ -7417,7 +7586,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	CHECK_LIMIT();
 	jit_movi_i(JIT_V1, lv->count);
 	jit_pusharg_i(JIT_V1);
-	(void)mz_finish(lexical_binding_wrong_return_arity);
+	(void)mz_finish(ts_lexical_binding_wrong_return_arity);
 	CHECK_LIMIT();
 
 	/* Continue with expected values; R2 has value array: */
@@ -7465,7 +7634,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  (void)jit_movi_p(JIT_R0, scheme_undefined);
 	  mz_prepare(1);
 	  jit_pusharg_p(JIT_R0);
-	  (void)mz_finish(scheme_make_envunbox);
+	  (void)mz_finish(ts_scheme_make_envunbox);
 	  jit_retval(JIT_R0);
 	  jit_stxi_p(WORDS_TO_BYTES(i), JIT_RUNSTACK, JIT_R0);
 	}
@@ -7591,7 +7760,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       mz_prepare(2);
       jit_pusharg_p(JIT_R0);
       jit_pusharg_p(JIT_V1);
-      (void)mz_finish(scheme_set_cont_mark);
+      (void)mz_finish(ts_scheme_set_cont_mark);
       CHECK_LIMIT();
 
       END_JIT_DATA(18);
@@ -7720,8 +7889,11 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
      one jump. Skip this optimization when the procedure has
      rest args, because we'll have to copy anyway. */
   if (!has_rest && num_params) {
-    jit_lshi_l(JIT_RUNSTACK_BASE, JIT_R1, JIT_LOG_WORD_SIZE);
-    jit_addr_p(JIT_RUNSTACK_BASE, JIT_R2, JIT_RUNSTACK_BASE);
+    jit_lshi_l(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_R1, JIT_LOG_WORD_SIZE);
+    jit_addr_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_R2, JIT_RUNSTACK_BASE_OR_ALT(JIT_V1));
+#ifndef JIT_RUNSTACK_BASE
+    mz_set_local_p(JIT_V1, JIT_RUNSTACK_BASE_LOCAL);
+#endif
     __START_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
     ref = jit_beqr_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
     __END_TINY_OR_SHORT_JUMPS__(num_params < 10, num_params < 100);
@@ -7730,7 +7902,11 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
     ref = 0;
     set_ref = 0;
   }
+#ifdef JIT_RUNSTACK_BASE
   jit_movr_p(JIT_RUNSTACK_BASE, JIT_RUNSTACK);
+#else
+  mz_set_local_p(JIT_RUNSTACK, JIT_RUNSTACK_BASE_LOCAL);
+#endif
 
   /* Make stack room for arguments: */
   cnt = num_params;
@@ -7837,7 +8013,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   CHECK_LIMIT();
   jit_movi_i(JIT_V1, 1);
   jit_pusharg_i(JIT_V1);
-  (void)mz_finish(call_wrong_return_arity);
+  (void)mz_finish(ts_call_wrong_return_arity);
   CHECK_LIMIT();
 
   /* *** unbound_global_code *** */
@@ -7845,7 +8021,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   JIT_UPDATE_THREAD_RSPTR();
   mz_prepare(1);
   jit_pusharg_p(JIT_R2);
-  (void)mz_finish(scheme_unbound_global);
+  (void)mz_finish(ts_scheme_unbound_global);
   CHECK_LIMIT();
 
   /* *** quote_syntax_code *** */
@@ -7883,7 +8059,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   mz_prepare(2);
   jit_pusharg_l(JIT_R1);
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish(scheme_delayed_rename);
+  (void)mz_finish(ts_scheme_delayed_rename);
   CHECK_LIMIT();
   jit_retval(JIT_R0);
   /* Restore global array into JIT_R1, and put computed element at i+p+1: */
@@ -7946,28 +8122,28 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_pusharg_i(JIT_R1);
     switch (i) {
     case 0:
-      (void)mz_finish(scheme_checked_car);
+      (void)mz_finish(ts_scheme_checked_car);
       break;
     case 1:
-      (void)mz_finish(scheme_checked_cdr);
+      (void)mz_finish(ts_scheme_checked_cdr);
       break;
     case 2:
-      (void)mz_finish(scheme_checked_caar);
+      (void)mz_finish(ts_scheme_checked_caar);
       break;
     case 3:
-      (void)mz_finish(scheme_checked_cadr);
+      (void)mz_finish(ts_scheme_checked_cadr);
       break;
     case 4:
-      (void)mz_finish(scheme_checked_cdar);
+      (void)mz_finish(ts_scheme_checked_cdar);
       break;
     case 5:
-      (void)mz_finish(scheme_checked_cddr);
+      (void)mz_finish(ts_scheme_checked_cddr);
       break;
     case 6:
-      (void)mz_finish(scheme_checked_mcar);
+      (void)mz_finish(ts_scheme_checked_mcar);
       break;
     case 7:
-      (void)mz_finish(scheme_checked_mcdr);
+      (void)mz_finish(ts_scheme_checked_mcdr);
       break;
     }
     CHECK_LIMIT();
@@ -8001,10 +8177,10 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_pusharg_i(JIT_R1);
     switch (i) {
     case 0:
-      (void)mz_finish(scheme_checked_set_mcar);
+      (void)mz_finish(ts_scheme_checked_set_mcar);
       break;
     case 1:
-      (void)mz_finish(scheme_checked_set_mcdr);
+      (void)mz_finish(ts_scheme_checked_set_mcdr);
       break;
     }
     CHECK_LIMIT();
@@ -8016,8 +8192,8 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   bad_unbox_code = jit_get_ip().ptr;
   mz_prolog(JIT_R1);
   jit_prepare(1);
-  jit_pusharg_i(JIT_R0);
-  (void)mz_finish(scheme_unbox);
+  jit_pusharg_p(JIT_R0);
+  (void)mz_finish(ts_scheme_unbox);
   CHECK_LIMIT();
   register_sub_func(jitter, bad_unbox_code, scheme_false);
 
@@ -8027,7 +8203,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   mz_prolog(JIT_R1);
   jit_prepare(1);
   jit_pusharg_i(JIT_R0);
-  (void)mz_finish(scheme_vector_length);
+  (void)mz_finish(ts_scheme_vector_length);
   CHECK_LIMIT();
   register_sub_func(jitter, bad_vector_length_code, scheme_false);
 
@@ -8075,9 +8251,12 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       }
       JIT_UPDATE_THREAD_RSPTR();
       mz_prepare_direct_prim(2);
-      mz_direct_only(jit_pusharg_p(JIT_RUNSTACK));
-      jit_pusharg_p(JIT_R1);
-      mz_finishr_direct_prim(JIT_R2, noncm_prim_indirect);
+      {
+        /* May use JIT_R0 and create local branch: */
+        mz_generate_direct_prim(jit_pusharg_p(JIT_RUNSTACK),
+                                jit_pusharg_p(JIT_R1),
+                                JIT_R2, noncm_prim_indirect);
+      }
       CHECK_LIMIT();
       jit_retval(JIT_R0);
       VALIDATE_RESULT(JIT_R0);
@@ -8105,7 +8284,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* Used as the code stub for a closure whose
      code is not yet compiled. See generate_function_prolog
      for the state of registers on entry */
-  on_demand_jit_code = jit_get_ip().ptr;
+  scheme_on_demand_jit_code = jit_get_ip().ptr;
   jit_prolog(NATIVE_ARG_COUNT);
   in = jit_arg_p();
   jit_getarg_p(JIT_R0, in); /* closure */
@@ -8139,21 +8318,25 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   CHECK_LIMIT();
   ref = jit_bner_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
   /* Also, check that the runstack is big enough with the revised
-     max_let_depth. We can use JIT_V2 here because RUNSTACK_BASE is not
-     yet ready: */
+     max_let_depth. */
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
   jit_ldxi_i(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->max_let_depth);
-  mz_tl_ldi_p(JIT_V2, tl_MZ_RUNSTACK_START);
-  jit_subr_ul(JIT_V2, JIT_RUNSTACK, JIT_V2);
-  ref2 = jit_bltr_ul(jit_forward(), JIT_V2, JIT_V1);
+  mz_set_local_p(JIT_R2, JIT_LOCAL2);
+  mz_tl_ldi_p(JIT_R2, tl_MZ_RUNSTACK_START);
+  jit_subr_ul(JIT_R2, JIT_RUNSTACK, JIT_R2);
+  jit_subr_ul(JIT_V1, JIT_R2, JIT_V1);
+  mz_get_local_p(JIT_R2, JIT_LOCAL2);
+  ref2 = jit_blti_l(jit_forward(), JIT_V1, 0);
   CHECK_LIMIT();
   /* This is the tail-call fast path: */
+  /* Set runstack base to end of arguments on runstack: */
+  jit_movr_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_R1);
+  jit_lshi_ul(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_LOG_WORD_SIZE);
+  jit_addr_p(JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_RUNSTACK_BASE_OR_ALT(JIT_V1), JIT_RUNSTACK);
+  mz_st_runstack_base_alt(JIT_V1);
+  /* Extract function and jump: */
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
   jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->arity_code);
-  /* Set runstack base to end of arguments on runstack: */
-  jit_movr_p(JIT_RUNSTACK_BASE, JIT_R1);
-  jit_lshi_ul(JIT_RUNSTACK_BASE, JIT_RUNSTACK_BASE, JIT_LOG_WORD_SIZE);
-  jit_addr_p(JIT_RUNSTACK_BASE, JIT_RUNSTACK_BASE, JIT_RUNSTACK);
   jit_jmpr(JIT_V1);
   CHECK_LIMIT();
   /* Slower path (non-tail) when argv != runstack. */
@@ -8165,13 +8348,13 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_pusharg_p(JIT_R2);
   jit_pusharg_p(JIT_R1);
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish(ts_scheme_apply_multi_from_native);
+  (void)mz_finish(ts__scheme_apply_multi_from_native);
   CHECK_LIMIT();
   mz_pop_threadlocal();
   mz_pop_locals();
   jit_ret();
   CHECK_LIMIT();
-  register_helper_func(jitter, on_demand_jit_code);
+  register_helper_func(jitter, scheme_on_demand_jit_code);
 
   /* *** app_values_tail_slow_code *** */
   /* RELIES ON jit_prolog(NATIVE_ARG_COUNT) FROM ABOVE */
@@ -8180,7 +8363,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   JIT_UPDATE_THREAD_RSPTR();
   mz_prepare(1);
   jit_pusharg_p(JIT_V1);
-  (void)mz_finish(tail_call_with_values_from_multiple_result);
+  (void)mz_finish(ts_tail_call_with_values_from_multiple_result);
   jit_retval(JIT_R0);
   VALIDATE_RESULT(JIT_R0);
   /* Return: */
@@ -8222,6 +8405,10 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
      is such a register for PPC. */
   stack_cache_pop_code = jit_get_ip().ptr;
   jit_movr_p(JIT_R0, JIT_RET);
+#ifdef MZ_USE_JIT_PPC
+  jit_subi_p(JIT_SP, JIT_SP, 48); /* includes space maybe used by callee */
+  jit_stxi_p(44, JIT_SP, JIT_AUX);
+#endif
   /* Decrement stack_cache_stack_pos (using a function,
      in case of thread-local vars) and get record pointer.
      Use jit_normal_finish(), because jit_finish() shuffles
@@ -8231,18 +8418,16 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_pusharg_p(JIT_R0);
   (void)jit_normal_finish(decrement_cache_stack_pos);
   jit_retval(JIT_R1); /* = pointer to a stack_cache_stack element */
-#ifdef MZ_USE_JIT_PPC
-  jit_movr_p(JIT_R(3), JIT_AUX);
-#endif
   CHECK_LIMIT();
   /* Extract old return address and jump to it */
   jit_ldxi_l(JIT_R0, JIT_R1, (int)&((Stack_Cache_Elem *)0x0)->orig_result);
-  jit_movi_p(JIT_R2, NULL);
+  (void)jit_movi_p(JIT_R2, NULL);
   jit_stxi_l((int)&((Stack_Cache_Elem *)0x0)->orig_result, JIT_R1, JIT_R2);
   jit_ldxi_l(JIT_R2, JIT_R1, (int)&((Stack_Cache_Elem *)0x0)->orig_return_address);
   jit_movr_p(JIT_RET, JIT_R0);
 #ifdef MZ_USE_JIT_PPC
-  jit_movr_p(JIT_AUX, JIT_R(3));
+  jit_ldxi_p(JIT_AUX, JIT_SP, 44);
+  jit_addi_p(JIT_SP, JIT_SP, 48);
 #endif
   jit_jmpr(JIT_R2);
   CHECK_LIMIT();
@@ -8253,7 +8438,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   JIT_UPDATE_THREAD_RSPTR();
   mz_prepare(1);
   jit_pusharg_p(JIT_R0);
-  (void)mz_finish(raise_bad_call_with_values);
+  (void)mz_finish(ts_raise_bad_call_with_values);
   /* Doesn't return */
   CHECK_LIMIT();
 
@@ -8269,9 +8454,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     mz_prepare(1);
     jit_pusharg_p(JIT_V1);
     if (i) {
-      (void)mz_finish(call_with_values_from_multiple_result_multi);
+      (void)mz_finish(ts_call_with_values_from_multiple_result_multi);
     } else {
-      (void)mz_finish(call_with_values_from_multiple_result);
+      (void)mz_finish(ts_call_with_values_from_multiple_result);
     }
     jit_retval(JIT_R0);
     VALIDATE_RESULT(JIT_R0);
@@ -8382,28 +8567,28 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 	switch (ii) {
 	case 0:
 	  if (!iii) {
-	    (void)mz_finish(scheme_checked_vector_ref);
+	    (void)mz_finish(ts_scheme_checked_vector_ref);
 	  } else {
-	    (void)mz_finish(scheme_checked_vector_set);
+	    (void)mz_finish(ts_scheme_checked_vector_set);
 	  }
 	  break;
 	case 1:
 	  if (!iii) {
-	    (void)mz_finish(scheme_checked_string_ref);
+	    (void)mz_finish(ts_scheme_checked_string_ref);
 	    /* might return, if char was outside Latin-1 */
 	    jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
 	    JIT_UPDATE_THREAD_RSPTR();
 	    jit_retval(JIT_R0);
 	    mz_epilog(JIT_R2);
 	  } else {
-	    (void)mz_finish(scheme_checked_string_set);
+	    (void)mz_finish(ts_scheme_checked_string_set);
 	  }
 	  break;
 	case 2:
 	  if (!iii) {
-	    (void)mz_finish(scheme_checked_byte_string_ref);
+	    (void)mz_finish(ts_scheme_checked_byte_string_ref);
 	  } else {
-	    (void)mz_finish(scheme_checked_byte_string_set);
+	    (void)mz_finish(ts_scheme_checked_byte_string_set);
 	  }
 	  break;
 	}
@@ -8516,7 +8701,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     jit_prepare(2);
     jit_pusharg_p(JIT_RUNSTACK);
     jit_pusharg_i(JIT_R1);
-    (void)mz_finish(scheme_checked_syntax_e);
+    (void)mz_finish(ts_scheme_checked_syntax_e);
     jit_retval(JIT_R0);
     jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
     mz_epilog(JIT_R2);
@@ -8614,9 +8799,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       jit_pusharg_p(JIT_V1);
       jit_pusharg_p(JIT_R0);
       if (ii == 1) {
-        (void)mz_finish(ts_scheme_apply_multi_from_native);
+        (void)mz_finish(ts__scheme_apply_multi_from_native);
       } else {
-        (void)mz_finish(ts_scheme_apply_from_native);
+        (void)mz_finish(ts__scheme_apply_from_native);
       }
       jit_retval(JIT_R0);
       VALIDATE_RESULT(JIT_R0);
@@ -8856,8 +9041,8 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     jit_movi_i(JIT_V1, 5);
     jit_prepare(2);
     jit_pusharg_p(JIT_RUNSTACK);
-    jit_pusharg_p(JIT_V1);
-    (void)mz_finish(scheme_extract_checked_procedure);
+    jit_pusharg_i(JIT_V1);
+    (void)mz_finish(ts_scheme_extract_checked_procedure);
     jit_retval(JIT_R0);
     VALIDATE_RESULT(JIT_R0);
     mz_epilog(JIT_V1);
@@ -8924,7 +9109,7 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     JIT_UPDATE_THREAD_RSPTR();
     jit_prepare(1);
     jit_pusharg_p(JIT_RUNSTACK);
-    (void)mz_finish(apply_checked_fail);
+    (void)mz_finish(ts_apply_checked_fail);
     CHECK_LIMIT();
     jit_retval(JIT_R0);
     VALIDATE_RESULT(JIT_R0);
@@ -8972,7 +9157,6 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     jit_pusharg_p(JIT_R0);
     (void)mz_finish(scheme_module_run_finish);
     CHECK_LIMIT();
-    jit_retval(JIT_R0);
     mz_pop_locals();
     jit_ret();
     CHECK_LIMIT();
@@ -9005,7 +9189,6 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     jit_pusharg_p(JIT_R0);
     (void)mz_finish(scheme_module_start_finish);
     CHECK_LIMIT();
-    jit_retval(JIT_R0);
     mz_pop_locals();
     jit_ret();
     CHECK_LIMIT();
@@ -9038,7 +9221,7 @@ static int generate_alloc_retry(mz_jit_state *jitter, int i)
     jit_pusharg_p(JIT_R0);
     jit_pusharg_p(JIT_R0);
   }
-  (void)mz_finish(prepare_retry_alloc);
+  (void)mz_finish(ts_prepare_retry_alloc);
   jit_retval(JIT_R0);
   if (i == 1) {
     mz_tl_ldi_l(JIT_R1, tl_retry_alloc_r1);
@@ -9165,7 +9348,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     jit_pusharg_p(JIT_R2);
     jit_pusharg_i(JIT_R1);
     CHECK_LIMIT();
-    (void)mz_finish(scheme_build_list_offset);
+    (void)mz_finish(ts_scheme_build_list_offset);
     jit_retval(JIT_V1);
 #ifndef JIT_PRECISE_GC
     if (data->closure_size)
@@ -9386,16 +9569,22 @@ void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
   ndata->max_let_depth = max_depth;
 }
 
-static void on_demand()
+static void on_demand_with_args(Scheme_Object **in_argv)
 {
   /* On runstack: closure (nearest), argc, argv (deepest) */
   Scheme_Object *c, *argc, **argv;
 
-  c = MZ_RUNSTACK[0];
-  argc = MZ_RUNSTACK[1];
-  argv = (Scheme_Object **)MZ_RUNSTACK[2];
+  c = in_argv[0];
+  argc = in_argv[1];
+  argv = (Scheme_Object **)in_argv[2];
 
-  scheme_on_demand_generate_lambda((Scheme_Native_Closure *)c, SCHEME_INT_VAL(argc), argv);
+  if (((Scheme_Native_Closure *)c)->code->code == scheme_on_demand_jit_code)
+    scheme_on_demand_generate_lambda((Scheme_Native_Closure *)c, SCHEME_INT_VAL(argc), argv);
+}
+
+static void on_demand()
+{
+  return on_demand_with_args(MZ_RUNSTACK);
 }
 
 Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, int clear_code_after_jit,
@@ -9424,7 +9613,7 @@ Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, in
     ndata->iso.so.type = scheme_rt_native_code_plus_case;
 #endif
   }
-  ndata->code = on_demand_jit_code;
+  ndata->code = scheme_on_demand_jit_code;
   ndata->u.tail_code = on_demand_jit_arity_code;
   ndata->arity_code = on_demand_jit_arity_code;
   ndata->u2.orig_code = data;
@@ -9473,10 +9662,10 @@ static int generate_simple_arity_check(mz_jit_state *jitter, int num_params, int
   /* Not negative, so report run-time arity mismatch */
   mz_prepare(3);
   jit_pusharg_p(JIT_R2);
-  jit_pusharg_p(JIT_R1);
+  jit_pusharg_i(JIT_R1);
   jit_pusharg_p(JIT_R0);
   CHECK_LIMIT();
-  (void)mz_nonrs_finish(wrong_argument_count);
+  (void)mz_nonrs_finish(ts_wrong_argument_count);
   CHECK_LIMIT();
 
   /* Arity check or reporting. If argv is NULL, it's a reporting request */
@@ -9511,7 +9700,7 @@ static int generate_simple_arity_check(mz_jit_state *jitter, int num_params, int
   if (is_method) {
     mz_prepare(1);
     jit_pusharg_p(JIT_R0);
-    (void)mz_nonrs_finish(scheme_box);
+    (void)mz_nonrs_finish(ts_scheme_box);
     mz_pop_threadlocal();
     mz_pop_locals();
     jit_ret();
@@ -9611,10 +9800,10 @@ static int generate_case_lambda_dispatch(mz_jit_state *jitter, Scheme_Case_Lambd
     JIT_UPDATE_THREAD_RSPTR();
     mz_prepare(3);
     jit_pusharg_p(JIT_R2);
-    jit_pusharg_p(JIT_R1);
+    jit_pusharg_i(JIT_R1);
     jit_pusharg_p(JIT_R0);
     CHECK_LIMIT();
-    (void)mz_finish(wrong_argument_count);
+    (void)mz_finish(ts_wrong_argument_count);
     CHECK_LIMIT();
   }
 
@@ -9694,7 +9883,7 @@ static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Da
 
 static int lambda_has_been_jitted(Scheme_Native_Closure_Data *ndata)
 {
-  return (ndata->code != on_demand_jit_code);
+  return (ndata->code != scheme_on_demand_jit_code);
 }
 
 int scheme_native_arity_check(Scheme_Object *closure, int argc)
@@ -9995,7 +10184,7 @@ Scheme_Object *scheme_native_stack_trace(void)
        on frames where the previous frame had a return address with a
        name, because an arbitrary frame's return address on the stack
        might not be used (depending on how the C compiler optimized the
-       cdode); any frame whose procedure has a name is JITted code, so
+       code); any frame whose procedure has a name is JITted code, so
        it will use the return address from the stack. */
     if (STK_COMP((unsigned long)halfway, (unsigned long)p)
 	&& prev_had_name) {
@@ -10111,11 +10300,8 @@ void scheme_dump_stack_trace(void)
 }
 #endif
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 void scheme_flush_stack_cache()
+  XFORM_SKIP_PROC
 {
   void **p;
 
@@ -10127,6 +10313,7 @@ void scheme_flush_stack_cache()
 }
 
 void scheme_jit_longjmp(mz_jit_jmp_buf b, int v)
+  XFORM_SKIP_PROC
 {
   unsigned long limit;
   void **p;
@@ -10145,15 +10332,12 @@ void scheme_jit_longjmp(mz_jit_jmp_buf b, int v)
 }
 
 void scheme_jit_setjmp_prepare(mz_jit_jmp_buf b)
+  XFORM_SKIP_PROC
 {
   void *p;
   p = &p;
   b->stack_frame = (unsigned long)p;
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 void scheme_clean_native_symtab(void)
 {
@@ -10205,25 +10389,6 @@ void *scheme_module_start_start(struct Start_Module_Args *a, Scheme_Object *name
 /**********************************************************************/
 
 void scheme_jit_fill_threadlocal_table() {
-#ifdef JIT_THREAD_LOCAL
-  thread_local_pointers[tl_MZ_RUNSTACK] = (&MZ_RUNSTACK);
-  thread_local_pointers[tl_MZ_RUNSTACK_START] = (&MZ_RUNSTACK_START);
-  thread_local_pointers[tl_scheme_current_thread] = (&scheme_current_thread);
-  thread_local_pointers[tl_scheme_current_cont_mark_pos] = (&scheme_current_cont_mark_pos);
-  thread_local_pointers[tl_scheme_current_cont_mark_stack] = (&scheme_current_cont_mark_stack);
-  thread_local_pointers[tl_stack_cache_stack_pos] = (&stack_cache_stack_pos);
-# ifdef CAN_INLINE_ALLOC
-  thread_local_pointers[tl_GC_gen0_alloc_page_ptr] = (&GC_gen0_alloc_page_ptr);
-  thread_local_pointers[tl_retry_alloc_r1] = (&retry_alloc_r1);
-  thread_local_pointers[tl_save_fp] = (&save_fp);
-#else
-# ifdef INLINE_FP_OPS
-  thread_local_pointers[tl_double_result] = (&double_result);
-#  endif
-# endif
-  thread_local_pointers[tl_fixup_runstack_base] = (&fixup_runstack_base);
-  thread_local_pointers[tl_fixup_already_in_place] = (&fixup_already_in_place);
-#endif
 }
 
 /**********************************************************************/
