@@ -1,5 +1,7 @@
 // Common functionality for PLT documentation pages
 
+// Cookies --------------------------------------------------------------------
+
 function GetCookie(key, def) {
   if (document.cookie.length <= 0) return def;
   var i, cookiestrs = document.cookie.split(/; */);
@@ -36,6 +38,38 @@ function GotoPLTRoot(ver, relative) {
   return false;
 }
 
+// URL Parameters -------------------------------------------------------------
+
+// In the following functions, the `name' argument is assumed to be simple in
+// that it doesn't contain anything that isn't plain text in a regexp.  (This
+// is because I don't know if there's a JS `regexp-quote' thing).  Also, the
+// output value from the Get functions and the input value to the Set functions
+// is not decoded/encoded.  Note that `SetArgInURL' mutates the string.
+
+function GetArgFromString(str, name) {
+  var rx = new RegExp("(?:^|[;&])"+name+"=([^&;]*)(?:[;&]|$)");
+  return rx.test(str) && RegExp.$1;
+}
+
+function SetArgInString(str, name, val) {
+  if (str.length == 0) return name + "=" + val;
+  var rx = new RegExp("^((?:|.*[;&])"+name+"=)(?:[^&;]*)([;&].*|)$");
+  if (rx.test(str)) return RegExp.$1 + val + RegExp.$2;
+  else return name + "=" + val + "&" + str;
+}
+
+function GetArgFromURL(url, name) {
+  if (!url.href.search(/\?([^#]*)(?:#|$)/)) return false;
+  return GetArgFromString(RegExp.$1, name);
+}
+
+function SetArgInURL(url, name, val) { // note: mutates the string
+  url.href.search(/^([^?#]*)(?:\?([^#]*))?(#.*)?$/);
+  url.href = RegExp.$1 + "?" + SetArgInString(RegExp.$2,name,val) + RegExp.$3;
+}
+
+// Utilities ------------------------------------------------------------------
+
 normalize_rxs = [/\/\/+/g, /\/\.(\/|$)/, /\/[^\/]*\/\.\.(\/|$)/];
 function NormalizePath(path) {
   var tmp, i;
@@ -43,6 +77,8 @@ function NormalizePath(path) {
     while ((tmp = path.replace(normalize_rxs[i], "/")) != path) path = tmp;
   return path;
 }
+
+// Interactions ---------------------------------------------------------------
 
 function DoSearchKey(event, field, ver, top_path) {
   var val = field.value;
