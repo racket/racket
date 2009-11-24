@@ -76,13 +76,17 @@
                          '("local")
                          (λ (x) (and (list? x) (andmap string? x))))
 (preferences:set-default 'framework:square-bracket:letrec
-                         '("let" 
-                           "let*" "let-values" "let*-values"
-                           "let-syntax" "let-struct" "let-syntaxes"
-                           "letrec"
-                           "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values"
-                           "parameterize"
-                           "with-syntax")
+                         (let ([fors '("for" "for/list" "for/hash" "for/and" "for/or" "for/first" "for/last")])
+                           (append fors
+                                   (map (λ (x) (regexp-replace #rx"for" x "for*"))
+                                        fors)
+                                   '("let" 
+                                     "let*" "let-values" "let*-values"
+                                     "let-syntax" "let-struct" "let-syntaxes"
+                                     "letrec"
+                                     "letrec-syntaxes" "letrec-syntaxes+values" "letrec-values"
+                                     "parameterize"
+                                     "with-syntax")))
                          (λ (x) (and (list? x) (andmap string? x))))
 
 (preferences:set-default 'framework:white-on-black? #f boolean?)

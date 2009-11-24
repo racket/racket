@@ -514,16 +514,13 @@
                keywords]
               [(drscheme:teachpack-menu-items) htdp-teachpack-callbacks]
               [(drscheme:special:insert-lambda) #f]
-              #;
-              ;; FIXME: disable context for now, re-enable when it is possible
-              ;; to have the context search the teachpack manual too.
               [(drscheme:help-context-term)
                (let* ([m (get-module)]
                       [m (and m (pair? m) (pair? (cdr m)) (cadr m))]
                       [m (and m (regexp-match #rx"^(lang/[^/.]+).ss$" m))]
                       [m (and m (cadr m))])
                  (if m
-                   (format "L:~a" m)
+                   (format "O:{ L:~a T:teachpack }" m)
                    (error 'drscheme:help-context-term
                           "internal error: unexpected module spec")))]
               [(tests:test-menu tests:dock-menu) #t]

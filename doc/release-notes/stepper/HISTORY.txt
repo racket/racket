@@ -1,6 +1,10 @@
 Stepper
 -------
 
+Changes for v4.2.3:
+
+Bug fixes, show first step as soon as it appears.
+
 Changes for v4.2.2:
 
 Minor bug fixes.

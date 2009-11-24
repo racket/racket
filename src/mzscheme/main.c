@@ -248,6 +248,10 @@ typedef struct {
   MAIN_char **argv;
 } Main_Args;
 
+# ifdef MZ_PRECISE_GC
+START_XFORM_SKIP;
+# endif
+
 static int main_after_dlls(int argc, MAIN_char **argv)
 {
   Main_Args ma;
@@ -255,6 +259,10 @@ static int main_after_dlls(int argc, MAIN_char **argv)
   ma.argv = argv;
   return scheme_main_stack_setup(1, main_after_stack, &ma);
 }
+
+# ifdef MZ_PRECISE_GC
+END_XFORM_SKIP;
+# endif
 
 /************************     main_after_stack    *************************/
 /*               Setup, parse command-line, and go to cont_run            */

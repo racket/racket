@@ -359,7 +359,8 @@
          `((a ([href ,(dest->url (resolve-get t ri (car (part-tags t))))]
                [class ,(if (or (eq? t d) (and show-mine? (memq t toc-chain)))
                          "tocviewselflink"
-                         "tocviewlink")])
+                         "tocviewlink")]
+               [pltdoc "x"])
               ,@(render-content (or (part-title-content t) '("???")) d ri)))
          (format-number (collected-info-number (part-collected-info t ri))
                         '(nbsp))))
@@ -528,7 +529,8 @@
                                            ,(cond
                                               [(part? p) "tocsubseclink"]
                                               [any-parts? "tocsubnonseclink"]
-                                              [else "tocsublink"])])
+                                              [else "tocsublink"])]
+                                          [pltdoc "x"])
                                          ,@(render-content
                                             (if (part? p)
                                               (or (part-title-content p)
@@ -607,8 +609,8 @@
                                   (list style-file)
                                   style-extra-files))
                    ,(scribble-js-contents script-file (lookup-path script-file alt-paths)))
-                 (body ((id ,(or (extract-part-body-id d ri)
-                                 "scribble-plt-scheme-org")))
+                 (body ([id ,(or (extract-part-body-id d ri)
+                                 "scribble-plt-scheme-org")])
                    ,@(render-toc-view d ri)
                    (div ([class "maincolumn"])
                      (div ([class "main"])
@@ -616,7 +618,8 @@
                            (render-version d ri))
                        ,@(navigation d ri #t)
                        ,@(render-part d ri)
-                       ,@(navigation d ri #f)))))))))))
+                       ,@(navigation d ri #f)))
+                   (div ([id "langindicator"]) nbsp)))))))))
 
     (define/private (part-parent d ri)
       (collected-info-parent (part-collected-info d ri)))
@@ -705,6 +708,7 @@
           (make-target-url url)
           (make-attributes
            `([title . ,(if title* (string-append label " to " title*) label)]
+             [pltdoc . "x"]
              ,@more)))))
       (define top-link
         (titled-url
@@ -987,7 +991,8 @@
                         [else
                          ;; Normal link:
                          (dest->url dest)]))
-                     ,@(attribs)]
+                     ,@(attribs)
+                     [pltdoc "x"]]
                     ,@(if (empty-content? (element-content e))
                           (render-content (strip-aux (dest-title dest)) part ri)
                           (render-content (element-content e) part ri))))

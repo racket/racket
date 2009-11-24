@@ -230,11 +230,14 @@ void scheme_init_print_buffers_places(void);
 void scheme_init_eval_places(void);
 void scheme_init_port_places(void);
 void scheme_init_regexp_places(void);
-void scheme_init_stx_places(void);
+void scheme_init_stx_places(int initial_main_os_thread);
 void scheme_init_fun_places(void);
 void scheme_init_sema_places(void);
 void scheme_init_gmp_places(void);
 void scheme_init_print_global_constants(void);
+void scheme_init_logger(void);
+Scheme_Logger *scheme_get_main_logger(void);
+void scheme_init_logger_config(void);
 
 void register_network_evts();
 
@@ -2422,6 +2425,7 @@ int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count);
 #define SCHEME_OUT_OF_CONTEXT_LOCAL 8192
 
 Scheme_Hash_Table *scheme_map_constants_to_globals(void);
+const char *scheme_look_for_primitive(void *code);
 
 Scheme_Object *scheme_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				  Scheme_Expand_Info *erec, int drec);
@@ -2942,8 +2946,6 @@ typedef struct Scheme_Log_Reader {
   Scheme_Object *sema;
   Scheme_Object *head, *tail;
 } Scheme_Log_Reader;
-
-extern Scheme_Logger *scheme_main_logger;
 
 char *scheme_optimize_context_to_string(Scheme_Object *context);
 

@@ -150,11 +150,8 @@ void scheme_init_unsafe_numcomp(Scheme_Env *env)
 /* Prototype needed for 3m conversion: */
 static MZ_INLINE Scheme_Object *force_rat(Scheme_Object *n, Small_Rational *sr);
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 static MZ_INLINE Scheme_Object *force_rat(Scheme_Object *n, Small_Rational *sr)
+  XFORM_SKIP_PROC
 {
   Scheme_Type t = SCHEME_TYPE(n);
   if (t == scheme_rational_type)
@@ -162,10 +159,6 @@ static MZ_INLINE Scheme_Object *force_rat(Scheme_Object *n, Small_Rational *sr)
   else
     return scheme_make_small_bn_rational(n, sr);
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 GEN_NARY_COMP(eq, "=", scheme_bin_eq, SCHEME_NUMBERP, "number")
 GEN_NARY_COMP(lt, "<", scheme_bin_lt, SCHEME_REALP, REAL_NUMBER_STR)

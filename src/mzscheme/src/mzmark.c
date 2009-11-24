@@ -5413,6 +5413,8 @@ static int native_unclosed_proc_plus_case_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_FUTURE_C
 
+#ifdef FUTURES_ENABLED
+
 static int future_SIZE(void *p) {
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
@@ -5420,13 +5422,20 @@ static int future_SIZE(void *p) {
 
 static int future_MARK(void *p) {
   future_t *f = (future_t *)p;
-  gcMARK(f->runstack);
-  gcMARK(f->runstack_start);
   gcMARK(f->orig_lambda);
-  gcMARK(f->prim_data.p);
-  gcMARK(f->prim_data.argv);
-  gcMARK(f->prim_data.retval);
+  gcMARK(f->arg_s0);
+  gcMARK(f->arg_S0);
+  gcMARK(f->arg_b0);
+  gcMARK(f->arg_n0);
+  gcMARK(f->arg_s1);
+  gcMARK(f->arg_S1);
+  gcMARK(f->arg_s2);
+  gcMARK(f->arg_S2);
+  gcMARK(f->retval_s);
   gcMARK(f->retval);
+  gcMARK(f->multiple_array);
+  gcMARK(f->tail_rator);
+  gcMARK(f->tail_rands);
   gcMARK(f->prev);
   gcMARK(f->next);
   gcMARK(f->next_waiting_atomic);
@@ -5436,13 +5445,20 @@ static int future_MARK(void *p) {
 
 static int future_FIXUP(void *p) {
   future_t *f = (future_t *)p;
-  gcFIXUP(f->runstack);
-  gcFIXUP(f->runstack_start);
   gcFIXUP(f->orig_lambda);
-  gcFIXUP(f->prim_data.p);
-  gcFIXUP(f->prim_data.argv);
-  gcFIXUP(f->prim_data.retval);
+  gcFIXUP(f->arg_s0);
+  gcFIXUP(f->arg_S0);
+  gcFIXUP(f->arg_b0);
+  gcFIXUP(f->arg_n0);
+  gcFIXUP(f->arg_s1);
+  gcFIXUP(f->arg_S1);
+  gcFIXUP(f->arg_s2);
+  gcFIXUP(f->arg_S2);
+  gcFIXUP(f->retval_s);
   gcFIXUP(f->retval);
+  gcFIXUP(f->multiple_array);
+  gcFIXUP(f->tail_rator);
+  gcFIXUP(f->tail_rands);
   gcFIXUP(f->prev);
   gcFIXUP(f->next);
   gcFIXUP(f->next_waiting_atomic);
@@ -5453,6 +5469,39 @@ static int future_FIXUP(void *p) {
 #define future_IS_ATOMIC 0
 #define future_IS_CONST_SIZE 1
 
+
+#else
+
+static int sequential_future_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(future_t));
+}
+
+static int sequential_future_MARK(void *p) {
+  future_t *f = (future_t *)p;
+  gcMARK(f->orig_lambda);
+  gcMARK(f->running_sema);
+  gcMARK(f->retval);
+  gcMARK(f->multiple_array);
+  return
+  gcBYTES_TO_WORDS(sizeof(future_t));
+}
+
+static int sequential_future_FIXUP(void *p) {
+  future_t *f = (future_t *)p;
+  gcFIXUP(f->orig_lambda);
+  gcFIXUP(f->running_sema);
+  gcFIXUP(f->retval);
+  gcFIXUP(f->multiple_array);
+  return
+  gcBYTES_TO_WORDS(sizeof(future_t));
+}
+
+#define sequential_future_IS_ATOMIC 0
+#define sequential_future_IS_CONST_SIZE 1
+
+
+#endif
 
 #endif  /* FUTURE */
 

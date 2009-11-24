@@ -272,7 +272,8 @@ fun.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/schmap.inc \
 				$(srcdir)/future.h
 future.@LTO@: $(srcdir)/schpriv.h $(srcdir)/future.h $(SCONFIG) $(srcdir)/../include/scheme.h \
-        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c \
+        $(srcdir)/jit_ts_future_glue.c $(srcdir)/jit_ts_runtime_glue.c $(srcdir)/jit_ts_protos.h
 hash.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
 jit.@LTO@: $(COMMON_HEADERS) \
@@ -285,7 +286,7 @@ jit.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/lightning/ppc/asm.h $(srcdir)/lightning/ppc/asm-common.h \
         $(srcdir)/lightning/ppc/funcs.h $(srcdir)/lightning/ppc/funcs-common.h \
         $(srcdir)/lightning/ppc/fp.h $(srcdir)/lightning/ppc/fp-common.h \
-				$(srcdir)/future.h
+        $(srcdir)/future.h $(srcdir)/jit_ts.c $(srcdir)/jit_ts_protos.h
 list.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/../src/stypes.h  
 module.@LTO@: $(COMMON_HEADERS) \

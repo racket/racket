@@ -1006,8 +1006,8 @@
      (stepper-syntax-property
       (check-expect-maker stx #'check-property-error #'?prop '() 
 			  'comes-from-check-property)
-      'stepper-skip-completely
-      #t))
+      'stepper-replace
+      #'#t))
     (_ (raise-syntax-error #f "`check-property' erwartet einen einzelnen Operanden"
 			   stx))))
 

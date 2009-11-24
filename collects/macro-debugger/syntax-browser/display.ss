@@ -28,65 +28,32 @@
 ;; FIXME: assumes text never moves
 
 ;; print-syntax-to-editor : syntax text controller<%> config number number
-;;                          -> display<%>
+;;                       -> display<%>
 (define (print-syntax-to-editor stx text controller config columns insertion-point)
   (begin-with-definitions
-   (define **entry (now))
    (define output-port (open-output-string/count-lines))
    (define range
      (pretty-print-syntax stx output-port 
                           (send: controller controller<%> get-primary-partition)
-                          (send: config config<%> get-colors)
+                          (length (send: config config<%> get-colors))
                           (send: config config<%> get-suffix-option)
                           columns))
-   (define **range (now))
    (define output-string (get-output-string output-port))
    (define output-length (sub1 (string-length output-string))) ;; skip final newline
    (fixup-parentheses output-string range)
-   (define **fixup (now))
+   (send text begin-edit-sequence #f)
+   (send text insert output-length output-string insertion-point)
    (define display
      (new display%
           (text text)
           (controller controller)
           (config config)
           (range range)
-          (base-style (standard-font text config))
           (start-position insertion-point)
           (end-position (+ insertion-point output-length))))
-   (send text begin-edit-sequence #f)
-   (define **editing (now))
-   (send text insert output-length output-string insertion-point)
-   (define **inserted (now))
-   (add-clickbacks text range controller insertion-point)
-   (define **clickbacks (now))
    (send display initialize)
-   (define **colorize (now))
    (send text end-edit-sequence)
-   (define **finished (now))
-   (when TIME-PRINTING?
-     (eprintf "** pretty-print: ~s\n" (- **range **entry))
-     (eprintf "** fixup, begin-edit-sequence: ~s\n" (- **editing **range))
-     (eprintf "** > insert: ~s\n" (- **inserted **editing))
-     (eprintf "** > clickback: ~s\n" (- **clickbacks **inserted))
-     (eprintf "** > colorize: ~s\n" (- **colorize **clickbacks))
-     (eprintf "** finish: ~s\n" (- **finished **colorize))
-     (eprintf "** total: ~s\n" (- **finished **entry))
-     (eprintf "\n"))
    display))
-
-;; add-clickbacks : text% range% controller<%> number -> void
-(define (add-clickbacks text range controller insertion-point)
-  (for ([range (send: range range<%> all-ranges)])
-    (let ([stx (range-obj range)]
-          [start (range-start range)]
-          [end (range-end range)])
-      (send text set-clickback (+ insertion-point start) (+ insertion-point end)
-            (lambda (_1 _2 _3)
-              (send: controller selection-manager<%>
-                     set-selected-syntax stx))))))
-
-(define (standard-font text config)
-  (code-style text (send: config config<%> get-syntax-font-size)))
 
 ;; display%
 (define display%
@@ -95,9 +62,11 @@
                  [config config<%>]
                  [range range<%>])
     (init-field text
-                base-style
                 start-position
                 end-position)
+
+    (define base-style
+      (code-style text (send: config config<%> get-syntax-font-size)))
 
     (define extra-styles (make-hasheq))
 
@@ -105,7 +74,35 @@
     (define/public (initialize)
       (send text change-style base-style start-position end-position #f)
       (apply-primary-partition-styles)
+      (add-clickbacks)
       (refresh))
+
+    ;; add-clickbacks : -> void
+    (define/private (add-clickbacks)
+      (define (the-clickback editor start end)
+        (send: controller selection-manager<%> set-selected-syntax
+               (clickback->stx
+                (- start start-position) (- end start-position))))
+      (for ([range (send: range range<%> all-ranges)])
+        (let ([stx (range-obj range)]
+              [start (range-start range)]
+              [end (range-end range)])
+          (send text set-clickback (+ start-position start) (+ start-position end)
+                the-clickback))))
+
+    ;; clickback->stx : num num -> syntax
+    ;; FIXME: use vectors for treerange-subs and do binary search to narrow?
+    (define/private (clickback->stx start end)
+      (let ([treeranges (send: range range<%> get-treeranges)])
+        (let loop* ([treeranges treeranges])
+          (for/or ([tr treeranges])
+            (cond [(and (= (treerange-start tr) start)
+                        (= (treerange-end tr) end))
+                   (treerange-obj tr)]
+                  [(and (<= (treerange-start tr) start)
+                        (<= end (treerange-end tr)))
+                   (loop* (treerange-subs tr))]
+                  [else #f])))))
 
     ;; refresh : -> void
     ;; Clears all highlighting and reapplies all non-foreground styles.

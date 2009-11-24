@@ -103,13 +103,18 @@
                  [(#f)   path]
                  [else (error "internal error (main-page)")]))
              (define (onclick style)
-               (if (eq? root 'user)
-                 (make-style style
-                             (list (make-attributes
-                                    `([onclick
-                                       . ,(format "return GotoPLTRoot(\"~a\", \"~a\");"
-                                                  (version) path)]))))
-                 style))
+               (make-style
+                style
+                (list (make-attributes
+                       `(,@(if (eq? root 'user)
+                             `([onclick
+                                . ,(format "return GotoPLTRoot(\"~a\", \"~a\");"
+                                           (version) path)])
+                             `())
+                         ;; note: root=#f means an external link, but in this
+                         ;; case this is the bugs link, so *keep* it and later
+                         ;; use it on the bugs page
+                         [pltdoc . "x"])))))
              (define (elt style)
                (make-toc-element
                 #f null (list (hyperlink dest #:style (onclick style) text))))

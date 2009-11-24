@@ -451,15 +451,18 @@ WARNING: printf is rebound in the body of the unit to always
       (super on-paint before dc left-margin top-margin right-margin bottom-margin dx dy draw-caret)
       (when before
         (let-values ([(view-x view-y view-width view-height)
-                      (let ([b1 (box 0)]
-                            [b2 (box 0)]
-                            [b3 (box 0)]
-                            [b4 (box 0)])
-                        (send (get-admin) get-view b1 b2 b3 b4)
-                        (values (unbox b1)
-                                (unbox b2)
-                                (unbox b3)
-                                (unbox b4)))])
+                      (let ([admin (get-admin)])
+                        (if admin
+                            (let ([b1 (box 0)]
+                                  [b2 (box 0)]
+                                  [b3 (box 0)]
+                                  [b4 (box 0)])
+                              (send admin get-view b1 b2 b3 b4)
+                              (values (unbox b1)
+                                      (unbox b2)
+                                      (unbox b3)
+                                      (unbox b4)))
+                            (values left-margin top-margin right-margin bottom-margin)))])
           (let* ([old-pen (send dc get-pen)]
                  [old-brush (send dc get-brush)]
                  [old-smoothing (send dc get-smoothing)]

@@ -25,6 +25,9 @@
 #  define THREAD_LOCAL __declspec(thread)
 # elif defined(OS_X)
 #  define IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
+#  if defined(__x86_64__) || defined(__i386__)
+#   define INLINE_GETSPECIFIC_ASSEMBLY_CODE
+#  endif
 # else
 #  define THREAD_LOCAL __thread
 # endif
@@ -92,6 +95,7 @@ typedef struct Thread_Local_Variables {
   unsigned long scheme_stack_boundary_;
   unsigned long volatile scheme_jit_stack_boundary_;
   volatile int scheme_future_need_gc_pause_;
+  int scheme_use_rtcall_;
   struct Scheme_Object *quick_stx_;
   int scheme_continuation_application_count_;
   int scheme_cont_capture_count_;
@@ -109,7 +113,6 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Overflow *offstack_overflow_;
   struct Scheme_Overflow_Jmp *scheme_overflow_jmp_;
   void *scheme_overflow_stack_start_;
-  struct future_t *current_ft_;
   void **codetab_tree_;
   int during_set_;
   Stack_Cache_Elem stack_cache_stack_[STACK_CACHE_SIZE];
@@ -180,7 +183,9 @@ typedef struct Thread_Local_Variables {
   int swap_no_setjmp_;
   int thread_swap_count_;
   int scheme_did_gc_count_;
-  int worker_gc_counter_;
+  struct Scheme_Future_State *scheme_future_state_;
+  struct Scheme_Future_Thread_State *scheme_future_thread_state_;
+  void *jit_future_storage_[2];
   struct Scheme_Object **scheme_current_runstack_start_;
   struct Scheme_Object **scheme_current_runstack_;
   MZ_MARK_STACK_TYPE scheme_current_cont_mark_stack_;
@@ -211,19 +216,36 @@ typedef struct Thread_Local_Variables {
   unsigned long current_total_allocation_;
   struct gmp_tmp_stack gmp_tmp_xxx_;
   struct gmp_tmp_stack *gmp_tmp_current_;
-#if FUTURES_ENABLED
-  pthread_cond_t worker_can_continue_cv_;
-  void *jit_future_storage_[2];
-#endif
+  struct Scheme_Logger *scheme_main_logger_;
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
 /* Using Pthread getspecific() */
 # include <pthread.h>
 MZ_EXTERN pthread_key_t scheme_thread_local_key;
-# define scheme_get_thread_local_variables() ((Thread_Local_Variables *)pthread_getspecific(scheme_thread_local_key))
-#ifdef MZ_XFORM
+# ifndef INLINE_GETSPECIFIC_ASSEMBLY_CODE
+#  define scheme_get_thread_local_variables() ((Thread_Local_Variables *)pthread_getspecific(scheme_thread_local_key))
+#  ifdef MZ_XFORM
 XFORM_GC_VARIABLE_STACK_THROUGH_GETSPECIFIC;
+#  endif
+# else
+#  ifdef MZ_XFORM
+START_XFORM_SKIP;
+#  endif
+static inline Thread_Local_Variables *scheme_get_thread_local_variables() __attribute__((used));
+static inline Thread_Local_Variables *scheme_get_thread_local_variables() {
+  Thread_Local_Variables *x;
+#  if defined(__x86_64__)
+  asm volatile("movq %%gs:0x8A0, %0" : "=r"(x));
+#  else
+  asm volatile("movl %%gs:0x468, %0" : "=r"(x));
+#  endif
+  return x;
+}
+#  ifdef MZ_XFORM
+END_XFORM_SKIP;
+XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION;
+#  endif
 # endif
 #else
 /* Using `THREAD_LOCAL' variable: */
@@ -255,6 +277,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_stack_boundary XOA (scheme_get_thread_local_variables()->scheme_stack_boundary_)
 #define scheme_jit_stack_boundary XOA (scheme_get_thread_local_variables()->scheme_jit_stack_boundary_)
 #define scheme_future_need_gc_pause XOA (scheme_get_thread_local_variables()->scheme_future_need_gc_pause_)
+#define scheme_use_rtcall XOA (scheme_get_thread_local_variables()->scheme_use_rtcall_)
 #define quick_stx XOA (scheme_get_thread_local_variables()->quick_stx_)
 #define scheme_continuation_application_count XOA (scheme_get_thread_local_variables()->scheme_continuation_application_count_)
 #define scheme_cont_capture_count XOA (scheme_get_thread_local_variables()->scheme_cont_capture_count_)
@@ -272,7 +295,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define offstack_overflow XOA (scheme_get_thread_local_variables()->offstack_overflow_)
 #define scheme_overflow_jmp XOA (scheme_get_thread_local_variables()->scheme_overflow_jmp_)
 #define scheme_overflow_stack_start XOA (scheme_get_thread_local_variables()->scheme_overflow_stack_start_)
-#define current_ft XOA (scheme_get_thread_local_variables()->current_ft_)
 #define codetab_tree XOA (scheme_get_thread_local_variables()->codetab_tree_)
 #define during_set XOA (scheme_get_thread_local_variables()->during_set_)
 #define thread_local_pointers XOA (scheme_get_thread_local_variables()->thread_local_pointers_)
@@ -344,7 +366,9 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define swap_no_setjmp XOA (scheme_get_thread_local_variables()->swap_no_setjmp_)
 #define thread_swap_count XOA (scheme_get_thread_local_variables()->thread_swap_count_)
 #define scheme_did_gc_count XOA (scheme_get_thread_local_variables()->scheme_did_gc_count_)
-#define worker_gc_counter XOA (scheme_get_thread_local_variables()->worker_gc_counter_)
+#define scheme_future_state XOA (scheme_get_thread_local_variables()->scheme_future_state_)
+#define scheme_future_thread_state XOA (scheme_get_thread_local_variables()->scheme_future_thread_state_)
+#define jit_future_storage XOA (scheme_get_thread_local_variables()->jit_future_storage_)
 #define scheme_current_runstack_start XOA (scheme_get_thread_local_variables()->scheme_current_runstack_start_)
 #define scheme_current_runstack XOA (scheme_get_thread_local_variables()->scheme_current_runstack_)
 #define scheme_current_cont_mark_stack XOA (scheme_get_thread_local_variables()->scheme_current_cont_mark_stack_)
@@ -375,8 +399,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define current_total_allocation XOA (scheme_get_thread_local_variables()->current_total_allocation_)
 #define gmp_tmp_xxx XOA (scheme_get_thread_local_variables()->gmp_tmp_xxx_)
 #define gmp_tmp_current XOA (scheme_get_thread_local_variables()->gmp_tmp_current_)
-#define worker_can_continue_cv XOA (scheme_get_thread_local_variables()->worker_can_continue_cv_)
-#define jit_future_storage XOA (scheme_get_thread_local_variables()->jit_future_storage_)
+#define scheme_main_logger XOA (scheme_get_thread_local_variables()->scheme_main_logger_)
 
 /* **************************************** */
 

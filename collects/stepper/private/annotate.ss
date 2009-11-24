@@ -1160,7 +1160,8 @@
   
   
   (define (annotate/module-top-level exp)
-    (cond [(stepper-syntax-property exp 'stepper-skip-completely) exp]
+    (cond [(stepper-syntax-property exp 'stepper-replace)]
+          [(stepper-syntax-property exp 'stepper-skip-completely) exp]
           ;; for kathy's test engine:
           [(syntax-property exp 'test-call) exp]
           [(stepper-syntax-property exp 'stepper-define-struct-hint)

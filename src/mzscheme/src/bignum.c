@@ -174,14 +174,10 @@ void scheme_clear_bignum_cache(void)
 void scheme_clear_bignum_cache(void) { }
 #endif
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
-
 #define xor(a, b) (!(a) ^ !(b))
 
 Scheme_Object *scheme_make_small_bignum(long v, Small_Bignum *o)
+  XFORM_SKIP_PROC
 {
   bigdig bv;
 
@@ -207,10 +203,6 @@ Scheme_Object *scheme_make_small_bignum(long v, Small_Bignum *o)
 
   return (Scheme_Object *) mzALIAS o;
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 Scheme_Object *scheme_make_bignum(long v)
 {

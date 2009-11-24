@@ -1,3 +1,8 @@
+Version 4.2.3, November 2009
+Changed _pointer (in scheme/foreign) to mean a pointer that does not
+ refer to GCable memory; added _gcpointer
+Added scheme/vector
+
 Version 4.2.2, September 2009
 Added scheme/unsafe/ops
 Added print-syntax-width

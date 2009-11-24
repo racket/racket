@@ -2220,22 +2220,46 @@ END jit;
 
 START future;
 
+#ifdef FUTURES_ENABLED
+
 future {
  mark:
   future_t *f = (future_t *)p;
-  gcMARK(f->runstack);
-  gcMARK(f->runstack_start);
   gcMARK(f->orig_lambda);
-  gcMARK(f->prim_data.p);
-  gcMARK(f->prim_data.argv);
-  gcMARK(f->prim_data.retval);
+  gcMARK(f->arg_s0);
+  gcMARK(f->arg_S0);
+  gcMARK(f->arg_b0);
+  gcMARK(f->arg_n0);
+  gcMARK(f->arg_s1);
+  gcMARK(f->arg_S1);
+  gcMARK(f->arg_s2);
+  gcMARK(f->arg_S2);
+  gcMARK(f->retval_s);
   gcMARK(f->retval);
+  gcMARK(f->multiple_array);
+  gcMARK(f->tail_rator);
+  gcMARK(f->tail_rands);
   gcMARK(f->prev);
   gcMARK(f->next);
   gcMARK(f->next_waiting_atomic);
  size:
   gcBYTES_TO_WORDS(sizeof(future_t));
 }
+
+#else
+
+sequential_future {
+ mark:
+  future_t *f = (future_t *)p;
+  gcMARK(f->orig_lambda);
+  gcMARK(f->running_sema);
+  gcMARK(f->retval);
+  gcMARK(f->multiple_array);
+ size:
+  gcBYTES_TO_WORDS(sizeof(future_t));
+}
+
+#endif
 
 END future;
 

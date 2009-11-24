@@ -77,14 +77,14 @@ table td {
   padding: 0.25em 0 0.25em 0;
 }
 
-.navsettop { 
-   margin-bottom: 1.5em;
-   border-bottom: 2px solid #e0e0c0;
+.navsettop {
+  margin-bottom: 1.5em;
+  border-bottom: 2px solid #e0e0c0;
 }
 
-.navsetbottom { 
-   margin-top: 2em;
-   border-top: 2px solid #e0e0c0;
+.navsetbottom {
+  margin-top: 2em;
+  border-top: 2px solid #e0e0c0;
 }
 
 .navleft {
@@ -117,6 +117,18 @@ table td {
   border: 1px solid #ddd;
   text-align: center;
   vertical-align: middle;
+}
+
+#langindicator {
+  position: fixed;
+  background-color: #c6f;
+  color: #000;
+  font-family: monospace;
+  font-weight: bold;
+  padding: 2px 10px;
+  display: none;
+  right: 0;
+  bottom: 0;
 }
 
 /* ---------------------------------------- */
@@ -224,11 +236,11 @@ table td {
   padding-left: 0.8em;
 }
 .tocviewsublist {
-   margin-bottom: 1em;
+  margin-bottom: 1em;
 }
-.tocviewsublist table, 
+.tocviewsublist table,
 .tocviewsublistonly table,
-.tocviewsublisttop table, 
+.tocviewsublisttop table,
 .tocviewsublistbottom table {
   font-size: 75%;
 }

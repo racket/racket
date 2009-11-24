@@ -124,6 +124,7 @@
 (define-struct range (obj start end))
 
 ;; A TreeRange is (make-treerange syntax nat nat (listof TreeRange))
+;; where subs are disjoint, in order, and all contained within [start, end]
 (define-struct treerange (obj start end subs))
 
 ;; syntax-prefs<%>

@@ -246,6 +246,8 @@ struct jit_local_state {
 #define jit_prolog(n)			_jit_prolog(&_jit, (n))
 #define jit_pushr_i(rs)			STWUrm((rs), -4, 1)
 #define jit_pusharg_i(rs)		(--_jitl.nextarg_puti, MRrr((3 + _jitl.nextarg_putd * 2 + _jitl.nextarg_putf + _jitl.nextarg_puti), (rs)))
+#define jit_save_argstate(curstate)		(curstate = _jitl.nextarg_puti)
+#define jit_restore_argstate(curstate)		(_jitl.nextarg_puti = curstate)
 #define jit_ret()			_jit_epilog(&_jit)
 #define jit_retval_i(rd)		MRrr((rd), 3)
 #define jit_rsbi_i(d, rs, is)		jit_chk_ims((is), SUBFICrri((d), (rs), (is)), SUBFCrrr((d), (rs), JIT_AUX))

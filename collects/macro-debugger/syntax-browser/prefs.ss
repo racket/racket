@@ -29,16 +29,25 @@
     (define-notify syntax-font-size (new notify-box% (value #f)))
 
     ;; colors : (listof string)
-    (define-notify colors 
-      (new notify-box%
-           (value '("black" "red" "blue"
-                    "mediumforestgreen" "darkgreen" 
-                    "darkred"
-                    "cornflowerblue" "royalblue" "steelblue" "darkslategray" "darkblue"
-                    "indigo" "purple" 
-                    "orange" "salmon" "darkgoldenrod" "olive"))))
+    (define-notify colors
+      (new notify-box% (value the-colors)))
 
     (super-new)))
+
+(define alt-colors
+  '("black"
+    "red"       "blue"           "forestgreen" "purple"       "brown"
+    "firebrick" "darkblue"       "seagreen"    "violetred"    "chocolate"
+    "darkred"   "cornflowerblue" "darkgreen"   "indigo"       "sandybrown"
+    "orange"    "cadetblue"      "olive"       "mediumpurple" "goldenrod"))
+
+(define the-colors
+  '("black" "red" "blue"
+    "mediumforestgreen" "darkgreen" 
+    "darkred"
+    "cornflowerblue" "royalblue" "steelblue" "darkslategray" "darkblue"
+    "indigo" "purple" 
+    "orange" "salmon" "darkgoldenrod" "olive"))
 
 (define syntax-prefs-base%
   (class* prefs-base% (config<%>)

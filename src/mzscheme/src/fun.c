@@ -7945,11 +7945,9 @@ void scheme_apply_dw_in_meta(Scheme_Dynamic_Wind *dw, int post_part, int meta_de
 #define CLOCKS_PER_SEC 1000000
 #endif
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 long scheme_get_milliseconds(void)
+  XFORM_SKIP_PROC
+/* this function can be called from any OS thread */
 {
 #ifdef USE_MACTIME
   return scheme_get_process_milliseconds();
@@ -7972,6 +7970,8 @@ long scheme_get_milliseconds(void)
 }
 
 double scheme_get_inexact_milliseconds(void)
+  XFORM_SKIP_PROC
+/* this function can be called from any OS thread */
 {
 #ifdef USE_MACTIME
   {
@@ -8000,6 +8000,7 @@ double scheme_get_inexact_milliseconds(void)
 }
 
 long scheme_get_process_milliseconds(void)
+  XFORM_SKIP_PROC
 {
 #ifdef USER_TIME_IS_CLOCK
   return scheme_get_milliseconds();
@@ -8043,6 +8044,7 @@ long scheme_get_process_milliseconds(void)
 }
 
 long scheme_get_thread_milliseconds(Scheme_Object *thrd)
+  XFORM_SKIP_PROC
 {
   Scheme_Thread *t = thrd ? (Scheme_Thread *)thrd : scheme_current_thread;
 
@@ -8054,10 +8056,6 @@ long scheme_get_thread_milliseconds(Scheme_Object *thrd)
     return t->accum_process_msec;
   }
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 long scheme_get_seconds(void)
 {

@@ -111,7 +111,7 @@
                [e (make-link-element "indexlink" e tag)]
                [e (send renderer render-content e sec ri)])
           (match e ; should always render to a single `a'
-            [`((a ([href ,href] [class "indexlink"]) . ,body))
+            [`((a ([href ,href] [class "indexlink"] [pltdoc ,_]) . ,body))
              (cond [(and (part-index-desc? desc)
                          (regexp-match #rx"(?:^|/)([^/]+)/index\\.html$" href))
                     => (lambda (man) (hash-set! manual-refs (cadr man) idx))])
@@ -121,10 +121,11 @@
                             (if (regexp-match? #rx"^Provided from: " label)
                               body
                               ;; if this happens, this code should be updated
-                              (error "internal error: unexpected tooltip"))]
+                              (error 'make-script
+                                     "internal error: unexpected tooltip"))]
                            [else body])])
                (values (compact-url href) (compact-body body)))]
-            [else (error "unexpected value rendered: ~e" e)])))
+            [else (error 'make-script "unexpected value rendered: ~e" e)])))
       (define (lib->name lib)
         (quote-string (let loop ([lib lib])
                         (match lib

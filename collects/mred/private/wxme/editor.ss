@@ -97,9 +97,9 @@
   (set-box! w PAGE-WIDTH)
   (set-box! h PAGE-HEIGHT)
   (when (eq? (get-printer-orientation) 'landscape)
-    (let ([tmp h])
-      (set! h w)
-      (set! w tmp))))
+    (let ([tmp (unbox h)])
+      (set-box! h (unbox w))
+      (set-box! w tmp))))
 
 ;; ----------------------------------------
 

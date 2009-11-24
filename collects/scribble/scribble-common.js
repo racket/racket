@@ -1,5 +1,7 @@
 // Common functionality for PLT documentation pages
 
+// Cookies --------------------------------------------------------------------
+
 function GetCookie(key, def) {
   if (document.cookie.length <= 0) return def;
   var i, cookiestrs = document.cookie.split(/; */);
@@ -36,6 +38,40 @@ function GotoPLTRoot(ver, relative) {
   return false;
 }
 
+// URL Parameters -------------------------------------------------------------
+
+// In the following functions, the `name' argument is assumed to be simple in
+// that it doesn't contain anything that isn't plain text in a regexp.  (This
+// is because JS doesn't have a `regexp-quote', easy to hack but not needed
+// here).  Also, the output value from the Get functions and the input value to
+// the Set functions is decoded/encoded.  Note that `SetArgInURL' mutates the
+// string in the url object.
+
+function GetArgFromString(str, name) {
+  var rx = new RegExp("(?:^|[;&])"+name+"=([^&;]*)(?:[;&]|$)");
+  return rx.test(str) && unescape(RegExp.$1);
+}
+
+function SetArgInString(str, name, val) {
+  val = escape(val);
+  if (str.length == 0) return name + "=" + val;
+  var rx = new RegExp("^((?:|.*[;&])"+name+"=)(?:[^&;]*)([;&].*|)$");
+  if (rx.test(str)) return RegExp.$1 + val + RegExp.$2;
+  else return name + "=" + val + "&" + str;
+}
+
+function GetArgFromURL(url, name) {
+  if (!url.href.search(/\?([^#]*)(?:#|$)/)) return false;
+  return GetArgFromString(RegExp.$1, name);
+}
+
+function SetArgInURL(url, name, val) { // note: mutates the string
+  url.href.search(/^([^?#]*)(?:\?([^#]*))?(#.*)?$/);
+  url.href = RegExp.$1 + "?" + SetArgInString(RegExp.$2,name,val) + RegExp.$3;
+}
+
+// Utilities ------------------------------------------------------------------
+
 normalize_rxs = [/\/\/+/g, /\/\.(\/|$)/, /\/[^\/]*\/\.\.(\/|$)/];
 function NormalizePath(path) {
   var tmp, i;
@@ -43,6 +79,12 @@ function NormalizePath(path) {
     while ((tmp = path.replace(normalize_rxs[i], "/")) != path) path = tmp;
   return path;
 }
+
+// `noscript' is problematic in some browsers (always renders as a
+// block), use this hack instead (does not always work!)
+// document.write("<style>mynoscript { display:none; }</style>");
+
+// Interactions ---------------------------------------------------------------
 
 function DoSearchKey(event, field, ver, top_path) {
   var val = field.value;
@@ -55,13 +97,41 @@ function DoSearchKey(event, field, ver, top_path) {
   return true;
 }
 
-function TocviewToggle(glyph,id) {
+function TocviewToggle(glyph, id) {
   var s = document.getElementById(id).style;
   var expand = s.display == "none";
   s.display = expand ? "block" : "none";
   glyph.innerHTML = expand ? "&#9660;" : "&#9658;";
 }
 
-// `noscript' is problematic in some browsers (always renders as a
-// block), use this hack instead (does not always work!)
-// document.write("<style>mynoscript { display:none; }</style>");
+// Page Init ------------------------------------------------------------------
+
+// Note: could make a function that inspects and uses window.onload to chain to
+// a previous one, but this file needs to be required first anyway, since it
+// contains utilities for all other files.
+var on_load_funcs = [];
+function AddOnLoad(fun) { on_load_funcs.push(fun); }
+window.onload = function() {
+  for (var i=0; i<on_load_funcs.length; i++) on_load_funcs[i]();
+};
+
+var cur_plt_lang = GetArgFromURL(location,"lang");
+
+function PropagateLangInLink(a) {
+  // the attribute's value doesn't matter
+  if (cur_plt_lang
+      && a.attributes["pltdoc"] && a.attributes["pltdoc"].value != ""
+      && !GetArgFromURL(a,"lang"))
+    SetArgInURL(a, "lang", cur_plt_lang);
+}
+
+AddOnLoad(function(){
+    if (!cur_plt_lang) return;
+    var indicator = document.getElementById("langindicator");
+    if (indicator) {
+      indicator.innerHTML = cur_plt_lang;
+      indicator.style.display = "block";
+    }
+    var links = document.getElementsByTagName("a");
+    for (var i=0; i<links.length; i++) PropagateLangInLink(links[i]);
+  });

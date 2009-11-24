@@ -338,11 +338,9 @@ static struct protoent *proto;
 # define mz_gai_strerror gai_strerror
 #else
 # define mzAI_PASSIVE 0
-# ifdef MZ_XFORM
-START_XFORM_SKIP;
-# endif
 static int mz_getaddrinfo(const char *nodename, const char *servname,
 			  const struct mz_addrinfo *hints, struct mz_addrinfo **res)
+  XFORM_SKIP_PROC
 {
   struct hostent *h;
 
@@ -386,17 +384,16 @@ static int mz_getaddrinfo(const char *nodename, const char *servname,
   return h_errno;
 }
 void mz_freeaddrinfo(struct mz_addrinfo *ai)
+  XFORM_SKIP_PROC
 {
   free(ai->ai_addr);
   free(ai);
 }
 const char *mz_gai_strerror(int ecode)
+  XFORM_SKIP_PROC
 {
   return hstrerror(ecode);
 }
-# ifdef MZ_XFORM
-END_XFORM_SKIP;
-# endif
 #endif
 
 #if defined(USE_WINSOCK_TCP) || defined(PTHREADS_OK_FOR_GHBN)
@@ -441,11 +438,8 @@ HANDLE ready_sema;
 int ready_fd;
 # endif
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 static long getaddrinfo_in_thread(void *data)
+  XFORM_SKIP_PROC
 {
   int ok;
   struct mz_addrinfo *res, hints;
@@ -486,10 +480,6 @@ static long getaddrinfo_in_thread(void *data)
 
   return 1;
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 static void release_ghbn_lock(GHBN_Rec *rec)
 {

@@ -383,6 +383,7 @@ scheme_init_string (Scheme_Env *env)
   platform_3m_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH MZ3M_SUBDIR);
 
   REGISTER_SO(putenv_str_table);
+
   REGISTER_SO(embedding_banner);
   REGISTER_SO(current_locale_name);
 
@@ -1978,32 +1979,82 @@ int scheme_any_string_has_null(Scheme_Object *o)
   }
 }
 
-#ifdef DOS_FILE_SYSTEM
-# include <windows.h>
-static char *mzGETENV(char *s)
-{
-  int sz, got;
-  char *res;
+/***********************************************************************/
+/* Environment Variables                                               */
+/***********************************************************************/
 
-  sz = GetEnvironmentVariable(s, NULL, 0);
-  if (!sz)
-    return NULL;
-  res = scheme_malloc_atomic(sz);
-  got = GetEnvironmentVariable(s, res, sz);
-  if (got < sz)
-    res[got] = 0;
-  return res;
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+static char* clone_str_with_gc(const char* buffer) {
+  int length;
+  char *newbuffer;
+  length = strlen(buffer);
+  newbuffer = scheme_malloc_atomic(length+1);
+  memcpy(newbuffer, buffer, length+1);
+  return newbuffer;
 }
-
-static int mzPUTENV(char *var, char *val, char *together)
-{
-  return !SetEnvironmentVariable(var, val);
-}
-
-#else
-# define mzGETENV getenv
-# define mzPUTENV(var, val, s) MSC_IZE(putenv)(s)
 #endif
+
+static void create_putenv_str_table_if_needed() {
+  if (!putenv_str_table) {
+    putenv_str_table = scheme_make_hash_table(SCHEME_hash_string);
+  }
+}
+
+#ifndef DOS_FILE_SYSTEM
+static void putenv_str_table_put_name(Scheme_Object *name, Scheme_Object *value) {
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  void *original_gc;
+  Scheme_Object *name_copy;
+  original_gc = GC_switch_to_master_gc();
+  name_copy = (Scheme_Object *) clone_str_with_gc((Scheme_Object *) name);
+  create_putenv_str_table_if_needed();
+  scheme_hash_set(putenv_str_table, name_copy, value);
+  GC_switch_back_from_master(original_gc);
+#else
+  create_putenv_str_table_if_needed();
+  scheme_hash_set(putenv_str_table, name, value);
+#endif
+}
+#endif
+
+#ifndef GETENV_FUNCTION
+static void putenv_str_table_put_name_value(Scheme_Object *name, Scheme_Object *value) {
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  void *original_gc;
+  Scheme_Object *name_copy;
+  Scheme_Object *value_copy;
+  original_gc = GC_switch_to_master_gc();
+  name_copy = (Scheme_Object *) clone_str_with_gc((Scheme_Object *) name);
+  value_copy = (Scheme_Object *) clone_str_with_gc((Scheme_Object *) value);
+  create_putenv_str_table_if_needed();
+  scheme_hash_set(putenv_str_table, name_copy, value_copy);
+  GC_switch_back_from_master(original_gc);
+#else
+  create_putenv_str_table_if_needed();
+  scheme_hash_set(putenv_str_table, name, value);
+#endif
+}
+#endif
+
+#if !defined(GETENV_FUNCTION) || defined(MZ_PRECISE_GC)
+static Scheme_Object *putenv_str_table_get(Scheme_Object *name) {
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  void *original_gc;
+  Scheme_Object *value; 
+  original_gc = GC_switch_to_master_gc();
+  create_putenv_str_table_if_needed();
+  value = scheme_hash_get(putenv_str_table, name);
+  GC_switch_back_from_master(original_gc);
+  return value;
+#else
+  create_putenv_str_table_if_needed();
+  return scheme_hash_get(putenv_str_table, name);
+#endif
+}
+#endif
+
+
+static Scheme_Object *sch_bool_getenv(const char* name);
 
 void
 scheme_init_getenv(void)
@@ -2017,125 +2068,163 @@ scheme_init_getenv(void)
     scheme_current_thread->error_buf = &newbuf;
     if (!scheme_setjmp(newbuf)) {
       while (1) {
-	Scheme_Object *v = scheme_read(p);
-	if (SCHEME_EOFP(v))
-	  break;
+        Scheme_Object *v = scheme_read(p);
+        if (SCHEME_EOFP(v))
+          break;
 
-	if (SCHEME_PAIRP(v) && SCHEME_PAIRP(SCHEME_CDR(v))
-	    && SCHEME_NULLP(SCHEME_CDR(SCHEME_CDR(v)))) {
-	  Scheme_Object *key = SCHEME_CAR(v);
-	  Scheme_Object *val = SCHEME_CADR(v);
-	  if (SCHEME_STRINGP(key) && SCHEME_STRINGP(val)) {
-	    Scheme_Object *a[2];
-	    a[0] = key;
-	    a[1] = val;
-	    sch_putenv(2, a);
-	    v = NULL;
-	  }
-	}
+        if (SCHEME_PAIRP(v) && SCHEME_PAIRP(SCHEME_CDR(v))
+            && SCHEME_NULLP(SCHEME_CDR(SCHEME_CDR(v)))) {
+          Scheme_Object *key = SCHEME_CAR(v);
+          Scheme_Object *val = SCHEME_CADR(v);
+          if (SCHEME_STRINGP(key) && SCHEME_STRINGP(val)) {
+            Scheme_Object *a[2];
+            a[0] = key;
+            a[1] = val;
+            sch_putenv(2, a);
+            v = NULL;
+          }
+        }
 
-	if (v)
-	  scheme_signal_error("bad environment specification: %V", v);
+        if (v)
+          scheme_signal_error("bad environment specification: %V", v);
       }
     }
     scheme_current_thread->error_buf = savebuf;
     scheme_close_input_port(p);
-
-    if (scheme_hash_get(putenv_str_table, (Scheme_Object *)"PLTNOMZJIT")) {
-      scheme_set_startup_use_jit(0);
-    }
-  }
-#else
-  if (mzGETENV("PLTNOMZJIT")) {
-    scheme_set_startup_use_jit(0);
   }
 #endif
+  if (sch_bool_getenv("PLTNOMZJIT")) {
+      scheme_set_startup_use_jit(0);
+  }
+}
+
+#ifdef DOS_FILE_SYSTEM
+# include <windows.h>
+static char *dos_win_getenv(const char *name) {
+  int value_size;
+  value_size = GetEnvironmentVariable(s, NULL, 0);
+  if (value_size) {
+    char *value;
+    int got;
+    value = scheme_malloc_atomic(value_size);
+    got = GetEnvironmentVariable(name, value, value_size);
+    if (got < value_size)
+      value[got] = 0;
+    return value;
+  }
+  return name;
+}
+#endif
+
+static Scheme_Object *sch_bool_getenv(const char* name) {
+  Scheme_Object *rc;
+  rc = scheme_false;
+#ifdef GETENV_FUNCTION
+# ifdef DOS_FILE_SYSTEM
+  if (GetEnvironmentVariable(s, NULL, 0)) rc = scheme_true;
+# else
+  if (getenv(name)) rc = scheme_true;
+# endif
+#else
+  if (putenv_str_table_get(name))  rc = scheme_true;
+#endif
+  return rc;
 }
 
 static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[])
 {
-  char *s;
+  char *name;
+  char *value;
   Scheme_Object *bs;
 
-  if (!SCHEME_CHAR_STRINGP(argv[0])
-      || scheme_any_string_has_null(argv[0]))
+  if (!SCHEME_CHAR_STRINGP(argv[0]) || scheme_any_string_has_null(argv[0]))
     scheme_wrong_type("getenv", CHAR_STRING_W_NO_NULLS, 0, argc, argv);
 
   bs = scheme_char_string_to_byte_string_locale(argv[0]);
+  name = SCHEME_BYTE_STR_VAL(bs);
 
 #ifdef GETENV_FUNCTION
-  s = mzGETENV(SCHEME_BYTE_STR_VAL(bs));
+# ifdef DOS_FILE_SYSTEM
+  value = dos_win_getenv(name);
+# else
+  value = getenv(name);
+# endif
 #else
-  if (putenv_str_table) {
-    s = (char *)scheme_hash_get(putenv_str_table, (Scheme_Object *)SCHEME_BYTE_STR_VAL(argv[0]));
-    /* If found, skip over the `=' in the table: */
-    if (s)
-      s += SCHEME_BYTE_STRTAG_VAL(bs) + 1;
-  } else
-    s = NULL;
-#endif
-
-  if (s)
-    return scheme_make_locale_string(s);
-
-  return scheme_false;
-}
-
-static Scheme_Object *sch_putenv(int argc, Scheme_Object *argv[])
-{
-  char *s, *var, *val;
-  long varlen, vallen;
-  Scheme_Object *bs;
-
-  if (!SCHEME_CHAR_STRINGP(argv[0])
-      || scheme_any_string_has_null(argv[0]))
-    scheme_wrong_type("putenv", CHAR_STRING_W_NO_NULLS, 0, argc, argv);
-  if (!SCHEME_CHAR_STRINGP(argv[1])
-      || scheme_any_string_has_null(argv[1]))
-    scheme_wrong_type("putenv", CHAR_STRING_W_NO_NULLS, 1, argc, argv);
-
-  bs = scheme_char_string_to_byte_string_locale(argv[0]);
-  var = SCHEME_BYTE_STR_VAL(bs);
-
-  bs = scheme_char_string_to_byte_string_locale(argv[1]);
-  val = SCHEME_BYTE_STR_VAL(bs);
-
-  varlen = strlen(var);
-  vallen = strlen(val);
-
-  s = (char *)scheme_malloc_atomic(varlen + vallen + 2);
-  memcpy(s, var, varlen);
-  memcpy(s + varlen + 1, val, vallen + 1);
-  s[varlen] = '=';
-
-#ifdef MZ_PRECISE_GC
   {
-    /* Can't put moveable string into array. */
-    char *ss;
-    ss = s;
-    s = malloc(varlen + vallen + 2);
-    memcpy(s, ss, varlen + vallen + 2);
-
-    /* Free old, if in table: */
-    if (putenv_str_table) {
-      ss = (char *)scheme_hash_get(putenv_str_table, (Scheme_Object *)var);
-      if (ss)
-	free(ss);
-    }
+    Scheme_Object *hash_value;
+    hash_value = putenv_str_table_get(name); 
+    return hash_value ? hash_value : scheme_false;
   }
 #endif
 
-  if (!putenv_str_table)
-    putenv_str_table = scheme_make_hash_table(SCHEME_hash_string);
+  return value ? scheme_make_locale_string(value) : scheme_false;
+}
 
-  scheme_hash_set(putenv_str_table, (Scheme_Object *)var, (Scheme_Object *)s);
+static int sch_unix_putenv(const char *var, const char *val, const long varlen, const long vallen) {
+  char *buffer;
+  long total_length;
+  total_length = varlen + vallen + 2;
+
+#ifdef MZ_PRECISE_GC
+  /* Can't put moveable string into array. */
+  buffer = malloc(total_length);
+#else
+  buffer = (char *)scheme_malloc_atomic(total_length);
+#endif
+  memcpy(buffer, var, varlen);
+  buffer[varlen] = '=';
+  memcpy(buffer + varlen + 1, val, vallen + 1);
+
+#ifdef MZ_PRECISE_GC
+  {
+    /* Free old, if in table: */
+    char *oldbuffer;
+    oldbuffer = (char *)putenv_str_table_get((Scheme_Object *)var);
+    if (oldbuffer)
+      free(oldbuffer);
+  }
+#endif
+
+  /* if precise the buffer needs to be remembered so it can be freed */
+  /* if not precise the buffer needs to be rooted so it doesn't get collected prematurely */
+  putenv_str_table_put_name((Scheme_Object *)var, (Scheme_Object *)buffer);
+  return putenv(buffer);
+} 
+
+static Scheme_Object *sch_putenv(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *varbs;
+  Scheme_Object *valbs;
+  char *var;
+  char *val;
+  int rc = 0;
+
+  if (!SCHEME_CHAR_STRINGP(argv[0]) || scheme_any_string_has_null(argv[0]))
+    scheme_wrong_type("putenv", CHAR_STRING_W_NO_NULLS, 0, argc, argv);
+  if (!SCHEME_CHAR_STRINGP(argv[1]) || scheme_any_string_has_null(argv[1]))
+    scheme_wrong_type("putenv", CHAR_STRING_W_NO_NULLS, 1, argc, argv);
+
+  varbs = scheme_char_string_to_byte_string_locale(argv[0]);
+  var = SCHEME_BYTE_STR_VAL(varbs);
+
+  valbs = scheme_char_string_to_byte_string_locale(argv[1]);
+  val = SCHEME_BYTE_STR_VAL(valbs);
 
 #ifdef GETENV_FUNCTION
-  return mzPUTENV(var, val, s) ? scheme_false : scheme_true;
+# ifdef DOS_FILE_SYSTEM
+  rc = !SetEnvironmentVariable(var, val);
+# else
+  rc = sch_unix_putenv(var, val, SCHEME_BYTE_STRLEN_VAL(varbs), SCHEME_BYTE_STRLEN_VAL(valbs));
+# endif
 #else
-  return scheme_true;
+  putenv_str_table_put_name_value(argv[0], argv[1]);
 #endif
+  return rc ? scheme_false : scheme_true;
 }
+
+/***********************************************************************/
+/* End Environment Variables                                           */
+/***********************************************************************/
 
 static void machine_details(char *s);
 

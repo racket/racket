@@ -119,6 +119,17 @@
   (test 2 vector-count even? #(1 2 3 4))
   (test 2 vector-count < #(1 2 3 4) #(4 3 2 1)))
 
+;; ---------- vector-copy ----------
+
+(let ()
+  (test #() vector-copy #())
+  (test #(1 2 3) vector-copy #(1 2 3))
+  (test #f immutable? (vector-copy #(1 2 3)))
+  (let ([v (vector 1 2 3)])
+    (test #f eq? v (vector-copy v))))
+
+
+
 ;; ---------- vector-arg{min,max} ----------
 
 (let ()

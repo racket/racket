@@ -534,16 +534,13 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
   return 0;
 }
 
-#ifdef MZ_XFORM
-START_XFORM_SKIP;
-#endif
-
 /* The fast cycle-checker plays a dangerous game: it changes type
    tags. No GCs can occur here, and no thread switches. If the fast
    version takes to long, we back out to the general case. (We don't
    even check for stack overflow, so keep the max limit low.) */
 
 static int check_cycles_fast(Scheme_Object *obj, PrintParams *pp, int *fast_checker_counter)
+  XFORM_SKIP_PROC
 {
   Scheme_Type t;
   int cycle = 0;
@@ -617,10 +614,6 @@ static int check_cycles_fast(Scheme_Object *obj, PrintParams *pp, int *fast_chec
 
   return cycle;
 }
-
-#ifdef MZ_XFORM
-END_XFORM_SKIP;
-#endif
 
 #ifdef DO_STACK_CHECK
 static void setup_graph_table(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht, int *counter, PrintParams *pp);

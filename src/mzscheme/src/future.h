@@ -23,143 +23,92 @@ int scheme_make_prim_w_arity(prim_t func, char *name, int arg1, int arg2);
 #include "pthread.h"
 #include <stdio.h>
 
-extern pthread_t g_rt_threadid;
-extern Scheme_Object *start_primitive_tracking(int argc, Scheme_Object *argv[]);
-extern Scheme_Object *end_primitive_tracking(int argc, Scheme_Object *argv[]);
-extern Scheme_Object *future(int argc, Scheme_Object *argv[]);
-extern Scheme_Object *touch(int argc, Scheme_Object *argv[]);
-extern Scheme_Object *num_processors(int argc, Scheme_Object *argv[]);
-extern void futures_init(void);
-
 typedef void (*prim_void_void_3args_t)(Scheme_Object **);
-typedef void *(*prim_alloc_void_pvoid_t)(void);
+typedef unsigned long (*prim_alloc_void_pvoid_t)();
 typedef Scheme_Object* (*prim_obj_int_pobj_obj_t)(Scheme_Object*, int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_t)(int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_obj_t)(int, Scheme_Object**, Scheme_Object*);
 typedef void* (*prim_pvoid_pvoid_pvoid_t)(void*, void*);
-
-typedef struct { 
-	unsigned int sigtype;
-
-	prim_void_void_3args_t void_void_3args;
-	prim_alloc_void_pvoid_t alloc_void_pvoid;
-	prim_obj_int_pobj_obj_t obj_int_pobj_obj;
-	prim_int_pobj_obj_t int_pobj_obj;
-	prim_int_pobj_obj_obj_t int_pobj_obj_obj;
-	prim_pvoid_pvoid_pvoid_t pvoid_pvoid_pvoid;
-
-	//Scheme_Object* (*prim_obj_int_pobj_obj)(Scheme_Object* rator, int argc, Scheme_Object** argv);
-	//Scheme_Object* (*prim_int_pobj_obj)(int argc, Scheme_Object** argv);
-	//Scheme_Object* (*prim_int_pobj_obj_obj)(int argc, Scheme_Object** argv, Scheme_Object* p);
-	//void (*prim_void_void)(void);
-	//void* (*prim_pvoid_pvoid_pvoid)(void *a, void *b);
-
-	Scheme_Object *p;
-	int argc;
-	Scheme_Object **argv;
-	Scheme_Object *retval;	
-
-	void *a;
-	void *b;
-	void *c;
-
-} prim_data_t;
 
 #define PENDING 0
 #define RUNNING 1
 #define WAITING_FOR_PRIM 2
 #define FINISHED 3
 
-typedef struct future {
+#define FSRC_OTHER 0
+#define FSRC_RATOR 1
+#define FSRC_PRIM 2
+
+typedef struct future_t {
   Scheme_Object so;
 
   int id;
   pthread_t threadid;
+  int thread_short_id;
   int status;
   int work_completed;
   pthread_cond_t *can_continue_cv;
 
-  long runstack_size;
-  Scheme_Object **runstack;
-  Scheme_Object **runstack_start;
   Scheme_Object *orig_lambda;
   void *code;
 
   //Runtime call stuff
   int rt_prim; /* flag to indicate waiting for a prim call */
   int rt_prim_is_atomic;
+  double time_of_request;
+  const char *source_of_request;
+  int source_type;
 
-  prim_data_t prim_data;
-  void *alloc_retval;
+  unsigned long alloc_retval;
   int alloc_retval_counter;
 
+  void *prim_func;
+  int prim_protocol;
+  Scheme_Object *arg_s0;
+  Scheme_Object **arg_S0;
+  Scheme_Bucket *arg_b0;
+  int arg_i0;
+  long arg_l0;
+  size_t arg_z0;
+  Scheme_Native_Closure_Data *arg_n0;
+  Scheme_Object *arg_s1;
+  Scheme_Object **arg_S1;
+  int arg_i1;
+  long arg_l1;
+  Scheme_Object *arg_s2;
+  Scheme_Object **arg_S2;
+  int arg_i2;
+
+  Scheme_Object *retval_s;
+  void *retval_p; /* use only with conservative GC */
+  MZ_MARK_STACK_TYPE retval_m;
+  int no_retval;
+
+  Scheme_Object **multiple_array;
+  int multiple_count;
+
+  Scheme_Object *tail_rator;
+  Scheme_Object **tail_rands;
+  int num_tail_rands;
+
   Scheme_Object *retval;
-  struct future *prev;
-  struct future *next;
-  struct future *next_waiting_atomic;
+  struct future_t *prev;
+  struct future_t *next;
+
+  int waiting_atomic;
+  struct future_t *next_waiting_atomic;
 } future_t;
 
-#ifdef UNIT_TEST
-//If unit testing, expose internal functions and vars to
-//the test suite
-extern future_t *g_future_queue;
-extern int g_next_futureid;
-extern pthread_t g_rt_threadid;
-
-extern void *worker_thread_future_loop(void *arg);
-extern void *invoke_rtcall(future_t *future);
-extern future_t *enqueue_future(void);
-extern future_t *get_pending_future(void);
-extern future_t *get_my_future(void);
-extern future_t *get_future_by_threadid(pthread_t threadid);
-extern future_t *get_future(int futureid);
-extern future_t *get_last_future(void);
-extern void clear_futures(void);
-#endif
-
 //Primitive instrumentation stuff 
-#ifdef INSTRUMENT_PRIMITIVES 
-extern int g_print_prims;
-extern void print_ms_and_us(void);
-#define LOG_PRIM_START(p) \
-	if (g_print_prims) \
-	{ \
-		printf("%p ", p); \
-		print_ms_and_us(); \
-		printf("\n"); \
-	} 
-
-#define LOG_PRIM_END(p) 
-/*
-#define LOG_PRIM_END(p) \
-	if (g_print_prims) \
-	{ \
-		print_ms_and_us(); \
-		printf("\n"); \
-	}
-*/
-
-#define LOG_PRIM_W_NAME(name) \
-	if (g_print_prims) \
-	{ \
-		printf("%s ", name); \
-		print_ms_and_us(); \
-		printf("\n"); \
-	} 
-#else
-#define LOG_PRIM_START(p) 
-#define LOG_PRIM_END(p) 
-#define LOG_PRIM_W_NAME(name) 
-#endif
 
 //Signature flags for primitive invocations
 //Here the convention is SIG_[arg1type]_[arg2type]..._[return type]
 #define SIG_VOID_VOID_3ARGS 1 						//void -> void, copy 3 args from runstack
 #define SIG_ALLOC_VOID_PVOID 2 						//void -> void*
-#define SIG_OBJ_INT_POBJ_OBJ 3 			//Scheme_Object* -> int -> Scheme_Object** -> Scheme_Object*
-#define SIG_INT_OBJARR_OBJ 4 				//int -> Scheme_Object*[] -> Scheme_Object
-#define SIG_INT_POBJ_OBJ_OBJ 17			//int -> Scheme_Object** -> Scheme_Object* -> Scheme_Object* 
-#define SIG_PVOID_PVOID_PVOID	18		//void* -> void* -> void*
+
+# include "jit_ts_protos.h"
+
+extern Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v);
 
 //Helper macros for argument marshaling
 #ifdef FUTURES_ENABLED
@@ -171,20 +120,8 @@ extern void print_ms_and_us(void);
 																/*GDB_BREAK;*/ \
 															}
 
-extern int rtcall_void_void_3args(void (*f)());
-extern int rtcall_alloc_void_pvoid(void (*f)(), void **retval);
-extern int rtcall_obj_int_pobj_obj(
-	Scheme_Object* (*f)(Scheme_Object*, int, Scheme_Object**), 
-	Scheme_Object *a, 
-	int b, 
-	Scheme_Object **c, 
-	Scheme_Object **retval);
-
-extern int rtcall_int_pobj_obj(
-	Scheme_Object* (*f)(int, Scheme_Object**), 
-	int argc, 
-	Scheme_Object **argv, 
-	Scheme_Object **retval);
+extern void scheme_rtcall_void_void_3args(const char *who, int src_type, prim_void_void_3args_t f);
+extern unsigned long scheme_rtcall_alloc_void_pvoid(const char *who, int src_type, prim_alloc_void_pvoid_t f);
 
 #else 
 
@@ -240,6 +177,9 @@ extern int rtcall_int_pobj_obj(
 #define LOG_RTCALL_INT_POBJ_OBJ_OBJ(a,b,c)
 #define LOG_RTCALL_ENV_ENV_VOID(a,b) 
 #endif
+
+extern void *scheme_on_demand_jit_code;
+extern void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv);
 
 void scheme_future_block_until_gc();
 void scheme_future_continue_after_gc();

@@ -50,8 +50,7 @@ void (*scheme_console_output)(char *str, long len);
 
 static int init_syslog_level = INIT_SYSLOG_LEVEL;
 static int init_stderr_level = SCHEME_LOG_ERROR;
-Scheme_Logger *scheme_main_logger;
-static void init_logger_config();
+THREAD_LOCAL_DECL(static Scheme_Logger *scheme_main_logger);
 
 /* readonly globals */
 const char *scheme_compile_stx_string = "compile";
@@ -177,6 +176,7 @@ Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)
   %c = unicode char
   %d = int
   %ld = long int
+  %lx = long int
   %o = int, octal
   %f = double
   %% = percent
@@ -333,9 +333,14 @@ static long sch_vsprintf(char *s, long maxlen, const char *msg, va_list args, ch
 	case 'l':
 	  {
 	    long d;
+            int as_hex;
+            as_hex = (msg[j] == 'x');
 	    j++;
 	    d = ints[ip++];
-	    sprintf(buf, "%ld", d);
+            if (as_hex)
+              sprintf(buf, "%lx", d);
+            else
+              sprintf(buf, "%ld", d);
 	    t = buf;
 	    tlen = strlen(t);
 	  }
@@ -343,7 +348,6 @@ static long sch_vsprintf(char *s, long maxlen, const char *msg, va_list args, ch
 	case 'f':
 	  {
 	    double f;
-	    j++;
 	    f = dbls[dp++];
 	    sprintf(buf, "%f", f);
 	    t = buf;
@@ -584,7 +588,13 @@ void scheme_init_error(Scheme_Env *env)
   scheme_add_evt(scheme_log_reader_type, (Scheme_Ready_Fun)log_reader_get, NULL, NULL, 1);
 
   REGISTER_SO(scheme_def_exit_proc);
+  REGISTER_SO(default_display_handler);
+  REGISTER_SO(emergency_display_handler);
+
   scheme_def_exit_proc = scheme_make_prim_w_arity(def_exit_handler_proc, "default-exit-handler", 1, 1);
+  default_display_handler = scheme_make_prim_w_arity(def_error_display_proc, "default-error-display-handler", 2, 2);
+  emergency_display_handler = scheme_make_prim_w_arity(emergency_error_display_proc, "emergency-error-display-handler", 2, 2);
+  
 
   REGISTER_SO(def_err_val_proc);
   def_err_val_proc = scheme_make_prim_w_arity(def_error_value_string_proc, "default-error-value->string-handler", 2, 2);
@@ -600,14 +610,6 @@ void scheme_init_error(Scheme_Env *env)
   info_symbol     = scheme_intern_symbol("info");
   debug_symbol    = scheme_intern_symbol("debug");
 
-  {
-    REGISTER_SO(scheme_main_logger);
-    scheme_main_logger = make_a_logger(NULL, NULL);
-    scheme_main_logger->syslog_level = init_syslog_level;
-    scheme_main_logger->stderr_level = init_stderr_level;
-  }
-  init_logger_config();
-
   REGISTER_SO(arity_property);
   {
     Scheme_Object *guard;
@@ -620,25 +622,27 @@ void scheme_init_error(Scheme_Env *env)
   scheme_init_error_config();
 }
 
-static void init_logger_config()
+void scheme_init_logger()
 {
-  scheme_set_root_param(MZCONFIG_LOGGER, (Scheme_Object *)scheme_main_logger);
+  REGISTER_SO(scheme_main_logger);
+  scheme_main_logger = make_a_logger(NULL, NULL);
+  scheme_main_logger->syslog_level = init_syslog_level;
+  scheme_main_logger->stderr_level = init_stderr_level;
+}
+
+Scheme_Logger *scheme_get_main_logger() {
+  return scheme_main_logger;
 }
 
 void scheme_init_error_config(void)
 {
-  init_logger_config();
-
   scheme_set_root_param(MZCONFIG_EXIT_HANDLER, scheme_def_exit_proc);
-  
-  REGISTER_SO(default_display_handler);
-  REGISTER_SO(emergency_display_handler);
-
-  default_display_handler = scheme_make_prim_w_arity(def_error_display_proc, "default-error-display-handler", 2, 2);
-  emergency_display_handler = scheme_make_prim_w_arity(emergency_error_display_proc, "emergency-error-display-handler", 2, 2);
-  
   scheme_set_root_param(MZCONFIG_ERROR_DISPLAY_HANDLER, default_display_handler);
   scheme_set_root_param(MZCONFIG_ERROR_PRINT_VALUE_HANDLER, def_err_val_proc);
+}
+
+void scheme_init_logger_config() {
+  scheme_set_root_param(MZCONFIG_LOGGER, (Scheme_Object *)scheme_main_logger);
 }
 
 static void

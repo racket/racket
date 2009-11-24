@@ -221,9 +221,8 @@ THREAD_LOCAL_DECL(static long stack_copy_size_cache[STACK_COPY_CACHE_SIZE]);
 THREAD_LOCAL_DECL(static int scc_pos);
 #define SCC_OK_EXTRA_AMT 100
 
-START_XFORM_SKIP;
-
 void scheme_flush_stack_copy_cache(void)
+  XFORM_SKIP_PROC
 {
   int i;
   for (i = 0; i < STACK_COPY_CACHE_SIZE; i++) {
@@ -231,8 +230,6 @@ void scheme_flush_stack_copy_cache(void)
     stack_copy_size_cache[i] = 0;
   }
 }
-
-END_XFORM_SKIP;
 
 #endif
 
