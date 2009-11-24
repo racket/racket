@@ -76,9 +76,8 @@
 
   (setup-printf "version" "~a [~a]" (version) (system-type 'gc))
   (setup-printf "variants" "~a"
-                (apply string-append
-                       (map (lambda (s) (format " ~a" s))
-                            (available-mzscheme-variants))))
+                (string-join (map symbol->string (available-mzscheme-variants))
+                             ", "))
   (setup-printf "main collects" "~a" (path->string main-collects-dir))
   (setup-printf "collects paths"
                 (if (null? (current-library-collection-paths)) " empty!" ""))
