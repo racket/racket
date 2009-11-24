@@ -620,7 +620,8 @@
                            (render-version d ri))
                        ,@(navigation d ri #t)
                        ,@(render-part d ri)
-                       ,@(navigation d ri #f)))))))))))
+                       ,@(navigation d ri #f)))
+                   (div ([id "langindicator"]) nbsp)))))))))
 
     (define/private (part-parent d ri)
       (collected-info-parent (part-collected-info d ri)))
