@@ -4,7 +4,7 @@
 
 (provide debug)
 
-(define-for-syntax verbose? #f)
+(define-for-syntax verbose? #t)
 (define-syntax (debug stx)
   (if verbose?
     (syntax-case stx ()
