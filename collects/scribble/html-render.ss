@@ -43,7 +43,7 @@
                ,@(map (lambda (x) (if (string? x) x (format "~a" x))) body)
                "\n"))))
 
-(define (extra-internal-attribs) null)
+(define (extra-internal-attribs) '([pltdoc "x"]))
 
 (define-runtime-path scribble-css "scribble.css")
 (define-runtime-path scribble-style-css "scribble-style.css")
