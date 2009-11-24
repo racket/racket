@@ -135,16 +135,14 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define x-specific-collections
-    (apply append
-           (specific-collections)
-           (map (lambda (x)
-                  (unpack x
-                          (build-path main-collects-dir 'up)
-                          (lambda (s) (setup-printf #f "~a" s))
-                          (current-target-directory-getter)
-                          (force-unpacks)
-                          (current-target-plt-directory-getter)))
-                (archives))))
+    (append* (specific-collections)
+             (for/list ([x (in-list (archives))])
+               (unpack x
+                       (build-path main-collects-dir 'up)
+                       (lambda (s) (setup-printf #f "~a" s))
+                       (current-target-directory-getter)
+                       (force-unpacks)
+                       (current-target-plt-directory-getter)))))
 
   ;; specific-planet-dir ::=
   ;;    - (list path[directory] string[owner] string[package-name] (listof string[extra package path]) Nat[maj] Nat[min]), or
@@ -853,49 +851,44 @@
                   kind mzlns))]
               [(and (or (not mzlls) (= (length mzlns) (length mzlls)))
                     (or (not mzlfs) (= (length mzlns) (length mzlfs))))
-               (for-each
-                (lambda (mzln mzll mzlf)
-                  (let ([p (program-launcher-path mzln)]
-                        [aux (list* `(exe-name . ,mzln)
-                                    '(framework-root . #f)
-                                    '(dll-dir . #f)
-                                    `(relative? . ,(not absolute-installation?))
-                                    (build-aux-from-path
-                                     (build-path (cc-path cc)
-                                                 (path-replace-suffix
-                                                  (or mzll mzln)
-                                                  #""))))])
-                    (unless (up-to-date? p aux)
-                      (setup-printf
-                       "launcher"
-                       "~a~a"
-                       (path->name p #:prefix (format "~a-bin" kind)
-                                   #:base (if (equal? kind 'console)
-                                            find-console-bin-dir
-                                            find-gui-bin-dir))
-                       (let ([v (current-launcher-variant)])
-                         (if (eq? v (system-type 'gc)) "" (format " [~a]" v))))
-                      (make-launcher
-                       (or mzlf
-                           (if (cc-collection cc)
-                             (list "-l-" (string-append
-                                          (apply string-append
-                                                 (map (lambda (s)
-                                                        (string-append
-                                                         (if (path? s)
-                                                           (path->string s)
-                                                           s)
-                                                         "/"))
-                                                      (cc-collection cc)))
-                                          mzll))
-                             (list "-t-" (path->string (build-path (cc-path cc) mzll)))))
-                       p
-                       aux))))
-                mzlns
-                (or mzlls (map (lambda (_) #f) mzlns))
-                (or mzlfs (map (lambda (_) #f) mzlns)))]
+               (for ([mzln (in-list mzlns)]
+                     [mzll (in-list (or mzlls (map (lambda (_) #f) mzlns)))]
+                     [mzlf (in-list (or mzlfs (map (lambda (_) #f) mzlns)))])
+                 (let ([p (program-launcher-path mzln)]
+                       [aux (list* `(exe-name . ,mzln)
+                                   '(framework-root . #f)
+                                   '(dll-dir . #f)
+                                   `(relative? . ,(not absolute-installation?))
+                                   (build-aux-from-path
+                                    (build-path (cc-path cc)
+                                                (path-replace-suffix
+                                                 (or mzll mzln)
+                                                 #""))))])
+                   (unless (up-to-date? p aux)
+                     (setup-printf
+                      "launcher"
+                      "~a~a"
+                      (path->name p #:prefix (format "~a-bin" kind)
+                                    #:base (if (equal? kind 'console)
+                                             find-console-bin-dir
+                                             find-gui-bin-dir))
+                      (let ([v (current-launcher-variant)])
+                        (if (eq? v (system-type 'gc)) "" (format " [~a]" v))))
+                     (make-launcher
+                      (or mzlf
+                          (if (cc-collection cc)
+                            (list "-l-" (string-append
+                                         (string-append*
+                                          (map (lambda (s) (format "~a/" s))
+                                               (cc-collection cc)))
+                                         mzll))
+                            (list "-t-" (path->string (build-path (cc-path cc) mzll)))))
+                      p
+                      aux))))]
               [else
-               (let ([fault (if (or (not mzlls) (= (length mzlns) (length mzlls))) 'f 'l)])
+               (let ([fault (if (or (not mzlls)
+                                    (= (length mzlns) (length mzlls)))
+                              'f 'l)])
                  (setup-printf
                   "WARNING"
                   "~s launcher name list ~s doesn't match ~a list; ~s"
