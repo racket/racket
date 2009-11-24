@@ -43,8 +43,6 @@
                ,@(map (lambda (x) (if (string? x) x (format "~a" x))) body)
                "\n"))))
 
-(define (extra-internal-attribs) '([pltdoc "x"]))
-
 (define-runtime-path scribble-css "scribble.css")
 (define-runtime-path scribble-style-css "scribble-style.css")
 (define-runtime-path scribble-prefix-html "scribble-prefix.html")
@@ -362,7 +360,7 @@
                [class ,(if (or (eq? t d) (and show-mine? (memq t toc-chain)))
                          "tocviewselflink"
                          "tocviewlink")]
-               ,@(extra-internal-attribs))
+               [pltdoc "x"])
               ,@(render-content (or (part-title-content t) '("???")) d ri)))
          (format-number (collected-info-number (part-collected-info t ri))
                         '(nbsp))))
@@ -532,7 +530,7 @@
                                               [(part? p) "tocsubseclink"]
                                               [any-parts? "tocsubnonseclink"]
                                               [else "tocsublink"])]
-                                          ,@(extra-internal-attribs))
+                                          [pltdoc "x"])
                                          ,@(render-content
                                             (if (part? p)
                                               (or (part-title-content p)
@@ -710,6 +708,7 @@
           (make-target-url url)
           (make-attributes
            `([title . ,(if title* (string-append label " to " title*) label)]
+             [pltdoc . "x"]
              ,@more)))))
       (define top-link
         (titled-url
@@ -993,7 +992,7 @@
                          ;; Normal link:
                          (dest->url dest)]))
                      ,@(attribs)
-                     ,@(extra-internal-attribs)]
+                     [pltdoc "x"]]
                     ,@(if (empty-content? (element-content e))
                           (render-content (strip-aux (dest-title dest)) part ri)
                           (render-content (element-content e) part ri))))
