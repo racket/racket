@@ -156,6 +156,7 @@ void *mzrt_thread_stub(void *data){
   mzrt_thread_stub_data *stub_data  = (mzrt_thread_stub_data*) data;
   void * (*start_proc)(void *)        = stub_data->start_proc;
   void *start_proc_data               = stub_data->data;
+  scheme_init_os_thread();
   proc_thread_self                    = stub_data->thread;
 
   free(data);
