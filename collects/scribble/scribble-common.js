@@ -97,7 +97,7 @@ function DoSearchKey(event, field, ver, top_path) {
   return true;
 }
 
-function TocviewToggle(glyph,id) {
+function TocviewToggle(glyph, id) {
   var s = document.getElementById(id).style;
   var expand = s.display == "none";
   s.display = expand ? "block" : "none";
@@ -114,3 +114,19 @@ function AddOnLoad(fun) { on_load_funcs.push(fun); }
 window.onload = function() {
   for (var i=0; i<on_load_funcs.length; i++) on_load_funcs[i]();
 };
+
+var cur_plt_lang = GetArgFromURL(location,"lang");
+
+function PropagateLangInLink(a) {
+  // the attribute's value doesn't matter
+  if (cur_plt_lang
+      && a.attributes["pltdoc"] && a.attributes["pltdoc"].value != ""
+      && !GetArgFromURL(a,"lang"))
+    SetArgInURL(a, "lang", cur_plt_lang);
+}
+
+AddOnLoad(function(){
+    if (!cur_plt_lang) return;
+    var links = document.getElementsByTagName("a");
+    for (var i=0; i<links.length; i++) PropagateLangInLink(links[i]);
+  });
