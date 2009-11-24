@@ -307,19 +307,29 @@ This file defines two sorts of primitives. All of them are provided into any mod
                         #t))]))
 
 (define-syntax (define-typed-struct stx)
-  (syntax-case stx (:)
-    [(_ nm ([fld : ty] ...) . opts)
+  (define-syntax-class fld-spec
+    #:literals (:)
+    #:description "[field-name : type]"
+    (pattern [fld:id : ty]))
+  (define-syntax-class struct-name
+    #:description "struct name (with optional super-struct name)"
+    #:attributes (name super)
+    (pattern (name:id super:id))
+    (pattern name:id
+	     #:with super #f))
+  (syntax-parse stx
+    [(_ nm:struct-name (fs:fld-spec ...) . opts)
      (let ([mutable (if (memq '#:mutable (syntax->datum #'opts))
                         '(#:mutable)
                         '())])
-       (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fld ...) . opts))
+       (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fs.fld ...) . opts))
                                            'typechecker:ignore #t)]
-                     [dtsi (internal (quasisyntax/loc stx (define-typed-struct-internal nm ([fld : ty] ...) #,@mutable)))])
+                     [dtsi (internal (quasisyntax/loc stx (define-typed-struct-internal nm (fs ...) #,@mutable)))])
          #'(begin d-s dtsi)))]
-    [(_ (vars ...) nm ([fld : ty] ...) . opts)
-     (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fld ...) . opts))
+    [(_ (vars:id ...) nm:struct-name (fs:fld-spec ...) . opts)
+     (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fs.fld ...) . opts))
                                          'typechecker:ignore #t)]
-                   [dtsi (internal (syntax/loc stx (define-typed-struct-internal (vars ...) nm ([fld : ty] ...))))])
+                   [dtsi (internal (syntax/loc stx (define-typed-struct-internal (vars ...) nm (fs ...))))])
        #'(begin d-s dtsi))]))
 
 (define-syntax (require-typed-struct stx)
