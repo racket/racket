@@ -226,17 +226,8 @@ function InitializeSearch() {
   result_links.push(n);
   AdjustResultsNum();
   // get search string
-  if (location.search.length > 0) {
-    var paramstrs = location.search.substring(1).split(/[;&]/);
-    for (var i=0; i<paramstrs.length; i++) {
-      var param = paramstrs[i].split(/=/);
-      // ignores an empty "q=" (param.length will be 1)
-      if (param.length == 2 && param[0] == "q") {
-        query.value = unescape(param[1]);
-        break;
-      }
-    }
-  }
+  var init_q = GetArgFromURL(location,"q");
+  if (init_q && init_q != "") query.value = init_q;
   ContextFilter();
   DoSearch();
   query.focus();
