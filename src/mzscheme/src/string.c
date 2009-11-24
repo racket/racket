@@ -383,7 +383,6 @@ scheme_init_string (Scheme_Env *env)
   platform_3m_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH MZ3M_SUBDIR);
 
   REGISTER_SO(putenv_str_table);
-  putenv_str_table = scheme_make_hash_table(SCHEME_hash_string);
 
   REGISTER_SO(embedding_banner);
   REGISTER_SO(current_locale_name);
@@ -1980,8 +1979,12 @@ int scheme_any_string_has_null(Scheme_Object *o)
   }
 }
 
+/***********************************************************************/
+/* Environment Variables                                               */
+/***********************************************************************/
+
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-static char* clone_str_with_gc(char* buffer) {
+static char* clone_str_with_gc(const char* buffer) {
   int length;
   char *newbuffer;
   length = strlen(buffer);
@@ -1991,16 +1994,24 @@ static char* clone_str_with_gc(char* buffer) {
 }
 #endif
 
+static void create_putenv_str_table_if_needed() {
+  if (!putenv_str_table) {
+    putenv_str_table = scheme_make_hash_table(SCHEME_hash_string);
+  }
+}
+
 #ifndef DOS_FILE_SYSTEM
 static void putenv_str_table_put_name(Scheme_Object *name, Scheme_Object *value) {
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   void *original_gc;
   Scheme_Object *name_copy;
   original_gc = GC_switch_to_master_gc();
-  name_copy = clone_str_with_gc(name);
+  name_copy = (Scheme_Object *) clone_str_with_gc((Scheme_Object *) name);
+  create_putenv_str_table_if_needed();
   scheme_hash_set(putenv_str_table, name_copy, value);
   GC_switch_back_from_master(original_gc);
 #else
+  create_putenv_str_table_if_needed();
   scheme_hash_set(putenv_str_table, name, value);
 #endif
 }
@@ -2013,11 +2024,13 @@ static void putenv_str_table_put_name_value(Scheme_Object *name, Scheme_Object *
   Scheme_Object *name_copy;
   Scheme_Object *value_copy;
   original_gc = GC_switch_to_master_gc();
-  name_copy = clone_str_with_gc(name);
-  value_copy = clone_str_with_gc(value);
+  name_copy = (Scheme_Object *) clone_str_with_gc((Scheme_Object *) name);
+  value_copy = (Scheme_Object *) clone_str_with_gc((Scheme_Object *) value);
+  create_putenv_str_table_if_needed();
   scheme_hash_set(putenv_str_table, name_copy, value_copy);
   GC_switch_back_from_master(original_gc);
 #else
+  create_putenv_str_table_if_needed();
   scheme_hash_set(putenv_str_table, name, value);
 #endif
 }
@@ -2029,10 +2042,12 @@ static Scheme_Object *putenv_str_table_get(Scheme_Object *name) {
   void *original_gc;
   Scheme_Object *value; 
   original_gc = GC_switch_to_master_gc();
+  create_putenv_str_table_if_needed();
   value = scheme_hash_get(putenv_str_table, name);
   GC_switch_back_from_master(original_gc);
   return value;
 #else
+  create_putenv_str_table_if_needed();
   return scheme_hash_get(putenv_str_table, name);
 #endif
 }
@@ -2206,6 +2221,10 @@ static Scheme_Object *sch_putenv(int argc, Scheme_Object *argv[])
 #endif
   return rc ? scheme_false : scheme_true;
 }
+
+/***********************************************************************/
+/* End Environment Variables                                           */
+/***********************************************************************/
 
 static void machine_details(char *s);
 
