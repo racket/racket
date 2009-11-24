@@ -42,16 +42,18 @@ function GotoPLTRoot(ver, relative) {
 
 // In the following functions, the `name' argument is assumed to be simple in
 // that it doesn't contain anything that isn't plain text in a regexp.  (This
-// is because I don't know if there's a JS `regexp-quote' thing).  Also, the
-// output value from the Get functions and the input value to the Set functions
-// is not decoded/encoded.  Note that `SetArgInURL' mutates the string.
+// is because JS doesn't have a `regexp-quote', easy to hack but not needed
+// here).  Also, the output value from the Get functions and the input value to
+// the Set functions is decoded/encoded.  Note that `SetArgInURL' mutates the
+// string in the url object.
 
 function GetArgFromString(str, name) {
   var rx = new RegExp("(?:^|[;&])"+name+"=([^&;]*)(?:[;&]|$)");
-  return rx.test(str) && RegExp.$1;
+  return rx.test(str) && unescape(RegExp.$1);
 }
 
 function SetArgInString(str, name, val) {
+  val = escape(val);
   if (str.length == 0) return name + "=" + val;
   var rx = new RegExp("^((?:|.*[;&])"+name+"=)(?:[^&;]*)([;&].*|)$");
   if (rx.test(str)) return RegExp.$1 + val + RegExp.$2;
