@@ -228,7 +228,7 @@ This is legal only in expression contexts.}
 appropriate number of type variables. This is legal only in expression
 contexts.}
 
-@schemevarfont|{#{e @ t ...}}| This is identical to @scheme[(inst e t ...)].
+@litchar|{#{e @ t ...}}| This is identical to @scheme[(inst e t ...)].
 
 @subsection{Require}
 

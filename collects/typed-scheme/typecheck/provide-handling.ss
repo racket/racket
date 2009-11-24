@@ -33,7 +33,7 @@
       (make-typed-renaming (syntax-property id 'not-free-identifier=? #t) alt)
       (make-rename-transformer (syntax-property id 'not-free-identifier=? #t))))
 
-(define (generate-prov stx-defs val-defs)
+(define (generate-prov stx-defs val-defs pos-blame-id)
   (define mapping (make-free-identifier-mapping))
   (lambda (form)
     (define (mem? i vd)
@@ -59,19 +59,15 @@
                     =>
                     (lambda (cnt)                                    
                       (with-syntax ([(export-id cnt-id) (generate-temporaries #'(id id))]
-                                    [module-source (generate-temporary 'module-source)]
-                                    ;; don't actually need to verify - this is generated
+                                    [module-source pos-blame-id]
                                     [the-contract (generate-temporary 'generated-contract)])
                         #`(begin 
-                            (define module-source (#%variable-reference))
                             (define the-contract #,cnt)
                             (define-syntax cnt-id
                               (make-provide/contract-transformer
                                (quote-syntax the-contract)
                                (quote-syntax id)
                                (quote-syntax module-source)))
-                            #;
-                            (define/contract cnt-id #,cnt id)
                             (define-syntax export-id
                               (if (unbox typed-context?)
                                   (renamer #'id #:alt #'cnt-id)
