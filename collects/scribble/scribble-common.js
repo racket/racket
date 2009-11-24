@@ -127,6 +127,11 @@ function PropagateLangInLink(a) {
 
 AddOnLoad(function(){
     if (!cur_plt_lang) return;
+    var indicator = document.getElementById("langindicator");
+    if (indicator) {
+      indicator.innerHTML = cur_plt_lang;
+      indicator.style.display = "block";
+    }
     var links = document.getElementsByTagName("a");
     for (var i=0; i<links.length; i++) PropagateLangInLink(links[i]);
   });
