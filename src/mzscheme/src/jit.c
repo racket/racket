@@ -1230,7 +1230,7 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
    since the call (which also pushed), so if the stack was 16-bytes
    aligned before the call, it is current stack pointer is 1 word
    (either 4 or 8 bytes) below alignment (need to push 3 or 1 words to
-   re-align). Also, for a call without a prolog, th stack pointer is
+   re-align). Also, for a call without a prolog, the stack pointer is
    1 word (for the return address) below alignment. */
 # define JIT_LOCAL1 -(JIT_WORD_SIZE * 4)
 # define JIT_LOCAL2 -(JIT_WORD_SIZE * 5)
@@ -4586,7 +4586,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
               /* watch out for most negative fixnum! */
               if (!unsafe_fx)
                 (void)jit_beqi_p(refslow, JIT_R0, (void *)(((long)1 << ((8 * JIT_WORD_SIZE) - 1)) | 0x1));
-              jit_movi_p(JIT_R1, scheme_make_integer(0));
+              (void)jit_movi_p(JIT_R1, scheme_make_integer(0));
               jit_subr_l(JIT_R0, JIT_R1, JIT_R0);
               jit_ori_l(JIT_R0, JIT_R0, 0x1);
               __START_INNER_TINY__(branch_short);
@@ -8408,6 +8408,10 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
      is such a register for PPC. */
   stack_cache_pop_code = jit_get_ip().ptr;
   jit_movr_p(JIT_R0, JIT_RET);
+#ifdef MZ_USE_JIT_PPC
+  jit_subi_p(JIT_SP, JIT_SP, 48); /* includes space maybe used by callee */
+  jit_stxi_p(44, JIT_SP, JIT_AUX);
+#endif
   /* Decrement stack_cache_stack_pos (using a function,
      in case of thread-local vars) and get record pointer.
      Use jit_normal_finish(), because jit_finish() shuffles
@@ -8417,18 +8421,16 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   jit_pusharg_p(JIT_R0);
   (void)jit_normal_finish(decrement_cache_stack_pos);
   jit_retval(JIT_R1); /* = pointer to a stack_cache_stack element */
-#ifdef MZ_USE_JIT_PPC
-  jit_movr_p(JIT_R(3), JIT_AUX);
-#endif
   CHECK_LIMIT();
   /* Extract old return address and jump to it */
   jit_ldxi_l(JIT_R0, JIT_R1, (int)&((Stack_Cache_Elem *)0x0)->orig_result);
-  jit_movi_p(JIT_R2, NULL);
+  (void)jit_movi_p(JIT_R2, NULL);
   jit_stxi_l((int)&((Stack_Cache_Elem *)0x0)->orig_result, JIT_R1, JIT_R2);
   jit_ldxi_l(JIT_R2, JIT_R1, (int)&((Stack_Cache_Elem *)0x0)->orig_return_address);
   jit_movr_p(JIT_RET, JIT_R0);
 #ifdef MZ_USE_JIT_PPC
-  jit_movr_p(JIT_AUX, JIT_R(3));
+  jit_ldxi_p(JIT_AUX, JIT_SP, 44);
+  jit_addi_p(JIT_SP, JIT_SP, 48);
 #endif
   jit_jmpr(JIT_R2);
   CHECK_LIMIT();
@@ -9158,7 +9160,6 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     jit_pusharg_p(JIT_R0);
     (void)mz_finish(scheme_module_run_finish);
     CHECK_LIMIT();
-    jit_retval(JIT_R0);
     mz_pop_locals();
     jit_ret();
     CHECK_LIMIT();
@@ -9191,7 +9192,6 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     jit_pusharg_p(JIT_R0);
     (void)mz_finish(scheme_module_start_finish);
     CHECK_LIMIT();
-    jit_retval(JIT_R0);
     mz_pop_locals();
     jit_ret();
     CHECK_LIMIT();
@@ -10187,7 +10187,7 @@ Scheme_Object *scheme_native_stack_trace(void)
        on frames where the previous frame had a return address with a
        name, because an arbitrary frame's return address on the stack
        might not be used (depending on how the C compiler optimized the
-       cdode); any frame whose procedure has a name is JITted code, so
+       code); any frame whose procedure has a name is JITted code, so
        it will use the return address from the stack. */
     if (STK_COMP((unsigned long)halfway, (unsigned long)p)
 	&& prev_had_name) {
