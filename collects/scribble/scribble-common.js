@@ -80,6 +80,10 @@ function NormalizePath(path) {
   return path;
 }
 
+// `noscript' is problematic in some browsers (always renders as a
+// block), use this hack instead (does not always work!)
+// document.write("<style>mynoscript { display:none; }</style>");
+
 // Interactions ---------------------------------------------------------------
 
 function DoSearchKey(event, field, ver, top_path) {
@@ -100,6 +104,13 @@ function TocviewToggle(glyph,id) {
   glyph.innerHTML = expand ? "&#9660;" : "&#9658;";
 }
 
-// `noscript' is problematic in some browsers (always renders as a
-// block), use this hack instead (does not always work!)
-// document.write("<style>mynoscript { display:none; }</style>");
+// Page Init ------------------------------------------------------------------
+
+// Note: could make a function that inspects and uses window.onload to chain to
+// a previous one, but this file needs to be required first anyway, since it
+// contains utilities for all other files.
+var on_load_funcs = [];
+function AddOnLoad(fun) { on_load_funcs.push(fun); }
+window.onload = function() {
+  for (var i=0; i<on_load_funcs.length; i++) on_load_funcs[i]();
+};

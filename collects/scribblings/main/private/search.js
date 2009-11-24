@@ -882,6 +882,6 @@ function SetHighlightColor(inp) {
 }
 set_highlight_color = SetHighlightColor;
 
-window.onload = InitializeSearch;
+AddOnLoad(InitializeSearch);
 
 })();
