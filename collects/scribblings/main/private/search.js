@@ -599,6 +599,7 @@ function UpdateResults() {
   if (first_search_result < 0 ||
       first_search_result >= search_results.length)
     first_search_result = 0;
+  var link_lang = (cur_plt_lang && ("?lang="+escape(cur_plt_lang)));
   for (var i=0; i<result_links.length; i++) {
     var n = i + first_search_result;
     if (n < search_results.length) {
@@ -637,9 +638,16 @@ function UpdateResults() {
       }
       if (note)
         note = '&nbsp;&nbsp;<span class="smaller">' + note + '</span>';
+      var href = UncompactUrl(res[1]);
+      if (link_lang) {
+        var hash = href.indexOf("#");
+        if (hash >= 0)
+          href = href.substring(0,hash) + link_lang + href.substring(hash);
+        else
+          href = href + link_lang;
+      }
       result_links[i].innerHTML =
-        '<a href="' + UncompactUrl(res[1]) + '"'
-         +' class="indexlink" tabIndex="2">'
+        '<a href="' + href + '" class="indexlink" tabIndex="2">'
         + UncompactHtml(res[2]) + '</a>' + (note || "");
       result_links[i].style.backgroundColor =
         (n < exact_results_num) ? highlight_color : background_color;
