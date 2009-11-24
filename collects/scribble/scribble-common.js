@@ -90,8 +90,12 @@ function DoSearchKey(event, field, ver, top_path) {
   var val = field.value;
   if (event && event.keyCode == 13) {
     var u = GetCookie("PLT_Root."+ver, null);
+    var args = "";
     if (u == null) u = top_path; // default: go to the top path
-    location = u + "search/index.html" + "?q=" + escape(val);
+    u += "search/index.html";
+    args = SetArgInString(args, "q", val);
+    if (cur_plt_lang) args = SetArgInString(args, "lang", cur_plt_lang);
+    location = u + "?" + args;
     return false;
   }
   return true;
