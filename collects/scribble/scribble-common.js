@@ -61,7 +61,7 @@ function SetArgInString(str, name, val) {
 }
 
 function GetArgFromURL(url, name) {
-  if (!url.href.search(/\?([^#]*)(?:#|$)/)) return false;
+  if (url.href.search(/\?([^#]*)(?:#|$)/) < 0) return false;
   return GetArgFromString(RegExp.$1, name);
 }
 
