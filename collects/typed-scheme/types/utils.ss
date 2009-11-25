@@ -2,9 +2,8 @@
 
 (require "../utils/utils.ss")
 
-(require (rep type-rep filter-rep object-rep rep-utils)
+(require (except-in (rep type-rep filter-rep object-rep rep-utils) Dotted)
          (utils tc-utils)
-         (only-in (rep free-variance) combine-frees)
          scheme/match
          scheme/list
          mzlib/trace

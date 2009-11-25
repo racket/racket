@@ -238,12 +238,12 @@
          (lambda (t)
            ;(printf "found a type alias ~a~n" #'id)
            (add-type-name-reference #'id)
-           t)]
+           t #;(add-name t (syntax-e #'id)))]
         ;; if it's a type name, we just use the name
         [(lookup-type-name #'id (lambda () #f))
          (add-type-name-reference #'id)
          ;(printf "found a type name ~a~n" #'id)
-         (make-Name #'id)]
+         (add-name (make-Name #'id) (syntax-e #'id))]
         [(free-identifier=? #'id #'t:->)
          (tc-error/delayed "Incorrect use of -> type constructor")
          Err]

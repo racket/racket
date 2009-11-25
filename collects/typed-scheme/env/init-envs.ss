@@ -22,27 +22,28 @@
   (define (gen-constructor sym)
     (string->symbol (string-append "make-" (substring (symbol->string sym) 7))))
   (match v
-    [(Union: elems) `(make-Union (sort (list ,@(map sub elems)) < #:key Type-seq))]
-    [(Base: n cnt) `(make-Base ',n (quote-syntax ,cnt))]
-    [(Name: stx) `(make-Name (quote-syntax ,stx))]
+    [(Union: elems) `(make-Union (sort (list ,@(map sub elems)) < #:key Type-seq) ',(Type-name v))]
+    [(Base: n cnt) `(make-Base ',n (quote-syntax ,cnt) ',(Type-name v))]
+    [(Name: stx) `(make-Name (quote-syntax ,stx) ',(Type-name v))]
     [(Struct: name parent flds proc poly? pred-id cert)
-     `(make-Struct ,(sub name) ,(sub parent) ,(sub flds) ,(sub proc) ,(sub poly?) (quote-syntax ,pred-id) (syntax-local-certifier))]
-    [(App: rator rands stx) `(make-App ,(sub rator) ,(sub rands) (quote-syntax ,stx))]
-    [(Opaque: pred cert) `(make-Opaque (quote-syntax ,pred) (syntax-local-certifier))]
+     `(make-Struct ,(sub name) ,(sub parent) ,(sub flds) ,(sub proc) ,(sub poly?) (quote-syntax ,pred-id) (syntax-local-certifier) ',(Type-name v))]
+    [(App: rator rands stx) `(make-App ,(sub rator) ,(sub rands) (quote-syntax ,stx) ',(Type-name v))]
+    [(Opaque: pred cert) `(make-Opaque (quote-syntax ,pred) (syntax-local-certifier) ',(Type-name v))]
     [(Refinement: parent pred cert) `(make-Refinement ,(sub parent)
                                                       (quote-syntax ,pred)
-                                                      (syntax-local-certifier))]
-    [(Mu-name: n b) `(make-Mu ,(sub n) ,(sub b))]
-    [(Poly-names: ns b) `(make-Poly (list ,@(map sub ns)) ,(sub b))]
-    [(PolyDots-names: ns b) `(make-PolyDots (list ,@(map sub ns)) ,(sub b))]
+                                                      (syntax-local-certifier)
+                                                      ',(Type-name v))]
+    [(Mu-name: n b) `(make-Mu ,(sub n) ,(sub b) ',(Type-name v))]
+    [(Poly-names: ns b) `(make-Poly (list ,@(map sub ns)) ,(sub b) ',(Type-name v))]
+    [(PolyDots-names: ns b) `(make-PolyDots (list ,@(map sub ns)) ,(sub b) ',(Type-name v))]
     [(? (lambda (e) (or (LatentFilter? e)
                         (LatentObject? e)
                         (PathElem? e)))
         (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq vals))) 
      `(,(gen-constructor tag) ,@(map sub vals))]
     [(? (lambda (e) (or (Type? e)))
-        (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag key seq vals))) 
-     `(,(gen-constructor tag) ,@(map sub vals))]
+        (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag key seq name vals))) 
+     `(,(gen-constructor tag) ,@(map sub vals) ',name)]
     [_ (basic v)]))
 
 (define (bound-in-this-module id) 

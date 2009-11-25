@@ -131,6 +131,7 @@
       [(Value: '()) null]))
   (match c 
     [(Univ:) (fp "Any")]
+    [(? Type-name) (fp "~a" (Type-name c))]
     [(? has-name?) (fp "~a" (has-name? c))]
     ;; names are just the printed as the original syntax
     [(Name: stx) (fp "~a" (syntax-e stx))]

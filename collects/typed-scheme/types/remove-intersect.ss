@@ -1,7 +1,8 @@
 #lang scheme/base
 
 (require "../utils/utils.ss" 
-	 (rep type-rep rep-utils)
+	 (rep type-rep)
+         (only-in (rep rep-utils) Type-key)
 	 (types union subtype resolve convenience utils)
          scheme/match mzlib/trace)
 

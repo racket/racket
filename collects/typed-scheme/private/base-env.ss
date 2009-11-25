@@ -98,8 +98,13 @@
 [list? (make-pred-ty (-lst Univ))]
 [list (-poly (a) (->* '() a (-lst a)))]
 [procedure? (make-pred-ty top-func)]
-[map (-polydots (c a b) ((list ((list a) (b b) . ->... . c) (-lst a))
-                         ((-lst b) b) . ->... .(-lst c)))]
+[map (-polydots (c a b) 
+		(cl->*
+		 (-> (-> a c) (-pair a (-lst a)) (-pair c (-lst c)))
+		((list 
+		  ((list a) (b b) . ->... . c) 
+		  (-lst a))
+		 ((-lst b) b) . ->... .(-lst c))))]
 [for-each (-polydots (c a b) ((list ((list a) (b b) . ->... . Univ) (-lst a))
                               ((-lst b) b) . ->... . -Void))]
 [fold-left (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))

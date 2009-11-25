@@ -1,7 +1,7 @@
 #lang scheme/unit
 
 (require "../utils/utils.ss")
-(require (rep type-rep rep-utils)
+(require (rep type-rep)         
 	 (types convenience union utils)
          "signatures.ss"
          scheme/list scheme/match)

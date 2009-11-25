@@ -606,15 +606,33 @@
        #:return (or expected (ret (Un)))
        (string-append "No function domains matched in function application:\n"
                       (domain-mismatches t doms rests drests rngs argtys-t #f #f))))]
-    ;; polymorphic functions without dotted rest, and without mandatory keyword args
+    ;; any kind of polymorphic function
+    [((tc-result1: (and t (PolyDots: 
+                           (and vars (list fixed-vars ... dotted-var))
+                           (Function: (list (and arrs (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...))) ...)))))
+      (list (tc-result1: argtys-t) ...))
+     (handle-clauses (doms rngs rests drests arrs) f-stx args-stx
+                     ;; only try inference if the argument lengths are appropriate
+                     (lambda (dom _ rest drest a) 
+                       (cond [rest (<= (length dom) (length argtys))]
+                             [drest (and (<= (length dom) (length argtys))
+                                         (eq? dotted-var (cdr drest)))]
+                             [else (= (length dom) (length argtys))]))
+                     ;; only try to infer the free vars of the rng (which includes the vars in filters/objects)
+                     ;; note that we have to use argtys-t here, since argtys is a list of tc-results
+                     (lambda (dom rng rest drest a) 
+                       (if drest
+                           (infer/dots fixed-vars dotted-var argtys-t dom (car drest) rng (fv rng) 
+                                       #:expected (and expected (tc-results->values expected)))
+                           (infer/vararg vars argtys-t dom rest rng (fv rng) 
+                                         (and expected (tc-results->values expected)))))
+                     t argtys expected)]
+    ;; regular polymorphic functions without dotted rest, and without mandatory keyword args
     [((tc-result1: 
        (and t
-            (or (Poly: 
-                 vars 
-                 (Function: (list (and arrs (arr: doms rngs rests (and drests #f) (list (Keyword: _ _ #f) ...))) ...)))
-                (PolyDots: 
-                 vars
-                 (Function: (list (and arrs (arr: doms rngs rests (and drests #f) (list (Keyword: _ _ #f) ...))) ...))))))
+            (Poly: 
+             vars 
+             (Function: (list (and arrs (arr: doms rngs rests (and drests #f) (list (Keyword: _ _ #f) ...))) ...)))))
       (list (tc-result1: argtys-t) ...))
      (handle-clauses (doms rngs rests arrs) f-stx args-stx
                      ;; only try inference if the argument lengths are appropriate
@@ -622,17 +640,6 @@
                      ;; only try to infer the free vars of the rng (which includes the vars in filters/objects)
                      ;; note that we have to use argtys-t here, since argtys is a list of tc-results
                      (lambda (dom rng rest a) (infer/vararg vars argtys-t dom rest rng (fv rng) (and expected (tc-results->values expected))))
-                     t argtys expected)]
-    ;; polymorphic ... type
-    [((tc-result1: (and t (PolyDots: 
-                           (and vars (list fixed-vars ... dotted-var))
-                           (Function: (list (and arrs (arr: doms rngs (and #f rests) (cons dtys dbounds) (list (Keyword: _ _ #f) ...))) ...)))))
-      (list (tc-result1: argtys-t) ...))
-     (handle-clauses (doms dtys dbounds rngs arrs) f-stx args-stx
-                     (lambda (dom dty dbound rng arr) (and (<= (length dom) (length argtys))
-                                                           (eq? dotted-var dbound)))
-                     (lambda (dom dty dbound rng arr) 
-                       (infer/dots fixed-vars dotted-var argtys-t dom dty rng (fv rng) #:expected (and expected (tc-results->values expected))))
                      t argtys expected)]
     ;; procedural structs
     [((tc-result1: (and sty (Struct: _ _ _ (? Function? proc-ty) _ _ _))) _)
