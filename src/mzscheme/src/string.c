@@ -2054,7 +2054,7 @@ static Scheme_Object *putenv_str_table_get(Scheme_Object *name) {
 #endif
 
 
-static Scheme_Object *sch_bool_getenv(const char* name);
+static int sch_bool_getenv(const char* name);
 
 void
 scheme_init_getenv(void)
@@ -2116,17 +2116,16 @@ static char *dos_win_getenv(const char *name) {
 }
 #endif
 
-static Scheme_Object *sch_bool_getenv(const char* name) {
-  Scheme_Object *rc;
-  rc = scheme_false;
+static int sch_bool_getenv(const char* name) {
+  int rc = 0;
 #ifdef GETENV_FUNCTION
 # ifdef DOS_FILE_SYSTEM
-  if (GetEnvironmentVariable(s, NULL, 0)) rc = scheme_true;
+  if (GetEnvironmentVariable(s, NULL, 0)) rc = 1;
 # else
-  if (getenv(name)) rc = scheme_true;
+  if (getenv(name)) rc = 1;
 # endif
 #else
-  if (putenv_str_table_get(name))  rc = scheme_true;
+  if (putenv_str_table_get(name))  rc = 1;
 #endif
   return rc;
 }
