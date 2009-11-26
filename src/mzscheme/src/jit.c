@@ -4067,7 +4067,8 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
     }
     if (args_unboxed) {
       --jitter->unbox;
-      jitter->unbox_depth -= (rand2 ? 2 : 1);
+      if (rand)
+        jitter->unbox_depth -= (rand2 ? 2 : 1);
     }
     if (for_branch)
       mz_rs_sync(); /* needed if arguments were unboxed */
