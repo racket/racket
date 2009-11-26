@@ -105,6 +105,8 @@ static Scheme_Object *fx_not (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_lshift (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_rshift (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_to_fl (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fl_ref (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fl_set (int argc, Scheme_Object *argv[]);
 
 static double not_a_number_val;
 
@@ -312,15 +314,18 @@ scheme_init_number (Scheme_Env *env)
 			     env);
 
   p = scheme_make_folding_prim(scheme_bitwise_and, "bitwise-and", 0, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("bitwise-and", p, env);
 
   p = scheme_make_folding_prim(bitwise_or, "bitwise-ior", 0, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("bitwise-ior", p, env);
 
   p = scheme_make_folding_prim(bitwise_xor, "bitwise-xor", 0, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("bitwise-xor", p, env);
 
   p = scheme_make_folding_prim(bitwise_not, "bitwise-not", 1, 1, 1);
@@ -525,6 +530,18 @@ void scheme_init_unsafe_number(Scheme_Env *env)
   if (scheme_can_inline_fp_op())
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("unsafe-fx->fl", p, env);
+
+  p = scheme_make_noncm_prim(fl_ref, "unsafe-f64vector-ref",
+                             2, 2);
+  if (scheme_can_inline_fp_op())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("unsafe-f64vector-ref", p, env);
+  
+  p = scheme_make_noncm_prim(fl_set, "unsafe-f64vector-set!",
+                             3, 3);
+  if (scheme_can_inline_fp_op())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+  scheme_add_global_constant("unsafe-f64vector-set!", p, env);  
 }
 
 
@@ -2813,4 +2830,21 @@ static Scheme_Object *fx_to_fl (int argc, Scheme_Object *argv[])
   if (scheme_current_thread->constant_folding) return scheme_exact_to_inexact(argc, argv);
   v = SCHEME_INT_VAL(argv[0]);
   return scheme_make_double(v);
+}
+
+static Scheme_Object *fl_ref (int argc, Scheme_Object *argv[])
+{
+  double v;
+  Scheme_Object *p;
+  p = ((Scheme_Structure *)argv[0])->slots[0];
+  v = ((double *)SCHEME_CPTR_VAL(p))[SCHEME_INT_VAL(argv[1])];
+  return scheme_make_double(v);
+}
+
+static Scheme_Object *fl_set (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *p;
+  p = ((Scheme_Structure *)argv[0])->slots[0];
+  ((double *)SCHEME_CPTR_VAL(p))[SCHEME_INT_VAL(argv[1])] = SCHEME_DBL_VAL(argv[2]);
+  return scheme_void;
 }

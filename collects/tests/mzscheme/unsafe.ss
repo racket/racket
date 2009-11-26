@@ -3,7 +3,8 @@
 
 (Section 'unsafe)
 
-(require '#%unsafe)
+(require scheme/unsafe/ops
+         scheme/foreign)
 
 (let ()
   (define (test-tri result proc x y z 
@@ -186,6 +187,13 @@
               #:post (lambda (x) (list x (string-ref v 2)))
               #:literal-ok? #f))
 
+  (test-bin 9.5 'unsafe-f64vector-ref (f64vector 1.0 9.5 18.7) 1)
+  (let ([v (f64vector 1.0 9.5 18.7)])
+    (test-tri (list (void) 27.4) 'unsafe-f64vector-set! v 2 27.4
+              #:pre (lambda () (f64vector-set! v 2 0.0)) 
+              #:post (lambda (x) (list x (f64vector-ref v 2)))
+              #:literal-ok? #f))
+
   (let ()
     (define-struct posn (x [y #:mutable] z))
     (test-bin 'a unsafe-struct-ref (make-posn 'a 'b 'c) 0 #:literal-ok? #f)
@@ -195,6 +203,12 @@
                 #:pre (lambda () (set-posn-y! p 0)) 
                 #:post (lambda (x) (posn-y p))
                 #:literal-ok? #f)))
+  ;; test unboxing:
+  (test-tri 5.4 '(lambda (x y z) (unsafe-fl+ x (unsafe-f64vector-ref y z))) 1.2 (f64vector 1.0 4.2 6.7) 1)
+  (test-tri 3.2 '(lambda (x y z) 
+                   (unsafe-f64vector-set! y 1 (unsafe-fl+ x z))
+                   (unsafe-f64vector-ref y 1))
+            1.2 (f64vector 1.0 4.2 6.7) 2.0)
 
   (void))
 

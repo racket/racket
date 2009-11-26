@@ -1,6 +1,10 @@
 #lang scribble/doc
 @(require "mz.ss"
-          (for-label scheme/unsafe/ops))
+          (for-label scheme/unsafe/ops
+                     (only-in scheme/foreign
+                              f64vector?
+                              f64vector-ref
+                              f64vector-set!)))
 
 @title[#:tag "unsafe"]{Unsafe Operations}
 
@@ -163,6 +167,15 @@ Unsafe versions of @scheme[bytes-length], @scheme[bytes-ref], and
 @scheme[bytes-set!]. A bytes's size can never be larger than a
 @tech{fixnum} (so even @scheme[bytes-length] always returns a
 fixnum).}
+
+
+@deftogether[(
+@defproc[(unsafe-f64vector-ref [vec f64vector?][k fixnum?]) inexact-real?]
+@defproc[(unsafe-f64vector-set! [vec f64vector?][k fixnum?][n inexact-real?]) void?]
+)]{
+
+Unsafe versions of @scheme[f64vector-ref] and
+@scheme[f64vector-set!].}
 
 
 @deftogether[(

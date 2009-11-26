@@ -201,6 +201,8 @@ union jit_double_imm {
   ((rd) == 0 ? (FSTPr (0), FPX(), FLDLm(0, (s1), (s2), 1))	\
    : (FPX(), FLDLm(0, (s1), (s2), 1), FSTPr ((rd) + 1)))
 
+#define jit_ldxr_d_fppush(rd, s1, s2) (FPX(), FLDLm(0, (s1), (s2), 1))
+
 #define jit_extr_i_d(rd, rs)   (PUSHLr((rs)),          \
   ((rd) == 0 ? (FSTPr (0), FILDLm(0, _ESP, 0, 0))      \
    : (FILDLm(0, _ESP, 0, 0), FSTPr ((rd) + 1))),       \
@@ -235,9 +237,10 @@ union jit_double_imm {
 
 #define jit_sti_d_fppop(id, rs)      (FPX(), FSTPLm((id), 0,    0, 0))
 #endif
-#define jit_stxi_d_fppop(id, rd, rs) (FPX(), FSTPLm((id), (rd), 0, 0))
 
+#define jit_stxi_d_fppop(id, rd, rs) (FPX(), FSTPLm((id), (rd), 0, 0))
 #define jit_str_d_fppop(rd, rs)      (FPX(), FSTPLm(0,    (rd), 0, 0))
+#define jit_stxr_d_fppop(d1, d2, rs) (FPX(), FSTPLm(0,    (d1), (d2), 1))
 
 /* Assume round to near mode */
 #define jit_floorr_d_i(rd, rs) \

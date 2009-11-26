@@ -93,9 +93,10 @@ Correct output N = 1000 is
     (if (null? o)
       e
       (let* ([o1 (car o)]
-             [e (+ e (* (* 0.5 (body-mass o1))
-                        (+ (+ (* (body-vx o1) (body-vx o1))
-                              (* (body-vy o1) (body-vy o1)))
+             [e (+ e (* 0.5 
+                        (body-mass o1)
+                        (+ (* (body-vx o1) (body-vx o1))
+                           (* (body-vy o1) (body-vy o1))
                            (* (body-vz o1) (body-vz o1)))))])
         (let loop-i ([i (cdr o)] [e e])
           (if (null? i)
@@ -104,7 +105,7 @@ Correct output N = 1000 is
                    [dx   (- (body-x o1) (body-x i1))]
                    [dy   (- (body-y o1) (body-y i1))]
                    [dz   (- (body-z o1) (body-z i1))]
-                   [dist (sqrt (+ (+ (* dx dx) (* dy dy)) (* dz dz)))]
+                   [dist (sqrt (+ (* dx dx) (* dy dy) (* dz dz)))]
                    [e    (- e (/ (* (body-mass o1) (body-mass i1)) dist))])
               (loop-i (cdr i) e))))))))
 
@@ -126,7 +127,7 @@ Correct output N = 1000 is
                    [dx    (- o1x (body-x i1))]
                    [dy    (- o1y (body-y i1))]
                    [dz    (- o1z (body-z i1))]
-                   [dist2 (+ (+ (* dx dx) (* dy dy)) (* dz dz))]
+                   [dist2 (+ (* dx dx) (* dy dy) (* dz dz))]
                    [mag   (/ +dt+ (* dist2 (sqrt dist2)))]
                    [dxmag (* dx mag)]
                    [dymag (* dy mag)]

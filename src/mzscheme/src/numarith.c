@@ -63,20 +63,24 @@ void scheme_init_numarith(Scheme_Env *env)
   scheme_add_global_constant("sub1", p, env);
 
   p = scheme_make_folding_prim(plus, "+", 0, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("+", p, env);
 
   p = scheme_make_folding_prim(minus, "-", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
-                                | SCHEME_PRIM_IS_UNARY_INLINED);
+                                | SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("-", p, env);
 
   p = scheme_make_folding_prim(mult, "*", 0, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("*", p, env);
 
   p = scheme_make_folding_prim(div_prim, "/", 1, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("/", p, env);
 
   p = scheme_make_folding_prim(scheme_abs, "abs", 1, 1, 1);

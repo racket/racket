@@ -1,3 +1,7 @@
+Version 4.2.3.3
+Added unsafe-f64vector-ref and unsafe-f64vector-set!
+Changed JIT to inline numeric ops with more than 2 arguments
+
 Version 4.2.3, November 2009
 Changed _pointer (in scheme/foreign) to mean a pointer that does not
  refer to GCable memory; added _gcpointer
