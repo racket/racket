@@ -226,7 +226,7 @@ function InitializeSearch() {
   result_links.push(n);
   AdjustResultsNum();
   // get search string
-  var init_q = GetArgFromURL(location,"q");
+  var init_q = GetPageArg("q",false);
   if (init_q && init_q != "") query.value = init_q;
   ContextFilter();
   DoSearch();
@@ -599,7 +599,7 @@ function UpdateResults() {
   if (first_search_result < 0 ||
       first_search_result >= search_results.length)
     first_search_result = 0;
-  var link_lang = (cur_plt_lang && ("?lang="+escape(cur_plt_lang)));
+  var link_args = (page_query_string && ("?"+page_query_string));
   for (var i=0; i<result_links.length; i++) {
     var n = i + first_search_result;
     if (n < search_results.length) {
@@ -639,12 +639,12 @@ function UpdateResults() {
       if (note)
         note = '&nbsp;&nbsp;<span class="smaller">' + note + '</span>';
       var href = UncompactUrl(res[1]);
-      if (link_lang) {
+      if (link_args) {
         var hash = href.indexOf("#");
         if (hash >= 0)
-          href = href.substring(0,hash) + link_lang + href.substring(hash);
+          href = href.substring(0,hash) + link_args + href.substring(hash);
         else
-          href = href + link_lang;
+          href = href + link_args;
       }
       result_links[i].innerHTML =
         '<a href="' + href + '" class="indexlink" tabIndex="2">'
