@@ -285,9 +285,9 @@
        #f))
 
 (test (overlay/align 'middle
-                      'middle
-                      (ellipse 100 50 'solid 'green)
-                      (ellipse 50 100 'solid 'red))
+                     'middle
+                     (ellipse 100 50 'solid 'green)
+                     (ellipse 50 100 'solid 'red))
       =>
       (make-image
        (make-overlay
@@ -297,9 +297,9 @@
        #f))
 
 (test (overlay/align 'middle
-                      'middle
-                      (ellipse 50 100 'solid 'red)
-                      (ellipse 100 50 'solid 'green))
+                     'middle
+                     (ellipse 50 100 'solid 'red)
+                     (ellipse 100 50 'solid 'green))
       =>
       (make-image
        (make-overlay
@@ -310,9 +310,9 @@
 
 
 (test (overlay/align 'right
-                      'bottom
-                      (ellipse 50 100 'solid 'red)
-                      (ellipse 100 50 'solid 'green))
+                     'bottom
+                     (ellipse 50 100 'solid 'red)
+                     (ellipse 100 50 'solid 'green))
       =>
       (make-image
        (make-overlay
@@ -322,9 +322,9 @@
        #f))
 
 (test (overlay/align 'right
-                      'baseline
-                      (ellipse 50 100 'solid 'red)
-                      (ellipse 100 50 'solid 'green))
+                     'baseline
+                     (ellipse 50 100 'solid 'red)
+                     (ellipse 100 50 'solid 'green))
       =>
       (make-image
        (make-overlay
@@ -413,11 +413,134 @@
        #f))
 
 (test (above (ellipse 50 100 'solid 'red)
-              (ellipse 100 50 'solid 'blue))
+             (ellipse 100 50 'solid 'blue))
       =>
       (above/align 'left
                     (ellipse 50 100 'solid 'red)
                     (ellipse 100 50 'solid 'blue)))
+
+
+
+(test (underlay (ellipse 100 100 'solid 'blue)
+                (ellipse 120 120 'solid 'red))
+      =>
+      (make-image
+       (make-overlay
+        (make-translate 0 0 (image-shape (ellipse 120 120 'solid 'red)))
+        (make-translate 0 0 (image-shape (ellipse 100 100 'solid 'blue))))
+       (make-bb 120
+                120
+                120)
+       #f))
+
+(test (underlay/xy (ellipse 100 100 'solid 'blue)
+                   0 0
+                   (ellipse 120 120 'solid 'red))
+      =>
+      (underlay (ellipse 100 100 'solid 'blue)
+                (ellipse 120 120 'solid 'red)))
+
+
+(test (underlay/xy (ellipse 50 100 'solid 'red)
+                   -25 25
+                   (ellipse 100 50 'solid 'green))
+      =>
+      (make-image
+       (make-overlay
+        (make-translate 0 25 (image-shape (ellipse 100 50 'solid 'green)))
+        (make-translate 25 0 (image-shape (ellipse 50 100 'solid 'red))))
+       (make-bb 100
+                100
+                100)
+       #f))
+
+(test (underlay/xy (ellipse 100 50 'solid 'green)
+                   10 10
+                   (ellipse 50 100 'solid 'red))
+      =>
+      (make-image
+       (make-overlay
+        (make-translate 10 10 (image-shape (ellipse 50 100 'solid 'red)))
+        (make-translate 0 0 (image-shape (ellipse 100 50 'solid 'green))))
+       (make-bb 100
+                110
+                110)
+       #f))
+
+(test (underlay (ellipse 100 50 'solid 'green)
+                (ellipse 50 100 'solid 'red))
+      =>
+      (make-image
+       (make-overlay
+        (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red)))
+        (make-translate 0 0 (image-shape (ellipse 100 50 'solid 'green))))
+       (make-bb 100
+                100
+                100)
+       #f))
+
+(test (underlay (ellipse 100 100 'solid 'blue)
+                (ellipse 120 120 'solid 'red)
+                (ellipse 140 140 'solid 'green))
+      =>
+      (make-image
+       (make-overlay
+        (make-translate 
+         0 0
+         (make-overlay
+          (make-translate 0 0 (image-shape (ellipse 140 140 'solid 'green)))
+          (make-translate 0 0 (image-shape (ellipse 120 120 'solid 'red)))))
+        (make-translate 0 0 (image-shape (ellipse 100 100 'solid 'blue))))
+       (make-bb 140 140 140)
+       #f))
+
+(test (underlay/align 'middle
+                      'middle
+                      (ellipse 100 50 'solid 'green)
+                      (ellipse 50 100 'solid 'red))
+      =>
+      (make-image
+       (make-overlay
+        (make-translate 25 0 (image-shape (ellipse 50 100 'solid 'red)))
+        (make-translate 0 25 (image-shape (ellipse 100 50 'solid 'green))))
+       (make-bb 100 100 100)
+       #f))
+
+(test (underlay/align 'middle
+                      'middle
+                      (ellipse 50 100 'solid 'red)
+                      (ellipse 100 50 'solid 'green))
+      =>
+      (make-image
+       (make-overlay
+        (make-translate 0 25 (image-shape (ellipse 100 50 'solid 'green)))
+        (make-translate 25 0 (image-shape (ellipse 50 100 'solid 'red))))
+       (make-bb 100 100 100)
+       #f))
+
+(test (underlay/align 'right
+                      'bottom
+                      (ellipse 50 100 'solid 'red)
+                      (ellipse 100 50 'solid 'green))
+      =>
+      (make-image
+       (make-overlay
+        (make-translate 0 50 (image-shape (ellipse 100 50 'solid 'green)))
+        (make-translate 50 0 (image-shape (ellipse 50 100 'solid 'red))))
+       (make-bb 100 100 100)
+       #f))
+
+(test (underlay/align "right"
+                      "baseline"
+                      (ellipse 50 100 'solid 'red)
+                      (ellipse 100 50 'solid 'green))
+      =>
+      (make-image
+       (make-overlay
+        (make-translate 0 50 (image-shape (ellipse 100 50 'solid 'green)))
+        (make-translate 50 0 (image-shape (ellipse 50 100 'solid 'red))))
+       (make-bb 100 100 100)
+       #f))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

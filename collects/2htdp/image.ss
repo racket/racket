@@ -52,6 +52,9 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 (provide overlay
          overlay/align
          overlay/xy
+         underlay
+         underlay/align
+         underlay/xy
          
          beside
          beside/align
