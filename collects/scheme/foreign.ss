@@ -1,7 +1,7 @@
 #lang scheme/base
 
 ;; Foreign Scheme interface
-(require '#%foreign setup/dirs
+(require '#%foreign setup/dirs scheme/unsafe/ops
          (for-syntax scheme/base scheme/list syntax/stx))
 
 ;; This module is full of unsafe bindings that are not provided to requiring
@@ -1081,7 +1081,8 @@
                      [TAG-set!     (id "" "-set!")]
                      [_TAG         (id "_" "")]
                      [_TAG*        (id "_" "*")]
-                     [TAGname      name])
+                     [TAGname      name]
+                     [f64?         (if (eq? (syntax-e #'TAG) 'f64) #'#t #'#f)])
          #'(begin
              (define-struct TAG (ptr length))
              (provide TAG? TAG-length (rename-out [TAG s:TAG]))
@@ -1102,14 +1103,19 @@
              (define* (TAG-ref v i)
                (if (TAG? v)
                    (if (and (exact-nonnegative-integer? i) (< i (TAG-length v)))
-                       (ptr-ref (TAG-ptr v) type i)
+                       (if f64? ;; use JIT-inlined operation
+                           (unsafe-f64vector-ref v i)
+                           (ptr-ref (TAG-ptr v) type i))
                        (error 'TAG-ref "bad index ~e for ~a bounds of 0..~e"
                               i 'TAG (sub1 (TAG-length v))))
                    (raise-type-error 'TAG-ref TAGname v)))
              (define* (TAG-set! v i x)
                (if (TAG? v)
                    (if (and (exact-nonnegative-integer? i) (< i (TAG-length v)))
-                       (ptr-set! (TAG-ptr v) type i x)
+                       (if (and f64? ;; use JIT-inlined operation
+                                (inexact-real? x))
+                           (unsafe-f64vector-set! v i x)
+                           (ptr-set! (TAG-ptr v) type i x))
                        (error 'TAG-set! "bad index ~e for ~a bounds of 0..~e"
                               i 'TAG (sub1 (TAG-length v))))
                    (raise-type-error 'TAG-set! TAGname v)))
@@ -1264,7 +1270,8 @@
     (raise-type-error 'cast "ctype" to-type))
   (unless (= (ctype-sizeof to-type)
              (ctype-sizeof from-type))
-    (raise-mismatch-error (format "representation sizes of types differ: ~e to "
+    (raise-mismatch-error 'cast
+                          (format "representation sizes of types differ: ~e to "
                                   from-type)
                           to-type))
   (let ([p2 (malloc from-type)])
