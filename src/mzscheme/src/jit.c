@@ -4915,7 +4915,7 @@ static int generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
   refdone = jit_jmpi(jit_forward());
   if (!arith) {
     reffalse = _jit.x.pc;
-    jit_movi_p(JIT_R0, &scheme_false);
+    (void)jit_movi_p(JIT_R0, scheme_false);
     refdone3 = jit_jmpi(jit_forward());
   } else {
     reffalse = NULL;
@@ -5004,7 +5004,7 @@ static int generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
   }
 #endif
   if (!arith) {
-    jit_movi_p(JIT_R0, scheme_true);
+    (void)jit_movi_p(JIT_R0, scheme_true);
   }
   mz_patch_ucbranch(refdone);
   if (refdone3)
@@ -5021,7 +5021,7 @@ static int generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
 
   if (!arith && for_branch) {
     __START_SHORT_JUMPS__(branch_short);
-    for_branch[0] = jit_beqi_p(jit_forward(), JIT_R0, &scheme_false);
+    for_branch[0] = jit_beqi_p(jit_forward(), JIT_R0, scheme_false);
     __END_SHORT_JUMPS__(branch_short);
   }
 
@@ -6657,7 +6657,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       jit_stxr_d_fppop(JIT_R1, JIT_R0, JIT_FPR0);
       CHECK_LIMIT();
       
-      jit_movi_p(JIT_R0, &scheme_void);
+      (void)jit_movi_p(JIT_R0, scheme_void);
       
       return 1;
     } else if (IS_NAMED_PRIM(rator, "vector-immutable")
