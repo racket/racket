@@ -576,8 +576,9 @@ exports of the module.
 
 Returns @scheme[id-stx] if no binding in the current expansion context
 shadows @scheme[id-stx] (ignoring unsealed @tech{internal-definition
-contexts}), if @scheme[id-stx] has no module bindings in its lexical
-information, and if the current expansion context is not a
+contexts} and identifiers that had the @indexed-scheme['unshadowable]
+@tech{syntax property}), if @scheme[id-stx] has no module bindings in
+its lexical information, and if the current expansion context is not a
 @tech{module context}.
 
 If a binding of @scheme[inner-identifier] shadows @scheme[id-stx], the

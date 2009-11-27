@@ -981,7 +981,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #endif
 	)
 #endif
-      PRINTF(BANNER);
+      PRINTF("%s", BANNER);
 #ifdef MZSCHEME_CMD_LINE  
 # ifdef DOS_FILE_SYSTEM
 #  if !defined(FILES_HAVE_FDS)

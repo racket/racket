@@ -8,7 +8,7 @@
  'compile-load
  #f
  (lambda ()
-   (namespace-set-variable-value! 'compile-load "quiet.ss")))
+   (namespace-set-variable-value! 'compile-load "mzq.ss")))
 
 (define file
   (if #f
@@ -64,7 +64,7 @@
 	   [(x next-eval)
 	    (if (or (compiled-expression? x)
 		    (and (syntax? x) (compiled-expression? (syntax-e x)))
-		    (current-module-name-prefix))
+		    (current-module-declare-name))
 		(next-eval x)
 		(begin
 		  ;; (fprintf file ": ~a~n" +)

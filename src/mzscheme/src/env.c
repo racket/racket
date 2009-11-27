@@ -182,6 +182,8 @@ static void init_compile_data(Scheme_Comp_Env *env);
 
 #define ASSERT_IS_VARIABLE_BUCKET(b) /* if (((Scheme_Object *)b)->type != scheme_variable_type) abort() */
 
+static Scheme_Object *unshadowable_symbol;
+
 /*========================================================================*/
 /*                             initialization                             */
 /*========================================================================*/
@@ -631,6 +633,9 @@ static void make_kernel_env(void)
     sym = scheme_intern_symbol("mzscheme");
     scheme_current_thread->name = sym;
   }
+
+  REGISTER_SO(unshadowable_symbol);
+  unshadowable_symbol = scheme_intern_symbol("unshadowable");
 
   DONE_TIME(env);
 
@@ -4687,7 +4692,7 @@ static Scheme_Object *
 local_get_shadower(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env, *frame;
-  Scheme_Object *sym, *esym, *sym_marks = NULL, *orig_sym, *uid = NULL, *env_marks;
+  Scheme_Object *sym, *esym, *sym_marks = NULL, *orig_sym, *uid = NULL, *env_marks, *prop;
 
   env = scheme_current_thread->current_local_env;
   if (!env)
@@ -4712,16 +4717,19 @@ local_get_shadower(int argc, Scheme_Object *argv[])
     for (i = frame->num_bindings; i--; ) {
       if (frame->values[i]) {
 	if (SAME_OBJ(SCHEME_STX_VAL(sym), SCHEME_STX_VAL(frame->values[i])))  {
-	  esym = frame->values[i];
-	  env_marks = scheme_stx_extract_marks(esym);
-	  if (scheme_equal(env_marks, sym_marks)) {
-	    sym = esym;
-	    if (frame->uids)
-	      uid = frame->uids[i];
-	    else
-	      uid = frame->uid;
-	    break;
-	  }
+          prop = scheme_stx_property(frame->values[i], unshadowable_symbol, NULL);
+          if (SCHEME_FALSEP(prop)) {
+            esym = frame->values[i];
+            env_marks = scheme_stx_extract_marks(esym);
+            if (scheme_equal(env_marks, sym_marks)) {
+              sym = esym;
+              if (frame->uids)
+                uid = frame->uids[i];
+              else
+                uid = frame->uid;
+              break;
+            }
+          }
 	}
       }
     }
@@ -4734,14 +4742,17 @@ local_get_shadower(int argc, Scheme_Object *argv[])
           if (SAME_OBJ(SCHEME_STX_VAL(sym), 
                        SCHEME_STX_VAL(COMPILE_DATA(frame)->const_names[i]))) {
             esym = COMPILE_DATA(frame)->const_names[i];
-            env_marks = scheme_stx_extract_marks(esym);
-            if (scheme_equal(env_marks, sym_marks)) { /* This used to have 1 || --- why? */
-              sym = esym;
-              if (COMPILE_DATA(frame)->const_uids)
-                uid = COMPILE_DATA(frame)->const_uids[i];
-              else
-                uid = frame->uid;
-              break;
+            prop = scheme_stx_property(esym, unshadowable_symbol, NULL);
+            if (SCHEME_FALSEP(prop)) {
+              env_marks = scheme_stx_extract_marks(esym);
+              if (scheme_equal(env_marks, sym_marks)) { /* This used to have 1 || --- why? */
+                sym = esym;
+                if (COMPILE_DATA(frame)->const_uids)
+                  uid = COMPILE_DATA(frame)->const_uids[i];
+                else
+                  uid = frame->uid;
+                break;
+              }
             }
 	  }
 	}
