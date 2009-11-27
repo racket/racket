@@ -18,5 +18,5 @@
 		  quote
 		  make-pair pair? first rest
 		  length map for-each reverse append list list-ref fold
-		  symbol?
+		  symbol? string->symbol symbol->string
 		  apply))
