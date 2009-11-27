@@ -316,7 +316,9 @@
   (symbol? (%a -> boolean)
 	   "feststellen, ob ein Wert ein Symbol ist")
   (symbol->string (symbol -> string)
-		  "Symbol in Zeichenkette umwandeln"))
+		  "Symbol in Zeichenkette umwandeln")
+  (string->symbol (string -> symbol)
+		  "Zeichenkette in Symbol umwandeln"))
  
  ("Verschiedenes"
   (equal? (%a %b -> boolean)

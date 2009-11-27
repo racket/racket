@@ -19,5 +19,5 @@
  procedures
  (all-from-except assignments: deinprogramm/DMdA procedures
 		  quote
-		  symbol?))
+		  symbol? string->symbol symbol->string))
 
