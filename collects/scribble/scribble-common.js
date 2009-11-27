@@ -141,7 +141,7 @@ AddOnLoad(function(){
     for (var i=0; i<links.length; i++) MergePageArgsIntoLink(links[i]);
     var label = GetPageArg("ctxtname",false);
     if (!label) return;
-    var indicator = document.getElementById("langindicator");
+    var indicator = document.getElementById("contextindicator");
     if (!indicator) return;
     indicator.innerHTML = label;
     indicator.style.display = "block";
