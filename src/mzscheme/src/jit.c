@@ -3833,10 +3833,10 @@ static int generate_double_arith(mz_jit_state *jitter, int arith, int cmp, int r
     } else
       ref8 = NULL;
     jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-    ref9 = jit_bnei_p(jit_forward(), JIT_R2, scheme_double_type);
+    ref9 = jit_bnei_i(jit_forward(), JIT_R2, scheme_double_type);
     if (two_args) {
       jit_ldxi_s(JIT_R2, JIT_R1, &((Scheme_Object *)0x0)->type);
-      ref10 = jit_bnei_p(jit_forward(), JIT_R2, scheme_double_type);
+      ref10 = jit_bnei_i(jit_forward(), JIT_R2, scheme_double_type);
     } else
       ref10 = NULL;
     CHECK_LIMIT();
@@ -4067,8 +4067,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
     }
     if (args_unboxed) {
       --jitter->unbox;
-      if (rand)
-        jitter->unbox_depth -= (rand2 ? 2 : 1);
+      jitter->unbox_depth -= (rand ? (rand2 ? 2 : 1) : 2);
     }
     if (for_branch)
       mz_rs_sync(); /* needed if arguments were unboxed */
@@ -4774,14 +4773,18 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
 #define MAX_NON_SIMPLE_ARGS 5
 
-static int extract_nary_arg(int reg, int n, mz_jit_state *jitter, Scheme_App_Rec *app, Scheme_Object **alt_args)
+static int extract_nary_arg(int reg, int n, mz_jit_state *jitter, Scheme_App_Rec *app, 
+                            Scheme_Object **alt_args, int old_short_jumps)
 {
   if (!alt_args) {
     jit_ldxi_p(reg, JIT_RUNSTACK, WORDS_TO_BYTES(n));
     if (jitter->unbox)
       generate_unboxing(jitter);
   } else if (is_constant_and_avoids_r1(app->args[n+1])) {
+    __END_SHORT_JUMPS__(old_short_jumps);
     generate(app->args[n+1], jitter, 0, 0, reg);
+    CHECK_LIMIT();
+    __START_SHORT_JUMPS__(old_short_jumps);
   } else {
     int i, j = 0;
     for (i = 0; i < n; i++) {
@@ -4847,8 +4850,12 @@ static int generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
       use_fx = 0;
       if (trigger_arg == i)
         trigger_arg++;
+    } else if (SCHEME_TYPE(v) >= _scheme_compiled_values_types_) {
+      use_fx = 0;
+      use_fl = 0;
     }
   }
+
   if ((non_simple_c <= MAX_NON_SIMPLE_ARGS) && (non_simple_c < c)) {
     stack_c = non_simple_c;
     alt_args = non_simples;
@@ -4872,7 +4879,7 @@ static int generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
     trigger_arg = 0;
   }
 
-  extract_nary_arg(JIT_R0, trigger_arg, jitter, app, alt_args);
+  extract_nary_arg(JIT_R0, trigger_arg, jitter, app, alt_args, c < 100);
   CHECK_LIMIT();
   /* trigger argument a fixnum? */
   reffx = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
@@ -4881,7 +4888,7 @@ static int generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
   if (use_fl) {
     /* First argument a flonum? */
     jit_ldxi_s(JIT_R0, JIT_R0, &((Scheme_Object *)0x0)->type);
-    reffl = jit_beqi_p(jit_forward(), JIT_R0, scheme_double_type);
+    reffl = jit_beqi_i(jit_forward(), JIT_R0, scheme_double_type);
     CHECK_LIMIT();
   } else {
     reffl = NULL;
@@ -4899,7 +4906,7 @@ static int generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
     int delta = stack_c - c;
     for (i = 0; i < c; i++) {
       if (delta) {
-        extract_nary_arg(JIT_R0, i, jitter, app, alt_args);
+        extract_nary_arg(JIT_R0, i, jitter, app, alt_args, c < 100);
         CHECK_LIMIT();
         jit_stxi_p(WORDS_TO_BYTES(i+delta), JIT_RUNSTACK, JIT_R0);
       } else
@@ -4930,10 +4937,10 @@ static int generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
       if (i != trigger_arg) {
         v = app->args[i+1];
         if (!SCHEME_FLOATP(v)) {
-          extract_nary_arg(JIT_R0, i, jitter, app, alt_args);
+          extract_nary_arg(JIT_R0, i, jitter, app, alt_args, c < 100);
           (void)jit_bmsi_ul(refslow, JIT_R0, 0x1);
           jit_ldxi_s(JIT_R0, JIT_R0, &((Scheme_Object *)0x0)->type);
-          (void)jit_bnei_p(refslow, JIT_R0, scheme_double_type);
+          (void)jit_bnei_i(refslow, JIT_R0, scheme_double_type);
           CHECK_LIMIT();
         }
       }
@@ -4942,12 +4949,12 @@ static int generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
     args_unboxed = ((arith != 9) && (arith != 10)); /* no unboxing for min & max */
     if (args_unboxed)
       jitter->unbox++;
-    extract_nary_arg(JIT_R0, 0, jitter, app, alt_args);
+    extract_nary_arg(JIT_R0, 0, jitter, app, alt_args, c < 100);
     CHECK_LIMIT();
     for (i = 1; i < c; i++) {
       if (!arith && (i > 1))
-        extract_nary_arg(JIT_R0, i - 1, jitter, app, alt_args);
-      extract_nary_arg((args_unboxed ? JIT_R0 : JIT_R1), i, jitter, app, alt_args);
+        extract_nary_arg(JIT_R0, i - 1, jitter, app, alt_args, c < 100);
+      extract_nary_arg((args_unboxed ? JIT_R0 : JIT_R1), i, jitter, app, alt_args, c < 100);
       if ((i == c - 1) && args_unboxed) --jitter->unbox; /* box last result */
       if (!arith) memset(refs, 0, sizeof(refs));
       __END_SHORT_JUMPS__(c < 100);
@@ -4974,7 +4981,7 @@ static int generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
       if (i != trigger_arg) {
         v = app->args[i+1];
         if (!SCHEME_INTP(v)) {
-          extract_nary_arg(JIT_R0, i, jitter, app, alt_args);
+          extract_nary_arg(JIT_R0, i, jitter, app, alt_args, c < 100);
           CHECK_LIMIT();
           (void)jit_bmci_ul(refslow, JIT_R0, 0x1);
           CHECK_LIMIT();
@@ -4983,11 +4990,11 @@ static int generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
     }
     /* All fixnums, so inline fast fixnum combination;
        on overflow, bail out to refslow. */
-    extract_nary_arg(JIT_R0, 0, jitter, app, alt_args);
+    extract_nary_arg(JIT_R0, 0, jitter, app, alt_args, c < 100);
     for (i = 1; i < c; i++) {
       if (!arith && (i > 1))
-        extract_nary_arg(JIT_R0, i - 1, jitter, app, alt_args);
-      extract_nary_arg(JIT_R1, i, jitter, app, alt_args);
+        extract_nary_arg(JIT_R0, i - 1, jitter, app, alt_args, c < 100);
+      extract_nary_arg(JIT_R1, i, jitter, app, alt_args, c < 100);
       CHECK_LIMIT();
       if (!arith) memset(refs, 0, sizeof(refs));
       __END_SHORT_JUMPS__(c < 100);
@@ -5310,7 +5317,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     /* Check for positive bignum: */
     __START_SHORT_JUMPS__(branch_short);
     jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-    ref2 = jit_bnei_p(jit_forward(), JIT_R2, scheme_bignum_type);
+    ref2 = jit_bnei_i(jit_forward(), JIT_R2, scheme_bignum_type);
     jit_ldxi_s(JIT_R2, JIT_R0, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
     ref3 = jit_bmci_ul(jit_forward(), JIT_R2, 0x1);
     __END_SHORT_JUMPS__(branch_short);

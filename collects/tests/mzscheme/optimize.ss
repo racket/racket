@@ -108,6 +108,9 @@
 		   (check-effect)
 		   (test v name ((eval `(lambda (x y) ,(wrap `(,op (,get-arg1) x y)))) arg2 arg3))
 		   (check-effect)
+		   (eval `(define _arg2 ,arg2))
+		   (test v name ((eval `(lambda (y) ,(wrap `(,op (,get-arg1) _arg2 y)))) arg3))
+                   (check-effect)
 		   (test v name ((eval `(lambda (x y z) ,(wrap `(,op x y z)))) (get-arg1) arg2 arg3))
 		   (check-effect)))]
          [tri (lambda (v op get-arg1 arg2 arg3 check-effect #:wrap [wrap values])
@@ -285,6 +288,7 @@
     (bin (expt 2 30) '+ (expt 2 29) (expt 2 29))
     (bin (- (expt 2 31) 2) '+ (sub1 (expt 2 30)) (sub1 (expt 2 30)))
     (tri 6 '+ (lambda () 1) 2 3 void)
+    (tri 13/2 '+ (lambda () 1) 5/2 3 void)
 
     (bin 3 '- 7 4)
     (bin 11 '- 7 -4)
@@ -293,6 +297,7 @@
     (bin (- (expt 2 30)) '- (- (expt 2 29)) (expt 2 29))
     (bin (- 2 (expt 2 31)) '- (- 1 (expt 2 30)) (sub1 (expt 2 30)))
     (tri 6 '- (lambda () 10) 3 1 void)
+    (tri 13/2 '- (lambda () 10) 3 1/2 void)
 
     (bin 4 '* 1 4)
     (bin 0 '* 0 4)
@@ -305,6 +310,7 @@
     (bin (expt 2 31) '* 2 (expt 2 30))
     (bin (- (expt 2 30)) '* 2 (- (expt 2 29)))
     (tri 30 '* (lambda () 2) 3 5 void)
+    (tri 5 '* (lambda () 2) 3 5/6 void)
 
     (bin 0 '/ 0 4)
     (bin 1/4 '/ 1 4)
@@ -314,6 +320,7 @@
     (bin -4 '/ 16 -4)
     (bin 4 '/ -16 -4)
     (tri 3 '/ (lambda () 30) 5 2 void)
+    (tri 12 '/ (lambda () 30) 5 1/2 void)
 
     (bin-int 3 'quotient 10 3)
     (bin-int -3 'quotient 10 -3)
