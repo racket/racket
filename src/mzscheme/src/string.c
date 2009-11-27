@@ -2102,7 +2102,7 @@ scheme_init_getenv(void)
 # include <windows.h>
 static char *dos_win_getenv(const char *name) {
   int value_size;
-  value_size = GetEnvironmentVariable(s, NULL, 0);
+  value_size = GetEnvironmentVariable(name, NULL, 0);
   if (value_size) {
     char *value;
     int got;
@@ -2112,7 +2112,7 @@ static char *dos_win_getenv(const char *name) {
       value[got] = 0;
     return value;
   }
-  return name;
+  return NULL;
 }
 #endif
 
@@ -2120,7 +2120,7 @@ static int sch_bool_getenv(const char* name) {
   int rc = 0;
 #ifdef GETENV_FUNCTION
 # ifdef DOS_FILE_SYSTEM
-  if (GetEnvironmentVariable(s, NULL, 0)) rc = 1;
+  if (GetEnvironmentVariable(name, NULL, 0)) rc = 1;
 # else
   if (getenv(name)) rc = 1;
 # endif
@@ -2159,6 +2159,7 @@ static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[])
   return value ? scheme_make_locale_string(value) : scheme_false;
 }
 
+#ifndef DOS_FILE_SYSTEM
 static int sch_unix_putenv(const char *var, const char *val, const long varlen, const long vallen) {
   char *buffer;
   long total_length;
@@ -2189,6 +2190,7 @@ static int sch_unix_putenv(const char *var, const char *val, const long varlen, 
   putenv_str_table_put_name((Scheme_Object *)var, (Scheme_Object *)buffer);
   return putenv(buffer);
 } 
+#endif
 
 static Scheme_Object *sch_putenv(int argc, Scheme_Object *argv[])
 {
