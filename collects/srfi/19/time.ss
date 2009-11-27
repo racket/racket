@@ -390,13 +390,13 @@
   
   (define (time>=? time1 time2)
     (tm:time-compare-check time1 time2 'time>=?)
-    (or (>= (time-second time1) (time-second time2))
+    (or (> (time-second time1) (time-second time2))
 	(and (= (time-second time1) (time-second time2))
 	     (>= (time-nanosecond time1) (time-nanosecond time2)))))
   
   (define (time<=? time1 time2)
     (tm:time-compare-check time1 time2 'time<=?)
-    (or (<= (time-second time1) (time-second time2))
+    (or (< (time-second time1) (time-second time2))
 	(and (= (time-second time1) (time-second time2))
 	     (<= (time-nanosecond time1) (time-nanosecond time2)))))
   
