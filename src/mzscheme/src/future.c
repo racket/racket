@@ -139,7 +139,7 @@ void scheme_init_futures(Scheme_Env *env)
   FUTURE_PRIM_W_ARITY("future?",          future_p,         1, 1, newenv);
   FUTURE_PRIM_W_ARITY("future",           future,           1, 1, newenv);
   FUTURE_PRIM_W_ARITY("touch",            touch,            1, 1, newenv);
-  FUTURE_PRIM_W_ARITY("processor-count",  processor_count,  1, 1, newenv);
+  FUTURE_PRIM_W_ARITY("processor-count",  processor_count,  0, 0, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
