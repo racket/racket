@@ -53,8 +53,18 @@ result is @scheme[values].
 
 Returns a procedure that is like @scheme[proc], except that its name
 as returned by @scheme[object-name] (and as printed for debugging) is
-@scheme[name].}
+@scheme[name].
 
+The given @scheme[name] is used for printing an error message if the
+resulting procedure is applied to the wrong number of arguments.  In
+addition, if @scheme[proc] is an @tech{accessor} or @tech{mutator}
+produced by @scheme[define-struct],
+@scheme[make-struct-field-accessor], or
+@scheme[make-struct-field-mutator], the resulting procedure also uses
+@scheme[name] when its (first) argument has the wrong type. More
+typically, however, @scheme[name] is not used for reporting errors,
+since the procedure name is typically hard-wired into an internal
+check.}
 
 @; ----------------------------------------
 @section{Keywords and Arity}

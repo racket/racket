@@ -689,6 +689,8 @@ Scheme_Object *scheme_clone_prefab_struct_instance(Scheme_Structure *s);
 
 Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv);
 
+Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym);
+
 /*========================================================================*/
 /*                         syntax objects                                 */
 /*========================================================================*/

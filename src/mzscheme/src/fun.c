@@ -3661,12 +3661,15 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *aty;
+  Scheme_Object *p, *aty;
 
   if (!SCHEME_PROCP(argv[0]))
     scheme_wrong_type("procedure-rename", "procedure", 0, argc, argv);
   if (!SCHEME_SYMBOLP(argv[1]))
     scheme_wrong_type("procedure-rename", "symbol", 1, argc, argv);
+
+  p = scheme_rename_struct_proc(argv[0], argv[1]);
+  if (p) return p;
 
   aty = get_or_check_arity(argv[0], -1, NULL);  
 
