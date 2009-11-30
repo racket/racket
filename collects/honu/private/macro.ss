@@ -162,7 +162,56 @@
 (define wrapped #f)
 (define unwrap #f)
 
+(define-for-syntax (pull stx)
+  (define (reverse-syntax stx)
+    (with-syntax ([(x ...) (reverse (syntax->list stx))])
+      #'(x ...)))
+  (define-syntax-class stop-class
+    (pattern x:id #:when (or (free-identifier=? #'x #'(... ...))
+                             (free-identifier=? #'x #'\;))))
+  (define (do-ellipses stx)
+    (let loop ([ellipses '()]
+               [body '()]
+               [stx stx])
+      (cond
+        [(null? stx) (values (with-syntax ([(ellipses ...) ellipses]
+                                           [(body ...) body])
+                               #'(ellipses ... body ...))
+                             stx)]
+        [(and (identifier? (car stx))
+              (free-identifier=? (car stx) #'(... ...)))
+         (loop (cons #'(... ...) ellipses) body (cdr stx))]
+        [(and (identifier? (car stx))
+              (free-identifier=? (car stx) #'\;))
+         ;; (printf "Found a ; in ~a\n" (syntax->datum stx))
+         (with-syntax ([all (cdr stx)])
+           ;; (printf "Found a ; -- ~a\n" (syntax->datum #'all))
+           (syntax-parse #'all
+                         [((~and x (~not _:stop-class)) ... stop:stop-class y ...)
+                          (with-syntax ([(ellipses ...) ellipses]
+                                        [(x* ...) (reverse-syntax #'(x ...))])
+                            (values #'(ellipses ... (wrapped x* ... \;) unwrap)
+                                    #'(stop y ...)))]
+                         [else (with-syntax ([(f ...) (reverse-syntax #'all)]
+                                             [(ellipses ...) ellipses])
+                                 (values #'(ellipses ... (wrapped f ... \;) unwrap)
+                                         #'()))]))])))
+  (let loop ([all '()]
+             [stx (reverse (syntax->list stx))])
+    (if (null? stx)
+        (with-syntax ([x all])
+          #'x)
+        (let ([head (car stx)]
+              [tail (cdr stx)])
+          (cond
+            [(and (identifier? head)
+                  (free-identifier=? head #'(... ...)))
+             (let-values ([(wrapped rest) (do-ellipses (cons head tail))])
+               (loop (cons (reverse-syntax wrapped) all) (syntax->list rest)))]
+            [else (loop (cons head all) tail)])))))
+
 ;; rename this to wrap
+#;
 (define-for-syntax (pull stx)
   (define (reverse-syntax stx)
     (with-syntax ([(x ...) (reverse (syntax->list stx))])
@@ -171,6 +220,8 @@
     (pattern x:id #:when (delimiter? #'x)))
   (define-syntax-class ellipses-class
                        (pattern x:id #:when (free-identifier=? #'x #'(... ...))))
+  (define-syntax-class not-ellipses-class
+                       (pattern x:id #:when (not (free-identifier=? #'x #'(... ...)))))
   ;; use this if you are defining your own ellipses identifier
   #;
   (define-syntax-class ellipses-class
@@ -183,7 +234,7 @@
       ;; (printf "stx is ~a\n" stx)
       ;; (printf "... = ~a\n" (free-identifier=? #'(... ...) (stx-car stx)))
       (syntax-parse stx
-        [(ellipses1:ellipses-class ellipses:ellipses-class ... delimiter:delimiter-class x ...)
+        [(before:not-ellipses-class ... ellipses1:ellipses-class ellipses:ellipses-class ... delimiter:delimiter-class x ...)
          (with-syntax ([(x* ...) (reverse-syntax (pull #'(delimiter x ...)))])
            (reverse-syntax
              (with-syntax ([wrapped #'wrapped]
@@ -192,7 +243,7 @@
                                                             #'((... ...) (... ...)))
                                                           (syntax->list #'(ellipses1 ellipses ...)))]
                                           [(x-new ...) (generate-temporaries #'(delimiter x ...))])
-                              (reverse-syntax #'(ellipses* ... x-new ...)))]
+                              (reverse-syntax #'(before ... ellipses* ... x-new ...)))]
                            #;
                            [original (syntax->datum (reverse-syntax #'(ellipses1 ellipses ... x ...)))])
                #'(ellipses1 ellipses ... (wrapped x* ...) unwrap))))]
@@ -219,8 +270,13 @@
     (pattern x:id #:when (free-identifier=? #'x #'(... ...))))
   (define-syntax-class delimiter-class
     (pattern x:id #:when (delimiter? #'x)))
+  ;; (printf "unpull ~a\n" (syntax->datum stx))
   (syntax-parse stx
                 #:literals (wrapped unwrap)
+                [((~and z (~not (unwrap _ ...))) ... (unwrap (wrapped x ... delimiter:delimiter-class) ...) rest ...)
+                 (with-syntax ([(x1 ...) (apply append (map syntax->list (syntax->list #'((x ... delimiter) ...))))]
+                               [(rest* ...) (unpull #'(rest ...))])
+                 #'(z ... x1 ... rest* ...))]
                 [(unwrap (wrapped x ... delimiter:delimiter-class) ...)
                  (with-syntax ([(x1 ...) (apply append (map syntax->list (syntax->list #'((x ... delimiter) ...))))])
                  #'(x1 ...))]
