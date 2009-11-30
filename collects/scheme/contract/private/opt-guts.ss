@@ -56,8 +56,14 @@
 
 
 ;; struct for color-keeping across opters
-(define-struct opt/info (contract val pos neg src-info orig-str positive-position?
-                         free-vars recf base-pred this that))
+(define-struct opt/info
+  (contract val pos neg src-info orig-str position-var position-swap?
+            free-vars recf base-pred this that))
+
+(define (opt/info-positive-position? oi)
+  (if (opt/info-position-swap? oi)
+    #`(not #,(opt/info-position-var oi))
+    (opt/info-position-var oi)))
 
 ;; opt/info-swap-blame : opt/info -> opt/info
 ;; swaps pos and neg
@@ -66,7 +72,8 @@
         (val (opt/info-val info))
         (pos (opt/info-pos info))
         (neg (opt/info-neg info))
-        (positive-position? (opt/info-positive-position? info))
+        (position-var (opt/info-position-var info))
+        (position-swap? (opt/info-position-swap? info))
         (src-info (opt/info-src-info info))
         (orig-str (opt/info-orig-str info))
         (free-vars (opt/info-free-vars info))
@@ -74,7 +81,8 @@
         (base-pred (opt/info-base-pred info))
         (this (opt/info-this info))
         (that (opt/info-that info)))
-    (make-opt/info ctc val neg pos src-info orig-str (not positive-position?)
+    (make-opt/info ctc val neg pos src-info orig-str
+                   position-var (not position-swap?)
                    free-vars recf base-pred this that)))
 
 ;; opt/info-change-val : identifier opt/info -> opt/info
@@ -83,7 +91,8 @@
   (let ((ctc (opt/info-contract info))
         (pos (opt/info-pos info))
         (neg (opt/info-neg info))
-        (positive-position? (opt/info-positive-position? info))
+        (position-var (opt/info-position-var info))
+        (position-swap? (opt/info-position-swap? info))
         (src-info (opt/info-src-info info))
         (orig-str (opt/info-orig-str info))
         (free-vars (opt/info-free-vars info))
@@ -91,7 +100,9 @@
         (base-pred (opt/info-base-pred info))
         (this (opt/info-this info))
         (that (opt/info-that info)))
-    (make-opt/info ctc val pos neg src-info orig-str positive-position? free-vars recf base-pred this that)))
+    (make-opt/info ctc val pos neg src-info orig-str
+                   position-var position-swap?
+                   free-vars recf base-pred this that)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
