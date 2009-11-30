@@ -8,6 +8,6 @@
 (big-bang 0 (stop-when zero?) (on-tick add1))
 
 "does big bang stop when the initial world is a stop world?"
-(big-bang (STOP! 0) (on-tick add1))
+(big-bang (stop-with 0) (on-tick add1))
 
 (define-struct stop (x))
