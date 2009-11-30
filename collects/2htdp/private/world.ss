@@ -4,6 +4,7 @@
          "timer.ss"
          "last.ss"
          "checked-cell.ss"
+         "stop.ss"
          htdp/image
          htdp/error
          mzlib/runtime-path
@@ -214,15 +215,20 @@
           (queue-callback 
            (lambda ()
              (with-handlers ([exn? (handler #t)])
+	       (define stop-it #f)
                (define tag (format "~a callback" 'transform))
                (define nw (transform (send world get) arg ...))
                (when (package? nw)
                  (broadcast (package-message nw))
                  (set! nw (package-world nw)))
+               (printf "~s\n" nw)
+	       (when (stop-the-world? nw)
+		 (set! nw (stop-the-world-world nw))
+		 (set! stop-it #t))
                (let ([changed-world? (send world set tag nw)])
                  (unless changed-world?
                    (when draw (pdraw))
-                   (when (pstop) 
+                   (when (or stop-it (pstop))
                      (when last-picture 
                        (set! draw last-picture)
                        (pdraw))
@@ -284,7 +290,11 @@
       ;; initialize the world and run 
       (super-new)
       (start!)
-      (when (stop (send world get)) (stop! (send world get)))))))
+      (let ([w (send world get)])
+        (cond
+          [(stop w) (stop! (send world get))]
+          [(stop-the-world? w) 
+           (stop! (stop-the-world-world (send world get)))]))))))
 
 ;; -----------------------------------------------------------------------------
 (define-runtime-path break-btn:path '(lib "icons/break.png"))

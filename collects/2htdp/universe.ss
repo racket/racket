@@ -17,10 +17,14 @@
          "private/world.ss"
          "private/universe.ss"
          "private/launch-many-worlds.ss"
+         "private/stop.ss"
          htdp/error
          (rename-in lang/prim (first-order->higher-order f2h)))
 
 (provide (all-from-out "private/image.ss"))
+
+(provide 
+ (rename-out (make-stop-the-world STOP!))) ;; World -> STOP!
 
 (provide
  launch-many-worlds
