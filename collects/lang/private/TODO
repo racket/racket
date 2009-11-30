@@ -38,4 +38,3 @@ string-ref  : String Nat -> Char
 
 NOTE: 
 substring consumes 2 or 3 arguments 
-
