@@ -215,26 +215,31 @@
           (queue-callback 
            (lambda ()
              (with-handlers ([exn? (handler #t)])
-	       (define stop-it #f)
                (define tag (format "~a callback" 'transform))
                (define nw (transform (send world get) arg ...))
                (when (package? nw)
                  (broadcast (package-message nw))
                  (set! nw (package-world nw)))
-               (printf "~s\n" nw)
-	       (when (stop-the-world? nw)
-		 (set! nw (stop-the-world-world nw))
-		 (set! stop-it #t))
-               (let ([changed-world? (send world set tag nw)])
-                 (unless changed-world?
-                   (when draw (pdraw))
-                   (when (or stop-it (pstop))
-                     (when last-picture 
-                       (set! draw last-picture)
-                       (pdraw))
-                     (callback-stop! 'name)
-                     (enable-images-button)))
-                 changed-world?))))))
+               (if (stop-the-world? nw)
+		   (begin
+		     (set! nw (stop-the-world-world nw))
+		     (send world set tag nw)
+		     (when last-picture
+		       (set! draw last-picture))
+		     (when draw (pdraw))
+		     (callback-stop! 'name)
+		     (enable-images-button))
+		   (let ([changed-world? (send world set tag nw)])
+		     (unless changed-world?
+		       (when draw (pdraw))
+		       (when (pstop)
+			 (printf "!stop!\n")
+			 (when last-picture 
+			   (set! draw last-picture)
+			   (pdraw))
+			 (callback-stop! 'name)
+			 (enable-images-button)))
+		     changed-world?)))))))
       
       ;; tick, tock : deal with a tick event for this world 
       (def/pub-cback (ptock) tick)

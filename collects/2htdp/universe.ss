@@ -24,7 +24,7 @@
 (provide (all-from-out "private/image.ss"))
 
 (provide 
- (rename-out (make-stop-the-world STOP!))) ;; World -> STOP!
+ (rename-out (make-stop-the-world stop-with))) ;; World -> STOP
 
 (provide
  launch-many-worlds
