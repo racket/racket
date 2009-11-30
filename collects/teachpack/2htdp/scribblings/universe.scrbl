@@ -443,9 +443,9 @@ All @tech{MouseEvent}s are represented via strings:
 
 @item{
 
-@defproc[(STOP! [w (unsyntax @tech{WorldState})]) boolean?]{signals to
+@defproc[(stop-with [w (unsyntax @tech{WorldState})]) (stop-with (unsyntax @tech{WorldState}))]{signals to
 DrScheme that the current world program should shut down. That is, any
-handler may return @scheme[(STOP! w)] provided @scheme[w] is a
+handler may return @scheme[(stop-with w)] provided @scheme[w] is a
 @tech{WorldState}. If it does, the state of the world becomes @scheme[w]
 but @scheme[big-bang] will close down all event handling.}
 
