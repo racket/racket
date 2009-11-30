@@ -153,7 +153,8 @@
            #'rest))])
     ))
 
-(define-for-syntax (delimiter? x) #f)
+(define-for-syntax (delimiter? x)
+  (or (free-identifier=? x #'\;)))
 
 (define-syntax (my-ellipses stx) (raise-syntax-error 'my-ellipses "dont use this"))
 ;; (define-syntax (wrapped stx) (raise-syntax-error 'wrapped "dont use wrap"))
@@ -166,6 +167,8 @@
   (define (reverse-syntax stx)
     (with-syntax ([(x ...) (reverse (syntax->list stx))])
       #'(x ...)))
+  (define-syntax-class delimiter-class
+    (pattern x:id #:when (delimiter? #'x)))
   (define-syntax-class ellipses-class
                        (pattern x:id #:when (free-identifier=? #'x #'(... ...))))
   ;; use this if you are defining your own ellipses identifier
@@ -180,6 +183,19 @@
       ;; (printf "stx is ~a\n" stx)
       ;; (printf "... = ~a\n" (free-identifier=? #'(... ...) (stx-car stx)))
       (syntax-parse stx
+        [(ellipses1:ellipses-class ellipses:ellipses-class ... delimiter:delimiter-class x ...)
+         (with-syntax ([(x* ...) (reverse-syntax (pull #'(delimiter x ...)))])
+           (reverse-syntax
+             (with-syntax ([wrapped #'wrapped]
+                           [original
+                            (with-syntax ([(ellipses* ...) (map (lambda (_)
+                                                            #'((... ...) (... ...)))
+                                                          (syntax->list #'(ellipses1 ellipses ...)))]
+                                          [(x-new ...) (generate-temporaries #'(delimiter x ...))])
+                              (reverse-syntax #'(ellipses* ... x-new ...)))]
+                           #;
+                           [original (syntax->datum (reverse-syntax #'(ellipses1 ellipses ... x ...)))])
+               #'(ellipses1 ellipses ... (wrapped x* ...) unwrap))))]
         [(ellipses1:ellipses-class ellipses:ellipses-class ... x ...)
          (with-syntax ([(x* ...) (reverse-syntax (pull #'(x ...)))])
            (reverse-syntax
@@ -196,13 +212,18 @@
         [(x ...) (with-syntax ([(x* ...) (map pull (syntax->list #'(x ...)))])
                    (reverse-syntax #'(x* ...)))]))))
 
-(begin-for-syntax (trace pull))
+;; (begin-for-syntax (trace pull))
 
 (define-for-syntax (unpull stx)
   (define-syntax-class ellipses-class
     (pattern x:id #:when (free-identifier=? #'x #'(... ...))))
+  (define-syntax-class delimiter-class
+    (pattern x:id #:when (delimiter? #'x)))
   (syntax-parse stx
                 #:literals (wrapped unwrap)
+                [(unwrap (wrapped x ... delimiter:delimiter-class) ...)
+                 (with-syntax ([(x1 ...) (apply append (map syntax->list (syntax->list #'((x ... delimiter) ...))))])
+                 #'(x1 ...))]
                 [(unwrap (wrapped x ... y) ...)
                  (with-syntax ([(x1 ...) (car (syntax->list #'((x ...) ...)))])
                    (with-syntax ([(x1* ...) (map unpull (syntax->list #'(x1 ...)))]

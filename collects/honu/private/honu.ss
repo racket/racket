@@ -126,7 +126,7 @@
                  (let ([v (syntax-local-value (stx-car first) (lambda () #f))])
                    (and (honu-transformer? v) v))]
                 [else #f]))))
-     (printf "~a bound transformer? ~a\n" stx (bound-transformer stx))
+     ;; (printf "~a bound transformer? ~a\n" stx (bound-transformer stx))
      (or (bound-transformer stx)
          (special-transformer stx)))
    
