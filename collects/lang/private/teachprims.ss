@@ -192,8 +192,25 @@ namespace.
           (apply append x)))))
 
 (define-teach beginner error
+  (lambda stuff0
+    (define-values (f stuff1)
+      (if (and (cons? stuff0) (symbol? (first stuff0)))
+          (values (first stuff0) (rest stuff0))
+          (values false stuff0)))
+    (define str
+      (let loop ([stuff stuff1][frmt ""][pieces '()])
+        (cond
+          [(empty? stuff) (apply format frmt (reverse pieces))]
+          [else 
+           (let ([f (first stuff)]
+                 [r (rest stuff)])
+             (if (string? f)
+                 (loop r (string-append frmt f) pieces)
+                 (loop r (string-append frmt "~e") (cons f pieces))))])))
+    (if f (error f str) (error str)))
+  #;
   (lambda (str)
-    (unless  (string? str)
+    (unless (string? str)
       (raise
        (make-exn:fail:contract
         (format "error: expected a string, got ~e and ~e" str)
