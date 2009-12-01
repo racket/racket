@@ -12,17 +12,25 @@
 
   ;; Takes either a syntax object representing a list of expressions
   ;; or a list of s-expressions, and checks to see if it's a single
-  ;; expression that begins with the literal #%module-begin.
-  (define (contains-#%module-begin exps)
-    (let ([exps (if (syntax? exps) (syntax->list exps) exps)])
-      (and exps
-           (pair? exps) 
-           (null? (cdr exps))
-           (let ([exp (car exps)])
-             (let ([lst (if (syntax? exp) (syntax->list exp) exp)])
-               (and lst
-                    (let ([head (if (syntax? (car lst)) (syntax-e (car lst)) (car lst))])
-                      (eq? '#%module-begin head))))))))
+  ;; expression that begins with the literal #%module-begin.  If so,
+  ;; it just returns that expression, else it wraps with #%module-begin.
+  (define (wrap-#%module-begin exps stx?)
+    (define wrapped-exps 
+      (let ([wrapped `(#%module-begin . ,exps)])
+        (if stx?
+            (datum->syntax #f wrapped)
+            wrapped)))
+    (let ([exps (if stx? (syntax->list exps) exps)])
+      (cond
+        [(null? exps) wrapped-exps]
+        [(not (null? (cdr exps))) wrapped-exps]
+        [else (let ([exp (if stx? (syntax-e (car exps)) (car exps))])
+                (cond
+                  [(not (pair? exp)) wrapped-exps]
+                  [(eq? '#%module-begin
+                        (if stx? (syntax-e (car exp)) (car exp)))
+                   (car exp)]
+                  [else wrapped-exps]))])))
 
   (define-syntax (provide-module-reader stx)
     (define (err str [sub #f])
@@ -188,13 +196,8 @@
            ;; or wrapper1 functions, we need to avoid double-wrapping.  Having to
            ;; do this for #lang readers should be considered deprecated, and
            ;; hopefully one day we'll move to just doing it unilaterally.
-           [wrapped-body (if (contains-#%module-begin body)
-                             body
-                             (let ([wrapped `(#%module-begin . ,body)])
-                               (if stx?
-                                   (list (datum->syntax #f wrapped all-loc))
-                                   (list wrapped))))]
-           [r `(,(tag-src 'module) ,(tag-src name) ,lang . ,wrapped-body)])
+           [wrapped-body (wrap-#%module-begin body stx?)]
+           [r `(,(tag-src 'module) ,(tag-src name) ,lang ,wrapped-body)])
       (if stx? (datum->syntax #f r all-loc) r)))
 
   (define (wrap lang port read modpath src line col pos)
