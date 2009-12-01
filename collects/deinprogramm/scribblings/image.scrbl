@@ -88,20 +88,20 @@ Die folgenden Prozeduren erzeugen Bilder mit einfachen geometrischen Formen:
 @defthing[ellipse (natural natural mode image-color -> image)]{
  Der Aufruf @scheme[(ellipse w h m c)]
  erzeugt eine Ellipse mit Breite @scheme[w] und Höhe @scheme[h], gefüllt mit Modus
- @scheme[m] uns in Farbe @scheme[c].}
+ @scheme[m] und in Farbe @scheme[c].}
 
 @defthing[triangle (integer mode image-color -> image)]{ 
  Der Aufruf @scheme[(triangle s m c)]
  erzeugt ein nach oben zeigendes gleichseitiges Dreieck, wobei
  @scheme[s] die Seitenlänge angibt, gefüllt mit Modus
- @scheme[m] uns in Farbe @scheme[c].}
+ @scheme[m] und in Farbe @scheme[c].}
 
 @defthing[line (natural natural number number number number image-color -> image)]{
  Der Aufruf @scheme[(line w h sx sy ex ey c)]
  erzeugt ein Bild mit einer farbigen Strecke, wobei @scheme[w] die Breite und @scheme[h] die Höhe des Bilds,
  sowie @scheme[sx] die X- und @scheme[sx] die Y-Koordinate des Anfangspunkts und 
  @scheme[ex] die X- und @scheme[ey] die Y-Koordinate des Endpunkts angeben, gefüllt mit Modus
- @scheme[m] uns in Farbe @scheme[c].}
+ @scheme[m] und in Farbe @scheme[c].}
 
 @defthing[text (string natural image-color -> image)]{
  Der Aufruf @scheme[(text s f c)]
