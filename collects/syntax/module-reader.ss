@@ -192,9 +192,9 @@
                              body
                              (let ([wrapped `(#%module-begin . ,body)])
                                (if stx?
-                                   (datum->syntax #f wrapped all-loc)
-                                   wrapped)))]
-           [r `(,(tag-src 'module) ,(tag-src name) ,lang ,wrapped-body)])
+                                   (list (datum->syntax #f wrapped all-loc))
+                                   (list wrapped))))]
+           [r `(,(tag-src 'module) ,(tag-src name) ,lang . ,wrapped-body)])
       (if stx? (datum->syntax #f r all-loc) r)))
 
   (define (wrap lang port read modpath src line col pos)
