@@ -184,8 +184,10 @@
                                         (- (or (syntax-position modpath) (add1 pos))
                                            pos)))
                           v))]
-           ;; Since there are users that wrap with #%module-begin in their reader,
-           ;; we need to avoid double-wrapping. 
+           ;; Since there are users that wrap with #%module-begin in their reader
+           ;; or wrapper1 functions, we need to avoid double-wrapping.  Having to
+           ;; do this for #lang readers should be considered deprecated, and
+           ;; hopefully one day we'll move to just doing it unilaterally.
            [wrapped-body (if (contains-#%module-begin body)
                              body
                              (let ([wrapped `(#%module-begin . ,body)])
