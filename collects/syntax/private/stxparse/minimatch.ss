@@ -1,7 +1,7 @@
 #lang scheme/base
 (require unstable/struct
-         (for-syntax scheme/base unstable/struct))
-(provide match)
+         (for-syntax scheme/base scheme/struct-info unstable/struct))
+(provide match make)
 
 (define-syntax (match stx)
   (syntax-case stx ()
@@ -25,7 +25,7 @@
 
 ;; (match-p id Pattern SuccessExpr FailureExpr)
 (define-syntax (match-p stx)
-  (syntax-case stx (quote cons list)
+  (syntax-case stx (quote cons list make struct)
     [(match-p x wildcard success failure)
      (and (identifier? #'wildcard) (free-identifier=? #'wildcard #'_))
      #'success]
@@ -46,6 +46,27 @@
     [(match-p x var success failure)
      (identifier? #'var)
      #'(let ([var x]) success)]
+    [(match-p x (make S p ...) success failure)
+     #'(match-p x (struct S (p ...)) success failure)]
+    [(match-p x (struct S (p ...)) success failure)
+     (identifier? #'S)
+     (let ()
+       (define (not-a-struct)
+         (raise-syntax-error #f "expected struct name" #'S))
+       (define si (syntax-local-value #'S not-a-struct))
+       (unless (struct-info? si)
+         (not-a-struct))
+       (let* ([si (extract-struct-info si)]
+              [predicate (list-ref si 2)]
+              [accessors (reverse (list-ref si 3))])
+         (unless (andmap identifier? accessors)
+           (raise-syntax-error #f "struct has incomplete information" #'S))
+         (with-syntax ([predicate predicate]
+                       [(accessor ...) accessors])
+           #'(if (predicate x)
+                 (let ([y (list (accessor x) ...)])
+                   (match-p y (list p ...) success failure))
+                 failure))))]
     [(match-p x s success failure)
      (prefab-struct-key (syntax-e #'s))
      (with-syntax ([key (prefab-struct-key (syntax-e #'s))]
@@ -55,3 +76,7 @@
                (let ([xps (cdr (vector->list (struct->vector x)))])
                  (match-p xps (list p ...) success failure))
                failure)))]))
+
+(define-syntax struct
+  (lambda (stx)
+    (raise-syntax-error #f "illegal use of keyword" stx)))

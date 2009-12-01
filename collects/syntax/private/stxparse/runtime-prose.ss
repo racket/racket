@@ -18,7 +18,7 @@
 
 (define (default-failure-handler stx0 f)
   (match (simplify-failure f)
-    [#s(failure x frontier expectation)
+    [(make failure x frontier expectation)
      (report-failure stx0 x (dfc->index frontier) (dfc->stx frontier) expectation)]))
 
 (define current-failure-handler
@@ -68,14 +68,14 @@
 ;; simplify* : Failure -> SimpleFailure
 (define (simplify* f)
   (match f
-    [#s(join-failures f1 f2)
+    [(make join-failures f1 f2)
      (choose-error (simplify* f1) (simplify* f2))]
-    [#s(failure x frontier expectation)
+    [(make failure x frontier expectation)
      (match expectation
-       [#s(expect:thing description '#t chained)
+       [(make expect:thing description '#t chained)
         (let ([chained* (simplify* chained)])
           (match chained*
-            [#s(failure _ chained*-frontier chained*-expectation)
+            [(make failure _ chained*-frontier chained*-expectation)
              (cond [(ineffable? chained*-expectation)
                     ;; If simplified chained failure is ineffable,
                     ;; keep (& adjust) its frontier
@@ -93,14 +93,14 @@
 ;; FIXME: try different selection/simplification algorithms/heuristics
 (define (simplify-failure0 f)
   (match f
-    [#s(join-failures f1 f2)
+    [(make join-failures f1 f2)
      (choose-error (simplify-failure0 f1) (simplify-failure0 f2))]
-    [#s(failure x frontier expectation)
+    [(make failure x frontier expectation)
      (match expectation
-       [#s(expect:thing description '#t chained)
+       [(make expect:thing description '#t chained)
         (let ([chained* (simplify-failure0 chained)])
           (match chained*
-            [#s(failure _ _ chained*-expectation)
+            [(make failure _ _ chained*-expectation)
              (cond [(ineffable? chained*-expectation)
                     ;; If simplified chained failure is ineffable, ignore it
                     ;; and stick to the one with the description
@@ -113,7 +113,7 @@
 
 (define (adjust-failure f base-frontier)
   (match f
-    [#s(failure x frontier expectation)
+    [(make failure x frontier expectation)
      (let ([frontier (dfc-append base-frontier frontier)])
        (make-failure x frontier expectation))]))
 
@@ -147,15 +147,15 @@
 
 (define (for-alternative e index stx)
   (match e
-    [#s(expect:thing description transparent? chained)
+    [(make expect:thing description transparent? chained)
      (format "expected ~a" description)]
-    [#s(expect:atom atom)
+    [(make expect:atom atom)
      (format "expected the literal ~s" atom)]
-    [#s(expect:literal literal)
+    [(make expect:literal literal)
      (format "expected the literal identifier ~s" (syntax-e literal))]
-    [#s(expect:message message)
+    [(make expect:message message)
      (format "~a" message)]
-    [#s(expect:pair)
+    [(make expect:pair)
      (cond [(= index 0)
             "expected sequence of terms"]
            [else
