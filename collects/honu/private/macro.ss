@@ -368,12 +368,26 @@
           (#%braces (#%braces name pattern ...))
           (#%braces (#%braces template ...))
           . rest)
-       (with-syntax ([pulled (pull #'(template ...))])
+       (with-syntax ([pulled (pull #'(template ...))]
+                     [(pattern* ...) (map (lambda (stx)
+                                            (if (and (identifier? stx)
+                                                     (not (ormap (lambda (f)
+                                                                   (free-identifier=? stx f))
+                                                                 (syntax->list #'(honu-literal ...))))
+                                                     (not (free-identifier=? stx #'(... ...))))
+                                                (with-syntax ([x stx])
+                                                  #'(~and x (~not (~or honu-literal ...))))
+                                                stx))
+                                          (syntax->list #'(pattern ...)))]
+                     )
          (values
           #'(define-honu-syntax name
               (lambda (stx ctx)
-                (syntax-case stx (honu-literal ...)
-                  [(name pattern ... . rrest)
+                ;; (define-literal-set literals (honu-literal ...))
+                (syntax-parse stx
+                              ;; #:literal-sets (literals)
+                              #:literals (honu-literal ...)
+                  [(name pattern* ... . rrest)
                    (with-syntax ([(out (... ...)) (unpull #'pulled)])
                      (values
                       #'(honu-unparsed-block
