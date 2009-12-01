@@ -35,6 +35,12 @@ START_XFORM_SUSPEND;
 # endif
 #endif
 
+#ifndef MZ_PRECISE_GC
+int GC_pthread_join(pthread_t thread, void **retval);
+int GC_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void * arg);
+int GC_pthread_detach(pthread_t thread);
+#endif
+
 void mzrt_set_user_break_handler(void (*user_break_handler)(int))
 {
 #ifdef WIN32
@@ -222,6 +228,21 @@ void * mz_proc_thread_wait(mz_proc_thread *thread) {
   GC_pthread_join(thread->threadid, &rc);
 #   else
   pthread_join(thread->threadid, &rc);
+#   endif
+  return rc;
+#endif
+}
+
+int mz_proc_thread_detach(mz_proc_thread *thread) {
+#ifdef WIN32
+  DWORD rc;
+  return (void *) rc;
+#else
+  int rc;
+#   ifndef MZ_PRECISE_GC
+  rc = GC_pthread_detach(thread->threadid);
+#   else
+  rc = pthread_detach(thread->threadid);
 #   endif
   return rc;
 #endif

@@ -41,6 +41,8 @@ static void launchgdb() {
 void fault_handler(int sn, struct siginfo *si, void *ctx)
 {
   void *p = si->si_addr;
+  int c = si->si_code;
+  int m = 0;
   if (si->si_code != SEGV_ACCERR) { /*SEGV_MAPERR*/
     printf("SIGSEGV fault on %p\n", p);
 #if WAIT_FOR_GDB
@@ -51,6 +53,12 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
 
   if (!designate_modified(p)) {
     if (si->si_code == SEGV_ACCERR) {
+#ifdef MZ_USE_PLACES
+      if(pagemap_find_page(MASTERGC->page_maps, p)) {
+        m = 1;
+        printf("OWNED BY MASTER %p\n", p);
+      }
+#endif
       printf("mprotect fault on %p\n", p);
     }
     else {

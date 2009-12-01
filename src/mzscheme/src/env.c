@@ -365,6 +365,14 @@ Scheme_Env *scheme_engine_instance_init() {
   scheme_init_parameterization_readonly_globals();
   env = place_instance_init_post_kernel(1);
 
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+{
+  int signal_fd;
+  signal_fd = scheme_get_signal_handle();
+  GC_set_put_external_event_fd(signal_fd);
+}
+#endif
+
   return env;
 }
 
@@ -498,8 +506,19 @@ static Scheme_Env *place_instance_init_post_kernel(int initial_main_os_thread) {
 }
 
 Scheme_Env *scheme_place_instance_init(void *stack_base) {
+  Scheme_Env *env;
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  int signal_fd;
+  GC_construct_child_gc();
+#endif
   place_instance_init_pre_kernel(stack_base);
-  return place_instance_init_post_kernel(0);
+  env = place_instance_init_post_kernel(0);
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  signal_fd = scheme_get_signal_handle();
+  GC_set_put_external_event_fd(signal_fd);
+#endif
+  scheme_set_can_break(1);
+  return env; 
 }
 
 void scheme_place_instance_destroy() {

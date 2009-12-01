@@ -1,4 +1,3 @@
-
 #ifndef __mzscheme_gc_2__
 #define __mzscheme_gc_2__
 
@@ -419,6 +418,16 @@ GC2_EXTERN unsigned long GC_make_jit_nursery_page();
    with the next GC.
 */
 
+GC2_EXTERN void GC_check_master_gc_request();
+/*
+   Checks to see if the master has requested a places major GC run 
+   and executes a GC if requested
+*/
+
+GC2_EXTERN void GC_set_put_external_event_fd(void *fd);
+/*
+   Sets the fd that can be passed to scheme_signal_received_at to wake up the place for GC
+*/
 
 # ifdef __cplusplus
 };

@@ -4142,6 +4142,10 @@ void scheme_thread_block(float sleep_time)
   }
 #endif
 
+/*####################################*/
+/* THREAD CONTEXT SWITCH HAPPENS HERE */
+/*####################################*/
+
   if (next) {
     /* Swap in `next', but first clear references to other threads. */
     swap_target = next;
@@ -4188,6 +4192,11 @@ void scheme_thread_block(float sleep_time)
   if (p->external_break && !p->suspend_break && scheme_can_break(p)) {
     raise_break(p);
   }
+
+  /* Check for major GC request from master GC */
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  GC_check_master_gc_request(); 
+#endif
   
   if (sleep_end > 0) {
     if (sleep_end > scheme_get_inexact_milliseconds()) {

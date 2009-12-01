@@ -132,14 +132,70 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   return (Scheme_Object*) place;
 }
 
+#ifdef MZ_PRECISE_GC
+typedef struct {
+  mz_proc_thread *proc_thread;
+  Scheme_Place   *waiting_place; 
+  int             wake_fd;
+  int             ready;
+  long            rc;
+} proc_thread_wait_data;
+
+
+static void *mz_proc_thread_wait_worker(void *data) {
+  void           *rc;
+  proc_thread_wait_data *wd = (proc_thread_wait_data*) data;
+
+  rc = mz_proc_thread_wait(wd->proc_thread);
+  wd->rc = (long) rc;
+  wd->ready = 1;
+  scheme_signal_received_at(&wd->wake_fd);
+  return NULL;
+}
+
+static int place_wait_ready(Scheme_Object *o) {
+  proc_thread_wait_data *wd = (proc_thread_wait_data*) o;
+  if (wd->ready) {
+    return 1;
+  }
+  return 0;
+}
+#endif
+
 static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]) {
-  void                  *rc;
   Scheme_Place          *place;
   place = (Scheme_Place *) args[0];
+ 
+#ifdef MZ_PRECISE_GC
+   {
+    Scheme_Object *rc;
+    mz_proc_thread *worker_thread;
+    Scheme_Place *waiting_place;
+    int wake_fd;
 
-  rc = mz_proc_thread_wait((mz_proc_thread *)place->proc_thread);
-  
-  return scheme_void;
+    proc_thread_wait_data *wd;
+    wd = (proc_thread_wait_data*) malloc(sizeof(proc_thread_wait_data));
+    wd->proc_thread = (mz_proc_thread *)place->proc_thread;
+    wd->waiting_place = waiting_place;
+    wake_fd = scheme_get_signal_handle();
+    wd->wake_fd = wake_fd;
+    wd->ready   = 0;
+
+    worker_thread = mz_proc_thread_create(mz_proc_thread_wait_worker, wd);
+    mz_proc_thread_detach(worker_thread);
+    scheme_block_until(place_wait_ready, NULL, (Scheme_Object *) wd, 1.0);
+
+    rc = scheme_make_integer((long)wd->rc);
+    free(wd);
+    return rc;
+  }
+#else
+  {
+    void *rcvoid;
+    rcvoid = mz_proc_thread_wait((mz_proc_thread *)place->proc_thread);
+    return scheme_make_integer((long) rcvoid);
+  }
+#endif
 }
 
 static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[])
@@ -180,6 +236,9 @@ Scheme_Object *scheme_places_deep_copy(Scheme_Object *so)
   switch (so->type) {
     case scheme_char_string_type: /*43*/
       new_so = scheme_make_sized_offset_char_string(SCHEME_CHAR_STR_VAL(so), 0, SCHEME_CHAR_STRLEN_VAL(so), 1);
+      break;
+    case scheme_byte_string_type:
+      new_so = scheme_make_sized_offset_byte_string(SCHEME_BYTE_STR_VAL(so), 0, SCHEME_BYTE_STRLEN_VAL(so), 1);
       break;
     case scheme_unix_path_type:
       new_so = scheme_make_sized_offset_path(SCHEME_BYTE_STR_VAL(so), 0, SCHEME_BYTE_STRLEN_VAL(so), 1);
@@ -232,10 +291,8 @@ static void *place_start_proc(void *data_arg) {
   null_out_runtime_globals();
 
   /* scheme_make_thread behaves differently if the above global vars are not null */
-#ifdef MZ_PRECISE_GC
-  GC_construct_child_gc();
-#endif
   scheme_place_instance_init(stack_base);
+
   a[0] = place_data->current_library_collection_paths;
   scheme_current_library_collection_paths(1, a);
 
@@ -337,8 +394,8 @@ void spawn_master_scheme_place() {
   mzrt_proc_first_thread_init();
   
 
-  //scheme_master_proc_thread = mz_proc_thread_create(master_scheme_place, NULL);
-  scheme_master_proc_thread = ~0;
+  /* scheme_master_proc_thread = mz_proc_thread_create(master_scheme_place, NULL); */
+  scheme_master_proc_thread = (void*) ~0;
 
 }
 #endif
