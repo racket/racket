@@ -5768,19 +5768,6 @@ find_system_path(int argc, Scheme_Object **argv)
 
     return CURRENT_WD();
   }
-
-  /* first option for addon_dir: PLTADDONDIR environment variable */
-  if (which == id_addon_dir) {
-    char* p;
-
-    if ((p = getenv("PLTADDONDIR"))) {
-      p = scheme_expand_filename(p, -1, NULL, NULL, 0);
-      if (p)
-        return scheme_make_path(p);
-    }
-
-    /* If PLTADDONDIR is undefined or malformed, fall through to default */
-  }
   
   {
     /* Everything else is in ~: */
@@ -5865,17 +5852,6 @@ find_system_path(int argc, Scheme_Object **argv)
       }
       
       return CURRENT_WD();
-    }
-
-    /* first option for addon_dir: PLTADDONDIR environment variable */
-    if (which == id_addon_dir) {
-      if ((p = getenv("PLTADDONDIR"))) {
-        p = scheme_expand_filename(p, -1, NULL, NULL, 0);
-        if (p)
-          return scheme_make_path(p);
-      }
-
-      /* If PLTADDONDIR is undefined or malformed, fall through to default */
     }
 
     home = NULL;

@@ -81,11 +81,9 @@ by @scheme[kind], which must be one of the following:
   ]}
 
  @item{@indexed-scheme['addon-dir] --- a directory for installing PLT Scheme
- extensions. This directory is specified by the @indexed-envvar{PLTADDONDIR}
- environment variable.  If the environment variable is undefined or not a legal
- path name, this directory defaults to @filepath{Library/PLT Scheme} in the
- user's home directory under Mac OS X and @scheme['pref-dir] otherwise.  This
- directory might not exist.}
+ extensions. It's the same as @scheme['pref-dir], except under Mac OS
+ X, where it is @filepath{Library/PLT Scheme} in the user's home
+ directory. This directory might not exist.}
 
  @item{@indexed-scheme['doc-dir] --- the standard directory for
  storing the current user's documents. Under Unix, it's the same as
