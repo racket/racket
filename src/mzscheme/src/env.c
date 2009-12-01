@@ -4412,7 +4412,7 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
       Scheme_Comp_Env *stx_env;
       if (!SAME_TYPE(scheme_intdef_context_type, SCHEME_TYPE(argv[2])))
 	scheme_wrong_type(name, "internal-definition context or #f", 2, argc, argv);
-      stx_env = (Scheme_Comp_Env *)SCHEME_PTR1_VAL(argv[2]);
+      stx_env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(argv[2]))[0];
       if (!scheme_is_sub_env(stx_env, env)) {
 	scheme_raise_exn(MZEXN_FAIL_CONTRACT, "%s: transforming context does "
 			 "not match given internal-definition context",
