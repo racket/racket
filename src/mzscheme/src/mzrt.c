@@ -196,6 +196,17 @@ mz_proc_thread* mzrt_proc_first_thread_init() {
 
 mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* data) {
   mz_proc_thread *thread = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
+  pthread_attr_t *attr;
+
+#ifdef OS_X
+  pthread_attr_t attr_storage;
+  attr = &attr_storage;
+  pthread_attr_init(attr);
+  pthread_attr_setstacksize(attr, 8*1024*1024); /*8MB*/
+#else
+  attr = NULL;
+#endif
+
 #ifdef MZ_PRECISE_GC
   mzrt_thread_stub_data *stub_data = (mzrt_thread_stub_data*)malloc(sizeof(mzrt_thread_stub_data));
   thread->mbox = pt_mbox_create();
@@ -205,13 +216,13 @@ mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* dat
 #   ifdef WIN32
   thread->threadid = CreateThread(NULL, 0, start_proc, data, 0, NULL);
 #   else
-  pthread_create(&thread->threadid, NULL, mzrt_thread_stub, stub_data);
+  pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
 #   endif
 #else
 #   ifdef WIN32
   thread->threadid = GC_CreateThread(NULL, 0, start_proc, data, 0, NULL);
 #   else
-  GC_pthread_create(&thread->threadid, NULL, start_proc, data);
+  GC_pthread_create(&thread->threadid, attr, start_proc, data);
 #   endif
 #endif
   return thread;

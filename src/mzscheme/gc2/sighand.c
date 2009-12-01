@@ -1,6 +1,6 @@
 /* 
    Provides:
-      initialize_signal_handler();
+      initialize_signal_handler(GCTYPE *gc)
       remove_signal_handler();
    Requires:
       generations_available - mutable int, Windows only
@@ -147,7 +147,11 @@ void fault_handler(int sn, siginfo_t *si, void *ctx)
 static void initialize_signal_handler(GCTYPE *gc)
 {
 # ifdef NEED_OSX_MACH_HANDLER
-  macosx_init_exception_handler();
+#  if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  macosx_init_exception_handler(MASTERGC == 0);
+#  else
+  macosx_init_exception_handler(1);
+#  endif
 # endif
 # ifdef NEED_SIGACTION
   {
