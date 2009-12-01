@@ -593,17 +593,6 @@ Reads all characters from @scheme[path] and returns them as a
 @tech{byte string}.  The @scheme[mode-flag] argument is the same as
 for @scheme[open-input-file].}
 
-@defproc[(file->lines [path path-string?]
-                      [#:mode mode-flag (or/c 'binary 'text) 'binary]
-                      [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
-         bytes?]{
-
-Read all characters from @scheme[path], breaking them into lines. The
-@scheme[line-mode] argument is the same as the second argument to
-@scheme[read-line], but the default is @scheme['any] instead of
-@scheme['linefeed]. The @scheme[mode-flag] argument is the same as for
-@scheme[open-input-file].}
-
 @defproc[(file->value [path path-string?]
                       [#:mode mode-flag (or/c 'binary 'text) 'binary])
          bytes?]{
@@ -612,10 +601,29 @@ Reads a single S-expression from @scheme[path] using @scheme[read].
 The @scheme[mode-flag] argument is the same as for
 @scheme[open-input-file].}
 
+@defproc[(file->list [path path-string?] 
+		     [proc (input-port? . -> . any/c) read]
+		     [#:mode mode-flag (or/c 'binary 'text) 'binary])
+		     (listof any/c)]{
+Repeatedly calls @scheme[proc] to consume the contents of
+@scheme[path], until @scheme[eof] is produced. The @scheme[mode-flag]
+argument is the same as for @scheme[open-input-file].  }
+
+@defproc[(file->lines [path path-string?]
+                      [#:mode mode-flag (or/c 'binary 'text) 'binary]
+                      [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
+         (listof string?)]{
+
+Read all characters from @scheme[path], breaking them into lines. The
+@scheme[line-mode] argument is the same as the second argument to
+@scheme[read-line], but the default is @scheme['any] instead of
+@scheme['linefeed]. The @scheme[mode-flag] argument is the same as for
+@scheme[open-input-file].}
+
 @defproc[(file->bytes-lines [path path-string?]
                       [#:mode mode-flag (or/c 'binary 'text) 'binary]
                       [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
-         bytes?]{
+         (listof bytes?)]{
 
 Like @scheme[file->lines], but reading bytes and collecting them into
 lines like @scheme[read-bytes-line].}
