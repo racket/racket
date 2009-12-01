@@ -3582,7 +3582,7 @@ static int mark_input_fd_FIXUP(void *p) {
 
 #endif
 
-#if defined(UNIX_PROCESSES)
+#if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
 static int mark_system_child_SIZE(void *p) {
   return
   gcBYTES_TO_WORDS(sizeof(System_Child));

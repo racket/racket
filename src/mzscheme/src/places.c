@@ -39,6 +39,7 @@ static Scheme_Object *not_implemented(int argc, Scheme_Object **argv)
 
 # ifdef MZ_PRECISE_GC
 static void register_traversers(void) { }
+
 # endif
 
 #endif
@@ -133,10 +134,151 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
 }
 
 #ifdef MZ_PRECISE_GC
+/*============= SIGNAL HANDLER =============*/
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <errno.h>
+
+
+static void error_info() {
+  char *erstr;
+  erstr = strerror(errno);
+  printf("errno %i %s\n", errno, erstr);
+}
+
+typedef struct Child_Status {
+  int pid;
+  int status;
+  void *signal_fd;
+  struct Child_Status *next;
+} Child_Status;
+
+static Child_Status *child_statuses = NULL;
+static mzrt_mutex* child_status_lock = NULL;
+
+static void add_child_status(int pid, int status) {
+  Child_Status *st;
+  st = malloc(sizeof(Child_Status));
+  st->pid = pid;
+  st->signal_fd = NULL;
+  st->status = status;
+
+  mzrt_mutex_lock(child_status_lock);
+  st->next = child_statuses;
+  child_statuses = st;
+  mzrt_mutex_unlock(child_status_lock);
+}
+
+static int raw_get_child_status(int pid, int *status) {
+  Child_Status *st;
+  Child_Status *prev;
+  int found = 0;
+
+  for (st = child_statuses, prev = NULL; st; prev = st, st = st->next) {
+    if (st->pid == pid) {
+      *status = st->status;
+      found = 1;
+      if (prev) {
+        prev->next = st->next;
+      }
+      else {
+        child_statuses = st->next;
+      }
+      free(st);
+      break;
+    }
+  }
+  return found;
+}
+
+int scheme_get_child_status(int pid, int *status) {
+  int found = 0;
+  mzrt_mutex_lock(child_status_lock);
+  found = raw_get_child_status(pid, status);
+  mzrt_mutex_unlock(child_status_lock);
+  /* printf("scheme_get_child_status found %i pid %i status %i\n", found,  pid, *status); */
+  return found;
+}
+
+int scheme_places_register_child(int pid, void *signal_fd, int *status) {
+  int found = 0;
+
+  mzrt_mutex_lock(child_status_lock);
+  found = raw_get_child_status(pid, status);
+  if (!found) {
+    Child_Status *st;
+    st = malloc(sizeof(Child_Status));
+    st->pid = pid;
+    st->signal_fd = signal_fd;
+    st->status = 0;
+
+    st->next = child_statuses;
+    child_statuses = st;
+  }
+  mzrt_mutex_unlock(child_status_lock);
+  return found;
+}
+
+static void *mz_proc_thread_signal_worker(void *data) {
+  int status;
+  int pid;
+  sigset_t set;
+  //GC_CAN_IGNORE siginfo_t info;
+  {
+    sigemptyset(&set);
+    sigaddset(&set, SIGCHLD);
+    pthread_sigmask(SIG_UNBLOCK, &set, NULL);
+  }
+
+  while(1) {
+    int rc;
+    int signalid;
+    do {
+      rc = sigwait(&set, &signalid);
+      if (rc == -1) {
+        if (errno != EINTR ) {
+        error_info();
+        }
+      }
+    } while (rc == -1 && errno == EINTR);
+
+    pid = waitpid((pid_t)-1, &status, WNOHANG);
+    if (pid == -1) {
+      char *erstr;
+      erstr = strerror(errno);
+      /* printf("errno %i %s\n", errno, erstr); */
+    }
+    else {
+      /* printf("SIGCHILD pid %i with status %i %i\n", pid, status, WEXITSTATUS(status)); */
+      add_child_status(pid, status);
+    }
+  };
+  return NULL;
+}
+
+
+void scheme_places_block_child_signal() {
+  {
+    sigset_t set;
+    sigemptyset(&set);
+    sigaddset(&set, SIGCHLD);
+    pthread_sigmask(SIG_BLOCK, &set, NULL);
+  }
+
+  {
+    mz_proc_thread *signal_thread;
+    mzrt_mutex_create(&child_status_lock);
+    signal_thread = mz_proc_thread_create(mz_proc_thread_signal_worker, NULL);
+    mz_proc_thread_detach(signal_thread);
+  }
+}
+
+/*============= THREAD JOIN HANDLER =============*/
 typedef struct {
   mz_proc_thread *proc_thread;
   Scheme_Place   *waiting_place; 
-  int             wake_fd;
+  int            *wake_fd;
   int             ready;
   long            rc;
 } proc_thread_wait_data;
@@ -149,7 +291,7 @@ static void *mz_proc_thread_wait_worker(void *data) {
   rc = mz_proc_thread_wait(wd->proc_thread);
   wd->rc = (long) rc;
   wd->ready = 1;
-  scheme_signal_received_at(&wd->wake_fd);
+  scheme_signal_received_at(wd->wake_fd);
   return NULL;
 }
 
@@ -171,7 +313,7 @@ static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]) {
     Scheme_Object *rc;
     mz_proc_thread *worker_thread;
     Scheme_Place *waiting_place;
-    int wake_fd;
+    int *wake_fd;
 
     proc_thread_wait_data *wd;
     wd = (proc_thread_wait_data*) malloc(sizeof(proc_thread_wait_data));
@@ -285,7 +427,7 @@ static void *place_start_proc(void *data_arg) {
   stack_base = PROMPT_STACK(stack_base);
   place_data = (Place_Start_Data *) data_arg;
  
-  printf("Startin place: proc thread id%u\n", ptid);
+  /* printf("Startin place: proc thread id%u\n", ptid); */
 
   /* create pristine THREAD_LOCAL variables*/
   null_out_runtime_globals();
@@ -328,6 +470,8 @@ Scheme_Object *scheme_places_deep_copy_in_master(Scheme_Object *so) {
 
 #ifdef MZ_PRECISE_GC
 static void* scheme_master_place_handlemsg(int msg_type, void *msg_payload);
+
+#if 0
 static void *master_scheme_place(void *data) {
   mz_proc_thread *myself;
   myself = proc_thread_self;
@@ -345,6 +489,7 @@ static void *master_scheme_place(void *data) {
   }
   return NULL;
 }
+#endif
 
 static void* scheme_master_place_handlemsg(int msg_type, void *msg_payload)
 {
@@ -390,7 +535,7 @@ void* scheme_master_fast_path(int msg_type, void *msg_payload) {
 }
 
 
-void spawn_master_scheme_place() {
+void scheme_spawn_master_place() {
   mzrt_proc_first_thread_init();
   
 

@@ -3250,8 +3250,11 @@ typedef struct Scheme_Symbol_Parts {
   const char *name;
 } Scheme_Symbol_Parts;
 
-void spawn_master_scheme_place();
+void scheme_spawn_master_place();
 void *scheme_master_fast_path(int msg_type, void *msg_payload);
+void scheme_places_block_child_signal();
+int scheme_get_child_status(int pid, int *status);
+int scheme_places_register_child(int pid, void *signal_fd, int *status);
 # endif
 Scheme_Object *scheme_places_deep_copy(Scheme_Object *so);
 #endif

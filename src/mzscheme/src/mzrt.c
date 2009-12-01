@@ -72,7 +72,8 @@ static void rungdb() {
       case 'd':
         snprintf(outbuffer, 100, "xterm -e gdb ./mzscheme3m %d &", pid);
         fprintf(stderr, "%s\n", outbuffer);
-        system(outbuffer);
+        if(system(outbuffer)) 
+          fprintf(stderr, "system failed\n");
         break;
       case 'e':
       default:

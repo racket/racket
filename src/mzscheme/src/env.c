@@ -356,8 +356,10 @@ Scheme_Env *scheme_engine_instance_init() {
 #endif
 
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  scheme_places_block_child_signal();
+
   GC_switch_out_master_gc();
-  spawn_master_scheme_place();
+  scheme_spawn_master_place();
 #endif
   
   place_instance_init_pre_kernel(stack_base);
@@ -367,7 +369,7 @@ Scheme_Env *scheme_engine_instance_init() {
 
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
 {
-  int signal_fd;
+  int *signal_fd;
   signal_fd = scheme_get_signal_handle();
   GC_set_put_external_event_fd(signal_fd);
 }
@@ -508,7 +510,7 @@ static Scheme_Env *place_instance_init_post_kernel(int initial_main_os_thread) {
 Scheme_Env *scheme_place_instance_init(void *stack_base) {
   Scheme_Env *env;
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
-  int signal_fd;
+  int *signal_fd;
   GC_construct_child_gc();
 #endif
   place_instance_init_pre_kernel(stack_base);
