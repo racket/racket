@@ -29,7 +29,12 @@
     (mixin (frame:standard-menus<%>) (basics<%>)
       
       (define/override (on-subwindow-char receiver event)
-        (let ([user-key? (send (keymap:get-user) handle-key-event receiver event)])
+        (let ([user-key? (send (keymap:get-user) 
+                               handle-key-event
+                               (if (is-a? receiver editor-canvas%)
+                                   (send receiver get-editor)
+                                   receiver)
+                               event)])
           ;; (printf "user-key? ~s\n" user-key?) returns #t for key release events -- is this a problem? (we'll find out!)
           (or user-key?
               (super on-subwindow-char receiver event))))
