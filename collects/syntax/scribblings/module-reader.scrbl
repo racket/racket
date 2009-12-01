@@ -141,7 +141,8 @@ reader functions return a list with a single expression that begins
 with @scheme[#%module-begin], then the @scheme[syntax/module-reader]
 language will not inappropriately add another.  This is to be
 backwards-compatible with older code, and adding @scheme[#%module-begin]
-in the reader functions should be considered deprecated behavior.
+in the reader functions or in the function specified by @scheme[#:wrapper1]
+should be considered deprecated behavior.
 
 In addition, the two wrappers can return a different value than the
 wrapped function.  This introduces two more customization points for
