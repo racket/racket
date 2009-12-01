@@ -316,8 +316,6 @@
        
        (let loop ([sexp full-sexp])
          (match sexp
-           [`((#%module-begin ,body ...))
-            (loop body)]
            [`((provide/doc (,x ,name ,ctc ,other ...) ...) ,rest ...)
             #`(let #,(map (λ (name ctc) 
                             (with-syntax ([name (datum->syntax #'tool-name name)]
@@ -333,7 +331,7 @@
            [`(,a . ,b) 
             (loop b)]
            [`()
-            (error 'tcl.ss "did not find provide/doc: ~a" full-sexp)])))]))
+            (error 'tcl.ss "did not find provide/doc" full-sexp)])))]))
 
 ;; invoke-tool : unit/sig string -> (values (-> void) (-> void))
 ;; invokes the tools and returns the two phase thunks.

@@ -10,20 +10,6 @@
 
   (define ar? procedure-arity-includes?)
 
-  ;; Takes either a syntax object representing a list of expressions
-  ;; or a list of s-expressions, and checks to see if it's a single
-  ;; expression that begins with the literal #%module-begin.
-  (define (contains-#%module-begin exps)
-    (let ([exps (if (syntax? exps) (syntax->list exps) exps)])
-      (and exps
-           (pair? exps) 
-           (null? (cdr exps))
-           (let ([exp (car exps)])
-             (let ([lst (if (syntax? exp) (syntax->list exp) exp)])
-               (and lst
-                    (let ([head (if (syntax? (car lst)) (syntax-e (car lst)) (car lst))])
-                      (eq? '#%module-begin head))))))))
-
   (define-syntax (provide-module-reader stx)
     (define (err str [sub #f])
       (raise-syntax-error 'syntax/module-reader str sub))
@@ -184,15 +170,7 @@
                                         (- (or (syntax-position modpath) (add1 pos))
                                            pos)))
                           v))]
-           ;; Since there are users that wrap with #%module-begin in their reader,
-           ;; we need to avoid double-wrapping. 
-           [wrapped-body (if (contains-#%module-begin body)
-                             body
-                             (let ([wrapped `(#%module-begin . ,body)])
-                               (if stx?
-                                   (datum->syntax #f wrapped all-loc)
-                                   wrapped)))]
-           [r `(,(tag-src 'module) ,(tag-src name) ,lang ,wrapped-body)])
+           [r `(,(tag-src 'module) ,(tag-src name) ,lang . ,body)])
       (if stx? (datum->syntax #f r all-loc) r)))
 
   (define (wrap lang port read modpath src line col pos)

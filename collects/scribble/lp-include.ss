@@ -7,8 +7,8 @@
 (provide lp-include)
 
 (define-syntax (module stx)
-  (syntax-case stx (#%module-begin)
-    [(module name base (#%module-begin body ...))
+  (syntax-case stx ()
+    [(module name base body ...)
      (begin
        #'(begin body ...))]))
 

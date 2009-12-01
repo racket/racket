@@ -46,7 +46,7 @@ into
 
 @schemeblock[
 (module _name-id module-path
-  (#%module-begin ....))
+  ....)
 ]
 
 where @scheme[_name-id] is derived from the name of the port used by
@@ -136,12 +136,7 @@ In some cases, the reader functions read the whole file, so there is
 no need to iterate them (e.g., Scribble's @scheme[read-inside] and
 @scheme[read-syntax-inside]).  In these cases you can specify
 @scheme[#:whole-body-readers?] as @scheme[#t] --- the readers are
-expected to return a list of expressions in this case.  If those
-reader functions return a list with a single expression that begins
-with @scheme[#%module-begin], then the @scheme[syntax/module-reader]
-language will not inappropriately add another.  This is to be
-backwards-compatible with older code, and adding @scheme[#%module-begin]
-in the reader functions should be considered deprecated behavior.
+expected to return a list of expressions in this case.
 
 In addition, the two wrappers can return a different value than the
 wrapped function.  This introduces two more customization points for
