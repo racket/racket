@@ -227,7 +227,8 @@ static Scheme_Object *init_dir_symbol, *init_file_symbol, *sys_dir_symbol;
 static Scheme_Object *exec_file_symbol, *run_file_symbol, *collects_dir_symbol;
 static Scheme_Object *pref_file_symbol, *orig_dir_symbol, *addon_dir_symbol;
 
-static Scheme_Object *exec_cmd, *run_cmd, *collects_path, *original_pwd;
+static Scheme_Object *exec_cmd, *run_cmd;
+static Scheme_Object *collects_path, *original_pwd = NULL, *addon_dir = NULL;
 #endif
 static Scheme_Object *windows_symbol, *unix_symbol;
 
@@ -5734,6 +5735,7 @@ find_system_path(int argc, Scheme_Object **argv)
   } else if (argv[0] == orig_dir_symbol) {
     return original_pwd;
   } else if (argv[0] == addon_dir_symbol) {
+    if (addon_dir) return addon_dir;
     which = id_addon_dir;
   } else {
     scheme_wrong_type("find-system-path", "system-path-symbol",
@@ -6021,6 +6023,14 @@ void scheme_set_original_dir(Scheme_Object *d)
     REGISTER_SO(original_pwd);
   }
   original_pwd = d;
+}
+
+void scheme_set_addon_dir(Scheme_Object *p)
+{
+  if (!addon_dir) {
+    REGISTER_SO(addon_dir);
+  }
+  addon_dir = p;
 }
 
 /********************************************************************************/

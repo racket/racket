@@ -1745,6 +1745,7 @@ MZ_EXTERN Scheme_Object *scheme_set_exec_cmd(char *s);
 MZ_EXTERN Scheme_Object *scheme_set_run_cmd(char *s);
 MZ_EXTERN void scheme_set_collects_path(Scheme_Object *p);
 MZ_EXTERN void scheme_set_original_dir(Scheme_Object *d);
+MZ_EXTERN void scheme_set_addon_dir(Scheme_Object *p);
 
 MZ_EXTERN void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs);
 MZ_EXTERN void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *extra_dirs, Scheme_Object *extra_post_dirs);

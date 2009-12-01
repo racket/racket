@@ -57,6 +57,13 @@ Sets the path to be returned by @scheme[(find-system-path
 'collects-dir)].}
 
 
+@function[(void scheme_set_addon_path
+           [Scheme_Object* path])]{
+
+Sets the path to be returned by @scheme[(find-system-path
+'addon-dir)].}
+
+
 @function[(void scheme_init_collection_paths_post
            [Scheme_Env* env]
            [Scheme_Object* pre_extra_paths]

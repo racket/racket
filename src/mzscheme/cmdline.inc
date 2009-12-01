@@ -456,7 +456,9 @@ static int run_from_cmd_line(int argc, char *_argv[],
   GC_CAN_IGNORE char **argv = _argv;
   Scheme_Env *global_env;
   char *prog, *sprog = NULL;
-  Scheme_Object *sch_argv, *collects_path = NULL, *collects_extra = NULL;
+  Scheme_Object *sch_argv,
+                *collects_path = NULL, *collects_extra = NULL,
+                *addon_dir = NULL;
   int i;
 #ifndef DONT_PARSE_COMMAND_LINE
   char **evals_and_loads, *real_switch = NULL, specific_switch[2];
@@ -693,6 +695,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-X";
     else if (!strcmp("--search", argv[0]))
       argv[0] = "-S";
+    else if (!strcmp("--addon", argv[0]))
+      argv[0] = "-A";
 # ifdef CMDLINE_STDIO_FLAG
     else if (!strcmp("--stdio", argv[0]))
       argv[0] = "-z";
@@ -736,6 +740,17 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  argv++;
 	  --argc;
 	  collects_path = scheme_make_path(argv[0]);
+          was_config_flag = 1;
+	  break;
+	case 'A':
+	  if (argc < 2) {
+	    PRINTF("%s: missing path after %s switch\n", 
+		   prog, real_switch);
+	    goto show_need_help;
+	  }
+	  argv++;
+	  --argc;
+	  addon_dir = scheme_make_path(argv[0]);
           was_config_flag = 1;
 	  break;
 	case 'U':
@@ -1041,6 +1056,20 @@ static int run_from_cmd_line(int argc, char *_argv[],
   }
 
 #ifndef NO_FILE_SYSTEM_UTILS
+  /* Setup path for "addon" directory: */
+  {
+#ifdef GETENV_FUNCTION
+    if (!addon_dir) {
+      char *s;
+      s = getenv("PLTADDONDIR");
+      if (s) {
+        s = scheme_expand_filename(s, -1, NULL, NULL, 0);
+        if (s) addon_dir = scheme_make_path(s);
+      }
+    }
+#endif
+    if (addon_dir) scheme_set_addon_dir(addon_dir);
+  }
   /* Setup path for "collects" collection directory: */
   {
     Scheme_Object *l, *r;
@@ -1149,6 +1178,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
          "  -I <path> : Set <init-lib> to <path>\n"
 	 "  -X <dir>, --collects <dir> : Main collects at <dir>\n"
 	 "  -S <dir>, --search <dir> : More collects at <dir> (after main collects)\n"
+	 "  -A <dir>, --addon <dir> : Addon directory at <dir>\n"
 	 "  -U, --no-user-path : Ignore user-specific collects, etc.\n"
 	 "  -N <file>, --name <file> : Sets `(find-system-path 'run-file)' to <file>\n"
 # ifdef MZ_USE_JIT
