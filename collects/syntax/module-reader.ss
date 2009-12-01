@@ -10,28 +10,6 @@
 
   (define ar? procedure-arity-includes?)
 
-  ;; Takes either a syntax object representing a list of expressions
-  ;; or a list of s-expressions, and checks to see if it's a single
-  ;; expression that begins with the literal #%module-begin.  If so,
-  ;; it just returns that expression, else it wraps with #%module-begin.
-  (define (wrap-#%module-begin exps stx?)
-    (define wrapped-exps 
-      (let ([wrapped `(#%module-begin . ,exps)])
-        (if stx?
-            (datum->syntax #f wrapped)
-            wrapped)))
-    (let ([exps (if stx? (syntax->list exps) exps)])
-      (cond
-        [(null? exps) wrapped-exps]
-        [(not (null? (cdr exps))) wrapped-exps]
-        [else (let ([exp (if stx? (syntax-e (car exps)) (car exps))])
-                (cond
-                  [(not (pair? exp)) wrapped-exps]
-                  [(eq? '#%module-begin
-                        (if stx? (syntax-e (car exp)) (car exp)))
-                   (car exp)]
-                  [else wrapped-exps]))])))
-
   (define-syntax (provide-module-reader stx)
     (define (err str [sub #f])
       (raise-syntax-error 'syntax/module-reader str sub))
@@ -163,6 +141,27 @@
 
   (define (wrap-internal lang port read whole? wrapper stx?
                          modpath src line col pos)
+    ;; Takes either a syntax object representing a list of expressions
+    ;; or a list of s-expressions, and checks to see if it's a single
+    ;; expression that begins with the literal #%module-begin.  If so,
+    ;; it just returns that expression, else it wraps with #%module-begin.
+    (define (wrap-#%module-begin exps stx?)
+      (define wrapped-exps 
+        (let ([wrapped `(#%module-begin . ,exps)])
+          (if stx?
+              (datum->syntax #f wrapped)
+              wrapped)))
+      (let ([exps (if stx? (syntax->list exps) exps)])
+        (cond
+          [(null? exps) wrapped-exps]
+          [(not (null? (cdr exps))) wrapped-exps]
+          [else (let ([exp (if stx? (syntax-e (car exps)) (car exps))])
+                  (cond
+                    [(not (pair? exp)) wrapped-exps]
+                    [(eq? '#%module-begin
+                          (if stx? (syntax-e (car exp)) (car exp)))
+                     (car exp)]
+                    [else wrapped-exps]))])))
     (let* ([lang (if stx? (datum->syntax #f lang modpath modpath) lang)]
            [body (lambda ()
                    (if whole?
