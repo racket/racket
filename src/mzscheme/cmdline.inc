@@ -681,8 +681,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-j";
     else if (!strcmp("--no-delay", argv[0]))
       argv[0] = "-d";
-    else if (!strcmp("--no-argv", argv[0]))
-      argv[0] = "-A";
     else if (!strcmp("--repl", argv[0]))
       argv[0] = "-i";
     else if (!strcmp("--binary", argv[0]))
