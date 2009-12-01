@@ -27,6 +27,13 @@
   
   (define basics-mixin
     (mixin (frame:standard-menus<%>) (basics<%>)
+      
+      (define/override (on-subwindow-char receiver event)
+        (let ([user-key? (send (keymap:get-user) handle-key-event receiver event)])
+          ;; (printf "user-key? ~s\n" user-key?) returns #t for key release events -- is this a problem? (we'll find out!)
+          (or user-key?
+              (super on-subwindow-char receiver event))))
+      
       (inherit get-edit-target-window get-edit-target-object get-menu-bar)
       (define/private (get-menu-bindings)
         (let ([name-ht (make-hasheq)])
