@@ -4,11 +4,11 @@
 
 (require 2htdp/universe)
 
-;; on RETURN stop 
+;; on RETURN stop
 
 (define (main debug?)
   (big-bang ""
-            (on-key (lambda (w ke) 
+            (on-key (lambda (w ke)
                       (cond
                         [(key=? ke "\r") (stop-with w)]
                         [(= (string-length ke) 1)
@@ -16,8 +16,7 @@
                         [else w])))
             (state debug?)
             (on-draw (lambda (w)
-                       (place-image 
+                       (place-image
                         (text w 22 'black)
                         3 3
                         (empty-scene 100 100))))))
-  
