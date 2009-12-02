@@ -820,7 +820,9 @@ void *worker_thread_future_loop(void *arg)
   //including runtime calls. 
   //If jitcode asks the runrtime thread to do work, then
   //a GC can occur.
-  LOG("Running JIT code at %p...\n", ft->code);    
+  LOG("Running JIT code at %p...\n", ft->code);
+
+  MZ_RUNSTACK = MZ_RUNSTACK_START + fts->runstack_size;
 
   scheme_current_thread->error_buf = &newbuf;
   if (scheme_future_setjmp(newbuf)) {
