@@ -49,12 +49,12 @@ And another example, creating a macro for syntax-time expressions:
 
 but the `quote' here is a hint that this can get 3d values into
 syntax, and all the problems that are involved.  Also, note that it
-breaks if you try to do something like:
+even works if you try to do something like:
 
   > (compile-time-value (begin (set! x 11) x))
-  8
+  11
 
-(and, of course, it cannot be used to define new bindings).
+(but, of course, it cannot be used to define new bindings).
 
 |#
 
