@@ -100,7 +100,7 @@ responses.  One basic kind of response is to show an HTML page.
 
 For example:
 
-The HTML @tt{hello} is represented as @scheme["hello"].
+The HTML @tt{hello} is represented as @scheme["hello"]. Strings are automatically escaped when output. This guarantees valid HTML. Therefore, the value @scheme["<b>Unfinished tag"] is rendered as @tt{&lt;b&gt;Unfinished tag} not @tt{<b>Unfinished tag}. Similarly, @scheme["<i>Finished tag</i>"] is rendered as @tt{&lt;i&gt;Finished tag&lt;/i&gt;} not @tt{<i>Finished tag</i>}.
 
 @tt{<p>This is an example</p>} is
 
