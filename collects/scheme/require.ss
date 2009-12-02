@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base scheme/require-transform scheme/list
-                     "private/at-syntax.ss")
+                     (only-in unstable/syntax syntax-local-eval))
          "require-syntax.ss")
 
 (provide matching-identifiers-in)
@@ -43,7 +43,7 @@
    (lambda (stx)
      (syntax-case stx ()
        [(_ proc spec)
-        (let ([proc (at-syntax #'proc)])
+        (let ([proc (syntax-local-eval #'proc)])
           (define-values [imports sources] (expand-import #'spec))
           (values
            (filter-map

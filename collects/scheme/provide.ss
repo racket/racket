@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base scheme/provide-transform scheme/list
-                     "private/at-syntax.ss"))
+                     (only-in unstable/syntax syntax-local-eval)))
 
 (provide matching-identifiers-out)
 (define-syntax matching-identifiers-out
@@ -21,7 +21,7 @@
    (lambda (stx modes)
      (syntax-case stx ()
        [(_ proc spec)
-        (let ([proc (at-syntax #'proc)])
+        (let ([proc (syntax-local-eval #'proc)])
           (filter-map
            (lambda (e)
              (let* ([s1 (symbol->string (export-out-sym e))]

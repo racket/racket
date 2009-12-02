@@ -4,7 +4,8 @@
          syntax/stx
          unstable/struct
          (for-syntax scheme/base
-                     scheme/private/sc))
+                     scheme/private/sc)
+         (for-template scheme/base))
 
 (provide unwrap-syntax
 
