@@ -100,8 +100,8 @@ static Scheme_Object *int_sqrt_rem (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *flvector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *flvector_p (int argc, Scheme_Object *argv[]);
-static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *flvector_length (int argc, Scheme_Object *argv[]);
+static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *fx_and (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_or (int argc, Scheme_Object *argv[]);
@@ -521,11 +521,11 @@ scheme_init_number (Scheme_Env *env)
                                                     "make-flvector",
                                                     1, 2),
 			     env);
-  scheme_add_global_constant("flvector-length",
-                             scheme_make_immed_prim(flvector_length,
-                                                    "flvector-length",
-                                                    1, 1),
-			     env);
+
+  p = scheme_make_immed_prim(flvector_length, "flvector-length", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("flvector-length", p, env);
+
   p = scheme_make_immed_prim(scheme_checked_flvector_ref,
                              "flvector-ref",
                              2, 2);
@@ -587,7 +587,7 @@ void scheme_init_unsafe_number(Scheme_Env *env)
 
   p = scheme_make_immed_prim(unsafe_flvector_length, "unsafe-flvector-length",
                              1, 1);
-  /* SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED; */
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("unsafe-flvector-length", p, env);
 
   p = scheme_make_immed_prim(unsafe_flvector_ref, "unsafe-flvector-ref",
@@ -2929,12 +2929,17 @@ static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[])
   return (Scheme_Object *)vec;
 }
 
+Scheme_Object *scheme_flvector_length(Scheme_Object *vec)
+{
+  if (!SCHEME_FLVECTORP(vec))
+    scheme_wrong_type("flvector-length", "flvector", 0, 1, &vec);
+
+  return scheme_make_integer(SCHEME_FLVEC_SIZE(vec));
+}
+
 static Scheme_Object *flvector_length (int argc, Scheme_Object *argv[])
 {
-  if (!SCHEME_FLVECTORP(argv[0]))
-    scheme_wrong_type("flvector-length", "flvector", 0, argc, argv);
-
-  return scheme_make_integer(SCHEME_FLVEC_SIZE(argv[0]));
+  return scheme_flvector_length(argv[0]);
 }
 
 Scheme_Object *scheme_checked_flvector_ref (int argc, Scheme_Object *argv[])

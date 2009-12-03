@@ -143,6 +143,7 @@ static void *bad_mcar_code, *bad_mcdr_code;
 static void *bad_set_mcar_code, *bad_set_mcdr_code;
 static void *bad_unbox_code;
 static void *bad_vector_length_code;
+static void *bad_flvector_length_code;
 static void *vector_ref_code, *vector_ref_check_index_code, *vector_set_code, *vector_set_check_index_code;
 static void *string_ref_code, *string_ref_check_index_code, *string_set_code, *string_set_check_index_code;
 static void *bytes_ref_code, *bytes_ref_check_index_code, *bytes_set_code, *bytes_set_check_index_code;
@@ -5516,8 +5517,21 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
       return 1;
     } else if (IS_NAMED_PRIM(rator, "vector-length")
-               || IS_NAMED_PRIM(rator, "unsafe-vector-length")) {
+               || IS_NAMED_PRIM(rator, "unsafe-vector-length")
+               || IS_NAMED_PRIM(rator, "flvector-length")
+               || IS_NAMED_PRIM(rator, "unsafe-flvector-length")) {
       GC_CAN_IGNORE jit_insn *reffail, *ref;
+      int unsafe = 0, for_fl = 0;
+
+      if (IS_NAMED_PRIM(rator, "unsafe-vector-length")) {
+        unsafe = 1;
+      } else if (IS_NAMED_PRIM(rator, "flvector-length")) {
+        for_fl = 1;
+      } else if (IS_NAMED_PRIM(rator, "unsafe-flvector-length")) {
+        unsafe = 1;
+        for_fl = 1;
+      }
+      
 
       LOG_IT(("inlined vector-length\n"));
 
@@ -5528,7 +5542,7 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
       mz_runstack_unskipped(jitter, 1);
 
-      if (!IS_NAMED_PRIM(rator, "unsafe-vector-length")) {
+      if (!unsafe) {
         mz_rs_sync_fail_branch();
 
         __START_TINY_JUMPS__(1);
@@ -5536,16 +5550,25 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
         __END_TINY_JUMPS__(1);
         
         reffail = _jit.x.pc;
-        (void)jit_calli(bad_vector_length_code);
+        if (!for_fl)
+          (void)jit_calli(bad_vector_length_code);
+        else
+          (void)jit_calli(bad_flvector_length_code);
 
         __START_TINY_JUMPS__(1);
         mz_patch_branch(ref);
         jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
-        (void)jit_bnei_i(reffail, JIT_R1, scheme_vector_type);
+        if (!for_fl)
+          (void)jit_bnei_i(reffail, JIT_R1, scheme_vector_type);
+        else
+          (void)jit_bnei_i(reffail, JIT_R1, scheme_flvector_type);
         __END_TINY_JUMPS__(1);
       }
 
-      (void)jit_ldxi_i(JIT_R0, JIT_R0, &SCHEME_VEC_SIZE(0x0));
+      if (!for_fl)
+        (void)jit_ldxi_i(JIT_R0, JIT_R0, &SCHEME_VEC_SIZE(0x0));
+      else
+        (void)jit_ldxi_l(JIT_R0, JIT_R0, &SCHEME_FLVEC_SIZE(0x0));
       jit_lshi_l(JIT_R0, JIT_R0, 1);
       jit_ori_l(JIT_R0, JIT_R0, 0x1);
             
@@ -8734,6 +8757,16 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   (void)mz_finish(ts_scheme_vector_length);
   CHECK_LIMIT();
   register_sub_func(jitter, bad_vector_length_code, scheme_false);
+
+  /* *** bad_flvector_length_code *** */
+  /* R0 is argument */
+  bad_flvector_length_code = jit_get_ip().ptr;
+  mz_prolog(JIT_R1);
+  jit_prepare(1);
+  jit_pusharg_i(JIT_R0);
+  (void)mz_finish(ts_scheme_flvector_length);
+  CHECK_LIMIT();
+  register_sub_func(jitter, bad_flvector_length_code, scheme_false);
 
   /* *** call_original_unary_arith_code *** */
   /* R0 is arg, R2 is code pointer, V1 is return address */

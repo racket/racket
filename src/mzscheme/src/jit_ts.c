@@ -60,6 +60,7 @@ define_ts_iS_s(scheme_checked_set_mcar, FSRC_OTHER)
 define_ts_iS_s(scheme_checked_set_mcdr, FSRC_OTHER)
 define_ts_s_s(scheme_unbox, FSRC_OTHER)
 define_ts_s_s(scheme_vector_length, FSRC_OTHER)
+define_ts_s_s(scheme_flvector_length, FSRC_OTHER)
 define_ts_s_s(tail_call_with_values_from_multiple_result, FSRC_OTHER)
 define_ts_s_v(raise_bad_call_with_values, FSRC_OTHER)
 define_ts_s_s(call_with_values_from_multiple_result_multi, FSRC_OTHER)
@@ -122,6 +123,7 @@ define_ts_siS_v(wrong_argument_count, FSRC_OTHER)
 # define ts_scheme_checked_set_mcdr scheme_checked_set_mcdr
 # define ts_scheme_unbox scheme_unbox
 # define ts_scheme_vector_length scheme_vector_length
+# define ts_scheme_flvector_length scheme_flvector_length
 # define ts_tail_call_with_values_from_multiple_result tail_call_with_values_from_multiple_result
 # define ts_raise_bad_call_with_values raise_bad_call_with_values
 # define ts_call_with_values_from_multiple_result_multi call_with_values_from_multiple_result_multi
