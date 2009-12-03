@@ -2,6 +2,7 @@
 
 (require "honu.ss"
          (for-syntax "debug.ss"
+                     "contexts.ss"
                      scheme/base
                      syntax/parse
                      syntax/stx
@@ -389,8 +390,23 @@
                               #:literals (honu-literal ...)
                   [(name pattern* ... . rrest)
                    (with-syntax ([(out (... ...)) (unpull #'pulled)])
-                     ;; TODO: use the proper `honu-unparsed' form depending on the context
+                     (define (X) (raise-syntax-error (syntax->datum #'name) "implement for this context"))
                      (values
+                      ;; this is sort of ugly, is there a better way?
+                      (cond
+                        [(type-context? ctx) (X)]
+                        [(type-or-expression-context? ctx) (X)]
+                        [(expression-context? ctx) #'(honu-unparsed-expr out (... ...))]
+                        [(expression-block-context? ctx)
+                         #'(honu-unparsed-begin out (... ...))]
+                        [(block-context? ctx)
+                         #'(honu-unparsed-begin out (... ...))]
+                        [(variable-definition-context? ctx) (X)]
+                        [(constant-definition-context? ctx) (X)]
+                        [(function-definition-context? ctx) (X)]
+                        [(prototype-context? ctx) (X)]
+                        [else #'(honu-unparsed-expr out (... ...))])
+                      #;
                       #'(honu-unparsed-begin out (... ...))
                       #'rrest)
                      #;
