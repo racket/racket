@@ -136,6 +136,35 @@
       src)
      src))
   
+  (let ([src 'ellipsis-args])
+    (test
+     (runtime-error-source 
+      '(term-let-fn ((f car))
+                    (term-let ([(x ...) '(a b)]
+                               [(y ...) '(c d e)])
+                              (term (f ((x y) ...)))))
+      src)
+     src))
+  
+  (let ([src 'ellipsis-args/map])
+    (test
+     (runtime-error-source 
+      '(term-let-fn ((f car))
+                    (term-let ([(x ...) '(a b)]
+                               [(y ...) '(c d e)])
+                              (term ((f (x y)) ...))))
+      src)
+     src))
+  
+  (let ([src 'ellipsis-args/in-hole])
+    (test
+     (runtime-error-source 
+      '(term-let ([(x ...) '(a b)]
+                  [(y ...) '(c d e)])
+                 (term ((in-hole hole (x y)) ...)))
+      src)
+     src))
+  
   (let ([src 'term-let-rhs])
     (test
      (runtime-error-source
