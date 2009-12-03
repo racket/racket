@@ -1,10 +1,13 @@
 #lang scheme
 
-(require "matcher.ss")
+(require "matcher.ss"
+         errortrace/errortrace-lib
+         errortrace/errortrace-key)
 (provide test test-syn-err tests reset-count
          syn-err-test-namespace
          print-tests-passed
-         equal/bindings?)
+         equal/bindings?
+         runtime-error-source syntax-error-sources)
 
 (define syn-err-test-namespace (make-base-namespace))
 (parameterize ([current-namespace syn-err-test-namespace])
@@ -108,3 +111,20 @@
 ;; rib-lt : rib rib -> boolean
 (define (rib-lt r1 r2) (string<=? (format "~s" (bind-name r1))
                                   (format "~s" (bind-name r2))))
+
+(define (runtime-error-source sexp src)
+  (let/ec return
+    (cadar
+     (continuation-mark-set->list
+      (exn-continuation-marks
+       (with-handlers ((exn:fail? values))
+         (parameterize ([current-compile (make-errortrace-compile-handler)])
+           (eval (read-syntax src (open-input-string (format "~s" sexp)))))
+         (return 'no-source)))
+      errortrace-key))))
+
+(define (syntax-error-sources sexp src)
+    (let ([p (read-syntax src (open-input-string (format "~s" sexp)))])
+      (with-handlers ((exn:srclocs? (λ (x) (map srcloc-source ((exn:srclocs-accessor x) x)))))
+        (expand p)
+        null)))
