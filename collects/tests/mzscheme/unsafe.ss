@@ -187,6 +187,19 @@
               #:post (lambda (x) (list x (string-ref v 2)))
               #:literal-ok? #f))
 
+  (let ([flvector (lambda args
+                    (let ([v (make-flvector (length args))])
+                      (for ([a args]
+                            [i (in-naturals)])
+                        (flvector-set! v i a))
+                      v))])
+    (test-bin 9.5 'unsafe-flvector-ref (flvector 1.0 9.5 18.7) 1)
+    (let ([v (flvector 1.0 9.5 18.7)])
+      (test-tri (list (void) 27.4) 'unsafe-flvector-set! v 2 27.4
+                #:pre (lambda () (flvector-set! v 2 0.0)) 
+                #:post (lambda (x) (list x (flvector-ref v 2)))
+                #:literal-ok? #f)))
+
   (test-bin 9.5 'unsafe-f64vector-ref (f64vector 1.0 9.5 18.7) 1)
   (let ([v (f64vector 1.0 9.5 18.7)])
     (test-tri (list (void) 27.4) 'unsafe-f64vector-set! v 2 27.4

@@ -850,6 +850,58 @@ for the machine running Scheme, @scheme[#f] if the native encoding
 is little-endian.}
 
 @; ------------------------------------------------------------------------
+@section{Inexact-Real Vectors}
+
+A @deftech{flvector} is like a @tech{vector}, but it holds only
+inexact real numbers. This representation can be more compact, and
+unsafe operations on @tech{flvector}s (see
+@schememodname[scheme/unsafe/ops]) can execute more efficiently than
+unsafe operations on @tech{vectors} of inexact reals.
+
+An f64vector as provided by @schememodname[scheme/foreign] stores the
+same kinds of values as an @tech{flvector}, but with extra
+indirections that make f64vectors more convenient for working with
+foreign libraries. The lack of indirections make unsafe
+@tech{flvector} access more efficient.
+
+@defproc[(flvector? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a @tech{flvector}, @scheme[#f] otherwise.}
+
+@defproc[(flvector [x inexact-real?] ...) flvector?]{
+
+Creates a @tech{flvector} containing the given inexact real numbers.}
+
+@defproc[(make-flvector [size exact-nonnegative-integer?]
+                        [x inexact-real? 0.0]) 
+         flvector?]{
+
+Creates a @tech{flvector} with @scheme[size] elements, where every
+slot in the @tech{flvector} is filled with @scheme[x].}
+
+@defproc[(flvector-length [vec flvector?]) exact-nonnegative-integer?]{
+
+Returns the length of @scheme[vec] (i.e., the number of slots in the
+@tech{flvector}).}
+
+
+@defproc[(flvector-ref [vec flvector?] [pos exact-nonnegative-integer?])
+         inexact-real?]{
+
+Returns the inexact real number in slot @scheme[pos] of
+@scheme[vec]. The first slot is position @scheme[0], and the last slot
+is one less than @scheme[(flvector-length vec)].}
+
+@defproc[(flvector-set! [vec flvector?] [pos exact-nonnegative-integer?]
+                        [x inexact-real?])
+         inexact-real?]{
+
+Sets the inexact real number in slot @scheme[pos] of @scheme[vec]. The
+first slot is position @scheme[0], and the last slot is one less than
+@scheme[(flvector-length vec)].}
+
+
+@; ------------------------------------------------------------------------
 @section{Extra Constants and Functions}
 
 @note-lib[scheme/math]

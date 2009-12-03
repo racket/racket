@@ -3192,6 +3192,12 @@ Scheme_Object *scheme_checked_byte_string_ref(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_byte_string_set(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_syntax_e(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_vector_length(Scheme_Object *v);
+Scheme_Object *scheme_checked_flvector_ref(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_checked_flvector_set(int argc, Scheme_Object **argv);
+
+void scheme_bad_vec_index(char *name, Scheme_Object *i, 
+                          const char *what, Scheme_Object *vec, 
+                          long bottom, long len);
 
 Scheme_Bucket_Table *scheme_make_weak_equal_table(void);
 

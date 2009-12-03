@@ -70,6 +70,8 @@ define_ts_iS_s(scheme_checked_string_ref, FSRC_OTHER)
 define_ts_iS_s(scheme_checked_string_set, FSRC_OTHER)
 define_ts_iS_s(scheme_checked_byte_string_ref, FSRC_OTHER)
 define_ts_iS_s(scheme_checked_byte_string_set, FSRC_OTHER)
+define_ts_iS_s(scheme_checked_flvector_ref, FSRC_OTHER)
+define_ts_iS_s(scheme_checked_flvector_set, FSRC_OTHER)
 define_ts_iS_s(scheme_checked_syntax_e, FSRC_OTHER)
 define_ts_iS_s(scheme_extract_checked_procedure, FSRC_OTHER)
 define_ts_S_s(apply_checked_fail, FSRC_OTHER)
@@ -130,6 +132,8 @@ define_ts_siS_v(wrong_argument_count, FSRC_OTHER)
 # define ts_scheme_checked_string_set scheme_checked_string_set
 # define ts_scheme_checked_byte_string_ref scheme_checked_byte_string_ref
 # define ts_scheme_checked_byte_string_set scheme_checked_byte_string_set
+# define ts_scheme_checked_flvector_ref scheme_checked_flvector_ref
+# define ts_scheme_checked_flvector_set scheme_checked_flvector_set
 # define ts_scheme_checked_syntax_e scheme_checked_syntax_e
 # define ts_scheme_extract_checked_procedure scheme_extract_checked_procedure
 # define ts_apply_checked_fail apply_checked_fail

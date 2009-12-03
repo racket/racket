@@ -88,6 +88,8 @@ END_XFORM_ARITH;
 #define WORDS_TO_BYTES(x) ((x) << JIT_LOG_WORD_SIZE)
 #define MAX_TRY_SHIFT 30
 
+#define JIT_LOG_DOUBLE_SIZE 3
+
 /* a mzchar is an int: */
 #define LOG_MZCHAR_SIZE 2
 
@@ -144,6 +146,7 @@ static void *bad_vector_length_code;
 static void *vector_ref_code, *vector_ref_check_index_code, *vector_set_code, *vector_set_check_index_code;
 static void *string_ref_code, *string_ref_check_index_code, *string_set_code, *string_set_check_index_code;
 static void *bytes_ref_code, *bytes_ref_check_index_code, *bytes_set_code, *bytes_set_check_index_code;
+static void *flvector_ref_check_index_code, *flvector_set_check_index_code;
 static void *syntax_e_code;
 void *scheme_on_demand_jit_code;
 static void *on_demand_jit_arity_code;
@@ -3248,7 +3251,9 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 
   rator = (alt_rands ? alt_rands[0] : app->args[0]);
 
-  if (SCHEME_PRIMP(rator)) {
+  if (no_call == 2) {
+    direct_prim = 1;
+  } else if (SCHEME_PRIMP(rator)) {
     if ((num_rands >= ((Scheme_Primitive_Proc *)rator)->mina)
 	&& ((num_rands <= ((Scheme_Primitive_Proc *)rator)->mu.maxa)
 	    || (((Scheme_Primitive_Proc *)rator)->mina < 0))
@@ -3594,6 +3599,7 @@ static int is_unboxable_op(Scheme_Object *obj, int flag)
   if (IS_NAMED_PRIM(obj, "unsafe-flabs")) return 1;
   if (IS_NAMED_PRIM(obj, "unsafe-fx->fl")) return 1;
   if (IS_NAMED_PRIM(obj, "unsafe-f64vector-ref")) return 1;
+  if (IS_NAMED_PRIM(obj, "unsafe-flvector-ref")) return 1;
 
   return 0;
 }
@@ -5870,7 +5876,8 @@ static int generate_binary_char(mz_jit_state *jitter, Scheme_App3_Rec *app,
   return 1;
 }
 
-static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int base_offset, int unsafe)
+static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int base_offset, 
+                              int for_fl, int unsafe)
 /* if int_ready, JIT_R1 has num index (for safe mode) and JIT_V1 has pre-computed offset,
    otherwise JIT_R1 has fixnum index */
 {
@@ -5887,9 +5894,15 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
       jit_ori_l(JIT_R1, JIT_R1, 0x1);
     }
     if (set) {
-      (void)jit_calli(vector_set_check_index_code);
+      if (!for_fl)
+        (void)jit_calli(vector_set_check_index_code);
+      else
+        (void)jit_calli(flvector_set_check_index_code);
     } else {
-      (void)jit_calli(vector_ref_check_index_code);
+      if (!for_fl)
+        (void)jit_calli(vector_ref_check_index_code);
+      else
+        (void)jit_calli(flvector_ref_check_index_code);
     }
     /* doesn't return */
     CHECK_LIMIT();
@@ -5899,8 +5912,13 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
     if (!int_ready)
       (void)jit_bmci_ul(reffail, JIT_R1, 0x1);
     jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-    (void)jit_bnei_i(reffail, JIT_R2, scheme_vector_type);
-    jit_ldxi_i(JIT_R2, JIT_R0, (int)&SCHEME_VEC_SIZE(0x0));
+    if (!for_fl) {
+      (void)jit_bnei_i(reffail, JIT_R2, scheme_vector_type);
+      jit_ldxi_i(JIT_R2, JIT_R0, (int)&SCHEME_VEC_SIZE(0x0));
+    } else {
+      (void)jit_bnei_i(reffail, JIT_R2, scheme_flvector_type);
+      jit_ldxi_l(JIT_R2, JIT_R0, (int)&SCHEME_FLVEC_SIZE(0x0));
+    }
     if (!int_ready) {
       jit_rshi_ul(JIT_V1, JIT_R1, 1);
       (void)jit_bler_ul(reffail, JIT_R2, JIT_V1);
@@ -5908,6 +5926,15 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
       (void)jit_bler_ul(reffail, JIT_R2, JIT_R1);
     }
     CHECK_LIMIT();
+
+    if (for_fl && set) {
+      jit_ldr_p(JIT_R2, JIT_RUNSTACK);
+      (void)jit_bmsi_ul(reffail, JIT_R2, 0x1);
+      jit_ldxi_s(JIT_R2, JIT_R2, &((Scheme_Object *)0x0)->type);
+      (void)jit_bnei_i(reffail, JIT_R2, scheme_double_type);
+      CHECK_LIMIT();
+    }
+
     __END_TINY_JUMPS__(1);
   } else {
     if (!int_ready)
@@ -5915,15 +5942,28 @@ static int generate_vector_op(mz_jit_state *jitter, int set, int int_ready, int 
   }
 
   if (!int_ready) {
-    jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE);
+    if (!for_fl)
+      jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_WORD_SIZE);
+    else
+      jit_lshi_ul(JIT_V1, JIT_V1, JIT_LOG_DOUBLE_SIZE);
     jit_addi_p(JIT_V1, JIT_V1, base_offset);
   }
   if (set) {
     jit_ldr_p(JIT_R2, JIT_RUNSTACK);
-    jit_stxr_p(JIT_V1, JIT_R0, JIT_R2);
+    if (!for_fl) {
+      jit_stxr_p(JIT_V1, JIT_R0, JIT_R2);
+    } else {
+      jit_ldxi_d_fppush(JIT_FPR0, JIT_R2, &((Scheme_Double *)0x0)->double_val);  
+      jit_stxr_d_fppop(JIT_V1, JIT_R0, JIT_FPR0);
+    }
     (void)jit_movi_p(JIT_R0, scheme_void);
   } else {
-    jit_ldxr_p(JIT_R0, JIT_R0, JIT_V1);
+    if (!for_fl) {
+      jit_ldxr_p(JIT_R0, JIT_R0, JIT_V1);
+    } else {
+      jit_ldxr_d_fppush(JIT_FPR0, JIT_R0, JIT_V1);
+      generate_alloc_double(jitter);
+    }
   }
 
   return 1;
@@ -6166,7 +6206,8 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	       || IS_NAMED_PRIM(rator, "string-ref")
                || IS_NAMED_PRIM(rator, "unsafe-string-ref")
 	       || IS_NAMED_PRIM(rator, "bytes-ref")
-	       || IS_NAMED_PRIM(rator, "unsafe-bytes-ref")) {
+	       || IS_NAMED_PRIM(rator, "unsafe-bytes-ref")
+	       || IS_NAMED_PRIM(rator, "flvector-ref")) {
       int simple;
       int which, unsafe = 0, base_offset = ((int)&SCHEME_VEC_ELS(0x0));
 
@@ -6175,6 +6216,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       else if (IS_NAMED_PRIM(rator, "unsafe-vector-ref")) {
 	which = 0;
         unsafe = 1;
+      } else if (IS_NAMED_PRIM(rator, "flvector-ref")) {
+	which = 3;
+        base_offset = ((int)&SCHEME_FLVEC_ELS(0x0));
       } else if (IS_NAMED_PRIM(rator, "unsafe-struct-ref")) {
 	which = 0;
         unsafe = 1;
@@ -6204,7 +6248,11 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
         if (!which) {
           /* vector-ref is relatively simple and worth inlining */
-          generate_vector_op(jitter, 0, 0, base_offset, unsafe);
+          generate_vector_op(jitter, 0, 0, base_offset, 0, unsafe);
+          CHECK_LIMIT();
+	} else if (which == 3) {
+          /* flvector-ref is relatively simple and worth inlining */
+          generate_vector_op(jitter, 0, 0, base_offset, 1, unsafe);
           CHECK_LIMIT();
 	} else if (which == 1) {
           if (unsafe) {
@@ -6247,12 +6295,18 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
           (void)jit_movi_p(JIT_R1, offset);
 	if (!which)
 	  offset = base_offset + WORDS_TO_BYTES(offset);
+	else if (which == 3)
+	  offset = base_offset + (offset * sizeof(double));
 	else if (which == 1)
 	  offset = offset << LOG_MZCHAR_SIZE;
 	jit_movi_l(JIT_V1, offset);
 	if (!which) {
           /* vector-ref is relatively simple and worth inlining */
-          generate_vector_op(jitter, 0, 1, base_offset, unsafe);
+          generate_vector_op(jitter, 0, 1, base_offset, 0, unsafe);
+          CHECK_LIMIT();
+	} else if (which == 3) {
+          /* flvector-ref is relatively simple and worth inlining */
+          generate_vector_op(jitter, 0, 1, base_offset, 1, unsafe);
           CHECK_LIMIT();
 	} else if (which == 1) {
           if (unsafe) {
@@ -6281,18 +6335,27 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       }
 
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "unsafe-f64vector-ref")) {
+    } else if (IS_NAMED_PRIM(rator, "unsafe-f64vector-ref")
+               || IS_NAMED_PRIM(rator, "unsafe-flvector-ref")) {
       int fpr0, unbox = jitter->unbox;
+      int is_f64;
 
+      is_f64 = IS_NAMED_PRIM(rator, "unsafe-f64vector-ref");
+      
       jitter->unbox = 0; /* no unboxing of vector and index arguments */
       generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
       jitter->unbox = unbox;
       CHECK_LIMIT();
 
-      jit_ldxi_p(JIT_R0, JIT_R0, (long)&(((Scheme_Structure *)0x0)->slots[0]));
-      jit_ldxi_p(JIT_R0, JIT_R0, (long)&SCHEME_CPTR_VAL(0x0));
+      if (is_f64) {
+        jit_ldxi_p(JIT_R0, JIT_R0, (long)&(((Scheme_Structure *)0x0)->slots[0]));
+        jit_ldxi_p(JIT_R0, JIT_R0, (long)&SCHEME_CPTR_VAL(0x0));
+      }
       jit_rshi_ul(JIT_R1, JIT_R1, 1);
-      jit_lshi_ul(JIT_R1, JIT_R1, 3); /* 3 = log(sizeof(double)) */
+      jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_DOUBLE_SIZE);
+      if (!is_f64) {
+        jit_addi_ul(JIT_R1, JIT_R1, (int)(&SCHEME_FLVEC_ELS(0x0)));
+      }
 
       if (jitter->unbox)
         fpr0 = JIT_FPR(jitter->unbox_depth);
@@ -6485,6 +6548,7 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
   } else if (!for_branch) {
     if (IS_NAMED_PRIM(rator, "vector-set!")
         || IS_NAMED_PRIM(rator, "unsafe-vector-set!")
+        || IS_NAMED_PRIM(rator, "flvector-set!")
         || IS_NAMED_PRIM(rator, "unsafe-struct-set!")
 	|| IS_NAMED_PRIM(rator, "string-set!")
 	|| IS_NAMED_PRIM(rator, "unsafe-string-set!")
@@ -6499,6 +6563,9 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       else if (IS_NAMED_PRIM(rator, "unsafe-vector-set!")) {
         which = 0;
         unsafe = 1;
+      } else if (IS_NAMED_PRIM(rator, "flvector-set!")) {
+	which = 3;
+        base_offset = ((int)&SCHEME_FLVEC_ELS(0x0));
       } else if (IS_NAMED_PRIM(rator, "unsafe-struct-set!")) {
         which = 0;
         unsafe = 1;
@@ -6573,7 +6640,11 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       if (!simple) {
 	if (!which) {
           /* vector-set! is relatively simple and worth inlining */
-          generate_vector_op(jitter, 1, 0, base_offset, unsafe);
+          generate_vector_op(jitter, 1, 0, base_offset, 0, unsafe);
+          CHECK_LIMIT();
+	} else if (which == 3) {
+          /* flvector-set! is relatively simple and worth inlining */
+          generate_vector_op(jitter, 1, 0, base_offset, 1, unsafe);
           CHECK_LIMIT();
 	} else if (which == 1) {
           if (unsafe) {
@@ -6605,12 +6676,18 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 	(void)jit_movi_p(JIT_R1, offset);
 	if (!which)
 	  offset = base_offset + WORDS_TO_BYTES(offset);
+	else if (which == 3)
+	  offset = base_offset + (offset * sizeof(double));
 	else if (which == 1)
 	  offset = offset << LOG_MZCHAR_SIZE;
 	jit_movi_l(JIT_V1, offset);
 	if (!which) {
           /* vector-set! is relatively simple and worth inlining */
-          generate_vector_op(jitter, 1, 1, base_offset, unsafe);
+          generate_vector_op(jitter, 1, 1, base_offset, 0, unsafe);
+          CHECK_LIMIT();
+	} else if (which == 3) {
+          /* flvector-set! is relatively simple and worth inlining */
+          generate_vector_op(jitter, 1, 1, base_offset, 1, unsafe);
           CHECK_LIMIT();
 	} else if (which == 1) {
           if (unsafe) {
@@ -6641,7 +6718,10 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       mz_runstack_unskipped(jitter, 3 - pushed);
 
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "unsafe-f64vector-set!")) {
+    } else if (IS_NAMED_PRIM(rator, "unsafe-f64vector-set!")
+               || IS_NAMED_PRIM(rator, "unsafe-flvector-set!")) {
+      int is_f64;
+      is_f64 = IS_NAMED_PRIM(rator, "unsafe-f64vector-set!");
       if (can_unbox(app->args[3], 5, JIT_FPR_NUM-1)) {
         int got_two;
         if (is_constant_and_avoids_r1(app->args[1])
@@ -6684,10 +6764,15 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       }
       CHECK_LIMIT();
 
-      jit_ldxi_p(JIT_R0, JIT_R0, (long)&(((Scheme_Structure *)0x0)->slots[0]));
-      jit_ldxi_p(JIT_R0, JIT_R0, (long)&SCHEME_CPTR_VAL(0x0));
+      if (is_f64) {
+        jit_ldxi_p(JIT_R0, JIT_R0, (long)&(((Scheme_Structure *)0x0)->slots[0]));
+        jit_ldxi_p(JIT_R0, JIT_R0, (long)&SCHEME_CPTR_VAL(0x0));
+      }
       jit_rshi_ul(JIT_R1, JIT_R1, 1);
-      jit_lshi_ul(JIT_R1, JIT_R1, 3); /* 3 = log(sizeof(double)) */
+      jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_DOUBLE_SIZE);
+      if (!is_f64) {
+        jit_addi_ul(JIT_R1, JIT_R1, (int)(&SCHEME_FLVEC_ELS(0x0)));
+      }
       jit_stxr_d_fppop(JIT_R1, JIT_R0, JIT_FPR0);
       CHECK_LIMIT();
       
@@ -9149,6 +9234,40 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       }
     }
   }
+
+  /* *** {flvector}_{ref,set}_check_index_code *** */
+  /* Same calling convention as for vector ops.    */
+  for (i = 0; i < 2; i++) {
+    if (!i) {
+      flvector_ref_check_index_code = jit_get_ip().ptr;
+    } else {
+      flvector_set_check_index_code = jit_get_ip().ptr;
+    }
+
+    mz_prolog(JIT_R2);
+
+    jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(2));
+    CHECK_RUNSTACK_OVERFLOW();
+    jit_str_p(JIT_RUNSTACK, JIT_R0);
+    jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
+    if (!i) {
+      jit_movi_i(JIT_R1, 2);
+    } else {
+      /* In set mode, value was already on run stack */
+      jit_movi_i(JIT_R1, 3);
+    }
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_prepare(2);
+    jit_pusharg_p(JIT_RUNSTACK);
+    jit_pusharg_i(JIT_R1);
+    if (!i) {
+      (void)mz_finish(ts_scheme_checked_flvector_ref);
+    } else {
+      (void)mz_finish(ts_scheme_checked_flvector_set);
+    }
+    /* does not return */
+  }
+
 
   /* *** syntax_ecode *** */
   /* R0 is (potential) syntax object */
