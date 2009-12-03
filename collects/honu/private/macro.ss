@@ -389,10 +389,22 @@
                               #:literals (honu-literal ...)
                   [(name pattern* ... . rrest)
                    (with-syntax ([(out (... ...)) (unpull #'pulled)])
+                     ;; TODO: use the proper `honu-unparsed' form depending on the context
                      (values
+                      #'(honu-unparsed-begin out (... ...))
+                      #'rrest)
+                     #;
+                     #'(honu-unparsed-block
+                        #f obj 'obj #f ctx
+                        out (... ...))
+                     #;
+                     (values
+                      #;
+                      #'(honu-unparsed-expr out (... ...))
                       #'(honu-unparsed-block
                          #f obj 'obj #f ctx
-                         out (... ...))
+                         out (... ...) rrest)
+                      #;
                       #'rrest))])))
           #'rest))])))
 
