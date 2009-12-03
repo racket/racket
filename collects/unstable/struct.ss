@@ -3,24 +3,27 @@
 (require (for-syntax scheme/base
                      scheme/struct-info))
 (provide make
-         struct->list)
+         struct->list
+         (for-syntax get-struct-info))
+
+;; get-struct-info : identifier stx -> struct-info-list
+(define-for-syntax (get-struct-info id ctx)
+  (define (bad-struct-name x)
+    (raise-syntax-error #f "expected struct name" ctx x))
+  (unless (identifier? id)
+    (bad-struct-name id))
+  (let ([value (syntax-local-value id (lambda () #f))])
+    (unless (struct-info? value)
+      (bad-struct-name id))
+    (extract-struct-info value)))
 
 ;; (make struct-name field-expr ...)
 ;; Checks that correct number of fields given.
 (define-syntax (make stx)
-  (define (bad-struct-name x)
-    (raise-syntax-error #f "expected struct name" stx x))
-  (define (get-struct-info id)
-    (unless (identifier? id)
-      (bad-struct-name id))
-    (let ([value (syntax-local-value id (lambda () #f))])
-      (unless (struct-info? value)
-        (bad-struct-name id))
-      (extract-struct-info value)))
   (syntax-case stx ()
     [(make S expr ...)
      (let ()
-       (define info (get-struct-info #'S))
+       (define info (get-struct-info #'S stx))
        (define constructor (list-ref info 1))
        (define accessors (list-ref info 3))
        (unless (identifier? #'constructor)

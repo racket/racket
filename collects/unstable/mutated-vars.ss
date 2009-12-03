@@ -13,8 +13,7 @@
   ;; syntax -> void
   (define (fmv/list lstx)
     (for-each find-mutated-vars (syntax->list lstx)))
-  ;(when (and (pair? (syntax->datum form))) (printf "called with ~a~n" (syntax->datum form)))
-  (kernel-syntax-case* form #f (define-type-alias-internal define-typed-struct-internal require/typed-internal)     
+  (kernel-syntax-case* form #f ()
     ;; what we care about: set!
     [(set! v e)
      (begin
@@ -51,5 +50,8 @@
 ;;   less general.
 ;; - What's with the typed-scheme literals?  If they were needed, then
 ;;   typed-scheme is probably broken now.
+;; ryanc:
+;; - The for-template is needed.
+;; - I've removed the bogus literals.
 
 (provide find-mutated-vars is-var-mutated?)
