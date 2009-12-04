@@ -2006,7 +2006,7 @@ static void putenv_str_table_put_name(Scheme_Object *name, Scheme_Object *value)
   void *original_gc;
   Scheme_Object *name_copy;
   original_gc = GC_switch_to_master_gc();
-  name_copy = (Scheme_Object *) clone_str_with_gc((Scheme_Object *) name);
+  name_copy = (Scheme_Object *) clone_str_with_gc((const char *) name);
   create_putenv_str_table_if_needed();
   scheme_hash_set(putenv_str_table, name_copy, value);
   GC_switch_back_from_master(original_gc);
@@ -2024,8 +2024,8 @@ static void putenv_str_table_put_name_value(Scheme_Object *name, Scheme_Object *
   Scheme_Object *name_copy;
   Scheme_Object *value_copy;
   original_gc = GC_switch_to_master_gc();
-  name_copy = (Scheme_Object *) clone_str_with_gc((Scheme_Object *) name);
-  value_copy = (Scheme_Object *) clone_str_with_gc((Scheme_Object *) value);
+  name_copy = (Scheme_Object *) clone_str_with_gc((const char *) name);
+  value_copy = (Scheme_Object *) clone_str_with_gc((const char *) value);
   create_putenv_str_table_if_needed();
   scheme_hash_set(putenv_str_table, name_copy, value_copy);
   GC_switch_back_from_master(original_gc);
