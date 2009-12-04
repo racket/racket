@@ -546,6 +546,15 @@ vector_obj {
 		    + ((vec->size - 1) * sizeof(Scheme_Object *))));
 }
 
+flvector_obj {
+  Scheme_Double_Vector *vec = (Scheme_Double_Vector *)p;
+
+ mark:
+ size:
+  gcBYTES_TO_WORDS((sizeof(Scheme_Double_Vector) 
+		    + ((vec->size - 1) * sizeof(double))));
+}
+
 input_port {
  mark:
   Scheme_Input_Port *ip = (Scheme_Input_Port *)p;

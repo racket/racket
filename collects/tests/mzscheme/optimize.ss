@@ -413,6 +413,10 @@
     (un-exact 'a 'unbox (box 'a))
     (un-exact 3 'vector-length (vector 'a 'b 'c))
 
+    (bin-exact 1.1 'flvector-ref (flvector 1.1 2.2 3.3) 0)
+    (bin-exact 3.3 'flvector-ref (flvector 1.1 2.2 3.3) 2)
+    (un-exact 3 'flvector-length (flvector 1.1 2.2 3.3))
+
     (bin-exact #\a 'string-ref "abc\u2001" 0)
     (bin-exact #\b 'string-ref "abc\u2001" 1)
     (bin-exact #\c 'string-ref "abc\u2001" 2)
@@ -454,7 +458,8 @@
 			 '(0 1 2))))])
       (test-setter make-vector #f 7 'vector-set! vector-set! vector-ref)
       (test-setter make-bytes 0 7 'bytes-set! bytes-set! bytes-ref)
-      (test-setter make-string #\a #\7 'string-set! string-set! string-ref))
+      (test-setter make-string #\a #\7 'string-set! string-set! string-ref)
+      (test-setter make-flvector 1.0 7.0 'flvector-set! flvector-set! flvector-ref))
 
     ))
 

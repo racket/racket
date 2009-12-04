@@ -2060,6 +2060,12 @@
       x)
    '(2))
 
+  (test/spec-passed
+   'or/c-hmm
+   (let ([funny/c (or/c (and/c procedure? (-> any)) (listof (-> number?)))])
+     (contract (-> funny/c any) void 'pos 'neg)))
+
+  
   
 ;                                          
 ;                                          

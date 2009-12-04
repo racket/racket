@@ -66,8 +66,13 @@
 (define-values (flat-prop flat-pred? flat-get)
   (make-struct-type-property 'contract-flat))
 
-(define-values (first-order-prop first-order-pred? first-order-get)
+(define-values (first-order-prop first-order-pred? raw-first-order-get)
   (make-struct-type-property 'contract-first-order))
+
+(define (first-order-get stct)
+  (cond
+    [(flat-pred? stct) (flat-get stct)]
+    [else (raw-first-order-get stct)]))
 
 (define (contract-first-order-passes? c v)
   (let ([ctc (coerce-contract 'contract-first-order-passes? c)])
@@ -404,7 +409,8 @@
   #:property name-prop (λ (ctc) (apply build-compound-type-name 'and/c (and/c-ctcs ctc)))
   #:property first-order-prop
   (λ (ctc)
-    (let ([tests (map (λ (x) ((first-order-get x) x)) (and/c-ctcs ctc))])
+    (let ([tests (map (λ (x) ((first-order-get x) x))
+                      (and/c-ctcs ctc))])
       (λ (x) 
         (andmap (λ (f) (f x)) tests))))
   #:property stronger-prop

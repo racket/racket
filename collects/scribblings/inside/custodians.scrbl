@@ -36,7 +36,6 @@ Creates a new custodian as a subordinate of @var{m}. If @var{m} is
 Places the value @var{o} into the management of the custodian
  @var{m}. If @var{m} is @cpp{NULL}, the current custodian is used.
 
-
 The @var{f} function is called by the custodian if it is ever asked to
 ``shutdown'' its values; @var{o} and @var{data} are passed on to
 @var{f}, which has the type
@@ -51,6 +50,10 @@ be remembered until either the custodian shuts it down or
 @cpp{scheme_remove_managed} is called. If @var{strong} is
 zero, the value is allowed to be garbaged collected (and automatically
 removed from the custodian).
+
+Independent of whether @var{strong} is zero, the value @var{o} is
+initially weakly held. A value associated with a custodian can
+therefore be finalized via will executors.
 
 The return value from @cpp{scheme_add_managed} can be used to refer
 to the value's custodian later in a call to

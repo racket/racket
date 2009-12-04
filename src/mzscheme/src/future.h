@@ -34,6 +34,7 @@ typedef void* (*prim_pvoid_pvoid_pvoid_t)(void*, void*);
 #define RUNNING 1
 #define WAITING_FOR_PRIM 2
 #define FINISHED 3
+#define PENDING_OVERSIZE 4
 
 #define FSRC_OTHER 0
 #define FSRC_RATOR 1

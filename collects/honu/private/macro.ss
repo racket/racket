@@ -2,6 +2,7 @@
 
 (require "honu.ss"
          (for-syntax "debug.ss"
+                     "contexts.ss"
                      scheme/base
                      syntax/parse
                      syntax/stx
@@ -368,17 +369,58 @@
           (#%braces (#%braces name pattern ...))
           (#%braces (#%braces template ...))
           . rest)
-       (with-syntax ([pulled (pull #'(template ...))])
+       (with-syntax ([pulled (pull #'(template ...))]
+                     [(pattern* ...) (map (lambda (stx)
+                                            (if (and (identifier? stx)
+                                                     (not (ormap (lambda (f)
+                                                                   (free-identifier=? stx f))
+                                                                 (syntax->list #'(honu-literal ...))))
+                                                     (not (free-identifier=? stx #'(... ...))))
+                                                (with-syntax ([x stx])
+                                                  #'(~and x (~not (~or honu-literal ...))))
+                                                stx))
+                                          (syntax->list #'(pattern ...)))]
+                     )
          (values
           #'(define-honu-syntax name
               (lambda (stx ctx)
-                (syntax-case stx (honu-literal ...)
-                  [(name pattern ... . rrest)
+                ;; (define-literal-set literals (honu-literal ...))
+                (syntax-parse stx
+                              ;; #:literal-sets (literals)
+                              #:literals (honu-literal ...)
+                  [(name pattern* ... . rrest)
                    (with-syntax ([(out (... ...)) (unpull #'pulled)])
+                     (define (X) (raise-syntax-error (syntax->datum #'name) "implement for this context"))
                      (values
+                      ;; this is sort of ugly, is there a better way?
+                      (cond
+                        [(type-context? ctx) (X)]
+                        [(type-or-expression-context? ctx) (X)]
+                        [(expression-context? ctx) #'(honu-unparsed-expr out (... ...))]
+                        [(expression-block-context? ctx)
+                         #'(honu-unparsed-begin out (... ...))]
+                        [(block-context? ctx)
+                         #'(honu-unparsed-begin out (... ...))]
+                        [(variable-definition-context? ctx) (X)]
+                        [(constant-definition-context? ctx) (X)]
+                        [(function-definition-context? ctx) (X)]
+                        [(prototype-context? ctx) (X)]
+                        [else #'(honu-unparsed-expr out (... ...))])
+                      #;
+                      #'(honu-unparsed-begin out (... ...))
+                      #'rrest)
+                     #;
+                     #'(honu-unparsed-block
+                        #f obj 'obj #f ctx
+                        out (... ...))
+                     #;
+                     (values
+                      #;
+                      #'(honu-unparsed-expr out (... ...))
                       #'(honu-unparsed-block
                          #f obj 'obj #f ctx
-                         out (... ...))
+                         out (... ...) rrest)
+                      #;
                       #'rrest))])))
           #'rest))])))
 

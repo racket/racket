@@ -98,6 +98,11 @@ static Scheme_Object *angle (int argc, Scheme_Object *argv[]);
 static Scheme_Object *int_sqrt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *int_sqrt_rem (int argc, Scheme_Object *argv[]);
 
+static Scheme_Object *flvector (int argc, Scheme_Object *argv[]);
+static Scheme_Object *flvector_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *flvector_length (int argc, Scheme_Object *argv[]);
+static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[]);
+
 static Scheme_Object *fx_and (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_or (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_xor (int argc, Scheme_Object *argv[]);
@@ -107,6 +112,10 @@ static Scheme_Object *fx_rshift (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_to_fl (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_set (int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *unsafe_flvector_length (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_flvector_ref (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_flvector_set (int argc, Scheme_Object *argv[]);
 
 static double not_a_number_val;
 
@@ -284,7 +293,7 @@ scheme_init_number (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("exact-positive-integer?", p, env);
 
-  p = scheme_make_noncm_prim(fixnum_p, "fixnum?", 1, 1);
+  p = scheme_make_immed_prim(fixnum_p, "fixnum?", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("fixnum?", p, env);
 
@@ -496,6 +505,39 @@ scheme_init_number (Scheme_Env *env)
 						      "inexact->exact",
 						      1, 1, 1),
 			     env);
+
+  scheme_add_global_constant("flvector",
+                             scheme_make_prim_w_arity(flvector,
+                                                      "flvector",
+                                                      0, -1),
+			     env);
+  scheme_add_global_constant("flvector?",
+                             scheme_make_folding_prim(flvector_p,
+                                                      "flvector?",
+                                                      1, 1, 1),
+			     env);
+  scheme_add_global_constant("make-flvector",
+                             scheme_make_immed_prim(make_flvector,
+                                                    "make-flvector",
+                                                    1, 2),
+			     env);
+
+  p = scheme_make_immed_prim(flvector_length, "flvector-length", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("flvector-length", p, env);
+
+  p = scheme_make_immed_prim(scheme_checked_flvector_ref,
+                             "flvector-ref",
+                             2, 2);
+  if (scheme_can_inline_fp_op())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("flvector-ref", p, env);
+
+  p = scheme_make_immed_prim(scheme_checked_flvector_set,
+                             "flvector-set!",
+                             3, 3);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+  scheme_add_global_constant("flvector-set!", p, env);
 }
 
 void scheme_init_unsafe_number(Scheme_Env *env)
@@ -531,19 +573,34 @@ void scheme_init_unsafe_number(Scheme_Env *env)
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("unsafe-fx->fl", p, env);
 
-  p = scheme_make_noncm_prim(fl_ref, "unsafe-f64vector-ref",
+  p = scheme_make_immed_prim(fl_ref, "unsafe-f64vector-ref",
                              2, 2);
   if (scheme_can_inline_fp_op())
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("unsafe-f64vector-ref", p, env);
   
-  p = scheme_make_noncm_prim(fl_set, "unsafe-f64vector-set!",
+  p = scheme_make_immed_prim(fl_set, "unsafe-f64vector-set!",
                              3, 3);
   if (scheme_can_inline_fp_op())
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("unsafe-f64vector-set!", p, env);  
-}
 
+  p = scheme_make_immed_prim(unsafe_flvector_length, "unsafe-flvector-length",
+                             1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("unsafe-flvector-length", p, env);
+
+  p = scheme_make_immed_prim(unsafe_flvector_ref, "unsafe-flvector-ref",
+                             2, 2);
+  if (scheme_can_inline_fp_op())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("unsafe-flvector-ref", p, env);
+
+  p = scheme_make_immed_prim(unsafe_flvector_set, "unsafe-flvector-set!",
+                             3, 3);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
+  scheme_add_global_constant("unsafe-flvector-set!", p, env);
+}
 
 
 Scheme_Object *
@@ -2787,6 +2844,156 @@ long scheme_integer_length(Scheme_Object *n)
   return SCHEME_INT_VAL(r);
 }
 
+
+/************************************************************************/
+/*                             flvectors                               */
+/************************************************************************/
+
+static Scheme_Double_Vector *alloc_flvector(long size)
+{
+  Scheme_Double_Vector *vec;
+
+  vec = (Scheme_Double_Vector *)scheme_malloc_fail_ok(scheme_malloc_atomic_tagged, 
+                                                      sizeof(Scheme_Double_Vector) 
+                                                      + ((size - 1) * sizeof(double)));
+  vec->so.type = scheme_flvector_type;
+  vec->size = size;
+
+  return vec;
+}
+
+static Scheme_Object *flvector (int argc, Scheme_Object *argv[])
+{
+  int i;
+  Scheme_Double_Vector *vec;
+
+  for (i = 0; i < argc; i++) {
+    if (!SCHEME_FLOATP(argv[i])) {
+      scheme_wrong_type("flvector", "inexact real", i, argc, argv);
+      return NULL;
+    }
+  }
+
+  vec = alloc_flvector(argc);
+
+  for (i = 0; i < argc; i++) {
+    vec->els[i] = SCHEME_FLOAT_VAL(argv[i]);
+  }
+
+  return (Scheme_Object *)vec;
+}
+
+
+static Scheme_Object *flvector_p (int argc, Scheme_Object *argv[])
+{
+  if (SCHEME_FLVECTORP(argv[0]))
+    return scheme_true;
+  else
+    return scheme_false;
+}
+
+static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[])
+{
+  Scheme_Double_Vector *vec;
+  long size;
+
+  if (SCHEME_INTP(argv[0]))
+    size = SCHEME_INT_VAL(argv[0]);
+  else if (SCHEME_BIGNUMP(argv[0])) {
+    if (SCHEME_BIGPOS(argv[0])) {
+      scheme_raise_out_of_memory("make-flvector", NULL);
+      return NULL;
+    } else
+      size = -1;
+  } else
+    size = -1;
+
+  if (size < 0)
+    scheme_wrong_type("make-flvector", "exact non-negative integer", 0, argc, argv);
+
+  if (argc > 1) {
+    if (!SCHEME_FLOATP(argv[1]))
+      scheme_wrong_type("make-flvector", "inexact real", 1, argc, argv);
+  }
+
+  vec = alloc_flvector(size);
+
+  if (argc > 1) {
+    int i;
+    double d = SCHEME_FLOAT_VAL(argv[1]);
+    for (i = 0; i < size; i++) {
+      vec->els[i] = d;
+    }
+  }
+
+  return (Scheme_Object *)vec;
+}
+
+Scheme_Object *scheme_flvector_length(Scheme_Object *vec)
+{
+  if (!SCHEME_FLVECTORP(vec))
+    scheme_wrong_type("flvector-length", "flvector", 0, 1, &vec);
+
+  return scheme_make_integer(SCHEME_FLVEC_SIZE(vec));
+}
+
+static Scheme_Object *flvector_length (int argc, Scheme_Object *argv[])
+{
+  return scheme_flvector_length(argv[0]);
+}
+
+Scheme_Object *scheme_checked_flvector_ref (int argc, Scheme_Object *argv[])
+{
+  double d;
+  Scheme_Object *vec;
+  long len, pos;
+
+  vec = argv[0];
+  if (!SCHEME_FLVECTORP(vec))
+    scheme_wrong_type("flvector-ref", "flvector", 0, argc, argv);
+  
+  len = SCHEME_FLVEC_SIZE(vec);
+  pos = scheme_extract_index("flvector-ref", 1, argc, argv, len, 0);
+
+  if (pos >= len) {
+    scheme_bad_vec_index("flvector-ref", argv[1], 
+                         "flvector", vec,
+                         0, len);
+    return NULL;
+  }
+
+  d = SCHEME_FLVEC_ELS(vec)[pos];
+
+  return scheme_make_double(d);
+}
+
+Scheme_Object *scheme_checked_flvector_set (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *vec;
+  long len, pos;
+
+  vec = argv[0];
+  if (!SCHEME_FLVECTORP(vec))
+    scheme_wrong_type("flvector-set!", "flvector", 0, argc, argv);
+  
+  len = SCHEME_FLVEC_SIZE(vec);
+  pos = scheme_extract_index("flvector-set!", 1, argc, argv, len, 0);
+  
+  if (!SCHEME_FLOATP(argv[2]))
+    scheme_wrong_type("flvector-set!", "inexact real", 2, argc, argv);
+
+  if (pos >= len) {
+    scheme_bad_vec_index("flvector-set!", argv[1], 
+                         "flvector", vec,
+                         0, len);
+    return NULL;
+  }
+
+  SCHEME_FLVEC_ELS(vec)[pos] = SCHEME_FLOAT_VAL(argv[2]);
+
+  return scheme_void;
+}
+
 /************************************************************************/
 /*                               Unsafe                                 */
 /************************************************************************/
@@ -2846,5 +3053,31 @@ static Scheme_Object *fl_set (int argc, Scheme_Object *argv[])
   Scheme_Object *p;
   p = ((Scheme_Structure *)argv[0])->slots[0];
   ((double *)SCHEME_CPTR_VAL(p))[SCHEME_INT_VAL(argv[1])] = SCHEME_DBL_VAL(argv[2]);
+  return scheme_void;
+}
+
+static Scheme_Object *unsafe_flvector_length (int argc, Scheme_Object *argv[])
+{
+  return scheme_make_integer(SCHEME_FLVEC_SIZE(argv[0]));
+}
+
+static Scheme_Object *unsafe_flvector_ref (int argc, Scheme_Object *argv[])
+{
+  long pos;
+  double d;
+
+  pos = SCHEME_INT_VAL(argv[1]);
+  d = SCHEME_FLVEC_ELS(argv[0])[pos];
+
+  return scheme_make_double(d);
+}
+
+static Scheme_Object *unsafe_flvector_set (int argc, Scheme_Object *argv[])
+{
+  long pos;
+
+  pos = SCHEME_INT_VAL(argv[1]);
+  SCHEME_FLVEC_ELS(argv[0])[pos] = SCHEME_FLOAT_VAL(argv[2]);
+
   return scheme_void;
 }

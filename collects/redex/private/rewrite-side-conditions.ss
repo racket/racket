@@ -1,4 +1,4 @@
-(module rewrite-side-conditions scheme/base
+(module rewrite-side-conditions scheme
   (require (lib "list.ss")
            "underscore-allowed.ss")
   (require (for-template
@@ -74,6 +74,20 @@
         [(cross a) #`(cross #,(loop #'a))]
         [(cross a ...) (expected-exact 'cross 1 term)]
         [cross (expected-arguments 'cross term)]
+        [_
+         (identifier? term)
+         (match (regexp-match #rx"^([^_]*)_.*" (symbol->string (syntax-e term)))
+           [(list _ (app string->symbol s))
+            (if (or (memq s (cons '... underscore-allowed))
+                    (memq s all-nts))
+                term
+                (raise-syntax-error
+                 what
+                 (format "before underscore must be either a non-terminal or a built-in pattern, found ~a in ~s"
+                         s (syntax-e term))
+                 orig-stx 
+                 term))]
+           [_ term])]
         [(terms ...)
          (map loop (syntax->list (syntax (terms ...))))]
         [else

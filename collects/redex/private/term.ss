@@ -32,11 +32,11 @@
       (let ([result-id (car (generate-temporaries '(f-results)))])
         (with-syntax ([fn fn])
           (let loop ([func (syntax (λ (x) (fn (syntax->datum x))))]
-                     [args rewritten]
+                     [args-stx rewritten]
                      [res result-id]
                      [args-depth (min depth max-depth)])
             (with-syntax ([func func]
-                          [args args]
+                          [args args-stx]
                           [res res])
               (if (zero? args-depth)
                   (begin
@@ -45,7 +45,7 @@
                                 outer-bindings))
                     (values result-id (min depth max-depth)))
                   (loop (syntax (λ (l) (map func (syntax->list l))))
-                        (syntax (args (... ...)))
+                        (syntax/loc args-stx (args (... ...)))
                         (syntax (res (... ...)))
                         (sub1 args-depth)))))))))
   
@@ -55,7 +55,7 @@
        (and (identifier? (syntax metafunc-name))
             (term-fn? (syntax-local-value (syntax metafunc-name) (λ () #f))))
        (rewrite-application (term-fn-get-id (syntax-local-value/catch (syntax metafunc-name) (λ (x) #t)))
-                            (syntax (arg ...))
+                            (syntax/loc stx (arg ...))
                             depth)]
       [f
        (and (identifier? (syntax f))
@@ -76,7 +76,7 @@
       [(unquote-splicing . x)
        (raise-syntax-error 'term "malformed unquote splicing" orig-stx stx)]
       [(in-hole id body)
-       (rewrite-application (syntax (λ (x) (apply plug x))) (syntax (id body)) depth)]
+       (rewrite-application (syntax (λ (x) (apply plug x))) (syntax/loc stx (id body)) depth)]
       [(in-hole . x)
        (raise-syntax-error 'term "malformed in-hole" orig-stx stx)]
       [hole (values (syntax (unsyntax the-hole)) 0)]

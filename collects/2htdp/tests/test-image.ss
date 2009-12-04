@@ -954,3 +954,26 @@
               16)
 (check-equal? (image-height (bitmap icons/stop-16x16.png))
               16)
+
+(check-equal? (let ()
+                (define bmp (make-object bitmap% 4 4))
+                (define mask (make-object bitmap% 4 4))
+                (define bdc (make-object bitmap-dc% bmp))
+                (send bdc set-brush "black" 'solid)
+                (send bdc draw-rectangle 0 0 4 4)
+                (send bdc set-bitmap mask)
+                (send bdc set-brush "black" 'solid)
+                (send bdc clear)
+                (send bdc draw-rectangle 1 1 1 1)
+                (send bdc set-bitmap #f)
+                (let-values ([(bytes w h) (bitmap->bytes bmp mask)])
+                  bytes))
+              (bytes-append #"\0\0\0\0" #"\0\0\0\0"   #"\0\0\0\0" #"\0\0\0\0"
+                            #"\0\0\0\0" #"\377\0\0\0" #"\0\0\0\0" #"\0\0\0\0"
+                            #"\0\0\0\0" #"\0\0\0\0"   #"\0\0\0\0" #"\0\0\0\0"
+                            #"\0\0\0\0" #"\0\0\0\0"   #"\0\0\0\0" #"\0\0\0\0"))
+ 
+;; ensure no error
+(check-equal? (begin (scale 2 (make-object bitmap% 10 10))
+                     (void))
+              (void))
