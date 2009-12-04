@@ -33,11 +33,26 @@ scheme
 ....
 ]
 
-In general, the @scheme[_rel-string] in @scheme[(lib _rel-string)]
-consists of one or more path elements that name collections, and then
-a final path element that names a library file; the path elements are
-separated by @litchar{/}. If the final element has no file suffix,
-then @litchar{/main.ss} is implicitly appended to the path.
+This example is more compactly and more commonly written as
+
+@schememod[
+scheme
+(require setup/getinfo
+         games/cards/cards)
+....
+]
+
+When an identifier @scheme[_id] is used in a @scheme[require] form, it
+is converted to @scheme[(lib _rel-string)] where @scheme[_rel-string]
+is the string form of @scheme[_id].
+
+A @scheme[_rel-string] in @scheme[(lib _rel-string)] consists of one
+or more path elements that name collections, and then a final path
+element that names a library file; the path elements are separated by
+@litchar{/}. If @scheme[_rel-string] contains no @litchar{/}s, then
+then @litchar{/main.ss} is implicitly appended to the path. If
+@scheme[_rel-string] contains @litchar{/} but does not end with a file
+suffix, then @litchar{.ss} is implicitly appended to the path.
 
 The translation of a @scheme[planet] or @scheme[lib] path to a
 @scheme[module] declaration is determined by the @tech{module name
