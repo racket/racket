@@ -50,8 +50,8 @@
            (err "must specify either both #:read and #:read-syntax, or none"))
          (when (and ~whole-body-readers? (not (and ~read ~read-syntax)))
            (err "got a #:whole-body-readers? without #:read and #:read-syntax"))])
-      ;; FIXME: a lot of the generated code is constant and should be lifted
-      ;; out of the template:
+      ;; FIXME: some generated code is constant and should be lifted out of the
+      ;; template:
       (quasisyntax/loc stx
         (#%module-begin
          #,@body
@@ -87,31 +87,7 @@
                  'module-language
                  (vector (syntax->datum modpath) 'get-info-getter props))
                r)))
-         (define lang*
-           (let ([lang #,~lang])
-             (if (not (procedure? lang))
-               (list lang #f)
-               (cond [(ar? lang 5) lang]
-                     [(ar? lang 1) (lambda (in . _) (lang in))]
-                     [(ar? lang 0) (lambda _ (lang))]
-                     [else (raise-type-error
-                            'syntax/module-reader
-                            "language+reader procedure of 5, 1, or 0 arguments"
-                            lang)]))))
-         (define (read-properties in modpath line col pos)
-           (if (not (procedure? lang*))
-             lang*
-             (call-with-values
-                 (lambda () (parameterize ([current-input-port in])
-                              (lang* in modpath line col pos)))
-                 (lambda xs
-                   (case (length xs)
-                     [(2) xs] [(1) (list (car xs) #f)]
-                     [else (error 'syntax/module-reader
-                                  "wrong number of results from ~a, ~a ~e"
-                                  "the #:language function"
-                                  "expected 1 or 2 values, got"
-                                  (length xs))])))))
+         (define read-properties (lang->read-properties #,~lang))
          (define (get-info in modpath line col pos)
            (get-info-getter (read-properties in modpath line col pos)))
          (define (get-info-getter props)
@@ -141,6 +117,35 @@
        (not (keyword? (syntax-e #'lang)))
        (construct-reader #''lang (syntax->list #'(body ...)))]
       [(_ body ...) (construct-reader #f (syntax->list #'(body ...)))]))
+
+  ;; turns the language specification (either a language or some flavor of a
+  ;; function that returns a language and some properties) into a function that
+  ;; returns (list <lang> <props>)
+  (define (lang->read-properties lang)
+    (define lang*
+      (cond [(not (procedure? lang)) (list lang #f)]
+            [(ar? lang 5) lang]
+            [(ar? lang 1) (lambda (in . _) (lang in))]
+            [(ar? lang 0) (lambda _ (lang))]
+            [else (raise-type-error
+                   'syntax/module-reader
+                   "language+reader procedure of 5, 1, or 0 arguments"
+                   lang)]))
+    (define (read-properties in modpath line col pos)
+      (if (not (procedure? lang*))
+        lang*
+        (parameterize ([current-input-port in])
+          (call-with-values
+              (lambda () (lang* in modpath line col pos))
+              (lambda xs
+                (case (length xs)
+                  [(2) xs] [(1) (list (car xs) #f)]
+                  [else (error 'syntax/module-reader
+                               "wrong number of results from ~a, ~a ~e"
+                               "the #:language function"
+                               "expected 1 or 2 values, got"
+                               (length xs))]))))))
+    read-properties)
 
   ;; Since there are users that wrap with `#%module-begin' in their reader
   ;;   or wrapper1 functions, we need to avoid double-wrapping.  Having to do
