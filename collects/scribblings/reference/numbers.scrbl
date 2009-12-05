@@ -953,7 +953,7 @@ Returns the hyperbolic tangent of @scheme[z].}
 Computes the greatest exact integer @scheme[m] such that:
 @schemeblock[(<= (expt 10 m)
                  (inexact->exact r))]
-Hence also
+Hence also:
 @schemeblock[(< (inexact->exact r)
                 (expt 10 (add1 m)))]
 

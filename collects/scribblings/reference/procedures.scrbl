@@ -253,7 +253,7 @@ See also @scheme[procedure-arity?].}
 
 @defthing[prop:procedure struct-type-property?]{
 
-A @tech{structure type property} to indentify structure types whose
+A @tech{structure type property} to identify structure types whose
 instances can be applied as procedures. In particular, when
 @scheme[procedure?] is applied to the instance, the result will be
 @scheme[#t], and when an instance is used in the function position of
@@ -451,8 +451,8 @@ primitive closure rather than a simple primitive procedure,
 
 Returns the arity of the result of the primitive procedure
 @scheme[prim] (as opposed to the procedure's input arity as returned
-by @scheme[arity]). For most primitives, this procedure returns
-@scheme[1], since most primitives return a single value when
+by @scheme[procedure-arity]). For most primitives, this procedure
+returns @scheme[1], since most primitives return a single value when
 applied.}
 
 @; ----------------------------------------
