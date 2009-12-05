@@ -14,18 +14,19 @@
         (apply p args))))
 
   (define-values (at-read at-read-syntax at-get-info)
-    (make-meta-reader 'at-exp
-                      "language path"
-                      (lambda (str)
-                        (let ([s (string->symbol
-                                  (string-append (bytes->string/latin-1 str)
-                                                 "/lang/reader"))])
-                          (and (module-path? s) s)))
-                      wrap-reader
-                      wrap-reader
-                      (lambda (proc)
-                        (lambda (key defval)
-                          (case key
-                            [(color-lexer)
-                             (dynamic-require 'syntax-color/scribble-lexer 'scribble-lexer)]
-                            [else (if proc (proc key defval) defval)]))))))
+    (make-meta-reader
+     'at-exp
+     "language path"
+     (lambda (str)
+       (let ([s (string->symbol
+                 (string-append (bytes->string/latin-1 str)
+                                "/lang/reader"))])
+         (and (module-path? s) s)))
+     wrap-reader
+     wrap-reader
+     (lambda (proc)
+       (lambda (key defval)
+         (case key
+           [(color-lexer)
+            (dynamic-require 'syntax-color/scribble-lexer 'scribble-lexer)]
+           [else (if proc (proc key defval) defval)]))))))

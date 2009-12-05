@@ -290,7 +290,7 @@ are meant to be exported directly.}
 
 @emph{This function is deprecated; the
 @schememodname[syntax/module-reader] language can be adapted using the
-various keywords to arbitrary readers, and please use it instead.}
+various keywords to arbitrary readers; please use it instead.}
 
 Repeatedly calls @scheme[read] on @scheme[in] until an end of file,
 collecting the results in order into @scheme[_lst], and derives a

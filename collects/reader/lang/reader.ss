@@ -6,11 +6,11 @@
                        [-get-info get-info]))
 
   (define-values (-read -read-syntax -get-info)
-    (make-meta-reader 'reader
-                      "language path"
-                      #:read-spec (lambda (in) (read in))
-                      (lambda (s)
-                        (and (module-path? s) s))
-                      values
-                      values
-                      values)))
+    (make-meta-reader
+     'reader
+     "language path"
+     #:read-spec (lambda (in) (read in))
+     (lambda (s) (and (module-path? s) s))
+     values
+     values
+     values)))
