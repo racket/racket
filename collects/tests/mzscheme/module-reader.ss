@@ -56,7 +56,9 @@
 ;; forget about the input -- just return a fixed empty input module
 (module r8 syntax/module-reader whatever
   #:wrapper2 (lambda (in rd)
-               (if (syntax? (rd in)) #'(module page zzz (#%module-begin)) '(module page zzz (#%module-begin)))))
+               (if (syntax? (rd in))
+                 #'(module page zzz (#%module-begin))
+                 '(module page zzz (#%module-begin)))))
 ;; the same, the easy way
 (module r9 syntax/module-reader
   #:language (lambda () 'zzz)
