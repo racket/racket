@@ -160,7 +160,7 @@
                     [(not (pair? exp)) wrapped-exps]
                     [(eq? '#%module-begin
                           (if stx? (syntax-e (car exp)) (car exp)))
-                     (car exp)]
+                     (car exps)]
                     [else wrapped-exps]))])))
     (let* ([lang (if stx? (datum->syntax #f lang modpath modpath) lang)]
            [body (lambda ()
