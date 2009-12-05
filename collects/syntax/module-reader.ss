@@ -241,7 +241,7 @@
       (let ([r (get in read-sym src #|mod|# line col pos
                     (lambda (spec)
                       (lambda ()
-                        (error self-sym "cannot find reader for `#lang ~a ~a'"
+                        (error read-sym "cannot find reader for `#lang ~a ~a'"
                                self-sym
                                spec))))])
         (let ([r (convert r)])
