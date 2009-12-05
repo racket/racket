@@ -142,27 +142,28 @@
        (construct-reader #''lang (syntax->list #'(body ...)))]
       [(_ body ...) (construct-reader #f (syntax->list #'(body ...)))]))
 
+  ;; Since there are users that wrap with `#%module-begin' in their reader
+  ;;   or wrapper1 functions, we need to avoid double-wrapping.  Having to do
+  ;;   this for #lang readers should be considered deprecated, and hopefully
+  ;;   one day we'll move to just doing it unilaterally (making this code throw
+  ;;   an error in that case before that's done).
+  ;; This function takes "body" as a sequence of expressions (can be syntaxes
+  ;;   and/or sexprs) and returns a new body as a *single* expression that is
+  ;;   wrapped in a `#%module-begin' -- using the input if it was a single
+  ;;   pre-wrapped expression.
+  (define (wrap-module-begin body)
+    (let ([exprs (if (syntax? body) (syntax->list body) body)])
+      (if (and (pair? exprs) (null? (cdr exprs))
+               (let* ([x (car exprs)]
+                      [x (if (syntax? x) (syntax-e x) x)]
+                      [x (and (pair? x) (car x))]
+                      [x (if (syntax? x) (syntax-e x) x)])
+                 (eq? x '#%module-begin)))
+        (car exprs)
+        (cons '#%module-begin body))))
+
   (define (wrap-internal lang port read whole? wrapper stx?
                          modpath src line col pos)
-    ;; Takes either a syntax object representing a list of expressions
-    ;; or a list of s-expressions, and checks to see if it's a single
-    ;; expression that begins with the literal #%module-begin.  If so,
-    ;; it just returns that expression, else it wraps with #%module-begin.
-    (define (wrap-#%module-begin exps stx?)
-      (define wrapped-exps
-        (let ([wrapped `(#%module-begin . ,exps)])
-          (if stx? (datum->syntax #f wrapped) wrapped)))
-      (let ([exps (if stx? (syntax->list exps) exps)])
-        (cond
-          [(null? exps) wrapped-exps]
-          [(not (null? (cdr exps))) wrapped-exps]
-          [else (let ([exp (if stx? (syntax-e (car exps)) (car exps))])
-                  (cond
-                    [(not (pair? exp)) wrapped-exps]
-                    [(eq? '#%module-begin
-                          (if stx? (syntax-e (car exp)) (car exp)))
-                     (car exps)]
-                    [else wrapped-exps]))])))
     (let* ([lang (if stx? (datum->syntax #f lang modpath modpath) lang)]
            [body (lambda ()
                    (if whole?
@@ -175,12 +176,10 @@
            [body (cond [(not wrapper)   (body)]
                        [(ar? wrapper 2) (wrapper body stx?)]
                        [else            (wrapper body)])]
+           [body (wrap-module-begin body)]
            [all-loc (vector src line col pos
                             (let-values ([(l c p) (port-next-location port)])
                               (and p (- p pos))))]
-           [body (if (and stx? (not (syntax? body)))
-                   (datum->syntax #f body all-loc)
-                   body)]
            [p-name (object-name port)]
            [name (if (path? p-name)
                    (let-values ([(base name dir?) (split-path p-name)])
@@ -195,13 +194,7 @@
                                              (add1 pos))
                                          pos)))
                         v))]
-           ;; Since there are users that wrap with #%module-begin in their
-           ;; reader or wrapper1 functions, we need to avoid double-wrapping.
-           ;; Having to do this for #lang readers should be considered
-           ;; deprecated, and hopefully one day we'll move to just doing it
-           ;; unilaterally.
-           [wrapped-body (wrap-#%module-begin body stx?)]
-           [r `(,(tag-src 'module) ,(tag-src name) ,lang ,wrapped-body)])
+           [r `(,(tag-src 'module) ,(tag-src name) ,lang ,body)])
       (if stx? (datum->syntax #f r all-loc) r)))
 
   (define (wrap lang port read modpath src line col pos)
