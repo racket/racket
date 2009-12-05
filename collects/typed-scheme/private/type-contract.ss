@@ -72,8 +72,9 @@
            (define (f a)
              (define-values (dom* rngs* rst)
                (match a
-                 [(arr: dom (Values: (list (Result: rngs (LFilterSet: '() '()) (LEmpty:)) ...)) rst #f '())
-                  (values (map t->c/neg dom) (map t->c rngs) (and rst (t->c/neg rst)))]
+                 [(arr: dom (Values: (list (Result: rngs (LFilterSet: '() '()) (LEmpty:)) ...)) rst #f (list (Keyword: kws ktys #t) ...))
+                  (values (append (map t->c/neg dom) (append-map (lambda (kw kty) (list kw (t->c/neg kty))) kws ktys))
+                          (map t->c rngs) (and rst (t->c/neg rst)))]
                  [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f '())
                   (if (and out? pos?)
                       (values (map t->c/neg dom) (map t->c rngs) (and rst (t->c/neg rst)))

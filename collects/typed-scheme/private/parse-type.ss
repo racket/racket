@@ -66,6 +66,12 @@
          (make-Poly vars (parse-type #'t))))]
     [(t:All . rest) (tc-error "All: bad syntax")]))
 
+(define-splicing-syntax-class keyword-tys
+  (pattern (~seq k:keyword t:expr)
+           #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #t))
+  (pattern (~seq [k:keyword t:expr])
+           #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #f)))
+
 (define (parse-type stx)    
   (parameterize ([current-orig-stx stx])    
     (syntax-parse
@@ -119,10 +125,15 @@
       (add-type-name-reference #'kw)
       ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
       (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (parse-type #'pred-ty))]
-     [(dom ... rest ddd:star (~and kw t:->) rng)
+     [(dom:expr ... rest:expr ddd:star kws:keyword-tys ... (~and kw t:->) rng)
       (add-type-name-reference #'kw)
-      (->* (map parse-type (syntax->list #'(dom ...))) (parse-type #'rest) (parse-values-type #'rng))]
-     [(dom ... rest :ddd/bound (~and kw t:->) rng)
+      (make-Function
+       (list (make-arr
+              (map parse-type (syntax->list #'(dom ...)))
+              (parse-values-type #'rng)
+              #:rest (parse-type #'rest)
+              #:kws (attribute kws.Keyword))))]
+     [(dom:expr ... rest:expr :ddd/bound (~and kw t:->) rng)
       (add-type-name-reference #'kw)
       (let ([var (lookup (current-tvars) (syntax-e #'bound) (lambda (_) #f))])
         (if (not (Dotted? var))
@@ -141,7 +152,7 @@
                                       (current-tvars))])
                                  (parse-type #'rest))
                                (syntax-e #'bound))))))]
-     [(dom ... rest _:ddd (~and kw t:->) rng)
+     [(dom:expr ... rest:expr _:ddd (~and kw t:->) rng)
       (add-type-name-reference #'kw)
       (let ([bounds (filter (compose Dotted? cdr)
                             (env-keys+vals (current-tvars)))])
@@ -160,11 +171,19 @@
                                                        (current-tvars))])
                              (parse-type #'rest))
                            var)))))]
-     ;; has to be below the previous one
-     [(dom ... (~and kw t:->) rng) 
+    #| ;; has to be below the previous one
+     [(dom:expr ... (~and kw t:->) rng) 
       (add-type-name-reference #'kw)
       (->* (map parse-type (syntax->list #'(dom ...)))
-           (parse-values-type #'rng))]     
+           (parse-values-type #'rng))]     |#
+     ;; use expr to rule out keywords
+     [(dom:expr ... kws:keyword-tys ... (~and kw t:->) rng)
+      (add-type-name-reference #'kw)
+      (make-Function
+       (list (make-arr
+              (map parse-type (syntax->list #'(dom ...)))
+              (parse-values-type #'rng)
+              #:kws (attribute kws.Keyword))))]
      [((~and kw case-lambda) tys ...)
       (add-type-name-reference #'kw)
       (make-Function 
