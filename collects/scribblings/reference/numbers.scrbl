@@ -955,11 +955,13 @@ Computes the greatest exact integer @scheme[m] such that:
                  (inexact->exact r))]
 Hence also
 @schemeblock[(< (inexact->exact r)
-                (expt 10 (add1 m)))].
+                (expt 10 (add1 m)))]
 
 @mz-examples[#:eval math-eval 
                     (order-of-magnitude 999)
-                    (order-of-magnitude 1000)]
+                    (order-of-magnitude 1000)
+                    (order-of-magnitude 1/100)
+                    (order-of-magnitude 1/101)]
 }
 
 @; ----------------------------------------------------------------------
