@@ -63,7 +63,7 @@ is identified by the @scheme[prop:set!-transformer] property of
 
 @defthing[prop:set!-transformer struct-type-property?]{
 
-A @tech{structure type property} to indentify structure types that act
+A @tech{structure type property} to identify structure types that act
 as @tech{assignment transformers} like the ones created by
 @scheme[make-set!-transformer].
 
@@ -133,7 +133,7 @@ create @scheme[transformer] or as indicated by a
 
 @defthing[prop:rename-transformer struct-type-property?]{
 
-A @tech{structure type property} to indentify structure types that act
+A @tech{structure type property} to identify structure types that act
 as @tech{rename transformers} like the ones created by
 @scheme[make-rename-transformer].
 
