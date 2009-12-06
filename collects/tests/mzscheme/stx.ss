@@ -72,41 +72,46 @@
 (test 'yes 'dot-literal (syntax-case #'(1 . #t) () [(_ . #t) 'yes] [_ 'no]))
 
 (test '(((x 3) (y 3) (z 3)) ;; each line should be x y z, not x x x...
-	((x 4) (y 4) (z 4))
-	((x 5) (y 5) (z 5)))
+        ((x 4) (y 4) (z 4))
+        ((x 5) (y 5) (z 5)))
       'ellipses
-      (syntax->datum (syntax-case '(_ 1 (x y z) ((3 3 3) (4 4 4) (5 5 5))) () 
-			      [(_ x (a ...) ((b ...) ...)) #'(((a b) ...) ...)])))
+      (syntax->datum (syntax-case '(_ 1 (x y z) ((3 3 3) (4 4 4) (5 5 5))) ()
+                       [(_ x (a ...) ((b ...) ...)) #'(((a b) ...) ...)])))
 
 (test '(((x y z 3) (x y z 3) (x y z 3))
-	((x y z 4) (x y z 4) (x y z 4))
-	((x y z 5) (x y z 5) (x y z 5)))
+        ((x y z 4) (x y z 4) (x y z 4))
+        ((x y z 5) (x y z 5) (x y z 5)))
       'ellipses
-      (syntax->datum (syntax-case '(_ 1 (x y z) ((3 3 3) (4 4 4) (5 5 5))) () 
-			      [(_ x (a ...) ((b ...) ...)) #'(((a ... b) ...) ...)])))
+      (syntax->datum (syntax-case '(_ 1 (x y z) ((3 3 3) (4 4 4) (5 5 5))) ()
+                       [(_ x (a ...) ((b ...) ...)) #'(((a ... b) ...) ...)])))
 
 
 (test '((1 z) (2 w) (x z) (y w))
       'ellipses
-      (syntax->datum (syntax-case '(((1 2) (x y)) (z w)) () 
-			      [(((a ...) ...) (b ...)) #'((a b) ... ...)])))
+      (syntax->datum (syntax-case '(((1 2) (x y)) (z w)) ()
+                       [(((a ...) ...) (b ...)) #'((a b) ... ...)])))
 
 (test '(#(1) #(2 3))
       'ellipses+vector
-      (syntax->datum 
-       (syntax-case '((1) (2 3)) () [((a ...) ...) #'(#(a ...) ...)])))
+      (syntax->datum
+       (syntax-case '((1) (2 3)) ()
+         [((a ...) ...) #'(#(a ...) ...)])))
 
 (test '(1 2 3 6 8 9 0 1 2 3)
-      syntax->datum 
-      (syntax-case '(((1) (2 3)) ((6)) ((8 9 0) (1 2 3))) () [(((a ...) ...) ...) #'(a ... ... ...)]))
+      syntax->datum
+      (syntax-case '(((1) (2 3)) ((6)) ((8 9 0) (1 2 3))) ()
+        [(((a ...) ...) ...) #'(a ... ... ...)]))
 (test '((1 2 3) (6) (8 9 0 1 2 3))
-      syntax->datum 
-      (syntax-case '(((1) (2 3)) ((6)) ((8 9 0) (1 2 3))) () [(((a ...) ...) ...) #'((a ... ...) ...)]))
+      syntax->datum
+      (syntax-case '(((1) (2 3)) ((6)) ((8 9 0) (1 2 3))) ()
+        [(((a ...) ...) ...) #'((a ... ...) ...)]))
 (test '((1) (2 3) (6) (8 9 0) (1 2 3))
-      syntax->datum 
-      (syntax-case '(((1) (2 3)) ((6)) ((8 9 0) (1 2 3))) () [(((a ...) ...) ...) #'((a ...) ... ...)]))
+      syntax->datum
+      (syntax-case '(((1) (2 3)) ((6)) ((8 9 0) (1 2 3))) ()
+        [(((a ...) ...) ...) #'((a ...) ... ...)]))
 
-(test (syntax-case #'((([n 1] [m 2]) ([p 10] [q 20])) (([nn -1] [mm -2]) ([pp -10] [qq -20]))) ()
+(test (syntax-case #'((([n 1] [m 2]) ([p 10] [q 20]))
+                      (([nn -1] [mm -2]) ([pp -10] [qq -20]))) ()
         [((([x y] ...) ...) ...)
          (syntax->datum #'(ell ((ull (+ x ...)
                                      ((- x ... y ...) ...))
@@ -118,7 +123,8 @@
             ((ull (+ nn mm) ((- n m 1 2) (- p q 10 20)))
              (ull (+ pp qq) ((- nn mm -1 -2) (- pp qq -10 -20))))))
 
-(test (syntax-case #'((([n 1] [m 2]) ([p 10] [q 20])) (([nn -1] [mm -2]) ([pp -10] [qq -20]))) ()
+(test (syntax-case #'((([n 1] [m 2]) ([p 10] [q 20]))
+                      (([nn -1] [mm -2]) ([pp -10] [qq -20]))) ()
         [((([x y] ...) ...) ...)
          (syntax->datum #'(ell ((ull (+ x ...)
                                      ((- x ...) ...))
@@ -137,11 +143,11 @@
 (define (tree-map f)
   (lambda (l)
     (if (pair? l)
-	(cons ((tree-map f) (car l))
-	      ((tree-map f) (cdr l)))
-	(if (null? l)
-	    null
-	    (f l)))))
+        (cons ((tree-map f) (car l))
+              ((tree-map f) (cdr l)))
+        (if (null? l)
+            null
+            (f l)))))
 
 (define-syntax mcr
   (lambda (stx)
@@ -154,7 +160,7 @@
 (syntax-case se ()
   [(bg five)
    (let ([bg (syntax bg)]
-	 [five (syntax five)])
+         [five (syntax five)])
      (test 'begin syntax-e bg)
      (test 5 syntax-e five)
 
@@ -203,11 +209,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Constructed s, se is part of s, part of s tagged
 
-(define s (syntax-property (with-syntax ([five (syntax-property (quote-syntax 5)
-								'testing
-								12)])
-			     (syntax (mcr2 five)))
-			   'testing 10))
+(define s
+  (syntax-property
+   (with-syntax ([five (syntax-property (quote-syntax 5) 'testing 12)])
+     (syntax (mcr2 five)))
+   'testing 10))
 (define se (expand-once s))
 
 (test (syntax-e (cadr (syntax-e s))) syntax-e se)
@@ -223,14 +229,14 @@
 ;; paren-shape:
 
 (let ([s (with-syntax ([a (quote-syntax [x y])])
-	   #'[a 10])])
+           #'[a 10])])
   (test #f syntax-property #'(x) 'paren-shape)
   (test #\[ syntax-property #'[x] 'paren-shape)
   (test #\[ syntax-property s 'paren-shape)
   (test #\[ syntax-property (syntax-case s () [(b _) #'b]) 'paren-shape))
 
 (let ([s (with-syntax ([(a ...) '(1 2 3)])
-	   #'[a ...])])
+           #'[a ...])])
   (test #\[ syntax-property s 'paren-shape))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -317,16 +323,17 @@
 ;; Symbol Keys
 (test null syntax-property-symbol-keys #'a)
 (let ([ssort (lambda (l)
-	       (if (equal? l '(yep aha))
-		   '(aha yep)
-		   l))])
+               (if (equal? l '(yep aha))
+                   '(aha yep)
+                   l))])
   (test '(aha) syntax-property-symbol-keys (syntax-property #'a 'aha 1))
   (test '(aha yep) ssort (syntax-property-symbol-keys (syntax-property (syntax-property #'a 'aha 1) 'yep 2)))
-  (test '(aha yep) ssort (syntax-property-symbol-keys (syntax-property 
-						       (syntax-property 
-							(syntax-property #'a 'aha 1) 
-							'yep 2)
-						       'aha 3))))
+  (test '(aha yep) ssort (syntax-property-symbol-keys
+                          (syntax-property
+                           (syntax-property
+                            (syntax-property #'a 'aha 1)
+                            'yep 2)
+                           'aha 3))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test free-identifier=? on different phases via syntax-case*
@@ -349,15 +356,15 @@
   (define-syntax ck
     (lambda (stx)
       (syntax-case stx ()
-	[(_ id et?)
-	 (with-syntax ([cmp (if (syntax-e (syntax et?))
-				(syntax free-transformer-identifier=?)
-				(syntax free-identifier=?))])
-	   (syntax
-	    (lambda (x)
-	      (syntax-case* x (id) cmp
-	        [(_ id) #t]
-		[else #f]))))])))
+        [(_ id et?)
+         (with-syntax ([cmp (if (syntax-e (syntax et?))
+                                (syntax free-transformer-identifier=?)
+                                (syntax free-identifier=?))])
+           (syntax
+            (lambda (x)
+              (syntax-case* x (id) cmp
+                [(_ id) #t]
+                [else #f]))))])))
 
   (define has-lam? (ck case-lambda #f))
   (define has-mz:lam? (ck mz:case-lambda #f))
@@ -370,7 +377,7 @@
   (define has-et-mtby? (ck b:mtby #t))
 
   (provide has-lam? has-mz:lam? has-mtax? has-mtby?
-	   has-et-lam? has-et-mz:lam? has-et-mtax? has-et-mtby?))
+           has-et-lam? has-et-mz:lam? has-et-mtax? has-et-mtby?))
 
 (require 'mt1)
 (require (for-syntax 'mtb))
@@ -410,13 +417,13 @@
       (datum->syntax
        stx
        (cons
-	(quote-syntax quote-syntax)
-	(cdr (syntax-e stx)))
+        (quote-syntax quote-syntax)
+        (cdr (syntax-e stx)))
        stx)))
 
   (define-values (run-mt2-test)
     (lambda (test)
-      
+
       (test #t has-lam? #'(any case-lambda))
       (test #f has-lam? #'(any case-lambada))
 
@@ -469,34 +476,40 @@
                (cdddr b))
         b)))
 
-(test '('#%kernel case-lambda (lib "scheme/init") case-lambda 0 0 0)  identifier-binding* #'case-lambda)
-(test '(scheme/promise delay* (lib "scheme/init") delay 0 0 0)  identifier-binding* #'delay)
-(test '('#%kernel #%module-begin (lib "scheme/init") #%plain-module-begin 0 0 0)  identifier-binding* #'#%plain-module-begin)
+(test '('#%kernel case-lambda (lib "scheme/init") case-lambda 0 0 0)
+      identifier-binding* #'case-lambda)
+(test '(scheme/promise delay* (lib "scheme/init") delay 0 0 0)
+      identifier-binding* #'delay)
+(test '('#%kernel #%module-begin (lib "scheme/init") #%plain-module-begin 0 0 0)
+      identifier-binding* #'#%plain-module-begin)
 (require (only-in scheme/base [#%plain-module-begin #%pmb]))
-(test '('#%kernel #%module-begin scheme/base #%plain-module-begin 0 0 0)  identifier-binding* #'#%pmb)
+(test '('#%kernel #%module-begin scheme/base #%plain-module-begin 0 0 0)
+      identifier-binding* #'#%pmb)
 
-(let ([b (identifier-binding (syntax-case (expand #'(module m scheme/base
-						      (require (only-in (lib "lang/htdp-intermediate.ss") [cons bcons]))
-						      bcons)) ()
-			       [(mod m mz (#%mod-beg req (app call-with-values (lambda () cons) print)))
-				(let ([s (syntax cons)])
-				  (test 'bcons syntax-e s)
-				  s)]))])
+(let ([b (identifier-binding
+          (syntax-case (expand #'(module m scheme/base
+                                   (require (only-in (lib "lang/htdp-intermediate.ss") [cons bcons]))
+                                   bcons)) ()
+            [(mod m mz (#%mod-beg req (app call-with-values (lambda () cons) print)))
+             (let ([s (syntax cons)])
+               (test 'bcons syntax-e s)
+               s)]))])
   (let-values ([(real real-base) (module-path-index-split (car b))]
-	       [(nominal nominal-base) (module-path-index-split (caddr b))])
+               [(nominal nominal-base) (module-path-index-split (caddr b))])
     (test '"teachprims.ss" values real)
     (test 'beginner-cons cadr b)
     (test '(lib "lang/htdp-intermediate.ss") values nominal)
     (test 'cons cadddr b)))
 
-(let ([b (identifier-binding (syntax-case (expand #'(module m (lib "lang/htdp-intermediate.ss")
-						      cons)) ()
-			       [(mod m beg (#%mod-beg (app call-w-vals (lam () cons) prnt)))
-				(let ([s (syntax cons)])
-				  (test 'cons syntax-e s)
-				  s)]))])
+(let ([b (identifier-binding
+          (syntax-case (expand #'(module m (lib "lang/htdp-intermediate.ss")
+                                   cons)) ()
+            [(mod m beg (#%mod-beg (app call-w-vals (lam () cons) prnt)))
+             (let ([s (syntax cons)])
+               (test 'cons syntax-e s)
+               s)]))])
   (let-values ([(real real-base) (module-path-index-split (car b))]
-	       [(nominal nominal-base) (module-path-index-split (caddr b))])
+               [(nominal nominal-base) (module-path-index-split (caddr b))])
     (test '"teachprims.ss" values real)
     (test 'beginner-cons cadr b)
     (test '(lib "lang/htdp-intermediate.ss") values nominal)
@@ -516,18 +529,18 @@
   (err/rt-test (eval-syntax 'eval))
   (err/rt-test (eval-syntax eval))
   (test eval eval-syntax #'eval)
-  (test #t 
-	'eval-syntax
-	(with-handlers ([exn:fail:syntax? (lambda (x) #t)])
-	  (eval-syntax (datum->syntax #f 'eval))))
+  (test #t
+        'eval-syntax
+        (with-handlers ([exn:fail:syntax? (lambda (x) #t)])
+          (eval-syntax (datum->syntax #f 'eval))))
 
   (test eval (current-eval) 'eval)
   (test eval (current-eval) eval)
   (test eval (current-eval) #'eval)
-  (test #t 
-	'current-eval-syntax
-	(with-handlers ([exn:fail:syntax? (lambda (x) #t)])
-	  ((current-eval) (datum->syntax #f 'eval))))
+  (test #t
+        'current-eval-syntax
+        (with-handlers ([exn:fail:syntax? (lambda (x) #t)])
+          ((current-eval) (datum->syntax #f 'eval))))
 
   (test eval 'compile (eval (compile 'eval)))
   (test eval 'compile (eval (compile eval)))
@@ -537,10 +550,10 @@
   (err/rt-test (compile-syntax 'eval))
   (err/rt-test (compile-syntax eval))
   (test eval 'compile (eval (compile-syntax #'eval)))
-  (test #t 
-	'compile-syntax
-	(with-handlers ([exn:fail:syntax? (lambda (x) #t)])
-	  (compile-syntax (datum->syntax #f 'eval))))
+  (test #t
+        'compile-syntax
+        (with-handlers ([exn:fail:syntax? (lambda (x) #t)])
+          (compile-syntax (datum->syntax #f 'eval))))
 
   (test eval 'expand (eval (expand 'eval)))
   (test eval 'expand (eval (expand eval)))
@@ -550,10 +563,10 @@
   (err/rt-test (expand-syntax 'eval))
   (err/rt-test (expand-syntax eval))
   (test eval 'expand (eval (expand-syntax #'eval)))
-  (test #t 
-	'expand-syntax
-	(with-handlers ([exn:fail:syntax? (lambda (x) #t)])
-	  (expand-syntax (datum->syntax #f 'eval))))
+  (test #t
+        'expand-syntax
+        (with-handlers ([exn:fail:syntax? (lambda (x) #t)])
+          (expand-syntax (datum->syntax #f 'eval))))
 
   (test eval 'expand-once (eval (expand-once 'eval)))
   (test eval 'expand-once (eval (expand-once eval)))
@@ -563,10 +576,10 @@
   (err/rt-test (expand-syntax-once 'eval))
   (err/rt-test (expand-syntax-once eval))
   (test eval 'expand-once (eval (expand-syntax-once #'eval)))
-  (test #t 
-	'expand-syntax-once
-	(with-handlers ([exn:fail:syntax? (lambda (x) #t)])
-	  (expand-syntax-once (datum->syntax #f 'eval))))
+  (test #t
+        'expand-syntax-once
+        (with-handlers ([exn:fail:syntax? (lambda (x) #t)])
+          (expand-syntax-once (datum->syntax #f 'eval))))
 
   (test eval 'expand-to-top-form (eval (expand-to-top-form 'eval)))
   (test eval 'expand-to-top-form (eval (expand-to-top-form eval)))
@@ -591,58 +604,58 @@
   (define (has-p? stx)
     (let ([p (syntax-property stx prop)])
       (and p
-	   (let loop ([p p])
-	     (cond
-	      [(pair? p) (or (loop (car p))
-			     (loop (cdr p)))]
-	      [else (and (identifier? p)
+           (let loop ([p p])
+             (cond
+              [(pair? p) (or (loop (car p))
+                             (loop (cdr p)))]
+              [else (and (identifier? p)
                          (eq? what (syntax-e p)))])))))
-  
+
   (let loop ([stx stx])
     (or (and (has-p? stx)
-	     (or (eq? #t where)
-		 (eq? (syntax-e stx) where)
-		 (and (pair? (syntax-e stx))
-		      (eq? (syntax-e (car (syntax-e stx)))
-			   where))))
-	(syntax-case stx (#%plain-lambda case-lambda begin begin0
+             (or (eq? #t where)
+                 (eq? (syntax-e stx) where)
+                 (and (pair? (syntax-e stx))
+                      (eq? (syntax-e (car (syntax-e stx)))
+                           where))))
+        (syntax-case stx (#%plain-lambda case-lambda begin begin0
                                          set! with-continuation-mark
                                          if #%plain-app module #%plain-module-begin
                                          define-values)
-	  [(#%plain-lambda formals expr ...)
-	   (ormap loop (syntax->list #'(expr ...)))]
-	  [(case-lambda [formals expr ...] ...)
-	   (ormap (lambda (l)
-		    (ormap loop (syntax->list l)))
-		  (syntax->list #'((expr ...) ...)))]
-	  [(let ([(id ...) rhs] ...) expr ...)
-	   (or (free-identifier=? #'let #'let-values)
-	       (free-identifier=? #'let #'letrec-values))
-	   (or (and (boolean? where)
-		    (syntax-case stx ()
-		      [(let [clause ...] expr)
-		       (ormap has-p? (syntax->list #'(clause ...)))]))
-	       (ormap loop (syntax->list #'(expr ...)))
-	       (ormap loop (syntax->list #'(rhs ...))))]
-	  [(begin expr ...)
-	   (ormap loop (syntax->list #'(expr ...)))]
-	  [(begin0 expr ...)
-	   (ormap loop (syntax->list #'(expr ...)))]
-	  [(set! id expr)
-	   (loop #'expr)]
-	  [(with-continuation-mark key val expr)
-	   (or (loop #'key) (loop #'val) (loop #'expr))]
-	  [(if test then else)
-	   (or (loop #'test) (loop #'then) (loop #'else))]
-	  [(#%plain-app expr ...)
-	   (ormap loop (syntax->list #'(expr ...)))]
-	  [(module name init body)
-	   (loop #'body)]
-	  [(#%plain-module-begin expr ...)
-	   (ormap loop (syntax->list #'(expr ...)))]
-	  [(define-values (id ...) expr)
-	   (loop #'expr)]
-	  [_ #f]))))
+          [(#%plain-lambda formals expr ...)
+           (ormap loop (syntax->list #'(expr ...)))]
+          [(case-lambda [formals expr ...] ...)
+           (ormap (lambda (l)
+                    (ormap loop (syntax->list l)))
+                  (syntax->list #'((expr ...) ...)))]
+          [(let ([(id ...) rhs] ...) expr ...)
+           (or (free-identifier=? #'let #'let-values)
+               (free-identifier=? #'let #'letrec-values))
+           (or (and (boolean? where)
+                    (syntax-case stx ()
+                      [(let [clause ...] expr)
+                       (ormap has-p? (syntax->list #'(clause ...)))]))
+               (ormap loop (syntax->list #'(expr ...)))
+               (ormap loop (syntax->list #'(rhs ...))))]
+          [(begin expr ...)
+           (ormap loop (syntax->list #'(expr ...)))]
+          [(begin0 expr ...)
+           (ormap loop (syntax->list #'(expr ...)))]
+          [(set! id expr)
+           (loop #'expr)]
+          [(with-continuation-mark key val expr)
+           (or (loop #'key) (loop #'val) (loop #'expr))]
+          [(if test then else)
+           (or (loop #'test) (loop #'then) (loop #'else))]
+          [(#%plain-app expr ...)
+           (ormap loop (syntax->list #'(expr ...)))]
+          [(module name init body)
+           (loop #'body)]
+          [(#%plain-module-begin expr ...)
+           (ormap loop (syntax->list #'(expr ...)))]
+          [(define-values (id ...) expr)
+           (loop #'expr)]
+          [_ #f]))))
 
 (test #t has-stx-property? (expand #'(let ([x 1]) 2)) 'let-values 'let 'origin)
 
@@ -652,7 +665,7 @@
 (test #t has-stx-property? (expand #'(module m scheme/base (define-struct x (a)))) 'define-syntaxes 'define-struct 'origin)
 
 ;; The s macro also expands to begin:
-(test #t has-stx-property? (expand #'(module m scheme/base 
+(test #t has-stx-property? (expand #'(module m scheme/base
                                        (require (for-syntax scheme/base))
                                        (define-syntax (s stx)
                                          #'(begin
@@ -660,7 +673,7 @@
                                              14))
                                        s))
       '#%app 's 'origin)
-(test #t has-stx-property? (expand #'(module m scheme/base 
+(test #t has-stx-property? (expand #'(module m scheme/base
                                        (require (for-syntax scheme/base))
                                        (define-syntax (s stx)
                                          #'(begin
@@ -688,10 +701,10 @@
 (test #t has-stx-property? (expand #'(let () (define-syntax (x stx) #'(quote y)) x)) 'quote 'x 'origin)
 (let ([check-expr
        (lambda (expr)
-	 (let ([e (expand expr)])
-	   (syntax-case e ()
-	     [(lv (bind ...) beg)
-	      (let ([db (syntax-property #'beg 'disappeared-binding)])
+         (let ([e (expand expr)])
+           (syntax-case e ()
+             [(lv (bind ...) beg)
+              (let ([db (syntax-property #'beg 'disappeared-binding)])
                 (let-values ([(bg e)
                               (syntax-case #'beg (#%plain-app list)
                                 [(bg () (#%plain-app list e))
@@ -731,12 +744,12 @@
 (module ++q scheme/base
   (require (for-syntax '++p
                        scheme/base))
-  (define ++d 11) 
+  (define ++d 11)
   (define-syntax (++o stx) #'++d)
   (define-syntax (++s stx)
     (syntax-case stx ()
-      [(_ id) #'(define-syntax (id stx) 
-		  (datum->syntax #'here (++goo)))]))
+      [(_ id) #'(define-syntax (id stx)
+                  (datum->syntax #'here (++goo)))]))
   (define-syntax (++t stx) (syntax-case stx () [(_ id) #'(define-values (id) ++d)]))
   (define-syntax (++t2 stx) #'(begin ++d))
   (define-syntax (++t3 stx) (syntax-property #'(begin0 ++d) 'certify-mode 'transparent))
@@ -749,14 +762,14 @@
     (syntax-case stx ()
       [(_ id) (datum->syntax #'here (add1 (syntax-local-value #'id)))]))
   (define-syntax (++o2 stx) #'(++check-val ++ds))
-  (define-syntax (++apply-to-ds stx) 
+  (define-syntax (++apply-to-ds stx)
     (syntax-case stx ()
       [(_ id) #'(id ++ds)]))
-  (define-syntax (++apply-to-d stx) 
+  (define-syntax (++apply-to-d stx)
     (syntax-case stx ()
       [(_ id) #'(id ++d)]))
   (provide ++o ++o2 ++s ++t ++t2 ++t3 ++t4 ++v ++v2 ++v3
-	   ++apply-to-d ++apply-to-ds))
+           ++apply-to-d ++apply-to-ds))
 
 (require '++q)
 (++s ++ack)
@@ -767,31 +780,31 @@
 (test 13 values (let () (++t id) 13))
 
 (let-syntax ([goo (lambda (stx)
-		    (syntax-case stx ()
-		      [(_ id) (datum->syntax #'here (sub1 (syntax-local-value #'id)))]))])
+                    (syntax-case stx ()
+                      [(_ id) (datum->syntax #'here (sub1 (syntax-local-value #'id)))]))])
   (test 16 'goo (++apply-to-ds goo)))
 
 (unless building-flat-tests?
   (test 11 eval-syntax (expand-syntax #'++o))
 
   (test 11 eval-syntax (syntax-case (expand-syntax #'++t2) ()
-			 [(_ x) #'x]))
+                         [(_ x) #'x]))
   (test 11 eval-syntax (syntax-case (expand #'(++t z)) ()
-			 [(d-v (_) x) #'x]))
+                         [(d-v (_) x) #'x]))
   (test 11 eval-syntax (syntax-case (expand-syntax #'++t3) ()
-			 [(_ x) #'x]))
+                         [(_ x) #'x]))
   (test 11 eval-syntax (syntax-case (expand #'(++t4 z)) ()
-			 [(d-v (_) x) #'x]))
+                         [(d-v (_) x) #'x]))
 
   (err/rt-test (teval (syntax-case (expand #'++v) ()
-			[(_ x) #'x]))
-	       exn:fail:syntax?)
+                        [(_ x) #'x]))
+               exn:fail:syntax?)
   (err/rt-test (teval (syntax-case (expand #'++v2) ()
-			[(_ x) #'x]))
-	       exn:fail:syntax?)
+                        [(_ x) #'x]))
+               exn:fail:syntax?)
   (err/rt-test (teval (syntax-case (expand #'++v3) ()
-			[(_ x) #'x]))
-	       exn:fail:syntax?))
+                        [(_ x) #'x]))
+               exn:fail:syntax?))
 
 (let ([expr (expand-syntax #'++v)])
   (test expr syntax-recertify expr expr (current-inspector) #f)
@@ -799,50 +812,50 @@
       (test #t syntax? new)
       (test 'no-marks syntax-e new))
     (test #t syntax? (syntax-recertify (syntax-case expr ()
-					 [(beg id) #'beg])
-				       expr (current-inspector) #f))
+                                         [(beg id) #'beg])
+                                       expr (current-inspector) #f))
     ;; we'd prefer this to fail, but it's defined to succeed:
     (test #t syntax? (syntax-recertify (syntax-case expr ()
-					 [(beg id) #'id])
-				       expr (current-inspector) #f))
+                                         [(beg id) #'id])
+                                       expr (current-inspector) #f))
     (test #t syntax? (syntax-recertify (datum->syntax expr (syntax-e expr))
-				       expr (current-inspector) #f))
+                                       expr (current-inspector) #f))
     ;; we'd prefer this to fail, but it's defined to succeed:
     (test #t syntax? (syntax-recertify (syntax-case expr ()
-					 [(beg id) #'(ack id)])
-				       expr (current-inspector) #f)))
+                                         [(beg id) #'(ack id)])
+                                       expr (current-inspector) #f)))
 
 (let ([expr (expand-syntax #'(++apply-to-d ack))])
   (test '(#%app (#%top . ack) ++d) syntax->datum expr)
   (let ([try (lambda (cvt? other)
-	       (syntax-recertify (datum->syntax 
-				  expr
-				  (cons (car (syntax-e expr))
-					((if cvt?
-					     (lambda (x) (datum->syntax
-							  (cdr (syntax-e expr))
-							  x))
-					     values)
-					 (cons
-					  other
-					  (cdr (syntax-e (cdr (syntax-e expr))))))))
-				 expr
-				 (current-inspector)
-				 #f))])
+               (syntax-recertify (datum->syntax
+                                  expr
+                                  (cons (car (syntax-e expr))
+                                        ((if cvt?
+                                             (lambda (x) (datum->syntax
+                                                          (cdr (syntax-e expr))
+                                                          x))
+                                             values)
+                                         (cons
+                                          other
+                                          (cdr (syntax-e (cdr (syntax-e expr))))))))
+                                 expr
+                                 (current-inspector)
+                                 #f))])
     (test #t syntax? (try #f #'other!))
     (let ([new (try #t #'other!)])
       (test #t syntax? new)
       (test '(#%app other! ++d) syntax->datum new))
     ;; we'd prefer this to fail, but it's defined to succeed:
     (test #t syntax? (try #t (syntax-case expr ()
-			       [(ap _ d) #'d])))))
+                               [(ap _ d) #'d])))))
 
-    
+
 ;; ----------------------------------------
 
 (module ++m scheme/base
   (require (for-syntax scheme/base))
-  (define ++x 10) 
+  (define ++x 10)
   (define-syntax (++xm stx) #'100)
   (provide (protect-out ++x ++xm)))
 (module ++n scheme/base
@@ -878,7 +891,7 @@
     (namespace-attach-module n ''++n))
 
   (parameterize ([current-code-inspector i]
-		 [current-namespace n2])
+                 [current-namespace n2])
     (namespace-require 'scheme/base)
     (teval '(require '++n))
 
@@ -895,22 +908,22 @@
     (err/rt-test (teval '++x) exn:fail:syntax?)
     (err/rt-test (teval '++xm) exn:fail:syntax?)
     (err/rt-test (teval '++y-macro2) exn:fail:syntax?)
-    
+
     (teval '(module zrt scheme/base
-	      (require '++n)
-	      (define (vy) ++y)
-	      (define (vy2) ++y-macro)
-	      (define (vu) ++u-macro)
-	      (define (vu2) ++u2)
-	      (provide vy vy2 vu vu2)))
+              (require '++n)
+              (define (vy) ++y)
+              (define (vy2) ++y-macro)
+              (define (vu) ++u-macro)
+              (define (vu2) ++u2)
+              (provide vy vy2 vu vu2)))
     (teval '(module zct scheme/base
               (require (for-syntax scheme/base
                                    '++n))
-	      (define-syntax (wy stx) (datum->syntax #'here ++y))
-	      (let-syntax ([goo ++y-macro]) 10)
-	      (define-syntax (wy2 stx) (datum->syntax #'here ++y-macro))
-	      (define-syntax (wu stx) (datum->syntax #'here ++u-macro))
-	      (provide wy wy2 wu)))
+              (define-syntax (wy stx) (datum->syntax #'here ++y))
+              (let-syntax ([goo ++y-macro]) 10)
+              (define-syntax (wy2 stx) (datum->syntax #'here ++y-macro))
+              (define-syntax (wu stx) (datum->syntax #'here ++u-macro))
+              (provide wy wy2 wu)))
 
     (teval '(require 'zct))
 
@@ -924,14 +937,14 @@
     (test 10 teval '(vy2))
     (test 8 teval '(vu))
     (test 8 teval '(vu2)))
-  
+
   (let ([old-insp (current-code-inspector)])
     (parameterize ([current-code-inspector i]
-		   [current-namespace n2])
+                   [current-namespace n2])
       (namespace-unprotect-module old-insp ''++m)))
 
   (parameterize ([current-code-inspector i]
-		 [current-namespace n2])
+                 [current-namespace n2])
     (test 10 teval '++y-macro)
     (test 10 teval '++y-macro2)))
 
@@ -953,7 +966,7 @@
     (syntax-rules ()
       [(_ get-foo)
        (define-syntax (get-foo stx)
-	 (syntax-local-value #'foo))])))
+         (syntax-local-value #'foo))])))
 (require '++//n)
 (++//def ++//get-foo)
 (test 17 values ++//get-foo)
@@ -966,12 +979,12 @@
   (syntax-case stx ()
     [(_ n)
      (if (zero? (syntax-e #'n))
-	 #'(list #f 0)
-	 (with-syntax ([m (sub1 (syntax-e #'n))])
+         #'(list #f 0)
+         (with-syntax ([m (sub1 (syntax-e #'n))])
            #`(list '#,(syntax-local-lift-context)
                    #,(syntax-local-lift-expression #'(add1 (cadr (@@foo m)))))))]))
 
-(define lifted-output #f) 
+(define lifted-output #f)
 
 (define-syntax (@@goo stx)
   (syntax-case stx ()
@@ -999,9 +1012,9 @@
     (syntax-case stx ()
       [(_ n)
        (if (zero? (syntax-e #'n))
-	   #'0
-	   (with-syntax ([m (sub1 (syntax-e #'n))])
-	     (syntax-local-lift-expression #'(add1 (@@foo m)))))]))
+           #'0
+           (with-syntax ([m (sub1 (syntax-e #'n))])
+             (syntax-local-lift-expression #'(add1 (@@foo m)))))]))
   (define-syntax (@@foox stx)
     (syntax-case stx ()
       [(_ n)
@@ -1024,7 +1037,7 @@
 (test 3
       'ls-foo
       (let-syntax ([z (lambda (stx) #`#,(@@foo 3))])
-	z))
+        z))
 
 (test (void) eval (expand #'(begin-for-syntax (define @@zoo (@@foo 2)))))
 (define-syntax (@@x stx) #`#, @@zoo)
@@ -1052,8 +1065,8 @@
     (syntax-case stx ()
       [(_ n)
        (if (zero? (syntax-e #'n))
-	   #'(list #f 0)
-	   (with-syntax ([m (sub1 (syntax-e #'n))])
+           #'(list #f 0)
+           (with-syntax ([m (sub1 (syntax-e #'n))])
              (let ([prev prev-ctx])
                (if prev
                    (unless (eq? prev (syntax-local-lift-context))
@@ -1107,45 +1120,45 @@
 
 (let ([go-once
        (lambda (eval)
-	 (parameterize ([current-namespace (make-base-namespace)])
-	   (eval '(module mm scheme/base
+         (parameterize ([current-namespace (make-base-namespace)])
+           (eval '(module mm scheme/base
                     (require (for-syntax scheme/base))
-		    (define-syntax (define$ stx)
-		      (syntax-case stx ()
-			[(_ id val)
-			 (with-syntax ([x (datum->syntax #f 'x)])
-			   #'(begin
-			       (define x val)
-			       (define-syntax (id stx) #'x)))]))
-		    (define$ a 1)
-		    (define$ b 2)
-		    (printf "~a ~a~n" a b)))
-	   (eval '(require 'mm))
-	   (eval '(current-namespace (module->namespace ''mm)))
+                    (define-syntax (define$ stx)
+                      (syntax-case stx ()
+                        [(_ id val)
+                         (with-syntax ([x (datum->syntax #f 'x)])
+                           #'(begin
+                               (define x val)
+                               (define-syntax (id stx) #'x)))]))
+                    (define$ a 1)
+                    (define$ b 2)
+                    (printf "~a ~a~n" a b)))
+           (eval '(require 'mm))
+           (eval '(current-namespace (module->namespace ''mm)))
 
-	   (eval '(define$ c 7))
-	   (test '(1 2 7) eval '(list a b c))
-	   (eval '(define$ d 8))
-	   (test '(1 2 7 8) eval '(list a b c d)))
+           (eval '(define$ c 7))
+           (test '(1 2 7) eval '(list a b c))
+           (eval '(define$ d 8))
+           (test '(1 2 7 8) eval '(list a b c d)))
 
-	 (parameterize ([current-namespace (make-base-namespace)])
-	   (eval '(module mm scheme/base
+         (parameterize ([current-namespace (make-base-namespace)])
+           (eval '(module mm scheme/base
                     (require (for-syntax scheme/base))
-		    (define-syntax (define$ stx)
-		      (syntax-case stx ()
-			[(_ id val)
-			 (with-syntax ([x (syntax-local-lift-expression #'val)])
-			   #'(define-syntax (id stx) #'x))]))
-		    (define$ a 1)
-		    (define$ b 2)
-		    (printf "~a ~a~n" a b)))
-	   (eval '(require 'mm))
-	   (eval '(current-namespace (module->namespace ''mm)))
+                    (define-syntax (define$ stx)
+                      (syntax-case stx ()
+                        [(_ id val)
+                         (with-syntax ([x (syntax-local-lift-expression #'val)])
+                           #'(define-syntax (id stx) #'x))]))
+                    (define$ a 1)
+                    (define$ b 2)
+                    (printf "~a ~a~n" a b)))
+           (eval '(require 'mm))
+           (eval '(current-namespace (module->namespace ''mm)))
 
-	   (eval '(define$ c 7))
-	   (test '(1 2 7) eval '(list a b c))
-	   (eval '(define$ d 8))
-	   (test '(1 2 7 8) eval '(list a b c d))))])
+           (eval '(define$ c 7))
+           (test '(1 2 7) eval '(list a b c))
+           (eval '(define$ d 8))
+           (test '(1 2 7 8) eval '(list a b c d))))])
   (go-once eval)
   (go-once (lambda (e) (eval (expand e)))))
 
@@ -1154,14 +1167,14 @@
 
 (test '(1 2) 'macro-nested-lexical
       (let ()
-	(define-syntax (m stx)
-	  (with-syntax ([x1 (let ([x 0]) #'x)]
-			[x2 (let ([x 0]) #'x)])
-	    #'(begin
-		(define x1 1)	
-		(define x2 2)
-		(list x1 x2))))
-	(m)))
+        (define-syntax (m stx)
+          (with-syntax ([x1 (let ([x 0]) #'x)]
+                        [x2 (let ([x 0]) #'x)])
+            #'(begin
+                (define x1 1)
+                (define x2 2)
+                (list x1 x2))))
+        (m)))
 
 (module @!$m scheme/base
   (require (for-syntax scheme/base))
@@ -1169,12 +1182,12 @@
     (syntax-case stx ()
       [(_ id)
        (with-syntax ([x1 (let ([x 0]) #'x)]
-		     [x2 (let ([x 0]) #'x)])
-	 #'(begin
-	     (define x1 10)
-	     (define x2 20)
-	     (define id (list x1 x2
-			      (list? (identifier-binding (quote-syntax x1)))))))]))
+                     [x2 (let ([x 0]) #'x)])
+         #'(begin
+             (define x1 10)
+             (define x2 20)
+             (define id (list x1 x2
+                              (list? (identifier-binding (quote-syntax x1)))))))]))
   (d @!$get)
   (provide @!$get))
 (require '@!$m)
@@ -1191,21 +1204,21 @@
                                      (define z (list b))
                                      z))])
                (goo))))))
-  
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test lazy unmarshaling of renamings and module-name resolution
 
 (let ([load-ok? #t]
       [old (current-module-name-resolver)])
   (parameterize ([current-namespace (make-base-namespace)]
-		 [current-module-name-resolver
-		  (case-lambda 
-		   [(name)
+                 [current-module-name-resolver
+                  (case-lambda
+                   [(name)
                     (if (equal? name "a")
                         (void)
                         (old name))]
-		   [(name _ __) (make-resolved-module-path 'huh?)]
-		   [(name base stx load?)
+                   [(name _ __) (make-resolved-module-path 'huh?)]
+                   [(name base stx load?)
                     (if (equal? name "a")
                         (begin
                           (unless load-ok?
@@ -1213,43 +1226,43 @@
                           (make-resolved-module-path 'a))
                         (old name base stx load?))])])
     (let ([a-code '(module a scheme/base
-		     (provide x y)
-		     (define x 1)
-		     (define y #'x))])
+                     (provide x y)
+                     (define x 1)
+                     (define y #'x))])
       (eval a-code)
       (let ([b-code (let ([p (open-output-bytes)])
-		      (write (compile
-			      '(module b scheme/base
-				 (require "a")
-				 (provide f)
-				 (define (f) #'x)))
-			     p)
-		      (lambda ()
-			(parameterize ([read-accept-compiled #t])
-			  (read (open-input-bytes (get-output-bytes p))))))]
-	    [x-id (parameterize ([current-namespace (make-base-namespace)])
+                      (write (compile
+                              '(module b scheme/base
+                                 (require "a")
+                                 (provide f)
+                                 (define (f) #'x)))
+                             p)
+                      (lambda ()
+                        (parameterize ([read-accept-compiled #t])
+                          (read (open-input-bytes (get-output-bytes p))))))]
+            [x-id (parameterize ([current-namespace (make-base-namespace)])
                     (printf "here\n")
-		    (eval a-code)
-		    (eval '(require 'a))
-		    (eval '#'x))])
-	(eval (b-code))
-	(eval '(require 'b))
-	(set! load-ok? #f)
-	(test #f eval '(free-identifier=? (f) #'x))
-	(test #t eval `(free-identifier=? (f) (quote-syntax ,x-id)))
-	(eval '(require 'a))
-	(test #t eval '(free-identifier=? (f) #'x))
-	(test #t eval `(free-identifier=? (f) (quote-syntax ,x-id)))
-	(parameterize ([current-namespace (make-base-namespace)])
-	  (eval '(module a scheme/base
-		   (provide y)
-		   (define y 3)))
-	  (set! load-ok? #t)
-	  (eval (b-code))
-	  (eval '(require 'b))
-	  (set! load-ok? #f)
-	  (test #t eval '(free-identifier=? (f) #'x))
-	  (test #f eval `(free-identifier=? (f) (quote-syntax ,x-id))))))))
+                    (eval a-code)
+                    (eval '(require 'a))
+                    (eval '#'x))])
+        (eval (b-code))
+        (eval '(require 'b))
+        (set! load-ok? #f)
+        (test #f eval '(free-identifier=? (f) #'x))
+        (test #t eval `(free-identifier=? (f) (quote-syntax ,x-id)))
+        (eval '(require 'a))
+        (test #t eval '(free-identifier=? (f) #'x))
+        (test #t eval `(free-identifier=? (f) (quote-syntax ,x-id)))
+        (parameterize ([current-namespace (make-base-namespace)])
+          (eval '(module a scheme/base
+                   (provide y)
+                   (define y 3)))
+          (set! load-ok? #t)
+          (eval (b-code))
+          (eval '(require 'b))
+          (set! load-ok? #f)
+          (test #t eval '(free-identifier=? (f) #'x))
+          (test #f eval `(free-identifier=? (f) (quote-syntax ,x-id))))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  certification example from the manual
@@ -1257,7 +1270,7 @@
 (module @-m scheme/base
   (require (for-syntax scheme/base))
   (provide def-go)
-  (define (unchecked-go n x) 
+  (define (unchecked-go n x)
     (+ n 17))
   (define-syntax (def-go stx)
    (syntax-case stx ()
@@ -1275,19 +1288,20 @@
 (require '@-n)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Propagating inactive certificates through a transparent macro-expansion result:
+;; Propagating inactive certificates through a transparent macro-expansion
+;; result:
 
 (module @!m scheme/base
   (require (for-syntax scheme/base))
   (provide define-x)
-  
+
   (define-syntax (define-x stx)
     (syntax-case stx ()
       [(_ x)
        #'(define-syntax (x stx)
            #'(begin
                (define-y y 10)))]))
-  
+
   (define-syntax define-y
     (syntax-rules ()
       [(_ id v)
@@ -1305,25 +1319,25 @@
 
 (module @w@ scheme/base
   (define add '+)
-  
+
   (provide (rename-out [add plus])))
 
 (module @q@ scheme/base
   (require (for-syntax scheme/base))
   (provide result)
-  
+
   (define-for-syntax a #'plus)
   (define-for-syntax b #'plus)
 
   (define-for-syntax accum null)
-  
-  (begin-for-syntax 
+
+  (begin-for-syntax
    (set! accum (cons (free-identifier=? a #'plus)
                      accum)))
 
   (require '@w@)
 
-  (begin-for-syntax 
+  (begin-for-syntax
    (set! accum (list*
                 (free-identifier=? a #'plus)
                 (free-identifier=? b #'plus)
@@ -1370,8 +1384,8 @@
     (let-syntax ([ref-x (lambda (stx)
                           #`(quote-syntax #,(get-x)))])
       (ref-x)))
-  
-  (with-output-to-file tmp10 
+
+  (with-output-to-file tmp10
     #:exists 'append
     (lambda ()
       (printf "~s\n" (foo)))))
@@ -1405,7 +1419,7 @@
 (module @simp@ scheme/base
 
   (require (for-syntax scheme/base))
-  
+
   (define-syntax-rule (foo)
     (begin
       (define-for-syntax goo #'intro)
@@ -1414,7 +1428,7 @@
         #`(quote #,(identifier-binding goo)))
       (define @simp@tst (extract))
       (provide @simp@tst)))
-  
+
   (foo))
 (require '@simp@)
 
