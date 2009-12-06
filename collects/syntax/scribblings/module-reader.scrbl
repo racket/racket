@@ -51,7 +51,7 @@ creates a reader that converts @scheme[#,(hash-lang)_something] into
 ]
 
 where @scheme[_name-id] is derived from the name of the port used by
-the reader.
+the reader, or @scheme[anonymous-module] if the port has no name.
 
 For example, @scheme[scheme/base/lang/reader] is implemented as
 
