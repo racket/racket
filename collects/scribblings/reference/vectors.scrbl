@@ -184,7 +184,7 @@ Applies @scheme[proc] to the elements of the @scheme[vec]s from the
 v
 ]}
 
-@defproc[(vector-append [lst list?] ...) list?]{
+@defproc[(vector-append [vec vector?] ...) vector?]{
 
 Creates a fresh vector that contains all
 of the elements of the given vectors in order. 
@@ -194,19 +194,19 @@ of the elements of the given vectors in order.
 }
 
 
-@defproc[(vector-take [vec vector?] [pos exact-nonnegative-integer?]) list?]{
+@defproc[(vector-take [vec vector?] [pos exact-nonnegative-integer?]) vector?]{
 Returns a fresh vector whose elements are the first @scheme[pos] elements of
 @scheme[vec].  If @scheme[vec] has fewer than
-@scheme[pos] elements, the @exnraise[exn:fail:contract].
+@scheme[pos] elements, then the @exnraise[exn:fail:contract].
 
 @mz-examples[#:eval vec-eval
  (vector-take #(1 2 3 4) 2)
 ]}
 
-@defproc[(vector-take-right [vec vector?] [pos exact-nonnegative-integer?]) list?]{
+@defproc[(vector-take-right [vec vector?] [pos exact-nonnegative-integer?]) vector?]{
 Returns a fresh vector whose elements are the last @scheme[pos] elements of
 @scheme[vec].  If @scheme[vec] has fewer than
-@scheme[pos] elements, the @exnraise[exn:fail:contract].
+@scheme[pos] elements, then the @exnraise[exn:fail:contract].
 
 @mz-examples[#:eval vec-eval
  (vector-take-right #(1 2 3 4) 2)
@@ -215,7 +215,7 @@ Returns a fresh vector whose elements are the last @scheme[pos] elements of
 @defproc[(vector-drop [vec vector?] [pos exact-nonnegative-integer?]) vector?]{
 Returns a fresh vector whose elements are the elements of @scheme[vec]
  after the first @scheme[pos] elements.  If @scheme[vec] has fewer
- than @scheme[pos] elements, the @exnraise[exn:fail:contract].
+ than @scheme[pos] elements, then the @exnraise[exn:fail:contract].
 
 @mz-examples[#:eval vec-eval
  (vector-drop #(1 2 3 4) 2)
@@ -224,7 +224,7 @@ Returns a fresh vector whose elements are the elements of @scheme[vec]
 @defproc[(vector-drop-right [vec vector?] [pos exact-nonnegative-integer?]) vector?]{
 Returns a fresh vector whose elements are the elements of @scheme[vec]
  before the first @scheme[pos] elements.  If @scheme[vec] has fewer
- than @scheme[pos] elements, the @exnraise[exn:fail:contract].
+ than @scheme[pos] elements, then the @exnraise[exn:fail:contract].
 
 @mz-examples[#:eval vec-eval
  (vector-drop-right #(1 2 3 4) 2)
@@ -288,11 +288,11 @@ returns @scheme[#f].
 ]}
 
 
-@defproc[(vector-count [proc procedure?] [lst list?] ...+)
-         list?]{
+@defproc[(vector-count [proc procedure?] [vec vector?] ...+)
+         exact-nonnegative-integer?]{
 
-Returns @scheme[(vector-length (vector-filter proc lst ...))], but
-without building the intermediate list.
+Returns the number of elements of the @scheme[vec ...] (taken in
+parallel) on which @scheme[proc] does not evaluate to @scheme[#f].
 
 @mz-examples[#:eval vec-eval
 (vector-count even? #(1 2 3 4 5))
