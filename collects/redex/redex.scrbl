@@ -128,7 +128,7 @@ in the grammar are terminals.
 
 @itemize[
 
-@item{The @defpattech[any] @pattern matches any sepxression.
+@item{The @defpattech[any] @pattern matches any sexpression.
 This @pattern may also be suffixed with an underscore and another
 identifier, in which case they bind the full name (as if it
 were an implicit @pattech[name] @pattern) and match the portion
@@ -192,9 +192,9 @@ symbol except those that are used as literals elsewhere in
 the language.
 }
 
-@item{The @defpattech[hole] @pattern matches anything when inside a matching
+@item{The @defpattech[hole] @pattern matches anything when inside
 the first argument to an @pattech[in-hole] @|pattern|. Otherwise, 
-it matches only the hole.
+it matches only a hole.
 }
 
 @item{The @defpattech[symbol] @pattern stands for a literal symbol that must
