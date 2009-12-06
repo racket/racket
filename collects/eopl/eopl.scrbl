@@ -4,7 +4,7 @@
           scheme/list
           (for-label eopl/eopl
                      scheme/contract
-                     (only-in scheme printf pretty-print)))
+                     (only-in scheme printf pretty-print delay force)))
 
 @(define-syntax-rule (def-mz id)
    (begin
