@@ -190,7 +190,7 @@
                    (let-values ([(base name dir?) (split-path p-name)])
                      (string->symbol
                       (path->string (path-replace-suffix name #""))))
-                   'page)]
+                   'anonymous-module)]
            [tag-src (lambda (v)
                       (if stx?
                         (datum->syntax
