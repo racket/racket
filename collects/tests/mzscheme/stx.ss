@@ -469,6 +469,7 @@
   (let ([b (identifier-binding s)])
     (if (list? b)
         (list* (let-values ([(name base) (module-path-index-split (car b))])
+                 (fprintf (current-error-port) ">>>>base = ~s\n" base)
                  name)
                (cadr b)
                (let-values ([(name base) (module-path-index-split (caddr b))])
@@ -478,7 +479,7 @@
 
 (test '('#%kernel case-lambda (lib "scheme/init") case-lambda 0 0 0)
       identifier-binding* #'case-lambda)
-(test '(scheme/promise delay* (lib "scheme/init") delay 0 0 0)
+(test '("private/promise.ss" delay* (lib "scheme/init") delay 0 0 0)
       identifier-binding* #'delay)
 (test '('#%kernel #%module-begin (lib "scheme/init") #%plain-module-begin 0 0 0)
       identifier-binding* #'#%plain-module-begin)
