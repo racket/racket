@@ -213,6 +213,9 @@
      [((~and kw t:U) ts ...)
       (add-type-name-reference #'kw)
       (apply Un (map parse-type (syntax->list #'(ts ...))))]
+     [((~and kw quote) (t1 . t2))
+      (add-type-name-reference #'kw)
+      (-pair (parse-type #'(quote t1)) (parse-type #'(quote t2)))]
      [((~and kw quote) t)
       (add-type-name-reference #'kw)
       (-val (syntax->datum #'t))]
