@@ -103,12 +103,20 @@ subsequent add) will not be performed until the @scheme[touch] call.
 
 @section[#:tag "logging"]{How Do I Keep Those Cores Busy?}
 
-Because it is not always obvious when or where unsafe operations may
-be causing unacceptable performance degradation in parallel programs,
-futures can be configured to generate trace output using the standard
-logging command-line switches.  This output can tell us which
-operations a given future is waiting on at a particular point during
-the program run.  For example, running the code in the previous
+It is not always obvious when or where unsafe operations may
+be causing unacceptable performance degradation in parallel programs.
+A a general guideline, any primitive that is inlined will run in parallel.
+For example, fixnum and flonum addition do run in parallel,
+but not bignum or rational addition. Similarly, vector operations are
+generally safe, but not continuation operations. Also, allocation can run
+in parallel, as long as only a little bit of allocation happens. Once a significant
+amount of allocation happens, a parallel thread has to rendez-vous with the
+runtime thread to get new, local memory.
+
+To help tell what is happening in your program, the parallel threads
+logs all of the points at which it has to syncronize
+with the runtime thread.
+For example, running the code in the previous
 example in the debug log level produces the following output:
 
 @verbatim|{
@@ -117,6 +125,9 @@ example in the debug log level produces the following output:
   Adding 4 and 8 together!
   12
 }|
+
+The message indicates which future blocked, the time it blocked and
+the primitive operation that caused it to block.
 
 To be sure we are not merely seeing the effects of a race condition in
 this example, we can force the main thread to @scheme[sleep] for an
