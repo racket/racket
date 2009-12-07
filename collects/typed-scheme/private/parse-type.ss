@@ -215,7 +215,7 @@
       (apply Un (map parse-type (syntax->list #'(ts ...))))]
      [((~and kw quote) t)
       (add-type-name-reference #'kw)
-      (-val (syntax-e #'t))]
+      (-val (syntax->datum #'t))]
      #;
      [(All-kw . rest)
       #:fail-unless (eq? 'All (syntax-e #'All-kw)) #f

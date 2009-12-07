@@ -96,6 +96,7 @@
    [#t (-val #t)]
    [#f (-val #f)]
    ["foo" (-val "foo")]
+   ['(1 2 3) (-val '(1 2 3))]
    
    [(Listof Number) (make-Listof  N)]
    
