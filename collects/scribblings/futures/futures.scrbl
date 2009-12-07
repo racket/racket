@@ -114,7 +114,7 @@ amount of allocation happens, a parallel thread has to rendez-vous with the
 runtime thread to get new, local memory.
 
 To help tell what is happening in your program, the parallel threads
-logs all of the points at which it has to syncronize
+logs all of the points at which it has to synchronize
 with the runtime thread.
 For example, running the code in the previous
 example in the debug log level produces the following output:
