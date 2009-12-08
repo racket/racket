@@ -1,20 +1,19 @@
 #lang scheme/base
-(require (for-syntax file/gunzip scheme/base))
-(provide decode)
+(require (for-syntax scheme/base file/gunzip net/base64))
+(provide (except-out (all-from-out scheme/base) #%module-begin)
+         (rename-out [module-begin #%module-begin]))
 
-(define-syntax (decode stx)
-  (define (decode stxs)
-    (define str
-      (apply string-append (map (λ (x) (symbol->string (syntax-e x))) stxs)))
-    (define loc
-      (if (even? (string-length str))
-        (for/list ([i (in-range 0 (string-length str) 2)])
-          (string->number (substring str i (+ i 2)) 16))
-        (error 'decode "missing digit somewhere")))
-    (define-values (p-in p-out) (make-pipe))
-    (inflate (open-input-bytes (apply bytes loc)) p-out)
-    (read p-in))
+(define-syntax (module-begin stx)
   (syntax-case stx ()
     [(_ x ...)
-     (andmap identifier? (syntax->list #'(x ...)))
-     (datum->syntax stx (decode (syntax->list #'(x ...))) stx)]))
+     (andmap (lambda (x) (or identifier? (integer? (syntax-e x))))
+             (syntax->list #'(x ...)))
+     (let* ([data  (format "~a" (syntax->datum #'(x ...)))]
+            [data  (substring data 1 (sub1 (string-length data)))]
+            [data  (string->bytes/utf-8 data)]
+            [in    (open-input-bytes (base64-decode data))]
+            [out   (open-output-string)]
+            [out   (begin (inflate in out) (get-output-string out))]
+            [exprs (read (open-input-string (string-append "(" out ")")))]
+            [exprs (datum->syntax stx exprs stx)])
+       #`(#%module-begin #,@exprs))]))

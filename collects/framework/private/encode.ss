@@ -1,67 +1,43 @@
 #lang scheme/base
-(require mzlib/deflate
-         mzlib/match
-         mzlib/pretty)
-(require (for-syntax mzlib/inflate
-                     mzlib/string))
+(require scheme/cmdline scheme/string scheme/match scheme/pretty
+         file/gzip file/gunzip net/base64)
 
-(provide encode-sexp
-         encode-module)
+(define (encode-exprs exprs)
+  (define in
+    (open-input-string
+     (string-join (map (lambda (x) (format "~s" x)) exprs) " ")))
+  (define out (open-output-bytes))
+  (deflate in out)
+  (base64-encode (get-output-bytes out)))
 
-(define (encode-module in-filename out-filename)
-  (call-with-input-file in-filename
-    (λ (port)
-      (let ([mod (read port)])
-        (unless (eof-object? (read port))
-          (error 'encode-module "found an extra expression"))
-        (match mod 
-          [`(module ,m mzscheme ,@(bodies ...))
-           (call-with-output-file out-filename
-             (λ (oport)
-               (let ([chopped (chop-up (encode-sexp `(begin ,@bodies)))])
-                 (fprintf oport "(module ~a mzscheme\n" m)
-                 (fprintf oport "  (require framework/private/decode)\n")
-                 (fprintf oport "  (decode ~a" (car chopped))
-                 (for-each (lambda (chopped)
-                             (fprintf oport "\n          ~a" chopped))
-                           (cdr chopped))
-                 (fprintf oport "))\n")))
-             'truncate 'text)]
-          [else (error 'encode-module "cannot parse module")])))))
+(define (encode-module)
+  (define mod (parameterize ([read-accept-reader #t]) (read)))
+  (when (eof-object? mod) (error 'encode-module "missing module"))
+  (match mod
+    [(list 'module m 'scheme/base (list '#%module-begin exprs ...))
+     (write-bytes #"#lang s-exp framework/private/decode\n")
+     (write-bytes (regexp-replace* #rx"\r\n" (encode-exprs exprs) #"\n"))]
+    [else (error 'encode-module "cannot parse module, must use scheme/base")]))
 
-(define (chop-up sym)
-  (let ([chopping-point 50])
-    (let loop ([str (symbol->string sym)])
-      (cond
-        [(<= (string-length str) chopping-point)
-         (list (string->symbol str))]
-        [else
-         (cons (string->symbol (substring str 0 chopping-point))
-               (loop (substring str chopping-point (string-length str))))]))))
+(define (decode-module)
+  (define mod (parameterize ([read-accept-reader #t]) (read)))
+  (when (eof-object? mod) (error 'encode-module "missing module"))
+  (match mod
+    [(list 'module m 'framework/private/decode
+           (list '#%module-begin exprs ...))
+     (write-bytes #"#lang scheme/base\n")
+     (let* ([data  (format "~a" exprs)]
+            [data  (substring data 1 (sub1 (string-length data)))]
+            [data  (string->bytes/utf-8 data)]
+            [in    (open-input-bytes (base64-decode data))]
+            [out   (open-output-string)]
+            [out   (begin (inflate in out) (get-output-string out))]
+            [exprs (read (open-input-string (string-append "(" out ")")))])
+       (for ([expr (in-list exprs)])
+         (pretty-print expr)))]
+    [else (error 'decode-module "cannot parse module, must use scheme/base")]))
 
-(define (encode-sexp sexp)
-  (define (str->sym string)
-    (string->symbol
-     (apply 
-      string-append
-      (map
-       (λ (x) 
-         (to-hex x))
-       (bytes->list string)))))
-  
-  (define (to-hex n)
-    (let ([digit->hex
-           (λ (d)
-             (cond
-               [(<= d 9) d]
-               [else (integer->char (+ d -10 (char->integer #\a)))]))])
-      (cond
-        [(< n 16) (format "0~a" (digit->hex n))]
-        [else (format "~a~a" 
-                      (digit->hex (quotient n 16))
-                      (digit->hex (modulo n 16)))])))
-  
-  (let ([in (open-input-string (format "~s" sexp))]
-        [out (open-output-bytes)])
-    (deflate in out)
-    (str->sym (get-output-bytes out))))
+(command-line #:once-any
+              ["-e" "encode" (encode-module) (exit)]
+              ["-d" "decode" (decode-module) (exit)])
+(printf "Use `-h' for help\n")
