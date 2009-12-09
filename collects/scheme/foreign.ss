@@ -1271,9 +1271,9 @@
   (unless (= (ctype-sizeof to-type)
              (ctype-sizeof from-type))
     (raise-mismatch-error 'cast
-                          (format "representation sizes of types differ: ~e to "
-                                  from-type)
-                          to-type))
+                          (format "representation sizes of from and to types differ: ~e and "
+                                  (ctype-sizeof from-type))
+                          (ctype-sizeof to-type)))
   (let ([p2 (malloc from-type)])
     (ptr-set! p2 from-type p)
     (ptr-ref p2 to-type)))
