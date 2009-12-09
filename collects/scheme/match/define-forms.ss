@@ -2,6 +2,7 @@
 
 (require (for-syntax scheme/base
                      unstable/syntax
+                     unstable/sequence
                      syntax/parse
                      "parse.ss"
                      "parse-helper.ss"
@@ -77,18 +78,19 @@
           #'(let () body1 body ...)]
          [(_ ([pat exp] rest-pats ...) body1 body ...)
           #`(match*/derived 
-             #,stx
              (exp)
+             #,stx
              [(pat) #,(syntax/loc stx (match-let* (rest-pats ...) body1 body ...))])]))
 
      (define-syntax (match-letrec stx)
        (syntax-parse stx
          [(_ ((~and cl [pat exp]) ...) body1 body ...)
-          (syntax/loc stx (let () 
+          (quasisyntax/loc stx
+			   (let () 
                             #,@(for/list ([c (in-syntax #'(cl ...))]
                                           [p (in-syntax #'(pat ...))]
                                           [e (in-syntax #'(exp ...))])
-                                 (syntax/loc c (match-define p e)))
+                                 (quasisyntax/loc c (match-define #,p #,e)))
                             body1 body ...))]))
 
      (define-syntax (match-define stx)
