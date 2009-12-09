@@ -1,14 +1,22 @@
 #lang scheme/base
 
 (require "patterns.ss" "compiler.ss"
-         syntax/stx scheme/nest
+         syntax/stx scheme/nest syntax/parse
          (for-template scheme/base (only-in "runtime.ss" match:error)))
 
-(provide go)
+(provide go go/one)
+
+;; this transforms `match'-style clauses into ones acceptable to `go'
+;; go : syntax syntax syntax [certifier] -> syntax
+(define (go/one parse/cert stx expr clauses [cert (syntax-local-certifier)])
+  (syntax-parse clauses
+    [([p . rhs] ...) 
+     (go parse/cert stx (quasisyntax/loc expr (#,expr))
+         #'([(p) . rhs] ...) cert)]))
 
 ;; this parses the clauses using parse/cert, then compiles them
-;; go : syntax syntax syntax certifier -> syntax
-(define (go parse/cert stx exprs clauses cert)
+;; go : syntax syntax syntax [certifier] -> syntax
+(define (go parse/cert stx exprs clauses [cert (syntax-local-certifier)])
   (syntax-case clauses ()
     [([pats . rhs] ...)
      (nest
