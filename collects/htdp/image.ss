@@ -407,7 +407,7 @@ plt/collects/tests/mzscheme/htdp-image.ss
   (cond
     [(string=? str "")
      (let-values ([(tw th) (get-text-size size "dummyX")])
-       (rectangle 0 th 'solid 'black))]
+       (put-pinhole (rectangle 0 th 'solid 'black) 0 0))]
     [else
      (let ([color (make-color% color-in)])
        (let-values ([(tw th) (get-text-size size str)])

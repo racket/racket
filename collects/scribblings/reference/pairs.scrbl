@@ -878,12 +878,12 @@ without building the intermediate list.
 ]}
 
 @defproc[(count [proc procedure?] [lst list?] ...+)
-         list?]{
+         exact-nonnegative-integer?]{
 
-Returns @scheme[(length (filter proc lst ...))], but
-without building the intermediate list.
+Returns @scheme[(length (filter proc lst ...))], but without building
+the intermediate list.
 
-@mz-examples[
+@mz-examples[#:eval list-eval
 (count positive? '(1 -1 2 3 -2 5))
 ]}
 

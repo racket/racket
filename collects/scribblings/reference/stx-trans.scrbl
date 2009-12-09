@@ -63,7 +63,7 @@ is identified by the @scheme[prop:set!-transformer] property of
 
 @defthing[prop:set!-transformer struct-type-property?]{
 
-A @tech{structure type property} to indentify structure types that act
+A @tech{structure type property} to identify structure types that act
 as @tech{assignment transformers} like the ones created by
 @scheme[make-set!-transformer].
 
@@ -133,7 +133,7 @@ create @scheme[transformer] or as indicated by a
 
 @defthing[prop:rename-transformer struct-type-property?]{
 
-A @tech{structure type property} to indentify structure types that act
+A @tech{structure type property} to identify structure types that act
 as @tech{rename transformers} like the ones created by
 @scheme[make-rename-transformer].
 
@@ -576,8 +576,9 @@ exports of the module.
 
 Returns @scheme[id-stx] if no binding in the current expansion context
 shadows @scheme[id-stx] (ignoring unsealed @tech{internal-definition
-contexts}), if @scheme[id-stx] has no module bindings in its lexical
-information, and if the current expansion context is not a
+contexts} and identifiers that had the @indexed-scheme['unshadowable]
+@tech{syntax property}), if @scheme[id-stx] has no module bindings in
+its lexical information, and if the current expansion context is not a
 @tech{module context}.
 
 If a binding of @scheme[inner-identifier] shadows @scheme[id-stx], the

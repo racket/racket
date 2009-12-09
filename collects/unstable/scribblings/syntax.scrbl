@@ -88,6 +88,20 @@ expression.
 
 @;{----}
 
+@defform[(define/with-syntax pattern expr)]{
+
+Definition form of @scheme[with-syntax]. That is, it matches the
+syntax object result of @scheme[expr] against @scheme[pattern] and
+creates pattern variable definitions for the pattern variables of
+@scheme[pattern].
+
+@examples[#:eval the-eval
+(define/with-syntax (px ...) #'(a b c))
+(define/with-syntax (tmp ...) (generate-temporaries #'(px ...)))
+#'([tmp px] ...)
+]
+}
+
 @defform[(define-pattern-variable id expr)]{
 
 Evaluates @scheme[expr] and binds it to @scheme[id] as a pattern
@@ -232,6 +246,50 @@ in the argument list are automatically converted to symbols.
 
 (Scribble doesn't show it, but the DrScheme pinpoints the location of
 the second error but not of the first.)
+}
+
+@defproc[(internal-definition-context-apply [intdef-ctx internal-definition-context?]
+                                            [stx syntax?])
+         syntax?]{
+
+Applies the renamings of @scheme[intdef-ctx] to @scheme[stx].
+
+}
+
+@defproc[(syntax-local-eval [stx syntax?]
+                            [intdef-ctx (or/c internal-definition-context? #f) #f])
+         any]{
+
+Evaluates @scheme[stx] as an expression in the current transformer
+environment (that is, at phase level 1), optionally extended with
+@scheme[intdef-ctx].
+
+@examples[#:eval the-eval
+(define-syntax (show-me stx)
+  (syntax-case stx ()
+    [(show-me expr)
+     (begin
+       (printf "at compile time produces ~s\n"
+               (syntax-local-eval #'expr))
+       #'(printf "at run time produes ~s\n"
+                 expr))]))
+(show-me (+ 2 5))
+(define-for-syntax fruit 'apple)
+(define fruit 'pear)
+(show-me fruit)
+#|
+(define-syntax (show-me* stx)
+  (syntax-case stx ()
+    [(show-me expr1)
+     (call-with-values (lambda () (syntax-local-eval #'expr1))
+                       (lambda vals
+                         (with-syntax ([vals vals])
+                           #'(quote vals))))]))
+(define-for-syntax (sum-and-difference a b)
+  (values (+ a b) (- a b)))
+(show-me* (sum-and-difference 12 9))
+|#
+]
 }
 
 @addition{Sam Tobin-Hochstadt}

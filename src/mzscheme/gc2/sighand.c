@@ -1,6 +1,6 @@
 /* 
    Provides:
-      initialize_signal_handler();
+      initialize_signal_handler(GCTYPE *gc)
       remove_signal_handler();
    Requires:
       generations_available - mutable int, Windows only
@@ -41,6 +41,8 @@ static void launchgdb() {
 void fault_handler(int sn, struct siginfo *si, void *ctx)
 {
   void *p = si->si_addr;
+  int c = si->si_code;
+  int m = 0;
   if (si->si_code != SEGV_ACCERR) { /*SEGV_MAPERR*/
     printf("SIGSEGV fault on %p\n", p);
 #if WAIT_FOR_GDB
@@ -51,6 +53,12 @@ void fault_handler(int sn, struct siginfo *si, void *ctx)
 
   if (!designate_modified(p)) {
     if (si->si_code == SEGV_ACCERR) {
+#ifdef MZ_USE_PLACES
+      if(pagemap_find_page(MASTERGC->page_maps, p)) {
+        m = 1;
+        printf("OWNED BY MASTER %p\n", p);
+      }
+#endif
       printf("mprotect fault on %p\n", p);
     }
     else {
@@ -139,7 +147,11 @@ void fault_handler(int sn, siginfo_t *si, void *ctx)
 static void initialize_signal_handler(GCTYPE *gc)
 {
 # ifdef NEED_OSX_MACH_HANDLER
-  macosx_init_exception_handler();
+#  if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  macosx_init_exception_handler(MASTERGC == 0);
+#  else
+  macosx_init_exception_handler(1);
+#  endif
 # endif
 # ifdef NEED_SIGACTION
   {

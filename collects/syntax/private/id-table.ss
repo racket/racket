@@ -4,6 +4,7 @@
          scheme/dict)
 (provide id-table-position?)
 
+#|
 (require (rename-in scheme/base [car s:car]))
 (define-syntax (car stx)
   (syntax-case stx ()
@@ -13,7 +14,7 @@
                                     '#,(syntax-line stx)
                                     '#,(syntax-column stx))))
               (s:car x))]))
-
+|#
 
 (define-struct id-table-position (a b))
 

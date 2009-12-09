@@ -59,8 +59,8 @@ instead of this scaling code, we use the dc<%>'s scaling code.
          [h (send bm get-height)]
          [bytes (make-bytes (* w h NUM-CHANNELS) 0)])
     (send bm get-argb-pixels 0 0 w h bytes #f)
-    (when (send bm get-loaded-mask)
-      (send (send bm get-loaded-mask) get-argb-pixels 0 0 w h bytes #t))
+    (when mask
+      (send mask get-argb-pixels 0 0 w h bytes #t))
     (values bytes w h)))
 
 (define (bytes->bitmap bytes w h)

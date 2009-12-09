@@ -40,8 +40,20 @@ multiple returns/escapes are impossible. All exceptions raised by
 Breaks are disabled from the time the exception is raised until the
 exception handler obtains control, and the handler itself is
 @scheme[parameterize-break]ed to disable breaks initially; see
-@secref["breakhandler"] for more information on breaks.}
+@secref["breakhandler"] for more information on breaks.
 
+@examples[
+(with-handlers ([number? (lambda (n)
+                           (+ n 5))])
+  (raise 18 #t))
+(define-struct (my-exception exn:fail:user) ())
+(with-handlers ([my-exception? (lambda (e)
+                                 #f)])
+  (+ 5 (raise (make-my-exception
+                "failed"
+                (current-continuation-marks)))))
+(raise 'failed #t)
+]}
 
 @defproc*[([(error [sym symbol?]) any]
            [(error [msg string?][v any/c] ...) any]
@@ -72,7 +84,13 @@ ways:
 ]
 
 In all cases, the constructed message string is passed to
-@scheme[make-exn:fail], and the resulting exception is raised.}
+@scheme[make-exn:fail], and the resulting exception is raised.
+
+@examples[
+(error 'failed)
+(error "failed" 23 'pizza (list 1 2 3))
+(error 'failed "~a failed because ~a" 'method-a "no argument supplied")
+]}
 
 @defproc*[([(raise-user-error [sym symbol?]) any]
            [(raise-user-error [msg string?][v any/c] ...) any]
@@ -83,7 +101,13 @@ Like @scheme[error], but constructs an exception with
 default @tech{error display handler} does not show a ``stack trace'' for
 @scheme[exn:fail:user] exceptions (see @secref["contmarks"]), so
 @scheme[raise-user-error] should be used for errors that are intended
-for end users.}
+for end users.
+
+@examples[
+(raise-user-error 'failed)
+(raise-user-error "failed" 23 'pizza (list 1 2 3))
+(raise-user-error 'failed "~a failed because ~a" 'method-a "no argument supplied")
+]}
 
 
 @defproc*[([(raise-type-error [name symbol?][expected string?][v any/c]) any]
@@ -102,7 +126,20 @@ In the second form, the bad argument is indicated by an index
 arguments @scheme[v] are provided (in order). The resulting error
 message names the bad argument and also lists the other arguments. If
 @scheme[bad-pos] is not less than the number of @scheme[v]s, the
-@exnraise[exn:fail:contract].}
+@exnraise[exn:fail:contract].
+
+@examples[
+(define (feed-cow animal)
+  (if (not (eq? animal 'cow))
+    (raise-type-error 'feed-cow "cow" animal)
+    "fed the cow"))
+(feed-cow 'turkey)
+(define (feed-animals cow sheep goose cat)
+  (if (not (eq? goose 'goose))
+    (raise-type-error 'feed-animals "goose" 2 cow sheep goose cat)
+    "fed the animals"))
+(feed-animals 'cow 'sheep 'dog 'cat)
+]}
 
 @defproc[(raise-mismatch-error [name symbol?][message string?][v any/c]) any]{
 

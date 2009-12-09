@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require (for-label (except-in lazy delay force)
                      (only-in lazy/force ! !! !list !!list)
-                     scheme/contract))
+                     scheme/contract
+                     (only-in scheme/promise promise?)))
 
 @(define-syntax-rule (deflazy mod def id)
    (begin

@@ -57,23 +57,28 @@ void scheme_init_numcomp(Scheme_Env *env)
   Scheme_Object *p;
 
   p = scheme_make_folding_prim(eq, "=", 2, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("=", p, env);
 
   p = scheme_make_folding_prim(lt, "<", 2, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_BINARY_INLINED);
   scheme_add_global_constant("<", p, env);
 
   p = scheme_make_folding_prim(gt, ">", 2, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant(">", p, env);
 
   p = scheme_make_folding_prim(lt_eq, "<=", 2, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("<=", p, env);
 
   p = scheme_make_folding_prim(gt_eq, ">=", 2, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant(">=", p, env);
 
   p = scheme_make_folding_prim(zero_p, "zero?", 1, 1, 1);
@@ -89,11 +94,13 @@ void scheme_init_numcomp(Scheme_Env *env)
   scheme_add_global_constant("negative?", p, env);
 
   p = scheme_make_folding_prim(sch_max, "max", 1, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("max", p, env);
 
   p = scheme_make_folding_prim(sch_min, "min", 1, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("min", p, env);
 }
 

@@ -574,6 +574,11 @@ Shows the interactions window
 Returns the currently active tab.
 
 }
+                                          
+@defmethod[(open-in-new-tab [filename (or/c path-string? #f)]) void?]{
+  Opens a new tab in this frame. If @scheme[filename] is a @scheme[path-string?],
+  It loads that file in the definitions window of the new tab.
+}
 
 @defmethod[#:mode public-final (close-current-tab) void?]{
   Closes the current tab, making some other tab visible.

@@ -1,5 +1,56 @@
 // Common functionality for PLT documentation pages
 
+// Page Parameters ------------------------------------------------------------
+
+var page_query_string =
+  (location.href.search(/\?([^#]+)(?:#|$)/) >= 0) && RegExp.$1;
+
+var page_args =
+  ((function(){
+      if (!page_query_string) return [];
+      var args = page_query_string.split(/[&;]/);
+      for (var i=0; i<args.length; i++) {
+        var a = args[i];
+        var p = a.indexOf('=');
+        if (p >= 0) args[i] = [a.substring(0,p), a.substring(p+1)];
+        else args[i] = [a, false];
+      }
+      return args;
+    })());
+
+function GetPageArg(key, def) {
+  for (var i=0; i<page_args.length; i++)
+    if (page_args[i][0] == key) return unescape(page_args[i][1]);
+  return def;
+}
+
+function MergePageArgsIntoLink(a) {
+  if (page_args.length == 0 ||
+      (!a.attributes["pltdoc"]) || (a.attributes["pltdoc"].value == ""))
+    return;
+  a.href.search(/^([^?#]*)(?:\?([^#]*))?(#.*)?$/);
+  if (RegExp.$2.length == 0) {
+    a.href = RegExp.$1 + "?" + page_query_string + RegExp.$3;
+  } else {
+    // need to merge here, precedence to arguments that exist in `a'
+    var i, j;
+    var prefix = RegExp.$1, str = RegExp.$2, suffix = RegExp.$3;
+    var args = str.split(/[&;]/);
+    for (i=0; i<args.length; i++) {
+      j = args[i].indexOf('=');
+      if (j) args[i] = args[i].substring(0,j);
+    }
+    var additions = "";
+    for (i=0; i<page_args.length; i++) {
+      var exists = false;
+      for (j=0; j<args.length; j++)
+        if (args[j] == page_args[i][0]) { exists = true; break; }
+      if (!exists) str += "&" + page_args[i][0] + "=" + page_args[i][1];
+    }
+    a.href = prefix + "?" + str + suffix;
+  }
+}
+
 // Cookies --------------------------------------------------------------------
 
 function GetCookie(key, def) {
@@ -38,38 +89,6 @@ function GotoPLTRoot(ver, relative) {
   return false;
 }
 
-// URL Parameters -------------------------------------------------------------
-
-// In the following functions, the `name' argument is assumed to be simple in
-// that it doesn't contain anything that isn't plain text in a regexp.  (This
-// is because JS doesn't have a `regexp-quote', easy to hack but not needed
-// here).  Also, the output value from the Get functions and the input value to
-// the Set functions is decoded/encoded.  Note that `SetArgInURL' mutates the
-// string in the url object.
-
-function GetArgFromString(str, name) {
-  var rx = new RegExp("(?:^|[;&])"+name+"=([^&;]*)(?:[;&]|$)");
-  return rx.test(str) && unescape(RegExp.$1);
-}
-
-function SetArgInString(str, name, val) {
-  val = escape(val);
-  if (str.length == 0) return name + "=" + val;
-  var rx = new RegExp("^((?:|.*[;&])"+name+"=)(?:[^&;]*)([;&].*|)$");
-  if (rx.test(str)) return RegExp.$1 + val + RegExp.$2;
-  else return name + "=" + val + "&" + str;
-}
-
-function GetArgFromURL(url, name) {
-  if (!url.href.search(/\?([^#]*)(?:#|$)/)) return false;
-  return GetArgFromString(RegExp.$1, name);
-}
-
-function SetArgInURL(url, name, val) { // note: mutates the string
-  url.href.search(/^([^?#]*)(?:\?([^#]*))?(#.*)?$/);
-  url.href = RegExp.$1 + "?" + SetArgInString(RegExp.$2,name,val) + RegExp.$3;
-}
-
 // Utilities ------------------------------------------------------------------
 
 normalize_rxs = [/\/\/+/g, /\/\.(\/|$)/, /\/[^\/]*\/\.\.(\/|$)/];
@@ -91,7 +110,9 @@ function DoSearchKey(event, field, ver, top_path) {
   if (event && event.keyCode == 13) {
     var u = GetCookie("PLT_Root."+ver, null);
     if (u == null) u = top_path; // default: go to the top path
-    location = u + "search/index.html" + "?q=" + escape(val);
+    u += "search/index.html?q=" + escape(val);
+    if (page_query_string) u += "&" + page_query_string;
+    location = u;
     return false;
   }
   return true;
@@ -115,23 +136,13 @@ window.onload = function() {
   for (var i=0; i<on_load_funcs.length; i++) on_load_funcs[i]();
 };
 
-var cur_plt_lang = GetArgFromURL(location,"lang");
-
-function PropagateLangInLink(a) {
-  // the attribute's value doesn't matter
-  if (cur_plt_lang
-      && a.attributes["pltdoc"] && a.attributes["pltdoc"].value != ""
-      && !GetArgFromURL(a,"lang"))
-    SetArgInURL(a, "lang", cur_plt_lang);
-}
-
 AddOnLoad(function(){
-    if (!cur_plt_lang) return;
-    var indicator = document.getElementById("langindicator");
-    if (indicator) {
-      indicator.innerHTML = cur_plt_lang;
-      indicator.style.display = "block";
-    }
     var links = document.getElementsByTagName("a");
-    for (var i=0; i<links.length; i++) PropagateLangInLink(links[i]);
+    for (var i=0; i<links.length; i++) MergePageArgsIntoLink(links[i]);
+    var label = GetPageArg("ctxtname",false);
+    if (!label) return;
+    var indicator = document.getElementById("contextindicator");
+    if (!indicator) return;
+    indicator.innerHTML = label;
+    indicator.style.display = "block";
   });

@@ -539,6 +539,7 @@ static int check_cycles(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht
    version takes to long, we back out to the general case. (We don't
    even check for stack overflow, so keep the max limit low.) */
 
+#if !defined(MZ_USE_PLACES)
 static int check_cycles_fast(Scheme_Object *obj, PrintParams *pp, int *fast_checker_counter)
   XFORM_SKIP_PROC
 {
@@ -614,6 +615,7 @@ static int check_cycles_fast(Scheme_Object *obj, PrintParams *pp, int *fast_chec
 
   return cycle;
 }
+#endif
 
 #ifdef DO_STACK_CHECK
 static void setup_graph_table(Scheme_Object *obj, int for_write, Scheme_Hash_Table *ht, int *counter, PrintParams *pp);

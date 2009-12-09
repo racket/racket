@@ -1,5 +1,4 @@
-#reader scribble/reader
-#lang scheme/base
+#lang at-exp scheme/base
 
 (require string-constants scheme/gui/base
          scheme/contract scheme/class)

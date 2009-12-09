@@ -4,11 +4,13 @@
          syntax/stx
          unstable/struct
          (for-syntax scheme/base
-                     scheme/private/sc))
+                     scheme/private/sc)
+         (for-template scheme/base))
 
 (provide unwrap-syntax
 
          define-pattern-variable
+         define/with-syntax
 
          with-temporaries
          generate-temporary
@@ -25,7 +27,10 @@
 
          current-syntax-context
          wrong-syntax
-         
+
+         internal-definition-context-apply
+         syntax-local-eval
+
          with-syntax*
          syntax-map)
 
@@ -181,6 +186,57 @@
                         stx
                         extras)))
 ;; Eli: The `report-error-as' thing seems arbitrary to me.
+
+(define (internal-definition-context-apply intdefs stx)
+  (let ([qastx (local-expand #`(quote #,stx) 'expression (list #'quote) intdefs)])
+    (with-syntax ([(q astx) qastx]) #'astx)))
+
+(define (syntax-local-eval stx [intdef0 #f])
+  (let* ([name (generate-temporary)]
+         [intdefs (syntax-local-make-definition-context intdef0)])
+    (syntax-local-bind-syntaxes (list name)
+                                #`(call-with-values (lambda () #,stx) list)
+                                intdefs)
+    (internal-definition-context-seal intdefs)
+    (apply values
+           (syntax-local-value (internal-definition-context-apply intdefs name)
+                               #f intdefs))))
+
+(define-syntax (define/with-syntax stx)
+  (syntax-case stx ()
+    [(define/with-syntax pattern rhs)
+     (let* ([pvar-env (get-match-vars #'define/with-syntax
+                                      stx
+                                      #'pattern
+                                      '())]
+            [depthmap (for/list ([x pvar-env])
+                        (let loop ([x x] [d 0])
+                          (if (pair? x)
+                              (loop (car x) (add1 d))
+                              (cons x d))))]
+            [pvars (map car depthmap)]
+            [depths (map cdr depthmap)]
+            [mark (make-syntax-introducer)])
+       (with-syntax ([(pvar ...) pvars]
+                     [(depth ...) depths]
+                     [(valvar ...) (generate-temporaries pvars)])
+         #'(begin (define-values (valvar ...)
+                    (with-syntax ([pattern rhs])
+                      (values (pvar-value pvar) ...)))
+                  (define-syntax pvar
+                    (make-syntax-mapping 'depth (quote-syntax valvar)))
+                  ...)))]))
+
+;; auxiliary macro
+(define-syntax (pvar-value stx)
+  (syntax-case stx ()
+    [(_ pvar)
+     (identifier? #'pvar)
+     (let ([mapping (syntax-local-value #'pvar)])
+       (unless (syntax-pattern-variable? mapping)
+         (raise-syntax-error #f "not a pattern variable" #'pvar))
+       (syntax-mapping-valvar mapping))]))
+
 
 (define-syntax (with-syntax* stx)
   (syntax-case stx ()

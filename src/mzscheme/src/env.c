@@ -182,6 +182,8 @@ static void init_compile_data(Scheme_Comp_Env *env);
 
 #define ASSERT_IS_VARIABLE_BUCKET(b) /* if (((Scheme_Object *)b)->type != scheme_variable_type) abort() */
 
+static Scheme_Object *unshadowable_symbol;
+
 /*========================================================================*/
 /*                             initialization                             */
 /*========================================================================*/
@@ -354,14 +356,24 @@ Scheme_Env *scheme_engine_instance_init() {
 #endif
 
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  scheme_places_block_child_signal();
+
   GC_switch_out_master_gc();
-  spawn_master_scheme_place();
+  scheme_spawn_master_place();
 #endif
   
   place_instance_init_pre_kernel(stack_base);
   make_kernel_env();
   scheme_init_parameterization_readonly_globals();
   env = place_instance_init_post_kernel(1);
+
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+{
+  int *signal_fd;
+  signal_fd = scheme_get_signal_handle();
+  GC_set_put_external_event_fd(signal_fd);
+}
+#endif
 
   return env;
 }
@@ -496,8 +508,19 @@ static Scheme_Env *place_instance_init_post_kernel(int initial_main_os_thread) {
 }
 
 Scheme_Env *scheme_place_instance_init(void *stack_base) {
+  Scheme_Env *env;
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  int *signal_fd;
+  GC_construct_child_gc();
+#endif
   place_instance_init_pre_kernel(stack_base);
-  return place_instance_init_post_kernel(0);
+  env = place_instance_init_post_kernel(0);
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  signal_fd = scheme_get_signal_handle();
+  GC_set_put_external_event_fd(signal_fd);
+#endif
+  scheme_set_can_break(1);
+  return env; 
 }
 
 void scheme_place_instance_destroy() {
@@ -631,6 +654,9 @@ static void make_kernel_env(void)
     sym = scheme_intern_symbol("mzscheme");
     scheme_current_thread->name = sym;
   }
+
+  REGISTER_SO(unshadowable_symbol);
+  unshadowable_symbol = scheme_intern_symbol("unshadowable");
 
   DONE_TIME(env);
 
@@ -4386,7 +4412,7 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
       Scheme_Comp_Env *stx_env;
       if (!SAME_TYPE(scheme_intdef_context_type, SCHEME_TYPE(argv[2])))
 	scheme_wrong_type(name, "internal-definition context or #f", 2, argc, argv);
-      stx_env = (Scheme_Comp_Env *)SCHEME_PTR1_VAL(argv[2]);
+      stx_env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(argv[2]))[0];
       if (!scheme_is_sub_env(stx_env, env)) {
 	scheme_raise_exn(MZEXN_FAIL_CONTRACT, "%s: transforming context does "
 			 "not match given internal-definition context",
@@ -4687,7 +4713,7 @@ static Scheme_Object *
 local_get_shadower(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env, *frame;
-  Scheme_Object *sym, *esym, *sym_marks = NULL, *orig_sym, *uid = NULL, *env_marks;
+  Scheme_Object *sym, *esym, *sym_marks = NULL, *orig_sym, *uid = NULL, *env_marks, *prop;
 
   env = scheme_current_thread->current_local_env;
   if (!env)
@@ -4712,16 +4738,19 @@ local_get_shadower(int argc, Scheme_Object *argv[])
     for (i = frame->num_bindings; i--; ) {
       if (frame->values[i]) {
 	if (SAME_OBJ(SCHEME_STX_VAL(sym), SCHEME_STX_VAL(frame->values[i])))  {
-	  esym = frame->values[i];
-	  env_marks = scheme_stx_extract_marks(esym);
-	  if (scheme_equal(env_marks, sym_marks)) {
-	    sym = esym;
-	    if (frame->uids)
-	      uid = frame->uids[i];
-	    else
-	      uid = frame->uid;
-	    break;
-	  }
+          prop = scheme_stx_property(frame->values[i], unshadowable_symbol, NULL);
+          if (SCHEME_FALSEP(prop)) {
+            esym = frame->values[i];
+            env_marks = scheme_stx_extract_marks(esym);
+            if (scheme_equal(env_marks, sym_marks)) {
+              sym = esym;
+              if (frame->uids)
+                uid = frame->uids[i];
+              else
+                uid = frame->uid;
+              break;
+            }
+          }
 	}
       }
     }
@@ -4734,14 +4763,17 @@ local_get_shadower(int argc, Scheme_Object *argv[])
           if (SAME_OBJ(SCHEME_STX_VAL(sym), 
                        SCHEME_STX_VAL(COMPILE_DATA(frame)->const_names[i]))) {
             esym = COMPILE_DATA(frame)->const_names[i];
-            env_marks = scheme_stx_extract_marks(esym);
-            if (scheme_equal(env_marks, sym_marks)) { /* This used to have 1 || --- why? */
-              sym = esym;
-              if (COMPILE_DATA(frame)->const_uids)
-                uid = COMPILE_DATA(frame)->const_uids[i];
-              else
-                uid = frame->uid;
-              break;
+            prop = scheme_stx_property(esym, unshadowable_symbol, NULL);
+            if (SCHEME_FALSEP(prop)) {
+              env_marks = scheme_stx_extract_marks(esym);
+              if (scheme_equal(env_marks, sym_marks)) { /* This used to have 1 || --- why? */
+                sym = esym;
+                if (COMPILE_DATA(frame)->const_uids)
+                  uid = COMPILE_DATA(frame)->const_uids[i];
+                else
+                  uid = frame->uid;
+                break;
+              }
             }
 	  }
 	}

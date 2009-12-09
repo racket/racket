@@ -128,6 +128,6 @@
   (define-syntax speed
     (syntax-rules ()
       [(_ id what)
-       (t "An" (scheme id) "application can provide better performance for"
+       (t "An " (scheme id) " application can provide better performance for "
           (elem what)
-          "iteration when it appears directly in a" (scheme for) "clause.")])))
+          " iteration when it appears directly in a " (scheme for) " clause.")])))

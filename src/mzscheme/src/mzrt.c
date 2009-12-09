@@ -35,6 +35,12 @@ START_XFORM_SUSPEND;
 # endif
 #endif
 
+#ifndef MZ_PRECISE_GC
+int GC_pthread_join(pthread_t thread, void **retval);
+int GC_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void*), void * arg);
+int GC_pthread_detach(pthread_t thread);
+#endif
+
 void mzrt_set_user_break_handler(void (*user_break_handler)(int))
 {
 #ifdef WIN32
@@ -66,7 +72,8 @@ static void rungdb() {
       case 'd':
         snprintf(outbuffer, 100, "xterm -e gdb ./mzscheme3m %d &", pid);
         fprintf(stderr, "%s\n", outbuffer);
-        system(outbuffer);
+        if(system(outbuffer)) 
+          fprintf(stderr, "system failed\n");
         break;
       case 'e':
       default:
@@ -156,6 +163,7 @@ void *mzrt_thread_stub(void *data){
   mzrt_thread_stub_data *stub_data  = (mzrt_thread_stub_data*) data;
   void * (*start_proc)(void *)        = stub_data->start_proc;
   void *start_proc_data               = stub_data->data;
+  scheme_init_os_thread();
   proc_thread_self                    = stub_data->thread;
 
   free(data);
@@ -188,6 +196,17 @@ mz_proc_thread* mzrt_proc_first_thread_init() {
 
 mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* data) {
   mz_proc_thread *thread = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
+  pthread_attr_t *attr;
+
+#ifdef OS_X
+  pthread_attr_t attr_storage;
+  attr = &attr_storage;
+  pthread_attr_init(attr);
+  pthread_attr_setstacksize(attr, 8*1024*1024); /*8MB*/
+#else
+  attr = NULL;
+#endif
+
 #ifdef MZ_PRECISE_GC
   mzrt_thread_stub_data *stub_data = (mzrt_thread_stub_data*)malloc(sizeof(mzrt_thread_stub_data));
   thread->mbox = pt_mbox_create();
@@ -197,13 +216,13 @@ mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* dat
 #   ifdef WIN32
   thread->threadid = CreateThread(NULL, 0, start_proc, data, 0, NULL);
 #   else
-  pthread_create(&thread->threadid, NULL, mzrt_thread_stub, stub_data);
+  pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
 #   endif
 #else
 #   ifdef WIN32
   thread->threadid = GC_CreateThread(NULL, 0, start_proc, data, 0, NULL);
 #   else
-  GC_pthread_create(&thread->threadid, NULL, start_proc, data);
+  GC_pthread_create(&thread->threadid, attr, start_proc, data);
 #   endif
 #endif
   return thread;
@@ -221,6 +240,21 @@ void * mz_proc_thread_wait(mz_proc_thread *thread) {
   GC_pthread_join(thread->threadid, &rc);
 #   else
   pthread_join(thread->threadid, &rc);
+#   endif
+  return rc;
+#endif
+}
+
+int mz_proc_thread_detach(mz_proc_thread *thread) {
+#ifdef WIN32
+  DWORD rc;
+  return (void *) rc;
+#else
+  int rc;
+#   ifndef MZ_PRECISE_GC
+  rc = GC_pthread_detach(thread->threadid);
+#   else
+  rc = pthread_detach(thread->threadid);
 #   endif
   return rc;
 #endif

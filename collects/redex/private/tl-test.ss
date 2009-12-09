@@ -261,7 +261,16 @@
       (term (f 1)))
     (test rhs-eval-count 2))
   
+  (define-namespace-anchor here)
+  (define ns (namespace-anchor->namespace here))
   
+  (let ([src 'bad-underscore])
+    (test 
+     (parameterize ([current-namespace ns])
+       (syntax-error-sources
+        '(define-language L (n m_1))
+        src))
+     (list src)))
   
 ;                                                                                             
 ;                                                                                             

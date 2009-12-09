@@ -318,6 +318,12 @@ typedef struct Scheme_Vector {
   Scheme_Object *els[1];
 } Scheme_Vector;
 
+typedef struct Scheme_Double_Vector {
+  Scheme_Object so;
+  long size;
+  double els[1];
+} Scheme_Double_Vector;
+
 typedef struct Scheme_Print_Params Scheme_Print_Params;
 typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int for_display, Scheme_Print_Params *pp);
 
@@ -435,6 +441,8 @@ typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data)
 #define SCHEME_MUTABLE_VECTORP(obj)  (SCHEME_VECTORP(obj) && SCHEME_MUTABLEP(obj))
 #define SCHEME_IMMUTABLE_VECTORP(obj)  (SCHEME_VECTORP(obj) && SCHEME_IMMUTABLEP(obj))
 
+#define SCHEME_FLVECTORP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_flvector_type)
+
 #define SCHEME_STRUCTP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_structure_type) || SAME_TYPE(SCHEME_TYPE(obj), scheme_proc_struct_type))
 #define SCHEME_STRUCT_TYPEP(obj) SAME_TYPE(SCHEME_TYPE(obj), scheme_struct_type_type)
 
@@ -538,6 +546,9 @@ typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data)
 #define SCHEME_VEC_SIZE(obj) (((Scheme_Vector *)(obj))->size)
 #define SCHEME_VEC_ELS(obj)  (((Scheme_Vector *)(obj))->els)
 #define SCHEME_VEC_BASE(obj) SCHEME_VEC_ELS(obj)
+
+#define SCHEME_FLVEC_SIZE(obj) (((Scheme_Double_Vector *)(obj))->size)
+#define SCHEME_FLVEC_ELS(obj)  (((Scheme_Double_Vector *)(obj))->els)
 
 #define SCHEME_ENVBOX_VAL(obj)  (*((Scheme_Object **)(obj)))
 #define SCHEME_WEAK_BOX_VAL(obj) SCHEME_BOX_VAL(obj)
@@ -1745,6 +1756,7 @@ MZ_EXTERN Scheme_Object *scheme_set_exec_cmd(char *s);
 MZ_EXTERN Scheme_Object *scheme_set_run_cmd(char *s);
 MZ_EXTERN void scheme_set_collects_path(Scheme_Object *p);
 MZ_EXTERN void scheme_set_original_dir(Scheme_Object *d);
+MZ_EXTERN void scheme_set_addon_dir(Scheme_Object *p);
 
 MZ_EXTERN void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs);
 MZ_EXTERN void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *extra_dirs, Scheme_Object *extra_post_dirs);

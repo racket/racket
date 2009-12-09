@@ -169,7 +169,7 @@ int scheme_stupid_windows_machine;
 
 /******************** Unix Subprocesses ********************/
 
-#if defined(UNIX_PROCESSES)
+#if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
 /* For process & system: */
 typedef struct System_Child {
   MZTAG_IF_REQUIRED
@@ -186,6 +186,10 @@ typedef struct Scheme_Subprocess {
   Scheme_Object so;
   void *handle;
   int pid;
+#if defined(UNIX_PROCESSES) && defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  short done;
+  int status;
+#endif
 } Scheme_Subprocess;
 
 #ifdef USE_FD_PORTS
@@ -486,7 +490,7 @@ scheme_init_port (Scheme_Env *env)
   REGISTER_SO(scheme_null_output_port_type);
   REGISTER_SO(scheme_redirect_output_port_type);
 
-#if defined(UNIX_PROCESSES)
+#if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
   REGISTER_SO(scheme_system_children);
 #endif
 
@@ -6787,7 +6791,7 @@ static int MyPipe(int *ph, int near_index) {
 
 /**************** Unix: signal stuff ******************/
 
-#if defined(UNIX_PROCESSES)
+#if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
 
 # define WAITANY(s) waitpid((pid_t)-1, s, WNOHANG)
 
@@ -6800,6 +6804,7 @@ static int need_to_check_children;
 void scheme_block_child_signals(int block)
   XFORM_SKIP_PROC
 {
+#if !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
   sigset_t sigs;
 
   sigemptyset(&sigs);
@@ -6808,6 +6813,7 @@ void scheme_block_child_signals(int block)
   sigaddset(&sigs, SIGPROF);
 #endif
   sigprocmask(block ? SIG_BLOCK : SIG_UNBLOCK, &sigs, NULL);
+#endif
 }
 
 static void child_done(int ingored)
@@ -6825,6 +6831,7 @@ static int sigchld_installed = 0;
 
 static void init_sigchld(void)
 {
+#if !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
   if (!sigchld_installed) {
     /* Catch child-done signals */
     START_XFORM_SKIP;
@@ -6833,6 +6840,7 @@ static void init_sigchld(void)
 
     sigchld_installed = 1;
   }
+#endif
 }
 
 static void check_child_done()
@@ -7073,24 +7081,47 @@ scheme_make_redirect_output_port(Scheme_Object *port)
 
 #if defined(UNIX_PROCESSES) || defined(WINDOWS_PROCESSES)
 
-static int subp_done(Scheme_Object *sp)
+static int subp_done(Scheme_Object *so)
 {
-  void *sci = ((Scheme_Subprocess *)sp)->handle;
+  Scheme_Subprocess *sp;
+  sp = (Scheme_Subprocess*) so;
 
 #if defined(UNIX_PROCESSES)
-  System_Child *sc = (System_Child *)sci;
-  check_child_done();
-  return sc->done;
-#endif
-#ifdef WINDOWS_PROCESSES
-  DWORD w;
-  if (sci) {
-    if (GetExitCodeProcess((HANDLE)sci, &w))
-      return w != STILL_ACTIVE;
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  {
+    int status;
+    if(! sp->done) {
+      if(scheme_get_child_status(((Scheme_Subprocess *)sp)->pid, &status)) {
+        sp->done = 1;
+        sp->status = status;
+        return 1;
+      }
+      return 0;
+    }
     else
       return 1;
-  } else
-    return 1;
+  }
+# else
+  {
+    System_Child *sc;
+    sc = ((System_Child *) ((Scheme_Subprocess *)sp)->handle);
+    check_child_done();
+    return sc->done;
+  }
+# endif
+#endif
+#ifdef WINDOWS_PROCESSES
+  {
+    HANDLE sci = (HANDLE) ((Scheme_Subprocess *)sp)->handle;
+    DWORD w;
+    if (sci) {
+      if (GetExitCodeProcess(sci, &w))
+        return w != STILL_ACTIVE;
+      else
+        return 1;
+    } else
+      return 1;
+  }
 #endif
 }
 
@@ -7116,14 +7147,23 @@ static Scheme_Object *subprocess_status(int argc, Scheme_Object **argv)
     int going = 0, status = MZ_FAILURE_STATUS;
 
 #if defined(UNIX_PROCESSES)
-    System_Child *sc = (System_Child *)sp->handle;
-
-    check_child_done();
-
-    if (sc->done)
-      status = sc->status;
-    else
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  if (sp->done)
+    status = sp->status;
+  else {
+    if(!scheme_get_child_status(((Scheme_Subprocess *)sp)->pid, &status)) {
       going = 1;
+    }
+  }
+# else
+  System_Child *sc = (System_Child *)sp->handle;
+  check_child_done();
+
+  if (sc->done)
+    status = sc->status;
+  else
+   going = 1;
+# endif
 #else
 # ifdef WINDOWS_PROCESSES
     DWORD w;
@@ -7189,23 +7229,34 @@ static Scheme_Object *subprocess_kill(int argc, Scheme_Object **argv)
     Scheme_Subprocess *sp = (Scheme_Subprocess *)argv[0];
 
 #if defined(UNIX_PROCESSES)
-    {
-      System_Child *sc = (System_Child *)sp->handle;
-
-      check_child_done();
-
-      while (1) {
-	if (sc->done)
-	  return scheme_void;
-
-	if (!kill(sp->pid, SCHEME_TRUEP(argv[1]) ? SIGKILL : SIGINT))
-	  return scheme_void;
-
-	if (errno != EINTR)
-	  break;
-	/* Otherwise we were interrupted. Try `kill' again. */
-      }
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  {
+    int status;
+    if (sp->done)
+      return scheme_void;
+    if(scheme_get_child_status(sp->pid, &status)) {
+	   return scheme_void;
     }
+  }
+# else
+  {
+    System_Child *sc = (System_Child *)sp->handle;
+
+    check_child_done();
+    if (sc->done)
+      return scheme_void;
+  }
+# endif
+
+  while (1) {
+
+    if (!kill(sp->pid, SCHEME_TRUEP(argv[1]) ? SIGKILL : SIGINT))
+      return scheme_void;
+
+    if (errno != EINTR)
+      break;
+    /* Otherwise we were interrupted. Try `kill' again. */
+  }
 #else
     if (SCHEME_TRUEP(argv[1])) {
       DWORD w;
@@ -7369,6 +7420,16 @@ static long mz_spawnv(char *command, const char * const *argv,
 static void close_subprocess_handle(void *sp, void *ignored)
 {
   Scheme_Subprocess *subproc = (Scheme_Subprocess *)sp;
+  #if defined(MZ_USE_PLACES) && defined (MZ_PRECISE_GC)
+  {
+    int status;
+    int pid = ((Scheme_Subprocess *)sp)->pid;
+    scheme_get_child_status(pid, &status)
+    /* printf("close_subprocess_handle pid %i status %i\n", pid status); */
+
+  }
+  #endif
+
   CloseHandle(subproc->handle);
 }
 
@@ -7387,7 +7448,9 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   char **argv;
   Scheme_Object *in, *out, *err;
 #if defined(UNIX_PROCESSES)
+# if !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
   System_Child *sc;
+# endif
   int fork_errno = 0;
 #else
   void *sc = 0;
@@ -7609,6 +7672,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   /*--------------------------------------*/
 
   {
+#if !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
     init_sigchld();
 
     sc = MALLOC_ONE_RT(System_Child);
@@ -7619,13 +7683,25 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
     sc->done = 0;
 
     scheme_block_child_signals(1);
+#endif
 
     pid = fork();
 
     if (pid > 0) {
+#if defined(MZ_USE_PLACES) && defined (MZ_PRECISE_GC)
+      {
+        int *signal_fd;
+        int status;
+        signal_fd = scheme_get_signal_handle();
+        scheme_places_register_child(pid, signal_fd, &status);
+
+        /* printf("SUBPROCESS  %i\n", pid); */
+      }
+#else
       sc->next = scheme_system_children;
       scheme_system_children = sc;
       sc->id = pid;
+#endif
     } else if (!pid) {
 #ifdef USE_ITIMER
       /* Turn off the timer. */
@@ -7659,7 +7735,9 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
       fork_errno = errno;
     }
 
+#if !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
     scheme_block_child_signals(0);
+#endif
   }
 
   switch (pid)
@@ -7807,7 +7885,9 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
   subproc = MALLOC_ONE_TAGGED(Scheme_Subprocess);
   subproc->so.type = scheme_subprocess_type;
+#if !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
   subproc->handle = (void *)sc;
+#endif
   subproc->pid = pid;
 # if defined(WINDOWS_PROCESSES)
   scheme_add_finalizer(subproc, close_subprocess_handle, NULL);
@@ -8781,7 +8861,7 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_rt_input_fd, mark_input_fd);
 #endif
 
-#if defined(UNIX_PROCESSES)
+#if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined (MZ_PRECISE_GC))
   GC_REG_TRAV(scheme_rt_system_child, mark_system_child);
 #endif
 

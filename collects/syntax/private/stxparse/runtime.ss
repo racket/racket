@@ -2,6 +2,7 @@
 (require scheme/contract/base
          scheme/stxparam
          scheme/list
+         unstable/struct
          "minimatch.ss"
          (for-syntax scheme/base
                      syntax/stx
@@ -159,18 +160,18 @@ A Dynamic Frontier Context (DFC) is one of
 (define-struct dfc:pre (parent stx) #:prefab)
 (define-struct dfc:post (parent stx) #:prefab)
 
-(define (dfc-empty x) (make-dfc:empty x))
+(define (dfc-empty x) (make dfc:empty x))
 (define (dfc-add-car parent stx)
-  (make-dfc:car parent stx))
+  (make dfc:car parent stx))
 (define (dfc-add-cdr parent _)
   (match parent
-    [#s(dfc:cdr uberparent n)
-     (make-dfc:cdr uberparent (add1 n))]
-    [_ (make-dfc:cdr parent 1)]))
+    [(make dfc:cdr uberparent n)
+     (make dfc:cdr uberparent (add1 n))]
+    [_ (make dfc:cdr parent 1)]))
 (define (dfc-add-pre parent stx)
-  (make-dfc:pre parent stx))
+  (make dfc:pre parent stx))
 (define (dfc-add-post parent stx)
-  (make-dfc:post parent stx))
+  (make dfc:post parent stx))
 
 (define (dfc-add-unbox parent stx)
   (dfc-add-car parent stx))
@@ -181,16 +182,16 @@ A Dynamic Frontier Context (DFC) is one of
 
 (define (dfc->index dfc)
   (match dfc
-    [#s(dfc:cdr parent n) n]
+    [(make dfc:cdr parent n) n]
     [_ 0]))
 
 (define (dfc->stx dfc)
   (match dfc
-    [#s(dfc:empty stx) stx]
-    [#s(dfc:car parent stx) stx]
-    [#s(dfc:cdr parent n) (dfc->stx parent)]
-    [#s(dfc:pre parent stx) stx]
-    [#s(dfc:post parent stx) stx]))
+    [(make dfc:empty stx) stx]
+    [(make dfc:car parent stx) stx]
+    [(make dfc:cdr parent n) (dfc->stx parent)]
+    [(make dfc:pre parent stx) stx]
+    [(make dfc:post parent stx) stx]))
 
 ;; dfc-difference : DFC DFC -> nat
 ;; Returns N s.t. B = (dfc-add-cdr^N A)
@@ -199,10 +200,10 @@ A Dynamic Frontier Context (DFC) is one of
     (error 'dfc-difference "~e is not an extension of ~e"
            (frontier->sexpr b) (frontier->sexpr a)))
   (match (list a b)
-    [(list #s(dfc:cdr pa na) #s(dfc:cdr pb nb))
+    [(list (make dfc:cdr pa na) (make dfc:cdr pb nb))
      (unless (equal? pa pb) (whoops))
      (- nb na)]
-    [(list pa #s(dfc:cdr pb nb))
+    [(list pa (make dfc:cdr pb nb))
      (unless (equal? pa pb) (whoops))
      nb]
     [_
@@ -213,16 +214,16 @@ A Dynamic Frontier Context (DFC) is one of
 ;; puts A at the base, B on top
 (define (dfc-append a b)
   (match b
-    [#s(dfc:empty stx) a]
-    [#s(dfc:car pb stx) (make-dfc:car (dfc-append a pb) stx)]
-    [#s(dfc:cdr #s(dfc:empty _) nb)
+    [(make dfc:empty stx) a]
+    [(make dfc:car pb stx) (make dfc:car (dfc-append a pb) stx)]
+    [(make dfc:cdr (make dfc:empty _) nb)
      ;; Special case to merge "consecutive" cdr frames
      (match a
-       [#s(dfc:cdr pa na) (make-dfc:cdr pa (+ na nb))]
-       [_ (make-dfc:cdr a nb)])]
-    [#s(dfc:cdr pb nb) (make-dfc:cdr (dfc-append a pb) nb)]
-    [#s(dfc:pre pb stx) (make-dfc:pre (dfc-append a pb) stx)]
-    [#s(dfc:post pb stx) (make-dfc:post (dfc-append a pb) stx)]))
+       [(make dfc:cdr pa na) (make dfc:cdr pa (+ na nb))]
+       [_ (make dfc:cdr a nb)])]
+    [(make dfc:cdr pb nb) (make dfc:cdr (dfc-append a pb) nb)]
+    [(make dfc:pre pb stx) (make dfc:pre (dfc-append a pb) stx)]
+    [(make dfc:post pb stx) (make dfc:post (dfc-append a pb) stx)]))
 
 
 ;; An Inverted DFC (IDFC) is a DFC inverted for easy comparison.
@@ -230,15 +231,15 @@ A Dynamic Frontier Context (DFC) is one of
 (define (invert-dfc dfc)
   (define (invert dfc acc)
     (match dfc
-      [#s(dfc:empty _) acc]
-      [#s(dfc:car parent stx)
-       (invert parent (make-dfc:car acc stx))]
-      [#s(dfc:cdr parent n)
-       (invert parent (make-dfc:cdr acc n))]
-      [#s(dfc:pre parent stx)
-       (invert parent (make-dfc:pre acc stx))]
-      [#s(dfc:post parent stx)
-       (invert parent (make-dfc:post acc stx))]))
+      [(make dfc:empty _) acc]
+      [(make dfc:car parent stx)
+       (invert parent (make dfc:car acc stx))]
+      [(make dfc:cdr parent n)
+       (invert parent (make dfc:cdr acc n))]
+      [(make dfc:pre parent stx)
+       (invert parent (make dfc:pre acc stx))]
+      [(make dfc:post parent stx)
+       (invert parent (make dfc:post acc stx))]))
   (invert dfc (dfc-empty 'dummy)))
 
 ;; compare-idfcs : IDFC IDFC -> (one-of '< '= '>)
@@ -247,28 +248,28 @@ A Dynamic Frontier Context (DFC) is one of
 (define (compare-idfcs a b)
   (match (list a b)
     ;; Same constructors
-    [(list #s(dfc:empty _) #s(dfc:empty _)) '=]
-    [(list #s(dfc:car pa _) #s(dfc:car pb _))
+    [(list (make dfc:empty _) (make dfc:empty _)) '=]
+    [(list (make dfc:car pa _) (make dfc:car pb _))
      (compare-idfcs pa pb)]
-    [(list #s(dfc:cdr pa na) #s(dfc:cdr pb nb))
+    [(list (make dfc:cdr pa na) (make dfc:cdr pb nb))
      (cond [(< na nb) '<]
            [(> na nb) '>]
            [(= na nb) (compare-idfcs pa pb)])]
-    [(list #s(dfc:pre pa _) #s(dfc:pre pb _))
+    [(list (make dfc:pre pa _) (make dfc:pre pb _))
      ;; FIXME: possibly just '= here, treat all sides as equiv
      (compare-idfcs pa pb)]
-    [(list #s(dfc:post pa _) #s(dfc:post pb _))
+    [(list (make dfc:post pa _) (make dfc:post pb _))
      ;; FIXME: possibly just '= here, treat all sides as equiv
      (compare-idfcs pa pb)]
     ;; Different constructors
-    [(list #s(dfc:empty _) _) '<]
-    [(list _ #s(dfc:empty _)) '>]
-    [(list #s(dfc:pre _ _) _) '<]
-    [(list _ #s(dfc:pre _ _)) '>]
-    [(list #s(dfc:car _ _) _) '<]
-    [(list _ #s(dfc:car _ _)) '>]
-    [(list #s(dfc:cdr _ _) _) '<]
-    [(list _ #s(dfc:cdr _ _)) '>]))
+    [(list (make dfc:empty _) _) '<]
+    [(list _ (make dfc:empty _)) '>]
+    [(list (make dfc:pre _ _) _) '<]
+    [(list _ (make dfc:pre _ _)) '>]
+    [(list (make dfc:car _ _) _) '<]
+    [(list _ (make dfc:car _ _)) '>]
+    [(list (make dfc:cdr _ _) _) '<]
+    [(list _ (make dfc:cdr _ _)) '>]))
 
 (define (idfc>? a b)
   (eq? (compare-idfcs a b) '>))
@@ -344,7 +345,7 @@ A Dynamic Frontier Context (DFC) is one of
                (lambda (f1)
                  (let ([combining-fail
                         (lambda (f2)
-                          (fail (make-join-failures f1 f2)))])
+                          (fail (make join-failures f1 f2)))])
                    (try* rest-attempts combining-fail)))])
           (first-attempt next-fail)))))
 
@@ -380,7 +381,7 @@ An Expectation is one of
   (or/c expect? (symbols 'ineffable)))
 
 (define (merge-expectations a b)
-  (make-expect:disj a b))
+  (make expect:disj a b))
 
 ;; expect->alternatives : Expectation -> (listof Expectation)/#f
 ;; #f indicates 'ineffable somewhere in expectation
@@ -541,7 +542,7 @@ An Expectation is one of
   (define fs
     (let loop ([f f])
       (match f
-        [#s(join-failures f1 f2)
+        [(make join-failures f1 f2)
          (append (loop f1) (loop f2))]
         [_ (list f)])))
   (case (length fs)
@@ -550,20 +551,21 @@ An Expectation is one of
 
 (define (one-failure->sexpr f)
   (match f
-    [#s(failure x frontier expectation)
+    [(make failure x frontier expectation)
      `(failure ,(frontier->sexpr frontier)
                #:term ,(syntax->datum x)
                #:expected ,(expectation->sexpr expectation))]))
 
 (define (frontier->sexpr dfc)
   (match (invert-dfc dfc)
-    [#s(dfc:empty _) '()]
-    [#s(dfc:car p _) (cons 0 (frontier->sexpr p))]
-    [#s(dfc:cdr p n) (cons n (frontier->sexpr p))]
-    [#s(dfc:side p _) (cons 'side (frontier->sexpr p))]))
+    [(make dfc:empty _) '()]
+    [(make dfc:car p _) (cons 0 (frontier->sexpr p))]
+    [(make dfc:cdr p n) (cons n (frontier->sexpr p))]
+    [(make dfc:pre p _) (cons 'pre (frontier->sexpr p))]
+    [(make dfc:post p _) (cons 'post (frontier->sexpr p))]))
 
 (define (expectation->sexpr expectation)
   (match expectation
-    [#s(expect:thing thing '#t chained)
-     (make-expect:thing thing #t (failure->sexpr chained))]
+    [(make expect:thing thing '#t chained)
+     (make expect:thing thing #t (failure->sexpr chained))]
     [_ expectation]))

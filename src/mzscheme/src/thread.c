@@ -4057,7 +4057,7 @@ void scheme_thread_block(float sleep_time)
   /* Check scheduled_kills early and often. */
   check_scheduled_kills();
 
-#ifdef UNIX_PROCESSES
+#if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
   /* Reap zombie processes: */
   scheme_check_child_done();
 #endif
@@ -4142,6 +4142,10 @@ void scheme_thread_block(float sleep_time)
   }
 #endif
 
+/*####################################*/
+/* THREAD CONTEXT SWITCH HAPPENS HERE */
+/*####################################*/
+
   if (next) {
     /* Swap in `next', but first clear references to other threads. */
     swap_target = next;
@@ -4188,6 +4192,11 @@ void scheme_thread_block(float sleep_time)
   if (p->external_break && !p->suspend_break && scheme_can_break(p)) {
     raise_break(p);
   }
+
+  /* Check for major GC request from master GC */
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
+  GC_check_master_gc_request(); 
+#endif
   
   if (sleep_end > 0) {
     if (sleep_end > scheme_get_inexact_milliseconds()) {
@@ -7362,7 +7371,7 @@ static void get_ready_for_GC()
 #ifdef WINDOWS_PROCESSES
   scheme_suspend_remembered_threads();
 #endif
-#ifdef UNIX_PROCESSES
+#if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
   scheme_block_child_signals(1);
 #endif
 
@@ -7393,7 +7402,7 @@ static void done_with_GC()
 #ifdef WINDOWS_PROCESSES
   scheme_resume_remembered_threads();
 #endif
-#ifdef UNIX_PROCESSES
+#if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
   scheme_block_child_signals(0);
 #endif
 

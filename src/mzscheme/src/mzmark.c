@@ -1449,6 +1449,34 @@ static int vector_obj_FIXUP(void *p) {
 #define vector_obj_IS_CONST_SIZE 0
 
 
+static int flvector_obj_SIZE(void *p) {
+  Scheme_Double_Vector *vec = (Scheme_Double_Vector *)p;
+
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Double_Vector) 
+		    + ((vec->size - 1) * sizeof(double))));
+}
+
+static int flvector_obj_MARK(void *p) {
+  Scheme_Double_Vector *vec = (Scheme_Double_Vector *)p;
+
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Double_Vector) 
+		    + ((vec->size - 1) * sizeof(double))));
+}
+
+static int flvector_obj_FIXUP(void *p) {
+  Scheme_Double_Vector *vec = (Scheme_Double_Vector *)p;
+
+  return
+  gcBYTES_TO_WORDS((sizeof(Scheme_Double_Vector) 
+		    + ((vec->size - 1) * sizeof(double))));
+}
+
+#define flvector_obj_IS_ATOMIC 1
+#define flvector_obj_IS_CONST_SIZE 0
+
+
 static int input_port_SIZE(void *p) {
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Input_Port));
@@ -3582,7 +3610,7 @@ static int mark_input_fd_FIXUP(void *p) {
 
 #endif
 
-#if defined(UNIX_PROCESSES)
+#if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
 static int mark_system_child_SIZE(void *p) {
   return
   gcBYTES_TO_WORDS(sizeof(System_Child));

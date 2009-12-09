@@ -321,13 +321,15 @@
                                       list list* vector vector-immutable box))]
              [(3) (memq (car a) '(eq? = <= < >= >
                                       bitwise-bit-set? char=?
-                                      + - * / quotient remainder min max bitwise-and bitwise-ior
+                                      + - * / quotient remainder min max bitwise-and bitwise-ior bitwise-xor
                                       arithmetic-shift vector-ref string-ref bytes-ref
                                       set-mcar! set-mcdr! cons mcons
                                       list list* vector vector-immutable))]
              [(4) (memq (car a) '(vector-set! string-set! bytes-set!
-                                              list list* vector vector-immutable))]
-             [else (memq (car a) '(list list* vector vector-immutable))]))
+                                              list list* vector vector-immutable
+                                              + - * / min max bitwise-and bitwise-ior bitwise-xor))]
+             [else (memq (car a) '(list list* vector vector-immutable
+                                        + - * / min max bitwise-and bitwise-ior bitwise-xor))]))
       (cons '#%in a)
       a))
 

@@ -317,9 +317,11 @@
                           (let* ([def-ctx (if star?
                                               (syntax-local-make-definition-context (car def-ctxes))
                                               (last def-ctxes))]
-                                 [ids (if star? 
-                                          (map (add-package-context (list def-ctx)) ids)
-                                          ids)])
+                                 [ids (map
+                                       (lambda (id) (syntax-property id 'unshadowable #t))
+                                       (if star? 
+                                           (map (add-package-context (list def-ctx)) ids)
+                                           ids))])
                             (syntax-local-bind-syntaxes ids #'rhs def-ctx)
                             (register-bindings! ids)
                             (loop (cdr exprs)
@@ -335,9 +337,11 @@
                         (let* ([def-ctx (if star?
                                             (syntax-local-make-definition-context (car def-ctxes))
                                             (last def-ctxes))]
-                               [ids (if star? 
-                                        (map (add-package-context (list def-ctx)) ids)
-                                        ids)])
+                               [ids (map
+                                     (lambda (id) (syntax-property id 'unshadowable #t))
+                                     (if star? 
+                                         (map (add-package-context (list def-ctx)) ids)
+                                         ids))])
                           (syntax-local-bind-syntaxes ids #f def-ctx)
                           (register-bindings! ids)
                           (loop (cdr exprs)

@@ -80,10 +80,15 @@ by @scheme[kind], which must be one of the following:
 
   ]}
 
- @item{@indexed-scheme['addon-dir] --- a directory for installing PLT Scheme
- extensions. It's the same as @scheme['pref-dir], except under Mac OS
- X, where it is @filepath{Library/PLT Scheme} in the user's home
- directory. This directory might not exist.}
+ @item{@indexed-scheme['addon-dir] --- a directory for installing PLT
+ Scheme extensions. This directory is specified by the
+ @indexed-envvar{PLTADDONDIR} environment variable, and it can be
+ overridden by the @DFlag{addon} or @Flag{A} command-line flag.  If no
+ environment variable or flag is specified, or if the value is not a
+ legal path name, then this directory defaults to
+ @filepath{Library/PLT Scheme} in the user's home directory under Mac
+ OS X and @scheme['pref-dir] otherwise.  This directory might not
+ exist.}
 
  @item{@indexed-scheme['doc-dir] --- the standard directory for
  storing the current user's documents. Under Unix, it's the same as
@@ -593,17 +598,6 @@ Reads all characters from @scheme[path] and returns them as a
 @tech{byte string}.  The @scheme[mode-flag] argument is the same as
 for @scheme[open-input-file].}
 
-@defproc[(file->lines [path path-string?]
-                      [#:mode mode-flag (or/c 'binary 'text) 'binary]
-                      [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
-         bytes?]{
-
-Read all characters from @scheme[path], breaking them into lines. The
-@scheme[line-mode] argument is the same as the second argument to
-@scheme[read-line], but the default is @scheme['any] instead of
-@scheme['linefeed]. The @scheme[mode-flag] argument is the same as for
-@scheme[open-input-file].}
-
 @defproc[(file->value [path path-string?]
                       [#:mode mode-flag (or/c 'binary 'text) 'binary])
          bytes?]{
@@ -612,10 +606,29 @@ Reads a single S-expression from @scheme[path] using @scheme[read].
 The @scheme[mode-flag] argument is the same as for
 @scheme[open-input-file].}
 
+@defproc[(file->list [path path-string?] 
+		     [proc (input-port? . -> . any/c) read]
+		     [#:mode mode-flag (or/c 'binary 'text) 'binary])
+		     (listof any/c)]{
+Repeatedly calls @scheme[proc] to consume the contents of
+@scheme[path], until @scheme[eof] is produced. The @scheme[mode-flag]
+argument is the same as for @scheme[open-input-file].  }
+
+@defproc[(file->lines [path path-string?]
+                      [#:mode mode-flag (or/c 'binary 'text) 'binary]
+                      [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
+         (listof string?)]{
+
+Read all characters from @scheme[path], breaking them into lines. The
+@scheme[line-mode] argument is the same as the second argument to
+@scheme[read-line], but the default is @scheme['any] instead of
+@scheme['linefeed]. The @scheme[mode-flag] argument is the same as for
+@scheme[open-input-file].}
+
 @defproc[(file->bytes-lines [path path-string?]
                       [#:mode mode-flag (or/c 'binary 'text) 'binary]
                       [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
-         bytes?]{
+         (listof bytes?)]{
 
 Like @scheme[file->lines], but reading bytes and collecting them into
 lines like @scheme[read-bytes-line].}

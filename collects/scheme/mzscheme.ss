@@ -16,7 +16,7 @@
              "private/old-procs.ss"
              "private/map.ss" ; shadows #%kernel bindings
              "private/kernstruct.ss"
-             "promise.ss"
+             "private/promise.ss"
              (only "private/cond.ss" old-cond)
              "tcp.ss"
              "udp.ss"

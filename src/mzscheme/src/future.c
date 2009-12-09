@@ -139,7 +139,7 @@ void scheme_init_futures(Scheme_Env *env)
   FUTURE_PRIM_W_ARITY("future?",          future_p,         1, 1, newenv);
   FUTURE_PRIM_W_ARITY("future",           future,           1, 1, newenv);
   FUTURE_PRIM_W_ARITY("touch",            touch,            1, 1, newenv);
-  FUTURE_PRIM_W_ARITY("processor-count",  processor_count,  1, 1, newenv);
+  FUTURE_PRIM_W_ARITY("processor-count",  processor_count,  0, 0, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -163,6 +163,7 @@ static void init_future_thread(struct Scheme_Future_State *fs, int i);
 
 #define THREAD_POOL_SIZE 12
 #define INITIAL_C_STACK_SIZE 500000
+#define FUTURE_RUNSTACK_SIZE 1000
 
 typedef struct Scheme_Future_State {
   struct Scheme_Future_Thread_State *pool_threads[THREAD_POOL_SIZE];
@@ -397,7 +398,7 @@ static void init_future_thread(Scheme_Future_State *fs, int i)
 
   {
     Scheme_Object **rs_start, **rs;
-    long init_runstack_size = 1000;
+    long init_runstack_size = FUTURE_RUNSTACK_SIZE;
     rs_start = scheme_alloc_runstack(init_runstack_size);
     rs = rs_start XFORM_OK_PLUS init_runstack_size;
     params.runstack_start = rs_start;
@@ -565,6 +566,11 @@ Scheme_Object *future(int argc, Scheme_Object *argv[])
       scheme_on_demand_generate_lambda(nc, 0, NULL);
     }
 
+  if (ncd->max_let_depth > FUTURE_RUNSTACK_SIZE * sizeof(void*)) {
+    /* Can't even call it in a future thread */
+    ft->status = PENDING_OVERSIZE;
+  }
+
   ft->code = (void*)ncd->code;
 
   pthread_mutex_lock(&fs->future_mutex);
@@ -631,7 +637,11 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
 #endif
 
   pthread_mutex_lock(&fs->future_mutex);
-  if (ft->status == PENDING) {
+  if ((ft->status == PENDING) || (ft->status == PENDING_OVERSIZE)) {
+    if (ft->status == PENDING_OVERSIZE) {
+      scheme_log(scheme_main_logger, SCHEME_LOG_DEBUG, 0,
+                 "future: oversize procedure deferred to runtime thread");
+    }
     ft->status = RUNNING;
     pthread_mutex_unlock(&fs->future_mutex);
 
@@ -820,7 +830,9 @@ void *worker_thread_future_loop(void *arg)
   //including runtime calls. 
   //If jitcode asks the runrtime thread to do work, then
   //a GC can occur.
-  LOG("Running JIT code at %p...\n", ft->code);    
+  LOG("Running JIT code at %p...\n", ft->code);
+
+  MZ_RUNSTACK = MZ_RUNSTACK_START + fts->runstack_size;
 
   scheme_current_thread->error_buf = &newbuf;
   if (scheme_future_setjmp(newbuf)) {

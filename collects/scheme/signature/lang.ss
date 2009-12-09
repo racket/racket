@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require scheme/unit
+         scheme/contract
          (for-syntax scheme/base
                      mzlib/private/unit-compiletime
                      mzlib/private/unit-syntax))
@@ -8,6 +9,7 @@
 (provide (rename-out [module-begin #%module-begin])
          (except-out (all-from-out scheme/base) #%module-begin)
          (all-from-out scheme/unit)
+         (all-from-out scheme/contract)
          (for-syntax (all-from-out scheme/base)))
 
 (define-for-syntax (make-name s)

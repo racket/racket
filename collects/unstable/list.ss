@@ -1,19 +1,15 @@
-#lang scheme
+#lang scheme/base
+(require scheme/contract
+         scheme/dict)
 
-; list-prefix : list? list? -> (or/c list? false/c)
-; Is l a prefix or r?, and what is that prefix?
+; list-prefix : list? list? -> boolean?
+; Is l a prefix or r?
 (define (list-prefix? ls rs)
-  (match ls
-    [(list)
-     #t]
-    [(list-rest l0 ls)
-     (match rs
-       [(list)
-        #f]
-       [(list-rest r0 rs)
-        (if (equal? l0 r0)
-            (list-prefix? ls rs)
-            #f)])]))
+  (or (null? ls)
+      (and (pair? rs)
+           (equal? (car ls) (car rs))
+           (list-prefix? (cdr ls) (cdr rs)))))
+
 ;; Eli: Is this some `match' obsession syndrom?  The simple definition:
 ;;   (define (list-prefix? ls rs)
 ;;     (or (null? ls) (and (pair? rs) (equal? (car ls) (car rs))
@@ -25,6 +21,7 @@
 ;;   (Which can be useful for things like making a path relative to
 ;;   another path.)  A nice generalization is to make it get two or more
 ;;   lists, and return a matching number of values.
+;; ryanc: changed to use Eli's version
 
 (provide/contract
  [list-prefix? (list? list? . -> . boolean?)])
@@ -39,3 +36,51 @@
   (append t (build-list (- (length s) (length t)) (lambda _ extra))))
 
 (provide filter-multiple extend)
+
+;; ryanc added:
+
+(provide/contract
+ [check-duplicate
+  (->* (list?)
+       (#:key (-> any/c any/c)
+        #:same? (or/c dict? (-> any/c any/c any/c)))
+       any)])
+
+;; check-duplicate : (listof X)
+;;                   #:key (X -> K)
+;;                   #:same? (or/c (K K -> bool) dict?)
+;;                -> X or #f
+(define (check-duplicate items
+                        #:key [key values]
+                        #:same? [same? equal?])
+  (cond [(procedure? same?)
+         (cond [(eq? same? equal?)
+                (check-duplicate/t items key (make-hash) #t)]
+               [(eq? same? eq?)
+                (check-duplicate/t items key (make-hasheq) #t)]
+               [(eq? same? eqv?)
+                (check-duplicate/t items key (make-hasheqv) #t)]
+               [else
+                (check-duplicate/list items key same?)])]
+        [(dict? same?)
+         (let ([dict same?])
+           (if (dict-mutable? dict)
+               (check-duplicate/t items key dict #t)
+               (check-duplicate/t items key dict #f)))]))
+(define (check-duplicate/t items key table mutating?)
+  (let loop ([items items] [table table])
+    (and (pair? items)
+         (let ([key-item (key (car items))])
+           (if (dict-ref table key-item #f)
+               (car items)
+               (loop (cdr items) (if mutating?
+                                     (begin (dict-set! table key-item #t) table)
+                                     (dict-set table key-item #t))))))))
+(define (check-duplicate/list items key same?)
+  (let loop ([items items] [sofar null])
+    (and (pair? items)
+         (let ([key-item (key (car items))])
+           (if (for/or ([prev (in-list sofar)])
+                 (same? key-item prev))
+               (car items)
+               (loop (cdr items) (cons key-item sofar)))))))

@@ -321,27 +321,33 @@ Scheme_Object *scheme_vector_length(Scheme_Object *v)
   return vector_length(1, a);
 }
 
-static Scheme_Object *
-bad_index(char *name, Scheme_Object *i, Scheme_Object *vec, int bottom)
+void scheme_bad_vec_index(char *name, Scheme_Object *i, const char *what, Scheme_Object *vec, 
+                          long bottom, long len)
 {
-  int n = SCHEME_VEC_SIZE(vec) - 1;
-
-  if (SCHEME_VEC_SIZE(vec)) {
+  if (len) {
+    long n = len - 1;
     char *vstr;
     int vlen;
     vstr = scheme_make_provided_string(vec, 2, &vlen);
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: index %s out of range [%d, %d] for vector: %t",
+		     "%s: index %s out of range [%ld, %ld] for %s: %t",
 		     name, 
 		     scheme_make_provided_string(i, 2, NULL), 
 		     bottom, n,
+                     what,
 		     vstr, vlen);
   } else
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "%s: bad index %s for empty vector",
+		     "%s: bad index %s for empty %s",
 		     name,
-		     scheme_make_provided_string(i, 0, NULL));
-  
+		     scheme_make_provided_string(i, 0, NULL),
+                     what);
+}
+
+static Scheme_Object *
+bad_index(char *name, Scheme_Object *i, Scheme_Object *vec, int bottom)
+{
+  scheme_bad_vec_index(name, i, "vector", vec, bottom, SCHEME_VEC_SIZE(vec));
   return NULL;
 }
 

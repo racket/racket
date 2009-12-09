@@ -830,6 +830,10 @@
       'ph-text
       (list (pinhole-x (text "10" 10 'red))
             (pinhole-y (text "10" 10 'red))))
+(test (list 0 0)
+      'ph-text
+      (list (pinhole-x (text "" 10 'red))
+            (pinhole-y (text "" 10 'red))))
 
 (test (list 3 3)
       'ph-add-line

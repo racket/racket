@@ -59,8 +59,8 @@
 (define combo-context-forms
   (list (lambda (p o) `(begin ,p ,o))
 	(lambda (p o) `(let () ,p ,o 10))
-	(lambda (p o) `(package out1 all-defined ,p ,o))
-	(lambda (p o) `(package out2 all-defined (package out1 all-defined ,p ,o)))))
+	(lambda (p o) `(define-package out1 #:all-defined ,p ,o))
+	(lambda (p o) `(define-package out2 #:all-defined (define-package out1 #:all-defined ,p ,o)))))
 
 (define all-forms
   (apply

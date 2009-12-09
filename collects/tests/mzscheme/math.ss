@@ -14,6 +14,8 @@
 (test 3 order-of-magnitude 5000)
 (test 3 order-of-magnitude 9999)
 (test 4 order-of-magnitude 10000)
+(test -2 order-of-magnitude 1/100)
+(test -3 order-of-magnitude 1/101)
 
 (test 25 sqr 5)
 (test 25 sqr -5)

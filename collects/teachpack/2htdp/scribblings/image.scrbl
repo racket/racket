@@ -318,6 +318,70 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                    (ellipse 10 10 "solid" "forestgreen"))]
 }
 
+@defproc[(underlay [i1 image?] [i2 image?] [is image?] ...) image?]{
+  Underlays all of its arguments building a single image.
+  
+  It behaves like @scheme[overlay], but with the arguments in the reverse order.
+  That is, the first argument goes
+  underneath of the second argument, which goes underneath the third argument, etc.
+  The images are all lined up on their upper-left corners.
+
+  @image-examples[(underlay (rectangle 30 60 "solid" "orange")
+                            (ellipse 60 30 "solid" "purple"))
+                  (underlay (ellipse 10 60 "solid" "red")
+                            (ellipse 20 50 "solid" "black")
+                            (ellipse 30 40 "solid" "red")
+                            (ellipse 40 30 "solid" "black")
+                            (ellipse 50 20 "solid" "red")
+                            (ellipse 60 10 "solid" "black"))]
+  
+  }
+
+@defproc[(underlay/align [x-place x-place?] [y-place y-place?] [i1 image?] [i2 image?] [is image?] ...) image?]{
+  Underlays all of its image arguments, much like the @scheme[underlay] function, but using
+  @scheme[x-place] and @scheme[y-place] to determine where the images are lined up. For example, if
+  @scheme[x-place] and @scheme[y-place] are both @scheme["middle"], then the images are lined up
+  on their centers.
+
+  @image-examples[(underlay/align "middle" "middle"
+                                  (rectangle 30 60 "solid" "orange")
+                                  (ellipse 60 30 "solid" "purple"))
+                  (underlay/align "right" "top"
+                                  (rectangle 50 50 "solid" "seagreen")
+                                  (rectangle 40 40 "solid" "silver")
+                                  (rectangle 30 30 "solid" "seagreen")
+                                  (rectangle 20 20 "solid" "silver"))]
+                                  
+  
+  }
+
+@defproc[(underlay/xy [i1 image?] [x real?] [y real?] [i2 image?]) image?]{
+  Constructs an image by underlaying @scheme[i1] underneath of @scheme[i2] after
+  shifting @scheme[i2] over by @scheme[x] pixels to the right and @scheme[y] 
+  pixels down.
+  
+  This is the same as @scheme[(overlay/xy i2 (- x) (- y) i1)].
+  
+  @image-examples[(underlay/xy (rectangle 20 20 "outline" "black")
+                               20 0
+                               (rectangle 20 20 "outline" "black"))
+                  (underlay/xy (rectangle 20 20 "solid" "red")
+                               20 20
+                               (rectangle 20 20 "solid" "black"))
+                  (underlay/xy (rectangle 20 20 "solid" "red")
+                               -20 -20
+                               (rectangle 20 20 "solid" "black"))
+                  (underlay/xy 
+                   (underlay/xy (ellipse 40 40 "solid" "gray")
+                                10
+                                15
+                                (ellipse 10 10 "solid" "forestgreen"))
+                   20
+                   15
+                   (ellipse 10 10 "solid" "forestgreen"))]
+}
+
+
 @defproc[(beside [i1 image?] [i2 image?] [is image?] ...) image?]{
   Constructs an image by placing all of the argument images in a
   horizontal row, aligned along their top edges.

@@ -2779,6 +2779,29 @@ make_struct_proc(Scheme_Struct_Type *struct_type,
   return p;
 }
 
+Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym)
+{
+  if (SCHEME_PRIMP(p)) {
+    int is_getter = (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER);
+    int is_setter = (((Scheme_Primitive_Proc *)p)->pp.flags & SCHEME_PRIM_IS_STRUCT_INDEXED_GETTER);
+    
+    if (is_getter || is_setter) {
+      const char *func_name;
+      Struct_Proc_Info *i;
+
+      func_name = scheme_symbol_name(sym);
+      
+      i = (Struct_Proc_Info *)SCHEME_PRIM_CLOSURE_ELS(p)[0];
+      
+      return make_struct_proc(i->struct_type, (char *)func_name, 
+                              is_getter ? SCHEME_GETTER : SCHEME_SETTER,
+                              i->field);
+    }
+  }
+
+  return NULL;
+}
+
 static Scheme_Object *make_name(const char *pre, const char *tn, int ltn,
 				const char *post1, const char *fn, int lfn,
 				const char *post2, int sym)

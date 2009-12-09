@@ -283,7 +283,7 @@
 ;; pos-flds  : (Listof Type)
 ;; name-flds : (Listof (Tuple Symbol Type Boolean))
 ;; methods   : (Listof (Tuple Symbol Function))
-(dt Class ([pos-flds (listof Type/c)] 
+(dt Class ([pos-flds (listof Type/c)]
            [name-flds (listof (list/c symbol? Type/c boolean?))]
            [methods (listof (list/c symbol? Function?))])
     [#:frees (combine-frees

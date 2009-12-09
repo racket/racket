@@ -1,6 +1,4 @@
 
-do-not-run-me-yet
-
 ;; Runs 3 threads perfoming the test suite simultaneously. Each
 ;;  thread creates a directory sub<n> to run in, so that filesystem
 ;;  tests don't collide.

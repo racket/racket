@@ -626,21 +626,23 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          [orig-h (send orig-bm get-height)]
          [x-scale (bitmap-x-scale bitmap)]
          [y-scale (bitmap-y-scale bitmap)]
-         [scale-w (* x-scale (send orig-bm get-width))]
-         [scale-h (* y-scale (send orig-bm get-height))]
+         [scale-w (ceiling (inexact->exact (* x-scale (send orig-bm get-width))))]
+         [scale-h (ceiling (inexact->exact (* y-scale (send orig-bm get-height))))]
          [new-bm (make-object bitmap% scale-w scale-h)]
-         [new-mask (make-object bitmap% scale-w scale-h)])
-    (send new-bm set-loaded-mask new-mask)
+         [new-mask (and orig-mask (make-object bitmap% scale-w scale-h))])
+    (when new-mask
+      (send new-bm set-loaded-mask new-mask))
     
     (send bdc set-bitmap new-bm)
     (send bdc set-scale x-scale y-scale)
     (send bdc clear)
     (send bdc draw-bitmap orig-bm 0 0)
 
-    (send bdc set-bitmap new-mask)
-    (send bdc set-scale x-scale y-scale)
-    (send bdc clear)
-    (send bdc draw-bitmap orig-mask 0 0)
+    (when new-mask
+      (send bdc set-bitmap new-mask)
+      (send bdc set-scale x-scale y-scale)
+      (send bdc clear)
+      (send bdc draw-bitmap orig-mask 0 0))
     
     (send bdc set-bitmap #f)
     
@@ -734,6 +736,6 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          render-image)
 
 ;; method names
-(provide get-shape get-bb get-normalized?)
+(provide get-shape get-bb get-normalized? get-normalized-shape)
 
 (provide np-atomic-shape? atomic-shape? simple-shape?)

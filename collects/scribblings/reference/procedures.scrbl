@@ -53,8 +53,18 @@ result is @scheme[values].
 
 Returns a procedure that is like @scheme[proc], except that its name
 as returned by @scheme[object-name] (and as printed for debugging) is
-@scheme[name].}
+@scheme[name].
 
+The given @scheme[name] is used for printing an error message if the
+resulting procedure is applied to the wrong number of arguments.  In
+addition, if @scheme[proc] is an @tech{accessor} or @tech{mutator}
+produced by @scheme[define-struct],
+@scheme[make-struct-field-accessor], or
+@scheme[make-struct-field-mutator], the resulting procedure also uses
+@scheme[name] when its (first) argument has the wrong type. More
+typically, however, @scheme[name] is not used for reporting errors,
+since the procedure name is typically hard-wired into an internal
+check.}
 
 @; ----------------------------------------
 @section{Keywords and Arity}
@@ -243,7 +253,7 @@ See also @scheme[procedure-arity?].}
 
 @defthing[prop:procedure struct-type-property?]{
 
-A @tech{structure type property} to indentify structure types whose
+A @tech{structure type property} to identify structure types whose
 instances can be applied as procedures. In particular, when
 @scheme[procedure?] is applied to the instance, the result will be
 @scheme[#t], and when an instance is used in the function position of
@@ -441,8 +451,8 @@ primitive closure rather than a simple primitive procedure,
 
 Returns the arity of the result of the primitive procedure
 @scheme[prim] (as opposed to the procedure's input arity as returned
-by @scheme[arity]). For most primitives, this procedure returns
-@scheme[1], since most primitives return a single value when
+by @scheme[procedure-arity]). For most primitives, this procedure
+returns @scheme[1], since most primitives return a single value when
 applied.}
 
 @; ----------------------------------------

@@ -1196,8 +1196,8 @@ This property should only be present if the contract is a flat contract. In the 
      
      @mz-examples[#:eval (contract-eval)
                          (flat-pred? (-> integer? integer?))
-                         (let ([c (between/c 1 10)]
-                               [pred ((flat-get c) c)])
+                         (let* ([c (between/c 1 10)]
+                                [pred ((flat-get c) c)])
                            (list (pred 9)
                                  (pred 11)))]
 }

@@ -307,9 +307,13 @@
 
 ;; overlay : image image image ... -> image
 ;; places images on top of each other with their upper left corners aligned. last one goes on the bottom
-
 (define/chk (overlay image image2 . image3)
   (overlay/internal 'left 'top image (cons image2 image3)))
+
+;; underlay : image image image ... -> image
+(define (underlay image image2 . image3)
+  (let ([imgs (reverse (list* image image2 image3))])
+    (overlay/internal 'left 'top (car imgs) (cdr imgs))))
 
 ;; overlay/align : string string image image image ... -> image
 ;; the first string has to be one of "center" "middle" "left" or "right" (or symbols)
@@ -321,6 +325,10 @@
 
 (define/chk (overlay/align x-place y-place image image2 . image3)
   (overlay/internal x-place y-place image (cons image2 image3)))
+
+(define/chk (underlay/align x-place y-place image image2 . image3)
+  (let ([imgs (reverse (list* image image2 image3))])
+    (overlay/internal x-place y-place (car imgs) (cdr imgs))))
 
 (define (overlay/internal x-place y-place fst rst)
   (let loop ([fst fst]
@@ -346,14 +354,16 @@
   (case x-place
     [(left) 0]
     [(middle) (/ (image-right image) 2)]
-    [(right) (image-right image)]))
+    [(right) (image-right image)]
+    [else (error 'find-x-spot "~s" x-place)]))
 
 (define (find-y-spot y-place image)
   (case y-place
     [(top) 0]
     [(middle) (/ (image-bottom image) 2)]
     [(bottom) (image-bottom image)]
-    [(baseline) (image-baseline image)]))
+    [(baseline) (image-baseline image)]
+    [else (error 'find-y-spot "~s" y-place)]))
 
 ;; overlay/xy : image number number image -> image
 ;; places images on top of each other with their upper-left corners offset by the two numbers
@@ -365,6 +375,14 @@
              image2
              (if (< dx 0) 0 dx)
              (if (< dy 0) 0 dy)))
+
+(define/chk (underlay/xy image dx dy image2)
+  (overlay/δ image2
+             (if (< dx 0) 0 dx)
+             (if (< dy 0) 0 dy)
+             image
+             (if (< dx 0) (- dx) 0)
+             (if (< dy 0) (- dy) 0)))
 
 (define (overlay/δ image1 dx1 dy1 image2 dx2 dy2)
   (make-image (make-overlay (make-translate dx1 dy1 (image-shape image1))
@@ -943,6 +961,10 @@
 (provide overlay
          overlay/align
          overlay/xy
+         underlay
+         underlay/align
+         underlay/xy
+         
          beside
          beside/align
          above

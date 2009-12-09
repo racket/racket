@@ -20,7 +20,8 @@
 ;; plain version
 (module r0 syntax/module-reader scheme/base)
 (test-both '(r0) "#reader '~s (define FoO #:bAr)"
-           '(module page scheme/base (define FoO #:bAr)))
+           '(module anonymous-module scheme/base
+              (#%module-begin (define FoO #:bAr))))
 
 ;; using a simple wrapper to get a case-insensitive reader
 (module r1 syntax/module-reader scheme/base
@@ -35,7 +36,8 @@
     (parameterize ([read-case-sensitive #f]) (apply reader args))))
 ;;
 (test-both '(r1 r2 r3) "#reader '~s (define FoO #:bAr)"
-           '(module page scheme/base (define foo #:bar)))
+           '(module anonymous-module scheme/base
+              (#%module-begin (define foo #:bar))))
 
 ;; add something to the result
 (module r4 syntax/module-reader zzz
@@ -45,7 +47,8 @@
   #:wrapper1 (lambda (t stx?) (cons (if stx? #'foo 'foo) (t))))
 ;;
 (test-both '(r4 r5) "#reader '~s (define foo #:bar)"
-           '(module page zzz foo (define foo #:bar)))
+           '(module anonymous-module zzz
+              (#%module-begin foo (define foo #:bar))))
 
 ;; make an empty module, after reading the contents
 (module r6 syntax/module-reader zzz
@@ -56,14 +59,16 @@
 ;; forget about the input -- just return a fixed empty input module
 (module r8 syntax/module-reader whatever
   #:wrapper2 (lambda (in rd)
-               (if (syntax? (rd in)) #'(module page zzz) '(module page zzz))))
+               (if (syntax? (rd in))
+                 #'(module anonymous-module zzz (#%module-begin))
+                 '(module anonymous-module zzz (#%module-begin)))))
 ;; the same, the easy way
 (module r9 syntax/module-reader
   #:language (lambda () 'zzz)
   #:wrapper1 (lambda (t) '()))
 ;;
 (test-both '(r6 r7 r8 r9) "#reader '~s (define foo #:bar)"
-           '(module page zzz))
+           '(module anonymous-module zzz (#%module-begin)))
 
 ;; a module that uses the scribble syntax with a specified language
 (module r10 syntax/module-reader -ignored-
@@ -89,9 +94,11 @@
   (require scribble/reader))
 ;;
 (test-both '(r10 r11) "#reader '~s scheme/base (define foo 1)"
-           '(module page scheme/base (define foo 1)))
+           '(module anonymous-module scheme/base
+              (#%module-begin (define foo 1))))
 (test-both '(r10 r11) "#reader '~s scheme/base @define[foo]{one}"
-           '(module page scheme/base (define foo "one")))
+           '(module anonymous-module scheme/base
+              (#%module-begin (define foo "one"))))
 
 ;; ----------------------------------------
 

@@ -1,43 +1,19 @@
 #lang scheme/base
-(require (for-syntax mzlib/inflate
-                     scheme/base))
+(require (for-syntax scheme/base file/gunzip net/base64))
+(provide (except-out (all-from-out scheme/base) #%module-begin)
+         (rename-out [module-begin #%module-begin]))
 
-(provide decode)
-
-(define-syntax (decode stx)
+(define-syntax (module-begin stx)
   (syntax-case stx ()
-    [(_ arg ...)
-     (andmap identifier? (syntax->list (syntax (arg ...))))
-     (let ()
-       (define (decode-sexp str)
-         (let* ([loc 
-                 (let loop ([chars (string->list str)])
-                   (cond
-                     [(null? chars) '()]
-                     [(null? (cdr chars)) (error 'to-sexp "missing digit somewhere")]
-                     [else (let ([fst (to-digit (car chars))]
-                                 [snd (to-digit (cadr chars))])
-                             (cons
-                              (+ (* fst 16) snd)
-                              (loop (cddr chars))))]))])
-           (let-values ([(p-in p-out) (make-pipe)])
-             (inflate (open-input-bytes (apply bytes loc)) p-out)
-             (read p-in))))
-       
-       (define (to-digit char)
-         (cond
-           [(char<=? #\0 char #\9) 
-            (- (char->integer char)
-               (char->integer #\0))]
-           [(char<=? #\a char #\f) 
-            (+ 10 (- (char->integer char)
-                     (char->integer #\a)))]))
-       
-       (define decoded
-         (decode-sexp 
-          (apply 
-           string-append
-           (map (λ (x) (symbol->string (syntax-e x)))
-                (syntax->list (syntax (arg ...)))))))
-       
-       (datum->syntax stx decoded stx))]))
+    [(_ x ...)
+     (andmap (lambda (x) (or identifier? (integer? (syntax-e x))))
+             (syntax->list #'(x ...)))
+     (let* ([data  (format "~a" (syntax->datum #'(x ...)))]
+            [data  (substring data 1 (sub1 (string-length data)))]
+            [data  (string->bytes/utf-8 data)]
+            [in    (open-input-bytes (base64-decode data))]
+            [out   (open-output-string)]
+            [out   (begin (inflate in out) (get-output-string out))]
+            [exprs (read (open-input-string (string-append "(" out ")")))]
+            [exprs (datum->syntax stx exprs stx)])
+       #`(#%module-begin #,@exprs))]))

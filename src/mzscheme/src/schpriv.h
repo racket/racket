@@ -689,6 +689,8 @@ Scheme_Object *scheme_clone_prefab_struct_instance(Scheme_Structure *s);
 
 Scheme_Object *scheme_extract_checked_procedure(int argc, Scheme_Object **argv);
 
+Scheme_Object *scheme_rename_struct_proc(Scheme_Object *p, Scheme_Object *sym);
+
 /*========================================================================*/
 /*                         syntax objects                                 */
 /*========================================================================*/
@@ -3190,6 +3192,13 @@ Scheme_Object *scheme_checked_byte_string_ref(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_byte_string_set(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_checked_syntax_e(int argc, Scheme_Object **argv);
 Scheme_Object *scheme_vector_length(Scheme_Object *v);
+Scheme_Object *scheme_checked_flvector_ref(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_checked_flvector_set(int argc, Scheme_Object **argv);
+Scheme_Object *scheme_flvector_length(Scheme_Object *v);
+
+void scheme_bad_vec_index(char *name, Scheme_Object *i, 
+                          const char *what, Scheme_Object *vec, 
+                          long bottom, long len);
 
 Scheme_Bucket_Table *scheme_make_weak_equal_table(void);
 
@@ -3248,8 +3257,11 @@ typedef struct Scheme_Symbol_Parts {
   const char *name;
 } Scheme_Symbol_Parts;
 
-void spawn_master_scheme_place();
+void scheme_spawn_master_place();
 void *scheme_master_fast_path(int msg_type, void *msg_payload);
+void scheme_places_block_child_signal();
+int scheme_get_child_status(int pid, int *status);
+int scheme_places_register_child(int pid, void *signal_fd, int *status);
 # endif
 Scheme_Object *scheme_places_deep_copy(Scheme_Object *so);
 #endif

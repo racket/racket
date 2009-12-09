@@ -76,14 +76,16 @@ doing these checks.
                          (loop a1 b1 c1)))))))))
 
     (define-syntax-rule (copying-insertionsort Alo Blo n)
-      (let iloop ([i 0] [A Alo])
-        (when (i< i n)
-          (let ([ref-i (ref A)])
-            (let jloop ([j (i+ Blo i)])
-              (let ([ref-j-1 (ref (i- j 1))])
-                (if (and (i< Blo j) (<? ref-i ref-j-1))
-                  (begin (set! j ref-j-1) (jloop (i- j 1)))
-                  (begin (set! j ref-i) (iloop (i+ i 1) (i+ A 1))))))))))
+      ;; n is never 0
+      (begin (set! Blo (ref Alo))
+             (let iloop ([i 1])
+               (when (i< i n)
+                 (let ([ref-i (ref (i+ Alo i))])
+                   (let jloop ([j (i+ Blo i)])
+                     (let ([ref-j-1 (ref (i- j 1))])
+                       (if (and (i< Blo j) (<? ref-i ref-j-1))
+                         (begin (set! j ref-j-1) (jloop (i- j 1)))
+                         (begin (set! j ref-i) (iloop (i+ i 1)))))))))))
 
     (define (copying-mergesort Alo Blo n)
       (cond

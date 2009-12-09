@@ -2,7 +2,8 @@
 @(require "common.ss")
 
 @(require (for-label syntax/module-reader
-                     (only-in scribble/reader read-syntax-inside read-inside)))
+                     (only-in scribble/reader
+                              read-syntax-inside read-inside)))
 
 @title[#:tag "module-reader"]{Module Reader}
 
@@ -15,16 +16,17 @@ is the name of the module that will be used in the language position
 of read modules; using keywords, the resulting readers can be
 customized in a number of ways.
 
-@defform*/subs[[(#%module-begin module-path)
-                (#%module-begin module-path reader-option ... body ....)
-                (#%module-begin             reader-option ... body ....)]
-               ([reader-option (code:line #:language    lang-expr)
-                               (code:line #:read        read-expr)
-                               (code:line #:read-syntax read-syntax-expr)
-                               (code:line #:info        info-expr)
-                               (code:line #:wrapper1    wrapper1-expr)
-                               (code:line #:wrapper2    wrapper2-expr)
-                               (code:line #:whole-body-readers? whole?-expr)])]{
+@defform*/subs[
+  [(#%module-begin module-path)
+   (#%module-begin module-path reader-option ... body ....)
+   (#%module-begin             reader-option ... body ....)]
+  ([reader-option (code:line #:language    lang-expr)
+                  (code:line #:read        read-expr)
+                  (code:line #:read-syntax read-syntax-expr)
+                  (code:line #:info        info-expr)
+                  (code:line #:wrapper1    wrapper1-expr)
+                  (code:line #:wrapper2    wrapper2-expr)
+                  (code:line #:whole-body-readers? whole?-expr)])]{
 
 Causes a module written in the @schememodname[syntax/module-reader]
 language to define and provide @schemeidfont{read} and
@@ -37,26 +39,25 @@ That is, a module @scheme[_something]@scheme[/lang/reader] implemented
 as
 
 @schemeblock[
-(module reader syntax/module-reader
-  module-path)
+  (module reader syntax/module-reader
+    module-path)
 ]
 
-creates a reader that converts @scheme[#,(hash-lang)_something]
-into
+creates a reader that converts @scheme[#,(hash-lang)_something] into
 
 @schemeblock[
-(module _name-id module-path
-  ....)
+  (module _name-id module-path
+    (#%module-begin ....))
 ]
 
 where @scheme[_name-id] is derived from the name of the port used by
-the reader.
+the reader, or @scheme[anonymous-module] if the port has no name.
 
 For example, @scheme[scheme/base/lang/reader] is implemented as
 
 @schemeblock[
-(module reader syntax/module-reader
-  scheme/base)
+  (module reader syntax/module-reader
+    scheme/base)
 ]
 
 The reader functions can be customized in a number of ways, using
@@ -68,10 +69,10 @@ reading.  For example, you can implement a
 using:
 
 @schemeblock[
-(module reader syntax/module-reader
-  honu
-  #:read read-honu
-  #:read-syntax read-honu-syntax)
+  (module reader syntax/module-reader
+    honu
+    #:read read-honu
+    #:read-syntax read-honu-syntax)
 ]
 
 Similarly, the @scheme[#:info] keyword supplies a procedure to be used
@@ -82,17 +83,17 @@ procedure (to be called with the key and default result for default
 handling). If @scheme[#:info] is not supplied, the default
 info-getting procedure is used.
 
-You can also use the (optional) module @scheme[body] forms to provide more
-definitions that might be needed to implement your reader functions.
-For example, here is a case-insensitive reader for the
+You can also use the (optional) module @scheme[body] forms to provide
+more definitions that might be needed to implement your reader
+functions.  For example, here is a case-insensitive reader for the
 @scheme[scheme/base] language:
 
 @schemeblock[
-(module reader syntax/module-reader
-  scheme/base
-  #:read (wrap read) #:read-syntax (wrap read-syntax)
-  (define ((wrap reader) . args)
-    (parameterize ([read-case-sensitive #f]) (apply reader args))))
+  (module reader syntax/module-reader
+    scheme/base
+    #:read (wrap read) #:read-syntax (wrap read-syntax)
+    (define ((wrap reader) . args)
+      (parameterize ([read-case-sensitive #f]) (apply reader args))))
 ]
 
 In many cases, however, the standard @scheme[read] and
@@ -105,11 +106,11 @@ alternative definition of the case-insensitive language using
 @scheme[#:wrapper1]:
 
 @schemeblock[
-(module reader syntax/module-reader
-  scheme/base
-  #:wrapper1 (lambda (t)
-               (parameterize ([read-case-sensitive #f])
-                 (t))))
+  (module reader syntax/module-reader
+    scheme/base
+    #:wrapper1 (lambda (t)
+                 (parameterize ([read-case-sensitive #f])
+                   (t))))
 ]
 
 Note that using a @tech[#:doc refman]{readtable}, you can implement
@@ -125,11 +126,11 @@ that corresponds to a file).  Here is the case-insensitive implemented
 using this option:
 
 @schemeblock[
-(module reader syntax/module-reader
-  scheme/base
-  #:wrapper2 (lambda (in r)
-               (parameterize ([read-case-sensitive #f])
-                 (r in))))
+  (module reader syntax/module-reader
+    scheme/base
+    #:wrapper2 (lambda (in r)
+                 (parameterize ([read-case-sensitive #f])
+                   (r in))))
 ]
 
 In some cases, the reader functions read the whole file, so there is
@@ -148,10 +149,9 @@ the resulting readers:
     following reader defines a ``language'' that ignores the contents
     of the file, and simply reads files as if they were empty:
     @schemeblock[
-    (module ignored syntax/module-reader
-      scheme/base
-      #:wrapper1 (lambda (t) (t) '()))
-    ]
+      (module ignored syntax/module-reader
+        scheme/base
+        #:wrapper1 (lambda (t) (t) '()))]
     Note that it is still performing the read, otherwise the module
     loader will complain about extra expressions.}
   @item{The reader function that is passed to a @scheme[#:wrapper2]
@@ -168,22 +168,22 @@ scribble syntax, and the first datum in the file determines the actual
 language (which means that the library specification is effectively
 ignored):
 @schemeblock[
-(module reader syntax/module-reader
-  -ignored-
-  #:wrapper2
-  (lambda (in rd stx?)
-    (let* ([lang (read in)]
-           [mod  (parameterize ([current-readtable 
-                                 (make-at-readtable)])
-                   (rd in))]
-           [mod  (if stx? mod (datum->syntax #f mod))]
-           [r (syntax-case mod ()
-                [(module name lang* . body)
-                 (with-syntax ([lang (datum->syntax
-                                      #'lang* lang #'lang*)])
-                   (syntax/loc mod (module name lang . body)))])])
-      (if stx? r (syntax->datum r))))
-  (require scribble/reader))
+  (module reader syntax/module-reader
+    -ignored-
+    #:wrapper2
+    (lambda (in rd stx?)
+      (let* ([lang (read in)]
+             [mod  (parameterize ([current-readtable
+                                   (make-at-readtable)])
+                     (rd in))]
+             [mod  (if stx? mod (datum->syntax #f mod))]
+             [r (syntax-case mod ()
+                  [(module name lang* . body)
+                   (with-syntax ([lang (datum->syntax
+                                        #'lang* lang #'lang*)])
+                     (syntax/loc mod (module name lang . body)))])])
+        (if stx? r (syntax->datum r))))
+    (require scribble/reader))
 ]
 
 This ability to change the language position in the resulting module
@@ -191,22 +191,33 @@ expression can be useful in cases such as the above, where the base
 language module is chosen based on the input.  To make this more
 convenient, you can omit the @scheme[module-path] and instead specify
 it via a @scheme[#:language] expression.  This expression can evaluate
-to a datum or syntax object that is used as a language, or it can evaluate to a thunk.
-In the latter case, the thunk is invoked to obtain such a datum
-before reading the module body begins, in a dynamic extent where
-@scheme[current-input-port] is the source input. A syntax object is converted
-using @scheme[syntax->datum] when a datum is needed (for @scheme[read] instead of @scheme[read-syntax]). 
-Using @scheme[#:language], the last
-example above can be written more concisely:
+to a datum or syntax object that is used as a language, or it can
+evaluate to a thunk.  In the latter case, the thunk is invoked to
+obtain such a datum before reading the module body begins, in a
+dynamic extent where @scheme[current-input-port] is the source
+input. A syntax object is converted using @scheme[syntax->datum] when
+a datum is needed (for @scheme[read] instead of @scheme[read-syntax]).
+Using @scheme[#:language], the last example above can be written more
+concisely:
+
 @schemeblock[
-(module reader syntax/module-reader
-  #:language read
-  #:wrapper2 (lambda (in rd stx?)
-               (parameterize ([current-readtable 
-                               (make-at-readtable)])
-                 (rd in)))
-  (require scribble/reader))
+  (module reader syntax/module-reader
+    #:language read
+    #:wrapper2 (lambda (in rd stx?)
+                 (parameterize ([current-readtable
+                                 (make-at-readtable)])
+                   (rd in)))
+    (require scribble/reader))
 ]
+
+
+Note: if such whole-body reader functions return a list with a single
+expression that begins with @scheme[#%module-begin], then the
+@scheme[syntax/module-reader] language will not inappropriately add
+another.  This for backwards-compatibility with older code: having a
+whole-body reader functions or wrapper functions that return a
+@scheme[#%module-begin]-wrapped body is deprectaed.
+
 }
 
 
@@ -227,7 +238,8 @@ procedures chains to another language that is specified in an input
 stream.
 
 @margin-note{The @schememodname[at-exp], @schememodname[reader], and
-@schememodname[planet] languages are implemented using this function.}
+  @schememodname[planet] languages are implemented using this
+  function.}
 
 The generated functions expect a target language description in the
 input stream that is provided to @scheme[read-spec]. The default
@@ -239,8 +251,9 @@ reader exception is raised, and @scheme[path-desc-str] is used as a
 description of the expected language form in the error message.
 
 @margin-note{The @schememodname[reader] language supplies
-@scheme[read] for @scheme[read-spec]. The @schememodname[at-exp] and
-@schememodname[planet] languages use the default @scheme[read-spec].}
+  @scheme[read] for @scheme[read-spec]. The @schememodname[at-exp] and
+  @schememodname[planet] languages use the default
+  @scheme[read-spec].}
 
 The result of @scheme[read-spec] is converted to a module path using
 @scheme[module-path-parser]. If @scheme[module-path-parser] produces
@@ -256,9 +269,9 @@ passed to @scheme[convert-read], @scheme[convert-read-syntax], or
 @scheme[convert-get-info], respectively.
 
 @margin-note{The @schememodname[at-exp] language supplies
-@scheme[convert-read] and @scheme[convert-read-syntax] to add
-@"@"-expression support to the current readtable before chaining to
-the given procedures.}
+  @scheme[convert-read] and @scheme[convert-read-syntax] to add
+  @"@"-expression support to the current readtable before chaining to
+  the given procedures.}
 
 The procedures generated by @scheme[make-meta-reader] are not meant
 for use with the @schememodname[syntax/module-reader] language; they
@@ -277,14 +290,14 @@ are meant to be exported directly.}
 
 @emph{This function is deprecated; the
 @schememodname[syntax/module-reader] language can be adapted using the
-various keywords to arbitrary readers, and please use it instead.}
+various keywords to arbitrary readers; please use it instead.}
 
 Repeatedly calls @scheme[read] on @scheme[in] until an end of file,
 collecting the results in order into @scheme[_lst], and derives a
-@scheme[_name-id] from @scheme[(object-name in)].  The last five 
+@scheme[_name-id] from @scheme[(object-name in)].  The last five
 arguments are used to construct the syntax object for the language
 position of the module.  The result is roughly
 
 @schemeblock[
-`(module ,_name-id ,mod-path ,@_lst)
+  `(module ,_name-id ,mod-path ,@_lst)
 ]}

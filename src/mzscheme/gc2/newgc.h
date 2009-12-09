@@ -88,6 +88,8 @@ typedef struct Page_Range {
 #ifdef MZ_USE_PLACES
 typedef struct NewGCMasterInfo {
   unsigned short next_GC_id;
+  unsigned char *have_collected;
+  void **signal_fds;
   mzrt_rwlock *cangc;
 } NewGCMasterInfo;
 #endif
@@ -173,6 +175,7 @@ typedef struct NewGC {
   /* Distributed GC over places info */
 #ifdef MZ_USE_PLACES
   objhead       saved_GC_objhead_template;
+  int           major_places_gc;   /* :1; */
 #endif
 
  struct mpage *thread_local_pages;

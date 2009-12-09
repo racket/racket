@@ -2060,6 +2060,12 @@
       x)
    '(2))
 
+  (test/spec-passed
+   'or/c-hmm
+   (let ([funny/c (or/c (and/c procedure? (-> any)) (listof (-> number?)))])
+     (contract (-> funny/c any) void 'pos 'neg)))
+
+  
   
 ;                                          
 ;                                          
@@ -2282,7 +2288,53 @@
                         'neg)
               'x)
    1)
-  
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;;  make-proj-contract
+  ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (contract-eval
+   '(define proj:add1->sub1
+      (make-proj-contract
+       'proj:add1->sub1
+       (lambda (pos neg src name blame)
+         (lambda (f)
+           (unless (and (procedure? f) (procedure-arity-includes? f 1))
+             (raise-contract-error f src pos name
+                                   "expected a unary function, got: ~e"
+                                   f))
+           (lambda (x)
+             (unless (and (integer? x) (exact? x))
+               (raise-contract-error x src neg name
+                                     "expected an integer, got: ~e"
+                                     x))
+             (let* ([y (f (add1 x))])
+               (unless (and (integer? y) (exact? y))
+                 (raise-contract-error y src pos name
+                                       "expected an integer, got: ~e"
+                                       y))
+               (sub1 y)))))
+       (lambda (f)
+         (and (procedure? f) (procedure-arity-includes? f 1))))))
+
+  (test/spec-passed/result
+   'make-proj-contract-1
+   '((contract proj:add1->sub1 sqrt 'pos 'neg) 15)
+   3)
+
+  (test/pos-blame
+   'make-proj-contract-2
+   '(contract proj:add1->sub1 'dummy 'pos 'neg))
+
+  (test/pos-blame
+   'make-proj-contract-3
+   '((contract proj:add1->sub1 (lambda (x) 'dummy) 'pos 'neg) 2))
+
+  (test/neg-blame
+   'make-proj-contract-4
+   '((contract proj:add1->sub1 sqrt 'pos 'neg) 'dummy))
   
 ;                                                                                           
 ;                                                                                           
@@ -5200,6 +5252,88 @@
   ;;  end of define-opt/c
   ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;;  opt/c and blame
+  ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (contract-eval
+   '(begin
+
+      (define proj:blame/c
+        (make-proj-contract
+         'proj:blame/c
+         (lambda (pos neg src name blame)
+           (lambda (x)
+             (if blame 'positive 'negative)))
+         (lambda (x) #t)))
+
+      (define call*0 'dummy)
+      (define (call*1 x0) x0)
+      (define (call*2 f1 x0) (f1 x0))
+      (define (call*3 f2 x1 x0) (f2 x1 x0))))
+
+  (test/spec-passed/result
+   'opt/c-blame-0
+   '((contract
+      (-> (-> (-> proj:blame/c any/c) any/c any/c) (-> any/c any/c) any/c any/c)
+      call*3
+      'pos
+      'neg)
+     call*2
+     call*1
+     call*0)
+   'negative)
+
+  (test/spec-passed/result
+   'opt/c-blame-1
+   '((contract
+      (opt/c (-> (-> (-> proj:blame/c any/c) any/c any/c) (-> any/c any/c) any/c any/c))
+      call*3
+      'pos
+      'neg)
+     call*2
+     call*1
+     call*0)
+   'negative)
+
+  (test/spec-passed/result
+   'opt/c-blame-2
+   '((contract
+      (-> (opt/c (-> (-> proj:blame/c any/c) any/c any/c)) (-> any/c any/c) any/c any/c)
+      call*3
+      'pos
+      'neg)
+     call*2
+     call*1
+     call*0)
+   'negative)
+
+  (test/spec-passed/result
+   'opt/c-blame-3
+   '((contract
+      (-> (-> (opt/c (-> proj:blame/c any/c)) any/c any/c) (-> any/c any/c) any/c any/c)
+      call*3
+      'pos
+      'neg)
+     call*2
+     call*1
+     call*0)
+   'negative)
+
+  (test/spec-passed/result
+   'opt/c-blame-4
+   '((contract
+      (-> (-> (-> (opt/c proj:blame/c) any/c) any/c any/c) (-> any/c any/c) any/c any/c)
+      call*3
+      'pos
+      'neg)
+     call*2
+     call*1
+     call*0)
+   'negative)
   
   ;; NOT YET RELEASED
   #;

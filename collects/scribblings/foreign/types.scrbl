@@ -470,6 +470,15 @@ form, only the input @scheme[type-expr]s and the output @scheme[type-expr] are
 specified, and each types is a simple expression, which creates a
 straightforward function type.
 
+For instance,
+
+@schemeblock[
+(_fun _int _string -> _int)
+]
+
+specifies a function that receives an integer and a
+string, and returns an integer.
+
 In its full form, the @scheme[_fun] syntax provides an IDL-like
 language that can be used to create a wrapper function around the
 primitive foreign function.  These wrappers can implement complex

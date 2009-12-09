@@ -285,7 +285,7 @@
                          (send dc set-text-foreground color)
                          (send dc draw-text "?" 
                                (+ endx dx fw)
-                               (- endy dy fh)))))))])
+                               (- (+ endy dy) fh)))))))])
           (add-mouse-drawing from1 from2 draw tack-box)
           (add-mouse-drawing to1 to2 draw tack-box))))
 

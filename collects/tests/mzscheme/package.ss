@@ -39,6 +39,7 @@
 
 (define (test-pack-seq* forms expr q-expr result)
   (let ([orig (current-namespace)])
+    ;; top level
     (let ([ns (make-base-namespace)])
       (parameterize ([current-namespace ns])
         (namespace-attach-module orig 'scheme/package)
@@ -48,6 +49,7 @@
         (if (fail? expr)
             (err/rt-test (eval (fail-expr expr)) result)
             (test result q-expr (eval expr)))))
+    ;; let
     (let ([ns (make-base-namespace)])
       (parameterize ([current-namespace ns])
         (namespace-attach-module orig 'scheme/package)
@@ -57,6 +59,21 @@
           (if (fail? expr)
               (err/rt-test (eval e) result)
               (test result `(let ... ,q-expr) (eval e))))))
+    ;; nested let
+    (let ([ns (make-base-namespace)])
+      (parameterize ([current-namespace ns])
+        (namespace-attach-module orig 'scheme/package)
+        (namespace-require '(for-syntax scheme/base))
+        (namespace-require 'scheme/package)
+        (let ([e (let loop ([forms forms])
+                   (if (null? (cdr forms))
+                       `(let () (begin . ,forms) ,(fail-expr expr))
+                       `(let () ,(car forms)
+                             ,(loop (cdr forms)))))])
+          (if (fail? expr)
+              (err/rt-test (eval e) result)
+              (test result `(let ... ,q-expr) (eval e))))))
+    ;; module
     (let ([ns (make-base-namespace)])
       (parameterize ([current-namespace ns])
         (namespace-attach-module orig 'scheme/package)

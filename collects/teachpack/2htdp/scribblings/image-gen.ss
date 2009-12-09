@@ -28,7 +28,13 @@
 
 (define (handle-image exp)
   (printf ".") (flush-output)
-  (let ([result (parameterize ([current-namespace image-ns]) (eval exp))])
+  (let ([result 
+         (with-handlers ([exn:fail?
+                          (λ (x)
+                            (printf "\nerror evaluating:\n")
+                            (pretty-print exp)
+                            (raise x))])
+           (parameterize ([current-namespace image-ns]) (eval exp)))])
     (cond
       [(image? result)
        (let ([fn (exp->filename exp)])

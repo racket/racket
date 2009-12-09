@@ -469,8 +469,8 @@
 
   (define in-port
     (case-lambda
-      [()  (in-port (current-input-port) read)]
-      [(r) (in-port (current-input-port) r)]
+      [()  (in-port read (current-input-port))]
+      [(r) (in-port r (current-input-port))]
       [(r p)
        (unless (and (procedure? r) (procedure-arity-includes? r 1))
          (raise-type-error 'in-port "procedure (arity 1)" r))

@@ -8,8 +8,8 @@
   (list
    (list '(image-height (rectangle 100 100 "solid" "black")) 'val 100)
    (list '(image-baseline (rectangle 100 100 "solid" "black")) 'val 100)
-   (list '(image-height (text "Hello" 24 "black")) 'val 24.0)
-   (list '(image-baseline (text "Hello" 24 "black")) 'val 18.0)
+   (list '(image-height (text "Hello" 24 "black")) 'val 41.0)
+   (list '(image-baseline (text "Hello" 24 "black")) 'val 31.0)
    (list
     '(image-height
       (overlay (circle 20 "solid" "orange") (circle 30 "solid" "purple")))
@@ -114,6 +114,76 @@
       (ellipse 20 10 "solid" "black"))
     'image
     "28c73238138.png")
+   (list
+    '(underlay/xy
+      (underlay/xy
+       (ellipse 40 40 "solid" "gray")
+       10
+       15
+       (ellipse 10 10 "solid" "forestgreen"))
+      20
+      15
+      (ellipse 10 10 "solid" "forestgreen"))
+    'image
+    "201c231dce2.png")
+   (list
+    '(underlay/xy
+      (rectangle 20 20 "solid" "red")
+      -20
+      -20
+      (rectangle 20 20 "solid" "black"))
+    'image
+    "42f9f9e4cf.png")
+   (list
+    '(underlay/xy
+      (rectangle 20 20 "solid" "red")
+      20
+      20
+      (rectangle 20 20 "solid" "black"))
+    'image
+    "157ab5efca7.png")
+   (list
+    '(underlay/xy
+      (rectangle 20 20 "outline" "black")
+      20
+      0
+      (rectangle 20 20 "outline" "black"))
+    'image
+    "26bd803042c.png")
+   (list
+    '(underlay/align
+      "right"
+      "top"
+      (rectangle 50 50 "solid" "seagreen")
+      (rectangle 40 40 "solid" "silver")
+      (rectangle 30 30 "solid" "seagreen")
+      (rectangle 20 20 "solid" "silver"))
+    'image
+    "ff2fcb7b87.png")
+   (list
+    '(underlay/align
+      "middle"
+      "middle"
+      (rectangle 30 60 "solid" "orange")
+      (ellipse 60 30 "solid" "purple"))
+    'image
+    "2d1e52503d7.png")
+   (list
+    '(underlay
+      (ellipse 10 60 "solid" "red")
+      (ellipse 20 50 "solid" "black")
+      (ellipse 30 40 "solid" "red")
+      (ellipse 40 30 "solid" "black")
+      (ellipse 50 20 "solid" "red")
+      (ellipse 60 10 "solid" "black"))
+    'image
+    "28253f4c3c.png")
+   (list
+    '(underlay
+      (rectangle 30 60 "solid" "orange")
+      (ellipse 60 30 "solid" "purple"))
+    'image
+    "9858b8d5d.png")
    (list
     '(overlay/xy
       (overlay/xy

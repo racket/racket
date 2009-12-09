@@ -253,9 +253,9 @@ machine's instruction to add the numbers (and check for overflow). If
 the two numbers are not fixnums, then the next check whether whether
 both are flonums; in that case, the machine's floating-point
 operations are used directly. For functions that take any number of
-arguments, such as @scheme[+], inlining is applied only for the
-two-argument case (except for @scheme[-], whose one-argument case is
-also inlined).
+arguments, such as @scheme[+], inlining works for two or more
+arguments (except for @scheme[-], whose one-argument case is also
+inlined) when the arguments are either all fixnums or all flonums.
 
 Flonums are @defterm{boxed}, which means that memory is allocated to
 hold every result of a flonum computation. Fortunately, the
