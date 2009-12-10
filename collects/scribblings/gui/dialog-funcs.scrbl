@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.ss" 
+          (for-label mrlib/path-dialog))
 
 @title{Dialogs}
 
