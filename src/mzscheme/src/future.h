@@ -24,7 +24,6 @@ int scheme_make_prim_w_arity(prim_t func, char *name, int arg1, int arg2);
 #include <stdio.h>
 
 typedef void (*prim_void_void_3args_t)(Scheme_Object **);
-typedef unsigned long (*prim_alloc_void_pvoid_t)();
 typedef Scheme_Object* (*prim_obj_int_pobj_obj_t)(Scheme_Object*, int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_t)(int, Scheme_Object**);
 typedef Scheme_Object* (*prim_int_pobj_obj_obj_t)(int, Scheme_Object**, Scheme_Object*);
@@ -105,7 +104,7 @@ typedef struct future_t {
 //Signature flags for primitive invocations
 //Here the convention is SIG_[arg1type]_[arg2type]..._[return type]
 #define SIG_VOID_VOID_3ARGS 1 						//void -> void, copy 3 args from runstack
-#define SIG_ALLOC_VOID_PVOID 2 						//void -> void*
+#define SIG_ALLOC 2 						//void -> void*
 
 # include "jit_ts_protos.h"
 
@@ -122,7 +121,7 @@ extern Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v);
 															}
 
 extern void scheme_rtcall_void_void_3args(const char *who, int src_type, prim_void_void_3args_t f);
-extern unsigned long scheme_rtcall_alloc_void_pvoid(const char *who, int src_type, prim_alloc_void_pvoid_t f);
+extern unsigned long scheme_rtcall_alloc(const char *who, int src_type);
 
 #else 
 
@@ -136,7 +135,7 @@ extern unsigned long scheme_rtcall_alloc_void_pvoid(const char *who, int src_typ
 #define LOG_THISCALL LOG(__FUNCTION__)
 
 #define LOG_RTCALL_VOID_VOID_3ARGS(f) LOG("(function=%p)", f)
-#define LOG_RTCALL_ALLOC_VOID_PVOID(f) LOG("(function=%p)", f)
+#define LOG_RTCALL_ALLOC(f) LOG("(function=%p)", f)
 #define LOG_RTCALL_OBJ_INT_POBJ_OBJ(f,a,b,c) LOG("(function = %p, a=%p, b=%d, c=%p)", f, a, b, c)
 #define LOG_RTCALL_OBJ_INT_POBJ_VOID(a,b,c) LOG("(%p, %d, %p)", a, b,c)
 #define LOG_RTCALL_INT_OBJARR_OBJ(a,b) LOG("(%d, %p)", a, b)
@@ -159,7 +158,7 @@ extern unsigned long scheme_rtcall_alloc_void_pvoid(const char *who, int src_typ
 #define LOG_THISCALL
 
 #define LOG_RTCALL_VOID_VOID_3ARGS(f)
-#define LOG_RTCALL_ALLOC_VOID_PVOID(f)
+#define LOG_RTCALL_ALLOC(f)
 #define LOG_RTCALL_OBJ_INT_POBJ_OBJ(f,a,b,c)
 #define LOG_RTCALL_OBJ_INT_POBJ_VOID(a,b,c)
 #define LOG_RTCALL_INT_OBJARR_OBJ(a,b)

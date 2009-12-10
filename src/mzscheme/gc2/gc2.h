@@ -410,9 +410,16 @@ GC2_EXTERN void GC_switch_back_from_master(void *gc);
    Switches to back to gc from the master GC
 */
 
-GC2_EXTERN unsigned long GC_make_jit_nursery_page();
+GC2_EXTERN long GC_alloc_alignment();
 /*
-   Obtains a nursery page from the GC for thread local allocation.
+   Guaranteeed alignment for nusery pages. Returns a constant, and
+   can be called from any thread.
+*/
+
+GC2_EXTERN unsigned long GC_make_jit_nursery_page(int count);
+/*
+   Obtains nursery pages from the GC for thread local allocation;
+   resulting space is count times the allocation alignment.
    The result is an unsigned long because it's not a valid
    pointer to a GCable object. The result becomes invalid (i.e. it's collected)
    with the next GC.

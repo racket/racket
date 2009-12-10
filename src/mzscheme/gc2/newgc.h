@@ -5,8 +5,8 @@ typedef struct mpage {
   struct mpage *next;
   struct mpage *prev;
   void *addr;
-  unsigned long previous_size; /* for med page, points to place to search for available block */
-  unsigned long size; /* big page size or med page element size */
+  unsigned long previous_size; /* for med page, place to search for available block; for jit nursery, allocated size */
+  unsigned long size; /* big page size, med page element size, or nursery starting point */
   unsigned char generation;
 /*
   unsigned char back_pointers :1;
