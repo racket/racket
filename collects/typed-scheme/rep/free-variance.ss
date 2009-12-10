@@ -1,9 +1,8 @@
 #lang scheme/base
-(require "../utils/utils.ss")
-
-(require (for-syntax scheme/base)
-         (utils tc-utils)
-         mzlib/etc)
+(require "../utils/utils.ss"
+	 (for-syntax scheme/base)
+         (utils tc-utils) scheme/list
+         mzlib/etc scheme/contract)
 
 ;; this file contains support for calculating the free variables/indexes of types
 ;; actual computation is done in rep-utils.ss  and type-rep.ss
@@ -22,19 +21,28 @@
 
 (provide Covariant Contravariant Invariant Constant Dotted)
 
+(define (variance? e)
+  (memq e (list Covariant Contravariant Invariant Constant Dotted)))
+
 ;; hashtables for keeping track of free variables and indexes
-(define index-table (make-weak-hasheq))
+(define index-table (make-weak-hash))
 ;; maps Type to List[Cons[Number,Variance]]
-(define var-table (make-weak-hasheq))
+(define var-table (make-weak-hash))
 ;; maps Type to List[Cons[Symbol,Variance]]
 
-(define (free-idxs* t) (hash-ref index-table t (lambda _ (int-err "type ~a not in index-table" (syntax-e t)))))
-(define (free-vars* t) (hash-ref var-table t (lambda _ (int-err "type ~a not in var-table" (syntax-e t)))))
+(define ((input/c tbl) val) (hash-ref tbl val #f))
 
+(define (free-idxs* t)
+  (hash-ref index-table t (lambda _ (int-err "type ~a not in index-table" t))))
+(define (free-vars* t)
+  (hash-ref var-table t (lambda _ (int-err "type ~a not in var-table" t))))
 
 (define empty-hash-table (make-immutable-hasheq null))
 
-(provide free-vars* free-idxs* empty-hash-table make-invariant)
+(p/c [free-vars* (-> (input/c var-table) (hash/c symbol? variance?))]
+     [free-idxs* (-> (input/c index-table) (hash/c exact-nonnegative-integer? variance?))])
+
+(provide empty-hash-table make-invariant)
 
 ;; frees = HT[Idx,Variance] where Idx is either Symbol or Number
 ;; (listof frees) -> frees

@@ -5,11 +5,11 @@
                     [-> -->]
                     [->* -->*]
                     [one-of/c -one-of/c])
-         (rep type-rep)
+         (rep type-rep filter-rep) scheme/list
          scheme/contract scheme/match unstable/match
          (for-syntax scheme/base))
 
-(provide combine-filter apply-filter abstract-filter abstract-filters
+(provide combine-filter apply-filter abstract-filter abstract-filters combine-props
          split-lfilters merge-filter-sets values->tc-results tc-results->values)
 
 ;; this implements the sequence invariant described on the first page relating to Bot
@@ -147,7 +147,7 @@
     ;; and
     [((FilterSet: f1+ f1-) (FilterSet: f2+ f2-) (F-FS:)) 
      (mk (combine (append f1+ f2+)
-		  null		  
+		  #;null		  
 		  (append (for/list ([f f1-])
 			    (make-ImpFilter f2+ (list f)))
 			  (for/list ([f f2-])
@@ -203,3 +203,18 @@
 (define (tc-results->values tc)
   (match tc
     [(tc-results: ts) (-values ts)]))
+
+(define (combine-props new-props old-props)
+  (define-values (new-imps new-atoms) (partition ImpFilter? new-props))
+  (define-values (derived-imps derived-atoms)
+    (for/fold 
+        ([derived-imps null]
+         [derived-atoms null])
+      ([o old-props])
+      (match o
+        [(ImpFilter: as cs)
+         (let ([as* (remove* new-atoms as filter-equal?)])
+           (if (null? as*)
+               (values derived-imps (append cs new-atoms))
+               (values (cons (make-ImpFilter as* cs) derived-imps) derived-atoms)))])))
+  (values (append new-imps derived-imps) (append new-atoms derived-atoms)))

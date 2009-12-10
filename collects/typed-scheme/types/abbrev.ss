@@ -121,7 +121,7 @@
 
 (define -Zero (-val 0))
 (define -Real (*Un -Flonum -ExactRational))
-(define -ExactNonnegativeInteger (*Un -Zero -ExactPositiveInteger))
+(define -ExactNonnegativeInteger (*Un -ExactPositiveInteger -Zero))
 (define -Nat -ExactNonnegativeInteger)
 
 (define -Byte -Number)

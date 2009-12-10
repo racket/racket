@@ -145,7 +145,7 @@ at least theoretically.
 ;; - 1 printers have to be defined at the same time as the structs
 ;; - 2 we want to support things printing corectly even when the custom printer is off
 
-(define-for-syntax printing? #t)
+(define-for-syntax printing? #f)
 
 (define-syntax-rule (defprinter t ...)
   (begin
@@ -179,7 +179,7 @@ at least theoretically.
 
 
 ;; turn contracts on and off - off by default for performance.
-(define-for-syntax enable-contracts? #f)
+(define-for-syntax enable-contracts? #t)
 (provide (for-syntax enable-contracts?) p/c w/c cnt d-s/c d/c)
 
 ;; these are versions of the contract forms conditionalized by `enable-contracts?'

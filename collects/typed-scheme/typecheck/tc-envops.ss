@@ -9,9 +9,10 @@
          (rep type-rep)
          (utils tc-utils)
          (types resolve)
-         (only-in (env type-environments lexical-env) env? update-type/lexical env-map)
+         (only-in (env type-environments lexical-env) env? update-type/lexical env-map env-props replace-props)
          scheme/contract scheme/match
          mzlib/trace
+         (typecheck tc-metafunctions)
          (for-syntax scheme/base))
 
 (provide env+)
@@ -57,9 +58,11 @@
 ;; sets the flag box to #f if anything becomes (U)
 (d/c (env+ env fs flag)
   (env? (listof Filter/c) (box/c #t). -> . env?)
-  (for/fold ([Γ env]) ([f fs])
+  (define-values (imps atoms) (combine-props fs (env-props env)))
+  (for/fold ([Γ (replace-props env imps)]) ([f atoms])
     (match f
       [(Bot:) (set-box! flag #f) (env-map (lambda (x) (cons (car x) (Un))) Γ)]
+      [(ImpFilter: _ _) Γ]
       [(or (TypeFilter: _ _ x) (NotTypeFilter: _ _ x))
        (update-type/lexical (lambda (x t) (let ([new-t (update t f)])
                                             (when (type-equal? new-t (Un))

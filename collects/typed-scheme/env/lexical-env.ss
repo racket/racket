@@ -7,6 +7,7 @@
          (only-in scheme/contract ->* ->)
          (utils tc-utils)
          (only-in (rep type-rep) Type/c)
+         (typecheck tc-metafunctions)
 	 (except-in (types utils convenience) -> ->*))
 
 (provide lexical-env with-lexical-env with-lexical-env/extend with-update-type/lexical)

@@ -46,7 +46,7 @@
 
 (define In-Syntax
   (-mu e
-       (*Un -Number -Boolean -Symbol -String -Keyword -Char
+       (*Un -Boolean -Symbol -String -Keyword -Char -Number
             (make-Vector (-Syntax e))
             (make-Box (-Syntax e))
             (-mu list
