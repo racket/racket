@@ -167,6 +167,15 @@ Returns a sequence equivalent to @scheme[(in-port (lambda (p)
 whereas the default mode of @scheme[read-line] is
 @scheme['linefeed]. }
 
+@defproc[(in-bytes-lines [in input-port? (current-input-port)]
+                         [mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
+         sequence?]{
+
+Returns a sequence equivalent to @scheme[(in-port (lambda (p)
+(read-bytes-line p mode)) in)]. Note that the default mode is @scheme['any],
+whereas the default mode of @scheme[read-bytes-line] is
+@scheme['linefeed]. }
+                   
 @defproc[(in-hash [hash hash?]) sequence?]{
 Returns a sequence equivalent to @scheme[hash].
 
