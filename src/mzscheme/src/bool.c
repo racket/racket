@@ -340,13 +340,8 @@ static int is_equal_overflow(Scheme_Object *obj1, Scheme_Object *obj2, Equal_Inf
   return SCHEME_TRUEP(v);
 }
 
-/* Number of lists/vectors/structs/boxes to compare before
-   paying for a stack check. */
-#define EQUAL_COUNT_START 20
-
 int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
 {
-  static int equal_counter = EQUAL_COUNT_START;
 
  top:
   if (eql->next_next) {

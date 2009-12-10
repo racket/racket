@@ -199,6 +199,10 @@ typedef struct Scheme_Future_Thread_State {
   volatile int *fuel_pointer;
   volatile unsigned long *stack_boundary_pointer;
   volatile int *need_gc_pointer;
+
+  unsigned long gen0_start;
+  unsigned long gen0_size;
+  unsigned long gen0_initial_offset;
 } Scheme_Future_Thread_State;
 
 THREAD_LOCAL_DECL(static Scheme_Future_State *scheme_future_state);
@@ -411,6 +415,8 @@ static void init_future_thread(Scheme_Future_State *fs, int i)
   sema_destroy(&params.ready_sema);
 
   fts->threadid = threadid;
+
+  fts->gen0_size = 1;
 	
   scheme_register_static(&fts->current_ft, sizeof(void*));
   scheme_register_static(params.scheme_current_runstack_ptr, sizeof(void*));
@@ -434,6 +440,9 @@ static void start_gc_not_ok(Scheme_Future_State *fs)
     Scheme_Future_Thread_State *fts = scheme_future_thread_state;
     if (fts->worker_gc_counter != *fs->gc_counter_ptr) {
       GC_gen0_alloc_page_ptr = 0; /* forces future to ask for memory */
+      fts->gen0_start = 0;
+      if (fts->gen0_size > 1)
+        fts->gen0_size >>= 1;
       fts->worker_gc_counter = *fs->gc_counter_ptr;
     }
   }
@@ -959,9 +968,8 @@ static void future_do_runtimecall(Scheme_Future_Thread_State *fts,
   }
 }
 
-
 /**********************************************************************/
-/* Functions for primitive invocation                   			  */
+/* Functions for primitive invocation          			      */
 /**********************************************************************/
 void scheme_rtcall_void_void_3args(const char *who, int src_type, prim_void_void_3args_t f)
   XFORM_SKIP_PROC
@@ -983,7 +991,9 @@ void scheme_rtcall_void_void_3args(const char *who, int src_type, prim_void_void
   future->arg_S0 = NULL;
 }
 
-unsigned long scheme_rtcall_alloc_void_pvoid(const char *who, int src_type, prim_alloc_void_pvoid_t f)
+#ifdef MZ_PRECISE_GC
+
+unsigned long scheme_rtcall_alloc(const char *who, int src_type)
   XFORM_SKIP_PROC
 /* Called in future thread */
 {
@@ -991,20 +1001,42 @@ unsigned long scheme_rtcall_alloc_void_pvoid(const char *who, int src_type, prim
   unsigned long retval;
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   Scheme_Future_State *fs = scheme_future_state;
+  long align;
+  
+  align = GC_alloc_alignment();
+
+  /* Do we actually still have space? */
+  if (fts->gen0_start) {
+    long cur;
+    cur = GC_gen0_alloc_page_ptr;
+    if (cur < (fts->gen0_start + (fts->gen0_size - 1) * align)) {
+      cur &= ~(align - 1);
+      cur += align + fts->gen0_initial_offset;
+      return cur;
+    }
+  }
+
+  /* Grow nursery size as long as we don't trigger a GC */
+  if (fts->gen0_size < 16)
+    fts->gen0_size <<= 1;
 
   while (1) {
     future = fts->current_ft;
-    future->time_of_request = 0; /* takes too long?: scheme_get_inexact_milliseconds(); */
+    future->time_of_request = scheme_get_inexact_milliseconds();
     future->source_of_request = who;
     future->source_type = src_type;
   
-    future->prim_protocol = SIG_ALLOC_VOID_PVOID;
+    future->prim_protocol = SIG_ALLOC;
+    future->arg_i0 = fts->gen0_size;
 
-    future_do_runtimecall(fts, (void*)f, 1);
+    future_do_runtimecall(fts, (void*)GC_make_jit_nursery_page, 1);
 
     future = fts->current_ft;
     retval = future->alloc_retval;
     future->alloc_retval = 0;
+
+    fts->gen0_start = retval;
+    fts->gen0_initial_offset = retval & (align - 1);
 
     if (*fs->gc_counter_ptr == future->alloc_retval_counter)
       break;
@@ -1012,6 +1044,8 @@ unsigned long scheme_rtcall_alloc_void_pvoid(const char *who, int src_type, prim
 
   return retval;
 }
+
+#endif
 
 static void receive_special_result(future_t *f, Scheme_Object *retval, int clear)
   XFORM_SKIP_PROC
@@ -1108,15 +1142,16 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
 
         break;
       }
-    case SIG_ALLOC_VOID_PVOID:
+#ifdef MZ_PRECISE_GC
+    case SIG_ALLOC:
       {
         unsigned long ret;
-        prim_alloc_void_pvoid_t func = (prim_alloc_void_pvoid_t)future->prim_func;
-        ret = func();
+        ret = GC_make_jit_nursery_page(future->arg_i0);
         future->alloc_retval = ret;
         future->alloc_retval_counter = scheme_did_gc_count;
         break;
       }
+#endif
 # include "jit_ts_runtime_glue.c"
     default:
       scheme_signal_error("unknown protocol %d", future->prim_protocol);

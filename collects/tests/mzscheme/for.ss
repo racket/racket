@@ -135,6 +135,9 @@
 (test-generator [((123) 4)] (in-port read (open-input-string "(123) 4")))
 (test-generator [(65 66 67)] (in-port read-byte (open-input-string "ABC")))
 
+(test-generator [("abc" "def")] (in-lines (open-input-string "abc\ndef")))
+(test-generator [(#"abc" #"def")] (in-bytes-lines (open-input-string "abc\ndef")))
+
 (test-generator [(0 1 2 3 4 5)] (in-sequences (in-range 6)))
 (test-generator [(0 1 2 3 4 5)] (in-sequences (in-range 4) '(4 5)))
 (test-generator [(0 1 2 3 4 5)] (in-sequences (in-range 6) '()))

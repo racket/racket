@@ -814,6 +814,7 @@ inline static mpage *gen0_create_new_nursery_mpage(NewGC *gc, const size_t page_
   newmpage->addr = malloc_dirty_pages(gc, page_size, APAGE_SIZE);
   newmpage->size_class = 0;
   newmpage->size = PREFIX_SIZE;
+  newmpage->previous_size = page_size;
   pagemap_add_with_size(gc->page_maps, newmpage, page_size);
   GCVERBOSEPAGE("NEW gen0", newmpage);
 
@@ -829,18 +830,19 @@ inline static void gen0_free_nursery_mpage(NewGC *gc, mpage *page, size_t page_s
 /* Needs to be consistent with GC_alloc_alignment(): */
 #define THREAD_LOCAL_PAGE_SIZE APAGE_SIZE
 
-unsigned long GC_make_jit_nursery_page() {
+unsigned long GC_make_jit_nursery_page(int count) {
   NewGC *gc = GC_get_GC();
   mpage *new_mpage;
+  long size = count * THREAD_LOCAL_PAGE_SIZE;
 
-  if((gc->gen0.current_size + THREAD_LOCAL_PAGE_SIZE) >= gc->gen0.max_size) {
+  if((gc->gen0.current_size + size) >= gc->gen0.max_size) {
     if (!gc->dumping_avoid_collection)
       garbage_collect(gc, 0);
   }
-  gc->gen0.current_size += THREAD_LOCAL_PAGE_SIZE;
+  gc->gen0.current_size += size;
 
   {
-    new_mpage = gen0_create_new_nursery_mpage(gc, THREAD_LOCAL_PAGE_SIZE);
+    new_mpage = gen0_create_new_nursery_mpage(gc, size);
 
     /* push page */
     new_mpage->next = gc->thread_local_pages;
@@ -865,7 +867,7 @@ unsigned long GC_make_jit_nursery_page() {
 }
 
 inline static void gen0_free_jit_nursery_page(NewGC *gc, mpage *page) {
-  gen0_free_nursery_mpage(gc, page, THREAD_LOCAL_PAGE_SIZE);
+  gen0_free_nursery_mpage(gc, page, page->previous_size);
 }
 
 inline static mpage *gen0_create_new_mpage(NewGC *gc) {
@@ -1211,7 +1213,7 @@ inline static int marked(NewGC *gc, void *p)
     if (page->size_class > 1) {
       return (page->size_class > 2);
     }
-  } else {
+  } else if (page->generation) {
     if((NUM(page->addr) + page->previous_size) > NUM(p)) 
       return 1;
   }

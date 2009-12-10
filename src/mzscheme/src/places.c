@@ -325,7 +325,7 @@ static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]) {
 
     worker_thread = mz_proc_thread_create(mz_proc_thread_wait_worker, wd);
     mz_proc_thread_detach(worker_thread);
-    scheme_block_until(place_wait_ready, NULL, (Scheme_Object *) wd, 1.0);
+    scheme_block_until(place_wait_ready, NULL, (Scheme_Object *) wd, 0);
 
     rc = scheme_make_integer((long)wd->rc);
     free(wd);
@@ -421,8 +421,8 @@ static void *place_start_proc(void *data_arg) {
   Place_Start_Data *place_data;
   Scheme_Object *a[2];
   int ptid;
+  long rc = 0;
   ptid = mz_proc_thread_self();
-
 
   stack_base = PROMPT_STACK(stack_base);
   place_data = (Place_Start_Data *) data_arg;
@@ -449,14 +449,31 @@ static void *place_start_proc(void *data_arg) {
     Scheme_Object *place_main;
     a[0] = scheme_places_deep_copy(place_data->module);
     a[1] = scheme_places_deep_copy(place_data->function);
-    place_main = scheme_dynamic_require(2, a);
 
-    a[0] = scheme_places_deep_copy(place_data->channel);
-    scheme_apply(place_main, 1, a);
+    {
+      Scheme_Thread * volatile p;
+      mz_jmp_buf * volatile saved_error_buf;
+      mz_jmp_buf new_error_buf;
+
+      p = scheme_get_current_thread();
+      saved_error_buf = p->error_buf;
+      p->error_buf = &new_error_buf;
+      if (!scheme_setjmp(new_error_buf)) {
+        place_main = scheme_dynamic_require(2, a);
+        a[0] = scheme_places_deep_copy(place_data->channel);
+        scheme_apply(place_main, 1, a);
+      }
+      else {
+        rc = 1;
+      }
+      p->error_buf = saved_error_buf;
+    }
+
+    /*printf("Leavin place: proc thread id%u\n", ptid);*/
     scheme_place_instance_destroy();
   }
 
-  return scheme_true;
+  return (void*) rc;
 }
 
 Scheme_Object *scheme_places_deep_copy_in_master(Scheme_Object *so) {
