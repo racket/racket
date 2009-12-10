@@ -2,7 +2,7 @@
 
 (require "../utils/utils.ss")
 
-(require (except-in (rep type-rep object-rep filter-rep rep-utils) Dotted)
+(require (rep type-rep object-rep filter-rep)
 	 "printer.ss" "utils.ss"
          (utils tc-utils)
          scheme/list
@@ -15,17 +15,8 @@
 (provide (all-defined-out)
          (rename-out [make-Listof -lst]))
 
-(define (add-name type name)
-  (define-values (struct-type skipped?) (struct-info type))
-  (define mk (struct-type-make-constructor struct-type))
-  (define flds (vector->list (struct->vector type)))
-  (when skipped?
-    (error "shouldn't skip"))
-  (match flds
-    [(list* _ fld1 fld2 old-name flds)
-     (apply mk fld1 fld2 (or old-name name) flds)]))
-
 ;; convenient constructors
+
 
 (define -App make-App)
 (define -pair make-Pair)
@@ -130,7 +121,7 @@
 
 (define -Zero (-val 0))
 (define -Real (*Un -Flonum -ExactRational))
-(define -ExactNonnegativeInteger (*Un -ExactPositiveInteger -Zero))
+(define -ExactNonnegativeInteger (*Un -Zero -ExactPositiveInteger))
 (define -Nat -ExactNonnegativeInteger)
 
 (define -Byte -Number)

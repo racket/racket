@@ -14,9 +14,12 @@
      #'(define *name
 	 (let ([table (make-ht)])
 	   (lambda (arg ...)
-	     (let* ([key key-expr]
-                    [new-seq (hash-ref table key count!)])
-               (make-name new-seq e ... arg ...)))))]))
+	     (let ([key key-expr])
+	       (hash-ref table key
+			 (lambda ()
+			   (let ([new (make-name (count!) e ... arg ...)])
+			     (hash-set! table key new)
+			     new)))))))]))
 
 (define (make-count!)  
   (let ([state 0])

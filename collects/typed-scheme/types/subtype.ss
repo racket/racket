@@ -1,6 +1,6 @@
 #lang scheme/base
 (require "../utils/utils.ss"
-         (except-in (rep type-rep filter-rep object-rep rep-utils) Dotted)
+         (rep type-rep filter-rep object-rep rep-utils)
          (utils tc-utils)
 	 (types utils comparison resolve abbrev)
          (env type-name-env)

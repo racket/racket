@@ -2,7 +2,7 @@
 
 (require "../utils/utils.ss")
 
-(require (rep type-rep)
+(require (rep type-rep rep-utils)
 	 (utils tc-utils)
 	 (types utils subtype abbrev printer comparison)
          scheme/match mzlib/trace)

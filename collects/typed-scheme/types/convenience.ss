@@ -46,19 +46,19 @@
 
 (define In-Syntax
   (-mu e
-       (*Un -Boolean -Symbol -String -Keyword -Char -Number
+       (*Un -Number -Boolean -Symbol -String -Keyword -Char
             (make-Vector (-Syntax e))
             (make-Box (-Syntax e))
             (-mu list
                  (*Un (-val '())
                       (-pair (-Syntax e)
-                             (*Un list (-Syntax e))))))))
+                             (*Un (-Syntax e) list)))))))
 
 (define Any-Syntax (-Syntax In-Syntax))
 
 (define (-Sexpof t)
   (-mu sexp
-       (Un -Boolean -Symbol -String -Keyword -Char -Number
+       (Un -Number -Boolean -Symbol -String -Keyword -Char
            (-val '())
            (-pair sexp sexp)
            (make-Vector sexp)

@@ -145,7 +145,7 @@ at least theoretically.
 ;; - 1 printers have to be defined at the same time as the structs
 ;; - 2 we want to support things printing corectly even when the custom printer is off
 
-(define-for-syntax printing? #f)
+(define-for-syntax printing? #t)
 
 (define-syntax-rule (defprinter t ...)
   (begin
@@ -170,16 +170,16 @@ at least theoretically.
   
 (define-syntax (define-struct/printer stx)
   (syntax-case stx ()
-    [(form name (flds ...) printer . props)
+    [(form name (flds ...) printer)
      #`(define-struct/properties name (flds ...) 
          #,(if printing?
-               #'([prop:custom-write (lambda (a b c) (if (custom-printer) (printer a b c) (pseudo-printer a b c)))] . props) 
-               #'([prop:custom-write pseudo-printer] . props))
+               #'([prop:custom-write (lambda (a b c) (if (custom-printer) (printer a b c) (pseudo-printer a b c)))]) 
+               #'([prop:custom-write pseudo-printer]))
          #f)]))
 
 
 ;; turn contracts on and off - off by default for performance.
-(define-for-syntax enable-contracts? #t)
+(define-for-syntax enable-contracts? #f)
 (provide (for-syntax enable-contracts?) p/c w/c cnt d-s/c d/c)
 
 ;; these are versions of the contract forms conditionalized by `enable-contracts?'

@@ -28,8 +28,6 @@
 ;; t must be a Type
 (dt Scope ([t (or/c Type/c Scope?)]) [#:key (Type-key t)])
 
-
-
 (define (scope-depth k)
   (flat-named-contract 
    (format "Scope of depth ~a" k)
@@ -102,7 +100,7 @@
 (dt Poly (n body) #:no-provide 
     [#:contract (->d ([n natural-number/c]
                       [body (scope-depth n)])
-                     ([_ any/c])
+                     ()
                      [result Poly?])]
     [#:frees (free-vars* body) (without-below n (free-idxs* body))]
     [#:fold-rhs (let ([body* (remove-scopes n body)])
@@ -115,7 +113,7 @@
 (dt PolyDots (n body) #:no-provide
     [#:contract (->d ([n natural-number/c]
                       [body (scope-depth n)])
-                     ([_ any/c])
+                     ()
                      [result PolyDots?])]
     [#:key (Type-key body)]
     [#:frees (free-vars* body) (without-below n (free-idxs* body))]
@@ -231,21 +229,17 @@
 
 ;; elems : Listof[Type]
 (dt Union ([elems (and/c (listof Type/c)                         
-                         (flat-named-contract
-                          'sorted-types
-                          (lambda (es)
-                            (let-values ([(sorted? k)
-                                          (for/fold ([sorted? #t]
-                                                     [last -1])
-                                            ([e es])
-                                            (let ([seq (Type-seq e)])
-                                              (values
-                                               (and sorted?
-                                                    (< last seq))
-                                               seq)))])
-                              (unless sorted?
-                                (printf "seqs ~a~n" (map Type-seq es)))
-                              sorted?))))]) 
+                         (lambda (es)
+                           (let-values ([(sorted? k)
+                                         (for/fold ([sorted? #t]
+                                                    [last -1])
+                                           ([e es])
+                                           (let ([seq (Type-seq e)])
+                                             (values
+                                              (and sorted?
+                                                   (< last seq))
+                                              seq)))])
+                             sorted?)))]) 
     [#:frees (combine-frees (map free-vars* elems))
              (combine-frees (map free-idxs* elems))]
     [#:fold-rhs ((get-union-maker) (map type-rec-id elems))]
@@ -347,7 +341,7 @@
         [_ (int-err "Tried to remove too many scopes: ~a" sc)])))
 
 ;; type equality
-(define (type-equal? t1 t2) (eq? (Type-seq t1) (Type-seq t2)))
+(define type-equal? eq?)
 
 ;; inequality - good
 
@@ -471,8 +465,8 @@
 #;(trace instantiate-many abstract-many)
 
 ;; the 'smart' constructor
-(define (Mu* name body [print-name #f])    
-  (let ([v (*Mu (abstract name body) print-name)])
+(define (Mu* name body)    
+  (let ([v (*Mu (abstract name body))])
     (hash-set! name-table v name)
     v))
 
@@ -483,9 +477,9 @@
      (instantiate (*F name) scope)]))
 
 ;; the 'smart' constructor
-(define (Poly* names body [print-name #f])
+(define (Poly* names body)
   (if (null? names) body
-      (let ([v (*Poly (length names) (abstract-many names body) print-name)])
+      (let ([v (*Poly (length names) (abstract-many names body))])
         (hash-set! name-table v names)
         v)))
 
@@ -498,9 +492,9 @@
      (instantiate-many (map *F names) scope)]))
 
 ;; the 'smart' constructor
-(define (PolyDots* names body [print-name #f])
+(define (PolyDots* names body)
   (if (null? names) body
-      (let ([v (*PolyDots (length names) (abstract-many names body) print-name)])
+      (let ([v (*PolyDots (length names) (abstract-many names body))])
         (hash-set! name-table v names)
         v)))
 
@@ -616,7 +610,6 @@
  remove-dups
  sub-lf sub-lo sub-pe
  Values: Values? Values-rs
- Type-key Type-seq Type-name type-case
  (rename-out [Mu:* Mu:]               
              [Poly:* Poly:]
              [PolyDots:* PolyDots:]
