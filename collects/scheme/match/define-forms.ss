@@ -12,12 +12,15 @@
 (provide define-forms)
 
 (define-syntax-rule (define-forms parse-id
-                      match match* match-lambda match-lambda* match-lambda** match-let
-                      match-let* match-define match-letrec match/derived match*/derived)
+                      match match* match-lambda match-lambda* 
+		      match-lambda** match-let match-let* 
+		      match-define match-letrec
+		      match/derived match*/derived)
   (...
    (begin
-     (provide match match* match-lambda match-lambda* match-lambda** match-let match-let*
-              match-define match-letrec match/derived match*/derived)
+     (provide match match* match-lambda match-lambda* match-lambda**
+	      match-let match-let* match-define match-letrec
+	      match/derived match*/derived)
      (define-syntax (match* stx)
        (syntax-parse stx
          [(_ es . clauses)
@@ -66,11 +69,13 @@
          [(_ nm:id (~and clauses ([pat init-exp:expr] ...)) body1 body ...)
           (with-syntax*
            ([vars (generate-temporaries #'(pat ...))]
-            [loop-body #`(match*/derived vars #,stx [(pat ...) (let () body1 body ...)])])
+            [loop-body #`(match*/derived vars #,stx 
+					 [(pat ...) (let () body1 body ...)])])
            #'(letrec ([nm (lambda vars loop-body)])
                (nm init-exp ...)))]
          [(_ (~and clauses ([pat init-exp:expr] ...)) body1 body ...)
-          #`(match*/derived (init-exp ...) #,stx [(pat ...) (let () body1 body ...)])]))
+          #`(match*/derived (init-exp ...) #,stx 
+			    [(pat ...) (let () body1 body ...)])]))
 
      (define-syntax (match-let* stx)
        (syntax-parse stx
@@ -80,7 +85,8 @@
           #`(match*/derived 
              (exp)
              #,stx
-             [(pat) #,(syntax/loc stx (match-let* (rest-pats ...) body1 body ...))])]))
+             [(pat) #,(syntax/loc stx (match-let* (rest-pats ...) 
+					 body1 body ...))])]))
 
      (define-syntax (match-letrec stx)
        (syntax-parse stx
@@ -100,4 +106,5 @@
           (let ([p (parse-id #'pat (syntax-local-certifier))])
             (with-syntax ([vars (bound-vars p)])
               (quasisyntax/loc stx
-                (define-values vars (match*/derived (rhs) #,stx [(pat) (values . vars)])))))])))))
+                (define-values vars (match*/derived (rhs) #,stx
+				      [(pat) (values . vars)])))))])))))
