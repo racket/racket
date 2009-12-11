@@ -107,7 +107,7 @@
 [rationalize (N N . -> . N)]
 [expt (cl->* (-Integer -Integer . -> . -Integer) (N N . -> . N))]
 [sqrt (cl->*
-       (-Real . -> . -Real)
+       (-Nat . -> . -Real)
        (N . -> . N))]
 [log (cl->*
       (-Pos . -> . -Real)
