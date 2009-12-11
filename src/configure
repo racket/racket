@@ -7100,7 +7100,7 @@ fi
 LFS_CFLAGS=`getconf LFS_CFLAGS 2> /dev/null`
 if test "${LFS_CFLAGS}" != "" ; then
   echo "Large-file support: ${LFS_CFLAGS}"
-  PREFLAGS="${PREFLAGS} ${LFS_CFLAGS}"
+  MZOPTIONS="${MZOPTIONS} ${LFS_CFLAGS}"
 fi
 
 ###### Get data sizes, stack direction, and endianness #######
