@@ -66,7 +66,7 @@
       (apply append (for/list ([f f-]) (abo ids keys f))))]))
 
 (d/c (abo xs idxs f)
-  (-> (listof identifier?) (listof index/c) Filter/c (or/c '() (list/c LatentFilter/c)))
+  ((listof identifier?) (listof index/c) Filter/c . -> . (or/c null? (list/c LatentFilter/c)))
   (define (lookup y)
     (for/first ([x xs] [i idxs] #:when (free-identifier=? x y)) i)) 
   (define-match-expander lookup:
@@ -76,10 +76,12 @@
     [(Bot:) (list (make-LBot))]
     [(TypeFilter: t p (lookup: idx)) (list (make-LTypeFilter t p idx))]
     [(NotTypeFilter: t p (lookup: idx)) (list (make-LNotTypeFilter t p idx))]
-    [(ImpFilter: a c)
-     (match* [(abo a) (abo c)]
-       [((list a*) (list c*)) (list (make-LImpFilter a* c*))]
-       [(_ _) null])]
+    [(ImpFilter: as cs)
+     (let ([a* (apply append (for/list ([f as]) (abo xs idxs f)))]
+           [c* (apply append (for/list ([f cs]) (abo xs idxs f)))])
+       (if (< (length a*) (length as)) ;; if we removed some things, we can't be sure
+           null
+           (list (make-LImpFilter a* c*))))]
     [_ null]))
 
 (define (merge-filter-sets fs)

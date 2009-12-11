@@ -70,9 +70,9 @@
   [#:fold-rhs (*LNotTypeFilter (type-rec-id t) (map pathelem-rec-id p) idx)])
 
 ;; implication
-(df LImpFilter ([a (non-empty-listof LatentFilter/c)] [c (non-empty-listof LatentFilter/c)])
-    [#:frees (combine-frees (map free-vars* (append a c)))
-	     (combine-frees (map free-idxs* (append a c)))])
+(dlf LImpFilter ([a (non-empty-listof LatentFilter/c)] [c (non-empty-listof LatentFilter/c)])
+     [#:frees (combine-frees (map free-vars* (append a c)))
+              (combine-frees (map free-idxs* (append a c)))])
 
 
 (dlf LFilterSet (thn els)

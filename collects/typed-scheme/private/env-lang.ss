@@ -11,7 +11,7 @@
                      (types convenience union)
                      (only-in (types convenience) [make-arr* make-arr])))
 
-(define-syntax (#%module-begin stx)
+(define-syntax (-#%module-begin stx)
   (define-syntax-class clause
     #:description "[id type]"
     (pattern [id:identifier ty]))
@@ -29,9 +29,9 @@
     [(mb . rest)
      #'(mb (begin) . rest)]))
 
-(provide #%module-begin
+(provide (rename-out [-#%module-begin #%module-begin])
          require
-         (all-from-out scheme/base)
+         (except-out (all-from-out scheme/base) #%module-begin)
          types rep private utils
          (for-syntax          
           (types-out convenience union)

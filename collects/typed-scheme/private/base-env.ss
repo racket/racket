@@ -11,10 +11,7 @@
  scheme/promise scheme/system
  (only-in string-constants/private/only-once maybe-print-message)
  (only-in scheme/match/runtime match:error matchable? match-equality-test)
- (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym]))
- ;; require the split-out files
- "base-env-numeric.ss"
- )
+ (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])))
 
 [raise (Univ . -> . (Un))]
 
@@ -91,8 +88,12 @@
 [pair? (make-pred-ty (-pair Univ Univ)) #;(-poly (a b) (make-pred-ty (-pair a b)))]
 [empty? (make-pred-ty (-val null))]
 [empty (-val null)]
+
 [string? (make-pred-ty -String)]
 [string (->* '() -Char -String)]
+[string-length (-String . -> . -Nat)]
+[unsafe-string-length (-String . -> . -Nat)]
+
 [symbol? (make-pred-ty Sym)]
 [keyword? (make-pred-ty -Keyword)]
 [list? (make-pred-ty (-lst Univ))]
@@ -159,7 +160,6 @@
 
 [sleep (N . -> . -Void)]
 
-[build-list (-poly (a) (-Nat (-Nat . -> . a) . -> . (-lst a)))]
 [reverse (-poly (a) (-> (-lst a) (-lst a)))]
 [append (-poly (a) (->* (list) (-lst a) (-lst a)))]
 [length (-poly (a) (-> (-lst a) -Nat))]
@@ -207,8 +207,6 @@
 
 [string-copy (-> -String -String)]
 [string->immutable-string (-> -String -String)]
-[string-ref (-> -String -Nat -Char)]
-[substring (->opt -String -Nat [-Nat] -String)]
 [string->path (-> -String -Path)]
 [file-exists? (-> -Pathlike B)]
 
@@ -224,16 +222,12 @@
                    #:mode (one-of/c 'binary 'text) #f 
                    a))]
 
-[random (cl-> [(-Nat) -Nat] [() -Real])]
 
 [assq  (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
 [assv  (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
 [assoc (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
 [assf  (-poly (a b) ((a . -> . Univ) (-lst (-pair a b))
                      . -> . (-opt (-pair a b))))]
-
-[list-ref  (-poly (a) ((-lst a) -Nat . -> . a))]
-[list-tail (-poly (a) ((-lst a) -Nat . -> . (-lst a)))]
 
 [apply        (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
 [kernel:apply (-poly (a b) (((list) a . ->* . b) (-lst a) . -> . b))]
@@ -275,55 +269,11 @@
 [regexp-quote (cl->*
 	       (-String [-Boolean] . ->opt . -String)
 	       (-Bytes  [-Boolean] . ->opt . -Bytes))]
-[regexp-match
- (let ([?outp   (-opt -Output-Port)]
-       [N       -Nat]
-       [?N      (-opt -Nat)]
-       [optlist (lambda (t) (-opt (-lst (-opt t))))]
-       [-StrRx  (Un -String -Regexp -PRegexp)]
-       [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
-       [-InpBts (Un -Input-Port -Bytes)])
-   (cl->*
-    (-StrRx   -String [N ?N ?outp] . ->opt . (optlist -String))
-    (-BtsRx   -String [N ?N ?outp] . ->opt . (optlist -Bytes))
-    (-Pattern -InpBts [N ?N ?outp] . ->opt . (optlist -Bytes))))]
-[regexp-match*
- (let ([N       -Nat]
-       [?N      (-opt -Nat)]
-       [-StrRx  (Un -String -Regexp -PRegexp)]
-       [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
-       [-InpBts (Un -Input-Port -Bytes)])
-   (cl->*
-    (-StrRx   -String [N ?N] . ->opt . (-lst -String))
-    (-BtsRx   -String [N ?N] . ->opt . (-lst -Bytes))
-    (-Pattern -InpBts [N ?N] . ->opt . (-lst -Bytes))))]
-[regexp-try-match
- (let ([?outp   (-opt -Output-Port)]
-       [?N      (-opt -Nat)]
-       [optlist (lambda (t) (-opt (-lst (-opt t))))])
-   (->opt -Pattern -Input-Port [-Nat ?N ?outp] (optlist -Bytes)))]
 
 [regexp-match-exact?
  (-Pattern (Un -String -Bytes -Input-Port) . -> . B)]
 
 
-[regexp-match-positions
- (let ([?outp   (-opt -Output-Port)]
-       [N       -Nat]
-       [?N      (-opt -Nat)]
-       [optlist (lambda (t) (-opt (-lst (-opt t))))]
-       [-StrRx  (Un -String -Regexp -PRegexp)]
-       [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
-       [-InpBts (Un -Input-Port -Bytes)])
-   (->opt -Pattern (Un -String -InpBts) [N ?N ?outp] (optlist (-pair -Nat -Nat))))]
-[regexp-match-positions*
- (let ([?outp   (-opt -Output-Port)]
-       [?N      (-opt -Nat)]
-       [optlist (lambda (t) (-opt (-lst (-opt t))))]
-       [-StrRx  (Un -String -Regexp -PRegexp)]
-       [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
-       [-InpBts (Un -Input-Port -Bytes)])
-   (->opt -Pattern (Un -String -InpBts) [-Nat ?N ?outp] (-lst (-pair -Nat -Nat))))]
 #;
 [regexp-match-peek-positions*]
 #;
@@ -344,11 +294,6 @@
 
 ;; errors
 
-[raise-type-error
- (cl->
-  [(Sym -String Univ) (Un)]
-  [(Sym -String -Nat (-lst Univ)) (Un)])]
-
 ;; this is a hack
 
 [match:error ((list) Univ . ->* . (Un))]
@@ -359,12 +304,7 @@
 [bitwise-not (null -Integer . ->* . -Integer)]
 [bitwise-xor (null -Integer . ->* . -Integer)]
 
-[make-string (cl-> [(-Nat) -String] [(-Nat -Char) -String])]
 [abs (-Real . -> . -Real)]
-[substring (->opt -String [-Nat] -String)]
-[string-length (-String . -> . -Nat)]
-[unsafe-string-length (-String . -> . -Nat)]
-[string-set! (-String -Nat -Char . -> . -Void)]
 
 [file-exists? (-Pathlike . -> . B)]
 [string->symbol (-String . -> . Sym)]
@@ -374,21 +314,14 @@
 
 ;; vectors
 [vector? (make-pred-ty (-vec Univ))]
-[vector-ref (-poly (a) ((-vec a) -Nat . -> . a))]
-[build-vector (-poly (a) (-Nat (-Nat . -> . a) . -> . (-vec a)))]
-
-[vector-set! (-poly (a) (-> (-vec a) -Nat a -Void))]
 
 [vector->list (-poly (a) (-> (-vec a) (-lst a)))]
 [list->vector (-poly (a) (-> (-lst a) (-vec a)))]
 [vector-length (-poly (a) ((-vec a) . -> . -Nat))]
-[make-vector (-poly (a) (cl-> [(-Nat) (-vec -Integer)]
-			      [(-Nat a) (-vec a)]))]
 [vector (-poly (a) (->* (list) a (-vec a)))]
 [vector-immutable (-poly (a) (->* (list) a (-vec a)))]
 [vector->vector-immutable (-poly (a) (-> (-vec a) (-vec a)))]
 [vector-fill! (-poly (a) (-> (-vec a) a -Void))]
-[vector-copy! (-poly (a) ((-vec a) -Nat (-vec a) [-Nat -Nat] . ->opt . -Void))]
 ;; [vector->values no good type here]
 
 
@@ -457,10 +390,6 @@
 [regexp-replace*
  (cl->* (-Pattern -String -String . -> . -String)
 	(-Pattern (Un -Bytes -String) (Un -Bytes -String) . -> . -Bytes))]
-[peek-char
- (cl->* [->opt [-Input-Port -Nat] (Un -Char (-val eof))])]
-[peek-byte
- (cl->* [->opt [-Input-Port -Nat] (Un -Byte (-val eof))])]
 [read-char
  (cl->* [->opt [-Input-Port] (Un -Char (-val eof))])]
 [read-byte
@@ -575,14 +504,6 @@
                          ((list a) (b b) . ->... . (-opt c))
                          (-lst a))
                         ((-lst b) b) . ->... . (-lst c)))]
-[take   (-poly (a) ((-lst a) -Nat . -> . (-lst a)))]
-[drop   (-poly (a) ((-lst a) -Nat . -> . (-lst a)))]
-[take-right   (-poly (a) ((-lst a) -Nat . -> . (-lst a)))]
-[drop-right   (-poly (a) ((-lst a) -Nat . -> . (-lst a)))]
-[split-at
- (-poly (a) ((list (-lst a)) -Nat . ->* . (-values (list (-lst a) (-lst a)))))]
-[split-at-right
- (-poly (a) ((list (-lst a)) -Nat . ->* . (-values (list (-lst a) (-lst a)))))]
 [last   (-poly (a) ((-lst a) . -> . a))]
 [add-between (-poly (a b) ((-lst a) b . -> . (-lst (Un a b))))]
 
@@ -623,8 +544,6 @@
 [generate-temporaries ((Un (-Syntax Univ) (-lst Univ)) . -> . (-lst (-Syntax Sym)))]
 [check-duplicate-identifier ((-lst (-Syntax Sym)) . -> . (-opt (-Syntax Sym)))]
 
-;; string.ss
-[real->decimal-string (N [-Nat] . ->opt .  -String)]
 
 [current-continuation-marks (-> -Cont-Mark-Set)]
 

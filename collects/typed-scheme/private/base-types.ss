@@ -3,7 +3,6 @@
 [Number -Real]
 [Complex -Number]
 [Integer -Integer]
-[Real -Real]
 [Exact-Rational -ExactRational]
 [Flonum -Flonum]
 [Exact-Positive-Integer -ExactPositiveInteger]
