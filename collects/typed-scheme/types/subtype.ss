@@ -6,7 +6,9 @@
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
          scheme/match unstable/match	 
-         mzlib/trace
+         mzlib/trace (rename-in scheme/contract
+                                [-> c->]
+                                [->* c->*])
 	 (for-syntax scheme/base syntax/parse))
 
 ;; exn representing failure of subtyping
@@ -179,7 +181,8 @@
 
 ;(trace subtypes*/varargs)
 
-(define (combine-arrs arrs)
+(d/c (combine-arrs arrs)
+  (c-> (listof arr?) (or/c #f arr?))
   (match arrs
     [(list (arr: dom1 rng1 #f #f '()) (arr: dom rng #f #f '()) ...)
      (cond
@@ -188,7 +191,7 @@
        #f)
       ((not (foldl type-equal? rng1 rng))
        #f)
-      [else (make-arr (apply map (lambda args (make-Union args)) (cons dom1 dom)) rng1 #f #f '())])]
+      [else (make-arr (apply map (lambda args (make-Union (sort args type<?))) (cons dom1 dom)) rng1 #f #f '())])]
     [_ #f]))
 
 
