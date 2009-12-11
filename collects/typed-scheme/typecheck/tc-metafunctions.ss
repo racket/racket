@@ -146,11 +146,12 @@
     [((FilterSet: f1+ f1-) (T-FS:) (FilterSet: f3+ f3-)) (mk (combine null (append f1- f3-)))]
     ;; and
     [((FilterSet: f1+ f1-) (FilterSet: f2+ f2-) (F-FS:)) 
-     (mk (combine (append f1+ f2+)
-		  #;null		  
-		  (append (for/list ([f f1-])
+     (mk (combine (append f1+ f2+)		  
+                  (append (for/list ([f f1-]
+                                     #:when (not (null? f2+)))
 			    (make-ImpFilter f2+ (list f)))
-			  (for/list ([f f2-])
+			  (for/list ([f f2-]
+                                     #:when (not (null? f1+)))
 			    (make-ImpFilter f1+ (list f))))))]
     [(f f* f*) (mk f*)]
     [(_ _ _)

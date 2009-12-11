@@ -261,7 +261,6 @@
 (define true-filter (-FS (list) (list (make-Bot))))
 (define false-filter (-FS (list (make-Bot)) (list)))
 
-
 (define (opt-fn args opt-args result)
   (apply cl->* (for/list ([i (in-range (add1 (length opt-args)))])                         
                  (make-Function (list (make-arr* (append args (take opt-args i)) result))))))

@@ -145,7 +145,7 @@ at least theoretically.
 ;; - 1 printers have to be defined at the same time as the structs
 ;; - 2 we want to support things printing corectly even when the custom printer is off
 
-(define-for-syntax printing? #f)
+(define-for-syntax printing? #t)
 
 (define-syntax-rule (defprinter t ...)
   (begin

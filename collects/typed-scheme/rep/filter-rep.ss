@@ -32,7 +32,7 @@
   [#:fold-rhs (*NotTypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])
 
 ;; implication
-(df ImpFilter ([a (listof Filter/c)] [c (listof Filter/c)])
+(df ImpFilter ([a (non-empty-listof Filter/c)] [c (non-empty-listof Filter/c)])
     [#:frees (combine-frees (map free-vars* (append a c)))
 	     (combine-frees (map free-idxs* (append a c)))])
 
@@ -70,8 +70,8 @@
   [#:fold-rhs (*LNotTypeFilter (type-rec-id t) (map pathelem-rec-id p) idx)])
 
 ;; implication
-(df LImpFilter ([a (listof LatentFilter/c)] [c (listof LatentFilter/c)])
-    #;[#:frees (combine-frees (map free-vars* (append a c)))
+(df LImpFilter ([a (non-empty-listof LatentFilter/c)] [c (non-empty-listof LatentFilter/c)])
+    [#:frees (combine-frees (map free-vars* (append a c)))
 	     (combine-frees (map free-idxs* (append a c)))])
 
 

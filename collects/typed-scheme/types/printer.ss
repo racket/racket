@@ -45,7 +45,8 @@
                            (fp")")]
     [(LNotTypeFilter: type path idx) (fp "(! ~a @ ~a ~a)" type path idx)]
     [(LTypeFilter: type path idx) (fp "(~a @ ~a ~a)" type path idx)]
-    [(LBot:) (fp "LBot")]))
+    [(LBot:) (fp "LBot")]
+    [(LImpFilter: a c) (fp "(LImpFilter ~a ~a)" a c)]))
 
 (define (print-filter c port write?)
   (define (fp . args) (apply fprintf port args))
@@ -57,7 +58,8 @@
     [(NoFilter:) (fp "-")]
     [(NotTypeFilter: type path id) (fp "(! ~a @ ~a ~a)" type path (syntax-e id))]
     [(TypeFilter: type path id) (fp "(~a @ ~a ~a)" type path (syntax-e id))]
-    [(Bot:) (fp "Bot")]))
+    [(Bot:) (fp "Bot")]
+    [(ImpFilter: a c) (fp "(ImpFilter ~a ~a)" a c)]))
 
 (define (print-pathelem c port write?)
   (define (fp . args) (apply fprintf port args))
