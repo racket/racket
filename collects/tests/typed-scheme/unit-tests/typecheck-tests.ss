@@ -161,7 +161,7 @@
         [tc-e/t (values 3) -Pos]
         [tc-e (values) #:ret (ret null)]
         [tc-e (values 3 #f) #:ret (ret (list -Pos (-val #f)) (list (-FS (list) (list (make-Bot))) (-FS (list (make-Bot)) (list))))]
-        [tc-e (map #{values @ Symbol} '(a b c)) (make-Listof  Sym)]
+        [tc-e (map #{values @ Symbol} '(a b c)) (-pair Sym (make-Listof  Sym))]
         [tc-e (letrec: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                        (fact 20))
               N]
@@ -255,7 +255,7 @@
         [tc-err (5 4)]
         [tc-err (apply 5 '(2))]
         [tc-err (map (lambda: ([x : Any] [y : Any]) 1) '(1))]
-        [tc-e (map add1 '(1)) (-lst -Pos)]
+        [tc-e (map add1 '(1)) (-pair -Pos (-lst -Pos))]
         
         [tc-e/t (let ([x 5])
                 (if (eq? x 1)
@@ -397,9 +397,23 @@
         [tc-e (let: ([x : Any 1]) (and (number? x) (boolean? x))) 
               #:ret (ret B (-FS (list (make-Bot)) null))]
         [tc-e (let: ([x : Any 1]) (and (number? x) x))
-              #:proc (get-let-name x 0 (ret (t:Un N (-val #f)) (-FS (list (make-TypeFilter N null #'x) (make-NotTypeFilter (-val #f) null #'x)) null)))]
+              #:proc (get-let-name x 0 (ret (t:Un N (-val #f)) (-FS 
+                                                                (list (make-TypeFilter N null #'x) (make-NotTypeFilter (-val #f) null #'x))
+                                                                (list (make-ImpFilter
+                                                                       (list (make-NotTypeFilter (-val #f) null #'x))
+                                                                       (list (make-NotTypeFilter N null #'x)))
+                                                                      (make-ImpFilter
+                                                                       (list (make-TypeFilter N null #'x))
+                                                                       (list (make-TypeFilter (-val #f) null #'x)))))))]
         [tc-e (let: ([x : Any 1]) (and x (boolean? x)))
-              #:proc (get-let-name x 0 (ret -Boolean (-FS (list (make-NotTypeFilter (-val #f) null #'x) (make-TypeFilter -Boolean null #'x)) null)))]
+              #:proc (get-let-name x 0 (ret -Boolean (-FS (list (make-NotTypeFilter (-val #f) null #'x) (make-TypeFilter -Boolean null #'x))
+                                                           (list
+                                                            (make-ImpFilter
+                                                             (list (make-TypeFilter B null #'x))
+                                                             (list (make-TypeFilter (-val #f) null #'x)))
+                                                            (make-ImpFilter
+                                                             (list (make-NotTypeFilter (-val #f) null #'x))
+                                                             (list (make-NotTypeFilter B null #'x)))))))]
         
         [tc-e/t (let: ([x : Any 3])
                       (if (and (list? x) (not (null? x)))
@@ -648,7 +662,9 @@
                  . t:-> . -Pos : (-LFS null (list (make-LBot))))]
         
         [tc-e/t (plambda: (z x y ...) () (inst map z x y ... y))
-              (-polydots (z x y) (t:-> ((list ((list x) (y y) . ->... . z) (-lst x)) ((-lst y) y) . ->... . (-lst z))))]
+              (-polydots (z x y) (t:-> (cl->*
+                                        ((t:-> x z) (-pair x (-lst x)) . t:-> . (-pair z (-lst z)))
+                                        ((list ((list x) (y y) . ->... . z) (-lst x)) ((-lst y) y) . ->... . (-lst z)))))]
         
         ;; error tests
         [tc-err (#%variable-reference number?)]
