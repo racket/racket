@@ -2552,13 +2552,13 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
       all_vals = 0;
   }
 
+  info->size += 1;
+
   if (all_vals) {
     le = try_optimize_fold(app->args[0], (Scheme_Object *)app, info);
     if (le)
       return le;
   }
-
-  info->size += 1;
 
   info->preserves_marks = !!(rator_flags & CLOS_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & CLOS_SINGLE_RESULT);
@@ -2723,13 +2723,13 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 
   /* Fold or continue */
 
+  info->size += 1;
+
   if (all_vals) {
     le = try_optimize_fold(app->rator, (Scheme_Object *)app, info);
     if (le)
       return le;
   }
-
-  info->size += 1;
 
   /* Check for (call-with-values (lambda () M) N): */
   if (SAME_OBJ(app->rator, scheme_call_with_values_proc)) {
@@ -3154,8 +3154,10 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info)
 
       val = scheme_optimize_info_lookup(info, pos, NULL, NULL);
       if (val) {
-        if (SAME_TYPE(SCHEME_TYPE(val), scheme_compiled_toplevel_type))
+        if (SAME_TYPE(SCHEME_TYPE(val), scheme_compiled_toplevel_type)) {
+          info->size -= 1;
           return scheme_optimize_expr(val, info);
+        }
 	return val;
       }
 
@@ -3189,6 +3191,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info)
   case scheme_compiled_let_void_type:
     return scheme_optimize_lets(expr, info, 0);
   case scheme_compiled_toplevel_type:
+    info->size += 1;
     if (info->top_level_consts) {
       int pos;
       Scheme_Object *c;
@@ -3226,6 +3229,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info)
     scheme_optimize_info_used_top(info);
     return expr;
   case scheme_compiled_quote_syntax_type:
+    info->size += 1;
     scheme_optimize_info_used_top(info);
     return expr;
   case scheme_variable_type:

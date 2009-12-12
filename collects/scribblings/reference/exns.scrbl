@@ -57,7 +57,7 @@ exception handler obtains control, and the handler itself is
 
 @defproc*[([(error [sym symbol?]) any]
            [(error [msg string?][v any/c] ...) any]
-           [(error [src symbol?][format string?][v any/c] ...) any])]{
+           [(error [src symbol?][frmat string?][v any/c] ...) any])]{
 
 Raises the exception @scheme[exn:fail], which contains an error
 string. The different forms produce the error string in different
@@ -74,11 +74,11 @@ ways:
  @scheme[error-value->string-handler]). A space is inserted before
  each @scheme[v].}
 
- @item{@scheme[(error src format v ...)] creates a
+ @item{@scheme[(error src frmat v ...)] creates a
  message string equivalent to the string created by
 
   @schemeblock[
-  (format (string-append "~s: " format) src v ...)
+  (format (string-append "~s: " frmat) src v ...)
   ]}
 
 ]

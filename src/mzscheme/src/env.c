@@ -3166,7 +3166,7 @@ Optimize_Info *scheme_optimize_info_create()
 #ifdef MZTAG_REQUIRED
   info->type = scheme_rt_optimize_info;
 #endif
-  info->inline_fuel = 16;
+  info->inline_fuel = 32;
   
   return info;
 }

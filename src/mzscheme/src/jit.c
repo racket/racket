@@ -2251,9 +2251,9 @@ static void ts_on_demand(void) XFORM_SKIP_PROC
 #ifdef MZ_PRECISE_GC
 static void *ts_prepare_retry_alloc(void *p, void *p2) XFORM_SKIP_PROC
 {
-  unsigned long ret;
-
   if (scheme_use_rtcall) {
+    unsigned long ret;
+  
     jit_future_storage[0] = p;
     jit_future_storage[1] = p2;
     ret = scheme_rtcall_alloc("[acquire_gc_page]", FSRC_OTHER);
@@ -2265,8 +2265,7 @@ static void *ts_prepare_retry_alloc(void *p, void *p2) XFORM_SKIP_PROC
     return p;
   }
 
-  ret = prepare_retry_alloc(p, p2);
-  return ret;
+  return prepare_retry_alloc(p, p2);
 }
 #endif
 

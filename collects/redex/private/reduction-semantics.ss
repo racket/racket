@@ -1425,7 +1425,15 @@
     (values
      (wrap
       (letrec ([cache (make-hash)]
+               [cache-entries 0]
                [not-in-cache (gensym)]
+               [cache-result (λ (arg res case)
+                               (when (caching-enabled?)
+                                 (when (>= cache-entries cache-size)
+                                   (set! cache (make-hash))
+                                   (set! cache-entries 0))
+                                 (hash-set! cache arg (cons res case))
+                                 (set! cache-entries (add1 cache-entries))))]
                [log-coverage (λ (id)
                                (when id
                                  (for-each 
@@ -1452,7 +1460,7 @@
                            [(null? cases) 
                             (if relation?
                                 (begin 
-                                  (hash-set! cache exp (cons #f #f))
+                                  (cache-result exp #f #f)
                                   #f)
                                 (redex-error name "no clauses matched for ~s" `(,name . ,exp)))]
                            [else
@@ -1470,7 +1478,7 @@
                                        (redex-error name "codomain test failed for ~s, call was ~s" ans `(,name ,@exp)))
                                      (cond
                                        [ans 
-                                        (hash-set! cache exp (cons #t id))
+                                        (cache-result exp #t id)
                                         (log-coverage id)
                                         #t]
                                        [else
@@ -1499,7 +1507,7 @@
                                                          "codomain test failed for ~s, call was ~s"
                                                          ans 
                                                          `(,name ,@exp)))
-                                          (hash-set! cache exp (cons ans id))
+                                          (cache-result exp ans id)
                                           (log-coverage id)
                                           ans)]))])))]))]
                       [else 

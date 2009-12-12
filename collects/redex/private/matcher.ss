@@ -1592,6 +1592,7 @@ before the pattern compiler is invoked.
                       compiled-pattern?))
  
  (set-cache-size! (-> (and/c integer? positive?) void?))
+ (cache-size (and/c integer? positive?))
  
  (make-bindings ((listof bind?) . -> . bindings?))
  (bindings-table (bindings? . -> . (listof bind?)))
