@@ -17,4 +17,4 @@
 
 (define-forms parse/legacy/cert
   match match* match-lambda match-lambda* match-lambda** match-let match-let*
-  match-define match-letrec)
+  match-define match-letrec match/derived match*/derived)
