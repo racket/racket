@@ -269,8 +269,13 @@ operations allow the @tech{JIT} compiler to generate code that avoids
 boxing and unboxing intermediate results. Currently, only expressions
 involving a combination of unchecked flonum operations,
 @scheme[unsafe-fx->fl], constants, and variable references are
-optimized to avoid boxing. See also @secref["unchecked-unsafe"],
-especially the warnings about unsafety.
+optimized to avoid boxing; the bytecode compiler attempts to move
+sub-expressions into and out of enclosing @scheme[let] forms to
+produce unboxing combinations. The bytecode decompiler (see
+@secref[#:doc '(lib "scribblings/mzc/mzc.scrbl") "decompile"]
+annotates combinations where the JIT can avoid boxes with
+@scheme[#%flonum]. See also @secref["unchecked-unsafe"], especially
+the warnings about unsafety.
 
 @; ----------------------------------------------------------------------
 

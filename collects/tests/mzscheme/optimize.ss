@@ -629,6 +629,14 @@
               (values x))
            '(let ([x (random)])
               x))
+(test-comp '(let ([x (+ (cons 1 2) 0)])
+              (values x))
+           '(let ([x (+ (cons 1 2) 0)])
+              x))
+
+(test-comp '(let ([x (+ (cons 1 2) 0)])
+              (- x 8))
+           '(- (+ (cons 1 2) 0) 8))
 
 (test-comp '(let-values ([(x y) (values 1 2)])
               (+ x y))

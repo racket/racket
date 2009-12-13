@@ -2973,6 +2973,33 @@ static int mark_sfs_info_FIXUP(void *p) {
 #define mark_sfs_info_IS_CONST_SIZE 1
 
 
+static int mark_once_used_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Once_Used));
+}
+
+static int mark_once_used_MARK(void *p) {
+  Scheme_Once_Used *o = (Scheme_Once_Used *)p;
+  gcMARK(o->expr);
+  gcMARK(o->info);
+  gcMARK(o->next);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Once_Used));
+}
+
+static int mark_once_used_FIXUP(void *p) {
+  Scheme_Once_Used *o = (Scheme_Once_Used *)p;
+  gcFIXUP(o->expr);
+  gcFIXUP(o->info);
+  gcFIXUP(o->next);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Once_Used));
+}
+
+#define mark_once_used_IS_ATOMIC 0
+#define mark_once_used_IS_CONST_SIZE 1
+
+
 #endif  /* ENV */
 
 /**********************************************************************/
@@ -3610,7 +3637,7 @@ static int mark_input_fd_FIXUP(void *p) {
 
 #endif
 
-#if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
+#if defined(UNIX_PROCESSES)
 static int mark_system_child_SIZE(void *p) {
   return
   gcBYTES_TO_WORDS(sizeof(System_Child));

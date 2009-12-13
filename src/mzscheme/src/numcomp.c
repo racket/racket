@@ -109,48 +109,58 @@ void scheme_init_unsafe_numcomp(Scheme_Env *env)
   Scheme_Object *p;
 
   p = scheme_make_folding_prim(fx_eq, "unsafe-fx=", 2, 2, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fx=", p, env);
 
   p = scheme_make_folding_prim(fx_lt, "unsafe-fx<", 2, 2, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fx<", p, env);
 
   p = scheme_make_folding_prim(fx_gt, "unsafe-fx>", 2, 2, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fx>", p, env);
 
   p = scheme_make_folding_prim(fx_lt_eq, "unsafe-fx<=", 2, 2, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fx<=", p, env);
 
   p = scheme_make_folding_prim(fx_gt_eq, "unsafe-fx>=", 2, 2, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fx>=", p, env);
 
   p = scheme_make_folding_prim(fl_eq, "unsafe-fl=", 2, 2, 1);
   if (scheme_can_inline_fp_comp())
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
   scheme_add_global_constant("unsafe-fl=", p, env);
 
   p = scheme_make_folding_prim(fl_lt, "unsafe-fl<", 2, 2, 1);
   if (scheme_can_inline_fp_comp())
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
   scheme_add_global_constant("unsafe-fl<", p, env);
 
   p = scheme_make_folding_prim(fl_gt, "unsafe-fl>", 2, 2, 1);
   if (scheme_can_inline_fp_comp())
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
   scheme_add_global_constant("unsafe-fl>", p, env);
 
   p = scheme_make_folding_prim(fl_lt_eq, "unsafe-fl<=", 2, 2, 1);
   if (scheme_can_inline_fp_comp())
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
   scheme_add_global_constant("unsafe-fl<=", p, env);
 
   p = scheme_make_folding_prim(fl_gt_eq, "unsafe-fl>=", 2, 2, 1);
   if (scheme_can_inline_fp_comp())
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
   scheme_add_global_constant("unsafe-fl>=", p, env);
 }
 

@@ -271,7 +271,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 run-larceny
                 extract-larceny-times
                 clean-up-fasl
-                '(maze maze2))
+                '())
      (make-impl 'ikarus
                 mk-ikarus
                 run-ikarus

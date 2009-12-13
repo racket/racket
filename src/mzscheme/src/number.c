@@ -545,38 +545,46 @@ void scheme_init_unsafe_number(Scheme_Env *env)
   Scheme_Object *p;
 
   p = scheme_make_folding_prim(fx_and, "unsafe-fxand", 0, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fxand", p, env);
 
   p = scheme_make_folding_prim(fx_or, "unsafe-fxior", 0, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fxior", p, env);
 
   p = scheme_make_folding_prim(fx_xor, "unsafe-fxxor", 0, -1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fxxor", p, env);
 
   p = scheme_make_folding_prim(fx_not, "unsafe-fxnot", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fxnot", p, env);
 
   p = scheme_make_folding_prim(fx_lshift, "unsafe-fxlshift", 2, 2, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fxlshift", p, env);
 
   p = scheme_make_folding_prim(fx_rshift, "unsafe-fxrshift", 2, 2, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fxrshift", p, env);
 
   p = scheme_make_folding_prim(fx_to_fl, "unsafe-fx->fl", 1, 1, 1);
   if (scheme_can_inline_fp_op())
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
   scheme_add_global_constant("unsafe-fx->fl", p, env);
 
   p = scheme_make_immed_prim(fl_ref, "unsafe-f64vector-ref",
                              2, 2);
   if (scheme_can_inline_fp_op())
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
   scheme_add_global_constant("unsafe-f64vector-ref", p, env);
   
   p = scheme_make_immed_prim(fl_set, "unsafe-f64vector-set!",
@@ -587,13 +595,15 @@ void scheme_init_unsafe_number(Scheme_Env *env)
 
   p = scheme_make_immed_prim(unsafe_flvector_length, "unsafe-flvector-length",
                              1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-flvector-length", p, env);
 
   p = scheme_make_immed_prim(unsafe_flvector_ref, "unsafe-flvector-ref",
                              2, 2);
   if (scheme_can_inline_fp_op())
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
   scheme_add_global_constant("unsafe-flvector-ref", p, env);
 
   p = scheme_make_immed_prim(unsafe_flvector_set, "unsafe-flvector-set!",

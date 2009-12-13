@@ -981,6 +981,8 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info)
   info = scheme_optimize_info_add_frame(info, data->num_params, data->num_params,
 					SCHEME_LAMBDA_FRAME);
 
+  info->vclock += 1; /* model delayed evaluation as vclock increment */
+
   /* For reporting warnings: */
   if (info->context && SCHEME_PAIRP(info->context))
     ctx = scheme_make_pair((Scheme_Object *)data,

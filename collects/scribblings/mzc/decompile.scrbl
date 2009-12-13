@@ -72,6 +72,10 @@ Many forms in the decompiled code, such as @scheme[module],
  it may even contain cyclic references to itself or other constant
  closures.}
 
+ @item{A form @scheme[(#%apply-values _proc _expr)] is equivalent to
+ @scheme[(call-with-values (lambda () _expr) _proc)], but the run-time
+ system avoids allocating a closure for @scheme[_expr].}
+
  @item{Some applications of core primitives are annotated with
  @schemeidfont{#%in}, which indicates that the JIT compiler will
  inline the operation. (Inlining information is not part of the
@@ -80,9 +84,14 @@ Many forms in the decompiled code, such as @scheme[module],
  @schememodname[scheme/unsafe/ops] are always inlined, so
  @schemeidfont{#%in} is not shown for them.}
 
- @item{A form @scheme[(#%apply-values _proc _expr)] is equivalent to
- @scheme[(call-with-values (lambda () _expr) _proc)], but the run-time
- system avoids allocating a closure for @scheme[_expr].}
+ @item{Some applications of unsafe flonum operations from
+ @schememodname[scheme/unsafe/ops] are annotated with
+ @schemeidfont{#%flonum}, indicating a place where the JIT compiler
+ can avoid allocation for intermediate flonum results. A single
+ @schemeidfont{#%flonum} by itself is not useful, but a
+ @schemeidfont{#%flonum} operation that consumes a
+ @schemeidfont{#%flonum} argument indicates a potential performance
+ improvement.}
 
  @item{A @schemeidfont{#%decode-syntax} form corresponds to a syntax
  object. Future improvements to the decompiler will convert such

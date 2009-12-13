@@ -1965,7 +1965,7 @@ typedef struct Optimize_Info
   Scheme_Object *consts;
 
   /* Propagated up and down the chain: */
-  int size;
+  int size, vclock;
   short inline_fuel;
   char letrec_not_twice, enforce_const;
   Scheme_Hash_Table *top_level_consts;
@@ -2278,13 +2278,14 @@ Scheme_Object *scheme_merge_expression_resolve_lifts(Scheme_Object *expr, Resolv
 Optimize_Info *scheme_optimize_info_create(void);
 
 void scheme_optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *value, int single_use);
-Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use);
+Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use, int once_used_ok);
 void scheme_optimize_info_used_top(Optimize_Info *info);
 
 void scheme_optimize_mutated(Optimize_Info *info, int pos);
 Scheme_Object *scheme_optimize_reverse(Optimize_Info *info, int pos, int unless_mutated);
 int scheme_optimize_is_used(Optimize_Info *info, int pos);
 int scheme_optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos);
+int scheme_optimize_is_mutated(Optimize_Info *info, int pos);
 
 Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth);
 Scheme_Object *scheme_optimize_shift(Scheme_Object *obj, int delta, int after_depth);
@@ -2303,6 +2304,23 @@ Scheme_Object *scheme_toplevel_to_flagged_toplevel(Scheme_Object *tl, int flags)
 
 void scheme_env_make_closure_map(Optimize_Info *frame, mzshort *size, mzshort **map);
 int scheme_env_uses_toplevel(Optimize_Info *frame);
+
+int scheme_wants_unboxed_arguments(Scheme_Object *rator);
+
+typedef struct Scheme_Once_Used {
+  Scheme_Object so;
+  Scheme_Object *expr;
+  int pos;
+  int vclock;
+
+  int used;
+  int delta;
+  Optimize_Info *info;
+
+  struct Scheme_Once_Used *next;
+} Scheme_Once_Used;
+
+Scheme_Once_Used *scheme_make_once_used(Scheme_Object *val, int pos, int vclock, Scheme_Once_Used *prev);
 
 int scheme_resolve_toplevel_pos(Resolve_Info *info);
 int scheme_resolve_is_toplevel_available(Resolve_Info *info);

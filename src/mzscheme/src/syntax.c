@@ -1558,12 +1558,14 @@ set_optimize(Scheme_Object *data, Optimize_Info *info)
     pos = SCHEME_LOCAL_POS(var);
 
     /* Register that we use this variable: */
-    scheme_optimize_info_lookup(info, pos, NULL, NULL);
+    scheme_optimize_info_lookup(info, pos, NULL, NULL, 0);
 
     /* Offset: */
     delta = scheme_optimize_info_get_shift(info, pos);
     if (delta)
       var = scheme_make_local(scheme_local_type, pos + delta, 0);
+
+    info->vclock++;
   } else {
     scheme_optimize_info_used_top(info);
   }
@@ -1890,6 +1892,7 @@ ref_optimize(Scheme_Object *tl, Optimize_Info *info)
 
   info->preserves_marks = 1;
   info->single_result = 1;
+  info->size++;
 
   return scheme_make_syntax_compiled(REF_EXPD, tl);
 }
@@ -2089,6 +2092,9 @@ apply_values_optimize(Scheme_Object *data, Optimize_Info *info)
   
   f = scheme_optimize_expr(f, info);
   e = scheme_optimize_expr(e, info);
+
+  info->size += 1;
+  info->vclock += 1;
 
   return scheme_optimize_apply_values(f, e, info, info->single_result);
 }
@@ -2424,6 +2430,7 @@ case_lambda_optimize(Scheme_Object *expr, Optimize_Info *info)
 
   info->preserves_marks = 1;
   info->single_result = 1;
+  info->size += 1;
 
   return scheme_make_syntax_compiled(CASE_LAMBDA_EXPD, expr);
 }
@@ -3024,6 +3031,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
   Scheme_Let_Header *head = (Scheme_Let_Header *)form;
   Scheme_Compiled_Let_Value *clv, *pre_body, *retry_start, *prev_body;
   Scheme_Object *body, *value, *ready_pairs = NULL, *rp_last = NULL, *ready_pairs_start;
+  Scheme_Once_Used *first_once_used = NULL, *last_once_used = NULL;
   int i, j, pos, is_rec, not_simply_let_star = 0;
   int size_before_opt, did_set_value;
   int remove_last_one = 0;
@@ -3206,6 +3214,16 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
           cnt = ((pre_body->flags[0] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT);
         scheme_optimize_propagate(body_info, pos, value, cnt == 1);
 	did_set_value = 1;
+      } else if (value && !is_rec) {
+        int cnt;
+        cnt = ((pre_body->flags[0] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT);
+        if (cnt == 1) {
+          /* used only once; we may be able to shift the expression to the use
+             site, instead of binding to a temporary */
+          last_once_used = scheme_make_once_used(value, pos, body_info->vclock, last_once_used);
+          if (!first_once_used) first_once_used = last_once_used;
+          scheme_optimize_propagate(body_info, pos, (Scheme_Object *)last_once_used, 1);
+        }
       }
     }
 
@@ -3339,11 +3357,11 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
     pos += pre_body->count;
     prev_body = pre_body;
     body = pre_body->body;
-    info->size += 1;
   }
 
   if (for_inline) {
     body_info->size = rhs_info->size;
+    body_info->vclock = rhs_info->vclock;
   }
 
   body = scheme_optimize_expr(body, body_info);
@@ -3351,16 +3369,21 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
     pre_body->body = body;
   else
     head->body = body;
-  info->size += 1;
 
   info->single_result = body_info->single_result;
   info->preserves_marks = body_info->preserves_marks;
+  info->vclock = body_info->vclock;
 
   /* Clear used flags where possible */
   body = head->body;
   pos = 0;
   for (i = head->num_clauses; i--; ) {
     int used = 0, j;
+
+    while (first_once_used && (first_once_used->pos < pos)) {
+      first_once_used = first_once_used->next;
+    }
+
     pre_body = (Scheme_Compiled_Let_Value *)body;
     for (j = pre_body->count; j--; ) {
       if (scheme_optimize_is_used(body_info, pos+j)) {
@@ -3369,7 +3392,10 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
       }
     }
     if (!used
-        && scheme_omittable_expr(pre_body->value, pre_body->count, -1, 0, info)) {
+        && (scheme_omittable_expr(pre_body->value, pre_body->count, -1, 0, info)
+            || (first_once_used 
+                && (first_once_used->pos == pos) 
+                && first_once_used->used))) {
       for (j = pre_body->count; j--; ) {
         if (pre_body->flags[j] & SCHEME_WAS_USED) {
           pre_body->flags[j] -= SCHEME_WAS_USED;
@@ -3380,12 +3406,13 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
         int sz;
         sz = expr_size(pre_body->value);
         pre_body->value = scheme_false;
-        info->size -= (sz + 1);
+        info->size -= sz;
       }
     } else {
       for (j = pre_body->count; j--; ) {
         pre_body->flags[j] |= SCHEME_WAS_USED;
       }
+      info->size += 1;
     }
     pos += pre_body->count;
     body = pre_body->body;
@@ -3791,9 +3818,11 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
         info->max_let_depth = max_let_depth;
 
       /* Check for (let ([x <expr>]) (<simple> x)) at end, and change to
-         (<simple> <expr>). This is easy because the local-variable
-         offsets in <expr> do not change (as long as <simple> doesn't
-         access the stack). */
+         (<simple> <expr>). This transformation is more generally performed
+         at the optimization layer, the cocde here pre-dates the mode general
+         optimzation, and we keep it just in case. The simple case is easy here,
+         because the local-variable offsets in <expr> do not change (as long as 
+         <simple> doesn't access the stack). */
       last_body = NULL;
       body = first;
       while (1) {
@@ -3809,7 +3838,8 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
           Scheme_App2_Rec *app = (Scheme_App2_Rec *)((Scheme_Let_One *)body)->body;
           if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)
               && (SCHEME_LOCAL_POS(app->rand) == 1)) {
-            if (SCHEME_TYPE(app->rator) > _scheme_values_types_) {
+            if ((SCHEME_TYPE(app->rator) > _scheme_values_types_)
+                && !scheme_wants_unboxed_arguments(app->rator)) {
               /* Move <expr> to app, and drop let-one: */
               app->rand = ((Scheme_Let_One *)body)->value;
               scheme_reset_app2_eval_type(app);
@@ -4818,11 +4848,11 @@ static void begin0_validate(Scheme_Object *data, Mz_CPort *port,
 static Scheme_Object *
 begin0_optimize(Scheme_Object *obj, Optimize_Info *info)
 {
-  int i;
+  int i, count;
   
-  i = ((Scheme_Sequence *)obj)->count;
+  count = ((Scheme_Sequence *)obj)->count;
 
-  while (i--) {
+  for (i = 0; i < count; i++) {
     Scheme_Object *le;
     le = scheme_optimize_expr(((Scheme_Sequence *)obj)->array[i], info);
     ((Scheme_Sequence *)obj)->array[i] = le;
@@ -4830,6 +4860,8 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info)
 
   /* Optimization of expression 0 has already set single_result */
   info->preserves_marks = 1;
+
+  info->size += 1;
 
   return scheme_make_syntax_compiled(BEGIN0_EXPD, obj);
 }

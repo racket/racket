@@ -1194,6 +1194,16 @@ mark_sfs_info {
   gcBYTES_TO_WORDS(sizeof(SFS_Info));
 }
 
+mark_once_used {
+ mark:
+  Scheme_Once_Used *o = (Scheme_Once_Used *)p;
+  gcMARK(o->expr);
+  gcMARK(o->info);
+  gcMARK(o->next);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Once_Used));
+}
+
 END env;
 
 /**********************************************************************/

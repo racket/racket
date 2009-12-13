@@ -159,7 +159,9 @@
            (collect-garbage)
            (t 81     'use_grabbed_callback (_fun _int -> _int) 9))])
     (with-keeper #t)
-    (with-keeper (box #f)))
+    (let ([b (box #f)])
+      (with-keeper b)
+      (set-box! b #f)))
   ;; ---
   ;; test exposing internal mzscheme functionality
   (test '(1 2)

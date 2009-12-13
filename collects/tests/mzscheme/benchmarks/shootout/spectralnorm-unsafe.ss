@@ -28,15 +28,13 @@
 
 ;; return element i,j of infinite matrix A
 (define (A i j)
-  (let ([n (unsafe-fx+ i (unsafe-fx+ j 1))]
-        [i+j (unsafe-fx+ i j)]
-        [i+1 (unsafe-fx+ i 1)])
-    (unsafe-fl/ 1.0 
-                (unsafe-fl+ 
-                 (unsafe-fl* (unsafe-fx->fl i+j)
-                             (unsafe-fl/ (unsafe-fx->fl n)
-                                         2.0))
-                 (unsafe-fx->fl i+1)))))
+  (unsafe-fl/ 1.0 
+              (unsafe-fl+ 
+               (unsafe-fl* (unsafe-fx->fl (unsafe-fx+ i j))
+                           (unsafe-fl/ (unsafe-fx->fl
+                                        (unsafe-fx+ i (unsafe-fx+ j 1)))
+                                       2.0))
+               (unsafe-fx->fl (unsafe-fx+ i 1)))))
 
 ;; multiply vector v by matrix A
 (define (MultiplyAv n v Av)
@@ -49,10 +47,10 @@
 ;; multiply vector v by matrix A transposed
 (define (MultiplyAtv n v Atv)
   (for ([i (in-range n)])
-    (vector-set! Atv i
-                 (for/fold ([r 0.0])
-                     ([j (in-range n)])
-                   (unsafe-fl+ r (unsafe-fl* (A j i) (unsafe-vector-ref v j)))))))
+    (unsafe-vector-set! Atv i
+                        (for/fold ([r 0.0])
+                            ([j (in-range n)])
+                          (unsafe-fl+ r (unsafe-fl* (A j i) (unsafe-vector-ref v j)))))))
 
 ;; multiply vector v by matrix A and then by matrix A transposed 
 (define (MultiplyAtAv n v AtAv)
@@ -64,4 +62,3 @@
         (real->decimal-string
          (Approximate (command-line #:args (n) (string->number n)))
          9))
-

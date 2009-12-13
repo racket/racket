@@ -3380,6 +3380,23 @@ void scheme_optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *valu
   info->consts = p;
 }
 
+Scheme_Once_Used *scheme_make_once_used(Scheme_Object *val, int pos, int vclock, Scheme_Once_Used *prev)
+{
+  Scheme_Once_Used *o;
+
+  o = MALLOC_ONE_TAGGED(Scheme_Once_Used);
+  o->so.type = scheme_once_used_type;
+
+  o->expr = val;
+  o->pos = pos;
+  o->vclock = vclock;
+
+  if (prev)
+    prev->next = o;
+  
+  return o;
+}
+
 void scheme_optimize_mutated(Optimize_Info *info, int pos)
 /* pos must be in immediate frame */
 {
@@ -3428,6 +3445,22 @@ int scheme_optimize_is_used(Optimize_Info *info, int pos)
   return 0;
 }
 
+int scheme_optimize_is_mutated(Optimize_Info *info, int pos)
+/* pos is in new-frame counts */
+{
+  while (1) {
+    if (pos < info->new_frame)
+      break;
+    pos -= info->new_frame;
+    info = info->next;
+  }
+
+  if (info->use && info->use[pos])
+    return 1;
+
+  return 0;
+}
+
 int scheme_optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos)
 {
   int j, i;
@@ -3456,7 +3489,8 @@ int scheme_optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos)
   return 0;
 }
 
-static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int j, int *closure_offset, int *single_use, int *not_ready)
+static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int j, int *closure_offset, int *single_use, 
+                                              int *not_ready, int once_used_ok)
 {
   Scheme_Object *p, *n;
   int delta = 0;
@@ -3494,8 +3528,18 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
       } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_compiled_toplevel_type)) {
         /* Ok */
       } else if (closure_offset) {
-        /* Inlining can deal procdures and top-levels, but not other things. */
+        /* Inlining can deal procedures and top-levels, but not other things. */
         return NULL;
+      } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_once_used_type)) {
+        Scheme_Once_Used *o;
+
+        if (!once_used_ok)
+          break;
+
+        o = (Scheme_Once_Used *)n;
+        o->delta = delta;
+        o->info = info;
+        return (Scheme_Object *)o;
       } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_local_type)) {
 	int pos;
 
@@ -3511,7 +3555,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
           if (!*single_use)
             single_use = NULL;
         }
-	n = do_optimize_info_lookup(info, pos, j, NULL, single_use, NULL);
+	n = do_optimize_info_lookup(info, pos, j, NULL, single_use, NULL, 0);
 
 	if (!n) {
 	  /* Return shifted reference to other local: */
@@ -3530,16 +3574,17 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
   return NULL;
 }
 
-Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use)
+Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use, 
+                                           int once_used_ok)
 {
-  return do_optimize_info_lookup(info, pos, 0, closure_offset, single_use, NULL);
+  return do_optimize_info_lookup(info, pos, 0, closure_offset, single_use, NULL, once_used_ok);
 }
 
 int scheme_optimize_info_is_ready(Optimize_Info *info, int pos)
 {
   int closure_offset, single_use, ready = 1;
   
-  do_optimize_info_lookup(info, pos, 0, &closure_offset, &single_use, &ready);
+  do_optimize_info_lookup(info, pos, 0, &closure_offset, &single_use, &ready, 0);
 
   return ready;
 }
@@ -3558,6 +3603,7 @@ Optimize_Info *scheme_optimize_info_add_frame(Optimize_Info *info, int orig, int
   naya->enforce_const = info->enforce_const;
   naya->top_level_consts = info->top_level_consts;
   naya->context = info->context;
+  naya->vclock = info->vclock;
 
   return naya;
 }
@@ -3575,7 +3621,7 @@ int scheme_optimize_info_get_shift(Optimize_Info *info, int pos)
   }
 
   if (!info)
-    *(long *)0x0 = 1;
+    scheme_signal_error("error looking for local-variable offset");
 
   return delta;
 }
@@ -3583,10 +3629,8 @@ int scheme_optimize_info_get_shift(Optimize_Info *info, int pos)
 void scheme_optimize_info_done(Optimize_Info *info)
 {
   info->next->size += info->size;
+  info->next->vclock = info->vclock;
 }
-
-
-  
 
 /*========================================================================*/
 /*                    compile-time env for resolve                        */
@@ -5676,6 +5720,7 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_rt_resolve_info, mark_resolve_info);
   GC_REG_TRAV(scheme_rt_optimize_info, mark_optimize_info);
   GC_REG_TRAV(scheme_rt_sfs_info, mark_sfs_info);
+  GC_REG_TRAV(scheme_once_used_type, mark_once_used);
 }
 
 END_XFORM_SKIP;
