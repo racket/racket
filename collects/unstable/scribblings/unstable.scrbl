@@ -88,6 +88,8 @@ Keep documentation and tests up to date.
 @include-section["sequence.scrbl"]
 @include-section["hash.scrbl"]
 @include-section["match.scrbl"]
+@include-section["skip-list.scrbl"]
+@include-section["interval-map.scrbl"]
 
 @;{--------}
 

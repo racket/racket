@@ -51,8 +51,17 @@
            proj
            (lambda (x) (if (predicate x) (then-fo x) (else-fo x))))))))
 
+(define (rename-contract ctc name)
+  (let ([ctc (coerce-contract 'rename-contract ctc)])
+    (if (flat-contract? ctc)
+        (flat-named-contract name (flat-contract-predicate ctc))
+        (let* ([ctc-fo ((first-order-get ctc) ctc)]
+               [proj ((proj-get ctc) ctc)])
+          (make-proj-contract name proj ctc-fo)))))
+
 (provide/contract
  [non-empty-string/c contract?]
  [path-element? contract?]
  [port-number? contract?]
- [if/c (-> procedure? contract? contract? contract?)])
+ [if/c (-> procedure? contract? contract? contract?)]
+ [rename-contract (-> contract? any/c contract?)])

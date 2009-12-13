@@ -44,5 +44,15 @@ Note that the following contract is @bold{not} equivalent:
   @schemeblock[(or/c (-> any) any/c) (code:comment "wrong!")]
 The last contract is the same as @scheme[any/c] because
 @scheme[or/c] tries flat contracts before higher-order contracts.
+}
 
+@defproc[(rename-contract [contract contract?]
+                          [name any/c])
+         contract?]{
+
+Produces a contract that acts like @scheme[contract] but with the name
+@scheme[name].
+
+The resulting contract is a flat contract if @scheme[contract] is a
+flat contract.
 }

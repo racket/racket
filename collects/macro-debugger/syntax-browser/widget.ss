@@ -253,7 +253,7 @@
 (define browser-text%
   (class (text:arrows-mixin
           (text:tacking-mixin
-           (text:mouse-drawings-mixin
+           (text:hover-drawings-mixin
             (text:hover-mixin
              (text:hide-caret/selection-mixin
               (editor:standard-style-list-mixin text:basic%))))))
