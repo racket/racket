@@ -45,7 +45,9 @@
                            (fp")")]
     [(LNotTypeFilter: type path idx) (fp "(! ~a @ ~a ~a)" type path idx)]
     [(LTypeFilter: type path idx) (fp "(~a @ ~a ~a)" type path idx)]
-    [(LBot:) (fp "LBot")]))
+    [(LBot:) (fp "LBot")]
+    [(LImpFilter: a c) (fp "(LImpFilter ~a ~a)" a c)]
+    [else (fp "(Unknown Latent Filter: ~a)" (struct->vector c))]))
 
 (define (print-filter c port write?)
   (define (fp . args) (apply fprintf port args))
@@ -57,14 +59,17 @@
     [(NoFilter:) (fp "-")]
     [(NotTypeFilter: type path id) (fp "(! ~a @ ~a ~a)" type path (syntax-e id))]
     [(TypeFilter: type path id) (fp "(~a @ ~a ~a)" type path (syntax-e id))]
-    [(Bot:) (fp "Bot")]))
+    [(Bot:) (fp "Bot")]
+    [(ImpFilter: a c) (fp "(ImpFilter ~a ~a)" a c)]
+    [else (fp "(Unknown Filter: ~a)" (struct->vector c))]))
 
 (define (print-pathelem c port write?)
   (define (fp . args) (apply fprintf port args))
   (match c
     [(CarPE:) (fp "car")]
     [(CdrPE:) (fp "cdr")]
-    [(StructPE: t i) (fp "(~a ~a)" t i)]))
+    [(StructPE: t i) (fp "(~a ~a)" t i)]
+    [else (fp "(Unknown Path Element: ~a)" (struct->vector c))]))
 
 (define (print-latentobject c port write?)
   (define (fp . args) (apply fprintf port args))
@@ -77,7 +82,8 @@
   (match c
     [(NoObject:) (fp "-")]
     [(Empty:) (fp "")]
-    [(Path: pes i) (fp "~a" (append pes (list (syntax-e i))))]))
+    [(Path: pes i) (fp "~a" (append pes (list (syntax-e i))))]    
+    [else (fp "(Unknown Object: ~a)" (struct->vector c))]))
 
 ;; print out a type
 ;; print-type : Type Port Boolean -> Void
@@ -119,7 +125,8 @@
           (fp/filter "-> ~a : ~a ~a" t lf lo)]
          [_
           (fp "-> ~a" rng)])
-       (fp ")")]))
+       (fp ")")]      
+      [else (fp "(Unknown Function Type: ~a)" (struct->vector a))]))
   (define (tuple? t)
     (match t
       [(Pair: a (? tuple?)) #t]

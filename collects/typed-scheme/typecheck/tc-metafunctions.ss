@@ -5,11 +5,11 @@
                     [-> -->]
                     [->* -->*]
                     [one-of/c -one-of/c])
-         (rep type-rep)
+         (rep type-rep filter-rep) scheme/list
          scheme/contract scheme/match unstable/match
          (for-syntax scheme/base))
 
-(provide combine-filter apply-filter abstract-filter abstract-filters
+(provide combine-filter apply-filter abstract-filter abstract-filters combine-props
          split-lfilters merge-filter-sets values->tc-results tc-results->values)
 
 ;; this implements the sequence invariant described on the first page relating to Bot
@@ -66,7 +66,7 @@
       (apply append (for/list ([f f-]) (abo ids keys f))))]))
 
 (d/c (abo xs idxs f)
-  (-> (listof identifier?) (listof index/c) Filter/c (or/c '() (list/c LatentFilter/c)))
+  ((listof identifier?) (listof index/c) Filter/c . -> . (or/c null? (list/c LatentFilter/c)))
   (define (lookup y)
     (for/first ([x xs] [i idxs] #:when (free-identifier=? x y)) i)) 
   (define-match-expander lookup:
@@ -76,10 +76,12 @@
     [(Bot:) (list (make-LBot))]
     [(TypeFilter: t p (lookup: idx)) (list (make-LTypeFilter t p idx))]
     [(NotTypeFilter: t p (lookup: idx)) (list (make-LNotTypeFilter t p idx))]
-    [(ImpFilter: a c)
-     (match* [(abo a) (abo c)]
-       [((list a*) (list c*)) (list (make-LImpFilter a* c*))]
-       [(_ _) null])]
+    [(ImpFilter: as cs)
+     (let ([a* (apply append (for/list ([f as]) (abo xs idxs f)))]
+           [c* (apply append (for/list ([f cs]) (abo xs idxs f)))])
+       (if (< (length a*) (length as)) ;; if we removed some things, we can't be sure
+           null
+           (list (make-LImpFilter a* c*))))]
     [_ null]))
 
 (define (merge-filter-sets fs)
@@ -146,13 +148,13 @@
     [((FilterSet: f1+ f1-) (T-FS:) (FilterSet: f3+ f3-)) (mk (combine null (append f1- f3-)))]
     ;; and
     [((FilterSet: f1+ f1-) (FilterSet: f2+ f2-) (F-FS:)) 
-     (mk (combine (append f1+ f2+)
-		  null
-		  #;
-		  (append (for/list ([f f1-])
-			    (make-ImpFilter f2+ f))
-			  (for/list ([f f2-])
-			    (make-ImpFilter f1+ f)))))]
+     (mk (combine (append f1+ f2+)		  
+                  (append (for/list ([f f1-]
+                                     #:when (not (null? f2+)))
+			    (make-ImpFilter f2+ (list f)))
+			  (for/list ([f f2-]
+                                     #:when (not (null? f1+)))
+			    (make-ImpFilter f1+ (list f))))))]
     [(f f* f*) (mk f*)]
     [(_ _ _)
      ;; could intersect f2 and f3 here
@@ -204,3 +206,18 @@
 (define (tc-results->values tc)
   (match tc
     [(tc-results: ts) (-values ts)]))
+
+(define (combine-props new-props old-props)
+  (define-values (new-imps new-atoms) (partition ImpFilter? new-props))
+  (define-values (derived-imps derived-atoms)
+    (for/fold 
+        ([derived-imps null]
+         [derived-atoms null])
+      ([o old-props])
+      (match o
+        [(ImpFilter: as cs)
+         (let ([as* (remove* new-atoms as filter-equal?)])
+           (if (null? as*)
+               (values derived-imps (append cs new-atoms))
+               (values (cons (make-ImpFilter as* cs) derived-imps) derived-atoms)))])))
+  (values (append new-imps derived-imps) (append new-atoms derived-atoms)))

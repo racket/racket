@@ -64,7 +64,7 @@
 (define: (manual-t-test [avga : number] [avgb : number] [vara : number]
                         [varb : number] [cta : number] [ctb : number]) : number
   (/ (- avga avgb)
-     (sqrt (+ (/ vara cta) (/ varb ctb)))))
+     (assert (sqrt (+ (/ vara cta) (/ varb ctb))) number?)))
 
 ;; chi-square : (listof [0,1]) (listof [0,1]) -> number
 ;; chi-square is a simple measure of the extent to which the
@@ -84,11 +84,11 @@
            [table
             `((,a-hits ,b-hits)
               (,a-misses ,b-misses))]
-           [expected (lambda: ([i : Integer] [j : Integer])
+           [expected (lambda: ([i : Natural] [j : Natural])
                               (/ (* (row-total i table) (col-total j table)) total-subjects))])
       (exact->inexact 
        (table-sum 
-        (lambda: ([i : Integer] [j : Integer])
+        (lambda: ([i : Natural] [j : Natural])
                  (/ (sqr (- (expected i j) (table-ref i j table))) (expected i j)))
         table)))))
 
@@ -473,7 +473,7 @@
           (show result ))))
 
 ;; applies only to the combined metric [or more generally to listof-answer results]
-(pdefine: (a b c) (total [experiment-number : Integer] [result : (Result (Listof number) b c)]) : (Listof number)
+(pdefine: (a b c) (total [experiment-number : Natural] [result : (Result (Listof number) b c)]) : (Listof number)
           (define: (total/s [s : Table]) : number (apply + (list-ref (pivot s) experiment-number)))
           (list (total/s (result-seqA result)) (total/s (result-seqB result))))
 
@@ -491,7 +491,7 @@
             [(null? l) '()]
             [else
              (let ([n (length (car l))])
-               (build-list n (lambda: ([i : Integer]) (map (lambda: ([j : (Listof X)]) (list-ref j i)) l))))]))
+               (build-list n (lambda: ([i : Natural]) (map (lambda: ([j : (Listof X)]) (list-ref j i)) l))))]))
 
 (define: (sqr [x : number]) : number (* x x))
 (define: (variance [xs : (Listof number)]): number
@@ -499,16 +499,16 @@
     (/ (apply + (map (lambda: ([x : number]) (sqr (- x avg))) xs))
        (sub1 (length xs)))))
 
-(define: (table-ref [i : Integer] [j : Integer] [table : Table]): number
+(define: (table-ref [i : Natural] [j : Natural] [table : Table]): number
   (list-ref (list-ref table i) j))
-(define: (row-total [i : Integer] [table : Table]) : number
+(define: (row-total [i : Natural] [table : Table]) : number
   (apply + (list-ref table i)))
-(define: (col-total [j : Integer] [table : Table]) : number
+(define: (col-total [j : Natural] [table : Table]) : number
   (apply + (map (lambda: ([x : (Listof number)]) (list-ref x j)) table)))
-(define: (table-sum [f : (Integer Integer -> number)] [table : Table]) : number
+(define: (table-sum [f : (Natural Natural -> Real)] [table : Table]) : number
   (let ([rows (length table)]
         [cols (length (car table))])
-    (let: loop : number ([i : Integer 0] [j : Integer 0] [sum : number 0])
+    (let loop ([i 0] [j 0] [#{sum : Real} 0])
           (cond
             [(>= j cols) sum]
             [(>= i rows) (loop 0 (add1 j) sum)]

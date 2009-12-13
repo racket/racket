@@ -3,7 +3,7 @@
 
 (require (rename-in "../utils/utils.ss" [infer r:infer]))
 (require syntax/kerncase
-	 unstable/list
+	 unstable/list unstable/syntax
          mzlib/etc
          scheme/match
          "signatures.ss"
@@ -253,9 +253,11 @@
     ;; report delayed errors
     (report-all-errors)
     ;; compute the new provides
-    (with-syntax
-        ([((new-provs ...) ...) (map (generate-prov stx-defs val-defs) provs)])
+    (with-syntax*
+        ([the-variable-reference (generate-temporary #'blame)]
+         [((new-provs ...) ...) (map (generate-prov stx-defs val-defs #'the-variable-reference) provs)])
       #`(begin
+          (define the-variable-reference (#%variable-reference))
            #,(env-init-code)
            #,(tname-env-init-code)
            #,(talias-env-init-code)

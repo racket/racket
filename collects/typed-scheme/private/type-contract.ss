@@ -57,7 +57,7 @@
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
          #`(listof #,(t->c elem-ty))]
         [(? (lambda (e) (eq? t:Any-Syntax e))) #'syntax?]
-        [(Base: sym cnt) cnt]
+        [(Base: sym cnt) #`(flat-named-contract '#,sym (flat-contract-predicate #,cnt))]
         [(Refinement: par p? cert)
          #`(and/c #,(t->c par) (flat-contract #,(cert p?)))]
         [(Union: elems)         

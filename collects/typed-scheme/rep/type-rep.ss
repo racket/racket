@@ -66,6 +66,11 @@
 ;; left and right are Types
 (dt Pair ([left Type/c] [right Type/c]) [#:key 'pair])
 
+;; *mutable* pairs - distinct from regular pairs
+;; left and right are Types
+(dt MPair ([left Type/c] [right Type/c]) [#:key 'mpair])
+
+
 ;; elem is a Type
 (dt Vector ([elem Type/c]) 
     [#:frees (make-invariant (free-vars* elem)) (make-invariant (free-idxs* elem))]

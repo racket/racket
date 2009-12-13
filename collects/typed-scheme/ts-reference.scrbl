@@ -90,7 +90,7 @@ The following base types are parameteric in their type arguments.
 types @scheme[t ...].  This can only appear as the return type of a
 function.}
 @defform/none[v]{where @scheme[v] is a number, boolean or string, is the singleton type containing only that value}
-@defform/none['val]{where @scheme[val] is a Scheme value, is the singleton type containing only that value}
+@defform/none[(quote val)]{where @scheme[val] is a Scheme value, is the singleton type containing only that value}
 @defform/none[i]{where @scheme[i] is an identifier can be a reference to a type
 name or a type variable}
 @defform[(Rec n t)]{is a recursive type where @scheme[n] is bound to the
@@ -228,7 +228,7 @@ This is legal only in expression contexts.}
 appropriate number of type variables. This is legal only in expression
 contexts.}
 
-@schemevarfont|{#{e @ t ...}}| This is identical to @scheme[(inst e t ...)].
+@litchar|{#{e @ t ...}}| This is identical to @scheme[(inst e t ...)].
 
 @subsection{Require}
 

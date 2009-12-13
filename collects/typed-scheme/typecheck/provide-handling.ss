@@ -8,6 +8,8 @@
          (private type-contract typed-renaming)
          (rep type-rep)
 	 (utils tc-utils)
+         scheme/contract/private/provide
+         unstable/syntax
          "def-binding.ss")
 
 (require (for-template scheme/base
@@ -31,7 +33,7 @@
       (make-typed-renaming (syntax-property id 'not-free-identifier=? #t) alt)
       (make-rename-transformer (syntax-property id 'not-free-identifier=? #t))))
 
-(define (generate-prov stx-defs val-defs)
+(define (generate-prov stx-defs val-defs pos-blame-id)
   (define mapping (make-free-identifier-mapping))
   (lambda (form)
     (define (mem? i vd)
@@ -56,9 +58,16 @@
              (cond [(type->contract (def-binding-ty b) (lambda () #f) #:out #t)
                     =>
                     (lambda (cnt)                                    
-                      (with-syntax ([(export-id cnt-id) (generate-temporaries #'(id id))])
+                      (with-syntax ([(export-id cnt-id) (generate-temporaries #'(id id))]
+                                    [module-source pos-blame-id]
+                                    [the-contract (generate-temporary 'generated-contract)])
                         #`(begin 
-                            (define/contract cnt-id #,cnt id)
+                            (define the-contract #,cnt)
+                            (define-syntax cnt-id
+                              (make-provide/contract-transformer
+                               (quote-syntax the-contract)
+                               (quote-syntax id)
+                               (quote-syntax module-source)))
                             (define-syntax export-id
                               (if (unbox typed-context?)
                                   (renamer #'id #:alt #'cnt-id)

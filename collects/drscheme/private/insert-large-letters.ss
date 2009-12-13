@@ -153,10 +153,10 @@
       (format " (~a)" (floor (inexact->exact w))))))
   
 
-(: get-max-line-width ((Instance Scheme:Text%) -> Number))
+(: get-max-line-width ((Instance Scheme:Text%) -> Real))
 (define (get-max-line-width txt)
   (let loop ([i (+ (send txt last-paragraph) 1)]
-             [m #{0 :: Number}])
+             [#{m : Integer} 0])
     (cond
       [(zero? i) m]
       [else (loop (- i 1)

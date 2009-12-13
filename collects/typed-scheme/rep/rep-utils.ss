@@ -143,9 +143,10 @@
                    (syntax/loc s (struct nm pat))])))
             (begin-for-syntax
               (hash-set! ht-stx 'kw-stx (list #'ex #'flds.fs bfs-fold-rhs #'#,stx)))
-            intern
-            provides
-            frees))])))
+            (w/c nm ()
+		 intern
+		 frees)
+	    provides))])))
 
 (define-for-syntax (mk-fold ht type-rec-id rec-ids kws)
   (lambda (stx)

@@ -32,7 +32,9 @@
   [#:fold-rhs (*NotTypeFilter (type-rec-id t) (map pathelem-rec-id p) v)])
 
 ;; implication
-(df ImpFilter ([a (listof Filter/c)] [c (listof Filter/c)]))
+(df ImpFilter ([a (non-empty-listof Filter/c)] [c (non-empty-listof Filter/c)])
+    [#:frees (combine-frees (map free-vars* (append a c)))
+	     (combine-frees (map free-idxs* (append a c)))])
 
 (df FilterSet (thn els)
      [#:frees (combine-frees (map free-vars* (append thn els)))
@@ -68,7 +70,10 @@
   [#:fold-rhs (*LNotTypeFilter (type-rec-id t) (map pathelem-rec-id p) idx)])
 
 ;; implication
-(df LImpFilter ([a (listof LatentFilter/c)] [c (listof LatentFilter/c)]))
+(dlf LImpFilter ([a (non-empty-listof LatentFilter/c)] [c (non-empty-listof LatentFilter/c)])
+     [#:frees (combine-frees (map free-vars* (append a c)))
+              (combine-frees (map free-idxs* (append a c)))])
+
 
 (dlf LFilterSet (thn els)
      [#:frees (combine-frees (map free-vars* (append thn els)))
@@ -96,3 +101,6 @@
   (flat-named-contract
    'LatentFilterSet
    (λ (e) (or (LFilterSet? e)))))
+
+(define filter-equal? eq?)
+(provide filter-equal?)

@@ -30,6 +30,7 @@
     (let loop ([t* t])
       (match t*
         [(Value: '()) (-lst Univ)]
+	[(Value: 0) -Nat]
         [(Mu: var (Union: (list (Value: '()) (Pair: _ (F: var))))) t*]
         [(Pair: t1 (Value: '())) (-lst t1)]
         [(Pair: t1 t2)
@@ -45,7 +46,7 @@
 
 (define In-Syntax
   (-mu e
-       (*Un -Number -Boolean -Symbol -String -Keyword -Char
+       (*Un -Boolean -Symbol -String -Keyword -Char -Number
             (make-Vector (-Syntax e))
             (make-Box (-Syntax e))
             (-mu list

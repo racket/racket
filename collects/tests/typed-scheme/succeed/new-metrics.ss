@@ -41,7 +41,7 @@
 (: manual-t-test (Number Number Number Number Number Number -> Number))
 (define (manual-t-test avga avgb vara varb cta ctb)
   (/ (- avga avgb)
-     (sqrt (+ (/ vara cta) (/ varb ctb)))))
+     (assert (sqrt (+ (/ vara cta) (/ varb ctb))) number?)))
 
 (: chi-square  ((Listof Number) (Listof Number) -> Number))
 ;; chi-square is a simple measure of the extent to which the
@@ -61,7 +61,7 @@
            [table
             `((,a-hits ,b-hits)
               (,a-misses ,b-misses))]
-           [expected (λ: ([i : Integer] [j : Integer])
+           [expected (λ: ([i : Natural] [j : Natural])
                          (/ (* (row-total i table) (col-total j table)) total-subjects))])
       (exact->inexact 
        (table-sum 
@@ -425,7 +425,7 @@
           (show result))))
 
 ;; applies only to the combined metric [or more generally to listof-answer results]
-(: total (All (b c) (Integer (result (Listof Number) b c) -> (Listof Number))))
+(: total (All (b c) (Natural (result (Listof Number) b c) -> (Listof Number))))
 (define (total experiment-number result)
   (: total/s (Table -> Number))
   (define (total/s s) (apply + (list-ref (pivot s) experiment-number)))
@@ -447,7 +447,7 @@
     [(null? l) '()]
     [else
      (let ([n (length (car l))])
-       (build-list n (λ: ([i : Integer]) (map (λ: ([j : (Listof X)]) (list-ref j i)) l))))]))
+       (build-list n (λ: ([i : Natural]) (map (λ: ([j : (Listof X)]) (list-ref j i)) l))))]))
 
 (: variance ((Listof Number) -> Number))
 (define (variance xs)
@@ -455,16 +455,16 @@
     (/ (apply + (map (λ: ([x : Number]) (sqr (- x avg))) xs))
        (sub1 (length xs)))))
 
-(: table-ref (Integer Integer Table -> Number))
+(: table-ref (Natural Natural Table -> Number))
 (define (table-ref i j table)
   (list-ref (list-ref table i) j))
-(: row-total (Integer Table -> Number))
+(: row-total (Natural Table -> Number))
 (define (row-total i table)
   (apply + (list-ref table i)))
-(: col-total (Integer Table -> Number))
+(: col-total (Natural Table -> Number))
 (define (col-total j table)
   (apply + (map (λ: ([x : (Listof Number)]) (list-ref x j)) table)))
-(: table-sum ((Integer Integer -> Number) Table -> Number))
+(: table-sum ((Natural Natural -> Number) Table -> Number))
 (define (table-sum f table)
   (let ([rows (length table)]
         [cols (length (car table))])

@@ -4,14 +4,15 @@
 	 "type-environments.ss" 
 	 "type-env.ss"
 	 unstable/mutated-vars
-         (only-in scheme/contract ->* ->)
+         (only-in scheme/contract ->* -> or/c any/c)
          (utils tc-utils)
          (only-in (rep type-rep) Type/c)
+         (typecheck tc-metafunctions)
 	 (except-in (types utils convenience) -> ->*))
 
 (provide lexical-env with-lexical-env with-lexical-env/extend with-update-type/lexical)
 (p/c
- [lookup-type/lexical ((identifier?) (env?) . ->* . Type/c)]
+ [lookup-type/lexical ((identifier?) (env? #:fail (or/c #f (-> any/c #f))) . ->* . (or/c Type/c #f))]
  [update-type/lexical (((identifier? Type/c . -> . Type/c) identifier?) (env?) . ->* . env?)])
 
 ;; the current lexical environment

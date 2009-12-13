@@ -1,9 +1,9 @@
 #lang scheme/base
 
 (provide #%module-begin provide require rename-in rename-out prefix-in only-in all-from-out except-out except-in
-         providing begin)
+         providing begin subtract-in)
 
-(require (for-syntax scheme/base))
+(require (for-syntax scheme/base) scheme/require)
 
 (define-for-syntax ts-mod 'typed-scheme/typed-scheme)
 

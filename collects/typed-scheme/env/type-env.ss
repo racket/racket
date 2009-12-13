@@ -22,7 +22,8 @@
 ;; add a single type to the mapping
 ;; identifier type -> void
 (define (register-type id type)
-  ;(printf "register-type ~a~n" (syntax-e id))
+  #;(when (eq? (syntax-e id) 'vector-ref)
+      (printf "register-type ~a~n" id))
   (module-identifier-mapping-put! the-mapping id type))
 
 ;; add a single type to the mapping

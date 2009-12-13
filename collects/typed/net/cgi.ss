@@ -3,6 +3,7 @@
 (require typed/private/utils)
 
 (require-typed-struct cgi-error () net/cgi)
+
 (require-typed-struct (incomplete-%-suffix cgi-error)  ([chars : (Listof Char)]) net/cgi) 
 (require-typed-struct (invalid-%-suffix cgi-error)  ([char : Char]) net/cgi)
   

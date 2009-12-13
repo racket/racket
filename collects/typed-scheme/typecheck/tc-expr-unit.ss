@@ -32,8 +32,14 @@
     [i:exp expected]
     [i:boolean (-val (syntax-e #'i))]
     [i:identifier (-val (syntax-e #'i))]
-    [i:exact-integer -Integer]
-    [(~var i (3d real?)) -Number]
+    [0 -Zero]
+    [(~var i (3d exact-positive-integer?)) -ExactPositiveInteger]
+    [(~var i (3d exact-nonnegative-integer?)) -ExactNonnegativeInteger]
+    [(~var i (3d exact-integer?)) -Integer]
+    [(~var i (3d (lambda (e) (and (number? e) (exact? e) (rational? e))))) -ExactRational]
+    [(~var i (3d inexact-real?)) -Flonum]
+    [(~var i (3d real?)) -Real]
+    [(~var i (3d number?)) -Number]
     [i:str -String]
     [i:char -Char]
     [i:keyword (-val (syntax-e #'i))]
@@ -41,10 +47,26 @@
     [i:byte-pregexp -Byte-PRegexp]
     [i:byte-regexp -Byte-Regexp]
     [i:regexp -Regexp]
-    [(i ...) 
-     (-Tuple (map tc-literal (syntax->list #'(i ...))))]
-    [i #:declare i (3d vector?)
-       (make-Vector (apply Un (map tc-literal (vector->list (syntax-e #'i)))))]
+    [(i ...)
+     (match expected
+       [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
+        (-Tuple
+         (for/list ([l (in-list (syntax->list #'(i ...)))])
+           (tc-literal l elem-ty)))]
+       ;; errors are handled elsewhere
+       [_ (-Tuple
+           (for/list ([l (in-list (syntax->list #'(i ...)))])
+             (tc-literal l #f)))])]
+    [(~var i (3d vector?))
+     (match expected
+       [(Vector: t)
+        (make-Vector (apply Un 
+                            (for/list ([l (syntax-e #'i)])
+                              (tc-literal l t))))]
+       ;; errors are handled elsewhere
+       [_ (make-Vector (apply Un 
+                              (for/list ([l (syntax-e #'i)])
+                                (tc-literal l #f))))])]
     [_ Univ]))
 
 
