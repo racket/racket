@@ -1198,14 +1198,14 @@
           (λ (val)
             (unless (hash? val)
               (raise-contract-error val src-info pos-blame orig-str 
-                                    "expected a hash"))
+                                    "expected a hash, got ~a" val))
             (case immutable
               [(#t) (unless (immutable? val)
                       (raise-contract-error val src-info pos-blame orig-str 
-                                            "expected an immutable hash"))]
+                                            "expected an immutable hash, got ~a" val))]
               [(#f) (when (immutable? val)
                       (raise-contract-error val src-info pos-blame orig-str 
-                                            "expected a mutable hash"))]
+                                            "expected a mutable hash, got ~a" val))]
               [(dont-care) (void)])
               
             (hash-for-each
