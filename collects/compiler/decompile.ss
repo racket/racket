@@ -246,11 +246,13 @@
     [(struct application (rator rands))
      (let ([stack (append (for/list ([i (in-list rands)]) (gensym 'rand))
                           stack)])
-       (annotate-inline
-        `(,(decompile-expr rator globs stack closed)
-          ,@(map (lambda (rand)
-                   (decompile-expr rand globs stack closed))
-                 rands))))]
+       (annotate-unboxed
+        rands
+        (annotate-inline
+         `(,(decompile-expr rator globs stack closed)
+           ,@(map (lambda (rand)
+                    (decompile-expr rand globs stack closed))
+                  rands)))))]
     [(struct apply-values (proc args-expr))
      `(#%apply-values ,(decompile-expr proc globs stack closed) 
                       ,(decompile-expr args-expr globs stack closed))]
@@ -331,6 +333,29 @@
              [else (memq (car a) '(list list* vector vector-immutable
                                         + - * / min max bitwise-and bitwise-ior bitwise-xor))]))
       (cons '#%in a)
+      a))
+
+(define (annotate-unboxed args a)
+  (define (unboxable? e s)
+    (cond
+     [(localref? e) #t]
+     [(toplevel? e) #t]
+     [(eq? '#%flonum (car s)) #t]
+     [(not (expr? e)) #t]
+     [else #f]))
+  (if (and (symbol? (car a))
+           (case (length a)
+             [(2) (memq (car a) '(unsafe-flabs
+                                  unsafe-fx->fl))]
+             [(3) (memq (car a) '(unsafe-fl+ unsafe-fl- unsafe-fl* unsafe-fl/
+                                             unsafe-fl< unsafe-fl> 
+                                             unsafe-fl=
+                                             unsafe-fl<= unsafe-fl>=))]
+             
+             [(4) (memq (car a) '(unsafe-flvector-set!))]
+             [else #f])
+           (andmap unboxable? args (cdr a)))
+      (cons '#%flonum a)
       a))
 
 ;; ----------------------------------------
