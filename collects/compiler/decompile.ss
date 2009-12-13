@@ -350,7 +350,8 @@
              [(3) (memq (car a) '(unsafe-fl+ unsafe-fl- unsafe-fl* unsafe-fl/
                                              unsafe-fl< unsafe-fl> 
                                              unsafe-fl=
-                                             unsafe-fl<= unsafe-fl>=))]
+                                             unsafe-fl<= unsafe-fl>=
+                                             unsafe-flvector-ref))]
              
              [(4) (memq (car a) '(unsafe-flvector-set!))]
              [else #f])
