@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/eval
-          "guide-utils.ss")
+          "guide-utils.ss"
+          (for-label (only-in mzscheme fluid-let)))
 
 @title[#:tag "parameterize"]{Dynamic Binding: @scheme[parameterize]}
 
