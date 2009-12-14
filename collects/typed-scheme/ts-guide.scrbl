@@ -155,8 +155,8 @@ typed-scheme
 (: tree-height (Tree -> Number))
 (define (tree-height t)
   (cond [(leaf? t) 1]
-        [else (max (tree-height (node-left t))
-                   (tree-height (node-right t)))]))
+        [else (max (+ 1 (tree-height (node-left t)))
+                   (+ 1 (tree-height (node-right t))))]))
 
 (: tree-sum (Tree -> Number))
 (define (tree-sum t)
