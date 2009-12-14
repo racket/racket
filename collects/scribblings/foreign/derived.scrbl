@@ -208,6 +208,7 @@ just aliases for byte-string bindings: @scheme[make-u8vector],
                         [! (mk #'id "vector-set!")]
                         [list-> (mk "list->" #'id "vector")]
                         [->list (mk #'id "vector->list")]
+                        [->cpointer (mk #'id "vector->cpointer")]
                         [_vec (mk "_" #'id "vector")])
             #`(begin
                (defproc* ([(make [len exact-nonnegative-integer?]) ?]
@@ -217,7 +218,8 @@ just aliases for byte-string bindings: @scheme[make-u8vector],
                           [(ref [vec ?][k exact-nonnegative-integer?]) number?]
                           [(! [vec ?][k exact-nonnegative-integer?][val number?]) void?]
                           [(list-> [lst (listof number?)]) ?]
-                          [(->list [vec ?]) (listof number?)])
+                          [(->list [vec ?]) (listof number?)]
+                          [(->cpointer [vec ?]) cpointer?])
                  . desc)
                ;; Big pain: make up relatively-correct source locations
                ;; for pieces in the _vec definition:

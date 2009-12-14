@@ -342,6 +342,7 @@ the later case, the result is the @scheme[ctype]).}
                       [output-type ctype?]
                       [#:abi abi (or/c symbol/c #f) #f]
                       [#:atomic? atomic? any/c #f]
+                      [#:save-errno save-errno (or/c #f 'posix 'windows) #f]
                       [#:wrapper wrapper (or/c #f (procedure? . -> . procedure?))
                                          #f]
                       [#:keep keep (or/c boolean? box? (any/c . -> . any/c))
@@ -385,6 +386,19 @@ continuation jumps, and its non-tail recursion must be minimal to
 avoid C-level stack overflow; otherwise, the process may crash or
 misbehave.
 
+If @scheme[save-errno] is @scheme['posix], then the value of
+@as-index{@tt{errno}} is saved (specific to the current thread)
+immediately after a foreign function returns. The saved value is
+accessible through @scheme[saved-errno]. If @scheme[save-errno] is
+@scheme['window], then the value of
+@as-index{@tt{GetLastError}}@tt{()} is saved for later use via
+@scheme[saved-errno]; the @scheme['windows] option is available only
+under Windows. If @scheme[save-errno] is @scheme[#f], no error value
+is saved automatically. The error-recording support provided by
+@scheme[save-errno] is needed because the PLT Scheme runtime system
+may otherwise preempt the current Scheme thread and itself call
+functions that set error values.
+
 The optional @scheme[wrapper], if provided, is expected to be a
 function that can change a callout procedure: when a callout is
 generated, the wrapper is applied on the newly created primitive
@@ -398,7 +412,7 @@ the foreign code before they reach the Scheme procedure, and possibly
 changes the result values too.
 
 Sending Scheme functions as callbacks to foreign code is achieved by
-translating them to a foreign ``closure'', which foreign code can call
+translating them to a foreign ``closure,'' which foreign code can call
 as plain C functions.  Additional care must be taken in case the
 foreign code might hold on to the callback function.  In these cases
 you must arrange for the callback value to not be garbage-collected,
@@ -450,7 +464,8 @@ values: @itemize[
 @defform/subs[#:literals (-> :: :)
               (_fun fun-option ... maybe-args type-spec ... -> type-spec
                     maybe-wrapper)
-              ([fun-option (code:line #:abi  abi-expr)
+              ([fun-option (code:line #:abi abi-expr)
+                           (code:line #:save-errno save-errno-expr)
                            (code:line #:keep keep-expr)
                            (code:line #:atomic? atomic?-expr)]
                [maybe-args code:blank

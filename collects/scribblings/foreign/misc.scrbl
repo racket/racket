@@ -38,7 +38,7 @@ bindings such as @scheme[foo-bar] for foreign names like
 ]}
 
 
-@defproc[(list->cblock [lst list>][type ctype?]) any]{
+@defproc[(list->cblock [lst list?][type ctype?]) any]{
 
 Allocates a memory block of an appropriate size, and initializes it
 using values from @scheme[lst] and the given @scheme[type].  The
@@ -46,9 +46,33 @@ using values from @scheme[lst] and the given @scheme[type].  The
 according to the given @scheme[type].}
 
 
-@defproc[(vector->cblock [vector any/c][type type?]) any]{
+@defproc[(vector->cblock [vec vector?][type type?]) any]{
 
 Like @scheme[list->cblock], but for Scheme vectors.}
+
+
+@defproc[(vector->cpointer [vec vector?]) cpointer?]{
+
+Returns a pointer to an array of @scheme[_scheme] values, which is the
+internal representation of @scheme[vec].}
+
+@defproc[(flvector->cpointer [flvec flvector?]) cpointer?]{
+
+Returns a pointer to an array of @scheme[_double] values, which is the
+internal representation of @scheme[flvec].}
+
+@defproc[(saved-errno) exact-integer?]{
+
+Returns the value most recently saved (in the current thread) after a
+foreign call with a non-@scheme[#f] @scheme[#:save-errno] option (see
+@scheme[_fun] and @scheme[_cprocedure]).}
+
+@defproc[(lookup-errno [sym (or/c 'EINTR 'EEXIST 'EAGAIN)])
+         exact-integer?]{
+
+Returns a platform-specific value corresponding to a Posix @tt{errno}
+symbol. The set of supported symbols is likely to expand in the
+future.}
 
 @; ----------------------------------------------------------------------
 

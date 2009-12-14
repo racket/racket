@@ -80,21 +80,27 @@
 
 ;; open : string int -> int
 (define open
-  (delay-ffi-obj (winize "open") #f (_fun _string _int -> _int)))
+  (delay-ffi-obj (winize "open") #f (_fun #:save-errno 'posix _string _int -> _int)))
 
 ;; close : int -> int
 (define close
-  (delay-ffi-obj (winize "close") #f (_fun _int -> _int)))
+  (delay-ffi-obj (winize "close") #f (_fun #:save-errno 'posix _int -> _int)))
 
 ;; ftruncate : int int -> int
 (define ftruncate
   (if (eq? 'windows (system-type))
-    (delay-ffi-obj "_chsize" #f (_fun _int _llong -> _int))
-    (delay-ffi-obj "ftruncate" #f (_fun _int _llong -> _int))))
+    (delay-ffi-obj "_chsize" #f (_fun #:save-errno 'posix _int _llong -> _int))
+    (delay-ffi-obj "ftruncate" #f (_fun #:save-errno 'posix _int _llong -> _int))))
 
 ;; on-c-fail : int (-> X) int or X
-(define (on-c-fail val fail-k)
-  (if (> val -1) val (fail-k)))
+(define (on-c-fail thunk fail-k)
+  (let ([val (thunk)])
+    (cond
+     [(> val -1) val]
+     [(= (saved-errno) (lookup-errno 'EINTR))
+      ;; interrupted by a signal; retry
+      (on-c-fail thunk fail-k)]
+     [else (fail-k)])))
 
 (define scheme_security_check_file
   (delay-ffi-obj "scheme_security_check_file" #f
@@ -115,15 +121,20 @@
      (if (path? file) (path->string file) file)
      SCHEME_GUARD_FILE_WRITE)
     (let ([fd (on-c-fail
-               ((force open) file O_WRONLY)
+               (lambda ()
+                 ((force open) file O_WRONLY))
                (lambda ()
                  (error 'truncate-file "could not open file")))])
       (on-c-fail
-       ((force ftruncate) fd size)
+       (lambda ()
+         ((force ftruncate) fd size))
        (lambda ()
          ((force close) fd)
          (error 'truncate-file "could not truncate file")))
-      ((force close) fd)
+      (on-c-fail
+       (lambda ()
+         ((force close) fd))
+       void)
       (void))))
 
 (provide truncate-file)

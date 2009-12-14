@@ -64,6 +64,7 @@
           (unsafe malloc) (unsafe free) (unsafe end-stubborn-change)
           cpointer? ptr-equal? ptr-add (unsafe ptr-ref) (unsafe ptr-set!) (unsafe cast)
           ptr-offset ptr-add! offset-ptr? set-ptr-offset!
+          vector->cpointer flvector->cpointer saved-errno lookup-errno
           ctype? make-ctype make-cstruct-type (unsafe make-sized-byte-string) ctype->layout
           _void _int8 _uint8 _int16 _uint16 _int32 _uint32 _int64 _uint64
           _fixint _ufixint _fixnum _ufixnum
@@ -481,12 +482,13 @@
                       #:abi [abi #f] 
                       #:wrapper [wrapper #f] 
                       #:keep [keep #f]
-                      #:atomic? [atomic? #f])
-  (_cprocedure* itypes otype abi wrapper keep atomic?))
+                      #:atomic? [atomic? #f]
+                      #:save-errno [errno #f])
+  (_cprocedure* itypes otype abi wrapper keep atomic? errno))
 
 ;; for internal use
 (define held-callbacks (make-weak-hasheq))
-(define (_cprocedure* itypes otype abi wrapper keep atomic?)
+(define (_cprocedure* itypes otype abi wrapper keep atomic? errno)
   (define-syntax-rule (make-it wrap)
     (make-ctype _fpointer
       (lambda (x)
@@ -499,7 +501,7 @@
                                   (if (or (null? x) (pair? x)) (cons cb x) cb)))]
                      [(procedure? keep) (keep cb)])
                cb)))
-      (lambda (x) (and x (wrap (ffi-call x itypes otype abi))))))
+      (lambda (x) (and x (wrap (ffi-call x itypes otype abi errno))))))
   (if wrapper (make-it wrapper) (make-it begin)))
 
 ;; Syntax for the special _fun type:
@@ -528,6 +530,7 @@
   (define abi    #f)
   (define keep   #f)
   (define atomic? #f)
+  (define errno  #f)
   (define inputs #f)
   (define output #f)
   (define bind   '())
@@ -592,10 +595,11 @@
                      (begin (set! var (cadr xs)) (set! xs (cddr xs)) (loop)))]
             ...
             [else (err "unknown keyword" (car xs))]))
-        (when (keyword? k) (kwds [#:abi abi] [#:keep keep] [#:atomic? atomic?]))))
+        (when (keyword? k) (kwds [#:abi abi] [#:keep keep] [#:atomic? atomic?] [#:save-errno errno]))))
     (unless abi  (set! abi  #'#f))
     (unless keep (set! keep #'#t))
     (unless atomic? (set! atomic? #'#f))
+    (unless errno (set! errno #'#f))
     ;; parse known punctuation
     (set! xs (map (lambda (x)
                     (syntax-case* x (-> ::) id=? [:: '::] [-> '->] [_  x]))
@@ -686,9 +690,9 @@
                         (string->symbol (string-append "ffi-wrapper:" n)))
                        body))])
         #`(_cprocedure* (list #,@(filter-map car inputs)) #,(car output)
-                        #,abi (lambda (ffi) #,body) #,keep #,atomic?))
+                        #,abi (lambda (ffi) #,body) #,keep #,atomic? #,errno))
       #`(_cprocedure* (list #,@(filter-map car inputs)) #,(car output)
-                      #,abi #f #,keep #,atomic?)))
+                      #,abi #f #,keep #,atomic? #,errno)))
   (syntax-case stx ()
     [(_ x ...) (begin (set! xs (syntax->list #'(x ...))) (do-fun))]))
 
@@ -1079,6 +1083,7 @@
                      [TAG->list    (id "" "->list")]
                      [TAG-ref      (id "" "-ref")]
                      [TAG-set!     (id "" "-set!")]
+                     [TAG->cpointer (id "" "->cpointer")]
                      [_TAG         (id "_" "")]
                      [_TAG*        (id "_" "*")]
                      [TAGname      name]
@@ -1125,6 +1130,10 @@
                    (raise-type-error 'TAG->list TAGname v)))
              (define* (list->TAG l)
                (make-TAG (list->cblock l type) (length l)))
+             (define* (TAG->cpointer v)
+               (if (TAG? v)
+                   (TAG-ptr v)
+                   (raise-type-error 'TAG->cpointer TAGname v)))
              ;; same as the _cvector implementation
              (provide _TAG)
              (define _TAG*

@@ -5,11 +5,13 @@ exec mzscheme "$0" > `echo "$0" | sed 's/ssc$/c/'` "$0"
 
 #lang scribble/text
 
-@(require "ssc-utils.ss")
+@(require "ssc-utils.ss"
+          scheme/string)
 
 @header{foreign.ssc}
 
 #include "schpriv.h"
+#include <errno.h>
 
 @@@IFNDEF{WINDOWS_DYNAMIC_LOAD}{
 
@@ -80,6 +82,8 @@ exec mzscheme "$0" > `echo "$0" | sed 's/ssc$/c/'` "$0"
 
 /* same as the macro in file.c */
 #define TO_PATH(x) (SCHEME_PATHP(x) ? (x) : scheme_char_string_to_path(x))
+
+static void save_errno_values(int kind);
 
 /*****************************************************************************/
 /* Defining EnumProcessModules for openning `self' as an ffi-lib */
@@ -933,7 +937,7 @@ ffi_abi sym_to_abi(char *who, Scheme_Object *sym)
   [proc     "Scheme_Object*"]
   [itypes   "Scheme_Object*"]
   [otype    "Scheme_Object*"]
-  [call_in_scheduler "int"]]
+  [call_in_scheduler "char"]]
 
 /*****************************************************************************/
 /* Pointer objects */
@@ -1569,6 +1573,18 @@ static Scheme_Object *do_memop(const char *who, int mode,
   return scheme_void;
 }
 
+@cdefine[vector->cpointer 1]{
+  if (!SCHEME_VECTORP(argv[0]))
+    scheme_wrong_type(MYNAME, "vector", 0, argc, argv);
+  return scheme_make_offset_cptr(argv[0], (long)SCHEME_VEC_ELS((Scheme_Object *)0x0), NULL);
+}
+
+@cdefine[flvector->cpointer 1]{
+  if (!SCHEME_FLVECTORP(argv[0]))
+    scheme_wrong_type(MYNAME, "flvector", 0, argc, argv);
+  return scheme_make_offset_cptr(argv[0], (long)SCHEME_FLVEC_ELS((Scheme_Object *)0x0), NULL);
+}
+
 @cdefine[memset  3 5]{return do_memop(MYNAME, 0, argc, argv);}
 @cdefine[memmove 3 6]{return do_memop(MYNAME, 1, argc, argv);}
 @cdefine[memcpy  3 6]{return do_memop(MYNAME, 2, argc, argv);}
@@ -1772,6 +1788,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
   Scheme_Object *base;
   ffi_cif       *cif    = (ffi_cif*)(SCHEME_VEC_ELS(data)[4]);
   long          cfoff   = SCHEME_INT_VAL(SCHEME_VEC_ELS(data)[5]);
+  int           save_errno = SCHEME_INT_VAL(SCHEME_VEC_ELS(data)[6]);
   int           nargs   = cif->nargs;
   /* When the foreign function is called, we need an array (ivals) of nargs
    * ForeignAny objects to store the actual C values that are created, and we
@@ -1848,6 +1865,7 @@ Scheme_Object *ffi_do_call(void *data, int argc, Scheme_Object *argv[])
   }
   /* Finally, call the function */
   ffi_call(cif, (VoidFun)W_OFFSET(c_func, cfoff), p, avalues);
+  if (save_errno != 0) save_errno_values(save_errno);
   if (ivals != stack_ivals) free(ivals);
   ivals = NULL; /* no need now to hold on to this */
   for (i=0; i<nargs; i++) { avalues[i] = NULL; } /* no need for these refs */
@@ -1876,9 +1894,9 @@ void free_fficall_data(void *ignored, void *p)
   free(p);
 }
 
-/* (ffi-call ffi-obj in-types out-type [abi]) -> (in-types -> out-value) */
+/* (ffi-call ffi-obj in-types out-type [abi save-errno?]) -> (in-types -> out-value) */
 /* the real work is done by ffi_do_call above */
-@cdefine[ffi-call 3 4]{
+@cdefine[ffi-call 3 5]{
   static Scheme_Object *ffi_name_prefix = NULL;
   Scheme_Object *itypes = argv[1];
   Scheme_Object *otype  = argv[2];
@@ -1887,7 +1905,7 @@ void free_fficall_data(void *ignored, void *p)
   long ooff;
   GC_CAN_IGNORE ffi_type *rtype, **atypes;
   GC_CAN_IGNORE ffi_cif *cif;
-  int i, nargs;
+  int i, nargs, save_errno;
   MZ_REGISTER_STATIC(ffi_name_prefix);
   if (!ffi_name_prefix)
     ffi_name_prefix = scheme_make_byte_string_without_copying("ffi:");
@@ -1904,6 +1922,22 @@ void free_fficall_data(void *ignored, void *p)
     scheme_wrong_type(MYNAME, "C-type", 2, argc, argv);
   rtype = CTYPE_PRIMTYPE(base);
   abi = GET_ABI(MYNAME,3);
+  if (argc > 4) {
+    save_errno = -1;
+    if (SCHEME_FALSEP(argv[4]))
+      save_errno = 0;
+    else if (SCHEME_SYMBOLP(argv[4])
+             && !SCHEME_SYM_WEIRDP(argv[4])) {
+      if (!strcmp(SCHEME_SYM_VAL(argv[4]), "posix"))
+        save_errno = 1;
+      else if (!strcmp(SCHEME_SYM_VAL(argv[4]), "windows"))
+        save_errno = 2;
+    }
+    if (save_errno == -1) {
+      scheme_wrong_type(MYNAME, "'posix, 'windows, or #f", 4, argc, argv);
+    }
+  } else
+    save_errno = 0;
   atypes = malloc(nargs * sizeof(ffi_type*));
   for (i=0, p=itypes; i<nargs; i++, p=SCHEME_CDR(p)) {
     if (NULL == (base = get_ctype_base(SCHEME_CAR(p))))
@@ -1915,7 +1949,7 @@ void free_fficall_data(void *ignored, void *p)
   cif = malloc(sizeof(ffi_cif));
   if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
     scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
-  data = scheme_make_vector(6, NULL);
+  data = scheme_make_vector(7, NULL);
   p = scheme_append_byte_string
         (ffi_name_prefix,
          scheme_make_byte_string_without_copying
@@ -1927,6 +1961,7 @@ void free_fficall_data(void *ignored, void *p)
   SCHEME_VEC_ELS(data)[3] = otype;
   SCHEME_VEC_ELS(data)[4] = (Scheme_Object*)cif;
   SCHEME_VEC_ELS(data)[5] = scheme_make_integer(ooff);
+  SCHEME_VEC_ELS(data)[6] = scheme_make_integer(save_errno);
   scheme_register_finalizer(data, free_fficall_data, cif, NULL, NULL);
   return scheme_make_closed_prim_w_arity
            (ffi_do_call, (void*)data, SCHEME_BYTE_STR_VAL(p),
@@ -2060,7 +2095,7 @@ void free_cl_cif_args(void *ignored, void *p)
   if (ffi_prep_cif(cif, abi, nargs, rtype, atypes) != FFI_OK)
     scheme_signal_error("internal error: ffi_prep_cif did not return FFI_OK");
   @cmake["data" ffi-callback
-         "cl_cif_args" "argv[0]" "argv[1]" "argv[2]" 
+         "cl_cif_args" "argv[0]" "argv[1]" "argv[2]"
          "((argc > 4) && SCHEME_TRUEP(argv[4]))"]
   @@@IFDEF{MZ_PRECISE_GC}{
   {
@@ -2078,6 +2113,51 @@ void free_cl_cif_args(void *ignored, void *p)
       ("internal error: ffi_prep_closure did not return FFI_OK");
   scheme_register_finalizer(data, free_cl_cif_args, cl_cif_args, NULL, NULL);
   return (Scheme_Object*)data;
+}
+
+/*****************************************************************************/
+
+static void save_errno_values(int kind)
+{
+  Scheme_Thread *p = scheme_current_thread;
+
+  if (kind == 2) {
+    long v = 0;
+@@IFDEF{WINDOWS_DYNAMIC_LOAD}{
+      v = GetLastError();
+    }
+    p->saved_errno = v;
+    return;
+  }
+
+  p->saved_errno = errno;
+}
+
+@cdefine[saved-errno 0]{
+  Scheme_Thread *p = scheme_current_thread;
+  return scheme_make_integer_value(p->saved_errno);
+}
+
+@cdefine[lookup-errno 1]{
+  Scheme_Object *v = argv[0];
+  @(let* ([errnos '(EINTR EEXIST EAGAIN)]
+          [syms (let loop ([errnos errnos])
+                  (if (null? (cdr errnos))   
+                      (format "or '~a" (car errnos))
+                      (format "'~a, ~a" (car errnos) (loop (cdr errnos)))))])
+    @string-append{
+      if (SCHEME_SYMBOLP(v) && !SCHEME_SYM_WEIRDP(v)) {
+        @(string-join
+          (for/list ([e errnos])
+           @string-append{
+            if (!strcmp("@symbol->string[e]", SCHEME_SYM_VAL(v)))
+              return scheme_make_integer(@symbol->string[e]);
+           })
+          "\n")
+      }
+      scheme_wrong_type(MYNAME, "@syms",0, argc, argv);
+      return NULL;
+    })
 }
 
 /*****************************************************************************/

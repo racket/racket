@@ -1108,6 +1108,8 @@ typedef struct Scheme_Thread {
   Scheme_Object *mbox_last;
   Scheme_Object *mbox_sema;
 
+  long saved_errno;
+
 #ifdef MZ_PRECISE_GC
   struct GC_Thread_Info *gc_info; /* managed by the GC */
 #endif
