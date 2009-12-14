@@ -6,7 +6,7 @@
 
 @title[#:tag "parameterize"]{Dynamic Binding: @scheme[parameterize]}
 
-@scheme[parameterize] is used to have values that are "dynamically scoped".
+@scheme[parameterize] is used to have values that are ``dynamically scoped''.
 You get a parameter with @scheme[make-parameter].  The parameter itself
 behaves as a function: call it with no inputs and you get its value,
 call it with one value and it will set the value.  The settings that are
@@ -25,7 +25,7 @@ For example:
 (p)]
 
 Many functions (including many primitive ones) use parameters as a way
-to customize their behavior.  For example @scheme[printf] will print stuff
+to customize their behavior.  For example @scheme[printf] will print text
 using the port that is the value of the @scheme[current-output-port]
 parameter.  Now, say that you have some function that prints
 something:
@@ -63,7 +63,7 @@ you cannot solve with just globals.  One is what happens when you have
 multiple threads -- in this case, setting the value temporarily will
 affect other threads, which may still want to print to the standard
 output.  Parameters solve this by having a specific value per-thread.
-What happens is that each thread "inherits" the value from the thread
+What happens is that each thread ``inherits'' the value from the thread
 that created it, and changes in one thread are visible only in that
 thread.
 
@@ -76,10 +76,10 @@ a numeric value, and you want to do the following:
   (foo)))
 ]
 
-In Scheme, "tail calls" are important -- they are the basic tool for
+In Scheme, ``tail calls'' are important -- they are the basic tool for
 creating loops and much more.  @scheme[parameterize] does some magic that
 allows it to change the parameter value temporarily but still preserve
-these tail calls.  For example, in the above case, you *will* get an
+these tail calls.  For example, in the above case, you @bold{will} get an
 infinite loop, rather than get a stack overflow error -- what happens
 is that each of these @scheme[parameterize] expressions can somehow detect
 when there's an earlier @scheme[parameterize] that no longer needs to do its
