@@ -1004,16 +1004,15 @@
     (lambda (stx)
       (let loop ([stx stx])
         (syntax-case stx ()
-          [[(id) (_ start)]
-           (and (integer? (syntax-e #'start))
-                (exact? (syntax-e #'start))
-                ((syntax-e #'start) . >= . 0))
+          [[(id) (_ start-expr)]
            #`[(id)
               (:do-in
                ;; outer bindings:
-               ()
+               ([(start) start-expr])
                ;; outer check:
-               (void)
+               (unless (exact-nonnegative-integer? start)
+                 ;; let `in-naturals' report the error:
+                 (in-naturals start))
                ;; loop bindings:
                ([pos start])
                ;; pos check
