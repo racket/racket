@@ -21,7 +21,7 @@
          char-set-for-each
          char-set-map
          char-set-copy
-         rename
+         char-set
          list->char-set
          list->char-set!
          string->char-set
