@@ -14,6 +14,7 @@
   (define current-output-file (make-parameter #f))
   
   (define (process-command-line benchmarks 
+                                extra-benchmarks
                                 implementations non-default-implementations
                                 num-iterations)
     
@@ -50,7 +51,10 @@
          (printf "Benchmarks:\n")
          (for-each (lambda (bm)
                      (printf " ~a\n" bm))
-                   benchmarks)]
+                   benchmarks)
+         (for-each (lambda (bm)
+                     (printf " ~a (not run by default)\n" bm))
+                   extra-benchmarks)]
         [("-o" "--out") filename "append output to <filename>"
          (current-output-file filename)]
         [("-n" "--iters") n "set number of run iterations"
@@ -80,7 +84,8 @@
                          (remq (cdr a)
                                (or run-implementations default-implementations)))
                    (loop (cdr args)))]
-             [(memq s benchmarks)
+             [(or (memq s benchmarks)
+                  (memq s extra-benchmarks))
               =>
               (lambda (l)
                 (let* ([...? (and (pair? (cdr args))

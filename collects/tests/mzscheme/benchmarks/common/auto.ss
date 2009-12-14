@@ -317,6 +317,9 @@ exec mzscheme -qu "$0" ${1+"$@"}
       takr2
       triangle))
 
+  (define extra-benchmarks
+    '(psyntax))
+
   (define (run-benchmark impl bm)
     (let ([i (ormap (lambda (i)
                       (and (eq? impl (impl-name i))
@@ -349,6 +352,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                   actual-implementations-to-run 
                   num-iterations)
     (process-command-line benchmarks
+                          extra-benchmarks
                           (map impl-name impls) obsolte-impls
                           3))
 
