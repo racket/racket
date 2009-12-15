@@ -935,15 +935,16 @@ expects arguments for both the super fields ands the new ones:
 
 @section{Enumerations and Masks}
 
-Although the constructors below are describes as procedures,they are
+Although the constructors below are describes as procedures, they are
 implemented as syntax, so that error messages can report a type name
 where the syntactic context implies one.
 
-@defproc[(_enum [symbols list?][basetype ctype? _ufixint]) ctype?]{
+@defproc[(_enum [symbols list?] [basetype ctype? _ufixint])
+         ctype?]{
 
 Takes a list of symbols and generates an enumeration type.  The
-enumeration maps between the given @scheme[symbols] and integers,
-counting from @scheme[0].
+enumeration maps between a symbol in the given @scheme[symbols] list and
+corresponding integers, counting from @scheme[0].
 
 The list @scheme[symbols] can also set the values of symbols by
 putting @scheme['=] and an exact integer after the symbol.  For
@@ -953,7 +954,8 @@ example, the list @scheme['(x y = 10 z)] maps @scheme['x] to
 
 The @scheme[basetype] argument specifies the base type to use.}
 
-@defproc[(_bitmask [symbols (or symbol? list?)][basetype ctype? _uint]) ctype?]{
+@defproc[(_bitmask [symbols (or symbol? list?)] [basetype ctype? _uint])
+         ctype?]{
 
 Similar to @scheme[_enum], but the resulting mapping translates a list
 of symbols to a number and back, using @scheme[bitwise-ior].  A single
