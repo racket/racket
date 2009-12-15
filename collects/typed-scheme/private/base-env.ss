@@ -290,7 +290,7 @@
   [-> -Bytes -Bytes])]
 
 [number->string (->opt N [N] -String)]
-[string->number (->opt -String [N] -String)]
+[string->number (->opt -String [N] (Un (-val #f) N))]
 
 [current-milliseconds (-> -Integer)]
 
