@@ -700,18 +700,19 @@ The fresh variables clause generates variables that do not
 occur in the term being matched. If the @scheme[fresh-clause] is a
 variable, that variable is used both as a binding in the
 rhs-exp and as the prefix for the freshly generated
-variable. 
+variable. (The variable does not have to be
+a non-terminal in the language of the reduction relation.)
 
 The second case of a @scheme[fresh-clause] is used when you want to
 generate a sequence of variables. In that case, the ellipses
 are literal ellipses; that is, you must actually write
-ellipses in your rule. The variable var1 is like the
+ellipses in your rule. The variable @scheme[var1] is like the
 variable in first case of a @scheme[fresh-clause], namely it is
 used to determine the prefix of the generated variables and
 it is bound in the right-hand side of the reduction rule,
 but unlike the single-variable fresh clause, it is bound to
-a sequence of variables. The variable var2 is used to
-determine the number of variables generated and var2 must be
+a sequence of variables. The variable @scheme[var2] is used to
+determine the number of variables generated and @scheme[var2] must be
 bound by the left-hand side of the rule.
 
 The side-conditions are expected to all hold, and have the
