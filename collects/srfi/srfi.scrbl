@@ -964,4 +964,11 @@ This SRFI's syntax is part of PLT Scheme's default reader (no
 
 @; ----------------------------------------
 
+@srfi[98]{An interface to access environment variables}
+
+@redirect[98 '((get-environment-variable #f "get-environment-variable")
+               (get-environment-variables #f "get-environment-variables"))]
+
+@; ----------------------------------------
+
 @index-section[]
