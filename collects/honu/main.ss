@@ -1,8 +1,13 @@
 #lang scheme/base
 
-(require "private/honu.ss"
+(require "private/honu-typed-scheme.ss"
          "private/macro.ss")
 
+(provide (rename-out (#%dynamic-honu-module-begin #%module-begin))
+         #%datum
+         )
+
+#;
 (provide int real bool obj 
          function var const
          string
@@ -21,6 +26,7 @@
          #%parens #%brackets #%braces #%angles
          #%prefix #%postfix
          ;; define-honu-syntax
+         ...
          (for-syntax ...)
 
          (rename-out (set! =)
