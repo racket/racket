@@ -1005,15 +1005,17 @@
                               #`(as-protected #,stx))])
       (list* pack-v v (extract-type v))))
 
+  ;; (define-for-syntax certify (syntax-local-certifier))
+
   (define-syntax (check-expr-type stx)
     ;; Pushes type checks down to be treated by later expansion:
     (syntax-case stx ()
       [(_ proc who type-name type-name-expr pred val)
        ;; Avoid the check if the static types are consistent
        (let ([v (local-expand
-		 #'val
-		 'expression
-		 prop-expand-stop-forms)])
+                  #'val
+                  'expression
+                  prop-expand-stop-forms)])
          ;; FIXME: this is where we run afoul of certificates, because we're
          ;; pulling apart something produced by `local-expand'.
 	 (syntax-case v (honu-typed if 
@@ -1205,25 +1207,29 @@
 	     (define gen-id val)
 	     (define-syntax id
 	       (make-set!-transformer
-		(lambda (stx)
-		  (syntax-case stx (set!)
-		    [(set! id rhs)
-		     (if const?
-			 (raise-syntax-error #f "cannot assign to constant" #'id)
-			 (syntax/loc stx
-                           (set! gen-id (check-expr-type 'set! id type-name type-name-expr pred-id rhs))))]
-		    [(id arg (... ...))
-		     (syntax/loc stx
-                       (honu-app (honu-typed gen-id id type-name protect-id) arg (... ...)))]
-		    [id
-                     (syntax/loc stx
-                       (honu-typed gen-id id type-name protect-id))]))))))]))
+             (lambda (stx)
+               (syntax-case stx (set!)
+                 [(set! id rhs)
+                  (if const?
+                    (raise-syntax-error #f "cannot assign to constant" #'id)
+                    (syntax/loc stx
+                                (set! gen-id (check-expr-type 'set! id type-name type-name-expr pred-id rhs))))]
+                 [(id arg (... ...))
+                  (syntax/loc stx
+                              (honu-app (honu-typed gen-id id type-name protect-id) arg (... ...)))]
+                 [id
+                   (syntax/loc stx
+                               (honu-typed gen-id id type-name protect-id))]))))))]))
 
   (define-for-syntax (make-typed-procedure gen-id result-spec arg-spec protect-id)
     (with-syntax ([((arg arg-type arg-type-name arg-pred-id) ...) arg-spec]
-		  [(result-type result-type-name result-protect-id) result-spec]
-		  [gen-id gen-id])
-      (with-syntax ([type-name #'(-> (result-type result-protect-id) (arg-type arg-type-name arg-pred-id) ...)])
+                  ;; FIXME! protect-id is quote-syntax'd and expanding it here
+                  ;; runs into trouble due to lexical marks
+                  ;; [(result-type result-type-name result-protect-id) result-spec]
+                  [(result-type result-type-name result-protect-id) (list #'#f #'#f #'#f)]
+                  [gen-id gen-id])
+      (with-syntax ([type-name #'(-> (result-type result-protect-id)
+                                     (arg-type arg-type-name arg-pred-id) ...)])
         (make-set!-transformer
          (lambda (stx)
            (syntax-case stx (set! honu-safe-use-hack)
@@ -1245,6 +1251,11 @@
                            (length formal-args)
                            (length actual-args))
                    stx))
+                ;; FIXME!
+                #'(#%app gen-id actual-arg ...)
+                #;
+                #'(honu-typed (#%app gen-id actual-arg ...) id result-type result-protect-id)
+                #;
                 #'(honu-typed (#%app gen-id
                                      (check-expr-type 'id 'arg arg-type arg-type-name arg-pred-id actual-arg) 
                                      ...)
