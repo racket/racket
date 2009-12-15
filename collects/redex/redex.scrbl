@@ -202,7 +202,10 @@ match exactly, unless it is the name of a non-terminal in a
 relevant language or contains an underscore. 
 
 If it is a non-terminal, it matches any of the right-hand
-sides of that non-terminal.
+sides of that non-terminal. If the non-terminal appears
+twice in a single pattern, then the match is constrained
+to expressions that are the same, unless the pattern is part
+of a grammar, in which case there is no constraint.
 
 If the symbol is a non-terminal followed by an underscore,
 for example @tt{e_1}, it is implicitly the same as a name @pattern
