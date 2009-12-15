@@ -229,11 +229,6 @@ static Scheme_Object *read_special_number(const mzchar *str, int pos)
    floating-point mantissa: */
 #define MAX_FLOATREAD_PRECISION_DIGITS 50
 
-/* We'd like to use strtod() for the common case, but we don't trust
-   it entirely. */
-#define MAX_FAST_FLOATREAD_LEN 50
-static char ffl_buf[MAX_FAST_FLOATREAD_LEN + 1];
-
 /* Exponent threshold for obvious infinity. Must be at least
    max(MAX_FAST_FLOATREAD_LEN, MAX_FLOATREAD_PRECISION_DIGITS) more
    than the larget possible FP exponent. */
@@ -1014,6 +1009,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, long len,
 #endif
 
 
+#define MAX_FAST_FLOATREAD_LEN 50
   /* When possible, use the standard floating-point parser */
   if (!is_not_float && (is_float || decimal_means_float) 
       && !has_slash && !has_hash && (radix == 10) 
@@ -1031,28 +1027,33 @@ Scheme_Object *scheme_read_number(const mzchar *str, long len,
     }
 
     {
-      int k;
-      for (k = delta; k < len; k++) {
-	if (str[k] > 127)
-	  ffl_buf[k - delta] = '?';
-	else
-	  ffl_buf[k - delta] = str[k];
+      /* We'd like to use strtod() for the common case, but we don't trust it entirely. */
+      char ffl_buf[MAX_FAST_FLOATREAD_LEN + 1];
+
+      {
+        int k;
+        for (k = delta; k < len; k++) {
+          if (str[k] > 127)
+            ffl_buf[k - delta] = '?';
+          else
+            ffl_buf[k - delta] = str[k];
+        }
+        ffl_buf[len - delta] = 0;
       }
-      ffl_buf[len - delta] = 0;
-    }
 
-    if (has_expt && (str[has_expt] != 'e' && str[has_expt] != 'E')) {
-      ffl_buf[has_expt - delta] = 'e';
-    }
-    d = STRTOD(ffl_buf, &ptr);
+      if (has_expt && (str[has_expt] != 'e' && str[has_expt] != 'E')) {
+        ffl_buf[has_expt - delta] = 'e';
+      }
+      d = STRTOD(ffl_buf, &ptr);
 
-    if ((ptr XFORM_OK_MINUS ffl_buf) < (len - delta)) {
-      if (report)
-	scheme_read_err(complain, stxsrc, line, col, pos, span, 0, indentation,
-			"read-number: bad decimal number %u",
-			str, len);
-      return scheme_false;
-    } 
+      if ((ptr XFORM_OK_MINUS ffl_buf) < (len - delta)) {
+        if (report)
+          scheme_read_err(complain, stxsrc, line, col, pos, span, 0, indentation,
+              "read-number: bad decimal number %u",
+              str, len);
+        return scheme_false;
+      } 
+    }
 
     if (!saw_nonzero_digit) {
       /* Assert: d = 0.0 or -0.0 */
