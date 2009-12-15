@@ -1,5 +1,6 @@
 #lang scheme/base
 
+(require (rename-in typed-scheme/minimal (#%module-begin #%module-begin-typed-scheme)))
 (require (for-syntax scheme/base
                      syntax/stx
                      syntax/parse
@@ -17,6 +18,7 @@
                                                               "this is a literal and cannot be used outside a macro"))))
 
 (define-literal honu-return)
+
 
 (begin-for-syntax
 
@@ -82,9 +84,6 @@
   ;; (printf "~a bound transformer? ~a\n" stx (bound-transformer stx))
   (or (bound-transformer stx)
       (special-transformer stx)))
-
-(define (call-values function values-producing)
-  (call-with-values (lambda () values-producing) function))
 
 ;; these functions use parse-block-one 
 ;; (define parse-a-tail-expr #f)
@@ -295,6 +294,7 @@
      (parse-expr (syntax->list #'(expr ...)))]
     [else (parse-expr expr-stxs)]))
 
+
 (define (parse-block-one context body combine-k done-k)
   (define (parse-one expr-stxs after-expr terminator)
     (define (checks)
@@ -331,6 +331,10 @@
 
 )
 
+(define (show-top-result v)
+  (unless (void? v)
+    (printf "~s\n" v)))
+
 (define-syntax (honu-unparsed-begin stx)
   (syntax-case stx ()
     [(_) #'(begin)]
@@ -344,4 +348,6 @@
                     #'(begin code (honu-unparsed-begin rest ...))))]))
 
 (define-syntax-rule (#%dynamic-honu-module-begin forms ...)
+                    (#%module-begin-typed-scheme (honu-unparsed-begin forms ...))
+                    #;
                     (#%plain-module-begin (honu-unparsed-begin forms ...)))

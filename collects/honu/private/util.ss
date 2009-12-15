@@ -2,7 +2,8 @@
 
 
 (provide delim-identifier=?
-         extract-until)
+         extract-until
+         call-values)
 
 (require syntax/stx)
 
@@ -28,6 +29,9 @@
          [else
            (loop (stx-cdr r) (cons (stx-car r) val-stxs))]))]
     [(r ids) (extract-until r ids #f)]))
+
+(define-syntax-rule (call-values function values-producing)
+  (call-with-values (lambda () values-producing) function))
 
 (define (test)
   (let* ([original #'(a b c d e)]
