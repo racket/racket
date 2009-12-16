@@ -133,14 +133,14 @@
      (void)]
     [(struct assign (id rhs undef-ok?))
      (traverse-expr rhs visit)]
-    [(struct localref (unbox? offset clear? other-clears?))
+    [(struct localref (unbox? offset clear? other-clears? flonum?))
      (void)]
     [(? lam?)
      (traverse-lam expr visit)]
     [(struct case-lam (name lams))
      (traverse-data name visit)
      (for-each (lambda (lam) (traverse-lam lam visit)) lams)]
-    [(struct let-one (rhs body))
+    [(struct let-one (rhs body flonum?))
      (traverse-expr rhs visit)
      (traverse-expr body visit)]
     [(struct let-void (count boxes? body))
@@ -252,7 +252,7 @@
   CPT_VECTOR
   CPT_HASH_TABLE
   CPT_STX
-  CPT_GSTX
+  CPT_LET_ONE_FLONUM
   CPT_MARSHALLED
   CPT_QUOTE
   CPT_REFERENCE
@@ -531,7 +531,7 @@
      (out-syntax SET_EXPD
                  (cons undef-ok? (cons id rhs))
                  out)]
-    [(struct localref (unbox? offset clear? other-clears?))
+    [(struct localref (unbox? offset clear? other-clears? flonum?))
      (if (and (not clear?) (not other-clears?)
               (offset . < . (- CPT_SMALL_LOCAL_END CPT_SMALL_LOCAL_START)))
          (out-byte (+ (if unbox?
@@ -545,8 +545,13 @@
                (out-number offset out)
                (begin
                  (out-number (- (add1 offset)) out)
-                 (out-number (+ (if clear? #x1 0)
-                                (if other-clears? #x2 0))
+                 (out-number (if clear?
+                                 #x1
+                                 (if other-clears? 
+                                     #x2
+                                     (if flonum?
+                                         #x3
+                                         0)))
                              out)))))]
     [(? lam?)
      (out-lam expr out)]
@@ -567,8 +572,8 @@
                     (cons (or name null)
                           lams)
                     out)]
-    [(struct let-one (rhs body))
-     (out-byte CPT_LET_ONE out)
+    [(struct let-one (rhs body flonum?))
+     (out-byte (if flonum? CPT_LET_ONE_FLONUM CPT_LET_ONE) out)
      (out-expr (protect-quote rhs) out)
      (out-expr (protect-quote body) out)]
     [(struct let-void (count boxes? body))

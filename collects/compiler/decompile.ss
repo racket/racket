@@ -189,14 +189,16 @@
     [(struct assign (id rhs undef-ok?))
      `(set! ,(decompile-expr id globs stack closed)
             ,(decompile-expr rhs globs stack closed))]
-    [(struct localref (unbox? offset clear? other-clears?))
+    [(struct localref (unbox? offset clear? other-clears? flonum?))
      (let ([id (list-ref/protect stack offset 'localref)])
        (let ([e (if unbox?
                     `(#%unbox ,id)
                     id)])
          (if clear?
              `(#%sfs-clear ,e)
-             e)))]
+             (if flonum?
+                 `(#%from-flonum ,e)
+                 e))))]
     [(? lam?)
      `(lambda . ,(decompile-lam expr globs stack closed))]
     [(struct case-lam (name lams))
@@ -204,10 +206,13 @@
        ,@(map (lambda (lam)
                 (decompile-lam lam globs stack closed))
               lams))]
-    [(struct let-one (rhs body))
+    [(struct let-one (rhs body flonum?))
      (let ([id (or (extract-id rhs)
                    (gensym 'local))])
-       `(let ([,id ,(decompile-expr rhs globs (cons id stack) closed)])
+       `(let ([,id ,(let ([v (decompile-expr rhs globs (cons id stack) closed)])
+                      (if flonum?
+                          (list '#%as-flonum v)
+                          v))])
           ,(decompile-expr body globs (cons id stack) closed)))]
     [(struct let-void (count boxes? body))
      (let ([ids (make-vector count #f)])
