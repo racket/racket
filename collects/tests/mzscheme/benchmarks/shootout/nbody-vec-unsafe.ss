@@ -28,16 +28,12 @@ Correct output N = 1000 is
 ;; ------------------------------
 ;; define planetary masses, initial positions & velocity
 
-(define-syntax-rule (defconst id n)
-  (define-syntax (id stx) (quote-syntax n)))
+(define +pi+ 3.141592653589793) ;; define locally to enable inlining
+(define +days-per-year+ 365.24)
 
-(defconst +pi+ 3.141592653589793)
-(defconst +days-per-year+ 365.24)
+(define +solar-mass+ (* 4 +pi+ +pi+))
 
-;; +solar-mass+ = (* 4 +pi+ +pi+)
-(defconst +solar-mass+ 39.47841760435743)
-
-(defconst +dt+ 0.01)
+(define +dt+ 0.01)
 
 (define make-body flvector)
 (define-syntax-rule (deffield n getter setter)
@@ -91,7 +87,7 @@ Correct output N = 1000 is
              (fl* 5.15138902046611451e-05 +solar-mass+)))
 
 (define *system* (vector *sun* *jupiter* *saturn* *uranus* *neptune*))
-(defconst *system-size* 5)
+(define *system-size* 5)
 ;; -------------------------------
 (define (offset-momentum)
   (let loop-i ([i 0] [px 0.0] [py 0.0] [pz 0.0])

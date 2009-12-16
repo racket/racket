@@ -20,7 +20,7 @@
     ;; v.Bv /(v.v)   eigenvalue of v
     (let loop ([i 0][vBv 0.0][vv 0.0])
       (if (= i n)
-          (sqrt (unsafe-fl/ vBv vv))
+          (unsafe-flsqrt (unsafe-fl/ vBv vv))
           (let ([vi (unsafe-flvector-ref v i)])
             (loop (unsafe-fx+ 1 i)
                   (unsafe-fl+ vBv (unsafe-fl* (unsafe-flvector-ref u i) vi))
