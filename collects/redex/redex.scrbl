@@ -935,9 +935,7 @@ an expression in the lc-lang above:
 
 The first argument to define-metafunction is the grammar
 (defined above). Following that are three cases, one for
-each variation of expressions (e in lc-lang). The right-hand
-side of each clause begins with a comma, since they are
-implicitly wrapped in @|tttterm|. The free variables of an
+each variation of expressions (e in lc-lang). The free variables of an
 application are the free variables of each of the subterms;
 the free variables of a variable is just the variable
 itself, and the free variables of a lambda expression are
