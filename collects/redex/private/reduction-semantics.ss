@@ -936,7 +936,7 @@
                other-matches)))))
    (rewrite-proc-name child-make-proc)
    (λ (lang) (subst lhs-frm-id ((rewrite-proc-lhs child-make-proc) lang) rhs-from))
-   (rewrite-proc-lhs child-make-proc)
+   (rewrite-proc-lhs-src child-make-proc)
    (rewrite-proc-id child-make-proc)))
 
 (define relation-coverage (make-parameter null))

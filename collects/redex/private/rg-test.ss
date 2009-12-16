@@ -699,26 +699,32 @@
          exn:fail:redex:generation-failure?
          (redex-check lang (side-condition any #f) #t #:retries 42 #:attempts 1))
         #rx"^redex-check: unable .* in 42")
-  (let-syntax ([test-gen-fail
-                (syntax-rules ()
-                  [(_ rhs expected)
-                   (test 
-                    (raised-exn-msg
-                     exn:fail:redex:generation-failure?
-                     (redex-check lang any #t 
-                                  #:source (reduction-relation 
-                                            lang
-                                            rhs)
-                                  #:retries 42
-                                  #:attempts 1))
-                    expected)])])
-    (test-gen-fail 
-     (--> (side-condition any #f) any)
-     #px"^redex-check: unable to generate LHS of clause at .*:\\d+:\\d+ in 42")
-    
-    (test-gen-fail
-     (--> (side-condition any #f) any impossible)
-     #rx"^redex-check: unable to generate LHS of impossible in 42")))
+  (let ([unable-loc #px"^redex-check: unable to generate LHS of clause at .*:\\d+:\\d+ in 42"])
+    (let-syntax ([test-gen-fail
+                  (syntax-rules ()
+                    [(_ clauses ... expected)
+                     (test 
+                      (raised-exn-msg
+                       exn:fail:redex:generation-failure?
+                       (redex-check lang any #t 
+                                    #:source (reduction-relation 
+                                              lang
+                                              clauses ...)
+                                    #:retries 42
+                                    #:attempts 1))
+                      expected)])])
+      (test-gen-fail 
+       (--> (side-condition any #f) any)
+       unable-loc)
+      
+      (test-gen-fail 
+       (==> (side-condition any #f) any)
+       with [(--> a b) (==> a b)]
+       unable-loc)
+      
+      (test-gen-fail
+       (--> (side-condition any #f) any impossible)
+       #rx"^redex-check: unable to generate LHS of impossible in 42"))))
 
 ;; check-metafunction-contract
 (let ()
