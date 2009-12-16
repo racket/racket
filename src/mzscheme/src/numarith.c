@@ -47,6 +47,7 @@ static Scheme_Object *fl_minus (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_mult (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_div (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fl_abs (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fl_sqrt (int argc, Scheme_Object *argv[]);
 
 #define zeroi scheme_exact_zero
 
@@ -173,6 +174,12 @@ void scheme_init_unsafe_numarith(Scheme_Env *env)
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
   scheme_add_global_constant("unsafe-flabs", p, env);
+
+  p = scheme_make_folding_prim(fl_sqrt, "unsafe-flsqrt", 1, 1, 1);
+  if (scheme_can_inline_fp_op())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
+  scheme_add_global_constant("unsafe-flsqrt", p, env);
 }
 
 Scheme_Object *
@@ -838,5 +845,14 @@ static Scheme_Object *fl_abs(int argc, Scheme_Object *argv[])
   if (scheme_current_thread->constant_folding) return scheme_abs(argc, argv);
   v = SCHEME_DBL_VAL(argv[0]);
   v = fabs(v);
+  return scheme_make_double(v);
+}
+
+static Scheme_Object *fl_sqrt(int argc, Scheme_Object *argv[])
+{
+  double v;
+  if (scheme_current_thread->constant_folding) return scheme_sqrt(argc, argv);
+  v = SCHEME_DBL_VAL(argv[0]);
+  v = sqrt(v);
   return scheme_make_double(v);
 }

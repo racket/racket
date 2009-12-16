@@ -59,7 +59,7 @@ static Scheme_Env    *unsafe_env;
 
 #define MAX_CONST_LOCAL_POS 64
 #define MAX_CONST_LOCAL_TYPES 2
-#define MAX_CONST_LOCAL_FLAG_VAL 2
+#define MAX_CONST_LOCAL_FLAG_VAL 3
 #define SCHEME_LOCAL_FLAGS_MASK 0x3
 static Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][MAX_CONST_LOCAL_TYPES][MAX_CONST_LOCAL_FLAG_VAL + 1];
 #define MAX_CONST_TOPLEVEL_DEPTH 16
@@ -713,15 +713,21 @@ static void init_scheme_local()
 #ifndef USE_TAGGED_ALLOCATION
   GC_CAN_IGNORE Scheme_Local *all;
 
-  all = (Scheme_Local *)scheme_malloc_eternal(sizeof(Scheme_Local) * 3 * 2 * MAX_CONST_LOCAL_POS);
+  all = (Scheme_Local *)scheme_malloc_eternal(sizeof(Scheme_Local) 
+                                              * (MAX_CONST_LOCAL_FLAG_VAL + 1)
+                                              * MAX_CONST_LOCAL_TYPES
+                                              * MAX_CONST_LOCAL_POS);
 # ifdef MEMORY_COUNTING_ON
-  scheme_misc_count += sizeof(Scheme_Local) * 3 * 2 * MAX_CONST_LOCAL_POS;
+  scheme_misc_count += (sizeof(Scheme_Local) 
+                        * (MAX_CONST_LOCAL_FLAG_VAL + 1)
+                        * MAX_CONST_LOCAL_TYPES
+                        * MAX_CONST_LOCAL_POS);
 # endif    
 #endif
 
   for (i = 0; i < MAX_CONST_LOCAL_POS; i++) {
-    for (k = 0; k < 2; k++) {
-      for (cor = 0; cor < 3; cor++) {
+    for (k = 0; k < MAX_CONST_LOCAL_TYPES; k++) {
+      for (cor = 0; cor < (MAX_CONST_LOCAL_FLAG_VAL + 1); cor++) {
         Scheme_Object *v;
 
 #ifndef USE_TAGGED_ALLOCATION
@@ -1898,6 +1904,7 @@ Scheme_Object *scheme_make_local(Scheme_Type type, int pos, int flags)
   case 0:
   case SCHEME_LOCAL_CLEAR_ON_READ:
   case SCHEME_LOCAL_OTHER_CLEARS:
+  case SCHEME_LOCAL_FLONUM:
     break;
   default:
     flags  = SCHEME_LOCAL_OTHER_CLEARS;
@@ -3397,7 +3404,7 @@ Scheme_Once_Used *scheme_make_once_used(Scheme_Object *val, int pos, int vclock,
   return o;
 }
 
-void scheme_optimize_mutated(Optimize_Info *info, int pos)
+static void register_use(Optimize_Info *info, int pos, int flag)
 /* pos must be in immediate frame */
 {
   if (!info->use) {
@@ -3406,7 +3413,13 @@ void scheme_optimize_mutated(Optimize_Info *info, int pos)
     memset(use, 0, info->new_frame);
     info->use = use;
   }
-  info->use[pos] = 1;
+  info->use[pos] |= flag;
+}
+
+void scheme_optimize_mutated(Optimize_Info *info, int pos)
+/* pos must be in immediate frame */
+{
+  register_use(info, pos, 0x1);
 }
 
 Scheme_Object *scheme_optimize_reverse(Optimize_Info *info, int pos, int unless_mutated)
@@ -3424,7 +3437,7 @@ Scheme_Object *scheme_optimize_reverse(Optimize_Info *info, int pos, int unless_
   }
 
   if (unless_mutated)
-    if (info->use && info->use[pos])
+    if (info->use && (info->use[pos] & 0x1))
       return NULL;
 
   return scheme_make_local(scheme_local_type, pos + delta, 0);
@@ -3455,8 +3468,27 @@ int scheme_optimize_is_mutated(Optimize_Info *info, int pos)
     info = info->next;
   }
 
-  if (info->use && info->use[pos])
+  if (info->use && (info->use[pos] & 0x1))
     return 1;
+
+  return 0;
+}
+
+int scheme_optimize_is_unbox_arg(Optimize_Info *info, int pos)
+/* pos is in new-frame counts */
+{
+  while (1) {
+    if (pos < info->new_frame)
+      break;
+    pos -= info->new_frame;
+    info = info->next;
+  }
+
+  if (info->use && (info->use[pos] & 0x2)) {
+    /* make sure it's not captured by a closure */
+    if (!info->stat_dists || (info->sd_depths[pos] < 2))
+      return 1;
+  }
 
   return 0;
 }
@@ -3490,7 +3522,7 @@ int scheme_optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos)
 }
 
 static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int j, int *closure_offset, int *single_use, 
-                                              int *not_ready, int once_used_ok)
+                                              int *not_ready, int once_used_ok, int context)
 {
   Scheme_Object *p, *n;
   int delta = 0;
@@ -3504,6 +3536,9 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
     delta += info->new_frame;
     info = info->next;
   }
+
+  if (context & OPT_CONTEXT_FLONUM_ARG)
+    register_use(info, pos, 0x2);
 
   p = info->consts;
   while (p) {
@@ -3555,7 +3590,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
           if (!*single_use)
             single_use = NULL;
         }
-	n = do_optimize_info_lookup(info, pos, j, NULL, single_use, NULL, 0);
+	n = do_optimize_info_lookup(info, pos, j, NULL, single_use, NULL, 0, context);
 
 	if (!n) {
 	  /* Return shifted reference to other local: */
@@ -3570,21 +3605,21 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 
   if (!closure_offset)
     register_stat_dist(info, pos, j);
-  
+
   return NULL;
 }
 
 Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use, 
-                                           int once_used_ok)
+                                           int once_used_ok, int context)
 {
-  return do_optimize_info_lookup(info, pos, 0, closure_offset, single_use, NULL, once_used_ok);
+  return do_optimize_info_lookup(info, pos, 0, closure_offset, single_use, NULL, once_used_ok, context);
 }
 
 int scheme_optimize_info_is_ready(Optimize_Info *info, int pos)
 {
   int closure_offset, single_use, ready = 1;
   
-  do_optimize_info_lookup(info, pos, 0, &closure_offset, &single_use, &ready, 0);
+  do_optimize_info_lookup(info, pos, 0, &closure_offset, &single_use, &ready, 0, 0);
 
   return ready;
 }
@@ -3791,7 +3826,6 @@ Resolve_Info *scheme_resolve_info_extend(Resolve_Info *info, int size, int oldsi
     ia = MALLOC_N_ATOMIC(int, mapc);
     naya->flags = ia;
 
-    /* necessary? added when changed allocation to atomic */
     for (i = mapc; i--; ) {
       naya->old_pos[i] = 0;
       naya->new_pos[i] = 0;

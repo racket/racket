@@ -266,16 +266,19 @@ contrast are never boxed, so they are especially cheap to use.
 The @schememodname[scheme/unsafe/ops] library provides fixnum- and
 flonum-specific operations, and combinations of unchecked flonum
 operations allow the @tech{JIT} compiler to generate code that avoids
-boxing and unboxing intermediate results. Currently, only expressions
-involving a combination of unchecked flonum operations,
-@scheme[unsafe-fx->fl], constants, and variable references are
-optimized to avoid boxing; the bytecode compiler attempts to move
-sub-expressions into and out of enclosing @scheme[let] forms to
-produce unboxing combinations. The bytecode decompiler (see
-@secref[#:doc '(lib "scribblings/mzc/mzc.scrbl") "decompile"]
-annotates combinations where the JIT can avoid boxes with
-@scheme[#%flonum]. See also @secref["unchecked-unsafe"], especially
-the warnings about unsafety.
+boxing and unboxing intermediate results. Expressions involving a
+combination of unchecked flonum operations, @scheme[unsafe-fx->fl],
+constants, and variable references are optimized to avoid boxing. When
+such a result is bound with @scheme[let] and then consumed by another
+unchecked flonum operation, the result is similarly unboxed, unless it
+is captured in a closure. The bytecode decompiler (see @secref[#:doc
+'(lib "scribblings/mzc/mzc.scrbl") "decompile"] annotates combinations
+where the JIT can avoid boxes with @schemeidfont{#%flonum},
+@schemeidfont{#%as-flonum}, and @schemeidfont{#%from-flonum}. See also
+@secref["unchecked-unsafe"], especially the warnings about unsafety.
+
+@margin-note{Unboxing of local bindings is not supported by the JIT for
+PowerPC.}
 
 @; ----------------------------------------------------------------------
 

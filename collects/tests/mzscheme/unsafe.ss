@@ -127,6 +127,10 @@
   (test-un 0.0 unsafe-flabs -0.0)
   (test-un +inf.0 unsafe-flabs -inf.0)
 
+  (test-un 5.0 unsafe-flsqrt 25.0)
+  (test-un 0.5 unsafe-flsqrt 0.25)
+  (test-un +nan.0 unsafe-flsqrt -1.0)
+
   (test-un 8.0 'unsafe-fx->fl 8)
   (test-un -8.0 'unsafe-fx->fl -8)
 

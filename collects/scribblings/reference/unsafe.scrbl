@@ -95,12 +95,14 @@ Like @scheme[exact->inexact], but constrained to consume @tech{fixnums}.
 @defproc[(unsafe-fl* [a inexact-real?][b inexact-real?]) inexact-real?]
 @defproc[(unsafe-fl/ [a inexact-real?][b inexact-real?]) inexact-real?]
 @defproc[(unsafe-flabs [a inexact-real?]) inexact-real?]
+@defproc[(unsafe-flsqrt [a inexact-real?]) inexact-real?]
 )]{
 
 For real @tech{inexact numbers}: Like @scheme[+], @scheme[-],
 @scheme[*], @scheme[/], and @scheme[abs], but constrained to consume
 real @tech{inexact numbers}. The result is always a real @tech{inexact
-number}.}
+number}. If a negative number is provided to @scheme[unsafe-sqrt], the
+result is @scheme[+nan.0].}
 
 
 @deftogether[(

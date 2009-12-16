@@ -41,13 +41,13 @@
 (define-form-struct (closure expr) (code gen-id)) ; a static closure (nothing to close over)
 (define-form-struct (case-lam expr) (name clauses)) ; each clause is an lam
 
-(define-form-struct (let-one expr) (rhs body)) ; pushes one value onto stack
+(define-form-struct (let-one expr) (rhs body flonum?)) ; pushes one value onto stack
 (define-form-struct (let-void expr) (count boxes? body)) ; create new stack slots
 (define-form-struct (install-value expr) (count pos boxes? rhs body)) ; set existing stack slot(s)
 (define-form-struct (let-rec expr) (procs body)) ; put `letrec'-bound closures into existing stack slots
 (define-form-struct (boxenv expr) (pos body)) ; box existing stack element
 
-(define-form-struct (localref expr) (unbox? pos clear? other-clears?)) ; access local via stack
+(define-form-struct (localref expr) (unbox? pos clear? other-clears? flonum?)) ; access local via stack
 
 (define-form-struct (toplevel expr) (depth pos const? ready?))  ; access binding via prefix array (which is on stack)
 (define-form-struct (topsyntax expr) (depth pos midpt)) ; access syntax object via prefix array (which is on stack)
@@ -410,7 +410,7 @@
     [16 vector]
     [17 hash-table]
     [18 stx]
-    [19 gstx] ; unused
+    [19 let-one-flonum]
     [20 marshalled]
     [21 quote]
     [22 reference]
@@ -491,9 +491,11 @@
 (define (make-local unbox? pos flags)
   (define SCHEME_LOCAL_CLEAR_ON_READ #x01)
   (define SCHEME_LOCAL_OTHER_CLEARS #x02)
+  (define SCHEME_LOCAL_FLONUM #x03)
   (make-localref unbox? pos 
-                 (positive? (bitwise-and flags SCHEME_LOCAL_CLEAR_ON_READ))
-                 (positive? (bitwise-and flags SCHEME_LOCAL_OTHER_CLEARS))))
+                 (= flags SCHEME_LOCAL_CLEAR_ON_READ)
+                 (= flags SCHEME_LOCAL_OTHER_CLEARS)
+                 (= flags SCHEME_LOCAL_FLONUM)))
 
 (define (a . << . b)
   (arithmetic-shift a b))
@@ -786,8 +788,9 @@
                            (if ppr null (read-compact cp)))
                      (read-compact-list l ppr cp))
                  (loop l ppr)))]
-          [(let-one)
-           (make-let-one (read-compact cp) (read-compact cp))]
+          [(let-one let-one-flonum)
+           (make-let-one (read-compact cp) (read-compact cp)
+                         (eq? cpt-tag 'let-one-flonum))]
           [(branch)
            (make-branch (read-compact cp) (read-compact cp) (read-compact cp))]
           [(module-index) (module-path-index-join (read-compact cp) (read-compact cp))]

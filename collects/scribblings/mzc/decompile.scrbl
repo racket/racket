@@ -87,11 +87,15 @@ Many forms in the decompiled code, such as @scheme[module],
  @item{Some applications of unsafe flonum operations from
  @schememodname[scheme/unsafe/ops] are annotated with
  @schemeidfont{#%flonum}, indicating a place where the JIT compiler
- can avoid allocation for intermediate flonum results. A single
+ might avoid allocation for intermediate flonum results. A single
  @schemeidfont{#%flonum} by itself is not useful, but a
  @schemeidfont{#%flonum} operation that consumes a
- @schemeidfont{#%flonum} argument indicates a potential performance
- improvement.}
+ @schemeidfont{#%flonum} or @schemeidfont{#%from-flonum} argument
+ indicates a potential performance improvement. A
+ @schemeidfont{#%from-flonum} wraps an identifier that is bound by
+ @scheme[let] with a @schemeidfont{#%as-flonum} around its value,
+ which indicates a local binding that can avoid boxing (when used as
+ an argument to an operation that can work with unboxed values).}
 
  @item{A @schemeidfont{#%decode-syntax} form corresponds to a syntax
  object. Future improvements to the decompiler will convert such

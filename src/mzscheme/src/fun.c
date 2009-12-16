@@ -965,7 +965,7 @@ typedef struct {
 } Closure_Info;
 
 Scheme_Object *
-scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info)
+scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info, int context)
 {
   Scheme_Closure_Data *data;
   Scheme_Object *code, *ctx;
@@ -999,7 +999,7 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info)
       scheme_optimize_mutated(info, i);
   }
 
-  code = scheme_optimize_expr(data->code, info);
+  code = scheme_optimize_expr(data->code, info, 0);
 
   if (info->single_result)
     SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_SINGLE_RESULT;

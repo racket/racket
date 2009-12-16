@@ -520,7 +520,7 @@ void scheme_future_gc_pause()
   Scheme_Future_Thread_State *fts = scheme_future_thread_state;
   Scheme_Future_State *fs = scheme_future_state;
 
-  pthread_mutex_lock(&fs->future_mutex);
+  pthread_mutex_lock(&fs->future_mutex); 
   end_gc_not_ok(fts, fs, MZ_RUNSTACK);
   start_gc_not_ok(fs); /* waits until wait_for_gc is 0 */
   pthread_mutex_unlock(&fs->future_mutex);

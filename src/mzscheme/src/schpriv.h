@@ -999,7 +999,10 @@ typedef struct Scheme_Local {
 
 #define SCHEME_LOCAL_CLEAR_ON_READ 0x1
 #define SCHEME_LOCAL_OTHER_CLEARS  0x2
-#define SCHEME_LOCAL_CLEARING_MASK 0x3
+#define SCHEME_LOCAL_FLONUM        0x3
+#define SCHEME_LOCAL_FLAGS_MASK    0x3
+
+#define SCHEME_GET_LOCAL_FLAGS(obj)  (SCHEME_LOCAL_FLAGS(obj) & SCHEME_LOCAL_FLAGS_MASK)
 
 typedef struct Scheme_Toplevel {
   Scheme_Inclhash_Object iso; /* keyex used for flags (and can't be hashed) */
@@ -1033,12 +1036,13 @@ typedef struct Scheme_Let_Value {
 #define SCHEME_LET_AUTOBOX(lh) MZ_OPT_HASH_KEY(&lh->iso)
 
 typedef struct Scheme_Let_One {
-  Scheme_Inclhash_Object iso; /* keyex used for eval_type */
+  Scheme_Inclhash_Object iso; /* keyex used for eval_type + flonum (and can't be hashed) */
   Scheme_Object *value;
   Scheme_Object *body;
 } Scheme_Let_One;
 
 #define SCHEME_LET_EVAL_TYPE(lh) MZ_OPT_HASH_KEY(&lh->iso)
+#define LET_ONE_FLONUM 0x8
 
 typedef struct Scheme_Let_Void {
   Scheme_Inclhash_Object iso; /* keyex used for autobox */
@@ -1985,7 +1989,7 @@ typedef struct Optimize_Info
   Scheme_Object *context; /* for logging */
 } Optimize_Info;
 
-typedef struct Scheme_Object *(*Scheme_Syntax_Optimizer)(Scheme_Object *data, Optimize_Info *info);
+typedef struct Scheme_Object *(*Scheme_Syntax_Optimizer)(Scheme_Object *data, Optimize_Info *info, int context);
 typedef struct Scheme_Object *(*Scheme_Syntax_Cloner)(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth);
 typedef struct Scheme_Object *(*Scheme_Syntax_Shifter)(Scheme_Object *data, int delta, int after_depth);
 
@@ -2240,13 +2244,16 @@ Scheme_Object *scheme_protect_quote(Scheme_Object *expr);
 Scheme_Object *scheme_make_syntax_resolved(int idx, Scheme_Object *data);
 Scheme_Object *scheme_make_syntax_compiled(int idx, Scheme_Object *data);
 
-Scheme_Object *scheme_optimize_expr(Scheme_Object *, Optimize_Info *);
-Scheme_Object *scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline);
-Scheme_Object *scheme_optimize_lets_for_test(Scheme_Object *form, Optimize_Info *info);
+Scheme_Object *scheme_optimize_expr(Scheme_Object *, Optimize_Info *, int context);
+Scheme_Object *scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, int context);
+Scheme_Object *scheme_optimize_lets_for_test(Scheme_Object *form, Optimize_Info *info, int context);
+
+#define OPT_CONTEXT_FLONUM_ARG 0x1
 
 Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e, 
                                             Optimize_Info *info,
-                                            int e_single_result);
+                                            int e_single_result,
+                                            int context);
 
 int scheme_compiled_duplicate_ok(Scheme_Object *o);
 int scheme_compiled_propagate_ok(Scheme_Object *o, Optimize_Info *info);
@@ -2278,7 +2285,8 @@ Scheme_Object *scheme_merge_expression_resolve_lifts(Scheme_Object *expr, Resolv
 Optimize_Info *scheme_optimize_info_create(void);
 
 void scheme_optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *value, int single_use);
-Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use, int once_used_ok);
+Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use, 
+                                           int once_used_ok, int context);
 void scheme_optimize_info_used_top(Optimize_Info *info);
 
 void scheme_optimize_mutated(Optimize_Info *info, int pos);
@@ -2286,6 +2294,7 @@ Scheme_Object *scheme_optimize_reverse(Optimize_Info *info, int pos, int unless_
 int scheme_optimize_is_used(Optimize_Info *info, int pos);
 int scheme_optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos);
 int scheme_optimize_is_mutated(Optimize_Info *info, int pos);
+int scheme_optimize_is_unbox_arg(Optimize_Info *info, int pos);
 
 Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth);
 Scheme_Object *scheme_optimize_shift(Scheme_Object *obj, int delta, int after_depth);
@@ -2305,7 +2314,8 @@ Scheme_Object *scheme_toplevel_to_flagged_toplevel(Scheme_Object *tl, int flags)
 void scheme_env_make_closure_map(Optimize_Info *frame, mzshort *size, mzshort **map);
 int scheme_env_uses_toplevel(Optimize_Info *frame);
 
-int scheme_wants_unboxed_arguments(Scheme_Object *rator);
+int scheme_wants_flonum_arguments(Scheme_Object *rator);
+int scheme_expr_produces_flonum(Scheme_Object *expr);
 
 typedef struct Scheme_Once_Used {
   Scheme_Object so;
@@ -2374,7 +2384,7 @@ Scheme_Object *scheme_make_closure_compilation(Scheme_Comp_Env *env,
 Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *compiled_list,
 						int strip_values);
 
-Scheme_Object *scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info);
+Scheme_Object *scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info, int context);
 Scheme_Object *scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info, 
                                                   int can_lift, int convert, int just_compute_lift,
                                                   Scheme_Object *precomputed_lift);
@@ -2407,13 +2417,15 @@ int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count);
 #define SCHEME_WAS_SET_BANGED          0x2
 #define SCHEME_WAS_ONLY_APPLIED        0x4
 #define SCHEME_WAS_APPLIED_EXCEPT_ONCE 0x8
+#define SCHEME_WAS_FLONUM_ARGUMENT     0x80
 
 #define SCHEME_USE_COUNT_MASK   0x70
 #define SCHEME_USE_COUNT_SHIFT  4
 #define SCHEME_USE_COUNT_INF    (SCHEME_USE_COUNT_MASK >> SCHEME_USE_COUNT_SHIFT)
 
 /* flags reported by scheme_resolve_info_flags */
-#define SCHEME_INFO_BOXED 1
+#define SCHEME_INFO_BOXED 0x1
+#define SCHEME_INFO_FLONUM_ARG 0x2
 
 /* flags used with scheme_new_frame */
 #define SCHEME_TOPLEVEL_FRAME 1

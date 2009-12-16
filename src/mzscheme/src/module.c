@@ -88,10 +88,10 @@ static Scheme_Object *top_level_require_execute(Scheme_Object *data);
 static Scheme_Object *module_jit(Scheme_Object *data);
 static Scheme_Object *top_level_require_jit(Scheme_Object *data);
 
-static Scheme_Object *module_optimize(Scheme_Object *data, Optimize_Info *info);
+static Scheme_Object *module_optimize(Scheme_Object *data, Optimize_Info *info, int context);
 static Scheme_Object *module_resolve(Scheme_Object *data, Resolve_Info *info);
 static Scheme_Object *module_sfs(Scheme_Object *data, SFS_Info *info);
-static Scheme_Object *top_level_require_optimize(Scheme_Object *data, Optimize_Info *info);
+static Scheme_Object *top_level_require_optimize(Scheme_Object *data, Optimize_Info *info, int context);
 static Scheme_Object *top_level_require_resolve(Scheme_Object *data, Resolve_Info *info);
 static Scheme_Object *top_level_require_sfs(Scheme_Object *data, SFS_Info *info);
 
@@ -5089,7 +5089,7 @@ static int set_code_closure_flags(Scheme_Object *clones,
 }
 
 static Scheme_Object *
-module_optimize(Scheme_Object *data, Optimize_Info *info)
+module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 {
   Scheme_Module *m = (Scheme_Module *)data;
   Scheme_Object *e, *vars, *old_context;
@@ -5104,7 +5104,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
   cnt = SCHEME_VEC_SIZE(m->body);
   for (i_m = 0; i_m < cnt; i_m++) {
     /* Optimize this expression: */
-    e = scheme_optimize_expr(SCHEME_VEC_ELS(m->body)[i_m], info);
+    e = scheme_optimize_expr(SCHEME_VEC_ELS(m->body)[i_m], info, 0);
     SCHEME_VEC_ELS(m->body)[i_m] = e;
 
     if (info->enforce_const) {
@@ -5234,7 +5234,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	while (1) {
 	  /* Re-optimize this expression. We can optimize anything without
              shift-cloning, since there are no local variables in scope. */
-	  e = scheme_optimize_expr(SCHEME_VEC_ELS(m->body)[start_simltaneous], info);
+	  e = scheme_optimize_expr(SCHEME_VEC_ELS(m->body)[start_simltaneous], info, 0);
 	  SCHEME_VEC_ELS(m->body)[start_simltaneous] = e;
  
           if (re_consts) {
@@ -6467,7 +6467,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
           oi->context = (Scheme_Object *)env->genv->module;
           if (!(rec[drec].comp_flags & COMP_CAN_INLINE))
             oi->inline_fuel = -1;
-	  m = scheme_optimize_expr(m, oi);
+	  m = scheme_optimize_expr(m, oi, 0);
 	  
 	  /* Simplify only in compile mode; it is too slow in expand mode. */
 	  rp = scheme_resolve_prefix(1, eenv->prefix, rec[drec].comp);
@@ -9337,7 +9337,7 @@ static void top_level_require_validate(Scheme_Object *data, Mz_CPort *port,
 }
 
 static Scheme_Object *
-top_level_require_optimize(Scheme_Object *data, Optimize_Info *info)
+top_level_require_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 {
   return scheme_make_syntax_compiled(REQUIRE_EXPD, data);
 }

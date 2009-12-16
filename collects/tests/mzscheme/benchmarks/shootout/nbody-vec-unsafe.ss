@@ -123,7 +123,7 @@ Correct output N = 1000 is
                    [dx   (fl- (body-x o1) (body-x i1))]
                    [dy   (fl- (body-y o1) (body-y i1))]
                    [dz   (fl- (body-z o1) (body-z i1))]
-                   [dist (sqrt (fl+ (fl+ (fl* dx dx) (fl* dy dy)) (fl* dz dz)))]
+                   [dist (flsqrt (fl+ (fl+ (fl* dx dx) (fl* dy dy)) (fl* dz dz)))]
                    [e    (fl- e (fl/ (fl* (body-mass o1) (body-mass i1)) dist))])
               (loop-i (unsafe-fx+ i 1) e))))))))
 
@@ -131,8 +131,7 @@ Correct output N = 1000 is
 (define (advance)
   (let loop-o ([o 0])
     (unless (unsafe-fx= o *system-size*)
-      (let* ([o1 (unsafe-vector-ref *system* o)]
-             [om  (body-mass o1)])
+      (let* ([o1 (unsafe-vector-ref *system* o)])
         (let loop-i ([i  (unsafe-fx+ o 1)]
                      [vx (body-vx o1)]
                      [vy (body-vy o1)]
@@ -143,14 +142,19 @@ Correct output N = 1000 is
                    [dy    (fl- (body-y o1) (body-y i1))]
                    [dz    (fl- (body-z o1) (body-z i1))]
                    [dist2 (fl+ (fl+ (fl* dx dx) (fl* dy dy)) (fl* dz dz))]
-                   [mag   (fl/ +dt+ (fl* dist2 (sqrt dist2)))])
-              (set-body-vx! i1 (fl+ (body-vx i1) (fl* (fl* dx mag) (body-mass o1))))
-              (set-body-vy! i1 (fl+ (body-vy i1) (fl* (fl* dy mag) (body-mass o1))))
-              (set-body-vz! i1 (fl+ (body-vz i1) (fl* (fl* dz mag) (body-mass o1))))
+                   [mag   (fl/ +dt+ (fl* dist2 (flsqrt dist2)))]
+                   [dxmag (fl* dx mag)]
+                   [dymag (fl* dy mag)]
+                   [dzmag (fl* dz mag)]
+                   [om (body-mass o1)]
+                   [im (body-mass i1)])
+              (set-body-vx! i1 (fl+ (body-vx i1) (fl* dxmag om)))
+              (set-body-vy! i1 (fl+ (body-vy i1) (fl* dymag om)))
+              (set-body-vz! i1 (fl+ (body-vz i1) (fl* dzmag om)))
               (loop-i (unsafe-fx+ i 1)
-                      (fl- vx (fl* (fl* dx mag) (body-mass i1)))
-                      (fl- vy (fl* (fl* dy mag) (body-mass i1)))
-                      (fl- vz (fl* (fl* dz mag) (body-mass i1)))))
+                      (fl- vx (fl* dxmag im))
+                      (fl- vy (fl* dymag im))
+                      (fl- vz (fl* dzmag im))))
             (begin (set-body-vx! o1 vx)
                    (set-body-vy! o1 vy)
                    (set-body-vz! o1 vz)

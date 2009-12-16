@@ -4640,7 +4640,6 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       }
       break;
     case CPT_STX:
-    case CPT_GSTX:
       {
 	if (!port->ut) {
           Scheme_Unmarshal_Tables *ut;
@@ -4675,7 +4674,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
                                  0, 0);
         }
 
-	v = scheme_unmarshal_datum_to_syntax(v, port->ut, ch == CPT_GSTX);
+	v = scheme_unmarshal_datum_to_syntax(v, port->ut, 0);
 	scheme_num_read_syntax_objects++;
 	if (!v)
 	  scheme_ill_formed_code(port);
@@ -4741,6 +4740,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       }
       break;
     case CPT_LET_ONE:
+    case CPT_LET_ONE_FLONUM:
       {
 	Scheme_Let_One *lo;
 	int et;
@@ -4749,12 +4749,14 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	lo->iso.so.type = scheme_let_one_type;
 
 	v = read_compact(port, 1);
-	lo->value = v;
+        lo->value = v;
 	v = read_compact(port, 1);
 	lo->body = v;
 	et = scheme_get_eval_type(lo->value);
-	SCHEME_LET_EVAL_TYPE(lo) = et;
-
+        if (ch == CPT_LET_ONE_FLONUM)
+          et |= LET_ONE_FLONUM;
+        SCHEME_LET_EVAL_TYPE(lo) = et;
+	
 	return (Scheme_Object *)lo;
       }
       break;

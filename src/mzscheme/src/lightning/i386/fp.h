@@ -84,6 +84,7 @@
 #define jit_divrr_d_fppop(rd,s1,s2) (FDIVRPr(1))
 #define jit_negr_d_fppop(rd,rs)     ( _OO (0xd9e0))
 #define jit_abs_d_fppop(rd,rs)      ( _OO (0xd9e1))
+#define jit_sqrt_d_fppop(rd,rs)     ( _OO (0xd9fa))
 
 /* - moves:
 

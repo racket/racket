@@ -2437,7 +2437,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       int unbox = SAME_TYPE(SCHEME_TYPE(obj), scheme_local_unbox_type);
       Scheme_Local *loc = (Scheme_Local *)obj;
       if ((loc->position < CPT_RANGE(SMALL_LOCAL))
-          && !(SCHEME_LOCAL_FLAGS(loc) & SCHEME_LOCAL_CLEARING_MASK)) {
+          && !SCHEME_GET_LOCAL_FLAGS(loc)) {
 	unsigned char s[1];
 	s[0] = loc->position + (unbox 
 				? CPT_SMALL_LOCAL_UNBOX_START 
@@ -2446,7 +2446,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       } else {
         int flags;
 	print_compact(pp, unbox ? CPT_LOCAL_UNBOX : CPT_LOCAL);
-        flags = SCHEME_LOCAL_FLAGS(loc) & SCHEME_LOCAL_CLEARING_MASK;
+        flags = SCHEME_GET_LOCAL_FLAGS(loc);
         if (flags) {
           print_compact_number(pp, -(loc->position + 1));
           print_compact_number(pp, flags);
@@ -2507,7 +2507,10 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
       lo = (Scheme_Let_One *)obj;
 
-      print_compact(pp, CPT_LET_ONE);
+      if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM)
+        print_compact(pp, CPT_LET_ONE_FLONUM);
+      else
+        print_compact(pp, CPT_LET_ONE);
       print(scheme_protect_quote(lo->value), notdisplay, 1, NULL, mt, pp);
       closed = print(scheme_protect_quote(lo->body), notdisplay, 1, NULL, mt, pp);
     }

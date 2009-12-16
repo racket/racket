@@ -1,3 +1,8 @@
+Version 4.2.3.6
+Changed JIT to support unboxed local binding of known-flonum
+ arguments to unsafe-fl functions
+Added unsafe-flsqrt
+
 Version 4.2.3.5
 Added #:save-errno option for foreign-function types
 

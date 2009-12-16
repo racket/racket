@@ -1479,7 +1479,7 @@ mark_input_fd {
 }
 #endif
 
-#if defined(UNIX_PROCESSES)
+#if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
 mark_system_child {
  mark:
   System_Child *sc = (System_Child *)p;

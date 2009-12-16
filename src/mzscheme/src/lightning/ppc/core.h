@@ -46,6 +46,7 @@ struct jit_local_state {
 };
 
 #define JIT_SP			1
+#define JIT_FP			1
 #define JIT_RET			3
 #define JIT_R_NUM		3
 #define JIT_V_NUM		7
