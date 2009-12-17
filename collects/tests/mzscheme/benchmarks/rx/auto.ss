@@ -287,7 +287,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (define-values (actual-benchmarks-to-run 
                   actual-implementations-to-run 
                   num-iterations)
-    (process-command-line benchmark-names
+    (process-command-line benchmark-names null
                           (map car testers) non-defaults
                           3))
   
