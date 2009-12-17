@@ -489,9 +489,9 @@ be @tech{expand}ed (i.e. parsed) before it can be evaluated, and it is
 expanded at @tech{phase level} 1 (i.e., in the @tech{transformer
 environment}) instead of @tech{phase level} 0.
 
-The resulting @scheme[value] is a procedure of one argument or as
-the result of @scheme[make-set!-transformer] on a procedure, then is
-it used as a @deftech{syntax transformer} (a.k.a. @deftech{macro}).
+If the resulting @scheme[value] is a procedure of one argument or
+the result of @scheme[make-set!-transformer] on a procedure, then it
+is used as a @deftech{syntax transformer} (a.k.a. @deftech{macro}).
 The procedure is expected to accept a syntax object and return a
 syntax object. A use of the binding (at @tech{phase level} 0) triggers
 a call of the @tech{syntax transformer} by the expander; see
