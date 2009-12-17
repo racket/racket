@@ -1703,7 +1703,7 @@ inline static void push_ptr(NewGC *gc, void *ptr)
       gc->mark_stack->top = MARK_STACK_START(gc->mark_stack);
     } else {
       /* we don't, so we need to allocate one */
-      gc->mark_stack->next = mark_stack_create_frame(gc);
+      gc->mark_stack->next = mark_stack_create_frame();
       gc->mark_stack->next->prev = gc->mark_stack;
       gc->mark_stack = gc->mark_stack->next;
     }
