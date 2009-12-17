@@ -498,7 +498,7 @@ a call of the @tech{syntax transformer} by the expander; see
 @secref["expand-steps"].
 
 Before the expander passes a @tech{syntax object} to a transformer,
-the @tech{syntax object} is extend with a @deftech{syntax mark} (that
+the @tech{syntax object} is extended with a @deftech{syntax mark} (that
 applies to all sub-@tech{syntax objects}). The result of the
 transformer is similarly extended with the same @tech{syntax
 mark}. When a @tech{syntax object}'s @tech{lexical information}
@@ -771,7 +771,7 @@ bucket-2
 (defs-and-uses)
 ]
 
-Macro-generated \scheme{require} and \scheme{provide}
+Macro-generated @scheme{require} and @scheme{provide}
  clauses also introduce and reference generation-specific bindings:
 
 @itemize[
