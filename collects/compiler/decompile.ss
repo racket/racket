@@ -292,7 +292,7 @@
      (let ([vars (for/list ([i (in-range num-params)]
                             [type (in-list arg-types)])
                    (gensym (format "~a~a-" 
-                                   (if (eq? type 'ref) "argbox" "arg")
+                                   (case type [(ref) "argbox"] [(flonum) "argfl"] [else "arg"])
                                    i)))]
            [rest-vars (if rest? (list (gensym 'rest)) null)]
            [captures (map (lambda (v)
@@ -351,6 +351,7 @@
   (if (and (symbol? (car a))
            (case (length a)
              [(2) (memq (car a) '(unsafe-flabs
+                                  unsafe-flsqrt
                                   unsafe-fx->fl))]
              [(3) (memq (car a) '(unsafe-fl+ unsafe-fl- unsafe-fl* unsafe-fl/
                                              unsafe-fl< unsafe-fl> 

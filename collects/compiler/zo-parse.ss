@@ -138,12 +138,13 @@
                                     (if (zero? (bitwise-and flags CLOS_HAS_REF_ARGS))
                                         (for/list ([i (in-range num-params)]) 'val)
                                         (for/list ([i (in-range num-params)])
-                                          (if (bitwise-bit-set?
-                                               (vector-ref closed-over
-                                                           (+ closure-size (quotient i BITS_PER_MZSHORT)))
-                                               (remainder i BITS_PER_MZSHORT))
-                                              'ref
-                                              'val))))])
+                                          (let ([byte (vector-ref closed-over
+                                                                  (+ closure-size (quotient (* 2 i) BITS_PER_MZSHORT)))])
+                                            (if (bitwise-bit-set? byte (remainder (* 2 i) BITS_PER_MZSHORT))
+                                                'ref
+                                                (if (bitwise-bit-set? byte (add1 (remainder (* 2 i) BITS_PER_MZSHORT)))
+                                                    'flonum
+                                                    'val))))))])
          (make-lam name
                    (append
                     (if (zero? (bitwise-and flags flags CLOS_PRESERVES_MARKS)) null '(preserves-marks))
