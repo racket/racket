@@ -940,14 +940,14 @@ static void define_values_validate(Scheme_Object *data, Mz_CPort *port,
         }
       }
       if (data) {
-        if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REF_ARGS) {
+        if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
           int sz;
           sz = data->num_params;
           a = MALLOC_N_ATOMIC(mzshort, (sz + 1));
           a[0] = -sz;
           for (i = 0; i < sz; i++) {
-            int bit = ((mzshort)1 << (i & (BITS_PER_MZSHORT - 1)));
-            if (data->closure_map[data->closure_size + (i / BITS_PER_MZSHORT)] & bit)
+            int bit = ((mzshort)1 << ((2 * i) & (BITS_PER_MZSHORT - 1)));
+            if (data->closure_map[data->closure_size + ((2 * i) / BITS_PER_MZSHORT)] & bit)
               a[i + 1] = 1;
             else
               a[i + 1] = 0;
@@ -3216,6 +3216,10 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 	did_set_value = 1;
       } else if (value && !is_rec) {
         int cnt;
+
+        if (scheme_expr_produces_flonum(value))
+          scheme_optimize_produces_flonum(body_info, pos);
+
         cnt = ((pre_body->flags[0] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT);
         if (cnt == 1) {
           /* used only once; we may be able to shift the expression to the use
@@ -3411,7 +3415,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     } else {
       for (j = pre_body->count; j--; ) {
         pre_body->flags[j] |= SCHEME_WAS_USED;
-        if (scheme_optimize_is_unbox_arg(body_info, pos+j))
+        if (scheme_optimize_is_flonum_arg(body_info, pos+j, 0))
           pre_body->flags[j] |= SCHEME_WAS_FLONUM_ARGUMENT;          
       }
       info->size += 1;

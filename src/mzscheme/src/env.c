@@ -3422,6 +3422,12 @@ void scheme_optimize_mutated(Optimize_Info *info, int pos)
   register_use(info, pos, 0x1);
 }
 
+void scheme_optimize_produces_flonum(Optimize_Info *info, int pos)
+/* pos must be in immediate frame */
+{
+  register_use(info, pos, 0x4);
+}
+
 Scheme_Object *scheme_optimize_reverse(Optimize_Info *info, int pos, int unless_mutated)
 /* pos is in new-frame counts, and we want to produce an old-frame reference if
    it's not mutated */
@@ -3458,7 +3464,7 @@ int scheme_optimize_is_used(Optimize_Info *info, int pos)
   return 0;
 }
 
-int scheme_optimize_is_mutated(Optimize_Info *info, int pos)
+static int check_use(Optimize_Info *info, int pos, int flag)
 /* pos is in new-frame counts */
 {
   while (1) {
@@ -3468,29 +3474,28 @@ int scheme_optimize_is_mutated(Optimize_Info *info, int pos)
     info = info->next;
   }
 
-  if (info->use && (info->use[pos] & 0x1))
+  if (info->use && (info->use[pos] & flag))
     return 1;
 
   return 0;
 }
 
-int scheme_optimize_is_unbox_arg(Optimize_Info *info, int pos)
+int scheme_optimize_is_mutated(Optimize_Info *info, int pos)
 /* pos is in new-frame counts */
 {
-  while (1) {
-    if (pos < info->new_frame)
-      break;
-    pos -= info->new_frame;
-    info = info->next;
-  }
+  return check_use(info, pos, 0x1);
+}
 
-  if (info->use && (info->use[pos] & 0x2)) {
-    /* make sure it's not captured by a closure */
-    if (!info->stat_dists || (info->sd_depths[pos] < 2))
-      return 1;
-  }
+int scheme_optimize_is_flonum_arg(Optimize_Info *info, int pos, int depth)
+/* pos is in new-frame counts */
+{
+  return check_use(info, pos, 0x2);
+}
 
-  return 0;
+int scheme_optimize_is_flonum_valued(Optimize_Info *info, int pos)
+/* pos is in new-frame counts */
+{
+  return check_use(info, pos, 0x4);
 }
 
 int scheme_optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos)
@@ -3935,13 +3940,27 @@ static int resolve_info_lookup(Resolve_Info *info, int pos, int *flags, Scheme_O
             boxmap = (mzshort *)ca[3];
             vec = scheme_make_vector(sz + 1, NULL);
             for (i = 0; i < sz; i++) {
+              int boxed = 0, flonumed = 0, flags = 0;
+
+              if (boxmap) {
+                int byte = boxmap[(2 * i) / BITS_PER_MZSHORT];
+                if (byte & ((mzshort)1 << ((2 * i) & (BITS_PER_MZSHORT - 1))))
+                  boxed = 1;
+                if (byte & ((mzshort)2 << ((2 * i) & (BITS_PER_MZSHORT - 1)))) {
+                  flonumed = 1;
+                  flags = SCHEME_LOCAL_FLONUM;
+                }
+              }
+              
               loc = scheme_make_local(scheme_local_type,
                                       posmap[i] + offset + shifted,
-                                      0);
-              if (boxmap) {
-                if (boxmap[i / BITS_PER_MZSHORT] & ((mzshort)1 << (i & (BITS_PER_MZSHORT - 1))))
-                  loc = scheme_box(loc);
-              }
+                                      flags);
+              
+              if (boxed)
+                loc = scheme_box(loc);
+              else if (flonumed)
+                loc = scheme_make_vector(1, loc);
+              
               SCHEME_VEC_ELS(vec)[i+1] = loc;
             }
             SCHEME_VEC_ELS(vec)[0] = ca[2];

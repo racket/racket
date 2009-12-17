@@ -1890,7 +1890,7 @@ typedef struct Scheme_Comp_Env
 } Scheme_Comp_Env;
 
 #define CLOS_HAS_REST 1
-#define CLOS_HAS_REF_ARGS 2
+#define CLOS_HAS_TYPED_ARGS 2
 #define CLOS_PRESERVES_MARKS 4
 #define CLOS_SFS 8
 #define CLOS_IS_METHOD 16
@@ -2014,7 +2014,8 @@ typedef struct Scheme_Closure_Data
   mzshort num_params; /* includes collecting arg if has_rest */
   mzshort max_let_depth;
   mzshort closure_size;
-  mzshort *closure_map; /* actually a Closure_Info* until resolved; if CLOS_HAS_REF_ARGS, followed by bit array */
+  mzshort *closure_map; /* actually a Closure_Info* until resolved; if CLOS_HAS_TYPED_ARGS, 
+                           followed by bit array with 2 bits per args then per closed-over */
   Scheme_Object *code;
   Scheme_Object *name; /* name or (vector name src line col pos span generated?) */
 #ifdef MZ_USE_JIT
@@ -2290,11 +2291,17 @@ Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *cl
 void scheme_optimize_info_used_top(Optimize_Info *info);
 
 void scheme_optimize_mutated(Optimize_Info *info, int pos);
+void scheme_optimize_produces_flonum(Optimize_Info *info, int pos);
 Scheme_Object *scheme_optimize_reverse(Optimize_Info *info, int pos, int unless_mutated);
 int scheme_optimize_is_used(Optimize_Info *info, int pos);
 int scheme_optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos);
 int scheme_optimize_is_mutated(Optimize_Info *info, int pos);
-int scheme_optimize_is_unbox_arg(Optimize_Info *info, int pos);
+int scheme_optimize_is_flonum_arg(Optimize_Info *info, int pos, int depth);
+int scheme_optimize_is_flonum_valued(Optimize_Info *info, int pos);
+
+int scheme_is_flonum_expression(Scheme_Object *expr, Optimize_Info *info);
+char *scheme_get_closure_flonum_map(Scheme_Closure_Data *data, int arg_n, int *ok);
+void scheme_set_closure_flonum_map(Scheme_Closure_Data *data, char *flonum_map);
 
 Scheme_Object *scheme_optimize_clone(int dup_ok, Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth);
 Scheme_Object *scheme_optimize_shift(Scheme_Object *obj, int delta, int after_depth);

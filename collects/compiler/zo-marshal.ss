@@ -664,14 +664,14 @@
                                        (list->vector
                                         (append
                                          (vector->list closure-map)
-                                         (let ([v (make-vector (ceiling (/ num-params BITS_PER_MZSHORT)))])
+                                         (let ([v (make-vector (ceiling (/ (* 2 num-params) BITS_PER_MZSHORT)))])
                                            (for ([t (in-list param-types)]
                                                  [i (in-naturals)])
                                              (when (eq? t 'ref)
-                                               (let ([pos (quotient i BITS_PER_MZSHORT)])
+                                               (let ([pos (quotient (* 2 i) BITS_PER_MZSHORT)])
                                                  (vector-set! v pos
                                                               (bitwise-ior (vector-ref v pos)
-                                                                           (arithmetic-shift 1 (modulo i BITS_PER_MZSHORT)))))))
+                                                                           (arithmetic-shift 1 (modulo (* 2 i) BITS_PER_MZSHORT)))))))
                                            (vector->list v))))
                                        closure-map))
                      l)]

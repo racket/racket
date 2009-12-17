@@ -1316,6 +1316,8 @@ static Scheme_Object *resolve_application(Scheme_Object *o, Resolve_Info *orig_i
         loc = SCHEME_VEC_ELS(additions)[i+1];
         if (SCHEME_BOXP(loc)) 
           loc = SCHEME_BOX_VAL(loc);
+        else if (SCHEME_VECTORP(loc))
+          loc = SCHEME_VEC_ELS(loc)[0];
         app2->args[i + 1] = loc;
       }
       for (i = 1; i < n; i++) {
@@ -1402,6 +1404,8 @@ static Scheme_Object *resolve_application2(Scheme_Object *o, Resolve_Info *orig_
           loc = SCHEME_VEC_ELS(additions)[i+1];
           if (SCHEME_BOXP(loc))
             loc = SCHEME_BOX_VAL(loc);
+          else if (SCHEME_VECTORP(loc))
+            loc = SCHEME_VEC_ELS(loc)[0];
           app2->args[i + 1] = loc;
         }
         app2->args[0] = rator;
@@ -1416,6 +1420,8 @@ static Scheme_Object *resolve_application2(Scheme_Object *o, Resolve_Info *orig_
         loc = SCHEME_VEC_ELS(additions)[1];
         if (SCHEME_BOXP(loc))
           loc = SCHEME_BOX_VAL(loc);
+        else if (SCHEME_VECTORP(loc))
+          loc = SCHEME_VEC_ELS(loc)[0];
         app2->rand1 = loc;
         app2->rand2 = app->rand;
         return resolve_application3((Scheme_Object *)app2, orig_info, 2 + rdelta);
@@ -1503,6 +1509,8 @@ static Scheme_Object *resolve_application3(Scheme_Object *o, Resolve_Info *orig_
           loc = SCHEME_VEC_ELS(additions)[i+1];
           if (SCHEME_BOXP(loc))
             loc = SCHEME_BOX_VAL(loc);
+          else if (SCHEME_VECTORP(loc))
+            loc = SCHEME_VEC_ELS(loc)[0];
           app2->args[i + 1] = loc;
         }
         app2->args[0] = rator;
@@ -2451,6 +2459,82 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
   return NULL;
 }
 
+int scheme_is_flonum_expression(Scheme_Object *expr, Optimize_Info *info)
+{
+  if (scheme_expr_produces_flonum(expr))
+    return 1;
+
+  if (SAME_TYPE(SCHEME_TYPE(expr), scheme_local_type)) {
+    if (scheme_optimize_is_flonum_valued(info, SCHEME_LOCAL_POS(expr)))
+      return 1;
+  }
+
+  return 0;
+}
+
+static void register_flonum_argument_types(Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
+                                           Optimize_Info *info)
+{
+  Scheme_Object *rator, *rand, *le;
+  int n, i;
+
+  if (app) {
+    rator = app->args[0];
+    n = app->num_args;
+  } else if (app2) {
+    rator = app2->rator;
+    n = 1;
+  } else {
+    rator = app3->rator;
+    n = 2;
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(rator), scheme_local_type)) {
+    rator = scheme_optimize_reverse(info, SCHEME_LOCAL_POS(rator), 1);
+    if (rator) {
+      int offset, single_use;
+      le = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(rator), &offset, &single_use, 0, 0);
+      if (le && SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type)) {
+        Scheme_Closure_Data *data = (Scheme_Closure_Data *)le;
+        char *map;
+        int ok;
+
+        map = scheme_get_closure_flonum_map(data, n, &ok);
+
+        if (ok) {
+          for (i = 0; i < n; i++) {
+            int is_flonum;
+
+            if (app)
+              rand = app->args[i+1];
+            else if (app2)
+              rand = app2->rand;
+            else {
+              if (!i)
+                rand = app3->rand1;
+              else
+                rand = app3->rand2;
+            }
+
+            is_flonum = scheme_is_flonum_expression(rand, info);
+            if (is_flonum) {
+              if (!map) {
+                map = MALLOC_N_ATOMIC(char, n);
+                memset(map, 1, n);
+              }
+            }
+            if (map && !is_flonum)
+              map[i] = 0;
+          }
+
+          if (map)
+            scheme_set_closure_flonum_map(data, map);
+        }
+      }
+    }
+  }
+}
+
 char *scheme_optimize_context_to_string(Scheme_Object *context)
 {
   if (context) {
@@ -2604,22 +2688,25 @@ static int purely_functional_primitive(Scheme_Object *rator, int n)
 
 int scheme_wants_flonum_arguments(Scheme_Object *rator)
 {
-  if (SCHEME_PRIMP(rator)
-      && (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL)) {
-    if (IS_NAMED_PRIM(rator, "unsafe-flabs")
-        || IS_NAMED_PRIM(rator, "unsafe-fl+")
-        || IS_NAMED_PRIM(rator, "unsafe-fl-")
-        || IS_NAMED_PRIM(rator, "unsafe-fl*")
-        || IS_NAMED_PRIM(rator, "unsafe-fl/")
-        || IS_NAMED_PRIM(rator, "unsafe-fl<")
-        || IS_NAMED_PRIM(rator, "unsafe-fl<=")
-        || IS_NAMED_PRIM(rator, "unsafe-fl=")
-        || IS_NAMED_PRIM(rator, "unsafe-fl>")
-        || IS_NAMED_PRIM(rator, "unsafe-fl>=")
-        || IS_NAMED_PRIM(rator, "unsafe-flvector-set!")
-        || IS_NAMED_PRIM(rator, "unsafe-flvector-ref")
-        || IS_NAMED_PRIM(rator, "unsafe-fx->fl"))
-      return 1;
+  if (SCHEME_PRIMP(rator)) {
+    if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL) {
+      if (IS_NAMED_PRIM(rator, "unsafe-flabs")
+          || IS_NAMED_PRIM(rator, "unsafe-fl+")
+          || IS_NAMED_PRIM(rator, "unsafe-fl-")
+          || IS_NAMED_PRIM(rator, "unsafe-fl*")
+          || IS_NAMED_PRIM(rator, "unsafe-fl/")
+          || IS_NAMED_PRIM(rator, "unsafe-fl<")
+          || IS_NAMED_PRIM(rator, "unsafe-fl<=")
+          || IS_NAMED_PRIM(rator, "unsafe-fl=")
+          || IS_NAMED_PRIM(rator, "unsafe-fl>")
+          || IS_NAMED_PRIM(rator, "unsafe-fl>=")
+          || IS_NAMED_PRIM(rator, "unsafe-flvector-ref")
+          || IS_NAMED_PRIM(rator, "unsafe-fx->fl"))
+        return 1;
+    } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_NARY_INLINED) {
+      if (IS_NAMED_PRIM(rator, "unsafe-flvector-set!"))
+        return 1;
+    }
   }
 
   return 0;
@@ -2724,6 +2811,10 @@ int scheme_expr_produces_flonum(Scheme_Object *expr)
       Scheme_App3_Rec *app = (Scheme_App3_Rec *)expr;
       return produces_unboxed(app->rator);
     }
+    break;
+  default:
+    if (SCHEME_FLOATP(expr))
+      return 1;
     break;
   }
   return 0;
@@ -2925,6 +3016,8 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
   if (!app->num_args && SAME_OBJ(app->args[0], scheme_list_proc))
     return scheme_null;
 
+  register_flonum_argument_types(app, NULL, NULL, info);
+
   return check_unbox_rotation((Scheme_Object *)app, app->args[0], app->num_args, info);
 }
 
@@ -3040,6 +3133,8 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
     info->preserves_marks = -info->preserves_marks;
     info->single_result = -info->single_result;
   }
+
+  register_flonum_argument_types(NULL, app, NULL, info);
 
   return check_unbox_rotation((Scheme_Object *)app, app->rator, 1, info);
 }
@@ -3173,6 +3268,8 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
     info->preserves_marks = -info->preserves_marks;
     info->single_result = -info->single_result;
   }
+
+  register_flonum_argument_types(NULL, NULL, app, info);
 
   return check_unbox_rotation((Scheme_Object *)app, app->rator, 2, info);
 }
@@ -10931,10 +11028,10 @@ int scheme_validate_rator_wants_box(Scheme_Object *app_rator, int pos,
       return 0;
   }
 
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REF_ARGS) {
+  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
     if (pos < data->num_params) {
-      int bit = ((mzshort)1 << (pos & (BITS_PER_MZSHORT - 1)));
-      if (data->closure_map[data->closure_size + (pos / BITS_PER_MZSHORT)] & bit)
+      int bit = ((mzshort)1 << ((2 * pos) & (BITS_PER_MZSHORT - 1)));
+      if (data->closure_map[data->closure_size + ((2 * pos) / BITS_PER_MZSHORT)] & bit)
         return 1;
     }
   }
@@ -10971,7 +11068,7 @@ void scheme_validate_closure(Mz_CPort *port, Scheme_Object *expr,
   cnt = data->num_params;
   base = sz - cnt;
 
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REF_ARGS) {
+  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
     base2 = data->closure_size;
     for (i = 0; i < cnt; i++) {
       new_stack[base + i] = closure_stack[base2 + i];
@@ -11008,11 +11105,11 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
                                         int self_pos)
 {
   Scheme_Closure_Data *data = (Scheme_Closure_Data *)expr;
-  int i, cnt, q, p, sz, base, vld, self_pos_in_closure = -1;
+  int i, cnt, q, p, sz, base, vld, self_pos_in_closure = -1, typed_arg = 0;
   mzshort *map;
   char *closure_stack;
       
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REF_ARGS) {
+  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
     sz = data->closure_size + data->num_params;
   } else {
     sz = data->closure_size;
@@ -11024,14 +11121,18 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
   else
     closure_stack = NULL;
 
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REF_ARGS) {
+  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
     cnt = data->num_params;
     base = sz - cnt;
     for (i = 0; i < cnt; i++) {
-      int bit = ((mzshort)1 << (i & (BITS_PER_MZSHORT - 1)));
-      if (map[data->closure_size + (i / BITS_PER_MZSHORT)] & bit)
+      int bit = ((mzshort)1 << ((2 * i) & (BITS_PER_MZSHORT - 1)));
+      if (map[data->closure_size + ((2 * i) / BITS_PER_MZSHORT)] & bit) {
         vld = VALID_BOX;
-      else
+        typed_arg = 1;
+      } else if (map[data->closure_size + ((2 * i) / BITS_PER_MZSHORT)] & (bit << 1)) {
+        vld = VALID_FLONUM;
+        typed_arg = 1;
+      } else
         vld = VALID_VAL;
       closure_stack[i + base] = vld;
     }
@@ -11057,7 +11158,7 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
     closure_stack[i + base] = vld;
   }
 
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REF_ARGS) {
+  if (typed_arg) {
     if ((proc_with_refs_ok != 1)
         && !argument_to_arity_error(app_rator, proc_with_refs_ok))
       scheme_ill_formed_code(port);

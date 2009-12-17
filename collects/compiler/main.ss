@@ -130,7 +130,7 @@
       [("--expand")
        ,(lambda (f) 'expand)
        ((,(format "Write macro-expanded Scheme source(s) to stdout") ""))]
-      [("--decompile")
+      [("-r" "--decompile")
        ,(lambda (f) 'decompile)
        ((,(format "Write quasi-Scheme for ~a file(s) to stdout" (extract-suffix append-zo-suffix)) ""))]
       [("-z" "--zo")
@@ -457,14 +457,15 @@
      (for ([zo-file source-files])
        (let ([zo-file (path->complete-path zo-file)])
          (let-values ([(base name dir?) (split-path zo-file)])
-           (parameterize ([current-load-relative-directory base]
-                          [print-graph #t])
-             (pretty-print
-              (decompile
-               (call-with-input-file*
-                zo-file
-                (lambda (in)
-                  (zo-parse in))))))))))]
+           (let ([alt-file (build-path base "compiled" (path-add-suffix name #".zo"))])
+             (parameterize ([current-load-relative-directory base]
+                            [print-graph #t])
+               (pretty-print
+                (decompile
+                 (call-with-input-file*
+                  (if (file-exists? alt-file) alt-file zo-file)
+                  (lambda (in)
+                    (zo-parse in)))))))))))]
   [(make-zo)
    (let ([n (make-base-empty-namespace)]
          [mc (dynamic-require 'compiler/cm 'managed-compile-zo)]

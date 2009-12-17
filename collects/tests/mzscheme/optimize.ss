@@ -989,6 +989,6 @@
 (err/rt-test (cwv-2-5-f (lambda () 1) (lambda (y z) (+ y 2))) exn:fail:contract:arity?)
 (err/rt-test (cwv-2-5-f (lambda () (values 1 2 3)) (lambda (y z) (+ y 2))) exn:fail:contract:arity?)
 
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

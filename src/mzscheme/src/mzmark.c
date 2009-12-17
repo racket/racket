@@ -3144,6 +3144,7 @@ static int mark_closure_info_MARK(void *p) {
   
   gcMARK(i->local_flags);
   gcMARK(i->base_closure_map);
+  gcMARK(i->flonum_map);
 
   return
   gcBYTES_TO_WORDS(sizeof(Closure_Info));
@@ -3154,6 +3155,7 @@ static int mark_closure_info_FIXUP(void *p) {
   
   gcFIXUP(i->local_flags);
   gcFIXUP(i->base_closure_map);
+  gcFIXUP(i->flonum_map);
 
   return
   gcBYTES_TO_WORDS(sizeof(Closure_Info));

@@ -224,4 +224,39 @@
 
   (void))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Interaction of unboxing, closures, etc.
+(let ([f (lambda (x)
+           (let ([x (unsafe-fl+ x 1.0)])
+             (let loop ([v 0.0][n 10000])
+               (if (zero? n)
+                   v
+                   (loop (unsafe-fl+ v x)
+                         (- n 1))))))])
+  (test 20000.0 f 1.0))
+(let ([f (lambda (x)
+           (let ([x (unsafe-fl+ x 1.0)])
+             (let loop ([v 0.0][n 10000][q 2.0])
+               (if (zero? n)
+                   (unsafe-fl+ v q)
+                   (loop (unsafe-fl+ v x)
+                         (- n 1)
+                         (unsafe-fl- 0.0 q))))))])
+  (test 20002.0 f 1.0))
+(let ([f (lambda (x)
+           (let loop ([a 0.0][v 0.0][n 1000000])
+             (if (zero? n)
+                 v
+                 (if (odd? n)
+                     (let ([b (unsafe-fl+ a a)])
+                       (loop b v (sub1 n)))
+                     ;; First arg is un place, but may need re-boxing
+                     (loop a
+                           (unsafe-fl+ v x)
+                           (- n 1))))))])
+  (test 500000.0 f 1.0))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

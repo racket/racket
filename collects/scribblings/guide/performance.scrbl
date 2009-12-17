@@ -270,15 +270,16 @@ boxing and unboxing intermediate results. Expressions involving a
 combination of unchecked flonum operations, @scheme[unsafe-fx->fl],
 constants, and variable references are optimized to avoid boxing. When
 such a result is bound with @scheme[let] and then consumed by another
-unchecked flonum operation, the result is similarly unboxed, unless it
-is captured in a closure. The bytecode decompiler (see @secref[#:doc
-'(lib "scribblings/mzc/mzc.scrbl") "decompile"] annotates combinations
-where the JIT can avoid boxes with @schemeidfont{#%flonum},
+unchecked flonum operation, the result is similarly unboxed. Finally,
+the compiler can detect some flonum-valued loop accumulators. The
+bytecode decompiler (see @secref[#:doc '(lib
+"scribblings/mzc/mzc.scrbl") "decompile"] annotates combinations where
+the JIT can avoid boxes with @schemeidfont{#%flonum},
 @schemeidfont{#%as-flonum}, and @schemeidfont{#%from-flonum}. See also
 @secref["unchecked-unsafe"], especially the warnings about unsafety.
 
-@margin-note{Unboxing of local bindings is not supported by the JIT for
-PowerPC.}
+@margin-note{Unboxing of local bindings and accumualtors is not
+supported by the JIT for PowerPC.}
 
 @; ----------------------------------------------------------------------
 
