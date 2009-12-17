@@ -40,7 +40,7 @@
  |#
  [create-aux-def
   (-> list? ;; DeclEntry
-      (values identifier? identifier? (listof sattr?) (listof syntax?)))]
+      (values identifier? identifier? (listof sattr?) (listof syntax?) boolean?))]
  [check-literals-list
   (-> syntax? syntax?
       (listof (list/c identifier? identifier?)))]
@@ -202,7 +202,7 @@
       (values (declenv-put-parser decls k parser description attrs splicing?)
               (append new-defs defs)))))
 
-;; create-aux-def : DeclEntry -> (values id id (listof SAttr) (listof stx))
+;; create-aux-def : DeclEntry -> (values id id (listof SAttr) (listof stx) boolean)
 (define (create-aux-def entry)
   (let ([sc-name (caddr entry)]
         [args (cadddr entry)])

@@ -118,9 +118,6 @@
   
 (define-syntax kernel-literals
   (make-literalset
-   (list* (quote-syntax module)
-          (quote-syntax #%plain-module-begin)
-          (quote-syntax #%require)
-          (quote-syntax #%provide)
+   (list* (list '#%plain-module-begin (quote-syntax #%plain-module-begin))
           (for/list ([id (kernel-form-identifier-list)])
             (list (syntax-e id) id)))))

@@ -95,10 +95,10 @@
                         (let ([rx (car line)]
                               [sc (car (cadr line))]
                               [args (cadr (cadr line))])
-                          (let-values ([(parser description attrs defs)
+                          (let-values ([(parser description attrs defs splicing?)
                                         (create-aux-def (list 'stxclass rx sc args))])
                             (list #`(list (quote #,rx)
-                                          (list 'parser
+                                          (list (quote #,(if splicing? 'splicing-parser 'parser))
                                                 (quote-syntax #,parser)
                                                 (quote-syntax #,description)
                                                 (quote #,attrs)))
