@@ -37,7 +37,7 @@
 (define-form-struct (mod form) (name self-modidx prefix provides requires body syntax-body unexported 
                                      max-let-depth dummy lang-info internal-context))
 
-(define-form-struct (lam expr) (name flags num-params param-types rest? closure-map max-let-depth body)) ; `lambda'
+(define-form-struct (lam expr) (name flags num-params param-types rest? closure-map closure-types max-let-depth body)) ; `lambda'
 (define-form-struct (closure expr) (code gen-id)) ; a static closure (nothing to close over)
 (define-form-struct (case-lam expr) (name clauses)) ; each clause is an lam
 
@@ -134,17 +134,28 @@
                       (if (zero? (bitwise-and flags CLOS_HAS_REF_ARGS))
                           (values (vector-length v) v rest)
                           (values v (car rest) (cdr rest)))]
-                     [(arg-types) (let ([num-params ((if rest? sub1 values) num-params)])
+                     [(check-bit) (lambda (i)
                                     (if (zero? (bitwise-and flags CLOS_HAS_REF_ARGS))
-                                        (for/list ([i (in-range num-params)]) 'val)
-                                        (for/list ([i (in-range num-params)])
-                                          (let ([byte (vector-ref closed-over
-                                                                  (+ closure-size (quotient (* 2 i) BITS_PER_MZSHORT)))])
-                                            (if (bitwise-bit-set? byte (remainder (* 2 i) BITS_PER_MZSHORT))
-                                                'ref
-                                                (if (bitwise-bit-set? byte (add1 (remainder (* 2 i) BITS_PER_MZSHORT)))
-                                                    'flonum
-                                                    'val))))))])
+                                        0
+                                        (let ([byte (vector-ref closed-over
+                                                                (+ closure-size (quotient (* 2 i) BITS_PER_MZSHORT)))])
+                                          (+ (if (bitwise-bit-set? byte (remainder (* 2 i) BITS_PER_MZSHORT))
+                                                 1
+                                                 0)
+                                             (if (bitwise-bit-set? byte (add1 (remainder (* 2 i) BITS_PER_MZSHORT)))
+                                                 2
+                                                 0)))))]
+                     [(arg-types) (let ([num-params ((if rest? sub1 values) num-params)])
+                                    (for/list ([i (in-range num-params)]) 
+                                      (case (check-bit i)
+                                        [(0) 'val]
+                                        [(1) 'ref]
+                                        [(2) 'flonum])))]
+                     [(closure-types) (for/list ([i (in-range closure-size)]
+                                                 [j (in-naturals num-params)])
+                                        (case (check-bit j)
+                                          [(0) 'val/ref]
+                                          [(2) 'flonum]))])
          (make-lam name
                    (append
                     (if (zero? (bitwise-and flags flags CLOS_PRESERVES_MARKS)) null '(preserves-marks))
@@ -158,6 +169,7 @@
                        (let ([v2 (make-vector closure-size)])
                          (vector-copy! v2 0 closed-over 0 closure-size)
                          v2))
+                   closure-types
                    max-let-depth
                    body)))]))
 

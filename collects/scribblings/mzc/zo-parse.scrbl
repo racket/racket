@@ -287,9 +287,10 @@ only other things that can be expressions).}
 @defstruct+[(lam expr) ([name (or/c symbol? vector?)]
                         [flags (listof (or/c 'preserves-marks 'is-method 'single-result))]
                         [num-params exact-nonnegative-integer?]
-                        [param-types (listof (or/c 'val 'ref))]
+                        [param-types (listof (or/c 'val 'ref 'flonum))]
                         [rest? boolean?]
                         [closure-map (vectorof exact-nonnegative-integer?)]
+                        [closure-types (listof (or/c 'val/ref 'flonum))]
                         [max-let-depth exact-nonnegative-integer?]
                         [body (or/c expr? seq? indirect? any/c)])]{
 
@@ -300,10 +301,14 @@ argument; the @scheme[rest?] field indicates whether extra arguments
 are accepted and collected into a ``rest'' variable. The
 @scheme[param-types] list contains @scheme[num-params] symbols
 indicating the type of each argumet, either @scheme['val] for a normal
-argument or @scheme['ref] for a boxed argument (representing a mutable
-local variable). The @scheme[closure-map] field is a vector of stack
-positions that are captured when evaluating the @scheme[lambda] form
-to create a closure.
+argument, @scheme['ref] for a boxed argument (representing a mutable
+local variable), or @scheme['flonum] for a flonum argument. The
+@scheme[closure-map] field is a vector of stack positions that are
+captured when evaluating the @scheme[lambda] form to create a closure.
+The @scheme[closure-types] field provides a corresponding list of
+types, but no distinction is made between normal values and boxed
+values; also, this information is redundant, since it can be inferred by
+the bindings referenced though @scheme[closure-map].
 
 When the function is called, the rest-argument list (if any) is pushed
 onto the stack, then the normal arguments in reverse order, then the
@@ -341,10 +346,14 @@ arguments given.}
 
 
 @defstruct+[(let-one expr) ([rhs (or/c expr? seq? indirect? any/c)]
-                            [body (or/c expr? seq? indirect? any/c)])]{
+                            [body (or/c expr? seq? indirect? any/c)]
+                            [flonum? boolean?])]{
 
 Pushes an uninitialized slot onto the stack, evaluates @scheme[rhs]
-and puts its value into the slot, and then runs @scheme[body].
+and puts its value into the slot, and then runs @scheme[body]. If
+@scheme[flonum?] is @scheme[#t], then @scheme[rhs] must produce a
+flonum, and the slot must be accessed by @scheme[localref]s that
+expect a flonum.
 
 After @scheme[rhs] is evaluated, the stack is restored to its depth
 from before evaluating @scheme[rhs]. Note that the new slot is created
@@ -403,7 +412,8 @@ the value so that it can be mutated later.}
 @defstruct+[(localref expr) ([unbox? boolean?]
                              [pos exact-nonnegative-integer?]
                              [clear? boolean?]
-                             [other-clears? boolean?])]{
+                             [other-clears? boolean?]
+                             [flonum? boolean?])]{
 
 Represents a local-variable reference; it accesses the value in the
 stack slot after the first @scheme[pos] slots. If @scheme[unbox?]  is
@@ -412,7 +422,8 @@ from the box. If @scheme[clear?] is @scheme[#t], then after the value
 is obtained, the stack slot is cleared (to avoid retaining a reference
 that can prevent reclamation of the value as garbage). If
 @scheme[other-clears?] is @scheme[#t], then some later reference to
-the same stack slot may clear after reading.}
+the same stack slot may clear after reading. If @scheme[flonum?] is
+@scheme[#t], the slot holds to a flonum value.}
 
 
 @defstruct+[(toplevel expr) ([depth exact-nonnegative-integer?]

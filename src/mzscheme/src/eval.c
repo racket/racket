@@ -11155,6 +11155,18 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
       vld = VALID_VAL;
     else if (vld == VALID_BOX_NOCLEAR)
       vld = VALID_BOX;
+
+    if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
+      int pos = data->num_params + i;
+      int bit = ((mzshort)2 << ((2 * pos) & (BITS_PER_MZSHORT - 1)));
+      if (map[data->closure_size + ((2 * pos) / BITS_PER_MZSHORT)] & bit) {
+        if (vld != VALID_FLONUM)
+          vld = VALID_NOT;
+      } else if (vld == VALID_FLONUM)
+        vld = VALID_NOT;
+    } else if (vld == VALID_FLONUM)
+      vld = VALID_NOT;
+
     closure_stack[i + base] = vld;
   }
 

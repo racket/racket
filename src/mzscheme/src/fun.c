@@ -1392,8 +1392,7 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
             closure_map = new_closure_map;
             expanded_already = 1;
           }
-          boxmap_set(closure_map, data->num_params + offset,
-                     (flags & SCHEME_INFO_BOXED) ? 1 : 2, data->closure_size);
+          boxmap_set(closure_map, data->num_params + offset, 2, data->closure_size);
         }
       }
       offset++;

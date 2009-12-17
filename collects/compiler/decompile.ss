@@ -151,7 +151,7 @@
 
 (define (extract-id expr)
   (match expr
-    [(struct lam (name flags num-params arg-types rest? closure-map max-let-depth body))
+    [(struct lam (name flags num-params arg-types rest? closure-map closure-types max-let-depth body))
      (extract-name name)]
     [(struct case-lam (name lams))
      (extract-name name)]
@@ -288,7 +288,7 @@
   (match expr
     [(struct indirect (val)) (decompile-lam val globs stack closed)]
     [(struct closure (lam gen-id)) (decompile-lam lam globs stack closed)]
-    [(struct lam (name flags num-params arg-types rest? closure-map max-let-depth body))
+    [(struct lam (name flags num-params arg-types rest? closure-map closure-types max-let-depth body))
      (let ([vars (for/list ([i (in-range num-params)]
                             [type (in-list arg-types)])
                    (gensym (format "~a~a-" 
