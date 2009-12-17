@@ -538,6 +538,16 @@ scheme_init_fun (Scheme_Env *env)
 			     write_compiled_closure);
   scheme_install_type_reader(scheme_unclosed_procedure_type,
 			     read_compiled_closure);
+  
+  REGISTER_SO(certify_mode_symbol);
+  REGISTER_SO(transparent_symbol);
+  REGISTER_SO(transparent_binding_symbol);
+  REGISTER_SO(opaque_symbol);
+  certify_mode_symbol        = scheme_intern_symbol("certify-mode");
+  transparent_symbol         = scheme_intern_symbol("transparent");
+  transparent_binding_symbol = scheme_intern_symbol("transparent-binding");
+  opaque_symbol              = scheme_intern_symbol("opaque");
+
 
   REGISTER_SO(is_method_symbol);
   REGISTER_SO(scheme_inferred_name_symbol);
@@ -2635,17 +2645,6 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
 {
   Scheme_Object *prop;
   int next_cadr_deflt = 0;
-
-  if (!certify_mode_symbol) {
-    REGISTER_SO(certify_mode_symbol);
-    REGISTER_SO(transparent_symbol);
-    REGISTER_SO(transparent_binding_symbol);
-    REGISTER_SO(opaque_symbol);
-    certify_mode_symbol = scheme_intern_symbol("certify-mode");
-    transparent_symbol = scheme_intern_symbol("transparent");
-    transparent_binding_symbol = scheme_intern_symbol("transparent-binding");
-    opaque_symbol = scheme_intern_symbol("opaque");
-  }
 
   if (SCHEME_STXP(code)) {
     prop = scheme_stx_property(code, certify_mode_symbol, NULL);
