@@ -22,6 +22,7 @@
   (make-env
    
    [build-list (-poly (a) (-Nat (-Nat* . -> . a) . -> . (-lst a)))]
+   [make-list (-poly (a) (-Nat a . -> . (-lst a)))]
    
    [string-ref (-> -String -Nat -Char)]
    [substring (->opt -String -Nat [-Nat] -String)]

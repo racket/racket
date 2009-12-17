@@ -424,5 +424,5 @@ This file defines two sorts of primitives. All of them are provided into any mod
        #:literals (:)
        [(_ k:id : t . body)
 	(quasisyntax/loc stx
-   	  (let/cc #,(annotate-names #'([k : t]) stx) . body))]))
+   	  (#,l/c #,(annotate-names #'([k : t]) stx) . body))]))
     (values (mk #'let/cc) (mk #'let/ec))))
