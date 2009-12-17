@@ -8102,6 +8102,7 @@ double scheme_get_inexact_milliseconds(void)
 {
 #ifdef USE_MACTIME
   {
+    /* This is wrong, since it's not since January 1, 1970 */
     UnsignedWide time;
     Microseconds(&time);
     return (((double)(time.lo >> 10)
