@@ -1467,8 +1467,13 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
   if (captured && (captured->count > offset)) {
     /* We need to extend the closure map.  All the info
        is in captured, so just build it from scratch. */
-    int old_pos, j;
-    closure_map = (mzshort *)scheme_malloc_atomic(sizeof(mzshort) * (captured->count + (has_tl ? 1 : 0)));
+    int old_pos, j, new_size;
+    new_size = (captured->count + (has_tl ? 1 : 0));
+    if (cl->flonum_map)
+      new_size += boxmap_size(data->num_params + new_size);
+    closure_map = (mzshort *)scheme_malloc_atomic(sizeof(mzshort) * new_size);
+    if (cl->flonum_map)
+      memset(closure_map, 0, sizeof(mzshort) * new_size);
     offset = captured->count;
     convert_boxes = NULL;
     for (j = captured->size; j--; ) {
@@ -1519,7 +1524,7 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
         int bsz;
         bsz = boxmap_size(convert_size);
         memcpy(closure_map XFORM_OK_PLUS (has_tl ? 1 : 0), 
-               convert_boxes, 
+               convert_boxes,
                bsz * sizeof(mzshort));
       }
     } else

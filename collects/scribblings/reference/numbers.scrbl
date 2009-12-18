@@ -909,6 +909,10 @@ indirections that make f64vectors more convenient for working with
 foreign libraries. The lack of indirections make unsafe
 @tech{flvector} access more efficient.
 
+Two @tech{flvectors} are @scheme[equal?] if they have the same length,
+and if the values in corresponding slots of the @tech{flvectors} are
+@scheme[equal?].
+
 @defproc[(flvector? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a @tech{flvector}, @scheme[#f] otherwise.}

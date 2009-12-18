@@ -388,6 +388,19 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     if (union_check(obj1, obj2, eql))
       return 1;
     return vector_equal(obj1, obj2, eql);
+  } else if (SCHEME_FLVECTORP(obj1)) {
+    long l1, l2, i;
+    l1 = SCHEME_FLVEC_SIZE(obj1);
+    l2 = SCHEME_FLVEC_SIZE(obj2);
+    if (l1 == l2) {
+      for (i = 0; i < l1; i++) {
+        if (!double_eqv(SCHEME_FLVEC_ELS(obj1)[i],
+                        SCHEME_FLVEC_ELS(obj2)[i]))
+          return 0;
+      }
+      return 1;
+    }
+    return 0;
   } else if (SCHEME_BYTE_STRINGP(obj1)
 	     || SCHEME_GENERAL_PATHP(obj1)) {
     int l1, l2;

@@ -638,7 +638,7 @@ static void *generate_one(mz_jit_state *old_jitter,
     if (ok) {
       /* That was big enough: */
       if (jitter->unbox || jitter->unbox_depth)
-	scheme_signal_error("ended with unbox or depth");
+	scheme_signal_error("internal error: ended with unbox or depth");
       if (known_size) {
 	/* That was in the permanent area, so return: */
 	jit_flush_code(buffer, jit_get_ip().ptr);
@@ -4468,7 +4468,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       unsafe_fl = 1;
     
     if (!args_unboxed && rand)
-      scheme_signal_error("unvalid mode");
+      scheme_signal_error("internal error: invalid mode");
 
     if (inlined_flonum1 && !inlined_flonum2) {
       GC_CAN_IGNORE Scheme_Object *tmp;
@@ -4571,7 +4571,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       --jitter->unbox;
     jitter->unbox_depth -= flonum_depth;
     if (!jitter->unbox && jitter->unbox_depth && rand)
-      scheme_signal_error("broken unbox depth");
+      scheme_signal_error("internal error: broken unbox depth");
     if (for_branch)
       mz_rs_sync(); /* needed if arguments were unboxed */
 
@@ -5190,7 +5190,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
             ref3 = jit_bmcr_l(jit_forward(), JIT_R0, JIT_R2);
           } else {
             /* shouldn't get here */
-            scheme_signal_error("bitwise-bit-test? constant in wrong position");
+            scheme_signal_error("internal error: bitwise-bit-test? constant in wrong position");
             ref3 = NULL;
           }
           break;
@@ -6789,7 +6789,8 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	which = 3;
         base_offset = ((int)&SCHEME_FLVEC_ELS(0x0));
         if (unbox) {
-          if (jitter->unbox_depth) scheme_signal_error("bad depth for flvector-ref");
+          if (jitter->unbox_depth) 
+            scheme_signal_error("internal error: bad depth for flvector-ref");
           jitter->unbox = 0;
         }
       } else if (IS_NAMED_PRIM(rator, "unsafe-struct-ref")) {
@@ -7996,7 +7997,7 @@ static int generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inline
   }
 
   if (!jitter->unbox || jitter->unbox_depth)
-    scheme_signal_error("bad unboxing mode or depth");
+    scheme_signal_error("internal error: bad unboxing mode or depth");
   
   /* It probably would be useful to special-case a let-one
      sequence down to something that can be unboxed. */
@@ -8497,7 +8498,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
         break;
       case SPLICE_EXPD:
         {
-          scheme_signal_error("cannot JIT a top-level splice form");
+          scheme_signal_error("internal error: cannot JIT a top-level splice form");
         }
         break;
       default:

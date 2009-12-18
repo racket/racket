@@ -945,6 +945,47 @@ static long overflow_equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
   return val;
 }
 
+XFORM_NONGCING static long dbl_hash_val(double d) 
+  XFORM_SKIP_PROC
+{
+  int e;
+  
+  if (MZ_IS_NAN(d)) {
+    d = 0.0;
+    e = 1000;
+  } else if (MZ_IS_POS_INFINITY(d)) {
+    d = 0.5;
+    e = 1000;
+  } else if (MZ_IS_NEG_INFINITY(d)) {
+    d = -0.5;
+    e = 1000;
+  } else if (!d && scheme_minus_zero_p(d)) {
+    d = 0;
+    e = 1000;
+  } else {
+    /* frexp should not be used on inf or nan: */
+    d = frexp(d, &e);
+  }
+
+  return ((long)(d * (1 << 30))) + e;
+}
+
+XFORM_NONGCING static long dbl_hash2_val(double d)  
+  XFORM_SKIP_PROC
+{
+  int e;
+  
+  if (MZ_IS_NAN(d)
+      || MZ_IS_POS_INFINITY(d)
+      || MZ_IS_NEG_INFINITY(d)) {
+    e = 1;
+  } else {
+    /* frexp should not be used on inf or nan: */
+    d = frexp(d, &e);
+  }
+  return e;
+}
+
 #define OVERFLOW_HASH() overflow_equal_hash_key(o, k - t, hi)
 
 /* Based on Bob Jenkins's one-at-a-time hash function at
@@ -971,26 +1012,7 @@ static long equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
 #endif
   case scheme_double_type:
     {
-      double d;
-      int e;
-      d = SCHEME_DBL_VAL(o);
-      if (MZ_IS_NAN(d)) {
-	d = 0.0;
-	e = 1000;
-      } else if (MZ_IS_POS_INFINITY(d)) {
-	d = 0.5;
-	e = 1000;
-      } else if (MZ_IS_NEG_INFINITY(d)) {
-	d = -0.5;
-	e = 1000;
-      } else if (!d && scheme_minus_zero_p(d)) {
-	d = 0;
-	e = 1000;
-      } else {
-	/* frexp should not be used on inf or nan: */
-	d = frexp(d, &e);
-      }
-      return k + ((long)(d * (1 << 30))) + e;
+      return k + dbl_hash_val(SCHEME_DBL_VAL(o));
     }
   case scheme_bignum_type:
     {
@@ -1058,6 +1080,22 @@ static long equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
       
       o = SCHEME_VEC_ELS(o)[len];
       break;
+    }
+  case scheme_flvector_type:
+    {
+      long len = SCHEME_FLVEC_SIZE(o), i;
+      double d;
+
+      if (!len)
+	return k + 1;
+      
+      for (i = 0; i < len; i++) {
+	SCHEME_USE_FUEL(1);
+	d = SCHEME_FLVEC_ELS(o)[i];
+        k = (k << 5) + k + dbl_hash_val(d);
+      }
+      
+      return k;
     }
   case scheme_char_type:
     return k + SCHEME_CHAR_VAL(o);
@@ -1396,18 +1434,7 @@ static long equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
 #endif
   case scheme_double_type:
     {
-      double d;
-      int e;
-      d = SCHEME_FLOAT_VAL(o);
-      if (MZ_IS_NAN(d)
-	  || MZ_IS_POS_INFINITY(d)
-	  || MZ_IS_NEG_INFINITY(d)) {
-	e = 1;
-      } else {
-	/* frexp should not be used on inf or nan: */
-	d = frexp(d, &e);
-      }
-      return e;
+      return dbl_hash2_val(SCHEME_FLOAT_VAL(o));
     }
   case scheme_bignum_type:
     return SCHEME_BIGDIG(o)[0];
@@ -1452,6 +1479,23 @@ static long equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       for (i = 0; i < len; i++) {
 	SCHEME_USE_FUEL(1);
 	k += equal_hash_key2(SCHEME_VEC_ELS(o)[i], hi);
+      }
+      
+      return k;
+    }
+  case scheme_flvector_type:
+    {
+      long len = SCHEME_FLVEC_SIZE(o), i;
+      double d;
+      long k = 0;
+
+      if (!len)
+	return k + 1;
+      
+      for (i = 0; i < len; i++) {
+	SCHEME_USE_FUEL(1);
+	d = SCHEME_FLVEC_ELS(o)[i];
+        k = (k << 5) + k + dbl_hash2_val(d);
       }
       
       return k;

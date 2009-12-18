@@ -1523,45 +1523,46 @@
                          null
                          e))))]
             [(function? e)
-             (if (skip-function? e)
-                 e
-                 (let ([name (register-proto-information e)])
-                   (when (eq? (tok-n (car e)) '__xform_nongcing__)
-                     (hash-table-put! non-gcing-functions name #t))
-                   (when show-info? (printf "/* FUNCTION ~a */~n" name))
-                   (if (or (positive? suspend-xform)
-                           (not pgc?)
-                           (and where 
-                                (regexp-match re:h where)
-                                (let loop ([e e][prev #f])
-                                  (cond
-                                   [(null? e) #t]
-                                   [(and (eq? '|::| (tok-n (car e)))
-                                         prev
-                                         (eq? (tok-n prev) (tok-n (cadr e))))
-                                    ;; inline constructor: need to convert
-                                    #f]
-                                   [else (loop (cdr e) (car e))]))))
-                       ;; Not pgc, xform suspended,
-                       ;; or still in headers and probably a simple inlined function
-                       (let ([palm-static? (and palm? (eq? 'static (tok-n (car e))))])
-                         (when palm?
-                           (fprintf map-port "(~aimpl ~s)~n" 
-                                    (if palm-static? "s" "")
-                                    name)
-                           (call-graph name e))
-                         (append
-                          (if palm-static?
-                              ;; Need to make sure prototype is there for section
-                              (add-segment-label
-                               name
-                               (let loop ([e e])
-                                 (if (braces? (car e))
-                                     (list (make-tok semi #f #f))
-                                     (cons (car e) (loop (cdr e))))))
-                              null)
-                          e))
-                       (convert-function e name))))]
+             (let ([name (register-proto-information e)])
+               (when (eq? (tok-n (car e)) '__xform_nongcing__)
+                 (hash-table-put! non-gcing-functions name #t))
+               (if (skip-function? e)
+                   e
+                   (begin
+                     (when show-info? (printf "/* FUNCTION ~a */~n" name))
+                     (if (or (positive? suspend-xform)
+                             (not pgc?)
+                             (and where 
+                                  (regexp-match re:h where)
+                                  (let loop ([e e][prev #f])
+                                    (cond
+                                     [(null? e) #t]
+                                     [(and (eq? '|::| (tok-n (car e)))
+                                           prev
+                                           (eq? (tok-n prev) (tok-n (cadr e))))
+                                      ;; inline constructor: need to convert
+                                      #f]
+                                     [else (loop (cdr e) (car e))]))))
+                         ;; Not pgc, xform suspended,
+                         ;; or still in headers and probably a simple inlined function
+                         (let ([palm-static? (and palm? (eq? 'static (tok-n (car e))))])
+                           (when palm?
+                             (fprintf map-port "(~aimpl ~s)~n" 
+                                      (if palm-static? "s" "")
+                                      name)
+                             (call-graph name e))
+                           (append
+                            (if palm-static?
+                                ;; Need to make sure prototype is there for section
+                                (add-segment-label
+                                 name
+                                 (let loop ([e e])
+                                   (if (braces? (car e))
+                                       (list (make-tok semi #f #f))
+                                       (cons (car e) (loop (cdr e))))))
+                                null)
+                            e))
+                         (convert-function e name)))))]
             [(var-decl? e)
              (when show-info? (printf "/* VAR */~n"))
              (if (and can-drop-vars?
