@@ -612,9 +612,6 @@ static void *generate_one(mz_jit_state *old_jitter,
 
     ok = generate(jitter, data);
 
-    if (jitter->unbox || jitter->unbox_depth)
-      scheme_signal_error("ended with unbox or depth");
-
     if (save_ptr) {
       mz_retain_it(jitter, save_ptr);
     }
@@ -640,6 +637,8 @@ static void *generate_one(mz_jit_state *old_jitter,
 
     if (ok) {
       /* That was big enough: */
+      if (jitter->unbox || jitter->unbox_depth)
+	scheme_signal_error("ended with unbox or depth");
       if (known_size) {
 	/* That was in the permanent area, so return: */
 	jit_flush_code(buffer, jit_get_ip().ptr);
