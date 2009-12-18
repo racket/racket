@@ -4,75 +4,54 @@
          unstable/gui/notify
          "interfaces.ss"
          "partition.ss")
-(provide smart-keymap%
-         syntax-keymap%)
+(provide syntax-keymap%)
 
-(define smart-keymap%
-  (class keymap%
+(define keymap/popup%
+  (class* keymap% (keymap/popup<%>)
     (init editor)
-
+    (super-new)
     (inherit add-function
              map-function
              chain-to-keymap)
 
-    (super-new)
+    (define/public (add-context-menu-items menu)
+      (void))
 
-    (define/public (get-context-menu%)
-      smart-context-menu%)
-
-    (field (the-context-menu #f))
-    (set! the-context-menu (new (get-context-menu%)))
-
-    (map-function "rightbutton" "popup-context-window")
-    (add-function "popup-context-window"
+    (map-function "rightbutton" "popup-context-menu")
+    (add-function "popup-context-menu"
                   (lambda (editor event)
-                    (do-popup-context-window editor event)))
+                    (popup-context-menu editor event)))
 
-    (chain-to-keymap (send editor get-keymap) #t)
-    (send editor set-keymap this)
-
-    (define/private (do-popup-context-window editor event)
+    (define/private (popup-context-menu editor event)
       (define-values (x y)
         (send editor dc-location-to-editor-location
               (send event get-x)
               (send event get-y)))
       (define admin (send editor get-admin))
-      (send admin popup-menu the-context-menu x y))
+      (define menu (new popup-menu%))
+      (add-context-menu-items menu)
+      (send admin popup-menu menu x y))
 
-    ))
-
-(define smart-context-menu%
-  (class popup-menu%
-    (define on-demand-actions null)
-    (define/public (add-on-demand p)
-      (set! on-demand-actions (cons p on-demand-actions)))
-
-    (define/override (on-demand)
-      (super on-demand)
-      (for-each (lambda (p) (p)) on-demand-actions))
-
-    (super-new)))
+    ;; FIXME: move out of constructor to use sites
+    (chain-to-keymap (send editor get-keymap) #t)
+    (send editor set-keymap this)))
 
 (define syntax-keymap%
-  (class smart-keymap%
+  (class keymap/popup%
     (init-field controller
                 config)
-
     (inherit add-function
              map-function
              call-function
              chain-to-keymap)
-    (inherit-field the-context-menu)
-    (field [copy-menu #f]
-           [clear-menu #f]
-           [props-menu #f])
     (super-new)
+
+    (define/private (selected-syntax)
+      (send controller get-selected-syntax))
 
     ;; Functionality
 
-    (define/public (get-controller) controller)
-
-    (add-function "copy-text"
+    (add-function "copy-syntax-as-text"
                   (lambda (_ event)
                     (define stx (send controller get-selected-syntax))
                     (send the-clipboard set-clipboard-string
@@ -93,53 +72,24 @@
                   (lambda (i e)
                     (send config set-props-shown? #f)))
 
-    (define/private (selected-syntax)
-      (send controller get-selected-syntax))
+    (define/override (add-context-menu-items menu)
+      (new menu-item% (label "Copy") (parent menu)
+           (demand-callback
+            (lambda (i)
+              (send i enable (and (selected-syntax) #t))))
+           (callback
+            (lambda (i e)
+              (call-function "copy-syntax-as-text" i e))))
+      (new separator-menu-item% (parent menu))
+      (new menu-item%
+           (label "Clear selection")
+           (parent menu)
+           (demand-callback
+            (lambda (i)
+              (send i enable (and (selected-syntax) #t))))
+           (callback 
+            (lambda (i e)
+              (call-function "clear-syntax-selection" i e))))
+      (menu-option/notify-box menu "View syntax properties"
+                              (get-field props-shown? config)))))
 
-    (define/public (add-menu-items)
-      (set! copy-menu
-            (new menu-item% (label "Copy") (parent the-context-menu)
-                 (demand-callback
-                  (lambda (i)
-                    (send i enable (and (selected-syntax) #t))))
-                 (callback
-                  (lambda (i e)
-                    (call-function "copy-text" i e)))))
-      (add-separator)
-      (set! clear-menu
-            (new menu-item%
-                 (label "Clear selection")
-                 (parent the-context-menu)
-                 (demand-callback
-                  (lambda (i)
-                    (send i enable (and (selected-syntax) #t))))
-                 (callback 
-                  (lambda (i e)
-                    (call-function "clear-syntax-selection" i e)))))
-      (set! props-menu
-            (menu-option/notify-box the-context-menu
-                                    "View syntax properties"
-                                    (get-field props-shown? config))
-            #;
-            (new menu-item%
-                 (label "Show syntax properties")
-                 (parent the-context-menu)
-                 (demand-callback
-                  (lambda (i)
-                    (if (send config get-props-shown?)
-                        (send i set-label "Hide syntax properties")
-                        (send i set-label "Show syntax properties"))))
-                 (callback 
-                  (lambda (i e)
-                    (if (send config get-props-shown?)
-                        (call-function "hide-syntax-properties" i e)
-                        (call-function "show-syntax-properties" i e))))))
-      (void))
-
-    (define/public (add-separator)
-      (new separator-menu-item% (parent the-context-menu)))
-
-    ;; Initialize menu
-
-    (add-menu-items)
-    ))

@@ -1,4 +1,3 @@
-
 #lang scheme/base
 (require scheme/list
          scheme/class
@@ -6,7 +5,8 @@
          drscheme/arrow
          framework/framework
          unstable/interval-map
-         unstable/gui/notify)
+         unstable/gui/notify
+         "interfaces.ss")
 
 (provide text:hover<%>
          text:hover-drawings<%>
@@ -118,10 +118,11 @@
         (invalidate-bitmap-cache 0.0 0.0 +inf.0 +inf.0)))
 
     (define/public (add-hover-drawing start end draw [tack-box (box #f)])
-      (interval-map-cons*! drawings-list
-                           start (add1 end)
-                           (make-drawing start end draw tack-box)
-                           null))
+      (let ([drawing (make-drawing start end draw tack-box)])
+        (interval-map-cons*! drawings-list
+                             start (add1 end)
+                             drawing
+                             null)))
 
     (define/public (delete-all-drawings)
       (interval-map-remove! drawings-list -inf.0 +inf.0))
@@ -145,6 +146,7 @@
 (define text:tacking-mixin
   (mixin (text:basic<%> text:hover-drawings<%>) ()
     (inherit get-canvas
+             get-keymap
              get-position-drawings)
     (inherit-field hover-position)
     (super-new)
@@ -171,14 +173,16 @@
 
     (define/private (make-tack/untack-menu)
       (define menu (new popup-menu%))
+      (define keymap (get-keymap))
       (new menu-item% (label "Tack")
            (parent menu)
-           (callback
-            (lambda _ (tack))))
+           (callback (lambda _ (tack))))
       (new menu-item% (label "Untack")
            (parent menu)
-           (callback
-            (lambda _ (untack))))
+           (callback (lambda _ (untack))))
+      (when (is-a? keymap keymap/popup<%>)
+        (new separator-menu-item% (parent menu))
+        (send keymap add-context-menu-items menu))
       menu)
 
     (define/private (tack)

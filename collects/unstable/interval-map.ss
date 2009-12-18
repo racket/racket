@@ -59,21 +59,20 @@
     ;; (Also need to insert missing intervals)
     ;; Main loop:
     (let loop ([start start] [ix (skip-list-iterate-least/>=? s start)])
-      (cond [ix
-             ;; First do leading gap, [ start, key(ix) )
-             (let ([ixstart (and ix (skip-list-iterate-key s ix))])
+      (let ([ixstart (and ix (skip-list-iterate-key s ix))])
+        (cond [(and ix (<? ixstart end))
+               ;; First do leading gap, [ start, key(ix) )
                (when (<? start ixstart)
                  (skip-list-set! s start (cons ixstart (force updated-defaultp))))
                ;; Then interval, [ ixstart, end(ix) )
-               (when (<? ixstart end)
-                 (let ([ixvalue (skip-list-iterate-value s ix)])
-                   (skip-list-iterate-set-value! s ix
-                     (cons (car ixvalue) (updater (cdr ixvalue))))
-                   (loop (car ixvalue) (skip-list-iterate-next s ix)))))]
-            [else
-             ;; Do gap, [ start, end )
-             (when (<? start end)
-               (skip-list-set! s start (cons end (force updated-defaultp))))]))))
+               (let ([ixvalue (skip-list-iterate-value s ix)])
+                 (skip-list-iterate-set-value! s ix
+                   (cons (car ixvalue) (updater (cdr ixvalue))))
+                 (loop (car ixvalue) (skip-list-iterate-next s ix)))]
+              [else
+               ;; Do gap, [ start, end )
+               (when (<? start end)
+                 (skip-list-set! s start (cons end (force updated-defaultp))))])))))
 
 
 (define (interval-map-cons*! im start end obj [default null])

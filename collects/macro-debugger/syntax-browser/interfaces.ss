@@ -84,6 +84,11 @@
    ;; add-keymap : text snip
    add-keymap))
 
+;; keymap/popup<%>
+(define-interface keymap/popup<%> ()
+  (;; add-context-menu-items : popup-menu -> void
+   add-context-menu-items))
+
 ;; display<%>
 (define-interface display<%> ()
   (;; refresh : -> void

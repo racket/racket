@@ -32,8 +32,7 @@
   (class s:syntax-keymap%
     (init-field: (macro-stepper widget<%>))
     (inherit-field config
-                   controller
-                   the-context-menu)
+                   controller)
     (inherit add-function
              call-function)
 
@@ -59,29 +58,23 @@
 
     ;; Menu
 
-    (inherit add-separator)
+    (define/override (add-context-menu-items menu)
+      (super add-context-menu-items menu)
+      (new separator-menu-item% (parent menu))
+      (new menu-item% (label "Show selected identifier") (parent menu)
+           (demand-callback
+            (lambda (i)
+              (send i enable (identifier? (send controller get-selected-syntax)))))
+           (callback
+            (lambda (i e)
+              (call-function "hiding:show-macro" i e))))
+      (new menu-item% (label "Hide selected identifier") (parent menu)
+           (demand-callback
+            (lambda (i)
+              (send i enable (identifier? (send controller get-selected-syntax)))))
+           (callback
+            (lambda (i e) (call-function "hiding:hide-macro" i e)))))))
 
-    (define/override (add-menu-items)
-      (super add-menu-items)
-      (add-separator)
-      (set! show-macro
-            (new menu-item% (label "Show selected identifier") (parent the-context-menu)
-                 (callback (lambda (i e)
-                             (call-function "hiding:show-macro" i e)))))
-      (set! hide-macro
-            (new menu-item% (label "Hide selected identifier") (parent the-context-menu)
-                 (callback (lambda (i e)
-                             (call-function "hiding:hide-macro" i e)))))
-      (enable/disable-hide/show #f)
-      (void))
-
-    (define/private (enable/disable-hide/show ?)
-      (send show-macro enable ?)
-      (send hide-macro enable ?))
-
-    (send: controller s:controller<%> listen-selected-syntax
-           (lambda (stx)
-             (enable/disable-hide/show (identifier? stx))))))
 
 (define stepper-syntax-widget%
   (class s:widget%
