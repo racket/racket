@@ -58,6 +58,12 @@ static Scheme_Object *unsafe_fl_sqrt (int argc, Scheme_Object *argv[]);
 
 #define zeroi scheme_exact_zero
 
+#if defined(__POWERPC__) || defined(powerpc)
+# define SQRT_MACHINE_CODE_AVAILABLE 0
+#else
+# define SQRT_MACHINE_CODE_AVAILABLE 1
+#endif
+
 void scheme_init_numarith(Scheme_Env *env)
 {
   Scheme_Object *p;
@@ -146,7 +152,7 @@ void scheme_init_flonum_numarith(Scheme_Env *env)
   scheme_add_global_constant("flabs", p, env);
 
   p = scheme_make_folding_prim(fl_sqrt, "flsqrt", 1, 1, 1);
-  if (scheme_can_inline_fp_op())
+  if (scheme_can_inline_fp_op() && SQRT_MACHINE_CODE_AVAILABLE)
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("flsqrt", p, env);
 }
@@ -218,7 +224,7 @@ void scheme_init_unsafe_numarith(Scheme_Env *env)
   scheme_add_global_constant("unsafe-flabs", p, env);
 
   p = scheme_make_folding_prim(unsafe_fl_sqrt, "unsafe-flsqrt", 1, 1, 1);
-  if (scheme_can_inline_fp_op())
+  if (scheme_can_inline_fp_op() && SQRT_MACHINE_CODE_AVAILABLE)
     SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL;
   scheme_add_global_constant("unsafe-flsqrt", p, env);
