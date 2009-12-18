@@ -4588,6 +4588,8 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
   } else {
     int unbox = jitter->unbox;
 
+    if (unsafe_fl < 0) unsafe_fl = 0;
+
     /* While generating a fixnum op, don't unbox! */
     jitter->unbox = 0;
 
