@@ -2325,7 +2325,7 @@ Scheme_Object *scheme_toplevel_to_flagged_toplevel(Scheme_Object *tl, int flags)
 void scheme_env_make_closure_map(Optimize_Info *frame, mzshort *size, mzshort **map);
 int scheme_env_uses_toplevel(Optimize_Info *frame);
 
-int scheme_wants_flonum_arguments(Scheme_Object *rator, int rotate_mode);
+int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_mode);
 int scheme_expr_produces_flonum(Scheme_Object *expr);
 
 typedef struct Scheme_Once_Used {

@@ -4376,7 +4376,7 @@ static int check_flonum_result(mz_jit_state *jitter, int reg, void *fail_code, S
   __END_TINY_JUMPS__(1);
 
   reffail = _jit.x.pc;
-  jit_movi_p(JIT_V1, ((Scheme_Primitive_Proc *)rator)->prim_val);
+  (void)jit_movi_p(JIT_V1, ((Scheme_Primitive_Proc *)rator)->prim_val);
   (void)jit_calli(fail_code);
 
   __START_TINY_JUMPS__(1);

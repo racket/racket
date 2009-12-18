@@ -1004,8 +1004,8 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
   return 0;
 }
 
-static int single_valued_noncm_expression(Scheme_Object *expr)
-/* Non-omittable but single-values expresions that are not sensitive
+static int single_valued_noncm_expression(Scheme_Object *expr, int fuel)
+/* Non-omittable but single-valued expresions that are not sensitive
    to being in tail position. */
 {
   Scheme_Object *rator = NULL;
@@ -1021,6 +1021,16 @@ static int single_valued_noncm_expression(Scheme_Object *expr)
    break;
  case scheme_application3_type:
    rator = ((Scheme_App2_Rec *)expr)->rator;
+   break;
+ case scheme_compiled_let_void_type:
+   {
+     Scheme_Let_Header *lh = (Scheme_Let_Header *)expr;
+     Scheme_Compiled_Let_Value *clv;
+     if ((lh->count == 1) && (lh->num_clauses == 1) && (fuel > 0)) {
+       clv = (Scheme_Compiled_Let_Value *)lh->body;
+       return single_valued_noncm_expression(clv->body, fuel - 1);
+     }
+   }
    break;
  }
 
@@ -2686,7 +2696,8 @@ static int purely_functional_primitive(Scheme_Object *rator, int n)
 
 #define IS_NAMED_PRIM(p, nm) (!strcmp(((Scheme_Primitive_Proc *)p)->name, nm))
 
-int scheme_wants_flonum_arguments(Scheme_Object *rator, int rotate_mode)
+int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_mode)
+/* In rotate mode, we really want to know whether any argument wants to be lifted out. */
 {
   if (SCHEME_PRIMP(rator)) {
     if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL) {
@@ -2701,7 +2712,8 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int rotate_mode)
           || IS_NAMED_PRIM(rator, "unsafe-fl=")
           || IS_NAMED_PRIM(rator, "unsafe-fl>")
           || IS_NAMED_PRIM(rator, "unsafe-fl>=")
-          || IS_NAMED_PRIM(rator, "unsafe-flvector-ref"))
+          || (rotate_mode && IS_NAMED_PRIM(rator, "unsafe-flvector-ref"))
+          || (rotate_mode && IS_NAMED_PRIM(rator, "unsafe-fx->fl")))
         return 1;
     } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNARY_INLINED) {
       if (!rotate_mode) {
@@ -2719,12 +2731,15 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int rotate_mode)
             || IS_NAMED_PRIM(rator, "fl<=")
             || IS_NAMED_PRIM(rator, "fl=")
             || IS_NAMED_PRIM(rator, "fl>")
-            || IS_NAMED_PRIM(rator, "fl>=")
-            || IS_NAMED_PRIM(rator, "flvector-ref"))
+            || IS_NAMED_PRIM(rator, "fl>="))
           return 1;
       }
     } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_NARY_INLINED) {
-      if (IS_NAMED_PRIM(rator, "unsafe-flvector-set!"))
+      if ((rotate_mode || (argpos == 2))
+          && IS_NAMED_PRIM(rator, "unsafe-flvector-set!")) 
+        return 1;
+      if (!rotate_mode && (argpos == 2) 
+          && IS_NAMED_PRIM(rator, "flvector-set!"))
         return 1;
     }
   }
@@ -2732,7 +2747,7 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int rotate_mode)
   return 0;
 }
 
-static int produces_unboxed(Scheme_Object *rator)
+static int produces_unboxed(Scheme_Object *rator, int *non_fl_args)
 {
   if (SCHEME_PRIMP(rator)) {
     if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL) {
@@ -2746,15 +2761,21 @@ static int produces_unboxed(Scheme_Object *rator)
           || IS_NAMED_PRIM(rator, "unsafe-fl<=")
           || IS_NAMED_PRIM(rator, "unsafe-fl=")
           || IS_NAMED_PRIM(rator, "unsafe-fl>")
-          || IS_NAMED_PRIM(rator, "unsafe-fl>=")
-          || IS_NAMED_PRIM(rator, "unsafe-flvector-ref")
-          || IS_NAMED_PRIM(rator, "unsafe-fx->fl"))
+          || IS_NAMED_PRIM(rator, "unsafe-fl>="))
         return 1;
+      if (IS_NAMED_PRIM(rator, "unsafe-flvector-ref")
+          || IS_NAMED_PRIM(rator, "unsafe-fx->fl")) {
+        if (non_fl_args) *non_fl_args = 1;
+        return 1;
+      }
     } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNARY_INLINED) {
       if (IS_NAMED_PRIM(rator, "flabs")
-          || IS_NAMED_PRIM(rator, "flsqrt")
-          || IS_NAMED_PRIM(rator, "->fl"))
+          || IS_NAMED_PRIM(rator, "flsqrt"))
         return 1;
+      if (IS_NAMED_PRIM(rator, "->fl")) {
+        if (non_fl_args) *non_fl_args = 1;
+        return 1;
+      }
     } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_BINARY_INLINED) {
       if (IS_NAMED_PRIM(rator, "flabs")
           || IS_NAMED_PRIM(rator, "flsqrt")
@@ -2766,9 +2787,12 @@ static int produces_unboxed(Scheme_Object *rator)
           || IS_NAMED_PRIM(rator, "fl<=")
           || IS_NAMED_PRIM(rator, "fl=")
           || IS_NAMED_PRIM(rator, "fl>")
-          || IS_NAMED_PRIM(rator, "fl>=")
-          || IS_NAMED_PRIM(rator, "flvector-ref"))
+          || IS_NAMED_PRIM(rator, "fl>="))
         return 1;
+      if (IS_NAMED_PRIM(rator, "flvector-ref")) {
+        if (non_fl_args) *non_fl_args = 1;
+        return 1;
+      }
     }
   }
 
@@ -2792,7 +2816,8 @@ static int is_unboxed_argument(Scheme_Object *rand, int fuel, Optimize_Info *inf
     case scheme_application_type:
       {
         Scheme_App_Rec *app = (Scheme_App_Rec *)rand;
-        if (produces_unboxed(app->args[0])) {
+        int non_fl_args = 0;
+        if (produces_unboxed(app->args[0], &non_fl_args)) {
           int i;
           for (i = app->num_args; i--; ) {
             fuel--;
@@ -2806,7 +2831,8 @@ static int is_unboxed_argument(Scheme_Object *rand, int fuel, Optimize_Info *inf
     case scheme_application2_type:
       {
         Scheme_App2_Rec *app = (Scheme_App2_Rec *)rand;
-        if (produces_unboxed(app->rator)) {
+        int non_fl_args = 0;
+        if (produces_unboxed(app->rator, &non_fl_args)) {
           if (is_unboxed_argument(app->rand, fuel - 1, info, lifted))
             return 1;
         }
@@ -2815,7 +2841,8 @@ static int is_unboxed_argument(Scheme_Object *rand, int fuel, Optimize_Info *inf
     case scheme_application3_type:
       {
         Scheme_App3_Rec *app = (Scheme_App3_Rec *)rand;
-        if (produces_unboxed(app->rator)) {
+        int non_fl_args = 0;
+        if (produces_unboxed(app->rator, &non_fl_args)) {
           if (is_unboxed_argument(app->rand1, fuel - 1, info, lifted)
               && is_unboxed_argument(app->rand2, fuel - 2, info, lifted))
             return 1;
@@ -2838,19 +2865,19 @@ int scheme_expr_produces_flonum(Scheme_Object *expr)
   case scheme_application_type:
     {
       Scheme_App_Rec *app = (Scheme_App_Rec *)expr;
-      return produces_unboxed(app->args[0]);
+      return produces_unboxed(app->args[0], NULL);
     }
     break;
   case scheme_application2_type:
     {
       Scheme_App2_Rec *app = (Scheme_App2_Rec *)expr;
-      return produces_unboxed(app->rator);
+      return produces_unboxed(app->rator, NULL);
     }
     break;
   case scheme_application3_type:
     {
       Scheme_App3_Rec *app = (Scheme_App3_Rec *)expr;
-      return produces_unboxed(app->rator);
+      return produces_unboxed(app->rator, NULL);
     }
     break;
   default:
@@ -2868,7 +2895,7 @@ static Scheme_Object *check_unbox_rotation(Scheme_Object *_app, Scheme_Object *r
   Scheme_Compiled_Let_Value *inner = NULL;
   int i, lifted = 0;
 
-  if (scheme_wants_flonum_arguments(rator, 1)) {
+  if (scheme_wants_flonum_arguments(rator, 0, 1)) {
     for (i = 0; i < count; i++) {
       if (count == 1)
         rand = ((Scheme_App2_Rec *)_app)->rand;
@@ -2943,6 +2970,8 @@ static Scheme_Object *check_unbox_rotation(Scheme_Object *_app, Scheme_Object *r
         
           flags = (int *)scheme_malloc_atomic(sizeof(int));
           flags[0] = (SCHEME_WAS_USED | (1 << SCHEME_USE_COUNT_SHIFT));
+          if (scheme_wants_flonum_arguments(rator, i, 0))
+            flags[0] |= SCHEME_WAS_FLONUM_ARGUMENT;
           lv->flags = flags;
         
           head->body = (Scheme_Object *)lv;
@@ -3017,6 +3046,11 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
       if (le)
 	return le;
     }
+
+
+    sub_context = 0;
+    if ((i > 0) && scheme_wants_flonum_arguments(app->args[0], i - 1, 0))
+      sub_context = OPT_CONTEXT_FLONUM_ARG;
     
     le = scheme_optimize_expr(app->args[i], info, sub_context);
     app->args[i] = le;
@@ -3028,9 +3062,6 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
         if (le)
           return le;
       }
-
-      if (scheme_wants_flonum_arguments(app->args[0], 0))
-        sub_context |= OPT_CONTEXT_FLONUM_ARG;
     }
 
     if (i && (SCHEME_TYPE(le) < _scheme_compiled_values_types_))
@@ -3134,7 +3165,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
       return le;
   }
   
-  if (scheme_wants_flonum_arguments(app->rator, 0))
+  if (scheme_wants_flonum_arguments(app->rator, 0, 0))
     sub_context |= OPT_CONTEXT_FLONUM_ARG;
 
   le = scheme_optimize_expr(app->rand, info, sub_context);
@@ -3159,7 +3190,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
   if ((SAME_OBJ(scheme_values_func, app->rator)
        || SAME_OBJ(scheme_list_star_proc, app->rator))
       && (scheme_omittable_expr(app->rand, 1, -1, 0, info)
-          || single_valued_noncm_expression(app->rand))) {
+          || single_valued_noncm_expression(app->rand, 5))) {
     info->preserves_marks = 1;
     info->single_result = 1;
     return app->rand;
@@ -3206,10 +3237,10 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
       return le;
   }
 
-  if (scheme_wants_flonum_arguments(app->rator, 0))
-    sub_context |= OPT_CONTEXT_FLONUM_ARG;
-
   /* 1st arg */
+
+  if (scheme_wants_flonum_arguments(app->rator, 0, 0))
+    sub_context |= OPT_CONTEXT_FLONUM_ARG;
 
   le = scheme_optimize_expr(app->rand1, info, sub_context);
   app->rand1 = le;
@@ -3218,6 +3249,11 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
     all_vals = 0;
 
   /* 2nd arg */
+
+  if (scheme_wants_flonum_arguments(app->rator, 1, 0))
+    sub_context |= OPT_CONTEXT_FLONUM_ARG;
+  else
+    sub_context &= ~OPT_CONTEXT_FLONUM_ARG;
 
   le = scheme_optimize_expr(app->rand2, info, sub_context);
   app->rand2 = le;
@@ -3674,7 +3710,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
         if (SAME_TYPE(SCHEME_TYPE(val), scheme_once_used_type)) {
           Scheme_Once_Used *o = (Scheme_Once_Used *)val;
           if ((o->vclock == info->vclock)
-              && single_valued_noncm_expression(o->expr)) {
+              && single_valued_noncm_expression(o->expr, 5)) {
             val = scheme_optimize_clone(1, o->expr, info, o->delta, 0);
             if (val) {
               info->size -= 1;
