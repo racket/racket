@@ -14,6 +14,7 @@
            (parameterize ([current-namespace ns])
              (namespace-require ''#%kernel)
              (namespace-require ''#%unsafe)
+             (namespace-require ''#%flonum)
              (for/list ([l (namespace-mapped-symbols)])
                (cons l (with-handlers ([exn:fail? (lambda (x) #f)])
                          (compile l))))))]
@@ -350,16 +351,23 @@
      [else #f]))
   (if (and (symbol? (car a))
            (case (length a)
-             [(2) (memq (car a) '(unsafe-flabs
-                                  unsafe-flsqrt
-                                  unsafe-fx->fl))]
-             [(3) (memq (car a) '(unsafe-fl+ unsafe-fl- unsafe-fl* unsafe-fl/
-                                             unsafe-fl< unsafe-fl> 
-                                             unsafe-fl=
-                                             unsafe-fl<= unsafe-fl>=
-                                             unsafe-flvector-ref))]
+             [(2) (memq (car a) '(flabs flsqrt ->fl
+                                        unsafe-flabs
+                                        unsafe-flsqrt
+                                        unsafe-fx->fl))]
+             [(3) (memq (car a) '(fl+ fl- fl* fl/
+                                      fl< fl> fl<= fl>= fl=
+                                      flvector-ref
+                                      unsafe-fl+ unsafe-fl- unsafe-fl* unsafe-fl/
+                                      unsafe-fl< unsafe-fl> 
+                                      unsafe-fl=
+                                      unsafe-fl<= unsafe-fl>=
+                                      unsafe-flvector-ref
+                                      unsafe-f64vector-ref))]
              
-             [(4) (memq (car a) '(unsafe-flvector-set!))]
+             [(4) (memq (car a) '(flvector-set!
+                                  unsafe-flvector-set!
+                                  unsafe-f64vector-set!))]
              [else #f])
            (andmap unboxable? args (cdr a)))
       (cons '#%flonum a)

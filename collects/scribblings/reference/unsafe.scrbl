@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "mz.ss"
           (for-label scheme/unsafe/ops
+                     scheme/flonum
                      (only-in scheme/foreign
                               f64vector?
                               f64vector-ref
@@ -85,7 +86,7 @@ For @tech{fixnums}: Like @scheme[=], @scheme[<], @scheme[>],
 
 
 @defproc[(unsafe-fx->fl [a fixnum?]) inexact-real?]{
-Like @scheme[exact->inexact], but constrained to consume @tech{fixnums}.
+Unchecked version of @scheme[->fl].
 }
 
 
@@ -98,11 +99,8 @@ Like @scheme[exact->inexact], but constrained to consume @tech{fixnums}.
 @defproc[(unsafe-flsqrt [a inexact-real?]) inexact-real?]
 )]{
 
-For real @tech{inexact numbers}: Like @scheme[+], @scheme[-],
-@scheme[*], @scheme[/], and @scheme[abs], but constrained to consume
-real @tech{inexact numbers}. The result is always a real @tech{inexact
-number}. If a negative number is provided to @scheme[unsafe-sqrt], the
-result is @scheme[+nan.0].}
+For @tech{flonums}: Unchecked versions of @scheme[fl+], @scheme[fl-],
+@scheme[fl*], @scheme[fl/], @scheme[flabs], and @scheme[flsqrt].}
 
 
 @deftogether[(
@@ -113,9 +111,9 @@ result is @scheme[+nan.0].}
 @defproc[(unsafe-fl>= [a inexact-real?][b inexact-real?]) boolean?]
 )]{
 
-For real @tech{inexact numbers}: Like @scheme[=], @scheme[<],
-@scheme[>], @scheme[<=], and @scheme[>=], but constrained to consume
-real @tech{inexact numbers}.}
+For @tech{flonums}: Unchecked versions of @scheme[fl=],
+@scheme[fl<], @scheme[fl>], @scheme[fl<=], and @scheme[fl>=], but constrained
+to consume @tech{flonums}.}
 
 
 @section{Unsafe Data Extraction}

@@ -18,6 +18,7 @@ Correct output N = 1000 is
 
 #lang scheme/base
 (require scheme/cmdline scheme/require 
+         (only-in scheme/flonum flvector)
 	 (for-syntax scheme/base)
 	 (filtered-in
 	  (lambda (name)

@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require "mz.ss"
           scheme/math
-          (for-label scheme/math))
+          (for-label scheme/math
+                     scheme/flonum))
 
 @(define math-eval (make-base-eval))
 @(interaction-eval #:eval math-eval (require scheme/math))
@@ -850,7 +851,51 @@ for the machine running Scheme, @scheme[#f] if the native encoding
 is little-endian.}
 
 @; ------------------------------------------------------------------------
-@section{Inexact-Real Vectors}
+@section{Inexact-Real (Flonum) Operations}
+
+@defmodule[scheme/flonum]
+
+The @schememodname[scheme/flonum] library provides operations like
+@scheme[fl+] that consume and produce only real @tech{inexact
+numbers}, which are also known as @deftech{flonums}. Flonum-specific
+operations provide can better performance when used consistently, and
+they are as safe as generic operations like @scheme[+].
+
+@margin-note{See @guidesecref["fixnums+flonums"].}
+
+@subsection{Flonum Arithmetic}
+
+@deftogether[(
+@defproc[(fl+ [a inexact-real?][b inexact-real?]) inexact-real?]
+@defproc[(fl- [a inexact-real?][b inexact-real?]) inexact-real?]
+@defproc[(fl* [a inexact-real?][b inexact-real?]) inexact-real?]
+@defproc[(fl/ [a inexact-real?][b inexact-real?]) inexact-real?]
+@defproc[(flabs [a inexact-real?]) inexact-real?]
+@defproc[(flsqrt [a inexact-real?]) inexact-real?]
+)]{
+
+Like @scheme[+], @scheme[-], @scheme[*], @scheme[/], @scheme[abs], and
+@scheme[sqrt], but constrained to consume @tech{flonums}. The result
+is always a @tech{flonum}. If a negative number is provided to
+@scheme[sqrt], the result is @scheme[+nan.0].}
+
+@deftogether[(
+@defproc[(fl= [a inexact-real?][b inexact-real?]) boolean?]
+@defproc[(fl< [a inexact-real?][b inexact-real?]) boolean?]
+@defproc[(fl> [a inexact-real?][b inexact-real?]) boolean?]
+@defproc[(fl<= [a inexact-real?][b inexact-real?]) boolean?]
+@defproc[(fl>= [a inexact-real?][b inexact-real?]) boolean?]
+)]{
+
+Like @scheme[=], @scheme[<], @scheme[>], @scheme[<=], and @scheme[>=],
+but constrained to consume @tech{flonums}.}
+
+@defproc[(->fl [a exact-integer?]) inexact-real?]{
+Like @scheme[exact->inexact], but constrained to consume exact integers,
+so the result is always a @tech{flonum}.
+}
+
+@subsection{Flonum Vectors}
 
 A @deftech{flvector} is like a @tech{vector}, but it holds only
 inexact real numbers. This representation can be more compact, and

@@ -4,10 +4,20 @@
 ;;
 ;; Derived from the Chicken variant, which was
 ;; Contributed by Anthony Borla
+
+;; The version that uses complex number is a little
+;; more elegant, but much slower:
+;;  (define (mandelbrot iterations x y n ci)
+;;    (let ((c (+ (- (/ (* 2.0 x) n) 1.5) 
+;;                (* ci 0.0+1.0i))))
+;;      (let loop ((i 0) (z 0.0+0.0i))
+;;	(cond
+;;	 [(> i iterations) 1]
+;;	 [(> (magnitude z) 2.0) 0]
+;;	 [else (loop (add1 i) (+ (* z z) c))]))))
  
 #lang scheme/base
-(require scheme/cmdline
-         scheme/flonum)
+(require scheme/cmdline)
 
 (define +limit-sqr+ 4.0)
 
@@ -15,16 +25,18 @@
 
 ;; -------------------------------
 
-(define (mandelbrot x y n ci)
-  (let ((cr (fl- (fl/ (fl* 2.0 (->fl x)) (->fl n)) 1.5)))
+(define (mandelbrot iterations x y n ci)
+  (let ((cr (- (/ (* 2.0 x) n) 1.5)))
     (let loop ((i 0) (zr 0.0) (zi 0.0))
-      (if (> i +iterations+)
+      (if (> i iterations)
           1
-          (cond
-           ((fl> (fl+ (fl* zr zr) (fl* zi zi)) +limit-sqr+) 0)
-           (else (loop (+ 1 i) 
-                       (fl+ (fl- (fl* zr zr) (fl* zi zi)) cr) 
-                       (fl+ (fl* 2.0 (fl* zr zi)) ci))))))))
+          (let ((zrq (* zr zr)) 
+                (ziq (* zi zi)))
+            (cond
+             ((> (+ zrq ziq) +limit-sqr+) 0)
+             (else (loop (add1 i) 
+                         (+ (- zrq ziq) cr) 
+                         (+ (* 2.0 zr zi) ci)))))))))
 
 ;; -------------------------------
 
@@ -37,21 +49,21 @@
 
       (when (< y n)
         
-        (let ([ci (fl- (fl/ (fl* 2.0 (->fl y)) (->fl n)) 1.0)])
+        (let ([ci (- (/ (* 2.0 y) n) 1.0)])
           
           (let loop-x ((x 0) (bitnum 0) (byteacc 0))
 
             (if (< x n)
-                (let ([bitnum (+ 1 bitnum)]
+                (let ([bitnum (add1 bitnum)]
                       [byteacc (+ (arithmetic-shift byteacc 1) 
-                                  (mandelbrot x y n ci))])
+                                  (mandelbrot +iterations+ x y n ci))])
 
                   (cond
                    ((= bitnum 8)
                     (write-byte byteacc out)
-                    (loop-x (+ 1 x) 0 0))
+                    (loop-x (add1 x) 0 0))
                    
-                   [else (loop-x (+ 1 x) bitnum byteacc)]))
+                   [else (loop-x (add1 x) bitnum byteacc)]))
 
                 (begin
                   (when (positive? bitnum)

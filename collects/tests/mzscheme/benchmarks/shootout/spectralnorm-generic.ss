@@ -5,8 +5,7 @@
 ;;   contributed by Isaac Gouy
 
 #lang scheme/base
-(require scheme/cmdline
-         scheme/flonum)
+(require scheme/cmdline)
 
 (define (Approximate n)
   (let ([u (make-vector n 1.0)]
@@ -18,35 +17,33 @@
     
     ;; B=AtA         A multiplied by A transposed
     ;; v.Bv /(v.v)   eigenvalue of v
-    (let loop ([i 0][vBv 0.0][vv 0.0])
+    (let loop ([i 0][vBv 0][vv 0])
       (if (= i n)
-          (flsqrt (fl/ vBv vv))
+          (sqrt (/ vBv vv))
           (let ([vi (vector-ref v i)])
             (loop (add1 i)
-                  (fl+ vBv (fl* (vector-ref u i) vi))
-                  (fl+ vv (fl* vi vi))))))))
+                  (+ vBv (* (vector-ref u i) vi))
+                  (+ vv (* vi vi))))))))
 
 ;; return element i,j of infinite matrix A
 (define (A i j)
-  (fl/ 1.0 (fl+ (fl* (->fl (+ i j))
-                     (fl/ (->fl (+ i (+ j 1))) 2.0)) 
-                (->fl (+ i 1)))))
+  (/ 1.0 (+ (* (+ i j) (/ (+ i (+ j 1)) 2.0)) (+ i 1))))
 
 ;; multiply vector v by matrix A
 (define (MultiplyAv n v Av)
   (for ([i (in-range n)])
     (vector-set! Av i 
-                 (for/fold ([r 0.0])
+                 (for/fold ([r 0])
                      ([j (in-range n)])
-                   (fl+ r (fl* (A i j) (vector-ref v j)))))))
+                   (+ r (* (A i j) (vector-ref v j)))))))
 
 ;; multiply vector v by matrix A transposed
 (define (MultiplyAtv n v Atv)
   (for ([i (in-range n)])
     (vector-set! Atv i
-                 (for/fold ([r 0.0])
+                 (for/fold ([r 0])
                      ([j (in-range n)])
-                   (fl+ r (fl* (A j i) (vector-ref v j)))))))
+                   (+ r (* (A j i) (vector-ref v j)))))))
 
 ;; multiply vector v by matrix A and then by matrix A transposed 
 (define (MultiplyAtAv n v AtAv)

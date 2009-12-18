@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
           "guide-utils.ss"
-          (for-label scheme/unsafe/ops))
+          (for-label scheme/flonum scheme/unsafe/ops))
 
 @title[#:tag "performance"]{Performance}
 
@@ -257,29 +257,34 @@ arguments, such as @scheme[+], inlining works for two or more
 arguments (except for @scheme[-], whose one-argument case is also
 inlined) when the arguments are either all fixnums or all flonums.
 
-Flonums are @defterm{boxed}, which means that memory is allocated to
-hold every result of a flonum computation. Fortunately, the
-generational garbage collector (described later in @secref["gc-perf"])
-makes allocation for short-lived results reasonably cheap. Fixnums, in
-contrast are never boxed, so they are especially cheap to use.
+Flonums are typically @defterm{boxed}, which means that memory is
+allocated to hold every result of a flonum computation. Fortunately,
+the generational garbage collector (described later in
+@secref["gc-perf"]) makes allocation for short-lived results
+reasonably cheap. Fixnums, in contrast are never boxed, so they are
+typically cheap to use.
 
-The @schememodname[scheme/unsafe/ops] library provides fixnum- and
-flonum-specific operations, and combinations of unchecked flonum
-operations allow the @tech{JIT} compiler to generate code that avoids
-boxing and unboxing intermediate results. Expressions involving a
-combination of unchecked flonum operations, @scheme[unsafe-fx->fl],
-constants, and variable references are optimized to avoid boxing. When
-such a result is bound with @scheme[let] and then consumed by another
-unchecked flonum operation, the result is similarly unboxed. Finally,
-the compiler can detect some flonum-valued loop accumulators. The
-bytecode decompiler (see @secref[#:doc '(lib
-"scribblings/mzc/mzc.scrbl") "decompile"] annotates combinations where
-the JIT can avoid boxes with @schemeidfont{#%flonum},
-@schemeidfont{#%as-flonum}, and @schemeidfont{#%from-flonum}. See also
-@secref["unchecked-unsafe"], especially the warnings about unsafety.
+The @schememodname[scheme/flonum] library provides flonum-specific
+operations, and combinations of flonum operations allow the @tech{JIT}
+compiler to generate code that avoids boxing and unboxing intermediate
+results. Besides results within immediate combinations,
+flonum-specific results that are bound with @scheme[let] and consumed
+by a later flonum-specific operation are unboxed within temporary
+storage. Finally, the compiler can detect some flonum-valued loop
+accumulators and avoid boxing of the accumulator. The bytecode
+decompiler (see @secref[#:doc '(lib "scribblings/mzc/mzc.scrbl")
+"decompile"]) annotates combinations where the JIT can avoid boxes with
+@schemeidfont{#%flonum}, @schemeidfont{#%as-flonum}, and
+@schemeidfont{#%from-flonum}.
 
 @margin-note{Unboxing of local bindings and accumualtors is not
 supported by the JIT for PowerPC.}
+
+The @schememodname[scheme/unsafe/ops] library provides unchecked
+fixnum- and flonum-specific operations. Unchecked flonum-specific
+operations allow unboxing, and sometimes they allow the compiler to
+reorder expressions to improve performance. See also
+@secref["unchecked-unsafe"], especially the warnings about unsafety.
 
 @; ----------------------------------------------------------------------
 

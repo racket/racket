@@ -4,6 +4,7 @@
 (Section 'unsafe)
 
 (require scheme/unsafe/ops
+         scheme/flonum
          scheme/foreign)
 
 (let ()

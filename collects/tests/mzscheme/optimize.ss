@@ -3,11 +3,14 @@
 
 (Section 'optimization)
 
+(require scheme/flonum)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check JIT inlining of primitives:
 (parameterize ([current-namespace (make-base-namespace)]
 	       [eval-jit-enabled #t])
+  (namespace-require 'scheme/flonum)
   (let* ([check-error-message (lambda (name proc)
 				(unless (memq name '(eq? not null? pair?
 							 real? number? boolean? 
@@ -215,6 +218,9 @@
     (tri-if #t '< (lambda () 1) 2 3 void)
     (tri-if #f '< (lambda () 1) 3 3 void)
     (tri-if #f '< (lambda () 1) -1 3 void)
+    (bin-exact #t 'fl< 100.0 200.0)
+    (bin-exact #f 'fl< 200.0 100.0)
+    (bin-exact #f 'fl< 200.0 200.0)
 
     (bin #t '<= 100 200)
     (bin #f '<= 200 100)
@@ -224,6 +230,9 @@
     (tri-if #t '<= (lambda () 1) 2 3 void)
     (tri-if #t '<= (lambda () 1) 3 3 void)
     (tri-if #f '<= (lambda () 1) -1 3 void)
+    (bin-exact #t 'fl<= 100.0 200.0)
+    (bin-exact #f 'fl<= 200.0 100.0)
+    (bin-exact #t 'fl<= 200.0 200.0)
 
     (bin #f '> 100 200)
     (bin #t '> 200 100)
@@ -234,6 +243,9 @@
     (tri-if #t '> (lambda () 3) 2 1 void)
     (tri-if #f '> (lambda () 3) 3 1 void)
     (tri-if #f '> (lambda () 3) -1 1 void)
+    (bin-exact #f 'fl> 100.0 200.0)
+    (bin-exact #t 'fl> 200.0 100.0)
+    (bin-exact #f 'fl> 200.0 200.0)
 
     (bin #f '>= 100 200)
     (bin #t '>= 200 100)
@@ -243,6 +255,9 @@
     (tri-if #t '>= (lambda () 3) 2 1 void)
     (tri-if #t '>= (lambda () 3) 3 1 void)
     (tri-if #f '>= (lambda () 3) -1 1 void)
+    (bin-exact #f 'fl>= 100.0 200.0)
+    (bin-exact #t 'fl>= 200.0 100.0)
+    (bin-exact #t 'fl>= 200.0 200.0)
 
     (bin #f '= 100 200)
     (bin #f '= 200 100)
@@ -253,6 +268,8 @@
     (tri-if #f '= (lambda () 3) 3 1 void)
     (tri-if #f '= (lambda () 3) 1 3 void)
     (tri-if #f '= (lambda () 1) 3 3 void)
+    (bin-exact #f 'fl= 100.0 200.0)
+    (bin-exact #t 'fl= 200.0 200.0)
 
     (un 3 'add1 2)
     (un -3 'add1 -4)
@@ -276,6 +293,10 @@
     (un (expt 2 30) 'abs (- (expt 2 30)))
     (un (sub1 (expt 2 62)) 'abs (sub1 (expt 2 62)))
     (un (expt 2 62) 'abs (- (expt 2 62)))
+    (un-exact 3.0 'flabs -3.0)
+
+    (un-exact 3.0 'flsqrt 9.0)
+    (un-exact +nan.0 'flsqrt -9.0)
     
     (un 1.0 'exact->inexact 1)
     (un 1073741823.0 'exact->inexact (sub1 (expt 2 30)))
@@ -283,12 +304,15 @@
     (un 4611686018427387903.0 'exact->inexact (sub1 (expt 2 62)))
     (un -4611686018427387904.0 'exact->inexact (- (expt 2 62)))
 
+    (un-exact 10.0 '->fl 10)
+
     (bin 11 '+ 4 7)
     (bin -3 '+ 4 -7)
     (bin (expt 2 30) '+ (expt 2 29) (expt 2 29))
     (bin (- (expt 2 31) 2) '+ (sub1 (expt 2 30)) (sub1 (expt 2 30)))
     (tri 6 '+ (lambda () 1) 2 3 void)
     (tri 13/2 '+ (lambda () 1) 5/2 3 void)
+    (bin-exact 3.4 'fl+ 1.1 2.3)
 
     (bin 3 '- 7 4)
     (bin 11 '- 7 -4)
@@ -298,6 +322,7 @@
     (bin (- 2 (expt 2 31)) '- (- 1 (expt 2 30)) (sub1 (expt 2 30)))
     (tri 6 '- (lambda () 10) 3 1 void)
     (tri 13/2 '- (lambda () 10) 3 1/2 void)
+    (bin-exact -0.75 'fl- 1.5 2.25)
 
     (bin 4 '* 1 4)
     (bin 0 '* 0 4)
@@ -311,6 +336,7 @@
     (bin (- (expt 2 30)) '* 2 (- (expt 2 29)))
     (tri 30 '* (lambda () 2) 3 5 void)
     (tri 5 '* (lambda () 2) 3 5/6 void)
+    (bin-exact 2.53 'fl* 1.1 2.3)
 
     (bin 0 '/ 0 4)
     (bin 1/4 '/ 1 4)
@@ -321,6 +347,7 @@
     (bin 4 '/ -16 -4)
     (tri 3 '/ (lambda () 30) 5 2 void)
     (tri 12 '/ (lambda () 30) 5 1/2 void)
+    (bin-exact (/ 1.1 2.3) 'fl/ 1.1 2.3)
 
     (bin-int 3 'quotient 10 3)
     (bin-int -3 'quotient 10 -3)

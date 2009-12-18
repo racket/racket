@@ -56,6 +56,7 @@ static int env_uid_counter     = 0;
 static Scheme_Object *kernel_symbol;
 static Scheme_Env    *kernel_env;
 static Scheme_Env    *unsafe_env;
+static Scheme_Env    *flonum_env;
 
 #define MAX_CONST_LOCAL_POS 64
 #define MAX_CONST_LOCAL_TYPES 2
@@ -436,8 +437,38 @@ static void init_unsafe(Scheme_Env *env)
 #endif
 }
 
+static void init_flonum(Scheme_Env *env)
+{
+  Scheme_Module_Phase_Exports *pt;
+  REGISTER_SO(flonum_env);
+
+  flonum_env = scheme_primitive_module(scheme_intern_symbol("#%flonum"), env);
+
+  scheme_init_flonum_number(flonum_env);
+  scheme_init_flonum_numarith(flonum_env);
+  scheme_init_flonum_numcomp(flonum_env);
+
+  scheme_finish_primitive_module(flonum_env);
+  pt = flonum_env->module->me->rt;
+  scheme_populate_pt_ht(pt);
+  scheme_protect_primitive_provide(flonum_env, NULL);
+
+#if USE_COMPILED_STARTUP
+  if (builtin_ref_counter != (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT + EXPECTED_FLONUM_COUNT)) {
+    printf("Flonum count %d doesn't match expected count %d\n",
+	   builtin_ref_counter - EXPECTED_PRIM_COUNT - EXPECTED_UNSAFE_COUNT, 
+           EXPECTED_FLONUM_COUNT);
+    abort();
+  }
+#endif
+}
+
 Scheme_Env *scheme_get_unsafe_env() {
   return unsafe_env;
+}
+
+Scheme_Env *scheme_get_flonum_env() {
+  return flonum_env;
 }
 
 static Scheme_Env *place_instance_init_post_kernel(int initial_main_os_thread) {
@@ -692,6 +723,7 @@ static void make_kernel_env(void)
 #endif
 
   init_unsafe(env);
+  init_flonum(env);
   
   scheme_init_print_global_constants();
 
@@ -1344,11 +1376,13 @@ Scheme_Object **scheme_make_builtin_references_table(void)
   scheme_misc_count += sizeof(Scheme_Object *) * (builtin_ref_counter + 1);
 #endif
 
-  for (j = 0; j < 2; j++) {
+  for (j = 0; j < 3; j++) {
     if (!j)
       kenv = kernel_env;
-    else
+    else if (j == 1)
       kenv = unsafe_env;
+    else
+      kenv = flonum_env;
     
     ht = kenv->toplevel;
     
@@ -1375,11 +1409,13 @@ Scheme_Hash_Table *scheme_map_constants_to_globals(void)
 
   result = scheme_make_hash_table(SCHEME_hash_ptr);
       
-  for (j = 0; j < 2; j++) {
+  for (j = 0; j < 3; j++) {
     if (!j)
       kenv = kernel_env;
-    else
+    else if (j == 1)
       kenv = unsafe_env;
+    else
+      kenv = flonum_env;
     
     ht = kenv->toplevel;
     bs = ht->buckets;
@@ -1403,11 +1439,13 @@ const char *scheme_look_for_primitive(void *code)
   long i;
   int j;
 
-  for (j = 0; j < 2; j++) {
+  for (j = 0; j < 3; j++) {
     if (!j)
       kenv = kernel_env;
-    else
+    else if (j == 1)
       kenv = unsafe_env;
+    else
+      kenv = flonum_env;
     
     ht = kenv->toplevel;
     bs = ht->buckets;
@@ -3018,7 +3056,9 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   /* Used to have `&& !SAME_OBJ(modidx, modname)' below, but that was a bad
      idea, because it causes module instances to be preserved. */
   if (modname && !(flags & SCHEME_RESOLVE_MODIDS) 
-      && (!(scheme_is_kernel_modname(modname) || scheme_is_unsafe_modname(modname))
+      && (!(scheme_is_kernel_modname(modname) 
+            || scheme_is_unsafe_modname(modname)
+            || scheme_is_flonum_modname(modname))
           || (flags & SCHEME_REFERENCING))) {
     /* Create a module variable reference, so that idx is preserved: */
     return scheme_hash_module_variable(env->genv, modidx, find_id, 
@@ -3052,6 +3092,15 @@ Scheme_Object *scheme_extract_unsafe(Scheme_Object *o)
 {
   Scheme_Env *home = ((Scheme_Bucket_With_Home *)o)->home;
   if (home && home->module && scheme_is_unsafe_modname(home->module->modname))
+    return (Scheme_Object *)((Scheme_Bucket *)o)->val;
+  else
+    return NULL;
+}
+
+Scheme_Object *scheme_extract_flonum(Scheme_Object *o)
+{
+  Scheme_Env *home = ((Scheme_Bucket_With_Home *)o)->home;
+  if (home && home->module && scheme_is_flonum_modname(home->module->modname))
     return (Scheme_Object *)((Scheme_Bucket *)o)->val;
   else
     return NULL;

@@ -36,24 +36,24 @@
 
 (define-inliner define-fx fixnum? "fixnum")
 
-(define-fx = fx=? (a b c ...) nocheck)
-(define-fx > fx>? (a b c ...) nocheck)
-(define-fx < fx<? (a b c ...) nocheck)
-(define-fx <= fx<=? (a b c ...) nocheck)
-(define-fx >= fx>=? (a b c ...) nocheck)
+(define-fx = fx=? #f (a b c ...) nocheck)
+(define-fx > fx>? #f (a b c ...) nocheck)
+(define-fx < fx<? #f (a b c ...) nocheck)
+(define-fx <= fx<=? #f (a b c ...) nocheck)
+(define-fx >= fx>=? #f (a b c ...) nocheck)
 
-(define-fx zero? fxzero? (a) nocheck)
-(define-fx positive? fxpositive? (a) nocheck)
-(define-fx negative? fxnegative? (a) nocheck)
-(define-fx odd? fxodd? (a) nocheck)
-(define-fx even? fxeven? (a) nocheck)
+(define-fx zero? fxzero? #f (a) nocheck)
+(define-fx positive? fxpositive? #f (a) nocheck)
+(define-fx negative? fxnegative? #f (a) nocheck)
+(define-fx odd? fxodd? #f (a) nocheck)
+(define-fx even? fxeven? #f (a) nocheck)
 
-(define-fx max fxmax (a b ...) nocheck)
-(define-fx min fxmin (a b ...) nocheck)
+(define-fx max fxmax #f (a b ...) nocheck)
+(define-fx min fxmin #f (a b ...) nocheck)
 
-(define-fx + fx+ (a b) check)
-(define-fx * fx* (a b) check)
-(define-fx - fx- [(a) (a b)] check)
+(define-fx + fx+ #f (a b) check)
+(define-fx * fx* #f (a b) check)
+(define-fx - fx- #f [(a) (a b)] check)
 
 (provide fxdiv-and-mod
          fxdiv0-and-mod0)
@@ -65,8 +65,8 @@
   (let-values ([(d m) (div-and-mod a b)])
     (check d (implementation-restriction 'div-and-mod d))
     (values d m)))
-(define-fx div fxdiv (a b) check)
-(define-fx mod fxmod (a b) nocheck)
+(define-fx div fxdiv #f (a b) check)
+(define-fx mod fxmod #f (a b) nocheck)
 (define (fxdiv0-and-mod0 a b)
   (unless (fixnum? a)
     (raise-type-error 'fxdiv0-and-mod0 "fixnum" a))
@@ -75,8 +75,8 @@
   (let-values ([(d m) (div0-and-mod0 a b)])
     (check d (implementation-restriction 'div0-and-mod0 d))
     (values d m)))
-(define-fx div0 fxdiv0 (a b) check)
-(define-fx mod0 fxmod0 (a b) nocheck)
+(define-fx div0 fxdiv0 #f (a b) check)
+(define-fx mod0 fxmod0 #f (a b) nocheck)
 
 (define-syntax-rule (define-carry fx/carry (a b c) expr)
   (begin
@@ -96,18 +96,18 @@
 (define-carry fx-/carry (a b c) (- a b c))
 (define-carry fx*/carry (a b c) (+ (* a b) c))
 
-(define-fx bitwise-not fxnot (a) nocheck)
-(define-fx bitwise-and fxand (a b ...) nocheck)
-(define-fx bitwise-ior fxior (a b ...) nocheck)
-(define-fx bitwise-xor fxxor (a b ...) nocheck)
+(define-fx bitwise-not fxnot #f (a) nocheck)
+(define-fx bitwise-and fxand #f (a b ...) nocheck)
+(define-fx bitwise-ior fxior #f (a b ...) nocheck)
+(define-fx bitwise-xor fxxor #f (a b ...) nocheck)
 
 (define-syntax-rule (fixnum-bitwise-if a b c)
   (bitwise-ior (bitwise-and a b)
                (bitwise-and (bitwise-not a) c)))
-(define-fx fixnum-bitwise-if fxif (a b c) nocheck)
+(define-fx fixnum-bitwise-if fxif #f (a b c) nocheck)
 
-(define-fx bitwise-length fxlength (a) nocheck)
-(define-fx bitwise-first-bit-set fxfirst-bit-set (a) nocheck)
+(define-fx bitwise-length fxlength #f (a) nocheck)
+(define-fx bitwise-first-bit-set fxfirst-bit-set #f (a) nocheck)
 
 (define positive-fixnum-width-bounds
   (string-append "exact integer in [0, " (number->string (- (fixnum-width) 1)) "]"))

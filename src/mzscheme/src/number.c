@@ -103,6 +103,8 @@ static Scheme_Object *flvector_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *flvector_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_flvector (int argc, Scheme_Object *argv[]);
 
+static Scheme_Object *integer_to_fl (int argc, Scheme_Object *argv[]);
+
 static Scheme_Object *fx_and (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_or (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_xor (int argc, Scheme_Object *argv[]);
@@ -506,6 +508,11 @@ scheme_init_number (Scheme_Env *env)
 						      1, 1, 1),
 			     env);
 
+}
+void scheme_init_flonum_number(Scheme_Env *env)
+{
+  Scheme_Object *p;
+
   scheme_add_global_constant("flvector",
                              scheme_make_prim_w_arity(flvector,
                                                       "flvector",
@@ -538,6 +545,11 @@ scheme_init_number (Scheme_Env *env)
                              3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_NARY_INLINED;
   scheme_add_global_constant("flvector-set!", p, env);
+
+  p = scheme_make_folding_prim(integer_to_fl, "->fl", 1, 1, 1);
+  if (scheme_can_inline_fp_op())
+    SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
+  scheme_add_global_constant("->fl", p, env);
 }
 
 void scheme_init_unsafe_number(Scheme_Env *env)
@@ -3090,4 +3102,15 @@ static Scheme_Object *unsafe_flvector_set (int argc, Scheme_Object *argv[])
   SCHEME_FLVEC_ELS(argv[0])[pos] = SCHEME_FLOAT_VAL(argv[2]);
 
   return scheme_void;
+}
+
+static Scheme_Object *integer_to_fl (int argc, Scheme_Object *argv[])
+{
+  if (SCHEME_INTP(argv[0])
+      || SCHEME_BIGNUMP(argv[0])) {
+    return scheme_exact_to_inexact(argc, argv);
+  } else {
+    scheme_wrong_type("->fl", "exact integer", 0, argc, argv);
+    return NULL;
+  }
 }

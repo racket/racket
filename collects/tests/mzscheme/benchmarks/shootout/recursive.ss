@@ -9,7 +9,8 @@
 ;; ---------------------------------------------------------------------
 
 #lang scheme/base
-(require scheme/cmdline)
+(require scheme/cmdline
+         scheme/flonum)
 
 ;; -------------------------------
 
@@ -25,8 +26,8 @@
         (else (+ (fib (- n 2)) (fib (- n 1))))))
 
 (define (fibflt n)
-  (cond ((< n 2.0) 1.0)
-        (else (+ (fibflt (- n 2.0)) (fibflt (- n 1.0))))))
+  (cond ((fl< n 2.0) 1.0)
+        (else (fl+ (fibflt (fl- n 2.0)) (fibflt (fl- n 1.0))))))
 
 ;; --------------
 
@@ -35,8 +36,8 @@
         (else (tak (tak (- x 1) y z) (tak (- y 1) z x) (tak (- z 1) x y)))))
 
 (define (takflt x y z)
-  (cond ((not (< y x)) z)
-        (else (takflt (takflt (- x 1.0) y z) (takflt (- y 1.0) z x) (takflt (- z 1.0) x y)))))
+  (cond ((not (fl< y x)) z)
+        (else (takflt (takflt (fl- x 1.0) y z) (takflt (fl- y 1.0) z x) (takflt (fl- z 1.0) x y)))))
 
 ;; -------------------------------
 

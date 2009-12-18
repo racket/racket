@@ -17,8 +17,7 @@ Correct output N = 1000 is
 |#
 
 #lang scheme/base
-(require scheme/cmdline
-         scheme/flonum)
+(require scheme/cmdline)
 
 ;; ------------------------------
 ;; define planetary masses, initial positions & velocity
@@ -94,20 +93,20 @@ Correct output N = 1000 is
     (if (null? o)
       e
       (let* ([o1 (car o)]
-             [e (+ e (fl* 0.5 
-                          (fl* (body-mass o1)
-                               (fl+ (fl+ (fl* (body-vx o1) (body-vx o1))
-                                         (fl* (body-vy o1) (body-vy o1)))
-                                    (fl* (body-vz o1) (body-vz o1))))))])
+             [e (+ e (* 0.5 
+                        (body-mass o1)
+                        (+ (* (body-vx o1) (body-vx o1))
+                           (* (body-vy o1) (body-vy o1))
+                           (* (body-vz o1) (body-vz o1)))))])
         (let loop-i ([i (cdr o)] [e e])
           (if (null? i)
             (loop-o (cdr o) e)
             (let* ([i1   (car i)]
-                   [dx   (fl- (body-x o1) (body-x i1))]
-                   [dy   (fl- (body-y o1) (body-y i1))]
-                   [dz   (fl- (body-z o1) (body-z i1))]
-                   [dist (flsqrt (fl+ (fl+ (fl* dx dx) (fl* dy dy)) (fl* dz dz)))]
-                   [e    (fl- e (fl/ (fl* (body-mass o1) (body-mass i1)) dist))])
+                   [dx   (- (body-x o1) (body-x i1))]
+                   [dy   (- (body-y o1) (body-y i1))]
+                   [dz   (- (body-z o1) (body-z i1))]
+                   [dist (sqrt (+ (* dx dx) (* dy dy) (* dz dz)))]
+                   [e    (- e (/ (* (body-mass o1) (body-mass i1)) dist))])
               (loop-i (cdr i) e))))))))
 
 ;; -------------------------------
@@ -125,28 +124,28 @@ Correct output N = 1000 is
                      [vz (body-vz o1)])
           (if (pair? i)
             (let* ([i1    (car i)]
-                   [dx    (fl- o1x (body-x i1))]
-                   [dy    (fl- o1y (body-y i1))]
-                   [dz    (fl- o1z (body-z i1))]
-                   [dist2 (fl+ (fl+ (fl* dx dx) (fl* dy dy)) (fl* dz dz))]
-                   [mag   (fl/ +dt+ (fl* dist2 (flsqrt dist2)))]
-                   [dxmag (fl* dx mag)]
-                   [dymag (fl* dy mag)]
-                   [dzmag (fl* dz mag)]
+                   [dx    (- o1x (body-x i1))]
+                   [dy    (- o1y (body-y i1))]
+                   [dz    (- o1z (body-z i1))]
+                   [dist2 (+ (* dx dx) (* dy dy) (* dz dz))]
+                   [mag   (/ +dt+ (* dist2 (sqrt dist2)))]
+                   [dxmag (* dx mag)]
+                   [dymag (* dy mag)]
+                   [dzmag (* dz mag)]
                    [im    (body-mass i1)])
-              (set-body-vx! i1 (fl+ (body-vx i1) (fl* dxmag om)))
-              (set-body-vy! i1 (fl+ (body-vy i1) (fl* dymag om)))
-              (set-body-vz! i1 (fl+ (body-vz i1) (fl* dzmag om)))
+              (set-body-vx! i1 (+ (body-vx i1) (* dxmag om)))
+              (set-body-vy! i1 (+ (body-vy i1) (* dymag om)))
+              (set-body-vz! i1 (+ (body-vz i1) (* dzmag om)))
               (loop-i (cdr i)
-                      (fl- vx (fl* dxmag im))
-                      (fl- vy (fl* dymag im))
-                      (fl- vz (fl* dzmag im))))
+                      (- vx (* dxmag im))
+                      (- vy (* dymag im))
+                      (- vz (* dzmag im))))
             (begin (set-body-vx! o1 vx)
                    (set-body-vy! o1 vy)
                    (set-body-vz! o1 vz)
-                   (set-body-x! o1 (fl+ o1x (fl* +dt+ vx)))
-                   (set-body-y! o1 (fl+ o1y (fl* +dt+ vy)))
-                   (set-body-z! o1 (fl+ o1z (fl* +dt+ vz)))))))
+                   (set-body-x! o1 (+ o1x (* +dt+ vx)))
+                   (set-body-y! o1 (+ o1y (* +dt+ vy)))
+                   (set-body-z! o1 (+ o1z (* +dt+ vz)))))))
       (loop-o (cdr o)))))
 
 ;; -------------------------------

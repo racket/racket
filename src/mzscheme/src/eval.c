@@ -2686,11 +2686,58 @@ static int purely_functional_primitive(Scheme_Object *rator, int n)
 
 #define IS_NAMED_PRIM(p, nm) (!strcmp(((Scheme_Primitive_Proc *)p)->name, nm))
 
-int scheme_wants_flonum_arguments(Scheme_Object *rator)
+int scheme_wants_flonum_arguments(Scheme_Object *rator, int rotate_mode)
 {
   if (SCHEME_PRIMP(rator)) {
     if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL) {
       if (IS_NAMED_PRIM(rator, "unsafe-flabs")
+          || IS_NAMED_PRIM(rator, "unsafe-flsqrt")
+          || IS_NAMED_PRIM(rator, "unsafe-fl+")
+          || IS_NAMED_PRIM(rator, "unsafe-fl-")
+          || IS_NAMED_PRIM(rator, "unsafe-fl*")
+          || IS_NAMED_PRIM(rator, "unsafe-fl/")
+          || IS_NAMED_PRIM(rator, "unsafe-fl<")
+          || IS_NAMED_PRIM(rator, "unsafe-fl<=")
+          || IS_NAMED_PRIM(rator, "unsafe-fl=")
+          || IS_NAMED_PRIM(rator, "unsafe-fl>")
+          || IS_NAMED_PRIM(rator, "unsafe-fl>=")
+          || IS_NAMED_PRIM(rator, "unsafe-flvector-ref"))
+        return 1;
+    } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNARY_INLINED) {
+      if (!rotate_mode) {
+        if (IS_NAMED_PRIM(rator, "flabs")
+            || IS_NAMED_PRIM(rator, "flsqrt"))
+          return 1;
+      }
+    } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_BINARY_INLINED) {
+      if (!rotate_mode) {
+        if (IS_NAMED_PRIM(rator, "fl+")
+            || IS_NAMED_PRIM(rator, "fl-")
+            || IS_NAMED_PRIM(rator, "fl*")
+            || IS_NAMED_PRIM(rator, "fl/")
+            || IS_NAMED_PRIM(rator, "fl<")
+            || IS_NAMED_PRIM(rator, "fl<=")
+            || IS_NAMED_PRIM(rator, "fl=")
+            || IS_NAMED_PRIM(rator, "fl>")
+            || IS_NAMED_PRIM(rator, "fl>=")
+            || IS_NAMED_PRIM(rator, "flvector-ref"))
+          return 1;
+      }
+    } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_NARY_INLINED) {
+      if (IS_NAMED_PRIM(rator, "unsafe-flvector-set!"))
+        return 1;
+    }
+  }
+
+  return 0;
+}
+
+static int produces_unboxed(Scheme_Object *rator)
+{
+  if (SCHEME_PRIMP(rator)) {
+    if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL) {
+      if (IS_NAMED_PRIM(rator, "unsafe-flabs")
+          || IS_NAMED_PRIM(rator, "unsafe-flsqrt")
           || IS_NAMED_PRIM(rator, "unsafe-fl+")
           || IS_NAMED_PRIM(rator, "unsafe-fl-")
           || IS_NAMED_PRIM(rator, "unsafe-fl*")
@@ -2703,32 +2750,26 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator)
           || IS_NAMED_PRIM(rator, "unsafe-flvector-ref")
           || IS_NAMED_PRIM(rator, "unsafe-fx->fl"))
         return 1;
-    } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_NARY_INLINED) {
-      if (IS_NAMED_PRIM(rator, "unsafe-flvector-set!"))
+    } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNARY_INLINED) {
+      if (IS_NAMED_PRIM(rator, "flabs")
+          || IS_NAMED_PRIM(rator, "flsqrt")
+          || IS_NAMED_PRIM(rator, "->fl"))
+        return 1;
+    } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_BINARY_INLINED) {
+      if (IS_NAMED_PRIM(rator, "flabs")
+          || IS_NAMED_PRIM(rator, "flsqrt")
+          || IS_NAMED_PRIM(rator, "fl+")
+          || IS_NAMED_PRIM(rator, "fl-")
+          || IS_NAMED_PRIM(rator, "fl*")
+          || IS_NAMED_PRIM(rator, "fl/")
+          || IS_NAMED_PRIM(rator, "fl<")
+          || IS_NAMED_PRIM(rator, "fl<=")
+          || IS_NAMED_PRIM(rator, "fl=")
+          || IS_NAMED_PRIM(rator, "fl>")
+          || IS_NAMED_PRIM(rator, "fl>=")
+          || IS_NAMED_PRIM(rator, "flvector-ref"))
         return 1;
     }
-  }
-
-  return 0;
-}
-
-static int produces_unboxed(Scheme_Object *rator)
-{
-  if (SCHEME_PRIMP(rator)
-      && (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL)) {
-    if (IS_NAMED_PRIM(rator, "unsafe-flabs")
-        || IS_NAMED_PRIM(rator, "unsafe-fl+")
-        || IS_NAMED_PRIM(rator, "unsafe-fl-")
-        || IS_NAMED_PRIM(rator, "unsafe-fl*")
-        || IS_NAMED_PRIM(rator, "unsafe-fl/")
-        || IS_NAMED_PRIM(rator, "unsafe-fl<")
-        || IS_NAMED_PRIM(rator, "unsafe-fl<=")
-        || IS_NAMED_PRIM(rator, "unsafe-fl=")
-        || IS_NAMED_PRIM(rator, "unsafe-fl>")
-        || IS_NAMED_PRIM(rator, "unsafe-fl>=")
-        || IS_NAMED_PRIM(rator, "unsafe-flvector-ref")
-        || IS_NAMED_PRIM(rator, "unsafe-fx->fl"))
-      return 1;
   }
 
   return 0;
@@ -2827,7 +2868,7 @@ static Scheme_Object *check_unbox_rotation(Scheme_Object *_app, Scheme_Object *r
   Scheme_Compiled_Let_Value *inner = NULL;
   int i, lifted = 0;
 
-  if (scheme_wants_flonum_arguments(rator)) {
+  if (scheme_wants_flonum_arguments(rator, 1)) {
     for (i = 0; i < count; i++) {
       if (count == 1)
         rand = ((Scheme_App2_Rec *)_app)->rand;
@@ -2988,7 +3029,7 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
           return le;
       }
 
-      if (scheme_wants_flonum_arguments(app->args[0]))
+      if (scheme_wants_flonum_arguments(app->args[0], 0))
         sub_context |= OPT_CONTEXT_FLONUM_ARG;
     }
 
@@ -3093,7 +3134,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
       return le;
   }
   
-  if (scheme_wants_flonum_arguments(app->rator))
+  if (scheme_wants_flonum_arguments(app->rator, 0))
     sub_context |= OPT_CONTEXT_FLONUM_ARG;
 
   le = scheme_optimize_expr(app->rand, info, sub_context);
@@ -3165,7 +3206,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
       return le;
   }
 
-  if (scheme_wants_flonum_arguments(app->rator))
+  if (scheme_wants_flonum_arguments(app->rator, 0))
     sub_context |= OPT_CONTEXT_FLONUM_ARG;
 
   /* 1st arg */
@@ -6071,6 +6112,9 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
               && scheme_extract_unsafe(var)) {
             scheme_register_unsafe_in_prefix(env, rec, drec, menv);
             return scheme_extract_unsafe(var);
+          } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
+                     && scheme_extract_flonum(var)) {
+            return scheme_extract_flonum(var);
           } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
                      || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type))
 	    return scheme_register_toplevel_in_prefix(var, env, rec, drec);

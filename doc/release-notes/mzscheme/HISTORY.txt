@@ -1,3 +1,6 @@
+Version 4.2.3.8
+Added scheme/flonum; moved flvector operations to scheme/flonum
+
 Version 4.2.3.6
 Changed JIT to support unboxed local binding of known-flonum
  arguments to unsafe-fl functions

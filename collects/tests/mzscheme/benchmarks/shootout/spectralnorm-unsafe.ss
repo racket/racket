@@ -6,6 +6,7 @@
 
 #lang scheme/base
 (require scheme/cmdline
+         scheme/flonum
          scheme/unsafe/ops)
 
 (define (Approximate n)

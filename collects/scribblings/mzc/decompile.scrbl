@@ -81,11 +81,11 @@ Many forms in the decompiled code, such as @scheme[module],
  inline the operation. (Inlining information is not part of the
  bytecode, but is instead based on an enumeration of primitives that
  the JIT is known to handle specially.) Operations from
- @schememodname[scheme/unsafe/ops] are always inlined, so
- @schemeidfont{#%in} is not shown for them.}
+ @schememodname[scheme/flonum] and @schememodname[scheme/unsafe/ops]
+ are always inlined, so @schemeidfont{#%in} is not shown for them.}
 
- @item{Some applications of unsafe flonum operations from
- @schememodname[scheme/unsafe/ops] are annotated with
+ @item{Some applications of flonum operations from @schememodname[scheme/flonum] 
+ and @schememodname[scheme/unsafe/ops] are annotated with
  @schemeidfont{#%flonum}, indicating a place where the JIT compiler
  might avoid allocation for intermediate flonum results. A single
  @schemeidfont{#%flonum} by itself is not useful, but a
