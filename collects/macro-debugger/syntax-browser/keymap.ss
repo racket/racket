@@ -1,6 +1,7 @@
 #lang scheme/base
 (require scheme/class
          scheme/gui
+         scheme/pretty
          unstable/gui/notify
          "interfaces.ss"
          "partition.ss")
@@ -54,11 +55,12 @@
     (add-function "copy-syntax-as-text"
                   (lambda (_ event)
                     (define stx (send controller get-selected-syntax))
-                    (send the-clipboard set-clipboard-string
-                          (if stx 
-                              (format "~s" (syntax->datum stx))
-                              "")
-                          (send event get-time-stamp))))
+                    (when stx
+                      (send the-clipboard set-clipboard-string
+                            (let ([out (open-output-string)])
+                              (pretty-print (syntax->datum stx) out)
+                              (get-output-string out))
+                            (send event get-time-stamp)))))
 
     (add-function "clear-syntax-selection"
                   (lambda (i e)
