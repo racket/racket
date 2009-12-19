@@ -9315,7 +9315,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  PUSH_RUNSTACK(p, RUNSTACK, 1);
 	  RUNSTACK_CHANGED();
 
-	  switch (SCHEME_LET_EVAL_TYPE(lo)) {
+	  switch (SCHEME_LET_EVAL_TYPE(lo) & 0x7) {
 	  case SCHEME_EVAL_CONSTANT:
 	    RUNSTACK[0] = lo->value;
 	    break;

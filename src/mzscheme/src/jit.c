@@ -10316,10 +10316,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       
       __END_SHORT_JUMPS__(1);
 
-      if (jitter->retain_start) {
-	code_end = jit_get_ip().ptr;
-	add_symbol((unsigned long)code, (unsigned long)code_end - 1, scheme_false, 0);
-      }
+      register_sub_func(jitter, code, scheme_false);
     }
   }
 
@@ -10404,10 +10401,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* *** fl1_code *** */
   /* R0 has argument, V1 has primitive proc */
   {
-    void *code, *code_end;
-
-    code = jit_get_ip().ptr;
-    fl1_fail_code = code;
+    fl1_fail_code = jit_get_ip().ptr;
 
     mz_prolog(JIT_R2);
 
@@ -10426,8 +10420,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       CHECK_LIMIT();
     }
 
-    code_end = jit_get_ip().ptr;
-    add_symbol((unsigned long)code, (unsigned long)code_end - 1, scheme_false, 0);
+    register_sub_func(jitter, fl1_fail_code, scheme_false);
   }
 
   /* *** fl2{rf}{rf}_code *** */
@@ -10435,7 +10428,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
      non-register argument is in FPR0 */
   for (ii = 0; ii < 2; ii++) {
     for (i = 0; i < 3; i++) {
-      void *code, *code_end;
+      void *code;
       int a0, a1;
 
       code = jit_get_ip().ptr;
@@ -10493,8 +10486,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
         CHECK_LIMIT();
       }
 
-      code_end = jit_get_ip().ptr;
-      add_symbol((unsigned long)code, (unsigned long)code_end - 1, scheme_false, 0);
+      register_sub_func(jitter, code, scheme_false);
     }
   }
 
@@ -10506,7 +10498,6 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
   /* *** check_proc_extract_code *** */
   /* arguments are on the Scheme stack */
   {
-    void *code_end;
     GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refslow;
     
     struct_proc_extract_code = jit_get_ip().ptr;
@@ -10609,10 +10600,7 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
       
     __END_SHORT_JUMPS__(1);
 
-    if (jitter->retain_start) {
-      code_end = jit_get_ip().ptr;
-      add_symbol((unsigned long)struct_proc_extract_code, (unsigned long)code_end - 1, scheme_false, 0);
-    }
+    register_sub_func(jitter, struct_proc_extract_code, scheme_false);
   }
 
   /* *** module_run_start_code *** */
@@ -10644,10 +10632,7 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     jit_ret();
     CHECK_LIMIT();
 
-    if (jitter->retain_start) {
-      code_end = jit_get_ip().ptr;
-      add_symbol((unsigned long)module_run_start_code, (unsigned long)code_end - 1, scheme_eof, 0);
-    }
+    register_sub_func(jitter, module_run_start_code, scheme_eof);
   }
 
   /* *** module_start_start_code *** */
@@ -10676,10 +10661,7 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     jit_ret();
     CHECK_LIMIT();
 
-    if (jitter->retain_start) {
-      code_end = jit_get_ip().ptr;
-      add_symbol((unsigned long)module_start_start_code, (unsigned long)code_end - 1, scheme_eof, 0);
-    }
+    register_sub_func(jitter, module_start_start_code, scheme_eof);
   }
 
   return 1;
