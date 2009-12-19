@@ -1505,18 +1505,13 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
       && (offset || !has_tl) /* either need args, or treat as convert becasue it's fully closed */
       ) {
     /* Take over closure_map to be the convert map, instead. */
-    int new_boxes_size;
-
     convert_map = closure_map;
     convert_size = offset;
 
-    if (convert_boxes)
-      new_boxes_size = boxmap_size(convert_size + data->num_params + (has_tl ? 1 : 0));
-    else
-      new_boxes_size = 0;
-
     if (has_tl || convert_boxes || cl->flonum_map) {
+      int new_boxes_size;
       int sz;
+      new_boxes_size = boxmap_size(convert_size + data->num_params + (has_tl ? 1 : 0));
       sz = ((has_tl ? sizeof(mzshort) : 0) + new_boxes_size * sizeof(mzshort));
       closure_map = (mzshort *)scheme_malloc_atomic(sz);
       memset(closure_map, 0, sz);
@@ -1581,7 +1576,7 @@ scheme_resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
                                           : 0)),
                                       NULL);
       if (cl->flonum_map && cl->flonum_map[i])
-        boxmap_set(closure_map, i + convert_size, 2, data->closure_size);
+        boxmap_set(closure_map, i + convert_size, 2, closure_size);
     }
     if (expanded_already && !just_compute_lift)
       SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_HAS_TYPED_ARGS;
