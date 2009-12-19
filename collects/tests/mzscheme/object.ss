@@ -260,6 +260,7 @@
 (class-keyword-test #'super)
 (class-keyword-test #'inner)
 (class-keyword-test #'this)
+(class-keyword-test #'this%)
 (class-keyword-test #'super-new)
 (class-keyword-test #'super-make-object)
 (class-keyword-test #'super-instantiate)
@@ -821,6 +822,43 @@
   (test 10 (class-field-accessor many-fields% a) om1)
   (test 12 (class-field-accessor many-fields% b) om1))
 
+;; ------------------------------------------------------------
+;; Test this%
+(let ()
+  (define base%
+    (class object% 
+      (super-new)
+      (define/public (factory)
+        (new this%))))
+  (define derived%
+    (class base%
+      (super-new)
+      (init-field [f 4])
+      (define/public (double)
+        (set! f (* 2 f)))))
+  (let* ([factory-derived (send (new derived%) factory)])
+    (test 4 'factory-derived-f (get-field f factory-derived))
+    (send factory-derived double)
+    (test 8 'factory-derived-f-doubled (get-field f factory-derived))))
+
+(let ()
+  (define account%
+    (class object% 
+      (super-new)
+      (init-field balance)
+      (define/public (add n)
+        (new this% [balance (+ n balance)]))))
+  (define savings%
+    (class account%
+      (super-new)
+      (inherit-field balance)
+      (define interest 0.04)
+      (define/public (add-interest)
+        (send this add (* interest balance)))))
+  (let* ([acct (new savings% [balance 500])]
+         [acct (send acct add 500)]
+         [acct (send acct add-interest)])
+    (test 1040.0 'acct-balance (get-field balance acct))))
 
 ;; ------------------------------------------------------------
 ;; Test public*, define-public, etc.

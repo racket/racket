@@ -357,6 +357,7 @@ flattened for top-level and embedded definitions.
 
 Within a @scheme[class*] form for instances of the new class,
 @scheme[this] is bound to the object itself;
+@scheme[this%] is bound to the class of the object;
 @scheme[super-instantiate], @scheme[super-make-object], and
 @scheme[super-new] are bound to forms to initialize fields in the
 superclass (see @secref["objcreation"]); @scheme[super] is
@@ -396,6 +397,34 @@ a syntax error.
       (describe this))
     (super-new)))
 (send (new table) describe-self)
+]}
+
+@defidform[this%]{
+                  
+Within a @scheme[class*] form, @scheme[this%] refers to the class
+of the current object (i.e., the object being initialized or whose
+method was called).  Use outside the body of a @scheme[class*] form is
+a syntax error.
+
+@defexamples[
+#:eval class-eval
+(define account%
+  (class object% 
+    (super-new)
+    (init-field balance)
+    (define/public (add n)
+      (new this% [balance (+ n balance)]))))
+(define savings%
+  (class account%
+    (super-new)
+    (inherit-field balance)
+    (define interest 0.04)
+    (define/public (add-interest)
+      (send this add (* interest balance)))))
+(let* ([acct (new savings% [balance 500])]
+       [acct (send acct add 500)]
+       [acct (send acct add-interest)])
+  (printf "Current balance: ~a\n" (get-field balance acct)))
 ]}
 
 @defclassforms[

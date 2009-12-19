@@ -45,6 +45,20 @@
            stx)]
          [id (find the-finder the-obj stx)])))))
 
+(define (make-this%-map replace-stx the-finder)
+  (let ([set!-stx (datum->syntax the-finder 'set!)])
+    (make-set!-transformer
+     (λ (stx)
+       (syntax-case stx ()
+         [(set! id expr)
+          (free-identifier=? #'set! set!-stx)
+          (raise-syntax-error 'class "cannot mutate this% identifier" stx)]
+         [id
+          (identifier? #'id)
+          (quasisyntax/loc stx #,replace-stx)]
+         [(f . args)
+          (quasisyntax/loc stx (#,replace-stx . args))])))))
+
 (define (make-field-map trace-flag the-finder the-obj the-binder the-binder-localized
                         field-accessor field-mutator field-pos/null)
   (let ([set!-stx (datum->syntax the-finder 'set!)])
@@ -356,7 +370,7 @@
                                     finalize-call-event))))
         (qstx (app method object . args)))))
 
-(provide (protect-out make-this-map make-field-map make-method-map 
+(provide (protect-out make-this-map make-this%-map make-field-map make-method-map 
                       make-direct-method-map 
                       make-rename-super-map make-rename-inner-map
                       make-init-error-map make-init-redirect super-error-map 

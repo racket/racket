@@ -61,7 +61,7 @@
            public-final override-final augment-final
            field init init-field init-rest
            rename-super rename-inner inherit inherit/super inherit/inner inherit-field
-           this super inner
+           this this% super inner
            super-make-object super-instantiate super-new
            inspect))
 
@@ -170,6 +170,7 @@
 
 (define/provide-context-keyword
   [this this-param]
+  [this% this%-param]
   [super super-param]
   [inner inner-param]
   [super-make-object super-make-object-param]
@@ -229,6 +230,7 @@
                 (quote-syntax super)
                 (quote-syntax inner)
                 (quote-syntax this)
+                (quote-syntax this%)
                 (quote-syntax super-instantiate)
                 (quote-syntax super-make-object)
                 (quote-syntax super-new)
@@ -1334,7 +1336,9 @@
                                          (syntax-parameterize
                                           ([this-param (make-this-map (quote-syntax this-id)
                                                                       (quote-syntax the-finder)
-                                                                      (quote the-obj))])
+                                                                      (quote the-obj))]
+                                           [this%-param (make-this%-map (quote-syntax (object-ref this))
+                                                                        (quote-syntax the-finder))])
                                           (let-syntaxes
                                            mappings
                                            (syntax-parameterize 
