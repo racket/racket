@@ -628,6 +628,7 @@
     (test-ellipsis-binding '((number_1 number_2) ...) '((1 2)))
     (test-ellipsis-binding '((name x number_1) ...) '(1 2))
     (test-ellipsis-binding '(((number_1 ...) (number_2 ...)) ...) '(((1) (2))))
+    (test-ellipsis-binding '(number ... variable) '(1 x))
     
     (cond
       [(= failures 0)

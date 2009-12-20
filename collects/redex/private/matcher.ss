@@ -1478,9 +1478,8 @@ before the pattern compiler is invoked.
              [else (let ([r-exp (car r-exps)])
                      (cond
                        [(repeat? r-exp)
-                        (i-loop
-                         (cdr r-exps)
-                         (append (repeat-empty-bindings r-exp) ribs))]
+                        (append (repeat-empty-bindings r-exp)
+                                (i-loop (cdr r-exps) ribs))]
                        [else
                         (loop (car r-exps) (i-loop (cdr r-exps) ribs))]))])))]
       [else ribs])))
