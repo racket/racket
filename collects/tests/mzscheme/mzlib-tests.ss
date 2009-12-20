@@ -4,7 +4,6 @@
 
 (load-relative "loadtest.ss")
 (load-in-sandbox "mpair.ss")
-(load-in-sandbox "md5.ss")
 (load-in-sandbox "etc.ss")
 (load-in-sandbox "structlib.ss")
 (load-in-sandbox "async-channel.ss")
