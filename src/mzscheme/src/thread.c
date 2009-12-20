@@ -4677,6 +4677,10 @@ static void suspend_thread(Scheme_Thread *p)
     SCHEME_PTR2_VAL(p->suspended_box) = (Scheme_Object *)p;
     scheme_post_sema_all(SCHEME_PTR1_VAL(p->suspended_box));
   }
+  if (p->running_box && (!(p->running & MZTHREAD_SUSPENDED))) {
+    /* Make transitive-resume link strong, instead of weak: */
+    SCHEME_PTR_VAL(p->running_box) = (Scheme_Object *)p;
+  }
 
   if (SAME_OBJ(p, scheme_main_thread)) {
     /* p is the main thread, which we're not allowed to
@@ -4712,10 +4716,15 @@ static void add_transitive_resume(Scheme_Thread *promote_to, Scheme_Thread *p)
   Scheme_Hash_Table *ht;
 
   if (!p->running_box) {
-    Scheme_Object *b;
+    Scheme_Object *b, *wb;
+    if ((p->running & MZTHREAD_USER_SUSPENDED)
+        && !(p->running & MZTHREAD_SUSPENDED))
+      wb = (Scheme_Object *)p;
+    else
+      wb = scheme_make_weak_box((Scheme_Object *)p);
     b = scheme_alloc_small_object();
     b->type = scheme_thread_dead_type;
-    SCHEME_PTR_VAL(b) = (Scheme_Object *)p;
+    SCHEME_PTR_VAL(b) = (Scheme_Object *)wb;
     p->running_box = b;
   }
   running_box = p->running_box;
@@ -4732,7 +4741,9 @@ static void add_transitive_resume(Scheme_Thread *promote_to, Scheme_Thread *p)
     ht = (Scheme_Hash_Table *)promote_to->transitive_resumes;
     for (i = ht->size; i--; ) {
       if (ht->vals[i]) {
-	if (!SCHEME_PTR_VAL(ht->keys[i])) {
+	if (!SCHEME_PTR_VAL(ht->keys[i])
+            || (SAME_TYPE(SCHEME_TYPE(ht->keys[i]), scheme_weak_box_type)
+                && !SCHEME_WEAK_BOX_VAL(ht->vals[i]))) {
 	  /* This one is dead */
 	  if (!gone)
 	    gone = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -4794,8 +4805,12 @@ static void transitive_resume(Scheme_Object *resumes)
   for (i = ht->size; i--; ) {
     if (ht->vals[i]) {
       a[0] = SCHEME_PTR_VAL(ht->keys[i]);
-      if (a[0])
-	thread_resume(1, a);
+      if (a[0]) {
+        if (SAME_TYPE(SCHEME_TYPE(a[0]), scheme_weak_box_type))
+          a[0] = SCHEME_WEAK_BOX_VAL(a[0]);
+        if (a[0])
+          thread_resume(1, a);
+      }
     }
   }
 }
@@ -4846,6 +4861,8 @@ static void transitive_promote(Scheme_Thread *p, Scheme_Custodian *c)
   for (i = ht->size; i--; ) {
     if (ht->vals[i]) {
       t = SCHEME_PTR_VAL(ht->keys[i]);
+      if (SAME_TYPE(SCHEME_TYPE(t), scheme_weak_box_type))
+        t = SCHEME_WEAK_BOX_VAL(t);
       if (t)
 	promote_thread((Scheme_Thread *)t, c);
     }
@@ -5021,6 +5038,13 @@ static Scheme_Object *thread_resume(int argc, Scheme_Object *argv[])
     if (p->resumed_box) {
       SCHEME_PTR2_VAL(p->resumed_box) = (Scheme_Object *)p;
       scheme_post_sema_all(SCHEME_PTR1_VAL(p->resumed_box));
+    }
+
+    if (p->running_box && !(p->running & MZTHREAD_SUSPENDED)) {
+      /* Make transitive-resume weak: */
+      Scheme_Object *wb;
+      wb = scheme_make_weak_box((Scheme_Object *)p);
+      SCHEME_PTR_VAL(p->running_box) = wb;
     }
     
     p->running -= MZTHREAD_USER_SUSPENDED;
