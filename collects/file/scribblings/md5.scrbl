@@ -11,7 +11,7 @@
 
 @defmodule[file/md5]
 
-@defproc[(md5 [in (or/c input-port? bytes?)]) bytes?]{
+@defproc[(md5 [in (or/c input-port? bytes? string?)]) bytes?]{
 
 Produces a byte string containing 32 hexadecimal digits (lowercase)
 that is the MD5 hash of the given input stream or byte string.

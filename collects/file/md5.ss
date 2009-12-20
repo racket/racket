@@ -72,6 +72,7 @@
 ;; 2009-12-20 / Eli
 ;; - `mzscheme' -> `scheme/base'
 ;; - moved from mzlib/md5 to file/md5
+;; - made it work on strings again
 
 (require (for-syntax scheme/base))
 
@@ -220,9 +221,10 @@
     [(a-thing) (md5 a-thing #t)]
     [(a-thing hex-encode?)
      (let ([a-port
-            (cond [(bytes? a-thing) (open-input-bytes a-thing)]
+            (cond [(bytes? a-thing)  (open-input-bytes a-thing)]
+                  [(string? a-thing) (open-input-string a-thing)]
                   [(input-port? a-thing) a-thing]
-                  [else (raise-type-error 'md5 "input-port or bytes"
+                  [else (raise-type-error 'md5 "input-port, bytes, or string"
                                           a-thing)])])
        (encode (step4 a-port) hex-encode?))]))
 
