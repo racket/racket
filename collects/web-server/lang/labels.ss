@@ -1,5 +1,5 @@
 #lang scheme
-(require mzlib/md5)
+(require file/md5)
 (provide/contract
  [make-labeling (bytes? . -> . (-> symbol?))])
 

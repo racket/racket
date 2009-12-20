@@ -1,6 +1,6 @@
 #lang scheme/base
 (require mzlib/contract
-         mzlib/md5
+         file/md5
          mzlib/port
          mzlib/list
          mzlib/plt-match

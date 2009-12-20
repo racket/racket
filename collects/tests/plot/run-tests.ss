@@ -3,7 +3,7 @@
 exec mred  "$0" "$@"
 |#
 #lang scheme
-(require plot mzlib/md5 scheme/runtime-path)
+(require plot file/md5 scheme/runtime-path)
 
 (define-runtime-path here "./")
 

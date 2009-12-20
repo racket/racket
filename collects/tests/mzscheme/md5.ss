@@ -3,7 +3,7 @@
 
 (Section 'md5)
 
-(require mzlib/md5)
+(require file/md5)
 
 (test #"d41d8cd98f00b204e9800998ecf8427e" md5 #"")
 (test #"0cc175b9c0f1b6a831c399e269772661" md5 #"a")
