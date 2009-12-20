@@ -111,7 +111,7 @@
   (set! splash-title _splash-title)
   (set! splash-max-width (max 1 (splash-get-preference (get-splash-width-preference-name) width-default)))
   (send gauge set-range splash-max-width)
-  (send splash-frame set-label splash-title)
+  (send splash-tlw set-label splash-title)
   (let/ec k
     (define (no-splash)
       (set! splash-bitmap #f)
@@ -154,8 +154,8 @@
        (no-splash)])
     
     (refresh-splash)
-    (send splash-frame center 'both)
-    (send splash-frame show #t)
+    (send splash-tlw center 'both)
+    (thread (λ () (send splash-tlw show #t)))
     (flush-display) (yield) (sleep)
     (flush-display) (yield) (sleep)))
 
@@ -171,8 +171,8 @@
   (unless (= splash-max-width splash-current-width)
     (splash-set-preference (get-splash-width-preference-name) (max 1 splash-current-width)))
   (set! quit-on-close? #f)
-  (when splash-frame
-    (send splash-frame show #f)))
+  (when splash-tlw
+    (send splash-tlw show #f)))
 
 (define (shutdown-splash)
   (set! splash-load-handler (λ (old-load f expected) (old-load f expected))))
@@ -279,12 +279,20 @@
 
 (define quit-on-close? #t)
 
-(define splash-frame%
-  (class frame%
-    (define/augment (on-close)
-      (when quit-on-close?
-        (exit)))
-    (super-new)))
+(define splash-tlw%
+  (case (system-type)
+    [(unix)
+     (class dialog%
+       (define/augment (on-close)
+         (when quit-on-close?
+           (exit)))
+       (super-new))]
+    [else
+     (class frame%
+       (define/augment (on-close)
+         (when quit-on-close?
+           (exit)))
+       (super-new [style '(no-resize-border)]))]))
 
 (define splash-canvas%
   (class canvas%
@@ -294,14 +302,13 @@
     (define/override (on-event evt) (splash-event-callback evt))
     (super-new)))
 
-(define splash-frame
+(define splash-tlw
   (parameterize ([current-eventspace splash-eventspace])
-    (instantiate splash-frame% ()
-      (label splash-title)
-      (style '(no-resize-border)))))
-(send splash-frame set-alignment 'center 'center)
+    (new splash-tlw%
+      (label splash-title))))
+(send splash-tlw set-alignment 'center 'center)
 
-(define panel (make-object vertical-pane% splash-frame))
+(define panel (make-object vertical-pane% splash-tlw))
 (define splash-canvas (new splash-canvas% [parent panel] [style '(no-autoclear)]))
 (define gauge-panel (make-object horizontal-pane% panel))
 (define gauge
