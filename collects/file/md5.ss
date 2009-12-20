@@ -76,7 +76,7 @@
 
 (require (for-syntax scheme/base))
 
-;;; Word aritmetic (32 bit)
+;;; Word arithmetic (32 bit)
 ;; Terminology
 ;;    word:  32 bit unsigned integer
 ;;    byte:   8 bit unsigned integer
