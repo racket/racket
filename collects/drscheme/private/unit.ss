@@ -56,6 +56,27 @@ module browser threading seems wrong.
                     [else "plt-logo-red-diffuse.png"]))
       'png/mask))
   
+  (define todays-icon-bw-mask 
+    (and (send todays-icon ok?)
+         (send todays-icon get-loaded-mask)
+         (eq? (system-type) 'unix) ;; avoid computing this unless we use it
+         (let* ([w (send todays-icon get-width)]
+                [h (send todays-icon get-height)]
+                [bm (make-object bitmap% w h #t)]
+                [color-mask (send todays-icon get-loaded-mask)]
+                [src-bytes (make-bytes (* w h 4) 0)]
+                [dest-bits (make-bytes (* w h 4) 255)]
+                [bdc (make-object bitmap-dc% bm)]
+                [black (send the-color-database find-color "black")]
+                [white (send the-color-database find-color "white")])
+           (send color-mask get-argb-pixels 0 0 w h src-bytes #t)
+           (for ([i (in-range 0 w)])
+             (for ([j (in-range 0 h)])
+               (let ([b (= (bytes-ref src-bytes (* 4 (+ i (* j h)))) 0)])
+                 (send bdc set-pixel i j (if b white black)))))
+           (send bdc set-bitmap #f)
+           bm)))
+  
   (define-unit unit@
     (import [prefix help-desk: drscheme:help-desk^]
             [prefix drscheme:app: drscheme:app^]
@@ -4111,7 +4132,7 @@ module browser threading seems wrong.
         (inherit set-icon)
         (when (send todays-icon ok?)
           (case (system-type)
-            [(unix) (set-icon todays-icon #f #;(send todays-icon get-loaded-mask))]))
+            [(unix) (set-icon todays-icon todays-icon-bw-mask)]))
         
         (send definitions-canvas focus)))
     
