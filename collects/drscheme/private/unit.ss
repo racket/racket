@@ -48,6 +48,14 @@ module browser threading seems wrong.
   (define show-planet-paths (string-constant module-browser-show-planet-paths/short))
   (define refresh (string-constant module-browser-refresh))
   
+  (define todays-icon
+    (make-object bitmap% 
+      (build-path (collection-path "icons")
+                  (case (date-week-day (seconds->date (current-seconds)))
+                    [(6 0) "plt-logo-red-shiny.png"]
+                    [else "plt-logo-red-diffuse.png"]))
+      'png/mask))
+  
   (define-unit unit@
     (import [prefix help-desk: drscheme:help-desk^]
             [prefix drscheme:app: drscheme:app^]
@@ -4099,6 +4107,12 @@ module browser threading seems wrong.
         
         (set-label-prefix (string-constant drscheme))
         (set! newest-frame this)
+        
+        (inherit set-icon)
+        (when (send todays-icon ok?)
+          (case (system-type)
+            [(unix) (set-icon todays-icon #f #;(send todays-icon get-loaded-mask))]))
+        
         (send definitions-canvas focus)))
     
     (define execute-warning-canvas%
