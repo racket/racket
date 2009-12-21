@@ -48,35 +48,6 @@ module browser threading seems wrong.
   (define show-planet-paths (string-constant module-browser-show-planet-paths/short))
   (define refresh (string-constant module-browser-refresh))
   
-  (define todays-icon
-    (make-object bitmap% 
-      (build-path (collection-path "icons")
-                  (case (date-week-day (seconds->date (current-seconds)))
-                    [(6 0) "plt-logo-red-shiny.png"]
-                    [else "plt-logo-red-diffuse.png"]))
-      'png/mask))
-  
-  (define todays-icon-bw-mask 
-    (and (send todays-icon ok?)
-         (send todays-icon get-loaded-mask)
-         (eq? (system-type) 'unix) ;; avoid computing this unless we use it
-         (let* ([w (send todays-icon get-width)]
-                [h (send todays-icon get-height)]
-                [bm (make-object bitmap% w h #t)]
-                [color-mask (send todays-icon get-loaded-mask)]
-                [src-bytes (make-bytes (* w h 4) 0)]
-                [dest-bits (make-bytes (* w h 4) 255)]
-                [bdc (make-object bitmap-dc% bm)]
-                [black (send the-color-database find-color "black")]
-                [white (send the-color-database find-color "white")])
-           (send color-mask get-argb-pixels 0 0 w h src-bytes #t)
-           (for ([i (in-range 0 w)])
-             (for ([j (in-range 0 h)])
-               (let ([b (= (bytes-ref src-bytes (* 4 (+ i (* j h)))) 0)])
-                 (send bdc set-pixel i j (if b white black)))))
-           (send bdc set-bitmap #f)
-           bm)))
-  
   (define-unit unit@
     (import [prefix help-desk: drscheme:help-desk^]
             [prefix drscheme:app: drscheme:app^]
@@ -4128,12 +4099,6 @@ module browser threading seems wrong.
         
         (set-label-prefix (string-constant drscheme))
         (set! newest-frame this)
-        
-        (inherit set-icon)
-        (when (send todays-icon ok?)
-          (case (system-type)
-            [(unix) (set-icon todays-icon todays-icon-bw-mask)]))
-        
         (send definitions-canvas focus)))
     
     (define execute-warning-canvas%

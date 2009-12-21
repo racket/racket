@@ -201,6 +201,16 @@
     
     (accept-drop-files #t)
     
+    (inherit set-icon)
+    (let ([icon (current-icon)])
+      (when icon
+        (if (pair? icon)
+            (let ([small (car icon)]
+                  [large (cdr icon)])
+              (set-icon small (send small get-loaded-mask) 'small)
+              (set-icon large (send large get-loaded-mask) 'large))
+            (set-icon icon (send icon get-loaded-mask) 'both))))
+    
     (let ([mb (make-object (get-menu-bar%) this)])
       (when (or (eq? (system-type) 'macos)
                 (eq? (system-type) 'macosx))
@@ -212,6 +222,8 @@
     [define panel (make-root-area-container (get-area-container%) this)]
     (define/public (get-area-container) panel)
     (set! after-init? #t)))
+
+(define current-icon (make-parameter #f))
 
 (define size-pref<%>
   (interface (basic<%>)))

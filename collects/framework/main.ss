@@ -645,6 +645,28 @@
   (frame)
   @{Removes empty menus in a frame.})
  
+ (parameter-doc
+  frame:current-icon
+  (parameter/c (or/c #f
+                     (is-a?/c bitmap%)
+                     (cons/c (is-a?/c bitmap%)
+                             (is-a?/c bitmap%))))
+  icon-spec
+  @{The value of this parameter is used by the initialization code of
+    @scheme[frame:basic-mixin].
+    @itemize[@item{If it is @scheme[#f], then its value is
+    ignored.}
+              @item{It it is a @scheme[bitmap%], then the @method[frame% set-icon] is called
+    with the bitmap, the result of invoking the @scheme[bitmap% get-loaded-mask] method,
+    and @scheme['both].}
+              @item{If it is a pair of bitmaps, then the @method[frame% set-icon]
+    method is invoked twice, once with each bitmap in the pair. The first bitmap
+    is passed (along with the result of its @scheme[bitmap% get-loaded-mask])
+    and @scheme['small], and then the second bitmap is passed
+    (also along with the result of its @scheme[bitmap% get-loaded-mask]) and @scheme['large].}]
+    
+    Defaults to @scheme[#f].})
+  
  (proc-doc/names
   group:get-the-frame-group
   (-> (is-a?/c group:%))
