@@ -542,7 +542,7 @@
   (define (bind! x) (set! bind (append bind (list x))))
   (define (pre!  x) (set! pre  (append pre  (list x))))
   (define (post! x) (set! post (append post (list x))))
-  (define-values (getkey setkey!)
+  (define-values (kwd-ref kwd-set!)
     (let ([ks '()])
       (values
        (lambda (k)
@@ -551,10 +551,8 @@
                [else (error '_fun "internal error: unknown keyword: ~e" k)]))
        (lambda (k-stx v)
          (let ([k (syntax-e k-stx)])
-           (cond [(assq k ks)
-                  (err (format "duplicate ~s keyword" k) k-stx)]
-                 [(assq k _fun-keywords)
-                  (set! ks (cons (cons k v) ks))]
+           (cond [(assq k ks) (err "duplicate keyword" k-stx)]
+                 [(assq k _fun-keywords) (set! ks (cons (cons k v) ks))]
                  [else (err "unknown keyword" k-stx)]))))))
   (define ((t-n-e clause) type name expr)
     (let ([keys (custom-type->keys type err)])
@@ -601,7 +599,7 @@
     (let loop ()
       (let ([k (and (pair? xs) (pair? (cdr xs)) (car xs))])
         (when (keyword? (syntax-e k))
-          (setkey! k (cadr xs))
+          (kwd-set! k (cadr xs))
           (set! xs (cddr xs))
           (loop))))
     ;; parse known punctuation
@@ -663,11 +661,11 @@
            (lambda (wrapper)
              #`(_cprocedure* (list #,@(filter-map car inputs))
                              #,(car output)
-                             #,(getkey '#:abi)
+                             #,(kwd-ref '#:abi)
                              #,wrapper
-                             #,(getkey '#:keep)
-                             #,(getkey '#:atomic?)
-                             #,(getkey '#:save-errno)))])
+                             #,(kwd-ref '#:keep)
+                             #,(kwd-ref '#:atomic?)
+                             #,(kwd-ref '#:save-errno)))])
       (if (or (caddr output) input-names (ormap caddr inputs)
               (ormap (lambda (x) (not (car x))) inputs)
               (pair? bind) (pair? pre) (pair? post))
