@@ -591,7 +591,7 @@
         (define-syntax-rule (kwds [key var] ...)
           (case k
             [(key) (if var
-                     (err (format "got a second ~s keyword") 'key (car xs))
+                     (err (format "got a second ~s keyword" 'key) (car xs))
                      (begin (set! var (cadr xs)) (set! xs (cddr xs)) (loop)))]
             ...
             [else (err "unknown keyword" (car xs))]))
