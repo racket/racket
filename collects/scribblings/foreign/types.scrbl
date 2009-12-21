@@ -577,6 +577,10 @@ treated:
    argument's value.}
 
  @item{@scheme[post:] a similar post-foreign code chunk.}
+
+ @item{@scheme[keywords:] specifies keyword/value expressions that will
+   be used with the surrounding @scheme[_fun] form.  (Note: the
+   keyword/value sequence follows @scheme[keywords:], not parenthesized.)}
 ]
 
 The @scheme[pre:] and @scheme[post:] bindings can be of the form

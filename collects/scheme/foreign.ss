@@ -399,7 +399,9 @@
          [else (set! keys (cons (cons key val) keys))]))
      (let loop ([t orig])
        (define (next rest . args) (apply setkey! args) (loop rest))
-       (syntax-case* t (type: expr: bind: 1st-arg: prev-arg: pre: post:) id=?
+       (syntax-case* t
+           (type: expr: bind: 1st-arg: prev-arg: pre: post: keywords:)
+           id=?
          [(type: t x ...)      (next #'(x ...) 'type #'t)]
          [(expr:     e  x ...) (next #'(x ...) 'expr #'e)]
          [(bind:     id x ...) (next #'(x ...) 'bind (cert-id #'id) #t)]
@@ -408,6 +410,12 @@
          ;; in the following two cases pass along orig for recertifying
          [(pre:      p  x ...) (next #'(x ...) 'pre  (with-arg #'p))]
          [(post:     p  x ...) (next #'(x ...) 'post (with-arg #'p))]
+         [(keywords: x ...)
+          (let kloop ([ks '()] [xs #'(x ...)])
+            (syntax-case xs ()
+              [(k v x ...) (syntax-e #'k)
+               (kloop (cons (cons (syntax-e #'k) #'v) ks) #'(x ...))]
+              [_ (next xs 'keywords (reverse ks))]))]
          [() (and (pair? keys) keys)]
          [_else #f]))))
 
@@ -428,7 +436,7 @@
         (let ([type (getkey 'type)] [pre (getkey 'pre)] [post (getkey 'post)])
           (unless type
             (err "this type must be used in a _fun expression (#f type)"))
-          (for-each notkey '(expr bind 1st prev))
+          (for-each notkey '(expr bind 1st prev keywords))
           (if (or pre post)
             ;; a type with pre/post blocks
             (let ([make-> (lambda (x what)
@@ -549,11 +557,15 @@
          (cond [(assq k ks) => cdr]
                [(assq k _fun-keywords) => cadr]
                [else (error '_fun "internal error: unknown keyword: ~e" k)]))
-       (lambda (k-stx v)
-         (let ([k (syntax-e k-stx)])
-           (cond [(assq k ks) (err "duplicate keyword" k-stx)]
+       (lambda (k-stx v [sub k-stx])
+         (let ([k (if (syntax? k-stx) (syntax-e k-stx) k-stx)])
+           (cond [(assq k ks)
+                  (err (if (keyword? k-stx)
+                         (format "indirectly duplicate ~s keyword" k-stx)
+                         "duplicate keyword")
+                       sub)]
                  [(assq k _fun-keywords) (set! ks (cons (cons k v) ks))]
-                 [else (err "unknown keyword" k-stx)]))))))
+                 [else (err "unknown keyword" sub)]))))))
   (define ((t-n-e clause) type name expr)
     (let ([keys (custom-type->keys type err)])
       (define (getkey key) (cond [(assq key keys) => cdr] [else #f]))
@@ -587,7 +599,11 @@
         (cond [(and (not expr) (getkey 'expr)) => (lambda (x) (set! expr x))])
         (cond [(getkey 'bind) => (lambda (x) (bind! #`[#,x #,name]))])
         (cond [(getkey 'pre ) => (lambda (x) (pre!  #`[#,name #,(arg x #t)]))])
-        (cond [(getkey 'post) => (lambda (x) (post! #`[#,name #,(arg x)]))]))
+        (cond [(getkey 'post) => (lambda (x) (post! #`[#,name #,(arg x)]))])
+        (cond [(getkey 'keywords)
+               => (lambda (ks)
+                    (for ([k+v (in-list ks)])
+                      (kwd-set! (car k+v) (cdr k+v) clause)))]))
       ;; turn a #f syntax to #f
       (set! type (and type (syntax-case type () [#f #f] [_ type])))
       (when type ; remember these for later usages
@@ -909,7 +925,9 @@
 ;;               eg, for method calls),
 ;; * `prev-arg:' similar to 1st-arg: but for the previous argument,
 ;; * `pre:'      for a binding that will be inserted before the ffi call,
-;; * `post:'     for a binding after the ffi call.
+;; * `post:'     for a binding after the ffi call,
+;; * `keywords:' specifying keywords to be used in the surrounding _fun
+;;               (the keywords and values follow).
 ;; The pre: and post: bindings can be of the form (id => expr) to use the
 ;; existing value.  Note that if the pre: expression is not (id => expr), then
 ;; it means that there is no input for this argument.  Also note that if a
