@@ -1808,10 +1808,10 @@ See also
 
 @defmethod[(set-clickback [start exact-nonnegative-integer?]
                           [end exact-nonnegative-integer?]
-                          [f ((is-a?/c text% 
-                                       exact-nonnegative-integer?
-                                       exact-nonnegative-integer?)
-                              . -> . any)]
+                          [f (-> (is-a?/c text%) 
+                                 exact-nonnegative-integer?
+                                 exact-nonnegative-integer?
+                                 any)]
                           [hilite-delta (or/c (is-a?/c style-delta%) #f) #f]
                           [call-on-down? any/c #f])
            void?]{
