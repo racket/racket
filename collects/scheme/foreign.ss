@@ -479,11 +479,11 @@
 ;; optionally applying a wrapper function to modify the result primitive
 ;; (callouts) or the input procedure (callbacks).
 (define* (_cprocedure itypes otype
-                      #:abi [abi #f] 
-                      #:wrapper [wrapper #f] 
-                      #:keep [keep #f]
-                      #:atomic? [atomic? #f]
-                      #:save-errno [errno #f])
+                      #:abi        [abi     #f]
+                      #:wrapper    [wrapper #f]
+                      #:keep       [keep    #f]
+                      #:atomic?    [atomic? #f]
+                      #:save-errno [errno   #f])
   (_cprocedure* itypes otype abi wrapper keep atomic? errno))
 
 ;; for internal use
@@ -524,13 +524,11 @@
     [_ (raise-syntax-error '-> "should be used only in a _fun context")]))
 
 (provide _fun)
+(define-for-syntax _fun-keywords
+  `([#:abi ,#'#f] [#:keep ,#'#t] [#:atomic? ,#'#f] [#:save-errno ,#'#f]))
 (define-syntax (_fun stx)
   (define (err msg . sub) (apply raise-syntax-error '_fun msg stx sub))
   (define xs     #f)
-  (define abi    #f)
-  (define keep   #f)
-  (define atomic? #f)
-  (define errno  #f)
   (define inputs #f)
   (define output #f)
   (define bind   '())
@@ -544,6 +542,20 @@
   (define (bind! x) (set! bind (append bind (list x))))
   (define (pre!  x) (set! pre  (append pre  (list x))))
   (define (post! x) (set! post (append post (list x))))
+  (define-values (getkey setkey!)
+    (let ([ks '()])
+      (values
+       (lambda (k)
+         (cond [(assq k ks) => cdr]
+               [(assq k _fun-keywords) => cadr]
+               [else (error '_fun "internal error: unknown keyword: ~e" k)]))
+       (lambda (k-stx v)
+         (let ([k (syntax-e k-stx)])
+           (cond [(assq k ks)
+                  (err (format "duplicate ~s keyword" k) k-stx)]
+                 [(assq k _fun-keywords)
+                  (set! ks (cons (cons k v) ks))]
+                 [else (err "unknown keyword" k-stx)]))))))
   (define ((t-n-e clause) type name expr)
     (let ([keys (custom-type->keys type err)])
       (define (getkey key) (cond [(assq key keys) => cdr] [else #f]))
@@ -576,7 +588,7 @@
         (set! type (getkey 'type))
         (cond [(and (not expr) (getkey 'expr)) => (lambda (x) (set! expr x))])
         (cond [(getkey 'bind) => (lambda (x) (bind! #`[#,x #,name]))])
-        (cond [(getkey 'pre) => (lambda (x) (pre!  #`[#,name #,(arg x #t)]))])
+        (cond [(getkey 'pre ) => (lambda (x) (pre!  #`[#,name #,(arg x #t)]))])
         (cond [(getkey 'post) => (lambda (x) (post! #`[#,name #,(arg x)]))]))
       ;; turn a #f syntax to #f
       (set! type (and type (syntax-case type () [#f #f] [_ type])))
@@ -587,21 +599,11 @@
   (define (do-fun)
     ;; parse keywords
     (let loop ()
-      (let ([k (and (pair? xs) (pair? (cdr xs)) (syntax-e (car xs)))])
-        (define-syntax-rule (kwds [key var] ...)
-          (case k
-            [(key) (if var
-                     (err (format "got a second ~s keyword" 'key) (car xs))
-                     (begin (set! var (cadr xs)) (set! xs (cddr xs)) (loop)))]
-            ...
-            [else (err "unknown keyword" (car xs))]))
-        (when (keyword? k)
-          (kwds [#:abi abi] [#:keep keep] [#:atomic? atomic?]
-                [#:save-errno errno]))))
-    (unless abi  (set! abi  #'#f))
-    (unless keep (set! keep #'#t))
-    (unless atomic? (set! atomic? #'#f))
-    (unless errno (set! errno #'#f))
+      (let ([k (and (pair? xs) (pair? (cdr xs)) (car xs))])
+        (when (keyword? (syntax-e k))
+          (setkey! k (cadr xs))
+          (set! xs (cddr xs))
+          (loop))))
     ;; parse known punctuation
     (set! xs (map (lambda (x)
                     (syntax-case* x (-> ::) id=? [:: '::] [-> '->] [_  x]))
@@ -657,44 +659,53 @@
                                (err "extraneous output expression" #'expr)
                                (t-n-e #'type #'name #'expr))]
               [type          (t-n-e #'type temp output-expr)])))
-    (if (or (caddr output) input-names (ormap caddr inputs)
-            (ormap (lambda (x) (not (car x))) inputs)
-            (pair? bind) (pair? pre) (pair? post))
-      (let* ([input-names (or input-names
-                              (filter-map (lambda (i)
-                                            (and (not (caddr i)) (cadr i)))
-                                          inputs))]
-             [output-expr (let ([o (caddr output)])
-                            (or (and (not (void? o)) o)
-                                (cadr output)))]
-             [args (filter-map (lambda (i)
-                                 (and (caddr i)
-                                      (not (void? (caddr i)))
-                                      #`[#,(cadr i) #,(caddr i)]))
-                               inputs)]
-             [ffi-args (filter-map (lambda (x) (and (car x) (cadr x))) inputs)]
-             ;; the actual wrapper body
-             [body (quasisyntax/loc stx
-                     (lambda #,input-names
-                       (let* (#,@args
-                              #,@bind
-                              #,@pre
-                              [#,(cadr output) (ffi #,@ffi-args)]
-                              #,@post)
-                         #,output-expr)))]
-             ;; if there is a string 'ffi-name property, use it as a name
-             [body (let ([n (cond [(syntax-property stx 'ffi-name)
-                                   => syntax->datum]
-                                  [else #f])])
-                     (if (string? n)
-                       (syntax-property
-                        body 'inferred-name
-                        (string->symbol (string-append "ffi-wrapper:" n)))
-                       body))])
-        #`(_cprocedure* (list #,@(filter-map car inputs)) #,(car output)
-                        #,abi (lambda (ffi) #,body) #,keep #,atomic? #,errno))
-      #`(_cprocedure* (list #,@(filter-map car inputs)) #,(car output)
-                      #,abi #f #,keep #,atomic? #,errno)))
+    (let ([make-cprocedure
+           (lambda (wrapper)
+             #`(_cprocedure* (list #,@(filter-map car inputs))
+                             #,(car output)
+                             #,(getkey '#:abi)
+                             #,wrapper
+                             #,(getkey '#:keep)
+                             #,(getkey '#:atomic?)
+                             #,(getkey '#:save-errno)))])
+      (if (or (caddr output) input-names (ormap caddr inputs)
+              (ormap (lambda (x) (not (car x))) inputs)
+              (pair? bind) (pair? pre) (pair? post))
+        (let* ([input-names
+                (or input-names
+                    (filter-map (lambda (i) (and (not (caddr i)) (cadr i)))
+                                inputs))]
+               [output-expr
+                (let ([o (caddr output)])
+                  (or (and (not (void? o)) o) (cadr output)))]
+               [args
+                (filter-map (lambda (i)
+                              (and (caddr i)
+                                   (not (void? (caddr i)))
+                                   #`[#,(cadr i) #,(caddr i)]))
+                            inputs)]
+               [ffi-args
+                (filter-map (lambda (x) (and (car x) (cadr x))) inputs)]
+               ;; the actual wrapper body
+               [body (quasisyntax/loc stx
+                       (lambda #,input-names
+                         (let* (#,@args
+                                #,@bind
+                                #,@pre
+                                [#,(cadr output) (ffi #,@ffi-args)]
+                                #,@post)
+                           #,output-expr)))]
+               ;; if there is a string 'ffi-name property, use it as a name
+               [body (let ([n (cond [(syntax-property stx 'ffi-name)
+                                     => syntax->datum]
+                                    [else #f])])
+                       (if (string? n)
+                         (syntax-property
+                          body 'inferred-name
+                          (string->symbol (string-append "ffi-wrapper:" n)))
+                         body))])
+          (make-cprocedure #`(lambda (ffi) #,body)))
+        (make-cprocedure #'#f))))
   (syntax-case stx ()
     [(_ x ...) (begin (set! xs (syntax->list #'(x ...))) (do-fun))]))
 
