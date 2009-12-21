@@ -390,11 +390,12 @@ If @scheme[save-errno] is @scheme['posix], then the value of
 @as-index{@tt{errno}} is saved (specific to the current thread)
 immediately after a foreign function returns. The saved value is
 accessible through @scheme[saved-errno]. If @scheme[save-errno] is
-@scheme['window], then the value of
+@scheme['windows], then the value of
 @as-index{@tt{GetLastError}}@tt{()} is saved for later use via
 @scheme[saved-errno]; the @scheme['windows] option is available only
-under Windows. If @scheme[save-errno] is @scheme[#f], no error value
-is saved automatically. The error-recording support provided by
+under Windows (on other platforms @scheme[saved-errno] will return
+0). If @scheme[save-errno] is @scheme[#f], no error value is saved
+automatically. The error-recording support provided by
 @scheme[save-errno] is needed because the PLT Scheme runtime system
 may otherwise preempt the current Scheme thread and itself call
 functions that set error values.
