@@ -2762,9 +2762,9 @@ static void save_errno_values(int kind)
 
   if (kind == 2) {
     long v = 0;
-#ifdef WINDOWS_DYNAMIC_LOAD
-v = GetLastError();
-#endif /* WINDOWS_DYNAMIC_LOAD */
+#   ifdef WINDOWS_DYNAMIC_LOAD
+    v = GetLastError();
+#   endif /* WINDOWS_DYNAMIC_LOAD */
     p->saved_errno = v;
     return;
   }
@@ -2786,11 +2786,11 @@ static Scheme_Object *foreign_lookup_errno(int argc, Scheme_Object *argv[])
   Scheme_Object *v = argv[0];
   if (SCHEME_SYMBOLP(v) && !SCHEME_SYM_WEIRDP(v)) {
     if (!strcmp("EINTR", SCHEME_SYM_VAL(v)))
-    return scheme_make_integer(EINTR);
-  if (!strcmp("EEXIST", SCHEME_SYM_VAL(v)))
-    return scheme_make_integer(EEXIST);
-  if (!strcmp("EAGAIN", SCHEME_SYM_VAL(v)))
-    return scheme_make_integer(EAGAIN);
+      return scheme_make_integer(EINTR);
+    if (!strcmp("EEXIST", SCHEME_SYM_VAL(v)))
+      return scheme_make_integer(EEXIST);
+    if (!strcmp("EAGAIN", SCHEME_SYM_VAL(v)))
+      return scheme_make_integer(EAGAIN);
   }
   scheme_wrong_type(MYNAME, "'EINTR, 'EEXIST, or 'EAGAIN",0, argc, argv);
   return NULL;

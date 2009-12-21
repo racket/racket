@@ -7,11 +7,12 @@
 (provide maplines)
 (define (maplines #:semicolons? [semi? #t] fun . ls)
   (add-between
-   (apply filter-map (lambda xs
-                       (let ([r (apply fun xs)])
-                         (cond [(list? r) (if semi? (append r '(";")) r)]
-                               [(or (not r) (void? r)) #f]
-                               [else (error 'maplines "bad result: ~e" r)])))
+   (apply filter-map
+          (lambda xs
+            (let ([r (apply fun xs)])
+              (cond [(list? r) (if semi? (append r '(";")) r)]
+                    [(or (not r) (void? r)) #f]
+                    [else (error 'maplines "bad result: ~e" r)])))
           ls)
    "\n"))
 

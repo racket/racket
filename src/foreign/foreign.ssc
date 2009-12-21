@@ -5,8 +5,7 @@ exec mzscheme "$0" > `echo "$0" | sed 's/ssc$/c/'` "$0"
 
 #lang scribble/text
 
-@(require "ssc-utils.ss"
-          scheme/string)
+@(require "ssc-utils.ss")
 
 @header{foreign.ssc}
 
@@ -2123,7 +2122,7 @@ static void save_errno_values(int kind)
 
   if (kind == 2) {
     long v = 0;
-@@IFDEF{WINDOWS_DYNAMIC_LOAD}{
+    @@IFDEF{WINDOWS_DYNAMIC_LOAD}{
       v = GetLastError();
     }
     p->saved_errno = v;
@@ -2145,15 +2144,14 @@ static void save_errno_values(int kind)
                   (if (null? (cdr errnos))   
                       (format "or '~a" (car errnos))
                       (format "'~a, ~a" (car errnos) (loop (cdr errnos)))))])
-    @string-append{
+    @list{
       if (SCHEME_SYMBOLP(v) && !SCHEME_SYM_WEIRDP(v)) {
-        @(string-join
+        @(add-newlines
           (for/list ([e errnos])
-           @string-append{
-            if (!strcmp("@symbol->string[e]", SCHEME_SYM_VAL(v)))
-              return scheme_make_integer(@symbol->string[e]);
-           })
-          "\n")
+            @string-append{
+              if (!strcmp("@symbol->string[e]", SCHEME_SYM_VAL(v)))
+                return scheme_make_integer(@symbol->string[e]);
+            }))
       }
       scheme_wrong_type(MYNAME, "@syms",0, argc, argv);
       return NULL;
