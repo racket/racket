@@ -595,7 +595,9 @@
                      (begin (set! var (cadr xs)) (set! xs (cddr xs)) (loop)))]
             ...
             [else (err "unknown keyword" (car xs))]))
-        (when (keyword? k) (kwds [#:abi abi] [#:keep keep] [#:atomic? atomic?] [#:save-errno errno]))))
+        (when (keyword? k)
+          (kwds [#:abi abi] [#:keep keep] [#:atomic? atomic?]
+                [#:save-errno errno]))))
     (unless abi  (set! abi  #'#f))
     (unless keep (set! keep #'#t))
     (unless atomic? (set! atomic? #'#f))
