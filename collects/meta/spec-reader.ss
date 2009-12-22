@@ -1,2 +1,2 @@
 #lang s-exp syntax/module-reader
-#:language 'dist-specs/spec-lang
+#:language 'meta/spec-lang

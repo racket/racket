@@ -1,4 +1,4 @@
-#lang reader dist-specs/spec-reader
+#lang reader meta/spec-reader
 
 ;; -*- scheme -*-
 
