@@ -45,7 +45,7 @@ shell---then you can use @scheme[dynamic-require], as in the following
 example:
 
 @schemeblock[
-(when (regexp-match? #rx"xterm" 
+(when (regexp-match? #rx"xterm"
                      (getenv "TERM"))
   (dynamic-require 'readline #f))
 ]
@@ -65,13 +65,15 @@ exits normally.
 
 @defproc[(install-readline!) void?]{
 
-Adds @scheme[(require readline)] to the result of
+Adds @scheme[(require readline/rep)] to the result of
 @scheme[(find-system-path 'init-file)], which is
 @filepath{~/.mzschemerc} under Unix. Consequently, @|readline| will be
 loaded whenever MzScheme is started in interactive mode. The
 declaration is added only if it is not already present, as determined
 by @scheme[read]ing and checking all top-level expressions in the
-file. For more fine-grained control, such as conditionally loading
+file.
+
+For more fine-grained control, such as conditionally loading
 @|readline| based on an environment variable, edit
 @filepath{~/.mzschemerc} manually.}
 
