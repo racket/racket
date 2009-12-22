@@ -5,7 +5,7 @@
  * Created:	1994
  * Updated:	
  *		11/1/95 - not deleting client data on delete or clear
- * Copyright:	(c) 2004-2009 PLT Scheme Inc.
+ * Copyright:	(c) 2004-2010 PLT Scheme Inc.
  * Copyright:	(c) 1993-94, AIAI, University of Edinburgh. All Rights Reserved.
  */
 

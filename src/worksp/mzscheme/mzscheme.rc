@@ -49,7 +49,7 @@ BEGIN
             VALUE "FileDescription", "PLT Scheme application\0"
             VALUE "InternalName", "MzScheme\0"
             VALUE "FileVersion", "4, 2, 3, 8\0"
-            VALUE "LegalCopyright", "Copyright Å© 1995-2009\0"
+            VALUE "LegalCopyright", "Copyright Å© 1995-2010\0"
             VALUE "OriginalFilename", "mzscheme.exe\0"
             VALUE "ProductName", "PLT Scheme\0"
             VALUE "ProductVersion", "4, 2, 3, 8\0"

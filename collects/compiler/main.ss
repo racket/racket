@@ -401,7 +401,7 @@
   (parse-options (current-command-line-arguments)))
 
 (when (compiler:option:somewhat-verbose)
-  (printf "mzc v~a [~a], Copyright (c) 2004-2009 PLT Scheme Inc.\n"
+  (printf "mzc v~a [~a], Copyright (c) 2004-2010 PLT Scheme Inc.\n"
           (version)
           (system-type 'gc)))
 

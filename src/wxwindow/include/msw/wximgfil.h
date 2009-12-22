@@ -3,7 +3,7 @@
  * Purpose:	Declaration of the Platform Independent GIF Image Class
  * Author:	Alejandro Aguilar Sierra
  * Created:	1995
- * Copyright:	(c) 2004-2009 PLT Scheme Inc.
+ * Copyright:	(c) 2004-2010 PLT Scheme Inc.
  * Copyright:	(c) 1995, Alejandro Aguilar Sierra <asierra@servidor.unam.mx>
  *
  * Renovated by Matthew for MrEd, 1995-2000

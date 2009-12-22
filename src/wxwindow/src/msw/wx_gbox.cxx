@@ -3,7 +3,7 @@
  * Purpose:	Group box item implementation
  * Author:	Matthew Flatt
  * Created:	2003
- * Copyright:	(c) 2004-2009 PLT Scheme Inc.
+ * Copyright:	(c) 2004-2010 PLT Scheme Inc.
  * Copyright:	(c) 2003, PLT
  */
 

@@ -4,7 +4,7 @@
  * Author:      Lj Birk (original msw by Julian Smart
  * Created:     1995
  * Updated:	October 1995
- * Copyright:   (c) 2004-2009 PLT Scheme Inc.
+ * Copyright:   (c) 2004-2010 PLT Scheme Inc.
  * Copyright:   (c) 1995, AIAI, University of Edinburgh
  */
 

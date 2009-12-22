@@ -40,7 +40,7 @@ BEGIN
             VALUE "FileDescription", "PLT Scheme GUI application\0"
             VALUE "InternalName", "MrEd\0"
             VALUE "FileVersion", "4, 2, 3, 8\0"
-            VALUE "LegalCopyright", "Copyright © 1995-2009\0"
+            VALUE "LegalCopyright", "Copyright © 1995-2010\0"
             VALUE "OriginalFilename", "MrEd.exe\0"
             VALUE "ProductName", "PLT Scheme\0"
             VALUE "ProductVersion", "4, 2, 3, 8\0"

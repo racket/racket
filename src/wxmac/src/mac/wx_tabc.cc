@@ -3,7 +3,7 @@
 // Purpose:	Panel item tab choice implementation (Macintosh version)
 // Author:	Matthew
 // Created:	2002
-// Copyright:  (c) 2004-2009 PLT Scheme Inc.
+// Copyright:  (c) 2004-2010 PLT Scheme Inc.
 // Copyright:  (c) 2002, PLT
 ///////////////////////////////////////////////////////////////////////////////
 
