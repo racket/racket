@@ -21,6 +21,10 @@
 
   (set-plt-tree! plt-base/ plt/-name null)
 
+  (set-bin-files-delayed-lists! 
+   ;; FIXME: hard-wired list of binary-specific files
+   '(("plt/collects/sgl/compiled/gl-info_ss.zo")))
+
   (expand-spec 'distributions)
 
   (void))

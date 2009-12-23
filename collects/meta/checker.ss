@@ -469,13 +469,11 @@
   (dprintf " done.\n")
   (set! add-dependency-contents! void))
 
-(define bin-files-lists
-  ;; FIXME: hard-wired list of binary-specific files
-  '(("plt/collects/sgl/compiled/gl-info_ss.zo"))
-  #;
-  (delay (map (lambda (trees)
-                (sort* (mappend tree-flatten (add-trees trees))))
-              *platform-tree-lists*)))
+(define bin-files-lists (delay null))
+
+(provide set-bin-files-delayed-lists!)
+(define (set-bin-files-delayed-lists! p)
+  (set! bin-files-lists p))
 
 (define (check-dependencies spec distname)
   (add-dependency-contents!)
