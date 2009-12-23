@@ -556,17 +556,17 @@ void scheme_init_unsafe_number(Scheme_Env *env)
 {
   Scheme_Object *p;
 
-  p = scheme_make_folding_prim(fx_and, "unsafe-fxand", 0, -1, 1);
+  p = scheme_make_folding_prim(fx_and, "unsafe-fxand", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fxand", p, env);
 
-  p = scheme_make_folding_prim(fx_or, "unsafe-fxior", 0, -1, 1);
+  p = scheme_make_folding_prim(fx_or, "unsafe-fxior", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fxior", p, env);
 
-  p = scheme_make_folding_prim(fx_xor, "unsafe-fxxor", 0, -1, 1);
+  p = scheme_make_folding_prim(fx_xor, "unsafe-fxxor", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fxxor", p, env);
