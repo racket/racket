@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/base
           scribble/manual
+          "utils.ss"
           (for-label unstable/path
                      unstable/contract
                      scheme/contract
@@ -9,6 +10,8 @@
 @title[#:tag "path"]{Path}
 
 @defmodule[unstable/path]
+
+@unstable-header[]
 
 @defproc[(explode-path* [p path-string?])
          (listof path-element?)]{

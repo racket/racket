@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/base
           scribble/manual
+          "utils.ss"
           (for-label unstable/bytes
                      scheme/serialize
                      scheme/contract
@@ -9,6 +10,8 @@
 @title[#:tag "bytes"]{Bytes}
 
 @defmodule[unstable/bytes]
+
+@unstable-header[]
 
 @defproc[(bytes-ci=? [b1 bytes?] [b2 bytes?]) boolean?]{
  Compares two bytes case insensitively.

@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/base
           scribble/manual
+          "utils.ss"
           (for-label unstable/exn
                      scheme/contract
                      scheme/base))
@@ -8,6 +9,8 @@
 @title[#:tag "exn"]{Exceptions}
 
 @defmodule[unstable/exn]
+
+@unstable-header[]
 
 @defproc[(network-error [s symbol?]
                         [fmt string?]

@@ -10,6 +10,8 @@
 
 @defmodule[unstable/contract]
 
+@unstable-header[]
+
 @defthing[non-empty-string/c contract?]{
 Contract for non-empty strings.
 }

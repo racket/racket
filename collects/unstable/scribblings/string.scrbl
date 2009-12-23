@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/base
           scribble/manual
+          "utils.ss"
           (for-label unstable/string
                      scheme/serialize
                      scheme/contract
@@ -9,6 +10,8 @@
 @title[#:tag "string"]{Strings}
 
 @defmodule[unstable/string]
+
+@unstable-header[]
 
 @defproc[(lowercase-symbol! [sb (or/c string? bytes?)])
          symbol?]{

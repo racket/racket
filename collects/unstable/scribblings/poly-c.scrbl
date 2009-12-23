@@ -1,5 +1,6 @@
 #lang scribble/manual
 @(require scribble/eval
+          "utils.ss"
           (for-label unstable/poly-c
                      scheme/contract
                      scheme/base))
@@ -11,8 +12,8 @@
 
 @defmodule[unstable/poly-c]
 
-@author[@author+email["Sam Tobin-Hochstadt" "samth@ccs.neu.edu"]
-	@author+email["Carl Eastlund" "cce@ccs.neu.edu"]]
+@unstable[@author+email["Sam Tobin-Hochstadt" "samth@ccs.neu.edu"]
+          @author+email["Carl Eastlund" "cce@ccs.neu.edu"]]
 
 
 @defform[(poly/c ([id+ id-] ...) cnt)]{

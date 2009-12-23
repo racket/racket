@@ -1,5 +1,6 @@
 #lang scribble/manual
 @(require scribble/eval
+          "utils.ss"
           (for-label unstable/mutated-vars
                      scheme/contract
                      scheme/base))
@@ -11,7 +12,7 @@
 
 @defmodule[unstable/mutated-vars]
 
-@author[@author+email["Sam Tobin-Hochstadt" "samth@ccs.neu.edu"]]
+@unstable[@author+email["Sam Tobin-Hochstadt" "samth@ccs.neu.edu"]]
 
 
 @defproc[(find-mutated-vars [stx syntax?]) void?]{ Traverses

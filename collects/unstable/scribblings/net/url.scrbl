@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/base
           scribble/manual
+          "../utils.ss"
           (for-label unstable/net/url
                      net/url
                      scheme/contract
@@ -9,6 +10,8 @@
 @title[#:tag "url"]{URLs}
 
 @defmodule[unstable/net/url]
+
+@unstable-header[]
 
 @defproc[(url-replace-path [proc ((listof path/param?) . -> . (listof path/param?))]
                            [u url?])

@@ -16,6 +16,8 @@
 
 @defmodule[unstable/list]
 
+@unstable-header[]
+
 @defproc[(list-prefix? [l list?]
                        [r list?])
          boolean?]{
