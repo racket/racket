@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "mz.ss"
           scheme/math
+          scribble/extract
           (for-label scheme/math
                      scheme/flonum))
 
@@ -65,7 +66,10 @@ infinity, or @scheme[+nan.0] if no such limit exists.
 
 A @deftech{fixnum} is an exact integer whose two's complement
 representation fit into 31 bits on a 32-bit platform or 63 bits on a
-64-bit platform. Two fixnums that are @scheme[=] are also the same
+64-bit platform; furthermore, no allocation is required when computing
+with fixnums. See also the @schememodname[scheme/fixnum] module, below.
+
+Two fixnums that are @scheme[=] are also the same
 according to @scheme[eq?]. Otherwise, the result of @scheme[eq?]
 applied to two numbers is undefined.
 
@@ -949,6 +953,25 @@ Sets the inexact real number in slot @scheme[pos] of @scheme[vec]. The
 first slot is position @scheme[0], and the last slot is one less than
 @scheme[(flvector-length vec)].}
 
+                       
+@section{Fixnum Operations}
+
+@defmodule[scheme/fixnum]
+
+The @schememodname[scheme/fixnum] library provides operations like
+@scheme[fx+] that consume and produce only fixnums. The
+operations in this library are meant to be safe versions of the
+unsafe fixnum operations like @scheme[unsafe-fx+]. The expected
+usecase for this library to develop some code using it and then
+to replace the @scheme[require] of @schememodname[scheme/fixnum]
+with 
+@schemeblock[(require (filtered-in
+                       (λ (name) (and (regexp-match #rx"unsafe-" name)
+                                      (regexp-replace #rx"unsafe-" name "")))
+                       scheme/unsafe/ops))]
+to drop in this library's unsafe cousins.
+
+@(include-extracted (lib "fixnum.ss" "scheme"))
 
 @; ------------------------------------------------------------------------
 @section{Extra Constants and Functions}

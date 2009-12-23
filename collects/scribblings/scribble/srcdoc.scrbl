@@ -108,7 +108,9 @@ form.}
               (proc-doc id contract desc-expr)
               ([contract (-> result)
                          (->d (arg ...) () (values [id result] ...))
+                         (->d (arg ...) () #:pre-cond expression (values [id result] ...))
                          (->d (arg ...) () [id result])
+                         (->d (arg ...) () #:pre-cond expression [id result])
                          (->d (arg ...) () #:rest id rest [id result])])]{
 
 Like @scheme[proc-doc], but supporting contract forms that embed

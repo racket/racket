@@ -57,14 +57,18 @@
   (lambda (stx)
     (syntax-case stx ()
       [(_ id contract desc)
-       (with-syntax ([(header result)
+       (with-syntax ([(header result (body-stuff ...))
                       (syntax-case #'contract (->d -> values)
                         [(->d (req ...) () (values [name res] ...))
-                         #'((id req ...) (values res ...))]
+                         #'((id req ...) (values res ...) ())]
+                        [(->d (req ...) () #:pre-cond condition (values [name res] ...))
+                         #'((id req ...) (values res ...) ((bold "Pre-condition: ") (scheme condition) "\n" "\n"))]
                         [(->d (req ...) () [name res])
-                         #'((id req ...) res)]
+                         #'((id req ...) res ())]
+                        [(->d (req ...) () #:pre-cond condition [name res])
+                         #'((id req ...) res ((bold "Pre-condition: ")  (scheme condition) "\n" "\n" ))]
                         [(->d (req ...) () #:rest rest rest-ctc [name res])
-                         #'((id req ... [rest rest-ctc] (... ...)) res)]
+                         #'((id req ... [rest rest-ctc] (... ...)) res ())]
                         [(->d (req ...) (one more ...) whatever)
                          (raise-syntax-error
                           #f
@@ -79,7 +83,7 @@
                           stx
                           #'contract)]
                         [(-> result)
-                         #'((id) result)]
+                         #'((id) result ())]
                         [(-> whatever ...) 
                          (raise-syntax-error
                           #f
@@ -95,7 +99,7 @@
                           #'contract)])])
          (values
           #'[id contract]
-          #'(defproc header result . desc)
+          #'(defproc header result body-stuff ... . desc)
           #'(scribble/manual)
           #'id))])))
 
