@@ -886,7 +886,7 @@ please adhere to these guidelines:
  (reindent-menu-item-label "&Reindent")
  (reindent-all-menu-item-label "Reindent &All")
  (semicolon-comment-out-menu-item-label "&Comment Out with Semicolons")
- (box-comment-out-menu-item-label "&Comment Out with a Box")
+ (box-comment-out-menu-item-label "Comment Out with a &Box")
  (uncomment-menu-item-label "&Uncomment")
 
  (convert-to-semicolon-comment "Convert to Semicolon Comment")
