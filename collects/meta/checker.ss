@@ -524,6 +524,10 @@
 (define *platform-tree-lists* null)
 (define *plt-tree* #f)
 
+(provide get-plt-tree)
+(define (get-plt-tree)
+  *plt-tree*)
+
 (provide verify!)
 (define (verify!)
   (define features (filter string? (reverse (*environment*))))
