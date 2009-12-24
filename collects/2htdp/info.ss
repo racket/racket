@@ -5,4 +5,5 @@
   '("hangman-world.ss"
     "hangman-world-play.ss"
     "tests"
+    "extended-key"
     "utest"))

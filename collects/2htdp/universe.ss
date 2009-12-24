@@ -207,7 +207,7 @@
   (string=? k m))
 
 (define (key-event? k) 
-  (and (string? k) (or (= (string-length k) 1) (member k KEY-EVTS))))
+  (and (string? k) (or (= (string-length k) 1) (pair? (member k KEY-EVTS)))))
 
 (define (key=? k m)
   (check-arg 'key=? (key-event? k) 'KEY-EVTS "first" k)
