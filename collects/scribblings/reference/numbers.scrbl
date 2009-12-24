@@ -961,7 +961,11 @@ first slot is position @scheme[0], and the last slot is one less than
 The @schememodname[scheme/fixnum] library provides operations like
 @scheme[fx+] that consume and produce only fixnums. The
 operations in this library are meant to be safe versions of the
-unsafe fixnum operations like @scheme[unsafe-fx+]. The expected
+unsafe fixnum operations like @scheme[unsafe-fx+]. 
+
+Note that these operations are slow, much slower than just using
+the regular mzscheme primitives, e.g. @scheme[+], even just on
+fixnums. The expected
 usecase for this library to develop some code using it and then
 to replace the @scheme[require] of @schememodname[scheme/fixnum]
 with 
@@ -969,7 +973,9 @@ with
                        (λ (name) (and (regexp-match #rx"unsafe-" name)
                                       (regexp-replace #rx"unsafe-" name "")))
                        scheme/unsafe/ops))]
-to drop in this library's unsafe cousins.
+to drop in this library's unsafe cousins or, if you find some crashing errors
+in code that uses the unsafe functions, to use this library to help debug
+the problems.
 
 @(include-extracted (lib "fixnum.ss" "scheme"))
 
