@@ -120,7 +120,7 @@
   (for ([ignore (in-range 0 800)])
     (let ([i (random-fixnum)]
           [j (random-fixnum)]
-          [k (random (r6:fixnum-width))]
+          [k (inexact->exact (floor (* (random) (+ 1 (r6:fixnum-width)))))]
           [more-fixnums (build-list (random 20) (λ (i) (random-fixnum)))])
       (for ([line (in-list unary-table)])
         (test #t same-results (list-ref line 0) (list-ref line 1) (list i)))
