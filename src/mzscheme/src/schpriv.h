@@ -170,6 +170,7 @@ void scheme_init_true_false(void);
 void scheme_init_symbol_table(void);
 void scheme_init_symbol_type(Scheme_Env *env);
 void scheme_init_type();
+void scheme_init_bignum();
 void scheme_init_list(Scheme_Env *env);
 void scheme_init_unsafe_list(Scheme_Env *env);
 void scheme_init_stx(Scheme_Env *env);

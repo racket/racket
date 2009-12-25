@@ -97,6 +97,11 @@ void scheme_bignum_use_fuel(long n);
 
 static Scheme_Object *bignum_one;
 
+void scheme_init_bignum() {
+  REGISTER_SO(bignum_one);
+  bignum_one = scheme_make_bignum(1);
+}
+
 #ifdef MZ_PRECISE_GC
 # define SAFE_SPACE(var) bigdig var[1];
 # define SCHEME_BIGDIG_SAFE(b, s) ((SCHEME_BIGDIG(b) == ((Small_Bignum *) mzALIAS b)->v) ? (s[0] = SCHEME_BIGDIG(b)[0], s) : SCHEME_BIGDIG(b))
@@ -744,21 +749,11 @@ Scheme_Object *scheme_bignum_subtract(const Scheme_Object *a, const Scheme_Objec
 
 Scheme_Object *scheme_bignum_add1(const Scheme_Object *n)
 {
-  if (!bignum_one) {
-    REGISTER_SO(bignum_one);
-    bignum_one = scheme_make_bignum(1);
-  }
-
   return bignum_add_sub(n, bignum_one, 0);
 }
 
 Scheme_Object *scheme_bignum_sub1(const Scheme_Object *n)
 {
-  if (!bignum_one) {
-    REGISTER_SO(bignum_one);
-    bignum_one = scheme_make_bignum(1);
-  }
-
   return bignum_add_sub(n, bignum_one, 1);
 }
 
