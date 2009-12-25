@@ -10105,7 +10105,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   /* In set mode, V1 is value to install.                   */
   for (ii = 0; ii < 2; ii++) {
     for (i = 0; i < 4; i++) {
-      void *code, *code_end;
+      void *code;
       int kind, for_branch;
       jit_insn *ref, *ref2, *refslow, *bref1, *bref2, *bref3, *bref4, *bref5, *bref6, *bref8;
 
@@ -10606,7 +10606,6 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
   /* *** module_run_start_code *** */
   /* Pushes a module name onto the stack for stack traces. */
   {
-    void *code_end;
     int in;
     
     module_run_start_code = jit_get_ip().ptr;
@@ -10638,7 +10637,6 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
   /* *** module_start_start_code *** */
   /* Pushes a module name onto the stack for stack traces. */
   {
-    void *code_end;
     int in;
     
     module_start_start_code = jit_get_ip().ptr;
