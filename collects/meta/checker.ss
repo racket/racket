@@ -35,6 +35,10 @@
 
 (define *properties* (make-weak-hasheq))
 
+(provide get-props
+         prop-get
+         prop-set!)
+
 (define (get-props obj)
   (hash-ref *properties* obj (lambda ()
                                (let ([props (mlist 'props)])
