@@ -136,7 +136,7 @@
         (test #t same-results (list-ref line 0) (list-ref line 1) more-fixnums)))))
 
 (define (random-fixnum)
-  (+ (r6:least-fixnum) (random (- (r6:greatest-fixnum) (r6:least-fixnum)))))
+  (inexact->exact (floor (+ (r6:least-fixnum) (* (random) (+ (- (r6:greatest-fixnum) (r6:least-fixnum)) 1))))))
 
 ;; check the arities
 (for-each (λ (x) (apply check-arity x)) table)
