@@ -15,7 +15,7 @@
   (let loop ([tree tree] [base #""] [acc init])
     (if (file? tree)
       (f tree base acc)
-      (let ([base* (bytes-append base (tree-name tree) #"/")])
+      (let ([base* (bytes-append base (tree-name tree))])
         (let dloop ([trees (dir-subs tree)] [acc (f tree base acc)])
           (if (null? trees)
             acc
@@ -26,7 +26,7 @@
     (f tree base
        (if (file? tree)
          acc
-         (let ([base* (bytes-append base (tree-name tree) #"/")])
+         (let ([base* (bytes-append base (tree-name tree))])
            (let dloop ([trees (dir-subs tree)])
              (if (null? trees)
                acc
@@ -36,7 +36,7 @@
   (let loop ([tree tree] [base #""])
     (f tree base)
     (when (dir? tree)
-      (let ([base* (bytes-append base (tree-name tree) #"/")])
+      (let ([base* (bytes-append base (tree-name tree))])
         (for/list ([tree (in-list (dir-subs tree))]) (loop tree base*)))))
   (void))
 
@@ -65,11 +65,11 @@
 
 ;; Turns a byte string with globbing into a regexp string.  "*" turns to ".*",
 ;; "?" turns to ".", "[...]" ranges are used as is, "{...|...}" turns to
-;; "(?:...|...)", backslash escapes as usual.  If the glob is "*" or "**", a
-;; corresponding symbol is returned; and if the glob is all literal, a byte
-;; string is returned.  No special treatment of "/"s, since these are used
-;; against path elements.  Note that this is applied on each part of a glob
-;; string, so "{...|...}" should not have "/"s in them.
+;; "(?:...|...)", backslash escapes as usual.  If the glob is "*", "*/", "**",
+;; or "**/", a corresponding symbol is returned; and if the glob is all
+;; literal, a byte string is returned.  No special treatment of "/"s, since
+;; these are used against path elements.  Note that this is applied on each
+;; part of a glob string, so "{...|...}" should not have "/"s in them.
 (define glob->regexp-or-literal
   (let ([glob-item
          ((compose byte-regexp bytes-append)
@@ -101,34 +101,60 @@
                  ;; and stuff between these things is getting quoted
                  (if (= i (caar ps))
                    r (cons (subq glob i (caar ps)) r))))))
-      (cond [(equal? #"*" glob) '*]
-            [(equal? #"**" glob) '**]
-            [(regexp-match #rx#"^[*]+$" glob)
+      (cond [(equal? #"*"   glob) '*]
+            [(equal? #"*/"  glob) '*/]
+            [(equal? #"**"  glob) '**]
+            [(equal? #"**/" glob) '**/]
+            [(regexp-match #rx#"^[*]+/?$" glob)
              (error 'glob->regexp-or-literal "bad glob: ~e" glob)]
             [else (let ([ps (regexp-match-positions* glob-item glob)])
                     (if (null? ps) glob (loop 0 ps '())))]))))
 
 (define (glob->pred glob)
-  (let loop ([xs (map glob->regexp-or-literal (regexp-split #rx#"/" glob))])
-    ;; xs is never null
-    (let* ([x (car xs)]
+  (let loop ([xs (let* (;; ignore "//"s (otherwise they'd match nothing)
+                        [glob (regexp-replace* #rx#"//+" glob #"/")]
+                        ;; ignore "/" prefix (filter never uses the root path)
+                        [glob (regexp-replace #rx#"^/" glob #"")])
+                   (regexp-split #rx#"(?<=/)" glob))])
+    ;; - xs is never null (`regexp-split' never returns null)
+    ;; - an element without a trailing slash must be the last one
+    ;; - an element with a trailing slash matches directories only, need to use
+    ;;   `dir?' for `*/' and `**/'
+    ;; - things usually work out fine, but if it's the last element, then we
+    ;;   better return #t or #f rather a continuation predicate, since a
+    ;;   predicate result will never be used and it will mess up (eg, a
+    ;;   predicate result for a file is considered true, but (not: (lambda (t)
+    ;;   #t)) is also a predicate) => use #t for `r' in this case
+    (let* ([x  (car xs)]
+           [x* (glob->regexp-or-literal x)]
            [xs (cdr xs)]
-           [r (and (pair? xs) (loop xs))])
-      (if r
-        ;; there's more to match => can only be true for dirs
-        (cond
-          [(eq? '*  x) (lambda (t) (and (dir? t) r))]
-          [(eq? '** x) (letrec ([R (or: r (lambda (t) (and (dir? t) R)))]) R)]
-          [(bytes?  x) (lambda (t) (and (dir? t) (equal? x (tree-name t)) r))]
-          [(byte-regexp? x)
-           (lambda (t) (and (dir? t) (regexp-match? x (tree-name t)) r))]
-          [else (error 'glob->pred "bad glob element: ~e" x)])
-        ;; the last element => matches files and dirs, returns a proper boolean
-        (cond
-          [(or (eq? '* x) (eq? '** x) (equal? #"" x)) (lambda (tree) #t)]
-          [(bytes? x) (lambda (t) (equal? x (tree-name t)))]
-          [(byte-regexp? x) (lambda (t) (regexp-match? x (tree-name t)))]
-          [else (error 'glob->pred "bad glob element: ~e" x)])))))
+           [r  (or (null? xs) (loop xs))])
+      (cond
+        [(eq? '*   x*) (lambda (t) #t)]
+        [(eq? '*/  x*) (lambda (t) (and (dir? t) r))]
+        [(eq? '**  x*) (lambda (t) #t)]
+        [(eq? '**/ x*) (letrec ([R (or: r (lambda (t) (and (dir? t) R)))]) R)]
+        ;; if it's the last one and it has no "/" suffix then it will match
+        ;; only files => in this case, allow matches on directories by adding
+        ;; the "/" (if this is not done then directories must always be
+        ;; specified with a trailing slash, which is easy to forget)
+        [else
+         (let ([x*/
+                (cond [(or (pair? xs) (regexp-match? #rx#"/$" x)) #f]
+                      [(bytes? x*) (bytes-append x* #"/")]
+                      [(byte-regexp? x*)
+                       (glob->regexp-or-literal (bytes-append x #"/"))]
+                      [else (error 'glob->pred "bad glob element: ~e" x)])])
+           (cond
+             [(bytes? x*/)
+              (lambda (t) (and (equal? (if (dir? t) x*/ x*) (tree-name t)) r))]
+             [(byte-regexp? x*/)
+              (lambda (t)
+                (and (regexp-match? (if (dir? t) x*/ x*) (tree-name t)) r))]
+             [(bytes? x*)
+              (lambda (t) (and (dir? t) (equal? x* (tree-name t)) r))]
+             [(byte-regexp? x*)
+              (lambda (t) (and (regexp-match? x* (tree-name t)) r))]))]))))
 
 (define (pred/glob->pred pred/glob)
   (cond [(string? pred/glob) (glob->pred (string->bytes/utf-8 pred/glob))]
@@ -181,7 +207,7 @@
                                      (unless (eq? r sub) (set! same? #f))
                                      r))
                                  subs)])
-      (and (pair? new-subs)
+      (and (pair? new-subs) ; drop empty directories
            (if same? dir (make-dir (tree-name dir) new-subs)))))
   (define (loop tree pred)
     (let ([r (pred tree)])
@@ -198,16 +224,19 @@
 (define (get-tree dir)
   (define (subs dir)
     (parameterize ([current-directory dir])
-      (sort
-       (for/list ([path (directory-list)])
-         (let ([name (path-element->bytes path)])
-           (cond
-             [(directory-exists? path)
-              (make-dir name (subs path))]
-             [(file-exists? path) (make-file name)]
-             [else (error 'get-tree "bad path encountered: ~a/~a"
-                          (current-directory) path)])))
-       bytes<?
-       #:key tree-name)))
-  (make-dir (regexp-replace #rx#"/$" (path->bytes (simplify-path dir)) #"")
+      (map cdr
+           (sort
+            (for/list ([path (directory-list)])
+              (let ([name (path-element->bytes path)])
+                (cons name
+                      (cond
+                        [(directory-exists? path)
+                         (make-dir (bytes-append name #"/") (subs path))]
+                        [(file-exists? path) (make-file name)]
+                        [else (error 'get-tree "bad path encountered: ~a/~a"
+                                     (current-directory) path)]))))
+            bytes<?
+            #:key car))))
+  (define root (path->bytes (simplify-path dir)))
+  (make-dir (if (regexp-match? #rx"/$" root) root (bytes-append root #"/"))
             (subs dir)))

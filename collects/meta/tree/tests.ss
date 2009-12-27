@@ -13,9 +13,13 @@
     (let ([r (e `(glob->regexp-or-literal ,x))])
       (if (byte-regexp? r) `(rx ,(object-name r)) r)))
   (test (g->rl #"*") => '*
+        (g->rl #"*/") => '*/
         (g->rl #"**") => '**
+        (g->rl #"**/") => '**/
         (g->rl #"***") =error> "bad glob"
+        (g->rl #"***/") =error> "bad glob"
         (g->rl #"********") =error> "bad glob"
+        (g->rl #"********/") =error> "bad glob"
         (g->rl #"glob") => #"glob"
         (g->rl #"gl?ob") => '(rx #"^gl.ob$")
         (g->rl #"gl*ob") => '(rx #"^gl.*ob$")
@@ -42,55 +46,52 @@
 
 (define (tree-tests)
   (define a-dir  (collection-path "scribble"))
-  (define a-list (map path->bytes (find-files void a-dir)))
+  (define a-list (map (lambda (p)
+                        (let ([r (path->bytes p)])
+                          (if (directory-exists? p) (bytes-append r #"/") r)))
+                      (find-files void a-dir)))
   (define a-tree #f)
-  (define (in-sub sub)
-    (let* ([sub (bytes-append (path->bytes a-dir) #"/" sub)]
-           [len (bytes-length sub)])
-      (define (prefix? b1 len1 b2)
-        (and (equal? b1 (subbytes b2 0 len1))
-             (equal? #"/" (subbytes b2 len1 (add1 len1)))))
-      (lambda (path)
-        (let ([pathlen (bytes-length path)])
-          (cond [(len . < . pathlen) (prefix? sub len path)]
-                [(len . > . pathlen) (prefix? path pathlen sub)]
-                [else (equal? path sub)])))))
   (define (->bytes x) (string->bytes/utf-8 (format "~a" x)))
   (define same-as-last-datums #f)
+  (define datums-result #f)
   (define (->datums xs)
-    (set! same-as-last-datums
-          (map (lambda (x) (read (open-input-bytes x))) xs))
-    same-as-last-datums)
+    (set! same-as-last-datums datums-result)
+    (set! datums-result (map (lambda (x) (read (open-input-bytes x))) xs))
+    datums-result)
   (define (mk-tree t)
     (e (let loop ([t t])
          (if (pair? t)
-           `(make-dir ,(->bytes (car t)) (list ,@(map loop (cdr t))))
+           `(make-dir ,(regexp-replace #rx#"/?$" (->bytes (car t)) #"/")
+                      (list ,@(map loop (cdr t))))
            `(make-file ,(->bytes t))))))
   (test (set! a-tree (mk-tree '(- 0 (A1 1 2 3 (B 4) C) (A2 5))))
         (->datums (e `(map tree-name (tree->list ,a-tree))))
-        => '(- 0 A1 1 2 3 B 4 C A2 5)
+        => '(-/ 0 A1/ 1 2 3 B/ 4 C A2/ 5)
         (->datums (e `(tree->path-list ,a-tree)))
-        => '(- -/0 -/A1 -/A1/1 -/A1/2 -/A1/3 -/A1/B -/A1/B/4 -/A1/C
-               -/A2 -/A2/5)
+        => '(-/ -/0 -/A1/ -/A1/1 -/A1/2 -/A1/3 -/A1/B/ -/A1/B/4 -/A1/C
+                -/A2/ -/A2/5)
         (->datums (e `(tree->path-list (tree-filter #"*" ,a-tree))))
-        => '(- -/0 -/A1 -/A1/1 -/A1/2 -/A1/3 -/A1/B -/A1/B/4 -/A1/C
-               -/A2 -/A2/5)
-        (->datums (e `(tree->path-list (tree-filter #"A2" ,a-tree))))
-        => '(- -/A2 -/A2/5)
-        (->datums (e `(tree->path-list (tree-filter #"A1/B" ,a-tree))))
-        => '(- -/A1 -/A1/B -/A1/B/4)
+        => same-as-last-datums
+        (->datums (e `(tree->path-list (tree-filter #"A2/" ,a-tree))))
+        => '(-/ -/A2/ -/A2/5)
+        (->datums (e `(tree->path-list (tree-filter #"A1/B/" ,a-tree))))
+        => '(-/ -/A1/ -/A1/B/ -/A1/B/4)
+        ;; works with string patterns too
+        (->datums (e `(tree->path-list (tree-filter "A1/B/" ,a-tree))))
+        => same-as-last-datums
+        ;; last "/" is optional here ...
         (->datums (e `(tree->path-list (tree-filter "A1/B" ,a-tree))))
-        => '(- -/A1 -/A1/B -/A1/B/4)
+        => same-as-last-datums
+        ;; ... but in general it forces matching only directories
+        (->datums (e `(tree->path-list (tree-filter "A1/?/" ,a-tree))))
+        => same-as-last-datums
+        (->datums (e `(tree->path-list (tree-filter "A1/?" ,a-tree))))
+        => '(-/ -/A1/ -/A1/1 -/A1/2 -/A1/3 -/A1/B/ -/A1/B/4 -/A1/C)
         (set! a-tree (e `(get-tree ,a-dir)))
         (e `(tree->path-list ,a-tree))
         => a-list
         (e `(tree->path-list (tree-filter #"*" ,a-tree)))
-        => a-list
-        (e `(tree->path-list (tree-filter #"text" ,a-tree)))
-        => (filter (in-sub #"text") a-list)
-        (e `(tree->path-list (tree-filter #"text/lang" ,a-tree)))
-        => (filter (in-sub #"text/lang") a-list)
-        )
+        => a-list)
   (set! a-tree
         (mk-tree '(-
                    (.svn
@@ -146,7 +147,7 @@
                      text.ss.svn-base
                      urls.ss.svn-base
                      xref.ss.svn-base)
-                    props
+                    (props)
                     (text-base
                      base-render.ss.svn-base
                      base.ss.svn-base
@@ -196,9 +197,9 @@
                      urls.ss.svn-base
                      xref.ss.svn-base)
                     (tmp
-                     prop-base
-                     props
-                     text-base))
+                     (prop-base)
+                     (props)
+                     (text-base)))
                    (base
                     (.svn
                      all-wcprops
@@ -207,13 +208,13 @@
                      format
                      (prop-base
                       lang.ss.svn-base)
-                     props
+                     (props)
                      (text-base
                       lang.ss.svn-base)
                      (tmp
-                      prop-base
-                      props
-                      text-base))
+                      (prop-base)
+                      (props)
+                      (text-base)))
                     (compiled
                      lang_ss.dep
                      lang_ss.zo)
@@ -225,13 +226,13 @@
                       format
                       (prop-base
                        reader.ss.svn-base)
-                      props
+                      (props)
                       (text-base
                        reader.ss.svn-base)
                       (tmp
-                       prop-base
-                       props
-                       text-base))
+                       (prop-base)
+                       (props)
+                       (text-base)))
                      (compiled
                       reader_ss.dep
                       reader_ss.zo)
@@ -326,14 +327,14 @@
                      (prop-base
                       main.ss.svn-base
                       reader.ss.svn-base)
-                     props
+                     (props)
                      (text-base
                       main.ss.svn-base
                       reader.ss.svn-base)
                      (tmp
-                      prop-base
-                      props
-                      text-base))
+                      (prop-base)
+                      (props)
+                      (text-base)))
                     (compiled
                      main_ss.dep
                      main_ss.zo
@@ -347,13 +348,13 @@
                       format
                       (prop-base
                        reader.ss.svn-base)
-                      props
+                      (props)
                       (text-base
                        reader.ss.svn-base)
                       (tmp
-                       prop-base
-                       props
-                       text-base))
+                       (prop-base)
+                       (props)
+                       (text-base)))
                      (compiled
                       reader_ss.dep
                       reader_ss.zo)
@@ -374,13 +375,13 @@
                      all-wcprops
                      entries
                      format
-                     prop-base
-                     props
-                     text-base
+                     (prop-base)
+                     (props)
+                     (text-base)
                      (tmp
-                      prop-base
-                      props
-                      text-base))
+                      (prop-base)
+                      (props)
+                      (text-base)))
                     (lang
                      (.svn
                       all-wcprops
@@ -390,14 +391,14 @@
                       (prop-base
                        lang.ss.svn-base
                        reader.ss.svn-base)
-                      props
+                      (props)
                       (text-base
                        lang.ss.svn-base
                        reader.ss.svn-base)
                       (tmp
-                       prop-base
-                       props
-                       text-base))
+                       (prop-base)
+                       (props)
+                       (text-base)))
                      (compiled
                       lang_ss.dep
                       lang_ss.zo
@@ -415,13 +416,13 @@
                      format
                      (prop-base
                       lang.ss.svn-base)
-                     props
+                     (props)
                      (text-base
                       lang.ss.svn-base)
                      (tmp
-                      prop-base
-                      props
-                      text-base))
+                      (prop-base)
+                      (props)
+                      (text-base)))
                     (compiled
                      lang_ss.dep
                      lang_ss.zo)
@@ -433,13 +434,13 @@
                       format
                       (prop-base
                        reader.ss.svn-base)
-                      props
+                      (props)
                       (text-base
                        reader.ss.svn-base)
                       (tmp
-                       prop-base
-                       props
-                       text-base))
+                       (prop-base)
+                       (props)
+                       (text-base)))
                      (compiled
                       reader_ss.dep
                       reader_ss.zo)
@@ -480,7 +481,7 @@
                       qsloc.ss.svn-base
                       render-utils.ss.svn-base
                       run-pdflatex.ss.svn-base)
-                     props
+                     (props)
                      (text-base
                       defaults.ss.svn-base
                       indirect-renderer.ss.svn-base
@@ -506,9 +507,9 @@
                       render-utils.ss.svn-base
                       run-pdflatex.ss.svn-base)
                      (tmp
-                      prop-base
-                      props
-                      text-base))
+                      (prop-base)
+                      (props)
+                      (text-base)))
                     (compiled
                      defaults_ss.dep
                      defaults_ss.zo
@@ -606,7 +607,7 @@
                       sigplan.tex.svn-base
                       sigplanconf.cls.svn-base
                       style.tex.svn-base)
-                     props
+                     (props)
                      (text-base
                       lang.ss.svn-base
                       sigplan.css.svn-base
@@ -614,9 +615,9 @@
                       sigplanconf.cls.svn-base
                       style.tex.svn-base)
                      (tmp
-                      prop-base
-                      props
-                      text-base))
+                      (prop-base)
+                      (props)
+                      (text-base)))
                     (compiled
                      lang_ss.dep
                      lang_ss.zo)
@@ -628,13 +629,13 @@
                       format
                       (prop-base
                        reader.ss.svn-base)
-                      props
+                      (props)
                       (text-base
                        reader.ss.svn-base)
                       (tmp
-                       prop-base
-                       props
-                       text-base))
+                       (prop-base)
+                       (props)
+                       (text-base)))
                      (compiled
                       reader_ss.dep
                       reader_ss.zo)
@@ -657,15 +658,15 @@
                       output.ss.svn-base
                       syntax-utils.ss.svn-base
                       textlang.ss.svn-base)
-                     props
+                     (props)
                      (text-base
                       output.ss.svn-base
                       syntax-utils.ss.svn-base
                       textlang.ss.svn-base)
                      (tmp
-                      prop-base
-                      props
-                      text-base))
+                      (prop-base)
+                      (props)
+                      (text-base)))
                     (compiled
                      output_ss.dep
                      output_ss.zo
@@ -681,13 +682,13 @@
                       format
                       (prop-base
                        reader.ss.svn-base)
-                      props
+                      (props)
                       (text-base
                        reader.ss.svn-base)
                       (tmp
-                       prop-base
-                       props
-                       text-base))
+                       (prop-base)
+                       (props)
+                       (text-base)))
                      (compiled
                       reader_ss.dep
                       reader_ss.zo)
@@ -707,15 +708,15 @@
                       drscheme-buttons.ss.svn-base
                       html.png.svn-base
                       pdf.png.svn-base)
-                     props
+                     (props)
                      (text-base
                       drscheme-buttons.ss.svn-base
                       html.png.svn-base
                       pdf.png.svn-base)
                      (tmp
-                      prop-base
-                      props
-                      text-base))
+                      (prop-base)
+                      (props)
+                      (text-base)))
                     (compiled
                      drscheme-buttons_ss.dep
                      drscheme-buttons_ss.zo)
@@ -730,13 +731,13 @@
                       format
                       (prop-base
                        mk-drs-bitmaps.ss.svn-base)
-                      props
+                      (props)
                       (text-base
                        mk-drs-bitmaps.ss.svn-base)
                       (tmp
-                       prop-base
-                       props
-                       text-base))
+                       (prop-base)
+                       (props)
+                       (text-base)))
                      (compiled
                       mk-drs-bitmaps_ss.dep
                       mk-drs-bitmaps_ss.zo)
@@ -747,13 +748,14 @@
    ;; the whole tree
    (->datums (e `(tree->path-list (tree-filter "*" ,a-tree))))
    =>
-   '(-
-     -/.svn
+   '(
+     -/
+     -/.svn/
      -/.svn/all-wcprops
      -/.svn/dir-prop-base
      -/.svn/entries
      -/.svn/format
-     -/.svn/prop-base
+     -/.svn/prop-base/
      -/.svn/prop-base/base-render.ss.svn-base
      -/.svn/prop-base/base.ss.svn-base
      -/.svn/prop-base/basic.ss.svn-base
@@ -801,8 +803,8 @@
      -/.svn/prop-base/text.ss.svn-base
      -/.svn/prop-base/urls.ss.svn-base
      -/.svn/prop-base/xref.ss.svn-base
-     -/.svn/props
-     -/.svn/text-base
+     -/.svn/props/
+     -/.svn/text-base/
      -/.svn/text-base/base-render.ss.svn-base
      -/.svn/text-base/base.ss.svn-base
      -/.svn/text-base/basic.ss.svn-base
@@ -850,44 +852,44 @@
      -/.svn/text-base/text.ss.svn-base
      -/.svn/text-base/urls.ss.svn-base
      -/.svn/text-base/xref.ss.svn-base
-     -/.svn/tmp
-     -/.svn/tmp/prop-base
-     -/.svn/tmp/props
-     -/.svn/tmp/text-base
-     -/base
-     -/base/.svn
+     -/.svn/tmp/
+     -/.svn/tmp/prop-base/
+     -/.svn/tmp/props/
+     -/.svn/tmp/text-base/
+     -/base/
+     -/base/.svn/
      -/base/.svn/all-wcprops
      -/base/.svn/dir-prop-base
      -/base/.svn/entries
      -/base/.svn/format
-     -/base/.svn/prop-base
+     -/base/.svn/prop-base/
      -/base/.svn/prop-base/lang.ss.svn-base
-     -/base/.svn/props
-     -/base/.svn/text-base
+     -/base/.svn/props/
+     -/base/.svn/text-base/
      -/base/.svn/text-base/lang.ss.svn-base
-     -/base/.svn/tmp
-     -/base/.svn/tmp/prop-base
-     -/base/.svn/tmp/props
-     -/base/.svn/tmp/text-base
-     -/base/compiled
+     -/base/.svn/tmp/
+     -/base/.svn/tmp/prop-base/
+     -/base/.svn/tmp/props/
+     -/base/.svn/tmp/text-base/
+     -/base/compiled/
      -/base/compiled/lang_ss.dep
      -/base/compiled/lang_ss.zo
-     -/base/lang
-     -/base/lang/.svn
+     -/base/lang/
+     -/base/lang/.svn/
      -/base/lang/.svn/all-wcprops
      -/base/lang/.svn/dir-prop-base
      -/base/lang/.svn/entries
      -/base/lang/.svn/format
-     -/base/lang/.svn/prop-base
+     -/base/lang/.svn/prop-base/
      -/base/lang/.svn/prop-base/reader.ss.svn-base
-     -/base/lang/.svn/props
-     -/base/lang/.svn/text-base
+     -/base/lang/.svn/props/
+     -/base/lang/.svn/text-base/
      -/base/lang/.svn/text-base/reader.ss.svn-base
-     -/base/lang/.svn/tmp
-     -/base/lang/.svn/tmp/prop-base
-     -/base/lang/.svn/tmp/props
-     -/base/lang/.svn/tmp/text-base
-     -/base/lang/compiled
+     -/base/lang/.svn/tmp/
+     -/base/lang/.svn/tmp/prop-base/
+     -/base/lang/.svn/tmp/props/
+     -/base/lang/.svn/tmp/text-base/
+     -/base/lang/compiled/
      -/base/lang/compiled/reader_ss.dep
      -/base/lang/compiled/reader_ss.zo
      -/base/lang/reader.ss
@@ -897,7 +899,7 @@
      -/basic.ss
      -/bnf.ss
      -/comment-reader.ss
-     -/compiled
+     -/compiled/
      -/compiled/base-render_ss.dep
      -/compiled/base-render_ss.zo
      -/compiled/base_ss.dep
@@ -972,44 +974,44 @@
      -/core.ss
      -/decode-struct.ss
      -/decode.ss
-     -/doc
-     -/doc/.svn
+     -/doc/
+     -/doc/.svn/
      -/doc/.svn/all-wcprops
      -/doc/.svn/dir-prop-base
      -/doc/.svn/entries
      -/doc/.svn/format
-     -/doc/.svn/prop-base
+     -/doc/.svn/prop-base/
      -/doc/.svn/prop-base/main.ss.svn-base
      -/doc/.svn/prop-base/reader.ss.svn-base
-     -/doc/.svn/props
-     -/doc/.svn/text-base
+     -/doc/.svn/props/
+     -/doc/.svn/text-base/
      -/doc/.svn/text-base/main.ss.svn-base
      -/doc/.svn/text-base/reader.ss.svn-base
-     -/doc/.svn/tmp
-     -/doc/.svn/tmp/prop-base
-     -/doc/.svn/tmp/props
-     -/doc/.svn/tmp/text-base
-     -/doc/compiled
+     -/doc/.svn/tmp/
+     -/doc/.svn/tmp/prop-base/
+     -/doc/.svn/tmp/props/
+     -/doc/.svn/tmp/text-base/
+     -/doc/compiled/
      -/doc/compiled/main_ss.dep
      -/doc/compiled/main_ss.zo
      -/doc/compiled/reader_ss.dep
      -/doc/compiled/reader_ss.zo
-     -/doc/lang
-     -/doc/lang/.svn
+     -/doc/lang/
+     -/doc/lang/.svn/
      -/doc/lang/.svn/all-wcprops
      -/doc/lang/.svn/dir-prop-base
      -/doc/lang/.svn/entries
      -/doc/lang/.svn/format
-     -/doc/lang/.svn/prop-base
+     -/doc/lang/.svn/prop-base/
      -/doc/lang/.svn/prop-base/reader.ss.svn-base
-     -/doc/lang/.svn/props
-     -/doc/lang/.svn/text-base
+     -/doc/lang/.svn/props/
+     -/doc/lang/.svn/text-base/
      -/doc/lang/.svn/text-base/reader.ss.svn-base
-     -/doc/lang/.svn/tmp
-     -/doc/lang/.svn/tmp/prop-base
-     -/doc/lang/.svn/tmp/props
-     -/doc/lang/.svn/tmp/text-base
-     -/doc/lang/compiled
+     -/doc/lang/.svn/tmp/
+     -/doc/lang/.svn/tmp/prop-base/
+     -/doc/lang/.svn/tmp/props/
+     -/doc/lang/.svn/tmp/text-base/
+     -/doc/lang/compiled/
      -/doc/lang/compiled/reader_ss.dep
      -/doc/lang/compiled/reader_ss.zo
      -/doc/lang/reader.ss
@@ -1024,36 +1026,36 @@
      -/info.ss
      -/latex-properties.ss
      -/latex-render.ss
-     -/lp
-     -/lp/.svn
+     -/lp/
+     -/lp/.svn/
      -/lp/.svn/all-wcprops
      -/lp/.svn/entries
      -/lp/.svn/format
-     -/lp/.svn/prop-base
-     -/lp/.svn/props
-     -/lp/.svn/text-base
-     -/lp/.svn/tmp
-     -/lp/.svn/tmp/prop-base
-     -/lp/.svn/tmp/props
-     -/lp/.svn/tmp/text-base
-     -/lp/lang
-     -/lp/lang/.svn
+     -/lp/.svn/prop-base/
+     -/lp/.svn/props/
+     -/lp/.svn/text-base/
+     -/lp/.svn/tmp/
+     -/lp/.svn/tmp/prop-base/
+     -/lp/.svn/tmp/props/
+     -/lp/.svn/tmp/text-base/
+     -/lp/lang/
+     -/lp/lang/.svn/
      -/lp/lang/.svn/all-wcprops
      -/lp/lang/.svn/dir-prop-base
      -/lp/lang/.svn/entries
      -/lp/lang/.svn/format
-     -/lp/lang/.svn/prop-base
+     -/lp/lang/.svn/prop-base/
      -/lp/lang/.svn/prop-base/lang.ss.svn-base
      -/lp/lang/.svn/prop-base/reader.ss.svn-base
-     -/lp/lang/.svn/props
-     -/lp/lang/.svn/text-base
+     -/lp/lang/.svn/props/
+     -/lp/lang/.svn/text-base/
      -/lp/lang/.svn/text-base/lang.ss.svn-base
      -/lp/lang/.svn/text-base/reader.ss.svn-base
-     -/lp/lang/.svn/tmp
-     -/lp/lang/.svn/tmp/prop-base
-     -/lp/lang/.svn/tmp/props
-     -/lp/lang/.svn/tmp/text-base
-     -/lp/lang/compiled
+     -/lp/lang/.svn/tmp/
+     -/lp/lang/.svn/tmp/prop-base/
+     -/lp/lang/.svn/tmp/props/
+     -/lp/lang/.svn/tmp/text-base/
+     -/lp/lang/compiled/
      -/lp/lang/compiled/lang_ss.dep
      -/lp/lang/compiled/lang_ss.zo
      -/lp/lang/compiled/reader_ss.dep
@@ -1062,40 +1064,40 @@
      -/lp/lang/reader.ss
      -/lp-include.ss
      -/lp.ss
-     -/manual
-     -/manual/.svn
+     -/manual/
+     -/manual/.svn/
      -/manual/.svn/all-wcprops
      -/manual/.svn/dir-prop-base
      -/manual/.svn/entries
      -/manual/.svn/format
-     -/manual/.svn/prop-base
+     -/manual/.svn/prop-base/
      -/manual/.svn/prop-base/lang.ss.svn-base
-     -/manual/.svn/props
-     -/manual/.svn/text-base
+     -/manual/.svn/props/
+     -/manual/.svn/text-base/
      -/manual/.svn/text-base/lang.ss.svn-base
-     -/manual/.svn/tmp
-     -/manual/.svn/tmp/prop-base
-     -/manual/.svn/tmp/props
-     -/manual/.svn/tmp/text-base
-     -/manual/compiled
+     -/manual/.svn/tmp/
+     -/manual/.svn/tmp/prop-base/
+     -/manual/.svn/tmp/props/
+     -/manual/.svn/tmp/text-base/
+     -/manual/compiled/
      -/manual/compiled/lang_ss.dep
      -/manual/compiled/lang_ss.zo
-     -/manual/lang
-     -/manual/lang/.svn
+     -/manual/lang/
+     -/manual/lang/.svn/
      -/manual/lang/.svn/all-wcprops
      -/manual/lang/.svn/dir-prop-base
      -/manual/lang/.svn/entries
      -/manual/lang/.svn/format
-     -/manual/lang/.svn/prop-base
+     -/manual/lang/.svn/prop-base/
      -/manual/lang/.svn/prop-base/reader.ss.svn-base
-     -/manual/lang/.svn/props
-     -/manual/lang/.svn/text-base
+     -/manual/lang/.svn/props/
+     -/manual/lang/.svn/text-base/
      -/manual/lang/.svn/text-base/reader.ss.svn-base
-     -/manual/lang/.svn/tmp
-     -/manual/lang/.svn/tmp/prop-base
-     -/manual/lang/.svn/tmp/props
-     -/manual/lang/.svn/tmp/text-base
-     -/manual/lang/compiled
+     -/manual/lang/.svn/tmp/
+     -/manual/lang/.svn/tmp/prop-base/
+     -/manual/lang/.svn/tmp/props/
+     -/manual/lang/.svn/tmp/text-base/
+     -/manual/lang/compiled/
      -/manual/lang/compiled/reader_ss.dep
      -/manual/lang/compiled/reader_ss.zo
      -/manual/lang/reader.ss
@@ -1105,13 +1107,13 @@
      -/manual-style.tex
      -/manual.ss
      -/pdf-render.ss
-     -/private
-     -/private/.svn
+     -/private/
+     -/private/.svn/
      -/private/.svn/all-wcprops
      -/private/.svn/dir-prop-base
      -/private/.svn/entries
      -/private/.svn/format
-     -/private/.svn/prop-base
+     -/private/.svn/prop-base/
      -/private/.svn/prop-base/defaults.ss.svn-base
      -/private/.svn/prop-base/indirect-renderer.ss.svn-base
      -/private/.svn/prop-base/lp.ss.svn-base
@@ -1135,8 +1137,8 @@
      -/private/.svn/prop-base/qsloc.ss.svn-base
      -/private/.svn/prop-base/render-utils.ss.svn-base
      -/private/.svn/prop-base/run-pdflatex.ss.svn-base
-     -/private/.svn/props
-     -/private/.svn/text-base
+     -/private/.svn/props/
+     -/private/.svn/text-base/
      -/private/.svn/text-base/defaults.ss.svn-base
      -/private/.svn/text-base/indirect-renderer.ss.svn-base
      -/private/.svn/text-base/lp.ss.svn-base
@@ -1160,11 +1162,11 @@
      -/private/.svn/text-base/qsloc.ss.svn-base
      -/private/.svn/text-base/render-utils.ss.svn-base
      -/private/.svn/text-base/run-pdflatex.ss.svn-base
-     -/private/.svn/tmp
-     -/private/.svn/tmp/prop-base
-     -/private/.svn/tmp/props
-     -/private/.svn/tmp/text-base
-     -/private/compiled
+     -/private/.svn/tmp/
+     -/private/.svn/tmp/prop-base/
+     -/private/.svn/tmp/props/
+     -/private/.svn/tmp/text-base/
+     -/private/compiled/
      -/private/compiled/defaults_ss.dep
      -/private/compiled/defaults_ss.zo
      -/private/compiled/indirect-renderer_ss.dep
@@ -1249,48 +1251,48 @@
      -/scribble.css
      -/scribble.tex
      -/search.ss
-     -/sigplan
-     -/sigplan/.svn
+     -/sigplan/
+     -/sigplan/.svn/
      -/sigplan/.svn/all-wcprops
      -/sigplan/.svn/dir-prop-base
      -/sigplan/.svn/entries
      -/sigplan/.svn/format
-     -/sigplan/.svn/prop-base
+     -/sigplan/.svn/prop-base/
      -/sigplan/.svn/prop-base/lang.ss.svn-base
      -/sigplan/.svn/prop-base/sigplan.css.svn-base
      -/sigplan/.svn/prop-base/sigplan.tex.svn-base
      -/sigplan/.svn/prop-base/sigplanconf.cls.svn-base
      -/sigplan/.svn/prop-base/style.tex.svn-base
-     -/sigplan/.svn/props
-     -/sigplan/.svn/text-base
+     -/sigplan/.svn/props/
+     -/sigplan/.svn/text-base/
      -/sigplan/.svn/text-base/lang.ss.svn-base
      -/sigplan/.svn/text-base/sigplan.css.svn-base
      -/sigplan/.svn/text-base/sigplan.tex.svn-base
      -/sigplan/.svn/text-base/sigplanconf.cls.svn-base
      -/sigplan/.svn/text-base/style.tex.svn-base
-     -/sigplan/.svn/tmp
-     -/sigplan/.svn/tmp/prop-base
-     -/sigplan/.svn/tmp/props
-     -/sigplan/.svn/tmp/text-base
-     -/sigplan/compiled
+     -/sigplan/.svn/tmp/
+     -/sigplan/.svn/tmp/prop-base/
+     -/sigplan/.svn/tmp/props/
+     -/sigplan/.svn/tmp/text-base/
+     -/sigplan/compiled/
      -/sigplan/compiled/lang_ss.dep
      -/sigplan/compiled/lang_ss.zo
-     -/sigplan/lang
-     -/sigplan/lang/.svn
+     -/sigplan/lang/
+     -/sigplan/lang/.svn/
      -/sigplan/lang/.svn/all-wcprops
      -/sigplan/lang/.svn/dir-prop-base
      -/sigplan/lang/.svn/entries
      -/sigplan/lang/.svn/format
-     -/sigplan/lang/.svn/prop-base
+     -/sigplan/lang/.svn/prop-base/
      -/sigplan/lang/.svn/prop-base/reader.ss.svn-base
-     -/sigplan/lang/.svn/props
-     -/sigplan/lang/.svn/text-base
+     -/sigplan/lang/.svn/props/
+     -/sigplan/lang/.svn/text-base/
      -/sigplan/lang/.svn/text-base/reader.ss.svn-base
-     -/sigplan/lang/.svn/tmp
-     -/sigplan/lang/.svn/tmp/prop-base
-     -/sigplan/lang/.svn/tmp/props
-     -/sigplan/lang/.svn/tmp/text-base
-     -/sigplan/lang/compiled
+     -/sigplan/lang/.svn/tmp/
+     -/sigplan/lang/.svn/tmp/prop-base/
+     -/sigplan/lang/.svn/tmp/props/
+     -/sigplan/lang/.svn/tmp/text-base/
+     -/sigplan/lang/compiled/
      -/sigplan/lang/compiled/reader_ss.dep
      -/sigplan/lang/compiled/reader_ss.zo
      -/sigplan/lang/reader.ss
@@ -1302,48 +1304,48 @@
      -/sigplan.ss
      -/srcdoc.ss
      -/struct.ss
-     -/text
-     -/text/.svn
+     -/text/
+     -/text/.svn/
      -/text/.svn/all-wcprops
      -/text/.svn/dir-prop-base
      -/text/.svn/entries
      -/text/.svn/format
-     -/text/.svn/prop-base
+     -/text/.svn/prop-base/
      -/text/.svn/prop-base/output.ss.svn-base
      -/text/.svn/prop-base/syntax-utils.ss.svn-base
      -/text/.svn/prop-base/textlang.ss.svn-base
-     -/text/.svn/props
-     -/text/.svn/text-base
+     -/text/.svn/props/
+     -/text/.svn/text-base/
      -/text/.svn/text-base/output.ss.svn-base
      -/text/.svn/text-base/syntax-utils.ss.svn-base
      -/text/.svn/text-base/textlang.ss.svn-base
-     -/text/.svn/tmp
-     -/text/.svn/tmp/prop-base
-     -/text/.svn/tmp/props
-     -/text/.svn/tmp/text-base
-     -/text/compiled
+     -/text/.svn/tmp/
+     -/text/.svn/tmp/prop-base/
+     -/text/.svn/tmp/props/
+     -/text/.svn/tmp/text-base/
+     -/text/compiled/
      -/text/compiled/output_ss.dep
      -/text/compiled/output_ss.zo
      -/text/compiled/syntax-utils_ss.dep
      -/text/compiled/syntax-utils_ss.zo
      -/text/compiled/textlang_ss.dep
      -/text/compiled/textlang_ss.zo
-     -/text/lang
-     -/text/lang/.svn
+     -/text/lang/
+     -/text/lang/.svn/
      -/text/lang/.svn/all-wcprops
      -/text/lang/.svn/dir-prop-base
      -/text/lang/.svn/entries
      -/text/lang/.svn/format
-     -/text/lang/.svn/prop-base
+     -/text/lang/.svn/prop-base/
      -/text/lang/.svn/prop-base/reader.ss.svn-base
-     -/text/lang/.svn/props
-     -/text/lang/.svn/text-base
+     -/text/lang/.svn/props/
+     -/text/lang/.svn/text-base/
      -/text/lang/.svn/text-base/reader.ss.svn-base
-     -/text/lang/.svn/tmp
-     -/text/lang/.svn/tmp/prop-base
-     -/text/lang/.svn/tmp/props
-     -/text/lang/.svn/tmp/text-base
-     -/text/lang/compiled
+     -/text/lang/.svn/tmp/
+     -/text/lang/.svn/tmp/prop-base/
+     -/text/lang/.svn/tmp/props/
+     -/text/lang/.svn/tmp/text-base/
+     -/text/lang/compiled/
      -/text/lang/compiled/reader_ss.dep
      -/text/lang/compiled/reader_ss.zo
      -/text/lang/reader.ss
@@ -1352,47 +1354,47 @@
      -/text/textlang.ss
      -/text-render.ss
      -/text.ss
-     -/tools
-     -/tools/.svn
+     -/tools/
+     -/tools/.svn/
      -/tools/.svn/all-wcprops
      -/tools/.svn/dir-prop-base
      -/tools/.svn/entries
      -/tools/.svn/format
-     -/tools/.svn/prop-base
+     -/tools/.svn/prop-base/
      -/tools/.svn/prop-base/drscheme-buttons.ss.svn-base
      -/tools/.svn/prop-base/html.png.svn-base
      -/tools/.svn/prop-base/pdf.png.svn-base
-     -/tools/.svn/props
-     -/tools/.svn/text-base
+     -/tools/.svn/props/
+     -/tools/.svn/text-base/
      -/tools/.svn/text-base/drscheme-buttons.ss.svn-base
      -/tools/.svn/text-base/html.png.svn-base
      -/tools/.svn/text-base/pdf.png.svn-base
-     -/tools/.svn/tmp
-     -/tools/.svn/tmp/prop-base
-     -/tools/.svn/tmp/props
-     -/tools/.svn/tmp/text-base
-     -/tools/compiled
+     -/tools/.svn/tmp/
+     -/tools/.svn/tmp/prop-base/
+     -/tools/.svn/tmp/props/
+     -/tools/.svn/tmp/text-base/
+     -/tools/compiled/
      -/tools/compiled/drscheme-buttons_ss.dep
      -/tools/compiled/drscheme-buttons_ss.zo
      -/tools/drscheme-buttons.ss
      -/tools/html.png
      -/tools/pdf.png
-     -/tools/private
-     -/tools/private/.svn
+     -/tools/private/
+     -/tools/private/.svn/
      -/tools/private/.svn/all-wcprops
      -/tools/private/.svn/dir-prop-base
      -/tools/private/.svn/entries
      -/tools/private/.svn/format
-     -/tools/private/.svn/prop-base
+     -/tools/private/.svn/prop-base/
      -/tools/private/.svn/prop-base/mk-drs-bitmaps.ss.svn-base
-     -/tools/private/.svn/props
-     -/tools/private/.svn/text-base
+     -/tools/private/.svn/props/
+     -/tools/private/.svn/text-base/
      -/tools/private/.svn/text-base/mk-drs-bitmaps.ss.svn-base
-     -/tools/private/.svn/tmp
-     -/tools/private/.svn/tmp/prop-base
-     -/tools/private/.svn/tmp/props
-     -/tools/private/.svn/tmp/text-base
-     -/tools/private/compiled
+     -/tools/private/.svn/tmp/
+     -/tools/private/.svn/tmp/prop-base/
+     -/tools/private/.svn/tmp/props/
+     -/tools/private/.svn/tmp/text-base/
+     -/tools/private/compiled/
      -/tools/private/compiled/mk-drs-bitmaps_ss.dep
      -/tools/private/compiled/mk-drs-bitmaps_ss.zo
      -/tools/private/mk-drs-bitmaps.ss
@@ -1402,13 +1404,13 @@
    ;; no immediate files
    (->datums (e `(tree->path-list (tree-filter "*/*" ,a-tree))))
    =>
-   '(-
-     -/.svn
+   '(-/
+     -/.svn/
      -/.svn/all-wcprops
      -/.svn/dir-prop-base
      -/.svn/entries
      -/.svn/format
-     -/.svn/prop-base
+     -/.svn/prop-base/
      -/.svn/prop-base/base-render.ss.svn-base
      -/.svn/prop-base/base.ss.svn-base
      -/.svn/prop-base/basic.ss.svn-base
@@ -1456,8 +1458,8 @@
      -/.svn/prop-base/text.ss.svn-base
      -/.svn/prop-base/urls.ss.svn-base
      -/.svn/prop-base/xref.ss.svn-base
-     -/.svn/props
-     -/.svn/text-base
+     -/.svn/props/
+     -/.svn/text-base/
      -/.svn/text-base/base-render.ss.svn-base
      -/.svn/text-base/base.ss.svn-base
      -/.svn/text-base/basic.ss.svn-base
@@ -1505,49 +1507,49 @@
      -/.svn/text-base/text.ss.svn-base
      -/.svn/text-base/urls.ss.svn-base
      -/.svn/text-base/xref.ss.svn-base
-     -/.svn/tmp
-     -/.svn/tmp/prop-base
-     -/.svn/tmp/props
-     -/.svn/tmp/text-base
-     -/base
-     -/base/.svn
+     -/.svn/tmp/
+     -/.svn/tmp/prop-base/
+     -/.svn/tmp/props/
+     -/.svn/tmp/text-base/
+     -/base/
+     -/base/.svn/
      -/base/.svn/all-wcprops
      -/base/.svn/dir-prop-base
      -/base/.svn/entries
      -/base/.svn/format
-     -/base/.svn/prop-base
+     -/base/.svn/prop-base/
      -/base/.svn/prop-base/lang.ss.svn-base
-     -/base/.svn/props
-     -/base/.svn/text-base
+     -/base/.svn/props/
+     -/base/.svn/text-base/
      -/base/.svn/text-base/lang.ss.svn-base
-     -/base/.svn/tmp
-     -/base/.svn/tmp/prop-base
-     -/base/.svn/tmp/props
-     -/base/.svn/tmp/text-base
-     -/base/compiled
+     -/base/.svn/tmp/
+     -/base/.svn/tmp/prop-base/
+     -/base/.svn/tmp/props/
+     -/base/.svn/tmp/text-base/
+     -/base/compiled/
      -/base/compiled/lang_ss.dep
      -/base/compiled/lang_ss.zo
-     -/base/lang
-     -/base/lang/.svn
+     -/base/lang/
+     -/base/lang/.svn/
      -/base/lang/.svn/all-wcprops
      -/base/lang/.svn/dir-prop-base
      -/base/lang/.svn/entries
      -/base/lang/.svn/format
-     -/base/lang/.svn/prop-base
+     -/base/lang/.svn/prop-base/
      -/base/lang/.svn/prop-base/reader.ss.svn-base
-     -/base/lang/.svn/props
-     -/base/lang/.svn/text-base
+     -/base/lang/.svn/props/
+     -/base/lang/.svn/text-base/
      -/base/lang/.svn/text-base/reader.ss.svn-base
-     -/base/lang/.svn/tmp
-     -/base/lang/.svn/tmp/prop-base
-     -/base/lang/.svn/tmp/props
-     -/base/lang/.svn/tmp/text-base
-     -/base/lang/compiled
+     -/base/lang/.svn/tmp/
+     -/base/lang/.svn/tmp/prop-base/
+     -/base/lang/.svn/tmp/props/
+     -/base/lang/.svn/tmp/text-base/
+     -/base/lang/compiled/
      -/base/lang/compiled/reader_ss.dep
      -/base/lang/compiled/reader_ss.zo
      -/base/lang/reader.ss
      -/base/lang.ss
-     -/compiled
+     -/compiled/
      -/compiled/base-render_ss.dep
      -/compiled/base-render_ss.zo
      -/compiled/base_ss.dep
@@ -1618,130 +1620,130 @@
      -/compiled/urls_ss.zo
      -/compiled/xref_ss.dep
      -/compiled/xref_ss.zo
-     -/doc
-     -/doc/.svn
+     -/doc/
+     -/doc/.svn/
      -/doc/.svn/all-wcprops
      -/doc/.svn/dir-prop-base
      -/doc/.svn/entries
      -/doc/.svn/format
-     -/doc/.svn/prop-base
+     -/doc/.svn/prop-base/
      -/doc/.svn/prop-base/main.ss.svn-base
      -/doc/.svn/prop-base/reader.ss.svn-base
-     -/doc/.svn/props
-     -/doc/.svn/text-base
+     -/doc/.svn/props/
+     -/doc/.svn/text-base/
      -/doc/.svn/text-base/main.ss.svn-base
      -/doc/.svn/text-base/reader.ss.svn-base
-     -/doc/.svn/tmp
-     -/doc/.svn/tmp/prop-base
-     -/doc/.svn/tmp/props
-     -/doc/.svn/tmp/text-base
-     -/doc/compiled
+     -/doc/.svn/tmp/
+     -/doc/.svn/tmp/prop-base/
+     -/doc/.svn/tmp/props/
+     -/doc/.svn/tmp/text-base/
+     -/doc/compiled/
      -/doc/compiled/main_ss.dep
      -/doc/compiled/main_ss.zo
      -/doc/compiled/reader_ss.dep
      -/doc/compiled/reader_ss.zo
-     -/doc/lang
-     -/doc/lang/.svn
+     -/doc/lang/
+     -/doc/lang/.svn/
      -/doc/lang/.svn/all-wcprops
      -/doc/lang/.svn/dir-prop-base
      -/doc/lang/.svn/entries
      -/doc/lang/.svn/format
-     -/doc/lang/.svn/prop-base
+     -/doc/lang/.svn/prop-base/
      -/doc/lang/.svn/prop-base/reader.ss.svn-base
-     -/doc/lang/.svn/props
-     -/doc/lang/.svn/text-base
+     -/doc/lang/.svn/props/
+     -/doc/lang/.svn/text-base/
      -/doc/lang/.svn/text-base/reader.ss.svn-base
-     -/doc/lang/.svn/tmp
-     -/doc/lang/.svn/tmp/prop-base
-     -/doc/lang/.svn/tmp/props
-     -/doc/lang/.svn/tmp/text-base
-     -/doc/lang/compiled
+     -/doc/lang/.svn/tmp/
+     -/doc/lang/.svn/tmp/prop-base/
+     -/doc/lang/.svn/tmp/props/
+     -/doc/lang/.svn/tmp/text-base/
+     -/doc/lang/compiled/
      -/doc/lang/compiled/reader_ss.dep
      -/doc/lang/compiled/reader_ss.zo
      -/doc/lang/reader.ss
      -/doc/main.ss
      -/doc/reader.ss
-     -/lp
-     -/lp/.svn
+     -/lp/
+     -/lp/.svn/
      -/lp/.svn/all-wcprops
      -/lp/.svn/entries
      -/lp/.svn/format
-     -/lp/.svn/prop-base
-     -/lp/.svn/props
-     -/lp/.svn/text-base
-     -/lp/.svn/tmp
-     -/lp/.svn/tmp/prop-base
-     -/lp/.svn/tmp/props
-     -/lp/.svn/tmp/text-base
-     -/lp/lang
-     -/lp/lang/.svn
+     -/lp/.svn/prop-base/
+     -/lp/.svn/props/
+     -/lp/.svn/text-base/
+     -/lp/.svn/tmp/
+     -/lp/.svn/tmp/prop-base/
+     -/lp/.svn/tmp/props/
+     -/lp/.svn/tmp/text-base/
+     -/lp/lang/
+     -/lp/lang/.svn/
      -/lp/lang/.svn/all-wcprops
      -/lp/lang/.svn/dir-prop-base
      -/lp/lang/.svn/entries
      -/lp/lang/.svn/format
-     -/lp/lang/.svn/prop-base
+     -/lp/lang/.svn/prop-base/
      -/lp/lang/.svn/prop-base/lang.ss.svn-base
      -/lp/lang/.svn/prop-base/reader.ss.svn-base
-     -/lp/lang/.svn/props
-     -/lp/lang/.svn/text-base
+     -/lp/lang/.svn/props/
+     -/lp/lang/.svn/text-base/
      -/lp/lang/.svn/text-base/lang.ss.svn-base
      -/lp/lang/.svn/text-base/reader.ss.svn-base
-     -/lp/lang/.svn/tmp
-     -/lp/lang/.svn/tmp/prop-base
-     -/lp/lang/.svn/tmp/props
-     -/lp/lang/.svn/tmp/text-base
-     -/lp/lang/compiled
+     -/lp/lang/.svn/tmp/
+     -/lp/lang/.svn/tmp/prop-base/
+     -/lp/lang/.svn/tmp/props/
+     -/lp/lang/.svn/tmp/text-base/
+     -/lp/lang/compiled/
      -/lp/lang/compiled/lang_ss.dep
      -/lp/lang/compiled/lang_ss.zo
      -/lp/lang/compiled/reader_ss.dep
      -/lp/lang/compiled/reader_ss.zo
      -/lp/lang/lang.ss
      -/lp/lang/reader.ss
-     -/manual
-     -/manual/.svn
+     -/manual/
+     -/manual/.svn/
      -/manual/.svn/all-wcprops
      -/manual/.svn/dir-prop-base
      -/manual/.svn/entries
      -/manual/.svn/format
-     -/manual/.svn/prop-base
+     -/manual/.svn/prop-base/
      -/manual/.svn/prop-base/lang.ss.svn-base
-     -/manual/.svn/props
-     -/manual/.svn/text-base
+     -/manual/.svn/props/
+     -/manual/.svn/text-base/
      -/manual/.svn/text-base/lang.ss.svn-base
-     -/manual/.svn/tmp
-     -/manual/.svn/tmp/prop-base
-     -/manual/.svn/tmp/props
-     -/manual/.svn/tmp/text-base
-     -/manual/compiled
+     -/manual/.svn/tmp/
+     -/manual/.svn/tmp/prop-base/
+     -/manual/.svn/tmp/props/
+     -/manual/.svn/tmp/text-base/
+     -/manual/compiled/
      -/manual/compiled/lang_ss.dep
      -/manual/compiled/lang_ss.zo
-     -/manual/lang
-     -/manual/lang/.svn
+     -/manual/lang/
+     -/manual/lang/.svn/
      -/manual/lang/.svn/all-wcprops
      -/manual/lang/.svn/dir-prop-base
      -/manual/lang/.svn/entries
      -/manual/lang/.svn/format
-     -/manual/lang/.svn/prop-base
+     -/manual/lang/.svn/prop-base/
      -/manual/lang/.svn/prop-base/reader.ss.svn-base
-     -/manual/lang/.svn/props
-     -/manual/lang/.svn/text-base
+     -/manual/lang/.svn/props/
+     -/manual/lang/.svn/text-base/
      -/manual/lang/.svn/text-base/reader.ss.svn-base
-     -/manual/lang/.svn/tmp
-     -/manual/lang/.svn/tmp/prop-base
-     -/manual/lang/.svn/tmp/props
-     -/manual/lang/.svn/tmp/text-base
-     -/manual/lang/compiled
+     -/manual/lang/.svn/tmp/
+     -/manual/lang/.svn/tmp/prop-base/
+     -/manual/lang/.svn/tmp/props/
+     -/manual/lang/.svn/tmp/text-base/
+     -/manual/lang/compiled/
      -/manual/lang/compiled/reader_ss.dep
      -/manual/lang/compiled/reader_ss.zo
      -/manual/lang/reader.ss
      -/manual/lang.ss
-     -/private
-     -/private/.svn
+     -/private/
+     -/private/.svn/
      -/private/.svn/all-wcprops
      -/private/.svn/dir-prop-base
      -/private/.svn/entries
      -/private/.svn/format
-     -/private/.svn/prop-base
+     -/private/.svn/prop-base/
      -/private/.svn/prop-base/defaults.ss.svn-base
      -/private/.svn/prop-base/indirect-renderer.ss.svn-base
      -/private/.svn/prop-base/lp.ss.svn-base
@@ -1765,8 +1767,8 @@
      -/private/.svn/prop-base/qsloc.ss.svn-base
      -/private/.svn/prop-base/render-utils.ss.svn-base
      -/private/.svn/prop-base/run-pdflatex.ss.svn-base
-     -/private/.svn/props
-     -/private/.svn/text-base
+     -/private/.svn/props/
+     -/private/.svn/text-base/
      -/private/.svn/text-base/defaults.ss.svn-base
      -/private/.svn/text-base/indirect-renderer.ss.svn-base
      -/private/.svn/text-base/lp.ss.svn-base
@@ -1790,11 +1792,11 @@
      -/private/.svn/text-base/qsloc.ss.svn-base
      -/private/.svn/text-base/render-utils.ss.svn-base
      -/private/.svn/text-base/run-pdflatex.ss.svn-base
-     -/private/.svn/tmp
-     -/private/.svn/tmp/prop-base
-     -/private/.svn/tmp/props
-     -/private/.svn/tmp/text-base
-     -/private/compiled
+     -/private/.svn/tmp/
+     -/private/.svn/tmp/prop-base/
+     -/private/.svn/tmp/props/
+     -/private/.svn/tmp/text-base/
+     -/private/compiled/
      -/private/compiled/defaults_ss.dep
      -/private/compiled/defaults_ss.zo
      -/private/compiled/indirect-renderer_ss.dep
@@ -1864,48 +1866,48 @@
      -/private/qsloc.ss
      -/private/render-utils.ss
      -/private/run-pdflatex.ss
-     -/sigplan
-     -/sigplan/.svn
+     -/sigplan/
+     -/sigplan/.svn/
      -/sigplan/.svn/all-wcprops
      -/sigplan/.svn/dir-prop-base
      -/sigplan/.svn/entries
      -/sigplan/.svn/format
-     -/sigplan/.svn/prop-base
+     -/sigplan/.svn/prop-base/
      -/sigplan/.svn/prop-base/lang.ss.svn-base
      -/sigplan/.svn/prop-base/sigplan.css.svn-base
      -/sigplan/.svn/prop-base/sigplan.tex.svn-base
      -/sigplan/.svn/prop-base/sigplanconf.cls.svn-base
      -/sigplan/.svn/prop-base/style.tex.svn-base
-     -/sigplan/.svn/props
-     -/sigplan/.svn/text-base
+     -/sigplan/.svn/props/
+     -/sigplan/.svn/text-base/
      -/sigplan/.svn/text-base/lang.ss.svn-base
      -/sigplan/.svn/text-base/sigplan.css.svn-base
      -/sigplan/.svn/text-base/sigplan.tex.svn-base
      -/sigplan/.svn/text-base/sigplanconf.cls.svn-base
      -/sigplan/.svn/text-base/style.tex.svn-base
-     -/sigplan/.svn/tmp
-     -/sigplan/.svn/tmp/prop-base
-     -/sigplan/.svn/tmp/props
-     -/sigplan/.svn/tmp/text-base
-     -/sigplan/compiled
+     -/sigplan/.svn/tmp/
+     -/sigplan/.svn/tmp/prop-base/
+     -/sigplan/.svn/tmp/props/
+     -/sigplan/.svn/tmp/text-base/
+     -/sigplan/compiled/
      -/sigplan/compiled/lang_ss.dep
      -/sigplan/compiled/lang_ss.zo
-     -/sigplan/lang
-     -/sigplan/lang/.svn
+     -/sigplan/lang/
+     -/sigplan/lang/.svn/
      -/sigplan/lang/.svn/all-wcprops
      -/sigplan/lang/.svn/dir-prop-base
      -/sigplan/lang/.svn/entries
      -/sigplan/lang/.svn/format
-     -/sigplan/lang/.svn/prop-base
+     -/sigplan/lang/.svn/prop-base/
      -/sigplan/lang/.svn/prop-base/reader.ss.svn-base
-     -/sigplan/lang/.svn/props
-     -/sigplan/lang/.svn/text-base
+     -/sigplan/lang/.svn/props/
+     -/sigplan/lang/.svn/text-base/
      -/sigplan/lang/.svn/text-base/reader.ss.svn-base
-     -/sigplan/lang/.svn/tmp
-     -/sigplan/lang/.svn/tmp/prop-base
-     -/sigplan/lang/.svn/tmp/props
-     -/sigplan/lang/.svn/tmp/text-base
-     -/sigplan/lang/compiled
+     -/sigplan/lang/.svn/tmp/
+     -/sigplan/lang/.svn/tmp/prop-base/
+     -/sigplan/lang/.svn/tmp/props/
+     -/sigplan/lang/.svn/tmp/text-base/
+     -/sigplan/lang/compiled/
      -/sigplan/lang/compiled/reader_ss.dep
      -/sigplan/lang/compiled/reader_ss.zo
      -/sigplan/lang/reader.ss
@@ -1914,105 +1916,107 @@
      -/sigplan/sigplan.tex
      -/sigplan/sigplanconf.cls
      -/sigplan/style.tex
-     -/text
-     -/text/.svn
+     -/text/
+     -/text/.svn/
      -/text/.svn/all-wcprops
      -/text/.svn/dir-prop-base
      -/text/.svn/entries
      -/text/.svn/format
-     -/text/.svn/prop-base
+     -/text/.svn/prop-base/
      -/text/.svn/prop-base/output.ss.svn-base
      -/text/.svn/prop-base/syntax-utils.ss.svn-base
      -/text/.svn/prop-base/textlang.ss.svn-base
-     -/text/.svn/props
-     -/text/.svn/text-base
+     -/text/.svn/props/
+     -/text/.svn/text-base/
      -/text/.svn/text-base/output.ss.svn-base
      -/text/.svn/text-base/syntax-utils.ss.svn-base
      -/text/.svn/text-base/textlang.ss.svn-base
-     -/text/.svn/tmp
-     -/text/.svn/tmp/prop-base
-     -/text/.svn/tmp/props
-     -/text/.svn/tmp/text-base
-     -/text/compiled
+     -/text/.svn/tmp/
+     -/text/.svn/tmp/prop-base/
+     -/text/.svn/tmp/props/
+     -/text/.svn/tmp/text-base/
+     -/text/compiled/
      -/text/compiled/output_ss.dep
      -/text/compiled/output_ss.zo
      -/text/compiled/syntax-utils_ss.dep
      -/text/compiled/syntax-utils_ss.zo
      -/text/compiled/textlang_ss.dep
      -/text/compiled/textlang_ss.zo
-     -/text/lang
-     -/text/lang/.svn
+     -/text/lang/
+     -/text/lang/.svn/
      -/text/lang/.svn/all-wcprops
      -/text/lang/.svn/dir-prop-base
      -/text/lang/.svn/entries
      -/text/lang/.svn/format
-     -/text/lang/.svn/prop-base
+     -/text/lang/.svn/prop-base/
      -/text/lang/.svn/prop-base/reader.ss.svn-base
-     -/text/lang/.svn/props
-     -/text/lang/.svn/text-base
+     -/text/lang/.svn/props/
+     -/text/lang/.svn/text-base/
      -/text/lang/.svn/text-base/reader.ss.svn-base
-     -/text/lang/.svn/tmp
-     -/text/lang/.svn/tmp/prop-base
-     -/text/lang/.svn/tmp/props
-     -/text/lang/.svn/tmp/text-base
-     -/text/lang/compiled
+     -/text/lang/.svn/tmp/
+     -/text/lang/.svn/tmp/prop-base/
+     -/text/lang/.svn/tmp/props/
+     -/text/lang/.svn/tmp/text-base/
+     -/text/lang/compiled/
      -/text/lang/compiled/reader_ss.dep
      -/text/lang/compiled/reader_ss.zo
      -/text/lang/reader.ss
      -/text/output.ss
      -/text/syntax-utils.ss
      -/text/textlang.ss
-     -/tools
-     -/tools/.svn
+     -/tools/
+     -/tools/.svn/
      -/tools/.svn/all-wcprops
      -/tools/.svn/dir-prop-base
      -/tools/.svn/entries
      -/tools/.svn/format
-     -/tools/.svn/prop-base
+     -/tools/.svn/prop-base/
      -/tools/.svn/prop-base/drscheme-buttons.ss.svn-base
      -/tools/.svn/prop-base/html.png.svn-base
      -/tools/.svn/prop-base/pdf.png.svn-base
-     -/tools/.svn/props
-     -/tools/.svn/text-base
+     -/tools/.svn/props/
+     -/tools/.svn/text-base/
      -/tools/.svn/text-base/drscheme-buttons.ss.svn-base
      -/tools/.svn/text-base/html.png.svn-base
      -/tools/.svn/text-base/pdf.png.svn-base
-     -/tools/.svn/tmp
-     -/tools/.svn/tmp/prop-base
-     -/tools/.svn/tmp/props
-     -/tools/.svn/tmp/text-base
-     -/tools/compiled
+     -/tools/.svn/tmp/
+     -/tools/.svn/tmp/prop-base/
+     -/tools/.svn/tmp/props/
+     -/tools/.svn/tmp/text-base/
+     -/tools/compiled/
      -/tools/compiled/drscheme-buttons_ss.dep
      -/tools/compiled/drscheme-buttons_ss.zo
      -/tools/drscheme-buttons.ss
      -/tools/html.png
      -/tools/pdf.png
-     -/tools/private
-     -/tools/private/.svn
+     -/tools/private/
+     -/tools/private/.svn/
      -/tools/private/.svn/all-wcprops
      -/tools/private/.svn/dir-prop-base
      -/tools/private/.svn/entries
      -/tools/private/.svn/format
-     -/tools/private/.svn/prop-base
+     -/tools/private/.svn/prop-base/
      -/tools/private/.svn/prop-base/mk-drs-bitmaps.ss.svn-base
-     -/tools/private/.svn/props
-     -/tools/private/.svn/text-base
+     -/tools/private/.svn/props/
+     -/tools/private/.svn/text-base/
      -/tools/private/.svn/text-base/mk-drs-bitmaps.ss.svn-base
-     -/tools/private/.svn/tmp
-     -/tools/private/.svn/tmp/prop-base
-     -/tools/private/.svn/tmp/props
-     -/tools/private/.svn/tmp/text-base
-     -/tools/private/compiled
+     -/tools/private/.svn/tmp/
+     -/tools/private/.svn/tmp/prop-base/
+     -/tools/private/.svn/tmp/props/
+     -/tools/private/.svn/tmp/text-base/
+     -/tools/private/compiled/
      -/tools/private/compiled/mk-drs-bitmaps_ss.dep
      -/tools/private/compiled/mk-drs-bitmaps_ss.zo
      -/tools/private/mk-drs-bitmaps.ss
      )
+   (->datums (e `(tree->path-list (tree-filter "*/" ,a-tree))))
+   => same-as-last-datums
    ;; only 2-levels and deeper
    (->datums (e `(tree->path-list (tree-filter "*/*/*" ,a-tree))))
    =>
-   '(-
-     -/.svn
-     -/.svn/prop-base
+   '(-/
+     -/.svn/
+     -/.svn/prop-base/
      -/.svn/prop-base/base-render.ss.svn-base
      -/.svn/prop-base/base.ss.svn-base
      -/.svn/prop-base/basic.ss.svn-base
@@ -2060,7 +2064,7 @@
      -/.svn/prop-base/text.ss.svn-base
      -/.svn/prop-base/urls.ss.svn-base
      -/.svn/prop-base/xref.ss.svn-base
-     -/.svn/text-base
+     -/.svn/text-base/
      -/.svn/text-base/base-render.ss.svn-base
      -/.svn/text-base/base.ss.svn-base
      -/.svn/text-base/basic.ss.svn-base
@@ -2108,168 +2112,168 @@
      -/.svn/text-base/text.ss.svn-base
      -/.svn/text-base/urls.ss.svn-base
      -/.svn/text-base/xref.ss.svn-base
-     -/.svn/tmp
-     -/.svn/tmp/prop-base
-     -/.svn/tmp/props
-     -/.svn/tmp/text-base
-     -/base
-     -/base/.svn
+     -/.svn/tmp/
+     -/.svn/tmp/prop-base/
+     -/.svn/tmp/props/
+     -/.svn/tmp/text-base/
+     -/base/
+     -/base/.svn/
      -/base/.svn/all-wcprops
      -/base/.svn/dir-prop-base
      -/base/.svn/entries
      -/base/.svn/format
-     -/base/.svn/prop-base
+     -/base/.svn/prop-base/
      -/base/.svn/prop-base/lang.ss.svn-base
-     -/base/.svn/props
-     -/base/.svn/text-base
+     -/base/.svn/props/
+     -/base/.svn/text-base/
      -/base/.svn/text-base/lang.ss.svn-base
-     -/base/.svn/tmp
-     -/base/.svn/tmp/prop-base
-     -/base/.svn/tmp/props
-     -/base/.svn/tmp/text-base
-     -/base/compiled
+     -/base/.svn/tmp/
+     -/base/.svn/tmp/prop-base/
+     -/base/.svn/tmp/props/
+     -/base/.svn/tmp/text-base/
+     -/base/compiled/
      -/base/compiled/lang_ss.dep
      -/base/compiled/lang_ss.zo
-     -/base/lang
-     -/base/lang/.svn
+     -/base/lang/
+     -/base/lang/.svn/
      -/base/lang/.svn/all-wcprops
      -/base/lang/.svn/dir-prop-base
      -/base/lang/.svn/entries
      -/base/lang/.svn/format
-     -/base/lang/.svn/prop-base
+     -/base/lang/.svn/prop-base/
      -/base/lang/.svn/prop-base/reader.ss.svn-base
-     -/base/lang/.svn/props
-     -/base/lang/.svn/text-base
+     -/base/lang/.svn/props/
+     -/base/lang/.svn/text-base/
      -/base/lang/.svn/text-base/reader.ss.svn-base
-     -/base/lang/.svn/tmp
-     -/base/lang/.svn/tmp/prop-base
-     -/base/lang/.svn/tmp/props
-     -/base/lang/.svn/tmp/text-base
-     -/base/lang/compiled
+     -/base/lang/.svn/tmp/
+     -/base/lang/.svn/tmp/prop-base/
+     -/base/lang/.svn/tmp/props/
+     -/base/lang/.svn/tmp/text-base/
+     -/base/lang/compiled/
      -/base/lang/compiled/reader_ss.dep
      -/base/lang/compiled/reader_ss.zo
      -/base/lang/reader.ss
-     -/doc
-     -/doc/.svn
+     -/doc/
+     -/doc/.svn/
      -/doc/.svn/all-wcprops
      -/doc/.svn/dir-prop-base
      -/doc/.svn/entries
      -/doc/.svn/format
-     -/doc/.svn/prop-base
+     -/doc/.svn/prop-base/
      -/doc/.svn/prop-base/main.ss.svn-base
      -/doc/.svn/prop-base/reader.ss.svn-base
-     -/doc/.svn/props
-     -/doc/.svn/text-base
+     -/doc/.svn/props/
+     -/doc/.svn/text-base/
      -/doc/.svn/text-base/main.ss.svn-base
      -/doc/.svn/text-base/reader.ss.svn-base
-     -/doc/.svn/tmp
-     -/doc/.svn/tmp/prop-base
-     -/doc/.svn/tmp/props
-     -/doc/.svn/tmp/text-base
-     -/doc/compiled
+     -/doc/.svn/tmp/
+     -/doc/.svn/tmp/prop-base/
+     -/doc/.svn/tmp/props/
+     -/doc/.svn/tmp/text-base/
+     -/doc/compiled/
      -/doc/compiled/main_ss.dep
      -/doc/compiled/main_ss.zo
      -/doc/compiled/reader_ss.dep
      -/doc/compiled/reader_ss.zo
-     -/doc/lang
-     -/doc/lang/.svn
+     -/doc/lang/
+     -/doc/lang/.svn/
      -/doc/lang/.svn/all-wcprops
      -/doc/lang/.svn/dir-prop-base
      -/doc/lang/.svn/entries
      -/doc/lang/.svn/format
-     -/doc/lang/.svn/prop-base
+     -/doc/lang/.svn/prop-base/
      -/doc/lang/.svn/prop-base/reader.ss.svn-base
-     -/doc/lang/.svn/props
-     -/doc/lang/.svn/text-base
+     -/doc/lang/.svn/props/
+     -/doc/lang/.svn/text-base/
      -/doc/lang/.svn/text-base/reader.ss.svn-base
-     -/doc/lang/.svn/tmp
-     -/doc/lang/.svn/tmp/prop-base
-     -/doc/lang/.svn/tmp/props
-     -/doc/lang/.svn/tmp/text-base
-     -/doc/lang/compiled
+     -/doc/lang/.svn/tmp/
+     -/doc/lang/.svn/tmp/prop-base/
+     -/doc/lang/.svn/tmp/props/
+     -/doc/lang/.svn/tmp/text-base/
+     -/doc/lang/compiled/
      -/doc/lang/compiled/reader_ss.dep
      -/doc/lang/compiled/reader_ss.zo
      -/doc/lang/reader.ss
-     -/lp
-     -/lp/.svn
+     -/lp/
+     -/lp/.svn/
      -/lp/.svn/all-wcprops
      -/lp/.svn/entries
      -/lp/.svn/format
-     -/lp/.svn/prop-base
-     -/lp/.svn/props
-     -/lp/.svn/text-base
-     -/lp/.svn/tmp
-     -/lp/.svn/tmp/prop-base
-     -/lp/.svn/tmp/props
-     -/lp/.svn/tmp/text-base
-     -/lp/lang
-     -/lp/lang/.svn
+     -/lp/.svn/prop-base/
+     -/lp/.svn/props/
+     -/lp/.svn/text-base/
+     -/lp/.svn/tmp/
+     -/lp/.svn/tmp/prop-base/
+     -/lp/.svn/tmp/props/
+     -/lp/.svn/tmp/text-base/
+     -/lp/lang/
+     -/lp/lang/.svn/
      -/lp/lang/.svn/all-wcprops
      -/lp/lang/.svn/dir-prop-base
      -/lp/lang/.svn/entries
      -/lp/lang/.svn/format
-     -/lp/lang/.svn/prop-base
+     -/lp/lang/.svn/prop-base/
      -/lp/lang/.svn/prop-base/lang.ss.svn-base
      -/lp/lang/.svn/prop-base/reader.ss.svn-base
-     -/lp/lang/.svn/props
-     -/lp/lang/.svn/text-base
+     -/lp/lang/.svn/props/
+     -/lp/lang/.svn/text-base/
      -/lp/lang/.svn/text-base/lang.ss.svn-base
      -/lp/lang/.svn/text-base/reader.ss.svn-base
-     -/lp/lang/.svn/tmp
-     -/lp/lang/.svn/tmp/prop-base
-     -/lp/lang/.svn/tmp/props
-     -/lp/lang/.svn/tmp/text-base
-     -/lp/lang/compiled
+     -/lp/lang/.svn/tmp/
+     -/lp/lang/.svn/tmp/prop-base/
+     -/lp/lang/.svn/tmp/props/
+     -/lp/lang/.svn/tmp/text-base/
+     -/lp/lang/compiled/
      -/lp/lang/compiled/lang_ss.dep
      -/lp/lang/compiled/lang_ss.zo
      -/lp/lang/compiled/reader_ss.dep
      -/lp/lang/compiled/reader_ss.zo
      -/lp/lang/lang.ss
      -/lp/lang/reader.ss
-     -/manual
-     -/manual/.svn
+     -/manual/
+     -/manual/.svn/
      -/manual/.svn/all-wcprops
      -/manual/.svn/dir-prop-base
      -/manual/.svn/entries
      -/manual/.svn/format
-     -/manual/.svn/prop-base
+     -/manual/.svn/prop-base/
      -/manual/.svn/prop-base/lang.ss.svn-base
-     -/manual/.svn/props
-     -/manual/.svn/text-base
+     -/manual/.svn/props/
+     -/manual/.svn/text-base/
      -/manual/.svn/text-base/lang.ss.svn-base
-     -/manual/.svn/tmp
-     -/manual/.svn/tmp/prop-base
-     -/manual/.svn/tmp/props
-     -/manual/.svn/tmp/text-base
-     -/manual/compiled
+     -/manual/.svn/tmp/
+     -/manual/.svn/tmp/prop-base/
+     -/manual/.svn/tmp/props/
+     -/manual/.svn/tmp/text-base/
+     -/manual/compiled/
      -/manual/compiled/lang_ss.dep
      -/manual/compiled/lang_ss.zo
-     -/manual/lang
-     -/manual/lang/.svn
+     -/manual/lang/
+     -/manual/lang/.svn/
      -/manual/lang/.svn/all-wcprops
      -/manual/lang/.svn/dir-prop-base
      -/manual/lang/.svn/entries
      -/manual/lang/.svn/format
-     -/manual/lang/.svn/prop-base
+     -/manual/lang/.svn/prop-base/
      -/manual/lang/.svn/prop-base/reader.ss.svn-base
-     -/manual/lang/.svn/props
-     -/manual/lang/.svn/text-base
+     -/manual/lang/.svn/props/
+     -/manual/lang/.svn/text-base/
      -/manual/lang/.svn/text-base/reader.ss.svn-base
-     -/manual/lang/.svn/tmp
-     -/manual/lang/.svn/tmp/prop-base
-     -/manual/lang/.svn/tmp/props
-     -/manual/lang/.svn/tmp/text-base
-     -/manual/lang/compiled
+     -/manual/lang/.svn/tmp/
+     -/manual/lang/.svn/tmp/prop-base/
+     -/manual/lang/.svn/tmp/props/
+     -/manual/lang/.svn/tmp/text-base/
+     -/manual/lang/compiled/
      -/manual/lang/compiled/reader_ss.dep
      -/manual/lang/compiled/reader_ss.zo
      -/manual/lang/reader.ss
-     -/private
-     -/private/.svn
+     -/private/
+     -/private/.svn/
      -/private/.svn/all-wcprops
      -/private/.svn/dir-prop-base
      -/private/.svn/entries
      -/private/.svn/format
-     -/private/.svn/prop-base
+     -/private/.svn/prop-base/
      -/private/.svn/prop-base/defaults.ss.svn-base
      -/private/.svn/prop-base/indirect-renderer.ss.svn-base
      -/private/.svn/prop-base/lp.ss.svn-base
@@ -2293,8 +2297,8 @@
      -/private/.svn/prop-base/qsloc.ss.svn-base
      -/private/.svn/prop-base/render-utils.ss.svn-base
      -/private/.svn/prop-base/run-pdflatex.ss.svn-base
-     -/private/.svn/props
-     -/private/.svn/text-base
+     -/private/.svn/props/
+     -/private/.svn/text-base/
      -/private/.svn/text-base/defaults.ss.svn-base
      -/private/.svn/text-base/indirect-renderer.ss.svn-base
      -/private/.svn/text-base/lp.ss.svn-base
@@ -2318,11 +2322,11 @@
      -/private/.svn/text-base/qsloc.ss.svn-base
      -/private/.svn/text-base/render-utils.ss.svn-base
      -/private/.svn/text-base/run-pdflatex.ss.svn-base
-     -/private/.svn/tmp
-     -/private/.svn/tmp/prop-base
-     -/private/.svn/tmp/props
-     -/private/.svn/tmp/text-base
-     -/private/compiled
+     -/private/.svn/tmp/
+     -/private/.svn/tmp/prop-base/
+     -/private/.svn/tmp/props/
+     -/private/.svn/tmp/text-base/
+     -/private/compiled/
      -/private/compiled/defaults_ss.dep
      -/private/compiled/defaults_ss.zo
      -/private/compiled/indirect-renderer_ss.dep
@@ -2369,134 +2373,134 @@
      -/private/compiled/render-utils_ss.zo
      -/private/compiled/run-pdflatex_ss.dep
      -/private/compiled/run-pdflatex_ss.zo
-     -/sigplan
-     -/sigplan/.svn
+     -/sigplan/
+     -/sigplan/.svn/
      -/sigplan/.svn/all-wcprops
      -/sigplan/.svn/dir-prop-base
      -/sigplan/.svn/entries
      -/sigplan/.svn/format
-     -/sigplan/.svn/prop-base
+     -/sigplan/.svn/prop-base/
      -/sigplan/.svn/prop-base/lang.ss.svn-base
      -/sigplan/.svn/prop-base/sigplan.css.svn-base
      -/sigplan/.svn/prop-base/sigplan.tex.svn-base
      -/sigplan/.svn/prop-base/sigplanconf.cls.svn-base
      -/sigplan/.svn/prop-base/style.tex.svn-base
-     -/sigplan/.svn/props
-     -/sigplan/.svn/text-base
+     -/sigplan/.svn/props/
+     -/sigplan/.svn/text-base/
      -/sigplan/.svn/text-base/lang.ss.svn-base
      -/sigplan/.svn/text-base/sigplan.css.svn-base
      -/sigplan/.svn/text-base/sigplan.tex.svn-base
      -/sigplan/.svn/text-base/sigplanconf.cls.svn-base
      -/sigplan/.svn/text-base/style.tex.svn-base
-     -/sigplan/.svn/tmp
-     -/sigplan/.svn/tmp/prop-base
-     -/sigplan/.svn/tmp/props
-     -/sigplan/.svn/tmp/text-base
-     -/sigplan/compiled
+     -/sigplan/.svn/tmp/
+     -/sigplan/.svn/tmp/prop-base/
+     -/sigplan/.svn/tmp/props/
+     -/sigplan/.svn/tmp/text-base/
+     -/sigplan/compiled/
      -/sigplan/compiled/lang_ss.dep
      -/sigplan/compiled/lang_ss.zo
-     -/sigplan/lang
-     -/sigplan/lang/.svn
+     -/sigplan/lang/
+     -/sigplan/lang/.svn/
      -/sigplan/lang/.svn/all-wcprops
      -/sigplan/lang/.svn/dir-prop-base
      -/sigplan/lang/.svn/entries
      -/sigplan/lang/.svn/format
-     -/sigplan/lang/.svn/prop-base
+     -/sigplan/lang/.svn/prop-base/
      -/sigplan/lang/.svn/prop-base/reader.ss.svn-base
-     -/sigplan/lang/.svn/props
-     -/sigplan/lang/.svn/text-base
+     -/sigplan/lang/.svn/props/
+     -/sigplan/lang/.svn/text-base/
      -/sigplan/lang/.svn/text-base/reader.ss.svn-base
-     -/sigplan/lang/.svn/tmp
-     -/sigplan/lang/.svn/tmp/prop-base
-     -/sigplan/lang/.svn/tmp/props
-     -/sigplan/lang/.svn/tmp/text-base
-     -/sigplan/lang/compiled
+     -/sigplan/lang/.svn/tmp/
+     -/sigplan/lang/.svn/tmp/prop-base/
+     -/sigplan/lang/.svn/tmp/props/
+     -/sigplan/lang/.svn/tmp/text-base/
+     -/sigplan/lang/compiled/
      -/sigplan/lang/compiled/reader_ss.dep
      -/sigplan/lang/compiled/reader_ss.zo
      -/sigplan/lang/reader.ss
-     -/text
-     -/text/.svn
+     -/text/
+     -/text/.svn/
      -/text/.svn/all-wcprops
      -/text/.svn/dir-prop-base
      -/text/.svn/entries
      -/text/.svn/format
-     -/text/.svn/prop-base
+     -/text/.svn/prop-base/
      -/text/.svn/prop-base/output.ss.svn-base
      -/text/.svn/prop-base/syntax-utils.ss.svn-base
      -/text/.svn/prop-base/textlang.ss.svn-base
-     -/text/.svn/props
-     -/text/.svn/text-base
+     -/text/.svn/props/
+     -/text/.svn/text-base/
      -/text/.svn/text-base/output.ss.svn-base
      -/text/.svn/text-base/syntax-utils.ss.svn-base
      -/text/.svn/text-base/textlang.ss.svn-base
-     -/text/.svn/tmp
-     -/text/.svn/tmp/prop-base
-     -/text/.svn/tmp/props
-     -/text/.svn/tmp/text-base
-     -/text/compiled
+     -/text/.svn/tmp/
+     -/text/.svn/tmp/prop-base/
+     -/text/.svn/tmp/props/
+     -/text/.svn/tmp/text-base/
+     -/text/compiled/
      -/text/compiled/output_ss.dep
      -/text/compiled/output_ss.zo
      -/text/compiled/syntax-utils_ss.dep
      -/text/compiled/syntax-utils_ss.zo
      -/text/compiled/textlang_ss.dep
      -/text/compiled/textlang_ss.zo
-     -/text/lang
-     -/text/lang/.svn
+     -/text/lang/
+     -/text/lang/.svn/
      -/text/lang/.svn/all-wcprops
      -/text/lang/.svn/dir-prop-base
      -/text/lang/.svn/entries
      -/text/lang/.svn/format
-     -/text/lang/.svn/prop-base
+     -/text/lang/.svn/prop-base/
      -/text/lang/.svn/prop-base/reader.ss.svn-base
-     -/text/lang/.svn/props
-     -/text/lang/.svn/text-base
+     -/text/lang/.svn/props/
+     -/text/lang/.svn/text-base/
      -/text/lang/.svn/text-base/reader.ss.svn-base
-     -/text/lang/.svn/tmp
-     -/text/lang/.svn/tmp/prop-base
-     -/text/lang/.svn/tmp/props
-     -/text/lang/.svn/tmp/text-base
-     -/text/lang/compiled
+     -/text/lang/.svn/tmp/
+     -/text/lang/.svn/tmp/prop-base/
+     -/text/lang/.svn/tmp/props/
+     -/text/lang/.svn/tmp/text-base/
+     -/text/lang/compiled/
      -/text/lang/compiled/reader_ss.dep
      -/text/lang/compiled/reader_ss.zo
      -/text/lang/reader.ss
-     -/tools
-     -/tools/.svn
+     -/tools/
+     -/tools/.svn/
      -/tools/.svn/all-wcprops
      -/tools/.svn/dir-prop-base
      -/tools/.svn/entries
      -/tools/.svn/format
-     -/tools/.svn/prop-base
+     -/tools/.svn/prop-base/
      -/tools/.svn/prop-base/drscheme-buttons.ss.svn-base
      -/tools/.svn/prop-base/html.png.svn-base
      -/tools/.svn/prop-base/pdf.png.svn-base
-     -/tools/.svn/props
-     -/tools/.svn/text-base
+     -/tools/.svn/props/
+     -/tools/.svn/text-base/
      -/tools/.svn/text-base/drscheme-buttons.ss.svn-base
      -/tools/.svn/text-base/html.png.svn-base
      -/tools/.svn/text-base/pdf.png.svn-base
-     -/tools/.svn/tmp
-     -/tools/.svn/tmp/prop-base
-     -/tools/.svn/tmp/props
-     -/tools/.svn/tmp/text-base
-     -/tools/compiled
+     -/tools/.svn/tmp/
+     -/tools/.svn/tmp/prop-base/
+     -/tools/.svn/tmp/props/
+     -/tools/.svn/tmp/text-base/
+     -/tools/compiled/
      -/tools/compiled/drscheme-buttons_ss.dep
      -/tools/compiled/drscheme-buttons_ss.zo
-     -/tools/private
-     -/tools/private/.svn
+     -/tools/private/
+     -/tools/private/.svn/
      -/tools/private/.svn/all-wcprops
      -/tools/private/.svn/dir-prop-base
      -/tools/private/.svn/entries
      -/tools/private/.svn/format
-     -/tools/private/.svn/prop-base
+     -/tools/private/.svn/prop-base/
      -/tools/private/.svn/prop-base/mk-drs-bitmaps.ss.svn-base
-     -/tools/private/.svn/props
-     -/tools/private/.svn/text-base
+     -/tools/private/.svn/props/
+     -/tools/private/.svn/text-base/
      -/tools/private/.svn/text-base/mk-drs-bitmaps.ss.svn-base
-     -/tools/private/.svn/tmp
-     -/tools/private/.svn/tmp/prop-base
-     -/tools/private/.svn/tmp/props
-     -/tools/private/.svn/tmp/text-base
-     -/tools/private/compiled
+     -/tools/private/.svn/tmp/
+     -/tools/private/.svn/tmp/prop-base/
+     -/tools/private/.svn/tmp/props/
+     -/tools/private/.svn/tmp/text-base/
+     -/tools/private/compiled/
      -/tools/private/compiled/mk-drs-bitmaps_ss.dep
      -/tools/private/compiled/mk-drs-bitmaps_ss.zo
      -/tools/private/mk-drs-bitmaps.ss
@@ -2504,124 +2508,124 @@
    ;; only 3-levels and deeper
    (->datums (e `(tree->path-list (tree-filter "*/*/*/*" ,a-tree))))
    =>
-   '(-
-     -/base
-     -/base/.svn
-     -/base/.svn/prop-base
+   '(-/
+     -/base/
+     -/base/.svn/
+     -/base/.svn/prop-base/
      -/base/.svn/prop-base/lang.ss.svn-base
-     -/base/.svn/text-base
+     -/base/.svn/text-base/
      -/base/.svn/text-base/lang.ss.svn-base
-     -/base/.svn/tmp
-     -/base/.svn/tmp/prop-base
-     -/base/.svn/tmp/props
-     -/base/.svn/tmp/text-base
-     -/base/lang
-     -/base/lang/.svn
+     -/base/.svn/tmp/
+     -/base/.svn/tmp/prop-base/
+     -/base/.svn/tmp/props/
+     -/base/.svn/tmp/text-base/
+     -/base/lang/
+     -/base/lang/.svn/
      -/base/lang/.svn/all-wcprops
      -/base/lang/.svn/dir-prop-base
      -/base/lang/.svn/entries
      -/base/lang/.svn/format
-     -/base/lang/.svn/prop-base
+     -/base/lang/.svn/prop-base/
      -/base/lang/.svn/prop-base/reader.ss.svn-base
-     -/base/lang/.svn/props
-     -/base/lang/.svn/text-base
+     -/base/lang/.svn/props/
+     -/base/lang/.svn/text-base/
      -/base/lang/.svn/text-base/reader.ss.svn-base
-     -/base/lang/.svn/tmp
-     -/base/lang/.svn/tmp/prop-base
-     -/base/lang/.svn/tmp/props
-     -/base/lang/.svn/tmp/text-base
-     -/base/lang/compiled
+     -/base/lang/.svn/tmp/
+     -/base/lang/.svn/tmp/prop-base/
+     -/base/lang/.svn/tmp/props/
+     -/base/lang/.svn/tmp/text-base/
+     -/base/lang/compiled/
      -/base/lang/compiled/reader_ss.dep
      -/base/lang/compiled/reader_ss.zo
-     -/doc
-     -/doc/.svn
-     -/doc/.svn/prop-base
+     -/doc/
+     -/doc/.svn/
+     -/doc/.svn/prop-base/
      -/doc/.svn/prop-base/main.ss.svn-base
      -/doc/.svn/prop-base/reader.ss.svn-base
-     -/doc/.svn/text-base
+     -/doc/.svn/text-base/
      -/doc/.svn/text-base/main.ss.svn-base
      -/doc/.svn/text-base/reader.ss.svn-base
-     -/doc/.svn/tmp
-     -/doc/.svn/tmp/prop-base
-     -/doc/.svn/tmp/props
-     -/doc/.svn/tmp/text-base
-     -/doc/lang
-     -/doc/lang/.svn
+     -/doc/.svn/tmp/
+     -/doc/.svn/tmp/prop-base/
+     -/doc/.svn/tmp/props/
+     -/doc/.svn/tmp/text-base/
+     -/doc/lang/
+     -/doc/lang/.svn/
      -/doc/lang/.svn/all-wcprops
      -/doc/lang/.svn/dir-prop-base
      -/doc/lang/.svn/entries
      -/doc/lang/.svn/format
-     -/doc/lang/.svn/prop-base
+     -/doc/lang/.svn/prop-base/
      -/doc/lang/.svn/prop-base/reader.ss.svn-base
-     -/doc/lang/.svn/props
-     -/doc/lang/.svn/text-base
+     -/doc/lang/.svn/props/
+     -/doc/lang/.svn/text-base/
      -/doc/lang/.svn/text-base/reader.ss.svn-base
-     -/doc/lang/.svn/tmp
-     -/doc/lang/.svn/tmp/prop-base
-     -/doc/lang/.svn/tmp/props
-     -/doc/lang/.svn/tmp/text-base
-     -/doc/lang/compiled
+     -/doc/lang/.svn/tmp/
+     -/doc/lang/.svn/tmp/prop-base/
+     -/doc/lang/.svn/tmp/props/
+     -/doc/lang/.svn/tmp/text-base/
+     -/doc/lang/compiled/
      -/doc/lang/compiled/reader_ss.dep
      -/doc/lang/compiled/reader_ss.zo
-     -/lp
-     -/lp/.svn
-     -/lp/.svn/tmp
-     -/lp/.svn/tmp/prop-base
-     -/lp/.svn/tmp/props
-     -/lp/.svn/tmp/text-base
-     -/lp/lang
-     -/lp/lang/.svn
+     -/lp/
+     -/lp/.svn/
+     -/lp/.svn/tmp/
+     -/lp/.svn/tmp/prop-base/
+     -/lp/.svn/tmp/props/
+     -/lp/.svn/tmp/text-base/
+     -/lp/lang/
+     -/lp/lang/.svn/
      -/lp/lang/.svn/all-wcprops
      -/lp/lang/.svn/dir-prop-base
      -/lp/lang/.svn/entries
      -/lp/lang/.svn/format
-     -/lp/lang/.svn/prop-base
+     -/lp/lang/.svn/prop-base/
      -/lp/lang/.svn/prop-base/lang.ss.svn-base
      -/lp/lang/.svn/prop-base/reader.ss.svn-base
-     -/lp/lang/.svn/props
-     -/lp/lang/.svn/text-base
+     -/lp/lang/.svn/props/
+     -/lp/lang/.svn/text-base/
      -/lp/lang/.svn/text-base/lang.ss.svn-base
      -/lp/lang/.svn/text-base/reader.ss.svn-base
-     -/lp/lang/.svn/tmp
-     -/lp/lang/.svn/tmp/prop-base
-     -/lp/lang/.svn/tmp/props
-     -/lp/lang/.svn/tmp/text-base
-     -/lp/lang/compiled
+     -/lp/lang/.svn/tmp/
+     -/lp/lang/.svn/tmp/prop-base/
+     -/lp/lang/.svn/tmp/props/
+     -/lp/lang/.svn/tmp/text-base/
+     -/lp/lang/compiled/
      -/lp/lang/compiled/lang_ss.dep
      -/lp/lang/compiled/lang_ss.zo
      -/lp/lang/compiled/reader_ss.dep
      -/lp/lang/compiled/reader_ss.zo
-     -/manual
-     -/manual/.svn
-     -/manual/.svn/prop-base
+     -/manual/
+     -/manual/.svn/
+     -/manual/.svn/prop-base/
      -/manual/.svn/prop-base/lang.ss.svn-base
-     -/manual/.svn/text-base
+     -/manual/.svn/text-base/
      -/manual/.svn/text-base/lang.ss.svn-base
-     -/manual/.svn/tmp
-     -/manual/.svn/tmp/prop-base
-     -/manual/.svn/tmp/props
-     -/manual/.svn/tmp/text-base
-     -/manual/lang
-     -/manual/lang/.svn
+     -/manual/.svn/tmp/
+     -/manual/.svn/tmp/prop-base/
+     -/manual/.svn/tmp/props/
+     -/manual/.svn/tmp/text-base/
+     -/manual/lang/
+     -/manual/lang/.svn/
      -/manual/lang/.svn/all-wcprops
      -/manual/lang/.svn/dir-prop-base
      -/manual/lang/.svn/entries
      -/manual/lang/.svn/format
-     -/manual/lang/.svn/prop-base
+     -/manual/lang/.svn/prop-base/
      -/manual/lang/.svn/prop-base/reader.ss.svn-base
-     -/manual/lang/.svn/props
-     -/manual/lang/.svn/text-base
+     -/manual/lang/.svn/props/
+     -/manual/lang/.svn/text-base/
      -/manual/lang/.svn/text-base/reader.ss.svn-base
-     -/manual/lang/.svn/tmp
-     -/manual/lang/.svn/tmp/prop-base
-     -/manual/lang/.svn/tmp/props
-     -/manual/lang/.svn/tmp/text-base
-     -/manual/lang/compiled
+     -/manual/lang/.svn/tmp/
+     -/manual/lang/.svn/tmp/prop-base/
+     -/manual/lang/.svn/tmp/props/
+     -/manual/lang/.svn/tmp/text-base/
+     -/manual/lang/compiled/
      -/manual/lang/compiled/reader_ss.dep
      -/manual/lang/compiled/reader_ss.zo
-     -/private
-     -/private/.svn
-     -/private/.svn/prop-base
+     -/private/
+     -/private/.svn/
+     -/private/.svn/prop-base/
      -/private/.svn/prop-base/defaults.ss.svn-base
      -/private/.svn/prop-base/indirect-renderer.ss.svn-base
      -/private/.svn/prop-base/lp.ss.svn-base
@@ -2645,7 +2649,7 @@
      -/private/.svn/prop-base/qsloc.ss.svn-base
      -/private/.svn/prop-base/render-utils.ss.svn-base
      -/private/.svn/prop-base/run-pdflatex.ss.svn-base
-     -/private/.svn/text-base
+     -/private/.svn/text-base/
      -/private/.svn/text-base/defaults.ss.svn-base
      -/private/.svn/text-base/indirect-renderer.ss.svn-base
      -/private/.svn/text-base/lp.ss.svn-base
@@ -2669,205 +2673,337 @@
      -/private/.svn/text-base/qsloc.ss.svn-base
      -/private/.svn/text-base/render-utils.ss.svn-base
      -/private/.svn/text-base/run-pdflatex.ss.svn-base
-     -/private/.svn/tmp
-     -/private/.svn/tmp/prop-base
-     -/private/.svn/tmp/props
-     -/private/.svn/tmp/text-base
-     -/sigplan
-     -/sigplan/.svn
-     -/sigplan/.svn/prop-base
+     -/private/.svn/tmp/
+     -/private/.svn/tmp/prop-base/
+     -/private/.svn/tmp/props/
+     -/private/.svn/tmp/text-base/
+     -/sigplan/
+     -/sigplan/.svn/
+     -/sigplan/.svn/prop-base/
      -/sigplan/.svn/prop-base/lang.ss.svn-base
      -/sigplan/.svn/prop-base/sigplan.css.svn-base
      -/sigplan/.svn/prop-base/sigplan.tex.svn-base
      -/sigplan/.svn/prop-base/sigplanconf.cls.svn-base
      -/sigplan/.svn/prop-base/style.tex.svn-base
-     -/sigplan/.svn/text-base
+     -/sigplan/.svn/text-base/
      -/sigplan/.svn/text-base/lang.ss.svn-base
      -/sigplan/.svn/text-base/sigplan.css.svn-base
      -/sigplan/.svn/text-base/sigplan.tex.svn-base
      -/sigplan/.svn/text-base/sigplanconf.cls.svn-base
      -/sigplan/.svn/text-base/style.tex.svn-base
-     -/sigplan/.svn/tmp
-     -/sigplan/.svn/tmp/prop-base
-     -/sigplan/.svn/tmp/props
-     -/sigplan/.svn/tmp/text-base
-     -/sigplan/lang
-     -/sigplan/lang/.svn
+     -/sigplan/.svn/tmp/
+     -/sigplan/.svn/tmp/prop-base/
+     -/sigplan/.svn/tmp/props/
+     -/sigplan/.svn/tmp/text-base/
+     -/sigplan/lang/
+     -/sigplan/lang/.svn/
      -/sigplan/lang/.svn/all-wcprops
      -/sigplan/lang/.svn/dir-prop-base
      -/sigplan/lang/.svn/entries
      -/sigplan/lang/.svn/format
-     -/sigplan/lang/.svn/prop-base
+     -/sigplan/lang/.svn/prop-base/
      -/sigplan/lang/.svn/prop-base/reader.ss.svn-base
-     -/sigplan/lang/.svn/props
-     -/sigplan/lang/.svn/text-base
+     -/sigplan/lang/.svn/props/
+     -/sigplan/lang/.svn/text-base/
      -/sigplan/lang/.svn/text-base/reader.ss.svn-base
-     -/sigplan/lang/.svn/tmp
-     -/sigplan/lang/.svn/tmp/prop-base
-     -/sigplan/lang/.svn/tmp/props
-     -/sigplan/lang/.svn/tmp/text-base
-     -/sigplan/lang/compiled
+     -/sigplan/lang/.svn/tmp/
+     -/sigplan/lang/.svn/tmp/prop-base/
+     -/sigplan/lang/.svn/tmp/props/
+     -/sigplan/lang/.svn/tmp/text-base/
+     -/sigplan/lang/compiled/
      -/sigplan/lang/compiled/reader_ss.dep
      -/sigplan/lang/compiled/reader_ss.zo
-     -/text
-     -/text/.svn
-     -/text/.svn/prop-base
+     -/text/
+     -/text/.svn/
+     -/text/.svn/prop-base/
      -/text/.svn/prop-base/output.ss.svn-base
      -/text/.svn/prop-base/syntax-utils.ss.svn-base
      -/text/.svn/prop-base/textlang.ss.svn-base
-     -/text/.svn/text-base
+     -/text/.svn/text-base/
      -/text/.svn/text-base/output.ss.svn-base
      -/text/.svn/text-base/syntax-utils.ss.svn-base
      -/text/.svn/text-base/textlang.ss.svn-base
-     -/text/.svn/tmp
-     -/text/.svn/tmp/prop-base
-     -/text/.svn/tmp/props
-     -/text/.svn/tmp/text-base
-     -/text/lang
-     -/text/lang/.svn
+     -/text/.svn/tmp/
+     -/text/.svn/tmp/prop-base/
+     -/text/.svn/tmp/props/
+     -/text/.svn/tmp/text-base/
+     -/text/lang/
+     -/text/lang/.svn/
      -/text/lang/.svn/all-wcprops
      -/text/lang/.svn/dir-prop-base
      -/text/lang/.svn/entries
      -/text/lang/.svn/format
-     -/text/lang/.svn/prop-base
+     -/text/lang/.svn/prop-base/
      -/text/lang/.svn/prop-base/reader.ss.svn-base
-     -/text/lang/.svn/props
-     -/text/lang/.svn/text-base
+     -/text/lang/.svn/props/
+     -/text/lang/.svn/text-base/
      -/text/lang/.svn/text-base/reader.ss.svn-base
-     -/text/lang/.svn/tmp
-     -/text/lang/.svn/tmp/prop-base
-     -/text/lang/.svn/tmp/props
-     -/text/lang/.svn/tmp/text-base
-     -/text/lang/compiled
+     -/text/lang/.svn/tmp/
+     -/text/lang/.svn/tmp/prop-base/
+     -/text/lang/.svn/tmp/props/
+     -/text/lang/.svn/tmp/text-base/
+     -/text/lang/compiled/
      -/text/lang/compiled/reader_ss.dep
      -/text/lang/compiled/reader_ss.zo
-     -/tools
-     -/tools/.svn
-     -/tools/.svn/prop-base
+     -/tools/
+     -/tools/.svn/
+     -/tools/.svn/prop-base/
      -/tools/.svn/prop-base/drscheme-buttons.ss.svn-base
      -/tools/.svn/prop-base/html.png.svn-base
      -/tools/.svn/prop-base/pdf.png.svn-base
-     -/tools/.svn/text-base
+     -/tools/.svn/text-base/
      -/tools/.svn/text-base/drscheme-buttons.ss.svn-base
      -/tools/.svn/text-base/html.png.svn-base
      -/tools/.svn/text-base/pdf.png.svn-base
-     -/tools/.svn/tmp
-     -/tools/.svn/tmp/prop-base
-     -/tools/.svn/tmp/props
-     -/tools/.svn/tmp/text-base
-     -/tools/private
-     -/tools/private/.svn
+     -/tools/.svn/tmp/
+     -/tools/.svn/tmp/prop-base/
+     -/tools/.svn/tmp/props/
+     -/tools/.svn/tmp/text-base/
+     -/tools/private/
+     -/tools/private/.svn/
      -/tools/private/.svn/all-wcprops
      -/tools/private/.svn/dir-prop-base
      -/tools/private/.svn/entries
      -/tools/private/.svn/format
-     -/tools/private/.svn/prop-base
+     -/tools/private/.svn/prop-base/
      -/tools/private/.svn/prop-base/mk-drs-bitmaps.ss.svn-base
-     -/tools/private/.svn/props
-     -/tools/private/.svn/text-base
+     -/tools/private/.svn/props/
+     -/tools/private/.svn/text-base/
      -/tools/private/.svn/text-base/mk-drs-bitmaps.ss.svn-base
-     -/tools/private/.svn/tmp
-     -/tools/private/.svn/tmp/prop-base
-     -/tools/private/.svn/tmp/props
-     -/tools/private/.svn/tmp/text-base
-     -/tools/private/compiled
+     -/tools/private/.svn/tmp/
+     -/tools/private/.svn/tmp/prop-base/
+     -/tools/private/.svn/tmp/props/
+     -/tools/private/.svn/tmp/text-base/
+     -/tools/private/compiled/
      -/tools/private/compiled/mk-drs-bitmaps_ss.dep
      -/tools/private/compiled/mk-drs-bitmaps_ss.zo
      )
    ;; only 4-levels and deeper
    (->datums (e `(tree->path-list (tree-filter "*/*/*/*/*" ,a-tree))))
    =>
-   '(-
-     -/base
-     -/base/lang
-     -/base/lang/.svn
-     -/base/lang/.svn/prop-base
+   '(-/
+     -/base/
+     -/base/lang/
+     -/base/lang/.svn/
+     -/base/lang/.svn/prop-base/
      -/base/lang/.svn/prop-base/reader.ss.svn-base
-     -/base/lang/.svn/text-base
+     -/base/lang/.svn/text-base/
      -/base/lang/.svn/text-base/reader.ss.svn-base
-     -/base/lang/.svn/tmp
-     -/base/lang/.svn/tmp/prop-base
-     -/base/lang/.svn/tmp/props
-     -/base/lang/.svn/tmp/text-base
-     -/doc
-     -/doc/lang
-     -/doc/lang/.svn
-     -/doc/lang/.svn/prop-base
+     -/base/lang/.svn/tmp/
+     -/base/lang/.svn/tmp/prop-base/
+     -/base/lang/.svn/tmp/props/
+     -/base/lang/.svn/tmp/text-base/
+     -/doc/
+     -/doc/lang/
+     -/doc/lang/.svn/
+     -/doc/lang/.svn/prop-base/
      -/doc/lang/.svn/prop-base/reader.ss.svn-base
-     -/doc/lang/.svn/text-base
+     -/doc/lang/.svn/text-base/
      -/doc/lang/.svn/text-base/reader.ss.svn-base
-     -/doc/lang/.svn/tmp
-     -/doc/lang/.svn/tmp/prop-base
-     -/doc/lang/.svn/tmp/props
-     -/doc/lang/.svn/tmp/text-base
-     -/lp
-     -/lp/lang
-     -/lp/lang/.svn
-     -/lp/lang/.svn/prop-base
+     -/doc/lang/.svn/tmp/
+     -/doc/lang/.svn/tmp/prop-base/
+     -/doc/lang/.svn/tmp/props/
+     -/doc/lang/.svn/tmp/text-base/
+     -/lp/
+     -/lp/lang/
+     -/lp/lang/.svn/
+     -/lp/lang/.svn/prop-base/
      -/lp/lang/.svn/prop-base/lang.ss.svn-base
      -/lp/lang/.svn/prop-base/reader.ss.svn-base
-     -/lp/lang/.svn/text-base
+     -/lp/lang/.svn/text-base/
      -/lp/lang/.svn/text-base/lang.ss.svn-base
      -/lp/lang/.svn/text-base/reader.ss.svn-base
-     -/lp/lang/.svn/tmp
-     -/lp/lang/.svn/tmp/prop-base
-     -/lp/lang/.svn/tmp/props
-     -/lp/lang/.svn/tmp/text-base
-     -/manual
-     -/manual/lang
-     -/manual/lang/.svn
-     -/manual/lang/.svn/prop-base
+     -/lp/lang/.svn/tmp/
+     -/lp/lang/.svn/tmp/prop-base/
+     -/lp/lang/.svn/tmp/props/
+     -/lp/lang/.svn/tmp/text-base/
+     -/manual/
+     -/manual/lang/
+     -/manual/lang/.svn/
+     -/manual/lang/.svn/prop-base/
      -/manual/lang/.svn/prop-base/reader.ss.svn-base
-     -/manual/lang/.svn/text-base
+     -/manual/lang/.svn/text-base/
      -/manual/lang/.svn/text-base/reader.ss.svn-base
-     -/manual/lang/.svn/tmp
-     -/manual/lang/.svn/tmp/prop-base
-     -/manual/lang/.svn/tmp/props
-     -/manual/lang/.svn/tmp/text-base
-     -/sigplan
-     -/sigplan/lang
-     -/sigplan/lang/.svn
-     -/sigplan/lang/.svn/prop-base
+     -/manual/lang/.svn/tmp/
+     -/manual/lang/.svn/tmp/prop-base/
+     -/manual/lang/.svn/tmp/props/
+     -/manual/lang/.svn/tmp/text-base/
+     -/sigplan/
+     -/sigplan/lang/
+     -/sigplan/lang/.svn/
+     -/sigplan/lang/.svn/prop-base/
      -/sigplan/lang/.svn/prop-base/reader.ss.svn-base
-     -/sigplan/lang/.svn/text-base
+     -/sigplan/lang/.svn/text-base/
      -/sigplan/lang/.svn/text-base/reader.ss.svn-base
-     -/sigplan/lang/.svn/tmp
-     -/sigplan/lang/.svn/tmp/prop-base
-     -/sigplan/lang/.svn/tmp/props
-     -/sigplan/lang/.svn/tmp/text-base
-     -/text
-     -/text/lang
-     -/text/lang/.svn
-     -/text/lang/.svn/prop-base
+     -/sigplan/lang/.svn/tmp/
+     -/sigplan/lang/.svn/tmp/prop-base/
+     -/sigplan/lang/.svn/tmp/props/
+     -/sigplan/lang/.svn/tmp/text-base/
+     -/text/
+     -/text/lang/
+     -/text/lang/.svn/
+     -/text/lang/.svn/prop-base/
      -/text/lang/.svn/prop-base/reader.ss.svn-base
-     -/text/lang/.svn/text-base
+     -/text/lang/.svn/text-base/
      -/text/lang/.svn/text-base/reader.ss.svn-base
-     -/text/lang/.svn/tmp
-     -/text/lang/.svn/tmp/prop-base
-     -/text/lang/.svn/tmp/props
-     -/text/lang/.svn/tmp/text-base
-     -/tools
-     -/tools/private
-     -/tools/private/.svn
-     -/tools/private/.svn/prop-base
+     -/text/lang/.svn/tmp/
+     -/text/lang/.svn/tmp/prop-base/
+     -/text/lang/.svn/tmp/props/
+     -/text/lang/.svn/tmp/text-base/
+     -/tools/
+     -/tools/private/
+     -/tools/private/.svn/
+     -/tools/private/.svn/prop-base/
      -/tools/private/.svn/prop-base/mk-drs-bitmaps.ss.svn-base
-     -/tools/private/.svn/text-base
+     -/tools/private/.svn/text-base/
      -/tools/private/.svn/text-base/mk-drs-bitmaps.ss.svn-base
-     -/tools/private/.svn/tmp
-     -/tools/private/.svn/tmp/prop-base
-     -/tools/private/.svn/tmp/props
-     -/tools/private/.svn/tmp/text-base
+     -/tools/private/.svn/tmp/
+     -/tools/private/.svn/tmp/prop-base/
+     -/tools/private/.svn/tmp/props/
+     -/tools/private/.svn/tmp/text-base/
+     )
+   ;; only 4-levels and deeper of directories, including empty ones
+   (->datums (e `(tree->path-list (tree-filter "*/*/*/*/" ,a-tree))))
+   =>
+   '(-/
+     -/base/
+     -/base/.svn/
+     -/base/.svn/tmp/
+     -/base/.svn/tmp/prop-base/
+     -/base/.svn/tmp/props/
+     -/base/.svn/tmp/text-base/
+     -/base/lang/
+     -/base/lang/.svn/
+     -/base/lang/.svn/prop-base/
+     -/base/lang/.svn/prop-base/reader.ss.svn-base
+     -/base/lang/.svn/props/
+     -/base/lang/.svn/text-base/
+     -/base/lang/.svn/text-base/reader.ss.svn-base
+     -/base/lang/.svn/tmp/
+     -/base/lang/.svn/tmp/prop-base/
+     -/base/lang/.svn/tmp/props/
+     -/base/lang/.svn/tmp/text-base/
+     -/doc/
+     -/doc/.svn/
+     -/doc/.svn/tmp/
+     -/doc/.svn/tmp/prop-base/
+     -/doc/.svn/tmp/props/
+     -/doc/.svn/tmp/text-base/
+     -/doc/lang/
+     -/doc/lang/.svn/
+     -/doc/lang/.svn/prop-base/
+     -/doc/lang/.svn/prop-base/reader.ss.svn-base
+     -/doc/lang/.svn/props/
+     -/doc/lang/.svn/text-base/
+     -/doc/lang/.svn/text-base/reader.ss.svn-base
+     -/doc/lang/.svn/tmp/
+     -/doc/lang/.svn/tmp/prop-base/
+     -/doc/lang/.svn/tmp/props/
+     -/doc/lang/.svn/tmp/text-base/
+     -/lp/
+     -/lp/.svn/
+     -/lp/.svn/tmp/
+     -/lp/.svn/tmp/prop-base/
+     -/lp/.svn/tmp/props/
+     -/lp/.svn/tmp/text-base/
+     -/lp/lang/
+     -/lp/lang/.svn/
+     -/lp/lang/.svn/prop-base/
+     -/lp/lang/.svn/prop-base/lang.ss.svn-base
+     -/lp/lang/.svn/prop-base/reader.ss.svn-base
+     -/lp/lang/.svn/props/
+     -/lp/lang/.svn/text-base/
+     -/lp/lang/.svn/text-base/lang.ss.svn-base
+     -/lp/lang/.svn/text-base/reader.ss.svn-base
+     -/lp/lang/.svn/tmp/
+     -/lp/lang/.svn/tmp/prop-base/
+     -/lp/lang/.svn/tmp/props/
+     -/lp/lang/.svn/tmp/text-base/
+     -/manual/
+     -/manual/.svn/
+     -/manual/.svn/tmp/
+     -/manual/.svn/tmp/prop-base/
+     -/manual/.svn/tmp/props/
+     -/manual/.svn/tmp/text-base/
+     -/manual/lang/
+     -/manual/lang/.svn/
+     -/manual/lang/.svn/prop-base/
+     -/manual/lang/.svn/prop-base/reader.ss.svn-base
+     -/manual/lang/.svn/props/
+     -/manual/lang/.svn/text-base/
+     -/manual/lang/.svn/text-base/reader.ss.svn-base
+     -/manual/lang/.svn/tmp/
+     -/manual/lang/.svn/tmp/prop-base/
+     -/manual/lang/.svn/tmp/props/
+     -/manual/lang/.svn/tmp/text-base/
+     -/private/
+     -/private/.svn/
+     -/private/.svn/tmp/
+     -/private/.svn/tmp/prop-base/
+     -/private/.svn/tmp/props/
+     -/private/.svn/tmp/text-base/
+     -/sigplan/
+     -/sigplan/.svn/
+     -/sigplan/.svn/tmp/
+     -/sigplan/.svn/tmp/prop-base/
+     -/sigplan/.svn/tmp/props/
+     -/sigplan/.svn/tmp/text-base/
+     -/sigplan/lang/
+     -/sigplan/lang/.svn/
+     -/sigplan/lang/.svn/prop-base/
+     -/sigplan/lang/.svn/prop-base/reader.ss.svn-base
+     -/sigplan/lang/.svn/props/
+     -/sigplan/lang/.svn/text-base/
+     -/sigplan/lang/.svn/text-base/reader.ss.svn-base
+     -/sigplan/lang/.svn/tmp/
+     -/sigplan/lang/.svn/tmp/prop-base/
+     -/sigplan/lang/.svn/tmp/props/
+     -/sigplan/lang/.svn/tmp/text-base/
+     -/text/
+     -/text/.svn/
+     -/text/.svn/tmp/
+     -/text/.svn/tmp/prop-base/
+     -/text/.svn/tmp/props/
+     -/text/.svn/tmp/text-base/
+     -/text/lang/
+     -/text/lang/.svn/
+     -/text/lang/.svn/prop-base/
+     -/text/lang/.svn/prop-base/reader.ss.svn-base
+     -/text/lang/.svn/props/
+     -/text/lang/.svn/text-base/
+     -/text/lang/.svn/text-base/reader.ss.svn-base
+     -/text/lang/.svn/tmp/
+     -/text/lang/.svn/tmp/prop-base/
+     -/text/lang/.svn/tmp/props/
+     -/text/lang/.svn/tmp/text-base/
+     -/tools/
+     -/tools/.svn/
+     -/tools/.svn/tmp/
+     -/tools/.svn/tmp/prop-base/
+     -/tools/.svn/tmp/props/
+     -/tools/.svn/tmp/text-base/
+     -/tools/private/
+     -/tools/private/.svn/
+     -/tools/private/.svn/prop-base/
+     -/tools/private/.svn/prop-base/mk-drs-bitmaps.ss.svn-base
+     -/tools/private/.svn/props/
+     -/tools/private/.svn/text-base/
+     -/tools/private/.svn/text-base/mk-drs-bitmaps.ss.svn-base
+     -/tools/private/.svn/tmp/
+     -/tools/private/.svn/tmp/prop-base/
+     -/tools/private/.svn/tmp/props/
+     -/tools/private/.svn/tmp/text-base/
      )
    ;; only 5-levels and deeper => nothing
    (->datums (e `(tree->path-list (tree-filter "*/*/*/*/*/*" ,a-tree))))
-   => '(-)
+   => '(-/)
    ;; only 6-levels and deeper => nothing
    (->datums (e `(tree->path-list (tree-filter "*/*/*/*/*/*/*" ,a-tree))))
-   => '(-)
+   => '(-/)
    ;; only immediate files
-   (->datums (e `(tree->path-list (tree-filter (not: "*/*") ,a-tree))))
+   (->datums (e `(tree->path-list (tree-filter (not: "*/") ,a-tree))))
    =>
-   '(-
+   '(-/
      -/base-render.ss
      -/base.ss
      -/basic.ss
@@ -2916,22 +3052,23 @@
      -/urls.ss
      -/xref.ss
      )
-   ;; "*/" is the same as "*/*"
-   (->datums (e `(tree->path-list (tree-filter (not: "*/") ,a-tree))))
+   ;; (not: "*/*") is the same as (not: "*/"), because empty directories are
+   ;; dropped (!!)
+   (->datums (e `(tree->path-list (tree-filter (not: "*/*") ,a-tree))))
    => same-as-last-datums
    ;; only compiled directories
    (->datums (e `(tree->path-list (tree-filter "**/compiled/" ,a-tree))))
    =>
-   '(-
-     -/base
-     -/base/compiled
+   '(-/
+     -/base/
+     -/base/compiled/
      -/base/compiled/lang_ss.dep
      -/base/compiled/lang_ss.zo
-     -/base/lang
-     -/base/lang/compiled
+     -/base/lang/
+     -/base/lang/compiled/
      -/base/lang/compiled/reader_ss.dep
      -/base/lang/compiled/reader_ss.zo
-     -/compiled
+     -/compiled/
      -/compiled/base-render_ss.dep
      -/compiled/base-render_ss.zo
      -/compiled/base_ss.dep
@@ -3002,33 +3139,33 @@
      -/compiled/urls_ss.zo
      -/compiled/xref_ss.dep
      -/compiled/xref_ss.zo
-     -/doc
-     -/doc/compiled
+     -/doc/
+     -/doc/compiled/
      -/doc/compiled/main_ss.dep
      -/doc/compiled/main_ss.zo
      -/doc/compiled/reader_ss.dep
      -/doc/compiled/reader_ss.zo
-     -/doc/lang
-     -/doc/lang/compiled
+     -/doc/lang/
+     -/doc/lang/compiled/
      -/doc/lang/compiled/reader_ss.dep
      -/doc/lang/compiled/reader_ss.zo
-     -/lp
-     -/lp/lang
-     -/lp/lang/compiled
+     -/lp/
+     -/lp/lang/
+     -/lp/lang/compiled/
      -/lp/lang/compiled/lang_ss.dep
      -/lp/lang/compiled/lang_ss.zo
      -/lp/lang/compiled/reader_ss.dep
      -/lp/lang/compiled/reader_ss.zo
-     -/manual
-     -/manual/compiled
+     -/manual/
+     -/manual/compiled/
      -/manual/compiled/lang_ss.dep
      -/manual/compiled/lang_ss.zo
-     -/manual/lang
-     -/manual/lang/compiled
+     -/manual/lang/
+     -/manual/lang/compiled/
      -/manual/lang/compiled/reader_ss.dep
      -/manual/lang/compiled/reader_ss.zo
-     -/private
-     -/private/compiled
+     -/private/
+     -/private/compiled/
      -/private/compiled/defaults_ss.dep
      -/private/compiled/defaults_ss.zo
      -/private/compiled/indirect-renderer_ss.dep
@@ -3075,46 +3212,46 @@
      -/private/compiled/render-utils_ss.zo
      -/private/compiled/run-pdflatex_ss.dep
      -/private/compiled/run-pdflatex_ss.zo
-     -/sigplan
-     -/sigplan/compiled
+     -/sigplan/
+     -/sigplan/compiled/
      -/sigplan/compiled/lang_ss.dep
      -/sigplan/compiled/lang_ss.zo
-     -/sigplan/lang
-     -/sigplan/lang/compiled
+     -/sigplan/lang/
+     -/sigplan/lang/compiled/
      -/sigplan/lang/compiled/reader_ss.dep
      -/sigplan/lang/compiled/reader_ss.zo
-     -/text
-     -/text/compiled
+     -/text/
+     -/text/compiled/
      -/text/compiled/output_ss.dep
      -/text/compiled/output_ss.zo
      -/text/compiled/syntax-utils_ss.dep
      -/text/compiled/syntax-utils_ss.zo
      -/text/compiled/textlang_ss.dep
      -/text/compiled/textlang_ss.zo
-     -/text/lang
-     -/text/lang/compiled
+     -/text/lang/
+     -/text/lang/compiled/
      -/text/lang/compiled/reader_ss.dep
      -/text/lang/compiled/reader_ss.zo
-     -/tools
-     -/tools/compiled
+     -/tools/
+     -/tools/compiled/
      -/tools/compiled/drscheme-buttons_ss.dep
      -/tools/compiled/drscheme-buttons_ss.zo
-     -/tools/private
-     -/tools/private/compiled
+     -/tools/private/
+     -/tools/private/compiled/
      -/tools/private/compiled/mk-drs-bitmaps_ss.dep
      -/tools/private/compiled/mk-drs-bitmaps_ss.zo
      )
    ;; only .dep files in compiled directories
    (->datums (e `(tree->path-list (tree-filter "**/compiled/*.dep" ,a-tree))))
    =>
-   '(-
-     -/base
-     -/base/compiled
+   '(-/
+     -/base/
+     -/base/compiled/
      -/base/compiled/lang_ss.dep
-     -/base/lang
-     -/base/lang/compiled
+     -/base/lang/
+     -/base/lang/compiled/
      -/base/lang/compiled/reader_ss.dep
-     -/compiled
+     -/compiled/
      -/compiled/base-render_ss.dep
      -/compiled/base_ss.dep
      -/compiled/basic_ss.dep
@@ -3150,26 +3287,26 @@
      -/compiled/text_ss.dep
      -/compiled/urls_ss.dep
      -/compiled/xref_ss.dep
-     -/doc
-     -/doc/compiled
+     -/doc/
+     -/doc/compiled/
      -/doc/compiled/main_ss.dep
      -/doc/compiled/reader_ss.dep
-     -/doc/lang
-     -/doc/lang/compiled
+     -/doc/lang/
+     -/doc/lang/compiled/
      -/doc/lang/compiled/reader_ss.dep
-     -/lp
-     -/lp/lang
-     -/lp/lang/compiled
+     -/lp/
+     -/lp/lang/
+     -/lp/lang/compiled/
      -/lp/lang/compiled/lang_ss.dep
      -/lp/lang/compiled/reader_ss.dep
-     -/manual
-     -/manual/compiled
+     -/manual/
+     -/manual/compiled/
      -/manual/compiled/lang_ss.dep
-     -/manual/lang
-     -/manual/lang/compiled
+     -/manual/lang/
+     -/manual/lang/compiled/
      -/manual/lang/compiled/reader_ss.dep
-     -/private
-     -/private/compiled
+     -/private/
+     -/private/compiled/
      -/private/compiled/defaults_ss.dep
      -/private/compiled/indirect-renderer_ss.dep
      -/private/compiled/lp_ss.dep
@@ -3193,42 +3330,42 @@
      -/private/compiled/qsloc_ss.dep
      -/private/compiled/render-utils_ss.dep
      -/private/compiled/run-pdflatex_ss.dep
-     -/sigplan
-     -/sigplan/compiled
+     -/sigplan/
+     -/sigplan/compiled/
      -/sigplan/compiled/lang_ss.dep
-     -/sigplan/lang
-     -/sigplan/lang/compiled
+     -/sigplan/lang/
+     -/sigplan/lang/compiled/
      -/sigplan/lang/compiled/reader_ss.dep
-     -/text
-     -/text/compiled
+     -/text/
+     -/text/compiled/
      -/text/compiled/output_ss.dep
      -/text/compiled/syntax-utils_ss.dep
      -/text/compiled/textlang_ss.dep
-     -/text/lang
-     -/text/lang/compiled
+     -/text/lang/
+     -/text/lang/compiled/
      -/text/lang/compiled/reader_ss.dep
-     -/tools
-     -/tools/compiled
+     -/tools/
+     -/tools/compiled/
      -/tools/compiled/drscheme-buttons_ss.dep
-     -/tools/private
-     -/tools/private/compiled
+     -/tools/private/
+     -/tools/private/compiled/
      -/tools/private/compiled/mk-drs-bitmaps_ss.dep
      )
    ;; only .dep files in compiled directories, by dropping .zo files
-   (->datums (e `(tree->path-list (tree-filter (and: "**/compiled"
+   (->datums (e `(tree->path-list (tree-filter (and: "**/compiled/"
                                                      (not: "**/*.zo"))
                                                ,a-tree))))
    => same-as-last-datums
    ;; no .svn directories
-   (->datums (e `(tree->path-list (tree-filter (not: "**/.svn") ,a-tree))))
+   (->datums (e `(tree->path-list (tree-filter (not: "**/.svn/") ,a-tree))))
    =>
-   '(-
-     -/base
-     -/base/compiled
+   '(-/
+     -/base/
+     -/base/compiled/
      -/base/compiled/lang_ss.dep
      -/base/compiled/lang_ss.zo
-     -/base/lang
-     -/base/lang/compiled
+     -/base/lang/
+     -/base/lang/compiled/
      -/base/lang/compiled/reader_ss.dep
      -/base/lang/compiled/reader_ss.zo
      -/base/lang/reader.ss
@@ -3238,7 +3375,7 @@
      -/basic.ss
      -/bnf.ss
      -/comment-reader.ss
-     -/compiled
+     -/compiled/
      -/compiled/base-render_ss.dep
      -/compiled/base-render_ss.zo
      -/compiled/base_ss.dep
@@ -3313,14 +3450,14 @@
      -/core.ss
      -/decode-struct.ss
      -/decode.ss
-     -/doc
-     -/doc/compiled
+     -/doc/
+     -/doc/compiled/
      -/doc/compiled/main_ss.dep
      -/doc/compiled/main_ss.zo
      -/doc/compiled/reader_ss.dep
      -/doc/compiled/reader_ss.zo
-     -/doc/lang
-     -/doc/lang/compiled
+     -/doc/lang/
+     -/doc/lang/compiled/
      -/doc/lang/compiled/reader_ss.dep
      -/doc/lang/compiled/reader_ss.zo
      -/doc/lang/reader.ss
@@ -3335,9 +3472,9 @@
      -/info.ss
      -/latex-properties.ss
      -/latex-render.ss
-     -/lp
-     -/lp/lang
-     -/lp/lang/compiled
+     -/lp/
+     -/lp/lang/
+     -/lp/lang/compiled/
      -/lp/lang/compiled/lang_ss.dep
      -/lp/lang/compiled/lang_ss.zo
      -/lp/lang/compiled/reader_ss.dep
@@ -3346,12 +3483,12 @@
      -/lp/lang/reader.ss
      -/lp-include.ss
      -/lp.ss
-     -/manual
-     -/manual/compiled
+     -/manual/
+     -/manual/compiled/
      -/manual/compiled/lang_ss.dep
      -/manual/compiled/lang_ss.zo
-     -/manual/lang
-     -/manual/lang/compiled
+     -/manual/lang/
+     -/manual/lang/compiled/
      -/manual/lang/compiled/reader_ss.dep
      -/manual/lang/compiled/reader_ss.zo
      -/manual/lang/reader.ss
@@ -3361,8 +3498,8 @@
      -/manual-style.tex
      -/manual.ss
      -/pdf-render.ss
-     -/private
-     -/private/compiled
+     -/private/
+     -/private/compiled/
      -/private/compiled/defaults_ss.dep
      -/private/compiled/defaults_ss.zo
      -/private/compiled/indirect-renderer_ss.dep
@@ -3447,12 +3584,12 @@
      -/scribble.css
      -/scribble.tex
      -/search.ss
-     -/sigplan
-     -/sigplan/compiled
+     -/sigplan/
+     -/sigplan/compiled/
      -/sigplan/compiled/lang_ss.dep
      -/sigplan/compiled/lang_ss.zo
-     -/sigplan/lang
-     -/sigplan/lang/compiled
+     -/sigplan/lang/
+     -/sigplan/lang/compiled/
      -/sigplan/lang/compiled/reader_ss.dep
      -/sigplan/lang/compiled/reader_ss.zo
      -/sigplan/lang/reader.ss
@@ -3464,16 +3601,16 @@
      -/sigplan.ss
      -/srcdoc.ss
      -/struct.ss
-     -/text
-     -/text/compiled
+     -/text/
+     -/text/compiled/
      -/text/compiled/output_ss.dep
      -/text/compiled/output_ss.zo
      -/text/compiled/syntax-utils_ss.dep
      -/text/compiled/syntax-utils_ss.zo
      -/text/compiled/textlang_ss.dep
      -/text/compiled/textlang_ss.zo
-     -/text/lang
-     -/text/lang/compiled
+     -/text/lang/
+     -/text/lang/compiled/
      -/text/lang/compiled/reader_ss.dep
      -/text/lang/compiled/reader_ss.zo
      -/text/lang/reader.ss
@@ -3482,15 +3619,15 @@
      -/text/textlang.ss
      -/text-render.ss
      -/text.ss
-     -/tools
-     -/tools/compiled
+     -/tools/
+     -/tools/compiled/
      -/tools/compiled/drscheme-buttons_ss.dep
      -/tools/compiled/drscheme-buttons_ss.zo
      -/tools/drscheme-buttons.ss
      -/tools/html.png
      -/tools/pdf.png
-     -/tools/private
-     -/tools/private/compiled
+     -/tools/private/
+     -/tools/private/compiled/
      -/tools/private/compiled/mk-drs-bitmaps_ss.dep
      -/tools/private/compiled/mk-drs-bitmaps_ss.zo
      -/tools/private/mk-drs-bitmaps.ss
@@ -3498,12 +3635,12 @@
      -/xref.ss
      )
    ;; no .svn or compiled directories using "{|}"
-   (->datums (e `(tree->path-list (tree-filter (not: "**/{.svn|compiled}")
+   (->datums (e `(tree->path-list (tree-filter (not: "**/{.svn|compiled}/")
                                                ,a-tree))))
    =>
-   '(-
-     -/base
-     -/base/lang
+   '(-/
+     -/base/
+     -/base/lang/
      -/base/lang/reader.ss
      -/base/lang.ss
      -/base-render.ss
@@ -3515,8 +3652,8 @@
      -/core.ss
      -/decode-struct.ss
      -/decode.ss
-     -/doc
-     -/doc/lang
+     -/doc/
+     -/doc/lang/
      -/doc/lang/reader.ss
      -/doc/main.ss
      -/doc/reader.ss
@@ -3529,14 +3666,14 @@
      -/info.ss
      -/latex-properties.ss
      -/latex-render.ss
-     -/lp
-     -/lp/lang
+     -/lp/
+     -/lp/lang/
      -/lp/lang/lang.ss
      -/lp/lang/reader.ss
      -/lp-include.ss
      -/lp.ss
-     -/manual
-     -/manual/lang
+     -/manual/
+     -/manual/lang/
      -/manual/lang/reader.ss
      -/manual/lang.ss
      -/manual-prefix.tex
@@ -3544,7 +3681,7 @@
      -/manual-style.tex
      -/manual.ss
      -/pdf-render.ss
-     -/private
+     -/private/
      -/private/defaults.ss
      -/private/indirect-renderer.ss
      -/private/lp.ss
@@ -3583,8 +3720,8 @@
      -/scribble.css
      -/scribble.tex
      -/search.ss
-     -/sigplan
-     -/sigplan/lang
+     -/sigplan/
+     -/sigplan/lang/
      -/sigplan/lang/reader.ss
      -/sigplan/lang.ss
      -/sigplan/sigplan.css
@@ -3594,45 +3731,33 @@
      -/sigplan.ss
      -/srcdoc.ss
      -/struct.ss
-     -/text
-     -/text/lang
+     -/text/
+     -/text/lang/
      -/text/lang/reader.ss
      -/text/output.ss
      -/text/syntax-utils.ss
      -/text/textlang.ss
      -/text-render.ss
      -/text.ss
-     -/tools
+     -/tools/
      -/tools/drscheme-buttons.ss
      -/tools/html.png
      -/tools/pdf.png
-     -/tools/private
+     -/tools/private/
      -/tools/private/mk-drs-bitmaps.ss
      -/urls.ss
      -/xref.ss
      )
    ;; no .svn or compiled directories using `or:'
    (->datums (e `(tree->path-list
-                  (tree-filter (not: (or: "**/.svn" "**/compiled")) ,a-tree))))
+                  (tree-filter (not: (or: "**/.svn/" "**/compiled/"))
+                               ,a-tree))))
    => same-as-last-datums
    ;; no .svn or compiled directories using `and:'
    (->datums (e `(tree->path-list
-                  (tree-filter (and: (not: "**/.svn") (not: "**/compiled"))
+                  (tree-filter (and: (not: "**/.svn/") (not: "**/compiled/"))
                                ,a-tree))))
-   => same-as-last-datums
-   #;#;#;
-   ;; only immediate directories
-   (->datums (e `(tree->path-list (tree-filter (and: "*/" (not: "*/*/*"))
-                                               ,a-tree))))
-   =>
-   '(-
-     -/.svn
-     -/base
-     -/doc
-     -/lp
-     -/text
-     -/tools
-     )))
+   => same-as-last-datums))
 
 (test do (glob-tests)
       do (tree-tests))
