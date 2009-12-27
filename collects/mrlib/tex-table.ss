@@ -171,6 +171,8 @@
     ("smiley" "☺")
     ("blacksmiley" "☻")
     ("frownie" "☹")
+    
+    ("S" "§")
     ))
 
 ;; checks to see if there are duplicates
