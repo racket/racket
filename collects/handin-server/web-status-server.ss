@@ -252,7 +252,10 @@
          (body ,msg "; " (a ([href "/"]) "restarting") " in 3 seconds.")))
 
 (define default-context-length (error-print-context-length))
-(define ((run-servlet port))
+
+;; this is doing the same work as the code below, needed to expose the tcp@
+;; argument
+(define (run-servlet-old port)
   (serve/servlet
    (lambda (request)
      (error-print-context-length default-context-length)
@@ -271,17 +274,73 @@
               (send-error "Your session has expired") (* 12 1024 1024))
    #:log-file (get-conf 'web-log-file)))
 
+;; This code has parts that are copied from `serve/servlet' in
+;; "web-server/servlet-env.ss", and parts from `serve/launch/wait' in
+;; "web-server/servlet-dispatch.ss"
+
+(require scheme/runtime-path
+         web-server/web-server
+         web-server/stuffers
+         web-server/private/mime-types
+         web-server/servlet-dispatch
+         (prefix-in lift: web-server/dispatchers/dispatch-lift)
+         (prefix-in fsmap: web-server/dispatchers/filesystem-map)
+         (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)
+         (prefix-in files: web-server/dispatchers/dispatch-files)
+         (prefix-in log: web-server/dispatchers/dispatch-log)
+         net/tcp-sig
+         net/ssl-tcp-unit)
+
+(define-runtime-path default-web-root '(lib "web-server/default-web-root"))
+
+(define (run-servlet port)
+  (serve
+   #:port port #:listen-ip #f
+   #:tcp@ (let ()
+            (define-unit-binding ssl-tcp@
+              (make-ssl-tcp@ (build-path server-dir "server-cert.pem")
+                             (build-path server-dir "private-key.pem")
+                             #f #f #f #f #f)
+              (import) (export tcp^))
+            ssl-tcp@)
+   #:dispatch
+   (sequencer:make
+    (cond [(get-conf 'web-log-file) =>
+           (lambda (file)
+             (log:make #:format (log:log-format->format 'apache-default)
+                       #:log-path file))]
+          [else #f])
+    (dispatch/servlet
+     (lambda (request)
+       (error-print-context-length default-context-length)
+       (parameterize ([current-session (web-counter)])
+         (login-page (aget (request-bindings request) 'handin) #f)))
+     #:regexp #rx""
+     #:namespace '(handin-server/private/md5
+                   handin-server/private/logger
+                   handin-server/private/config
+                   handin-server/private/hooker
+                   handin-server/private/reloadable)
+     #:stateless? #f
+     #:stuffer default-stuffer
+     #:current-directory server-dir
+     #:manager (make-threshold-LRU-manager
+                (send-error "Your session has expired") (* 12 1024 1024)))
+    (files:make
+     #:url->path (fsmap:make-url->path (build-path server-dir "htdocs"))
+     #:path->mime-type (make-path->mime-type
+                        (build-path default-web-root "mime.types"))
+     #:indices '("index.html"))
+    (lift:make (send-error "File not found")))))
+
 (provide run)
 (define (run)
   (cond [(get-conf 'https-port-number)
          => (lambda (p)
               (define t
                 (parameterize ([error-print-context-length 0])
-                  (thread
-                   (lambda ()
-                     (dynamic-wind
-                       (lambda () (log-line "*** starting web server"))
-                       (run-servlet p)
-                       (lambda () (log-line "*** web server died!")))))))
+                  (thread (lambda ()
+                            (log-line "*** starting web server")
+                            (run-servlet p)))))
               (lambda () (break-thread t)))]
         [else void]))
