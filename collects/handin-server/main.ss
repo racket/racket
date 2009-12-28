@@ -170,9 +170,10 @@
   (set! len (read r-safe))
   (unless (and (number? len) (integer? len) (positive? len))
     (error* "bad length: ~s" len))
-  (unless (len . < . (get-conf 'max-upload))
-    (error* "max handin file size is ~s bytes, file to handin is too big (~s bytes)"
-            (get-conf 'max-upload) len))
+  (let ([max (get-conf 'max-upload)])
+    (unless (len . < . max)
+      (error* "max handin file size is ~s bytes, ~a (~s bytes)"
+              max "file to handin is too big" len)))
   (parameterize ([current-directory (assignment<->dir assignment)])
     (wait-for-lock dirname
       (let ([dir (build-path (current-directory) dirname)])
@@ -671,16 +672,14 @@
                   [(eq? protocol 'ver1)
                    (write+flush w 'ver1)]
                   [(eq? protocol 'GET)
-                   (error 'handin "request via the GET protocol: maybe you are using the server-port instead of the https-server-port to connect to the https server? ~a"
+                   (error 'handin "got a GET request: maybe you are using the server-port instead of the https-server-port to connect to the https server? ~a"
                           (let ([port (get-conf 'https-port-number)])
-                            (if port 
-                                (let-values ([(us them) (ssl-addresses r)])
-                                  (format "Try this url: https://~a:~a/" 
-                                          us
-                                          port))
-                                (format "There is no https-port-number set in config.ss; try setting that first."))))]
-                  [else
-                   (error 'handin "unknown protocol: ~s" protocol)]))
+                            (if port
+                              (let-values ([(us them) (ssl-addresses r)])
+                                (format "Try this url: https://~a:~a/"
+                                        us port))
+                              (format "There is no https-port-number set in config.ss; try setting that first."))))]
+                  [else (error 'handin "unknown protocol: ~e" protocol)]))
               (handle-connection r r-safe w)
               (log-line "normal exit")
               (kill-watcher)
