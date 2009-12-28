@@ -257,8 +257,7 @@
 ;; "web-server/servlet-env.ss", and parts from `serve/launch/wait' in
 ;; "web-server/servlet-dispatch.ss"
 
-(require scheme/runtime-path
-         web-server/web-server
+(require web-server/web-server
          web-server/servlet-dispatch
          (prefix-in lift: web-server/dispatchers/dispatch-lift)
          (prefix-in fsmap: web-server/dispatchers/filesystem-map)
@@ -267,8 +266,6 @@
          (prefix-in log: web-server/dispatchers/dispatch-log)
          net/tcp-sig
          net/ssl-tcp-unit)
-
-(define-runtime-path default-web-root '(lib "web-server/default-web-root"))
 
 (define (run-servlet port)
   (serve
