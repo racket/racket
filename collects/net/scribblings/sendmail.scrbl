@@ -9,7 +9,7 @@
 @defmodule[net/sendmail]{The @schememodname[net/sendmail] module
 provides tools for sending electronic mail messages using a
 @exec{sendmail} program on the local system. See also the
-@scheme[net/smtp] package, which sends mail via SMTP.}
+@schememodname[net/smtp] package, which sends mail via SMTP.}
 
 All strings used in mail messages are assumed to conform to their
 corresponding SMTP specifications, except as noted otherwise.
