@@ -4,12 +4,11 @@
          scheme/date
          net/uri-codec
          web-server/servlet
-         web-server/servlet-env
-         web-server/managers/lru
          handin-server/private/md5
          handin-server/private/logger
          handin-server/private/config
-         handin-server/private/hooker)
+         handin-server/private/hooker
+         "run-servlet.ss")
 
 (define (aget alist key)
   (cond [(assq key alist) => cdr] [else #f]))
@@ -246,61 +245,12 @@
         (lambda () (set! count (add1 count)) (format "w~a" count))
         (lambda () (semaphore-post sema))))))
 
-(define ((send-error msg) req)
-  `(html (head (meta [(http-equiv "refresh") (content "3;URL=/")])
-               (title ,msg))
-         (body ,msg "; " (a ([href "/"]) "restarting") " in 3 seconds.")))
-
 (define default-context-length (error-print-context-length))
 
-;; This code has parts that are copied from `serve/servlet' in
-;; "web-server/servlet-env.ss", and parts from `serve/launch/wait' in
-;; "web-server/servlet-dispatch.ss"
-
-(require web-server/web-server
-         web-server/servlet-dispatch
-         (prefix-in lift: web-server/dispatchers/dispatch-lift)
-         (prefix-in fsmap: web-server/dispatchers/filesystem-map)
-         (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)
-         (prefix-in files: web-server/dispatchers/dispatch-files)
-         (prefix-in log: web-server/dispatchers/dispatch-log)
-         net/tcp-sig
-         net/ssl-tcp-unit)
-
-(define (run-servlet port)
-  (serve
-   #:port port #:listen-ip #f
-   #:tcp@ (let ()
-            (define-unit-binding ssl-tcp@
-              (make-ssl-tcp@ (build-path server-dir "server-cert.pem")
-                             (build-path server-dir "private-key.pem")
-                             #f #f #f #f #f)
-              (import) (export tcp^))
-            ssl-tcp@)
-   #:dispatch
-   (sequencer:make
-    (cond [(get-conf 'web-log-file) =>
-           (lambda (file)
-             (log:make #:format (log:log-format->format 'apache-default)
-                       #:log-path file))]
-          [else #f])
-    (dispatch/servlet
-     (lambda (request)
-       (error-print-context-length default-context-length)
-       (parameterize ([current-session (web-counter)])
-         (login-page (aget (request-bindings request) 'handin) #f)))
-     #:regexp #rx""
-     #:namespace '(handin-server/private/md5
-                   handin-server/private/logger
-                   handin-server/private/config
-                   handin-server/private/hooker
-                   handin-server/private/reloadable)
-     #:current-directory server-dir
-     #:manager (make-threshold-LRU-manager
-                (send-error "Your session has expired") (* 12 1024 1024)))
-    (files:make
-     #:url->path (fsmap:make-url->path (build-path server-dir "htdocs")))
-    (lift:make (send-error "File not found")))))
+(define (dispatcher request)
+  (error-print-context-length default-context-length)
+  (parameterize ([current-session (web-counter)])
+    (login-page (aget (request-bindings request) 'handin) #f)))
 
 (provide run)
 (define (run)
@@ -308,5 +258,6 @@
          => (lambda (p)
               (log-line "*** starting web server")
               (parameterize ([error-print-context-length 0])
-                (run-servlet p)))]
+                (run-servlet dispatcher p server-dir
+                             #:log-file (get-conf 'web-log-file))))]
         [else void]))
