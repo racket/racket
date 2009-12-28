@@ -253,27 +253,6 @@
 
 (define default-context-length (error-print-context-length))
 
-;; this is doing the same work as the code below, needed to expose the tcp@
-;; argument
-(define (run-servlet-old port)
-  (serve/servlet
-   (lambda (request)
-     (error-print-context-length default-context-length)
-     (parameterize ([current-session (web-counter)])
-       (login-page (aget (request-bindings request) 'handin) #f)))
-   #:port port #:listen-ip #f #:ssl? #t #:command-line? #t
-   #:servlet-path "/" #:servlet-regexp #rx""
-   #:server-root-path server-dir #:servlets-root server-dir
-   #:file-not-found-responder (send-error "File not found")
-   #:servlet-namespace '(handin-server/private/md5
-                         handin-server/private/logger
-                         handin-server/private/config
-                         handin-server/private/hooker
-                         handin-server/private/reloadable)
-   #:manager (make-threshold-LRU-manager
-              (send-error "Your session has expired") (* 12 1024 1024))
-   #:log-file (get-conf 'web-log-file)))
-
 ;; This code has parts that are copied from `serve/servlet' in
 ;; "web-server/servlet-env.ss", and parts from `serve/launch/wait' in
 ;; "web-server/servlet-dispatch.ss"
