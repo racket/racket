@@ -667,12 +667,20 @@
                                  ;; see note on close-output-port below
                                  (close-output-port w)))])
               (let ([protocol (read r-safe)])
-                (if (eq? protocol 'ver1)
-                  (write+flush w 'ver1)
-                  (error 'handin "unknown protocol: ~e~a" protocol
-                         (if (eq? protocol 'GET)
-                           " (this port is used for handin submissions only)"
-                           ""))))
+                (cond
+                  [(eq? protocol 'ver1)
+                   (write+flush w 'ver1)]
+                  [(eq? protocol 'GET)
+                   (error 'handin "request via the GET protocol: maybe you are using the server-port instead of the https-server-port to connect to the https server? ~a"
+                          (let ([port (get-conf 'https-port-number)])
+                            (if port 
+                                (let-values ([(us them) (ssl-addresses r)])
+                                  (format "Try this url: https://~a:~a/" 
+                                          us
+                                          port))
+                                (format "There is no https-port-number set in config.ss; try setting that first."))))]
+                  [else
+                   (error 'handin "unknown protocol: ~s" protocol)]))
               (handle-connection r r-safe w)
               (log-line "normal exit")
               (kill-watcher)
