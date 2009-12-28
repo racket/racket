@@ -1045,7 +1045,7 @@ please adhere to these guidelines:
   (initial-language-category "初期言語")
   (no-language-chosen "言語が選択されていません")
 
- (module-language-one-line-summary "実行するとモジュールのコンテキスト内で REPL を作成する。モジュールで宣言された言語を含む。")
+ ;(module-language-one-line-summary "実行するとモジュールのコンテキスト内で REPL を作成する。モジュールで宣言された言語を含む。")
   (module-language-auto-text "#lang 行を自動的に追加する") ;; shows up in the details section of the module language
 
   ;;; from the `not a language language' used initially in drscheme.

@@ -632,7 +632,7 @@
  (r5rs-one-line-summary "R5RS, kaal")
  (unknown-debug-frame "[onbekend]")
  
- (module-language-one-line-summary "Execute creates a REPL in the context of the module, including the module's declared language")
+ ;(module-language-one-line-summary "Execute creates a REPL in the context of the module, including the module's declared language")
   
  ;;; debug language
  (backtrace-window-title "Spoor - DrScheme")

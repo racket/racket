@@ -1055,7 +1055,7 @@
   (initial-language-category "Langage initial")
   (no-language-chosen "Aucun langage sélectionné")
   
-  (module-language-one-line-summary "Exécuter crée une fenêtre d'interaction dans le contexte du module, incluant le langage du module lui-même")
+  ;(module-language-one-line-summary "Exécuter crée une fenêtre d'interaction dans le contexte du module, incluant le langage du module lui-même")
   (module-language-auto-text "Ligne #lang automatique") ;; shows up in the details section of the module language
   
   ;;; from the `not a language language' used initially in drscheme.

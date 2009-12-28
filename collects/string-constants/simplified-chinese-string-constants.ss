@@ -953,7 +953,7 @@
   (initial-language-category "初始语言")
   (no-language-chosen "还没有选择语言")
   
-  (module-language-one-line-summary "运行程序将提供一个包含该module的REPL")
+  ;(module-language-one-line-summary "运行程序将提供一个包含该module的REPL")
   
   ;;; from the `not a language language' used initially in drscheme.
   (must-choose-language "在继续操作之前，你必须为DrScheme选择一种语言。")

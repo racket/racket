@@ -936,7 +936,7 @@ please adhere to these guidelines:
   (initial-language-category "Startsprog")
   (no-language-chosen "Intet sprog valgt")
   
-  (module-language-one-line-summary "En kørsel åbner en REPL i i modulets sammenhæng, inkluderer modulets deklarede sprog")
+  ;(module-language-one-line-summary "En kørsel åbner en REPL i i modulets sammenhæng, inkluderer modulets deklarede sprog")
   
   ;;; from the `not a language language' used initially in drscheme.
   (must-choose-language "DrScheme kan ikke køre programmer før du vælger et programmeringssprog.")

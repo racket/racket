@@ -802,7 +802,7 @@
  (initial-language-category "Lenguaje inicial")
  (unknown-debug-frame "[desconocido]")
  
- (module-language-one-line-summary "Ejecutar crea un REPL en el contexto del módulo, incluyendo el lenguaje declarado para el módulo")
+ ;(module-language-one-line-summary "Ejecutar crea un REPL en el contexto del módulo, incluyendo el lenguaje declarado para el módulo")
 
   ;;; from the `not a language language' used initially in drscheme.
  (must-choose-language "DrScheme no puede procesar programas hasta que selecciones un lenguaje de programación.")

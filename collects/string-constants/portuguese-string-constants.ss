@@ -908,7 +908,7 @@ please adhere to these guidelines:
  (teaching-languages "Teaching Languages")
  (experimental-languages "Experimental Languages")
  
- (module-language-one-line-summary "Run creates a REPL in the context of the module, including the module's declared language")
+ ;(module-language-one-line-summary "Run creates a REPL in the context of the module, including the module's declared language")
   
 
  ;;; debug language
