@@ -306,10 +306,7 @@
 (define (run)
   (cond [(get-conf 'https-port-number)
          => (lambda (p)
-              (define t
-                (parameterize ([error-print-context-length 0])
-                  (thread (lambda ()
-                            (log-line "*** starting web server")
-                            (run-servlet p)))))
-              (lambda () (break-thread t)))]
+              (log-line "*** starting web server")
+              (parameterize ([error-print-context-length 0])
+                (run-servlet p)))]
         [else void]))
