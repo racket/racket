@@ -623,11 +623,10 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(let ([port (get-conf 'port-number)])
-  (log-line "server started on port ~a ------------------------------" port)
-  (hook 'server-start `([port ,port])))
-
 (define stop-status (web:run))
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define session-count 0)
 
@@ -635,8 +634,11 @@
 (parameterize ([error-display-handler (lambda (msg exn) (log-line msg))]
                [error-print-context-length 0]
                [current-directory server-dir])
+  (define port (get-conf 'port-number))
+  (log-line "server started on port ~a ------------------------------" port)
+  (hook 'server-start `([port ,port]))
   (run-server
-   (get-conf 'port-number)
+   port
    (lambda (r w)
      (error-print-context-length default-context-length)
      (set! connection-num (add1 connection-num))
