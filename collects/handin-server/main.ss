@@ -623,8 +623,9 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(log-line "server started ------------------------------")
-(hook 'server-start `([port ,(get-conf 'port-number)]))
+(let ([port (get-conf 'port-number)])
+  (log-line "server started on port ~a ------------------------------" port)
+  (hook 'server-start `([port ,port])))
 
 (define stop-status (web:run))
 
