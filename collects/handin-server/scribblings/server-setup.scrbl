@@ -134,8 +134,8 @@ This directory contains the following files and sub-directories:
     keeping, for example:
     @verbatim[#:indent 2]|{
       (("Full Name"
-        #rx"^[A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)+$"
-        "full name, no punctuations, properly capitalized")
+        #rx"^[A-Z][a-zA-Z-]+(?: [A-Z][a-zA-Z-]+)+$"
+        "full name, no punctuation, properly capitalized")
        ("Utah ID Number"
         #rx"^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$"
         "Utah ID Number with exactly nine digits")
