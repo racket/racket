@@ -669,7 +669,10 @@
               (let ([protocol (read r-safe)])
                 (if (eq? protocol 'ver1)
                   (write+flush w 'ver1)
-                  (error 'handin "unknown protocol: ~s" protocol)))
+                  (error 'handin "unknown protocol: ~e~a" protocol
+                         (if (eq? protocol 'GET)
+                           " (this port is used for handin submissions only)"
+                           ""))))
               (handle-connection r r-safe w)
               (log-line "normal exit")
               (kill-watcher)
