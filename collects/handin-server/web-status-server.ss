@@ -299,8 +299,7 @@
      #:manager (make-threshold-LRU-manager
                 (send-error "Your session has expired") (* 12 1024 1024)))
     (files:make
-     #:url->path (fsmap:make-url->path (build-path server-dir "htdocs"))
-     #:indices '("index.html"))
+     #:url->path (fsmap:make-url->path (build-path server-dir "htdocs")))
     (lift:make (send-error "File not found")))))
 
 (provide run)
