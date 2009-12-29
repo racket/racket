@@ -2,9 +2,9 @@
 
 @(require scribble/manual "shared.ss" 
           (for-label scheme
-	  	     (only-in lang/htdp-beginner check-expect)
+                     (only-in lang/htdp-beginner check-expect)
 		     teachpack/2htdp/universe
-		     teachpack/htdp/image))
+		     2htdp/image))
 @(require scribble/struct)
 
 @(define (table* . stuff)
@@ -56,30 +56,15 @@ The purpose of this documentation is to give experienced Schemers and HtDP
  @link["http://world.cs.brown.edu/"]{How to Design Worlds}.
 
 @; -----------------------------------------------------------------------------
+@section{Background}
+ 
+The universe teachpack assumes working knowledge of the basic image manipulation primitives, 
+either @schememodname[htdp/image] or @schememodname[2htdp/image]. Its operations
+sometimes require scenes which for @scheme[htdp/image] images means an image whose
+pinhole is at (0,0). For @schememodname[2htdp/image], every image is a scene.
 
-@section[#:tag "basics"]{Basics}
-
-The teachpack assumes working knowledge of the basic image manipulation
- primitives and supports several functions that require a special kind of
- image, called a @deftech{scene}, which is an image whose pinholes are at
- position @math{(0, 0)}. For example, the teachpack displays only
- @tech{scene}s in its canvas. 
-
-@defproc[(scene? [x any/c]) boolean?]{
- determines whether @scheme[x] is a @tech{scene}.}
-
-@defproc[(empty-scene [width natural-number/c]
-                      [height natural-number/c])
-         scene?]{
- creates a plain white, @scheme[width] x @scheme[height] @tech{scene}.}
-
-@defproc[(place-image [img image?] [x number?] [y number?]
-                      [s scene?])
-         scene?]{
- creates a scene by placing @scheme[img] at
- @math{(@scheme[x], @scheme[y])} into @scheme[s];
- @math{(@scheme[x], @scheme[y])} are computer graphics coordinates,
- i.e., they count right and down from the upper-left corner.}
+The example programs in this document are all written using @schememodname[2htdp/image]
+primitives.
 
 @; -----------------------------------------------------------------------------
 @section[#:tag "simulations"]{Simple Simulations}
@@ -89,7 +74,7 @@ The simplest kind of animated @tech{world} program is a time-based
  supply a function that creates a scene for each natural number. By handing
  this function to the teachpack displays the simulation. 
 
-@defproc[(animate [create-image (-> natural-number/c scene)])
+@defproc[(animate [create-image (-> natural-number/c scene?)])
          true]{
 
  opens a canvas and starts a clock that tick 28 times per second.  Every
@@ -104,16 +89,18 @@ The simplest kind of animated @tech{world} program is a time-based
 Example:
 @schemeblock[
 (define (create-UFO-scene height)
-  (place-image UFO 50 height (empty-scene 100 100)))
+  (underlay/xy (rectangle 100 100 "solid" "white") 50 height UFO))
 
 (define UFO
-  (overlay (circle 10 'solid 'green)
-           (rectangle 40 4 'solid 'green)))
+  (underlay/align "center"
+                  "center"
+                  (circle 10 "solid" "green")
+                  (rectangle 40 4 "solid" "green")))
 
 (animate create-UFO-scene)
 ]
 
-@defproc[(run-simulation [create-image (-> natural-number/c scene)])
+@defproc[(run-simulation [create-image (-> natural-number/c scene?)])
          true]{
 
  @scheme[animate] was originally called @scheme[run-simulation], and this
@@ -489,12 +476,14 @@ a short-hand for three lines of code:
 @(begin
 #reader scribble/comment-reader
 @schemeblock[ 
-(define (create-UFO-scene height) 
-  (place-image UFO 50 height (empty-scene 100 100)))
+(define (create-UFO-scene height)
+  (underlay/xy (rectangle 100 100 "solid" "white") 50 height UFO))
 
 (define UFO
-  (overlay (circle 10 'solid 'green)
-           (rectangle 40 4 'solid 'green)))
+  (underlay/align "center"
+                  "center"
+                  (circle 10 "solid" "green")
+                  (rectangle 40 4 "solid" "green")))
 
 ;; (run-simulation create-UFO-scene) is short for: 
 (big-bang 0 
@@ -504,26 +493,6 @@ a short-hand for three lines of code:
 
 Exercise: Add a condition for stopping the flight of the UFO when it
 reaches the bottom. 
-
-@; -----------------------------------------------------------------------------
-@section[#:tag "scenes-and-images"]{Scenes and Images}
-
-For the creation of scenes from the world, use the functions from
-@secref["image"].  The teachpack adds the following two functions, which
-are highly useful for creating scenes. 
-
-@defproc[(nw:rectangle [width natural-number/c] [height natural-number/c] [solid-or-outline Mode] [c Color]) image?]{
-   creates a @scheme[width] by @scheme[height] rectangle, solid or outlined as specified by
-   @scheme[solid-or-outline] and colored according to @scheme[c], with a pinhole at the upper left
-   corner.}
-   
-@defproc[(scene+line [s scene?][x0 number?][y0 number?][x1 number?][y1 number?][c Color]) scene?]{
-   creates a scene by placing a line of color @scheme[c] from
-   @math{(@scheme[x0], @scheme[y0])} to @math{(@scheme[x1],
-   @scheme[y1])} using computer graphics coordinates.  In contrast to
-   the @scheme[add-line] function, @scheme[scene+line] cuts off those
-   portions of the line that go beyond the boundaries of the given
-   @scheme[s].}
 
 @; -----------------------------------------------------------------------------
 @section[#:tag "world-example"]{A First Sample World} 
@@ -1095,8 +1064,8 @@ Once you have designed a world program, add a function definition
 #reader scribble/comment-reader
 (schemeblock
 > (launch-many-worlds (main "matthew") 
-                           (main "kathi") 
-                           (main "h3"))
+                      (main "kathi") 
+                      (main "h3"))
 10
 25
 33
@@ -1607,16 +1576,17 @@ Finally, here is the third function, which renders the state as a scene:
 ; WorldState -> Scene
 ; render the state of the world as a scene 
 
-(check-expect (render HEIGHT) (place-image BALL 50 HEIGHT MT))
+(check-expect (render HEIGHT) (underlay/xy MT 50 HEIGHT BALL))
 (check-expect (render 'resting)
-              (place-image  (text "resting" 11 'red) 10 10 MT))
+              (underlay/xy MT 10 10 (text "resting" 11 "red")))
 
 (define (render w)
-  (place-image 
-    (text name 11 'black) 5 85 
+  (underlay/xy 
     (cond
-      [(symbol? w) (place-image (text "resting" 11 'red) 10 10 MT)]
-      [(number? w) (place-image BALL 50 w MT)])))
+      [(symbol? w) (underlay/xy MT 10 10 (text "resting" 11 "red"))]
+      [(number? w) (underlay/xy MT 50 w BALL)])
+    5 85 
+    (text name 11 "black")))
 
 ))
 
@@ -1631,17 +1601,18 @@ Finally, here is the third function, which renders the state as a scene:
 
 (check-expect 
  ((draw "Carl") 100) 
- (place-image (text "Carl" 11 'black) 
+ (underlay/xy (underlay/xy MT 50 100 BALL) 
               5 85 
-              (place-image BALL 50 100 MT)))
+              (text "Carl" 11 "black")))
 
 (define (draw name)
   (lambda (w)
-    (place-image 
-     (text name 11 'black) 5 85 
+    (overlay/xy 
      (cond
-       [(symbol? w) (place-image (text "resting" 11 'red) 10 10 MT)]
-       [(number? w) (place-image BALL 50 w MT)]))))
+       [(symbol? w) (underlay/xy MT 10 10 (text "resting" 11 "red"))]
+       [(number? w) (underlay/xy MT 50 w BALL)])
+     5 85 
+     (text name 11 'black))))
 
 ))
 

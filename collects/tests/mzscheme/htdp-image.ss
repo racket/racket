@@ -1236,6 +1236,34 @@
       'clr-text-clr
       (ignore (text "abc" 12 (make-color 0 0 255))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  test scene-based functions
+;;
+
+(test #t
+      'nw:rectangle1
+      (image=? (put-pinhole (rectangle 10 10 'solid 'black) 0 0)
+               (nw:rectangle 10 10 'solid 'black)))
+
+(test #t
+      'empty-scene1
+      (image=? (put-pinhole 
+                (overlay (rectangle 10 10 'solid 'white)
+                         (rectangle 10 10 'outline 'black))
+                0 0)
+               (empty-scene 10 10)))
+
+(test #t
+      'place-image1
+      (image=?
+       (overlay/xy (nw:rectangle 50 50 'solid 'orange)
+                   10 12
+                   (rectangle 10 10 'solid 'purple))
+       (place-image (rectangle 10 10 'solid 'purple)
+                    10 12
+                    (nw:rectangle 50 50 'solid 'orange))))
+
 (define (tp-exn/num re)
   (lambda (exn)
     (and (exn:fail? exn)
@@ -1269,6 +1297,10 @@
 (err/rt-name-test (overlay/xy image-snip1 #f #f #f) "second")
 (err/rt-name-test (overlay/xy image-snip1 1 #f #f) "third")
 (err/rt-name-test (overlay/xy image-snip1 1 1 #f) "fourth")
+(err/rt-name-test (place-image #f #f #f #f) "first")
+(err/rt-name-test (place-image image-snip1 #f #f #f) "second")
+(err/rt-name-test (place-image image-snip1 1 #f #f) "third")
+(err/rt-name-test (place-image image-snip1 1 1 #f) "fourth")
 (err/rt-name-test (pinhole-x 1) "first")
 (err/rt-name-test (pinhole-y 1) "first")
 (err/rt-name-test (move-pinhole #f #f #f) "first")
@@ -1278,6 +1310,12 @@
 (err/rt-name-test (rectangle 10 #f #f #f) "second")
 (err/rt-name-test (rectangle 10 10 #f #f) "third")
 (err/rt-name-test (rectangle 10 10 'solid #f) "fourth")
+(err/rt-name-test (nw:rectangle #f #f #f #f) "first")
+(err/rt-name-test (nw:rectangle 10 #f #f #f) "second")
+(err/rt-name-test (nw:rectangle 10 10 #f #f) "third")
+(err/rt-name-test (nw:rectangle 10 10 'solid #f) "fourth")
+(err/rt-name-test (empty-scene #f #f) "first")
+(err/rt-name-test (empty-scene 10 #f) "second")
 (err/rt-name-test (circle #f #f #f) "first")
 (err/rt-name-test (circle 10 #f #f) "second")
 (err/rt-name-test (circle 10 'solid #f) "third")
@@ -1297,6 +1335,12 @@
 (err/rt-name-test (add-line image-snip1 10 10 #f #f #f) "fourth")
 (err/rt-name-test (add-line image-snip1 10 10 11 #f #f) "fifth")
 (err/rt-name-test (add-line image-snip1 10 10 11 11 #f) "sixth")
+(err/rt-name-test (scene+line #f #f #f #f #f #f) "first")
+(err/rt-name-test (scene+line (nw:rectangle 10 10 'solid 'blue) #f #f #f #f #f) "second")
+(err/rt-name-test (scene+line (nw:rectangle 10 10 'solid 'blue) 10 #f #f #f #f) "third")
+(err/rt-name-test (scene+line (nw:rectangle 10 10 'solid 'blue) 10 10 #f #f #f) "fourth")
+(err/rt-name-test (scene+line (nw:rectangle 10 10 'solid 'blue) 10 10 11 #f #f) "fifth")
+(err/rt-name-test (scene+line (nw:rectangle 10 10 'solid 'blue) 10 10 11 11 #f) "sixth")
 (err/rt-name-test (text #f #f #f) "first")
 (err/rt-name-test (text "abc" #f #f) "second")
 (err/rt-name-test (text "abc" 10 #f) "third")

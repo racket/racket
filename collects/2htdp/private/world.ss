@@ -5,7 +5,7 @@
          "last.ss"
          "checked-cell.ss"
          "stop.ss"
-         htdp/image
+         "universe-image.ss"
          htdp/error
          mzlib/runtime-path
          mrlib/bitmap-label

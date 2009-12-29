@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require "../../mrlib/image-core.ss"
+         "img-err.ss"
          scheme/contract
          scheme/class
          scheme/gui/base
@@ -57,216 +58,6 @@
     (send bdc set-bitmap #f)
     (send bm save-file filename 'png)))
 
-
-;                                                                                                 
-;                                                                                                 
-;                                                                                                 
-;                                                                                                 
-;                                                                                                 
-;                                                                                                 
-;                                              ;;                      ;;      ;;                 
-;                                              ;;                      ;;      ;;                 
-;    ;;;;   ;;;;;;;;;  ;;;;   ;;;;      ;;;;   ;;;;;;   ;;;;    ;;;;   ;; ;;;  ;;  ;; ;;;  ;;;;;; 
-;   ;;  ;;  ;;;; ;;;; ;;;;;;  ;;;;     ;;;;;;  ;;;;;;  ;;  ;;  ;;;;;;  ;;;;;   ;;  ;;;;;;  ;;;;;; 
-;  ;;;;;;;; ;;   ;;  ;;;  ;;; ;;      ;;;      ;;  ;; ;;;;;;;;;;;      ;;;;;   ;;  ;;  ;; ;;;  ;; 
-;  ;;;      ;;   ;;  ;;;  ;;; ;;      ;;;      ;;  ;; ;;;     ;;;      ;;;;;   ;;  ;;  ;; ;;;  ;; 
-;   ;;; ;;  ;;   ;;   ;;;;;;  ;;       ;;;;;;  ;;  ;;  ;;; ;;  ;;;;;;  ;;  ;;  ;;  ;;  ;;  ;;;;;; 
-;    ;;;;   ;;   ;;    ;;;;   ;;        ;;;;   ;;  ;;   ;;;;    ;;;;   ;;  ;;; ;;  ;;  ;;   ;;;;; 
-;                                                                                          ;; ;;; 
-;                                                                                          ;;;;;  
-;                                                                                                 
-;
-
-
-(define-syntax define/chk
-  (λ (stx)
-    (syntax-case stx ()
-      [(define/chk (fn-name args ... . final-arg) body ...)
-       (identifier? #'final-arg)
-       (let ([len (length (syntax->list #'(args ...)))])
-         (with-syntax ([(i ...) (build-list len values)])
-           #`(define (fn-name args ... . final-arg)
-               (let ([args (check/normalize 'fn-name 'args args i)] ...
-                     [final-arg (map/i (λ (x j) (check/normalize 'fn-name 'final-arg x (+ #,len j)))
-                                       final-arg)])
-                 body ...))))]
-      [(define/chk (fn-name args ...) body ...)
-       (with-syntax ([(i ...) (build-list (length (syntax->list #'(args ...))) add1)])
-         #'(define (fn-name args ...)
-             (let ([args (check/normalize 'fn-name 'args args i)] ...)
-               body ...)))])))
-
-(define (map/i f l)
-  (let loop ([l l]
-             [i 0])
-    (cond
-      [(null? l) null]
-      [else (cons (f (car l) i)
-                  (loop (cdr l) (+ i 1)))])))
-
-;; check/normalize : symbol symbol any number -> any
-;; based on the name of the argument, checks to see if the input
-;; is valid and, if so, transforms it to a specific kind of value
-;;   width, height -> number
-;;   mode -> 'outline 'solid
-;;   color -> (is-a?/c color<%>)
-(define (check/normalize fn-name argname arg i)
-  (case argname
-    [(x-place)
-     (check-arg fn-name
-                (x-place? arg)
-                'x-place
-                i
-                arg)
-     (let ([sym (if (string? arg)
-                    (string->symbol arg)
-                    arg)])
-       (if (eq? sym 'center)
-           'middle
-           sym))]
-    [(y-place) 
-     (check-arg fn-name
-                (y-place? arg)
-                'y-place
-                i
-                arg)
-     (let ([sym (if (string? arg)
-                    (string->symbol arg)
-                    arg)])
-       (if (eq? sym 'center)
-           'middle
-           sym))]
-    [(image image1 image2 image3) 
-     (check-arg fn-name
-                (image? arg)
-                'image
-                i
-                arg)
-     (to-img arg)]
-    [(mode)
-     (check-arg fn-name
-                (mode? arg)
-                'mode
-                i
-                arg)
-     (if (string? arg)
-         (string->symbol arg)
-         arg)]
-    [(width height radius side-length side-length1 side-length2)
-     (check-arg fn-name
-                (and (real? arg)
-                     (not (negative? arg)))
-                'non-negative-real-number
-                i arg)
-     arg]
-    [(dx dy x1 y1 x2 y2 factor x-factor y-factor)
-     (check-arg fn-name
-                (real? arg)
-                'real\ number
-                i arg)
-     arg]
-    [(side-count)
-     (check-arg fn-name
-                (side-count? arg)
-                'side-count
-                i arg)
-     arg]
-    [(step-count)
-     (check-arg fn-name
-                (step-count? arg)
-                'step-count
-                i arg)
-     arg]
-    [(angle)
-     (check-arg fn-name
-                (angle? arg)
-                'angle\ in\ degrees
-                i arg)
-     (if (< arg 0)
-         (+ arg 360)
-         arg)]
-    [(color)
-     (check-color fn-name i arg)
-     (let ([color-str 
-            (cond
-              [(symbol? arg)
-               (symbol->string arg)]
-              [else arg])])
-       (if (send the-color-database find-color color-str)
-           color-str
-           "black"))]
-    [(string)
-     (check-arg fn-name (string? arg) 'string i arg)
-     arg]
-    [(font-size)
-     (check-arg fn-name (and (integer? arg) (<= 1 arg 255)) 'font-size i arg)
-     arg]
-    [(face)
-     (check-arg fn-name (or (not arg) (string? arg)) 'face i arg)
-     arg]
-    [(family)
-     (check-arg fn-name (memq arg '(default decorative roman script swiss modern symbol system)) 'family i arg)
-     arg]
-    [(style)
-     (check-arg fn-name (memq arg '(normal italic slant)) 'style i arg)
-     arg]
-    [(weight)
-     (check-arg fn-name (memq arg '(normal bold light)) 'weight i arg)
-     arg]
-    [(underline)
-     (and arg #t)]
-    [(posns)
-     (check-arg fn-name
-                (and (list? arg)
-                     (andmap posn? arg))
-                'list-of-posns
-                i arg)
-     (check-arg fn-name
-                (>= (length arg) 3)
-                'list-of-at-least-three-posns
-                i arg)
-     arg]
-    [else
-     (error 'check "the function ~a has an argument with an unknown name: ~s"
-            fn-name
-            argname)]))
-
-(define (y-place? arg)
-  (member arg '("top" top "bottom" bottom "middle" middle "center" center "baseline" baseline)))
-(define (x-place? arg)
-  (member arg '("left" left "right" right "middle" middle "center" center)))
-(define (mode? arg)
-  (member arg '(solid outline "solid" "outline")))
-(define (angle? arg)
-  (and (real? arg)
-       (< -360 arg 360)))
-(define (side-count? i)
-  (and (integer? i)
-       (3 . <= .  i)))
-(define (step-count? i)
-  (and (integer? i)
-       (1 . <= .  i)))
-(define (color? c) (or (symbol? c) (string? c)))
-
-(define (to-img arg)
-  (cond
-    [(is-a? arg image-snip%) (image-snip->image arg)]
-    [(is-a? arg bitmap%) (bitmap->image arg)]
-    [else arg]))
-
-(define (image-snip->image is)
-  (bitmap->image (send is get-bitmap)
-                 (or (send is get-bitmap-mask)
-                     (send (send is get-bitmap) get-loaded-mask))))
-
-(define (bitmap->image bm [mask-bm (send bm get-loaded-mask)])
-  (let ([w (send bm get-width)]
-        [h (send bm get-height)])
-    (make-image (make-translate (/ w 2)
-                                (/ h 2)
-                                (make-bitmap bm mask-bm 0 1 1 #f #f))
-                (make-bb w h h)
-                #f)))
 
 ;                                              
 ;                                              
@@ -978,18 +769,9 @@
          save-image
          bring-between
          
-         image-snip->image
-         bitmap->image
          
          scale
          scale/xy
-         
-         x-place?
-         y-place?
-         mode?
-         angle?
-         side-count?
-         color?
          
          image-width
          image-height

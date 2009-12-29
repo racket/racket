@@ -49,7 +49,7 @@ and some code that builds an initial world and starts the game.
 @chunk[<main>
        (require scheme/list scheme/math
                 (for-syntax scheme/base))
-       (require 2htdp/universe lang/posn scheme/contract)
+       (require 2htdp/universe htdp/image lang/posn scheme/contract)
        <world>
        <breadth-first-search>
        <board->graph>

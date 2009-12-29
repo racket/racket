@@ -104,15 +104,6 @@ Matthew
 ;; =============================
 (provide (all-from-out htdp/image))
 
-(provide
- ;; Scene is Image with pinhole in origin 
- nw:rectangle ;; Number Number Mode Color -> Image
- place-image  ;; Image Number Number Scene -> Scene
- empty-scene  ;; Number Number -> Scene 
- scene+line   ;; Scene Number Number Number Number Color -> Scene 
- ;; cut all pieces that are outside the given rectangle 
- )
-
 ;; world manipulation functions: 
 ;; =============================
 (provide      ;; forall(World):
@@ -166,57 +157,6 @@ Matthew
 
 ;; ---------------------------------------------------------------------------
 
-;                                                                             
-;                                                                             
-;   ;;;;;                                                  ;;;;;               
-;   ;                                    ;                  ;                 
-;   ;                                    ;                  ;                 
-;   ;      ;  ;   ; ;;    ;;;   ; ;;;  ;;;;;   ;            ;   ;;; ;    ;;;; 
-;   ;;;;;  ;  ;   ;;  ;  ;   ;  ;;  ;    ;     ;            ;   ; ;;;   ;   ; 
-;   ;       ;;    ;   ;  ;   ;  ;        ;                  ;   ; ; ;   ;   ; 
-;   ;       ;;    ;   ;  ;   ;  ;        ;                  ;   ; ; ;   ;   ; 
-;   ;      ;  ;   ;   ;  ;   ;  ;        ;     ;            ;   ; ; ;   ;  ;; 
-;   ;;;;;  ;  ;   ;;;;    ;;;   ;         ;;   ;          ;;;;; ; ; ;    ;; ; 
-;                 ;                                                         ; 
-;                 ;                                                      ;;;; 
-;                                                                              
-
-(define (nw:rectangle width height mode color)
-  (check-size/0 'nw:rectangle width "first")
-  (check-size/0 'nw:rectangle height "second")
-  (check-mode 'rectangle mode "third")
-  (check-sym/string-color 'rectangle color "fourth")
-  (put-pinhole (rectangle width height mode color) 0 0))
-
-(define (place-image image x y scene)
-  (check-image 'place-image image "first")
-  (check-arg 'place-image (number? x) 'integer "second" x)
-  (check-arg 'place-image (number? y) 'integer "third" y)
-  (check-scene 'place-image scene "fourth")
-  (let ([x (number->integer x)]
-        [y (number->integer y)])
-    (place-image0 image x y scene)))
-
-(define (empty-scene width height)
-  (check-size/0 'empty-scene width "first")
-  (check-size/0 'empty-scene height "second")    
-  (put-pinhole 
-   (overlay (rectangle width height 'solid 'white)
-            (rectangle width height 'outline 'black))
-   0 0))
-
-(define (scene+line img x0 y0 x1 y1 c)
-  ;; img and c are checked via calls to add-line from image.ss
-  (check-arg 'scene+line (scene? img) "scene" "first" "plain image")
-  (check-arg 'scene+line (number? x0) "number" "second" x0)
-  (check-arg 'scene+line (number? y0) "number" "third" y0)
-  (check-arg 'scene+line (number? x1) "number" "fourth" x1)
-  (check-arg 'scene+line (number? y1) "number" "fifth" y1)
-  (let ([x0 (number->integer x0)]
-        [x1 (number->integer x1)]
-        [y0 (number->integer y0)]
-        [y1 (number->integer y1)])
-    (add-line-to-scene0 img x0 y0 x1 y1 c)))
 
 ;                                                                        
 ;                                                                        
@@ -406,8 +346,6 @@ Matthew
         (error tag "scene expected, given image whose pinhole is at (~s,~s) instead of (0,0)"
                (pinhole-x i) (pinhole-y i)))
       (check-arg tag #f "image" rank i)))
-
-(define (scene? i) (and (= 0 (pinhole-x i)) (= 0 (pinhole-y i))))
 
 ;; Symbol Any String -> Void
 (define (check-sym/string-color tag width rank)

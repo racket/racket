@@ -13,15 +13,13 @@
          "private/syn-aux-aux.ss" 
          "private/syn-aux.ss"
          "private/check-aux.ss"
-         "private/image.ss"
+         "private/universe-image.ss"
          "private/world.ss"
          "private/universe.ss"
          "private/launch-many-worlds.ss"
          "private/stop.ss"
          htdp/error
          (rename-in lang/prim (first-order->higher-order f2h)))
-
-(provide (all-from-out "private/image.ss"))
 
 (provide 
  (rename-out (make-stop-the-world stop-with))) ;; World -> STOP
@@ -34,7 +32,6 @@
 
 (provide
  sexp?  ;; Any -> Boolean 
- scene? ;; Any -> Boolean 
  )
 
 (define-keywords AllSpec

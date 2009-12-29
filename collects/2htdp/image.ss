@@ -47,7 +47,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 
 
 (require mrlib/image-core
-         "private/image-more.ss")
+         "private/image-more.ss"
+         "private/img-err.ss")
 
 (provide overlay
          overlay/align

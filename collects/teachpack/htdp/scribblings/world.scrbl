@@ -28,35 +28,6 @@ create and display a series of animated scenes, i.e., a simulation. The
 second one generalizes the first by adding interactive GUI features. 
 
 @; -----------------------------------------------------------------------------
-@section[#:tag "basics"]{Basics}
-
-The teachpack assumes working knowledge of the basic image manipulation
-primitives and introduces a special kind of image: a scene. 
-
-@deftech{Scene}@;
-@schemeblock[
-;; Image -> Boolean 
-(define (focus-at-0-0 i)	     
-  (and (= (pinhole-x i) 0) (= (pinhole-y i) 0)))
-
-(and/c image? focus-at-0-0)]
-
-The teachpack can display only @tech{Scene}s, which are images whose
-pinholes are at position @scheme[(0,0)].
-
-@defproc[(empty-scene [width natural-number/c]
-                      [height natural-number/c])
-         (unsyntax @tech{Scene})]{
- Creates a @scheme[width] x @scheme[height] @tech{Scene}.}
-
-@defproc[(place-image [img image?] [x number?] [y number?]
-                      [s (unsyntax @tech{Scene})])
-         (unsyntax @tech{Scene})]{
- Creates a scene by placing @scheme[img] at @scheme[(x,y)] into @scheme[s];
- @scheme[(x,y)] are comp. graph. coordinates, i.e., they count right and
- down from the upper-left corner.}
-
-@; -----------------------------------------------------------------------------
 @section[#:tag "simulations"]{Simple Simulations}
 
 @defproc[(run-simulation
@@ -206,27 +177,6 @@ Example: The following examples shows that @scheme[(run-simulation 100 100
 ]
 Exercise: Add a condition for stopping the flight of the UFO when it
 reaches the bottom. 
-
-@; -----------------------------------------------------------------------------
-@section{Scenes and Images}
-
-For the creation of scenes from the world, use the functions from
-@secref["image"].  The following two functions have turned out to be useful
-for the creation of scenes, too.
-
-
-@defproc[(nw:rectangle [width natural-number/c] [height natural-number/c] [solid-or-filled Mode] [c Color]) image?]{
-   Creates a @scheme[width] x @scheme[height] rectangle, solid or outlined as specified by
-   @scheme[solid-or-filled] and colored according to @scheme[c], with a pinhole at the upper left
-   corner.}
-   
-@defproc[(scene+line [s (unsyntax @tech{Scene})][x0 number?][y0 number?][x1 number?][y1 number?][c Color]) (unsyntax @tech{Scene})]{
-   Creates a scene by placing a line of color @scheme[c] from @scheme[(x0,y0)] to
-   @scheme[(x1,y1)] into @scheme[scene];  
-   @scheme[(x,y)] are comp. graph. coordinates; 
-   in contrast to the @scheme[add-line] function, this
-   one cuts off those portions of the line that go beyond the boundaries of
-   the given @scheme[s].}
 
 @; -----------------------------------------------------------------------------
 

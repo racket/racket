@@ -222,6 +222,48 @@ left, above, to the right, and below the pinhole, respectively. The pixel
 directly on the pinhole is always saved.}
 
 @;-----------------------------------------------------------------------------
+@section[#:tag "scenes"]{Scenes}
+
+A @deftech{scene} is an image, but with the pinhole in the upper-left corner, i.e. 
+an image where @scheme[pinhole-x] and @scheme[pinhole-y] both return
+@scheme[0].
+
+Scenes are particularly useful with the
+@schememodname[2htdp/universe]
+and
+@schememodname[htdp/world]
+teachpacks, since it displays only @tech{scene}s in its canvas. 
+
+@defproc[(scene? [x any/c]) boolean?]{Is @scheme[x] an scene?}
+
+@defproc[(empty-scene [width natural-number/c]
+                      [height natural-number/c])
+         scene?]{
+ creates a plain white, @scheme[width] x @scheme[height] @tech{scene}.}
+
+@defproc[(place-image [img image?] [x number?] [y number?]
+                      [s scene?])
+         scene?]{
+ creates a scene by placing @scheme[img] at
+ @math{(@scheme[x], @scheme[y])} into @scheme[s];
+ @math{(@scheme[x], @scheme[y])} are computer graphics coordinates,
+ i.e., they count right and down from the upper-left corner.}
+
+
+@defproc[(nw:rectangle [width natural-number/c] [height natural-number/c] [solid-or-outline Mode] [c Color]) image?]{
+   creates a @scheme[width] by @scheme[height] rectangle, solid or outlined as specified by
+   @scheme[solid-or-outline] and colored according to @scheme[c], with a pinhole at the upper left
+   corner.}
+   
+@defproc[(scene+line [s scene?][x0 number?][y0 number?][x1 number?][y1 number?][c Color]) scene?]{
+   creates a scene by placing a line of color @scheme[c] from
+   @math{(@scheme[x0], @scheme[y0])} to @math{(@scheme[x1],
+   @scheme[y1])} using computer graphics coordinates.  In contrast to
+   the @scheme[add-line] function, @scheme[scene+line] cuts off those
+   portions of the line that go beyond the boundaries of the given
+   @scheme[s].}
+
+@;-----------------------------------------------------------------------------
 @section[#:tag "pixel-lists"]{Miscellaneous Image Manipulation and Creation}
  
 The last group of functions extracts the constituent colors from an image

@@ -1,7 +1,6 @@
 #lang scheme
 
-(require htdp/image
-         htdp/error)
+(require htdp/error)
 
 (provide (all-defined-out))
 
@@ -33,18 +32,8 @@
 
 ;; -----------------------------------------------------------------------------
 
-;; Any -> Boolean 
-(define (scene? i)
-  (and (image? i) (internal-scene? i)))
-
-;; Image -> Boolean 
-(define (internal-scene? i) 
-  (and (= 0 (pinhole-x i)) (= 0 (pinhole-y i))))
-
 ;; Number Symbol Symbol -> Integer
-(define (number->integer x . rst)
-  (define t (if (pair? rst) (car rst) ""))
-  (define p (if (and (pair? rst) (pair? (cdr rst))) (cadr rst) ""))
+(define (number->integer x [t ""] [p ""])
   (check-arg t (and (number? x) (real? x)) "real number" p x)
   (inexact->exact (floor x)))
 
@@ -163,34 +152,4 @@
 ;; Symbol Any String -> Void
 (define (check-pos t c r)
   (check-arg 
-   t (and (number? c) (>= (number->integer c t r) 0)) "positive integer" r c))
-
-;; Symbol Any String String *-> Void
-(define (check-image tag i rank . other-message)
-  (if (and (pair? other-message) (string? (car other-message)))
-      (check-arg tag (image? i) (car other-message) rank i)
-      (check-arg tag (image? i) "image" rank i)))
-
-;; Symbol Any String -> Void
-(define (check-scene tag i rank)
-  (define error "image with pinhole at (~s,~s)")
-  (if (image? i)
-      (check-arg tag (internal-scene? i) "scene" rank (image-pins i))
-      (check-arg tag #f         "scene" rank i)))
-
-;; Symbol Any -> Void 
-(define (check-scene-result tname i)
-  (if (image? i) 
-      (check-result tname internal-scene? "scene" i (image-pins i))
-      (check-result tname (lambda (x) (image? x)) "scene" i)))
-
-(define (image-pins i)
-  (format "image with pinhole at (~s,~s)" (pinhole-x i) (pinhole-y i)))
-
-;; Symbol (union Symbol String) Nat -> Void
-(define (check-mode tag s rank)
-  (check-arg tag (or (eq? s 'solid)
-                     (eq? s 'outline)
-                     (string=? "solid" s)
-                     (string=? "outline" s)) "mode (solid or outline)" rank s))
-
+   t (and (real? c) (>= (number->integer c t r) 0)) "positive integer" r c))

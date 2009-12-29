@@ -1,6 +1,6 @@
 #lang scheme
 
-(require 2htdp/universe htdp/testing)
+(require 2htdp/universe htdp/testing htdp/image)
 ;(require "../2htdp/universe.ss" htdp/testing)
 
 ;; World   = Number | 'resting 
