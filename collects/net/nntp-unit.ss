@@ -173,19 +173,16 @@
 
 (define (get-rest-of-multi-line-response communicator)
   (let ([receiver (communicator-receiver communicator)])
-    (let loop ()
+    (let loop ([r '()])
       (let ([l (get-one-line-from-server receiver)])
         (cond
-         [(eof-object? l)
-          ((signal-error make-premature-close
-                         "port prematurely closed during multi-line response")
-           communicator)]
-         [(string=? l ".")
-          '()]
-         [(string=? l "..")
-          (cons "." (loop))]
-         [else
-          (cons l (loop))])))))
+          [(eof-object? l)
+           ((signal-error make-premature-close
+                          "port prematurely closed during multi-line response")
+            communicator)]
+          [(string=? l ".")  (reverse r)]
+          [(string=? l "..") (loop (cons "." r))]
+          [else              (loop (cons l r))])))))
 
 ;; get-multi-line-response :
 ;; communicator -> number x string x list (string)
@@ -307,12 +304,7 @@
 ;; list (string) x list (desired) -> list (string)
 
 (define (extract-desired-headers headers desireds)
-  (let loop ([headers headers])
-    (if (null? headers) null
-        (let ([first (car headers)]
-              [rest (cdr headers)])
-          (if (ormap (lambda (matcher)
-                       (regexp-match matcher first))
-                     desireds)
-              (cons first (loop rest))
-              (loop rest))))))
+  (filter (lambda (header)
+            (ormap (lambda (matcher) (regexp-match matcher header))
+                   desireds))
+          headers))
