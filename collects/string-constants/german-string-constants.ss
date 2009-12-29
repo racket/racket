@@ -782,8 +782,8 @@
  (clear-error-highlight-item-help-string "Entfernt die rosa Fehlermarkierung")
  (reindent-menu-item-label "&Einrücken")
  (reindent-all-menu-item-label "&Alles einrücken")
- (semicolon-comment-out-menu-item-label "Mit Semikolon auskommentieren")
- (box-comment-out-menu-item-label "Mit Kommentar-Kasten auskommentieren")
+ (semicolon-comment-out-menu-item-label "Mit &Semikolon auskommentieren")
+ (box-comment-out-menu-item-label "Mit &Kommentar-Kasten auskommentieren")
  (uncomment-menu-item-label "Einkommentieren")
 
  (convert-to-semicolon-comment "In Semikolon-Kommentar umwandeln")
@@ -951,7 +951,7 @@
  (initial-language-category "Sprache am Anfang")
  (no-language-chosen "Keine Sprache ausgewählt")
 
- ;(module-language-one-line-summary "Start erzeugt eine REPL im Kontext des Moduls inklusive der deklarierten Sprache des Moduls.")
+ (module-language-one-line-summary "List die #lang-Zeile, um die tatsächliche Sprache zu ermitteln.")
   
  (module-language-auto-text "Automatisch Zeile mit #lang") ;; shows up in the details section of the module language
 
