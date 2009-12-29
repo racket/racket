@@ -259,5 +259,10 @@
               (log-line "*** starting web server")
               (parameterize ([error-print-context-length 0])
                 (run-servlet dispatcher p server-dir
+                             #:namespace '(handin-server/private/md5
+                                           handin-server/private/logger
+                                           handin-server/private/config
+                                           handin-server/private/hooker
+                                           handin-server/private/reloadable)
                              #:log-file (get-conf 'web-log-file))))]
         [else void]))
