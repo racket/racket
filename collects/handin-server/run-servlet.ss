@@ -9,10 +9,7 @@
 (require web-server/web-server
          web-server/servlet-dispatch
          web-server/managers/lru
-         (prefix-in lift: web-server/dispatchers/dispatch-lift)
-         (prefix-in fsmap: web-server/dispatchers/filesystem-map)
          (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)
-         (prefix-in files: web-server/dispatchers/dispatch-files)
          (prefix-in log: web-server/dispatchers/dispatch-log)
          web-server/http/request-structs
          net/url
@@ -49,12 +46,16 @@
        (lambda (req)
          (init-path (url->string (request-uri req)))
          (dispatcher req))
-       #:regexp #rx"^/(?:/|$)"
+       #:regexp #rx""
        #:namespace namespace
        #:current-directory server-dir
        #:manager (make-threshold-LRU-manager
                   (send-error "Your session has expired" init-path)
                   (* 12 1024 1024))))
-    (files:make
-     #:url->path (fsmap:make-url->path (build-path server-dir "htdocs")))
-    (lift:make (send-error "File not found" (lambda () "/"))))))
+    ;; This can be used to serve html content too; doesn't make sense now,
+    ;; since the servlet will be used for all requests.  (See "servlet-env.ss"
+    ;; for the needed `require's)
+    ;; (files:make
+    ;;  #:url->path (fsmap:make-url->path (build-path server-dir "htdocs")))
+    ;; (lift:make (send-error "File not found" (lambda () "/")))
+    )))
