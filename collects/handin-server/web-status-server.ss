@@ -256,7 +256,6 @@
 (define (run)
   (cond [(get-conf 'https-port-number)
          => (lambda (p)
-              (log-line "*** starting embedded web server on port ~a" p)
               (parameterize ([error-print-context-length 0])
                 (run-servlet dispatcher p server-dir
                              #:namespace '(handin-server/private/md5
@@ -264,5 +263,6 @@
                                            handin-server/private/config
                                            handin-server/private/hooker
                                            handin-server/private/reloadable)
-                             #:log-file (get-conf 'web-log-file))))]
+                             #:log-file (get-conf 'web-log-file)))
+              (log-line "*** embedded web server started on port ~a" p))]
         [else void]))
