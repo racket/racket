@@ -636,8 +636,9 @@
                [error-print-context-length 0]
                [current-directory server-dir])
   (define port (get-conf 'port-number))
-  (log-line "server started on port ~a ------------------------------" port)
-  (hook 'server-start `([port ,port]))
+  (define (start-notify)
+    (log-line "*** handin server started on port ~a" port)
+    (hook 'server-start `([port ,port])))
   (run-server
    port
    (lambda (r w)
@@ -697,5 +698,6 @@
      (let ([l (ssl-listen port-k cnt #t)])
        (ssl-load-certificate-chain! l "server-cert.pem")
        (ssl-load-private-key! l "private-key.pem")
+       (start-notify)
        l))
    ssl-close ssl-accept ssl-accept/enable-break))

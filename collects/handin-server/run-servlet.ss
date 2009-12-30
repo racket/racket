@@ -53,8 +53,8 @@
                   (send-error "Your session has expired" init-path)
                   (* 12 1024 1024))))
     ;; This can be used to serve html content too; doesn't make sense now,
-    ;; since the servlet will be used for all requests.  (See "servlet-env.ss"
-    ;; for the needed `require's)
+    ;; since the servlet will be used for all requests, and it never calls
+    ;; (next-dispatcher).  (See "servlet-env.ss" for the needed `require's.)
     ;; (files:make
     ;;  #:url->path (fsmap:make-url->path (build-path server-dir "htdocs")))
     ;; (lift:make (send-error "File not found" (lambda () "/")))
