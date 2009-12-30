@@ -1221,7 +1221,9 @@ FOREIGN_USED_OBJSLIB = $(FOREIGN_OBJSLIB)
 FOREIGN_NOT_USED_LIB = 
 FOREIGN_NOT_USED_OBJSLIB = 
 
-EXTRA_MZ_OBJS = ../../mzscheme/src/gmp.@LTO@ ../../mzscheme/src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB)
+EXTRA_GMP := $(if @EXTRA_GMP_OBJ@,../../mzscheme/src/@EXTRA_GMP_OBJ@,)
+
+EXTRA_MZ_OBJS = ../../mzscheme/src/gmp.@LTO@ $(EXTRA_GMP) ../../mzscheme/src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB)
 
 LIBMREDLIBS_a = 
 LIBMREDLIBS_la = $(LDFLAGS) $(LDLIBS) $(@WXVARIANT@_LIBS)

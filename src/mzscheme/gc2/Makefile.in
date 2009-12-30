@@ -372,8 +372,10 @@ FOREIGN_USED_OBJSLIB = $(FOREIGN_OBJSLIB)
 FOREIGN_NOT_USED_LIB = 
 FOREIGN_NOT_USED_OBJSLIB = 
 
-EXTRA_OBJS_T = ../src/gmp.@LTO@ ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_LIB)
-EXTRA_OBJS_L = ../src/gmp.@LTO@ ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB)
+EXTRA_GMP := $(if @EXTRA_GMP_OBJ@,../src/@EXTRA_GMP_OBJ@,)
+
+EXTRA_OBJS_T = ../src/gmp.@LTO@ $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_LIB)
+EXTRA_OBJS_L = ../src/gmp.@LTO@ $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB)
 
 ../libmzscheme3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) gc2.@LTO@
 	$(AR) $(ARFLAGS) ../libmzscheme3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@
