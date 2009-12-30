@@ -124,7 +124,7 @@
   (unless (procedure? f)
     (tp-error proc "procedure expected as ~a argument; given ~e" arg# f))
   (let ([arity-of-f (procedure-arity f)])
-    (unless  (and (number? arity-of-f) (>= arity-of-f exp-arity))
+    (unless (procedure-arity-includes? f exp-arity) ; (and (number? arity-of-f) (>= arity-of-f exp-arity))
       (tp-error proc "procedure of ~a expected as ~a argument; given procedure of ~a "
                 arg-err arg# 
                 (cond
