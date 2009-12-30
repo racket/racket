@@ -187,9 +187,9 @@
 (define-syntax (expand-ssp-body stx)
   (syntax-case stx ()
     [(_ (sp-id ...) (temp-id ...) body)
-     (let ([body (local-expand #'(letrec-syntaxes ([(sp-id) (syntax-local-value (quote-syntax temp-id))]
-                                                   ...)
-                                   (force-expand body))
+     (let ([body (local-expand #'(letrec-syntaxes/trans ([(sp-id) (syntax-local-value (quote-syntax temp-id))]
+                                                         ...)
+                                    (force-expand body))
                                (syntax-local-context)
                                null ;; `force-expand' actually determines stopping places
                                #f)])
@@ -212,12 +212,23 @@
                       (letrec-syntaxes ([(sp-id) (syntax-local-value (quote-syntax temp-id))] ...)
                         expr))]))]))]))
 
+(define-syntax (letrec-syntaxes/trans stx)
+  (syntax-case stx ()
+    [(_ bindings body)
+     (syntax-property
+      #'(letrec-syntaxes bindings body)
+      'certify-mode
+      'transparent)]))
+
 (define-syntax (force-expand stx)
   (syntax-case stx ()
     [(_ stx)
      ;; Expand `stx' to reveal type of form, and then preserve it via
      ;; `quote':
-     #`(quote #,(local-expand #'stx
-                              'module
-                              (kernel-form-identifier-list)
-                              #f))]))
+     (syntax-property
+      #`(quote #,(local-expand #'stx
+                               'module
+                               (kernel-form-identifier-list)
+                               #f))
+      'certify-mode
+      'transparent)]))
