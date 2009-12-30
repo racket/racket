@@ -209,6 +209,12 @@ scheme_init_port_fun(Scheme_Env *env)
   default_write_handler   = scheme_make_prim_w_arity(sch_default_write_handler,   "default-port-write-handler",   2, 2);
   default_print_handler   = scheme_make_prim_w_arity(sch_default_print_handler,   "default-port-print-handler",   2, 2);
 
+  /* Use dummy port: */
+  REGISTER_SO(dummy_input_port);
+  REGISTER_SO(dummy_output_port);
+  dummy_input_port = scheme_make_byte_string_input_port("");
+  dummy_output_port = scheme_make_null_output_port(1);
+
   scheme_init_port_fun_config();
 
   scheme_add_global_constant("eof", scheme_eof, env);
@@ -369,11 +375,6 @@ static MZ_INLINE Scheme_Input_Port *input_port_record_slow(Scheme_Object *port)
       return (Scheme_Input_Port *)port;
 
     if (!SCHEME_STRUCTP(port)) {
-      /* Use dummy port: */
-      if (!dummy_input_port) {
-        REGISTER_SO(dummy_input_port);
-        dummy_input_port = scheme_make_byte_string_input_port("");
-      }
       return (Scheme_Input_Port *)dummy_input_port;
     }
     
@@ -406,11 +407,6 @@ static MZ_INLINE Scheme_Output_Port *output_port_record_slow(Scheme_Object *port
       return (Scheme_Output_Port *)port;
 
     if (!SCHEME_STRUCTP(port)) {
-      /* Use dummy port: */
-      if (!dummy_output_port) {
-        REGISTER_SO(dummy_output_port);
-        dummy_output_port = scheme_make_null_output_port(1);
-      }
       return (Scheme_Output_Port *)dummy_output_port;
     }
     
