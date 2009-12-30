@@ -176,6 +176,8 @@ THREAD_LOCAL_DECL(static Scheme_Prompt *available_regular_prompt);
 THREAD_LOCAL_DECL(static Scheme_Dynamic_Wind *available_prompt_dw);
 THREAD_LOCAL_DECL(static Scheme_Meta_Continuation *available_prompt_mc);
 THREAD_LOCAL_DECL(static Scheme_Object *cached_beg_stx);
+THREAD_LOCAL_DECL(static Scheme_Object *cached_mod_stx);
+THREAD_LOCAL_DECL(static Scheme_Object *cached_mod_beg_stx);
 THREAD_LOCAL_DECL(static Scheme_Object *cached_dv_stx);
 THREAD_LOCAL_DECL(static Scheme_Object *cached_ds_stx);
 THREAD_LOCAL_DECL(static int cached_stx_phase);
@@ -574,6 +576,8 @@ void
 scheme_init_fun_places()
 {
   REGISTER_SO(cached_beg_stx);
+  REGISTER_SO(cached_mod_stx);
+  REGISTER_SO(cached_mod_beg_stx);
   REGISTER_SO(cached_dv_stx);
   REGISTER_SO(cached_ds_stx);
   REGISTER_SO(offstack_cont);
@@ -2642,6 +2646,7 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
 		   Scheme_Object *orig_code, Scheme_Object *closest_code,
                    Scheme_Comp_Env *cenv, int phase, 
 		   int deflt, int cadr_deflt)
+/* Adds (if mark) or lifts (if not mark) certificates. */
 {
   Scheme_Object *prop;
   int next_cadr_deflt = 0;
@@ -2649,7 +2654,10 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
   if (SCHEME_STXP(code)) {
     prop = scheme_stx_property(code, certify_mode_symbol, NULL);
     if (SAME_OBJ(prop, opaque_symbol)) {
-      return scheme_stx_cert(code, mark, menv, orig_code, NULL, 1);
+      if (mark)
+        return scheme_stx_cert(code, mark, menv, orig_code, NULL, 1);
+      else
+        return scheme_stx_lift_active_certs(code);
     } else if (SAME_OBJ(prop, transparent_symbol)) {
       cadr_deflt = 0;
       /* fall through */
@@ -2671,30 +2679,42 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
 	Scheme_Object *name;
 	name = SCHEME_STX_CAR(code);
 	if (SCHEME_STX_SYMBOLP(name)) {
-	  Scheme_Object *beg_stx, *dv_stx, *ds_stx;
+	  Scheme_Object *beg_stx, *mod_stx, *mod_beg_stx, *dv_stx, *ds_stx;
 
 	  if (!phase) {
+            mod_stx = scheme_module_stx;
 	    beg_stx = scheme_begin_stx;
+	    mod_beg_stx = scheme_module_begin_stx;
 	    dv_stx = scheme_define_values_stx;
 	    ds_stx = scheme_define_syntaxes_stx;
 	  } else if (phase == cached_stx_phase) {
 	    beg_stx = cached_beg_stx;
+	    mod_stx = cached_mod_stx;
+	    mod_beg_stx = cached_mod_beg_stx;
 	    dv_stx = cached_dv_stx;
 	    ds_stx = cached_ds_stx;
 	  } else {
 	    beg_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_begin_stx), scheme_false, 
 					     scheme_sys_wraps(cenv), 0, 0);
+	    mod_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_module_stx), scheme_false, 
+					     scheme_sys_wraps(cenv), 0, 0);
+	    mod_beg_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_module_begin_stx), scheme_false, 
+                                                 scheme_sys_wraps(cenv), 0, 0);
 	    dv_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_define_values_stx), scheme_false, 
 					    scheme_sys_wraps(cenv), 0, 0);
 	    ds_stx = scheme_datum_to_syntax(SCHEME_STX_VAL(scheme_define_syntaxes_stx), scheme_false, 
 					    scheme_sys_wraps(cenv), 0, 0);
 	    cached_beg_stx = beg_stx;
+	    cached_mod_stx = mod_stx;
+	    cached_mod_beg_stx = mod_beg_stx;
 	    cached_dv_stx = dv_stx;
 	    cached_ds_stx = ds_stx;
 	    cached_stx_phase = phase;
 	  }
 
-	  if (scheme_stx_module_eq(beg_stx, name, phase)) {
+	  if (scheme_stx_module_eq(beg_stx, name, phase)
+              || scheme_stx_module_eq(mod_stx, name, phase)
+              || scheme_stx_module_eq(mod_beg_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 0;
 	  } else if (scheme_stx_module_eq(dv_stx, name, phase)
@@ -2705,8 +2725,12 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
 	}
       }
       
-      if (!trans)
-	return scheme_stx_cert(code, mark, menv, orig_code, NULL, 1);
+      if (!trans) {
+        if (mark)
+          return scheme_stx_cert(code, mark, menv, orig_code, NULL, 1);
+        else
+          return scheme_stx_lift_active_certs(code);
+      }
     }
   }
 
@@ -2733,7 +2757,18 @@ cert_with_specials(Scheme_Object *code, Scheme_Object *mark, Scheme_Env *menv,
   } else if (SCHEME_STX_NULLP(code))
     return code;
 
-  return scheme_stx_cert(code, mark, menv, orig_code, NULL, 1);
+  if (mark)
+    return scheme_stx_cert(code, mark, menv, orig_code, NULL, 1);
+  else
+    return scheme_stx_lift_active_certs(code);
+}
+
+Scheme_Object *scheme_lift_local_stx_certificates(Scheme_Object *code, 
+                                                  Scheme_Comp_Env *env)
+{
+  return cert_with_specials(code, NULL, NULL, code, code,
+                            NULL, env->genv->phase,
+                            0, 0);
 }
 
 Scheme_Object *
@@ -2788,6 +2823,15 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 
     mark = scheme_new_mark();
     code = scheme_add_remove_mark(code, mark);
+
+    {
+      /* Ensure that source doesn't already have 'certify-mode, in case argument
+         properties are used for result properties. */
+      Scheme_Object *prop;
+      prop = scheme_stx_property(code, certify_mode_symbol, NULL);
+      if (SCHEME_TRUEP(prop))
+        code = scheme_stx_property(code, certify_mode_symbol, scheme_false);
+    }
 
     SCHEME_EXPAND_OBSERVE_MACRO_PRE_X(rec[drec].observer, code);
 

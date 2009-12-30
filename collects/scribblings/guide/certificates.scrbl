@@ -41,7 +41,11 @@ example, when @scheme[(go 'a)] is expanded to @scheme[(unchecked-go 8
 'a)], a certificate is attached to the result @scheme[(unchecked-go 8
 'a)]. Extracting just @scheme[unchecked-go] removes the identifier
 from the certified expression, so that the reference is disallowed
-when it is inserted into @scheme[(unchecked-go #f 'a)].
+when it is inserted into @scheme[(unchecked-go #f 'a)]. The
+@scheme[expand] and @scheme[local-expand] (when used with an empty
+stop list) functions lift all certificates to the outermost result
+expression, except as indicated by @scheme['certify-mode] syntax
+properties (see @refsecref["stxcerts"]).
 
 In addition to checking module references, the macro expander
 disallows references to local bindings where the binding identifier is

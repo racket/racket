@@ -12,7 +12,7 @@
     [(_ name expr)
      (syntax-case (local-expand/capture-lifts #'expr
                                               'expression 
-                                              (list #'define-values))
+                                              null #;(list #'define-values))
        (begin define-values)
        [(begin (define-values (n) e) e*)
         #`(begin (define-values (n) e)

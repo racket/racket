@@ -331,6 +331,7 @@ extern Scheme_Object *scheme_date;
 
 extern Scheme_Object *scheme_module_stx;
 extern Scheme_Object *scheme_begin_stx;
+extern Scheme_Object *scheme_module_begin_stx;
 extern Scheme_Object *scheme_define_values_stx;
 extern Scheme_Object *scheme_define_syntaxes_stx;
 extern Scheme_Object *scheme_top_stx;
@@ -902,10 +903,14 @@ int scheme_stx_certified(Scheme_Object *stx, Scheme_Object *extra_certs,
                          Scheme_Object *modidx, Scheme_Object *home_insp);
 int scheme_module_protected_wrt(Scheme_Object *home_insp, Scheme_Object *insp);
 Scheme_Object *scheme_stx_activate_certs(Scheme_Object *stx);
+Scheme_Object *scheme_stx_lift_active_certs(Scheme_Object *stx);
 
 Scheme_Object *scheme_stx_extract_certs(Scheme_Object *o, Scheme_Object *base_certs);
 Scheme_Object *scheme_stx_add_inactive_certs(Scheme_Object *o, Scheme_Object *certs);
 Scheme_Object *scheme_stx_propagate_inactive_certs(Scheme_Object *o, Scheme_Object *orig);
+
+Scheme_Object *scheme_lift_local_stx_certificates(Scheme_Object *code, 
+                                                  struct Scheme_Comp_Env *env);
 
 int scheme_stx_has_more_certs(Scheme_Object *id, Scheme_Object *certs, 
 			      Scheme_Object *than_id, Scheme_Object *than_certs);

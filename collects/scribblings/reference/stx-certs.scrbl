@@ -60,10 +60,11 @@ shape and properties of the result:
           @scheme['certify-mode] property if it does not already have
           a @scheme['certify-mode] property value.}
 
- @item{If the result has no @scheme['certify-mode] property value,
-          but its datum is a pair, and if the syntax object
-          corresponding to the @scheme[car] of the pair is an
-          identifier bound to @scheme[begin], then the certificate is
+ @item{If the result has no @scheme['certify-mode] property value, but
+          its datum is a pair, and if the syntax object corresponding
+          to the @scheme[car] of the pair is an identifier bound to
+          @scheme[begin], @scheme[module], or
+          @scheme[#%plain-module-begin], then the certificate is
           propagated as if the syntax object had the
           @scheme['transparent] property value.}
 
@@ -77,7 +78,11 @@ shape and properties of the result:
 
 ]
 
-The expander attaches a new active certificate to a syntax object,
+To avoid accidental transfer for a @scheme['certify-mode] property
+value, the expander always removes any @scheme['certify-mode] property
+on a syntax object that is passed to a syntax transformer.
+
+As the expander attaches a new active certificate to a syntax object,
 it also removes any @tech{inactive certificates} attached to any
 @tech{syntax object} within the one where the certificate is attached,
 and it re-attaches the formerly @tech{inactive certificates} as
@@ -122,6 +127,12 @@ expansion context:
    syntax object are lifted to the immediate syntax object.}
 
 ]
+
+Finally, for the result of @scheme[expand] or @scheme[local-expand]
+with an empty stop list, certificates are lifted to the outermost
+result expression, except to the degree that @scheme['certify-mode]
+property values and bindings like @scheme[begin] direct certificates
+to sub-expressions.
 
 
 @defproc[(syntax-recertify [new-stx syntax?]

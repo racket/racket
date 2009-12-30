@@ -168,6 +168,7 @@ static Scheme_Object *nominal_id_symbol;
 
 /* global read-only syntax */
 Scheme_Object *scheme_module_stx;
+Scheme_Object *scheme_module_begin_stx;
 Scheme_Object *scheme_begin_stx;
 Scheme_Object *scheme_define_values_stx;
 Scheme_Object *scheme_define_syntaxes_stx;
@@ -500,6 +501,7 @@ void scheme_finish_kernel(Scheme_Env *env)
   scheme_sys_wraps(NULL);
 
   REGISTER_SO(scheme_module_stx);
+  REGISTER_SO(scheme_module_begin_stx);
   REGISTER_SO(scheme_begin_stx);
   REGISTER_SO(scheme_define_values_stx);
   REGISTER_SO(scheme_define_syntaxes_stx);
@@ -523,6 +525,7 @@ void scheme_finish_kernel(Scheme_Env *env)
 
   w = scheme_sys_wraps0;
   scheme_module_stx = scheme_datum_to_syntax(scheme_intern_symbol("module"), scheme_false, w, 0, 0);
+  scheme_module_begin_stx = scheme_datum_to_syntax(module_begin_symbol, scheme_false, w, 0, 0);
   scheme_begin_stx = scheme_datum_to_syntax(scheme_intern_symbol("begin"), scheme_false, w, 0, 0);
   scheme_define_values_stx = scheme_datum_to_syntax(scheme_intern_symbol("define-values"), scheme_false, w, 0, 0);
   scheme_define_syntaxes_stx = scheme_datum_to_syntax(scheme_intern_symbol("define-syntaxes"), scheme_false, w, 0, 0);
@@ -6098,7 +6101,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
   {
     Scheme_Object *stop;
     stop = scheme_get_stop_expander();
-    scheme_add_local_syntax(20, xenv);
+    scheme_add_local_syntax(19, xenv);
     scheme_set_local_syntax(0, scheme_begin_stx, stop, xenv);
     scheme_set_local_syntax(1, scheme_define_values_stx, stop, xenv);
     scheme_set_local_syntax(2, scheme_define_syntaxes_stx, stop, xenv);
@@ -6114,11 +6117,10 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     scheme_set_local_syntax(12, letrec_values_stx, stop, xenv);
     scheme_set_local_syntax(13, if_stx, stop, xenv);
     scheme_set_local_syntax(14, begin0_stx, stop, xenv);
-    scheme_set_local_syntax(15, set_stx, stop, xenv);
-    scheme_set_local_syntax(16, with_continuation_mark_stx, stop, xenv);
-    scheme_set_local_syntax(17, letrec_syntaxes_stx, stop, xenv);
-    scheme_set_local_syntax(18, var_ref_stx, stop, xenv);
-    scheme_set_local_syntax(19, expression_stx, stop, xenv);
+    scheme_set_local_syntax(15, with_continuation_mark_stx, stop, xenv);
+    scheme_set_local_syntax(16, letrec_syntaxes_stx, stop, xenv);
+    scheme_set_local_syntax(17, var_ref_stx, stop, xenv);
+    scheme_set_local_syntax(18, expression_stx, stop, xenv);
   }
 
   first = scheme_null;

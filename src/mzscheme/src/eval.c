@@ -247,6 +247,8 @@ static Scheme_Object *read_syntax(Scheme_Object *obj);
 static Scheme_Object *write_quote_syntax(Scheme_Object *obj);
 static Scheme_Object *read_quote_syntax(Scheme_Object *obj);
 
+static Scheme_Object *stop_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
+
 static Scheme_Object *scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env, 
 						 Scheme_Compile_Expand_Info *rec, int drec, 
 						 int app_position);
@@ -9795,6 +9797,9 @@ static void *expand_k(void)
     /* scheme_simplify_stx(obj, scheme_new_stx_simplify_cache()); */ /* too expensive */
   }
 
+  if (!as_local)
+    obj = scheme_lift_local_stx_certificates(obj, env);
+
   return obj;
 }
 
@@ -10109,12 +10114,20 @@ static void update_intdef_chain(Scheme_Object *intdef)
   }
 }
 
+static void add_core_stop_form(int pos, Scheme_Object *sym, Scheme_Comp_Env *env)
+{
+  Scheme_Object *stx;
+  stx = scheme_datum_to_syntax(sym, scheme_false, scheme_sys_wraps(env), 0, 0);
+  scheme_set_local_syntax(pos, stx, stop_expander, env);
+}
+
 static Scheme_Object *
 do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, int argc, Scheme_Object **argv)
 {
   Scheme_Comp_Env *env, *orig_env, **ip;
   Scheme_Object *l, *local_mark, *renaming = NULL, *orig_l, *exp_expr = NULL;
   int cnt, pos, kind;
+  int nonempty_stop_list = 0;
   int bad_sub_env = 0, bad_intdef = 0;
   Scheme_Object *observer, *catch_lifts_key = NULL;
 
@@ -10226,9 +10239,13 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   
   if (for_expr) {
   } else if (SCHEME_TRUEP(argv[2])) {
+#   define NUM_CORE_EXPR_STOP_FORMS 15
     cnt = scheme_stx_proper_list_length(argv[2]);
-    if (cnt > 0)
+    if (cnt > 0) {
+      cnt += NUM_CORE_EXPR_STOP_FORMS;
       scheme_add_local_syntax(cnt, env);
+      nonempty_stop_list = 1;
+    }
     pos = 0;
 
     for (l = argv[2]; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
@@ -10246,6 +10263,24 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     if (!SCHEME_NULLP(l)) {
       scheme_wrong_type(name, "#f or list of identifier syntax", 2, argc, argv);
       return NULL;
+    }
+
+    if (cnt > 0) {
+      add_core_stop_form(pos++, begin_symbol, env);
+      add_core_stop_form(pos++, scheme_intern_symbol("set!"), env);
+      add_core_stop_form(pos++, app_symbol, env);
+      add_core_stop_form(pos++, top_symbol, env);
+      add_core_stop_form(pos++, lambda_symbol, env);
+      add_core_stop_form(pos++, scheme_intern_symbol("case-lambda"), env);
+      add_core_stop_form(pos++, let_values_symbol, env);
+      add_core_stop_form(pos++, letrec_values_symbol, env);
+      add_core_stop_form(pos++, scheme_intern_symbol("if"), env);
+      add_core_stop_form(pos++, scheme_intern_symbol("begin0"), env);
+      add_core_stop_form(pos++, scheme_intern_symbol("with-continuation-mark"), env);
+      add_core_stop_form(pos++, letrec_syntaxes_symbol, env);
+      add_core_stop_form(pos++, scheme_intern_symbol("#%variable-reference"), env);
+      add_core_stop_form(pos++, scheme_intern_symbol("#%expression"), env);
+      add_core_stop_form(pos++, quote_symbol, env);
     }
   }
 
@@ -10367,6 +10402,9 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     l = scheme_add_remove_mark(l, local_mark);
   }
 
+  if (!nonempty_stop_list)
+    l = scheme_lift_local_stx_certificates(l, env);
+
   if (for_expr) {
     Scheme_Object *a[2];
     SCHEME_EXPAND_OBSERVE_OPAQUE_EXPR(observer, exp_expr);
@@ -10374,9 +10412,10 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     a[0] = l;
     a[1] = exp_expr;
     return scheme_values(2, a);
-  } else
+  } else {
     SCHEME_EXPAND_OBSERVE_EXIT_LOCAL(observer, l);
     return l;
+  }
 }
 
 static Scheme_Object *
