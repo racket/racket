@@ -40,6 +40,8 @@
      "to create a single list from several"))
    
    ("Misc"
+    (random (-> (and/c real? inexact? (>/c 0) (</c 1)))
+            "to generate a random number between 0 and 1 (excl).")
     (force (delay -> any) "to find the delayed value; see also delay")
     (promise? (any -> boolean) "to determine if a value is delayed")
     (void (-> void) "produces a void value")
