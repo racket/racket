@@ -919,10 +919,6 @@ static Scheme_Object *hash_k(void)
   return scheme_make_integer_value(nv);
 }
 
-/* Number of lists/vectors/structs/boxes to hash before
-   paying for a stack check. */
-#define HASH_COUNT_START 20
-
 static long overflow_equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
 {
   Scheme_Object *nv;
@@ -995,7 +991,6 @@ XFORM_NONGCING static long dbl_hash2_val(double d)
 static long equal_hash_key(Scheme_Object *o, long k, Hash_Info *hi)
 {
   Scheme_Type t;
-  static int hash_counter = HASH_COUNT_START;
 
  top:
   t = SCHEME_TYPE(o);
@@ -1418,7 +1413,6 @@ static long overflow_equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
 static long equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
 {
   Scheme_Type t;
-  static int hash_counter = HASH_COUNT_START;
 
  top:
   t = SCHEME_TYPE(o);
