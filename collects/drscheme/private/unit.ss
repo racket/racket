@@ -47,6 +47,8 @@ module browser threading seems wrong.
   (define show-lib-paths (string-constant module-browser-show-lib-paths/short))
   (define show-planet-paths (string-constant module-browser-show-planet-paths/short))
   (define refresh (string-constant module-browser-refresh))
+
+  (define define-button-long-label "(define ...)")
   
   (define-unit unit@
     (import [prefix help-desk: drscheme:help-desk^]
@@ -1018,7 +1020,7 @@ module browser threading seems wrong.
                           (send item check #t))
                         (loop (cdr defns)))))))))
         
-        (super-new (label "(define ...)")
+        (super-new (label define-button-long-label)
                    [string-constant-untitled (string-constant untitled)]
                    [string-constant-no-full-name-since-not-saved 
                     (string-constant no-full-name-since-not-saved)])))
@@ -1901,9 +1903,16 @@ module browser threading seems wrong.
                         (append (remq top-outer-panel l) (list top-outer-panel)))))
             (send top-outer-panel change-children (λ (l) (list top-panel)))
             (send transcript-parent-panel change-children (λ (l) (list transcript-panel)))
+            #;
             (if vertical? 
                 (send top-panel change-children (λ (x) (remq name-panel x)))
                 (send top-panel change-children (λ (x) (cons name-panel (remq name-panel x)))))
+            (send func-defs-canvas set-message #f (if vertical? "δ" define-button-long-label))
+            (send name-message set-short-title vertical?)
+            (send name-panel set-orientation (not vertical?))
+            (if vertical?
+                (send name-panel set-alignment 'right 'top)
+                (send name-panel set-alignment 'left 'center))
             (end-container-sequence)))
         
         (define toolbar-buttons '())

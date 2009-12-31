@@ -50,7 +50,7 @@ makes it respond to mouse movements again.}
 
 
 @defmethod[(set-message [file-name? any/c]
-                        [msg path-string?])
+                        [msg (if filename? path-string? string?)])
            void?]{
 
 Sets the label for the control.
@@ -63,7 +63,15 @@ If @scheme[file-name?] is @scheme[#f], @scheme[msg] is treated as a
 label string. Clicking on the name-message control pops up a dialog
 saying that there is no file name until the file is saved.}
 
-
+@defmethod[(set-short-title [short-title? boolean?]) void?]{
+  Sets the @scheme[short-title?] flag. The flag defaults to @scheme[#f].
+  
+  If the flag is @scheme[#t], then
+  the label for the control is simply the string @scheme["/"]. Otherwise,
+  the label is determined by
+  the @method[name-message% set-message].
+}
+                 
 @defmethod[(get-background-color) (or/c false/c (is-a/c color%) string?)]{
 
 The result of this method is used for the background color

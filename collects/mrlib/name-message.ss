@@ -7,8 +7,8 @@
 
 (provide/contract
  [get-left-side-padding (-> number?)]
- (pad-xywh (number? number? (>=/c 0) (>=/c 0) . -> . (values number? number? (>=/c 0) (>=/c 0))))
- (draw-button-label
+ [pad-xywh (number? number? (>=/c 0) (>=/c 0) . -> . (values number? number? (>=/c 0) (>=/c 0)))]
+ [draw-button-label
   (->d ([dc (is-a?/c dc<%>)]
         [label (or/c false/c string?)]
         [x number?]
@@ -20,12 +20,12 @@
         [button-label-font (is-a?/c font%)]
         [bkg-color (or/c false/c (is-a?/c color%) string?)])
        ()
-       [result void?]))
+       [result void?])]
  
- (calc-button-min-sizes
+ [calc-button-min-sizes
   (->* ((is-a?/c dc<%>) string? (is-a?/c font%))
        ()
-       (values number? number?))))
+       (values number? number?))])
 
 (provide name-message%)
 
@@ -37,6 +37,8 @@
     (inherit popup-menu get-dc get-size get-client-size min-width min-height
              stretchable-width stretchable-height
              get-top-level-window refresh)
+  
+    (define short-title? #f)
     
     (define hidden? #f)
     (define/public (set-hidden? d?) 
@@ -56,6 +58,11 @@
     ;; label : string
     (init-field [label string-constant-untitled]
                 [font small-control-font])
+    
+    (define/private (get-label)
+      (if short-title?
+          "/"
+          label))
     
     (define full-name-window #f)
     
@@ -83,6 +90,12 @@
           (set! to-draw-message #f)
           (update-min-sizes)
           (refresh))))
+    
+    (define/public (set-short-title st?) 
+      (set! short-title? st?)
+      (set! to-draw-message #f)
+      (update-min-sizes)
+      (refresh))
     
     (define/public (fill-popup menu reset)
       (if (and paths (not (null? paths)))
@@ -139,7 +152,7 @@
     
     (inherit get-parent)
     (define/private (update-min-sizes)
-      (let-values ([(w h) (calc-button-min-sizes (get-dc) label font)])
+      (let-values ([(w h) (calc-button-min-sizes (get-dc) (get-label) font)])
         (cond
           [allow-to-shrink
            (cond
@@ -178,20 +191,21 @@
     
     (define to-draw-message #f)
     (define/private (compute-new-string)
-      (let-values ([(cw ch) (get-client-size)])
-        (let ([width-to-use (- cw (get-left-side-padding) triangle-width circle-spacer)])
-          (let loop ([c (string-length label)])
-            (cond
-              [(= c 0) (set! to-draw-message "")]
-              [else 
-               (let ([candidate (if (= c (string-length label))
-                                    label
-                                    (string-append (substring label 0 c) "..."))])
-                 (let-values ([(tw th _1 _2) (send (get-dc) get-text-extent candidate small-control-font)])
-                   (cond
-                     [(tw . <= . width-to-use) (set! to-draw-message candidate)]
-                     [else
-                      (loop (- c 1))])))])))))
+      (let ([label (get-label)])
+        (let-values ([(cw ch) (get-client-size)])
+          (let ([width-to-use (- cw (get-left-side-padding) triangle-width circle-spacer)])
+            (let loop ([c (string-length label)])
+              (cond
+                [(= c 0) (set! to-draw-message "")]
+                [else 
+                 (let ([candidate (if (= c (string-length label))
+                                      label
+                                      (string-append (substring label 0 c) "..."))])
+                   (let-values ([(tw th _1 _2) (send (get-dc) get-text-extent candidate small-control-font)])
+                     (cond
+                       [(tw . <= . width-to-use) (set! to-draw-message candidate)]
+                       [else
+                        (loop (- c 1))])))]))))))
     
     (define/override (on-size w h)
       (compute-new-string)
@@ -200,7 +214,8 @@
     (super-new [style '(transparent no-focus)])
     (update-min-sizes)
     (stretchable-width #f)
-    (stretchable-height #f)))
+    (stretchable-height #f)
+    (send (get-dc) set-smoothing 'aligned)))
 
 (define (get-left-side-padding) (+ button-label-inset circle-spacer))
 (define button-label-inset 1)
@@ -211,7 +226,6 @@
 (define triangle-color (make-object color% 50 50 50))
 
 (define border-inset 1)
-(define triangle-space 0)
 (define circle-spacer 4)
 (define rrect-spacer 3)
 
@@ -240,16 +254,15 @@
                   (+ 2 triangle-height))
              button-label-inset)]
          [ans-w
-          (max
-           (+ ans-h ans-h)
-           (+ circle-spacer
-              button-label-inset
-              1 ;; becuase "(define ...)" has the wrong size under windows
-              (max 0 (inexact->exact (ceiling tw)))
-              triangle-space
-              triangle-width
-              circle-spacer 
-              button-label-inset))])
+          (+ border-inset 
+             circle-spacer
+             button-label-inset
+             (if (eq? (system-type) 'windows) 1 0)  ;; becuase "(define ...)" has the wrong size under windows
+             (max 0 (inexact->exact (ceiling tw)))
+             button-label-inset
+             triangle-width
+             circle-spacer 
+             border-inset)])
     (values 
      (- tx (quotient (- ans-w tw) 2))
      (- ty (quotient (- ans-h th) 2))
@@ -264,8 +277,8 @@
           w)
         0))
   
-  (define w (+ border-inset circle-spacer button-label-inset label-width triangle-width circle-spacer border-inset))
-  
+  (define w (+ border-inset circle-spacer button-label-inset label-width button-label-inset triangle-width circle-spacer border-inset))
+
   (when bkg-color
     (send dc set-pen bkg-color 1 'solid)
     (send dc set-brush bkg-color 'solid)
@@ -281,12 +294,9 @@
          (send dc set-pen (send the-pen-list find-or-create-pen color 1 'solid))
          (send dc set-brush (send the-brush-list find-or-create-brush color 'solid))
          
-         (let ([old-smooth (send dc get-smoothing)])
-           (send dc set-smoothing 'aligned)
-           (send dc draw-ellipse (+ dx border-inset) (+ dy border-inset) xh xh)
-           (send dc draw-ellipse (+ dx (- w xh)) (+ dy border-inset) xh xh)
-           (send dc set-smoothing old-smooth))
-         
+         (send dc draw-ellipse (+ dx border-inset) (+ dy border-inset) xh xh)
+         (send dc draw-ellipse (+ dx (- w xh)) (+ dy border-inset) xh xh)
+
          (send dc set-pen (send the-pen-list find-or-create-pen "black" 1 'transparent))
          (send dc draw-rectangle (+ dx (quotient xh 2)) (+ dy border-inset) (- w xh) xh)
          (send dc set-pen (send the-pen-list find-or-create-pen color 1 'solid))
@@ -310,14 +320,14 @@
     (send dc set-font button-label-font)
     (let-values ([(tw th _1 _2) (send dc get-text-extent label)])
       (send dc draw-text label
-            (+ dx (+ circle-spacer button-label-inset))
+            (+ dx (+ border-inset circle-spacer button-label-inset))
             (+ dy (- (/ h 2) (/ th 2)))
             #t)))
   
   (send dc set-pen (send the-pen-list find-or-create-pen 
                          (if grabbed? grabbed-fg-color triangle-color)
                          1 'solid))
-  (let ([x (- w triangle-width circle-spacer)]
+  (let ([x (- w triangle-width circle-spacer border-inset)]
         [y (- (/ h 2) (/ triangle-height 2))])
     (let loop ([x-off 0][off-y 5])
       (unless (= 5 x-off)
