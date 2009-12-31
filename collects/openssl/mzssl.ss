@@ -937,12 +937,12 @@
 	(raise-type-error who what port))
       (let ([p (ephemeron-value v)])
 	(values (car p) (cdr p)))))
-	 
-  (define (ssl-addresses p)
+
+  (define (ssl-addresses p . more)
     (let-values ([(mzssl input?) (lookup 'ssl-addresses "SSL port" p)])
-      (if input?
-	  (tcp-addresses (mzssl-i mzssl))
-	  (tcp-addresses (mzssl-o mzssl)))))
+      (apply tcp-addresses
+             (if input? (mzssl-i mzssl) (mzssl-o mzssl))
+             more)))
 
   (define (ssl-abandon-port p)
     (let-values ([(mzssl input?) (lookup 'ssl-abandon-port "SSL output port" p)])
