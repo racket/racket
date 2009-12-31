@@ -959,21 +959,24 @@ module browser threading seems wrong.
                                  (string-constant sort-by-position) 
                                  (string-constant sort-by-name))))
         
-        (define capability-info (drscheme:language:get-capability-default 'drscheme:define-popup))
+        (define drscheme:define-popup-capability-info
+          (drscheme:language:get-capability-default 'drscheme:define-popup))
         
         (inherit set-message set-hidden?)
-        (define/public (language-changed new-language)
-          (set! capability-info (send new-language capability-value 'drscheme:define-popup))
-          (cond
-            [capability-info
-             (set-message #f (cdr capability-info))
-             (set-hidden? #f)]
-            [else
-             (set-hidden? #t)]))
+        (define/public (language-changed new-language vertical?)
+          (set! drscheme:define-popup-capability-info (send new-language capability-value 'drscheme:define-popup))
+          (let ([define-name (get-drscheme:define-popup-name drscheme:define-popup-capability-info
+                                                             vertical?)])
+            (cond
+              [define-name
+                (set-message #f define-name)
+                (set-hidden? #f)]
+              [else
+               (set-hidden? #t)])))
         (define/override (fill-popup menu reset)
-          (when capability-info
+          (when drscheme:define-popup-capability-info
             (let* ([text (send frame get-definitions-text)]
-                   [unsorted-defns (get-definitions (car capability-info)
+                   [unsorted-defns (get-definitions (car drscheme:define-popup-capability-info)
                                                     (not sort-by-name?)
                                                     text)]
                    [defns (if sort-by-name?
@@ -1020,7 +1023,7 @@ module browser threading seems wrong.
                           (send item check #t))
                         (loop (cdr defns)))))))))
         
-        (super-new (label define-button-long-label)
+        (super-new (label "(define ...)") ;; this default is quickly changed
                    [string-constant-untitled (string-constant untitled)]
                    [string-constant-no-full-name-since-not-saved 
                     (string-constant no-full-name-since-not-saved)])))
@@ -1903,11 +1906,13 @@ module browser threading seems wrong.
                         (append (remq top-outer-panel l) (list top-outer-panel)))))
             (send top-outer-panel change-children (λ (l) (list top-panel)))
             (send transcript-parent-panel change-children (λ (l) (list transcript-panel)))
-            #;
-            (if vertical? 
-                (send top-panel change-children (λ (x) (remq name-panel x)))
-                (send top-panel change-children (λ (x) (cons name-panel (remq name-panel x)))))
-            (send func-defs-canvas set-message #f (if vertical? "δ" define-button-long-label))
+
+            (let* ([settings (send definitions-text get-next-settings)]
+                   [language (drscheme:language-configuration:language-settings-language settings)]
+                   [name (get-drscheme:define-popup-name (send language capability-value 'drscheme:define-popup)
+                                                         vertical?)])
+              (when name
+                (send func-defs-canvas set-message #f name)))
             (send name-message set-short-title vertical?)
             (send name-panel set-orientation (not vertical?))
             (if vertical?
@@ -2029,7 +2034,7 @@ module browser threading seems wrong.
         (define/public (language-changed)
           (let* ([settings (send definitions-text get-next-settings)]
                  [language (drscheme:language-configuration:language-settings-language settings)])
-            (send func-defs-canvas language-changed language)
+            (send func-defs-canvas language-changed language (or (toolbar-is-left?) (toolbar-is-right?)))
             (send language-message set-yellow/lang
                   (not (send definitions-text this-and-next-language-the-same?))
                   (string-append (send language get-language-name)
@@ -4109,6 +4114,18 @@ module browser threading seems wrong.
         (set-label-prefix (string-constant drscheme))
         (set! newest-frame this)
         (send definitions-canvas focus)))
+    
+    ;; get-drscheme:define-popup-name : (or/c #f (cons/c string? string?) (list/c string? string? string)) boolean -> (or/c #f string?)
+    (define (get-drscheme:define-popup-name info vertical?)
+      (and info
+           (if vertical?
+               (if (pair? (cdr info))
+                   (list-ref info 2)
+                   "δ")
+               (if (pair? (cdr info))
+                   (list-ref info 1)
+                   (cdr info)))))
+                  
     
     (define execute-warning-canvas%
       (class canvas%

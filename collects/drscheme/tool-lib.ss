@@ -1090,10 +1090,20 @@ all of the names in the tools library, for use defining keybindings
            controls the name of the menu just to the right of the language
            menu (defaultly named ``Scheme'')}
          @cap[drscheme:define-popup
-              (or/c (cons/c string? string?) false/c)
-              (cons "(define" "(define ...)")]{
+              (or/c #f
+                    (list/c string? string? string?)
+                    (cons/c string? string?))
+              (list "(define" "(define ...)" "δ")]{
            specifies the prefix that the define popup should look for and what
-           label it should have, or @scheme[#f] if it should not appear at all}
+           label it should have, or @scheme[#f] if it should not appear at all.
+           
+           If the list of three strings alternative is used, the first string is
+           the prefix that is looked for when finding definitions. The second
+           and third strings are used as the label of the control, in horizontal
+           and vertical mode, respectively.
+           
+           The pair of strings alternative is deprecated. If it is used, 
+           the pair @scheme[(cons a-str b-str)] is the same as @scheme[(list a-str b-str "δ")].}
          @cap[drscheme:help-context-term (or/c false/c string?) #f]{
            specifies a context query for documentation searches that are
            initiated in this language, can be @scheme[#f] (no change to the

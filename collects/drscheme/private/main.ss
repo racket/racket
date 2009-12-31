@@ -361,8 +361,10 @@
                                        (λ (t a b) (send t tabify-selection a b)))
 (drscheme:language:register-capability 'drscheme:autocomplete-words (listof string?) '())
 (drscheme:language:register-capability 'drscheme:define-popup
-                                       (or/c (cons/c string? string?) false/c)
-                                       (cons "(define" "(define ...)"))
+                                       (or/c (cons/c string? string?) 
+                                             (list/c string? string? string?)
+                                             #f)
+                                       (list "(define" "(define ...)" "δ"))
 
 ;; The default is #f to keep whatever the user chose as their context.
 ;; If it's "", then we will kill the user's choice.
