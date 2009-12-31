@@ -5,6 +5,7 @@
            mzlib/pretty
            syntax/docprovide
            scheme/promise
+	   scheme/port
            "../posn.ss"
            (for-syntax scheme/base))
   
@@ -12,6 +13,16 @@
    procedures
    
    ("Reading and Printing"
+    (with-input-from-file (string (-> any) -> any)
+      "to open the named input file and to extract all input from there")
+    (with-output-to-file (string (-> any) -> any)
+      "to open the named output file and to put all output there")
+    (with-input-from-string (string (-> any) -> any)
+      "to turn the given string into input for read* operations")
+    (with-output-to-string (string (-> any) -> any)
+      "to produce a string from all write/display/print operations")
+    
+
     (print (any -> void)
            "to print the argument as a value to stdout")
     (display (any -> void)
@@ -52,11 +63,6 @@
      "to cause the program to sleep for the given number of seconds")
     (current-milliseconds (-> exact-integer)
      "to return the current “time” in fixnum milliseconds (possibly negative)")
-    
-    (with-input-from-file (string (-> any) -> any)
-      "to open the given string as an input file and to make it the current input port")
-    (with-output-to-file (string (-> any) -> any)
-      "to open the given string as an output file and to make it the current output port")
     
     (force (delay -> any) "to find the delayed value; see also delay")
     (promise? (any -> boolean) "to determine if a value is delayed")
