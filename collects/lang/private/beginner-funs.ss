@@ -468,7 +468,7 @@
     ("Misc"
       (identity (any -> any)
 	"to return the argument unchanged")
-      ((beginner-error error) (string -> void) "to signal an error")
+      ((beginner-error error) (any ... -> void) "to signal an error, turning the given values into an error message ")
       ((beginner-struct? struct?) (any -> boolean)
        "to determine whether some value is a structure")
       ((beginner-equal? equal?) (any any -> boolean)
