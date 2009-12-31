@@ -254,16 +254,27 @@
 
 (provide run)
 (define (run)
-  (cond [(get-conf 'https-port-number)
-         => (lambda (p)
-              (begin0 (parameterize ([error-print-context-length 0])
-                        (run-servlet
-                         dispatcher
-                         #:namespace '(handin-server/private/md5
-                                       handin-server/private/logger
-                                       handin-server/private/config
-                                       handin-server/private/hooker
-                                       handin-server/private/reloadable)
-                         #:log-file (get-conf 'web-log-file)))
-                (log-line "*** embedded web server started")))]
-        [else void]))
+  (if (get-conf 'use-https)
+    (begin0 (parameterize ([error-print-context-length 0])
+              (run-servlet
+               dispatcher
+               #:namespace '(handin-server/private/md5
+                             handin-server/private/logger
+                             handin-server/private/config
+                             handin-server/private/hooker
+                             handin-server/private/reloadable)
+               #:log-file (get-conf 'web-log-file)))
+      (log-line "*** embedded web server started"))
+    ;; simple "server" so it's known that there is no server
+    (lambda (msg . args)
+      (when (eq? 'connect msg)
+        (for-each (lambda (x) (display x (cadr args)))
+                  '(#"HTTP/1.0 200 OK\r\n"
+                    #"Content-Type: text/html\r\n"
+                    #"\r\n"
+                    #"<html><body><h1>"
+                    #"Please use the handin plugin"
+                    #"</h1></body></html>"))
+        (close-input-port (car args))
+        (close-output-port (cadr args))
+        (semaphore-post (caddr args))))))

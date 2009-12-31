@@ -70,7 +70,7 @@
     [(active-dirs)             (values '()                   path-list    )]
     [(inactive-dirs)           (values '()                   path-list    )]
     [(port-number)             (values 7979                  id           )]
-    [(https-port-number)       (values #f                    id           )]
+    [(use-https)               (values #t                    id           )]
     [(hook-file)               (values #f                    path/false   )]
     [(session-timeout)         (values 300                   id           )]
     [(session-memory-limit)    (values 40000000              id           )]

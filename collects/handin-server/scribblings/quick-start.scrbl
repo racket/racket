@@ -26,8 +26,7 @@
 @item{Make a @filepath{test} subdirectory in your new directory.}
 
 @item{Create a file @filepath{config.ss} with the following content:
-  @schemeblock[((active-dirs ("test"))
-                (https-port-number 7980))]}
+  @schemeblock[((active-dirs ("test")))]}
 
 @item{In your new directory, run @commandline{mred-text -l handin-server}}
 
@@ -50,10 +49,9 @@
   The submitted file will be @filepath{.../test/tester/handin.scm}.}
 
 @item{Check the status of your submission by pointing a web browser at
-  @tt{https://localhost:7980/}.  Note the ``s'' in ``https''.  Use the
-  ``@tt{tester}'' username and ``@tt{pw}'' password, as before.
+  @tt{https://localhost:7979/}.  Note the ``s'' in ``@tt{https}''.  Use
+  the ``@tt{tester}'' username and ``@tt{pw}'' password, as before.
 
-  NOTE: The @scheme[https-port-number] line in the
-  @filepath{config.ss} file enables the embedded secure server.  You
-  can remove it if you don't want it.}
+  NOTE: The embedded web server can be disabled in the configuration
+  file if you don't want to use it.}
 ]

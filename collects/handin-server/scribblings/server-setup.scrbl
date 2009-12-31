@@ -41,9 +41,9 @@ This directory contains the following files and sub-directories:
   @item{@indexed-scheme[port-number] --- the port for the main handin
     server; the default is 7979.}
 
-  @item{@indexed-scheme[https-port-number] --- the port number for the
-    handin-status HTTPS server; the default is @scheme[#f] which
-    indicates that no HTTPS server is started.}
+  @item{@indexed-scheme[use-https] --- determines whether to start an
+    embedded web server for handin status reports; the default is
+    @scheme[#t].}
 
   @item{@indexed-scheme[session-timeout] --- number of seconds before
     the session times-out.  The client is given this many seconds for
@@ -470,9 +470,9 @@ the correct assignment in the handin dialog.
 
 A student can download his/her own submissions through the handin
 dialog.  This can also be done through a web server that runs
-concurrently with the handin server if you use the
-@scheme[https-port-number] option in the configuration file.  The
-starting URL is
+concurrently with the handin server (on the same port) if you set the
+@scheme[use-https] option in the configuration file to @scheme[#t] (the
+default).  The starting URL is
 
 @commandline{https://SERVER:PORT/}
 
