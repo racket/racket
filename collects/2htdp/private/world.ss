@@ -209,6 +209,7 @@
        (mouse  on-mouse)
        (rec    on-receive))
       
+      (define drawing #f) ;; Boolean; is a draw callback scheduled?
       (define-syntax-rule (def/pub-cback (name arg ...) transform)
         ;; Any ... -> Boolean
         (define/public (name arg ...) 
@@ -231,9 +232,13 @@
 		     (enable-images-button))
 		   (let ([changed-world? (send world set tag nw)])
 		     (unless changed-world?
-		       (when draw (pdraw))
+                       #;
+		       (when draw (pdraw)) 
+                       (when (and draw (not drawing)) 
+                         (set! drawing #t)
+                         (queue-callback (lambda () (pdraw) (set! drawing #f))
+                                         #f)) ;; low priority, otherwise it's too fast
 		       (when (pstop)
-			 (printf "!stop!\n")
 			 (when last-picture 
 			   (set! draw last-picture)
 			   (pdraw))
