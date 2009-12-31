@@ -49,6 +49,7 @@
 
 (define (handin-connect server port)
   (let-values ([(r w) (connect-to server port)])
+    (write+flush w 'handin)
     ;; Sanity check: server sends "handin", first:
     (let ([s (read-bytes 6 r)])
       (unless (equal? #"handin" s)
