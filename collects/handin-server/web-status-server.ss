@@ -258,12 +258,12 @@
          => (lambda (p)
               (begin0 (parameterize ([error-print-context-length 0])
                         (run-servlet
-                         dispatcher p server-dir
+                         dispatcher
                          #:namespace '(handin-server/private/md5
                                        handin-server/private/logger
                                        handin-server/private/config
                                        handin-server/private/hooker
                                        handin-server/private/reloadable)
                          #:log-file (get-conf 'web-log-file)))
-                (log-line "*** embedded web server started on port ~a" p)))]
+                (log-line "*** embedded web server started")))]
         [else void]))
