@@ -3052,9 +3052,97 @@
      -/urls.ss
      -/xref.ss
      )
-   ;; (not: "*/*") is the same as (not: "*/"), because empty directories are
-   ;; dropped (!!)
+   ;; (not: "*/*") would be the same as (not: "*/") if empty directories were
+   ;; dropped -- but for negated predicates the default is to keep empty
+   ;; directories, so the result is the same as the above but also includes
+   ;; directories
    (->datums (e `(tree->path-list (tree-filter (not: "*/*") ,a-tree))))
+   =>
+   '(
+     -/
+     -/.svn/
+     -/base/
+     -/base-render.ss
+     -/base.ss
+     -/basic.ss
+     -/bnf.ss
+     -/comment-reader.ss
+     -/compiled/
+     -/config.ss
+     -/core.ss
+     -/decode-struct.ss
+     -/decode.ss
+     -/doc/
+     -/doc.txt
+     -/doclang.ss
+     -/eval.ss
+     -/extract.ss
+     -/html-properties.ss
+     -/html-render.ss
+     -/info.ss
+     -/latex-properties.ss
+     -/latex-render.ss
+     -/lp/
+     -/lp-include.ss
+     -/lp.ss
+     -/manual/
+     -/manual-prefix.tex
+     -/manual-struct.ss
+     -/manual-style.tex
+     -/manual.ss
+     -/pdf-render.ss
+     -/private/
+     -/provide-doc-transform.ss
+     -/reader.ss
+     -/render-struct.ss
+     -/run.ss
+     -/scheme.css
+     -/scheme.ss
+     -/scheme.tex
+     -/scribble-common.js
+     -/scribble-prefix.html
+     -/scribble-prefix.tex
+     -/scribble-style.css
+     -/scribble-style.tex
+     -/scribble.css
+     -/scribble.tex
+     -/search.ss
+     -/sigplan/
+     -/sigplan.ss
+     -/srcdoc.ss
+     -/struct.ss
+     -/text/
+     -/text-render.ss
+     -/text.ss
+     -/tools/
+     -/urls.ss
+     -/xref.ss
+     )
+   ;; (not: (not: pred)) returns `pred'
+   (->datums (e `(tree->path-list (tree-filter (not: (not: (not: "*/*")))
+                                               ,a-tree))))
+   => same-as-last-datums
+   ;; the special treatment of negated predicates makes it possible to select
+   ;; only toplevel directories too
+   (->datums (e `(tree->path-list (tree-filter (and: "*/" (not: "*/*"))
+                                               ,a-tree))))
+   =>
+   '(
+     -/
+     -/.svn/
+     -/base/
+     -/compiled/
+     -/doc/
+     -/lp/
+     -/manual/
+     -/private/
+     -/sigplan/
+     -/text/
+     -/tools/
+     )
+   ;; demorgan works with this negation
+   (->datums (e `(tree->path-list (tree-filter (not: (or: (not: "*/") "*/*"))
+                                               ,a-tree))))
    => same-as-last-datums
    ;; only compiled directories
    (->datums (e `(tree->path-list (tree-filter "**/compiled/" ,a-tree))))
@@ -3240,6 +3328,43 @@
      -/tools/private/compiled/
      -/tools/private/compiled/mk-drs-bitmaps_ss.dep
      -/tools/private/compiled/mk-drs-bitmaps_ss.zo
+     )
+   ;; only compiled directories but not their content
+   (->datums (e `(tree->path-list (tree-filter (and: "**/compiled/"
+                                                     (not: "**/compiled/*"))
+                                               ,a-tree))))
+   =>
+   '(-/
+     -/base/
+     -/base/compiled/
+     -/base/lang/
+     -/base/lang/compiled/
+     -/compiled/
+     -/doc/
+     -/doc/compiled/
+     -/doc/lang/
+     -/doc/lang/compiled/
+     -/lp/
+     -/lp/lang/
+     -/lp/lang/compiled/
+     -/manual/
+     -/manual/compiled/
+     -/manual/lang/
+     -/manual/lang/compiled/
+     -/private/
+     -/private/compiled/
+     -/sigplan/
+     -/sigplan/compiled/
+     -/sigplan/lang/
+     -/sigplan/lang/compiled/
+     -/text/
+     -/text/compiled/
+     -/text/lang/
+     -/text/lang/compiled/
+     -/tools/
+     -/tools/compiled/
+     -/tools/private/
+     -/tools/private/compiled/
      )
    ;; only .dep files in compiled directories
    (->datums (e `(tree->path-list (tree-filter "**/compiled/*.dep" ,a-tree))))

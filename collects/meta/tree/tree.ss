@@ -56,7 +56,7 @@
 
 ;; ----------------------------------------------------------------------------
 
-;; a tree-filtering predicate is a function that receives a tree, and returns
+;; A tree-filtering predicate is a function that receives a tree, and returns
 ;; either #t/#f to include or exclude it, or it can return a function to be
 ;; applied on the sub-trees of a directory.  This setup makes it possible to
 ;; minimize the filtering work that is needed (compared to the old code that
@@ -162,7 +162,7 @@
         [(procedure? pred/glob) pred/glob]
         [else (error 'pred/glob->pred "bad predicate or glob: ~e" pred/glob)]))
 
-;; combine tree-filter predicates efficiently: stop when the result is #f or #t
+;; Combine tree-filter predicates efficiently: stop when the result is #f or #t
 ;; for `and:' or `or:' resp., drop predicates that returned #t or #f for them.
 (define-syntax-rule (define-combiner name: raw-name: pos neg)
   (begin
@@ -188,12 +188,24 @@
       (apply raw-name: (map pred/glob->pred preds/globs)))))
 (define-combiner and: raw-and: #t #f)
 (define-combiner or:  raw-or:  #f #t)
+
+;; Negating predicates is a little tricky, for example (not: "*/*") would
+;; filter out everything in all subdirectories, and since empty directories are
+;; usually dropped by `tree-filter', this means that the directories will be
+;; dropped too, leaving only immediate files.  The way to make this behave more
+;; intuitively is to mark negated predicates, and when filtering with a negated
+;; predicate the default is to keep empty directories rather than drop them.
+;; (As an aside, this can also be used to make (not: (not: f)) return `f'.)
+(define-struct negated (pred orig) #:property prop:procedure 0)
 (define (raw-not: p)
-  (lambda (tree)
-    (let ([r (p tree)])
-      (cond [(eq? #t r) #f]
-            [(eq? #f r) #t]
-            [else (raw-not: r)]))))
+  (if (negated? p)
+    (negated-orig p)
+    (make-negated (lambda (tree)
+                    (let ([r (p tree)])
+                      (cond [(eq? #t r) #f]
+                            [(eq? #f r) #t]
+                            [else (raw-not: r)])))
+                  p)))
 (define (not: pred/glob)
   (raw-not: (pred/glob->pred pred/glob)))
 
@@ -207,8 +219,13 @@
                                      (unless (eq? r sub) (set! same? #f))
                                      r))
                                  subs)])
-      (and (pair? new-subs) ; drop empty directories
-           (if same? dir (make-dir (tree-name dir) new-subs)))))
+      ;; (when (null? new-subs)
+      ;;   (printf "dropping result after pred: ~s\n" (object-name pred)))
+      ;; (and (pair? new-subs) ; drop empty directories
+      ;;      (if same? dir (make-dir (tree-name dir) new-subs)))
+      (cond [(and (null? new-subs) (not (negated? pred))) #f]
+            [same? dir]
+            [else (make-dir (tree-name dir) new-subs)])))
   (define (loop tree pred)
     (let ([r (pred tree)])
       (cond [(eq? #t r) tree]
