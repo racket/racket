@@ -1,1 +1,1 @@
-#lang scheme/base (provide stamp) (define stamp "31dec2009")
+#lang scheme/base (provide stamp) (define stamp "1jan2010")
