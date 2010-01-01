@@ -140,19 +140,22 @@ Every exception or result mismatch during the call to
   Set this parameter to true when testing programs that use state.}
 
 @defproc*[([(message [string string?]) void?]
+           [(message [string string?] [styles 'final]) void?]
            [(message [string string?]
-                     [styles (or/c (symbols 'final)
-                                   (listof (one-of/c 'ok 'ok-cancel
-                                                     'yes-no 'caution 'stop)))])
+                     [styles (listof (or/c 'ok 'ok-cancel 'yes-no 'caution 'stop))])
             any])]{
-  If given only a string, this string will be shown on the client's
-  submission dialog; if @scheme[styles] is also given, it can be the
-  symbol @scheme['final], which will be used as the text on the handin
+  The first two cases of @scheme[message] update the top-line of the status
+  dialog on the client. If @scheme['final] is passed, then the
+  string argument is used as the as the text on the handin
   dialog after a successful submission instead of ``Handin
   successful.'' (useful for submissions that were saved, but had
-  problems); finally, @scheme[styles] can be used as a list of styles
-  for a @scheme[message-box] dialog on the client side, and the
-  resulting value is returned as the result of @scheme[message].  You
+  problems).
+
+  The third case, when @scheme[styles] is a list of symbols,
+  opens a @scheme[message-box] dialog on the client side, and the
+  resulting value is returned as the result of @scheme[message]. The 
+  @scheme[styles] list is passed as the @scheme[style] argument to
+  @scheme[message-box].  You
   can use this to send warnings to the student or ask confirmation.}
 
 @defproc[(set-run-status [status (or/c false? string?)]) void?]{
