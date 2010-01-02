@@ -232,8 +232,38 @@ has been moved out).
   (class* snip% (equal<%>)
     (init-field shape bb normalized?)
     (define/public (equal-to? that eq-recur) 
+      (or (eq? this that)
+          (and (eq-recur bb (send that get-bb))
+               (let* ([w (ceiling (max (inexact->exact (bb-right bb))
+                                       (inexact->exact (bb-right (send that get-bb)))))]
+                      [h (ceiling (max (inexact->exact (bb-bottom bb))
+                                       (inexact->exact (bb-bottom (send that get-bb)))))]
+                      [bm1 (make-object bitmap% w h)]
+                      [bm2 (make-object bitmap% w h)]
+                      [bytes1 (make-bytes (* w h 4) 0)]
+                      [bytes2 (make-bytes (* w h 4) 0)]
+                      [bdc (make-object bitmap-dc%)])
+                 (send bdc set-smoothing 'aligned)
+                 (and (check-same? bm1 bm2 bytes1 bytes2 bdc "red" that)
+                      (check-same? bm1 bm2 bytes1 bytes2 bdc "green" that)))))
+      
+      #;
       (eq-recur (get-normalized-shape)
                 (send that get-normalized-shape)))
+    
+    (define/private (check-same? bm1 bm2 bytes1 bytes2 bdc color that)
+      (clear-bitmap/draw/bytes bm1 bdc bytes1 this color)
+      (clear-bitmap/draw/bytes bm2 bdc bytes2 that color)
+      (equal? bytes1 bytes2))
+    
+    (define/private (clear-bitmap/draw/bytes bm bdc bytes obj color)
+      (send bdc set-bitmap bm)
+      (send bdc set-pen "black" 1 'transparent)
+      (send bdc set-brush color 'solid)
+      (send bdc draw-rectangle 0 0 (send bm get-width) (send bm get-height))
+      (render-image this bdc 0 0)
+      (send bm get-argb-pixels 0 0 (send bm get-width) (send bm get-height) bytes))
+    
     (define/public (equal-hash-code-of y) 42)
     (define/public (equal-secondary-hash-code-of y) 3)
 
@@ -288,10 +318,10 @@ has been moved out).
         (send dc set-smoothing smoothing)))
     (define/override (get-extent dc x y [w #f] [h #f] [descent #f] [space #f] [lspace #f] [rspace #f])
       (send (get-the-snip-class-list) add snip-class)
-      (let ([bottom (bb-bottom bb)])
-        (set-box/f! w (bb-right bb))
+      (let ([bottom (round (bb-bottom bb))])
+        (set-box/f! w (round (bb-right bb)))
         (set-box/f! h bottom)
-        (set-box/f! descent (- bottom (bb-baseline bb)))
+        (set-box/f! descent (- bottom (round (bb-baseline bb))))
         (set-box/f! space 0)
         (set-box/f! lspace 0)
         (set-box/f! rspace 0)))

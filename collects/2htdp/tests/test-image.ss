@@ -9,7 +9,13 @@
          scheme/gui/base
          schemeunit)
 
-(define-syntax-rule (test a => b) (check-equal? a b))
+(require (for-syntax scheme/base))
+(define-syntax (test stx)
+  (syntax-case stx ()
+    [(test a => b)
+     #`(begin
+         ;(printf "running line ~a\n" #,(syntax-line stx))
+         (check-equal? a b))]))
 
 ;; test case: (beside (text "a"...) (text "b" ...)) vs (text "ab")
 
@@ -390,15 +396,15 @@
        #f))
 
 (test (above/align 'center
-                     (ellipse 50 100 'solid 'red)
-                     (ellipse 100 50 'solid 'blue))
+                   (ellipse 50 100 'solid 'red)
+                   (ellipse 100 50 'solid 'blue))
       
       =>
       (make-image
        (make-overlay
         (make-translate 25 0 (image-shape (ellipse 50 100 'solid 'red)))
         (make-translate 0 100 (image-shape (ellipse 100 50 'solid 'blue))))
-       (make-bb 100 150 100)
+       (make-bb 100 150 150)
        #f))
 
 (test (above/align 'right
@@ -814,7 +820,7 @@
 ;;
 
 (check-equal? (equal~? (rhombus 10 90 'solid 'black)
-                       (square 10 'solid 'black)
+                       (rotate 45 (square 10 'solid 'black))
                        0.01)
               #t)
 

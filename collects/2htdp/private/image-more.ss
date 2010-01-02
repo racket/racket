@@ -311,8 +311,8 @@
            [y2 (point-y (line-segment-end simple-shape))])
        (values (min x1 x2)
                (min y1 y2)
-               (max x1 x2)
-               (max y1 y2)))]
+               (+ (max x1 x2) 1)
+               (+ (max y1 y2) 1)))]
     [(polygon? simple-shape)
      (let ([points (polygon-points simple-shape)])
        (let* ([fx (point-x (car points))]
@@ -381,7 +381,7 @@
   (cond
     [(line-segment? simple-shape)
      (make-line-segment (rotate-point (line-segment-start simple-shape)
-                                       θ)
+                                      θ)
                         (rotate-point (line-segment-end simple-shape)
                                       θ)
                         (line-segment-color simple-shape))]
@@ -550,7 +550,6 @@
                      (+ x2 dx)
                      (+ dx (image-right image)))]
          [baseline (+ dy (image-baseline image))])
-    ;(printf "dx ~s orig-right ~s\n" dx (image-right image))
     (make-image (make-translate
                  dx dy
                  (make-overlay
