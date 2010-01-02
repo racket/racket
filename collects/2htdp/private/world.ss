@@ -250,7 +250,7 @@
                             (let ([b (box d)])
                               (set! w (cons b w))
                               ;; low priority, otherwise it's too fast
-                              (queue-callback (lambda () (unbox b)) #f))]
+                              (queue-callback (lambda () ((unbox b))) #f))]
                            [(< draw# 0)
                             (set-draw#!)
                             (for-each (lambda (b) (set-box! b void)) w)
