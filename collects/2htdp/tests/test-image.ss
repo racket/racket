@@ -1,6 +1,7 @@
 #lang scheme/base
 (require "../../mrlib/image-core.ss"
          "../private/image-more.ss"
+         "../private/img-err.ss"
          "../../mrlib/private/image-core-bitmap.ss"
          lang/posn
          scheme/math
