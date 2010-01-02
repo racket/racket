@@ -50,7 +50,7 @@ The purpose of this documentation is to give experienced Schemers and HtDP
  communicating worlds.
 
 @emph{Note}: For a quick and educational introduction to just worlds, see
- @link["http://www.ccs.neu.edu/home/matthias/HtDP/Prologue/book.html"]{How
+ @link["http://www.ccs.neu.edu/home/matthias/HtDP2e/prologue.html"]{How
  to Design Programs, Second Edition: Prologue}. As of August 2008, we also
  have a series of projects available as a small booklet on
  @link["http://world.cs.brown.edu/"]{How to Design Worlds}.
@@ -204,7 +204,7 @@ current world. The clock ticks at the rate of 28 times per second.}}
               (on-tick tick-expr rate-expr)
               #:contracts
               ([tick-expr (-> (unsyntax @tech{WorldState}) (unsyntax @tech{WorldState}))]
-               [rate-expr natural-number/c])]{
+               [rate-expr (and/c real? positive?)])]{
 tell DrScheme to call the @scheme[tick-expr] function on the current
 world every time the clock ticks. The result of the call becomes the
 current world. The clock ticks at the rate of @scheme[rate-expr].}}
@@ -665,7 +665,7 @@ As mentioned, all event handlers may return @tech{WorldState}s or
               (on-tick tick-expr rate-expr)
               #:contracts
               ([tick-expr (-> (unsyntax @tech{WorldState}) (or/c (unsyntax @tech{WorldState}) package?))]
-               [rate-expr natural-number/c])]{
+               [rate-expr (and/c real? positive?)])]{
 }
 
 @defform/none[#:literals (on-key)
@@ -988,7 +988,7 @@ optional handlers:
               (on-tick tick-expr rate-expr)
               #:contracts
               ([tick-expr (-> (unsyntax @tech{UniverseState}) bundle?)]
-               [rate-expr natural-number/c])]{ 
+               [rate-expr (and/c real? positive?)])]{ 
  tell DrScheme to apply @scheme[tick-expr] as above but use the specified
  clock tick rate instead of the default.
  }
