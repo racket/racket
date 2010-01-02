@@ -14,7 +14,7 @@
            (parameterize ([current-namespace ns])
              (namespace-require ''#%kernel)
              (namespace-require ''#%unsafe)
-             (namespace-require ''#%flonum)
+             (namespace-require ''#%flfxnum)
              (for/list ([l (namespace-mapped-symbols)])
                (cons l (with-handlers ([exn:fail? (lambda (x) #f)])
                          (compile l))))))]
