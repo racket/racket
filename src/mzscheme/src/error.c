@@ -1883,6 +1883,13 @@ void scheme_wrong_return_arity(const char *where,
 		   buffer, blen);
 }
 
+void scheme_non_fixnum_result(const char *name, Scheme_Object *o)
+{
+  scheme_raise_exn(MZEXN_FAIL_CONTRACT_NON_FIXNUM_RESULT,
+                   "%s: result is not a fixnum: %V",
+                   name, o);
+}
+
 void scheme_raise_out_of_memory(const char *where, const char *msg, ...)
 {
   char *s;

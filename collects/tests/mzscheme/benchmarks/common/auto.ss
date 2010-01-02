@@ -24,6 +24,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
     (when (file-exists? (symbol->string bm))
       (delete-file (symbol->string bm)))
     (parameterize ([current-command-line-arguments (vector (symbol->string bm))])
+      (namespace-require 'scheme)
       (load script)))
 
   (define (clean-up-bin bm)
@@ -318,7 +319,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
       triangle))
 
   (define extra-benchmarks
-    '(psyntax))
+    '(kanren
+      psyntax))
 
   (define (run-benchmark impl bm)
     (let ([i (ormap (lambda (i)

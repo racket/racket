@@ -977,7 +977,7 @@ typedef struct {
   mzshort *base_closure_map;
   char *flonum_map; /* NULL when has_flomap set => no flonums */
   char has_tl, has_flomap;
-  short body_size;
+  int body_size, body_psize;
 } Closure_Info;
 
 Scheme_Object *
@@ -1047,9 +1047,9 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info, i
   else
     cl->has_tl = 0;
   cl->body_size = info->size;
-
+  cl->body_psize = info->psize;
+  
   info->size++;
-  info->inline_fuel++;
 
   data->closure_size = (cl->base_closure_size
 			+ (cl->has_tl ? 1 : 0));
@@ -1240,7 +1240,7 @@ Scheme_Object *scheme_sfs_closure(Scheme_Object *expr, SFS_Info *info, int self_
   return expr;
 }
 
-int scheme_closure_body_size(Scheme_Closure_Data *data, int check_assign)
+int scheme_closure_body_size(Scheme_Closure_Data *data, int check_assign, Optimize_Info *info)
 {
   int i;
   Closure_Info *cl;
@@ -1259,7 +1259,7 @@ int scheme_closure_body_size(Scheme_Closure_Data *data, int check_assign)
     }
   }
 
-  return cl->body_size;
+  return cl->body_size + ((info && info->use_psize) ? cl->body_psize : 0);
 }
 
 int scheme_closure_has_top_level(Scheme_Closure_Data *data)

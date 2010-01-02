@@ -3973,7 +3973,8 @@ static int can_unbox_directly(Scheme_Object *obj)
         return 1;
       if (SCHEME_PRIMP(app->rator)
           && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
-        if (IS_NAMED_PRIM(app->rator, "->fl")) 
+        if (IS_NAMED_PRIM(app->rator, "->fl")
+            || IS_NAMED_PRIM(app->rator, "fx->fl"))
           return 1;
       }
     }
@@ -4945,12 +4946,12 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           } else if ((arith == 6) || (arith == -6)) {
             /* arithmetic-shift 
                This is a lot of code, but if you're using
-               arihtmetic-shift, then you probably want it. */
+               arithmetic-shift, then you probably want it. */
             int v1 = (reversed ? JIT_R0 : JIT_R1);
             int v2 = (reversed ? JIT_R1 : JIT_R0);
             jit_insn *refi, *refc;
 
-            if (!unsafe_fx || overflow_refslow)
+            if ((arith != -6) && (!unsafe_fx || overflow_refslow))
               refi = jit_bgei_l(jit_forward(), v2, (long)scheme_make_integer(0));
             else
               refi = NULL;
@@ -4959,14 +4960,19 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
               /* Right shift */
               if (!unsafe_fx || overflow_refslow) {
                 /* check for a small enough shift */
-                (void)jit_blti_l(refslow, v2, scheme_make_integer(-MAX_TRY_SHIFT));
-                jit_notr_l(JIT_V1, v2);
-                jit_rshi_l(JIT_V1, JIT_V1, 0x1);
+                if (arith == -6) {
+                  (void)jit_blti_l(refslow, v2, scheme_make_integer(0));
+                  (void)jit_bgti_l(refslow, v2, scheme_make_integer(MAX_TRY_SHIFT));
+                  jit_rshi_l(JIT_V1, v2, 0x1);
+                } else {
+                  (void)jit_blti_l(refslow, v2, scheme_make_integer(-MAX_TRY_SHIFT));
+                  jit_notr_l(JIT_V1, v2);
+                  jit_rshi_l(JIT_V1, JIT_V1, 0x1);
+                  jit_addi_l(JIT_V1, JIT_V1, 0x1);
+                }
               } else {
                 jit_rshi_l(JIT_V1, v2, 0x1);
               }
-              if (!unsafe_fx || overflow_refslow)
-                jit_addi_l(JIT_V1, JIT_V1, 0x1);
               CHECK_LIMIT();
 #ifdef MZ_USE_JIT_I386
               /* Can't shift from _ECX */
@@ -6159,6 +6165,9 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     } else if (IS_NAMED_PRIM(rator, "unsafe-fxabs")) {
       generate_arith(jitter, rator, app->rand, NULL, 1, 11, 0, 0, NULL, 1, 1, 0, NULL);
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "fxabs")) {
+      generate_arith(jitter, rator, app->rand, NULL, 1, 11, 0, 0, NULL, 1, -1, 0, NULL);
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-flabs")) {
       generate_arith(jitter, rator, app->rand, NULL, 1, 11, 0, 0, NULL, 1, 0, 1, NULL);
       return 1;
@@ -6177,7 +6186,8 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     } else if (IS_NAMED_PRIM(rator, "unsafe-fx->fl")) {
       generate_arith(jitter, rator, app->rand, NULL, 1, 12, 0, 0, NULL, 1, 1, 0, NULL);
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "->fl")) {
+    } else if (IS_NAMED_PRIM(rator, "->fl")
+               || IS_NAMED_PRIM(rator, "fx->fl")) {
       generate_arith(jitter, rator, app->rand, NULL, 1, 12, 0, 0, NULL, 1, -1, 0, NULL);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "bitwise-not")) {
@@ -6185,6 +6195,9 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fxnot")) {
       generate_arith(jitter, rator, app->rand, NULL, 1, 7, 0, 9, NULL, 1, 1, 0, NULL);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fxnot")) {
+      generate_arith(jitter, rator, app->rand, NULL, 1, 7, 0, 9, NULL, 1, -1, 0, NULL);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "vector-immutable")
                || IS_NAMED_PRIM(rator, "vector")) {
@@ -6617,6 +6630,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
   } else if (IS_NAMED_PRIM(rator, "unsafe-fx=")) {
     generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, 0, 0, for_branch, branch_short, 1, 0, NULL);
     return 1;
+  } else if (IS_NAMED_PRIM(rator, "fx=")) {
+    generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, 0, 0, for_branch, branch_short, -1, 0, NULL);
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "unsafe-fl=")) {
     generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, 0, 0, for_branch, branch_short, 0, 1, NULL);
     return 1;
@@ -6628,6 +6644,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     return 1;
   } else if (IS_NAMED_PRIM(rator, "unsafe-fx<=")) {
     generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, -1, 0, for_branch, branch_short, 1, 0, NULL);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "fx<=")) {
+    generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, -1, 0, for_branch, branch_short, -1, 0, NULL);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "unsafe-fl<=")) {
     generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, -1, 0, for_branch, branch_short, 0, 1, NULL);
@@ -6641,6 +6660,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
   } else if (IS_NAMED_PRIM(rator, "unsafe-fx<")) {
     generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, -2, 0, for_branch, branch_short, 1, 0, NULL);
     return 1;
+  } else if (IS_NAMED_PRIM(rator, "fx<")) {
+    generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, -2, 0, for_branch, branch_short, -1, 0, NULL);
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "unsafe-fl<")) {
     generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, -2, 0, for_branch, branch_short, 0, 1, NULL);
     return 1;
@@ -6653,6 +6675,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
   } else if (IS_NAMED_PRIM(rator, "unsafe-fx>=")) {
     generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, 1, 0, for_branch, branch_short, 1, 0, NULL);
     return 1;
+  } else if (IS_NAMED_PRIM(rator, "fx>=")) {
+    generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, 1, 0, for_branch, branch_short, -1, 0, NULL);
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "unsafe-fl>=")) {
     generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, 1, 0, for_branch, branch_short, 0, 1, NULL);
     return 1;
@@ -6664,6 +6689,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     return 1;
   } else if (IS_NAMED_PRIM(rator, "unsafe-fx>")) {
     generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, 2, 0, for_branch, branch_short, 1, 0, NULL);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "fx>")) {
+    generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, 2, 0, for_branch, branch_short, -1, 0, NULL);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "unsafe-fl>")) {
     generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, 2, 0, for_branch, branch_short, 0, 1, NULL);
@@ -6684,6 +6712,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "unsafe-fx+")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, 1, 0, 0, NULL, 1, 1, 0, NULL);
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "fx+")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, 1, 0, 0, NULL, 1, -1, 0, NULL);
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fl+")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, 1, 0, 0, NULL, 1, 0, 1, NULL);
       return 1;
@@ -6696,6 +6727,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "unsafe-fx-")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, -1, 0, 0, NULL, 1, 1, 0, NULL);
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "fx-")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, -1, 0, 0, NULL, 1, -1, 0, NULL);
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fl-")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, -1, 0, 0, NULL, 1, 0, 1, NULL);
       return 1;
@@ -6707,6 +6741,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fx*")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, 2, 0, 0, NULL, 1, 1, 0, NULL);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fx*")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, 2, 0, 0, NULL, 1, -1, 0, NULL);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fl*")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, 2, 0, 0, NULL, 1, 0, 1, NULL);
@@ -6729,11 +6766,17 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "unsafe-fxquotient")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, -3, 0, 0, NULL, 1, 1, 0, NULL);
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "fxquotient")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, -3, 0, 0, NULL, 1, -1, 0, NULL);
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "remainder")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, -4, 0, 0, NULL, 1, 0, 0, NULL);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fxremainder")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, -4, 0, 0, NULL, 1, 1, 0, NULL);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fxremainder")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, -4, 0, 0, NULL, 1, -1, 0, NULL);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "min")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, 9, 0, 0, NULL, 1, 0, 0, NULL);
@@ -6747,11 +6790,17 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "unsafe-fxand")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, 3, 0, 0, NULL, 1, 1, 0, NULL);
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "fxand")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, 3, 0, 0, NULL, 1, -1, 0, NULL);
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "bitwise-ior")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, 4, 0, 0, NULL, 1, 0, 0, NULL);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fxior")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, 4, 0, 0, NULL, 1, 1, 0, NULL);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fxior")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, 4, 0, 0, NULL, 1, -1, 0, NULL);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "bitwise-xor")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, 5, 0, 0, NULL, 1, 0, 0, NULL);
@@ -6759,14 +6808,23 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "unsafe-fxxor")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, 5, 0, 0, NULL, 1, 1, 0, NULL);
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "fxxor")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, 5, 0, 0, NULL, 1, -1, 0, NULL);
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "arithmetic-shift")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, 6, 0, 0, NULL, 1, 0, 0, NULL);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fxlshift")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, 6, 0, 0, NULL, 1, 1, 0, NULL);
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "fxlshift")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, 6, 0, 0, NULL, 1, -1, 0, NULL);
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-fxrshift")) {
       generate_arith(jitter, rator, app->rand1, app->rand2, 2, -6, 0, 0, NULL, 1, 1, 0, NULL);
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "fxrshift")) {
+      generate_arith(jitter, rator, app->rand1, app->rand2, 2, -6, 0, 0, NULL, 1, -1, 0, NULL);
       return 1;
     } else if (IS_NAMED_PRIM(rator, "vector-ref")
                || IS_NAMED_PRIM(rator, "unsafe-vector-ref")
@@ -8981,14 +9039,24 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
 #ifdef USE_FLONUM_UNBOXING
       flonum = SCHEME_LET_EVAL_TYPE(lv) & LET_ONE_FLONUM;
-      if (flonum)
-        jitter->unbox++;
 #else
       flonum = 0;
 #endif
 
       PAUSE_JIT_DATA();
-      generate_non_tail(lv->value, jitter, 0, 1, 0); /* no sync */
+      if (flonum) {
+#ifdef USE_FLONUM_UNBOXING
+        int directly;
+        if (can_unbox_inline(lv->value, 5, JIT_FPR_NUM-1, 0)
+            || can_unbox_directly(lv->value)) {
+          jitter->unbox++;
+          generate_unboxed(lv->value, jitter, 1, 0);
+        } else {
+          scheme_signal_error("internal error: bad FLONUM annotation on let");
+        }
+#endif
+      } else
+        generate_non_tail(lv->value, jitter, 0, 1, 0); /* no sync */
       RESUME_JIT_DATA();
       CHECK_LIMIT();
       
@@ -9001,6 +9069,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 #ifdef USE_FLONUM_UNBOXING
         --jitter->unbox;
         --jitter->unbox_depth;
+        if (jitter->unbox_depth)
+          scheme_signal_error("internal error: flonum let RHS leaves unbox depth");
         generate_flonum_local_unboxing(jitter, 1);
         CHECK_LIMIT();
         (void)jit_movi_p(JIT_R0, NULL);

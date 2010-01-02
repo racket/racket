@@ -10951,35 +10951,29 @@
   '*top*)
 
 (define env (scheme-report-environment 5))
-(define-syntax add
-  (syntax-rules ()
-    ((_ id ...)
-     (begin
-       (eval `(define id ,id) env)
-       ...))))
 
 (define (sc-eval e)
   (eval (cadr e) env))
 
-(add syntax-object->datum
-     datum->syntax-object
-     syntax->list
-     syntax->vector
-     identifier?
-     free-identifier=?
-     bound-identifier=?
-     literal-identifier=?
-     generate-temporaries
-     environment?
-     syntax-error
-     $sc-put-cte
-     $syntax-dispatch
-     $make-environment
-     sc-expand
-     andmap
-     ormap
-     gensym
-     gensym?)
+(eval `(define syntax-object->datum ,syntax-object->datum) env)
+(eval `(define datum->syntax-object ,datum->syntax-object) env)
+(eval `(define syntax->list ,syntax->list) env)
+(eval `(define syntax->vector ,syntax->vector) env)
+(eval `(define identifier? ,identifier?) env)
+(eval `(define free-identifier=? ,free-identifier=?) env)
+(eval `(define bound-identifier=? ,bound-identifier=?) env)
+(eval `(define literal-identifier=? ,literal-identifier=?) env)
+(eval `(define generate-temporaries ,generate-temporaries) env)
+(eval `(define environment? ,environment?) env)
+(eval `(define syntax-error ,syntax-error) env)
+(eval `(define $sc-put-cte ,$sc-put-cte) env)
+(eval `(define $syntax-dispatch ,$syntax-dispatch) env)
+(eval `(define $make-environment ,$make-environment) env)
+(eval `(define sc-expand ,sc-expand) env)
+(eval `(define andmap ,andmap) env)
+(eval `(define ormap ,ormap) env)
+(eval `(define gensym ,gensym) env)
+(eval `(define gensym? ,gensym?) env)
 
 (eval `(define eval ,sc-eval) env)
 (eval `(define interaction-environment ,sc-interaction-environment) env)

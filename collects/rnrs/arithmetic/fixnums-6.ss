@@ -3,6 +3,7 @@
 (require (only-in rnrs/base-6
                   div-and-mod div mod
                   div0-and-mod0 div0 mod0)
+         (prefix-in core: scheme/fixnum)
          rnrs/arithmetic/bitwise-6
          r6rs/private/num-inline
          (for-syntax r6rs/private/inline-rules))
@@ -17,8 +18,6 @@
          fxbit-field
          fxbit-count
          fxarithmetic-shift
-         fxarithmetic-shift-left
-         fxarithmetic-shift-right
          fxrotate-bit-field
          fxreverse-bit-field)
          ;; Many other provides from macros below
@@ -36,11 +35,11 @@
 
 (define-inliner define-fx fixnum? "fixnum")
 
-(define-fx = fx=? #f (a b c ...) nocheck)
-(define-fx > fx>? #f (a b c ...) nocheck)
-(define-fx < fx<? #f (a b c ...) nocheck)
-(define-fx <= fx<=? #f (a b c ...) nocheck)
-(define-fx >= fx>=? #f (a b c ...) nocheck)
+(define-fx = fx=? core:fx= (a b c ...) nocheck)
+(define-fx > fx>? core:fx> (a b c ...) nocheck)
+(define-fx < fx<? core:fx< (a b c ...) nocheck)
+(define-fx <= fx<=? core:fx<= (a b c ...) nocheck)
+(define-fx >= fx>=? core:fx>= (a b c ...) nocheck)
 
 (define-fx zero? fxzero? #f (a) nocheck)
 (define-fx positive? fxpositive? #f (a) nocheck)
@@ -51,9 +50,9 @@
 (define-fx max fxmax #f (a b ...) nocheck)
 (define-fx min fxmin #f (a b ...) nocheck)
 
-(define-fx + fx+ #f (a b) check)
-(define-fx * fx* #f (a b) check)
-(define-fx - fx- #f [(a) (a b)] check)
+(define-fx + fx+ core:fx+ (a b) check)
+(define-fx * fx* core:fx* (a b) check)
+(define-fx - fx- core:fx- [(a) (a b)] check)
 
 (provide fxdiv-and-mod
          fxdiv0-and-mod0)
@@ -96,10 +95,10 @@
 (define-carry fx-/carry (a b c) (- a b c))
 (define-carry fx*/carry (a b c) (+ (* a b) c))
 
-(define-fx bitwise-not fxnot #f (a) nocheck)
-(define-fx bitwise-and fxand #f (a b ...) nocheck)
-(define-fx bitwise-ior fxior #f (a b ...) nocheck)
-(define-fx bitwise-xor fxxor #f (a b ...) nocheck)
+(provide (rename-out [core:fxnot fxnot]))
+(define-fx bitwise-and fxand core:fxand (a b ...) nocheck)
+(define-fx bitwise-ior fxior core:fxior (a b ...) nocheck)
+(define-fx bitwise-xor fxxor core:fxxor (a b ...) nocheck)
 
 (define-syntax-rule (fixnum-bitwise-if a b c)
   (bitwise-ior (bitwise-and a b)
@@ -181,11 +180,8 @@
 
 (define-shifter fxarithmetic-shift r6rs:fxarithmetic-shift
   (- 1 (fixnum-width)) fixnum-width-bounds values)
-(define-shifter fxarithmetic-shift-left r6rs:fxarithmetic-shift-left
-  0 positive-fixnum-width-bounds values)
-(define-shifter fxarithmetic-shift-right r6rs:fxarithmetic-shift-right
-  0 positive-fixnum-width-bounds -)
-
+(provide (rename-out [core:fxlshift fxarithmetic-shift-left]
+                     [core:fxrshift fxarithmetic-shift-right]))
 
 (define (fxrotate-bit-field n start end count)
   (unless (fixnum? n)

@@ -1,4 +1,9 @@
 #lang scheme/base
-(require '#%flonum)
+(require '#%flfxnum)
 
-(provide (all-from-out '#%flonum))
+(provide fl+ fl- fl* fl/
+         flabs flsqrt
+         fl= fl< fl<= fl> fl>=
+         ->fl
+         flvector? flvector make-flvector 
+         flvector-length flvector-ref flvector-set!)

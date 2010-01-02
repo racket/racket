@@ -1558,7 +1558,7 @@ set_optimize(Scheme_Object *data, Optimize_Info *info, int context)
     pos = SCHEME_LOCAL_POS(var);
 
     /* Register that we use this variable: */
-    scheme_optimize_info_lookup(info, pos, NULL, NULL, 0, 0);
+    scheme_optimize_info_lookup(info, pos, NULL, NULL, 0, 0, NULL);
 
     /* Offset: */
     delta = scheme_optimize_info_get_shift(info, pos);
@@ -2830,7 +2830,7 @@ int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
 
   if (SAME_TYPE(SCHEME_TYPE(value), scheme_compiled_unclosed_procedure_type)) {
     int sz;
-    sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 1);
+    sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 1, info);
     if ((sz >= 0) && (sz <= MAX_PROC_INLINE_SIZE))
       return 1;
   }
@@ -2840,6 +2840,7 @@ int scheme_compiled_propagate_ok(Scheme_Object *value, Optimize_Info *info)
       int pos;
       pos = SCHEME_TOPLEVEL_POS(value);
       value = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
+      value = scheme_no_potential_size(value);
       if (value)
         return 1;
     }
@@ -2998,10 +2999,10 @@ static int set_code_flags(Scheme_Compiled_Let_Value *retry_start,
   return flags;
 }
 
-static int expr_size(Scheme_Object *o)
+static int expr_size(Scheme_Object *o, Optimize_Info *info)
 {
   if (SAME_TYPE(SCHEME_TYPE(o), scheme_compiled_unclosed_procedure_type))
-    return scheme_closure_body_size((Scheme_Closure_Data *)o, 0);
+    return scheme_closure_body_size((Scheme_Closure_Data *)o, 0, NULL) + 1;
   else
     return 1;
 }
@@ -3091,6 +3092,28 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     body = pre_body->body;
   }
 
+  if (is_rec && !body_info->letrec_not_twice) {
+    /* For each identifier bound to a procedure, register an initial
+       size estimate, which is used to discourage early loop unrolling 
+       at the expense of later inlining. */
+    body = head->body;
+    pre_body = NULL;
+    pos = 0;
+    for (i = head->num_clauses; i--; ) {
+      pre_body = (Scheme_Compiled_Let_Value *)body;
+
+      if ((pre_body->count == 1)
+          && SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(pre_body->value))
+          && !(pre_body->flags[0] & SCHEME_WAS_SET_BANGED)) {
+        scheme_optimize_propagate(body_info, pos, scheme_estimate_closure_size(pre_body->value), 0);
+      }
+
+      pos += pre_body->count;
+      body = pre_body->body;
+    }
+    rhs_info->use_psize = 1;
+  }
+
   prev_body = NULL;
   body = head->body;
   pre_body = NULL;
@@ -3120,7 +3143,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 
     value = scheme_optimize_expr(pre_body->value, rhs_info, 0);
     pre_body->value = value;
-
+    
     body_info->transitive_use_pos = 0;
 
     if (is_rec && !not_simply_let_star) {
@@ -3272,6 +3295,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
             /* Try optimization. */
 	    Scheme_Object *self_value;
             int sz;
+            char use_psize;
 
             if ((clv->count == 1)
                 && body_info->transitive_use
@@ -3284,7 +3308,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 	    self_value = SCHEME_CDR(cl_first);
 
             /* Drop old size, and remove old inline fuel: */
-            sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 0);
+            sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 0, NULL);
             body_info->size -= (sz + 1);
             
             /* Setting letrec_not_twice prevents inlinining
@@ -3292,10 +3316,13 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
                chance that we miss some optimizations, but we
                avoid the possibility of N^2 behavior. */
             body_info->letrec_not_twice = 1;
+            use_psize = body_info->use_psize;
+            body_info->use_psize = info->use_psize;
             
             value = scheme_optimize_expr(self_value, body_info, 0);
 
             body_info->letrec_not_twice = 0;
+            body_info->use_psize = use_psize;
             
             clv->value = value;
 
@@ -3408,7 +3435,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
       if (pre_body->count == 1) {
         /* Drop expr and deduct from size to aid further inlining. */
         int sz;
-        sz = expr_size(pre_body->value);
+        sz = expr_size(pre_body->value, info);
         pre_body->value = scheme_false;
         info->size -= sz;
       }

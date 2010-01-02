@@ -2304,6 +2304,130 @@ static Scheme_Object *try_optimize_fold(Scheme_Object *f, Scheme_Object *o, Opti
   return NULL;
 }
 
+static int estimate_expr_size(Scheme_Object *expr, int sz, int fuel)
+{
+  Scheme_Type t;
+
+  if (sz > 128)
+    return sz;
+  if (fuel < 0)
+    return sz + 128;
+  
+  t = SCHEME_TYPE(expr);
+
+  switch(t) {
+  case scheme_local_type:
+    {
+      sz += 1;
+      break;
+    }
+  case scheme_compiled_syntax_type:
+    {
+      sz += 1; /* FIXME */
+      break;
+    }
+  case scheme_application2_type:
+    {
+      Scheme_App2_Rec *app = (Scheme_App2_Rec *)expr;
+      
+      sz = estimate_expr_size(app->rator, sz, fuel - 1);
+      sz = estimate_expr_size(app->rand, sz, fuel - 1);
+      sz++;
+
+      break;
+    }
+  case scheme_application_type:
+    {
+      Scheme_App_Rec *app = (Scheme_App_Rec *)expr;
+      int i;
+
+      for (i = app->num_args + 1; i--; ) {
+        sz = estimate_expr_size(app->args[i], sz, fuel - 1);
+      }
+      sz++;
+
+      break;
+    }
+  case scheme_application3_type:
+    {
+      Scheme_App3_Rec *app = (Scheme_App3_Rec *)expr;
+      
+      sz = estimate_expr_size(app->rator, sz, fuel - 1);
+      sz = estimate_expr_size(app->rand1, sz, fuel - 1);
+      sz = estimate_expr_size(app->rand2, sz, fuel - 1);
+      sz++;
+
+      break;
+    }
+  case scheme_compiled_let_void_type:
+    {
+      Scheme_Let_Header *head = (Scheme_Let_Header *)expr;
+      Scheme_Object *body;
+      Scheme_Compiled_Let_Value *lv;
+      int i;
+
+      body = head->body;
+      for (i = head->num_clauses; i--; ) {
+	lv = (Scheme_Compiled_Let_Value *)body;
+        sz = estimate_expr_size(lv->value, sz, fuel - 1);
+	body = lv->body;
+        sz++;
+      }
+      sz = estimate_expr_size(body, sz, fuel - 1);
+      break;
+    }
+  case scheme_sequence_type:
+  case scheme_begin0_sequence_type:
+    {
+      Scheme_Sequence *seq = (Scheme_Sequence *)expr;
+      int i;
+
+      for (i = seq->count; i--; ) {
+	sz = estimate_expr_size(seq->array[i], sz, fuel - 1);
+      }
+      
+      break;
+    }
+  case scheme_branch_type:
+    {
+      Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)expr;
+      
+      sz = estimate_expr_size(b->test, sz, fuel - 1);
+      sz = estimate_expr_size(b->tbranch, sz, fuel - 1);
+      sz = estimate_expr_size(b->fbranch, sz, fuel - 1);
+      break;
+    }
+  case scheme_compiled_unclosed_procedure_type:
+    {
+      sz = estimate_expr_size(((Scheme_Closure_Data *)expr)->code, sz, fuel - 1);
+      sz++;
+      break;
+    }
+  case scheme_compiled_toplevel_type:
+  case scheme_compiled_quote_syntax_type:
+  default:
+    sz += 1;
+    break;
+  }
+
+  return sz;
+}
+
+Scheme_Object *scheme_estimate_closure_size(Scheme_Object *e)
+{
+  int sz;
+  sz = estimate_expr_size(e, 0, 32);
+  return scheme_box(scheme_make_integer(sz));
+}
+
+Scheme_Object *scheme_no_potential_size(Scheme_Object *v)
+{
+  if (v && SCHEME_BOXP(v))
+    return NULL;
+  else
+    return v;
+}
+
 static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data, Optimize_Info *info,
 				    int argc, Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
                                     int context)
@@ -2373,7 +2497,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 /* If not app, app2, or app3, just return a known procedure, if any,
    and do not check arity. */
 {
-  int offset = 0, single_use = 0;
+  int offset = 0, single_use = 0, psize = 0;
   Scheme_Object *bad_app = NULL;
 
   if (info->inline_fuel < 0)
@@ -2386,21 +2510,25 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
   if (SAME_TYPE(SCHEME_TYPE(le), scheme_local_type)) {
     /* Check for inlining: */
-    le = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(le), &offset, &single_use, 0, 0);
-    if (!le)
-      return NULL;
+    le = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(le), &offset, &single_use, 0, 0, &psize);
   }
 
-  while (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_toplevel_type)) {
-    single_use = 0;
-    if (info->top_level_consts) {
-      int pos;
-      pos = SCHEME_TOPLEVEL_POS(le);
-      le = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
-      if (!le)
-	return NULL;
-    } else
-      return NULL;
+  if (le) {
+    while (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_toplevel_type)) {
+      single_use = 0;
+      if (info->top_level_consts) {
+        int pos;
+        pos = SCHEME_TOPLEVEL_POS(le);
+        le = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
+        if (le && SCHEME_BOXP(le)) {
+          psize = SCHEME_INT_VAL(SCHEME_BOX_VAL(le));
+          le = NULL;
+        }
+        if (!le)
+          break;
+      } else
+        break;
+    }
   }
 
   if (le && SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type)) {
@@ -2414,20 +2542,20 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     *_flags = SCHEME_CLOSURE_DATA_FLAGS(data);
       
     if ((data->num_params == argc) || (!app && !app2 && !app3)) {
-      sz = scheme_closure_body_size(data, 1);
+      sz = scheme_closure_body_size(data, 1, info);
 
       if ((sz >= 0) && (single_use || (sz <= (info->inline_fuel * (argc + 2))))) {
 	le = scheme_optimize_clone(0, data->code, info, offset, argc);
 	if (le) {
-	  LOG_INLINE(fprintf(stderr, "Inline %s\n", data->name ? scheme_write_to_string(data->name, NULL) : "???"));
+	  LOG_INLINE(fprintf(stderr, "Inline %d %d %s\n", sz, single_use, data->name ? scheme_write_to_string(data->name, NULL) : "???"));
           return apply_inlined(le, data, info, argc, app, app2, app3, context);
 	} else {
           LOG_INLINE(fprintf(stderr, "No inline %s\n", data->name ? scheme_write_to_string(data->name, NULL) : "???"));
         }
       } else {
-        LOG_INLINE(fprintf(stderr, "No fuel %s %d*%d/%d\n", data->name ? scheme_write_to_string(data->name, NULL) : "???", 
+        LOG_INLINE(fprintf(stderr, "No fuel %s %d*%d/%d %d\n", data->name ? scheme_write_to_string(data->name, NULL) : "???", 
                            sz, info->inline_fuel * (argc + 2),
-                           info->inline_fuel));
+                           info->inline_fuel, info->use_psize));
       }
     } else {
       if (!(SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)
@@ -2451,6 +2579,12 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     if (!scheme_check_proc_arity(NULL, argc, 0, 1, a))  {
       bad_app = le;
     }
+  }
+
+  if (psize) {
+    LOG_INLINE(fprintf(stderr, "Potential inline %d %d\n", psize, info->inline_fuel * (argc + 2)));
+    if (psize <= (info->inline_fuel * (argc + 2)))
+      info->psize += psize;
   }
 
   if (bad_app) {
@@ -2505,7 +2639,7 @@ static void register_flonum_argument_types(Scheme_App_Rec *app, Scheme_App2_Rec 
     rator = scheme_optimize_reverse(info, SCHEME_LOCAL_POS(rator), 1);
     if (rator) {
       int offset, single_use;
-      le = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(rator), &offset, &single_use, 0, 0);
+      le = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(rator), &offset, &single_use, 0, 0, NULL);
       if (le && SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type)) {
         Scheme_Closure_Data *data = (Scheme_Closure_Data *)le;
         char *map;
@@ -2749,28 +2883,31 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_m
   return 0;
 }
 
-static int produces_unboxed(Scheme_Object *rator, int *non_fl_args)
+static int produces_unboxed(Scheme_Object *rator, int *non_fl_args, int argc, int for_args)
 {
   if (SCHEME_PRIMP(rator)) {
     if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL) {
-      if (IS_NAMED_PRIM(rator, "unsafe-flabs")
-          || IS_NAMED_PRIM(rator, "unsafe-flsqrt")
-          || IS_NAMED_PRIM(rator, "unsafe-fl+")
-          || IS_NAMED_PRIM(rator, "unsafe-fl-")
-          || IS_NAMED_PRIM(rator, "unsafe-fl*")
-          || IS_NAMED_PRIM(rator, "unsafe-fl/")
-          || IS_NAMED_PRIM(rator, "unsafe-fl<")
-          || IS_NAMED_PRIM(rator, "unsafe-fl<=")
-          || IS_NAMED_PRIM(rator, "unsafe-fl=")
-          || IS_NAMED_PRIM(rator, "unsafe-fl>")
-          || IS_NAMED_PRIM(rator, "unsafe-fl>="))
+      if (((argc == 1)
+           && (IS_NAMED_PRIM(rator, "unsafe-flabs")
+               || IS_NAMED_PRIM(rator, "unsafe-flsqrt")))
+          || ((argc == 2)
+              && (IS_NAMED_PRIM(rator, "unsafe-fl+")
+                  || IS_NAMED_PRIM(rator, "unsafe-fl-")
+                  || IS_NAMED_PRIM(rator, "unsafe-fl*")
+                  || IS_NAMED_PRIM(rator, "unsafe-fl/")
+                  || (for_args 
+                      && (IS_NAMED_PRIM(rator, "unsafe-fl<")
+                          || IS_NAMED_PRIM(rator, "unsafe-fl<=")
+                          || IS_NAMED_PRIM(rator, "unsafe-fl=")
+                          || IS_NAMED_PRIM(rator, "unsafe-fl>")
+                          || IS_NAMED_PRIM(rator, "unsafe-fl>="))))))
         return 1;
-      if (IS_NAMED_PRIM(rator, "unsafe-flvector-ref")
-          || IS_NAMED_PRIM(rator, "unsafe-fx->fl")) {
+      if (((argc == 2) && IS_NAMED_PRIM(rator, "unsafe-flvector-ref"))
+          || ((argc == 1) && IS_NAMED_PRIM(rator, "unsafe-fx->fl"))) {
         if (non_fl_args) *non_fl_args = 1;
         return 1;
       }
-    } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNARY_INLINED) {
+    } else if ((argc == 1) && (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
       if (IS_NAMED_PRIM(rator, "flabs")
           || IS_NAMED_PRIM(rator, "flsqrt"))
         return 1;
@@ -2778,7 +2915,7 @@ static int produces_unboxed(Scheme_Object *rator, int *non_fl_args)
         if (non_fl_args) *non_fl_args = 1;
         return 1;
       }
-    } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_BINARY_INLINED) {
+    } else if ((argc ==2) && (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_BINARY_INLINED)) {
       if (IS_NAMED_PRIM(rator, "flabs")
           || IS_NAMED_PRIM(rator, "flsqrt")
           || IS_NAMED_PRIM(rator, "fl+")
@@ -2819,7 +2956,7 @@ static int is_unboxed_argument(Scheme_Object *rand, int fuel, Optimize_Info *inf
       {
         Scheme_App_Rec *app = (Scheme_App_Rec *)rand;
         int non_fl_args = 0;
-        if (produces_unboxed(app->args[0], &non_fl_args)) {
+        if (produces_unboxed(app->args[0], &non_fl_args, app->num_args, 1)) {
           int i;
           for (i = app->num_args; i--; ) {
             fuel--;
@@ -2834,7 +2971,7 @@ static int is_unboxed_argument(Scheme_Object *rand, int fuel, Optimize_Info *inf
       {
         Scheme_App2_Rec *app = (Scheme_App2_Rec *)rand;
         int non_fl_args = 0;
-        if (produces_unboxed(app->rator, &non_fl_args)) {
+        if (produces_unboxed(app->rator, &non_fl_args, 1, 1)) {
           if (is_unboxed_argument(app->rand, fuel - 1, info, lifted))
             return 1;
         }
@@ -2844,7 +2981,7 @@ static int is_unboxed_argument(Scheme_Object *rand, int fuel, Optimize_Info *inf
       {
         Scheme_App3_Rec *app = (Scheme_App3_Rec *)rand;
         int non_fl_args = 0;
-        if (produces_unboxed(app->rator, &non_fl_args)) {
+        if (produces_unboxed(app->rator, &non_fl_args, 2, 1)) {
           if (is_unboxed_argument(app->rand1, fuel - 1, info, lifted)
               && is_unboxed_argument(app->rand2, fuel - 2, info, lifted))
             return 1;
@@ -2867,19 +3004,19 @@ int scheme_expr_produces_flonum(Scheme_Object *expr)
   case scheme_application_type:
     {
       Scheme_App_Rec *app = (Scheme_App_Rec *)expr;
-      return produces_unboxed(app->args[0], NULL);
+      return produces_unboxed(app->args[0], NULL, app->num_args, 0);
     }
     break;
   case scheme_application2_type:
     {
       Scheme_App2_Rec *app = (Scheme_App2_Rec *)expr;
-      return produces_unboxed(app->rator, NULL);
+      return produces_unboxed(app->rator, NULL, 1, 0);
     }
     break;
   case scheme_application3_type:
     {
       Scheme_App3_Rec *app = (Scheme_App3_Rec *)expr;
-      return produces_unboxed(app->rator, NULL);
+      return produces_unboxed(app->rator, NULL, 2, 0);
     }
     break;
   default:
@@ -3105,7 +3242,7 @@ static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *r
     int offset;
     Scheme_Object *expr;
     expr = scheme_optimize_reverse(info, SCHEME_LOCAL_POS(rand), 0);
-    c = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(expr), &offset, NULL, 0, 0);
+    c = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(expr), &offset, NULL, 0, 0, NULL);
   }
   if (SAME_TYPE(SCHEME_TYPE(rand), scheme_compiled_toplevel_type)) {
     if (info->top_level_consts) {
@@ -3114,6 +3251,7 @@ static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *r
       while (1) {
         pos = SCHEME_TOPLEVEL_POS(rand);
         c = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
+        c = scheme_no_potential_size(c);
         if (c && SAME_TYPE(SCHEME_TYPE(c), scheme_compiled_toplevel_type))
           rand = c;
         else
@@ -3440,11 +3578,13 @@ static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info, i
 {
   Scheme_Sequence *s = (Scheme_Sequence *)o;
   Scheme_Object *le;
-  int i, count;
+  int i, count, prev_size;
   int drop = 0, preserves_marks = 0, single_result = 0;
 
   count = s->count;
   for (i = 0; i < count; i++) {
+    prev_size = info->size;
+
     le = scheme_optimize_expr(s->array[i], info, 0);
     if (i == s->count - 1) {
       single_result = info->single_result;
@@ -3456,6 +3596,7 @@ static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info, i
     if ((i + 1 != count)
 	&& scheme_omittable_expr(le, -1, -1, 0, NULL)) {
       drop++;
+      info->size = prev_size;
       s->array[i] = NULL;
     } else {
       s->array[i] = le;
@@ -3483,8 +3624,6 @@ static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info, i
 
     s = s2;
   }
-
-  info->size += 1;
 
   return (Scheme_Object *)s;
 }
@@ -3566,13 +3705,16 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
     t = ((Scheme_Branch_Rec *)t)->test;
 
   if (SCHEME_TYPE(t) > _scheme_compiled_values_types_) {
+    info->size -= 1;
     if (SCHEME_FALSEP(t))
       return scheme_optimize_expr(fb, info, 0);
     else
       return scheme_optimize_expr(tb, info, 0);
   } else if (SAME_TYPE(SCHEME_TYPE(t), scheme_compiled_quote_syntax_type)
-             || SAME_TYPE(SCHEME_TYPE(t), scheme_compiled_unclosed_procedure_type))
+             || SAME_TYPE(SCHEME_TYPE(t), scheme_compiled_unclosed_procedure_type)) {
+    info->size -= 1; /* could be more precise for better for procedure size */
     return scheme_optimize_expr(tb, info, 0);
+  }
 
   tb = scheme_optimize_expr(tb, info, 0);
 
@@ -3605,12 +3747,14 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
       && SAME_TYPE(SCHEME_TYPE(tb), scheme_local_type)
       && (SCHEME_LOCAL_POS(t) == SCHEME_LOCAL_POS(tb))
       && SCHEME_FALSEP(fb)) {
+    info->size -= 2;
     return t;
   }
 
   /* Try optimize: (if <omitable-expr> v v) => v */
   if (scheme_omittable_expr(t, 1, 20, 0, NULL)
       && equivalent_exprs(tb, fb)) {
+    info->size -= 2; /* could be more precise */
     return tb;
   }
 
@@ -3636,7 +3780,9 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   b->tbranch = tb;
   b->fbranch = fb;
 
-  info->size += 1;
+  /* Seems to work better to not to increase the size
+     specifically for `if': */
+  /* info->size += 1; */
 
   return o;
 }
@@ -3707,7 +3853,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
 
       pos = SCHEME_LOCAL_POS(expr);
 
-      val = scheme_optimize_info_lookup(info, pos, NULL, NULL, 1, context);
+      val = scheme_optimize_info_lookup(info, pos, NULL, NULL, 1, context, NULL);
       if (val) {
         if (SAME_TYPE(SCHEME_TYPE(val), scheme_once_used_type)) {
           Scheme_Once_Used *o = (Scheme_Once_Used *)val;
@@ -3721,7 +3867,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
             }
           }
           /* Can't move expression, so lookup again to mark as used. */
-          (void)scheme_optimize_info_lookup(info, pos, NULL, NULL, 0, context);
+          (void)scheme_optimize_info_lookup(info, pos, NULL, NULL, 0, context, NULL);
         } else {
           if (SAME_TYPE(SCHEME_TYPE(val), scheme_compiled_toplevel_type)) {
             info->size -= 1;
@@ -3769,6 +3915,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
       while (1) {
         pos = SCHEME_TOPLEVEL_POS(expr);
         c = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
+        c = scheme_no_potential_size(c);
         if (c && SAME_TYPE(SCHEME_TYPE(c), scheme_compiled_toplevel_type))
           expr = c;
         else
@@ -6151,8 +6298,8 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
             scheme_register_unsafe_in_prefix(env, rec, drec, menv);
             return scheme_extract_unsafe(var);
           } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
-                     && scheme_extract_flonum(var)) {
-            return scheme_extract_flonum(var);
+                     && scheme_extract_flfxnum(var)) {
+            return scheme_extract_flfxnum(var);
           } else if (SAME_TYPE(SCHEME_TYPE(var), scheme_variable_type)
                      || SAME_TYPE(SCHEME_TYPE(var), scheme_module_variable_type))
 	    return scheme_register_toplevel_in_prefix(var, env, rec, drec);
@@ -11785,9 +11932,10 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
         scheme_ill_formed_code(port);
 #endif
       
-      if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM)
+      if (SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM) {
         stack[delta] = VALID_FLONUM;
-      else
+        /* FIXME: need to check that lo->value produces a flonum */
+      } else
         stack[delta] = VALID_VAL;
 
       expr = lo->body;

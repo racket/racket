@@ -214,9 +214,9 @@ mark:
 headers:
 	./mzscheme@CGC@ -cqu $(srcdir)/mkincludes.ss "$(DESTDIR)$(includepltdir)" "$(srcdir)" .
 
-$(srcdir)/src/schexn.h: $(srcdir)/src/exnsrc.ss $(srcdir)/src/makeexn
+$(srcdir)/src/schexn.h: $(srcdir)/src/makeexn
 	./mzscheme@CGC@ -um $(srcdir)/src/makeexn > $(srcdir)/src/schexn.h
-$(collectsdir)/scheme/private/kernstruct.ss: $(srcdir)/src/exnsrc.ss $(srcdir)/src/makeexn
+$(collectsdir)/scheme/private/kernstruct.ss: $(srcdir)/src/makeexn
 	./mzscheme@CGC@ -um $(srcdir)/src/makeexn kernstruct $(collectsdir)/scheme/private/kernstruct.ss
 
 

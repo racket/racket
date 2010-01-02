@@ -4688,7 +4688,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       break;
     case CPT_REFERENCE:
       l = read_compact_number(port);
-      RANGE_CHECK(l, < (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT + EXPECTED_FLONUM_COUNT));
+      RANGE_CHECK(l, < (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT + EXPECTED_FLFXNUM_COUNT));
       return variable_references[l];
       break;
     case CPT_LOCAL:

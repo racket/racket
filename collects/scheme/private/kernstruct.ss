@@ -56,6 +56,16 @@
         (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
         '(#f #f)
         (quote-syntax exn:fail:contract)))))
+  (define-syntax exn:fail:contract:non-fixnum-result
+    (make-struct-info
+     (λ ()
+       (list
+        (quote-syntax struct:exn:fail:contract:non-fixnum-result)
+        (quote-syntax make-exn:fail:contract:non-fixnum-result)
+        (quote-syntax exn:fail:contract:non-fixnum-result?)
+        (list (quote-syntax exn-continuation-marks) (quote-syntax exn-message))
+        '(#f #f)
+        (quote-syntax exn:fail:contract)))))
   (define-syntax exn:fail:contract:continuation
     (make-struct-info
      (λ ()

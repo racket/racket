@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/bnf
-          "mz.ss")
+          "mz.ss"
+          (for-label scheme/fixnum))
 
 @title[#:tag "exns"]{Exceptions}
 
@@ -457,6 +458,11 @@ Raised when a procedure is applied to the wrong number of arguments.}
            #:inspector #f]{
 
 Raised for division by exact zero.}
+
+@defstruct[(exn:fail:contract:non-fixnum-result exn:fail:contract) ()
+           #:inspector #f]{
+
+Raised by functions like @scheme[fx+] when the result would not be a fixnum.}
 
 @defstruct[(exn:fail:contract:continuation exn:fail:contract) ()
            #:inspector #f]{

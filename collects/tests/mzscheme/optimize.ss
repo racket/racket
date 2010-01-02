@@ -3,7 +3,8 @@
 
 (Section 'optimization)
 
-(require scheme/flonum)
+(require scheme/flonum
+         scheme/fixnum)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -11,6 +12,7 @@
 (parameterize ([current-namespace (make-base-namespace)]
 	       [eval-jit-enabled #t])
   (namespace-require 'scheme/flonum)
+  (namespace-require 'scheme/fixnum)
   (let* ([check-error-message (lambda (name proc)
 				(unless (memq name '(eq? not null? pair?
 							 real? number? boolean? 
@@ -218,6 +220,9 @@
     (tri-if #t '< (lambda () 1) 2 3 void)
     (tri-if #f '< (lambda () 1) 3 3 void)
     (tri-if #f '< (lambda () 1) -1 3 void)
+    (bin-exact #t 'fx< 100 200)
+    (bin-exact #f 'fx< 200 100)
+    (bin-exact #f 'fx< 200 200)
     (bin-exact #t 'fl< 100.0 200.0)
     (bin-exact #f 'fl< 200.0 100.0)
     (bin-exact #f 'fl< 200.0 200.0)
@@ -230,6 +235,9 @@
     (tri-if #t '<= (lambda () 1) 2 3 void)
     (tri-if #t '<= (lambda () 1) 3 3 void)
     (tri-if #f '<= (lambda () 1) -1 3 void)
+    (bin-exact #t 'fx<= 100 200)
+    (bin-exact #f 'fx<= 200 100)
+    (bin-exact #t 'fx<= 200 200)
     (bin-exact #t 'fl<= 100.0 200.0)
     (bin-exact #f 'fl<= 200.0 100.0)
     (bin-exact #t 'fl<= 200.0 200.0)
@@ -243,6 +251,9 @@
     (tri-if #t '> (lambda () 3) 2 1 void)
     (tri-if #f '> (lambda () 3) 3 1 void)
     (tri-if #f '> (lambda () 3) -1 1 void)
+    (bin-exact #f 'fx> 100 200)
+    (bin-exact #t 'fx> 200 100)
+    (bin-exact #f 'fx> 200 200)
     (bin-exact #f 'fl> 100.0 200.0)
     (bin-exact #t 'fl> 200.0 100.0)
     (bin-exact #f 'fl> 200.0 200.0)
@@ -255,6 +266,9 @@
     (tri-if #t '>= (lambda () 3) 2 1 void)
     (tri-if #t '>= (lambda () 3) 3 1 void)
     (tri-if #f '>= (lambda () 3) -1 1 void)
+    (bin-exact #f 'fx>= 100 200)
+    (bin-exact #t 'fx>= 200 100)
+    (bin-exact #t 'fx>= 200 200)
     (bin-exact #f 'fl>= 100.0 200.0)
     (bin-exact #t 'fl>= 200.0 100.0)
     (bin-exact #t 'fl>= 200.0 200.0)
@@ -268,6 +282,8 @@
     (tri-if #f '= (lambda () 3) 3 1 void)
     (tri-if #f '= (lambda () 3) 1 3 void)
     (tri-if #f '= (lambda () 1) 3 3 void)
+    (bin-exact #f 'fx= 100 200)
+    (bin-exact #t 'fx= 200 200)
     (bin-exact #f 'fl= 100.0 200.0)
     (bin-exact #t 'fl= 200.0 200.0)
 
@@ -305,6 +321,7 @@
     (un -4611686018427387904.0 'exact->inexact (- (expt 2 62)))
 
     (un-exact 10.0 '->fl 10)
+    (un-exact 10.0 'fx->fl 10)
 
     (bin 11 '+ 4 7)
     (bin -3 '+ 4 -7)
@@ -312,6 +329,7 @@
     (bin (- (expt 2 31) 2) '+ (sub1 (expt 2 30)) (sub1 (expt 2 30)))
     (tri 6 '+ (lambda () 1) 2 3 void)
     (tri 13/2 '+ (lambda () 1) 5/2 3 void)
+    (bin-exact 25 'fx+ 10 15)
     (bin-exact 3.4 'fl+ 1.1 2.3)
 
     (bin 3 '- 7 4)
@@ -322,6 +340,7 @@
     (bin (- 2 (expt 2 31)) '- (- 1 (expt 2 30)) (sub1 (expt 2 30)))
     (tri 6 '- (lambda () 10) 3 1 void)
     (tri 13/2 '- (lambda () 10) 3 1/2 void)
+    (bin-exact 13 'fx- 5 -8)
     (bin-exact -0.75 'fl- 1.5 2.25)
 
     (bin 4 '* 1 4)
@@ -336,6 +355,7 @@
     (bin (- (expt 2 30)) '* 2 (- (expt 2 29)))
     (tri 30 '* (lambda () 2) 3 5 void)
     (tri 5 '* (lambda () 2) 3 5/6 void)
+    (bin-exact 253 'fx* 11 23)
     (bin-exact 2.53 'fl* 1.1 2.3)
 
     (bin 0 '/ 0 4)
@@ -354,12 +374,16 @@
     (bin-int 3 'quotient -10 -3)
     (bin-int -3 'quotient -10 3)
     (bin-exact 7 'quotient (* 7 (expt 2 100)) (expt 2 100))
+    (bin-exact 3 'fxquotient 10 3)
+    (bin-exact -3 'fxquotient 10 -3)
 
     (bin-int 1 'remainder 10 3)
     (bin-int 1 'remainder 10 -3)
     (bin-int -1 'remainder -10 -3)
     (bin-int -1 'remainder -10 3)
     (bin-exact 7 'remainder (+ 7 (expt 2 100)) (expt 2 100))
+    (bin-exact 1 'fxremainder 10 3)
+    (bin-exact 1 'fxremainder 10 -3)
 
     (bin 3 'min 3 300)
     (bin -300 'min 3 -300)
@@ -383,6 +407,7 @@
     (bin-exact -11 'bitwise-and -11 -1)
     (bin-exact (expt 2 50) 'bitwise-and (expt 2 50) (expt 2 50))
     (tri-exact #x10101 'bitwise-and (lambda () #x11111) #x10111 #x110101 void #f)
+    (bin-exact 11 'fxand 11 43)
 
     (bin-exact 11 'bitwise-ior 8 3)
     (bin-exact 11 'bitwise-ior 11 3)
@@ -390,6 +415,7 @@
     (bin-exact (sub1 (expt 2 51)) 'bitwise-ior (sub1 (expt 2 50)) (expt 2 50))
     (bin-exact (add1 (expt 2 50)) 'bitwise-ior 1 (expt 2 50))
     (tri-exact #x10101 'bitwise-ior (lambda () #x1) #x100 #x10000 void #f)
+    (bin-exact 11 'fxior 8 3)
 
     (bin-exact 11 'bitwise-xor 8 3)
     (bin-exact 8 'bitwise-xor 11 3)
@@ -397,6 +423,7 @@
     (bin-exact (sub1 (expt 2 51)) 'bitwise-xor (sub1 (expt 2 50)) (expt 2 50))
     (bin-exact (add1 (expt 2 50)) 'bitwise-xor 1 (expt 2 50))
     (tri-exact #x10101 'bitwise-xor (lambda () #x1) #x110 #x10010 void #f)
+    (bin-exact 11 'fxxor 8 3)
 
     (bin-exact 4 'arithmetic-shift 2 1)
     (bin-exact 1 'arithmetic-shift 2 -1)
@@ -408,12 +435,16 @@
     (bin-exact -1 'arithmetic-shift -1 -1)
     (bin-exact 2 'arithmetic-shift (expt 2 33) -32)
     (bin-exact 8 'arithmetic-shift (expt 2 33) -30)
+    (bin-exact 4 'fxlshift 2 1)
+    (bin-exact 1 'fxrshift 2 1)
 
     (un-exact -1 'bitwise-not 0)
     (un-exact 0 'bitwise-not -1)
     (un-exact (- -1 (expt 2 30)) 'bitwise-not (expt 2 30))
     (un-exact (- (expt 2 30)) 'bitwise-not (sub1 (expt 2 30)))
     (un-exact (- -1 (expt 2 32)) 'bitwise-not (expt 2 32))
+    (un-exact -1 'fxnot 0)
+    (un-exact 0 'fxnot -1)
 
     (bin-exact #t 'bitwise-bit-set? 1 0)
     (bin-exact #f 'bitwise-bit-set? 1 1)

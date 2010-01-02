@@ -31,12 +31,8 @@
   (list (list fxlshift unsafe-fxlshift)
         (list fxrshift unsafe-fxrshift)))
 
-;; the unsafe versions of these functions seem to be broken.
 (define nary-table
-  (list ;(list fxand unsafe-fxand)
-        ;(list fxior unsafe-fxior)
-        ;(list fxxor unsafe-fxxor)
-   ))
+  (list))
 
 (define table (append binary/small-second-arg-table binary-table unary-table nary-table))
 

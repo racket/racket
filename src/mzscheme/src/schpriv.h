@@ -185,13 +185,13 @@ void scheme_init_vector(Scheme_Env *env);
 void scheme_init_unsafe_vector(Scheme_Env *env);
 void scheme_init_string(Scheme_Env *env);
 void scheme_init_number(Scheme_Env *env);
-void scheme_init_flonum_number(Scheme_Env *env);
+void scheme_init_flfxnum_number(Scheme_Env *env);
 void scheme_init_unsafe_number(Scheme_Env *env);
 void scheme_init_numarith(Scheme_Env *env);
-void scheme_init_flonum_numarith(Scheme_Env *env);
+void scheme_init_flfxnum_numarith(Scheme_Env *env);
 void scheme_init_unsafe_numarith(Scheme_Env *env);
 void scheme_init_numcomp(Scheme_Env *env);
-void scheme_init_flonum_numcomp(Scheme_Env *env);
+void scheme_init_flfxnum_numcomp(Scheme_Env *env);
 void scheme_init_unsafe_numcomp(Scheme_Env *env);
 void scheme_init_numstr(Scheme_Env *env);
 void scheme_init_eval(Scheme_Env *env);
@@ -1978,9 +1978,9 @@ typedef struct Optimize_Info
   Scheme_Object *consts;
 
   /* Propagated up and down the chain: */
-  int size, vclock;
+  int size, vclock, psize;
   short inline_fuel;
-  char letrec_not_twice, enforce_const;
+  char letrec_not_twice, enforce_const, use_psize;
   Scheme_Hash_Table *top_level_consts;
 
   /* Set by expression optimization: */
@@ -2126,7 +2126,7 @@ Scheme_Object *scheme_lookup_binding(Scheme_Object *symbol, Scheme_Comp_Env *env
                                      Scheme_Object **_lexical_binding_id);
 
 Scheme_Object *scheme_extract_unsafe(Scheme_Object *o);
-Scheme_Object *scheme_extract_flonum(Scheme_Object *o);
+Scheme_Object *scheme_extract_flfxnum(Scheme_Object *o);
 
 Scheme_Object *scheme_add_env_renames(Scheme_Object *stx, Scheme_Comp_Env *env,
 				      Scheme_Comp_Env *upto);
@@ -2297,8 +2297,11 @@ Optimize_Info *scheme_optimize_info_create(void);
 
 void scheme_optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *value, int single_use);
 Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use, 
-                                           int once_used_ok, int context);
+                                           int once_used_ok, int context, int *potential_size);
 void scheme_optimize_info_used_top(Optimize_Info *info);
+
+Scheme_Object *scheme_estimate_closure_size(Scheme_Object *e);
+Scheme_Object *scheme_no_potential_size(Scheme_Object *value);
 
 void scheme_optimize_mutated(Optimize_Info *info, int pos);
 void scheme_optimize_produces_flonum(Optimize_Info *info, int pos);
@@ -2318,7 +2321,7 @@ Scheme_Object *scheme_optimize_shift(Scheme_Object *obj, int delta, int after_de
 Scheme_Object *scheme_clone_closure_compilation(int dup_ok, Scheme_Object *obj, Optimize_Info *info, int delta, int closure_depth);
 Scheme_Object *scheme_shift_closure_compilation(Scheme_Object *obj, int delta, int after_depth);
 
-int scheme_closure_body_size(Scheme_Closure_Data *closure_data, int check_assign);
+int scheme_closure_body_size(Scheme_Closure_Data *closure_data, int check_assign, Optimize_Info *info);
 int scheme_closure_argument_flags(Scheme_Closure_Data *closure_data, int i);
 int scheme_closure_has_top_level(Scheme_Closure_Data *data);
 
@@ -2861,7 +2864,7 @@ Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modid
 Scheme_Env *scheme_get_kernel_env();
 int scheme_is_kernel_env();
 Scheme_Env *scheme_get_unsafe_env();
-Scheme_Env *scheme_get_flonum_env();
+Scheme_Env *scheme_get_flfxnum_env();
 
 void scheme_install_initial_module_set(Scheme_Env *env);
 Scheme_Bucket_Table *scheme_clone_toplevel(Scheme_Bucket_Table *ht, Scheme_Env *home);
@@ -2874,7 +2877,7 @@ Scheme_Module *scheme_extract_compiled_module(Scheme_Object *o);
 
 int scheme_is_kernel_modname(Scheme_Object *modname);
 int scheme_is_unsafe_modname(Scheme_Object *modname);
-int scheme_is_flonum_modname(Scheme_Object *modname);
+int scheme_is_flfxnum_modname(Scheme_Object *modname);
 
 void scheme_clear_modidx_cache(void);
 void scheme_clear_shift_cache(void);
@@ -2917,6 +2920,8 @@ extern const char *scheme_var_ref_string;
 extern const char *scheme_begin_stx_string;
 
 void scheme_wrong_rator(Scheme_Object *rator, int argc, Scheme_Object **argv);
+
+void scheme_non_fixnum_result(const char *name, Scheme_Object *o);
 
 void scheme_raise_out_of_memory(const char *where, const char *msg, ...);
 

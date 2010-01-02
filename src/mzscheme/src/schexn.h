@@ -7,6 +7,7 @@ enum {
   MZEXN_FAIL_CONTRACT,
   MZEXN_FAIL_CONTRACT_ARITY,
   MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO,
+  MZEXN_FAIL_CONTRACT_NON_FIXNUM_RESULT,
   MZEXN_FAIL_CONTRACT_CONTINUATION,
   MZEXN_FAIL_CONTRACT_VARIABLE,
   MZEXN_FAIL_SYNTAX,
@@ -37,14 +38,15 @@ static exn_rec exn_table[] = {
   { 2, NULL, NULL, 0, NULL, 2 },
   { 2, NULL, NULL, 0, NULL, 2 },
   { 2, NULL, NULL, 0, NULL, 2 },
+  { 2, NULL, NULL, 0, NULL, 2 },
   { 3, NULL, NULL, 0, NULL, 2 },
   { 3, NULL, NULL, 0, NULL, 1 },
   { 3, NULL, NULL, 0, NULL, 1 },
-  { 3, NULL, NULL, 0, NULL, 8 },
-  { 3, NULL, NULL, 0, NULL, 8 },
+  { 3, NULL, NULL, 0, NULL, 9 },
+  { 3, NULL, NULL, 0, NULL, 9 },
   { 2, NULL, NULL, 0, NULL, 1 },
-  { 2, NULL, NULL, 0, NULL, 11 },
-  { 2, NULL, NULL, 0, NULL, 11 },
+  { 2, NULL, NULL, 0, NULL, 12 },
+  { 2, NULL, NULL, 0, NULL, 12 },
   { 2, NULL, NULL, 0, NULL, 1 },
   { 2, NULL, NULL, 0, NULL, 1 },
   { 2, NULL, NULL, 0, NULL, 1 },
@@ -66,6 +68,7 @@ static exn_rec *exn_table;
   exn_table[MZEXN_FAIL_CONTRACT].args = 2;
   exn_table[MZEXN_FAIL_CONTRACT_ARITY].args = 2;
   exn_table[MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO].args = 2;
+  exn_table[MZEXN_FAIL_CONTRACT_NON_FIXNUM_RESULT].args = 2;
   exn_table[MZEXN_FAIL_CONTRACT_CONTINUATION].args = 2;
   exn_table[MZEXN_FAIL_CONTRACT_VARIABLE].args = 3;
   exn_table[MZEXN_FAIL_SYNTAX].args = 3;
@@ -103,6 +106,7 @@ static exn_rec *exn_table;
   SETUP_STRUCT(MZEXN_FAIL_CONTRACT, EXN_PARENT(MZEXN_FAIL), "exn:fail:contract", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_CONTRACT_ARITY, EXN_PARENT(MZEXN_FAIL_CONTRACT), "exn:fail:contract:arity", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO, EXN_PARENT(MZEXN_FAIL_CONTRACT), "exn:fail:contract:divide-by-zero", 0, NULL, scheme_null, NULL)
+  SETUP_STRUCT(MZEXN_FAIL_CONTRACT_NON_FIXNUM_RESULT, EXN_PARENT(MZEXN_FAIL_CONTRACT), "exn:fail:contract:non-fixnum-result", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_CONTRACT_CONTINUATION, EXN_PARENT(MZEXN_FAIL_CONTRACT), "exn:fail:contract:continuation", 0, NULL, scheme_null, NULL)
   SETUP_STRUCT(MZEXN_FAIL_CONTRACT_VARIABLE, EXN_PARENT(MZEXN_FAIL_CONTRACT), "exn:fail:contract:variable", 1, MZEXN_FAIL_CONTRACT_VARIABLE_FIELDS, scheme_null, scheme_make_prim(variable_field_check))
   SETUP_STRUCT(MZEXN_FAIL_SYNTAX, EXN_PARENT(MZEXN_FAIL), "exn:fail:syntax", 1, MZEXN_FAIL_SYNTAX_FIELDS, MZEXN_FAIL_SYNTAX_PROPS, scheme_make_prim(syntax_field_check))

@@ -392,6 +392,7 @@
 "(#%require '#%expobs"
 "(only '#%foreign) "
 "(only '#%unsafe) "
+"(only '#%flfxnum) "
 " '#%paramz"
 " '#%network"
 " '#%utils"

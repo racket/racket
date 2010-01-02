@@ -134,7 +134,7 @@ static Scheme_Object *kernel_modname;
 static Scheme_Object *kernel_symbol;
 static Scheme_Object *kernel_modidx;
 static Scheme_Module *kernel;
-static Scheme_Object *flonum_modname;
+static Scheme_Object *flfxnum_modname;
 static Scheme_Object *unsafe_modname;
 
 /* global read-only symbols */
@@ -334,7 +334,7 @@ void scheme_init_module(Scheme_Env *env)
   REGISTER_SO(kernel_modname);
   REGISTER_SO(kernel_modidx);
   REGISTER_SO(unsafe_modname);
-  REGISTER_SO(flonum_modname);
+  REGISTER_SO(flfxnum_modname);
   kernel_symbol = scheme_intern_symbol("#%kernel");
   kernel_modname = scheme_intern_resolved_module_path(kernel_symbol);
   kernel_modidx = scheme_make_modidx(scheme_make_pair(quote_symbol,
@@ -343,7 +343,7 @@ void scheme_init_module(Scheme_Env *env)
                                      scheme_false, kernel_modname);
   (void)scheme_hash_key(kernel_modidx);
   unsafe_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%unsafe"));
-  flonum_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%flonum"));
+  flfxnum_modname = scheme_intern_resolved_module_path(scheme_intern_symbol("#%flfxnum"));
 
   REGISTER_SO(module_symbol);
   REGISTER_SO(module_begin_symbol);
@@ -603,16 +603,16 @@ int scheme_is_unsafe_modname(Scheme_Object *modname)
   return SAME_OBJ(modname, unsafe_modname);
 }
 
-int scheme_is_flonum_modname(Scheme_Object *modname)
+int scheme_is_flfxnum_modname(Scheme_Object *modname)
 {
-  return SAME_OBJ(modname, flonum_modname);
+  return SAME_OBJ(modname, flfxnum_modname);
 }
 
 static int is_builtin_modname(Scheme_Object *modname) 
 {
   return (SAME_OBJ(modname, kernel_modname)
           || SAME_OBJ(modname, unsafe_modname)
-          || SAME_OBJ(modname, flonum_modname));
+          || SAME_OBJ(modname, flfxnum_modname));
 }
 
 Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env)
@@ -1798,7 +1798,7 @@ static Scheme_Object *namespace_unprotect_module(int argc, Scheme_Object *argv[]
   code_insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
 
   if (!SAME_OBJ(name, kernel_modname)
-      && !SAME_OBJ(name, flonum_modname)) {
+      && !SAME_OBJ(name, flfxnum_modname)) {
     if (SAME_OBJ(name, unsafe_modname))
       menv2 = scheme_get_unsafe_env();
     else
@@ -2460,8 +2460,8 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
                 im = kernel;
               else if (SAME_OBJ(name, unsafe_modname))
                 im = scheme_get_unsafe_env()->module;
-              else if (SAME_OBJ(name, flonum_modname))
-                im = scheme_get_flonum_env()->module;
+              else if (SAME_OBJ(name, flfxnum_modname))
+                im = scheme_get_flfxnum_env()->module;
               else
                 im = (Scheme_Module *)scheme_hash_get(menv->module_registry, name);
               
@@ -2856,8 +2856,8 @@ static Scheme_Object *module_export_protected_p(int argc, Scheme_Object **argv)
     mv = (Scheme_Object *)kernel;
   else if (SAME_OBJ(modname, unsafe_modname))
     mv = (Scheme_Object *)scheme_get_unsafe_env()->module;
-  else if (SAME_OBJ(modname, flonum_modname))
-    mv = (Scheme_Object *)scheme_get_flonum_env()->module;
+  else if (SAME_OBJ(modname, flfxnum_modname))
+    mv = (Scheme_Object *)scheme_get_flfxnum_env()->module;
   else
     mv = scheme_hash_get(env->module_registry, modname);
   if (!mv) {
@@ -3151,8 +3151,8 @@ static Scheme_Module *module_load(Scheme_Object *name, Scheme_Env *env, const ch
     return kernel;
   else if (name == unsafe_modname)
     return scheme_get_unsafe_env()->module;
-  else if (name == flonum_modname)
-    return scheme_get_flonum_env()->module;
+  else if (name == flfxnum_modname)
+    return scheme_get_flfxnum_env()->module;
   else {
     Scheme_Module *m;
 
@@ -3237,8 +3237,8 @@ Scheme_Env *scheme_module_access(Scheme_Object *name, Scheme_Env *env, int rev_m
     return scheme_get_kernel_env();
   else if ((name == unsafe_modname) && !rev_mod_phase)
     return scheme_get_unsafe_env();
-  else if ((name == flonum_modname) && !rev_mod_phase)
-    return scheme_get_flonum_env();
+  else if ((name == flfxnum_modname) && !rev_mod_phase)
+    return scheme_get_flfxnum_env();
   else {
     Scheme_Object *chain;
     Scheme_Env *menv;
@@ -3578,7 +3578,7 @@ int scheme_module_export_position(Scheme_Object *modname, Scheme_Env *env, Schem
 
   if (SAME_OBJ(modname, kernel_modname)
       || SAME_OBJ(modname, unsafe_modname)
-      || SAME_OBJ(modname, flonum_modname))
+      || SAME_OBJ(modname, flfxnum_modname))
     return -1;
 
   m = module_load(modname, env, NULL);
@@ -3603,8 +3603,8 @@ Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Sch
     name = SCHEME_STX_SYM(name);
     return scheme_lookup_in_table(kenv->syntax, (char *)name);
   } else if (SAME_OBJ(modname, unsafe_modname)
-             || SAME_OBJ(modname, flonum_modname)) {
-    /* no unsafe or flonum syntax */
+             || SAME_OBJ(modname, flfxnum_modname)) {
+    /* no unsafe or flfxnum syntax */
     return NULL;
   } else {
     Scheme_Env *menv;
@@ -4551,8 +4551,8 @@ Scheme_Object *scheme_builtin_value(const char *name)
   if (v)
     return v;
 
-  /* Try flonum next: */
-  a[0] = flonum_modname;
+  /* Try flfxnum next: */
+  a[0] = flfxnum_modname;
   v = _dynamic_require(2, a, scheme_get_env(NULL), 0, 0, 0, 0, 0, -1);
   if (v)
     return v;
@@ -4865,8 +4865,8 @@ module_execute(Scheme_Object *data)
 
   if (SAME_OBJ(m->modname, kernel_modname))
     old_menv = scheme_get_kernel_env();
-  else if (SAME_OBJ(m->modname, flonum_modname))
-    old_menv = scheme_get_flonum_env();
+  else if (SAME_OBJ(m->modname, flfxnum_modname))
+    old_menv = scheme_get_flfxnum_env();
   else if (SAME_OBJ(m->modname, unsafe_modname))
     old_menv = scheme_get_unsafe_env();
   else
@@ -5133,9 +5133,53 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   info->context = (Scheme_Object *)m;
 
   cnt = SCHEME_VEC_SIZE(m->body);
+
+  if (info->enforce_const) {
+    /* For each identifier bound to a procedure, register an initial
+       size estimate, which is used to discourage early loop unrolling 
+       at the expense of later inlining. */
+    for (i_m = 0; i_m < cnt; i_m++) {
+      e = SCHEME_VEC_ELS(m->body)[i_m];
+      if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_syntax_type)
+	  && (SCHEME_PINT_VAL(e) == DEFINE_VALUES_EXPD)) {
+	int n;
+
+	e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
+        vars = SCHEME_CAR(e);
+	e = SCHEME_CDR(e);
+
+        n = scheme_list_length(vars);
+        if (n == 1) {
+          if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type)) {
+            Scheme_Toplevel *tl;
+            
+            tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
+            
+            if (!(SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_MUTATED)) {
+              int pos;
+              if (!consts)
+                consts = scheme_make_hash_table(SCHEME_hash_ptr);
+              pos = tl->position;
+	      scheme_hash_set(consts, 
+                              scheme_make_integer(pos),
+                              scheme_estimate_closure_size(e));
+            }
+          }
+        }
+      }
+    }
+
+    if (consts) {
+      info->top_level_consts = consts;
+      consts = NULL;
+    }
+  }
+
   for (i_m = 0; i_m < cnt; i_m++) {
     /* Optimize this expression: */
+    info->use_psize = 1;
     e = scheme_optimize_expr(SCHEME_VEC_ELS(m->body)[i_m], info, 0);
+    info->use_psize = 0;
     SCHEME_VEC_ELS(m->body)[i_m] = e;
 
     if (info->enforce_const) {
@@ -5265,9 +5309,9 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 	while (1) {
 	  /* Re-optimize this expression. We can optimize anything without
              shift-cloning, since there are no local variables in scope. */
-	  e = scheme_optimize_expr(SCHEME_VEC_ELS(m->body)[start_simltaneous], info, 0);
+          e = scheme_optimize_expr(SCHEME_VEC_ELS(m->body)[start_simltaneous], info, 0);
 	  SCHEME_VEC_ELS(m->body)[start_simltaneous] = e;
- 
+
           if (re_consts) {
             /* Install optimized closures into constant table: */
             Scheme_Object *rpos;
@@ -5489,14 +5533,14 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   if (SAME_OBJ(m->modname, kernel_modname)
       || SAME_OBJ(m->modname, unsafe_modname)
-      || SAME_OBJ(m->modname, flonum_modname)) {
+      || SAME_OBJ(m->modname, flfxnum_modname)) {
     /* Too confusing. Give it a different name while compiling. */
     Scheme_Object *k2;
     const char *kname;
     if (SAME_OBJ(m->modname, kernel_modname))
       kname = "#%kernel";
-    else if (SAME_OBJ(m->modname, flonum_modname))
-      kname = "#%flonum";
+    else if (SAME_OBJ(m->modname, flfxnum_modname))
+      kname = "#%flfxnum";
     else
       kname = "#%unsafe";
     k2 = scheme_intern_resolved_module_path(scheme_make_symbol(kname)); /* uninterned! */
@@ -8833,8 +8877,8 @@ void scheme_do_module_rename_unmarshal(Scheme_Object *rn, Scheme_Object *info,
     me = kernel->me;
   } else if (SAME_OBJ(unsafe_modname, name)) {
     me = scheme_get_unsafe_env()->module->me;
-  } else if (SAME_OBJ(flonum_modname, name)) {
-    me = scheme_get_flonum_env()->module->me;
+  } else if (SAME_OBJ(flfxnum_modname, name)) {
+    me = scheme_get_flfxnum_env()->module->me;
   } else {
     if (!export_registry) {
       env = scheme_get_env(scheme_current_config());

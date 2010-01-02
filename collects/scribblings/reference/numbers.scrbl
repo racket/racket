@@ -3,7 +3,10 @@
           scheme/math
           scribble/extract
           (for-label scheme/math
-                     scheme/flonum))
+                     scheme/flonum
+                     scheme/fixnum
+                     scheme/unsafe/ops
+                     scheme/require))
 
 @(define math-eval (make-base-eval))
 @(interaction-eval #:eval math-eval (require scheme/math))
@@ -959,25 +962,67 @@ first slot is position @scheme[0], and the last slot is one less than
 @defmodule[scheme/fixnum]
 
 The @schememodname[scheme/fixnum] library provides operations like
-@scheme[fx+] that consume and produce only fixnums. The
-operations in this library are meant to be safe versions of the
-unsafe fixnum operations like @scheme[unsafe-fx+]. 
+@scheme[fx+] that consume and produce only fixnums. The operations in
+this library are meant to be safe versions of unsafe operations like
+@scheme[unsafe-fx+]. These safe operations are generally no faster
+than using generic primitives like @scheme[+].
 
-Note that these operations are slow, much slower than just using
-the regular mzscheme primitives, e.g. @scheme[+], even just on
-fixnums. The expected
-usecase for this library to develop some code using it and then
-to replace the @scheme[require] of @schememodname[scheme/fixnum]
-with 
+The expected use of the @schememodname[scheme/fixnum] library is for
+code where the @scheme[require] of @schememodname[scheme/fixnum] is
+replaced with
+
 @schemeblock[(require (filtered-in
-                       (λ (name) (and (regexp-match #rx"unsafe-" name)
-                                      (regexp-replace #rx"unsafe-" name "")))
+                       (λ (name) (regexp-replace #rx"unsafe-" name ""))
                        scheme/unsafe/ops))]
-to drop in this library's unsafe cousins or, if you find some crashing errors
-in code that uses the unsafe functions, to use this library to help debug
-the problems.
 
-@(include-extracted (lib "fixnum.ss" "scheme"))
+to drop in unsafe versions of the library. Alternately, when
+encountering crashes with code that uses unsafe fixnum operations, use
+the @schememodname[scheme/fixnum] library to help debug the problems.
+
+@deftogether[(
+@defproc[(fx+ [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(fx- [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(fx* [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(fxquotient [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(fxremainder [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(fxabs [a fixnum?]) fixnum?]
+)]{
+
+Safe versions of @scheme[unsafe-fx+], @scheme[unsafe-fx-],
+@scheme[unsafe-fx*], @scheme[unsafe-fxquotient],
+@scheme[unsafe-fxremainder], and @scheme[unsafe-fxabs]. The
+@exnraise[exn:fail:contract:non-fixnum-result] if the arithmetic
+result would not be a fixnum.}
+
+
+@deftogether[(
+@defproc[(fxand [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(fxior [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(fxxor [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(fxnot [a fixnum?]) fixnum?]
+@defproc[(fxlshift [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(fxrshift [a fixnum?][b fixnum?]) fixnum?]
+)]{
+
+Safe versions of @scheme[unsafe-fxand], @scheme[unsafe-fxior],
+@scheme[unsafe-fxxor], @scheme[unsafe-fxnot],
+@scheme[unsafe-fxlshift], and @scheme[unsafe-fxrshift].  The
+@exnraise[exn:fail:contract:non-fixnum-result] if the arithmetic
+result would not be a fixnum.}
+
+
+@deftogether[(
+@defproc[(fx= [a fixnum?][b fixnum?]) boolean?]
+@defproc[(fx< [a fixnum?][b fixnum?]) boolean?]
+@defproc[(fx> [a fixnum?][b fixnum?]) boolean?]
+@defproc[(fx<= [a fixnum?][b fixnum?]) boolean?]
+@defproc[(fx>= [a fixnum?][b fixnum?]) boolean?]
+)]{
+
+Safe versions of @scheme[unsafe-fx=],  @scheme[unsafe-fx<],  @scheme[unsafe-fx>],
+ @scheme[unsafe-fx<=],  and @scheme[unsafe-fx>=].}
+
+
 
 @; ------------------------------------------------------------------------
 @section{Extra Constants and Functions}

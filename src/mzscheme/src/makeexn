@@ -37,6 +37,7 @@ propeties (the latter in curly braces), strings are contracts/comments.
                      (arity []
                             "application with the wrong number of arguments")
                      (divide-by-zero [] "divide by zero")
+                     (non-fixnum-result [] "arithmetic produced a non-fixnum result")
                      (continuation [] "attempt to cross a continuation barrier")
                      (variable [variable_field_check
                                 (id "symbol" "the variable's identifier")]
@@ -213,8 +214,9 @@ Not an exception in the above sense:
   (define exceptions (map (λ (x) (gen-ds (ex-string x) (fields x) (parent-sym x))) l))
   (define structs (map (λ (x) (apply gen-ds x))
                        '((arity-at-least (arity-at-least-value) #t)
-                         (date (time-zone-offset dst? year-day week-day year month day hour minute second) #t)
-                         (srcloc (span position column line source) #t))))
+                         (date (date-time-zone-offset date-dst? date-year-day date-week-day date-year 
+                                 date-month date-day date-hour date-minute date-second) #t)
+                         (srcloc (srcloc-span srcloc-position srcloc-column srcloc-line srcloc-source) #t))))
   
   (with-output-to-file filename #:exists 'replace
     (λ ()

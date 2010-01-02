@@ -56,7 +56,7 @@ static int env_uid_counter     = 0;
 static Scheme_Object *kernel_symbol;
 static Scheme_Env    *kernel_env;
 static Scheme_Env    *unsafe_env;
-static Scheme_Env    *flonum_env;
+static Scheme_Env    *flfxnum_env;
 
 #define MAX_CONST_LOCAL_POS 64
 #define MAX_CONST_LOCAL_TYPES 2
@@ -437,27 +437,27 @@ static void init_unsafe(Scheme_Env *env)
 #endif
 }
 
-static void init_flonum(Scheme_Env *env)
+static void init_flfxnum(Scheme_Env *env)
 {
   Scheme_Module_Phase_Exports *pt;
-  REGISTER_SO(flonum_env);
+  REGISTER_SO(flfxnum_env);
 
-  flonum_env = scheme_primitive_module(scheme_intern_symbol("#%flonum"), env);
+  flfxnum_env = scheme_primitive_module(scheme_intern_symbol("#%flfxnum"), env);
 
-  scheme_init_flonum_number(flonum_env);
-  scheme_init_flonum_numarith(flonum_env);
-  scheme_init_flonum_numcomp(flonum_env);
+  scheme_init_flfxnum_number(flfxnum_env);
+  scheme_init_flfxnum_numarith(flfxnum_env);
+  scheme_init_flfxnum_numcomp(flfxnum_env);
 
-  scheme_finish_primitive_module(flonum_env);
-  pt = flonum_env->module->me->rt;
+  scheme_finish_primitive_module(flfxnum_env);
+  pt = flfxnum_env->module->me->rt;
   scheme_populate_pt_ht(pt);
-  scheme_protect_primitive_provide(flonum_env, NULL);
+  scheme_protect_primitive_provide(flfxnum_env, NULL);
 
 #if USE_COMPILED_STARTUP
-  if (builtin_ref_counter != (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT + EXPECTED_FLONUM_COUNT)) {
-    printf("Flonum count %d doesn't match expected count %d\n",
+  if (builtin_ref_counter != (EXPECTED_PRIM_COUNT + EXPECTED_UNSAFE_COUNT + EXPECTED_FLFXNUM_COUNT)) {
+    printf("Flfxnum count %d doesn't match expected count %d\n",
 	   builtin_ref_counter - EXPECTED_PRIM_COUNT - EXPECTED_UNSAFE_COUNT, 
-           EXPECTED_FLONUM_COUNT);
+           EXPECTED_FLFXNUM_COUNT);
     abort();
   }
 #endif
@@ -467,8 +467,8 @@ Scheme_Env *scheme_get_unsafe_env() {
   return unsafe_env;
 }
 
-Scheme_Env *scheme_get_flonum_env() {
-  return flonum_env;
+Scheme_Env *scheme_get_flfxnum_env() {
+  return flfxnum_env;
 }
 
 static Scheme_Env *place_instance_init_post_kernel(int initial_main_os_thread) {
@@ -724,7 +724,7 @@ static void make_kernel_env(void)
 #endif
 
   init_unsafe(env);
-  init_flonum(env);
+  init_flfxnum(env);
   
   scheme_init_print_global_constants();
 
@@ -1383,7 +1383,7 @@ Scheme_Object **scheme_make_builtin_references_table(void)
     else if (j == 1)
       kenv = unsafe_env;
     else
-      kenv = flonum_env;
+      kenv = flfxnum_env;
     
     ht = kenv->toplevel;
     
@@ -1416,7 +1416,7 @@ Scheme_Hash_Table *scheme_map_constants_to_globals(void)
     else if (j == 1)
       kenv = unsafe_env;
     else
-      kenv = flonum_env;
+      kenv = flfxnum_env;
     
     ht = kenv->toplevel;
     bs = ht->buckets;
@@ -1446,7 +1446,7 @@ const char *scheme_look_for_primitive(void *code)
     else if (j == 1)
       kenv = unsafe_env;
     else
-      kenv = flonum_env;
+      kenv = flfxnum_env;
     
     ht = kenv->toplevel;
     bs = ht->buckets;
@@ -3059,7 +3059,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   if (modname && !(flags & SCHEME_RESOLVE_MODIDS) 
       && (!(scheme_is_kernel_modname(modname) 
             || scheme_is_unsafe_modname(modname)
-            || scheme_is_flonum_modname(modname))
+            || scheme_is_flfxnum_modname(modname))
           || (flags & SCHEME_REFERENCING))) {
     /* Create a module variable reference, so that idx is preserved: */
     return scheme_hash_module_variable(env->genv, modidx, find_id, 
@@ -3098,10 +3098,10 @@ Scheme_Object *scheme_extract_unsafe(Scheme_Object *o)
     return NULL;
 }
 
-Scheme_Object *scheme_extract_flonum(Scheme_Object *o)
+Scheme_Object *scheme_extract_flfxnum(Scheme_Object *o)
 {
   Scheme_Env *home = ((Scheme_Bucket_With_Home *)o)->home;
-  if (home && home->module && scheme_is_flonum_modname(home->module->modname))
+  if (home && home->module && scheme_is_flfxnum_modname(home->module->modname))
     return (Scheme_Object *)((Scheme_Bucket *)o)->val;
   else
     return NULL;
@@ -3577,7 +3577,7 @@ int scheme_optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos)
 }
 
 static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int j, int *closure_offset, int *single_use, 
-                                              int *not_ready, int once_used_ok, int context)
+                                              int *not_ready, int once_used_ok, int context, int *potential_size)
 {
   Scheme_Object *p, *n;
   int delta = 0;
@@ -3605,6 +3605,12 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
            but which wasn't replaced with more information. */
         if (not_ready)
           *not_ready = SCHEME_TRUEP(SCHEME_CAR(n));
+        break;
+      }
+      if (SCHEME_BOXP(n)) {
+        /* A potential-size record: */
+        if (potential_size)
+          *potential_size = SCHEME_INT_VAL(SCHEME_BOX_VAL(n));
         break;
       }
       if (single_use)
@@ -3645,7 +3651,7 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
           if (!*single_use)
             single_use = NULL;
         }
-	n = do_optimize_info_lookup(info, pos, j, NULL, single_use, NULL, 0, context);
+	n = do_optimize_info_lookup(info, pos, j, NULL, single_use, NULL, 0, context, potential_size);
 
 	if (!n) {
 	  /* Return shifted reference to other local: */
@@ -3665,16 +3671,16 @@ static Scheme_Object *do_optimize_info_lookup(Optimize_Info *info, int pos, int 
 }
 
 Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *closure_offset, int *single_use, 
-                                           int once_used_ok, int context)
+                                           int once_used_ok, int context, int *potential_size)
 {
-  return do_optimize_info_lookup(info, pos, 0, closure_offset, single_use, NULL, once_used_ok, context);
+  return do_optimize_info_lookup(info, pos, 0, closure_offset, single_use, NULL, once_used_ok, context, potential_size);
 }
 
 int scheme_optimize_info_is_ready(Optimize_Info *info, int pos)
 {
   int closure_offset, single_use, ready = 1;
   
-  do_optimize_info_lookup(info, pos, 0, &closure_offset, &single_use, &ready, 0, 0);
+  do_optimize_info_lookup(info, pos, 0, &closure_offset, &single_use, &ready, 0, 0, NULL);
 
   return ready;
 }
@@ -3694,6 +3700,7 @@ Optimize_Info *scheme_optimize_info_add_frame(Optimize_Info *info, int orig, int
   naya->top_level_consts = info->top_level_consts;
   naya->context = info->context;
   naya->vclock = info->vclock;
+  naya->use_psize = info->use_psize;
 
   return naya;
 }
@@ -3719,6 +3726,7 @@ int scheme_optimize_info_get_shift(Optimize_Info *info, int pos)
 void scheme_optimize_info_done(Optimize_Info *info)
 {
   info->next->size += info->size;
+  info->next->psize += info->psize;
   info->next->vclock = info->vclock;
 }
 
