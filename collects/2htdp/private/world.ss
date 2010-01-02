@@ -210,6 +210,10 @@
        (rec    on-receive))
       
       (define drawing #f) ;; Boolean; is a draw callback scheduled?
+      (define (set-draw#!) (set! draw# (random 3)) (set! drawing #f))
+      (define draw# 0) 
+      (set-draw#!)
+      
       (define-syntax-rule (def/pub-cback (name arg ...) transform)
         ;; Any ... -> Boolean
         (define/public (name arg ...) 
@@ -218,6 +222,13 @@
              (with-handlers ([exn? (handler #t)])
                (define tag (format "~a callback" 'transform))
                (define nw (transform (send world get) arg ...))
+               (define (d) (pdraw) (set-draw#!))
+               ;; ---
+               ;; [Listof (Box [d | void])]
+               (define w '()) 
+               ;; set all to void, then w to null 
+               ;; when a high priority draw is scheduledd
+               ;; --- 
                (when (package? nw)
                  (broadcast (package-message nw))
                  (set! nw (package-world nw)))
@@ -230,14 +241,24 @@
 		     (when draw (pdraw))
 		     (callback-stop! 'name)
 		     (enable-images-button))
-		   (let ([changed-world? (send world set tag nw)])
-		     (unless changed-world?
-                       #;
-		       (when draw (pdraw)) 
-                       (when (and draw (not drawing)) 
-                         (set! drawing #t)
-                         (queue-callback (lambda () (pdraw) (set! drawing #f))
-                                         #f)) ;; low priority, otherwise it's too fast
+                   (let ([changed-world? (send world set tag nw)])
+		     (unless changed-world? 
+                       (when draw 
+                         (cond
+                           [(not drawing)
+                            (set! drawing #t)
+                            (let ([b (box d)])
+                              (set! w (cons b w))
+                              ;; low priority, otherwise it's too fast
+                              (queue-callback (lambda () (unbox b)) #f))]
+                           [(< draw# 0)
+                            (set-draw#!)
+                            (for-each (lambda (b) (set-box! b void)) w)
+                            (set! w '())
+                            ;; high!!  the scheduled callback didn't fire
+                            (queue-callback (lambda () (d)) #t)]
+                           [else 
+                            (set! draw# (- draw# 1))]))
 		       (when (pstop)
 			 (when last-picture 
 			   (set! draw last-picture)
@@ -259,9 +280,13 @@
       (def/pub-cback (prec msg) rec)
       
       ;; ----------------------------------------------------------------------
-      ;; draw : render this world 
-      (define/private (pdraw) (show (ppdraw)))
+      ;; -> Void 
+      ;; draw : render the given world or this world (if #f)
+      (define/private (pdraw) 
+        (show (ppdraw)))
       
+      ;; -> Scene
+      ;; produce the scene for the this state
       (define/private (ppdraw)
         (check-scene-result (name-of draw 'your-draw) (draw (send world get))))
       
