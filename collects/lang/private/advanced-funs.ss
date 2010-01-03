@@ -11,6 +11,12 @@
   
   (provide-and-document
    procedures
+
+   ("Numbers: Integers, Rationals, Reals, Complex, Exacts, Inexacts"
+    (random (case->
+             (integer -> integer)
+             (-> (and/c real inexact? (>/c 0) (</c 1))))
+            "to generate a random natural number less than some given integer, or to generate a random inexact number between 0.0 and 1.0 exclusive"))
    
    ("Reading and Printing"
     (with-input-from-file (string (-> any) -> any)
@@ -55,8 +61,6 @@
      "to produce the first element on the list whose first is equal? to v; otherwise it produces false"))
    
    ("Misc"
-    (random (-> (and/c real inexact? (>/c 0) (</c 1)))
-     "to generate a random number between 0 and 1 (excl).")
     (gensym (-> symbol?)
      "to generate a new symbol, different from all symbols in the program")
     (sleep (-> positive-number void)

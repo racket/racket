@@ -66,6 +66,6 @@
    procedures
 
    (all-from-except intermediate: lang/htdp-intermediate-lambda procedures
-		    cons list* append)
+		    cons list* append random)
    (all-from advanced: lang/private/advanced-funs procedures))
   )
