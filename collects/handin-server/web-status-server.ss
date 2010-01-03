@@ -1,5 +1,7 @@
-#lang scheme
+#lang scheme/base
+
 (require scheme/list
+         scheme/path
          scheme/file
          scheme/date
          net/uri-codec

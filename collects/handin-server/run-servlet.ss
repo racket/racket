@@ -1,4 +1,4 @@
-#lang scheme
+#lang scheme/base
 
 (define default-context-length (error-print-context-length))
 
@@ -6,14 +6,14 @@
 ;; "web-server/servlet-env.ss", and parts from `serve/launch/wait' in
 ;; "web-server/servlet-dispatch.ss"
 
-(require web-server/web-server
+(require scheme/unit
+         scheme/async-channel
+         web-server/web-server
          web-server/servlet-dispatch
          web-server/managers/lru
          (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)
          (prefix-in log: web-server/dispatchers/dispatch-log)
-         web-server/private/connection-manager
          web-server/http/request-structs
-         scheme/async-channel
          net/url
          openssl
          net/tcp-sig)
