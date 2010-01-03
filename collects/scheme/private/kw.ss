@@ -395,44 +395,32 @@
                                        ;; body of procedure, where all keyword and optional
                                        ;; argments come in as a pair of arguments (value and
                                        ;; whether the value is valid):
-                                       (syntax-property
-                                        (quasisyntax/loc stx
-                                          ;; We need to push the certificates way down, so that
-                                          ;; the `class' macro (for example) can pull it apart
-                                          ;; enough to insert an additional argument.
-                                          (let #,(syntax-property
-                                                  #`(#,(syntax-property
-                                                        #`[core 
-                                                           #,(annotate-method
-                                                              (syntax-property
-                                                               (quasisyntax/loc stx
-                                                                 (lambda #,(syntax-property
-                                                                            #`(given-kws given-args
-                                                                                         new-plain-id ... 
-                                                                                         opt-arg ...
-                                                                                         opt-arg? ...
-                                                                                         . new-rest)
-                                                                            'certify-mode
-                                                                            'transparent)
-                                                                   ;; sort out the arguments into the user-supplied bindings,
-                                                                   ;; evaluating default-values expressions as needed:
-                                                                   (let-kws given-kws given-args kws-sorted
-                                                                            (let-maybe ([id opt-expr kind] ... . rest)
-                                                                                       (kw-arg ...) (kw-arg? ...)
-                                                                                       (opt-arg ...) (opt-arg? ...)
-                                                                                       (new-plain-id ... . new-rest)
-                                                                                       ;; the original body, finally:
-                                                                                       body1 body ...))))
-                                                               'certify-mode
-                                                               'transparent))]
-                                                        'certify-mode
-                                                        'transparent))
-                                                  'certify-mode
-                                                  'transparent)
-                                            ;; entry points use `core':
-                                            #,result))
-                                        'certify-mode
-                                        'transparent))]
+                                       (quasisyntax/loc stx
+                                         ;; We need to push the certificates way down, so that
+                                         ;; the `class' macro (for example) can pull it apart
+                                         ;; enough to insert an additional argument.
+                                         (let ([core 
+                                                #,(annotate-method
+                                                   (quasisyntax/loc stx
+                                                     (lambda #,(syntax-property
+                                                                #`(given-kws given-args
+                                                                             new-plain-id ... 
+                                                                             opt-arg ...
+                                                                             opt-arg? ...
+                                                                             . new-rest)
+                                                                'certify-mode
+                                                                'transparent)
+                                                       ;; sort out the arguments into the user-supplied bindings,
+                                                       ;; evaluating default-value expressions as needed:
+                                                       (let-kws given-kws given-args kws-sorted
+                                                                (let-maybe ([id opt-expr kind] ... . rest)
+                                                                           (kw-arg ...) (kw-arg? ...)
+                                                                           (opt-arg ...) (opt-arg? ...)
+                                                                           (new-plain-id ... . new-rest)
+                                                                           ;; the original body, finally:
+                                                                           body1 body ...)))))])
+                                           ;; entry points use `core':
+                                           #,result)))]
                                     [mk-no-kws
                                      (lambda ()
                                        ;; entry point without keywords:
