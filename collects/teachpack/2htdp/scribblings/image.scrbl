@@ -621,6 +621,10 @@ The baseline of an image is the place where the bottoms any letters line up, not
 
 @section{Equality Testing of Images}
 
+Two images are equal if they draw exactly the same way, at their current size
+(not neccessarily at all sizes).
+
+@;{
 Image equality testing is done structurally, i.e., based on 
 the construction of the image, 
 although with certain, expected equivalences. For example, 
@@ -679,3 +683,4 @@ Equality testing may contain a few nuances, though:
          @centerline{@image["2htdp/scribblings/ligature.png"]}.
          }
 ]
+}
