@@ -23,7 +23,7 @@
 #  define USE_THREAD_LOCAL
 # if _MSC_VER
 #  define THREAD_LOCAL __declspec(thread)
-# elif defined(OS_X)
+# elif defined(OS_X) || (defined(linux) && defined(MZ_USES_SHARED_LIB))
 #  define IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
 #  if defined(__x86_64__) || defined(__i386__)
 #   define INLINE_GETSPECIFIC_ASSEMBLY_CODE
@@ -236,11 +236,28 @@ START_XFORM_SKIP;
 #  endif
 static inline Thread_Local_Variables *scheme_get_thread_local_variables() __attribute__((used));
 static inline Thread_Local_Variables *scheme_get_thread_local_variables() {
-  Thread_Local_Variables *x;
-#  if defined(__x86_64__)
+  Thread_Local_Variables *x = NULL;
+#  if defined(OS_X)
+#   if defined(__x86_64__)
   asm volatile("movq %%gs:0x8A0, %0" : "=r"(x));
-#  else
+#   else
   asm volatile("movl %%gs:0x468, %0" : "=r"(x));
+#   endif
+#  elif defined(linux) && defined(MZ_USES_SHARED_LIB)
+#   if defined(__x86_64__)
+  asm volatile( "mov %1, %%eax;" 
+  "shl $0x4, %%rax;"
+  "mov %%fs:0x10, %%rdx;" 
+  "mov 0x118(%%rax,%%rdx), %0;"
+      :"=r"(x)        /* output */
+      :"r"(scheme_thread_local_key)
+      :"%rax", "%rdx"  /* clobbered register */
+     );
+#   else
+#    error scheme_get_thread_local_variables no defined on this platform
+#   endif
+#  else
+#    error scheme_get_thread_local_variables no defined on this platform
 #  endif
   return x;
 }

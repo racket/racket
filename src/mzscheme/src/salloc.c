@@ -178,10 +178,8 @@ static int do_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, vo
   return return_code;
 }
 
-int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void *data) XFORM_SKIP_PROC
-{
-#ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
-# ifdef INLINE_GETSPECIFIC_ASSEMBLY_CODE
+#if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS) && defined(INLINE_GETSPECIFIC_ASSEMBLY_CODE)
+static void macosx_get_thread_local_key_for_assembly_code() {
   /* Our [highly questionable] strategy for inlining pthread_getspecific() is taken from 
      the Go implementation (see "http://golang.org/src/libcgo/darwin_386.c").
      In brief, we assume that thread-local variables are going to be
@@ -190,14 +188,12 @@ int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void 
      that particular key and double-check that it worked. */
   pthread_key_t unwanted[16];
   int num_unwanted = 0;
-# endif
 
   while (1) {
     if (pthread_key_create(&scheme_thread_local_key, NULL)) {
       fprintf(stderr, "pthread key create failed\n");
       abort();
     }
-# ifdef INLINE_GETSPECIFIC_ASSEMBLY_CODE
     if (scheme_thread_local_key == 0x108)
       break;
     else {
@@ -207,25 +203,56 @@ int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void 
       }
       unwanted[num_unwanted++] = scheme_thread_local_key;
     }
-# else
-    break;
-# endif
   }
 
-# ifdef INLINE_GETSPECIFIC_ASSEMBLY_CODE
   pthread_setspecific(scheme_thread_local_key, (void *)0xaced);
   if (scheme_get_thread_local_variables() != (Thread_Local_Variables *)0xaced) {
     fprintf(stderr, "pthread getspecific inline hack failed\n");
     abort();
   }
+
   while (num_unwanted--) {
     pthread_key_delete(unwanted[num_unwanted]);
   }
-# endif  
+}
 #endif
 
-  scheme_init_os_thread();
+void scheme_setup_thread_local_key_if_needed() {
+#ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
+# ifdef INLINE_GETSPECIFIC_ASSEMBLY_CODE
+#  if defined(linux)
+    scheme_thread_local_key = 0;
+    if (pthread_key_create(&scheme_thread_local_key, NULL)) {
+      fprintf(stderr, "pthread key create failed\n");
+      abort();
+    }
+    /*
+    if (scheme_thread_local_key != 0) {
+      fprintf(stderr, "pthread getspecific inline hack failed scheme_thread_local_key %i\n", scheme_thread_local_key);
+      abort();
+    }
+    */
+    pthread_setspecific(scheme_thread_local_key, (void *)0xaced);
+    if (scheme_get_thread_local_variables() != (Thread_Local_Variables *)0xaced) {
+      fprintf(stderr, "pthread getspecific inline hack failed to return set data\n");
+      abort();
+    }
+#  else
+    macosx_get_thread_local_key_for_assembly_code();
+#  endif
+# else
+    if (pthread_key_create(&scheme_thread_local_key, NULL)) {
+      fprintf(stderr, "pthread key create failed\n");
+      abort();
+    }
+# endif
+#endif
+}
 
+int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void *data) XFORM_SKIP_PROC
+{
+  scheme_setup_thread_local_key_if_needed();
+  scheme_init_os_thread();
   return do_main_stack_setup(no_auto_statics, _main, data);
 }
 
@@ -273,6 +300,15 @@ void scheme_set_report_out_of_memory(Scheme_Report_Out_Of_Memory_Proc p)
 # ifdef MZ_PRECISE_GC
 extern void GC_attach_current_thread_exceptions_to_handler();
 # endif
+#endif
+
+#ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
+void scheme_set_thread_local_variables(void *tlvas) XFORM_SKIP_PROC {
+  pthread_setspecific(scheme_thread_local_key, tlvas);
+}
+void* scheme_dbg_get_thread_local_variables() XFORM_SKIP_PROC {
+  return pthread_getspecific(scheme_thread_local_key);
+}
 #endif
 
 void scheme_init_os_thread() XFORM_SKIP_PROC
