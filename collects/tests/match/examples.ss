@@ -603,4 +603,9 @@
 	 (match 3
 	  [(or) 1]
 	  [_ 4]))
+   
+   (comp '((1 2) 3)
+         (match `(begin 1 2 3)
+           [`(begin ,es ... ,en)
+            (list es en)]))
    ))

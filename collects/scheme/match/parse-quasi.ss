@@ -42,11 +42,10 @@
          (append-pats pat rpat)
          (raise-syntax-error 'match "non-list pattern inside unquote-splicing"
                              stx #'p)))]
-    [(p dd)
+    [(p dd . rest)
      (ddk? #'dd)
-     (let* ([count (ddk? #'..)]
-            [min (if (number? count) count #f)]
-            [max (if (number? count) count #f)])
+     (let* ([count (ddk? #'dd)]
+            [min (and (number? count) count)])
        (make-GSeq
         (parameterize ([match-...-nesting (add1 (match-...-nesting))])
           (list (list (pq #'p))))
@@ -55,7 +54,7 @@
         (list #f)
         ;; patterns in p get bound to lists
         (list #f)
-        (make-Null (make-Dummy #f))
+        (pq #'rest)
         #f))]
     [(a . b) (make-Pair (pq #'a) (pq #'b))]
     ;; the hard cases
@@ -73,7 +72,7 @@
      (make-Vector (map pq (syntax->list #'(p ...))))]
     [bx
      (box? (syntax-e #'bx))
-     (make-Box (pq (unbox (syntax-e #'bx))))]
+     (make-Box (pq (unbox (syntax-e #'bx))))]    
     [()
      (make-Null (make-Dummy #f))]
     [v
