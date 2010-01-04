@@ -8,8 +8,8 @@
   (list
    (list '(image-height (rectangle 100 100 "solid" "black")) 'val 100)
    (list '(image-baseline (rectangle 100 100 "solid" "black")) 'val 100)
-   (list '(image-height (text "Hello" 24 "black")) 'val 41.0)
-   (list '(image-baseline (text "Hello" 24 "black")) 'val 31.0)
+   (list '(image-height (text "Hello" 24 "black")) 'val 24.0)
+   (list '(image-baseline (text "Hello" 24 "black")) 'val 18.0)
    (list
     '(image-height
       (overlay (circle 20 "solid" "orange") (circle 30 "solid" "purple")))
@@ -34,6 +34,24 @@
     'image
     "f7f1480d58.png")
    (list '(frame (ellipse 20 20 "outline" "black")) 'image "6a5a617f28.png")
+   (list
+    '(above
+      (beside
+       (crop 40 40 40 40 (circle 40 "solid" "palevioletred"))
+       (crop 0 40 40 40 (circle 40 "solid" "lightcoral")))
+      (beside
+       (crop 40 0 40 40 (circle 40 "solid" "lightcoral"))
+       (crop 0 0 40 40 (circle 40 "solid" "palevioletred"))))
+    'image
+    "164b8da7bf6.png")
+   (list
+    '(crop 40 60 40 60 (ellipse 80 120 "solid" "dodgerblue"))
+    'image
+    "6c262f1d24.png")
+   (list
+    '(crop 0 0 40 40 (circle 40 "solid" "chocolate"))
+    'image
+    "8e7c1870c7.png")
    (list '(ellipse 60 60 "solid" "blue") 'image "d92d6a49f1.png")
    (list
     '(scale/xy 3 2 (ellipse 20 30 "solid" "blue"))

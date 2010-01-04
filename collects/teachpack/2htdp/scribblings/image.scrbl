@@ -453,7 +453,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
   
   }
 
-@section{Rotating, Scaling, and Framing Images}
+@section{Rotating, Scaling, Cropping, and Framing Images}
 
 @defproc[(rotate [angle angle?] [image image?]) image?]{
   Rotates @scheme[image] by @scheme[angle] degrees in a counter-clockwise direction.
@@ -488,6 +488,24 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                   (ellipse 60 60 "solid" "blue")]
 }
 
+@defproc[(crop [x real?] [y real?] 
+               [width (and/c real? (not/c negative?))]
+               [height (and/c real? (not/c negative?))]
+               [image image?])
+         image?]{
+
+ Crops @scheme[image] to the rectangle with the upper left at the point (@scheme[x],@scheme[y])
+ and with @scheme[width] and @scheme[height]. 
+ 
+ @image-examples[(crop 0 0 40 40 (circle 40 "solid" "chocolate"))
+                 (crop 40 60 40 60 (ellipse 80 120 "solid" "dodgerblue"))
+                 (above
+                  (beside (crop 40 40 40 40 (circle 40 "solid" "palevioletred"))
+                          (crop 0 40 40 40 (circle 40 "solid" "lightcoral")))
+                  (beside (crop 40 0 40 40 (circle 40 "solid" "lightcoral"))
+                          (crop 0 0 40 40 (circle 40 "solid" "palevioletred"))))]
+                 
+}
 
 @defproc[(frame [image image?]) image?]{
   Returns an image just like @scheme[image], except

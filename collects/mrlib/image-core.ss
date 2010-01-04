@@ -117,6 +117,9 @@ has been moved out).
 ;;  - (make-scale x-factor y-factor shape)
 (define-struct/reg-mk scale (x y shape) #:transparent #:omit-define-syntaxes)
 ;;
+;;  - (make-crop (listof vector) shape)
+(define-struct/reg-mk crop (points shape) #:transparent #:omit-define-syntaxes)
+;;
 ;;  - atomic-shape
 
 ;; an atomic-shape is either:
@@ -160,11 +163,15 @@ has been moved out).
         (λ (x y) 42) 
         (λ (x y) 3)))
 ;; a normalized-shape (subtype of shape) is either
-;;  - (make-overlay normalized-shape simple-shape)
+;;  - (make-overlay normalized-shape cropped-simple-shape)
+;;  - cropped-simple-shape
+
+;; a cropped-simple-shape is either
+;;  - (make-crop (listof points) cropped-simple-shape)
 ;;  - simple-shape
 
 ;; a simple-shape (subtype of shape) is
-;;  - (make-translate dx dy np-atomic-shape)
+;;  - (make-translate dx dy np-atomic-shape))
 ;;  - polygon
 ;;  - line-segment
 
@@ -275,7 +282,7 @@ has been moved out).
     
     (define/public (get-normalized-shape)
       (unless normalized?
-        (set! shape (normalize-shape shape values))
+        (set! shape (normalize-shape shape))
         (set! normalized? #t))
       shape)
     
@@ -395,10 +402,16 @@ has been moved out).
              [dy 0]
              [x-scale 1]
              [y-scale 1]
+             [crops '()]  ;; (listof (listof point))
              [bottom #f])
     (define (scale-point p)
       (make-point (+ dx (* x-scale (point-x p)))
                   (+ dy (* y-scale (point-y p)))))
+    (define (add-crops shape)
+      (let loop ([crops crops])
+        (cond
+          [(null? crops) shape]
+          [else (make-crop (car crops) (loop (cdr crops)))])))
     (cond
       [(translate? shape)
        (loop (translate-shape shape)
@@ -406,6 +419,7 @@ has been moved out).
              (+ dy (* y-scale (translate-dy shape)))
              x-scale
              y-scale
+             crops
              bottom)]
       [(scale? shape)
        (loop (scale-shape shape)
@@ -413,30 +427,41 @@ has been moved out).
              dy
              (* x-scale (scale-x shape))
              (* y-scale (scale-y shape))
+             crops
              bottom)]
       [(overlay? shape)
        (loop (overlay-bottom shape)
-             dx dy x-scale y-scale
+             dx dy x-scale y-scale crops
              (loop (overlay-top shape)
-                   dx dy x-scale y-scale bottom))]
+                   dx dy x-scale y-scale crops
+                   bottom))]
+      [(crop? shape)
+       (loop (crop-shape shape)
+             dx dy x-scale y-scale 
+             (cons (map scale-point (crop-points shape)) crops)
+             bottom)]
       [(polygon? shape)
        (let* ([this-one 
-               (make-polygon (map scale-point (polygon-points shape))
-                             (polygon-mode shape)
-                             (polygon-color shape))])
+               (add-crops 
+                (make-polygon (map scale-point (polygon-points shape))
+                              (polygon-mode shape)
+                              (polygon-color shape)))])
          (if bottom
              (make-overlay bottom (f this-one))
              (f this-one)))]
       [(line-segment? shape)
        (let ([this-one 
-              (make-line-segment (scale-point (line-segment-start shape))
-                                 (scale-point (line-segment-end shape))
-                                 (line-segment-color shape))])
+              (add-crops
+               (make-line-segment (scale-point (line-segment-start shape))
+                                  (scale-point (line-segment-end shape))
+                                  (line-segment-color shape)))])
          (if bottom
              (make-overlay bottom (f this-one))
              (f this-one)))]
       [(np-atomic-shape? shape)
-       (let ([this-one (make-translate dx dy (scale-np-atomic x-scale y-scale shape))])
+       (let ([this-one 
+              (add-crops
+               (make-translate dx dy (scale-np-atomic x-scale y-scale shape)))])
          (if bottom
              (make-overlay bottom (f this-one))
              (f this-one)))]
@@ -510,7 +535,7 @@ has been moved out).
 ;                                                                
 ;                                                         
 
-;; render-image : normalized-shape dc dx dy -> void
+;; render-image : image dc dx dy -> void
 (define (render-image image dc dx dy)
   (let ([pen (send dc get-pen)]
         [brush (send dc get-brush)]
@@ -519,33 +544,33 @@ has been moved out).
     (let loop ([shape (send image get-normalized-shape)])
       (cond
         [(overlay? shape)
-         (render-simple-shape (overlay-bottom shape) dc dx dy)
+         (render-cropped-simple-shape (overlay-bottom shape) dc dx dy)
          (loop (overlay-top shape))]
         [else
-         (render-simple-shape shape dc dx dy)]))
+         (render-cropped-simple-shape shape dc dx dy)]))
     (send dc set-pen pen)
     (send dc set-brush brush)
     (send dc set-font font)
     (send dc set-text-foreground fg)))
 
+(define (render-cropped-simple-shape shape dc dx dy)
+  (cond
+    [(crop? shape)
+     (let ([old-region (send dc get-clipping-region)]
+           [new-region (new region% [dc dc])]
+           [path (polygon-points->path (crop-points shape))])
+       (send new-region set-path path dx dy)
+       (when old-region (send new-region intersect old-region))
+       (send dc set-clipping-region new-region)
+       (render-cropped-simple-shape (crop-shape shape) dc dx dy)
+       (send dc set-clipping-region old-region))]
+    [else
+     (render-simple-shape shape dc dx dy)]))
+
 (define (render-simple-shape simple-shape dc dx dy)
   (cond
     [(polygon? simple-shape)
-     (let ([path (new dc-path%)]
-           [points (polygon-points simple-shape)])
-       (send path move-to (point-x (car points)) (point-y (car points)))
-       (let loop ([point (make-rectangular (point-x (car points)) (point-y (car points)))]
-                  [last-point (car points)]
-                  [points (cdr points)])
-         (unless (null? points)
-           (let* ([vec (make-rectangular (- (point-x (car points))
-                                            (point-x last-point))
-                                         (- (point-y (car points))
-                                            (point-y last-point)))]
-                  [endpoint (+ point vec (make-polar -1 (angle vec)))])
-             (send path line-to (real-part endpoint) (imag-part endpoint))
-             (loop endpoint (car points) (cdr points)))))
-       (send path line-to (point-x (car points)) (point-y (car points)))
+     (let ([path (polygon-points->path (polygon-points simple-shape))])
        (send dc set-pen (mode-color->pen (polygon-mode simple-shape) (polygon-color simple-shape)))
        (send dc set-brush (mode-color->brush (polygon-mode simple-shape) (polygon-color simple-shape)))
        (send dc draw-path path dx dy 'winding))]
@@ -598,6 +623,23 @@ has been moved out).
                       (real-part p)
                       (imag-part p) 
                       #f 0 θ))))]))]))
+
+(define (polygon-points->path points)
+  (let ([path (new dc-path%)])
+    (send path move-to (point-x (car points)) (point-y (car points)))
+    (let loop ([point (make-rectangular (point-x (car points)) (point-y (car points)))]
+               [last-point (car points)]
+               [points (cdr points)])
+      (unless (null? points)
+        (let* ([vec (make-rectangular (- (point-x (car points))
+                                         (point-x last-point))
+                                      (- (point-y (car points))
+                                         (point-y last-point)))]
+               [endpoint (+ point vec (make-polar -1 (angle vec)))])
+          (send path line-to (real-part endpoint) (imag-part endpoint))
+          (loop endpoint (car points) (cdr points)))))
+    (send path line-to (point-x (car points)) (point-y (car points)))
+    path))
 
 #|
 
@@ -742,7 +784,8 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          (struct-out point)
          make-overlay overlay? overlay-top overlay-bottom
          make-translate translate? translate-dx translate-dy translate-shape
-         make-scale scale-x scale-y scale-shape
+         make-scale scale? scale-x scale-y scale-shape
+	 make-crop crop? crop-points crop-shape
          make-ellipse ellipse? ellipse-width ellipse-height ellipse-angle ellipse-mode ellipse-color
          make-text text? text-string text-angle text-y-scale text-color
          text-angle text-size text-face text-family text-style text-weight text-underline

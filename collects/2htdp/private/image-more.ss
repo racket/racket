@@ -258,6 +258,18 @@
 ;                                                                                   
 ;       
 
+;; crop : number number number number image -> image
+;; crops an image to be w x h from (x,y)
+(define/chk (crop x1 y1 width height image)
+  (let ([iw (min width (image-width image))]
+        [ih (min height (image-height image))])
+    (make-image (make-crop (rectangle-points iw ih)
+                           (make-translate (- x1) (- y1) (image-shape image)))
+                (make-bb iw
+                         ih
+                         (min ih (image-baseline image)))
+                #f)))
+
 ;; frame : image -> image
 ;; draws a black frame around a image where the bounding box is
 ;; (useful for debugging images)
@@ -282,24 +294,79 @@
 ;; (in degrees)
 ;; LINEAR TIME OPERATION (sigh)
 (define/chk (rotate angle image)
-  (define left +inf.0)
-  (define top +inf.0)
-  (define right -inf.0)
-  (define bottom -inf.0)
-  (define (add-to-bounding-box/rotate simple-shape)
-    (let ([rotated-shape (rotate-simple angle simple-shape)])
-      (let-values ([(this-left this-top this-right this-bottom) (simple-bb rotated-shape)])
-        (set! left (min this-left left))
-        (set! top (min this-top top))
-        (set! right (max this-right right))
-        (set! bottom (max this-bottom bottom)))
-      rotated-shape))
-  (let* ([rotated (normalize-shape (image-shape image) add-to-bounding-box/rotate)])
-    (make-image (make-translate (- left) (- top) rotated)
-                (make-bb (- right left) (- bottom top) (- bottom top))
+  (let-values ([(rotated-shape ltrb)
+                (rotate-normalized-shape/bb angle 
+                                            (normalize-shape (image-shape image)))])
+    
+    (make-image (make-translate (- (ltrb-left ltrb)) (- (ltrb-top ltrb)) rotated-shape)
+                (make-bb (- (ltrb-right ltrb) (ltrb-left ltrb))
+                         (- (ltrb-bottom ltrb) (ltrb-top ltrb))
+                         (- (ltrb-bottom ltrb) (ltrb-top ltrb)))
                 #f)))
 
-;; simple-bb : simple-shape -> (values number number number number)
+;; rotate-normalized-shape/bb : angle normalized-shape -> (values normalized-shape ltrb)
+(define (rotate-normalized-shape/bb angle shape)
+  (cond
+    [(overlay? shape)
+     (let-values ([(top-shape top-ltrb) (rotate-normalized-shape/bb angle (overlay-top shape))]
+                  [(bottom-shape bottom-ltrb) (rotate-simple/bb angle (overlay-bottom shape))])
+       (values (make-overlay top-shape bottom-shape)
+               (union-ltrb top-ltrb bottom-ltrb)))]
+    [else 
+     (rotate-cropped-simple/bb angle shape)]))
+
+;; rotate-cropped-shape/bb : angle cropped-simple-shape -> (values cropped-simple-shape ltrb)
+(define (rotate-cropped-simple/bb angle shape)
+  (cond
+    [(crop? shape)
+     (let-values ([(rotated-shape ltrb) (rotate-cropped-simple/bb angle (crop-shape shape))])
+       (let* ([rotated-points (rotate-points angle (crop-points shape))]
+              [crop-ltrb (points->ltrb rotated-points)])
+         (values (make-crop rotated-points rotated-shape)
+                 (intersect-ltrb crop-ltrb ltrb))))]
+    [else 
+     (rotate-simple/bb angle shape)]))
+
+;; rotate-simple/bb : angle simple-shape -> (values simple-shape ltrb)
+(define (rotate-simple/bb angle shape)
+  (let ([rotated-shape (rotate-simple angle shape)])
+    (values rotated-shape (simple-bb rotated-shape))))
+
+;; rotate-simple : angle simple-shape -> simple-shape
+(define (rotate-simple θ simple-shape)
+  (cond
+    [(line-segment? simple-shape)
+     (make-line-segment (rotate-point (line-segment-start simple-shape)
+                                      θ)
+                        (rotate-point (line-segment-end simple-shape)
+                                      θ)
+                        (line-segment-color simple-shape))]
+    [(polygon? simple-shape)
+     (make-polygon (rotate-points θ (polygon-points simple-shape))
+                   (polygon-mode simple-shape)
+                   (polygon-color simple-shape))]
+    [else
+     (let* ([unrotated (translate-shape simple-shape)]
+            [rotated (rotate-atomic θ unrotated)])
+       (let-values ([(dx dy) 
+                     (c->xy (* (make-polar 1 (degrees->radians θ))
+                               (xy->c (translate-dx simple-shape)
+                                      (translate-dy simple-shape))))])
+         (make-translate dx dy rotated)))]))
+
+(define-struct ltrb (left top right bottom))
+(define (union-ltrb ltrb1 ltrb2)
+  (make-ltrb (min (ltrb-left ltrb1) (ltrb-left ltrb2))
+             (min (ltrb-top ltrb1) (ltrb-top ltrb2))
+             (max (ltrb-right ltrb1) (ltrb-right ltrb2))
+             (max (ltrb-bottom ltrb1) (ltrb-bottom ltrb2))))
+(define (intersect-ltrb ltrb1 ltrb2)
+  (make-ltrb (max (ltrb-left ltrb1) (ltrb-left ltrb2))
+             (max (ltrb-top ltrb1) (ltrb-top ltrb2))
+             (min (ltrb-right ltrb1) (ltrb-right ltrb2))
+             (min (ltrb-bottom ltrb1) (ltrb-bottom ltrb2))))
+
+;; simple-bb : simple-shape -> ltrb
 ;; returns the bounding box of 'shape' 
 ;; (only called for rotated shapes, so bottom=baseline)
 (define (simple-bb simple-shape)
@@ -309,36 +376,38 @@
            [y1 (point-y (line-segment-start simple-shape))]
            [x2 (point-x (line-segment-end simple-shape))]
            [y2 (point-y (line-segment-end simple-shape))])
-       (values (min x1 x2)
-               (min y1 y2)
-               (+ (max x1 x2) 1)
-               (+ (max y1 y2) 1)))]
+       (make-ltrb (min x1 x2)
+                  (min y1 y2)
+                  (+ (max x1 x2) 1)
+                  (+ (max y1 y2) 1)))]
     [(polygon? simple-shape)
-     (let ([points (polygon-points simple-shape)])
-       (let* ([fx (point-x (car points))]
-              [fy (point-y (car points))]
-              [left fx]
-              [top fy]
-              [right fx]
-              [bottom fy])
-         (for-each (λ (point)
-                     (let ([new-x (point-x point)]
-                           [new-y (point-y point)])
-                       (set! left (min new-x left))
-                       (set! top (min new-y top))
-                       (set! right (max new-x right))
-                       (set! bottom (max new-y bottom))))
-                   (cdr points))
-         (values left top right bottom)))]
+     (points->ltrb (polygon-points simple-shape))]
     [else
      (let ([dx (translate-dx simple-shape)]
            [dy (translate-dy simple-shape)])
        (let-values ([(l t r b) (np-atomic-bb (translate-shape simple-shape))])
-         (values (+ l dx)
-                 (+ t dy)
-                 (+ r dx)
-                 (+ b dy))))]))
+         (make-ltrb (+ l dx)
+                    (+ t dy)
+                    (+ r dx)
+                    (+ b dy))))]))
 
+;; points->ltrb : (cons point (listof points)) -> (values number number number number)
+(define (points->ltrb points)
+  (let* ([fx (point-x (car points))]
+         [fy (point-y (car points))]
+         [left fx]
+         [top fy]
+         [right fx]
+         [bottom fy])
+    (for-each (λ (point)
+                (let ([new-x (point-x point)]
+                      [new-y (point-y point)])
+                  (set! left (min new-x left))
+                  (set! top (min new-y top))
+                  (set! right (max new-x right))
+                  (set! bottom (max new-y bottom))))
+              (cdr points))
+    (make-ltrb left top right bottom)))
 
 (define (np-atomic-bb atomic-shape)
   (cond
@@ -376,28 +445,7 @@
             (max ax bx cx dx)
             (max ay by cy dy))))
 
-;; rotate-simple : angle simple-shape -> simple-shape
-(define (rotate-simple θ simple-shape)
-  (cond
-    [(line-segment? simple-shape)
-     (make-line-segment (rotate-point (line-segment-start simple-shape)
-                                      θ)
-                        (rotate-point (line-segment-end simple-shape)
-                                      θ)
-                        (line-segment-color simple-shape))]
-    [(polygon? simple-shape)
-     (make-polygon (map (λ (p) (rotate-point p θ))
-                        (polygon-points simple-shape))
-                   (polygon-mode simple-shape)
-                   (polygon-color simple-shape))]
-    [else
-     (let* ([unrotated (translate-shape simple-shape)]
-            [rotated (rotate-atomic θ unrotated)])
-       (let-values ([(dx dy) 
-                     (c->xy (* (make-polar 1 (degrees->radians θ))
-                               (xy->c (translate-dx simple-shape)
-                                      (translate-dy simple-shape))))])
-         (make-translate dx dy rotated)))]))
+(define (rotate-points θ points) (map (λ (p) (rotate-point p θ)) points))
 
 (define (center-point np-atomic-shape)
   (let-values ([(l t r b) (np-atomic-bb np-atomic-shape)])
@@ -515,11 +563,11 @@
                     mode
                     color)))
 
-(define (rectangle-points width height)
-  (list (make-point 0 0)
-        (make-point width 0)
-        (make-point width height)
-        (make-point 0 height)))
+(define (rectangle-points width height [dx 0] [dy 0])
+  (list (make-point dx dy)
+        (make-point (+ dx width) dy)
+        (make-point (+ dx width) (+ height dy))
+        (make-point dx (+ dy height))))
   
 
 (define/chk (line x1 y1 color)
@@ -631,11 +679,15 @@
                   mode color))
 
 (define (make-a-polygon points mode color)
-  (let ([poly (make-polygon points mode color)])
-    (let-values ([(l t r b) (simple-bb poly)])
-      (make-image (make-translate (- l) (- t) poly)
-                  (make-bb (- r l) (- b t) (- b t))
-                  #f))))
+  (let* ([poly (make-polygon points mode color)]
+         [ltrb (simple-bb poly)]
+         [l (ltrb-left ltrb)]
+         [t (ltrb-top ltrb)]
+         [r (ltrb-right ltrb)]
+         [b (ltrb-bottom ltrb)])
+    (make-image (make-translate (- l) (- t) poly)
+                (make-bb (- r l) (- b t) (- b t))
+                #f)))
 (define (gcd a b)
   (cond
     [(zero? b) a]
@@ -761,7 +813,8 @@
          above/align
          
          rotate
-         
+         crop
+
          frame
          
          show-image

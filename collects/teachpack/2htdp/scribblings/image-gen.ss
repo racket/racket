@@ -1,5 +1,8 @@
 #lang scheme/gui
 
+;; Run this file is generate the images in the img/ directory, 
+;; picked up by image-examples from image.scrbl
+
 (require 2htdp/private/image-more
          lang/posn
          mrlib/image-core)

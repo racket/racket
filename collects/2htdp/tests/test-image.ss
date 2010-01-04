@@ -1,4 +1,17 @@
 #lang scheme/base
+#|
+;; snippet of code for experimentation
+(define images
+  (list (round-numbers (rotate 180 (line 20 30 "red")))
+        (round-numbers (line 20 30 "red"))))
+
+(define t (new text%))
+(define f (new frame% [label ""] [width 600] [height 400]))
+(define ec (new editor-canvas% [parent f] [editor t]))
+(for ((i (in-list images))) (send t insert i))
+(send f show #t)
+|#
+
 (require "../../mrlib/image-core.ss"
          "../private/image-more.ss"
          "../private/img-err.ss"
@@ -599,6 +612,32 @@
       =>
       (make-translate 135 170 (make-ellipse 50 100 0 'solid "blue")))
 
+(test (normalize-shape (image-shape
+                        (beside (rectangle 10 10 'solid 'black)
+                                (crop 0 0 5 5 (rectangle 10 10 'solid 'green)))))
+      =>
+      (make-overlay
+       (make-polygon
+        (list (make-point 0 0)
+              (make-point 10 0)
+              (make-point 10 10)
+              (make-point 0 10))
+        'solid
+        "black")
+       (make-crop
+        (list (make-point 10 0)
+              (make-point 15 0)
+              (make-point 15 5)
+              (make-point 10 5))
+        (make-polygon
+         (list (make-point 10 0)
+               (make-point 20 0)
+               (make-point 20 10)
+               (make-point 10 10))
+         'solid
+         "green"))))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -764,11 +803,13 @@
 ;;
 
 ;; note: the regular-polygon and the rectangle generate the points in reverse directions.
-(check-equal? (round-numbers (regular-polygon 100 4 'outline 'green))
-              (round-numbers (rectangle 100 100 'outline 'green)))
+(test (round-numbers (regular-polygon 100 4 'outline 'green))
+      =>
+      (round-numbers (rectangle 100 100 'outline 'green)))
 
-(check-equal? (swizzle (list 0 1 2 3 4) 2)
-              (list 0 2 4 1 3))
+(test (swizzle (list 0 1 2 3 4) 2)
+      =>
+      (list 0 2 4 1 3))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -776,42 +817,48 @@
 ;;  text
 ;;
 
-(check-equal? (beside/align "baseline"
-                             (text "a" 18 "black")
-                             (text "b" 18 "black"))
-              (text "ab" 18 "black"))
+(test (beside/align "baseline"
+                    (text "a" 18 "black")
+                    (text "b" 18 "black"))
+      =>
+      (text "ab" 18 "black"))
 
-(check-equal? (round-numbers
-               (image-width (rotate 45 (text "One" 18 'black))))
-              (round-numbers
-               (let ([t (text "One" 18 'black)])
-                 (image-width (rotate 45 (rectangle (image-width t) 
-                                                    (image-height t)
-                                                    'solid 'black))))))
+(test (round-numbers
+       (image-width (rotate 45 (text "One" 18 'black))))
+      =>
+      (round-numbers
+       (let ([t (text "One" 18 'black)])
+         (image-width (rotate 45 (rectangle (image-width t) 
+                                            (image-height t)
+                                            'solid 'black))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; triangle
 ;;
 
-(check-equal? (round-numbers (rotate 180 (isosceles-triangle 60 330 "solid" "lightseagreen")))
-              (round-numbers (isosceles-triangle 60 30 "solid" "lightseagreen")))
+(test (round-numbers (rotate 180 (isosceles-triangle 60 330 "solid" "lightseagreen")))
+      =>
+      (round-numbers (isosceles-triangle 60 30 "solid" "lightseagreen")))
 
-(check-equal? (triangle 40 'outline 'black)
-              (regular-polygon 40 3 'outline 'black))
+(test (triangle 40 'outline 'black)
+      =>
+      (regular-polygon 40 3 'outline 'black))
 
-(check-equal? (equal~? (rotate (+ 180 45) (right-triangle 50 50 'solid 'black))
-                       (isosceles-triangle 50 90 'solid 'black)
-                       0.001)
-              #t)
+(test (equal~? (rotate (+ 180 45) (right-triangle 50 50 'solid 'black))
+               (isosceles-triangle 50 90 'solid 'black)
+               0.001)
+      =>
+      #t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; square
 ;;
 
-(check-equal? (square 10 'solid 'black)
-              (rectangle 10 10 'solid 'black))
+(test (square 10 'solid 'black)
+      =>
+      (rectangle 10 10 'solid 'black))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -819,28 +866,33 @@
 ;; rhombus
 ;;
 
-(check-equal? (equal~? (rhombus 10 90 'solid 'black)
-                       (rotate 45 (square 10 'solid 'black))
-                       0.01)
-              #t)
+(test (equal~? (rhombus 10 90 'solid 'black)
+               (rotate 45 (square 10 'solid 'black))
+               0.01)
+      =>
+      #t)
 
-(check-equal? (equal~? (rhombus 50 150 'solid 'black)
-                       (rotate 90 (rhombus 50 30 'solid 'black))
-                       0.01)
-              #t)
+(test (equal~? (rhombus 50 150 'solid 'black)
+               (rotate 90 (rhombus 50 30 'solid 'black))
+               0.01)
+      =>
+      #t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; lines
 ;;
 
-(check-equal? (image-width (line 10 20 'black))
-              11)
-(check-equal? (image-height (line 10 20 'black))
-              21)
+(test (image-width (line 10 20 'black))
+      =>
+      11)
+(test (image-height (line 10 20 'black))
+      =>
+      21)
 
-(check-equal? (round-numbers (rotate 90 (line 10 20 'black)))
-              (round-numbers (line 20 -10 'black)))
+(test (round-numbers (rotate 90 (line 10 20 'black)))
+      =>
+      (round-numbers (line 20 -10 'black)))
 
 (check-equal? (round-numbers (line 20 30 "red"))
               (round-numbers (rotate 180 (line 20 30 "red"))))
@@ -984,3 +1036,25 @@
 (check-equal? (begin (scale 2 (make-object bitmap% 10 10))
                      (void))
               (void))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; cropping
+;;
+
+(test (crop 0 0 10 10 (rectangle 20 20 'solid 'black))
+      =>
+      (rectangle 10 10 'solid 'black))
+
+(test (equal~? (crop 0 0 40 40 (circle 40 'solid 'red))
+               (rotate 180 (crop 40 40 40 40 (circle 40 'solid 'red)))
+               0.1)
+      =>
+      #t)
+
+(test (beside (rectangle 10 10 'solid 'black)
+              (crop 0 0 10 10 (rectangle 10 10 'solid 'green)))
+      =>
+      (beside (rectangle 10 10 'solid 'black)
+              (rectangle 10 10 'solid 'green)))

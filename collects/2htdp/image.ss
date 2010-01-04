@@ -63,6 +63,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          above
          above/align
          
+	 crop
          rotate
          frame
    
