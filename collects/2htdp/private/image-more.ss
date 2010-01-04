@@ -756,8 +756,8 @@
 ;; see pin-line in slideshow
 ;; the initial strings in the second instance of add-curve are like the strings in add-line
 
-(define/chk (image-width image) (image-right image))
-(define/chk (image-height image) (image-bottom image))
+(define/chk (image-width image) (inexact->exact (ceiling (image-right image))))
+(define/chk (image-height image) (inexact->exact (ceiling (image-bottom image))))
 
 (define-syntax (bitmap stx)
   (syntax-case stx ()

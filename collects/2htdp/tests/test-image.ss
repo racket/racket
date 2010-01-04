@@ -148,27 +148,27 @@
       0)
 
 (check-close (image-width (rotate 45 (rectangle 100 0 'solid 'blue)))
-             (* (sin (* pi 1/4)) 100))
+             (inexact->exact (ceiling (* (sin (* pi 1/4)) 100))))
 (check-close (image-height (rotate 45 (rectangle 100 0 'solid 'blue)))
-             (* (sin (* pi 1/4)) 100))
+             (inexact->exact (ceiling (* (sin (* pi 1/4)) 100))))
 (check-close (image-width (rotate 45 (rectangle 0 100 'solid 'blue)))
-             (* (sin (* pi 1/4)) 100))
+             (inexact->exact (ceiling (* (sin (* pi 1/4)) 100))))
 (check-close (image-height (rotate 45 (rectangle 0 100 'solid 'blue)))
-             (* (sin (* pi 1/4)) 100))
+             (inexact->exact (ceiling (* (sin (* pi 1/4)) 100))))
 
 (test (image-width (scale 4 (rectangle 10 10 'outline 'black)))
       =>
       40)
 (test (image-width (rotate 90 (scale 4 (rectangle 10 10 'outline 'black))))
       =>
-      40.0)
+      40)
 
 (test (image-width (scale 4 (rectangle 10 10 'solid 'black)))
       =>
       40)
 (test (image-width (rotate 90 (scale 4 (rectangle 10 10 'solid 'black))))
       =>
-      40.0)
+      40)
 
 
 (test (image-width (ellipse 10 20 'solid 'blue))
@@ -192,14 +192,14 @@
 
 (test (image-width (rotate 30 (ellipse 100 0 'solid 'blue)))
       =>
-      (* (cos (* pi 1/6)) 100))
+      (inexact->exact (ceiling (* (cos (* pi 1/6)) 100))))
 (test (image-height (rotate 30 (ellipse 100 0 'solid 'blue)))
       =>
-      (* (sin (* pi 1/6)) 100))
+      (inexact->exact (ceiling (* (sin (* pi 1/6)) 100))))
 (check-close (image-width (rotate 30 (ellipse 0 100 'solid 'blue)))
              (* (sin (* pi 1/6)) 100))
 (check-close (image-height (rotate 30 (ellipse 0 100 'solid 'blue)))
-             (* (cos (* pi 1/6)) 100))
+             (ceiling (* (cos (* pi 1/6)) 100)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

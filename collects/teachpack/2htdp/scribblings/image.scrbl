@@ -527,7 +527,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
 
 @section{Image Properties}
 
-@defproc[(image-width [i image?]) (and/c number? positive?)]{
+@defproc[(image-width [i image?]) (and/c integer? positive? exact?)]{
   Returns the width of @scheme[i].
                        
   @image-examples[(image-width (ellipse 30 40 "solid" "orange"))
@@ -536,7 +536,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                                        (circle 20 "solid" "purple")))]
 }
 
-@defproc[(image-height [i image?]) (and/c number? positive?)]{
+@defproc[(image-height [i image?]) (and/c integer? positive? exact?)]{
   Returns the height of @scheme[i].
   
   @image-examples[(image-height (ellipse 30 40 "solid" "orange"))
@@ -545,7 +545,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                                          (circle 30 "solid" "purple")))]
   }
 
-@defproc[(image-baseline [i image?]) (and/c number? positive?)]{
+@defproc[(image-baseline [i image?]) (and/c integer? positive? exact?)]{
   Returns the distance from the top of the image to its baseline. 
   Unless the image was constructed with @scheme[text] or @scheme[text/font],
   this will be the same as its height.
