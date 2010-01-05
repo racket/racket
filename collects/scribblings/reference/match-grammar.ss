@@ -45,7 +45,7 @@ qp      ::= literal                           @match literal
          |  id                                @match symbol
          |  (qp ...)                          @match sequences of qps
          |  (qp ... . qp)                     @match qps ending qp
-         |  (qp ... ooo)                      @match qps ending repeated qp
+         |  (qp ooo . qp)                     @match qps beginning with repeated qp
          |  #(qp ...)                         @match vector of qps
          |  #&qp                              @match boxed qp
          |  ,pat                              @match pat
