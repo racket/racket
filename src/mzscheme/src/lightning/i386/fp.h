@@ -346,6 +346,19 @@ union jit_double_imm {
         (void) (_jitl.r0_can_be_tmp ? 0 : POPQr(_EAX)),        \
         res ((d), 0, 0, 0), _jit.x.pc)
 
+#define jit_fp_btest_fppop(d, n, _and, cmp, res)               \
+       (FUCOMPPr(1),                                           \
+        (_jitl.r0_can_be_tmp ? 0 : PUSHQr(_EAX)),              \
+        FNSTSWr(_EAX),                                         \
+        SHRLir(n, _EAX),                                       \
+        (void)((_and) ? ANDLir ((_and), _EAX) : 0),            \
+        (void)((cmp) ? CMPLir ((cmp), _AL) : 0),               \
+        (void) (_jitl.r0_can_be_tmp ? 0 : POPQr(_EAX)),        \
+        res ((d), 0, 0, 0), _jit.x.pc)
+
+#define jit_fp_btest_fppop_2(d, res)               \
+       (FUCOMIPr(1), FSTPr(0), res ((d), 0, 0, 0), _jit.x.pc)
+
 #define jit_nothing_needed(x)
 
 /* After FNSTSW we have 1 if <, 40 if =, 0 if >, 45 if unordered.  Here
@@ -408,17 +421,21 @@ union jit_double_imm {
 #define jit_bunordr_d(d, s1, s2)        jit_fp_btest((d), (s1), (s2), 11, 0, 0, JCm)
 
 #define jit_bger_d_fppop(d, s1, s2)       jit_fp_btest_fppop((d), 9, 0, 0, JNCm)
-#define jit_bantiger_d_fppop(d, s1, s2)   jit_fp_btest_fppop((d), 9, 0, 0, JCm)
+/* #define jit_bantiger_d_fppop(d, s1, s2)   jit_fp_btest_fppop((d), 9, 0, 0, JCm) */
+#define jit_bantiger_d_fppop(d, s1, s2)   jit_fp_btest_fppop_2((d), JBm)
 #define jit_bler_d_fppop(d, s1, s2)       (FXCHr(1), jit_bger_d_fppop(d, s1, s2))
 #define jit_bantiler_d_fppop(d, s1, s2)   (FXCHr(1), jit_bantiger_d_fppop(d, s1, s2))
 
 #define jit_bgtr_d_fppop(d, s1, s2)       jit_fp_btest_fppop((d), 8, 0x45, 0, JZm)
-#define jit_bantigtr_d_fppop(d, s1, s2)   jit_fp_btest_fppop((d), 8, 0x45, 0, JNZm)
+/* #define jit_bantigtr_d_fppop(d, s1, s2)   jit_fp_btest_fppop((d), 8, 0x45, 0, JNZm) */
+#define jit_bantigtr_d_fppop(d, s1, s2)   jit_fp_btest_fppop_2((d), JBEm)
 #define jit_bltr_d_fppop(d, s1, s2)       (FXCHr(1), jit_bgtr_d_fppop(d, s1, s2))
 #define jit_bantiltr_d_fppop(d, s1, s2)   (FXCHr(1), jit_bantigtr_d_fppop(d, s1, s2))
 
 #define jit_beqr_d_fppop(d, s1, s2)       jit_fp_btest_fppop((d), 8, 0x45, 0x40, JZm)
 #define jit_bantieqr_d_fppop(d, s1, s2)   jit_fp_btest_fppop((d), 8, 0x45, 0x40, JNZm)
+/* Doesn't work right with +nan.0: */
+/* #define jit_bantieqr_d_fppop(d, s1, s2)   jit_fp_btest_fppop_2((d), JNZm) */
 
 #define jit_getarg_f(rd, ofs)        jit_ldxi_f((rd), JIT_FP,(ofs))
 #define jit_getarg_d(rd, ofs)        jit_ldxi_d((rd), JIT_FP,(ofs))

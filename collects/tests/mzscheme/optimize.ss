@@ -678,6 +678,14 @@
 (test-comp '(lambda (x) (if (cons 1 x) 78 78))
            '(lambda (x) 78))
 
+(test-comp '(lambda (x) (if (let ([r (something)])
+                              (if r r (something-else)))
+                            (a1)
+                            (a2)))
+           '(lambda (x)  (if (if (something) #t (something-else))
+                             (a1)
+                             (a2))))
+
 (test-comp '(values 10)
            10)
 (test-comp '(let ([x (values 10)])

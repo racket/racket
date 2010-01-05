@@ -3039,6 +3039,43 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   int size_before_opt, did_set_value;
   int remove_last_one = 0, inline_fuel;
 
+  if (context & OPT_CONTEXT_BOOLEAN) {
+    /* Special case: (let ([x M]) (if x x N)), where x is not in N,
+       to (if M #t #f), since we're in a test position. */
+    if (!(SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE) && (head->count == 1) && (head->num_clauses == 1)) {
+      clv = (Scheme_Compiled_Let_Value *)head->body;
+      if (SAME_TYPE(SCHEME_TYPE(clv->body), scheme_branch_type)
+          && (((clv->flags[0] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT)
+              == 2)) {
+        Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)clv->body;
+        if (SAME_TYPE(SCHEME_TYPE(b->test), scheme_local_type)
+            && SAME_TYPE(SCHEME_TYPE(b->tbranch), scheme_local_type)
+            && !SCHEME_LOCAL_POS(b->test)
+            && !SCHEME_LOCAL_POS(b->tbranch)) {
+          Scheme_Branch_Rec *b3;
+          Optimize_Info *sub_info;
+
+          b3 = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
+          b3->so.type = scheme_branch_type;
+          b3->test = clv->value;
+          b3->tbranch = scheme_true;
+          b3->fbranch = b->fbranch;
+
+          sub_info = scheme_optimize_info_add_frame(info, 1, 0, 0);
+	
+          form = scheme_optimize_expr((Scheme_Object *)b3, sub_info, context);
+
+          info->single_result = sub_info->single_result;
+          info->preserves_marks = sub_info->preserves_marks;
+
+          scheme_optimize_info_done(sub_info);
+
+          return form;
+        }
+      }
+    }
+  }
+
   /* Special case: (let ([x E]) x) where E is lambda, case-lambda, or
      a constant. (If we allowed arbitrary E here, it would affect the
      tailness of E.) */
@@ -3408,7 +3445,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     body_info->vclock = rhs_info->vclock;
   }
 
-  body = scheme_optimize_expr(body, body_info, 0);
+  body = scheme_optimize_expr(body, body_info, scheme_optimize_tail_context(context));
   if (head->num_clauses)
     pre_body->body = body;
   else
@@ -3534,51 +3571,6 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   scheme_optimize_info_done(body_info);
 
   return form;
-}
-
-Scheme_Object *
-scheme_optimize_lets_for_test(Scheme_Object *form, Optimize_Info *info, int context)
-/* Special case for when the `let' expression appears in an `if' test */
-{
-  Scheme_Let_Header *head = (Scheme_Let_Header *)form;
-
-  /* Special case: (let ([x M]) (if x x N)), where x is not in N,
-     to (if M #t #f), since we're in a test position. */
-  if (!(SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE) && (head->count == 1) && (head->num_clauses == 1)) {
-    Scheme_Compiled_Let_Value *clv;
-    clv = (Scheme_Compiled_Let_Value *)head->body;
-    if (SAME_TYPE(SCHEME_TYPE(clv->body), scheme_branch_type)
-	&& (((clv->flags[0] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT)
-	    == 2)) {
-      Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)clv->body;
-      if (SAME_TYPE(SCHEME_TYPE(b->test), scheme_local_type)
-	  && SAME_TYPE(SCHEME_TYPE(b->tbranch), scheme_local_type)
-	  && !SCHEME_LOCAL_POS(b->test)
-	  && !SCHEME_LOCAL_POS(b->tbranch)) {
-	Scheme_Branch_Rec *b3;
-	Optimize_Info *sub_info;
-
-	b3 = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
-	b3->so.type = scheme_branch_type;
-	b3->test = clv->value;
-	b3->tbranch = scheme_true;
-	b3->fbranch = b->fbranch;
-
-	sub_info = scheme_optimize_info_add_frame(info, 1, 0, 0);
-	
-	form = scheme_optimize_expr((Scheme_Object *)b3, sub_info, context);
-
-        info->single_result = sub_info->single_result;
-        info->preserves_marks = sub_info->preserves_marks;
-
-	scheme_optimize_info_done(sub_info);
-
-	return form;
-      }
-    }
-  }
-
-  return scheme_optimize_lets(form, info, 0, context);
 }
 
 static int is_lifted_reference(Scheme_Object *v)
@@ -4909,7 +4901,10 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
 
   for (i = 0; i < count; i++) {
     Scheme_Object *le;
-    le = scheme_optimize_expr(((Scheme_Sequence *)obj)->array[i], info, 0);
+    le = scheme_optimize_expr(((Scheme_Sequence *)obj)->array[i], info, 
+                              (!i 
+                               ? scheme_optimize_result_context(context)
+                               : 0));
     ((Scheme_Sequence *)obj)->array[i] = le;
   }
 

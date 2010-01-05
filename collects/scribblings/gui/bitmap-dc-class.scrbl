@@ -72,7 +72,7 @@ The pixel RGB values are copied into @scheme[pixels]. The first byte
 
 If @scheme[alpha?] is false, then the alpha value for each pixel is
  set to 255. If @scheme[alpha?] is true, then @italic{only} the alpha
- value is set for each pixel, based on each pixel's value. Thus, the
+ value is set for each pixel, based on each pixel's inverted value. Thus, the
  same @scheme[pixels] byte string is in general filled from two bitmaps:
  one (the main image) for the pixel values and one (the mask) for the
  alpha values.
@@ -129,8 +129,9 @@ The pixel RGB values are taken from @scheme[pixels]. The first byte
  order, left to right then top to bottom.
 
 If @scheme[alpha?] is false, then the alpha value for each pixel is
- ignored. If @scheme[alpha?] is true, then @italic{only} the each
- pixel is set based @italic{only} on the alpha value. Thus, the same
+ ignored. If @scheme[alpha?] is true, then each
+ pixel is set based @italic{only} on the alpha value, but inverted to serve
+ as a mask. Thus, the same
  @scheme[pixels] byte string is in general used with two bitmaps, one
  (the main image) for the pixel values and one (the mask) for the
  alpha values.

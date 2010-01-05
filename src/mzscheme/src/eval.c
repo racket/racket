@@ -3586,7 +3586,10 @@ static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info, i
   for (i = 0; i < count; i++) {
     prev_size = info->size;
 
-    le = scheme_optimize_expr(s->array[i], info, 0);
+    le = scheme_optimize_expr(s->array[i], info, 
+                              ((i + 1 == count) 
+                               ? scheme_optimize_tail_context(context) 
+                               : 0));
     if (i == s->count - 1) {
       single_result = info->single_result;
       preserves_marks = info->preserves_marks;
@@ -3674,6 +3677,19 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   tb = b->tbranch;
   fb = b->fbranch;
   
+  if (context & OPT_CONTEXT_BOOLEAN) {
+    /* For test position, convert (if <expr> #t #f) to <expr> */
+    if (SAME_OBJ(tb, scheme_true) && SAME_OBJ(fb, scheme_false))
+      return scheme_optimize_expr(t, info, context);
+    
+    /* Convert (if <id> <id> expr) to (if <id> #t expr) */
+    if (SAME_TYPE(SCHEME_TYPE(t), scheme_local_type)
+        && SAME_TYPE(SCHEME_TYPE(tb), scheme_local_type)
+        && (SCHEME_LOCAL_POS(t) == SCHEME_LOCAL_POS(tb))) {
+      b->tbranch = tb = scheme_true;
+    }
+  }
+  
   /* Try optimize: (if (not x) y z) => (if x z y) */
   while (1) {
     if (SAME_TYPE(SCHEME_TYPE(t), scheme_application2_type)) {
@@ -3691,33 +3707,23 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
       break;
   }
 
-  if (SAME_TYPE(SCHEME_TYPE(t), scheme_compiled_let_void_type)) {
-    /* Maybe convert: (let ([x M]) (if x x N)) => (if M #t N) */
-    t = scheme_optimize_lets_for_test(t, info, 0);
-  } else
-    t = scheme_optimize_expr(t, info, 0);
+  t = scheme_optimize_expr(t, info, OPT_CONTEXT_BOOLEAN);
 
   info->vclock += 1; /* model branch as clock increment */
-
-  /* For test position, convert (if <expr> #t #f) to <expr> */
-  if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)
-      && SAME_OBJ(((Scheme_Branch_Rec *)t)->tbranch, scheme_true)
-      && SAME_OBJ(((Scheme_Branch_Rec *)t)->fbranch, scheme_false))
-    t = ((Scheme_Branch_Rec *)t)->test;
 
   if (SCHEME_TYPE(t) > _scheme_compiled_values_types_) {
     info->size -= 1;
     if (SCHEME_FALSEP(t))
-      return scheme_optimize_expr(fb, info, 0);
+      return scheme_optimize_expr(fb, info, scheme_optimize_tail_context(context));
     else
-      return scheme_optimize_expr(tb, info, 0);
+      return scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
   } else if (SAME_TYPE(SCHEME_TYPE(t), scheme_compiled_quote_syntax_type)
              || SAME_TYPE(SCHEME_TYPE(t), scheme_compiled_unclosed_procedure_type)) {
     info->size -= 1; /* could be more precise for better for procedure size */
-    return scheme_optimize_expr(tb, info, 0);
+    return scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
   }
 
-  tb = scheme_optimize_expr(tb, info, 0);
+  tb = scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
 
   if (!info->preserves_marks) 
     preserves_marks = 0;
@@ -3728,7 +3734,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   else if (info->single_result < 0)
     single_result = -1;
 
-  fb = scheme_optimize_expr(fb, info, 0);
+  fb = scheme_optimize_expr(fb, info, scheme_optimize_tail_context(context));
 
   if (!info->preserves_marks) 
     preserves_marks = 0;
@@ -3797,7 +3803,7 @@ static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int co
 
   v = scheme_optimize_expr(wcm->val, info, 0);
 
-  b = scheme_optimize_expr(wcm->body, info, 0);
+  b = scheme_optimize_expr(wcm->body, info, scheme_optimize_tail_context(context));
 
   /* info->single_result is already set */
   info->preserves_marks = 0;

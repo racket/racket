@@ -2269,9 +2269,12 @@ Scheme_Object *scheme_make_syntax_compiled(int idx, Scheme_Object *data);
 
 Scheme_Object *scheme_optimize_expr(Scheme_Object *, Optimize_Info *, int context);
 Scheme_Object *scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, int context);
-Scheme_Object *scheme_optimize_lets_for_test(Scheme_Object *form, Optimize_Info *info, int context);
 
 #define OPT_CONTEXT_FLONUM_ARG 0x1
+#define OPT_CONTEXT_BOOLEAN    0x2
+
+#define scheme_optimize_result_context(c) (c & (~OPT_CONTEXT_FLONUM_ARG))
+#define scheme_optimize_tail_context(c) scheme_optimize_result_context(c) 
 
 Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e, 
                                             Optimize_Info *info,
