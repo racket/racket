@@ -225,10 +225,6 @@
                                      (unless (eq? r sub) (set! same? #f))
                                      r))
                                  subs)])
-      ;; (when (null? new-subs)
-      ;;   (printf "dropping result after pred: ~s\n" (object-name pred)))
-      ;; (and (pair? new-subs) ; drop empty directories
-      ;;      (if same? dir (make-dir (tree-name dir) new-subs)))
       (cond [(and (null? new-subs) (not (negated? pred))) #f]
             [same? dir]
             [else (make-dir (tree-name dir) new-subs)])))
@@ -262,5 +258,5 @@
             bytes<?
             #:key car))))
   (define root (path->bytes (simplify-path dir)))
-  (make-dir (if (regexp-match? #rx"/$" root) root (bytes-append root #"/"))
+  (make-dir (if (regexp-match? #rx#"/$" root) root (bytes-append root #"/"))
             (subs dir)))
