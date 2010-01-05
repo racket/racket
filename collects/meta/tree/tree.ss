@@ -42,8 +42,7 @@
     (f tree base)
     (when (dir? tree)
       (let ([base* (bytes-append base (tree-name tree))])
-        (for/list ([tree (in-list (dir-subs tree))]) (loop tree base*)))))
-  (void))
+        (for ([tree (in-list (dir-subs tree))]) (loop tree base*))))))
 
 (define (print-tree tree)
   (tree-for-each
