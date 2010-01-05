@@ -1,15 +1,20 @@
 #lang scheme/base
 
 (provide tree-foldl tree-foldr tree-for-each print-tree
-         tree->list tree->path-list and: or: not: tree-filter get-tree)
+         tree->list tree->path-list and: or: not: tree-filter get-tree
+         (struct-out tree) (struct-out file) (struct-out dir))
 
 (require scheme/list)
 
 ;; ----------------------------------------------------------------------------
+;; Type definitions
 
-(define-struct tree (name))
+(define-struct tree (name [data #:auto #:mutable]))
 (define-struct (file tree) ())
 (define-struct (dir tree) (subs))
+
+;; ----------------------------------------------------------------------------
+;; Tree utilities
 
 (define (tree-foldl f init tree)
   (let loop ([tree tree] [base #""] [acc init])
@@ -55,6 +60,7 @@
                        '() tree))
 
 ;; ----------------------------------------------------------------------------
+;; Tree filtering
 
 ;; A tree-filtering predicate is a function that receives a tree, and returns
 ;; either #t/#f to include or exclude it, or it can return a function to be
@@ -237,6 +243,7 @@
     (or (dir-filter pred tree) (make-dir (tree-name tree) '()))))
 
 ;; ----------------------------------------------------------------------------
+;; Reading a tree from a directory
 
 (define (get-tree dir)
   (define (subs dir)
