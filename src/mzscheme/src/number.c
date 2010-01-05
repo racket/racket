@@ -52,9 +52,6 @@
 # define MAX_SHIFT_EVER 32
 #endif
 
-/* globals */
-double scheme_infinity_val, scheme_minus_infinity_val;
-
 /* locals */
 static Scheme_Object *number_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *complex_p (int argc, Scheme_Object *argv[]);
@@ -127,21 +124,24 @@ static Scheme_Object *unsafe_flvector_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_flvector_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_flvector_set (int argc, Scheme_Object *argv[]);
 
-static double not_a_number_val;
+/* globals */
+READ_ONLY double scheme_infinity_val;
+READ_ONLY double scheme_minus_infinity_val;
+READ_ONLY double scheme_floating_point_zero = 0.0;
+READ_ONLY double scheme_floating_point_nzero = 0.0; /* negated below; many compilers treat -0.0 as 0.0, 
+					     but otherwise correctly implement fp negation */
+READ_ONLY static double not_a_number_val;
 
-Scheme_Object *scheme_inf_object, *scheme_minus_inf_object, *scheme_nan_object;
+READ_ONLY Scheme_Object *scheme_inf_object, *scheme_minus_inf_object, *scheme_nan_object;
 
 #define zeroi scheme_exact_zero
 
-Scheme_Object *scheme_zerod, *scheme_nzerod, *scheme_pi, *scheme_half_pi, *scheme_plus_i, *scheme_minus_i;
+READ_ONLY Scheme_Object *scheme_zerod, *scheme_nzerod, *scheme_pi, *scheme_half_pi, *scheme_plus_i, *scheme_minus_i;
 #ifdef MZ_USE_SINGLE_FLOATS
-Scheme_Object *scheme_zerof, *scheme_nzerof, *scheme_single_pi;
-Scheme_Object *scheme_single_inf_object, *scheme_single_minus_inf_object, *scheme_single_nan_object;
+READ_ONLY Scheme_Object *scheme_zerof, *scheme_nzerof, *scheme_single_pi;
+READ_ONLY Scheme_Object *scheme_single_inf_object, *scheme_single_minus_inf_object, *scheme_single_nan_object;
 #endif
 
-double scheme_floating_point_zero = 0.0;
-double scheme_floating_point_nzero = 0.0; /* negated below; many compilers treat -0.0 as 0.0, 
-					     but otherwise correctly implement fp negation */
 
 #ifdef FREEBSD_CONTROL_387
 #include <machine/floatingpoint.h>

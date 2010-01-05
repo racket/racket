@@ -30,12 +30,11 @@
 #include "schexpobs.h"
 
 /* globals */
-Scheme_Object *scheme_sys_wraps0;
-Scheme_Object *scheme_sys_wraps1;
-Scheme_Object *(*scheme_module_demand_hook)(int, Scheme_Object **);
+SHARED_OK Scheme_Object *(*scheme_module_demand_hook)(int, Scheme_Object **);
 
+SHARED_OK static Scheme_Bucket_Table *modpath_table;
 #ifdef MZ_USE_PLACES
-mzrt_mutex *modpath_table_mutex;
+SHARED_OK static mzrt_mutex *modpath_table_mutex;
 #else
 # define mzrt_mutex_lock(l) /* empty */
 # define mzrt_mutex_unlock(l) /* empty */
@@ -128,77 +127,80 @@ static Scheme_Object *scheme_sys_wraps_phase_worker(long p);
 
 #define cons scheme_make_pair
 
-
 /* global read-only kernel stuff */
-static Scheme_Object *kernel_modname;
-static Scheme_Object *kernel_symbol;
-static Scheme_Object *kernel_modidx;
-static Scheme_Module *kernel;
-static Scheme_Object *flfxnum_modname;
-static Scheme_Object *unsafe_modname;
+READ_ONLY static Scheme_Object *kernel_modname;
+READ_ONLY static Scheme_Object *kernel_symbol;
+READ_ONLY static Scheme_Object *kernel_modidx;
+READ_ONLY static Scheme_Module *kernel;
+READ_ONLY static Scheme_Object *flfxnum_modname;
+READ_ONLY static Scheme_Object *unsafe_modname;
+
+/* global read-only phase wraps */
+READ_ONLY static Scheme_Object *scheme_sys_wraps0;
+READ_ONLY static Scheme_Object *scheme_sys_wraps1;
 
 /* global read-only symbols */
-static Scheme_Object *module_symbol;
-static Scheme_Object *module_begin_symbol;
-static Scheme_Object *prefix_symbol;
-static Scheme_Object *only_symbol;
-static Scheme_Object *rename_symbol;
-static Scheme_Object *all_except_symbol;
-static Scheme_Object *prefix_all_except_symbol;
-static Scheme_Object *all_from_symbol;
-static Scheme_Object *all_from_except_symbol;
-static Scheme_Object *all_defined_symbol;
-static Scheme_Object *all_defined_except_symbol;
-static Scheme_Object *prefix_all_defined_symbol;
-static Scheme_Object *prefix_all_defined_except_symbol;
-static Scheme_Object *struct_symbol;
-static Scheme_Object *protect_symbol;
-static Scheme_Object *expand_symbol;
-static Scheme_Object *for_syntax_symbol;
-static Scheme_Object *for_template_symbol;
-static Scheme_Object *for_label_symbol;
-static Scheme_Object *for_meta_symbol;
-static Scheme_Object *just_meta_symbol;
-static Scheme_Object *quote_symbol;
-static Scheme_Object *lib_symbol;
-static Scheme_Object *planet_symbol;
-static Scheme_Object *file_symbol;
-static Scheme_Object *module_name_symbol;
-static Scheme_Object *nominal_id_symbol;
+ROSYM static Scheme_Object *module_symbol;
+ROSYM static Scheme_Object *module_begin_symbol;
+ROSYM static Scheme_Object *prefix_symbol;
+ROSYM static Scheme_Object *only_symbol;
+ROSYM static Scheme_Object *rename_symbol;
+ROSYM static Scheme_Object *all_except_symbol;
+ROSYM static Scheme_Object *prefix_all_except_symbol;
+ROSYM static Scheme_Object *all_from_symbol;
+ROSYM static Scheme_Object *all_from_except_symbol;
+ROSYM static Scheme_Object *all_defined_symbol;
+ROSYM static Scheme_Object *all_defined_except_symbol;
+ROSYM static Scheme_Object *prefix_all_defined_symbol;
+ROSYM static Scheme_Object *prefix_all_defined_except_symbol;
+ROSYM static Scheme_Object *struct_symbol;
+ROSYM static Scheme_Object *protect_symbol;
+ROSYM static Scheme_Object *expand_symbol;
+ROSYM static Scheme_Object *for_syntax_symbol;
+ROSYM static Scheme_Object *for_template_symbol;
+ROSYM static Scheme_Object *for_label_symbol;
+ROSYM static Scheme_Object *for_meta_symbol;
+ROSYM static Scheme_Object *just_meta_symbol;
+ROSYM static Scheme_Object *quote_symbol;
+ROSYM static Scheme_Object *lib_symbol;
+ROSYM static Scheme_Object *planet_symbol;
+ROSYM static Scheme_Object *file_symbol;
+ROSYM static Scheme_Object *module_name_symbol;
+ROSYM static Scheme_Object *nominal_id_symbol;
 
 /* global read-only syntax */
-Scheme_Object *scheme_module_stx;
-Scheme_Object *scheme_module_begin_stx;
-Scheme_Object *scheme_begin_stx;
-Scheme_Object *scheme_define_values_stx;
-Scheme_Object *scheme_define_syntaxes_stx;
-Scheme_Object *scheme_top_stx;
-static Scheme_Object *modbeg_syntax;
-static Scheme_Object *define_for_syntaxes_stx;
-static Scheme_Object *require_stx;
-static Scheme_Object *provide_stx;
-static Scheme_Object *set_stx;
-static Scheme_Object *app_stx;
-static Scheme_Object *lambda_stx;
-static Scheme_Object *case_lambda_stx;
-static Scheme_Object *let_values_stx;
-static Scheme_Object *letrec_values_stx;
-static Scheme_Object *if_stx;
-static Scheme_Object *begin0_stx;
-static Scheme_Object *set_stx;
-static Scheme_Object *with_continuation_mark_stx;
-static Scheme_Object *letrec_syntaxes_stx;
-static Scheme_Object *var_ref_stx;
-static Scheme_Object *expression_stx;
+READ_ONLY Scheme_Object *scheme_module_stx;
+READ_ONLY Scheme_Object *scheme_module_begin_stx;
+READ_ONLY Scheme_Object *scheme_begin_stx;
+READ_ONLY Scheme_Object *scheme_define_values_stx;
+READ_ONLY Scheme_Object *scheme_define_syntaxes_stx;
+READ_ONLY Scheme_Object *scheme_top_stx;
+READ_ONLY static Scheme_Object *modbeg_syntax;
+READ_ONLY static Scheme_Object *define_for_syntaxes_stx;
+READ_ONLY static Scheme_Object *require_stx;
+READ_ONLY static Scheme_Object *provide_stx;
+READ_ONLY static Scheme_Object *set_stx;
+READ_ONLY static Scheme_Object *app_stx;
+READ_ONLY static Scheme_Object *lambda_stx;
+READ_ONLY static Scheme_Object *case_lambda_stx;
+READ_ONLY static Scheme_Object *let_values_stx;
+READ_ONLY static Scheme_Object *letrec_values_stx;
+READ_ONLY static Scheme_Object *if_stx;
+READ_ONLY static Scheme_Object *begin0_stx;
+READ_ONLY static Scheme_Object *set_stx;
+READ_ONLY static Scheme_Object *with_continuation_mark_stx;
+READ_ONLY static Scheme_Object *letrec_syntaxes_stx;
+READ_ONLY static Scheme_Object *var_ref_stx;
+READ_ONLY static Scheme_Object *expression_stx;
 
-static Scheme_Env *initial_modules_env;
-static int num_initial_modules;
-static Scheme_Object **initial_modules;
-static Scheme_Object *initial_renames;
-static Scheme_Bucket_Table *initial_toplevel;
+READ_ONLY static Scheme_Env *initial_modules_env;
+READ_ONLY static int num_initial_modules;
+READ_ONLY static Scheme_Object **initial_modules;
+READ_ONLY static Scheme_Object *initial_renames;
+READ_ONLY static Scheme_Bucket_Table *initial_toplevel;
 
-static Scheme_Object *empty_self_modidx;
-static Scheme_Object *empty_self_modname;
+READ_ONLY static Scheme_Object *empty_self_modidx;
+READ_ONLY static Scheme_Object *empty_self_modname;
 
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *starts_table);
 
@@ -214,7 +216,6 @@ THREAD_LOCAL_DECL(static Scheme_Object *global_shift_cache);
 # define SHIFT_CACHE_NULLP(x) !(x)
 #endif
 
-static Scheme_Bucket_Table *modpath_table;
 #define SCHEME_MODNAMEP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_resolved_module_path_type)
 
 typedef void (*Check_Func)(Scheme_Object *prnt_name, Scheme_Object *name, 

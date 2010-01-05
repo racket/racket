@@ -23,7 +23,7 @@
 
 #ifndef NO_SCHEME_THREADS
 
-Scheme_Object *scheme_always_ready_evt;
+READ_ONLY Scheme_Object *scheme_always_ready_evt;
 THREAD_LOCAL_DECL(Scheme_Object *scheme_system_idle_channel);
 
 static Scheme_Object *make_sema(int n, Scheme_Object **p);
@@ -60,7 +60,7 @@ static int pending_break(Scheme_Thread *p);
 int scheme_main_was_once_suspended;
 
 THREAD_LOCAL_DECL(static Scheme_Object *system_idle_put_evt);
-static Scheme_Object *thread_recv_evt;
+READ_ONLY static Scheme_Object *thread_recv_evt;
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);

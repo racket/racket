@@ -48,12 +48,12 @@ extern MZ_DLLIMPORT void (*GC_custom_finalize)(void);
 extern int GC_is_marked(void *);
 #endif
 
-Scheme_Hash_Table *scheme_symbol_table = NULL;
-Scheme_Hash_Table *scheme_keyword_table = NULL;
-Scheme_Hash_Table *scheme_parallel_symbol_table = NULL;
+SHARED_OK Scheme_Hash_Table *scheme_symbol_table = NULL;
+SHARED_OK Scheme_Hash_Table *scheme_keyword_table = NULL;
+SHARED_OK Scheme_Hash_Table *scheme_parallel_symbol_table = NULL;
 
 #ifdef MZ_USE_PLACES
-mzrt_rwlock *symbol_table_lock;
+SHARED_OK mzrt_rwlock *symbol_table_lock;
 #else
 # define mzrt_rwlock_rdlock(l) /* empty */
 # define mzrt_rwlock_wrlock(l) /* empty */
@@ -63,7 +63,8 @@ mzrt_rwlock *symbol_table_lock;
 unsigned long scheme_max_found_symbol_name;
 
 /* globals */
-int scheme_case_sensitive = 1;
+SHARED_OK int scheme_case_sensitive = 1;
+static int gensym_counter;
 
 void scheme_set_case_sensitive(int v) { scheme_case_sensitive =  v; }
 
@@ -80,7 +81,6 @@ static Scheme_Object *string_to_keyword_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *keyword_to_string_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *gensym(int argc, Scheme_Object *argv[]);
 
-static int gensym_counter;
 
 /**************************************************************************/
 

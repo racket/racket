@@ -31,7 +31,7 @@ enum {
 #define MZEXN_MAXARGS 3
 
 #ifdef GLOBAL_EXN_ARRAY
-static exn_rec exn_table[] = {
+READ_ONLY static exn_rec exn_table[] = {
   { 2, NULL, NULL, 0, NULL, -1 },
   { 2, NULL, NULL, 0, NULL, 0 },
   { 2, NULL, NULL, 0, NULL, 1 },
@@ -54,7 +54,7 @@ static exn_rec exn_table[] = {
   { 3, NULL, NULL, 0, NULL, 0 }
 };
 #else
-static exn_rec *exn_table;
+READ_ONLY static exn_rec *exn_table;
 #endif
 
 #endif
@@ -88,11 +88,11 @@ static exn_rec *exn_table;
 #endif
 
 #ifdef _MZEXN_DECL_FIELDS
-  static const char *MZEXN_FIELDS[2] = { "message", "continuation-marks" };
-  static const char *MZEXN_FAIL_CONTRACT_VARIABLE_FIELDS[1] = { "id" };
-  static const char *MZEXN_FAIL_SYNTAX_FIELDS[1] = { "exprs" };
-  static const char *MZEXN_FAIL_READ_FIELDS[1] = { "srclocs" };
-  static const char *MZEXN_BREAK_FIELDS[1] = { "continuation" };
+  READ_ONLY static const char *MZEXN_FIELDS[2] = { "message", "continuation-marks" };
+  READ_ONLY static const char *MZEXN_FAIL_CONTRACT_VARIABLE_FIELDS[1] = { "id" };
+  READ_ONLY static const char *MZEXN_FAIL_SYNTAX_FIELDS[1] = { "exprs" };
+  READ_ONLY static const char *MZEXN_FAIL_READ_FIELDS[1] = { "srclocs" };
+  READ_ONLY static const char *MZEXN_BREAK_FIELDS[1] = { "continuation" };
 #endif
 
 #ifdef _MZEXN_DECL_PROPS

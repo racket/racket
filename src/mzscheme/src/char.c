@@ -28,7 +28,7 @@
 
 /* globals */
 #include "schuchar.inc"
-Scheme_Object **scheme_char_constants;
+READ_ONLY Scheme_Object **scheme_char_constants;
 
 /* locals */
 static Scheme_Object *char_p (int argc, Scheme_Object *argv[]);

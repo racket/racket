@@ -7,17 +7,17 @@
    via the scheme_uchar_find() macro in scheme.h. */
 
 /* Character properties: */
-unsigned short *scheme_uchar_table[8192];
+READ_ONLY unsigned short *scheme_uchar_table[8192];
 
 /* Character case mapping as index into scheme_uchar_ups, etc.: */
-unsigned char *scheme_uchar_cases_table[8192];
+READ_ONLY unsigned char *scheme_uchar_cases_table[8192];
 
 /* Character general categories: */
-unsigned char *scheme_uchar_cats_table[8192];
+READ_ONLY unsigned char *scheme_uchar_cats_table[8192];
 
 /* The udata... arrays are used by init_uchar_table to fill the above mappings.*/
 
-static unsigned short udata[] = {
+READ_ONLY static unsigned short udata[] = {
  /* 0 */
  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
@@ -1465,7 +1465,7 @@ static unsigned short udata[] = {
  0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0
 };
 
-static unsigned char udata_cases[] = {
+READ_ONLY static unsigned char udata_cases[] = {
  /* 0 */
  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2164,7 +2164,7 @@ static unsigned char udata_cases[] = {
  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
-static unsigned char udata_cats[] = {
+READ_ONLY static unsigned char udata_cats[] = {
  /* 0 */
  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -3618,7 +3618,7 @@ static unsigned char udata_cats[] = {
    is relative to the original character (except for combining class,
    of course). */
 
-int scheme_uchar_ups[] = {
+READ_ONLY int scheme_uchar_ups[] = {
  0, 0, -32, 743, 121, 0, -1, 0, -232, 0, -300, 195, 0, 0, 0, 0,
  0, 0, 0, 97, 0, 0, 163, 0, 130, 0, 0, 0, 0, 56, 0, -1,
  -2, -79, 0, 0, 0, 0, 0, 0, 0, 0, 0, -210, -206, -205, -202, -203,
@@ -3631,7 +3631,7 @@ int scheme_uchar_ups[] = {
  9, 0, 0, -7205, 0, 0, 0, 0, 0, 0, 0, 0, 0, -28, 0, -16,
  0, -26, 0, 0, 0, -10795, -10792, -7264, 0, 0, 0, 0, 0, -40, 0 };
 
-int scheme_uchar_downs[] = {
+READ_ONLY int scheme_uchar_downs[] = {
  0, 32, 0, 0, 0, 1, 0, -199, 0, -121, 0, 0, 210, 206, 205, 79,
  202, 203, 207, 0, 211, 209, 0, 213, 0, 214, 218, 217, 219, 0, 2, 1,
  0, 0, -97, -56, -130, 10795, -163, 10792, -195, 69, 71, 0, 0, 0, 0, 0,
@@ -3644,7 +3644,7 @@ int scheme_uchar_downs[] = {
  0, -74, -9, 0, -86, -100, -112, -128, -126, -7517, -8383, -8262, 28, 0, 16, 0,
  26, 0, -10743, -3814, -10727, 0, 0, 0, 0, 0, 0, 0, 40, 0, 0 };
 
-int scheme_uchar_titles[] = {
+READ_ONLY int scheme_uchar_titles[] = {
  0, 0, -32, 743, 121, 0, -1, 0, -232, 0, -300, 195, 0, 0, 0, 0,
  0, 0, 0, 97, 0, 0, 163, 0, 130, 0, 0, 0, 0, 56, 1, 0,
  -1, -79, 0, 0, 0, 0, 0, 0, 0, 0, 0, -210, -206, -205, -202, -203,
@@ -3657,7 +3657,7 @@ int scheme_uchar_titles[] = {
  9, 0, 0, -7205, 0, 0, 0, 0, 0, 0, 0, 0, 0, -28, 0, -16,
  0, -26, 0, 0, 0, -10795, -10792, -7264, 0, 0, 0, 0, 0, -40, 0 };
 
-int scheme_uchar_folds[] = {
+READ_ONLY int scheme_uchar_folds[] = {
  0, 32, 0, 775, 0, 1, 0, 0, 0, -121, -268, 0, 210, 206, 205, 79,
  202, 203, 207, 0, 211, 209, 0, 213, 0, 214, 218, 217, 219, 0, 2, 1,
  0, 0, -97, -56, -130, 10795, -163, 10792, -195, 69, 71, 0, 0, 0, 0, 0,
@@ -3670,7 +3670,7 @@ int scheme_uchar_folds[] = {
  0, -74, -9, -7173, -86, -100, -112, -128, -126, -7517, -8383, -8262, 28, 0, 16, 0,
  26, 0, -10743, -3814, -10727, 0, 0, 0, 0, 0, 0, 0, 40, 0, 0 };
 
-unsigned char scheme_uchar_combining_classes[] = {
+READ_ONLY unsigned char scheme_uchar_combining_classes[] = {
  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -3684,7 +3684,7 @@ unsigned char scheme_uchar_combining_classes[] = {
  0, 0, 0, 0, 0, 0, 0, 0, 218, 224, 8, 26, 0, 0, 226 };
 
 #define NUM_GENERAL_CATEGORIES 30
-static const char *general_category_names[] = {
+READ_ONLY static const char *general_category_names[] = {
   "cn",
   "cc",
   "cf",
@@ -3720,7 +3720,7 @@ static const char *general_category_names[] = {
 #define NUM_UCHAR_RANGES 430
 
 #define URANGE_VARIES 0x40000000
-static int mapped_uchar_ranges[] = {
+READ_ONLY static int mapped_uchar_ranges[] = {
   0x0, 0x36f | URANGE_VARIES,
   0x374, 0x375 | URANGE_VARIES,
   0x37a, 0x37e | URANGE_VARIES,

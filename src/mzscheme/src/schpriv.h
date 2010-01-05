@@ -20,6 +20,18 @@
 
 #include "scheme.h"
 
+#ifdef CIL_ANALYSIS
+#define ROSYM          __attribute__((__ROSYM__))
+#define READ_ONLY      __attribute__((__READ_ONLY__))
+#define SHARED_OK      __attribute__((__SHARED_OK__))
+#define HOOK_SHARED_OK __attribute__((__HOOK_SHARED_OK__))
+#else
+#define ROSYM          /* EMPTY */
+#define READ_ONLY      /* EMPTY */
+#define SHARED_OK      /* EMPTY */
+#define HOOK_SHARED_OK /* EMPTY */
+#endif
+
 /*========================================================================*/
 /*                         allocation and GC                              */
 /*========================================================================*/

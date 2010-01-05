@@ -31,13 +31,13 @@
 #endif
 
 /* global_constants */
-Scheme_Object scheme_true[1];
-Scheme_Object scheme_false[1];
+READ_ONLY Scheme_Object scheme_true[1];
+READ_ONLY Scheme_Object scheme_false[1];
 
-Scheme_Object *scheme_not_prim;
-Scheme_Object *scheme_eq_prim;
-Scheme_Object *scheme_eqv_prim;
-Scheme_Object *scheme_equal_prim;
+READ_ONLY Scheme_Object *scheme_not_prim;
+READ_ONLY Scheme_Object *scheme_eq_prim;
+READ_ONLY Scheme_Object *scheme_eqv_prim;
+READ_ONLY Scheme_Object *scheme_equal_prim;
 
 /* locals */
 static Scheme_Object *not_prim (int argc, Scheme_Object *argv[]);

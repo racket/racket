@@ -149,53 +149,54 @@
 
 #define EMBEDDED_DEFINES_START_ANYWHERE 0
 
-/* globals */
-THREAD_LOCAL_DECL(volatile int scheme_fuel_counter);
 
+/* globals */
 int scheme_startup_use_jit = 1;
 void scheme_set_startup_use_jit(int v) { scheme_startup_use_jit =  v; }
-
-/* THREAD LOCAL SHARED */
-#ifdef USE_STACK_BOUNDARY_VAR
-THREAD_LOCAL_DECL(unsigned long scheme_stack_boundary);
-THREAD_LOCAL_DECL(unsigned long volatile scheme_jit_stack_boundary);
-#endif
-THREAD_LOCAL_DECL(static Scheme_Object *quick_stx);
 
 /* global counters */
 /* FIXME needs to be atomically incremented */
 int scheme_overflow_count;
 int get_overflow_count() { return scheme_overflow_count; }
+
+
+/* THREAD LOCAL SHARED */
+THREAD_LOCAL_DECL(volatile int scheme_fuel_counter);
+#ifdef USE_STACK_BOUNDARY_VAR
+THREAD_LOCAL_DECL(unsigned long scheme_stack_boundary);
+THREAD_LOCAL_DECL(unsigned long volatile scheme_jit_stack_boundary);
+#endif
+THREAD_LOCAL_DECL(static Scheme_Object *quick_stx);
 THREAD_LOCAL_DECL(int scheme_continuation_application_count);
 
 /* read-only globals */
-Scheme_Object *scheme_eval_waiting;
-Scheme_Object *scheme_multiple_values;
-static Scheme_Object *app_expander;
-static Scheme_Object *datum_expander;
-static Scheme_Object *top_expander;
-static Scheme_Object *stop_expander;
+READ_ONLY Scheme_Object *scheme_eval_waiting;
+READ_ONLY Scheme_Object *scheme_multiple_values;
+READ_ONLY static Scheme_Object *app_expander;
+READ_ONLY static Scheme_Object *datum_expander;
+READ_ONLY static Scheme_Object *top_expander;
+READ_ONLY static Scheme_Object *stop_expander;
 /* symbols */
-static Scheme_Object *app_symbol;
-static Scheme_Object *datum_symbol;
-static Scheme_Object *top_symbol;
-static Scheme_Object *top_level_symbol;
-static Scheme_Object *define_values_symbol;
-static Scheme_Object *letrec_values_symbol;
-static Scheme_Object *lambda_symbol;
-static Scheme_Object *unknown_symbol;
-static Scheme_Object *void_link_symbol;
-static Scheme_Object *quote_symbol;
-static Scheme_Object *letrec_syntaxes_symbol;
-static Scheme_Object *begin_symbol;
-static Scheme_Object *let_values_symbol;
-static Scheme_Object *internal_define_symbol;
-static Scheme_Object *module_symbol;
-static Scheme_Object *module_begin_symbol;
-static Scheme_Object *expression_symbol;
-static Scheme_Object *protected_symbol;
-Scheme_Object *scheme_stack_dump_key;
-static Scheme_Object *zero_rands_ptr; /* &zero_rands_ptr is dummy rands pointer */
+ROSYM static Scheme_Object *app_symbol;
+ROSYM static Scheme_Object *datum_symbol;
+ROSYM static Scheme_Object *top_symbol;
+ROSYM static Scheme_Object *top_level_symbol;
+ROSYM static Scheme_Object *define_values_symbol;
+ROSYM static Scheme_Object *letrec_values_symbol;
+ROSYM static Scheme_Object *lambda_symbol;
+ROSYM static Scheme_Object *unknown_symbol;
+ROSYM static Scheme_Object *void_link_symbol;
+ROSYM static Scheme_Object *quote_symbol;
+ROSYM static Scheme_Object *letrec_syntaxes_symbol;
+ROSYM static Scheme_Object *begin_symbol;
+ROSYM static Scheme_Object *let_values_symbol;
+ROSYM static Scheme_Object *internal_define_symbol;
+ROSYM static Scheme_Object *module_symbol;
+ROSYM static Scheme_Object *module_begin_symbol;
+ROSYM static Scheme_Object *expression_symbol;
+ROSYM static Scheme_Object *protected_symbol;
+ROSYM Scheme_Object *scheme_stack_dump_key;
+READ_ONLY static Scheme_Object *zero_rands_ptr; /* &zero_rands_ptr is dummy rands pointer */
 
 /* locals */
 static Scheme_Object *eval(int argc, Scheme_Object *argv[]);

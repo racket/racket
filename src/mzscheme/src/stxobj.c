@@ -37,7 +37,30 @@
    In addition, the need to marshal syntax objects to bytecode
    introduces some other complications. */
 
-static Scheme_Object *scheme_datum_to_syntax_proc;
+READ_ONLY static Scheme_Object *scheme_datum_to_syntax_proc;
+ROSYM static Scheme_Object *source_symbol; /* uninterned! */
+ROSYM static Scheme_Object *share_symbol; /* uninterned! */
+ROSYM static Scheme_Object *origin_symbol;
+ROSYM static Scheme_Object *lexical_symbol;
+ROSYM static Scheme_Object *protected_symbol;
+ROSYM static Scheme_Object *nominal_id_symbol;
+
+READ_ONLY static Scheme_Stx_Srcloc *empty_srcloc;
+READ_ONLY static Scheme_Object *empty_simplified;
+READ_ONLY static Scheme_Object *no_nested_inactive_certs;
+READ_ONLY static Scheme_Object *no_nested_active_certs;
+READ_ONLY static Scheme_Object *no_nested_certs;
+
+THREAD_LOCAL_DECL(static Scheme_Object *nominal_ipair_cache);
+THREAD_LOCAL_DECL(static Scheme_Object *mark_id);
+THREAD_LOCAL_DECL(static Scheme_Object *current_rib_timestamp);
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *quick_hash_table);
+THREAD_LOCAL_DECL(static Scheme_Object *last_phase_shift);
+THREAD_LOCAL_DECL(static Scheme_Object *unsealed_dependencies);
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *id_marks_ht); /* a cache */
+THREAD_LOCAL_DECL(static Scheme_Hash_Table *than_id_marks_ht); /* a cache */
+THREAD_LOCAL_DECL(static Scheme_Bucket_Table *interned_skip_ribs);
+
 
 static Scheme_Object *syntax_p(int argc, Scheme_Object **argv);
 
@@ -75,36 +98,6 @@ static Scheme_Object *lift_inactive_certs(Scheme_Object *o, int as_active);
 static Scheme_Object *write_free_id_info_prefix(Scheme_Object *obj);
 static Scheme_Object *read_free_id_info_prefix(Scheme_Object *obj, Scheme_Object *insp);
 
-static Scheme_Object *source_symbol; /* uninterned! */
-static Scheme_Object *share_symbol; /* uninterned! */
-static Scheme_Object *origin_symbol;
-static Scheme_Object *lexical_symbol;
-static Scheme_Object *protected_symbol;
-static Scheme_Object *nominal_id_symbol;
-
-THREAD_LOCAL_DECL(static Scheme_Object *nominal_ipair_cache);
-
-THREAD_LOCAL_DECL(static Scheme_Object *mark_id);
-THREAD_LOCAL_DECL(static Scheme_Object *current_rib_timestamp);
-
-static Scheme_Stx_Srcloc *empty_srcloc;
-
-static Scheme_Object *empty_simplified;
-
-THREAD_LOCAL_DECL(static Scheme_Hash_Table *quick_hash_table);
-
-THREAD_LOCAL_DECL(static Scheme_Object *last_phase_shift);
-
-THREAD_LOCAL_DECL(static Scheme_Object *unsealed_dependencies);
-
-THREAD_LOCAL_DECL(static Scheme_Hash_Table *id_marks_ht); /* a cache */
-THREAD_LOCAL_DECL(static Scheme_Hash_Table *than_id_marks_ht); /* a cache */
-
-THREAD_LOCAL_DECL(static Scheme_Bucket_Table *interned_skip_ribs);
-
-static Scheme_Object *no_nested_inactive_certs;
-static Scheme_Object *no_nested_active_certs;
-static Scheme_Object *no_nested_certs;
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);

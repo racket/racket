@@ -95,7 +95,7 @@ void scheme_bignum_use_fuel(long n);
 # define WORD_SIZE 32
 #endif
 
-static Scheme_Object *bignum_one;
+READ_ONLY static Scheme_Object *bignum_one;
 
 void scheme_init_bignum() {
   REGISTER_SO(bignum_one);

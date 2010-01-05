@@ -128,7 +128,7 @@ long scheme_creator_id = 'MzSc';
 #define IS_A_SEP(kind, x) ((kind == SCHEME_UNIX_PATH_KIND) ? IS_A_UNIX_SEP(x) : IS_A_DOS_SEP(x))
 #define IS_A_PRIM_SEP(kind, x) ((kind == SCHEME_UNIX_PATH_KIND) ? IS_A_UNIX_PRIM_SEP(x) : IS_A_DOS_PRIM_SEP(x))
 
-MZ_DLLSPEC int scheme_ignore_user_paths;
+SHARED_OK int scheme_ignore_user_paths;
 void scheme_set_ignore_user_paths(int v) { scheme_ignore_user_paths = v; }
 
 #define CURRENT_WD() scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_DIRECTORY)
@@ -216,21 +216,22 @@ static char *do_normal_path_seps(char *si, int *_len, int delta, int strip_trail
 static char *remove_redundant_slashes(char *filename, int *l, int delta, int *expanded, int kind);
 static Scheme_Object *do_path_to_directory_path(char *s, long offset, long len, Scheme_Object *p, int just_check, int kind);
 
-static Scheme_Object *up_symbol, *relative_symbol;
-static Scheme_Object *same_symbol;
+READ_ONLY static Scheme_Object *up_symbol;
+READ_ONLY static Scheme_Object *relative_symbol;
+READ_ONLY static Scheme_Object *same_symbol;
 #ifndef NO_FILE_SYSTEM_UTILS
-static Scheme_Object *read_symbol, *write_symbol, *execute_symbol;
+READ_ONLY static Scheme_Object *read_symbol, *write_symbol, *execute_symbol;
 
-static Scheme_Object *temp_dir_symbol, *home_dir_symbol, *pref_dir_symbol;
-static Scheme_Object *doc_dir_symbol, *desk_dir_symbol;
-static Scheme_Object *init_dir_symbol, *init_file_symbol, *sys_dir_symbol;
-static Scheme_Object *exec_file_symbol, *run_file_symbol, *collects_dir_symbol;
-static Scheme_Object *pref_file_symbol, *orig_dir_symbol, *addon_dir_symbol;
+READ_ONLY static Scheme_Object *temp_dir_symbol, *home_dir_symbol, *pref_dir_symbol;
+READ_ONLY static Scheme_Object *doc_dir_symbol, *desk_dir_symbol;
+READ_ONLY static Scheme_Object *init_dir_symbol, *init_file_symbol, *sys_dir_symbol;
+READ_ONLY static Scheme_Object *exec_file_symbol, *run_file_symbol, *collects_dir_symbol;
+READ_ONLY static Scheme_Object *pref_file_symbol, *orig_dir_symbol, *addon_dir_symbol;
 
-static Scheme_Object *exec_cmd, *run_cmd;
-static Scheme_Object *collects_path, *original_pwd = NULL, *addon_dir = NULL;
+SHARED_OK static Scheme_Object *exec_cmd, *run_cmd;
+SHARED_OK static Scheme_Object *collects_path, *original_pwd = NULL, *addon_dir = NULL;
 #endif
-static Scheme_Object *windows_symbol, *unix_symbol;
+READ_ONLY static Scheme_Object *windows_symbol, *unix_symbol;
 
 void scheme_init_file(Scheme_Env *env)
 {
@@ -1623,7 +1624,7 @@ char *strip_trailing_spaces(const char *s, int *_len, int delta, int in_place)
 }
 
 /* Watch out for special device names. Could we do better than hardwiring this list? */
-static char *special_filenames[] = { "NUL", "CON", "PRN", "AUX", /* NT only: "CLOCK$", */
+READ_ONLY static const char *special_filenames[] = { "NUL", "CON", "PRN", "AUX", /* NT only: "CLOCK$", */
                                      "COM1", "COM2", "COM3", "COM4", "COM5", 
                                      "COM6", "COM7", "COM8", "COM9",
                                      "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", 

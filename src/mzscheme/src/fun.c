@@ -76,22 +76,50 @@ static void ASSERT_SUSPEND_BREAK_ZERO() {
 }
 
 /* globals */
-int scheme_defining_primitives; /* set to 1 during start-up */
+SHARED_OK int scheme_defining_primitives; /* set to 1 during start-up */
 
-Scheme_Object scheme_void[1]; /* the void constant */
-Scheme_Object *scheme_values_func; /* the function bound to `values' */
-Scheme_Object *scheme_procedure_p_proc;
-Scheme_Object *scheme_procedure_arity_includes_proc;
-Scheme_Object *scheme_void_proc;
-Scheme_Object *scheme_call_with_values_proc; /* the function bound to `call-with-values' */
-Scheme_Object *scheme_reduced_procedure_struct;
-Scheme_Object *scheme_tail_call_waiting;
-Scheme_Object *scheme_inferred_name_symbol;
-Scheme_Object *scheme_default_prompt_tag;
+READ_ONLY Scheme_Object scheme_void[1]; /* the void constant */
+READ_ONLY Scheme_Object *scheme_values_func; /* the function bound to `values' */
+READ_ONLY Scheme_Object *scheme_procedure_p_proc;
+READ_ONLY Scheme_Object *scheme_procedure_arity_includes_proc;
+READ_ONLY Scheme_Object *scheme_void_proc;
+READ_ONLY Scheme_Object *scheme_call_with_values_proc; /* the function bound to `call-with-values' */
+READ_ONLY Scheme_Object *scheme_reduced_procedure_struct;
+READ_ONLY Scheme_Object *scheme_tail_call_waiting;
+READ_ONLY Scheme_Object *scheme_inferred_name_symbol;
+READ_ONLY Scheme_Object *scheme_default_prompt_tag;
+
+/* READ ONLY SHARABLE GLOBALS */
+
+ROSYM static Scheme_Object *certify_mode_symbol;
+ROSYM static Scheme_Object *transparent_symbol;
+ROSYM static Scheme_Object *transparent_binding_symbol;
+ROSYM static Scheme_Object *opaque_symbol;
+ROSYM static Scheme_Object *is_method_symbol;
+ROSYM static Scheme_Object *cont_key; /* uninterned */
+ROSYM static Scheme_Object *barrier_prompt_key; /* uninterned */
+READ_ONLY static Scheme_Prompt *original_default_prompt; /* for escapes, represents the implicit initial prompt */
+READ_ONLY static Scheme_Object *call_with_prompt_proc;
+READ_ONLY static Scheme_Object *abort_continuation_proc;
+READ_ONLY static Scheme_Object *internal_call_cc_prim;
+
+/* Caches need to be thread-local: */
+THREAD_LOCAL_DECL(static Scheme_Prompt *available_prompt);
+THREAD_LOCAL_DECL(static Scheme_Prompt *available_cws_prompt);
+THREAD_LOCAL_DECL(static Scheme_Prompt *available_regular_prompt);
+THREAD_LOCAL_DECL(static Scheme_Dynamic_Wind *available_prompt_dw);
+THREAD_LOCAL_DECL(static Scheme_Meta_Continuation *available_prompt_mc);
+THREAD_LOCAL_DECL(static Scheme_Object *cached_beg_stx);
+THREAD_LOCAL_DECL(static Scheme_Object *cached_mod_stx);
+THREAD_LOCAL_DECL(static Scheme_Object *cached_mod_beg_stx);
+THREAD_LOCAL_DECL(static Scheme_Object *cached_dv_stx);
+THREAD_LOCAL_DECL(static Scheme_Object *cached_ds_stx);
+THREAD_LOCAL_DECL(static int cached_stx_phase);
+THREAD_LOCAL_DECL(static Scheme_Cont *offstack_cont);
+THREAD_LOCAL_DECL(static Scheme_Overflow *offstack_overflow);
 
 THREAD_LOCAL_DECL(int scheme_cont_capture_count);
 THREAD_LOCAL_DECL(static int scheme_prompt_capture_count);
-
 
 /* locals */
 static Scheme_Object *procedure_p (int argc, Scheme_Object *argv[]);
@@ -150,40 +178,6 @@ static Scheme_Object *current_prompt_read(int, Scheme_Object **);
 
 static Scheme_Object *write_compiled_closure(Scheme_Object *obj);
 static Scheme_Object *read_compiled_closure(Scheme_Object *obj);
-
-/* READ ONLY SHARABLE GLOBALS */
-static Scheme_Prompt *original_default_prompt; /* for escapes, represents the implicit initial prompt */
-
-static Scheme_Object *certify_mode_symbol;
-static Scheme_Object *transparent_symbol;
-static Scheme_Object *transparent_binding_symbol;
-static Scheme_Object *opaque_symbol;
-
-static Scheme_Object *cont_key; /* uninterned */
-static Scheme_Object *barrier_prompt_key; /* uninterned */
-
-static Scheme_Object *is_method_symbol;
-
-static Scheme_Object *call_with_prompt_proc;
-static Scheme_Object *abort_continuation_proc;
-
-static Scheme_Object *internal_call_cc_prim;
-
-/* Caches need to be thread-local: */
-THREAD_LOCAL_DECL(static Scheme_Prompt *available_prompt);
-THREAD_LOCAL_DECL(static Scheme_Prompt *available_cws_prompt);
-THREAD_LOCAL_DECL(static Scheme_Prompt *available_regular_prompt);
-THREAD_LOCAL_DECL(static Scheme_Dynamic_Wind *available_prompt_dw);
-THREAD_LOCAL_DECL(static Scheme_Meta_Continuation *available_prompt_mc);
-THREAD_LOCAL_DECL(static Scheme_Object *cached_beg_stx);
-THREAD_LOCAL_DECL(static Scheme_Object *cached_mod_stx);
-THREAD_LOCAL_DECL(static Scheme_Object *cached_mod_beg_stx);
-THREAD_LOCAL_DECL(static Scheme_Object *cached_dv_stx);
-THREAD_LOCAL_DECL(static Scheme_Object *cached_ds_stx);
-THREAD_LOCAL_DECL(static int cached_stx_phase);
-THREAD_LOCAL_DECL(static Scheme_Cont *offstack_cont);
-THREAD_LOCAL_DECL(static Scheme_Overflow *offstack_overflow);
-
 
 typedef void (*DW_PrePost_Proc)(void *);
 

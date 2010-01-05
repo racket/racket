@@ -26,17 +26,19 @@
 #include "schpriv.h"
 #include <string.h>
 
-Scheme_Type_Reader2 *scheme_type_readers;
-Scheme_Type_Writer *scheme_type_writers;
-Scheme_Equal_Proc *scheme_type_equals;
-Scheme_Primary_Hash_Proc *scheme_type_hash1s;
-Scheme_Secondary_Hash_Proc *scheme_type_hash2s;
+/* types should all be registered before invoking places */
 
-static char **type_names;
-static Scheme_Type maxtype, allocmax;
+SHARED_OK Scheme_Type_Reader2 *scheme_type_readers;
+SHARED_OK Scheme_Type_Writer *scheme_type_writers;
+SHARED_OK Scheme_Equal_Proc *scheme_type_equals;
+SHARED_OK Scheme_Primary_Hash_Proc *scheme_type_hash1s;
+SHARED_OK Scheme_Secondary_Hash_Proc *scheme_type_hash2s;
+
+SHARED_OK static char **type_names;
+SHARED_OK static Scheme_Type maxtype, allocmax;
 
 #ifdef MEMORY_COUNTING_ON
-long scheme_type_table_count;
+SHARED_OK long scheme_type_table_count;
 #endif
 
 static void init_type_arrays()

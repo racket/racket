@@ -185,16 +185,10 @@ extern int GC_is_marked(void *);
 # endif
 #endif
 
-/* On swap, put target in a static variable, instead of on the stack,
-   so that the swapped-out thread is less likely to have a pointer
-   to the target thread. */
-THREAD_LOCAL_DECL(static Scheme_Thread *swap_target);
 
-THREAD_LOCAL_DECL(static Scheme_Object *scheduled_kills);
-
-Scheme_Object *scheme_parameterization_key;
-Scheme_Object *scheme_exn_handler_key;
-Scheme_Object *scheme_break_enabled_key;
+ROSYM Scheme_Object *scheme_parameterization_key;
+ROSYM Scheme_Object *scheme_exn_handler_key;
+ROSYM Scheme_Object *scheme_break_enabled_key;
 
 long scheme_total_gc_time;
 static long start_this_gc_time, end_this_gc_time;
@@ -213,16 +207,32 @@ void (*scheme_wakeup_on_input)(void *fds);
 int (*scheme_check_for_break)(void);
 void (*scheme_on_atomic_timeout)(void);
 
+ROSYM static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
+ROSYM static Scheme_Object *client_symbol, *server_symbol;
+
+	
+
 THREAD_LOCAL_DECL(static int do_atomic = 0);
 THREAD_LOCAL_DECL(static int missed_context_switch = 0);
 THREAD_LOCAL_DECL(static int have_activity = 0);
 THREAD_LOCAL_DECL(int scheme_active_but_sleeping = 0);
 THREAD_LOCAL_DECL(static int thread_ended_with_activity);
 THREAD_LOCAL_DECL(int scheme_no_stack_overflow);
-
 THREAD_LOCAL_DECL(static int needs_sleep_cancelled);
-
 THREAD_LOCAL_DECL(static int tls_pos = 0);
+/* On swap, put target in a static variable, instead of on the stack,
+   so that the swapped-out thread is less likely to have a pointer
+   to the target thread. */
+THREAD_LOCAL_DECL(static Scheme_Thread *swap_target);
+THREAD_LOCAL_DECL(static Scheme_Object *scheduled_kills);
+THREAD_LOCAL_DECL(static Scheme_Object *the_nested_exn_handler);
+THREAD_LOCAL_DECL(static Scheme_Object *cust_closers);
+THREAD_LOCAL_DECL(static Scheme_Object *thread_swap_callbacks);
+THREAD_LOCAL_DECL(static Scheme_Object *thread_swap_out_callbacks);
+THREAD_LOCAL_DECL(static Scheme_Object *recycle_cell);
+THREAD_LOCAL_DECL(static Scheme_Object *maybe_recycle_cell);
+THREAD_LOCAL_DECL(static int recycle_cc_count);
+THREAD_LOCAL_DECL(static mz_jmp_buf main_init_error_buf);
 
 #ifdef MZ_PRECISE_GC
 extern long GC_get_memory_use(void *c);
@@ -242,22 +252,6 @@ typedef struct Thread_Cell {
   Scheme_Bucket_Table *vals;
 } Thread_Cell;
 
-static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
-static Scheme_Object *client_symbol, *server_symbol;
-
-THREAD_LOCAL_DECL(static Scheme_Object *the_nested_exn_handler);
-
-THREAD_LOCAL_DECL(static Scheme_Object *cust_closers);
-
-THREAD_LOCAL_DECL(static Scheme_Object *thread_swap_callbacks);
-THREAD_LOCAL_DECL(static Scheme_Object *thread_swap_out_callbacks);
-
-THREAD_LOCAL_DECL(static Scheme_Object *recycle_cell);
-THREAD_LOCAL_DECL(static Scheme_Object *maybe_recycle_cell);
-THREAD_LOCAL_DECL(static int recycle_cc_count);
-
-THREAD_LOCAL_DECL(static mz_jmp_buf main_init_error_buf);
-	
 #ifdef MZ_PRECISE_GC
 /* This is a trick to get the types right. Note that 
    the layout of the weak box is defined by the

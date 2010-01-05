@@ -219,7 +219,7 @@ static char *mz_iconv_nl_langinfo(){
 }
 #endif
 
-static const char * const STRING_IS_NOT_UTF_8 = "string is not a well-formed UTF-8 encoding: ";
+READ_ONLY static const char * const STRING_IS_NOT_UTF_8 = "string is not a well-formed UTF-8 encoding: ";
 
 static Scheme_Object *make_string (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string (int argc, Scheme_Object *argv[]);
@@ -333,17 +333,17 @@ static char *string_to_from_locale(int to_bytes,
 
 #define portable_isspace(x) (((x) < 128) && isspace(x))
 
-static Scheme_Object *sys_symbol;
-static Scheme_Object *platform_3m_path, *platform_cgc_path;
-static Scheme_Object *zero_length_char_string;
-static Scheme_Object *zero_length_byte_string;
+ROSYM static Scheme_Object *sys_symbol;
+ROSYM static Scheme_Object *platform_3m_path, *platform_cgc_path;
+READ_ONLY static Scheme_Object *zero_length_char_string;
+READ_ONLY static Scheme_Object *zero_length_byte_string;
 
-static Scheme_Hash_Table *putenv_str_table;
+SHARED_OK static Scheme_Hash_Table *putenv_str_table;
 
-static char *embedding_banner;
+SHARED_OK static char *embedding_banner;
 static Scheme_Object *vers_str, *banner_str;
 
-static Scheme_Object *complete_symbol, *continues_symbol, *aborts_symbol, *error_symbol;
+READ_ONLY static Scheme_Object *complete_symbol, *continues_symbol, *aborts_symbol, *error_symbol;
 
 void
 scheme_init_string (Scheme_Env *env)
@@ -5453,7 +5453,7 @@ void machine_details(char *buff)
 /***************************** Unix ***********************************/
 
 #if (!defined(MACINTOSH_EVENTS) || defined(OS_X)) && !defined(DOS_FILE_SYSTEM) && !defined(USE_OSKIT_CONSOLE)
-static char *uname_locations[] = { "/bin/uname",
+READ_ONLY static char *uname_locations[] = { "/bin/uname",
 				   "/usr/bin/uname",
 				   /* The above should cover everything, but
 				      just in case... */

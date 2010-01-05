@@ -2,7 +2,7 @@
 
 #define NUM_SPECIAL_CASINGS 104
 
-static int uchar_special_casings[] = {
+READ_ONLY static int uchar_special_casings[] = {
   /* code,  down len, off,  up len, off,  title len, off,  fold len, off,  final-sigma? */
   223,  1, 0,  2, 1,  2, 3,  2, 5,  0,
   304,  2, 7,  1, 9,  1, 9,  2, 10,  0,
@@ -110,7 +110,7 @@ static int uchar_special_casings[] = {
   64279,  1, 648,  2, 649,  2, 651,  2, 653,  0 };
 
 /* Offsets in scheme_uchar_special_casings point into here: */
-static int uchar_special_casing_data[] = {
+READ_ONLY static int uchar_special_casing_data[] = {
   223, 83, 83, 83, 115, 115, 115, 105, 775, 304, 105, 775, 329, 700, 78, 700,
   110, 496, 74, 780, 106, 780, 912, 921, 776, 769, 953, 776, 769, 962, 931, 963,
   944, 933, 776, 769, 965, 776, 769, 1415, 1333, 1362, 1333, 1410, 1381, 1410, 7830, 72,
@@ -168,7 +168,7 @@ static int uchar_special_casing_data[] = {
    The entire utable_compose_pairs table is referenced by utable_decomp_indices
    to map characters to canonical decompositions.
    None of the [de]composition tables includes Hangol. */
-static unsigned int utable_compose_pairs[] = {
+READ_ONLY static unsigned int utable_compose_pairs[] = {
  0x3c0338, 0x3d0338, 0x3e0338, 0x410300, 0x410301, 0x410302, 0x410303, 0x410304,
  0x410306, 0x410307, 0x410308, 0x410309, 0x41030a, 0x41030c, 0x41030f, 0x410311,
  0x410323, 0x410325, 0x410328, 0x420307, 0x420323, 0x420331, 0x430301, 0x430302,
@@ -410,7 +410,7 @@ static unsigned int utable_compose_pairs[] = {
  0x9ef90000, 0x99a70000, 0x72350000, 0x90f10000, 0x8d770000, 0x3010000, 0xb70000, 0x3b0000,
  0x2b90000, 0x3080301, 0x3130000, 0x3000000, 0x30090000, 0xc50000, 0x20020000
 };
-static unsigned int utable_compose_result[] = {
+READ_ONLY static unsigned int utable_compose_result[] = {
  0x226e, 0x2260, 0x226f, 0xc0, 0xc1, 0xc2, 0xc3, 0x100,
  0x102, 0x226, 0xc4, 0x1ea2, 0xc5, 0x1cd, 0x200, 0x202,
  0x1ea0, 0x1e00, 0x104, 0x1e02, 0x1e04, 0x1e06, 0x106, 0x108,
@@ -533,7 +533,7 @@ static unsigned int utable_compose_result[] = {
    least one is outside the BMP, so it doesn't fit in utable_compose_pairs.
    Negative values in utable_decomp_indices map to this table; add one to
    the mapped index, negate, then multiply by 2 to find the pair. */
-static unsigned int utable_compose_long_pairs[] = {
+READ_ONLY static unsigned int utable_compose_long_pairs[] = {
  0x27ed3, 0x0, 0x25249, 0x0, 0x233d5, 0x0, 0x2284a, 0x0,
  0x21d0b, 0x0, 0x236a3, 0x0, 0x22bf1, 0x0, 0x22b0c, 0x0,
  0x226d4, 0x0, 0x261da, 0x0, 0x22331, 0x0, 0x219c8, 0x0,
@@ -576,7 +576,7 @@ static unsigned int utable_compose_long_pairs[] = {
    utable_long_compose_pairs (when the index is negative). */
 #define DECOMPOSE_TABLE_SIZE 2043
 
-static unsigned int utable_decomp_keys[] = {
+READ_ONLY static unsigned int utable_decomp_keys[] = {
  0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc7, 0xc8,
  0xc9, 0xca, 0xcb, 0xcc, 0xcd, 0xce, 0xcf, 0xd1,
  0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd9, 0xda, 0xdb,
@@ -834,7 +834,7 @@ static unsigned int utable_decomp_keys[] = {
  0x2fa13, 0x2fa14, 0x2fa15, 0x2fa16, 0x2fa17, 0x2fa18, 0x2fa19, 0x2fa1a,
  0x2fa1b, 0x2fa1c, 0x2fa1d
 };
-static short utable_decomp_indices[] = {
+READ_ONLY static short utable_decomp_indices[] = {
  3, 4, 5, 6, 10, 12, 26, 33,
  34, 35, 40, 65, 66, 67, 72, 97,
  104, 105, 106, 107, 111, 144, 145, 146,
@@ -1103,7 +1103,7 @@ static short utable_decomp_indices[] = {
 
 #define KOMPAT_DECOMPOSE_TABLE_SIZE 3359
 
-static unsigned int utable_kompat_decomp_keys[] = {
+READ_ONLY static unsigned int utable_kompat_decomp_keys[] = {
  0xa0, 0xa8, 0xaa, 0xaf, 0xb2, 0xb3, 0xb4, 0xb5,
  0xb8, 0xb9, 0xba, 0xbc, 0xbd, 0xbe, 0x132, 0x133,
  0x13f, 0x140, 0x149, 0x17f, 0x1c4, 0x1c5, 0x1c6, 0x1c7,
@@ -1525,7 +1525,7 @@ static unsigned int utable_kompat_decomp_keys[] = {
  0x1d7f1, 0x1d7f2, 0x1d7f3, 0x1d7f4, 0x1d7f5, 0x1d7f6, 0x1d7f7, 0x1d7f8,
  0x1d7f9, 0x1d7fa, 0x1d7fb, 0x1d7fc, 0x1d7fd, 0x1d7fe, 0x1d7ff
 };
-static char utable_kompat_decomp_lens[] = {
+READ_ONLY static char utable_kompat_decomp_lens[] = {
  1, 2, 1, 2, 1, 1, 2, 1, 2, 1, 1, 3, 3, 3, 2, 2, 2, 2, 2, 1, 3, 3, 3, 2,
  2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 1,
  1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
@@ -1667,7 +1667,7 @@ static char utable_kompat_decomp_lens[] = {
  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 };
-static short utable_kompat_decomp_indices[] = {
+READ_ONLY static short utable_kompat_decomp_indices[] = {
  0, 1, 3, 4, 6, 7, 8, 10, 11, 13, 14, 15, 18, 21, 24, 26,
  28, 30, 32, 34, 35, 38, 41, 44, 46, 48, 50, 52, 54, 56, 58, 60,
  62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 73, 75, 77, 79, 81, 83,
@@ -1879,7 +1879,7 @@ static short utable_kompat_decomp_indices[] = {
  257, 251, 13, 6, 7, 252, 253, 254, 255, 256, 257, 251, 13, 6, 7, 252,
  253, 254, 255, 256, 257, 251, 13, 6, 7, 252, 253, 254, 255, 256, 257
 };
-static unsigned short utable_kompat_decomp_strs[] = {
+READ_ONLY static unsigned short utable_kompat_decomp_strs[] = {
  0x20, 0x20, 0x308, 0x61, 0x20, 0x304, 0x32, 0x33,
  0x20, 0x301, 0x3bc, 0x20, 0x327, 0x31, 0x6f, 0x31,
  0x2044, 0x34, 0x31, 0x2044, 0x32, 0x33, 0x2044, 0x34,

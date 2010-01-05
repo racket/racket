@@ -8,7 +8,7 @@
 #include "mzrt.h"
 
 
-mz_proc_thread *scheme_master_proc_thread;
+SHARED_OK mz_proc_thread *scheme_master_proc_thread;
 THREAD_LOCAL_DECL(mz_proc_thread *proc_thread_self);
 
 Scheme_Object *scheme_place(int argc, Scheme_Object *args[]);
@@ -154,8 +154,8 @@ typedef struct Child_Status {
   struct Child_Status *next;
 } Child_Status;
 
-static Child_Status *child_statuses = NULL;
-static mzrt_mutex* child_status_lock = NULL;
+SHARED_OK static Child_Status *child_statuses = NULL;
+SHARED_OK static mzrt_mutex* child_status_lock = NULL;
 
 static void add_child_status(int pid, int status) {
   Child_Status *st;

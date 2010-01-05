@@ -316,7 +316,7 @@ typedef struct SOCKADDR_IN mz_unspec_address;
 # ifdef PROTOENT_IS_INT
 #  define PROTO_P_PROTO PROTOENT_IS_INT
 # else
-static struct protoent *proto;
+SHARED_OK static struct protoent *proto;
 #  define PROTO_P_PROTO (proto ? proto->p_proto : 0)
 # endif
 

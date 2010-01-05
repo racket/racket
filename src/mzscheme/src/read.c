@@ -51,44 +51,44 @@
 
 /* Init options for embedding: */
 /* these are used to set initial config parameterizations */
-int scheme_square_brackets_are_parens = 1;
-int scheme_curly_braces_are_parens = 1;
+SHARED_OK int scheme_square_brackets_are_parens = 1;
+SHARED_OK int scheme_curly_braces_are_parens = 1;
 
 /* performance counter */ /* FIXME should be atomically incremented or not shared */
 int scheme_num_read_syntax_objects;
 
 /* global flag set from environment variable */
-static int use_perma_cache = 1;
+SHARED_OK static int use_perma_cache = 1;
 
 /* read-only global symbols */
 static char *builtin_fast;  /* FIXME possible init race condition */
-static unsigned char delim[128];
+SHARED_OK static unsigned char delim[128];
 /* Table of built-in variable refs for .zo loading: */
 static Scheme_Object **variable_references;
-static Scheme_Object *quote_symbol;
-static Scheme_Object *quasiquote_symbol;
-static Scheme_Object *unquote_symbol;
-static Scheme_Object *unquote_splicing_symbol;
-static Scheme_Object *syntax_symbol;
-static Scheme_Object *unsyntax_symbol;
-static Scheme_Object *unsyntax_splicing_symbol;
-static Scheme_Object *quasisyntax_symbol;
-static Scheme_Object *paren_shape_symbol;
-static Scheme_Object *terminating_macro_symbol;
-static Scheme_Object *non_terminating_macro_symbol;
-static Scheme_Object *dispatch_macro_symbol;
-static Scheme_Object *honu_comma;
-static Scheme_Object *honu_semicolon;
-static Scheme_Object *honu_parens;
-static Scheme_Object *honu_braces;
-static Scheme_Object *honu_brackets;
-static Scheme_Object *honu_angles;
+ROSYM static Scheme_Object *quote_symbol;
+ROSYM static Scheme_Object *quasiquote_symbol;
+ROSYM static Scheme_Object *unquote_symbol;
+ROSYM static Scheme_Object *unquote_splicing_symbol;
+ROSYM static Scheme_Object *syntax_symbol;
+ROSYM static Scheme_Object *unsyntax_symbol;
+ROSYM static Scheme_Object *unsyntax_splicing_symbol;
+ROSYM static Scheme_Object *quasisyntax_symbol;
+ROSYM static Scheme_Object *paren_shape_symbol;
+ROSYM static Scheme_Object *terminating_macro_symbol;
+ROSYM static Scheme_Object *non_terminating_macro_symbol;
+ROSYM static Scheme_Object *dispatch_macro_symbol;
+ROSYM static Scheme_Object *honu_comma;
+ROSYM static Scheme_Object *honu_semicolon;
+ROSYM static Scheme_Object *honu_parens;
+ROSYM static Scheme_Object *honu_braces;
+ROSYM static Scheme_Object *honu_brackets;
+ROSYM static Scheme_Object *honu_angles;
 /* For matching angle brackets in Honu mode: */
-static Scheme_Object *honu_angle_open;
-static Scheme_Object *honu_angle_close;
+ROSYM static Scheme_Object *honu_angle_open;
+ROSYM static Scheme_Object *honu_angle_close;
 /* For recoginizing unresolved hash tables and commented-out graph introductions: */
-static Scheme_Object *unresolved_uninterned_symbol;
-static Scheme_Object *tainted_uninterned_symbol;
+ROSYM static Scheme_Object *unresolved_uninterned_symbol;
+ROSYM static Scheme_Object *tainted_uninterned_symbol;
 
 /* local function prototypes */
 static Scheme_Object *read_case_sensitive(int, Scheme_Object *[]);

@@ -35,8 +35,8 @@
 #endif
 
 #ifdef MZ_PRECISE_GC
-void *(*scheme_get_external_stack_val)(void);
-void (*scheme_set_external_stack_val)(void *);
+HOOK_SHARED_OK void *(*scheme_get_external_stack_val)(void);
+HOOK_SHARED_OK void (*scheme_set_external_stack_val)(void *);
 #endif
 
 #ifndef MZ_PRECISE_GC

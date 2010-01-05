@@ -53,20 +53,21 @@ static int builtin_ref_counter = 0;
 static int env_uid_counter     = 0;
 
 /* globals READ-ONLY SHARED */
-static Scheme_Object *kernel_symbol;
-static Scheme_Env    *kernel_env;
-static Scheme_Env    *unsafe_env;
-static Scheme_Env    *flfxnum_env;
+READ_ONLY static Scheme_Object *kernel_symbol;
+READ_ONLY static Scheme_Object *unshadowable_symbol;
+READ_ONLY static Scheme_Env    *kernel_env;
+READ_ONLY static Scheme_Env    *unsafe_env;
+READ_ONLY static Scheme_Env    *flfxnum_env;
 
 #define MAX_CONST_LOCAL_POS 64
 #define MAX_CONST_LOCAL_TYPES 2
 #define MAX_CONST_LOCAL_FLAG_VAL 3
 #define SCHEME_LOCAL_FLAGS_MASK 0x3
-static Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][MAX_CONST_LOCAL_TYPES][MAX_CONST_LOCAL_FLAG_VAL + 1];
+READ_ONLY static Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][MAX_CONST_LOCAL_TYPES][MAX_CONST_LOCAL_FLAG_VAL + 1];
 #define MAX_CONST_TOPLEVEL_DEPTH 16
 #define MAX_CONST_TOPLEVEL_POS 16
 #define SCHEME_TOPLEVEL_FLAGS_MASK 0x3
-static Scheme_Object *toplevels[MAX_CONST_TOPLEVEL_DEPTH][MAX_CONST_TOPLEVEL_POS][SCHEME_TOPLEVEL_FLAGS_MASK + 1];
+READ_ONLY static Scheme_Object *toplevels[MAX_CONST_TOPLEVEL_DEPTH][MAX_CONST_TOPLEVEL_POS][SCHEME_TOPLEVEL_FLAGS_MASK + 1];
 
 /* If locked, these are probably sharable: */
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *toplevels_ht);
@@ -183,7 +184,6 @@ static void init_compile_data(Scheme_Comp_Env *env);
 
 #define ASSERT_IS_VARIABLE_BUCKET(b) /* if (((Scheme_Object *)b)->type != scheme_variable_type) abort() */
 
-static Scheme_Object *unshadowable_symbol;
 
 /*========================================================================*/
 /*                             initialization                             */

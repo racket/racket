@@ -56,10 +56,10 @@ static Scheme_Object *sch_pack_bang(int argc, Scheme_Object *argv[]);
 
 static char *number_to_allocated_string(int radix, Scheme_Object *obj, int alloc);
 
-static char *infinity_str = "+inf.0";
-static char *minus_infinity_str = "-inf.0";
-static char *not_a_number_str = "+nan.0";
-static char *other_not_a_number_str = "-nan.0";
+READ_ONLY static char *infinity_str = "+inf.0";
+READ_ONLY static char *minus_infinity_str = "-inf.0";
+READ_ONLY static char *not_a_number_str = "+nan.0";
+READ_ONLY static char *other_not_a_number_str = "-nan.0";
 
 static Scheme_Object *num_limits[3];
 
@@ -176,7 +176,7 @@ MK_SCH_TRIG(SCH_COS, cos)
 /*                           number parsing                               */
 /*========================================================================*/
 
-static int u_strcmp(mzchar *s, char *t)
+static int u_strcmp(mzchar *s, const char *t)
 {
   int i;
 

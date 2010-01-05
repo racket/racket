@@ -34,22 +34,32 @@
 #include "schexpobs.h"
 
 /* globals */
-Scheme_Object *scheme_define_values_syntax, *scheme_define_syntaxes_syntax;
-Scheme_Object *scheme_ref_syntax;
-Scheme_Object *scheme_begin_syntax;
-Scheme_Object *scheme_lambda_syntax;
-Scheme_Object *scheme_compiled_void_code;
-Scheme_Object scheme_undefined[1];
+READ_ONLY Scheme_Object *scheme_define_values_syntax;
+READ_ONLY Scheme_Object *scheme_define_syntaxes_syntax;
+READ_ONLY Scheme_Object *scheme_ref_syntax;
+READ_ONLY Scheme_Object *scheme_begin_syntax;
+READ_ONLY Scheme_Object *scheme_lambda_syntax;
+READ_ONLY Scheme_Object *scheme_compiled_void_code;
+READ_ONLY Scheme_Object scheme_undefined[1];
 
-Scheme_Syntax_Optimizer scheme_syntax_optimizers[_COUNT_EXPD_];
-Scheme_Syntax_Resolver scheme_syntax_resolvers[_COUNT_EXPD_];
-Scheme_Syntax_SFSer scheme_syntax_sfsers[_COUNT_EXPD_];
-Scheme_Syntax_Validater scheme_syntax_validaters[_COUNT_EXPD_];
-Scheme_Syntax_Executer scheme_syntax_executers[_COUNT_EXPD_];
-Scheme_Syntax_Jitter scheme_syntax_jitters[_COUNT_EXPD_];
-Scheme_Syntax_Cloner scheme_syntax_cloners[_COUNT_EXPD_];
-Scheme_Syntax_Shifter scheme_syntax_shifters[_COUNT_EXPD_];
-int scheme_syntax_protect_afters[_COUNT_EXPD_];
+READ_ONLY Scheme_Syntax_Optimizer scheme_syntax_optimizers[_COUNT_EXPD_];
+READ_ONLY Scheme_Syntax_Resolver scheme_syntax_resolvers[_COUNT_EXPD_];
+READ_ONLY Scheme_Syntax_SFSer scheme_syntax_sfsers[_COUNT_EXPD_];
+READ_ONLY Scheme_Syntax_Validater scheme_syntax_validaters[_COUNT_EXPD_];
+READ_ONLY Scheme_Syntax_Executer scheme_syntax_executers[_COUNT_EXPD_];
+READ_ONLY Scheme_Syntax_Jitter scheme_syntax_jitters[_COUNT_EXPD_];
+READ_ONLY Scheme_Syntax_Cloner scheme_syntax_cloners[_COUNT_EXPD_];
+READ_ONLY Scheme_Syntax_Shifter scheme_syntax_shifters[_COUNT_EXPD_];
+READ_ONLY int scheme_syntax_protect_afters[_COUNT_EXPD_];
+
+/* symbols */
+ROSYM static Scheme_Object *lambda_symbol;
+ROSYM static Scheme_Object *letrec_values_symbol;
+ROSYM static Scheme_Object *let_star_values_symbol;
+ROSYM static Scheme_Object *let_values_symbol;
+ROSYM static Scheme_Object *begin_symbol;
+ROSYM static Scheme_Object *disappeared_binding_symbol;
+
 
 /* locals */
 static Scheme_Object *lambda_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
@@ -225,14 +235,6 @@ static Scheme_Object *write_top(Scheme_Object *obj);
 static Scheme_Object *read_top(Scheme_Object *obj);
 static Scheme_Object *write_case_lambda(Scheme_Object *obj);
 static Scheme_Object *read_case_lambda(Scheme_Object *obj);
-
-/* symbols */
-static Scheme_Object *lambda_symbol;
-static Scheme_Object *letrec_values_symbol;
-static Scheme_Object *let_star_values_symbol;
-static Scheme_Object *let_values_symbol;
-static Scheme_Object *begin_symbol;
-static Scheme_Object *disappeared_binding_symbol;
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);

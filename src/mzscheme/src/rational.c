@@ -27,7 +27,7 @@
 #include <ctype.h>
 #include <math.h>
 
-static Scheme_Object *one = scheme_make_integer(1);
+READ_ONLY static Scheme_Object *one = scheme_make_integer(1);
 
 static Scheme_Object *make_rational(const Scheme_Object *n, const Scheme_Object *d,
 				    int normalize)

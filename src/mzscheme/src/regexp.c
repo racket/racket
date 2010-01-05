@@ -1962,7 +1962,7 @@ regranges(int parse_flags, int at_start)
   }
 }
 
-static char *prop_names[] = { "Cn",
+READ_ONLY static const char *prop_names[] = { "Cn",
 			      "Cc",
 			      "Cf",
 			      "Cs",

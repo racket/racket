@@ -299,16 +299,16 @@ typedef struct Scheme_FD {
 /******************** Globals and Prototypes ********************/
 
 /* globals */
-Scheme_Object scheme_eof[1];
+READ_ONLY Scheme_Object scheme_eof[1];
 THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stdout_port);
 THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stderr_port);
 THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stdin_port);
 
 THREAD_LOCAL_DECL(fd_set *scheme_fd_set);
 
-Scheme_Object *(*scheme_make_stdin)(void) = NULL;
-Scheme_Object *(*scheme_make_stdout)(void) = NULL;
-Scheme_Object *(*scheme_make_stderr)(void) = NULL;
+HOOK_SHARED_OK Scheme_Object *(*scheme_make_stdin)(void) = NULL;
+HOOK_SHARED_OK Scheme_Object *(*scheme_make_stdout)(void) = NULL;
+HOOK_SHARED_OK Scheme_Object *(*scheme_make_stderr)(void) = NULL;
 
 int scheme_file_open_count;
 
@@ -319,28 +319,28 @@ static int special_is_ok;
 
 /* locals */
 #ifdef MZ_FDS
-static Scheme_Object *fd_input_port_type;
+READ_ONLY static Scheme_Object *fd_input_port_type;
 #endif
 #ifdef USE_OSKIT_CONSOLE
-static Scheme_Object *oskit_console_input_port_type;
+READ_ONLY static Scheme_Object *oskit_console_input_port_type;
 #endif
-static Scheme_Object *file_input_port_type;
-Scheme_Object *scheme_string_input_port_type;
+READ_ONLY static Scheme_Object *file_input_port_type;
+READ_ONLY Scheme_Object *scheme_string_input_port_type;
 #ifdef USE_TCP
-Scheme_Object *scheme_tcp_input_port_type;
-Scheme_Object *scheme_tcp_output_port_type;
+READ_ONLY Scheme_Object *scheme_tcp_input_port_type;
+READ_ONLY Scheme_Object *scheme_tcp_output_port_type;
 #endif
 #ifdef MZ_FDS
-static Scheme_Object *fd_output_port_type;
+READ_ONLY static Scheme_Object *fd_output_port_type;
 #endif
-static Scheme_Object *file_output_port_type;
-Scheme_Object *scheme_string_output_port_type;
-Scheme_Object *scheme_user_input_port_type;
-Scheme_Object *scheme_user_output_port_type;
-Scheme_Object *scheme_pipe_read_port_type;
-Scheme_Object *scheme_pipe_write_port_type;
-Scheme_Object *scheme_null_output_port_type;
-Scheme_Object *scheme_redirect_output_port_type;
+READ_ONLY static Scheme_Object *file_output_port_type;
+READ_ONLY Scheme_Object *scheme_string_output_port_type;
+READ_ONLY Scheme_Object *scheme_user_input_port_type;
+READ_ONLY Scheme_Object *scheme_user_output_port_type;
+READ_ONLY Scheme_Object *scheme_pipe_read_port_type;
+READ_ONLY Scheme_Object *scheme_pipe_write_port_type;
+READ_ONLY Scheme_Object *scheme_null_output_port_type;
+READ_ONLY Scheme_Object *scheme_redirect_output_port_type;
 
 int scheme_force_port_closed;
 
@@ -407,14 +407,14 @@ static Scheme_Object *make_oskit_console_input_port();
 static void force_close_output_port(Scheme_Object *port);
 static void force_close_input_port(Scheme_Object *port);
 
-static Scheme_Object *text_symbol, *binary_symbol;
-static Scheme_Object *append_symbol, *error_symbol, *update_symbol, *can_update_symbol;
-static Scheme_Object *replace_symbol, *truncate_symbol, *truncate_replace_symbol;
-static Scheme_Object *must_truncate_symbol;
+ROSYM static Scheme_Object *text_symbol, *binary_symbol;
+ROSYM static Scheme_Object *append_symbol, *error_symbol, *update_symbol, *can_update_symbol;
+ROSYM static Scheme_Object *replace_symbol, *truncate_symbol, *truncate_replace_symbol;
+ROSYM static Scheme_Object *must_truncate_symbol;
 
-Scheme_Object *scheme_none_symbol, *scheme_line_symbol, *scheme_block_symbol;
+ROSYM Scheme_Object *scheme_none_symbol, *scheme_line_symbol, *scheme_block_symbol;
 
-static Scheme_Object *exact_symbol;
+ROSYM static Scheme_Object *exact_symbol;
 
 #define READ_STRING_BYTE_BUFFER_SIZE 1024
 THREAD_LOCAL_DECL(static char *read_string_byte_buffer);

@@ -33,6 +33,8 @@
 long scheme_hash_request_count;
 long scheme_hash_iteration_count;
 
+READ_ONLY static Scheme_Object GONE[1];
+
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
@@ -140,7 +142,6 @@ static int not_stx_bound_eq(char *a, char *b)
 /*                         normal hash table                              */
 /*========================================================================*/
 
-static Scheme_Object GONE[1];
 
 Scheme_Hash_Table *scheme_make_hash_table(int type)
 {

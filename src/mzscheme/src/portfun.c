@@ -139,26 +139,26 @@ static int pipe_out_ready(Scheme_Output_Port *p);
 static void register_traversers(void);
 #endif
 
-static Scheme_Object *any_symbol;
-static Scheme_Object *any_one_symbol;
-static Scheme_Object *cr_symbol;
-static Scheme_Object *lf_symbol;
-static Scheme_Object *crlf_symbol;
-static Scheme_Object *module_symbol;
+ROSYM static Scheme_Object *any_symbol;
+ROSYM static Scheme_Object *any_one_symbol;
+ROSYM static Scheme_Object *cr_symbol;
+ROSYM static Scheme_Object *lf_symbol;
+ROSYM static Scheme_Object *crlf_symbol;
+ROSYM static Scheme_Object *module_symbol;
 
-static Scheme_Object *default_read_handler;
-static Scheme_Object *default_display_handler;
-static Scheme_Object *default_write_handler;
-static Scheme_Object *default_print_handler;
+READ_ONLY static Scheme_Object *default_read_handler;
+READ_ONLY static Scheme_Object *default_display_handler;
+READ_ONLY static Scheme_Object *default_write_handler;
+READ_ONLY static Scheme_Object *default_print_handler;
 
-Scheme_Object *scheme_default_global_print_handler;
+READ_ONLY Scheme_Object *scheme_default_global_print_handler;
 
-Scheme_Object *scheme_write_proc;
-Scheme_Object *scheme_display_proc;
-Scheme_Object *scheme_print_proc;
+READ_ONLY Scheme_Object *scheme_write_proc;
+READ_ONLY Scheme_Object *scheme_display_proc;
+READ_ONLY Scheme_Object *scheme_print_proc;
 
-static Scheme_Object *dummy_input_port;
-static Scheme_Object *dummy_output_port;
+READ_ONLY static Scheme_Object *dummy_input_port;
+READ_ONLY static Scheme_Object *dummy_output_port;
 
 #define fail_err_symbol scheme_false
 

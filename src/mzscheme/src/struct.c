@@ -25,17 +25,32 @@
 #define PROP_USE_HT_COUNT 5
 
 /* globals */
-Scheme_Object *scheme_arity_at_least, *scheme_date;
-Scheme_Object *scheme_make_arity_at_least;
-Scheme_Object *scheme_source_property;
-Scheme_Object *scheme_input_port_property, *scheme_output_port_property;
-Scheme_Object *scheme_equal_property;
-Scheme_Object *scheme_make_struct_type_proc;
-Scheme_Object *scheme_current_inspector_proc;
+READ_ONLY Scheme_Object *scheme_arity_at_least;
+READ_ONLY Scheme_Object *scheme_date;
+READ_ONLY Scheme_Object *scheme_make_arity_at_least;
+READ_ONLY Scheme_Object *scheme_source_property;
+READ_ONLY Scheme_Object *scheme_input_port_property;
+READ_ONLY Scheme_Object *scheme_output_port_property;
+READ_ONLY Scheme_Object *scheme_equal_property;
+READ_ONLY Scheme_Object *scheme_make_struct_type_proc;
+READ_ONLY Scheme_Object *scheme_current_inspector_proc;
+READ_ONLY Scheme_Object *scheme_recur_symbol;
+READ_ONLY Scheme_Object *scheme_display_symbol;
+READ_ONLY Scheme_Object *scheme_write_special_symbol;
+
+READ_ONLY static Scheme_Object *location_struct;
+READ_ONLY static Scheme_Object *write_property;
+READ_ONLY static Scheme_Object *evt_property;
+READ_ONLY static Scheme_Object *proc_property;
+READ_ONLY static Scheme_Object *rename_transformer_property;
+READ_ONLY static Scheme_Object *set_transformer_property;
+READ_ONLY static Scheme_Object *not_free_id_symbol;
+READ_ONLY static Scheme_Object *scheme_checked_proc_property;
+ROSYM static Scheme_Object *ellipses_symbol;
+ROSYM static Scheme_Object *prefab_symbol;
 
 /* locals */
 
-Scheme_Object *location_struct;
 
 typedef enum {
   SCHEME_CONSTR = 1, 
@@ -109,14 +124,9 @@ static Scheme_Object *make_name(const char *pre, const char *tn, int tnl, const 
 
 static void get_struct_type_info(int argc, Scheme_Object *argv[], Scheme_Object **a, int always);
 
-static Scheme_Object *write_property;
-Scheme_Object *scheme_recur_symbol, *scheme_display_symbol, *scheme_write_special_symbol;
 
-static Scheme_Object *evt_property;
 static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int is_evt_struct(Scheme_Object *);
-
-static Scheme_Object *proc_property;
 
 static int wrapped_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 static int nack_guard_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
@@ -137,11 +147,6 @@ static Scheme_Object *exn_source_get(int argc, Scheme_Object **argv);
 
 static Scheme_Object *procedure_extract_target(int argc, Scheme_Object **argv);
 
-static Scheme_Object *rename_transformer_property;
-static Scheme_Object *set_transformer_property;
-static Scheme_Object *not_free_id_symbol;
-static Scheme_Object *scheme_checked_proc_property;
-
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
@@ -155,8 +160,6 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type);
 
 #define BUILTIN_STRUCT_FLAGS SCHEME_STRUCT_EXPTIME | SCHEME_STRUCT_NO_SET
 #define LOC_STRUCT_FLAGS BUILTIN_STRUCT_FLAGS | SCHEME_STRUCT_NO_SET
-
-static Scheme_Object *ellipses_symbol, *prefab_symbol;
 
 #define TYPE_NAME(base, blen) make_name("struct:", base, blen, "", NULL, 0, "", 1)
 #define CSTR_NAME(base, blen) make_name("make-", base, blen, "", NULL, 0, "", 1)
@@ -188,13 +191,13 @@ scheme_init_struct (Scheme_Env *env)
   int i;
   Scheme_Object *guard;
 
-  static const char *arity_fields[1] = { "value" };
+  READ_ONLY static const char *arity_fields[1] = { "value" };
 #ifdef TIME_SYNTAX
-  static const char *date_fields[10] = { "second", "minute", "hour",
+  READ_ONLY static const char *date_fields[10] = { "second", "minute", "hour",
 					 "day", "month", "year",
 					 "week-day", "year-day", "dst?", "time-zone-offset" };
 #endif
-  static const char *location_fields[10] = { "source", "line", "column", "position", "span" };
+  READ_ONLY static const char *location_fields[10] = { "source", "line", "column", "position", "span" };
   
 #ifdef MZ_PRECISE_GC
   register_traversers();

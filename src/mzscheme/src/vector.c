@@ -26,8 +26,8 @@
 #include "schpriv.h"
 
 /* globals */
-Scheme_Object *scheme_vector_proc;
-Scheme_Object *scheme_vector_immutable_proc;
+READ_ONLY Scheme_Object *scheme_vector_proc;
+READ_ONLY Scheme_Object *scheme_vector_immutable_proc;
 
 /* locals */
 static Scheme_Object *vector_p (int argc, Scheme_Object *argv[]);

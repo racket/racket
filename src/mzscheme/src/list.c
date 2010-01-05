@@ -25,13 +25,16 @@
 
 #include "schpriv.h"
 
-/* globals */
-Scheme_Object scheme_null[1];
-Scheme_Object *scheme_cons_proc;
-Scheme_Object *scheme_mcons_proc;
-Scheme_Object *scheme_list_proc;
-Scheme_Object *scheme_list_star_proc;
-Scheme_Object *scheme_box_proc;
+/* read only globals */
+READ_ONLY Scheme_Object scheme_null[1];
+READ_ONLY Scheme_Object *scheme_cons_proc;
+READ_ONLY Scheme_Object *scheme_mcons_proc;
+READ_ONLY Scheme_Object *scheme_list_proc;
+READ_ONLY Scheme_Object *scheme_list_star_proc;
+READ_ONLY Scheme_Object *scheme_box_proc;
+/* read only locals */
+ROSYM static Scheme_Object *weak_symbol;
+ROSYM static Scheme_Object *equal_symbol;
 
 /* locals */
 static Scheme_Object *pair_p_prim (int argc, Scheme_Object *argv[]);
@@ -148,8 +151,6 @@ static Scheme_Object *unsafe_set_box (int argc, Scheme_Object *argv[]);
 #define BOXP "box?"
 #define UNBOX "unbox"
 #define SETBOX "set-box!"
-
-static Scheme_Object *weak_symbol, *equal_symbol;
 
 void
 scheme_init_list (Scheme_Env *env)

@@ -41,36 +41,36 @@
 #endif
 
 /* globals */
-scheme_console_printf_t scheme_console_printf;
+SHARED_OK scheme_console_printf_t scheme_console_printf;
 scheme_console_printf_t scheme_get_console_printf() { return scheme_console_printf; }
-Scheme_Exit_Proc scheme_exit;
+SHARED_OK Scheme_Exit_Proc scheme_exit;
 void scheme_set_exit(Scheme_Exit_Proc p) { scheme_exit = p; }
 
-void (*scheme_console_output)(char *str, long len);
+HOOK_SHARED_OK void (*scheme_console_output)(char *str, long len);
 
 static int init_syslog_level = INIT_SYSLOG_LEVEL;
 static int init_stderr_level = SCHEME_LOG_ERROR;
 THREAD_LOCAL_DECL(static Scheme_Logger *scheme_main_logger);
 
 /* readonly globals */
-const char *scheme_compile_stx_string = "compile";
-const char *scheme_expand_stx_string = "expand";
-const char *scheme_application_stx_string = "application";
-const char *scheme_set_stx_string = "set!";
-const char *scheme_var_ref_string = "#%variable-reference";
-const char *scheme_begin_stx_string = "begin";
-static Scheme_Object *fatal_symbol;
-static Scheme_Object *error_symbol; 
-static Scheme_Object *warning_symbol;
-static Scheme_Object *info_symbol;
-static Scheme_Object *debug_symbol;
-static Scheme_Object *arity_property;
-static Scheme_Object *def_err_val_proc;
-static Scheme_Object *def_error_esc_proc;
-static Scheme_Object *default_display_handler;
-static Scheme_Object *emergency_display_handler;
-Scheme_Object *scheme_def_exit_proc;
-Scheme_Object *scheme_raise_arity_error_proc;
+READ_ONLY const char *scheme_compile_stx_string = "compile";
+READ_ONLY const char *scheme_expand_stx_string = "expand";
+READ_ONLY const char *scheme_application_stx_string = "application";
+READ_ONLY const char *scheme_set_stx_string = "set!";
+READ_ONLY const char *scheme_var_ref_string = "#%variable-reference";
+READ_ONLY const char *scheme_begin_stx_string = "begin";
+ROSYM static Scheme_Object *fatal_symbol;
+ROSYM static Scheme_Object *error_symbol; 
+ROSYM static Scheme_Object *warning_symbol;
+ROSYM static Scheme_Object *info_symbol;
+ROSYM static Scheme_Object *debug_symbol;
+ROSYM static Scheme_Object *arity_property;
+ROSYM static Scheme_Object *def_err_val_proc;
+ROSYM static Scheme_Object *def_error_esc_proc;
+ROSYM static Scheme_Object *default_display_handler;
+ROSYM static Scheme_Object *emergency_display_handler;
+READ_ONLY Scheme_Object *scheme_def_exit_proc;
+READ_ONLY Scheme_Object *scheme_raise_arity_error_proc;
 
 
 #ifdef MEMORY_COUNTING_ON
@@ -1300,7 +1300,7 @@ char *scheme_make_args_string(char *s, int which, int argc, Scheme_Object **argv
 
 const char *scheme_number_suffix(int which)
 {
-  static char *ending[] = {"st", "nd", "rd"};
+  READ_ONLY static char *ending[] = {"st", "nd", "rd"};
 
   if (!which)
     return "th";
