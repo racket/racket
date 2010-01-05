@@ -58,6 +58,7 @@ struct jit_local_state {
   int   tiny_jumps;
   int	framesize;
 #endif
+  int   r0_can_be_tmp;
   int	argssize;
 };
 

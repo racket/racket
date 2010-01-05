@@ -5127,7 +5127,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   int start_simltaneous = 0, i_m, cnt;
   Scheme_Object *cl_first = NULL, *cl_last = NULL;
   Scheme_Hash_Table *consts = NULL, *ready_table = NULL, *re_consts = NULL;
-  int cont, next_pos_ready = -1;
+  int cont, next_pos_ready = -1, inline_fuel;
 
   old_context = info->context;
   info->context = (Scheme_Object *)m;
@@ -5178,8 +5178,12 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   for (i_m = 0; i_m < cnt; i_m++) {
     /* Optimize this expression: */
     info->use_psize = 1;
+    inline_fuel = info->inline_fuel;
+    if (inline_fuel > 2)
+      info->inline_fuel = 2;
     e = scheme_optimize_expr(SCHEME_VEC_ELS(m->body)[i_m], info, 0);
     info->use_psize = 0;
+    info->inline_fuel = inline_fuel;
     SCHEME_VEC_ELS(m->body)[i_m] = e;
 
     if (info->enforce_const) {
@@ -5309,11 +5313,28 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 	while (1) {
 	  /* Re-optimize this expression. We can optimize anything without
              shift-cloning, since there are no local variables in scope. */
-          e = scheme_optimize_expr(SCHEME_VEC_ELS(m->body)[start_simltaneous], info, 0);
+          int old_sz, new_sz;
+
+          e = SCHEME_VEC_ELS(m->body)[start_simltaneous];
+
+          if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_syntax_type)
+              && (SCHEME_PINT_VAL(e) == DEFINE_VALUES_EXPD)) {
+            Scheme_Object *sub_e;
+            sub_e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
+            sub_e = SCHEME_CDR(sub_e);
+            if (SAME_TYPE(SCHEME_TYPE(sub_e), scheme_compiled_unclosed_procedure_type))
+              old_sz = scheme_closure_body_size((Scheme_Closure_Data *)sub_e, 0, NULL);
+            else
+              old_sz = 0;
+          } else
+            old_sz = 0;
+
+          e = scheme_optimize_expr(e, info, 0);
 	  SCHEME_VEC_ELS(m->body)[start_simltaneous] = e;
 
           if (re_consts) {
-            /* Install optimized closures into constant table: */
+            /* Install optimized closures into constant table --- unless they
+               grow too much: */
             Scheme_Object *rpos;
             rpos = scheme_hash_get(re_consts, scheme_make_integer(start_simltaneous));
             if (rpos) {
@@ -5322,7 +5343,14 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
               if (!scheme_compiled_propagate_ok(e, info)
                   && scheme_is_statically_proc(e, info))
                 e = scheme_make_noninline_proc(e);
-              scheme_hash_set(info->top_level_consts, rpos, e);
+
+              if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type))
+                new_sz = scheme_closure_body_size((Scheme_Closure_Data *)e, 0, NULL);
+              else
+                new_sz = 0;
+
+              if (!new_sz || !old_sz || (new_sz < 2 * old_sz))
+                scheme_hash_set(info->top_level_consts, rpos, e);
             }
           }
 

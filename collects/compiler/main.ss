@@ -55,6 +55,8 @@
 
 (define default-plt-name "archive")
 
+(define disable-inlining (make-parameter #f))
+
 (define plt-output (make-parameter #f))
 (define plt-name (make-parameter default-plt-name))
 (define plt-files-replace (make-parameter #f))
@@ -177,6 +179,12 @@
        (,(format "Output -z to \"compiled\", -e to ~s"
                  (path->string (build-path "compiled" "native"
                                            (system-library-subpath #f)))))]]
+     [help-labels
+      "----------------------- bytecode compilation flags --------------------------"]
+     [once-each
+      [("--disable-inline")
+       ,(lambda (f) (disable-inlining #t))
+       ("Disable procedure inlining during compilation")]]
      [help-labels
       "--------------------- executable configuration flags ------------------------"]
      [once-each
@@ -487,7 +495,9 @@
          (let ([name (extract-base-filename/ss file 'mzc)])
            (when (compiler:option:somewhat-verbose)
              (printf "\"~a\":\n" file))
-           (mc file)
+           (parameterize ([compile-context-preservation-enabled
+                           (disable-inlining)])
+             (mc file))
            (let ([dest (append-zo-suffix
                         (let-values ([(base name dir?) (split-path file)])
                           (build-path (if (symbol? base) 'same base)

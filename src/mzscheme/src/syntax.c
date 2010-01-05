@@ -3035,7 +3035,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   Scheme_Once_Used *first_once_used = NULL, *last_once_used = NULL;
   int i, j, pos, is_rec, not_simply_let_star = 0;
   int size_before_opt, did_set_value;
-  int remove_last_one = 0;
+  int remove_last_one = 0, inline_fuel;
 
   /* Special case: (let ([x E]) x) where E is lambda, case-lambda, or
      a constant. (If we allowed arbitrary E here, it would affect the
@@ -3141,8 +3141,14 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
       body_info->transitive_use_pos = pos + 1;
     }
 
+    inline_fuel = info->inline_fuel;
+    if (inline_fuel > 2)
+      info->inline_fuel = 2;
+
     value = scheme_optimize_expr(pre_body->value, rhs_info, 0);
     pre_body->value = value;
+
+    info->inline_fuel = inline_fuel;
     
     body_info->transitive_use_pos = 0;
 
@@ -3327,7 +3333,12 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
             clv->value = value;
 
             if (!(clv->flags[0] & SCHEME_WAS_SET_BANGED)) {
-              scheme_optimize_propagate(body_info, clv->position, value, 0);
+              /* Register re-optimized as the value for the binding, but
+                 only if it didn't grow too much: */
+              int new_sz;
+              new_sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 0, NULL);
+              if (new_sz < 2 * sz)
+                scheme_optimize_propagate(body_info, clv->position, value, 0);
             }
 
             body_info->transitive_use_pos = 0;

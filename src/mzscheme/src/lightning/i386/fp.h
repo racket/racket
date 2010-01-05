@@ -319,12 +319,12 @@ union jit_double_imm {
 
 #define jit_fp_btest(d, s1, s2, n, _and, cmp, res)             \
        (((s1) == 0 ? FCOMr((s2)) : (FLDr((s1)), FUCOMPr((s2) + 1))),    \
-        PUSHQr(_EAX),                                          \
+        (_jitl.r0_can_be_tmp ? 0 : PUSHQr(_EAX)),              \
         FNSTSWr(_EAX),                                         \
         SHRLir(n, _EAX),                                       \
         (void)((_and) ? ANDLir ((_and), _EAX) : 0),            \
         ((cmp) ? CMPLir ((cmp), _AL) : 0),                     \
-        (void) POPQr(_EAX),                                     \
+        (void) (_jitl.r0_can_be_tmp ? 0 : POPQr(_EAX)),        \
         res ((d), 0, 0, 0), _jit.x.pc)
 
 #define jit_fp_test_fppop(d, n, _and, res)                       \
@@ -338,12 +338,12 @@ union jit_double_imm {
 
 #define jit_fp_btest_fppop(d, n, _and, cmp, res)               \
        (FUCOMPPr(1),                                           \
-        PUSHQr(_EAX),                                          \
+        (_jitl.r0_can_be_tmp ? 0 : PUSHQr(_EAX)),              \
         FNSTSWr(_EAX),                                         \
         SHRLir(n, _EAX),                                       \
         (void)((_and) ? ANDLir ((_and), _EAX) : 0),            \
         (void)((cmp) ? CMPLir ((cmp), _AL) : 0),               \
-        POPQr(_EAX),                                           \
+        (void) (_jitl.r0_can_be_tmp ? 0 : POPQr(_EAX)),        \
         res ((d), 0, 0, 0), _jit.x.pc)
 
 #define jit_nothing_needed(x)
