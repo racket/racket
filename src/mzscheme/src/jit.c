@@ -9046,7 +9046,6 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       PAUSE_JIT_DATA();
       if (flonum) {
 #ifdef USE_FLONUM_UNBOXING
-        int directly;
         if (can_unbox_inline(lv->value, 5, JIT_FPR_NUM-1, 0)
             || can_unbox_directly(lv->value)) {
           jitter->unbox++;
