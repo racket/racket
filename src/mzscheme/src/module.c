@@ -9762,7 +9762,7 @@ static int check_requires_ok(Scheme_Object *l)
   Scheme_Object *x;
   while (!SCHEME_NULLP(l)) {
     x = SCHEME_CAR(l);
-    if (!SCHEME_SYMBOLP(x) && !SAME_TYPE(SCHEME_TYPE(x), scheme_module_index_type))
+    if (!SAME_TYPE(SCHEME_TYPE(x), scheme_module_index_type))
       return 0;
     l = SCHEME_CDR(l);
   }
