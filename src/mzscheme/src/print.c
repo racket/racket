@@ -1524,13 +1524,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 #endif
 
 #ifdef DO_STACK_CHECK
-#define PRINT_COUNT_START 20
-  {
-    static int check_counter = PRINT_COUNT_START;
-
-    if (!--check_counter) {
-      check_counter = PRINT_COUNT_START;
-      {
 #include "mzstkchk.h"
 	{
 	  Scheme_Thread *p = scheme_current_thread;
@@ -1555,9 +1548,6 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 
 	  return closed;
 	}
-      }
-    }
-  }
 #endif
 
   if (scheme_check_print_is_obj && !scheme_check_print_is_obj(obj)) {
