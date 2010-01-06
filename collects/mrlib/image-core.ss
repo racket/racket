@@ -90,9 +90,6 @@ has been moved out).
 (define (image-normalized? p) (send p get-normalized?))
 (define (set-image-shape! p s) (send p set-shape s))
 (define (set-image-normalized?! p n?) (send p set-normalized? n?))
-(define (image-right image) (bb-right (image-bb image)))
-(define (image-bottom image) (bb-bottom (image-bb image)))
-(define (image-baseline image) (bb-baseline (image-bb image)))
 (define (image? p) 
   (or (is-a? p image%)
       (is-a? p image-snip%)
@@ -240,13 +237,12 @@ has been moved out).
 (define image%
   (class* snip% (equal<%>)
     (init-field shape bb normalized?)
-    (define/public (equal-to? that eq-recur) 
+    (define/public (equal-to? that eq-recur)
       (or (eq? this that)
-          (and (eq-recur bb (send that get-bb))
-               (let* ([w (ceiling (max (inexact->exact (bb-right bb))
-                                       (inexact->exact (bb-right (send that get-bb)))))]
-                      [h (ceiling (max (inexact->exact (bb-bottom bb))
-                                       (inexact->exact (bb-bottom (send that get-bb)))))]
+          (and (is-a? that image%)
+               (same-bb? bb (send that get-bb))
+               (let* ([w (round (inexact->exact (bb-right bb)))]
+                      [h (round (inexact->exact (bb-bottom bb)))]
                       [bm1 (make-object bitmap% w h)]
                       [bm2 (make-object bitmap% w h)]
                       [bytes1 (make-bytes (* w h 4) 0)]
@@ -341,6 +337,10 @@ has been moved out).
     (inherit set-snipclass)
     (set-snipclass snip-class)))
 
+(define (same-bb? bb1 bb2)
+  (and (= (round (bb-right bb1)) (round (bb-right bb2)))
+       (= (round (bb-bottom bb1)) (round (bb-bottom bb2)))
+       (= (round (bb-baseline bb1)) (round (bb-baseline bb2)))))
 (define scheme/base:read read)
 
 (define image-snipclass% 
@@ -808,9 +808,6 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          ellipse-rotated-size
          
          image?
-         image-right
-         image-bottom
-         image-baseline
          
          text->font
          compare-all-rotations

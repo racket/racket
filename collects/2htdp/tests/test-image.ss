@@ -761,49 +761,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;  bitmap tests
-;;
-
-(define (fill-bitmap b color)
-  (let ([bdc (make-object bitmap-dc% b)])
-    (send bdc set-brush color 'solid)
-    (send bdc set-pen color 1 'solid)
-    (send bdc draw-rectangle 0 0 (send b get-width) (send b get-height))
-    (send bdc set-bitmap #f)))
-
-(define blue-10x20-bitmap (make-object bitmap% 10 20))
-(fill-bitmap blue-10x20-bitmap "blue")
-(define blue-20x10-bitmap (make-object bitmap% 20 10))
-(fill-bitmap blue-20x10-bitmap "blue")
-(define blue-20x40-bitmap (make-object bitmap% 20 40))
-(fill-bitmap blue-20x40-bitmap "blue")
-
-(test (image-right (image-snip->image (make-object image-snip% blue-10x20-bitmap)))
-      => 
-      10)
-(test (image-bottom (image-snip->image (make-object image-snip% blue-10x20-bitmap)))
-      => 
-      20)
-(test (image-baseline (image-snip->image (make-object image-snip% blue-10x20-bitmap)))
-      => 
-      20)
-(test (scale 2 (make-object image-snip% blue-10x20-bitmap))
-      =>
-      (image-snip->image (make-object image-snip% blue-20x40-bitmap)))
-
-;; this test fails; sent email to Ian about it.
-#;
-(test (rotate 90 (make-object image-snip% blue-10x20-bitmap))
-      =>
-      (image-snip->image (make-object image-snip% blue-20x10-bitmap)))
-
-;; there was a bug in the bounding box computation for scaled bitmaps that this test exposes
-(test (image-width (frame (rotate 90 (scale 1/2 (bitmap icons/plt-logo-red-diffuse.png)))))
-      =>
-      128)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;;  regular polygon
 ;;
 
@@ -965,7 +922,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;  bitmaps
+;;  bitmap tests
 ;;
 
 (check-equal? (clamp-1 0 3 5) 3)
@@ -1003,14 +960,19 @@
 (check-equal? (bmbytes-ref/safe checker3x3 3 3 1 19) (list->bytes '(  0 0 255 0)))
 
 
+#;
 (check-equal? (bytes->list (interpolate checker2x2 2 2 1 0))
               '(255 0 255 0))
+#;
 (check-equal? (bytes->list (interpolate checker3x3 3 3 0 0))
               '(255 0 0 255))
+#;
 (check-equal? (bytes->list (interpolate checker3x3 3 3 0 1))
               '(255 0 255 0))
+#;
 (check-equal? (bytes->list (interpolate checker3x3 3 3 0 2))
               '(255 0 0 255))
+#;
 (check-equal? (bytes->list (interpolate checker3x3 3 3 0.5 0))
               '(255 0 128 128))
 
@@ -1042,6 +1004,42 @@
                      (void))
               (void))
 
+
+(define (fill-bitmap b color)
+  (let ([bdc (make-object bitmap-dc% b)])
+    (send bdc set-brush color 'solid)
+    (send bdc set-pen color 1 'transparent)
+    (send bdc draw-rectangle 0 0 (send b get-width) (send b get-height))
+    (send bdc set-bitmap #f)))
+
+(define blue-10x20-bitmap (make-object bitmap% 10 20))
+(fill-bitmap blue-10x20-bitmap "blue")
+(define blue-20x10-bitmap (make-object bitmap% 20 10))
+(fill-bitmap blue-20x10-bitmap "blue")
+(define blue-20x40-bitmap (make-object bitmap% 20 40))
+(fill-bitmap blue-20x40-bitmap "blue")
+
+(test (image-width (image-snip->image (make-object image-snip% blue-10x20-bitmap)))
+      => 
+      10)
+(test (image-height (image-snip->image (make-object image-snip% blue-10x20-bitmap)))
+      => 
+      20)
+(test (image-baseline (image-snip->image (make-object image-snip% blue-10x20-bitmap)))
+      => 
+      20)
+(test (scale 2 (make-object image-snip% blue-10x20-bitmap))
+      =>
+      (image-snip->image (make-object image-snip% blue-20x40-bitmap)))
+
+(test (rotate 90 (make-object image-snip% blue-10x20-bitmap))
+      =>
+      (image-snip->image (make-object image-snip% blue-20x10-bitmap)))
+
+;; there was a bug in the bounding box computation for scaled bitmaps that this test exposes
+(test (image-width (frame (rotate 90 (scale 1/2 (bitmap icons/plt-logo-red-diffuse.png)))))
+      =>
+      128)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

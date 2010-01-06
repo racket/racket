@@ -16,8 +16,8 @@
            [f (new frame% [label ""])]
            [c (new canvas% 
                    [parent f]
-                   [min-width (+ extra-space (inexact->exact (floor (image-right g))))]
-                   [min-height (+ extra-space (inexact->exact (floor (image-bottom g))))]
+                   [min-width (+ extra-space (image-width g))]
+                   [min-height (+ extra-space (image-height g))]
                    [paint-callback
                     (λ (c dc)
                       (send dc set-smoothing 'aligned)
@@ -27,8 +27,8 @@
                           (render-image 
                            g
                            dc
-                           (inexact->exact (floor (- (/ w 2 scale) (/ (image-right g) 2))))
-                           (inexact->exact (floor (- (/ h 2 scale) (/ (image-bottom g) 2))))))))])]
+                           (inexact->exact (floor (- (/ w 2 scale) (/ (get-right g) 2))))
+                           (inexact->exact (floor (- (/ h 2 scale) (/ (get-bottom g) 2))))))))])]
            [min-scale 1]
            [max-scale 10]
            [sl (new slider% 
@@ -59,8 +59,8 @@
 (define (save-image pre-image filename)
   (let* ([image (to-img pre-image)]
          [bm (make-object bitmap% 
-               (inexact->exact (ceiling (+ 1 (image-width image)))) 
-               (inexact->exact (ceiling (+ 1 (image-height image)))))]
+               (inexact->exact (ceiling (+ 1 (get-right image)))) 
+               (inexact->exact (ceiling (+ 1 (get-bottom image)))))]
          [bdc (make-object bitmap-dc% bm)])
     (send bdc set-smoothing 'aligned)
     (send bdc clear)
@@ -68,6 +68,10 @@
     (send bdc set-bitmap #f)
     (send bm save-file filename 'png)))
 
+
+(define (get-right img) (bb-right (send img get-bb)))
+(define (get-bottom img) (bb-bottom (send img get-bb)))
+(define (get-baseline img) (bb-baseline (send img get-bb)))
 
 ;                                              
 ;                                              
@@ -101,9 +105,9 @@
 
 (define (scale-internal x-factor y-factor image)
   (make-image (make-scale x-factor y-factor (image-shape image))
-              (make-bb (* x-factor (image-right image))
-                       (* y-factor (image-bottom image))
-                       (* y-factor (image-baseline image)))
+              (make-bb (* x-factor (get-right image))
+                       (* y-factor (get-bottom image))
+                       (* y-factor (get-baseline image)))
               #f))
 
 ;; overlay : image image image ... -> image
@@ -155,16 +159,16 @@
 (define (find-x-spot x-place image)
   (case x-place
     [(left) 0]
-    [(middle) (/ (image-right image) 2)]
-    [(right) (image-right image)]
+    [(middle) (/ (get-right image) 2)]
+    [(right) (get-right image)]
     [else (error 'find-x-spot "~s" x-place)]))
 
 (define (find-y-spot y-place image)
   (case y-place
     [(top) 0]
-    [(middle) (/ (image-bottom image) 2)]
-    [(bottom) (image-bottom image)]
-    [(baseline) (image-baseline image)]
+    [(middle) (/ (get-bottom image) 2)]
+    [(bottom) (get-bottom image)]
+    [(baseline) (get-baseline image)]
     [else (error 'find-y-spot "~s" y-place)]))
 
 ;; overlay/xy : image number number image -> image
@@ -189,12 +193,12 @@
 (define (overlay/δ image1 dx1 dy1 image2 dx2 dy2)
   (make-image (make-overlay (make-translate dx1 dy1 (image-shape image1))
                             (make-translate dx2 dy2 (image-shape image2)))
-              (make-bb (max (+ (image-right image1) dx1)
-                            (+ (image-right image2) dx2))
-                       (max (+ (image-bottom image1) dy1)
-                            (+ (image-bottom image2) dy2))
-                       (max (+ (image-baseline image1) dy1)
-                            (+ (image-baseline image2) dy2)))
+              (make-bb (max (+ (get-right image1) dx1)
+                            (+ (get-right image2) dx2))
+                       (max (+ (get-bottom image1) dy1)
+                            (+ (get-bottom image2) dy2))
+                       (max (+ (get-baseline image1) dy1)
+                            (+ (get-baseline image2) dy2)))
               #f))
 
 ;; beside : image image image ... -> image
@@ -222,7 +226,7 @@
                           0 
                           (if (< dy 0) (- dy) 0)
                           (car rst)
-                          (image-right fst)
+                          (get-right fst)
                           (if (< dy 0) 0 dy))
                (cdr rst)))])))
 
@@ -252,7 +256,7 @@
                           0
                           (car rst)
                           (if (< dx 0) 0 dx)
-                          (image-bottom fst))
+                          (get-bottom fst))
                (cdr rst)))])))
 
 
@@ -275,13 +279,13 @@
   (crop/internal x1 y1 width height image))
 
 (define (crop/internal x1 y1 width height image)
-  (let ([iw (min width (image-width image))]
-        [ih (min height (image-height image))])
+  (let ([iw (min width (get-right image))]
+        [ih (min height (get-bottom image))])
     (make-image (make-crop (rectangle-points iw ih)
                            (make-translate (- x1) (- y1) (image-shape image)))
                 (make-bb iw
                          ih
-                         (min ih (image-baseline image)))
+                         (min ih (get-baseline image)))
                 #f)))
 
 ;; place-image : image x y scene -> scene
@@ -296,8 +300,8 @@
     (crop/internal
      (if (< dx 0) (- dx) 0)
      (if (< dy 0) (- dy) 0)
-     (image-right scene)
-     (image-bottom scene)
+     (get-right scene)
+     (get-bottom scene)
      (overlay/δ image
                 (if (< dx 0) 0 dx)
                 (if (< dy 0) 0 dy)
@@ -312,13 +316,13 @@
 (define/chk (frame image)
   (make-image (make-overlay (image-shape image)
                             (image-shape 
-                             (rectangle (image-right image)
-                                        (image-bottom image)
+                             (rectangle (get-right image)
+                                        (get-bottom image)
                                         'outline
                                         'black)))
-              (make-bb (image-right image)
-                       (image-bottom image)
-                       (image-baseline image))
+              (make-bb (get-right image)
+                       (get-bottom image)
+                       (get-baseline image))
               #f))
 
 ;; scale : I number -> I
@@ -471,9 +475,11 @@
        (rotated-rectangular-bounding-box w h (text-angle atomic-shape)))]
     [(bitmap? atomic-shape)
      (let ([bb (bitmap-raw-bitmap atomic-shape)])
-       (rotated-rectangular-bounding-box (* (send bb get-width) (bitmap-x-scale atomic-shape))
-                                         (* (send bb get-height) (bitmap-y-scale atomic-shape))
-                                         (bitmap-angle atomic-shape)))]
+       (let-values ([(l t r b)
+                     (rotated-rectangular-bounding-box (* (send bb get-width) (bitmap-x-scale atomic-shape))
+                                                       (* (send bb get-height) (bitmap-y-scale atomic-shape))
+                                                       (bitmap-angle atomic-shape))])
+         (values l t r b)))]
     [else
      (fprintf (current-error-port) "using bad bounding box for ~s\n" atomic-shape)
      (values 0 0 100 100)]))
@@ -667,11 +673,11 @@
          [dy (abs (min 0 y1 y2))]
          [bottom (max (+ y1 dy)
                       (+ y2 dy)
-                      (+ dy (image-bottom image)))]
+                      (+ dy (get-bottom image)))]
          [right (max (+ x1 dx)
                      (+ x2 dx)
-                     (+ dx (image-right image)))]
-         [baseline (+ dy (image-baseline image))])
+                     (+ dx (get-right image)))]
+         [baseline (+ dy (get-baseline image))])
     (make-image (make-translate
                  dx dy
                  (make-overlay
@@ -806,8 +812,10 @@
                 (make-bb w/h w/h w/h)
                 #f)))
 
-(define/chk (image-width image) (inexact->exact (ceiling (image-right image))))
-(define/chk (image-height image) (inexact->exact (ceiling (image-bottom image))))
+(define/chk (image-width image) (bb-select/round/exact bb-right image))
+(define/chk (image-height image) (bb-select/round/exact bb-bottom image))
+(define/chk (image-baseline image) (bb-select/round/exact bb-baseline image))
+(define (bb-select/round/exact select image) (inexact->exact (round (select (send image get-bb)))))
 
 (define-syntax (bitmap stx)
   (syntax-case stx ()
@@ -880,6 +888,7 @@
          
          image-width
          image-height
+         image-baseline
          
          circle
          ellipse

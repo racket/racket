@@ -97,16 +97,26 @@ instead of this scaling code, we use the dc<%>'s scaling code.
     (values (build-bmbytes new-w
                            new-h
                            (λ (x y)
-                             (let* {[pre-image (* (make-rectangular (+ west x) (- nrth y))
+                             (let* {[pre-image (* (make-rectangular (+ west x 1/2) (- nrth y 1/2))
                                                   theta-unrotation)]
                                     }
                                (interpolate bmbytes w h
                                             (real-part pre-image)
                                             (- (imag-part pre-image))))))
             new-w
-            new-h)))
-                               
-           
+            new-h)))                               
+;; Why the offsets of 1/2 in `rotate-bytes` and `interpolate`?
+;; We consider a pixel's RGB as a point-sample taken from the 'true' image,
+;; where the RGB is the sample at the *center* of the square covered by the pixel.
+;; (When we assume the sample had been from the NW corner instead of the center,
+;; we got weird artifacts upon rotation:
+;; Consider a 1x1 bitmap rotated by 90 degrees.
+;; The NW corner of our new value would be derived from the *NE* corner of
+;; the original bitmap, which is a full pixel-width away from the original sample.
+;; So a 1x1 bitmap being rotated would counterintuitively give a different bitmap.)
+
+
+
 ; interpolate: bytes natnum natum real real -> bytes
 ;
 ; Given a bitmap (bytes of size (* w h NUM-CHANNELS)), return a pixel (bytes of size NUM-CHANNELS)
@@ -114,10 +124,10 @@ instead of this scaling code, we use the dc<%>'s scaling code.
 ; where x,y are *real-valued* coordinates in [0,w), [0,h).
 ;
 (define (interpolate bmbytes w h x y)
-  (let* {[x0 (floor/e x)]
-         [y0 (floor/e y)]
-         [dx (- x x0)]
-         [dy (- y y0)]
+  (let* {[x0 (floor/e (- x 1/2))]
+         [y0 (floor/e (- y 1/2))]
+         [dx (- (- x 1/2) x0)]
+         [dy (- (- y 1/2) y0)]
          [1-dx (- 1 dx)]
          [1-dy (- 1 dy)]
          [nw (bmbytes-ref/safe bmbytes w h       x0        y0 )]
