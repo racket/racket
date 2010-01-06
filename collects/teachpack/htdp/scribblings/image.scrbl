@@ -139,13 +139,15 @@ find out where the pinhole is and place it where convenient.
 Images can be composed, and images can be found within compositions. 
 
 @defproc[(add-line [i image?] 
-                   [x number?]
-                   [y number?]
-                   [z number?]
-                   [u number?]
+                   [x1 number?]
+                   [y1 number?]
+                   [x2 number?]
+                   [y2 number?]
                    [c (unsyntax @tech{Color})]) image?]{
-Creates an image by adding a line (colored @scheme[c]) from @scheme[(x,y)]
-to @scheme[(z,u)] to image @scheme[i].}
+Creates an image by adding a line (colored @scheme[c]) from 
+(@scheme[x1],@scheme[y1]) to
+(@scheme[x2],@scheme[y2])
+to image @scheme[i].}
 
 @defproc[(overlay [img image?] [img2 image?] [img* image?] ...) image?]{
 Creates an image by overlaying all images on their pinholes.
