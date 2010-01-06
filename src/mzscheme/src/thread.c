@@ -378,7 +378,6 @@ static int post_system_idle();
 static Scheme_Object *current_stats(int argc, Scheme_Object *args[]);
 
 static Scheme_Object **config_map;
-Scheme_Object *mtrace_cmark_key = NULL;
 
 typedef struct {
   MZTAG_IF_REQUIRED
@@ -796,9 +795,8 @@ void scheme_init_memtrace(Scheme_Env *env)
   v = scheme_intern_symbol("#%memtrace");
   newenv = scheme_primitive_module(v, env);
     
-  mtrace_cmark_key = scheme_make_symbol("memory-trace-continuation-mark");
-  scheme_add_global("memory-trace-continuation-mark", mtrace_cmark_key, 
-		    newenv);
+  v = scheme_make_symbol("memory-trace-continuation-mark");
+  scheme_add_global("memory-trace-continuation-mark", v , newenv);
   v = scheme_make_prim_w_arity(new_tracking_fun, 
 			       "new-memtrace-tracking-function", 1, 1);
   scheme_add_global("new-memtrace-tracking-function", v, newenv);
