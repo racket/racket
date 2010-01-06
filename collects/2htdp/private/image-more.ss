@@ -471,8 +471,8 @@
        (rotated-rectangular-bounding-box w h (text-angle atomic-shape)))]
     [(bitmap? atomic-shape)
      (let ([bb (bitmap-raw-bitmap atomic-shape)])
-       (rotated-rectangular-bounding-box (send bb get-width)
-                                         (send bb get-height)
+       (rotated-rectangular-bounding-box (* (send bb get-width) (bitmap-x-scale atomic-shape))
+                                         (* (send bb get-height) (bitmap-y-scale atomic-shape))
                                          (bitmap-angle atomic-shape)))]
     [else
      (fprintf (current-error-port) "using bad bounding box for ~s\n" atomic-shape)
