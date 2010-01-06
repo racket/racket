@@ -37,13 +37,23 @@
                     [min-value min-scale]
                     [max-value max-scale]
                     [callback (λ ignore (send c refresh))])]
-           [bp (new horizontal-panel% [parent f] [alignment '(center center)] [stretchable-height #f])]
+           [bp (new horizontal-panel% 
+                    [parent f]
+                    [alignment '(center center)]
+                    [stretchable-height #f])]
            [scale-adjust
             (λ (f)
-              (send sl set-value (max min-scale (min max-scale (f (send sl get-value)))))
+              (send sl set-value 
+                    (max min-scale (min max-scale (f (send sl get-value)))))
               (send c refresh))])
-    (send (new button% [label "√"] [callback (λ x (scale-adjust sub1))] [parent bp]) min-width 100)
-    (send (new button% [label "2"] [callback (λ x (scale-adjust add1))] [parent bp]) min-width 100)
+    (send (new button% 
+               [label "√"] 
+               [callback (λ x (scale-adjust sub1))] 
+               [parent bp]) min-width 100)
+    (send (new button% 
+               [label "2"]
+               [callback (λ x (scale-adjust add1))]
+               [parent bp]) min-width 100)
     (send f show #t)))
 
 (define (save-image pre-image filename)
@@ -97,7 +107,8 @@
               #f))
 
 ;; overlay : image image image ... -> image
-;; places images on top of each other with their upper left corners aligned. last one goes on the bottom
+;; places images on top of each other with their upper left corners aligned. 
+;; last one goes on the bottom
 (define/chk (overlay image image2 . image3)
   (overlay/internal 'left 'top image (cons image2 image3)))
 
@@ -261,6 +272,9 @@
 ;; crop : number number number number image -> image
 ;; crops an image to be w x h from (x,y)
 (define/chk (crop x1 y1 width height image)
+  (crop/internal x1 y1 width height image))
+
+(define (crop/internal x1 y1 width height image)
   (let ([iw (min width (image-width image))]
         [ih (min height (image-height image))])
     (make-image (make-crop (rectangle-points iw ih)
@@ -269,6 +283,27 @@
                          ih
                          (min ih (image-baseline image)))
                 #f)))
+
+;; place-image : image x y scene -> scene
+(define/chk (place-image image1 x1 y1 image2) 
+  (place-image/internal image1 x1 y1 image2 'left 'top))
+(define/chk (place-image/align image1 x1 y1 x-place y-place image2)
+  (place-image/internal image1 x1 y1 image2 x-place y-place))
+
+(define (place-image/internal image orig-dx orig-dy scene x-place y-place)
+  (let ([dx (- orig-dx (find-x-spot x-place image))]
+        [dy (- orig-dy (find-y-spot y-place image))])
+    (crop/internal
+     (if (< dx 0) (- dx) 0)
+     (if (< dy 0) (- dy) 0)
+     (image-right scene)
+     (image-bottom scene)
+     (overlay/δ image
+                (if (< dx 0) 0 dx)
+                (if (< dy 0) 0 dy)
+                scene
+                (if (< dx 0) (- dx) 0)
+                (if (< dy 0) (- dy) 0)))))
 
 ;; frame : image -> image
 ;; draws a black frame around a image where the bounding box is
@@ -290,47 +325,35 @@
 ;; scales the I by the given factor
 
 ;; rotate : I number -> I
-;; rotates the I around the top-left corner by the given angle
-;; (in degrees)
-;; LINEAR TIME OPERATION (sigh)
+;; rotates the I around the top-left corner by the given angle (in degrees)
 (define/chk (rotate angle image)
-  (let-values ([(rotated-shape ltrb)
-                (rotate-normalized-shape/bb angle 
-                                            (normalize-shape (image-shape image)))])
-    
+  (let* ([rotated-shape (rotate-normalized-shape 
+                         angle
+                         (send image get-normalized-shape))]
+        [ltrb (normalized-shape-bb rotated-shape)])
     (make-image (make-translate (- (ltrb-left ltrb)) (- (ltrb-top ltrb)) rotated-shape)
                 (make-bb (- (ltrb-right ltrb) (ltrb-left ltrb))
                          (- (ltrb-bottom ltrb) (ltrb-top ltrb))
                          (- (ltrb-bottom ltrb) (ltrb-top ltrb)))
                 #f)))
 
-;; rotate-normalized-shape/bb : angle normalized-shape -> (values normalized-shape ltrb)
-(define (rotate-normalized-shape/bb angle shape)
+(define (rotate-normalized-shape angle shape)
   (cond
     [(overlay? shape)
-     (let-values ([(top-shape top-ltrb) (rotate-normalized-shape/bb angle (overlay-top shape))]
-                  [(bottom-shape bottom-ltrb) (rotate-simple/bb angle (overlay-bottom shape))])
-       (values (make-overlay top-shape bottom-shape)
-               (union-ltrb top-ltrb bottom-ltrb)))]
+     (let ([top-shape (rotate-normalized-shape angle (overlay-top shape))]
+           [bottom-shape (rotate-simple angle (overlay-bottom shape))])
+       (make-overlay top-shape bottom-shape))]
     [else 
-     (rotate-cropped-simple/bb angle shape)]))
+     (rotate-cropped-simple angle shape)]))
 
-;; rotate-cropped-shape/bb : angle cropped-simple-shape -> (values cropped-simple-shape ltrb)
-(define (rotate-cropped-simple/bb angle shape)
+;; rotate-cropped-simple : angle cropped-simple-shape -> cropped-simple-shape
+(define (rotate-cropped-simple angle shape)
   (cond
     [(crop? shape)
-     (let-values ([(rotated-shape ltrb) (rotate-cropped-simple/bb angle (crop-shape shape))])
-       (let* ([rotated-points (rotate-points angle (crop-points shape))]
-              [crop-ltrb (points->ltrb rotated-points)])
-         (values (make-crop rotated-points rotated-shape)
-                 (intersect-ltrb crop-ltrb ltrb))))]
+     (make-crop (rotate-points angle (crop-points shape))
+                (rotate-cropped-simple angle (crop-shape shape)))]
     [else 
-     (rotate-simple/bb angle shape)]))
-
-;; rotate-simple/bb : angle simple-shape -> (values simple-shape ltrb)
-(define (rotate-simple/bb angle shape)
-  (let ([rotated-shape (rotate-simple angle shape)])
-    (values rotated-shape (simple-bb rotated-shape))))
+     (rotate-simple angle shape)]))
 
 ;; rotate-simple : angle simple-shape -> simple-shape
 (define (rotate-simple θ simple-shape)
@@ -365,6 +388,26 @@
              (max (ltrb-top ltrb1) (ltrb-top ltrb2))
              (min (ltrb-right ltrb1) (ltrb-right ltrb2))
              (min (ltrb-bottom ltrb1) (ltrb-bottom ltrb2))))
+
+;; normalized-shape-bb : normalized-shape -> ltrb
+(define (normalized-shape-bb shape)
+  (cond
+    [(overlay? shape)
+     (let ([top-ltrb (normalized-shape-bb (overlay-top shape))]
+           [bottom-ltrb (simple-bb (overlay-bottom shape))])
+       (union-ltrb top-ltrb bottom-ltrb))]
+    [else 
+     (cropped-simple-bb shape)]))
+
+;; cropped-simple-bb : cropped-simple-shape -> ltrb
+(define (cropped-simple-bb shape)
+  (cond
+    [(crop? shape)
+     (let ([ltrb (cropped-simple-bb (crop-shape shape))]
+           [crop-ltrb (points->ltrb (crop-points shape))])
+       (intersect-ltrb crop-ltrb ltrb))]
+    [else
+     (simple-bb shape)]))
 
 ;; simple-bb : simple-shape -> ltrb
 ;; returns the bounding box of 'shape' 
@@ -445,7 +488,31 @@
             (max ax bx cx dx)
             (max ay by cy dy))))
 
-(define (rotate-points θ points) (map (λ (p) (rotate-point p θ)) points))
+(define (rotate-points θ in-points)
+  (let* ([cs (map point->c in-points)]
+         [vectors (points->vectors cs)]
+         [rotated-vectors (map (λ (c) (rotate-c c θ)) vectors)]
+         [points (vectors->points rotated-vectors)])
+    points))
+
+(define (points->vectors orig-points)
+  (let loop ([points (cons 0 orig-points)])
+    (cond
+      [(null? (cdr points)) '()]
+      [else
+       (cons (- (cadr points) (car points))
+             (loop (cdr points)))])))
+
+(define (vectors->points vecs)
+  (let loop ([vecs vecs]
+             [p 0])
+    (cond
+      [(null? vecs) '()]
+      [else 
+       (let ([next-p (+ (car vecs) p)])
+         (cons (c->point next-p)
+               (loop (cdr vecs)
+                     next-p)))])))
 
 (define (center-point np-atomic-shape)
   (let-values ([(l t r b) (np-atomic-bb np-atomic-shape)])
@@ -500,15 +567,22 @@
   (let-values ([(x y) (rotate-xy (point-x p) (point-y p) θ)])
     (make-point x y)))
 
+(define (rotate-c c θ)
+  (* (make-polar 1 (degrees->radians θ)) 
+     c))
+
 ;; rotate-xy : x,y angle -> x,y
 (define (rotate-xy x y θ)
-  (c->xy (* (make-polar 1 (degrees->radians θ)) 
-            (xy->c x y))))
+  (c->xy (rotate-c (xy->c x y) θ)))
 
 (define (xy->c x y) (make-rectangular x (- y)))
 (define (c->xy c) 
   (values (real-part c)
           (- (imag-part c))))
+(define (point->c p) (xy->c (point-x p) (point-y p)))
+(define (c->point c) 
+  (let-values ([(x y) (c->xy c)])
+    (make-point x y)))
 
 
 ;; bring-between : number number -> number
@@ -732,30 +806,6 @@
                 (make-bb w/h w/h w/h)
                 #f)))
 
-(define (mode-color->pen mode color)
-  (send the-pen-list find-or-create-pen color 1 
-        (case mode
-          [(outline) 'solid]
-          [(solid) 'transparent])))
-
-(define (mode-color->brush mode color)
-  (send the-brush-list find-or-create-brush color 
-        (case mode
-          [(outline) 'transparent]
-          [(solid) 'solid])))
-
-;; add-line : I number number number number -> I
-;; add-line : string string I number number number number -> I
-;; like add-line, but adapted to use coordinates relative the top-left of the I,
-;; or to the user-specified spot
-
-;; add-curve : I posn number number posn number number -> I
-;; add-curve : string string I posn number number posn number number -> I
-;; the posns are the start and end points of the curve
-;; the pair of numbers following each posn are the angle and "pull" of the curve
-;; see pin-line in slideshow
-;; the initial strings in the second instance of add-curve are like the strings in add-line
-
 (define/chk (image-width image) (inexact->exact (ceiling (image-right image))))
 (define/chk (image-height image) (inexact->exact (ceiling (image-bottom image))))
 
@@ -814,8 +864,11 @@
          
          rotate
          crop
-
          frame
+
+         place-image
+         place-image/align
+         
          
          show-image
          save-image

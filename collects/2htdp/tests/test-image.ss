@@ -1,9 +1,16 @@
 #lang scheme/base
 #|
 ;; snippet of code for experimentation
+#lang scheme/gui
+(require 2htdp/private/image-more
+         mrlib/image-core
+         mrlib/private/image-core-bitmap
+         2htdp/private/img-err
+         (only-in lang/htdp-advanced equal~?))
+
 (define images
-  (list (round-numbers (rotate 180 (line 20 30 "red")))
-        (round-numbers (line 20 30 "red"))))
+  (list (rhombus 10 90 'solid 'black)
+        (rotate 45 (square 10 'solid 'black))))
 
 (define t (new text%))
 (define f (new frame% [label ""] [width 600] [height 400]))
@@ -20,15 +27,17 @@
          scheme/math
          scheme/class
          scheme/gui/base
-         schemeunit)
+         schemeunit
+         (only-in lang/htdp-advanced equal~?))
 
 (require (for-syntax scheme/base))
 (define-syntax (test stx)
   (syntax-case stx ()
     [(test a => b)
-     #`(begin
-         ;(printf "running line ~a\n" #,(syntax-line stx))
-         (check-equal? a b))]))
+     (with-syntax ([check-equal? (datum->syntax #'here 'check-equal? stx)])
+       #`(begin
+           ;(printf "running line ~a\n" #,(syntax-line stx))
+           #,(quasisyntax/loc stx (check-equal? a b))))]))
 
 ;; test case: (beside (text "a"...) (text "b" ...)) vs (text "ab")
 
@@ -38,26 +47,6 @@
   (and (number? a)
        (number? b)
        (< (abs (- a b)) 0.001)))
-
-#;
-(show-image
- (overlay/xy (rectangle 100 10 'solid 'red)
-             0
-             10
-             (rectangle 100 10 'solid 'red)))
-
-
-#;
-(show-image
- (let loop ([image (rectangle 400 8 'solid 'red)]
-            [n 2])
-   (cond
-     [(= n 7) image]
-     [else
-      (loop (overlay/align 'center 'center
-                            image
-                            (rotate (* 180 (/ 1 n)) image))
-            (+ n 1))])))
 
 (define-syntax-rule 
   (round-numbers e)
@@ -221,6 +210,17 @@
                              (make-posn 10 0))
                        "solid" "plum")
               (rectangle 10 10 "solid" "plum"))
+
+;; make sure equality isn't equating everything
+(check-equal? (equal? (rectangle 10 10 'solid 'blue)
+                      (rectangle 10 10 'solid 'red))
+              #f)
+
+;; make sure 'white and black match up with color structs
+(check-equal? (rectangle 10 10 'solid (make-color 255 255 255))
+              (rectangle 10 10 'solid 'white))
+(check-equal? (rectangle 10 10 'solid (make-color 0 0 0))
+              (rectangle 10 10 'solid 'black))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -650,9 +650,11 @@
 (test (bring-between 720 360) => 0)
 (test (bring-between 720.5 360) => .5)
 
-(test (round-numbers (rotate 90 (rectangle 100 100 'solid 'blue)))
+(test (equal~? (rotate 90 (rectangle 100 100 'solid 'blue))
+               (rectangle 100 100 'solid 'blue)
+               .1)
       =>
-      (round-numbers (rectangle 100 100 'solid 'blue)))
+      #t)
 
 (test (round-numbers
        (normalize-shape (image-shape (rotate 90 (rotate 90 (rectangle 50 100 'solid 'purple))))
@@ -677,8 +679,6 @@
 (test (round-numbers (rotate -90 (ellipse 200 400 'solid 'purple)))
       =>
       (round-numbers (rotate 90 (ellipse 200 400 'solid 'purple))))
-
-(require (only-in lang/htdp-advanced equal~?))
 
 (test (equal~? (rectangle 100 10 'solid 'red)
                (rotate 90 (rectangle 10 100 'solid 'red))
@@ -787,14 +787,16 @@
 (test (image-baseline (image-snip->image (make-object image-snip% blue-10x20-bitmap)))
       => 
       20)
-#|
 (test (scale 2 (make-object image-snip% blue-10x20-bitmap))
       =>
       (image-snip->image (make-object image-snip% blue-20x40-bitmap)))
+
+;; this test fails; sent email to Ian about it.
+#;
 (test (rotate 90 (make-object image-snip% blue-10x20-bitmap))
       =>
       (image-snip->image (make-object image-snip% blue-20x10-bitmap)))
-|#
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1040,7 +1042,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; cropping
+;; cropping (and place-image)
 ;;
 
 (test (crop 0 0 10 10 (rectangle 20 20 'solid 'black))
@@ -1058,3 +1060,55 @@
       =>
       (beside (rectangle 10 10 'solid 'black)
               (rectangle 10 10 'solid 'green)))
+
+(test (place-image (circle 4 'solid 'black)
+                   10 10
+                   (rectangle 40 40 'solid 'orange))
+      =>
+      (underlay/xy (rectangle 40 40 'solid 'orange)
+                   10 10
+                   (circle 4 'solid 'black)))
+
+(test (place-image (circle 4 'solid 'black)
+                   50 50
+                   (rectangle 40 40 'solid 'orange))
+      =>
+      (rectangle 40 40 'solid 'orange))
+
+(test (place-image (circle 4 'solid 'black)
+                   36 36
+                   (rectangle 40 40 'solid 'orange))
+      =>
+      (underlay/xy (rectangle 40 40 'solid 'orange)
+                   36 36
+                   (crop 0 0 4 4 (circle 4 'solid 'black))))
+
+(test (place-image (circle 8 'solid 'black)
+                   -4 -4
+                   (rectangle 40 40 'solid 'orange))
+      =>
+      (overlay (crop 4 4 16 16 (circle 8 'solid 'black))
+               (rectangle 40 40 'solid 'orange)))
+
+(check-equal? (place-image (circle 4 'solid 'black)
+                           -4 0
+                           (rectangle 40 40 'solid 'orange))
+              (overlay (crop 4 0 4 8 (circle 4 'solid 'black))
+                       (rectangle 40 40 'solid 'orange)))
+
+(test (place-image/align (circle 4 'solid 'black)
+                         5 10 'center 'center
+                         (rectangle 40 40 'solid 'orange))
+      =>
+      (underlay/xy (rectangle 40 40 'solid 'orange)
+                   1 6
+                   (circle 4 'solid 'black)))
+
+
+(test (place-image/align (circle 4 'solid 'black)
+                         10 15 'right 'bottom
+                         (rectangle 40 40 'solid 'orange))
+      =>
+      (underlay/xy (rectangle 40 40 'solid 'orange)
+                   2 7
+                   (circle 4 'solid 'black)))

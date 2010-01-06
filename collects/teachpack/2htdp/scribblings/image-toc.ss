@@ -8,8 +8,8 @@
   (list
    (list '(image-height (rectangle 100 100 "solid" "black")) 'val 100)
    (list '(image-baseline (rectangle 100 100 "solid" "black")) 'val 100)
-   (list '(image-height (text "Hello" 24 "black")) 'val 24)
-   (list '(image-baseline (text "Hello" 24 "black")) 'val 18)
+   (list '(image-height (text "Hello" 24 "black")) 'val 41)
+   (list '(image-baseline (text "Hello" 24 "black")) 'val 31.0)
    (list
     '(image-height
       (overlay (circle 20 "solid" "orange") (circle 30 "solid" "purple")))
@@ -76,6 +76,91 @@
     '(rotate 45 (ellipse 60 20 "solid" "olivedrab"))
     'image
     "28daec71a64.png")
+   (list
+    '(beside
+      (place-image/align
+       (circle 8 "solid" "tomato")
+       0
+       0
+       "center"
+       "center"
+       (rectangle 32 32 "outline" "black"))
+      (place-image/align
+       (circle 8 "solid" "tomato")
+       8
+       8
+       "center"
+       "center"
+       (rectangle 32 32 "outline" "black"))
+      (place-image/align
+       (circle 8 "solid" "tomato")
+       16
+       16
+       "center"
+       "center"
+       (rectangle 32 32 "outline" "black"))
+      (place-image/align
+       (circle 8 "solid" "tomato")
+       24
+       24
+       "center"
+       "center"
+       (rectangle 32 32 "outline" "black"))
+      (place-image/align
+       (circle 8 "solid" "tomato")
+       32
+       32
+       "center"
+       "center"
+       (rectangle 32 32 "outline" "black")))
+    'image
+    "cf131e14ad.png")
+   (list
+    '(place-image/align
+      (triangle 16 "solid" "yellowgreen")
+      32
+      32
+      "right"
+      "bottom"
+      (rectangle 32 32 "solid" "mediumgoldenrod"))
+    'image
+    "f4c4d435a6.png")
+   (list
+    '(place-image
+      (circle 4 "solid" "white")
+      16
+      18
+      (place-image
+       (circle 4 "solid" "white")
+       -2
+       4
+       (place-image
+        (circle 4 "solid" "white")
+        12
+        0
+        (place-image
+         (circle 4 "solid" "white")
+         6
+         12
+         (rectangle 24 24 "solid" "goldenrod")))))
+    'image
+    "1178fdd1294.png")
+   (list
+    '(place-image
+      (triangle 64 "solid" "red")
+      -8
+      -8
+      (rectangle 48 48 "solid" "gray"))
+    'image
+    "2875b40781.png")
+   (list
+    '(place-image
+      (triangle 32 "solid" "red")
+      8
+      8
+      (rectangle 48 48 "solid" "gray"))
+    'image
+    "2bea495d1f.png")
    (list
     '(above/align
       "center"
@@ -256,6 +341,15 @@
       (ellipse 60 30 "solid" "purple"))
     'image
     "bf08c71801.png")
+   (list
+    '(overlay
+      (regular-polygon 20 5 "solid" (make-color 50 50 255))
+      (regular-polygon 25 5 "solid" (make-color 100 100 255))
+      (regular-polygon 30 5 "solid" (make-color 150 150 255))
+      (regular-polygon 35 5 "solid" (make-color 200 200 255))
+      (regular-polygon 40 5 "solid" (make-color 250 250 255)))
+    'image
+    "1aea411192a.png")
    (list
     '(overlay
       (ellipse 10 10 "solid" "red")

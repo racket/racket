@@ -46,9 +46,10 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 |#
 
 
-(require mrlib/image-core
+(require "../mrlib/image-core.ss"
          "private/image-more.ss"
-         "private/img-err.ss")
+         "private/img-err.ss"
+         htdp/error)
 
 (provide overlay
          overlay/align
@@ -66,7 +67,9 @@ and they all have good sample contracts. (It is amazing what we can do with kids
 	 crop
          rotate
          frame
-   
+         place-image
+         place-image/align
+         
          scale
          scale/xy
          
@@ -94,8 +97,22 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          mode?
          angle?
          side-count?
-         color?
-         
+         image-color?
+         (rename-out [build-color make-color])
+         color-red color-blue color-green color? color
          image-width
          image-height
          image-baseline)
+
+(define build-color
+  (let ([orig-make-color make-color])
+    (let ([make-color 
+           (λ (a b c)
+             (check-arg 'make-color (and (integer? a) (<= 0 a 255)) 
+                        'integer\ between\ 0\ and\ 255 1 a)
+             (check-arg 'make-color (and (integer? b) (<= 0 b 255)) 
+                        'integer\ between\ 0\ and\ 255 2 b)
+             (check-arg 'make-color (and (integer? c) (<= 0 c 255)) 
+                        'integer\ between\ 0\ and\ 255 3 c)
+             (make-color a b c))])
+      make-color)))

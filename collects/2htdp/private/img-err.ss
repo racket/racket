@@ -7,7 +7,7 @@
          mode?
          angle?
          side-count?
-         color?
+         image-color?
          image-snip->image
          bitmap->image)
 
@@ -147,15 +147,20 @@
          (+ arg 360)
          arg)]
     [(color)
-     (check-color fn-name i arg)
-     (let ([color-str 
-            (cond
-              [(symbol? arg)
-               (symbol->string arg)]
-              [else arg])])
-       (if (send the-color-database find-color color-str)
-           color-str
-           "black"))]
+     (check-arg fn-name (image-color? arg) 'color i arg)
+     ;; return either a string or a color object;
+     ;; since there may be saved files that have 
+     ;; strings in the color positions we leave them
+     ;; here too.
+     (if (color? arg)
+         arg
+         (let* ([color-str
+                 (if (symbol? arg)
+                     (symbol->string arg)
+                     arg)])
+           (if (send the-color-database find-color color-str)
+               color-str
+               "black")))]
     [(string)
      (check-arg fn-name (string? arg) 'string i arg)
      arg]
@@ -207,7 +212,7 @@
 (define (step-count? i)
   (and (integer? i)
        (1 . <= .  i)))
-(define (color? c) (or (symbol? c) (string? c)))
+(define (image-color? c) (or (symbol? c) (string? c) (color? c)))
 
 (define (to-img arg)
   (cond

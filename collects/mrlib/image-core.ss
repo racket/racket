@@ -233,7 +233,9 @@ has been moved out).
 ;                        ;;   ;                     
 ;                         ;;;;                      
 
-(define-local-member-name get-shape set-shape get-bb get-normalized? set-normalized get-normalized-shape)
+(define-local-member-name
+  get-shape set-shape get-bb 
+  get-normalized? set-normalized get-normalized-shape)
 
 (define image%
   (class* snip% (equal<%>)
@@ -250,13 +252,8 @@ has been moved out).
                       [bytes1 (make-bytes (* w h 4) 0)]
                       [bytes2 (make-bytes (* w h 4) 0)]
                       [bdc (make-object bitmap-dc%)])
-                 (send bdc set-smoothing 'aligned)
                  (and (check-same? bm1 bm2 bytes1 bytes2 bdc "red" that)
-                      (check-same? bm1 bm2 bytes1 bytes2 bdc "green" that)))))
-      
-      #;
-      (eq-recur (get-normalized-shape)
-                (send that get-normalized-shape)))
+                      (check-same? bm1 bm2 bytes1 bytes2 bdc "green" that))))))
     
     (define/private (check-same? bm1 bm2 bytes1 bytes2 bdc color that)
       (clear-bitmap/draw/bytes bm1 bdc bytes1 this color)
@@ -268,8 +265,8 @@ has been moved out).
       (send bdc set-pen "black" 1 'transparent)
       (send bdc set-brush color 'solid)
       (send bdc draw-rectangle 0 0 (send bm get-width) (send bm get-height))
-      (render-image this bdc 0 0)
-      (send bm get-argb-pixels 0 0 (send bm get-width) (send bm get-height) bytes))
+      (render-image obj bdc 0 0)
+      (send bdc get-argb-pixels 0 0 (send bm get-width) (send bm get-height) bytes))
     
     (define/public (equal-hash-code-of y) 42)
     (define/public (equal-secondary-hash-code-of y) 3)
@@ -323,10 +320,12 @@ has been moved out).
         (send dc set-smoothing 'aligned)
         (render-image this dc x y)
         (send dc set-smoothing smoothing)))
+    
     (define/override (get-extent dc x y [w #f] [h #f] [descent #f] [space #f] [lspace #f] [rspace #f])
       (send (get-the-snip-class-list) add snip-class)
-      (let ([bottom (round (bb-bottom bb))])
-        (set-box/f! w (round (bb-right bb)))
+      (let ([bottom (round (bb-bottom bb))]
+            [right (round (bb-right bb))])
+        (set-box/f! w right)
         (set-box/f! h bottom)
         (set-box/f! descent (- bottom (round (bb-baseline bb))))
         (set-box/f! space 0)
@@ -571,8 +570,10 @@ has been moved out).
   (cond
     [(polygon? simple-shape)
      (let ([path (polygon-points->path (polygon-points simple-shape))])
-       (send dc set-pen (mode-color->pen (polygon-mode simple-shape) (polygon-color simple-shape)))
-       (send dc set-brush (mode-color->brush (polygon-mode simple-shape) (polygon-color simple-shape)))
+       (send dc set-pen (mode-color->pen (polygon-mode simple-shape)
+                                         (polygon-color simple-shape)))
+       (send dc set-brush (mode-color->brush (polygon-mode simple-shape)
+                                             (polygon-color simple-shape)))
        (send dc draw-path path dx dy 'winding))]
     [(line-segment? simple-shape)
      (let ([path (new dc-path%)]
@@ -626,19 +627,14 @@ has been moved out).
 
 (define (polygon-points->path points)
   (let ([path (new dc-path%)])
-    (send path move-to (point-x (car points)) (point-y (car points)))
-    (let loop ([point (make-rectangular (point-x (car points)) (point-y (car points)))]
-               [last-point (car points)]
-               [points (cdr points)])
+    (send path move-to (round (point-x (car points))) (round (point-y (car points))))
+    (let loop ([points (cdr points)])
       (unless (null? points)
-        (let* ([vec (make-rectangular (- (point-x (car points))
-                                         (point-x last-point))
-                                      (- (point-y (car points))
-                                         (point-y last-point)))]
-               [endpoint (+ point vec (make-polar -1 (angle vec)))])
-          (send path line-to (real-part endpoint) (imag-part endpoint))
-          (loop endpoint (car points) (cdr points)))))
-    (send path line-to (point-x (car points)) (point-y (car points)))
+        (send path line-to 
+              (round (point-x (car points)))
+              (round (point-y (car points))))
+        (loop (cdr points))))
+    (send path line-to (round (point-x (car points))) (round (point-y (car points))))
     path))
 
 #|
@@ -680,15 +676,14 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 
 (define (do-rotate bitmap)
   (let ([θ (degrees->radians (bitmap-angle bitmap))])
-    (let-values ([(bytes w h) (bitmap->bytes (bitmap-rendered-bitmap bitmap) (bitmap-rendered-mask bitmap))])
+    (let-values ([(bytes w h) (bitmap->bytes (bitmap-rendered-bitmap bitmap) 
+                                             (bitmap-rendered-mask bitmap))])
       (let-values ([(rotated-bytes rotated-w rotated-h)
                     (rotate-bytes bytes w h θ)])
-        (set-bitmap-rendered-bitmap!
-         bitmap
-         (bytes->bitmap rotated-bytes rotated-w rotated-h))
-        (set-bitmap-rendered-mask!
-         bitmap
-         (send (bitmap-rendered-bitmap bitmap) get-loaded-mask))))))
+        (let* ([bm (bytes->bitmap rotated-bytes rotated-w rotated-h)]
+               [mask (send bm get-loaded-mask)])
+          (set-bitmap-rendered-bitmap! bitmap bm)
+          (set-bitmap-rendered-mask! bitmap mask))))))
 
 (define (do-scale bitmap)
   (let* ([bdc (make-object bitmap-dc%)]
@@ -762,18 +757,29 @@ the mask bitmap and the original bitmap are all together in a single bytes!
   (* θ 2 pi (/ 360)))
 
 (define (mode-color->pen mode color)
-  (cond
-    [(eq? mode 'solid)
-     (send the-pen-list find-or-create-pen "black" 1 'transparent)]
-    [else
-     (send the-pen-list find-or-create-pen color 1 'solid)]))
+  (send the-pen-list find-or-create-pen 
+        (get-color-arg color)
+        1 
+        (case mode
+          [(outline) 'solid]
+          [(solid) 'transparent])))
 
 (define (mode-color->brush mode color)
-  (cond
-    [(eq? mode 'solid)
-     (send the-brush-list find-or-create-brush color 'solid)]
-    [else
-     (send the-brush-list find-or-create-brush "black" 'transparent)]))
+  (send the-brush-list find-or-create-brush 
+        (get-color-arg color) 
+        (case mode
+          [(outline) 'transparent]
+          [(solid) 'solid])))
+
+(define (get-color-arg color)
+  (if (string? color) 
+      color
+      (make-object color% 
+        (color-red color)
+        (color-green color)
+        (color-blue color))))
+
+(define-struct/reg-mk color (red green blue) #:transparent)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -794,6 +800,8 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 
          make-bitmap bitmap? bitmap-raw-bitmap bitmap-raw-mask bitmap-angle bitmap-x-scale bitmap-y-scale 
          bitmap-rendered-bitmap bitmap-rendered-mask
+
+         (struct-out color)
          
          degrees->radians
          normalize-shape
@@ -806,7 +814,9 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          
          text->font
          compare-all-rotations
-         render-image)
+         render-image
+         
+         scale-np-atomic)
 
 ;; method names
 (provide get-shape get-bb get-normalized? get-normalized-shape)
