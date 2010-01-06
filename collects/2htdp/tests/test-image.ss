@@ -797,7 +797,10 @@
       =>
       (image-snip->image (make-object image-snip% blue-20x10-bitmap)))
 
-
+;; there was a bug in the bounding box computation for scaled bitmaps that this test exposes
+(test (image-width (frame (rotate 90 (scale 1/2 (bitmap icons/plt-logo-red-diffuse.png)))))
+      =>
+      128)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
