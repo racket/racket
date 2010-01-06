@@ -292,32 +292,41 @@
   (syntax-case stx ()
     [(_)
      (syntax-property
-      #'(dynamic-wind
-	    values
-	    (lambda () (run-tests))
-	    (lambda () (display-results)))
+      #'(test*)
       'test-call #t)]))
+
+(define (test*)
+  (dynamic-wind
+   values
+   (lambda () (run-tests))
+   (lambda () (display-results))))
 
 (define-syntax (run-tests stx)
   (syntax-case stx ()
     [(_)
      (syntax-property
-      #'(run (namespace-variable-value 'test~object #f builder (current-namespace)))
+      #'(run)
       'test-call #t)]))
 
-(define (run test-info) (and test-info (send test-info run)))
+(define (run) 
+  (let ([test-info
+         (namespace-variable-value 'test~object #f builder (current-namespace))]) 
+    (and test-info (send test-info run))))
+
+(define (display-results*)
+  (let ([test-info (namespace-variable-value 'test~object #f builder (current-namespace))])
+    (and test-info
+         (let ([display-data (scheme-test-data)])
+           (when (caddr display-data)
+             (send test-info refine-display-class (caddr display-data)))
+           (send test-info setup-display (car display-data) (cadr display-data))
+           (send test-info summarize-results (current-output-port))))))
 
 (define-syntax (display-results stx) 
   (syntax-case stx ()
     [(_)
      (syntax-property
-      #'(let ([test-info (namespace-variable-value 'test~object #f builder (current-namespace))])
-          (and test-info
-               (let ([display-data (scheme-test-data)])
-                 (when (caddr display-data)
-                   (send test-info refine-display-class (caddr display-data)))
-                 (send test-info setup-display (car display-data) (cadr display-data))
-                 (send test-info summarize-results (current-output-port)))))
+      #'(display-results*)
       'test-call #t)]))
 
 (provide run-tests display-results test builder)

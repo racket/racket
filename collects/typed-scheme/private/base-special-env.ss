@@ -9,19 +9,17 @@
  '#%paramz
  (only-in scheme/match/runtime match:error)
  scheme/promise
- string-constants/string-constant)
+ string-constants/string-constant
+ (prefix-in ce: test-engine/scheme-tests)
+ (for-syntax
+  scheme/base syntax/parse
+  (utils tc-utils)
+  (env init-envs)          
+  (except-in (rep filter-rep object-rep type-rep) make-arr)
+  (types convenience union)
+  (only-in (types convenience) [make-arr* make-arr])          
+  (typecheck tc-structs)))
 
-
-
-;; these are all for constructing the types given to variables
-(require (for-syntax
-          scheme/base
-          (utils tc-utils)
-          (env init-envs)          
-          (except-in (rep filter-rep object-rep type-rep) make-arr)
-          (types convenience union)
-          (only-in (types convenience) [make-arr* make-arr])          
-          (typecheck tc-structs)))
 
 (define-for-syntax (initialize-others)
   (d-s srcloc
@@ -46,7 +44,7 @@
 
 (define-syntax (define-initial-env stx)
     (syntax-case stx ()
-      [(_ initial-env make-promise-ty language-ty qq-append-ty [id ty] ...)
+      [(_ initial-env make-promise-ty language-ty qq-append-ty cl ...)
        (with-syntax ([(_ make-promise . _)
                       (local-expand #'(delay 3)
                                     'expression
@@ -64,7 +62,7 @@
               [make-promise make-promise-ty]
               [language language-ty]
               [qq-append qq-append-ty]
-              [id ty] ...)))]))
+              cl ...)))]))
 
 
 
@@ -78,7 +76,37 @@
   (-poly (a b) 
          (cl->*
           (-> (-lst a) (-val '()) (-lst a))
-          (-> (-lst a) (-lst b) (-lst (*Un a b))))))
+          (-> (-lst a) (-lst b) (-lst (*Un a b)))))
+  [(syntax-parse (local-expand #'(ce:test) 'expression null)
+                 #:context #'ce:test
+     [(_ ce-t:id) #'ce-t])
+   (-> -Void)]
+  
+  [(syntax-parse (local-expand #'(ce:check-expect 1 1) 'module #f)
+                 #:literals (let when define-values)
+    [(define-values _ 
+       (let ((_ _))
+         (when _ 
+           (insert-test _ (lambda () (check-values-expected _ _ _ _))))))
+     #'insert-test])
+   (Univ (-> Univ) . -> . -Void)]
+  [(syntax-parse (local-expand #'(ce:check-expect 1 1) 'module #f)
+                 #:literals (let when define-values)
+                 ;#:literal-sets (kernel-literals)
+    [(define-values _ 
+       (let ((_ _))
+         (when _ 
+           (insert-test _ (lambda () (check-values-expected _ _ _ _))))))
+     #'check-values-expected])
+   ((-> Univ) Univ Univ Univ . -> . -Void)]
+  [(syntax-parse (local-expand #'(ce:check-expect 1 1) 'module #f)
+                 #:literals (let when define-values)
+                 ;#:literal-sets (kernel-literals)
+    [(define-values _ 
+       (let ((_ (nvv _ _ builder _)))
+         _))
+     #'builder])
+   (-> Univ)])
      
      
      

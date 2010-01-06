@@ -33,11 +33,15 @@
            text-snip))]
       [else (format "~v" value)]))
   
+  (define (test*)
+    (run-tests)
+    (pop-up))
+  
   (define-syntax (test stx) 
     (syntax-case stx ()
       [(_)
        (syntax-property
-	#'(begin (run-tests) (pop-up))
+	#'(test*)
 	'test-call #t)]))
 
   (define (pop-up)
