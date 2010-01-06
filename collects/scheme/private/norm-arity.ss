@@ -50,16 +50,16 @@
           (if-one-then-no-list
            (cond
              [min-at-least
-              (append (sort
-                       (uniq
+              (append (uniq
+                       (sort
                         (filter (λ (x) (and (number? x)
                                             (< x (arity-at-least-value
                                                   min-at-least))))
-                                a))
-                       <)
+                                a)
+                        <))
                       (list min-at-least))]
              [else
-              (sort (uniq a) <)])))
+              (uniq (sort a <))])))
         a))
   
   ;; have my own version of this to avoid a circular dependency
@@ -78,7 +78,19 @@
        (car lst)]
       [else lst]))
   
+  ;; uniq : sorted list of integers -> sorted, uniqe list of integers
   (define (uniq lst)
-    (let ([ht (make-hash)])
-      (for-each (λ (i) (hash-set! ht i #f)) lst)
-      (hash-map ht (λ (x y) x)))))
+    (cond
+      [(null? lst) null]
+      [(null? (cdr lst)) lst]
+      [else
+       (let loop ([fst (car lst)]
+                  [rst (cdr lst)])
+         (cond
+           [(null? rst) (list fst)]
+           [else
+            (let ([snd (car rst)])
+              (if (= fst snd)
+                  (loop fst (cdr rst))
+                  (cons fst (loop snd (cdr rst)))))]))])))
+
