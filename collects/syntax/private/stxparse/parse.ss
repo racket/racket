@@ -154,6 +154,11 @@
                                                      #:allow-declare? #t
                                                      #:decls decls0
                                                      #:context #'ctx)])
+               (unless (and (stx-list? rest) (stx-pair? rest))
+                 (raise-syntax-error #f
+                                     "expected non-empty clause body"
+                                     #'ctx
+                                     clause))
                (with-syntax ([rest rest]
                              [pattern
                               (parse-whole-pattern #'p decls2 #:context #'ctx)]
@@ -164,7 +169,7 @@
                               (convert-sides x #,sides
                                              (clause-success () (let () . rest)))))))]))
         (unless (and (stx-list? clauses-stx) (stx-pair? clauses-stx))
-          (raise-syntax-error #f "expected non-empty sequence of clauses" stx))
+          (raise-syntax-error #f "expected non-empty sequence of clauses" #'ctx))
         (with-syntax ([(def ...) defs]
                       [(alternative ...)
                        (map for-clause (stx->list clauses-stx))])
