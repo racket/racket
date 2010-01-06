@@ -61,7 +61,9 @@ READ_ONLY static char *minus_infinity_str = "-inf.0";
 READ_ONLY static char *not_a_number_str = "+nan.0";
 READ_ONLY static char *other_not_a_number_str = "-nan.0";
 
-static Scheme_Object *num_limits[3];
+#if !defined(SIXTY_FOUR_BIT_INTEGERS) && defined(NO_LONG_LONG_TYPE)
+SHARED_OK static Scheme_Object *num_limits[3];
+#endif
 
 #ifdef SCHEME_BIG_ENDIAN
 # define MZ_IS_BIG_ENDIAN 1
@@ -158,7 +160,25 @@ void scheme_init_numstr(Scheme_Env *env)
 						       MZCONFIG_SCHEDULER_RANDOM_STATE),
 			     env);
 
+#if !defined(SIXTY_FOUR_BIT_INTEGERS) && defined(NO_LONG_LONG_TYPE)
   REGISTER_SO(num_limits);
+  {
+    Scheme_Object *a[2], *v;
+
+    a[0] = scheme_make_integer(1);
+    a[1] = scheme_make_integer(64);
+    a[0] = scheme_bitwise_shift(2, a);
+    v = scheme_sub1(1, a);
+    num_limits[MZ_U8HI] = v;
+    a[0] = v;
+    a[1] = scheme_make_integer(-1);
+    v = scheme_bitwise_shift(2, a);
+    num_limits[MZ_S8HI] = v;
+    a[0] = v;
+    v = scheme_bin_minus(scheme_make_integer(0), scheme_add1(1, a));
+    num_limits[MZ_S8LO] = v;
+  }
+#endif
 }
 
 # ifdef SIN_COS_NEED_DEOPTIMIZE
@@ -1852,23 +1872,6 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
     else
       bad = !scheme_get_unsigned_long_long_val(n, (umzlonglong *)&llval);
 # else
-    if (!num_limits[MZ_U8HI]) {
-      Scheme_Object *a[2], *v;
-
-      a[0] = scheme_make_integer(1);
-      a[1] = scheme_make_integer(64);
-      a[0] = scheme_bitwise_shift(2, a);
-      v = scheme_sub1(1, a);
-      num_limits[MZ_U8HI] = v;
-      a[0] = v;
-      a[1] = scheme_make_integer(-1);
-      v = scheme_bitwise_shift(2, a);
-      num_limits[MZ_S8HI] = v;
-      a[0] = v;
-      v = scheme_bin_minus(scheme_make_integer(0), scheme_add1(1, a));
-      num_limits[MZ_S8LO] = v;
-    }
-
     if (sgned)
       bad = (scheme_bin_lt(n, num_limits[MZ_S8LO])
 	     || scheme_bin_lt(num_limits[MZ_S8HI], n));
