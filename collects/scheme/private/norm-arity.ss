@@ -35,7 +35,7 @@
   ;;  result is normalized in the following sense:
   ;;   - no duplicate entries
   ;;   - nats are sorted
-  ;;   - at most one arity-at-least, always at the beginning
+  ;;   - at most one arity-at-least, always at the end
   (define (normalize-arity a)
     (if (pair? a)
         (let-values ([(min-at-least) #f])
