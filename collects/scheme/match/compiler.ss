@@ -8,7 +8,8 @@
          "reorder.ss"
          scheme/struct-info
          scheme/stxparam
-         scheme/nest)
+         scheme/nest
+         unstable/syntax)
 
 (provide compile*)
 
@@ -43,12 +44,12 @@
                                  esc)])
       #`[(#,predicate-stx #,x) rhs]))
   (define (compile-con-pat accs pred pat-acc)
-    (with-syntax ([(tmps ...) (generate-temporaries accs)])
-      (with-syntax ([(accs ...) accs]
-                    [pred pred]
-                    [body (compile*
-                           (append (syntax->list #'(tmps ...)) xs)
-                           (map (lambda (row)
+    (with-syntax* ([(tmps ...) (generate-temporaries accs)]
+                   [(accs ...) accs]
+                   [pred pred]
+                   [body (compile*
+                          (append (syntax->list #'(tmps ...)) xs)
+                          (map (lambda (row)
                                   (define-values (p1 ps) (Row-split-pats row))
                                   (make-Row (append (pat-acc p1) ps)
                                             (Row-rhs row)
@@ -56,7 +57,7 @@
                                             (Row-vars-seen row)))
                                 rows)
                            esc)])
-        #`[(pred #,x) (let ([tmps (accs #,x)] ...) body)])))
+      #`[(pred #,x) (let ([tmps (accs #,x)] ...) body)]))
   (cond
     [(eq? 'box k)
      (compile-con-pat (list #'unbox) #'box? (compose list Box-p))]
@@ -116,7 +117,22 @@
             [accs (Struct-accessors s)]
             [pred (Struct-pred s)])
        (compile-con-pat accs pred Struct-ps))]
-    [else (error 'compile "bad key: ~a" k)]))
+    ;; it's a prefab struct
+    [(list? k)
+     (let* ([s (Row-first-pat (car rows))]
+            [key (PrefabStruct-key s)]
+            [pats (PrefabStruct-ps s)])       
+       (with-syntax*
+        ([struct-type-id (syntax-local-lift-expression #`(prefab-key->struct-type '#,key #,(length pats)))]
+         [(_ _ _ acc-proc _ _ _ _) (syntax-local-lift-values-expression 8 #`(struct-type-info struct-type-id))])
+        (compile-con-pat
+         (for/list ([p pats]
+                    [i (in-naturals)])
+           #`(make-struct-field-accessor acc-proc #,i)
+           #;#`(lambda (val) (acc-proc val #,i)))
+         #`(struct-type-make-predicate struct-type-id)
+         PrefabStruct-ps)))]
+    [else (error 'match-compile "bad key: ~a" k)]))
 
 
 ;; produces the syntax for a let clause

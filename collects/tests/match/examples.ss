@@ -608,4 +608,22 @@
          (match `(begin 1 2 3)
            [`(begin ,es ... ,en)
             (list es en)]))
-   ))
+
+   (comp '(a b c)
+	 (let ()
+	   
+	   (define-struct foo (a b c) #:prefab)
+	   (match (make-foo 'a 'b 'c)
+		  [`#s(foo ,x ,y ,z)
+		   (list x y z)])))
+   (comp '(a b c)
+	 (let ()
+	   
+	   (define-struct foo (a b c) #:prefab)
+	   (define-struct (bar foo) (d) #:prefab)
+	   (match (make-bar 'a 'b 'c 1)
+		  [`#s((bar foo 3) ,x ,y ,z ,w)
+		      (list x y z)])
+	   ))
+
+))

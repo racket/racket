@@ -57,6 +57,16 @@
         (pq #'rest)
         #f))]
     [(a . b) (make-Pair (pq #'a) (pq #'b))]
+    ;; prefab structs
+    [struct
+     (prefab-struct-key (syntax-e #'struct))
+     (let ([key (prefab-struct-key (syntax-e #'struct))]
+           [pats (cdr (vector->list (struct->vector (syntax-e #'struct))))])
+       (make-And (list (make-Pred #`(struct-type-make-predicate (prefab-key->struct-type '#,key #,(length pats))))
+                       (make-App #'struct->vector
+                                 (make-Vector (cons (make-Dummy #f) (map pq pats))))))
+       #;
+       (make-PrefabStruct key (map pq pats)))]
     ;; the hard cases
     [#(p ...)
      (ormap (lambda (p)
