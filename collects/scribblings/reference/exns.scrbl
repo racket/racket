@@ -163,11 +163,17 @@ the procedure. The printed form of @scheme[v] is appended to
 
 Creates an @scheme[exn:fail:contract:arity] value and @scheme[raise]s
 it as an exception.  The @scheme[name] is used for the source
-procedure's name in the error message. The @scheme[arity-v] value must
-be a possible result from @scheme[procedure-arity], and it is used for
-the procedure's arity in the error message; if
-@scheme[name-symbol-or-procedure] is a procedure, its actual arity is
-ignored.  The @scheme[arg-v] arguments are the actual supplied
+procedure's name in the error message. 
+
+The @scheme[arity-v] value must
+be a possible result from @scheme[procedure-arity], except
+that it does not have to be normalized (see @scheme[procedure-arity?] for
+the details of normalized arities); @scheme[raise-arity-error] 
+will normalize the arity and used the normalized form in the error message.
+If @scheme[name-symbol-or-procedure] is a procedure, its actual arity is
+ignored.  
+
+The @scheme[arg-v] arguments are the actual supplied
 arguments, which are shown in the error message (using the error value
 conversion handler; see @scheme[error-value->string-handler]); also,
 the number of supplied @scheme[arg-v]s is explicitly mentioned in the

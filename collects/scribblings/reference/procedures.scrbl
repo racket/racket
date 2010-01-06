@@ -129,6 +129,14 @@ A valid arity @scheme[_a] is one of the following:
 
 ]
 
+Generally, @scheme[procedure-arity] always produces an arity that is normalized. 
+Specifically, it is either the empty list (corresponding to the procedure 
+@scheme[(case-lambda)]), one of the first two cases above, or a list
+that contains at least two elements. If it is a list, there is at most one
+@scheme[arity-at-least] instance that appears as the last element of the list,
+all of the other elements are sorted in ascending order, and there are no duplicate
+elements.
+
 @mz-examples[
 (procedure-arity cons)
 (procedure-arity list)

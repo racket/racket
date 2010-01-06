@@ -40,7 +40,7 @@
 
   ;; using only optionals
   (t (procedure-arity (lambda/kw (#:optional) 0))       => 0
-     (procedure-arity (lambda/kw (x #:optional y z) 0)) => '(3 1 2))
+     (procedure-arity (lambda/kw (x #:optional y z) 0)) => '(1 2 3))
   (let ([f (lambda/kw (x #:optional y) (list x y))])
     (t (f 0)   => '(0 #f)
        (f 0 1) => '(0 1)))

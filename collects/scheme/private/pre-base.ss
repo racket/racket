@@ -14,6 +14,7 @@
              "for.ss"
              "map.ss" ; shadows #%kernel bindings
              "kernstruct.ss"
+             "norm-arity.ss"
              '#%builtin) ; so it's attached
 
   (define-syntaxes (#%top-interaction)
@@ -70,7 +71,10 @@
              (rename lambda #%plain-lambda)
              (rename #%module-begin #%plain-module-begin)
              (rename module-begin #%module-begin)
-             (all-from-except '#%kernel lambda λ #%app #%module-begin apply prop:procedure)
+             (rename norm:procedure-arity procedure-arity)
+             (rename norm:raise-arity-error raise-arity-error)
+             (all-from-except '#%kernel lambda λ #%app #%module-begin apply prop:procedure 
+                              procedure-arity raise-arity-error)
              (all-from "reqprov.ss")
              (all-from "for.ss")
              (all-from "kernstruct.ss")

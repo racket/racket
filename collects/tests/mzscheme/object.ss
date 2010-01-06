@@ -1248,7 +1248,7 @@
 	 (check-arity-error (mk-f) #f))
        (let ([mk-f (lambda ()
 		     (eval (syntax-property #'(case-lambda [(a b) a][(c d) c]) 'method-arity-error #t)))])
-	 (test '(2 2) procedure-arity (mk-f))
+	 (test 2 procedure-arity (mk-f))
 	 (check-arity-error (mk-f) #t)
 	 (test 1 (mk-f) 1 2)
 	 (let ([f (mk-f)])
