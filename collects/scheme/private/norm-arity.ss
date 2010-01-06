@@ -36,6 +36,7 @@
   ;;   - no duplicate entries
   ;;   - nats are sorted
   ;;   - at most one arity-at-least, always at the end
+  ;;   - if there is only one possibility, it is returned by itself (ie, not in a list)
   (define (normalize-arity a)
     (if (pair? a)
         (let-values ([(min-at-least) #f])
