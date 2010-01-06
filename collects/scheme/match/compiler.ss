@@ -117,21 +117,6 @@
             [accs (Struct-accessors s)]
             [pred (Struct-pred s)])
        (compile-con-pat accs pred Struct-ps))]
-    ;; it's a prefab struct
-    [(list? k)
-     (let* ([s (Row-first-pat (car rows))]
-            [key (PrefabStruct-key s)]
-            [pats (PrefabStruct-ps s)])       
-       (with-syntax*
-        ([struct-type-id (syntax-local-lift-expression #`(prefab-key->struct-type '#,key #,(length pats)))]
-         [(_ _ _ acc-proc _ _ _ _) (syntax-local-lift-values-expression 8 #`(struct-type-info struct-type-id))])
-        (compile-con-pat
-         (for/list ([p pats]
-                    [i (in-naturals)])
-           #`(make-struct-field-accessor acc-proc #,i)
-           #;#`(lambda (val) (acc-proc val #,i)))
-         #`(struct-type-make-predicate struct-type-id)
-         PrefabStruct-ps)))]
     [else (error 'match-compile "bad key: ~a" k)]))
 
 

@@ -59,10 +59,6 @@
 ;; ps is a listof patterns
 (define-struct (Struct CPat) (id pred super accessors ps) #:transparent)
 
-;; ps is a listof patterns
-;; key is a prefab struct key
-(define-struct (PrefabStruct CPat) (key pred accessors ps) #:transparent)
-
 ;; both fields are lists of pats
 (define-struct (HashTable CPat) (key-pats val-pats) #:transparent)
 
@@ -109,7 +105,6 @@
 ;; the result is #f if p is not a constructor pattern
 (define (pat-key p)
   (cond [(Struct? p) (get-key (Struct-id p))]
-        [(PrefabStruct? p) (list (PrefabStruct-key p))]
         [(Box? p) 'box]
         [(Vector? p) 'vector]
         [(Pair? p) 'pair]
@@ -172,8 +167,6 @@
      (merge (map bound-vars (Vector-ps p)))]
     [(Struct? p)
      (merge (map bound-vars (Struct-ps p)))]
-    [(PrefabStruct? p)
-     (merge (map bound-vars (PrefabStruct-ps p)))]
     [(App? p)
      (bound-vars (App-p p))]
     [(Not? p) null]
