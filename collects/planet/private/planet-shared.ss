@@ -1,9 +1,9 @@
+#lang scheme/base
 #| planet-shared.ss -- shared client/server utility functions
 
 Various common pieces of code that both the client and server need to access
 ==========================================================================================
 |#
-#lang scheme/base
   
   (require (only-in mzlib/file path-only)
 	   mzlib/port
