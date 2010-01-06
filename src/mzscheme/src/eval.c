@@ -151,7 +151,7 @@
 
 
 /* globals */
-int scheme_startup_use_jit = 1;
+SHARED_OK int scheme_startup_use_jit = 1;
 void scheme_set_startup_use_jit(int v) { scheme_startup_use_jit =  v; }
 
 /* global counters */

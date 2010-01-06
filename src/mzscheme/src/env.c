@@ -42,10 +42,10 @@
 /* #define TIME_STARTUP_PROCESS */
 
 /* global flags */
-int scheme_allow_set_undefined;
+SHARED_OK int scheme_allow_set_undefined;
 void scheme_set_allow_set_undefined(int v) { scheme_allow_set_undefined =  v; }
 int scheme_get_allow_set_undefined() { return scheme_allow_set_undefined; }
-int scheme_starting_up;
+SHARED_OK int scheme_starting_up;
 
 /* global counters just need to be atomically incremented */
 static int intdef_counter      = 0;

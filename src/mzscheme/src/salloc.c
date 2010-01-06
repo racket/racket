@@ -63,13 +63,13 @@ THREAD_LOCAL Thread_Local_Variables scheme_thread_locals;
 #endif
 
 extern int scheme_num_copied_stacks;
-static unsigned long scheme_primordial_os_thread_stack_base;
+SHARED_OK static unsigned long scheme_primordial_os_thread_stack_base;
 THREAD_LOCAL_DECL(static unsigned long scheme_os_thread_stack_base);
 #ifdef USE_THREAD_LOCAL
-Thread_Local_Variables *scheme_vars; /* for debugging */
+SHARED_OK Thread_Local_Variables *scheme_vars; /* for debugging */
 #endif
 
-static Scheme_Report_Out_Of_Memory_Proc more_report_out_of_memory;
+HOOK_SHARED_OK static Scheme_Report_Out_Of_Memory_Proc more_report_out_of_memory;
 
 #if defined(MZ_XFORM) && !defined(MZ_PRECISE_GC)
 void **GC_variable_stack;
@@ -79,7 +79,7 @@ void **GC_variable_stack;
 extern MZ_DLLIMPORT void GC_register_late_disappearing_link(void **link, void *obj);
 #endif
 
-static int use_registered_statics;
+SHARED_OK static int use_registered_statics;
 
 /************************************************************************/
 /*                           stack setup                                */
@@ -1566,9 +1566,9 @@ static int skip_foreign_thread(void *p, size_t size)
 
 #endif
 
-void (*scheme_external_dump_info)(void);
-void (*scheme_external_dump_arg)(Scheme_Object *arg);
-char *(*scheme_external_dump_type)(void *v);
+HOOK_SHARED_OK void (*scheme_external_dump_info)(void);
+HOOK_SHARED_OK void (*scheme_external_dump_arg)(Scheme_Object *arg);
+HOOK_SHARED_OK char *(*scheme_external_dump_type)(void *v);
 
 #ifdef USE_TAGGED_ALLOCATION
 static void count_managed(Scheme_Custodian *m, int *c, int *a, int *u, int *t,

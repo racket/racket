@@ -64,7 +64,7 @@ unsigned long scheme_max_found_symbol_name;
 
 /* globals */
 SHARED_OK int scheme_case_sensitive = 1;
-static int gensym_counter;
+static int gensym_counter; /*FIXME need atomic increment*/
 
 void scheme_set_case_sensitive(int v) { scheme_case_sensitive =  v; }
 
