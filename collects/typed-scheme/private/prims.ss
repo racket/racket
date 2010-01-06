@@ -22,6 +22,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (provide (all-defined-out)
          :
 	 (rename-out [define-typed-struct define-struct:]
+                     [lambda: λ:]
                      [define-typed-struct/exec define-struct/exec:]))
 
 (require "../utils/utils.ss"
@@ -31,7 +32,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
           scheme/base
           (rep type-rep)
           mzlib/match
-          "parse-type.ss"
+          "parse-type.ss" "annotate-classes.ss"
           syntax/struct
           syntax/stx
           scheme/struct-info
@@ -117,37 +118,9 @@ This file defines two sorts of primitives. All of them are provided into any mod
          #,(syntax-property #'(require/contract pred pred-cnt lib)
                             'typechecker:ignore #t)))]))
 
-(define-for-syntax (formal-annotation-error stx src)
-  (let loop ([stx stx])
-    (syntax-case stx ()
-      ;; should never happen
-      [() (raise-syntax-error #f "bad annotation syntax" src stx)]
-      [[var : ty]
-       (identifier? #'var)
-       (raise-syntax-error #f "expected dotted or starred type" src #'ty)]
-      [([var : ty] . rest)
-       (identifier? #'var)
-       (loop #'rest)]
-      [([var : ty] . rest)
-       (raise-syntax-error #f "not a variable" src #'var)]
-      [(e . rest)
-       (raise-syntax-error #f "expected annotated variable of the form [x : T], got something else" src #'e)])))
-
-(define-for-syntax (types-of-formals stx src)
-  (syntax-case stx (:)
-    [([var : ty] ...) (quasisyntax/loc stx (ty ...))]
-    [([var : ty] ... . [rest : rest-ty star])
-     (eq? '* (syntax-e #'star))
-     (syntax/loc stx (ty ... rest-ty star))]
-    [([var : ty] ... . [rest : rest-ty ddd bound])
-     (eq? '... (syntax-e #'ddd))
-     (syntax/loc stx (ty ... rest-ty ddd bound))]
-    [_ (formal-annotation-error stx src)]))
-
-
 (define-syntax (plambda: stx)
-  (syntax-case stx ()
-    [(plambda: (tvars ...) formals . body)
+  (syntax-parse stx 
+    [(plambda: (tvars:id ...) formals . body)
      (quasisyntax/loc stx
        (#%expression
         #,(syntax-property (syntax/loc stx (lambda: formals . body))
@@ -155,8 +128,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
                            #'(tvars ...))))]))
 
 (define-syntax (pcase-lambda: stx)
-  (syntax-case stx ()
-    [(pcase-lambda: (tvars ...) cl ...)
+  (syntax-parse stx
+    [(pcase-lambda: (tvars:id ...) cl ...)
      (quasisyntax/loc stx
        (#%expression
         #,(syntax-property (syntax/loc stx (case-lambda: cl ...))
@@ -164,138 +137,97 @@ This file defines two sorts of primitives. All of them are provided into any mod
                            #'(tvars ...))))]))
 
 (define-syntax (pdefine: stx)
-  (syntax-case stx (:)
-    [(pdefine: tvars (nm . formals) : ret-ty . body)
-     (with-syntax* ([(tys ...) (types-of-formals #'formals stx)]
-                    [type (syntax/loc #'ret-ty (All tvars (tys ... -> ret-ty)))])
+  (syntax-parse stx #:literals (:)
+    [(pdefine: (tvars:id ...) (nm:id . formals:annotated-formals) : ret-ty . body)
+     (with-syntax ([type (syntax/loc #'ret-ty (All (tvars ...) (formals.arg-ty ... -> ret-ty)))])
        (syntax/loc stx
          (define: nm : type
-           (plambda: tvars formals . body))))]))
+           (plambda: (tvars ...) formals . body))))]))
 
 (define-syntax (ann stx)
-  (syntax-case stx (:)
-    [(_ arg : ty)
-     (syntax-property #'arg 'type-ascription #'ty)]
-    [(_ arg ty)
+  (syntax-parse stx #:literals (:)
+    [(_ (~or (~seq arg : ty) (~seq arg ty)))
      (syntax-property #'arg 'type-ascription #'ty)]))
 
 (define-syntax (inst stx)
-  (syntax-case stx (:)
+  (syntax-parse stx #:literals (:)
     [(_ arg : . tys)
      (syntax/loc stx (inst arg . tys))]    
-    [(_ arg tys ... ty ddd b)
-     (eq? (syntax-e #'ddd) '...)
+    [(_ arg tys ... ty ddd b:id)
+     #:when (eq? (syntax-e #'ddd) '...)
      (syntax-property #'arg 'type-inst #'(tys ... (ty . b)))]
     [(_ arg tys ...)
      (syntax-property #'arg 'type-inst #'(tys ...))]))
 
 (define-syntax (define: stx)
-  (syntax-case stx (:)
-    [(define: (nm . formals) : ret-ty body ...)
-     (identifier? #'nm)
-     (with-syntax* ([(tys ...) (types-of-formals #'formals stx)]
-                    [arrty (syntax/loc stx (tys ... -> ret-ty))])
-                   (syntax/loc stx
-                     (define: nm : arrty
-                       (lambda: formals body ...))))]
-    [(define: nm : ty body)
+  (syntax-parse stx #:literals (:)
+    [(define: (nm:id . formals:annotated-formals) (~describe "return type annotation" (~seq : ret-ty)) body ...)
+     (with-syntax ([arrty (syntax/loc stx (formals.arg-ty ... -> ret-ty))])
+       (syntax/loc stx
+         (define: nm : arrty
+           (lambda: formals body ...))))]
+    [(define: nm:id ~! (~describe "type annotation" (~seq : ty)) body)
      (identifier? #'nm)
      (with-syntax ([new-nm (syntax-property #'nm 'type-label #'ty)])
        (syntax/loc stx (define new-nm body)))]
-    [(define: (vars ...) (f args ...) : ret body ...)
-     (andmap identifier? (syntax->list #'(vars ...)))
-     #'(pdefine: (vars ...) (f args ...) : ret body ...)]
-    [(define: (nm . formals) body ...)
-     (raise-syntax-error #f "missing return type annotation" stx)]
-    [(define: nm body)
-     (raise-syntax-error #f "missing type annotation" stx)]))
-
-
-;; helper function for annoating the bound names
-(define-for-syntax (annotate-names stx src)
-  (define (label-one var ty)
-    (syntax-property var 'type-label ty))
-  (define (label vars tys)
-    (map label-one
-         (syntax->list vars)
-         (syntax->list tys)))
-  (define (label-dotted var ty bound)
-    (syntax-property (syntax-property var 'type-ascription ty)
-                      'type-dotted 
-                      bound))
-  (syntax-case stx (:)
-    [([var : ty] ...)
-     (label #'(var ...) #'(ty ...))]
-    [([var : ty] ... . [rest : rest-ty star])
-     (eq? '* (syntax-e #'star))
-     (append (label #'(var ...) #'(ty ...)) (label-one #'rest #'rest-ty))]
-    [([var : ty] ... . [rest : rest-ty ddd bound])
-     (eq? '... (syntax-e #'ddd))
-     (append (label #'(var ...) #'(ty ...)) (label-dotted #'rest #'rest-ty #'bound))]
-    [_ (formal-annotation-error stx src)]))
-
-(define-syntax-rule (λ: . args) (lambda: . args))
+    [(define: (vars:id ...) (f:id args ...) : ret body ...)
+     #'(pdefine: (vars ...) (f args ...) : ret body ...)]))
 
 (define-syntax (lambda: stx)
-  (syntax-case stx (:)
-    [(lambda: formals . body)
-     (with-syntax ([labeled-formals (annotate-names #'formals stx)])
-       (syntax/loc stx (lambda labeled-formals . body)))]))
+  (syntax-parse stx
+    [(lambda: formals:annotated-formals . body)
+     (syntax/loc stx (lambda formals.ann-formals . body))]))
 
 (define-syntax (case-lambda: stx)
-  (syntax-case stx (:)
-    [(case-lambda: [formals . body] ...)
-     (with-syntax ([(lab-formals ...) (map (lambda (s) (annotate-names s stx))
-                                           (syntax->list #'(formals ...)))])
-       (syntax/loc stx (case-lambda [lab-formals . body] ...)))]))
+  (syntax-parse stx
+    [(case-lambda: [formals:annotated-formals . body] ...)
+     (syntax/loc stx (case-lambda [formals.ann-formals . body] ...))]))
 
 (define-syntaxes (let-internal: let*: letrec:)
   (let ([mk (lambda (form)
               (lambda (stx)
-                (syntax-case stx (:)
-                  [(_ ([nm : ty . exprs] ...) . body)
-                   (with-syntax* ([(vars ...) (annotate-names #'([nm : ty] ...) stx)]
-                                  [bindings (map (lambda (v e loc)
-                                                   (quasisyntax/loc loc [#,v . #,e]))
-                                                 (syntax->list #'(vars ...))
-                                                 (syntax->list #'(exprs ...))
-                                                 (syntax->list (syntax-case stx () [(_ bs . body) #'bs])))])
-                                 (quasisyntax/loc stx (#,form bindings . body)))])))])
+                (syntax-parse stx
+                  [(_ (bs:annotated-binding ...) . body)
+                   (quasisyntax/loc stx (#,form (bs.binding ...) . body))])))])
     (values (mk #'let) (mk #'let*) (mk #'letrec))))
 
+(define-syntaxes (let-values: let*-values: letrec-values:)
+  (let ([mk (lambda (form)
+              (lambda (stx)
+                (syntax-parse stx
+                  [(_ (bs:annotated-values-binding ...) . body)
+                   (quasisyntax/loc stx (#,form (bs.binding ...) . body))])))])
+    (values (mk #'let-values) (mk #'let*-values) (mk #'letrec-values))))
+
 (define-syntax (let: stx)
-  (syntax-case stx (:)
-    [(let: nm : ret-ty ([arg : ty val] ...) . body)
-     (identifier? #'nm)
-     (syntax/loc stx ((letrec: ([nm : (ty ... -> ret-ty) (lambda: ([arg : ty] ...) . body)]) nm) val ...))]
+  (syntax-parse stx #:literals (:)
+    [(let: nm:id ~! : ret-ty (bs:annotated-binding ...) . body)
+     (syntax/loc stx ((letrec: ([nm : (bs.ty ... -> ret-ty) (lambda (bs.ann-name ...) . body)]) nm) bs.rhs ...))]
     [(let: . rest)
      (syntax/loc stx (let-internal: . rest))]))
 
 (define-syntax (define-type-alias stx)
-  (syntax-case stx ()
-    [(_ tname rest) 
-     (identifier? #'tname)
-     (begin
-       #`(begin
-           #,(ignore #'(define-syntax tname (lambda (stx) (raise-syntax-error 'type-check "type name used out of context" stx))))
-           #,(internal (syntax/loc stx (define-type-alias-internal tname rest)))))]
-    [(_ (tname . args) rest)
-     (andmap identifier? (syntax->list #'args))
-     #'(define-type-alias tname (All args rest))]))
+  (syntax-parse stx
+    [(_ tname:id rest) 
+     #`(begin
+         #,(ignore #'(define-syntax tname (lambda (stx) (raise-syntax-error 'type-check "type name used out of context" stx))))
+         #,(internal (syntax/loc stx (define-type-alias-internal tname rest))))]
+    [(_ (tname:id args:id ...) rest)
+     (syntax/loc stx (define-type-alias tname (All (args ...) rest)))]))
 
 (define-syntax (define-typed-struct/exec stx)
-  (syntax-case stx (:)
-    [(_ nm ([fld : ty] ...) [proc : proc-ty])
+  (syntax-parse stx #:literals (:)
+    [(_ nm ((~describe "field specification" [fld:annotated-name]) ...) [proc : proc-ty])
      (with-syntax* 
       ([proc* (syntax-property #'(ann proc : proc-ty) 'typechecker:with-type #t)]
-       [d-s (syntax-property (syntax/loc stx (define-struct/properties nm (fld ...)
+       [d-s (syntax-property (syntax/loc stx (define-struct/properties nm (fld.name ...)
                                                ([prop:procedure proc*])))
                              'typechecker:ignore-some #t)]
-       [dtsi (internal (syntax/loc stx (define-typed-struct/exec-internal nm ([fld : ty] ...) proc-ty)))])
+       [dtsi (internal (syntax/loc stx (define-typed-struct/exec-internal nm (fld ...) proc-ty)))])
       #'(begin d-s dtsi))]))
 
 (define-syntax (with-handlers: stx)
-  (syntax-case stx ()
+  (syntax-parse stx
     [(_ ([pred? action] ...) . body)
      (with-syntax ([(pred?* ...) (map (lambda (s) (syntax-property #`(ann #,s : (Any -> Any)) 'typechecker:with-type #t))
                                       (syntax->list #'(pred? ...)))]
@@ -333,9 +265,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
        #'(begin d-s dtsi))]))
 
 (define-syntax (require-typed-struct stx)
-  (syntax-case stx (:)
-    [(_ nm ([fld : ty] ...) lib)
-     (identifier? #'nm)
+  (syntax-parse stx #:literals (:)
+    [(_ nm:id ([fld : ty] ...) lib)
      (with-syntax* ([(struct-info maker pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)]
                     [(mut ...) (map (lambda _ #'#f) (syntax->list #'(sel ...)))])
                    (quasisyntax/loc stx
@@ -378,32 +309,17 @@ This file defines two sorts of primitives. All of them are provided into any mod
                          [sel (nm -> ty)]) ...))]))
 
 (define-syntax (do: stx)
-  (syntax-case stx (:)
-    [(_ : ty ((var : tys init . step) ...) (e0 e1 ...) c ...)
-     (with-syntax ([(step ...)
-                    (map (lambda (v s)
-                           (syntax-case s ()
-                             [() v]
-                             [(e) #'e]
-                             [_ (raise-syntax-error 
-                                 #f
-                                 "bad variable syntax"
-                                 stx)]))
-                         (syntax->list #'(var ...))
-                         (syntax->list #'(step ...)))])
-       (syntax-case #'(e1 ...) ()
-         [() (syntax/loc
-                 stx
-               (let: doloop : ty ([var : tys init] ...)
-                     (if (not e0)
-                         (begin c ... (doloop step ...)))))]
-         [(e1 e2 ...)
-          (syntax/loc
-              stx
-            (let: doloop : ty ([var : tys init] ...)
-                  (if e0
-                      (begin e1 e2 ...)
-                      (begin c ... (doloop step ...)))))]))]))
+  (syntax-parse stx #:literals (:)
+    [(_ : ty 
+        ((var:annotated-name init (~optional step:expr #:defaults ([step #'var]))) ...) 
+        (stop?:expr (~optional (~seq finish:expr ...) #:defaults ([(finish 1) #'((void))])))
+        c:expr ...)
+     (syntax/loc
+         stx
+       (let: doloop : ty ([var.name : var.ty init] ...)
+         (if stop?
+             (begin finish ...)
+             (begin c ... (doloop step ...)))))]))
 
 (define-syntax (provide: stx)
   (syntax-parse stx
@@ -421,8 +337,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
   (let ()
     (define ((mk l/c) stx)      
       (syntax-parse stx
-       #:literals (:)
-       [(_ k:id : t . body)
-	(quasisyntax/loc stx
-   	  (#,l/c #,(annotate-names #'([k : t]) stx) . body))]))
+       [(_ k:annotated-name . body)
+	(quasisyntax/loc stx (#,l/c k.name . body))]))
     (values (mk #'let/cc) (mk #'let/ec))))

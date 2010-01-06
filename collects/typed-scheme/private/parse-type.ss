@@ -17,6 +17,8 @@
      [parse-tc-results (syntax? . c:-> . tc-results?)] 
      [parse-tc-results/id (syntax? c:any/c . c:-> . tc-results?)])
 
+(provide star ddd/bound)
+
 (define enable-mu-parsing (make-parameter #t))
 
 (define ((parse/id p) loc datum)
