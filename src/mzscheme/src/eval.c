@@ -154,12 +154,6 @@
 SHARED_OK int scheme_startup_use_jit = 1;
 void scheme_set_startup_use_jit(int v) { scheme_startup_use_jit =  v; }
 
-/* global counters */
-/* FIXME needs to be atomically incremented */
-int scheme_overflow_count;
-int get_overflow_count() { return scheme_overflow_count; }
-
-
 /* THREAD LOCAL SHARED */
 THREAD_LOCAL_DECL(volatile int scheme_fuel_counter);
 #ifdef USE_STACK_BOUNDARY_VAR
@@ -168,6 +162,9 @@ THREAD_LOCAL_DECL(unsigned long volatile scheme_jit_stack_boundary);
 #endif
 THREAD_LOCAL_DECL(static Scheme_Object *quick_stx);
 THREAD_LOCAL_DECL(int scheme_continuation_application_count);
+THREAD_LOCAL_DECL(static int generate_lifts_count);
+THREAD_LOCAL_DECL(int scheme_overflow_count);
+int scheme_get_overflow_count() { return scheme_overflow_count; }
 
 /* read-only globals */
 READ_ONLY Scheme_Object *scheme_eval_waiting;
@@ -233,6 +230,7 @@ static Scheme_Object *datum_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Sc
 static Scheme_Object *datum_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 static Scheme_Object *top_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *top_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
+static Scheme_Object *stop_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 
 static Scheme_Object *write_application(Scheme_Object *obj);
 static Scheme_Object *read_application(Scheme_Object *obj);
@@ -398,10 +396,12 @@ scheme_init_eval (Scheme_Env *env)
   REGISTER_SO(app_expander);
   REGISTER_SO(datum_expander);
   REGISTER_SO(top_expander);
+  REGISTER_SO(stop_expander);
 
   app_expander    = scheme_make_compiled_syntax(app_syntax,   app_expand);
   datum_expander  = scheme_make_compiled_syntax(datum_syntax, datum_expand);
   top_expander    = scheme_make_compiled_syntax(top_syntax,   top_expand);
+  stop_expander   = scheme_make_compiled_syntax(stop_syntax,  stop_expand);
   scheme_add_global_keyword("#%app",    app_expander,   env);
   scheme_add_global_keyword("#%datum",  datum_expander, env);
   scheme_add_global_keyword("#%top",    top_expander,   env);
@@ -10185,20 +10185,13 @@ static Scheme_Object *stop_expand(Scheme_Object *form, Scheme_Comp_Env *env, Sch
 
 Scheme_Object *scheme_get_stop_expander(void)
 {
-  if (!stop_expander) {
-    REGISTER_SO(stop_expander);
-    stop_expander = scheme_make_compiled_syntax(stop_syntax, 
-						stop_expand);
-  }
-
   return stop_expander;
 }
 
 Scheme_Object *scheme_generate_lifts_key(void)
 {
-  static int cnt = 0;
   char buf[20];
-  sprintf(buf, "lifts%d", cnt++);
+  sprintf(buf, "lifts%d", generate_lifts_count++);
   return scheme_make_symbol(buf); /* uninterned */
 }
 

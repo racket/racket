@@ -105,8 +105,9 @@ Scheme_Extension_Table *scheme_extension_table;
 #endif
 
 #ifndef NO_DYNAMIC_LOAD
-static Scheme_Hash_Table *loaded_extensions; /* hash on scheme_initialize pointer */
-static Scheme_Hash_Table *fullpath_loaded_extensions; /* hash on full path name */
+/* FIXME disallow extensions under places */
+FIXME_LATER static Scheme_Hash_Table *loaded_extensions; /* hash on scheme_initialize pointer */
+FIXME_LATER static Scheme_Hash_Table *fullpath_loaded_extensions; /* hash on full path name */
 #endif
 
 #ifdef MZ_PRECISE_GC 

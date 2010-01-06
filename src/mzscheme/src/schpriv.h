@@ -25,11 +25,13 @@
 #define READ_ONLY      __attribute__((__READ_ONLY__))
 #define SHARED_OK      __attribute__((__SHARED_OK__))
 #define HOOK_SHARED_OK __attribute__((__HOOK_SHARED_OK__))
+#define FIXME_LATER    __attribute__((__FIXME_LATER__))
 #else
 #define ROSYM          /* EMPTY */
 #define READ_ONLY      /* EMPTY */
 #define SHARED_OK      /* EMPTY */
 #define HOOK_SHARED_OK /* EMPTY */
+#define FIXME_LATER    /* EMPTY */
 #endif
 
 /*========================================================================*/
@@ -467,7 +469,7 @@ void scheme_zero_unneeded_rands(Scheme_Thread *p);
 
 int scheme_can_break(Scheme_Thread *p);
 
-extern int scheme_overflow_count;
+THREAD_LOCAL_DECL(extern int scheme_overflow_count);
 
 #define MZTHREADELEM(p, x) scheme_ ## x
 

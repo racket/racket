@@ -219,6 +219,11 @@ typedef struct Thread_Local_Variables {
   struct gmp_tmp_stack gmp_tmp_xxx_;
   struct gmp_tmp_stack *gmp_tmp_current_;
   struct Scheme_Logger *scheme_main_logger_;
+  int intdef_counter_;
+  int builtin_ref_counter_;
+  int env_uid_counter_;
+  int scheme_overflow_count_;
+  int generate_lifts_count_;
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
@@ -421,6 +426,11 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define gmp_tmp_xxx XOA (scheme_get_thread_local_variables()->gmp_tmp_xxx_)
 #define gmp_tmp_current XOA (scheme_get_thread_local_variables()->gmp_tmp_current_)
 #define scheme_main_logger XOA (scheme_get_thread_local_variables()->scheme_main_logger_)
+#define intdef_counter XOA (scheme_get_thread_local_variables()->intdef_counter_)
+#define builtin_ref_counter XOA (scheme_get_thread_local_variables()->builtin_ref_counter_)
+#define env_uid_counter XOA (scheme_get_thread_local_variables()->env_uid_counter_)
+#define scheme_overflow_count XOA (scheme_get_thread_local_variables()->scheme_overflow_count_)
+#define generate_lifts_count XOA (scheme_get_thread_local_variables()->generate_lifts_count_)
 
 /* **************************************** */
 

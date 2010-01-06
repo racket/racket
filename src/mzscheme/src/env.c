@@ -47,11 +47,6 @@ void scheme_set_allow_set_undefined(int v) { scheme_allow_set_undefined =  v; }
 int scheme_get_allow_set_undefined() { return scheme_allow_set_undefined; }
 SHARED_OK int scheme_starting_up;
 
-/* global counters just need to be atomically incremented */
-static int intdef_counter      = 0;
-static int builtin_ref_counter = 0;
-static int env_uid_counter     = 0;
-
 /* globals READ-ONLY SHARED */
 READ_ONLY static Scheme_Object *kernel_symbol;
 READ_ONLY static Scheme_Object *unshadowable_symbol;
@@ -72,6 +67,9 @@ READ_ONLY static Scheme_Object *toplevels[MAX_CONST_TOPLEVEL_DEPTH][MAX_CONST_TO
 /* If locked, these are probably sharable: */
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *toplevels_ht);
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *locals_ht[2]);
+THREAD_LOCAL_DECL(static int intdef_counter);
+THREAD_LOCAL_DECL(static int builtin_ref_counter);
+THREAD_LOCAL_DECL(static int env_uid_counter);
 
 /* local functions */
 static void make_kernel_env(void);

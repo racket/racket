@@ -48,8 +48,8 @@ void scheme_set_exit(Scheme_Exit_Proc p) { scheme_exit = p; }
 
 HOOK_SHARED_OK void (*scheme_console_output)(char *str, long len);
 
-static int init_syslog_level = INIT_SYSLOG_LEVEL;
-static int init_stderr_level = SCHEME_LOG_ERROR;
+SHARED_OK static int init_syslog_level = INIT_SYSLOG_LEVEL;
+SHARED_OK static int init_stderr_level = SCHEME_LOG_ERROR;
 THREAD_LOCAL_DECL(static Scheme_Logger *scheme_main_logger);
 
 /* readonly globals */

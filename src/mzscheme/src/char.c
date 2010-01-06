@@ -29,6 +29,7 @@
 /* globals */
 #include "schuchar.inc"
 READ_ONLY Scheme_Object **scheme_char_constants;
+READ_ONLY static Scheme_Object *general_category_symbols[NUM_GENERAL_CATEGORIES];
 
 /* locals */
 static Scheme_Object *char_p (int argc, Scheme_Object *argv[]);
@@ -63,7 +64,6 @@ static Scheme_Object *char_general_category (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_utf8_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_map_list (int argc, Scheme_Object *argv[]);
 
-static Scheme_Object *general_category_symbols[NUM_GENERAL_CATEGORIES];
 
 void scheme_init_portable_case(void)
 {
@@ -88,6 +88,12 @@ void scheme_init_char (Scheme_Env *env)
     SCHEME_CHAR_VAL(sc) = i;
     
     scheme_char_constants[i] = sc;
+  }
+  
+  for (i = 0; i < NUM_GENERAL_CATEGORIES; i++) {
+    Scheme_Object *s;
+    s = scheme_intern_symbol(general_category_names[i]);
+    general_category_symbols[i] = s;
   }
 
   p = scheme_make_folding_prim(char_p, "char?", 1, 1, 1);
@@ -405,11 +411,6 @@ static Scheme_Object *char_general_category (int argc, Scheme_Object *argv[])
 
   c = SCHEME_CHAR_VAL(argv[0]);
   cat = scheme_general_category(c);
-  if (!general_category_symbols[cat]) {
-    Scheme_Object *s;
-    s = scheme_intern_symbol(general_category_names[cat]);
-    general_category_symbols[cat] = s;
-  }
 
   return general_category_symbols[cat];
 }
