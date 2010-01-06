@@ -2428,7 +2428,7 @@ int unw_init_local (unw_cursor_t *cursor, ucontext_t *uc)
   if (!unw_local_addr_space) {
     unw_local_addr_space = (unw_addr_space_t)malloc(sizeof(struct unw_addr_space));
     memset(unw_local_addr_space, 0, sizeof(unw_local_addr_space));
-    unw_local_addr_space->caching_policy = UNW_CACHE_GLOBAL;
+    /* unw_local_addr_space->caching_policy = UNW_CACHE_GLOBAL; */
   }
 
   c->dwarf.as = unw_local_addr_space;
