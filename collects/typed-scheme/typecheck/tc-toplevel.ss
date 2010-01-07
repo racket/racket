@@ -103,7 +103,7 @@
            ;; if all the variables have types, we stick them into the environment
            [(andmap (lambda (s) (syntax-property s 'type-label)) vars)        
             (let ([ts (map get-type vars)])
-              (for-each register-type vars ts)
+              (for-each register-type-if-undefined vars ts)
               (map make-def-binding vars ts))]
            ;; if this already had an annotation, we just construct the binding reps
            [(andmap (lambda (s) (lookup-type s (lambda () #f))) vars)

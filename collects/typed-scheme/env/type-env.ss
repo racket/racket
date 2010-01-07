@@ -5,7 +5,7 @@
          (utils tc-utils)
          (types utils))
 
-(provide register-type
+(provide register-type register-type-if-undefined
          finish-register-type
          maybe-finish-register-type
          register-type/undefined
@@ -22,15 +22,20 @@
 ;; add a single type to the mapping
 ;; identifier type -> void
 (define (register-type id type)
-  #;(when (eq? (syntax-e id) 'vector-ref)
-      (printf "register-type ~a~n" id))
   (module-identifier-mapping-put! the-mapping id type))
+
+(define (register-type-if-undefined id type)
+  (if (module-identifier-mapping-get the-mapping id (lambda _ #f))
+      (tc-error/stx id "Duplicate type annotation for ~a" (syntax-e id))
+      (register-type id type)))
 
 ;; add a single type to the mapping
 ;; identifier type -> void
 (define (register-type/undefined id type)
   ;(printf "register-type/undef ~a~n" (syntax-e id))
-  (module-identifier-mapping-put! the-mapping id (box type)))
+  (if (module-identifier-mapping-get the-mapping id (lambda _ #f))
+      (tc-error/stx id "Duplicate type annotation for ~a" (syntax-e id))
+      (module-identifier-mapping-put! the-mapping id (box type))))
 
 ;; add a bunch of types to the mapping
 ;; listof[id] listof[type] -> void
