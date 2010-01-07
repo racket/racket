@@ -42,9 +42,9 @@ Extends @scheme[l2] to be as long as @scheme[l1] by adding @scheme[(-
 (length l1) (length l2))] copies of @scheme[v] to the end of
 @scheme[l2].   
 
-@examples[#:eval the-eval]
+@examples[#:eval the-eval
 (extend '(1 2 3) '(a) 'b)
-}
+]}
 
 
 @addition{Ryan Culpepper}
