@@ -4,7 +4,7 @@
          scheme/control
          scheme/stxparam scheme/splicing)
 
-(provide yield generator in-generator)
+(provide yield generator in-generator infinite)
 
 ;; (define-syntax-parameter yield
 ;;   (lambda (stx)
@@ -73,6 +73,11 @@
       [((id ...) (_ body0 body ...))
        #'[(id ...)
           (in-producer (generator body0 body ... stop-value) stop-value)]])))
+
+(define (infinite sequence)
+  (generator
+    (for ([i (in-cycle sequence)])
+         (yield i))))
 
 #|
 ;; examples
