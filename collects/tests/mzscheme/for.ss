@@ -248,8 +248,8 @@
         (list (g1) (g2) (g1) (g2) (g1) (g2) (g1) (g2))))
 
 (test '(1 2 3 1 2 3)
-      'infinite-generator
-      (let ([maker (infinite '(1 2 3))])
+      'repeat-generator
+      (let ([maker (make-repeat-generator '(1 2 3))])
         (list (maker) (maker) (maker)
               (maker) (maker) (maker))))
 
