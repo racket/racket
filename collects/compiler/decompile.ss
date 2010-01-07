@@ -354,12 +354,18 @@
              [(2) (memq (car a) '(flabs flsqrt ->fl
                                         unsafe-flabs
                                         unsafe-flsqrt
-                                        unsafe-fx->fl))]
+                                        unsafe-fx->fl
+                                        flsin flcos fltan
+                                        flasin flacos flatan
+                                        flexp fllog
+                                        flfloor flceiling flround fltruncate
+                                        flmin flmax
+                                        unsafe-flmin unsafe-flmax))]
              [(3) (memq (car a) '(fl+ fl- fl* fl/
                                       fl< fl> fl<= fl>= fl=
                                       flvector-ref
                                       unsafe-fl+ unsafe-fl- unsafe-fl* unsafe-fl/
-                                      unsafe-fl< unsafe-fl> 
+                                      unsafe-fl< unsafe-fl>
                                       unsafe-fl=
                                       unsafe-fl<= unsafe-fl>=
                                       unsafe-flvector-ref

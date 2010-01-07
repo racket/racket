@@ -55,8 +55,10 @@ struct jit_local_state {
   int   long_jumps;
   int   nextarg_geti;
 #else
-  int   tiny_jumps;
   int	framesize;
+#endif
+#ifdef SUPPORT_TINY_JUMPS
+  int   tiny_jumps;
 #endif
   int   r0_can_be_tmp;
   int	argssize;
@@ -548,18 +550,29 @@ static int jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
 #define jit_calli(label)	(CALLm( ((unsigned long) (label)),	0, 0, 0), _jit.x.pc)
 #define jit_callr(reg)		(CALLsr(reg))
 #define jit_jmpr(reg)		JMPsr(reg)
+
+#ifdef SUPPORT_TINY_JUMPS
+# if 0
+static long _CHECK_TINY(long diff) { if ((diff < -128) || (diff > 127)) *(long *)0x0 = 1; return diff; }
+# else
+#  define _CHECK_TINY(x) x
+# endif
+# define jit_patch_normal_at(jump_pc,v)  (_jitl.tiny_jumps \
+                                          ? (*_PSC((jump_pc) - sizeof(char)) = _jit_SC(_CHECK_TINY((jit_insn *)(v) - (jump_pc)))) \
+                                          : (*_PSI((jump_pc) - sizeof(int)) = _jit_SI((jit_insn *)(v) - (jump_pc))))
+#else
+# define jit_patch_normal_at(jump_pc,v)  (*_PSI((jump_pc) - sizeof(int)) = _jit_SI((jit_insn *)(v) - (jump_pc)))
+#endif
+
 #ifdef JIT_X86_64
 #define jit_patch_long_at(jump_pc,v)  (*_PSL((jump_pc) - sizeof(long)) = _jit_SL((jit_insn *)(v)))
-# define jit_patch_short_at(jump_pc,v)  (*_PSI((jump_pc) - sizeof(int)) = _jit_SI((jit_insn *)(v) - (jump_pc)))
+# define jit_patch_short_at(jump_pc,v)  jit_patch_normal_at(jump_pc, v)
 # define jit_patch_branch_at(jump_pc,v) (_jitl.long_jumps ? jit_patch_long_at((jump_pc)-3, v) : jit_patch_short_at(jump_pc, v))
 # define jit_patch_ucbranch_at(jump_pc,v) (_jitl.long_jumps ? jit_patch_long_at((jump_pc)-3, v) : jit_patch_short_at(jump_pc, v))
 # define jit_ret() (POPQr(_R13), POPQr(_R12), POPQr(_EBX), POPQr(_EBP), RET_())
 #else
-#define jit_patch_long_at(jump_pc,v)  (_jitl.tiny_jumps \
-                                       ? (*_PSC((jump_pc) - sizeof(char)) = _jit_SC((jit_insn *)(v) - (jump_pc))) \
-                                       : (*_PSL((jump_pc) - sizeof(long)) = _jit_SL((jit_insn *)(v) - (jump_pc))))
-# define jit_patch_branch_at(jump_pc,v)  jit_patch_long_at(jump_pc, v)
-# define jit_patch_ucbranch_at(jump_pc,v)  jit_patch_long_at(jump_pc, v)
+# define jit_patch_branch_at(jump_pc,v)  jit_patch_normal_at(jump_pc, v)
+# define jit_patch_ucbranch_at(jump_pc,v)  jit_patch_normal_at(jump_pc, v)
 # define jit_ret() (POPLr(_EDI), POPLr(_ESI), POPLr(_EBX), POPLr(_EBP), RET_())
 #endif
 

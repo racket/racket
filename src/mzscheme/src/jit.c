@@ -96,6 +96,7 @@ END_XFORM_ARITH;
 #if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_X86_64)
 # define NEED_LONG_JUMPS
 #endif
+/* Tiny jumps seem worthwhile for x86, but they don't seem to help for x86_64: */
 #if defined(MZ_USE_JIT_I386) && !defined(MZ_USE_JIT_X86_64)
 # define USE_TINY_JUMPS
 #endif
@@ -510,6 +511,7 @@ static void mz_load_retained(mz_jit_state *jitter, int rs, int retptr)
 }
 #endif
 
+#if defined(MZ_USE_JIT_I386)
 static double *mz_retain_double(mz_jit_state *jitter, double d)
 {
   void *p;
@@ -519,6 +521,7 @@ static double *mz_retain_double(mz_jit_state *jitter, double d)
   jitter->retained_double++;
   return p;
 }
+#endif
 
 static void *generate_one(mz_jit_state *old_jitter, 
 			  Generate_Proc generate,
@@ -1490,7 +1493,7 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 
 #ifdef NEED_LONG_JUMPS
 # define __START_SHORT_JUMPS__(cond) if (cond) { _jitl.long_jumps = 0; }
-# define __END_SHORT_JUMPS__(cond) if (cond) { _jitl.long_jumps = 1; }
+# define __END_SHORT_JUMPS__(cond) if (cond) { _jitl.long_jumps= 1; }
 #else
 # define __START_SHORT_JUMPS__(cond) /* empty */
 # define __END_SHORT_JUMPS__(cond) /* empty */
@@ -1498,8 +1501,8 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 
 #ifdef USE_TINY_JUMPS
 /* A tiny jump has to be between -128 and 127 bytes. */
-# define __START_TINY_JUMPS__(cond) if (cond) { _jitl.tiny_jumps = 1; }
-# define __END_TINY_JUMPS__(cond) if (cond) { _jitl.tiny_jumps = 0; }
+# define __START_TINY_JUMPS__(cond) if (cond) { __START_SHORT_JUMPS__(1); _jitl.tiny_jumps = 1; }
+# define __END_TINY_JUMPS__(cond) if (cond) { _jitl.tiny_jumps = 0; __END_SHORT_JUMPS__(1); }
 # define __START_INNER_TINY__(cond) __END_SHORT_JUMPS__(cond); __START_TINY_JUMPS__(1);
 # define __END_INNER_TINY__(cond) __END_TINY_JUMPS__(1); __START_SHORT_JUMPS__(cond); 
 #else
@@ -1511,6 +1514,14 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 
 #define __START_TINY_OR_SHORT_JUMPS__(tcond, cond) if (tcond) { __START_TINY_JUMPS__(1); } else { __START_SHORT_JUMPS__(cond); }
 #define __END_TINY_OR_SHORT_JUMPS__(tcond, cond) if (tcond) { __END_TINY_JUMPS__(1); } else { __END_SHORT_JUMPS__(cond); }
+
+#ifdef JIT_X86_64
+# define __START_TINY_JUMPS_IF_COMPACT__(cond) /* empty */
+# define __END_TINY_JUMPS_IF_COMPACT__(cond) /* empty */
+#else
+# define __START_TINY_JUMPS_IF_COMPACT__(cond) __START_TINY_JUMPS__(cond)
+# define __END_TINY_JUMPS_IF_COMPACT__(cond) __END_TINY_JUMPS__(cond)
+#endif
 
 /* mz_b..i_p supports 64-bit constants on x86_64: */
 #ifdef MZ_USE_JIT_X86_64
@@ -2437,10 +2448,8 @@ static void branch_for_true(mz_jit_state *jitter, Branch_Info *for_branch)
   if (for_branch->true_needs_jump) {
     GC_CAN_IGNORE jit_insn *ref;
 
-    __START_SHORT_JUMPS__(for_branch->branch_short);
     ref = jit_jmpi(jit_forward());
     add_branch(for_branch, ref, BRANCH_ADDR_TRUE, BRANCH_ADDR_UCBRANCH);
-    __END_SHORT_JUMPS__(for_branch->branch_short);
   }
 }
 
@@ -5097,9 +5106,9 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         if (!unsafe_fx && !unsafe_fl) {
           mz_rs_sync();
 
-          __START_TINY_JUMPS__(1);
+          __START_TINY_JUMPS_IF_COMPACT__(1);
           ref2 = jit_bmsi_ul(jit_forward(), va, 0x1);
-          __END_TINY_JUMPS__(1);
+          __END_TINY_JUMPS_IF_COMPACT__(1);
         } else {
           ref2 = NULL;
           if (for_branch) mz_rs_sync();
@@ -5117,18 +5126,18 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
         if (!unsafe_fx && !unsafe_fl) {
           if (!has_fixnum_fast) {
-            __START_TINY_JUMPS__(1);
+            __START_TINY_JUMPS_IF_COMPACT__(1);
             mz_patch_branch(ref2);
-            __END_TINY_JUMPS__(1);
+            __END_TINY_JUMPS_IF_COMPACT__(1);
           }
 
           /* Slow path */
           refslow = generate_arith_slow_path(jitter, rator, &ref, &ref4, for_branch, orig_args, reversed, arith, 0, 0);
 
           if (has_fixnum_fast) {
-            __START_TINY_JUMPS__(1);
+            __START_TINY_JUMPS_IF_COMPACT__(1);
             mz_patch_branch(ref2);
-            __END_TINY_JUMPS__(1);
+            __END_TINY_JUMPS_IF_COMPACT__(1);
           }
         } else {
           refslow = overflow_refslow;
@@ -5147,9 +5156,9 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
           /* check both fixnum bits at once by ANDing into R2: */
           jit_andr_ul(JIT_R2, JIT_R0, JIT_R1);
-          __START_TINY_JUMPS__(1);
+          __START_TINY_JUMPS_IF_COMPACT__(1);
           ref2 = jit_bmsi_ul(jit_forward(), JIT_R2, 0x1);
-          __END_TINY_JUMPS__(1);
+          __END_TINY_JUMPS_IF_COMPACT__(1);
           CHECK_LIMIT();
         } else {
           if (for_branch) mz_rs_sync();
@@ -5167,9 +5176,9 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
         if (!unsafe_fx && !unsafe_fl) {
           if (!has_fixnum_fast) {
-            __START_TINY_JUMPS__(1);
+            __START_TINY_JUMPS_IF_COMPACT__(1);
             mz_patch_branch(ref2);
-            __END_TINY_JUMPS__(1);
+            __END_TINY_JUMPS_IF_COMPACT__(1);
           }
 
           /* Slow path */
@@ -5177,9 +5186,9 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       
           if (has_fixnum_fast) {
             /* Fixnum branch: */
-            __START_TINY_JUMPS__(1);
+            __START_TINY_JUMPS_IF_COMPACT__(1);
             mz_patch_branch(ref2);
-            __END_TINY_JUMPS__(1);
+            __END_TINY_JUMPS_IF_COMPACT__(1);
           }
           CHECK_LIMIT();
         } else {
@@ -5191,9 +5200,9 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         /* Only one argument: */
         if (!unsafe_fx && !unsafe_fl) {
           mz_rs_sync();
-          __START_TINY_JUMPS__(1);
+          __START_TINY_JUMPS_IF_COMPACT__(1);
           ref2 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
-          __END_TINY_JUMPS__(1);
+          __END_TINY_JUMPS_IF_COMPACT__(1);
         } else {
           if (for_branch) mz_rs_sync();
           ref2 = NULL;
@@ -5215,18 +5224,18 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
         if (!unsafe_fx && !unsafe_fl) {
           if (!has_fixnum_fast) {
-            __START_TINY_JUMPS__(1);
+            __START_TINY_JUMPS_IF_COMPACT__(1);
             mz_patch_branch(ref2);
-            __END_TINY_JUMPS__(1);
+            __END_TINY_JUMPS_IF_COMPACT__(1);
           }
 
           /* Slow path */
           refslow = generate_arith_slow_path(jitter, rator, &ref, &ref4, for_branch, orig_args, reversed, arith, 1, v);
 
           if (has_fixnum_fast) {
-            __START_TINY_JUMPS__(1);
+            __START_TINY_JUMPS_IF_COMPACT__(1);
             mz_patch_branch(ref2);
-            __END_TINY_JUMPS__(1);
+            __END_TINY_JUMPS_IF_COMPACT__(1);
           }
         } else {
           refslow = overflow_refslow;
@@ -5342,9 +5351,9 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
                 /* first argument must have been most negative fixnum, 
                    second argument must have been -1: */
                 if (reversed)
-                  jit_movi_p(JIT_R0, (void *)(((long)1 << ((8 * JIT_WORD_SIZE) - 1)) | 0x1));
+                  (void)jit_movi_p(JIT_R0, (void *)(((long)1 << ((8 * JIT_WORD_SIZE) - 1)) | 0x1));
                 else
-                  jit_movi_p(JIT_R0, scheme_make_integer(-1));
+                  (void)jit_movi_p(JIT_R0, scheme_make_integer(-1));
                 (void)jit_jmpi(refslow);
                 __START_INNER_TINY__(branch_short);
                 mz_patch_branch(refx);
@@ -5705,13 +5714,17 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         mz_patch_ucbranch(refdt);
 
       (void)jit_movi_p(JIT_R0, scheme_true);
+      __START_INNER_TINY__(branch_short);
       ref2 = jit_jmpi(jit_forward());
+      __END_INNER_TINY__(branch_short);
       if (ref3)
         mz_patch_branch(ref3);
       if (refd)
         mz_patch_branch(refd);
       (void)jit_movi_p(JIT_R0, scheme_false);
+      __START_INNER_TINY__(branch_short);
       mz_patch_ucbranch(ref2);
+      __END_INNER_TINY__(branch_short);
       if (!unsafe_fx && !unsafe_fl)
         jit_patch_movi(ref, (_jit.x.pc));
     }

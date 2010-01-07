@@ -33,7 +33,6 @@
 #ifndef __lightning_asm_common_h
 #define __lightning_asm_common_h_
 
-
 #ifndef _ASM_SAFETY
 #define JITFAIL(MSG) 0
 #else
@@ -112,8 +111,10 @@ typedef unsigned long	_ul;
 #define _jit_L(L)         _jit_VD(((*_jit.x.ul_pc++)= _jit_UL((L)       )))
 #define _jit_I_noinc(I)   _jit_VD(((*_jit.x.ui_pc)=   _jit_UI((I)       )))
 
+#define _COPY_HIGH_BIT(N, I) (((unsigned long)(I) & (1 << ((N)-1))) ? ~_MASK(N) : 0)
+
 #define _MASK(N)	((unsigned long)(((long)1<<(N)))-1)
-#define _siP(N,I)	(!((((unsigned long)(I))^(((unsigned long)(I))<<1))&~_MASK(N)))
+#define _siP(N,I)	(!((((unsigned long)(I))^(_COPY_HIGH_BIT(N, I)))&~_MASK(N)))
 #define _uiP(N,I)	(!(((unsigned long)(I))&~_MASK(N)))
 #define _suiP(N,I)	(_siP(N,I) | _uiP(N,I))
 
