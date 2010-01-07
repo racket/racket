@@ -33,12 +33,6 @@ typedef unsigned long (*GC_get_thread_stack_base_Proc)(void);
 
 #endif
 
-#ifdef MZ_USE_PLACES
-# define GC_OBJHEAD_SIZE (2*sizeof(unsigned long))
-#else 
-# define GC_OBJHEAD_SIZE (sizeof(unsigned long))
-#endif
-
 #ifndef GC2_JUST_MACROS
 
 #include <stddef.h>

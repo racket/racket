@@ -22,13 +22,16 @@ void mzrt_set_user_break_handler(void (*user_break_handler)(int));
 
 
 /****************** PROCESS WEIGHT THREADS ********************************/
-/* mzrt_threads.c */
-typedef struct mz_proc_thread {
+
 #ifdef WIN32
-  HANDLE threadid;
+typedef HANDLE mzrt_thread_id;
 #else
-  pthread_t threadid;
+typedef pthread_t mzrt_thread_id;
 #endif
+
+
+typedef struct mz_proc_thread {
+  mzrt_thread_id threadid;
   struct pt_mbox *mbox;
 } mz_proc_thread;
 
@@ -46,8 +49,8 @@ int mz_proc_thread_detach(mz_proc_thread *thread);
 
 void mzrt_sleep(int seconds);
 
-unsigned int mz_proc_thread_self();
-unsigned int mz_proc_thread_id(mz_proc_thread* thread);
+mzrt_thread_id mz_proc_thread_self();
+mzrt_thread_id mz_proc_thread_id(mz_proc_thread* thread);
 
 /****************** THREAD RWLOCK ******************************************/
 /* mzrt_rwlock_*.c */
@@ -76,6 +79,13 @@ int mzrt_cond_timedwait(mzrt_cond *cond, mzrt_mutex *mutex, long seconds, long n
 int mzrt_cond_signal(mzrt_cond *cond);
 int mzrt_cond_broadcast(mzrt_cond *cond);
 int mzrt_cond_destroy(mzrt_cond *cond);
+
+/****************** THREAD SEMA ******************************************/
+typedef struct mzrt_sema mzrt_sema; /* OPAQUE DEFINITION */
+int mzrt_sema_create(mzrt_sema **sema, int init);
+int mzrt_sema_post(mzrt_sema *sema);
+int mzrt_sema_wait(mzrt_sema *sema);
+int mzrt_sema_destroy(mzrt_sema *sema);
 
 /****************** PROCESS THREAD MAIL BOX *******************************/
 typedef struct pt_mbox_msg {

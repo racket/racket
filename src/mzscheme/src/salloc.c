@@ -184,7 +184,7 @@ static void macosx_get_thread_local_key_for_assembly_code() {
      the Go implementation (see "http://golang.org/src/libcgo/darwin_386.c").
      In brief, we assume that thread-local variables are going to be
      accessed via the gs segment register at offset 0x48 (i386) or 0x60 (x86_64),
-     and we also hardwire the therad-local key 0x108. Here we have to try to get
+     and we also hardwire the thread-local key 0x108. Here we have to try to get
      that particular key and double-check that it worked. */
   pthread_key_t unwanted[16];
   int num_unwanted = 0;

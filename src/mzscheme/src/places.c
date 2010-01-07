@@ -15,8 +15,6 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_sleep(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[]);
-static void load_namespace(char *namespace_name);
-static void load_namespace_utf8(Scheme_Object *namespace_name);
 static Scheme_Object *scheme_places_deep_copy_in_master(Scheme_Object *so);
 
 # ifdef MZ_PRECISE_GC
@@ -57,7 +55,7 @@ void scheme_init_place(Scheme_Env *env)
   
   plenv = scheme_primitive_module(scheme_intern_symbol("#%place"), env);
 
-  PLACE_PRIM_W_ARITY("place",       scheme_place,       1, 3, plenv);
+  PLACE_PRIM_W_ARITY("place",       scheme_place,       3, 3, plenv);
   PLACE_PRIM_W_ARITY("place-sleep", scheme_place_sleep, 1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-wait",  scheme_place_wait,  1, 1, plenv);
   PLACE_PRIM_W_ARITY("place?",      scheme_place_p,     1, 1, plenv);
@@ -71,15 +69,14 @@ void scheme_init_place(Scheme_Env *env)
 /************************************************************************/
 /************************************************************************/
 
-/* FIXME this struct probably will need to be garbage collected as stuff
- * is added to it */
 typedef struct Place_Start_Data {
-  int argc;
-  Scheme_Object *thunk;
+  /* Allocated as array of objects, so all
+     field must be pointers */
   Scheme_Object *module;
   Scheme_Object *function;
   Scheme_Object *channel;
   Scheme_Object *current_library_collection_paths;
+  mzrt_sema *ready;
 } Place_Start_Data;
 
 static void null_out_runtime_globals() {
@@ -103,31 +100,35 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   Place_Start_Data      *place_data;
   mz_proc_thread        *proc_thread;
   Scheme_Object         *collection_paths;
+  mzrt_sema             *ready;
 
   /* create place object */
   place = MALLOC_ONE_TAGGED(Scheme_Place);
   place->so.type = scheme_place_type;
 
+  mzrt_sema_create(&ready, 0);
+
   /* pass critical info to new place */
   place_data = MALLOC_ONE(Place_Start_Data);
-  place_data->argc = argc;
-  if (argc == 1) {
-    place_data->thunk    = args[0];
-  }
-  else if (argc == 3 ) {
-    place_data->module   = args[0];
-    place_data->function = args[1];
-    place_data->channel  = args[2];
-  }
-  else {
-    scheme_wrong_count_m("place", 1, 2, argc, args, 0);
-  }
+
+  place_data->module   = args[0];
+  place_data->function = args[1];
+  place_data->channel  = args[2];
+  place_data->ready    = ready;
+
   collection_paths = scheme_current_library_collection_paths(0, NULL);
   collection_paths = scheme_places_deep_copy_in_master(collection_paths);
   place_data->current_library_collection_paths = collection_paths;
 
   /* create new place */
   proc_thread = mz_proc_thread_create(place_start_proc, place_data);
+
+  /* wait until the place has started and grabbed the value
+     from `place_data'; it's important that a GC doesn't happen
+     here until the other place is far enough. */
+  mzrt_sema_wait(ready);
+  mzrt_sema_destroy(ready);
+  
   place->proc_thread = proc_thread;
 
   return (Scheme_Object*) place;
@@ -345,29 +346,6 @@ static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[])
   return SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_type) ? scheme_true : scheme_false;
 }
 
-static void load_namespace(char *namespace_name) {
-  load_namespace_utf8( scheme_make_utf8_string(namespace_name));
-}
-
-static void load_namespace_utf8(Scheme_Object *namespace_name) {
-  Scheme_Object *nsreq;
-  Scheme_Object *a[1];
-  Scheme_Thread * volatile p;
-  mz_jmp_buf * volatile saved_error_buf;
-  mz_jmp_buf new_error_buf;
-
-  nsreq = scheme_builtin_value("namespace-require");
-  a[0] = scheme_make_pair(scheme_intern_symbol("lib"),
-      scheme_make_pair(namespace_name, scheme_make_null()));
-
-  p = scheme_get_current_thread();
-  saved_error_buf = p->error_buf;
-  p->error_buf = &new_error_buf;
-  if (!scheme_setjmp(new_error_buf))
-    scheme_apply(nsreq, 1, a);
-  p->error_buf = saved_error_buf;
-}
-
 Scheme_Object *scheme_places_deep_copy(Scheme_Object *so)
 {
   Scheme_Object *new_so = so;
@@ -386,10 +364,11 @@ Scheme_Object *scheme_places_deep_copy(Scheme_Object *so)
       new_so = scheme_make_sized_offset_path(SCHEME_BYTE_STR_VAL(so), 0, SCHEME_BYTE_STRLEN_VAL(so), 1);
       break;
     case scheme_symbol_type:
-      {
-        Scheme_Symbol *sym = (Scheme_Symbol *)so;
-        new_so = scheme_intern_exact_symbol(sym->s, sym->len);
-      }
+      if (SCHEME_SYM_UNINTERNEDP(so)) {
+        scheme_log_abort("cannot copy uninterned symbol");
+        abort();
+      } else
+        new_so = so;
       break;
     case scheme_pair_type:
       {
@@ -406,9 +385,8 @@ Scheme_Object *scheme_places_deep_copy(Scheme_Object *so)
       new_so = so;
       break;
     case scheme_resolved_module_path_type:
-      abort();
-      break;
     default:
+      scheme_log_abort("cannot copy object");
       abort();
       break;
   }
@@ -417,15 +395,16 @@ Scheme_Object *scheme_places_deep_copy(Scheme_Object *so)
 
 static void *place_start_proc(void *data_arg) {
   void *stack_base;
-  Scheme_Object *thunk;
   Place_Start_Data *place_data;
-  Scheme_Object *a[2];
-  int ptid;
+  Scheme_Object *place_main;
+  Scheme_Object *a[2], *channel;
+  mzrt_thread_id ptid;
   long rc = 0;
   ptid = mz_proc_thread_self();
-
+  
   stack_base = PROMPT_STACK(stack_base);
   place_data = (Place_Start_Data *) data_arg;
+  data_arg = NULL;
  
   /* printf("Startin place: proc thread id%u\n", ptid); */
 
@@ -438,40 +417,36 @@ static void *place_start_proc(void *data_arg) {
   a[0] = place_data->current_library_collection_paths;
   scheme_current_library_collection_paths(1, a);
 
+  a[0] = scheme_places_deep_copy(place_data->module);
+  a[1] = scheme_places_deep_copy(place_data->function);
+  channel = scheme_places_deep_copy(place_data->channel);
 
-  if (place_data->argc == 1)
+  mzrt_sema_post(place_data->ready);
+  place_data = NULL;
+  /* at point point, don't refer to place_data or its content
+     anymore, because it's allocated in the other place */
+
   {
-    load_namespace("scheme/init");
-    thunk = place_data->thunk;
-    scheme_apply(thunk, 0, NULL);
-    stack_base = NULL;
-  } else {
-    Scheme_Object *place_main;
-    a[0] = scheme_places_deep_copy(place_data->module);
-    a[1] = scheme_places_deep_copy(place_data->function);
+    Scheme_Thread * volatile p;
+    mz_jmp_buf * volatile saved_error_buf;
+    mz_jmp_buf new_error_buf;
 
-    {
-      Scheme_Thread * volatile p;
-      mz_jmp_buf * volatile saved_error_buf;
-      mz_jmp_buf new_error_buf;
-
-      p = scheme_get_current_thread();
-      saved_error_buf = p->error_buf;
-      p->error_buf = &new_error_buf;
-      if (!scheme_setjmp(new_error_buf)) {
-        place_main = scheme_dynamic_require(2, a);
-        a[0] = scheme_places_deep_copy(place_data->channel);
-        scheme_apply(place_main, 1, a);
-      }
-      else {
-        rc = 1;
-      }
-      p->error_buf = saved_error_buf;
+    p = scheme_get_current_thread();
+    saved_error_buf = p->error_buf;
+    p->error_buf = &new_error_buf;
+    if (!scheme_setjmp(new_error_buf)) {
+      place_main = scheme_dynamic_require(2, a);
+      a[0] = channel;
+      scheme_apply(place_main, 1, a);
     }
-
-    /*printf("Leavin place: proc thread id%u\n", ptid);*/
-    scheme_place_instance_destroy();
+    else {
+      rc = 1;
+    }
+    p->error_buf = saved_error_buf;
   }
+
+  /*printf("Leavin place: proc thread id%u\n", ptid);*/
+  scheme_place_instance_destroy();
 
   return (void*) rc;
 }

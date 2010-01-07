@@ -328,11 +328,13 @@ void scheme_init_module(Scheme_Env *env)
     REGISTER_SO(empty_self_modname);
     empty_self_modidx = scheme_make_modidx(scheme_false, scheme_false, scheme_false);
     (void)scheme_hash_key(empty_self_modidx);
+#ifdef MZ_USE_PLACES
+    empty_self_modname = scheme_intern_symbol("expanded module"); /* FIXME: needs to be uninterned */
+#else
     empty_self_modname = scheme_make_symbol("expanded module"); /* uninterned */
+#endif
     empty_self_modname = scheme_intern_resolved_module_path(empty_self_modname);
   }
-  
-
 
   REGISTER_SO(quote_symbol);
   REGISTER_SO(file_symbol);

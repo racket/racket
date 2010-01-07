@@ -138,7 +138,7 @@ xobjects: $(OBJS) main.@LTO@
 XFORMDEP = $(srcdir)/gc2.h $(srcdir)/gc2_obj.h $(srcdir)/xform.ss $(srcdir)/xform-mod.ss \
            $(srcdir)/precomp.c $(srcdir)/../src/schpriv.h $(srcdir)/../include/scheme.h \
            $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h $(srcdir)/../src/schemef.h \
-           $(srcdir)/../src/stypes.h $(srcdir)/../include/schthread.h 
+           $(srcdir)/../src/stypes.h $(srcdir)/../include/schthread.h $(srcdir)/../src/mzrt.h 
 
 LIGHTNINGDEP = $(srcdir)/../src/lightning/i386/core.h $(srcdir)/../src/lightning/i386/core-common.h \
                $(srcdir)/../src/lightning/i386/asm.h $(srcdir)/../src/lightning/i386/asm-common.h \

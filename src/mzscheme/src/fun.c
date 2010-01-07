@@ -901,7 +901,7 @@ Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Object *context)
 
   /* We need to cache clones to support multiple references
      to a zero-sized closure in bytecode. We need either a clone
-     or native code, and context determines which field is releveant,
+     or native code, and context determines which field is relevant,
      so we put the two possibilities in a union `u'. */
 
   if (!context)

@@ -174,7 +174,7 @@ typedef struct NewGC {
   unsigned long saved_GC_gen0_alloc_page_end;
   /* Distributed GC over places info */
 #ifdef MZ_USE_PLACES
-  objhead       saved_GC_objhead_template;
+  int           place_id;
   int           major_places_gc;   /* :1; */
 #endif
 

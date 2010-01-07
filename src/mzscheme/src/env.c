@@ -353,6 +353,9 @@ Scheme_Env *scheme_engine_instance_init() {
 #ifndef DONT_USE_FOREIGN
   scheme_init_foreign_globals();
 #endif
+#ifdef MZ_USE_JIT
+  scheme_init_jit();
+#endif
 
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
   scheme_places_block_child_signal();
@@ -475,9 +478,7 @@ static Scheme_Env *place_instance_init_post_kernel(int initial_main_os_thread) {
   /* this check prevents initializing orig ports twice for the first initial
    * place.  The kernel initializes orig_ports early. */
   scheme_init_fun_places();
-  if (!scheme_orig_stdout_port) {
-    scheme_init_port_places();
-  }
+  scheme_init_port_places();
   scheme_init_error_escape_proc(NULL);
   scheme_init_print_buffers_places();
   scheme_init_logger();

@@ -97,7 +97,6 @@ static const char *type_name[PAGE_TYPES] = {
 #ifdef MZ_USE_PLACES
 static NewGC *MASTERGC;
 static NewGCMasterInfo *MASTERGCINFO;
-THREAD_LOCAL_DECL(static objhead GC_objhead_template);
 inline static int premaster_or_master_gc(NewGC *gc) {
   return (!MASTERGC || gc == MASTERGC);
 }
@@ -584,7 +583,8 @@ static inline void* REMOVE_BIG_PAGE_PTR_TAG(void *p) {
 
 void GC_check_master_gc_request() {
 #ifdef MZ_USE_PLACES 
-  if (MASTERGC && MASTERGC->major_places_gc == 1 && MASTERGCINFO->have_collected[GC_objhead_template.owner] != 0) {
+  NewGC *gc = GC_get_GC();
+  if (MASTERGC && MASTERGC->major_places_gc == 1 && MASTERGCINFO->have_collected[gc->place_id] != 0) {
     GC_gcollect();
   }
 #endif
@@ -662,10 +662,6 @@ static void *allocate_big(const size_t request_size_bytes, int type)
   bpage->page_type = type;
   GCVERBOSEPAGE("NEW BIG PAGE", bpage);
 
-#ifdef MZ_USE_PLACES
-    memcpy(BIG_PAGE_TO_OBJHEAD(bpage), &GC_objhead_template, sizeof(objhead));
-#endif
-
   /* push new bpage onto GC->gen0.big_pages */
   bpage->next = gc->gen0.big_pages;
   if(bpage->next) bpage->next->prev = bpage;
@@ -694,9 +690,6 @@ inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int p
 
   for (n = page->previous_size; ((n + sz) <= APAGE_SIZE); n += sz) {
     objhead *info = (objhead *)PTR(NUM(page->addr) + n);
-#ifdef MZ_USE_PLACES
-    memcpy(info, &GC_objhead_template, sizeof(objhead));
-#endif
     info->dead = 1;
     info->size = gcBYTES_TO_WORDS(sz);
   }
@@ -959,10 +952,6 @@ inline static void *allocate(const size_t request_size, const int type)
     else
       bzero(info, allocate_size);
 
-#ifdef MZ_USE_PLACES
-    memcpy(info, &GC_objhead_template, sizeof(objhead));
-#endif
-
     info->type = type;
     info->size = BYTES_MULTIPLE_OF_WORD_TO_WORDS(allocate_size); /* ALIGN_BYTES_SIZE bumbed us up to the next word boundary */
     {
@@ -995,10 +984,6 @@ inline static void *fast_malloc_one_small_tagged(size_t request_size, int dirty)
       memset(info, 0, sizeof(objhead)); /* init objhead */
     else
       bzero(info, allocate_size);
-
-#ifdef MZ_USE_PLACES
-    memcpy(info, &GC_objhead_template, sizeof(objhead));
-#endif
 
     info->size = BYTES_MULTIPLE_OF_WORD_TO_WORDS(allocate_size); /* ALIGN_BYTES_SIZE bumbed us up to the next word boundary */
 
@@ -1035,12 +1020,7 @@ void *GC_malloc_pair(void *car, void *cdr)
     objhead *info = (objhead *) PTR(GC_gen0_alloc_page_ptr);
     GC_gen0_alloc_page_ptr = newptr;
 
-#ifdef MZ_USE_PLACES
-    memcpy(info, &GC_objhead_template, sizeof(objhead));
-#else
     memset(info, 0, sizeof(objhead)); /* init objhead */
-#endif
-
 
     /* info->type = type; */ /* We know that the type field is already 0 */
     info->size = BYTES_MULTIPLE_OF_WORD_TO_WORDS(allocate_size); /* ALIGN_BYTES_SIZE bumbed us up to the next word boundary */
@@ -1075,7 +1055,6 @@ void *GC_malloc_one_small_dirty_tagged(size_t s)  { return fast_malloc_one_small
 void *GC_malloc_one_small_tagged(size_t s)        { return fast_malloc_one_small_tagged(s, 0); }
 void GC_free(void *p) {}
 
-
 long GC_compute_alloc_size(long sizeb)
 {
   return COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(sizeb);
@@ -1088,31 +1067,12 @@ long GC_initial_word(int request_size)
 
   const size_t allocate_size = COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(request_size);
 
-#ifdef MZ_USE_PLACES
-  memcpy(&info, &GC_objhead_template, sizeof(objhead));
-#else
   memset(&info, 0, sizeof(objhead));
-#endif
 
-  info.size = BYTES_MULTIPLE_OF_WORD_TO_WORDS(allocate_size); /* ALIGN_BYTES_SIZE bumbed us up to the next word boundary */
+  info.size = BYTES_MULTIPLE_OF_WORD_TO_WORDS(allocate_size); /* ALIGN_BYTES_SIZE bumped us up to the next word boundary */
   memcpy(&w, &info, sizeof(objhead));
 
   return w;
-}
-
-void GC_initial_words(char *buffer, long sizeb)
-{
-  objhead *info = (objhead *)buffer;
-
-  const size_t allocate_size = COMPUTE_ALLOC_SIZE_FOR_OBJECT_SIZE(sizeb);
-
-#ifdef MZ_USE_PLACES
-  memcpy(info, &GC_objhead_template, sizeof(objhead));
-#else
-  memset(info, 0, sizeof(objhead));
-#endif
-
-  info->size = BYTES_MULTIPLE_OF_WORD_TO_WORDS(allocate_size); /* ALIGN_BYTES_SIZE bumbed us up to the next word boundary */
 }
 
 long GC_alloc_alignment()
@@ -1874,8 +1834,8 @@ static void NewGCMasterInfo_cleanup() {
   MASTERGCINFO = NULL;
 }
 
-static void NewGCMasterInfo_set_have_collected() {
-  MASTERGCINFO->have_collected[GC_objhead_template.owner] = 1;
+static void NewGCMasterInfo_set_have_collected(NewGC *gc) {
+  MASTERGCINFO->have_collected[gc->place_id] = 1;
 }
 
 static void Master_collect() {
@@ -1932,18 +1892,19 @@ static void NewGCMasterInfo_get_next_id(NewGC *newgc) {
   /* waiting for other threads to finish a possible concurrent GC is not optimal*/
   mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
   newid = MASTERGCINFO->next_GC_id++;
-  GC_objhead_template.owner = newid;
-  /* printf("ALLOCATED GC OID %li\n", GC_objhead_template.owner); */
+  newgc->place_id = newid;
+  /* printf("ALLOCATED GC OID %li\n", newgc->place_id); */
   MASTERGCINFO->have_collected = realloc(MASTERGCINFO->have_collected, sizeof(char) * MASTERGCINFO->next_GC_id);
   MASTERGCINFO->signal_fds = realloc(MASTERGCINFO->signal_fds, sizeof(void*) * MASTERGCINFO->next_GC_id);
   MASTERGCINFO->have_collected[newid] = 0;
-  MASTERGCINFO->signal_fds[newid] = -1;
+  MASTERGCINFO->signal_fds[newid] = (void *)-1;
   mzrt_rwlock_unlock(MASTERGCINFO->cangc);
 }
 
 void GC_set_put_external_event_fd(void *fd) {
+  NewGC *gc = GC_get_GC();
   mzrt_rwlock_wrlock(MASTERGCINFO->cangc);
-  MASTERGCINFO->signal_fds[GC_objhead_template.owner] = fd;
+  MASTERGCINFO->signal_fds[gc->place_id] = fd;
   mzrt_rwlock_unlock(MASTERGCINFO->cangc);
 }
 #endif
@@ -2053,14 +2014,12 @@ static inline void save_globals_to_gc(NewGC *gc) {
   gc->saved_GC_variable_stack       = GC_variable_stack;
   gc->saved_GC_gen0_alloc_page_ptr  = GC_gen0_alloc_page_ptr;
   gc->saved_GC_gen0_alloc_page_end  = GC_gen0_alloc_page_end;
-  gc->saved_GC_objhead_template     = GC_objhead_template;
 }
 
 static inline void restore_globals_from_gc(NewGC *gc) {
   GC_variable_stack       = gc->saved_GC_variable_stack;
   GC_gen0_alloc_page_ptr  = gc->saved_GC_gen0_alloc_page_ptr;
   GC_gen0_alloc_page_end  = gc->saved_GC_gen0_alloc_page_end;
-  GC_objhead_template     = gc->saved_GC_objhead_template;
 }
 
 void GC_switch_out_master_gc() {
@@ -3444,7 +3403,7 @@ static void garbage_collect(NewGC *gc, int force_full)
 #ifdef MZ_USE_PLACES
   if (postmaster_and_place_gc(gc)) {
     mzrt_rwlock_rdlock(MASTERGCINFO->cangc);
-    /* printf("RD MGCLOCK garbage_collect %i\n", GC_objhead_template.owner); */
+    /* printf("RD MGCLOCK garbage_collect %i\n", gc->place_id); */
   }
 #endif
 
@@ -3695,9 +3654,9 @@ static void garbage_collect(NewGC *gc, int force_full)
 #ifdef MZ_USE_PLACES
   if (postmaster_and_place_gc(gc)) {
     if (gc->gc_full) { 
-      NewGCMasterInfo_set_have_collected();
+      NewGCMasterInfo_set_have_collected(gc);
     }
-    /* printf("UN RD MGCLOCK garbage_collect %i\n", GC_objhead_template.owner); */
+    /* printf("UN RD MGCLOCK garbage_collect %i\n", gc->place_id); */
     mzrt_rwlock_unlock(MASTERGCINFO->cangc);
     if (gc->gc_full) { 
       Master_collect();

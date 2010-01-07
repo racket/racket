@@ -120,55 +120,55 @@ static void assert_failure(int where) { printf("JIT assert failed %d\n", where);
 /* Used by vector-set-performance-stats!: */
 int scheme_jit_malloced;
 
-static int skip_checks = 0;
+SHARED_OK static int skip_checks = 0;
 
 #define MAX_SHARED_CALL_RANDS 25
-static void *shared_tail_code[4][MAX_SHARED_CALL_RANDS];
-static void *shared_non_tail_code[4][MAX_SHARED_CALL_RANDS][2];
-static void *shared_non_tail_retry_code[2];
-static void *shared_non_tail_argc_code[2];
-static void *shared_tail_argc_code;
+SHARED_OK static void *shared_tail_code[4][MAX_SHARED_CALL_RANDS];
+SHARED_OK static void *shared_non_tail_code[4][MAX_SHARED_CALL_RANDS][2];
+SHARED_OK static void *shared_non_tail_retry_code[2];
+SHARED_OK static void *shared_non_tail_argc_code[2];
+SHARED_OK static void *shared_tail_argc_code;
 
 #define MAX_SHARED_ARITY_CHECK 25
-static void *shared_arity_check[MAX_SHARED_ARITY_CHECK][2][2];
+SHARED_OK static void *shared_arity_check[MAX_SHARED_ARITY_CHECK][2][2];
 
-static void *bad_result_arity_code;
-static void *unbound_global_code;
-static void *quote_syntax_code;
-static void *call_original_unary_arith_code;
-static void *call_original_binary_arith_code;
-static void *call_original_binary_rev_arith_code;
-static void *call_original_unary_arith_for_branch_code;
-static void *call_original_binary_arith_for_branch_code;
-static void *call_original_binary_rev_arith_for_branch_code;
-static void *call_original_nary_arith_code;
-static void *bad_car_code, *bad_cdr_code;
-static void *bad_caar_code, *bad_cdar_code, *bad_cadr_code, *bad_cddr_code;
-static void *bad_mcar_code, *bad_mcdr_code;
-static void *bad_set_mcar_code, *bad_set_mcdr_code;
-static void *bad_unbox_code;
-static void *bad_vector_length_code;
-static void *bad_flvector_length_code;
-static void *vector_ref_code, *vector_ref_check_index_code, *vector_set_code, *vector_set_check_index_code;
-static void *string_ref_code, *string_ref_check_index_code, *string_set_code, *string_set_check_index_code;
-static void *bytes_ref_code, *bytes_ref_check_index_code, *bytes_set_code, *bytes_set_check_index_code;
-static void *flvector_ref_check_index_code, *flvector_set_check_index_code, *flvector_set_flonum_check_index_code;
-static void *syntax_e_code;
-void *scheme_on_demand_jit_code;
-static void *on_demand_jit_arity_code;
-static void *get_stack_pointer_code;
-static void *stack_cache_pop_code;
-static void *struct_pred_code, *struct_pred_multi_code;
-static void *struct_pred_branch_code;
-static void *struct_get_code, *struct_get_multi_code;
-static void *struct_set_code, *struct_set_multi_code;
-static void *struct_proc_extract_code;
-static void *bad_app_vals_target;
-static void *app_values_slow_code, *app_values_multi_slow_code, *app_values_tail_slow_code;
-static void *finish_tail_call_code, *finish_tail_call_fixup_code;
-static void *module_run_start_code, *module_start_start_code;
-static void *box_flonum_from_stack_code;
-static void *fl1_fail_code, *fl2rr_fail_code[2], *fl2fr_fail_code[2], *fl2rf_fail_code[2];
+SHARED_OK static void *bad_result_arity_code;
+SHARED_OK static void *unbound_global_code;
+SHARED_OK static void *quote_syntax_code;
+SHARED_OK static void *call_original_unary_arith_code;
+SHARED_OK static void *call_original_binary_arith_code;
+SHARED_OK static void *call_original_binary_rev_arith_code;
+SHARED_OK static void *call_original_unary_arith_for_branch_code;
+SHARED_OK static void *call_original_binary_arith_for_branch_code;
+SHARED_OK static void *call_original_binary_rev_arith_for_branch_code;
+SHARED_OK static void *call_original_nary_arith_code;
+SHARED_OK static void *bad_car_code, *bad_cdr_code;
+SHARED_OK static void *bad_caar_code, *bad_cdar_code, *bad_cadr_code, *bad_cddr_code;
+SHARED_OK static void *bad_mcar_code, *bad_mcdr_code;
+SHARED_OK static void *bad_set_mcar_code, *bad_set_mcdr_code;
+SHARED_OK static void *bad_unbox_code;
+SHARED_OK static void *bad_vector_length_code;
+SHARED_OK static void *bad_flvector_length_code;
+SHARED_OK static void *vector_ref_code, *vector_ref_check_index_code, *vector_set_code, *vector_set_check_index_code;
+SHARED_OK static void *string_ref_code, *string_ref_check_index_code, *string_set_code, *string_set_check_index_code;
+SHARED_OK static void *bytes_ref_code, *bytes_ref_check_index_code, *bytes_set_code, *bytes_set_check_index_code;
+SHARED_OK static void *flvector_ref_check_index_code, *flvector_set_check_index_code, *flvector_set_flonum_check_index_code;
+SHARED_OK static void *syntax_e_code;
+SHARED_OK void *scheme_on_demand_jit_code;
+SHARED_OK static void *on_demand_jit_arity_code;
+SHARED_OK static void *get_stack_pointer_code;
+SHARED_OK static void *stack_cache_pop_code;
+SHARED_OK static void *struct_pred_code, *struct_pred_multi_code;
+SHARED_OK static void *struct_pred_branch_code;
+SHARED_OK static void *struct_get_code, *struct_get_multi_code;
+SHARED_OK static void *struct_set_code, *struct_set_multi_code;
+SHARED_OK static void *struct_proc_extract_code;
+SHARED_OK static void *bad_app_vals_target;
+SHARED_OK static void *app_values_slow_code, *app_values_multi_slow_code, *app_values_tail_slow_code;
+SHARED_OK static void *finish_tail_call_code, *finish_tail_call_fixup_code;
+SHARED_OK static void *module_run_start_code, *module_start_start_code;
+SHARED_OK static void *box_flonum_from_stack_code;
+SHARED_OK static void *fl1_fail_code, *fl2rr_fail_code[2], *fl2fr_fail_code[2], *fl2rf_fail_code[2];
 
 typedef struct {
   MZTAG_IF_REQUIRED
@@ -240,8 +240,8 @@ typedef struct {
 
 typedef int (*Native_Check_Arity_Proc)(Scheme_Object *o, int argc, int dummy);
 typedef Scheme_Object *(*Native_Get_Arity_Proc)(Scheme_Object *o, int dumm1, int dummy2);
-static Native_Check_Arity_Proc check_arity_code;
-static Native_Get_Arity_Proc get_arity_code;
+SHARED_OK static Native_Check_Arity_Proc check_arity_code;
+SHARED_OK static Native_Get_Arity_Proc get_arity_code;
 
 static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi_ok, int need_ends, int ignored);
 static int generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitter, int multi_ok, int need_ends, int ignored,  
@@ -481,9 +481,9 @@ static int past_limit(mz_jit_state *jitter)
 
 #define JIT_INIT_MAPPINGS_SIZE 32
 
-static void *jit_buffer_cache;
-static long jit_buffer_cache_size;
-static int jit_buffer_cache_registered;
+THREAD_LOCAL_DECL(static void *jit_buffer_cache);
+THREAD_LOCAL_DECL(static long jit_buffer_cache_size);
+THREAD_LOCAL_DECL(static int jit_buffer_cache_registered);
 
 typedef int (*Generate_Proc)(mz_jit_state *j, void *data);
 
@@ -735,6 +735,41 @@ static void emit_indentation(mz_jit_state *jitter)
 # define FOR_LOG(x) /* empty */
 # define LOG_IT(args) /* empty */
 #endif
+
+/*========================================================================*/
+/*                            initialization                              */
+/*========================================================================*/
+
+#ifdef MZ_USE_PLACES
+
+static mzrt_mutex *jit_lock;
+THREAD_LOCAL_DECL(static int in_jit_critical_section);
+
+static void BEGIN_JIT_CRITICAL_SECTION()
+{
+  if (!in_jit_critical_section) 
+    mzrt_mutex_lock(jit_lock);
+  in_jit_critical_section++;
+}
+
+static void END_JIT_CRITICAL_SECTION()
+{
+  --in_jit_critical_section;
+  if (!in_jit_critical_section)
+    mzrt_mutex_unlock(jit_lock);
+}
+
+#else
+# define BEGIN_JIT_CRITICAL_SECTION() /* empty */
+# define END_JIT_CRITICAL_SECTION() /* empty */
+#endif
+
+void scheme_init_jit()
+{
+#ifdef MZ_USE_PLACES
+  mzrt_mutex_create(&jit_lock);
+#endif  
+}
 
 /*========================================================================*/
 /*                               run time                                 */
@@ -1564,7 +1599,6 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 #ifdef CAN_INLINE_ALLOC
 THREAD_LOCAL_DECL(extern unsigned long GC_gen0_alloc_page_ptr);
 long GC_initial_word(int sizeb);
-void GC_initial_words(char *buffer, int sizeb);
 long GC_compute_alloc_size(long sizeb);
 
 static void *retry_alloc_code;
@@ -1628,9 +1662,6 @@ static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut
 {
   GC_CAN_IGNORE jit_insn *ref, *reffail;
   long a_word, sz, algn;
-#if defined(MZ_USE_PLACES)
-  long a_words[2];
-#endif
 
   sz = GC_compute_alloc_size(amt);
   algn = GC_alloc_alignment();
@@ -1665,28 +1696,16 @@ static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, int immut
   mz_patch_branch(ref);
   jit_addi_ul(JIT_R2, JIT_V1, sz);
   (void)mz_tl_sti_l(tl_GC_gen0_alloc_page_ptr, JIT_R2, JIT_R0);
-#if !defined(MZ_USE_PLACES)
+
+  /* GC header: */
   a_word = GC_initial_word(amt);
   jit_movi_l(JIT_R2, a_word);
   jit_str_l(JIT_V1, JIT_R2);
 
-  /*SchemeObject header*/
+  /* Scheme_Object header: */
   a_word = initial_tag_word(ty, immut);
   jit_movi_l(JIT_R2, a_word);
   jit_stxi_l(sizeof(long), JIT_V1, JIT_R2);
-#else
-  GC_initial_words((char *)a_words, amt);
-  jit_movi_l(JIT_R2, a_words[0]);
-  jit_str_l(JIT_V1, JIT_R2);
-
-  jit_movi_l(JIT_R2, a_words[1]);
-  jit_stxi_l(sizeof(long), JIT_V1, JIT_R2);
-
-  /*SchemeObject header*/
-  a_word = initial_tag_word(ty, immut);
-  jit_movi_l(JIT_R2, a_word);
-  jit_stxi_l(sizeof(long)*2, JIT_V1, JIT_R2);
-#endif
 
   CHECK_LIMIT();
   __END_TINY_JUMPS__(1);
@@ -4442,7 +4461,7 @@ static int generate_alloc_double(mz_jit_state *jitter, int inline_retry)
 # ifdef CAN_INLINE_ALLOC
   inline_alloc(jitter, sizeof(Scheme_Double), scheme_double_type, 0, 0, 1, inline_retry);
   CHECK_LIMIT();
-  jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
+  jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
   (void)jit_stxi_d_fppop(&((Scheme_Double *)0x0)->double_val, JIT_R0, JIT_FPR0);
 # else
   (void)mz_tl_sti_d_fppop(tl_double_result, JIT_FPR0, JIT_R0);
@@ -6741,8 +6760,8 @@ static int generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       inline_alloc(jitter, sizeof(Scheme_Small_Object), scheme_box_type, 0, 1, 0, 0);
       CHECK_LIMIT();
       
-      jit_stxi_p((long)&SCHEME_BOX_VAL(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R0);
-      jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
+      jit_stxi_p((long)&SCHEME_BOX_VAL(0x0) + OBJHEAD_SIZE, JIT_V1, JIT_R0);
+      jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
 #else
       /* Non-inlined */
       JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
@@ -7657,9 +7676,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_mutable_pair_type, 0, 1, 0, 0);
       CHECK_LIMIT();
 
-      jit_stxi_p((long)&SCHEME_MCAR(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R0);
-      jit_stxi_p((long)&SCHEME_MCDR(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R1);
-      jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
+      jit_stxi_p((long)&SCHEME_MCAR(0x0) + OBJHEAD_SIZE, JIT_V1, JIT_R0);
+      jit_stxi_p((long)&SCHEME_MCDR(0x0) + OBJHEAD_SIZE, JIT_V1, JIT_R1);
+      jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
 #else
       /* Non-inlined alloc */
       JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
@@ -8087,13 +8106,13 @@ static int generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry)
   CHECK_LIMIT();
   
   if (rev) {
-    jit_stxi_p((long)&SCHEME_CAR(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R1);
-    jit_stxi_p((long)&SCHEME_CDR(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R0);
+    jit_stxi_p((long)&SCHEME_CAR(0x0) + OBJHEAD_SIZE, JIT_V1, JIT_R1);
+    jit_stxi_p((long)&SCHEME_CDR(0x0) + OBJHEAD_SIZE, JIT_V1, JIT_R0);
   } else {
-    jit_stxi_p((long)&SCHEME_CAR(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R0);
-    jit_stxi_p((long)&SCHEME_CDR(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R1);
+    jit_stxi_p((long)&SCHEME_CAR(0x0) + OBJHEAD_SIZE, JIT_V1, JIT_R0);
+    jit_stxi_p((long)&SCHEME_CDR(0x0) + OBJHEAD_SIZE, JIT_V1, JIT_R1);
   }
-  jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
+  jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
 #else
   /* Non-inlined */
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
@@ -8147,14 +8166,14 @@ static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
   CHECK_LIMIT();
 
   if ((c == 2) || (c == 1)) {
-    jit_stxi_p((long)&SCHEME_VEC_ELS(0x0)[0] + GC_OBJHEAD_SIZE, JIT_V1, JIT_R0);
+    jit_stxi_p((long)&SCHEME_VEC_ELS(0x0)[0] + OBJHEAD_SIZE, JIT_V1, JIT_R0);
   }
   if (c == 2) {
-    jit_stxi_p((long)&SCHEME_VEC_ELS(0x0)[1] + GC_OBJHEAD_SIZE, JIT_V1, JIT_R1);
+    jit_stxi_p((long)&SCHEME_VEC_ELS(0x0)[1] + OBJHEAD_SIZE, JIT_V1, JIT_R1);
   }
   jit_movi_l(JIT_R1, c);
-  jit_stxi_i((long)&SCHEME_VEC_SIZE(0x0) + GC_OBJHEAD_SIZE, JIT_V1, JIT_R1);
-  jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
+  jit_stxi_i((long)&SCHEME_VEC_SIZE(0x0) + OBJHEAD_SIZE, JIT_V1, JIT_R1);
+  jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
 #else
   /* Non-inlined */
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
@@ -8285,12 +8304,15 @@ static int generate_flonum_local_unboxing(mz_jit_state *jitter, int push)
 static Scheme_Object example_so = { scheme_native_closure_type, 0 };
 #endif
 
+static Scheme_Native_Closure_Data *create_native_lambda(Scheme_Closure_Data *data, int clear_code_after_jit,
+                                                        Scheme_Native_Closure_Data *case_lam);
+
 static void ensure_closure_native(Scheme_Closure_Data *data, 
 				  Scheme_Native_Closure_Data *case_lam)
 {
   if (!data->u.native_code || SCHEME_FALSEP((Scheme_Object *)data->u.native_code)) {
     Scheme_Native_Closure_Data *code;
-    code = scheme_generate_lambda(data, 0, case_lam);
+    code = create_native_lambda(data, 0, case_lam);
     data->u.native_code = code;
   }
 }
@@ -8316,7 +8338,7 @@ static int generate_closure(Scheme_Closure_Data *data,
       /* Inlined alloc */
       inline_alloc(jitter, sz, scheme_native_closure_type, 0, 0, 0, 0);
       CHECK_LIMIT();
-      jit_addi_p(JIT_R0, JIT_V1, GC_OBJHEAD_SIZE);
+      jit_addi_p(JIT_R0, JIT_V1, OBJHEAD_SIZE);
     } else
 # endif
       {
@@ -8404,7 +8426,7 @@ static int generate_closure_prep(Scheme_Closure_Data *data, mz_jit_state *jitter
   return retval;
 }
 
-Scheme_Native_Closure_Data *scheme_generate_case_lambda(Scheme_Case_Lambda *c)
+static Scheme_Native_Closure_Data *create_native_case_lambda(Scheme_Case_Lambda *c)
 {
   Scheme_Closure_Data *data;
   Scheme_Native_Closure_Data *ndata;
@@ -8447,11 +8469,24 @@ Scheme_Native_Closure_Data *scheme_generate_case_lambda(Scheme_Case_Lambda *c)
   return ndata;
 }
 
+Scheme_Native_Closure_Data *scheme_generate_case_lambda(Scheme_Case_Lambda *c)
+{
+  Scheme_Native_Closure_Data *ndata;
+
+  BEGIN_JIT_CRITICAL_SECTION();
+
+  ndata = create_native_case_lambda(c);
+
+  END_JIT_CRITICAL_SECTION();
+
+  return ndata;
+}
+
 static void ensure_case_closure_native(Scheme_Case_Lambda *c)
 {
   if (!c->native_code || SCHEME_FALSEP((Scheme_Object *)c->native_code)) {
     Scheme_Native_Closure_Data *ndata;
-    ndata = scheme_generate_case_lambda(c);
+    ndata = create_native_case_lambda(c);
     c->native_code = ndata;
   }
 }
@@ -11785,7 +11820,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   return 1;
 }
 
-void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv)
+static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv)
 {
   Scheme_Native_Closure_Data *ndata = nc->code;
   Scheme_Closure_Data *data;
@@ -11857,6 +11892,15 @@ void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
   ndata->max_let_depth = max_depth;
 }
 
+void scheme_on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv)
+{
+  BEGIN_JIT_CRITICAL_SECTION();
+  
+  on_demand_generate_lambda(nc, argc, argv);
+
+  END_JIT_CRITICAL_SECTION();
+}
+
 static void on_demand_with_args(Scheme_Object **in_argv)
 {
   /* On runstack: closure (nearest), argc, argv (deepest) */
@@ -11875,8 +11919,8 @@ static void on_demand()
   return on_demand_with_args(MZ_RUNSTACK);
 }
 
-Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, int clear_code_after_jit,
-						   Scheme_Native_Closure_Data *case_lam)
+static Scheme_Native_Closure_Data *create_native_lambda(Scheme_Closure_Data *data, int clear_code_after_jit,
+                                                        Scheme_Native_Closure_Data *case_lam)
 {
   Scheme_Native_Closure_Data *ndata;
 
@@ -11910,9 +11954,23 @@ Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, in
 
 #if 0
   /* Compile immediately: */
-  scheme_on_demand_generate_lambda(ndata);
+  on_demand_generate_lambda(ndata);
 #endif
 
+  return ndata;
+}
+
+Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, int clear_code_after_jit,
+						   Scheme_Native_Closure_Data *case_lam)
+{
+  Scheme_Native_Closure_Data *ndata;
+
+  BEGIN_JIT_CRITICAL_SECTION();
+
+  ndata = create_native_lambda(data, clear_code_after_jit, case_lam);
+
+  END_JIT_CRITICAL_SECTION();
+  
   return ndata;
 }
 

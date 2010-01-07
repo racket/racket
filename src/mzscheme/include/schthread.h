@@ -83,7 +83,6 @@ typedef long objhead;
 
 typedef struct Thread_Local_Variables {
   void **GC_variable_stack_;
-  objhead GC_objhead_template_;
   struct NewGC *GC_;
   unsigned long GC_gen0_alloc_page_ptr_;
   unsigned long GC_gen0_alloc_page_end_;
@@ -96,6 +95,10 @@ typedef struct Thread_Local_Variables {
   unsigned long volatile scheme_jit_stack_boundary_;
   volatile int scheme_future_need_gc_pause_;
   int scheme_use_rtcall_;
+  int in_jit_critical_section_;
+  void *jit_buffer_cache_;
+  long jit_buffer_cache_size_;
+  int jit_buffer_cache_registered_;
   struct Scheme_Object *quick_stx_;
   int scheme_continuation_application_count_;
   int scheme_cont_capture_count_;
@@ -315,6 +318,10 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_jit_stack_boundary XOA (scheme_get_thread_local_variables()->scheme_jit_stack_boundary_)
 #define scheme_future_need_gc_pause XOA (scheme_get_thread_local_variables()->scheme_future_need_gc_pause_)
 #define scheme_use_rtcall XOA (scheme_get_thread_local_variables()->scheme_use_rtcall_)
+#define in_jit_critical_section XOA (scheme_get_thread_local_variables()->in_jit_critical_section_)
+#define jit_buffer_cache XOA (scheme_get_thread_local_variables()->jit_buffer_cache_)
+#define jit_buffer_cache_size XOA (scheme_get_thread_local_variables()->jit_buffer_cache_size_)
+#define jit_buffer_cache_registered XOA (scheme_get_thread_local_variables()->jit_buffer_cache_registered_)
 #define quick_stx XOA (scheme_get_thread_local_variables()->quick_stx_)
 #define scheme_continuation_application_count XOA (scheme_get_thread_local_variables()->scheme_continuation_application_count_)
 #define scheme_cont_capture_count XOA (scheme_get_thread_local_variables()->scheme_cont_capture_count_)

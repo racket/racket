@@ -550,11 +550,6 @@ scheme_init_port (Scheme_Env *env)
   }
 #endif
 
-  scheme_init_port_places();
-
-  flush_out = SCHEME_TRUEP(scheme_terminal_port_p(1, &scheme_orig_stdout_port));
-  flush_err = SCHEME_TRUEP(scheme_terminal_port_p(1, &scheme_orig_stderr_port));
-
 #ifdef MZ_FDS
   scheme_add_atexit_closer(flush_if_output_fds);
   /* Note: other threads might continue to write even after
@@ -653,6 +648,9 @@ void scheme_init_port_places(void)
   }
 # endif
 #endif
+  
+  flush_out = SCHEME_TRUEP(scheme_terminal_port_p(1, &scheme_orig_stdout_port));
+  flush_err = SCHEME_TRUEP(scheme_terminal_port_p(1, &scheme_orig_stderr_port));
 }
 
 void scheme_init_port_config(void)

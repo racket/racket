@@ -166,22 +166,22 @@ void *mzrt_thread_stub(void *data){
   scheme_init_os_thread();
   proc_thread_self                    = stub_data->thread;
 
-  //free(data);  REMOVEME --- why does this break Mac OS X?
+  free(data);
 
   return start_proc(start_proc_data);
 }
 
-unsigned int mz_proc_thread_self() {
+mzrt_thread_id mz_proc_thread_self() {
 #ifdef WIN32
 #error !!!mz_proc_thread_id not implemented!!!
 #else
-  return (unsigned int) pthread_self();
+  return pthread_self();
 #endif
 }
 
-unsigned int mz_proc_thread_id(mz_proc_thread* thread) {
+mzrt_thread_id mz_proc_thread_id(mz_proc_thread* thread) {
 
-  return (unsigned int) thread->threadid;
+  return thread->threadid;
 }
 
 mz_proc_thread* mzrt_proc_first_thread_init() {
@@ -207,7 +207,6 @@ mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* dat
   attr = NULL;
 #endif
 
-#ifdef MZ_PRECISE_GC
   mzrt_thread_stub_data *stub_data = (mzrt_thread_stub_data*)malloc(sizeof(mzrt_thread_stub_data));
   thread->mbox = pt_mbox_create();
   stub_data->start_proc = start_proc;
@@ -218,13 +217,7 @@ mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* dat
 #   else
   pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
 #   endif
-#else
-#   ifdef WIN32
-  thread->threadid = GC_CreateThread(NULL, 0, start_proc, data, 0, NULL);
-#   else
-  GC_pthread_create(&thread->threadid, attr, start_proc, data);
-#   endif
-#endif
+
   return thread;
 }
 
@@ -359,6 +352,66 @@ int mzrt_cond_broadcast(mzrt_cond *cond) {
 
 int mzrt_cond_destroy(mzrt_cond *cond) {
   return pthread_cond_destroy(&cond->cond);
+}
+
+struct mzrt_sema {
+  int ready;
+  pthread_mutex_t m;
+  pthread_cond_t c;
+};
+
+int mzrt_sema_create(mzrt_sema **_s, int v)
+{
+  mzrt_sema *s;
+  int err;
+
+  s = (mzrt_sema *)malloc(sizeof(mzrt_sema));
+  err = pthread_mutex_init(&s->m, NULL);
+  if (err) { 
+    free(s); 
+    return err; 
+  }
+  err = pthread_cond_init(&s->c, NULL);
+  if (err) { 
+    pthread_mutex_destroy(&s->m);
+    free(s); 
+    return err; 
+  }
+  s->ready = v;
+  *_s = s;
+
+  return 0;
+}
+
+int mzrt_sema_wait(mzrt_sema *s)
+{
+  pthread_mutex_lock(&s->m);
+  while (!s->ready) {
+    pthread_cond_wait(&s->c, &s->m);
+  }
+  --s->ready;
+  pthread_mutex_unlock(&s->m);
+
+  return 0;
+}
+
+int mzrt_sema_post(mzrt_sema *s)
+{
+  pthread_mutex_lock(&s->m);
+  s->ready++;
+  pthread_cond_signal(&s->c);
+  pthread_mutex_unlock(&s->m);
+
+  return 0;
+}
+
+int mzrt_sema_destroy(mzrt_sema *s)
+{
+  pthread_mutex_destroy(&s->m);
+  pthread_cond_destroy(&s->c);
+  free(s);
+
+  return 0;
 }
 
 /****************** PROCESS THREAD MAIL BOX *******************************/

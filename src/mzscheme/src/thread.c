@@ -120,8 +120,8 @@ extern void scheme_gmp_tls_restore_snapshot(long *s, void *data, long *save, int
 static void check_ready_break();
 
 extern int scheme_num_read_syntax_objects;
-extern long scheme_hash_request_count;
-extern long scheme_hash_iteration_count;
+THREAD_LOCAL_DECL(extern long scheme_hash_request_count);
+THREAD_LOCAL_DECL(extern long scheme_hash_iteration_count);
 #ifdef MZ_USE_JIT
 extern int scheme_jit_malloced;
 #else
