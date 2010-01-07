@@ -1,6 +1,34 @@
 #lang scheme/base
 
+(provide get-tree get-plt-tree)
+
 (require "tree.ss" setup/dirs)
+
+;; ----------------------------------------------------------------------------
+;; Reading a tree from a directory
+
+(define (get-tree path)
+  (define path* (simplify-path path))
+  (let loop ([path path*]
+             [name (regexp-replace #rx#"/$" (path->bytes path*) #"")])
+    (cond [(directory-exists? path)
+           (make-tree
+            (bytes-append name #"/")
+            (parameterize ([current-directory path])
+              (let* ([subs (map (lambda (sub)
+                                  (cons (path-element->bytes sub) sub))
+                                (directory-list))]
+                     [subs (sort subs bytes<? #:key car)])
+                (map (lambda (sub)
+                       (loop (build-path path (cdr sub)) (car sub)))
+                     subs)))
+            path)]
+          [(file-exists? path) (make-tree name #f path)]
+          [else (error 'get-tree "bad path encountered: ~a/~a"
+                       (current-directory) path)])))
+
+;; ----------------------------------------------------------------------------
+;; Reading the PLT tree
 
 (define (get-plt-tree)
   (when absolute-installation?

@@ -2,13 +2,13 @@
 
 (require tests/eli-tester scheme/sandbox scheme/runtime-path scheme/file)
 
-(define-runtime-path tree "tree.ss")
-
-(define e
-  (call-with-trusted-sandbox-configuration
-   (lambda () (make-module-evaluator tree))))
+(define-runtime-path tree-module     "tree.ss")
+(define-runtime-path plt-tree-module "plt-tree.ss")
 
 (define (glob-tests)
+  (define e
+    (call-with-trusted-sandbox-configuration
+     (lambda () (make-module-evaluator tree-module))))
   (define (g->rl x)
     (let ([r (e `(glob->regexp-or-literal ,x))])
       (if (byte-regexp? r) `(rx ,(object-name r)) r)))
@@ -42,9 +42,13 @@
         (g->rl #"gl[]*]ob") => '(rx #"^gl[]*]ob$")
         (g->rl #"gl[^]*]ob") => '(rx #"^gl[^]*]ob$")
         (g->rl #"gl[^]*]*ob") => '(rx #"^gl[^]*].*ob$")
-        ))
+        )
+  (kill-evaluator e))
 
 (define (tree-tests)
+  (define e
+    (call-with-trusted-sandbox-configuration
+     (lambda () (make-module-evaluator plt-tree-module))))
   (define a-dir  (collection-path "scribble"))
   (define a-list (find-files void a-dir))
   (define a-tree #f)
@@ -3904,7 +3908,8 @@
    => same-as-last-datums
    ;; no .svn or compiled directories using `and:'
    (e/filter '(and: (not: "**/.svn/") (not: "**/compiled/")))
-   => same-as-last-datums))
+   => same-as-last-datums)
+  (kill-evaluator e))
 
 (test do (glob-tests)
       do (tree-tests))
