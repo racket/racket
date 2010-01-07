@@ -122,6 +122,7 @@ has been moved out).
 ;; an atomic-shape is either:
 ;;  - polygon
 ;;  - line-segment
+;;  - curve-segment
 ;;  - np-atomic-shape
 
 ;; a np-atomic-shape is:
@@ -159,6 +160,12 @@ has been moved out).
                           (rec (line-segment-color a) (line-segment-color b))))
         (λ (x y) 42) 
         (λ (x y) 3)))
+
+;; a curve-segment is
+;;
+;;  - (make-curve-segment point real real point real real color)
+(define-struct/reg-mk curve-segment (start s-angle s-pull end e-angle e-pull color) #:transparent #:omit-define-syntaxes)
+
 ;; a normalized-shape (subtype of shape) is either
 ;;  - (make-overlay normalized-shape cropped-simple-shape)
 ;;  - cropped-simple-shape
@@ -171,6 +178,7 @@ has been moved out).
 ;;  - (make-translate dx dy np-atomic-shape))
 ;;  - polygon
 ;;  - line-segment
+;;  - curve-segment
 
 ;; an angle is a number between 0 and 360 (degrees)
 
@@ -457,6 +465,22 @@ has been moved out).
          (if bottom
              (make-overlay bottom (f this-one))
              (f this-one)))]
+      [(curve-segment? shape)
+       ;; the pull is multiplied by the distance 
+       ;; between the two points when it is drawn,
+       ;; so we don't need to scale it here
+       (let ([this-one 
+              (add-crops
+               (make-curve-segment (scale-point (curve-segment-start shape))
+                                   (curve-segment-s-angle shape)
+                                   (curve-segment-s-pull shape)
+                                   (scale-point (curve-segment-end shape))
+                                   (curve-segment-e-angle shape)
+                                   (curve-segment-e-pull shape)
+                                   (curve-segment-color shape)))])
+         (if bottom
+             (make-overlay bottom (f this-one))
+             (f this-one)))]
       [(np-atomic-shape? shape)
        (let ([this-one 
               (add-crops
@@ -471,11 +495,13 @@ has been moved out).
   (or (and (translate? shape)
            (np-atomic-shape? (translate-shape shape)))
       (polygon? shape)
-      (line-segment? shape)))
+      (line-segment? shape)
+      (curve-segment? shape)))
 
 (define (atomic-shape? shape)
   (or (polygon? shape)
       (line-segment? shape)
+      (curve-segment? shape)
       (np-atomic-shape? shape)))
 
 (define (np-atomic-shape? shape)
@@ -576,14 +602,37 @@ has been moved out).
                                              (polygon-color simple-shape)))
        (send dc draw-path path dx dy 'winding))]
     [(line-segment? simple-shape)
-     (let ([path (new dc-path%)]
-           [start (line-segment-start simple-shape)]
+     (let ([start (line-segment-start simple-shape)]
            [end (line-segment-end simple-shape)])
        (send dc set-pen (line-segment-color simple-shape) 1 'solid)
        (send dc set-brush "black" 'transparent)
        (send dc draw-line
              (+ dx (point-x start)) (+ dy (point-y start))
              (+ dx (point-x end)) (+ dy (point-y end))))]
+    [(curve-segment? simple-shape)
+     (let* ([path (new dc-path%)]
+            [start (curve-segment-start simple-shape)]
+            [end (curve-segment-end simple-shape)]
+            [sx (point-x start)]
+            [sy (point-y start)]
+            [ex (point-x end)]
+            [ey (point-y end)]
+            [sa (degrees->radians (curve-segment-s-angle simple-shape))]
+            [ea (degrees->radians (curve-segment-e-angle simple-shape))]
+            [d (sqrt (+ (sqr (- ey sy)) (sqr (- ex sx))))]
+            [sp (* (curve-segment-s-pull simple-shape) d)]
+            [ep (* (curve-segment-e-pull simple-shape) d)])
+       (send path move-to sx sy)
+       (send path curve-to
+                (+ sx (* sp (cos sa)))
+                (- sy (* sp (sin sa)))
+                (- ex (* ep (cos ea)))
+                (+ ey (* ep (sin ea)))
+                ex
+                ey)
+       (send dc set-pen (curve-segment-color simple-shape) 1 'solid)
+       (send dc set-brush "black" 'transparent)
+       (send dc draw-path path dx dy))]
     [else
      (let ([dx (+ dx (translate-dx simple-shape))]
            [dy (+ dy (translate-dy simple-shape))]
@@ -797,6 +846,10 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          text-angle text-size text-face text-family text-style text-weight text-underline
          make-polygon polygon? polygon-points polygon-mode polygon-color
          make-line-segment line-segment? line-segment-start line-segment-end line-segment-color
+         make-curve-segment curve-segment? 
+         curve-segment-start curve-segment-s-angle curve-segment-s-pull
+         curve-segment-end curve-segment-e-angle curve-segment-e-pull 
+         curve-segment-color
 
          make-bitmap bitmap? bitmap-raw-bitmap bitmap-raw-mask bitmap-angle bitmap-x-scale bitmap-y-scale 
          bitmap-rendered-bitmap bitmap-rendered-mask

@@ -211,6 +211,42 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                             "darkolivegreen")]
 }
 
+@defproc[(add-curve [image image?] 
+                    [x1 real?] [y1 real?] [angle1 angle?] [pull1 real?]
+                    [x2 real?] [y2 real?] [angle2 angle?] [pull2 real?]
+                    [color image-color?])
+         image?]{
+
+Adds a curve to @scheme[image], starting at the point
+(@scheme[x1],@scheme[y1]), and ending at the point
+(@scheme[x2],@scheme[y2]).
+
+The @scheme[angle1] and @scheme[angle2] arguments specify the 
+angle that the curve has as it leaves the initial point and
+as it reaches the final point, respectively. 
+
+The @scheme[pull1] and @scheme[pull2] arguments control how
+long the curve tries to stay with that angle. Larger numbers
+mean that the curve stays with the angle longer.
+
+@image-examples[(add-curve (rectangle 100 100 'solid 'black)
+                           20 20 0 1/3
+                           80 80 0 1/3
+                           'white)
+                (add-curve (rectangle 100 100 'solid 'black)
+                           20 20 0 1 
+                           80 80 0 1
+                           'white)
+                (add-curve 
+                 (add-curve 
+                  (rectangle 40 100 'solid 'black)
+                  20 10 180 1/2
+                  20 90 180 1/2
+                  'white)
+                 20 10 0 1/2
+                 20 90 0 1/2
+                 'white)]
+}
 @defproc[(text [string string?] [font-size (and/c integer? (<=/c 1 255))] [color image-color?])
          image?]{
                 

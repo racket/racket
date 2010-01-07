@@ -9,7 +9,7 @@
    (list '(image-height (rectangle 100 100 "solid" "black")) 'val 100)
    (list '(image-baseline (rectangle 100 100 "solid" "black")) 'val 100)
    (list '(image-height (text "Hello" 24 "black")) 'val 41)
-   (list '(image-baseline (text "Hello" 24 "black")) 'val 31.0)
+   (list '(image-baseline (text "Hello" 24 "black")) 'val 31)
    (list
     '(image-height
       (overlay (circle 20 "solid" "orange") (circle 30 "solid" "purple")))
@@ -382,6 +382,48 @@
     "169f2ceb45c.png")
    (list '(text "Goodbye" 36 "indigo") 'image "169990a635e.png")
    (list '(text "Hello" 24 "olive") 'image "1bbeedc0d6.png")
+   (list
+    '(add-curve
+      (add-curve
+       (rectangle 40 100 'solid 'black)
+       20
+       10
+       180
+       1/2
+       20
+       90
+       180
+       1/2
+       'white)
+      20
+      10
+      0
+      1/2
+      20
+      90
+      0
+      1/2
+      'white)
+    'image
+    "13121248a3c.png")
+   (list
+    '(add-curve (rectangle 100 100 'solid 'black) 20 20 0 1 80 80 0 1 'white)
+    'image
+    "df251e846.png")
+   (list
+    '(add-curve
+      (rectangle 100 100 'solid 'black)
+      20
+      20
+      0
+      1/3
+      80
+      80
+      0
+      1/3
+      'white)
+    'image
+    "12472655f6c.png")
    (list
     '(add-line
       (ellipse 80 60 "outline" "darkolivegreen")

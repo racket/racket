@@ -922,6 +922,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;;  curves
+;;
+
+(test (add-curve (rectangle 100 20 'solid 'black)
+                 10 10 0 1/4
+                 90 10 0 1/4 
+                 'white)
+      =>
+      (add-line (rectangle 100 20 'solid 'black)
+                10 10
+                90 10
+                'white))
+
+(test (scale 2
+             (add-curve 
+              (rectangle 100 100 'solid 'black)
+              20 20 0 1/3 80 80 0 1/3 'white))
+      =>
+      (add-curve 
+       (rectangle 200 200 'solid 'black)
+       40 40 0 1/3 160 160 0 1/3 'white))
+
+(test (rotate 
+       90
+       (add-curve 
+        (rectangle 100 100 'solid 'black)
+        20 20 0 1/3 80 80 0 1/3 'white))
+      =>
+      (add-curve 
+       (rectangle 100 100 'solid 'black)
+       20 80 90 1/3 80 20 90 1/3 'white))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;;  bitmap tests
 ;;
 

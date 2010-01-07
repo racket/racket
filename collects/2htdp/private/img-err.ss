@@ -120,7 +120,7 @@
                 'non-negative-real-number
                 i arg)
      arg]
-    [(dx dy x1 y1 x2 y2 factor x-factor y-factor)
+    [(dx dy x1 y1 x2 y2 factor x-factor y-factor pull1 pull2)
      (check-arg fn-name
                 (real? arg)
                 'real\ number
@@ -138,7 +138,7 @@
                 'step-count
                 i arg)
      arg]
-    [(angle)
+    [(angle angle1 angle2)
      (check-arg fn-name
                 (angle? arg)
                 'angle\ in\ degrees

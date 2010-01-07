@@ -368,6 +368,16 @@
                         (rotate-point (line-segment-end simple-shape)
                                       θ)
                         (line-segment-color simple-shape))]
+    [(curve-segment? simple-shape)
+     (make-curve-segment (rotate-point (curve-segment-start simple-shape)
+                                       θ)
+                         (bring-between (+ (curve-segment-s-angle simple-shape) θ) 360)
+                         (curve-segment-s-pull simple-shape)
+                         (rotate-point (curve-segment-end simple-shape)
+                                       θ)
+                         (bring-between (+ (curve-segment-e-angle simple-shape) θ) 360)
+                         (curve-segment-e-pull simple-shape)
+                         (curve-segment-color simple-shape))]
     [(polygon? simple-shape)
      (make-polygon (rotate-points θ (polygon-points simple-shape))
                    (polygon-mode simple-shape)
@@ -423,6 +433,15 @@
            [y1 (point-y (line-segment-start simple-shape))]
            [x2 (point-x (line-segment-end simple-shape))]
            [y2 (point-y (line-segment-end simple-shape))])
+       (make-ltrb (min x1 x2)
+                  (min y1 y2)
+                  (+ (max x1 x2) 1)
+                  (+ (max y1 y2) 1)))]
+    [(curve-segment? simple-shape)
+     (let ([x1 (point-x (curve-segment-start simple-shape))]
+           [y1 (point-y (curve-segment-start simple-shape))]
+           [x2 (point-x (curve-segment-end simple-shape))]
+           [y2 (point-y (curve-segment-end simple-shape))])
        (make-ltrb (min x1 x2)
                   (min y1 y2)
                   (+ (max x1 x2) 1)
@@ -686,6 +705,25 @@
                 (make-bb right bottom baseline)
                 #f)))
 
+(define/chk (add-curve image x1 y1 angle1 pull1 x2 y2 angle2 pull2 color)
+  (let* ([dx (abs (min 0 x1 x2))]
+         [dy (abs (min 0 y1 y2))]
+         [bottom (max (+ y1 dy)
+                      (+ y2 dy)
+                      (+ dy (get-bottom image)))]
+         [right (max (+ x1 dx)
+                     (+ x2 dx)
+                     (+ dx (get-right image)))]
+         [baseline (+ dy (get-baseline image))])
+    (make-image (make-translate
+                 dx dy
+                 (make-overlay
+                  (make-curve-segment (make-point x1 y1) angle1 pull1
+                                      (make-point x2 y2) angle2 pull2
+                                      color)
+                  (image-shape image)))
+                (make-bb right bottom baseline)
+                #f)))
 
 ;; this is just so that 'text' objects can be sized.
 (define text-sizing-bm (make-object bitmap-dc% (make-object bitmap% 1 1)))
@@ -906,6 +944,7 @@
          
          line
          add-line
+         add-curve
          
          text
          text/font
