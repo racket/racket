@@ -12,7 +12,7 @@
          (rename-in (types utils union convenience)
                     [Un t:Un]
                     [-> t:->])
-         (utils tc-utils)
+         (utils tc-utils utils)
          unstable/mutated-vars
          (env type-name-env type-environments init-envs)
          (schemeunit)
@@ -768,6 +768,20 @@
                         (fact 20))]
         
         [tc-err (ann (lambda: ([x : Any]) #f) (Any -> Boolean : String))]
+        
+        
+        [tc-e (time (+ 3 4)) -ExactPositiveInteger]
+
+
+
+        [tc-e
+         (call-with-values (lambda () (time-apply + (list 1 2)))
+                           (lambda: ([v : (Listof Number)]
+                                     [cpu : Number]
+                                     [user : Number]
+                                     [gc : Number]) 
+                             'whatever))
+         #:ret (ret (-val 'whatever) (-FS (list) (list (make-Bot))))]
         )
   (test-suite
    "check-type tests"

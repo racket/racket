@@ -94,7 +94,7 @@ at least theoretically.
                 e)))]
     [(_ . args)
      (begin (printf "starting ~a~n" 'args)
-            (let ([e args])
+            (let ([e (begin . args)])
               (printf "result was ~a~n" e)
               e))]))
 

@@ -87,7 +87,7 @@
 (define (merge-filter-sets fs)
   (match fs
     [(list (FilterSet: f+ f-) ...)
-     (make-FilterSet (apply append f+) (apply append f-))]))
+     (make-FilterSet (remove-duplicates (apply append f+)) (remove-duplicates (apply append f-)))]))
 
 (d/c (apply-filter lfs t o)
   (-> LatentFilterSet/c Type/c Object? FilterSet/c)
