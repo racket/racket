@@ -32,11 +32,10 @@
 
 ;; comparators that inform the type system
 (define-syntax-class comparator
-  #:literals (eq? equal? eqv? = string=? symbol=?)
-  (pattern eq?) (pattern equal?) (pattern eqv?) (pattern =) (pattern string=?) (pattern symbol=?))
+  #:literals (eq? equal? eqv? = string=? symbol=? memq member)
+  (pattern eq?) (pattern equal?) (pattern eqv?) (pattern =) (pattern string=?) (pattern symbol=?) (pattern member))
 
 ;; typecheck eq? applications
-;; identifier identifier expression expression expression
 ;; identifier expr expr -> tc-results
 (define (tc/eq comparator v1 v2)  
   (define (ok? val)
@@ -52,6 +51,15 @@
      (ret -Boolean (apply-filter (make-LFilterSet (list (make-LTypeFilter (-val val) null 0)) (list (make-LNotTypeFilter (-val val) null 0))) t o))]
     [((tc-result1: (Value: (? ok? val))) (tc-result1: t _ o))
      (ret -Boolean (apply-filter (make-LFilterSet (list (make-LTypeFilter (-val val) null 0)) (list (make-LNotTypeFilter (-val val) null 0))) t o))]
+    [((tc-result1: t _ o)
+      (and (? (lambda _ (free-identifier=? #'member comparator))) 
+           (tc-result1: (app untuple (list ts ...)))))
+     (let ([ty (apply Un ts)])
+       (ret -Boolean 
+            (apply-filter 
+             (make-LFilterSet (list (make-LTypeFilter ty null 0))
+                              (list (make-LNotTypeFilter ty null 0)))
+             t o)))]
     [(_ _) (ret -Boolean)]))
 
 
