@@ -42,6 +42,7 @@
 
 (define-syntax-class annotated-formal
   #:description "annotated variable of the form [x : T]"
+  #:opaque
   #:attributes (name ty ann-name)
   (pattern [:annotated-name]))
 
