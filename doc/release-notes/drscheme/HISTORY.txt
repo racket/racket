@@ -1,4 +1,15 @@
 ------------------------------
+        Version 4.2.4
+------------------------------
+
+  . the 2htdp/image library changed:
+
+    - changed how equality works (it is now based on how the 
+      images draw, instead of on an underlying algebra
+      of images)
+    - added cropping and curves
+
+------------------------------
         Version 4.2.3
 ------------------------------
 
