@@ -33,7 +33,7 @@
 ;; Listof[A] Listof[B] B -> Listof[B]
 ;; pads out t to be as long as s
 (define (extend s t extra)
-  (append t (build-list (- (length s) (length t)) (lambda _ extra))))
+  (append t (build-list (max 0 (- (length s) (length t))) (lambda _ extra))))
 
 (provide filter-multiple extend)
 
