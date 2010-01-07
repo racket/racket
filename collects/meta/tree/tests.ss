@@ -46,52 +46,86 @@
 
 (define (tree-tests)
   (define a-dir  (collection-path "scribble"))
-  (define a-list (map (lambda (p)
-                        (let ([r (path->bytes p)])
-                          (if (directory-exists? p) (bytes-append r #"/") r)))
-                      (find-files void a-dir)))
+  (define a-list (find-files void a-dir))
   (define a-tree #f)
   (define (->bytes x) (string->bytes/utf-8 (format "~a" x)))
   (define same-as-last-datums #f)
   (define datums-result #f)
   (define (->datums xs)
     (set! same-as-last-datums datums-result)
-    (set! datums-result (map (lambda (x) (read (open-input-bytes x))) xs))
+    (set! datums-result
+          (map (lambda (x)
+                 (read (open-input-bytes (if (path? x) (path->bytes x) x))))
+               xs))
     datums-result)
-  (define (mk-tree t)
-    (e (let loop ([t t])
-         (if (pair? t)
-           `(make-dir ,(regexp-replace #rx#"/?$" (->bytes (car t)) #"/")
-                      (list ,@(map loop (cdr t))))
-           `(make-file ,(->bytes t))))))
-  (test (set! a-tree (mk-tree '(- 0 (A1 1 2 3 (B 4) C) (A2 5))))
-        (->datums (e `(map tree-name (tree->list ,a-tree))))
-        => '(-/ 0 A1/ 1 2 3 B/ 4 C A2/ 5)
-        (->datums (e `(tree->path-list ,a-tree)))
-        => '(-/ -/0 -/A1/ -/A1/1 -/A1/2 -/A1/3 -/A1/B/ -/A1/B/4 -/A1/C
-                -/A2/ -/A2/5)
-        (->datums (e `(tree->path-list (tree-filter #"*" ,a-tree))))
-        => same-as-last-datums
-        (->datums (e `(tree->path-list (tree-filter #"A2/" ,a-tree))))
-        => '(-/ -/A2/ -/A2/5)
-        (->datums (e `(tree->path-list (tree-filter #"A1/B/" ,a-tree))))
-        => '(-/ -/A1/ -/A1/B/ -/A1/B/4)
-        ;; works with string patterns too
-        (->datums (e `(tree->path-list (tree-filter "A1/B/" ,a-tree))))
-        => same-as-last-datums
-        ;; last "/" is optional here ...
-        (->datums (e `(tree->path-list (tree-filter "A1/B" ,a-tree))))
-        => same-as-last-datums
-        ;; ... but in general it forces matching only directories
-        (->datums (e `(tree->path-list (tree-filter "A1/?/" ,a-tree))))
-        => same-as-last-datums
-        (->datums (e `(tree->path-list (tree-filter "A1/?" ,a-tree))))
-        => '(-/ -/A1/ -/A1/1 -/A1/2 -/A1/3 -/A1/B/ -/A1/B/4 -/A1/C)
-        (set! a-tree (e `(get-tree ,a-dir)))
-        (e `(tree->path-list ,a-tree))
-        => a-list
-        (e `(tree->path-list (tree-filter #"*" ,a-tree)))
-        => a-list)
+  (define (mk-tree t [convert values])
+    (e (let loop ([t t] [path #""])
+         (let* ([subs? (pair? t)]
+                [name (->bytes (if subs? (car t) t))]
+                [name (if subs? (regexp-replace #rx#"/?$" name #"/") name)]
+                [path (bytes-append path name)])
+           (if subs?
+             `(make-tree ,name
+                         (list ,@(map (lambda (s) (loop s path)) (cdr t)))
+                         ,(convert path))
+             `(make-tree ,name #f ,(convert path)))))))
+  (define (e/filter filter)
+    (->datums (e `(map tree-path (tree->list (tree-filter ,filter ,a-tree))))))
+  (test
+   ;; works with paths...
+   (set! a-tree (mk-tree '(- 0 (A1 1 2 3 (B 4) C) (A2 5)) bytes->path))
+   (->datums (e `(map tree-name (tree->list ,a-tree))))
+   => '(-/ 0 A1/ 1 2 3 B/ 4 C A2/ 5)
+   ;; ...as well as bytes
+   (set! a-tree (mk-tree '(- 0 (A1 1 2 3 (B 4) C) (A2 5))))
+   (->datums (e `(map tree-name (tree->list ,a-tree))))
+   => same-as-last-datums
+   (->datums (e `(map tree-path (tree->list ,a-tree))))
+   => '(-/ -/0 -/A1/ -/A1/1 -/A1/2 -/A1/3 -/A1/B/ -/A1/B/4 -/A1/C -/A2/ -/A2/5)
+   (->datums (e `(map tree-path (tree-foldr cons '() ,a-tree))))
+   => same-as-last-datums
+   (->datums (e `(map tree-path (reverse (tree-foldl cons '() ,a-tree)))))
+   => same-as-last-datums
+   (->datums (e `(let ([l '()])
+                   (tree-for-each (lambda (t) (set! l (cons (tree-path t) l)))
+                                  ,a-tree)
+                   (reverse l))))
+   => same-as-last-datums
+   (e/filter #"*")
+   => same-as-last-datums
+   (e/filter #"A2/")
+   => '(-/ -/A2/ -/A2/5)
+   (e/filter #"A1/B/")
+   => '(-/ -/A1/ -/A1/B/ -/A1/B/4)
+   ;; works with string patterns too
+   (e/filter "A1/B/")
+   => same-as-last-datums
+   ;; last "/" is optional here ...
+   (e/filter "A1/B")
+   => same-as-last-datums
+   ;; ... but in general it forces matching only directories
+   (e/filter "A1/?/")
+   => same-as-last-datums
+   (e/filter "A1/?")
+   => '(-/ -/A1/ -/A1/1 -/A1/2 -/A1/3 -/A1/B/ -/A1/B/4 -/A1/C)
+   (e/filter "*/2")
+   => '(-/ -/A1/ -/A1/2)
+   (e/filter "*/[25]")
+   => '(-/ -/A1/ -/A1/2 -/A2/ -/A2/5)
+   (e/filter "*/{2|5}")
+   => same-as-last-datums
+   (e/filter '(not: "*/2"))
+   => '(-/ -/0 -/A1/ -/A1/1 -/A1/3 -/A1/B/ -/A1/B/4 -/A1/C -/A2/ -/A2/5)
+   (e/filter '(not: "*/[25]"))
+   => '(-/ -/0 -/A1/ -/A1/1 -/A1/3 -/A1/B/ -/A1/B/4 -/A1/C -/A2/)
+   (e/filter '(not: "*/{2|5}"))
+   => '(-/ -/0 -/A1/ -/A1/1 -/A1/3 -/A1/B/ -/A1/B/4 -/A1/C -/A2/)
+   (set! a-tree (e `(get-tree ,a-dir)))
+   (e `(map tree-path (tree->list ,a-tree)))
+   => a-list
+   (e/filter #"*")
+   => (->datums a-list)
+   )
   (set! a-tree
         (mk-tree '(-
                    (.svn
@@ -746,7 +780,7 @@
                    xref.ss)))
   (test
    ;; the whole tree
-   (->datums (e `(tree->path-list (tree-filter "*" ,a-tree))))
+   (e/filter "*")
    =>
    '(
      -/
@@ -1402,7 +1436,7 @@
      -/xref.ss
      )
    ;; no immediate files
-   (->datums (e `(tree->path-list (tree-filter "*/*" ,a-tree))))
+   (e/filter "*/*")
    =>
    '(-/
      -/.svn/
@@ -2009,10 +2043,10 @@
      -/tools/private/compiled/mk-drs-bitmaps_ss.zo
      -/tools/private/mk-drs-bitmaps.ss
      )
-   (->datums (e `(tree->path-list (tree-filter "*/" ,a-tree))))
+   (e/filter "*/")
    => same-as-last-datums
    ;; only 2-levels and deeper
-   (->datums (e `(tree->path-list (tree-filter "*/*/*" ,a-tree))))
+   (e/filter "*/*/*")
    =>
    '(-/
      -/.svn/
@@ -2506,7 +2540,7 @@
      -/tools/private/mk-drs-bitmaps.ss
      )
    ;; only 3-levels and deeper
-   (->datums (e `(tree->path-list (tree-filter "*/*/*/*" ,a-tree))))
+   (e/filter "*/*/*/*")
    =>
    '(-/
      -/base/
@@ -2779,7 +2813,7 @@
      -/tools/private/compiled/mk-drs-bitmaps_ss.zo
      )
    ;; only 4-levels and deeper
-   (->datums (e `(tree->path-list (tree-filter "*/*/*/*/*" ,a-tree))))
+   (e/filter "*/*/*/*/*")
    =>
    '(-/
      -/base/
@@ -2863,7 +2897,7 @@
      -/tools/private/.svn/tmp/text-base/
      )
    ;; only 4-levels and deeper of directories, including empty ones
-   (->datums (e `(tree->path-list (tree-filter "*/*/*/*/" ,a-tree))))
+   (e/filter "*/*/*/*/")
    =>
    '(-/
      -/base/
@@ -2995,13 +3029,13 @@
      -/tools/private/.svn/tmp/text-base/
      )
    ;; only 5-levels and deeper => nothing
-   (->datums (e `(tree->path-list (tree-filter "*/*/*/*/*/*" ,a-tree))))
+   (e/filter "*/*/*/*/*/*")
    => '(-/)
    ;; only 6-levels and deeper => nothing
-   (->datums (e `(tree->path-list (tree-filter "*/*/*/*/*/*/*" ,a-tree))))
+   (e/filter "*/*/*/*/*/*/*")
    => '(-/)
    ;; only immediate files
-   (->datums (e `(tree->path-list (tree-filter (not: "*/") ,a-tree))))
+   (e/filter '(not: "*/"))
    =>
    '(-/
      -/base-render.ss
@@ -3056,7 +3090,7 @@
    ;; dropped -- but for negated predicates the default is to keep empty
    ;; directories, so the result is the same as the above but also includes
    ;; directories
-   (->datums (e `(tree->path-list (tree-filter (not: "*/*") ,a-tree))))
+   (e/filter '(not: "*/*"))
    =>
    '(
      -/
@@ -3119,13 +3153,11 @@
      -/xref.ss
      )
    ;; (not: (not: pred)) returns `pred'
-   (->datums (e `(tree->path-list (tree-filter (not: (not: (not: "*/*")))
-                                               ,a-tree))))
+   (e/filter '(not: (not: (not: "*/*"))))
    => same-as-last-datums
    ;; the special treatment of negated predicates makes it possible to select
    ;; only toplevel directories too
-   (->datums (e `(tree->path-list (tree-filter (and: "*/" (not: "*/*"))
-                                               ,a-tree))))
+   (e/filter '(and: "*/" (not: "*/*")))
    =>
    '(
      -/
@@ -3141,11 +3173,10 @@
      -/tools/
      )
    ;; demorgan works with this negation
-   (->datums (e `(tree->path-list (tree-filter (not: (or: (not: "*/") "*/*"))
-                                               ,a-tree))))
+   (e/filter '(not: (or: (not: "*/") "*/*")))
    => same-as-last-datums
    ;; only compiled directories
-   (->datums (e `(tree->path-list (tree-filter "**/compiled/" ,a-tree))))
+   (e/filter "**/compiled/")
    =>
    '(-/
      -/base/
@@ -3330,9 +3361,7 @@
      -/tools/private/compiled/mk-drs-bitmaps_ss.zo
      )
    ;; only compiled directories but not their content
-   (->datums (e `(tree->path-list (tree-filter (and: "**/compiled/"
-                                                     (not: "**/compiled/*"))
-                                               ,a-tree))))
+   (e/filter '(and: "**/compiled/" (not: "**/compiled/*")))
    =>
    '(-/
      -/base/
@@ -3367,7 +3396,7 @@
      -/tools/private/compiled/
      )
    ;; only .dep files in compiled directories
-   (->datums (e `(tree->path-list (tree-filter "**/compiled/*.dep" ,a-tree))))
+   (e/filter "**/compiled/*.dep")
    =>
    '(-/
      -/base/
@@ -3477,12 +3506,10 @@
      -/tools/private/compiled/mk-drs-bitmaps_ss.dep
      )
    ;; only .dep files in compiled directories, by dropping .zo files
-   (->datums (e `(tree->path-list (tree-filter (and: "**/compiled/"
-                                                     (not: "**/*.zo"))
-                                               ,a-tree))))
+   (e/filter '(and: "**/compiled/" (not: "**/*.zo")))
    => same-as-last-datums
    ;; no .svn directories
-   (->datums (e `(tree->path-list (tree-filter (not: "**/.svn/") ,a-tree))))
+   (e/filter '(not: "**/.svn/"))
    =>
    '(-/
      -/base/
@@ -3760,8 +3787,7 @@
      -/xref.ss
      )
    ;; no .svn or compiled directories using "{|}"
-   (->datums (e `(tree->path-list (tree-filter (not: "**/{.svn|compiled}/")
-                                               ,a-tree))))
+   (e/filter '(not: "**/{.svn|compiled}/"))
    =>
    '(-/
      -/base/
@@ -3874,14 +3900,10 @@
      -/xref.ss
      )
    ;; no .svn or compiled directories using `or:'
-   (->datums (e `(tree->path-list
-                  (tree-filter (not: (or: "**/.svn/" "**/compiled/"))
-                               ,a-tree))))
+   (e/filter '(not: (or: "**/.svn/" "**/compiled/")))
    => same-as-last-datums
    ;; no .svn or compiled directories using `and:'
-   (->datums (e `(tree->path-list
-                  (tree-filter (and: (not: "**/.svn/") (not: "**/compiled/"))
-                               ,a-tree))))
+   (e/filter '(and: (not: "**/.svn/") (not: "**/compiled/")))
    => same-as-last-datums))
 
 (test do (glob-tests)

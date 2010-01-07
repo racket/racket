@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require setup/dirs "tree.ss")
+(require "tree.ss" setup/dirs)
 
 (define (get-plt-tree)
   (when absolute-installation?
@@ -8,9 +8,11 @@
   (get-tree (build-path (find-collects-dir) 'up)))
 
 #| good for benchmarking changes
-(printf "getting tree\n")
-(define t (get-plt-tree))
-(printf "filtering\n")
+(printf "getting tree ")
+(define t (time (get-plt-tree)))
+;;!!! (printf "adding deps ")
+;;!!! (time (add-deps! t))
+(printf "filtering x 1000 ")
 (time
  (for ([i (in-range 1000)]) ; print-tree
    (tree-filter
