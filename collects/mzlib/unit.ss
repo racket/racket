@@ -468,9 +468,12 @@
         (with-syntax ([ctc-stx (syntax-property ctc 'inferred-name var)])
           (quasisyntax/loc (error-syntax)
             (quote-syntax (let ([v/c (#,loc)])
-                            (contract ctc-stx (car v/c) (cdr v/c)
-                                      (current-contract-region)
-                                      #,(id->contract-src-info var))))))
+                            (if (pair? v/c)
+                                (contract ctc-stx (car v/c) (cdr v/c)
+                                          (current-contract-region)
+                                          #,(id->contract-src-info var))
+                                (error 'unit "contracted import ~a used before definition"
+                                       (quote #,(syntax-object->datum var))))))))
         (quasisyntax/loc (error-syntax)
           (quote-syntax (#,loc)))))
   
