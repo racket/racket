@@ -3113,7 +3113,7 @@ Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,
 	  for (j = 0; j < c; j++) {
 	    SCHEME_VEC_ELS(naya)[j] = SCHEME_VEC_ELS(cvec)[j];
 	  }
-	  if (!sbm->shift_cache) {
+	  if (0 && !sbm->shift_cache) {
 	    sbm->cache_next = modidx_caching_chain;
 	    modidx_caching_chain = sbm;
 	  }

@@ -40,6 +40,7 @@ static Scheme_Object *fx_minus (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_mult (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_div (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_rem (int argc, Scheme_Object *argv[]);
+static Scheme_Object *fx_mod (int argc, Scheme_Object *argv[]);
 static Scheme_Object *fx_abs (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *unsafe_fx_plus (int argc, Scheme_Object *argv[]);
@@ -47,6 +48,7 @@ static Scheme_Object *unsafe_fx_minus (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_fx_mult (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_fx_div (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_fx_rem (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_fx_mod (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_fx_abs (int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *fl_plus (int argc, Scheme_Object *argv[]);
@@ -122,11 +124,10 @@ void scheme_init_numarith(Scheme_Env *env)
 						       2, 2,
 						       2, 2),
 			     env);
-  scheme_add_global_constant("modulo", 
-			     scheme_make_folding_prim(scheme_modulo,
-						      "modulo", 
-						      2, 2, 1),
-			     env);
+
+  p = scheme_make_folding_prim(scheme_modulo, "modulo", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("modulo", p, env);
 }
 
 void scheme_init_flfxnum_numarith(Scheme_Env *env)
@@ -152,6 +153,10 @@ void scheme_init_flfxnum_numarith(Scheme_Env *env)
   p = scheme_make_folding_prim(fx_rem, "fxremainder", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
   scheme_add_global_constant("fxremainder", p, env);
+
+  p = scheme_make_folding_prim(fx_mod, "fxmodulo", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("fxmodulo", p, env);
 
   p = scheme_make_folding_prim(fx_abs, "fxabs", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
@@ -217,6 +222,11 @@ void scheme_init_unsafe_numarith(Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
                                 | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fxremainder", p, env);
+
+  p = scheme_make_folding_prim(unsafe_fx_mod, "unsafe-fxmodulo", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_BINARY_INLINED
+                                | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
+  scheme_add_global_constant("unsafe-fxmodulo", p, env);
 
   p = scheme_make_folding_prim(unsafe_fx_abs, "unsafe-fxabs", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= (SCHEME_PRIM_IS_UNARY_INLINED
@@ -582,7 +592,9 @@ do_bin_quotient(const char *name, const Scheme_Object *n1, const Scheme_Object *
 		     "%s: undefined for 0.0", name);
 
   if (SCHEME_INTP(n1) && SCHEME_INTP(n2)) {
-    return (scheme_make_integer (SCHEME_INT_VAL(n1) / SCHEME_INT_VAL(n2)));
+    /* Beware that most negative fixnum divided by -1
+       isn't a fixnum: */
+    return (scheme_make_integer_value(SCHEME_INT_VAL(n1) / SCHEME_INT_VAL(n2)));
   }
   if (SCHEME_DBLP(n1) || SCHEME_DBLP(n2)) {
     Scheme_Object *r;
@@ -781,9 +793,11 @@ rem_mod (int argc, Scheme_Object *argv[], char *name, int first_sign)
 
     if (v) {
       if (first_sign) {
+        /* remainder */
 	if (a < 0)
 	  v = -v;
       } else {
+        /* modulo */
 	int neg1, neg2;
 	
 	neg1 = (a < 0);
@@ -880,22 +894,30 @@ quotient_remainder(int argc, Scheme_Object *argv[])
 /*                                Flfx                                  */
 /************************************************************************/
 
-#define SAFE_FX(name, s_name, scheme_op)                     \
+#define CHECK_SECOND_ZERO(name) \
+  if (!SCHEME_INT_VAL(argv[1])) \
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO, \
+		     name ": undefined for 0");
+
+
+#define SAFE_FX(name, s_name, scheme_op, EXTRA_CHECK)        \
  static Scheme_Object *name(int argc, Scheme_Object *argv[]) \
  {                                                           \
    Scheme_Object *o;                                         \
    if (!SCHEME_INTP(argv[0])) scheme_wrong_type(s_name, "fixnum", 0, argc, argv); \
    if (!SCHEME_INTP(argv[1])) scheme_wrong_type(s_name, "fixnum", 1, argc, argv); \
+   EXTRA_CHECK                                               \
    o = scheme_op(argc, argv);                                \
    if (!SCHEME_INTP(o)) scheme_non_fixnum_result(s_name, o); \
    return o;                                                 \
  }
 
-SAFE_FX(fx_plus, "fx+", plus)
-SAFE_FX(fx_minus, "fx-", minus)
-SAFE_FX(fx_mult, "fx*", mult)
-SAFE_FX(fx_div, "fxquotient", quotient)
-SAFE_FX(fx_rem, "fxremainder", rem_prim)
+SAFE_FX(fx_plus, "fx+", plus, )
+SAFE_FX(fx_minus, "fx-", minus, )
+SAFE_FX(fx_mult, "fx*", mult, )
+SAFE_FX(fx_div, "fxquotient", quotient, CHECK_SECOND_ZERO("fxquotient"))
+SAFE_FX(fx_rem, "fxremainder", rem_prim, CHECK_SECOND_ZERO("fxremainder"))
+SAFE_FX(fx_mod, "fxmodulo", scheme_modulo, CHECK_SECOND_ZERO("fxmodulo"))
 
 static Scheme_Object *fx_abs(int argc, Scheme_Object *argv[])
 {
@@ -920,6 +942,34 @@ UNSAFE_FX(unsafe_fx_minus, -, minus)
 UNSAFE_FX(unsafe_fx_mult, *, mult)
 UNSAFE_FX(unsafe_fx_div, /, quotient)
 UNSAFE_FX(unsafe_fx_rem, %, rem_prim)
+
+static Scheme_Object *unsafe_fx_mod(int argc, Scheme_Object *argv[])
+{
+  int neg1, neg2;
+  long v, v1, av1, v2, av2;
+  if (scheme_current_thread->constant_folding) return scheme_modulo(argc, argv);
+
+  v1 = SCHEME_INT_VAL(argv[0]);
+  v2 = SCHEME_INT_VAL(argv[1]);
+
+  av1 = (v1 < 0) ? -v1 : v1;
+  av2 = (v2 < 0) ? -v2 : v2;
+
+  v = av1 % av2;
+	
+  if (v) {
+    neg1 = (v1 < 0);
+    neg2 = (v2 < 0);
+  
+    if (neg1 != neg2)
+      v = av2 - v;
+  
+    if (neg2)
+      v = -v;
+  }
+
+  return scheme_make_integer(v); 
+}
 
 static Scheme_Object *unsafe_fx_abs(int argc, Scheme_Object *argv[])
 {

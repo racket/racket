@@ -4,7 +4,8 @@
 (provide fx->fl
          fxabs
          fx+ fx- fx*
-         fxquotient fxremainder 
+         fxquotient fxremainder fxmodulo 
          fxand fxior fxxor
          fxnot fxrshift fxlshift
-         fx>= fx> fx= fx< fx<=)
+         fx>= fx> fx= fx< fx<=
+         fxmin fxmax)

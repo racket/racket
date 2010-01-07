@@ -6,6 +6,7 @@
                   [integer? r6rs:integer?]
                   finite? infinite? nan?)
          (prefix-in core: scheme/flonum)
+         scheme/fixnum
          (only-in rnrs/arithmetic/fixnums-6
                   fixnum?)
          rnrs/conditions-6
@@ -17,8 +18,7 @@
          fldenominator
          fllog (rename-out [core:flsqrt flsqrt]) flexpt
          &no-infinities make-no-infinities-violation no-infinities-violation?
-         &no-nans make-no-nans-violation no-nans-violation?
-         fixnum->flonum)
+         &no-nans make-no-nans-violation no-nans-violation?)
 ;; More provided via macros
 
 (define-inliner define-fl inexact-real? "flonum")
@@ -39,8 +39,8 @@
 (define-fl infinite? flinfinite? #f (a) nocheck)
 (define-fl nan? flnan? #f (a) nocheck)
 
-(define-fl max flmax #f (a b ...) nocheck)
-(define-fl min flmin #f (a b ...) nocheck)
+(define-fl max flmax core:flmax (a b ...) nocheck)
+(define-fl min flmin core:flmin (a b ...) nocheck)
 
 (define-fl + fl+ core:fl+ (a b ...) nocheck)
 (define-fl * fl* core:fl* (a b ...) nocheck)
@@ -83,30 +83,24 @@
           1.0)
       (raise-type-error 'fldenominator "flonum" c)))
 
-(define-fl floor flfloor #f (a) nocheck)
-(define-fl ceiling flceiling #f (a) nocheck)
-(define-fl truncate fltruncate #f (a) nocheck)
-(define-fl round flround #f (a) nocheck)
-
-(define-fl exp flexp #f (a) nocheck)
+(provide (rename-out [core:flfloor flfloor]
+                     [core:flceiling flceiling]
+                     [core:flround flround]
+                     [core:fltruncate fltruncate]
+                     [core:flexp flexp]))
 
 (define fllog
   (case-lambda
-   [(v) 
-    (unless (inexact-real? v)
-      (raise-type-error 'fllog "flonum" v))
-    (let ([v (log v)])
-      (if (inexact-real? v)
-          v
-          +nan.0))]
+   [(v) (core:fllog v)]
    [(v1 v2)
     (/ (fllog v1) (fllog v2))]))
 
-(define-fl sin flsin #f (a) nocheck)
-(define-fl cos flcos #f (a) nocheck)
-(define-fl tan fltan #f (a) nocheck)
-(define-fl asin flasin #f (a) nocheck)
-(define-fl acos flacos #f (a) nocheck)
+(provide (rename-out [core:flsin flsin]
+                     [core:flcos flcos]
+                     [core:fltan fltan]
+                     [core:flasin flasin]
+                     [core:flacos flacos]))
+
 (define-fl atan flatan #f [(a) (a b)] nocheck)
 
 (define (flexpt a b)
@@ -133,7 +127,4 @@
     (raise-type-error 'real->flonum "real" r))
   (exact->inexact r))
 
-(define (fixnum->flonum fx)
-  (if (fixnum? fx)
-      (exact->inexact fx)
-      (raise-type-error 'fixnum->flonum "fixnum" fx)))
+(provide (rename-out [fx->fl fixnum->flonum]))

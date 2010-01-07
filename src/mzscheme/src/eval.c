@@ -2849,13 +2849,27 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_m
           || IS_NAMED_PRIM(rator, "unsafe-fl=")
           || IS_NAMED_PRIM(rator, "unsafe-fl>")
           || IS_NAMED_PRIM(rator, "unsafe-fl>=")
+          || IS_NAMED_PRIM(rator, "unsafe-flmin")
+          || IS_NAMED_PRIM(rator, "unsafe-flmax")
           || (rotate_mode && IS_NAMED_PRIM(rator, "unsafe-flvector-ref"))
           || (rotate_mode && IS_NAMED_PRIM(rator, "unsafe-fx->fl")))
         return 1;
     } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNARY_INLINED) {
       if (!rotate_mode) {
         if (IS_NAMED_PRIM(rator, "flabs")
-            || IS_NAMED_PRIM(rator, "flsqrt"))
+            || IS_NAMED_PRIM(rator, "flsqrt")
+            || IS_NAMED_PRIM(rator, "fltruncate")
+            || IS_NAMED_PRIM(rator, "flround")
+            || IS_NAMED_PRIM(rator, "flfloor")
+            || IS_NAMED_PRIM(rator, "flceiling")
+            || IS_NAMED_PRIM(rator, "flsin")
+            || IS_NAMED_PRIM(rator, "flcos")
+            || IS_NAMED_PRIM(rator, "fltan")
+            || IS_NAMED_PRIM(rator, "flasin")
+            || IS_NAMED_PRIM(rator, "flacos")
+            || IS_NAMED_PRIM(rator, "flatan")
+            || IS_NAMED_PRIM(rator, "fllog")
+            || IS_NAMED_PRIM(rator, "flexp"))
           return 1;
       }
     } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_BINARY_INLINED) {
@@ -2868,7 +2882,8 @@ int scheme_wants_flonum_arguments(Scheme_Object *rator, int argpos, int rotate_m
             || IS_NAMED_PRIM(rator, "fl<=")
             || IS_NAMED_PRIM(rator, "fl=")
             || IS_NAMED_PRIM(rator, "fl>")
-            || IS_NAMED_PRIM(rator, "fl>="))
+            || IS_NAMED_PRIM(rator, "flmin")
+            || IS_NAMED_PRIM(rator, "flmax"))
           return 1;
       }
     } else if (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_NARY_INLINED) {
@@ -2896,6 +2911,8 @@ static int produces_unboxed(Scheme_Object *rator, int *non_fl_args, int argc, in
                   || IS_NAMED_PRIM(rator, "unsafe-fl-")
                   || IS_NAMED_PRIM(rator, "unsafe-fl*")
                   || IS_NAMED_PRIM(rator, "unsafe-fl/")
+                  || IS_NAMED_PRIM(rator, "unsafe-flmin")
+                  || IS_NAMED_PRIM(rator, "unsafe-flmax")
                   || (for_args 
                       && (IS_NAMED_PRIM(rator, "unsafe-fl<")
                           || IS_NAMED_PRIM(rator, "unsafe-fl<=")
@@ -2910,7 +2927,19 @@ static int produces_unboxed(Scheme_Object *rator, int *non_fl_args, int argc, in
       }
     } else if ((argc == 1) && (SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
       if (IS_NAMED_PRIM(rator, "flabs")
-          || IS_NAMED_PRIM(rator, "flsqrt"))
+          || IS_NAMED_PRIM(rator, "flsqrt")
+          || IS_NAMED_PRIM(rator, "fltruncate")
+          || IS_NAMED_PRIM(rator, "flround")
+          || IS_NAMED_PRIM(rator, "flfloor")
+          || IS_NAMED_PRIM(rator, "flceiling")
+          || IS_NAMED_PRIM(rator, "flsin")
+          || IS_NAMED_PRIM(rator, "flcos")
+          || IS_NAMED_PRIM(rator, "fltan")
+          || IS_NAMED_PRIM(rator, "flasin")
+          || IS_NAMED_PRIM(rator, "flacos")
+          || IS_NAMED_PRIM(rator, "flatan")
+          || IS_NAMED_PRIM(rator, "fllog")
+          || IS_NAMED_PRIM(rator, "flexp"))
         return 1;
       if (IS_NAMED_PRIM(rator, "->fl")) {
         if (non_fl_args) *non_fl_args = 1;
@@ -2923,11 +2952,14 @@ static int produces_unboxed(Scheme_Object *rator, int *non_fl_args, int argc, in
           || IS_NAMED_PRIM(rator, "fl-")
           || IS_NAMED_PRIM(rator, "fl*")
           || IS_NAMED_PRIM(rator, "fl/")
-          || IS_NAMED_PRIM(rator, "fl<")
-          || IS_NAMED_PRIM(rator, "fl<=")
-          || IS_NAMED_PRIM(rator, "fl=")
-          || IS_NAMED_PRIM(rator, "fl>")
-          || IS_NAMED_PRIM(rator, "fl>="))
+          || IS_NAMED_PRIM(rator, "flmin")
+          || IS_NAMED_PRIM(rator, "flmax")
+          || (for_args
+              && (IS_NAMED_PRIM(rator, "fl<")
+                  || IS_NAMED_PRIM(rator, "fl<=")
+                  || IS_NAMED_PRIM(rator, "fl=")
+                  || IS_NAMED_PRIM(rator, "fl>")
+                  || IS_NAMED_PRIM(rator, "fl>="))))
         return 1;
       if (IS_NAMED_PRIM(rator, "flvector-ref")) {
         if (non_fl_args) *non_fl_args = 1;

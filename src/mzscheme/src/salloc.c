@@ -303,9 +303,6 @@ extern void GC_attach_current_thread_exceptions_to_handler();
 #endif
 
 #ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
-void scheme_set_thread_local_variables(void *tlvas) XFORM_SKIP_PROC {
-  pthread_setspecific(scheme_thread_local_key, tlvas);
-}
 void* scheme_dbg_get_thread_local_variables() XFORM_SKIP_PROC {
   return pthread_getspecific(scheme_thread_local_key);
 }

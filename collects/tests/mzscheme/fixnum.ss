@@ -16,6 +16,7 @@
 
         (list fxquotient unsafe-fxquotient)
         (list fxremainder unsafe-fxremainder)
+        (list fxmodulo unsafe-fxmodulo)
         
         (list fxand unsafe-fxand)
         (list fxior unsafe-fxior)
@@ -25,7 +26,9 @@
         (list fx> unsafe-fx>)
         (list fx= unsafe-fx=)
         (list fx<= unsafe-fx<=)
-        (list fx< unsafe-fx<)))
+        (list fx< unsafe-fx<)
+        (list fxmin unsafe-fxmin)
+        (list fxmax unsafe-fxmax)))
 
 (define binary/small-second-arg-table
   (list (list fxlshift unsafe-fxlshift)

@@ -870,7 +870,7 @@
                strlen cos sin exp pow log sqrt atan2 
                isnan isinf fpclass _fpclass _isnan __isfinited __isnanl __isnan
                __isinff __isinfl isnanf isinff __isinfd __isnanf __isnand __isinf
-               floor ceil round fmod fabs __maskrune _errno __errno
+               floor ceil round fmod modf fabs __maskrune _errno __errno
                isalpha isdigit isspace tolower toupper
                fread fwrite socket fcntl setsockopt connect send recv close
                __builtin_next_arg __builtin_saveregs 

@@ -101,9 +101,10 @@
 
 #define jit_movr_d(rd,s1)                              \
        ((s1) == (rd) ? 0                               \
-        : (s1) == 0 ? FSTr ((rd))                      \
-        : (rd) == 0 ? (FXCHr ((s1)), FSTr ((s1)))      \
-        : (FLDr ((s1)), FSTr ((rd)+1)))
+        : (rd) == 0 ? (FSTPr(0), FSTr (((s1)-1)))      \
+        : (FLDr ((s1)), FSTPr ((rd)+1)))
+
+#define jit_movr_d_rel(rd,s1) ((rd < s1) ? (FSTPr(0), FLDr(0)) : (FSTr(1)))
 
 /* - loads:
 

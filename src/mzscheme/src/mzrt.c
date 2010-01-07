@@ -166,7 +166,7 @@ void *mzrt_thread_stub(void *data){
   scheme_init_os_thread();
   proc_thread_self                    = stub_data->thread;
 
-  free(data);
+  //free(data);  REMOVEME --- why does this break Mac OS X?
 
   return start_proc(start_proc_data);
 }
@@ -214,7 +214,7 @@ mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* dat
   stub_data->data       = data;
   stub_data->thread     = thread;
 #   ifdef WIN32
-  thread->threadid = CreateThread(NULL, 0, start_proc, data, 0, NULL);
+  thread->threadid = CreateThread(NULL, 0, mzrt_thread_stub, stub_data, 0, NULL);
 #   else
   pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
 #   endif

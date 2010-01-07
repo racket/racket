@@ -313,6 +313,19 @@
 
     (un-exact 3.0 'flsqrt 9.0)
     (un-exact +nan.0 'flsqrt -9.0)
+
+    (let ([test-trig
+           (lambda (trig fltrig)
+             (un (trig 1.0) fltrig 1.0)
+             (un +nan.0 fltrig +nan.0))])
+      (test-trig sin 'flsin)
+      (test-trig cos 'flcos)
+      (test-trig tan 'fltan)
+      (test-trig asin 'flasin)
+      (test-trig acos 'flacos)
+      (test-trig atan 'flatan)
+      (test-trig log 'fllog)
+      (test-trig exp 'flexp))
     
     (un 1.0 'exact->inexact 1)
     (un 1073741823.0 'exact->inexact (sub1 (expt 2 30)))
@@ -376,6 +389,7 @@
     (bin-exact 7 'quotient (* 7 (expt 2 100)) (expt 2 100))
     (bin-exact 3 'fxquotient 10 3)
     (bin-exact -3 'fxquotient 10 -3)
+    (bin-exact (expt 2 30) 'quotient (- (expt 2 30)) -1)
 
     (bin-int 1 'remainder 10 3)
     (bin-int 1 'remainder 10 -3)
@@ -384,6 +398,18 @@
     (bin-exact 7 'remainder (+ 7 (expt 2 100)) (expt 2 100))
     (bin-exact 1 'fxremainder 10 3)
     (bin-exact 1 'fxremainder 10 -3)
+    (bin-exact -1 'fxremainder -10 3)
+    (bin-exact -1 'fxremainder -10 -3)
+
+    (bin-int 1 'modulo 10 3)
+    (bin-int -2 'modulo 10 -3)
+    (bin-int -1 'modulo -10 -3)
+    (bin-int 2 'modulo -10 3)
+    (bin-exact 7 'modulo (+ 7 (expt 2 100)) (expt 2 100))
+    (bin-exact 1 'fxmodulo 10 3)
+    (bin-exact -2 'fxmodulo 10 -3)
+    (bin-exact -1 'fxmodulo -10 -3)
+    (bin-exact 2 'fxmodulo -10 3)
 
     (bin 3 'min 3 300)
     (bin -300 'min 3 -300)
@@ -391,6 +417,10 @@
     (tri 5 'min (lambda () 10) 5 20 void)
     (tri 5 'min (lambda () 5) 10 20 void)
     (tri 5 'min (lambda () 20) 10 5 void)
+    (bin-exact 3.0 'flmin 3.0 4.5)
+    (bin-exact 2.5 'flmin 3.0 2.5)
+    (bin-exact 30 'fxmin 30 45)
+    (bin-exact 25 'fxmin 30 25)
 
     (bin 300 'max 3 300)
     (bin 3 'max 3 -300)
@@ -398,6 +428,10 @@
     (tri 50 'max (lambda () 10) 50 20 void)
     (tri 50 'max (lambda () 50) 10 20 void)
     (tri 50 'max (lambda () 20) 10 50 void)
+    (bin-exact 4.5 'flmax 3.0 4.5)
+    (bin-exact 3.0 'flmax 3.0 2.5)
+    (bin-exact 45 'fxmax 30 45)
+    (bin-exact 30 'fxmax 30 25)
 
     (bin-exact 11 'bitwise-and 11 43)
     (bin-exact 0 'bitwise-and 11 32)

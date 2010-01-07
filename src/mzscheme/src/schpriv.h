@@ -1793,6 +1793,21 @@ typedef struct {
 Scheme_Object *scheme_make_random_state(long seed);
 long scheme_rand(Scheme_Random_State *rs);
 
+/***** flonums *****/
+
+double scheme_double_truncate(double x);
+double scheme_double_round(double x);
+double scheme_double_floor(double x);
+double scheme_double_ceiling(double x);
+double scheme_double_sin(double x);
+double scheme_double_cos(double x);
+double scheme_double_tan(double x);
+double scheme_double_asin(double x);
+double scheme_double_acos(double x);
+double scheme_double_atan(double x);
+double scheme_double_log(double x);
+double scheme_double_exp(double x);
+
 /*========================================================================*/
 /*                     read, eval, print                                  */
 /*========================================================================*/

@@ -240,13 +240,13 @@ otherwise.}
 
 
 @defproc[(remainder [n integer?] [m integer?]) integer?]{ Returns
- @scheme[q] with the same sign as @scheme[n] such that
+ @scheme[_q] with the same sign as @scheme[n] such that
 
 @itemize[
 
- @item{@scheme[(abs q)] is between @scheme[0] (inclusive) and @scheme[(abs m)] (exclusive), and}
+ @item{@scheme[(abs _q)] is between @scheme[0] (inclusive) and @scheme[(abs m)] (exclusive), and}
 
- @item{@scheme[(+ q (* m (quotient n m)))] equals @scheme[n].}
+ @item{@scheme[(+ _q (* m (quotient n m)))] equals @scheme[n].}
 
 ]
 
@@ -263,13 +263,13 @@ otherwise.}
 
 
 @defproc[(modulo [n integer?] [m integer?]) number?]{  Returns
- @scheme[q] with the same sign as @scheme[m] where
+ @scheme[_q] with the same sign as @scheme[m] where
 
 @itemize[
 
- @item{@scheme[(abs q)] is between @scheme[0] (inclusive) and @scheme[(abs m)] (exclusive), and}
+ @item{@scheme[(abs _q)] is between @scheme[0] (inclusive) and @scheme[(abs m)] (exclusive), and}
 
- @item{the difference between @scheme[q] and @scheme[(- n (* m (quotient n m)))] is a multiple of @scheme[m].}
+ @item{the difference between @scheme[_q] and @scheme[(- n (* m (quotient n m)))] is a multiple of @scheme[m].}
 
 ]
 
@@ -878,13 +878,11 @@ they are as safe as generic operations like @scheme[+].
 @defproc[(fl* [a inexact-real?][b inexact-real?]) inexact-real?]
 @defproc[(fl/ [a inexact-real?][b inexact-real?]) inexact-real?]
 @defproc[(flabs [a inexact-real?]) inexact-real?]
-@defproc[(flsqrt [a inexact-real?]) inexact-real?]
 )]{
 
-Like @scheme[+], @scheme[-], @scheme[*], @scheme[/], @scheme[abs], and
-@scheme[sqrt], but constrained to consume @tech{flonums}. The result
-is always a @tech{flonum}. If a negative number is provided to
-@scheme[sqrt], the result is @scheme[+nan.0].}
+Like @scheme[+], @scheme[-], @scheme[*], @scheme[/], and @scheme[abs],
+but constrained to consume @tech{flonums}. The result is always a
+@tech{flonum}.}
 
 @deftogether[(
 @defproc[(fl= [a inexact-real?][b inexact-real?]) boolean?]
@@ -892,10 +890,43 @@ is always a @tech{flonum}. If a negative number is provided to
 @defproc[(fl> [a inexact-real?][b inexact-real?]) boolean?]
 @defproc[(fl<= [a inexact-real?][b inexact-real?]) boolean?]
 @defproc[(fl>= [a inexact-real?][b inexact-real?]) boolean?]
+@defproc[(flmin [a inexact-real?]) inexact-real?]
+@defproc[(flmax [a inexact-real?]) inexact-real?]
 )]{
 
-Like @scheme[=], @scheme[<], @scheme[>], @scheme[<=], and @scheme[>=],
-but constrained to consume @tech{flonums}.}
+Like @scheme[=], @scheme[<], @scheme[>], @scheme[<=], @scheme[>=],
+@scheme[min], and @scheme[max], but constrained to consume
+@tech{flonums}.}
+
+@deftogether[(
+@defproc[(flround [a inexact-real?]) inexact-real?]
+@defproc[(flfloor [a inexact-real?]) inexact-real?]
+@defproc[(flceiling [a inexact-real?]) inexact-real?]
+@defproc[(fltruncate [a inexact-real?]) inexact-real?]
+)]{
+
+Like @scheme[round], @scheme[floor], @scheme[ceiling], and
+@scheme[truncate], but constrained to consume @tech{flonums}.}
+
+@deftogether[(
+@defproc[(flsin [a inexact-real?]) inexact-real?]
+@defproc[(flcos [a inexact-real?]) inexact-real?]
+@defproc[(fltan [a inexact-real?]) inexact-real?]
+@defproc[(flasin [a inexact-real?]) inexact-real?]
+@defproc[(flacos [a inexact-real?]) inexact-real?]
+@defproc[(flatan [a inexact-real?]) inexact-real?]
+@defproc[(fllog [a inexact-real?]) inexact-real?]
+@defproc[(flexp [a inexact-real?]) inexact-real?]
+@defproc[(flsqrt [a inexact-real?]) inexact-real?]
+)]{
+
+Like @scheme[sin], @scheme[cos], @scheme[tan], @scheme[asin],
+@scheme[acos], @scheme[atan], @scheme[log], @scheme[exp], and
+@scheme[flsqrt], but constrained to consume and produce
+@tech{flonums}. The result is @scheme[+nan.0] when a number outside
+the range @scheme[-1.0] to @scheme[1.0] is given to @scheme[flasin] or
+@scheme[flacos], or when a negative number is given to @scheme[fllog]
+or @scheme[flsqrt].}
 
 @defproc[(->fl [a exact-integer?]) inexact-real?]{
 Like @scheme[exact->inexact], but constrained to consume exact integers,
@@ -985,12 +1016,14 @@ the @schememodname[scheme/fixnum] library to help debug the problems.
 @defproc[(fx* [a fixnum?][b fixnum?]) fixnum?]
 @defproc[(fxquotient [a fixnum?][b fixnum?]) fixnum?]
 @defproc[(fxremainder [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(fxmodulo [a fixnum?][b fixnum?]) fixnum?]
 @defproc[(fxabs [a fixnum?]) fixnum?]
 )]{
 
 Safe versions of @scheme[unsafe-fx+], @scheme[unsafe-fx-],
 @scheme[unsafe-fx*], @scheme[unsafe-fxquotient],
-@scheme[unsafe-fxremainder], and @scheme[unsafe-fxabs]. The
+@scheme[unsafe-fxremainder], @scheme[unsafe-fxmodulo], and
+@scheme[unsafe-fxabs]. The
 @exnraise[exn:fail:contract:non-fixnum-result] if the arithmetic
 result would not be a fixnum.}
 
@@ -1017,10 +1050,13 @@ result would not be a fixnum.}
 @defproc[(fx> [a fixnum?][b fixnum?]) boolean?]
 @defproc[(fx<= [a fixnum?][b fixnum?]) boolean?]
 @defproc[(fx>= [a fixnum?][b fixnum?]) boolean?]
+@defproc[(fxmin [a fixnum?][b fixnum?]) fixnum?]
+@defproc[(fxmax [a fixnum?][b fixnum?]) fixnum?]
 )]{
 
-Safe versions of @scheme[unsafe-fx=],  @scheme[unsafe-fx<],  @scheme[unsafe-fx>],
- @scheme[unsafe-fx<=],  and @scheme[unsafe-fx>=].}
+Safe versions of @scheme[unsafe-fx=], @scheme[unsafe-fx<],
+ @scheme[unsafe-fx>], @scheme[unsafe-fx<=], @scheme[unsafe-fx>=],
+ @scheme[unsafe-fxmin], and @scheme[unsafe-fxmax].}
 
 
 

@@ -88,6 +88,12 @@
   (test-bin #t unsafe-fx>= 2 2)
   (test-bin #t unsafe-fx>= 2 1)
 
+  (test-bin 3 unsafe-fxmin 3 30)
+  (test-bin -30 unsafe-fxmin 3 -30)
+
+  (test-bin 30 unsafe-fxmax 3 30)
+  (test-bin 3 unsafe-fxmax 3 -30)
+
   (test-bin 7.9 'unsafe-fl- 10.0 2.1)
   (test-bin 3.7 'unsafe-fl- 1.0 -2.7)
 
@@ -134,6 +140,15 @@
 
   (test-un 8.0 'unsafe-fx->fl 8)
   (test-un -8.0 'unsafe-fx->fl -8)
+
+  (test-bin 3.7 'unsafe-flmin 3.7 4.1)
+  (test-bin 2.1 'unsafe-flmin 3.7 2.1)
+  (test-bin +nan.0 'unsafe-flmin +nan.0 2.1)
+  (test-bin +nan.0 'unsafe-flmin 2.1 +nan.0)
+  (test-bin 3.7 'unsafe-flmax 3.7 2.1)
+  (test-bin 4.1 'unsafe-flmax 3.7 4.1)
+  (test-bin +nan.0 'unsafe-flmax +nan.0 2.1)
+  (test-bin +nan.0 'unsafe-flmax 2.1 +nan.0)
 
   ;; test unboxing:
   (test-tri 9.0 '(lambda (x y z) (unsafe-fl+ (unsafe-fl- x z) y)) 4.5 7.0 2.5)
