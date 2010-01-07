@@ -43,3 +43,6 @@
 [Pair (-poly (a b) (-pair a b))]
 [Boxof (-poly (a) (make-Box a))]
 [Continuation-Mark-Set -Cont-Mark-Set]
+[False (-val #f)]
+[True (-val #t)]
+[Null (-val null)]
