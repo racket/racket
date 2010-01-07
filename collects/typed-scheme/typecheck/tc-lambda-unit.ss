@@ -66,7 +66,7 @@
     (define (check-body)
       (with-lexical-env/extend 
        arg-list arg-types
-       (make-lam-result (map list arg-list arg-types) null rest-ty drest 
+       (make-lam-result (for/list ([al arg-list] [at arg-types] [a-ty arg-tys]) (list al at)) null rest-ty drest 
                         (tc-exprs/check (syntax->list body) ret-ty))))
     (when (or (not (= arg-len tys-len))
               (and (or rest-ty drest) (not rest)))
