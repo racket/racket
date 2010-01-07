@@ -35,7 +35,9 @@
 
 (define tests 0)
 (define failures 0)
-(define (reset-count) (set! tests 0))
+(define (reset-count) 
+  (set! tests 0)
+  (set! failures 0))
 
 (define (print-tests-passed filename)
   (cond

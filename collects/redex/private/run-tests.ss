@@ -1,7 +1,11 @@
 ;; require this file to run all of the test suites for redex.
 
 #lang scheme/base
-(require scheme/runtime-path)
+(require scheme/runtime-path
+         "config.ss"
+         "test-util.ss")
+
+(set-show-bitmaps? #t)
 
 (define test-files
   '("lw-test.ss" 
@@ -16,8 +20,6 @@
     "hole-test.ss"))
 
 (define-runtime-path here ".")
-
-(putenv "PLT_REDEX_TEST_NOSHOW_DIFFS" "yes")
 
 (define (flush)
   ;; these flushes are here for running under cygwin, 
