@@ -1531,7 +1531,7 @@ v4 todo:
      src-info
      blame
      orig-str
-     "expected a ~a that accepts ~a argument~a and and arbitrarily more~a, given: ~e"
+     "expected a ~a that accepts ~a argument~a and arbitrarily more~a, given: ~e"
      (if mtd? "method" "procedure")
      (cond
        [(zero? dom-length) "no"]
