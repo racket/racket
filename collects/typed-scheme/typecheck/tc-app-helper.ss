@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.ss" scheme/match
+(require "../utils/utils.ss" scheme/match unstable/list
          (utils tc-utils) (rep type-rep) (types utils union))
 
 (provide (all-defined-out))
@@ -28,6 +28,23 @@
   (cond
     [(null? doms)
      (int-err "How could doms be null: ~a ~a" ty)]
+    [(and (= 1 (length doms)) (not (car rests)) (not (car drests)) (not tail-ty) (not tail-bound))
+     (apply string-append
+            (if (not (= (length (car doms)) (length arg-tys)))
+                (format "Wrong number of arguments - Expected ~a, but got ~a\n\n" (length (car doms)) (length arg-tys))
+                "")
+            (append
+             (for/list ([dom-t (in-list (extend arg-tys (car doms) #f))]
+                        [arg-t (in-list (extend (car doms) arg-tys #f))]
+                        [i (in-naturals 1)])
+               (let ([dom-t (or dom-t "-none-")]
+                     [arg-t (or arg-t "-none-")])
+                 (format "Argument ~a:\n  Expected: ~a\n  Given:    ~a\n" i (make-printable dom-t) (make-printable arg-t))))
+             (list
+              (if expected
+                  (format "\nResult type:     ~a\nExpected result: ~a\n"
+                          (car rngs) (make-printable expected))
+                  ""))))]
     [(= 1 (length doms))
      (string-append
       "Domain: "

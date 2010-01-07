@@ -11,7 +11,7 @@ at least theoretically.
 	 scheme/pretty mzlib/pconvert syntax/parse)
 
 ;; to move to unstable
-(provide debug reverse-begin)
+(provide reverse-begin)
 
 (provide
  ;; timing
@@ -78,25 +78,6 @@ at least theoretically.
 (define-requirer env env-out)
 (define-requirer private private-out)
 (define-requirer types types-out)
-
-;; printf debugging convenience
-(define-syntax debug
-  (syntax-rules ()
-    [(_ (f . args))
-     (begin (printf "starting ~a~n" 'f)
-            (let ([l (list . args)])
-              (printf "arguments are:~n")
-              (for/list ([arg 'args]
-                         [val l])
-                (printf "\t~a: ~a~n" arg val))
-              (let ([e (apply f l)])
-                (printf "result was ~a~n" e)
-                e)))]
-    [(_ . args)
-     (begin (printf "starting ~a~n" 'args)
-            (let ([e (begin . args)])
-              (printf "result was ~a~n" e)
-              e))]))
 
 ;; run `h' last, but drop its return value
 (define-syntax-rule (reverse-begin h . forms) (begin0 (begin . forms) h))
