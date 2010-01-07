@@ -273,7 +273,7 @@ a @scheme[require/typed] form.}
 
 The @schememodname[typed-scheme] language corresponds to the
 @schememodname[scheme/base] language---that is, any identifier provided
-by @schememodname[scheme/base], such as @scheme[mod] is available by default in
+by @schememodname[scheme/base], such as @scheme[modulo] is available by default in
 @schememodname[typed-scheme].  
 
 @schememod[typed-scheme
