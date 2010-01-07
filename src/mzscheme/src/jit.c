@@ -12588,6 +12588,10 @@ Scheme_Object *scheme_native_stack_trace(void)
     }
   }
 
+#ifdef MZ_USE_DWARF_LIBUNWIND
+  unw_destroy_local(&c);
+#endif
+
   if (last)
     SCHEME_CDR(last) = tail;
   else

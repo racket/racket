@@ -424,6 +424,7 @@ unw_save_loc_t;
 #define unw_destroy_addr_space	UNW_OBJ(destroy_addr_space)
 #define unw_get_accessors	UNW_ARCH_OBJ(get_accessors)
 #define unw_init_local		UNW_OBJ(init_local)
+#define unw_destroy_local	UNW_OBJ(destroy_local)
 #define unw_init_remote		UNW_OBJ(init_remote)
 #define unw_step		UNW_OBJ(step)
 #define unw_resume		UNW_OBJ(resume)
@@ -449,6 +450,7 @@ extern int unw_set_caching_policy (unw_addr_space_t, unw_caching_policy_t);
 extern const char *unw_regname (unw_regnum_t);
 
 extern int unw_init_local (unw_cursor_t *, unw_context_t *);
+extern void unw_destroy_local(unw_cursor_t *);
 extern int unw_init_remote (unw_cursor_t *, unw_addr_space_t, void *);
 extern int unw_step (unw_cursor_t *);
 extern int unw_resume (unw_cursor_t *);

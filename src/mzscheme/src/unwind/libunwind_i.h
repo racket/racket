@@ -651,6 +651,7 @@ HIDDEN int dwarf_step (struct dwarf_cursor *c);
 
 struct unw_addr_space
   {
+    void *mem_pool;
     struct unw_accessors acc;
     unw_caching_policy_t caching_policy;
 #ifdef HAVE_ATOMIC_OPS_H

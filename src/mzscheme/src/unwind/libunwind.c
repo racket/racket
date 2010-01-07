@@ -31,6 +31,34 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #include "libunwind_i.h"
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
+/*                   region-based memory management                   */
+/*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
+
+static void *rgn_chain = NULL;
+
+static void *malloc_in_rgn(unw_addr_space_t as, long sz)
+{
+  void *p;
+
+  /* 16 to ensure alignment, definitely >= sizeof(void*) */
+  p = malloc(sz + 16);
+
+  *(void **)p = as->mem_pool;
+  as->mem_pool = p;
+
+  return (void *)((char *)p + 16);
+}
+
+static void free_all_allocated(unw_addr_space_t as)
+{
+  while (as->mem_pool) {
+    void *next = *(void **)as->mem_pool;
+    free(as->mem_pool);
+    as->mem_pool = next;
+  }
+}
+
+/*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 /*                             Gexpr.c                                */
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 
@@ -914,7 +942,7 @@ dwarf_extract_proc_info_from_fde (unw_addr_space_t as, unw_accessors_t *a,
     {
       pi->format = UNW_INFO_FORMAT_TABLE;
       pi->unwind_info_size = sizeof (dci);
-      pi->unwind_info = malloc (sizeof(struct dwarf_cie_info));
+      pi->unwind_info = malloc_in_rgn (as, sizeof(struct dwarf_cie_info));
       if (!pi->unwind_info)
 	return UNW_ENOMEM;
 
@@ -942,8 +970,8 @@ dwarf_extract_proc_info_from_fde (unw_addr_space_t as, unw_accessors_t *a,
 /*                            Gparser.c                               */
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 
-#define alloc_reg_state()	(malloc (sizeof(dwarf_reg_state_t)))
-#define free_reg_state(rs)	(free (rs))
+#define alloc_reg_state(as)	(malloc_in_rgn (as, sizeof(dwarf_reg_state_t)))
+#define free_reg_state(rs)	/* empty */
 
 static inline int
 read_regnum (unw_addr_space_t as, unw_accessors_t *a, unw_word_t *addr,
@@ -1142,7 +1170,7 @@ run_cfi_program (struct dwarf_cursor *c, dwarf_state_record_t *sr,
 	  break;
 
 	case DW_CFA_remember_state:
-	  new_rs = alloc_reg_state ();
+	  new_rs = alloc_reg_state (as);
 	  if (!new_rs)
 	    {
 	      Debug (1, "Out of memory in DW_CFA_remember_state\n");
@@ -1318,7 +1346,7 @@ put_unwind_info (struct dwarf_cursor *c, unw_proc_info_t *pi)
 
   if (pi->unwind_info);
     {
-      free (pi->unwind_info);
+      /* free (pi->unwind_info); */
       pi->unwind_info = NULL;
     }
 }
@@ -1806,6 +1834,7 @@ struct table_entry
 struct callback_data
   {
     /* in: */
+    unw_addr_space_t as;
     unw_word_t ip;		/* instruction-pointer we're looking for */
     unw_proc_info_t *pi;	/* proc-info pointer */
     int need_unwind_info;
@@ -1820,7 +1849,7 @@ linear_search (unw_addr_space_t as, unw_word_t ip,
 	       unw_word_t fde_count,
 	       unw_proc_info_t *pi, int need_unwind_info, void *arg)
 {
-  unw_accessors_t *a = unw_get_accessors (unw_local_addr_space);
+  unw_accessors_t *a = NULL;
   unw_word_t i = 0, fde_addr, addr = eh_frame_start;
   int ret;
 
@@ -1954,17 +1983,17 @@ callback (struct dl_phdr_info *info, size_t size, void *ptr)
       return 0;
     }
 
-  a = unw_get_accessors (unw_local_addr_space);
+  a = unw_get_accessors (cb_data->as);
   addr = (unw_word_t) (hdr + 1);
 
   /* (Optionally) read eh_frame_ptr: */
-  if ((ret = dwarf_read_encoded_pointer (unw_local_addr_space, a,
+  if ((ret = dwarf_read_encoded_pointer (cb_data->as, a,
 					 &addr, hdr->eh_frame_ptr_enc, pi,
 					 &eh_frame_start, NULL)) < 0)
     return ret;
 
   /* (Optionally) read fde_count: */
-  if ((ret = dwarf_read_encoded_pointer (unw_local_addr_space, a,
+  if ((ret = dwarf_read_encoded_pointer (cb_data->as, a,
 					 &addr, hdr->fde_count_enc, pi,
 					 &fde_count, NULL)) < 0)
     return ret;
@@ -1988,7 +2017,7 @@ callback (struct dl_phdr_info *info, size_t size, void *ptr)
 	abort ();
 
       cb_data->single_fde = 1;
-      return linear_search (unw_local_addr_space, ip,
+      return linear_search (cb_data->as, ip,
 			    eh_frame_start, eh_frame_end, fde_count,
 			    pi, need_unwind_info, NULL);
     }
@@ -2025,6 +2054,7 @@ dwarf_find_proc_info (unw_addr_space_t as, unw_word_t ip,
 
   Debug (14, "looking for IP=0x%lx\n", (long) ip);
 
+  cb_data.as = as;
   cb_data.ip = ip;
   cb_data.pi = pi;
   cb_data.need_unwind_info = need_unwind_info;
@@ -2119,7 +2149,6 @@ dwarf_search_unwind_table (unw_addr_space_t as, unw_word_t ip,
 /*                                glue                                */
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX*/
 
-unw_addr_space_t unw_local_addr_space;
 unw_accessors_t *unw_get_accessors (unw_addr_space_t unw_local_addr_space)
 {
   return NULL;
@@ -2422,18 +2451,23 @@ common_init (struct cursor *c)
 int unw_init_local (unw_cursor_t *cursor, ucontext_t *uc)
 {
   struct cursor *c = (struct cursor *) cursor;
+  unw_addr_space_t as;
 
   Debug (1, "(cursor=%p)\n", c);
 
-  if (!unw_local_addr_space) {
-    unw_local_addr_space = (unw_addr_space_t)malloc(sizeof(struct unw_addr_space));
-    memset(unw_local_addr_space, 0, sizeof(unw_local_addr_space));
-    /* unw_local_addr_space->caching_policy = UNW_CACHE_GLOBAL; */
-  }
+  as = (unw_addr_space_t)malloc(sizeof(struct unw_addr_space));
+  memset(as, 0, sizeof(struct unw_addr_space));
 
-  c->dwarf.as = unw_local_addr_space;
+  c->dwarf.as = as;
   c->dwarf.as_arg = uc;
   return common_init (c);
+}
+
+void unw_destroy_local(unw_cursor_t *cursor)
+{
+  struct cursor *c = (struct cursor *) cursor;
+  free_all_allocated(c->dwarf.as);
+  free(c->dwarf.as);
 }
 
 int unw_step (unw_cursor_t *c)
