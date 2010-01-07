@@ -994,19 +994,19 @@
 (check-equal? (bmbytes-ref/safe checker3x3 3 3 1 19) (list->bytes '(  0 0 255 0)))
 
 
-#;
+
 (check-equal? (bytes->list (interpolate checker2x2 2 2 1 0))
               '(255 0 255 0))
-#;
+
 (check-equal? (bytes->list (interpolate checker3x3 3 3 0 0))
               '(255 0 0 255))
-#;
+
 (check-equal? (bytes->list (interpolate checker3x3 3 3 0 1))
               '(255 0 255 0))
-#;
+
 (check-equal? (bytes->list (interpolate checker3x3 3 3 0 2))
               '(255 0 0 255))
-#;
+
 (check-equal? (bytes->list (interpolate checker3x3 3 3 0.5 0))
               '(255 0 128 128))
 

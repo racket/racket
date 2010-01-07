@@ -1,5 +1,6 @@
 #lang scheme
-(require (prefix-in uni: 2htdp/universe))
+(require (prefix-in uni: 2htdp/universe)
+         (prefix-in uni: htdp/image))
 
 (define (create-UFO-scene height)
   (uni:place-image UFO 50 height (uni:empty-scene 100 100)))
