@@ -1216,7 +1216,6 @@ static void tcp_close_input(Scheme_Input_Port *port)
   closesocket(data->tcp);
 #endif
 
-  --scheme_file_open_count;
 }
 
 static int
@@ -1415,7 +1414,6 @@ static void tcp_close_output(Scheme_Output_Port *port)
   closesocket(data->tcp);
 #endif
 
-  --scheme_file_open_count;
 }
 
 static int
@@ -1504,7 +1502,6 @@ static void closesocket_w_decrement(Close_Socket_Data *csd)
   if (csd->src_addr)
     mz_freeaddrinfo(csd->src_addr);
   mz_freeaddrinfo(csd->dest_addr);  
-  --scheme_file_open_count;
 }
 #endif
 
@@ -1621,7 +1618,6 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 	    errno = status;
 #endif
 
-	    scheme_file_open_count++;
 	  
 	    if (inprogress) {
 	      tcp_t *sptr;
@@ -1681,7 +1677,6 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 	    } else {
 	      errid = errno;
 	      closesocket(s);
-	      --scheme_file_open_count;
 	      errpart = 6;
 	    }
 	  } else {
@@ -1923,7 +1918,6 @@ tcp_listen(int argc, Scheme_Object *argv[])
 	      }
 	      l->s[pos++] = s;
 	    
-	      scheme_file_open_count++;
 	      REGISTER_SOCKET(s);
 
 	      if (pos == count) {
@@ -1961,7 +1955,6 @@ tcp_listen(int argc, Scheme_Object *argv[])
 	s = l->s[i];
 	UNREGISTER_SOCKET(s);
 	closesocket(s);
-	--scheme_file_open_count;
       }
       
       mz_freeaddrinfo(tcp_listen_addr);
@@ -2004,7 +1997,6 @@ static int stop_listener(Scheme_Object *o)
 	UNREGISTER_SOCKET(s);
 	closesocket(s);
 	listener->s[i] = INVALID_SOCKET;
-	--scheme_file_open_count;
       }
       scheme_remove_managed(((listener_t *)o)->mref, o);
     }
@@ -2142,7 +2134,6 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
     v[0] = make_tcp_input_port(tcp, "tcp-accepted", cust);
     v[1] = make_tcp_output_port(tcp, "tcp-accepted", cust);
 
-    scheme_file_open_count++;
     REGISTER_SOCKET(s);
     
     return scheme_values(2, v);
@@ -2498,7 +2489,6 @@ void scheme_socket_to_ports(long s, const char *name, int takeover,
   *_outp = v;
   
   if (takeover) {
-    scheme_file_open_count++;
     REGISTER_SOCKET(s);
   }
 }

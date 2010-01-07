@@ -310,14 +310,16 @@ HOOK_SHARED_OK Scheme_Object *(*scheme_make_stdin)(void) = NULL;
 HOOK_SHARED_OK Scheme_Object *(*scheme_make_stdout)(void) = NULL;
 HOOK_SHARED_OK Scheme_Object *(*scheme_make_stderr)(void) = NULL;
 
-int scheme_file_open_count;
-
 MZ_DLLSPEC int scheme_binary_mode_stdio;
 void scheme_set_binary_mode_stdio(int v) { scheme_binary_mode_stdio =  v; }
 
-static int special_is_ok;
+THREAD_LOCAL_DECL(static int special_is_ok);
 
 /* locals */
+#ifdef USE_FD_PORTS
+THREAD_LOCAL_DECL(static int fd_reserved);
+THREAD_LOCAL_DECL(static int the_fd);
+#endif
 #ifdef MZ_FDS
 READ_ONLY static Scheme_Object *fd_input_port_type;
 #endif
@@ -342,10 +344,10 @@ READ_ONLY Scheme_Object *scheme_pipe_write_port_type;
 READ_ONLY Scheme_Object *scheme_null_output_port_type;
 READ_ONLY Scheme_Object *scheme_redirect_output_port_type;
 
-int scheme_force_port_closed;
+THREAD_LOCAL_DECL(int scheme_force_port_closed);
 
-static int flush_out;
-static int flush_err;
+SHARED_OK static int flush_out;
+SHARED_OK static int flush_err;
 
 THREAD_LOCAL_DECL(static Scheme_Custodian *new_port_cust); /* back-door argument */
 
@@ -685,7 +687,8 @@ void scheme_alloc_global_fdset() {
 }
 
 #ifdef USE_DYNAMIC_FDSET_SIZE
-static int dynamic_fd_size;
+/* initialized early via scheme_alloc_global_fdset */
+SHARED_OK static int dynamic_fd_size;
 
 # define STORED_ACTUAL_FDSET_LIMIT
 # define FDSET_LIMIT(fd) (*(int *)((char *)fd XFORM_OK_PLUS dynamic_fd_size))
@@ -698,11 +701,11 @@ void *scheme_alloc_fdset_array(int count, int permanent)
      ok with OS X use from default_sleep() */
 
   if (!dynamic_fd_size) {
-#ifdef USE_ULIMIT
+# ifdef USE_ULIMIT
     dynamic_fd_size = ulimit(4, 0);
-#else
+# else
     dynamic_fd_size = getdtablesize();
-#endif
+# endif
     /* divide by bits-per-byte: */
     dynamic_fd_size = (dynamic_fd_size + 7) >> 3;
     /* word-align: */
@@ -733,17 +736,17 @@ void scheme_fdzero(void *fd)
 
 #else
 
-#if defined(WIN32_FD_HANDLES)
-# define fdset_type win_extended_fd_set
-#else
-# define fdset_type fd_set
-#endif
+# if defined(WIN32_FD_HANDLES)
+#  define fdset_type win_extended_fd_set
+# else
+#  define fdset_type fd_set
+# endif
 
 void *scheme_alloc_fdset_array(int count, int permanent)
 {
-#if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP) || defined(WIN32_FD_HANDLES)
+# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP) || defined(WIN32_FD_HANDLES)
   void *fdarray;
-# if defined(WIN32_FD_HANDLES)
+#  if defined(WIN32_FD_HANDLES)
   if (count) {
     fdarray = scheme_malloc_allow_interior(count * sizeof(fdset_type));
     if (permanent)
@@ -752,19 +755,19 @@ void *scheme_alloc_fdset_array(int count, int permanent)
     scheme_init_fdset_array(fdarray, count);
   } else
     fdarray = NULL;
-# else
+#  else
   if (permanent)
     fdarray = scheme_malloc_eternal(count * sizeof(fdset_type));
   else
     fdarray = scheme_malloc_atomic(count * sizeof(fdset_type));
-# endif
+#  endif
   return fdarray;
-#else
+# else
   return NULL;
-#endif
+# endif
 }
 
-#if defined(WIN32_FD_HANDLES)
+# if defined(WIN32_FD_HANDLES)
 static void reset_wait_array(win_extended_fd_set *efd)
 {
   /* Allocate an array that may be big enough to hold all events
@@ -775,11 +778,11 @@ static void reset_wait_array(win_extended_fd_set *efd)
   wa = MALLOC_N_ATOMIC(HANDLE, sz);
   efd->wait_array = wa;
 }
-#endif
+# endif
 
 void *scheme_init_fdset_array(void *fdarray, int count)
 {
-#if defined(WIN32_FD_HANDLES)
+# if defined(WIN32_FD_HANDLES)
   if (count) {
     int i;
     win_extended_fd_set *fd;
@@ -796,28 +799,28 @@ void *scheme_init_fdset_array(void *fdarray, int count)
       reset_wait_array(fdarray);
     }
   }
-#endif
+# endif
   return fdarray;
 }
 
 void *scheme_get_fdset(void *fdarray, int pos)
 {
-#if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP) || defined(WIN32_FD_HANDLES)
+# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP) || defined(WIN32_FD_HANDLES)
   return ((fdset_type *)fdarray) + pos;
-#else
+# else
   return NULL;
-#endif
+# endif
 }
 
 void scheme_fdzero(void *fd)
 {
-#if defined(WIN32_FD_HANDLES)
+# if defined(WIN32_FD_HANDLES)
   scheme_init_fdset_array(fd, 1);
-#else
-# if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
+# else
+#  if defined(FILES_HAVE_FDS) || defined(USE_SOCKETS_TCP)
   FD_ZERO((fd_set *)fd);
+#  endif
 # endif
-#endif
 }
 
 #endif
@@ -3887,7 +3890,6 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
       return NULL;
     } else {
       regfile = S_ISREG(buf.st_mode);
-      scheme_file_open_count++;
       result = make_fd_input_port(fd, scheme_make_path(filename), regfile, 0, NULL, internal);
     }
   }
@@ -3927,7 +3929,6 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
     filename_exn(name, "cannot open input file", filename, errno);
     return NULL;
   }
-  scheme_file_open_count++;
 
   result = scheme_make_named_file_input_port(fp, scheme_make_path(filename));
 # endif
@@ -4118,7 +4119,6 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
   } while ((ok == -1) && (errno == EINTR));
 
   regfile = S_ISREG(buf.st_mode);
-  scheme_file_open_count++;
   return make_fd_output_port(fd, scheme_make_path(filename), regfile, 0, and_read, -1);
 #else
 # ifdef WINDOWS_FILE_HANDLES
@@ -4204,7 +4204,6 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
       SetEndOfFile(fd);
   }
 
-  scheme_file_open_count++;
   return make_fd_output_port((int)fd, scheme_make_path(filename), regfile, mode[1] == 't', and_read, -1);
 # else
   if (scheme_directory_exists(filename)) {
@@ -4264,7 +4263,6 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
     if (!fp)
       filename_exn(name, "cannot open output file", filename, errno);
   }
-  scheme_file_open_count++;
 
   return scheme_make_file_output_port(fp);
 # endif
@@ -4726,7 +4724,6 @@ file_close_input(Scheme_Input_Port *port)
   fip = (Scheme_Input_File *)port->port_data;
 
   fclose(fip->f);
-  --scheme_file_open_count;
 }
 
 static void
@@ -5257,7 +5254,6 @@ fd_close_input(Scheme_Input_Port *port)
     rc = dec_refcount(fip->refcount);
     if (!rc) {
       CloseHandle((HANDLE)fip->fd);
-      --scheme_file_open_count;
     }
   }
 #else
@@ -5269,7 +5265,6 @@ fd_close_input(Scheme_Input_Port *port)
      do {
        cr = close(fip->fd);
      } while ((cr == -1) && (errno == EINTR));
-     --scheme_file_open_count;
    }
  }
 #endif
@@ -5776,7 +5771,6 @@ file_close_output(Scheme_Output_Port *port)
   FILE *fp = fop->f;
 
   fclose(fp);
-  --scheme_file_open_count;
 }
 
 Scheme_Object *
@@ -6513,7 +6507,6 @@ fd_close_output(Scheme_Output_Port *port)
     rc = dec_refcount(fop->refcount);
     if (!rc) {
       CloseHandle((HANDLE)fop->fd);
-      --scheme_file_open_count;
     }
   }
 #else
@@ -6526,7 +6519,6 @@ fd_close_output(Scheme_Output_Port *port)
      do {
        cr = close(fop->fd);
      } while ((cr == -1) && (errno == EINTR));
-     --scheme_file_open_count;
    }
  }
 #endif
@@ -7855,19 +7847,16 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   if (!inport) {
     mzCLOSE_PIPE_END(to_subprocess[0]);
     out = NULL;
-    scheme_file_open_count += 1;
   } else
     out = scheme_false;
   if (!outport) {
     mzCLOSE_PIPE_END(from_subprocess[1]);
     in = NULL;
-    scheme_file_open_count += 1;
   } else
     in = scheme_false;
   if (!errport) {
     mzCLOSE_PIPE_END(err_subprocess[1]);
     err = NULL;
-    scheme_file_open_count += 1;
   } else
     err = scheme_false;
 
@@ -8088,10 +8077,6 @@ static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
 
 /* We don't want on-demand loading of code to fail because we run out of
    file descriptors. So, keep one in reserve. */
-
-#ifdef USE_FD_PORTS
-static int fd_reserved, the_fd;
-#endif
 
 void scheme_reserve_file_descriptor(void)
 {

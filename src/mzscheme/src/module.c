@@ -193,16 +193,17 @@ READ_ONLY static Scheme_Object *letrec_syntaxes_stx;
 READ_ONLY static Scheme_Object *var_ref_stx;
 READ_ONLY static Scheme_Object *expression_stx;
 
-READ_ONLY static Scheme_Env *initial_modules_env;
-READ_ONLY static int num_initial_modules;
-READ_ONLY static Scheme_Object **initial_modules;
-READ_ONLY static Scheme_Object *initial_renames;
-READ_ONLY static Scheme_Bucket_Table *initial_toplevel;
-
 READ_ONLY static Scheme_Object *empty_self_modidx;
 READ_ONLY static Scheme_Object *empty_self_modname;
 
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *starts_table);
+
+/* FIXME eventually theses initial objects should be shared, but work required */
+THREAD_LOCAL_DECL(static Scheme_Env *initial_modules_env);
+THREAD_LOCAL_DECL(static int num_initial_modules);
+THREAD_LOCAL_DECL(static Scheme_Object **initial_modules);
+THREAD_LOCAL_DECL(static Scheme_Object *initial_renames);
+THREAD_LOCAL_DECL(static Scheme_Bucket_Table *initial_toplevel);
 
 /* caches */
 THREAD_LOCAL_DECL(static Scheme_Modidx *modidx_caching_chain);
@@ -321,6 +322,17 @@ void scheme_init_module(Scheme_Env *env)
 #ifdef MZ_USE_PLACES
   mzrt_mutex_create(&modpath_table_mutex);
 #endif
+
+  if (!empty_self_modidx) {
+    REGISTER_SO(empty_self_modidx);
+    REGISTER_SO(empty_self_modname);
+    empty_self_modidx = scheme_make_modidx(scheme_false, scheme_false, scheme_false);
+    (void)scheme_hash_key(empty_self_modidx);
+    empty_self_modname = scheme_make_symbol("expanded module"); /* uninterned */
+    empty_self_modname = scheme_intern_resolved_module_path(empty_self_modname);
+  }
+  
+
 
   REGISTER_SO(quote_symbol);
   REGISTER_SO(file_symbol);
@@ -672,7 +684,7 @@ void scheme_save_initial_module_set(Scheme_Env *env)
 {
   int i, c, count;
   Scheme_Hash_Table *ht;
-	
+
   if (!initial_modules_env) {
     REGISTER_SO(initial_modules_env);
   }
@@ -5671,15 +5683,6 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   fm = scheme_stx_property(fm, module_name_symbol, SCHEME_PTR_VAL(m->modname));
 
-  if (!empty_self_modidx) {
-    REGISTER_SO(empty_self_modidx);
-    REGISTER_SO(empty_self_modname);
-    empty_self_modidx = scheme_make_modidx(scheme_false, scheme_false, scheme_false);
-    (void)scheme_hash_key(empty_self_modidx);
-    empty_self_modname = scheme_make_symbol("expanded module"); /* uninterned */
-    empty_self_modname = scheme_intern_resolved_module_path(empty_self_modname);
-  }
-  
   /* phase shift to replace self_modidx of previous expansion (if any): */
   fm = scheme_stx_phase_shift(fm, 0, empty_self_modidx, self_modidx, NULL);
 

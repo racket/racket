@@ -254,6 +254,7 @@ void scheme_init_sema_places(void);
 void scheme_init_gmp_places(void);
 void scheme_init_print_global_constants(void);
 void scheme_init_logger(void);
+void scheme_init_file_places(void);
 Scheme_Logger *scheme_get_main_logger(void);
 void scheme_init_logger_config(void);
 
@@ -3139,7 +3140,6 @@ extern char *scheme_convert_from_wchar(const wchar_t *ws);
 #endif
 
 THREAD_LOCAL_DECL(extern int scheme_active_but_sleeping);
-extern int scheme_file_open_count;
 
 typedef struct Scheme_Indexed_String {
   MZTAG_IF_REQUIRED
@@ -3175,7 +3175,7 @@ extern Scheme_Object *scheme_tcp_input_port_type;
 extern Scheme_Object *scheme_tcp_output_port_type;
 #endif
 
-extern int scheme_force_port_closed;
+THREAD_LOCAL_DECL(extern int scheme_force_port_closed);
 
 void scheme_flush_orig_outputs(void);
 Scheme_Object *scheme_file_stream_port_p(int, Scheme_Object *[]);

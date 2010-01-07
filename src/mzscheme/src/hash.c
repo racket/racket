@@ -30,8 +30,8 @@
 #include <math.h>
 #include "../gc2/gc2_obj.h"
 
-long scheme_hash_request_count;
-long scheme_hash_iteration_count;
+THREAD_LOCAL_DECL(long scheme_hash_request_count);
+THREAD_LOCAL_DECL(long scheme_hash_iteration_count);
 
 READ_ONLY static Scheme_Object GONE[1];
 
@@ -40,7 +40,11 @@ static void register_traversers(void);
 #endif
 
 #ifdef MZ_PRECISE_GC
-static long keygen;
+/* keygen race conditions below are ok, because keygen is randomness used
+to create a hashkey.  Setting a hashkey on a Scheme_Object however, may 
+lead to race conditions */
+
+FIXME_LATER static long keygen;
 XFORM_NONGCING static MZ_INLINE
 long PTR_TO_LONG(Scheme_Object *o)
 {
@@ -53,7 +57,8 @@ long PTR_TO_LONG(Scheme_Object *o)
   v = o->keyex;
 
   if (!(v & 0xFFFC)) {
-    v |= (short)keygen;
+    long local_keygen = keygen;
+    v |= (short)local_keygen;
 #ifdef OBJHEAD_HAS_HASH_BITS
     /* In 3m mode, we only have 14 bits of hash code in the
        Scheme_Object header. But the GC-level object header has some
@@ -62,7 +67,7 @@ long PTR_TO_LONG(Scheme_Object *o)
        objects, so we use 1 of our 14 bits to indicate whether the
        other bit are present. */
     if (GC_is_allocated(o)) {
-      OBJHEAD_HASH_BITS(o) = (keygen >> 16);
+      OBJHEAD_HASH_BITS(o) = (local_keygen >> 16);
       v |= 0x4000;
     } else
       v &= ~0x4000;

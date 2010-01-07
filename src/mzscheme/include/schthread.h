@@ -223,7 +223,20 @@ typedef struct Thread_Local_Variables {
   int builtin_ref_counter_;
   int env_uid_counter_;
   int scheme_overflow_count_;
+  Scheme_Object *original_pwd_;
+  long scheme_hash_request_count_;
+  long scheme_hash_iteration_count_;
+  Scheme_Env *initial_modules_env_;
+  int num_initial_modules_;
+  Scheme_Object **initial_modules_;
+  Scheme_Object *initial_renames_;
+  Scheme_Bucket_Table *initial_toplevel_;
   int generate_lifts_count_;
+  int special_is_ok_;
+  int scheme_force_port_closed_;
+  int fd_reserved_;
+  int the_fd_;
+/*KPLAKE1*/
 } Thread_Local_Variables;
 
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
@@ -430,7 +443,20 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define builtin_ref_counter XOA (scheme_get_thread_local_variables()->builtin_ref_counter_)
 #define env_uid_counter XOA (scheme_get_thread_local_variables()->env_uid_counter_)
 #define scheme_overflow_count XOA (scheme_get_thread_local_variables()->scheme_overflow_count_)
+#define original_pwd XOA (scheme_get_thread_local_variables()->original_pwd_)
+#define scheme_hash_request_count XOA (scheme_get_thread_local_variables()->scheme_hash_request_count_)
+#define scheme_hash_iteration_count XOA (scheme_get_thread_local_variables()->scheme_hash_iteration_count_)
+#define initial_modules_env XOA (scheme_get_thread_local_variables()->initial_modules_env_)
+#define num_initial_modules XOA (scheme_get_thread_local_variables()->num_initial_modules_)
+#define initial_modules XOA (scheme_get_thread_local_variables()->initial_modules_)
+#define initial_renames XOA (scheme_get_thread_local_variables()->initial_renames_)
+#define initial_toplevel XOA (scheme_get_thread_local_variables()->initial_toplevel_)
 #define generate_lifts_count XOA (scheme_get_thread_local_variables()->generate_lifts_count_)
+#define special_is_ok XOA (scheme_get_thread_local_variables()->special_is_ok_)
+#define scheme_force_port_closed XOA (scheme_get_thread_local_variables()->scheme_force_port_closed_)
+#define fd_reserved XOA (scheme_get_thread_local_variables()->fd_reserved_)
+#define the_fd XOA (scheme_get_thread_local_variables()->the_fd_)
+/*KPLAKE2*/
 
 /* **************************************** */
 

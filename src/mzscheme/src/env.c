@@ -487,6 +487,7 @@ static Scheme_Env *place_instance_init_post_kernel(int initial_main_os_thread) {
   scheme_init_sema_places();
   scheme_init_gmp_places();
   scheme_alloc_global_fdset();
+  scheme_init_file_places();
 
   env = scheme_make_empty_env();
   scheme_set_param(scheme_current_config(), MZCONFIG_ENV, (Scheme_Object *)env); 
