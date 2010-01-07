@@ -2,8 +2,8 @@
 
 (require tests/eli-tester scheme/sandbox scheme/runtime-path scheme/file)
 
-(define-runtime-path tree-module     "tree.ss")
-(define-runtime-path plt-tree-module "plt-tree.ss")
+(define-runtime-path tree-module      "tree.ss")
+(define-runtime-path file-tree-module "file-tree.ss")
 
 (define (glob-tests)
   (define e
@@ -48,7 +48,7 @@
 (define (tree-tests)
   (define e
     (call-with-trusted-sandbox-configuration
-     (lambda () (make-module-evaluator plt-tree-module))))
+     (lambda () (make-module-evaluator file-tree-module))))
   (define a-dir  (collection-path "scribble"))
   (define a-list (find-files void a-dir))
   (define a-tree #f)
@@ -124,7 +124,7 @@
    => '(-/ -/0 -/A1/ -/A1/1 -/A1/3 -/A1/B/ -/A1/B/4 -/A1/C -/A2/)
    (e/filter '(not: "*/{2|5}"))
    => '(-/ -/0 -/A1/ -/A1/1 -/A1/3 -/A1/B/ -/A1/B/4 -/A1/C -/A2/)
-   (set! a-tree (e `(get-tree ,a-dir)))
+   (set! a-tree (e `(get-file-tree ,a-dir)))
    (e `(map tree-path (tree->list ,a-tree)))
    => a-list
    (e/filter #"*")

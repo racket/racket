@@ -1,13 +1,13 @@
 #lang scheme/base
 
-(provide get-tree get-plt-tree)
+(provide get-file-tree get-plt-file-tree)
 
 (require "tree.ss" setup/dirs)
 
 ;; ----------------------------------------------------------------------------
 ;; Reading a tree from a directory
 
-(define (get-tree path)
+(define (get-file-tree path)
   (define path* (simplify-path path))
   (let loop ([path path*]
              [name (regexp-replace #rx#"/$" (path->bytes path*) #"")])
@@ -24,28 +24,28 @@
                      subs)))
             path)]
           [(file-exists? path) (make-tree name #f path)]
-          [else (error 'get-tree "bad path encountered: ~a/~a"
+          [else (error 'get-file-tree "bad path encountered: ~a/~a"
                        (current-directory) path)])))
 
 ;; ----------------------------------------------------------------------------
 ;; Reading the PLT tree
 
-(define (get-plt-tree)
+(define (get-plt-file-tree)
   (when absolute-installation?
     (error 'get-plt-tree "must be used from a relative installation"))
-  (get-tree (build-path (find-collects-dir) 'up)))
+  (get-file-tree (build-path (find-collects-dir) 'up)))
 
 #| good for benchmarking changes
 (printf "getting tree ")
-(define t (time (get-plt-tree)))
+(define t (time (get-plt-file-tree)))
 ;;!!! (printf "adding deps ")
 ;;!!! (time (add-deps! t))
 (printf "filtering x 1000 ")
 (time
- (for ([i (in-range 1000)]) ; print-tree
+ (for ([i (in-range 1000)])
    (tree-filter
     (not: (or: "**/.svn/" "**/compiled/"))
-    ;; (get-tree "/home/scheme/plt/collects/scribble/.svn")
+    ;; (get-file-tree "/home/scheme/plt/collects/scribble/.svn")
     t
     )))
 |#
