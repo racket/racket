@@ -249,7 +249,7 @@
 
 (test '(1 2 3 1 2 3)
       'repeat-generator
-      (let ([maker (make-repeat-generator '(1 2 3))])
+      (let ([maker (make-repeated-sequence-generator '(1 2 3))])
         (list (maker) (maker) (maker)
               (maker) (maker) (maker))))
 
