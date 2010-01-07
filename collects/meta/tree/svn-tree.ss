@@ -83,6 +83,7 @@
 (define (get-plt-svn-tree)
   (get-svn-tree "http://svn.plt-scheme.org/plt/trunk/"))
 
-
+#|
 (tree-for-each (lambda (t) (printf "~a\n" (tree-path t)))
                (time (get-svn-tree "file:///home/svn/plt/trunk/")))
+|#
