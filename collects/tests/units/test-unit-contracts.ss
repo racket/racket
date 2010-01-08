@@ -103,6 +103,13 @@
 (test-syntax-error "identifier not first part of pair after contracted in signature"
   (define-signature x ((contracted [(-> number? number?) x]))))
 
+(test-syntax-error "identifier h? not bound anywhere"
+  (module h?-test scheme
+    (define-signature s^
+      ((define-values (f?) (values number?))
+       (define-syntaxes (g?) (make-rename-transformer #'number?))
+       (contracted [f (-> f? (and/c g? h?))])))))
+
 (test-syntax-error "f not defined in unit exporting sig3"
   (unit (import) (export sig3 sig4)
         (define a #t)

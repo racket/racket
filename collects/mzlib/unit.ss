@@ -307,6 +307,7 @@
              (with-syntax (((super-rtime ...) super-rtimes)
                            ((super-name ...) super-names)
                            ((var ...) all-bindings)
+                           ((ctc ...) all-ctcs)
                            ((((vid ...) . vbody) ...) all-val-defs)
                            ((((sid ...) . sbody) ...) all-stx-defs))
                #`(begin
@@ -333,7 +334,14 @@
                                               (quote-syntax #,c))
                                            #'#f))
                                      all-ctcs))
-                       (quote-syntax #,sigid))))))))
+                       (quote-syntax #,sigid))))
+                   (define-values ()
+                     (begin
+                       (λ (var ...)
+                         (letrec-syntaxes+values
+                             ([(sid ...) sbody] ...) ([(vid ...) vbody] ...)
+                           ctc ...))
+                       (values)))))))
           (else
            (syntax-case (car sig-exprs) (define-values define-syntaxes contracted)
              (x
