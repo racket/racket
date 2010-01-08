@@ -10,28 +10,36 @@
          sinh cosh tanh
          order-of-magnitude)
 
-(define (sqr z) (* z z))
+(define (sqr z)
+  (unless (number? z) (raise-type-error 'sqr "number" z))
+  (* z z))
 
 (define pi (atan 0 -1))
 
 ;; sgn function
 (define (sgn x)
+  (unless (real? x) (raise-type-error 'sgn "real number" x))
   (if (exact? x)
     (cond [(< x 0) -1] [(> x 0) 1] [else 0])
     (cond [(< x 0.0) -1.0] [(> x 0.0) 1.0] [else 0.0])))
 
 ;; complex conjugate
 (define (conjugate z)
+  (unless (number? z) (raise-type-error 'conjugate "number" z))
   (make-rectangular (real-part z) (- (imag-part z))))
 
 ;; real hyperbolic functions
 (define (sinh x)
+  (unless (number? x) (raise-type-error 'sinh "number" x))
   (/ (- (exp x) (exp (- x))) 2.0))
 
 (define (cosh x)
+  (unless (number? x) (raise-type-error 'cosh "number" x))
   (/ (+ (exp x) (exp (- x))) 2.0))
 
-(define (tanh x) (/ (sinh x) (cosh x)))
+(define (tanh x)
+  (unless (number? x) (raise-type-error 'tanh "number" x))
+  (/ (sinh x) (cosh x)))
 
 (define order-of-magnitude
   (let* ([exact-log (λ (x) (inexact->exact (log x)))]
