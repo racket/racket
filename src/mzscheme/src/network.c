@@ -1723,15 +1723,24 @@ tcp_connect_break(int argc, Scheme_Object *argv[])
 }
 
 
-static short get_no_portno(tcp_t socket)
+static unsigned short get_no_portno(tcp_t socket, int *_errid)
 {
-  GC_CAN_IGNORE struct sockaddr_in addr;
-  unsigned int l = sizeof(struct sockaddr);
+  char here[MZ_SOCK_NAME_MAX_LEN];
+  unsigned int l = sizeof(here);
+  unsigned short no_port;
 
-  if (getsockname(socket, (struct sockaddr *) &addr, &l)) {
-    scheme_raise_exn(MZEXN_FAIL_NETWORK, "tcp-addresses: could not get local address (%e)", SOCK_ERRNO());
+  if (getsockname(socket, (struct sockaddr *)here, &l)) {
+    int errid;
+    errid = SOCK_ERRNO();
+    *_errid = errid;
+    return 0;
   }
-  return addr.sin_port; 
+
+  /* don't use ntohs, since the result is put back into another sin_port: */
+  no_port = ((struct sockaddr_in *)here)->sin_port;
+  if (!no_port)
+    *_errid = 0;
+  return no_port;
 }
 
 static Scheme_Object *
@@ -1820,7 +1829,7 @@ tcp_listen(int argc, Scheme_Object *argv[])
 #endif
       int first_time = 1;
       int first_was_zero = 0;
-      short no_port = 0;
+      unsigned short no_port = 0;
 
       errid = 0;
       for (addr = tcp_listen_addr; addr; ) {
@@ -1895,8 +1904,12 @@ tcp_listen(int argc, Scheme_Object *argv[])
 	  if (!bind(s, addr->ai_addr, addr->ai_addrlen)) {
             if (first_time) {
               if (((struct sockaddr_in *)addr->ai_addr)->sin_port == 0) {
-                no_port = get_no_portno(s);
+                no_port = get_no_portno(s, &errid);
                 first_was_zero = 1;
+		if (no_port == 0) {
+		  closesocket(s);
+		  break;
+		}
               }
               first_time = 0;
             }
