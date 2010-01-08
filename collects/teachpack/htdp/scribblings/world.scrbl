@@ -1,6 +1,7 @@
 #lang scribble/doc
 
 @(require scribble/manual
+          (only-in scribble/core make-nested-flow make-style)
           "shared.ss"
 	  scribble/struct
           (for-label scheme
@@ -10,6 +11,12 @@
 @teachpack["world"]{Simulations and Animations}
 
 @defmodule[#:require-form beginner-require htdp/world #:use-sources (htdp/image)]
+
+@(make-table (make-with-attributes 'centered
+	       `((cellspacing . "6")
+		 (height . "600")
+		 (width . "70%")))
+   (list (list (list (make-paragraph "This teachpack is deprecated. Use 2htdp/universe instead.")))))
 
 @emph{Note}: For a quick and educational introduction to the teachpack, see
 @link["http://www.ccs.neu.edu/home/matthias/HtDP/Prologue/book.html"]{How
