@@ -452,7 +452,8 @@ used.
 
 @defproc[(log [z number?]) number?]{ Returns the natural logarithm of
  @scheme[z].  The result is normally inexact, but it is
- @scheme[0] when @scheme[z] is an exact @scheme[1].
+ @scheme[0] when @scheme[z] is an exact @scheme[1]. When @scheme[z]
+ is exact @scheme[0], @exnraise[exn:fail:contract:divide-by-zero].}
 
 @mz-examples[(log (exp 1)) (log 2+3i) (log 1)]}
 

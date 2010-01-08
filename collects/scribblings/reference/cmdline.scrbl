@@ -209,7 +209,7 @@ Example:
 
 @defproc[(parse-command-line [name (or/c string? path?)]
                              [argv (or/c (listof string?) (vectorof string?))]
-                             [table (listof (list/c symbol? list?))]
+                             [table (listof (cons/c symbol? list?))]
                              [finish-proc ((list?) () #:rest list? . ->* . any)]
                              [arg-help-strs (listof string?)]
                              [help-proc (string? . -> . any) (lambda (str) ....)]
@@ -257,7 +257,7 @@ string and exits and the default @scheme[unknown-proc] raises the
 @scheme[exn:fail] exception.
 
 A @scheme[table] is a list of flag specification sets. Each set is
-represented as a list of two items: a mode symbol and a list of either
+represented as a pair of two items: a mode symbol and a list of either
 help strings or flag specifications.  A mode symbol is one of
 @scheme['once-each], @scheme['once-any], @scheme['multi],
 @scheme['final], or @scheme['help-labels], with the same meanings as
