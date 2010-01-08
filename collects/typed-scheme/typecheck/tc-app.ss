@@ -32,30 +32,52 @@
 
 ;; comparators that inform the type system
 (define-syntax-class comparator
-  #:literals (eq? equal? eqv? = string=? symbol=? memq member)
-  (pattern eq?) (pattern equal?) (pattern eqv?) (pattern =) (pattern string=?) (pattern symbol=?) (pattern member))
+  #:literals (eq? equal? eqv? = string=? symbol=? memq member memv)
+  (pattern eq?) (pattern equal?) (pattern eqv?) (pattern =) (pattern string=?) (pattern symbol=?) 
+  (pattern member) (pattern memq) (pattern memv))
 
 ;; typecheck eq? applications
 ;; identifier expr expr -> tc-results
 (define (tc/eq comparator v1 v2)  
+  (define (eq?-able e) (or (boolean? e) (keyword? e) (symbol? e)))
+  (define (eqv?-able e) (or (eq?-able e) (number? e)))
+  (define (equal?-able e) #t)
   (define (ok? val)
     (define-syntax-rule (alt nm pred ...) (and (free-identifier=? #'nm comparator) (or (pred val) ...)))
     (or (alt symbol=? symbol?)
         (alt string=? string?)
         (alt = number?)
-        (alt eq? boolean? keyword? symbol?)
-        (alt eqv? boolean? keyword? symbol? number?)
-        (alt equal? (lambda (x) #t))))
+        (alt eq? eq?-able)
+        (alt eqv? eqv?-able)
+        (alt equal? equal?-able)))
   (match* ((single-value v1) (single-value v2))
     [((tc-result1: t _ o) (tc-result1: (Value: (? ok? val))))
      (ret -Boolean (apply-filter (make-LFilterSet (list (make-LTypeFilter (-val val) null 0)) (list (make-LNotTypeFilter (-val val) null 0))) t o))]
     [((tc-result1: (Value: (? ok? val))) (tc-result1: t _ o))
      (ret -Boolean (apply-filter (make-LFilterSet (list (make-LTypeFilter (-val val) null 0)) (list (make-LNotTypeFilter (-val val) null 0))) t o))]
     [((tc-result1: t _ o)
-      (and (? (lambda _ (free-identifier=? #'member comparator))) 
-           (tc-result1: (app untuple (list ts ...)))))
+      (and (? (lambda _ (free-identifier=? #'member comparator)))
+           (tc-result1: (app untuple (list (and ts (Value: _)) ...)))))
      (let ([ty (apply Un ts)])
-       (ret -Boolean 
+       (ret (Un (-val #f) t) 
+            (apply-filter 
+             (make-LFilterSet (list (make-LTypeFilter ty null 0))
+                              (list (make-LNotTypeFilter ty null 0)))
+             t o)))]
+    [((tc-result1: t _ o)
+      (and (? (lambda _ (free-identifier=? #'memv comparator)))
+           (tc-result1: (app untuple (list (and ts (Value: (? eqv?-able))) ...)))))
+     (let ([ty (apply Un ts)])
+       (ret (Un (-val #f) t) 
+            (apply-filter 
+             (make-LFilterSet (list (make-LTypeFilter ty null 0))
+                              (list (make-LNotTypeFilter ty null 0)))
+             t o)))]
+    [((tc-result1: t _ o)
+      (and (? (lambda _ (free-identifier=? #'memq comparator)))
+           (tc-result1: (app untuple (list (and ts (Value: (? eq?-able))) ...)))))
+     (let ([ty (apply Un ts)])
+       (ret (Un (-val #f) t) 
             (apply-filter 
              (make-LFilterSet (list (make-LTypeFilter ty null 0))
                               (list (make-LNotTypeFilter ty null 0)))
@@ -394,9 +416,11 @@
     ;; in eq? cases, call tc/eq
     [(#%plain-app eq?:comparator v1 v2)
      ;; make sure the whole expression is type correct
-     (tc/funapp #'eq? #'(v1 v2) (single-value #'eq?) (map single-value (syntax->list #'(v1 v2))) expected)
-     ;; check thn and els with the eq? info
-     (tc/eq #'eq? #'v1 #'v2)]
+     (match* ((tc/funapp #'eq? #'(v1 v2) (single-value #'eq?) (map single-value (syntax->list #'(v1 v2))) expected)
+              ;; check thn and els with the eq? info
+              (tc/eq #'eq? #'v1 #'v2))
+       [((tc-result1: t) (tc-result1: t* f o))
+        (ret t f o)])]
     ;; special-case for not - flip the filters
     [(#%plain-app not arg)
      (match (single-value #'arg)
