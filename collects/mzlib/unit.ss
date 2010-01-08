@@ -463,13 +463,13 @@
     (cons (car x)
           (signature-siginfo (lookup-signature (cdr x)))))
                  
-  (define-for-syntax (make-import-unboxing var loc ctc)
+  (define-for-syntax (make-import-unboxing var renamings loc ctc)
     (if ctc
         (with-syntax ([ctc-stx (syntax-property ctc 'inferred-name var)])
           (quasisyntax/loc (error-syntax)
             (quote-syntax (let ([v/c (#,loc)])
                             (if (pair? v/c)
-                                (contract ctc-stx (car v/c) (cdr v/c)
+                                (contract (let-syntax #,renamings ctc-stx) (car v/c) (cdr v/c)
                                           (current-contract-region)
                                           #,(id->contract-src-info var))
                                 (error 'unit "contracted import ~a used before definition"
@@ -561,16 +561,24 @@
                         (let-values ([(iloc ...)
                                       (vector->values (hash-table-get import-table import-key) 0 icount)]
                                      ...)
-                          (letrec-syntaxes (#,@(map (lambda (ivs ils ics)
-                                                      (quasisyntax/loc (error-syntax)
-                                                        [#,ivs
-                                                         (make-id-mappers
-                                                          #,@(map (lambda (iv l c)
-                                                                    (make-import-unboxing iv l c))
-                                                                  (syntax->list ivs)
-                                                                  (syntax->list ils)
-                                                                  ics))]))
+                          (letrec-syntaxes (#,@(map (lambda (ivs e-ivs ils ics)
+                                                      (with-syntax ([renamings 
+                                                                     (map (λ (ev iv)
+                                                                            #`(#,ev 
+                                                                               (make-rename-transformer
+                                                                                (quote-syntax #,iv))))
+                                                                          (syntax->list e-ivs)
+                                                                          (syntax->list ivs))])
+                                                        (quasisyntax/loc (error-syntax)
+                                                          [#,ivs
+                                                           (make-id-mappers
+                                                            #,@(map (lambda (iv l c)
+                                                                      (make-import-unboxing iv #'renamings l c))
+                                                                    (syntax->list ivs)
+                                                                    (syntax->list ils)
+                                                                    ics))])))
                                                     (syntax->list #'((int-ivar ...) ...))
+                                                    (syntax->list #'((ext-ivar ...) ...))
                                                     (syntax->list #'((iloc ...) ...))
                                                     (map cadddr import-sigs)))
                                            (letrec-syntaxes+values (renames ...

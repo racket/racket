@@ -862,3 +862,28 @@
     (make-student 4 3))
   (test-contract-error top-level "student-id" "not a student"
     (student-id 'a)))
+
+;; Test that prefixing doesn't cause issues.
+(let ()
+  (define-signature t^
+    ((contracted (t? (any/c . -> . boolean?))
+                 (make-t (-> t?)))))
+  
+  (define-unit t@
+    (import)
+    (export t^)
+    (define-struct t ()))
+  
+  (define-signature s^ (new-make-t))
+  
+  (define-unit s@
+    (import (prefix pre: t^))
+    (export s^)
+    (define new-make-t pre:make-t))
+  
+  (define c@ (compound-unit (import)
+                            (export S)
+                            (link [((T : t^)) t@]
+                                  [((S : s^)) s@ T])))
+  (define-values/invoke-unit c@ (import) (export s^))
+  (new-make-t))
