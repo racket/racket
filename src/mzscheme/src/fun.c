@@ -8195,9 +8195,10 @@ long scheme_get_process_milliseconds(void)
   {
     FILETIME cr, ex, kr, us;
     if (GetProcessTimes(GetCurrentProcess(), &cr, &ex, &kr, &us)) {
-      unsigned long n;
-      n = (kr.dwLowDateTime + us.dwLowDateTime) / 10000;
-      return n;
+      mzlonglong v;
+      v = ((((mzlonglong)kr.dwHighDateTime << 32) + kr.dwLowDateTime)
+	   + (((mzlonglong)us.dwHighDateTime << 32) + us.dwLowDateTime));
+      return (unsigned long)(v / 10000);
     }
   }
 #   endif
