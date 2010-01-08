@@ -233,6 +233,7 @@ void scheme_init_dynamic_extension(Scheme_Env *env);
 #ifndef NO_REGEXP_UTILS
 extern void scheme_regexp_initialize(Scheme_Env *env);
 #endif
+void scheme_init_salloc(void);
 #ifdef MZ_USE_JIT
 void scheme_init_jit(void);
 #endif
@@ -2965,7 +2966,7 @@ void scheme_non_fixnum_result(const char *name, Scheme_Object *o);
 
 void scheme_raise_out_of_memory(const char *where, const char *msg, ...);
 
-extern unsigned long scheme_max_found_symbol_name;
+unsigned long scheme_get_max_symbol_length();
 
 char *scheme_make_arity_expect_string(Scheme_Object *proc,
 				      int argc, Scheme_Object **argv,

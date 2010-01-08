@@ -47,7 +47,7 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *cache_ht);
 /* read-only globals */
 SHARED_OK static char compacts[_CPT_COUNT_];
 SHARED_OK static Scheme_Hash_Table *global_constants_ht;
-static Scheme_Object *quote_link_symbol = NULL;
+SHARED_OK static Scheme_Object *quote_link_symbol = NULL;
 
 /* Flag for debugging compiled code in printed form: */
 #define NO_COMPACT 0

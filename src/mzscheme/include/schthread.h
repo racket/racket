@@ -258,6 +258,7 @@ typedef struct Thread_Local_Variables {
   long scheme_code_page_total_;
   int locale_on_;
   const mzchar *current_locale_name_;
+  int gensym_counter_;
 /*KPLAKE1*/
 } Thread_Local_Variables;
 
@@ -501,6 +502,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_code_page_total XOA (scheme_get_thread_local_variables()->scheme_code_page_total_)
 #define locale_on XOA (scheme_get_thread_local_variables()->locale_on_)
 #define current_locale_name XOA (scheme_get_thread_local_variables()->current_locale_name_)
+#define gensym_counter XOA (scheme_get_thread_local_variables()->gensym_counter_)
 /*KPLAKE2*/
 
 /* **************************************** */

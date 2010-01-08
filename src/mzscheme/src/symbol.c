@@ -60,11 +60,11 @@ SHARED_OK mzrt_rwlock *symbol_table_lock;
 # define mzrt_rwlock_unlock(l) /* empty */
 #endif
 
-unsigned long scheme_max_found_symbol_name;
+SHARED_OK static unsigned long scheme_max_symbol_length;
 
 /* globals */
 SHARED_OK int scheme_case_sensitive = 1;
-static int gensym_counter; /*FIXME need atomic increment*/
+THREAD_LOCAL_DECL(static int gensym_counter);
 
 void scheme_set_case_sensitive(int v) { scheme_case_sensitive =  v; }
 
@@ -333,6 +333,12 @@ scheme_init_symbol (Scheme_Env *env)
   GLOBAL_IMMED_PRIM("gensym",                     gensym,                           0, 1, env);
 }
 
+unsigned long scheme_get_max_symbol_length() {
+  /* x86, x86_64, and powerpc support aligned_atomic_loads_and_stores */
+  return scheme_max_symbol_length;
+}
+
+
 static Scheme_Object *
 make_a_symbol(const char *name, unsigned int len, int kind)
 {
@@ -346,9 +352,13 @@ make_a_symbol(const char *name, unsigned int len, int kind)
   memcpy(sym->s, name, len);
   sym->s[len] = 0;
 
-  if (len > scheme_max_found_symbol_name) {
-    scheme_max_found_symbol_name = len;
+#ifdef MZ_USE_PLACES
+  mzrt_ensure_max_cas(&scheme_max_symbol_length, len);
+#else
+  if ( len > scheme_max_symbol_length ) {
+    scheme_max_symbol_length = len;
   }
+#endif
 
   return (Scheme_Object *) sym;
 }

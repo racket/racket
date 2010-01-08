@@ -110,6 +110,87 @@ void pt_mbox_recv(pt_mbox *mbox, int *type, void **payload, pt_mbox **origin);
 void pt_mbox_send_recv(pt_mbox *mbox, int type, void *payload, pt_mbox *origin, int *return_type, void **return_payload);
 void pt_mbox_destroy(pt_mbox *mbox);
 
+static inline int mzrt_cas(volatile size_t *addr, size_t old, size_t new_val) {
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
+# if defined(__i386__)
+  char result;
+  __asm__ __volatile__("lock; cmpxchgl %3, %0; setz %1"
+      : "=m"(*addr), "=q"(result)
+      : "m"(*addr), "r" (new_val), "a"(old) 
+      : "memory");
+  return (int) result;
+# elif defined(__x86_64__)
+  char result;
+  __asm__ __volatile__("lock; cmpxchgq %3, %0; setz %1"
+      : "=m"(*addr), "=q"(result)
+      : "m"(*addr), "r" (new_val), "a"(old) 
+      : "memory");
+  return (int) result;
+# elif defined(__powerpc__) || defined(__ppc__) || defined(__PPC__) \
+     || defined(__powerpc64__) || defined(__ppc64__)
+
+#  if defined(__powerpc64__) || defined(__ppc64__) || defined(__64BIT__)
+/* FIXME: Completely untested.  */
+  AO_t oldval;
+  int result = 0;
+
+  __asm__ __volatile__(
+               "1:ldarx %0,0,%2\n"   /* load and reserve              */
+               "cmpd %0, %4\n"      /* if load is not equal to  */
+               "bne 2f\n"            /*   old, fail     */
+               "stdcx. %3,0,%2\n"    /* else store conditional         */
+               "bne- 1b\n"           /* retry if lost reservation      */
+         "li %1,1\n"       /* result = 1;     */
+               "2:\n"
+              : "=&r"(oldval), "=&r"(result)
+              : "r"(addr), "r"(new_val), "r"(old), "1"(result)
+              : "memory", "cc");
+
+  return result;
+#  else
+  AO_t oldval;
+  int result = 0;
+
+  __asm__ __volatile__(
+               "1:lwarx %0,0,%2\n"   /* load and reserve              */
+               "cmpw %0, %4\n"      /* if load is not equal to  */
+               "bne 2f\n"            /*   old, fail     */
+               "stwcx. %3,0,%2\n"    /* else store conditional         */
+               "bne- 1b\n"           /* retry if lost reservation      */
+         "li %1,1\n"       /* result = 1;     */
+               "2:\n"
+              : "=&r"(oldval), "=&r"(result)
+              : "r"(addr), "r"(new_val), "r"(old), "1"(result)
+              : "memory", "cc");
+
+  return result;
+#  endif
+# else
+# error mzrt_cas not defined on this platform
+# endif
+#elif defined(_MSC_VER)
+# if defined(_AMD64_)
+  return _InterlockedCompareExchange64((LONGLONG volatile *)addr, (LONGLONG)new_val, (LONGLONG)old) == (LONGLONG)old
+# elif _M_IX86 >= 400
+  return _InterlockedCompareExchange((LONG volatile *)addr, (LONG)new_val, (LONG)old) == (LONG)old;
+# endif
+#else
+# error mzrt_cas not defined on this platform
+#endif
+}
+
+static inline void mzrt_ensure_max_cas(unsigned long *atomic_val, unsigned long len) {
+  int set = 0;
+  while(!set) {
+    unsigned long old_val = *atomic_val;
+    if (len > old_val) {
+      set = !mzrt_cas(atomic_val, old_val, len);
+    }
+    else {
+      set = 1;
+    }
+  }
+}
 #endif
 
 #endif

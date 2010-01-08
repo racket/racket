@@ -14,7 +14,7 @@
 	    [p (open-output-bytes)])
 	(write c p)
 	(let ([s (get-output-bytes p)])
-	  (printf "  {~n    static MZCOMPILED_STRING_FAR unsigned char expr[] = {")
+	  (printf "  {~n    SHARED_OK static MZCOMPILED_STRING_FAR unsigned char expr[] = {")
 	  (let loop ([chars (bytes->list s)][pos 0])
 	    (unless (null? chars)
 	      (let ([char (car chars)])

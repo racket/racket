@@ -354,6 +354,7 @@ Scheme_Env *scheme_engine_instance_init() {
 #ifndef DONT_USE_FOREIGN
   scheme_init_foreign_globals();
 #endif
+  scheme_init_salloc();
 #ifdef MZ_USE_JIT
   scheme_init_jit();
 #endif

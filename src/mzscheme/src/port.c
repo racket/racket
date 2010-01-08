@@ -310,7 +310,7 @@ HOOK_SHARED_OK Scheme_Object *(*scheme_make_stdin)(void) = NULL;
 HOOK_SHARED_OK Scheme_Object *(*scheme_make_stdout)(void) = NULL;
 HOOK_SHARED_OK Scheme_Object *(*scheme_make_stderr)(void) = NULL;
 
-MZ_DLLSPEC int scheme_binary_mode_stdio;
+SHARED_OK MZ_DLLSPEC int scheme_binary_mode_stdio = 0;
 void scheme_set_binary_mode_stdio(int v) { scheme_binary_mode_stdio =  v; }
 
 THREAD_LOCAL_DECL(static int special_is_ok);

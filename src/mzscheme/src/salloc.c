@@ -89,6 +89,25 @@ SHARED_OK static int use_registered_statics;
 extern MZ_DLLIMPORT void GC_init();
 #endif
 
+struct free_list_entry {
+  long size; /* size of elements in this bucket */
+  void *elems; /* doubly linked list for free blocks */
+  int count; /* number of items in `elems' */
+};
+
+SHARED_OK static struct free_list_entry *free_list;
+SHARED_OK static int free_list_bucket_count;
+#ifdef MZ_USE_PLACES
+SHARED_OK static mzrt_mutex *free_list_mutex;
+#endif
+
+
+void scheme_init_salloc() {
+#ifdef MZ_USE_PLACES
+  mzrt_mutex_create(&free_list_mutex);
+#endif
+}
+
 void scheme_set_stack_base(void *base, int no_auto_statics)
 {
 #ifdef MZ_PRECISE_GC
@@ -739,15 +758,6 @@ static int fd, fd_created;
 #if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
 
 
-FIXME_LATER struct free_list_entry {
-  long size; /* size of elements in this bucket */
-  void *elems; /* doubly linked list for free blocks */
-  int count; /* number of items in `elems' */
-};
-
-static struct free_list_entry *free_list;
-static int free_list_bucket_count;
-
 static long get_page_size()
 {
 # ifdef PAGESIZE
@@ -865,8 +875,13 @@ static long free_list_find_bucket(long size)
 void *scheme_malloc_code(long size)
 {
 #if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
+
   long size2, bucket, sz, page_size;
   void *p, *pg, *prev;
+
+# ifdef MZ_USE_PLACES
+  mzrt_mutex_lock(free_list_mutex);
+# endif
 
   if (size < CODE_HEADER_SIZE) {
     /* ensure CODE_HEADER_SIZE alignment 
@@ -891,44 +906,49 @@ void *scheme_malloc_code(long size)
     *(long *)pg = sz;
     LOG_CODE_MALLOC(1, printf("allocated large %p (%ld) [now %ld]\n", 
                               pg, size + CODE_HEADER_SIZE, scheme_code_page_total));
-    return ((char *)pg) + CODE_HEADER_SIZE;
+    p = ((char *)pg) + CODE_HEADER_SIZE;
   }
+  else {
+    bucket = free_list_find_bucket(size);
+    size2 = free_list[bucket].size;
 
-  bucket = free_list_find_bucket(size);
-  size2 = free_list[bucket].size;
-
-  if (!free_list[bucket].elems) {
-    /* add a new page's worth of items to the free list */
-    int i, count = 0;
-    pg = malloc_page(page_size);
-    scheme_code_page_total += page_size;
-    LOG_CODE_MALLOC(2, printf("new page for %ld / %ld at %p [now %ld]\n", 
-                              size2, bucket, pg, scheme_code_page_total));
-    sz = page_size - size2;
-    for (i = CODE_HEADER_SIZE; i <= sz; i += size2) {
-      p = ((char *)pg) + i;
-      prev = free_list[bucket].elems;
-      ((void **)p)[0] = prev;
-      ((void **)p)[1] = NULL;
-      if (prev)
-        ((void **)prev)[1] = p;
-      free_list[bucket].elems = p;
-      count++;
+    if (!free_list[bucket].elems) {
+      /* add a new page's worth of items to the free list */
+      int i, count = 0;
+      pg = malloc_page(page_size);
+      scheme_code_page_total += page_size;
+      LOG_CODE_MALLOC(2, printf("new page for %ld / %ld at %p [now %ld]\n", 
+            size2, bucket, pg, scheme_code_page_total));
+      sz = page_size - size2;
+      for (i = CODE_HEADER_SIZE; i <= sz; i += size2) {
+        p = ((char *)pg) + i;
+        prev = free_list[bucket].elems;
+        ((void **)p)[0] = prev;
+        ((void **)p)[1] = NULL;
+        if (prev)
+          ((void **)prev)[1] = p;
+        free_list[bucket].elems = p;
+        count++;
+      }
+      ((long *)pg)[0] = bucket; /* first long of page indicates bucket */
+      ((long *)pg)[1] = 0; /* second long indicates number of allocated on page */
+      free_list[bucket].count = count;
     }
-    ((long *)pg)[0] = bucket; /* first long of page indicates bucket */
-    ((long *)pg)[1] = 0; /* second long indicates number of allocated on page */
-    free_list[bucket].count = count;
+
+    p = free_list[bucket].elems;
+    prev = ((void **)p)[0];
+    free_list[bucket].elems = prev;
+    --free_list[bucket].count;
+    if (prev)
+      ((void **)prev)[1] = NULL;
+    ((long *)CODE_PAGE_OF(p))[1] += 1;
+
+    LOG_CODE_MALLOC(0, printf("allocated %ld (->%ld / %ld)\n", size, size2, bucket));
   }
 
-  p = free_list[bucket].elems;
-  prev = ((void **)p)[0];
-  free_list[bucket].elems = prev;
-  --free_list[bucket].count;
-  if (prev)
-    ((void **)prev)[1] = NULL;
-  ((long *)CODE_PAGE_OF(p))[1] += 1;
-  
-  LOG_CODE_MALLOC(0, printf("allocated %ld (->%ld / %ld)\n", size, size2, bucket));
+# ifdef MZ_USE_PLACES
+  mzrt_mutex_unlock(free_list_mutex);
+# endif
 
   return p;
 #else
@@ -942,6 +962,10 @@ void scheme_free_code(void *p)
   long size, size2, bucket, page_size;
   int per_page, n;
   void *prev;
+
+# ifdef MZ_USE_PLACES
+  mzrt_mutex_lock(free_list_mutex);
+# endif
 
   page_size = get_page_size();
 
@@ -1015,6 +1039,10 @@ void scheme_free_code(void *p)
                               CODE_PAGE_OF(p), scheme_code_page_total));
     free_page(CODE_PAGE_OF(p), page_size);
   }
+# ifdef MZ_USE_PLACES
+  mzrt_mutex_unlock(free_list_mutex);
+# endif
+
 #else
   free(p);
 #endif

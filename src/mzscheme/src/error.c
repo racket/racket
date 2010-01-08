@@ -771,14 +771,18 @@ static long get_print_width(void)
 
 static char *init_buf(long *len, long *_size)
 {
-  long size, print_width;
+  unsigned long local_max_symbol_length;
+  long print_width;
+  long size;
+  
+  local_max_symbol_length = scheme_get_max_symbol_length();
+  print_width             = get_print_width();
 
-  print_width = get_print_width();
+  size = (3 * local_max_symbol_length + 500 + 2 * print_width);
 
+  /* out parameters */
   if (len)
     *len = print_width;
-
-  size = (3 * scheme_max_found_symbol_name + 500 + 2 * print_width);
   if (_size)
     *_size = size;
 
