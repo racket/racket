@@ -32,6 +32,7 @@
 (define-struct (mrule base) (me1 locals me2 ?2 etx next) #:transparent)
 
 ;; A LocalAction is one of:
+(define-struct local-exn (exn) #:transparent)
 (define-struct (local-expansion node) (for-stx? me1 inner lifted me2 opaque)
   #:transparent)
 (define-struct local-lift (expr ids) #:transparent)
@@ -44,15 +45,15 @@
 (define-struct (prule base) () #:transparent)
 (define-struct (p:variable prule) () #:transparent)
 
-;;   (make-p:module <Base> ?exn ?stx stx ?Deriv ?stx ?exn Deriv ?stx)
+;;   (make-p:module <Base> (listof LocalAction) ?stx stx ?Deriv ?stx ?exn Deriv ?stx)
 ;;   (make-p:#%module-begin <Base> Stx ModulePass1 ModulePass2 ?exn)
-(define-struct (p:module prule) (?2 tag rename check tag2 ?3 body shift)
+(define-struct (p:module prule) (locals tag rename check tag2 ?3 body shift)
   #:transparent)
 (define-struct (p:#%module-begin prule) (me pass1 pass2 ?2) #:transparent)
 
-;;   (make-p:define-syntaxes <Base> DerivLL)
+;;   (make-p:define-syntaxes <Base> DerivLL (listof LocalAction))
 ;;   (make-p:define-values <Base> Deriv)
-(define-struct (p:define-syntaxes prule) (rhs ?2) #:transparent)
+(define-struct (p:define-syntaxes prule) (rhs locals) #:transparent)
 (define-struct (p:define-values prule) (rhs) #:transparent)
 
 ;;   (make-p:#%expression <Base> Deriv ?Stx)
@@ -89,15 +90,15 @@
 ;;   (make-p:provide <Base> (listof Deriv) ?exn)
 (define-struct (p:provide prule) (inners ?2) #:transparent)
 
+;;   (make-p:require <Base> (listof LocalAction))
+(define-struct (p:require prule) (locals) #:transparent)
+
 ;;   (make-p:stop <Base>)
 ;;   (make-p:unknown <Base>)
 ;;   (make-p:#%top <Base> Stx)
 ;;   (make-p:#%datum <Base> Stx)
 ;;   (make-p:quote <Base>)
 ;;   (make-p:quote-syntax <Base>)
-;;   (make-p:require <Base>)
-;;   (make-p:require-for-syntax <Base>)
-;;   (make-p:require-for-template <Base>)
 ;;   (make-p:#%variable-reference <Base>)
 (define-struct (p::STOP prule) () #:transparent)
 (define-struct (p:stop p::STOP) () #:transparent)
@@ -106,9 +107,6 @@
 (define-struct (p:#%datum p::STOP) () #:transparent)
 (define-struct (p:quote p::STOP) () #:transparent)
 (define-struct (p:quote-syntax p::STOP) () #:transparent)
-(define-struct (p:require p::STOP) () #:transparent)
-(define-struct (p:require-for-syntax p::STOP) () #:transparent)
-(define-struct (p:require-for-template p::STOP) () #:transparent)
 (define-struct (p:#%variable-reference p::STOP) () #:transparent)
 
 ;; A LDeriv is
@@ -133,8 +131,8 @@
 (define-struct (b:defstx brule) (head ?1 rename ?2 bindrhs) #:transparent)
 
 ;; A BindSyntaxes is
-;;   (make-bind-syntaxes DerivLL ?exn)
-(define-struct bind-syntaxes (rhs ?1) #:transparent)
+;;   (make-bind-syntaxes DerivLL (listof LocalAction))
+(define-struct bind-syntaxes (rhs locals) #:transparent)
 
 ;; A CaseLambdaClause is
 ;;   (make-clc ?exn CaseLambdaRename BDeriv)
@@ -165,9 +163,7 @@
 ;; A ModPrim is a PRule in:
 ;;   (make-p:define-values <Base> #:transparent)
 ;;   (make-p:define-syntaxes <Base> Deriv)
-;;   (make-p:require <Base>)
-;;   (make-p:require-for-syntax <Base>)
-;;   (make-p:require-for-template <Base>)
+;;   (make-p:require <Base> (listof LocalAction))
 ;;   (make-p:provide <Base>)
 ;;   #f
 
