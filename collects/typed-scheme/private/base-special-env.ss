@@ -10,7 +10,7 @@
  (only-in scheme/match/runtime match:error)
  scheme/promise
  string-constants/string-constant
- (prefix-in ce: test-engine/scheme-tests)
+ ;(prefix-in ce: test-engine/scheme-tests)
  (for-syntax
   scheme/base syntax/parse
   (utils tc-utils)
@@ -76,37 +76,7 @@
   (-poly (a b) 
          (cl->*
           (-> (-lst a) (-val '()) (-lst a))
-          (-> (-lst a) (-lst b) (-lst (*Un a b)))))
-  [(syntax-parse (local-expand #'(ce:test) 'expression null)
-                 #:context #'ce:test
-     [(_ ce-t:id) #'ce-t])
-   (-> -Void)]
-  
-  [(syntax-parse (local-expand #'(ce:check-expect 1 1) 'module #f)
-                 #:literals (let when define-values)
-    [(define-values _ 
-       (let ((_ _))
-         (when _ 
-           (insert-test _ (lambda () (check-values-expected _ _ _ _))))))
-     #'insert-test])
-   (Univ (-> Univ) . -> . -Void)]
-  [(syntax-parse (local-expand #'(ce:check-expect 1 1) 'module #f)
-                 #:literals (let when define-values)
-                 ;#:literal-sets (kernel-literals)
-    [(define-values _ 
-       (let ((_ _))
-         (when _ 
-           (insert-test _ (lambda () (check-values-expected _ _ _ _))))))
-     #'check-values-expected])
-   ((-> Univ) Univ Univ Univ . -> . -Void)]
-  [(syntax-parse (local-expand #'(ce:check-expect 1 1) 'module #f)
-                 #:literals (let when define-values)
-                 ;#:literal-sets (kernel-literals)
-    [(define-values _ 
-       (let ((_ (nvv _ _ builder _)))
-         _))
-     #'builder])
-   (-> Univ)])
+          (-> (-lst a) (-lst b) (-lst (*Un a b))))))
      
      
      
