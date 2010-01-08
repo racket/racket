@@ -40,6 +40,10 @@ AO_INSTALL_DIR=$(srcdir)/libatomic_ops
 LIBATOM_USE=libatomic_ops/libatomic_ops.a
 LIBATOM_NONE=
 
+# for version.mak:
+mainsrcdir = @srcdir@/../..
+@INCLUDEDEP@ @srcdir@/../version.mak
+
 # compiler options; mainly used to allow importing options
 OPTIONS=@OPTIONS@ @CGCOPTIONS@
 
