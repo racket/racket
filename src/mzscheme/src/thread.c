@@ -119,7 +119,7 @@ extern void scheme_gmp_tls_restore_snapshot(long *s, void *data, long *save, int
 
 static void check_ready_break();
 
-extern int scheme_num_read_syntax_objects;
+THREAD_LOCAL_DECL(extern int scheme_num_read_syntax_objects);
 THREAD_LOCAL_DECL(extern long scheme_hash_request_count);
 THREAD_LOCAL_DECL(extern long scheme_hash_iteration_count);
 #ifdef MZ_USE_JIT
@@ -138,7 +138,7 @@ extern int scheme_jit_malloced;
 # define MZ_THREAD_QUANTUM_USEC 10000
 #endif
 
-static int buffer_init_size = INIT_TB_SIZE;
+THREAD_LOCAL_DECL(static int buffer_init_size);
 
 THREAD_LOCAL_DECL(Scheme_Thread *scheme_current_thread = NULL);
 THREAD_LOCAL_DECL(Scheme_Thread *scheme_main_thread = NULL);
@@ -162,7 +162,7 @@ THREAD_LOCAL_DECL(static int swap_no_setjmp = 0);
 THREAD_LOCAL_DECL(static int thread_swap_count);
 THREAD_LOCAL_DECL(int scheme_did_gc_count);
 
-static int init_load_on_demand = 1;
+SHARED_OK static int init_load_on_demand = 1;
 
 #ifdef RUNSTACK_IS_GLOBAL
 THREAD_LOCAL_DECL(Scheme_Object **scheme_current_runstack_start);
@@ -174,8 +174,7 @@ THREAD_LOCAL_DECL(MZ_MARK_POS_TYPE scheme_current_cont_mark_pos);
 THREAD_LOCAL_DECL(static Scheme_Custodian *main_custodian);
 THREAD_LOCAL_DECL(static Scheme_Custodian *last_custodian);
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *limited_custodians = NULL);
-
-static Scheme_Object *initial_inspector;
+THREAD_LOCAL_DECL(static Scheme_Object *initial_inspector);
 
 #ifndef MZ_PRECISE_GC
 static int cust_box_count, cust_box_alloc;
@@ -190,22 +189,23 @@ ROSYM Scheme_Object *scheme_parameterization_key;
 ROSYM Scheme_Object *scheme_exn_handler_key;
 ROSYM Scheme_Object *scheme_break_enabled_key;
 
-long scheme_total_gc_time;
-static long start_this_gc_time, end_this_gc_time;
+THREAD_LOCAL_DECL(long scheme_total_gc_time);
+THREAD_LOCAL_DECL(static long start_this_gc_time);
+THREAD_LOCAL_DECL(static long end_this_gc_time);
 static void get_ready_for_GC(void);
 static void done_with_GC(void);
 #ifdef MZ_PRECISE_GC
 static void inform_GC(int major_gc, long pre_used, long post_used);
 #endif
 
-static volatile short delayed_break_ready = 0;
-static Scheme_Thread *main_break_target_thread;
+THREAD_LOCAL_DECL(static volatile short delayed_break_ready);
+THREAD_LOCAL_DECL(static Scheme_Thread *main_break_target_thread);
 
-void (*scheme_sleep)(float seconds, void *fds);
-void (*scheme_notify_multithread)(int on);
-void (*scheme_wakeup_on_input)(void *fds);
-int (*scheme_check_for_break)(void);
-void (*scheme_on_atomic_timeout)(void);
+HOOK_SHARED_OK void (*scheme_sleep)(float seconds, void *fds);
+HOOK_SHARED_OK void (*scheme_notify_multithread)(int on);
+HOOK_SHARED_OK void (*scheme_wakeup_on_input)(void *fds);
+HOOK_SHARED_OK int (*scheme_check_for_break)(void);
+HOOK_SHARED_OK void (*scheme_on_atomic_timeout)(void);
 
 ROSYM static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
 ROSYM static Scheme_Object *client_symbol, *server_symbol;
@@ -377,7 +377,7 @@ static int post_system_idle();
 
 static Scheme_Object *current_stats(int argc, Scheme_Object *args[]);
 
-static Scheme_Object **config_map;
+SHARED_OK static Scheme_Object **config_map;
 
 typedef struct {
   MZTAG_IF_REQUIRED
@@ -398,15 +398,14 @@ typedef struct Scheme_Thread_Custodian_Hop {
   Scheme_Thread *p; /* really an indirection with precise gc */
 } Scheme_Thread_Custodian_Hop;
 
-static Scheme_Custodian_Extractor *extractors;
+SHARED_OK static Scheme_Custodian_Extractor *extractors;
 
 typedef struct {
   MZTAG_IF_REQUIRED
   Scheme_Object *key;
   void (*f)(Scheme_Env *);
 } Scheme_NSO;
-static int num_nsos = 0;
-static Scheme_NSO *namespace_options = NULL;
+
 
 #define SETJMP(p) scheme_setjmpup(&p->jmpup_buf, p, p->stack_start)
 #define LONGJMP(p) scheme_longjmpup(&p->jmpup_buf)
@@ -435,6 +434,24 @@ unsigned long scheme_get_current_thread_stack_start(void);
 
 void scheme_init_thread(Scheme_Env *env)
 {
+  REGISTER_SO(read_symbol);
+  REGISTER_SO(write_symbol);
+  REGISTER_SO(execute_symbol);
+  REGISTER_SO(delete_symbol);
+  REGISTER_SO(exists_symbol);
+
+  read_symbol = scheme_intern_symbol("read");
+  write_symbol = scheme_intern_symbol("write");
+  execute_symbol = scheme_intern_symbol("execute");
+  delete_symbol = scheme_intern_symbol("delete");
+  exists_symbol = scheme_intern_symbol("exists");
+
+  REGISTER_SO(client_symbol);
+  REGISTER_SO(server_symbol);
+
+  client_symbol = scheme_intern_symbol("client");
+  server_symbol = scheme_intern_symbol("server");
+
   scheme_add_global_constant("dump-memory-stats",
 			     scheme_make_prim_w_arity(scheme_dump_gc_stats,
 						      "dump-memory-stats",
@@ -782,9 +799,10 @@ void scheme_init_thread(Scheme_Env *env)
 						       "current-thread-initial-stack-size",
 						       MZCONFIG_THREAD_INIT_STACK_SIZE),
 			     env);
+}
 
-
-  REGISTER_SO(namespace_options);
+void scheme_init_thread_places(void) {
+  buffer_init_size = INIT_TB_SIZE;
 }
 
 void scheme_init_memtrace(Scheme_Env *env)
@@ -1647,7 +1665,7 @@ static Scheme_Object *extract_thread(Scheme_Object *o)
   return (Scheme_Object *)WEAKIFIED(((Scheme_Thread_Custodian_Hop *)o)->p);
 }
 
-void scheme_add_custodian_extractor(Scheme_Type t, Scheme_Custodian_Extractor e)
+void scheme_init_custodian_extractors()
 {
   if (!extractors) {
     int n;
@@ -1657,7 +1675,10 @@ void scheme_add_custodian_extractor(Scheme_Type t, Scheme_Custodian_Extractor e)
     memset(extractors, 0, sizeof(Scheme_Custodian_Extractor) * n);
     extractors[scheme_thread_hop_type] = extract_thread;
   }
+}
 
+void scheme_add_custodian_extractor(Scheme_Type t, Scheme_Custodian_Extractor e)
+{
   if (t) {
     extractors[t] = e;
   }
@@ -5170,8 +5191,10 @@ typedef struct Evt {
   int can_redirect;
 } Evt;
 
-static int evts_array_size;
-static Evt **evts;
+
+/* PLACE_THREAD_DECL */
+FIXME_LATER static int evts_array_size;
+FIXME_LATER static Evt **evts;
 
 void scheme_add_evt(Scheme_Type type,
 		    Scheme_Ready_Fun ready, 
@@ -6083,7 +6106,7 @@ static Scheme_Object *thread_cell_set(int argc, Scheme_Object *argv[])
 /*                              parameters                                */
 /*========================================================================*/
 
-static int max_configs = __MZCONFIG_BUILTIN_COUNT__;
+SHARED_OK static int max_configs = __MZCONFIG_BUILTIN_COUNT__;
 static Scheme_Object *do_param(void *data, int argc, Scheme_Object *argv[]);
 
 Scheme_Config *scheme_current_config()
@@ -6866,23 +6889,6 @@ Scheme_Env *scheme_get_env(Scheme_Config *c)
   return (Scheme_Env *)o;
 }
 
-void scheme_add_namespace_option(Scheme_Object *key, void (*f)(Scheme_Env *))
-{
-  Scheme_NSO *old = namespace_options;
-  
-  namespace_options = MALLOC_N_RT(Scheme_NSO, (num_nsos + 1));
-
-  memcpy(namespace_options, old, num_nsos * sizeof(Scheme_NSO));
-
-#ifdef MZTAG_REQUIRED
-  namespace_options[num_nsos].type = scheme_rt_namespace_option;
-#endif
-  namespace_options[num_nsos].key = key;
-  namespace_options[num_nsos].f = f;
-  
-  num_nsos++;
-}
-
 Scheme_Object *scheme_make_namespace(int argc, Scheme_Object *argv[])
 {
   Scheme_Env *genv, *env;
@@ -6965,20 +6971,6 @@ void scheme_security_check_file(const char *who, const char *filename, int guard
   if (sg->file_proc) {
     Scheme_Object *l = scheme_null, *a[3];
 
-    if (!read_symbol) {
-      REGISTER_SO(read_symbol);
-      REGISTER_SO(write_symbol);
-      REGISTER_SO(execute_symbol);
-      REGISTER_SO(delete_symbol);
-      REGISTER_SO(exists_symbol);
-
-      read_symbol = scheme_intern_symbol("read");
-      write_symbol = scheme_intern_symbol("write");
-      execute_symbol = scheme_intern_symbol("execute");
-      delete_symbol = scheme_intern_symbol("delete");
-      exists_symbol = scheme_intern_symbol("exists");
-    }
-
     if (guards & SCHEME_GUARD_FILE_EXISTS)
       l = scheme_make_pair(exists_symbol, l);
     if (guards & SCHEME_GUARD_FILE_DELETE)
@@ -7036,14 +7028,6 @@ void scheme_security_check_network(const char *who, const char *host, int port, 
 
   if (sg->network_proc) {
     Scheme_Object *a[4];
-
-    if (!client_symbol) {
-      REGISTER_SO(client_symbol);
-      REGISTER_SO(server_symbol);
-
-      client_symbol = scheme_intern_symbol("client");
-      server_symbol = scheme_intern_symbol("server");
-    }
 
     a[0] = scheme_intern_symbol(who);
     a[1] = (host ? scheme_make_sized_utf8_string((char *)host, -1) : scheme_false);

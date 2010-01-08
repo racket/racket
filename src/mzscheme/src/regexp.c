@@ -125,7 +125,7 @@ regerror(char *s)
 		   "regexp: %s", s);
 }
 
-const char *failure_msg_for_read;
+THREAD_LOCAL_DECL(const char *failure_msg_for_read);
 
 static void
 regcomperror(char *s)

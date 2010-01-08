@@ -104,7 +104,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[]);
 
 #define REGISTER_SO(x) MZ_REGISTER_STATIC(x)
 
-extern long scheme_total_gc_time;
+THREAD_LOCAL_DECL(extern long scheme_total_gc_time);
 THREAD_LOCAL_DECL(extern int scheme_cont_capture_count);
 THREAD_LOCAL_DECL(extern int scheme_continuation_application_count);
 
@@ -184,6 +184,7 @@ void scheme_init_true_false(void);
 void scheme_init_symbol_table(void);
 void scheme_init_symbol_type(Scheme_Env *env);
 void scheme_init_type();
+void scheme_init_custodian_extractors();
 void scheme_init_bignum();
 void scheme_init_list(Scheme_Env *env);
 void scheme_init_unsafe_list(Scheme_Env *env);
@@ -248,6 +249,8 @@ void scheme_init_place(Scheme_Env *env);
 void scheme_init_futures(Scheme_Env *env);
 
 void scheme_init_print_buffers_places(void);
+void scheme_init_string_places(void);
+void scheme_init_thread_places(void);
 void scheme_init_eval_places(void);
 void scheme_init_port_places(void);
 void scheme_init_regexp_places(void);
@@ -256,6 +259,7 @@ void scheme_init_fun_places(void);
 void scheme_init_sema_places(void);
 void scheme_init_gmp_places(void);
 void scheme_init_print_global_constants(void);
+void scheme_init_variable_references_constants(void);
 void scheme_init_logger(void);
 void scheme_init_file_places(void);
 Scheme_Logger *scheme_get_main_logger(void);
@@ -540,7 +544,7 @@ typedef int (*Scheme_Ready_Fun_FPC)(Scheme_Object *o, Scheme_Schedule_Info *sinf
 
 void scheme_check_break_now(void);
 
-extern int scheme_main_was_once_suspended;
+THREAD_LOCAL_DECL(extern int scheme_main_was_once_suspended);
 
 /* A "flattened" config. Maps parameters to thread cells. */
 typedef struct {

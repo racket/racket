@@ -53,18 +53,20 @@
 /* these are used to set initial config parameterizations */
 SHARED_OK int scheme_square_brackets_are_parens = 1;
 SHARED_OK int scheme_curly_braces_are_parens = 1;
-
-/* performance counter */ /* FIXME should be atomically incremented or not shared */
-int scheme_num_read_syntax_objects;
-
 /* global flag set from environment variable */
 SHARED_OK static int use_perma_cache = 1;
 
+THREAD_LOCAL_DECL(int scheme_num_read_syntax_objects);
+
+
 /* read-only global symbols */
-static char *builtin_fast;  /* FIXME possible init race condition */
+SHARED_OK static char *builtin_fast;
 SHARED_OK static unsigned char delim[128];
+SHARED_OK static unsigned char cpt_branch[256];
+
 /* Table of built-in variable refs for .zo loading: */
-static Scheme_Object **variable_references;
+SHARED_OK static Scheme_Object **variable_references;
+
 ROSYM static Scheme_Object *quote_symbol;
 ROSYM static Scheme_Object *quasiquote_symbol;
 ROSYM static Scheme_Object *unquote_symbol;
@@ -360,8 +362,6 @@ typedef struct {
 
 void scheme_init_read(Scheme_Env *env)
 {
-  REGISTER_SO(variable_references);
-
   REGISTER_SO(quote_symbol);
   REGISTER_SO(quasiquote_symbol);
   REGISTER_SO(unquote_symbol);
@@ -374,6 +374,10 @@ void scheme_init_read(Scheme_Env *env)
 
   REGISTER_SO(unresolved_uninterned_symbol);
   REGISTER_SO(tainted_uninterned_symbol);
+  REGISTER_SO(terminating_macro_symbol);
+  REGISTER_SO(non_terminating_macro_symbol);
+  REGISTER_SO(dispatch_macro_symbol);
+  REGISTER_SO(builtin_fast);
 
   quote_symbol                  = scheme_intern_symbol("quote");
   quasiquote_symbol             = scheme_intern_symbol("quasiquote");
@@ -385,9 +389,62 @@ void scheme_init_read(Scheme_Env *env)
   quasisyntax_symbol            = scheme_intern_symbol("quasisyntax");
   paren_shape_symbol            = scheme_intern_symbol("paren-shape");
 
-  unresolved_uninterned_symbol  = scheme_make_symbol("unresolved");
-  tainted_uninterned_symbol     = scheme_make_symbol("tainted");
+  unresolved_uninterned_symbol = scheme_make_symbol("unresolved");
+  tainted_uninterned_symbol    = scheme_make_symbol("tainted");
+    
+  terminating_macro_symbol     = scheme_intern_symbol("terminating-macro");
+  non_terminating_macro_symbol = scheme_intern_symbol("non-terminating-macro");
+  dispatch_macro_symbol        = scheme_intern_symbol("dispatch-macro");
 
+  /* initialize builtin_fast */
+  {
+    int i; 
+    builtin_fast = scheme_malloc_atomic(128);
+    memset(builtin_fast, READTABLE_CONTINUING, 128);
+    for (i = 0; i < 128; i++) {
+      if (scheme_isspace(i))
+        builtin_fast[i] = READTABLE_WHITESPACE;
+    }
+    builtin_fast[';']  = READTABLE_TERMINATING;
+    builtin_fast['\''] = READTABLE_TERMINATING;
+    builtin_fast[',']  = READTABLE_TERMINATING;
+    builtin_fast['"']  = READTABLE_TERMINATING;
+    builtin_fast['|']  = READTABLE_MULTIPLE_ESCAPE;
+    builtin_fast['\\'] = READTABLE_SINGLE_ESCAPE;
+    builtin_fast['(']  = READTABLE_TERMINATING;
+    builtin_fast['[']  = READTABLE_TERMINATING;
+    builtin_fast['{']  = READTABLE_TERMINATING;
+    builtin_fast[')']  = READTABLE_TERMINATING;
+    builtin_fast[']']  = READTABLE_TERMINATING;
+    builtin_fast['}']  = READTABLE_TERMINATING;
+  }
+
+  /* initialize cpt_branch */
+  {
+    int i;
+
+    for (i = 0; i < 256; i++) {
+      cpt_branch[i] = i;
+    }
+
+#define FILL_IN(v) \
+    for (i = CPT_ ## v ## _START; i < CPT_ ## v ## _END; i++) { \
+      cpt_branch[i] = CPT_ ## v ## _START; \
+    }
+    FILL_IN(SMALL_NUMBER);
+    FILL_IN(SMALL_SYMBOL);
+    FILL_IN(SMALL_MARSHALLED);
+    FILL_IN(SMALL_LIST);
+    FILL_IN(SMALL_PROPER_LIST);
+    FILL_IN(SMALL_LOCAL);
+    FILL_IN(SMALL_LOCAL_UNBOX);
+    FILL_IN(SMALL_SVECTOR);
+    FILL_IN(SMALL_APPLICATION);
+
+    /* These two are handled specially: */
+    cpt_branch[CPT_SMALL_APPLICATION2] = CPT_SMALL_APPLICATION2;
+    cpt_branch[CPT_SMALL_APPLICATION3] = CPT_SMALL_APPLICATION3;
+  }
   
   REGISTER_SO(honu_comma);
   REGISTER_SO(honu_semicolon);
@@ -488,6 +545,13 @@ void scheme_init_read(Scheme_Env *env)
     use_perma_cache = 0;
   }
 }
+
+void scheme_init_variable_references_constants()
+{
+  REGISTER_SO(variable_references);
+  variable_references = scheme_make_builtin_references_table();
+}
+
 
 static Scheme_Simple_Object *malloc_list_stack()
 {
@@ -4263,7 +4327,8 @@ typedef struct Scheme_Load_Delay {
   int perma_cache;
   unsigned char *cached;
   Scheme_Object *cached_port;
-  struct Scheme_Load_Delay *clear_bytes_prev, *clear_bytes_next;
+  struct Scheme_Load_Delay *clear_bytes_prev;
+  struct Scheme_Load_Delay *clear_bytes_next;
 } Scheme_Load_Delay;
 
 #define ZO_CHECK(x) if (!(x)) scheme_ill_formed_code(port);
@@ -4443,7 +4508,6 @@ static Scheme_Object *read_compact_escape(CPort *port)
   return read_inner(ep, NULL, port->ht, scheme_null, &params, 0);
 }
 
-static unsigned char cpt_branch[256];
 
 static Scheme_Object *read_compact(CPort *port, int use_stack);
 
@@ -5129,35 +5193,6 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   Scheme_Object *dir;
   Scheme_Config *config;
 	  
-  if (!cpt_branch[1]) {
-    int i;
-
-    for (i = 0; i < 256; i++) {
-      cpt_branch[i] = i;
-    }
-
-#define FILL_IN(v) \
-    for (i = CPT_ ## v ## _START; i < CPT_ ## v ## _END; i++) { \
-      cpt_branch[i] = CPT_ ## v ## _START; \
-    }
-    FILL_IN(SMALL_NUMBER);
-    FILL_IN(SMALL_SYMBOL);
-    FILL_IN(SMALL_MARSHALLED);
-    FILL_IN(SMALL_LIST);
-    FILL_IN(SMALL_PROPER_LIST);
-    FILL_IN(SMALL_LOCAL);
-    FILL_IN(SMALL_LOCAL_UNBOX);
-    FILL_IN(SMALL_SVECTOR);
-    FILL_IN(SMALL_APPLICATION);
-
-    /* These two are handled specially: */
-    cpt_branch[CPT_SMALL_APPLICATION2] = CPT_SMALL_APPLICATION2;
-    cpt_branch[CPT_SMALL_APPLICATION3] = CPT_SMALL_APPLICATION3;
-  }
-
-  if (!variable_references)
-    variable_references = scheme_make_builtin_references_table();
-
   /* Allow delays? */
   if (params->delay_load_info) {
     delay_info = MALLOC_ONE_RT(Scheme_Load_Delay);
@@ -5338,7 +5373,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
   return result;
 }
 
-static Scheme_Load_Delay *clear_bytes_chain;
+THREAD_LOCAL_DECL(static Scheme_Load_Delay *clear_bytes_chain);
 
 void scheme_clear_delayed_load_cache()
 {
@@ -5790,36 +5825,6 @@ static Scheme_Object *make_readtable(int argc, Scheme_Object **argv)
       return NULL;
     }
     orig_t = (Readtable *)argv[0];
-  }
-
-  if (!terminating_macro_symbol) {
-    REGISTER_SO(terminating_macro_symbol);
-    REGISTER_SO(non_terminating_macro_symbol);
-    REGISTER_SO(dispatch_macro_symbol);
-    REGISTER_SO(builtin_fast);
-    terminating_macro_symbol = scheme_intern_symbol("terminating-macro");
-    non_terminating_macro_symbol = scheme_intern_symbol("non-terminating-macro");
-    dispatch_macro_symbol = scheme_intern_symbol("dispatch-macro");
-    
-    fast = scheme_malloc_atomic(128);
-    memset(fast, READTABLE_CONTINUING, 128);
-    for (i = 0; i < 128; i++) {
-      if (scheme_isspace(i))
-	fast[i] = READTABLE_WHITESPACE;
-    }
-    fast[';'] = READTABLE_TERMINATING;
-    fast['\''] = READTABLE_TERMINATING;
-    fast[','] = READTABLE_TERMINATING;
-    fast['"'] = READTABLE_TERMINATING;
-    fast['|'] = READTABLE_MULTIPLE_ESCAPE;
-    fast['\\'] = READTABLE_SINGLE_ESCAPE;
-    fast['('] = READTABLE_TERMINATING;
-    fast['['] = READTABLE_TERMINATING;
-    fast['{'] = READTABLE_TERMINATING;
-    fast[')'] = READTABLE_TERMINATING;
-    fast[']'] = READTABLE_TERMINATING;
-    fast['}'] = READTABLE_TERMINATING;
-    builtin_fast = fast;
   }
 
   t = MALLOC_ONE_TAGGED(Readtable);

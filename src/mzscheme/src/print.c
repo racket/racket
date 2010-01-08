@@ -32,21 +32,21 @@
 # include <malloc.h>
 #endif
 
-int (*scheme_check_print_is_obj)(Scheme_Object *o);
+HOOK_SHARED_OK int (*scheme_check_print_is_obj)(Scheme_Object *o);
 
 #define QUICK_ENCODE_BUFFER_SIZE 256
 THREAD_LOCAL_DECL(static char *quick_buffer = NULL);
 THREAD_LOCAL_DECL(static char *quick_encode_buffer = NULL);
 
 /* FIXME places possible race condition on growing printer size */
-static Scheme_Type_Printer *printers;
-static int printers_count;
+SHARED_OK static Scheme_Type_Printer *printers;
+SHARED_OK static int printers_count;
 
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *cache_ht);
 
 /* read-only globals */
-static char compacts[_CPT_COUNT_];
-static Scheme_Hash_Table *global_constants_ht;
+SHARED_OK static char compacts[_CPT_COUNT_];
+SHARED_OK static Scheme_Hash_Table *global_constants_ht;
 static Scheme_Object *quote_link_symbol = NULL;
 
 /* Flag for debugging compiled code in printed form: */

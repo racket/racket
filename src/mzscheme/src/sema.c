@@ -57,8 +57,7 @@ static int thread_recv_ready(Scheme_Object *ch, Scheme_Schedule_Info *sinfo);
 
 static int pending_break(Scheme_Thread *p);
 
-int scheme_main_was_once_suspended;
-
+THREAD_LOCAL_DECL(int scheme_main_was_once_suspended);
 THREAD_LOCAL_DECL(static Scheme_Object *system_idle_put_evt);
 READ_ONLY static Scheme_Object *thread_recv_evt;
 

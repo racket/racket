@@ -50,15 +50,15 @@
 # include <windows.h>
 #endif
 
-static void **dgc_array;
-static int *dgc_count;
-static int dgc_size;
+THREAD_LOCAL_DECL(static void **dgc_array);
+THREAD_LOCAL_DECL(static int *dgc_count);
+THREAD_LOCAL_DECL(static int dgc_size);
 
 #ifdef USE_THREAD_LOCAL
 # ifdef IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS
 pthread_key_t scheme_thread_local_key;
 # else
-THREAD_LOCAL Thread_Local_Variables scheme_thread_locals;
+SHARED_OK THREAD_LOCAL Thread_Local_Variables scheme_thread_locals;
 # endif
 #endif
 
@@ -532,7 +532,7 @@ void scheme_free_immobile_box(void **b)
 #endif
 }
 
-static void (*save_oom)(void);
+THREAD_LOCAL_DECL(static void (*save_oom)(void));
 
 static void raise_out_of_memory(void)
 {
@@ -726,7 +726,8 @@ START_XFORM_SKIP;
 /* Max of desired alignment and 2 * sizeof(long): */
 #define CODE_HEADER_SIZE 16
 
-long scheme_code_page_total;
+
+THREAD_LOCAL_DECL(long scheme_code_page_total);
 
 #if defined(MZ_JIT_USE_MPROTECT) && !defined(MAP_ANON)
 static int fd, fd_created;
@@ -737,7 +738,8 @@ static int fd, fd_created;
 
 #if defined(MZ_JIT_USE_MPROTECT) || defined(MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC)
 
-struct free_list_entry {
+
+FIXME_LATER struct free_list_entry {
   long size; /* size of elements in this bucket */
   void *elems; /* doubly linked list for free blocks */
   int count; /* number of items in `elems' */
@@ -751,7 +753,7 @@ static long get_page_size()
 # ifdef PAGESIZE
   const long page_size = PAGESIZE;
 # else
-  static unsigned long page_size = -1;
+  SHARED_OK static unsigned long page_size = -1;
   if (page_size == -1) {
 #  ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
     SYSTEM_INFO info;
@@ -1136,7 +1138,7 @@ END_XFORM_SKIP;
 
 #endif
 
-static int current_lifetime;
+THREAD_LOCAL_DECL(static int current_lifetime);
 
 void scheme_reset_finalizations(void)
 {

@@ -239,6 +239,25 @@ typedef struct Thread_Local_Variables {
   int scheme_force_port_closed_;
   int fd_reserved_;
   int the_fd_;
+  int scheme_num_read_syntax_objects_;
+  struct Scheme_Load_Delay *clear_bytes_chain_;
+  const char *failure_msg_for_read_;
+  void **dgc_array_;
+  int *dgc_count_;
+  int dgc_size_;
+  void (*save_oom_)(void);
+  int current_lifetime_;
+  int scheme_main_was_once_suspended_;
+  int buffer_init_size_;
+  Scheme_Object *initial_inspector_;
+  long scheme_total_gc_time_;
+  long start_this_gc_time_;
+  long end_this_gc_time_;
+  volatile short delayed_break_ready_;
+  Scheme_Thread *main_break_target_thread_;
+  long scheme_code_page_total_;
+  int locale_on_;
+  const mzchar *current_locale_name_;
 /*KPLAKE1*/
 } Thread_Local_Variables;
 
@@ -463,6 +482,25 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_force_port_closed XOA (scheme_get_thread_local_variables()->scheme_force_port_closed_)
 #define fd_reserved XOA (scheme_get_thread_local_variables()->fd_reserved_)
 #define the_fd XOA (scheme_get_thread_local_variables()->the_fd_)
+#define scheme_num_read_syntax_objects XOA (scheme_get_thread_local_variables()->scheme_num_read_syntax_objects_)
+#define clear_bytes_chain XOA (scheme_get_thread_local_variables()->clear_bytes_chain_)
+#define failure_msg_for_read XOA (scheme_get_thread_local_variables()->failure_msg_for_read_)
+#define dgc_array XOA (scheme_get_thread_local_variables()->dgc_array_)
+#define dgc_count XOA (scheme_get_thread_local_variables()->dgc_count_)
+#define dgc_size XOA (scheme_get_thread_local_variables()->dgc_size_)
+#define save_oom XOA (scheme_get_thread_local_variables()->save_oom_)
+#define current_lifetime XOA (scheme_get_thread_local_variables()->current_lifetime_)
+#define scheme_main_was_once_suspended XOA (scheme_get_thread_local_variables()->scheme_main_was_once_suspended_)
+#define buffer_init_size XOA (scheme_get_thread_local_variables()->buffer_init_size_)
+#define initial_inspector XOA (scheme_get_thread_local_variables()->initial_inspector_)
+#define scheme_total_gc_time XOA (scheme_get_thread_local_variables()->scheme_total_gc_time_)
+#define start_this_gc_time XOA (scheme_get_thread_local_variables()->start_this_gc_time_)
+#define end_this_gc_time XOA (scheme_get_thread_local_variables()->end_this_gc_time_)
+#define delayed_break_ready XOA (scheme_get_thread_local_variables()->delayed_break_ready_)
+#define main_break_target_thread XOA (scheme_get_thread_local_variables()->main_break_target_thread_)
+#define scheme_code_page_total XOA (scheme_get_thread_local_variables()->scheme_code_page_total_)
+#define locale_on XOA (scheme_get_thread_local_variables()->locale_on_)
+#define current_locale_name XOA (scheme_get_thread_local_variables()->current_locale_name_)
 /*KPLAKE2*/
 
 /* **************************************** */

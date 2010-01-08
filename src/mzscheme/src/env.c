@@ -350,6 +350,7 @@ Scheme_Env *scheme_engine_instance_init() {
   scheme_init_symbol_table();
   scheme_init_module_path_table();
   scheme_init_type();
+  scheme_init_custodian_extractors();
 #ifndef DONT_USE_FOREIGN
   scheme_init_foreign_globals();
 #endif
@@ -481,6 +482,8 @@ static Scheme_Env *place_instance_init_post_kernel(int initial_main_os_thread) {
   scheme_init_port_places();
   scheme_init_error_escape_proc(NULL);
   scheme_init_print_buffers_places();
+  scheme_init_thread_places();
+  scheme_init_string_places();
   scheme_init_logger();
   scheme_init_eval_places();
   scheme_init_regexp_places();
@@ -727,6 +730,7 @@ static void make_kernel_env(void)
   init_flfxnum(env);
   
   scheme_init_print_global_constants();
+  scheme_init_variable_references_constants();
 
   scheme_defining_primitives = 0;
 }

@@ -916,7 +916,6 @@ typedef struct Scheme_Cont_Frame_Data {
 #  include "../gc2/gc2_obj.h"
 # endif
 #endif
-#include "schthread.h"
 
 typedef void (Scheme_Close_Custodian_Client)(Scheme_Object *o, void *data);
 typedef void (*Scheme_Exit_Closer_Func)(Scheme_Object *, Scheme_Close_Custodian_Client *, void *);
@@ -1114,6 +1113,8 @@ typedef struct Scheme_Thread {
   struct GC_Thread_Info *gc_info; /* managed by the GC */
 #endif
 } Scheme_Thread;
+
+#include "schthread.h"
 
 #if !SCHEME_DIRECT_EMBEDDED
 # ifdef LINK_EXTENSIONS_BY_TABLE

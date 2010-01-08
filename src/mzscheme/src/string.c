@@ -162,8 +162,8 @@ typedef struct Scheme_Converter {
    is called after continuation marks (and hence parameterization)
    may have changed. Similarly, setlocale() is only up-to-date
    when reset_locale() has been called. */
-static int locale_on;
-static const mzchar *current_locale_name = (mzchar *)"xxxx\0\0\0\0";
+THREAD_LOCAL_DECL(static int locale_on);
+THREAD_LOCAL_DECL(static const mzchar *current_locale_name);
 static void reset_locale(void);
 
 #ifdef USE_ICONV_DLL
@@ -341,7 +341,8 @@ READ_ONLY static Scheme_Object *zero_length_byte_string;
 SHARED_OK static Scheme_Hash_Table *putenv_str_table;
 
 SHARED_OK static char *embedding_banner;
-static Scheme_Object *vers_str, *banner_str;
+SHARED_OK static Scheme_Object *vers_str;
+SHARED_OK static Scheme_Object *banner_str;
 
 READ_ONLY static Scheme_Object *complete_symbol, *continues_symbol, *aborts_symbol, *error_symbol;
 
@@ -385,7 +386,13 @@ scheme_init_string (Scheme_Env *env)
   REGISTER_SO(putenv_str_table);
 
   REGISTER_SO(embedding_banner);
-  REGISTER_SO(current_locale_name);
+  REGISTER_SO(vers_str);
+  REGISTER_SO(banner_str);
+
+  vers_str = scheme_make_utf8_string(scheme_version());
+  SCHEME_SET_CHAR_STRING_IMMUTABLE(vers_str);
+  banner_str = scheme_make_utf8_string(scheme_banner());
+  SCHEME_SET_CHAR_STRING_IMMUTABLE(banner_str);
 
   p = scheme_make_folding_prim(string_p, "string?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
@@ -843,6 +850,11 @@ scheme_init_string (Scheme_Env *env)
 #ifdef MZ_PRECISE_GC
   register_traversers();
 #endif
+}
+
+void scheme_init_string_places(void) {
+  REGISTER_SO(current_locale_name);
+  current_locale_name = (mzchar *)"xxxx\0\0\0\0";
 }
 
 /**********************************************************************/
@@ -1902,24 +1914,12 @@ sch_fprintf(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 version(int argc, Scheme_Object *argv[])
 {
-  if (!vers_str) {
-    REGISTER_SO(vers_str);
-    vers_str = scheme_make_utf8_string(scheme_version());
-    SCHEME_SET_CHAR_STRING_IMMUTABLE(vers_str);
-  }
-
   return vers_str;
 }
 
 static Scheme_Object *
 banner(int argc, Scheme_Object *argv[])
 {
-  if (!banner_str) {
-    REGISTER_SO(banner_str);
-    banner_str = scheme_make_utf8_string(scheme_banner());
-    SCHEME_SET_CHAR_STRING_IMMUTABLE(banner_str);
-  }
-
   return banner_str;
 }
 
