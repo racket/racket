@@ -17,6 +17,10 @@
         (module-path-index-join name 
                                 (module-path-index-rejoin base rel-to))])))
 
+  (define (try thunk)
+    (with-handlers ([exn:fail? (lambda (exn) #f)])
+      (thunk)))
+
   (define (find-scheme-tag part ri stx/binding phase-level)
     ;; The phase-level argument is used only when `stx/binding'
     ;; is an identifier.
@@ -106,12 +110,21 @@
                                             rmp
                                             (lambda ()
                                               (let-values ([(valss stxess)
-                                                            (with-handlers ([exn:fail?
-                                                                             (lambda (exn)
-                                                                               (values null null))])
-                                                              (module-compiled-exports
-                                                               (get-module-code (resolved-module-path-name rmp)
-                                                                                #:choose (lambda (src zo so) 'zo))))])
+                                                            (let ([exp
+                                                                   (or
+                                                                    (try
+                                                                     (lambda ()
+                                                                       ;; First, try using bytecode:
+                                                                       (get-module-code (resolved-module-path-name rmp)
+                                                                                        #:choose (lambda (src zo so) 'zo))))
+                                                                    (try
+                                                                     (lambda ()
+                                                                       ;; Bytecode not available. Declaration in the
+                                                                       ;; current namespace?
+                                                                       (module->compiled-module-expression rmp))))])
+                                                              (if exp
+                                                                  (module-compiled-exports exp)
+                                                                  (values null null)))])
                                                 (let ([t 
                                                        ;; Merge the two association lists:
                                                        (let loop ([base valss]

@@ -1,3 +1,6 @@
+Version 4.2.3.11
+Added module->compiled-module-expression
+
 Version 4.2.3.10
 Added more fl and fx operations
 

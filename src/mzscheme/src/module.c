@@ -57,6 +57,7 @@ static Scheme_Object *module_compiled_exports(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_compiled_lang_info(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_to_lang_info(int argc, Scheme_Object *argv[]);
+static Scheme_Object *module_to_compiled(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *module_path_index_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_path_index_resolve(int argc, Scheme_Object *argv[]);
@@ -394,6 +395,7 @@ void scheme_init_module(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("module-provide-protected?",        module_export_protected_p,  2, 2, env);
   GLOBAL_PRIM_W_ARITY("module->namespace",                module_to_namespace,        1, 1, env);
   GLOBAL_PRIM_W_ARITY("module->language-info",            module_to_lang_info,        1, 1, env);
+  GLOBAL_PRIM_W_ARITY("module->compiled-module-expression", module_to_compiled,       1, 1, env);
   GLOBAL_PRIM_W_ARITY("module-path?",                     is_module_path,             1, 1, env);
 }
 
@@ -2553,7 +2555,7 @@ static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[])
   return scheme_module_to_namespace(argv[0], env);
 }
 
-static Scheme_Object *module_to_lang_info(int argc, Scheme_Object *argv[])
+static Scheme_Module *module_to_(const char *who, int argc, Scheme_Object *argv[])
 {
   Scheme_Env *env;
   Scheme_Object *name;
@@ -2562,22 +2564,68 @@ static Scheme_Object *module_to_lang_info(int argc, Scheme_Object *argv[])
   env = scheme_get_env(NULL);
 
   if (!SCHEME_PATHP(argv[0])
+      && !SCHEME_MODNAMEP(argv[0])
       && !scheme_is_module_path(argv[0]))
-    scheme_wrong_type("module->language-info", "path or module-path", 0, argc, argv);
+    scheme_wrong_type(who, "path, module-path, or resolved-module-path", 0, argc, argv);
 
-  name = scheme_module_resolve(scheme_make_modidx(argv[0], scheme_false, scheme_false), 1);
+  if (SCHEME_MODNAMEP(argv[0]))
+    name = argv[0];
+  else
+    name = scheme_module_resolve(scheme_make_modidx(argv[0], scheme_false, scheme_false), 1);
 
-  env = scheme_get_env(NULL);
-  m = (Scheme_Module *)scheme_hash_get(env->module_registry, name);
+  if (SAME_OBJ(name, kernel_modname))
+    m = kernel;
+  else if (SAME_OBJ(name, unsafe_modname))
+    m = scheme_get_unsafe_env()->module;
+  else if (SAME_OBJ(name, flfxnum_modname))
+    m = scheme_get_flfxnum_env()->module;
+  else {
+    env = scheme_get_env(NULL);
+    m = (Scheme_Module *)scheme_hash_get(env->module_registry, name);
+  }
 
   if (!m)
-    scheme_arg_mismatch("module->laguage-info",
+    scheme_arg_mismatch(who,
                         "unknown module in the current namespace: ",
                         name);
+
+  return m;
+}
+
+static Scheme_Object *module_to_lang_info(int argc, Scheme_Object *argv[])
+{
+  Scheme_Module *m;
+
+  m = module_to_("module->language-info", argc, argv);
 
   return (m->lang_info ? m->lang_info : scheme_false);
 }
 
+static Scheme_Object *module_to_compiled(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *o;
+  Scheme_Module *m;
+  Scheme_Compilation_Top *top;
+  Resolve_Prefix *rp;
+
+  m = module_to_("module->compiled-module-expression", argc, argv);
+
+  o = scheme_make_syntax_resolved(MODULE_EXPD, (Scheme_Object *)m);
+  
+  rp = MALLOC_ONE_TAGGED(Resolve_Prefix);
+  rp->so.type = scheme_resolve_prefix_type;
+  rp->num_toplevels = 0;
+  rp->num_stxes = 0;
+  rp->uses_unsafe = 0;
+
+  top = MALLOC_ONE_TAGGED(Scheme_Compilation_Top);
+  top->so.type = scheme_compilation_top_type;
+  top->max_let_depth = 0;
+  top->code = o;
+  top->prefix = rp;
+
+  return (Scheme_Object *)top;
+}
 
 static Scheme_Object *module_compiled_p(int argc, Scheme_Object *argv[])
 {
