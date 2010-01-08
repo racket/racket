@@ -5,6 +5,7 @@
          scheme/stxparam scheme/splicing)
 
 (provide yield generator in-generator infinite-generator
+         sequence->generator
          make-repeated-sequence-generator)
 
 ;; (define-syntax-parameter yield
@@ -69,6 +70,11 @@
       body0 body ...
       (loop))))
 
+(define (sequence->generator sequence)
+  (generator
+    (for ([i sequence])
+         (yield i))))
+
 (define stop-value (gensym))
 
 (define-sequence-syntax in-generator
@@ -82,9 +88,7 @@
           (in-producer (generator body0 body ... stop-value) stop-value)]])))
 
 (define (make-repeated-sequence-generator sequence)
-  (infinite-generator
-    (for ([i sequence])
-         (yield i))))
+  (sequence->generator (in-cycle sequence)))
 
 #|
 ;; examples
