@@ -144,22 +144,12 @@ has been moved out).
 ;; a polygon is:
 ;;
 ;;  - (make-polygon (listof vector) mode color)
-(define-struct/reg-mk polygon (points mode color) #:transparent #:omit-define-syntaxes
-  #:property prop:equal+hash 
-  (list (λ (a b rec) (polygon-equal? a b rec)) (λ (x y) 42) (λ (x y) 3)))
+(define-struct/reg-mk polygon (points mode color) #:transparent #:omit-define-syntaxes)
 
 ;; a line-segment is
 ;;
 ;;  - (make-line-segment point point color)
-(define-struct/reg-mk line-segment (start end color) #:transparent #:omit-define-syntaxes
-  #:property prop:equal+hash 
-  (list (λ (a b rec) (and (or (and (rec (line-segment-start a) (line-segment-start b))
-                                   (rec (line-segment-end a) (line-segment-end b)))
-                              (and (rec (line-segment-start a) (line-segment-end b))
-                                   (rec (line-segment-end a) (line-segment-start b))))
-                          (rec (line-segment-color a) (line-segment-color b))))
-        (λ (x y) 42) 
-        (λ (x y) 3)))
+(define-struct/reg-mk line-segment (start end color) #:transparent #:omit-define-syntaxes)
 
 ;; a curve-segment is
 ;;
@@ -184,43 +174,6 @@ has been moved out).
 
 ;; a mode is either 'solid or 'outline (indicating a pen width for outline mode)
 
-(define (polygon-equal? p1 p2 eq-recur)
-  (and (eq-recur (polygon-mode p1) (polygon-mode p2))
-       (eq-recur (polygon-color p1) (polygon-color p2))
-       (let ([p1-points (polygon-points p1)]
-             [p2-points (polygon-points p2)])
-         (or (and (null? p1-points)
-                  (null? p2-points))
-             (and (not (or (null? p1-points)
-                           (null? p2-points)))
-                  (or (compare-all-rotations p1-points p2-points eq-recur)
-                      (compare-all-rotations p1-points (reverse p2-points) eq-recur)))))))
-
-
-;; returns #t when there is some rotation of l1 that is equal to l2
-(define (compare-all-rotations l1 l2 compare)
-  (cond
-    [(and (null? l1) (null? l2)) #t]
-    [else
-     (let ([v1 (list->vector l1)]
-           [v2 (list->vector l2)])
-       (and (= (vector-length v1) 
-               (vector-length v2))
-            (let o-loop ([init 0])
-              (cond
-                [(= init (vector-length v1)) #f]
-                [else
-                 (or (let i-loop ([i 0])
-                       (cond
-                         [(= i (vector-length v2)) 
-                          #t]
-                         [else
-                          (let ([j (modulo (+ init i) (vector-length v1))])
-                            (and (compare (vector-ref v1 j)
-                                          (vector-ref v2 i))
-                                 (i-loop (+ i 1))))]))
-                     (o-loop (+ init 1)))]))))]))
-        
 
 ;                                                   
 ;                                                   
@@ -242,11 +195,15 @@ has been moved out).
   get-shape set-shape get-bb 
   get-normalized? set-normalized get-normalized-shape)
 
+(define skip-image-equality-fast-path (make-parameter #f))
+
 (define image%
   (class* snip% (equal<%>)
     (init-field shape bb normalized?)
     (define/public (equal-to? that eq-recur)
       (or (eq? this that)
+          (and (not (skip-image-equality-fast-path))  ;; this is here to make testing more effective
+               (equal? (get-normalized-shape) (send that get-normalized-shape)))
           (and (is-a? that image%)
                (same-bb? bb (send that get-bb))
                (let* ([w (round (inexact->exact (bb-right bb)))]
@@ -863,8 +820,9 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          image?
          
          text->font
-         compare-all-rotations
          render-image
+         
+         skip-image-equality-fast-path
          
          scale-np-atomic)
 

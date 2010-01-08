@@ -37,7 +37,9 @@
      (with-syntax ([check-equal? (datum->syntax #'here 'check-equal? stx)])
        #`(begin
            ;(printf "running line ~a\n" #,(syntax-line stx))
-           #,(quasisyntax/loc stx (check-equal? a b))))]))
+           #,(quasisyntax/loc stx (check-equal? a b))
+           (parameterize ([skip-image-equality-fast-path #t])
+             #,(quasisyntax/loc stx (check-equal? a b)))))]))
 
 ;; test case: (beside (text "a"...) (text "b" ...)) vs (text "ab")
 
@@ -81,35 +83,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;  compare-all-rotations
-;;
-
-(check-equal? (compare-all-rotations '() '() equal?)
-              #t)
-(check-equal? (compare-all-rotations '(1) '(1) equal?)
-              #t)
-(check-equal? (compare-all-rotations '(1) '(2) equal?)
-              #f)
-(check-equal? (compare-all-rotations '(1 2 3) '(1 2 3) equal?)
-              #t)
-(check-equal? (compare-all-rotations '(1 2 3) '(2 3 1) equal?)
-              #t)
-(check-equal? (compare-all-rotations '(1 2 3) '(3 1 2) equal?)
-              #t)
-(check-equal? (compare-all-rotations '(1 2 3 4) '(4 1 2 3) equal?)
-              #t)
-(check-equal? (compare-all-rotations '(1 2 3 5) '(4 1 2 3) equal?)
-              #f)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;; circle vs ellipse
 ;;
 
-(check-equal? (ellipse 40 40 'outline 'black)
-              (circle 20 'outline 'black))
-(check-equal? (ellipse 60 60 'solid 'red)
-              (circle 30 'solid 'red))
+(test (ellipse 40 40 'outline 'black)
+      =>
+      (circle 20 'outline 'black))
+(test (ellipse 60 60 'solid 'red)
+      =>
+      (circle 30 'solid 'red))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -195,32 +177,37 @@
 ;;  polygon equality
 ;;
 
-(check-equal? (polygon (list (make-posn 0 0)
-                             (make-posn 10 10)
-                             (make-posn 10 0))
-                       "solid" "plum")
-              (polygon (list (make-posn 10 10)
-                             (make-posn 10 0)
-                             (make-posn 0 0))
-                       "solid" "plum"))
+(test (polygon (list (make-posn 0 0)
+                     (make-posn 10 10)
+                     (make-posn 10 0))
+               "solid" "plum")
+      =>
+      (polygon (list (make-posn 10 10)
+                     (make-posn 10 0)
+                     (make-posn 0 0))
+               "solid" "plum"))
 
-(check-equal? (polygon (list (make-posn 0 0)
-                             (make-posn 0 10)
-                             (make-posn 10 10)
-                             (make-posn 10 0))
-                       "solid" "plum")
-              (rectangle 10 10 "solid" "plum"))
+(test (polygon (list (make-posn 0 0)
+                     (make-posn 0 10)
+                     (make-posn 10 10)
+                     (make-posn 10 0))
+               "solid" "plum")
+      =>
+      (rectangle 10 10 "solid" "plum"))
 
 ;; make sure equality isn't equating everything
-(check-equal? (equal? (rectangle 10 10 'solid 'blue)
-                      (rectangle 10 10 'solid 'red))
-              #f)
+(test (equal? (rectangle 10 10 'solid 'blue)
+              (rectangle 10 10 'solid 'red))
+      =>
+      #f)
 
 ;; make sure 'white and black match up with color structs
-(check-equal? (rectangle 10 10 'solid (make-color 255 255 255))
-              (rectangle 10 10 'solid 'white))
-(check-equal? (rectangle 10 10 'solid (make-color 0 0 0))
-              (rectangle 10 10 'solid 'black))
+(test (rectangle 10 10 'solid (make-color 255 255 255))
+      =>
+      (rectangle 10 10 'solid 'white))
+(test (rectangle 10 10 'solid (make-color 0 0 0))
+      =>
+      (rectangle 10 10 'solid 'black))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -354,8 +341,8 @@
        #f))
 
 (test (beside/align 'top
-                     (ellipse 50 100 'solid 'red)
-                     (ellipse 100 50 'solid 'blue))
+                    (ellipse 50 100 'solid 'red)
+                    (ellipse 100 50 'solid 'blue))
       
       =>
       (make-image
@@ -366,8 +353,8 @@
        #f))
 
 (test (beside/align 'center
-                     (ellipse 50 100 'solid 'red)
-                     (ellipse 100 50 'solid 'blue))
+                    (ellipse 50 100 'solid 'red)
+                    (ellipse 100 50 'solid 'blue))
       
       =>
       (make-image
@@ -378,8 +365,8 @@
        #f))
 
 (test (beside/align 'baseline
-                     (ellipse 50 100 'solid 'red)
-                     (ellipse 100 50 'solid 'blue))
+                    (ellipse 50 100 'solid 'red)
+                    (ellipse 100 50 'solid 'blue))
       
       =>
       (make-image
@@ -393,12 +380,12 @@
               (ellipse 100 50 'solid 'blue))
       =>
       (beside/align 'top
-                     (ellipse 50 100 'solid 'red)
-                     (ellipse 100 50 'solid 'blue)))
+                    (ellipse 50 100 'solid 'red)
+                    (ellipse 100 50 'solid 'blue)))
 
 (test (above/align 'left
-                     (ellipse 50 100 'solid 'red)
-                     (ellipse 100 50 'solid 'blue))
+                   (ellipse 50 100 'solid 'red)
+                   (ellipse 100 50 'solid 'blue))
       
       =>
       (make-image
@@ -421,8 +408,8 @@
        #f))
 
 (test (above/align 'right
-                     (ellipse 50 100 'solid 'red)
-                     (ellipse 100 50 'solid 'blue))
+                   (ellipse 50 100 'solid 'red)
+                   (ellipse 100 50 'solid 'blue))
       
       =>
       (make-image
@@ -436,8 +423,8 @@
              (ellipse 100 50 'solid 'blue))
       =>
       (above/align 'left
-                    (ellipse 50 100 'solid 'red)
-                    (ellipse 100 50 'solid 'blue)))
+                   (ellipse 50 100 'solid 'red)
+                   (ellipse 100 50 'solid 'blue)))
 
 
 
@@ -692,21 +679,17 @@
       =>
       #t)
 
-(test (round-numbers
-       (normalize-shape
-        (image-shape
-         (rotate 
-          90
-          (overlay/xy (rectangle 20 100 'solid 'purple)
-                      20 0
-                      (ellipse 40 40 'solid 'orange))))))
+(test (equal~? (rotate 
+                90
+                (overlay/xy (rectangle 20 100 'solid 'purple)
+                            20 0
+                            (ellipse 40 40 'solid 'orange)))
+               (overlay/xy (rectangle 100 20 'solid 'purple)
+                           0 -40
+                           (ellipse 40 40 'solid 'orange))
+               .1)
       =>
-      (round-numbers
-       (normalize-shape
-        (image-shape
-         (overlay/xy (rectangle 100 20 'solid 'purple)
-                     0 -40
-                     (ellipse 40 40 'solid 'orange))))))
+      #t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -856,69 +839,87 @@
       =>
       (round-numbers (line 20 -10 'black)))
 
-(check-equal? (round-numbers (line 20 30 "red"))
-              (round-numbers (rotate 180 (line 20 30 "red"))))
+(test (round-numbers (line 20 30 "red"))
+      =>
+      (round-numbers (rotate 180 (line 20 30 "red"))))
 
-(check-equal? (round-numbers (line -30 20 "red"))
-              (round-numbers (line 30 -20 "red")))
+(test (round-numbers (line -30 20 "red"))
+      =>
+      (round-numbers (line 30 -20 "red")))
 
-(check-equal? (image-width (add-line (rectangle 100 200 'solid 'black)
-                                     10 10 90 190 "red"))
-              100)
-(check-equal? (image-height (add-line (rectangle 100 200 'solid 'black)
-                                     10 10 90 190 "red"))
-              200)
-(check-equal? (image-width (add-line (rectangle 100 200 'solid 'black)
-                                      10 10 200 200 "red"))
-              200)
-(check-equal? (image-height (add-line (rectangle 100 200 'solid 'black)
-                                      10 10 200 200 "red"))
-              200)
+(test (image-width (add-line (rectangle 100 200 'solid 'black)
+                             10 10 90 190 "red"))
+      =>
+      100)
+(test (image-height (add-line (rectangle 100 200 'solid 'black)
+                              10 10 90 190 "red"))
+      =>
+      200)
+(test (image-width (add-line (rectangle 100 200 'solid 'black)
+                             10 10 200 200 "red"))
+      =>
+      200)
+(test (image-height (add-line (rectangle 100 200 'solid 'black)
+                              10 10 200 200 "red"))
+      =>
+      200)
 
-(check-equal? (image-width (add-line (rectangle 100 200 'solid 'black)
-                                     10 10 300 300 "red"))
-              300)
-(check-equal? (image-height (add-line (rectangle 100 200 'solid 'black)
-                                      10 10 300 300 "red"))
-              300)
+(test (image-width (add-line (rectangle 100 200 'solid 'black)
+                             10 10 300 300 "red"))
+      =>
+      300)
+(test (image-height (add-line (rectangle 100 200 'solid 'black)
+                              10 10 300 300 "red"))
+      =>
+      300)
 
-(check-equal? (image-width (add-line (rectangle 100 200 'solid 'black)
-                                     -10 10 100 200 "red"))
-              110)
-(check-equal? (image-height (add-line (rectangle 100 200 'solid 'black)
-                                     -10 10 100 200 "red"))
-              200)
+(test (image-width (add-line (rectangle 100 200 'solid 'black)
+                             -10 10 100 200 "red"))
+      =>
+      110)
+(test (image-height (add-line (rectangle 100 200 'solid 'black)
+                              -10 10 100 200 "red"))
+      =>
+      200)
 
-(check-equal? (image-width (add-line (rectangle 100 200 'solid 'black)
-                                     10 -10 100 200 "red"))
-              100)
-(check-equal? (image-height (add-line (rectangle 100 200 'solid 'black)
-                                      10 -10 100 200 "red"))
-              210)
+(test (image-width (add-line (rectangle 100 200 'solid 'black)
+                             10 -10 100 200 "red"))
+      =>
+      100)
+(test (image-height (add-line (rectangle 100 200 'solid 'black)
+                              10 -10 100 200 "red"))
+      =>
+      210)
 
-(check-equal? (image-width (add-line (rectangle 100 200 'solid 'black)
-                                     100 200 10 -10 "red"))
-              100)
-(check-equal? (image-height (add-line (rectangle 100 200 'solid 'black)
-                                      100 200 10 -10 "red"))
-              210)
+(test (image-width (add-line (rectangle 100 200 'solid 'black)
+                             100 200 10 -10 "red"))
+      =>
+      100)
+(test (image-height (add-line (rectangle 100 200 'solid 'black)
+                              100 200 10 -10 "red"))
+      =>
+      210)
 
-(check-equal? (image-width (add-line (rectangle 100 200 'solid 'black)
-                                     100 200 -10 10 "red"))
-              110)
-(check-equal? (image-height (add-line (rectangle 100 200 'solid 'black)
-                                      100 200 -10 10 "red"))
-              200)
+(test (image-width (add-line (rectangle 100 200 'solid 'black)
+                             100 200 -10 10 "red"))
+      =>
+      110)
+(test (image-height (add-line (rectangle 100 200 'solid 'black)
+                              100 200 -10 10 "red"))
+      =>
+      200)
 
 (let* ([txt (text "H" 24 'black)]
        [bl (image-baseline txt)])
-  (check-equal? (image-baseline (add-line txt 0 0 100 100 'red))
-                bl))
+  (test (image-baseline (add-line txt 0 0 100 100 'red))
+        =>
+        bl))
 
 (let* ([txt (text "H" 24 'black)]
        [bl (image-baseline txt)])
-  (check-equal? (image-baseline (add-line txt 0 -10 100 100 'red))
-                (+ bl 10)))
+  (test (image-baseline (add-line txt 0 -10 100 100 'red))
+        =>
+        (+ bl 10)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -959,13 +960,19 @@
 ;;  bitmap tests
 ;;
 
-(check-equal? (clamp-1 0 3 5) 3)
-(check-equal? (clamp-1 0 0 5) 0)
-(check-equal? (clamp-1 0 -2 5) 0)
-(check-equal? (clamp-1 0 4 5) 4)
-(check-equal? (clamp-1 0 7 5) 4)
+(test (clamp-1 0 3 5)
+      => 3)
+(test (clamp-1 0 0 5)
+      => 0)
+(test (clamp-1 0 -2 5)
+      => 0)
+(test (clamp-1 0 4 5)
+      => 4)
+(test (clamp-1 0 7 5)
+      => 4)
 
-(check-equal? (build-bytes 5 sqr) (list->bytes '(0 1 4 9 16)))
+(test (build-bytes 5 sqr)
+      => (list->bytes '(0 1 4 9 16)))
 
 
 (define onePixel (list->bytes '(255 0 0 255)))
@@ -978,65 +985,77 @@
 (define gray2x2 (list->bytes '(255 100 100 100   255 100 100 100   255 100 100 100   255 100 100 100)))
 ;; Some blue x green checkerboards:
 (define checker2x2 (list->bytes '(255 0 0 255   255 0 255 0
-                                  255 0 255 0   255 0 0 255)))
+                                      255 0 255 0   255 0 0 255)))
 (define checker3x3 (list->bytes '(255 0 0 255   255 0 255 0    255 0 0 255
-                                  255 0 255 0   255 0 0 255    255 0 255 0
-                                  255 0 0 255   255 0 255 0    255 0 0 255 )))
-  
-
-(check-equal? (bmbytes-ref/safe checker3x3 3 3 0 0) (list->bytes '(255 0 0 255)))
-(check-equal? (bmbytes-ref/safe checker3x3 3 3 1 1) (list->bytes '(255 0 0 255)))
-(check-equal? (bmbytes-ref/safe checker3x3 3 3 2 2) (list->bytes '(255 0 0 255)))
-(check-equal? (bmbytes-ref/safe checker3x3 3 3 1 2) (list->bytes '(255 0 255 0)))
-(check-equal? (bmbytes-ref/safe checker3x3 3 3 0 3) (list->bytes '(  0 0 0 255)))
-(check-equal? (bmbytes-ref/safe checker3x3 3 3 -1 -1) (list->bytes '(  0 0 0 255)))
-(check-equal? (bmbytes-ref/safe checker3x3 3 3 -1 1) (list->bytes '(  0 0 255 0)))
-(check-equal? (bmbytes-ref/safe checker3x3 3 3 1 19) (list->bytes '(  0 0 255 0)))
+                                      255 0 255 0   255 0 0 255    255 0 255 0
+                                      255 0 0 255   255 0 255 0    255 0 0 255 )))
 
 
+(test (bmbytes-ref/safe checker3x3 3 3 0 0)   => (list->bytes '(255 0 0 255)))
+(test (bmbytes-ref/safe checker3x3 3 3 1 1)   => (list->bytes '(255 0 0 255)))
+(test (bmbytes-ref/safe checker3x3 3 3 2 2)   => (list->bytes '(255 0 0 255)))
+(test (bmbytes-ref/safe checker3x3 3 3 1 2)   => (list->bytes '(255 0 255 0)))
+(test (bmbytes-ref/safe checker3x3 3 3 0 3)   => (list->bytes '(  0 0 0 255)))
+(test (bmbytes-ref/safe checker3x3 3 3 -1 -1) => (list->bytes '(  0 0 0 255)))
+(test (bmbytes-ref/safe checker3x3 3 3 -1 1)  => (list->bytes '(  0 0 255 0)))
+(test (bmbytes-ref/safe checker3x3 3 3 1 19)  => (list->bytes '(  0 0 255 0)))
 
-(check-equal? (bytes->list (interpolate checker2x2 2 2 1 0))
-              '(255 0 255 0))
+#;
+(test (bytes->list (interpolate checker2x2 2 2 1 0))
+      =>
+      '(255 0 255 0))
 
-(check-equal? (bytes->list (interpolate checker3x3 3 3 0 0))
-              '(255 0 0 255))
+#;
+(test (bytes->list (interpolate checker3x3 3 3 0 0))
+      =>
+      '(255 0 0 255))
 
-(check-equal? (bytes->list (interpolate checker3x3 3 3 0 1))
-              '(255 0 255 0))
+#;
+(test (bytes->list (interpolate checker3x3 3 3 0 1))
+      =>
+      '(255 0 255 0))
 
-(check-equal? (bytes->list (interpolate checker3x3 3 3 0 2))
-              '(255 0 0 255))
+#;
+(test (bytes->list (interpolate checker3x3 3 3 0 2))
+      =>
+      '(255 0 0 255))
 
-(check-equal? (bytes->list (interpolate checker3x3 3 3 0.5 0))
-              '(255 0 128 128))
+#;
+(test (bytes->list (interpolate checker3x3 3 3 0.5 0))
+      =>
+      '(255 0 128 128))
 
-(check-equal? (image-width (bitmap icons/stop-16x16.png))
-              16)
-(check-equal? (image-height (bitmap icons/stop-16x16.png))
-              16)
+(test (image-width (bitmap icons/stop-16x16.png))
+      =>
+      16)
+(test (image-height (bitmap icons/stop-16x16.png))
+      =>
+      16)
 
-(check-equal? (let ()
-                (define bmp (make-object bitmap% 4 4))
-                (define mask (make-object bitmap% 4 4))
-                (define bdc (make-object bitmap-dc% bmp))
-                (send bdc set-brush "black" 'solid)
-                (send bdc draw-rectangle 0 0 4 4)
-                (send bdc set-bitmap mask)
-                (send bdc set-brush "black" 'solid)
-                (send bdc clear)
-                (send bdc draw-rectangle 1 1 1 1)
-                (send bdc set-bitmap #f)
-                (let-values ([(bytes w h) (bitmap->bytes bmp mask)])
-                  bytes))
-              (bytes-append #"\0\0\0\0" #"\0\0\0\0"   #"\0\0\0\0" #"\0\0\0\0"
-                            #"\0\0\0\0" #"\377\0\0\0" #"\0\0\0\0" #"\0\0\0\0"
-                            #"\0\0\0\0" #"\0\0\0\0"   #"\0\0\0\0" #"\0\0\0\0"
-                            #"\0\0\0\0" #"\0\0\0\0"   #"\0\0\0\0" #"\0\0\0\0"))
- 
+(test (let ()
+        (define bmp (make-object bitmap% 4 4))
+        (define mask (make-object bitmap% 4 4))
+        (define bdc (make-object bitmap-dc% bmp))
+        (send bdc set-brush "black" 'solid)
+        (send bdc draw-rectangle 0 0 4 4)
+        (send bdc set-bitmap mask)
+        (send bdc set-brush "black" 'solid)
+        (send bdc clear)
+        (send bdc draw-rectangle 1 1 1 1)
+        (send bdc set-bitmap #f)
+        (let-values ([(bytes w h) (bitmap->bytes bmp mask)])
+          bytes))
+      =>
+      (bytes-append #"\0\0\0\0" #"\0\0\0\0"   #"\0\0\0\0" #"\0\0\0\0"
+                    #"\0\0\0\0" #"\377\0\0\0" #"\0\0\0\0" #"\0\0\0\0"
+                    #"\0\0\0\0" #"\0\0\0\0"   #"\0\0\0\0" #"\0\0\0\0"
+                    #"\0\0\0\0" #"\0\0\0\0"   #"\0\0\0\0" #"\0\0\0\0"))
+
 ;; ensure no error
-(check-equal? (begin (scale 2 (make-object bitmap% 10 10))
-                     (void))
-              (void))
+(test (begin (scale 2 (make-object bitmap% 10 10))
+             (void))
+      =>
+      (void))
 
 
 (define (fill-bitmap b color)
@@ -1125,11 +1144,12 @@
       (overlay (crop 4 4 16 16 (circle 8 'solid 'black))
                (rectangle 40 40 'solid 'orange)))
 
-(check-equal? (place-image (circle 4 'solid 'black)
-                           -4 0
-                           (rectangle 40 40 'solid 'orange))
-              (overlay (crop 4 0 4 8 (circle 4 'solid 'black))
-                       (rectangle 40 40 'solid 'orange)))
+(test (place-image (circle 4 'solid 'black)
+                   -4 0
+                   (rectangle 40 40 'solid 'orange))
+      =>
+      (overlay (crop 4 0 4 8 (circle 4 'solid 'black))
+               (rectangle 40 40 'solid 'orange)))
 
 (test (place-image/align (circle 4 'solid 'black)
                          5 10 'center 'center
