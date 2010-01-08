@@ -77,8 +77,9 @@
         -Output-Port)]
 [read (->opt [-Input-Port] -Sexp)]
 [ormap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c))]
-[andmap (-polydots (a c b) (cl->*
-                              ;(make-pred-ty (list (make-pred-ty (list a) B d) (-lst a)) B (-lst d))
+[andmap (-polydots (a c d b) (cl->*
+                              ;; 1 means predicate on second argument
+                              (make-pred-ty (list (make-pred-ty (list a) c d) (-lst a)) c (-lst d) 1)
                               (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c)))]
 [newline (->opt [-Output-Port] -Void)]
 [not (-> Univ B)]

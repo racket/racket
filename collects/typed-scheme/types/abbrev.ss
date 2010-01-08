@@ -252,11 +252,14 @@
 
 (d/c make-pred-ty
   (case-> (c:-> Type/c Type/c)
-          (c:-> (listof Type/c) Type/c Type/c Type/c))
+          (c:-> (listof Type/c) Type/c Type/c Type/c)
+          (c:-> (listof Type/c) Type/c Type/c integer? Type/c))
   (case-lambda 
+    [(in out t n)
+     (->* in out : (-LFS (list (-filter t null n)) (list (-not-filter t null n))))]
     [(in out t)
-     (->* in out : (-LFS (list (-filter t)) (list (-not-filter t))))]
-    [(t) (make-pred-ty (list Univ) -Boolean t)]))
+     (make-pred-ty in out t 0)]
+    [(t) (make-pred-ty (list Univ) -Boolean t 0)]))
 
 (define true-filter (-FS (list) (list (make-Bot))))
 (define false-filter (-FS (list (make-Bot)) (list)))

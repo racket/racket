@@ -128,7 +128,7 @@
           body2]
          [_ (let ([ty-str (match type
                             [(tc-result1: (? (lambda (t) (type-equal? t -Void)))) #f]
-                            [(tc-result1: t)
+                            [(tc-result1: t f o)
                              (format "- : ~a\n" t)]
                             [(tc-results: t)
                              (format "- : ~a\n" (cons 'Values t))]

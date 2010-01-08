@@ -782,6 +782,11 @@
                                      [gc : Number]) 
                              'whatever))
          #:ret (ret (-val 'whatever) (-FS (list) (list (make-Bot))))]
+        [tc-e (let: ([l : (Listof Any) (list 1 2 3)])
+                (if (andmap number? l)
+                    (+ 1 (car l))
+                    7))
+              -Number]
         )
   (test-suite
    "check-type tests"
