@@ -340,7 +340,8 @@
                        (λ (var ...)
                          (letrec-syntaxes+values
                              ([(sid ...) sbody] ...) ([(vid ...) vbody] ...)
-                           ctc ...))
+                           ctc ...
+                           (void)))
                        (values)))))))
           (else
            (syntax-case (car sig-exprs) (define-values define-syntaxes contracted)
