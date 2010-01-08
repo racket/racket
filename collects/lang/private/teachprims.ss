@@ -221,6 +221,7 @@ namespace.
   (lambda (x)
     (not (or (number? x)
              (boolean? x)
+             (empty? x)
              (pair? x)
              (symbol? x)
              (string? x)
