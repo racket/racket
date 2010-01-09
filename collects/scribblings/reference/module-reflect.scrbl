@@ -377,10 +377,22 @@ namespace. The information is the same as would have been returned by
 @scheme[module-compiled-language-info] applied to the module's
 implementation as compiled code.}
 
-@defproc[(module->compiled-module-expression
-          [mod (or/c module-path? path? resolved-module-path?)])
-         compiled-module-expression?]{
 
-Returns the implementation of @scheme[mod], which must be declared
-(but not necessarily @tech{instantiate}d or @tech{visit}ed) in the
-current namespace.}
+@defproc[(module->imports
+          [mod (or/c module-path? path? resolved-module-path?)])
+         (listof (cons/c (or/c exact-integer? #f) 
+                         (listof module-path-index?)))]{
+
+Like @scheme[module-compiled-imports], but produces the imports of
+@scheme[mod], which must be declared (but not necessarily
+@tech{instantiate}d or @tech{visit}ed) in the current namespace.}
+
+
+@defproc[(module->exports
+          [mod (or/c module-path? path? resolved-module-path?)])
+         (values (listof (cons/c (or/c exact-integer? #f) list?))
+                 (listof (cons/c (or/c exact-integer? #f) list?)))]{
+
+Like @scheme[module-compiled-exports], but produces the exports of
+@scheme[mod], which must be declared (but not necessarily
+@tech{instantiate}d or @tech{visit}ed) in the current namespace.}

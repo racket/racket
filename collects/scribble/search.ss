@@ -17,8 +17,8 @@
         (module-path-index-join name 
                                 (module-path-index-rejoin base rel-to))])))
 
-  (define (try thunk)
-    (with-handlers ([exn:fail? (lambda (exn) #f)])
+  (define (try thunk fail-thunk)
+    (with-handlers* ([exn:fail? (lambda (exn) (fail-thunk))])
       (thunk)))
 
   (define (find-scheme-tag part ri stx/binding phase-level)
@@ -110,21 +110,20 @@
                                             rmp
                                             (lambda ()
                                               (let-values ([(valss stxess)
-                                                            (let ([exp
-                                                                   (or
-                                                                    (try
-                                                                     (lambda ()
-                                                                       ;; First, try using bytecode:
-                                                                       (get-module-code (resolved-module-path-name rmp)
-                                                                                        #:choose (lambda (src zo so) 'zo))))
-                                                                    (try
-                                                                     (lambda ()
-                                                                       ;; Bytecode not available. Declaration in the
-                                                                       ;; current namespace?
-                                                                       (module->compiled-module-expression rmp))))])
-                                                              (if exp
-                                                                  (module-compiled-exports exp)
-                                                                  (values null null)))])
+                                                            (try
+                                                             (lambda ()
+                                                               ;; First, try using bytecode:
+                                                               (module-compiled-exports 
+                                                                (get-module-code (resolved-module-path-name rmp)
+                                                                                 #:choose (lambda (src zo so) 'zo))))
+                                                             (lambda ()
+                                                               (try
+                                                                (lambda ()
+                                                                  ;; Bytecode not available. Declaration in the
+                                                                  ;; current namespace?
+                                                                  (module->exports rmp))
+                                                                (lambda ()
+                                                                  (values null null)))))])
                                                 (let ([t 
                                                        ;; Merge the two association lists:
                                                        (let loop ([base valss]

@@ -57,7 +57,8 @@ static Scheme_Object *module_compiled_exports(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_compiled_lang_info(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_to_namespace(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_to_lang_info(int argc, Scheme_Object *argv[]);
-static Scheme_Object *module_to_compiled(int argc, Scheme_Object *argv[]);
+static Scheme_Object *module_to_imports(int argc, Scheme_Object *argv[]);
+static Scheme_Object *module_to_exports(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *module_path_index_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *module_path_index_resolve(int argc, Scheme_Object *argv[]);
@@ -395,7 +396,8 @@ void scheme_init_module(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("module-provide-protected?",        module_export_protected_p,  2, 2, env);
   GLOBAL_PRIM_W_ARITY("module->namespace",                module_to_namespace,        1, 1, env);
   GLOBAL_PRIM_W_ARITY("module->language-info",            module_to_lang_info,        1, 1, env);
-  GLOBAL_PRIM_W_ARITY("module->compiled-module-expression", module_to_compiled,       1, 1, env);
+  GLOBAL_PRIM_W_ARITY("module->imports",                  module_to_imports,          1, 1, env);
+  GLOBAL_PRIM_W_ARITY2("module->exports",                 module_to_exports,          1, 1, 2, 2, env);
   GLOBAL_PRIM_W_ARITY("module-path?",                     is_module_path,             1, 1, env);
 }
 
@@ -2601,30 +2603,119 @@ static Scheme_Object *module_to_lang_info(int argc, Scheme_Object *argv[])
   return (m->lang_info ? m->lang_info : scheme_false);
 }
 
-static Scheme_Object *module_to_compiled(int argc, Scheme_Object *argv[])
+static Scheme_Object *extract_compiled_imports(Scheme_Module *m)
 {
-  Scheme_Object *o;
+  Scheme_Object *l;
+  int i;
+
+  l = scheme_null;
+  if (!SCHEME_NULLP(m->requires))
+    l = scheme_make_pair(scheme_make_pair(scheme_make_integer(0),
+                                          m->requires),
+                         l);
+  if (!SCHEME_NULLP(m->et_requires))
+    l = scheme_make_pair(scheme_make_pair(scheme_make_integer(1),
+                                          m->et_requires),
+                         l);
+  if (!SCHEME_NULLP(m->tt_requires))
+    l = scheme_make_pair(scheme_make_pair(scheme_make_integer(-1),
+                                          m->tt_requires),
+                         l);
+  if (!SCHEME_NULLP(m->dt_requires))
+    l = scheme_make_pair(scheme_make_pair(scheme_false,
+                                          m->dt_requires),
+                         l);
+
+  if (m->other_requires) {
+    for (i = 0; i < m->other_requires->size; i++) {
+      if (m->other_requires->vals[i]) {
+        l = scheme_make_pair(scheme_make_pair(m->other_requires->keys[i],
+                                              m->other_requires->vals[i]),
+                             l);
+      }
+    }
+  }
+    
+  return l;
+}
+
+static Scheme_Object *make_provide_desc(Scheme_Module_Phase_Exports *pt, int i)
+{
+  return scheme_make_pair(pt->provides[i],
+                          scheme_make_pair((pt->provide_nominal_srcs
+                                            ? pt->provide_nominal_srcs[i]
+                                            : scheme_null),
+                                           scheme_null));
+}
+
+static Scheme_Object *extract_compiled_exports(Scheme_Module *m)
+{
+  Scheme_Object *a[2];
+  Scheme_Object *ml, *vl, *val_l, *mac_l;
+  Scheme_Module_Phase_Exports *pt;
+  int i, n, k;
+
+  val_l = scheme_null;
+  mac_l = scheme_null;
+
+  for (k = -3; k < (m->me->other_phases ? m->me->other_phases->size : 0); k++) {
+    switch(k) {
+    case -3:
+      pt = m->me->rt;
+      break;
+    case -2:
+      pt = m->me->et;
+      break;
+    case -1:
+      pt = m->me->dt;
+      break;
+    default:
+      pt = (Scheme_Module_Phase_Exports *)m->me->other_phases->vals[k];
+      break;
+    }
+
+    if (pt) {
+      ml = scheme_null;
+      vl = scheme_null;
+      n = pt->num_var_provides;
+      for (i = pt->num_provides - 1; i >= n; --i) {
+        ml = scheme_make_pair(make_provide_desc(pt, i), ml);
+      }
+      for (; i >= 0; --i) {
+        vl = scheme_make_pair(make_provide_desc(pt, i), vl);
+      }
+
+      if (!SCHEME_NULLP(vl))
+        val_l = scheme_make_pair(scheme_make_pair(pt->phase_index, vl), 
+                                 val_l);
+
+      if (!SCHEME_NULLP(ml))
+        mac_l = scheme_make_pair(scheme_make_pair(pt->phase_index, ml),
+                                 mac_l);
+    }
+  }
+    
+  a[0] = val_l;
+  a[1] = mac_l;
+  return scheme_values(2, a);
+}
+
+static Scheme_Object *module_to_imports(int argc, Scheme_Object *argv[])
+{
   Scheme_Module *m;
-  Scheme_Compilation_Top *top;
-  Resolve_Prefix *rp;
 
-  m = module_to_("module->compiled-module-expression", argc, argv);
+  m = module_to_("module->imports", argc, argv);
 
-  o = scheme_make_syntax_resolved(MODULE_EXPD, (Scheme_Object *)m);
-  
-  rp = MALLOC_ONE_TAGGED(Resolve_Prefix);
-  rp->so.type = scheme_resolve_prefix_type;
-  rp->num_toplevels = 0;
-  rp->num_stxes = 0;
-  rp->uses_unsafe = 0;
+  return extract_compiled_imports(m);
+}
 
-  top = MALLOC_ONE_TAGGED(Scheme_Compilation_Top);
-  top->so.type = scheme_compilation_top_type;
-  top->max_let_depth = 0;
-  top->code = o;
-  top->prefix = rp;
+static Scheme_Object *module_to_exports(int argc, Scheme_Object *argv[])
+{
+  Scheme_Module *m;
 
-  return (Scheme_Object *)top;
+  m = module_to_("module->exports", argc, argv);
+
+  return extract_compiled_exports(m);
 }
 
 static Scheme_Object *module_compiled_p(int argc, Scheme_Object *argv[])
@@ -2653,111 +2744,23 @@ static Scheme_Object *module_compiled_name(int argc, Scheme_Object *argv[])
 static Scheme_Object *module_compiled_imports(int argc, Scheme_Object *argv[])
 {
   Scheme_Module *m;
-  Scheme_Object *l;
-  int i;
 
   m = scheme_extract_compiled_module(argv[0]);
 
-  if (m) {
-    l = scheme_null;
-    if (!SCHEME_NULLP(m->requires))
-      l = scheme_make_pair(scheme_make_pair(scheme_make_integer(0),
-                                            m->requires),
-                           l);
-    if (!SCHEME_NULLP(m->et_requires))
-      l = scheme_make_pair(scheme_make_pair(scheme_make_integer(1),
-                                            m->et_requires),
-                           l);
-    if (!SCHEME_NULLP(m->tt_requires))
-      l = scheme_make_pair(scheme_make_pair(scheme_make_integer(-1),
-                                            m->tt_requires),
-                           l);
-    if (!SCHEME_NULLP(m->dt_requires))
-      l = scheme_make_pair(scheme_make_pair(scheme_false,
-                                            m->dt_requires),
-                           l);
-
-    if (m->other_requires) {
-      for (i = 0; i < m->other_requires->size; i++) {
-        if (m->other_requires->vals[i]) {
-          l = scheme_make_pair(scheme_make_pair(m->other_requires->keys[i],
-                                                m->other_requires->vals[i]),
-                               l);
-        }
-      }
-    }
-    
-    return l;
-  }
+  if (m)
+    return extract_compiled_imports(m);
 
   scheme_wrong_type("module-compiled-imports", "compiled module declaration", 0, argc, argv);
   return NULL;
 }
 
-static Scheme_Object *make_provide_desc(Scheme_Module_Phase_Exports *pt, int i)
-{
-  return scheme_make_pair(pt->provides[i],
-                          scheme_make_pair((pt->provide_nominal_srcs
-                                            ? pt->provide_nominal_srcs[i]
-                                            : scheme_null),
-                                           scheme_null));
-}
-
 static Scheme_Object *module_compiled_exports(int argc, Scheme_Object *argv[])
 {
   Scheme_Module *m;
-  Scheme_Object *a[2];
-  Scheme_Object *ml, *vl, *val_l, *mac_l;
-  Scheme_Module_Phase_Exports *pt;
-  int i, n, k;
-
   m = scheme_extract_compiled_module(argv[0]);
 
-  if (m) {
-    val_l = scheme_null;
-    mac_l = scheme_null;
-
-    for (k = -3; k < (m->me->other_phases ? m->me->other_phases->size : 0); k++) {
-      switch(k) {
-      case -3:
-        pt = m->me->rt;
-        break;
-      case -2:
-        pt = m->me->et;
-        break;
-      case -1:
-        pt = m->me->dt;
-        break;
-      default:
-        pt = (Scheme_Module_Phase_Exports *)m->me->other_phases->vals[k];
-        break;
-      }
-
-      if (pt) {
-        ml = scheme_null;
-        vl = scheme_null;
-        n = pt->num_var_provides;
-        for (i = pt->num_provides - 1; i >= n; --i) {
-          ml = scheme_make_pair(make_provide_desc(pt, i), ml);
-        }
-        for (; i >= 0; --i) {
-          vl = scheme_make_pair(make_provide_desc(pt, i), vl);
-        }
-
-        if (!SCHEME_NULLP(vl))
-          val_l = scheme_make_pair(scheme_make_pair(pt->phase_index, vl), 
-                                   val_l);
-
-        if (!SCHEME_NULLP(ml))
-          mac_l = scheme_make_pair(scheme_make_pair(pt->phase_index, ml),
-                                   mac_l);
-      }
-    }
-    
-    a[0] = val_l;
-    a[1] = mac_l;
-    return scheme_values(2, a);
-  }
+  if (m)
+    extract_compiled_exports(m);
 
   scheme_wrong_type("module-compiled-exports", "compiled module declaration", 0, argc, argv);
   return NULL;
