@@ -606,7 +606,8 @@ plt-extras :+= (package: "frtime/")
 ;; -------------------- typed-scheme
 dr-extras :+= (package: "typed-scheme/" ; used in drscheme
                         #:docs "ts-{reference|guide}/")
-              (collects: "typed/")
+              (- (collects: "typed/")
+                 (cond (not plt) => (collects: "typed/test-engine/")))
 
 ;; -------------------- gui-debugger
 plt-extras :+= (collects: "gui-debugger/")
