@@ -2760,7 +2760,7 @@ static Scheme_Object *module_compiled_exports(int argc, Scheme_Object *argv[])
   m = scheme_extract_compiled_module(argv[0]);
 
   if (m)
-    extract_compiled_exports(m);
+    return extract_compiled_exports(m);
 
   scheme_wrong_type("module-compiled-exports", "compiled module declaration", 0, argc, argv);
   return NULL;
