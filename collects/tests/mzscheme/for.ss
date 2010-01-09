@@ -247,9 +247,29 @@
   (test '(#t #f #f #t #t #f odd even) 'yield-helper
         (list (g1) (g2) (g1) (g2) (g1) (g2) (g1) (g2))))
 
+(test '(1 2 3)
+      'sequence->generator-1
+      (let ([maker (sequence->generator '(1 2 3))])
+        (list (maker) (maker) (maker))))
+
+(test '(1 2 3)
+      'sequence->generator-2
+      (let ([maker (sequence->generator (in-list '(1 2 3)))])
+        (list (maker) (maker) (maker))))
+
+(test '(0 1 2 3 4)
+      'sequence->generator-3
+      (let ([maker (sequence->generator (in-range 0 5))])
+        (list (maker) (maker) (maker) (maker) (maker))))
+
+(test '(0 1 2 3 4)
+      'sequence->generator-4
+      (let ([maker (sequence->generator (in-naturals))])
+        (list (maker) (maker) (maker) (maker) (maker))))
+
 (test '(1 2 3 1 2 3)
-      'repeat-generator
-      (let ([maker (make-repeated-sequence-generator '(1 2 3))])
+      'sequence->repeated-generator
+      (let ([maker (sequence->repeated-generator '(1 2 3))])
         (list (maker) (maker) (maker)
               (maker) (maker) (maker))))
 
