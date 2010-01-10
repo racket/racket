@@ -47,16 +47,14 @@
        x
        (error 'external-browser "~e is not a valid browser preference" x)))))
 
-(define (find-exe name)
-  (find-executable-path name #f))
-
 ;; by-need filtering of found unix executables
 (define existing-unix-browsers->exes
   (delay
-    (filter values (map (lambda (b)
-                          (let ([exe (find-exe (symbol->string b))])
-                            (and exe (cons b exe))))
-                        all-unix-browsers))))
+    (filter values
+            (map (lambda (b)
+                   (let ([exe (find-executable-path (symbol->string b) #f)])
+                     (and exe (cons b exe))))
+                 all-unix-browsers))))
 (define existing-unix-browsers
   (delay (map car (force existing-unix-browsers->exes))))
 (define-syntax unix-browser-list
@@ -157,7 +155,7 @@
     (when delete-at (thread (lambda () (sleep delete-at) (delete-file temp))))
     (send-url/file temp)))
 
-(define osascript (delay (find-exe "osascript")))
+(define osascript (delay (find-executable-path "osascript" #f)))
 (define (send-url/mac url)
   (browser-run (force osascript) "-e" (format "open location \"~a\"" url)))
 
