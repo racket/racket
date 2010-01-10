@@ -230,6 +230,8 @@
          [user      (aget bindings 'user)]
          [passwd    (aget bindings 'passwd)]
          [user      (and user (clean-str user))]
+         [user      (and user (if (get-conf 'username-case-sensitive)
+                                user (string-foldcase user)))]
          [user-data (get-user-data user)])
     (cond [(and user-data
                 (string? passwd)
