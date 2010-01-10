@@ -20,10 +20,8 @@
 
   (fw:preferences:set-default
    'external-browser
-   (let ([ll-pref (get-preference 'external-browser (lambda () #f))])
-     (if (raw:browser-preference? ll-pref)
-         ll-pref
-         'firefox))
+   (let ([pref (get-preference 'external-browser (lambda () #f))])
+     (and (raw:browser-preference? pref) pref))
    raw:browser-preference?)
 
   (define http-proxy-preference 'plt:http-proxy)
