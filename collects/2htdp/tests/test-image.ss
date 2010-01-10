@@ -209,6 +209,30 @@
       =>
       (rectangle 10 10 'solid 'black))
 
+;; test zero sized image equalities
+
+(test (rectangle 0 100 'solid 'white)
+      =>
+      (rectangle 0 100 'solid 'white))
+
+(test (rectangle 0 100 'solid 'white)
+      =>
+      (rectangle 0 100 'solid 'black))
+
+(test (rectangle 100 0 'solid 'white)
+      =>
+      (rectangle 100 0 'solid 'black))
+
+(test (rectangle 0 0 'solid 'black)
+      =>
+      (rectangle 0 0 'solid 'orange))
+
+(test (equal~? (rectangle 0 100 'solid 'white)
+               (rotate 90 (rectangle 100 0 'solid 'black))
+               .1)
+      =>
+      #t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  testing overlays

@@ -206,15 +206,17 @@ has been moved out).
                (equal? (get-normalized-shape) (send that get-normalized-shape)))
           (and (is-a? that image%)
                (same-bb? bb (send that get-bb))
-               (let* ([w (round (inexact->exact (bb-right bb)))]
-                      [h (round (inexact->exact (bb-bottom bb)))]
-                      [bm1 (make-object bitmap% w h)]
-                      [bm2 (make-object bitmap% w h)]
-                      [bytes1 (make-bytes (* w h 4) 0)]
-                      [bytes2 (make-bytes (* w h 4) 0)]
-                      [bdc (make-object bitmap-dc%)])
-                 (and (check-same? bm1 bm2 bytes1 bytes2 bdc "red" that)
-                      (check-same? bm1 bm2 bytes1 bytes2 bdc "green" that))))))
+               (let ([w (round (inexact->exact (bb-right bb)))]
+                     [h (round (inexact->exact (bb-bottom bb)))])
+                 (or (zero? w)
+                     (zero? h)
+                     (let ([bm1 (make-object bitmap% w h)]
+                           [bm2 (make-object bitmap% w h)]
+                           [bytes1 (make-bytes (* w h 4) 0)]
+                           [bytes2 (make-bytes (* w h 4) 0)]
+                           [bdc (make-object bitmap-dc%)])
+                       (and (check-same? bm1 bm2 bytes1 bytes2 bdc "red" that)
+                            (check-same? bm1 bm2 bytes1 bytes2 bdc "green" that))))))))
     
     (define/private (check-same? bm1 bm2 bytes1 bytes2 bdc color that)
       (clear-bitmap/draw/bytes bm1 bdc bytes1 this color)
@@ -523,17 +525,19 @@ has been moved out).
         [brush (send dc get-brush)]
         [font (send dc get-font)]
         [fg (send dc get-text-foreground)])
-    (let loop ([shape (send image get-normalized-shape)])
-      (cond
-        [(overlay? shape)
-         (render-cropped-simple-shape (overlay-bottom shape) dc dx dy)
-         (loop (overlay-top shape))]
-        [else
-         (render-cropped-simple-shape shape dc dx dy)]))
+    (render-normalized-shape (send image get-normalized-shape) dc dx dy)
     (send dc set-pen pen)
     (send dc set-brush brush)
     (send dc set-font font)
     (send dc set-text-foreground fg)))
+
+(define (render-normalized-shape shape dc dx dy)
+  (cond
+    [(overlay? shape)
+     (render-cropped-simple-shape (overlay-bottom shape) dc dx dy)
+     (render-normalized-shape (overlay-top shape) dc dx dy)]
+    [else
+     (render-cropped-simple-shape shape dc dx dy)]))
 
 (define (render-cropped-simple-shape shape dc dx dy)
   (cond
