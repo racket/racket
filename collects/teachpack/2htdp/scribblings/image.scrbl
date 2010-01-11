@@ -528,12 +528,12 @@ and universes using @scheme[2htdp/universe].
                      6 12
                      (rectangle 24 24 "solid" "goldenrod")))))]
 }
-@defproc[(place-image/align [image image?] [x real?] [y real?] [scene image?] [x-place x-place?] [y-place y-place?])
+@defproc[(place-image/align [image image?] [x real?] [y real?] [x-place x-place?] [y-place y-place?][scene image?])
          image?]{
 
- Places @scheme[image] onto @scheme[scene] with its @scheme[x-place] and @scheme[y-place]
- at the coordinates 
- (@scheme[x],@scheme[y]) and crops the resulting image so that it has the 
+ Like @scheme[place-image], but uses @scheme[image]'s @scheme[x-place] and
+ @scheme[y-place] to anchor the image. Also, recall that
+ @scheme[place-image] crops the resulting image so that it has the 
  same size as @scheme[scene].
   
  @image-examples[(place-image/align (triangle 16 "solid" "yellowgreen")
