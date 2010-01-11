@@ -1,15 +1,14 @@
-(module info (lib "infotab.ss" "setup")
-  (define name "DeinProgramm")
+#lang setup/infotab
 
-  (define tools '("deinprogramm-langs.ss"))
+(define name "DeinProgramm")
 
-  (define tool-icons '(("logo-small.png" "deinprogramm")))
-  (define tool-names '("DeinProgramm"))
-  (define tool-urls '("http://www.deinprogramm.de/dmda/"))
+(define tools '("deinprogramm-langs.ss"))
 
-  (define compile-omit-files
-    '("define-record-procedures.scm"
-      "convert-explicit.scm"
-      "line3d.scm"))) 
+(define tool-icons '(("logo-small.png" "deinprogramm")))
+(define tool-names '("DeinProgramm"))
+(define tool-urls '("http://www.deinprogramm.de/dmda/"))
 
-  
+(define compile-omit-files
+  '("define-record-procedures.scm"
+    "convert-explicit.scm"
+    "line3d.scm"))
