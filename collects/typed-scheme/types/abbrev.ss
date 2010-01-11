@@ -60,7 +60,7 @@
   (lambda (stx)
     (syntax-parse stx
       [(_ elem-pats)
-       #'(app untuple elem-pats)])))
+       #'(app untuple (? values elem-pats))])))
 
 
 (d/c (-result t [f -no-lfilter] [o -no-lobj])

@@ -563,15 +563,20 @@
        (ret (foldr make-Pair last tys)))]
     ;; special case for `reverse' to propogate expected type info
     [(#%plain-app reverse arg)
-     #:when expected
      (match expected
        [(tc-result1: (Listof: _))
         (tc-expr/check #'arg expected)]
        [(tc-result1: (List: ts))
         (tc-expr/check #'arg (ret (-Tuple (reverse ts))))
         expected]
-       [_ 
-        (tc/funapp #'reverse #'(arg) (single-value #'reverse) (list (single-value #'arg)) expected)])]
+       [_
+        (match (single-value #'arg)
+          [(tc-result1: (List: ts))
+           (if expected 
+               (check-below (ret (-Tuple (reverse ts))) expected)
+               (ret (-Tuple (reverse ts))))]
+          [arg-ty
+           (tc/funapp #'reverse #'(arg) (single-value #'reverse) (list arg-ty) expected)])])]
     ;; inference for ((lambda
     [(#%plain-app (#%plain-lambda (x ...) . body) args ...)
      #:fail-unless (= (length (syntax->list #'(x ...)))
