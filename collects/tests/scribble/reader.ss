@@ -91,7 +91,7 @@ fo@o  -@->  fo@o
 ---
 @[foo]  -@->  (foo)
 ---
-@|{blah}|  -@->  ("blah")
+@|{blah}|  -@->  {"blah"}
 ---
 ;; -------------------- newlines and spaces in text
 ---
