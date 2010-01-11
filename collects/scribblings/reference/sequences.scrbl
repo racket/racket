@@ -194,7 +194,7 @@ as a sequence to get the key and value as separate values for each
 element).}
 
 @defproc[(in-producer [producer procedure?] [stop any/c] [args any/c] ...)
-         sequence]{
+         sequence?]{
 Returns a sequence that contains values from sequential calls to
 @scheme[producer].  @scheme[stop] identifies the value that marks the
 end of the sequence --- this value is not included in the sequence.
@@ -203,7 +203,7 @@ results with @scheme[eq?].  Note that you must use a predicate function
 if the stop value is itself a function, or if the @scheme[producer]
 returns multiple values.}
 
-@defproc[(in-value [v any/c]) sequence]{
+@defproc[(in-value [v any/c]) sequence?]{
 Returns a sequence that produces a single value: @scheme[v]. This form
 is mostly useful for @scheme[let]-like bindings in forms such as
 @scheme[for*/list].}
@@ -363,6 +363,21 @@ with a stop-value known to the generator.
   i)
 ]}
 
+@defform[(infinite-generator body ...)]{ Creates a function similar to
+@scheme[generator] but when the last @scheme[body] is executed the function
+will re-execute all the bodies in a loop.
+
+@examples[#:eval (generator-eval)
+(define welcome
+  (infinite-generator
+    (yield 'hello)
+    (yield 'goodbye)))
+(welcome)
+(welcome)
+(welcome)
+(welcome)
+]}
+
 @defproc[(in-generator [expr any?] ...) sequence?]{ Returns a generator
 that can be used as a sequence. The @scheme[in-generator] procedure takes care of the
 case when @scheme[expr] stops producing values, so when the @scheme[expr]
@@ -380,3 +395,11 @@ completes, the generator will end.
 @defform[(yield expr)]{ Saves the point of execution inside a generator
 and returns a value.}
 
+@defproc[(sequence->generator [s sequence?]) (-> any?)]{ Returns a generator
+that returns elements from the sequence, @scheme[s], each time the generator
+is invoked.}
+
+@defproc[(sequence->repeated-generator [s sequence?]) (-> any?)]{ Returns a generator
+that returns elements from the sequence, @scheme[s], similar to
+@scheme[sequence->generator] but looping over the values in the sequence
+when no more values are left.}
