@@ -19,7 +19,7 @@
 @section{The World is Not Enough}
 
 With the June 2009 release, we started deprecating the world teachpack; instead
- we recommended the use of the world teachpack. With the January 2010 release,
+ we recommended the use of the universe teachpack. With the January 2010 release,
  we are also introducing a new image teachpack and, in support of this second
  teachpack, we have separated out the image functionality from the
  functionality for world programs. 
