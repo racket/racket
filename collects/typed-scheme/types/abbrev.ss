@@ -50,6 +50,18 @@
                        [else #f])]
     [_ #f]))
 
+(define-match-expander Listof:
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ elem-pat)
+       #'(Mu: var (Union: (list (Value: '()) (Pair: elem-pat (F: var)))))])))
+
+(define-match-expander List:
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ elem-pats)
+       #'(app untuple elem-pats)])))
+
 
 (d/c (-result t [f -no-lfilter] [o -no-lobj])
   (c:->* (Type/c) (LFilterSet? LatentObject?) Result?)

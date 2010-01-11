@@ -138,6 +138,8 @@
       [(Value: '()) null]))
   (match c 
     [(Univ:) (fp "Any")]
+    ;; special case number until something better happens
+    [(Base: 'Number _) (fp "Number")]
     [(? has-name?) (fp "~a" (has-name? c))]
     ;; names are just the printed as the original syntax
     [(Name: stx) (fp "~a" (syntax-e stx))]

@@ -174,14 +174,14 @@
 
 (define (let-loop-check form lp actuals args body expected)
   (syntax-parse #`(#,args #,body #,actuals) 
-    #:literals (#%plain-app if null? pair?)
+    #:literals (#%plain-app if null? pair? null)
     [((val acc ...)
       ((~and inner-body (if (#%plain-app (~or pair? null?) val*) thn els)))
       (actual actuals ...))
-     #:fail-unless
+     #:when
      (and (free-identifier=? #'val #'val*)
           (ormap (lambda (a) (find-annotation #'inner-body a))
-                 (syntax->list #'(acc ...)))) #f
+                 (syntax->list #'(acc ...))))
      (let* ([ts1 (generalize (tc-expr/t #'actual))]
             [ann-ts (for/list ([a (in-syntax #'(acc ...))]
                                [ac (in-syntax #'(actuals ...))])
@@ -194,6 +194,24 @@
          (tc-expr/check a (ret t)))
        ;; then check that the function typechecks with the inferred types
        (tc/rec-lambda/check form args body lp ts expected)
+       expected)]
+    ;; special case `for/list'
+    [((val acc ...)
+      ((~and inner-body (if e1 e2 e3:id)))
+      (null actuals ...))
+     #:when (free-identifier=? #'val #'e3)
+     (let ([ts (for/list ([ac (syntax->list #'(actuals ...))]
+                          [f (syntax->list #'(acc ...))])
+                 (or 
+                  (type-annotation f #:infer #t)
+                  (generalize (tc-expr/t ac))))]
+           [acc-ty (or 
+                    (type-annotation #'val #:infer #t)
+                    (match expected
+                      [(tc-result1: (and t (Listof: _))) t]
+                      [_ #f])
+                    (generalize (-val '())))])
+       (tc/rec-lambda/check form args body lp (cons acc-ty ts) expected)
        expected)]
     ;; special case when argument needs inference
     [_     
@@ -407,7 +425,7 @@
   (syntax-parse form
     #:literals (#%plain-app #%plain-lambda letrec-values quote
                 values apply k:apply not list list* call-with-values do-make-object make-object cons
-                andmap ormap)
+                andmap ormap reverse)
     ;; call-with-values
     [(#%plain-app call-with-values prod con)
      (match (tc/funapp #'prod #'() (single-value #'prod) null #f)
@@ -517,7 +535,7 @@
     ;; special case for `list'
     [(#%plain-app list . args)
      (begin
-       ;(printf "calling list: ~a ~a~n" (syntax->datum #'args) (Type? expected))
+       ;(printf "calling list: ~a ~a~n" (syntax->datum #'args) expected)
        (match expected
          [(tc-result1: (Mu: var (Union: (or 
                                          (list (Pair: elem-ty (F: var)) (Value: '()))
@@ -543,6 +561,17 @@
      (match-let* ([(list last tys-r ...) (reverse (map tc-expr/t (syntax->list #'args)))]
                   [tys (reverse tys-r)])
        (ret (foldr make-Pair last tys)))]
+    ;; special case for `reverse' to propogate expected type info
+    [(#%plain-app reverse arg)
+     #:when expected
+     (match expected
+       [(tc-result1: (Listof: _))
+        (tc-expr/check #'arg expected)]
+       [(tc-result1: (List: ts))
+        (tc-expr/check #'arg (ret (-Tuple (reverse ts))))
+        expected]
+       [_ 
+        (tc/funapp #'reverse #'(arg) (single-value #'reverse) (list (single-value #'arg)) expected)])]
     ;; inference for ((lambda
     [(#%plain-app (#%plain-lambda (x ...) . body) args ...)
      #:fail-unless (= (length (syntax->list #'(x ...)))

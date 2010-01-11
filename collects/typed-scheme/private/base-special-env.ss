@@ -76,7 +76,28 @@
   (-poly (a b) 
          (cl->*
           (-> (-lst a) (-val '()) (-lst a))
-          (-> (-lst a) (-lst b) (-lst (*Un a b))))))
+          (-> (-lst a) (-lst b) (-lst (*Un a b)))))
+  ;; make-sequence
+  [(syntax-parse (local-expand #'(for ([x '()]) x) 'expression #f)
+     #:context #'make-sequence
+     #:literals (let-values quote)
+     [(let-values ([_ (m-s '(_) '())]) . _)
+      #'m-s])
+   (-poly (a) 
+          (let ([seq-vals 
+                 (lambda ([a a])
+                   (-values (list 
+                             (-> Univ a)
+                             (-> Univ Univ)
+                             Univ
+                             (-> Univ Univ)
+                             (-> a Univ)
+                             (-> Univ a Univ))))])
+            (cl->* (-> Univ (-lst a) (seq-vals))
+                   (-> Univ (-vec a) (seq-vals))
+                   (-> Univ -String (seq-vals -Char))
+                   (-> Univ -Bytes (seq-vals -Nat))
+                   (-> Univ -Input-Port (seq-vals -Nat)))))])
      
      
      
