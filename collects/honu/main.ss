@@ -5,7 +5,13 @@
 
 (provide (rename-out (#%dynamic-honu-module-begin #%module-begin))
          #%datum
-         )
+         true
+         false
+         display
+         else
+         (rename-out
+           (honu-if if)
+           ))
 
 #;
 (provide int real bool obj 
