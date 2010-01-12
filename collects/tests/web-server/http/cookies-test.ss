@@ -126,4 +126,20 @@
                  (list (make-client-cookie "key1" "value1" #f "/acme")
                        (make-client-cookie "key2" "value2" ".acme" #f)))
     
+     (test-equal? "phpBB. PR10689"
+                 (request-cookies 
+                  (make-request 
+                   #"GET" (string->url "http://test.com/foo")
+                   (list (make-header #"Cookie" 
+                                      #"style_cookie=null; phpbb3_e1p9b_u=54; phpbb3_e1p9b_k=; phpbb3_e1p9b_sid=3fa8d7a7b65fbabcbe9b345861dc079a"))
+                   empty #f
+                   "host" 80 "client"))
+                 (list (make-client-cookie "style_cookie" "null" #f #f)
+                       (make-client-cookie "phpbb3_e1p9b_u" "54" #f #f)
+                       (make-client-cookie "phpbb3_e1p9b_k" "" #f #f)
+                       (make-client-cookie "phpbb3_e1p9b_sid" "3fa8d7a7b65fbabcbe9b345861dc079a" #f #f)))
+    
     )))
+
+#;(require schemeunit/text-ui)
+#;(run-tests cookies-tests)

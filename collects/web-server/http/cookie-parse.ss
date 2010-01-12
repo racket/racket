@@ -32,6 +32,13 @@
    VALUE           =       value
    path            =       "$Path" "=" value
    domain          =       "$Domain" "=" value
+
+   value          = token | quoted-string
+
+   token          = 1*<any CHAR except CTLs or tspecials>
+
+   quoted-string  = ( <"> *(qdtext) <"> )
+   qdtext         = <any TEXT except <">>
 |#
 (define-lex-abbrevs
   (tspecial (:or (char-set "()<>@,;:\\\"/[]?={}") whitespace #\tab))
@@ -74,7 +81,9 @@
                    (separator
                     [(COMMA) #t]
                     [(SEMI) #t])
-                   (item [(lhs EQUALS rhs) (cons $1 $3)])
+                   (item [(lhs EQUALS rhs) (cons $1 $3)]
+                         ; This is not part of the spec. It is illegal
+                         [(lhs EQUALS) (cons $1 "")])
                    (lhs [(DOMAIN) 'domain]
                         [(PATH) 'path]
                         [(TOKEN) $1])
