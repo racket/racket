@@ -238,9 +238,9 @@ void scheme_init_salloc(void);
 void scheme_init_jit(void);
 #endif
 void scheme_init_memtrace(Scheme_Env *env);
-void scheme_init_parameterization_readonly_globals();
 void scheme_init_parameterization(Scheme_Env *env);
 void scheme_init_getenv(void);
+void scheme_init_inspector(void);
 
 #ifndef DONT_USE_FOREIGN
 void scheme_init_foreign_globals();
@@ -263,6 +263,7 @@ void scheme_init_print_global_constants(void);
 void scheme_init_variable_references_constants(void);
 void scheme_init_logger(void);
 void scheme_init_file_places(void);
+
 Scheme_Logger *scheme_get_main_logger(void);
 void scheme_init_logger_config(void);
 
@@ -297,6 +298,7 @@ void scheme_init_module_resolver(void);
 void scheme_finish_kernel(Scheme_Env *env);
 
 Scheme_Object *scheme_make_initial_inspectors(void);
+Scheme_Object *scheme_get_current_inspector(void);
 
 extern int scheme_builtin_ref_counter;
 
@@ -2825,7 +2827,10 @@ typedef struct Scheme_Module_Exports
   MZTAG_IF_REQUIRED
 
   /* Most common phases: */
-  Scheme_Module_Phase_Exports *rt, *et, *dt;
+  Scheme_Module_Phase_Exports *rt; /* run time? phase 0*/
+  Scheme_Module_Phase_Exports *et; /* expansion time? phase 1 */
+  Scheme_Module_Phase_Exports *dt; /* */
+                            
   /* All others: */
   Scheme_Hash_Table *other_phases;
 

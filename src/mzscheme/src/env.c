@@ -143,8 +143,7 @@ int scheme_is_module_begin_env(Scheme_Comp_Env *env);
 
 Scheme_Env *scheme_engine_instance_init();
 Scheme_Env *scheme_place_instance_init();
-static void place_instance_init_pre_kernel();
-static Scheme_Env *place_instance_init_post_kernel(int initial_main_os_thread);
+static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thread);
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -358,6 +357,7 @@ Scheme_Env *scheme_engine_instance_init() {
 #ifdef MZ_USE_JIT
   scheme_init_jit();
 #endif
+  make_kernel_env();
 
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
   scheme_places_block_child_signal();
@@ -366,14 +366,11 @@ Scheme_Env *scheme_engine_instance_init() {
   scheme_spawn_master_place();
 #endif
   
-  place_instance_init_pre_kernel(stack_base);
-  make_kernel_env();
-  scheme_init_parameterization_readonly_globals();
-  env = place_instance_init_post_kernel(1);
+  env = place_instance_init(stack_base, 1);
 
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
 {
-  int *signal_fd;
+  void *signal_fd;
   signal_fd = scheme_get_signal_handle();
   GC_set_put_external_event_fd(signal_fd);
 }
@@ -381,37 +378,6 @@ Scheme_Env *scheme_engine_instance_init() {
 
   return env;
 }
-
-static void place_instance_init_pre_kernel(void *stack_base) {
-
-#ifdef TIME_STARTUP_PROCESS
-  printf("place_init @ %ld\n", scheme_get_process_milliseconds());
-#endif
-  scheme_set_current_os_thread_stack_base(stack_base);
-
-#ifndef MZ_PRECISE_GC
-  scheme_init_setjumpup();
-#endif
-
-  scheme_init_stack_check();
-  scheme_init_overflow();
-
-  init_toplevel_local_offsets_hashtable_caches();
-
-
-#ifdef TIME_STARTUP_PROCESS
-  printf("pre-process @ %ld\n", scheme_get_process_milliseconds());
-#endif
-
-  scheme_make_thread(stack_base);
-
-  scheme_init_module_resolver();
-
-#ifdef TIME_STARTUP_PROCESS
-  printf("process @ %ld\n", scheme_get_process_milliseconds());
-#endif
-}
-
 
 static void init_unsafe(Scheme_Env *env)
 {
@@ -474,8 +440,43 @@ Scheme_Env *scheme_get_flfxnum_env() {
   return flfxnum_env;
 }
 
-static Scheme_Env *place_instance_init_post_kernel(int initial_main_os_thread) {
+
+static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thread) {
   Scheme_Env *env;
+
+#ifdef TIME_STARTUP_PROCESS
+  printf("place_init @ %ld\n", scheme_get_process_milliseconds());
+#endif
+  scheme_set_current_os_thread_stack_base(stack_base);
+
+#ifndef MZ_PRECISE_GC
+  scheme_init_setjumpup();
+#endif
+
+  scheme_init_stack_check();
+  scheme_init_overflow();
+
+  init_toplevel_local_offsets_hashtable_caches();
+
+
+#ifdef TIME_STARTUP_PROCESS
+  printf("pre-process @ %ld\n", scheme_get_process_milliseconds());
+#endif
+
+  scheme_make_thread(stack_base);
+
+  {
+    Scheme_Object *sym;
+    sym = scheme_intern_symbol("mzscheme");
+    scheme_current_thread->name = sym;
+  }
+
+  scheme_init_module_resolver();
+
+#ifdef TIME_STARTUP_PROCESS
+  printf("process @ %ld\n", scheme_get_process_milliseconds());
+#endif
+
   /* error handling and buffers */
   /* this check prevents initializing orig ports twice for the first initial
    * place.  The kernel initializes orig_ports early. */
@@ -505,6 +506,7 @@ static Scheme_Env *place_instance_init_post_kernel(int initial_main_os_thread) {
 #ifndef NO_SCHEME_EXNS
   scheme_init_exn_config();
 #endif
+  scheme_init_error_config();
 
   scheme_init_memtrace(env);
 #ifndef NO_TCP_SUPPORT
@@ -548,8 +550,7 @@ Scheme_Env *scheme_place_instance_init(void *stack_base) {
   int *signal_fd;
   GC_construct_child_gc();
 #endif
-  place_instance_init_pre_kernel(stack_base);
-  env = place_instance_init_post_kernel(0);
+  env = place_instance_init(stack_base, 0);
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
   signal_fd = scheme_get_signal_handle();
   GC_set_put_external_event_fd(signal_fd);
@@ -573,8 +574,6 @@ static void make_kernel_env(void)
 
   env = make_empty_inited_env(GLOBAL_TABLE_SIZE);
 
-  scheme_set_param(scheme_current_config(), MZCONFIG_ENV, 
-		   (Scheme_Object *)env);
 
   REGISTER_SO(kernel_env);
   kernel_env = env;
@@ -620,6 +619,7 @@ static void make_kernel_env(void)
   MZTIMEIT(exn, scheme_init_exn(env));
 #endif
   MZTIMEIT(process, scheme_init_thread(env));
+  scheme_init_inspector();
   MZTIMEIT(reduced, scheme_init_reduced_proc_struct(env));
 #ifndef NO_SCHEME_THREADS
   MZTIMEIT(sema, scheme_init_sema(env));
@@ -685,12 +685,7 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("syntax-local-lift-require", local_lift_require, 2, 2, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-lift-provide", local_lift_provide, 1, 1, env);
 
-  {
-    Scheme_Object *sym;
-    sym = scheme_intern_symbol("mzscheme");
-    scheme_current_thread->name = sym;
-  }
-
+  
   REGISTER_SO(unshadowable_symbol);
   unshadowable_symbol = scheme_intern_symbol("unshadowable");
 

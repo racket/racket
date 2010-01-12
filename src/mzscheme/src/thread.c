@@ -174,7 +174,7 @@ THREAD_LOCAL_DECL(MZ_MARK_POS_TYPE scheme_current_cont_mark_pos);
 THREAD_LOCAL_DECL(static Scheme_Custodian *main_custodian);
 THREAD_LOCAL_DECL(static Scheme_Custodian *last_custodian);
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *limited_custodians = NULL);
-THREAD_LOCAL_DECL(static Scheme_Object *initial_inspector);
+READ_ONLY static Scheme_Object *initial_inspector;
 
 #ifndef MZ_PRECISE_GC
 static int cust_box_count, cust_box_alloc;
@@ -434,6 +434,10 @@ unsigned long scheme_get_current_thread_stack_start(void);
 
 void scheme_init_thread(Scheme_Env *env)
 {
+#ifdef MZ_PRECISE_GC
+    register_traversers();
+#endif
+
   REGISTER_SO(read_symbol);
   REGISTER_SO(write_symbol);
   REGISTER_SO(execute_symbol);
@@ -803,6 +807,8 @@ void scheme_init_thread(Scheme_Env *env)
 
 void scheme_init_thread_places(void) {
   buffer_init_size = INIT_TB_SIZE;
+  REGISTER_SO(recycle_cell);
+  REGISTER_SO(maybe_recycle_cell);
 }
 
 void scheme_init_memtrace(Scheme_Env *env)
@@ -824,14 +830,24 @@ void scheme_init_memtrace(Scheme_Env *env)
   scheme_finish_primitive_module(newenv);
 }
 
-void scheme_init_parameterization_readonly_globals()
+void scheme_init_inspector() {
+    REGISTER_SO(initial_inspector);
+    initial_inspector = scheme_make_initial_inspectors();
+    /* Keep the initial inspector in case someone resets Scheme (by
+       calling scheme_basic_env() a second time. Using the same
+       inspector after a reset lets us use the same initial module
+       instances. */
+}
+
+Scheme_Object *scheme_get_current_inspector()
+  XFORM_SKIP_PROC
 {
-  REGISTER_SO(scheme_exn_handler_key);
-  REGISTER_SO(scheme_parameterization_key);
-  REGISTER_SO(scheme_break_enabled_key);
-  scheme_exn_handler_key = scheme_make_symbol("exnh");
-  scheme_parameterization_key = scheme_make_symbol("paramz");
-  scheme_break_enabled_key = scheme_make_symbol("break-on?");
+  if (scheme_defining_primitives) 
+    return initial_inspector;
+
+  Scheme_Config *c;
+  c = scheme_current_config();
+  return scheme_get_param(c, MZCONFIG_INSPECTOR);
 }
   
 void scheme_init_parameterization(Scheme_Env *env)
@@ -839,8 +855,12 @@ void scheme_init_parameterization(Scheme_Env *env)
   Scheme_Object *v;
   Scheme_Env *newenv;
 
-  REGISTER_SO(recycle_cell);
-  REGISTER_SO(maybe_recycle_cell);
+  REGISTER_SO(scheme_exn_handler_key);
+  REGISTER_SO(scheme_parameterization_key);
+  REGISTER_SO(scheme_break_enabled_key);
+  scheme_exn_handler_key = scheme_make_symbol("exnh");
+  scheme_parameterization_key = scheme_make_symbol("paramz");
+  scheme_break_enabled_key = scheme_make_symbol("break-on?");
 
   v = scheme_intern_symbol("#%paramz");
   newenv = scheme_primitive_module(v, env);
@@ -2164,9 +2184,6 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
 
   if (!scheme_main_thread) {
     /* Creating the first thread... */
-#ifdef MZ_PRECISE_GC
-    register_traversers();
-#endif
     REGISTER_SO(scheme_current_thread);
     REGISTER_SO(scheme_main_thread);
     REGISTER_SO(scheme_first_thread);
@@ -3629,6 +3646,8 @@ void scheme_wake_up(void)
 
 void scheme_out_of_fuel(void)
 {
+  if (scheme_defining_primitives) return;
+
   scheme_thread_block((float)0);
   scheme_current_thread->ran_some = 1;
 }
@@ -6690,18 +6709,7 @@ static void make_initial_config(Scheme_Thread *p)
   }
 
   {
-    Scheme_Object *ins;
-    if (initial_inspector) {
-      ins = initial_inspector;
-    } else {
-      ins = scheme_make_initial_inspectors();
-      /* Keep the initial inspector in case someone resets Scheme (by
-         calling scheme_basic_env() a second time. Using the same
-         inspector after a reset lets us use the same initial module
-         instances. */
-      REGISTER_SO(initial_inspector);
-      initial_inspector = ins;
-    }
+    Scheme_Object *ins = initial_inspector;
     init_param(cells, paramz, MZCONFIG_INSPECTOR, ins);
     init_param(cells, paramz, MZCONFIG_CODE_INSPECTOR, ins);
   }

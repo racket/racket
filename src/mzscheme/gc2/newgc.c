@@ -224,7 +224,7 @@ void GC_set_collect_inform_callback(void (*func)(int major_gc, long pre_used, lo
 /*****************************************************************************/
 /* OS-Level Memory Management Routines                                       */
 /*****************************************************************************/
-static void garbage_collect(NewGC*, int);
+static void garbage_collect(NewGC*, int, int);
 
 static void out_of_memory()
 {
@@ -263,9 +263,9 @@ inline static void check_used_against_max(NewGC *gc, size_t len)
       gc->unsafe_allocation_abort(gc);
   } else {
     if(gc->used_pages > gc->max_pages_for_use) {
-      garbage_collect(gc, 0); /* hopefully this will free enough space */
+      garbage_collect(gc, 0, 0); /* hopefully this will free enough space */
       if(gc->used_pages > gc->max_pages_for_use) {
-        garbage_collect(gc, 1); /* hopefully *this* will free enough space */
+        garbage_collect(gc, 1, 0); /* hopefully *this* will free enough space */
         if(gc->used_pages > gc->max_pages_for_use) {
           /* too much memory allocated. 
            * Inform the thunk and then die semi-gracefully */
@@ -599,7 +599,7 @@ static inline void gc_if_needed_account_alloc_size(NewGC *gc, size_t allocate_si
     else {
 #endif
     if (!gc->dumping_avoid_collection)
-      garbage_collect(gc, 0);
+      garbage_collect(gc, 0, 0);
 #ifdef MZ_USE_PLACES 
     }
 #endif
@@ -830,7 +830,7 @@ unsigned long GC_make_jit_nursery_page(int count) {
 
   if((gc->gen0.current_size + size) >= gc->gen0.max_size) {
     if (!gc->dumping_avoid_collection)
-      garbage_collect(gc, 0);
+      garbage_collect(gc, 0, 0);
   }
   gc->gen0.current_size += size;
 
@@ -931,7 +931,7 @@ inline static void *allocate(const size_t request_size, const int type)
       LOG_PRIM_START(((void*)garbage_collect));			
 #endif
       
-      garbage_collect(gc, 0);
+      garbage_collect(gc, 0, 0);
 
 #ifdef INSTRUMENT_PRIMITIVES 
       LOG_PRIM_END(((void*)garbage_collect));
@@ -1876,7 +1876,7 @@ static void Master_collect() {
       printf("START MASTER COLLECTION\n");
       fprintf(gcdebugOUT(), "START MASTER COLLECTION\n");
       MASTERGC->major_places_gc = 0;
-      garbage_collect(MASTERGC, 1);
+      garbage_collect(MASTERGC, 1, 0);
       printf("END MASTER COLLECTION\n");
       fprintf(gcdebugOUT(), "END MASTER COLLECTION\n");
     }
@@ -2028,7 +2028,7 @@ void GC_switch_out_master_gc() {
   if(!initialized) {
     NewGC *gc = GC_get_GC();
     initialized = 1;
-    garbage_collect(gc, 1);
+    garbage_collect(gc, 1, 1);
 
 #ifdef MZ_USE_PLACES
     GC_gen0_alloc_page_ptr = 2;
@@ -2089,7 +2089,7 @@ void GC_switch_back_from_master(void *gc) {
 void GC_gcollect(void)
 {
   NewGC *gc = GC_get_GC();
-  garbage_collect(gc, 1);
+  garbage_collect(gc, 1, 0);
 }
 
 static inline int atomic_mark(void *p) { return 0; }
@@ -3393,7 +3393,7 @@ extern double scheme_get_inexact_milliseconds(void);
    really clean up. The full_needed_for_finalization flag triggers 
    the second full GC. */
 
-static void garbage_collect(NewGC *gc, int force_full)
+static void garbage_collect(NewGC *gc, int force_full, int switching_master)
 {
   unsigned long old_mem_use;
   unsigned long old_gen0;
@@ -3543,7 +3543,7 @@ static void garbage_collect(NewGC *gc, int force_full)
   clean_up_heap(gc);
   TIME_STEP("cleaned heap");
 #ifdef MZ_USE_PLACES
-  if (premaster_or_place_gc(gc))
+  if (premaster_or_place_gc(gc) && !switching_master)
 #endif
     reset_nursery(gc);
   TIME_STEP("reset nursurey");
@@ -3554,7 +3554,7 @@ static void garbage_collect(NewGC *gc, int force_full)
   TIME_STEP("accounted");
   if (gc->generations_available) {
 #ifdef MZ_USE_PLACES
-    if (postmaster_and_master_gc(gc)) {
+    if (postmaster_and_master_gc(gc) || switching_master) {
       unprotect_old_pages(gc);
     }
     else {

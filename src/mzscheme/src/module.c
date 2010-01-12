@@ -425,21 +425,21 @@ void scheme_finish_kernel(Scheme_Env *env)
   /* When this function is called, the initial namespace has all the
      primitive bindings for syntax and procedures. This function fills
      in the module wrapper for #%kernel. */
-  Scheme_Bucket_Table *ht;
-  int i, j, count, syntax_start = 0;
-  Scheme_Bucket **bs;
-  Scheme_Object **exs, *w, *rn;
-  Scheme_Object *insp;
+  Scheme_Object *w;
 
   REGISTER_SO(kernel);
 
   kernel = MALLOC_ONE_TAGGED(Scheme_Module);
   kernel->so.type = scheme_module_type;
-
-  insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
-  
   env->module = kernel;
-  env->insp = insp;
+
+  {
+    Scheme_Object *insp;
+    insp = scheme_get_current_inspector();
+
+    env->insp = insp;
+    kernel->insp = insp;
+  }
 
   kernel->modname = kernel_modname;
   kernel->requires = scheme_null;
@@ -448,68 +448,75 @@ void scheme_finish_kernel(Scheme_Env *env)
   kernel->dt_requires = scheme_null;
   kernel->other_requires = NULL;
 
-  kernel->insp = insp;
   
-  /* Provide all syntax and variables: */
-  count = 0;
-  for (j = 0; j < 2; j++) {
-    if (!j)
-      ht = env->toplevel;
-    else {
-      ht = env->syntax;
-      syntax_start = count;
-    }
-
-    bs = ht->buckets;
-    for (i = ht->size; i--; ) {
-      Scheme_Bucket *b = bs[i];
-      if (b && b->val)
-	count++;
-    }
-  }
-
-  exs = MALLOC_N(Scheme_Object *, count);
-  count = 0;
-  for (j = 0; j < 2; j++) {
-    if (!j)
-      ht = env->toplevel;
-    else
-      ht = env->syntax;
-
-    bs = ht->buckets;
-    for (i = ht->size; i--; ) {
-      Scheme_Bucket *b = bs[i];
-      if (b && b->val)
-	exs[count++] = (Scheme_Object *)b->key;
-    }
-  }
- 
-  kernel->no_cert = 1;
-
   {
-    Scheme_Module_Exports *me;
-    me = make_module_exports();
-    kernel->me = me;
+    Scheme_Bucket_Table *ht;
+    int i, j, count, syntax_start = 0;
+    Scheme_Bucket **bs;
+    Scheme_Object **exs;
+    Scheme_Object *rn;
+    /* Provide all syntax and variables: */
+    count = 0;
+    for (j = 0; j < 2; j++) {
+      if (!j)
+        ht = env->toplevel;
+      else {
+        ht = env->syntax;
+        syntax_start = count;
+      }
+
+      bs = ht->buckets;
+      for (i = ht->size; i--; ) {
+        Scheme_Bucket *b = bs[i];
+        if (b && b->val)
+          count++;
+      }
+    }
+
+    exs = MALLOC_N(Scheme_Object *, count);
+    count = 0;
+    for (j = 0; j < 2; j++) {
+      if (!j)
+        ht = env->toplevel;
+      else
+        ht = env->syntax;
+
+      bs = ht->buckets;
+      for (i = ht->size; i--; ) {
+        Scheme_Bucket *b = bs[i];
+        if (b && b->val)
+          exs[count++] = (Scheme_Object *)b->key;
+      }
+    }
+
+    kernel->no_cert = 1;
+
+    {
+      Scheme_Module_Exports *me;
+      me = make_module_exports();
+      kernel->me = me;
+    }
+
+    kernel->me->rt->provides = exs;
+    kernel->me->rt->provide_srcs = NULL;
+    kernel->me->rt->provide_src_names = exs;
+    kernel->me->rt->num_provides = count;
+    kernel->me->rt->num_var_provides = syntax_start;
+    scheme_populate_pt_ht(kernel->me->rt);
+
+    env->running = 1;
+    env->et_running = 1;
+    env->attached = 1;
+
+    /* Since this is the first module rename, it's registered as
+       the kernel module rename: */
+    rn = scheme_make_module_rename(scheme_make_integer(0), mzMOD_RENAME_NORMAL, NULL);
+    for (i = kernel->me->rt->num_provides; i--; ) {
+      scheme_extend_module_rename(rn, kernel_modidx, exs[i], exs[i], kernel_modidx, exs[i], 
+          0, scheme_make_integer(0), NULL, NULL, 0);
+    }
+    scheme_seal_module_rename(rn, STX_SEAL_ALL);
   }
-
-  kernel->me->rt->provides = exs;
-  kernel->me->rt->provide_srcs = NULL;
-  kernel->me->rt->provide_src_names = exs;
-  kernel->me->rt->num_provides = count;
-  kernel->me->rt->num_var_provides = syntax_start;
-
-  env->running = 1;
-  env->et_running = 1;
-  env->attached = 1;
-
-  /* Since this is the first module rename, it's registered as
-     the kernel module rename: */
-  rn = scheme_make_module_rename(scheme_make_integer(0), mzMOD_RENAME_NORMAL, NULL);
-  for (i = kernel->me->rt->num_provides; i--; ) {
-    scheme_extend_module_rename(rn, kernel_modidx, exs[i], exs[i], kernel_modidx, exs[i], 
-                                0, scheme_make_integer(0), NULL, NULL, 0);
-  }
-  scheme_seal_module_rename(rn, STX_SEAL_ALL);
 
   REGISTER_SO(scheme_sys_wraps0);
   REGISTER_SO(scheme_sys_wraps1);
@@ -4488,14 +4495,20 @@ Scheme_Env *scheme_primitive_module(Scheme_Object *name, Scheme_Env *for_env)
   
   env = scheme_new_module_env(for_env, m, 0);
 
-  config = scheme_current_config();
 
-  prefix = scheme_get_param(config, MZCONFIG_CURRENT_MODULE_NAME);
-  if (SCHEME_MODNAMEP(prefix))
-    name = prefix;
-  else
+  if (!scheme_defining_primitives) {
+    config = scheme_current_config();
+    prefix = scheme_get_param(config, MZCONFIG_CURRENT_MODULE_NAME);
+    if (SCHEME_MODNAMEP(prefix))
+      name = prefix;
+    else
+      name = scheme_intern_resolved_module_path(name);
+    insp = scheme_get_param(config, MZCONFIG_CODE_INSPECTOR);
+  }
+  else {
     name = scheme_intern_resolved_module_path(name);
-  insp = scheme_get_param(config, MZCONFIG_CODE_INSPECTOR);
+    insp = scheme_get_current_inspector();
+  }
 
   m->modname = name;
   m->requires = scheme_null;

@@ -79,6 +79,8 @@ static Scheme_Object *current_inspector(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_code_inspector(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *make_struct_type_property(int argc, Scheme_Object *argv[]);
+static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *argv[],
+  Scheme_Object **predout, Scheme_Object **accessout );
 static Scheme_Object *struct_type_property_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_equal_property_value_ok(int argc, Scheme_Object *argv[]);
@@ -264,10 +266,7 @@ scheme_init_struct (Scheme_Env *env)
 
     a[0] = scheme_intern_symbol("custom-write");
     a[1] = guard;
-    make_struct_type_property(2, a);
-    write_property = scheme_current_thread->ku.multiple.array[0];
-    pred = scheme_current_thread->ku.multiple.array[1];
-    access = scheme_current_thread->ku.multiple.array[2];
+    write_property = make_struct_type_property_from_c(2, a, &pred, &access);
     scheme_add_global_constant("prop:custom-write", write_property, env);
     scheme_add_global_constant("custom-write?", pred, env);
     scheme_add_global_constant("custom-write-accessor", access, env);
@@ -796,10 +795,11 @@ static Scheme_Object *prop_accessor(int argc, Scheme_Object **args, Scheme_Objec
   return v;
 }
 
-static Scheme_Object *make_struct_type_property(int argc, Scheme_Object *argv[])
-{
+static Scheme_Object *make_struct_type_property_from_c(int argc, Scheme_Object *argv[],
+  Scheme_Object **predout, Scheme_Object **accessout ) {
+
   Scheme_Struct_Property *p;
-  Scheme_Object *a[3], *v, *supers = scheme_null;
+  Scheme_Object *a[1], *v, *supers = scheme_null;
   char *name;
   int len;
 
@@ -853,35 +853,35 @@ static Scheme_Object *make_struct_type_property(int argc, Scheme_Object *argv[])
   name[len] = '?';
   name[len+1] = 0;
 
-  v = scheme_make_folding_prim_closure(prop_pred,
-				       1, a,
-				       name,
-				       1, 1, 0);
-  a[1] = v;
+  v = scheme_make_folding_prim_closure(prop_pred, 1, a, name, 1, 1, 0);
+  *predout = v;
 
   name = MALLOC_N_ATOMIC(char, len + 10);
   memcpy(name, SCHEME_SYM_VAL(argv[0]), len);
   memcpy(name + len, "-accessor", 10);
 
-  v = scheme_make_folding_prim_closure(prop_accessor,
-				       1, a,
-				       name,
-				       1, 1, 0);
-  a[2] = v;
+  v = scheme_make_folding_prim_closure(prop_accessor, 1, a, name, 1, 1, 0);
+  *accessout = v;
 
+  return a[0];
+}
+
+static Scheme_Object *make_struct_type_property(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *a[3];
+  a[0] = make_struct_type_property_from_c(argc, argv, &a[1], &a[2]);
   return scheme_values(3, a);
 }
 
 Scheme_Object *scheme_make_struct_type_property_w_guard(Scheme_Object *name, Scheme_Object *guard)
 {
-  Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *a[2];
+  Scheme_Object *pred = NULL;
+  Scheme_Object *access = NULL;
 
   a[0] = name;
   a[1] = guard;
-
-  (void)make_struct_type_property(2, a);
-  return p->ku.multiple.array[0];
+  return make_struct_type_property_from_c(2, a, &pred, &access);
 }
 
 Scheme_Object *scheme_make_struct_type_property(Scheme_Object *name)
@@ -963,17 +963,21 @@ static Scheme_Object *guard_property(Scheme_Object *prop, Scheme_Object *v, Sche
   } else {
     /* Normal guard handling: */
     if (p->guard) {
-      Scheme_Object *a[2], *info[mzNUM_ST_INFO], *l;
+      if(!scheme_defining_primitives) {
+        Scheme_Object *a[2], *info[mzNUM_ST_INFO], *l;
 
-      a[0] = (Scheme_Object *)t;
-      get_struct_type_info(1, a, info, 1);
+        a[0] = (Scheme_Object *)t;
+        get_struct_type_info(1, a, info, 1);
 
-      l = scheme_build_list(mzNUM_ST_INFO, info);
+        l = scheme_build_list(mzNUM_ST_INFO, info);
 
-      a[0] = v;
-      a[1] = l;
-    
-      return _scheme_apply(p->guard, 2, a);
+        a[0] = v;
+        a[1] = l;
+
+        return _scheme_apply(p->guard, 2, a);
+      }
+      else 
+        return v;
     } else
       return v;
   }
@@ -1866,7 +1870,7 @@ static Scheme_Object *check_type_and_inspector(const char *who, int always, int 
 
   stype = (Scheme_Struct_Type *)argv[0];
 
-  insp = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
+  insp = scheme_get_current_inspector();
 
   if (!always && !scheme_is_subinspector(stype->inspector, insp)) {
     scheme_arg_mismatch(who, 

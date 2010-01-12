@@ -157,8 +157,8 @@ READ_ONLY Scheme_Object *scheme_write_proc;
 READ_ONLY Scheme_Object *scheme_display_proc;
 READ_ONLY Scheme_Object *scheme_print_proc;
 
-READ_ONLY static Scheme_Object *dummy_input_port;
-READ_ONLY static Scheme_Object *dummy_output_port;
+THREAD_LOCAL_DECL(static Scheme_Object *dummy_input_port);
+THREAD_LOCAL_DECL(static Scheme_Object *dummy_output_port);
 
 #define fail_err_symbol scheme_false
 
@@ -208,14 +208,6 @@ scheme_init_port_fun(Scheme_Env *env)
   default_display_handler = scheme_make_prim_w_arity(sch_default_display_handler, "default-port-display-handler", 2, 2);
   default_write_handler   = scheme_make_prim_w_arity(sch_default_write_handler,   "default-port-write-handler",   2, 2);
   default_print_handler   = scheme_make_prim_w_arity(sch_default_print_handler,   "default-port-print-handler",   2, 2);
-
-  /* Use dummy port: */
-  REGISTER_SO(dummy_input_port);
-  REGISTER_SO(dummy_output_port);
-  dummy_input_port = scheme_make_byte_string_input_port("");
-  dummy_output_port = scheme_make_null_output_port(1);
-
-  scheme_init_port_fun_config();
 
   scheme_add_global_constant("eof", scheme_eof, env);
   
@@ -352,6 +344,12 @@ void scheme_init_port_fun_config(void)
   scheme_default_global_print_handler
     = scheme_make_prim_w_arity(sch_default_global_port_print_handler, "default-global-port-print-handler", 2, 2);
   scheme_set_root_param(MZCONFIG_PORT_PRINT_HANDLER, scheme_default_global_print_handler);
+
+  /* Use dummy port: */
+  REGISTER_SO(dummy_input_port);
+  REGISTER_SO(dummy_output_port);
+  dummy_input_port = scheme_make_byte_string_input_port("");
+  dummy_output_port = scheme_make_null_output_port(1);
 }
 
 /*========================================================================*/

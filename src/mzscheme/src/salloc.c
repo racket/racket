@@ -975,69 +975,69 @@ void scheme_free_code(void *p)
     /* it was a large object on its own page(s) */
     scheme_code_page_total -= size;
     LOG_CODE_MALLOC(1, printf("freeing large %p (%ld) [%ld left]\n", 
-                              p, size, scheme_code_page_total));
+          p, size, scheme_code_page_total));
     free_page((char *)p - CODE_HEADER_SIZE, size);
-    return;
   }
+  else {
+    bucket = size;
 
-  bucket = size;
-
-  if ((bucket < 0) || (bucket >= free_list_bucket_count)) {
-    printf("bad free: %p\n", (char *)p + CODE_HEADER_SIZE);
-    abort();    
-  }
-
-  size2 = free_list[bucket].size;
-
-  LOG_CODE_MALLOC(0, printf("freeing %ld / %ld\n", size2, bucket));
-
-  /* decrement alloc count for this page: */
-  per_page = (page_size - CODE_HEADER_SIZE) / size2;
-  n = ((long *)CODE_PAGE_OF(p))[1];
-  /* double-check: */
-  if ((n < 1) || (n > per_page)) {
-    printf("bad free: %p\n", (char *)p + CODE_HEADER_SIZE);
-    abort();
-  }
-  n--;
-  ((long *)CODE_PAGE_OF(p))[1] = n;
-  
-  /* add to free list: */
-  prev = free_list[bucket].elems;
-  ((void **)p)[0] = prev;
-  ((void **)p)[1] = NULL;
-  if (prev)
-    ((void **)prev)[1] = p;
-  free_list[bucket].elems = p;
-  free_list[bucket].count++;
-
-  /* Free whole page if it's completely on the free list, and if there
-     are enough buckets on other pages. */
-  if ((n == 0) && ((free_list[bucket].count - per_page) >= (per_page / 2))) {
-    /* remove same-page elements from free list, then free page */
-    int i;
-    long sz;
-    void *pg;
-
-    sz = page_size - size2;
-    pg = CODE_PAGE_OF(p);
-    for (i = CODE_HEADER_SIZE; i <= sz; i += size2) {
-      p = ((char *)pg) + i;
-      prev = ((void **)p)[1];
-      if (prev)
-        ((void **)prev)[0] = ((void **)p)[0];
-      else
-        free_list[bucket].elems = ((void **)p)[0];
-      prev = ((void **)p)[0];
-      if (prev)
-        ((void **)prev)[1] = ((void **)p)[1];
-      --free_list[bucket].count;
+    if ((bucket < 0) || (bucket >= free_list_bucket_count)) {
+      printf("bad free: %p\n", (char *)p + CODE_HEADER_SIZE);
+      abort();    
     }
-    
-    scheme_code_page_total -= page_size;
-    LOG_CODE_MALLOC(2, printf("freeing page at %p [%ld left]\n", 
-                              CODE_PAGE_OF(p), scheme_code_page_total));
-    free_page(CODE_PAGE_OF(p), page_size);
+
+    size2 = free_list[bucket].size;
+
+    LOG_CODE_MALLOC(0, printf("freeing %ld / %ld\n", size2, bucket));
+
+    /* decrement alloc count for this page: */
+    per_page = (page_size - CODE_HEADER_SIZE) / size2;
+    n = ((long *)CODE_PAGE_OF(p))[1];
+    /* double-check: */
+    if ((n < 1) || (n > per_page)) {
+      printf("bad free: %p\n", (char *)p + CODE_HEADER_SIZE);
+      abort();
+    }
+    n--;
+    ((long *)CODE_PAGE_OF(p))[1] = n;
+
+    /* add to free list: */
+    prev = free_list[bucket].elems;
+    ((void **)p)[0] = prev;
+    ((void **)p)[1] = NULL;
+    if (prev)
+      ((void **)prev)[1] = p;
+    free_list[bucket].elems = p;
+    free_list[bucket].count++;
+
+    /* Free whole page if it's completely on the free list, and if there
+       are enough buckets on other pages. */
+    if ((n == 0) && ((free_list[bucket].count - per_page) >= (per_page / 2))) {
+      /* remove same-page elements from free list, then free page */
+      int i;
+      long sz;
+      void *pg;
+
+      sz = page_size - size2;
+      pg = CODE_PAGE_OF(p);
+      for (i = CODE_HEADER_SIZE; i <= sz; i += size2) {
+        p = ((char *)pg) + i;
+        prev = ((void **)p)[1];
+        if (prev)
+          ((void **)prev)[0] = ((void **)p)[0];
+        else
+          free_list[bucket].elems = ((void **)p)[0];
+        prev = ((void **)p)[0];
+        if (prev)
+          ((void **)prev)[1] = ((void **)p)[1];
+        --free_list[bucket].count;
+      }
+
+      scheme_code_page_total -= page_size;
+      LOG_CODE_MALLOC(2, printf("freeing page at %p [%ld left]\n", 
+            CODE_PAGE_OF(p), scheme_code_page_total));
+      free_page(CODE_PAGE_OF(p), page_size);
+    }
   }
 # ifdef MZ_USE_PLACES
   mzrt_mutex_unlock(free_list_mutex);

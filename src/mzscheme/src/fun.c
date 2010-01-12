@@ -3639,16 +3639,16 @@ static int is_arity(Scheme_Object *a, int at_least_ok, int list_ok)
 void scheme_init_reduced_proc_struct(Scheme_Env *env)
 {
   if (!scheme_reduced_procedure_struct) {
-    Scheme_Object *pr;
+    Scheme_Inspector *insp;
 
     REGISTER_SO(scheme_reduced_procedure_struct);
-    pr = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
-    while (((Scheme_Inspector *)pr)->superior->superior) {
-      pr = (Scheme_Object *)((Scheme_Inspector *)pr)->superior;
+    insp = (Scheme_Inspector *) scheme_get_current_inspector();
+    while (insp->superior->superior) {
+      insp = insp->superior;
     }
     scheme_reduced_procedure_struct = scheme_make_proc_struct_type(NULL,
                                                                    NULL,
-                                                                   pr,
+                                                                   (Scheme_Object *)insp,
                                                                    3, 0,
                                                                    scheme_false,
                                                                    scheme_make_integer(0),

@@ -618,8 +618,6 @@ void scheme_init_error(Scheme_Env *env)
   }
                                                             
   scheme_add_global_constant("prop:arity-string", arity_property, env);
-
-  scheme_init_error_config();
 }
 
 void scheme_init_logger()
@@ -3504,8 +3502,6 @@ void scheme_init_exn(Scheme_Env *env)
                                                     "raise",
                                                     1, 2),
 			     env);
-
-  scheme_init_exn_config();
 }
 
 void scheme_init_exn_config(void)

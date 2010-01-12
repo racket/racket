@@ -249,7 +249,6 @@ typedef struct Thread_Local_Variables {
   int current_lifetime_;
   int scheme_main_was_once_suspended_;
   int buffer_init_size_;
-  Scheme_Object *initial_inspector_;
   long scheme_total_gc_time_;
   long start_this_gc_time_;
   long end_this_gc_time_;
@@ -259,6 +258,8 @@ typedef struct Thread_Local_Variables {
   int locale_on_;
   const mzchar *current_locale_name_;
   int gensym_counter_;
+  Scheme_Object *dummy_input_port_;
+  Scheme_Object *dummy_output_port_;
 /*KPLAKE1*/
 } Thread_Local_Variables;
 
@@ -493,7 +494,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define current_lifetime XOA (scheme_get_thread_local_variables()->current_lifetime_)
 #define scheme_main_was_once_suspended XOA (scheme_get_thread_local_variables()->scheme_main_was_once_suspended_)
 #define buffer_init_size XOA (scheme_get_thread_local_variables()->buffer_init_size_)
-#define initial_inspector XOA (scheme_get_thread_local_variables()->initial_inspector_)
 #define scheme_total_gc_time XOA (scheme_get_thread_local_variables()->scheme_total_gc_time_)
 #define start_this_gc_time XOA (scheme_get_thread_local_variables()->start_this_gc_time_)
 #define end_this_gc_time XOA (scheme_get_thread_local_variables()->end_this_gc_time_)
@@ -503,6 +503,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define locale_on XOA (scheme_get_thread_local_variables()->locale_on_)
 #define current_locale_name XOA (scheme_get_thread_local_variables()->current_locale_name_)
 #define gensym_counter XOA (scheme_get_thread_local_variables()->gensym_counter_)
+#define dummy_input_port XOA (scheme_get_thread_local_variables()->dummy_input_port_)
+#define dummy_output_port XOA (scheme_get_thread_local_variables()->dummy_output_port_)
 /*KPLAKE2*/
 
 /* **************************************** */
