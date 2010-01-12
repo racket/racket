@@ -303,12 +303,12 @@ Similar to @scheme[map], except that
 @itemize[
 
  @item{the result is @scheme[#f] if every application of @scheme[proc] produces
-       @scheme[#f]; or}
+       @scheme[#f]; and}
 
- @item{the result of the first applciation of @scheme[proc] to produces a
-       value other than @scheme[#f], in which case @scheme[proc] is not
+ @item{if the result of an application of @scheme[proc] produces a
+       value other than @scheme[#f], then @scheme[proc] is not
        applied to later elements of the @scheme[lst]s;
-       the application of @scheme[proc] to the last elements in the
+       the application of @scheme[proc] to the last elements of the
        @scheme[lst]s is in tail position with respect to the
        @scheme[ormap] call.}
 
@@ -330,7 +330,7 @@ Similar to @scheme[map], but @scheme[proc] is called only for its
  effect, and its result (which can be any number of values) is
  ignored.
 
-(mz-examples[
+@mz-examples[
 (for-each (lambda (arg)
             (printf "Got ~a\n" arg)
             23)
