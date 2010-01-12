@@ -2166,8 +2166,8 @@ Scheme_Object *int_sqrt_rem (int argc, Scheme_Object *argv[])
 
 static Scheme_Object *fixnum_expt(long x, long y)
 {
-  int orig_x = x;
-  int orig_y = y;
+  long orig_x = x;
+  long orig_y = y;
 
   if ((x == 2) && (y <= MAX_SHIFT_TRY))
     return scheme_make_integer((long)1 << y);

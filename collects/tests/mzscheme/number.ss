@@ -591,6 +591,7 @@
 (test 2 expt 4 1/2)
 (test 2.0 expt 4 0.5)
 (test (sqrt 5) expt 5 1/2)
+(test 18446744073709551616 expt (expt 2 32) 2)
 (arity-test expt 2 2)
 
 (test 31525197391593472 inexact->exact 31525197391593473.0)

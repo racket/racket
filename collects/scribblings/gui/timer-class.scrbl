@@ -22,7 +22,7 @@ See @secref["eventspaceinfo"] for more information about event
  priorities.
 
 
-@defconstructor[([notify-callback (-> any) @scheme[void]]
+@defconstructor[([notify-callback (-> any) void]
                  [interval (or/c (integer-in 0 1000000000) false/c) #f]
                  [just-once? any/c #f])]{
 
