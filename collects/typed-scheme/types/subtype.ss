@@ -5,7 +5,7 @@
 	 (types utils comparison resolve abbrev)
          (env type-name-env)
          (only-in (infer infer-dummy) unify)
-         scheme/match unstable/match	 
+         scheme/match unstable/match unstable/debug
          mzlib/trace (rename-in scheme/contract
                                 [-> c->]
                                 [->* c->*])
@@ -308,7 +308,7 @@
 	       (subtypes* A0 (cons proc flds) (cons proc* flds*))]
 	      ;; subtyping on structs follows the declared hierarchy
 	      [((Struct: nm (? Type? parent) flds proc _ _ _) other) 
-					;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)
+               ;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)
 	       (subtype* A0 parent other)]
 	      ;; Promises are covariant
 	      [((Struct: 'Promise _ (list t) _ _ _ _) (Struct: 'Promise _ (list t*) _ _ _ _)) (subtype* A0 t t*)]

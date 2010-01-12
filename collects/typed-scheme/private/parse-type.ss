@@ -12,13 +12,14 @@
          (for-template scheme/base "base-types-extra.ss" "colon.ss")
          (for-template (prefix-in t: "base-types-extra.ss")))
 
+(define-struct poly (name vars) #:prefab)
+
 (p/c [parse-type (syntax? . c:-> . Type/c)]
      [parse-type/id (syntax? c:any/c . c:-> . Type/c)] 
      [parse-tc-results (syntax? . c:-> . tc-results?)] 
      [parse-tc-results/id (syntax? c:any/c . c:-> . tc-results?)])
 
 (provide star ddd/bound)
-
 (define enable-mu-parsing (make-parameter #t))
 
 (define ((parse/id p) loc datum)
@@ -280,7 +281,11 @@
          ([rator (parse-type #'id)]
           [args (map parse-type (syntax->list #'(arg args ...)))])
          (match rator
-           [(Name: _)
+           [(Name: n)
+            (when (and (current-poly-struct) 
+                       (free-identifier=? n (poly-name (current-poly-struct)))
+                       (not (andmap type-equal? args (poly-vars (current-poly-struct)))))
+              (tc-error "Structure type constructor ~a applied to non-regular arguments ~a" rator args))
             (make-App rator args stx)]
            [(Poly: ns _)
             (unless (= (length args) (length ns))

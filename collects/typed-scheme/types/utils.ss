@@ -31,7 +31,8 @@
          tc-error/expr
          lookup-fail
          lookup-type-fail
-         combine-results)
+         combine-results
+         current-poly-struct)
 
 
 ;; substitute : Type Name Type -> Type
@@ -305,3 +306,7 @@
 
 (define (lookup-type-fail i)
   (tc-error/expr "~a is not bound as a type" (syntax-e i)))
+
+;; a parameter for the current polymorphic structure being defined
+;; to allow us to prevent non-regular datatypes
+(define current-poly-struct (make-parameter #f))
