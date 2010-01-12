@@ -169,7 +169,7 @@ oberen Kante, der untern Kante oder der Mitte angeordnet werden.}
 
 @defthing[overlay (image image h-place v-place -> image)]{
  Der Aufruf @scheme[(overlay img other h v)]
- legt zweite Bild @scheme[img] auf das erste @scheme[other].  Die beiden anderen Argumente geben an, wie
+ legt zweite Bild @scheme[other] auf das erste @scheme[img].  Die beiden anderen Argumente geben an, wie
  die beiden Bilder zueinander positioniert werden.}
 
 @defthing[beside (image image v-mode -> image)]{
