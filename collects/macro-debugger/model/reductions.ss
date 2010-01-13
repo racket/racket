@@ -366,7 +366,8 @@
                  [#:new-local-context
                   [LocalAction ?form local]]])
               ([#:pass1]
-               [LocalAction ?form local]
+               ;; Use ?disconnected; do not modify real term
+               [LocalAction ?disconnected local]
                [#:pass2])]
         [LocalActions ?form rest])]))
 
