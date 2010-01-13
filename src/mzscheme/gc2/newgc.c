@@ -2046,13 +2046,6 @@ void GC_switch_out_master_gc() {
   }
 }
 
-/* used to initialize a MasterGC Thread, bad idea
- * scheme_master_fast_path is more performant */
-void GC_switch_in_master_gc() {
-  GC_set_GC(MASTERGC);
-  restore_globals_from_gc(MASTERGC);
-}
-
 /*used in scheme_master_fast_path*/
 void *GC_switch_to_master_gc() {
   NewGC *gc = GC_get_GC();

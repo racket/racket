@@ -463,26 +463,6 @@ Scheme_Object *scheme_places_deep_copy_in_master(Scheme_Object *so) {
 #ifdef MZ_PRECISE_GC
 static void* scheme_master_place_handlemsg(int msg_type, void *msg_payload);
 
-#if 0
-static void *master_scheme_place(void *data) {
-  mz_proc_thread *myself;
-  myself = proc_thread_self;
-  GC_switch_in_master_gc();
-
-  while(1) {
-    int recv_type;
-    void *recv_payload;
-    pt_mbox *origin;
-    Scheme_Object *o;
-
-    pt_mbox_recv(myself->mbox, &recv_type, &recv_payload, &origin);
-    o = scheme_master_place_handlemsg(recv_type, recv_payload);
-    pt_mbox_send(origin, 2, (void *) o, NULL);
-  }
-  return NULL;
-}
-#endif
-
 static void* scheme_master_place_handlemsg(int msg_type, void *msg_payload)
 {
   switch(msg_type) {
