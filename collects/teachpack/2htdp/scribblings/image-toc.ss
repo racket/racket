@@ -25,14 +25,13 @@
    (list '(image-width (circle 30 "solid" "orange")) 'val 60)
    (list '(image-width (ellipse 30 40 "solid" "orange")) 'val 30)
    (list
-    '(beside/align
-      "bottom"
+    '(beside
       (ellipse 20 70 "solid" "lightsteelblue")
       (frame (ellipse 20 50 "solid" "mediumslateblue"))
       (ellipse 20 30 "solid" "slateblue")
       (ellipse 20 10 "solid" "navy"))
     'image
-    "f7f1480d58.png")
+    "54a488e1a5.png")
    (list '(frame (ellipse 20 20 "outline" "black")) 'image "6a5a617f28.png")
    (list
     '(above
@@ -163,13 +162,13 @@
     "2bea495d1f.png")
    (list
     '(above/align
-      "center"
+      "left"
       (ellipse 70 20 "solid" "yellowgreen")
       (ellipse 50 20 "solid" "olivedrab")
       (ellipse 30 20 "solid" "darkolivegreen")
       (ellipse 10 20 "solid" "darkgreen"))
     'image
-    "166bb7bc683.png")
+    "ff11314e4e.png")
    (list
     '(above/align
       "right"
@@ -193,13 +192,13 @@
     "2187216ca96.png")
    (list
     '(beside/align
-      "center"
+      "top"
       (ellipse 20 70 "solid" "mediumorchid")
       (ellipse 20 50 "solid" "darkorchid")
       (ellipse 20 30 "solid" "purple")
       (ellipse 20 10 "solid" "indigo"))
     'image
-    "2dd0a2a4517.png")
+    "10a0d35fa03.png")
    (list
     '(beside/align
       "bottom"
@@ -265,12 +264,12 @@
     "ff2fcb7b87.png")
    (list
     '(underlay/align
-      "middle"
+      "left"
       "middle"
       (rectangle 30 60 "solid" "orange")
       (ellipse 60 30 "solid" "purple"))
     'image
-    "2d1e52503d7.png")
+    "1404e4b2af.png")
    (list
     '(underlay
       (ellipse 10 60 "solid" "red")
@@ -335,21 +334,21 @@
     "969a9aa483.png")
    (list
     '(overlay/align
-      "middle"
+      "left"
       "middle"
       (rectangle 30 60 "solid" "orange")
       (ellipse 60 30 "solid" "purple"))
     'image
-    "bf08c71801.png")
+    "11b64ab4d3.png")
    (list
     '(overlay
       (regular-polygon 20 5 "solid" (make-color 50 50 255))
-      (regular-polygon 25 5 "solid" (make-color 100 100 255))
-      (regular-polygon 30 5 "solid" (make-color 150 150 255))
-      (regular-polygon 35 5 "solid" (make-color 200 200 255))
-      (regular-polygon 40 5 "solid" (make-color 250 250 255)))
+      (regular-polygon 26 5 "solid" (make-color 100 100 255))
+      (regular-polygon 32 5 "solid" (make-color 150 150 255))
+      (regular-polygon 38 5 "solid" (make-color 200 200 255))
+      (regular-polygon 44 5 "solid" (make-color 250 250 255)))
     'image
-    "1aea411192a.png")
+    "1acede17bc6.png")
    (list
     '(overlay
       (ellipse 10 10 "solid" "red")

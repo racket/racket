@@ -310,10 +310,10 @@ mean that the curve stays with the angle longer.
                            (ellipse 50 50 "solid" "red")
                            (ellipse 60 60 "solid" "black"))
                   (overlay (regular-polygon 20 5 "solid" (make-color  50  50 255))
-                           (regular-polygon 25 5 "solid" (make-color 100 100 255))
-                           (regular-polygon 30 5 "solid" (make-color 150 150 255))
-                           (regular-polygon 35 5 "solid" (make-color 200 200 255))
-                           (regular-polygon 40 5 "solid" (make-color 250 250 255)))]
+                           (regular-polygon 26 5 "solid" (make-color 100 100 255))
+                           (regular-polygon 32 5 "solid" (make-color 150 150 255))
+                           (regular-polygon 38 5 "solid" (make-color 200 200 255))
+                           (regular-polygon 44 5 "solid" (make-color 250 250 255)))]
   
   }
 
@@ -323,7 +323,7 @@ mean that the curve stays with the angle longer.
   @scheme[x-place] and @scheme[y-place] are both @scheme["middle"], then the images are lined up
   on their centers.
 
-  @image-examples[(overlay/align "middle" "middle"
+  @image-examples[(overlay/align "left" "middle"
                                  (rectangle 30 60 "solid" "orange")
                                  (ellipse 60 30 "solid" "purple"))
                   (overlay/align "right" "bottom"
@@ -383,7 +383,7 @@ mean that the curve stays with the angle longer.
   @scheme[x-place] and @scheme[y-place] are both @scheme["middle"], then the images are lined up
   on their centers.
 
-  @image-examples[(underlay/align "middle" "middle"
+  @image-examples[(underlay/align "left" "middle"
                                   (rectangle 30 60 "solid" "orange")
                                   (ellipse 60 30 "solid" "purple"))
                   (underlay/align "right" "top"
@@ -446,7 +446,7 @@ mean that the curve stays with the angle longer.
                                 (ellipse 20 30 "solid" "slateblue")
                                 (ellipse 20 10 "solid" "navy"))
                   
-                  (beside/align "center"
+                  (beside/align "top"
                                 (ellipse 20 70 "solid" "mediumorchid")
                                 (ellipse 20 50 "solid" "darkorchid")
                                 (ellipse 20 30 "solid" "purple")
@@ -484,7 +484,7 @@ mean that the curve stays with the angle longer.
                                (ellipse 30 20 "solid" "darkgoldenrod")
                                (ellipse 10 20 "solid" "sienna"))
                   
-                  (above/align "center"
+                  (above/align "left"
                                (ellipse 70 20 "solid" "yellowgreen")
                                (ellipse 50 20 "solid" "olivedrab")
                                (ellipse 30 20 "solid" "darkolivegreen")
@@ -622,11 +622,11 @@ and universes using @scheme[2htdp/universe].
   debug image constructions, i.e., to see where
   certain sub-images appear within some larger image.
   
-  @image-examples[(beside/align "bottom"
-                                (ellipse 20 70 "solid" "lightsteelblue")
-                                (frame (ellipse 20 50 "solid" "mediumslateblue"))
-                                (ellipse 20 30 "solid" "slateblue")
-                                (ellipse 20 10 "solid" "navy"))]
+  @image-examples[(beside
+                   (ellipse 20 70 "solid" "lightsteelblue")
+                   (frame (ellipse 20 50 "solid" "mediumslateblue"))
+                   (ellipse 20 30 "solid" "slateblue")
+                   (ellipse 20 10 "solid" "navy"))]
 }
 
 @section{Image Properties}
@@ -754,63 +754,4 @@ The baseline of an image is the place where the bottoms any letters line up, not
 Two images are equal if they draw exactly the same way, at their current size
 (not neccessarily at all sizes).
 
-@;{
-Image equality testing is done structurally, i.e., based on 
-the construction of the image, 
-although with certain, expected equivalences. For example, 
-two rectangles with the same width, height, color, and mode
-are equal. Similarly, constructing a 20x10 rectangle and
-then rotating it by 90 degress is equal to a 10x20 rectangle
-(provided they have the same color and mode).
-
-Equality testing may contain a few nuances, though:
-@itemize[
-  @item{Overlaying two images in opposite orders is never equal. For example,
-        these two images are not @scheme[equal]:
-        @schemeblock[(overlay/xy (rectangle 30 10 "solid" "blue")
-                                 0
-                                 10
-                                 (rectangle 30 10 "solid" "red"))]
-        @schemeblock[(overlay/xy (rectangle 30 10 "solid" "red")
-                                 0
-                                 -10
-                                 (rectangle 30 10 "solid" "blue"))]
-        even thought they may appear to be the same when drawn. 
-        
-        The rationale for them being different is that, at some scale factor,
-        they will draw differently; specifically when they are scaled down
-        far enough, the first will appear to be a single red pixel and the second will appear to
-        be a single blue pixel.}
-   @item{When rotating images, the internal calculations involve real numbers, not just
-         rationals and thus must be approximated with Scheme's inexact numbers, causing
-         small roundoff errors that make the images draw slightly differently. 
-         
-         To combat this problem, use @scheme[equal~?] to compare the images,
-         or @scheme[check-within] for test suites involving images.}
-   
-   @item{Combining a series of line segments to form a polygon produces
-         an image that is different than the polygon.}
-   
-   @item{In order to make equality on images created with 
-         @scheme[text] and @scheme[text/font]
-         work well, each string passed to either of those functions results
-         in a number of horizontally aligned images, one for each letter in the
-         string. This means that, for example
-         @schemeblock[(equal? (beside/align "baseline"
-                                            (text "a" 18 "black")
-                                            (text "b" 18 "black"))
-                              (text "ab" 18 "black"))]
-         is true, but that subtle aspects of font drawing may be wrong, since
-         the underlying toolkit only gets a single letter at a time, instead
-         of the entire word (or sentence).
-         
-         The most obvious way that this shows up is in the handling of ligatures.
-         For example, the letter combinations ``ff'' and ``fi'' and ``fl'' are
-         generally drawn intertwined when they appear together, and thus an ``f''
-         drawn separately from an ``i'' looks different than the ligature ``fi''.
-         For example, here is how 24 point Times font looks when the word ``refill''
-         is drawn, first with ligatures and then without:
-         @centerline{@image["2htdp/scribblings/ligature.png"]}.
-         }
-]
-}
+@include-section["porting-guide.scrbl"]

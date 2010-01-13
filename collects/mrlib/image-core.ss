@@ -202,21 +202,21 @@ has been moved out).
     (init-field shape bb normalized?)
     (define/public (equal-to? that eq-recur)
       (or (eq? this that)
-          (and (not (skip-image-equality-fast-path))  ;; this is here to make testing more effective
-               (equal? (get-normalized-shape) (send that get-normalized-shape)))
           (and (is-a? that image%)
                (same-bb? bb (send that get-bb))
-               (let ([w (round (inexact->exact (bb-right bb)))]
-                     [h (round (inexact->exact (bb-bottom bb)))])
-                 (or (zero? w)
-                     (zero? h)
-                     (let ([bm1 (make-object bitmap% w h)]
-                           [bm2 (make-object bitmap% w h)]
-                           [bytes1 (make-bytes (* w h 4) 0)]
-                           [bytes2 (make-bytes (* w h 4) 0)]
-                           [bdc (make-object bitmap-dc%)])
-                       (and (check-same? bm1 bm2 bytes1 bytes2 bdc "red" that)
-                            (check-same? bm1 bm2 bytes1 bytes2 bdc "green" that))))))))
+               (or (and (not (skip-image-equality-fast-path))  ;; this is here to make testing more effective
+                        (equal? (get-normalized-shape) (send that get-normalized-shape)))
+                   (let ([w (+ 1 (round (inexact->exact (bb-right bb))))]    ;; some shapes (ie, rectangles) draw 1 outside the bounding box
+                         [h (+ 1 (round (inexact->exact (bb-bottom bb))))])  ;; so we make the bitmap slightly bigger to accomodate that.
+                     (or (zero? w)
+                         (zero? h)
+                         (let ([bm1 (make-object bitmap% w h)]
+                               [bm2 (make-object bitmap% w h)]
+                               [bytes1 (make-bytes (* w h 4) 0)]
+                               [bytes2 (make-bytes (* w h 4) 0)]
+                               [bdc (make-object bitmap-dc%)])
+                           (and (check-same? bm1 bm2 bytes1 bytes2 bdc "red" that)
+                                (check-same? bm1 bm2 bytes1 bytes2 bdc "green" that)))))))))
     
     (define/private (check-same? bm1 bm2 bytes1 bytes2 bdc color that)
       (clear-bitmap/draw/bytes bm1 bdc bytes1 this color)
@@ -280,9 +280,7 @@ has been moved out).
     (define/override (copy) (make-image shape bb normalized?))
     (define/override (draw dc x y left top right bottom dx dy draw-caret?)
       (let ([smoothing (send dc get-smoothing)])
-        (send dc set-smoothing 'aligned)
-        (render-image this dc x y)
-        (send dc set-smoothing smoothing)))
+        (render-image this dc x y)))
     
     (define/override (get-extent dc x y [w #f] [h #f] [descent #f] [space #f] [lspace #f] [rspace #f])
       (send (get-the-snip-class-list) add snip-class)
@@ -524,12 +522,14 @@ has been moved out).
   (let ([pen (send dc get-pen)]
         [brush (send dc get-brush)]
         [font (send dc get-font)]
-        [fg (send dc get-text-foreground)])
+        [fg (send dc get-text-foreground)]
+        [smoothing (send dc get-smoothing)])
     (render-normalized-shape (send image get-normalized-shape) dc dx dy)
     (send dc set-pen pen)
     (send dc set-brush brush)
     (send dc set-font font)
-    (send dc set-text-foreground fg)))
+    (send dc set-text-foreground fg)
+    (send dc set-smoothing smoothing)))
 
 (define (render-normalized-shape shape dc dx dy)
   (cond
@@ -556,20 +556,43 @@ has been moved out).
 (define (render-simple-shape simple-shape dc dx dy)
   (cond
     [(polygon? simple-shape)
-     (let ([path (polygon-points->path (polygon-points simple-shape))])
-       (send dc set-pen (mode-color->pen (polygon-mode simple-shape)
-                                         (polygon-color simple-shape)))
-       (send dc set-brush (mode-color->brush (polygon-mode simple-shape)
-                                             (polygon-color simple-shape)))
-       (send dc draw-path path dx dy 'winding))]
+     (send dc set-pen (mode-color->pen (polygon-mode simple-shape)
+                                       (polygon-color simple-shape)))
+     (send dc set-brush (mode-color->brush (polygon-mode simple-shape)
+                                           (polygon-color simple-shape)))
+     (send dc set-smoothing (mode->smoothing (polygon-mode simple-shape)))
+     (cond
+       [(eq? (polygon-mode simple-shape) 'outline)
+        (let ([connect
+               (λ (p1 p2)
+                 (let ([path (new dc-path%)])
+                   (send path move-to (point-x p1) (point-y p1))
+                   (send path line-to (point-x p2) (point-y p2))
+                   (send dc draw-path path dx dy)))])
+          (let loop ([points (polygon-points simple-shape)])
+            (cond
+              [(null? (cdr points))
+               (connect (car points) (car (polygon-points simple-shape)))]
+              [else
+               (connect (car points) (cadr points))
+               (loop (cdr points))])))]
+       [else
+        (let ([path (polygon-points->path (polygon-points simple-shape))])
+          (send dc draw-path path dx dy 'winding))])]
     [(line-segment? simple-shape)
-     (let ([start (line-segment-start simple-shape)]
-           [end (line-segment-end simple-shape)])
+     (let* ([start (line-segment-start simple-shape)]
+            [end (line-segment-end simple-shape)]
+            [path (new dc-path%)]
+            [sx (point-x start)]
+            [sy (point-y start)]
+            [ex (point-x end)]
+            [ey (point-y end)])
+       (send path move-to sx sy)
+       (send path line-to ex ey)
        (send dc set-pen (line-segment-color simple-shape) 1 'solid)
        (send dc set-brush "black" 'transparent)
-       (send dc draw-line
-             (+ dx (point-x start)) (+ dy (point-y start))
-             (+ dx (point-x end)) (+ dy (point-y end))))]
+       (send dc set-smoothing 'aligned)
+       (send dc draw-path path dx dy))]
     [(curve-segment? simple-shape)
      (let* ([path (new dc-path%)]
             [start (curve-segment-start simple-shape)]
@@ -585,14 +608,15 @@ has been moved out).
             [ep (* (curve-segment-e-pull simple-shape) d)])
        (send path move-to sx sy)
        (send path curve-to
-                (+ sx (* sp (cos sa)))
-                (- sy (* sp (sin sa)))
-                (- ex (* ep (cos ea)))
-                (+ ey (* ep (sin ea)))
-                ex
-                ey)
+             (+ sx (* sp (cos sa)))
+             (- sy (* sp (sin sa)))
+             (- ex (* ep (cos ea)))
+             (+ ey (* ep (sin ea)))
+             ex
+             ey)
        (send dc set-pen (curve-segment-color simple-shape) 1 'solid)
        (send dc set-brush "black" 'transparent)
+       (send dc set-smoothing 'aligned)
        (send dc draw-path path dx dy))]
     [else
      (let ([dx (+ dx (translate-dx simple-shape))]
@@ -610,6 +634,7 @@ has been moved out).
               (send path rotate θ)
               (send dc set-pen (mode-color->pen (ellipse-mode atomic-shape) (ellipse-color atomic-shape)))
               (send dc set-brush (mode-color->brush (ellipse-mode atomic-shape) (ellipse-color atomic-shape)))
+              (send dc set-smoothing (mode->smoothing (ellipse-mode atomic-shape)))
               (send dc draw-path path dx dy)))]
          [(bitmap? atomic-shape)
           (let ([bm (get-rendered-bitmap atomic-shape)]) 
@@ -647,6 +672,34 @@ has been moved out).
     (send path line-to (round (point-x (car points))) (round (point-y (car points))))
     path))
 
+(define (points->bb-path points)
+  (let ([path (new dc-path%)])
+    (let-values ([(left top right bottom) (points->ltrb-values points)])
+      (send path move-to left top)
+      (send path line-to right top)
+      (send path line-to right bottom)
+      (send path line-to left bottom)
+      (send path line-to left top)
+      path)))
+
+;; points->ltrb-values : (cons point (listof points)) -> (values number number number number)
+(define (points->ltrb-values points)
+  (let* ([fx (point-x (car points))]
+         [fy (point-y (car points))]
+         [left fx]
+         [top fy]
+         [right fx]
+         [bottom fy])
+    (for-each (λ (point)
+                (let ([new-x (point-x point)]
+                      [new-y (point-y point)])
+                  (set! left (min new-x left))
+                  (set! top (min new-y top))
+                  (set! right (max new-x right))
+                  (set! bottom (max new-y bottom))))
+              (cdr points))
+    (values left top right bottom)))
+  
 #|
 
 the mask bitmap and the original bitmap are all together in a single bytes!
@@ -766,13 +819,17 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 (define (degrees->radians θ)
   (* θ 2 pi (/ 360)))
 
+(define (mode->smoothing mode)
+  (case mode
+    [(outline) 'aligned]
+    [(solid) 'smoothed]))
+
 (define (mode-color->pen mode color)
-  (send the-pen-list find-or-create-pen 
-        (get-color-arg color)
-        1 
-        (case mode
-          [(outline) 'solid]
-          [(solid) 'transparent])))
+  (case mode
+    [(outline) 
+     (send the-pen-list find-or-create-pen (get-color-arg color) 1 'solid)]
+    [(solid)
+     (send the-pen-list find-or-create-pen "black" 1 'transparent)]))
 
 (define (mode-color->brush mode color)
   (send the-brush-list find-or-create-brush 
@@ -820,7 +877,8 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          degrees->radians
          normalize-shape
          ellipse-rotated-size
-         
+         points->ltrb-values
+
          image?
          
          text->font

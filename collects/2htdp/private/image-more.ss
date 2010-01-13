@@ -114,12 +114,12 @@
 ;; places images on top of each other with their upper left corners aligned. 
 ;; last one goes on the bottom
 (define/chk (overlay image image2 . image3)
-  (overlay/internal 'left 'top image (cons image2 image3)))
+  (overlay/internal 'middle 'middle image (cons image2 image3)))
 
 ;; underlay : image image image ... -> image
 (define (underlay image image2 . image3)
   (let ([imgs (reverse (list* image image2 image3))])
-    (overlay/internal 'left 'top (car imgs) (cdr imgs))))
+    (overlay/internal 'middle 'middle (car imgs) (cdr imgs))))
 
 ;; overlay/align : string string image image image ... -> image
 ;; the first string has to be one of "center" "middle" "left" or "right" (or symbols)
@@ -204,7 +204,7 @@
 ;; beside : image image image ... -> image
 ;; places images in a single horizontal row, top aligned
 (define/chk (beside image1 image2 . image3)
-  (beside/internal 'top image1 (cons image2 image3)))
+  (beside/internal 'middle image1 (cons image2 image3)))
 
 ;; beside/align : string image image image ... -> image
 ;; places images in a horizontal row where the vertical alignment is
@@ -233,7 +233,7 @@
 ;; above : image image image ... -> image
 ;; places images in a single vertical row, left aligned
 (define/chk (above image1 image2 . image3)
-  (above/internal 'left image1 (cons image2 image3)))
+  (above/internal 'middle image1 (cons image2 image3)))
 
 ;; beside/align : string image image image ... -> image
 ;; places images in a horizontal row where the vertical alignment is
@@ -457,22 +457,8 @@
                     (+ r dx)
                     (+ b dy))))]))
 
-;; points->ltrb : (cons point (listof points)) -> (values number number number number)
 (define (points->ltrb points)
-  (let* ([fx (point-x (car points))]
-         [fy (point-y (car points))]
-         [left fx]
-         [top fy]
-         [right fx]
-         [bottom fy])
-    (for-each (λ (point)
-                (let ([new-x (point-x point)]
-                      [new-y (point-y point)])
-                  (set! left (min new-x left))
-                  (set! top (min new-y top))
-                  (set! right (max new-x right))
-                  (set! bottom (max new-y bottom))))
-              (cdr points))
+  (let-values ([(left top right bottom) (points->ltrb-values points)])
     (make-ltrb left top right bottom)))
 
 (define (np-atomic-bb atomic-shape)

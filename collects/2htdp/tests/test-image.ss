@@ -15,7 +15,7 @@
 (define t (new text%))
 (define f (new frame% [label ""] [width 600] [height 400]))
 (define ec (new editor-canvas% [parent f] [editor t]))
-(for ((i (in-list images))) (send t insert i))
+(for ((i (in-list images))) (send t insert i) (send t insert " "))
 (send f show #t)
 |#
 
@@ -233,6 +233,47 @@
       =>
       #t)
 
+
+(let ([size 10])
+  (test (add-line
+         (add-line
+          (add-line
+           (add-line
+            (rectangle size size 'solid 'white)
+            0 0 0 size 'black)
+           0 size size size 'black)
+          size size size 0 'black)
+         size 0 0 0 'black)
+        =>
+        (overlay (rectangle size size 'outline 'black)
+                 (rectangle size size 'solid 'white)))
+  
+  (test (add-line
+         (add-line
+          (add-line
+           (add-line
+            (rectangle size size 'solid 'white)
+            0 0 size 0 'black)
+           size 0 size size 'black)
+          size size 0 size 'black)
+         0 size 0 0 'black)
+        =>
+        (overlay (rectangle size size 'outline 'black)
+                 (rectangle size size 'solid 'white)))
+  
+  (test (add-line
+         (add-line
+          (add-line
+           (add-line
+            (rectangle size size 'solid 'white)
+            0 0 size 0 'black)
+           0 0 0 size 'black)
+          0 size size size 'black)
+         size 0 size size 'black)
+        =>
+        (overlay (rectangle size size 'outline 'black)
+                 (rectangle size size 'solid 'white))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  testing overlays
@@ -243,7 +284,7 @@
       =>
       (make-image
        (make-overlay
-        (make-translate 0 0 (image-shape (ellipse 100 100 'solid 'blue)))
+        (make-translate 10 10 (image-shape (ellipse 100 100 'solid 'blue)))
         (make-translate 0 0 (image-shape (ellipse 120 120 'solid 'red))))
        (make-bb 120
                 120
@@ -251,7 +292,7 @@
        #f))
 
 (test (overlay/xy (ellipse 100 100 'solid 'blue)
-                  0 0
+                  -10 -10
                   (ellipse 120 120 'solid 'red))
       =>
       (overlay (ellipse 100 100 'solid 'blue)
@@ -293,8 +334,8 @@
       =>
       (make-image
        (make-overlay
-        (make-translate 0 0 (image-shape (ellipse 100 50 'solid 'green)))
-        (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red))))
+        (make-translate 0 25 (image-shape (ellipse 100 50 'solid 'green)))
+        (make-translate 25 0 (image-shape (ellipse 50 100 'solid 'red))))
        (make-bb 100
                 100
                 100)
@@ -307,9 +348,9 @@
       (make-image
        (make-overlay
         (make-translate 
-         0 0
+         10 10
          (make-overlay
-          (make-translate 0 0 (image-shape (ellipse 100 100 'solid 'blue)))
+          (make-translate 10 10 (image-shape (ellipse 100 100 'solid 'blue)))
           (make-translate 0 0 (image-shape (ellipse 120 120 'solid 'red)))))
         (make-translate 0 0 (image-shape (ellipse 140 140 'solid 'green))))
        (make-bb 140 140 140)
@@ -403,7 +444,7 @@
 (test (beside (ellipse 50 100 'solid 'red)
               (ellipse 100 50 'solid 'blue))
       =>
-      (beside/align 'top
+      (beside/align 'center
                     (ellipse 50 100 'solid 'red)
                     (ellipse 100 50 'solid 'blue)))
 
@@ -446,7 +487,7 @@
 (test (above (ellipse 50 100 'solid 'red)
              (ellipse 100 50 'solid 'blue))
       =>
-      (above/align 'left
+      (above/align 'center
                    (ellipse 50 100 'solid 'red)
                    (ellipse 100 50 'solid 'blue)))
 
@@ -458,14 +499,14 @@
       (make-image
        (make-overlay
         (make-translate 0 0 (image-shape (ellipse 120 120 'solid 'red)))
-        (make-translate 0 0 (image-shape (ellipse 100 100 'solid 'blue))))
+        (make-translate 10 10 (image-shape (ellipse 100 100 'solid 'blue))))
        (make-bb 120
                 120
                 120)
        #f))
 
 (test (underlay/xy (ellipse 100 100 'solid 'blue)
-                   0 0
+                   -10 -10
                    (ellipse 120 120 'solid 'red))
       =>
       (underlay (ellipse 100 100 'solid 'blue)
@@ -503,8 +544,8 @@
       =>
       (make-image
        (make-overlay
-        (make-translate 0 0 (image-shape (ellipse 50 100 'solid 'red)))
-        (make-translate 0 0 (image-shape (ellipse 100 50 'solid 'green))))
+        (make-translate 25 0 (image-shape (ellipse 50 100 'solid 'red)))
+        (make-translate 0 25 (image-shape (ellipse 100 50 'solid 'green))))
        (make-bb 100
                 100
                 100)
@@ -520,8 +561,8 @@
          0 0
          (make-overlay
           (make-translate 0 0 (image-shape (ellipse 140 140 'solid 'green)))
-          (make-translate 0 0 (image-shape (ellipse 120 120 'solid 'red)))))
-        (make-translate 0 0 (image-shape (ellipse 100 100 'solid 'blue))))
+          (make-translate 10 10 (image-shape (ellipse 120 120 'solid 'red)))))
+        (make-translate 10 10 (image-shape (ellipse 100 100 'solid 'blue))))
        (make-bb 140 140 140)
        #f))
 
@@ -624,8 +665,9 @@
       (make-translate 135 170 (make-ellipse 50 100 0 'solid "blue")))
 
 (test (normalize-shape (image-shape
-                        (beside (rectangle 10 10 'solid 'black)
-                                (crop 0 0 5 5 (rectangle 10 10 'solid 'green)))))
+                        (beside/align 'top
+                                      (rectangle 10 10 'solid 'black)
+                                      (crop 0 0 5 5 (rectangle 10 10 'solid 'green)))))
       =>
       (make-overlay
        (make-polygon
@@ -950,15 +992,27 @@
 ;;  curves
 ;;
 
-(test (add-curve (rectangle 100 20 'solid 'black)
-                 10 10 0 1/4
-                 90 10 0 1/4 
-                 'white)
+;; make sure a curve stays roughly in the middle pixels by
+;; covering up a white curve with a thin black bar
+(test (overlay/align 'middle
+                     'middle 
+                     (rectangle 82 2 'solid 'black)
+                     (add-curve (rectangle 100 20 'solid 'black)
+                                10 10 0 1/4
+                                90 10 0 1/4 
+                                'white))
+                      
       =>
-      (add-line (rectangle 100 20 'solid 'black)
-                10 10
-                90 10
-                'white))
+      (rectangle 100 20 'solid 'black))
+
+;; and then make sure the curve actually draws something ...
+(test (not (equal? (add-curve (rectangle 100 20 'solid 'black)
+                              10 10 0 1/4
+                              90 10 0 1/4 
+                              'white)
+                   (rectangle 100 20 'solid 'black)))
+      =>
+      #t)
 
 (test (scale 2
              (add-curve 
@@ -1133,11 +1187,13 @@
       =>
       #t)
 
-(test (beside (rectangle 10 10 'solid 'black)
-              (crop 0 0 10 10 (rectangle 10 10 'solid 'green)))
+(test (beside/align 'middle
+                    (rectangle 10 10 'solid 'black)
+                    (crop 0 0 10 10 (rectangle 10 10 'solid 'green)))
       =>
-      (beside (rectangle 10 10 'solid 'black)
-              (rectangle 10 10 'solid 'green)))
+      (beside/align 'middle
+                    (rectangle 10 10 'solid 'black)
+                    (rectangle 10 10 'solid 'green)))
 
 (test (place-image (circle 4 'solid 'black)
                    10 10
@@ -1165,15 +1221,17 @@
                    -4 -4
                    (rectangle 40 40 'solid 'orange))
       =>
-      (overlay (crop 4 4 16 16 (circle 8 'solid 'black))
-               (rectangle 40 40 'solid 'orange)))
+      (overlay/xy (crop 4 4 16 16 (circle 8 'solid 'black))
+                  0 0
+                  (rectangle 40 40 'solid 'orange)))
 
 (test (place-image (circle 4 'solid 'black)
                    -4 0
                    (rectangle 40 40 'solid 'orange))
       =>
-      (overlay (crop 4 0 4 8 (circle 4 'solid 'black))
-               (rectangle 40 40 'solid 'orange)))
+      (overlay/xy (crop 4 0 4 8 (circle 4 'solid 'black))
+                  0 0
+                  (rectangle 40 40 'solid 'orange)))
 
 (test (place-image/align (circle 4 'solid 'black)
                          5 10 'center 'center
