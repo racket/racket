@@ -3,11 +3,13 @@
 ------------------------------
 
   . the 2htdp/image library changed:
-
     - changed how equality works (it is now based on how the 
       images draw, instead of on an underlying algebra
       of images)
     - added cropping and curves
+    - overlay, beside, and above now line things up on
+      centers, rather than upper lefts
+    - added scene-related funtions (place-image, scene+line, etc)
 
 ------------------------------
         Version 4.2.3
@@ -20,7 +22,7 @@
 ------------------------------
 
   . DrScheme now (by default) automatically compiles your source
-   files, saving them in the compiled/drscheme/ subdirectory.
+    files, saving them in the compiled/drscheme/ subdirectory.
 
   . Syntax coloring now works for languages using the @-reader
     (ie, Scribble) 
