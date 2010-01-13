@@ -276,7 +276,7 @@ Similar to @scheme[map], except that
 
  @item{the result is @scheme[#f] if any application of @scheme[proc] produces
        @scheme[#f], in which case @scheme[proc] is not applied to later
-       elements of the @scheme[lst]s; or}
+       elements of the @scheme[lst]s; and}
 
  @item{the result is that of @scheme[proc] applied to the last elements
        of the @scheme[lsts]s; more specifically, the application of
@@ -305,8 +305,8 @@ Similar to @scheme[map], except that
  @item{the result is @scheme[#f] if every application of @scheme[proc] produces
        @scheme[#f]; and}
 
- @item{if the result of an application of @scheme[proc] produces a
-       value other than @scheme[#f], then @scheme[proc] is not
+ @item{the result is that of the first application of @scheme[proc] producing a
+       value other than @scheme[#f], in which case @scheme[proc] is not
        applied to later elements of the @scheme[lst]s;
        the application of @scheme[proc] to the last elements of the
        @scheme[lst]s is in tail position with respect to the
