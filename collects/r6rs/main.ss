@@ -157,7 +157,8 @@ FIXME:
        (syntax-case a (begin #%require)
          [(def . _)
           (ormap (lambda (id)
-                   (free-identifier=? id #'def))
+                   (and (identifier? id)
+                        (free-identifier=? id #'def)))
                  (list #'define-values
                        #'define-syntaxes
                        #'define-values-for-syntax))
