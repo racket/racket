@@ -975,9 +975,9 @@ match.
 
 Defines a metafunction @scheme[g] as an extension of an existing
 metafunction @scheme[f]. The metafunction @scheme[g] behaves as 
-if @scheme[f]'s clauses were appended to its definition (with the
-function position of the left-hand sides changed to from @scheme[f]
-to @scheme[g]).
+if @scheme[f]'s clauses were appended to its definition (with 
+occurrences of @scheme[f] changed to @scheme[g] in the inherited
+clauses).
 }
 
 For example, @scheme[define-metafunction/extension] may be used to extend
