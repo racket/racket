@@ -8,8 +8,8 @@
   (list
    (list '(image-height (rectangle 100 100 "solid" "black")) 'val 100)
    (list '(image-baseline (rectangle 100 100 "solid" "black")) 'val 100)
-   (list '(image-height (text "Hello" 24 "black")) 'val 41)
-   (list '(image-baseline (text "Hello" 24 "black")) 'val 31)
+   (list '(image-height (text "Hello" 24 "black")) 'val 24)
+   (list '(image-baseline (text "Hello" 24 "black")) 'val 18)
    (list
     '(image-height
       (overlay (circle 20 "solid" "orange") (circle 30 "solid" "purple")))
