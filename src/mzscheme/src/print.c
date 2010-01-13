@@ -132,10 +132,10 @@ static Scheme_Object *writable_struct_subs(Scheme_Object *s, int for_write, Prin
 	   && SCHEME_STRUCTP(obj) \
 	   && PRINTABLE_STRUCT(obj, pp), 0)) \
     || (qk(SCHEME_STRUCTP(obj) && scheme_is_writable_struct(obj), 0)) \
+    || (qk(pp->print_struct, 1) && SCHEME_STRUCTP(obj) && SCHEME_PREFABP(obj)) \
     || (qk(pp->print_hash_table, 1) && (SCHEME_HASHTPx(obj) || SCHEME_HASHTRP(obj))))
 #define ssQUICK(x, isbox) x
 #define ssQUICKp(x, isbox) (pp ? x : isbox)
-#define ssALL(x, isbox) 1
 #define ssALLp(x, isbox) isbox
 
 void scheme_init_print(Scheme_Env *env)
