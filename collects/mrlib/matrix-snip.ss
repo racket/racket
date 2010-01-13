@@ -1,7 +1,6 @@
-#lang scheme 
+#lang scheme/base 
 
-(require mzlib/class
-         mzlib/string
+(require scheme/class
          mrlib/cache-image-snip)
 
 (provide visible-matrix%
@@ -70,7 +69,9 @@
     (super-new)
     (define/override (read f)
       (define b (send f get-bytes))
-      (data->snip (read-from-string b (lambda () #f))))
+      (data->snip 
+       (with-handlers ((exn:fail:read? (λ (x) #f)))
+         (read (open-input-string b)))))
     (define/override (data->snip data) 
       (define _ (unless data (error 'read "in matrix-snip-class% failed")))
       (define new-cache-image-snip (super data->snip (cadr data)))
