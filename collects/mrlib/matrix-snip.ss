@@ -1,6 +1,7 @@
 #lang scheme/base 
 
 (require scheme/class
+         (prefix-in scheme: (only-in scheme/base read))
          mrlib/cache-image-snip)
 
 (provide visible-matrix%
@@ -70,8 +71,10 @@
     (define/override (read f)
       (define b (send f get-bytes))
       (data->snip 
-       (with-handlers ((exn:fail:read? (λ (x) #f)))
-         (read (open-input-string b)))))
+       (and b
+            (not (equal? b #""))
+            (with-handlers ((exn:fail:read? (λ (x) #f)))
+              (scheme:read (open-input-bytes b))))))
     (define/override (data->snip data) 
       (define _ (unless data (error 'read "in matrix-snip-class% failed")))
       (define new-cache-image-snip (super data->snip (cadr data)))
