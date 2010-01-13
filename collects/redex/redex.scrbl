@@ -628,18 +628,17 @@ extended non-terminals. For example, this language:
 @schemeblock[
   (define-extended-language lc-num-lang
     lc-lang
-    (e ....     (code:comment "extend the previous `e' non-terminal")
+    (v ....     (code:comment "extend the previous `v' non-terminal")
        +
-       number)
-    (v ....
-       + 
        number)
     (x (variable-except lambda +)))
 ]
 
-extends lc-lang with two new alternatives for both the @scheme[e]
-and @scheme[v] nonterminal, replaces the @scheme[x] non-terminal with a
-new one, and carries the @scheme[c] non-terminal forward. 
+extends lc-lang with two new alternatives for the @scheme[v]
+non-terminal, carries forward the @scheme[e] and @scheme[c]
+non-terminals, and replaces the @scheme[x] non-terminal with a
+new one (which happens to be equivalent to the one that would 
+have been inherited).
 
 The four-period ellipses indicates that the new language's
 non-terminal has all of the alternatives from the original
@@ -886,16 +885,16 @@ all non-GUI portions of Redex) and also exported by
 @schememodname[redex] (which includes all of Redex).
 
 @defform/subs[#:literals (: ->)
-              (define-metafunction language-exp
+             (define-metafunction language
                contract
                [(name @#,ttpattern ...) @#,tttterm extras ...] 
                ...)
-               ([contract (code:line) 
-                          (code:line id : @#,ttpattern ... -> @#,ttpattern)]
-                [extras (side-condition scheme-expression)
-                        (where tl-pat @#,tttterm)]
-                [tl-pat identifier (tl-pat-ele ...)]
-                [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
+             ([contract (code:line) 
+                        (code:line id : @#,ttpattern ... -> @#,ttpattern)]
+              [extras (side-condition scheme-expression)
+                      (where tl-pat @#,tttterm)]
+              [tl-pat identifier (tl-pat-ele ...)]
+              [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
 
 The @scheme[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side
@@ -969,17 +968,32 @@ match.
 
 }
 
-@defform[(define-metafunction/extension extending-name language-exp 
+@defform[(define-metafunction/extension f language 
            contract
-           [(name @#,ttpattern ...) @#,tttterm (side-condition scheme-expression) ...]
+           [(g @#,ttpattern ...) @#,tttterm extras ...] 
            ...)]{
 
-This defines a metafunction as an extension of an existing
-one. The extended metafunction behaves as if the original
-patterns were in this definitions, with the name of the
-function fixed up to be @scheme[extending-name]. 
+Defines a metafunction @scheme[g] as an extension of an existing
+metafunction @scheme[f]. The metafunction @scheme[g] behaves as 
+if @scheme[f]'s clauses were appended to its definition (with the
+function position of the left-hand sides changed to from @scheme[f]
+to @scheme[g]).
 }
 
+For example, @scheme[define-metafunction/extension] may be used to extend
+the free-vars function above to the forms introduced by the language
+lc-num-lang.
+                
+@schemeblock[
+(define-metafunction/extension free-vars lc-num-lang
+  free-vars-num : e -> (x ...)
+  [(free-vars-num number) 
+   ()]
+  [(free-vars-num (+ e_1 e_2))
+   (∪ (free-vars-num e_1)
+      (free-vars-num e_2))])
+]
+                
 @defform[(in-domain? (metafunction-name @#,tttterm ...))]{
 Returns @scheme[#t] if the inputs specified to @scheme[metafunction-name] are
 legtimate inputs according to @scheme[metafunction-name]'s contract,
@@ -987,7 +1001,7 @@ and @scheme[#f] otherwise.
 }
 
 @defform/subs[#:literals ()
-              (define-relation language-exp
+              (define-relation language
                [(name @#,ttpattern ...) @#,tttterm ...] ...)
                ([tl-pat identifier (tl-pat-ele ...)]
                 [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{

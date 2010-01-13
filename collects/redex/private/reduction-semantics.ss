@@ -1077,6 +1077,11 @@
            (raise-syntax-error syn-error-name "expected an identifier in the language position" orig-stx #'lang))
          (when (null? (syntax-e #'rest))
            (raise-syntax-error syn-error-name "no clauses" orig-stx))
+         (when prev-metafunction
+           (syntax-local-value 
+            prev-metafunction
+            (λ ()
+              (raise-syntax-error syn-error-name "expected a previously defined metafunction" orig-stx prev-metafunction))))
          (prune-syntax
           (let ([lang-nts (language-id-nts #'lang 'define-metafunction)])  ;; keep this near the beginning, so it signals the first error (PR 10062)
           (let-values ([(contract-name dom-ctcs codom-contract pats)
@@ -1114,6 +1119,8 @@
                                              (list name
                                                    (car names)))))
                                          (loop name (cdr names))]))])
+                  (when (and prev-metafunction (eq? (syntax-e #'name) (syntax-e prev-metafunction)))
+                    (raise-syntax-error syn-error-name "the extended and extending metafunctions cannot share a name" orig-stx prev-metafunction))
                   (parse-extras #'((stuff ...) ...))
                     (with-syntax ([(((cp-let-bindings ...) rhs/wheres) ...)
                                    (map (λ (sc/b rhs)
