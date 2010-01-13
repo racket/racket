@@ -842,10 +842,11 @@ void scheme_init_inspector() {
 Scheme_Object *scheme_get_current_inspector()
   XFORM_SKIP_PROC
 {
+  Scheme_Config *c;
+
   if (scheme_defining_primitives) 
     return initial_inspector;
 
-  Scheme_Config *c;
   c = scheme_current_config();
   return scheme_get_param(c, MZCONFIG_INSPECTOR);
 }
