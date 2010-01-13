@@ -532,13 +532,14 @@ and universes using @scheme[2htdp/universe].
          image?]{
 
  Like @scheme[place-image], but uses @scheme[image]'s @scheme[x-place] and
- @scheme[y-place] to anchor the image. Also, recall that
- @scheme[place-image] crops the resulting image so that it has the 
+ @scheme[y-place] to anchor the image. Also, like
+ @scheme[place-image], @scheme[place-image/align]
+ crops the resulting image so that it has the 
  same size as @scheme[scene].
   
- @image-examples[(place-image/align (triangle 16 "solid" "yellowgreen")
-                                    32 32 "right" "bottom"
-                                    (rectangle 32 32 "solid" "mediumgoldenrod"))
+ @image-examples[(place-image/align (triangle 48 "solid" "yellowgreen")
+                                    64 64 "right" "bottom"
+                                    (rectangle 64 64 "solid" "mediumgoldenrod"))
                  (beside 
                   (place-image/align (circle 8 "solid" "tomato")
                                      0 0 "center" "center"

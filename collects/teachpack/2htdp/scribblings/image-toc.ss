@@ -116,14 +116,14 @@
     "cf131e14ad.png")
    (list
     '(place-image/align
-      (triangle 16 "solid" "yellowgreen")
-      32
-      32
+      (triangle 48 "solid" "yellowgreen")
+      64
+      64
       "right"
       "bottom"
-      (rectangle 32 32 "solid" "mediumgoldenrod"))
+      (rectangle 64 64 "solid" "mediumgoldenrod"))
     'image
-    "f4c4d435a6.png")
+    "11402043018.png")
    (list
     '(place-image
       (circle 4 "solid" "white")
