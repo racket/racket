@@ -1357,8 +1357,21 @@ START places;
 place_val {
  mark:
   Scheme_Place *pr = (Scheme_Place *)p;
+  gcMARK(pr->channel);
+
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Place));
+}
+
+place_async_channel_val {
+ mark:
+  Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
+  int i;
+  for (i = pac->size; i--; )
+    gcMARK(pac->msgs[i]);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Place_Async_Channel));
 }
 
 END places;

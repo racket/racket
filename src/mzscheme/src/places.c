@@ -10,12 +10,17 @@
 
 SHARED_OK mz_proc_thread *scheme_master_proc_thread;
 THREAD_LOCAL_DECL(mz_proc_thread *proc_thread_self);
-
 Scheme_Object *scheme_place(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_sleep(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_places_deep_copy_in_master(Scheme_Object *so);
+static Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]);
+static Scheme_Object *scheme_place_recv(int argc, Scheme_Object *args[]);
+
+Scheme_Object *scheme_place_async_channel_create();
+void scheme_place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o);
+Scheme_Object *scheme_place_async_recv(Scheme_Place_Async_Channel *ch);
 
 # ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -55,10 +60,12 @@ void scheme_init_place(Scheme_Env *env)
   
   plenv = scheme_primitive_module(scheme_intern_symbol("#%place"), env);
 
-  PLACE_PRIM_W_ARITY("place",       scheme_place,       3, 3, plenv);
-  PLACE_PRIM_W_ARITY("place-sleep", scheme_place_sleep, 1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place-wait",  scheme_place_wait,  1, 1, plenv);
-  PLACE_PRIM_W_ARITY("place?",      scheme_place_p,     1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place",          scheme_place,       1, 3, plenv);
+  PLACE_PRIM_W_ARITY("place-sleep",    scheme_place_sleep, 1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-wait",     scheme_place_wait,  1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place?",         scheme_place_p,     1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-ch-send",  scheme_place_send,  1, 2, plenv);
+  PLACE_PRIM_W_ARITY("place-ch-recv",  scheme_place_recv,  1, 1, plenv);
 
   scheme_finish_primitive_module(plenv);
 }
@@ -110,11 +117,25 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
 
   /* pass critical info to new place */
   place_data = MALLOC_ONE(Place_Start_Data);
-
-  place_data->module   = args[0];
-  place_data->function = args[1];
-  place_data->channel  = args[2];
   place_data->ready    = ready;
+
+  if (argc == 2 || argc == 3 ) {
+    Scheme_Object *channel;
+    place_data->module   = args[0];
+    place_data->function = args[1];
+    place_data->ready    = ready;
+    if (argc == 2) {
+      channel = scheme_place_async_channel_create();
+    }
+    else {
+      channel = args[2];
+    }
+    place_data->channel = channel;
+    place->channel = channel;
+  }
+  else {
+    scheme_wrong_count_m("place", 1, 2, argc, args, 0);
+  }
 
   collection_paths = scheme_current_library_collection_paths(0, NULL);
   collection_paths = scheme_places_deep_copy_in_master(collection_paths);
@@ -460,6 +481,28 @@ Scheme_Object *scheme_places_deep_copy_in_master(Scheme_Object *so) {
   return so;
 }
 
+Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]) {
+  if (argc == 2) {
+    Scheme_Object *mso;
+    mso = scheme_places_deep_copy_in_master(args[1]);
+    scheme_place_async_send((Scheme_Place_Async_Channel *) args[0], mso);
+  }
+  else {
+    scheme_wrong_count_m("place-ch-send", 1, 2, argc, args, 0);
+  }
+  return scheme_true;
+}
+
+Scheme_Object *scheme_place_recv(int argc, Scheme_Object *args[]) {
+  if (argc == 1) {
+    return scheme_place_async_recv((Scheme_Place_Async_Channel *) args[0]);
+  }
+  else {
+    scheme_wrong_count_m("place-ch-recv", 1, 2, argc, args, 0);
+  }
+  return scheme_true;
+}
+
 #ifdef MZ_PRECISE_GC
 static void* scheme_master_place_handlemsg(int msg_type, void *msg_payload);
 
@@ -499,9 +542,13 @@ void* scheme_master_fast_path(int msg_type, void *msg_payload) {
   Scheme_Object *o;
   void *original_gc;
 
+#ifdef MZ_PRECISE_GC
   original_gc = GC_switch_to_master_gc();
+#endif
   o = scheme_master_place_handlemsg(msg_type, msg_payload);
+#ifdef MZ_PRECISE_GC
   GC_switch_back_from_master(original_gc);
+#endif
 
   return o;
 }
@@ -515,7 +562,101 @@ void scheme_spawn_master_place() {
   scheme_master_proc_thread = (void*) ~0;
 
 }
+
 #endif
+
+/*========================================================================*/
+/*                       places async channels                            */
+/*========================================================================*/
+
+static void* GC_master_malloc(size_t size) {
+  void *ptr;
+#ifdef MZ_PRECISE_GC
+  void *original_gc;
+  original_gc = GC_switch_to_master_gc();
+#endif
+  ptr = GC_malloc(size);
+#ifdef MZ_PRECISE_GC
+  GC_switch_back_from_master(original_gc);
+#endif
+  return ptr;
+}
+
+Scheme_Object *scheme_place_async_channel_create() {
+  Scheme_Object **msgs;
+  Scheme_Place_Async_Channel *ch;
+
+  ch = GC_master_malloc(sizeof(Scheme_Place_Async_Channel));
+  msgs = GC_master_malloc(sizeof(Scheme_Object*) * 8);
+
+  ch->so.type = scheme_place_async_channel_type;
+  ch->in = 0;
+  ch->out = 0;
+  ch->count = 0;
+  ch->size = 8;
+  mzrt_mutex_create(&ch->lock);
+  ch->msgs = msgs;
+  ch->wakeup_signal = NULL;
+  return (Scheme_Object *)ch;
+}
+
+void scheme_place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o) {
+  int cnt;
+  mzrt_mutex_lock(ch->lock);
+  {
+    cnt = ch->count;
+    if (ch->count == ch->size) { /* GROW QUEUE */
+      Scheme_Object **new_msgs;
+
+      new_msgs = GC_master_malloc(sizeof(Scheme_Object*) *2);
+
+      if (ch->out < ch->in) {
+        memcpy(new_msgs, ch->msgs + ch->out, sizeof(Scheme_Object *) * (ch->in - ch->out));
+      }
+      else {
+        int s1 = (ch->size - ch->out);
+        memcpy(new_msgs, ch->msgs + ch->out, sizeof(Scheme_Object *) * s1);
+        memcpy(new_msgs + s1, ch->msgs, sizeof(Scheme_Object *) * ch->in);
+      }
+      
+      ch->msgs = new_msgs;
+      ch->in = ch->size;
+      ch->out = 0;
+      ch->size *= 2;
+    }
+
+    ch->msgs[ch->in] = o;
+    ++ch->count;
+    ch->in = (++ch->in % ch->size);
+  }
+  mzrt_mutex_unlock(ch->lock);
+
+  if (!cnt && ch->wakeup_signal) {
+    /*wake up possibly sleeping receiver */  
+    scheme_signal_received_at(ch->wakeup_signal);
+  }
+}
+
+Scheme_Object *scheme_place_async_recv(Scheme_Place_Async_Channel *ch) {
+  Scheme_Object *msg = NULL;
+  while(1) {
+    mzrt_mutex_lock(ch->lock);
+    {
+      if (ch->count > 0) { /* GET MSG */
+        msg = ch->msgs[ch->out];
+        ch->msgs[ch->out] = NULL;
+        --ch->count;
+        ch->out = (++ch->out % ch->size);
+      }
+    }
+    mzrt_mutex_unlock(ch->lock);
+    if(msg) break;
+    scheme_thread_block(0);
+    scheme_block_until(NULL, NULL, NULL, 0);
+  }
+  return msg;
+}
+
 
 /*========================================================================*/
 /*                       precise GC traversers                            */
@@ -531,6 +672,7 @@ START_XFORM_SKIP;
 static void register_traversers(void)
 {
   GC_REG_TRAV(scheme_place_type, place_val);
+  GC_REG_TRAV(scheme_place_async_channel_type, place_async_channel_val);
 }
 
 END_XFORM_SKIP;

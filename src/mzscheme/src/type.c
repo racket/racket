@@ -280,6 +280,7 @@ scheme_init_type ()
   set_name(scheme_rt_meta_cont, "<meta-continuation>");
 #endif
   set_name(scheme_place_type, "<place>");
+  set_name(scheme_place_async_channel_type, "<place_async_channel>");
   set_name(scheme_engine_type, "<engine>");
 }
 

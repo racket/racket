@@ -3366,7 +3366,26 @@ Scheme_Object *scheme_places_deep_copy(Scheme_Object *so);
 typedef struct Scheme_Place {
   Scheme_Object so;
   void *proc_thread;
+  Scheme_Object *channel;
 } Scheme_Place;
+
+typedef struct Scheme_Place_Async_Channel {
+  Scheme_Object so;
+  int in;
+  int out;
+  int count;
+  int size;
+#if defined(MZ_USE_PLACES)
+  mzrt_mutex *lock;
+#endif
+  Scheme_Object **msgs;
+  void *wakeup_signal;
+} Scheme_Place_Async_Channel;
+
+Scheme_Object *scheme_place_async_channel_create();
+void scheme_place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o);
+Scheme_Object *scheme_place_async_recv(Scheme_Place_Async_Channel *ch);
+
 
 Scheme_Env *scheme_place_instance_init();
 void scheme_place_instance_destroy();

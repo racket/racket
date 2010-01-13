@@ -3347,18 +3347,51 @@ static int place_val_SIZE(void *p) {
 
 static int place_val_MARK(void *p) {
   Scheme_Place *pr = (Scheme_Place *)p;
+  gcMARK(pr->channel);
+
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place));
 }
 
 static int place_val_FIXUP(void *p) {
   Scheme_Place *pr = (Scheme_Place *)p;
+  gcFIXUP(pr->channel);
+
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Place));
 }
 
 #define place_val_IS_ATOMIC 0
 #define place_val_IS_CONST_SIZE 1
+
+
+static int place_async_channel_val_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Place_Async_Channel));
+}
+
+static int place_async_channel_val_MARK(void *p) {
+  Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
+  int i;
+  for (i = pac->size; i--; )
+    gcMARK(pac->msgs[i]);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Place_Async_Channel));
+}
+
+static int place_async_channel_val_FIXUP(void *p) {
+  Scheme_Place_Async_Channel *pac = (Scheme_Place_Async_Channel *)p;
+  int i;
+  for (i = pac->size; i--; )
+    gcFIXUP(pac->msgs[i]);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Place_Async_Channel));
+}
+
+#define place_async_channel_val_IS_ATOMIC 0
+#define place_async_channel_val_IS_CONST_SIZE 1
 
 
 #endif  /* PLACES */
