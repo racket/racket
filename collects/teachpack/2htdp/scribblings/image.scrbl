@@ -313,7 +313,7 @@ Unlike @scheme[scene+curve], if the line passes outside of @scheme[image], the i
 @defproc[(overlay [i1 image?] [i2 image?] [is image?] ...) image?]{
   Overlays all of its arguments building a single image. The first argument goes
   on top of the second argument, which goes on top of the third argument, etc.
-  The images are all lined up on their upper-left corners.
+  The images are all lined up on their centers.
 
   @image-examples[(overlay (rectangle 30 60 "solid" "orange")
                            (ellipse 60 30 "solid" "purple"))
@@ -378,7 +378,7 @@ Unlike @scheme[scene+curve], if the line passes outside of @scheme[image], the i
   It behaves like @scheme[overlay], but with the arguments in the reverse order.
   That is, the first argument goes
   underneath of the second argument, which goes underneath the third argument, etc.
-  The images are all lined up on their upper-left corners.
+  The images are all lined up on their centers.
 
   @image-examples[(underlay (rectangle 30 60 "solid" "orange")
                             (ellipse 60 30 "solid" "purple"))
@@ -438,7 +438,7 @@ Unlike @scheme[scene+curve], if the line passes outside of @scheme[image], the i
 
 @defproc[(beside [i1 image?] [i2 image?] [is image?] ...) image?]{
   Constructs an image by placing all of the argument images in a
-  horizontal row, aligned along their top edges.
+  horizontal row, aligned along their centers.
 
   @image-examples[(beside (ellipse 20 70 "solid" "gray")
                           (ellipse 20 50 "solid" "darkgray")
@@ -476,7 +476,7 @@ Unlike @scheme[scene+curve], if the line passes outside of @scheme[image], the i
 
 @defproc[(above [i1 image?] [i2 image?] [is image?] ...) image?]{
   Constructs an image by placing all of the argument images in a
-  vertical row, aligned along their left edges.
+  vertical row, aligned along their centers.
 
   @image-examples[(above (ellipse 70 20 "solid" "gray")
                          (ellipse 50 20 "solid" "darkgray")
@@ -514,9 +514,10 @@ and universes using @scheme[2htdp/universe].
 
 @defproc[(place-image [image image?] [x real?] [y real?] [scene image?]) image?]{
 
- Places @scheme[image] onto @scheme[scene] with its upper left corner at the coordinates 
+ Places @scheme[image] onto @scheme[scene] with its center at the coordinates 
  (@scheme[x],@scheme[y]) and crops the resulting image so that it has the 
- same size as @scheme[scene].
+ same size as @scheme[scene]. The coordinates are relative to the top-left
+ of @scheme[scene].
   
  @image-examples[(place-image 
                   (triangle 32 "solid" "red")
