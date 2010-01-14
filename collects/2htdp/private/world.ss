@@ -147,8 +147,13 @@
       (define (show-canvas)
         (send visible set-cursor (make-object cursor% 'arrow))
         (let ([fst-scene (ppdraw)])
-          (set! width  (if width width (image-width fst-scene)))
-          (set! height (if height height (image-height fst-scene)))
+          (if (2:image? fst-scene)
+              (begin
+                (set! width  (if width width (+ (image-width fst-scene) 1)))
+                (set! height (if height height (+ (image-height fst-scene) 1))))
+              (begin
+                (set! width  (if width width (image-width fst-scene)))
+                (set! height (if height height (image-height fst-scene)))))              
           (create-frame)
           (show fst-scene)))
       

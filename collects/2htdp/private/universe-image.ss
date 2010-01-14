@@ -3,7 +3,7 @@
          (prefix-in 1: htdp/image)
          htdp/error)
 
-(provide image? scene? image-width image-height text
+(provide image? scene? image-width image-height text 2:image?
          check-image check-scene check-scene-result)
 
 (define (scene? x)
@@ -20,21 +20,13 @@
 (define (text a b c) (2:text a b c))
 
 (define (image-width x)
-  (check-arg 'image-width 
-             (image? x)
-             'image
-             1 
-             x)
+  (check-arg 'image-width (image? x) 'image 1 x)
   (if (2:image? x)
       (2:image-width x)
       (1:image-width x)))
 
 (define (image-height x)
-  (check-arg 'image-height 
-             (image? x)
-             'image
-             1 
-             x)
+  (check-arg 'image-height (image? x) 'image 1 x)
   (if (2:image? x)
       (2:image-height x)
       (1:image-height x)))
