@@ -12,10 +12,10 @@
  (cond
    [(if (empty? l) #t (empty? k))
     empty]
-   [(and (number? (car l)) (number? (car k)))
-    (cons (+ (car l) (car k)) (mrg (cdr l) (cdr k)))]
-   [(number? (car l))
-    (cons (car l) (mrg (rest l) (rest k)))]
+   [(and (number? (first l)) (number? (first k)))
+    (cons (+ (first l) (first k)) (mrg (rest l) (rest k)))]
+   [(number? (first l))
+    (cons (first l) (mrg (rest l) (rest k)))]
    [else
     (error 'fail)]))
 

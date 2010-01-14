@@ -32,7 +32,10 @@
 [cddr  (-poly (a) (-> (-lst a) (-lst a)))]
 [cdddr (-poly (a) (-> (-lst a) (-lst a)))]
 
-[first (-poly (a b) (cl-> [((-pair a b)) a] [((-lst a)) a]))]
+[first (-poly (a b) 
+              (cl->*
+               (->acc (list (-pair a b)) a (list -car))
+               (->* (list (-lst a)) a)))]
 [second (-poly (a b c)
                (cl-> [((-pair a (-pair b c))) b]
                      [((-lst a)) a]))]
@@ -42,7 +45,10 @@
 [fourth (-poly (a) ((-lst a) . -> .  a))]
 [fifth  (-poly (a) ((-lst a) . -> .  a))]
 [sixth  (-poly (a) ((-lst a) . -> .  a))]
-[rest (-poly (a) ((-lst a) . -> .  (-lst a)))]
+[rest (-poly (a b) 
+             (cl->*
+              (->acc (list (-pair a b)) b (list -cdr))
+              (->* (list (-lst a)) (-lst a))))]
 
 [cons (-poly (a b)
              (cl-> [(a (-lst a)) (-lst a)]
