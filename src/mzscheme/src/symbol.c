@@ -53,7 +53,7 @@ SHARED_OK Scheme_Hash_Table *scheme_keyword_table = NULL;
 SHARED_OK Scheme_Hash_Table *scheme_parallel_symbol_table = NULL;
 
 #ifdef MZ_USE_PLACES
-SHARED_OK mzrt_rwlock *symbol_table_lock;
+SHARED_OK static mzrt_rwlock *symbol_table_lock;
 #else
 # define mzrt_rwlock_rdlock(l) /* empty */
 # define mzrt_rwlock_wrlock(l) /* empty */
