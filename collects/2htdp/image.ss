@@ -88,6 +88,8 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          line
          add-line
          add-curve
+         scene+line
+         scene+curve
          text
          text/font
          bitmap

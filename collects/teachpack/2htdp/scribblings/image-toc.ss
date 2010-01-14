@@ -8,8 +8,8 @@
   (list
    (list '(image-height (rectangle 100 100 "solid" "black")) 'val 100)
    (list '(image-baseline (rectangle 100 100 "solid" "black")) 'val 100)
-   (list '(image-height (text "Hello" 24 "black")) 'val 24)
-   (list '(image-baseline (text "Hello" 24 "black")) 'val 18)
+   (list '(image-height (text "Hello" 24 "black")) 'val 41)
+   (list '(image-baseline (text "Hello" 24 "black")) 'val 31)
    (list
     '(image-height
       (overlay (circle 20 "solid" "orange") (circle 30 "solid" "purple")))
@@ -76,6 +76,90 @@
     'image
     "28daec71a64.png")
    (list
+    '(scene+curve
+      (rectangle 100 100 "solid" "black")
+      -20
+      -20
+      0
+      1
+      120
+      120
+      0
+      1
+      "red")
+    'image
+    "25dd3e2d97c.png")
+   (list
+    '(scene+curve
+      (add-curve
+       (rectangle 40 100 "solid" "black")
+       20
+       10
+       180
+       1/2
+       20
+       90
+       180
+       1/2
+       "white")
+      20
+      10
+      0
+      1/2
+      20
+      90
+      0
+      1/2
+      "white")
+    'image
+    "1132401ea93.png")
+   (list
+    '(scene+curve
+      (rectangle 100 100 "solid" "black")
+      20
+      20
+      0
+      1
+      80
+      80
+      0
+      1
+      "white")
+    'image
+    "6efa12ea15.png")
+   (list
+    '(scene+curve
+      (rectangle 100 100 "solid" "black")
+      20
+      20
+      0
+      1/3
+      80
+      80
+      0
+      1/3
+      "white")
+    'image
+    "353ed4578.png")
+   (list
+    '(scene+line (rectangle 40 40 "solid" "gray") -10 50 50 -10 "maroon")
+    'image
+    "1f5944ec1ed.png")
+   (list
+    '(scene+line
+      (ellipse 80 60 "outline" "darkolivegreen")
+      (+ 40 (* 40 (cos (* pi 1/4))))
+      (+ 30 (* 30 (sin (* pi 1/4))))
+      (+ 40 (* 40 (cos (* pi 5/4))))
+      (+ 30 (* 30 (sin (* pi 5/4))))
+      "darkolivegreen")
+    'image
+    "2353974cf1b.png")
+   (list
+    '(scene+line (ellipse 40 40 "outline" "maroon") 0 40 40 0 "maroon")
+    'image
+    "2b944b7ab91.png")
+   (list
     '(beside
       (place-image/align
        (circle 8 "solid" "tomato")
@@ -127,39 +211,39 @@
    (list
     '(place-image
       (circle 4 "solid" "white")
-      16
       18
+      20
       (place-image
        (circle 4 "solid" "white")
-       -2
-       4
+       0
+       6
        (place-image
         (circle 4 "solid" "white")
-        12
-        0
+        14
+        2
         (place-image
          (circle 4 "solid" "white")
-         6
-         12
+         8
+         14
          (rectangle 24 24 "solid" "goldenrod")))))
     'image
-    "1178fdd1294.png")
+    "ab1841ea36.png")
    (list
     '(place-image
       (triangle 64 "solid" "red")
-      -8
-      -8
+      24
+      24
       (rectangle 48 48 "solid" "gray"))
     'image
-    "2875b40781.png")
+    "13e518b230e.png")
    (list
     '(place-image
       (triangle 32 "solid" "red")
-      8
-      8
+      24
+      24
       (rectangle 48 48 "solid" "gray"))
     'image
-    "2bea495d1f.png")
+    "126418b230e.png")
    (list
     '(above/align
       "left"
@@ -383,8 +467,22 @@
    (list '(text "Hello" 24 "olive") 'image "1bbeedc0d6.png")
    (list
     '(add-curve
+      (rectangle 100 100 "solid" "black")
+      -20
+      -20
+      0
+      1
+      120
+      120
+      0
+      1
+      "red")
+    'image
+    "1532990d5cb.png")
+   (list
+    '(add-curve
       (add-curve
-       (rectangle 40 100 'solid 'black)
+       (rectangle 40 100 "solid" "black")
        20
        10
        180
@@ -393,7 +491,7 @@
        90
        180
        1/2
-       'white)
+       "white")
       20
       10
       0
@@ -402,27 +500,41 @@
       90
       0
       1/2
-      'white)
+      "white")
     'image
-    "13121248a3c.png")
-   (list
-    '(add-curve (rectangle 100 100 'solid 'black) 20 20 0 1 80 80 0 1 'white)
-    'image
-    "df251e846.png")
+    "2751bdfe579.png")
    (list
     '(add-curve
-      (rectangle 100 100 'solid 'black)
+      (rectangle 100 100 "solid" "black")
       20
       20
       0
-      1/3
+      1
       80
       80
       0
-      1/3
-      'white)
+      1
+      "white")
     'image
-    "12472655f6c.png")
+    "fa1a9f17b6.png")
+   (list
+    '(add-curve
+      (rectangle 100 100 "solid" "black")
+      20
+      20
+      0
+      1/3
+      80
+      80
+      0
+      1/3
+      "white")
+    'image
+    "2a1f3988f.png")
+   (list
+    '(add-line (rectangle 40 40 "solid" "gray") -10 50 50 -10 "maroon")
+    'image
+    "12b0447b10c.png")
    (list
     '(add-line
       (ellipse 80 60 "outline" "darkolivegreen")

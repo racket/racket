@@ -290,7 +290,7 @@
 
 ;; place-image : image x y scene -> scene
 (define/chk (place-image image1 x1 y1 image2) 
-  (place-image/internal image1 x1 y1 image2 'left 'top))
+  (place-image/internal image1 x1 y1 image2 'middle 'middle))
 (define/chk (place-image/align image1 x1 y1 x-place y-place image2)
   (place-image/internal image1 x1 y1 image2 x-place y-place))
 
@@ -308,6 +308,28 @@
                 scene
                 (if (< dx 0) (- dx) 0)
                 (if (< dy 0) (- dy) 0)))))
+
+(define/chk (scene+line image x1 y1 x2 y2 color)
+  (let* ([dx (abs (min 0 x1 x2))]
+         [dy (abs (min 0 y1 y2))])
+    (make-image (make-overlay
+                 (make-crop (rectangle-points (get-right image) (get-bottom image))
+                            (make-line-segment (make-point x1 y1) (make-point x2 y2) color))
+                 (image-shape image))
+                (image-bb image)
+                #f)))
+
+(define/chk (scene+curve image x1 y1 angle1 pull1 x2 y2 angle2 pull2 color)
+  (let* ([dx (abs (min 0 x1 x2))]
+         [dy (abs (min 0 y1 y2))])
+    (make-image (make-overlay
+                 (make-crop (rectangle-points (get-right image) (get-bottom image))
+                            (make-curve-segment (make-point x1 y1) angle1 pull1
+                                                (make-point x2 y2) angle2 pull2
+                                                color))
+                 (image-shape image))
+                (image-bb image)
+                #f)))
 
 ;; frame : image -> image
 ;; draws a black frame around a image where the bounding box is
@@ -931,7 +953,8 @@
          line
          add-line
          add-curve
-         
+         scene+line
+         scene+curve
          text
          text/font
          

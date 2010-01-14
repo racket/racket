@@ -987,6 +987,35 @@
         =>
         (+ bl 10)))
 
+(test (scene+line (rectangle 100 100 'solid 'black)
+                  10 10 
+                  90 50
+                  "red")
+      =>
+      (add-line (rectangle 100 100 'solid 'black)
+                10 10 
+                90 50
+                "red"))
+
+(test (image-width (scene+line (rectangle 100 100 'solid 'black)
+                               -10 -20
+                               110 120
+                               "green"))
+      =>
+      100)
+(test (image-height (scene+line (rectangle 100 100 'solid 'black)
+                               -10 -20
+                               110 120
+                               'purple))
+      =>
+      100)
+(test (image-baseline (scene+line (rectangle 100 100 'solid 'black)
+                                  -10 -20
+                                  110 120
+                                  'olive))
+      =>
+      100)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  curves
@@ -1032,6 +1061,27 @@
       (add-curve 
        (rectangle 100 100 'solid 'black)
        20 80 90 1/3 80 20 90 1/3 'white))
+
+(test (add-curve (rectangle 100 100 'solid 'black)
+                 10 10 0 1/4
+                 90 90 0 1/4
+                 'white)
+      =>
+      (scene+curve (rectangle 100 100 'solid 'black)
+                   10 10 0 1/4
+                   90 90 0 1/4
+                   'white))
+(test (scene+curve (rectangle 100 100 'solid 'black)
+                   10 10 0 1/4
+                   110 110 0 1/4
+                   'red)
+      
+      =>
+      (crop 0 0 100 100
+            (add-curve (rectangle 100 100 'solid 'black)
+                       10 10 0 1/4
+                       110 110 0 1/4
+                       'red)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1195,39 +1245,44 @@
                     (rectangle 10 10 'solid 'black)
                     (rectangle 10 10 'solid 'green)))
 
-(test (place-image (circle 4 'solid 'black)
-                   10 10
-                   (rectangle 40 40 'solid 'orange))
+(test (place-image/align (circle 4 'solid 'black)
+                         10 10
+                         'left 'top
+                         (rectangle 40 40 'solid 'orange))
       =>
       (underlay/xy (rectangle 40 40 'solid 'orange)
                    10 10
                    (circle 4 'solid 'black)))
 
-(test (place-image (circle 4 'solid 'black)
-                   50 50
-                   (rectangle 40 40 'solid 'orange))
+(test (place-image/align (circle 4 'solid 'black)
+                         50 50
+                         'left 'top
+                         (rectangle 40 40 'solid 'orange))
       =>
       (rectangle 40 40 'solid 'orange))
 
-(test (place-image (circle 4 'solid 'black)
-                   36 36
-                   (rectangle 40 40 'solid 'orange))
+(test (place-image/align (circle 4 'solid 'black)
+                         36 36
+                         'left 'top
+                         (rectangle 40 40 'solid 'orange))
       =>
       (underlay/xy (rectangle 40 40 'solid 'orange)
                    36 36
                    (crop 0 0 4 4 (circle 4 'solid 'black))))
 
-(test (place-image (circle 8 'solid 'black)
-                   -4 -4
-                   (rectangle 40 40 'solid 'orange))
+(test (place-image/align (circle 8 'solid 'black)
+                         -4 -4
+                         'left 'top
+                         (rectangle 40 40 'solid 'orange))
       =>
       (overlay/xy (crop 4 4 16 16 (circle 8 'solid 'black))
                   0 0
                   (rectangle 40 40 'solid 'orange)))
 
-(test (place-image (circle 4 'solid 'black)
-                   -4 0
-                   (rectangle 40 40 'solid 'orange))
+(test (place-image/align (circle 4 'solid 'black)
+                         -4 0
+                         'left 'top
+                         (rectangle 40 40 'solid 'orange))
       =>
       (overlay/xy (crop 4 0 4 8 (circle 4 'solid 'black))
                   0 0

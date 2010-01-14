@@ -200,6 +200,8 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
 
   Adds a line to the image @scheme[image], starting from the point (@scheme[x1],@scheme[y1])
   and going to the point (@scheme[x2],@scheme[y2]).
+  Unlike @scheme[scene+line], if the line passes outside of @scheme[image], the image
+  gets larger to accomodate the line.
   
   @image-examples[(add-line (ellipse 40 40 "outline" "maroon")
                             0 40 40 0 "maroon")
@@ -208,7 +210,9 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                             (+ 30 (* 30 (sin (* pi 1/4))))
                             (+ 40 (* 40 (cos (* pi 5/4))))
                             (+ 30 (* 30 (sin (* pi 5/4))))
-                            "darkolivegreen")]
+                            "darkolivegreen")
+                  (add-line (rectangle 40 40 "solid" "gray")
+                            -10 50 50 -10 "maroon")]
 }
 
 @defproc[(add-curve [image image?] 
@@ -229,24 +233,34 @@ The @scheme[pull1] and @scheme[pull2] arguments control how
 long the curve tries to stay with that angle. Larger numbers
 mean that the curve stays with the angle longer.
 
-@image-examples[(add-curve (rectangle 100 100 'solid 'black)
+Unlike @scheme[scene+curve], if the line passes outside of @scheme[image], the image
+  gets larger to accomodate the curve.
+
+
+@image-examples[(add-curve (rectangle 100 100 "solid" "black")
                            20 20 0 1/3
                            80 80 0 1/3
-                           'white)
-                (add-curve (rectangle 100 100 'solid 'black)
+                           "white")
+                (add-curve (rectangle 100 100 "solid" "black")
                            20 20 0 1 
                            80 80 0 1
-                           'white)
+                           "white")
                 (add-curve 
                  (add-curve 
-                  (rectangle 40 100 'solid 'black)
+                  (rectangle 40 100 "solid" "black")
                   20 10 180 1/2
                   20 90 180 1/2
-                  'white)
+                  "white")
                  20 10 0 1/2
                  20 90 0 1/2
-                 'white)]
+                 "white")
+                        
+                (add-curve (rectangle 100 100 "solid" "black")
+                           -20 -20 0 1 
+                           120 120 0 1
+                           "red")]
 }
+
 @defproc[(text [string string?] [font-size (and/c integer? (<=/c 1 255))] [color image-color?])
          image?]{
                 
@@ -506,26 +520,26 @@ and universes using @scheme[2htdp/universe].
   
  @image-examples[(place-image 
                   (triangle 32 "solid" "red")
-                  8 8
+                  24 24
                   (rectangle 48 48 "solid" "gray"))
                  
                  (place-image 
                   (triangle 64 "solid" "red")
-                  -8 -8
+                  24 24
                   (rectangle 48 48 "solid" "gray"))
                  
                  (place-image
                   (circle 4 "solid" "white")
-                  16 18
+                  18 20
                   (place-image
                    (circle 4 "solid" "white")
-                   -2 4
+                   0 6
                    (place-image
                     (circle 4 "solid" "white")
-                    12 0
+                    14 2
                     (place-image
                      (circle 4 "solid" "white")
-                     6 12
+                     8 14
                      (rectangle 24 24 "solid" "goldenrod")))))]
 }
 @defproc[(place-image/align [image image?] [x real?] [y real?] [x-place x-place?] [y-place y-place?][scene image?])
@@ -558,6 +572,74 @@ and universes using @scheme[2htdp/universe].
                                      (rectangle 32 32 "outline" "black")))]
 }
 
+@defproc[(scene+line [image image?]
+                     [x1 real?] [y1 real?]
+                     [x2 real?] [y2 real?]
+                     [color image-color?])
+         image?]{
+
+  Adds a line to the image @scheme[scene], starting from the point (@scheme[x1],@scheme[y1])
+  and going to the point (@scheme[x2],@scheme[y2]); unlike
+  @scheme[add-line], this function crops the resulting image to the size of @scheme[scene].
+  
+  @image-examples[(scene+line (ellipse 40 40 "outline" "maroon")
+                              0 40 40 0 "maroon")
+                  (scene+line (ellipse 80 60 "outline" "darkolivegreen")
+                              (+ 40 (* 40 (cos (* pi 1/4))))
+                              (+ 30 (* 30 (sin (* pi 1/4))))
+                              (+ 40 (* 40 (cos (* pi 5/4))))
+                              (+ 30 (* 30 (sin (* pi 5/4))))
+                              "darkolivegreen")
+                  (scene+line (rectangle 40 40 "solid" "gray")
+                              -10 50 50 -10 "maroon")]
+}
+
+@defproc[(scene+curve [scene image?] 
+                      [x1 real?] [y1 real?] [angle1 angle?] [pull1 real?]
+                      [x2 real?] [y2 real?] [angle2 angle?] [pull2 real?]
+                      [color image-color?])
+         image?]{
+
+Adds a curve to @scheme[scene], starting at the point
+(@scheme[x1],@scheme[y1]), and ending at the point
+(@scheme[x2],@scheme[y2]).
+
+The @scheme[angle1] and @scheme[angle2] arguments specify the 
+angle that the curve has as it leaves the initial point and
+as it reaches the final point, respectively. 
+
+The @scheme[pull1] and @scheme[pull2] arguments control how
+long the curve tries to stay with that angle. Larger numbers
+mean that the curve stays with the angle longer.
+
+Unlike @scheme[add-curve], this function crops the curve, only showing
+the parts that fit onto @scheme[scene].
+
+@image-examples[(scene+curve (rectangle 100 100 "solid" "black")
+                             20 20 0 1/3
+                             80 80 0 1/3
+                             "white")
+                (scene+curve (rectangle 100 100 "solid" "black")
+                             20 20 0 1 
+                             80 80 0 1
+                             "white")
+                (scene+curve 
+                 (add-curve 
+                  (rectangle 40 100 "solid" "black")
+                  20 10 180 1/2
+                  20 90 180 1/2
+                  "white")
+                 20 10 0 1/2
+                 20 90 0 1/2
+                 "white")
+                        
+                (scene+curve (rectangle 100 100 "solid" "black")
+                             -20 -20 0 1 
+                             120 120 0 1
+                             "red")]
+}
+
+                
 @section{Rotating, Scaling, Cropping, and Framing Images}
 
 @defproc[(rotate [angle angle?] [image image?]) image?]{
