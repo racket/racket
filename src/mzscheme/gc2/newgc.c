@@ -653,8 +653,6 @@ static void *allocate_big(const size_t request_size_bytes, int type)
   else
     addr = malloc_pages(gc, round_to_apage_size(allocate_size), APAGE_SIZE);
 
-  gc->gen0.current_size += allocate_size;
-
   bpage = malloc_mpage();
   bpage->addr = addr;
   bpage->size = allocate_size;
