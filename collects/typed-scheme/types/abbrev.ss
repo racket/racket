@@ -265,8 +265,11 @@
 (d/c make-pred-ty
   (case-> (c:-> Type/c Type/c)
           (c:-> (listof Type/c) Type/c Type/c Type/c)
-          (c:-> (listof Type/c) Type/c Type/c integer? Type/c))
+          (c:-> (listof Type/c) Type/c Type/c integer? Type/c)
+          (c:-> (listof Type/c) Type/c Type/c integer? (listof PathElem?) Type/c))
   (case-lambda 
+    [(in out t n p)
+     (->* in out : (-LFS (list (-filter t p n)) (list (-not-filter t p n))))]
     [(in out t n)
      (->* in out : (-LFS (list (-filter t null n)) (list (-not-filter t null n))))]
     [(in out t)

@@ -67,6 +67,7 @@
        (add-type-name-reference #'kw)
        (parameterize ([current-tvars (extend-env vars tvars (current-tvars))])
          (make-Poly vars (parse-type #'t))))]
+    [(t:All (_:id ...) _ _ _ ...) (tc-error "All: too many forms in body of All type")]
     [(t:All . rest) (tc-error "All: bad syntax")]))
 
 (define-splicing-syntax-class keyword-tys
@@ -74,6 +75,24 @@
            #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #t))
   (pattern (~seq [k:keyword t:expr])
            #:attr Keyword (make-Keyword (syntax-e #'k) (parse-type #'t) #f)))
+
+(define-syntax-class path-elem
+  #:description "path element"
+  #:literals (car cdr)
+  (pattern car
+           #:attr pe (make-CarPE))
+  (pattern cdr
+           #:attr pe (make-CdrPE)))
+
+(define-splicing-syntax-class latent-filter
+  #:description "latent filter"  
+  (pattern (~seq t:expr @:id pe:path-elem ...)
+           #:fail-unless (eq? (syntax-e #'@) '@) "expected @"
+           #:attr type (parse-type #'t)
+           #:attr path (attribute pe.pe))
+  (pattern t:expr
+           #:attr type (parse-type #'t)
+           #:attr path '()))
 
 (define (parse-type stx)    
   (parameterize ([current-orig-stx stx])    
@@ -171,10 +190,10 @@
        (add-type-name-reference #'kw)
        (-Param (parse-type #'t1) (parse-type #'t2))]
       ;; function types
-      [(dom (~and kw t:->) rng : pred-ty)
+      [(dom (~and kw t:->) rng : ~! latent:latent-filter)
        (add-type-name-reference #'kw)
        ;; use parse-type instead of parse-values-type because we need to add the filters from the pred-ty
-       (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (parse-type #'pred-ty))]
+       (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (attribute latent.type) 0 (attribute latent.path))]
       [(dom:expr ... rest:expr ddd:star kws:keyword-tys ... (~and kw t:->) rng)
        (add-type-name-reference #'kw)
        (make-Function

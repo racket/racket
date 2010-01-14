@@ -43,6 +43,8 @@
                                (fp "LTop")
                                (for ([i els]) (fp " ~a" i)))
                            (fp")")]
+    [(LNotTypeFilter: type path 0) (fp "(! ~a @ ~a)" type path)]
+    [(LTypeFilter: type path 0) (fp "(~a @ ~a)" type path)]
     [(LNotTypeFilter: type path idx) (fp "(! ~a @ ~a ~a)" type path idx)]
     [(LTypeFilter: type path idx) (fp "(~a @ ~a ~a)" type path idx)]
     [(LBot:) (fp "LBot")]
@@ -115,10 +117,13 @@
          [(Values: (list (Result: t (LFilterSet: (list) (list)) (LEmpty:))))
           (fp "-> ~a" t)]
          [(Values: (list (Result: t
-				  (LFilterSet: (list (LTypeFilter: ft '() 0))
-					       (list (LNotTypeFilter: ft '() 0)))
+				  (LFilterSet: (list (LTypeFilter: ft pth 0))
+					       (list (LNotTypeFilter: ft pth 0)))
 				  (LEmpty:)))) 
-          (fp "-> ~a : ~a" t ft)]
+          (if (null? pth)
+              (fp "-> ~a : ~a" t ft)
+              (begin (fp "-> ~a : ~a @" t ft)
+                     (for ([pe pth]) (fp " ~a" pe))))]
          [(Values: (list (Result: t fs (LEmpty:)))) 
           (fp/filter "-> ~a : ~a" t fs)]
          [(Values: (list (Result: t lf lo)))
