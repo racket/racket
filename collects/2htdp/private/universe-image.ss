@@ -58,7 +58,7 @@
       i
       (if (1:image? i) 
           (check-result tname 1:scene? "scene" i (image-pins i))
-          (check-result tname #f       "scene" i))))
+          (check-result tname (lambda _ #f) "scene" i))))
 
 (define (image-pins i)
   (format "image with pinhole at (~s,~s)" (1:pinhole-x i) (1:pinhole-y i)))

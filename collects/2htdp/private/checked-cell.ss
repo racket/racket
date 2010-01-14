@@ -73,12 +73,14 @@
     ;; effect: set value to v if distinct, also display it if pb exists
     (define/public (set tag v) 
       (define nw  (coerce tag v))
-      (if (equal? value nw)
-          #t
-          (begin
-            (set! value nw)
-            (when pb (show-state))
-            #f)))
+      ;; this is the old Robby "optimization" for not triggering draw
+      ;; when the world doesn't change 
+      ;if (equal? value nw)
+      ;   #t
+      (begin
+        (set! value nw)
+        (when pb (show-state))
+        #f))
     
     ;; -> ok?
     (define/public (get) value)

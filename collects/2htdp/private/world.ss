@@ -233,39 +233,40 @@
                  (broadcast (package-message nw))
                  (set! nw (package-world nw)))
                (if (stop-the-world? nw)
-		   (begin
-		     (set! nw (stop-the-world-world nw))
-		     (send world set tag nw)
-		     (when last-picture
-		       (set! draw last-picture))
-		     (when draw (pdraw))
-		     (callback-stop! 'name)
-		     (enable-images-button))
+                   (begin
+                     (set! nw (stop-the-world-world nw))
+                     (send world set tag nw)
+                     (when last-picture
+                       (set! draw last-picture))
+                     (when draw (pdraw))
+                     (callback-stop! 'name)
+                     (enable-images-button))
                    (let ([changed-world? (send world set tag nw)])
-		     (unless changed-world? 
-                       (when draw 
-                         (cond
-                           [(not drawing)
-                            (set! drawing #t)
-                            (let ([b (box d)])
-                              (set! w (cons b w))
-                              ;; low priority, otherwise it's too fast
-                              (queue-callback (lambda () ((unbox b))) #f))]
-                           [(< draw# 0)
-                            (set-draw#!)
-                            (for-each (lambda (b) (set-box! b void)) w)
-                            (set! w '())
-                            ;; high!!  the scheduled callback didn't fire
-                            (queue-callback (lambda () (d)) #t)]
-                           [else 
-                            (set! draw# (- draw# 1))]))
-		       (when (pstop)
-			 (when last-picture 
-			   (set! draw last-picture)
-			   (pdraw))
-			 (callback-stop! 'name)
-			 (enable-images-button)))
-		     changed-world?)))))))
+                     ;; this is the old "Robby optimization" see checked-cell:
+                     ; unless changed-world? 
+                     (when draw 
+                       (cond
+                         [(not drawing)
+                          (set! drawing #t)
+                          (let ([b (box d)])
+                            (set! w (cons b w))
+                            ;; low priority, otherwise it's too fast
+                            (queue-callback (lambda () ((unbox b))) #f))]
+                         [(< draw# 0)
+                          (set-draw#!)
+                          (for-each (lambda (b) (set-box! b void)) w)
+                          (set! w '())
+                          ;; high!!  the scheduled callback didn't fire
+                          (queue-callback (lambda () (d)) #t)]
+                         [else 
+                          (set! draw# (- draw# 1))]))
+                     (when (pstop)
+                       (when last-picture 
+                         (set! draw last-picture)
+                         (pdraw))
+                       (callback-stop! 'name)
+                       (enable-images-button))
+                     changed-world?)))))))
       
       ;; tick, tock : deal with a tick event for this world 
       (def/pub-cback (ptock) tick)
@@ -314,8 +315,9 @@
       (define/public (start!)
         (queue-callback
          (lambda ()
-           (when draw (show-canvas))
-           (when register (register-with-host)))))
+           (with-handlers ([exn? (handler #t)])
+             (when draw (show-canvas))
+             (when register (register-with-host))))))
       
       (define/public (stop! w)
         (set! live #f)
