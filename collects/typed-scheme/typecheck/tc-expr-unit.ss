@@ -326,6 +326,12 @@
              (#%plain-app _ _ args ...)))
          (tc/send #'rcvr #'meth #'(args ...) expected)]
         ;; let
+        [(let-values ([(or-part) e1]) (if op1 op2 e2))
+         (and 
+          (identifier? #'op1) (identifier? #'op2)
+          (free-identifier=? #'or-part #'op1)
+          (free-identifier=? #'or-part #'op2))
+         (tc-expr/check #'(if e1 e1 (let-values ([(or-part) e1]) e2)) expected)]
         [(let-values ([(name ...) expr] ...) . body)
          (tc/let-values #'((name ...) ...) #'(expr ...) #'body form expected)]
         [(letrec-values ([(name) expr]) name*)
@@ -388,6 +394,11 @@
            (#%plain-app _ _ args ...)))
        (tc/send #'rcvr #'meth #'(args ...))]
       ;; let
+      [(let-values ([(or-part) e1]) (if op1 op2 e2))
+       (and (identifier? #'op1) (identifier? #'op2)
+            (free-identifier=? #'or-part #'op1)
+            (free-identifier=? #'or-part #'op2))
+       (tc-expr #'(if e1 e1 (let-values ([(or-part) e1]) e2)))]
       [(let-values ([(name ...) expr] ...) . body)
        (tc/let-values #'((name ...) ...) #'(expr ...) #'body form)]
       [(letrec-values ([(name ...) expr] ...) . body)
