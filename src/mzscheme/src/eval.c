@@ -2543,9 +2543,12 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     *_flags = SCHEME_CLOSURE_DATA_FLAGS(data);
       
     if ((data->num_params == argc) || (!app && !app2 && !app3)) {
-      sz = scheme_closure_body_size(data, 1, info);
+      int threshold;
 
-      if ((sz >= 0) && (single_use || (sz <= (info->inline_fuel * (argc + 2))))) {
+      sz = scheme_closure_body_size(data, 1, info);
+      threshold = info->inline_fuel * (2 + argc);
+
+      if ((sz >= 0) && (single_use || (sz <= threshold))) {
 	le = scheme_optimize_clone(0, data->code, info, offset, argc);
 	if (le) {
 	  LOG_INLINE(fprintf(stderr, "Inline %d %d %s\n", sz, single_use, data->name ? scheme_write_to_string(data->name, NULL) : "???"));
@@ -2555,7 +2558,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
         }
       } else {
         LOG_INLINE(fprintf(stderr, "No fuel %s %d*%d/%d %d\n", data->name ? scheme_write_to_string(data->name, NULL) : "???", 
-                           sz, info->inline_fuel * (argc + 2),
+                           sz, threshold,
                            info->inline_fuel, info->use_psize));
       }
     } else {
@@ -3819,9 +3822,12 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   b->tbranch = tb;
   b->fbranch = fb;
 
-  /* Seems to work better to not to increase the size
-     specifically for `if': */
-  /* info->size += 1; */
+  if (OPT_BRANCH_ADDS_NO_SIZE) {
+    /* Seems to work better to not to increase the size
+       specifically for `if' */
+  } else {
+    info->size += 1;
+  }
 
   return o;
 }

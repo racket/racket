@@ -2343,6 +2343,12 @@ Scheme_Object *scheme_optimize_info_lookup(Optimize_Info *info, int pos, int *cl
                                            int once_used_ok, int context, int *potential_size);
 void scheme_optimize_info_used_top(Optimize_Info *info);
 
+/* Controls for inlining algorithm: */
+#define OPT_ESTIMATE_FUTURE_SIZES   1
+#define OPT_DISCOURAGE_EARLY_INLINE 1
+#define OPT_LIMIT_FUNCTION_RESIZE   0
+#define OPT_BRANCH_ADDS_NO_SIZE     1
+
 Scheme_Object *scheme_estimate_closure_size(Scheme_Object *e);
 Scheme_Object *scheme_no_potential_size(Scheme_Object *value);
 

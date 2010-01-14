@@ -5213,56 +5213,63 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
   cnt = SCHEME_VEC_SIZE(m->body);
 
-  if (info->enforce_const) {
-    /* For each identifier bound to a procedure, register an initial
-       size estimate, which is used to discourage early loop unrolling 
-       at the expense of later inlining. */
-    for (i_m = 0; i_m < cnt; i_m++) {
-      e = SCHEME_VEC_ELS(m->body)[i_m];
-      if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_syntax_type)
-	  && (SCHEME_PINT_VAL(e) == DEFINE_VALUES_EXPD)) {
-	int n;
+  if (OPT_ESTIMATE_FUTURE_SIZES) {
+    if (info->enforce_const) {
+      /* For each identifier bound to a procedure, register an initial
+         size estimate, which is used to discourage early loop unrolling 
+         at the expense of later inlining. */
+      for (i_m = 0; i_m < cnt; i_m++) {
+        e = SCHEME_VEC_ELS(m->body)[i_m];
+        if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_syntax_type)
+            && (SCHEME_PINT_VAL(e) == DEFINE_VALUES_EXPD)) {
+          int n;
 
-	e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
-        vars = SCHEME_CAR(e);
-	e = SCHEME_CDR(e);
+          e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
+          vars = SCHEME_CAR(e);
+          e = SCHEME_CDR(e);
 
-        n = scheme_list_length(vars);
-        if (n == 1) {
-          if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type)) {
-            Scheme_Toplevel *tl;
+          n = scheme_list_length(vars);
+          if (n == 1) {
+            if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type)) {
+              Scheme_Toplevel *tl;
             
-            tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
+              tl = (Scheme_Toplevel *)SCHEME_CAR(vars);
             
-            if (!(SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_MUTATED)) {
-              int pos;
-              if (!consts)
-                consts = scheme_make_hash_table(SCHEME_hash_ptr);
-              pos = tl->position;
-	      scheme_hash_set(consts, 
-                              scheme_make_integer(pos),
-                              scheme_estimate_closure_size(e));
+              if (!(SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_MUTATED)) {
+                int pos;
+                if (!consts)
+                  consts = scheme_make_hash_table(SCHEME_hash_ptr);
+                pos = tl->position;
+                scheme_hash_set(consts, 
+                                scheme_make_integer(pos),
+                                scheme_estimate_closure_size(e));
+              }
             }
           }
         }
       }
-    }
 
-    if (consts) {
-      info->top_level_consts = consts;
-      consts = NULL;
+      if (consts) {
+        info->top_level_consts = consts;
+        consts = NULL;
+      }
     }
   }
 
   for (i_m = 0; i_m < cnt; i_m++) {
     /* Optimize this expression: */
-    info->use_psize = 1;
-    inline_fuel = info->inline_fuel;
-    if (inline_fuel > 2)
-      info->inline_fuel = 2;
+    if (OPT_DISCOURAGE_EARLY_INLINE) {
+      info->use_psize = 1;
+      inline_fuel = info->inline_fuel;
+      if (inline_fuel > 2)
+        info->inline_fuel = 2;
+    } else
+      inline_fuel = 0;
     e = scheme_optimize_expr(SCHEME_VEC_ELS(m->body)[i_m], info, 0);
-    info->use_psize = 0;
-    info->inline_fuel = inline_fuel;
+    if (OPT_DISCOURAGE_EARLY_INLINE) {
+      info->use_psize = 0;
+      info->inline_fuel = inline_fuel;
+    }
     SCHEME_VEC_ELS(m->body)[i_m] = e;
 
     if (info->enforce_const) {
@@ -5396,14 +5403,17 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
           e = SCHEME_VEC_ELS(m->body)[start_simltaneous];
 
-          if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_syntax_type)
-              && (SCHEME_PINT_VAL(e) == DEFINE_VALUES_EXPD)) {
-            Scheme_Object *sub_e;
-            sub_e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
-            sub_e = SCHEME_CDR(sub_e);
-            if (SAME_TYPE(SCHEME_TYPE(sub_e), scheme_compiled_unclosed_procedure_type))
-              old_sz = scheme_closure_body_size((Scheme_Closure_Data *)sub_e, 0, NULL);
-            else
+          if (OPT_LIMIT_FUNCTION_RESIZE) {
+            if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_syntax_type)
+                && (SCHEME_PINT_VAL(e) == DEFINE_VALUES_EXPD)) {
+              Scheme_Object *sub_e;
+              sub_e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
+              sub_e = SCHEME_CDR(sub_e);
+              if (SAME_TYPE(SCHEME_TYPE(sub_e), scheme_compiled_unclosed_procedure_type))
+                old_sz = scheme_closure_body_size((Scheme_Closure_Data *)sub_e, 0, NULL);
+              else
+                old_sz = 0;
+            } else
               old_sz = 0;
           } else
             old_sz = 0;
@@ -5412,8 +5422,8 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 	  SCHEME_VEC_ELS(m->body)[start_simltaneous] = e;
 
           if (re_consts) {
-            /* Install optimized closures into constant table --- unless they
-               grow too much: */
+            /* Install optimized closures into constant table ---
+               unless, maybe, they grow too much: */
             Scheme_Object *rpos;
             rpos = scheme_hash_get(re_consts, scheme_make_integer(start_simltaneous));
             if (rpos) {
@@ -5423,12 +5433,15 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
                   && scheme_is_statically_proc(e, info))
                 e = scheme_make_noninline_proc(e);
 
-              if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type))
-                new_sz = scheme_closure_body_size((Scheme_Closure_Data *)e, 0, NULL);
-              else
+              if (OPT_LIMIT_FUNCTION_RESIZE) {
+                if (SAME_TYPE(SCHEME_TYPE(e), scheme_compiled_unclosed_procedure_type))
+                  new_sz = scheme_closure_body_size((Scheme_Closure_Data *)e, 0, NULL);
+                else
+                  new_sz = 0;
+              } else
                 new_sz = 0;
 
-              if (!new_sz || !old_sz || (new_sz < 2 * old_sz))
+              if (!new_sz || !old_sz || (new_sz < 4 * old_sz))
                 scheme_hash_set(info->top_level_consts, rpos, e);
             }
           }

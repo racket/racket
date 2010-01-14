@@ -3131,26 +3131,28 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     body = pre_body->body;
   }
 
-  if (is_rec && !body_info->letrec_not_twice) {
-    /* For each identifier bound to a procedure, register an initial
-       size estimate, which is used to discourage early loop unrolling 
-       at the expense of later inlining. */
-    body = head->body;
-    pre_body = NULL;
-    pos = 0;
-    for (i = head->num_clauses; i--; ) {
-      pre_body = (Scheme_Compiled_Let_Value *)body;
+  if (OPT_ESTIMATE_FUTURE_SIZES) {
+    if (is_rec && !body_info->letrec_not_twice) {
+      /* For each identifier bound to a procedure, register an initial
+         size estimate, which is used to discourage early loop unrolling 
+         at the expense of later inlining. */
+      body = head->body;
+      pre_body = NULL;
+      pos = 0;
+      for (i = head->num_clauses; i--; ) {
+        pre_body = (Scheme_Compiled_Let_Value *)body;
 
-      if ((pre_body->count == 1)
-          && SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(pre_body->value))
-          && !(pre_body->flags[0] & SCHEME_WAS_SET_BANGED)) {
-        scheme_optimize_propagate(body_info, pos, scheme_estimate_closure_size(pre_body->value), 0);
+        if ((pre_body->count == 1)
+            && SAME_TYPE(scheme_compiled_unclosed_procedure_type, SCHEME_TYPE(pre_body->value))
+            && !(pre_body->flags[0] & SCHEME_WAS_SET_BANGED)) {
+          scheme_optimize_propagate(body_info, pos, scheme_estimate_closure_size(pre_body->value), 0);
+        }
+
+        pos += pre_body->count;
+        body = pre_body->body;
       }
-
-      pos += pre_body->count;
-      body = pre_body->body;
+      rhs_info->use_psize = 1;
     }
-    rhs_info->use_psize = 1;
   }
 
   prev_body = NULL;
@@ -3180,15 +3182,20 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
       body_info->transitive_use_pos = pos + 1;
     }
 
-    inline_fuel = info->inline_fuel;
-    if (inline_fuel > 2)
-      info->inline_fuel = 2;
+    if (OPT_DISCOURAGE_EARLY_INLINE) {
+      inline_fuel = info->inline_fuel;
+      if (inline_fuel > 2)
+        info->inline_fuel = 2;
+    } else
+      inline_fuel = 0;
 
     value = scheme_optimize_expr(pre_body->value, rhs_info, 0);
     pre_body->value = value;
 
-    info->inline_fuel = inline_fuel;
-    
+    if (OPT_DISCOURAGE_EARLY_INLINE) {
+      info->inline_fuel = inline_fuel;
+    }
+
     body_info->transitive_use_pos = 0;
 
     if (is_rec && !not_simply_let_star) {
@@ -3373,10 +3380,13 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
 
             if (!(clv->flags[0] & SCHEME_WAS_SET_BANGED)) {
               /* Register re-optimized as the value for the binding, but
-                 only if it didn't grow too much: */
+                 maybe only if it didn't grow too much: */
               int new_sz;
-              new_sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 0, NULL);
-              if (new_sz < 2 * sz)
+              if (OPT_LIMIT_FUNCTION_RESIZE) {
+                new_sz = scheme_closure_body_size((Scheme_Closure_Data *)value, 0, NULL);
+              } else
+                new_sz = 0;
+              if (new_sz < 4 * sz)
                 scheme_optimize_propagate(body_info, clv->position, value, 0);
             }
 
