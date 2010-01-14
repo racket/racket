@@ -5,9 +5,10 @@
 	  scribble/manual 
           (for-label scheme
                      (prefix-in htdp: teachpack/htdp/world)
+                     (prefix-in htdp: htdp/image)
 		     (prefix-in 2htdp: teachpack/2htdp/universe)
-                     (only-in lang/htdp-beginner check-expect)
-		     2htdp/image))
+                     (prefix-in 2htdp: 2htdp/image)
+                     (only-in lang/htdp-beginner check-expect)))
 
 @; -----------------------------------------------------------------------------
 
@@ -31,14 +32,14 @@ In this document, we explain how to port programs that assume the old world
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-(require htdp/world)
+(require #,(schememodname htdp/world))
 ))
 @; ---------------------------------
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-(require 2htdp/universe)
-(require htdp/image)
+(require #,(schememodname 2htdp/universe))
+(require #,(schememodname htdp/image))
 ))
 ]
  The table shows the old style on the left and the new style on the
@@ -64,7 +65,7 @@ Here is the first program from the documentation for the world teachpack:
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-(require htdp/world)
+(require #,(schememodname htdp/world))
 
 ;; Number -> Scene 
 (define (create-UFO-scene height)
@@ -99,13 +100,13 @@ Let us now convert this program into the universe setting, step by
  step, staring with the @scheme[require] specification, which is converted
  as above: 
 @port[
-@schemeblock[(require htdp/world)]
+@schemeblock[(require #,(schememodname htdp/world))]
 @; ---------------------------------
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-(require 2htdp/universe)
-(require htdp/image)
+(require #,(schememodname 2htdp/universe))
+(require #,(schememodname htdp/image))
 ))
 ]
 
@@ -211,21 +212,19 @@ couple of hours to do it.
 @; -----------------------------------------------------------------------------
 @section{Porting Image Programs}
 
-robby's section 
-
 using the new image library in isolation: 
 
 @port[
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-(require htdp/image)
+(require #,(schememodname htdp/image))
 ))
 @; ---------------------------------
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-(require 2htdp/image)
+(require #,(schememodname 2htdp/image))
 ))
 ]
 
@@ -235,16 +234,28 @@ using the new image library with the universe teachpack
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-(require htdp/world)
+(require #,(schememodname htdp/world))
 ))
 @; ---------------------------------
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-(require 2htdp/universe)
-(require 2htdp/image)
-))
-]
+(require #,(schememodname 2htdp/universe))
+(require #,(schememodname 2htdp/image))
+))]
+  
 
+why switch(?): faster image comparison, added rotate, scale, and curves, plus a bunch of new polygon primitives
 
+@schemeblock[(htdp:rectangle 10 10 "outline" "black")
+             (2htdp:rectangle 10 10 "outline" "black")]
 
+changes:
+
+no pinholes (although they will reappear in a different form, eventually)
+
+overlay arguments reversed (added underlay)
+
+line drawing is slightly different (outlines are the same) (ellipses?)
+
+star function is different (bring back old star function?)

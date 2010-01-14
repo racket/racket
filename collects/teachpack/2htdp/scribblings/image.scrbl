@@ -838,4 +838,3 @@ The baseline of an image is the place where the bottoms any letters line up, not
 Two images are equal if they draw exactly the same way, at their current size
 (not neccessarily at all sizes).
 
-@include-section["porting-guide.scrbl"]

@@ -16,7 +16,15 @@
 	       `((cellspacing . "6")
 		 (height . "600")
 		 (width . "70%")))
-   (list (list (list (make-paragraph "This teachpack is deprecated. Use 2htdp/universe instead.")))))
+             (list (list (list (make-paragraph
+                                (list "This teachpack is deprecated. Use "
+                                      (schememodname 2htdp/universe)
+                                      " instead. See the"
+                                      " " (secref "htdp-port"
+                                                  #:tag-prefixes '("2htdp")
+                                                  ;#:doc '(lib "teachpack/teachpack.scrbl")
+                                                  )
+                                      " section for information on how to adapt old code to the new teachpack."))))))
 
 @emph{Note}: For a quick and educational introduction to the teachpack, see
 @link["http://www.ccs.neu.edu/home/matthias/HtDP/Prologue/book.html"]{How
