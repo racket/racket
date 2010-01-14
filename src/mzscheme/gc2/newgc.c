@@ -771,7 +771,7 @@ static void *allocate_medium(const size_t request_size_bytes, const int type)
     NewGC *gc = GC_get_GC();
     void *objptr;
 
-    /* gc_if_needed_account_alloc_size(gc, sz); */
+    gc_if_needed_account_alloc_size(gc, sz);
 
     objptr = medium_page_realloc_dead_slot(gc, sz, pos, type);
     if (!objptr) {
@@ -892,6 +892,7 @@ inline static void *allocate(const size_t request_size, const int type)
   newptr = GC_gen0_alloc_page_ptr + allocate_size;
   ASSERT_VALID_OBJPTR(newptr);
 
+  /* master always overflows and uses allocate_medium because master allocations can't move */
   while (OVERFLOWS_GEN0(newptr)) {
     NewGC *gc = GC_get_GC();
 #ifdef MZ_USE_PLACES
