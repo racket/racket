@@ -67,8 +67,9 @@
     [(Wrap p:module (e1 e2 rs ?1 locals tag rename check tag2 ?3 body shift))
      (R [#:hide-check rs]
         [! ?1]
+        [#:pattern ?form]
+        [LocalActions ?form locals]
         [#:pattern (?module ?name ?language . ?body-parts)]
-        [LocalActions ?body-parts locals]
         [#:when tag
                 [#:in-hole ?body-parts
                            [#:walk (list tag) 'tag-module-begin]]]
