@@ -5169,7 +5169,9 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
   }
 
 #ifdef MZ_USE_JIT
-  {
+  /* This information can be expensive to compute, no one uses it
+     currently, and it's approximate anyway. So skip it. */
+  if (0) {
     Scheme_Object *tr;
     tr = scheme_native_stack_trace();
     cont->native_trace = tr;
@@ -5648,7 +5650,12 @@ internal_call_cc (int argc, Scheme_Object *argv[])
   if (sub_cont && (sub_cont->ss.cont_mark_pos == MZ_CONT_MARK_POS)) {
     Scheme_Object *argv2[1];
 #ifdef MZ_USE_JIT
-    ret = scheme_native_stack_trace();
+    /* See note above on how the stack trace is expensive to compute
+       and not all that useful. */
+    if (0)
+      ret = scheme_native_stack_trace();
+    else
+      ret = NULL;
 #endif    
     /* Old cont is the same as this one, except that it may
        have different marks (not counting cont_key). */
