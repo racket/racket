@@ -336,10 +336,18 @@
              (k f v s ws)))]
 
     [(R** f v p s ws [#:new-local-context clause ...] . more)
-     ;; Note: pass no left-state to subclauses,
-     ;; then discard result state, restore s when return.
-     #'(RSbind (with-new-local-context v (R** f v p #f ws clause ...))
-               (lambda (f2 v2 s2 ws2) (R** f2 v2 p s ws2 . more)))]
+     ;; If vis = #t, then (clause ...) do not affect local config
+     ;; If vis = #f, then proceed normally
+     ;;   *except* must save & restore real term
+     #'(let* ([vis (visibility)]
+              [process-clauses (lambda () (R** #f (if vis #f v) _ #f ws clause ...))])
+         (RSbind (if vis
+                     (with-new-local-context v (process-clauses))
+                     (process-clauses))
+                 (lambda (f2 v2 s2 ws2)
+                   (let ([v2 (if vis v v2)]
+                         [s2 (if vis s s2)])
+                     (R** f v2 p s2 ws2 . more)))))]
 
     ;; Subterm handling
     [(R** f v p s ws [reducer hole fill] . more)

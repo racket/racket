@@ -360,16 +360,13 @@
      (R)]
     [(cons local rest)
      (R [#:pattern ?form]
-        [#:if (visibility)
-              ;; If macro with local-expand is transparent,
-              ;; then all local-expansions must be transparent.
-              ([#:parameterize ((macro-policy (lambda _ #t)))
-                 [#:new-local-context
-                  [LocalAction ?form local]]])
-              ([#:pass1]
-               ;; Use ?disconnected; do not modify real term
-               [LocalAction ?disconnected local]
-               [#:pass2])]
+        [#:parameterize ((macro-policy
+                          ;; If macro with local-expand is transparent,
+                          ;; then all local-expansions must be transparent.
+                          (if (visibility) (lambda _ #t) (macro-policy))))
+          [#:new-local-context
+           [#:pattern ?form]
+           [LocalAction ?form local]]]
         [LocalActions ?form rest])]))
 
 (define (LocalAction local)
