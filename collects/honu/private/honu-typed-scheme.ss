@@ -22,6 +22,9 @@
                                             "this is a literal and cannot be used outside a macro"))))
 
 (define-literal honu-return)
+(define-literal \;)
+
+;; (define-syntax (\; stx) (raise-syntax-error '\; "out of context" stx))
 
 (begin-for-syntax
 
@@ -335,6 +338,37 @@
     [else (call-values parse-one (extract-until body (list #'\;
                                                            )))]))
 
+(define (parse-block-one/2 stx context)
+  (define (parse-one stx context)
+    (define-syntax-class block
+                         [pattern (#%braces statement ...)
+                                  #:with result #'(honu-unparsed-begin statement ...)])
+    (define-syntax-class function
+                         [pattern (type:id name:id (#%parens args ...) body:block . rest)
+                                  #:with result #'(define (name args ...)
+                                                    body.result)])
+    (define-syntax-class expr
+                         [pattern f])
+    (define-splicing-syntax-class call
+                         [pattern (~seq e:expr (#%parens args ...))
+                                  #:with call #'(e args ...)])
+    (define-syntax-class expression
+                         #:literals (\;)
+                         [pattern (call:call \; . rest) #:with result #'call.call]
+                         [pattern (x:number \; . rest) #:with result #'x]
+                         )
+    ;; (printf "~a\n" (syntax-class-parse function stx))
+    (syntax-parse stx
+      [function:function (values #'function.result #'function.rest)]
+      [expr:expression (values #'expr.result #'expr.rest)]
+      [(x:number . rest) (values #'x #'rest)]
+      ))
+  (cond
+    [(stx-null? stx) (values stx '())]
+    [(get-transformer stx) => (lambda (transformer)
+                                (transformer stx context))]
+    [else (parse-one stx context)]))
+
 (define (parse-block stx ctx)
   (let loop ([stx stx])
     (parse-block-one ctx
@@ -500,10 +534,21 @@ if (foo){
        (datum->syntax #'a
                       (cons #'a #'(b ...))
                       #'a)]))
+  
+(define-syntax (honu-top stx)
+  (raise-syntax-error #f "interactive use is not yet supported"))
 
 (define-syntax (honu-unparsed-begin stx)
+  ;; (printf "honu unparsed begin: ~a\n" (syntax->datum stx))
   (syntax-case stx ()
-    [(_) #'(begin)]
+    [(_) #'(begin (void))]
+    [(_ . body) (let-values ([(code rest) (parse-block-one/2 #'body
+                                                             the-top-block-context)])
+                  ;; (printf "Rest is ~a\n" (syntax->datum rest))
+                  (with-syntax ([code code]
+                                [(rest ...) rest])
+                    #'(begin code (honu-unparsed-begin rest ...))))]
+    #;
     [(_ . body) (let-values ([(code rest) (parse-block-one the-top-block-context
                                                            #'body 
                                                            values

@@ -3,11 +3,14 @@
 (require "private/honu-typed-scheme.ss"
          "private/macro.ss")
 
-(provide (rename-out (#%dynamic-honu-module-begin #%module-begin))
+(provide (rename-out (#%dynamic-honu-module-begin #%module-begin)
+                     (honu-top #%top))
          #%datum
          true
          false
          display
+         newline
+         \;
          else
          (rename-out
            (honu-if if)
