@@ -9175,6 +9175,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	{
 	  Scheme_Object *p, *v;
 	  int pos, set_undef;
+          GC_CAN_IGNORE jit_insn *ref1, *ref2, *ref3
 	  START_JIT_DATA();
 	
 	  LOG_IT(("set!\n"));
@@ -9198,8 +9199,22 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  jit_ldxi_p(JIT_R2, JIT_R2, WORDS_TO_BYTES(pos));
 	  CHECK_LIMIT();
 	
-	  /* R0 has values, R2 has pos */
-	  JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+	  /* R0 has values, R2 has bucket */
+          __START_SHORT_JUMPS__(1);
+          jit_ldxi_p(JIT_R1, JIT_R2, &((Scheme_Bucket *)0x0)->val);
+          ref1 = jit_beqi_p(jit_forward(), JIT_R1, NULL);
+          jit_ldxi_s(JIT_R1, JIT_R2, &((Scheme_Bucket_With_Flags *)0x0)->flags);
+          ref2 = jit_bmsi_i(jit_forward(), JIT_R1, GLOB_IS_IMMUTATED);
+          
+          /* Fast path: */
+          jit_stxi_p(&((Scheme_Bucket *)0x0)->val, JIT_R2, JIT_R0);
+          ref3 = jit_jmpi(jit_forward());
+
+          /* slow path: */
+          mz_patch_branch(ref1);
+          mz_patch_branch(ref2);
+          __END_SHORT_JUMPS__(1);
+	  JIT_UPDATE_THREAD_RSPTR_FOR_BRANCH_IF_NEEDED();
 	  mz_prepare(3);
 	  (void)jit_movi_i(JIT_R1, set_undef);
 	  jit_pusharg_p(JIT_R1);
@@ -9208,6 +9223,11 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  CHECK_LIMIT();
 	  (void)mz_finish(ts_call_set_global_bucket);
 	  CHECK_LIMIT();
+          
+          __START_SHORT_JUMPS__(1);
+          mz_patch_ucbranch(ref3);
+          __END_SHORT_JUMPS__(1);
+
           if (for_branch) 
             finish_branch_with_true(jitter, for_branch);
           else
