@@ -787,6 +787,10 @@
                     (+ 1 (car l))
                     7))
               -Number]
+        (tc-e (or (string->number "7") 7) 
+              #:ret (ret -Number (-FS (list) (list (make-Bot)))))
+        [tc-e (let ([x 1]) (if x x (add1 x))) 
+              #:ret (ret -Pos (-FS (list) (list (make-Bot))))]
         )
   (test-suite
    "check-type tests"
