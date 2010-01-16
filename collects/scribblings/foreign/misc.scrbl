@@ -81,8 +81,8 @@ future.}
 @defproc[(cast [v any/c][from-type ctype?][to-type ctype?]) any/c]{
 
 Converts @scheme[v] from a value matching @scheme[from-type] to a
-value matching @scheme[to-type], where @scheme[(ctype-size from-type)]
-matches @scheme[(ctype-size to-type)].
+value matching @scheme[to-type], where @scheme[(ctype-sizeof from-type)]
+matches @scheme[(ctype-sizeof to-type)].
 
 The conversion is equivalent to
 
