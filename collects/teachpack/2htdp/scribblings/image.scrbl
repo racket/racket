@@ -22,38 +22,56 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
 
 @section{Basic Images}
 
-@defproc[(circle [radius (and/c real? (not/c negative?))]
-                 [mode mode?]
-                 [color image-color?])
-         image?]{
+@defproc*[([(circle [radius (and/c real? (not/c negative?))]
+                    [mode mode?]
+                    [color image-color?])
+            image?]
+           [(circle [radius (and/c real? (not/c negative?))]
+                    [mode 'outline]
+                    [color pen?])
+            image?])]{
   Constructs a circle with the given radius, height, mode, and color.
   
+   If the @scheme[mode] is @scheme['outline], then the @scheme[color]
+  can be a @scheme[pen?] struct or an @scheme[image-color?], but if the @scheme[mode]
+  is @scheme['solid], then the @scheme[color] must be an
+  @scheme[image-color?].
+
   @image-examples[(circle 30 "outline" "red")
                   (circle 20 "solid" "blue")]
-  
+
 }
 
 @defproc[(ellipse [width (and/c real? (not/c negative?))]
                   [height (and/c real? (not/c negative?))]
                   [mode mode?] 
-                  [color image-color?]) image?]{
+                  [color (or/c image-color? pen?)])
+         image?]{
   Constructs an ellipsis with the given width, height, mode, and color.
+
+  If the @scheme[mode] is @scheme['outline], then the @scheme[color]
+  can be a @scheme[pen?] struct or an @scheme[image-color?], but if the @scheme[mode]
+  is @scheme['solid], then the @scheme[color] must be an
+  @scheme[image-color?].
   
   @image-examples[(ellipse 40 20 "outline" "black")
-                  (ellipse 20 40 "solid" "blue")]
-  
+                  (ellipse 20 40 "solid" "blue")] 
 }
 
 @defproc[(triangle [side-length (and/c real? (not/c negative?))] 
                    [mode mode?]
-                   [color image-color?])
+                   [color (if (or (equal? mode 'outline)
+                                  (equal? mode "outline"))
+                              (or/c image-color? pen?)
+                              image-color?)])
          image?]{
-  Constructs a upward-pointing equilateral triangle. 
+   Constructs a upward-pointing equilateral triangle. 
   The @scheme[side-length] argument 
   determines the 
   length of the side of the triangle.
 
 @image-examples[(triangle 40 "solid" "tan")]
+
 }
 
 @defproc[(right-triangle [side-length1 (and/c real? (not/c negative?))]
@@ -171,7 +189,8 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                                  (make-posn -10 20)
                                  (make-posn 60 0)
                                  (make-posn -10 -20))
-                           "solid" "burlywood")
+                           "solid" 
+                           "burlywood")
                   (polygon (list (make-posn 0 0)
                                  (make-posn 0 40)
                                  (make-posn 20 40)
@@ -180,7 +199,27 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
                                  (make-posn 40 20)
                                  (make-posn 20 20)
                                  (make-posn 20 0))
-                           "solid" "plum")]
+                           "solid" 
+                           "plum")
+                  (underlay
+                   (rectangle 80 80 "solid" "mediumseagreen")
+                   (polygon
+                    (list (make-posn 0 0)
+                          (make-posn 50 0)
+                          (make-posn 0 50)
+                          (make-posn 50 50))
+                    "outline"
+                    (make-pen "darkslategray" 10 "solid" "round" "round")))
+                  
+                  (underlay
+                   (rectangle 90 80 "solid" "mediumseagreen")
+                   (polygon 
+                    (list (make-posn 0 0)
+                          (make-posn 50 0)
+                          (make-posn 0 50)
+                          (make-posn 50 50))
+                    "outline"
+                    (make-pen "darkslategray" 10 "solid" "projecting" "miter")))]
 }
 
 @defproc[(line [x1 real?] [y1 real?] [color image-color?]) image?]{
@@ -205,14 +244,12 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
   
   @image-examples[(add-line (ellipse 40 40 "outline" "maroon")
                             0 40 40 0 "maroon")
-                  (add-line (ellipse 80 60 "outline" "darkolivegreen")
-                            (+ 40 (* 40 (cos (* pi 1/4))))
-                            (+ 30 (* 30 (sin (* pi 1/4))))
-                            (+ 40 (* 40 (cos (* pi 5/4))))
-                            (+ 30 (* 30 (sin (* pi 5/4))))
-                            "darkolivegreen")
                   (add-line (rectangle 40 40 "solid" "gray")
-                            -10 50 50 -10 "maroon")]
+                            -10 50 50 -10 "maroon")
+                 (add-line
+                   (rectangle 100 100 "solid" "darkolivegreen")
+                   25 25 75 75 
+                   (make-pen "goldenrod" 30 "solid" "round" "round"))]
 }
 
 @defproc[(add-curve [image image?] 
@@ -237,28 +274,28 @@ Unlike @scheme[scene+curve], if the line passes outside of @scheme[image], the i
   gets larger to accomodate the curve.
 
 
-@image-examples[(add-curve (rectangle 100 100 "solid" "black")
-                           20 20 0 1/3
-                           80 80 0 1/3
-                           "white")
-                (add-curve (rectangle 100 100 "solid" "black")
-                           20 20 0 1 
-                           80 80 0 1
-                           "white")
-                (add-curve 
-                 (add-curve 
-                  (rectangle 40 100 "solid" "black")
-                  20 10 180 1/2
-                  20 90 180 1/2
-                  "white")
-                 20 10 0 1/2
-                 20 90 0 1/2
-                 "white")
-                        
-                (add-curve (rectangle 100 100 "solid" "black")
-                           -20 -20 0 1 
-                           120 120 0 1
-                           "red")]
+  @image-examples[(add-curve (rectangle 100 100 "solid" "black")
+                             20 20 0 1/3
+                             80 80 0 1/3
+                             "white")
+                  (add-curve (rectangle 100 100 "solid" "black")
+                             20 20 0 1 
+                             80 80 0 1
+                             "white")
+                  (add-curve 
+                   (add-curve 
+                    (rectangle 40 100 "solid" "black")
+                    20 10 180 1/2
+                    20 90 180 1/2
+                    (make-pen "white" 4 "solid" "round" "round"))
+                   20 10 0 1/2
+                   20 90 0 1/2
+                   (make-pen "white" 4 "solid" "round" "round"))
+                  
+                  (add-curve (rectangle 100 100 "solid" "black")
+                             -20 -20 0 1 
+                             120 120 0 1
+                             "red")]
 }
 
 @defproc[(text [string string?] [font-size (and/c integer? (<=/c 1 255))] [color image-color?])
@@ -585,14 +622,12 @@ and universes using @scheme[2htdp/universe].
   
   @image-examples[(scene+line (ellipse 40 40 "outline" "maroon")
                               0 40 40 0 "maroon")
-                  (scene+line (ellipse 80 60 "outline" "darkolivegreen")
-                              (+ 40 (* 40 (cos (* pi 1/4))))
-                              (+ 30 (* 30 (sin (* pi 1/4))))
-                              (+ 40 (* 40 (cos (* pi 5/4))))
-                              (+ 30 (* 30 (sin (* pi 5/4))))
-                              "darkolivegreen")
                   (scene+line (rectangle 40 40 "solid" "gray")
-                              -10 50 50 -10 "maroon")]
+                              -10 50 50 -10 "maroon")
+                  (scene+line
+                   (rectangle 100 100 "solid" "darkolivegreen")
+                   25 25 100 100 
+                   (make-pen "goldenrod" 30 "solid" "round" "round"))]
 }
 
 @defproc[(scene+curve [scene image?] 
@@ -831,6 +866,49 @@ The baseline of an image is the place where the bottoms any letters line up, not
 @defproc[(side-count? [x any/c]) boolean?]{
   Determines if @scheme[x] is an integer 
   greater than or equal to @scheme[3].
+}
+
+@defstruct[pen ([color image-color?]
+                [width (and/c real? (<=/c 0 255))]
+                [style pen-style?]
+                [cap pen-cap?]
+                [join pen-join?])]{
+  The @scheme[pen] struct specifies how the drawing library draws lines. 
+      
+      
+      A good default for @scheme[style] is @scheme["solid"], and
+      good default values for the @scheme[cap] and @scheme[join] fields
+      are @scheme["round"].
+      
+      Using @scheme[0] as a width is special; it means to always draw the 
+      smallest possible, but visible, pen. This means that the pen will always
+      be one pixel in size, no matter how the image is scaled.
+}
+
+@defproc[(pen-style? [x any/c]) boolean?]{
+  Determines if @scheme[x] is a valid pen style.
+  It can be one of
+  @scheme["solid"], @scheme['solid], 
+  @scheme["dot"], @scheme['dot], 
+  @scheme["long-dash"], @scheme['long-dash], 
+  @scheme["short-dash"], @scheme['short-dash], 
+  @scheme["dot-dash"], or @scheme['dot-dash].
+}
+
+@defproc[(pen-cap? [x any/c]) boolean?]{
+  Determines if @scheme[x] is a valid pen cap.
+  It can be one of
+  @scheme["round"], @scheme['round], 
+  @scheme["projecting"], @scheme['projecting], 
+  @scheme["butt"], or @scheme['butt].
+}
+
+@defproc[(pen-join? [x any/c]) boolean?]{
+  Determines if @scheme[x] is a valid pen join.
+  It can be one of
+  @scheme["round"], @scheme['round], 
+  @scheme["bevel"], @scheme['bevel], 
+  @scheme["miter"], or @scheme['miter].
 }
 
 @section{Equality Testing of Images}

@@ -103,19 +103,10 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          image-color?
          (rename-out [build-color make-color])
          color-red color-blue color-green color? color
+         
+         (rename-out [build-pen make-pen])
+         pen-color pen-width pen-style pen-cap pen-join
+
          image-width
          image-height
          image-baseline)
-
-(define build-color
-  (let ([orig-make-color make-color])
-    (let ([make-color 
-           (λ (a b c)
-             (check-arg 'make-color (and (integer? a) (<= 0 a 255)) 
-                        'integer\ between\ 0\ and\ 255 1 a)
-             (check-arg 'make-color (and (integer? b) (<= 0 b 255)) 
-                        'integer\ between\ 0\ and\ 255 2 b)
-             (check-arg 'make-color (and (integer? c) (<= 0 c 255)) 
-                        'integer\ between\ 0\ and\ 255 3 c)
-             (make-color a b c))])
-      make-color)))

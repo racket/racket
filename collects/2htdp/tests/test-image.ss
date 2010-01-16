@@ -2,10 +2,8 @@
 #|
 ;; snippet of code for experimentation
 #lang scheme/gui
-(require 2htdp/private/image-more
-         mrlib/image-core
-         mrlib/private/image-core-bitmap
-         2htdp/private/img-err
+(require 2htdp/image
+         lang/posn
          (only-in lang/htdp-advanced equal~?))
 
 (define images
@@ -19,8 +17,25 @@
 (send f show #t)
 |#
 
-(require "../../mrlib/image-core.ss"
-         "../private/image-more.ss"
+(require "../image.ss"
+         (only-in "../../mrlib/image-core.ss" 
+                  image%
+                  make-image
+                  image-shape
+                  image-bb
+                  image-normalized?
+                  skip-image-equality-fast-path
+                  make-overlay
+                  make-translate
+                  make-bb
+                  normalize-shape
+                  make-ellipse
+                  make-polygon
+                  make-point
+                  make-crop )
+         (only-in "../private/image-more.ss" 
+                  bring-between
+                  swizzle)
          "../private/img-err.ss"
          "../../mrlib/private/image-core-bitmap.ss"
          lang/posn
@@ -40,6 +55,18 @@
            #,(quasisyntax/loc stx (check-equal? a b))
            (parameterize ([skip-image-equality-fast-path #t])
              #,(quasisyntax/loc stx (check-equal? a b)))))]))
+
+(define-syntax (test/exn stx)
+  (syntax-case stx ()
+    [(test/exn a => b)
+     (with-syntax ([check-equal? (datum->syntax #'here 'check-equal? stx)])
+       #`(let ([reg b])
+           (unless (regexp? reg)
+             (error 'test/exn "expected a regular expression, got ~e" reg))
+           ;(printf "running line ~a\n" #,(syntax-line stx))
+           #,(quasisyntax/loc stx (check-regexp-match 
+                                   reg
+                                   (with-handlers ((exn:fail? exn-message)) a "NO EXN!")))))]))
 
 ;; test case: (beside (text "a"...) (text "b" ...)) vs (text "ab")
 
@@ -195,6 +222,34 @@
       =>
       (rectangle 10 10 "solid" "plum"))
 
+(test (polygon (list (make-posn 0 0)
+                     (make-posn 0 10)
+                     (make-posn 10 10)
+                     (make-posn 10 0))
+               "solid" "plum")
+      =>
+      (polygon (list (make-posn 0 0)
+                     (make-posn 0 10)
+                     (make-posn 10 10)
+                     (make-posn 10 0)
+                     (make-posn 0 0))
+               "solid" "plum"))
+
+(test (polygon (list (make-posn 0 0)
+                     (make-posn 0 10)
+                     (make-posn 10 10)
+                     (make-posn 10 0))
+               "outline"
+               (make-pen "plum" 8 "solid" "round" "round"))
+      =>
+      (polygon (list (make-posn 0 0)
+                     (make-posn 0 10)
+                     (make-posn 10 10)
+                     (make-posn 10 0)
+                     (make-posn 0 0))
+               "outline"
+               (make-pen "plum" 8 "solid" "round" "round")))
+
 ;; make sure equality isn't equating everything
 (test (equal? (rectangle 10 10 'solid 'blue)
               (rectangle 10 10 'solid 'red))
@@ -232,47 +287,6 @@
                .1)
       =>
       #t)
-
-
-(let ([size 10])
-  (test (add-line
-         (add-line
-          (add-line
-           (add-line
-            (rectangle size size 'solid 'white)
-            0 0 0 size 'black)
-           0 size size size 'black)
-          size size size 0 'black)
-         size 0 0 0 'black)
-        =>
-        (overlay (rectangle size size 'outline 'black)
-                 (rectangle size size 'solid 'white)))
-  
-  (test (add-line
-         (add-line
-          (add-line
-           (add-line
-            (rectangle size size 'solid 'white)
-            0 0 size 0 'black)
-           size 0 size size 'black)
-          size size 0 size 'black)
-         0 size 0 0 'black)
-        =>
-        (overlay (rectangle size size 'outline 'black)
-                 (rectangle size size 'solid 'white)))
-  
-  (test (add-line
-         (add-line
-          (add-line
-           (add-line
-            (rectangle size size 'solid 'white)
-            0 0 size 0 'black)
-           0 0 0 size 'black)
-          0 size size size 'black)
-         size 0 size size 'black)
-        =>
-        (overlay (rectangle size size 'outline 'black)
-                 (rectangle size size 'solid 'white))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1304,3 +1318,143 @@
       (underlay/xy (rectangle 40 40 'solid 'orange)
                    2 7
                    (circle 4 'solid 'black)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; pen arguments
+;;
+
+;; just make sure no errors.
+(test (image? (polygon (list (make-posn 0 0)
+                             (make-posn 100 100)
+                             (make-posn 100 0)
+                             (make-posn 0 100))
+                       "outline"
+                       (make-pen "darkslategray" 6 "solid" "round" "round")))
+      =>
+      #t)
+
+(test (image? (line 10 
+                    10 
+                    (make-pen "darkslategray" 6 "solid" "round" "round")))
+      =>
+      #t)
+
+(test (scale 2
+             (polygon (list (make-posn 0 0)
+                            (make-posn 100 0)
+                            (make-posn 100 100))
+                      "outline"
+                      (make-pen "black" 6 "solid" "round" "round")))
+      =>
+      (polygon (list (make-posn 0 0)
+                     (make-posn 200 0)
+                     (make-posn 200 200))
+               "outline"
+               (make-pen "black" 12 "solid" "round" "round")))
+
+(test (scale 2
+             (ellipse 30 40 "outline"
+                      (make-pen "black" 2 "solid" "round" "round")))
+      =>
+      (ellipse 60 80 "outline"
+               (make-pen "black" 4 "solid" "round" "round")))
+
+(test (scale 2
+             (polygon (list (make-posn 0 0)
+                            (make-posn 100 0)
+                            (make-posn 100 100))
+                      "outline"
+                      (make-pen "black" 0 "solid" "round" "round")))
+      =>
+      (polygon (list (make-posn 0 0)
+                     (make-posn 200 0)
+                     (make-posn 200 200))
+               "outline"
+               (make-pen "black" 0 "solid" "round" "round")))
+
+(test (scale 2
+             (add-line
+              (rectangle 100 100 'solid 'black)
+              20 20 80 80
+              (make-pen "black" 6 "solid" "round" "round")))
+      =>
+      (add-line
+       (rectangle 200 200 'solid 'black)
+       40 40 160 160
+       (make-pen "black" 12 "solid" "round" "round")))
+
+(test (scale 2
+             (add-curve
+              (rectangle 100 100 'solid 'black)
+              20 20 0 1/2
+              80 80 0 1/2
+              (make-pen "black" 6 "solid" "round" "round")))
+      =>
+      (add-curve
+       (rectangle 200 200 'solid 'black)
+       40 40 0 1/2
+       160 160 0 1/2
+       (make-pen "black" 12 "solid" "round" "round")))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  test that the extra mode check is there
+;;
+
+(test/exn (rectangle 10 10 "solid" (make-pen "black" 12 "solid" "round" "round"))
+          =>
+          #rx"^rectangle: expected <image-color>")
+
+(test/exn (rectangle 10 10 'solid (make-pen "black" 12 "solid" "round" "round"))
+          =>
+          #rx"^rectangle: expected <image-color>")
+
+(test/exn (circle 10 'solid (make-pen "black" 12 "solid" "round" "round"))
+          =>
+          #rx"^circle: expected <image-color>")
+
+(test/exn (ellipse 10 10 'solid (make-pen "black" 12 "solid" "round" "round"))
+          =>
+          #rx"^ellipse: expected <image-color>")
+
+(test/exn (triangle 10 'solid (make-pen "black" 12 "solid" "round" "round"))
+          =>
+          #rx"^triangle: expected <image-color>")
+
+(test/exn (right-triangle 10 12 'solid (make-pen "black" 12 "solid" "round" "round"))
+          =>
+          #rx"^right-triangle: expected <image-color>")
+
+(test/exn (isosceles-triangle 10 120 'solid (make-pen "black" 12 "solid" "round" "round"))
+          =>
+          #rx"^isosceles-triangle: expected <image-color>")
+
+(test/exn (square 10 'solid (make-pen "black" 12 "solid" "round" "round"))
+          =>
+          #rx"^square: expected <image-color>")
+
+(test/exn (rhombus 40 45 'solid (make-pen "black" 12 "solid" "round" "round"))
+          =>
+          #rx"^rhombus: expected <image-color>")
+
+(test/exn (regular-polygon 40 6 'solid (make-pen "black" 12 "solid" "round" "round"))
+          =>
+          #rx"^regular-polygon: expected <image-color>")
+
+(test/exn (star 40 'solid (make-pen "black" 12 "solid" "round" "round"))
+          =>
+          #rx"^star: expected <image-color>")
+
+(test/exn (star-polygon 40 7 3 'solid (make-pen "black" 12 "solid" "round" "round"))
+          =>
+          #rx"^star-polygon: expected <image-color>")
+
+(test/exn (polygon (list (make-posn 0 0) (make-posn 100 0) (make-posn 100 100))
+                   'solid (make-pen "black" 12 "solid" "round" "round"))
+          =>
+          #rx"^polygon: expected <image-color>")
+
+

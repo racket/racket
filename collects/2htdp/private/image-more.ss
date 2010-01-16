@@ -59,12 +59,12 @@
 (define (save-image pre-image filename)
   (let* ([image (to-img pre-image)]
          [bm (make-object bitmap% 
-               (inexact->exact (ceiling (+ 1 (get-right image)))) 
-               (inexact->exact (ceiling (+ 1 (get-bottom image)))))]
+               (inexact->exact (ceiling (+ 2 (get-right image)))) 
+               (inexact->exact (ceiling (+ 2 (get-bottom image)))))]
          [bdc (make-object bitmap-dc% bm)])
     (send bdc set-smoothing 'aligned)
     (send bdc clear)
-    (render-image image bdc 0 0)
+    (render-image image bdc 1 1)
     (send bdc set-bitmap #f)
     (send bm save-file filename 'png)))
 
@@ -632,34 +632,23 @@
       [else
        (loop (- x upper-bound))])))
 
-;; stamp : I I -> I
-;; treats the first I as if it were a mask and uses that mask to
-;; mask out parts of the first I (the mask is solid; no alpha stuff
-;; here, even if dim were used).
-;; only accepts solid black Is
-
-;; see-thru : I number -> I
-;; applies an alpha value to the I, making it translucent
-
-
-;; -- as in the current I library, but they don't actually create
-;; bitmaps, but instead just records that are rendered right as they are
-;; about to be drawn
-
-;;       rectangle
 
 (define/chk (polygon posns mode color)
+  (check-mode/color-combination 'polygon 3 mode color)
   (make-a-polygon (map (λ (p) (make-point (posn-x p) (posn-y p))) posns)
                   mode
                   color))
 
 (define/chk (rectangle width height mode color)
+  (check-mode/color-combination 'rectangle 4 mode color)
   (make-a-polygon (rectangle-points width height) mode color))
 
 (define/chk (square side-length mode color)
+  (check-mode/color-combination 'square 3 mode color)
   (make-a-polygon (rectangle-points side-length side-length) mode color))
 
 (define/chk (rhombus side-length angle mode color)
+  (check-mode/color-combination 'rhombus 3 mode color)
   (let* ([left-corner (make-polar side-length (+ (* pi 1/2) (/ (degrees->radians angle) 2)))]
          [right-corner (make-polar side-length (- (* pi 1/2) (/ (degrees->radians angle) 2)))]
          [bottom-corner (+ left-corner right-corner)])
@@ -763,6 +752,7 @@
                   #f))))
 
 (define/chk (isosceles-triangle side-length angle mode color)
+  (check-mode/color-combination 'isosceles-triangle 4 mode color)
   (let ([left-corner (make-polar side-length (+ (* pi 1/2) (/ (degrees->radians angle) 2)))]
         [right-corner (make-polar side-length (- (* pi 1/2) (/ (degrees->radians angle) 2)))])
     (make-a-polygon (list (make-point 0 0)
@@ -772,6 +762,7 @@
                     color)))
 
 (define/chk (right-triangle side-length1 side-length2 mode color)
+  (check-mode/color-combination 'right-triangle 4 mode color)
   (make-a-polygon (list (make-point 0 (- side-length2))
                         (make-point 0 0)
                         (make-point side-length1 0))
@@ -779,12 +770,15 @@
                   color))
 
 (define/chk (triangle side-length mode color)
+  (check-mode/color-combination 'triangle 3 mode color)
   (make-polygon/star side-length 3 mode color values))
 
 (define/chk (regular-polygon side-length side-count mode color)
+  (check-mode/color-combination 'regular-polygon 4 mode color)
   (make-polygon/star side-length side-count mode color values))
 
 (define/chk (star-polygon side-length side-count step-count mode color)
+  (check-mode/color-combination 'star-polygon 5 mode color)
   (check-arg 'star-polygon
              (step-count . < . side-count)
              (format "number that is smaller than the side-count (~a)" side-count)
@@ -798,6 +792,7 @@
   (make-polygon/star side-length side-count mode color (λ (l) (swizzle l step-count))))
 
 (define/chk (star side-length mode color)
+  (check-mode/color-combination 'star 3 mode color)
   (make-polygon/star side-length 5 mode color (λ (l) (swizzle l 2))))
 
 (define (make-polygon/star side-length side-count mode color adjust)
@@ -844,6 +839,7 @@
                         (+ i 1)))])))
 
 (define/chk (ellipse width height mode color)
+  (check-mode/color-combination 'ellipse 4 mode color)
   (make-image (make-translate (/ width 2) (/ height 2)
                               (make-ellipse width height 
                                             0
@@ -853,6 +849,7 @@
               #f))
 
 (define/chk (circle radius mode color)
+  (check-mode/color-combination 'circle 3 mode color)
   (let ([w/h (* 2 radius)])
     (make-image (make-translate radius radius (make-ellipse w/h w/h 0 mode color))
                 (make-bb w/h w/h w/h)
@@ -903,6 +900,19 @@
                  (or (current-load-relative-directory)
                      (current-directory)))])])
        #`(make-object image-snip% (make-object bitmap% #,path 'unknown/mask)))]))
+
+
+(define build-color
+  (let ([orig-make-color make-color])
+    (define/chk (make-color int0-255-1 int0-255-2 int0-255-3) 
+      (orig-make-color int0-255-1 int0-255-2 int0-255-3))
+    make-color))
+
+(define build-pen
+  (let ([orig-make-pen make-pen])
+    (define/chk (make-pen color real-0-255 pen-style pen-cap pen-join)
+      (orig-make-pen color real-0-255 pen-style pen-cap pen-join))
+    make-pen))
 
 (provide overlay
          overlay/align
@@ -962,7 +972,10 @@
          
          swizzle
          
-         rotate-xy)
+         rotate-xy
+         
+         build-color
+         build-pen)
 
 (provide/contract
  [np-atomic-bb (-> np-atomic-shape? (values real? real? real? real?))]

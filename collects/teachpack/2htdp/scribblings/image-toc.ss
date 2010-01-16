@@ -142,19 +142,19 @@
     'image
     "353ed4578.png")
    (list
+    '(scene+line
+      (rectangle 100 100 "solid" "darkolivegreen")
+      25
+      25
+      100
+      100
+      (make-pen "goldenrod" 30 "solid" "round" "round"))
+    'image
+    "d629961aee.png")
+   (list
     '(scene+line (rectangle 40 40 "solid" "gray") -10 50 50 -10 "maroon")
     'image
     "1f5944ec1ed.png")
-   (list
-    '(scene+line
-      (ellipse 80 60 "outline" "darkolivegreen")
-      (+ 40 (* 40 (cos (* pi 1/4))))
-      (+ 30 (* 30 (sin (* pi 1/4))))
-      (+ 40 (* 40 (cos (* pi 5/4))))
-      (+ 30 (* 30 (sin (* pi 5/4))))
-      "darkolivegreen")
-    'image
-    "2353974cf1b.png")
    (list
     '(scene+line (ellipse 40 40 "outline" "maroon") 0 40 40 0 "maroon")
     'image
@@ -491,7 +491,7 @@
        90
        180
        1/2
-       "white")
+       (make-pen "white" 4 "solid" "round" "round"))
       20
       10
       0
@@ -500,9 +500,9 @@
       90
       0
       1/2
-      "white")
+      (make-pen "white" 4 "solid" "round" "round"))
     'image
-    "2751bdfe579.png")
+    "21b080bdda8.png")
    (list
     '(add-curve
       (rectangle 100 100 "solid" "black")
@@ -532,19 +532,19 @@
     'image
     "2a1f3988f.png")
    (list
+    '(add-line
+      (rectangle 100 100 "solid" "darkolivegreen")
+      25
+      25
+      75
+      75
+      (make-pen "goldenrod" 30 "solid" "round" "round"))
+    'image
+    "7bbcc7cbaa.png")
+   (list
     '(add-line (rectangle 40 40 "solid" "gray") -10 50 50 -10 "maroon")
     'image
     "12b0447b10c.png")
-   (list
-    '(add-line
-      (ellipse 80 60 "outline" "darkolivegreen")
-      (+ 40 (* 40 (cos (* pi 1/4))))
-      (+ 30 (* 30 (sin (* pi 1/4))))
-      (+ 40 (* 40 (cos (* pi 5/4))))
-      (+ 30 (* 30 (sin (* pi 5/4))))
-      "darkolivegreen")
-    'image
-    "17ca1cb72eb.png")
    (list
     '(add-line (ellipse 40 40 "outline" "maroon") 0 40 40 0 "maroon")
     'image
@@ -552,6 +552,32 @@
    (list '(line 30 -20 "red") 'image "12948ac080d.png")
    (list '(line -30 20 "red") 'image "69aaaa680d.png")
    (list '(line 30 30 "black") 'image "8e1ebaaf82.png")
+   (list
+    '(underlay
+      (rectangle 90 80 "solid" "mediumseagreen")
+      (polygon
+       (list
+        (make-posn 0 0)
+        (make-posn 50 0)
+        (make-posn 0 50)
+        (make-posn 50 50))
+       "outline"
+       (make-pen "darkslategray" 10 "solid" "projecting" "miter")))
+    'image
+    "29b31e5fe3a.png")
+   (list
+    '(underlay
+      (rectangle 80 80 "solid" "mediumseagreen")
+      (polygon
+       (list
+        (make-posn 0 0)
+        (make-posn 50 0)
+        (make-posn 0 50)
+        (make-posn 50 50))
+       "outline"
+       (make-pen "darkslategray" 10 "solid" "round" "round")))
+    'image
+    "1aaa434b462.png")
    (list
     '(polygon
       (list

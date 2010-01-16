@@ -9,7 +9,8 @@
          side-count?
          image-color?
          image-snip->image
-         bitmap->image)
+         bitmap->image
+         check-mode/color-combination)
 
 (require htdp/error
          scheme/class
@@ -147,20 +148,25 @@
          (+ arg 360)
          arg)]
     [(color)
-     (check-arg fn-name (image-color? arg) 'color i arg)
-     ;; return either a string or a color object;
-     ;; since there may be saved files that have 
-     ;; strings in the color positions we leave them
-     ;; here too.
-     (if (color? arg)
-         arg
-         (let* ([color-str
-                 (if (symbol? arg)
-                     (symbol->string arg)
-                     arg)])
-           (if (send the-color-database find-color color-str)
-               color-str
-               "black")))]
+     (check-arg fn-name (or (image-color? arg) (pen? arg)) 'image-color-or-pen i arg)
+     ;; return either a string, color, or a pen,
+     ;; (technically, the string case is redundant,
+     ;;  but since there may be saved files that have 
+     ;;  strings in the color positions we leave them
+     ;;  here too; note that using a pen struct means
+     ;;  'smoothed mode, but a color (or string) means
+     ;;  'aligned mode, so that's not redundant).
+     (cond
+       [(color? arg) arg]
+       [(pen? arg) arg]
+       [else
+        (let* ([color-str
+                (if (symbol? arg)
+                    (symbol->string arg)
+                    arg)])
+          (if (send the-color-database find-color color-str)
+              color-str
+              "black"))])]
     [(string)
      (check-arg fn-name (string? arg) 'string i arg)
      arg]
@@ -192,6 +198,30 @@
                 'list-of-at-least-three-posns
                 i arg)
      arg]
+    [(int0-255-1 int0-255-2 int0-255-3)
+     (check-arg fn-name (and (integer? arg) (<= 0 arg 255)) 
+                'integer\ between\ 0\ and\ 255 i arg)
+     arg]
+    [(real-0-255)
+     (check-arg fn-name (and (integer? arg) (<= 0 arg 255)) 
+                'real\ number\ between\ 0\ and\ 255 i arg)
+     arg]
+    
+    [(pen-style)
+     (check-arg fn-name (pen-style? arg) 'pen-style i arg)
+     (if (string? arg)
+         (string->symbol arg)
+         arg)]
+    [(pen-cap)
+     (check-arg fn-name (pen-cap? arg) 'pen-cap i arg)
+     (if (string? arg)
+         (string->symbol arg)
+         arg)]
+    [(pen-join)
+     (check-arg fn-name (pen-join? arg) 'pen-join i arg)
+     (if (string? arg)
+         (string->symbol arg)
+         arg)]
     [else
      (error 'check "the function ~a has an argument with an unknown name: ~s"
             fn-name
@@ -213,6 +243,15 @@
   (and (integer? i)
        (1 . <= .  i)))
 (define (image-color? c) (or (symbol? c) (string? c) (color? c)))
+(define (pen-style? arg) 
+  (member (if (string? arg) (string->symbol arg) arg)
+          '(solid dot long-dash short-dash dot-dash)))
+(define (pen-cap? arg)
+  (member (if (string? arg) (string->symbol arg) arg)
+          '(round projecting butt)))
+(define (pen-join? arg)
+  (member (if (string? arg) (string->symbol arg) arg)
+          '(round bevel miter)))
 
 (define (to-img arg)
   (cond
@@ -233,3 +272,12 @@
                                 (make-bitmap bm mask-bm 0 1 1 #f #f))
                 (make-bb w h h)
                 #f)))
+
+
+;; checks the dependent part of the 'color' specification
+(define (check-mode/color-combination fn-name i mode color)
+  (cond
+    [(eq? mode 'solid)
+     (check-arg fn-name (image-color? color) 'image-color i color)]
+    [(eq? mode 'outline)
+     (void)]))
