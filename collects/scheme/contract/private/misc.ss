@@ -740,7 +740,7 @@
                             'type-name
                             val))
                          (fill-name p-app val))))
-                   predicate?)))))))]))
+                   #:first-order predicate?)))))))]))
 
 (define listof
   (*-immutableof list? map andmap list listof))
@@ -902,8 +902,7 @@
                                          "expected immutable <~a>, given: ~e"
                                          "expected <~a>, given: ~e")
                                    'type-name
-                                   v)))))
-                        #f))))))))]
+                                   v)))))))))))))]
     [(_ predicate? constructor (arb? selector) correct-size type-name name)
      (eq? #t (syntax->datum (syntax arb?)))
      (syntax
@@ -936,8 +935,7 @@
                           v
                           "expected <~a>, given: ~e"
                           'type-name
-                          v)))))
-               #f))))))]))
+                          v)))))))))))]))
 
 (define cons/c (*-immutable/c pair? cons (#f car cdr) cons cons/c #f))
 (define box-immutable/c (*-immutable/c box? box-immutable (#f unbox) immutable-box box-immutable/c))
@@ -1012,6 +1010,7 @@
            [ctc-proc (contract-projection ctc)])
       (simple-contract
        #:name (build-compound-type-name 'promise/c ctc)
+       #:projection
        (λ (blame)
          (let ([p-app (ctc-proc blame)])
            (λ (val)
@@ -1022,7 +1021,7 @@
                 "expected <promise>, given: ~e"
                 val))
              (delay (p-app (force val))))))
-       promise?))))
+       #:first-order promise?))))
 
 #|
    as with copy-struct in struct.ss, this first begin0

@@ -331,9 +331,9 @@
                     ...
                     [field-ctc-var (coerce-contract 'object-contract field-ctc-stx)]
                     ...)
-                (let ([method-var (contract-proc method-ctc-var)] 
+                (let ([method-var (contract-projection method-ctc-var)] 
                       ...
-                      [field-var (contract-proc field-ctc-var)]
+                      [field-var (contract-projection field-ctc-var)]
                       ...)
                   (let ([cls (make-wrapper-class 'wrapper-class 
                                                  '(method-name ...)

@@ -109,14 +109,18 @@
                             (syntax-line stx)
                             (syntax-column stx)
                             (syntax-position stx))
-                    (values (source->name 
-                             (resolved-module-path-name 
-                              (module-path-index-resolve 
-                               (syntax-source-module 
-                                (srcloc-source stx)))))
-                            (srcloc-line stx)
-                            (srcloc-column stx)
-                            (srcloc-position stx)))])
+                    (if (syntax? (srcloc-source stx))
+                      (values (source->name 
+                               (resolved-module-path-name 
+                                (module-path-index-resolve 
+                                 (syntax-source-module
+                                  (srcloc-source stx)))))
+                              (srcloc-line stx)
+                              (srcloc-column stx)
+                              (srcloc-position stx))
+                      (error 'contract
+                             "malformed srcloc has non-syntax source: ~e"
+                             stx)))])
     (let ([location (cond [(and line col) (format "~a:~a" line col)]
                           [pos (format "~a" pos)]
                           [else #f])])

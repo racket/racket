@@ -57,13 +57,15 @@ improve method arity mismatch contract violation error messages?
    [(syntax? info) (build-source-location info)]
    [(list? info)
     (let ([loc (list-ref info 0)])
-      (struct-copy
-       srcloc loc
-       [source
-        (resolved-module-path-name
-         (module-path-index-resolve
-          (syntax-source-module
-           (srcloc-source loc))))]))]
+      (if (syntax? (srcloc-source loc))
+        (struct-copy
+         srcloc loc
+         [source
+          (resolved-module-path-name
+           (module-path-index-resolve
+            (syntax-source-module
+             (srcloc-source loc))))])
+        loc))]
    [else
     (error 'contract
            "expected a syntax object or list of two elements, got: ~e"

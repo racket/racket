@@ -365,7 +365,7 @@
                              [(val blame name-id) outer-args])
                  (syntax
                   (let ([dom-contract-x (coerce-contract '-> dom)] ...)
-                    (let ([dom-x (contract-proc dom-contract-x)] ...)
+                    (let ([dom-x (contract-projection dom-contract-x)] ...)
                       (let ([name-id (build-compound-type-name '-> name-dom-contract-x ... 'any)])
                         body))))))
              
