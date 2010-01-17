@@ -23,9 +23,9 @@ improve method arity mismatch contract violation error messages?
 
 (define-syntax (contract stx)
   (syntax-case stx ()
-    [(_ c v pos neg loc name)
+    [(_ c v pos neg name loc)
      (syntax/loc stx
-       (apply-contract c v pos neg loc name))]
+       (apply-contract c v pos neg name loc))]
     [(_ a-contract to-check pos-blame-e neg-blame-e)
      #|
      (quasisyntax/loc stx
@@ -50,20 +50,22 @@ improve method arity mismatch contract violation error messages?
      |#
      (raise-syntax-error 'contract "upgrade to new calling convention" stx)]))
 
-(define (apply-contract c v pos neg loc name)
+(define (apply-contract c v pos neg name loc)
   (let* ([c (coerce-contract 'contract c)])
     (check-sexp! 'contract "positive blame" pos)
     (check-sexp! 'contract "negative blame" neg)
-    (check-srcloc! 'contract "source location" loc)
     (check-sexp! 'contract "value name" name)
+    (check-syntax/srcloc! 'contract "source location" loc)
     (((contract-projection c)
       (make-blame loc name (contract-name c) pos neg #f))
      v)))
 
-(define (check-srcloc! f-name v-name v)
-  (unless (srcloc? v)
-    (error f-name "expected ~a to be a srcloc; got: ~e" v-name v))
-  (check-sexp! f-name (format "srcloc-source of ~a") (srcloc-source v)))
+(define (check-syntax/srcloc! f-name v-name v)
+  (unless (or (syntax? v) (srcloc? v))
+    (error f-name "expected ~a to be syntax or srcloc; got: ~e" v-name v))
+  (check-sexp! f-name
+               (format "source file of ~a")
+               (source-location-source v)))
 
 (define (check-sexp! f-name v-name v)
   (let loop ([seen #hasheq()] [x v])
