@@ -59,12 +59,12 @@
 (define (save-image pre-image filename)
   (let* ([image (to-img pre-image)]
          [bm (make-object bitmap% 
-               (inexact->exact (ceiling (+ 2 (get-right image)))) 
-               (inexact->exact (ceiling (+ 2 (get-bottom image)))))]
+               (inexact->exact (ceiling (+ 1 (get-right image)))) 
+               (inexact->exact (ceiling (+ 1 (get-bottom image)))))]
          [bdc (make-object bitmap-dc% bm)])
     (send bdc set-smoothing 'aligned)
     (send bdc clear)
-    (render-image image bdc 1 1)
+    (render-image image bdc 0 0)
     (send bdc set-bitmap #f)
     (send bm save-file filename 'png)))
 

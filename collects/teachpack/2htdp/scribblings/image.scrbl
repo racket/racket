@@ -8,9 +8,17 @@
           lang/posn
           "shared.ss"
           "image-util.ss"
+          scribble/decode
           scribble/manual)
 
 @teachpack["image"]{Images}
+
+@(define mode/color-text
+   (make-splice
+    @list{If the @scheme[mode] is @scheme['outline] or @scheme["outline"], then the last
+     argument can be a @scheme[pen] struct or an @scheme[image-color?], but if the @scheme[mode]
+     is @scheme['solid] or @scheme["solid"], then the last argument must be an
+     @scheme[image-color?].}))
 
 @defmodule[#:require-form beginner-require 2htdp/image]
 
@@ -27,70 +35,85 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
                     [color image-color?])
             image?]
            [(circle [radius (and/c real? (not/c negative?))]
-                    [mode 'outline]
-                    [color pen?])
+                    [outline-mode (or/c 'outline "outline")]
+                    [pen-or-color (or/c pen? image-color?)])
             image?])]{
   Constructs a circle with the given radius, height, mode, and color.
   
-   If the @scheme[mode] is @scheme['outline], then the @scheme[color]
-  can be a @scheme[pen?] struct or an @scheme[image-color?], but if the @scheme[mode]
-  is @scheme['solid], then the @scheme[color] must be an
-  @scheme[image-color?].
-
-  @image-examples[(circle 30 "outline" "red")
-                  (circle 20 "solid" "blue")]
+  @mode/color-text
+  
+   @image-examples[(circle 30 "outline" "red")
+                   (circle 20 "solid" "blue")]
 
 }
 
-@defproc[(ellipse [width (and/c real? (not/c negative?))]
-                  [height (and/c real? (not/c negative?))]
-                  [mode mode?] 
-                  [color (or/c image-color? pen?)])
-         image?]{
+@defproc*[([(ellipse [width (and/c real? (not/c negative?))]
+                     [height (and/c real? (not/c negative?))]
+                     [mode mode?] 
+                     [color image-color?])
+            image?]
+           [(ellipse [width (and/c real? (not/c negative?))]
+                     [height (and/c real? (not/c negative?))]
+                     [mode (or/c 'outline "outline")] 
+                     [pen-or-color (or/c image-color? pen?)])
+            image?])]{
   Constructs an ellipsis with the given width, height, mode, and color.
 
-  If the @scheme[mode] is @scheme['outline], then the @scheme[color]
-  can be a @scheme[pen?] struct or an @scheme[image-color?], but if the @scheme[mode]
-  is @scheme['solid], then the @scheme[color] must be an
-  @scheme[image-color?].
+  @mode/color-text
   
   @image-examples[(ellipse 40 20 "outline" "black")
                   (ellipse 20 40 "solid" "blue")] 
 }
 
-@defproc[(triangle [side-length (and/c real? (not/c negative?))] 
-                   [mode mode?]
-                   [color (if (or (equal? mode 'outline)
-                                  (equal? mode "outline"))
-                              (or/c image-color? pen?)
-                              image-color?)])
-         image?]{
+@defproc*[([(triangle [side-length (and/c real? (not/c negative?))] 
+                      [mode mode?]
+                      [color image-color?])
+            image?]
+           [(triangle [side-length (and/c real? (not/c negative?))] 
+                      [outline-mode (or/c 'outline "outline")]
+                      [pen-or-color (or/c pen? image-color?)])
+            image?])]{
+
    Constructs a upward-pointing equilateral triangle. 
   The @scheme[side-length] argument 
   determines the 
   length of the side of the triangle.
 
-@image-examples[(triangle 40 "solid" "tan")]
+    @mode/color-text
+  
+    @image-examples[(triangle 40 "solid" "tan")]
 
 }
 
-@defproc[(right-triangle [side-length1 (and/c real? (not/c negative?))]
-                         [side-length2 (and/c real? (not/c negative?))]
-                         [mode mode?]
-                         [color image-color?])
-         image?]{
+@defproc*[([(right-triangle [side-length1 (and/c real? (not/c negative?))]
+                            [side-length2 (and/c real? (not/c negative?))]
+                            [mode mode?]
+                            [color image-color?])
+            image?]
+           [(right-triangle [side-length1 (and/c real? (not/c negative?))]
+                            [side-length2 (and/c real? (not/c negative?))]
+                            [outline-mode (or/c 'outline "outline")]
+                            [pen-or-color (or/c pen? image-color?)])
+            image?])]{
                  
   Constructs a triangle with a right angle where the two sides adjacent
   to the right angle have lengths @scheme[side-length1] and @scheme[side-length2].
 
+  @mode/color-text
+  
   @image-examples[(right-triangle 36 48 "solid" "black")]
 }
-                
-@defproc[(isosceles-triangle [side-length (and/c real? (not/c negative?))] 
-                             [angle angle?]
-                             [mode mode?]
-                             [color image-color?])
-         image?]{
+
+@defproc*[([(isosceles-triangle [side-length (and/c real? (not/c negative?))] 
+                                [angle angle?]
+                                [mode mode?]
+                                [color image-color?])
+            image?]
+           [(isosceles-triangle [side-length (and/c real? (not/c negative?))] 
+                                [angle angle?]
+                                [outline-mode (or/c 'outline "outline")]
+                                [pen-or-color (or/c pen? image-color?)])
+            image?])]{
 
  Creates a triangle with two equal-length sides, of length @scheme[side-length]
  where the angle between those sides is @scheme[angle]. The third
@@ -98,72 +121,118 @@ Existing images can be rotated, scaled, and overlaid on top of each other.
  @scheme[180], then the triangle will point up and if the @scheme[angle]
  is more, then the triangle will point down. 
  
+ @mode/color-text
+ 
  @image-examples[(isosceles-triangle 200 170 "solid" "seagreen")
                  (isosceles-triangle 60 30 "solid" "aquamarine")
                  (isosceles-triangle 60 330 "solid" "lightseagreen")]
 }
 
 
-@defproc[(square [side-length (and/c real? (not/c negative?))]
-                 [mode mode?]
-                 [color image-color?])
-         image?]{
+@defproc*[([(square [side-len (and/c real? (not/c negative?))]
+                    [mode mode?]
+                    [color image-color?])
+            image?]
+           [(square [side-len (and/c real? (not/c negative?))]
+                    [outline-mode (or/c 'outline "outline")]
+                    [pen-or-color (or/c pen? image-color?)])
+            image?])]{
 
  Constructs a square.
+ 
+ @mode/color-text
  
  @image-examples[(square 40 "solid" "slateblue")
                  (square 50 "outline" "darkmagenta")]
 
 }
 
-@defproc[(rectangle [width real?] [height real?] [mode mode?] [color image-color?]) image?]{
+@defproc*[([(rectangle [width real?]
+                       [height real?]
+                       [mode mode?]
+                       [color image-color?])
+            image?]
+           [(rectangle [width real?] 
+                       [height real?] 
+                       [outline-mode (or/c 'outline "outline")] 
+                       [pen-or-color (or/c pen? image-color?)])
+            image?])]{
   Constructs a rectangle with the given width, height, mode, and color.
+  
+  @mode/color-text
+  
   @image-examples[(rectangle 40 20 "outline" "black")
                   (rectangle 20 40 "solid" "blue")]
 }
 
-@defproc[(rhombus [side-length (and/c real? (not/c negative?))]
-                  [angle angle?]
-                  [mode mode?]
-                  [color image-color?])
-         image?]{
+@defproc*[([(rhombus [side-length (and/c real? (not/c negative?))]
+                     [angle angle?]
+                     [mode mode?]
+                     [color image-color?])
+            image?]
+           [(rhombus [side-length (and/c real? (not/c negative?))]
+                     [angle angle?]
+                     [outline-mode (or/c 'outline "outline")]
+                     [pen-or-color (or/c pen? image-color?)])
+            image?])]{
                  
 Constructs a four sided polygon with all equal sides and thus where opposite angles are equal to each
 other. The top and bottom pair of angles is @scheme[angle] and the left and right are @scheme[(- 180 angle)].
+
+@mode/color-text
 
 @image-examples[(rhombus 40 45 "solid" "magenta")
                 (rhombus 80 150 "solid" "mediumpurple")]
 }
 
-@defproc[(regular-polygon [side-length (and/c real? (not/c negative?))] 
-                          [side-count side-count?]
-                          [mode mode?]
-                          [color image-color?])
-         image?]{
+@defproc*[([(regular-polygon [side-length (and/c real? (not/c negative?))] 
+                             [side-count side-count?]
+                             [mode mode?]
+                             [color image-color?])
+            image?]
+           [(regular-polygon [side-length (and/c real? (not/c negative?))] 
+                             [side-count side-count?]
+                             [outline-mode (or/c 'outline "outline")]
+                             [pen-or-color (or/c pen? image-color?)])
+            image?])]{
   Constructs a regular polygon with @scheme[side-count] sides.
+
+  @mode/color-text
 
   @image-examples[(regular-polygon 50 3 "outline" "red")
                   (regular-polygon 40 4 "outline" "blue")
                   (regular-polygon 20 8 "solid" "red")]
 }
 
-@defproc[(star [side-length (and/c real? (not/c negative?))] 
-               [mode mode?]
-               [color image-color?])
-         image?]{
+@defproc*[([(star [side-length (and/c real? (not/c negative?))] 
+                  [mode mode?]
+                  [color image-color?])
+            image?]
+           [(star [side-length (and/c real? (not/c negative?))] 
+                  [outline-mode (or/c 'outline "outline")]
+                  [color (or/c pen? image-color?)])
+            image?])]{
   Constructs a star with five points. The @scheme[side-length] argument 
   determines the side length of the enclosing pentagon.
+
+  @mode/color-text
 
   @image-examples[(star 40 "solid" "gray")]
   
 }
 
-@defproc[(star-polygon [side-length (and/c real? (not/c negative?))]
-                       [side-count side-count?]
-                       [step-count step-count?]
-                       [mode mode?]
-                       [color image-color?])
-         image?]{
+@defproc*[([(star-polygon [side-length (and/c real? (not/c negative?))]
+                          [side-count side-count?]
+                          [step-count step-count?]
+                          [mode mode?]
+                          [color image-color?])
+            image?]
+           [(star-polygon [side-length (and/c real? (not/c negative?))]
+                          [side-count side-count?]
+                          [step-count step-count?]
+                          [outline-mode (or/c 'outline "outline")]
+                          [pen-or-color (or/c pen? image-color?)])
+            image?])]{
  
   Constructs an arbitrary regular star polygon (a generalization of the regular polygons). 
   The polygon is enclosed by a regular polygon with @scheme[side-count] sides each
@@ -173,17 +242,25 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
   For examples, if @scheme[side-count] is @scheme[5] and @scheme[step-count] is @scheme[2],
   then this function produces a shape just like @scheme[star].
   
+  @mode/color-text
+
   @image-examples[(star-polygon 40 5 2 "solid" "seagreen")
                   (star-polygon 40 7 3 "outline" "darkred")
                   (star-polygon 20 10 3 "solid" "cornflowerblue")]
  
 }
                 
-@defproc[(polygon [verticies (listof posn?)] 
-                  [mode mode?]
-                  [color image-color?])
-         image?]{
+@defproc*[([(polygon [verticies (listof posn?)] 
+                     [mode mode?]
+                     [color image-color?])
+            image?]
+           [(polygon [verticies (listof posn?)] 
+                     [outline-mode (or/c 'outline "outline")]
+                     [pen-or-color (or/c pen? image-color?)])
+            image?])]{
   Constructs a polygon connecting the given verticies.
+  
+  @mode/color-text
   
   @image-examples[(polygon (list (make-posn 0 0)
                                  (make-posn -10 20)
@@ -692,10 +769,20 @@ the parts that fit onto @scheme[scene].
 }
 
 @defproc[(scale [factor real?] [image image?]) image?]{
+
   Scales @scheme[image] by @scheme[factor]. 
+  
+  The pen sizes are also scaled and thus draw thicker (or thinner)
+  lines than the original image, unless the pen was size 
+  @scheme[0]. That pen size is treated specially to mean ``the
+  smallest available line'' and thus it always draws a one pixel
+  wide line; this is also the case for @scheme['outline] and @scheme["outline"]
+  shapes that are drawn with an @scheme[image-color?] instead of
+  a @scheme[pen].
+  
          
-         @image-examples[(scale 2 (ellipse 20 30 "solid" "blue"))
-                         (ellipse 40 60 "solid" "blue")]
+  @image-examples[(scale 2 (ellipse 20 30 "solid" "blue"))
+                   (ellipse 40 60 "solid" "blue")]
   
   
   
@@ -916,3 +1003,34 @@ The baseline of an image is the place where the bottoms any letters line up, not
 Two images are equal if they draw exactly the same way, at their current size
 (not neccessarily at all sizes).
 
+@section{The nitty gritty of pixels, pens, and lines}
+
+The image library treats coordinates as if they are in the upper-left corner 
+of each pixel, and infinitesimally small.
+
+Thus, when drawing a solid @scheme[square] of whose side-length is 10, the image library
+colors in all of the pixels enclosed by the @scheme[square] starting at the upper
+left corner of (0,0) and going down to the upper left corner of (10,10),
+so the pixel whose upper left at (9,9) is colored in, but the pixel
+at (10,10) is not. All told, 100 pixels get colored in, just as expected for
+a @scheme[square] with a side length of 10.
+
+When drawing lines, however, things get a bit more complex. Specifically, 
+imagine drawing the outline of that rectangle. Since the border is
+between the pixels, there really isn't a natural pixel to draw to indicate
+the border. Accordingly, when drawing an outline @scheme[square] (without a 
+@scheme[pen] specification, but just a color as the last argument), 
+the image library uses a pen whose width is 1 pixel, but draws a line
+centered at the point (0.5,0.5) that goes down and around to the point (10.5,10.5).
+This means that the outline slightly exceeds the bounding box of the shape.
+Specifically, the upper and left-hand lines around the square are within
+the bounding box, but the lower and right-hand lines are just outside.
+
+The special case of adding 0.5 to each coordinate when drawing the square
+applies to all polygon-based shapes, but does not apply when a @scheme[pen]
+is passed as the last argument to create the shape.
+In that case, not adjustment of the pixels is performed and using a one
+pixel wide pen draws the pixels above and below the line, but each with
+a color that is half of the intensity of the given color. Using a
+@scheme[pen] with with two, colors the pixels above and below the line
+with the full intensity. 
