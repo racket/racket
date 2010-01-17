@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(provide unpack-blame build-src-loc-string 
+(provide unpack-blame build-src-loc-string source->name
          mangle-id mangle-id-for-maker
          build-struct-names
          lookup-struct-info
