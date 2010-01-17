@@ -231,11 +231,21 @@
 
 (define (process-syntax x good bad name)
   (process-elements x good bad name
-                    (syntax-source x)
+                    (syntax-get-source x)
                     (syntax-line x)
                     (syntax-column x)
                     (syntax-position x)
                     (syntax-span x)))
+
+(define (syntax-get-source x)
+  (cond
+   [(syntax-source-module x) =>
+    (lambda (src)
+      (if (module-path-index? src)
+        (resolved-module-path-name
+         (module-path-index-resolve src))
+        src))]
+   [else (syntax-source x)]))
 
 (define (process-list x good bad name)
   (cond
