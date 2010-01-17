@@ -219,11 +219,8 @@ it around flattened out.
                                          ctc-field)]
                                 
                                 [ctc-field-val
-                                 ((((proj-get ctc) ctc) (contract/info-pos contract/info)
-                                                        (contract/info-neg contract/info)
-                                                        (contract/info-src-info contract/info)
-                                                        (contract/info-orig-str contract/info)
-                                                        (contract/info-positive-position? contract/info))
+                                 (((contract-predicate ctc)
+                                   (contract/info-blame contract/info))
                                   ctc-x)])
                            (update-parent-links parent ctc-field-val)
                            ctc-field-val)] ...)
@@ -231,22 +228,20 @@ it around flattened out.
            
            (define (stronger-lazy-contract? a b)
              (and (contract-predicate b)
-                  (check-sub-contract? 
+                  (contract-stronger? 
                    (contract-get a selector-indicies)
                    (contract-get b selector-indicies)) ...))
            
            (define (lazy-contract-proj ctc)
-             (λ (pos-blame neg-blame src-info orig-str positive-position?)
-               (let ([contract/info (make-contract/info ctc pos-blame neg-blame src-info orig-str positive-position?)])
+             (λ (blame)
+               (let ([contract/info (make-contract/info ctc blame)])
                  (λ (val)
                    (unless (or (wrap-predicate val)
                                (opt-wrap-predicate val)
                                (raw-predicate val))
-                     (raise-contract-error
+                     (raise-blame-error
+                      blame
                       val
-                      src-info
-                      pos-blame
-                      orig-str
                       "expected <~a>, got ~e" 'name val))
                    (cond
                      [(already-there? contract/info val lazy-depth-to-look)
@@ -268,10 +263,8 @@ it around flattened out.
                [(wrap-predicate val)
                 (and (wrap-get val 0)
                      (let ([old-contract/info (wrap-get val 1)])
-                       (if (and (eq? (contract/info-pos new-contract/info)
-                                     (contract/info-pos old-contract/info))
-                                (eq? (contract/info-neg new-contract/info)
-                                     (contract/info-neg old-contract/info))
+                       (if (and (equal? (contract/info-blame new-contract/info)
+                                        (contract/info-blame old-contract/info))
                                 (contract-stronger? (contract/info-contract old-contract/info)
                                                     (contract/info-contract new-contract/info)))
                            #t
@@ -310,6 +303,13 @@ it around flattened out.
                                (list (contract-get ctc selector-indicies) ...)
                                '(fields ...)
                                (contract-get ctc field-count)))
+
+           (define lazy-contract-property
+             (build-contract-property
+              #:projection lazy-contract-proj
+              #:name lazy-contract-name
+              #:first-order (lambda (ctc) predicate)
+              #:stronger stronger-lazy-contract?))
            
            (define-values (contract-type contract-maker contract-predicate contract-get contract-set)
              (make-struct-type 'contract-name
@@ -322,10 +322,7 @@ it around flattened out.
                                ;; this field is #f when there is no synthesized attrs
                                0 ;; auto-field-k
                                '() ;; auto-field-v
-                               (list (cons proj-prop lazy-contract-proj)
-                                     (cons name-prop lazy-contract-name)
-                                     (cons first-order-prop (λ (ctc) predicate))
-                                     (cons stronger-prop stronger-lazy-contract?))))
+                               (list (cons prop:contract lazy-contract-property))))
            
            (define-for-syntax (build-enforcer opt/i opt/info name stx clauses
                                               helper-id-var helper-info helper-freev
@@ -395,10 +392,7 @@ it around flattened out.
                     (let ([to-save (append (opt/info-free-vars opt/info)
                                            (lifts-to-save lifts))])
                       (with-syntax ((val (opt/info-val opt/info))
-                                    (pos (opt/info-pos opt/info))
-                                    (neg (opt/info-neg opt/info))
-                                    (src-info (opt/info-src-info opt/info))
-                                    (orig-str (opt/info-orig-str opt/info))
+                                    (blame (opt/info-blame opt/info))
                                     (ctc (opt/info-contract opt/info))
                                     (enforcer-id enforcer-id-var)
                                     (helper-id helper-id-var)
@@ -451,13 +445,11 @@ it around flattened out.
                                   (opt-wrap-set w j free-var) (... ...)
                                   w)]
                                [else
-                                (raise-contract-error
+                                (raise-blame-error
+                                 blame
                                  val
-                                 src-info
-                                 pos
-                                 orig-str
                                  "expected <~a>, got ~e"
-                                 ((name-get ctc) ctc)
+                                 (contract-name ctc)
                                  val)]))
                              lifts
                              superlifts
@@ -469,12 +461,12 @@ it around flattened out.
 
 (define (do-contract-name name/c name/dc list-of-subcontracts fields attrs)
   (cond
-    [(and (andmap name-pred? list-of-subcontracts) (not attrs))
+    [(and (andmap contract-struct? list-of-subcontracts) (not attrs))
      (apply build-compound-type-name name/c list-of-subcontracts)]
     [else
      (let ([fields 
             (map (λ (field ctc) 
-                   (if (name-pred? ctc)
+                   (if (contract? ctc)
                        (build-compound-type-name field ctc)
                        (build-compound-type-name field '...)))
                  fields
@@ -490,7 +482,7 @@ it around flattened out.
                          (list 'and '...)))]
          [else (apply build-compound-type-name name/dc fields)]))]))
 
-(define-struct contract/info (contract pos neg src-info orig-str positive-position?))
+(define-struct contract/info (contract blame))
 (define-struct opt-contract/info (contract enforcer id))
 
 ;; parents : (listof wrap-parent)
@@ -513,11 +505,9 @@ it around flattened out.
 
 (define (check-synth-info-test stct synth-info contract/info)
   (unless ((synth-info-test synth-info) (synth-info-vals synth-info))
-    (raise-contract-error
+    (raise-blame-error
+     (contract/info-blame contract/info)
      stct
-     (contract/info-src-info contract/info)
-     (contract/info-pos contract/info)
-     (contract/info-orig-str contract/info)
      "failed `and' clause, got ~e" stct)))
 
 (define-values (evaluate-attr-prop evaluate-attr-prop-predicate evaluate-attr-prop-accessor)
@@ -543,14 +533,6 @@ it around flattened out.
 
 (define max-cache-size 5)
 (define lazy-depth-to-look 5) 
-
-(define (check-sub-contract? x y)
-  (cond
-    [(and (stronger-pred? x) (stronger-pred? y))
-     (contract-stronger? x y)]
-    [(and (procedure? x) (procedure? y))
-     (procedure-closure-contents-eq? x y)]
-    [else #f]))
 
 #|
 test case:
