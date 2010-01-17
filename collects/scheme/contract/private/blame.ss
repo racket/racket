@@ -18,7 +18,9 @@
          current-blame-format
          (struct-out exn:fail:contract:blame))
 
-(define-struct blame [source value contract positive negative swapped?])
+(define-struct blame
+  [source value contract positive negative swapped?]
+  #:transparent)
 
 (define (blame-guilty b)
   (if (blame-swapped? b)
