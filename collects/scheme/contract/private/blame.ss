@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require unstable/srcloc scheme/pretty)
+(require unstable/srcloc scheme/pretty "helpers.ss")
 
 (provide blame?
          make-blame
@@ -44,7 +44,12 @@
     b)))
 
 (define (default-blame-format b x custom-message)
-  (let* ([source-message (source-location->prefix (blame-source b))]
+  (let* ([source-message
+          (let* ([loc (blame-source b)])
+            (source-location->prefix
+             (struct-copy
+              srcloc loc
+              [source (source->name (srcloc-source loc))])))]
          [guilty-message (show (blame-guilty b))]
          [contract-message (show (blame-contract b))]
          [value-message (if (blame-value b)
