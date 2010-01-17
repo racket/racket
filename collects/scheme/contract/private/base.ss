@@ -71,7 +71,8 @@ improve method arity mismatch contract violation error messages?
   (let loop ([seen #hasheq()] [x v])
     (unless (or (null? x) (boolean? x) (number? x)
                 (string? x) (bytes? x) (regexp? x) (char? x)
-                (symbol? x) (keyword? x))
+                (symbol? x) (keyword? x)
+                (path? x))
       (when (hash-has-key? seen x)
         (error f-name
                "expected ~a to be acyclic; found a cycle in ~e at ~e"
