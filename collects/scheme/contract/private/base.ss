@@ -9,60 +9,84 @@ improve method arity mismatch contract violation error messages?
 
 
 
-(provide (rename-out [-contract contract])
+(provide contract
          recursive-contract
          current-contract-region)
 
 (require (for-syntax scheme/base)
          scheme/stxparam
+         unstable/srcloc
          "guts.ss"
          "helpers.ss")
 
 (define-syntax-parameter current-contract-region (λ (stx) #'(#%variable-reference)))
 
-(define-syntax (-contract stx)
+(define-syntax (contract stx)
   (syntax-case stx ()
+    [(_ a-contract to-check pos-blame-e neg-blame-e srcloc-e name-e)
+     (syntax/loc stx
+       (let* ([c a-contract]
+              [v to-check]
+              [b (make-blame srcloc-e
+                             name-e
+                             (contract-name c)
+                             (unpack-blame pos-blame-e)
+                             (unpack-blame neg-blame-e)
+                             #f)])
+         (((contract-projection c) b) v)))]
     [(_ a-contract to-check pos-blame-e neg-blame-e)
-     (let ([s (syntax/loc stx here)])
-       (quasisyntax/loc stx
-         (contract/proc a-contract to-check pos-blame-e neg-blame-e 
-                        (list (make-srcloc (quote-syntax #,s)
-                                           #,(syntax-line s)
-                                           #,(syntax-column s)
-                                           #,(syntax-position s)
-                                           #,(syntax-span s)) 
-                              #f))))]
+     (quasisyntax/loc stx
+       (contract a-contract
+                 to-check
+                 pos-blame-e
+                 neg-blame-e
+                 (build-source-location (quote-syntax #,stx))
+                 '#f))]
     [(_ a-contract-e to-check pos-blame-e neg-blame-e src-info-e)
      (syntax/loc stx
-       (begin
-         (contract/proc a-contract-e to-check pos-blame-e neg-blame-e src-info-e)))]))
+       (let* ([info src-info-e])
+         (contract a-contract-e
+                   to-check
+                   pos-blame-e
+                   neg-blame-e
+                   (unpack-source info)
+                   (unpack-name info))))]))
 
-(define (contract/proc a-contract-raw name pos-blame neg-blame src-info)
-  (let ([a-contract (coerce-contract 'contract a-contract-raw)])
+(define (unpack-source info)
+  (cond
+   [(syntax? info) (build-source-location info)]
+   [(list? info)
+    (let ([loc (list-ref info 0)])
+      (struct-copy
+       srcloc loc
+       [source
+        (resolved-module-path-name
+         (module-path-index-resolve
+          (syntax-source-module
+           (srcloc-source loc))))]))]
+   [else
+    (error 'contract
+           "expected a syntax object or list of two elements, got: ~e"
+           info)]))
 
-    (unless (or (and (list? src-info)
-                     (= 2 (length src-info))
-                     (srcloc? (list-ref src-info 0))
-                     (or (string? (list-ref src-info 1))
-                         (not (list-ref src-info 1))))
-                (syntax? src-info))
-      (error 'contract "expected syntax or a list of two elements (srcloc and string or #f) as last argument, given: ~e, other args ~e ~e ~e ~e"
-             src-info
-             (unpack-blame neg-blame)
-             (unpack-blame pos-blame)
-             a-contract-raw
-             name))
-    (((contract-proc a-contract) pos-blame neg-blame src-info (contract-name a-contract) #t)
-     name)))
+(define (unpack-name info)
+  (cond
+   [(syntax? info) (and (identifier? info) (syntax-e info))]
+   [(list? info) (list-ref info 1)]
+   [else
+    (error 'contract
+           "expected a syntax object or list of two elements, got: ~e"
+           info)]))
 
 (define-syntax (recursive-contract stx)
   (syntax-case stx ()
     [(_ arg)
-     (syntax (make-proj-contract 
-              '(recursive-contract arg) 
-              (λ (pos-blame neg-blame src str positive-position?)
-                (let ([ctc (coerce-contract 'recursive-contract arg)])
-                  (let ([proc (contract-proc ctc)])
-                    (λ (val)
-                      ((proc pos-blame neg-blame src str positive-position?) val)))))
-              #f))]))
+     (syntax
+      (simple-contract
+       #:name '(recursive-contract arg)
+       #:projection
+       (λ (blame)
+          (let ([ctc (coerce-contract 'recursive-contract arg)])
+            (let ([f (contract-projection ctc)])
+              (λ (val)
+                 ((f blame) val)))))))]))
