@@ -77,31 +77,21 @@
            f)))
 
 
-(define (check-pre-expr->pp/h val pre-expr src-info blame orig-str)
+(define (check-pre-expr->pp/h val pre-expr blame)
   (unless pre-expr
-    (raise-contract-error val
-                          src-info
-                          blame
-                          orig-str
-                          "pre-condition expression failure")))
+    (raise-blame-error blame val "pre-condition expression failure")))
 
-(define (check-post-expr->pp/h val post-expr src-info blame orig-str)
+(define (check-post-expr->pp/h val post-expr blame)
   (unless post-expr
-    (raise-contract-error val
-                          src-info
-                          blame
-                          orig-str
-                          "post-condition expression failure")))
+    (raise-blame-error blame val "post-condition expression failure")))
 
-(define (check-procedure val dom-length optionals mandatory-kwds optional-keywords src-info blame orig-str)
+(define (check-procedure val dom-length optionals mandatory-kwds optional-keywords blame)
   (unless (and (procedure? val)
                (procedure-arity-includes?/optionals val dom-length optionals)
                (keywords-match mandatory-kwds optional-keywords val))
-    (raise-contract-error
-     val
-     src-info
+    (raise-blame-error
      blame
-     orig-str
+     val
      "expected a procedure that accepts ~a arguments~a, given: ~e"
      dom-length
      (keyword-error-text mandatory-kwds)
@@ -140,53 +130,37 @@
   (and (procedure? val)
        (procedure-accepts-and-more? val arity)))
 
-(define (check-procedure/kind val arity kind-of-thing src-info blame orig-str)
+(define (check-procedure/kind val arity kind-of-thing blame)
   (unless (procedure? val)
-    (raise-contract-error val
-                          src-info
-                          blame
-                          orig-str
-                          "expected a procedure, got ~e"
-                          val))
+    (raise-blame-error blame val "expected a procedure, got ~e" val))
   (unless (procedure-arity-includes? val arity)
-    (raise-contract-error val
-                          src-info
-                          blame
-                          orig-str
-                          "expected a ~a of arity ~a (not arity ~a), got  ~e"
-                          kind-of-thing
-                          arity
-                          (procedure-arity val)
-                          val)))
+    (raise-blame-error blame
+                       val
+                       "expected a ~a of arity ~a (not arity ~a), got  ~e"
+                       kind-of-thing
+                       arity
+                       (procedure-arity val)
+                       val)))
 
-(define (check-procedure/more/kind val arity kind-of-thing src-info blame orig-str)
+(define (check-procedure/more/kind val arity kind-of-thing blame)
   (unless (procedure? val)
-    (raise-contract-error val
-                          src-info
-                          blame
-                          orig-str
-                          "expected a procedure, got ~e"
-                          val))
+    (raise-blame-error blame val "expected a procedure, got ~e" val))
   (unless (procedure-accepts-and-more? val arity)
-    (raise-contract-error val
-                          src-info
-                          blame
-                          orig-str
-                          "expected a ~a that accepts ~a arguments and aribtrarily more (not arity ~a), got  ~e"
-                          kind-of-thing
-                          arity
-                          (procedure-arity val)
-                          val)))
+    (raise-blame-error blame
+                       val
+                       "expected a ~a that accepts ~a arguments and aribtrarily more (not arity ~a), got  ~e"
+                       kind-of-thing
+                       arity
+                       (procedure-arity val)
+                       val)))
 
-(define (check-procedure/more val dom-length mandatory-kwds optional-kwds src-info blame orig-str)
+(define (check-procedure/more val dom-length mandatory-kwds optional-kwds blame)
   (unless (and (procedure? val)
                (procedure-accepts-and-more? val dom-length)
                (keywords-match mandatory-kwds optional-kwds val))
-    (raise-contract-error
-     val
-     src-info
+    (raise-blame-error
      blame
-     orig-str
+     val
      "expected a procedure that accepts ~a arguments and and arbitrarily more~a, given: ~e"
      dom-length
      (keyword-error-text mandatory-kwds)
