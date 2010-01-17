@@ -9,25 +9,24 @@
   (let ([in (∃/c-in ctc)]
         [out (∃/c-out ctc)]
         [pred? (∃/c-pred? ctc)])
-  (λ (pos-blame neg-blame src-info orig-str positive-position?)
-    (if positive-position?
-	in
+  (λ (blame)
+    (if (blame-swapped? blame)
         (λ (val)
           (if (pred? val)
               (out val)
-              (raise-contract-error val src-info pos-blame orig-str 
-                                    "non-polymorphic value: ~e"
-                                    val)))))))
+              (raise-blame-error blame
+                                 val 
+                                 "non-polymorphic value: ~e"
+                                 val)))
+	in))))
 
 (define-struct ∃/c (in out pred? name)
   #:omit-define-syntaxes
-  #:property proj-prop ∃-proj
-  #:property name-prop (λ (ctc) (∃/c-name ctc))
-  #:property first-order-prop
-  (λ (ctc) (λ (x) #t)) ;; ???
-      
-  #:property stronger-prop
-  (λ (this that) #f))
+  #:property prop:contract
+  (build-contract-property
+   #:name (λ (ctc) (∃/c-name ctc))
+   #:first-order (λ (ctc) (λ (x) #t)) ;; ???
+   #:projection ∃-proj))
 
 (define-struct ∃ ())
 
