@@ -25,50 +25,8 @@
              check-between/c
              check-unary-between/c)
  (all-from-out "private/provide.ss")
- (all-from-out "private/base.ss"))
+ (all-from-out "private/base.ss")
+ (except-out (all-from-out "private/guts.ss")
+             check-flat-contract
+             check-flat-named-contract))
 
-;; from private/guts.ss
-
-(provide any
-         and/c
-         any/c
-         none/c
-         make-none/c 
-         
-         guilty-party
-         exn:fail:contract2?
-         exn:fail:contract2-srclocs
-                
-         contract-violation->string
-         
-         contract?
-         contract-name
-         contract-proc
-         
-         flat-contract?
-         flat-contract
-         flat-contract-predicate
-         flat-named-contract
-         
-         contract-first-order-passes?
-         
-         ;; below need docs
-         
-         make-proj-contract
-         
-         contract-stronger?
-         
-         coerce-contract/f
-         coerce-contract
-         coerce-contracts
-         coerce-flat-contract
-         coerce-flat-contracts
-         
-         build-compound-type-name
-         raise-contract-error
-         
-         proj-prop proj-pred? proj-get
-         name-prop name-pred? name-get
-         stronger-prop stronger-pred? stronger-get
-         flat-prop flat-pred? flat-get
-         first-order-prop first-order-get)
