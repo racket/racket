@@ -126,51 +126,53 @@
 
 (define-struct or/c (pred flat-ctcs ho-ctc)
   #:omit-define-syntaxes
-  #:property proj-prop
-  (λ (ctc)
-    (let ([c-proc ((proj-get (or/c-ho-ctc ctc)) (or/c-ho-ctc ctc))]
-          [pred (or/c-pred ctc)])
-      (λ (pos-blame neg-blame src-info orig-str positive-position?)
-        (let ([partial-contract (c-proc pos-blame neg-blame src-info orig-str positive-position?)])
-          (λ (val)
-            (cond
-              [(pred val) val]
-              [else
-               (partial-contract val)]))))))
-  
-  #:property name-prop
-  (λ (ctc)
-    (apply build-compound-type-name 
-           'or/c 
-           (or/c-ho-ctc ctc)
-           (or/c-flat-ctcs ctc)))
-  
-  #:property first-order-prop
-  (λ (ctc)
-    (let ([pred (or/c-pred ctc)]
-          [ho ((first-order-get (or/c-ho-ctc ctc)) (or/c-ho-ctc ctc))])
-      (λ (x)
-        (or (ho x)
-            (pred x)))))
-   
-  #:property stronger-prop
-  (λ (this that)
-    (and (or/c? that)
-         (contract-stronger? (or/c-ho-ctc this) (or/c-ho-ctc that))
-         (let ([this-ctcs (or/c-flat-ctcs this)]
-               [that-ctcs (or/c-flat-ctcs that)])
-           (and (= (length this-ctcs) (length that-ctcs))
-                (andmap contract-stronger?
-                        this-ctcs
-                        that-ctcs))))))
+  #:property prop:contract
+  (build-contract-property
+   #:projection
+   (λ (ctc)
+      (let ([c-proc (contract-projection (or/c-ho-ctc ctc))]
+            [pred (or/c-pred ctc)])
+        (λ (blame)
+           (let ([partial-contract (c-proc blame)])
+             (λ (val)
+                (cond
+                 [(pred val) val]
+                 [else
+                  (partial-contract val)]))))))
+
+   #:name
+   (λ (ctc)
+      (apply build-compound-type-name 
+             'or/c 
+             (or/c-ho-ctc ctc)
+             (or/c-flat-ctcs ctc)))
+
+   #:first-order
+   (λ (ctc)
+      (let ([pred (or/c-pred ctc)]
+            [ho (contract-first-order (or/c-ho-ctc ctc))])
+        (λ (x)
+           (or (ho x)
+               (pred x)))))
+
+   #:stronger
+   (λ (this that)
+      (and (or/c? that)
+           (contract-stronger? (or/c-ho-ctc this) (or/c-ho-ctc that))
+           (let ([this-ctcs (or/c-flat-ctcs this)]
+                 [that-ctcs (or/c-flat-ctcs that)])
+             (and (= (length this-ctcs) (length that-ctcs))
+                  (andmap contract-stronger?
+                          this-ctcs
+                          that-ctcs)))))))
 
 (define (multi-or/c-proj ctc)
   (let* ([ho-contracts (multi-or/c-ho-ctcs ctc)]
-         [c-procs (map (λ (x) ((proj-get x) x)) ho-contracts)]
-         [first-order-checks (map (λ (x) ((first-order-get x) x)) ho-contracts)]
+         [c-procs (map (λ (x) (contract-projection x)) ho-contracts)]
+         [first-order-checks (map (λ (x) (contract-first-order x)) ho-contracts)]
          [predicates (map flat-contract-predicate (multi-or/c-flat-ctcs ctc))])
-    (λ (pos-blame neg-blame src-info orig-str positive-position?)
-      (let ([partial-contracts (map (λ (c-proc) (c-proc pos-blame neg-blame src-info orig-str positive-position?)) c-procs)])
+    (λ (blame)
+      (let ([partial-contracts (map (λ (c-proc) (c-proc blame)) c-procs)])
         (λ (val)
           (cond
             [(ormap (λ (pred) (pred val)) predicates)
@@ -185,16 +187,16 @@
                  [(null? checks)
                   (if candidate-proc
                       (candidate-proc val)
-                      (raise-contract-error val src-info pos-blame orig-str 
-                                            "none of the branches of the or/c matched, given ~e"
-                                            val))]
+                      (raise-blame-error blame val 
+                                         "none of the branches of the or/c matched, given ~e"
+                                         val))]
                  [((car checks) val)
                   (if candidate-proc
-                      (raise-contract-error val src-info pos-blame orig-str
-                                            "two of the clauses in the or/c might both match: ~s and ~s, given ~e"
-                                            (contract-name candidate-contract)
-                                            (contract-name (car contracts))
-                                            val)
+                      (raise-blame-error blame val
+                                         "two of the clauses in the or/c might both match: ~s and ~s, given ~e"
+                                         (contract-name candidate-contract)
+                                         (contract-name (car contracts))
+                                         val)
                       (loop (cdr checks)
                             (cdr procs)
                             (cdr contracts)
@@ -208,58 +210,61 @@
                         candidate-contract)]))]))))))
 
 (define-struct multi-or/c (flat-ctcs ho-ctcs)
-  #:property proj-prop multi-or/c-proj
-  #:property name-prop
-  (λ (ctc)
-    (apply build-compound-type-name 
-           'or/c 
-           (append
-            (multi-or/c-flat-ctcs ctc)
-            (reverse (multi-or/c-ho-ctcs ctc)))))
-  
-  #:property first-order-prop
-  (λ (ctc)
-    (let ([flats (map flat-contract-predicate (multi-or/c-flat-ctcs ctc))]
-          [hos (map (λ (x) ((first-order-get x) x)) (multi-or/c-ho-ctcs ctc))])
-      (λ (x)
-        (or (ormap (λ (f) (f x)) hos)
-            (ormap (λ (f) (f x)) flats)))))
-  
-  #:property stronger-prop
-  (λ (this that)
-    (and (multi-or/c? that)
-         (let ([this-ctcs (multi-or/c-ho-ctcs this)]
-               [that-ctcs (multi-or/c-ho-ctcs that)])
-           (and (= (length this-ctcs) (length that-ctcs))
-                (andmap contract-stronger?
-                        this-ctcs
-                        that-ctcs)))
-         (let ([this-ctcs (multi-or/c-flat-ctcs this)]
-               [that-ctcs (multi-or/c-flat-ctcs that)])
-           (and (= (length this-ctcs) (length that-ctcs))
-                (andmap contract-stronger?
-                        this-ctcs
-                        that-ctcs))))))
+  #:property prop:contract
+  (build-contract-property
+   #:projection multi-or/c-proj
+   #:name
+   (λ (ctc)
+      (apply build-compound-type-name 
+             'or/c 
+             (append
+              (multi-or/c-flat-ctcs ctc)
+              (reverse (multi-or/c-ho-ctcs ctc)))))
+
+   #:first-order
+   (λ (ctc)
+      (let ([flats (map flat-contract-predicate (multi-or/c-flat-ctcs ctc))]
+            [hos (map (λ (x) (contract-first-order x)) (multi-or/c-ho-ctcs ctc))])
+        (λ (x)
+           (or (ormap (λ (f) (f x)) hos)
+               (ormap (λ (f) (f x)) flats)))))
+
+   #:stronger
+   (λ (this that)
+      (and (multi-or/c? that)
+           (let ([this-ctcs (multi-or/c-ho-ctcs this)]
+                 [that-ctcs (multi-or/c-ho-ctcs that)])
+             (and (= (length this-ctcs) (length that-ctcs))
+                  (andmap contract-stronger?
+                          this-ctcs
+                          that-ctcs)))
+           (let ([this-ctcs (multi-or/c-flat-ctcs this)]
+                 [that-ctcs (multi-or/c-flat-ctcs that)])
+             (and (= (length this-ctcs) (length that-ctcs))
+                  (andmap contract-stronger?
+                          this-ctcs
+                          that-ctcs)))))))
 
 (define-struct flat-or/c (pred flat-ctcs)
-  #:property proj-prop flat-proj
-  #:property name-prop
-  (λ (ctc)
-    (apply build-compound-type-name 
-           'or/c 
-           (flat-or/c-flat-ctcs ctc)))
-  #:property stronger-prop
-  (λ (this that)
-    (and (flat-or/c? that)
-         (let ([this-ctcs (flat-or/c-flat-ctcs this)]
-               [that-ctcs (flat-or/c-flat-ctcs that)])
-           (and (= (length this-ctcs) (length that-ctcs))
-                (andmap contract-stronger?
-                        this-ctcs
-                        that-ctcs)))))
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:name
+   (λ (ctc)
+      (apply build-compound-type-name 
+             'or/c 
+             (flat-or/c-flat-ctcs ctc)))
+   #:stronger
+   (λ (this that)
+      (and (flat-or/c? that)
+           (let ([this-ctcs (flat-or/c-flat-ctcs this)]
+                 [that-ctcs (flat-or/c-flat-ctcs that)])
+             (and (= (length this-ctcs) (length that-ctcs))
+                  (andmap contract-stronger?
+                          this-ctcs
+                          that-ctcs)))))
 
-  #:property flat-prop
-  (λ (ctc) (flat-or/c-pred ctc)))
+   #:first-order
+   (λ (ctc) (flat-or/c-pred ctc))))
 
 ;;
 ;; or/c opter
@@ -283,12 +288,8 @@
        (list (cons
               partial-var
               (with-syntax ((lift-var lift-var)
-                            (pos (opt/info-pos opt/info))
-                            (neg (opt/info-neg opt/info))
-                            (src-info (opt/info-src-info opt/info))
-                            (orig-str (opt/info-orig-str opt/info))
-                            (positive-position? (opt/info-orig-str opt/info)))
-                (syntax (((proj-get lift-var) lift-var) pos neg src-info orig-str positive-position?)))))
+                            (blame (opt/info-blame opt/info)))
+                (syntax ((contract-projection lift-var) blame)))))
        #f
        lift-var
        (list #f)
@@ -351,14 +352,13 @@
            (cond
              [(null? hos) 
               (with-syntax ([val (opt/info-val opt/info)]
-                            [pos (opt/info-pos opt/info)]
-                            [src-info (opt/info-src-info opt/info)]
-                            [orig-str (opt/info-orig-str opt/info)])
+                            [blame (opt/info-blame opt/info)])
                 (syntax
                  (if next-ps 
                      val
-                     (raise-contract-error val src-info pos orig-str 
-                                           "none of the branches of the or/c matched"))))]
+                     (raise-blame-error blame
+                                        val
+                                        "none of the branches of the or/c matched"))))]
              [(= (length hos) 1) (with-syntax ((ho-ctc ho-ctc))
                                    (syntax
                                     (if next-ps val ho-ctc)))]
@@ -435,30 +435,31 @@
 
 (define-struct one-of/c (elems)
   #:omit-define-syntaxes
-  #:property proj-prop flat-proj
-  #:property name-prop
-  (λ (ctc) 
-    (let ([elems (one-of/c-elems ctc)])
-      `(,(cond
-           [(andmap symbol? elems)
-            'symbols]
-           [else
-            'one-of/c])
-        ,@(map one-of-pc elems))))
-  
-  #:property stronger-prop
-  (λ (this that)
-    (and (one-of/c? that)
-         (let ([this-elems (one-of/c-elems this)]
-               [that-elems (one-of/c-elems that)])
-           (and 
-            (andmap (λ (this-elem) (memv this-elem that-elems))
-                    this-elems)
-            #t))))
-  #:property flat-prop 
-  (λ (ctc) 
-    (let ([elems (one-of/c-elems ctc)])
-      (λ (x) (memv x elems)))))
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:name
+   (λ (ctc) 
+      (let ([elems (one-of/c-elems ctc)])
+        `(,(cond
+            [(andmap symbol? elems)
+             'symbols]
+            [else
+             'one-of/c])
+          ,@(map one-of-pc elems))))
+
+   #:stronger
+   (λ (this that)
+      (and (one-of/c? that)
+           (let ([this-elems (one-of/c-elems this)]
+                 [that-elems (one-of/c-elems that)])
+             (and 
+              (andmap (λ (this-elem) (memv this-elem that-elems))
+                      this-elems)
+              #t))))
+   #:first-order 
+   (λ (ctc) 
+      (let ([elems (one-of/c-elems ctc)])
+        (λ (x) (memv x elems))))))
 
 (define printable/c
   (flat-named-contract
@@ -484,30 +485,31 @@
 
 (define-struct between/c (low high)
   #:omit-define-syntaxes
-  #:property proj-prop flat-proj
-  #:property name-prop
-  (λ (ctc) 
-    (let ([n (between/c-low ctc)]
-          [m (between/c-high ctc)])
-      (cond
-        [(= n -inf.0) `(<=/c ,m)]
-        [(= m +inf.0) `(>=/c ,n)]
-        [(= n m) `(=/c ,n)]
-        [else `(between/c ,n ,m)])))
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:name
+   (λ (ctc) 
+      (let ([n (between/c-low ctc)]
+            [m (between/c-high ctc)])
+        (cond
+         [(= n -inf.0) `(<=/c ,m)]
+         [(= m +inf.0) `(>=/c ,n)]
+         [(= n m) `(=/c ,n)]
+         [else `(between/c ,n ,m)])))
 
-  #:property stronger-prop
-  (λ (this that)
-    (and (between/c? that)
-         (<= (between/c-low that) (between/c-low this))
-         (<= (between/c-high this) (between/c-high that))))
-  
-  #:property flat-prop
-  (λ (ctc) 
-    (let ([n (between/c-low ctc)]
-          [m (between/c-high ctc)])
-      (λ (x) 
-        (and (real? x)
-             (<= n x m))))))
+   #:stronger
+   (λ (this that)
+      (and (between/c? that)
+           (<= (between/c-low that) (between/c-low this))
+           (<= (between/c-high this) (between/c-high that))))
+
+   #:first-order
+   (λ (ctc) 
+      (let ([n (between/c-low ctc)]
+            [m (between/c-high ctc)])
+        (λ (x) 
+           (and (real? x)
+                (<= n x m)))))))
 
 (define-syntax (check-unary-between/c stx)
   (syntax-case stx ()
@@ -556,21 +558,17 @@
          (let ([lifts3 (lift/effect #'(check-between/c n m) lifts2)])
            (with-syntax ((val (opt/info-val opt/info))
                          (ctc (opt/info-contract opt/info))
-                         (pos (opt/info-pos opt/info))
-                         (src-info (opt/info-src-info opt/info))
-                         (orig-str (opt/info-orig-str opt/info))
+                         (blame (opt/info-blame opt/info))
                          (this (opt/info-this opt/info))
                          (that (opt/info-that opt/info)))
              (values
               (syntax (if (and (number? val) (<= n val m)) 
                           val
-                          (raise-contract-error
+                          (raise-blame-error
+                           blame
                            val
-                           src-info
-                           pos
-                           orig-str
                            "expected <~a>, given: ~e"
-                           ((name-get ctc) ctc)
+                           (contract-name ctc)
                            val)))
               lifts3
               null
@@ -597,22 +595,18 @@
         (let ([lifts3 (lift/effect (check-arg #'m) lifts2)])
           (with-syntax ((val (opt/info-val opt/info))
                         (ctc (opt/info-contract opt/info))
-                        (pos (opt/info-pos opt/info))
-                        (src-info (opt/info-src-info opt/info))
-                        (orig-str (opt/info-orig-str opt/info))
+                        (blame (opt/info-blame opt/info))
                         (this (opt/info-this opt/info))
                         (that (opt/info-that opt/info)))
             (values
              (syntax 
               (if (and (real? val) (comparison val m)) 
                   val
-                  (raise-contract-error
+                  (raise-blame-error
+                   blame
                    val
-                   src-info
-                   pos
-                   orig-str
                    "expected <~a>, given: ~e"
-                   ((name-get ctc) ctc)
+                   (contract-name ctc)
                    val)))
              lifts3
              null
@@ -731,18 +725,17 @@
                   (build-flat-contract
                    `(name ,(contract-name ctc))
                    (lambda (x) (and (predicate? x) (testmap content-pred? x)))))
-                (let ([proj (contract-proc ctc)])
-                  (make-proj-contract
-                   (build-compound-type-name 'name ctc)
-                   (λ (pos-blame neg-blame src-info orig-str positive-position?)
-                     (let ([p-app (proj pos-blame neg-blame src-info orig-str positive-position?)])
+                (let ([proj (contract-projection ctc)])
+                  (simple-contract
+                   #:name (build-compound-type-name 'name ctc)
+                   #:projection
+                   (λ (blame)
+                     (let ([p-app (proj blame)])
                        (λ (val)
                          (unless (predicate? val)
-                           (raise-contract-error
+                           (raise-blame-error
+                            blame
                             val
-                            src-info
-                            pos-blame
-                            orig-str
                             "expected <~a>, given: ~e"
                             'type-name
                             val))
@@ -816,18 +809,14 @@
         (values
          (with-syntax ((val (opt/info-val opt/info))
                        (ctc (opt/info-contract opt/info))
-                       (pos (opt/info-pos opt/info))
-                       (src-info (opt/info-src-info opt/info))
-                       (orig-str (opt/info-orig-str opt/info)))
+                       (blame (opt/info-blame opt/info)))
            (syntax (if next
                        val
-                       (raise-contract-error
+                       (raise-blame-error
+                        blame
                         val
-                        src-info
-                        pos
-                        orig-str
                         "expected <~a>, given: ~e"
-                        ((name-get ctc) ctc)
+                        (contract-name ctc)
                         val))))
          (append
           lifts-hdp lifts-tlp
@@ -894,22 +883,21 @@
                           (and (predicate?-name x)
                                (p-apps (selector-names x)) 
                                ...))))
-                     (let ([procs (contract-proc ctc-x)] ...)
-                       (make-proj-contract
-                        (build-compound-type-name 'name ctc-x ...)
-                        (λ (pos-blame neg-blame src-info orig-str positive-position?)
-                          (let ([p-apps (procs pos-blame neg-blame src-info orig-str positive-position?)] ...)
+                     (let ([procs (contract-projection ctc-x)] ...)
+                       (simple-contract
+                        #:name (build-compound-type-name 'name ctc-x ...)
+                        #:projection
+                        (λ (blame)
+                          (let ([p-apps (procs blame)] ...)
                             (λ (v)
                               (if #,(if test-immutable?
                                         #'(and (predicate?-name v)
                                                (immutable? v))
                                         #'(predicate?-name v))
                                   (constructor-name (p-apps (selector-names v)) ...)
-                                  (raise-contract-error
+                                  (raise-blame-error
+                                   blame
                                    v
-                                   src-info
-                                   pos-blame
-                                   orig-str
                                    #,(if test-immutable?
                                          "expected immutable <~a>, given: ~e"
                                          "expected <~a>, given: ~e")
@@ -924,11 +912,12 @@
             [selector-name selector])
         (λ params
           (let ([ctcs (map (λ (param) (coerce-contract 'name param)) params)])
-            (let ([procs (map contract-proc ctcs)])
-              (make-proj-contract
-               (apply build-compound-type-name 'name ctcs)
-               (λ (pos-blame neg-blame src-info orig-str positive-position?)
-                 (let ([p-apps (map (λ (proc) (proc pos-blame neg-blame src-info orig-str positive-position?)) procs)]
+            (let ([procs (map contract-projection ctcs)])
+              (simple-contract
+               #:name (apply build-compound-type-name 'name ctcs)
+               #:projection
+               (λ (blame)
+                 (let ([p-apps (map (λ (proc) (proc blame)) procs)]
                        [count (length params)])
                    (λ (v)
                      (if (and (immutable? v)
@@ -942,11 +931,9 @@
                                     [else (let ([p-app (car p-apps)])
                                             (cons (p-app (selector-name v i))
                                                   (loop (cdr p-apps) (+ i 1))))])))
-                         (raise-contract-error
+                         (raise-blame-error
+                          blame
                           v
-                          src-info
-                          pos-blame
-                          orig-str
                           "expected <~a>, given: ~e"
                           'type-name
                           v)))))
@@ -975,21 +962,17 @@
         (values
          (with-syntax ((val (opt/info-val opt/info))
                        (ctc (opt/info-contract opt/info))
-                       (pos (opt/info-pos opt/info))
-                       (src-info (opt/info-src-info opt/info))
-                       (orig-str (opt/info-orig-str opt/info))
+                       (blame (opt/info-blame opt/info))
                        (next-hdp next-hdp)
                        (next-tlp next-tlp))
            (syntax (if check
                        (cons (let ((val (car val))) next-hdp)
                              (let ((val (cdr val))) next-tlp))
-                       (raise-contract-error
+                       (raise-blame-error
+                        blame
                         val
-                        src-info
-                        pos
-                        orig-str
                         "expected <~a>, given: ~e"
-                        ((name-get ctc) ctc)
+                        (contract-name ctc)
                         val))))        
          (append lifts-hdp lifts-tlp) 
          (append superlifts-hdp superlifts-tlp)
@@ -1026,19 +1009,16 @@
 (define promise/c
   (λ (ctc-in)
     (let* ([ctc (coerce-contract 'promise/c ctc-in)]
-           [ctc-proc (contract-proc ctc)])
-      (make-proj-contract
-       (build-compound-type-name 'promise/c ctc)
-       (λ (pos-blame neg-blame src-info orig-str positive-position?)
-         (let ([p-app (ctc-proc pos-blame neg-blame src-info orig-str positive-position?)])
+           [ctc-proc (contract-projection ctc)])
+      (simple-contract
+       #:name (build-compound-type-name 'promise/c ctc)
+       (λ (blame)
+         (let ([p-app (ctc-proc blame)])
            (λ (val)
              (unless (promise? val)
-               (raise-contract-error
+               (raise-blame-error
+                blame
                 val
-                src-info
-                pos-blame
-                'ignored
-                orig-str
                 "expected <promise>, given: ~e"
                 val))
              (delay (p-app (force val))))))
@@ -1117,40 +1097,42 @@
 
 (define-struct parameter/c (ctc)
   #:omit-define-syntaxes
-  #:property proj-prop
-  (λ (ctc)
-    (let ([c-proc ((proj-get (parameter/c-ctc ctc)) (parameter/c-ctc ctc))])
-      (λ (pos-blame neg-blame src-info orig-str positive-position?)
-        (let ([partial-neg-contract (c-proc neg-blame pos-blame src-info orig-str (not positive-position?))]
-              [partial-pos-contract (c-proc pos-blame neg-blame src-info orig-str positive-position?)])
-          (λ (val)
-            (cond
-              [(parameter? val)
-               (make-derived-parameter 
-                val 
-                partial-neg-contract
-                partial-pos-contract)]
-              [else
-               (raise-contract-error val src-info pos-blame orig-str 
-                                     "expected a parameter")]))))))
-  
-  #:property name-prop (λ (ctc) (build-compound-type-name 'parameter/c (parameter/c-ctc ctc)))
-  #:property first-order-prop
-  (λ (ctc)
-    (let ([tst ((first-order-get (parameter/c-ctc ctc)) (parameter/c-ctc ctc))])
-      (λ (x)
-        (and (parameter? x)
-             (tst (x))))))
-   
-  #:property stronger-prop
-  (λ (this that)
-    ;; must be invariant (because the library doesn't currently split out pos/neg contracts
-    ;; which could be tested individually ....)
-    (and (parameter/c? that)
-         (contract-stronger? (parameter/c-ctc this) 
-                             (parameter/c-ctc that))
-         (contract-stronger? (parameter/c-ctc that) 
-                             (parameter/c-ctc this)))))
+  #:property prop:contract
+  (build-contract-property
+   #:projection
+   (λ (ctc)
+      (let ([c-proc (contract-projection (parameter/c-ctc ctc))])
+        (λ (blame)
+           (let ([partial-neg-contract (c-proc (blame-swap blame))]
+                 [partial-pos-contract (c-proc blame)])
+             (λ (val)
+                (cond
+                 [(parameter? val)
+                  (make-derived-parameter 
+                   val 
+                   partial-neg-contract
+                   partial-pos-contract)]
+                 [else
+                  (raise-blame-error blame val "expected a parameter")]))))))
+
+   #:name
+   (λ (ctc) (build-compound-type-name 'parameter/c (parameter/c-ctc ctc)))
+   #:first-order
+   (λ (ctc)
+      (let ([tst (contract-first-order (parameter/c-ctc ctc))])
+        (λ (x)
+           (and (parameter? x)
+                (tst (x))))))
+
+   #:stronger
+   (λ (this that)
+      ;; must be invariant (because the library doesn't currently split out pos/neg contracts
+      ;; which could be tested individually ....)
+      (and (parameter/c? that)
+           (contract-stronger? (parameter/c-ctc this) 
+                               (parameter/c-ctc that))
+           (contract-stronger? (parameter/c-ctc that) 
+                               (parameter/c-ctc this))))))
 
 (define (hash/c dom rng #:immutable [immutable 'dont-care])
   (unless (memq immutable '(#t #f dont-care))
@@ -1166,8 +1148,8 @@
 
 ;; hash-test : hash/c -> any -> bool
 (define (hash-test ctc)
-  (let ([dom-proc ((flat-get (hash/c-dom ctc)) (hash/c-dom ctc))]
-        [rng-proc ((flat-get (hash/c-rng ctc)) (hash/c-rng ctc))]
+  (let ([dom-proc (flat-contract-predicate (hash/c-dom ctc))]
+        [rng-proc (flat-contract-predicate (hash/c-rng ctc))]
         [immutable (hash/c-immutable ctc)])
     (λ (val)
       (and (hash? val)
@@ -1186,72 +1168,71 @@
 (define-struct hash/c (dom rng immutable)
   #:omit-define-syntaxes
 
-  #:property flat-prop hash-test
-  #:property proj-prop
-  (λ (ctc)
-    (let ([dom-proc ((proj-get (hash/c-dom ctc)) (hash/c-dom ctc))]
-          [rng-proc ((proj-get (hash/c-rng ctc)) (hash/c-rng ctc))]
-          [immutable (hash/c-immutable ctc)])
-      (λ (pos-blame neg-blame src-info orig-str positive-position?)
-        (let ([partial-dom-contract (dom-proc pos-blame neg-blame src-info orig-str positive-position?)]
-              [partial-rng-contract (rng-proc pos-blame neg-blame src-info orig-str positive-position?)])
-          (λ (val)
-            (unless (hash? val)
-              (raise-contract-error val src-info pos-blame orig-str 
-                                    "expected a hash, got ~a" val))
-            (case immutable
-              [(#t) (unless (immutable? val)
-                      (raise-contract-error val src-info pos-blame orig-str 
-                                            "expected an immutable hash, got ~a" val))]
-              [(#f) (when (immutable? val)
-                      (raise-contract-error val src-info pos-blame orig-str 
-                                            "expected a mutable hash, got ~a" val))]
-              [(dont-care) (void)])
-              
-            (hash-for-each
-             val
-             (λ (key val)
-               (partial-dom-contract key)
-               (partial-rng-contract val)))
-            
-            val)))))
-  
-  #:property name-prop (λ (ctc) (apply 
-                                 build-compound-type-name
-                                 'hash/c (hash/c-dom ctc) (hash/c-rng ctc)
-                                 (if (eq? 'dont-care (hash/c-immutable ctc))
-                                     '()
-                                     (list '#:immutable (hash/c-immutable ctc)))))
-  #:property stronger-prop
-  (λ (this that)
-    #f))
+  #:property prop:flat-contract
+  (build-flat-contract-property
+   #:first-order hash-test
+   #:projection
+   (λ (ctc)
+      (let ([dom-proc (contract-projection (hash/c-dom ctc))]
+            [rng-proc (contract-projection (hash/c-rng ctc))]
+            [immutable (hash/c-immutable ctc)])
+        (λ (blame)
+           (let ([partial-dom-contract (dom-proc blame)]
+                 [partial-rng-contract (rng-proc blame)])
+             (λ (val)
+                (unless (hash? val)
+                  (raise-blame-error blame val "expected a hash, got ~a" val))
+                (case immutable
+                  [(#t) (unless (immutable? val)
+                          (raise-blame-error blame val
+                                             "expected an immutable hash, got ~a" val))]
+                  [(#f) (when (immutable? val)
+                          (raise-blame-error blame val
+                                             "expected a mutable hash, got ~a" val))]
+                  [(dont-care) (void)])
+                
+                (hash-for-each
+                 val
+                 (λ (key val)
+                    (partial-dom-contract key)
+                    (partial-rng-contract val)))
+                
+                val)))))
+
+   #:name
+   (λ (ctc) (apply 
+             build-compound-type-name
+             'hash/c (hash/c-dom ctc) (hash/c-rng ctc)
+             (if (eq? 'dont-care (hash/c-immutable ctc))
+               '()
+               (list '#:immutable (hash/c-immutable ctc)))))))
 
 (define-struct immutable-hash/c (dom rng)
   #:omit-define-syntaxes
 
-  #:property first-order-prop (λ (ctc) (λ (val) (and (hash? val) (immutable? val))))
-  #:property proj-prop
-  (λ (ctc)
-    (let ([dom-proc ((proj-get (immutable-hash/c-dom ctc)) (immutable-hash/c-dom ctc))]
-          [rng-proc ((proj-get (immutable-hash/c-rng ctc)) (immutable-hash/c-rng ctc))])
-      (λ (pos-blame neg-blame src-info orig-str positive-position?)
-        (let ([partial-dom-contract (dom-proc pos-blame neg-blame src-info orig-str positive-position?)]
-              [partial-rng-contract (rng-proc pos-blame neg-blame src-info orig-str positive-position?)])
-          (λ (val)
-            (unless (and (hash? val)
-                         (immutable? val))
-              (raise-contract-error val src-info pos-blame orig-str 
-                                    "expected an immutable hash"))
-            (make-immutable-hash
-             (hash-map
-              val
-              (λ (k v)
-                (cons (partial-dom-contract k)
-                      (partial-rng-contract v))))))))))
-  
-  #:property name-prop (λ (ctc) (build-compound-type-name
-                                 'hash/c (immutable-hash/c-dom ctc) (immutable-hash/c-rng ctc)
-                                 '#:immutable #t))
-  #:property stronger-prop
-  (λ (this that)
-    #f))
+  #:property prop:contract
+  (build-contract-property
+   #:first-order (λ (ctc) (λ (val) (and (hash? val) (immutable? val))))
+   #:projection
+   (λ (ctc)
+      (let ([dom-proc (contract-projection (immutable-hash/c-dom ctc))]
+            [rng-proc (contract-projection (immutable-hash/c-rng ctc))])
+        (λ (blame)
+           (let ([partial-dom-contract (dom-proc blame)]
+                 [partial-rng-contract (rng-proc blame)])
+             (λ (val)
+                (unless (and (hash? val)
+                             (immutable? val))
+                  (raise-blame-error blame val
+                                     "expected an immutable hash"))
+                (make-immutable-hash
+                 (hash-map
+                  val
+                  (λ (k v)
+                     (cons (partial-dom-contract k)
+                           (partial-rng-contract v))))))))))
+
+   #:name
+   (λ (ctc) (build-compound-type-name
+             'hash/c (immutable-hash/c-dom ctc) (immutable-hash/c-rng ctc)
+             '#:immutable #t))))
