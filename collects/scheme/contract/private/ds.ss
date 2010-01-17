@@ -286,185 +286,186 @@ it around flattened out.
                (contract-maker ctc-x ... #f)))
            
            (define (selectors x)
-             (burrow-in x 'selectors selector-indicies)) ...
-                                                         
-                                                         (define (burrow-in struct selector-name i)
-                                                           (cond
-                                                             [(raw-predicate struct)
-                                                              (get struct i)]
-                                                             [(opt-wrap-predicate struct)
-                                                              (if (opt-wrap-get struct 0)
-                                                                  (do-selection struct (+ i 1))
-                                                                  (opt-wrap-get struct (+ i 1)))]
-                                                             [(wrap-predicate struct)
-                                                              (if (wrap-get struct 0)
-                                                                  (do-selection struct (+ i 1))
-                                                                  (wrap-get struct (+ i 1)))]
-                                                             [else
-                                                              (error selector-name "expected <~a>, got ~e" 'name struct)]))
-                                                         
-                                                         (define (lazy-contract-name ctc)
-                                                           (do-contract-name 'struct/c
-                                                                             'struct/dc
-                                                                             (list (contract-get ctc selector-indicies) ...)
-                                                                             '(fields ...)
-                                                                             (contract-get ctc field-count)))
-                                                         
-                                                         (define-values (contract-type contract-maker contract-predicate contract-get contract-set)
-                                                           (make-struct-type 'contract-name
-                                                                             #f
-                                                                             (+ field-count 1) ;; extra field is for synthesized attribute ctcs
-                                                                             ;; it is a list whose first element is
-                                                                             ;; a procedure (called once teh attrs are known) that
-                                                                             ;; indicates if the test passes. the rest of the elements are
-                                                                             ;; procedures that build the attrs
-                                                                             ;; this field is #f when there is no synthesized attrs
-                                                                             0 ;; auto-field-k
-                                                                             '() ;; auto-field-v
-                                                                             (list (cons proj-prop lazy-contract-proj)
-                                                                                   (cons name-prop lazy-contract-name)
-                                                                                   (cons first-order-prop (λ (ctc) predicate))
-                                                                                   (cons stronger-prop stronger-lazy-contract?))))
-                                                         
-                                                         (define-for-syntax (build-enforcer opt/i opt/info name stx clauses
-                                                                                            helper-id-var helper-info helper-freev
-                                                                                            enforcer-id-var)
-                                                           (define (make-free-vars free-vars freev)
-                                                             (let loop ([i 0]
-                                                                        [stx null]
-                                                                        [free-vars free-vars])
-                                                               (cond
-                                                                 [(null? free-vars) (reverse stx)]
-                                                                 [else (loop (+ i 1)
-                                                                             (cons (with-syntax ((var (car free-vars))
-                                                                                                 (freev freev)
-                                                                                                 (j (+ i 2)))
-                                                                                     (syntax (var (opt-wrap-get stct j)))) stx)
-                                                                             (cdr free-vars))])))
-                                                           
-                                                           (let*-values ([(inner-val) #'val]
-                                                                         [(clauses lifts superlifts stronger-ribs)
-                                                                          (build-enforcer-clauses opt/i
-                                                                                                  (opt/info-change-val inner-val opt/info)
-                                                                                                  name
-                                                                                                  stx
-                                                                                                  clauses
-                                                                                                  (list (syntax f-x) ...)
-                                                                                                  (list (list (syntax f-xs) ...) ...)
-                                                                                                  helper-id-var
-                                                                                                  helper-info
-                                                                                                  helper-freev)])
-                                                             (with-syntax ([(clause (... ...)) clauses]
-                                                                           [enforcer-id enforcer-id-var]
-                                                                           [helper-id helper-id-var]
-                                                                           [((free-var free-var-val) (... ...))
-                                                                            (make-free-vars (append (opt/info-free-vars opt/info)) #'freev)]
-                                                                           [(saved-lifts (... ...)) (lifts-to-save lifts)])
-                                                               (values
-                                                                #`(λ (stct f-x ...)
-                                                                    (let ((free-var free-var-val) (... ...))
-                                                                      #,(bind-lifts
-                                                                         lifts
-                                                                         #'(let* (clause (... ...))
-                                                                             (values f-x ...)))))
-                                                                lifts
-                                                                superlifts
-                                                                stronger-ribs))))
-                                                         
-                                                         ;;
-                                                         ;; struct/dc opter
-                                                         ;;
-                                                         (define/opter (struct/dc opt/i opt/info stx)
-                                                           (syntax-case stx ()
-                                                             [(_ clause (... ...))
-                                                              (let ((enforcer-id-var (car (generate-temporaries (syntax (enforcer)))))
-                                                                    (helper-id-var (car (generate-temporaries (syntax (helper)))))
-                                                                    (contract/info-var (car (generate-temporaries (syntax (contract/info)))))
-                                                                    (id-var (car (generate-temporaries (syntax (id))))))
-                                                                (let-values ([(enforcer lifts superlifts stronger-ribs)
-                                                                              (build-enforcer opt/i
-                                                                                              opt/info
-                                                                                              'struct/dc
-                                                                                              stx
-                                                                                              (syntax (clause (... ...)))
-                                                                                              helper-id-var
-                                                                                              #'info
-                                                                                              #'freev
-                                                                                              enforcer-id-var)])
-                                                                  (let ([to-save (append (opt/info-free-vars opt/info)
-                                                                                         (lifts-to-save lifts))])
-                                                                    (with-syntax ((val (opt/info-val opt/info))
-                                                                                  (pos (opt/info-pos opt/info))
-                                                                                  (neg (opt/info-neg opt/info))
-                                                                                  (src-info (opt/info-src-info opt/info))
-                                                                                  (orig-str (opt/info-orig-str opt/info))
-                                                                                  (ctc (opt/info-contract opt/info))
-                                                                                  (enforcer-id enforcer-id-var)
-                                                                                  (helper-id helper-id-var)
-                                                                                  (contract/info contract/info-var)
-                                                                                  (id id-var)
-                                                                                  ((j (... ...)) (let loop ([i 2]
-                                                                                                            [lst to-save])
-                                                                                                   (cond
-                                                                                                     [(null? lst) null]
-                                                                                                     [else (cons i (loop (+ i 1) (cdr lst)))])))
-                                                                                  ((free-var (... ...)) to-save))
-                                                                      (with-syntax ([(stronger-this-var (... ...)) (map stronger-rib-this-var stronger-ribs)]
-                                                                                    [(stronger-that-var (... ...)) (map stronger-rib-that-var stronger-ribs)]
-                                                                                    [(stronger-exps (... ...)) (map stronger-rib-stronger-exp stronger-ribs)]
-                                                                                    [(stronger-indexes (... ...)) (build-list (length stronger-ribs) 
-                                                                                                                              (λ (x) (+ x 2)))]
-                                                                                    [(stronger-var (... ...)) (map stronger-rib-save-id stronger-ribs)])
-                                                                        
-                                                                        (let ([partials
-                                                                               (list (cons id-var #'(begin-lifted (box 'identity)))
-                                                                                     (cons enforcer-id-var enforcer)
-                                                                                     (cons contract/info-var
-                                                                                           (syntax 
-                                                                                            (make-opt-contract/info ctc enforcer-id id))))])
-                                                                          (values
-                                                                           (syntax 
-                                                                            (cond
-                                                                              [(opt-wrap-predicate val)
-                                                                               (if (and (opt-wrap-get val 0)
-                                                                                        (let ([stronger-this-var stronger-var] 
-                                                                                              (... ...)
-                                                                                              
-                                                                                              ;; this computation is bogus
-                                                                                              ;; it only works if the stronger vars and the things
-                                                                                              ;; saved in the wrapper are the same
-                                                                                              [stronger-that-var (opt-wrap-get val stronger-indexes)]
-                                                                                              (... ...))
-                                                                                          (and 
-                                                                                           ;; make sure this is the same contract -- if not,
-                                                                                           ;; the rest of this test is bogus and may fail at runtime
-                                                                                           (eq? id (opt-contract/info-id (opt-wrap-get val 1)))
-                                                                                           stronger-exps (... ...))))
-                                                                                   val
-                                                                                   (let ([w (opt-wrap-maker val contract/info)])
-                                                                                     (opt-wrap-set w j free-var) (... ...)
-                                                                                     w))]
-                                                                              [(or (raw-predicate val)
-                                                                                   (wrap-predicate val))
-                                                                               (let ([w (opt-wrap-maker val contract/info)])
-                                                                                 (opt-wrap-set w j free-var) (... ...)
-                                                                                 w)]
-                                                                              [else
-                                                                               (raise-contract-error
-                                                                                val
-                                                                                src-info
-                                                                                pos
-                                                                                orig-str
-                                                                                "expected <~a>, got ~e"
-                                                                                ((name-get ctc) ctc)
-                                                                                val)]))
-                                                                           lifts
-                                                                           superlifts
-                                                                           partials
-                                                                           #f
-                                                                           #f
-                                                                           stronger-ribs)))))))]))
-                                                         )))]))
+             (burrow-in x 'selectors selector-indicies))
+           ...
+           
+           (define (burrow-in struct selector-name i)
+             (cond
+              [(raw-predicate struct)
+               (get struct i)]
+              [(opt-wrap-predicate struct)
+               (if (opt-wrap-get struct 0)
+                 (do-selection struct (+ i 1))
+                 (opt-wrap-get struct (+ i 1)))]
+              [(wrap-predicate struct)
+               (if (wrap-get struct 0)
+                 (do-selection struct (+ i 1))
+                 (wrap-get struct (+ i 1)))]
+              [else
+               (error selector-name "expected <~a>, got ~e" 'name struct)]))
+           
+           (define (lazy-contract-name ctc)
+             (do-contract-name 'struct/c
+                               'struct/dc
+                               (list (contract-get ctc selector-indicies) ...)
+                               '(fields ...)
+                               (contract-get ctc field-count)))
+           
+           (define-values (contract-type contract-maker contract-predicate contract-get contract-set)
+             (make-struct-type 'contract-name
+                               #f
+                               (+ field-count 1) ;; extra field is for synthesized attribute ctcs
+                               ;; it is a list whose first element is
+                               ;; a procedure (called once teh attrs are known) that
+                               ;; indicates if the test passes. the rest of the elements are
+                               ;; procedures that build the attrs
+                               ;; this field is #f when there is no synthesized attrs
+                               0 ;; auto-field-k
+                               '() ;; auto-field-v
+                               (list (cons proj-prop lazy-contract-proj)
+                                     (cons name-prop lazy-contract-name)
+                                     (cons first-order-prop (λ (ctc) predicate))
+                                     (cons stronger-prop stronger-lazy-contract?))))
+           
+           (define-for-syntax (build-enforcer opt/i opt/info name stx clauses
+                                              helper-id-var helper-info helper-freev
+                                              enforcer-id-var)
+             (define (make-free-vars free-vars freev)
+               (let loop ([i 0]
+                          [stx null]
+                          [free-vars free-vars])
+                 (cond
+                  [(null? free-vars) (reverse stx)]
+                  [else (loop (+ i 1)
+                              (cons (with-syntax ((var (car free-vars))
+                                                  (freev freev)
+                                                  (j (+ i 2)))
+                                      (syntax (var (opt-wrap-get stct j)))) stx)
+                              (cdr free-vars))])))
+             
+             (let*-values ([(inner-val) #'val]
+                           [(clauses lifts superlifts stronger-ribs)
+                            (build-enforcer-clauses opt/i
+                                                    (opt/info-change-val inner-val opt/info)
+                                                    name
+                                                    stx
+                                                    clauses
+                                                    (list (syntax f-x) ...)
+                                                    (list (list (syntax f-xs) ...) ...)
+                                                    helper-id-var
+                                                    helper-info
+                                                    helper-freev)])
+               (with-syntax ([(clause (... ...)) clauses]
+                             [enforcer-id enforcer-id-var]
+                             [helper-id helper-id-var]
+                             [((free-var free-var-val) (... ...))
+                              (make-free-vars (append (opt/info-free-vars opt/info)) #'freev)]
+                             [(saved-lifts (... ...)) (lifts-to-save lifts)])
+                 (values
+                  #`(λ (stct f-x ...)
+                       (let ((free-var free-var-val) (... ...))
+                         #,(bind-lifts
+                            lifts
+                            #'(let* (clause (... ...))
+                                (values f-x ...)))))
+                  lifts
+                  superlifts
+                  stronger-ribs))))
+           
+           ;;
+           ;; struct/dc opter
+           ;;
+           (define/opter (struct/dc opt/i opt/info stx)
+             (syntax-case stx ()
+               [(_ clause (... ...))
+                (let ((enforcer-id-var (car (generate-temporaries (syntax (enforcer)))))
+                      (helper-id-var (car (generate-temporaries (syntax (helper)))))
+                      (contract/info-var (car (generate-temporaries (syntax (contract/info)))))
+                      (id-var (car (generate-temporaries (syntax (id))))))
+                  (let-values ([(enforcer lifts superlifts stronger-ribs)
+                                (build-enforcer opt/i
+                                                opt/info
+                                                'struct/dc
+                                                stx
+                                                (syntax (clause (... ...)))
+                                                helper-id-var
+                                                #'info
+                                                #'freev
+                                                enforcer-id-var)])
+                    (let ([to-save (append (opt/info-free-vars opt/info)
+                                           (lifts-to-save lifts))])
+                      (with-syntax ((val (opt/info-val opt/info))
+                                    (pos (opt/info-pos opt/info))
+                                    (neg (opt/info-neg opt/info))
+                                    (src-info (opt/info-src-info opt/info))
+                                    (orig-str (opt/info-orig-str opt/info))
+                                    (ctc (opt/info-contract opt/info))
+                                    (enforcer-id enforcer-id-var)
+                                    (helper-id helper-id-var)
+                                    (contract/info contract/info-var)
+                                    (id id-var)
+                                    ((j (... ...)) (let loop ([i 2]
+                                                              [lst to-save])
+                                                     (cond
+                                                      [(null? lst) null]
+                                                      [else (cons i (loop (+ i 1) (cdr lst)))])))
+                                    ((free-var (... ...)) to-save))
+                        (with-syntax ([(stronger-this-var (... ...)) (map stronger-rib-this-var stronger-ribs)]
+                                      [(stronger-that-var (... ...)) (map stronger-rib-that-var stronger-ribs)]
+                                      [(stronger-exps (... ...)) (map stronger-rib-stronger-exp stronger-ribs)]
+                                      [(stronger-indexes (... ...)) (build-list (length stronger-ribs) 
+                                                                                (λ (x) (+ x 2)))]
+                                      [(stronger-var (... ...)) (map stronger-rib-save-id stronger-ribs)])
+                          
+                          (let ([partials
+                                 (list (cons id-var #'(begin-lifted (box 'identity)))
+                                       (cons enforcer-id-var enforcer)
+                                       (cons contract/info-var
+                                             (syntax 
+                                              (make-opt-contract/info ctc enforcer-id id))))])
+                            (values
+                             (syntax 
+                              (cond
+                               [(opt-wrap-predicate val)
+                                (if (and (opt-wrap-get val 0)
+                                         (let ([stronger-this-var stronger-var] 
+                                               (... ...)
+                                               
+                                               ;; this computation is bogus
+                                               ;; it only works if the stronger vars and the things
+                                               ;; saved in the wrapper are the same
+                                               [stronger-that-var (opt-wrap-get val stronger-indexes)]
+                                               (... ...))
+                                           (and 
+                                            ;; make sure this is the same contract -- if not,
+                                            ;; the rest of this test is bogus and may fail at runtime
+                                            (eq? id (opt-contract/info-id (opt-wrap-get val 1)))
+                                            stronger-exps (... ...))))
+                                  val
+                                  (let ([w (opt-wrap-maker val contract/info)])
+                                    (opt-wrap-set w j free-var) (... ...)
+                                    w))]
+                               [(or (raw-predicate val)
+                                    (wrap-predicate val))
+                                (let ([w (opt-wrap-maker val contract/info)])
+                                  (opt-wrap-set w j free-var) (... ...)
+                                  w)]
+                               [else
+                                (raise-contract-error
+                                 val
+                                 src-info
+                                 pos
+                                 orig-str
+                                 "expected <~a>, got ~e"
+                                 ((name-get ctc) ctc)
+                                 val)]))
+                             lifts
+                             superlifts
+                             partials
+                             #f
+                             #f
+                             stronger-ribs)))))))]))
+           )))]))
 
 (define (do-contract-name name/c name/dc list-of-subcontracts fields attrs)
   (cond
