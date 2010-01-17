@@ -30,9 +30,6 @@
 (define-struct contract-property [ name first-order projection stronger ]
   #:omit-define-syntaxes)
 
-(define build-contract-property
-  (build-property make-contract-property 'anonymous-contract))
-
 (define (contract-property-guard prop info)
   (unless (contract-property? prop)
     (raise
@@ -77,10 +74,6 @@
 
 (define-struct flat-contract-property [implementation]
   #:omit-define-syntaxes)
-
-(define build-flat-contract-property
-  (build-property (compose make-flat-contract-property make-contract-property)
-                  'anonymous-flat-contract))
 
 (define (flat-contract-property-guard prop info)
   (unless (flat-contract-property? prop)
@@ -130,6 +123,13 @@
 
     (mk get-name get-first-order get-projection stronger)))
 
+(define build-contract-property
+  (build-property make-contract-property 'anonymous-contract))
+
+(define build-flat-contract-property
+  (build-property (compose make-flat-contract-property make-contract-property)
+                  'anonymous-flat-contract))
+
 (define (get-any? c) any?)
 (define (any? x) #t)
 
@@ -158,9 +158,6 @@
    (lambda (c) (simple-contract-projection c))
    (lambda (a b) ((simple-contract-stronger a) a b))))
 
-(define simple-contract
-  (build-contract make-simple-contract 'simple-contract))
-
 (define-struct simple-flat-contract [ name first-order projection stronger ]
   #:omit-define-syntaxes
   #:property prop:flat-contract
@@ -170,9 +167,6 @@
     (lambda (c) (simple-flat-contract-first-order c))
     (lambda (c) (simple-flat-contract-projection c))
     (lambda (a b) ((simple-flat-contract-stronger a) a b)))))
-
-(define simple-flat-contract
-  (build-contract make-simple-flat-contract 'simple-flat-contract))
 
 (define ((build-contract mk default-name)
          #:name [name #f]
@@ -186,3 +180,9 @@
          [stronger (or stronger weakest)])
 
     (mk name first-order projection stronger)))
+
+(define simple-contract
+  (build-contract make-simple-contract 'simple-contract))
+
+(define simple-flat-contract
+  (build-contract make-simple-flat-contract 'simple-flat-contract))
