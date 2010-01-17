@@ -1,4 +1,4 @@
-#lang scheme
+#lang scheme/gui
 
 (require 2htdp/universe)
 (require 2htdp/image)
@@ -16,5 +16,9 @@
                      (begin
                        (set! s (string-append "-" s))
                        (rectangle 1 1 'solid 'green)))))
+
+(let ([s (make-semaphore)])
+  (queue-callback (λ () (semaphore-post s)))
+  (yield s))
 
 (unless (string=? s "---") (error 'world-update-test "failed! ~s" s))
