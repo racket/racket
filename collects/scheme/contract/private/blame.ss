@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require unstable/srcloc scheme/pretty "helpers.ss")
+(require unstable/srcloc scheme/pretty setup/main-collects)
 
 (provide blame?
          make-blame
@@ -45,13 +45,21 @@
     (current-continuation-marks)
     b)))
 
+(define (simplify-source loc)
+  (let* ([src (srcloc-source loc)])
+    (if (path? src)
+      (let* ([rel (path->main-collects-relative src)])
+        (if (pair? rel)
+          (apply build-path
+                 (bytes->path #"<collects>")
+                 (map bytes->path-element (cdr rel)))
+          rel))
+      src)))
+
 (define (default-blame-format b x custom-message)
-  (let* ([source-message
-          (let* ([loc (blame-source b)])
-            (source-location->prefix
-             (struct-copy
-              srcloc loc
-              [source (source->name (srcloc-source loc))])))]
+  (let* ([source-message (source-location->prefix
+                          (simplify-source
+                           (blame-source b)))]
          [guilty-message (show (blame-guilty b))]
          [contract-message (show (blame-contract b))]
          [value-message (if (blame-value b)
