@@ -4,6 +4,7 @@
 	  "port.ss"
 	  scribble/manual 
           (for-label scheme
+                     (only-in 2htdp/universe on-tick on-draw)
                      (prefix-in htdp: teachpack/htdp/world)
                      (prefix-in htdp: htdp/image)
 		     (prefix-in 2htdp: teachpack/2htdp/universe)
@@ -143,8 +144,10 @@ For the image constant we switch from symbols to strings:
 ;; Scene 
 (define UFO
   (htdp:overlay
-    (htdp:circle 10 'solid 'red)
-    (htdp:rectangle 40 4 'solid 'red)))
+    (htdp:circle 
+     10 'solid 'red)
+    (htdp:rectangle
+     40 4 'solid 'red)))
 ))
 @; ---------------------------------
 @(begin
@@ -153,8 +156,10 @@ For the image constant we switch from symbols to strings:
 ;; Scene 
 (define UFO
   (htdp:overlay
-    (htdp:circle 10 "solid" "red")
-    (htdp:rectangle 40 4 "solid" "red")))
+    (htdp:circle
+     10 "solid" "red")
+    (htdp:rectangle
+     40 4 "solid" "red")))
 ))
 ]
  Strictly speaking, this isn't necessary, but we intend to replace symbols
@@ -180,10 +185,14 @@ The most important change concerns the lines that launch the world program:
  as there are lines in the old program. As you can see, the
  @scheme[big-bang] expression from the universe teachpack no longer
  requires the specification of the size of the scene or the rate at which
- the clock ticks (though it is possible to supply these dimensions if the
- defaults don't work). Furthermore, the names of the clauses are similar to
+ the clock ticks (though it is possible to supply the clock rate if the default
+ is not satisfactory). 
+ Furthermore, the names of the clauses are similar to
  the old names but shorter. 
 
+
+@;{
+   
 key events and mouse events are string: use key=? and mouse=? 
 
 stuff from Todd: 
@@ -207,12 +216,21 @@ what previous students have done. Porting five or six old projects to
 the new version can eat up a couple of hours if you have to run them
 and just correct errors. That's not horrible unless you don't have a
 couple of hours to do it.
+}
 
 
 @; -----------------------------------------------------------------------------
 @section{Porting Image Programs}
 
-using the new image library in isolation: 
+The universe library also comes with a new image library, @schememodname[2htdp/image].
+Using the old image
+library still works fine with @schememodname[2htdp/universe], but the
+new image library provides a number of improvements, including faster 
+image comparison (especially useful in @scheme[check-expect] expressions),
+rotating images, scaling images, curves, a number of new polygon shapes,
+and more control over line drawing.
+
+To use the new image library in isloation:
 
 @port[
 @(begin
@@ -228,7 +246,7 @@ using the new image library in isolation:
 ))
 ]
 
-using the new image library with the universe teachpack 
+and to use the new image library with the universe teachpack:
 
 @port[
 @(begin
@@ -244,18 +262,85 @@ using the new image library with the universe teachpack
 (require #,(schememodname 2htdp/image))
 ))]
   
+@bold{Overlay vs Underlay}
 
-why switch(?): faster image comparison, added rotate, scale, and curves, plus a bunch of new polygon primitives
+The @scheme[htdp:overlay] function places its first argument
+under its second (and subsequent) arguments and so in 
+@schememodname[2htdp/image], we decided to call that
+function @scheme[2htdp:underlay].
 
-@schemeblock[(htdp:rectangle 10 10 "outline" "black")
-             (2htdp:rectangle 10 10 "outline" "black")]
+@port[(schemeblock
+       (htdp:overlay
+        (htdp:rectangle 
+         10 20 "solid" "red")
+        (htdp:rectangle
+         20 10 "solid" "blue")))
+      (schemeblock
+       (2htdp:underlay
+        (2htdp:rectangle
+         10 20 "solid" "red")
+        (2htdp:rectangle
+         20 10 "solid" "blue")))]
 
-changes:
+@bold{No more pinholes}
 
-no pinholes (although they will reappear in a different form, eventually)
+The concept of pinholes from @schememodname[htdp/image]
+has no correspondance in @schememodname[2htdp/image] 
+(we do expect to bring back pinholes in @schememodname[2htdp/image]
+eventually, but they will not be as pervasive as they are
+in @scheme[htdp/image]).
 
-overlay arguments reversed (added underlay)
+Instead of 
+a special position in the image that overlay operations
+are sensitive to, 
+@schememodname[2htdp/image] has a family of overlay operations,
+that overlay images based on their centers or their edges.
 
-line drawing is slightly different (outlines are the same) (ellipses?)
+Since the default position of the pinhole is in the center
+for most images and the default for overlaying and underlaying
+images in @scheme[2htdp/image] is based on the center, 
+simple examples (like the one above) behave the same
+in both libraries.
 
-star function is different (bring back old star function?)
+But, consider this expression that overlays two images on
+their upper-left corners, written using both libraries.
+
+@port[@schemeblock[(htdp:overlay
+                    (htdp:put-pinhole
+                     (htdp:rectangle 10 20 "solid" "red")
+                     0 0)
+                    (htdp:put-pinhole
+                     (htdp:rectangle 20 10 "solid" "blue")
+                     0 0))]
+       @schemeblock[(2htdp:underlay/align
+                     "left"
+                     "top"
+                     (2htdp:rectangle 
+                      10 20 "solid" "red")
+                     (2htdp:rectangle
+                      20 10 "solid" "blue"))]]
+
+In the @schememodname[2htdp/image] version, the programmer
+uses @scheme[2htdp:underlay/align] to specify where
+the images should be lined up, instead of using the pinhole.
+
+@bold{Outlines in different places}
+
+The outline style shapes are now shifted by one pixel for @schememodname[2htdp/image] 
+images as compared to @schememodname[htdp/image].
+This means that these two rectangles draw the same sets of pixels.
+
+@port[@schemeblock[(htdp:rectangle 
+                    11 11 "outline" "black")]
+       @schemeblock[(2htdp:rectangle
+                     10 10 "outline" "black")]]
+
+See also @secref["nitty-gritty"].
+
+@bold{Star changed}
+
+The @scheme[2htdp:star] function is a completely different
+function from @scheme[htdp:star]. Both produce stars based, 
+on polygons, but @scheme[2htdp:star] always produces a five-pointed
+star. See also @scheme[2htdp:star-polygon] for more general star
+shapes.

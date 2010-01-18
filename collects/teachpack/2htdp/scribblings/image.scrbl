@@ -1003,7 +1003,7 @@ The baseline of an image is the place where the bottoms any letters line up, not
 Two images are equal if they draw exactly the same way, at their current size
 (not neccessarily at all sizes).
 
-@section{The nitty gritty of pixels, pens, and lines}
+@section[#:tag "nitty-gritty"]{The nitty gritty of pixels, pens, and lines}
 
 The image library treats coordinates as if they are in the upper-left corner 
 of each pixel, and infinitesimally small.

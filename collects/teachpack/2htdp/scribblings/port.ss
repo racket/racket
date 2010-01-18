@@ -2,8 +2,7 @@
 
 (require scribble/core)
 
-(define-syntax-rule
-  (port old new)
+(define (port old new)
   (make-table 
    (make-style 'boxed '())
    (list           
