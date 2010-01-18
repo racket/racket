@@ -46,15 +46,18 @@
     b)))
 
 (define (simplify-source loc)
-  (let* ([src (srcloc-source loc)])
+  (let* ([loc (build-source-location loc)]
+         [src (srcloc-source loc)])
     (if (path? src)
       (let* ([rel (path->main-collects-relative src)])
         (if (pair? rel)
-          (apply build-path
-                 (bytes->path #"<collects>")
-                 (map bytes->path-element (cdr rel)))
-          rel))
-      src)))
+          (struct-copy srcloc loc
+                       [source
+                        (apply build-path
+                               (bytes->path #"<collects>")
+                               (map bytes->path-element (cdr rel)))])
+          loc))
+      loc)))
 
 (define (default-blame-format b x custom-message)
   (let* ([source-message (source-location->prefix
