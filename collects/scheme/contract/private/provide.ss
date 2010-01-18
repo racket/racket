@@ -8,7 +8,8 @@
          "arrow.ss"
          "base.ss"
          scheme/contract/exists
-         "guts.ss")
+         "guts.ss"
+         unstable/location)
 
 (define-syntax (verify-contract stx)
   (syntax-case stx ()
@@ -52,9 +53,9 @@
                             #`(contract contract-id
                                         id
                                         pos-module-source
-                                        (current-module-path)
+                                        (quote-module-path)
                                         'id
-                                        (quote-syntax id))))))])
+                                        (quote-srcloc id))))))])
                (when key
                  (hash-set! saved-id-table key lifted-id))
                ;; Expand to a use of the lifted expression:
@@ -653,7 +654,7 @@
                 (with-syntax ([code
                                (quasisyntax/loc stx
                                  (begin
-                                   (define pos-module-source (current-module-path))
+                                   (define pos-module-source (quote-module-path))
                                    
                                    #,@(if no-need-to-check-ctrct?
                                           (list)
@@ -670,7 +671,7 @@
                   (syntax-local-lift-module-end-declaration
                    #`(begin 
                        (unless extra-test
-                         (contract contract-id id pos-module-source 'ignored 'id (quote-syntax id)))
+                         (contract contract-id id pos-module-source 'ignored 'id (quote-srcloc id)))
                        (void)))
                   
                   (syntax (code id-rename))))))]))
