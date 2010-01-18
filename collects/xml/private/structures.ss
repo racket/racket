@@ -58,15 +58,18 @@
 (define permissive-xexprs (make-parameter #f))
 
 (define permissive/c
-  (make-proj-contract 'permissive/c
-                      (lambda (pos neg src-info name)
-                        (lambda (v)
-                          (if (permissive-xexprs)
-                              v
-                              (raise-contract-error
-                               v src-info pos name "not in permissive mode"))))
-                      (lambda (v)
-                        (permissive-xexprs))))
+  (simple-flat-contract
+   #:name 'permissive/c
+   #:projection
+   (lambda (blame)
+     (lambda (v)
+       (if (permissive-xexprs)
+         v
+         (raise-blame-error
+          blame v "not in permissive mode"))))
+   #:first-order
+   (lambda (v)
+     (permissive-xexprs))))
 
 ; content? : TST -> Bool
 (define content/c
