@@ -11,6 +11,7 @@ improve method arity mismatch contract violation error messages?
 
 (provide contract
          recursive-contract
+         current-module-path
          current-contract-region)
 
 (require (for-syntax scheme/base)
@@ -19,7 +20,19 @@ improve method arity mismatch contract violation error messages?
          "guts.ss"
          "helpers.ss")
 
-(define-syntax-parameter current-contract-region (λ (stx) #'(#%variable-reference)))
+(define-syntax-rule (current-module-path)
+  (variable-reference->module-path (#%variable-reference)))
+
+(define (variable-reference->module-path var)
+  (let* ([path (variable-reference->resolved-module-path var)]
+         [name (and path (resolved-module-path-name path))])
+    (cond
+     [(path? name) `(file ,(path->string name))]
+     [(symbol? name) `(quote ,name)]
+     [else 'top-level])))
+
+(define-syntax-parameter current-contract-region
+  (λ (stx) #'(current-module-path)))
 
 (define-syntax (contract stx)
   (syntax-case stx ()
@@ -61,10 +74,10 @@ improve method arity mismatch contract violation error messages?
      v)))
 
 (define (check-syntax/srcloc! f-name v-name v)
-  (unless (or (syntax? v) (srcloc? v))
-    (error f-name "expected ~a to be syntax or srcloc; got: ~e" v-name v))
+  (unless (or (syntax? v) (srcloc? v) (not v))
+    (error f-name "expected ~a to be syntax or srcloc or #f; got: ~e" v-name v))
   (check-sexp! f-name
-               (format "source file of ~a")
+               (format "source file of ~a" v-name)
                (source-location-source v)))
 
 (define (check-sexp! f-name v-name v)
