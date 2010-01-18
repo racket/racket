@@ -16,16 +16,6 @@
     [(_ name x) (a:known-good-contract? #'x) #'x]
     [(_ name x) #'(coerce-contract name x)]))
 
-;; id->contract-src-info : identifier -> syntax
-;; constructs the last argument to the -contract, given an identifier
-(define-for-syntax (id->contract-src-info id)
-  #`(list (make-srcloc #,id
-                       #,(syntax-line id)
-                       #,(syntax-column id)
-                       #,(syntax-position id)
-                       #,(syntax-span id))
-          #,(format "~s" (syntax->datum id))))
-
 (define-for-syntax (make-provide/contract-transformer contract-id id pos-module-source)
   (make-set!-transformer
    (let ([saved-id-table (make-hasheq)])
