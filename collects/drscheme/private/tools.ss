@@ -4,6 +4,7 @@
          scheme/list
          scheme/runtime-path
          scheme/contract
+         unstable/location
          setup/getinfo
          mred
          framework
@@ -326,7 +327,8 @@
                                                 name 
                                                 'drscheme 
                                                 tool-name
-                                                (quote-syntax name))]))
+                                                (quote name)
+                                                (quote-srcloc name))]))
                           name
                           ctc)
                 body)]

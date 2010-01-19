@@ -5,7 +5,8 @@
          syntax/stx
          syntax/kerncase
          scheme/struct-info
-         scheme/contract/private/helpers
+         unstable/srcloc
+         unstable/location
          (for-syntax scheme/base
                      syntax/kerncase
                      "rep.ss"
@@ -110,9 +111,10 @@
   (pattern x:expr
            #:with c #`(contract #,ctc
                                 x
-                                (quote #,(string->symbol (or (build-src-loc-string #'x) "")))
-                                (quote #,(or '<this-macro>))
-                                (quote-syntax #,(syntax/loc #'x (<there>))))))
+                                (quote #,(source-location->string #'x))
+                                '<this-macro>
+                                #f
+                                (quote-srcloc x))))
 
 ;; Literal sets
   

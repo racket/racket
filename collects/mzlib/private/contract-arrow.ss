@@ -33,7 +33,7 @@
            (let ([proj-x (contract-projection rngs-x)] ...)
              (simple-contract
               #:name
-              (build-compound-type-name 'unconstrained-domain-> ((name-get rngs-x) rngs-x) ...)
+              (build-compound-type-name 'unconstrained-domain-> (contract-name rngs-x) ...)
               #:projection
               (λ (blame)
                 (let ([p-app-x (proj-x blame)] ...)
