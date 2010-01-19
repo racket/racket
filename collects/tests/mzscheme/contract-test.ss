@@ -7159,7 +7159,11 @@ so that propagation occurs.
      (and (exn? x)
           (regexp-match #rx"pce8-bug" (exn-message x)))))
   
-  (contract-eval `(,test 'pos guilty-party (with-handlers ((void values)) (contract not #t 'pos 'neg))))
+  (contract-eval
+   `(,test
+     'pos
+     (compose blame-guilty exn:fail:contract:blame-object)
+     (with-handlers ((void values)) (contract not #t 'pos 'neg))))
   
   (report-errs)
   
