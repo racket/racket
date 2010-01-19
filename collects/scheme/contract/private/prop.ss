@@ -177,9 +177,14 @@
   (let* ([name (or name default-name)]
          [first-order (or first-order any?)]
          [projection (or projection (first-order-projection name first-order))]
-         [stronger (or stronger weakest)])
+         [stronger (or stronger as-strong?)])
 
     (mk name first-order projection stronger)))
+
+(define (as-strong? a b)
+  (procedure-closure-contents-eq?
+   (contract-struct-projection a)
+   (contract-struct-projection b)))
 
 (define simple-contract
   (build-contract make-simple-contract 'simple-contract))
