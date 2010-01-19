@@ -14,7 +14,7 @@
 (define-for-syntax (make-define/contract-transformer contract-id id)
   (make-set!-transformer
    (λ (stx)
-     (with-syntax ([neg-blame-str (source-location->string stx)]
+     (with-syntax ([neg-blame-str (source-location->string stx "<<unknown>>")]
                    [contract-id contract-id]
                    [id id])
        (syntax-case stx (set!)
