@@ -9,7 +9,8 @@
          "base.ss"
          scheme/contract/exists
          "guts.ss"
-         unstable/location)
+         unstable/location
+         unstable/srcloc)
 
 (define-syntax (verify-contract stx)
   (syntax-case stx ()
@@ -696,7 +697,7 @@
                                                               'not-enough-info-for-blame
                                                               'not-enough-info-for-blame
                                                               '#f
-                                                              '#f))
+                                                              (build-source-location #f)))
                                                   ctcs
                                                   vals)))))])
     struct:struct-name))
