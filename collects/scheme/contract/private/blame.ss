@@ -47,10 +47,10 @@
 
 (define (default-blame-format b x custom-message)
   (let* ([source-message (source-location->prefix (blame-source b))]
-         [guilty-message (show (blame-guilty b))]
-         [contract-message (show (blame-contract b))]
+         [guilty-message (show/display (blame-guilty b))]
+         [contract-message (show/write (blame-contract b))]
          [value-message (if (blame-value b)
-                          (format " on ~a" (show (blame-value b)))
+                          (format " on ~a" (show/display (blame-value b)))
                           "")])
     (format "~a~a broke the contract ~a~a; ~a"
             source-message
@@ -59,15 +59,23 @@
             value-message
             custom-message)))
 
-(define (show v)
+(define ((show f) v)
   (let* ([line
           (parameterize ([pretty-print-columns 'infinity])
-            (pretty-format v))])
+            (f v))])
     (if (< (string-length line) 30)
       line
       (parameterize ([pretty-print-print-line show-line-break]
                      [pretty-print-columns 50])
-        (pretty-format v)))))
+        (f v)))))
+
+(define (pretty-format/display v [columns (pretty-print-columns)])
+  (let ([port (open-output-string)])
+    (pretty-display v port)
+    (get-output-string port)))
+
+(define show/display (show pretty-format/display))
+(define show/write (show pretty-format))
 
 (define (show-line-break line port len cols)
   (newline port)
