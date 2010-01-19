@@ -104,6 +104,7 @@ means specifically @tech{@Spattern}.
                  (~not S-pattern)
                  #((unsyntax @svar[pattern-part]) ...)
                  #s(prefab-struct-key (unsyntax @svar[pattern-part]) ...)
+                 #&@#,svar[S-pattern]
                  (~rest S-pattern)
                  (@#,ref[~describe s] expr S-pattern)
                  A-pattern]
@@ -512,6 +513,17 @@ key and whose sequence of fields, when considered as a list, match the
   [#s(point x y ...) (syntax->datum #'(y ...))])
 (syntax-parse #'#s(point 1 2 3)
   [#s(point x ~rest y) (syntax->datum #'y)])
+]
+}
+
+@specsubform[#&@#,svar[S-pattern]]{ 
+
+Matches a term that is a box whose contents matches the inner
+@tech{@Spattern}.
+
+@myexamples[
+(syntax-parse #'#&5
+  [#&n:nat 'ok])
 ]
 }
 

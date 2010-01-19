@@ -182,13 +182,31 @@
 (syntax-parse #'(+) #:literals ([plus +])
   [(plus) (void)])
 
-(define-syntax-class (nat> n)
-  #:description (format "nat > ~s" n)
+(define-syntax-class (Nat> n)
+  #:description (format "Nat > ~s" n)
   (pattern x:nat #:fail-unless (> (syntax-e #'x) n) #f))
 (syntax-parse #'(1 2 3)
   [(a:nat b0:nat c0:nat)
    #:with b #'b0
-   #:declare b (nat> (syntax-e #'a))
+   #:declare b (Nat> (syntax-e #'a))
    #:with c #'c0
-   #:declare c (nat> (syntax-e #'b0))
+   #:declare c (Nat> (syntax-e #'b0))
    (void)])
+
+(define-syntax-class (nat> bound)
+  #:opaque
+  #:description (format "natural number greater than ~s" bound)
+  (pattern n:nat
+           #:when (> (syntax-e #'n) bound)))
+
+(define-conventions nat-convs
+  [N (nat> 0)])
+
+(syntax-parse #'(5 4) #:conventions (nat-convs)
+  [(N ...) (void)])
+
+(let/ec escape
+  (with-handlers ([exn? (compose escape void)])
+    (syntax-parse #'(4 -1) #:conventions (nat-convs)
+      [(N ...) (void)]))
+  (error 'test-conv1 "didn't work"))
