@@ -888,7 +888,7 @@
                  (syntax
                   ((x ...)
                    (begin
-                     (check-pre-expr->pp/h val pre-expr blame)
+                     (check-pre-expr->pp/h val pre-expr (blame-swap blame))
                      (let ([dom-id ((contract-projection (coerce-contract 'stx-name dom)) 
                                     (blame-swap blame))]
                            ...)
