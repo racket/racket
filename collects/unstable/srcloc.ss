@@ -69,11 +69,11 @@
 (define (source-location-end x)
   (process-source-location x good-end bad! 'source-location-end))
 
-(define (source-location->string x)
-  (process-source-location x good-string bad! 'source-location->string))
+(define (source-location->string x [s ""])
+  (process-source-location x (good-string s) bad! 'source-location->string))
 
-(define (source-location->prefix x)
-  (process-source-location x good-prefix bad! 'source-location->prefix))
+(define (source-location->prefix x [s ""])
+  (process-source-location x (good-prefix s) bad! 'source-location->prefix))
 
 (define (build-source-location . locs)
   (combine-source-locations locs good-srcloc bad!
@@ -126,10 +126,10 @@
    [(or (list? x) (vector? x)) (datum->syntax #f null x)]
    [else (datum->syntax #f null (vector src line col pos span))]))
 
-(define (good-string x src line col pos span)
+(define ((good-string default) x src line col pos span)
   (format "~a~a"
           (cond [(path? src) (collects-path src)]
-                [(not src) ""]
+                [(not src) default]
                 [else src])
           (if line
             (if col
@@ -151,8 +151,8 @@
              (map bytes->path-element (cdr rel)))
       rel)))
 
-(define (good-prefix x src line col pos span)
-  (let ([str (good-string x src line col pos span)])
+(define ((good-prefix default) x src line col pos span)
+  (let ([str ((good-string default) x src line col pos span)])
     (if (string=? str "") "" (string-append str ": "))))
 
 (define (combine-source-locations locs good bad name)
