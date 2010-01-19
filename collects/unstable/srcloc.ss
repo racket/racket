@@ -3,6 +3,8 @@
 ;; Unstable library by: Carl Eastlund <cce@ccs.neu.edu>
 ;; intended for use in scheme/contract, so don't try to add contracts!
 
+(require setup/main-collects)
+
 (provide
 
  ;; type predicates
@@ -126,7 +128,9 @@
 
 (define (good-string x src line col pos span)
   (format "~a~a"
-          (or src "")
+          (cond [(path? src) (collects-path src)]
+                [(not src) ""]
+                [else src])
           (if line
             (if col
               (format ":~a.~a" line col)
@@ -136,6 +140,16 @@
                 (format "::~a-~a" pos (+ pos span))
                 (format "::~a" pos))
               ""))))
+
+(define (collects-path path)
+  (let* ([rel
+          (with-handlers ([exn:fail? (lambda (exn) path)])
+            (path->main-collects-relative path))])
+    (if (pair? rel)
+      (apply build-path
+             (bytes->path #"<collects>")
+             (map bytes->path-element (cdr rel)))
+      rel)))
 
 (define (good-prefix x src line col pos span)
   (let ([str (good-string x src line col pos span)])
