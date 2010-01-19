@@ -73,13 +73,9 @@
   (define (test/spec-failed name expression blame)
     (let ()
       (define (has-proper-blame? msg)
-        (equal?
-         blame
-         (cond
-           [(regexp-match #rx"(^| )(.*) broke" msg) 
-            =>
-            (λ (x) (caddr x))]
-           [else (format "no blame in error message: \"~a\"" msg)])))
+        (regexp-match?
+         (string-append "(^| )" (regexp-quote blame) " broke")
+         msg))
       (printf "testing: ~s\n" name)
       (contract-eval
        `(,thunk-error-test 
