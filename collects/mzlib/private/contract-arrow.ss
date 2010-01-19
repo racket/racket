@@ -43,7 +43,7 @@
                           (let-values ([(res-x ...) (apply val args)])
                             (values (p-app-x res-x) ...)))
                         (raise-blame-error blame val "expected a procedure")))))
-              procedure?))))]))
+              #:first-order procedure?))))]))
 
 (define (build--> name doms doms-rest rngs kwds quoted-kwds rng-any? func)
   (let ([doms/c (map (λ (dom) (coerce-contract name dom)) doms)]
