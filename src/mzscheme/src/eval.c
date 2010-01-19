@@ -9723,7 +9723,7 @@ static void *eval_k(void)
       v = scheme_eval_clone(v);
     rp = scheme_prefix_eval_clone(top->prefix);
 
-    save_runstack = scheme_push_prefix(env, top->prefix, NULL, NULL, 0, env->phase);
+    save_runstack = scheme_push_prefix(env, top->prefix, NULL, NULL, 0, env->phase, NULL);
 
     if (as_tail) {
       /* Cons up a closure to capture the prefix */
@@ -11031,7 +11031,8 @@ int scheme_prefix_depth(Resolve_Prefix *rp)
 
 Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp, 
 				   Scheme_Object *src_modidx, Scheme_Object *now_modidx,
-				   int src_phase, int now_phase)
+				   int src_phase, int now_phase,
+                                   Scheme_Env *dummy_env)
 {
   Scheme_Object **rs_save, **rs, *v, **a;
   int i, j;
@@ -11056,8 +11057,8 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
    
     for (i = 0; i < rp->num_toplevels; i++) {
       v = rp->toplevels[i];
-      if (genv)
-	v = link_toplevel(rp->toplevels, i, genv, src_modidx, now_modidx);
+      if (genv || SCHEME_FALSEP(v))
+	v = link_toplevel(rp->toplevels, i, genv ? genv : dummy_env, src_modidx, now_modidx);
       a[i] = v;
     }
 

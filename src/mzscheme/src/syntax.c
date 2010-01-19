@@ -700,7 +700,7 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
   if (dm_env) {
     scheme_prepare_exp_env(dm_env);
 
-    save_runstack = scheme_push_prefix(dm_env->exp_env, rp, NULL, NULL, 1, 1);
+    save_runstack = scheme_push_prefix(dm_env->exp_env, rp, NULL, NULL, 1, 1, NULL);
     vals = scheme_eval_linked_expr_multi_with_dynamic_state(vals_expr, dyn_state);
     if (defmacro == 2)
       dm_env = NULL;
@@ -5850,7 +5850,7 @@ static Scheme_Object *eval_letmacro_rhs(Scheme_Object *a, Scheme_Comp_Env *rhs_e
     return (Scheme_Object *)scheme_enlarge_runstack(depth, eval_letmacro_rhs_k);
   }
 
-  save_runstack = scheme_push_prefix(NULL, rp, NULL, NULL, phase, phase);
+  save_runstack = scheme_push_prefix(NULL, rp, NULL, NULL, phase, phase, rhs_env->genv);
 
   if (scheme_omittable_expr(a, 1, -1, 0, NULL)) {
     /* short cut */
