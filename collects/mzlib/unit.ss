@@ -16,6 +16,7 @@
 (require mzlib/etc
          scheme/contract/base
          scheme/stxparam
+         unstable/location
          "private/unit-contract.ss"
          "private/unit-keywords.ss"
          "private/unit-runtime.ss"
@@ -482,7 +483,7 @@
                           (if (pair? v/c)
                               (contract (let-syntax #,renamings ctc-stx) (car v/c) (cdr v/c)
                                         (current-contract-region)
-                                        (quote #,var) (quote-syntax #,var))
+                                        (quote #,var) (quote-srcloc #,var))
                               (error 'unit "contracted import ~a used before definition"
                                      (quote #,(syntax->datum var))))))))
       (quasisyntax/loc (error-syntax)
@@ -748,7 +749,7 @@
                                                                                       (current-contract-region)
                                                                                       'cant-happen
                                                                                       (quote #,id)
-                                                                                      (quote-syntax #,id))
+                                                                                      (quote-srcloc #,id))
                                                                             (set-box! #,export-loc
                                                                                       (cons #,tmp (current-contract-region)))))
                                                                         (quasisyntax/loc defn-or-expr
@@ -825,7 +826,7 @@
                                                  #`(let ([old-v/c (#,vref)])
                                                      (contract ctc-stx (car old-v/c) 
                                                                (cdr old-v/c) (current-contract-region)
-                                                               (quote #,var) (quote-syntax #,var)))
+                                                               (quote #,var) (quote-srcloc #,var)))
                                                  #`(#,vref))
                                            (current-contract-region)))
                                  (if ctc
@@ -833,7 +834,7 @@
                                          (let ([old-v/c (#,vref)])
                                            (contract ctc-stx (car old-v/c) 
                                                      (cdr old-v/c) (current-contract-region)
-                                                     (quote #,var) (quote-syntax #,var))))
+                                                     (quote #,var) (quote-srcloc #,var))))
                                      vref)))))
                        (car target-sig)
                        (cadddr target-sig)))
@@ -1304,7 +1305,7 @@
                                           #`(let ([v/c (#,tb)])
                                               (contract ctc-stx (car v/c) (cdr v/c)
                                                         (current-contract-region)
-                                                        (quote #,v) (quote-syntax #,v))))
+                                                        (quote #,v) (quote-srcloc #,v))))
                                         #`(#,tb)))
                                   tbs
                                   (iota (length (car os)))
@@ -1507,7 +1508,7 @@
                                         (export (export-tagged-sig-id [e.x e.c] ...) ...))))])
                        (values 
                         (syntax/loc stx
-                          (contract unit-contract new-unit '(unit name) (current-contract-region) (quote name) (quote-syntax name)))
+                          (contract unit-contract new-unit '(unit name) (current-contract-region) (quote name) (quote-srcloc name)))
                         isigs esigs deps))))]
                 [(ic:import-clause/contract ec:export-clause/contract . body)
                  (build-unit/contract 
