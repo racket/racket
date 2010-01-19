@@ -45,24 +45,8 @@
     (current-continuation-marks)
     b)))
 
-(define (simplify-source loc)
-  (let* ([loc (build-source-location loc)]
-         [src (srcloc-source loc)])
-    (if (path? src)
-      (let* ([rel (path->main-collects-relative src)])
-        (if (pair? rel)
-          (struct-copy srcloc loc
-                       [source
-                        (apply build-path
-                               (bytes->path #"<collects>")
-                               (map bytes->path-element (cdr rel)))])
-          loc))
-      loc)))
-
 (define (default-blame-format b x custom-message)
-  (let* ([source-message (source-location->prefix
-                          (simplify-source
-                           (blame-source b)))]
+  (let* ([source-message (source-location->prefix (blame-source b))]
          [guilty-message (show (blame-guilty b))]
          [contract-message (show (blame-contract b))]
          [value-message (if (blame-value b)
