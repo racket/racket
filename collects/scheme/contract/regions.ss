@@ -345,7 +345,8 @@
                                   #:guard (contract (-> super-contracts ... non-auto-contracts ... symbol? any)
                                                     guard
                                                     (current-contract-region) blame-id
-                                                    #'maker)))))))))]
+                                                    (quote maker)
+                                                    (quote-srcloc maker))))))))))]
     [(_ name . bad-fields)
      (identifier? #'name)
      (syntax-error "expected a list of field name/contract pairs"
