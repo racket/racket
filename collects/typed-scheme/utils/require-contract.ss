@@ -1,7 +1,6 @@
 #lang scheme/base
 
 (require scheme/contract
-         unstable/location
          (for-syntax scheme/base
                      syntax/kerncase 
                      syntax/parse
@@ -46,7 +45,7 @@
                           '(interface for #,(syntax->datum #'nm))
                           'never-happen
                           (quote nm)
-                          (quote-srcloc nm))))]
+                          (quote-syntax nm))))]
     [(require/contract (orig-nm:renameable nm:id) cnt lib)
      #`(begin (require (only-in lib [orig-nm orig-nm.r]))
               (define-ignored nm 
@@ -55,4 +54,4 @@
                           '#,(syntax->datum #'nm)
                           'never-happen
                           (quote nm)
-                          (quote-srcloc nm))))]))
+                          (quote-syntax nm))))]))

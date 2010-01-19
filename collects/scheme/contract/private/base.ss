@@ -56,9 +56,9 @@ improve method arity mismatch contract violation error messages?
      v)))
 
 (define (check-srcloc! f-name v-name v args)
-  (unless (srcloc? v)
+  (unless (source-location? v)
     (error f-name
-           "expected ~a to be a srcloc structure, got: ~e; all arguments: ~e"
+           "expected ~a to be a source location, got: ~e; all arguments: ~e"
            v-name v args))
   (check-sexp! f-name
                (format "source file of ~a" v-name)

@@ -5,8 +5,7 @@
 (require (for-syntax scheme/base
                      unstable/srcloc
                      (prefix-in a: scheme/contract/private/helpers))
-         (only-in scheme/contract contract)
-         unstable/location)
+         (only-in scheme/contract contract))
 
 ;; First, we have the old define/contract implementation, which
 ;; is still used in mzlib/contract.
@@ -30,7 +29,7 @@
                        (syntax->datum (quote-syntax f))
                        neg-blame-str
                        (quote f)
-                       (quote-srcloc f))
+                       (quote-syntax f))
              arg
              ...))]
          [ident
@@ -41,7 +40,7 @@
                       (syntax->datum (quote-syntax ident))
                       neg-blame-str
                       (quote ident)
-                      (quote-srcloc ident)))])))))
+                      (quote-syntax ident)))])))))
 
 ;; (define/contract id contract expr)
 ;; defines `id' with `contract'; initially binding

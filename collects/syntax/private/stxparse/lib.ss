@@ -6,7 +6,6 @@
          syntax/kerncase
          scheme/struct-info
          unstable/srcloc
-         unstable/location
          (for-syntax scheme/base
                      syntax/kerncase
                      "rep.ss"
@@ -115,7 +114,7 @@
                          (quote #,(source-location->string #'x "<<unknown>>"))
                          '<this-macro>
                          #f
-                         (quote-srcloc x))))
+                         (quote-syntax x))))
 
 ;; Literal sets
   
