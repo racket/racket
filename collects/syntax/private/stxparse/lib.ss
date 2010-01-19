@@ -109,12 +109,13 @@
 (define-syntax-class (expr/c ctc)
   #:attributes (c)
   (pattern x:expr
-           #:with c #`(contract #,ctc
-                                x
-                                (quote #,(source-location->string #'x))
-                                '<this-macro>
-                                #f
-                                (quote-srcloc x))))
+           #:with
+           c #`(contract #,ctc
+                         x
+                         (quote #,(source-location->string #'x "<<unknown>>"))
+                         '<this-macro>
+                         #f
+                         (quote-srcloc x))))
 
 ;; Literal sets
   
