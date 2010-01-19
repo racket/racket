@@ -3,22 +3,20 @@
 (define-struct stuffer (in out))
 (define (stuffer/c dom rng)
   (define in (dom . -> . rng))
-  (define in-proc (contract-proc in))
+  (define in-proc (contract-projection in))
   (define out (rng . -> . dom))  
-  (define out-proc (contract-proc out))
-  (make-proj-contract
-   (build-compound-type-name 'stuffer/c in out)
-   (λ (pos-blame neg-blame src-info orig-str positive-position?)
-     (define in-app (in-proc pos-blame neg-blame src-info orig-str positive-position?))
-     (define out-app (out-proc pos-blame neg-blame src-info orig-str positive-position?))
+  (define out-proc (contract-projection out))
+  (simple-contract
+   #:name (build-compound-type-name 'stuffer/c in out)
+   #:projection
+   (λ (blame)
+     (define in-app (in-proc blame))
+     (define out-app (out-proc blame))
      (λ (val)
        (unless (stuffer? val)
-         (raise-contract-error
+         (raise-blame-error
+          blame
           val
-          src-info
-          pos-blame
-          'ignored
-          orig-str
           "expected <stuffer>, given: ~e"
           val))
        (make-stuffer

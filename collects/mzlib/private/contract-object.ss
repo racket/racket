@@ -340,10 +340,12 @@
                                                  (list methods ...)
                                                  '(field-name ...)
                                                  #t)])
-                    (make-proj-contract
+                    (simple-contract
+                     #:name
                      `(object-contract 
                        ,(build-compound-type-name 'method-name method-ctc-var) ...
                        ,(build-compound-type-name 'field 'field-name field-ctc-var) ...)
+                     #:projection
                      (lambda (blame)
                        (let ([method/app-var (method-var blame)] 
                              ...
@@ -369,8 +371,7 @@
                                  val
                                  (method/app-var (vector-ref vtable (hash-ref method-ht 'method-name))) ...
                                  (field/app-var (get-field field-name val)) ...
-                                 ))))))
-                     #f)))))))]))))
+                                 )))))))))))))]))))
 
 
 (define (check-object val blame)

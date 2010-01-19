@@ -132,7 +132,8 @@
                            export-tagged-infos)])
          (quasisyntax/loc stx
            (begin
-             (make-proj-contract
+             (simple-contract
+              #:name
               (list 'unit/c
                     (cons 'import 
                           (list (cons 'isig
@@ -144,6 +145,7 @@
                                       (map list (list 'e.x ...)
                                            (build-compound-type-name 'e.c ...)))
                                 ...)))
+              #:projection
               (λ (blame)
                 (λ (unit-tmp)
                   (unless (unit? unit-tmp)
@@ -179,6 +181,7 @@
                                   export-sigs
                                   contract-table
                                   #'blame)))))))
+              #:first-order
               (λ (v)
                 (and (unit? v)
                      (with-handlers ([exn:fail:contract? (λ () #f)])

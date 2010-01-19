@@ -38,26 +38,29 @@
             (if (predicate x) (then-pred x) (else-pred x)))
           (flat-named-contract name pred))
         ;; ho contract
-        (let ([then-proj ((proj-get then-ctc) then-ctc)]
-              [then-fo ((first-order-get then-ctc) then-ctc)]
-              [else-proj ((proj-get else-ctc) else-ctc)]
-              [else-fo ((first-order-get else-ctc) else-ctc)])
-          (define ((proj pos neg srcinfo name pos?) x)
+        (let ([then-proj (contract-projection then-ctc)]
+              [then-fo (contract-first-order then-ctc)]
+              [else-proj (contract-projection else-ctc)]
+              [else-fo (contract-first-order else-ctc)])
+          (define ((proj blame) x)
             (if (predicate x)
-                ((then-proj pos neg srcinfo name pos?) x)
-                ((else-proj pos neg srcinfo name pos?) x)))
-          (make-proj-contract
-           name
-           proj
+                ((then-proj blame) x)
+                ((else-proj blame) x)))
+          (simple-contract
+           #:name name
+           #:projection proj
+           #:first-order
            (lambda (x) (if (predicate x) (then-fo x) (else-fo x))))))))
 
 (define (rename-contract ctc name)
   (let ([ctc (coerce-contract 'rename-contract ctc)])
     (if (flat-contract? ctc)
         (flat-named-contract name (flat-contract-predicate ctc))
-        (let* ([ctc-fo ((first-order-get ctc) ctc)]
-               [proj ((proj-get ctc) ctc)])
-          (make-proj-contract name proj ctc-fo)))))
+        (let* ([ctc-fo (contract-first-order ctc)]
+               [proj (contract-projection ctc)])
+          (simple-contract #:name name
+                           #:projection proj
+                           #:first-order ctc-fo)))))
 
 (provide/contract
  [non-empty-string/c contract?]
