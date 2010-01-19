@@ -5261,7 +5261,7 @@
          #:projection
          (lambda (blame)
            (lambda (x)
-             (if blame 'positive 'negative)))))
+             (if (blame-swapped? blame) 'negative 'positive)))))
 
       (define call*0 'dummy)
       (define (call*1 x0) x0)
