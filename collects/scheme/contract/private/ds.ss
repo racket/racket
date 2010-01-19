@@ -75,7 +75,7 @@ it around flattened out.
                      [struct:-name struct:-name/val]
                      [struct-maker struct-maker/val]
                      [predicate predicate/val]
-                     [contract-name (add-suffix "-contract")]
+                     [the-contract (add-suffix "-contract")]
                      [(selector-indicies ...) (nums-up-to field-count/val)]
                      [(selector-indicies+1 ...) (map add1 (nums-up-to field-count/val))]
                      [(ctc-x ...) (generate-temporaries (syntax (fields ...)))]
@@ -312,7 +312,7 @@ it around flattened out.
               #:stronger stronger-lazy-contract?))
            
            (define-values (contract-type contract-maker contract-predicate contract-get contract-set)
-             (make-struct-type 'contract-name
+             (make-struct-type 'the-contract
                                #f
                                (+ field-count 1) ;; extra field is for synthesized attribute ctcs
                                ;; it is a list whose first element is
