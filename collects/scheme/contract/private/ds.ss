@@ -214,12 +214,12 @@ it around flattened out.
            (define (rewrite-fields parent contract/info ctc-x ...)
              (let* ([f-x (let* ([ctc-field (contract-get (contract/info-contract contract/info)
                                                          selector-indicies)]
-                                [ctc (if (procedure? ctc-field)
-                                         (ctc-field f-xs ...)
-                                         ctc-field)]
+                                [ctc (if (contract-struct? ctc-field)
+                                         ctc-field
+                                         (ctc-field f-xs ...))]
                                 
                                 [ctc-field-val
-                                 (((contract-predicate ctc)
+                                 (((contract-projection ctc)
                                    (contract/info-blame contract/info))
                                   ctc-x)])
                            (update-parent-links parent ctc-field-val)
