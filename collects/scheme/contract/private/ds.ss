@@ -466,7 +466,7 @@ it around flattened out.
     [else
      (let ([fields 
             (map (λ (field ctc) 
-                   (if (contract? ctc)
+                   (if (contract-struct? ctc)
                        (build-compound-type-name field ctc)
                        (build-compound-type-name field '...)))
                  fields
