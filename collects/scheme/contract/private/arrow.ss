@@ -928,7 +928,7 @@ v4 todo:
                           [rng-underscore? (box? (->d-range ->d-stct))])
                      (when (->d-pre-cond ->d-stct)
                        (unless (apply (->d-pre-cond ->d-stct) dep-pre-args)
-                         (raise-blame-error blame
+                         (raise-blame-error (blame-swap blame)
                                             val
                                             "#:pre-cond violation~a"
                                             (build-values-string ", argument" dep-pre-args))))
