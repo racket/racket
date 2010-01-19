@@ -28,17 +28,9 @@ improve method arity mismatch contract violation error messages?
     [(_ c v pos neg name loc)
      (syntax/loc stx
        (apply-contract c v pos neg name loc))]
-    [(_ a-contract to-check pos-blame-e neg-blame-e)
-     #|
-     (quasisyntax/loc stx
-       (contract a-contract
-                 to-check
-                 pos-blame-e
-                 neg-blame-e
-                 (build-source-location (quote-syntax #,stx))
-                 '#f))
-     |#
-     (raise-syntax-error 'contract "upgrade to new calling convention" stx)]
+    [(_ c v pos neg)
+     (syntax/loc stx
+       (apply-contract c v pos neg #f (build-source-location #f)))]
     [(_ a-contract-e to-check pos-blame-e neg-blame-e src-info-e)
      #|
      (syntax/loc stx
@@ -53,23 +45,27 @@ improve method arity mismatch contract violation error messages?
      (raise-syntax-error 'contract "upgrade to new calling convention" stx)]))
 
 (define (apply-contract c v pos neg name loc)
-  (let* ([c (coerce-contract 'contract c)])
-    (check-sexp! 'contract "positive blame" pos)
-    (check-sexp! 'contract "negative blame" neg)
-    (check-sexp! 'contract "value name" name)
-    (check-srcloc! 'contract "source location" loc)
+  (let* ([c (coerce-contract 'contract c)]
+         [args (list c v pos neg name loc)])
+    (check-sexp! 'contract "positive blame" pos args)
+    (check-sexp! 'contract "negative blame" neg args)
+    (check-sexp! 'contract "value name" name args)
+    (check-srcloc! 'contract "source location" loc args)
     (((contract-projection c)
       (make-blame loc name (contract-name c) pos neg #f))
      v)))
 
-(define (check-srcloc! f-name v-name v)
+(define (check-srcloc! f-name v-name v args)
   (unless (srcloc? v)
-    (error f-name "expected ~a to be a srcloc structure; got: ~e" v-name v))
+    (error f-name
+           "expected ~a to be a srcloc structure, got: ~e; all arguments: ~e"
+           v-name v args))
   (check-sexp! f-name
                (format "source file of ~a" v-name)
-               (source-location-source v)))
+               (source-location-source v)
+               args))
 
-(define (check-sexp! f-name v-name v)
+(define (check-sexp! f-name v-name v args)
   (let loop ([seen #hasheq()] [x v])
     (unless (or (null? x) (boolean? x) (number? x)
                 (string? x) (bytes? x) (regexp? x) (char? x)
@@ -77,8 +73,10 @@ improve method arity mismatch contract violation error messages?
                 (path? x))
       (when (hash-has-key? seen x)
         (error f-name
-               "expected ~a to be acyclic; found a cycle in ~e at ~e"
-               v-name v x))
+               (string-append "expected ~a to be acyclic, "
+                              "found a cycle in ~e at ~e; "
+                              "all arguments: ~e")
+               v-name v x args))
       (let ([seen (hash-set seen x #t)])
         (cond
          [(pair? x) (loop seen (car x)) (loop seen (cdr x))]
@@ -89,8 +87,10 @@ improve method arity mismatch contract violation error messages?
          [(prefab-struct-key x) =>
           (lambda (k) (loop seen k) (loop seen (struct->vector x)))]
          [else (error f-name
-                      "expected ~a to be an s-expression; ~e contained ~e"
-                      v-name v x)])))))
+                      (string-append "expected ~a to be an s-expression, "
+                                     "~e contained ~e; "
+                                     "all arguments: ~e")
+                      v-name v x args)])))))
 
 (define (unpack-source info)
   (cond
