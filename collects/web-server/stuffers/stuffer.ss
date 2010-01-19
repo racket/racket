@@ -22,7 +22,7 @@
        (make-stuffer
         (in-app (stuffer-in val))
         (out-app (stuffer-out val)))))
-   stuffer?))
+   #:first-order stuffer?))
 
 (define id-stuffer
   (make-stuffer 
