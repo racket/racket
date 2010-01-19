@@ -38,15 +38,15 @@
 
  (define (apply/c c
                   #:name [name (build-compound-type-name 'apply/c c)])
-   (make-proj-contract
-    name
-    (lambda (pos neg src name2 positive-position?)
+   (simple-contract
+    #:name name
+    #:projection
+    (lambda (blame)
       (lambda (p)
         (let* ([ctc (coerce-contract 'apply/c c)]
                [thunk
                 (lambda ()
-                  ((((proj-get ctc) ctc)
-                    pos neg src name2 positive-position?) p))])
+                  (((contract-projection ctc) blame) p))])
           (make-keyword-procedure
            (lambda (keys vals . args) (keyword-apply (thunk) keys vals args))
            (case-lambda
@@ -60,7 +60,7 @@
              [(a b c d e f g) ((thunk) a b c d e f g)]
              [(a b c d e f g h) ((thunk) a b c d e f g h)]
              [args (apply (thunk) args)])))))
-    procedure?)))
+    #:first-order procedure?)))
 
 (define-syntax (poly/c stx)
   (syntax-case stx ()
