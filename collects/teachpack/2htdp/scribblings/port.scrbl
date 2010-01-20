@@ -191,33 +191,55 @@ The most important change concerns the lines that launch the world program:
  the old names but shorter. 
 
 
-@;{
-   
-key events and mouse events are string: use key=? and mouse=? 
+The other big change concerns key event handling and mouse event
+ handling. The respective handlers no longer accept symbols and chars but
+ strings only. Here is the first key event handler from the documentation
+ of the world teachpack: 
 
-stuff from Todd: 
+@port[
+@schemeblock[
+ (define (change w a-key-event)
+    (cond
+      [(key=? a-key-event 'left)  
+       (world-go w -DELTA)]
+      [(key=? a-key-event 'right)
+       (world-go w +DELTA)]
+      [(char? a-key-event)
+       w] 
+      [(key=? a-key-event 'up)
+       (world-go w -DELTA)]
+      [(key=? a-key-event 'down)
+       (world-go w +DELTA)]
+      [else
+       w]))]
+@; ---------------------------------
+@schemeblock[
+ (define (change w a-key-event)
+    (cond
+      [(key=? a-key-event "left")  
+       (world-go w -DELTA)]
+      [(key=? a-key-event "right")
+       (world-go w +DELTA)]
+      [(= (string-length a-key-event) 1)
+       w] 
+      [(key=? a-key-event "up")
+       (world-go w -DELTA)]
+      [(key=? a-key-event "down")
+       (world-go w +DELTA)]
+      [else
+       w]))
+]]
+ Note how the @scheme[char?] clause changed. Since all chars are now
+ represented as strings containing one ``letter'', the program on the right
+ just checks the length of the string. Otherwise, we simply change all
+ symbols into strings. 
 
-I'm not actually worried about me--I try to stay up to date, and I
-teach three intro classes, so enough of my time is devoted to the HtDP
-languages that I can stay on top of things. I'm worried about people
-like Renee Ciezki in Arizona who pushes other teachers in her county
-to use HtDP only to discover that the lessons she's given them to use
-don't quite work anymore. At least she emails and asks what's going
-on--I'm afraid other people just throw up their hands in frustration.
+If you ever recorded your programs' work via an animated gif, you can still
+ do so. Instead of adding a fifth argument to @scheme[big-bang], however,
+ you will need to add a clause of the shape @scheme[(record? x)]. 
 
-And it's not just that one change to go from world to universe--key
-events became strings instead of symbols, for example, and there are a
-number of other small changes. Having a checklist that explains how to
-get from X to Y would make the transition less complicated.
-
-Also, being unable to show previous student projects as examples is a
-major downer. It's incredibly motivational to current students to see
-what previous students have done. Porting five or six old projects to
-the new version can eat up a couple of hours if you have to run them
-and just correct errors. That's not horrible unless you don't have a
-couple of hours to do it.
-}
-
+Finally, the universe teachpack implements a richer functionality than the
+ world teachpack. 
 
 @; -----------------------------------------------------------------------------
 @section{Porting Image Programs}
