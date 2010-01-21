@@ -7,6 +7,9 @@
                      (honu-top #%top)
                      (semicolon \;)
                      (honu-+ +)
+                     (honu-* *)
+                     (honu-/ /)
+                     (honu-- -)
                      )
          #%datum
          true

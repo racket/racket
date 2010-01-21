@@ -12,18 +12,21 @@
                      )
          ;; "typed-utils.ss"
          )
+(require (for-meta 2 scheme/base))
 
 (provide (all-defined-out))
 
 ;; macro for defining literal tokens that can be used in macros
-(define-syntax-rule (define-literal name)
-  (define-syntax name (lambda (stx)
+(define-syntax-rule (define-literal name ...)
+  (begin
+    (define-syntax name (lambda (stx)
                         (raise-syntax-error 'name
-                                            "this is a literal and cannot be used outside a macro"))))
+                                            "this is a literal and cannot be used outside a macro")))
+    ...))
 
 (define-literal honu-return)
 (define-literal semicolon)
-(define-literal honu-+)
+(define-literal honu-+ honu-* honu-/ honu--)
 
 ;; (define-syntax (\; stx) (raise-syntax-error '\; "out of context" stx))
 
@@ -358,19 +361,67 @@ x(2)
     (define-syntax-class expr
                          [pattern f])
     (define-splicing-syntax-class call
-                         [pattern (~seq e:expr (#%parens arg:expression))
+                         [pattern (~seq e:expr (#%parens arg:expression-1))
                                   #:with call #'(e arg.result)])
-    (define-splicing-syntax-class expression1
+    (define-splicing-syntax-class expression-last
                          [pattern (~seq call:call) #:with result #'call.call]
                          [pattern (~seq x:number) #:with result #'x]
                          )
-    (define-splicing-syntax-class expression
-                         #:literals (semicolon honu-+)
-                         [pattern (~seq exp-left:expression1 honu-+ exp-right:expression)
+    (define-splicing-syntax-class expression-3
+                                  [pattern (~seq e:expression-last) #:with result #'e.result])
+
+    (define-syntax (syntax-lambda stx)
+      (syntax-case stx ()
+        [(_ (arg ...) body)
+         (with-syntax ([(temp ...) (generate-temporaries #'(arg ...))])
+           #'(lambda (temp ...)
+               (with-syntax ([arg temp] ...)
+                 body)))]))
+
+    (define-syntax-rule (define-infix-operator name next [operator reducer] ...)
+      (define-splicing-syntax-class name
+                                    #:literals (operator ...)
+                                    [pattern (~seq (~var left next) operator (~var right name))
+                                             #:with result (reducer #'left.result #'right.result)]
+                                    ...
+                                    [pattern (~seq (~var exp next))
+                                             #:with result #'exp.result]
+                                    ))
+
+    (define-infix-operator expression-2 expression-3
+                           [honu-* (syntax-lambda (left right)
+                                                  #'(* left right))]
+                           [honu-/ (syntax-lambda (left right)
+                                                  #'(/ left right))])
+
+    #;
+    (define-splicing-syntax-class expression-2
+                         #:literals (honu-* honu-/)
+                         [pattern (~seq exp-left:expression-3 honu-* exp-right:expression-2)
+                                  #:with result #'(* exp-left.result exp-right.result)]
+                         [pattern (~seq exp-left:expression-3 honu-/ exp-right:expression-2)
+                                  #:with result #'(/ exp-left.result exp-right.result)]
+                         [pattern (~seq exp:expression-3) #:with result #'exp.result])
+
+    
+
+    (define-infix-operator expression-1 expression-2
+                           [honu-+ (syntax-lambda (left right)
+                                                  #'(+ left right))]
+                           [honu-- (syntax-lambda (left right)
+                                                  #'(- left right))])
+
+    #;
+    (define-splicing-syntax-class expression-1
+                         #:literals (honu-+ honu--)
+                         [pattern (~seq exp-left:expression-2 honu-+ exp-right:expression-1)
                                   #:with result #'(+ exp-left.result exp-right.result)]
-                         [pattern (~seq exp:expression1) #:with result #'exp.result])
+                         [pattern (~seq exp-left:expression-2 honu-- exp-right:expression-1)
+                                  #:with result #'(- exp-left.result exp-right.result)]
+                         [pattern (~seq exp:expression-2) #:with result #'exp.result])
+
     (define-syntax-class expression-top
-                         [pattern (e:expression semicolon . rest)
+                         [pattern (e:expression-1 semicolon . rest)
                                   #:with result #'e.result])
     ;; (printf "~a\n" (syntax-class-parse function stx))
     (syntax-parse stx
