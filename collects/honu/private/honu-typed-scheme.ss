@@ -22,7 +22,8 @@
                                             "this is a literal and cannot be used outside a macro"))))
 
 (define-literal honu-return)
-(define-literal \;)
+(define-literal semicolon)
+(define-literal honu-+)
 
 ;; (define-syntax (\; stx) (raise-syntax-error '\; "out of context" stx))
 
@@ -338,6 +339,13 @@
     [else (call-values parse-one (extract-until body (list #'\;
                                                            )))]))
 
+#|
+(define-honu-macro (e ... * e ... \;))
+
+(foo . bar ())
+x(2)
+|#
+
 (define (parse-block-one/2 stx context)
   (define (parse-one stx context)
     (define-syntax-class block
@@ -353,10 +361,13 @@
                          [pattern (~seq e:expr (#%parens args ...))
                                   #:with call #'(e args ...)])
     (define-syntax-class expression
-                         #:literals (\;)
-                         [pattern (call:call \; . rest) #:with result #'call.call]
-                         [pattern (x:number \; . rest) #:with result #'x]
+                         [pattern (call:call semicolon . rest) #:with result #'call.call]
+                         [pattern (x:number semicolon . rest) #:with result #'x]
                          )
+    #;
+    (define-syntax-class expression
+                         #:literals (semicolon +)
+                         [pattern (expression1)])
     ;; (printf "~a\n" (syntax-class-parse function stx))
     (syntax-parse stx
       [function:function (values #'function.result #'function.rest)]

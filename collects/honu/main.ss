@@ -4,13 +4,14 @@
          "private/macro.ss")
 
 (provide (rename-out (#%dynamic-honu-module-begin #%module-begin)
-                     (honu-top #%top))
+                     (honu-top #%top)
+                     (semicolon \;)
+                     )
          #%datum
          true
          false
          display
          newline
-         \;
          else
          (rename-out
            (honu-if if)
