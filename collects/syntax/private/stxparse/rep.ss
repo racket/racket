@@ -973,7 +973,7 @@
   (define (check-sc-expr x)
     (syntax-case x ()
       [sc (identifier? #'sc) (list #'sc null)]
-      [(sc arg ...) (identifier? #'sc) (list #'sc #'(arg ...))]
+      [(sc arg ...) (identifier? #'sc) (list #'sc (syntax->list #'(arg ...)))]
       [_ (raise-syntax-error #f "expected syntax class use" ctx x)]))
   (syntax-case stx ()
     [(rx sc)

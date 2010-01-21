@@ -4399,7 +4399,7 @@ void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env)
 
   save_runstack = scheme_push_prefix(menv, m->prefix,
 				     m->me->src_modidx, menv->link_midx,
-				     0, menv->phase);
+				     0, menv->phase, NULL);
 
   p = scheme_current_thread;
   save_phase_shift = p->current_phase_shift;
@@ -4782,7 +4782,8 @@ static void eval_exptime(Scheme_Object *names, int count,
     save_runstack = scheme_push_prefix(genv, rp,
                                        (shift ? genv->module->me->src_modidx : NULL), 
                                        (shift ? genv->link_midx : NULL), 
-                                       1, genv->phase);
+                                       1, genv->phase,
+                                       NULL);
 
     if (is_simple_expr(expr)) {
       vals = _scheme_eval_linked_expr_multi_wp(expr, scheme_current_thread);

@@ -91,6 +91,7 @@ i386-linux-fc6    :=tag unix
 i386-linux-f7     :=tag unix
 x86_64-linux-f7   :=tag unix
 i386-linux-f9     :=tag unix
+i386-linux-f12    :=tag unix
 i386-linux-debian :=tag unix
 i386-linux-debian-testing  :=tag unix
 i386-linux-debian-unstable :=tag unix

@@ -2584,7 +2584,8 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo);
 int scheme_prefix_depth(Resolve_Prefix *rp);
 Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
 				   Scheme_Object *src_modix, Scheme_Object *now_modix,
-				   int src_phase, int now_phase);
+				   int src_phase, int now_phase,
+                                   Scheme_Env *dummy_env);
 void scheme_pop_prefix(Scheme_Object **rs);
 
 Scheme_Object *scheme_eval_clone(Scheme_Object *expr);
