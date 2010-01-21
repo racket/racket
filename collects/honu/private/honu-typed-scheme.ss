@@ -358,20 +358,24 @@ x(2)
     (define-syntax-class expr
                          [pattern f])
     (define-splicing-syntax-class call
-                         [pattern (~seq e:expr (#%parens args ...))
-                                  #:with call #'(e args ...)])
-    (define-syntax-class expression
-                         [pattern (call:call semicolon . rest) #:with result #'call.call]
-                         [pattern (x:number semicolon . rest) #:with result #'x]
+                         [pattern (~seq e:expr (#%parens arg:expression))
+                                  #:with call #'(e arg.result)])
+    (define-splicing-syntax-class expression1
+                         [pattern (~seq call:call) #:with result #'call.call]
+                         [pattern (~seq x:number) #:with result #'x]
                          )
-    #;
-    (define-syntax-class expression
-                         #:literals (semicolon +)
-                         [pattern (expression1)])
+    (define-splicing-syntax-class expression
+                         #:literals (semicolon honu-+)
+                         [pattern (~seq exp-left:expression1 honu-+ exp-right:expression)
+                                  #:with result #'(+ exp-left.result exp-right.result)]
+                         [pattern (~seq exp:expression1) #:with result #'exp.result])
+    (define-syntax-class expression-top
+                         [pattern (e:expression semicolon . rest)
+                                  #:with result #'e.result])
     ;; (printf "~a\n" (syntax-class-parse function stx))
     (syntax-parse stx
       [function:function (values #'function.result #'function.rest)]
-      [expr:expression (values #'expr.result #'expr.rest)]
+      [expr:expression-top (values #'expr.result #'expr.rest)]
       [(x:number . rest) (values #'x #'rest)]
       ))
   (cond

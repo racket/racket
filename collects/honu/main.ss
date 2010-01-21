@@ -6,6 +6,7 @@
 (provide (rename-out (#%dynamic-honu-module-begin #%module-begin)
                      (honu-top #%top)
                      (semicolon \;)
+                     (honu-+ +)
                      )
          #%datum
          true
