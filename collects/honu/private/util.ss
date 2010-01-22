@@ -1,6 +1,5 @@
 #lang scheme
 
-
 (provide delim-identifier=?
          extract-until
          call-values)

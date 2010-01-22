@@ -6,13 +6,17 @@
                      syntax/name
                      syntax/define
                      syntax/parse
+                     scheme/list
                      "contexts.ss"
                      "util.ss"
                      "ops.ss"
                      )
          ;; "typed-utils.ss"
          )
-(require (for-meta 2 scheme/base))
+(require (for-meta 2 scheme/base
+                   scheme/list
+                     ))
+(require (for-meta 3 scheme/base))
 
 (provide (all-defined-out))
 
@@ -367,16 +371,18 @@ x(2)
                          [pattern (~seq call:call) #:with result #'call.call]
                          [pattern (~seq x:number) #:with result #'x]
                          )
+
+    #;
     (define-splicing-syntax-class expression-3
                                   [pattern (~seq e:expression-last) #:with result #'e.result])
 
     (define-syntax (syntax-lambda stx)
       (syntax-case stx ()
-        [(_ (arg ...) body)
+        [(_ (arg ...) body ...)
          (with-syntax ([(temp ...) (generate-temporaries #'(arg ...))])
            #'(lambda (temp ...)
                (with-syntax ([arg temp] ...)
-                 body)))]))
+                 body ...)))]))
 
     (define-syntax-rule (define-infix-operator name next [operator reducer] ...)
       (define-splicing-syntax-class name
@@ -388,6 +394,58 @@ x(2)
                                              #:with result #'exp.result]
                                     ))
 
+    (define (drop-last lst)
+      (take lst (sub1 (length lst))))
+
+    ;; TODO: maybe just have a precedence macro that creates all these constructs
+    ;;   (infix-operators ([honu-* ...]
+    ;;                     [honu-- ...])
+    ;;                    ([honu-+ ...]
+    ;;                     [honu-- ...]))
+    ;; Where operators defined higher in the table have higher precedence.
+    (define-syntax (infix-operators stx)
+      (define (drop-last lst)
+        (take lst (sub1 (length lst))))
+      (define-syntax (syntax-lambda stx)
+        (syntax-case stx ()
+          [(_ (arg ...) body ...)
+           (with-syntax ([(temp ...) (generate-temporaries #'(arg ...))])
+             #'(lambda (temp ...)
+                 (with-syntax ([arg temp] ...)
+                   body ...)))]))
+      (define (create-stuff names operator-stuff)
+        (define make (syntax-lambda (expression next-expression operator-stuff)
+                                    #;
+                                    (printf "Make infix ~a ~a\n" (syntax->datum #'expression) (syntax->datum #'next-expression))
+                                    (with-syntax ([(ops ...) #'operator-stuff])
+                                      #'(define-infix-operator expression next-expression ops ...))))
+        (for/list ([name1 (drop-last names)]
+                   [name2 (cdr names)]
+                   [operator operator-stuff])
+                  (make name1 name2 operator)))
+      (syntax-case stx ()
+        [(_ first last operator-stuff ...)
+         (with-syntax ([(name ...) (generate-temporaries #'(operator-stuff ...))])
+           (with-syntax ([(result ...) (create-stuff (cons #'first
+                                                           (append
+                                                             (drop-last (syntax->list #'(name ...)))
+                                                             (list #'last)))
+
+                                                     (syntax->list #'(operator-stuff ...)))])
+             #'(begin
+                 result ...)))]))
+    
+    (infix-operators expression-1 expression-last
+                     ([honu-+ (syntax-lambda (left right)
+                                             #'(+ left right))]
+                      [honu-- (syntax-lambda (left right)
+                                             #'(- left right))])
+                     ([honu-* (syntax-lambda (left right)
+                                             #'(* left right))]
+                      [honu-/ (syntax-lambda (left right)
+                                             #'(/ left right))]))
+
+    #;
     (define-infix-operator expression-2 expression-3
                            [honu-* (syntax-lambda (left right)
                                                   #'(* left right))]
@@ -395,16 +453,6 @@ x(2)
                                                   #'(/ left right))])
 
     #;
-    (define-splicing-syntax-class expression-2
-                         #:literals (honu-* honu-/)
-                         [pattern (~seq exp-left:expression-3 honu-* exp-right:expression-2)
-                                  #:with result #'(* exp-left.result exp-right.result)]
-                         [pattern (~seq exp-left:expression-3 honu-/ exp-right:expression-2)
-                                  #:with result #'(/ exp-left.result exp-right.result)]
-                         [pattern (~seq exp:expression-3) #:with result #'exp.result])
-
-    
-
     (define-infix-operator expression-1 expression-2
                            [honu-+ (syntax-lambda (left right)
                                                   #'(+ left right))]
