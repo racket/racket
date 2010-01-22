@@ -260,6 +260,7 @@ typedef struct Thread_Local_Variables {
   int gensym_counter_;
   Scheme_Object *dummy_input_port_;
   Scheme_Object *dummy_output_port_;
+  Scheme_Bucket_Table *place_local_modpath_table_;
 /*KPLAKE1*/
 } Thread_Local_Variables;
 
@@ -505,6 +506,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define gensym_counter XOA (scheme_get_thread_local_variables()->gensym_counter_)
 #define dummy_input_port XOA (scheme_get_thread_local_variables()->dummy_input_port_)
 #define dummy_output_port XOA (scheme_get_thread_local_variables()->dummy_output_port_)
+#define place_local_modpath_table XOA (scheme_get_thread_local_variables()->place_local_modpath_table_)
 /*KPLAKE2*/
 
 /* **************************************** */
