@@ -29,7 +29,10 @@
 
 (define-literal honu-return)
 (define-literal semicolon)
-(define-literal honu-+ honu-* honu-/ honu--)
+(define-literal honu-+ honu-* honu-/ honu-- honu-|| honu-%
+                honu-= honu-+= honu--= honu-*= honu-/= honu-%=
+                honu-&= honu-^= honu-\|= honu-<<= honu->>= honu->>>=
+                honu->> honu-<< honu->>> honu-< honu-> honu-<= honu->=)
 
 ;; (define-syntax (\; stx) (raise-syntax-error '\; "out of context" stx))
 
@@ -428,16 +431,36 @@ x(2)
                                   #:with result #'e.result])
 
 
+    ;; infix operators in the appropriate precedence level
+    ;; things defined lower in the table have a higher precedence.
+    ;; the first set of operators is `expression-1'
     (splicing-let-syntax ([sl (make-rename-transformer #'syntax-lambda)])
-                         (infix-operators expression-1 expression-last
-                                          ([honu-+ (sl (left right)
-                                                       #'(+ left right))]
-                                           [honu-- (sl (left right)
-                                                       #'(- left right))])
-                                          ([honu-* (sl (left right)
-                                                       #'(* left right))]
-                                           [honu-/ (sl (left right)
-                                                       #'(/ left right))])))
+      (infix-operators expression-1 expression-last
+        ([honu-= (sl (left right) #'(= left right))]
+         [honu-+= (sl (left right) #'(+ left right))]
+         [honu--= (sl (left right) #'(- left right))]
+         [honu-*= (sl (left right) #'(* left right))]
+         [honu-/= (sl (left right) #'(/ left right))]
+         [honu-%= (sl (left right) #'(modulo left right))]
+         [honu-&= (sl (left right) #'(+ left right))]
+         [honu-^= (sl (left right) #'(+ left right))]
+         [honu-\|= (sl (left right) #'(+ left right))]
+         [honu-<<= (sl (left right) #'(+ left right))]
+         [honu->>= (sl (left right) #'(+ left right))]
+         [honu->>>= (sl (left right) #'(+ left right))])
+        ([honu-|| (sl (left right) #'(+ left right))])
+        ([honu->> (sl (left right) #'(+ left right))]
+         [honu-<< (sl (left right) #'(+ left right))]
+         [honu->>> (sl (left right) #'(+ left right))]
+         [honu-< (sl (left right) #'(< left right))]
+         [honu-> (sl (left right) #'(> left right))]
+         [honu-<= (sl (left right) #'(<= left right))]
+         [honu->= (sl (left right) #'(>= left right))])
+        ([honu-+ (sl (left right) #'(+ left right))]
+         [honu-- (sl (left right) #'(- left right))])
+        ([honu-* (sl (left right) #'(* left right))]
+         [honu-% (sl (left right) #'(modulo left right))]
+         [honu-/ (sl (left right) #'(/ left right))])))
 
     ;; (printf "~a\n" (syntax-class-parse function stx))
     (syntax-parse stx
