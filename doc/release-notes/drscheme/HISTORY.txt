@@ -17,6 +17,7 @@
 ------------------------------
 
   . minor bug fixes
+  . added first draft of the 2htdp/image library
 
 ------------------------------
         Version 4.2.2

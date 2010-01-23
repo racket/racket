@@ -387,7 +387,16 @@ has been moved out).
       (let loop ([crops crops])
         (cond
           [(null? crops) shape]
-          [else (make-crop (car crops) (loop (cdr crops)))])))
+          [(null? (cdr crops))
+           (make-crop (car crops) shape)]
+          [else
+           (let ([fst (car crops)]
+                 [snd (cadr crops)])
+             (cond
+               [(equal? fst snd)
+                (loop (cdr crops))]
+               [else
+                (make-crop (car crops) (loop (cdr crops)))]))])))
     (cond
       [(translate? shape)
        (loop (translate-shape shape)
