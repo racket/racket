@@ -58,7 +58,7 @@
 (define permissive-xexprs (make-parameter #f))
 
 (define permissive/c
-  (simple-flat-contract
+  (simple-contract
    #:name 'permissive/c
    #:projection
    (lambda (blame)
