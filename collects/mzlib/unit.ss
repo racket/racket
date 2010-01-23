@@ -16,6 +16,7 @@
 (require mzlib/etc
          scheme/contract/base
          scheme/stxparam
+         unstable/location
          "private/unit-contract.ss"
          "private/unit-keywords.ss"
          "private/unit-runtime.ss"
@@ -1294,7 +1295,7 @@
                      (((wrap-code ...) ...)
                       (map (λ (os ov tbs)
                              (define rename-bindings 
-                               (get-member-bindings def-table os #'(#%variable-reference)))
+                               (get-member-bindings def-table os #'(quote-module-path)))
                              (map (λ (tb i v c)
                                     (if c
                                         (with-syntax ([ctc-stx
