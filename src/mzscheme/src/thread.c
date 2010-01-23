@@ -2296,6 +2296,9 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     scheme_first_thread = process;
   }
 
+  if (!buffer_init_size) /* => before place init */
+    buffer_init_size = INIT_TB_SIZE;
+
   {
     Scheme_Object **tb;
     tb = MALLOC_N(Scheme_Object *, buffer_init_size);

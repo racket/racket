@@ -6994,7 +6994,7 @@ static Scheme_Object *check_top(const char *when, Scheme_Object *form, Scheme_Co
 	if (bad || !scheme_lookup_in_table(env->genv->toplevel, (const char *)SCHEME_STX_SYM(c))) {
           GC_CAN_IGNORE const char *reason;
           if (env->genv->phase == 1) {
-            reason = "unbound identifier in module (transformer environment)";
+            reason = "unbound identifier in module (in phase 1, transformer environment)";
             /* Check in the run-time environment */
             if (scheme_lookup_in_table(env->genv->template_env->toplevel, (const char *)SCHEME_STX_SYM(c))) {
               reason = ("unbound identifier in module (in the transformer environment, which does"
@@ -7004,9 +7004,11 @@ static Scheme_Object *check_top(const char *when, Scheme_Object *form, Scheme_Co
               reason = ("unbound identifier in module (in the transformer environment, which does"
                         " not include the macro definition that is visible to run-time expressions)");
             }
-          } else
+          } else if (env->genv->phase == 0)
             reason = "unbound identifier in module";
-	  scheme_wrong_syntax(when, NULL, c, reason);
+          else
+            reason = "unbound identifier in module (in phase %d)";
+	  scheme_wrong_syntax(when, NULL, c, reason, env->genv->phase);
 	}
       }
     }
