@@ -4217,8 +4217,9 @@ static int can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely
       Scheme_App3_Rec *app = (Scheme_App3_Rec *)obj;
       if (!is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_BINARY_INLINED, unsafely, 0))
         return 0;
-      if (IS_NAMED_PRIM(app->rator, "unsafe-f64vector-ref")
-          || IS_NAMED_PRIM(app->rator, "unsafe-flvector-ref")) {
+      if ((SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)
+          && (IS_NAMED_PRIM(app->rator, "unsafe-f64vector-ref")
+              || IS_NAMED_PRIM(app->rator, "unsafe-flvector-ref"))) {
         if (is_unboxing_immediate(app->rand1, 1)
             && is_unboxing_immediate(app->rand1, 2)) {
           return 1;
