@@ -1758,6 +1758,9 @@ WARNING: printf is rebound in the body of the unit to always
 (define clever-file-format-mixin
   (mixin ((class->interface text%)) (clever-file-format<%>)
     (inherit get-file-format set-file-format find-first-snip)
+
+    ;; all-string-snips : -> boolean
+    ;; returns #t when it is safe to save this file in 'text mode.
     (define/private (all-string-snips)
       (let loop ([s (find-first-snip)])
         (cond
@@ -1765,6 +1768,7 @@ WARNING: printf is rebound in the body of the unit to always
           [(is-a? s string-snip%)
            (loop (send s next))]
           [else #f])))
+    
     (define/augment (on-save-file name format)
       (let ([all-strings? (all-string-snips)])
         (cond
