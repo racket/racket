@@ -1,4 +1,4 @@
-#lang scheme
+#lang scheme/gui
 
 (require 2htdp/universe)
 (require 2htdp/image)

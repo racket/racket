@@ -6,6 +6,7 @@
                      syntax/name
                      syntax/define
                      syntax/parse
+                     scheme/splicing
                      "contexts.ss"
                      "util.ss"
                      "ops.ss"
@@ -13,16 +14,25 @@
          ;; "typed-utils.ss"
          )
 
+(require (for-meta 2 scheme/base "util.ss"))
+(require (for-meta 3 scheme/base))
+
 (provide (all-defined-out))
 
 ;; macro for defining literal tokens that can be used in macros
-(define-syntax-rule (define-literal name)
-  (define-syntax name (lambda (stx)
+(define-syntax-rule (define-literal name ...)
+  (begin
+    (define-syntax name (lambda (stx)
                         (raise-syntax-error 'name
-                                            "this is a literal and cannot be used outside a macro"))))
+                                            "this is a literal and cannot be used outside a macro")))
+    ...))
 
 (define-literal honu-return)
-(define-literal \;)
+(define-literal semicolon)
+(define-literal honu-+ honu-* honu-/ honu-- honu-|| honu-%
+                honu-= honu-+= honu--= honu-*= honu-/= honu-%=
+                honu-&= honu-^= honu-\|= honu-<<= honu->>= honu->>>=
+                honu->> honu-<< honu->>> honu-< honu-> honu-<= honu->=)
 
 ;; (define-syntax (\; stx) (raise-syntax-error '\; "out of context" stx))
 
@@ -338,6 +348,13 @@
     [else (call-values parse-one (extract-until body (list #'\;
                                                            )))]))
 
+#|
+(define-honu-macro (e ... * e ... \;))
+
+(foo . bar ())
+x(2)
+|#
+
 (define (parse-block-one/2 stx context)
   (define (parse-one stx context)
     (define-syntax-class block
@@ -349,18 +366,106 @@
                                                     body.result)])
     (define-syntax-class expr
                          [pattern f])
+
     (define-splicing-syntax-class call
-                         [pattern (~seq e:expr (#%parens args ...))
-                                  #:with call #'(e args ...)])
-    (define-syntax-class expression
-                         #:literals (\;)
-                         [pattern (call:call \; . rest) #:with result #'call.call]
-                         [pattern (x:number \; . rest) #:with result #'x]
+                         [pattern (~seq e:expr (#%parens arg:expression-1))
+                                  #:with call #'(e arg.result)])
+    (define-splicing-syntax-class expression-last
+                         [pattern (~seq call:call) #:with result #'call.call]
+                         [pattern (~seq x:number) #:with result #'x]
                          )
+
+    (define-syntax-rule (define-infix-operator name next [operator reducer] ...)
+      (define-splicing-syntax-class name
+                                    #:literals (operator ...)
+                                    [pattern (~seq (~var left next) operator (~var right name))
+                                             #:with result (reducer #'left.result #'right.result)]
+                                    ...
+                                    [pattern (~seq (~var exp next))
+                                             #:with result #'exp.result]
+                                    ))
+
+    ;; TODO: maybe just have a precedence macro that creates all these constructs
+    ;;   (infix-operators ([honu-* ...]
+    ;;                     [honu-- ...])
+    ;;                    ([honu-+ ...]
+    ;;                     [honu-- ...]))
+    ;; Where operators defined higher in the table have higher precedence.
+    (define-syntax (infix-operators stx)
+      (define (create-stuff names operator-stuff)
+        (define make (syntax-lambda (expression next-expression operator-stuff)
+                                    #;
+                                    (printf "Make infix ~a ~a\n" (syntax->datum #'expression) (syntax->datum #'next-expression))
+                                    (with-syntax ([(ops ...) #'operator-stuff])
+                                      #'(define-infix-operator expression next-expression ops ...))))
+        (for/list ([name1 (drop-last names)]
+                   [name2 (cdr names)]
+                   [operator operator-stuff])
+                  (make name1 name2 operator)))
+      (syntax-case stx ()
+        [(_ first last operator-stuff ...)
+         (with-syntax ([(name ...) (generate-temporaries #'(operator-stuff ...))])
+           (with-syntax ([(result ...) (create-stuff (cons #'first
+                                                           (append
+                                                             (drop-last (syntax->list #'(name ...)))
+                                                             (list #'last)))
+
+                                                     (syntax->list #'(operator-stuff ...)))])
+             #'(begin
+                 result ...)))]))
+
+    #;
+    (infix-operators expression-1 expression-last
+                       ([honu-+ (syntax-lambda (left right)
+                                    #'(+ left right))]
+                        [honu-- (syntax-lambda (left right)
+                                               #'(- left right))])
+                       ([honu-* (syntax-lambda (left right)
+                                               #'(* left right))]
+                        [honu-/ (syntax-lambda (left right)
+                                               #'(/ left right))]))
+    
+
+    (define-syntax-class expression-top
+                         [pattern (e:expression-1 semicolon . rest)
+                                  #:with result #'e.result])
+
+
+    ;; infix operators in the appropriate precedence level
+    ;; things defined lower in the table have a higher precedence.
+    ;; the first set of operators is `expression-1'
+    (splicing-let-syntax ([sl (make-rename-transformer #'syntax-lambda)])
+      (infix-operators expression-1 expression-last
+        ([honu-= (sl (left right) #'(= left right))]
+         [honu-+= (sl (left right) #'(+ left right))]
+         [honu--= (sl (left right) #'(- left right))]
+         [honu-*= (sl (left right) #'(* left right))]
+         [honu-/= (sl (left right) #'(/ left right))]
+         [honu-%= (sl (left right) #'(modulo left right))]
+         [honu-&= (sl (left right) #'(+ left right))]
+         [honu-^= (sl (left right) #'(+ left right))]
+         [honu-\|= (sl (left right) #'(+ left right))]
+         [honu-<<= (sl (left right) #'(+ left right))]
+         [honu->>= (sl (left right) #'(+ left right))]
+         [honu->>>= (sl (left right) #'(+ left right))])
+        ([honu-|| (sl (left right) #'(+ left right))])
+        ([honu->> (sl (left right) #'(+ left right))]
+         [honu-<< (sl (left right) #'(+ left right))]
+         [honu->>> (sl (left right) #'(+ left right))]
+         [honu-< (sl (left right) #'(< left right))]
+         [honu-> (sl (left right) #'(> left right))]
+         [honu-<= (sl (left right) #'(<= left right))]
+         [honu->= (sl (left right) #'(>= left right))])
+        ([honu-+ (sl (left right) #'(+ left right))]
+         [honu-- (sl (left right) #'(- left right))])
+        ([honu-* (sl (left right) #'(* left right))]
+         [honu-% (sl (left right) #'(modulo left right))]
+         [honu-/ (sl (left right) #'(/ left right))])))
+
     ;; (printf "~a\n" (syntax-class-parse function stx))
     (syntax-parse stx
       [function:function (values #'function.result #'function.rest)]
-      [expr:expression (values #'expr.result #'expr.rest)]
+      [expr:expression-top (values #'expr.result #'expr.rest)]
       [(x:number . rest) (values #'x #'rest)]
       ))
   (cond

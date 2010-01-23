@@ -101,11 +101,14 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          angle?
          side-count?
          image-color?
+         pen-style? 
+         pen-cap?
+         pen-join?
          (rename-out [build-color make-color])
          color-red color-blue color-green color? color
          
          (rename-out [build-pen make-pen])
-         pen-color pen-width pen-style pen-cap pen-join
+         pen-color pen-width pen-style pen-cap pen-join pen
 
          image-width
          image-height

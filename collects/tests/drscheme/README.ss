@@ -8,11 +8,12 @@ load run-test.ss. It will return a function that accepts the names of
 tests. Those names must be listed here. If no arguments are passed to
 the function, all tests will be run.
 
-|# stepper-test.ss #|
+   stepper-test.ss 
 
    runs the stepper on the sample solutions and
    checks the results.
-   
+   (this test suite is not being maintained)  
+ 
 |# io.ss #|
 
    This tests the drscheme's io implementation.

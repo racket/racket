@@ -1,6 +1,11 @@
 #lang scheme/gui
 
 #| TODO: 
+   -- yield instead of sync
+   -- run callbacks in user eventspace
+   -- make timer fire just once; restart after on-tick callback finishes
+   -- take out counting; replace by 0.25 delay
+
    -- make window resizable :: why
    -- what if clauses are repeated in world and/or universe descriptions? 
    -- what if the initial world or universe state is omitted? the error message is bad then. 

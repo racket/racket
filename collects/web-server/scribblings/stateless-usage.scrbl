@@ -51,7 +51,9 @@ because parameterizations are not serializable.
 
 Fourth, and related, this process only runs on your code, not on the code you
 @scheme[require]. Thus, your continuations---to be serializable---must not
-be in the context of another module. For example, the following will not work:
+be in the context of another module. For example, the following will fail with an @as-index{"unsafe context"}
+exception:
+
 @schemeblock[
  (define requests
    (map (lambda (rg) (send/suspend/url rg))

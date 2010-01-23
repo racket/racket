@@ -8,6 +8,9 @@
          angle?
          side-count?
          image-color?
+         pen-style? 
+         pen-cap?
+         pen-join?
          image-snip->image
          bitmap->image
          check-mode/color-combination)

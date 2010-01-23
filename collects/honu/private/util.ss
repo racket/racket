@@ -1,11 +1,14 @@
 #lang scheme
 
+(provide (except-out (all-defined-out) test))
 
+#;
 (provide delim-identifier=?
          extract-until
          call-values)
 
-(require syntax/stx)
+(require syntax/stx
+         scheme/list)
 
 (define (delim-identifier=? a b)
   (eq? (syntax-e a) (syntax-e b)))
@@ -32,6 +35,19 @@
 
 (define-syntax-rule (call-values function values-producing)
   (call-with-values (lambda () values-producing) function))
+
+;; shortcut for treating arguments as syntax objects
+(define-syntax (syntax-lambda stx)
+  (syntax-case stx ()
+    [(_ (arg ...) body ...)
+     (with-syntax ([(temp ...) (generate-temporaries #'(arg ...))])
+       #'(lambda (temp ...)
+           (with-syntax ([arg temp] ...)
+             body ...)))]))
+
+;; removes the last element of a list
+(define (drop-last lst)
+  (take lst (sub1 (length lst))))
 
 (define (test)
   (let* ([original #'(a b c d e)]

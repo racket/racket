@@ -908,7 +908,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          curve-segment-start curve-segment-s-angle curve-segment-s-pull
          curve-segment-end curve-segment-e-angle curve-segment-e-pull 
          curve-segment-color
-         make-pen pen? pen-color pen-width pen-style pen-cap pen-join
+         make-pen pen? pen-color pen-width pen-style pen-cap pen-join pen
          
          make-bitmap bitmap? bitmap-raw-bitmap bitmap-raw-mask bitmap-angle bitmap-x-scale bitmap-y-scale 
          bitmap-rendered-bitmap bitmap-rendered-mask
