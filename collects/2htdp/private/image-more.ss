@@ -117,7 +117,7 @@
   (overlay/internal 'middle 'middle image (cons image2 image3)))
 
 ;; underlay : image image image ... -> image
-(define (underlay image image2 . image3)
+(define/chk (underlay image image2 . image3)
   (let ([imgs (reverse (list* image image2 image3))])
     (overlay/internal 'middle 'middle (car imgs) (cdr imgs))))
 
