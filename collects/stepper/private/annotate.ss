@@ -1171,11 +1171,13 @@
                      [defined-name (if (and (pair? name-list) (null? (cdr name-list)))
                                        (car name-list)
                                        #f)])
-                #`(begin
-                    (define-values (new-var ...)
-                      #,(top-level-annotate/inner (top-level-rewrite #`e) exp defined-name))
-                    ;; this next expression should deliver the newly computed values to an exp-finished-break
-                    (#%plain-app #,exp-finished-break (#%plain-app list (#%plain-app list #,(lambda () exp) #f (#%plain-lambda () (#%plain-app list new-var ...)))))))]
+                (stepper-recertify
+                 #`(begin
+                     (define-values (new-var ...)
+                       #,(top-level-annotate/inner (top-level-rewrite #`e) exp defined-name))
+                     ;; this next expression should deliver the newly computed values to an exp-finished-break
+                     (#%plain-app #,exp-finished-break (#%plain-app list (#%plain-app list #,(lambda () exp) #f (#%plain-lambda () (#%plain-app list new-var ...))))))
+                 #'e))]
              [(define-syntaxes (new-vars ...) e)
               exp]
              [(#%require specs ...)
