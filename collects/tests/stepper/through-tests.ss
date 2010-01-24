@@ -13,6 +13,7 @@
 
          )
 
+
 (provide run-test run-tests run-all-tests run-all-tests-except)
 
 (define list-of-tests null)
@@ -1442,7 +1443,11 @@
                    #;[show-all-steps #t])
       #;(run-tests '(check-expect forward-ref check-within check-within-bad check-error check-error-bad))
       #;(run-tests '(teachpack-universe))
-      #;(run-tests '(check-expect check-within))
+      #;(run-tests '(simple-if))
       (run-all-tests)))
   
+  
 
+
+  
+  

@@ -386,10 +386,12 @@
   (define (queue-length queue)
     (length (unbox queue)))
 
+  (define saved-code-inspector (current-code-inspector))
+  
   (define (rebuild-stx new old)
     (syntax-recertify (datum->syntax old new old old)
                       old
-                      (current-code-inspector)
+                      saved-code-inspector
                       #f))
 
   (define break-kind?
