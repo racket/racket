@@ -367,7 +367,7 @@
   (cond
     [(overlay? shape)
      (let ([top-shape (rotate-normalized-shape angle (overlay-top shape))]
-           [bottom-shape (rotate-simple angle (overlay-bottom shape))])
+           [bottom-shape (rotate-cropped-simple angle (overlay-bottom shape))])
        (make-overlay top-shape bottom-shape))]
     [else 
      (rotate-cropped-simple angle shape)]))
@@ -430,7 +430,7 @@
   (cond
     [(overlay? shape)
      (let ([top-ltrb (normalized-shape-bb (overlay-top shape))]
-           [bottom-ltrb (simple-bb (overlay-bottom shape))])
+           [bottom-ltrb (cropped-simple-bb (overlay-bottom shape))])
        (union-ltrb top-ltrb bottom-ltrb))]
     [else 
      (cropped-simple-bb shape)]))
