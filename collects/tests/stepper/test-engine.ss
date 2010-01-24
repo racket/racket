@@ -6,10 +6,8 @@
          lang/run-teaching-program
          (only-in srfi/13 string-contains)
          scheme/contract
-         (file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
-         "language-level-model.ss"
-         ;; temp:
-         stepper/private/annotate)
+         #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
+         "language-level-model.ss")
 
 
 ;; A SIMPLE EXAMPLE OF USING THIS FRAMEWORK:
