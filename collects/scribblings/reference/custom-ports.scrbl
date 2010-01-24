@@ -72,11 +72,11 @@ The arguments implement the port as follows:
       @scheme[peek] is called again; or}
 
       @item{a @tech{synchronizable event} (see @secref["sync"]) other
-      than a pipe input port that becomes ready when the read is
-      complete (roughly): the event's value can one of the above three
-      results or another event like itself; in the last case, a
-      reading process loops with @scheme[sync] until it gets a
-      non-event result.}
+      than a pipe input port or procedure of arity four; the event
+      becomes ready when the read is complete (roughly): the event's
+      value can one of the above three results or another event like
+      itself; in the last case, a reading process loops with
+      @scheme[sync] until it gets a non-event result.}
 
     ]
 

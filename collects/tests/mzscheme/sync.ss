@@ -465,12 +465,20 @@
 (define-values (struct:wt make-wt wt? wt-ref wt-set!)
   (make-struct-type 'wt #f 2 0 #f (list (cons prop:evt 1)) (make-inspector) #f '(1)))
 
-(let ([always-ready (make-wt #f (lambda (self) #t))]
-      [always-stuck (make-wt 1 2)])
-  (test always-ready sync always-ready)
-  (test always-ready sync/timeout 0 always-ready)
-  (test #f sync/timeout 0 always-stuck)
-  (test #f sync/timeout SYNC-SLEEP-DELAY always-stuck))
+(define-values (struct:wt2 make-wt2 wt2? wt2-ref wt2-set!)
+  (make-struct-type 'wt2 #f 2 0 #f (list (cons prop:evt 1))
+                    (make-inspector) 0 '(1)))
+
+(let ([test-wt
+       (lambda (make-wt)
+         (let ([always-ready (make-wt (lambda () 10) (lambda (self) #t))]
+               [always-stuck (make-wt 1 2)])
+           (test always-ready sync always-ready)
+           (test always-ready sync/timeout 0 always-ready)
+           (test #f sync/timeout 0 always-stuck)
+           (test #f sync/timeout SYNC-SLEEP-DELAY always-stuck)))])
+  (test-wt make-wt)
+  (test-wt make-wt2))
 
 ;; Check whether something that takes at least SYNC-SLEEP-DELAY
 ;;  seconds in fact takes roughly that much CPU time. We
@@ -496,7 +504,7 @@
                  (equal? "" Section-prefix))
 	(test busy? (lambda (a ax b c d) (> b c)) 'busy-wait? go took boundary real-took)))))
 
-(define (test-good-waitable wrap-sema)
+(define (test-good-waitable wrap-sema make-wt)
   (let ([sema (make-semaphore)])
     (letrec-values ([(sema-ready-part get-sema-result) (wrap-sema sema sema (lambda () sema-ready))]
 		    [(sema-ready) (make-wt 1 sema-ready-part)])
@@ -530,13 +538,18 @@
 			[(wrapped) (make-wt 3 wrapped-part)])
 	  (non-busy-wait (get-wrapped-result) get-wrapped-result))))))
 
-(test-good-waitable (lambda (x x-result get-self)
-		      (values x (lambda () x-result))))
-(test-good-waitable (lambda (x x-result get-self)
-		      (let ([ws (choice-evt
-				 x
-				 (make-wt 99 (lambda (self) (make-semaphore))))])
-			(values ws (lambda () x-result)))))
+(map
+ (lambda (make-wt)
+   (test-good-waitable (lambda (x x-result get-self)
+                         (values x (lambda () x-result)))
+                       make-wt)
+   (test-good-waitable (lambda (x x-result get-self)
+                         (let ([ws (choice-evt
+                                    x
+                                    (make-wt 99 (lambda (self) (make-semaphore))))])
+                           (values ws (lambda () x-result))))
+                       make-wt))
+ (list make-wt make-wt2))
 
 (check-busy-wait
  (letrec ([s (make-semaphore)]
@@ -592,22 +605,25 @@
        (test bad-stuck-port sync bad-stuck-port))
      #t)))
 
-(test-stuck-port (make-semaphore 1) semaphore-try-wait? semaphore-post)
-(let ([ready? #t])
-  (test-stuck-port (make-wt 77 (lambda (self)
-				 (if ready?
-				     #t
-				     (make-semaphore))))
-		   (lambda (wt) (set! ready? #f))
-		   (lambda (wt) (set! ready? #t))))
-(let ([s (make-semaphore 1)])
-  (test-stuck-port (make-wt 77 s)
-		   (lambda (wt) (semaphore-try-wait? s))
-		   (lambda (wt) (semaphore-post s))))
-(let ([s (make-semaphore 1)])
-  (test-stuck-port (make-wt 177 (lambda (self) s))
-		   (lambda (wt) (semaphore-try-wait? s))
-		   (lambda (wt) (semaphore-post s))))
+(map
+ (lambda (make-wt)
+   (test-stuck-port (make-semaphore 1) semaphore-try-wait? semaphore-post)
+   (let ([ready? #t])
+     (test-stuck-port (make-wt 77 (lambda (self)
+                                    (if ready?
+                                        #t
+                                        (make-semaphore))))
+                      (lambda (wt) (set! ready? #f))
+                      (lambda (wt) (set! ready? #t))))
+   (let ([s (make-semaphore 1)])
+     (test-stuck-port (make-wt 77 s)
+                      (lambda (wt) (semaphore-try-wait? s))
+                      (lambda (wt) (semaphore-post s))))
+   (let ([s (make-semaphore 1)])
+     (test-stuck-port (make-wt 177 (lambda (self) s))
+                      (lambda (wt) (semaphore-try-wait? s))
+                      (lambda (wt) (semaphore-post s)))))
+ (list make-wt make-wt2))
 
 ;; ----------------------------------------
 
