@@ -187,8 +187,10 @@
 ;; back to us by calling the followup-thunk.
 (define (call-iter-on-each stx-thunk iter)
   (let* ([next (stx-thunk)]
-         [followup-thunk (if (eof-object? next) void (lambda () (call-iter-on-each stx-thunk iter)))])
-    (iter (expand next) followup-thunk)))
+         [followup-thunk (if (eof-object? next) void (lambda () (call-iter-on-each stx-thunk iter)))]
+         [expanded (expand next)])
+    ;;(printf "~v\n" expanded)
+    (iter expanded followup-thunk)))
 
 
 (define (warn error-box who fmt . args)

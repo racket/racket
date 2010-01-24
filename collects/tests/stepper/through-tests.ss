@@ -1131,6 +1131,21 @@
                       (9 (check-error (+ (hilite 7) (rest empty)) "bogus")))
         (before-after (9 false (check-expect (hilite (+ 3 1)) 4))
                       (9 false (check-expect (hilite 4) 4)))))
+  
+  ;;;;;;;;;;;;
+  ;;
+  ;;    DMdA TESTS
+  ;;
+  ;;;;;;;;;;;
+  
+  (t1 'dmda-certificate-bug
+       m:dmda-a
+      "(: apply-nim-move (integer? -> integer?))
+  (define apply-nim-move
+    (lambda (s)
+      (if s s s)))"
+      '())
+
 
   ;  ;;;;;;;;;;;;;
   ;  ;;
@@ -1253,7 +1268,6 @@
         (before-after ((hilite (inform "30")))
                       ((hilite true)))
         (finished-stepping)))
-
 
   ;;;;;;;;;;;;;
   ;;

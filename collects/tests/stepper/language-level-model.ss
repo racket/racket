@@ -32,6 +32,11 @@
   (make-ll-model `(lib "lazy.ss" "lazy") `() fake-mz-render-settings #f #f))
 
 
+;; unsure about the render-settings, here: 
+(define dmda-a
+  (make-ll-model `(lib "DMdA-beginner.ss" "deinprogramm") '() fake-beginner-render-settings #f #t))
+
+
 ;; SUPPORT FOR TESTING A BUNCH OF LANGUAGES AT ONCE:
 
 ;; built-in multi-language bundles:
