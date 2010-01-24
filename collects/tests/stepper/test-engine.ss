@@ -6,8 +6,10 @@
          lang/run-teaching-program
          (only-in srfi/13 string-contains)
          scheme/contract
-         #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
-         "language-level-model.ss")
+         (file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
+         "language-level-model.ss"
+         ;; temp:
+         stepper/private/annotate)
 
 
 ;; A SIMPLE EXAMPLE OF USING THIS FRAMEWORK:
@@ -110,6 +112,8 @@
     ))
 
 
+
+
 ;; test-sequence/many : model-or-models/c string? steps? -> (void)
 ;; run a given test through a bunch of language models (or just one).
 
@@ -167,7 +171,6 @@
                             (show-result result error-box)
                             (car all-steps)))
                   (set! all-steps (cdr all-steps)))))]
-         [dc1 (display (expanded-thunk))]
          [iter-caller
           (lambda (init iter)
             (init)
@@ -187,7 +190,7 @@
 (define (call-iter-on-each stx-thunk iter)
   (let* ([next (stx-thunk)]
          [followup-thunk (if (eof-object? next) void (lambda () (call-iter-on-each stx-thunk iter)))])
-    (iter next followup-thunk)))
+    (iter (expand next) followup-thunk)))
 
 
 (define (warn error-box who fmt . args)
@@ -275,3 +278,6 @@
            (lambda () (expand-teaching-program p2 read-syntax namespace-spec teachpack-specs #f module-id enable-testing?))])
      (display (expanded-thunk))
      (test-sequence/core render-settings show-lambdas-as-lambdas? expanded-thunk '() (box #f)))])
+
+
+
