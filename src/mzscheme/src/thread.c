@@ -5881,7 +5881,7 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
   if (syncing->result) {
     /* Apply wrap functions to the selected evt: */
     Scheme_Object *o, *l, *a, *to_call = NULL, *args[1];
-    int to_call_is_cont = 0;
+    int to_call_is_handle = 0;
 
     o = evt_set->argv[syncing->result - 1];
     if (SAME_TYPE(SCHEME_TYPE(o), scheme_channel_syncer_type)) {
@@ -5908,7 +5908,7 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
 	  if (SCHEME_BOXP(a) || SCHEME_PROCP(a)) {
 	    if (SCHEME_BOXP(a)) {
 	      a = SCHEME_BOX_VAL(a);
-	      to_call_is_cont = 1;
+	      to_call_is_handle = 1;
 	    }
 	    to_call = a;
 	  } else if (SAME_TYPE(scheme_thread_suspend_type, SCHEME_TYPE(a))
@@ -5921,9 +5921,9 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
 	if (to_call) {
 	  args[0] = o;
 	  
-	  /* If to_call is still a wrap-evt (not a cont-evt),
+	  /* If to_call is still a wrap-evt (not a handle-evt),
 	     then set the config one more time: */
-	  if (!to_call_is_cont) {
+	  if (!to_call_is_handle) {
 	    scheme_push_break_enable(&cframe, 0, 0);
 	    tailok = 0;
 	  }
@@ -5932,7 +5932,7 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
 	    return _scheme_tail_apply(to_call, 1, args);
 	  } else {
 	    o = scheme_apply(to_call, 1, args);
-	    if (!to_call_is_cont)
+	    if (!to_call_is_handle)
 	      scheme_pop_break_enable(&cframe, 1);
 	    return o;
 	  }

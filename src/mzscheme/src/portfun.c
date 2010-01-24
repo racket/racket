@@ -769,22 +769,17 @@ static long user_read_result(const char *who, Scheme_Input_Port *port,
 			    "returned #f when no progress evt was supplied: ",
 			    val);
 	return 0;
-      } else if (SCHEME_PROCP(val)) {
-	Scheme_Object *orig = val;
-	a[0] = val;
-	if (scheme_check_proc_arity(NULL, 4, 0, 1, a)) {
-	  if (!special_ok) {
-	    scheme_arg_mismatch(who,
-				"the port has no specific peek procedure, so"
-				" a special read result is not allowed: ",
-				orig);
-	    return 0;
-	  }
-	  port->special = a[0];
-	  return SCHEME_SPECIAL;
-	} else
-	  val = NULL;
-	n = 0;
+      } else if (SCHEME_PROCP(val)
+                 && scheme_check_proc_arity(NULL, 4, 0, 1, a)) {
+	if (!special_ok) {
+          scheme_arg_mismatch(who,
+                              "the port has no specific peek procedure, so"
+                              " a special read result is not allowed: ",
+                              val);
+          return 0;
+        }
+        port->special = val;
+        return SCHEME_SPECIAL;
       } else if (evt_ok && pipe_input_p(val)) {
         ((User_Input_Port *)port->port_data)->prefix_pipe = val;
         return 0;

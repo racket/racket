@@ -285,6 +285,10 @@ scheme_init_struct (Scheme_Env *env)
 		   (Scheme_Ready_Fun)evt_struct_is_ready,
 		   NULL,
 		   is_evt_struct, 1);
+    scheme_add_evt(scheme_proc_struct_type,
+		   (Scheme_Ready_Fun)evt_struct_is_ready,
+		   NULL,
+		   is_evt_struct, 1);
   }
 
   {
@@ -1055,6 +1059,11 @@ static Scheme_Object *check_evt_property_value_ok(int argc, Scheme_Object *argv[
   return v;
 }
 
+static Scheme_Object *return_wrapped(void *data, int argc, Scheme_Object *argv[])
+{
+  return (Scheme_Object *)data;
+}
+
 static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
 {
   Scheme_Object *v;
@@ -1099,7 +1108,12 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
 	return 0;
       }
 
-      /* non-evt => ready and result is self */
+      /* non-evt => ready and result is self; if self is a procedure,
+         we need to wrap it, so that self is not treated as a `wrap-evt'
+         procedure. */
+      if (SCHEME_PROCP(o)) {
+        o = scheme_make_closed_prim_w_arity(return_wrapped, (void *)o, "wrapper", 1, 1);
+      }
       scheme_set_sync_target(sinfo, o, o, NULL, 0, 0, NULL);
 
       return 1;
