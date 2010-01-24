@@ -1865,6 +1865,7 @@ cases appear. If it is a list of numbers, then only the selected cases appear (c
 @defparam[metafunction-style style text-style/c]{}
 @defparam[non-terminal-style style text-style/c]{}
 @defparam[non-terminal-subscript-style style text-style/c]{}
+@defparam[non-terminal-superscript-style style text-style/c]{}
 @defparam[default-style style text-style/c]{}]]{
 
 These parameters determine the font used for various text in
@@ -1875,15 +1876,27 @@ useful things it can be is one of the symbols @scheme['roman],
 monospaced font, respectively. (It can also encode style
 information, too.)
 
-The label-style is used for the reduction rule label
-names. The literal-style is used for names that aren't
+The @scheme[label-style] is used for the reduction rule label
+names. The @scheme[literal-style] is used for names that aren't
 non-terminals that appear in patterns. The
-metafunction-style is used for the names of
-metafunctions. The non-terminal-style is for non-terminals
-and non-terminal-subscript-style is used for the portion
+@scheme[metafunction-style] is used for the names of
+metafunctions. 
+
+The @scheme[non-terminal-style] is used for the names of non-terminals.
+Two parameters style the text in the (optional) "underscore" component
+of a non-terminal reference. The first, @scheme[non-terminal-subscript-style],
+applies to the segment between the underscore and the first caret (@scheme[^]) 
+to follow it; the second, @scheme[non-terminal-superscript-style], applies
+to the segment following that caret. For example, in the non-terminal 
+reference @scheme[x_y_z], @scheme[x] has style @scheme[non-terminal-style],
+@scheme[y] has style @scheme[non-terminal-subscript-style], and @scheme[z]
+has style @scheme[non-terminal-superscript-style].
+
+The
+@scheme[non-terminal-subscript-style] is used for the portion
 after the underscore in non-terminal references.
 
-The default-style is used for parenthesis, the dot in dotted
+The @scheme[default-style] is used for parenthesis, the dot in dotted
 lists, spaces, the separator words in the grammar, the
 "where" and "fresh" in side-conditions, and other places
 where the other parameters aren't used.

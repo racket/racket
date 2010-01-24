@@ -159,5 +159,9 @@
 ;; make sure two metafunctions simultaneously rewritten line up properly
 (test (render-metafunctions S T TL) "metafunctions-multiple.png")
 
+;; Non-terminal superscripts
+(test (render-lw lang (to-lw (x_^abcdef x_q^abcdef)))
+      "superscripts.png")
+
 (printf "bitmap-test.ss: ")
 (done)
