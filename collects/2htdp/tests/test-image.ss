@@ -32,7 +32,9 @@
                   make-ellipse
                   make-polygon
                   make-point
-                  make-crop )
+                  make-crop
+                  crop?
+                  normalized-shape?)
          (only-in "../private/image-more.ss" 
                   bring-between
                   swizzle)
@@ -1319,6 +1321,37 @@
                    2 7
                    (circle 4 'solid 'black)))
 
+;; this test case checks to make sure the number of crops doesn't 
+;; grow when normalizing shapes.
+(let* ([an-image 
+        (crop
+         0 0 50 50
+         (crop
+          0 10 60 60
+          (crop
+           10 0 60 60
+           (overlay
+            (overlay
+             (ellipse 20 50 'solid 'red)
+             (ellipse 30 40 'solid 'black))
+            (overlay
+             (ellipse 20 50 'solid 'red)
+             (ellipse 30 40 'solid 'black))))))]
+       [an-image+crop
+        (crop 40 40 10 10 an-image)])
+  
+  (define (count-crops s)
+    (define crops 0)
+    (let loop ([s s])
+      (when (crop? s)
+        (set! crops (+ crops 1)))
+      (when (struct? s)
+        (for-each loop (vector->list (struct->vector s)))))
+    crops)
+  
+  (test (+ (count-crops (normalize-shape (image-shape an-image))) 1)
+        =>
+        (count-crops (normalize-shape (image-shape an-image+crop)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1458,3 +1491,65 @@
           #rx"^polygon: expected <image-color>")
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  random testing of normalization
+;;    make sure normalization actually normalizes
+;;    and that normalization doesn't introduce new structs
+;;
+
+(define (random-image size)
+  (let loop ([size size])
+    (let ([val (random (if (zero? size) 4 8))])
+      (case val
+        [(0) (rectangle (random-size) (random-size) (random-mode) (random-color))]
+        [(1) (circle (random-size) (random-mode) (random-color))]
+        [(2) (line (random-coord) (random-coord) (random-color))]
+        [(3) (add-curve
+              (rectangle (random-size) (random-size) (random-mode) (random-color))
+              (random-coord) (random-coord) (random-pull) (random-angle)
+              (random-coord) (random-coord) (random-pull) (random-angle)
+              (random-color))]
+        [(4) (overlay (loop (floor (/ size 2)))
+                      (loop (ceiling (/ size 2))))]
+        [(5) (crop (random-coord) (random-coord) (random-size) (random-size)
+                   (loop (- size 1)))]
+        [(6) (scale/xy (random-size)
+                       (random-size)
+                       (loop (- size 1)))]
+        [(7) (rotate (random-angle) (loop (- size 1)))]))))
+
+(define (random-pull) (/ (random 20) (+ 1 (random 10))))
+(define (random-angle) (random 360))
+(define (random-coord) (- (random 200) 100))
+(define (random-size) (random 100))
+(define (random-mode) (if (zero? (random 2)) 'outline 'solid))
+(define (random-color) (pick-from-list '("red" red "blue" "orange" "green" "black")))
+(define (pick-from-list l) (list-ref l (random (length l))))
+
+(define (image-struct-count obj)
+  (let ([counts (make-hash)])
+    (let loop ([obj obj])
+      (when (struct? obj)
+        (let ([stuff (vector->list (struct->vector obj))])
+          (unless (member (car stuff) '(struct:translate struct:scale)) ;; skip these becuase normalization eliminates them
+            (hash-set! counts (car stuff) (+ 1 (hash-ref counts (car stuff) 0))))
+          (for-each loop (cdr stuff)))))
+    (sort (hash-map counts list) string<=? #:key (λ (x) (symbol->string (car x))))))       
+  
+(time
+ (let ([seed (+ 1 (modulo (current-seconds) (- (expt 2 31) 1)))])
+   (random-seed seed)
+   (for ((i (in-range 0 20000)))
+     (let* ([img (random-image 10)]
+            [raw-size (image-struct-count (image-shape img))]
+            [normalized (normalize-shape (image-shape img) values)]
+            [norm-size (image-struct-count normalized)])
+       (unless (normalized-shape? normalized)
+         (error 'test-image.ss "found a non-normalized shape (seed ~a) after normalization ~s:" 
+                seed
+                img))
+       (unless (equal? norm-size raw-size)
+         (error 'test-image.ss "found differing sizes (seed ~a):\n  ~s\n  ~s" 
+                seed
+                raw-size norm-size))))))

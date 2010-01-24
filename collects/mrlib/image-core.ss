@@ -1,5 +1,4 @@
 #lang scheme/base
-
 #|
 
 This library is the part of the 2htdp/image 
@@ -157,12 +156,12 @@ has been moved out).
 (define-struct/reg-mk curve-segment (start s-angle s-pull end e-angle e-pull color) #:transparent #:omit-define-syntaxes)
 
 ;; a normalized-shape (subtype of shape) is either
-;;  - (make-overlay normalized-shape cropped-simple-shape)
-;;  - cropped-simple-shape
+;;  - (make-overlay normalized-shape cn-or-simple-shape)
+;;  - cn-or-simple-shape
 
-;; a cropped-simple-shape is either
-;;  - (make-crop (listof points) cropped-simple-shape)
+;; an cn-or-simple-shape is either:
 ;;  - simple-shape
+;;  - (make-crop (listof points) normalized-shape)
 
 ;; a simple-shape (subtype of shape) is
 ;;  - (make-translate dx dy np-atomic-shape))
@@ -378,25 +377,10 @@ has been moved out).
              [dy 0]
              [x-scale 1]
              [y-scale 1]
-             [crops '()]  ;; (listof (listof point))
              [bottom #f])
     (define (scale-point p)
       (make-point (+ dx (* x-scale (point-x p)))
                   (+ dy (* y-scale (point-y p)))))
-    (define (add-crops shape)
-      (let loop ([crops crops])
-        (cond
-          [(null? crops) shape]
-          [(null? (cdr crops))
-           (make-crop (car crops) shape)]
-          [else
-           (let ([fst (car crops)]
-                 [snd (cadr crops)])
-             (cond
-               [(equal? fst snd)
-                (loop (cdr crops))]
-               [else
-                (make-crop (car crops) (loop (cdr crops)))]))])))
     (cond
       [(translate? shape)
        (loop (translate-shape shape)
@@ -404,7 +388,6 @@ has been moved out).
              (+ dy (* y-scale (translate-dy shape)))
              x-scale
              y-scale
-             crops
              bottom)]
       [(scale? shape)
        (loop (scale-shape shape)
@@ -412,34 +395,36 @@ has been moved out).
              dy
              (* x-scale (scale-x shape))
              (* y-scale (scale-y shape))
-             crops
              bottom)]
       [(overlay? shape)
        (loop (overlay-bottom shape)
-             dx dy x-scale y-scale crops
+             dx dy x-scale y-scale 
              (loop (overlay-top shape)
-                   dx dy x-scale y-scale crops
+                   dx dy x-scale y-scale 
                    bottom))]
       [(crop? shape)
-       (loop (crop-shape shape)
-             dx dy x-scale y-scale 
-             (cons (map scale-point (crop-points shape)) crops)
-             bottom)]
+       (let* ([inside (loop (crop-shape shape)
+                            dx dy x-scale y-scale 
+                            #f)]
+              [this-one
+               (make-crop (map scale-point (crop-points shape))
+                          inside)])
+         (if bottom
+             (make-overlay bottom this-one)
+             this-one))]
       [(polygon? shape)
        (let* ([this-one 
-               (add-crops 
-                (make-polygon (map scale-point (polygon-points shape))
-                              (polygon-mode shape)
-                              (scale-color (polygon-color shape) x-scale y-scale)))])
+               (make-polygon (map scale-point (polygon-points shape))
+                             (polygon-mode shape)
+                             (scale-color (polygon-color shape) x-scale y-scale))])
          (if bottom
              (make-overlay bottom (f this-one))
              (f this-one)))]
       [(line-segment? shape)
        (let ([this-one 
-              (add-crops
-               (make-line-segment (scale-point (line-segment-start shape))
-                                  (scale-point (line-segment-end shape))
-                                  (scale-color (line-segment-color shape) x-scale y-scale)))])
+              (make-line-segment (scale-point (line-segment-start shape))
+                                 (scale-point (line-segment-end shape))
+                                 (scale-color (line-segment-color shape) x-scale y-scale))])
          (if bottom
              (make-overlay bottom (f this-one))
              (f this-one)))]
@@ -448,26 +433,39 @@ has been moved out).
        ;; between the two points when it is drawn,
        ;; so we don't need to scale it here
        (let ([this-one 
-              (add-crops
-               (make-curve-segment (scale-point (curve-segment-start shape))
-                                   (curve-segment-s-angle shape)
-                                   (curve-segment-s-pull shape)
-                                   (scale-point (curve-segment-end shape))
-                                   (curve-segment-e-angle shape)
-                                   (curve-segment-e-pull shape)
-                                   (scale-color (curve-segment-color shape) x-scale y-scale)))])
+              (make-curve-segment (scale-point (curve-segment-start shape))
+                                  (curve-segment-s-angle shape)
+                                  (curve-segment-s-pull shape)
+                                  (scale-point (curve-segment-end shape))
+                                  (curve-segment-e-angle shape)
+                                  (curve-segment-e-pull shape)
+                                  (scale-color (curve-segment-color shape) x-scale y-scale))])
          (if bottom
              (make-overlay bottom (f this-one))
              (f this-one)))]
       [(np-atomic-shape? shape)
        (let ([this-one 
-              (add-crops
-               (make-translate dx dy (scale-np-atomic x-scale y-scale shape)))])
+              (make-translate dx dy (scale-np-atomic x-scale y-scale shape))])
          (if bottom
              (make-overlay bottom (f this-one))
              (f this-one)))]
       [else 
        (error 'normalize-shape "unknown shape ~s\n" shape)])))
+
+(define (normalized-shape? s)
+  (cond
+    [(overlay? s)
+     (and (normalized-shape? (overlay-top s))
+          (cn-or-simple-shape? (overlay-bottom s)))]
+    [else
+     (cn-or-simple-shape? s)]))
+
+(define (cn-or-simple-shape? s)
+  (cond
+    [(crop? s)
+     (normalized-shape? (crop-shape s))]
+    [else
+     (simple-shape? s)]))
 
 (define (simple-shape? shape)
   (or (and (translate? shape)
@@ -564,22 +562,30 @@ has been moved out).
 (define (render-normalized-shape shape dc dx dy)
   (cond
     [(overlay? shape)
-     (render-cropped-simple-shape (overlay-bottom shape) dc dx dy)
+     (render-cn-or-simple-shape (overlay-bottom shape) dc dx dy)
      (render-normalized-shape (overlay-top shape) dc dx dy)]
     [else
-     (render-cropped-simple-shape shape dc dx dy)]))
+     (render-cn-or-simple-shape shape dc dx dy)]))
 
-(define (render-cropped-simple-shape shape dc dx dy)
+(define last-cropped-points (make-parameter #f))
+
+(define (render-cn-or-simple-shape shape dc dx dy)
   (cond
     [(crop? shape)
-     (let ([old-region (send dc get-clipping-region)]
-           [new-region (new region% [dc dc])]
-           [path (polygon-points->path (crop-points shape))])
-       (send new-region set-path path dx dy)
-       (when old-region (send new-region intersect old-region))
-       (send dc set-clipping-region new-region)
-       (render-cropped-simple-shape (crop-shape shape) dc dx dy)
-       (send dc set-clipping-region old-region))]
+     (let ([points (crop-points shape)])
+       (cond
+         [(equal? points (last-cropped-points))
+          (render-normalized-shape (crop-shape shape) dc dx dy)]
+         [else
+          (let ([old-region (send dc get-clipping-region)]
+                [new-region (new region% [dc dc])]
+                [path (polygon-points->path points)])
+            (send new-region set-path path dx dy)
+            (when old-region (send new-region intersect old-region))
+            (send dc set-clipping-region new-region)
+            (parameterize ([last-cropped-points points])
+              (render-normalized-shape (crop-shape shape) dc dx dy))
+            (send dc set-clipping-region old-region))]))]
     [else
      (render-simple-shape shape dc dx dy)]))
 
@@ -941,4 +947,4 @@ the mask bitmap and the original bitmap are all together in a single bytes!
 ;; method names
 (provide get-shape get-bb get-normalized? get-normalized-shape)
 
-(provide np-atomic-shape? atomic-shape? simple-shape?)
+(provide np-atomic-shape? atomic-shape? simple-shape? cn-or-simple-shape? normalized-shape?)
