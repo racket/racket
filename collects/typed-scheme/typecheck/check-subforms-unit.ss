@@ -2,6 +2,7 @@
 
 (require "../utils/utils.ss"
 	 syntax/kerncase
+	 syntax/parse
          scheme/match
          "signatures.ss" "tc-metafunctions.ss"
          (types utils convenience union subtype)
@@ -18,33 +19,40 @@
   (define body-ty #f)    
   (define (get-result-ty t)
     (match t
-      [(Function: (list (arr: _ (Values: (list (Result: rngs _ _))) #f _ '()) ...)) (apply Un rngs)]
-      [_ (tc-error "Internal error in get-result-ty: not a function type: ~n~a" t)]))
+      [(Function: 
+	(list 
+	 (arr: _ 
+	       (Values: (list (Result: rngs _ _) ...)) 
+	       _ _ (list (Keyword: _ _ #t) ...))))
+       (apply Un rngs)]
+      [_ (int-err "Internal error in get-result-ty: not a function type: ~n~a" t)]))
   (let loop ([form form])
     (parameterize ([current-orig-stx form])
-      (kernel-syntax-case* form #f (#%app)
+      (syntax-parse form
         [stx
          ;; if this needs to be checked
-         (syntax-property form 'typechecker:with-type)
+         #:when (syntax-property form 'typechecker:with-type)
          ;; the form should be already ascribed the relevant type
-         (void 
-          (tc-expr form))]
+	 (tc-expr form)]
         [stx
-         ;; this is a hander function
-         (syntax-property form 'typechecker:exn-handler)
-         (let ([t (tc-expr/t form)])
-           (unless (subtype t (-> (Un) Univ))
-             (tc-error "Exception handler must be a single-argument function, got ~n~a"))
-           (set! handler-tys (cons (get-result-ty t) handler-tys)))]
+         ;; this is a handler function
+         #:when (syntax-property form 'typechecker:exn-handler)
+         (let ([t (tc-expr form)])
+           (match t
+	     [(tc-result1: 
+	       (and t 
+		    (Function: (list (arr: (list _) _ _ _ (list (Keyword: _ _ #f) ...)) ...))))
+	      (set! handler-tys (cons (get-result-ty t) handler-tys))]
+	     [(tc-results: t)
+	      (tc-error "Exception handler must be a single-argument function, got ~n~a" t)]))]
         [stx
          ;; this is the body of the with-handlers
-         (syntax-property form 'typechecker:exn-body)
-         (let ([t (tc-expr/t form)])
-           (set! body-ty t))]
+         #:when (syntax-property form 'typechecker:exn-body)
+         (match-let ([(tc-results: ts) (tc-expr form)])
+           (set! body-ty (-values ts)))]
         [(a . b)
-         (begin
-           (loop #'a)
-           (loop #'b))]
+	 (loop #'a)
+	 (loop #'b)]
         [_ (void)])))
   (ret (apply Un body-ty handler-tys)))
 
