@@ -253,6 +253,18 @@ int mz_proc_thread_detach(mz_proc_thread *thread) {
 #endif
 }
 
+void mz_proc_thread_exit(void *rc) {
+#ifdef WIN32
+  ExitThread((DWORD)rc);
+#else
+#   ifndef MZ_PRECISE_GC
+  pthread_exit(rc);
+#   else
+  pthread_exit(rc);
+#   endif
+#endif
+}
+
 /***********************************************************************/
 /*                RW Lock                                              */
 /***********************************************************************/
