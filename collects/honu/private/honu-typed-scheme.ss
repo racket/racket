@@ -22,10 +22,10 @@
 ;; macro for defining literal tokens that can be used in macros
 (define-syntax-rule (define-literal name ...)
   (begin
-    (define-syntax name (lambda (stx)
-                        (raise-syntax-error 'name
-                                            "this is a literal and cannot be used outside a macro")))
-    ...))
+   (define-syntax name (lambda (stx)
+                         (raise-syntax-error 'name
+                                             "this is a literal and cannot be used outside a macro")))
+   ...))
 
 (define-literal honu-return)
 (define-literal semicolon)
@@ -43,9 +43,9 @@
 
 
 (define-values (struct:honu-trans make-honu-trans honu-trans? honu-trans-ref honu-trans-set!)
-               (make-struct-type 'honu-trans #f 1 0 #f 
-                                 (list (list prop:honu-transformer #t))
-                                 (current-inspector) 0))
+  (make-struct-type 'honu-trans #f 1 0 #f
+                    (list (list prop:honu-transformer #t))
+                    (current-inspector) 0))
 
 (define (make-honu-transformer proc)
   (unless (and (procedure? proc)
@@ -375,6 +375,22 @@ x(2)
                          [pattern (~seq x:number) #:with result #'x]
                          )
 
+    (define-syntax-rule (define-infix-operator name next [operator reducer] ...)
+      (begin
+       (define-syntax-class operator-class
+         #:literals (operator ...)
+         (pattern operator #:attr func reducer)
+         ...)
+       (define-splicing-syntax-class name
+         (pattern (~seq (~var left next)
+                        (~optional (~seq (~var op operator-class) (~var right name))))
+                  #:with result
+                  (cond [(attribute right)
+                         ((attribute op.func) #'left.result #'right.result)]
+                        [else
+                         #'left.result])))))
+
+    #;
     (define-syntax-rule (define-infix-operator name next [operator reducer] ...)
       (define-splicing-syntax-class name
                                     #:literals (operator ...)
