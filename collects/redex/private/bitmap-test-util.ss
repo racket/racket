@@ -39,8 +39,8 @@
                            (send bdc set-bitmap #f)
                            bm))]
          [new-bitmap (make-object bitmap% 
-                       (inexact->exact (pict-width pict)) 
-                       (inexact->exact (pict-height pict)))]
+                       (ceiling (inexact->exact (pict-width pict))) 
+                       (ceiling (inexact->exact (pict-height pict))))]
          [bdc (make-object bitmap-dc% new-bitmap)])
     (send bdc clear)
     (draw-pict pict bdc 0 0)
