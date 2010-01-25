@@ -45,9 +45,7 @@
 ;; Look for (the outermost) syntax in `orig' that has the same
 ;; location as `lookfor' which is coming from the expanded `orig',
 ;; given in `expanded'.
-(define (look-for-in-orig orig expanded lookfor) lookfor)
-
-#|
+(define (look-for-in-orig orig expanded lookfor)
   (define src (syntax-source orig))
   ;(printf "orig : ~a~n" (unwind orig))
   ;(printf "expanded : ~a~n" expanded)
@@ -72,8 +70,5 @@
             (ormap (lambda (enc) (hash-ref syntax-locs (syntax-loc enc) #f))
                    enclosing)
             #;(printf "chose branch two ~a~n" enclosing))))))
-
-;(trace look-for-in-orig)
-|#
 
 
