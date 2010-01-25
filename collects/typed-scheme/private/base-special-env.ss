@@ -12,13 +12,14 @@
  string-constants/string-constant
  ;(prefix-in ce: test-engine/scheme-tests)
  (for-syntax
-  scheme/base syntax/parse
+  scheme/base syntax/parse mzlib/etc
   (utils tc-utils)
   (env init-envs)          
   (except-in (rep filter-rep object-rep type-rep) make-arr)
   (types convenience union)
   (only-in (types convenience) [make-arr* make-arr])          
-  (typecheck tc-structs)))
+  (typecheck tc-structs))
+ (for-meta 2 scheme/base syntax/parse))
 
 
 (define-for-syntax (initialize-others)
@@ -78,11 +79,12 @@
           (-> (-lst a) (-val '()) (-lst a))
           (-> (-lst a) (-lst b) (-lst (*Un a b)))))
   ;; make-sequence
-  [(syntax-parse (local-expand #'(for ([x '()]) x) 'expression #f)
-     #:context #'make-sequence
-     #:literals (let-values quote)
-     [(let-values ([_ (m-s '(_) '())]) . _)
-      #'m-s])
+  [(begin-lifted
+     (syntax-parse (local-expand #'(for ([x '()]) x) 'expression #f)
+       #:context #'make-sequence
+       #:literals (let-values quote)
+       [(let-values ([_ (m-s '(_) '())]) . _)
+        #'m-s]))
    (-poly (a) 
           (let ([seq-vals 
                  (lambda ([a a])
