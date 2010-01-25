@@ -10,6 +10,8 @@
                      (honu-* *)
                      (honu-/ /)
                      (honu-- -)
+                     (honu-? ?)
+                     (honu-: :)
                      )
          #%datum
          true

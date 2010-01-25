@@ -32,7 +32,8 @@
 (define-literal honu-+ honu-* honu-/ honu-- honu-|| honu-%
                 honu-= honu-+= honu--= honu-*= honu-/= honu-%=
                 honu-&= honu-^= honu-\|= honu-<<= honu->>= honu->>>=
-                honu->> honu-<< honu->>> honu-< honu-> honu-<= honu->=)
+                honu->> honu-<< honu->>> honu-< honu-> honu-<= honu->=
+                honu-? honu-:)
 
 ;; (define-syntax (\; stx) (raise-syntax-error '\; "out of context" stx))
 
@@ -368,7 +369,7 @@ x(2)
                          [pattern f])
 
     (define-splicing-syntax-class call
-                         [pattern (~seq e:expr (#%parens arg:expression-1))
+                         [pattern (~seq e:expr (#%parens arg:trigraph))
                                   #:with call #'(e arg.result)])
     (define-splicing-syntax-class expression-last
                          [pattern (~seq call:call) #:with result #'call.call]
@@ -390,18 +391,6 @@ x(2)
                         [else
                          #'left.result])))))
 
-    #;
-    (define-syntax-rule (define-infix-operator name next [operator reducer] ...)
-      (define-splicing-syntax-class name
-                                    #:literals (operator ...)
-                                    [pattern (~seq (~var left next) operator (~var right name))
-                                             #:with result (reducer #'left.result #'right.result)]
-                                    ...
-                                    [pattern (~seq (~var exp next))
-                                             #:with result #'exp.result]
-                                    ))
-
-    ;; TODO: maybe just have a precedence macro that creates all these constructs
     ;;   (infix-operators ([honu-* ...]
     ;;                     [honu-- ...])
     ;;                    ([honu-+ ...]
@@ -429,23 +418,6 @@ x(2)
                                                      (syntax->list #'(operator-stuff ...)))])
              #'(begin
                  result ...)))]))
-
-    #;
-    (infix-operators expression-1 expression-last
-                       ([honu-+ (syntax-lambda (left right)
-                                    #'(+ left right))]
-                        [honu-- (syntax-lambda (left right)
-                                               #'(- left right))])
-                       ([honu-* (syntax-lambda (left right)
-                                               #'(* left right))]
-                        [honu-/ (syntax-lambda (left right)
-                                               #'(/ left right))]))
-    
-
-    (define-syntax-class expression-top
-                         [pattern (e:expression-1 semicolon . rest)
-                                  #:with result #'e.result])
-
 
     ;; infix operators in the appropriate precedence level
     ;; things defined lower in the table have a higher precedence.
@@ -478,10 +450,25 @@ x(2)
          [honu-% (sl (left right) #'(modulo left right))]
          [honu-/ (sl (left right) #'(/ left right))])))
 
+    (define-splicing-syntax-class trigraph
+      #:literals (honu-? honu-:)
+      [pattern (~seq condition:expression-1 (~optional (~seq honu-? on-true:trigraph
+                                                             honu-: on-false:trigraph)))
+               #:with result
+               (cond [(attribute on-true)
+                      #'(if condition.result on-true.result on-false.result)]
+                     [else #'condition.result])])
+
+    (define-syntax-class expression-top
+                         #:literals (semicolon)
+      [pattern (e:trigraph semicolon . rest)
+               #:with result #'e.result])
+
     ;; (printf "~a\n" (syntax-class-parse function stx))
     (syntax-parse stx
       [function:function (values #'function.result #'function.rest)]
       [expr:expression-top (values #'expr.result #'expr.rest)]
+      #;
       [(x:number . rest) (values #'x #'rest)]
       ))
   (cond
