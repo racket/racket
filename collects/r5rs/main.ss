@@ -209,7 +209,9 @@
                   form)]
                 [((unquote-splicing e) . rest)
                  (if (zero? depth)
-                     #`(mappend e #,(loop #'rest depth))
+                     (if (null? (syntax-e #'rest))
+                         #'e ;; Note: we're not check for a list
+                         #`(mappend e #,(loop #'rest depth)))
                      #`(mcons (mcons 'unquote-splicing
                                      #,(loop #'(e) (sub1 depth)))
                               #,(loop #'rest depth)))]
