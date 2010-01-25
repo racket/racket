@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require scheme/port
+         scheme/path
          scheme/list
          scheme/string
          syntax/moddep
@@ -444,7 +445,7 @@
       (cond [(and p (null? (cdr inps)))
              (port-count-lines! p)
              (parameterize ([current-input-port p])
-               (begin0 ((sandbox-reader) source)
+               (begin0 ((sandbox-reader) (or (object-name p) source))
                  ;; close a port if we opened it
                  (unless (eq? p (car inps)) (close-input-port p))))]
             [p (error 'input->code "ambiguous inputs: ~e" inps)]
@@ -550,11 +551,17 @@
                    (module->namespace `(quote ,(syntax-e mod)))))]
               [_else #f])])
     ;; the actual evaluation happens under the specified limits
-    ((limit-thunk (lambda ()
-                    (if (and (pair? program) (eq? 'begin (car program)))
-                      (eval* (cdr program))
-                      (eval program))
-                    (when ns (set! ns (ns))))))
+    (parameterize ([current-load-relative-directory
+                    (let* ([d (syntax-source program)]
+                           [d (and (path-string? d) (path-only d))])
+                      (if (and d (directory-exists? d))
+                        d
+                        (current-load-relative-directory)))])
+      ((limit-thunk (lambda ()
+                      (if (and (pair? program) (eq? 'begin (car program)))
+                        (eval* (cdr program))
+                        (eval program))
+                      (when ns (set! ns (ns)))))))
     (when uncovered!
       (let ([get (let ([ns (current-namespace)])
                    (lambda () (eval '(get-uncovered-expressions) ns)))])
