@@ -1,4 +1,4 @@
 #lang setup/infotab
 
-(define scribblings '(("ts-reference.scrbl" ())
-		      ("ts-guide.scrbl" ())))
+(define scribblings '(("scribblings/ts-reference.scrbl" ())
+		      ("scribblings/ts-guide.scrbl" (multi-page))))

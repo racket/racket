@@ -1,37 +1,29 @@
-#lang scribble/doc
+#lang scribble/manual
 
-@begin[(require scribble/manual)
-       (require (for-label typed-scheme))]
-
-@begin[
-(define (item* header . args) (apply item @bold[header]{: } args))
-(define-syntax-rule (tmod forms ...) (schememod typed-scheme forms ...))
-(define (gtech . x)  (apply tech x #:doc '(lib "scribblings/guide/guide.scrbl")))
-(define (rtech . x)  (apply tech x #:doc '(lib "scribblings/reference/reference.scrbl")))
-]
+@begin[(require "utils.ss" (for-label typed/scheme))]
 
 @title[#:tag "top"]{@bold{Typed Scheme}: Scheme with Static Types}
 
 @author["Sam Tobin-Hochstadt"]
 
-@section-index["typechecking"]
+@section-index["typechecking" "typechecker" "typecheck"]
 
-Typed Scheme is a Scheme-like language, with a type system that
-supports common Scheme programming idioms.  Explicit type declarations
-are required --- that is, there is no type inference.  The language
-supports a number of features from previous work on type systems that
-make it easier to type Scheme programs, as well as a novel idea dubbed
-@italic{occurrence typing} for case discrimination.
+Typed Scheme is a family of languages, each of which enforce
+that programs written in the language obey a type system that ensures
+the absence of many common errors.  This guide is intended for programmers familiar 
+with PLT Scheme.  For an introduction to PLT Scheme, see the @(other-manual '(lib "scribblings/guide/guide.scrbl")).
 
-Typed Scheme is also designed to integrate with the rest of your PLT
-Scheme system.  It is possible to convert a single module to Typed
-Scheme, while leaving the rest of the program unchanged.  The typed
-module is protected from the untyped code base via
-automatically-synthesized contracts.
+@local-table-of-contents[]
 
-Further information on Typed Scheme is available from
-@link["http://www.ccs.neu.edu/home/samth/typed-scheme"]{the homepage}.
+@include-section["quick.scrbl"]
+@include-section["begin.scrbl"]
+@include-section["more.scrbl"]
 
+@section{How the Type System Works}
+
+@section{Integrating with Untyped Code}
+
+@;{
 @section{Starting with Typed Scheme}
 
 If you already know PLT Scheme, or even some other Scheme, it should be
@@ -191,7 +183,7 @@ process of elimination we can determine that @scheme[t] must be a
 @scheme[node].  Therefore, we can use accessors such as
 @scheme[node-left] and @scheme[node-right] with @scheme[t] as input.
 
-@section{Polymorphism}
+@section[#:tag "poly"]{Polymorphism}
 
 Typed Scheme offers abstraction over types as well as values.
 
@@ -303,104 +295,4 @@ The new type constructor @scheme[All] takes a list of type
 variables and a body type.  The type variables are allowed to
 appear free in the body of the @scheme[All] form.
 
-@section{Variable-Arity Functions: Programming with Rest Arguments}
-
-Typed Scheme can handle some uses of rest arguments.
-
-@subsection{Uniform Variable-Arity Functions}
-
-In Scheme, one can write a function that takes an arbitrary
-number of arguments as follows:
-
-@schememod[
-scheme
-(define (sum . xs)
-  (if (null? xs)
-      0
-      (+ (car xs) (apply sum (cdr xs)))))
-
-(sum)
-(sum 1 2 3 4)
-(sum 1 3)]
-
-The arguments to the function that are in excess to the
-non-rest arguments are converted to a list which is assigned
-to the rest parameter.  So the examples above evaluate to
-@schemeresult[0], @schemeresult[10], and @schemeresult[4].
-
-We can define such functions in Typed Scheme as well:
-
-@schememod[
-typed-scheme
-(: sum (Number * -> Number))
-(define (sum . xs)
-  (if (null? xs)
-      0
-      (+ (car xs) (apply sum (cdr xs)))))]
-
-This type can be assigned to the function when each element
-of the rest parameter is used at the same type.
-
-@subsection{Non-Uniform Variable-Arity Functions}
-
-However, the rest argument may be used as a heterogeneous list.
-Take this (simplified) definition of the Scheme function @scheme[map]:
-
-@schememod[
-scheme
-(define (map f as . bss)
-  (if (or (null? as)
-          (ormap null? bss))
-      null
-      (cons (apply f (car as) (map car bss))
-            (apply map f (cdr as) (map cdr bss)))))
-
-(map add1 (list 1 2 3 4))
-(map cons (list 1 2 3) (list (list 4) (list 5) (list 6)))
-(map + (list 1 2 3) (list 2 3 4) (list 3 4 5) (list 4 5 6))]
-
-Here the different lists that make up the rest argument @scheme[bss]
-can be of different types, but the type of each list in @scheme[bss]
-corresponds to the type of the corresponding argument of @scheme[f].
-We also know that, in order to avoid arity errors, the length of
-@scheme[bss] must be one less than the arity of @scheme[f] (as
-@scheme[as] corresponds to the first argument of @scheme[f]).
-                                                            
-The example uses of @scheme[map] evaluate to @schemeresult[(list 2 3 4 5)],
-@schemeresult[(list (list 1 4) (list 2 5) (list 3 6))], and
-@schemeresult[(list 10 14 18)].
-
-In Typed Scheme, we can define @scheme[map] as follows:
-
-@schememod[
-typed-scheme
-(: map 
-   (All (C A B ...)
-        ((A B ... B -> C) (Listof A) (Listof B) ... B
-         ->
-         (Listof C))))
-(define (map f as . bss)
-  (if (or (null? as)
-          (ormap null? bss))
-      null
-      (cons (apply f (car as) (map car bss))
-            (apply map f (cdr as) (map cdr bss)))))]
-
-Note that the type variable @scheme[B] is followed by an
-ellipsis.  This denotes that B is a dotted type variable
-which corresponds to a list of types, much as a rest
-argument corresponds to a list of values.  When the type
-of @scheme[map] is instantiated at a list of types, then
-each type @scheme[t] which is bound by @scheme[B] (notated by
-the dotted pre-type @scheme[t ... B]) is expanded to a number
-of copies of @scheme[t] equal to the length of the sequence
-assigned to @scheme[B].  Then @scheme[B] in each copy is
-replaced with the corresponding type from the sequence.
-
-So the type of @scheme[(inst map Integer Boolean String Number)]
-is
-
-@scheme[((Boolean String Number -> Integer)
-         (Listof Boolean) (Listof String) (Listof Number)
-         ->
-         (Listof Integer))].
+}

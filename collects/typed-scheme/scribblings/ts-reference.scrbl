@@ -1,29 +1,24 @@
-#lang scribble/doc
+#lang scribble/manual
 
-@begin[(require scribble/manual scribble/eval
+@begin[(require "utils.ss" scribble/eval
                 scheme/sandbox)
-       (require (for-label typed-scheme
+       (require (for-label typed/scheme
                            scheme/list srfi/14
                            version/check))]
 
-@begin[
-(define (item* header . args) (apply item @bold[header]{: } args))
-(define-syntax-rule (tmod forms ...) (schememod typed-scheme forms ...))
-(define (gtech . x)  (apply tech x #:doc '(lib "scribblings/guide/guide.scrbl")))
-(define (rtech . x)  (apply tech x #:doc '(lib "scribblings/reference/reference.scrbl")))
-]
 
 @title[#:tag "top"]{The Typed Scheme Reference} 
 
 @author["Sam Tobin-Hochstadt"]
 
-@(defmodulelang typed-scheme)
+@(defmodulelang* (typed/scheme typed/scheme/base typed-scheme))
 
 @section[#:tag "type-ref"]{Type Reference}
 
 @subsubsub*section{Base Types}
 @deftogether[(
 @defidform[Number]
+@defidform[Real]
 @defidform[Integer]
 @defidform[Boolean]
 @defidform[String]
@@ -126,8 +121,13 @@ result of @scheme[_loop] (and thus the result of the entire
 				expression in @scheme[body]).}
 @deftogether[[
 @defform[(letrec: ([v : t e] ...) . body)]
-@defform[(let*: ([v : t e] ...) . body)]]]{Type-annotated versions of
-@scheme[letrec] and @scheme[let*].}
+@defform[(let*: ([v : t e] ...) . body)]
+@defform[(let-values: ([([v : t] ...) e] ...) . body)]
+@defform[(letrec-values: ([([v : t] ...) e] ...) . body)]
+@defform[(let*-values: ([([v : t] ...) e] ...) . body)]]]{
+Type-annotated versions of
+@scheme[letrec], @scheme[let*], @scheme[let-values],
+  @scheme[letrec-values], and @scheme[let*-values].}  
 
 @deftogether[[
 @defform[(let/cc: v : t . body)]
