@@ -371,7 +371,7 @@ x(2)
 
     (define-splicing-syntax-class call
                                   #:literals (honu-comma)
-                         [pattern (~seq e:expr (#%parens (~seq arg:trigraph (~optional honu-comma)) ...))
+                         [pattern (~seq e:expr (#%parens (~seq arg:ternary (~optional honu-comma)) ...))
                                   #:with call #'(e arg.result ...)])
     (define-splicing-syntax-class expression-last
                          [pattern (~seq call:call) #:with result #'call.call]
@@ -452,10 +452,10 @@ x(2)
          [honu-% (sl (left right) #'(modulo left right))]
          [honu-/ (sl (left right) #'(/ left right))])))
 
-    (define-splicing-syntax-class trigraph
+    (define-splicing-syntax-class ternary
       #:literals (honu-? honu-:)
-      [pattern (~seq condition:expression-1 (~optional (~seq honu-? on-true:trigraph
-                                                             honu-: on-false:trigraph)))
+      [pattern (~seq condition:expression-1 (~optional (~seq honu-? on-true:ternary
+                                                             honu-: on-false:ternary)))
                #:with result
                (cond [(attribute on-true)
                       #'(if condition.result on-true.result on-false.result)]
@@ -463,7 +463,7 @@ x(2)
 
     (define-syntax-class expression-top
                          #:literals (semicolon)
-      [pattern (e:trigraph semicolon . rest)
+      [pattern (e:ternary semicolon . rest)
                #:with result #'e.result])
 
     ;; (printf "~a\n" (syntax-class-parse function stx))
