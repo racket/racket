@@ -2978,7 +2978,7 @@ static void fprintf_debug(NewGC *gc, const char *msg, objhead *info, FILE* file,
           fprintf(file, "RMP %p already freed and out of bounds\n", SCHEME_PATH_VAL(obj));
         }
       default:
-        fprintf_buffer(file, ((char *)obj), (info->size * WORD_SIZE));
+        fprintf_buffer(file, ((char *)obj), (info->size * WORD_SIZE) - sizeof(objhead));
         break;
     }
   }
