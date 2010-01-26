@@ -78,9 +78,12 @@
                           ; prop-vals:
                           (list (cons prop:serializable #,CLOSURE:serialize-info-id)
                                 (cons prop:procedure
-                                      (#%plain-lambda (clsr . args)
-                                                      (let-values ([#,fvars ((CLOSURE-ref clsr 0))])
-                                                        (apply #,stx args)))))
+                                      (make-keyword-procedure
+                                       (lambda (kws kw-vals clsr . rst)
+                                         (let-values ([#,fvars ((CLOSURE-ref clsr 0))])
+                                          (keyword-apply #,stx
+                                                         kws kw-vals
+                                                         rst))))))
                           
                           #f  ; inspector
                           
