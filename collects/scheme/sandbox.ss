@@ -552,7 +552,7 @@
               [_else #f])])
     ;; the actual evaluation happens under the specified limits
     (parameterize ([current-load-relative-directory
-                    (let* ([d (syntax-source program)]
+                    (let* ([d (and (syntax? program) (syntax-source program))]
                            [d (and (path-string? d) (path-only d))])
                       (if (and d (directory-exists? d))
                         d
