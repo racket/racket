@@ -27,9 +27,7 @@
   (set! tests (+ tests 1))
   (let* ([bitmap-filename 
           (build-path (format "bmps-~a" (system-type))
-                      (case (system-type)
-                        [(unix) (string-append "unix-" raw-bitmap-filename)]
-                        [else raw-bitmap-filename]))]
+                      raw-bitmap-filename)]
          [old-bitmap (if (file-exists? bitmap-filename)
                          (make-object bitmap% bitmap-filename)
                          (let* ([bm (make-object bitmap% 100 20)]
