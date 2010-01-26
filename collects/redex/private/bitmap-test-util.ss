@@ -3,7 +3,7 @@
          slideshow
          "../pict.ss"
          "../reduction-semantics.ss"
-         "config.ss")
+         "../tests/config.ss")
 
 (provide test done)
 
