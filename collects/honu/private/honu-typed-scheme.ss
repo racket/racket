@@ -33,7 +33,7 @@
                 honu-= honu-+= honu--= honu-*= honu-/= honu-%=
                 honu-&= honu-^= honu-\|= honu-<<= honu->>= honu->>>=
                 honu->> honu-<< honu->>> honu-< honu-> honu-<= honu->=
-                honu-? honu-:)
+                honu-? honu-: honu-comma)
 
 ;; (define-syntax (\; stx) (raise-syntax-error '\; "out of context" stx))
 
@@ -356,6 +356,7 @@
 x(2)
 |#
 
+
 (define (parse-block-one/2 stx context)
   (define (parse-one stx context)
     (define-syntax-class block
@@ -369,8 +370,9 @@ x(2)
                          [pattern f])
 
     (define-splicing-syntax-class call
-                         [pattern (~seq e:expr (#%parens arg:trigraph))
-                                  #:with call #'(e arg.result)])
+                                  #:literals (honu-comma)
+                         [pattern (~seq e:expr (#%parens (~seq arg:trigraph (~optional honu-comma)) ...))
+                                  #:with call #'(e arg.result ...)])
     (define-splicing-syntax-class expression-last
                          [pattern (~seq call:call) #:with result #'call.call]
                          [pattern (~seq x:number) #:with result #'x]
@@ -645,6 +647,9 @@ if (foo){
   
 (define-syntax (honu-top stx)
   (raise-syntax-error #f "interactive use is not yet supported"))
+
+(define (display2 x y)
+  (printf "~a ~a" x y))
 
 (define-syntax (honu-unparsed-begin stx)
   ;; (printf "honu unparsed begin: ~a\n" (syntax->datum stx))
