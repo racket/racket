@@ -49,10 +49,6 @@
 (define-syntax FUTURE    (syntax-rules () ((FUTURE x) x)))
 (define-syntax TOUCH     (syntax-rules () ((TOUCH x)  x)))
 
-(define-syntax def-macro  (syntax-rules () ((def-macro stuff ...) #t)))
-(define-syntax def-struct (syntax-rules () ((def-macro stuff ...) #t)))
-(define-syntax def-nuc    (syntax-rules () ((def-nuc   stuff ...) #t)))
-
 (define-syntax define-structure
   (syntax-rules ()
     ((define-structure #f
@@ -320,204 +316,6 @@
 
 )
 
-; -- SYSTEM DEPENDENT CODE ----------------------------------------------------
-
-; The code in this section is not portable.  It must be adapted to
-; the Scheme system you are using.
-
-; ********** GAMBIT 2.2
-
-'; Add a single-quote at the start of this line if you are NOT using Gambit
-(begin
-
-(declare             ; Compiler declarations for fast code:
- (multilisp)         ; - Enable the FUTURE special-form
- (block)             ; - Assume this file contains the entire program
- (standard-bindings) ; - Assume standard bindings (this permits open-coding)
- (extended-bindings) ; - Same for extensions (such as "##flonum.+")
- (fixnum)            ; - Use fixnum arithmetic by default
- (not safe)          ; - Remove all runtime type checks
-)
-
-(define-macro (def-macro form . body)
-  `(DEFINE-MACRO ,form (LET () ,@body)))
-
-(def-macro (FLOAT+ x . l) `(,(string->symbol "##flonum.+") ,x ,@l))
-(def-macro (FLOAT- x . l) `(,(string->symbol "##flonum.-") ,x ,@l))
-(def-macro (FLOAT* x . l) `(,(string->symbol "##flonum.*") ,x ,@l))
-(def-macro (FLOAT/ x . l) `(,(string->symbol "##flonum./") ,x ,@l))
-(def-macro (FLOAT=   x y) `(,(string->symbol "##flonum.=") ,x ,y))
-(def-macro (FLOAT<   x y) `(,(string->symbol "##flonum.<") ,x ,y))
-(def-macro (FLOAT<=  x y) `(not (,(string->symbol "##flonum.<") ,y ,x)))
-(def-macro (FLOAT>   x y) `(,(string->symbol "##flonum.<") ,y ,x))
-(def-macro (FLOAT>=  x y) `(not (,(string->symbol "##flonum.<") ,x ,y)))
-(def-macro (FLOATsin   x) `(,(string->symbol "##flonum.sin")  ,x))
-(def-macro (FLOATcos   x) `(,(string->symbol "##flonum.cos")  ,x))
-(def-macro (FLOATatan  x) `(,(string->symbol "##flonum.atan") ,x))
-(def-macro (FLOATsqrt  x) `(,(string->symbol "##flonum.sqrt") ,x))
-)
-
-; ********** MIT-SCHEME
-
-'; Remove the single-quote from this line if you are using MIT-Scheme
-(begin
-
-(declare (usual-integrations))
-
-(define-macro (def-macro form . body)
-  `(DEFINE-MACRO ,form (LET () ,@body)))
-
-(def-macro (nary-function op1 op2 args)
-  (if (null? (cdr args))
-    `(,op1 ,@args)
-    (let loop ((args args))
-      (if (null? (cdr args))
-        (car args)
-        (loop (cons (list op2 (car args) (cadr args)) (cddr args)))))))
-
-(def-macro (FLOAT+ x . l) `(nary-function begin      flo:+ ,(cons x l)))
-(def-macro (FLOAT- x . l) `(nary-function flo:negate flo:- ,(cons x l)))
-(def-macro (FLOAT* x . l) `(nary-function begin      flo:* ,(cons x l)))
-(def-macro (FLOAT/ x . l) `(nary-function error      flo:/ ,(cons x l)))
-(def-macro (FLOAT=   x y) `(flo:= ,x ,y))
-(def-macro (FLOAT<   x y) `(flo:< ,x ,y))
-(def-macro (FLOAT<=  x y) `(not (flo:< ,y ,x)))
-(def-macro (FLOAT>   x y) `(flo:< ,y ,x))
-(def-macro (FLOAT>=  x y) `(not (flo:< ,x ,y)))
-(def-macro (FLOATsin   x) `(flo:sin  ,x))
-(def-macro (FLOATcos   x) `(flo:cos  ,x))
-(def-macro (FLOATatan  x) `(flo:atan ,x))
-(def-macro (FLOATsqrt  x) `(flo:sqrt ,x))
-
-(def-macro (FUTURE x) x)
-(def-macro (TOUCH x) x)
-)
-
-; ********** SCM
-
-'; Remove the single-quote from this line if you are using SCM
-(begin
-
-(defmacro def-macro (form . body)
-  `(DEFMACRO ,(car form) ,(cdr form) (LET () ,@body)))
-
-(def-macro (FLOAT+ x . l) `(+ ,x ,@l))
-(def-macro (FLOAT- x . l) `(- ,x ,@l))
-(def-macro (FLOAT* x . l) `(* ,x ,@l))
-(def-macro (FLOAT/ x . l) `(/ ,x ,@l))
-(def-macro (FLOAT=   x y) `(= ,x ,y))
-(def-macro (FLOAT<   x y) `(< ,x ,y))
-(def-macro (FLOAT<=  x y) `(not (< ,y ,x)))
-(def-macro (FLOAT>   x y) `(< ,y ,x))
-(def-macro (FLOAT>=  x y) `(not (< ,x ,y)))
-(def-macro (FLOATsin   x) `(sin  ,x))
-(def-macro (FLOATcos   x) `(cos  ,x))
-(def-macro (FLOATatan  x) `(atan ,x))
-(def-macro (FLOATsqrt  x) `(sqrt ,x))
-
-(def-macro (FUTURE x) x)
-(def-macro (TOUCH x) x)
-)
-
-; -- STRUCTURE DEFINITION MACRO -----------------------------------------------
-
-; The macro "def-struct" provides a simple mechanism to define record
-; structures out of vectors.  The first argument to "def-struct" is a boolean
-; indicating whether the vector should be tagged (to allow the type of the
-; structure to be tested).  The second argument is the name of the structure.
-; The remaining arguments are the names of the structure's fields.  A call
-; to "def-struct" defines macros to
-;
-;  1) construct a record object of this type
-;  2) fetch and store each field
-;  3) test a record to see if it is of this type (only if tags are used)
-;  4) define subclasses of this record with additional fields
-;
-; The call "(def-struct #t foo a b c)" will define the following macros:
-;
-;  (make-foo x y)                -- make a record
-;  (make-constant-foo x y)       -- make a record (args must be constants)
-;  (foo? x)                      -- test a record
-;  (foo-a x)                     -- get field "a"
-;  (foo-b x)                     -- get field "b"
-;  (foo-a-set! x y)              -- mutate field "a"
-;  (foo-b-set! x y)              -- mutate field "b"
-;  (def-foo tag? name fields...) -- define subclass of "foo"
-
-(def-macro (def-struct tag? name . fields)
-  `(DEF-SUBSTRUCT () () 0 ,tag? ,name ,@fields))
-
-(def-macro (def-substruct sup-fields sup-tags sup-length tag? name . fields)
-
-  (define (err)
-    (error "Ill-formed `def-substruct'") #f)
-
-  (define (sym . strings)
-    (string->symbol (apply string-append strings)))
-
-  (if (symbol? name)
-    (let* ((name-str (symbol->string name))
-           (tag (sym "." name-str "."))
-           (all-tags (append sup-tags
-                             (if tag?
-                               (list (cons tag sup-length))
-                               '()))))
-      (let loop ((l1 fields)
-                 (l2 '())
-                 (l3 '())
-                 (i (+ sup-length (if tag? 1 0))))
-        (if (pair? l1)
-          (let ((rest (cdr l1)) (field (car l1)))
-            (if (symbol? field)
-              (let* ((field-str (symbol->string field))
-                     (field-ref (sym name-str "-" field-str))
-                     (field-set! (sym name-str "-" field-str "-set!")))
-                (loop rest
-                      (cons `(DEF-MACRO (,field-set! X Y)
-                               `(VECTOR-SET! ,X ,,i ,Y))
-                            (cons `(DEF-MACRO (,field-ref X)
-                                     `(VECTOR-REF ,X ,,i))
-                                  l2))
-                      (cons (cons field i) l3)
-                      (+ i 1)))
-              (err)))
-          (let ((all-fields (append sup-fields (reverse l3))))
-            `(BEGIN
-               ,@l2
-               (DEFINE ,(sym "fields-of-" name-str)
-                 ',all-fields)
-               (DEF-MACRO (,(sym "def-" name-str) TAG? NAME . FIELDS)
-                 `(DEF-SUBSTRUCT ,',all-fields ,',all-tags ,',i
-                                 ,TAG? ,NAME ,@FIELDS))
-               (DEF-MACRO (,(sym "make-constant-" name-str) . REST)
-                 (DEFINE (ADD-TAGS I TAGS LST)
-                   (COND ((NULL? TAGS)
-                          LST)
-                         ((= I (CDAR TAGS))
-                          (CONS (CAAR TAGS)
-                                (ADD-TAGS (+ I 1) (CDR TAGS) LST)))
-                         (ELSE
-                          (CONS (CAR LST)
-                                (ADD-TAGS (+ I 1) TAGS (CDR LST))))))
-                 `'#(,@(ADD-TAGS 0 ',all-tags REST)))
-               (DEF-MACRO (,(sym "make-" name-str) . REST)
-                 (DEFINE (ADD-TAGS I TAGS LST)
-                   (COND ((NULL? TAGS)
-                          LST)
-                         ((= I (CDAR TAGS))
-                          (CONS `',(CAAR TAGS)
-                                (ADD-TAGS (+ I 1) (CDR TAGS) LST)))
-                         (ELSE
-                          (CONS (CAR LST)
-                                (ADD-TAGS (+ I 1) TAGS (CDR LST))))))
-                 `(VECTOR ,@(ADD-TAGS 0 ',all-tags REST)))
-               ,@(if tag?
-                   `((DEF-MACRO (,(sym name-str "?") X)
-                       `(EQ? (VECTOR-REF ,X ,,sup-length) ',',tag)))
-                   '())
-               ',name)))))
-    (err)))
-
 ; -- MATH UTILITIES -----------------------------------------------------------
 
 (define constant-pi          3.14159265358979323846)
@@ -538,8 +336,6 @@
            (FLOAT+ (FLOATatan (FLOAT/ y x)) constant-pi)))))
 
 ; -- POINTS -------------------------------------------------------------------
-
-(def-struct #f pt x y z)
 
 (define (pt-sub p1 p2)
   (make-pt (FLOAT- (pt-x p1) (pt-x p2))
@@ -578,8 +374,6 @@
 ; tx ty tz
 ;
 ; The components tx, ty, and tz are the translation vector.
-
-(def-struct #f tfo a b c d e f g h i tx ty tz)
 
 (define tfo-id  ; the identity transformation matrix
   '#(1.0 0.0 0.0
@@ -742,20 +536,7 @@
 
 ; Define part common to all 4 nucleotide types.
 
-(def-struct #f nuc
-  dgf-base-tfo  ; defines the standard position for wc and wc-dumas
-  P-O3*-275-tfo ; defines the standard position for the connect function
-  P-O3*-180-tfo
-  P-O3*-60-tfo
-  P O1P O2P O5* C5* H5* H5** C4* H4* O4* C1* H1* C2* H2** O2* H2* C3*
-  H3* O3* N1 N3 C2 C4 C5 C6)
-
 ; Define remaining atoms for each nucleotide type.
-
-(def-nuc #t rA N6 N7 N9 C8 H2 H61 H62 H8)
-(def-nuc #t rC N4 O2 H41 H42 H5 H6)
-(def-nuc #t rG N2 N7 N9 C8 O6 H1 H21 H22 H8)
-(def-nuc #t rU O2 O4 H3 H5 H6)
 
 ; Database of nucleotide conformations:
 
@@ -3166,38 +2947,6 @@
 
 
 ; -- PARTIAL INSTANTIATIONS ---------------------------------------------------
-
-(def-struct #f var id tfo nuc)
-
-; Add a single-quote at the start of this line if you want lazy computation
-(begin
-
-(def-macro (mk-var i tfo nuc)
-  `(make-var ,i ,tfo ,nuc))
-
-(def-macro (absolute-pos var p)
-  `(tfo-apply (var-tfo ,var) ,p))
-
-(def-macro (lazy-computation-of expr)
-  expr)
-)
-
-'; Remove the single-quote from this line if you want lazy computation
-(begin
-
-(def-macro (mk-var i tfo nuc)
-  `(make-var ,i ,tfo (make-relative-nuc ,tfo ,nuc)))
-
-(def-macro (absolute-pos var p)
-  `(force ,p))
-
-(def-macro (lazy-computation-of expr)
-  `(delay ,expr))
-)
-
-(def-macro (atom-pos atom var)
-  `(let ((v ,var))
-     (absolute-pos v (,atom (var-nuc v)))))
 
 (define (get-var id lst)
   (let ((v (car lst)))

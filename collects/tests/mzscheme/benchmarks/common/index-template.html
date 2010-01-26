@@ -4,45 +4,52 @@
 
 <H1>About the Benchmarks</H1>
 
-<p>The pages linked below show some benchmark results on a collection of fairly standard
+<p>The <a href="Benchmarks.html">benchmark page</a> shows some benchmark results on a collection of fairly standard
    (mostly Gabriel) Scheme benchmarks.</p>
 
 <p>Tables show relative performance, with the actual time for the fastest
    run shown on the left. So, by default, <font color=forestgreen><b>1</b></font> 
    is the fastest, but select any implementation to normalize the table with
    respect to that implementation's speed. A <tt>--</tt> appears when a benchmark
-   didn't run in an implementation (and you should assume a benchmark problem,
-   rather than an implementation problem).</p>
+   didn't run in an implementation for some reason (possibly not a good one).</p>
 
-<p><font color="gray" size="-1">Small gray numbers are (relative) compile times.</font></p>
+<p><font color="gray" size="-1">Small gray numbers are (relative)
+compile times, where the compile time for the <tt>nothing</tt>
+benchmark is subtracted from every other benchmark's compile
+time.</font></p>
 
 <p>Run times are averaged over three runs. All reported times are CPU time (system plus user).
-   Where available, the times are based on the output of the implementation's <tt>time</tt> 
-   syntactic form, otherwise <tt>/usr/bin/time</tt> is used.</p>
+   The times are based on the output of the implementation's <tt>time</tt> 
+   syntactic form for function.</p>
 
-<p>Compiler configuration:
+<p>Machine:
 <ul>
-<li> Bigloo (2.8b): <tt>-06 -copt -O3 -copt -fomit-frame-pointer</tt></il>
-<li> Chicken (2 build 3): <tt>-no-trace -no-lambda-info -optimize-level 3 -block -lambda-lift</tt></il>
-<li> Gambit (4.0 beta 17): <tt>(declare (block) (standard-bindings) (extended-bindings) (safe) (interrupts-enabled))</tt>, 
-     installed with <tt>--enable-single-host</tt>, compiled with <tt>-dynamic</tt>, compiled and run with <tt>-:m10000</tt></li>
-<li> Larceny (0.92b): default mode &mdash; but should use <tt>(benchmark-block-mode #t)</tt> when it works</li>
-<li> MzScheme (352.5): in <tt>module</tt></li>
+  <li> MacBook Pro, 2.53 GHz, Mac OS X 10.6.2, compiling to 32-bit programs
+</ul></p>
+
+<p>Compiler configurations:
+<ul>
+<li> Bigloo (3.3a): <tt>-06 -call/cc -copt -O3 -copt -fomit-frame-pointer</tt></il>
+<li> Chicken (4.3.0): <tt>-no-trace -no-lambda-info -optimize-level 3 -block -lambda-lift</tt></il>
+<li> Gambit (4.6.0): <tt>(declare (block) (standard-bindings) (extended-bindings) (safe) (interrupts-enabled))</tt>, 
+     compiled and run with <tt>-:m10000</tt></li>
+<li> Ikarus (0.0.4-rc1+ rev 1870): in R6RS library</li>
+<li> Larceny (0.97): in R6RS library</li>
+<li> PLT (4.2.4): in <tt>module</tt></li>
 </ul>
-These configurations are all "safe mode", but they allow the compiler
-to assume that built-in Scheme functions are not redefined and (except
-in the case of Larceny) that no top-level defintion is ever
+These configurations are all &ldquo;safe mode,&rdquo; but they allow the compiler
+to assume that built-in Scheme functions are not redefined and that no top-level defintion is ever
 changed. Such assumptions correspond to putting the benchmark in an
-R6RS library (we expect).</P>
+R6RS library.</P>
 
 <p>In general, we attempt to use the various implementations in a compentent way,
    but not in a sophisticated way. For example, we do not tweak
    inlining parameters or specify fixnum arithmetic (where appropriate),
    which could produce significant improvements from some compilers.</p>
 
-<p>For a larger set of benchmarks and a more sophisticated use of the compilers,
-   see Marc Feeley's page:
-   <a href="http://www.iro.umontreal.ca/~gambit/bench.html">http://www.iro.umontreal.ca/~gambit/bench.html</a>.
+<p>For more benchmarks and a more sophisticated use of a few compilers,
+   including fixnum- and flonum-specific arithmetic as well as unsafe modes,
+   see <a href="../log1/Gambit_20benchmarks.html">this other page</a>.</p>
 
 <p>For further details on the benchmarks here, see the benchmark source and
    infrastructure, which is available form the PLT SVN repository:</p>
@@ -50,8 +57,3 @@ R6RS library (we expect).</P>
 <p align=center>
    <a href="http://svn.plt-scheme.org/plt/trunk/collects/tests/mzscheme/benchmarks/common/">http://svn.plt-scheme.org/plt/trunk/collects/tests/mzscheme/benchmarks/common/</a></P>
 
-<H1>Results</H1>
-
-<ul>
-<li> <a href=machine1.html>machine1</a> ...
-</ul>
