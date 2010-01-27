@@ -167,7 +167,7 @@
   (syntax-rules ()
     [(_ lang pat size attempt decisions)
      (parameterize ([generation-decisions decisions])
-       (generate-term lang pat size #:attempt attempt))]))
+       (generate-term lang pat size #:attempt-num attempt))]))
 
 (let ()
   (define-language lc
@@ -197,6 +197,13 @@
                #:var (list (λ _ 'x) (λ _ 'y))))
    '(x y)))
 
+(let ()
+  (define-language L
+    (n 1))
+  (test ((generate-term L n) 0) 1)
+  (test ((generate-term L n) 0 #:retries 0) 1)
+  (test ((generate-term L n) 0 #:attempt-num 0) 1))
+
 ;; variable-except pattern
 (let ()
   (define-language var
@@ -212,17 +219,17 @@
     (n natural)
     (i integer)
     (r real))
-  (test (let ([n (generate-term L n 0 #:attempt 10000)])
+  (test (let ([n (generate-term L n 0 #:attempt-num 10000)])
           (and (integer? n)
                (exact? n)
                (not (negative? n))))
         #t)
   (test (generate-term/decisions L n 0 1 (decisions #:nat (λ (_) 42))) 42)
-  (test (let ([i (generate-term L i 0 #:attempt 10000)])
+  (test (let ([i (generate-term L i 0 #:attempt-num 10000)])
           (and (integer? i) (exact? i)))
         #t)
   (test (generate-term/decisions L i 0 1 (decisions #:int (λ (_) -42))) -42)
-  (test (real? (generate-term L r 0 #:attempt 10000)) #t)
+  (test (real? (generate-term L r 0 #:attempt-num 10000)) #t)
   (test (generate-term/decisions L r 0 1 (decisions #:real (λ (_) 4.2))) 4.2))
 
 (let ()

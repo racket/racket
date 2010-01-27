@@ -1127,30 +1127,37 @@ metafunctions or unnamed reduction-relation cases) to application counts.}
            (values (covered-cases equals-coverage)
                    (covered-cases plus-coverage))))]
 
-@defform/subs[(generate-term language @#,ttpattern size-exp kw-args ...)
-              ([kw-args (code:line #:attempts attempts-expr)
+@defform*/subs[[(generate-term language @#,ttpattern size-expr kw-args ...)
+                (generate-term language @#,ttpattern)]
+              ([kw-args (code:line #:attempt-num attempts-expr)
                         (code:line #:retries retries-expr)])
               #:contracts ([size-expr natural-number/c]
                            [attempt-num-expr natural-number/c]
                            [retries-expr natural-number/c])]{
-Generates a random term matching @scheme[pattern] (in the given language).
+                                                             
+In its first form, @scheme[generate-term] produces a random term matching
+the given pattern (according to the given language). In its second, 
+@scheme[generate-term] produces a procedure for constructing the same.
+This procedure expects @scheme[size-expr] (below) as its sole positional
+argument and allows the same optional keyword arguments as the first form.
+The second form may be more efficient when generating many terms.
 
 The argument @scheme[size-expr] bounds the height of the generated term
-(measured as the height of the derivation tree used to produce
-the term). 
+(measured as the height of its parse tree). 
          
 The optional keyword argument @scheme[attempt-num-expr] 
 (default @scheme[1]) provides coarse grained control over the random
-decisions made during generation. For example, the expected length of 
-@pattech[pattern-sequence]s increases with @scheme[attempt-num-expr].
+decisions made during generation; increasing @scheme[attempt-num-expr]
+tends to increase the complexity of the result. For example, the expected
+length of @pattech[pattern-sequence]s increases with @scheme[attempt-num-expr].
 
 The random generation process does not actively consider the constraints
-imposed by @pattech[side-condition] or @tt{_!_} @|pattern|s when 
-constructing a term; instead, it tests the satisfaction of
-such constraints after it freely generates the relevant portion of the 
-sub-term---regenerating the sub-term if necessary. The optional keyword 
-argument @scheme[retries-expr] (default @scheme[100]) bounds the number of times that 
-@scheme[generate-term] retries the generation of any sub-term. If 
+imposed by @pattech[side-condition] or @tt{_!_} @|pattern|s; instead, 
+it uses a ``guess and check'' strategy in which it freely generates 
+candidate terms then tests whether they happen to satisfy the constraints,
+repeating as necessary. The optional keyword argument @scheme[retries-expr]
+(default @scheme[100]) bounds the number of times that 
+@scheme[generate-term] retries the generation of any pattern. If 
 @scheme[generate-term] is unable to produce a satisfying term after 
 @scheme[retries-expr] attempts, it raises an exception recognized by
 @scheme[exn:fail:redex:generation-failure?].}

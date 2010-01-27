@@ -152,11 +152,11 @@
                      who what attempts (if (= attempts 1) "" "s"))])
     (raise (make-exn:fail:redex:generation-failure str (current-continuation-marks)))))
 
-(define (generate lang decisions@ retries what)
+(define (generate lang decisions@ what)
   (define-values/invoke-unit decisions@
     (import) (export decisions^))
   
-  (define ((generate-nt lang base-cases generate)
+  (define ((generate-nt lang base-cases generate retries)
            name cross? size attempt in-hole env)
     (let*-values
         ([(term _)
@@ -171,7 +171,7 @@
                              ((next-non-terminal-decision) name cross? lang attempt)))])
                (generate (max 0 (sub1 size)) attempt empty-env in-hole (rhs-pattern rhs))))
            (λ (_ env) (mismatches-satisfied? env))
-           size attempt)])
+           size attempt retries)])
       term))
   
   (define (generate-sequence ellipsis generate env length)
@@ -197,18 +197,18 @@
                   (values (cons term terms) (cons env envs)))))])
       (values seq (merge-environments envs))))
   
-  (define (generate/pred name gen pred init-sz init-att)
+  (define (generate/pred name gen pred init-sz init-att retries)
     (let ([pre-threshold-incr 
            (ceiling
             (/ (- retry-threshold init-att)
-               (* proportion-before-threshold retries)))]
+               (* proportion-before-threshold (add1 retries))))]
           [incr-size? 
            (λ (remain)
              (zero? 
               (modulo (sub1 remain) 
                       (ceiling (* proportion-at-size 
                                   retries)))))])
-      (let retry ([remaining retries]
+      (let retry ([remaining (add1 retries)]
                   [size init-sz]
                   [attempt init-att])
         (if (zero? remaining)
@@ -254,18 +254,19 @@
                    (cons (make-bind (binder-name key) val) bindings)
                    bindings))))
   
-  (define (generate-pat lang sexp size attempt env in-hole pat)
-    (define recur (curry generate-pat lang sexp size attempt))
+  (define (generate-pat lang sexp retries size attempt env in-hole pat)
+    (define recur (curry generate-pat lang sexp retries size attempt))
     (define recur/pat (recur env in-hole))
     (define ((recur/pat/size-attempt pat) size attempt)
-      (generate-pat lang sexp size attempt env in-hole pat))
+      (generate-pat lang sexp retries size attempt env in-hole pat))
     
     (define clang (rg-lang-clang lang))
     (define gen-nt 
       (generate-nt 
        clang 
        (rg-lang-base-cases lang)
-       (curry generate-pat lang sexp)))
+       (curry generate-pat lang sexp retries)
+       retries))
     
     (match pat
       [`number (values ((next-number-decision) attempt) env)]
@@ -276,7 +277,7 @@
        (generate/pred 'variable
                       (recur/pat/size-attempt 'variable)
                       (λ (var _) (not (memq var vars)))
-                      size attempt)]
+                      size attempt retries)]
       [`variable 
        (values ((next-variable-decision) (rg-lang-lits lang) attempt)
                env)]
@@ -284,7 +285,7 @@
        (generate/pred 'variable
                       (recur/pat/size-attempt 'variable)
                       (λ (var _) (not (memq var (compiled-lang-literals clang))))
-                      size attempt)]
+                      size attempt retries)]
       [`(variable-prefix ,prefix) 
        (define (symbol-append prefix suffix)
          (string->symbol (string-append (symbol->string prefix) (symbol->string suffix))))
@@ -297,7 +298,7 @@
        (generate/pred `(side-condition ,(unparse-pattern pat) ,guard-src-loc) 
                       (recur/pat/size-attempt pat)
                       (λ (_ env) (condition (bindings env)))
-                      size attempt)]
+                      size attempt retries)]
       [`(name ,(? symbol? id) ,p)
        (let-values ([(term env) (recur/pat p)])
          (values term (hash-set env (make-binder id) term)))]
@@ -310,6 +311,7 @@
        (let*-values ([(new-lang nt) ((next-any-decision) lang sexp)]
                      [(term _) (generate-pat new-lang
                                              sexp
+                                             retries
                                              size
                                              attempt
                                              empty-env
@@ -354,7 +356,7 @@
         [rg-sexp (prepare-lang sexp)])
     (λ (pat)
       (let ([parsed (reassign-classes (parse-pattern pat lang 'top-level))])
-        (λ (size attempt)
+        (λ (size attempt retries)
           (let-values ([(term env)
                         (generate/pred 
                          pat
@@ -362,13 +364,14 @@
                            (generate-pat 
                             rg-lang 
                             rg-sexp
+                            retries
                             size
                             attempt
                             empty-env
                             the-hole
                             parsed))
                          (λ (_ env) (mismatches-satisfied? env))
-                         size attempt)])
+                         size attempt retries)])
             (values term (bindings env))))))))
 
 (define-struct base-cases (cross non-cross))
@@ -640,34 +643,35 @@
       x
       (raise-type-error 'redex-check "reduction-relation" x)))
 
-(define (defer-all pat size in-hole acc env att recur defer) 
-  (defer acc))
-
-(define-for-syntax (term-generator lang pat decisions@ retries what)
+(define-for-syntax (term-generator lang pat decisions@ what)
   (with-syntax ([pattern 
                  (rewrite-side-conditions/check-errs 
                   (language-id-nts lang what)
                   what #t pat)])
-    #`((generate #,lang #,decisions@ #,retries '#,what) `pattern)))
+    #`((generate #,lang #,decisions@ '#,what) `pattern)))
 
 (define-syntax (generate-term stx)
   (syntax-case stx ()
-    [(_ lang pat size . kw-args)
+    [(name lang pat size . kw-args)
      (with-syntax ([(attempt retries)
-                    (parse-kw-args `((#:attempt . 1)
+                    (parse-kw-args `((#:attempt-num . 1)
                                      (#:retries . ,#'default-retries))
                                    (syntax kw-args)
                                    stx)])
-       (with-syntax ([generate (term-generator #'lang 
-                                               #'pat
-                                               #'(generation-decisions)
-                                               #'retries
-                                               'generate-term)])
-         (syntax/loc stx
-           (let-values ([(term _) (generate size attempt)])
-             term))))]
-    [(_ lang pat size)
-     (syntax/loc stx (generate-term lang pat size #:attempt 1))]))
+       (syntax/loc stx
+         ((generate-term lang pat) size #:attempt-num attempt #:retries retries)))]
+    [(name lang pat)
+     (with-syntax ([make-gen (term-generator #'lang
+                                             #'pat
+                                             #'(generation-decisions)
+                                             #'name)])
+       (syntax/loc stx
+         (let ([generate make-gen])
+           (λ (size #:attempt-num [attempt-num 1] #:retries [retries default-retries])
+             (let ([att (assert-nat 'name attempt-num)]
+                   [ret (assert-nat 'name retries)])
+               (let-values ([(term _) (generate size att ret)])
+                 term))))))]))
 
 (define-for-syntax (show-message stx)
   (syntax-case stx ()
@@ -728,19 +732,19 @@
                          (test-match lang pat)
                          (λ (generated) (redex-error 'redex-check "~s does not match ~s" generated 'pat))))
                     #`(check-prop
-                       #,(term-generator #'lang #'pat #'random-decisions@ #'ret 'redex-check)
-                       property att show)))
+                       #,(term-generator #'lang #'pat #'random-decisions@ 'redex-check)
+                       property att ret show)))
                (void))))))]))
 
 (define (format-attempts a)
   (format "~a attempt~a" a (if (= 1 a) "" "s")))
 
-(define (check-prop generator property attempts show)
-  (when (check generator property attempts show)
+(define (check-prop generator property attempts retries show)
+  (when (check generator property attempts retries show)
     (show (format "no counterexamples in ~a\n"
                   (format-attempts attempts)))))
 
-(define (check generator property attempts show
+(define (check generator property attempts retries show
                #:source [source #f]
                #:match [match #f]
                #:match-fail [match-fail #f])
@@ -748,7 +752,7 @@
     (if (zero? remaining)
         #t
         (let ([attempt (add1 (- attempts remaining))])
-          (let-values ([(term bindings) (generator (attempt->size attempt) attempt)])
+          (let-values ([(term bindings) (generator (attempt->size attempt) attempt retries)])
             (if (andmap (λ (bindings) 
                           (with-handlers 
                               ([exn:fail?
@@ -787,18 +791,19 @@
               [decisions@ (generation-decisions)]
               [att (assert-nat 'check-metafunction-contract attempts)])
           (check-prop 
-           ((generate lang decisions@ retries 'check-metafunction-contract)
+           ((generate lang decisions@ 'check-metafunction-contract)
             (if dom dom '(any (... ...))))
            (λ (t _) 
              (with-handlers ([exn:fail:redex? (λ (_) #f)])
                (begin (term (name ,@t)) #t)))
            att
+           retries
            show))))]))
 
 (define (check-lhs-pats lang mf/rr prop decisions@ attempts retries what show
                          [match #f]
                          [match-fail #f])
-  (let ([lang-gen (generate lang decisions@ retries what)])
+  (let ([lang-gen (generate lang decisions@ what)])
     (let-values ([(pats srcs)
                   (cond [(metafunc-proc? mf/rr)
                          (values (map metafunc-case-lhs-pat (metafunc-proc-cases mf/rr))
@@ -815,6 +820,7 @@
                  (lang-gen pat)
                  prop
                  attempts
+                 retries
                  show
                  #:source src
                  #:match match
