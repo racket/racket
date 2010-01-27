@@ -14,6 +14,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
            mzlib/inflate
            mzlib/date
            mzlib/port
+           mzlib/file
            dynext/file
            syntax/toplevel
            scheme/runtime-path)
@@ -37,10 +38,16 @@ exec mzscheme -qu "$0" ${1+"$@"}
     (delete-file (format "~a.o1" bm)))
 
   (define (mk-mzscheme bm)
-    ;; To get compilation time:
-    (parameterize ([current-namespace (make-base-namespace)])
-      (namespace-require 'scheme/base)
-      (load (format "~a.ss" bm))))
+    (unless (directory-exists? "compiled")
+      (make-directory "compiled"))
+    (parameterize ([current-namespace (make-base-namespace)]
+                   [read-accept-reader #t])
+      (let ([name (format "~a.ss" bm)])
+        (compile-file name
+                      (build-path "compiled" (path-add-suffix name #".zo"))))))
+
+  (define (clean-up-zo bm)
+    (delete-directory/files "compiled"))
 
   (define (clean-up-nothing bm)
     (void))
@@ -73,9 +80,6 @@ exec mzscheme -qu "$0" ${1+"$@"}
       (namespace-require 'scheme/base)
       (eval '(define null #f)) ; for dynamic.sch
       (compile-file (format "~a.sch" bm))))
-
-  (define (clean-up-zo bm)
-    (delete-file (build-path "compiled" (format "~a.zo" bm))))
 
   (define (setup-larceny bm)
     (setup-sps bm "(larceny benchmarking)"))
@@ -126,7 +130,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
       (lambda ()
         (printf "(library (~a)\n" bm)
         (printf " (export bm-!-go)\n")
-        (printf " (import (rnrs) (rnrs mutable-pairs) (rnrs mutable-strings) (rnrs r5rs) ~a)\n" lib)
+        (printf " (import (rnrs) (rnrs mutable-pairs) (rnrs mutable-strings) (rnrs r5rs) (rnrs eval) ~a)\n" lib)
         (printf " (define (bm-!-go) 'ok)\n")
         (call-with-input-file (format "~a.sch" bm)
           (lambda (in)
@@ -209,9 +213,11 @@ exec mzscheme -qu "$0" ${1+"$@"}
                             #"([0-9]*) ms elapsed cpu time, including ([0-9]*) ms collecting\n"
                             #"[ \t]*([0-9]*) ms elapsed real time")
                            str)])
-      (list (string->number (bytes->string/utf-8 (cadr m)))
-            (string->number (bytes->string/utf-8 (cadddr m)))
-            (string->number (bytes->string/utf-8 (caddr m))))))
+      (if m
+          (list (string->number (bytes->string/utf-8 (cadr m)))
+                (string->number (bytes->string/utf-8 (cadddr m)))
+                (string->number (bytes->string/utf-8 (caddr m))))
+          (list #f #f #f))))
 
 
   ;; Table of implementatons and benchmarks ------------------------------
@@ -235,7 +241,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 (lambda (bm)
                   (system (format "mzscheme -u ~a.ss" bm)))
                 extract-mzscheme-times
-                clean-up-nothing
+                clean-up-zo
                 mutable-pair-progs)
      (make-impl 'mz-old
                 void
@@ -243,7 +249,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 (lambda (bm)
                   (system (format "mz-old -u ~a.ss" bm)))
                 extract-mzscheme-times
-                clean-up-nothing
+                clean-up-zo
                 mutable-pair-progs)
      (make-impl 'mzschemecgc
                 void
@@ -251,7 +257,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 (lambda (bm)
                   (system (format "mzschemecgc -u ~a.ss" bm)))
                 extract-mzscheme-times
-                clean-up-nothing
+                clean-up-zo
                 mutable-pair-progs)
      (make-impl 'mzscheme3m
                 void
@@ -259,7 +265,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 (lambda (bm)
                   (system (format "mzscheme3m -u ~a.ss" bm)))
                 extract-mzscheme-times
-                clean-up-nothing
+                clean-up-zo
                 mutable-pair-progs)
      (make-impl 'plt-r5rs
                 void
@@ -286,7 +292,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 (lambda (bm)
                   (system (format "mzscheme -jqu ~a.ss" bm)))
                 extract-mzscheme-times
-                clean-up-nothing
+                clean-up-zo
                 mutable-pair-progs)
      (make-impl 'mzschemecgc-j
                 void
@@ -294,7 +300,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 (lambda (bm)
                   (system (format "mzschemecgc -jqu ~a.ss" bm)))
                 extract-mzscheme-times
-                clean-up-nothing
+                clean-up-zo
                 mutable-pair-progs)
      (make-impl 'mzschemecgc-tl
                 void

@@ -7,11 +7,13 @@
 <p>The <a href="Benchmarks.html">benchmark page</a> shows some benchmark results on a collection of fairly standard
    (mostly Gabriel) Scheme benchmarks.</p>
 
-<p>Tables show relative performance, with the actual time for the fastest
-   run shown on the left. So, by default, <font color=forestgreen><b>1</b></font> 
-   is the fastest, but select any implementation to normalize the table with
-   respect to that implementation's speed. A <tt>--</tt> appears when a benchmark
-   didn't run in an implementation for some reason (possibly not a good one).</p>
+<p>Tables show relative performance, with the actual time for the
+   fastest run shown on the left. So, by
+   default, <font color=forestgreen><b>1</b></font> is the fastest,
+   but select any implementation to normalize the table with respect
+   to that implementation's speed. A <tt>-</tt> appears when a
+   benchmark didn't run in an implementation for some reason (possibly
+   not a good one).</p>
 
 <p><font color="gray" size="-1">Small gray numbers are (relative)
 compile times, where the compile time for the <tt>nothing</tt>
@@ -35,7 +37,8 @@ time.</font></p>
      compiled and run with <tt>-:m10000</tt></li>
 <li> Ikarus (0.0.4-rc1+ rev 1870): in R6RS library</li>
 <li> Larceny (0.97): in R6RS library</li>
-<li> PLT (4.2.4): in <tt>module</tt></li>
+<li> PLT (4.2.4): in <tt>module</tt>; for benchmarks that use <tt>set-car!</tt> and <tt>set-cdr!</tt>, 
+     PLT's R5RS support is used</li>
 </ul>
 These configurations are all &ldquo;safe mode,&rdquo; but they allow the compiler
 to assume that built-in Scheme functions are not redefined and that no top-level defintion is ever
