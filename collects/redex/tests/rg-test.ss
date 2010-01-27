@@ -111,23 +111,6 @@
   (test (pick-string lits 0 (make-random .5 1 0 1 1 1 2 1)) "abc")
   (test (pick-var lits 0 (make-random .01 1 0 1 1 1 2 1)) 'abc))
 
-(let ()
-  (define-language L
-    (a 5 (x a))
-    (b 4))
-  (test (pick-nt 'a #f L 1 'dontcare)
-        (nt-rhs (car (compiled-lang-lang L))))
-  (test (pick-nt 'a #f L preferred-production-threshold 'dontcare (make-random 1))
-        (nt-rhs (car (compiled-lang-lang L))))
-  (let ([pref (car (nt-rhs (car (compiled-lang-lang L))))])
-    (test (pick-nt 'a #f L preferred-production-threshold
-                   (make-pref-prods 'dont-care
-                                    (make-immutable-hash `((a ,pref))))
-                   (make-random 0))
-          (list pref)))
-  (test (pick-nt 'b #f L preferred-production-threshold #f)
-        (nt-rhs (cadr (compiled-lang-lang L)))))
-
 (define-syntax raised-exn-msg
   (syntax-rules ()
     [(_ expr) (raised-exn-msg exn:fail? expr)]
@@ -141,7 +124,7 @@
 
 (define (patterns . selectors) 
   (map (λ (selector) 
-         (λ (name cross? lang size pref-prods)
+         (λ (name cross? lang sizes)
            (list (selector (nt-rhs (nt-by-name lang name cross?))))))
        selectors))
 
@@ -158,15 +141,14 @@
   (test (raised-exn-msg (iter)) #rx"empty"))
 
 (define (decisions #:var [var pick-var] 
-                   #:nt [nt pick-nt]
+                   #:nt [nt pick-nts]
                    #:str [str pick-string]
                    #:num [num pick-number]
                    #:nat [nat pick-natural]
                    #:int [int pick-integer]
                    #:real [real pick-real]
                    #:any [any pick-any]
-                   #:seq [seq pick-sequence-length]
-                   #:pref [pref pick-preferred-productions])
+                   #:seq [seq pick-sequence-length])
   (define-syntax decision
     (syntax-rules ()
       [(_ d) (if (procedure? d) (λ () d) (iterator (quote d) d))]))
@@ -179,8 +161,7 @@
         (define next-real-decision (decision real))
         (define next-string-decision (decision str))
         (define next-any-decision (decision any))
-        (define next-sequence-decision (decision seq))
-        (define next-pref-prods-decision (decision pref))))
+        (define next-sequence-decision (decision seq))))
 
 (define-syntax generate-term/decisions
   (syntax-rules ()
@@ -539,71 +520,6 @@
       (get-output-string p)
       (close-output-port p))))
 
-;; preferred productions
-(let ([make-pick-nt (λ opt (λ req (apply pick-nt (append req opt))))])
-  (define-language L
-    (e (+ e e) (* e e) 7))
-  (define-language M (e 0) (e-e 1))
-  
-  (let ([pats (λ (L) (nt-rhs (car (compiled-lang-lang L))))])
-    (test 
-     (generate-term/decisions
-      L e 2 preferred-production-threshold
-      (decisions #:pref (list (λ (L) (make-pref-prods
-                                      'dont-care
-                                      (make-immutable-hash `((e ,(car (pats L))))))))
-                 #:nt (make-pick-nt (make-random 0 0 0))))
-     '(+ (+ 7 7) (+ 7 7)))
-    (test
-     (generate-term/decisions
-      L any 2 preferred-production-threshold
-      (decisions #:nt (patterns first)
-                 #:var (list (λ _ 'x))
-                 #:any (list (λ (lang sexp) (values sexp 'sexp)))))
-     'x)
-    (test
-     (generate-term/decisions
-      L any 2 preferred-production-threshold
-      (decisions #:pref (list (λ (L) (make-pref-prods
-                                      'dont-care
-                                      (make-immutable-hash `((e ,(car (pats L))))))))
-                 #:nt (make-pick-nt (make-random 0 0 0))
-                 #:any (list (λ (lang sexp) (values lang 'e)))))
-     '(+ (+ 7 7) (+ 7 7)))
-    (test
-     (generate-term/decisions
-      M (cross e) 2 preferred-production-threshold
-      (decisions #:nt (make-pick-nt (make-random) (λ (att rand) #t))))
-     (term hole))
-    (test
-     (generate-term/decisions
-      M e-e 2 preferred-production-threshold
-      (decisions #:nt (make-pick-nt (make-random) (λ (att rand) #t))))
-     1)
-    
-    (test
-     (let ([generated null])
-       (output
-        (λ ()
-          (check-reduction-relation
-           (reduction-relation L (--> e e))
-           (λ (t) (set! generated (cons t generated)))
-           #:decisions (decisions #:nt (make-pick-nt (make-random)
-                                                     (λ (att rand) #t))
-                                  #:pref (list (λ (_) 'dontcare)
-                                               (λ (_) 'dontcare)
-                                               (λ (_) 'dontcare)
-                                               ; size 0 terms prior to this attempt
-                                               (λ (L) (make-pref-prods
-                                                       'dont-care
-                                                       (make-immutable-hash `((e ,(car (pats L)))))))
-                                               (λ (L) (make-pref-prods
-                                                       'dont-care
-                                                       (make-immutable-hash `((e ,(cadr (pats L)))))))))
-           #:attempts 5)))
-       generated)
-     '((* 7 7) (+ 7 7) 7 7 7))))
-
 ;; redex-check
 (let ()
   (define-language lang
@@ -889,89 +805,6 @@
          exn:fail:redex:generation-failure?
          (check-metafunction n (λ (_) #t) #:retries 42))
         #rx"check-metafunction: unable .* in 42"))
-
-;; custom generators
-(let ()
-  (define-language L
-    (x variable))
-  
-  (test
-   (generate-term 
-    L x_1 0
-    #:custom (λ (pat sz i-h acc env att rec def)
-               (match pat
-                 ['x (values 'x env)]
-                 [_ (def acc)])))
-   'x)
-  (test
-   (let/ec k
-     (equal?
-      (generate-term 
-       L (x x) 0
-       #:custom (let ([once? #f])
-                  (λ (pat sz i-h acc env att rec def)
-                    (match pat
-                      ['x (if once?
-                              (k #f)
-                              (begin
-                                (set! once? #t)
-                                (values 'x env)))]
-                      [_ (def acc)]))))
-      '(x x)))
-   #t)
-  
-  (test
-   (hash-ref
-    (let/ec k
-      (generate-term 
-       L (x (x)) 0
-       #:custom (λ (pat sz i-h acc env att rec def)
-                  (match pat
-                    [(struct binder ('x))
-                     (values 'y (hash-set env pat 'y))]
-                    [(list (struct binder ('x))) (k env)]
-                    [_ (def acc)]))))
-    (make-binder 'x))
-   'y)
-  
-  (test
-   (generate-term
-    L (in-hole hole 7) 0
-    #:custom (λ (pat sz i-h acc env att rec def)
-               (match pat
-                 [`(in-hole hole 7)
-                  (rec 'hole #:contractum 7)]
-                 [_ (def acc)])))
-   7)
-  
-  (test
-   (let/ec k
-     (generate-term 
-      L any 10
-      #:attempt 42
-      #:custom (λ (pat sz i-h acc env att rec def) (k (list sz att)))))
-   '(10 42))
-  
-  (test
-   (let/ec k
-     (generate-term 
-      L x 10
-      #:custom (λ (pat sz i-h acc env att rec def) 
-                 (match pat
-                   ['x (rec 7 #:size 0)]
-                   [7 (k sz)]
-                   [_ (def att)]))))
-   0)
-  
-  (test
-   (generate-term
-    L (q 7) 0
-    #:custom (λ (pat sz i-h acc env att rec def) 
-               (match pat
-                 ['q (rec '(7 7) #:acc 8)]
-                 [7 (values (or acc 7) env)]
-                 [_ (def att)])))
-   '((8 8) 7)))
 
 ;; parse/unparse-pattern
 (let-syntax ([test-match (syntax-rules () [(_ p x) (test (match x [p #t] [_ #f]) #t)])])
