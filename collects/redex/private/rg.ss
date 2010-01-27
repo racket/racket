@@ -664,7 +664,7 @@
      (with-syntax ([make-gen (term-generator #'lang
                                              #'pat
                                              #'(generation-decisions)
-                                             #'name)])
+                                             (syntax-e #'name))])
        (syntax/loc stx
          (let ([generate make-gen])
            (λ (size #:attempt-num [attempt-num 1] #:retries [retries default-retries])

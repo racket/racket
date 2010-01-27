@@ -8,6 +8,9 @@
          "../private/keyword-macros.ss"
          "../private/error.ss")
 
+(define-namespace-anchor nsa)
+(define ns (namespace-anchor->namespace nsa))
+
 (reset-count)
 
 ;; to-table : hash-table -> assoc
@@ -202,7 +205,11 @@
     (n 1))
   (test ((generate-term L n) 0) 1)
   (test ((generate-term L n) 0 #:retries 0) 1)
-  (test ((generate-term L n) 0 #:attempt-num 0) 1))
+  (test ((generate-term L n) 0 #:attempt-num 0) 1)
+  (test (with-handlers ([exn:fail:syntax? exn-message])
+          (parameterize ([current-namespace ns])
+            (expand #'(generate-term M n))))
+        #rx"generate-term: expected a identifier defined by define-language( in: M)?$"))
 
 ;; variable-except pattern
 (let ()
