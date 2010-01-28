@@ -530,7 +530,7 @@ When an editor is loaded and a header/footer record is encountered,
  be loaded.
 
 See also @method[editor<%> write-headers-to-file] and
- @method[editor<%> write-headers-to-file].
+ @method[editor<%> read-header-from-file].
 
 
 @section[#:tag "editoreol"]{End of Line Ambiguity}
