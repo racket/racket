@@ -452,6 +452,8 @@
         (define (module-language-selected)
           ;; need to deselect things in the languages-hier-list at this point.
           ;(send languages-hier-list select #f)
+          (send use-chosen-language-rb set-selection #f)
+          (send use-language-in-source-rb set-selection 0)
           (update-gui-based-on-selected-language module-language*language
                                                  module-language*get-language-details-panel
                                                  module-language*get/set-settings))
@@ -727,8 +729,7 @@
             (cond
               [(equal? language-to-show 
                        module-language*language)
-               (send use-language-in-source-rb set-selection 0)
-               (send use-chosen-language-rb set-selection #f)]
+               (module-language-selected)]
               [else
                (send use-chosen-language-rb set-selection 0)
                (send use-language-in-source-rb set-selection #f)
