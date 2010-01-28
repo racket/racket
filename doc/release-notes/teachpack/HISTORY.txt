@@ -1,4 +1,14 @@
 ------------------------------------------------------------------------
+Version 4.2.4				  [Thu Jan 28 12:02:01 EST 2010]
+
+* separated 2htdp/universe from htdp/image
+* 2htdp/universe contains some stupid hacks to improve performance 
+  -- to be changed with Matthew's advice  
+* error modified 
+* added a bunch of primitives for JPR 
+* fixed some other bugs 
+
+------------------------------------------------------------------------
 Version 4.2.3				  [Sun Nov 22 19:25:01 EST 2009]
 
 * bug fixes in universe 
