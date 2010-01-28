@@ -6,11 +6,9 @@
 
 (define-syntax (defintern stx)
   (syntax-parse stx
-    [(_ name+args make-name key (~optional (~seq #:extra-arg e:expr)) ...)
-     (if (attribute e)
-         #'(defintern name+args (lambda () (make-hash #;'weak)) make-name key #:extra-arg e)
-         #'(defintern name+args (lambda () (make-hash #;'weak)) make-name key))]
-    [(_ (*name:id arg:id ...) make-ht make-name key-expr (~seq #:extra-arg e:expr) ...)
+    [(_ name+args make-name key #:extra-args e:expr ...)
+     #'(defintern name+args (lambda () (make-hash)) make-name key #:extra-args e ...)]
+    [(_ (*name:id arg:id ...) make-ht make-name key-expr #:extra-args e:expr ...)
      #'(define *name
 	 (let ([table (make-ht)])
 	   (lambda (arg ...)
