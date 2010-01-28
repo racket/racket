@@ -811,7 +811,7 @@ in a way that depends on the setting of @scheme[(sandbox-output)] or
 
 Retrieves uncovered expression from an evaluator, as longs as the
 @scheme[sandbox-coverage-enabled] parameter had a true value when the
-evaluator was created. Otherwise, and exception is raised to indicate
+evaluator was created. Otherwise, an exception is raised to indicate
 that no coverage information is available.
 
 The @scheme[prog?] argument specifies whether to obtain expressions that
