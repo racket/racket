@@ -540,6 +540,16 @@
     (d 5)
     (e e 4)
     (n number))
+  
+  (test (redex-check lang d #t #:attempts 1 #:print? (not #t)) #t)
+  (test (counterexample-term (redex-check lang d #f #:print? #f)) 5)
+  (let ([exn (with-handlers ([exn:fail:redex:test? values])
+               (redex-check lang d (error 'boom ":(") #:print? #f)
+               'not-an-exn)])
+    (test (exn-message exn) "checking 5 raises an exception:\nboom: :(")
+    (test (exn-message (exn:fail:redex:test-source exn)) "boom: :(")
+    (test (exn:fail:redex:test-term exn) 5))
+  
   (test (output (λ () (redex-check lang d #f)))
         #rx"redex-check: .*:.*\ncounterexample found after 1 attempt:\n5\n")
   (test (output (λ () (redex-check lang d #t))) 
@@ -574,17 +584,29 @@
                                   (--> 0 dontcare z)))))
         #rx"counterexample found after 1 attempt with z:\n0\n")
   
-  (let ([generated null])
+  (let ([generated null]
+        [R (reduction-relation 
+            lang 
+            (--> 1 dontcare)
+            (--> 2 dontcare))])
     (test (output
            (λ ()
              (redex-check lang n (set! generated (cons (term n) generated)) 
                           #:attempts 5
-                          #:source (reduction-relation 
-                                    lang 
-                                    (--> 1 dontcare)
-                                    (--> 2 dontcare)))))
+                          #:source R)))
           #rx"no counterexamples.*with each clause")
-    (test generated '(2 2 1 1)))
+    (test generated '(2 2 1 1))
+    
+    (test (redex-check lang any #t 
+                       #:attempts 1 
+                       #:source R
+                       #:print? (not #t))
+          #t)
+    (test (counterexample-term
+           (redex-check lang any (= (term any) 1)
+                        #:source R
+                        #:print? #f))
+          2))
   
   (let ()
     (define-metafunction lang
@@ -595,7 +617,17 @@
              (redex-check lang (n) (eq? 42 (term n)) 
                           #:attempts 1
                           #:source mf)))
-          #px"counterexample found after 1 attempt with clause at .*:\\d+:\\d+:\n\\(0\\)\n"))
+          #px"counterexample found after 1 attempt with clause at .*:\\d+:\\d+:\n\\(0\\)\n")
+    (test (redex-check lang any #t 
+                       #:attempts 1 
+                       #:source mf
+                       #:print? (not #t))
+          #t)
+    (test (counterexample-term
+           (redex-check lang any (= (car (term any)) 42)
+                        #:source mf
+                        #:print? #f))
+          '(0)))
   
   (let ()
     (define-metafunction lang
@@ -720,6 +752,14 @@
     (E* hole E*)
     (n 4))
   
+  (let ([R (reduction-relation
+            L
+            (--> 1 2)
+            (--> 2 3))])
+    (test (check-reduction-relation R (λ (_) #t) #:print? #f) #t)
+    (test (counterexample-term (check-reduction-relation R (curry = 1) #:print? #f))
+          2))
+  
   (let ([generated null]
         [R (reduction-relation
             L
@@ -786,6 +826,11 @@
     [(m 2) whatever])
   (define-metafunction empty
     [(n (side-condition any #f)) any])
+  
+  (test (check-metafunction m (λ (_) #t) #:print? #f) #t)
+  (test (counterexample-term
+         (check-metafunction m (compose (curry = 1) car) #:print? #f))
+        '(2))
   
   (let ([generated null])
     (test (begin

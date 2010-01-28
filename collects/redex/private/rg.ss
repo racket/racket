@@ -695,11 +695,12 @@
      (let-values ([(names names/ellipses) 
                    (extract-names (language-id-nts #'lang 'redex-check)
                                   'redex-check #t #'pat)]
-                  [(attempts-stx source-stx retries-stx)
+                  [(attempts-stx source-stx retries-stx print?-stx)
                    (apply values
                           (parse-kw-args `((#:attempts . ,#'default-check-attempts)
                                            (#:source . #f)
-                                           (#:retries . ,#'default-retries))
+                                           (#:retries . ,#'default-retries)
+                                           (#:print? . #t))
                                          (syntax kw-args)
                                          stx))])
        (with-syntax ([(name ...) names]
@@ -711,7 +712,8 @@
                                               property)))])
            (quasisyntax/loc stx
              (let ([att (assert-nat 'redex-check #,attempts-stx)]
-                   [ret (assert-nat 'redex-check #,retries-stx)])
+                   [ret (assert-nat 'redex-check #,retries-stx)]
+                   [print? #,print?-stx])
                (unsyntax
                 (if source-stx
                     #`(let-values ([(metafunc/red-rel num-cases) 
@@ -728,21 +730,27 @@
                          (max 1 (floor (/ att num-cases)))
                          ret
                          'redex-check
-                         show
+                         (and print? show)
                          (test-match lang pat)
                          (λ (generated) (redex-error 'redex-check "~s does not match ~s" generated 'pat))))
                     #`(check-prop
                        #,(term-generator #'lang #'pat #'random-decisions@ 'redex-check)
-                       property att ret show)))
-               (void))))))]))
+                       property att ret (and print? show)))))))))]))
 
 (define (format-attempts a)
   (format "~a attempt~a" a (if (= 1 a) "" "s")))
 
-(define (check-prop generator property attempts retries show)
-  (when (check generator property attempts retries show)
-    (show (format "no counterexamples in ~a\n"
-                  (format-attempts attempts)))))
+(define (check-prop generator property attempts retries show) 
+  (let ([c (check generator property attempts retries show)])
+    (if (counterexample? c)
+        (unless show c) ; check printed it
+        (if show
+            (show (format "no counterexamples in ~a\n"
+                          (format-attempts attempts)))
+            #t))))
+
+(define-struct (exn:fail:redex:test exn:fail:redex) (source term))
+(define-struct counterexample (term))
 
 (define (check generator property attempts retries show
                #:source [source #f]
@@ -757,9 +765,16 @@
                           (with-handlers 
                               ([exn:fail?
                                 (λ (exn) 
-                                  (show 
-                                   (format "checking ~s raises an exception\n" term))
-                                  (raise exn))])
+                                  (when show 
+                                    (show (format "checking ~s raises an exception\n" term)))
+                                  (raise 
+                                   (if show
+                                       exn
+                                       (make-exn:fail:redex:test
+                                        (format "checking ~s raises an exception:\n~a" term (exn-message exn))
+                                        (current-continuation-marks)
+                                        exn
+                                        term))))])
                             (property term bindings)))
                         (cond [(and match match-fail (match term)) 
                                => (curry map (compose make-bindings match-bindings))]
@@ -767,12 +782,13 @@
                               [else (list bindings)]))
                 (loop (sub1 remaining))
                 (begin
-                  (show
-                   (format "counterexample found after ~a~a:\n"
-                           (format-attempts attempt)
-                           (if source (format " with ~a" source) "")))
-                  (pretty-print term (current-output-port))
-                  #f)))))))
+                  (when show
+                    (show
+                     (format "counterexample found after ~a~a:\n"
+                             (format-attempts attempt)
+                             (if source (format " with ~a" source) "")))
+                    (pretty-print term (current-output-port)))
+                  (make-counterexample term))))))))
 
 (define-syntax (check-metafunction-contract stx)
   (syntax-case stx ()
@@ -801,8 +817,8 @@
            show))))]))
 
 (define (check-lhs-pats lang mf/rr prop decisions@ attempts retries what show
-                         [match #f]
-                         [match-fail #f])
+                        [match #f]
+                        [match-fail #f])
   (let ([lang-gen (generate lang decisions@ what)])
     (let-values ([(pats srcs)
                   (cond [(metafunc-proc? mf/rr)
@@ -811,46 +827,53 @@
                         [(reduction-relation? mf/rr)
                          (values (map (λ (rwp) ((rewrite-proc-lhs rwp) lang)) (reduction-relation-make-procs mf/rr))
                                  (reduction-relation-srcs mf/rr))])])
-      (when (for/and ([pat pats] [src srcs])
-              (with-handlers ([exn:fail:redex:generation-failure?
-                               ; Produce an error message that blames the LHS as a whole.
-                               (λ (_)
-                                 (raise-gen-fail what (format "LHS of ~a" src) retries))])
-                (check
-                 (lang-gen pat)
-                 prop
-                 attempts
-                 retries
-                 show
-                 #:source src
-                 #:match match
-                 #:match-fail match-fail)))
-        (show
-         (format "no counterexamples in ~a (with each clause)\n"
-                 (format-attempts attempts)))))))
+      (let loop ([pats pats] [srcs srcs])
+        (if (and (null? pats) (null? srcs))
+            (if show
+                (show
+                 (format "no counterexamples in ~a (with each clause)\n"
+                         (format-attempts attempts)))
+                #t)
+            (let ([c (with-handlers ([exn:fail:redex:generation-failure?
+                                      ; Produce an error message that blames the LHS as a whole.
+                                      (λ (_)
+                                        (raise-gen-fail what (format "LHS of ~a" (car srcs)) retries))])
+                       (check
+                        (lang-gen (car pats))
+                        prop
+                        attempts
+                        retries
+                        show
+                        #:source (car srcs)
+                        #:match match
+                        #:match-fail match-fail))])
+              (if (counterexample? c)
+                  (unless show c)
+                  (loop (cdr pats) (cdr srcs)))))))))
 
 (define-syntax (check-metafunction stx)
   (syntax-case stx ()
     [(_ name property . kw-args)
      (with-syntax ([m (metafunc/err #'name stx)]
-                   [(attempts retries)
+                   [(attempts retries print?) 
                     (parse-kw-args `((#:attempts . , #'default-check-attempts)
-                                     (#:retries . ,#'default-retries))
+                                     (#:retries . ,#'default-retries)
+                                     (#:print? . #t))
                                    (syntax kw-args)
-                                   stx)]
-                   [show (show-message stx)])
-       (syntax/loc stx
-         (let ([att (assert-nat 'check-metafunction attempts)]
-               [ret (assert-nat 'check-metafunction retries)])
-           (check-lhs-pats 
-            (metafunc-proc-lang m)
-            m
-            (λ (term _) (property term))
-            (generation-decisions)
-            att
-            ret
-            'check-metafunction
-            show))))]))
+                                   stx)])
+       (with-syntax ([show (show-message stx)])
+         (syntax/loc stx
+           (let ([att (assert-nat 'check-metafunction attempts)]
+                 [ret (assert-nat 'check-metafunction retries)])
+             (check-lhs-pats 
+              (metafunc-proc-lang m)
+              m
+              (λ (term _) (property term))
+              (generation-decisions)
+              att
+              ret
+              'check-metafunction
+              (and print? show))))))]))
 
 (define (reduction-relation-srcs r)
   (map (λ (proc) (or (rewrite-proc-name proc)
@@ -864,10 +887,11 @@
 (define-syntax (check-reduction-relation stx)
   (syntax-case stx ()
     [(_ relation property . kw-args)
-     (with-syntax ([(attempts retries decisions@)
+     (with-syntax ([(attempts retries decisions@ print?)
                     (parse-kw-args `((#:attempts . , #'default-check-attempts)
                                      (#:retries . ,#'default-retries)
-                                     (#:decisions . ,#'random-decisions@))
+                                     (#:decisions . ,#'random-decisions@)
+                                     (#:print? . #t))
                                    (syntax kw-args)
                                    stx)]
                    [show (show-message stx)])
@@ -883,7 +907,7 @@
             attempts
             retries
             'check-reduction-relation
-            show))))]))
+            (and print? show)))))]))
 
 (define-signature decisions^
   (next-variable-decision
@@ -921,7 +945,9 @@
          (struct-out mismatch)
          (struct-out class)
          (struct-out binder)
-         (struct-out base-cases))
+         (struct-out base-cases)
+         (struct-out counterexample)
+         (struct-out exn:fail:redex:test))
 
 (provide pick-from-list pick-sequence-length pick-nts
          pick-char pick-var pick-string pick-any

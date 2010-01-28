@@ -1166,11 +1166,13 @@ repeating as necessary. The optional keyword argument @scheme[retries-expr]
               ([kw-arg (code:line #:attempts attempts-expr)
                        (code:line #:source metafunction)
                        (code:line #:source relation-expr)
-                       (code:line #:retries retries-expr)])
+                       (code:line #:retries retries-expr)
+                       (code:line #:print? print?-expr)])
               #:contracts ([property-expr any/c]
                            [attempts-expr natural-number/c]
                            [relation-expr reduction-relation?]
-                           [retries-expr natural-number/c])]{
+                           [retries-expr natural-number/c]
+                           [print?-expr any/c])]{
 Searches for a counterexample to @scheme[property-expr], interpreted
 as a predicate universally quantified over the pattern variables
 bound by @scheme[pattern]. @scheme[redex-check] constructs and tests 
@@ -1180,8 +1182,18 @@ using the @scheme[match-bindings] produced by @scheme[match]ing
 @math{t} against @scheme[pattern].
 
 @scheme[redex-check] generates at most @scheme[attempts-expr] (default @scheme[1000])
-random terms in its search. The size and complexity of terms it generates
-gradually increases with each failed attempt.
+random terms in its search. The size and complexity of these terms increase with 
+each failed attempt. 
+
+When @scheme[print?-expr] produces any non-@scheme[#f] value (the default), 
+@scheme[redex-check] prints the test outcome on @scheme[current-output-port].
+When @scheme[print?-expr] produces @scheme[#f], @scheme[redex-check] prints
+nothing, instead 
+@itemlist[
+  @item{returning a @scheme[counterexample] structure when the test reveals a counterexample,}
+  @item{returning @scheme[#t] when all tests pass, or}
+  @item{raising a @scheme[exn:fail:redex:test] when checking the property raises an exception.}
+]
 
 When passed a metafunction or reduction relation via the optional @scheme[#:source]
 argument, @scheme[redex-check] distributes its attempts across the left-hand sides
@@ -1227,6 +1239,16 @@ term that does not match @scheme[pattern].}
           (printf "~s\n" (term (number ...)))
           #:attempts 3
           #:source R))]
+
+@defstruct[counterexample ([term any/c])]{
+Produced by @scheme[redex-check], @scheme[check-reduction-relation], and 
+@scheme[check-metafunction] when testing falsifies a property.}
+
+@defstruct[(exn:fail:redex:test exn:fail:redex) ([source exn:fail?] [term any/c])]{
+Raised by @scheme[redex-check], @scheme[check-reduction-relation], and 
+@scheme[check-metafunction] when testing a property raises an exception.
+The @scheme[exn:fail:redex:test-source] component contains the exception raised by the property,
+and the @scheme[exn:fail:redex:test-term] component contains the term that induced the exception.}
 
 @defform/subs[(check-reduction-relation relation property kw-args ...)
               ([kw-arg (code:line #:attempts attempts-expr)
