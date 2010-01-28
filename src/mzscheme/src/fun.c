@@ -1242,10 +1242,6 @@ int scheme_closure_body_size(Scheme_Closure_Data *data, int check_assign, Optimi
   cl = (Closure_Info *)data->closure_map;
 
   if (check_assign) {
-    /* Don't try to inline if there's a rest arg: */
-    if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)
-      return -1;
-    
     /* Don't try to inline if any arguments are mutated: */
     for (i = data->num_params; i--; ) {
       if (cl->local_flags[i] & SCHEME_WAS_SET_BANGED)

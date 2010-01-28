@@ -2435,10 +2435,12 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
 {
   Scheme_Let_Header *lh;
   Scheme_Compiled_Let_Value *lv, *prev = NULL;
-  int i;
+  int i, expected;
   int *flags, flag;
 
-  if (!argc) {
+  expected = data->num_params;
+
+  if (!expected) {
     info = scheme_optimize_info_add_frame(info, 0, 0, 0);
     info->inline_fuel >>= 1;
     p = scheme_optimize_expr(p, info, context);
@@ -2450,16 +2452,37 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
 
   lh = MALLOC_ONE_TAGGED(Scheme_Let_Header);
   lh->iso.so.type = scheme_compiled_let_void_type;
-  lh->count = argc;
-  lh->num_clauses = argc;
+  lh->count = expected;
+  lh->num_clauses = expected;
 
-  for (i = 0; i < argc; i++) {
+  for (i = 0; i < expected; i++) {
     lv = MALLOC_ONE_TAGGED(Scheme_Compiled_Let_Value);
     lv->so.type = scheme_compiled_let_value_type;
     lv->count = 1;
     lv->position = i;
 
-    if (app)
+    if ((i == expected - 1)
+        && (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)) {
+      int j;
+      Scheme_Object *l = scheme_null, *val;
+
+      for (j = argc; j-- > i; ) {
+        if (app)
+          val = app->args[j + 1];
+        else if (app3)
+          val = (j ? app3->rand2 : app3->rand1);
+        else if (app2)
+          val = app2->rand;
+        else
+          val = scheme_false;
+
+        l = cons(val, l);
+      }
+      l = cons(scheme_list_proc, l);
+      val = make_application(l);
+      
+      lv->value = val;
+    } else if (app)
       lv->value = app->args[i + 1];
     else if (app3)
       lv->value = (i ? app3->rand2 : app3->rand1);
@@ -2536,20 +2559,22 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     Scheme_Closure_Data *data = (Scheme_Closure_Data *)le;
     int sz;
 
-    if (!app && !app2 && !app3) {
+    if (!app && !app2 && !app3)
       return le;
-    }
 
     *_flags = SCHEME_CLOSURE_DATA_FLAGS(data);
-      
-    if ((data->num_params == argc) || (!app && !app2 && !app3)) {
+    
+    if ((data->num_params == argc) 
+        || ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)
+            && (argc + 1 >= data->num_params))
+        || (!app && !app2 && !app3)) {
       int threshold;
 
       sz = scheme_closure_body_size(data, 1, info);
       threshold = info->inline_fuel * (2 + argc);
 
       if ((sz >= 0) && (single_use || (sz <= threshold))) {
-	le = scheme_optimize_clone(0, data->code, info, offset, argc);
+	le = scheme_optimize_clone(0, data->code, info, offset, data->num_params);
 	if (le) {
 	  LOG_INLINE(fprintf(stderr, "Inline %d %d %s\n", sz, single_use, data->name ? scheme_write_to_string(data->name, NULL) : "???"));
           return apply_inlined(le, data, info, argc, app, app2, app3, context);
@@ -2562,11 +2587,8 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
                            info->inline_fuel, info->use_psize));
       }
     } else {
-      if (!(SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)
-          || (argc + 1 < data->num_params)) {
-        /* Issue warning below */
-        bad_app = (Scheme_Object *)data;
-      }
+      /* Issue warning below */
+      bad_app = (Scheme_Object *)data;
     }
   }
 
@@ -3725,6 +3747,8 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
     }
   }
   
+  t = scheme_optimize_expr(t, info, OPT_CONTEXT_BOOLEAN);
+
   /* Try optimize: (if (not x) y z) => (if x z y) */
   while (1) {
     if (SAME_TYPE(SCHEME_TYPE(t), scheme_application2_type)) {
@@ -3741,8 +3765,6 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
     } else
       break;
   }
-
-  t = scheme_optimize_expr(t, info, OPT_CONTEXT_BOOLEAN);
 
   info->vclock += 1; /* model branch as clock increment */
 
@@ -6726,7 +6748,7 @@ compile_expand_app(Scheme_Object *forms, Scheme_Comp_Env *env,
     
     name = scheme_check_immediate_macro(name, env, rec, drec, 0, &gval, NULL, NULL);
 
-    /* look for ((lambda (x) ...) ...); */
+    /* look for ((lambda (x ...) ....) ....) or ((lambda x ....) ....) */
     if (SAME_OBJ(gval, scheme_lambda_syntax)) {
       Scheme_Object *argsnbody;
 	
@@ -6740,15 +6762,15 @@ compile_expand_app(Scheme_Object *forms, Scheme_Comp_Env *env,
         if (SCHEME_STX_PAIRP(body)) {
           int pl;
           pl = scheme_stx_proper_list_length(args);
-          if (pl >= 0) {
+          if ((pl >= 0) || SCHEME_STX_SYMBOLP(args)) {
             Scheme_Object *bindings = scheme_null, *last = NULL;
             Scheme_Object *rest;
             int al;
-	      
+            
             rest = SCHEME_STX_CDR(form);
             al = scheme_stx_proper_list_length(rest);
 
-            if (al == pl) {	      
+            if ((pl < 0) || (al == pl)) {
               DupCheckRecord r;
 
               scheme_begin_dup_symbol_check(&r, env);
@@ -6756,7 +6778,10 @@ compile_expand_app(Scheme_Object *forms, Scheme_Comp_Env *env,
               while (!SCHEME_STX_NULLP(args)) {
                 Scheme_Object *v, *n;
 		  
-                n = SCHEME_STX_CAR(args);
+                if (pl < 0)
+                  n = args;
+                else
+                  n = SCHEME_STX_CAR(args);
                 scheme_check_identifier("lambda", n, NULL, env, name);
 
                 /* If we don't check here, the error is in terms of `let': */
@@ -6765,7 +6790,12 @@ compile_expand_app(Scheme_Object *forms, Scheme_Comp_Env *env,
                 /* Propagate certifications to bound id: */
                 n = scheme_stx_cert(n, NULL, NULL, name, NULL, 1);
 
-                v = SCHEME_STX_CAR(rest);
+                if (pl < 0) {
+                  v = scheme_intern_symbol("list");
+                  v = scheme_datum_to_syntax(v, scheme_false, scheme_sys_wraps(env), 0, 0);
+                  v = cons(v, rest);
+                } else
+                  v = SCHEME_STX_CAR(rest);
                 v = cons(cons(cons(n, scheme_null), cons(v, scheme_null)), scheme_null);
                 if (last)
                   SCHEME_CDR(last) = v;
@@ -6773,8 +6803,13 @@ compile_expand_app(Scheme_Object *forms, Scheme_Comp_Env *env,
                   bindings = v;
 		  
                 last = v;
-                args = SCHEME_STX_CDR(args);
-                rest = SCHEME_STX_CDR(rest);
+                if (pl < 0) {
+                  /* rator is (lambda rest-x ....) */
+                  break;
+                } else {
+                  args = SCHEME_STX_CDR(args);
+                  rest = SCHEME_STX_CDR(rest);
+                }
               }
 
               body = scheme_datum_to_syntax(icons(begin_symbol, body), form, 
