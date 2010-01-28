@@ -1968,10 +1968,14 @@ static int no_sync_change(Scheme_Object *obj, int fuel)
       fuel = no_sync_change(branch->tbranch, fuel);
       return no_sync_change(branch->fbranch, fuel);
     }
-  case scheme_toplevel_type:
   case scheme_local_type:
+    if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+      return 0;
+    else
+      return fuel - 1;
+  case scheme_toplevel_type:
   case scheme_local_unbox_type:
-    return fuel - 1;
+      return fuel - 1;
   default:
     if (t > _scheme_values_types_)
       return fuel - 1;
@@ -2274,8 +2278,13 @@ static int is_non_gc(Scheme_Object *obj, int depth)
   case scheme_unclosed_procedure_type:
     break;
 
-  case scheme_quote_syntax_type:
   case scheme_local_type:
+    if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+      return 0;
+    return 1;
+    break;
+    
+  case scheme_quote_syntax_type:
   case scheme_local_unbox_type:
     return 1;
     break;
@@ -2316,12 +2325,16 @@ static int is_relatively_constant_and_avoids_r1(Scheme_Object *obj, Scheme_Objec
 
   t = SCHEME_TYPE(obj);
   if (SAME_TYPE(t, scheme_local_type)) {
-    /* Must have clearing or other-clears flag set */
-    Scheme_Type t2 = SCHEME_TYPE(wrt);
-    if (t2 == scheme_local_type) {
-      /* If different local vars, then order doesn't matter */
-      if (SCHEME_LOCAL_POS(wrt) != SCHEME_LOCAL_POS(obj))
-        return 1;
+    /* Must have clearing, other-clears, or flonum flag set */
+    if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+      return 0;
+    else {
+      Scheme_Type t2 = SCHEME_TYPE(wrt);
+      if (t2 == scheme_local_type) {
+        /* If different local vars, then order doesn't matter */
+        if (SCHEME_LOCAL_POS(wrt) != SCHEME_LOCAL_POS(obj))
+          return 1;
+      }
     }
   }
 
@@ -3905,10 +3918,12 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
     if (num_rands) {
       /* Save rator where GC can see it */
       Scheme_Type t;
-      t = SCHEME_TYPE((alt_rands 
-                       ? alt_rands[1+args_already_in_place] 
-                       : app->args[1+args_already_in_place]));
-      if ((num_rands == 1) && (SAME_TYPE(scheme_local_type, t)
+      arg = (alt_rands 
+             ? alt_rands[1+args_already_in_place] 
+             : app->args[1+args_already_in_place]);
+      t = SCHEME_TYPE(arg);
+      if ((num_rands == 1) && ((SAME_TYPE(scheme_local_type, t)
+                                && ((SCHEME_GET_LOCAL_FLAGS(arg) != SCHEME_LOCAL_FLONUM)))
 			       || (t >= _scheme_values_types_))) {
 	/* App of something complex to a local variable. We
 	   can move the proc directly to V1. */
