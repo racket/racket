@@ -1,3 +1,10 @@
+Version 4.2.4.1
+
+Changed radio-box% to allow #f as a selection so that no buttons are
+ selected
+
+----------------------------------------------------------------------
+
 Version 4.2.4, January 2010
 
 Minor bug fixes

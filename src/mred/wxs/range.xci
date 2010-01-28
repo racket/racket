@@ -3,3 +3,6 @@
 
 @MACRO RANGERET[p.rv] = if ((x<p> < 0) || (x<p> >= THISOBJECT->Number())) { READY_TO_RETURN; return <rv>; }
 @MACRO RANGE[p] = $$RANGERET[<p>.scheme_void]
+
+@MACRO RANGEXRET[p.rv] = if ((x<p> < -1) || (x<p> >= THISOBJECT->Number())) { READY_TO_RETURN; return <rv>; }
+@MACRO RANGEX[p] = $$RANGEXRET[<p>.scheme_void]
