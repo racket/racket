@@ -716,8 +716,14 @@
                                          (send (car l) scroll-to)]
                                         [else (loop (cdr l))])))]
 	    [select (lambda (i) 
-		      (send i select #t)
-		      (send i scroll-to))]
+                      (cond
+                       [i
+                        (send i select #t)
+                        (send i scroll-to)]
+                       [(and (allow-deselect) selected)
+                        (send selected show-select #f)
+                        (set! selected #f)
+                        (set! selected-item #f)]))]
             [click-select (lambda (i) 
 			    (send i click-select #t)
 			    (send i scroll-to))]
