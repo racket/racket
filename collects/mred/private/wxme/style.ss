@@ -621,7 +621,7 @@
   (define/public (s-set-as-basic slist)
     (set! style-list slist)
 
-    (set! name "basic")
+    (set! name "Basic")
     (set! base-style #f)
 
     (set! nonjoin-delta (new style-delta%))
