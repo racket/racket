@@ -750,7 +750,7 @@
             #t))))
 
 (define-struct (exn:fail:redex:test exn:fail:redex) (source term))
-(define-struct counterexample (term))
+(define-struct counterexample (term) #:transparent)
 
 (define (check generator property attempts retries show
                #:source [source #f]

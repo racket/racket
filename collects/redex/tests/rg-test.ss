@@ -542,7 +542,8 @@
     (n number))
   
   (test (redex-check lang d #t #:attempts 1 #:print? (not #t)) #t)
-  (test (counterexample-term (redex-check lang d #f #:print? #f)) 5)
+  (test (redex-check lang d #f #:print? #f)
+        (make-counterexample 5))
   (let ([exn (with-handlers ([exn:fail:redex:test? values])
                (redex-check lang d (error 'boom ":(") #:print? #f)
                'not-an-exn)])
@@ -602,11 +603,10 @@
                        #:source R
                        #:print? (not #t))
           #t)
-    (test (counterexample-term
-           (redex-check lang any (= (term any) 1)
+    (test (redex-check lang any (= (term any) 1)
                         #:source R
-                        #:print? #f))
-          2))
+                        #:print? #f)
+          (make-counterexample 2)))
   
   (let ()
     (define-metafunction lang
@@ -623,11 +623,10 @@
                        #:source mf
                        #:print? (not #t))
           #t)
-    (test (counterexample-term
-           (redex-check lang any (= (car (term any)) 42)
+    (test (redex-check lang any (= (car (term any)) 42)
                         #:source mf
-                        #:print? #f))
-          '(0)))
+                        #:print? #f)
+          (make-counterexample '(0))))
   
   (let ()
     (define-metafunction lang

@@ -1240,7 +1240,7 @@ term that does not match @scheme[pattern].}
           #:attempts 3
           #:source R))]
 
-@defstruct[counterexample ([term any/c])]{
+@defstruct[counterexample ([term any/c]) #:inspector #f]{
 Produced by @scheme[redex-check], @scheme[check-reduction-relation], and 
 @scheme[check-metafunction] when testing falsifies a property.}
 
