@@ -26,6 +26,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (define nongc (make-parameter #f))
   (define subtract-nothing (make-parameter #f))
   (define generate-graph (make-parameter #f))
+  (define no-compile-time (make-parameter #f))
 
   (command-line
    "tabulate"
@@ -37,6 +38,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
      (include-links #t)]
     [("--multi") name "generate multiple pages for different views of data"
      (base-link-filename name)]
+    [("--no-compile-time") "do not show compile times"
+     (no-compile-time #t)]
     [("--nongc") "show times not including GC"
      (nongc #t)]
     [("--index") "generate full page with an index.html link"
@@ -87,7 +90,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                                                 (car runs)
                                                 #f)])
                                         (if a
-                                            (cadadr a)
+                                            (cadar a)
                                             0))
                                       0)])
                              (max (- (or (cadadr runs) 0)
@@ -266,6 +269,27 @@ exec mzscheme -qu "$0" ${1+"$@"}
         (proc fastest n-fastest c-fastest relative-to
               base n-base c-base))))
 
+  (define (bar-group name content)
+    `(tr ((style "background-color: #eeeeee"))
+         (td ((valign "top")) ,(symbol->string name))
+         (td
+          (table
+           ((style "border-spacing: 0px;"))
+           ,@(content)))))
+
+  (define (bar-plot impl n ratio)
+    `(tr (td (span ((style "font-size: small;")) 
+                   ,(symbol->string impl))
+             nbsp)
+         (td ((style "padding: 0em;"))
+             ,(if (and n ratio)
+                  (let ([col (darken (lookup-color impl))])
+                    `(span ((style ,(format "background-color: ~a; color: ~a;" col col)))
+                           ,(format (make-string (max (floor (* 60 (if (zero? n) 1 ratio)))
+                                                      1)
+                                                 #\x))))
+                  ""))))
+
   (define (generate-page relative-to grouping graph? has-other?)
     (empty-tag-shorthand html-empty-tags)
     (write-xml/content 
@@ -297,7 +321,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                                                 0]
                                                [else (add1 (loop (cdr impls)))]))])
                                 (cons
-                                 `(td ((colspan ,(number->string (* 2 (+ 1 count))))
+                                 `(td ((colspan ,(number->string (* (if (no-compile-time) 1 2) (+ 1 count))))
                                        (align "center")
                                        (bgcolor "#DDDDFF"))
                                       (b ,(if (equal? s relative-to)
@@ -315,7 +339,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                                  ,(if (eq? grouping 'mode)
                                       "impl"
                                       "mode")))))
-                 (td ((colspan "2") (align "right")) 
+                 (td ((colspan ,(if (no-compile-time) "1" "2")) (align "right")) 
                      ,(if (and (base-link-filename)
                                relative-to)
                           `(a ((href ,(fixup-filename
@@ -325,7 +349,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                               "fastest")
                           "fastest"))
                  ,@(map (lambda (impl)
-                          `(td ((colspan "2") (align "right")) 
+                          `(td ((colspan ,(if (no-compile-time) "1" "2")) (align "right")) 
                                (b ,(let ([s (extract-column impl (opposite grouping))])
                                      (if (and (base-link-filename)
                                               (not (eq? impl relative-to)))
@@ -357,12 +381,14 @@ exec mzscheme -qu "$0" ${1+"$@"}
                                                            (car bm-run))))
                                            ,(symbol->string (car bm-run)))
                                        (symbol->string (car bm-run))))
-                              (td ((align "right"))
-                                  nbsp
-                                  ,(small (if (= c-fastest forever)
-                                              " "
-                                              (number->string c-fastest)))
-                                  nbsp)
+                              ,@(if (no-compile-time)
+                                    null
+                                    `((td ((align "right"))
+                                          nbsp
+                                          ,(small (if (= c-fastest forever)
+                                                      " "
+                                                      (number->string c-fastest)))
+                                          nbsp)))
                               (td ((align "right"))
                                   ,(format "~a ms" fastest)
                                   nbsp nbsp)
@@ -372,14 +398,17 @@ exec mzscheme -qu "$0" ${1+"$@"}
                                         (let* ([a (assq impl (cdr bm-run))]
                                                [n (and a (caadr a))]
                                                [n2 (and a (ntime a))])
-                                          `(,(if (= c-fastest forever)
-                                                 `(td)
-                                                 `(td ((align "right")
-                                                       (bgcolor ,(lookup-color impl)))
-                                                      ,(if (and a (caddr a) c-base (positive? c-base))
-                                                           (small (ratio->string (/ (caddr a) c-base)))
-                                                           '"-")
-                                                      nbsp))
+                                          `(,@(if (no-compile-time)
+                                                  null
+                                                  (list
+                                                   (if (= c-fastest forever)
+                                                       `(td)
+                                                       `(td ((align "right")
+                                                             (bgcolor ,(lookup-color impl)))
+                                                            ,(if (and a (caddr a) c-base (positive? c-base))
+                                                                 (small (ratio->string (/ (caddr a) c-base)))
+                                                                 '"-")
+                                                            nbsp))))
                                             (td ((bgcolor ,(if (and n base (= n base)
                                                                     (or (not orig-relative-to)
                                                                         (and (string? orig-relative-to)
@@ -421,6 +450,36 @@ exec mzscheme -qu "$0" ${1+"$@"}
                      ,@(if has-other?
                            `(nbsp nbsp (a ((href ,(output-name #f 'impl #f))) "Back to tables"))
                            null)))
+             ,(let* ([bm-runs (filter (lambda (bm-run)
+                                        (andmap (lambda (impl)
+                                                  (let ([a (assq impl (cdr bm-run))])
+                                                    (and a (caadr a))))
+                                                sorted-impls))
+                                      sorted-runs)]
+                     [rel-vals (map (lambda (bm-run)
+                                      (call-with-bm-info
+                                       bm-run
+                                       relative-to
+                                       grouping
+                                       (lambda (fastest n-fastest c-fastest relative-to
+                                                        base n-base c-base)
+                                         (map (lambda (impl)
+                                                (let* ([a (assq impl (cdr bm-run))]
+                                                       [n (and a (caadr a))])
+                                                  (list impl (if (zero? n) 1 (/ base n)))))
+                                              sorted-impls))))
+                                    bm-runs)]
+                     [avgs (map (lambda (impl)
+                                  (let ([vals (map (lambda (rel-val) (cadr (assq impl rel-val)))
+                                                   rel-vals)])
+                                    (sqrt (apply + (map (lambda (x) (* x x)) vals)))))
+                                sorted-impls)]
+                     [max-avg (apply max avgs)])
+                (bar-group 'geometric-mean
+                           (lambda ()
+                             (map (lambda (impl avg)
+                                    (bar-plot impl 1 (inexact->exact (/ avg max-avg))))
+                                  sorted-impls avgs))))
              ,@(map (lambda (bm-run)
                       (call-with-bm-info
                        bm-run
@@ -428,27 +487,16 @@ exec mzscheme -qu "$0" ${1+"$@"}
                        grouping
                        (lambda (fastest n-fastest c-fastest relative-to
                                         base n-base c-base)
-                         `(tr ((style "background-color: #eeeeee"))
-                              (td ((valign "top")) ,(symbol->string (car bm-run)))
-                              (td
-                               (table
-                                ((style "border-spacing: 0px;"))
-                                ,@(map (lambda (impl)
-                                         (let* ([a (assq impl (cdr bm-run))]
-                                                [n (and a (caadr a))]
-                                                [n2 (and a (ntime a))])
-                                           `(tr (td (span ((style "font-size: small;")) 
-                                                          ,(symbol->string impl))
-                                                    nbsp)
-                                                (td ((style "padding: 0em;"))
-                                                    ,(if (and n base)
-                                                         (let ([col (darken (lookup-color impl))])
-                                                           `(span ((style ,(format "background-color: ~a; color: ~a;" col col)))
-                                                                  ,(format (make-string (max (floor (* 60 (if (zero? n) 1 (/ base n))))
-                                                                                             1)
-                                                                                        #\x))))
-                                                         "")))))
-                                       sorted-impls)))))))
+                         (bar-group
+                          (car bm-run)
+                          (lambda () 
+                            (map (lambda (impl)
+                                   (let* ([a (assq impl (cdr bm-run))]
+                                          [n (and a (caadr a))]
+                                          [n2 (and a (ntime a))])
+                                     (bar-plot impl n (and n base (not (zero? n))
+                                                           (/ base n)))))
+                                 sorted-impls))))))
                     sorted-runs))))))
     (newline))
   

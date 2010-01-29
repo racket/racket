@@ -1,11 +1,14 @@
 <html>
-<head><title>Some Scheme Benchmarks</title></head>
+<head><title>Some Scheme Benchmarks: Compilers</title></head>
 <body>
 
 <H1>About the Benchmarks</H1>
 
-<p>The <a href="Benchmarks.html">benchmark page</a> shows some benchmark results on a collection of fairly standard
-   (mostly Gabriel) Scheme benchmarks.</p>
+<p>The <a href="Benchmarks.html">benchmark page</a> shows some
+   benchmark results on a collection of fairly standard (mostly
+   Gabriel) Scheme benchmarks. (See also the
+   extended <a href="../log3/Benchmarks.html">compilers and
+   interepreters</a> results.)</p>
 
 <p>Tables show relative performance, with the actual time for the
    fastest run shown on the left. So, by
@@ -22,7 +25,7 @@ time.</font></p>
 
 <p>Run times are averaged over three runs. All reported times are CPU time (system plus user).
    The times are based on the output of the implementation's <tt>time</tt> 
-   syntactic form for function.</p>
+   syntactic form or similar functions.</p>
 
 <p>Machine:
 <ul>
@@ -31,12 +34,13 @@ time.</font></p>
 
 <p>Compiler configurations:
 <ul>
-<li> Bigloo (3.3a): <tt>-06 -call/cc -copt -O3 -copt -fomit-frame-pointer</tt></il>
-<li> Chicken (4.3.0): <tt>-no-trace -no-lambda-info -optimize-level 3 -block -lambda-lift</tt></il>
+<li> Bigloo (3.3a): <tt>-06 -call/cc -copt -O3 -copt -fomit-frame-pointer</tt></li>
+<li> Chicken (4.3.0): <tt>-no-trace -no-lambda-info -optimize-level 3 -block -lambda-lift</tt></li>
 <li> Gambit (4.6.0): <tt>(declare (block) (standard-bindings) (extended-bindings) (safe) (interrupts-enabled))</tt>, 
      compiled and run with <tt>-:m10000</tt></li>
 <li> Ikarus (0.0.4-rc1+ rev 1870): in R6RS library</li>
 <li> Larceny (0.97): in R6RS library</li>
+<li> MIT (7.7.90+): <tt>(declare (usual-integrations))</tt>; run with <tt>--heap 12000</tt></li>
 <li> PLT (4.2.4): in <tt>module</tt>; for benchmarks that use <tt>set-car!</tt> and <tt>set-cdr!</tt>, 
      PLT's R5RS support is used</li>
 </ul>

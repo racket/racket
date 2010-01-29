@@ -157,6 +157,89 @@ exec mzscheme -qu "$0" ${1+"$@"}
     (clean-up-sps bm)
     (system "rm -rf ~/.ikarus"))
 
+  (define (run-scheme48 bm)
+    (parameterize ([current-input-port
+                    (open-input-string
+                     (format
+                      ",bench on\n,open time bitwise\n,load \"scheme48-prelude.sch\"\n,load \"~a.sch\"\n,exit\n"
+                      bm))])
+      (system "scheme48 -h 20000000")))
+
+  (define (extract-scheme48-times bm str)
+    (let ([m (regexp-match #rx#"cpu time: ([0-9]+) real time: ([0-9]+)" str)]
+          ;; `time' result is 10s of milliseconds? OS ticks, maybe?
+          [msec/tick 10])
+      (list (bytes->number (cadr m))
+            (bytes->number (caddr m))
+            0)))
+
+  (define (mk-mit bm)
+    (with-output-to-file (format "~a.scm" bm)
+      #:exists 'truncate
+      (lambda ()
+        (printf "(declare (usual-integrations))\n")
+        (call-with-input-file "mit-prelude.sch" 
+          (lambda (in) (copy-port in (current-output-port))))
+        (call-with-input-file (format "~a.sch" bm)
+          (lambda (in) (copy-port in (current-output-port))))))
+    (parameterize ([current-input-port 
+                    (open-input-string
+                     (format "(cf \"~a\")\n" bm))]
+                   [current-output-port (open-output-nowhere)])
+      (system "mit-scheme")))
+
+  (define (run-mit bm)
+    (parameterize ([current-input-port 
+                    (open-input-string
+                     (format "(load \"~a\")\n(exit)\ny\n" bm))])
+      (system "mit-scheme --heap 12000")))
+
+  (define (clean-up-mit bm)
+    (delete-file (format "~a.com" bm))
+    (delete-file (format "~a.ext" bm))
+    (delete-file (format "~a.bci" bm))
+    (delete-file (format "~a.bin" bm))
+    (delete-file (format "~a.scm" bm)))
+
+  (define (extract-mit-times bm str)
+    (let ([m (regexp-match #rx#"cpu: ([0-9]+) real: ([0-9]+) gc: ([0-9]+)" str)]
+          ;; `time' result is 10s of milliseconds? OS ticks, maybe?
+          [msec/tick 10])
+      (list (bytes->number (cadr m))
+            (bytes->number (caddr m))
+            (bytes->number (cadddr m)))))
+
+  (define (run-petite bm)
+    (parameterize ([current-input-port
+                    (open-input-string
+                     (format
+                      "(load \"petite-prelude.sch\")\n(load \"~a.sch\")\n(exit)\n"
+                      bm))])
+      (system "petite")))
+
+  (define (extract-petite-times bm str)
+    (let ([m (regexp-match #rx#"([0-9]+) ms elapsed cpu time(?:, including ([0-9]+) ms collecting)?[ \n]* ([0-9]+) ms elapsed real time" str)])
+      (list (bytes->number (cadr m))
+            (bytes->number (cadddr m))
+            (if (caddr m) (bytes->number (caddr m)) 0))))
+
+  (define (run-guile bm)
+    (parameterize ([current-input-port
+                    (open-input-string
+                     (format
+                      "(load \"guile-prelude.sch\")\n(load \"~a.sch\")\n"
+                      bm))])
+      (system "guile")))
+
+  (define (extract-guile-times bm str)
+    (let ([m (regexp-match #rx#"user: ([0-9]+) system: ([0-9]+) real: ([0-9]+) gc: ([0-9]+)" str)]
+          ;; `time' result is 10s of milliseconds? OS ticks, maybe?
+          [msec/tick 10])
+      (list (+ (bytes->number (cadr m))
+               (bytes->number (caddr m)))
+            (bytes->number (cadddr m))
+            (bytes->number (cadddr (cdr m))))))
+
   (define (extract-times bm str)
     str)
 
@@ -345,7 +428,36 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 run-ikarus
                 extract-ikarus-times
                 clean-up-ikarus
-                '(takr))))
+                '(takr))
+     (make-impl 'mit
+                void
+                mk-mit
+                run-mit
+                extract-mit-times
+                clean-up-mit
+                '(nucleic2 puzzle takr2))
+     (make-impl 'scheme48
+                void
+                void
+                run-scheme48
+                extract-scheme48-times
+                void
+                '())
+     (make-impl 'petite
+                void
+                void
+                run-petite
+                extract-petite-times
+                void
+                '())
+     (make-impl 'guile
+                void
+                void
+                run-guile
+                extract-guile-times
+                void
+                '(dynamic dynamic2))
+))
 
   (define obsolte-impls '(mzscheme3m mzschemecgc mzscheme-j mzschemecgc-j mzschemecgc-tl mzc mz-old))
 
