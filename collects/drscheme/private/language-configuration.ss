@@ -385,7 +385,7 @@
         (define in-source-discussion-spacer (new horizontal-panel% 
                                                  [parent in-source-discussion-panel]
                                                  [stretchable-width #f]
-                                                 [min-width 24]))
+                                                 [min-width 32]))
         (define stupid-internal-definition-syntax1 (add-discussion in-source-discussion-panel))
         (define use-chosen-language-rb
           (new radio-box%
@@ -394,12 +394,18 @@
                [parent languages-choice-panel]
                [callback
                 (λ (this-rb evt)
+                  (let ([i (send languages-hier-list get-selected)])
+                    (cond
+                      [(and i (is-a? i hieritem-language<%>))
+                       (something-selected i)]
+                      [else
+                       (non-language-selected)]))
                   (send use-language-in-source-rb set-selection #f))]))
         (define languages-hier-list-panel (new horizontal-panel% [parent languages-choice-panel]))
         (define languages-hier-list-spacer (new horizontal-panel% 
                                                 [parent languages-hier-list-panel]
                                                 [stretchable-width #f]
-                                                [min-width 24]))
+                                                [min-width 16]))
         
         (define languages-hier-list (new selectable-hierlist% 
                                          [parent languages-hier-list-panel]
@@ -918,7 +924,7 @@
         
         (send t set-styles-sticky #f)
         (send t set-autowrap-bitmap #f)
-        (let* ([size-sd (make-object style-delta% 'change-size (send small-control-font get-point-size))]
+        (let* ([size-sd (make-object style-delta% 'change-size (send normal-control-font get-point-size))]
                [do-insert
                 (λ (str tt-style?)
                   (let ([before (send t last-position)])

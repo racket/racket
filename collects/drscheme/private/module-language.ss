@@ -62,11 +62,14 @@
       
       (inherit get-language-name)
       (define/public (get-users-language-name defs-text)
-        (let ([m (regexp-match "#lang (.*)$"
-                               (send defs-text get-text 0 (send defs-text paragraph-end-position 1)))])
-          (if m
-              (list-ref m 1)
-              (get-language-name))))
+        (let* ([i (open-input-text-editor defs-text)]
+               [l (with-handlers ((exn:fail? (λ (x) '?)))
+                    (read-language i (lambda () '?)))])
+          (if (eq? '? l)
+              (get-language-name)
+              (regexp-replace #rx".*#(?:!|lang ) *"
+                              (send defs-text get-text 0 (file-position i))
+                              ""))))
       
       (define/override (use-namespace-require/copy?) #f)
       
