@@ -238,7 +238,8 @@ void scheme_init_salloc(void);
 void scheme_init_jit(void);
 #endif
 void scheme_init_memtrace(Scheme_Env *env);
-void scheme_init_parameterization(Scheme_Env *env);
+void scheme_init_paramz(Scheme_Env *env);
+void scheme_init_parameterization();
 void scheme_init_getenv(void);
 void scheme_init_inspector(void);
 

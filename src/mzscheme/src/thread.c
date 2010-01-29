@@ -850,17 +850,20 @@ Scheme_Object *scheme_get_current_inspector()
   return scheme_get_param(c, MZCONFIG_INSPECTOR);
 }
   
-void scheme_init_parameterization(Scheme_Env *env)
+void scheme_init_parameterization()
 {
-  Scheme_Object *v;
-  Scheme_Env *newenv;
-
   REGISTER_SO(scheme_exn_handler_key);
   REGISTER_SO(scheme_parameterization_key);
   REGISTER_SO(scheme_break_enabled_key);
   scheme_exn_handler_key = scheme_make_symbol("exnh");
   scheme_parameterization_key = scheme_make_symbol("paramz");
   scheme_break_enabled_key = scheme_make_symbol("break-on?");
+}
+
+void scheme_init_paramz(Scheme_Env *env)
+{
+  Scheme_Object *v;
+  Scheme_Env *newenv;
 
   v = scheme_intern_symbol("#%paramz");
   newenv = scheme_primitive_module(v, env);

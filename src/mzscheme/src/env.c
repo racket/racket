@@ -508,13 +508,15 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
 #endif
   scheme_init_error_config();
 
+/* BEGIN PRIMITIVE MODULES */
   scheme_init_memtrace(env);
 #ifndef NO_TCP_SUPPORT
   scheme_init_network(env);
 #endif
-  scheme_init_parameterization(env);
+  scheme_init_paramz(env);
   scheme_init_expand_observe(env);
   scheme_init_place(env);
+/* END PRIMITIVE MODULES */
 #if defined(MZ_USE_PLACES)
   scheme_jit_fill_threadlocal_table();
 #endif
@@ -631,6 +633,7 @@ static void make_kernel_env(void)
 #ifndef NO_REGEXP_UTILS
   MZTIMEIT(regexp, scheme_regexp_initialize(env));
 #endif
+  scheme_init_parameterization();
 
   MARK_START_TIME();
 
