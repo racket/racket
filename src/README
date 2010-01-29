@@ -385,21 +385,14 @@ mzscheme/sconfig.h to provide a platform-specific compilation
 information. As dsitributed, mzscheme/sconfig.h contains
 configurations for the following platforms:
 
-              Windows
-              Mac OS X
-              Linux (x86, PPC, 68k, Alpha)
-              Cygwin
+              Windows (x86)
+              Mac OS X (PPC, x86, x86_64)
+              Linux (x86, x86_64, PPC, 68k)
+              Cygwin (x86)
               Solaris (x86, Sparc)
-              SunOS4 (Sparc)
-              IBM AIX (RS6000)
-              SGI IRIX (Mips)
-              DEC Ultrix
-              HP/UX
-              FreeBSD
-              OpenBSD
-              NetBSD
-              OSF1 (Alpha)
-              SCO Unix (x86)
+              FreeBSD (x86)
+              OpenBSD (x86)
+              NetBSD (x86)
 
 If your platfrom is not supported by the Boehm garbage collector
 (distributed with PLT source), provide the `--enable-sgc' flag to
