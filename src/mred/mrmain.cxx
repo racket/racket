@@ -292,12 +292,14 @@ static int call_main_after_stack(void *data)
 }
 
 int main(int argc, char *argv[])
+  XFORM_SKIP_PROC
 {
   Main_Args ma;
   ma.argc = argc;
   ma.argv = argv;
   return scheme_main_stack_setup(1, call_main_after_stack, &ma);
 }
+
 #endif
 
 /* **************************************************************** */

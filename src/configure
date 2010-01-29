@@ -706,7 +706,7 @@ FRAMEWORK_REL_INSTALL
 FRAMEWORK_PREFIX
 INSTALL_ORIG_TREE
 EXE_SUFFIX
-PLACE_CGC_FLAGS
+MZRT_CGC_FLAGS
 LIBATOM
 MREDLINKER
 LIBSFX
@@ -2316,7 +2316,7 @@ ZLIB_INC='$(ZLIB_INC)'
 PNG_A='$(PNG_A)'
 
 PREFLAGS="$CPPFLAGS"
-PLACE_CGC_FLAGS=""
+MZRT_CGC_FLAGS=""
 LIBATOM="LIBATOM_NONE"
 
 ar_libtool_no_undefined=""
@@ -10712,16 +10712,24 @@ fi
 
 if test "${enable_places}" = "yes" ; then
   PREFLAGS="$PREFLAGS -DMZ_USE_PLACES"
-  PLACE_CGC_FLAGS="$GC_THREADS_FLAG -DTHREAD_LOCAL_ALLOC"
   LDFLAGS="$LDFLAGS -pthread"
-  LIBATOM="LIBATOM_USE"
+  enable_mzrt=yes
 fi
 
 ############### futures ###################
 
 if test "${enable_futures}" = "yes" ; then
-  PREFLAGS="$PREFLAGS -DFUTURES_ENABLED -DUSE_PTHREAD_INSTEAD_OF_ITIMER"
+  PREFLAGS="$PREFLAGS -DMZ_USE_FUTURES"
+  enable_mzrt=yes
+fi
+
+############### OS threads ###################
+
+if test "${enable_mzrt}" = "yes" ; then
+  PREFLAGS="$PREFLAGS -DUSE_PTHREAD_INSTEAD_OF_ITIMER"
   LDFLAGS="$LDFLAGS -pthread"
+  MZRT_CGC_FLAGS="$GC_THREADS_FLAG -DTHREAD_LOCAL_ALLOC"
+  LIBATOM="LIBATOM_USE"
 fi
 
 ################ Xrender ##################
@@ -12959,7 +12967,7 @@ FRAMEWORK_REL_INSTALL!$FRAMEWORK_REL_INSTALL$ac_delim
 FRAMEWORK_PREFIX!$FRAMEWORK_PREFIX$ac_delim
 INSTALL_ORIG_TREE!$INSTALL_ORIG_TREE$ac_delim
 EXE_SUFFIX!$EXE_SUFFIX$ac_delim
-PLACE_CGC_FLAGS!$PLACE_CGC_FLAGS$ac_delim
+MZRT_CGC_FLAGS!$MZRT_CGC_FLAGS$ac_delim
 LIBATOM!$LIBATOM$ac_delim
 MREDLINKER!$MREDLINKER$ac_delim
 LIBSFX!$LIBSFX$ac_delim

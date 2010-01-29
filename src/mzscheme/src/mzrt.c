@@ -1,6 +1,6 @@
 #include "schpriv.h"
 
-#ifdef MZ_USE_PLACES
+#ifdef MZ_USE_MZRT
 
 /************************************************************************/
 /************************************************************************/
@@ -194,18 +194,19 @@ mz_proc_thread* mzrt_proc_first_thread_init() {
   return thread;
 }
 
-mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* data) {
+mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_proc, void* data, long stacksize) {
   mz_proc_thread *thread = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
+#   ifndef WIN32
   pthread_attr_t *attr;
-
-#ifdef OS_X
   pthread_attr_t attr_storage;
-  attr = &attr_storage;
-  pthread_attr_init(attr);
-  pthread_attr_setstacksize(attr, 8*1024*1024); /*8MB*/
-#else
-  attr = NULL;
-#endif
+
+  if (stacksize) {
+    attr = &attr_storage;
+    pthread_attr_init(attr);
+    pthread_attr_setstacksize(attr, stacksize); /*8MB*/
+  } else
+    attr = NULL;
+#   endif
 
   mzrt_thread_stub_data *stub_data = (mzrt_thread_stub_data*)malloc(sizeof(mzrt_thread_stub_data));
   thread->mbox = pt_mbox_create();
@@ -213,12 +214,24 @@ mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* dat
   stub_data->data       = data;
   stub_data->thread     = thread;
 #   ifdef WIN32
-  thread->threadid = CreateThread(NULL, 0, mzrt_thread_stub, stub_data, 0, NULL);
+  thread->threadid = CreateThread(NULL, stacksize, mzrt_thread_stub, stub_data, 0, NULL);
 #   else
   pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
 #   endif
 
   return thread;
+}
+
+mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* data) {
+  long stacksize;
+
+#ifdef OS_X
+  stacksize = 8*1024*1024;
+#else
+  stacksize = 0;
+#endif
+
+  return mz_proc_thread_create_w_stacksize(start_proc, data, stacksize);
 }
 
 void * mz_proc_thread_wait(mz_proc_thread *thread) {

@@ -42,7 +42,7 @@
 
 #include "schpriv.h"
 #include "schmach.h"
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
 # include "future.h"
 #endif
 #ifdef MZ_USE_DWARF_LIBUNWIND
@@ -2570,7 +2570,7 @@ extern int g_print_prims;
 #include "jit_ts.c"
 
 /* Support for intercepting direct calls to primitives: */
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
 # define mz_prepare_direct_prim(n) mz_prepare(n)
 # define mz_finishr_direct_prim(reg, proc) (jit_pusharg_p(reg), (void)mz_finish(proc))
 # define mz_direct_only(p) /* skip this arg, so that total count <= 3 args */
@@ -2689,7 +2689,7 @@ static int generate_pause_for_gc_and_retry(mz_jit_state *jitter,
                                            int gc_reg, /* must not be JIT_R1 */
                                            GC_CAN_IGNORE jit_insn *refagain)
 {
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
   GC_CAN_IGNORE jit_insn *refslow = 0, *refpause;
   int i;
 

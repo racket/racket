@@ -1,7 +1,7 @@
 #ifndef MZRT_H
 #define MZRT_H
 
-#ifdef MZ_USE_PLACES
+#ifdef MZ_USE_MZRT
 
 /****************** ATOMIC OPERATIONS ************************************/
 /* mzrt_atomic_ops.c */
@@ -44,6 +44,7 @@ typedef void *(mz_proc_thread_start)(void*);
 
 mz_proc_thread* mzrt_proc_first_thread_init();
 mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start*, void* data);
+mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start*, void* data, long stacksize);
 void *mz_proc_thread_wait(mz_proc_thread *thread);
 int mz_proc_thread_detach(mz_proc_thread *thread);
 void mz_proc_thread_exit(void *rc);

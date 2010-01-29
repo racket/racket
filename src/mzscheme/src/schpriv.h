@@ -403,6 +403,14 @@ THREAD_LOCAL_DECL(extern volatile int scheme_fuel_counter);
 
 THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_main_thread);
 
+#if defined(MZ_USE_PLACES) || defined(MZ_USE_FUTURES)
+# define MZ_USE_MZRT
+#endif
+
+#ifdef MZ_USE_MZRT
+#include "mzrt.h"
+#endif
+
 #ifdef MZ_USE_PLACES
 THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_current_thread);
 THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_first_thread);
@@ -415,7 +423,6 @@ THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_first_thread);
 #define scheme_jumping_to_continuation (scheme_current_thread->cjs.jumping_to_continuation)
 #define scheme_multiple_count (scheme_current_thread->ku.multiple.count)
 #define scheme_multiple_array (scheme_current_thread->ku.multiple.array)
-#include "mzrt.h"
 extern mz_proc_thread *scheme_master_proc_thread;
 THREAD_LOCAL_DECL(extern mz_proc_thread *proc_thread_self);
 #endif

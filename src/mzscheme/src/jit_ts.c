@@ -1,4 +1,4 @@
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
 
 # include "jit_ts_def.c"
 

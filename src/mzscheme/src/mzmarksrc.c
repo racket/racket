@@ -2253,7 +2253,7 @@ END jit;
 
 START future;
 
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
 
 future {
  mark:

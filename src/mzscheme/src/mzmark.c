@@ -5503,7 +5503,7 @@ static int native_unclosed_proc_plus_case_FIXUP(void *p) {
 
 #ifdef MARKS_FOR_FUTURE_C
 
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
 
 static int future_SIZE(void *p) {
   return

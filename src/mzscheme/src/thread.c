@@ -41,7 +41,7 @@
 #include "schpriv.h"
 #include "schmach.h"
 #include "schgc.h"
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
 # include "future.h"
 #endif
 #ifndef PALMOS_STUFF
@@ -232,7 +232,6 @@ THREAD_LOCAL_DECL(static Scheme_Object *thread_swap_out_callbacks);
 THREAD_LOCAL_DECL(static Scheme_Object *recycle_cell);
 THREAD_LOCAL_DECL(static Scheme_Object *maybe_recycle_cell);
 THREAD_LOCAL_DECL(static int recycle_cc_count);
-THREAD_LOCAL_DECL(static mz_jmp_buf main_init_error_buf);
 
 #ifdef MZ_PRECISE_GC
 extern long GC_get_memory_use(void *c);
@@ -2199,7 +2198,7 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
 
     process->suspend_break = 1; /* until start-up finished */
 
-    process->error_buf = &main_init_error_buf;
+    process->error_buf = NULL;
 
     thread_swap_callbacks = scheme_null;
     thread_swap_out_callbacks = scheme_null;
@@ -4130,7 +4129,7 @@ void scheme_thread_block(float sleep_time)
   /* Check scheduled_kills early and often. */
   check_scheduled_kills();
 
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
   scheme_check_future_work();
 #endif
 
@@ -7349,7 +7348,7 @@ static void get_ready_for_GC()
 {
   start_this_gc_time = scheme_get_process_milliseconds();
 
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
   scheme_future_block_until_gc();
 #endif
 
@@ -7421,7 +7420,7 @@ static void done_with_GC()
   end_this_gc_time = scheme_get_process_milliseconds();
   scheme_total_gc_time += (end_this_gc_time - start_this_gc_time);
 
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
   scheme_future_continue_after_gc();
 #endif
 }

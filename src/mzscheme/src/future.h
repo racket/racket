@@ -20,7 +20,6 @@ void scheme_add_global(char *name, int arity, Scheme_Env *env);
 int scheme_make_prim_w_arity(prim_t func, char *name, int arg1, int arg2);
 #endif
 
-#include "pthread.h"
 #include <stdio.h>
 
 typedef void (*prim_void_void_3args_t)(Scheme_Object **);
@@ -43,11 +42,10 @@ typedef struct future_t {
   Scheme_Object so;
 
   int id;
-  pthread_t threadid;
   int thread_short_id;
   int status;
   int work_completed;
-  pthread_cond_t *can_continue_cv;
+  mzrt_sema *can_continue_sema;
 
   Scheme_Object *orig_lambda;
   void *code;
@@ -111,7 +109,7 @@ typedef struct future_t {
 extern Scheme_Object *scheme_ts_scheme_force_value_same_mark(Scheme_Object *v);
 
 //Helper macros for argument marshaling
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
 
 #define IS_WORKER_THREAD (g_rt_threadid != 0 && pthread_self() != g_rt_threadid)
 #define ASSERT_CORRECT_THREAD if (g_rt_threadid != 0 && pthread_self() != g_rt_threadid) \

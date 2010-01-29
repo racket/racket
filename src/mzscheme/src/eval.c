@@ -143,7 +143,7 @@
 #ifdef MACOS_STACK_LIMIT
 #include <Memory.h>
 #endif 
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
 # include "future.h"
 #endif
 

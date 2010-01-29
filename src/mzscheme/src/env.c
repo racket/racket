@@ -32,7 +32,7 @@
 #include "schminc.h"
 #include "schmach.h"
 #include "schexpobs.h"
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
 # include "future.h"
 #endif
 

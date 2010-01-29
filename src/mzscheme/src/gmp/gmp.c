@@ -5788,6 +5788,7 @@ void scheme_init_gmp_places() {
   gmp_tmp_xxx.alloc_point = &gmp_tmp_xxx;
   gmp_tmp_xxx.prev = 0;
   gmp_tmp_current = &gmp_tmp_xxx;
+  REGISTER_SO(gmp_mem_pool);
 }
 
 void scheme_gmp_tls_init(long *s) 

@@ -163,8 +163,10 @@ typedef struct Scheme_Converter {
    may have changed. Similarly, setlocale() is only up-to-date
    when reset_locale() has been called. */
 THREAD_LOCAL_DECL(static int locale_on);
-THREAD_LOCAL_DECL(static const mzchar *current_locale_name);
+THREAD_LOCAL_DECL(static void *current_locale_name_ptr);
 static void reset_locale(void);
+
+#define current_locale_name ((const mzchar *)current_locale_name_ptr)
 
 #ifdef USE_ICONV_DLL
 static char *nl_langinfo(int which)
@@ -173,7 +175,7 @@ static char *nl_langinfo(int which)
 
   reset_locale();
   if (!current_locale_name)
-    current_locale_name = (mzchar *)"\0\0\0\0";
+    current_locale_name_ptr ="\0\0\0\0";
 
   if ((current_locale_name[0] == 'C')
       && !current_locale_name[1])
@@ -853,8 +855,8 @@ scheme_init_string (Scheme_Env *env)
 }
 
 void scheme_init_string_places(void) {
-  REGISTER_SO(current_locale_name);
-  current_locale_name = (mzchar *)"xxxx\0\0\0\0";
+  REGISTER_SO(current_locale_name_ptr);
+  current_locale_name_ptr = "xxxx\0\0\0\0";
 }
 
 /**********************************************************************/
@@ -3418,7 +3420,7 @@ static void reset_locale(void)
 	setlocale(LC_COLLATE, "C");
     }
 #endif
-    current_locale_name = name;
+    current_locale_name_ptr = (void *)name;
   }
 }
 
