@@ -1,14 +1,12 @@
 <html>
-<head><title>Some Scheme Benchmarks: Compilers</title></head>
+<head><title>Some Scheme Benchmarks</title></head>
 <body>
 
 <H1>About the Benchmarks</H1>
 
-<p>The <a href="Benchmarks.html">benchmark page</a> shows some
+<p>The <a href="Benchmarks.html">benchmark results page</a> shows some
    benchmark results on a collection of fairly standard (mostly
-   Gabriel) Scheme benchmarks. (See also the
-   extended <a href="../log3/Benchmarks.html">compilers and
-   interepreters</a> results.)</p>
+   Gabriel) Scheme benchmarks.</p>
 
 <p>Tables show relative performance, with the actual time for the
    fastest run shown on the left. So, by
@@ -18,14 +16,18 @@
    benchmark didn't run in an implementation for some reason (possibly
    not a good one).</p>
 
-<p><font color="gray" size="-1">Small gray numbers are (relative)
-compile times, where the compile time for the <tt>nothing</tt>
-benchmark is subtracted from every other benchmark's compile
-time.</font></p>
+<p><font color="gray" size="-1">
+The <a href="../log2/Benchmarks.html">compilers-only page</a> shows
+just the compilers among the tested implementations. For those
+results, the small gray numbers are (relative) compile times, where
+the compile time for the <tt>nothing</tt> benchmark is subtracted from
+every other benchmark's compile time.</font></p>
 
-<p>Run times are averaged over three runs. All reported times are CPU time (system plus user).
-   The times are based on the output of the implementation's <tt>time</tt> 
-   syntactic form or similar functions.</p>
+<p>Run times are averaged over three runs for compilers or one run for
+   interpreters. All reported times are CPU time (system plus user).
+   The times are based on the output of the
+   implementation's <tt>time</tt> syntactic form or similar
+   functions.</p>
 
 <p>Machine:
 <ul>
@@ -38,16 +40,19 @@ time.</font></p>
 <li> Chicken (4.3.0): <tt>-no-trace -no-lambda-info -optimize-level 3 -block -lambda-lift</tt></li>
 <li> Gambit (4.6.0): <tt>(declare (block) (standard-bindings) (extended-bindings) (safe) (interrupts-enabled))</tt>, 
      compiled and run with <tt>-:m10000</tt></li>
+<li> Guile (1.8.7): <tt>load</tt></li>
 <li> Ikarus (0.0.4-rc1+ rev 1870): in R6RS library</li>
 <li> Larceny (0.97): in R6RS library</li>
 <li> MIT (7.7.90+): <tt>(declare (usual-integrations))</tt>; run with <tt>--heap 12000</tt></li>
+<li> Petite Chez (7.4d): <tt>load</tt>
 <li> PLT (4.2.4): in <tt>module</tt>; for benchmarks that use <tt>set-car!</tt> and <tt>set-cdr!</tt>, 
      PLT's R5RS support is used</li>
+<li> Scheme48 (1.8): <tt>load</tt> after <tt>,bench on</tt></li>
 </ul>
-These configurations are all &ldquo;safe mode,&rdquo; but they allow the compiler
-to assume that built-in Scheme functions are not redefined and that no top-level defintion is ever
-changed. Such assumptions correspond to putting the benchmark in an
-R6RS library.</P>
+These configurations are all &ldquo;safe mode,&rdquo; but they allow a
+compiler to assume that built-in Scheme functions are not redefined
+and that no top-level defintion is ever changed. Such assumptions
+correspond to putting the benchmark in an R6RS library.</P>
 
 <p>In general, we attempt to use the various implementations in a compentent way,
    but not in a sophisticated way. For example, we do not tweak
@@ -56,7 +61,7 @@ R6RS library.</P>
 
 <p>For more benchmarks and a more sophisticated use of a few compilers,
    including fixnum- and flonum-specific arithmetic as well as unsafe modes,
-   see <a href="../log1/Gambit_20benchmarks.html">this other page</a>.</p>
+   see <a href="../log1/Gambit_20benchmarks.html">Gambit benchmark results</a>.</p>
 
 <p>For further details on the benchmarks here, see the benchmark source and
    infrastructure, which is available form the PLT SVN repository:</p>

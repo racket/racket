@@ -1,7 +1,7 @@
 To run a benchmark, assuming you have `mzscheme' in your path:
  ./auto.ss <impl-or-benchmark> ...
 where <impl-or-benchmark> names an implementation as one of
-   mzscheme3m
+   mzscheme
    bigloo
    chicken
    gambit
@@ -17,8 +17,8 @@ or any of the above prefixed by "no-" to skip the corresponding
 and benchmarks, run
  ./auto.ss --show
 
-Naming no implementation/benchmark causes a standard of them to be run
-(as reported by --show). Similarly, if the first named
+Naming no implementation/benchmark causes a standard set of them to be
+run (as reported by --show). Similarly, if the first named
 implementation/benchmak starts with "no-", the default set is used
 minus the "no-"-specified implementation/benchmark.
 
@@ -36,7 +36,7 @@ All benchmarks must be run from the directory containing this file.
 Most bechmarks were obtained from
  http://www.cs.cmu.edu/afs/cs/project/ai-repository/ai/lang/scheme/code/bench/gabriel/
  http://www.ccs.neu.edu/home/will/GC/sourcecode.html
- Marc Feeley (who has all of them and more)
+ Marc Feeley
 
 Files that end in ".sch" are supposed to be standard Scheme plus `time'.
 Files that end in ".ss" are MzScheme wrapper modules or helper scripts.
@@ -47,4 +47,4 @@ To build <benchmark>.sch directly with Gambit, Bigloo, or Chicken:
   mzscheme -qr mk-chicken.ss <benchmark> ; <benchmark>
 
 Unpack "dynamic-input.txt.gz" if you want to run the "dynamic" benchmark,
-but the auto.ss script will do that for you.
+but the "auto.ss" script will do that for you.
