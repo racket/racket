@@ -22,7 +22,7 @@
   (define sc-use-language-in-source "Use the language declared in the source")
   (define sc-choose-a-language "Choose a language")
   (define sc-lang-in-source-discussion
-    "Typically, a #lang line at the start of a program declares its language. This is the default and preferred mode for DrScheme.")
+    "The #lang line at the start of a program declares its language. This is the default and preferred mode for DrScheme.")
 
   (provide language-configuration@)
   
@@ -33,7 +33,8 @@
             [prefix drscheme:language: drscheme:language^]
             [prefix drscheme:app: drscheme:app^]
             [prefix drscheme:tools: drscheme:tools^]
-            [prefix drscheme:help-desk: drscheme:help-desk^])
+            [prefix drscheme:help-desk: drscheme:help-desk^]
+            [prefix drscheme:module-language: drscheme:module-language^])
     (export drscheme:language-configuration/internal^)
     
     ;; settings-preferences-symbol : symbol
@@ -346,9 +347,11 @@
               cached-fringe)
             
             (define/override (on-select i)
-              (if (and i (is-a? i hieritem-language<%>))
-                  (something-selected i)
-                  (nothing-selected)))
+              (cond
+                [(and i (is-a? i hieritem-language<%>))
+                 (something-selected i)]
+                [else
+                 (non-language-selected)]))
             ;; this is used only because we set `on-click-always'
             (define/override (on-click i)
               (when (and i (is-a? i hierarchical-list-compound-item<%>))
@@ -358,7 +361,7 @@
               (when (and i (is-a? i hieritem-language<%>))
                 (something-selected i)
                 (ok-handler 'execute)))
-            (super-instantiate (parent))
+            (super-new [parent parent])
             ;; do this so we can expand/collapse languages on a single click
             (send this on-click-always #t)))
         
@@ -398,7 +401,9 @@
                                                 [stretchable-width #f]
                                                 [min-width 24]))
         
-        (define languages-hier-list (make-object selectable-hierlist% languages-hier-list-panel))
+        (define languages-hier-list (new selectable-hierlist% 
+                                         [parent languages-hier-list-panel]
+                                         [style '(no-border no-hscroll hide-vscroll transparent)]))
         (define details-outer-panel (make-object vertical-pane% outermost-panel))
         (define details/manual-parent-panel (make-object vertical-panel% details-outer-panel))
         (define details-panel (make-object panel:single% details/manual-parent-panel))
@@ -435,8 +440,6 @@
               (init-rest args)
               (public selected)
               (define (selected)
-                (send use-chosen-language-rb set-selection 0)
-                (send use-language-in-source-rb set-selection #f)
                 (update-gui-based-on-selected-language language get-language-details-panel get/set-settings))
               (apply super-make-object args))))
         
@@ -454,6 +457,8 @@
           ;(send languages-hier-list select #f)
           (send use-chosen-language-rb set-selection #f)
           (send use-language-in-source-rb set-selection 0)
+          (ok-handler 'enable)
+          (send details-button enable #t)
           (update-gui-based-on-selected-language module-language*language
                                                  module-language*get-language-details-panel
                                                  module-language*get/set-settings))
@@ -462,10 +467,12 @@
         (define module-language*get-language-details-panel 'module-language*-not-yet-set)
         (define module-language*get/set-settings 'module-language*-not-yet-set)
         
-        ;; nothing-selected : -> void
+        ;; non-language-selected : -> void
         ;; updates the GUI and selected-language and get/set-selected-language-settings
-        ;; for when no language is selected.
-        (define (nothing-selected)
+        ;; for when some non-language is selected in the hierlist
+        (define (non-language-selected)
+          (send use-chosen-language-rb set-selection 0)
+          (send use-language-in-source-rb set-selection #f)
           (send revert-to-defaults-button enable #f)
           (send details-panel active-child no-details-panel)
           (send one-line-summary-message set-label "")
@@ -476,7 +483,9 @@
         
         ;; something-selected : item -> void
         (define (something-selected item)
-          (ok-handler 'enable)
+          (send use-chosen-language-rb set-selection 0)
+          (send use-language-in-source-rb set-selection #f)
+          (ok-handler 'enable)                
           (send details-button enable #t)
           (send item selected))
         
@@ -507,7 +516,7 @@
                        positions numbers))
               
               (when (null? (cdr positions))
-                (unless (equal? positions (list "Module"))
+                (unless (equal? positions (list drscheme:module-language:module-language-name))
                   (error 'drscheme:language
                          "Only the module language may be at the top level. Other languages must have at least two levels")))
               
@@ -578,7 +587,7 @@
                                     (get/set-settings (send language default-settings))])))))
                      
                      (cond
-                       [(equal? positions '("Module"))
+                       [(equal? positions (list drscheme:module-language:module-language-name))
                         (set! module-language*language language)
                         (set! module-language*get-language-details-panel get-language-details-panel)
                         (set! module-language*get/set-settings get/set-settings)]
@@ -909,15 +918,25 @@
         
         (send t set-styles-sticky #f)
         (send t set-autowrap-bitmap #f)
-        (let ([do-insert
-               (λ (str style)
-                 (let ([before (send t last-position)])
-                   (send t insert str before before)
-                   (send t change-style style before (send t last-position))))])
+        (let* ([size-sd (make-object style-delta% 'change-size (send small-control-font get-point-size))]
+               [do-insert
+                (λ (str tt-style?)
+                  (let ([before (send t last-position)])
+                    (send t insert str before before)
+                    (cond
+                      [tt-style?
+                       (send t change-style 
+                             (send (send t get-style-list) find-named-style "Standard")
+                             before (send t last-position))]
+                      [else
+                       (send t change-style 
+                             (send (send t get-style-list) basic-style)
+                             before (send t last-position))])
+                    (send t change-style size-sd before (send t last-position))))])
           (let loop ([strs (regexp-split #rx"#lang" sc-lang-in-source-discussion)])
-            (do-insert (car strs) (send (send t get-style-list) basic-style))
+            (do-insert (car strs) #f)
             (unless (null? (cdr strs))
-              (do-insert "#lang" (send (send t get-style-list) find-named-style "standard"))
+              (do-insert "#lang" #t)
               (loop (cdr strs)))))
         (send t hide-caret #t)
         

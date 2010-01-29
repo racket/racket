@@ -10,10 +10,10 @@
   (require (rename mzlib/list sort* sort)
 	   mzlib/etc)
 
-  (define turn-up (include-bitmap "../../icons/turn-up.png" 'png))
-  (define turn-down (include-bitmap "../../icons/turn-down.png" 'png))
-  (define turn-up-click (include-bitmap "../../icons/turn-up-click.png" 'png))
-  (define turn-down-click (include-bitmap "../../icons/turn-down-click.png" 'png))
+  (define turn-up (include-bitmap "../../icons/turn-up.png" 'png/mask))
+  (define turn-down (include-bitmap "../../icons/turn-down.png" 'png/mask))
+  (define turn-up-click (include-bitmap "../../icons/turn-up-click.png" 'png/mask))
+  (define turn-down-click (include-bitmap "../../icons/turn-down-click.png" 'png/mask))
 
   (provide hierlist@)
   (define-unit hierlist@
@@ -93,7 +93,10 @@
                       (send dc draw-bitmap-section bitmap 
                             (+ x (max 0 (- (/ size 2) (/ bw 2))))
                             (+ y (max 0 (- (/ size 2) (/ bh 2))))
-			    0 0 (min bw (+ size 2)) (min bh (+ size 2)))))]
+			    0 0 (min bw (+ size 2)) (min bh (+ size 2))
+                            'solid
+                            (send the-color-database find-color "black")
+                            (send bitmap get-loaded-mask))))]
             [size-cache-invalid (lambda () (set! size-calculated? #f))]
             [on-event
              (lambda (dc x y mediax mediay event)
@@ -340,7 +343,8 @@
            [parent-snip parent-snp]
            [children null]
 	   [new-children null]
-	   [no-sublists? #f])
+	   [no-sublists? #f]
+           [transparent? #f])
           (private
             [append-children! (lambda ()
                                 (unless (null? new-children)
@@ -350,17 +354,19 @@
             [insert-item 
              (lambda (mixin snip% whitespace?)
                (let ([s (make-object snip% this top top-select (add1 depth) mixin)])
+                 (send s use-style-background transparent?)
                  (begin-edit-sequence)
                  (unless (and (null? children)
                               (null? new-children))
                    (insert #\newline (last-position)))
                  (when whitespace?
-		   (insert (make-whitespace) (last-position)))
+                   (insert (make-whitespace) (last-position)))
                  (insert s (last-position))
                  (end-edit-sequence)
                  (set! new-children (cons s new-children))
                  (send s get-item)))])
           (public
+            [set-transparent (λ (t?) (set! transparent? (and t? #t)))]
             [get-parent-snip (lambda () parent-snip)]
             [deselect-all 
              (lambda () 
@@ -479,7 +485,7 @@
 
       ;; Snip for a compound list item
       (define hierarchical-list-snip%
-	(class100 editor-snip% (prnt tp top-select depth mixin [title #f][content #f])
+        (class100 editor-snip% (prnt tp top-select depth mixin [title #f][content #f])
 	  (private-field 
 	    [parent prnt]
 	    [top tp])
@@ -583,11 +589,19 @@
 	    [content-snip (make-object editor-snip% content-buffer #f 4 0 0 0 0 0 0 0)]
 	    [arrow (make-object (get-arrow-snip%) (lambda (a) (on-arrow a)))]
 	    [whitespace (make-object whitespace-snip%)])
+          (override 
+            [use-style-background
+             (λ (x)
+               (super use-style-background x)
+               (send title-snip use-style-background x)
+               (send content-snip use-style-background x)
+               (send content-buffer set-transparent x))])
           (public
             [get-arrow-snip (lambda () arrow)])
-	  (sequence
+          (inherit style-background-used?)
+          (sequence
 	    (super-init main-buffer #f 0 0 0 0 0 0 0 0)
-	    (send main-buffer hide-caret #t)
+            (send main-buffer hide-caret #t)
 	    (send main-buffer insert arrow)
 	    (when title (send title-buffer insert title))
 	    (when content (send content-buffer insert content))
@@ -637,7 +651,7 @@
       (send list-keymap map-function "return" "toggle-open/closed")
 
       (define hierarchical-list%
-	(class100 editor-canvas% (parent [style '(no-hscroll)])
+        (class100 editor-canvas% (parent [style '(no-hscroll)])
           (inherit min-width min-height allow-tab-exit)
           (rename [super-on-char on-char]
                   [super-on-focus on-focus])
@@ -854,6 +868,7 @@
            [selected #f]
            [selected-item #f])
           (sequence
+            (send top-buffer set-transparent (member 'transparent style))
             (super-init parent top-buffer style)
 	    (allow-tab-exit #t)
             (send top-buffer set-cursor arrow-cursor) 

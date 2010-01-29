@@ -79,10 +79,11 @@
    ;show-syntax-error-context
    ))
 
-(define-signature drscheme:module-langauge-cm^
+(define-signature drscheme:module-language-cm^
   (module-language<%>))
-(define-signature drscheme:module-language^ extends drscheme:module-langauge-cm^
+(define-signature drscheme:module-language^ extends drscheme:module-language-cm^
   (add-module-language
+   module-language-name
    module-language-put-file-mixin))
 
 (define-signature drscheme:module-langauge-tools-cm^

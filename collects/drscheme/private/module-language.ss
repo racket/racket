@@ -29,7 +29,7 @@
   
   (define module-language<%>
     (interface ()
-      ))
+      get-users-language-name))
   
   ;; add-module-language : -> void
   ;; adds the special module-only language to drscheme
@@ -53,10 +53,21 @@
   (define default-full-trace? #t)
   (define default-auto-text "#lang scheme\n")  
   
+  (define module-language-name "Determine langauge from source")
+  
   ;; module-mixin : (implements drscheme:language:language<%>)
   ;;             -> (implements drscheme:language:language<%>)
   (define (module-mixin %)
     (class* % (drscheme:language:language<%> module-language<%>)
+      
+      (inherit get-language-name)
+      (define/public (get-users-language-name defs-text)
+        (let ([m (regexp-match "#lang (.*)$"
+                               (send defs-text get-text 0 (send defs-text paragraph-end-position 1)))])
+          (if m
+              (list-ref m 1)
+              (get-language-name))))
+      
       (define/override (use-namespace-require/copy?) #f)
       
       (define/augment (capability-value key)
@@ -328,7 +339,7 @@
       
       (super-new
        [module #f]
-       [language-position (list "Module")]
+       [language-position (list module-language-name)]
        [language-numbers (list -32768)])))
   
   ;; can be called with #f to just kill the repl (in case we want to kill it
