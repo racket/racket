@@ -20,16 +20,15 @@
     [(_ test-exp bitmap-filename)
      #`(test/proc
         #,(syntax-line stx)
-        test-exp
+        (λ () test-exp)
         bitmap-filename)]))
 
-(define (test/proc line-number pict raw-bitmap-filename)
+(define (test/proc line-number pict-thunk raw-bitmap-filename)
   (set! tests (+ tests 1))
-  (let* ([bitmap-filename 
+  (let* ([pict (set-fonts/call pict-thunk)]
+         [bitmap-filename 
           (build-path (format "bmps-~a" (system-type))
-                      (case (system-type)
-                        [(unix) (string-append "unix-" raw-bitmap-filename)]
-                        [else raw-bitmap-filename]))]
+                      raw-bitmap-filename)]
          [old-bitmap (if (file-exists? bitmap-filename)
                          (make-object bitmap% bitmap-filename)
                          (let* ([bm (make-object bitmap% 100 20)]
@@ -39,8 +38,8 @@
                            (send bdc set-bitmap #f)
                            bm))]
          [new-bitmap (make-object bitmap% 
-                       (inexact->exact (pict-width pict)) 
-                       (inexact->exact (pict-height pict)))]
+                       (ceiling (inexact->exact (pict-width pict))) 
+                       (ceiling (inexact->exact (pict-height pict))))]
          [bdc (make-object bitmap-dc% new-bitmap)])
     (send bdc clear)
     (draw-pict pict bdc 0 0)
@@ -50,6 +49,33 @@
         (let ([failed-panel (make-failed-panel line-number bitmap-filename old-bitmap new-bitmap diff-bitmap)])
           (set! failed (append failed (list failed-panel))))))))
 
+(define (set-fonts/call thunk)
+  (case (system-type)
+    [(unix)
+     (let ([rewrite-style 
+            (λ (s)
+              (let loop ([s s])
+                (cond
+                  [(pair? s) (cons (loop (car s)) (loop (cdr s)))]
+                  [(eq? s 'roman) (verify-face " DejaVu Serif")]
+                  [(eq? s 'swiss) (verify-face " DejaVu Sans")]
+                  [else s])))])
+       (parameterize ([label-style (rewrite-style (label-style))]
+                      [literal-style (rewrite-style (literal-style))]
+                      [metafunction-style (rewrite-style (metafunction-style))]
+                      [non-terminal-style (rewrite-style (non-terminal-style))]
+                      [non-terminal-subscript-style (rewrite-style (non-terminal-subscript-style))]
+                      [non-terminal-superscript-style (rewrite-style (non-terminal-superscript-style))]
+                      [default-style (rewrite-style (default-style))])
+         (thunk)))]
+    [else
+     (thunk)]))
+
+(define (verify-face face)
+  (unless (member face (get-face-list))
+    (error 'verify-face "unknown face: ~s" face))
+  face)
+  
 (define (compute-diffs old-bitmap new-bitmap)
   (let* ([w (max (send old-bitmap get-width)
                  (send new-bitmap get-width))]

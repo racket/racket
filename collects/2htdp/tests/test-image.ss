@@ -1498,34 +1498,36 @@
 ;;    and that normalization doesn't introduce new structs
 ;;
 
-(define (random-image size)
-  (let loop ([size size])
-    (let ([val (random (if (zero? size) 4 8))])
-      (case val
-        [(0) (rectangle (random-size) (random-size) (random-mode) (random-color))]
-        [(1) (circle (random-size) (random-mode) (random-color))]
-        [(2) (line (random-coord) (random-coord) (random-color))]
-        [(3) (add-curve
-              (rectangle (random-size) (random-size) (random-mode) (random-color))
-              (random-coord) (random-coord) (random-pull) (random-angle)
-              (random-coord) (random-coord) (random-pull) (random-angle)
-              (random-color))]
-        [(4) (overlay (loop (floor (/ size 2)))
-                      (loop (ceiling (/ size 2))))]
-        [(5) (crop (random-coord) (random-coord) (random-size) (random-size)
-                   (loop (- size 1)))]
-        [(6) (scale/xy (random-size)
-                       (random-size)
-                       (loop (- size 1)))]
-        [(7) (rotate (random-angle) (loop (- size 1)))]))))
+(require redex/reduction-semantics)
 
-(define (random-pull) (/ (random 20) (+ 1 (random 10))))
-(define (random-angle) (random 360))
-(define (random-coord) (- (random 200) 100))
-(define (random-size) (random 100))
-(define (random-mode) (if (zero? (random 2)) 'outline 'solid))
-(define (random-color) (pick-from-list '("red" red "blue" "orange" "green" "black")))
-(define (pick-from-list l) (list-ref l (random (length l))))
+(define-language 2htdp/image
+  (image (rectangle size size mode color)
+         (line coord coord color)
+         (add-curve (rectangle size size mode color)
+                    coord coord pull angle
+                    coord coord pull angle
+                    color)
+         (overlay image image)
+         (overlay/xy image coord coord image)
+         (underlay image image)
+         (underlay/xy image coord coord image)
+         (crop coord coord size size image)
+         (scale/xy size size image)
+         (scale size image)
+         (rotate angle image))
+  
+  (size big-nat)
+  (mode 'outline 'solid "outline" "solid")
+  (color "red" 'red "blue" "orange" "green" "black")
+  (coord big-int)
+  (pull 0 1/2 1/3 2 (/ big-nat (+ 1 big-nat)))
+  (angle 0 90 45 30 180 natural (* 4 natural))
+  
+  ; Redex tends to choose small numbers.
+  (big-nat (+ (* 10 natural) natural))
+  (big-int (+ (* 10 integer) integer)))
+
+(define-namespace-anchor anchor)
 
 (define (image-struct-count obj)
   (let ([counts (make-hash)])
@@ -1535,21 +1537,25 @@
           (unless (member (car stuff) '(struct:translate struct:scale)) ;; skip these becuase normalization eliminates them
             (hash-set! counts (car stuff) (+ 1 (hash-ref counts (car stuff) 0))))
           (for-each loop (cdr stuff)))))
-    (sort (hash-map counts list) string<=? #:key (λ (x) (symbol->string (car x))))))       
+    (sort (hash-map counts list) string<=? #:key (λ (x) (symbol->string (car x))))))
+
+(define (check-image-properties img-sexp img)
+  (let* ([raw-size (image-struct-count (image-shape img))]
+         [normalized (normalize-shape (image-shape img) values)]
+         [norm-size (image-struct-count normalized)])
+    (unless (normalized-shape? normalized)
+      (error 'test-image.ss "found a non-normalized shape after normalization:\n~s" 
+             img-sexp))
+    (unless (equal? norm-size raw-size)
+      (error 'test-image.ss "found differing sizes for ~s:\n  ~s\n  ~s" 
+             img-sexp raw-size norm-size))))       
   
 (time
- (let ([seed (+ 1 (modulo (current-seconds) (- (expt 2 31) 1)))])
-   (random-seed seed)
-   (for ((i (in-range 0 20000)))
-     (let* ([img (random-image 10)]
-            [raw-size (image-struct-count (image-shape img))]
-            [normalized (normalize-shape (image-shape img) values)]
-            [norm-size (image-struct-count normalized)])
-       (unless (normalized-shape? normalized)
-         (error 'test-image.ss "found a non-normalized shape (seed ~a) after normalization ~s:" 
-                seed
-                img))
-       (unless (equal? norm-size raw-size)
-         (error 'test-image.ss "found differing sizes (seed ~a):\n  ~s\n  ~s" 
-                seed
-                raw-size norm-size))))))
+ (redex-check
+  2htdp/image
+  image
+  (check-image-properties 
+   (term image)
+   (eval (term image) (namespace-anchor->namespace anchor)))
+  #:attempts 1000))
+

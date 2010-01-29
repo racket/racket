@@ -856,6 +856,8 @@
     (scheme-global-var name)
     value))
 
+(define nothing
+  (begin
 (def-proc 'not                            (lambda (x) (not x)))
 (def-proc 'boolean?                       boolean?)
 (def-proc 'eqv?                           eqv?)
@@ -1032,7 +1034,7 @@
 (def-proc 'write                          write)
 (def-proc 'display                        display)
 (def-proc 'newline                        newline)
-(def-proc 'write-char                     write-char)
+(def-proc 'write-char                     write-char)))
 
 ; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

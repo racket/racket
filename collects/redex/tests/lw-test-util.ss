@@ -1,5 +1,5 @@
 (module lw-test-util mzscheme
-  (require "loc-wrapper.ss")
+  (require "../private/loc-wrapper.ss")
   (provide normalize-lw)
   
   (define (normalize-lw lw)

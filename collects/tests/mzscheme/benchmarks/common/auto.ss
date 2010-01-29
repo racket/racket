@@ -3,6 +3,8 @@
 exec mzscheme -qu "$0" ${1+"$@"}
 |#
 
+;; See "tabulate.ss" for information on the output format
+
 (module auto scheme/base
   (require (for-syntax scheme/base)
            mzlib/process
@@ -11,6 +13,8 @@ exec mzscheme -qu "$0" ${1+"$@"}
            mzlib/compile
            mzlib/inflate
            mzlib/date
+           mzlib/port
+           mzlib/file
            dynext/file
            syntax/toplevel
            scheme/runtime-path)
@@ -34,10 +38,16 @@ exec mzscheme -qu "$0" ${1+"$@"}
     (delete-file (format "~a.o1" bm)))
 
   (define (mk-mzscheme bm)
-    ;; To get compilation time:
-    (parameterize ([current-namespace (make-base-namespace)])
-      (namespace-require 'scheme/base)
-      (load (format "~a.ss" bm))))
+    (unless (directory-exists? "compiled")
+      (make-directory "compiled"))
+    (parameterize ([current-namespace (make-base-namespace)]
+                   [read-accept-reader #t])
+      (let ([name (format "~a.ss" bm)])
+        (compile-file name
+                      (build-path "compiled" (path-add-suffix name #".zo"))))))
+
+  (define (clean-up-zo bm)
+    (delete-directory/files "compiled"))
 
   (define (clean-up-nothing bm)
     (void))
@@ -71,21 +81,24 @@ exec mzscheme -qu "$0" ${1+"$@"}
       (eval '(define null #f)) ; for dynamic.sch
       (compile-file (format "~a.sch" bm))))
 
-  (define (clean-up-zo bm)
-    (delete-file (build-path "compiled" (format "~a.zo" bm))))
+  (define (setup-larceny bm)
+    (setup-sps bm "(larceny benchmarking)"))
 
   (define (mk-larceny bm)
     (parameterize ([current-input-port 
 		    (open-input-string
 		     (format (string-append
-			      "(compiler-switches 'fast-safe)\n"
-			      "(compile-file \"~a.sch\")\n")
+			      "(import (larceny compiler))\n"
+			      "(compile-library \"~a.sls\")\n")
 			     bm))]
 		   [current-output-port (open-output-bytes)])
-      (system "larceny")))
+      (system "larceny -err5rs")
+      ;; Make sure compiled version is used:
+      (delete-file (format "~a.sls" bm))))
 
   (define (clean-up-fasl bm)
-    (delete-file (format "~a.fasl" bm)))
+    (clean-up-sps bm)
+    (delete-file (format "~a.slfasl" bm)))
 
   (define (mk-mzc bm)
     (parameterize ([current-output-port (open-output-bytes)])
@@ -104,16 +117,45 @@ exec mzscheme -qu "$0" ${1+"$@"}
     (system (format "gsi -:d-,m10000 ~a.o1" bm)))
 
   (define (run-larceny bm)
-    (parameterize ([current-input-port (open-input-string
-                                        (format "(load \"~a.fasl\")\n"
-                                                bm))])
-      (system "larceny")))
+    (system "larceny -r6rs -program prog.sps -path ."))
 
+  (define (setup-sps bm lib)
+    (with-output-to-file "prog.sps"
+      #:exists 'truncate
+      (lambda ()
+        (printf "(import (~a))\n" bm)
+        (printf "(bm-!-go)\n")))
+    (with-output-to-file (format "~a.sls" bm)
+      #:exists 'truncate
+      (lambda ()
+        (printf "(library (~a)\n" bm)
+        (printf " (export bm-!-go)\n")
+        (printf " (import (rnrs) (rnrs mutable-pairs) (rnrs mutable-strings) (rnrs r5rs) (rnrs eval) ~a)\n" lib)
+        (printf " (define (bm-!-go) 'ok)\n")
+        (call-with-input-file (format "~a.sch" bm)
+          (lambda (in)
+            (copy-port in (current-output-port))))
+        (printf ")\n"))))
+
+  (define (clean-up-sps bm)
+    (delete-file "prog.sps")
+    (let ([f (format "~a.sls" bm)])
+      (when (file-exists? f)
+        (delete-file f))))
+
+  (define (setup-ikarus bm)
+    (setup-sps bm "(ikarus)")
+    (system "rm -rf ~/.ikarus"))
+  
   (define (mk-ikarus bm)
-    (void))
+    (system "ikarus --compile-dependencies prog.sps"))
 
   (define (run-ikarus bm)
-    (system (format "ikarus ~a.sch < /dev/null" bm)))
+    (system "ikarus --r6rs-script prog.sps"))
+
+  (define (clean-up-ikarus bm)
+    (clean-up-sps bm)
+    (system "rm -rf ~/.ikarus"))
 
   (define (extract-times bm str)
     str)
@@ -133,6 +175,15 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (define (extract-mzscheme-times bm str)
     (let ([m (regexp-match #rx#"cpu time: ([0-9]+) real time: ([0-9]+) gc time: ([0-9]+)" str)])
       (map bytes->number (cdr m))))
+
+  (define (extract-bigloo-times bm str)
+    (let ([m (regexp-match #rx#"real: ([0-9]+) sys: ([0-9]+) user: ([0-9]+)" str)]
+          ;; `time' result is 10s of milliseconds? OS ticks, maybe?
+          [msec/tick 10])
+      (list (* msec/tick (+ (bytes->number (caddr m))
+                            (bytes->number (cadddr m))))
+            (* msec/tick (bytes->number (cadr m)))
+            0)))
 
   (define (extract-larceny-times bm str)
     (let ([m (regexp-match #rx#"Elapsed time...: ([0-9]+) ms.*Elapsed GC time: ([0-9]+) ms" str)])
@@ -162,14 +213,16 @@ exec mzscheme -qu "$0" ${1+"$@"}
                             #"([0-9]*) ms elapsed cpu time, including ([0-9]*) ms collecting\n"
                             #"[ \t]*([0-9]*) ms elapsed real time")
                            str)])
-      (list (string->number (bytes->string/utf-8 (cadr m)))
-            (string->number (bytes->string/utf-8 (cadddr m)))
-            (string->number (bytes->string/utf-8 (caddr m))))))
+      (if m
+          (list (string->number (bytes->string/utf-8 (cadr m)))
+                (string->number (bytes->string/utf-8 (cadddr m)))
+                (string->number (bytes->string/utf-8 (caddr m))))
+          (list #f #f #f))))
 
 
   ;; Table of implementatons and benchmarks ------------------------------
 
-  (define-struct impl (name make run extract-result clean-up skips))
+  (define-struct impl (name setup make run extract-result clean-up skips))
 
   (define mutable-pair-progs '(conform
                                destruct
@@ -183,34 +236,39 @@ exec mzscheme -qu "$0" ${1+"$@"}
   (define impls
     (list
      (make-impl 'mzscheme
+                void
                 mk-mzscheme
                 (lambda (bm)
                   (system (format "mzscheme -u ~a.ss" bm)))
                 extract-mzscheme-times
-                clean-up-nothing
+                clean-up-zo
                 mutable-pair-progs)
      (make-impl 'mz-old
+                void
                 mk-mzscheme
                 (lambda (bm)
                   (system (format "mz-old -u ~a.ss" bm)))
                 extract-mzscheme-times
-                clean-up-nothing
+                clean-up-zo
                 mutable-pair-progs)
      (make-impl 'mzschemecgc
+                void
                 mk-mzscheme
                 (lambda (bm)
                   (system (format "mzschemecgc -u ~a.ss" bm)))
                 extract-mzscheme-times
-                clean-up-nothing
+                clean-up-zo
                 mutable-pair-progs)
      (make-impl 'mzscheme3m
+                void
                 mk-mzscheme
                 (lambda (bm)
                   (system (format "mzscheme3m -u ~a.ss" bm)))
                 extract-mzscheme-times
-                clean-up-nothing
+                clean-up-zo
                 mutable-pair-progs)
      (make-impl 'plt-r5rs
+                void
                 mk-plt-r5rs
                 (lambda (bm)
                   (system (format "plt-r5rs ~a.scm" bm)))
@@ -218,6 +276,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 clean-up-plt-r5rs
                 null)
      (make-impl 'mzc
+                void
                 mk-mzc
                 (lambda (bm)
                   (system (format "mzscheme -mvqee '(load-extension \"~a\")' '(require ~a)'" 
@@ -228,20 +287,23 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 (append '(takr takr2)
                         mutable-pair-progs))
      (make-impl 'mzscheme-j
+                void
                 mk-mzscheme
                 (lambda (bm)
                   (system (format "mzscheme -jqu ~a.ss" bm)))
                 extract-mzscheme-times
-                clean-up-nothing
+                clean-up-zo
                 mutable-pair-progs)
      (make-impl 'mzschemecgc-j
+                void
                 mk-mzscheme
                 (lambda (bm)
                   (system (format "mzschemecgc -jqu ~a.ss" bm)))
                 extract-mzscheme-times
-                clean-up-nothing
+                clean-up-zo
                 mutable-pair-progs)
      (make-impl 'mzschemecgc-tl
+                void
                 mk-mzscheme-tl
                 (lambda (bm)
                   (system (format "mzschemecgc -qr compiled/~a.zo" bm)))
@@ -250,37 +312,42 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 (append '(nucleic2)
                         mutable-pair-progs))
      (make-impl 'chicken
+                void
                 (run-mk "mk-chicken.ss")
                 run-exe
                 extract-chicken-times
                 clean-up-bin
-                '(nucleic2))
+                '(scheme2 takr2))
      (make-impl 'bigloo
+                void
                 (run-mk "mk-bigloo.ss")
-                run-exe/time
-                extract-time-times
+                run-exe
+                extract-bigloo-times
                 clean-up-bin
-                '(cpstack maze maze2 puzzle triangle))
+                '(cpstack takr2))
      (make-impl 'gambit
+                void
                 (run-mk "mk-gambit.ss")
                 run-gambit-exe
                 extract-gambit-times
                 clean-up-o1
                 '(nucleic2))
      (make-impl 'larceny
+                setup-larceny
                 mk-larceny
                 run-larceny
                 extract-larceny-times
                 clean-up-fasl
                 '())
      (make-impl 'ikarus
+                setup-ikarus
                 mk-ikarus
                 run-ikarus
                 extract-ikarus-times
-                clean-up-nothing
-                '(fft))))
+                clean-up-ikarus
+                '(takr))))
 
-  (define obsolte-impls '(mzscheme mzscheme-j mzschemecgc-tl mzc mz-old))
+  (define obsolte-impls '(mzscheme3m mzschemecgc mzscheme-j mzschemecgc-j mzschemecgc-tl mzc mz-old))
 
   (define benchmarks
     '(conform
@@ -303,6 +370,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
       nboyer
       nestedloop
       nfa
+      nothing
       nqueens
       nucleic2
       paraffins
@@ -329,23 +397,25 @@ exec mzscheme -qu "$0" ${1+"$@"}
                     impls)])
       (if (memq bm (impl-skips i))
           (rprintf "[~a ~a ~s #f]\n" impl bm '(#f #f #f))
-          (let ([start (current-inexact-milliseconds)])
-            ((impl-make i) bm)
-            (let ([end (current-inexact-milliseconds)])
-              (let loop ([n num-iterations])
-                (unless (zero? n)
-                  (let ([out (open-output-bytes)])
-                    (unless (parameterize ([current-output-port out]
-                                           [current-error-port out])
-                              ((impl-run i) bm))
-                      (error 'auto "~a\nrun failed ~a" (get-output-bytes out) bm))
-                    (rprintf "[~a ~a ~s ~a]\n"
-                            impl
-                            bm
-                            ((impl-extract-result i) bm (get-output-bytes out))
-                            (inexact->exact (round (- end start)))))
-                  (loop (sub1 n)))))
-            ((impl-clean-up i) bm)))
+          (begin
+            ((impl-setup i) bm)
+            (let ([start (current-inexact-milliseconds)])
+              ((impl-make i) bm)
+              (let ([end (current-inexact-milliseconds)])
+                (let loop ([n num-iterations])
+                  (unless (zero? n)
+                    (let ([out (open-output-bytes)])
+                      (unless (parameterize ([current-output-port out]
+                                             [current-error-port out])
+                                ((impl-run i) bm))
+                        (error 'auto "~a\nrun failed ~a" (get-output-bytes out) bm))
+                      (rprintf "[~a ~a ~s ~a]\n"
+                               impl
+                               bm
+                               ((impl-extract-result i) bm (get-output-bytes out))
+                               (inexact->exact (round (- end start)))))
+                    (loop (sub1 n)))))
+              ((impl-clean-up i) bm))))
       (flush-output)))
 
   ;; Extract command-line arguments --------------------

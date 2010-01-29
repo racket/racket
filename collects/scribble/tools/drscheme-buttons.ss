@@ -40,7 +40,6 @@
                (dynamic-require 'scribble/run #f)
                (cond
                  [(equal? label "HTML")
-                  (system (format "firefox ~a" (path-replace-suffix name suffix)))
                   (send-url/file (path-replace-suffix fn suffix))]
                  [else (system (format "open ~a" (path-replace-suffix name suffix)))]))
              (message-box "Scribble" (get-output-string p) drs-frame))

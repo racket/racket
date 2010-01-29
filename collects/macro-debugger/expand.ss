@@ -25,7 +25,7 @@
 (define (expand/show-predicate stx show?)
   (let-values ([(result deriv) (trace/result stx)])
     (when (exn? result) (raise result))
-    (let-values ([(_steps _uses stx exn2)
+    (let-values ([(_steps _defs _uses stx exn2)
                   (parameterize ((macro-policy show?))
                     (reductions+ deriv))])
       (when (exn? exn2) (raise exn2))

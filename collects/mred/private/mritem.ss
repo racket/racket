@@ -264,40 +264,47 @@
 	  (check-container-parent cwho parent)
 	  (check-callback cwho callback)
 	  (check-orientation cwho style)
-	  (check-non-negative-integer cwho selection)))
+	  (check-non-negative-integer/false cwho selection)))
       (private-field
        [wx #f])
       (private
 	[check-button
-	 (lambda (method n)
-	   (check-non-negative-integer `(method radio-box% ,method) n)
-	   (unless (< n (length chcs))
-	     (raise-mismatch-error (who->name `(method radio-box% ,method)) "no such button: " n)))])
+	 (lambda (method n false-ok?)
+	   ((if false-ok?
+                check-non-negative-integer/false 
+                check-non-negative-integer)
+            `(method radio-box% ,method) n)
+           (when n
+             (unless (< n (length chcs))
+               (raise-mismatch-error (who->name `(method radio-box% ,method)) "no such button: " n))))])
       (override
 	[enable (entry-point
 		 (case-lambda
 		  [(on?) (send wx enable on?)]
-		  [(which on?) (check-button 'enable which)
+		  [(which on?) (check-button 'enable which #f)
 		   (send wx enable which on?)]))]
 	[is-enabled? (entry-point
 		      (case-lambda
 		       [() (send wx is-enabled?)]
-		       [(which) (check-button 'is-enabled? which)
+		       [(which) (check-button 'is-enabled? which #f)
 			(send wx is-enabled? which)]))])
       (public
 	[get-number (lambda () (length chcs))]
 	[get-item-label (lambda (n) 
-			  (check-button 'get-item-label n)
+			  (check-button 'get-item-label n #f)
 			  (list-ref chcs n))]
 	[get-item-plain-label (lambda (n) 
-				(check-button 'get-item-plain-label n)
+				(check-button 'get-item-plain-label n #f)
 				(wx:label->plain-label (list-ref chcs n)))]
 	
-	[get-selection (entry-point (lambda () (send wx get-selection)))]
+	[get-selection (entry-point (lambda () (let ([v (send wx get-selection)])
+                                                 (if (equal? v -1)
+                                                     #f
+                                                     v))))]
 	[set-selection (entry-point
 			(lambda (v) 
-			  (check-button 'set-selection v)
-			  (send wx set-selection v)))])
+			  (check-button 'set-selection v #t)
+			  (send wx set-selection (or v -1))))])
       (sequence
 	(as-entry
 	 (lambda ()
@@ -317,7 +324,7 @@
 							   (length choices))
 						   selection))))
 		       label parent callback #f)))
-	(when (positive? selection)
+	(when (or (not selection) (positive? selection))
 	  (set-selection selection)))))
 
   (define slider%

@@ -90,6 +90,7 @@
                          #:mutable [setters? #f]
                          #:proc-ty [proc-ty #f]
                          #:maker [maker* #f]
+                         #:predicate [pred* #f]
                          #:constructor-return [cret #f]
                          #:poly? [poly? #f]
                          #:type-only [type-only #f])
@@ -107,6 +108,7 @@
                                #:type-wrapper type-wrapper
                                #:pred-wrapper pred-wrapper
                                #:maker (or maker* maker)
+                               #:predicate (or pred* pred)
                                #:constructor-return cret))))
 
 ;; generate names, and register the approriate types give field types and structure type
@@ -117,6 +119,7 @@
                                #:type-wrapper [type-wrapper values]
                                #:pred-wrapper [pred-wrapper values]
                                #:maker [maker* #f]
+                               #:predicate [pred* #f]
                                #:constructor-return [cret #f])
   ;; create the approriate names that define-struct will bind
   (define-values (maker pred getters setters) (struct-names nm flds setters?))
@@ -127,7 +130,7 @@
     (append 
      (list (cons (or maker* maker) 
                  (wrapper (->* external-fld-types (if cret cret name))))
-           (cons pred
+           (cons (or pred* pred)
                  (make-pred-ty (pred-wrapper name))))
      (for/list ([g (in-list getters)] [t (in-list external-fld-types/no-parent)] [i (in-naturals)])
        (let ([func (if setters? 
@@ -185,6 +188,7 @@
 ;; tc/struct : (U identifier (list identifier identifier)) Listof[identifier] Listof[syntax] -> void
 (define (tc/struct nm/par flds tys [proc-ty #f] 
                    #:maker [maker #f] #:constructor-return [cret #f] #:mutable [mutable #f]
+                   #:predicate [pred #f]
                    #:type-only [type-only #f])
   ;; get the parent info and create some types and type variables
   (define-values (nm parent-name parent name name-tvar) (parse-parent nm/par))
@@ -200,6 +204,7 @@
                    ;; procedure
                    #:proc-ty proc-ty-parsed
                    #:maker maker
+                   #:predicate pred
 		   #:constructor-return (and cret (parse-type cret))
                    #:mutable mutable
                    #:type-only type-only))

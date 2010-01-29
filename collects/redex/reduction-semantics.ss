@@ -50,7 +50,9 @@
          check-metafunction
          check-metafunction-contract
          check-reduction-relation
-         exn:fail:redex:generation-failure?)
+         exn:fail:redex:generation-failure?
+         (struct-out exn:fail:redex:test)
+         (struct-out counterexample))
 
 (provide/contract
  [current-traced-metafunctions (parameter/c (or/c 'all (listof symbol?)))]

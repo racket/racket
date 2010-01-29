@@ -1299,6 +1299,7 @@
   (define mismatch-err (mk-err exn:fail:contract?))
 
   (define do-sel (lambda (sel n) (for-each (lambda (rb) (sel rb (n rb))) rbs)))
+  (define sel-false (lambda (sel) (do-sel sel (lambda (rb) #f))))
   (define sel-minus (lambda (sel) (do-sel (type-err sel) (lambda (rb) -1))))
   (define sel-first (lambda (sel) (do-sel sel (lambda (rb) 0))))
   (define sel-middle (lambda (sel) (do-sel sel (lambda (rb) (floor (/ (send rb get-number) 2))))))
@@ -1311,7 +1312,9 @@
     (make-object button% (format "Select First~a" title) hp2 (lambda (b e) (sel-first sel)))
     (make-object button% (format "Select Middle ~a" title) hp2 (lambda (b e) (sel-middle sel)))
     (make-object button% (format "Select Last~a" title) hp2 (lambda (b e) (sel-last sel)))
-    (make-object button% (format "Select N~a" title) hp2 (lambda (b e) (sel-N sel))))
+    (make-object button% (format "Select N~a" title) hp2 (lambda (b e) (sel-N sel)))
+    (when (equal? title "")
+      (make-object button% (format "Select #f~a" title) hp2 (lambda (b e) (sel-false sel)))))
   (make-selectors "" normal-sel)
   (make-selectors " by Simulate" simulate-sel)
   (make-object button% "Check" p

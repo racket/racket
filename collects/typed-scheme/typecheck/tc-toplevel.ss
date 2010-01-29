@@ -3,11 +3,13 @@
 
 (require (rename-in "../utils/utils.ss" [infer r:infer]))
 (require syntax/kerncase
-	 unstable/list unstable/syntax
+	 unstable/list unstable/syntax syntax/parse
          mzlib/etc
          scheme/match
          "signatures.ss"
          "tc-structs.ss"
+         ;; to appease syntax-parse
+         "internal-forms.ss"
          (rep type-rep)
          (types utils convenience)
          (private parse-type type-annotation type-contract)
@@ -29,13 +31,17 @@
   ;; first, find the mutated variables:
   (find-mutated-vars form)
   (parameterize ([current-orig-stx form])
-    (kernel-syntax-case* form #f (define-type-alias-internal define-typed-struct-internal define-type-internal 
-                                   define-typed-struct/exec-internal :-internal assert-predicate-internal
-                                   require/typed-internal values)
+    (syntax-parse form
+      #:literals (values define-type-alias-internal define-typed-struct-internal define-type-internal 
+			 define-typed-struct/exec-internal :-internal assert-predicate-internal
+			 require/typed-internal declare-refinement-internal
+			 define-values quote-syntax #%plain-app begin)
+      ;#:literal-sets (kernel-literals)
+      
       ;; forms that are handled in other ways
       [stx 
-       (or (syntax-property form 'typechecker:ignore) 
-           (syntax-property form 'typechecker:ignore-some))
+       #:when (or (syntax-property form 'typechecker:ignore) 
+                  (syntax-property form 'typechecker:ignore-some))
        (list)]
       
       ;; type aliases have already been handled by an earlier pass
@@ -72,9 +78,16 @@
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)))]
       [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:mutable)) (#%plain-app values)))
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:mutable #t)]
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:maker m #:constructor-return t)) 
+      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) 
+                                                #:maker m #:constructor-return t #:predicate p)) 
                                 (#%plain-app values)))
-       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:maker #'m #:constructor-return #'t)]
+       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...))
+		  #:maker #'m #:constructor-return #'t #:predicate #'p)]
+      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...)
+						#:maker m #:constructor-return t)) 
+                                (#%plain-app values)))
+       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) 
+		  #:maker #'m #:constructor-return #'t)]
       [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:type-only))
                                 (#%plain-app values)))
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:type-only #t)]
@@ -91,8 +104,7 @@
        (register-type #'pred (make-pred-ty (parse-type #'ty)))]
       
       ;; top-level type annotation
-      [(define-values () (begin (quote-syntax (:-internal id ty)) (#%plain-app values)))
-       (identifier? #'id)
+      [(define-values () (begin (quote-syntax (:-internal id:identifier ty)) (#%plain-app values)))
        (register-type/undefined #'id (parse-type #'ty))]
             
       
@@ -128,8 +140,7 @@
        (apply append (filter list? (map tc-toplevel/pass1 (syntax->list #'rest))))]
       
       ;; define-syntaxes just get noted
-      [(define-syntaxes (var ...) . rest)
-       (andmap identifier? (syntax->list #'(var ...)))
+      [(define-syntaxes (var:id ...) . rest)
        (map make-def-stx-binding (syntax->list #'(var ...)))]
       
       ;; otherwise, do nothing in this pass

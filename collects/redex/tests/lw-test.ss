@@ -51,7 +51,7 @@
 
 (module lw-test mzscheme
   (require "test-util.ss"
-           "loc-wrapper.ss"
+           "../private/loc-wrapper.ss"
            "lw-test-util.ss")
   
   (reset-count)

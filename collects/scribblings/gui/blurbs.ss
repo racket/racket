@@ -203,7 +203,7 @@ information@|details|, even if the editor currently has delayed refreshing (see
           monitor @|whatsit| changes.})
 
   (define (MonitorCallbackX a b c d)
-    (MonitorMethod a b @elem{the @|d|callback procedure (provided as an initialization argument)} c))
+    (MonitorMethod a b @elem{the @|d| callback procedure (provided as an initialization argument)} c))
 
   (define (MonitorCallback a b c)
     (MonitorCallbackX a b c "control"))

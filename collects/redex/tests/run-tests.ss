@@ -5,7 +5,7 @@
          "config.ss"
          "test-util.ss")
 
-(set-show-bitmaps? #t)
+(set-show-bitmaps? #f)
 
 (define test-files
   '("lw-test.ss" 

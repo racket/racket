@@ -152,6 +152,11 @@
                          (λ (x) (and (list? x) 
                                      (andmap (λ (x) (or (path? x) (drscheme:frame:planet-spec? x)))
                                              x))))
+(preferences:set-default 'drscheme:install-plt-dialog
+                         '(#t "" "") ; url-selected?, url string, file string
+                         (λ (x) (and (list? x) (= 3 (length x))
+                                     (boolean? (car x))
+                                     (andmap string? (cdr x)))))
 
 (preferences:set-un/marshall 
  'drscheme:user-defined-keybindings

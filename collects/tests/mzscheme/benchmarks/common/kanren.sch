@@ -1,5 +1,5 @@
-(define error
-  (lambda args (/ args)))
+;; smashed into benchmark form by Matthew
+
 (define errorf error)
 
 ; like cout << arguments << args
@@ -14,7 +14,7 @@
 (define cerr cout)
 
 (define pntall (lambda v (write v) (newline)))
-(define (pretty-print v) (write v) (newline))
+(define (_pretty-print v) (write v) (newline))
 
 (define nl (string #\newline))
 
@@ -113,14 +113,15 @@
 (define-syntax test-check
   (syntax-rules ()
     ((_ title tested-expression expected-result)
-     (begin
-       (cout "Testing " title nl)
-       (let* ((expected expected-result)
-              (produced tested-expression))
-         (or (equal? expected produced)
-             (errorf 'test-check
-               "Failed: ~a~%Expected: ~a~%Computed: ~a~%"
-               'tested-expression expected produced)))))))
+       (begin
+         (cout "Testing " title nl)
+         (let* ((expected expected-result)
+                (produced tested-expression))
+           (or (equal? expected produced)
+               (errorf 'test-check
+                       "Failed: ~a~%Expected: ~a~%Computed: ~a~%"
+                       'tested-expression expected produced)))
+         #f))))
 
 (define symbol-append
   (lambda symbs
@@ -149,7 +150,7 @@
       (let ((id (logical-variable 'id)) ...) body))))
 
 ; The anonymous variable
-(define _ (let-lv (_) _))
+(define __ (let-lv (_) _))
 
 ; Another way to introduce logical variables: via distinguished pairs
 ; (define logical-var-tag (list '*logical-var-tag*)) ; unique for eq?
@@ -175,9 +176,14 @@
 ; the exclamation mark. The mark makes sure the symbol stands out when
 ; printed.
 
+(define counter 0)
+(define (jensym s)
+  (set! counter (+ counter 1))
+  (string->symbol (string-append "!$gen$!" s (number->string counter))))
+
 (define eigen-variable
   (lambda (id)
-    (symbol-append '! id '_ (gensym "x"))))
+    (symbol-append '! id '_ (jensym "x"))))
 
 (define eigen-var?
   (lambda (x)
@@ -195,6 +201,7 @@
     ((_ (id ...) body)
       (let ((id (eigen-variable 'id)) ...) body))))
 
+(define (eigen-test)
 (test-check 'eigen
   (and
     (eigen () #t)
@@ -202,7 +209,7 @@
     (eigen (x y)
       (begin (display "eigens: ") (display (list x y))
 	(newline) #t)))
-  #t)
+  #t))
 
 ;;; ------------------------------------------------------
 
@@ -437,7 +444,7 @@
 ;;;; This is Oleg's unifier
 
 ; Either t or u may be:
-; _
+; __
 ; free-var
 ; bound-var
 ; pair
@@ -461,8 +468,8 @@
   (lambda (t u subst)
     (cond
       ((eq? t u) subst)			; quick tests first
-      ((eq? t _) subst)
-      ((eq? u _) subst)
+      ((eq? t __) subst)
+      ((eq? u __) subst)
       ((var? t)
        (let*-and (unify-free/any t u subst) ((ct (assq t subst)))
 	 (if (var? u)			; ct is a bound var, u is a var
@@ -505,13 +512,13 @@
 
 
 ; Just like unify. However, the first term, t, comes from
-; an internalized term. We know it can't be _ and can't contain _
+; an internalized term. We know it can't be __ and can't contain __
 
 (define unify-internal/any
   (lambda (t u subst)
     (cond
       ((eq? t u) subst)			; quick tests first
-      ((eq? u _) subst)
+      ((eq? u __) subst)
       ((var? t)
        (let*-and (unify-free/any t u subst) ((ct (assq t subst)))
 	 (if (var? u)			; ct is a bound var, u is a var
@@ -537,8 +544,8 @@
 ; the other way around.
 ; Aside from the above, this function can take advantage of the following
 ; facts about (commitment->term cx) (where cx is an existing commitment):
-;   - it is never _
-;   - it never contains _
+;   - it is never __
+;   - it never contains __
 ; Most importantly, if, for example, (commitment->term ct) is a free variable,
 ; we enter its binding to (commitment->term cu) with fewer checks.
 ; in particular, we never need to call unify-free/list nor
@@ -583,7 +590,7 @@
 (define unify-free/any
   (lambda (t-var u subst)
     (cond
-      ((eq? u _) subst)
+      ((eq? u __) subst)
       ((var? u)
        (let*-and (extend-subst t-var u subst) ((cu (assq u subst)))
          (unify-free/bound t-var cu subst)))
@@ -631,13 +638,13 @@
 
 ; t-var is a free variable, u-value is a proper or improper
 ; list, which may be either fully or partially grounded (or not at all).
-; We scan the u-value for _, and if, found, replace them with fresh
+; We scan the u-value for __, and if, found, replace them with fresh
 ; variables. We then bind t-var to the term.
 ; This function is not recursive and always succeeds.
 ;
-; We assume that more often than not u-value does not contain _.
+; We assume that more often than not u-value does not contain __.
 ; Therefore, to avoid the wasteful rebuilding of u-value, we 
-; first scan it for the occurrence of _. If the scan returns negative,
+; first scan it for the occurrence of __. If the scan returns negative,
 ; we can use u-value as it is.
 
       ; Rebuild lst replacing all anonymous variables with some
@@ -647,7 +654,7 @@
 (define ufl-rebuild-without-anons
   (lambda (lst)
     (cond
-      ((eq? lst _) (logical-variable '*anon))
+      ((eq? lst __) (logical-variable '*anon))
       ((not (pair? lst)) #f)
       ((null? (cdr lst))
 	(let ((new-car (ufl-rebuild-without-anons (car lst))))
@@ -670,7 +677,7 @@
 
 (define (term-tests)
   
-  (cout nl "Compositions of substitutions" nl)
+  ; (cout nl "Compositions of substitutions" nl)
   ; (let-lv (x y)
   ;   (test-check 'test-compose-subst-0
   ;     (append (unit-subst x y) (unit-subst y 52))
@@ -857,7 +864,7 @@
     (list
         (let-lv (x0 x1 y0 y1)
   	(begin
-  	  (pretty-print
+  	  (_pretty-print
   	    (reify-subst '()
   	      (unify
   		`(h ,x1 (f ,y0 ,y0) ,y1)
@@ -867,7 +874,7 @@
   
         (let-lv (x0 x1 x2 y0 y1 y2)
   	(begin
-  	  (pretty-print
+  	  (_pretty-print
              (reify-subst '()
               (unify
                 `(h ,x1 ,x2 (f ,y0 ,y0) (f ,y1 ,y1) ,y2)
@@ -877,7 +884,7 @@
   
         (let-lv (x0 x1 x2 x3 x4 y0 y1 y2 y3 y4)
          (begin
-          (pretty-print
+          (_pretty-print
             (reify-subst '()
               (unify
                 `(h ,x1 ,x2 ,x3 ,x4 (f ,y0 ,y0) (f ,y1 ,y1) (f ,y2 ,y2) (f ,y3 ,y3) ,y4)
@@ -894,7 +901,8 @@
         (reify-subst '() subst)))
     '((z.0 42) (y.0 (2 3 4 5 42)) (x.0 (1 2 3 4 5 42))))
     ;'((z.0 . 42) (y.0 2 3 4 5 a*.0) (a*.0 . z.0) (x.0 1 2 3 4 5 a*.0)))
-  
+
+  10
   )
   
 
@@ -915,18 +923,18 @@
      (lambda (formal0)
        (lambda@ (formal1 formal2 ...) body0 body1 ...)))))
 
-(define-syntax @  
+(define-syntax at@
   (syntax-rules ()
     ((_ rator rand) (rator rand))
-    ((_ rator rand0 rand1 rand2 ...) (@ (rator rand0) rand1 rand2 ...))))
+    ((_ rator rand0 rand1 rand2 ...) (at@ (rator rand0) rand1 rand2 ...))))
 
-(test-check 'test-@-lambda@
-  (@ (lambda@ (x y z) (+ x (+ y z))) 1 2 3)
-  6)
+;(test-check 'test-@-lambda@
+;  (at@ (lambda@ (x y z) (+ x (+ y z))) 1 2 3)
+;  6)
 
-'(test-check 'test-@-lambda@
-  (@ (lambda@ (x y z) (+ x (+ y z))) 1 2 3)
-  42)
+;'(test-check 'test-@-lambda@
+;  (at@ (lambda@ (x y z) (+ x (+ y z))) 1 2 3)
+;  42)
 
 (define Y
   (lambda (f)
@@ -959,7 +967,7 @@
 
 
 ; Trivial goals
-(define succeed (lambda@ (s k) (@ k s)))  ; eta-reduced
+(define succeed (lambda@ (s k) (at@ k s)))  ; eta-reduced
 (define fail (lambda@ (s k f) (f)))
 (define sfail (lambda@ (k f) (f)))	; Failed SGoal
 
@@ -1085,16 +1093,16 @@
 ;     ((_ (ex-id) gl)
 ;      (let-lv (ex-id)
 ;        (lambda@ (sk fk in-subst)
-;          (@ gl
+;          (at@ gl
 ;            (lambda@ (fk out-subst)
-;              (@ sk fk (lv-elim-1 ex-id in-subst out-subst)))
+;              (at@ sk fk (lv-elim-1 ex-id in-subst out-subst)))
 ;            fk in-subst))))
 ;     ((_ (ex-id ...) gl)
 ;      (let-lv (ex-id ...) 
 ;        (lambda@ (sk fk in-subst)
-;          (@ gl
+;          (at@ gl
 ;            (lambda@ (fk out-subst)
-;              (@ sk fk (lv-elim (list ex-id ...) in-subst out-subst)))
+;              (at@ sk fk (lv-elim (list ex-id ...) in-subst out-subst)))
 ;            fk in-subst))))))
 
 ; For the unifier that doesn't introduce temp variables,
@@ -1117,7 +1125,7 @@
 ; So, to prune variables and preserve sharing, we have to topologically sort
 ; the bindings first!
 
-(define-syntax exists
+(define-syntax _exists
   (syntax-rules ()
     ((_ () gl) gl)
     ((_ (ex-id ...) gl)
@@ -1142,13 +1150,13 @@
     (let ((print-it
 	    (lambda (event subst)
 	      (display title) (display " ")
-	      (display event) (pretty-print subst) (newline))))
+	      (display event) (_pretty-print subst) (newline))))
       (lambda@ (subst sk fk)
 	(print-it "CALL:" subst)
-	(@ gl subst
+	(at@ gl subst
 	  (lambda@ (subst fk)
 	    (print-it "RETURN:" subst)
-	    (@ sk subst
+	    (at@ sk subst
 	      (lambda ()
 		(display title) (display " REDO") (newline)
 		(fk))
@@ -1182,9 +1190,9 @@
 
 (define-syntax splice-in-gls/all
   (syntax-rules ()
-    ((_ subst sk gl) (@ gl subst sk))
+    ((_ subst sk gl) (at@ gl subst sk))
     ((_ subst sk gl0 gl1 ...)
-     (@ gl0 subst (lambda (subst) (splice-in-gls/all subst sk gl1 ...))))))
+     (at@ gl0 subst (lambda (subst) (splice-in-gls/all subst sk gl1 ...))))))
 
 
 ; (promise-one-answer gl)
@@ -1226,9 +1234,9 @@
     ((_ gl0 gl1 ...)
      (promise-one-answer
        (lambda@ (subst sk fk)
-	 (@
+	 (at@
 	   (splice-in-gls/all subst
-	     (lambda@ (subst fk-ign) (@ sk subst fk)) gl0 gl1 ...)
+	     (lambda@ (subst fk-ign) (at@ sk subst fk)) gl0 gl1 ...)
 	   fk))))))
 
 ; (all!! gl1 gl2 ...)
@@ -1252,11 +1260,11 @@
 (define-syntax splice-in-gls/all!!
   (syntax-rules (promise-one-answer)
     ((_ subst sk fk)
-      (@ sk subst fk))
+      (at@ sk subst fk))
     ((_ subst sk fk (promise-one-answer gl))
-      (@ gl subst sk fk))
+      (at@ gl subst sk fk))
     ((_ subst sk fk gl0 gl1 ...)
-      (@ gl0 subst
+      (at@ gl0 subst
 	(lambda@ (subst fk-ign) (splice-in-gls/all!! subst sk fk gl1 ...))
 	fk))))
 
@@ -1288,16 +1296,16 @@
   (syntax-rules ()
     ((_ condition then)
      (lambda@ (subst sk fk)
-       (@ condition subst
+       (at@ condition subst
          ; sk from cond
-         (lambda@ (subst fk-ign) (@ then subst sk fk))
+         (lambda@ (subst fk-ign) (at@ then subst sk fk))
          ; failure from cond
          fk)))
     ((_ condition then else)
      (lambda@ (subst sk fk)
-       (@ condition subst
-         (lambda@ (subst fk-ign) (@ then subst sk fk))
-         (lambda () (@ else subst sk fk))
+       (at@ condition subst
+         (lambda@ (subst fk-ign) (at@ then subst sk fk))
+         (lambda () (at@ else subst sk fk))
          )))))
 
 ; (if-all! (COND1 ... CONDN) THEN)
@@ -1354,9 +1362,9 @@
 
 (define-syntax splice-in-gls/any
   (syntax-rules ()
-    ((_ subst sk fk gl1) (@ gl1 subst sk fk))
+    ((_ subst sk fk gl1) (at@ gl1 subst sk fk))
     ((_ subst sk fk gl1 gl2 ...)
-     (@ gl1 subst sk (lambda () (splice-in-gls/any subst sk fk gl2 ...))))))
+     (at@ gl1 subst sk (lambda () (splice-in-gls/any subst sk fk gl2 ...))))))
 
 
 ; Negation
@@ -1373,16 +1381,16 @@
 (define fails
   (lambda (gl)
     (lambda@ (subst sk fk)
-      (@ gl subst
+      (at@ gl subst
         (lambda@ (subst current-fk) (fk))
-        (lambda () (@ sk subst fk))
+        (lambda () (at@ sk subst fk))
         ))))
 
 ; Again, G-Rule must hold for this predicate to be logically sound
 (define succeeds
   (lambda (gl)
     (lambda@ (subst sk fk)
-      (@ gl subst (lambda@ (subst-ign fk-ign) (@ sk subst fk))
+      (at@ gl subst (lambda@ (subst-ign fk-ign) (at@ sk subst fk))
 	fk))))
 
 ; partially-eval-sgl: Partially evaluate a semi-goal. A
@@ -1396,7 +1404,7 @@
 ; be implemented with streams (lazy lists). The following is a purely
 ; combinational implementation.
 ;
-; (@ partially-eval-sgl sgl a b) =>
+; (at@ partially-eval-sgl sgl a b) =>
 ;   (b) if sgl has no answers
 ;   (a s residial-sgl) if sgl has a answer. That answer is delivered
 ;                       in s. 
@@ -1406,14 +1414,14 @@
 ; The following definition is eta-reduced.
 
 (define (partially-eval-sgl sgl)
-  (@ sgl
+  (at@ sgl
     (lambda@ (subst fk a b)
-      (@ a subst 
+      (at@ a subst 
 	(lambda@ (sk1 fk1)
-	  (@
+	  (at@
 	    (fk) 
 	    ; new a
-	    (lambda@ (sub11 x) (@ sk1 sub11 (lambda () (@ x sk1 fk1))))
+	    (lambda@ (sub11 x) (at@ sk1 sub11 (lambda () (at@ x sk1 fk1))))
 	    ; new b
 	    fk1))))
     (lambda () (lambda@ (a b) (b)))))
@@ -1444,16 +1452,16 @@
       ((null? sgls) (fk))		; all of the sgls are finished
       ((null? (cdr sgls))
        ; only one of sgls left -- run it through the end
-       (@ (car sgls) sk fk))
+       (at@ (car sgls) sk fk))
       (else
         (let loop ((curr sgls) (residuals '()))
 	  ; check if the current round is finished
 	  (if (null? curr) (interleave sk fk (reverse residuals))
-	    (@
+	    (at@
 	      partially-eval-sgl (car curr)
 	      ; (car curr) had an answer
 	      (lambda@ (subst residual)
-	        (@ sk subst
+	        (at@ sk subst
 	          ; re-entrance cont
 		  (lambda () (loop (cdr curr) (cons residual residuals)))))
 	    ; (car curr) is finished - drop it, and try next
@@ -1505,13 +1513,13 @@
       (cond
         ((null? sagls) (fk))  ; all of the sagls are finished
         ((null? (cdr sagls))  ; only one gl is left -- run it through the end
-	 (@ (caar sagls) sk fk))
+	 (at@ (caar sagls) sk fk))
         (else
 	  (let loop ((curr sagls)
                      (residuals '()))
             ; check if the current round is finished
 	    (if (null? curr) (outer (reverse residuals))
-                (@
+                (at@
                  partially-eval-sgl (caar curr)
                   ; (caar curr) had an answer
                  (lambda@ (subst residual)
@@ -1519,12 +1527,12 @@
                   ; gls down the curr.
                    (let check ((to-check (cdr curr)))
                      (if (null? to-check) ; OK, subst is unique,give it to user
-                         (@ sk subst
+                         (at@ sk subst
                            ; re-entrance cont
                            (lambda ()
                              (loop (cdr curr) 
                                (cons (cons residual (cdar curr)) residuals))))
-                         (@ (cdar to-check) subst
+                         (at@ (cdar to-check) subst
                             ; subst was the answer to some other gl:
 			    ; check failed
                             (lambda@ (subst1 fk1)
@@ -1575,13 +1583,13 @@
     ((_ condition then) (all condition then))
     ((_ condition then else)
      (lambda@ (subst sk fk)
-       (@ partially-eval-sgl (condition subst)
+       (at@ partially-eval-sgl (condition subst)
          (lambda@ (ans residual)
-           (@ then ans sk
+           (at@ then ans sk
              ; then failed. Check to see if condition has another answer
-             (lambda () (@ residual (lambda@ (subst) (@ then subst sk)) fk))))
+             (lambda () (at@ residual (lambda@ (subst) (at@ then subst sk)) fk))))
              ; condition failed
-         (lambda () (@ else subst sk fk)))))))
+         (lambda () (at@ else subst sk fk)))))))
 
 
 ; An interleaving conjunction: all-interleave
@@ -1675,11 +1683,11 @@
 (define all-interleave-bin
   (lambda (sgl1 gl2)
     (lambda@ (sk fk)
-      (@ partially-eval-sgl sgl1
+      (at@ partially-eval-sgl sgl1
 	(lambda@ (ans residual)
 	  (interleave sk fk
 	    (list 
-	      (@ gl2 ans)
+	      (at@ gl2 ans)
 	      (all-interleave-bin residual gl2)
 	    )))
 	  ;gl1 failed
@@ -1725,21 +1733,21 @@
 ; we notice that the logical variable 'x' occurs at the top-level. Normally we
 ; compile the relation like that into the following
 ;    (lambda (g1 g2)
-;      (exists (x y)
+;      (_exists (x y)
 ;        (lambda@ (subst)
 ; 	 (let*-and (fail subst) ((subst (unify g1 `(,x . ,y)  subst))
 ; 			         (subst (unify g2 x subst)))
-; 	     (@ body subst)))))
+; 	     (at@ body subst)))))
 ;
 ; However, that we may permute the order of 'unify g...' clauses
 ; to read
 ;    (lambda (g1 g2)
-;      (exists (x y)
+;      (_exists (x y)
 ;        (lambda@ (subst)
 ; 	 (let*-and (fail subst) ((subst (unify x g2 subst))
 ; 			         (subst (unify g1 `(,x . ,y)  subst))
 ; 			         )
-; 	     (@ body subst)))))
+; 	     (at@ body subst)))))
 ;
 ; We may further note that according to the properties of the unifier
 ; (see below), (unify x g2 subst) must always succeed, 
@@ -1751,7 +1759,7 @@
 ; to being lexical. Thus, we compile the relation as
 ;
 ;    (lambda (g1 g2)
-;      (exists (x y)
+;      (_exists (x y)
 ;        (lambda@ (subst)
 ; 	 (let* ((subst (unify-free/any x g2 subst))
 ; 	        (fast-path? (and (pair? subst)
@@ -1760,14 +1768,14 @@
 ; 	        (subst (if fast-path? (cdr subst) subst)))
 ; 	 (let*-and sfail ((subst (unify g1 `(,x . ,y)  subst))
 ; 			 )
-; 	     (@ body subst))))))
+; 	     (at@ body subst))))))
 ;
 ; The benefit of that approach is that we limit the growth of subst and avoid
 ; keeping commitments that had to be garbage-collected later.
 
 
 (define-syntax relation
-  (syntax-rules (to-show head-let once _)
+  (syntax-rules (to-show head-let once __)
     ((_ (head-let head-term ...) gl)
      (relation-head-let (head-term ...) gl))
     ((_ (head-let head-term ...))	; not particularly useful without body
@@ -1794,7 +1802,7 @@
     ; parameters, and forget them
     ; also, note and keep track of the first occurrence of a term
     ; that is just a var (bare-var) 
-    ((_ "g" vars once-vars (gs ...) gunis bvars bvar-cl (_ . terms) . gl)
+    ((_ "g" vars once-vars (gs ...) gunis bvars bvar-cl (__ . terms) . gl)
      (relation "g" vars once-vars (gs ... anon) gunis
        bvars bvar-cl terms . gl))
     ((_ "g" vars once-vars (gs ...) gunis bvars (subst . cls)
@@ -1830,20 +1838,20 @@
     ; Final: writing the code
     ((_ "f" vars () () () (subst) gl)   ; no arguments (no head-tests)
       (lambda ()
-	(exists vars gl)))
+	(_exists vars gl)))
                                     ; no tests but pure binding
     ((_ "f" (ex-id ...) once-vars (g ...) () (subst) gl)
      (lambda (g ...)
-       (exists (ex-id ...) gl)))
+       (_exists (ex-id ...) gl)))
 				    ; the most general
     ((_ "f" (ex-id ...) once-vars (g ...) ((gv . term) ...) 
        (subst let*-clause ...) gl) 
      (lambda (g ...)
-       (exists (ex-id ...)
+       (_exists (ex-id ...)
 	 (lambda (subst)
 	   (let* (let*-clause ...)
 	     (let*-and sfail ((subst (unify gv term subst)) ...)
-	       (@ gl subst)))))))))
+	       (at@ gl subst)))))))))
 
 ; A macro-expand-time memv function for identifiers
 ;	id-memv?? FORM (ID ...) KT KF
@@ -1948,14 +1956,14 @@
      (lambda gvs                                     ; don't bother bind vars
        (lambda@ (subst)
 	 (let*-and sfail ((subst (unify gv term subst)) ...)
-	   (@ succeed subst)))))
+	   (at@ succeed subst)))))
 
     ((_ "f" (var0 ...) ((gvo term) ...) gvs gl)
      (lambda gvs
        (lambda@ (subst)			; first unify the constants
 	 (let*-and sfail ((subst (unify gvo term subst)) ...)
-           (let ((var0 (if (eq? var0 _) (logical-variable '?) var0)) ...)
-             (@ gl subst))))))))
+           (let ((var0 (if (eq? var0 __) (logical-variable '?) var0)) ...)
+             (at@ gl subst))))))))
 
 ; (define-syntax relation/cut
 ;   (syntax-rules (to-show)
@@ -1965,11 +1973,11 @@
 ;      (relation/cut cut-id ex-ids (var ... g) (x1 ...) xs gl ...))
 ;     ((_ cut-id (ex-id ...) (g ...) () (x ...) gl ...)
 ;      (lambda (g ...)
-;        (exists (ex-id ...)
+;        (_exists (ex-id ...)
 ;          (all! (== g x) ...
 ;            (lambda@ (sk fk subst cutk)
 ;              (let ((cut-id (!! cutk)))
-;                (@ (all gl ...) sk fk subst cutk)))))))))
+;                (at@ (all gl ...) sk fk subst cutk)))))))))
 
 (define-syntax fact
   (syntax-rules ()
@@ -2043,9 +2051,9 @@
 
 ; Unify lifted to be a binary relation
 (define-syntax ==
-  (syntax-rules (_)
-    ((_ _ u) (lambda@ (subst sk) (@ sk subst)))
-    ((_ t _) (lambda@ (subst sk) (@ sk subst)))
+  (syntax-rules (__)
+    ((_ __ u) (lambda@ (subst sk) (at@ sk subst)))
+    ((_ t __) (lambda@ (subst sk) (at@ sk subst)))
     ((_ t u)
      (lambda@ (subst)
        (let*-and sfail ((subst (unify t u subst)))
@@ -2071,7 +2079,7 @@
   (syntax-rules ()
     ((_ (redo-k subst id ...) A SE ...)
       (let-lv (id ...)
-	(@ A empty-subst
+	(at@ A empty-subst
 	  (lambda@ (subst redo-k) SE ...)
 	  (lambda () '()))))))
 
@@ -2104,14 +2112,14 @@
     ((_ (var ...) gl)
      (lambda@ (subst)
        (let ((var (nonvar! (subst-in var subst))) ...)
-	 (@ gl subst))))))
+	 (at@ gl subst))))))
 
 (define-syntax project/no-check
   (syntax-rules ()
     ((_ (var ...) gl)
      (lambda@ (subst)
        (let ((var (subst-in var subst)) ...)
-	 (@ gl subst))))))
+	 (at@ gl subst))))))
 
 (define-syntax predicate
   (syntax-rules ()
@@ -2187,10 +2195,10 @@
 			   sfail
 			   (let ((s (extend-subst depth-counter-var
 				      (+ counter 1) subst)))
-			     (@ gl s))))))
+			     (at@ gl s))))))
 		(else
 		  (let ((s (extend-subst depth-counter-var 1 subst)))
-		    (@ gl s)))))))))
+		    (at@ gl s)))))))))
     ))
 
 ; ?- help(call_with_depth_limit/3).
@@ -2241,7 +2249,7 @@
          )
     (test-check 'test-father0
       (let ((result
-  	    (@ (father 'jon 'sam) empty-subst
+  	    (at@ (father 'jon 'sam) empty-subst
   	      initial-sk initial-fk)))
         (and
   	(equal? (car result) '())
@@ -2250,7 +2258,7 @@
   
     (test-check 'test-child-of-male-0
       (reify-subst '()
-        (car (@ (child-of-male 'sam 'jon) empty-subst
+        (car (at@ (child-of-male 'sam 'jon) empty-subst
   	     initial-sk initial-fk)))
     ;`(,(commitment 'child.0 'sam) ,(commitment 'dad.0 'jon)))
     '())  ; variables shouldn't leak
@@ -2259,7 +2267,7 @@
     ; The mark should be found here...
     (test-check 'test-child-of-male-1
     (reify-subst '()
-      (car (@ (child-of-male 'sam 'jon) empty-subst
+      (car (at@ (child-of-male 'sam 'jon) empty-subst
   	    initial-sk initial-fk)))
     ;`(,(commitment 'child.0 'sam) ,(commitment 'dad.0 'jon)))
     '())
@@ -2282,7 +2290,7 @@
   	)
     (test-check 'test-father-1
       (let ((result
-  	    (@ (new-father 'rob 'sal) empty-subst
+  	    (at@ (new-father 'rob 'sal) empty-subst
   	      initial-sk initial-fk)))
         (and
   	(equal? (car result) '())
@@ -2310,7 +2318,7 @@
     (test-check 'test-father-5
       (query (redok subst x)
         (newer-father 'rob x)
-        (pretty-print subst)
+        (_pretty-print subst)
         (cons
   	(reify-subst (list x) subst)
   	(redok)))
@@ -2394,7 +2402,7 @@
       ((grandpa-sam
          (relation (grandchild)
   	 (to-show grandchild)
-  	 (exists (parent)
+  	 (_exists (parent)
   	   (all (father 'sam parent)
   	        (father parent grandchild))))))
       (test-check 'test-grandpa-sam-1
@@ -2406,7 +2414,7 @@
       ((grandpa-sam
          (relation ((once grandchild))
   	 (to-show grandchild)
-  	 (exists (parent)
+  	 (_exists (parent)
   	   (all (father 'sam parent)
   	        (father parent grandchild))))))
       (test-check 'test-grandpa-sam-1
@@ -2429,7 +2437,7 @@
     (let ((grandpa
   	  (relation ((once grandad) (once grandchild))
   	    (to-show grandad grandchild)
-  	    (exists (parent)
+  	    (_exists (parent)
   	      (all
   		(father grandad parent)
   		(father parent grandchild))))))
@@ -2441,7 +2449,7 @@
   	  (lambda (guide* grandad*)
   	    (relation (grandchild)
   	      (to-show grandchild)
-  	      (exists (parent)
+  	      (_exists (parent)
   		(all
   		  (guide* grandad* parent)
   		  (guide* parent grandchild)))))))
@@ -2472,14 +2480,14 @@
       ((grandpa/father
          (relation (grandad grandchild)
   	 (to-show grandad grandchild)
-  	 (exists (parent)
+  	 (_exists (parent)
   	   (all
   	     (father grandad parent)
   	     (father parent grandchild)))))
        (grandpa/mother
          (relation (grandad grandchild)
   	 (to-show grandad grandchild)
-  	 (exists (parent)
+  	 (_exists (parent)
   	   (all
   	     (father grandad parent)
   	     (mother parent grandchild)))))
@@ -2496,7 +2504,7 @@
       ((grandpa-sam
          (let ((r (relation (child)
   		  (to-show child)
-  		  (exists (parent)
+  		  (_exists (parent)
   		    (all
   		      (father 'sam parent)
   		      (father parent child))))))
@@ -2513,7 +2521,7 @@
   ; (define grandpa/father
   ;   (relation/cut cut (grandad grandchild)
   ;     (to-show grandad grandchild)
-  ;     (exists (parent)
+  ;     (_exists (parent)
   ;       (all
   ;         (father grandad parent)
   ;         (father parent grandchild)
@@ -2522,7 +2530,7 @@
   ; (define grandpa/mother
   ;   (relation (grandad grandchild)
   ;     (to-show grandad grandchild)
-  ;     (exists (parent)
+  ;     (_exists (parent)
   ;       (all
   ;         (father grandad parent)
   ;         (mother parent grandchild)))))
@@ -2533,7 +2541,7 @@
       ((grandpa/father
          (relation (grandad grandchild)
   	 (to-show grandad grandchild)
-  	 (exists (parent)
+  	 (_exists (parent)
   	   (all!
   	     (father grandad parent)
   	     (father parent grandchild)))))
@@ -2541,7 +2549,7 @@
         (grandpa/mother
   	(relation (grandad grandchild)
   	  (to-show grandad grandchild)
-  	  (exists (parent)
+  	  (_exists (parent)
   	    (all
   	      (father grandad parent)
   	      (mother parent grandchild)))))
@@ -2560,21 +2568,21 @@
   ; (define grandpa/father
   ;   (relation/cut cut (grandad grandchild)
   ;     (to-show grandad grandchild)
-  ;     (exists (parent)
+  ;     (_exists (parent)
   ;       (all cut (father grandad parent) (father parent grandchild)))))
   
     (let
       ((grandpa/father
          (relation (grandad grandchild)
   	 (to-show grandad grandchild)
-  	 (exists (parent)
+  	 (_exists (parent)
   	   (all
   	     (father grandad parent) (father parent grandchild)))))
   
         (grandpa/mother
   	(relation (grandad grandchild)
   	  (to-show grandad grandchild)
-  	  (exists (parent)
+  	  (_exists (parent)
   	    (all
   	      (father grandad parent) (mother parent grandchild)))))
         )
@@ -2638,7 +2646,7 @@
         ((a-grandma
   	 (relation (grandad grandchild)
   	   (to-show grandad grandchild)
-  	   (exists (parent)
+  	   (_exists (parent)
   	     (all! (mother grandad parent)))))
   	(no-grandma-grandpa
   	  (let-gls (a1 a2) ((a-grandma a-grandma)
@@ -2671,14 +2679,14 @@
       (let* ((parents-of-scouts-sgl
   	     ((parents-of-scouts p1 p2) empty-subst))
              (cons@ (lambda@ (x y) (cons x y)))
-             (split1 (@ 
+             (split1 (at@ 
                       partially-eval-sgl parents-of-scouts-sgl
                       cons@ (lambda () '())))
              (a1 (car split1))
-             (split2 (@ partially-eval-sgl (cdr split1) cons@
+             (split2 (at@ partially-eval-sgl (cdr split1) cons@
                        (lambda () '())))
              (a2 (car split2))
-             (split3 (@ partially-eval-sgl (cdr split2) cons@
+             (split3 (at@ partially-eval-sgl (cdr split2) cons@
                        (lambda () '())))
              (a3 (car split3)))
         (map (lambda (subst)
@@ -2730,7 +2738,7 @@
              (lambda (old young)
                (any
                  (father old young)
-                 (exists (not-so-old)
+                 (_exists (not-so-old)
                    (all
                      (father old not-so-old)
                      (ancestor not-so-old young)))))))
@@ -2749,7 +2757,7 @@
     (letrec
         ((move
            (extend-relation (a1 a2 a3 a4)
-             (fact () 0 _ _ _)
+             (fact () 0 __ __ __)
              (relation (n a b c)
                (to-show n a b c)
                (project (n)
@@ -2788,7 +2796,7 @@
         (letrec
             ((move
                (extend-relation (a1 a2 a3 a4)
-                 (fact () 0 _ _ _)
+                 (fact () 0 __ __ __)
                  (relation (n a b c)
                    (to-show n a b c)
                    (project (n)
@@ -2841,7 +2849,7 @@
   
   (test-check 'unification-of-free-vars-4
     (solve 1 (x)
-      (exists (y)
+      (_exists (y)
         (all! (== y x) (== y 5) (== x y))))
     '(((x.0 5))))
   
@@ -2928,8 +2936,8 @@
   ; (test-check 'lv-elim-1
   ;   (reify
   ;     (let-lv (x z dummy)
-  ;       (@ 
-  ; 	(exists (y)
+  ;       (at@ 
+  ; 	(_exists (y)
   ; 	  (== `(,x ,z ,y) `(5 9 ,x)))
   ; 	(lambda@ (fk subst) subst)
   ; 	initial-fk
@@ -2940,8 +2948,8 @@
   ; (test-check 'lv-elim-2
   ;   (reify
   ;     (let-lv (x dummy)
-  ;       (@ 
-  ; 	(exists (y)
+  ;       (at@ 
+  ; 	(_exists (y)
   ; 	  (== `(,x ,y) `((5 ,y) ,7)))
   ; 	(lambda@ (fk subst) subst)
   ; 	initial-fk
@@ -2953,8 +2961,8 @@
   ; (test-check 'lv-elim-3
   ;   (reify
   ;     (let-lv (x v dummy)
-  ;       (@ 
-  ; 	(exists (y)
+  ;       (at@ 
+  ; 	(_exists (y)
   ; 	  (== x `(a b c ,v d)))
   ; 	(lambda@ (fk subst) subst)
   ; 	initial-fk
@@ -2966,7 +2974,7 @@
   ; (test-check 'lv-elim-4-1
   ;   (reify
   ;     (let-lv (x v b dummy)
-  ;       (@ 
+  ;       (at@ 
   ; 	(let-lv (y)
   ; 	  (== `(,b ,x ,y) `(,x ,y 1)))
   ; 	(lambda@ (fk subst) subst)
@@ -2977,9 +2985,9 @@
   ; ; (test-check 'lv-elim-4-2
   ; ;   (concretize
   ; ;     (let-lv (v b dummy)
-  ; ;       (@ 
-  ; ; 	(exists (x)
-  ; ; 	  (exists (y)
+  ; ;       (at@ 
+  ; ; 	(_exists (x)
+  ; ; 	  (_exists (y)
   ; ; 	    (== `(,b ,x ,y) `(,x ,y 1))))
   ; ; 	  (lambda@ (fk subst) subst)
   ; ; 	  initial-fk
@@ -2989,9 +2997,9 @@
   ; ; (test-check 'lv-elim-4-3
   ; ;   (concretize
   ; ;     (let-lv (v b dummy)
-  ; ;       (@ 
-  ; ; 	(exists (y)
-  ; ; 	  (exists (x)
+  ; ;       (at@ 
+  ; ; 	(_exists (y)
+  ; ; 	  (_exists (x)
   ; ; 	    (== `(,b ,x ,y) `(,x ,y 1))))
   ; ; 	  (lambda@ (fk subst) subst)
   ; ; 	  initial-fk
@@ -3001,8 +3009,8 @@
   ; (test-check 'lv-elim-4-4
   ;   (reify
   ;     (let-lv (v b dummy)
-  ;       (@ 
-  ; 	(exists (x y)
+  ;       (at@ 
+  ; 	(_exists (x y)
   ; 	    (== `(,b ,x ,y) `(,x ,y 1)))
   ; 	  (lambda@ (fk subst) subst)
   ; 	  initial-fk
@@ -3015,7 +3023,7 @@
   ; (test-check 'lv-elim-5-1
   ;   (reify
   ;     (let-lv (x v b dummy)
-  ;       (@ 
+  ;       (at@ 
   ; 	(let-lv (y)
   ; 	  (== `(,b ,y ,x) `(,x (1 ,x) ,y)))
   ; 	(lambda@ (fk subst) subst)
@@ -3027,9 +3035,9 @@
   ; ; (test-check 'lv-elim-5-2
   ; ;   (concretize
   ; ;     (let-lv (v b dummy)
-  ; ;       (@ 
-  ; ; 	(exists (x)
-  ; ; 	  (exists (y)
+  ; ;       (at@ 
+  ; ; 	(_exists (x)
+  ; ; 	  (_exists (y)
   ; ; 	  (== `(,b ,y ,x) `(,x (1 ,x) ,y))))
   ; ; 	(lambda@ (fk subst) subst)
   ; ; 	initial-fk
@@ -3039,9 +3047,9 @@
   ; ; (test-check 'lv-elim-5-3
   ; ;   (concretize
   ; ;     (let-lv (v b dummy)
-  ; ;       (@ 
-  ; ; 	(exists (y)
-  ; ; 	  (exists (x)
+  ; ;       (at@ 
+  ; ; 	(_exists (y)
+  ; ; 	  (_exists (x)
   ; ; 	  (== `(,b ,y ,x) `(,x (1 ,x) ,y))))
   ; ; 	(lambda@ (fk subst) subst)
   ; ; 	initial-fk
@@ -3051,8 +3059,8 @@
   ; (test-check 'lv-elim-5-4
   ;   (reify
   ;     (let-lv (v b dummy)
-  ;       (@ 
-  ; 	(exists (x y)
+  ;       (at@ 
+  ; 	(_exists (x y)
   ; 	  (== `(,b ,y ,x) `(,x (1 ,x) ,y)))
   ; 	(lambda@ (fk subst) subst)
   ; 	initial-fk
@@ -3094,19 +3102,19 @@
     )
   
     (cout nl "R1:" nl)
-    (pretty-print (solve 10 (x y) (R1 x y)))
+    (_pretty-print (solve 10 (x y) (R1 x y)))
     (cout nl "R2:" nl)
-    (pretty-print (solve 10 (x y) (R2 x y)))
+    (_pretty-print (solve 10 (x y) (R2 x y)))
     (cout nl "R1+R2:" nl)
-    (pretty-print 
+    (_pretty-print 
       (solve 10 (x y)
         ((extend-relation (a1 a2) R1 R2) x y)))
   
     (cout nl "Rinf:" nl)
-    (values (pretty-print (solve 5 (x y) (Rinf x y))))
+    (values (_pretty-print (solve 5 (x y) (Rinf x y))))
     (cout nl "Rinf+R1: Rinf starves R1:" nl)
     (values
-      (pretty-print 
+      (_pretty-print 
         (solve 5 (x y)
   	((extend-relation (a1 a2) Rinf R1) x y))))
   
@@ -3393,7 +3401,8 @@
          ((x.0 (succ (succ (succ (succ (succ zero)))))) (y.0 zero))))
   
     (newline)
-  ))
+  )
+10)
 
 ;; ========================================================================
 ;; type-inference example
@@ -3418,7 +3427,7 @@
 ;
 ; $Id: type-inference.scm,v 4.50 2005/02/12 00:05:01 oleg Exp $
 
-(display "Type inference") (newline)
+; (display "Type inference") (newline)
 
 ; Variation 1: use a subset of Scheme itself as the source language
 ; The following two functions translate between the source language
@@ -3529,12 +3538,12 @@
 
 (define env
   (relation (head-let g v t)
-    (exists (tq)
+    (_exists (tq)
       (all!!
 	(membero `(,v . ,tq) g)
 	(any
 	  (== tq `(non-generic ,t))
-	  (exists (type-gen)
+	  (_exists (type-gen)
 	    (all!!
 	      (== tq `(generic ,type-gen))
 	      (project (type-gen)
@@ -3584,7 +3593,7 @@
 (define app-rel
   (relation (g t rand rator)
     (to-show g `(app ,rator ,rand) t)
-    (exists (t-rand)
+    (_exists (t-rand)
       (all!! (!- g rator `(a--> ,t-rand ,t)) (!- g rand t-rand)))))
 
 (define fix-rel
@@ -3606,7 +3615,7 @@
   (relation (g v rand body t)
     (to-show g `(let ((,v ,rand)) ,body) t)
     (all!!
-      (exists (some-type) (!- g rand some-type))
+      (_exists (some-type) (!- g rand some-type))
       (!- `((,v generic ,(relation (head-let t-rand)
 			   (all!!
 			     (!- g rand t-rand)
@@ -3819,7 +3828,9 @@
         (t.0 a-->)
         (u.0 int)
         (v.0 int))))
-  #t))
+  #t)
+
+10)
 
 ;----------------------------------------------------------------------
 ; A different implementation of type environments
@@ -3834,7 +3845,7 @@
 ; !- as the argument. Actually, they will receive the 'self'-like
 ; argument. We need to explicitly find the fixpoint.
 
-(cout nl "Natural-deduction-like type inference" nl nl)
+; (cout nl "Natural-deduction-like type inference" nl nl)
 
 
 (define pint-rel
@@ -3893,7 +3904,7 @@
     (let ((!- (s!- s!-)))
       (relation (t rand rator)
 	(to-show `(app ,rator ,rand) t)
-	(exists (t-rand)
+	(_exists (t-rand)
 	  (all!! (!- rator `(a--> ,t-rand ,t)) (!- rand t-rand)))))))
 
 (define pfix-rel
@@ -3919,7 +3930,7 @@
       (relation (v rand body t)
 	(to-show `(let ((,v ,rand)) ,body) t)
 	(all!! 
-	  (exists (some-type) (!- rand some-type))
+	  (_exists (some-type) (!- rand some-type))
 	  (let* ((snew-!-
 		   (lambda (self)
 		     (extend-relation (v t)
@@ -4144,7 +4155,8 @@
         (t.0 a-->)
         (u.0 int)
         (v.0 int))))
-  #t))
+  #t)
+10)
 
 
 ; The code below uses the low-level function var? Every use of var?
@@ -4217,15 +4229,16 @@
     (equal?
       (solution (x) (name x '(115 108 101 101 112)))
       '((x.0 sleep))))
-  #t))
+  #t)
+10)
 
 ;; ========================================================================
 ;; typeclasses example
 ;; ========================================================================
 
-(newline)
-(display "Checking for dependency satisfaction in Haskell typeclasses")
-(newline)
+;(newline)
+;(display "Checking for dependency satisfaction in Haskell typeclasses")
+;(newline)
 ; Suppose we have the following Haskell class and instance declarations
 ;      class C a b c | a b -> c 
 ;      instance C a b c => C a (x,y,b) c
@@ -4261,10 +4274,10 @@
       (fails (project/no-check (c1 c2) (predicate (*equal? c1 c2)))))))
 
 ; This does loop
-'(define typeclass-C
-   (extend-relation (a b c) 
-     typeclass-C-instance-1
-     typeclass-C-instance-2))
+;'(define typeclass-C
+;   (extend-relation (a b c) 
+;     typeclass-C-instance-1
+;     typeclass-C-instance-2))
 
 (define typeclass-C/x
   (extend-relation-with-recur-limit 2 (a b c)
@@ -4359,13 +4372,15 @@
   (test-check "Typechecking (open world) f [x] int" 
               (solve 4 (a) (typeclass-F-instance-1 `(list ,a) 'int))
               '())					; meaning: does not typecheck!
+
+  10
   )
 
 ;; ========================================================================
 ;; zebra example
 ;; ========================================================================
 
-(display "Zebra") (newline)
+; (display "Zebra") (newline)
 
 ;   1. There are five houses in a row, each of a different color
 ;       and inhabited by men of different nationalities,
@@ -4392,9 +4407,9 @@
 
 (define memb 
   (relation (head-let item lst) 
-    (any (== lst `(,item . ,_))
-      (exists (rest)
-	(if-only (== lst `(,_ . ,rest)) (memb item rest))))))
+    (any (== lst `(,item . ,__))
+      (_exists (rest)
+	(if-only (== lst `(,__ . ,rest)) (memb item rest))))))
 
 
 (define next-to
@@ -4403,38 +4418,38 @@
 
 (define on-right
   (extend-relation (a0 a1 a2)
-    (fact (item1 item2) item1 item2 `(,item1 ,item2 . ,_))
+    (fact (item1 item2) item1 item2 `(,item1 ,item2 . ,__))
     (relation ((once item1) (once item2) rest)
-      (to-show item1 item2 `(,_ . ,rest))
+      (to-show item1 item2 `(,__ . ,rest))
       (on-right item1 item2 rest))))
         
 (define zebra
   (relation (head-let h)
     (if-only
       (all!
-        (== h `((norwegian ,_ ,_ ,_ ,_) ,_ (,_ ,_ milk ,_ ,_) ,_ ,_))
-        (memb `(englishman ,_ ,_ ,_ red) h)
-        (on-right `(,_ ,_ ,_ ,_ ivory) `(,_ ,_ ,_ ,_ green) h)
-        (next-to `(norwegian ,_ ,_ ,_ ,_) `(,_ ,_ ,_ ,_ blue) h)
-        (memb `(,_ kools ,_ ,_ yellow) h)
-        (memb `(spaniard ,_ ,_ dog ,_) h)
-        (memb `(,_ ,_ coffee ,_ green) h) 
-        (memb `(ukrainian ,_ tea ,_ ,_) h)
-        (memb `(,_ luckystrikes oj ,_ ,_) h)
-        (memb `(japanese parliaments ,_ ,_ ,_) h)
-        (memb `(,_ oldgolds ,_ snails ,_) h)
-        (next-to `(,_ ,_ ,_ horse ,_) `(,_ kools ,_ ,_ ,_) h)
-        (next-to `(,_ ,_ ,_ fox ,_) `(,_ chesterfields ,_ ,_ ,_) h)
+        (== h `((norwegian ,__ ,__ ,__ ,__) ,__ (,__ ,__ milk ,__ ,__) ,__ ,__))
+        (memb `(englishman ,__ ,__ ,__ red) h)
+        (on-right `(,__ ,__ ,__ ,__ ivory) `(,__ ,__ ,__ ,__ green) h)
+        (next-to `(norwegian ,__ ,__ ,__ ,__) `(,__ ,__ ,__ ,__ blue) h)
+        (memb `(,__ kools ,__ ,__ yellow) h)
+        (memb `(spaniard ,__ ,__ dog ,__) h)
+        (memb `(,__ ,__ coffee ,__ green) h) 
+        (memb `(ukrainian ,__ tea ,__ ,__) h)
+        (memb `(,__ luckystrikes oj ,__ ,__) h)
+        (memb `(japanese parliaments ,__ ,__ ,__) h)
+        (memb `(,__ oldgolds ,__ snails ,__) h)
+        (next-to `(,__ ,__ ,__ horse ,__) `(,__ kools ,__ ,__ ,__) h)
+        (next-to `(,__ ,__ ,__ fox ,__) `(,__ chesterfields ,__ ,__ ,__) h)
         )
-      (all (memb `(,_ ,_ water ,_ ,_) h)
-	(memb `(,_ ,_ ,_ zebra ,_) h)))))
+      (all (memb `(,__ ,__ water ,__ ,__) h)
+	(memb `(,__ ,__ ,__ zebra ,__) h)))))
 
-'(pretty-print
-  (time (let loop ((n 100000))
-              (cond
-                ((zero? n) 'done)
-                (else (solution (h) (zebra h))
-                  (loop (sub1 n)))))))
+;'(_pretty-print
+;  (time (let loop ((n 100000))
+;              (cond
+;                ((zero? n) 'done)
+;                (else (solution (h) (zebra h))
+;                  (loop (sub1 n)))))))
 
 (define (zebra-test)
 (test-check "Zebra"
@@ -4443,7 +4458,8 @@
           (ukrainian chesterfields tea horse blue)
           (englishman oldgolds milk snails red)
           (spaniard luckystrikes oj dog ivory)
-          (japanese parliaments coffee zebra green))))))
+          (japanese parliaments coffee zebra green)))))
+10)
 
 ; Sample timing (Pentium IV, 2GHz, 1GB RAM)
 ; (time (solution (h) ...))
@@ -4550,7 +4566,7 @@
 ; we need to check if terms  btree(T1) and  btree(T2) are consistent.
 ; Thus, to add btree(root(T1,T2)) to our database, we need to use
 ; the database itself to verify btree(T1) and btree(T2). Clearly,
-; we need a fixpoint. The need for the fixpoint exists no matter what is
+; we need a fixpoint. The need for the fixpoint _exists no matter what is
 ; the representation of the database -- a finite map or a relation.
 ; Prolog solves the fixpoint problem by making the database global
 ; and using mutations (similar to the way letrec is implemented in Scheme).
@@ -4884,7 +4900,9 @@
       (let ((kb1 (goal-fwd kb)))
 	(kb1 '(goal (root t1 t2)))))
     (cout (reify-subst '() subst) nl) #t)
-  #t))
+  #t)
+
+10)
 
 
 ; Again, we use Y because btree and mirror-axiom-eq-2 are recursive.
@@ -4921,7 +4939,7 @@
 	  (kb `(myeq ,b ,a))))
       (relation (a b)			; transitivity
 	(to-show `(myeq ,a ,b))
-	(exists (c)
+	(_exists (c)
 	  (all
 	    (kb `(myeq ,a ,c))
 	    (kb `(myeq ,c ,b)))))
@@ -4945,7 +4963,7 @@
 	(to-show `(myeq (mirror ,a) ,b))
 	(all
 	  (trace-vars 'mirror (a b))
-	  (exists (c)
+	  (_exists (c)
 	    (all (kb `(myeq ,b (mirror ,c)))
 	         (kb `(myeq ,a ,c)))))))))
 
@@ -5010,7 +5028,7 @@
 (define-syntax un@ ; uncurry 
   (syntax-rules ()
     ((_ proc arg1 ...)
-      (lambda (arg1 ...) (@ proc arg1 ...)))))
+      (lambda (arg1 ...) (at@ proc arg1 ...)))))
 
 ; The initial assumptions: just the btrii
 ;(define init-kb (Y btrii))
@@ -5091,7 +5109,8 @@
       ;(solve 1 (x) (kb `(myeq (root t1 t2)  (mirror ,x))))
       (solve 1 (x) (kb `(myeq ,x (mirror (root t1 t2)))))
       )))
-)
+
+10)
 
 ;; ========================================================================
 ;; pure bin arith example
@@ -5108,7 +5127,7 @@
 ; aka: division as relation.
 ; The function divo below is a KANREN relation between four binary numerals
 ; n, m, q, and r such that the following holds
-;	exists r. 0<=r<m, n = q*m + r
+;	_exists r. 0<=r<m, n = q*m + r
 ;
 ; The relation 'divo' encompasses all four operations of arithmetics:
 ; we can use (divo x y z zero) to multiply and divide and
@@ -5224,11 +5243,11 @@
 
 ; Not a zero
 (define pos
-  (fact () `(,_ . ,_)))
+  (fact () `(,__ . ,__)))
 
 ; At least two
 (define gt1
-  (fact () `(,_ ,_ . ,_)))
+  (fact () `(,__ ,__ . ,__)))
 
 ; compare the lengths of two numerals
 ; (<ol a b) 
@@ -5238,9 +5257,9 @@
 ; We also make sure that 'n' is a well-formed number.
 (define <ol
   (extend-relation (n m)
-    (fact () '() `(,_ . ,_))
-    (fact () '(1) `(,_ ,_ . ,_))
-    (relation (x y x1 y1) (to-show `(,_ ,x1 . ,x) `(,_ ,y1 . ,y))
+    (fact () '() `(,__ . ,__))
+    (fact () '(1) `(,__ ,__ . ,__))
+    (relation (x y x1 y1) (to-show `(,__ ,x1 . ,x) `(,__ ,y1 . ,y))
       (<ol `(,x1 . ,x) `(,y1 . ,y)))))
 
 ; holds if both a and b have the same number of bits, i.e., they are zero
@@ -5249,7 +5268,7 @@
   (extend-relation (n m)
     (fact () '() '())
     (fact () '(1) '(1))
-    (relation (x y x1 y1) (to-show `(,_ ,x1 . ,x) `(,_ ,y1 . ,y))
+    (relation (x y x1 y1) (to-show `(,__ ,x1 . ,x) `(,__ ,y1 . ,y))
       (=ol `(,x1 . ,x) `(,y1 . ,y)))))
 
 ; (<ol3 p1 p n m) holds iff
@@ -5259,16 +5278,16 @@
   (relation (head-let p1 p n m)
     (any
       (all (== p1 '()) (pos p))
-      (exists (p1r pr)
+      (_exists (p1r pr)
 	(all
-	  (== p1 `(,_ . ,p1r))
-	  (== p  `(,_ . ,pr))
+	  (== p1 `(,__ . ,p1r))
+	  (== p  `(,__ . ,pr))
 	  (any-interleave
-	    (exists (mr)
-	      (all (== n '()) (== m  `(,_ . ,mr)) 
+	    (_exists (mr)
+	      (all (== n '()) (== m  `(,__ . ,mr)) 
 		(<ol3 p1r pr n mr)))
-	    (exists (nr)
-	      (all (== n  `(,_ . ,nr)) 
+	    (_exists (nr)
+	      (all (== n  `(,__ . ,nr)) 
 		(<ol3 p1r pr nr m)))
 	    ))))))
 
@@ -5282,13 +5301,13 @@
       (all (== p '()) (== n '()) (== m '()))
       (all (== p '()) (== n '()) (== m '(1)))
       (all (== p '()) (== n '(1)) (== m '()))
-      (exists (pr mr)
+      (_exists (pr mr)
 	(all
-	  (== p `(,_ . ,pr)) (== n '()) (== m `(,_ . ,mr))
+	  (== p `(,__ . ,pr)) (== n '()) (== m `(,__ . ,mr))
 	  (<ol2 pr '() mr)))
-      (exists (pr nr)
+      (_exists (pr nr)
 	(all
-	  (== p `(,_ . ,pr)) (== n `(,_ . ,nr))
+	  (== p `(,__ . ,pr)) (== n `(,__ . ,nr))
 	  (<ol2 pr nr m)))
       )))
 
@@ -5319,57 +5338,56 @@
 ; one. So, we have already two cases to consider per each number: The
 ; number has no bits, and the number has some bits.
 
-'
-(define full-adder
-  (extend-relation (carry-in a b r)
-    (fact (a) 0 a '() a) 		; 0 + a + 0 = a
-    (relation (b)			; 0 + 0 + b = b
-      (to-show 0 '() b b)
-      (pos b))
-    (relation (head-let '1 a '() r)	; 1 + a + 0 = 0 + a + 1
-      (full-adder 0 a '(1) r))
-    (relation (head-let '1 '() b r)	; 1 + 0 + b = 0 + 1 + b
-      (all (pos b)
-	(full-adder 0 '(1) b r)))
-
-    ; The following three relations are needed
-    ; to make all numbers well-formed by construction,
-    ; that is, to make sure the higher-order bit is one.
-    (relation (head-let carry-in '(1) '(1) r)	; c + 1 + 1 >= 2
-      (exists (r1 r2)
-	(all (== r `(,r1 ,r2))
-	     (half-adder carry-in 1 1 r1 r2))))
-
-    ; cin + 1 + (2*br + bb) = (2*rr + rb) where br > 0 and so is rr > 0
-    (relation (carry-in bb br rb rr)
-      (to-show carry-in '(1) `(,bb . ,br) `(,rb . ,rr))
-      (all
-	(pos br) (pos rr)
-	(exists (carry-out)
-	  (all
-	    (half-adder carry-in 1 bb rb carry-out)
-	    (full-adder carry-out '() br rr)))))
-
-    ; symmetric case for the above
-    (relation (head-let carry-in a '(1) r)
-      (all
-	(gt1 a) (gt1 r)
-	(full-adder carry-in '(1) a r)))
-
-    ; carry-in + (2*ar + ab) + (2*br + bb) 
-    ; = (carry-in + ab + bb) (mod 2)
-    ; + 2*(ar + br + (carry-in + ab + bb)/2)
-    ; The cases of ar= 0 or br = 0 have already been handled.
-    ; So, now we require ar >0 and br>0. That implies that rr>0.
-    (relation (carry-in ab ar bb br rb rr)
-      (to-show carry-in `(,ab . ,ar) `(,bb . ,br) `(,rb . ,rr))
-      (all
-	(pos ar) (pos br) (pos rr)
-	(exists (carry-out)
-	  (all
-	    (half-adder carry-in ab bb rb carry-out)
-	    (full-adder carry-out ar br rr))))
-    )))
+; (define full-adder
+;   (extend-relation (carry-in a b r)
+;     (fact (a) 0 a '() a) 		; 0 + a + 0 = a
+;     (relation (b)			; 0 + 0 + b = b
+;       (to-show 0 '() b b)
+;       (pos b))
+;     (relation (head-let '1 a '() r)	; 1 + a + 0 = 0 + a + 1
+;       (full-adder 0 a '(1) r))
+;     (relation (head-let '1 '() b r)	; 1 + 0 + b = 0 + 1 + b
+;       (all (pos b)
+; 	(full-adder 0 '(1) b r)))
+; 
+;     ; The following three relations are needed
+;     ; to make all numbers well-formed by construction,
+;     ; that is, to make sure the higher-order bit is one.
+;     (relation (head-let carry-in '(1) '(1) r)	; c + 1 + 1 >= 2
+;       (_exists (r1 r2)
+; 	(all (== r `(,r1 ,r2))
+; 	     (half-adder carry-in 1 1 r1 r2))))
+; 
+;     ; cin + 1 + (2*br + bb) = (2*rr + rb) where br > 0 and so is rr > 0
+;     (relation (carry-in bb br rb rr)
+;       (to-show carry-in '(1) `(,bb . ,br) `(,rb . ,rr))
+;       (all
+; 	(pos br) (pos rr)
+; 	(_exists (carry-out)
+; 	  (all
+; 	    (half-adder carry-in 1 bb rb carry-out)
+; 	    (full-adder carry-out '() br rr)))))
+; 
+;     ; symmetric case for the above
+;     (relation (head-let carry-in a '(1) r)
+;       (all
+; 	(gt1 a) (gt1 r)
+; 	(full-adder carry-in '(1) a r)))
+; 
+;     ; carry-in + (2*ar + ab) + (2*br + bb) 
+;     ; = (carry-in + ab + bb) (mod 2)
+;     ; + 2*(ar + br + (carry-in + ab + bb)/2)
+;     ; The cases of ar= 0 or br = 0 have already been handled.
+;     ; So, now we require ar >0 and br>0. That implies that rr>0.
+;     (relation (carry-in ab ar bb br rb rr)
+;       (to-show carry-in `(,ab . ,ar) `(,bb . ,br) `(,rb . ,rr))
+;       (all
+; 	(pos ar) (pos br) (pos rr)
+; 	(_exists (carry-out)
+; 	  (all
+; 	    (half-adder carry-in ab bb rb carry-out)
+; 	    (full-adder carry-out ar br rr))))
+;     )))
 
 ; After we have checked that  both summands have some bits, and so we
 ; can decompose them the least-significant bit and the other ones, it appears
@@ -5384,7 +5402,7 @@
 ; uninstantiated variables. We don't know which are the input and which
 ; are the output. So, if we keep only the last relation for the
 ; case of positive summands, and try to
-;	(exists (x) (full-adder 0 (1 . ()) x (0 1 . ())))
+;	(_exists (x) (full-adder 0 (1 . ()) x (0 1 . ())))
 ; we will see x bound to (1 0) -- an invalid number. So, our adder, when
 ; asked to subtract numbers, gave a bad number. And it would give us
 ; a bad number in all the cases when we use it to subtract numbers and
@@ -5433,9 +5451,63 @@
 ; version would be minimal and without loss of speed.
 
 ; The following full-adder* is almost the same as full-adder above.
-'
-(define full-adder*
-  (extend-relation (carry-in a b r)
+; 
+; (define full-adder*
+;   (extend-relation (carry-in a b r)
+; ;     (fact (a) 0 a '() a) 		; 0 + a + 0 = a
+; ;     (relation (b)			; 0 + 0 + b = b
+; ;       (to-show 0 '() b b)
+; ;       (pos b))
+; ;     (relation (head-let '1 a '() r)	; 1 + a + 0 = 0 + a + 1
+; ;       (full-adder 0 a '(1) r))
+; ;     (relation (head-let '1 '() b r)	; 1 + 0 + b = 0 + 1 + b
+; ;       (all (pos b)
+; ; 	(full-adder 0 '(1) b r)))
+; 
+;     ; The following three relations are needed
+;     ; to make all numbers well-formed by construction,
+;     ; that is, to make sure the higher-order bit is one.
+;     (relation (head-let carry-in '(1) '(1) r)	; c + 1 + 1 >= 2
+;       (_exists (r1 r2)
+; 	(all (== r `(,r1 ,r2))
+; 	     (half-adder carry-in 1 1 r1 r2))))
+; 
+;     ; cin + 1 + (2*br + bb) = (2*rr + rb) where br > 0 and so is rr > 0
+;     (relation (carry-in bb br rb rr)
+;       (to-show carry-in '(1) `(,bb . ,br) `(,rb . ,rr))
+;       (all
+; 	(pos br) (pos rr)
+; 	(_exists (carry-out)
+; 	  (all
+; 	    (half-adder carry-in 1 bb rb carry-out)
+; 	    (full-adder carry-out '() br rr)))))
+; 
+;     ; symmetric case for the above
+;     (relation (head-let carry-in a '(1) r)
+;       (all
+; 	(gt1 a) (gt1 r)
+; 	(full-adder* carry-in '(1) a r)))
+; 
+;     ; carry-in + (2*ar + ab) + (2*br + bb) 
+;     ; = (carry-in + ab + bb) (mod 2)
+;     ; + 2*(ar + br + (carry-in + ab + bb)/2)
+;     ; The cases of ar= 0 or br = 0 have already been handled.
+;     ; So, now we require ar >0 and br>0. That implies that rr>0.
+;     (relation (carry-in ab ar bb br rb rr)
+;       (to-show carry-in `(,ab . ,ar) `(,bb . ,br) `(,rb . ,rr))
+;       (all
+; 	(pos ar) (pos br) (pos rr)
+; 	(_exists (carry-out)
+; 	  (all
+; 	    (half-adder carry-in ab bb rb carry-out)
+; 	    (full-adder* carry-out ar br rr))))
+;     )))
+
+; This driver handles the trivial cases and then invokes full-adder*
+; coupled with the recursively enumerating generator.
+
+; (define full-adder
+;   (extend-relation (carry-in a b r)
 ;     (fact (a) 0 a '() a) 		; 0 + a + 0 = a
 ;     (relation (b)			; 0 + 0 + b = b
 ;       (to-show 0 '() b b)
@@ -5445,73 +5517,18 @@
 ;     (relation (head-let '1 '() b r)	; 1 + 0 + b = 0 + 1 + b
 ;       (all (pos b)
 ; 	(full-adder 0 '(1) b r)))
-
-    ; The following three relations are needed
-    ; to make all numbers well-formed by construction,
-    ; that is, to make sure the higher-order bit is one.
-    (relation (head-let carry-in '(1) '(1) r)	; c + 1 + 1 >= 2
-      (exists (r1 r2)
-	(all (== r `(,r1 ,r2))
-	     (half-adder carry-in 1 1 r1 r2))))
-
-    ; cin + 1 + (2*br + bb) = (2*rr + rb) where br > 0 and so is rr > 0
-    (relation (carry-in bb br rb rr)
-      (to-show carry-in '(1) `(,bb . ,br) `(,rb . ,rr))
-      (all
-	(pos br) (pos rr)
-	(exists (carry-out)
-	  (all
-	    (half-adder carry-in 1 bb rb carry-out)
-	    (full-adder carry-out '() br rr)))))
-
-    ; symmetric case for the above
-    (relation (head-let carry-in a '(1) r)
-      (all
-	(gt1 a) (gt1 r)
-	(full-adder* carry-in '(1) a r)))
-
-    ; carry-in + (2*ar + ab) + (2*br + bb) 
-    ; = (carry-in + ab + bb) (mod 2)
-    ; + 2*(ar + br + (carry-in + ab + bb)/2)
-    ; The cases of ar= 0 or br = 0 have already been handled.
-    ; So, now we require ar >0 and br>0. That implies that rr>0.
-    (relation (carry-in ab ar bb br rb rr)
-      (to-show carry-in `(,ab . ,ar) `(,bb . ,br) `(,rb . ,rr))
-      (all
-	(pos ar) (pos br) (pos rr)
-	(exists (carry-out)
-	  (all
-	    (half-adder carry-in ab bb rb carry-out)
-	    (full-adder* carry-out ar br rr))))
-    )))
-
-; This driver handles the trivial cases and then invokes full-adder*
-; coupled with the recursively enumerating generator.
-
-'
-(define full-adder
-  (extend-relation (carry-in a b r)
-    (fact (a) 0 a '() a) 		; 0 + a + 0 = a
-    (relation (b)			; 0 + 0 + b = b
-      (to-show 0 '() b b)
-      (pos b))
-    (relation (head-let '1 a '() r)	; 1 + a + 0 = 0 + a + 1
-      (full-adder 0 a '(1) r))
-    (relation (head-let '1 '() b r)	; 1 + 0 + b = 0 + 1 + b
-      (all (pos b)
-	(full-adder 0 '(1) b r)))
-    (relation (head-let carry-in a b r)
-      (any-interleave
-	; Note that we take advantage of the fact that if
-	; a + b = r and length(b) <= length(a) then length(a) <= length(r)
-	(all (<ol a `(,_ . ,r))		; or, length(a) < length(2*r)
-	  (any (<ol b a) (=ol b a))
-	  (full-adder* carry-in a b r))
-	; commutative case, length(a) < length(b)
-	(all (<ol b `(,_ . ,r))
-	  (<ol a b)
-	  (full-adder* carry-in a b r))
-	))))
+;     (relation (head-let carry-in a b r)
+;       (any-interleave
+; 	; Note that we take advantage of the fact that if
+; 	; a + b = r and length(b) <= length(a) then length(a) <= length(r)
+; 	(all (<ol a `(,_ . ,r))		; or, length(a) < length(2*r)
+; 	  (any (<ol b a) (=ol b a))
+; 	  (full-adder* carry-in a b r))
+; 	; commutative case, length(a) < length(b)
+; 	(all (<ol b `(,_ . ,r))
+; 	  (<ol a b)
+; 	  (full-adder* carry-in a b r))
+; 	))))
 
 ; There is the third way of doing the addition, using
 ; all-interleave and any-interleave.
@@ -5548,7 +5565,7 @@
     ; to make all numbers well-formed by construction,
     ; that is, to make sure the higher-order bit is one.
     (relation (head-let carry-in '(1) '(1) r)	; c + 1 + 1 >= 2
-      (exists (r1 r2)
+      (_exists (r1 r2)
 	(all (== r `(,r1 ,r2))
 	     (half-adder carry-in 1 1 r1 r2))))
 
@@ -5557,7 +5574,7 @@
       (to-show carry-in '(1) `(,bb . ,br) `(,rb . ,rr))
       (all
 	(pos br) (pos rr)
-	(exists (carry-out)
+	(_exists (carry-out)
 	  (all-interleave
 	    (half-adder carry-in 1 bb rb carry-out)
 	    (full-adder carry-out '() br rr)))))
@@ -5577,7 +5594,7 @@
       (to-show carry-in `(,ab . ,ar) `(,bb . ,br) `(,rb . ,rr))
       (all
 	(pos ar) (pos br) (pos rr)
-	(exists (carry-out)
+	(_exists (carry-out)
 	  (all-interleave
 	    (half-adder carry-in ab bb rb carry-out)
 	    (full-adder carry-out ar br rr))))
@@ -5594,22 +5611,21 @@
     (a++o y out x)))
 
 
-' 
-(define <o  ; n < m iff exists x >0 such that n + x = m
-  (relation (head-let n m)
-    (exists (x) (all (pos x) (a++o n x m)))))
+;(define <o  ; n < m iff _exists x >0 such that n + x = m
+;  (relation (head-let n m)
+;    (_exists (x) (all (pos x) (a++o n x m)))))
 
 ; The following is an optimization: it is easier to test for the
 ; length of two numbers. If one number has fewer bits than the other number,
 ; the former is clearly shorter (provided that the numbers are well-formed,
 ; that is, the higher-order bit is one). So we don't need to go through
 ; the trouble of subtracting them.
-(define <o  ; n < m iff exists x >0 such that n + x = m
+(define <o  ; n < m iff _exists x >0 such that n + x = m
   (relation (head-let n m)
     (any-interleave
       (<ol n m)
       (all (=ol n m)
-	(exists (x) (all (pos x) (a++o n x m)))))))
+	(_exists (x) (all (pos x) (a++o n x m)))))))
 
 
 ; n * m = p
@@ -5623,7 +5639,7 @@
 
       ; (2*nr) * m = 2*(nr*m), m>0 (the case of m=0 is taken care of already)
       ; nr > 0, otherwise the number is ill-formed
-      (exists (nr pr)
+      (_exists (nr pr)
 	(all
 	  (gt1 m)
 	  (== n `(0 . ,nr))
@@ -5632,9 +5648,9 @@
 	  (**o nr m pr)))
 
       ; The symmetric case to the above: m is even, n is odd
-      (exists (mr pr)
+      (_exists (mr pr)
 	(all
-	  (== n `(1 ,_ . ,_))		; n is odd and n > 1
+	  (== n `(1 ,__ . ,__))		; n is odd and n > 1
 	  (== m `(0 . ,mr))
 	  (== p `(0 . ,pr))
 	  (pos mr) (pos pr)
@@ -5645,9 +5661,9 @@
       ; the result is certainly greater than 1.
       ; we note that m > 0 and so 2*(nr*m) < 2*(nr*m) + m
       ; and (floor (log2 (nr*m))) < (floor (log2 (2*(nr*m) + m)))
-      (exists (nr p1)
+      (_exists (nr p1)
 	(all
-	  (== m `(1 ,_ . ,_))		; m is odd and n > 1
+	  (== m `(1 ,__ . ,__))		; m is odd and n > 1
 	  (== n `(1 . ,nr))
 	  (pos nr) (gt1 p)
 	  (<ol3 p1 p n m)
@@ -5661,44 +5677,44 @@
 ; This is divo from pure-arithm.scm
 ; it still works -- but very slow for some operations
 ; because <o takes linear time...
-'
-(define divo
-  (relation (head-let n m q r)
-    (any-interleave
-      (all (== q '()) (== r n) (<o n m))      ; if n < m, then q=0, n=r
-      (all (== n m) (== q '(1)) (== r '()))  ; n = 1*n + 0
-      (exists (p)
-	(all (<o m n) (<o r m)  (a++o p r n) ;(trace-vars 1 (p r n))
-	  (**o q m p))))))
+
+;(define divo
+;  (relation (head-let n m q r)
+;    (any-interleave
+;      (all (== q '()) (== r n) (<o n m))      ; if n < m, then q=0, n=r
+;      (all (== n m) (== q '(1)) (== r '()))  ; n = 1*n + 0
+;      (_exists (p)
+;	(all (<o m n) (<o r m)  (a++o p r n) ;(trace-vars 1 (p r n))
+;	  (**o q m p))))))
 
 ; A faster divo algorithm
-'
-(define divo
-  (relation (head-let n m q r)
-    (any-interleave
-      (all (== r n) (== q '()) (<ol n m) (<o n m)) ; m has more digits than n: q=0,n=r
-      (all
-	(<ol m n)			; n has mode digits than m
-					; q is not zero, n>0, so q*m <= n,
-	(exists (p)			; definitely q*m < 2*n
-	  (all (<o r m) (<ol p `(0 . ,n))
-	    (a++o p r n) ;(trace-vars 1 (p r n))
-	    (**o q m p)))
-	)
-      ; n has the same number of digits than m
-      (all (== q '(1)) (=ol n m) (a++o r m n) (<o r m))
-      (all (== q '()) (== r n) (=ol n m) (<o n m))  ; if n < m, then q=0, n=r
-      )))
-; 	(any-interleave
-; 	  (all (== m '(1)) (== r '()) (== n q)) ; n = n*1 + 0
-; 	  ; For even divisors:
-; 	  ; n = (2*m)*q + r => (n - r) is even and (n-r)/2 = m*q
-; 	  (exists (p m1)
-; 	    (all (== m `(0 . ,m1))
-; 	         (== m1 `(_, . ,_))
-; 	         (**o m1 q p)
-; 	         (a--o n r `(0 . ,p))))
-
+; 
+; (define divo
+;   (relation (head-let n m q r)
+;     (any-interleave
+;       (all (== r n) (== q '()) (<ol n m) (<o n m)) ; m has more digits than n: q=0,n=r
+;       (all
+; 	(<ol m n)			; n has mode digits than m
+; 					; q is not zero, n>0, so q*m <= n,
+; 	(_exists (p)			; definitely q*m < 2*n
+; 	  (all (<o r m) (<ol p `(0 . ,n))
+; 	    (a++o p r n) ;(trace-vars 1 (p r n))
+; 	    (**o q m p)))
+; 	)
+;       ; n has the same number of digits than m
+;       (all (== q '(1)) (=ol n m) (a++o r m n) (<o r m))
+;       (all (== q '()) (== r n) (=ol n m) (<o n m))  ; if n < m, then q=0, n=r
+;       )))
+; ; 	(any-interleave
+; ; 	  (all (== m '(1)) (== r '()) (== n q)) ; n = n*1 + 0
+; ; 	  ; For even divisors:
+; ; 	  ; n = (2*m)*q + r => (n - r) is even and (n-r)/2 = m*q
+; ; 	  (_exists (p m1)
+; ; 	    (all (== m `(0 . ,m1))
+; ; 	         (== m1 `(__, . ,__))
+; ; 	         (**o m1 q p)
+; ; 	         (a--o n r `(0 . ,p))))
+; 
 
 ; A faster and more refutationally complete divo algorithm
 ; Again, divo n m q r 
@@ -5745,7 +5761,7 @@
 					; Note that m is L-instantiated here
 	(<o r m)			; r is L-instantiated
 	(pos q)				; q must be positive then
-	(exists (n1 n2 q1 q2 q2m q2mr rr r1)
+	(_exists (n1 n2 q1 q2 q2m q2mr rr r1)
 	  (all-interleave
 	    (split n r n1 n2)
 	    (split q r q1 q2)
@@ -5775,17 +5791,17 @@
 
 (define split
   (extend-relation-interleave (n r n1 n2)
-    (fact () '() _ '() '())
+    (fact () '() __ '() '())
     (fact (b n) `(0 ,b . ,n) '() `(,b . ,n) '())
     (fact (n) `(1 . ,n) '() n '(1))
     (relation (b n r n1)
-      (to-show `(0 ,b . ,n) `(,_ . ,r) n1 '())
+      (to-show `(0 ,b . ,n) `(,__ . ,r) n1 '())
       (split `(,b . ,n) r n1 '()))
     (relation (n r n1)
-      (to-show `(1 . ,n) `(,_ . ,r) n1 '(1))
+      (to-show `(1 . ,n) `(,__ . ,r) n1 '(1))
       (split n r n1 '()))
     (relation (b n r n1 n2)
-      (to-show `(,b . ,n) `(,_ . ,r) n1 `(,b . ,n2))
+      (to-show `(,b . ,n) `(,__ . ,r) n1 `(,b . ,n2))
       (all (pos n2)
 	(split n r n1 n2)))
 ))
@@ -5839,20 +5855,20 @@
   (relation (head-let n b q)
     (any-interleave
       (all (== n '(1)) (== q '()))  ; 1 = b^0
-      (all (gt1 n) (== q '(1)) (split n b '(1) _))
-      (exists (q1 b2)			; n = (2^k)^(2*q) + r
+      (all (gt1 n) (== q '(1)) (split n b '(1) __))
+      (_exists (q1 b2)			; n = (2^k)^(2*q) + r
 	(all-interleave                 ;   = (2^(2*k))^q + r
 	     (== q `(0 . ,q1))
 	     (pos q1)
 	     (<ol b n)
 	     (r-append b `(1 . ,b) b2)
 	     (exp2 n b2 q1)))
-      (exists (q1 n1 b2)		; n = (2^k)^(2*q+1) + r
+      (_exists (q1 n1 b2)		; n = (2^k)^(2*q+1) + r
 	(all-interleave 		; n/(2^k) = (2^(2*k))^q + r'
 	     (== q `(1 . ,q1))
 	     (pos q1)
 	     (pos n1)
-	     (split n b n1 _)
+	     (split n b n1 __)
 	     (r-append b `(1 . ,b) b2)
 	     (exp2 n1 b2 q1)))
       )))
@@ -5862,12 +5878,12 @@
 ; nq = n^q where n is L-instantiated and q is fully instantiated
 (define repeated-mul
   (extend-relation (n q nq)
-    (fact () `(,_ . ,_) '() '(1))
+    (fact () `(,__ . ,__) '() '(1))
     (fact (n) n '(1) n)
     (relation (head-let n q nq)
       (all
 	(gt1 q)
-	(exists (q1 nq1)
+	(_exists (q1 nq1)
 	  (all
 	    (a++o q1 '(1) q)
 	    (repeated-mul n q1 nq1)
@@ -5889,19 +5905,19 @@
       (all (== b '()) (pos q) (== r n))         ; n = 0^q + n, q>0
       ; in the rest, n is longer than b
       (all (== b '(0 1))		; b = 2
-	   (exists (n1)
+	   (_exists (n1)
 	     (all
 	       (pos n1)
-	       (== n `(,_ ,_ . ,n1))    ; n is at least 4
+	       (== n `(,__ ,__ . ,n1))    ; n is at least 4
 	       (exp2 n '() q)		; that will L-instantiate n and n1
-	       (split n n1 _ r))))
+	       (split n n1 __ r))))
       ; the general case
       (all
-	(any (== b '(1 1)) (== b `(,_ ,_ ,_ . ,_))) ; b >= 3
+	(any (== b '(1 1)) (== b `(,__ ,__ ,__ . ,__))) ; b >= 3
 	(<ol b n)			; b becomes L-instantiated
 	                                ; If b was L-instantiated, the previous
 					; goal had only *one* answer
-	(exists (bw nw nw1 bw1 ql1 ql qh qdh qd bql bqd bq bq1)
+	(_exists (bw nw nw1 bw1 ql1 ql qh qdh qd bql bqd bq bq1)
 	 (all
 	  (exp2 b '() bw1)
 	  (a++o bw1 '(1) bw)
@@ -5909,7 +5925,7 @@
 					; sure q will be L-instatiated
 					; Now, we can use b and q to bound n
 					; |n|-1 < |b|*(q+1)
-	  (exists (q1 bwq1)
+	  (_exists (q1 bwq1)
 	    (all
 	      (a++o q '(1) q1)
 	      (**o bw q1 bwq1)		; |b|*(q+1)
@@ -5917,11 +5933,11 @@
 	  (exp2 n '() nw1)		; n becomes L-instantiated
 					; Now we have only finite number of ans
 	  (a++o nw1 '(1) nw)
-	  (divo nw bw ql1 _)		; low boundary on q:
+	  (divo nw bw ql1 __)		; low boundary on q:
 	  (a++o ql '(1) ql1)		; |n| = |b|(ql+1) + c
 	  (any (== q ql) (<ol ql q))	; Tighten the estimate for q
 	  (repeated-mul b ql bql)	; bql = b^ql
-	  (divo nw bw1 qh _)		; upper boundary on q-1
+	  (divo nw bw1 qh __)		; upper boundary on q-1
 	  (a++o ql qdh qh)
 	  (a++o ql qd q)
 	  (any (== qd qdh) (<o qd qdh)) ; qd is bounded
@@ -5958,7 +5974,7 @@
 (test (x) (a++o x (build 3) (build 29)))
 (test-check "all numbers that sum to 4"
   (solve 10 (w)
-    (exists (y z)
+    (_exists (y z)
       (all (a++o y z (build 4))
 	(project (y z) (== `(,(trans y) ,(trans z)) w)))))
    '(((w.0 (4 0)))
@@ -5998,7 +6014,7 @@
 (test-check "strong commutativity"
   (solve 5 (a b c)
     (all (a++o a b c)
-    (exists (x y z)
+    (_exists (x y z)
       (all!
 	(a++o x y z)
 	(== x b)
@@ -6074,14 +6090,14 @@
   '())
 (test-check 'multiplication-all-1
   (solve 7 (w) 
-    (exists (y z) (all (**o y z (build 6))
+    (_exists (y z) (all (**o y z (build 6))
 		    (project (y z) (== `(,(trans y) ,(trans z)) w)))))
   '(((w.0 (1 6))) ((w.0 (6 1))) ((w.0 (2 3)))  ((w.0 (3 2)))))
 
 ; Only one answer
 (test-check 'multiplication-all-2
   (solve 7 (w) 
-    (exists (x)
+    (_exists (x)
       (all (**o (build 3) (build 2) x)
 	(project (x) (== (trans x) w)))))
   '(((w.0 6))))
@@ -6190,14 +6206,14 @@
 
 
 (test-check 'divo-1
-  (solution (x) (divo (build 4) (build 2) x _))
+  (solution (x) (divo (build 4) (build 2) x __))
   '((x.0 (0 1))))
-(test-check 'div-fail-1 (test (x) (divo (build 4) (build 0) x _)) '())
+(test-check 'div-fail-1 (test (x) (divo (build 4) (build 0) x __)) '())
 (test-check 'divo-2
-  (solution (x) (divo (build 4) (build 3) x _))
+  (solution (x) (divo (build 4) (build 3) x __))
   '((x.0 (1))))
 (test-check 'divo-3
-  (solution (x) (divo (build 4) (build 4) x _))
+  (solution (x) (divo (build 4) (build 4) x __))
   '((x.0 (1))))
 (test-check 'divo-4
   (solution (x y) (divo (build 4) (build 5) x y))
@@ -6205,13 +6221,13 @@
 
 
 (test-check 'divo-33-1
-  (solution (x) (divo (build 33) (build 3) x _))
+  (solution (x) (divo (build 33) (build 3) x __))
   `((x.0 ,(build 11))))
 (test-check 'divo-33-2
-  (solution (x) (divo (build 33) x (build 11) _))
+  (solution (x) (divo (build 33) x (build 11) __))
   `((x.0 ,(build 3))))
 (test-check 'divo-33-3
-  (solution (x) (divo x (build 3) (build 11) _))
+  (solution (x) (divo x (build 3) (build 11) __))
   `((x.0 ,(build 33))))
 (test-check 'divo-33-5
   (solution (x y) (divo (build 33) (build 5) x y))
@@ -6229,21 +6245,21 @@
   '())
 
 
-(test (x) (divo x (build 5) _ (build 4)))
+(test (x) (divo x (build 5) __ (build 4)))
 (test (x) (divo x (build 5) (build 3) (build 4)))
-(test (x) (divo x _ (build 3) (build 4)))
-(test-check 'div-fail-2 (test (x) (divo (build 5) x (build 7) _)) '())
+(test (x) (divo x __ (build 3) (build 4)))
+(test-check 'div-fail-2 (test (x) (divo (build 5) x (build 7) __)) '())
 
 (test-check "all numbers such as 5/Z = 1"
   (solve 7 (w) 
-    (exists (z) (all (divo (build 5) z (build 1) _)
+    (_exists (z) (all (divo (build 5) z (build 1) __)
 		    (project (z) (== `(,(trans z)) w)))))
   '(((w.0 (5))) ((w.0 (3))) ((w.0 (4)))))
 
 (test-check "all inexact factorizations of 12"
   (set-equal?
    (solve 100 (w) 
-    (exists (m q r n)
+    (_exists (m q r n)
       (all 
 	(== n (build 12))
 	(<o m n)
@@ -6451,11 +6467,13 @@
     ((n.0 (0 1)) (b.0 (1)) (r.0 (1)))
     ((n.0 (1 0 0 1)) (b.0 (0 1)) (r.0 (1)))
     ((n.0 (0 0 1 1 1)) (b.0 (1 1)) (r.0 (1))))
-))
+)
+10)
 
 ;; ========================================================================
 
 (define (all-tests)
+  (eigen-test)
   (term-tests)
   (kanren-tests)
   (ti-tests)

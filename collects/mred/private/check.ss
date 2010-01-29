@@ -117,7 +117,7 @@
       (unless (and (integer? i) (exact? i) (not (negative? i)))
 	(raise-type-error (who->name who) 
 			  (if false-ok?
-			      "non-negative exact integeror #f" 
+			      "non-negative exact integer or #f" 
 			      "non-negative exact integer" )
 			  i))))
 

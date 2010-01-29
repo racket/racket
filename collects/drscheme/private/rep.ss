@@ -1618,6 +1618,7 @@ TODO
         (reset-regions (list (list (last-position) (last-position))))
         (set-unread-start-point (last-position))
         (set-insertion-point (last-position))
+        (set! indenting-limit (last-position))
         (set-allow-edits #f)
         (set! repl-header-end #f)
         (end-edit-sequence))
@@ -1652,6 +1653,12 @@ TODO
         (send context enable-evaluation)
         (end-edit-sequence)
         (clear-undos))
+      
+      (define indenting-limit 0)
+      (define/override (get-limit n) 
+        (cond
+          [(< n indenting-limit) 0]
+          [else indenting-limit]))
       
       ;; avoid calling paragraph-start-position very often.
       (define repl-header-end #f)

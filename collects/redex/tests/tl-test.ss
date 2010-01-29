@@ -1,9 +1,9 @@
 (module tl-test scheme
   (require "../reduction-semantics.ss"
            "test-util.ss"
-           (only-in "matcher.ss" make-bindings make-bind)
+           (only-in "../private/matcher.ss" make-bindings make-bind)
            scheme/match
-           "struct.ss")
+           "../private/struct.ss")
   
   (reset-count)
   
