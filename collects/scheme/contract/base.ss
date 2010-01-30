@@ -8,6 +8,7 @@
          "private/misc.ss"
          "private/provide.ss"
          "private/guts.ss"
+         "private/legacy.ss"
          "private/ds.ss"
          "private/opt.ss")
 
@@ -26,6 +27,10 @@
              check-unary-between/c)
  (all-from-out "private/provide.ss")
  (all-from-out "private/base.ss")
+ (except-out (all-from-out "private/legacy.ss")
+             unpack-blame
+             unpack-source
+             unpack-name)
  (except-out (all-from-out "private/guts.ss")
              check-flat-contract
              check-flat-named-contract))

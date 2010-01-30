@@ -1,7 +1,6 @@
 #lang scheme/base
 
-(provide unpack-blame
-         mangle-id mangle-id-for-maker
+(provide mangle-id mangle-id-for-maker
          build-struct-names
          lookup-struct-info
          nums-up-to
@@ -127,23 +126,6 @@
       (if (and source location)
           (string-append source ":" location)
           (or location source)))))
-
-;; unpack-blame : any/c -> any/c
-;; Constructs an S-expression for use in the blame error messages.
-;; A variable reference represents a module or top-level context.
-;; Other representations of blame are returned as-is.
-(define (unpack-blame blame)
-  (if (variable-reference? blame)
-      (let ([rp (variable-reference->resolved-module-path blame)])
-        (cond
-         [(not rp) 
-          'top-level]
-         [else
-          (let ([resolved (resolved-module-path-name rp)])
-            (cond
-             [(symbol? resolved) `(quote ,resolved)]
-             [else `(file ,(path->string resolved))]))]))
-      blame))
 
 (define build-struct-names
   (lambda (name-stx fields omit-sel? omit-set? srcloc-stx)

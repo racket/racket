@@ -18,7 +18,7 @@ improve method arity mismatch contract violation error messages?
          unstable/srcloc
          unstable/location
          "guts.ss"
-         "helpers.ss")
+         "legacy.ss")
 
 (define-syntax-parameter current-contract-region
   (λ (stx) #'(quote-module-path)))
@@ -30,19 +30,20 @@ improve method arity mismatch contract violation error messages?
        (apply-contract c v pos neg name loc))]
     [(_ c v pos neg)
      (syntax/loc stx
-       (apply-contract c v pos neg #f (build-source-location #f)))]
-    [(_ a-contract-e to-check pos-blame-e neg-blame-e src-info-e)
-     #|
+       (apply-contract c
+                       v
+                       (unpack-blame pos)
+                       (unpack-blame neg)
+                       #f
+                       (build-source-location #f)))]
+    [(_ c v pos neg src)
      (syntax/loc stx
-       (let* ([info src-info-e])
-         (contract a-contract-e
-                   to-check
-                   pos-blame-e
-                   neg-blame-e
-                   (unpack-source info)
-                   (unpack-name info))))
-     |#
-     (raise-syntax-error 'contract "upgrade to new calling convention" stx)]))
+       (apply-contract c
+                       v
+                       (unpack-blame pos)
+                       (unpack-blame neg)
+                       (unpack-name src)
+                       (unpack-source src)))]))
 
 (define (apply-contract c v pos neg name loc)
   (let* ([c (coerce-contract 'contract c)]
@@ -91,34 +92,6 @@ improve method arity mismatch contract violation error messages?
                                      "~e contained ~e; "
                                      "all arguments: ~e")
                       v-name v x args)])))))
-
-(define (unpack-source info)
-  (cond
-   [(syntax? info) (build-source-location info)]
-   [(list? info)
-    (let ([loc (list-ref info 0)])
-      (if (syntax? (srcloc-source loc))
-        (struct-copy
-         srcloc loc
-         [source
-          (resolved-module-path-name
-           (module-path-index-resolve
-            (syntax-source-module
-             (srcloc-source loc))))])
-        loc))]
-   [else
-    (error 'contract
-           "expected a syntax object or list of two elements, got: ~e"
-           info)]))
-
-(define (unpack-name info)
-  (cond
-   [(syntax? info) (and (identifier? info) (syntax-e info))]
-   [(list? info) (list-ref info 1)]
-   [else
-    (error 'contract
-           "expected a syntax object or list of two elements, got: ~e"
-           info)]))
 
 (define-syntax (recursive-contract stx)
   (syntax-case stx ()
