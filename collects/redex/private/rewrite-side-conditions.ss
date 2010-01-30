@@ -62,7 +62,7 @@
         [(variable-prefix a ...) (expected-exact 'variable-prefix 1 term)]
         [variable-prefix (expected-arguments 'variable-prefix term)]
         [hole term]
-        [(name x y) #`(name #,(loop #'x) #,(loop #'y))]
+        [(name x y) #`(name x #,(loop #'y))]
         [(name x ...) (expected-exact 'name 2 term)]
         [name (expected-arguments 'name term)]
         [(in-hole a b) #`(in-hole #,(loop #'a) #,(loop #'b))]

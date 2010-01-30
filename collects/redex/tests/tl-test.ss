@@ -52,6 +52,8 @@
   
   (test (pair? ((redex-match grammar M) '(1 1)))
         #t)
+  
+  (test (pair? (redex-match grammar (name not-an-nt_subscript 1) 1)) #t)
 
   ;; next 3: test naming of subscript-less non-terminals
   (test (pair? (redex-match grammar (M M) (term (1 1)))) #t)
