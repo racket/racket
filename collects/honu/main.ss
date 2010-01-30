@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require "private/honu-typed-scheme.ss"
+         ;; "private/honu.ss"
          "private/macro.ss")
 
 (provide (rename-out (#%dynamic-honu-module-begin #%module-begin)

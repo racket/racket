@@ -6,6 +6,7 @@
                      syntax/name
                      syntax/define
                      syntax/parse
+                     syntax/parse/experimental
                      scheme/splicing
                      "contexts.ss"
                      "util.ss"
@@ -67,6 +68,7 @@
              (and (positive? (string-length str))
                   (memq (string-ref str 0) sym-chars)))))))
 
+;; returns a transformer or #f
 (define (get-transformer stx)
   ;; if its an identifier and bound to a transformer return it
   (define (bound-transformer stx)
@@ -366,16 +368,46 @@ x(2)
                          [pattern (type:id name:id (#%parens args ...) body:block . rest)
                                   #:with result #'(define (name args ...)
                                                     body.result)])
-    (define-syntax-class expr
-                         [pattern f])
+
+    (define (syntax-object-position mstart end)
+      (if (stx-null? end)
+          (length (syntax->list mstart))
+        (let loop ([start mstart]
+                   [count 0])
+          ;; (printf "Checking ~a vs ~a\n" start end)
+          (cond
+           [(stx-null? start) (raise-syntax-error 'honu-macro "the `rest' syntax returned by a honu macro did not return objects at the same syntactic nesting level as the head of the pattern. this is probably because it returned syntax from some inner nesting level such as (if (x + 1 2) more-stuff) where `rest' was (+ 1 2) instead of `more-stuff'" end mstart)]
+           [(eq? (stx-car start) (stx-car end)) count]
+           ;; [(equal? start end) count]
+           [else (loop (stx-cdr start) (add1 count))]))))
+
+    (define-primitive-splicing-syntax-class (expr)
+      #:attrs (result)
+      #:description "expr"
+      (lambda (stx fail)
+        (cond
+          [(stx-null? stx) (fail)]
+          [(get-transformer stx) => (lambda (transformer)
+                                      (let-values ([(used rest)
+                                                    (transformer stx context)])
+                                        (list rest (syntax-object-position stx rest)
+                                              used)))]
+
+          [else (syntax-case stx ()
+                  [(f . rest) (list #'rest 1 #'f)])])))
+
+    #;
+    (define-splicing-syntax-class expr
+                         [pattern (~seq f ...) #:with result])
 
     (define-splicing-syntax-class call
                                   #:literals (honu-comma)
                          [pattern (~seq e:expr (#%parens (~seq arg:ternary (~optional honu-comma)) ...))
-                                  #:with call #'(e arg.result ...)])
+                                  #:with call #'(e.result arg.result ...)])
     (define-splicing-syntax-class expression-last
                          [pattern (~seq call:call) #:with result #'call.call]
                          [pattern (~seq x:number) #:with result #'x]
+                         [pattern (~seq e:expr) #:with result #'e.result]
                          )
 
     (define-syntax-rule (define-infix-operator name next [operator reducer] ...)
@@ -524,7 +556,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
   (lambda (stx ctx)
     (define (parse-complete-block stx)
       ;; (printf "Parsing complete block ~a\n" (syntax->datum stx))
-      (with-syntax ([(exprs ...) (parse-block stx ctx)])
+      (with-syntax ([(exprs ...) (parse-block stx the-expression-block-context)])
         #'(begin exprs ...))
       #;
       (let-values ([(a b)
@@ -556,7 +588,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
       [(_ condition:paren-expr on-true:block else on-false:block . rest)
        ;; (printf "used if with else\n")
        (let ([result #'(if condition.expr on-true.line on-false.line)])
-         (expression-result ctx result #'rest))]
+         (expression-result ctx result (syntax/loc #'rest rest)))]
       [(_ condition:paren-expr on-true:block . rest)
        ;; (printf "used if with no else\n")
        (let ([result #'(when condition.expr on-true.line)])
@@ -656,6 +688,8 @@ if (foo){
   (syntax-case stx ()
     [(_) #'(begin (void))]
     [(_ . body) (let-values ([(code rest) (parse-block-one/2 #'body
+                                                             the-expression-context
+                                                             #;
                                                              the-top-block-context)])
                   ;; (printf "Rest is ~a\n" (syntax->datum rest))
                   (with-syntax ([code code]
