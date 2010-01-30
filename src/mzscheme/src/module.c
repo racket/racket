@@ -199,6 +199,9 @@ READ_ONLY static Scheme_Object *empty_self_modidx;
 READ_ONLY static Scheme_Object *empty_self_modname;
 
 THREAD_LOCAL_DECL(static Scheme_Bucket_Table *starts_table);
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+THREAD_LOCAL_DECL(static Scheme_Bucket_Table *place_local_modpath_table);
+#endif
 
 /* FIXME eventually theses initial objects should be shared, but work required */
 THREAD_LOCAL_DECL(static Scheme_Env *initial_modules_env);
@@ -408,6 +411,10 @@ void scheme_init_module_resolver(void)
 
   REGISTER_SO(starts_table);
   starts_table = scheme_make_weak_equal_table();
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+  REGISTER_SO(place_local_modpath_table);
+  place_local_modpath_table = scheme_make_weak_equal_table();
+#endif
 
   config = scheme_current_config();
 
@@ -2870,10 +2877,36 @@ Scheme_Object *scheme_intern_resolved_module_path_worker(Scheme_Object *o)
   return return_value;
 }
 
+#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+static Scheme_Object *scheme_intern_local_resolved_module_path_worker(Scheme_Object *o)
+{
+  Scheme_Object *rmp;
+  Scheme_Bucket *b;
+  Scheme_Object *return_value;
+
+  rmp = scheme_alloc_small_object();
+  rmp->type = scheme_resolved_module_path_type;
+  SCHEME_PTR_VAL(rmp) = o;
+
+  scheme_start_atomic();
+  b = scheme_bucket_from_table(place_local_modpath_table, (const char *)rmp);
+  scheme_end_atomic_no_swap();
+  if (!b->val)
+    b->val = scheme_true;
+
+  return_value = (Scheme_Object *)HT_EXTRACT_WEAK(b->key);
+
+  return return_value;
+}
+#endif
+
 Scheme_Object *scheme_intern_resolved_module_path(Scheme_Object *o)
 {
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   void *return_payload;
+  if (SCHEME_SYMBOLP(o) && SCHEME_SYM_UNINTERNEDP(o)) {
+    return scheme_intern_local_resolved_module_path_worker(o);
+  }
   return_payload = scheme_master_fast_path(1, o);
   return (Scheme_Object*) return_payload;
 #endif
@@ -4399,7 +4432,7 @@ void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env)
 
   save_runstack = scheme_push_prefix(menv, m->prefix,
 				     m->me->src_modidx, menv->link_midx,
-				     0, menv->phase);
+				     0, menv->phase, NULL);
 
   p = scheme_current_thread;
   save_phase_shift = p->current_phase_shift;
@@ -4782,7 +4815,8 @@ static void eval_exptime(Scheme_Object *names, int count,
     save_runstack = scheme_push_prefix(genv, rp,
                                        (shift ? genv->module->me->src_modidx : NULL), 
                                        (shift ? genv->link_midx : NULL), 
-                                       1, genv->phase);
+                                       1, genv->phase,
+                                       NULL);
 
     if (is_simple_expr(expr)) {
       vals = _scheme_eval_linked_expr_multi_wp(expr, scheme_current_thread);

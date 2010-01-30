@@ -46,18 +46,12 @@
 (define (f+dderiv a)
   (cons '+ (map dderiv a)))
  
-(put '+ 'dderiv f+dderiv)    ; install procedure on the property list
- 
 (define (f-dderiv a)
   (cons '- (map dderiv a)))
- 
-(put '- 'dderiv f-dderiv)    ; install procedure on the property list
  
 (define (*dderiv a)
   (list '* (cons '* a)
         (cons '+ (map dderiv-aux a))))
- 
-(put '* 'dderiv *dderiv)    ; install procedure on the property list
  
 (define (/dderiv a)
   (list '-
@@ -70,8 +64,6 @@
                     (cadr a)
                     (cadr a)
                     (dderiv (cadr a))))))
- 
-(put '/ 'dderiv /dderiv)    ; install procedure on the property list
  
 (define (dderiv a)
   (cond
@@ -89,6 +81,14 @@
     (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))
     (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))
     (dderiv '(+ (* 3 x x) (* a x x) (* b x) 5))))
+ 
+(put '+ 'dderiv f+dderiv)    ; install procedure on the property list
+ 
+(put '- 'dderiv f-dderiv)    ; install procedure on the property list
+ 
+(put '* 'dderiv *dderiv)    ; install procedure on the property list
+ 
+(put '/ 'dderiv /dderiv)    ; install procedure on the property list
  
 ;;; call:  (run)
  

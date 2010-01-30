@@ -1,0 +1,31 @@
+
+(declare (usual-integrations))
+
+(define-syntax time
+  (syntax-rules ()
+    ((_ expr)
+     (with-timings
+      (lambda () expr)
+      (lambda (run-time gc-time real-time)
+        (display "cpu: ")
+        (display run-time)
+        (display " real: ")
+        (display real-time)
+        (display " gc: ")
+        (display gc-time)
+        (newline))))))
+
+(define-integrable (bitwise-and a b)
+  (if (and (fix:fixnum? a)
+           (fix:fixnum? b))
+      (fix:and a b)
+      0))
+(define-integrable (bitwise-ior a b)
+  (if (and (fix:fixnum? a)
+           (fix:fixnum? b))
+      (fix:or a b)
+      0))
+(define-integrable (bitwise-not a)
+  (if (fix:fixnum? a)
+      (fix:not a)
+      0))

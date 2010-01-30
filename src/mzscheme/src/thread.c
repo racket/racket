@@ -41,7 +41,7 @@
 #include "schpriv.h"
 #include "schmach.h"
 #include "schgc.h"
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
 # include "future.h"
 #endif
 #ifndef PALMOS_STUFF
@@ -232,7 +232,6 @@ THREAD_LOCAL_DECL(static Scheme_Object *thread_swap_out_callbacks);
 THREAD_LOCAL_DECL(static Scheme_Object *recycle_cell);
 THREAD_LOCAL_DECL(static Scheme_Object *maybe_recycle_cell);
 THREAD_LOCAL_DECL(static int recycle_cc_count);
-THREAD_LOCAL_DECL(static mz_jmp_buf main_init_error_buf);
 
 #ifdef MZ_PRECISE_GC
 extern long GC_get_memory_use(void *c);
@@ -851,17 +850,20 @@ Scheme_Object *scheme_get_current_inspector()
   return scheme_get_param(c, MZCONFIG_INSPECTOR);
 }
   
-void scheme_init_parameterization(Scheme_Env *env)
+void scheme_init_parameterization()
 {
-  Scheme_Object *v;
-  Scheme_Env *newenv;
-
   REGISTER_SO(scheme_exn_handler_key);
   REGISTER_SO(scheme_parameterization_key);
   REGISTER_SO(scheme_break_enabled_key);
   scheme_exn_handler_key = scheme_make_symbol("exnh");
   scheme_parameterization_key = scheme_make_symbol("paramz");
   scheme_break_enabled_key = scheme_make_symbol("break-on?");
+}
+
+void scheme_init_paramz(Scheme_Env *env)
+{
+  Scheme_Object *v;
+  Scheme_Env *newenv;
 
   v = scheme_intern_symbol("#%paramz");
   newenv = scheme_primitive_module(v, env);
@@ -2199,7 +2201,7 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
 
     process->suspend_break = 1; /* until start-up finished */
 
-    process->error_buf = &main_init_error_buf;
+    process->error_buf = NULL;
 
     thread_swap_callbacks = scheme_null;
     thread_swap_out_callbacks = scheme_null;
@@ -2295,6 +2297,9 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     process->next->prev = process;
     scheme_first_thread = process;
   }
+
+  if (!buffer_init_size) /* => before place init */
+    buffer_init_size = INIT_TB_SIZE;
 
   {
     Scheme_Object **tb;
@@ -4127,7 +4132,7 @@ void scheme_thread_block(float sleep_time)
   /* Check scheduled_kills early and often. */
   check_scheduled_kills();
 
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
   scheme_check_future_work();
 #endif
 
@@ -5878,7 +5883,7 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
   if (syncing->result) {
     /* Apply wrap functions to the selected evt: */
     Scheme_Object *o, *l, *a, *to_call = NULL, *args[1];
-    int to_call_is_cont = 0;
+    int to_call_is_handle = 0;
 
     o = evt_set->argv[syncing->result - 1];
     if (SAME_TYPE(SCHEME_TYPE(o), scheme_channel_syncer_type)) {
@@ -5905,7 +5910,7 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
 	  if (SCHEME_BOXP(a) || SCHEME_PROCP(a)) {
 	    if (SCHEME_BOXP(a)) {
 	      a = SCHEME_BOX_VAL(a);
-	      to_call_is_cont = 1;
+	      to_call_is_handle = 1;
 	    }
 	    to_call = a;
 	  } else if (SAME_TYPE(scheme_thread_suspend_type, SCHEME_TYPE(a))
@@ -5918,9 +5923,9 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
 	if (to_call) {
 	  args[0] = o;
 	  
-	  /* If to_call is still a wrap-evt (not a cont-evt),
+	  /* If to_call is still a wrap-evt (not a handle-evt),
 	     then set the config one more time: */
-	  if (!to_call_is_cont) {
+	  if (!to_call_is_handle) {
 	    scheme_push_break_enable(&cframe, 0, 0);
 	    tailok = 0;
 	  }
@@ -5929,7 +5934,7 @@ static Scheme_Object *do_sync(const char *name, int argc, Scheme_Object *argv[],
 	    return _scheme_tail_apply(to_call, 1, args);
 	  } else {
 	    o = scheme_apply(to_call, 1, args);
-	    if (!to_call_is_cont)
+	    if (!to_call_is_handle)
 	      scheme_pop_break_enable(&cframe, 1);
 	    return o;
 	  }
@@ -7346,7 +7351,7 @@ static void get_ready_for_GC()
 {
   start_this_gc_time = scheme_get_process_milliseconds();
 
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
   scheme_future_block_until_gc();
 #endif
 
@@ -7418,7 +7423,7 @@ static void done_with_GC()
   end_this_gc_time = scheme_get_process_milliseconds();
   scheme_total_gc_time += (end_this_gc_time - start_this_gc_time);
 
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
   scheme_future_continue_after_gc();
 #endif
 }

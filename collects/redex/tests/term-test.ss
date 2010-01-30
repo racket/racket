@@ -1,6 +1,6 @@
 (module term-test scheme
-  (require "term.ss"
-           "matcher.ss"
+  (require "../private/term.ss"
+           "../private/matcher.ss"
            "test-util.ss")
   
   (reset-count)

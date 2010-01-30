@@ -42,7 +42,7 @@
 
 #include "schpriv.h"
 #include "schmach.h"
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
 # include "future.h"
 #endif
 #ifdef MZ_USE_DWARF_LIBUNWIND
@@ -1968,10 +1968,14 @@ static int no_sync_change(Scheme_Object *obj, int fuel)
       fuel = no_sync_change(branch->tbranch, fuel);
       return no_sync_change(branch->fbranch, fuel);
     }
-  case scheme_toplevel_type:
   case scheme_local_type:
+    if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+      return 0;
+    else
+      return fuel - 1;
+  case scheme_toplevel_type:
   case scheme_local_unbox_type:
-    return fuel - 1;
+      return fuel - 1;
   default:
     if (t > _scheme_values_types_)
       return fuel - 1;
@@ -2274,8 +2278,13 @@ static int is_non_gc(Scheme_Object *obj, int depth)
   case scheme_unclosed_procedure_type:
     break;
 
-  case scheme_quote_syntax_type:
   case scheme_local_type:
+    if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+      return 0;
+    return 1;
+    break;
+    
+  case scheme_quote_syntax_type:
   case scheme_local_unbox_type:
     return 1;
     break;
@@ -2316,12 +2325,16 @@ static int is_relatively_constant_and_avoids_r1(Scheme_Object *obj, Scheme_Objec
 
   t = SCHEME_TYPE(obj);
   if (SAME_TYPE(t, scheme_local_type)) {
-    /* Must have clearing or other-clears flag set */
-    Scheme_Type t2 = SCHEME_TYPE(wrt);
-    if (t2 == scheme_local_type) {
-      /* If different local vars, then order doesn't matter */
-      if (SCHEME_LOCAL_POS(wrt) != SCHEME_LOCAL_POS(obj))
-        return 1;
+    /* Must have clearing, other-clears, or flonum flag set */
+    if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_FLONUM)
+      return 0;
+    else {
+      Scheme_Type t2 = SCHEME_TYPE(wrt);
+      if (t2 == scheme_local_type) {
+        /* If different local vars, then order doesn't matter */
+        if (SCHEME_LOCAL_POS(wrt) != SCHEME_LOCAL_POS(obj))
+          return 1;
+      }
     }
   }
 
@@ -2557,7 +2570,7 @@ extern int g_print_prims;
 #include "jit_ts.c"
 
 /* Support for intercepting direct calls to primitives: */
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
 # define mz_prepare_direct_prim(n) mz_prepare(n)
 # define mz_finishr_direct_prim(reg, proc) (jit_pusharg_p(reg), (void)mz_finish(proc))
 # define mz_direct_only(p) /* skip this arg, so that total count <= 3 args */
@@ -2676,7 +2689,7 @@ static int generate_pause_for_gc_and_retry(mz_jit_state *jitter,
                                            int gc_reg, /* must not be JIT_R1 */
                                            GC_CAN_IGNORE jit_insn *refagain)
 {
-#ifdef FUTURES_ENABLED
+#ifdef MZ_USE_FUTURES
   GC_CAN_IGNORE jit_insn *refslow = 0, *refpause;
   int i;
 
@@ -3905,10 +3918,12 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
     if (num_rands) {
       /* Save rator where GC can see it */
       Scheme_Type t;
-      t = SCHEME_TYPE((alt_rands 
-                       ? alt_rands[1+args_already_in_place] 
-                       : app->args[1+args_already_in_place]));
-      if ((num_rands == 1) && (SAME_TYPE(scheme_local_type, t)
+      arg = (alt_rands 
+             ? alt_rands[1+args_already_in_place] 
+             : app->args[1+args_already_in_place]);
+      t = SCHEME_TYPE(arg);
+      if ((num_rands == 1) && ((SAME_TYPE(scheme_local_type, t)
+                                && ((SCHEME_GET_LOCAL_FLAGS(arg) != SCHEME_LOCAL_FLONUM)))
 			       || (t >= _scheme_values_types_))) {
 	/* App of something complex to a local variable. We
 	   can move the proc directly to V1. */
@@ -4217,8 +4232,9 @@ static int can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely
       Scheme_App3_Rec *app = (Scheme_App3_Rec *)obj;
       if (!is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_BINARY_INLINED, unsafely, 0))
         return 0;
-      if (IS_NAMED_PRIM(app->rator, "unsafe-f64vector-ref")
-          || IS_NAMED_PRIM(app->rator, "unsafe-flvector-ref")) {
+      if ((SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)
+          && (IS_NAMED_PRIM(app->rator, "unsafe-f64vector-ref")
+              || IS_NAMED_PRIM(app->rator, "unsafe-flvector-ref"))) {
         if (is_unboxing_immediate(app->rand1, 1)
             && is_unboxing_immediate(app->rand1, 2)) {
           return 1;

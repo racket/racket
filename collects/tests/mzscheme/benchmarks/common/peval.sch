@@ -627,7 +627,7 @@
 
 (let ((input (with-input-from-file "input.txt" read)))
   (time
-   (let loop ((n 20) (v 0))
+   (let loop ((n 60) (v 0))
      (if (zero? n)
          v
          (loop (- n 1) (test (if input 0 17)))))))

@@ -6,6 +6,7 @@
                      syntax/name
                      syntax/define
                      syntax/parse
+                     syntax/parse/experimental
                      scheme/splicing
                      "contexts.ss"
                      "util.ss"
@@ -22,17 +23,18 @@
 ;; macro for defining literal tokens that can be used in macros
 (define-syntax-rule (define-literal name ...)
   (begin
-    (define-syntax name (lambda (stx)
-                        (raise-syntax-error 'name
-                                            "this is a literal and cannot be used outside a macro")))
-    ...))
+   (define-syntax name (lambda (stx)
+                         (raise-syntax-error 'name
+                                             "this is a literal and cannot be used outside a macro")))
+   ...))
 
 (define-literal honu-return)
 (define-literal semicolon)
 (define-literal honu-+ honu-* honu-/ honu-- honu-|| honu-%
                 honu-= honu-+= honu--= honu-*= honu-/= honu-%=
                 honu-&= honu-^= honu-\|= honu-<<= honu->>= honu->>>=
-                honu->> honu-<< honu->>> honu-< honu-> honu-<= honu->=)
+                honu->> honu-<< honu->>> honu-< honu-> honu-<= honu->=
+                honu-? honu-: honu-comma)
 
 ;; (define-syntax (\; stx) (raise-syntax-error '\; "out of context" stx))
 
@@ -43,9 +45,9 @@
 
 
 (define-values (struct:honu-trans make-honu-trans honu-trans? honu-trans-ref honu-trans-set!)
-               (make-struct-type 'honu-trans #f 1 0 #f 
-                                 (list (list prop:honu-transformer #t))
-                                 (current-inspector) 0))
+  (make-struct-type 'honu-trans #f 1 0 #f
+                    (list (list prop:honu-transformer #t))
+                    (current-inspector) 0))
 
 (define (make-honu-transformer proc)
   (unless (and (procedure? proc)
@@ -66,6 +68,7 @@
              (and (positive? (string-length str))
                   (memq (string-ref str 0) sym-chars)))))))
 
+;; returns a transformer or #f
 (define (get-transformer stx)
   ;; if its an identifier and bound to a transformer return it
   (define (bound-transformer stx)
@@ -355,6 +358,7 @@
 x(2)
 |#
 
+
 (define (parse-block-one/2 stx context)
   (define (parse-one stx context)
     (define-syntax-class block
@@ -364,28 +368,63 @@ x(2)
                          [pattern (type:id name:id (#%parens args ...) body:block . rest)
                                   #:with result #'(define (name args ...)
                                                     body.result)])
-    (define-syntax-class expr
-                         [pattern f])
+
+    (define (syntax-object-position mstart end)
+      (if (stx-null? end)
+          (length (syntax->list mstart))
+        (let loop ([start mstart]
+                   [count 0])
+          ;; (printf "Checking ~a vs ~a\n" start end)
+          (cond
+           [(stx-null? start) (raise-syntax-error 'honu-macro "the `rest' syntax returned by a honu macro did not return objects at the same syntactic nesting level as the head of the pattern. this is probably because it returned syntax from some inner nesting level such as (if (x + 1 2) more-stuff) where `rest' was (+ 1 2) instead of `more-stuff'" end mstart)]
+           [(eq? (stx-car start) (stx-car end)) count]
+           ;; [(equal? start end) count]
+           [else (loop (stx-cdr start) (add1 count))]))))
+
+    (define-primitive-splicing-syntax-class (expr)
+      #:attrs (result)
+      #:description "expr"
+      (lambda (stx fail)
+        (cond
+          [(stx-null? stx) (fail)]
+          [(get-transformer stx) => (lambda (transformer)
+                                      (let-values ([(used rest)
+                                                    (transformer stx context)])
+                                        (list rest (syntax-object-position stx rest)
+                                              used)))]
+
+          [else (syntax-case stx ()
+                  [(f . rest) (list #'rest 1 #'f)])])))
+
+    #;
+    (define-splicing-syntax-class expr
+                         [pattern (~seq f ...) #:with result])
 
     (define-splicing-syntax-class call
-                         [pattern (~seq e:expr (#%parens arg:expression-1))
-                                  #:with call #'(e arg.result)])
+                                  #:literals (honu-comma)
+                         [pattern (~seq e:expr (#%parens (~seq arg:ternary (~optional honu-comma)) ...))
+                                  #:with call #'(e.result arg.result ...)])
     (define-splicing-syntax-class expression-last
                          [pattern (~seq call:call) #:with result #'call.call]
                          [pattern (~seq x:number) #:with result #'x]
+                         [pattern (~seq e:expr) #:with result #'e.result]
                          )
 
     (define-syntax-rule (define-infix-operator name next [operator reducer] ...)
-      (define-splicing-syntax-class name
-                                    #:literals (operator ...)
-                                    [pattern (~seq (~var left next) operator (~var right name))
-                                             #:with result (reducer #'left.result #'right.result)]
-                                    ...
-                                    [pattern (~seq (~var exp next))
-                                             #:with result #'exp.result]
-                                    ))
+      (begin
+       (define-syntax-class operator-class
+         #:literals (operator ...)
+         (pattern operator #:attr func reducer)
+         ...)
+       (define-splicing-syntax-class name
+         (pattern (~seq (~var left next)
+                        (~optional (~seq (~var op operator-class) (~var right name))))
+                  #:with result
+                  (cond [(attribute right)
+                         ((attribute op.func) #'left.result #'right.result)]
+                        [else
+                         #'left.result])))))
 
-    ;; TODO: maybe just have a precedence macro that creates all these constructs
     ;;   (infix-operators ([honu-* ...]
     ;;                     [honu-- ...])
     ;;                    ([honu-+ ...]
@@ -413,23 +452,6 @@ x(2)
                                                      (syntax->list #'(operator-stuff ...)))])
              #'(begin
                  result ...)))]))
-
-    #;
-    (infix-operators expression-1 expression-last
-                       ([honu-+ (syntax-lambda (left right)
-                                    #'(+ left right))]
-                        [honu-- (syntax-lambda (left right)
-                                               #'(- left right))])
-                       ([honu-* (syntax-lambda (left right)
-                                               #'(* left right))]
-                        [honu-/ (syntax-lambda (left right)
-                                               #'(/ left right))]))
-    
-
-    (define-syntax-class expression-top
-                         [pattern (e:expression-1 semicolon . rest)
-                                  #:with result #'e.result])
-
 
     ;; infix operators in the appropriate precedence level
     ;; things defined lower in the table have a higher precedence.
@@ -462,10 +484,25 @@ x(2)
          [honu-% (sl (left right) #'(modulo left right))]
          [honu-/ (sl (left right) #'(/ left right))])))
 
+    (define-splicing-syntax-class ternary
+      #:literals (honu-? honu-:)
+      [pattern (~seq condition:expression-1 (~optional (~seq honu-? on-true:ternary
+                                                             honu-: on-false:ternary)))
+               #:with result
+               (cond [(attribute on-true)
+                      #'(if condition.result on-true.result on-false.result)]
+                     [else #'condition.result])])
+
+    (define-syntax-class expression-top
+                         #:literals (semicolon)
+      [pattern (e:ternary semicolon . rest)
+               #:with result #'e.result])
+
     ;; (printf "~a\n" (syntax-class-parse function stx))
     (syntax-parse stx
       [function:function (values #'function.result #'function.rest)]
       [expr:expression-top (values #'expr.result #'expr.rest)]
+      #;
       [(x:number . rest) (values #'x #'rest)]
       ))
   (cond
@@ -519,7 +556,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
   (lambda (stx ctx)
     (define (parse-complete-block stx)
       ;; (printf "Parsing complete block ~a\n" (syntax->datum stx))
-      (with-syntax ([(exprs ...) (parse-block stx ctx)])
+      (with-syntax ([(exprs ...) (parse-block stx the-expression-block-context)])
         #'(begin exprs ...))
       #;
       (let-values ([(a b)
@@ -551,7 +588,7 @@ Then, in the pattern above for 'if', 'then' would be bound to the following synt
       [(_ condition:paren-expr on-true:block else on-false:block . rest)
        ;; (printf "used if with else\n")
        (let ([result #'(if condition.expr on-true.line on-false.line)])
-         (expression-result ctx result #'rest))]
+         (expression-result ctx result (syntax/loc #'rest rest)))]
       [(_ condition:paren-expr on-true:block . rest)
        ;; (printf "used if with no else\n")
        (let ([result #'(when condition.expr on-true.line)])
@@ -643,11 +680,16 @@ if (foo){
 (define-syntax (honu-top stx)
   (raise-syntax-error #f "interactive use is not yet supported"))
 
+(define (display2 x y)
+  (printf "~a ~a" x y))
+
 (define-syntax (honu-unparsed-begin stx)
   ;; (printf "honu unparsed begin: ~a\n" (syntax->datum stx))
   (syntax-case stx ()
     [(_) #'(begin (void))]
     [(_ . body) (let-values ([(code rest) (parse-block-one/2 #'body
+                                                             the-expression-context
+                                                             #;
                                                              the-top-block-context)])
                   ;; (printf "Rest is ~a\n" (syntax->datum rest))
                   (with-syntax ([code code]

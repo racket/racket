@@ -1,3 +1,9 @@
+  * Renamed the #:attempts keyword #:attempt-num in the `generate-term' form
+
+v4.2.4
+
+  * minor bug fixes
+
 v4.2.3
 
   * added support for collecting metafunction coverage, using the

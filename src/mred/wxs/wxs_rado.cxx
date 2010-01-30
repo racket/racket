@@ -345,6 +345,7 @@ static l_TYPE l_POINT *l_MAKE_ARRAY(Scheme_Object *l, l_INTTYPE *c, char *who)
 
 
 
+
 class os_wxRadioBox : public wxRadioBox {
  public:
   Scheme_Object *callback_closure;
@@ -706,7 +707,7 @@ static Scheme_Object *os_wxRadioBoxSetSelection(int n,  Scheme_Object *p[])
   
   x0 = WITH_VAR_STACK(objscheme_unbundle_integer(p[POFFSET+0], "set-selection in radio-box%"));
 
-  if ((x0 < 0) || (x0 >= THISOBJECT->Number())) { READY_TO_RETURN; return scheme_void; }
+  if ((x0 < -1) || (x0 >= THISOBJECT->Number())) { READY_TO_RETURN; return scheme_void; }
   WITH_VAR_STACK(((wxRadioBox *)((Scheme_Class_Object *)p[0])->primdata)->SetSelection(x0));
 
   

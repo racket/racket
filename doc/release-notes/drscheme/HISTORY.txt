@@ -10,12 +10,14 @@
     - overlay, beside, and above now line things up on
       centers, rather than upper lefts
     - added scene-related funtions (place-image, scene+line, etc)
+    - added support for drawing with various kinds of pens
 
 ------------------------------
         Version 4.2.3
 ------------------------------
 
   . minor bug fixes
+  . added first draft of the 2htdp/image library
 
 ------------------------------
         Version 4.2.2

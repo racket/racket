@@ -16,7 +16,15 @@ Creates a hierarchical-list control.
                                           'resize-corner 'deleted 'transparent))
                         '(no-hscroll)])]{
 
-Creates the control.}
+Creates the control.
+
+If the style @scheme['transparent] is passed, then the
+@method[editor-snip% use-style-background] method will be
+called with @scheme[#t] when editor snips are created as part of
+the hierarchical list, ensuring that the entire control is 
+transparent.
+
+}
 
 
 @defmethod[(get-selected) (or/c (is-a?/c hierarchical-list-item<%>)

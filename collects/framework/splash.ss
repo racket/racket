@@ -280,19 +280,11 @@
 (define quit-on-close? #t)
 
 (define splash-tlw%
-  (case (system-type)
-    [(unix)
-     (class dialog%
-       (define/augment (on-close)
-         (when quit-on-close?
-           (exit)))
-       (super-new))]
-    [else
-     (class frame%
-       (define/augment (on-close)
-         (when quit-on-close?
-           (exit)))
-       (super-new [style '(no-resize-border)]))]))
+  (class dialog%
+    (define/augment (on-close)
+      (when quit-on-close?
+        (exit)))
+    (super-new)))
 
 (define splash-canvas%
   (class canvas%

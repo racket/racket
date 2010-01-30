@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require "core-layout.ss"
-         "loc-wrapper.ss"
+(require "../private/core-layout.ss"
+         "../private/loc-wrapper.ss"
          "lw-test-util.ss"
          "test-util.ss"
          (lib "struct.ss"))

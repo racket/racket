@@ -47,7 +47,7 @@ mainsrcdir = @srcdir@/../..
 # compiler options; mainly used to allow importing options
 OPTIONS=@OPTIONS@ @CGCOPTIONS@
 
-BASEFLAGS= -I$(srcdir)/include -I$(AO_INSTALL_DIR)/src @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @PLACE_CGC_FLAGS@
+BASEFLAGS= -I$(srcdir)/include -I$(AO_INSTALL_DIR)/src @CFLAGS@ @COMPFLAGS@ @PREFLAGS@ @MZRT_CGC_FLAGS@
 CFLAGS= $(BASEFLAGS) @PROFFLAGS@ $(OPTIONS) -DNO_EXECUTE_PERMISSION -DSILENT -DNO_GETENV -DLARGE_CONFIG -DATOMIC_UNCOLLECTABLE -DINITIAL_MARK_STACK_SIZE=8192
 
 # To build the parallel collector on Linux, add to the above:

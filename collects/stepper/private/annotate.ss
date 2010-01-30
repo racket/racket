@@ -18,6 +18,7 @@
     [(_ body bindings)
      (syntax/loc stx (letrec bindings body))]))
 
+
 ; CONTRACTS
 
 
@@ -215,7 +216,7 @@
               (stepper-syntax-property #`(#%plain-app #,put-into-xml-table #,rewritten) 
                                        'stepper-skipto
                                        (list syntax-e cdr car))
-              (syntax-recertify rewritten stx (current-code-inspector) #f))))))
+              (stepper-recertify rewritten stx))))))
 
 
 ;                                               
@@ -769,7 +770,7 @@
                      (let*-2vals ([(new-exp bindings) vals])
                                  (2vals (stepper-recertify new-exp exp)
                                         (map (lambda (b)
-                                               (syntax-recertify b exp (current-code-inspector) #f))
+                                               (stepper-recertify b exp))
                                              bindings))))]
                   
                   ;; this is a terrible hack... until some other language form needs it.  It wraps the 
@@ -1094,10 +1095,6 @@
                    [else 
                     (error 'annotate "unexpected syntax for expression: ~v" (syntax->datum exp))]))))])))
   
-  (define (stepper-recertify new-stx old-stx)
-    (syntax-recertify new-stx old-stx (current-code-inspector) #f))
-  
-  
   ;; annotate/top-level : syntax-> syntax
   ;; expansion of teaching level language programs produces two kinds of 
   ;; expressions: modules containing all of the code in the def'ns window, and
@@ -1115,19 +1112,16 @@
         ; the 'require' form is used for the test harness
         [(require module-name) exp]
         ; the 'dynamic-require' form is used by the actual expander 
-        
         [(let-values ([(done-already?) . rest1])
            (#%plain-app dynamic-wind
-                  void
-                  (#%plain-lambda () . rest2)
-                  (#%plain-lambda () . rest3)))
+                        void
+                        (#%plain-lambda () . rest2)
+                        (#%plain-lambda () . rest3)))
          exp]
         [else
-         ;; I think we can re-enable this error now. I don't want to do it right before a release, though. 2009-05-20
-         #;
          (error `annotate/top-level "unexpected top-level expression: ~a\n"
                 (syntax->datum exp))
-         (annotate/module-top-level exp)])))
+         #;(annotate/module-top-level exp)])))
   
   #;(define/contract annotate/top-level/acl2
     (syntax? . -> . syntax?)
@@ -1177,11 +1171,13 @@
                      [defined-name (if (and (pair? name-list) (null? (cdr name-list)))
                                        (car name-list)
                                        #f)])
-                #`(begin
-                    (define-values (new-var ...)
-                      #,(top-level-annotate/inner (top-level-rewrite #`e) exp defined-name))
-                    ;; this next expression should deliver the newly computed values to an exp-finished-break
-                    (#%plain-app #,exp-finished-break (#%plain-app list (#%plain-app list #,(lambda () exp) #f (#%plain-lambda () (#%plain-app list new-var ...)))))))]
+                (stepper-recertify
+                 #`(begin
+                     (define-values (new-var ...)
+                       #,(top-level-annotate/inner (top-level-rewrite #`e) exp defined-name))
+                     ;; this next expression should deliver the newly computed values to an exp-finished-break
+                     (#%plain-app #,exp-finished-break (#%plain-app list (#%plain-app list #,(lambda () exp) #f (#%plain-lambda () (#%plain-app list new-var ...))))))
+                 #'e))]
              [(define-syntaxes (new-vars ...) e)
               exp]
              [(#%require specs ...)
@@ -1191,17 +1187,25 @@
              [(begin .  bodies)
               #`(begin #,@(map annotate/module-top-level (syntax->list #`bodies)))]
              [(#%plain-app call-with-values (#%plain-lambda () body) print-values)
-              (stepper-recertify 
-               #`(#%plain-app
-                  call-with-values 
-                  (#%plain-lambda () #,(top-level-annotate/inner (top-level-rewrite #`body) exp #f))
-                  (#%plain-lambda vals
-                    (begin
-                      (#,exp-finished-break (#%plain-app list (#%plain-app list #,(lambda () exp) #f (#%plain-lambda () vals))))
-                      (#%plain-app
-                       call-with-values (#%plain-lambda () vals)
-                       print-values))))
-               exp)]
+              ;; re-extract the plain-lambda term, to use in recertification:
+              (let ([lam-for-cert (syntax-case exp (#%plain-app call-with-values)
+                                    [(#%plain-app call-with-values lam print-values) #'lam]
+                                    [other (error 'annotate/module-top-level "unreachable 2010-01-23 22:14")])])
+                ;; this recertify looks to be superfluous now that it has the "transparent" certificate-mode tag,
+                ;; but it can't hurt, and I'd rather just leave it in here.
+                (stepper-recertify 
+                 #`(#%plain-app
+                    call-with-values 
+                    #,(stepper-recertify
+                       #`(#%plain-lambda () #,(top-level-annotate/inner (top-level-rewrite #`body) exp #f))
+                       lam-for-cert)
+                    (#%plain-lambda vals
+                                    (begin
+                                      (#,exp-finished-break (#%plain-app list (#%plain-app list #,(lambda () exp) #f (#%plain-lambda () vals))))
+                                      (#%plain-app
+                                       call-with-values (#%plain-lambda () vals)
+                                       print-values))))
+                 exp))]
              [any
               (stepper-syntax-property exp 'stepper-test-suite-hint)
               (top-level-annotate/inner (top-level-rewrite exp) exp #f)]
@@ -1211,14 +1215,12 @@
               ;; which produce arbitrary expressions at the top level.
               #;(error `annotate/module-top-level "unexpected module-top-level expression to annotate: ~a\n" (syntax->datum exp))])]))
   
+  
   ; body of local
-  (let* ([annotated-exp (cond 
-                          ;; support for ACL2 is commented out.
-                          #;[(and (not (eq? language-level 'testing))
-                                (string=? (language-level->name language-level) "ACL2 Beginner (beta 8)"))
-                           (annotate/top-level/acl2 main-exp)]
-                          [else 
-                           (annotate/top-level main-exp)])])
-    annotated-exp))
+  (annotate/top-level main-exp))
 
 
+(define saved-code-inspector (current-code-inspector))
+
+(define (stepper-recertify new-stx old-stx)
+  (syntax-recertify new-stx old-stx saved-code-inspector #f))

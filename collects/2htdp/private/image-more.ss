@@ -2,6 +2,7 @@
 
 (require "../../mrlib/image-core.ss"
          "img-err.ss"
+         scheme/match
          scheme/contract
          scheme/class
          scheme/gui/base
@@ -117,7 +118,7 @@
   (overlay/internal 'middle 'middle image (cons image2 image3)))
 
 ;; underlay : image image image ... -> image
-(define (underlay image image2 . image3)
+(define/chk (underlay image image2 . image3)
   (let ([imgs (reverse (list* image image2 image3))])
     (overlay/internal 'middle 'middle (car imgs) (cdr imgs))))
 
@@ -279,9 +280,10 @@
   (crop/internal x1 y1 width height image))
 
 (define (crop/internal x1 y1 width height image)
-  (let ([iw (min width (get-right image))]
-        [ih (min height (get-bottom image))])
-    (make-image (make-crop (rectangle-points iw ih)
+  (let* ([iw (min width (get-right image))]
+         [ih (min height (get-bottom image))]
+         [points (rectangle-points iw ih)])
+    (make-image (make-crop points
                            (make-translate (- x1) (- y1) (image-shape image)))
                 (make-bb iw
                          ih
@@ -363,26 +365,28 @@
                          (- (ltrb-bottom ltrb) (ltrb-top ltrb)))
                 #f)))
 
-(define (rotate-normalized-shape angle shape)
+(define/contract (rotate-normalized-shape angle shape)
+  (-> number? normalized-shape? normalized-shape?)
   (cond
     [(overlay? shape)
      (let ([top-shape (rotate-normalized-shape angle (overlay-top shape))]
-           [bottom-shape (rotate-simple angle (overlay-bottom shape))])
+           [bottom-shape (rotate-cn-or-simple-shape angle (overlay-bottom shape))])
        (make-overlay top-shape bottom-shape))]
     [else 
-     (rotate-cropped-simple angle shape)]))
+     (rotate-cn-or-simple-shape angle shape)]))
 
-;; rotate-cropped-simple : angle cropped-simple-shape -> cropped-simple-shape
-(define (rotate-cropped-simple angle shape)
+(define/contract (rotate-cn-or-simple-shape angle shape)
+  (-> number? cn-or-simple-shape? cn-or-simple-shape?)
   (cond
     [(crop? shape)
      (make-crop (rotate-points angle (crop-points shape))
-                (rotate-cropped-simple angle (crop-shape shape)))]
-    [else 
+                (rotate-normalized-shape angle (crop-shape shape)))]
+    [else
      (rotate-simple angle shape)]))
 
 ;; rotate-simple : angle simple-shape -> simple-shape
 (define (rotate-simple θ simple-shape)
+  (-> number? simple-shape? simple-shape?)
   (cond
     [(line-segment? simple-shape)
      (make-line-segment (rotate-point (line-segment-start simple-shape)
@@ -425,21 +429,21 @@
              (min (ltrb-right ltrb1) (ltrb-right ltrb2))
              (min (ltrb-bottom ltrb1) (ltrb-bottom ltrb2))))
 
-;; normalized-shape-bb : normalized-shape -> ltrb
-(define (normalized-shape-bb shape)
+(define/contract (normalized-shape-bb shape)
+  (-> normalized-shape? ltrb?)
   (cond
     [(overlay? shape)
      (let ([top-ltrb (normalized-shape-bb (overlay-top shape))]
-           [bottom-ltrb (simple-bb (overlay-bottom shape))])
+           [bottom-ltrb (cn-or-simple-shape-bb (overlay-bottom shape))])
        (union-ltrb top-ltrb bottom-ltrb))]
     [else 
-     (cropped-simple-bb shape)]))
+     (cn-or-simple-shape-bb shape)]))
 
-;; cropped-simple-bb : cropped-simple-shape -> ltrb
-(define (cropped-simple-bb shape)
+(define/contract (cn-or-simple-shape-bb shape)
+  (-> cn-or-simple-shape? ltrb?)
   (cond
     [(crop? shape)
-     (let ([ltrb (cropped-simple-bb (crop-shape shape))]
+     (let ([ltrb (normalized-shape-bb (crop-shape shape))]
            [crop-ltrb (points->ltrb (crop-points shape))])
        (intersect-ltrb crop-ltrb ltrb))]
     [else
@@ -448,7 +452,8 @@
 ;; simple-bb : simple-shape -> ltrb
 ;; returns the bounding box of 'shape' 
 ;; (only called for rotated shapes, so bottom=baseline)
-(define (simple-bb simple-shape)
+(define/contract (simple-bb simple-shape)
+  (-> simple-shape? ltrb?)
   (cond
     [(line-segment? simple-shape)
      (let ([x1 (point-x (line-segment-start simple-shape))]
@@ -484,6 +489,7 @@
     (make-ltrb left top right bottom)))
 
 (define (np-atomic-bb atomic-shape)
+  (-> np-atomic-shape? (values number? number? number? number?))
   (cond
     [(ellipse? atomic-shape)
      (let ([θ (ellipse-angle atomic-shape)])
@@ -554,6 +560,7 @@
 
 ;; rotate-atomic : angle np-atomic-shape -> np-atomic-shape
 (define (rotate-atomic θ atomic-shape)
+  (-> number? np-atomic-shape? np-atomic-shape?)
   (cond
     [(ellipse? atomic-shape)
      (cond

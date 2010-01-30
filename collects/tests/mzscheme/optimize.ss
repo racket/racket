@@ -4,7 +4,8 @@
 (Section 'optimization)
 
 (require scheme/flonum
-         scheme/fixnum)
+         scheme/fixnum
+         compiler/zo-parse)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -564,7 +565,9 @@
 	  [t2 (get-output-bytes s2)])
       (or (bytes=? t1 t2)
 	  (begin
-	    (printf "~s\n~s\n" t1 t2)
+	    (printf "~s\n~s\n" 
+                    (zo-parse (open-input-bytes t1))
+                    (zo-parse (open-input-bytes t2)))
 	    #f
 	    )))))
 
@@ -656,6 +659,17 @@
 	   '((lambda (x) x) 3))
 (test-comp '(let ([x 3][y 4]) (+ x y))
 	   '((lambda (x y) (+ x y)) 3 4))
+(test-comp '5
+	   '((lambda ignored 5) 3 4))
+(test-comp '5
+	   '(let ([f (lambda ignored 5)])
+              (f 3 4)))
+(test-comp '5
+	   '(let ([f (lambda (a . ignored) a)])
+              (f 5 3 4)))
+(test-comp '(let ([x (list 3 4)]) x)
+	   '(let ([f (lambda (a . b) b)])
+              (f 5 3 4)))
 
 (test-comp '(let ([x 1][y 2]) x)
 	   '1)

@@ -7,6 +7,9 @@
 
 (namespace-require ''#%kernel)
 
+(call-with-output-file (vector-ref (current-command-line-arguments) 0) #:exists 'replace
+  (lambda (outfile)
+
 (let loop ()
   (let ([expr (read)])
     (unless (eof-object? expr)
@@ -14,17 +17,17 @@
 	    [p (open-output-bytes)])
 	(write c p)
 	(let ([s (get-output-bytes p)])
-	  (printf "  {~n    SHARED_OK static MZCOMPILED_STRING_FAR unsigned char expr[] = {")
+	  (fprintf outfile "  {~n    SHARED_OK static MZCOMPILED_STRING_FAR unsigned char expr[] = {")
 	  (let loop ([chars (bytes->list s)][pos 0])
 	    (unless (null? chars)
 	      (let ([char (car chars)])
-		(printf "~a," char))
+		(fprintf outfile "~a," char))
 	      (loop (cdr chars)
 		    (if (= pos DIGS-PER-LINE)
 			(begin
-			  (newline)
+			  (newline outfile)
 			  0)
 			(add1 pos)))))
-	  (printf "0};~n    EVAL_ONE_SIZED_STR((char *)expr, ~a);~n" (bytes-length s))
-	  (printf "  }~n")))
-      (loop))))
+	  (fprintf outfile "0};~n    EVAL_ONE_SIZED_STR((char *)expr, ~a);~n" (bytes-length s))
+	  (fprintf outfile "  }~n")))
+      (loop))))))

@@ -6,7 +6,10 @@ don't depend on any other portion of the system
 |#
 
 (provide (all-defined-out))
-(require "syntax-traversal.ss" syntax/parse (for-syntax scheme/base syntax/parse) scheme/match)
+(require "syntax-traversal.ss"
+	 "utils.ss"
+	 syntax/parse (for-syntax scheme/base syntax/parse) scheme/match
+         (for-syntax unstable/syntax))
 
 ;; a parameter representing the original location of the syntax being currently checked
 (define current-orig-stx (make-parameter #'here))
@@ -126,11 +129,14 @@ don't depend on any other portion of the system
 (define-struct (exn:fail:tc exn:fail) ())
 
 ;; raise an internal error - typechecker bug!
-(define (int-err msg . args)  
-  (raise (make-exn:fail:tc (string-append "Internal Typechecker Error: "
-                                          (apply format msg args)
-                                          (format "\nwhile typechecking\n~a" (syntax->datum (current-orig-stx))))
-                           (current-continuation-marks))))
+(define (int-err msg . args) 
+  (parameterize ([custom-printer #t])
+    (raise (make-exn:fail:tc (string-append "Internal Typechecker Error: "
+					    (apply format msg args)
+					    (format "\nwhile typechecking\n~aoriginally\n~a"
+						    (syntax->datum (current-orig-stx))
+						    (syntax->datum (locate-stx (current-orig-stx)))))
+			     (current-continuation-marks)))))
 
 (define-syntax (nyi stx)
   (syntax-case stx ()
@@ -155,17 +161,8 @@ don't depend on any other portion of the system
     #:attributes (ty id)
     (pattern [nm:identifier ty]
              #:with id #'#'nm)
-    (pattern [e:expr ty extra-mods ...]
-             #:with id #'(let ([new-ns
-                                (let* ([ns (make-empty-namespace)])
-                                  (namespace-attach-module (current-namespace)
-                                                           'scheme/base
-                                                           ns)
-                                  ns)])
-                           (parameterize ([current-namespace new-ns])
-                             (namespace-require 'scheme/base)
-                             (namespace-require 'extra-mods) ...
-                             e))))
+    (pattern [e:expr ty]
+             #:with id #'e))
   (syntax-parse stx
     [(_ e:spec ...)
      #'(list (list e.id e.ty) ...)]))

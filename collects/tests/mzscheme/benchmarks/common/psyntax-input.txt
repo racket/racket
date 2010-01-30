@@ -213,11 +213,11 @@
 ;;; The following nonstandard procedures must be provided by the
 ;;; implementation for this code to run.
 ;;;
-;;; (void)
+;;; (voide)
 ;;; returns the implementation's cannonical "unspecified value".  The
 ;;; following usually works:
 ;;;
-;;; (define void (lambda () (if #f #f))).
+;;; (define voide (lambda () (if #f #f))).
 ;;;
 ;;; (andmap proc list1 list2 ...)
 ;;; returns true if proc returns true when applied to each element of list1
@@ -729,7 +729,7 @@
       (if (null? (cdr exps))
           (car exps)
          ; weed out leading void calls, assuming ordinary list representation
-          (if (equal? (car exps) '(void))
+          (if (equal? (car exps) '(voide))
               (loop (cdr exps))
               `(begin ,@exps))))))
 
@@ -1804,7 +1804,7 @@
          (if meta?
              (let ((x (chi-expr type value e r r w ae #t)))
                (top-level-eval-hook x)
-               (ct-eval/residualize3 ctem void (lambda () x)))
+               (ct-eval/residualize3 ctem voide (lambda () x)))
              (rt-eval/residualize rtem
                (lambda ()
                  (chi-expr type value e r r w ae #f)))))))))
@@ -2146,7 +2146,7 @@
                               (define-top-level-value-hook sym (top-level-eval-hook exp))
                               (meta-residualize!
                                 (ct-eval/residualize3 ctem
-                                  void
+                                  voide
                                   (lambda () (build-global-definition no-source sym exp))))
                               (parse (cdr body) r mr
                                 (cons id ids)
@@ -2266,7 +2266,7 @@
                         ; expand and eval meta inits for effect only
                          (let ((x (chi-meta-frob (car body) mr)))
                            (top-level-eval-hook x)
-                           (meta-residualize! (ct-eval/residualize3 ctem void (lambda () x))))
+                           (meta-residualize! (ct-eval/residualize3 ctem voide (lambda () x))))
                          (f (cdr body)))))))))))))
 
 (define vmap
@@ -2770,7 +2770,7 @@
                empty-wrap))
       ((_ name)
        (id? (syntax name))
-       (values (wrap (syntax name) w) (syntax (void)) empty-wrap))
+       (values (wrap (syntax name) w) (syntax (voide)) empty-wrap))
       (_ (syntax-error (source-wrap e w ae))))))
 
 (define parse-define-syntax
@@ -2878,7 +2878,7 @@
 
 (define chi-void
   (lambda ()
-    (build-application no-source (build-primref no-source 'void) '())))
+    (build-application no-source (build-primref no-source 'voide) '())))
 
 (define ellipsis?
   (lambda (x)
@@ -2920,7 +2920,7 @@
             ((vector? x)
              (let ((old (vector->list x)))
                 (let ((new (map f old)))
-                   (if (andmap eq? old new) x (list->vector new)))))
+                   (if (andmap2 eq? old new) x (list->vector new)))))
             (else x))))))
 
 (define strip
@@ -3698,13 +3698,13 @@
     (let f ((ls orig-ls))
       (syntax-case ls ()
         (() '())
-        ((x . r) (cons #'x (f #'r)))
+        ((x . r) (cons (syntax x) (f (syntax r))))
         (_ (error 'syntax->list "invalid argument ~s" orig-ls))))))
 
 (set! syntax->vector
   (lambda (v)
     (syntax-case v ()
-      (#(x ...) (apply vector (syntax->list #'(x ...))))
+      (#(x ...) (apply vector (syntax->list (syntax (x ...)))))
       (_ (error 'syntax->vector "invalid argument ~s" v)))))
 
 (set! syntax-object->datum
@@ -4029,67 +4029,67 @@
       (syntax-case p (unquote quasiquote)
         ((unquote p)
          (if (= lev 0)
-             #'("value" p)
-             (quasicons #'("quote" unquote) (quasi #'(p) (- lev 1)))))
-        ((quasiquote p) (quasicons #'("quote" quasiquote) (quasi #'(p) (+ lev 1))))
+             (syntax ("value" p))
+             (quasicons (syntax ("quote" unquote)) (quasi (syntax (p)) (- lev 1)))))
+        ((quasiquote p) (quasicons (syntax ("quote" quasiquote)) (quasi (syntax (p)) (+ lev 1))))
         ((p . q)
-         (syntax-case #'p (unquote unquote-splicing)
+         (syntax-case (syntax p) (unquote unquote-splicing)
            ((unquote p ...)
             (if (= lev 0)
-                (quasilist* #'(("value" p) ...) (quasi #'q lev))
+                (quasilist* (syntax (("value" p) ...)) (quasi (syntax q) lev))
                 (quasicons
-                  (quasicons #'("quote" unquote) (quasi #'(p ...) (- lev 1)))
-                  (quasi #'q lev))))
+                  (quasicons (syntax ("quote" unquote)) (quasi (syntax (p ...)) (- lev 1)))
+                  (quasi (syntax q) lev))))
            ((unquote-splicing p ...)
             (if (= lev 0)
-                (quasiappend #'(("value" p) ...) (quasi #'q lev))
+                (quasiappend (syntax (("value" p) ...)) (quasi (syntax q) lev))
                 (quasicons
-                  (quasicons #'("quote" unquote-splicing) (quasi #'(p ...) (- lev 1)))
-                  (quasi #'q lev))))
-           (_ (quasicons (quasi #'p lev) (quasi #'q lev)))))
-        (#(x ...) (quasivector (vquasi #'(x ...) lev)))
-        (p #'("quote" p))))
+                  (quasicons (syntax ("quote" unquote-splicing)) (quasi (syntax (p ...)) (- lev 1)))
+                  (quasi (syntax q) lev))))
+           (_ (quasicons (quasi (syntax p) lev) (quasi (syntax q) lev)))))
+        (#(x ...) (quasivector (vquasi (syntax (x ...)) lev)))
+        (p (syntax ("quote" p)))))
     (define (vquasi p lev)
       (syntax-case p ()
         ((p . q)
-         (syntax-case #'p (unquote unquote-splicing)
+         (syntax-case (syntax p) (unquote unquote-splicing)
            ((unquote p ...)
             (if (= lev 0)
-                (quasilist* #'(("value" p) ...) (vquasi #'q lev))
+                (quasilist* (syntax (("value" p) ...)) (vquasi (syntax q) lev))
                 (quasicons
-                  (quasicons #'("quote" unquote) (quasi #'(p ...) (- lev 1)))
-                  (vquasi #'q lev))))
+                  (quasicons (syntax ("quote" unquote)) (quasi (syntax (p ...)) (- lev 1)))
+                  (vquasi (syntax q) lev))))
            ((unquote-splicing p ...)
             (if (= lev 0)
-                (quasiappend #'(("value" p) ...) (vquasi #'q lev))
+                (quasiappend (syntax (("value" p) ...)) (vquasi (syntax q) lev))
                 (quasicons
                   (quasicons
-                    #'("quote" unquote-splicing)
-                    (quasi #'(p ...) (- lev 1)))
-                  (vquasi #'q lev))))
-           (_ (quasicons (quasi #'p lev) (vquasi #'q lev)))))
-        (() #'("quote" ()))))
+                    (syntax ("quote" unquote-splicing))
+                    (quasi (syntax (p ...)) (- lev 1)))
+                  (vquasi (syntax q) lev))))
+           (_ (quasicons (quasi (syntax p) lev) (vquasi (syntax q) lev)))))
+        (() (syntax ("quote" ())))))
     (define (quasicons x y)
       (with-syntax ((x x) (y y))
-        (syntax-case #'y ()
+        (syntax-case (syntax y) ()
           (("quote" dy)
-           (syntax-case #'x ()
-             (("quote" dx) #'("quote" (dx . dy)))
-             (_ (if (null? #'dy) #'("list" x) #'("list*" x y)))))
-          (("list" . stuff) #'("list" x . stuff))
-          (("list*" . stuff) #'("list*" x . stuff))
-          (_ #'("list*" x y)))))
+           (syntax-case (syntax x) ()
+             (("quote" dx) (syntax ("quote" (dx . dy))))
+             (_ (if (null? (syntax dy)) (syntax ("list" x)) (syntax ("list*" x y))))))
+          (("list" . stuff) (syntax ("list" x . stuff)))
+          (("list*" . stuff) (syntax ("list*" x . stuff)))
+          (_ (syntax ("list*" x y))))))
     (define (quasiappend x y)
       (syntax-case y ()
         (("quote" ())
          (cond
-           ((null? x) #'("quote" ()))
+           ((null? x) (syntax ("quote" ())))
            ((null? (cdr x)) (car x))
-           (else (with-syntax (((p ...) x)) #'("append" p ...)))))
+           (else (with-syntax (((p ...) x)) (syntax ("append" p ...))))))
         (_
          (cond
            ((null? x) y)
-           (else (with-syntax (((p ...) x) (y y)) #'("append" p ... y)))))))
+           (else (with-syntax (((p ...) x) (y y)) (syntax ("append" p ... y))))))))
     (define (quasilist* x y)
       (let f ((x x))
         (if (null? x)
@@ -4097,35 +4097,35 @@
             (quasicons (car x) (f (cdr x))))))
     (define (quasivector x)
       (syntax-case x ()
-        (("quote" (x ...)) #'("quote" #(x ...)))
+        (("quote" (x ...)) (syntax ("quote" #(x ...))))
         (_
-         (let f ((y x) (k (lambda (ls) #`("vector" #,@ls))))
+         (let f ((y x) (k (lambda (ls) (quasisyntax ("vector" (unsyntax-splicing ls))))))
            (syntax-case y ()
-             (("quote" (y ...)) (k #'(("quote" y) ...)))
-             (("list" y ...) (k #'(y ...)))
-             (("list*" y ... z) (f #'z (lambda (ls) (k (append #'(y ...) ls)))))
-             (else #`("list->vector" #,x)))))))
+             (("quote" (y ...)) (k (syntax (("quote" y) ...))))
+             (("list" y ...) (k (syntax (y ...))))
+             (("list*" y ... z) (f (syntax z) (lambda (ls) (k (append (syntax (y ...)) ls)))))
+             (else (quasisyntax ("list->vector" (unsyntax-splicing x)))))))))
     (define (emit x)
       (syntax-case x ()
-        (("quote" x) #''x)
-        (("list" x ...) #`(list #,@(map emit #'(x ...))))
+        (("quote" x) (syntax 'x))
+        (("list" x ...) (quasisyntax (list (unsyntax-splicing (map emit (syntax (x ...)))))))
       ; could emit list* for 3+ arguments if implementation supports list*
        (("list*" x ... y)
-        (let f ((x* #'(x ...)))
+        (let f ((x* (syntax (x ...))))
           (if (null? x*)
-              (emit #'y)
-              #`(cons #,(emit (car x*)) #,(f (cdr x*))))))
-        (("append" x ...) #`(append #,@(map emit #'(x ...))))
-        (("vector" x ...) #`(vector #,@(map emit #'(x ...))))
-        (("list->vector" x) #`(list->vector #,(emit #'x)))
-        (("value" x) #'x)))
+              (emit (syntax y))
+              (quasisyntax (cons (unsyntax (emit (car x*))) (unsyntax (f (cdr x*))))))))
+        (("append" x ...) (quasisyntax (append (unsyntax-splicing (map emit (syntax (x ...)))))))
+        (("vector" x ...) (quasisyntax (vector (unsyntax-splicing (map emit (syntax (x ...)))))))
+        (("list->vector" x) (quasisyntax (list->vector (unsyntax (emit (syntax x))))))
+        (("value" x) (syntax x))))
     (lambda (x)
       (syntax-case x ()
        ; convert to intermediate language, combining introduced (but not
        ; unquoted source) quote expressions where possible and choosing
        ; optimal construction code otherwise, then emit Scheme code
        ; corresponding to the intermediate language forms.
-        ((_ e) (emit (quasi #'e 0)))))))
+        ((_ e) (emit (quasi (syntax e) 0)))))))
 
 (define-syntax unquote
   (lambda (x)
@@ -4140,68 +4140,68 @@
     (define (qs q n b* k)
       (syntax-case q (quasisyntax unsyntax unsyntax-splicing)
         ((quasisyntax . d)
-         (qs #'d (+ n 1) b*
+         (qs (syntax d) (+ n 1) b*
            (lambda (b* dnew)
              (k b*
-                (if (eq? dnew #'d)
+                (if (eq? dnew (syntax d))
                     q
-                    (with-syntax ((d dnew)) #'(quasisyntax . d)))))))
+                    (with-syntax ((d dnew)) (syntax (quasisyntax . d))))))))
         ((unsyntax . d)
          (not (= n 0))
-         (qs #'d (- n 1) b*
+         (qs (syntax d) (- n 1) b*
            (lambda (b* dnew)
              (k b*
-                (if (eq? dnew #'d)
+                (if (eq? dnew (syntax d))
                     q
-                    (with-syntax ((d dnew)) #'(unsyntax . d)))))))
+                    (with-syntax ((d dnew)) (syntax (unsyntax . d))))))))
         ((unsyntax-splicing . d)
          (not (= n 0))
-         (qs #'d (- n 1) b*
+         (qs (syntax d) (- n 1) b*
            (lambda (b* dnew)
              (k b*
-                (if (eq? dnew #'d)
+                (if (eq? dnew (syntax d))
                     q
-                    (with-syntax ((d dnew)) #'(unsyntax-splicing . d)))))))
+                    (with-syntax ((d dnew)) (syntax (unsyntax-splicing . d))))))))
         ((unsyntax q)
          (= n 0)
-         (with-syntax (((t) (generate-temporaries #'(q))))
-           (k (cons #'(t q) b*) #'t)))
+         (with-syntax (((t) (generate-temporaries (syntax (q)))))
+           (k (cons (syntax (t q)) b*) (syntax t))))
         (((unsyntax q ...) . d)
          (= n 0)
-         (qs #'d n b*
+         (qs (syntax d) n b*
            (lambda (b* dnew)
-             (with-syntax (((t ...) (generate-temporaries #'(q ...))))
-               (k (append #'((t q) ...) b*)
-                  (with-syntax ((d dnew)) #'(t ... . d)))))))
+             (with-syntax (((t ...) (generate-temporaries (syntax (q ...)))))
+               (k (append (syntax ((t q) ...)) b*)
+                  (with-syntax ((d dnew)) (syntax (t ... . d))))))))
         (((unsyntax-splicing q ...) . d)
          (= n 0)
-         (qs #'d n b*
+         (qs (syntax d) n b*
            (lambda (b* dnew)
-             (with-syntax (((t ...) (generate-temporaries #'(q ...))))
-               (k (append #'(((t (... ...)) q) ...) b*)
-                  (with-syntax ((((m ...) ...) #'((t (... ...)) ...)))
-                    (with-syntax ((d dnew)) #'(m ... ... . d))))))))
+             (with-syntax (((t ...) (generate-temporaries (syntax (q ...)))))
+               (k (append (syntax (((t (... ...)) q) ...)) b*)
+                  (with-syntax ((((m ...) ...) (syntax ((t (... ...)) ...))))
+                    (with-syntax ((d dnew)) (syntax (m ... ... . d)))))))))
         ((a . d)
-         (qs #'a n b*
+         (qs (syntax a) n b*
            (lambda (b* anew)
-             (qs #'d n b*
+             (qs (syntax d) n b*
                (lambda (b* dnew)
                  (k b*
-                    (if (and (eq? anew #'a) (eq? dnew #'d))
+                    (if (and (eq? anew (syntax a)) (eq? dnew (syntax d)))
                         q
-                        (with-syntax ((a anew) (d dnew)) #'(a . d)))))))))
+                        (with-syntax ((a anew) (d dnew)) (syntax (a . d))))))))))
         (#(x ...)
-         (vqs #'(x ...) n b*
+         (vqs (syntax (x ...)) n b*
            (lambda (b* xnew*)
              (k b*
-                (if (let same? ((x* #'(x ...)) (xnew* xnew*))
+                (if (let same? ((x* (syntax (x ...))) (xnew* xnew*))
                       (if (null? x*)
                           (null? xnew*)
                           (and (not (null? xnew*))
                                (eq? (car x*) (car xnew*))
                                (same? (cdr x*) (cdr xnew*)))))
                     q
-                    (with-syntax (((x ...) xnew*)) #'#(x ...)))))))
+                    (with-syntax (((x ...) xnew*)) (syntax #(x ...))))))))
         (_ (k b* q))))
     (define (vqs x* n b* k)
       (if (null? x*)
@@ -4211,26 +4211,26 @@
               (syntax-case (car x*) (unsyntax unsyntax-splicing)
                 ((unsyntax q ...)
                  (= n 0)
-                 (with-syntax (((t ...) (generate-temporaries #'(q ...))))
-                   (k (append #'((t q) ...) b*)
-                      (append #'(t ...) xnew*))))
+                 (with-syntax (((t ...) (generate-temporaries (syntax (q ...)))))
+                   (k (append (syntax ((t q) ...)) b*)
+                      (append (syntax (t ...)) xnew*))))
                 ((unsyntax-splicing q ...)
                  (= n 0)
-                 (with-syntax (((t ...) (generate-temporaries #'(q ...))))
-                   (k (append #'(((t (... ...)) q) ...) b*)
-                      (with-syntax ((((m ...) ...) #'((t (... ...)) ...)))
-                        (append #'(m ... ...) xnew*)))))
+                 (with-syntax (((t ...) (generate-temporaries (syntax (q ...)))))
+                   (k (append (syntax (((t (... ...)) q) ...)) b*)
+                      (with-syntax ((((m ...) ...) (syntax ((t (... ...)) ...))))
+                        (append (syntax (m ... ...)) xnew*)))))
                 (_ (qs (car x*) n b*
                      (lambda (b* xnew)
                        (k b* (cons xnew xnew*))))))))))
     (syntax-case x ()
       ((_ x)
-       (qs #'x 0 '()
+       (qs (syntax x) 0 '()
          (lambda (b* xnew)
-           (if (eq? xnew #'x)
-               #'(syntax x)
+           (if (eq? xnew (syntax x))
+               (syntax (syntax x))
                (with-syntax (((b ...) b*) (x xnew))
-                 #'(with-syntax (b ...) (syntax x))))))))))
+                 (syntax (with-syntax (b ...) (syntax x)))))))))))
 
 (define-syntax unsyntax
   (lambda (x)

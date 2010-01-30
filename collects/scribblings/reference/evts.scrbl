@@ -324,13 +324,13 @@ A @tech{structure type property} that identifies structure types whose
 
 @itemize[
  
- @item{An event @scheme[evt]: In this case, using the structure as an
- event is equivalent to using @scheme[evt].}
+ @item{An event @scheme[_evt]: In this case, using the structure as an
+ event is equivalent to using @scheme[_evt].}
 
- @item{A procedure @scheme[proc] of one argument: In this case, the
+ @item{A procedure @scheme[_proc] of one argument: In this case, the
  structure is similar to an event generated
  by @scheme[guard-evt], except that the would-be guard
- procedure @scheme[proc] receives the structure as an argument, instead
+ procedure @scheme[_proc] receives the structure as an argument, instead
  of no arguments.}
 
  @item{An exact, non-negative integer between @scheme[0] (inclusive)

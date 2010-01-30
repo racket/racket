@@ -2978,7 +2978,7 @@ static void fprintf_debug(NewGC *gc, const char *msg, objhead *info, FILE* file,
           fprintf(file, "RMP %p already freed and out of bounds\n", SCHEME_PATH_VAL(obj));
         }
       default:
-        fprintf_buffer(file, ((char *)obj), (info->size * WORD_SIZE));
+        fprintf_buffer(file, ((char *)obj), (info->size * WORD_SIZE) - sizeof(objhead));
         break;
     }
   }
@@ -3309,6 +3309,7 @@ static void clean_up_heap(NewGC *gc)
   cleanup_vacated_pages(gc);
 }
 
+#ifdef MZ_USE_PLACES
 static void unprotect_old_pages(NewGC *gc)
 {
   Page_Range *protect_range = gc->protect_range;
@@ -3337,6 +3338,8 @@ static void unprotect_old_pages(NewGC *gc)
 
   flush_protect_page_ranges(protect_range, 0);
 }
+#endif
+
 static void protect_old_pages(NewGC *gc)
 {
   Page_Range *protect_range = gc->protect_range;

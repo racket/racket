@@ -1127,30 +1127,37 @@ metafunctions or unnamed reduction-relation cases) to application counts.}
            (values (covered-cases equals-coverage)
                    (covered-cases plus-coverage))))]
 
-@defform/subs[(generate-term language @#,ttpattern size-exp kw-args ...)
-              ([kw-args (code:line #:attempts attempts-expr)
+@defform*/subs[[(generate-term language @#,ttpattern size-expr kw-args ...)
+                (generate-term language @#,ttpattern)]
+              ([kw-args (code:line #:attempt-num attempts-expr)
                         (code:line #:retries retries-expr)])
               #:contracts ([size-expr natural-number/c]
                            [attempt-num-expr natural-number/c]
                            [retries-expr natural-number/c])]{
-Generates a random term matching @scheme[pattern] (in the given language).
+                                                             
+In its first form, @scheme[generate-term] produces a random term matching
+the given pattern (according to the given language). In its second, 
+@scheme[generate-term] produces a procedure for constructing the same.
+This procedure expects @scheme[size-expr] (below) as its sole positional
+argument and allows the same optional keyword arguments as the first form.
+The second form may be more efficient when generating many terms.
 
 The argument @scheme[size-expr] bounds the height of the generated term
-(measured as the height of the derivation tree used to produce
-the term). 
+(measured as the height of its parse tree). 
          
 The optional keyword argument @scheme[attempt-num-expr] 
 (default @scheme[1]) provides coarse grained control over the random
-decisions made during generation. For example, the expected length of 
-@pattech[pattern-sequence]s increases with @scheme[attempt-num-expr].
+decisions made during generation; increasing @scheme[attempt-num-expr]
+tends to increase the complexity of the result. For example, the expected
+length of @pattech[pattern-sequence]s increases with @scheme[attempt-num-expr].
 
 The random generation process does not actively consider the constraints
-imposed by @pattech[side-condition] or @tt{_!_} @|pattern|s when 
-constructing a term; instead, it tests the satisfaction of
-such constraints after it freely generates the relevant portion of the 
-sub-term---regenerating the sub-term if necessary. The optional keyword 
-argument @scheme[retries-expr] (default @scheme[100]) bounds the number of times that 
-@scheme[generate-term] retries the generation of any sub-term. If 
+imposed by @pattech[side-condition] or @tt{_!_} @|pattern|s; instead, 
+it uses a ``guess and check'' strategy in which it freely generates 
+candidate terms then tests whether they happen to satisfy the constraints,
+repeating as necessary. The optional keyword argument @scheme[retries-expr]
+(default @scheme[100]) bounds the number of times that 
+@scheme[generate-term] retries the generation of any pattern. If 
 @scheme[generate-term] is unable to produce a satisfying term after 
 @scheme[retries-expr] attempts, it raises an exception recognized by
 @scheme[exn:fail:redex:generation-failure?].}
@@ -1159,11 +1166,13 @@ argument @scheme[retries-expr] (default @scheme[100]) bounds the number of times
               ([kw-arg (code:line #:attempts attempts-expr)
                        (code:line #:source metafunction)
                        (code:line #:source relation-expr)
-                       (code:line #:retries retries-expr)])
+                       (code:line #:retries retries-expr)
+                       (code:line #:print? print?-expr)])
               #:contracts ([property-expr any/c]
                            [attempts-expr natural-number/c]
                            [relation-expr reduction-relation?]
-                           [retries-expr natural-number/c])]{
+                           [retries-expr natural-number/c]
+                           [print?-expr any/c])]{
 Searches for a counterexample to @scheme[property-expr], interpreted
 as a predicate universally quantified over the pattern variables
 bound by @scheme[pattern]. @scheme[redex-check] constructs and tests 
@@ -1173,8 +1182,18 @@ using the @scheme[match-bindings] produced by @scheme[match]ing
 @math{t} against @scheme[pattern].
 
 @scheme[redex-check] generates at most @scheme[attempts-expr] (default @scheme[1000])
-random terms in its search. The size and complexity of terms it generates
-gradually increases with each failed attempt.
+random terms in its search. The size and complexity of these terms increase with 
+each failed attempt. 
+
+When @scheme[print?-expr] produces any non-@scheme[#f] value (the default), 
+@scheme[redex-check] prints the test outcome on @scheme[current-output-port].
+When @scheme[print?-expr] produces @scheme[#f], @scheme[redex-check] prints
+nothing, instead 
+@itemlist[
+  @item{returning a @scheme[counterexample] structure when the test reveals a counterexample,}
+  @item{returning @scheme[#t] when all tests pass, or}
+  @item{raising a @scheme[exn:fail:redex:test] when checking the property raises an exception.}
+]
 
 When passed a metafunction or reduction relation via the optional @scheme[#:source]
 argument, @scheme[redex-check] distributes its attempts across the left-hand sides
@@ -1220,6 +1239,16 @@ term that does not match @scheme[pattern].}
           (printf "~s\n" (term (number ...)))
           #:attempts 3
           #:source R))]
+
+@defstruct[counterexample ([term any/c]) #:inspector #f]{
+Produced by @scheme[redex-check], @scheme[check-reduction-relation], and 
+@scheme[check-metafunction] when testing falsifies a property.}
+
+@defstruct[(exn:fail:redex:test exn:fail:redex) ([source exn:fail?] [term any/c])]{
+Raised by @scheme[redex-check], @scheme[check-reduction-relation], and 
+@scheme[check-metafunction] when testing a property raises an exception.
+The @scheme[exn:fail:redex:test-source] component contains the exception raised by the property,
+and the @scheme[exn:fail:redex:test-term] component contains the term that induced the exception.}
 
 @defform/subs[(check-reduction-relation relation property kw-args ...)
               ([kw-arg (code:line #:attempts attempts-expr)
@@ -1865,6 +1894,7 @@ cases appear. If it is a list of numbers, then only the selected cases appear (c
 @defparam[metafunction-style style text-style/c]{}
 @defparam[non-terminal-style style text-style/c]{}
 @defparam[non-terminal-subscript-style style text-style/c]{}
+@defparam[non-terminal-superscript-style style text-style/c]{}
 @defparam[default-style style text-style/c]{}]]{
 
 These parameters determine the font used for various text in
@@ -1875,15 +1905,27 @@ useful things it can be is one of the symbols @scheme['roman],
 monospaced font, respectively. (It can also encode style
 information, too.)
 
-The label-style is used for the reduction rule label
-names. The literal-style is used for names that aren't
+The @scheme[label-style] is used for the reduction rule label
+names. The @scheme[literal-style] is used for names that aren't
 non-terminals that appear in patterns. The
-metafunction-style is used for the names of
-metafunctions. The non-terminal-style is for non-terminals
-and non-terminal-subscript-style is used for the portion
+@scheme[metafunction-style] is used for the names of
+metafunctions. 
+
+The @scheme[non-terminal-style] is used for the names of non-terminals.
+Two parameters style the text in the (optional) "underscore" component
+of a non-terminal reference. The first, @scheme[non-terminal-subscript-style],
+applies to the segment between the underscore and the first caret (@scheme[^]) 
+to follow it; the second, @scheme[non-terminal-superscript-style], applies
+to the segment following that caret. For example, in the non-terminal 
+reference @scheme[x_y_z], @scheme[x] has style @scheme[non-terminal-style],
+@scheme[y] has style @scheme[non-terminal-subscript-style], and @scheme[z]
+has style @scheme[non-terminal-superscript-style].
+
+The
+@scheme[non-terminal-subscript-style] is used for the portion
 after the underscore in non-terminal references.
 
-The default-style is used for parenthesis, the dot in dotted
+The @scheme[default-style] is used for parenthesis, the dot in dotted
 lists, spaces, the separator words in the grammar, the
 "where" and "fresh" in side-conditions, and other places
 where the other parameters aren't used.

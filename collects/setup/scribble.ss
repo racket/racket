@@ -427,10 +427,11 @@
                                  (memq 'depends-all-main (doc-flags doc)))
                             (and auto-user?
                                  (memq 'depends-all (doc-flags doc)))))])
-    (setup-printf 
-     (cond [up-to-date? "using"] [can-run? "running"] [else "skipping"])
-     "~a"
-     (path->name (doc-src-file doc)))
+    (when (or (not up-to-date?) (verbose))
+      (setup-printf 
+       (cond [up-to-date? "using"] [can-run? "running"] [else "skipping"])
+       "~a"
+       (path->name (doc-src-file doc))))
     (if up-to-date?
       ;; Load previously calculated info:
       (render-time

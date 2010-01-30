@@ -4705,6 +4705,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       break;
     case CPT_STX:
       {
+        Scheme_Hash_Table *save_ht;
+
 	if (!port->ut) {
           Scheme_Unmarshal_Tables *ut;
 	  Scheme_Hash_Table *rht;
@@ -4725,8 +4727,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	  port->ut->rns = rht;
 	}
 
-        if (*port->ht)
-          scheme_ill_formed_code(port);
+        save_ht = *port->ht;
+        *port->ht = NULL;
 
 	v = read_compact(port, 1);
 
@@ -4737,6 +4739,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
                                  scheme_make_hash_table(SCHEME_hash_ptr), 
                                  0, 0);
         }
+
+        *port->ht = save_ht;
 
 	v = scheme_unmarshal_datum_to_syntax(v, port->ut, 0);
 	scheme_num_read_syntax_objects++;

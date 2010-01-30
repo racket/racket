@@ -6,7 +6,8 @@
          
          texpict/utils
          texpict/mrpict
-         
+        
+         scheme/match
          scheme/gui/base
          scheme/class)
 
@@ -21,6 +22,7 @@
          label-style
          non-terminal-style
          non-terminal-subscript-style
+         non-terminal-superscript-style
          label-font-size
          default-font-size
          metafunction-font-size
@@ -688,18 +690,15 @@
                                                'modern
                                                (default-font-size)))))]
       [(and (symbol? atom)
-            (regexp-match #rx"^([^_]*)_(.*)$" (symbol->string atom)))
+            (regexp-match #rx"^([^_^]*)_([^^]*)\\^?(.*)$" (symbol->string atom)))
        =>
-       (λ (m)
-         (let* ([first-part (cadr m)]
-                [second-part (caddr m)]
-                [first-span (- span (string-length first-part))])
-           (list 
-            (non-terminal->token col first-span first-part)
-            (make-string-token (+ col first-span) 
-                               (- span first-span)
-                               second-part
-                               (non-terminal-subscript-style)))))]
+       (match-lambda
+           [(list _ nt sub sup)
+            (let* ([sub-pict (basic-text sub (non-terminal-subscript-style))]
+                   [sup-pict (basic-text sup (non-terminal-superscript-style))]
+                   [sub+sup (lbl-superimpose sub-pict sup-pict)])
+              (list (non-terminal->token col span nt)
+                    (make-pict-token (+ col span) 0 sub+sup)))])]
       [(or (memq atom all-nts)
            (memq atom '(number variable variable-except variable-not-otherwise-mentioned)))
        (list (non-terminal->token col span (format "~s" atom)))]
@@ -747,6 +746,7 @@
   (define (unksc str) (pink-background ((current-text) str 'modern (default-font-size))))
   (define non-terminal-style (make-parameter '(italic . roman)))
   (define non-terminal-subscript-style (make-parameter `(subscript . ,(non-terminal-style))))
+  (define non-terminal-superscript-style (make-parameter `(superscript . ,(non-terminal-style))))
   (define default-style (make-parameter 'roman))
   (define metafunction-style (make-parameter 'swiss))
   (define (metafunction-text str) ((current-text) str (metafunction-style) (metafunction-font-size)))

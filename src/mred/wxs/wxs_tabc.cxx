@@ -274,6 +274,7 @@ static int unbundle_symset_tabStyle(Scheme_Object *v, const char *where) {
 
 
 
+
 class os_wxTabChoice : public wxTabChoice {
  public:
   Scheme_Object *callback_closure;

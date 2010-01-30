@@ -110,6 +110,8 @@
     ))
 
 
+
+
 ;; test-sequence/many : model-or-models/c string? steps? -> (void)
 ;; run a given test through a bunch of language models (or just one).
 
@@ -167,7 +169,6 @@
                             (show-result result error-box)
                             (car all-steps)))
                   (set! all-steps (cdr all-steps)))))]
-         [dc1 (display (expanded-thunk))]
          [iter-caller
           (lambda (init iter)
             (init)
@@ -186,8 +187,10 @@
 ;; back to us by calling the followup-thunk.
 (define (call-iter-on-each stx-thunk iter)
   (let* ([next (stx-thunk)]
-         [followup-thunk (if (eof-object? next) void (lambda () (call-iter-on-each stx-thunk iter)))])
-    (iter next followup-thunk)))
+         [followup-thunk (if (eof-object? next) void (lambda () (call-iter-on-each stx-thunk iter)))]
+         [expanded (expand next)])
+    ;;(printf "~v\n" expanded)
+    (iter expanded followup-thunk)))
 
 
 (define (warn error-box who fmt . args)
@@ -275,3 +278,6 @@
            (lambda () (expand-teaching-program p2 read-syntax namespace-spec teachpack-specs #f module-id enable-testing?))])
      (display (expanded-thunk))
      (test-sequence/core render-settings show-lambdas-as-lambdas? expanded-thunk '() (box #f)))])
+
+
+

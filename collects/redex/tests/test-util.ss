@@ -1,6 +1,6 @@
 #lang scheme
 
-(require "matcher.ss"
+(require "../private/matcher.ss"
          errortrace/errortrace-lib
          errortrace/errortrace-key)
 (provide test test-syn-err tests reset-count

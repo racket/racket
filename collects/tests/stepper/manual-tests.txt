@@ -17,3 +17,5 @@ Try programs which print snips (print-convert-test.ss)
 try programs that contain test cases; make sure that the popups behave sensibly.
 
 Try jumping to the end on a program with an error.
+** jumping to end when already at end doesn't behave properly ("no step
+   matching that criterion")

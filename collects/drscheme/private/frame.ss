@@ -300,108 +300,98 @@
   ;; asks the user for a .plt file, either from the web or from
   ;; a file on the disk and installs it.
   (define (install-plt-file parent)
+    (define pref (preferences:get 'drscheme:install-plt-dialog))
     (define dialog
-      (instantiate dialog% ()
-        (parent parent)
-        (alignment '(left center))
-        (label (string-constant install-plt-file-dialog-title))))
+      (new dialog% [parent parent]
+           [label (string-constant install-plt-file-dialog-title)]
+           [alignment '(left center)]))
     (define tab-panel
-      (instantiate tab-panel% ()
-        (parent dialog)
-        (callback (λ (x y) (update-panels)))
-        (choices (list (string-constant install-plt-web-tab)
-                       (string-constant install-plt-file-tab)))))
-    (define outer-swapping-panel (instantiate horizontal-panel% ()
-                                   (parent tab-panel)
-                                   (stretchable-height #f)))
-    (define spacing-panel (instantiate horizontal-panel% ()
-                            (stretchable-width #f)
-                            (parent outer-swapping-panel)
-                            (min-width 20)))
-    (define swapping-panel (instantiate panel:single% ()
-                             (parent outer-swapping-panel)
-                             (alignment '(left center))
-                             (stretchable-width #t)
-                             (stretchable-height #f)))
-    (define file-panel (instantiate horizontal-panel% ()
-                         (parent swapping-panel)
-                         (stretchable-width #t)
-                         (stretchable-height #f)))
-    (define url-panel (instantiate horizontal-panel% ()
-                        (parent swapping-panel)
-                        (stretchable-height #f)))
-    (define button-panel (instantiate horizontal-panel% ()
-                           (parent dialog)
-                           (stretchable-height #f)
-                           (alignment '(right center))))
-    (define file-text-field (instantiate text-field% ()
-                              (parent file-panel)
-                              (callback void)
-                              (min-width 300)
-                              (stretchable-width #t)
-                              (label (string-constant install-plt-filename))))
-    (define file-button (instantiate button% ()
-                          (parent file-panel)
-                          (label (string-constant browse...))
-                          (callback (λ (x y) (browse)))))
-    (define url-text-field (instantiate text-field% ()
-                             (parent url-panel)
-                             (label (string-constant install-plt-url))
-                             (min-width 300)
-                             (stretchable-width #t)
-                             (callback void)))
-    
+      (new tab-panel% [parent dialog]
+           [callback (λ (x y) (update-panels))]
+           [choices (list (string-constant install-plt-web-tab)
+                          (string-constant install-plt-file-tab))]))
+    (define outer-swapping-panel
+      (new horizontal-panel% [parent tab-panel]
+           [stretchable-height #f]))
+    (define spacing-panel
+      (new horizontal-panel% [parent outer-swapping-panel]
+           [stretchable-width #f]
+           [min-width 20]))
+    (define swapping-panel
+      (new panel:single% [parent outer-swapping-panel]
+           [alignment '(left center)]
+           [stretchable-width #t] [stretchable-height #f]))
+    (define file-panel
+      (new horizontal-panel% [parent swapping-panel]
+           [stretchable-width #t] [stretchable-height #f]))
+    (define url-panel
+      (new horizontal-panel% [parent swapping-panel]
+           [stretchable-height #f]))
+    (define button-panel
+      (new horizontal-panel% [parent dialog]
+           [stretchable-height #f] [alignment '(right center)]))
+    (define file-text-field
+      (new text-field% [parent file-panel]
+           [callback void] [min-width 300] [stretchable-width #t]
+           [init-value (caddr pref)]
+           [label (string-constant install-plt-filename)]))
+    (define file-button
+      (new button% [parent file-panel]
+           [callback (λ (x y) (browse))]
+           [label (string-constant browse...)]))
+    (define url-text-field
+      (new text-field% [parent url-panel]
+           [min-width 300] [stretchable-width #t] [callback void]
+           [init-value (cadr pref)]
+           [label (string-constant install-plt-url)]))
     (define-values (ok-button cancel-button)
       (gui-utils:ok/cancel-buttons
        button-panel
-       (λ (x y)
-         (set! cancel? #f)
-         (send dialog show #f))
-       (λ (x y)
-         (send dialog show #f))))
-    
+       (λ (x y) (set! cancel? #f) (send dialog show #f))
+       (λ (x y) (send dialog show #f))))
     ;; browse : -> void
-    ;; gets the name of a file from the user and
-    ;; updates file-text-field
+    ;; gets the name of a file from the user and updates file-text-field
     (define (browse)
       (let ([filename (finder:get-file #f "" #f "" dialog)])
         (when filename
           (send file-text-field set-value (path->string filename)))))
-    
     ;; from-web? : -> boolean
     ;; returns #t if the user has selected a web address
     (define (from-web?)
       (zero? (send tab-panel get-selection)))
-    
     (define cancel? #t)
-    
     (define (update-panels)
-      (send swapping-panel active-child
-            (if (from-web?)
-                url-panel
-                file-panel)))
-    
+      (define w? (from-web?))
+      (define t  (if w? url-text-field file-text-field))
+      (send swapping-panel active-child (if w? url-panel file-panel))
+      (send t focus)
+      (send (send t get-editor) set-position
+            0 (string-length (send t get-value))))
+    ;; initialize
+    (send tab-panel set-selection (if (car pref) 0 1))
     (update-panels)
     (send dialog show #t)
-    
+    (preferences:set 'drscheme:install-plt-dialog
+                     (list (from-web?)
+                           (send url-text-field get-value)
+                           (send file-text-field get-value)))
     (cond
       [cancel? (void)]
       [(from-web?)
-       (install-plt-from-url (trim-whitespace (send url-text-field get-value)) parent)]
-      [else 
-       (parameterize ([error-display-handler drscheme:init:original-error-display-handler])
-         (run-installer (string->path (send file-text-field get-value))))]))
-  
-  ;; trim-whitespace: string -> string
-  ;; Trims the whitespace surrounding a string.
-  (define (trim-whitespace a-str)
-    (cond
-      [(regexp-match #px"^\\s*(.*[^\\s])\\s*$"
-                     a-str)
-       => second]
-      [else
-       a-str]))
-  
+       (install-plt-from-url
+        (let* ([url (send url-text-field get-value)]
+               ;; trim whitespaces
+               [url (regexp-replace #rx"^ +" url "")]
+               [url (regexp-replace #rx" +$" url "")])
+          (if (regexp-match? #rx"^(?:[^/:]*://|$)" url)
+            url
+            (string-append "http://" url)))
+        parent)]
+      [else (parameterize ([error-display-handler
+                            drscheme:init:original-error-display-handler])
+              (run-installer
+               (string->path (send file-text-field get-value))))]))
+
   ;; install-plt-from-url : string (union #f dialog%) -> void
   ;; downloads and installs a .plt file from the given url
   (define (install-plt-from-url s-url parent)

@@ -238,7 +238,8 @@ void scheme_init_salloc(void);
 void scheme_init_jit(void);
 #endif
 void scheme_init_memtrace(Scheme_Env *env);
-void scheme_init_parameterization(Scheme_Env *env);
+void scheme_init_paramz(Scheme_Env *env);
+void scheme_init_parameterization();
 void scheme_init_getenv(void);
 void scheme_init_inspector(void);
 
@@ -403,6 +404,14 @@ THREAD_LOCAL_DECL(extern volatile int scheme_fuel_counter);
 
 THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_main_thread);
 
+#if defined(MZ_USE_PLACES) || defined(MZ_USE_FUTURES)
+# define MZ_USE_MZRT
+#endif
+
+#ifdef MZ_USE_MZRT
+#include "mzrt.h"
+#endif
+
 #ifdef MZ_USE_PLACES
 THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_current_thread);
 THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_first_thread);
@@ -415,7 +424,6 @@ THREAD_LOCAL_DECL(extern Scheme_Thread *scheme_first_thread);
 #define scheme_jumping_to_continuation (scheme_current_thread->cjs.jumping_to_continuation)
 #define scheme_multiple_count (scheme_current_thread->ku.multiple.count)
 #define scheme_multiple_array (scheme_current_thread->ku.multiple.array)
-#include "mzrt.h"
 extern mz_proc_thread *scheme_master_proc_thread;
 THREAD_LOCAL_DECL(extern mz_proc_thread *proc_thread_self);
 #endif
@@ -2584,7 +2592,8 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, int stxtoo);
 int scheme_prefix_depth(Resolve_Prefix *rp);
 Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
 				   Scheme_Object *src_modix, Scheme_Object *now_modix,
-				   int src_phase, int now_phase);
+				   int src_phase, int now_phase,
+                                   Scheme_Env *dummy_env);
 void scheme_pop_prefix(Scheme_Object **rs);
 
 Scheme_Object *scheme_eval_clone(Scheme_Object *expr);

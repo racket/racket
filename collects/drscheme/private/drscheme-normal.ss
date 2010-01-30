@@ -78,6 +78,9 @@
 (set-splash-char-observer
  (λ (evt)
    (let ([ch (send evt get-key-code)])
+     (when (and (eq? ch #\q)
+                (send evt get-control-down))
+       (exit))
      (when (char? ch)
        ;; as soon as something is typed, load the bitmaps
        (load-magic-images)

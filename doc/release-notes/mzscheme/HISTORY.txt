@@ -1,26 +1,11 @@
-Version 4.2.3.12
-Added module->imports and module->exports
-
-Version 4.2.3.10
-Added more fl and fx operations
-
-Version 4.2.3.8
-Added scheme/flonum; moved flvector operations to scheme/flonum
-
-Version 4.2.3.6
+Version 4.2.4, January 2010
+Added scheme/flonum and scheme/fixnum
+Extended scheme/unsafe/ops
 Changed JIT to support unboxed local binding of known-flonum
  arguments to unsafe-fl functions
-Added unsafe-flsqrt
-
-Version 4.2.3.5
-Added #:save-errno option for foreign-function types
-
-Version 4.2.3.4
-Added flvectors
-
-Version 4.2.3.3
-Added unsafe-f64vector-ref and unsafe-f64vector-set!
 Changed JIT to inline numeric ops with more than 2 arguments
+Added #:save-errno option for foreign-function types
+Added module->imports and module->exports
 
 Version 4.2.3, November 2009
 Changed _pointer (in scheme/foreign) to mean a pointer that does not

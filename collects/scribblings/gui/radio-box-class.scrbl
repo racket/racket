@@ -28,7 +28,7 @@ Whenever the user changes the selected radio button, the radio box's
                                           'vertical-label 'horizontal-label 
                                           'deleted)) 
                         '(vertical)]
-                 [selection exact-nonnegative-integer? 0]
+                 [selection (or/c exact-nonnegative-integer? #f) 0]
                  [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
@@ -64,8 +64,9 @@ The @scheme[style] argument must include either @scheme['vertical] for a
  @HVLabelNote[@scheme[style]]{radio box} @DeletedStyleNote[@scheme[style] @scheme[parent]]{radio box}
 
 By default, the first radio button is initially selected. If
- @scheme[selection] is positive, it is passed to @method[radio-box%
- set-selection] to set the initial radio button selection.
+ @scheme[selection] is positive or @scheme[#f], it is passed to
+ @method[radio-box% set-selection] to set the initial radio button
+ selection.
 
 @FontKWs[@scheme[font]] @WindowKWs[@scheme[enabled]] @SubareaKWs[] @AreaKWs[]
 
@@ -115,10 +116,10 @@ Returns the number of radio buttons in the radio box.
 }
 
 @defmethod[(get-selection)
-           exact-nonnegative-integer?]{
+           (or/c exact-nonnegative-integer? #f)]{
 
-Gets the position of the selected radio button. Radio buttons are
-numbered from @scheme[0].
+Gets the position of the selected radio button, returning @scheme[#f]
+if no button is selected. Radio buttons are numbered from @scheme[0].
 
 }
 
@@ -139,10 +140,11 @@ box, @|MismatchExn|.
 
 }
 
-@defmethod[(set-selection [n exact-nonnegative-integer?])
+@defmethod[(set-selection [n (or/c exact-nonnegative-integer? #f)])
            void?]{
 
-Sets the selected radio button by position. (The control's callback
+Sets the selected radio button by position, or deselects all radio
+ buttons if @scheme[n] is @scheme[#f]. (The control's callback
  procedure is @italic{not} invoked.) Radio buttons are numbered from
  @scheme[0]. If @scheme[n] is equal to or larger than the number of
  radio buttons in the radio box, @|MismatchExn|.

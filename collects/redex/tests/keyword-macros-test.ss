@@ -1,6 +1,6 @@
 #lang scheme
 
-(require "keyword-macros.ss"
+(require "../private/keyword-macros.ss"
          "test-util.ss")
 
 (reset-count)

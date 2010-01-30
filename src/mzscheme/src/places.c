@@ -7,6 +7,7 @@
 
 #include "mzrt.h"
 
+READ_ONLY static Scheme_Object *scheme_def_place_exit_proc;
 
 SHARED_OK mz_proc_thread *scheme_master_proc_thread;
 THREAD_LOCAL_DECL(mz_proc_thread *proc_thread_self);
@@ -17,6 +18,8 @@ static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_places_deep_copy_in_master(Scheme_Object *so);
 static Scheme_Object *scheme_place_send(int argc, Scheme_Object *args[]);
 static Scheme_Object *scheme_place_recv(int argc, Scheme_Object *args[]);
+static Scheme_Object *scheme_place_ch_p(int argc, Scheme_Object *args[]);
+static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *args[]);
 
 Scheme_Object *scheme_place_async_channel_create();
 void scheme_place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o);
@@ -42,7 +45,6 @@ static Scheme_Object *not_implemented(int argc, Scheme_Object **argv)
 
 # ifdef MZ_PRECISE_GC
 static void register_traversers(void) { }
-
 # endif
 
 #endif
@@ -66,8 +68,14 @@ void scheme_init_place(Scheme_Env *env)
   PLACE_PRIM_W_ARITY("place?",         scheme_place_p,     1, 1, plenv);
   PLACE_PRIM_W_ARITY("place-ch-send",  scheme_place_send,  1, 2, plenv);
   PLACE_PRIM_W_ARITY("place-ch-recv",  scheme_place_recv,  1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place-ch?",      scheme_place_ch_p,  1, 1, plenv);
 
+#ifdef MZ_USE_PLACES
+  REGISTER_SO(scheme_def_place_exit_proc);
+  scheme_def_place_exit_proc = scheme_make_prim_w_arity(def_place_exit_handler_proc, "default-place-exit-handler", 1, 1);
+#endif
   scheme_finish_primitive_module(plenv);
+
 }
 
 #ifdef MZ_USE_PLACES
@@ -85,6 +93,21 @@ typedef struct Place_Start_Data {
   Scheme_Object *current_library_collection_paths;
   mzrt_sema *ready;
 } Place_Start_Data;
+
+static Scheme_Object *def_place_exit_handler_proc(int argc, Scheme_Object *argv[])
+{
+  long status;
+
+  if (SCHEME_INTP(argv[0])) {
+    status = SCHEME_INT_VAL(argv[0]);
+    if (status < 1 || status > 255)
+      status = 0;
+  } else
+    status = 0;
+
+  mz_proc_thread_exit((void *) status);
+  return scheme_void; /* Never get here */
+}
 
 static void null_out_runtime_globals() {
   scheme_current_thread           = NULL;
@@ -155,7 +178,7 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
   return (Scheme_Object*) place;
 }
 
-#ifdef MZ_PRECISE_GC
+# ifdef MZ_PRECISE_GC
 /*============= SIGNAL HANDLER =============*/
 #include <signal.h>
 #include <sys/types.h>
@@ -324,13 +347,13 @@ static int place_wait_ready(Scheme_Object *o) {
   }
   return 0;
 }
-#endif
+# endif
 
 static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]) {
   Scheme_Place          *place;
   place = (Scheme_Place *) args[0];
  
-#ifdef MZ_PRECISE_GC
+# ifdef MZ_PRECISE_GC
    {
     Scheme_Object *rc;
     mz_proc_thread *worker_thread;
@@ -353,13 +376,13 @@ static Scheme_Object *scheme_place_wait(int argc, Scheme_Object *args[]) {
     free(wd);
     return rc;
   }
-#else
+# else
   {
     void *rcvoid;
     rcvoid = mz_proc_thread_wait((mz_proc_thread *)place->proc_thread);
     return scheme_make_integer((long) rcvoid);
   }
-#endif
+# endif
 }
 
 static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[])
@@ -447,6 +470,8 @@ static void *place_start_proc(void *data_arg) {
   /* at point point, don't refer to place_data or its content
      anymore, because it's allocated in the other place */
 
+  scheme_set_root_param(MZCONFIG_EXIT_HANDLER, scheme_def_place_exit_proc);
+
   {
     Scheme_Thread * volatile p;
     mz_jmp_buf * volatile saved_error_buf;
@@ -473,11 +498,11 @@ static void *place_start_proc(void *data_arg) {
 }
 
 Scheme_Object *scheme_places_deep_copy_in_master(Scheme_Object *so) {
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
+# if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   void *return_payload;
   return_payload = scheme_master_fast_path(5, so);
   return (Scheme_Object*) return_payload;
-#endif
+# endif
   return so;
 }
 
@@ -503,9 +528,7 @@ Scheme_Object *scheme_place_recv(int argc, Scheme_Object *args[]) {
   return scheme_true;
 }
 
-#ifdef MZ_PRECISE_GC
-static void* scheme_master_place_handlemsg(int msg_type, void *msg_payload);
-
+# ifdef MZ_PRECISE_GC
 static void* scheme_master_place_handlemsg(int msg_type, void *msg_payload)
 {
   switch(msg_type) {
@@ -542,13 +565,13 @@ void* scheme_master_fast_path(int msg_type, void *msg_payload) {
   Scheme_Object *o;
   void *original_gc;
 
-#ifdef MZ_PRECISE_GC
+# ifdef MZ_PRECISE_GC
   original_gc = GC_switch_to_master_gc();
-#endif
+# endif
   o = scheme_master_place_handlemsg(msg_type, msg_payload);
-#ifdef MZ_PRECISE_GC
+# ifdef MZ_PRECISE_GC
   GC_switch_back_from_master(original_gc);
-#endif
+# endif
 
   return o;
 }
@@ -562,8 +585,7 @@ void scheme_spawn_master_place() {
   scheme_master_proc_thread = (void*) ~0;
 
 }
-
-#endif
+# endif
 
 /*========================================================================*/
 /*                       places async channels                            */
@@ -599,6 +621,12 @@ Scheme_Object *scheme_place_async_channel_create() {
   ch->wakeup_signal = NULL;
   return (Scheme_Object *)ch;
 }
+
+static Scheme_Object *scheme_place_ch_p(int argc, Scheme_Object *args[])
+{
+  return SAME_TYPE(SCHEME_TYPE(args[0]), scheme_place_async_channel_type) ? scheme_true : scheme_false;
+}
+
 
 void scheme_place_async_send(Scheme_Place_Async_Channel *ch, Scheme_Object *o) {
   int cnt;
@@ -656,7 +684,6 @@ Scheme_Object *scheme_place_async_recv(Scheme_Place_Async_Channel *ch) {
   }
   return msg;
 }
-
 
 /*========================================================================*/
 /*                       precise GC traversers                            */

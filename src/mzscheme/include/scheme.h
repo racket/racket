@@ -147,25 +147,6 @@ typedef jmpbuf jmp_buf[1];
 typedef struct FSSpec mzFSSpec;
 #endif
 
-/* Set up MZ_EXTERN for DLL build */
-#if defined(WINDOWS_DYNAMIC_LOAD) \
-    && !defined(LINK_EXTENSIONS_BY_TABLE) \
-    && !defined(SCHEME_EMBEDDED_NO_DLL)
-# define MZ_DLLIMPORT __declspec(dllimport)
-# define MZ_DLLEXPORT __declspec(dllexport)
-# ifdef __mzscheme_private__
-#  define MZ_DLLSPEC __declspec(dllexport)
-# else
-#  define MZ_DLLSPEC __declspec(dllimport)
-# endif
-#else
-# define MZ_DLLSPEC
-# define MZ_DLLIMPORT
-# define MZ_DLLEXPORT
-#endif
-
-#define MZ_EXTERN extern MZ_DLLSPEC
-
 #ifndef MZ_DONT_USE_JIT
 # if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_X86_64)
 #  define MZ_USE_JIT

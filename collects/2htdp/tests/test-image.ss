@@ -32,7 +32,9 @@
                   make-ellipse
                   make-polygon
                   make-point
-                  make-crop )
+                  make-crop
+                  crop?
+                  normalized-shape?)
          (only-in "../private/image-more.ss" 
                   bring-between
                   swizzle)
@@ -1319,6 +1321,37 @@
                    2 7
                    (circle 4 'solid 'black)))
 
+;; this test case checks to make sure the number of crops doesn't 
+;; grow when normalizing shapes.
+(let* ([an-image 
+        (crop
+         0 0 50 50
+         (crop
+          0 10 60 60
+          (crop
+           10 0 60 60
+           (overlay
+            (overlay
+             (ellipse 20 50 'solid 'red)
+             (ellipse 30 40 'solid 'black))
+            (overlay
+             (ellipse 20 50 'solid 'red)
+             (ellipse 30 40 'solid 'black))))))]
+       [an-image+crop
+        (crop 40 40 10 10 an-image)])
+  
+  (define (count-crops s)
+    (define crops 0)
+    (let loop ([s s])
+      (when (crop? s)
+        (set! crops (+ crops 1)))
+      (when (struct? s)
+        (for-each loop (vector->list (struct->vector s)))))
+    crops)
+  
+  (test (+ (count-crops (normalize-shape (image-shape an-image))) 1)
+        =>
+        (count-crops (normalize-shape (image-shape an-image+crop)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1457,4 +1490,72 @@
           =>
           #rx"^polygon: expected <image-color>")
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  random testing of normalization
+;;    make sure normalization actually normalizes
+;;    and that normalization doesn't introduce new structs
+;;
+
+(require redex/reduction-semantics)
+
+(define-language 2htdp/image
+  (image (rectangle size size mode color)
+         (line coord coord color)
+         (add-curve (rectangle size size mode color)
+                    coord coord pull angle
+                    coord coord pull angle
+                    color)
+         (overlay image image)
+         (overlay/xy image coord coord image)
+         (underlay image image)
+         (underlay/xy image coord coord image)
+         (crop coord coord size size image)
+         (scale/xy size size image)
+         (scale size image)
+         (rotate angle image))
+  
+  (size big-nat)
+  (mode 'outline 'solid "outline" "solid")
+  (color "red" 'red "blue" "orange" "green" "black")
+  (coord big-int)
+  (pull 0 1/2 1/3 2 (/ big-nat (+ 1 big-nat)))
+  (angle 0 90 45 30 180 natural (* 4 natural))
+  
+  ; Redex tends to choose small numbers.
+  (big-nat (+ (* 10 natural) natural))
+  (big-int (+ (* 10 integer) integer)))
+
+(define-namespace-anchor anchor)
+
+(define (image-struct-count obj)
+  (let ([counts (make-hash)])
+    (let loop ([obj obj])
+      (when (struct? obj)
+        (let ([stuff (vector->list (struct->vector obj))])
+          (unless (member (car stuff) '(struct:translate struct:scale)) ;; skip these becuase normalization eliminates them
+            (hash-set! counts (car stuff) (+ 1 (hash-ref counts (car stuff) 0))))
+          (for-each loop (cdr stuff)))))
+    (sort (hash-map counts list) string<=? #:key (λ (x) (symbol->string (car x))))))
+
+(define (check-image-properties img-sexp img)
+  (let* ([raw-size (image-struct-count (image-shape img))]
+         [normalized (normalize-shape (image-shape img) values)]
+         [norm-size (image-struct-count normalized)])
+    (unless (normalized-shape? normalized)
+      (error 'test-image.ss "found a non-normalized shape after normalization:\n~s" 
+             img-sexp))
+    (unless (equal? norm-size raw-size)
+      (error 'test-image.ss "found differing sizes for ~s:\n  ~s\n  ~s" 
+             img-sexp raw-size norm-size))))       
+  
+(time
+ (redex-check
+  2htdp/image
+  image
+  (check-image-properties 
+   (term image)
+   (eval (term image) (namespace-anchor->namespace anchor)))
+  #:attempts 1000))
 

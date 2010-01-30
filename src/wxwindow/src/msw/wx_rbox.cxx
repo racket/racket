@@ -424,7 +424,7 @@ void wxRadioBox::SetButton(int which, int value)
 
 void wxRadioBox::SetSelection(int N)
 {
-  if ((N < 0) || (N >= no_items))
+  if ((N < -1) || (N >= no_items))
     return;
 
   if (N == selected)
@@ -433,7 +433,8 @@ void wxRadioBox::SetSelection(int N)
   if (selected >= 0 && selected < no_items)
     SetButton(selected, 0);
     
-  SetButton(N, 1);
+  if (N != -1)
+    SetButton(N, 1);
 
   selected = N;
 }

@@ -354,7 +354,7 @@ ZLIB_INC='$(ZLIB_INC)'
 PNG_A='$(PNG_A)'
 
 PREFLAGS="$CPPFLAGS"
-PLACE_CGC_FLAGS=""
+MZRT_CGC_FLAGS=""
 LIBATOM="LIBATOM_NONE"
 
 ar_libtool_no_undefined=""
@@ -1142,16 +1142,24 @@ fi
 
 if test "${enable_places}" = "yes" ; then
   PREFLAGS="$PREFLAGS -DMZ_USE_PLACES"
-  PLACE_CGC_FLAGS="$GC_THREADS_FLAG -DTHREAD_LOCAL_ALLOC"
   LDFLAGS="$LDFLAGS -pthread"
-  LIBATOM="LIBATOM_USE"
+  enable_mzrt=yes
 fi
 
 ############### futures ###################
 
 if test "${enable_futures}" = "yes" ; then
-  PREFLAGS="$PREFLAGS -DFUTURES_ENABLED -DUSE_PTHREAD_INSTEAD_OF_ITIMER"
+  PREFLAGS="$PREFLAGS -DMZ_USE_FUTURES"
+  enable_mzrt=yes
+fi
+
+############### OS threads ###################
+
+if test "${enable_mzrt}" = "yes" ; then
+  PREFLAGS="$PREFLAGS -DUSE_PTHREAD_INSTEAD_OF_ITIMER"
   LDFLAGS="$LDFLAGS -pthread"
+  MZRT_CGC_FLAGS="$GC_THREADS_FLAG -DTHREAD_LOCAL_ALLOC"
+  LIBATOM="LIBATOM_USE"
 fi
 
 ################ Xrender ##################
@@ -1432,7 +1440,7 @@ AC_SUBST(FRAMEWORK_REL_INSTALL)
 AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(INSTALL_ORIG_TREE)
 AC_SUBST(EXE_SUFFIX)
-AC_SUBST(PLACE_CGC_FLAGS)
+AC_SUBST(MZRT_CGC_FLAGS)
 AC_SUBST(LIBATOM)
 
 AC_SUBST(MREDLINKER)

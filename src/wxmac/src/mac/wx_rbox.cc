@@ -282,7 +282,7 @@ void wxRadioBox::SetSelection(int N)
 
   numberItems = cRadioButtons->Number();
 
-  if (0 <= N && N < numberItems) {
+  if (-1 <= N && N < numberItems) {
     if (selected != N) {
       if (0 <= selected && selected < numberItems) {
 	selectedNode = cRadioButtons->Nth(selected);
@@ -290,9 +290,11 @@ void wxRadioBox::SetSelection(int N)
 	selectedRadioButton->SetValue(FALSE);
       }
       
-      node = cRadioButtons->Nth(N);
-      radioButton = (wxRadioButton*)node->Data();
-      radioButton->SetValue(TRUE);
+      if (N != -1) {
+        node = cRadioButtons->Nth(N);
+        radioButton = (wxRadioButton*)node->Data();
+        radioButton->SetValue(TRUE);
+      }
       
       selected = N;
     }

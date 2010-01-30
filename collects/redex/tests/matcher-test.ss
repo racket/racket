@@ -1,5 +1,5 @@
 (module matcher-test mzscheme
-  (require "matcher.ss"
+  (require "../private/matcher.ss"
            (only "test-util.ss" equal/bindings?)
            (lib "list.ss"))
   

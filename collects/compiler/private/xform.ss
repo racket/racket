@@ -586,22 +586,24 @@
         
         (define per-block-push? #t)
         (define gc-var-stack-mode
-          (ormap (lambda (e)
-                   (cond
-                    [(and (pragma? e)
-                          (regexp-match #rx"GC_VARIABLE_STACK_THOUGH_TABLE" (pragma-s e)))
-                     'table]
-                    [(and (tok? e)
-                          (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL))
-                     'thread-local]
-                    [(and (tok? e)
-                          (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_GETSPECIFIC))
-                     'getspecific]
-                    [(and (tok? e)
-                          (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION))
-                     'function]
-                    [else #f]))
-                 e-raw))
+          (let loop ([e-raw e-raw])
+            (ormap (lambda (e)
+                     (cond
+                      [(and (pragma? e)
+                            (regexp-match #rx"GC_VARIABLE_STACK_THOUGH_TABLE" (pragma-s e)))
+                       'table]
+                      [(and (tok? e)
+                            (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL))
+                       'thread-local]
+                      [(and (tok? e)
+                            (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_GETSPECIFIC))
+                       'getspecific]
+                      [(and (tok? e)
+                            (eq? (tok-n e) 'XFORM_GC_VARIABLE_STACK_THROUGH_FUNCTION))
+                       'function]
+                      [(braces? e) (loop (seq->list (seq-in e)))]
+                      [else #f]))
+                   e-raw)))
         
         ;; The code produced by xform uses a number of macros. These macros
         ;; make the transformation about a little easier to debug, and they

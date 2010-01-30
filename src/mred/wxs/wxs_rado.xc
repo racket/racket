@@ -48,7 +48,7 @@
 
 @ "get-selection" : int GetSelection();
 @ "number" : int Number()
-@ "set-selection" : void SetSelection(int); : : /RANGE[0]
+@ "set-selection" : void SetSelection(int); : : /RANGEX[0]
 
 @ "enable" : void Enable(int,bool); : : /RANGE[0] <> single-button
 @ "enable" : void Enable(bool); <> all-buttons

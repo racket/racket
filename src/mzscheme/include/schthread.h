@@ -19,8 +19,8 @@
 #ifndef SCHEME_THREADLOCAL_H
 #define SCHEME_THREADLOCAL_H
 
-#if defined(MZ_USE_PLACES) || defined(FUTURES_ENABLED)
-#  define USE_THREAD_LOCAL
+#if defined(MZ_USE_PLACES) || defined(MZ_USE_FUTURES)
+# define USE_THREAD_LOCAL
 # if _MSC_VER
 #  define THREAD_LOCAL __declspec(thread)
 # elif defined(OS_X) || (defined(linux) && defined(MZ_USES_SHARED_LIB))
@@ -35,7 +35,26 @@
 # define THREAD_LOCAL /* empty */
 #endif
 
-extern void scheme_init_os_thread();
+/* Set up MZ_EXTERN for DLL build */
+#if (defined(__WIN32__) || defined(WIN32) || defined(_WIN32)) \
+    && !defined(LINK_EXTENSIONS_BY_TABLE) \
+    && !defined(SCHEME_EMBEDDED_NO_DLL)
+# define MZ_DLLIMPORT __declspec(dllimport)
+# define MZ_DLLEXPORT __declspec(dllexport)
+# ifdef __mzscheme_private__
+#  define MZ_DLLSPEC __declspec(dllexport)
+# else
+#  define MZ_DLLSPEC __declspec(dllimport)
+# endif
+#else
+# define MZ_DLLSPEC
+# define MZ_DLLIMPORT
+# define MZ_DLLEXPORT
+#endif
+
+#define MZ_EXTERN extern MZ_DLLSPEC
+
+MZ_EXTERN void scheme_init_os_thread();
 
 /* **************************************************************** */
 /* Declarations that we wish were elsewhere, but are needed here to */
@@ -77,7 +96,7 @@ typedef long objhead;
 
 /* **************************************** */
 
-#if FUTURES_ENABLED
+#if MZ_USE_FUTURES
 # include <pthread.h>
 #endif
 
@@ -193,8 +212,8 @@ typedef struct Thread_Local_Variables {
   void *jit_future_storage_[2];
   struct Scheme_Object **scheme_current_runstack_start_;
   struct Scheme_Object **scheme_current_runstack_;
-  MZ_MARK_STACK_TYPE scheme_current_cont_mark_stack_;
-  MZ_MARK_POS_TYPE scheme_current_cont_mark_pos_;
+  long scheme_current_cont_mark_stack_;
+  long scheme_current_cont_mark_pos_;
   struct Scheme_Custodian *main_custodian_;
   struct Scheme_Custodian *last_custodian_;
   struct Scheme_Hash_Table *limited_custodians_;
@@ -215,7 +234,6 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *recycle_cell_;
   struct Scheme_Object *maybe_recycle_cell_;
   int recycle_cc_count_;
-  mz_jmp_buf main_init_error_buf_;
   void *gmp_mem_pool_;
   unsigned long max_total_allocation_;
   unsigned long current_total_allocation_;
@@ -226,14 +244,14 @@ typedef struct Thread_Local_Variables {
   int builtin_ref_counter_;
   int env_uid_counter_;
   int scheme_overflow_count_;
-  Scheme_Object *original_pwd_;
+  struct Scheme_Object *original_pwd_;
   long scheme_hash_request_count_;
   long scheme_hash_iteration_count_;
-  Scheme_Env *initial_modules_env_;
+  struct Scheme_Env *initial_modules_env_;
   int num_initial_modules_;
-  Scheme_Object **initial_modules_;
-  Scheme_Object *initial_renames_;
-  Scheme_Bucket_Table *initial_toplevel_;
+  struct Scheme_Object **initial_modules_;
+  struct Scheme_Object *initial_renames_;
+  struct Scheme_Bucket_Table *initial_toplevel_;
   int generate_lifts_count_;
   int special_is_ok_;
   int scheme_force_port_closed_;
@@ -253,13 +271,14 @@ typedef struct Thread_Local_Variables {
   long start_this_gc_time_;
   long end_this_gc_time_;
   volatile short delayed_break_ready_;
-  Scheme_Thread *main_break_target_thread_;
+  struct Scheme_Thread *main_break_target_thread_;
   long scheme_code_page_total_;
   int locale_on_;
-  const mzchar *current_locale_name_;
+  void *current_locale_name_ptr_;
   int gensym_counter_;
-  Scheme_Object *dummy_input_port_;
-  Scheme_Object *dummy_output_port_;
+  struct Scheme_Object *dummy_input_port_;
+  struct Scheme_Object *dummy_output_port_;
+  struct Scheme_Bucket_Table *place_local_modpath_table_;
 /*KPLAKE1*/
 } Thread_Local_Variables;
 
@@ -460,7 +479,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define recycle_cell XOA (scheme_get_thread_local_variables()->recycle_cell_)
 #define maybe_recycle_cell XOA (scheme_get_thread_local_variables()->maybe_recycle_cell_)
 #define recycle_cc_count XOA (scheme_get_thread_local_variables()->recycle_cc_count_)
-#define main_init_error_buf XOA (scheme_get_thread_local_variables()->main_init_error_buf_)
 #define gmp_mem_pool XOA (scheme_get_thread_local_variables()->gmp_mem_pool_)
 #define max_total_allocation XOA (scheme_get_thread_local_variables()->max_total_allocation_)
 #define current_total_allocation XOA (scheme_get_thread_local_variables()->current_total_allocation_)
@@ -501,10 +519,11 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define main_break_target_thread XOA (scheme_get_thread_local_variables()->main_break_target_thread_)
 #define scheme_code_page_total XOA (scheme_get_thread_local_variables()->scheme_code_page_total_)
 #define locale_on XOA (scheme_get_thread_local_variables()->locale_on_)
-#define current_locale_name XOA (scheme_get_thread_local_variables()->current_locale_name_)
+#define current_locale_name_ptr XOA (scheme_get_thread_local_variables()->current_locale_name_ptr_)
 #define gensym_counter XOA (scheme_get_thread_local_variables()->gensym_counter_)
 #define dummy_input_port XOA (scheme_get_thread_local_variables()->dummy_input_port_)
 #define dummy_output_port XOA (scheme_get_thread_local_variables()->dummy_output_port_)
+#define place_local_modpath_table XOA (scheme_get_thread_local_variables()->place_local_modpath_table_)
 /*KPLAKE2*/
 
 /* **************************************** */

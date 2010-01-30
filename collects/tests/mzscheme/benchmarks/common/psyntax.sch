@@ -1,20 +1,21 @@
-;;; psyntax.pp
-;;; automatically generated from psyntax.ss
-;;; Mon Feb 26 23:22:05 EST 2007
-;;; see copyright notice in psyntax.ss
+;; smashed into benchmark form by Matthew
 
 ;;; psyntax.pp
 ;;; automatically generated from psyntax.ss
 ;;; Mon Feb 26 23:22:05 EST 2007
 ;;; see copyright notice in psyntax.ss
 
-(define (error . args) (+ args))
-(define (void) (if #f #t))
-(define (annotation-expression e) #f)
-(define (annotation-stripped e) e)
+;;; psyntax.pp
+;;; automatically generated from psyntax.ss
+;;; Mon Feb 26 23:22:05 EST 2007
+;;; see copyright notice in psyntax.ss
+
+(define (voide) (if #f #t))
+(define (sc-annotation-expression e) #f)
+(define (sc-annotation-stripped e) e)
 
 (define props '())
-(define (getprop s k)
+(define (sc-getprop s k)
   (let loop ((props props))
     (if (null? props)
         #f
@@ -26,7 +27,7 @@
                       (cdar vals)
                       (loop (cdr vals)))))
              (loop (cdr props))))))
-(define (putprop s k v)
+(define (sc-putprop s k v)
   (set! props
         (let loop ((props props))
           (if (null? props)
@@ -42,7 +43,7 @@
                                    (cons (car vals) (loop (cdr vals)))))))
                    (cdr props))
                   (cons (car props) (loop (cdr props))))))))
-(define (remprop s k)
+(define (sc-remprop s k)
   (set! props
         (let loop ((props props))
           (if (null? props)
@@ -59,24 +60,29 @@
                    (cdr props))
                   (cons (car props) (loop (cdr props))))))))
 (define counter 0)
-(define (gensym)
+(define (jensym)
   (set! counter (+ counter 1))
   (string->symbol (string-append "!$gen$!" (number->string counter))))
-(define (gensym? s)
+(define (jensym? s)
   (and (symbol? s)
        (let ((s (symbol->string s)))
          (char=? (string-ref s 0) #\!))))
 
-(define (ormap proc l)
+(define (sc-ormap proc l)
   (if (null? l)
       #f
       (or (proc (car l))
-          (ormap proc (cdr l)))))
-(define (andmap proc l)
+          (sc-ormap proc (cdr l)))))
+(define (sc-andmap proc l)
   (if (null? l)
       #t
       (and (proc (car l))
-           (andmap proc (cdr l)))))
+           (sc-andmap proc (cdr l)))))
+(define (sc-andmap2 proc l l2)
+  (if (null? l)
+      #t
+      (and (proc (car l) (car l2))
+           (sc-andmap2 proc (cdr l) (cdr l2)))))
 
 (define $sc-put-cte #f)
 (define $syntax-dispatch #f)
@@ -87,14 +93,64 @@
 (define datum->syntax-object #f)
 (define syntax->list #f)
 (define syntax->vector #f)
-(define identifier? #f)
-(define free-identifier=? #f)
-(define bound-identifier=? #f)
+(define sc-identifier? #f)
+(define sc-free-identifier=? #f)
+(define sc-bound-identifier=? #f)
 (define literal-identifier=? #f)
-(define generate-temporaries #f)
-(define environment? #f)
+(define sc-generate-temporaries #f)
+(define sc-environment? #f)
 (define sc-interaction-environment #f)
-(define syntax-error #f)
+(define sc-syntax-error #f)
+
+(define env (scheme-report-environment 5))
+
+(define (sc-eval e)
+  ((eval `(lambda (syntax-object->datum
+                   datum->syntax-object
+                   syntax->list 
+                   syntax->vector 
+                   identifier? 
+                   free-identifier=? 
+                   bound-identifier=? 
+                   literal-identifier=? 
+                   generate-temporaries 
+                   environment? 
+                   syntax-error 
+                   $sc-put-cte 
+                   $syntax-dispatch 
+                   $make-environment 
+                   sc-expand 
+                   andmap 
+                   andmap2 
+                   ormap 
+                   gensym 
+                   gensym? 
+                   eval 
+                   interaction-environment)
+            ,(cadr e))
+         env)
+   syntax-object->datum
+   datum->syntax-object
+   syntax->list
+   syntax->vector
+   sc-identifier?
+   sc-free-identifier=?
+   sc-bound-identifier=?
+   literal-identifier=?
+   sc-generate-temporaries
+   sc-environment?
+   sc-syntax-error
+   $sc-put-cte
+   $syntax-dispatch
+   $make-environment
+   sc-expand
+   sc-andmap
+   sc-andmap2
+   sc-ormap
+   jensym
+   jensym?
+   sc-eval
+   sc-interaction-environment))
 
 ((lambda ()
    (letrec ((noexpand62 '"noexpand")
@@ -140,29 +196,29 @@
             (put-cte-hook137 (lambda (symbol2513 val2512)
                                ($sc-put-cte symbol2513 val2512 '*top*)))
             (get-global-definition-hook138 (lambda (symbol2511)
-                                             (getprop
+                                             (sc-getprop
                                                symbol2511
                                                '*sc-expander*)))
             (put-global-definition-hook139 (lambda (symbol2510 x2509)
                                              (if (not x2509)
-                                                 (remprop
+                                                 (sc-remprop
                                                    symbol2510
                                                    '*sc-expander*)
-                                                 (putprop
+                                                 (sc-putprop
                                                    symbol2510
                                                    '*sc-expander*
                                                    x2509))))
             (read-only-binding?140 (lambda (symbol2508) '#f))
             (get-import-binding141 (lambda (symbol2507 token2506)
-                                     (getprop symbol2507 token2506)))
+                                     (sc-getprop symbol2507 token2506)))
             (update-import-binding!142 (lambda (symbol2504 token2503
                                                 p2502)
                                          ((lambda (x2505)
                                             (if (not x2505)
-                                                (remprop
+                                                (sc-remprop
                                                   symbol2504
                                                   token2503)
-                                                (putprop
+                                                (sc-putprop
                                                   symbol2504
                                                   token2503
                                                   x2505)))
@@ -226,7 +282,7 @@
                                                            (car exps2486)
                                                            (if (equal?
                                                                  (car exps2486)
-                                                                 '(void))
+                                                                 '(voide))
                                                                (loop2485
                                                                  (cdr exps2486))
                                                                (cons
@@ -289,7 +345,7 @@
                                                                                   var2470
                                                                                   x2474)
                                                                                 sets2471)))
-                                                                           (gensym))
+                                                                           (jensym))
                                                                          (values
                                                                            (cons
                                                                              var2470
@@ -442,7 +498,7 @@
                                             '#f))
                                        (id-var-name434 id2442 '(())))))
             (displaced-lexical-error299 (lambda (id2440)
-                                          (syntax-error
+                                          (sc-syntax-error
                                             id2440
                                             (if (id-var-name434
                                                   id2440
@@ -481,14 +537,14 @@
                                       b2433
                                       (make-transformer-binding302
                                         ((binding-value282 b2433))))
-                                    (void))
+                                    (voide))
                                 b2433))
                              (lookup*300 x2431 r2430)))))
             (make-transformer-binding302 (lambda (b2428)
                                            ((lambda (t2429)
                                               (if t2429
                                                   t2429
-                                                  (syntax-error
+                                                  (sc-syntax-error
                                                     b2428
                                                     '"invalid transformer")))
                                              (sanitize-binding271 b2428))))
@@ -509,7 +565,7 @@
                                     (symbol?
                                       ((lambda (e2422)
                                          (if (annotation?132 e2422)
-                                             (annotation-expression e2422)
+                                             (sc-annotation-expression e2422)
                                              e2422))
                                         (syntax-object-expression65
                                           x2421)))
@@ -521,11 +577,11 @@
                               (symbol?
                                 ((lambda (e2420)
                                    (if (annotation?132 e2420)
-                                       (annotation-expression e2420)
+                                       (sc-annotation-expression e2420)
                                        e2420))
                                   (syntax-object-expression65 x2419)))
                               (if (annotation?132 x2419)
-                                  (symbol? (annotation-expression x2419))
+                                  (symbol? (sc-annotation-expression x2419))
                                   '#f)))))
             (id-marks312 (lambda (id2418)
                            (if (syntax-object?64 id2418)
@@ -542,7 +598,7 @@
                                         (values
                                           ((lambda (e2415)
                                              (if (annotation?132 e2415)
-                                                 (annotation-expression
+                                                 (sc-annotation-expression
                                                    e2415)
                                                  e2415))
                                             (syntax-object-expression65
@@ -555,7 +611,7 @@
                                         (values
                                           ((lambda (e2416)
                                              (if (annotation?132 e2416)
-                                                 (annotation-expression
+                                                 (sc-annotation-expression
                                                    e2416)
                                                  e2416))
                                             x2414)
@@ -703,7 +759,7 @@
                                       (cons
                                         ((lambda (e2359)
                                            (if (annotation?132 e2359)
-                                               (annotation-expression
+                                               (sc-annotation-expression
                                                  e2359)
                                                e2359))
                                           (syntax-object-expression65
@@ -731,7 +787,7 @@
                                                ((lambda (e2355)
                                                   (if (annotation?132
                                                         e2355)
-                                                      (annotation-expression
+                                                      (sc-annotation-expression
                                                         e2355)
                                                       e2355))
                                                  (syntax-object-expression65
@@ -880,12 +936,12 @@
                                                               marks2326
                                                               old-binding2327)))))
                                                      (id-marks312 id2324))
-                                                   (void)))
+                                                   (voide)))
                                               ((lambda (x2329)
                                                  ((lambda (e2330)
                                                     (if (annotation?132
                                                           e2330)
-                                                        (annotation-expression
+                                                        (sc-annotation-expression
                                                           e2330)
                                                         e2330))
                                                    (if (syntax-object?64
@@ -901,7 +957,7 @@
                                                     ((lambda (e2332)
                                                        (if (annotation?132
                                                              e2332)
-                                                           (annotation-expression
+                                                           (sc-annotation-expression
                                                              e2332)
                                                            e2332))
                                                       (if (syntax-object?64
@@ -951,7 +1007,7 @@
                                                                                       (cdr ids2316)
                                                                                       (+ i2315
                                                                                          '1)))))
-                                                                              (void)))))
+                                                                              (voide)))))
                                                           f2314)
                                                          ids2309
                                                          '0)
@@ -983,15 +1039,15 @@
                                     (lambda (tosym2301 marks2300)
                                       (begin
                                         (if (not tosym2301)
-                                            (syntax-error
+                                            (sc-syntax-error
                                               id2299
                                               '"identifier not visible for export")
-                                            (void))
+                                            (voide))
                                         (make-resolved-id418
                                           ((lambda (x2302)
                                              ((lambda (e2303)
                                                 (if (annotation?132 e2303)
-                                                    (annotation-expression
+                                                    (sc-annotation-expression
                                                       e2303)
                                                     e2303))
                                                (if (syntax-object?64 x2302)
@@ -1305,7 +1361,7 @@
                                                                                                                                                             ((lambda (e2250)
                                                                                                                                                                (if (annotation?132
                                                                                                                                                                      e2250)
-                                                                                                                                                                   (annotation-expression
+                                                                                                                                                                   (sc-annotation-expression
                                                                                                                                                                      e2250)
                                                                                                                                                                    e2250))
                                                                                                                                                               (if (syntax-object?64
@@ -1422,7 +1478,7 @@
                                                     ((lambda (e2217)
                                                        (if (annotation?132
                                                              e2217)
-                                                           (annotation-expression
+                                                           (sc-annotation-expression
                                                              e2217)
                                                            e2217))
                                                       (syntax-object-expression65
@@ -1435,7 +1491,7 @@
                                                         ((lambda (e2218)
                                                            (if (annotation?132
                                                                  e2218)
-                                                               (annotation-expression
+                                                               (sc-annotation-expression
                                                                  e2218)
                                                                e2218))
                                                           id2209)
@@ -1481,7 +1537,7 @@
                             (if (eq? ((lambda (x2194)
                                         ((lambda (e2195)
                                            (if (annotation?132 e2195)
-                                               (annotation-expression
+                                               (sc-annotation-expression
                                                  e2195)
                                                e2195))
                                           (if (syntax-object?64 x2194)
@@ -1492,7 +1548,7 @@
                                      ((lambda (x2192)
                                         ((lambda (e2193)
                                            (if (annotation?132 e2193)
-                                               (annotation-expression
+                                               (sc-annotation-expression
                                                  e2193)
                                                e2193))
                                           (if (syntax-object?64 x2192)
@@ -1507,7 +1563,7 @@
                                (if (eq? ((lambda (x2183)
                                            ((lambda (e2184)
                                               (if (annotation?132 e2184)
-                                                  (annotation-expression
+                                                  (sc-annotation-expression
                                                     e2184)
                                                   e2184))
                                              (if (syntax-object?64 x2183)
@@ -1518,7 +1574,7 @@
                                         ((lambda (x2181)
                                            ((lambda (e2182)
                                               (if (annotation?132 e2182)
-                                                  (annotation-expression
+                                                  (sc-annotation-expression
                                                     e2182)
                                                   e2182))
                                              (if (syntax-object?64 x2181)
@@ -1559,7 +1615,7 @@
                                ((lambda (x2173)
                                   ((lambda (e2174)
                                      (if (annotation?132 e2174)
-                                         (annotation-expression e2174)
+                                         (sc-annotation-expression e2174)
                                          e2174))
                                     (if (syntax-object?64 x2173)
                                         (syntax-object-expression65 x2173)
@@ -1569,7 +1625,7 @@
                                ((lambda (x2171)
                                   ((lambda (e2172)
                                      (if (annotation?132 e2172)
-                                         (annotation-expression e2172)
+                                         (sc-annotation-expression e2172)
                                          e2172))
                                     (if (syntax-object?64 x2171)
                                         (syntax-object-expression65 x2171)
@@ -1612,14 +1668,14 @@
                                                                  gooduns2159)
                                                           (if (null?
                                                                 ids2160)
-                                                              (syntax-error
+                                                              (sc-syntax-error
                                                                 exp2156)
                                                               (if (id?306
                                                                     (car ids2160))
                                                                   (if (bound-id-member?442
                                                                         (car ids2160)
                                                                         gooduns2159)
-                                                                      (syntax-error
+                                                                      (sc-syntax-error
                                                                         (car ids2160)
                                                                         '"duplicate "
                                                                         class2155)
@@ -1628,7 +1684,7 @@
                                                                         (cons
                                                                           (car ids2160)
                                                                           gooduns2159)))
-                                                                  (syntax-error
+                                                                  (sc-syntax-error
                                                                     (car ids2160)
                                                                     '"invalid "
                                                                     class2155))))))
@@ -1665,12 +1721,12 @@
                               (wrap443
                                 (if (annotation?132 ae2147)
                                     (begin
-                                      (if (not (eq? (annotation-expression
+                                      (if (not (eq? (sc-annotation-expression
                                                       ae2147)
                                                     x2149))
                                           (error 'sc-expand
                                             '"internal error in source-wrap: ae/x mismatch")
-                                          (void))
+                                          (voide))
                                       ae2147)
                                     x2149)
                                 w2148)))
@@ -1696,7 +1752,7 @@
                                                              x2146
                                                              '#(syntax-object eval ((top) #(ribcage () () ()) #(ribcage #(x) #((top)) #("i")) #(ribcage () () ()) #(ribcage #(when-list w) #((top) (top)) #("i" "i")) #(ribcage (lambda-var-list gen-var strip strip* strip-annotation ellipsis? chi-void chi-local-syntax chi-lambda-clause parse-begin parse-alias parse-eval-when parse-meta parse-define-syntax parse-define parse-import parse-module do-import! lookup-import-label import-mark-delta chi-internal chi-body chi-macro chi-set! chi-application chi-expr chi chi-sequence chi-meta-frob chi-frobs ct-eval/residualize3 ct-eval/residualize2 rt-eval/residualize initial-mode-set update-mode-set do-top-import vfor-each vmap chi-external check-defined-ids check-module-exports id-set-diff chi-top-module set-frob-meta?! set-frob-e! frob-meta? frob-e frob? make-frob create-module-binding set-module-binding-exported! set-module-binding-val! set-module-binding-imps! set-module-binding-label! set-module-binding-id! set-module-binding-type! module-binding-exported module-binding-val module-binding-imps module-binding-label module-binding-id module-binding-type module-binding? make-module-binding make-resolved-interface make-unresolved-interface set-interface-token! set-interface-exports! set-interface-marks! interface-token interface-exports interface-marks interface? make-interface flatten-exports chi-top chi-top-sequence chi-top* syntax-type chi-when-list source-wrap wrap bound-id-member? invalid-ids-error distinct-bound-ids? valid-bound-ids? bound-id=? help-bound-id=? literal-id=? free-id=? id-var-name id-var-name-loc id-var-name&marks id-var-name-loc&marks top-id-free-var-name top-id-bound-var-name anon diff-marks same-marks? join-subst join-marks join-wraps smart-append resolved-id-var-name id->resolved-id make-resolved-id make-binding-wrap store-import-binding lookup-import-binding-name extend-ribcage-subst! extend-ribcage-barrier-help! extend-ribcage-barrier! import-extend-ribcage! extend-ribcage! make-empty-ribcage barrier-marker new-mark anti-mark the-anti-mark set-env-wrap! set-env-top-ribcage! env-wrap env-top-ribcage env? make-env set-import-interface-new-marks! set-import-interface-interface! import-interface-new-marks import-interface-interface import-interface? make-import-interface set-top-ribcage-mutable?! set-top-ribcage-key! top-ribcage-mutable? top-ribcage-key top-ribcage? make-top-ribcage set-ribcage-labels! set-ribcage-marks! set-ribcage-symnames! ribcage-labels ribcage-marks ribcage-symnames ribcage? make-ribcage gen-labels label? gen-label set-indirect-label! get-indirect-label indirect-label? gen-indirect-label anon only-top-marked? top-marked? tmp-wrap top-wrap empty-wrap wrap-subst wrap-marks make-wrap id-sym-name&marks id-subst id-marks id-sym-name id? nonsymbol-id? global-extend defer-or-eval-transformer make-transformer-binding lookup lookup* displaced-lexical-error displaced-lexical? extend-var-env* extend-env* extend-env null-env binding? set-binding-value! set-binding-type! binding-value binding-type make-binding sanitize-binding arg-check no-source unannotate self-evaluating? lexical-var? build-lexical-var build-top-module build-body build-letrec build-sequence build-data build-primref built-lambda? build-lambda build-revisit-only build-visit-only build-cte-install build-global-definition build-global-assignment build-global-reference build-lexical-assignment build-lexical-reference build-conditional build-application generate-id update-import-binding! get-import-binding read-only-binding? put-global-definition-hook get-global-definition-hook put-cte-hook error-hook define-top-level-value-hook local-eval-hook top-level-eval-hook annotation? fx>= fx<= fx> fx< fx= fx- fx+ set-syntax-object-wrap! set-syntax-object-expression! syntax-object-wrap syntax-object-expression syntax-object? make-syntax-object noexpand let-values define-structure unless when) ((top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) ("m" top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) ("m" top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top)) ("i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t))))
                                                            'eval
-                                                           (syntax-error
+                                                           (sc-syntax-error
                                                              (wrap443
                                                                x2146
                                                                w2144)
@@ -1892,7 +1948,7 @@
                                             '#f rib2125)
                                           (if (annotation?132 e2129)
                                               (syntax-type446
-                                                (annotation-expression
+                                                (sc-annotation-expression
                                                   e2129)
                                                 r2128 w2127 e2129 rib2125)
                                               (if ((lambda (x2139)
@@ -2062,16 +2118,16 @@
                                                                     r2046)
                                                                   (displaced-lexical-error299
                                                                     id2067)
-                                                                  (void))
+                                                                  (voide))
                                                               (if (not (top-ribcage-mutable?376
                                                                          top-ribcage2041))
-                                                                  (syntax-error
+                                                                  (sc-syntax-error
                                                                     (source-wrap444
                                                                       e2050
                                                                       w2064
                                                                       ae2048)
                                                                     '"invalid definition in read-only environment")
-                                                                  (void))
+                                                                  (voide))
                                                               ((lambda (sym2068)
                                                                  (call-with-values
                                                                    (lambda ()
@@ -2088,22 +2144,22 @@
                                                                                        id2067
                                                                                        '(()))
                                                                                      valsym2070))
-                                                                           (syntax-error
+                                                                           (sc-syntax-error
                                                                              (source-wrap444
                                                                                e2050
                                                                                w2064
                                                                                ae2048)
                                                                              '"definition not permitted")
-                                                                           (void))
+                                                                           (voide))
                                                                        (if (read-only-binding?140
                                                                              valsym2070)
-                                                                           (syntax-error
+                                                                           (sc-syntax-error
                                                                              (source-wrap444
                                                                                e2050
                                                                                w2064
                                                                                ae2048)
                                                                              '"invalid definition of read-only identifier")
-                                                                           (void))
+                                                                           (voide))
                                                                        (ct-eval/residualize2493
                                                                          ctem2044
                                                                          (lambda ()
@@ -2126,7 +2182,7 @@
                                                                    ((lambda (e2072)
                                                                       (if (annotation?132
                                                                             e2072)
-                                                                          (annotation-expression
+                                                                          (sc-annotation-expression
                                                                             e2072)
                                                                           e2072))
                                                                      (if (syntax-object?64
@@ -2157,16 +2213,16 @@
                                                                         r2046)
                                                                       (displaced-lexical-error299
                                                                         id2076)
-                                                                      (void))
+                                                                      (voide))
                                                                   (if (not (top-ribcage-mutable?376
                                                                              top-ribcage2041))
-                                                                      (syntax-error
+                                                                      (sc-syntax-error
                                                                         (source-wrap444
                                                                           e2050
                                                                           w2073
                                                                           ae2048)
                                                                         '"invalid definition in read-only environment")
-                                                                      (void))
+                                                                      (voide))
                                                                   ((lambda (sym2077)
                                                                      (call-with-values
                                                                        (lambda ()
@@ -2183,22 +2239,22 @@
                                                                                            id2076
                                                                                            '(()))
                                                                                          valsym2079))
-                                                                               (syntax-error
+                                                                               (sc-syntax-error
                                                                                  (source-wrap444
                                                                                    e2050
                                                                                    w2073
                                                                                    ae2048)
                                                                                  '"definition not permitted")
-                                                                               (void))
+                                                                               (voide))
                                                                            (if (read-only-binding?140
                                                                                  valsym2079)
-                                                                               (syntax-error
+                                                                               (sc-syntax-error
                                                                                  (source-wrap444
                                                                                    e2050
                                                                                    w2073
                                                                                    ae2048)
                                                                                  '"invalid definition of read-only identifier")
-                                                                               (void))
+                                                                               (voide))
                                                                            (if meta?2042
                                                                                (ct-eval/residualize2493
                                                                                  ctem2044
@@ -2267,7 +2323,7 @@
                                                                        ((lambda (e2082)
                                                                           (if (annotation?132
                                                                                 e2082)
-                                                                              (annotation-expression
+                                                                              (sc-annotation-expression
                                                                                 e2082)
                                                                               e2082))
                                                                          (if (syntax-object?64
@@ -2308,13 +2364,13 @@
                                                                             (wrap443
                                                                               id2086
                                                                               w2049))
-                                                                          (void))
+                                                                          (voide))
                                                                       (if (not (top-ribcage-mutable?376
                                                                                  top-ribcage2041))
-                                                                          (syntax-error
+                                                                          (sc-syntax-error
                                                                             orig2087
                                                                             '"invalid definition in read-only environment")
-                                                                          (void))
+                                                                          (voide))
                                                                       (chi-top-module482
                                                                         orig2087
                                                                         r2046
@@ -2347,10 +2403,10 @@
                                                                      (begin
                                                                        (if (not (top-ribcage-mutable?376
                                                                                   top-ribcage2041))
-                                                                           (syntax-error
+                                                                           (sc-syntax-error
                                                                              orig2090
                                                                              '"invalid definition in read-only environment")
-                                                                           (void))
+                                                                           (voide))
                                                                        (ct-eval/residualize2493
                                                                          ctem2044
                                                                          (lambda ()
@@ -2371,7 +2427,7 @@
                                                                                            '(displaced-lexical))
                                                                                          (displaced-lexical-error299
                                                                                            mid2088)
-                                                                                         (syntax-error
+                                                                                         (sc-syntax-error
                                                                                            mid2088
                                                                                            '"unknown module"))))
                                                                                 (binding-type281
@@ -2399,16 +2455,16 @@
                                                                                     r2046)
                                                                                   (displaced-lexical-error299
                                                                                     new-id2095)
-                                                                                  (void))
+                                                                                  (voide))
                                                                               (if (not (top-ribcage-mutable?376
                                                                                          top-ribcage2041))
-                                                                                  (syntax-error
+                                                                                  (sc-syntax-error
                                                                                     (source-wrap444
                                                                                       e2050
                                                                                       w2049
                                                                                       ae2048)
                                                                                     '"invalid definition in read-only environment")
-                                                                                  (void))
+                                                                                  (voide))
                                                                               ((lambda (sym2096)
                                                                                  (call-with-values
                                                                                    (lambda ()
@@ -2425,22 +2481,22 @@
                                                                                                        new-id2095
                                                                                                        '(()))
                                                                                                      valsym2098))
-                                                                                           (syntax-error
+                                                                                           (sc-syntax-error
                                                                                              (source-wrap444
                                                                                                e2050
                                                                                                w2049
                                                                                                ae2048)
                                                                                              '"definition not permitted")
-                                                                                           (void))
+                                                                                           (voide))
                                                                                        (if (read-only-binding?140
                                                                                              valsym2098)
-                                                                                           (syntax-error
+                                                                                           (sc-syntax-error
                                                                                              (source-wrap444
                                                                                                e2050
                                                                                                w2049
                                                                                                ae2048)
                                                                                              '"invalid definition of read-only identifier")
-                                                                                           (void))
+                                                                                           (voide))
                                                                                        (ct-eval/residualize2493
                                                                                          ctem2044
                                                                                          (lambda ()
@@ -2469,7 +2525,7 @@
                                                                                    ((lambda (e2100)
                                                                                       (if (annotation?132
                                                                                             e2100)
-                                                                                          (annotation-expression
+                                                                                          (sc-annotation-expression
                                                                                             e2100)
                                                                                           e2100))
                                                                                      (if (syntax-object?64
@@ -2483,13 +2539,13 @@
                                                                              w2049))))
                                                                      (begin
                                                                        (if meta-seen?2039
-                                                                           (syntax-error
+                                                                           (sc-syntax-error
                                                                              (source-wrap444
                                                                                e2050
                                                                                w2049
                                                                                ae2048)
                                                                              '"invalid meta definition")
-                                                                           (void))
+                                                                           (voide))
                                                                        (if meta?2042
                                                                            ((lambda (x2101)
                                                                               (begin
@@ -2497,7 +2553,7 @@
                                                                                   x2101)
                                                                                 (ct-eval/residualize3494
                                                                                   ctem2044
-                                                                                  void
+                                                                                  voide
                                                                                   (lambda ()
                                                                                     x2101))))
                                                                              (chi-expr499
@@ -2725,16 +2781,16 @@
                                                                                                                                                                 id1909
                                                                                                                                                                 '(()))
                                                                                                                                                               valsym1938))
-                                                                                                                                                    (syntax-error
+                                                                                                                                                    (sc-syntax-error
                                                                                                                                                       orig1917
                                                                                                                                                       '"definition not permitted")
-                                                                                                                                                    (void))
+                                                                                                                                                    (voide))
                                                                                                                                                 (if (read-only-binding?140
                                                                                                                                                       valsym1938)
-                                                                                                                                                    (syntax-error
+                                                                                                                                                    (sc-syntax-error
                                                                                                                                                       orig1917
                                                                                                                                                       '"invalid definition of read-only identifier")
-                                                                                                                                                    (void))
+                                                                                                                                                    (voide))
                                                                                                                                                 (list
                                                                                                                                                   '$sc-put-cte
                                                                                                                                                   (list
@@ -2759,7 +2815,7 @@
                                                                                                                                    ((lambda (e1940)
                                                                                                                                       (if (annotation?132
                                                                                                                                             e1940)
-                                                                                                                                          (annotation-expression
+                                                                                                                                          (sc-annotation-expression
                                                                                                                                             e1940)
                                                                                                                                           e1940))
                                                                                                                                      (if (syntax-object?64
@@ -2918,7 +2974,7 @@
                                                                                                                                                     ((lambda (e1961)
                                                                                                                                                        (if (annotation?132
                                                                                                                                                              e1961)
-                                                                                                                                                           (annotation-expression
+                                                                                                                                                           (sc-annotation-expression
                                                                                                                                                              e1961)
                                                                                                                                                            e1961))
                                                                                                                                                       (if (syntax-object?64
@@ -3002,7 +3058,7 @@
                                                                                                                                                             ((lambda (e1967)
                                                                                                                                                                (if (annotation?132
                                                                                                                                                                      e1967)
-                                                                                                                                                                   (annotation-expression
+                                                                                                                                                                   (sc-annotation-expression
                                                                                                                                                                      e1967)
                                                                                                                                                                    e1967))
                                                                                                                                                               (if (syntax-object?64
@@ -3060,7 +3116,7 @@
                                                                                                                                                                 ((lambda (e1973)
                                                                                                                                                                    (if (annotation?132
                                                                                                                                                                          e1973)
-                                                                                                                                                                       (annotation-expression
+                                                                                                                                                                       (sc-annotation-expression
                                                                                                                                                                          e1973)
                                                                                                                                                                        e1973))
                                                                                                                                                                   (if (syntax-object?64
@@ -3084,12 +3140,12 @@
                                                                                                                                                                           (if (not (symbol?
                                                                                                                                                                                      (get-indirect-label360
                                                                                                                                                                                        label1955)))
-                                                                                                                                                                              (syntax-error
+                                                                                                                                                                              (sc-syntax-error
                                                                                                                                                                                 (module-binding-id464
                                                                                                                                                                                   b1953)
                                                                                                                                                                                 '"unexported target of alias")
-                                                                                                                                                                              (void))
-                                                                                                                                                                          (void))
+                                                                                                                                                                              (voide))
+                                                                                                                                                                          (voide))
                                                                                                                                                                       rest1974))
                                                                                                                                                                    (ctdefs1924))))
                                                                                                                                                              (error 'sc-expand-internal
@@ -3135,7 +3191,7 @@
                                               fexports1878 ids1877)
                                        (letrec ((defined?1880 (lambda (e1887
                                                                        ids1886)
-                                                                (ormap
+                                                                (sc-ormap
                                                                   (lambda (x1888)
                                                                     (if (import-interface?380
                                                                           x1888)
@@ -3149,7 +3205,7 @@
                                                                                           ((lambda (e1894)
                                                                                              (if (annotation?132
                                                                                                    e1894)
-                                                                                                 (annotation-expression
+                                                                                                 (sc-annotation-expression
                                                                                                    e1894)
                                                                                                  e1894))
                                                                                             (if (syntax-object?64
@@ -3179,7 +3235,7 @@
                                                                                                                        ((lambda (e1903)
                                                                                                                           (if (annotation?132
                                                                                                                                 e1903)
-                                                                                                                              (annotation-expression
+                                                                                                                              (sc-annotation-expression
                                                                                                                                 e1903)
                                                                                                                               e1903))
                                                                                                                          (if (syntax-object?64
@@ -3196,7 +3252,7 @@
                                                                                                                        ((lambda (e1901)
                                                                                                                           (if (annotation?132
                                                                                                                                 e1901)
-                                                                                                                              (annotation-expression
+                                                                                                                              (sc-annotation-expression
                                                                                                                                 e1901)
                                                                                                                               e1901))
                                                                                                                          (if (syntax-object?64
@@ -3233,14 +3289,14 @@
                                                                      fexports1883)
                                                                    (if (not (null?
                                                                               missing1882))
-                                                                       (syntax-error
+                                                                       (sc-syntax-error
                                                                          (car missing1882)
                                                                          (if (= (length
                                                                                   missing1882)
                                                                                 '1)
                                                                              '"missing definition for export"
                                                                              '"missing definition for multiple exports, including"))
-                                                                       (void))
+                                                                       (voide))
                                                                    ((lambda (e1885
                                                                              fexports1884)
                                                                       (if (defined?1880
@@ -3400,7 +3456,7 @@
                                                                                           ((lambda (e1852)
                                                                                              (if (annotation?132
                                                                                                    e1852)
-                                                                                                 (annotation-expression
+                                                                                                 (sc-annotation-expression
                                                                                                    e1852)
                                                                                                  e1852))
                                                                                             (if (syntax-object?64
@@ -3420,7 +3476,7 @@
                                                                             ((lambda (e1854)
                                                                                (if (annotation?132
                                                                                      e1854)
-                                                                                   (annotation-expression
+                                                                                   (sc-annotation-expression
                                                                                      e1854)
                                                                                    e1854))
                                                                               (if (syntax-object?64
@@ -3442,7 +3498,7 @@
                                                                   (if (not (null?
                                                                              cls1831))
                                                                       ((lambda (cls1834)
-                                                                         (syntax-error
+                                                                         (sc-syntax-error
                                                                            source-exp1826
                                                                            '"duplicate definition for "
                                                                            (symbol->string
@@ -3450,7 +3506,7 @@
                                                                            '" in"))
                                                                         (syntax-object->datum
                                                                           cls1831))
-                                                                      (void))
+                                                                      (voide))
                                                                   ((letrec ((lp21835 (lambda (ls21837
                                                                                               cls1836)
                                                                                        (if (null?
@@ -3472,7 +3528,7 @@
                                             (car ls1825)
                                             (cdr ls1825)
                                             '())
-                                          (void)))))
+                                          (voide)))))
             (chi-external486 (lambda (ribcage1721 source-exp1720
                                       body1719 r1718 mr1717 ctem1716
                                       exports1715 fexports1714
@@ -3610,7 +3666,7 @@
                                                                                                                           (meta-residualize!1713
                                                                                                                             (ct-eval/residualize3494
                                                                                                                               ctem1716
-                                                                                                                              void
+                                                                                                                              voide
                                                                                                                               (lambda ()
                                                                                                                                 (list
                                                                                                                                   'define
@@ -3652,7 +3708,7 @@
                                                                                                                 ((lambda (e1753)
                                                                                                                    (if (annotation?132
                                                                                                                          e1753)
-                                                                                                                       (annotation-expression
+                                                                                                                       (sc-annotation-expression
                                                                                                                          e1753)
                                                                                                                        e1753))
                                                                                                                   (if (syntax-object?64
@@ -3881,7 +3937,7 @@
                                                                                                                                (extend-ribcage-barrier!412
                                                                                                                                  ribcage1721
                                                                                                                                  mid1781)
-                                                                                                                               (void))
+                                                                                                                               (voide))
                                                                                                                            (do-import!507
                                                                                                                              import-iface1788
                                                                                                                              ribcage1721)
@@ -3911,7 +3967,7 @@
                                                                                                                       '(displaced-lexical))
                                                                                                                     (displaced-lexical-error299
                                                                                                                       mid1781)
-                                                                                                                    (syntax-error
+                                                                                                                    (sc-syntax-error
                                                                                                                       mid1781
                                                                                                                       '"unknown module"))))
                                                                                                            (binding-type281
@@ -4091,13 +4147,13 @@
                                                                                                                          '#f)))
                                                                                                                    (begin
                                                                                                                      (if meta-seen?1726
-                                                                                                                         (syntax-error
+                                                                                                                         (sc-syntax-error
                                                                                                                            (source-wrap444
                                                                                                                              e1738
                                                                                                                              w1737
                                                                                                                              ae1736)
                                                                                                                            '"invalid meta definition")
-                                                                                                                         (void))
+                                                                                                                         (voide))
                                                                                                                      ((letrec ((f1807 (lambda (body1808)
                                                                                                                                         (if ((lambda (t1809)
                                                                                                                                                (if t1809
@@ -4122,7 +4178,7 @@
                                                                                                                                                    (meta-residualize!1713
                                                                                                                                                      (ct-eval/residualize3494
                                                                                                                                                        ctem1716
-                                                                                                                                                       void
+                                                                                                                                                       voide
                                                                                                                                                        (lambda ()
                                                                                                                                                          x1810)))))
                                                                                                                                                 (chi-meta-frob496
@@ -4174,7 +4230,7 @@
                                                              i1707))
                                                          (do1706
                                                            (+ i1707 '1)))
-                                                       (void)))))
+                                                       (voide)))))
                                   do1706)
                                  '0))
                               (vector-length v1703))))
@@ -4305,7 +4361,7 @@
                                                 (if (not t1677)
                                                     (set! t1677
                                                       (thunk1675))
-                                                    (void))
+                                                    (voide))
                                                 (top-level-eval-hook133
                                                   t1677)))
                                             (lambda ()
@@ -4324,7 +4380,7 @@
                                            (begin
                                              (if (memq 'c ctem1672)
                                                  (eval-thunk1671)
-                                                 (void))
+                                                 (voide))
                                              (if (memq 'r ctem1672)
                                                  (if ((lambda (t1673)
                                                         (if t1673
@@ -4487,7 +4543,7 @@
                                                                       (if (memv
                                                                             t1629
                                                                             '(meta-form))
-                                                                          (syntax-error
+                                                                          (sc-syntax-error
                                                                             (source-wrap444
                                                                               e1626
                                                                               w1623
@@ -4501,7 +4557,7 @@
                                                                                   e1626
                                                                                   w1623
                                                                                   ae1622)
-                                                                                (syntax-error
+                                                                                (sc-syntax-error
                                                                                   (source-wrap444
                                                                                     e1626
                                                                                     w1623
@@ -4515,7 +4571,7 @@
                                                                                       e1626
                                                                                       w1623
                                                                                       ae1622)
-                                                                                    (syntax-error
+                                                                                    (sc-syntax-error
                                                                                       (source-wrap444
                                                                                         e1626
                                                                                         w1623
@@ -4535,7 +4591,7 @@
                                                                                                  id1639
                                                                                                  exports1638
                                                                                                  forms1637)
-                                                                                          (syntax-error
+                                                                                          (sc-syntax-error
                                                                                             orig1640
                                                                                             '"invalid context for definition")))
                                                                                       (if (memv
@@ -4550,7 +4606,7 @@
                                                                                             (lambda (orig1643
                                                                                                      only?1642
                                                                                                      mid1641)
-                                                                                              (syntax-error
+                                                                                              (sc-syntax-error
                                                                                                 orig1643
                                                                                                 '"invalid context for definition")))
                                                                                           (if (memv
@@ -4561,7 +4617,7 @@
                                                                                                   e1626
                                                                                                   w1623
                                                                                                   ae1622)
-                                                                                                (syntax-error
+                                                                                                (sc-syntax-error
                                                                                                   (source-wrap444
                                                                                                     e1626
                                                                                                     w1623
@@ -4570,7 +4626,7 @@
                                                                                               (if (memv
                                                                                                     t1629
                                                                                                     '(syntax))
-                                                                                                  (syntax-error
+                                                                                                  (sc-syntax-error
                                                                                                     (source-wrap444
                                                                                                       e1626
                                                                                                       w1623
@@ -4584,7 +4640,7 @@
                                                                                                           e1626
                                                                                                           w1623
                                                                                                           ae1622))
-                                                                                                      (syntax-error
+                                                                                                      (sc-syntax-error
                                                                                                         (source-wrap444
                                                                                                           e1626
                                                                                                           w1623
@@ -4606,7 +4662,7 @@
                                                        e11616)))
                                               tmp1615)
                                             ((lambda (_1620)
-                                               (syntax-error
+                                               (sc-syntax-error
                                                  (source-wrap444
                                                    e1612
                                                    w1609
@@ -4679,13 +4735,13 @@
                                                                               (begin
                                                                                 (if (read-only-binding?140
                                                                                       n1601)
-                                                                                    (syntax-error
+                                                                                    (sc-syntax-error
                                                                                       (source-wrap444
                                                                                         e1600
                                                                                         w1597
                                                                                         ae1596)
                                                                                       '"invalid assignment to read-only variable")
-                                                                                    (void))
+                                                                                    (voide))
                                                                                 (list
                                                                                   'set!
                                                                                   sym1605
@@ -4712,7 +4768,7 @@
                                                                                      (wrap443
                                                                                        id1588
                                                                                        w1597))
-                                                                                   (syntax-error
+                                                                                   (sc-syntax-error
                                                                                      (source-wrap444
                                                                                        e1600
                                                                                        w1597
@@ -4735,7 +4791,7 @@
                                            (id-var-name434 id1588 w1579)))
                                        tmp1583)
                                      ((lambda (_1606)
-                                        (syntax-error
+                                        (sc-syntax-error
                                           (source-wrap444
                                             e1581
                                             w1579
@@ -4820,7 +4876,7 @@
                                                                                  x1569))
                                                                              (if (symbol?
                                                                                    x1569)
-                                                                                 (syntax-error
+                                                                                 (sc-syntax-error
                                                                                    (source-wrap444
                                                                                      e1563
                                                                                      w1561
@@ -4836,11 +4892,11 @@
                                        (out1566
                                          (lambda (id1567)
                                            (begin
-                                             (if (not (identifier? id1567))
-                                                 (syntax-error
+                                             (if (not (sc-identifier? id1567))
+                                                 (sc-syntax-error
                                                    id1567
                                                    '"environment argument is not an identifier")
-                                                 (void))
+                                                 (voide))
                                              (lookup301
                                                (id-var-name434
                                                  id1567
@@ -4869,10 +4925,10 @@
                                                   inits1551)
                                            (begin
                                              (if (null? exprs1555)
-                                                 (syntax-error
+                                                 (sc-syntax-error
                                                    outer-form1546
                                                    '"no expressions in body")
-                                                 (void))
+                                                 (voide))
                                              (build-body237
                                                '#f
                                                (reverse vars1553)
@@ -5006,7 +5062,7 @@
                                                                                                      ((lambda (e1479)
                                                                                                         (if (annotation?132
                                                                                                               e1479)
-                                                                                                            (annotation-expression
+                                                                                                            (sc-annotation-expression
                                                                                                               e1479)
                                                                                                             e1479))
                                                                                                        (if (syntax-object?64
@@ -5228,7 +5284,7 @@
                                                                                                                                (extend-ribcage-barrier!412
                                                                                                                                  ribcage1451
                                                                                                                                  mid1508)
-                                                                                                                               (void))
+                                                                                                                               (voide))
                                                                                                                            (do-import!507
                                                                                                                              import-iface1515
                                                                                                                              ribcage1451)
@@ -5255,7 +5311,7 @@
                                                                                                                       '(displaced-lexical))
                                                                                                                     (displaced-lexical-error299
                                                                                                                       mid1508)
-                                                                                                                    (syntax-error
+                                                                                                                    (sc-syntax-error
                                                                                                                       mid1508
                                                                                                                       '"unknown module"))))
                                                                                                            (binding-type281
@@ -5427,13 +5483,13 @@
                                                                                                                          '#f)))
                                                                                                                    (begin
                                                                                                                      (if meta-seen?1454
-                                                                                                                         (syntax-error
+                                                                                                                         (sc-syntax-error
                                                                                                                            (source-wrap444
                                                                                                                              e1467
                                                                                                                              w1466
                                                                                                                              ae1465)
                                                                                                                            '"invalid meta definition")
-                                                                                                                         (void))
+                                                                                                                         (voide))
                                                                                                                      ((letrec ((f1532 (lambda (body1533)
                                                                                                                                         (if ((lambda (t1534)
                                                                                                                                                (if t1534
@@ -5482,10 +5538,10 @@
                                       ((lambda (label1443)
                                          (begin
                                            (if (not label1443)
-                                               (syntax-error
+                                               (sc-syntax-error
                                                  id1442
                                                  '"exported identifier not visible")
-                                               (void))
+                                               (voide))
                                            label1443))
                                         (id-var-name-loc433
                                           id1442
@@ -5531,7 +5587,7 @@
                                                                               (wrap443
                                                                                 x1436
                                                                                 *w1410)
-                                                                              (syntax-error
+                                                                              (sc-syntax-error
                                                                                 (source-wrap444
                                                                                   e1413
                                                                                   w1412
@@ -5569,7 +5625,7 @@
                                                       form1422)))
                                              tmp1416)
                                            ((lambda (_1430)
-                                              (syntax-error
+                                              (sc-syntax-error
                                                 (source-wrap444
                                                   e1413
                                                   w1412
@@ -5617,7 +5673,7 @@
                                                         w1392)))
                                                   tmp1402)
                                                 ((lambda (_1409)
-                                                   (syntax-error
+                                                   (sc-syntax-error
                                                      (source-wrap444
                                                        e1393
                                                        w1392
@@ -5698,11 +5754,11 @@
                                                              (wrap443
                                                                name1388
                                                                w1363)
-                                                             '#(syntax-object (void) ((top) #(ribcage #(_ name) #((top) (top)) #("i" "i")) #(ribcage () () ()) #(ribcage #(e w ae) #((top) (top) (top)) #("i" "i" "i")) #(ribcage (lambda-var-list gen-var strip strip* strip-annotation ellipsis? chi-void chi-local-syntax chi-lambda-clause parse-begin parse-alias parse-eval-when parse-meta parse-define-syntax parse-define parse-import parse-module do-import! lookup-import-label import-mark-delta chi-internal chi-body chi-macro chi-set! chi-application chi-expr chi chi-sequence chi-meta-frob chi-frobs ct-eval/residualize3 ct-eval/residualize2 rt-eval/residualize initial-mode-set update-mode-set do-top-import vfor-each vmap chi-external check-defined-ids check-module-exports id-set-diff chi-top-module set-frob-meta?! set-frob-e! frob-meta? frob-e frob? make-frob create-module-binding set-module-binding-exported! set-module-binding-val! set-module-binding-imps! set-module-binding-label! set-module-binding-id! set-module-binding-type! module-binding-exported module-binding-val module-binding-imps module-binding-label module-binding-id module-binding-type module-binding? make-module-binding make-resolved-interface make-unresolved-interface set-interface-token! set-interface-exports! set-interface-marks! interface-token interface-exports interface-marks interface? make-interface flatten-exports chi-top chi-top-sequence chi-top* syntax-type chi-when-list source-wrap wrap bound-id-member? invalid-ids-error distinct-bound-ids? valid-bound-ids? bound-id=? help-bound-id=? literal-id=? free-id=? id-var-name id-var-name-loc id-var-name&marks id-var-name-loc&marks top-id-free-var-name top-id-bound-var-name anon diff-marks same-marks? join-subst join-marks join-wraps smart-append resolved-id-var-name id->resolved-id make-resolved-id make-binding-wrap store-import-binding lookup-import-binding-name extend-ribcage-subst! extend-ribcage-barrier-help! extend-ribcage-barrier! import-extend-ribcage! extend-ribcage! make-empty-ribcage barrier-marker new-mark anti-mark the-anti-mark set-env-wrap! set-env-top-ribcage! env-wrap env-top-ribcage env? make-env set-import-interface-new-marks! set-import-interface-interface! import-interface-new-marks import-interface-interface import-interface? make-import-interface set-top-ribcage-mutable?! set-top-ribcage-key! top-ribcage-mutable? top-ribcage-key top-ribcage? make-top-ribcage set-ribcage-labels! set-ribcage-marks! set-ribcage-symnames! ribcage-labels ribcage-marks ribcage-symnames ribcage? make-ribcage gen-labels label? gen-label set-indirect-label! get-indirect-label indirect-label? gen-indirect-label anon only-top-marked? top-marked? tmp-wrap top-wrap empty-wrap wrap-subst wrap-marks make-wrap id-sym-name&marks id-subst id-marks id-sym-name id? nonsymbol-id? global-extend defer-or-eval-transformer make-transformer-binding lookup lookup* displaced-lexical-error displaced-lexical? extend-var-env* extend-env* extend-env null-env binding? set-binding-value! set-binding-type! binding-value binding-type make-binding sanitize-binding arg-check no-source unannotate self-evaluating? lexical-var? build-lexical-var build-top-module build-body build-letrec build-sequence build-data build-primref built-lambda? build-lambda build-revisit-only build-visit-only build-cte-install build-global-definition build-global-assignment build-global-reference build-lexical-assignment build-lexical-reference build-conditional build-application generate-id update-import-binding! get-import-binding read-only-binding? put-global-definition-hook get-global-definition-hook put-cte-hook error-hook define-top-level-value-hook local-eval-hook top-level-eval-hook annotation? fx>= fx<= fx> fx< fx= fx- fx+ set-syntax-object-wrap! set-syntax-object-expression! syntax-object-wrap syntax-object-expression syntax-object? make-syntax-object noexpand let-values define-structure unless when) ((top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) ("m" top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) ("m" top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top)) ("i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t)))
+                                                             '#(syntax-object (voide) ((top) #(ribcage #(_ name) #((top) (top)) #("i" "i")) #(ribcage () () ()) #(ribcage #(e w ae) #((top) (top) (top)) #("i" "i" "i")) #(ribcage (lambda-var-list gen-var strip strip* strip-annotation ellipsis? chi-void chi-local-syntax chi-lambda-clause parse-begin parse-alias parse-eval-when parse-meta parse-define-syntax parse-define parse-import parse-module do-import! lookup-import-label import-mark-delta chi-internal chi-body chi-macro chi-set! chi-application chi-expr chi chi-sequence chi-meta-frob chi-frobs ct-eval/residualize3 ct-eval/residualize2 rt-eval/residualize initial-mode-set update-mode-set do-top-import vfor-each vmap chi-external check-defined-ids check-module-exports id-set-diff chi-top-module set-frob-meta?! set-frob-e! frob-meta? frob-e frob? make-frob create-module-binding set-module-binding-exported! set-module-binding-val! set-module-binding-imps! set-module-binding-label! set-module-binding-id! set-module-binding-type! module-binding-exported module-binding-val module-binding-imps module-binding-label module-binding-id module-binding-type module-binding? make-module-binding make-resolved-interface make-unresolved-interface set-interface-token! set-interface-exports! set-interface-marks! interface-token interface-exports interface-marks interface? make-interface flatten-exports chi-top chi-top-sequence chi-top* syntax-type chi-when-list source-wrap wrap bound-id-member? invalid-ids-error distinct-bound-ids? valid-bound-ids? bound-id=? help-bound-id=? literal-id=? free-id=? id-var-name id-var-name-loc id-var-name&marks id-var-name-loc&marks top-id-free-var-name top-id-bound-var-name anon diff-marks same-marks? join-subst join-marks join-wraps smart-append resolved-id-var-name id->resolved-id make-resolved-id make-binding-wrap store-import-binding lookup-import-binding-name extend-ribcage-subst! extend-ribcage-barrier-help! extend-ribcage-barrier! import-extend-ribcage! extend-ribcage! make-empty-ribcage barrier-marker new-mark anti-mark the-anti-mark set-env-wrap! set-env-top-ribcage! env-wrap env-top-ribcage env? make-env set-import-interface-new-marks! set-import-interface-interface! import-interface-new-marks import-interface-interface import-interface? make-import-interface set-top-ribcage-mutable?! set-top-ribcage-key! top-ribcage-mutable? top-ribcage-key top-ribcage? make-top-ribcage set-ribcage-labels! set-ribcage-marks! set-ribcage-symnames! ribcage-labels ribcage-marks ribcage-symnames ribcage? make-ribcage gen-labels label? gen-label set-indirect-label! get-indirect-label indirect-label? gen-indirect-label anon only-top-marked? top-marked? tmp-wrap top-wrap empty-wrap wrap-subst wrap-marks make-wrap id-sym-name&marks id-subst id-marks id-sym-name id? nonsymbol-id? global-extend defer-or-eval-transformer make-transformer-binding lookup lookup* displaced-lexical-error displaced-lexical? extend-var-env* extend-env* extend-env null-env binding? set-binding-value! set-binding-type! binding-value binding-type make-binding sanitize-binding arg-check no-source unannotate self-evaluating? lexical-var? build-lexical-var build-top-module build-body build-letrec build-sequence build-data build-primref built-lambda? build-lambda build-revisit-only build-visit-only build-cte-install build-global-definition build-global-assignment build-global-reference build-lexical-assignment build-lexical-reference build-conditional build-application generate-id update-import-binding! get-import-binding read-only-binding? put-global-definition-hook get-global-definition-hook put-cte-hook error-hook define-top-level-value-hook local-eval-hook top-level-eval-hook annotation? fx>= fx<= fx> fx< fx= fx- fx+ set-syntax-object-wrap! set-syntax-object-expression! syntax-object-wrap syntax-object-expression syntax-object? make-syntax-object noexpand let-values define-structure unless when) ((top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) ("m" top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) ("m" top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top)) ("i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t)))
                                                              '(())))
                                                          tmp1385)
                                                        ((lambda (_1390)
-                                                          (syntax-error
+                                                          (sc-syntax-error
                                                             (source-wrap444
                                                               e1364
                                                               w1363
@@ -5778,7 +5834,7 @@
                                                              w1339))
                                                          tmp1354)
                                                        ((lambda (_1361)
-                                                          (syntax-error
+                                                          (sc-syntax-error
                                                             (source-wrap444
                                                               e1340
                                                               w1339
@@ -5802,7 +5858,7 @@
                                          (lambda (_1336 form1335) form1335)
                                          tmp1334)
                                        ((lambda (_1337)
-                                          (syntax-error
+                                          (sc-syntax-error
                                             (source-wrap444
                                               e1332
                                               w1331
@@ -5824,7 +5880,7 @@
                                                   (cons e11324 e21323)))
                                               tmp1322)
                                             ((lambda (_1329)
-                                               (syntax-error
+                                               (sc-syntax-error
                                                  (source-wrap444
                                                    e1320
                                                    w1319
@@ -5852,7 +5908,7 @@
                                             (values new-id1315 old-id1314))
                                           tmp1310)
                                         ((lambda (_1317)
-                                           (syntax-error
+                                           (sc-syntax-error
                                              (source-wrap444
                                                e1308
                                                w1307
@@ -5882,7 +5938,7 @@
                                                    (cons e11302 e21301))
                                                  tmp1300)
                                                ((lambda (_1305)
-                                                  (syntax-error
+                                                  (sc-syntax-error
                                                     (source-wrap444
                                                       e1295
                                                       w1294
@@ -5904,7 +5960,7 @@
                                                   ((lambda (ids1275)
                                                      (if (not (valid-bound-ids?439
                                                                 ids1275))
-                                                         (syntax-error
+                                                         (sc-syntax-error
                                                            e1269
                                                            '"invalid parameter list in")
                                                          ((lambda (labels1277
@@ -5941,7 +5997,7 @@
                                                          ((lambda (old-ids1284)
                                                             (if (not (valid-bound-ids?439
                                                                        old-ids1284))
-                                                                (syntax-error
+                                                                (sc-syntax-error
                                                                   e1269
                                                                   '"invalid parameter list in")
                                                                 ((lambda (labels1286
@@ -5983,7 +6039,7 @@
                                                              ids1283)))
                                                        tmp1280)
                                                      ((lambda (_1291)
-                                                        (syntax-error
+                                                        (sc-syntax-error
                                                           e1269))
                                                        tmp1270)))
                                                 ($syntax-dispatch
@@ -6056,7 +6112,7 @@
                                                    id1251))
                                                tmp1247)
                                              ((lambda (_1263)
-                                                (syntax-error
+                                                (sc-syntax-error
                                                   (source-wrap444
                                                     e1244
                                                     w1241
@@ -6069,7 +6125,7 @@
                                                 .
                                                 each-any))))
                                      e1244)))
-            (chi-void518 (lambda () (cons 'void '())))
+            (chi-void518 (lambda () (cons 'voide '())))
             (ellipsis?519 (lambda (x1239)
                             (if (nonsymbol-id?305 x1239)
                                 (literal-id=?436
@@ -6082,7 +6138,7 @@
                                          (strip-annotation520 (car x1238))
                                          (strip-annotation520 (cdr x1238)))
                                        (if (annotation?132 x1238)
-                                           (annotation-stripped x1238)
+                                           (sc-annotation-stripped x1238)
                                            x1238))))
             (strip*521 (lambda (x1231 w1230 fn1229)
                          (if (memq 'top (wrap-marks316 w1230))
@@ -6115,7 +6171,7 @@
                                                         (if (vector? x1233)
                                                             ((lambda (old1236)
                                                                ((lambda (new1237)
-                                                                  (if (andmap
+                                                                  (if (sc-andmap2
                                                                         eq?
                                                                         old1236
                                                                         new1237)
@@ -6146,8 +6202,8 @@
             (gen-var523 (lambda (id1223)
                           ((lambda (id1224)
                              (if (annotation?132 id1224)
-                                 (gensym)
-                                 (gensym)))
+                                 (jensym)
+                                 (jensym)))
                             (if (syntax-object?64 id1223)
                                 (syntax-object-expression65 id1223)
                                 id1223))))
@@ -6186,7 +6242,7 @@
                                                                        (if (annotation?132
                                                                              vars1222)
                                                                            (lvl1219
-                                                                             (annotation-expression
+                                                                             (sc-annotation-expression
                                                                                vars1222)
                                                                              ls1221
                                                                              w1220)
@@ -6258,10 +6314,10 @@
                                                        (if (not (eq? (interface-token455
                                                                        iface1208)
                                                                      token1205))
-                                                           (syntax-error
+                                                           (sc-syntax-error
                                                              id1199
                                                              '"import mismatch for module")
-                                                           (void))
+                                                           (voide))
                                                        (sc-put-module1200
                                                          (interface-exports454
                                                            iface1208)
@@ -6272,7 +6328,7 @@
                                                  (interface-exports454
                                                    iface1208)))
                                               (binding-value282 b1206))
-                                            (syntax-error
+                                            (sc-syntax-error
                                               id1199
                                               '"unknown module")))
                                        (binding-type281 b1206)))
@@ -6310,7 +6366,7 @@
                                      (if (memv t1193 '(displaced-lexical))
                                          (displaced-lexical-error299
                                            (wrap443 id1192 w1168))
-                                         (void)))
+                                         (voide)))
                                     (binding-type281
                                       (lookup301 n1191 r1170))))
                                 var1183
@@ -6332,7 +6388,7 @@
                                 var1183)))
                        tmp1173)
                      ((lambda (_1196)
-                        (syntax-error (source-wrap444 e1171 w1168 ae1167)))
+                        (sc-syntax-error (source-wrap444 e1171 w1168 ae1167)))
                        tmp1172)))
                 ($syntax-dispatch
                   tmp1172
@@ -6350,7 +6406,7 @@
                          (list 'quote (strip522 e1163 w1157)))
                        tmp1162)
                      ((lambda (_1165)
-                        (syntax-error (source-wrap444 e1160 w1157 ae1156)))
+                        (sc-syntax-error (source-wrap444 e1160 w1157 ae1156)))
                        tmp1161)))
                 ($syntax-dispatch tmp1161 '(any any))))
              e1160)))
@@ -6386,7 +6442,7 @@
                                                            maps1103)))
                                                      (if (ellipsis?1096
                                                            e1099)
-                                                         (syntax-error
+                                                         (sc-syntax-error
                                                            src1100
                                                            '"misplaced ellipsis in syntax form")
                                                          (values
@@ -6412,7 +6468,7 @@
                                                        (lambda (dots1111
                                                                 e1110)
                                                          (if vec?1095
-                                                             (syntax-error
+                                                             (sc-syntax-error
                                                                src1100
                                                                '"misplaced ellipsis in syntax template")
                                                              (gen-syntax1039
@@ -6465,7 +6521,7 @@
                                                                                                                 maps1130)
                                                                                                          (if (null?
                                                                                                                (car maps1130))
-                                                                                                             (syntax-error
+                                                                                                             (sc-syntax-error
                                                                                                                src1100
                                                                                                                '"extra ellipsis in syntax form")
                                                                                                              (values
@@ -6521,7 +6577,7 @@
                                                                                maps1138)
                                                                         (if (null?
                                                                               (car maps1138))
-                                                                            (syntax-error
+                                                                            (sc-syntax-error
                                                                               src1100
                                                                               '"extra ellipsis in syntax form")
                                                                             (values
@@ -6623,7 +6679,7 @@
                                     (if (= level1088 '0)
                                         (values var1089 maps1087)
                                         (if (null? maps1087)
-                                            (syntax-error
+                                            (sc-syntax-error
                                               src1090
                                               '"missing ellipsis in syntax form")
                                             (call-with-values
@@ -6670,7 +6726,7 @@
                                     ((lambda (formals1078 actuals1077)
                                        (if (eq? (car e1076) 'ref)
                                            (car actuals1077)
-                                           (if (andmap
+                                           (if (sc-andmap
                                                  (lambda (x1079)
                                                    (if (eq? (car x1079)
                                                             'ref)
@@ -6807,7 +6863,7 @@
                                    (lambda (e1059 maps1058)
                                      (regen1046 e1059))))
                                tmp1055)
-                             ((lambda (_1060) (syntax-error e1053))
+                             ((lambda (_1060) (sc-syntax-error e1053))
                                tmp1054)))
                         ($syntax-dispatch tmp1054 '(any any))))
                      e1053))
@@ -6829,7 +6885,7 @@
                            (lambda (vars1038 body1037)
                              (list 'lambda vars1038 body1037))))
                        tmp1034)
-                     (syntax-error tmp1033)))
+                     (sc-syntax-error tmp1033)))
                 ($syntax-dispatch tmp1033 '(any . any))))
              e1032)))
        (global-extend304
@@ -6877,7 +6933,7 @@
                            id1014))
                        tmp1010)
                      ((lambda (_1026)
-                        (syntax-error (source-wrap444 e1008 w1005 ae1004)))
+                        (sc-syntax-error (source-wrap444 e1008 w1005 ae1004)))
                        tmp1009)))
                 ($syntax-dispatch
                   tmp1009
@@ -6909,7 +6965,7 @@
                                   (chi498 else998 r990 mr989 w988 m?986)))
                               tmp997)
                             ((lambda (_1002)
-                               (syntax-error
+                               (sc-syntax-error
                                  (source-wrap444 e991 w988 ae987)))
                               tmp992)))
                        ($syntax-dispatch tmp992 '(any any any any)))))
@@ -7197,12 +7253,12 @@
                                                 (map car pvars906)
                                                 pat899
                                                 '"pattern variable")
-                                              (if (not (andmap
+                                              (if (not (sc-andmap
                                                          (lambda (x908)
                                                            (not (ellipsis?519
                                                                   (car x908))))
                                                          pvars906))
-                                                  (syntax-error
+                                                  (sc-syntax-error
                                                     pat899
                                                     '"misplaced ellipsis in syntax-case pattern")
                                                   ((lambda (y909)
@@ -7344,7 +7400,7 @@
                                                                       exp893))
                                                                   tmp892)
                                                                 ((lambda (_896)
-                                                                   (syntax-error
+                                                                   (sc-syntax-error
                                                                      (car clauses883)
                                                                      '"invalid syntax-case clause"))
                                                                   tmp886)))
@@ -7363,7 +7419,7 @@
                          (if tmp870
                              (apply
                                (lambda (_874 val873 key872 m871)
-                                 (if (andmap
+                                 (if (sc-andmap
                                        (lambda (x876)
                                          (if (id?306 x876)
                                              (not (ellipsis?519 x876))
@@ -7380,11 +7436,11 @@
                                             (chi498 val873 r866 mr865 '(())
                                               m?862))))
                                        (gen-var523 'tmp))
-                                     (syntax-error
+                                     (sc-syntax-error
                                        e868
                                        '"invalid literals list in")))
                                tmp870)
-                             (syntax-error tmp869)))
+                             (sc-syntax-error tmp869)))
                         ($syntax-dispatch
                           tmp869
                           '(any any each-any . each-any))))
@@ -7399,15 +7455,15 @@
                                                (if tmp853
                                                    (apply
                                                      (lambda (id855 e854)
-                                                       (if (identifier?
+                                                       (if (sc-identifier?
                                                              id855)
-                                                           (andmap
+                                                           (sc-andmap
                                                              proper-export?828
                                                              e854)
                                                            '#f))
                                                      tmp853)
                                                    ((lambda (id857)
-                                                      (identifier? id857))
+                                                      (sc-identifier? id857))
                                                      tmp852)))
                                               ($syntax-dispatch
                                                 tmp852
@@ -7420,7 +7476,7 @@
                          (if tmp832
                              (apply
                                (lambda (_835 e834 d833)
-                                 (if (andmap proper-export?828 e834)
+                                 (if (sc-andmap proper-export?828 e834)
                                      (list
                                        '#(syntax-object begin ((top) #(ribcage #(_ e d) #((top) (top) (top)) #("i" "i" "i")) #(ribcage #(orig) #((top)) #("i")) #(ribcage (proper-export?) ((top)) ("i")) #(ribcage #(x) #((top)) #("i")) #(ribcage (lambda-var-list gen-var strip strip* strip-annotation ellipsis? chi-void chi-local-syntax chi-lambda-clause parse-begin parse-alias parse-eval-when parse-meta parse-define-syntax parse-define parse-import parse-module do-import! lookup-import-label import-mark-delta chi-internal chi-body chi-macro chi-set! chi-application chi-expr chi chi-sequence chi-meta-frob chi-frobs ct-eval/residualize3 ct-eval/residualize2 rt-eval/residualize initial-mode-set update-mode-set do-top-import vfor-each vmap chi-external check-defined-ids check-module-exports id-set-diff chi-top-module set-frob-meta?! set-frob-e! frob-meta? frob-e frob? make-frob create-module-binding set-module-binding-exported! set-module-binding-val! set-module-binding-imps! set-module-binding-label! set-module-binding-id! set-module-binding-type! module-binding-exported module-binding-val module-binding-imps module-binding-label module-binding-id module-binding-type module-binding? make-module-binding make-resolved-interface make-unresolved-interface set-interface-token! set-interface-exports! set-interface-marks! interface-token interface-exports interface-marks interface? make-interface flatten-exports chi-top chi-top-sequence chi-top* syntax-type chi-when-list source-wrap wrap bound-id-member? invalid-ids-error distinct-bound-ids? valid-bound-ids? bound-id=? help-bound-id=? literal-id=? free-id=? id-var-name id-var-name-loc id-var-name&marks id-var-name-loc&marks top-id-free-var-name top-id-bound-var-name anon diff-marks same-marks? join-subst join-marks join-wraps smart-append resolved-id-var-name id->resolved-id make-resolved-id make-binding-wrap store-import-binding lookup-import-binding-name extend-ribcage-subst! extend-ribcage-barrier-help! extend-ribcage-barrier! import-extend-ribcage! extend-ribcage! make-empty-ribcage barrier-marker new-mark anti-mark the-anti-mark set-env-wrap! set-env-top-ribcage! env-wrap env-top-ribcage env? make-env set-import-interface-new-marks! set-import-interface-interface! import-interface-new-marks import-interface-interface import-interface? make-import-interface set-top-ribcage-mutable?! set-top-ribcage-key! top-ribcage-mutable? top-ribcage-key top-ribcage? make-top-ribcage set-ribcage-labels! set-ribcage-marks! set-ribcage-symnames! ribcage-labels ribcage-marks ribcage-symnames ribcage? make-ribcage gen-labels label? gen-label set-indirect-label! get-indirect-label indirect-label? gen-indirect-label anon only-top-marked? top-marked? tmp-wrap top-wrap empty-wrap wrap-subst wrap-marks make-wrap id-sym-name&marks id-subst id-marks id-sym-name id? nonsymbol-id? global-extend defer-or-eval-transformer make-transformer-binding lookup lookup* displaced-lexical-error displaced-lexical? extend-var-env* extend-env* extend-env null-env binding? set-binding-value! set-binding-type! binding-value binding-type make-binding sanitize-binding arg-check no-source unannotate self-evaluating? lexical-var? build-lexical-var build-top-module build-body build-letrec build-sequence build-data build-primref built-lambda? build-lambda build-revisit-only build-visit-only build-cte-install build-global-definition build-global-assignment build-global-reference build-lexical-assignment build-lexical-reference build-conditional build-application generate-id update-import-binding! get-import-binding read-only-binding? put-global-definition-hook get-global-definition-hook put-cte-hook error-hook define-top-level-value-hook local-eval-hook top-level-eval-hook annotation? fx>= fx<= fx> fx< fx= fx- fx+ set-syntax-object-wrap! set-syntax-object-expression! syntax-object-wrap syntax-object-expression syntax-object? make-syntax-object noexpand let-values define-structure unless when) ((top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) ("m" top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) ("m" top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top)) ("i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t)))
                                        (cons
@@ -7435,7 +7491,7 @@
                                          (cons
                                            orig830
                                            '#(syntax-object (#f anon) ((top) #(ribcage #(_ e d) #((top) (top) (top)) #("i" "i" "i")) #(ribcage #(orig) #((top)) #("i")) #(ribcage (proper-export?) ((top)) ("i")) #(ribcage #(x) #((top)) #("i")) #(ribcage (lambda-var-list gen-var strip strip* strip-annotation ellipsis? chi-void chi-local-syntax chi-lambda-clause parse-begin parse-alias parse-eval-when parse-meta parse-define-syntax parse-define parse-import parse-module do-import! lookup-import-label import-mark-delta chi-internal chi-body chi-macro chi-set! chi-application chi-expr chi chi-sequence chi-meta-frob chi-frobs ct-eval/residualize3 ct-eval/residualize2 rt-eval/residualize initial-mode-set update-mode-set do-top-import vfor-each vmap chi-external check-defined-ids check-module-exports id-set-diff chi-top-module set-frob-meta?! set-frob-e! frob-meta? frob-e frob? make-frob create-module-binding set-module-binding-exported! set-module-binding-val! set-module-binding-imps! set-module-binding-label! set-module-binding-id! set-module-binding-type! module-binding-exported module-binding-val module-binding-imps module-binding-label module-binding-id module-binding-type module-binding? make-module-binding make-resolved-interface make-unresolved-interface set-interface-token! set-interface-exports! set-interface-marks! interface-token interface-exports interface-marks interface? make-interface flatten-exports chi-top chi-top-sequence chi-top* syntax-type chi-when-list source-wrap wrap bound-id-member? invalid-ids-error distinct-bound-ids? valid-bound-ids? bound-id=? help-bound-id=? literal-id=? free-id=? id-var-name id-var-name-loc id-var-name&marks id-var-name-loc&marks top-id-free-var-name top-id-bound-var-name anon diff-marks same-marks? join-subst join-marks join-wraps smart-append resolved-id-var-name id->resolved-id make-resolved-id make-binding-wrap store-import-binding lookup-import-binding-name extend-ribcage-subst! extend-ribcage-barrier-help! extend-ribcage-barrier! import-extend-ribcage! extend-ribcage! make-empty-ribcage barrier-marker new-mark anti-mark the-anti-mark set-env-wrap! set-env-top-ribcage! env-wrap env-top-ribcage env? make-env set-import-interface-new-marks! set-import-interface-interface! import-interface-new-marks import-interface-interface import-interface? make-import-interface set-top-ribcage-mutable?! set-top-ribcage-key! top-ribcage-mutable? top-ribcage-key top-ribcage? make-top-ribcage set-ribcage-labels! set-ribcage-marks! set-ribcage-symnames! ribcage-labels ribcage-marks ribcage-symnames ribcage? make-ribcage gen-labels label? gen-label set-indirect-label! get-indirect-label indirect-label? gen-indirect-label anon only-top-marked? top-marked? tmp-wrap top-wrap empty-wrap wrap-subst wrap-marks make-wrap id-sym-name&marks id-subst id-marks id-sym-name id? nonsymbol-id? global-extend defer-or-eval-transformer make-transformer-binding lookup lookup* displaced-lexical-error displaced-lexical? extend-var-env* extend-env* extend-env null-env binding? set-binding-value! set-binding-type! binding-value binding-type make-binding sanitize-binding arg-check no-source unannotate self-evaluating? lexical-var? build-lexical-var build-top-module build-body build-letrec build-sequence build-data build-primref built-lambda? build-lambda build-revisit-only build-visit-only build-cte-install build-global-definition build-global-assignment build-global-reference build-lexical-assignment build-lexical-reference build-conditional build-application generate-id update-import-binding! get-import-binding read-only-binding? put-global-definition-hook get-global-definition-hook put-cte-hook error-hook define-top-level-value-hook local-eval-hook top-level-eval-hook annotation? fx>= fx<= fx> fx< fx= fx- fx+ set-syntax-object-wrap! set-syntax-object-expression! syntax-object-wrap syntax-object-expression syntax-object? make-syntax-object noexpand let-values define-structure unless when) ((top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) ("m" top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) ("m" top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top)) ("i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t))))))
-                                     (syntax-error
+                                     (sc-syntax-error
                                        x827
                                        '"invalid exports list in")))
                                tmp832)
@@ -7443,12 +7499,12 @@
                                 (if (if tmp839
                                         (apply
                                           (lambda (_843 m842 e841 d840)
-                                            (identifier? m842))
+                                            (sc-identifier? m842))
                                           tmp839)
                                         '#f)
                                     (apply
                                       (lambda (_847 m846 e845 d844)
-                                        (if (andmap proper-export?828 e845)
+                                        (if (sc-andmap proper-export?828 e845)
                                             (cons
                                               '#(syntax-object $module ((top) #(ribcage #(_ m e d) #((top) (top) (top) (top)) #("i" "i" "i" "i")) #(ribcage #(orig) #((top)) #("i")) #(ribcage (proper-export?) ((top)) ("i")) #(ribcage #(x) #((top)) #("i")) #(ribcage (lambda-var-list gen-var strip strip* strip-annotation ellipsis? chi-void chi-local-syntax chi-lambda-clause parse-begin parse-alias parse-eval-when parse-meta parse-define-syntax parse-define parse-import parse-module do-import! lookup-import-label import-mark-delta chi-internal chi-body chi-macro chi-set! chi-application chi-expr chi chi-sequence chi-meta-frob chi-frobs ct-eval/residualize3 ct-eval/residualize2 rt-eval/residualize initial-mode-set update-mode-set do-top-import vfor-each vmap chi-external check-defined-ids check-module-exports id-set-diff chi-top-module set-frob-meta?! set-frob-e! frob-meta? frob-e frob? make-frob create-module-binding set-module-binding-exported! set-module-binding-val! set-module-binding-imps! set-module-binding-label! set-module-binding-id! set-module-binding-type! module-binding-exported module-binding-val module-binding-imps module-binding-label module-binding-id module-binding-type module-binding? make-module-binding make-resolved-interface make-unresolved-interface set-interface-token! set-interface-exports! set-interface-marks! interface-token interface-exports interface-marks interface? make-interface flatten-exports chi-top chi-top-sequence chi-top* syntax-type chi-when-list source-wrap wrap bound-id-member? invalid-ids-error distinct-bound-ids? valid-bound-ids? bound-id=? help-bound-id=? literal-id=? free-id=? id-var-name id-var-name-loc id-var-name&marks id-var-name-loc&marks top-id-free-var-name top-id-bound-var-name anon diff-marks same-marks? join-subst join-marks join-wraps smart-append resolved-id-var-name id->resolved-id make-resolved-id make-binding-wrap store-import-binding lookup-import-binding-name extend-ribcage-subst! extend-ribcage-barrier-help! extend-ribcage-barrier! import-extend-ribcage! extend-ribcage! make-empty-ribcage barrier-marker new-mark anti-mark the-anti-mark set-env-wrap! set-env-top-ribcage! env-wrap env-top-ribcage env? make-env set-import-interface-new-marks! set-import-interface-interface! import-interface-new-marks import-interface-interface import-interface? make-import-interface set-top-ribcage-mutable?! set-top-ribcage-key! top-ribcage-mutable? top-ribcage-key top-ribcage? make-top-ribcage set-ribcage-labels! set-ribcage-marks! set-ribcage-symnames! ribcage-labels ribcage-marks ribcage-symnames ribcage? make-ribcage gen-labels label? gen-label set-indirect-label! get-indirect-label indirect-label? gen-indirect-label anon only-top-marked? top-marked? tmp-wrap top-wrap empty-wrap wrap-subst wrap-marks make-wrap id-sym-name&marks id-subst id-marks id-sym-name id? nonsymbol-id? global-extend defer-or-eval-transformer make-transformer-binding lookup lookup* displaced-lexical-error displaced-lexical? extend-var-env* extend-env* extend-env null-env binding? set-binding-value! set-binding-type! binding-value binding-type make-binding sanitize-binding arg-check no-source unannotate self-evaluating? lexical-var? build-lexical-var build-top-module build-body build-letrec build-sequence build-data build-primref built-lambda? build-lambda build-revisit-only build-visit-only build-cte-install build-global-definition build-global-assignment build-global-reference build-lexical-assignment build-lexical-reference build-conditional build-application generate-id update-import-binding! get-import-binding read-only-binding? put-global-definition-hook get-global-definition-hook put-cte-hook error-hook define-top-level-value-hook local-eval-hook top-level-eval-hook annotation? fx>= fx<= fx> fx< fx= fx- fx+ set-syntax-object-wrap! set-syntax-object-expression! syntax-object-wrap syntax-object-expression syntax-object? make-syntax-object noexpand let-values define-structure unless when) ((top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) ("m" top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) ("m" top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top)) ("i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t)))
                                               (cons
@@ -7456,11 +7512,11 @@
                                                 (cons
                                                   m846
                                                   (cons e845 d844))))
-                                            (syntax-error
+                                            (sc-syntax-error
                                               x827
                                               '"invalid exports list in")))
                                       tmp839)
-                                    (syntax-error tmp831)))
+                                    (sc-syntax-error tmp831)))
                                ($syntax-dispatch
                                  tmp831
                                  '(any any each-any . each-any)))))
@@ -7516,7 +7572,7 @@
                                                          '(displaced-lexical))
                                                        (displaced-lexical-error299
                                                          m819)
-                                                       (syntax-error
+                                                       (sc-syntax-error
                                                          m819
                                                          '"unknown module"))))
                                               (binding-type281 b820)))
@@ -7569,12 +7625,12 @@
                                                                                                  np812)
                                                                                                prefix808)
                                                                                              '#f))
-                                                                                    (syntax-error
+                                                                                    (sc-syntax-error
                                                                                       id809
                                                                                       (string-append
                                                                                         '"missing expected prefix "
                                                                                         prefix808))
-                                                                                    (void))
+                                                                                    (voide))
                                                                                 (datum->syntax-object
                                                                                   id809
                                                                                   (string->symbol
@@ -7600,7 +7656,7 @@
                                                                       ((lambda (e806)
                                                                          (if (annotation?132
                                                                                e806)
-                                                                             (annotation-expression
+                                                                             (sc-annotation-expression
                                                                                e806)
                                                                              e806))
                                                                         (if (syntax-object?64
@@ -7623,8 +7679,8 @@
                                                                                            (apply
                                                                                              (lambda (m663
                                                                                                       id662)
-                                                                                               (andmap
-                                                                                                 identifier?
+                                                                                               (sc-andmap
+                                                                                                 sc-identifier?
                                                                                                  id662))
                                                                                              tmp661)
                                                                                            '#f)
@@ -7664,7 +7720,7 @@
                                                                                                                    id665
                                                                                                                    '#f)))
                                                                                                            tmp671)
-                                                                                                         (syntax-error
+                                                                                                         (sc-syntax-error
                                                                                                            tmp670)))
                                                                                                     ($syntax-dispatch
                                                                                                       tmp670
@@ -7679,8 +7735,8 @@
                                                                                                   (apply
                                                                                                     (lambda (m678
                                                                                                              id677)
-                                                                                                      (andmap
-                                                                                                        identifier?
+                                                                                                      (sc-andmap
+                                                                                                        sc-identifier?
                                                                                                         id677))
                                                                                                     tmp676)
                                                                                                   '#f)
@@ -7721,7 +7777,7 @@
                                                                                                                           id688
                                                                                                                           '#f)))
                                                                                                                   tmp687)
-                                                                                                                (syntax-error
+                                                                                                                (sc-syntax-error
                                                                                                                   tmp685)))
                                                                                                            ($syntax-dispatch
                                                                                                              tmp685
@@ -7740,7 +7796,7 @@
                                                                                                          (apply
                                                                                                            (lambda (m695
                                                                                                                     prefix-id694)
-                                                                                                             (identifier?
+                                                                                                             (sc-identifier?
                                                                                                                prefix-id694))
                                                                                                            tmp693)
                                                                                                          '#f)
@@ -7822,7 +7878,7 @@
                                                                                                                                  id703
                                                                                                                                  '#f)))
                                                                                                                          tmp702)
-                                                                                                                       (syntax-error
+                                                                                                                       (sc-syntax-error
                                                                                                                          tmp701)))
                                                                                                                   ($syntax-dispatch
                                                                                                                     tmp701
@@ -7835,7 +7891,7 @@
                                                                                                                  (gen-mid638
                                                                                                                    mid700)
                                                                                                                  exports698
-                                                                                                                 (generate-temporaries
+                                                                                                                 (sc-generate-temporaries
                                                                                                                    exports698)
                                                                                                                  (map (prefix-add636
                                                                                                                         prefix-id696)
@@ -7846,7 +7902,7 @@
                                                                                                                 (apply
                                                                                                                   (lambda (m719
                                                                                                                            prefix-id718)
-                                                                                                                    (identifier?
+                                                                                                                    (sc-identifier?
                                                                                                                       prefix-id718))
                                                                                                                   tmp717)
                                                                                                                 '#f)
@@ -7928,7 +7984,7 @@
                                                                                                                                         id727
                                                                                                                                         '#f)))
                                                                                                                                 tmp726)
-                                                                                                                              (syntax-error
+                                                                                                                              (sc-syntax-error
                                                                                                                                 tmp725)))
                                                                                                                          ($syntax-dispatch
                                                                                                                            tmp725
@@ -7941,7 +7997,7 @@
                                                                                                                         (gen-mid638
                                                                                                                           mid724)
                                                                                                                         exports722
-                                                                                                                        (generate-temporaries
+                                                                                                                        (sc-generate-temporaries
                                                                                                                           exports722)
                                                                                                                         (map (prefix-drop637
                                                                                                                                prefix-id720)
@@ -7953,11 +8009,11 @@
                                                                                                                          (lambda (m744
                                                                                                                                   new-id743
                                                                                                                                   old-id742)
-                                                                                                                           (if (andmap
-                                                                                                                                 identifier?
+                                                                                                                           (if (sc-andmap
+                                                                                                                                 sc-identifier?
                                                                                                                                  new-id743)
-                                                                                                                               (andmap
-                                                                                                                                 identifier?
+                                                                                                                               (sc-andmap
+                                                                                                                                 sc-identifier?
                                                                                                                                  old-id742)
                                                                                                                                '#f))
                                                                                                                          tmp741)
@@ -8046,7 +8102,7 @@
                                                                                                                                                  other-id757)
                                                                                                                                                '#f)))
                                                                                                                                        tmp756)
-                                                                                                                                     (syntax-error
+                                                                                                                                     (sc-syntax-error
                                                                                                                                        tmp753)))
                                                                                                                                 ($syntax-dispatch
                                                                                                                                   tmp753
@@ -8057,7 +8113,7 @@
                                                                                                                                d751
                                                                                                                                (gen-mid638
                                                                                                                                  mid752)
-                                                                                                                               (generate-temporaries
+                                                                                                                               (sc-generate-temporaries
                                                                                                                                  old-id747)
                                                                                                                                (difference635
                                                                                                                                  exports750
@@ -8069,11 +8125,11 @@
                                                                                                                                 (lambda (m776
                                                                                                                                          new-id775
                                                                                                                                          old-id774)
-                                                                                                                                  (if (andmap
-                                                                                                                                        identifier?
+                                                                                                                                  (if (sc-andmap
+                                                                                                                                        sc-identifier?
                                                                                                                                         new-id775)
-                                                                                                                                      (andmap
-                                                                                                                                        identifier?
+                                                                                                                                      (sc-andmap
+                                                                                                                                        sc-identifier?
                                                                                                                                         old-id774)
                                                                                                                                       '#f))
                                                                                                                                 tmp773)
@@ -8134,7 +8190,7 @@
                                                                                                                                                         other-id787)
                                                                                                                                                       '#f)))
                                                                                                                                               tmp786)
-                                                                                                                                            (syntax-error
+                                                                                                                                            (sc-syntax-error
                                                                                                                                               tmp785)))
                                                                                                                                        ($syntax-dispatch
                                                                                                                                          tmp785
@@ -8150,7 +8206,7 @@
                                                                                                                              (if (if tmp797
                                                                                                                                      (apply
                                                                                                                                        (lambda (mid798)
-                                                                                                                                         (identifier?
+                                                                                                                                         (sc-identifier?
                                                                                                                                            mid798))
                                                                                                                                        tmp797)
                                                                                                                                      '#f)
@@ -8173,7 +8229,7 @@
                                                                                                                                     (if (if tmp800
                                                                                                                                             (apply
                                                                                                                                               (lambda (mid801)
-                                                                                                                                                (identifier?
+                                                                                                                                                (sc-identifier?
                                                                                                                                                   mid801))
                                                                                                                                               tmp800)
                                                                                                                                             '#f)
@@ -8193,7 +8249,7 @@
                                                                                                                                                   '#f)))
                                                                                                                                           tmp800)
                                                                                                                                         ((lambda (_803)
-                                                                                                                                           (syntax-error
+                                                                                                                                           (sc-syntax-error
                                                                                                                                              m655
                                                                                                                                              '"invalid module specifier"))
                                                                                                                                           tmp660)))
@@ -8246,7 +8302,7 @@
                                                                                        each-any))))
                                                                                m655))
                                                                            tmp657)
-                                                                         (syntax-error
+                                                                         (sc-syntax-error
                                                                            tmp656)))
                                                                     ($syntax-dispatch
                                                                       tmp656
@@ -8278,7 +8334,7 @@
                                                                         '#(syntax-object begin ((top) #(ribcage #(d) #((top)) #("i")) #(ribcage #(_ m) #((top) (top)) #("i" "i")) #(ribcage (modspec* modspec gen-mid prefix-drop prefix-add difference) ((top) (top) (top) (top) (top) (top)) ("i" "i" "i" "i" "i" "i")) #(ribcage #(r) #((top)) #("i")) #(ribcage () () ()) #(ribcage #(orig import-only?) #((top) (top)) #("i" "i")) #(ribcage ($import-help $module-exports) ((top) (top)) ("i" "i")) #(ribcage (lambda-var-list gen-var strip strip* strip-annotation ellipsis? chi-void chi-local-syntax chi-lambda-clause parse-begin parse-alias parse-eval-when parse-meta parse-define-syntax parse-define parse-import parse-module do-import! lookup-import-label import-mark-delta chi-internal chi-body chi-macro chi-set! chi-application chi-expr chi chi-sequence chi-meta-frob chi-frobs ct-eval/residualize3 ct-eval/residualize2 rt-eval/residualize initial-mode-set update-mode-set do-top-import vfor-each vmap chi-external check-defined-ids check-module-exports id-set-diff chi-top-module set-frob-meta?! set-frob-e! frob-meta? frob-e frob? make-frob create-module-binding set-module-binding-exported! set-module-binding-val! set-module-binding-imps! set-module-binding-label! set-module-binding-id! set-module-binding-type! module-binding-exported module-binding-val module-binding-imps module-binding-label module-binding-id module-binding-type module-binding? make-module-binding make-resolved-interface make-unresolved-interface set-interface-token! set-interface-exports! set-interface-marks! interface-token interface-exports interface-marks interface? make-interface flatten-exports chi-top chi-top-sequence chi-top* syntax-type chi-when-list source-wrap wrap bound-id-member? invalid-ids-error distinct-bound-ids? valid-bound-ids? bound-id=? help-bound-id=? literal-id=? free-id=? id-var-name id-var-name-loc id-var-name&marks id-var-name-loc&marks top-id-free-var-name top-id-bound-var-name anon diff-marks same-marks? join-subst join-marks join-wraps smart-append resolved-id-var-name id->resolved-id make-resolved-id make-binding-wrap store-import-binding lookup-import-binding-name extend-ribcage-subst! extend-ribcage-barrier-help! extend-ribcage-barrier! import-extend-ribcage! extend-ribcage! make-empty-ribcage barrier-marker new-mark anti-mark the-anti-mark set-env-wrap! set-env-top-ribcage! env-wrap env-top-ribcage env? make-env set-import-interface-new-marks! set-import-interface-interface! import-interface-new-marks import-interface-interface import-interface? make-import-interface set-top-ribcage-mutable?! set-top-ribcage-key! top-ribcage-mutable? top-ribcage-key top-ribcage? make-top-ribcage set-ribcage-labels! set-ribcage-marks! set-ribcage-symnames! ribcage-labels ribcage-marks ribcage-symnames ribcage? make-ribcage gen-labels label? gen-label set-indirect-label! get-indirect-label indirect-label? gen-indirect-label anon only-top-marked? top-marked? tmp-wrap top-wrap empty-wrap wrap-subst wrap-marks make-wrap id-sym-name&marks id-subst id-marks id-sym-name id? nonsymbol-id? global-extend defer-or-eval-transformer make-transformer-binding lookup lookup* displaced-lexical-error displaced-lexical? extend-var-env* extend-env* extend-env null-env binding? set-binding-value! set-binding-type! binding-value binding-type make-binding sanitize-binding arg-check no-source unannotate self-evaluating? lexical-var? build-lexical-var build-top-module build-body build-letrec build-sequence build-data build-primref built-lambda? build-lambda build-revisit-only build-visit-only build-cte-install build-global-definition build-global-assignment build-global-reference build-lexical-assignment build-lexical-reference build-conditional build-application generate-id update-import-binding! get-import-binding read-only-binding? put-global-definition-hook get-global-definition-hook put-cte-hook error-hook define-top-level-value-hook local-eval-hook top-level-eval-hook annotation? fx>= fx<= fx> fx< fx= fx- fx+ set-syntax-object-wrap! set-syntax-object-expression! syntax-object-wrap syntax-object-expression syntax-object? make-syntax-object noexpand let-values define-structure unless when) ((top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) ("m" top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) ("m" top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top) (top)) ("i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t)))
                                                                         d648))
                                                                     tmp647)
-                                                                  (syntax-error
+                                                                  (sc-syntax-error
                                                                     tmp645)))
                                                              ($syntax-dispatch
                                                                tmp645
@@ -8286,7 +8342,7 @@
                                                           (map modspec*640
                                                                m643)))
                                                       tmp642)
-                                                    (syntax-error tmp641)))
+                                                    (sc-syntax-error tmp641)))
                                                ($syntax-dispatch
                                                  tmp641
                                                  '(any . each-any))))
@@ -8318,11 +8374,11 @@
                   (wrap-marks316 '((top)))
                   (cons top-ribcage623 (wrap-subst317 '((top)))))))
              (make-top-ribcage373 token622 mutable?621))))
-       (set! environment? (lambda (x620) (env?386 x620)))
+       (set! sc-environment? (lambda (x620) (env?386 x620)))
        (set! sc-interaction-environment
          ((lambda (e619) (lambda () e619))
            ($make-environment '*top* '#t)))
-       (set! identifier? (lambda (x618) (nonsymbol-id?305 x618)))
+       (set! sc-identifier? (lambda (x618) (nonsymbol-id?305 x618)))
        (set! datum->syntax-object
          (lambda (id616 datum615)
            (begin
@@ -8332,7 +8388,7 @@
                       'datum->syntax-object
                       '"invalid argument"
                       x617)
-                    (void)))
+                    (voide)))
                id616)
              (make-syntax-object63
                datum615
@@ -8379,7 +8435,7 @@
              v600)))
        (set! syntax-object->datum
          (lambda (x599) (strip522 x599 '(()))))
-       (set! generate-temporaries
+       (set! sc-generate-temporaries
          ((lambda (n595)
             (lambda (ls596)
               (begin
@@ -8389,7 +8445,7 @@
                          'generate-temporaries
                          '"invalid argument"
                          x598)
-                       (void)))
+                       (voide)))
                   ls596)
                 (map (lambda (x597)
                        (begin
@@ -8400,7 +8456,7 @@
                            '((tmp)))))
                      ls596))))
            '0))
-       (set! free-identifier=?
+       (set! sc-free-identifier=?
          (lambda (x592 y591)
            (begin
              ((lambda (x594)
@@ -8409,7 +8465,7 @@
                       'free-identifier=?
                       '"invalid argument"
                       x594)
-                    (void)))
+                    (voide)))
                x592)
              ((lambda (x593)
                 (if (not (nonsymbol-id?305 x593))
@@ -8417,10 +8473,10 @@
                       'free-identifier=?
                       '"invalid argument"
                       x593)
-                    (void)))
+                    (voide)))
                y591)
              (free-id=?435 x592 y591))))
-       (set! bound-identifier=?
+       (set! sc-bound-identifier=?
          (lambda (x588 y587)
            (begin
              ((lambda (x590)
@@ -8429,7 +8485,7 @@
                       'bound-identifier=?
                       '"invalid argument"
                       x590)
-                    (void)))
+                    (voide)))
                x588)
              ((lambda (x589)
                 (if (not (nonsymbol-id?305 x589))
@@ -8437,7 +8493,7 @@
                       'bound-identifier=?
                       '"invalid argument"
                       x589)
-                    (void)))
+                    (voide)))
                y587)
              (bound-id=?438 x588 y587))))
        (set! literal-identifier=?
@@ -8449,7 +8505,7 @@
                       'literal-identifier=?
                       '"invalid argument"
                       x586)
-                    (void)))
+                    (voide)))
                x584)
              ((lambda (x585)
                 (if (not (nonsymbol-id?305 x585))
@@ -8457,10 +8513,10 @@
                       'literal-identifier=?
                       '"invalid argument"
                       x585)
-                    (void)))
+                    (voide)))
                y583)
              (literal-id=?436 x584 y583))))
-       (set! syntax-error
+       (set! sc-syntax-error
          (lambda (object578 . messages579)
            (begin
              (for-each
@@ -8471,7 +8527,7 @@
                           'syntax-error
                           '"invalid argument"
                           x582)
-                        (void)))
+                        (voide)))
                    x581))
                messages579)
              ((lambda (message580)
@@ -8483,7 +8539,7 @@
           (letrec ((match-each525 (lambda (e575 p574 w573)
                                     (if (annotation?132 e575)
                                         (match-each525
-                                          (annotation-expression e575)
+                                          (sc-annotation-expression e575)
                                           p574
                                           w573)
                                         (if (pair? e575)
@@ -8564,7 +8620,7 @@
                                                            (if (annotation?132
                                                                  e568)
                                                                (f566
-                                                                 (annotation-expression
+                                                                 (sc-annotation-expression
                                                                    e568)
                                                                  w567)
                                                                (if (syntax-object?64
@@ -8590,7 +8646,7 @@
                    (match-each-any527 (lambda (e558 w557)
                                         (if (annotation?132 e558)
                                             (match-each-any527
-                                              (annotation-expression e558)
+                                              (sc-annotation-expression e558)
                                               w557)
                                             (if (pair? e558)
                                                 ((lambda (l559)
@@ -8668,7 +8724,7 @@
                                                                             p555
                                                                             '1)
                                                                           r554)
-                                                                        (void))))))
+                                                                        (voide))))))
                                                        (vector-ref
                                                          p555
                                                          '0))))))))
@@ -8799,7 +8855,7 @@
                                                                          w543
                                                                          r542)
                                                                        '#f)
-                                                                   (void)))))))
+                                                                   (voide)))))))
                                               (vector-ref p544 '0)))))))
                    (match531 (lambda (e539 p538 w537 r536)
                                (if (not r536)
@@ -8810,7 +8866,7 @@
                                            (match*530
                                              ((lambda (e540)
                                                 (if (annotation?132 e540)
-                                                    (annotation-expression
+                                                    (sc-annotation-expression
                                                       e540)
                                                     e540))
                                                (syntax-object-expression65
@@ -8823,7 +8879,7 @@
                                            (match*530
                                              ((lambda (e541)
                                                 (if (annotation?132 e541)
-                                                    (annotation-expression
+                                                    (sc-annotation-expression
                                                       e541)
                                                     e541))
                                                e539)
@@ -8838,7 +8894,7 @@
                         (match*530
                           ((lambda (e534)
                              (if (annotation?132 e534)
-                                 (annotation-expression e534)
+                                 (sc-annotation-expression e534)
                                  e534))
                             (syntax-object-expression65 e533))
                           p532
@@ -8847,7 +8903,7 @@
                         (match*530
                           ((lambda (e535)
                              (if (annotation?132 e535)
-                                 (annotation-expression e535)
+                                 (sc-annotation-expression e535)
                                  e535))
                             e533)
                           p532
@@ -8895,7 +8951,7 @@
                                       '#(syntax-object begin ((top) #(ribcage #(_ out in e1 e2) #((top) (top) (top) (top) (top)) #("i" "i" "i" "i" "i")) #(ribcage () () ()) #(ribcage #(x) #((top)) #("i")) #(top-ribcage *top* #t)))
                                       (cons e12547 e22546)))))
                               tmp2545)
-                            (syntax-error tmp2532)))
+                            (sc-syntax-error tmp2532)))
                        ($syntax-dispatch
                          tmp2532
                          '(any #(each (any any)) any . each-any)))))
@@ -8913,7 +8969,7 @@
           (if (if tmp2556
                   (apply
                     (lambda (dummy2561 tid2560 id2559 e12558 e22557)
-                      (andmap identifier? (cons tid2560 id2559)))
+                      (sc-andmap sc-identifier? (cons tid2560 id2559)))
                     tmp2556)
                   '#f)
               (apply
@@ -8951,7 +9007,7 @@
                              id2565)
                         (cons e12564 e22563)))))
                 tmp2556)
-              (syntax-error tmp2555)))
+              (sc-syntax-error tmp2555)))
          ($syntax-dispatch
            tmp2555
            '(any (any . each-any) any . each-any))))
@@ -8971,7 +9027,7 @@
                       '#(syntax-object syntax ((top) #(ribcage #(dummy x) #(("m" top) (top)) #("i" "i")) #(ribcage () () ()) #(ribcage #(x) #(("m" top)) #("i")) #(top-ribcage *top* #t)))
                       x2573)))
                 tmp2572)
-              (syntax-error tmp2571)))
+              (sc-syntax-error tmp2571)))
          ($syntax-dispatch tmp2571 '(any any))))
       x2570))
   '*top*)
@@ -9010,7 +9066,7 @@
                                                     template2599)))
                                               tmp2598)
                                             ((lambda (_2603)
-                                               (syntax-error x2575))
+                                               (sc-syntax-error x2575))
                                               tmp2593)))
                                        ($syntax-dispatch
                                          tmp2593
@@ -9024,7 +9080,7 @@
             (if (if tmp2578
                     (apply
                       (lambda (_2581 k2580 cl2579)
-                        (andmap identifier? k2580))
+                        (sc-andmap sc-identifier? k2580))
                       tmp2578)
                     '#f)
                 (apply
@@ -9043,11 +9099,11 @@
                                         '#(syntax-object x ((top) #(ribcage #(cl) #((top)) #("i")) #(ribcage #(_ k cl) #((top) (top) (top)) #("i" "i" "i")) #(ribcage (clause) ((top)) ("i")) #(ribcage #(x) #((top)) #("i")) #(top-ribcage *top* #t)))
                                         (cons k2584 cl2589)))))
                                 tmp2588)
-                              (syntax-error tmp2586)))
+                              (sc-syntax-error tmp2586)))
                          ($syntax-dispatch tmp2586 'each-any)))
                       (map clause2576 cl2583)))
                   tmp2578)
-                (syntax-error tmp2577)))
+                (sc-syntax-error tmp2577)))
            ($syntax-dispatch tmp2577 '(any each-any . each-any))))
         x2575)))
   '*top*)
@@ -9082,7 +9138,7 @@
                                       '#(syntax-object or ((top) #(ribcage #(_ e1 e2 e3) #((top) (top) (top) (top)) #("i" "i" "i" "i")) #(ribcage () () ()) #(ribcage #(x) #((top)) #("i")) #(top-ribcage *top* #t)))
                                       (cons e22613 e32612)))))
                               tmp2611)
-                            (syntax-error tmp2605)))
+                            (sc-syntax-error tmp2605)))
                        ($syntax-dispatch
                          tmp2605
                          '(any any any . each-any)))))
@@ -9117,7 +9173,7 @@
                               (lambda (_2629)
                                 '#(syntax-object #t ((top) #(ribcage #(_) #((top)) #("i")) #(ribcage () () ()) #(ribcage #(x) #((top)) #("i")) #(top-ribcage *top* #t))))
                               tmp2628)
-                            (syntax-error tmp2618)))
+                            (sc-syntax-error tmp2618)))
                        ($syntax-dispatch tmp2618 '(any)))))
                 ($syntax-dispatch tmp2618 '(any any)))))
          ($syntax-dispatch tmp2618 '(any any any . each-any))))
@@ -9131,7 +9187,7 @@
           (if (if tmp2632
                   (apply
                     (lambda (_2637 x2636 v2635 e12634 e22633)
-                      (andmap identifier? x2636))
+                      (sc-andmap sc-identifier? x2636))
                     tmp2632)
                   '#f)
               (apply
@@ -9146,7 +9202,7 @@
                  (if (if tmp2647
                          (apply
                            (lambda (_2653 f2652 x2651 v2650 e12649 e22648)
-                             (andmap identifier? (cons f2652 x2651)))
+                             (sc-andmap sc-identifier? (cons f2652 x2651)))
                            tmp2647)
                          '#f)
                      (apply
@@ -9163,7 +9219,7 @@
                              f2659)
                            v2657))
                        tmp2647)
-                     (syntax-error tmp2631)))
+                     (sc-syntax-error tmp2631)))
                 ($syntax-dispatch
                   tmp2631
                   '(any any #(each (any any)) any . each-any)))))
@@ -9180,7 +9236,7 @@
           (if (if tmp2666
                   (apply
                     (lambda (let*2671 x2670 v2669 e12668 e22667)
-                      (andmap identifier? x2670))
+                      (sc-andmap sc-identifier? x2670))
                     tmp2666)
                   '#f)
               (apply
@@ -9201,7 +9257,7 @@
                                                          (list binding2683)
                                                          body2684))
                                                      tmp2682)
-                                                   (syntax-error tmp2681)))
+                                                   (sc-syntax-error tmp2681)))
                                               ($syntax-dispatch
                                                 tmp2681
                                                 '(any any))))
@@ -9211,7 +9267,7 @@
                      f2678)
                     (map list x2676 v2675)))
                 tmp2666)
-              (syntax-error tmp2665)))
+              (sc-syntax-error tmp2665)))
          ($syntax-dispatch
            tmp2665
            '(any #(each (any any)) any . each-any))))
@@ -9286,7 +9342,7 @@
                                                                                   e22707))))
                                                                           tmp2706)
                                                                         ((lambda (_2711)
-                                                                           (syntax-error
+                                                                           (sc-syntax-error
                                                                              x2687))
                                                                           tmp2696)))
                                                                    ($syntax-dispatch
@@ -9365,7 +9421,7 @@
                                                                              rest2713))
                                                                          tmp2720)
                                                                        ((lambda (_2725)
-                                                                          (syntax-error
+                                                                          (sc-syntax-error
                                                                             x2687))
                                                                          tmp2714)))
                                                                   ($syntax-dispatch
@@ -9390,7 +9446,7 @@
                     m12691
                     m22690))
                 tmp2689)
-              (syntax-error tmp2688)))
+              (sc-syntax-error tmp2688)))
          ($syntax-dispatch tmp2688 '(any any . each-any))))
       x2687))
   '*top*)
@@ -9458,14 +9514,14 @@
                                                                  '#(syntax-object do ((top) #(ribcage #(e1 e2) #((top) (top)) #("i" "i")) #(ribcage #(step) #((top)) #("i")) #(ribcage #(_ var init step e0 e1 c) #((top) (top) (top) (top) (top) (top) (top)) #("i" "i" "i" "i" "i" "i" "i")) #(ribcage () () ()) #(ribcage #(orig-x) #((top)) #("i")) #(top-ribcage *top* #t)))
                                                                  step2748)))))))
                                                    tmp2756)
-                                                 (syntax-error tmp2749)))
+                                                 (sc-syntax-error tmp2749)))
                                             ($syntax-dispatch
                                               tmp2749
                                               '(any . each-any)))))
                                      ($syntax-dispatch tmp2749 '())))
                                   e12731))
                               tmp2747)
-                            (syntax-error tmp2737)))
+                            (sc-syntax-error tmp2737)))
                        ($syntax-dispatch tmp2737 'each-any)))
                     (map (lambda (v2741 s2740)
                            ((lambda (tmp2742)
@@ -9478,7 +9534,7 @@
                                               (lambda (e2745) e2745)
                                               tmp2744)
                                             ((lambda (_2746)
-                                               (syntax-error orig-x2727))
+                                               (sc-syntax-error orig-x2727))
                                               tmp2742)))
                                        ($syntax-dispatch tmp2742 '(any)))))
                                 ($syntax-dispatch tmp2742 '())))
@@ -9486,7 +9542,7 @@
                          var2735
                          step2733)))
                 tmp2729)
-              (syntax-error tmp2728)))
+              (sc-syntax-error tmp2728)))
          ($syntax-dispatch
            tmp2728
            '(any #(each (any any . any))
@@ -9723,7 +9779,7 @@
                                                (lambda ()
                                                  '#(syntax-object ("quote" ()) ((top) #(ribcage () () ()) #(ribcage #(p lev) #((top) (top)) #("i" "i")) #(ribcage (emit quasivector quasilist* quasiappend quasicons vquasi quasi) ((top) (top) (top) (top) (top) (top) (top)) ("i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t))))
                                                tmp2898)
-                                             (syntax-error tmp2884)))
+                                             (sc-syntax-error tmp2884)))
                                         ($syntax-dispatch tmp2884 '()))))
                                  ($syntax-dispatch tmp2884 '(any . any))))
                               p2883)))
@@ -9810,7 +9866,7 @@
                                                        any))))
                                                y2868))
                                            tmp2867)
-                                         (syntax-error tmp2866)))
+                                         (sc-syntax-error tmp2866)))
                                     ($syntax-dispatch tmp2866 '(any any))))
                                  (list x2865 y2864))))
               (quasiappend2767 (lambda (x2851 y2850)
@@ -9832,7 +9888,7 @@
                                                                        '#(syntax-object "append" ((top) #(ribcage #(p) #((top)) #("i")) #(ribcage () () ()) #(ribcage #(x y) #((top) (top)) #("i" "i")) #(ribcage (emit quasivector quasilist* quasiappend quasicons vquasi quasi) ((top) (top) (top) (top) (top) (top) (top)) ("i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t)))
                                                                        p2856))
                                                                    tmp2855)
-                                                                 (syntax-error
+                                                                 (sc-syntax-error
                                                                    tmp2854)))
                                                             ($syntax-dispatch
                                                               tmp2854
@@ -9855,7 +9911,7 @@
                                                                     (list
                                                                       y2861))))
                                                               tmp2860)
-                                                            (syntax-error
+                                                            (sc-syntax-error
                                                               tmp2859)))
                                                        ($syntax-dispatch
                                                          tmp2859
@@ -9963,7 +10019,7 @@
                                                                   '#(syntax-object "vector" ((top) #(ribcage #(t8) #(("m" tmp)) #("i")) #(ribcage () () ()) #(ribcage #(ls) #((top)) #("i")) #(ribcage #(_) #((top)) #("i")) #(ribcage () () ()) #(ribcage #(x) #((top)) #("i")) #(ribcage (emit quasivector quasilist* quasiappend quasicons vquasi quasi) ((top) (top) (top) (top) (top) (top) (top)) ("i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t)))
                                                                   t82844))
                                                               tmp2843)
-                                                            (syntax-error
+                                                            (sc-syntax-error
                                                               tmp2842)))
                                                        ($syntax-dispatch
                                                          tmp2842
@@ -9997,7 +10053,7 @@
                                                                '#(syntax-object list ((top) #(ribcage #(t1) #(("m" tmp)) #("i")) #(ribcage #(x) #((top)) #("i")) #(ribcage () () ()) #(ribcage #(x) #((top)) #("i")) #(ribcage (emit quasivector quasilist* quasiappend quasicons vquasi quasi) ((top) (top) (top) (top) (top) (top) (top)) ("i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t)))
                                                                t12785))
                                                            tmp2784)
-                                                         (syntax-error
+                                                         (sc-syntax-error
                                                            tmp2782)))
                                                     ($syntax-dispatch
                                                       tmp2782
@@ -10024,7 +10080,7 @@
                                                                                              t32795
                                                                                              t22794))
                                                                                          tmp2793)
-                                                                                       (syntax-error
+                                                                                       (sc-syntax-error
                                                                                          tmp2792)))
                                                                                   ($syntax-dispatch
                                                                                     tmp2792
@@ -10050,7 +10106,7 @@
                                                                              '#(syntax-object append ((top) #(ribcage #(t4) #(("m" tmp)) #("i")) #(ribcage #(x) #((top)) #("i")) #(ribcage () () ()) #(ribcage #(x) #((top)) #("i")) #(ribcage (emit quasivector quasilist* quasiappend quasicons vquasi quasi) ((top) (top) (top) (top) (top) (top) (top)) ("i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t)))
                                                                              t42802))
                                                                          tmp2801)
-                                                                       (syntax-error
+                                                                       (sc-syntax-error
                                                                          tmp2799)))
                                                                   ($syntax-dispatch
                                                                     tmp2799
@@ -10071,7 +10127,7 @@
                                                                                     '#(syntax-object vector ((top) #(ribcage #(t5) #(("m" tmp)) #("i")) #(ribcage #(x) #((top)) #("i")) #(ribcage () () ()) #(ribcage #(x) #((top)) #("i")) #(ribcage (emit quasivector quasilist* quasiappend quasicons vquasi quasi) ((top) (top) (top) (top) (top) (top) (top)) ("i" "i" "i" "i" "i" "i" "i")) #(top-ribcage *top* #t)))
                                                                                     t52809))
                                                                                 tmp2808)
-                                                                              (syntax-error
+                                                                              (sc-syntax-error
                                                                                 tmp2806)))
                                                                          ($syntax-dispatch
                                                                            tmp2806
@@ -10098,7 +10154,7 @@
                                                                                 (lambda (x2816)
                                                                                   x2816)
                                                                                 tmp2815)
-                                                                              (syntax-error
+                                                                              (sc-syntax-error
                                                                                 tmp2777)))
                                                                          ($syntax-dispatch
                                                                            tmp2777
@@ -10141,17 +10197,17 @@
                    (apply
                      (lambda (_2775 e2774) (emit2770 (quasi2764 e2774 '0)))
                      tmp2773)
-                   (syntax-error tmp2772)))
+                   (sc-syntax-error tmp2772)))
               ($syntax-dispatch tmp2772 '(any any))))
            x2771)))))
   '*top*)
 ($sc-put-cte
   '#(syntax-object unquote ((top) #(ribcage #(unquote) #((top)) #(unquote))))
-  (lambda (x2923) (syntax-error x2923 '"misplaced"))
+  (lambda (x2923) (sc-syntax-error x2923 '"misplaced"))
   '*top*)
 ($sc-put-cte
   '#(syntax-object unquote-splicing ((top) #(ribcage #(unquote-splicing) #((top)) #(unquote-splicing))))
-  (lambda (x2924) (syntax-error x2924 '"misplaced"))
+  (lambda (x2924) (sc-syntax-error x2924 '"misplaced"))
   '*top*)
 ($sc-put-cte
   '#(syntax-object quasisyntax ((top) #(ribcage #(quasisyntax) #((top)) #(quasisyntax))))
@@ -10255,12 +10311,12 @@
                                                                             b*2975)
                                                                           t3004))
                                                                       tmp3003)
-                                                                    (syntax-error
+                                                                    (sc-syntax-error
                                                                       tmp3002)))
                                                                ($syntax-dispatch
                                                                  tmp3002
                                                                  '(any))))
-                                                            (generate-temporaries
+                                                            (sc-generate-temporaries
                                                               (list
                                                                 q3001))))
                                                         tmp2999)
@@ -10301,12 +10357,12 @@
                                                                                           tmp3016))
                                                                                        dnew3010)))
                                                                                  tmp3014)
-                                                                               (syntax-error
+                                                                               (sc-syntax-error
                                                                                  tmp3012)))
                                                                           ($syntax-dispatch
                                                                             tmp3012
                                                                             'each-any)))
-                                                                       (generate-temporaries
+                                                                       (sc-generate-temporaries
                                                                          q3009)))))
                                                                tmp3005)
                                                              ((lambda (tmp3021)
@@ -10359,7 +10415,7 @@
                                                                                                                tmp3036))
                                                                                                             dnew3026))
                                                                                                         tmp3034)
-                                                                                                      (syntax-error
+                                                                                                      (sc-syntax-error
                                                                                                         tmp3032)))
                                                                                                  ($syntax-dispatch
                                                                                                    tmp3032
@@ -10371,12 +10427,12 @@
                                                                                                        '(#(syntax-object ... ((top) #(ribcage #(t) #((top)) #("i")) #(ribcage () () ()) #(ribcage #(b* dnew) #((top) (top)) #("i" "i")) #(ribcage #(q d) #((top) (top)) #("i" "i")) #(ribcage () () ()) #(ribcage #(q n b* k) #((top) (top) (top) (top)) #("i" "i" "i" "i")) #(ribcage (vqs qs) ((top) (top)) ("i" "i")) #(ribcage #(x) #((top)) #("i")) #(top-ribcage *top* #t))))))
                                                                                                    t3031))))
                                                                                         tmp3030)
-                                                                                      (syntax-error
+                                                                                      (sc-syntax-error
                                                                                         tmp3028)))
                                                                                  ($syntax-dispatch
                                                                                    tmp3028
                                                                                    'each-any)))
-                                                                              (generate-temporaries
+                                                                              (sc-generate-temporaries
                                                                                 q3025)))))
                                                                       tmp3021)
                                                                     ((lambda (tmp3042)
@@ -10414,7 +10470,7 @@
                                                                                                              a3052
                                                                                                              d3051))
                                                                                                          tmp3050)
-                                                                                                       (syntax-error
+                                                                                                       (sc-syntax-error
                                                                                                          tmp3049)))
                                                                                                   ($syntax-dispatch
                                                                                                     tmp3049
@@ -10462,7 +10518,7 @@
                                                                                                               (list->vector
                                                                                                                 x3063))
                                                                                                             tmp3062)
-                                                                                                          (syntax-error
+                                                                                                          (sc-syntax-error
                                                                                                             tmp3061)))
                                                                                                      ($syntax-dispatch
                                                                                                        tmp3061
@@ -10555,12 +10611,12 @@
                                                                 t2952
                                                                 xnew*2943)))
                                                           tmp2951)
-                                                        (syntax-error
+                                                        (sc-syntax-error
                                                           tmp2949)))
                                                    ($syntax-dispatch
                                                      tmp2949
                                                      'each-any)))
-                                                (generate-temporaries
+                                                (sc-generate-temporaries
                                                   q2948)))
                                             tmp2946)
                                           ((lambda (tmp2956)
@@ -10600,7 +10656,7 @@
                                                                                        m2966)
                                                                                      xnew*2943))
                                                                                  tmp2965)
-                                                                               (syntax-error
+                                                                               (sc-syntax-error
                                                                                  tmp2963)))
                                                                           ($syntax-dispatch
                                                                             tmp2963
@@ -10612,12 +10668,12 @@
                                                                                 '(#(syntax-object ... ((top) #(ribcage #(t) #((top)) #("i")) #(ribcage #(q) #((top)) #("i")) #(ribcage () () ()) #(ribcage #(b* xnew*) #((top) (top)) #("i" "i")) #(ribcage () () ()) #(ribcage #(x* n b* k) #((top) (top) (top) (top)) #("i" "i" "i" "i")) #(ribcage (vqs qs) ((top) (top)) ("i" "i")) #(ribcage #(x) #((top)) #("i")) #(top-ribcage *top* #t))))))
                                                                             t2962))))
                                                                  tmp2961)
-                                                               (syntax-error
+                                                               (sc-syntax-error
                                                                  tmp2959)))
                                                           ($syntax-dispatch
                                                             tmp2959
                                                             'each-any)))
-                                                       (generate-temporaries
+                                                       (sc-generate-temporaries
                                                          q2958)))
                                                    tmp2956)
                                                  ((lambda (_2971)
@@ -10672,23 +10728,23 @@
                                               '#(syntax-object syntax ((top) #(ribcage #(b x) #((top) (top)) #("i" "i")) #(ribcage () () ()) #(ribcage #(b* xnew) #((top) (top)) #("i" "i")) #(ribcage #(_ x) #((top) (top)) #("i" "i")) #(ribcage (vqs qs) ((top) (top)) ("i" "i")) #(ribcage #(x) #((top)) #("i")) #(top-ribcage *top* #t)))
                                               x2936)))
                                         tmp2935)
-                                      (syntax-error tmp2934)))
+                                      (sc-syntax-error tmp2934)))
                                  ($syntax-dispatch
                                    tmp2934
                                    '(each-any any))))
                               (list b*2933 xnew2932))))))
                   tmp2929)
-                (syntax-error tmp2928)))
+                (sc-syntax-error tmp2928)))
            ($syntax-dispatch tmp2928 '(any any))))
         x2925)))
   '*top*)
 ($sc-put-cte
   '#(syntax-object unsyntax ((top) #(ribcage #(unsyntax) #((top)) #(unsyntax))))
-  (lambda (x3067) (syntax-error x3067 '"misplaced"))
+  (lambda (x3067) (sc-syntax-error x3067 '"misplaced"))
   '*top*)
 ($sc-put-cte
   '#(syntax-object unsyntax-splicing ((top) #(ribcage #(unsyntax-splicing) #((top)) #(unsyntax-splicing))))
-  (lambda (x3068) (syntax-error x3068 '"misplaced"))
+  (lambda (x3068) (sc-syntax-error x3068 '"misplaced"))
   '*top*)
 ($sc-put-cte
   '#(syntax-object include ((top) #(ribcage #(include) #((top)) #(include))))
@@ -10726,12 +10782,12 @@
                                        '#(syntax-object begin ((top) #(ribcage #(exp) #((top)) #("i")) #(ribcage () () ()) #(ribcage #(fn) #((top)) #("i")) #(ribcage #(k filename) #((top) (top)) #("i" "i")) #(ribcage (read-file) ((top)) ("i")) #(ribcage #(x) #((top)) #("i")) #(top-ribcage *top* #t)))
                                        exp3078))
                                    tmp3077)
-                                 (syntax-error tmp3076)))
+                                 (sc-syntax-error tmp3076)))
                             ($syntax-dispatch tmp3076 'each-any)))
                          (read-file3070 fn3075 k3074)))
                       (syntax-object->datum filename3073)))
                   tmp3072)
-                (syntax-error tmp3071)))
+                (sc-syntax-error tmp3071)))
            ($syntax-dispatch tmp3071 '(any any))))
         x3069)))
   '*top*)
@@ -10788,7 +10844,7 @@
                                                                       e23102))))
                                                               tmp3101)
                                                             ((lambda (_3107)
-                                                               (syntax-error
+                                                               (sc-syntax-error
                                                                  x3085))
                                                               tmp3096)))
                                                        ($syntax-dispatch
@@ -10830,7 +10886,7 @@
                                                                  rest3109))
                                                              tmp3111)
                                                            ((lambda (_3117)
-                                                              (syntax-error
+                                                              (sc-syntax-error
                                                                 x3085))
                                                              tmp3110)))
                                                       ($syntax-dispatch
@@ -10848,7 +10904,7 @@
                       m13089
                       m23088)))
                 tmp3087)
-              (syntax-error tmp3086)))
+              (sc-syntax-error tmp3086)))
          ($syntax-dispatch tmp3086 '(any any any . each-any))))
       x3085))
   '*top*)
@@ -10889,8 +10945,8 @@
                          (apply
                            (lambda (dummy3131 id3130 exp13129 var3128
                                     val3127 exp23126)
-                             (if (identifier? id3130)
-                                 (identifier? var3128)
+                             (if (sc-identifier? id3130)
+                                 (sc-identifier? var3128)
                                  '#f))
                            tmp3125)
                          '#f)
@@ -10937,7 +10993,7 @@
                                    '#(syntax-object syntax ((top) #(ribcage #(dummy id exp1 var val exp2) #(("m" top) (top) (top) (top) (top) (top)) #("i" "i" "i" "i" "i" "i")) #(ribcage () () ()) #(ribcage #(x) #(("m" top)) #("i")) #(top-ribcage *top* #t)))
                                    exp13135))))))
                        tmp3125)
-                     (syntax-error tmp3121)))
+                     (sc-syntax-error tmp3121)))
                 ($syntax-dispatch
                   tmp3121
                   '(any (any any)
@@ -10949,34 +11005,6 @@
          ($syntax-dispatch tmp3121 '(any any))))
       x3120))
   '*top*)
-
-(define env (scheme-report-environment 5))
-
-(define (sc-eval e)
-  (eval (cadr e) env))
-
-(eval `(define syntax-object->datum ,syntax-object->datum) env)
-(eval `(define datum->syntax-object ,datum->syntax-object) env)
-(eval `(define syntax->list ,syntax->list) env)
-(eval `(define syntax->vector ,syntax->vector) env)
-(eval `(define identifier? ,identifier?) env)
-(eval `(define free-identifier=? ,free-identifier=?) env)
-(eval `(define bound-identifier=? ,bound-identifier=?) env)
-(eval `(define literal-identifier=? ,literal-identifier=?) env)
-(eval `(define generate-temporaries ,generate-temporaries) env)
-(eval `(define environment? ,environment?) env)
-(eval `(define syntax-error ,syntax-error) env)
-(eval `(define $sc-put-cte ,$sc-put-cte) env)
-(eval `(define $syntax-dispatch ,$syntax-dispatch) env)
-(eval `(define $make-environment ,$make-environment) env)
-(eval `(define sc-expand ,sc-expand) env)
-(eval `(define andmap ,andmap) env)
-(eval `(define ormap ,ormap) env)
-(eval `(define gensym ,gensym) env)
-(eval `(define gensym? ,gensym?) env)
-
-(eval `(define eval ,sc-eval) env)
-(eval `(define interaction-environment ,sc-interaction-environment) env)
 
 (time
  (with-input-from-file "psyntax-input.txt"
