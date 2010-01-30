@@ -109,16 +109,16 @@
                      [action
                       (with-handlers ((exn:fail? (λ (x) 
                                                    (fprintf (current-error-port)
-                                                            "\nExecution fail: Bug? transcript of ~a clicking follows\n"
+                                                            "\nExecution fail: transcript of ~a clicking follows\n"
                                                             (send window get-label))
                                                    (apply show-log (cons action actions))
                                                    (raise x))))
                         (action))
                       (loop (- n 1) (cons action actions))]
                      [else
-                      (fprintf (current-error-port) "\nExists/Meets window with no button: Bug? -> Reopen Dialog")
-                      (open-dialog)
-                      (loop n actions)]))]))]))))))
+                      (fprintf (current-error-port) "\nExists/Meets window with no button: Bug?\n")
+                      (apply show-log (cons action actions))
+                      (error 'randomly-click.ss "giving up")]))]))]))))))
 
 (define (show-log . actions)
   (for ((action (in-list actions)))
