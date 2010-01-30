@@ -62,15 +62,25 @@
       
       (inherit get-language-name)
       (define/public (get-users-language-name defs-text)
-        (let* ([i (open-input-text-editor defs-text)]
-               [l (with-handlers ((exn:fail? (λ (x) '?)))
-                    (read-language i (lambda () '?)))])
-          (if (eq? '? l)
-              (get-language-name)
-              (regexp-replace #rx".*#(?:!|lang ) *"
-                              (send defs-text get-text 0 (file-position i))
-                              ""))))
-      
+        (let ([defs-port (open-input-text-editor defs-text)])
+          (with-handlers ((exn:fail? (λ (x) (void))))
+            (let/ec k
+              (let ([orig-security (current-security-guard)])
+                (parameterize ([current-security-guard
+                                (make-security-guard
+                                 orig-security
+                                 (lambda (what path modes) #t)
+                                 (lambda (what host port mode) (k (void))))])
+                  (read-language defs-port (λ () (void)))
+                  (void)))))
+          (let* ([str (send defs-text get-text 0 (file-position defs-port))]
+                 [pos (regexp-match-positions #rx"#(?:!|lang )" str)])
+            (cond
+              [(not pos)
+               (get-language-name)]
+              [else
+               (substring str (cdr (car pos)) (string-length str))]))))
+                
       (define/override (use-namespace-require/copy?) #f)
       
       (define/augment (capability-value key)
