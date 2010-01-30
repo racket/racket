@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require unstable/srcloc scheme/pretty setup/main-collects)
+(require unstable/srcloc scheme/pretty)
 
 (provide blame?
          make-blame
