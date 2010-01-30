@@ -3,6 +3,8 @@
 (provide go)
 
 (define numButtonsToPush 200)
+(define the-seed (+ 1 (modulo (current-seconds) (- (expt 2 31) 1))))
+(random-seed the-seed)
 
 ;;find-all-actions: area -> (listof (-> void))
 (define (find-all-actions area)
@@ -109,14 +111,17 @@
                      [action
                       (with-handlers ((exn:fail? (λ (x) 
                                                    (fprintf (current-error-port)
-                                                            "\nExecution fail: transcript of ~a clicking follows\n"
-                                                            (send window get-label))
+                                                            "\nExecution fail: transcript of ~a clicking follows with seed ~s\n"
+                                                            (send window get-label)
+                                                            the-seed)
                                                    (apply show-log (cons action actions))
                                                    (raise x))))
                         (action))
                       (loop (- n 1) (cons action actions))]
                      [else
-                      (fprintf (current-error-port) "\nExists/Meets window with no button: Bug?\n")
+                      (fprintf (current-error-port) 
+                               "\nExists/Meets window with no button: Bug? seed ~s\n"
+                               the-seed)
                       (apply show-log (cons action actions))
                       (error 'randomly-click.ss "giving up")]))]))]))))))
 
