@@ -39,9 +39,9 @@
                                                                  var)])
                                    #`(let ([old-v/c (#,vref)])
                                        (contract sig-ctc-stx (car old-v/c)
-                                                 (cdr old-v/c) (blame-guilty #,blame-id)
+                                                 (cdr old-v/c) (blame-positive #,blame-id)
                                                  (quote #,var) (quote-syntax #,var)))))
-                              (blame-innocent #,blame-id))
+                              (blame-negative #,blame-id))
                       (wrap-with-proj ctc #`(#,vref))))
             vref)))
     (for ([tagged-info (in-list import-tagged-infos)]
@@ -53,7 +53,7 @@
                                                #`(vector-ref #,v #,index)))))
     (with-syntax ((((eloc ...) ...)
                    (for/list ([target-sig import-sigs])
-                     (let ([rename-bindings (get-member-bindings def-table target-sig #`(blame-guilty #,blame-id))])
+                     (let ([rename-bindings (get-member-bindings def-table target-sig #`(blame-positive #,blame-id))])
                        (for/list ([target-int/ext-name (in-list (car target-sig))]
                                   [sig-ctc (in-list (cadddr target-sig))])
                          (let* ([var (car target-int/ext-name)]

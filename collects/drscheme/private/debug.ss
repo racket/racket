@@ -337,7 +337,7 @@ profile todo:
   (define (print-planet-icon-to-stderr exn)
     (when (exn:fail:contract:blame? exn)
       (let ([table (parse-gp exn
-                             (blame-guilty
+                             (blame-positive
                               (exn:fail:contract:blame-object exn)))])
         (when table
           (let ([gp-url (bug-info->ticket-url table)])

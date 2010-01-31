@@ -18,9 +18,9 @@
 (let* ([cm (syntax-parameterize ((making-a-method #t)) (-> any/c integer? integer?))]
        [cf (-> integer? integer?)]
        [m-proj ((contract-projection cm)
-                (make-blame #'here #f "whatever" 'pos 'neg #f))]
+                (make-blame #'here #f "whatever" 'pos 'neg #t))]
        [f-proj ((contract-projection cf)
-                (make-blame #'here #f "whatever" 'pos 'neg #f))]
+                (make-blame #'here #f "whatever" 'pos 'neg #t))]
        [cls (make-wrapper-class 'wrapper-class
                                 '(m)
                                 (list 

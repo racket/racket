@@ -55,7 +55,7 @@ improve method arity mismatch contract violation error messages?
   (let* ([c (coerce-contract 'contract c)])
     (check-source-location! 'contract loc)
     (((contract-projection c)
-      (make-blame loc name (contract-name c) pos neg #f))
+      (make-blame loc name (contract-name c) pos neg #t))
      v)))
 
 (define-syntax (recursive-contract stx)

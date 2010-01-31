@@ -23,7 +23,7 @@
                      name
                      (unpack-blame pos)
                      "<<unknown party>>"
-                     #f)
+                     #t)
          x
          fmt
          args))
@@ -36,15 +36,15 @@
    (cond
     [(procedure-arity-includes? proj 5)
      (lambda (blame)
-       (proj (blame-guilty blame)
-             (blame-innocent blame)
+       (proj (blame-positive blame)
+             (blame-negative blame)
              (list (blame-source blame) (blame-value blame))
              (blame-contract blame)
              (not (blame-swapped? blame))))]
     [(procedure-arity-includes? proj 4)
      (lambda (blame)
-       (proj (blame-guilty blame)
-             (blame-innocent blame)
+       (proj (blame-positive blame)
+             (blame-negative blame)
              (list (blame-source blame) (blame-value blame))
              (blame-contract blame)))]
     [else
@@ -60,7 +60,7 @@
                         name
                         (unpack-blame (if original? pos neg))
                         (unpack-blame (if original? neg pos))
-                        (not original?))))))
+                        original?)))))
 
 (define (legacy-property name)
   (define-values [ prop pred get ]

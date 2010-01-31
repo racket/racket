@@ -5126,7 +5126,7 @@ so that propagation occurs.
   (contract-eval
    `(,test
      'pos
-     (compose blame-guilty exn:fail:contract:blame-object)
+     (compose blame-positive exn:fail:contract:blame-object)
      (with-handlers ((void values)) (contract not #t 'pos 'neg))))
   
   (report-errs)
