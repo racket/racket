@@ -9,8 +9,6 @@
          blame-innocent
          blame-contract
          blame-value
-         blame-positive
-         blame-negative
          blame-swapped?
          blame-swap
 
@@ -18,9 +16,26 @@
          current-blame-format
          (struct-out exn:fail:contract:blame))
 
+(define (blame=? a b equal?/recur)
+  (and (equal?/recur (blame-guilty a) (blame-guilty b))
+       (equal?/recur (blame-innocent a) (blame-innocent b))
+       (equal?/recur (blame-contract a) (blame-contract b))
+       (equal?/recur (blame-value a) (blame-value b))
+       (equal?/recur (blame-source a) (blame-source b))
+       (equal?/recur (blame-swapped? a) (blame-swapped? b))))
+
+(define (blame-hash b hash/recur)
+  (bitwise-xor (hash/recur (blame-guilty b))
+               (hash/recur (blame-innocent b))
+               (hash/recur (blame-contract b))
+               (hash/recur (blame-value b))
+               (hash/recur (blame-source b))
+               (hash/recur (blame-swapped? b))))
+
 (define-struct blame
   [source value contract positive negative swapped?]
-  #:transparent)
+  #:property prop:equal+hash
+  (list blame=? blame-hash blame-hash))
 
 (define (blame-guilty b)
   (if (blame-swapped? b)
