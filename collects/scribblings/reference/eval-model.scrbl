@@ -366,6 +366,16 @@ via a @tech{weak reference}, then the object can be reclaimed, and the
 @tech{weak reference} is replaced by a different @tech{value}
 (typically @scheme[#f]).
 
+As a special case, a @tech{fixnum} is always considered reachable by
+the garbage collector. Many other values are always reachable due to
+the way they are implemented and used: A @tech{character} in the
+Latin-1 range is always reachable, because @scheme[equal?] Latin-1
+characters are always @scheme[eq?], and all of the Latin-1 characters
+are referenced by an internal module. Similarly, @scheme[null],
+@scheme[#t], @scheme[#f], @scheme[eof], and @|void-const| and are
+always reachable. Values produced by @scheme[quote] remain reachable
+when the @scheme[quote] expression itself is reachable.
+
 @;------------------------------------------------------------------------
 @section{Procedure Applications and Local Variables}
 

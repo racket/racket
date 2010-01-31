@@ -19,7 +19,7 @@ instead created with mutable pairs.
 @defproc[(mpair? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
 a mutable pair, @scheme[#f] otherwise.}
 
-@defproc[(mcons [a any/c] [d any/c]) pair?]{Returns a mutable pair whose first
+@defproc[(mcons [a any/c] [d any/c]) pair?]{Returns a newly allocated mutable pair whose first
 element is @scheme[a] and second element is @scheme[d].}
 
 @defproc[(mcar [p mpair?]) any/c]{Returns the first element of the

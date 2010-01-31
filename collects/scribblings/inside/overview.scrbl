@@ -213,13 +213,57 @@ must be extended as follows:
 For a relatively simple extension @filepath{hw.c}, the extension is
 compiled under Unix for 3m with the following three commands:
 
-@commandline{mzc --xform --cc hw.c}
+@commandline{mzc --xform hw.c}
 @commandline{mzc --3m --cc hw.3m.c}
 @commandline{mzc --3m --ld hw.so hw.o}
 
 Some examples in @filepath{collects/mzscheme/examples} work with
 MzScheme3m in this way. A few examples are manually instrumented, in
 which case the @DFlag{xform} step should be skipped.
+
+@subsection{Declaring a Module in an Extension}
+
+To create an extension that behaves as a module, return a symbol from
+@cpp{scheme_module_name}, and have @cpp{scheme_initialize} and
+@cpp{scheme_rename} declare a module using @cpp{scheme_primitive_module}.
+
+For example, the following extension implements a module named
+@scheme[hello] that exports a binding @scheme[greeting]:
+
+@verbatim[#:indent 2]{
+  #include "escheme.h"
+
+  Scheme_Object *scheme_initialize(Scheme_Env *env) {
+    Scheme_Env *mod_env;
+    mod_env = scheme_primitive_module(scheme_intern_symbol("hi"), 
+                                      env);
+    scheme_add_global("greeting", 
+                      scheme_make_utf8_string("hello"), 
+                      mod_env);
+    scheme_finish_primitive_module(mod_env);
+    return scheme_void;
+  }
+
+  Scheme_Object *scheme_reload(Scheme_Env *env) {
+    return scheme_initialize(env); /* Nothing special for reload */
+  }
+
+  Scheme_Object *scheme_module_name() {
+    return scheme_intern_symbol("hi");
+  }
+}
+
+This extension could be compiled for 3m on Mac OS X for i386, for
+example, using the following sequence of @exec{mzc} commands:
+
+@commandline{mzc --xform hi.c}
+@commandline{mzc --3m --cc hi.3m.c}
+@commandline{mkdir -p compiled/native/i386-macosx/3m}
+@commandline{mzc --3m --ld compiled/native/i386-macosx/3m/hi_ss.dylib hi_3m.o}
+
+The resulting module can be loaded with
+
+@schemeblock[(require "hi.ss")]
 
 @; ----------------------------------------------------------------------
 

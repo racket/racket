@@ -5,7 +5,7 @@
 @title[#:style 'toc]{Reader Extension}
 
 Scheme's reader can be extended in three ways: through a reader-macro
-procedure in a readtable (see @secref["readtables"]), through a
+procedure in a @tech{readtable} (see @secref["readtables"]), through a
 @litchar{#reader} form (see @secref["parse-reader"]), or through a
 custom-port byte reader that returns a ``special'' result procedure
 (see @secref["customport"]). All three kinds of @deftech{reader
