@@ -347,6 +347,8 @@
               cached-fringe)
             
             (define/override (on-select i)
+              (when i
+                (set! most-recent-languages-hier-list-selection i))
               (cond
                 [(and i (is-a? i hieritem-language<%>))
                  (something-selected i)]
@@ -363,7 +365,9 @@
                 (ok-handler 'execute)))
             (super-new [parent parent])
             ;; do this so we can expand/collapse languages on a single click
-            (send this on-click-always #t)))
+            (inherit on-click-always allow-deselect)
+            (on-click-always #t)
+            (allow-deselect #t)))
         
         (define outermost-panel (make-object horizontal-pane% parent))
         (define languages-choice-panel (new vertical-panel%
@@ -387,6 +391,7 @@
                                                  [stretchable-width #f]
                                                  [min-width 32]))
         (define stupid-internal-definition-syntax1 (add-discussion in-source-discussion-panel))
+        (define most-recent-languages-hier-list-selection #f)
         (define use-chosen-language-rb
           (new radio-box%
                [label #f]
@@ -394,12 +399,9 @@
                [parent languages-choice-panel]
                [callback
                 (λ (this-rb evt)
-                  (let ([i (send languages-hier-list get-selected)])
-                    (cond
-                      [(and i (is-a? i hieritem-language<%>))
-                       (something-selected i)]
-                      [else
-                       (non-language-selected)]))
+                  (when most-recent-languages-hier-list-selection
+                    (send languages-hier-list select 
+                          most-recent-languages-hier-list-selection))
                   (send use-language-in-source-rb set-selection #f))]))
         (define languages-hier-list-panel (new horizontal-panel% [parent languages-choice-panel]))
         (define languages-hier-list-spacer (new horizontal-panel% 
@@ -460,7 +462,7 @@
         
         (define (module-language-selected)
           ;; need to deselect things in the languages-hier-list at this point.
-          ;(send languages-hier-list select #f)
+          (send languages-hier-list select #f)
           (send use-chosen-language-rb set-selection #f)
           (send use-language-in-source-rb set-selection 0)
           (ok-handler 'enable)
