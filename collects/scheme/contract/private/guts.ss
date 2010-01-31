@@ -8,7 +8,8 @@
 (require (for-syntax scheme/base
                      "helpers.ss"))
 
-(provide (all-from-out "blame.ss" "prop.ss")
+(provide (except-out (all-from-out "blame.ss") make-blame)
+         (all-from-out "prop.ss")
          
          coerce-contract
          coerce-contracts
