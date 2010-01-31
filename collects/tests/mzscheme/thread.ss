@@ -1319,32 +1319,33 @@
   (run #t))
 
 ;; Make sure that transitive thread-resume keeps a weak link
-;; when thread is blocked:
-(let ([run
-       (lambda (suspend-first?)
-         (let ([done (make-semaphore)])
-           (let ([boxes
-                  (for/list ([i (in-range 100)])
-                    (let ([t
-                           (thread (lambda ()
-                                     (semaphore-wait (make-semaphore))
-                                     (semaphore-post done)))])
-                      (when suspend-first?
-                        (sync (system-idle-evt))
-                        (thread-suspend t))
-                      (thread-resume t (current-thread))
-                      (make-weak-box t)))])
-             (sync (system-idle-evt))
-             (collect-garbage)
-             (collect-garbage)
-             (test #t > (apply + (map (lambda (b) (if (weak-box-value b)
-                                                      0
-                                                      1))
-                                      boxes))
-                   50)
-             (test #f sync/timeout 0.0 done))))])
-  (run #f)
-  (run #t))
+;; when thread is blocked (but only test under 3m):
+(when (regexp-match #rx"3m" (path->bytes (system-library-subpath)))
+  (let ([run
+         (lambda (suspend-first?)
+           (let ([done (make-semaphore)])
+             (let ([boxes
+                    (for/list ([i (in-range 100)])
+                      (let ([t
+                             (thread (lambda ()
+                                       (semaphore-wait (make-semaphore))
+                                       (semaphore-post done)))])
+                        (when suspend-first?
+                          (sync (system-idle-evt))
+                          (thread-suspend t))
+                        (thread-resume t (current-thread))
+                        (make-weak-box t)))])
+               (sync (system-idle-evt))
+               (collect-garbage)
+               (collect-garbage)
+               (test #t > (apply + (map (lambda (b) (if (weak-box-value b)
+                                                        0
+                                                        1))
+                                        boxes))
+                     50)
+               (test #f sync/timeout 0.0 done))))])
+    (run #f)
+    (run #t)))
 
 ; --------------------
 

@@ -534,7 +534,7 @@
     (un0 '#&1 'box 1)
 
     (let ([test-setter
-	   (lambda (make-X def-val set-val set-name set ref)
+	   (lambda (make-X def-val set-val set-name set ref 3rd-all-ok?)
 	     (let ([v (make-X 3 def-val)])
 	       (check-error-message set-name (eval `(lambda (x) (,set-name ,v -1 ,set-val))))
 	       (check-error-message set-name (eval `(lambda (x) (,set-name ,v 3 ,set-val))))
@@ -547,12 +547,12 @@
 					(test def-val ref v (modulo (+ i 1) 3))
 					(test def-val ref v (modulo (+ i 2) 3))
 					(set v i def-val))
-				      #t))
+				      3rd-all-ok?))
 			 '(0 1 2))))])
-      (test-setter make-vector #f 7 'vector-set! vector-set! vector-ref)
-      (test-setter make-bytes 0 7 'bytes-set! bytes-set! bytes-ref)
-      (test-setter make-string #\a #\7 'string-set! string-set! string-ref)
-      (test-setter make-flvector 1.0 7.0 'flvector-set! flvector-set! flvector-ref))
+      (test-setter make-vector #f 7 'vector-set! vector-set! vector-ref #t)
+      (test-setter make-bytes 0 7 'bytes-set! bytes-set! bytes-ref #f)
+      (test-setter make-string #\a #\7 'string-set! string-set! string-ref #f)
+      (test-setter make-flvector 1.0 7.0 'flvector-set! flvector-set! flvector-ref #f))
 
     ))
 

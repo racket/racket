@@ -1,3 +1,6 @@
+Version 4.2.4.2
+Changed module to wrap each body expression in a prompt
+
 Version 4.2.4, January 2010
 Added scheme/flonum and scheme/fixnum
 Extended scheme/unsafe/ops
