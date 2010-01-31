@@ -817,7 +817,7 @@ The @scheme[define-struct/contract] form only allows a subset of the
                      positive-blame-expr negative-blame-expr)
            (contract contract-expr to-protect-expr 
                      positive-blame-expr negative-blame-expr
-                     contract-source-info)]]{
+                     value-name-expr source-location-expr)]]{
 
 The primitive mechanism for attaching a contract to a value. The
 purpose of @scheme[contract] is as a target for the expansion of some
@@ -830,35 +830,21 @@ is the result of the @scheme[to-protect-expr] expression, but with the
 contract specified by @scheme[contract-expr] enforced on
 @scheme[to-protect-expr].
 
-The values of @scheme[positive-blame-expr] and
-@scheme[negative-blame-expr] must be symbols indicating how to assign
-blame for positive and negative positions of the contract specified by
-@scheme[contract-expr]. 
+The values of @scheme[positive-blame-expr] and @scheme[negative-blame-expr]
+indicate how to assign blame for positive and negative positions of the contract
+specified by @scheme[contract-expr].  They may be any value, and are formatted
+as by @scheme[display] for purposes of contract violation error messages.
 
-If specified, @scheme[contract-source-info], indicates where the
-contract was assumed. Its value must be a either:
-@itemize[
-@item{a list of two elements: @scheme[srcloc] struct and
-either a string or @scheme[#f]. The srcloc struct indicates
-where the contract was assumed. Its @tt{source} field
-should be a syntax object, and @scheme[module-path-index-resolve]
-is called on it to extract the path of syntax object.
+If specified, @scheme[value-name-expr] indicates a name for the protected value
+to be used in error messages.  If not supplied, or if @scheme[value-name-expr]
+produces @scheme[#f], no name is printed.  Otherwise, it is also formatted as by
+@scheme[display].
 
-If the second element of
-the list is not @scheme[#f], it is used as the name of the
-identifier whose contract was assumed.}
+If specified, @scheme[source-location-expr] indicates the source location
+reported by contract violations.  The expession must produce a @scheme[srcloc]
+structure, @tech{syntax object}, @scheme[#f], or a list or vector in the format
+accepted by the third argument to @scheme[datum->syntax].
 
-@item{a syntax object specifying the
-source location of the location where the contract was assumed. If the
-syntax object wraps a symbol, the symbol is used as the name of the
-primitive whose contract was assumed.}
-]
-
-If absent, it defaults to the source location of the
-@scheme[contract] expression with no identifying name.
-
-The second form above is not recommended, because mzscheme strips
-source location information from compiled files.
 }
 
 @; ------------------------------------------------------------------------
