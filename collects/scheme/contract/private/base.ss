@@ -18,6 +18,7 @@ improve method arity mismatch contract violation error messages?
          unstable/srcloc
          unstable/location
          "guts.ss"
+         "blame.ss"
          "legacy.ss")
 
 (define-syntax-parameter current-contract-region
@@ -51,52 +52,11 @@ improve method arity mismatch contract violation error messages?
                        (unpack-source src)))]))
 
 (define (apply-contract c v pos neg name loc)
-  (let* ([c (coerce-contract 'contract c)]
-         [args (list c v pos neg name loc)])
-    (check-sexp! 'contract "positive blame" pos args)
-    (check-sexp! 'contract "negative blame" neg args)
-    (check-sexp! 'contract "value name" name args)
-    (check-srcloc! 'contract "source location" loc args)
+  (let* ([c (coerce-contract 'contract c)])
+    (check-source-location! 'contract loc)
     (((contract-projection c)
       (make-blame loc name (contract-name c) pos neg #f))
      v)))
-
-(define (check-srcloc! f-name v-name v args)
-  (unless (source-location? v)
-    (error f-name
-           "expected ~a to be a source location, got: ~e; all arguments: ~e"
-           v-name v args))
-  (check-sexp! f-name
-               (format "source file of ~a" v-name)
-               (source-location-source v)
-               args))
-
-(define (check-sexp! f-name v-name v args)
-  (let loop ([seen #hasheq()] [x v])
-    (unless (or (null? x) (boolean? x) (number? x)
-                (string? x) (bytes? x) (regexp? x) (char? x)
-                (symbol? x) (keyword? x)
-                (path? x))
-      (when (hash-has-key? seen x)
-        (error f-name
-               (string-append "expected ~a to be acyclic, "
-                              "found a cycle in ~e at ~e; "
-                              "all arguments: ~e")
-               v-name v x args))
-      (let ([seen (hash-set seen x #t)])
-        (cond
-         [(pair? x) (loop seen (car x)) (loop seen (cdr x))]
-         [(mpair? x) (loop seen (mcar x)) (loop seen (mcdr x))]
-         [(vector? x) (for ([y (in-vector x)]) (loop seen y))]
-         [(box? x) (loop seen (unbox x))]
-         [(hash? x) (for ([(y z) (in-hash x)]) (loop seen y) (loop seen z))]
-         [(prefab-struct-key x) =>
-          (lambda (k) (loop seen k) (loop seen (struct->vector x)))]
-         [else (error f-name
-                      (string-append "expected ~a to be an s-expression, "
-                                     "~e contained ~e; "
-                                     "all arguments: ~e")
-                      v-name v x args)])))))
 
 (define-syntax (recursive-contract stx)
   (syntax-case stx ()
