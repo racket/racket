@@ -4,10 +4,15 @@
 ;;
 ;; Derived from the Chicken variant, which was
 ;; Contributed by Anthony Borla
- 
+;;
+;; This version uses unsafe operations
+
 #lang scheme/base
 (require scheme/cmdline
-         scheme/unsafe/ops)
+	 scheme/require (for-syntax scheme/base)
+	 (filtered-in
+	  (lambda (name) (regexp-replace #rx"unsafe-" name ""))
+	  scheme/unsafe/ops))
 
 (define +limit-sqr+ 4.0)
 
@@ -16,15 +21,15 @@
 ;; -------------------------------
 
 (define (mandelbrot x y n ci)
-  (let ((cr (unsafe-fl- (unsafe-fl/ (unsafe-fl* 2.0 (unsafe-fx->fl x)) (unsafe-fx->fl n)) 1.5)))
+  (let ((cr (fl- (fl/ (fl* 2.0 (fx->fl x)) (fx->fl n)) 1.5)))
     (let loop ((i 0) (zr 0.0) (zi 0.0))
-      (if (unsafe-fx> i +iterations+)
+      (if (fx> i +iterations+)
           1
           (cond
-           ((unsafe-fl> (unsafe-fl+ (unsafe-fl* zr zr) (unsafe-fl* zi zi)) +limit-sqr+) 0)
-           (else (loop (unsafe-fx+ 1 i) 
-                       (unsafe-fl+ (unsafe-fl- (unsafe-fl* zr zr) (unsafe-fl* zi zi)) cr) 
-                       (unsafe-fl+ (unsafe-fl* 2.0 (unsafe-fl* zr zi)) ci))))))))
+           ((fl> (fl+ (fl* zr zr) (fl* zi zi)) +limit-sqr+) 0)
+           (else (loop (fx+ 1 i) 
+                       (fl+ (fl- (fl* zr zr) (fl* zi zi)) cr) 
+                       (fl+ (fl* 2.0 (fl* zr zi)) ci))))))))
 
 ;; -------------------------------
 
@@ -35,23 +40,23 @@
 
     (let loop-y ((y 0))
 
-      (when (unsafe-fx< y n)
+      (when (fx< y n)
         
-        (let ([ci (unsafe-fl- (unsafe-fl/ (unsafe-fl* 2.0 (unsafe-fx->fl y)) (unsafe-fx->fl n)) 1.0)])
+        (let ([ci (fl- (fl/ (fl* 2.0 (fx->fl y)) (fx->fl n)) 1.0)])
           
           (let loop-x ((x 0) (bitnum 0) (byteacc 0))
 
-            (if (unsafe-fx< x n)
-                (let ([bitnum (unsafe-fx+ 1 bitnum)]
-                      [byteacc (unsafe-fx+ (unsafe-fxlshift byteacc 1) 
+            (if (fx< x n)
+                (let ([bitnum (fx+ 1 bitnum)]
+                      [byteacc (fx+ (fxlshift byteacc 1) 
                                            (mandelbrot x y n ci))])
 
                   (cond
-                   ((unsafe-fx= bitnum 8)
+                   ((fx= bitnum 8)
                     (write-byte byteacc out)
-                    (loop-x (unsafe-fx+ 1 x) 0 0))
+                    (loop-x (fx+ 1 x) 0 0))
                    
-                   [else (loop-x (unsafe-fx+ 1 x) bitnum byteacc)]))
+                   [else (loop-x (fx+ 1 x) bitnum byteacc)]))
 
                 (begin
                   (when (positive? bitnum)

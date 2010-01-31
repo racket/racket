@@ -15,7 +15,7 @@
         (display " system: ")
         (display (msecs (- (tms:stime end) (tms:stime start))))
         (display " real: ")
-        (display (msecs (- (tms:stime end) (tms:stime start))))
+        (display (msecs (- (tms:clock end) (tms:clock start))))
         (display " gc: ")
         (display (msecs (- end-gc start-gc)))
         (newline)))))
