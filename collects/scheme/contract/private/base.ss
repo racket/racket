@@ -27,7 +27,12 @@ improve method arity mismatch contract violation error messages?
   (syntax-case stx ()
     [(_ c v pos neg name loc)
      (syntax/loc stx
-       (apply-contract c v pos neg name loc))]
+       (apply-contract c
+                       v
+                       (unpack-blame pos)
+                       (unpack-blame neg)
+                       name
+                       loc))]
     [(_ c v pos neg)
      (syntax/loc stx
        (apply-contract c
