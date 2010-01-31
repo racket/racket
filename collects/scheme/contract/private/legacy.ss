@@ -33,16 +33,28 @@
    #:name name
    #:first-order test
    #:projection
-   (lambda (blame)
-     (proj (blame-guilty blame)
-           (blame-innocent blame)
-           (list (blame-source blame) (blame-value blame))
-           (blame-contract blame)
-           (not (blame-swapped? blame))))))
+   (cond
+    [(procedure-arity-includes? proj 5)
+     (lambda (blame)
+       (proj (blame-guilty blame)
+             (blame-innocent blame)
+             (list (blame-source blame) (blame-value blame))
+             (blame-contract blame)
+             (not (blame-swapped? blame))))]
+    [(procedure-arity-includes? proj 4)
+     (lambda (blame)
+       (proj (blame-guilty blame)
+             (blame-innocent blame)
+             (list (blame-source blame) (blame-value blame))
+             (blame-contract blame)))]
+    [else
+     (error 'make-proj-contract
+            "expected a projection that accepts 4 or 5 arguments; got: ~e"
+            proj)])))
 
 (define (contract-proc c)
   (let* ([proj (contract-projection c)])
-    (lambda (pos neg src name original?)
+    (lambda (pos neg src name [original? #t])
       (proj (make-blame (unpack-source src)
                         (unpack-name src)
                         name
