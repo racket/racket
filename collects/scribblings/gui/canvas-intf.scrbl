@@ -21,6 +21,33 @@ The @scheme[canvas<%>] interface is implemented by two classes:
 ]
 
 
+@defmethod*[([(accept-tab-focus)
+              boolean?]
+             [(accept-tab-focus [on? any/c])
+              void?])]{
+
+@index['("keyboard focus" "navigation")]{Gets} or sets whether
+tab-focus is enabled for the canvas (assuming that the canvas is
+not created with the @scheme['no-focus] style for @scheme[canvas%]). When tab-focus is
+enabled, the canvas can receive the keyboard focus when the user
+navigates among a frame or dialog's controls with the Tab and
+arrow keys. By default, tab-focus is disabled.
+
+When tab-focus is enabled for a @scheme[canvas%] object, Tab, arrow,
+ Enter, and Escape keyboard events are consumed by a frame's default
+ @method[top-level-window<%> on-traverse-char] method. (In addition, a
+ dialog's default method consumes Escape key events.) Otherwise,
+ @method[top-level-window<%> on-traverse-char] allows the keyboard
+ events to be propagated to the canvas.
+
+For an @scheme[editor-canvas%] object, handling of Tab, arrow, Enter,
+ and Escape keyboard events is determined by the
+ @method[editor-canvas% allow-tab-exit] method.
+
+
+}
+
+
 @defmethod[(get-canvas-background)
            (or/c (is-a?/c color%) false/c)]{
 Returns the color currently used to ``erase'' the canvas content before
@@ -144,7 +171,7 @@ Called when the keyboard focus enters the canvas via keyboard
 @method[window<%> on-focus] is called.
 
 See also
-@xmethod[canvas% accept-tab-focus] and
+@method[canvas<%> accept-tab-focus] and
 @xmethod[top-level-window<%> on-traverse-char] .
 
 }

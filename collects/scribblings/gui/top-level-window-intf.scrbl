@@ -223,7 +223,7 @@ If the window that currently owns the focus specifically handles the
        Meta/Alt events.}
 
  @item{@scheme[canvas%] --- when tab-focus is disabled (see
-@method[canvas% accept-tab-focus]): all keyboard events, except alphanumeric key events when the Meta
+@method[canvas<%> accept-tab-focus]): all keyboard events, except alphanumeric key events when the Meta
        (X) or Alt (Windows) key is pressed; when tab-focus is enabled:
        no key events}
 

@@ -90,26 +90,6 @@ The @scheme[gl-config] argument determines properties of an OpenGL
 
 }
 
-@defmethod*[([(accept-tab-focus)
-              boolean?]
-             [(accept-tab-focus [on? any/c])
-              void?])]{
-
-@index['("keyboard focus" "navigation")]{Gets} or sets whether
-tab-focus is enabled for the canvas (assuming that the canvas is
-not created with the @scheme['no-focus] style). When tab-focus is
-enabled, the canvas can receive the keyboard focus when the user
-navigates among a frame or dialog's controls with the Tab and
-arrow keys. By default, tab-focus is disabled.
-
-When tab-focus is enabled for a canvas, Tab, arrow, and Enter keyboard
- events are consumed by a frame's default
-@method[top-level-window<%> on-traverse-char] method. (In addition, a dialog's default method consumes Escape key
- events.) Otherwise,
-@method[top-level-window<%> on-traverse-char] allows the keyboard events to be propagated to the canvas.
-}
-
-
 @defmethod[(get-scroll-page [which (one-of/c 'horizontal 'vertical)])
            (integer-in 1 1000000000)]{
 

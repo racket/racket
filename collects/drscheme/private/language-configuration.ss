@@ -946,6 +946,8 @@
         
         (send t auto-wrap #t)
         (send t lock #t)
+        (send c accept-tab-focus #f)
+        (send c allow-tab-exit #t)
         c))
     
     (define (size-discussion-canvas canvas)

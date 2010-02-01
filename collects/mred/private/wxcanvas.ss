@@ -14,7 +14,7 @@
 		    wx-canvas%
 		    wx-editor-canvas%))
 
-  (define (make-canvas-glue% %) ; implies make-window-glue%
+  (define (make-canvas-glue% default-tabable? %) ; implies make-window-glue%
     (class100 (make-window-glue% %) (mred proxy . args)
       (inherit get-mred get-top-level clear-margins)
       (public
@@ -22,6 +22,22 @@
 	[do-on-event (lambda (e) (super on-event e))]
 	[do-on-scroll (lambda (e) (super on-scroll e))]
 	[do-on-paint (lambda () (super on-paint))])
+      (private-field
+       [tabable? default-tabable?])
+      (public
+        [get-tab-focus (lambda () tabable?)]
+        [set-tab-focus (lambda (v) (set! tabable? v))]
+        [on-tab-in (lambda () 
+		     (let ([mred (wx->mred this)])
+		       (when mred
+			 (send mred on-tab-in))))])
+      (override
+        [gets-focus? (lambda () tabable?)]
+        [handles-key-code
+         (lambda (code alpha? meta?)
+           (if default-tabable?
+               (super handles-key-code code alpha? meta?)
+               (or meta? (not tabable?))))])
       (private
         [clear-and-on-paint
          (lambda (mred)
@@ -68,20 +84,11 @@
 
   (define wx-canvas% 
     (make-canvas-glue%
+     #f
      (class100 (make-control% wx:canvas% 0 0 #t #t) (parent x y w h style gl-config)
        (inherit get-top-level)
-       (private-field
-	[tabable? #f])
        (public
-         [clear-margins (lambda () (void))]
-	 [on-tab-in (lambda () (send (wx->mred this) on-tab-in))]
-	 [get-tab-focus (lambda () tabable?)]
-	 [set-tab-focus (lambda (v) (set! tabable? v))])
-       (override
-	 [gets-focus? (lambda () tabable?)]
-	 [handles-key-code
-	  (lambda (code alpha? meta?)
-	    (or meta? (not tabable?)))])
+         [clear-margins (lambda () (void))])
        (sequence
 	 (super-init style parent x y w h (cons 'deleted style) "canvas" gl-config)
          (unless (memq 'deleted style)
@@ -163,10 +170,6 @@
       (public
 	[set-tabable (lambda (on?) (set! tabable? on?))]
 	[is-tabable? (lambda () tabable?)]
-	[on-tab-in (lambda () 
-		     (let ([mred (wx->mred this)])
-		       (when mred
-			 (send mred on-tab-in))))]
 	[set-single-line (lambda () (set! single-line-canvas? #t))]
 	[is-single-line? (lambda () single-line-canvas?)]
 	[set-line-count (lambda (n)
@@ -220,6 +223,7 @@
 
   (define wx-editor-canvas% 
     (class (make-canvas-glue%
+            #t
             (make-editor-canvas% (make-control% wx:editor-canvas%
                                                 0 0 #t #t)))
       (inherit editor-canvas-on-scroll)
