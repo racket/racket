@@ -1713,9 +1713,9 @@
     [(_ name orig-lang (names rhs ...) ...)
      (begin
        (unless (identifier? (syntax name))
-         (raise-syntax-error 'define-extended-langauge "expected an identifier" stx #'name))
+         (raise-syntax-error 'define-extended-language "expected an identifier" stx #'name))
        (unless (identifier? (syntax orig-lang))
-         (raise-syntax-error 'define-extended-langauge "expected an identifier" stx #'orig-lang))
+         (raise-syntax-error 'define-extended-language "expected an identifier" stx #'orig-lang))
        (check-rhss-not-empty stx (cdddr (syntax->list stx)))
        (let ([old-names (language-id-nts #'orig-lang 'define-extended-language)])
          (with-syntax ([((new-nt-names orig) ...) (append (pull-out-names 'define-language stx #'(names ...)) 

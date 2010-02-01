@@ -2,7 +2,7 @@
 
 ;;; -- Where are Undo, Redo, Select all, and friends from the right-click popup menu?
 
- ;;; when translating this constant, substitute name of actual langauge for `English'
+ ;;; when translating this constant, substitute name of actual language for `English'
  (is-this-your-native-language "Is uw moedertaal Nederlands?")
 
  (are-you-sure-you-want-to-switch-languages

@@ -86,14 +86,14 @@
    module-language-name
    module-language-put-file-mixin))
 
-(define-signature drscheme:module-langauge-tools-cm^
+(define-signature drscheme:module-language-tools-cm^
   (frame-mixin
    frame<%>
    tab-mixin
    tab<%>
    definitions-text-mixin
    definitions-text<%>))
-(define-signature drscheme:module-language-tools^ extends drscheme:module-langauge-tools-cm^
+(define-signature drscheme:module-language-tools^ extends drscheme:module-language-tools-cm^
   ())
 
 (define-signature drscheme:get-collection-cm^ ())

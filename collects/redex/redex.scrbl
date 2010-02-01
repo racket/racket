@@ -394,7 +394,7 @@ All of the exports in this section are provided both by
 all non-GUI portions of Redex) and also exported by
 @schememodname[redex] (which includes all of Redex).
 
-Object langauge expressions in Redex are written using
+Object language expressions in Redex are written using
 @scheme[term]. It is similar to Scheme's @scheme[quote] (in
 many cases it is identical) in that it constructs lists as
 the visible representation of terms. 

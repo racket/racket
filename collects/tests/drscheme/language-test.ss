@@ -1111,7 +1111,7 @@ the settings above should match r5rs
 
 
 ;; teaching-language-fraction-output
-;; tests that the teaching langauges properly handle repeating decimals
+;; tests that the teaching languages properly handle repeating decimals
 (define (teaching-language-fraction-output)
   (test-setting
    (lambda () (fw:test:set-radio-box! "Fraction Style" "Mixed fractions"))

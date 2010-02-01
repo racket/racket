@@ -89,7 +89,7 @@ please adhere to these guidelines:
 |#
 
 (module danish-string-constants "string-constant-lang.ss"
-  ;;; when translating this constant, substitute name of actual langauge for `English'
+  ;;; when translating this constant, substitute name of actual language for `English'
   (is-this-your-native-language "Foretrækker du dansk?")
   
   (are-you-sure-you-want-to-switch-languages

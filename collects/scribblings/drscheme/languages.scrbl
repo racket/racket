@@ -26,7 +26,7 @@ Scheme module can be written as @scheme[(module ...)]. In any case,
 aside from comments, the @tech{definitions window} must contain
 exactly one module.
 
-In the details pane of the module langauge, some of the
+In the details pane of the module language, some of the
 configuration options for the Module language that correspond
 to using various libraries and thus can be used without DrScheme. 
 Here's how, for the ones that are straightforward (the ones

@@ -53,7 +53,7 @@
   (define default-full-trace? #t)
   (define default-auto-text "#lang scheme\n")  
   
-  (define module-language-name "Determine langauge from source")
+  (define module-language-name "Determine language from source")
   
   ;; module-mixin : (implements drscheme:language:language<%>)
   ;;             -> (implements drscheme:language:language<%>)
