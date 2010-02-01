@@ -92,11 +92,13 @@ responses.  One basic kind of response is to show an HTML page.
 
 @schemeblock[
  (define html-response/c
+  (flat-rec-contract 
+   html-response
    (or/c string?
-         (or/c (cons/c symbol? (listof html-response/c))
+         (or/c (cons/c symbol? (listof html-response))
                (cons/c symbol?
                        (cons/c (listof (list/c symbol? string?))
-                               (listof html-response/c))))))]
+                               (listof html-response)))))))]
 
 For example:
 
