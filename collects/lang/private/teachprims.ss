@@ -2,7 +2,7 @@
 collects/tests/mzscheme/beginner.ss
                     .../beginner-abbr.ss
                     .../intermediate.ss
-                    .../intermediate-lam.ss
+                    .../intermediate-lambda.ss
                     .../advanced.ss
 
 Each one has to run separately, since they mangle the top-level
@@ -197,25 +197,13 @@ namespace.
       (if (and (cons? stuff0) (symbol? (first stuff0)))
           (values (first stuff0) (rest stuff0))
           (values false stuff0)))
-    (define str
-      (let loop ([stuff stuff1][frmt ""][pieces '()])
-        (cond
-          [(empty? stuff) (apply format frmt (reverse pieces))]
-          [else 
-           (let ([f (first stuff)]
-                 [r (rest stuff)])
-             (if (string? f)
-                 (loop r (string-append frmt f) pieces)
-                 (loop r (string-append frmt "~e") (cons f pieces))))])))
-    (if f (error f str) (error str)))
-  #;
-  (lambda (str)
-    (unless (string? str)
-      (raise
-       (make-exn:fail:contract
-        (format "error: expected a string, got ~e and ~e" str)
-        (current-continuation-marks))))
-    (error str)))
+    (error (apply
+            string-append
+            (if f (format "~a: " f) "")
+            (for/list ([ele (in-list stuff1)])
+              (if (string? ele)
+                  ele
+                  (format "~e" ele)))))))
 
 (define-teach beginner struct?
   (lambda (x)
