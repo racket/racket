@@ -289,10 +289,8 @@ the settings above should match r5rs
                      "call/cc: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: call/cc")
     
-    (test-expression "(error 'a \"~a\" 1)"
-                     "procedure error: expects 2 arguments, given 3: 'a \"~a\" 1")
-    (test-expression "(error \"a\" \"a\")"
-                     "error: expected a symbol and a string, got \"a\" and \"a\"")
+    (test-expression "(error 'a \"~a\" 1)" "a: ~a1")
+    (test-expression "(error \"a\" \"a\")" "aa")
     
     (test-expression "(time 1)"
                      "time: name is not defined, not a parameter, and not a primitive name"
@@ -456,10 +454,8 @@ the settings above should match r5rs
                      "call/cc: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: call/cc")
     
-    (test-expression "(error 'a \"~a\" 1)"
-                     "procedure error: expects 2 arguments, given 3: 'a \"~a\" 1")
-    (test-expression "(error \"a\" \"a\")"
-                     "error: expected a symbol and a string, got \"a\" and \"a\"")
+    (test-expression "(error 'a \"~a\" 1)" "a: ~a1")
+    (test-expression "(error \"a\" \"a\")" "aa")
     
     (test-expression "(time 1)"
                      "time: name is not defined, not a parameter, and not a primitive name"
@@ -619,10 +615,8 @@ the settings above should match r5rs
                      "call/cc: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: call/cc")
     
-    (test-expression "(error 'a \"~a\" 1)"
-                     "procedure error: expects 2 arguments, given 3: 'a \"~a\" 1")
-    (test-expression "(error \"a\" \"a\")"
-                     "error: expected a symbol and a string, got \"a\" and \"a\"")
+    (test-expression "(error 'a \"~a\" 1)" "a: ~a1")
+    (test-expression "(error \"a\" \"a\")" "aa")
     
     (test-expression "(time 1)" 
                      #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
@@ -778,10 +772,8 @@ the settings above should match r5rs
                      "call/cc: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: call/cc")
     
-    (test-expression "(error 'a \"~a\" 1)"
-                     "procedure error: expects 2 arguments, given 3: 'a \"~a\" 1")
-    (test-expression "(error \"a\" \"a\")"
-                     "error: expected a symbol and a string, got \"a\" and \"a\"")
+    (test-expression "(error 'a \"~a\" 1)" "a: ~a1")
+    (test-expression "(error \"a\" \"a\")" "aa")
     
     (test-expression "(time 1)" 
                      #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
@@ -931,10 +923,8 @@ the settings above should match r5rs
                      "call/cc: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: call/cc")
     
-    (test-expression "(error 'a \"~a\" 1)"
-                     "procedure error: expects 2 arguments, given 3: 'a \"~a\" 1")
-    (test-expression "(error \"a\" \"a\")"
-                     "error: expected a symbol and a string, got \"a\" and \"a\"")
+    (test-expression "(error 'a \"~a\" 1)" "a: ~a1")
+    (test-expression "(error \"a\" \"a\")" "aa")
     
     (test-expression "(time 1)" 
                      #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")

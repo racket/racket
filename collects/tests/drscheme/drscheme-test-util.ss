@@ -1,22 +1,15 @@
-;;; util.ss
+#lang scheme/base
 
-;;; utility functions for DrScheme GUI testing 
-
-;;; Authors: Robby Findler, Paul Steckler
-
-(module drscheme-test-util mzscheme
-  (require (prefix fw: framework)
-           mrlib/hierlist
-           mred
-           mzlib/class
-           mzlib/list
-           mzlib/contract
-           mzlib/etc
-           tests/utils/gui
-           mzlib/contract)
+(require (prefix-in fw: framework)
+         mrlib/hierlist
+         scheme/gui/base
+         scheme/class
+         scheme/contract
+         tests/utils/gui)
 
   (provide/contract 
-   [use-get/put-dialog ((-> any) path? . -> . void?)])
+   [use-get/put-dialog (-> (-> any) path? void?)]
+   [set-module-language! (->* () (boolean?) void?)])
   
   (provide save-drscheme-window-as
            do-execute
@@ -83,19 +76,19 @@
   ;; waits until pred return a true value and returns that.
   ;; if that doesn't happen by `secs', calls fail and returns that.
   (define poll-until
-    (opt-lambda (pred [secs 10] [fail (lambda ()
-                                        (error 'poll-until 
-                                               "timeout after ~e secs, ~e never returned a true value"
-                                               secs pred))])
+    (lambda (pred [secs 10] [fail (lambda ()
+                                    (error 'poll-until 
+                                           "timeout after ~e secs, ~e never returned a true value"
+                                           secs pred))])
       (let ([step 1/20])
-	(let loop ([counter secs])
-	  (if (<= counter 0)
-	      (fail)
-	      (let ([result (pred)])
-		(or result
-		    (begin
-		      (sleep step)
-		      (loop (- counter step))))))))))
+        (let loop ([counter secs])
+          (if (<= counter 0)
+              (fail)
+              (let ([result (pred)])
+                (or result
+                    (begin
+                      (sleep step)
+                      (loop (- counter step))))))))))
   
   (define (drscheme-frame? frame)
     (method-in-interface? 'get-execute-button (object-interface frame)))
@@ -321,7 +314,45 @@
   ;; set language level in the frontmost DrScheme frame (resets settings to defaults)
   ;; If `close-dialog?' it #t,
   (define set-language-level! 
-    (opt-lambda (in-language-spec [close-dialog? #t])
+    (lambda (in-language-spec [close-dialog? #t])
+      (unless (and (pair? in-language-spec)
+                   (list? in-language-spec)
+                   (andmap (lambda (x) (or string? regexp?)) in-language-spec))
+        (error 'set-language-level! "expected a non-empty list of regexps and strings for language, got: ~e" in-language-spec))
+      (let ([drs-frame (get-top-level-focus-window)])
+        (fw:test:menu-select "Language" "Choose Language...")
+        (let* ([language-dialog (wait-for-new-frame drs-frame)]
+               [language-choice (find-labelled-window #f hierarchical-list%)]
+               [b1 (box 0)]
+               [b2 (box 0)]
+               [click-on-snip
+                (lambda (snip)
+                  (let* ([editor (send (send snip get-admin) get-editor)]
+                         [between-threshold (send editor get-between-threshold)])
+                    (send editor get-snip-location snip b1 b2)
+                    (let-values ([(gx gy) (send editor editor-location-to-dc-location
+                                                (unbox b1)
+                                                (unbox b2))])
+                      (let ([x (inexact->exact (+ gx between-threshold 1))]
+                            [y (inexact->exact (+ gy between-threshold 1))])
+                        (fw:test:mouse-click 'left x y)))))])
+          (send language-choice focus)
+          (let loop ([list-item language-choice]
+                     [language-spec in-language-spec])
+            (let* ([name (car language-spec)]
+                   [which (filter (lambda (child)
+                                    (let* ([text (send (send child get-editor) get-text)]
+                                           [matches
+                                            (or (and (regexp? name)
+                                                     (regexp-match name text))
+                                                (and (string? name)
+                                                     (string=? name text)))])
+                                      (and matches
+                                           child)))
+                                  (send list-item get-items))])
+              (when (null? which)
+                (error '(define set-language-level! 
+    (lambda (in-language-spec [close-dialog? #t])
       (unless (and (pair? in-language-spec)
                    (list? in-language-spec)
                    (andmap (lambda (x) (or string? regexp?)) in-language-spec))
@@ -390,8 +421,59 @@
                 (error 'set-language-level! 
                        "didn't get drscheme frame back, got: ~s (drs-frame ~s)\n"
                        new-frame
+                       drs-frame)))))))) "couldn't find language: ~e, no match at ~e"
+                       in-language-spec name))
+              (unless (= 1 (length which))
+                (error 'set-language-level! "couldn't find language: ~e, double match ~e"
+                       in-language-spec name))
+              (let ([next-item (car which)])
+                (cond
+                  [(null? (cdr language-spec))
+                   (when (is-a? next-item hierarchical-list-compound-item<%>)
+                     (error 'set-language-level! "expected no more languages after ~e, but still are, input ~e"
+                            name in-language-spec))
+                   (click-on-snip (send next-item get-clickable-snip))]
+                  [else
+                   (unless (is-a? next-item hierarchical-list-compound-item<%>)
+                     (error 'set-language-level! "expected more languages after ~e, but got to end, input ~e"
+                            name in-language-spec))
+                   (unless (send next-item is-open?)
+                     (click-on-snip (send next-item get-arrow-snip)))
+                   (loop next-item (cdr language-spec))]))))
+          
+          (with-handlers ([exn:fail? (lambda (x) (void))])
+            (fw:test:button-push "Show Details"))
+          
+          (fw:test:button-push "Revert to Language Defaults")
+          
+          (when close-dialog?
+            (fw:test:button-push "OK")
+            (let ([new-frame (wait-for-new-frame language-dialog)])
+              (unless (eq? new-frame drs-frame)
+                (error 'set-language-level! 
+                       "didn't get drscheme frame back, got: ~s (drs-frame ~s)\n"
+                       new-frame
                        drs-frame)))))))) 
-
+  (define (set-module-language! [close-dialog? #t])
+    (let ([drs-frame (get-top-level-focus-window)])
+      (fw:test:menu-select "Language" "Choose Language...")
+      (let* ([language-dialog (wait-for-new-frame drs-frame)])
+        (fw:test:set-radio-box-item! "Use the language declared in the source")
+        
+        (with-handlers ([exn:fail? (lambda (x) (void))])
+          (fw:test:button-push "Show Details"))
+        
+        (fw:test:button-push "Revert to Language Defaults")
+        
+        (when close-dialog?
+          (fw:test:button-push "OK")
+          (let ([new-frame (wait-for-new-frame language-dialog)])
+            (unless (eq? new-frame drs-frame)
+              (error 'set-language-level! 
+                     "didn't get drscheme frame back, got: ~s (drs-frame ~s)\n"
+                     new-frame
+                     drs-frame)))))))
+  
   (provide/contract [check-language-level ((or/c string? regexp?) . -> . void?)])
   ;; checks that the language in the drscheme window is set to the given one.
   ;; clears the definitions, clicks execute and checks the interactions window.
@@ -536,4 +618,4 @@
       (semaphore-wait s)
       (if raised-exn?
           (raise exn)
-          (apply values anss)))))
+          (apply values anss))))

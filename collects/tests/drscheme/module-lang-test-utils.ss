@@ -139,7 +139,7 @@
   
   (run-use-compiled-file-paths-tests)
   
-  (set-language-level! '("Module") #f)
+  (set-module-language! #f)
   (test:set-radio-box-item! "Debugging")
   (let ([f (get-top-level-focus-window)])
     (test:button-push "OK")
@@ -153,7 +153,7 @@
 (define (run-use-compiled-file-paths-tests)
   
   (define (setup-dialog/run proc)
-    (set-language-level! '("Module") #f)
+    (set-module-language! #f)
     (proc)
     (let ([f (get-top-level-focus-window)])
       (test:button-push "OK")
@@ -163,10 +163,10 @@
     
   (define (run-one-test radio-box expected [no-check-expected #f])
     (let ([got (setup-dialog/run (λ () (test:set-radio-box-item! radio-box)))])
-      (unless (equal? got (format "~s" expected))
+      (unless (spaces-equal? got (format "~s" expected))
         (error 'r-u-c-f-p-t "got ~s expected ~s"
                got
-               expected)))
+               (format "~s" expected))))
     
     (when no-check-expected
       (let ([got (setup-dialog/run 
@@ -176,8 +176,12 @@
         (unless (equal? got (format "~s" no-check-expected))
           (error 'r-u-c-f-p-t.2 "got ~s expected ~s"
                  got
-                 expected)))))
-      
+                 (format "~s" no-check-expected))))))
+
+  (define (spaces-equal? a b)
+    (equal? (regexp-replace* #rx"[\n\t ]+" a " ")
+            (regexp-replace* #rx"[\n\t ]+" b " ")))
+  
   (define drs/compiled/et (build-path "compiled" "drscheme" "errortrace"))
   (define drs/compiled (build-path "compiled" "drscheme"))
   (define compiled/et (build-path "compiled" "errortrace"))

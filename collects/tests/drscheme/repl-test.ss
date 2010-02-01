@@ -81,7 +81,7 @@ This produces an ACK message
 
 (define test-data
   (list
-#|   
+
    ;; basic tests
    (mktest "1"
            ("1"
@@ -840,21 +840,18 @@ This produces an ACK message
            void
            void)
    
-   |#
-
-(mktest "(new snip%)"
-           ("1"
-            "1"
-            "1"
-            "1"
-            "1"
-            "1")
+   (mktest "(new snip%)"
+           ("{unknown snip: #(struct:object:snip% ...)}\n"
+            "{unknown snip: #(struct:object:snip% ...)}\n"
+            "{unknown snip: #(struct:object:snip% ...)}\n"
+            "{unknown snip: #(struct:object:snip% ...)}\n"
+            "{unknown snip: #(struct:object:snip% ...)}\n"
+            "{unknown snip: #(struct:object:snip% ...)}\n")
            'interactions
            #f 
            void
            void)
-           
-   
+
    ;; graphical lambda tests
    (mktest (list "((" '("Insert" "Insert λ") "(x) x) 1)")
            
@@ -999,9 +996,8 @@ This produces an ACK message
     'interactions
     #f
     void 
-    void)
-   
-   ))
+    void)))
+
 ;; these tests aren't used at the moment.
 #;
 (define xml-tests
