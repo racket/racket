@@ -8,6 +8,7 @@
          drscheme/tool
          mrlib/switchable-button
          string-constants
+         "capability.ss"
          "model/trace.ss"
          "model/deriv.ss"
          "model/deriv-util.ss"
@@ -16,12 +17,7 @@
          "view/stepper.ss"
          "view/prefs.ss")
 
-(provide tool@
-         language/macro-stepper<%>)
-
-(define language/macro-stepper<%>
-  (interface ()
-    enable-macro-stepper?))
+(provide tool@)
 
 (define-local-member-name allow-macro-stepper?)
 (define-local-member-name run-macro-stepper)
@@ -85,13 +81,10 @@
     (export drscheme:tool-exports^)
 
     (define (phase1)
-      (drscheme:language:extend-language-interface
-       language/macro-stepper<%>
-       (mixin (drscheme:language:language<%>) (language/macro-stepper<%>)
-         (inherit get-language-position)
-         (define/public (enable-macro-stepper?)
-           (macro-stepper-works-for? (get-language-position)))
-         (super-new))))
+      (drscheme:language:register-capability
+       macro-stepper-capability-key
+       boolean?
+       #f))
     (define (phase2) (void))
 
     (define drscheme-eventspace (current-eventspace))
@@ -170,7 +163,7 @@
           (let ([lang
                  (drscheme:language-configuration:language-settings-language
                   (send (get-definitions-text) get-next-settings))])
-            (send lang enable-macro-stepper?)))
+            (send lang capability-value macro-stepper-capability-key)))
 
         (define/private (enable/disable-stuff enable?)
           (if enable?
@@ -304,19 +297,6 @@
           (send director add-trace events))
         ))
 
-    ;; Borrowed from mztake/debug-tool.ss
-
-    (define (macro-stepper-works-for? lang)
-      (let ([main-group (car lang)]
-            [second (and (pair? (cdr lang)) (cadr lang))]
-            [third (and (pair? (cdr lang)) (pair? (cddr lang)) (caddr lang))])
-        (or (equal? main-group (string-constant module-language-name))
-            (and (equal? main-group (string-constant legacy-languages))
-                 (or (member second 
-                             (list (string-constant r5rs-language-name)
-                                   "Swindle"
-                                   (string-constant pretty-big-scheme))))))))
-    
     ;; Macro debugger code
 
     (drscheme:get/extend:extend-unit-frame

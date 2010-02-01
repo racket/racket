@@ -6,6 +6,7 @@
            scheme/string
            scheme/list
            "drsig.ss"
+           macro-debugger/capability
            string-constants
            mred
            framework
@@ -1332,6 +1333,15 @@
     (define-struct (simple-settings+assume drscheme:language:simple-settings) (no-redef?))
     (define simple-settings+assume->vector (make-->vector simple-settings+assume))
 
+    (define (macro-stepper-mixin %)
+      (class %
+        (super-new)
+        (define/augment (capability-value key)
+          (cond
+           [(eq? key macro-stepper-capability-key) #t]
+           [else (inner (drscheme:language:get-capability-default key)
+                        capability-value key)]))))
+
     (define (assume-mixin %)
       (class %
         (define/override (default-settings) 
@@ -1445,7 +1455,9 @@
                       (cond
                         [(eq? key 'drscheme:autocomplete-words) 
                          (get-all-manual-keywords)]
-                        [else (drscheme:language:get-capability-default key)]))
+                        [else (inner
+                               (drscheme:language:get-capability-default key)
+                               capability-value key)]))
                     (define/override (create-executable setting parent program-filename)
                       (let ([executable-fn
                              (drscheme:language:put-executable
@@ -1488,7 +1500,7 @@
                       (list -200 3)
                       #t
                       (string-constant pretty-big-scheme-one-line-summary)
-                      (λ (%) (assume-mixin (add-errortrace-key-mixin %)))))
+                      (λ (%) (macro-stepper-mixin (assume-mixin (add-errortrace-key-mixin %))))))
         (add-language
          (make-simple '(lib "r5rs/lang.ss")
                       "plt:r5rs"
@@ -1497,7 +1509,7 @@
                       (list -200 -1000)
                       #f
                       (string-constant r5rs-one-line-summary)
-                      (lambda (%) (r5rs-mixin (assume-mixin (add-errortrace-key-mixin %))))))
+                      (lambda (%) (r5rs-mixin (macro-stepper-mixin (assume-mixin (add-errortrace-key-mixin %)))))))
         
         (add-language
          (make-simple 'mzscheme
@@ -1527,7 +1539,8 @@
         (define/augment (capability-value v)
           (case v
             [(drscheme:check-syntax-button) #f]
-            [else (drscheme:language:get-capability-default v)]))
+            [else (inner (drscheme:language:get-capability-default v)
+                         capability-value v)]))
         
         (super-new)))
     
