@@ -52,6 +52,4 @@ the function, all tests will be run.
 
    Tests the teachpacks
 
-|# syncheck-test.ss #|
-
 |#)))

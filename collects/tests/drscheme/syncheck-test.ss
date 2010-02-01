@@ -5,20 +5,20 @@ tests involving object% are commented out, since they
 trigger runtime errors in check syntax.
 
 |#
+#lang scheme/base
 
-(module syncheck-test mzscheme
-  
   (require "drscheme-test-util.ss"
+           string-constants/string-constant
            tests/utils/gui
-           mzlib/etc
-           mzlib/class
-           mzlib/list
-           mzlib/file
+           scheme/path
+           scheme/class
+           scheme/list
+           scheme/file
            mred
            framework
            mrlib/text-string-style-desc)
   
-  (provide run-test)
+  (provide main)
   
   ;; type str/ann = (list (union symbol string) symbol)
   ;; type test = (make-test string
@@ -28,7 +28,7 @@ trigger runtime errors in check syntax.
   (define-struct (dir-test test) ())
   
   (define build-test
-    (opt-lambda (input expected [arrow-table '()])
+    (λ (input expected [arrow-table '()])
       (make-test input expected arrow-table)))
   
   ;; tests : (listof test)
@@ -191,7 +191,6 @@ trigger runtime errors in check syntax.
                   ("))"    default-color))
                 (list '((7 8) (19 20))))
      
-     #;
      (build-test "object%"
                 '(("object%" imported-syntax))) ; used to be lexically-bound-variable
      (build-test "unbound-id"
@@ -600,7 +599,6 @@ trigger runtime errors in check syntax.
                   (")"    default-color))
                 (list '((5 6) (10 11) (12 13))))
      
-     #;
      (build-test "(class object% this)"
                 '(("("       default-color)
                   ("class"   imported-syntax)
@@ -850,19 +848,29 @@ trigger runtime errors in check syntax.
                    ("1))"           default-color))
                  (list '((27 33) (19 26) (36 49) (53 59) (64 66))))))
   
-  (define (run-test)
-    (check-language-level #rx"Pretty")
-    (let* ([drs (wait-for-drscheme-frame)]
-           [defs (send drs get-definitions-text)]
-           [filename (make-temporary-file "syncheck-test~a")])
-      (let-values ([(dir _1 _2) (split-path filename)])
-        (send defs save-file filename)
-        (preferences:set 'framework:coloring-active #f)
-        (for-each (run-one-test (normalize-path dir)) tests)
-        (preferences:set 'framework:coloring-active #t)
-        (send defs save-file) ;; clear out autosave
-        (send defs set-filename #f)
-        (delete-file filename))))
+  (define (main)
+    (let ([s (make-semaphore 0)])
+      (thread
+       (λ ()
+         (let ([drs (wait-for-drscheme-frame)])
+           (set-language-level! (list "Pretty Big"))
+           (do-execute drs)
+           (let* ([defs (send drs get-definitions-text)]
+                  [filename (make-temporary-file "syncheck-test~a")])
+             (let-values ([(dir _1 _2) (split-path filename)])
+               (send defs save-file filename)
+               (preferences:set 'framework:coloring-active #f)
+               (for-each (run-one-test (normalize-path dir)) tests)
+               (preferences:set 'framework:coloring-active #t)
+               (send defs save-file) ;; clear out autosave
+               (send defs set-filename #f)
+               (delete-file filename)
+               ;; let the app die.
+               (semaphore-post s))))))
+      (fire-up-drscheme)
+      (yield s)
+      (printf "Tests complete.\n")
+      (exit)))
   
   (define ((run-one-test save-dir) test)
     (let* ([drs (wait-for-drscheme-frame)]
@@ -885,8 +893,9 @@ trigger runtime errors in check syntax.
          (error 'syncheck-test.ss "still in edit sequence for ~s" input))
       
       (when (send drs syncheck:error-report-visible?)
-        (printf "FAILED ~s\n   error report window is visible\n"
-                input))
+        (fprintf (current-error-port)
+                 "FAILED ~s\n   error report window is visible\n"
+                 input))
       
       ;; need to check for syntax error here
       (let ([got (get-annotated-output drs)])
@@ -940,41 +949,42 @@ trigger runtime errors in check syntax.
   (define (compare-arrows test-exp expected raw-actual)
     (when expected
       (let ()
-        (define already-checked (make-hash-table 'equal))
+        (define already-checked (make-hash))
         
-        (define actual-ht (make-hash-table 'equal))
+        (define actual-ht (make-hash))
         (define stupid-internal-define-syntax1
-          (hash-table-for-each raw-actual
+          (hash-for-each raw-actual
             (lambda (k v)
-              (hash-table-put! actual-ht (cdr k)
-                               (sort (map cdr v)
-                                     (lambda (x y) (< (car x) (car y))))))))
-        (define expected-ht (make-hash-table 'equal))
+              (hash-set! actual-ht (cdr k)
+                         (sort (map cdr v)
+                               (lambda (x y) (< (car x) (car y))))))))
+        (define expected-ht (make-hash))
         (define stupid-internal-define-syntax2
-          (for-each (lambda (binding) (hash-table-put! expected-ht (car binding) (cdr binding)))
+          (for-each (lambda (binding) (hash-set! expected-ht (car binding) (cdr binding)))
                     expected))
         ;; binding-in-ht? : hash-table (list number number) (listof (list number number)) -> boolean
         (define (test-binding expected? ht)
           (lambda (pr)
             (let ([frm (car pr)]
                   [to (cdr pr)])
-              (hash-table-get
+              (hash-ref
                already-checked
                frm
                (lambda ()
-                 (hash-table-put! already-checked frm #t)
-                 (let ([ht-ent (hash-table-get ht frm (lambda () 'nothing-there))])
+                 (hash-set! already-checked frm #t)
+                 (let ([ht-ent (hash-ref ht frm (lambda () 'nothing-there))])
                    (unless (equal? ht-ent to)
-                     (printf (if expected? 
-                                 "FAILED arrow test ~s from ~s\n  expected ~s\n    actual ~s\n"
-                                 "FAILED arrow test ~s from ~s\n    actual ~s\n  expected ~s\n")
+                     (fprintf (current-error-port)
+                              (if expected? 
+                                  "FAILED arrow test ~s from ~s\n  expected ~s\n    actual ~s\n"
+                                  "FAILED arrow test ~s from ~s\n    actual ~s\n  expected ~s\n")
                              test-exp
                              frm
                              ht-ent
                              to))))))))
         
-        (for-each (test-binding #t expected-ht) (hash-table-map actual-ht cons))
-        (for-each (test-binding #f actual-ht) (hash-table-map expected-ht cons)))))
+        (for-each (test-binding #t expected-ht) (hash-map actual-ht cons))
+        (for-each (test-binding #f actual-ht) (hash-map expected-ht cons)))))
   
   (define (compare-output raw-expected got arrows arrows-got input)
     (let ([expected (collapse-and-rename raw-expected)])
@@ -982,8 +992,9 @@ trigger runtime errors in check syntax.
         [(equal? got expected)
          (compare-arrows input arrows arrows-got)]
         [else
-         (printf "FAILED: ~s\n      expected: ~s\n           got: ~s\n"
-                 input expected got)])))
+         (fprintf (current-error-port)
+                  "FAILED: ~s\n      expected: ~s\n           got: ~s\n"
+                  input expected got)])))
   
   ;; get-annotate-output : drscheme-frame -> (listof str/ann)
   (define (get-annotated-output drs)
@@ -991,5 +1002,6 @@ trigger runtime errors in check syntax.
       (queue-callback
        (λ ()
          (channel-put chan (get-string/style-desc (send drs get-definitions-text)))))
-      (channel-get chan))))
-
+      (channel-get chan)))
+  
+  (main)

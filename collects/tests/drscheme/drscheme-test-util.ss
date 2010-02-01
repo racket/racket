@@ -11,7 +11,8 @@
    [use-get/put-dialog (-> (-> any) path? void?)]
    [set-module-language! (->* () (boolean?) void?)])
   
-  (provide save-drscheme-window-as
+  (provide fire-up-drscheme
+           save-drscheme-window-as
            do-execute
            test-util-error
            poll-until
@@ -93,22 +94,19 @@
   (define (drscheme-frame? frame)
     (method-in-interface? 'get-execute-button (object-interface frame)))
   
-  (define wait-for-drscheme-frame
-    (case-lambda
-     [() (wait-for-drscheme-frame #t)]
-     [(print-message?)
-      (let ([wait-for-drscheme-frame-pred
-             (lambda ()
-               (let ([active (get-top-level-focus-window)])
-                 (if (and active
-                          (drscheme-frame? active))
-                     active
-                     #f)))])
-        (or (wait-for-drscheme-frame-pred)
-            (begin
-              (when print-message?
-                (printf "Select DrScheme frame~n"))
-              (poll-until wait-for-drscheme-frame-pred))))]))
+  (define (wait-for-drscheme-frame [print-message? #f])
+    (let ([wait-for-drscheme-frame-pred
+           (lambda ()
+             (let ([active (get-top-level-focus-window)])
+               (if (and active
+                        (drscheme-frame? active))
+                   active
+                   #f)))])
+      (or (wait-for-drscheme-frame-pred)
+          (begin
+            (when print-message?
+              (printf "Select DrScheme frame~n"))
+            (poll-until wait-for-drscheme-frame-pred)))))
   
   ;; wait-for-new-frame : frame [(listof eventspace) = null] -> frame
   ;; returns the newly opened frame, waiting until old-frame
@@ -619,3 +617,18 @@
       (if raised-exn?
           (raise exn)
           (apply values anss))))
+  
+  ;; this is assumed to not open an windows or anything like that
+  ;; but just to print and return.
+  (define orig-display-handler (error-display-handler))
+  
+  (define (fire-up-drscheme)
+    (dynamic-require 'drscheme #f)
+      
+    ;; reset the uncaught exception handler to be sure we kill everything (drscheme sets it)
+    (uncaught-exception-handler
+     (λ (x)
+       (if (exn? x)
+           (orig-display-handler (exn-message x) x)
+           (fprintf (current-error-port) "uncaught exception ~s\n" x))
+       (exit 1))))
