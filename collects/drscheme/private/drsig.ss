@@ -83,7 +83,6 @@
   (module-language<%>))
 (define-signature drscheme:module-language^ extends drscheme:module-language-cm^
   (add-module-language
-   module-language-name
    module-language-put-file-mixin))
 
 (define-signature drscheme:module-language-tools-cm^

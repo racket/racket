@@ -1055,6 +1055,7 @@ please adhere to these guidelines:
   (initial-language-category "Initial language")
   (no-language-chosen "No language chosen")
  
+  (module-language-name "Determine language from source")
  (module-language-one-line-summary "Reads the #lang line to specify the actual language")
   (module-language-auto-text "Automatic #lang line") ;; shows up in the details section of the module language
    

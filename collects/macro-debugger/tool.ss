@@ -310,7 +310,7 @@
       (let ([main-group (car lang)]
             [second (and (pair? (cdr lang)) (cadr lang))]
             [third (and (pair? (cdr lang)) (pair? (cddr lang)) (caddr lang))])
-        (or (equal? main-group "Module")
+        (or (equal? main-group (string-constant module-language-name))
             (and (equal? main-group (string-constant legacy-languages))
                  (or (member second 
                              (list (string-constant r5rs-language-name)

@@ -53,8 +53,6 @@
   (define default-full-trace? #t)
   (define default-auto-text "#lang scheme\n")  
   
-  (define module-language-name "Determine language from source")
-  
   ;; module-mixin : (implements drscheme:language:language<%>)
   ;;             -> (implements drscheme:language:language<%>)
   (define (module-mixin %)
@@ -352,7 +350,7 @@
       
       (super-new
        [module #f]
-       [language-position (list module-language-name)]
+       [language-position (list (string-constant module-language-name))]
        [language-numbers (list -32768)])))
   
   ;; can be called with #f to just kill the repl (in case we want to kill it

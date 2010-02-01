@@ -521,7 +521,7 @@
                        positions numbers))
               
               (when (null? (cdr positions))
-                (unless (equal? positions (list drscheme:module-language:module-language-name))
+                (unless (equal? positions (list (string-constant module-language-name)))
                   (error 'drscheme:language
                          "Only the module language may be at the top level. Other languages must have at least two levels")))
               
@@ -592,7 +592,7 @@
                                     (get/set-settings (send language default-settings))])))))
                      
                      (cond
-                       [(equal? positions (list drscheme:module-language:module-language-name))
+                       [(equal? positions (list (string-constant module-language-name)))
                         (set! module-language*language language)
                         (set! module-language*get-language-details-panel get-language-details-panel)
                         (set! module-language*get/set-settings get/set-settings)]
