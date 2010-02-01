@@ -234,7 +234,7 @@
                                          (for/fold ([sorted? #t]
                                                     [last -1])
                                            ([e es])
-                                           (let ([seq (Type-seq e)])
+                                           (let ([seq (Rep-seq e)])
                                              (values
                                               (and sorted?
                                                    (< last seq))

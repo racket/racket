@@ -32,17 +32,17 @@
 
 (define ((input/c tbl) val) (hash-ref tbl val #f))
 
-(define (free-idxs* t)
+#;
+(define (free-idxs* t) #;(Type-free-idxs t)
+  
   (hash-ref index-table t (lambda _ (int-err "type ~a not in index-table" t))))
-(define (free-vars* t)
+#;
+(define (free-vars* t) #;(Type-free-vars t)
   (hash-ref var-table t (lambda _ (int-err "type ~a not in var-table" t))))
 
 (define empty-hash-table (make-immutable-hasheq null))
 
-(p/c [free-vars* (-> (input/c var-table) (hash/c symbol? variance?))]
-     [free-idxs* (-> (input/c index-table) (hash/c exact-nonnegative-integer? variance?))])
-
-(provide empty-hash-table make-invariant)
+(provide empty-hash-table make-invariant input/c variance?)
 
 ;; frees = HT[Idx,Variance] where Idx is either Symbol or Number
 ;; (listof frees) -> frees

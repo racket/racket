@@ -25,8 +25,12 @@
 
 (provide == defintern hash-id (for-syntax fold-target))
 
+(define-struct Rep (seq
+                    free-vars  
+                    free-idxs))
+
 (define-for-syntax fold-target #'fold-target)
-(define-for-syntax default-fields (list #'seq #;#;#'free-vars #'free-idxs))
+(define-for-syntax default-fields (list #'seq #'free-vars #'free-idxs))
 
 (define-for-syntax (mk par ht-stx key?)
   (define-syntax-class opt-cnt-id
@@ -57,10 +61,9 @@
              #:with f2 #'empty-hash-table
              #:with def #'(begin))
     (pattern e:expr
-             #:with id (generate-temporary)
-             #:with def #'(define id e)
-             #:with f1 #'(id free-vars*)
-             #:with f2 #'(id free-idxs*)))
+             #:with def #'(begin)
+             #:with f1 #'(e Rep-free-vars)
+             #:with f2 #'(e Rep-free-idxs)))
   (define-syntax-class (fold-pat fold-name)
     #:transparent
     #:attributes (e proc)
@@ -79,13 +82,13 @@
              #:with ex (format-id #'nm "~a:" #'nm)
              #:with fold (format-id #f "~a-fold" #'nm)
              #:with kw (string->keyword (symbol->string (syntax-e #'nm)))
-             #:with *maker (format-id #'nm "*~a" #'nm)
-             #:with **maker (format-id #'nm "**~a" #'nm)))
+             #:with *maker (format-id #'nm "*~a" #'nm)))
   (lambda (stx)          
     (syntax-parse stx 
       [(dform nm:form-nm flds:idlist (~or 
                                       (~optional (~and (~fail #:unless key? "#:key not allowed")
-                                                       [#:key key-expr:expr]))
+                                                       [#:key key-expr:expr])
+                                                 #:defaults ([key-expr #'#f]))
                                       (~optional [#:intern intern?:expr]
                                                  #:defaults
                                                  ([intern? (syntax-parse #'flds.fs
@@ -95,8 +98,8 @@
                                       (~optional [#:frees frees:frees-pat]
                                                  #:defaults 
                                                  ([frees.def #'(begin)]
-                                                  [frees.f1 (combiner #'free-vars* #'flds.fs)]
-                                                  [frees.f2 (combiner #'free-idxs* #'flds.fs)]))
+                                                  [frees.f1 (combiner #'Rep-free-vars #'flds.fs)]
+                                                  [frees.f2 (combiner #'Rep-free-idxs #'flds.fs)]))
                                       (~optional [#:fold-rhs (~var fold-rhs (fold-pat #'nm.fold))]
                                                  #:defaults
                                                  ([fold-rhs.proc
@@ -108,35 +111,13 @@
                                       (~optional no-provide?:no-provide-kw)) ...)
        (with-syntax* 
         ([(s:ty maker pred acc ...) (build-struct-names #'nm (syntax->list #'flds.fs) #f #t #'nm)]
-         [*maker-cnt (if enable-contracts?
-                         (or (attribute cnt) #'(flds.cnt ... . -> . pred))
-                         #'any/c)]
+         [*maker-cnt (or (attribute cnt) #'(flds.cnt ... . -> . pred))]
          [provides (if (attribute no-provide?)
                        #'(begin)                                 
                        #`(begin 
                            (provide nm.ex pred acc ...)
                            (p/c (rename nm.*maker maker *maker-cnt))))]
-         [intern 
-          (let ([mk (lambda (int) 
-		      (if key? 
-			  #`(defintern (nm.**maker . flds.fs) maker #,int 
-                              #:extra-args #,(attribute key-expr))
-			  #`(defintern (nm.**maker . flds.fs) maker #,int
-                              #:extra-args)))])
-            (mk #'intern?))]
-         [(ign-pats ...) (append (map (lambda (x) #'_) default-fields) (if key? (list #'_) (list)))]
-         [frees 
-            (quasisyntax/loc stx
-		(w/c nm ([nm.*maker *maker-cnt])
-                     #,(syntax/loc #'nm
-                         (define (nm.*maker . flds.fs)
-                           (define v (nm.**maker . flds.fs))
-                           frees.def
-                           (unless-in-table 
-                            var-table v
-                            (hash-set! var-table v frees.f1)
-                            (hash-set! index-table v frees.f2))
-                           v))))])
+         [(ign-pats ...) (append (map (lambda (x) #'_) default-fields) (if key? (list #'_) (list)))])
         #`(begin
             (define-struct (nm #,par) flds.fs #:inspector #f)
             (define-match-expander nm.ex
@@ -147,10 +128,15 @@
                    (syntax/loc s (struct nm pat))])))
             (begin-for-syntax
               (hash-set! #,ht-stx 'nm.kw (list #'nm.ex #'flds.fs fold-rhs.proc #f)))
-            (w/c nm ()
-		 intern
-		 frees)
-	    provides))])))
+            #,(quasisyntax/loc stx
+                (w/c nm ([nm.*maker *maker-cnt])
+                     #,(quasisyntax/loc #'nm
+                         (defintern (nm.*maker . flds.fs) maker intern?
+                           #:extra-args
+                           frees.f1 frees.f2 
+                           #,@(begin                                 
+                                (if key? (list #'key-expr) null))))))
+            provides))])))
 
 (define-for-syntax (mk-fold ht type-rec-id rec-ids kws)
   (lambda (stx)
@@ -214,9 +200,9 @@
     #:transparent
     (pattern [i:id (~optional (~and #:key
                                     (~bind [key? #'#t]
-                                           [(fld-names 1) (append default-fields (list #'key))]))
+                                           [(fld-names 1) (list #'key)]))
                               #:defaults ([key? #'#f]
-                                          [(fld-names 1) default-fields]))
+                                          [(fld-names 1) null]))
                    #:d d-id:id]))
   (define-syntax-class type-name
     #:transparent
@@ -239,7 +225,7 @@
                   (for-syntax i.ht ... i.rec-id ...))
          (define-syntax i.d-id (mk #'i.name #'i.ht i.key?)) ...
          (define-for-syntax i.ht (make-hasheq)) ...
-         (define-struct/printer i.name (i.fld-names ...) (lambda (a b c) ((unbox i.printer) a b c))) ...
+         (define-struct/printer (i.name Rep) (i.fld-names ...) (lambda (a b c) ((unbox i.printer) a b c))) ...
          (define-for-syntax i.rec-id #'i.rec-id) ...   
          (provide i.case ...)           
          (define-syntaxes (i.case ...)
@@ -260,4 +246,10 @@
                 [LatentObject #:d dlo]
                 [PathElem #:d dpe])
 
-(provide PathElem?)
+(provide PathElem? (rename-out [Rep-seq Type-seq]
+                               [Rep-free-vars free-vars*]
+                               [Rep-free-idxs free-idxs*]))
+
+(p/c (struct Rep ([seq integer?] 
+                  [free-vars (hash/c symbol? variance?)] 
+                  [free-idxs (hash/c exact-nonnegative-integer? variance?)])))
