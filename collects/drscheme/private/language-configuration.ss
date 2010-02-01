@@ -408,7 +408,7 @@
         
         (define languages-hier-list (new selectable-hierlist% 
                                          [parent languages-hier-list-panel]
-                                         [style '(no-border no-hscroll hide-vscroll transparent)]))
+                                         [style '(no-border no-hscroll auto-vscroll transparent)]))
         (define details-outer-panel (make-object vertical-pane% outermost-panel))
         (define details/manual-parent-panel (make-object vertical-panel% details-outer-panel))
         (define details-panel (make-object panel:single% details/manual-parent-panel))
