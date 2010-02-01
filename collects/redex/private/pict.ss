@@ -3,7 +3,8 @@
          (lib "utils.ss" "texpict")
          scheme/gui/base
          scheme/class
-         (only-in scheme/list drop-right last)
+         scheme/match
+         (only-in scheme/list drop-right last partition)
          "reduction-semantics.ss"
          "struct.ss"
          "loc-wrapper.ss"
@@ -793,20 +794,24 @@
          [scs (map (lambda (eqn)
                      (if (null? (list-ref eqn 1))
                          #f
-                         (side-condition-pict null 
-                                              (map (lambda (p)
-                                                     (if (pair? p)
-                                                         (cons (wrapper->pict (car p))
-                                                               (wrapper->pict (cdr p)))
-                                                         (wrapper->pict p)))
-                                                   (list-ref eqn 1))
-                                              (if (memq style '(up-down/vertical-side-conditions
-                                                                left-right/vertical-side-conditions))
-                                                  0
-                                                  (if (memq style '(up-down/compact-side-conditions
-                                                                    left-right/compact-side-conditions))
-                                                      max-line-w/pre-sc
-                                                      +inf.0)))))
+                         (let-values ([(fresh where/sc) (partition metafunc-extra-fresh? (list-ref eqn 1))])
+                           (side-condition-pict (foldl (λ (clause picts) 
+                                                         (foldr (λ (l ps) (cons (wrapper->pict l) ps))
+                                                                picts (metafunc-extra-fresh-vars clause)))
+                                                       '() fresh)
+                                                (map (match-lambda
+                                                       [(struct metafunc-extra-where (lhs rhs))
+                                                        (cons (wrapper->pict lhs) (wrapper->pict rhs))]
+                                                       [(struct metafunc-extra-side-cond (expr))
+                                                        (wrapper->pict expr)])
+                                                     where/sc)
+                                                (if (memq style '(up-down/vertical-side-conditions
+                                                                  left-right/vertical-side-conditions))
+                                                    0
+                                                    (if (memq style '(up-down/compact-side-conditions
+                                                                      left-right/compact-side-conditions))
+                                                        max-line-w/pre-sc
+                                                        +inf.0))))))
                    eqns)])
     (case style
       [(left-right left-right/vertical-side-conditions left-right/compact-side-conditions left-right/beside-side-conditions)

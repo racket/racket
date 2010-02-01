@@ -54,6 +54,9 @@
          (struct-out exn:fail:redex:test)
          (struct-out counterexample))
 
+(provide variable-not-in
+         variables-not-in)
+
 (provide/contract
  [current-traced-metafunctions (parameter/c (or/c 'all (listof symbol?)))]
  [reduction-relation->rule-names (-> reduction-relation? (listof symbol?))]
@@ -71,7 +74,5 @@
  [lookup-binding (case-> 
                   (-> bindings? symbol? any)
                   (-> bindings? symbol? (-> any) any))]
- [variable-not-in (any/c symbol? . -> . symbol?)]
- [variables-not-in (any/c (listof symbol?) . -> . (listof symbol?))]
  [relation-coverage (parameter/c (listof coverage?))]
  [covered-cases (-> coverage? (listof (cons/c string? natural-number/c)))])

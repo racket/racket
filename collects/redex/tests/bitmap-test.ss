@@ -163,5 +163,20 @@
 (test (render-lw lang (to-lw (x_^abcdef x_q^abcdef)))
       "superscripts.png")
 
+;; `variable-not-in' in `where' RHS rendered as `fresh'
+(define-metafunction lang
+  [(f (name n 1)) 
+   (x x_1 x_2 x_3)
+   (where x ,(variable-not-in 'y 'x))
+   (where (x_1 x_2) ,(variables-not-in 'z '(x1 x2)))
+   (where x_3 (variables-not-in 'z '(x1 x2)))])
+(test (render-metafunction f) "var-not-in.png")
+(let ([variable-not-in list])
+  (define-metafunction lang
+    [(g 1) 
+     x
+     (where x ,(variable-not-in 'y 'x))])
+  (test (render-metafunction g) "var-not-in-rebound.png"))
+
 (printf "bitmap-test.ss: ")
 (done)
