@@ -75,7 +75,8 @@
                      (send interactions-text paragraph-start-position 2)
                      (send interactions-text paragraph-end-position 2))])
           (unless (or (test-all? test) (string=? "> " after-execute-output))
-            (printf "FAILED (line ~a): ~a\n        ~a\n        expected no output after execution, got: ~s\n"
+            (fprintf (current-error-port)
+                     "FAILED (line ~a): ~a\n        ~a\n        expected no output after execution, got: ~s\n"
                     (test-line test)
                     (test-definitions test)
                     (or (test-interactions test) 'no-interactions)
@@ -107,12 +108,13 @@
                                       [else 'module-lang-test "bad test value: ~e" r])
                                 r text))])
         (unless output-passed?
-          (printf "FAILED (line ~a): ~a\n        ~a\n  expected: ~s\n       got: ~s\n"
-                  (test-line test)
-                  (test-definitions test)
-                  (or (test-interactions test) 'no-interactions)
-                  (test-result test)
-                  text))
+          (fprintf (current-error-port)
+                   "FAILED (line ~a): ~a\n        ~a\n  expected: ~s\n       got: ~s\n"
+                   (test-line test)
+                   (test-definitions test)
+                   (or (test-interactions test) 'no-interactions)
+                   (test-result test)
+                   text))
         (cond
           [(eq? (test-error-ranges test) 'dont-test)
            (void)]
@@ -120,11 +122,12 @@
            (let ([error-ranges-expected
                   ((test-error-ranges test) definitions-text interactions-text)])
              (unless (equal? error-ranges-expected (send interactions-text get-error-ranges))
-               (printf "FAILED (line ~a; ranges): ~a\n  expected: ~s\n       got: ~s\n"
-                       (test-line test)
-                       (test-definitions test)
-                       error-ranges-expected
-                       (send interactions-text get-error-ranges))))])))))
+               (fprintf (current-error-port)
+                        "FAILED (line ~a; ranges): ~a\n  expected: ~s\n       got: ~s\n"
+                        (test-line test)
+                        (test-definitions test)
+                        error-ranges-expected
+                        (send interactions-text get-error-ranges))))])))))
 
 
 (define drs 'not-yet-drs-frame)

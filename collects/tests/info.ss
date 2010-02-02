@@ -1,8 +1,8 @@
 #lang setup/infotab
 
 (define name "Test Suites")
-(define tools '(("tool.ss" "drscheme") ("time-keystrokes.ss" "drscheme")))
-(define tool-names '("DrScheme Test Suites" "Time Keystrokes"))
+(define tools '(("time-keystrokes.ss" "drscheme")))
+(define tool-names '("Time Keystrokes"))
 
 (define compile-omit-paths
   '("2htdp"

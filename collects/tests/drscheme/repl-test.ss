@@ -17,8 +17,6 @@ This produces an ACK message
          mred
          framework)
 
-(provide run-test)
-
 (define-struct loc (line col offset))
 ;; loc = (make-loc number number number)
 ;; all numbers in loc structs start at zero.
@@ -1186,12 +1184,14 @@ This produces an ACK message
            (cond
              [(eq? source-location 'definitions)
               (unless (send definitions-canvas has-focus?)
-                (printf "FAILED execute test for ~s\n  expected definitions to have the focus\n"
-                        program))]
+                (fprintf (current-error-port)
+                         "FAILED execute test for ~s\n  expected definitions to have the focus\n"
+                         program))]
              [(eq? source-location 'interactions)
               (unless (send interactions-canvas has-focus?)
-                (printf "FAILED execute test for ~s\n  expected interactions to have the focus\n"
-                        program))]
+                (fprintf (current-error-port)
+                         "FAILED execute test for ~s\n  expected interactions to have the focus\n"
+                         program))]
              [(send definitions-canvas has-focus?)
               (let ([start (car source-location)]
                     [finish (cdr source-location)])
@@ -1203,13 +1203,14 @@ This produces an ACK message
                                (= (+ (srcloc-position error-range) -1) (loc-offset start))
                                (= (+ (srcloc-position error-range) -1 (srcloc-span error-range)) 
                                   (loc-offset finish)))
-                    (printf "FAILED execute test for ~s\n  error-range is ~s\n  expected ~s\n"
-                            program
-                            (and error-range
-                                 (list (+ (srcloc-position error-range) -1)
-                                       (+ (srcloc-position error-range) -1 (srcloc-span error-range))))
-                            (list (loc-offset start)
-                                  (loc-offset finish))))))])])
+                    (fprintf (current-error-port)
+                             "FAILED execute test for ~s\n  error-range is ~s\n  expected ~s\n"
+                             program
+                             (and error-range
+                                  (list (+ (srcloc-position error-range) -1)
+                                        (+ (srcloc-position error-range) -1 (srcloc-span error-range))))
+                             (list (loc-offset start)
+                                   (loc-offset finish))))))])])
         
         ; check text for execute test
         (next-test)
@@ -1220,10 +1221,11 @@ This produces an ACK message
                    (regexp-match execute-answer received-execute)]
                   [else #f])
           (failure)
-          (printf "FAILED execute test for ~s (~a)\n  expected: ~s\n       got: ~s\n"
-                  program
-                  language-cust
-                  execute-answer received-execute))
+          (fprintf (current-error-port)
+                   "FAILED execute test for ~s (~a)\n  expected: ~s\n       got: ~s\n"
+                   program
+                   language-cust
+                   execute-answer received-execute))
         
         (test:new-window interactions-canvas)
         
@@ -1274,9 +1276,10 @@ This produces an ACK message
                                 (regexp-match load-answer received-load)]
                                [else #f])
                        (failure)
-                       (printf "FAILED load test ~a for ~s\n  expected: ~s\n       got: ~s\n"
-                               short-filename
-                               program load-answer received-load)))))])
+                       (fprintf (current-error-port)
+                                "FAILED load test ~a for ~s\n  expected: ~s\n       got: ~s\n"
+                                short-filename
+                                program load-answer received-load)))))])
           (load-test tmp-load-short-filename (make-load-answer in-vector language-cust #f))
           (when (file-exists? tmp-load3-filename)
             (delete-file tmp-load3-filename))
@@ -1287,7 +1290,7 @@ This produces an ACK message
         
         ; check for edit-sequence
         (when (repl-in-edit-sequence?)
-          (printf "FAILED: repl in edit-sequence")
+          (fprintf (current-error-port) "FAILED: repl in edit-sequence")
           (escape)))))
   
   (define tests 0)
@@ -1298,7 +1301,7 @@ This produces an ACK message
   (define (final-report)
     (if (= 0 failures)
         (printf "tests finished: all ~a tests passed\n" tests)
-        (printf "tests finished: ~a failed out of ~a total\n" failures tests)))
+        (fprintf (current-error-port) "tests finished: ~a failed out of ~a total\n" failures tests)))
   
   (define (run-test-in-language-level language-cust)
     (let ([level (list #rx"Pretty Big")])
@@ -1470,8 +1473,7 @@ This produces an ACK message
   (kill-tests)
   (callcc-test)
   (top-interaction-test)
-  (final-report)
-  )
+  (final-report))
 
 (define (insert-in-definitions/newlines drs str)
   (let loop ([strs (regexp-split #rx"\n" str)])
@@ -1504,3 +1506,9 @@ This produces an ACK message
   (if (regexp? b)
       (regexp (string-append (regexp-quote a) (object-name b)))
       (string-append a b)))
+
+
+(let ()
+  (fire-up-drscheme)
+  (thread (λ () (run-test) (exit)))
+  (yield (make-semaphore 0)))
