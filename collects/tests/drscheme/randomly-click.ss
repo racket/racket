@@ -122,7 +122,7 @@
                       (fprintf (current-error-port) 
                                "\nExists/Meets window with no button: Bug? seed ~s\n"
                                the-seed)
-                      (apply show-log (cons action actions))
+                      (apply show-log actions)
                       (error 'randomly-click.ss "giving up")]))]))]))))))
 
 (define (show-log . actions)
