@@ -511,13 +511,13 @@
     [(#%plain-app do-make-object cl (#%plain-app list . pos-args) (#%plain-app list (#%plain-app cons 'names named-args) ...))
      (check-do-make-object #'cl #'pos-args #'(names ...) #'(named-args ...))]
     ;; ormap/andmap of ... argument
-    [(#%plain-app or/andmap:id f arg)
-     #:fail-unless (or (free-identifier=? #'or/andmap #'ormap)
-                       (free-identifier=? #'or/andmap #'andmap)) #f
-     #:fail-unless (with-handlers ([exn:fail? (lambda _ #f)])
-                     (tc/dots #'arg)
-                     #t) #f
-     (let-values ([(ty bound) (tc/dots #'arg)])
+    [(#%plain-app (~or (~literal andmap) (~literal ormap)) f arg)
+     #:attr ty+bound
+     (with-handlers ([exn:fail? (lambda _ #f)])
+       (let-values ([(ty bound) (tc/dots #'arg)])
+         (list ty bound)))
+     #:when (attribute ty+bound)
+     (match-let ([(list ty bound) (attribute ty+bound)])
        (parameterize ([current-tvars (extend-env (list bound)
                                                  (list (make-DottedBoth (make-F bound)))
                                                  (current-tvars))])
@@ -677,6 +677,7 @@
                            (and vars (list fixed-vars ... dotted-var))
                            (Function: (list (and arrs (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...))) ...)))))
       (list (tc-result1: argtys-t) ...))
+     (printf "poly clause 1~n")
      (handle-clauses (doms rngs rests drests arrs) f-stx args-stx
                      ;; only try inference if the argument lengths are appropriate
                      (lambda (dom _ rest drest a) 

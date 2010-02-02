@@ -100,7 +100,7 @@
 (dt Poly (n body) #:no-provide 
     [#:contract (->d ([n natural-number/c]
                       [body (scope-depth n)])
-                     ()
+                     (#:syntax [stx (or/c #f syntax?)])
                      [result Poly?])]
     [#:frees (free-vars* body) (without-below n (free-idxs* body))]
     [#:fold-rhs (let ([body* (remove-scopes n body)])
@@ -113,7 +113,7 @@
 (dt PolyDots (n body) #:no-provide
     [#:contract (->d ([n natural-number/c]
                       [body (scope-depth n)])
-                     ()
+                     (#:syntax [stx (or/c #f syntax?)])
                      [result PolyDots?])]
     [#:key (Type-key body)]
     [#:frees (free-vars* body) (without-below n (free-idxs* body))]

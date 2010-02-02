@@ -50,7 +50,7 @@
                                 [(ormap Bot? t)
                                  (flat-named-contract "t was Bot" (list/c))]
                                 [else (listof Filter/c)])])
-                      ()
+                      (#:syntax [stx #f])
                       [result FilterSet?])])
 
 ;; represents no info about the filters of this expression
@@ -89,7 +89,7 @@
                                 [(ormap LBot? t)
                                  (flat-named-contract "t was LBot" (list/c))]
                                 [else (listof LatentFilter/c)])])
-                      ()
+                      (#:syntax [stx #f])
                       [result LFilterSet?])])
 
 (define FilterSet/c
