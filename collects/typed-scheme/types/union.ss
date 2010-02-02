@@ -19,7 +19,9 @@
 (define (flat t)
   (match t
     [(Union: es) es]
-    [_ (list t)]))    
+    [(Values: (list (Result: (Union: es) _ _))) es]
+    [(Values: (list (Result: t _ _))) (list t)]
+    [_ (list t)]))
 
 (define (remove-subtypes ts)
   (let loop ([ts* ts] [result '()])
@@ -44,7 +46,7 @@
        (cond
          [(null? types) (make-union* null)]
          [(null? (cdr types)) (car types)]           
-         [else (make-union* (foldr union2 '() (remove-subtypes types)))]))]))
+         [else (make-union* (sort (foldr union2 '() (remove-subtypes types)) type<?))]))]))
 
 (define (u-maker args) (apply Un args))
 

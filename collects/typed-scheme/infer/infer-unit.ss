@@ -12,7 +12,7 @@
          scheme/match
          mzlib/etc
          mzlib/trace
-	 unstable/sequence unstable/list
+	 unstable/sequence unstable/list unstable/debug
          scheme/list)
 
 (import dmap^ constraints^ promote-demote^)
@@ -254,7 +254,7 @@
     (insert empty X S T))
   (if (seen? S T)
       empty
-      (parameterize ([match-equality-test type-equal?]
+      (parameterize ([match-equality-test (lambda (a b) (if (and (Rep? a) (Rep? b)) (type-equal? a b) (equal? a b)))]
                      [current-seen (remember S T (current-seen))])
         (match* 
             (S T)

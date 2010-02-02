@@ -66,8 +66,10 @@
   (make-Result t f o))
 
 (d/c (-values args)
-     (c:-> (listof Type/c) Values?)
-     (make-Values (for/list ([i args]) (-result i))))
+     (c:-> (listof Type/c) (or/c Type/c Values?))
+     (match args
+       ;[(list t) t]
+       [_ (make-Values (for/list ([i args]) (-result i)))]))
 
 ;; basic types
 

@@ -200,7 +200,7 @@
 ;; potentially raises exn:subtype, when the algorithm fails
 ;; is s a subtype of t, taking into account constraints A
 (define (subtype* A s t)
-  (parameterize ([match-equality-test type-equal?]
+  (parameterize ([match-equality-test (lambda (a b) (if (and (Rep? a) (Rep? b)) (type-equal? a b) (equal? a b)))]
                  [current-seen A])
     (let ([ks (Type-key s)] [kt (Type-key t)])
       (cond 

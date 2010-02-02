@@ -677,7 +677,6 @@
                            (and vars (list fixed-vars ... dotted-var))
                            (Function: (list (and arrs (arr: doms rngs rests drests (list (Keyword: _ _ #f) ...))) ...)))))
       (list (tc-result1: argtys-t) ...))
-     (printf "poly clause 1~n")
      (handle-clauses (doms rngs rests drests arrs) f-stx args-stx
                      ;; only try inference if the argument lengths are appropriate
                      (lambda (dom _ rest drest a) 

@@ -246,7 +246,7 @@
                                [Rep-free-vars free-vars*]
                                [Rep-free-idxs free-idxs*]))
 
-(p/c (struct Rep ([seq integer?] 
+(p/c (struct Rep ([seq exact-nonnegative-integer?] 
                   [free-vars (hash/c symbol? variance?)] 
                   [free-idxs (hash/c exact-nonnegative-integer? variance?)]
                   [stx (or/c #f syntax?)])))
