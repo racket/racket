@@ -426,20 +426,19 @@
              d ri top (if (part-style? d 'no-toc) "tocview" "tocsub")
              sub-parts-on-other-page?)
           ,@(parameterize ([extra-breaking? #t])
-              (append-map
-               (lambda (t)
-                 (let loop ([t t])
-                   (if (table? t)
-                     (render-table t d ri #f)
-                     (loop (delayed-block-blocks t ri)))))
-               (filter (lambda (e)
-                         (let loop ([e e])
-                           (or (and (table? e)
-                                    (memq 'aux (style-properties (table-style e)))
-                                    (pair? (table-blockss e)))
-                               (and (delayed-block? e)
-                                    (loop (delayed-block-blocks e ri))))))
-                       (part-blocks d)))))))
+              (append-map (lambda (e)
+                            (let loop ([e e])
+                              (cond
+                               [(and (table? e)
+                                     (memq 'aux (style-properties (table-style e)))
+                                     (pair? (table-blockss e)))
+                                (render-table e d ri #f)]
+                               [(delayed-block? e)
+                                (loop (delayed-block-blocks e ri))]
+                               [(compound-paragraph? e)
+                                (append-map loop (compound-paragraph-blocks e))]
+                               [else null])))
+                          (part-blocks d))))))
 
     (define/public (get-onthispage-label)
       null)
