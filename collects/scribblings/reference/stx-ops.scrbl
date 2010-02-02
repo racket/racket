@@ -157,12 +157,12 @@ needed to strip lexical and source-location information recursively.}
                         [cert (or/c syntax? #f) #f])
           syntax?]{
 
-Converts the @tech{datum} @scheme[v] to a @tech{syntax object}. If
-@scheme[v] is a pair, vector, box, immutable hash table, or immutable
-@tech{prefab} structure, then the contents are recursively converted;
-mutable vectors and boxes are essentially replaced by immutable
-vectors and boxes. @tech{Syntax object}s already in @scheme[v] are
-preserved as-is in the result. For any kind of value other than a
+Converts the @tech{datum} @scheme[v] to a @tech{syntax object}.
+The contents of pairs, vectors, and boxes, the fields of @tech{prefab}
+structures, and the values of immutable hash tables are recursively converted.
+The keys of @tech{prefab} structures and the keys of immutable hash tables are
+not converted. Mutable vectors and boxes are replaced by immutable vectors and
+boxes. For any kind of value other than a
 pair, vector, box, immutable @tech{hash table}, immutable
 @tech{prefab} structure, or @tech{syntax object}, conversion means
 wrapping the value with lexical information, source-location
