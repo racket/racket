@@ -617,21 +617,23 @@
 (define-syntax expectation-of-message/too-few
   (syntax-rules ()
     [(emtf #f #f)
-     (collect-error "repetition constraint violated")]
+     (expectation-of-message "repetition constraint violated")]
     [(emtf #f name)
-     (collect-error (format "missing required occurrence of ~a" name))]
+     (expectation-of-message
+      (format "missing required occurrence of ~a" name))]
     [(emtf msg _)
-     (collect-error msg)]))
+     (expectation-of-message msg)]))
 
 (define-syntax expectation-of-message/too-many
   (syntax-rules ()
     [(emtm #f #f)
-     (collect-error (format "repetition constraint violated"))]
+     (expectation-of-message
+      (format "repetition constraint violated"))]
     [(emtm #f name)
-     (collect-error (format "too many occurrences of ~a" name))]
+     (expectation-of-message
+      (format "too many occurrences of ~a" name))]
     [(emtm msg _)
-     (collect-error msg)]))
-
+     (expectation-of-message msg)]))
 
 ;;
 
@@ -648,9 +650,9 @@
                               (let ([b (syntax-local-value #'tmp)])
                                 (syntax-case stx ()
                                   [(ce thing)
-                                   (begin (set-box! b (cons #''thing (unbox b)))
+                                   (begin (set-box! b (cons #'thing (unbox b)))
                                           #'thing)]
                                   [(ce)
                                    (with-syntax ([(thing ...) (reverse (unbox b))])
-                                     #'(list thing ...))])))))
+                                     #'(list #'thing ...))])))))
        body))))

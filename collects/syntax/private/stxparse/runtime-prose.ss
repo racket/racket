@@ -143,7 +143,8 @@
                             (for-alternative alt index stx))
                           ";" "or")))]
         [(eq? e 'ineffable)
-         #f]))
+         #f]
+        [else (error 'prose-for-expectation "unexpected: ~e" e)]))
 
 (define (for-alternative e index stx)
   (match e
@@ -188,3 +189,50 @@
     [(a . b) (cons #'a (improper-stx->list #'b))]
     [() null]
     [rest (list #'rest)]))
+
+
+;; Ad-hoc interpretation of error message expressions
+(provide interpret-error-expression)
+
+;; Recognize application of 'format' procedure
+(define (interpret-error-expression e)
+  (define vars '(X Y Z))
+
+  ;; minieval : syntax -> (or syntax datum)
+  ;; Returns syntax on NON-evalable stuff, datum otherwise
+  (define (minieval x)
+    (syntax-case x (format quote datum literal)
+      [(format str arg ...)
+       (string? (syntax-e #'str))
+       (let ([args (map minieval (syntax->list #'(arg ...)))])
+         (define args*
+           (cond [(<= (length (filter syntax? args)) (length vars))
+                  (for/list ([arg args])
+                    (if (syntax? arg)
+                        (begin0 (car vars) (set! vars (cdr vars)))
+                        arg))]
+                 [else
+                  (let ([counter 1])
+                    (for/list ([arg args])
+                      (if (syntax? arg)
+                          (begin0 (format "Q~a" counter)
+                            (set! counter (add1 counter)))
+                          arg)))]))
+         (apply format (syntax-e #'str) args*))]
+      [(quote (datum d))
+       (format "expected the literal ~a" (syntax->datum #'d))]
+      [(quote (literal lit))
+       (format "expected the literal identifier ~s" (syntax-e #'lit))]
+      [(quote thing)
+       (syntax->datum #'thing)]
+      [d
+       (let ([d (syntax->datum #'d)])
+         (or (string? d) (number? d) (boolean? d)))
+       (syntax->datum #'d)]
+      [_
+       x]))
+  (let ([ie (minieval e)])
+    (if (syntax? ie)
+        (syntax->datum ie)
+        ie)))
+

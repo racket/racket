@@ -6,7 +6,7 @@
           scheme/sandbox
           (for-label scheme/base
                      scheme/contract
-                     syntax/parse
+                     (except-in syntax/parse ...+)
                      syntax/kerncase))
 
 @(define ellipses @scheme[...])

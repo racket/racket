@@ -5,6 +5,7 @@
                      unstable/struct
                      "rep-data.ss"
                      "rep.ss")
+         scheme/list
          syntax/stx
          "parse.ss"
          "runtime.ss"
@@ -172,7 +173,9 @@
     [(_ s)
      (parameterize ((current-syntax-context stx))
        (with-syntax ([p (stxclass-parser-name (get-stxclass #'s))])
-         #'(parser-errors p)))]))
+         #'(remove-duplicates
+            (map interpret-error-expression
+                 (parser-errors p)))))]))
 
 (define-syntax (debug-rhs stx)
   (syntax-case stx ()

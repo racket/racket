@@ -4,13 +4,21 @@
           scribble/decode
           scribble/eval
           scheme/sandbox
+          (for-syntax scheme/base)
           (for-label scheme/base
                      scheme/contract
-                     syntax/parse
+                     (rename-in syntax/parse [...+ DOTSPLUS])
                      syntax/kerncase))
 
-@(define ellipses @scheme[...])
+@(define-syntax-rule (define-dotsplus-names dotsplus def-dotsplus)
+   (begin (require (for-label (only-in syntax/parse ...+)))
+          (define dotsplus (scheme ...+))
+          (define def-dotsplus (defhere ...+))))
+@(define-dotsplus-names dotsplus def-dotsplus)
+
 @(define-syntax-rule (defhere id) (defidentifier #'id #:form? #t))
+
+@(define ellipses @scheme[...])
 
 @(define Spattern "single-term pattern")
 @(define Lpattern "list pattern")
@@ -84,7 +92,7 @@ When a special form in this manual refers to @svar[syntax-pattern]
 means specifically @tech{@Spattern}.
 
 @schemegrammar*[#:literals (_ ~var ~literal ~or ~and ~not ~rest ~datum
-                            ~describe ~seq ~optional ~rep ~once
+                            ~describe ~seq ~optional ~rep ~once ~between
                             ~! ~bind ~fail ~parse)
                 [S-pattern
                  pvar-id
@@ -98,7 +106,7 @@ means specifically @tech{@Spattern}.
                  (H-pattern . S-pattern)
                  (A-pattern . S-pattern)
                  (EH-pattern #,ellipses . S-pattern)
-                 (H-pattern @#,(scheme ...+) . S-pattern)
+                 (H-pattern @#,dotsplus . S-pattern)
                  (@#,ref[~and s] proper-S/A-pattern ...+)
                  (@#,ref[~or s] S-pattern ...+)
                  (~not S-pattern)
@@ -113,7 +121,7 @@ means specifically @tech{@Spattern}.
                  (A-pattern . L-pattern)
                  (H-pattern . L-pattern)
                  (EH-pattern #,ellipses . L-pattern)
-                 (H-pattern @#,(scheme ...+) . L-pattern)
+                 (H-pattern @#,dotsplus . L-pattern)
                  (~rest L-pattern)]
                 [H-pattern
                  pvar-id:splicing-syntax-class-id
@@ -413,14 +421,14 @@ the whole sequence pattern.
 See @tech{@EHpatterns} for more information.
 }
 
-@specsubform[(H-pattern @#,defhere[...+] . S-pattern)]{
+@specsubform[(H-pattern @#,def-dotsplus . S-pattern)]{
 
 Like an ellipses (@ellipses) pattern, but requires at one occurrence
 of the head pattern to be present.
 
 That is, the following patterns are equivalent:
 @itemize[
-@item[@scheme[(H ...+ . S)]]
+@item[@scheme[(H @#,dotsplus . S)]]
 @item[@scheme[((~between H 1 +inf.0) ... . S)]]
 ]
 
