@@ -369,6 +369,7 @@
         #'#s(pat:compound attrs #:pair (head-part tail-part)))])))
 
 ;; (parse:H id FCE HeadPattern id id expr) : expr
+;; x must not alias rest
 (define-syntax (parse:H stx)
   (syntax-case stx ()
     [(parse:H x fc head rest rest-fc k)
@@ -471,11 +472,11 @@
                      [(attr-repc ...) attr-repcs])
          (define-pattern-variable alt-map #'((id . alt-id) ...))
          (define-pattern-variable loop-k
-           #'(dots-loop dx loop-fc* enclosing-fail rel-rep ... alt-id ...))
+           #'(dots-loop dx* loop-fc* enclosing-fail rel-rep ... alt-id ...))
          #`(let ()
              (define (dots-loop dx loop-fc loop-fail rel-rep ... alt-id ...)
                (with-enclosing-fail loop-fail
-                 (try (parse:EH dx loop-fc head head-repc loop-fc* alt-map head-rep
+                 (try (parse:EH dx loop-fc head head-repc dx* loop-fc* alt-map head-rep
                                 loop-k)
                       ...
                       (cond [(< rel-rep (rep:min-number rel-repc))
@@ -494,7 +495,7 @@
 ;;           RepConstraint/#f expr) : expr
 (define-syntax (parse:EH stx)
   (syntax-case stx ()
-    [(parse:EH x fc head repc fc* alts rep k0)
+    [(parse:EH x fc head repc x* fc* alts rep k0)
      (let ()
        (define-pattern-variable k
          (let* ([main-attrs (wash-iattrs (pattern-attrs (wash #'head)))]
@@ -511,11 +512,11 @@
              #`(let ([alt-id (rep:combine repc (attribute id) alt-id)] ...)
                  k0))))
        (syntax-case #'repc ()
-         [#f #`(parse:H x fc head x fc* k)]
-         [_  #`(parse:H x fc head x fc*
+         [#f #`(parse:H x fc head x* fc* k)]
+         [_  #`(parse:H x fc head x* fc*
                         (if (< rep (rep:max-number repc))
                             (let ([rep (add1 rep)]) k)
-                            (fail x
+                            (fail x*
                                   #:expect (expectation-of-reps/too-many rep repc)
                                   #:fce fc*)))]))]))
 

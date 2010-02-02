@@ -357,7 +357,8 @@ variables that do not explicitly specify a syntax class.
 
 Uses the @tech{conventions} specified. The advantage of
 @scheme[#:local-conventions] over @scheme[#:conventions] is that local
-conventions can be in the scope of syntax-class parameter bindings.
+conventions can be in the scope of syntax-class parameter
+bindings. See the section on @tech{conventions} for examples.
 }
 
 Each clause consists of a @tech{syntax pattern}, an optional sequence
@@ -749,6 +750,28 @@ class.
   #:conventions (xn-prefixes)
   [(x0 x ... n0 n ...)
    (syntax->datum #'(x0 (x ...) n0 (n ...)))])
+]
+
+Local conventions, introduced with the @scheme[#:local-conventions]
+keyword argument of @scheme[syntax-parse] and syntax class
+definitions, may refer to local bindings:
+
+@myexamples[
+(define-syntax-class (nat> bound)
+  (pattern n:nat
+           #:fail-unless (> (syntax-e #'n) bound)
+                         (format "expected number > ~s" bound)))
+
+(define-syntax-class (natlist> bound)
+  #:local-conventions ([N (nat> bound)])
+  (pattern (N ...)))
+
+(define (parse-natlist> bound x)
+  (syntax-parse x
+    #:local-conventions ([NS (natlist> bound)])
+    [NS 'ok]))
+(parse-natlist> 0 #'(1 2 3))
+(parse-natlist> 5 #'(8 6 4 2))
 ]
 
 }
