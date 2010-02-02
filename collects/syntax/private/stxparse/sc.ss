@@ -17,6 +17,7 @@
          define-conventions
          syntax-class-parse
          syntax-class-attributes
+         syntax-class-possible-errors
 
          debug-rhs
          debug-pattern
@@ -33,7 +34,7 @@
          ~or
          ~not
          ~seq
-         ~bounds
+         ~between
          ~once
          ~optional
          ~rest
@@ -42,6 +43,7 @@
          ~bind
          ~fail
          ~parse
+         ...+
 
          attribute
          this-syntax)
@@ -93,15 +95,14 @@
        (with-syntax ([([entry (def ...)] ...)
                       (for/list ([line (check-conventions-rules #'(rule ...) stx)])
                         (let ([rx (car line)]
-                              [sc (car (cadr line))]
-                              [args (cadr (cadr line))])
-                          (let-values ([(parser description attrs defs splicing?)
-                                        (create-aux-def (list 'stxclass rx sc args))])
+                              [den (cadr line)])
+                          (let-values ([(den defs) (create-aux-def den)])
                             (list #`(list (quote #,rx)
-                                          (list (quote #,(if splicing? 'splicing-parser 'parser))
-                                                (quote-syntax #,parser)
-                                                (quote-syntax #,description)
-                                                (quote #,attrs)))
+                                          (make-den:parser
+                                           (quote-syntax #,(den:parser-parser den))
+                                           (quote-syntax #,(den:parser-description den))
+                                           (quote #,(den:parser-attrs den))
+                                           (quote #,(den:parser-splicing? den))))
                                   defs))))])
          #'(begin
              def ... ...
@@ -129,7 +130,8 @@
      (with-disappeared-uses
       (let ([rhs
              (parameterize ((current-syntax-context #'ctx))
-               (parse-rhs #'rhss #t (syntax-e #'splicing?) #:context #'ctx))])
+               (parse-rhs #'rhss (syntax->datum #'attrs) (syntax-e #'splicing?)
+                          #:context #'ctx))])
         #`(let ([get-description
                  (lambda args
                    #,(or (rhs-description rhs)
@@ -164,6 +166,13 @@
          (with-syntax ([(a ...) (map attr-name attrs)]
                        [(depth ...) (map attr-depth attrs)])
            #'(quote ((a depth) ...)))))]))
+
+(define-syntax (syntax-class-possible-errors stx)
+  (syntax-case stx ()
+    [(_ s)
+     (parameterize ((current-syntax-context stx))
+       (with-syntax ([p (stxclass-parser-name (get-stxclass #'s))])
+         #'(parser-errors p)))]))
 
 (define-syntax (debug-rhs stx)
   (syntax-case stx ()

@@ -283,7 +283,8 @@ Two parsing forms are provided: @scheme[syntax-parse] and
               ([parse-option (code:line #:context context-expr)
                              (code:line #:literals (literal ...))
                              (code:line #:literal-sets (literal-set ...))
-                             (code:line #:conventions (convention-id ...))]
+                             (code:line #:conventions (convention-id ...))
+                             (code:line #:local-conventions (convention-rule ...))]
                [literal literal-id
                         (pattern-id literal-id)]
                [literal-set literal-set-id
@@ -352,6 +353,13 @@ Imports @tech{convention}s that give default syntax classes to pattern
 variables that do not explicitly specify a syntax class.
 }
 
+@specsubform[(code:line #:local-conventions (convention-rule ...))]{
+
+Uses the @tech{conventions} specified. The advantage of
+@scheme[#:local-conventions] over @scheme[#:conventions] is that local
+conventions can be in the scope of syntax-class parameter bindings.
+}
+
 Each clause consists of a @tech{syntax pattern}, an optional sequence
 of @tech{pattern directives}, and a non-empty sequence of body
 expressions.
@@ -386,7 +394,8 @@ structures can share syntax class definitions.
                  (code:line #:opaque)
                  (code:line #:literals (literal-entry ...))
                  (code:line #:literal-sets (literal-set ...))
-                 (code:line #:conventions (convention-id ...))]
+                 (code:line #:conventions (convention-id ...))
+                 (code:line #:local-conventions (convention-rule ...))]
                 [attr-arity-decl
                  attr-name-id
                  (attr-name-id depth)]
@@ -713,8 +722,9 @@ identifiers the literal matches.
 ]
 }
 
-@defform/subs[(define-conventions name-id (id-pattern syntax-class) ...)
-              ([name-pattern exact-id
+@defform/subs[(define-conventions name-id convention-rule ...)
+              ([convention-rule (name-pattern syntax-class)]
+               [name-pattern exact-id
                              name-rx]
                [syntax-class syntax-class-id
                              (syntax-class-id expr ...)])]{

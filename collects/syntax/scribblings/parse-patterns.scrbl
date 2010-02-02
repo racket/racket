@@ -97,8 +97,8 @@ means specifically @tech{@Spattern}.
                  (~datum datum)
                  (H-pattern . S-pattern)
                  (A-pattern . S-pattern)
-                 ((@#,ref[~or eh] EH-pattern ...+) #,ellipses . S-pattern)
                  (EH-pattern #,ellipses . S-pattern)
+                 (H-pattern @#,(scheme ...+) . S-pattern)
                  (@#,ref[~and s] proper-S/A-pattern ...+)
                  (@#,ref[~or s] S-pattern ...+)
                  (~not S-pattern)
@@ -112,8 +112,8 @@ means specifically @tech{@Spattern}.
                  ()
                  (A-pattern . L-pattern)
                  (H-pattern . L-pattern)
-                 ((@#,ref[~or eh] EH-pattern ...+) #,ellipses . L-pattern)
                  (EH-pattern #,ellipses . L-pattern)
+                 (H-pattern @#,(scheme ...+) . L-pattern)
                  (~rest L-pattern)]
                 [H-pattern
                  pvar-id:splicing-syntax-class-id
@@ -125,8 +125,10 @@ means specifically @tech{@Spattern}.
                  (@#,ref[~describe h] expr H-pattern)
                  proper-S-pattern]
                 [EH-pattern
+                 (@#,ref[~or eh] EH-pattern ...)
                  (~once H-pattern once-option ...)
                  (@#,ref[~optional eh] H-pattern optional-option ...)
+                 (~between H min-number max-number between-option)
                  H-pattern]
                 [A-pattern
                  ~!
@@ -160,10 +162,10 @@ One of @ref[~and s], @ref[~and h], or @ref[~and a]:
 
 @defidform[~or]{
 
-One of @ref[~or s], @ref[~or h]), or @ref[~or eh]:
+One of @ref[~or s], @ref[~or h], or @ref[~or eh]:
 @itemize[
 @item{@ref[~or eh] if the pattern occurs directly before ellipses
-  (@ellipses)}
+  (@ellipses) or immediately within another @ref[~or eh] pattern}
 @item{@ref[~or h] if any of the disjuncts is a @tech{proper @Hpattern}}
 @item{@ref[~or s] otherwise}
 ]
@@ -396,11 +398,11 @@ words, @Apatterns ``don't take up space.''
 See @tech{@Apatterns} for more information.
 }
 
-@specsubform[((@#,def[~or eh] EH-pattern ...+) #,ellipses . S-pattern)]{
+@specsubform[(EH-pattern #,ellipses . S-pattern)]{
 
 Matches any term that can be decomposed into a list head matching some
-number of repetitions of @scheme[EH-pattern] alternatives (subject to
-its repetition constraints) followed by a list tail matching
+number of repetitions of the @scheme[EH-pattern] alternatives (subject
+to its repetition constraints) followed by a list tail matching
 @scheme[S-pattern].
 
 In other words, the whole pattern matches either the second pattern
@@ -411,10 +413,25 @@ the whole sequence pattern.
 See @tech{@EHpatterns} for more information.
 }
 
-@specsubform[(EH-pattern #,ellipses . S-pattern)]{
+@specsubform[(H-pattern @#,defhere[...+] . S-pattern)]{
 
-The @scheme[~or]-free variant of ellipses (@ellipses) pattern is
-equivalent to the @scheme[~or] variant with just one alternative.
+Like an ellipses (@ellipses) pattern, but requires at one occurrence
+of the head pattern to be present.
+
+That is, the following patterns are equivalent:
+@itemize[
+@item[@scheme[(H ...+ . S)]]
+@item[@scheme[((~between H 1 +inf.0) ... . S)]]
+]
+
+@myexamples[
+(syntax-parse #'(1 2 3)
+  [(n:nat ...+) 'ok])
+(syntax-parse #'()
+  [(n:nat ...+) 'ok]
+  [_ 'none])
+]
+
 }
 
 @specsubform[(@#,def[~and s] S/A-pattern ...)]{
@@ -704,7 +721,8 @@ An @deftech{@EHpattern} (abbreviated @svar[EH-pattern]) is pattern
 that describes some number of terms, like a @tech{@Hpattern}, but may
 also place contraints on the number of times it occurs in a
 repetition. They are useful for matching keyword arguments where the
-keywords may come in any order.
+keywords may come in any order. Multiple alternatives can be grouped
+together via @ref[~or eh].
 
 @myexamples[
 (define parser1
@@ -725,6 +743,12 @@ arguments. The ``pieces'' can occur in any order.
 
 Here are the variants of @elem{@EHpattern}:
 
+@specsubform[(@#,def[~or eh] EH-pattern ...)]{
+
+Matches if any of the inner @scheme[EH-pattern] alternatives match.
+
+}
+
 @specsubform/subs[(@#,defhere[~once] H-pattern once-option ...)
                   ([once-option (code:line #:name name-expr)
                                 (code:line #:too-few too-few-message-expr)
@@ -734,11 +758,11 @@ Matches if the inner @scheme[H-pattern] matches. This pattern must be
 selected exactly once in the match of the entire repetition sequence.
 
 If the pattern is not chosen in the repetition sequence, then an error
-is raised with a message, either @scheme[too-few-message-expr] or
+is raised with the message either @scheme[too-few-message-expr] or
 @schemevalfont{"missing required occurrence of @scheme[name-expr]"}.
 
 If the pattern is chosen more than once in the repetition sequence,
-then an error is raised with a message, either
+then an error is raised with the message either
 @scheme[too-many-message-expr] or @schemevalfont{"too many occurrences
 of @scheme[name-expr]"}.
 }
@@ -752,7 +776,7 @@ Matches if the inner @scheme[H-pattern] matches. This pattern may be used at
 most once in the match of the entire repetition.
 
 If the pattern is chosen more than once in the repetition sequence,
-then an error is raised with a message, either
+then an error is raised with the message either
 @scheme[too-many-message-expr] or @schemevalfont{"too many occurrences
 of @scheme[name-expr]"}.
 
@@ -761,6 +785,25 @@ bindings are used if the subpattern does not match at all in the
 sequence. The default attributes must be a subset of the subpattern's
 attributes.
 }
+
+@specsubform/subs[(@#,defhere[~between] H-pattern min-number max-number between-option ...)
+                  ([reps-option (code:line #:name name-expr)
+                                (code:line #:too-few too-few-message-expr)
+                                (code:line #:too-many too-many-message-expr)])]{
+
+Matches if the inner @scheme[H-pattern] matches. This pattern must be
+selected at least @scheme[min-number] and at most @scheme[max-number]
+times in the entire repetition.
+
+If the pattern is chosen too few times, then an error is raised with a
+message, either @scheme[too-few-message-expr] or @schemevalfont{"too
+few occurrences of @scheme[name-expr]"}.
+
+If the pattern is chosen too many times, then an error is raised with
+the message either @scheme[too-many-message-expr] or
+@schemevalfont{"too few occurrences of @scheme[name-expr]"}.
+}
+
 
 
 @;{--------}

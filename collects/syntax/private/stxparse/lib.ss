@@ -3,11 +3,9 @@
 (require "sc.ss"
          "../util.ss"
          syntax/stx
-         syntax/kerncase
          scheme/struct-info
          scheme/contract/private/helpers
          (for-syntax scheme/base
-                     syntax/kerncase
                      "rep.ss"
                      (only-in "rep-data.ss" make-literalset))
          (for-template scheme/base
@@ -115,9 +113,26 @@
                                 (quote-syntax #,(syntax/loc #'x (<there>))))))
 
 ;; Literal sets
-  
-(define-syntax kernel-literals
-  (make-literalset
-   (list* (list '#%plain-module-begin (quote-syntax #%plain-module-begin))
-          (for/list ([id (kernel-form-identifier-list)])
-            (list (syntax-e id) id)))))
+
+(define-literal-set kernel-literals
+  (begin
+   begin0
+   define-values
+   define-syntaxes
+   define-values-for-syntax
+   set!
+   let-values
+   letrec-values
+   #%plain-lambda
+   case-lambda
+   if
+   quote
+   letrec-syntaxes+values
+   with-continuation-mark
+   #%expression
+   #%plain-app
+   #%top
+   #%datum
+   #%variable-reference
+   module #%provide #%require
+   #%plain-module-begin))
