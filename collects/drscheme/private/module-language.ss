@@ -407,17 +407,18 @@
     (define compilation-on-check-box #f)
     (define compilation-on? #t)
     (define save-stacktrace-on-check-box #f)
-    (define debugging-radio-box #f)
+    (define left-debugging-radio-box #f)
+    (define right-debugging-radio-box #f)
     (define simple-case-lambda
       (drscheme:language:simple-module-based-language-config-panel
        new-parent
        #:case-sensitive #t
        
-       #:get-debugging-radio-box (λ (rb) (set! debugging-radio-box rb))
+       #:get-debugging-radio-box (λ (rb-l rb-r) (set! left-debugging-radio-box rb-l) (set! right-debugging-radio-box rb-r))
        
        #:debugging-radio-box-callback
        (λ (debugging-radio-box evt)
-         (update-compilation-checkbox debugging-radio-box))
+         (update-compilation-checkbox left-debugging-radio-box right-debugging-radio-box))
 
        #:dynamic-panel-extras
        (λ (dynamic-panel)
@@ -430,14 +431,14 @@
          (set! save-stacktrace-on-check-box (new check-box%
                                                  [label (string-constant preserve-stacktrace-information)]
                                                  [parent dynamic-panel])))))
-    (define (update-compilation-checkbox debugging-radio-box)
-      (case (send debugging-radio-box get-selection)
-        [(2 3)
-         (send compilation-on-check-box enable #f)
-         (send compilation-on-check-box set-value #f)]
+    (define (update-compilation-checkbox left-debugging-radio-box right-debugging-radio-box)
+      (case (send left-debugging-radio-box get-selection)
         [(0 1)
          (send compilation-on-check-box enable #t)
-         (send compilation-on-check-box set-value compilation-on?)]))
+         (send compilation-on-check-box set-value compilation-on?)]
+        [(#f)
+         (send compilation-on-check-box enable #f)
+         (send compilation-on-check-box set-value #f)]))
     
     (define cp-panel (new group-box-panel%
                           [parent new-parent]
@@ -585,7 +586,7 @@
     (install-collection-paths '(default))
     (update-buttons)
     (install-auto-text default-auto-text)
-    (update-compilation-checkbox debugging-radio-box)
+    (update-compilation-checkbox left-debugging-radio-box right-debugging-radio-box)
     
     (case-lambda
       [()
@@ -596,9 +597,9 @@
                  (list (get-collection-paths)
                        (get-command-line-args)
                        (get-auto-text)
-                       (case (send debugging-radio-box get-selection)
-                         [(2 3) #f]
-                         [(0 1) compilation-on?])
+                       (case (send left-debugging-radio-box get-selection)
+                         [(0 1) compilation-on?]
+                         [(#f) #f])
                        (send save-stacktrace-on-check-box get-value)))))]
       [(settings)
        (simple-case-lambda settings)
@@ -607,7 +608,7 @@
        (install-auto-text (module-language-settings-auto-text settings))
        (set! compilation-on? (module-language-settings-compilation-on? settings))
        (send compilation-on-check-box set-value (module-language-settings-compilation-on? settings))
-       (update-compilation-checkbox debugging-radio-box)
+       (update-compilation-checkbox left-debugging-radio-box right-debugging-radio-box)
        (send save-stacktrace-on-check-box set-value (module-language-settings-full-trace? settings))
        (update-buttons)]))
   
