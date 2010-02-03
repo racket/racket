@@ -210,7 +210,7 @@
  iworld3)
 
 ;; --- the server representation of a world --- 
-(define-struct iworld (in out name info) #:transparent)
+(define-struct iworld (in out name info) #; #:transparent)
 ;; World = (make-iworld IPort OPort Symbol [Listof Sexp])
 
 (define (iw* n) (make-iworld (current-input-port) (current-output-port) n '()))
