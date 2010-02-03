@@ -18,7 +18,7 @@
 
 (provide/contract
  [parse-rhs
-  (-> syntax? boolean? boolean? #:context (or/c false/c syntax?)
+  (-> syntax? (or/c false/c (listof sattr?)) boolean? #:context (or/c false/c syntax?)
       rhs?)]
  [parse-whole-pattern 
   (-> syntax? DeclEnv/c #:context (or/c false/c syntax?)
@@ -39,8 +39,8 @@
       (values DeclEnv/c (listof syntax?)))]
  |#
  [create-aux-def
-  (-> list? ;; DeclEntry
-      (values identifier? identifier? (listof sattr?) (listof syntax?) boolean?))]
+  (-> DeclEntry/c
+      (values DeclEntry/c (listof syntax?)))]
  [check-literals-list
   (-> syntax? syntax?
       (listof (list/c identifier? identifier?)))]
@@ -67,9 +67,10 @@
          (free-identifier=? stx kw)
          (begin (disappeared! stx) #t))))
 
-(define wildcard? (id-predicate (quote-syntax _)))
-(define epsilon?  (id-predicate (quote-syntax ||)))
-(define dots?     (id-predicate (quote-syntax ...)))
+(define wildcard?  (id-predicate (quote-syntax _)))
+(define epsilon?   (id-predicate (quote-syntax ||)))
+(define dots?      (id-predicate (quote-syntax ...)))
+(define plus-dots? (id-predicate (quote-syntax ...+)))
 
 (define keywords
   (list (quote-syntax _)
@@ -85,13 +86,14 @@
         (quote-syntax ~rep)
         (quote-syntax ~once)
         (quote-syntax ~optional)
-        (quote-syntax ~bounds)
+        (quote-syntax ~between)
         (quote-syntax ~rest)
         (quote-syntax ~describe)
         (quote-syntax ~!)
         (quote-syntax ~bind)
         (quote-syntax ~fail)
-        (quote-syntax ~parse)))
+        (quote-syntax ~parse)
+        (quote-syntax ...+)))
 
 (define (reserved? stx)
   (and (identifier? stx)
@@ -116,20 +118,20 @@
 
 ;; ---
 
-;; parse-rhs : stx boolean boolean stx -> RHS
-;; If strict? is true, then referenced stxclasses must be defined and
+;; parse-rhs : stx boolean (or #f (listof SAttr)) stx -> RHS
+;; If expected-attrs is true, then referenced stxclasses must be defined and
 ;; literals must be bound. Set to #f for pass1 (attr collection);
 ;; parser requires stxclasses to be bound.
-(define (parse-rhs stx strict? splicing? #:context ctx)
+(define (parse-rhs stx expected-attrs splicing? #:context ctx)
   (parameterize ((current-syntax-context ctx))
     (define-values (rest description transp? attributes auto-nested? decls defs)
-      (parse-rhs/part1 stx strict?))
+      (parse-rhs/part1 stx (and expected-attrs #t)))
     (define patterns
       (parameterize ((stxclass-lookup-config
-                      (cond [strict? 'yes]
+                      (cond [expected-attrs 'yes]
                             [auto-nested? 'try]
                             [else 'no])))
-        (parse-variants rest decls splicing?)))
+        (parse-variants rest decls splicing? expected-attrs)))
     (when (null? patterns)
       (wrong-syntax #f "expected at least one variant"))
     (let ([sattrs
@@ -151,12 +153,12 @@
   (define-values (decls defs) (get-decls+defs chunks strict?))
   (values rest description transparent? attributes auto-nested? decls defs))
 
-(define (parse-variants rest decls splicing?)
+(define (parse-variants rest decls splicing? expected-attrs)
   (define (gather-patterns stx)
     (syntax-case stx (pattern)
       [((pattern . _) . rest)
        (begin (disappeared! (stx-car stx))
-              (cons (parse-variant (stx-car stx) splicing? decls)
+              (cons (parse-variant (stx-car stx) splicing? decls expected-attrs)
                     (gather-patterns #'rest)))]
       [(bad-variant . rest)
        (wrong-syntax #'bad-variant "expected syntax-class variant")]
@@ -175,10 +177,11 @@
   (define lits (options-select-value chunks '#:literals #:default null))
   (define litsets (options-select-value chunks '#:literal-sets #:default null))
   (define convs (options-select-value chunks '#:conventions #:default null))
+  (define localconvs (options-select-value chunks '#:local-conventions #:default null))
   (define literals
     (append-lits+litsets (check-literals-bound lits strict?)
                          litsets))
-  (define convention-rules (apply append convs))
+  (define convention-rules (apply append (cons localconvs convs)))
   (new-declenv literals #:conventions convention-rules))
 
 (define (check-literals-bound lits strict?)
@@ -195,31 +198,34 @@
 
 ;; decls-create-defs : DeclEnv -> (values DeclEnv (listof stx))
 (define (decls-create-defs decls0)
-  (for/fold ([decls decls0] [defs null])
-      ([(k v) (in-dict (declenv-table decls0))]
-       #:when (memq (car v) '(stxclass splicing-stxclass)))
-    (let-values ([(parser description attrs new-defs splicing?) (create-aux-def v)])
-      (values (declenv-put-parser decls k parser description attrs splicing?)
-              (append new-defs defs)))))
+  (define (updater key value defs)
+    (let-values ([(value newdefs) (create-aux-def value)])
+      (values value (append newdefs defs))))
+  (declenv-update/fold decls0 updater null))
 
-;; create-aux-def : DeclEntry -> (values id id (listof SAttr) (listof stx) boolean)
+;; create-aux-def : DeclEntry -> (values DeclEntry (listof stx))
 (define (create-aux-def entry)
-  (let ([sc-name (caddr entry)]
-        [args (cadddr entry)])
-    (let ([sc (get-stxclass/check-arg-count sc-name (length args))])
-      (with-syntax ([sc-parser (stxclass-parser-name sc)]
-                    [sc-description (stxclass-description sc)])
-        (if (pair? args)
-            (with-syntax ([x (generate-temporary 'x)]
-                          [parser (generate-temporary sc-name)]
-                          [description (generate-temporary sc-name)]
-                          [(arg ...) args])
-              (values #'parser #'description (stxclass-attrs sc)
-                      (list #'(define (parser x) (sc-parser x arg ...))
-                            #'(define (description) (description arg ...)))
-                      (stxclass/h? sc)))
-            (values #'sc-parser #'sc-description (stxclass-attrs sc)
-                    null (stxclass/h? sc)))))))
+  (match entry
+    [(struct den:lit (_i _e))
+     (values entry null)]
+    [(struct den:class (name class args))
+     (let ([sc (get-stxclass/check-arg-count class (length args))])
+       (with-syntax ([sc-parser (stxclass-parser-name sc)]
+                     [sc-description (stxclass-description sc)])
+         (if (pair? args)
+             (with-syntax ([x (generate-temporary 'x)]
+                           [parser (generate-temporary class)]
+                           [description (generate-temporary class)]
+                           [(arg ...) args])
+               (values (make den:parser #'parser #'description
+                             (stxclass-attrs sc) (stxclass/h? sc))
+                       (list #'(define (parser x) (sc-parser x arg ...))
+                             #'(define (description) (description arg ...)))))
+             (values (make den:parser #'sc-parser #'sc-description
+                           (stxclass-attrs sc) (stxclass/h? sc))
+                     null))))]
+    [(struct den:parser (_p _d _a _sp))
+     (values entry null)]))
 
 (define (append-lits+litsets lits litsets)
   (define seen (make-bound-id-table lits))
@@ -230,8 +236,8 @@
       (bound-id-table-set! seen (car lit) #t)))
   (apply append lits litsets))
 
-;; parse-variant : stx boolean DeclEnv -> RHS
-(define (parse-variant stx splicing? decls0)
+;; parse-variant : stx boolean DeclEnv #f/(listof Sattr) -> RHS
+(define (parse-variant stx splicing? decls0 expected-attrs)
   (syntax-case stx (pattern)
     [(pattern p . rest)
      (let-values ([(rest decls defs clauses)
@@ -249,6 +255,10 @@
                 (cons (pattern-attrs pattern)
                       (side-clauses-attrss clauses)))]
               [sattrs (iattrs->sattrs attrs)])
+         (when expected-attrs
+           (parameterize ((current-syntax-context stx))
+             ;; Called just for error-reporting
+             (reorder-iattrs expected-attrs attrs)))
          (make variant stx sattrs pattern clauses defs)))]))
 
 (define (side-clauses-attrss clauses)
@@ -367,6 +377,10 @@
      (dots? #'dots)
      (begin (disappeared! #'dots)
             (parse-pat:dots stx #'head #'tail decls))]
+    [(head plus-dots . tail)
+     (plus-dots? #'plus-dots)
+     (begin (disappeared! #'plus-dots)
+            (parse-pat:plus-dots stx #'head #'tail decls))]
     [(head . tail)
      (let ([headp (parse-*-pattern #'head decls #t #t)]
            [tailp (parse-single-pattern #'tail decls)])
@@ -394,47 +408,50 @@
        (let ([lp (parse-single-pattern (datum->syntax #f contents #'s) decls)])
          (create-pat:compound `(#:pstruct ,key) (list lp))))]))
 
-;; parse-ellipsis-head-pattern : stx DeclEnv number -> EllipsisHeadPattern
+;; parse-ellipsis-head-pattern : stx DeclEnv number -> (listof EllipsisHeadPattern)
 (define (parse-ellipsis-head-pattern stx decls)
-  (syntax-case stx (~bounds ~optional ~once)
+  (syntax-case stx (~or ~between ~optional ~once)
+    [(~or . _)
+     (begin
+       (unless (stx-list? stx)
+         (wrong-syntax stx "expected sequence of patterns"))
+       (apply append
+              (for/list ([sub (cdr (stx->list stx))])
+                (parse-ellipsis-head-pattern sub decls))))]
     [(~optional . _)
      (disappeared! stx)
-     (parse-ehpat/optional stx decls)]
+     (list (parse-ehpat/optional stx decls))]
     [(~once . _)
      (disappeared! stx)
-     (parse-ehpat/once stx decls)]
-    [(~bounds . _)
+     (list (parse-ehpat/once stx decls))]
+    [(~between . _)
      (disappeared! stx)
-     (parse-ehpat/bounds stx decls)]
+     (list (parse-ehpat/bounds stx decls))]
     [_
      (let ([head (parse-head-pattern stx decls)])
-       (make ehpat (map increase-depth (pattern-attrs head))
-             head
-             #f))]))
+       (list (make ehpat (map increase-depth (pattern-attrs head))
+                   head
+                   #f)))]))
 
 ;; ----
 
 (define (parse-pat:id id decls allow-head?)
   (define entry (declenv-lookup decls id))
   (match entry
-    [(list 'literal internal-id literal-id)
-     (create-pat:literal literal-id)]
-    [(list 'stxclass _ _ _)
+    [(struct den:lit (internal literal))
+     (create-pat:literal literal)]
+    [(struct den:class (_n _c _a))
      (error 'parse-pat:id
-            "(internal error) decls had leftover 'stxclass entry: ~s"
+            "(internal error) decls had leftover stxclass entry: ~s"
             entry)]
-    [(list 'splicing-stxclass _ _ _)
-     (error 'parse-pat:id
-            "(internal error) decls had leftover 'splicing-stxclass entry: ~s"
-            entry)]
-    [(list 'parser parser description attrs)
-     (parse-pat:id/s id parser null attrs)]
-    [(list 'splicing-parser parser description attrs)
-     (parse-pat:id/h id parser null attrs)]
+    [(struct den:parser (parser desc attrs splicing?))
+     (if splicing?
+         (parse-pat:id/h id parser null attrs)
+         (parse-pat:id/s id parser null attrs))]
     ['#f
-     (when #f ;; FIXME: enable?
+     (when #t ;; FIXME: right place???
        (unless (safe-name? id)
-         (wrong-syntax id "expected identifier not starting with ~ character")))
+         (wrong-syntax id "expected identifier not starting with ~~ character")))
      (let-values ([(name sc) (split-id/get-stxclass id decls)])
        (if sc
            (parse-pat:var* id allow-head? name sc null)
@@ -631,20 +648,20 @@
     result))
 
 (define (parse-pat:dots stx head tail decls)
-  (define headps
-    (syntax-case head (~or)
-      [(~or . _)
-       (begin
-         (unless (stx-list? head)
-           (wrong-syntax head "expected sequence of patterns"))
-         (unless (stx-pair? (stx-cdr head))
-           (wrong-syntax head "expected at least one pattern"))
-         (for/list ([sub (cdr (stx->list head))])
-           (parse-ellipsis-head-pattern sub decls)))]
-      [_
-       (list (parse-ellipsis-head-pattern head decls))]))
+  (define headps (parse-ellipsis-head-pattern head decls))
   (define tailp (parse-single-pattern tail decls))
+  (unless (pair? headps)
+    (wrong-syntax head "expected at least one pattern"))
   (create-pat:dots headps tailp))
+
+(define (parse-pat:plus-dots stx head tail decls)
+  (define headp (parse-head-pattern head decls))
+  (define tailp (parse-single-pattern tail decls))
+  (define head/rep
+    (make-ehpat (map increase-depth (pattern-attrs headp))
+                headp
+                (make-rep:bounds 1 +inf.0 #f #f #f)))
+  (create-pat:dots (list head/rep) tailp))
 
 (define (parse-pat:bind stx decls)
   (syntax-case stx ()
@@ -758,8 +775,8 @@
                (make rep:once name too-few-msg too-many-msg))))]))
 
 (define (parse-ehpat/bounds stx decls)
-  (syntax-case stx (~bounds)
-    [(~bounds p min max . options)
+  (syntax-case stx (~between)
+    [(~between p min max . options)
      (let ([head (parse-head-pattern #'p decls)])
        (define minN (syntax-e #'min))
        (define maxN (syntax-e #'max))
@@ -959,26 +976,32 @@
     [_
      (raise-syntax-error "expected conventions entry" ctx stx)]))
 
+;; returns (listof (list regexp DeclEntry))
 (define (check-conventions-rules stx ctx)
   (unless (stx-list? stx)
     (raise-syntax-error #f "expected convention rule list" ctx stx))
   (for/list ([x (stx->list stx)])
     (check-conventions-rule x ctx)))
 
+;; returns (list regexp DeclEntry)
 (define (check-conventions-rule stx ctx)
   (define (check-conventions-pattern x blame)
     (cond [(symbol? x) (regexp (string-append "^" (regexp-quote (symbol->string x)) "$"))]
           [(regexp? x) x]
           [else (raise-syntax-error #f  "expected identifier convention pattern" ctx blame)]))
-  (define (check-sc-expr x)
+  (define (check-sc-expr x rx)
     (syntax-case x ()
-      [sc (identifier? #'sc) (list #'sc null)]
-      [(sc arg ...) (identifier? #'sc) (list #'sc (syntax->list #'(arg ...)))]
+      [sc
+       (identifier? #'sc)
+       (make den:class rx #'sc null)]
+      [(sc arg ...)
+       (identifier? #'sc)
+       (make den:class rx #'sc (syntax->list #'(arg ...)))]
       [_ (raise-syntax-error #f "expected syntax class use" ctx x)]))
   (syntax-case stx ()
     [(rx sc)
      (list (check-conventions-pattern (syntax-e #'rx) #'rx)
-           (check-sc-expr #'sc))]))
+           (check-sc-expr #'sc #'rx))]))
 
 ;; bind clauses
 (define (check-bind-clause-list stx ctx)
@@ -993,11 +1016,15 @@
      (make clause:attr (check-attr-arity #'attr-decl ctx) #'expr)]
     [_ (raise-syntax-error #f "expected bind clause" ctx clause)]))
 
+
+;; Directive tables
+
 ;; common-parse-directive-table
 (define common-parse-directive-table
   (list (list '#:literals check-literals-list)
         (list '#:literal-sets check-literal-sets-list)
-        (list '#:conventions check-conventions-list)))
+        (list '#:conventions check-conventions-list)
+        (list '#:local-conventions check-conventions-rules)))
 
 ;; parse-directive-table
 (define parse-directive-table

@@ -121,15 +121,16 @@ Enables or disables last-line scrolling, or gets the current enable
 @index['("keyboard focus" "navigation")]{Gets} or sets whether
  tab-exit is enabled for the editor canvas. When tab-exit is enabled,
  the user can move the keyboard focus out of the editor using the Tab
- and arrow keys, or invoke the default button using the Enter/Return
- key. By default, tab-exit is disabled.
+ and arrow keys, invoke the default button using the Enter/Return key,
+ or invoke a dialog's close action with Escape. By default, tab-exit
+ is disabled.
 
-When tab-exit is enabled for an editor canvas, Tab, arrow, and Enter
- keyboard events are consumed by a frame's default
- @method[top-level-window<%> on-traverse-char] method. (In addition, a
- dialog's default method consumes Escape key events.) Otherwise,
- @method[top-level-window<%> on-traverse-char] allows the keyboard
- events to be propagated to the canvas.
+When tab-exit is enabled for an editor canvas, Tab and Enter keyboard
+ events are consumed by a frame's default @method[top-level-window<%>
+ on-traverse-char] method; in addition, a dialog's default method
+ consumes Escape key events. Otherwise, @method[top-level-window<%>
+ on-traverse-char] allows the keyboard events to be propagated to the
+ canvas.
 
 }
 

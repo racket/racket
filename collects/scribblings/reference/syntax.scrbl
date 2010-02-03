@@ -95,7 +95,7 @@ id)] is the name of the declared module.
 @margin-note/ref{For a @scheme[module]-like form for use @emph{within}
 modules and other contexts, see @scheme[define-package].}
 
-The @scheme[module-path] must be as for @scheme[require], and it
+The @scheme[module-path] form must be as for @scheme[require], and it
 supplies the initial bindings for the body @scheme[form]s. That is, it
 is treated like a @scheme[(require module-path)] prefix before the
 @scheme[form]s, except that the bindings introduced by
@@ -179,10 +179,13 @@ module, whose full name depends both on @scheme[id] and
 The module body is executed only when the module is explicitly
 @techlink{instantiate}d via @scheme[require] or
 @scheme[dynamic-require]. On invocation, expressions and definitions
-are evaluated in order as they appear within the module; accessing a
-@tech{module-level variable} before it is defined signals a run-time
-error, just like accessing an undefined global variable.
+are evaluated in order as they appear within the module. Each
+evaluation of an expression or definition is wrapped with a
+continuation prompt (see @scheme[call-with-continuation-prompt]) for
+the default continuation and using the default prompt handler.
 
+Accessing a @tech{module-level variable} before it is defined signals
+a run-time error, just like accessing an undefined global variable.
 If a module (in its fully expanded form) does not contain a
 @scheme[set!]  for an identifier that defined within the module, then
 the identifier is a @defterm{constant} after it is defined; its value
@@ -218,8 +221,8 @@ See also @secref["module-eval-model"] and @secref["mod-parse"].
 Legal only in a @tech{module begin context}, and handled by the
 @scheme[module] form.
 
-The pre-defined @scheme[#%module-begin] form wraps every
-top-level expression to print non-@|void-const| results using
+The @scheme[#%module-begin] form of @schememodname[scheme/base] wraps
+every top-level expression to print non-@|void-const| results using
 @scheme[current-print].}
 
 @defform[(#%plain-module-begin form ...)]{

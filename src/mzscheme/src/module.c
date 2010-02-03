@@ -4403,6 +4403,44 @@ static void eval_module_body(Scheme_Env *menv, Scheme_Env *env)
 #endif
 }
 
+static Scheme_Object *body_one_expr(void *expr, int argc, Scheme_Object **argv)
+{
+  return _scheme_eval_linked_expr_multi((Scheme_Object *)expr);
+}
+
+static int needs_prompt(Scheme_Object *e)
+{
+  Scheme_Type t;
+  
+  while (1) {
+    t = SCHEME_TYPE(e);
+    if (t > _scheme_values_types_)
+      return 0;
+  
+    switch (t) {
+    case scheme_unclosed_procedure_type:
+    case scheme_toplevel_type:
+    case scheme_local_type:
+    case scheme_local_unbox_type:
+      return 0;
+    case scheme_syntax_type:
+      switch (SCHEME_PINT_VAL(e)) {
+      case CASE_LAMBDA_EXPD:
+        return 0;
+      case DEFINE_VALUES_EXPD:
+        e = (Scheme_Object *)SCHEME_IPTR_VAL(e);
+        e = SCHEME_VEC_ELS(e)[0];
+        break;
+      default:
+        return 1;
+      }
+      break;
+    default:
+      return 1;
+    }
+  }
+}
+
 void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env)
 {
   Scheme_Thread *p;
@@ -4459,7 +4497,10 @@ void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env)
     cnt = SCHEME_VEC_SIZE(m->body);
     for (i = 0; i < cnt; i++) {
       body = SCHEME_VEC_ELS(m->body)[i];
-      _scheme_eval_linked_expr_multi(body);
+      if (needs_prompt(body))
+        (void)_scheme_call_with_prompt_multi(body_one_expr, body);
+      else
+        (void)_scheme_eval_linked_expr_multi(body);
     }
 
     if (scheme_module_demand_hook) {

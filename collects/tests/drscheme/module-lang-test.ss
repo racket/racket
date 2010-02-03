@@ -262,3 +262,10 @@
          (current-namespace (make-base-empty-namespace))}
       "(+ 1 2)"
       "3")
+
+
+(require "drscheme-test-util.ss")
+(let ()
+  (fire-up-drscheme)
+  (thread (λ () (run-test) (exit)))
+  (yield (make-semaphore 0)))

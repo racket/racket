@@ -87,8 +87,8 @@
     ;; isn't well-formed according to `read' you get all output
     ;; If the environment variable is set to a symbol (according to read)
     ;; you get that language. If it is set to a list of symbols
-    ;; (again, according to read) you get those langauges.
-    ;; if it is set to anything else, you get all langauges.
+    ;; (again, according to read) you get those languages.
+    ;; if it is set to anything else, you get all languages.
     (define (env-var-set? lang)
       (cond
         [(symbol? specific) (eq? lang specific)]

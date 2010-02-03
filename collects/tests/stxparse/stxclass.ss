@@ -210,3 +210,26 @@
     (syntax-parse #'(4 -1) #:conventions (nat-convs)
       [(N ...) (void)]))
   (error 'test-conv1 "didn't work"))
+
+;; Local conventions
+
+(define-syntax-class (nats> bound)
+  #:local-conventions ([N (nat> bound)])
+  (pattern (N ...)))
+
+(define (p1 bound x)
+  (syntax-parse x
+    #:local-conventions ([ns (nats> bound)])
+    [ns 'yes]
+    [_ 'no]))
+
+(eq? (p1 0 #'(1 2 3)) 'yes)
+(eq? (p1 2 #'(1 2 3)) 'no)
+
+;; Regression (2/2/2010)
+
+(define-splicing-syntax-class twoseq
+  (pattern (~seq a b)))
+
+(syntax-parse #'(1 2 3 4)
+  [(x:twoseq ...) 'ok])

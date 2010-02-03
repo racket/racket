@@ -7857,9 +7857,16 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
       if ((which == 3)
           && (can_unbox_inline(app->args[3], 5, JIT_FPR_NUM-3, 0)
-              || can_unbox_directly(app->args[3])))
-        flonum_arg = 1;
-      else
+              || can_unbox_directly(app->args[3]))) {
+# if !defined(INLINE_FP_OPS) || !defined(CAN_INLINE_ALLOC)
+        /* Error handling will have to box flonum, so don't unbox if
+           that cannot be done inline: */
+        if (!unsafe)
+          flonum_arg = 0;
+        else
+# endif
+          flonum_arg = 1;
+      } else
         flonum_arg = 0;
 
       if (flonum_arg) {

@@ -114,14 +114,21 @@ soon as a @tech{reader language} (or its absence) is determined.
 
 A @deftech{reader language} is specified by @litchar{#lang} or
 @litchar{#!} (see @secref["parse-reader"]) at the beginning of the
-input, though possibly after comment forms. Instead of dispatching to
-a @schemeidfont{read} or @schemeidfont{read-syntax} form as
-@scheme[read] and @scheme[read-syntax] do, @scheme[read-language]
-dispatches to a @schemeidfont{get-info} function (if any) exported by
-the same module. The result of the @schemeidfont{get-info} function is
-the result of @scheme[read-language] if it is a function of two
-arguments; if @schemeidfont{get-info} produces any other kind of
-result, the @exnraise[exn:fail:contract].
+input, though possibly after comment forms. The default
+@tech{readtable} is used by @scheme[read-language] (instead of the
+value of @scheme[current-readtable]), and @litchar{#reader} forms
+(which might produce comments) are not allowed before @litchar{#lang}
+or @litchar{#!}.
+
+When it finds a @litchar{#lang} or @litchar{#!} specification, instead
+of dispatching to a @schemeidfont{read} or @schemeidfont{read-syntax}
+form as @scheme[read] and @scheme[read-syntax] do,
+@scheme[read-language] dispatches to a @schemeidfont{get-info}
+function (if any) exported by the same module. The result of the
+@schemeidfont{get-info} function is the result of
+@scheme[read-language] if it is a function of two arguments; if
+@schemeidfont{get-info} produces any other kind of result, the
+@exnraise[exn:fail:contract].
 
 The function produced by @schemeidfont{get-info} reflects information
 about the expected syntax of the input stream. The first argument to the

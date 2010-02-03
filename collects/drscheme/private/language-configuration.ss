@@ -1,20 +1,18 @@
-#lang mzscheme
-  (require mzlib/unit
+#lang scheme/base
+  (require scheme/unit
            mrlib/hierlist
-           mzlib/class
-           mzlib/contract
-           mzlib/kw
-           mzlib/string
-           mzlib/struct
+           scheme/class
+           scheme/contract
+           scheme/string
+           scheme/list
            "drsig.ss"
+           macro-debugger/capability
            string-constants
            mred
            framework
-           mzlib/list
-           mzlib/etc
-           mzlib/file
            setup/getinfo
-           syntax/toplevel)
+           syntax/toplevel
+           (only-in mzlib/struct make-->vector))
   
   (define original-output (current-output-port))
   (define (printfo . args) (apply fprintf original-output args))
@@ -59,7 +57,7 @@
     ;; only allows addition on phase2
     ;; effect: updates `languages'
     (define add-language
-      (opt-lambda (language [front? #f])
+      (λ (language [front? #f])
         
         (drscheme:tools:only-in-phase 'drscheme:language:add-language 'phase2)
         (for-each
@@ -105,7 +103,7 @@
                                             initial-language-position)
                                     x))
                              (get-languages))
-                      (first (get-languages)))])
+                      (list-ref (get-languages) 0))])
         (make-language-settings lang (send lang default-settings))))
     
     ;; type language-settings = (make-language-settings (instanceof language<%>) settings)
@@ -138,7 +136,7 @@
     ;; as the defaults in the dialog and the output language setting is the user's choice
     ;; todo: when button is clicked, ensure language is selected
     (define language-dialog
-      (opt-lambda (show-welcome? language-settings-to-show [parent #f])
+      (λ (show-welcome? language-settings-to-show [parent #f])
         (define ret-dialog%
           (class dialog%
             (define/override (on-subwindow-char receiver evt)
@@ -250,7 +248,7 @@
     ;; as the defaults in the dialog and the output language setting is the user's choice
     ;; if re-center is a dialog, when the show details button is clicked, the dialog is recenterd.
     (define fill-language-dialog
-      (opt-lambda (parent show-details-parent language-settings-to-show
+      (λ (parent show-details-parent language-settings-to-show
                           [re-center #f]
                           [ok-handler void]) ; en/disable button, execute it
         
@@ -258,8 +256,8 @@
           (let ([request-lang-to-show (language-settings-language language-settings-to-show)])
             (cond
               [(equal? initial-language-position (send request-lang-to-show get-language-position))
-               (values (first (get-languages))
-                       (send (first (get-languages)) default-settings))
+               (values (list-ref (get-languages) 0)
+                       (send (list-ref (get-languages) 0) default-settings))
                (values #f #f)]
               [else (values request-lang-to-show
                             (language-settings-settings language-settings-to-show))])))
@@ -347,6 +345,8 @@
               cached-fringe)
             
             (define/override (on-select i)
+              (when i
+                (set! most-recent-languages-hier-list-selection i))
               (cond
                 [(and i (is-a? i hieritem-language<%>))
                  (something-selected i)]
@@ -363,7 +363,9 @@
                 (ok-handler 'execute)))
             (super-new [parent parent])
             ;; do this so we can expand/collapse languages on a single click
-            (send this on-click-always #t)))
+            (inherit on-click-always allow-deselect)
+            (on-click-always #t)
+            (allow-deselect #t)))
         
         (define outermost-panel (make-object horizontal-pane% parent))
         (define languages-choice-panel (new vertical-panel%
@@ -386,7 +388,8 @@
                                                  [parent in-source-discussion-panel]
                                                  [stretchable-width #f]
                                                  [min-width 32]))
-        (define stupid-internal-definition-syntax1 (add-discussion in-source-discussion-panel))
+        (define in-source-discussion-editor-canvas (add-discussion in-source-discussion-panel))
+        (define most-recent-languages-hier-list-selection #f)
         (define use-chosen-language-rb
           (new radio-box%
                [label #f]
@@ -394,12 +397,9 @@
                [parent languages-choice-panel]
                [callback
                 (λ (this-rb evt)
-                  (let ([i (send languages-hier-list get-selected)])
-                    (cond
-                      [(and i (is-a? i hieritem-language<%>))
-                       (something-selected i)]
-                      [else
-                       (non-language-selected)]))
+                  (when most-recent-languages-hier-list-selection
+                    (send languages-hier-list select 
+                          most-recent-languages-hier-list-selection))
                   (send use-language-in-source-rb set-selection #f))]))
         (define languages-hier-list-panel (new horizontal-panel% [parent languages-choice-panel]))
         (define languages-hier-list-spacer (new horizontal-panel% 
@@ -409,7 +409,7 @@
         
         (define languages-hier-list (new selectable-hierlist% 
                                          [parent languages-hier-list-panel]
-                                         [style '(no-border no-hscroll hide-vscroll transparent)]))
+                                         [style '(no-border no-hscroll auto-vscroll transparent)]))
         (define details-outer-panel (make-object vertical-pane% outermost-panel))
         (define details/manual-parent-panel (make-object vertical-panel% details-outer-panel))
         (define details-panel (make-object panel:single% details/manual-parent-panel))
@@ -421,7 +421,7 @@
         
         (define no-details-panel (make-object vertical-panel% details-panel))
         
-        (define languages-table (make-hash-table))
+        (define languages-table (make-hasheq))
         (define languages (get-languages))
         
         ;; selected-language : (union (instanceof language<%>) #f)
@@ -460,7 +460,7 @@
         
         (define (module-language-selected)
           ;; need to deselect things in the languages-hier-list at this point.
-          ;(send languages-hier-list select #f)
+          (send languages-hier-list select #f)
           (send use-chosen-language-rb set-selection #f)
           (send use-language-in-source-rb set-selection 0)
           (ok-handler 'enable)
@@ -522,7 +522,7 @@
                        positions numbers))
               
               (when (null? (cdr positions))
-                (unless (equal? positions (list drscheme:module-language:module-language-name))
+                (unless (equal? positions (list (string-constant module-language-name)))
                   (error 'drscheme:language
                          "Only the module language may be at the top level. Other languages must have at least two levels")))
               
@@ -593,7 +593,7 @@
                                     (get/set-settings (send language default-settings))])))))
                      
                      (cond
-                       [(equal? positions (list drscheme:module-language:module-language-name))
+                       [(equal? positions (list (string-constant module-language-name)))
                         (set! module-language*language language)
                         (set! module-language*get-language-details-panel get-language-details-panel)
                         (set! module-language*get/set-settings get/set-settings)]
@@ -629,14 +629,14 @@
                   [else (let* ([position (car positions)]
                                [number (car numbers)]
                                [sub-ht/sub-hier-list
-                                (hash-table-get
+                                (hash-ref
                                  ht
                                  (string->symbol position)
                                  (λ ()
                                    (if first?
                                        (let* ([item (send hier-list new-item number-mixin)]
-                                              [x (list (make-hash-table) hier-list item)])
-                                         (hash-table-put! ht (string->symbol position) x)
+                                              [x (list (make-hasheq) hier-list item)])
+                                         (hash-set! ht (string->symbol position) x)
                                          (send item set-number number)
                                          (send item set-allow-selection #f)
                                          (let* ([editor (send item get-editor)]
@@ -651,14 +651,14 @@
                                                               (if second-number
                                                                   (compose second-number-mixin number-mixin)
                                                                   number-mixin))]
-                                              [x (list (make-hash-table) new-list #f)])
+                                              [x (list (make-hasheq) new-list #f)])
                                          (send new-list set-number number)
                                          (when second-number
                                            (send new-list set-second-number second-number))
                                          (send new-list set-allow-selection #t)
                                          (send new-list open)
                                          (send (send new-list get-editor) insert position)
-                                         (hash-table-put! ht (string->symbol position) x)
+                                         (hash-set! ht (string->symbol position) x)
                                          x))))])
                           (cond
                             [first? 
@@ -905,6 +905,7 @@
           (do-construct-details))
         (update-show/hide-details)
         (send languages-hier-list focus)
+        (size-discussion-canvas in-source-discussion-editor-canvas)
         (values
          (λ () selected-language)
          (λ () 
@@ -918,10 +919,8 @@
                      [horizontal-inset 0]
                      [vertical-inset 0]
                      [parent p]
-                     [style '(no-border auto-vscroll no-hscroll transparent)]
+                     [style '(no-border no-vscroll no-hscroll transparent)]
                      [editor t])])
-        (send c set-line-count 3)
-        
         (send t set-styles-sticky #f)
         (send t set-autowrap-bitmap #f)
         (let* ([size-sd (make-object style-delta% 'change-size (send normal-control-font get-point-size))]
@@ -947,37 +946,20 @@
         (send t hide-caret #t)
         
         (send t auto-wrap #t)
-        (send t lock #t)))
+        (send t lock #t)
+        (send c accept-tab-focus #f)
+        (send c allow-tab-exit #t)
+        c))
     
-    (define panel-background-editor-canvas% 
-      (class editor-canvas%
-        (inherit get-dc get-client-size)
-        (define/override (on-paint)
-          (let-values ([(cw ch) (get-client-size)])
-            (let* ([dc (get-dc)]
-                   [old-pen (send dc get-pen)]
-                   [old-brush (send dc get-brush)])
-              (send dc set-brush (send the-brush-list find-or-create-brush (get-panel-background) 'panel))
-              (send dc set-pen (send the-pen-list find-or-create-pen "black" 1 'transparent))
-              (send dc draw-rectangle 0 0 cw ch)
-              (send dc set-pen old-pen)
-              (send dc set-brush old-brush)))
-          (super on-paint))
-        (super-new)))
-    
-    (define panel-background-text% 
-      (class text%
-        (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
-          (when before?
-            (let ([old-pen (send dc get-pen)]
-                  [old-brush (send dc get-brush)])
-              (send dc set-brush (send the-brush-list find-or-create-brush (get-panel-background) 'panel))
-              (send dc set-pen (send the-pen-list find-or-create-pen "black" 1 'transparent))
-              (send dc draw-rectangle (+ dx left) (+ dy top) (- right left) (- bottom top))
-              (send dc set-pen old-pen)
-              (send dc set-brush old-brush)))
-          (super on-paint before? dc left top right bottom dx dy draw-caret))
-        (super-new)))
+    (define (size-discussion-canvas canvas)
+      (let ([t (send canvas get-editor)])
+        
+        (let ([by (box 0)])
+          (send t position-location 
+                (send t line-end-position (send t last-line))
+                #f
+                by)
+          (send canvas min-height (+ (ceiling (inexact->exact (unbox by))) 24)))))
     
     (define section-style-delta (make-object style-delta% 'change-bold))
     (send section-style-delta set-delta-foreground "medium blue")
@@ -1234,9 +1216,9 @@
                                                                  (format "uncaught exception: ~s" x)))
                                                 read-syntax/namespace-introduce)])
                                (contract
-                                (opt-> ()
-                                       (any/c port?)
-                                       (or/c syntax? eof-object?))
+                                (->* ()
+                                     (any/c port?)
+                                     (or/c syntax? eof-object?))
                                 (dynamic-require
                                  (cond
                                    [(string? reader-spec)
@@ -1289,7 +1271,7 @@
             (regexp-split #rx"/" str))))
     
     (define read-syntax/namespace-introduce
-      (opt-lambda (source-name-v [input-port (current-input-port)])
+      (λ (source-name-v [input-port (current-input-port)])
         (let ([v (read-syntax source-name-v input-port)])
           (if (syntax? v)
               (namespace-syntax-introduce v)
@@ -1350,6 +1332,15 @@
     
     (define-struct (simple-settings+assume drscheme:language:simple-settings) (no-redef?))
     (define simple-settings+assume->vector (make-->vector simple-settings+assume))
+
+    (define (macro-stepper-mixin %)
+      (class %
+        (super-new)
+        (define/augment (capability-value key)
+          (cond
+           [(eq? key macro-stepper-capability-key) #t]
+           [else (inner (drscheme:language:get-capability-default key)
+                        capability-value key)]))))
 
     (define (assume-mixin %)
       (class %
@@ -1415,7 +1406,7 @@
           (run-in-user-thread
            (λ ()
              (namespace-require 'errortrace/errortrace-key)
-             (namespace-transformer-require 'errortrace/errortrace-key))))
+             (namespace-require '(for-syntax errortrace/errortrace-key)))))
         (super-new)))
   
     (define (r5rs-mixin %)
@@ -1464,7 +1455,9 @@
                       (cond
                         [(eq? key 'drscheme:autocomplete-words) 
                          (get-all-manual-keywords)]
-                        [else (drscheme:language:get-capability-default key)]))
+                        [else (inner
+                               (drscheme:language:get-capability-default key)
+                               capability-value key)]))
                     (define/override (create-executable setting parent program-filename)
                       (let ([executable-fn
                              (drscheme:language:put-executable
@@ -1507,7 +1500,7 @@
                       (list -200 3)
                       #t
                       (string-constant pretty-big-scheme-one-line-summary)
-                      (λ (%) (assume-mixin (add-errortrace-key-mixin %)))))
+                      (λ (%) (macro-stepper-mixin (assume-mixin (add-errortrace-key-mixin %))))))
         (add-language
          (make-simple '(lib "r5rs/lang.ss")
                       "plt:r5rs"
@@ -1516,7 +1509,7 @@
                       (list -200 -1000)
                       #f
                       (string-constant r5rs-one-line-summary)
-                      (lambda (%) (r5rs-mixin (assume-mixin (add-errortrace-key-mixin %))))))
+                      (lambda (%) (r5rs-mixin (macro-stepper-mixin (assume-mixin (add-errortrace-key-mixin %)))))))
         
         (add-language
          (make-simple 'mzscheme
@@ -1546,7 +1539,8 @@
         (define/augment (capability-value v)
           (case v
             [(drscheme:check-syntax-button) #f]
-            [else (drscheme:language:get-capability-default v)]))
+            [else (inner (drscheme:language:get-capability-default v)
+                         capability-value v)]))
         
         (super-new)))
     
@@ -1765,13 +1759,12 @@
                                  'normal
                                  'normal))
       
-      (define/kw (get-font #:key
-                           (point-size (send default-font get-point-size))
-                           (family (send default-font get-family))
-                           (style (send default-font get-style))
-                           (weight (send default-font get-weight))
-                           (underlined (send default-font get-underlined))
-                           (smoothing (send default-font get-smoothing)))
+      (define (get-font #:point-size [point-size (send default-font get-point-size)]
+                        #:family (family (send default-font get-family))
+                        #:style (style (send default-font get-style))
+                        #:weight (weight (send default-font get-weight))
+                        #:underlined (underlined (send default-font get-underlined))
+                        #:smoothing (smoothing (send default-font get-smoothing)))
         (send the-font-list find-or-create-font
               point-size
               family
@@ -1822,7 +1815,7 @@
            (new canvas-message% (parent panel2) (label (string-constant start-with-before)))
            (new canvas-message%
                 (parent panel2) 
-                (label (car (last-pair lang)))
+                (label (last lang))
                 (color (send the-color-database find-color "blue"))
                 (callback (λ () (change-current-lang-to lang)))
                 (font (get-font #:underlined #t)))

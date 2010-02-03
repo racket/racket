@@ -4,7 +4,7 @@
 
 (provide output)
 
-;; Outputs some value, for the preprocessor langauge.
+;; Outputs some value, for the preprocessor language.
 ;;
 ;; Uses global state because `output' is wrapped around each expression in a
 ;; scribble/text file so this is much more convenient than wrapping the whole

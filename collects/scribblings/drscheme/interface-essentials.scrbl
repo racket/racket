@@ -787,7 +787,7 @@ Each type has advantages and disadvantages:
 
 In general, DrScheme's @drlang{Module} language gives you the most
 options. Most other languages only allow one type of executable. The
-teaching langauges create stand-alone executables in
+teaching languages create stand-alone executables in
 distributions. The legacy languages create launchers.
 
 @bold{Tip:} Disable debugging in the language dialog before creating

@@ -70,15 +70,6 @@
   (test (hash-ref (base-cases-non-cross (find-base-cases L)) 'x)
         '(0 0)))
 
-(let ()
-  (define-language lang
-    (e number x y)
-    (x variable)
-    (y y))
-  (test (min-prods (car (compiled-lang-lang lang))
-                   (base-cases-non-cross (find-base-cases lang)))
-        (list (car (nt-rhs (car (compiled-lang-lang lang)))))))
-
 (define (make-random . nums)
   (let ([nums (box nums)])
     (λ ([m +inf.0])
@@ -126,10 +117,7 @@
            (make-exn-not-raised))))]))
 
 (define (patterns . selectors) 
-  (map (λ (selector) 
-         (λ (name cross? lang sizes)
-           (list (selector (nt-rhs (nt-by-name lang name cross?))))))
-       selectors))
+  (map (curry compose list) selectors))
 
 (define (iterator name items)
   (let ([bi (box items)])
@@ -249,6 +237,7 @@
     (f (n_1 ..._1 n_2 ..._2 n_2 ..._1))
     (g (z_1 ..._!_1 z_2 ... (z_1 z_2) ...))
     (n number)
+    (q literal)
     (z 4))
   (test
    (generate-term/decisions 
@@ -263,7 +252,19 @@
   (test (generate-term/decisions lang d 5 0 (decisions #:seq (list (λ (_) 2))))
         '(4 4 4 4 (4 4) (4 4)))
   (test (raised-exn-msg exn:fail:redex:generation-failure? (generate-term lang e 5 #:retries 42)) 
-        #rx"generate-term: unable to generate pattern e in 42")
+        #rx"generate-term: unable to generate pattern \\(n_1 ..._!_1 n_2 ..._!_1 \\(n_1 n_2\\) ..._3\\) in 42")
+  (test (raised-exn-msg 
+         exn:fail:redex:generation-failure?
+         (parameterize ([generation-decisions
+                         (decisions #:var (list (λ _ 'x) (λ _ 'x)))])
+           (generate-term lang (variable-except x) 5 #:retries 1))) 
+        #rx"generate-term: unable to generate pattern \\(variable-except x\\) in 1")
+  (test (raised-exn-msg 
+         exn:fail:redex:generation-failure?
+         (parameterize ([generation-decisions
+                         (decisions #:var (λ _ 'literal))])
+           (generate-term lang variable-not-otherwise-mentioned 5 #:retries 1))) 
+        #rx"generate-term: unable to generate pattern variable-not-otherwise-mentioned in 1")
   (test (generate-term/decisions lang f 5 0 (decisions #:seq (list (λ (_) 0)))) null)
   (test (generate-term/decisions 
          lang ((0 ..._!_1) ... (1 ..._!_1) ...) 5 0
@@ -419,8 +420,8 @@
   (define-language empty)
   
   ;; `any' pattern
-  (let ([four (prepare-lang four)]
-        [sexp (prepare-lang sexp)])
+  (let ([four (make-rg-lang '((e . ()) (f . ())) '((e-e . ()) (f-f . ())) 'dont-care)]
+        [sexp (make-rg-lang 'dont-care 'dont-care 'dont-care)])
     (test (call-with-values (λ () (pick-any four sexp (make-random 0 1))) list)
           (list four 'f))
     (test (call-with-values (λ () (pick-any four sexp (make-random 1))) list)
@@ -436,6 +437,7 @@
         '("foo" "bar" "baz"))
   (test (generate-term/decisions
          empty any 5 0 (decisions #:nt (patterns first)
+                                  #:any (λ (langc sexpc) (values sexpc 'sexp))
                                   #:var (list (λ _ 'x))))
         'x))
 
@@ -660,6 +662,7 @@
          exn:fail:redex:generation-failure?
          (redex-check lang (side-condition any #f) #t #:retries 42 #:attempts 1))
         #rx"^redex-check: unable .* in 42")
+
   (let ([unable-loc #px"^redex-check: unable to generate LHS of clause at .*:\\d+:\\d+ in 42"])
     (let-syntax ([test-gen-fail
                   (syntax-rules ()
@@ -770,11 +773,12 @@
     (test (begin
             (output
              (λ ()
-               (check-reduction-relation 
-                R (λ (term) (set! generated (cons term generated)))
-                #:decisions (decisions #:seq (list (λ _ 0) (λ _ 0) (λ _ 0))
-                                       #:num (list (λ _ 1) (λ _ 1) (λ _ 0)))
-                #:attempts 1)))
+               (parameterize ([generation-decisions 
+                               (decisions #:seq (list (λ _ 0) (λ _ 0) (λ _ 0))
+                                          #:num (list (λ _ 1) (λ _ 1) (λ _ 0)))])
+                 (check-reduction-relation 
+                  R (λ (term) (set! generated (cons term generated)))
+                  #:attempts 1))))
             generated)
           (reverse '((+ (+)) 0))))
   
@@ -804,10 +808,11 @@
              (==> a b)])])
     (test (output
            (λ ()
-             (check-reduction-relation 
-              T (curry equal? '(9 4)) 
-              #:attempts 1
-              #:decisions (decisions #:num (build-list 5 (λ (x) (λ _ x)))))))
+             (parameterize ([generation-decisions 
+                             (decisions #:num (build-list 5 (λ (x) (λ _ x))))])
+               (check-reduction-relation 
+                T (curry equal? '(9 4)) 
+                #:attempts 1))))
           #rx"no counterexamples"))
   
   (let ([U (reduction-relation L (--> (side-condition any #f) any))])

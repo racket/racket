@@ -189,19 +189,19 @@
 
 (tcerr "parse-ehpat/bounds: min"
        (syntax-parser
-        [((~bounds x 1.0 9) ...) 'ok])
+        [((~between x 1.0 9) ...) 'ok])
        #rx"^syntax-parser: "
        #rx"expected exact nonnegative integer")
 
 (tcerr "parse-ehpat/bounds: max"
        (syntax-parser
-        [((~bounds x 1 "foo") ...) 'ok])
+        [((~between x 1 "foo") ...) 'ok])
        #rx"^syntax-parser: "
        #rx"expected exact nonnegative integer")
 
 (tcerr "parse-ehpat/bounds: min>max"
        (syntax-parser
-        [((~bounds x 3 2) ...) 'ok])
+        [((~between x 3 2) ...) 'ok])
        #rx"^syntax-parser: "
        #rx"minimum larger than maximum")
 

@@ -711,7 +711,7 @@ expressions entered in the interactions window. It is also used in
 other contexts by tools to expand single expressions.
 
 See also
-@method[drscheme:langauge:language<%> front-end/finished-complete-program].
+@method[drscheme:language:language<%> front-end/finished-complete-program].
 }
 
 @defmethod[(get-comment-character)

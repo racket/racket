@@ -94,7 +94,7 @@
      #'(void)]))
 
 (define (htdp-string-to-pred exn?/rx)
-  (if (string? exn?/rx)
+  (if (or (regexp? exn?/rx) (string? exn?/rx))
       (lambda (x)
 	(regexp-match exn?/rx (exn-message x)))
       exn?/rx))

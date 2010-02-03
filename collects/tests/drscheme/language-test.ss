@@ -20,8 +20,6 @@ the settings above should match r5rs
          framework
          (prefix-in fw: framework))
 
-(provide run-test)
-
 (define language (make-parameter "<<not a language>>"))
 
 ;; set-language : boolean -> void
@@ -289,10 +287,8 @@ the settings above should match r5rs
                      "call/cc: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: call/cc")
     
-    (test-expression "(error 'a \"~a\" 1)"
-                     "procedure error: expects 2 arguments, given 3: 'a \"~a\" 1")
-    (test-expression "(error \"a\" \"a\")"
-                     "error: expected a symbol and a string, got \"a\" and \"a\"")
+    (test-expression "(error 'a \"~a\" 1)" "a: ~a1")
+    (test-expression "(error \"a\" \"a\")" "aa")
     
     (test-expression "(time 1)"
                      "time: name is not defined, not a parameter, and not a primitive name"
@@ -456,10 +452,8 @@ the settings above should match r5rs
                      "call/cc: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: call/cc")
     
-    (test-expression "(error 'a \"~a\" 1)"
-                     "procedure error: expects 2 arguments, given 3: 'a \"~a\" 1")
-    (test-expression "(error \"a\" \"a\")"
-                     "error: expected a symbol and a string, got \"a\" and \"a\"")
+    (test-expression "(error 'a \"~a\" 1)" "a: ~a1")
+    (test-expression "(error \"a\" \"a\")" "aa")
     
     (test-expression "(time 1)"
                      "time: name is not defined, not a parameter, and not a primitive name"
@@ -619,10 +613,8 @@ the settings above should match r5rs
                      "call/cc: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: call/cc")
     
-    (test-expression "(error 'a \"~a\" 1)"
-                     "procedure error: expects 2 arguments, given 3: 'a \"~a\" 1")
-    (test-expression "(error \"a\" \"a\")"
-                     "error: expected a symbol and a string, got \"a\" and \"a\"")
+    (test-expression "(error 'a \"~a\" 1)" "a: ~a1")
+    (test-expression "(error \"a\" \"a\")" "aa")
     
     (test-expression "(time 1)" 
                      #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
@@ -778,10 +770,8 @@ the settings above should match r5rs
                      "call/cc: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: call/cc")
     
-    (test-expression "(error 'a \"~a\" 1)"
-                     "procedure error: expects 2 arguments, given 3: 'a \"~a\" 1")
-    (test-expression "(error \"a\" \"a\")"
-                     "error: expected a symbol and a string, got \"a\" and \"a\"")
+    (test-expression "(error 'a \"~a\" 1)" "a: ~a1")
+    (test-expression "(error \"a\" \"a\")" "aa")
     
     (test-expression "(time 1)" 
                      #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
@@ -931,10 +921,8 @@ the settings above should match r5rs
                      "call/cc: name is not defined, not a parameter, and not a primitive name"
                      "reference to an identifier before its definition: call/cc")
     
-    (test-expression "(error 'a \"~a\" 1)"
-                     "procedure error: expects 2 arguments, given 3: 'a \"~a\" 1")
-    (test-expression "(error \"a\" \"a\")"
-                     "error: expected a symbol and a string, got \"a\" and \"a\"")
+    (test-expression "(error 'a \"~a\" 1)" "a: ~a1")
+    (test-expression "(error \"a\" \"a\")" "aa")
     
     (test-expression "(time 1)" 
                      #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
@@ -1055,8 +1043,9 @@ the settings above should match r5rs
     (do-execute drs)
     (let* ([got (fetch-output/should-be-tested drs)])
       (unless (string=? result got)
-        (printf "FAILED: ~s ~s ~s test~n expected: ~s~n      got: ~s~n"
-                (language) setting-name expression result got)))))
+        (fprintf (current-error-port)
+                 "FAILED: ~s ~s ~s test~n expected: ~s~n      got: ~s~n"
+                 (language) setting-name expression result got)))))
 
 (define (test-hash-bang)
   (let* ([expression "#!/bin/sh\n1"]
@@ -1068,8 +1057,9 @@ the settings above should match r5rs
     (do-execute drs)
     (let* ([got (fetch-output/should-be-tested drs)])
       (unless (string=? "1" got)
-        (printf "FAILED: ~s ~a test~n expected: ~s~n     got: ~s~n"
-                (language) expression result got)))))
+        (fprintf (current-error-port)
+                 "FAILED: ~s ~a test~n expected: ~s~n     got: ~s~n"
+                 (language) expression result got)))))
 
 (define (fetch-output/should-be-tested . args)
   (regexp-replace (regexp
@@ -1104,14 +1094,15 @@ the settings above should match r5rs
                                                          (min (string-length line1-expect)
                                                               (string-length line1-got))))
                        (regexp-match line1-expect line1-got)))
-        (printf "expected lines: ~n  ~a~n  ~a~ngot lines:~n  ~a~n  ~a~n" 
-                line0-expect line1-expect
-                line0-got line1-got)
+        (fprintf (current-error-port)
+                 "expected lines: ~n  ~a~n  ~a~ngot lines:~n  ~a~n  ~a~n" 
+                 line0-expect line1-expect
+                 line0-got line1-got)
         (error 'language-test.ss "failed get top of repl test")))))
 
 
 ;; teaching-language-fraction-output
-;; tests that the teaching langauges properly handle repeating decimals
+;; tests that the teaching languages properly handle repeating decimals
 (define (teaching-language-fraction-output)
   (test-setting
    (lambda () (fw:test:set-radio-box! "Fraction Style" "Mixed fractions"))
@@ -1186,10 +1177,11 @@ the settings above should match r5rs
               (unless (if (procedure? answer)
                           (answer got)
                           (whitespace-string=? answer got))
-                (printf "FAILED ~s ~a, sharing ~a pretty? ~a~n            got ~s~n       expected ~s~n"
-                        (language) option show-sharing pretty?
-                        (shorten got)
-                        (if (procedure? answer) (answer) answer)))))])
+                (fprintf (current-error-port)
+                         "FAILED ~s ~a, sharing ~a pretty? ~a~n            got ~s~n       expected ~s~n"
+                         (language) option show-sharing pretty?
+                         (shorten got)
+                         (if (procedure? answer) (answer) answer)))))])
     
     (clear-definitions drs)
     (type-in-definitions drs expression)
@@ -1254,7 +1246,8 @@ the settings above should match r5rs
               (send interactions-text paragraph-end-position
                     (- (send interactions-text last-paragraph) 1)))])
         (unless (equal? got "0")
-          (printf "FAILED: test-error-after-definition failed, expected 0, got ~s\n" got))))))
+          (fprintf (current-error-port)
+                   "FAILED: test-error-after-definition failed, expected 0, got ~s\n" got))))))
 
 
 ;; test-expression : (union string 'xml 'image (listof (union string 'xml 'image)))
@@ -1358,3 +1351,8 @@ the settings above should match r5rs
   (go advanced)
   (go pretty-big)
   (go r5rs))
+
+(let ()
+  (fire-up-drscheme)
+  (thread (λ () (run-test) (exit)))
+  (yield (make-semaphore)))

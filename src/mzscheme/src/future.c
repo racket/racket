@@ -161,7 +161,7 @@ static Scheme_Object *processor_count(int argc, Scheme_Object *argv[]);
 static void futures_init(void);
 static void init_future_thread(struct Scheme_Future_State *fs, int i);
 
-#define THREAD_POOL_SIZE 12
+#define THREAD_POOL_SIZE 16
 #define INITIAL_C_STACK_SIZE 500000
 #define FUTURE_RUNSTACK_SIZE 1000
 

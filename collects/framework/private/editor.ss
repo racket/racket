@@ -350,7 +350,7 @@
           (send style set-delta delta)
           (send standard-style-list new-named-style "Standard"
                 (send standard-style-list find-or-create-style
-                      (send standard-style-list find-named-style "Basic")
+                      (send standard-style-list basic-style)
                       delta)))))
   
   (let ([delta (make-object style-delta%)]

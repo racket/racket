@@ -36,7 +36,7 @@ initialized to contain @scheme[v].}
 
 @defproc[(vector [v any/c] ...) vector?]{
 
-Returns a mutable vector with as many slots as provided @scheme[v]s,
+Returns a newly allocated mutable vector with as many slots as provided @scheme[v]s,
 where the slots are initialized to contain the given @scheme[v]s in
 order.}
 
@@ -44,7 +44,7 @@ order.}
 @defproc[(vector-immutable [v any/c] ...) (and/c vector?
                                                  immutable?)]{
 
-Returns an immutable vector with as many slots as provided
+Returns a newly allocated immutable vector with as many slots as provided
 @scheme[v]s, where the slots are contain the given @scheme[v]s in
 order.}
 

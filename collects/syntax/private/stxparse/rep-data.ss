@@ -4,6 +4,7 @@
          syntax/stx
          syntax/id-table
          "../util.ss"
+         "minimatch.ss"
          "rep-attrs.ss"
          "rep-patterns.ss")
 (provide (all-from-out "rep-attrs.ss")
@@ -81,13 +82,17 @@ A LiteralSet is
 DeclEnv =
   (make-declenv immutable-bound-id-mapping[id => DeclEntry]
                 (listof ConventionRule))
+
 DeclEntry =
-  (list 'literal id id)
-  (list 'stxclass id id (listof stx))
-  (list 'parser id id (listof IAttr))
-  #f
+  (make-den:lit id id)
+  (make-den:class id id (listof syntax) bool)
+  (make-den:parser id id (listof SAttr) bool)
 |#
 (define-struct declenv (table conventions))
+
+(define-struct den:lit (internal external))
+(define-struct den:class (name class args))
+(define-struct den:parser (parser description attrs splicing?))
 
 (define (new-declenv literals #:conventions [conventions null])
   (for/fold ([decls (make-declenv (make-immutable-bound-id-table) conventions)])
@@ -104,45 +109,63 @@ DeclEntry =
   ;; Order goes: literals, pattern, declares
   ;; So blame-declare? only applies to stxclass declares
   (let ([val (declenv-lookup env id #:use-conventions? #f)])
-    (when val
-      (cond [(eq? 'literal (car val))
-             (wrong-syntax id "identifier previously declared as literal")]
-            [(and blame-declare? stxclass-name)
-             (wrong-syntax (cadr val)
-                           "identifier previously declared with syntax class ~a"
-                           stxclass-name)]
-            [else
-             (wrong-syntax (if blame-declare? (cadr val) id)
-                           "identifier previously declared")]))))
+    (match val
+      [(struct den:lit (_i _e))
+       (wrong-syntax id "identifier previously declared as literal")]
+      [(struct den:class (name _c _a))
+       (if (and blame-declare? stxclass-name)
+           (wrong-syntax name
+                         "identifier previously declared with syntax class ~a"
+                         stxclass-name)
+           (wrong-syntax (if blame-declare? name id)
+                         "identifier previously declared"))]
+      [(struct den:parser (_p _d _a _sp))
+       (wrong-syntax id "(internal error) late unbound check")]
+      ['#f (void)])))
 
 (define (declenv-put-literal env internal-id lit-id)
   (declenv-check-unbound env internal-id)
   (make-declenv
    (bound-id-table-set (declenv-table env) internal-id
-                       (list 'literal internal-id lit-id))
+                       (make den:lit internal-id lit-id))
    (declenv-conventions env)))
 
 (define (declenv-put-stxclass env id stxclass-name args)
   (declenv-check-unbound env id)
   (make-declenv
    (bound-id-table-set (declenv-table env) id
-                       (list 'stxclass id stxclass-name args))
+                       (make den:class id stxclass-name args))
    (declenv-conventions env)))
 
 (define (declenv-put-parser env id parser get-description attrs splicing?)
   ;; no unbound check, since replacing 'stxclass entry
   (make-declenv
    (bound-id-table-set (declenv-table env) id
-                       (list (if splicing? 'splicing-parser 'parser)
-                             parser get-description attrs))
+                       (make den:parser parser get-description attrs splicing?))
    (declenv-conventions env)))
+
+;; declenv-update/fold : DeclEnv (Id/Regexp DeclEntry a -> DeclEntry a) a
+;;                    -> (values DeclEnv a)
+(define (declenv-update/fold env0 f acc0)
+  (define-values (acc1 rules1)
+    (for/fold ([acc acc0] [newrules null])
+        ([rule (declenv-conventions env0)])
+      (let-values ([(val acc) (f (car rule) (cadr rule) acc)])
+        (values acc (cons (list (car rule) val) newrules)))))
+  (define-values (acc2 table2)
+    (for/fold ([acc acc1] [table (make-immutable-bound-id-table)])
+        ([(k v) (in-dict (declenv-table env0))])
+      (let-values ([(val acc) (f k v acc)])
+        (values acc (bound-id-table-set table k val)))))
+  (values (make-declenv table2 (reverse rules1))
+          acc2))
 
 ;; returns ids in domain of env but not in given list
 (define (declenv-domain-difference env ids)
   (define idbm (make-bound-id-table))
   (for ([id ids]) (bound-id-table-set! idbm id #t))
   (for/list ([(k v) (in-dict (declenv-table env))]
-             #:when (and (pair? v) (not (eq? (car v) 'literal)))
+             #:when (or (den:class? v) (den:parser? v))
              #:when (not (bound-id-table-ref idbm k #f)))
     k))
 
@@ -158,11 +181,19 @@ DeclEntry =
 (define DeclEnv/c
   (flat-named-contract 'DeclEnv declenv?))
 
+(define DeclEntry/c
+  (flat-named-contract 'DeclEntry (or/c den:lit? den:class? den:parser?)))
+
 (define SideClause/c
   (or/c clause:fail? clause:with? clause:attr?))
 
+(provide (struct-out den:lit)
+         (struct-out den:class)
+         (struct-out den:parser))
+
 (provide/contract
  [DeclEnv/c contract?]
+ [DeclEntry/c contract?]
  [SideClause/c contract?]
 
  [make-dummy-stxclass (-> identifier? stxclass?)]
@@ -177,14 +208,20 @@ DeclEntry =
  [declenv-put-stxclass
   (-> DeclEnv/c identifier? identifier? (listof syntax?)
       DeclEnv/c)]
+ [declenv-put-literal
+  (-> DeclEnv/c identifier? identifier?
+      DeclEnv/c)]
  [declenv-put-parser
   (-> DeclEnv/c identifier? any/c any/c (listof sattr?) boolean?
       DeclEnv/c)]
  [declenv-domain-difference
   (-> DeclEnv/c (listof identifier?)
       (listof identifier?))]
- [declenv-table
-  (-> DeclEnv/c any)]
+ [declenv-update/fold
+  (-> DeclEnv/c
+      (-> (or/c identifier? regexp?) DeclEntry/c any/c (values DeclEntry/c any/c))
+      any/c
+      (values DeclEnv/c any/c))]
 
  [get-stxclass
   (-> identifier? any)]

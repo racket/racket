@@ -1167,7 +1167,7 @@ all of the names in the tools library, for use defining keybindings
        contract?)
    (s)
    @{Returns the contract for a given capability, which was specified
-             when @scheme[drscheme:langauge:register-capability] was called.})
+             when @scheme[drscheme:language:register-capability] was called.})
   
   
   ;                                                           

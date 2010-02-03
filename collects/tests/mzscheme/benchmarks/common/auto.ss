@@ -456,7 +456,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
                 run-guile
                 extract-guile-times
                 void
-                '(dynamic dynamic2))
+                '(ctak))
 ))
 
   (define obsolte-impls '(mzscheme3m mzschemecgc mzscheme-j mzschemecgc-j mzschemecgc-tl mzc mz-old))

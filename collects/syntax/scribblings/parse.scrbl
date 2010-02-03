@@ -6,7 +6,7 @@
           scheme/sandbox
           (for-label scheme/base
                      scheme/contract
-                     syntax/parse
+                     (except-in syntax/parse ...+)
                      syntax/kerncase))
 
 @(define ellipses @scheme[...])
@@ -283,7 +283,8 @@ Two parsing forms are provided: @scheme[syntax-parse] and
               ([parse-option (code:line #:context context-expr)
                              (code:line #:literals (literal ...))
                              (code:line #:literal-sets (literal-set ...))
-                             (code:line #:conventions (convention-id ...))]
+                             (code:line #:conventions (convention-id ...))
+                             (code:line #:local-conventions (convention-rule ...))]
                [literal literal-id
                         (pattern-id literal-id)]
                [literal-set literal-set-id
@@ -352,6 +353,14 @@ Imports @tech{convention}s that give default syntax classes to pattern
 variables that do not explicitly specify a syntax class.
 }
 
+@specsubform[(code:line #:local-conventions (convention-rule ...))]{
+
+Uses the @tech{conventions} specified. The advantage of
+@scheme[#:local-conventions] over @scheme[#:conventions] is that local
+conventions can be in the scope of syntax-class parameter
+bindings. See the section on @tech{conventions} for examples.
+}
+
 Each clause consists of a @tech{syntax pattern}, an optional sequence
 of @tech{pattern directives}, and a non-empty sequence of body
 expressions.
@@ -386,7 +395,8 @@ structures can share syntax class definitions.
                  (code:line #:opaque)
                  (code:line #:literals (literal-entry ...))
                  (code:line #:literal-sets (literal-set ...))
-                 (code:line #:conventions (convention-id ...))]
+                 (code:line #:conventions (convention-id ...))
+                 (code:line #:local-conventions (convention-rule ...))]
                 [attr-arity-decl
                  attr-name-id
                  (attr-name-id depth)]
@@ -713,8 +723,9 @@ identifiers the literal matches.
 ]
 }
 
-@defform/subs[(define-conventions name-id (id-pattern syntax-class) ...)
-              ([name-pattern exact-id
+@defform/subs[(define-conventions name-id convention-rule ...)
+              ([convention-rule (name-pattern syntax-class)]
+               [name-pattern exact-id
                              name-rx]
                [syntax-class syntax-class-id
                              (syntax-class-id expr ...)])]{
@@ -739,6 +750,28 @@ class.
   #:conventions (xn-prefixes)
   [(x0 x ... n0 n ...)
    (syntax->datum #'(x0 (x ...) n0 (n ...)))])
+]
+
+Local conventions, introduced with the @scheme[#:local-conventions]
+keyword argument of @scheme[syntax-parse] and syntax class
+definitions, may refer to local bindings:
+
+@myexamples[
+(define-syntax-class (nat> bound)
+  (pattern n:nat
+           #:fail-unless (> (syntax-e #'n) bound)
+                         (format "expected number > ~s" bound)))
+
+(define-syntax-class (natlist> bound)
+  #:local-conventions ([N (nat> bound)])
+  (pattern (N ...)))
+
+(define (parse-natlist> bound x)
+  (syntax-parse x
+    #:local-conventions ([NS (natlist> bound)])
+    [NS 'ok]))
+(parse-natlist> 0 #'(1 2 3))
+(parse-natlist> 5 #'(8 6 4 2))
 ]
 
 }

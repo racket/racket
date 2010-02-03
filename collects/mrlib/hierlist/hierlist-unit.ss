@@ -720,10 +720,14 @@
                        [i
                         (send i select #t)
                         (send i scroll-to)]
-                       [(and (allow-deselect) selected)
-                        (send selected show-select #f)
-                        (set! selected #f)
-                        (set! selected-item #f)]))]
+                       [(allow-deselect)
+                        (when selected
+                          (send selected show-select #f)
+                          (set! selected #f)
+                          (set! selected-item #f))]
+                       [else
+                        (error 'hierarchical-list%::select 
+                               "can only pass #f when allow-deselect has been called with #t")]))]
             [click-select (lambda (i) 
 			    (send i click-select #t)
 			    (send i scroll-to))]

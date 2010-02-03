@@ -260,6 +260,10 @@
 	   [(on?) (set! force-focus? (and on? #t))
 	    (send wx force-display-focus on?)]))]
 
+	[accept-tab-focus (entry-point
+			   (case-lambda
+			    [() (send wx get-tab-focus)]
+			    [(on?) (send wx set-tab-focus (and on? #t))]))]
 	[allow-tab-exit (entry-point
 			 (case-lambda
 			  [() (send wx is-tabable?)]

@@ -205,8 +205,9 @@
   (λ (window)
     (let ([frame  (get-active-frame)])
       (let loop ([window  window])
-        (cond [(null? window)      #f]
-              [(eq? window frame)  #t]
+        (cond [(not window) #f]
+              [(null? window) #f]  ;; is this test needed?
+              [(eq? window frame) #t]
               [else  (loop (send window get-parent))])))))
 
 ;;

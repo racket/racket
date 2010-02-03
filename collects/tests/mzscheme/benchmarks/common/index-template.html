@@ -12,8 +12,8 @@
    fastest run shown on the left. So, by
    default, <font color=forestgreen><b>1</b></font> is the fastest,
    but select any implementation to normalize the table with respect
-   to that implementation's speed. A <tt>-</tt> appears when a
-   benchmark didn't run in an implementation for some reason (possibly
+   to that implementation&rsquo;s speed. A <tt>-</tt> appears when a
+   benchmark didn&rsquo;t run in an implementation for some reason (possibly
    not a good one).</p>
 
 <p><font color="gray" size="-1">
@@ -21,12 +21,12 @@ The <a href="../log2/Benchmarks.html">compilers-only page</a> shows
 just the compilers among the tested implementations. For those
 results, the small gray numbers are (relative) compile times, where
 the compile time for the <tt>nothing</tt> benchmark is subtracted from
-every other benchmark's compile time.</font></p>
+every other benchmark&rsquo;s compile time.</font></p>
 
 <p>Run times are averaged over three runs for compilers or one run for
    interpreters. All reported times are CPU time (system plus user).
    The times are based on the output of the
-   implementation's <tt>time</tt> syntactic form or similar
+   implementation&rsquo;s <tt>time</tt> syntactic form or similar
    functions.</p>
 
 <p>Machine:
@@ -40,24 +40,23 @@ every other benchmark's compile time.</font></p>
 <li> Chicken (4.3.0): <tt>-no-trace -no-lambda-info -optimize-level 3 -block -lambda-lift</tt></li>
 <li> Gambit (4.6.0): <tt>(declare (block) (standard-bindings) (extended-bindings) (safe) (interrupts-enabled))</tt>, 
      compiled and run with <tt>-:m10000</tt></li>
-<li> Guile (1.8.7): <tt>load</tt></li>
+<li> Guile (1.9.7): <tt>load</tt></li>
 <li> Ikarus (0.0.4-rc1+ rev 1870): in R6RS library</li>
 <li> Larceny (0.97): in R6RS library</li>
 <li> MIT (7.7.90+): <tt>(declare (usual-integrations))</tt>; run with <tt>--heap 12000</tt></li>
 <li> Petite Chez (7.4d): <tt>load</tt>
 <li> PLT (4.2.4): in <tt>module</tt>; for benchmarks that use <tt>set-car!</tt> and <tt>set-cdr!</tt>, 
-     PLT's R5RS support is used</li>
+     PLT&rsquo;s R5RS support is used</li>
 <li> Scheme48 (1.8): <tt>load</tt> after <tt>,bench on</tt></li>
 </ul>
 These configurations are all &ldquo;safe mode,&rdquo; but they allow a
 compiler to assume that built-in Scheme functions are not redefined
 and that no top-level defintion is ever changed. Such assumptions
-correspond to putting the benchmark in an R6RS library.</P>
-
-<p>In general, we attempt to use the various implementations in a compentent way,
-   but not in a sophisticated way. For example, we do not tweak
-   inlining parameters or specify fixnum arithmetic (where appropriate),
-   which could produce significant improvements from some compilers.</p>
+correspond to putting the benchmark in an R6RS library.  We attempt to
+use the various implementations in a compentent way, but not in a
+sophisticated way. For example, we do not tweak inlining parameters or
+specify fixnum arithmetic (where appropriate), which could produce
+significant improvements from some compilers.</p>
 
 <p>For more benchmarks and a more sophisticated use of a few compilers,
    including fixnum- and flonum-specific arithmetic as well as unsafe modes,

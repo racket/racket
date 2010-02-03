@@ -3,6 +3,7 @@
 (require "matcher.ss"
          "struct.ss"
          "term.ss"
+         "fresh.ss"
          "loc-wrapper.ss"
 	 "error.ss"
          mzlib/trace
@@ -1016,6 +1017,11 @@
 
 (define-struct metafunc-case (cp rhs lhs-pat src-loc id))
 
+;; Intermediate structures recording clause "extras" for typesetting.
+(define-struct metafunc-extra-side-cond (expr))
+(define-struct metafunc-extra-where (lhs rhs))
+(define-struct metafunc-extra-fresh (vars))
+
 (define-syntax (in-domain? stx)
   (syntax-case stx ()
     [(_ (name exp ...))
@@ -1249,11 +1255,25 @@
                                                                          (map (λ (hm)
                                                                                 (map
                                                                                  (λ (lst)
-                                                                                   (syntax-case lst (side-condition where)
+                                                                                   (syntax-case lst (side-condition where unquote)
+                                                                                     [(where pat (unquote (f _ _)))
+                                                                                      (and (or (identifier? #'pat)
+                                                                                               (andmap identifier? (syntax->list #'pat)))
+                                                                                           (or (free-identifier=? #'f #'variable-not-in)
+                                                                                               (free-identifier=? #'f #'variables-not-in)))
+                                                                                      (with-syntax ([(ids ...)
+                                                                                                     (map to-lw/proc
+                                                                                                          (if (identifier? #'pat)
+                                                                                                              (list #'pat)
+                                                                                                              (syntax->list #'pat)))])
+                                                                                        #`(make-metafunc-extra-fresh
+                                                                                           (list ids ...)))]
                                                                                      [(where pat exp)
-                                                                                      #`(cons #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
+                                                                                      #`(make-metafunc-extra-where
+                                                                                         #,(to-lw/proc #'pat) #,(to-lw/proc #'exp))]
                                                                                      [(side-condition x)
-                                                                                      (to-lw/uq/proc #'x)]))
+                                                                                      #`(make-metafunc-extra-side-cond
+                                                                                         #,(to-lw/uq/proc #'x))]))
                                                                                  (reverse (syntax->list hm))))
                                                                               (syntax->list #'(... seq-of-tl-side-cond/binds)))]
                                                                         
@@ -1265,8 +1285,8 @@
                                                                         
                                                                         [(x-lhs-for-lw ...) #'(... seq-of-lhs-for-lw)])
                                                                      #'(list (list x-lhs-for-lw
-                                                                                   (list (cons bind-id/lw bind-pat/lw) ...
-                                                                                         (cons rhs-bind-id/lw rhs-bind-pat/lw/uq) ...
+                                                                                   (list (make-metafunc-extra-where bind-id/lw bind-pat/lw) ...
+                                                                                         (make-metafunc-extra-where rhs-bind-id/lw rhs-bind-pat/lw/uq) ...
                                                                                          where/sc/lw ...)
                                                                                    rhs/lw)
                                                                              ...)))])
@@ -1713,9 +1733,9 @@
     [(_ name orig-lang (names rhs ...) ...)
      (begin
        (unless (identifier? (syntax name))
-         (raise-syntax-error 'define-extended-langauge "expected an identifier" stx #'name))
+         (raise-syntax-error 'define-extended-language "expected an identifier" stx #'name))
        (unless (identifier? (syntax orig-lang))
-         (raise-syntax-error 'define-extended-langauge "expected an identifier" stx #'orig-lang))
+         (raise-syntax-error 'define-extended-language "expected an identifier" stx #'orig-lang))
        (check-rhss-not-empty stx (cdddr (syntax->list stx)))
        (let ([old-names (language-id-nts #'orig-lang 'define-extended-language)])
          (with-syntax ([((new-nt-names orig) ...) (append (pull-out-names 'define-language stx #'(names ...)) 
@@ -1943,61 +1963,6 @@
              (cons this-one (loop (cdr l)))
              (loop (cdr l))))])))
 
-(define re:gen-d #rx".*[^0-9]([0-9]+)$")
-(define (variable-not-in sexp var)
-  (let* ([var-str (symbol->string var)]
-         [var-prefix (let ([m (regexp-match #rx"^(.*[^0-9])[0-9]+$" var-str)])
-                       (if m
-                           (cadr m)
-                           var-str))]
-         [found-exact-var? #f]
-         [nums (let loop ([sexp sexp]
-                          [nums null])
-                 (cond
-                   [(pair? sexp) (loop (cdr sexp) (loop (car sexp) nums))]
-                   [(symbol? sexp) 
-                    (when (eq? sexp var)
-                      (set! found-exact-var? #t))
-                    (let* ([str (symbol->string sexp)]
-                           [match (regexp-match re:gen-d str)])
-                      (if (and match
-                               (is-prefix? var-prefix str))
-                          (cons (string->number (cadr match)) nums)
-                          nums))]
-                   [else nums]))])
-    (cond
-      [(not found-exact-var?) var]
-      [(null? nums) (string->symbol (format "~a1" var))]
-      [else (string->symbol (format "~a~a" var-prefix (find-best-number nums)))])))
-
-(define (find-best-number nums)
-  (let loop ([sorted (sort nums <)]
-             [i 1])
-    (cond
-      [(empty? sorted) i]
-      [else 
-       (let ([fst (car sorted)])
-         (cond
-           [(< i fst) i]
-           [(> i fst) (loop (cdr sorted) i)]
-           [(= i fst) (loop (cdr sorted) (+ i 1))]))])))
-
-(define (variables-not-in sexp vars)
-  (let loop ([vars vars]
-             [sexp sexp])
-    (cond
-      [(null? vars) null]
-      [else 
-       (let ([new-var (variable-not-in sexp (car vars))])
-         (cons new-var
-               (loop (cdr vars)
-                     (cons new-var sexp))))])))
-
-(define (is-prefix? str1 str2)
-  (and (<= (string-length str1) (string-length str2))
-       (equal? str1 (substring str2 0 (string-length str1)))))
-
-
 (define (reduction-relation->rule-names x) 
   (reverse (reduction-relation-rule-names x)))
 
@@ -2168,6 +2133,10 @@
          metafunc-proc-cases
          metafunc-proc?
          (struct-out metafunc-case)
+         
+         (struct-out metafunc-extra-side-cond)
+         (struct-out metafunc-extra-where)
+         (struct-out metafunc-extra-fresh)
          
          (struct-out binds))
 

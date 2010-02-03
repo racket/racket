@@ -77,6 +77,7 @@
                  (match-p xps (list p ...) success failure))
                failure)))]))
 
+#;
 (define-syntax struct
   (lambda (stx)
     (raise-syntax-error #f "illegal use of keyword" stx)))

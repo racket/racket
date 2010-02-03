@@ -387,6 +387,15 @@
 (htdp-test false 'string-lower-case? (string-lower-case? "ab\t"))
 (htdp-test true 'string-lower-case? (string-lower-case? "abc"))
 
+(htdp-err/rt-test (error "a" "a") #rx"^aa$")
+(htdp-err/rt-test (error 'a "a") #rx"^a: a$")
+(htdp-err/rt-test (error "This is" " an err" "or" " message with a number: " 5)
+                  #rx"^This is an error message with a number: 5$")
+(htdp-err/rt-test (error "several numbers " 1 2 3 4 5 6 7)
+                  #rx"^several numbers 1234567$")
+(htdp-err/rt-test (error "several numbers " 1 " 2 " 3 " 4")
+                  #rx"^several numbers 1 2 3 4$")
+
 (htdp-top (require scheme/match))
 (htdp-test 17 'match (match 'x ['x 17]))
 (htdp-test 'x 'match (match 'x ['y 17][z z]))

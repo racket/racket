@@ -3,6 +3,8 @@
 (provide go)
 
 (define numButtonsToPush 200)
+(define the-seed (+ 1 (modulo (current-seconds) (- (expt 2 31) 1))))
+(random-seed the-seed)
 
 ;;find-all-actions: area -> (listof (-> void))
 (define (find-all-actions area)
@@ -67,58 +69,64 @@
      (send area get-label)]))
 
 (define (g open-dialog)
-  (thread
-   (λ ()
-     (let ((base-window (get-top-level-focus-window)))
-       (open-dialog)
-       (wait-for-different-frame base-window)
-       (let loop ([n numButtonsToPush]
-                  [actions '()])
-         (cond
-           [(zero? n) 
-            (printf "\n")
-            (exit 0)]
-           [else
-            
-            (printf "~a " n)
-            (when (= 1 (modulo n 10)) (printf "\n"))
-            (flush-output)
+  (let ((base-window (get-top-level-focus-window)))
+    (open-dialog)
+    (wait-for-different-frame base-window)
+    (let loop ([n numButtonsToPush]
+               [actions '()])
+      (cond
+        [(zero? n) 
+         (printf "\n")
+         (exit 0)]
+        [else
          
-            (let ((window (get-top-level-focus-window)))
-              (cond
-                ;; Back to base-window is not interesting, Reopen
-                [(eq? base-window window)
-                 (open-dialog)
-                 (wait-for-different-frame base-window)
-                 (loop (- n 1) actions)]
-                
-                ;; get-top-level-focus-window returns #f may imply window not in current eventspace
-                ;; but it also might just mean we didn't look into subeventspaces(?)
-                ;; or that we need to wait for something to happen in the GUI(?)
-                [(eq? window #f)
-                 (sleep .1)
-                 (loop (- n 1) actions)]
-                
-                [else
-                 ;; print out the button before the button is pushed
-                 ;; Using the toy print-label function
-                 ;; because some of the parents may not be sent with get-label e.g. vertical-pane%
-                 ;(print (map print-label (trace-area button window)))
-                 (let ([action (find-random-action window)])
-                   (cond
-                     [action
-                      (with-handlers ((exn:fail? (λ (x) 
-                                                   (fprintf (current-error-port)
-                                                            "\nExecution fail: Bug? transcript of ~a clicking follows\n"
-                                                            (send window get-label))
-                                                   (apply show-log (cons action actions))
-                                                   (raise x))))
-                        (action))
-                      (loop (- n 1) (cons action actions))]
-                     [else
-                      (fprintf (current-error-port) "\nExists/Meets window with no button: Bug? -> Reopen Dialog")
-                      (open-dialog)
-                      (loop n actions)]))]))]))))))
+         (printf "~a " n)
+         (when (= 1 (modulo n 10)) (printf "\n"))
+         (flush-output)
+         
+         (let ((window (get-top-level-focus-window)))
+           (cond
+             ;; Back to base-window is not interesting, Reopen
+             [(eq? base-window window)
+              (open-dialog)
+              (wait-for-different-frame base-window)
+              (loop (- n 1) actions)]
+             
+             ;; get-top-level-focus-window returns #f may imply window not in current eventspace
+             ;; but it also might just mean we didn't look into subeventspaces(?)
+             ;; or that we need to wait for something to happen in the GUI(?)
+             [(eq? window #f)
+              (sleep .1)
+              (loop (- n 1) actions)]
+             
+             [else
+              ;; print out the button before the button is pushed
+              ;; Using the toy print-label function
+              ;; because some of the parents may not be sent with get-label e.g. vertical-pane%
+              ;(print (map print-label (trace-area button window)))
+              (let ([action (find-random-action window)])
+                (cond
+                  [action
+                   (with-handlers ((exn:fail? (λ (x) 
+                                                (fprintf (current-error-port)
+                                                         "\nExecution fail: transcript of ~a clicking follows with seed ~s\n"
+                                                         (send window get-label)
+                                                         the-seed)
+                                                (apply show-log (cons action actions))
+                                                (raise x))))
+                     ;; pause to make sure all events are flushed from the queue
+                     (let ([s (make-semaphore 0)])
+                       (queue-callback (λ () (semaphore-post s)) #f)
+                       (semaphore-wait s))
+                     ;; do the new thing.
+                     (action))
+                   (loop (- n 1) (cons action actions))]
+                  [else
+                   (fprintf (current-error-port) 
+                            "\nExists/Meets window with no button: Bug? seed ~s\n"
+                            the-seed)
+                   (apply show-log actions)
+                   (error 'randomly-click.ss "giving up")]))]))]))))
 
 (define (show-log . actions)
   (for ((action (in-list actions)))
@@ -129,12 +137,12 @@
 ;; the splash screen is in a separate eventspace so wont' show up.
 (define (wait-for-first-frame)
   (let loop ()
-    (let ([tlws (get-top-level-windows)])
+    (let ([tlw (get-top-level-focus-window)])
       (cond
-        [(null? tlws)
-         (sleep 1/10)
+        [(not tlw)
+         (sleep 1/20)
          (loop)]
-        [else (car tlws)]))))
+        [else tlw]))))
 
 
 (define (wait-for-different-frame win)

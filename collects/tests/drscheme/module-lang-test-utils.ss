@@ -75,7 +75,8 @@
                      (send interactions-text paragraph-start-position 2)
                      (send interactions-text paragraph-end-position 2))])
           (unless (or (test-all? test) (string=? "> " after-execute-output))
-            (printf "FAILED (line ~a): ~a\n        ~a\n        expected no output after execution, got: ~s\n"
+            (fprintf (current-error-port)
+                     "FAILED (line ~a): ~a\n        ~a\n        expected no output after execution, got: ~s\n"
                     (test-line test)
                     (test-definitions test)
                     (or (test-interactions test) 'no-interactions)
@@ -107,12 +108,13 @@
                                       [else 'module-lang-test "bad test value: ~e" r])
                                 r text))])
         (unless output-passed?
-          (printf "FAILED (line ~a): ~a\n        ~a\n  expected: ~s\n       got: ~s\n"
-                  (test-line test)
-                  (test-definitions test)
-                  (or (test-interactions test) 'no-interactions)
-                  (test-result test)
-                  text))
+          (fprintf (current-error-port)
+                   "FAILED (line ~a): ~a\n        ~a\n  expected: ~s\n       got: ~s\n"
+                   (test-line test)
+                   (test-definitions test)
+                   (or (test-interactions test) 'no-interactions)
+                   (test-result test)
+                   text))
         (cond
           [(eq? (test-error-ranges test) 'dont-test)
            (void)]
@@ -120,11 +122,12 @@
            (let ([error-ranges-expected
                   ((test-error-ranges test) definitions-text interactions-text)])
              (unless (equal? error-ranges-expected (send interactions-text get-error-ranges))
-               (printf "FAILED (line ~a; ranges): ~a\n  expected: ~s\n       got: ~s\n"
-                       (test-line test)
-                       (test-definitions test)
-                       error-ranges-expected
-                       (send interactions-text get-error-ranges))))])))))
+               (fprintf (current-error-port)
+                        "FAILED (line ~a; ranges): ~a\n  expected: ~s\n       got: ~s\n"
+                        (test-line test)
+                        (test-definitions test)
+                        error-ranges-expected
+                        (send interactions-text get-error-ranges))))])))))
 
 
 (define drs 'not-yet-drs-frame)
@@ -139,7 +142,7 @@
   
   (run-use-compiled-file-paths-tests)
   
-  (set-language-level! '("Module") #f)
+  (set-module-language! #f)
   (test:set-radio-box-item! "Debugging")
   (let ([f (get-top-level-focus-window)])
     (test:button-push "OK")
@@ -153,7 +156,7 @@
 (define (run-use-compiled-file-paths-tests)
   
   (define (setup-dialog/run proc)
-    (set-language-level! '("Module") #f)
+    (set-module-language! #f)
     (proc)
     (let ([f (get-top-level-focus-window)])
       (test:button-push "OK")
@@ -163,10 +166,10 @@
     
   (define (run-one-test radio-box expected [no-check-expected #f])
     (let ([got (setup-dialog/run (λ () (test:set-radio-box-item! radio-box)))])
-      (unless (equal? got (format "~s" expected))
+      (unless (spaces-equal? got (format "~s" expected))
         (error 'r-u-c-f-p-t "got ~s expected ~s"
                got
-               expected)))
+               (format "~s" expected))))
     
     (when no-check-expected
       (let ([got (setup-dialog/run 
@@ -176,8 +179,12 @@
         (unless (equal? got (format "~s" no-check-expected))
           (error 'r-u-c-f-p-t.2 "got ~s expected ~s"
                  got
-                 expected)))))
-      
+                 (format "~s" no-check-expected))))))
+
+  (define (spaces-equal? a b)
+    (equal? (regexp-replace* #rx"[\n\t ]+" a " ")
+            (regexp-replace* #rx"[\n\t ]+" b " ")))
+  
   (define drs/compiled/et (build-path "compiled" "drscheme" "errortrace"))
   (define drs/compiled (build-path "compiled" "drscheme"))
   (define compiled/et (build-path "compiled" "errortrace"))

@@ -19,7 +19,7 @@
          ~or
          ~not
          ~seq
-         ~bounds
+         ~between
          ~once
          ~optional
          ~rest
@@ -28,6 +28,7 @@
          ~bind
          ~fail
          ~parse
+         ...+
 
          current-expression
          current-macro-name
@@ -84,7 +85,7 @@
 (define-keyword ~or)
 (define-keyword ~not)
 (define-keyword ~seq)
-(define-keyword ~bounds)
+(define-keyword ~between)
 (define-keyword ~once)
 (define-keyword ~optional)
 (define-keyword ~rest)
@@ -93,6 +94,7 @@
 (define-keyword ~bind)
 (define-keyword ~fail)
 (define-keyword ~parse)
+(define-keyword ...+)
 
 ;; == Parameters & Syntax Parameters
 
@@ -569,3 +571,11 @@ An Expectation is one of
     [(make expect:thing thing '#t chained)
      (make expect:thing thing #t (failure->sexpr chained))]
     [_ expectation]))
+
+
+;;
+
+(provide (struct-out parser))
+
+(define-struct parser (proc errors)
+  #:property prop:procedure (struct-field-index proc))

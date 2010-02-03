@@ -52,15 +52,18 @@
   (syntax-case stx ()
     [(parse:rhs #s(rhs _ _ transparent? _ variants (def ...))
                 relsattrs (arg ...) get-description splicing?)
-     #`(lambda (x arg ...)
-         (define (fail-rhs failure)
-           (expectation-of-thing (get-description arg ...)
-                                 transparent?
-                                 (if transparent? failure #f)))
-         def ...
-         (syntax-parameterize ((this-syntax (make-rename-transformer #'x)))
-           (with-enclosing-fail* fail-rhs
-             (parse:variants x relsattrs variants splicing?))))]))
+     #`(with-error-collector
+         (make-parser
+          (lambda (x arg ...)
+            (define (fail-rhs failure)
+              (expectation-of-thing (get-description arg ...)
+                                    transparent?
+                                    (if transparent? failure #f)))
+            def ...
+            (syntax-parameterize ((this-syntax (make-rename-transformer #'x)))
+              (with-enclosing-fail* fail-rhs
+                (parse:variants x relsattrs variants splicing?))))
+          (collect-error)))]))
 
 ;; (parse:variants id (SAttr ...) (Variant ...) boolean)
 ;;   : expr[SyntaxClassResult]
@@ -366,6 +369,7 @@
         #'#s(pat:compound attrs #:pair (head-part tail-part)))])))
 
 ;; (parse:H id FCE HeadPattern id id expr) : expr
+;; x must not alias rest
 (define-syntax (parse:H stx)
   (syntax-case stx ()
     [(parse:H x fc head rest rest-fc k)
@@ -468,11 +472,11 @@
                      [(attr-repc ...) attr-repcs])
          (define-pattern-variable alt-map #'((id . alt-id) ...))
          (define-pattern-variable loop-k
-           #'(dots-loop dx loop-fc* enclosing-fail rel-rep ... alt-id ...))
+           #'(dots-loop dx* loop-fc* enclosing-fail rel-rep ... alt-id ...))
          #`(let ()
              (define (dots-loop dx loop-fc loop-fail rel-rep ... alt-id ...)
                (with-enclosing-fail loop-fail
-                 (try (parse:EH dx loop-fc head head-repc loop-fc* alt-map head-rep
+                 (try (parse:EH dx loop-fc head head-repc dx* loop-fc* alt-map head-rep
                                 loop-k)
                       ...
                       (cond [(< rel-rep (rep:min-number rel-repc))
@@ -491,7 +495,7 @@
 ;;           RepConstraint/#f expr) : expr
 (define-syntax (parse:EH stx)
   (syntax-case stx ()
-    [(parse:EH x fc head repc fc* alts rep k0)
+    [(parse:EH x fc head repc x* fc* alts rep k0)
      (let ()
        (define-pattern-variable k
          (let* ([main-attrs (wash-iattrs (pattern-attrs (wash #'head)))]
@@ -508,11 +512,11 @@
              #`(let ([alt-id (rep:combine repc (attribute id) alt-id)] ...)
                  k0))))
        (syntax-case #'repc ()
-         [#f #`(parse:H x fc head x fc* k)]
-         [_  #`(parse:H x fc head x fc*
+         [#f #`(parse:H x fc head x* fc* k)]
+         [_  #`(parse:H x fc head x* fc*
                         (if (< rep (rep:max-number repc))
                             (let ([rep (add1 rep)]) k)
-                            (fail x
+                            (fail x*
                                   #:expect (expectation-of-reps/too-many rep repc)
                                   #:fce fc*)))]))]))
 
@@ -566,17 +570,19 @@
 ;; (expectation Pattern)
 (define-syntax (expectation stx)
   (syntax-case stx ()
-    [(_ #s(pat:datum attrs datum))
-     #'(make-expect:atom 'datum)]
-    [(_ #s(pat:literal attrs literal))
-     #'(make-expect:literal (quote-syntax literal))]
+    [(_ #s(pat:datum attrs d))
+     #'(begin (collect-error '(datum d))
+              (make-expect:atom 'd))]
+    [(_ #s(pat:literal attrs lit))
+     #'(begin (collect-error '(literal lit))
+              (make-expect:literal (quote-syntax lit)))]
     ;; 2 pat:compound patterns
     ;;[(_ #s(pat:compound attrs #:pair (head-pattern tail-pattern)))
     ;; #'(make-expect:pair)]
     [(_ #s(pat:compound attrs kind0 (part-pattern ...)))
-     #''ineffable]
+     #'(collect-error 'ineffable)]
     [(_ #s(pat:not _ pattern))
-     #''ineffable]
+     #'(collect-error 'ineffable)]
     [(_ #s(ghost:fail _ condition message))
      #'(expectation-of-message message)]))
 
@@ -586,8 +592,10 @@
   (make-expect:thing description transparent? chained))
 
 (define-syntax-rule (expectation-of-message message)
-  (let ([msg message])
-    (if msg (make-expect:message msg) 'ineffable)))
+  (let ([msg (collect-error message)])
+    (if msg
+        (make-expect:message msg)
+        'ineffable)))
 
 (define-syntax expectation-of-reps/too-few
   (syntax-rules ()
@@ -607,18 +615,45 @@
     [(_ rep #s(rep:bounds min max name too-few-msg too-many-msg))
      (expectation-of-message/too-many too-many-msg name)]))
 
-(define-syntax-rule (expectation-of-message/too-few msg name)
-  (expectation-of-message
-   (or msg
-       (let ([n name])
-         (if n
-             (format "missing required occurrence of ~a" n)
-             "repetition constraint violated")))))
+(define-syntax expectation-of-message/too-few
+  (syntax-rules ()
+    [(emtf #f #f)
+     (expectation-of-message "repetition constraint violated")]
+    [(emtf #f name)
+     (expectation-of-message
+      (format "missing required occurrence of ~a" name))]
+    [(emtf msg _)
+     (expectation-of-message msg)]))
 
-(define-syntax-rule (expectation-of-message/too-many msg name)
-  (expectation-of-message
-   (or msg
-       (let ([n name])
-         (if n
-             (format "too many occurrences of ~a" n)
-             "repetition constraint violated")))))
+(define-syntax expectation-of-message/too-many
+  (syntax-rules ()
+    [(emtm #f #f)
+     (expectation-of-message
+      (format "repetition constraint violated"))]
+    [(emtm #f name)
+     (expectation-of-message
+      (format "too many occurrences of ~a" name))]
+    [(emtm msg _)
+     (expectation-of-message msg)]))
+
+;;
+
+(define-syntax-parameter collect-error
+  (syntax-rules ()
+    [(ce thing) thing]
+    [(ce) '()]))
+
+(define-syntax-rule (with-error-collector body)
+  (...
+   (let-syntax ([tmp (box null)])
+     (syntax-parameterize ((collect-error
+                            (lambda (stx)
+                              (let ([b (syntax-local-value #'tmp)])
+                                (syntax-case stx ()
+                                  [(ce thing)
+                                   (begin (set-box! b (cons #'thing (unbox b)))
+                                          #'thing)]
+                                  [(ce)
+                                   (with-syntax ([(thing ...) (reverse (unbox b))])
+                                     #'(list #'thing ...))])))))
+       body))))

@@ -72,7 +72,7 @@
        (let loop ([supers start][accum null])
          (cond
            [(null? supers) (reverse accum)]
-           [(memq (car supers) accum)
+           [(assoc (caar supers) accum)
             (loop (cdr supers) accum)]
            [else
             (let ([super (car supers)])

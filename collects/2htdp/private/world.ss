@@ -181,7 +181,7 @@
                    (when live
                      (cond
                        [(and (<= 0 x width) (<= 0 y height)) (pmouse x y me)]
-                       [(memq me '(leave enter)) (pmouse x y me)]
+                       [(member me '("leave" "enter")) (pmouse x y me)]
                        [else (void)]))))
                (parent frame)
                (editor visible)

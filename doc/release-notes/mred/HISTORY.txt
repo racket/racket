@@ -1,5 +1,7 @@
-Version 4.2.4.1
+Version 4.2.4.2
+Added accept-tab-focus method to canvas<%> and editor-canvas%
 
+Version 4.2.4.1
 Changed radio-box% to allow #f as a selection so that no buttons are
  selected
 

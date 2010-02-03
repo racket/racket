@@ -45,17 +45,18 @@
       (list->string (build-list length (λ (_) (pick-char attempt random))))))
 
 (define (pick-any lang sexp [random random]) 
-  (let ([c-lang (rg-lang-clang lang)]
-        [c-sexp (rg-lang-clang sexp)])
-    (if (and (not (null? (compiled-lang-lang c-lang))) (zero? (random 5)))
-        (values lang (pick-from-list (map nt-name (compiled-lang-lang c-lang)) random))
-        (values sexp (nt-name (car (compiled-lang-lang c-sexp)))))))
+  (if (and (> (dict-count (rg-lang-non-cross lang)) 0) (zero? (random 5)))
+      (let ([nts (rg-lang-non-cross lang)])
+        (values lang (pick-from-list (dict-map nts (λ (nt _) nt)) random)))
+      (values sexp 'sexp)))
 
 (define (pick-string lang-lits attempt [random random])
   (random-string lang-lits (random-natural 1/5 random) attempt random))
 
-(define (pick-nts name cross? lang attempt)
-  (nt-rhs (nt-by-name lang name cross?)))
+;; next-non-terminal-decision selects a subset of a non-terminal's productions.
+;; This implementation, the default, chooses them all, but many of the
+;; generator's test cases restrict the productions.
+(define pick-nts values)
 
 (define (pick-from-list l [random random]) (list-ref l (random (length l))))
 
@@ -132,19 +133,15 @@
 (define (pick-sequence-length attempt)
   (random-natural (expected-value->p (attempt->size attempt))))
 
-(define (zip . lists)
-  (apply (curry map list) lists))
-
-(define (min-prods nt base-table)
-  (let* ([sizes (hash-ref base-table (nt-name nt))]
+(define (min-prods nt prods base-table)
+  (let* ([sizes (hash-ref base-table nt)]
          [min-size (apply min/f sizes)])
-    (map cadr (filter (λ (x) (equal? min-size (car x))) (zip sizes (nt-rhs nt))))))
+    (map cadr (filter (λ (x) (equal? min-size (car x))) (map list sizes prods)))))
 
-(define-struct rg-lang (clang lits base-cases))
+(define-struct rg-lang (non-cross cross base-cases))
 (define (prepare-lang lang)
-  (let ([lits (map symbol->string (compiled-lang-literals lang))]
-        [parsed (parse-language lang)])
-    (make-rg-lang parsed lits (find-base-cases parsed))))
+  (let ([parsed (parse-language lang)])
+    (values parsed (map symbol->string (compiled-lang-literals lang)) (find-base-cases parsed))))
 
 (define-struct (exn:fail:redex:generation-failure exn:fail:redex) ())
 (define (raise-gen-fail who what attempts)
@@ -152,50 +149,23 @@
                      who what attempts (if (= attempts 1) "" "s"))])
     (raise (make-exn:fail:redex:generation-failure str (current-continuation-marks)))))
 
-(define (generate lang decisions@ what)
-  (define-values/invoke-unit decisions@
+(define (compile lang what)
+  (define-values/invoke-unit (generation-decisions)
     (import) (export decisions^))
   
-  (define ((generate-nt lang base-cases generate retries)
-           name cross? size attempt in-hole env)
+  (define (gen-nt lang name cross? retries size attempt in-hole)
     (let*-values
-        ([(term _)
-          (generate/pred 
-           name
-           (λ (size attempt) 
-             (let ([rhs (pick-from-list
-                         (if (zero? size)
-                             (min-prods (nt-by-name lang name cross?) 
-                                        ((if cross? base-cases-cross base-cases-non-cross)
-                                         base-cases))
-                             ((next-non-terminal-decision) name cross? lang attempt)))])
-               (generate (max 0 (sub1 size)) attempt empty-env in-hole (rhs-pattern rhs))))
-           (λ (_ env) (mismatches-satisfied? env))
-           size attempt retries)])
+        ([(productions)
+          (hash-ref ((if cross? rg-lang-cross rg-lang-non-cross) lang) name)]
+         [(term _)
+          (let ([gen (pick-from-list
+                      (if (zero? size)
+                          (min-prods name productions 
+                                     ((if cross? base-cases-cross base-cases-non-cross)
+                                      (rg-lang-base-cases lang)))
+                          ((next-non-terminal-decision) productions)))])
+            (gen retries (max 0 (sub1 size)) attempt empty-env in-hole))])
       term))
-  
-  (define (generate-sequence ellipsis generate env length)
-    (define (split-environment env)
-      (foldl (λ (var seq-envs)
-               (let ([vals (hash-ref env var #f)])
-                 (if vals
-                     (map (λ (seq-env val) (hash-set seq-env var val)) seq-envs vals)
-                     seq-envs)))
-             (build-list length (λ (_) #hash())) (ellipsis-vars ellipsis)))
-    (define (merge-environments seq-envs)
-      (foldl (λ (var env)
-               (hash-set env var (map (λ (seq-env) (hash-ref seq-env var)) seq-envs)))
-             env (ellipsis-vars ellipsis)))
-    (let-values
-        ([(seq envs)
-          (let recur ([envs (split-environment env)])
-            (if (null? envs)
-                (values null null)
-                (let*-values 
-                    ([(term env) (generate (car envs) the-hole (ellipsis-pattern ellipsis))]
-                     [(terms envs) (recur (cdr envs))])
-                  (values (cons term terms) (cons env envs)))))])
-      (values seq (merge-environments envs))))
   
   (define (generate/pred name gen pred init-sz init-att retries)
     (let ([pre-threshold-incr 
@@ -206,8 +176,7 @@
            (λ (remain)
              (zero? 
               (modulo (sub1 remain) 
-                      (ceiling (* proportion-at-size 
-                                  retries)))))])
+                      (ceiling (* proportion-at-size retries)))))])
       (let retry ([remaining (add1 retries)]
                   [size init-sz]
                   [attempt init-att])
@@ -223,13 +192,36 @@
                                 post-threshold-incr
                                 pre-threshold-incr)))))))))
   
-  (define (generate/prior name env generate)
+  (define (generate/prior name env gen)
     (let* ([none (gensym)]
            [prior (hash-ref env name none)])
       (if (eq? prior none)
-          (let-values ([(term env) (generate)])
+          (let-values ([(term env) (gen)])
             (values term (hash-set env name term)))
           (values prior env))))
+  
+  (define (generate-sequence gen env vars length)
+    (define (split-environment env)
+      (foldl (λ (var seq-envs)
+               (let ([vals (hash-ref env var #f)])
+                 (if vals
+                     (map (λ (seq-env val) (hash-set seq-env var val)) seq-envs vals)
+                     seq-envs)))
+             (build-list length (λ (_) #hash())) vars))
+    (define (merge-environments seq-envs)
+      (foldl (λ (var env)
+               (hash-set env var (map (λ (seq-env) (hash-ref seq-env var)) seq-envs)))
+             env vars))
+    (let-values
+        ([(seq envs)
+          (let recur ([envs (split-environment env)])
+            (if (null? envs)
+                (values null null)
+                (let*-values 
+                    ([(term env) (gen (car envs) the-hole)]
+                     [(terms envs) (recur (cdr envs))])
+                  (values (cons term terms) (cons env envs)))))])
+      (values seq (merge-environments envs))))
   
   (define (mismatches-satisfied? env)
     (let ([groups (make-hasheq)])
@@ -250,129 +242,150 @@
   (define (bindings env)
     (make-bindings
      (for/fold ([bindings null]) ([(key val) env])
-               (if (binder? key) 
-                   (cons (make-bind (binder-name key) val) bindings)
-                   bindings))))
+       (if (binder? key) 
+           (cons (make-bind (binder-name key) val) bindings)
+           bindings))))
   
-  (define (generate-pat lang sexp retries size attempt env in-hole pat)
-    (define recur (curry generate-pat lang sexp retries size attempt))
-    (define recur/pat (recur env in-hole))
-    (define ((recur/pat/size-attempt pat) size attempt)
-      (generate-pat lang sexp retries size attempt env in-hole pat))
-    
-    (define clang (rg-lang-clang lang))
-    (define gen-nt 
-      (generate-nt 
-       clang 
-       (rg-lang-base-cases lang)
-       (curry generate-pat lang sexp retries)
-       retries))
-    
-    (match pat
-      [`number (values ((next-number-decision) attempt) env)]
-      [`natural (values ((next-natural-decision) attempt) env)]
-      [`integer (values ((next-integer-decision) attempt) env)]
-      [`real (values ((next-real-decision) attempt) env)]
-      [`(variable-except ,vars ...)
-       (generate/pred 'variable
-                      (recur/pat/size-attempt 'variable)
-                      (λ (var _) (not (memq var vars)))
-                      size attempt retries)]
-      [`variable 
-       (values ((next-variable-decision) (rg-lang-lits lang) attempt)
-               env)]
-      [`variable-not-otherwise-mentioned
-       (generate/pred 'variable
-                      (recur/pat/size-attempt 'variable)
-                      (λ (var _) (not (memq var (compiled-lang-literals clang))))
-                      size attempt retries)]
-      [`(variable-prefix ,prefix) 
-       (define (symbol-append prefix suffix)
-         (string->symbol (string-append (symbol->string prefix) (symbol->string suffix))))
-       (let-values ([(term env) (recur/pat 'variable)])
-         (values (symbol-append prefix term) env))]
-      [`string 
-       (values ((next-string-decision) (rg-lang-lits lang) attempt)
-               env)]
-      [`(side-condition ,pat ,(? procedure? condition) ,guard-src-loc)
-       (generate/pred `(side-condition ,(unparse-pattern pat) ,guard-src-loc) 
-                      (recur/pat/size-attempt pat)
-                      (λ (_ env) (condition (bindings env)))
-                      size attempt retries)]
-      [`(name ,(? symbol? id) ,p)
-       (let-values ([(term env) (recur/pat p)])
-         (values term (hash-set env (make-binder id) term)))]
-      [`hole (values in-hole env)]
-      [`(in-hole ,context ,contractum)
-       (let-values ([(term env) (recur/pat contractum)])
-         (recur env term context))]
-      [`(hide-hole ,pattern) (recur env the-hole pattern)]
-      [`any
-       (let*-values ([(new-lang nt) ((next-any-decision) lang sexp)]
-                     [(term _) (generate-pat new-lang
-                                             sexp
-                                             retries
-                                             size
-                                             attempt
-                                             empty-env
-                                             the-hole
-                                             nt)])
-         (values term env))]
-      [(? (is-nt? clang))
-       (values (gen-nt pat #f size attempt in-hole env) env)]
-      [(struct binder ((or (? (is-nt? clang) nt) 
-                           (app (symbol-match named-nt-rx) (? (is-nt? clang) nt)))))
-       (generate/prior pat env (λ () (recur/pat nt)))]
-      [(struct binder ((or (? built-in? b) 
-                           (app (symbol-match named-nt-rx) (? built-in? b)))))
-       (generate/prior pat env (λ () (recur/pat b)))]
-      [(struct mismatch (name (app (symbol-match mismatch-nt-rx)
-                                   (? symbol? (? (is-nt? clang) nt)))))
-       (let-values ([(term _) (recur/pat nt)])
-         (values term (hash-set env pat term)))]
-      [(struct mismatch (name (app (symbol-match mismatch-nt-rx)
-                                   (? symbol? (? built-in? b)))))
-       (let-values ([(term _) (recur/pat b)])
-         (values term (hash-set env pat term)))]
-      [`(cross ,(? symbol? cross-nt))
-       (values (gen-nt cross-nt #t size attempt in-hole env) env)]
-      [(or (? symbol?) (? number?) (? string?) (? boolean?) (? null?)) (values pat env)]
-      [(list-rest (and (struct ellipsis (name sub-pat class vars)) ellipsis) rest)
-       (let*-values ([(length) (let ([prior (hash-ref env class #f)])
-                                 (if prior prior ((next-sequence-decision) attempt)))]
-                     [(seq env) (generate-sequence ellipsis recur env length)]
-                     [(rest env) (recur (hash-set (hash-set env class length) name length)
-                                   in-hole rest)])
-         (values (append seq rest) env))]
-      [(list-rest pat rest)
-       (let*-values 
-           ([(pat-term env) (recur/pat pat)]
-            [(rest-term env) (recur env in-hole rest)])
-         (values (cons pat-term rest-term) env))]
-      [else
-       (error what "unknown pattern ~s\n" pat)]))
-  
-  (let ([rg-lang (prepare-lang lang)]
-        [rg-sexp (prepare-lang sexp)])
-    (λ (pat)
-      (let ([parsed (reassign-classes (parse-pattern pat lang 'top-level))])
-        (λ (size attempt retries)
-          (let-values ([(term env)
-                        (generate/pred 
-                         pat
-                         (λ (size attempt)
-                           (generate-pat 
-                            rg-lang 
-                            rg-sexp
-                            retries
-                            size
-                            attempt
-                            empty-env
-                            the-hole
-                            parsed))
-                         (λ (_ env) (mismatches-satisfied? env))
-                         size attempt retries)])
-            (values term (bindings env))))))))
+  (let*-values ([(langp lits lang-bases) (prepare-lang lang)]
+                [(sexpp _ sexp-bases) (prepare-lang sexp)]
+                [(lit-syms) (compiled-lang-literals lang)])
+    (letrec-values 
+        ([(compile)
+          (λ (pat any?)
+            (let* ([nt? (is-nt? (if any? sexpp langp))]
+                   [mismatches? #f]
+                   [generator ; retries size attempt env in-hole -> (values term env)
+                    (let recur ([pat pat])
+                      (match pat
+                        [`number (λ (r s a e h) (values ((next-number-decision) a) e))]
+                        [`natural (λ (r s a e h) (values ((next-natural-decision) a) e))]
+                        [`integer (λ (r s a e h) (values ((next-integer-decision) a) e))]
+                        [`real (λ (r s a e h) (values ((next-real-decision) a) e))]
+                        [`(variable-except ,vars ...)
+                         (let ([g (recur 'variable)])
+                           (λ (r s a e h)
+                             (generate/pred pat
+                                            (λ (s a) (g r s a e h))
+                                            (λ (var _) (not (memq var vars)))
+                                            s a r)))]
+                        [`variable 
+                         (λ (r s a e h)
+                           (values ((next-variable-decision) lits a) e))]
+                        [`variable-not-otherwise-mentioned
+                         (let ([g (recur 'variable)])
+                           (λ (r s a e h)
+                             (generate/pred pat
+                                            (λ (s a) (g r s a e h))
+                                            (λ (var _) (not (memq var lit-syms)))
+                                            s a r)))]
+                        [`(variable-prefix ,prefix)
+                         (define (symbol-append prefix suffix)
+                           (string->symbol (string-append (symbol->string prefix) (symbol->string suffix))))
+                         (let ([g (recur 'variable)])
+                           (λ (r s a e h)
+                             (let-values ([(term _) (g r s a e h)])
+                               (values (symbol-append prefix term) e))))]
+                        [`string 
+                         (λ (r s a e h)
+                           (values ((next-string-decision) lits a) e))]
+                        [`(side-condition ,pat ,(? procedure? condition) ,guard-src-loc)
+                         (let ([g (recur pat)])
+                           (λ (r s a e h)
+                             (generate/pred `(side-condition ,(unparse-pattern pat) ,guard-src-loc) 
+                                            (λ (s a) (g r s a e h))
+                                            (λ (_ env) (condition (bindings env)))
+                                            s a r)))]
+                        [`(name ,(? symbol? id) ,p)
+                         (let ([g (recur p)])
+                           (λ (r s a e h)
+                             (let-values ([(term env) (g r s a e h)])
+                               (values term (hash-set env (make-binder id) term)))))]
+                        [`hole (λ (r s a e h) (values h e))]
+                        [`(in-hole ,context ,contractum)
+                         (let ([ctx (recur context)]
+                               [ctm (recur contractum)])
+                           (λ (r s a e h)
+                             (let-values ([(term env) (ctm r s a e h)])
+                               (ctx r s a env term))))]
+                        [`(hide-hole ,pattern)
+                         (let ([g (recur pattern)])
+                           (λ (r s a e h)
+                             (g r s a e the-hole)))]
+                        [`any
+                         (λ (r s a e h)
+                           (let*-values ([(lang nt) ((next-any-decision) langc sexpc)]
+                                         [(term) (gen-nt lang nt #f r s a the-hole)])
+                             (values term e)))]
+                        [(or (? symbol? (? nt? p)) `(cross ,(? symbol? p)))
+                         (let ([cross? (not (symbol? pat))])
+                           (λ (r s a e h)
+                             (values (gen-nt (if any? sexpc langc) p cross? r s a h) e)))]
+                        [(struct binder ((or (app (symbol-match named-nt-rx) (? symbol? p)) p)))
+                         (let ([g (recur p)])
+                           (λ (r s a e h)
+                             (generate/prior pat e (λ () (g r s a e h)))))]
+                        [(struct mismatch (_ (app (symbol-match mismatch-nt-rx) p)))
+                         (let ([g (recur p)])
+                           (set! mismatches? #t)
+                           (λ (r s a e h)
+                             (let-values ([(term _) (g r s a e h)])
+                               (values term (hash-set e pat term)))))]
+                        [(or (? symbol?) (? number?) (? string?) (? boolean?) (? null?))
+                         (λ (r s a e h) (values pat e))]
+                        [(list-rest (struct ellipsis (name sub-pat class vars)) rest)
+                         (let ([elemg (recur sub-pat)]
+                               [tailg (recur rest)])
+                           (when (mismatch? name)
+                             (set! mismatches? #t))
+                           (λ (r s a e h)
+                             (let*-values ([(len) 
+                                            (let ([prior (hash-ref e class #f)])
+                                              (if prior prior ((next-sequence-decision) a)))]
+                                           [(seq env)
+                                            (generate-sequence (λ (e h) (elemg r s a e h)) e vars len)]
+                                           [(tail env) 
+                                            (let ([e (hash-set (hash-set env class len) name len)])
+                                              (tailg r s a e h))])
+                               (values (append seq tail) env))))]
+                        [(list-rest hdp tlp)
+                         (let ([hdg (recur hdp)]
+                               [tlg (recur tlp)])
+                           (λ (r s a e h)
+                             (let*-values 
+                                 ([(hd env) (hdg r s a e h)]
+                                  [(tl env) (tlg r s a env h)])
+                               (values (cons hd tl) env))))]
+                        [else
+                         (error what "unknown pattern ~s\n" pat)]))])
+              (if mismatches?
+                  (λ (r s a e h)
+                    (let ([g (λ (s a) (generator r s a e h))]
+                          [p? (λ (_ e) (mismatches-satisfied? e))])
+                      (generate/pred (unparse-pattern pat) g p? s a r)))
+                  generator)))]
+         [(compile-non-terminals)
+          (λ (nts any?)
+            (make-immutable-hash
+             (map (λ (nt) (cons (nt-name nt)
+                                (map (λ (p) (compile (rhs-pattern p) any?))
+                                     (nt-rhs nt))))
+                  nts)))]
+         [(compile-language)
+          (λ (lang bases any?)
+            (make-rg-lang
+             (compile-non-terminals (compiled-lang-lang lang) any?)
+             (compile-non-terminals (compiled-lang-cclang lang) any?)
+             bases))]
+         [(langc sexpc compile-pattern)
+          (values
+           (compile-language langp lang-bases #f)
+           (compile-language sexpp sexp-bases #t)
+           (λ (pat) (compile pat #f)))])
+      (λ (pat)
+        (let ([g (compile-pattern (reassign-classes (parse-pattern pat lang 'top-level)))])
+          (λ (size attempt retries)
+            (let-values ([(term env) (g retries size attempt empty-env the-hole)])
+              (values term (bindings env)))))))))
 
 (define-struct base-cases (cross non-cross))
 
@@ -643,12 +656,12 @@
       x
       (raise-type-error 'redex-check "reduction-relation" x)))
 
-(define-for-syntax (term-generator lang pat decisions@ what)
+(define-for-syntax (term-generator lang pat what)
   (with-syntax ([pattern 
                  (rewrite-side-conditions/check-errs 
                   (language-id-nts lang what)
                   what #t pat)])
-    #`((generate #,lang #,decisions@ '#,what) `pattern)))
+    #`((compile #,lang '#,what) `pattern)))
 
 (define-syntax (generate-term stx)
   (syntax-case stx ()
@@ -663,7 +676,6 @@
     [(name lang pat)
      (with-syntax ([make-gen (term-generator #'lang
                                              #'pat
-                                             #'(generation-decisions)
                                              (syntax-e #'name))])
        (syntax/loc stx
          (let ([generate make-gen])
@@ -726,7 +738,6 @@
                          lang
                          metafunc/red-rel
                          property
-                         random-decisions@
                          (max 1 (floor (/ att num-cases)))
                          ret
                          'redex-check
@@ -734,7 +745,7 @@
                          (test-match lang pat)
                          (λ (generated) (redex-error 'redex-check "~s does not match ~s" generated 'pat))))
                     #`(check-prop
-                       #,(term-generator #'lang #'pat #'random-decisions@ 'redex-check)
+                       #,(term-generator #'lang #'pat 'redex-check)
                        property att ret (and print? show)))))))))]))
 
 (define (format-attempts a)
@@ -804,10 +815,9 @@
        (syntax/loc stx 
         (let ([lang (metafunc-proc-lang m)]
               [dom (metafunc-proc-dom-pat m)]
-              [decisions@ (generation-decisions)]
               [att (assert-nat 'check-metafunction-contract attempts)])
           (check-prop 
-           ((generate lang decisions@ 'check-metafunction-contract)
+           ((compile lang 'check-metafunction-contract)
             (if dom dom '(any (... ...))))
            (λ (t _) 
              (with-handlers ([exn:fail:redex? (λ (_) #f)])
@@ -816,10 +826,10 @@
            retries
            show))))]))
 
-(define (check-lhs-pats lang mf/rr prop decisions@ attempts retries what show
+(define (check-lhs-pats lang mf/rr prop attempts retries what show
                         [match #f]
                         [match-fail #f])
-  (let ([lang-gen (generate lang decisions@ what)])
+  (let ([lang-gen (compile lang what)])
     (let-values ([(pats srcs)
                   (cond [(metafunc-proc? mf/rr)
                          (values (map metafunc-case-lhs-pat (metafunc-proc-cases mf/rr))
@@ -869,7 +879,6 @@
               (metafunc-proc-lang m)
               m
               (λ (term _) (property term))
-              (generation-decisions)
               att
               ret
               'check-metafunction
@@ -887,10 +896,9 @@
 (define-syntax (check-reduction-relation stx)
   (syntax-case stx ()
     [(_ relation property . kw-args)
-     (with-syntax ([(attempts retries decisions@ print?)
+     (with-syntax ([(attempts retries print?)
                     (parse-kw-args `((#:attempts . , #'default-check-attempts)
                                      (#:retries . ,#'default-retries)
-                                     (#:decisions . ,#'random-decisions@)
                                      (#:print? . #t))
                                    (syntax kw-args)
                                    stx)]
@@ -903,7 +911,6 @@
             (reduction-relation-lang rel)
             rel
             (λ (term _) (property term))
-            decisions@
             attempts
             retries
             'check-reduction-relation
@@ -945,6 +952,7 @@
          (struct-out mismatch)
          (struct-out class)
          (struct-out binder)
+         (struct-out rg-lang)
          (struct-out base-cases)
          (struct-out counterexample)
          (struct-out exn:fail:redex:test))
