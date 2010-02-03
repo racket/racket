@@ -13,7 +13,6 @@
          framework
          string-constants
          planet/config
-         macro-debugger/capability
          "drsig.ss"
          "rep.ss")
 
@@ -86,7 +85,7 @@
         (cond
           [(eq? key 'drscheme:autocomplete-words)
            (drscheme:language-configuration:get-all-manual-keywords)]
-          [(eq? key macro-stepper-capability-key) #t]
+          [(eq? key 'macro-stepper:enabled) #t]
           [else (drscheme:language:get-capability-default key)]))
       
       ;; config-panel : as in super class

@@ -9,7 +9,6 @@
          mzlib/list
          mred
          net/sendurl
-         macro-debugger/capability
          string-constants)
 (provide tool@)
 
@@ -37,7 +36,7 @@
                  (super-instantiate ()))))
         (define/augment (capability-value key)
           (cond
-           [(eq? key macro-stepper-capability-key) #t]
+           [(eq? key 'macro-stepper:enabled) #t]
            [else (inner (drscheme:language:get-capability-default key)
                         capability-value key)]))
         (define/override (use-namespace-require/copy?) #t)
