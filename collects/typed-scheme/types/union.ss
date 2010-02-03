@@ -19,6 +19,8 @@
 (define (flat t)
   (match t
     [(Union: es) es]
+    [(Values: (list (Result: (Union: es) _ _))) es]
+    [(Values: (list (Result: t _ _))) (list t)]
     [_ (list t)]))    
 
 (define (remove-subtypes ts)
