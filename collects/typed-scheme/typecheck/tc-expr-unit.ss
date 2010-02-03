@@ -5,7 +5,7 @@
 (require syntax/kerncase mzlib/trace
          scheme/match (prefix-in - scheme/contract)
          "signatures.ss" "tc-envops.ss" "tc-metafunctions.ss"
-         (types utils convenience union subtype remove-intersect)
+         (types utils convenience union subtype remove-intersect type-table)
          (private-in parse-type type-annotation)
          (rep type-rep)
          (only-in (infer infer) restrict)
@@ -231,6 +231,7 @@
              (lambda (ann)
                (let* ([r (tc-expr/check/internal form ann)]
                       [r* (check-below r expected)])
+                 (add-typeof-expr form expected)
                  ;; around again in case there is an instantiation
                  ;; remove the ascription so we don't loop infinitely
                  (loop (remove-ascription form) r* #t)))]
@@ -242,13 +243,16 @@
                 ;; do the instantiation on the old type
                 (let* ([ts* (do-inst form ts)]
                        [ts** (ret ts* fs os)])
+                  (add-typeof-expr form ts**)
                   ;; make sure the new type is ok
                   (check-below ts** expected))]
                ;; no annotations possible on dotted results
-               [ty ty])]
+               [ty (add-typeof-expr form ty) ty])]
             ;; nothing to see here
             [checked? expected]
-            [else (tc-expr/check/internal form expected)]))))
+            [else (let ([t (tc-expr/check/internal form expected)])
+                    (add-typeof-expr form t)
+                    t)]))))
 
 (define (tc-or e1 e2 or-part [expected #f])
   (match (single-value e1)
@@ -469,8 +473,10 @@
                     [else (internal-tc-expr form)])])
       (match ty
         [(tc-results: ts fs os)
-         (let ([ts* (do-inst form ts)])
-           (ret ts* fs os))]))))
+         (let* ([ts* (do-inst form ts)]
+                [r (ret ts* fs os)])
+           (add-typeof-expr form r)
+           r)]))))
 
 (define (tc/send rcvr method args [expected #f])
   (match (tc-expr rcvr)
