@@ -27,10 +27,7 @@
              check-unary-between/c)
  (all-from-out "private/provide.ss")
  (all-from-out "private/base.ss")
- (except-out (all-from-out "private/legacy.ss")
-             unpack-blame
-             unpack-source
-             unpack-name)
+ (all-from-out "private/legacy.ss")
  (except-out (all-from-out "private/guts.ss")
              check-flat-contract
              check-flat-named-contract))

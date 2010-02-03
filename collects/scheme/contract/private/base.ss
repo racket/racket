@@ -18,8 +18,7 @@ improve method arity mismatch contract violation error messages?
          unstable/srcloc
          unstable/location
          "guts.ss"
-         "blame.ss"
-         "legacy.ss")
+         "blame.ss")
 
 (define-syntax-parameter current-contract-region
   (λ (stx) #'(quote-module-path)))
@@ -28,28 +27,15 @@ improve method arity mismatch contract violation error messages?
   (syntax-case stx ()
     [(_ c v pos neg name loc)
      (syntax/loc stx
-       (apply-contract c
-                       v
-                       (unpack-blame pos)
-                       (unpack-blame neg)
-                       name
-                       loc))]
+       (apply-contract c v pos neg name loc))]
     [(_ c v pos neg)
      (syntax/loc stx
-       (apply-contract c
-                       v
-                       (unpack-blame pos)
-                       (unpack-blame neg)
-                       #f
-                       (build-source-location #f)))]
+       (apply-contract c v pos neg #f (build-source-location #f)))]
     [(_ c v pos neg src)
-     (syntax/loc stx
-       (apply-contract c
-                       v
-                       (unpack-blame pos)
-                       (unpack-blame neg)
-                       (unpack-name src)
-                       (unpack-source src)))]))
+     (raise-syntax-error 'contract
+       (string-append
+        "please update contract application to new protocol "
+        "(either 4 or 6 arguments)"))]))
 
 (define (apply-contract c v pos neg name loc)
   (let* ([c (coerce-contract 'contract c)])

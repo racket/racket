@@ -12,8 +12,6 @@
          first-order-prop first-order-get first-order-pred?
          flat-prop flat-get flat-pred?
 
-         unpack-blame unpack-source unpack-name
-
          )
 
 (define (raise-contract-error x src pos name fmt . args)
