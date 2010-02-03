@@ -6,7 +6,6 @@
            scheme/string
            scheme/list
            "drsig.ss"
-           macro-debugger/capability
            string-constants
            mred
            framework
@@ -1338,7 +1337,7 @@
         (super-new)
         (define/augment (capability-value key)
           (cond
-           [(eq? key macro-stepper-capability-key) #t]
+           [(eq? key 'macro-stepper:enabled) #t]
            [else (inner (drscheme:language:get-capability-default key)
                         capability-value key)]))))
 

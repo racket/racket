@@ -8,7 +8,6 @@
          drscheme/tool
          mrlib/switchable-button
          string-constants
-         "capability.ss"
          "model/trace.ss"
          "model/deriv.ss"
          "model/deriv-util.ss"
@@ -16,6 +15,8 @@
          (only-in "view/view.ss" macro-stepper-director%)
          "view/stepper.ss"
          "view/prefs.ss")
+
+;; Capability name: 'macro-stepper:enabled
 
 (provide tool@)
 
@@ -82,7 +83,7 @@
 
     (define (phase1)
       (drscheme:language:register-capability
-       macro-stepper-capability-key
+       'macro-stepper:enabled
        boolean?
        #f))
     (define (phase2) (void))
@@ -163,7 +164,7 @@
           (let ([lang
                  (drscheme:language-configuration:language-settings-language
                   (send (get-definitions-text) get-next-settings))])
-            (send lang capability-value macro-stepper-capability-key)))
+            (send lang capability-value 'macro-stepper:enabled)))
 
         (define/private (enable/disable-stuff enable?)
           (if enable?
