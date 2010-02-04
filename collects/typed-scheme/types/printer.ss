@@ -146,6 +146,10 @@
     ;; special case number until something better happens
     [(Base: 'Number _) (fp "Number")]
     [(? has-name?) (fp "~a" (has-name? c))]
+    [(StructTop: st) (fp "~a" st)]
+    [(BoxTop:) (fp "Box")]
+    [(VectorTop:) (fp "Vector")]
+    [(MPairTop:) (fp "MPair")]
     ;; names are just the printed as the original syntax
     [(Name: stx) (fp "~a" (syntax-e stx))]
     [(App: rator rands stx) 
