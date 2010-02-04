@@ -8438,7 +8438,7 @@ static int generate_closure_prep(Scheme_Closure_Data *data, mz_jit_state *jitter
       if (CLOSURE_CONTENT_IS_FLONUM(data, j)) {
         pos = mz_remap(map[j]);
         jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
-        generate_flonum_local_boxing(jitter, pos, map[j], JIT_R0);
+        generate_flonum_local_boxing(jitter, pos, map[j], JIT_R1);
         CHECK_LIMIT();
         retval = 1;
       }
