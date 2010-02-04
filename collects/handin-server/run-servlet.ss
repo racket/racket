@@ -69,7 +69,8 @@
   (define ach (make-async-channel))
   ;; wrap the dispatcher so we can post on the waiting semaphore
   (define (wrap-sequence . ds)
-    (let ([d (apply sequencer:make ds)])
+    (let* ([ds (filter values ds)] ;; drop #f when log-file is #f
+           [d (apply sequencer:make ds)])
       (lambda (conn req)
         (d conn req)
         ;; (cond [(hash-ref port->sema (connection-o-port conn) #f)
