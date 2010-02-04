@@ -196,7 +196,7 @@ scheme_init_number (Scheme_Env *env)
   MZ_SIGSET(SIGFPE, SIG_IGN);
 #endif
 #ifdef FREEBSD_CONTROL_387
-  __fpsetreg(FP_MSKS_FLD, FP_MSKS_REG, FP_MSKS_FLD, FP_MSKS_OFF);
+  fpsetmask(0);
 #endif
 #ifdef LINUX_CONTROL_387
   __setfpucw(_FPU_EXTENDED + _FPU_RC_NEAREST + 0x3F);
