@@ -1060,8 +1060,8 @@ flat contracts do not need to supply an explicit projection.
 @defexamples[#:eval (contract-eval)
 (define int/c
   (simple-flat-contract #:name 'int/c #:first-order integer?))
-(contract 1 int/c 'positive 'negative)
-(contract "not one" int/c 'positive 'negative)
+(contract int/c 1 'positive 'negative)
+(contract int/c "not one" 'positive 'negative)
 (int/c 1)
 (int/c "not one")
 (define int->int/c
@@ -1072,14 +1072,14 @@ flat contracts do not need to supply an explicit projection.
    #:projection
    (λ (b)
      (let ([domain ((contract-projection int/c) (blame-swap b))]
-           [range ((contract-projection int/c) blame)])
+           [range ((contract-projection int/c) b)])
        (λ (f)
          (if (and (procedure? f) (procedure-arity-includes? f 1))
            (λ (x) (range (f (domain x))))
            (raise-blame-error
             b f "expected a function of one argument, got: ~e" f)))))))
-(contract "not fun" int->int/c 'positive 'negative)
-(define halve (contract (λ (x) (/ x 2)) int->int/c 'positive 'negative))
+(contract int->int/c "not fun" 'positive 'negative)
+(define halve (contract int->int/c (λ (x) (/ x 2)) 'positive 'negative))
 (halve 2)
 (halve 1)
 (halve 1/2)
