@@ -826,13 +826,12 @@
     ;; set up the IO context
     [current-input-port
      (let ([inp (sandbox-input)])
-       (cond
-        [(not inp) null-input]
-        [(input->port inp) => values]
-        [(and (procedure? inp) (procedure-arity-includes? inp 0)) (inp)]
-        [(eq? 'pipe inp)
-         (let-values ([(i o) (make-pipe)]) (set! input o) i)]
-        [else (error 'make-evaluator "bad sandbox-input: ~e" inp)]))]
+       (cond [(not inp) null-input]
+             [(input->port inp) => values]
+             [(and (procedure? inp) (procedure-arity-includes? inp 0)) (inp)]
+             [(eq? 'pipe inp)
+              (let-values ([(i o) (make-pipe)]) (set! input o) i)]
+             [else (error 'make-evaluator "bad sandbox-input: ~e" inp)]))]
     [current-output-port (make-output 'output (sandbox-output)
                                       (lambda (o) (set! output o)))]
     [current-error-port (make-output 'error-output (sandbox-error-output)
