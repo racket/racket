@@ -44,16 +44,21 @@
    (lambda (v)
      (error 'yield "must be called in the context of a generator"))))
 
-(define (yield value)
-  ((current-yielder) value))
+(define yield
+  (case-lambda [()  ((current-yielder))]
+               [(v) ((current-yielder) v)]
+               [vs  (apply (current-yielder) vs)]))
 
 (define yield-tag (make-continuation-prompt-tag))
 
 (define-syntax-rule (generator body0 body ...)
   (let ([state 'fresh])
     (define (cont)
-      (define (yielder value)
-        (shift-at yield-tag k (set! cont k) value))
+      (define yielder
+        (case-lambda
+          [()  (shift-at yield-tag k (set! cont k) (values))]
+          [(v) (shift-at yield-tag k (set! cont k) v)]
+          [vs  (shift-at yield-tag k (set! cont k) (apply values vs))]))
       (set! state 'running)
       (reset-at yield-tag
         (parameterize ([current-yielder yielder])
