@@ -56,10 +56,18 @@
         (shift-at yield-tag k (set! cont k) value))
       (reset-at yield-tag
         (parameterize ([current-yielder yielder])
-          (let ([retval (begin body0 body ...)])
-            ;; normal return:
-            (set! cont (lambda () retval))
-            retval))))
+          (call-with-values
+              (lambda () (begin body0 body ...))
+              ;; only a normal return gets here
+              (case-lambda
+                ;; Note: in this case, the generator was invoked with no
+                ;; arguments, so returning no values is more symmetric.  But
+                ;; this is a common case, and probably people would expect a
+                ;; void result more than no values.
+                [() (set! cont void)]
+                [(r) (set! cont (lambda () r))]
+                [rs (set! cont (lambda () (apply values rs)))]))
+          (cont))))
     (define (generator) (cont))
     generator))
 
