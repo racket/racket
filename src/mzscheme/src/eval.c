@@ -2431,7 +2431,8 @@ Scheme_Object *scheme_no_potential_size(Scheme_Object *v)
 
 static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data, Optimize_Info *info,
 				    int argc, Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
-                                    int context)
+                                    int context,
+                                    int nested_count, Scheme_Object *orig, Scheme_Object *le_prev, long prev_offset)
 {
   Scheme_Let_Header *lh;
   Scheme_Compiled_Let_Value *lv, *prev = NULL;
@@ -2441,13 +2442,20 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
   expected = data->num_params;
 
   if (!expected) {
-    info = scheme_optimize_info_add_frame(info, 0, 0, 0);
+    info = scheme_optimize_info_add_frame(info, nested_count, nested_count, 0);
     info->inline_fuel >>= 1;
+    if (nested_count) info->vclock++;
     p = scheme_optimize_expr(p, info, context);
     info->next->single_result = info->single_result;
-    info->next->preserves_marks = info->preserves_marks;
+    if (!nested_count)
+      info->next->preserves_marks = info->preserves_marks;
     scheme_optimize_info_done(info);
-    return p;
+
+    if (le_prev) {
+      *((Scheme_Object **)(((char *)le_prev) + prev_offset)) = p;
+      return orig;
+    } else
+      return p;
   }
 
   lh = MALLOC_ONE_TAGGED(Scheme_Let_Header);
@@ -2506,7 +2514,13 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
   else
     lh->body = p;
 
-  return scheme_optimize_lets((Scheme_Object *)lh, info, 1, context);
+  p = scheme_optimize_lets((Scheme_Object *)lh, info, 1 + nested_count, context);
+
+  if (le_prev) {
+    *((Scheme_Object **)(((char *)le_prev) + prev_offset)) = p;
+    return orig;
+  } else
+    return p;
 }
 
 #if 0
@@ -2517,24 +2531,45 @@ static Scheme_Object *apply_inlined(Scheme_Object *p, Scheme_Closure_Data *data,
 
 Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int argc,
 				   Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
-                                   int *_flags, int context)
+                                   int *_flags, int context, int optimized_rator)
 /* If not app, app2, or app3, just return a known procedure, if any,
    and do not check arity. */
 {
   int offset = 0, single_use = 0, psize = 0;
-  Scheme_Object *bad_app = NULL;
+  Scheme_Object *bad_app = NULL, *prev = NULL, *orig_le = le;
+  long prev_offset = 0;
+  int nested_count = 0;
 
   if (info->inline_fuel < 0)
     return NULL;
-  
+
+  /* Move inside `let' bindings, so we can convert ((let (....) proc) arg ...)
+     to (let (....) (proc arg ...)) */
+  while (optimized_rator && SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_let_void_type)) {
+    Scheme_Let_Header *lh;
+    int i;
+    
+    lh = (Scheme_Let_Header *)le;
+    prev = le; 
+    prev_offset = (long)&(((Scheme_Let_Header *)0x0)->body);
+    le = lh->body;
+    for (i = 0; i < lh->num_clauses; i++) {
+      prev = le;
+      prev_offset = (long)&(((Scheme_Compiled_Let_Value *)0x0)->body);
+      le = ((Scheme_Compiled_Let_Value *)le)->body;
+    }
+    nested_count += lh->count;
+  }
+
   if (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type)) {
     /* Found a `((lambda' */
     single_use = 1;
   }
 
-  if (SAME_TYPE(SCHEME_TYPE(le), scheme_local_type)) {
+  if (!optimized_rator && SAME_TYPE(SCHEME_TYPE(le), scheme_local_type)) {
     /* Check for inlining: */
-    le = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(le), &offset, &single_use, 0, 0, &psize);
+    if (SCHEME_LOCAL_POS(le) >= nested_count)
+      le = scheme_optimize_info_lookup(info, SCHEME_LOCAL_POS(le) - nested_count, &offset, &single_use, 0, 0, &psize);
   }
 
   if (le) {
@@ -2574,10 +2609,16 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
       threshold = info->inline_fuel * (2 + argc);
 
       if ((sz >= 0) && (single_use || (sz <= threshold))) {
-	le = scheme_optimize_clone(0, data->code, info, offset, data->num_params);
+        Optimize_Info *sub_info;
+        if (nested_count)
+          sub_info = scheme_optimize_info_add_frame(info, nested_count, nested_count, 0);
+        else
+          sub_info = info;
+	le = scheme_optimize_clone(0, data->code, sub_info, offset, data->num_params);
 	if (le) {
 	  LOG_INLINE(fprintf(stderr, "Inline %d %d %s\n", sz, single_use, data->name ? scheme_write_to_string(data->name, NULL) : "???"));
-          return apply_inlined(le, data, info, argc, app, app2, app3, context);
+          return apply_inlined(le, data, info, argc, app, app2, app3, context,
+                               nested_count, orig_le, prev, prev_offset);
 	} else {
           LOG_INLINE(fprintf(stderr, "No inline %s\n", data->name ? scheme_write_to_string(data->name, NULL) : "???"));
         }
@@ -3058,31 +3099,43 @@ static int is_unboxed_argument(Scheme_Object *rand, int fuel, Optimize_Info *inf
 
 int scheme_expr_produces_flonum(Scheme_Object *expr)
 {
-  switch (SCHEME_TYPE(expr)) {
-  case scheme_application_type:
-    {
-      Scheme_App_Rec *app = (Scheme_App_Rec *)expr;
-      return produces_unboxed(app->args[0], NULL, app->num_args, 0);
+  while (1) {
+    switch (SCHEME_TYPE(expr)) {
+    case scheme_application_type:
+      {
+        Scheme_App_Rec *app = (Scheme_App_Rec *)expr;
+        return produces_unboxed(app->args[0], NULL, app->num_args, 0);
+      }
+      break;
+    case scheme_application2_type:
+      {
+        Scheme_App2_Rec *app = (Scheme_App2_Rec *)expr;
+        return produces_unboxed(app->rator, NULL, 1, 0);
+      }
+      break;
+    case scheme_application3_type:
+      {
+        Scheme_App3_Rec *app = (Scheme_App3_Rec *)expr;
+        return produces_unboxed(app->rator, NULL, 2, 0);
+      }
+      break;
+    case scheme_compiled_let_void_type:
+      {
+        Scheme_Let_Header *lh = (Scheme_Let_Header *)expr;
+        int i;
+        expr = lh->body;
+        for (i = 0; i < lh->num_clauses; i++) {
+          expr = ((Scheme_Compiled_Let_Value *)expr)->body;
+        }
+        /* check expr again */
+      }
+      break;
+    default:
+      if (SCHEME_FLOATP(expr))
+        return 1;
+      return 0;
     }
-    break;
-  case scheme_application2_type:
-    {
-      Scheme_App2_Rec *app = (Scheme_App2_Rec *)expr;
-      return produces_unboxed(app->rator, NULL, 1, 0);
-    }
-    break;
-  case scheme_application3_type:
-    {
-      Scheme_App3_Rec *app = (Scheme_App3_Rec *)expr;
-      return produces_unboxed(app->rator, NULL, 2, 0);
-    }
-    break;
-  default:
-    if (SCHEME_FLOATP(expr))
-      return 1;
-    break;
   }
-  return 0;
 }
 
 static Scheme_Object *check_unbox_rotation(Scheme_Object *_app, Scheme_Object *rator, int count, Optimize_Info *info)
@@ -3239,11 +3292,10 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
 
   for (i = 0; i < n; i++) {
     if (!i) {
-      le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, &rator_flags, context);
+      le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, &rator_flags, context, 0);
       if (le)
 	return le;
     }
-
 
     sub_context = 0;
     if ((i > 0) && scheme_wants_flonum_arguments(app->args[0], i - 1, 0))
@@ -3253,12 +3305,10 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
     app->args[i] = le;
 
     if (!i) {
-      if (SAME_TYPE(SCHEME_TYPE(app->args[0]),scheme_compiled_unclosed_procedure_type)) {
-        /* Found "((lambda" after optimizing; try again */
-        le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, &rator_flags, context);
-        if (le)
-          return le;
-      }
+      /* Maybe found "((lambda" after optimizing; try again */
+      le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, &rator_flags, context, 1);
+      if (le)
+        return le;
     }
 
     if (i && (SCHEME_TYPE(le) < _scheme_compiled_values_types_))
@@ -3349,16 +3399,16 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
   le = check_app_let_rator(o, app->rator, info, 1, context);
   if (le) return le;
 
-  le = optimize_for_inline(info, app->rator, 1, NULL, app, NULL, &rator_flags, context);
+  le = optimize_for_inline(info, app->rator, 1, NULL, app, NULL, &rator_flags, context, 0);
   if (le)
     return le;
 
   le = scheme_optimize_expr(app->rator, info, sub_context);
   app->rator = le;
 
-  if (SAME_TYPE(SCHEME_TYPE(app->rator),scheme_compiled_unclosed_procedure_type)) {
-    /* Found "((lambda" after optimizing; try again */
-    le = optimize_for_inline(info, app->rator, 1, NULL, app, NULL, &rator_flags, context);
+  {
+    /* Maybe found "((lambda" after optimizing; try again */
+    le = optimize_for_inline(info, app->rator, 1, NULL, app, NULL, &rator_flags, context, 1);
     if (le)
       return le;
   }
@@ -3421,20 +3471,20 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
   le = check_app_let_rator(o, app->rator, info, 2, context);
   if (le) return le;
 
-  le = optimize_for_inline(info, app->rator, 2, NULL, NULL, app, &rator_flags, context);
+  le = optimize_for_inline(info, app->rator, 2, NULL, NULL, app, &rator_flags, context, 0);
   if (le)
     return le;
 
   le = scheme_optimize_expr(app->rator, info, sub_context);
   app->rator = le;
 
-  if (SAME_TYPE(SCHEME_TYPE(app->rator),scheme_compiled_unclosed_procedure_type)) {
-    /* Found "((lambda" after optimizing; try again */
-    le = optimize_for_inline(info, app->rator, 2, NULL, NULL, app, &rator_flags, context);
+  {
+    /* Maybe found "((lambda" after optimizing; try again */
+    le = optimize_for_inline(info, app->rator, 2, NULL, NULL, app, &rator_flags, context, 1);
     if (le)
       return le;
   }
-
+  
   /* 1st arg */
 
   if (scheme_wants_flonum_arguments(app->rator, 0, 0))
@@ -3570,7 +3620,7 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
     if (rev) {
       int rator2_flags;
       Scheme_Object *o_f;
-      o_f = optimize_for_inline(info, rev, 1, NULL, NULL, NULL, &rator2_flags, context);
+      o_f = optimize_for_inline(info, rev, 1, NULL, NULL, NULL, &rator2_flags, context, 0);
       if (o_f) {
         f_is_proc = rev;
 
@@ -3920,7 +3970,9 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
 
       pos = SCHEME_LOCAL_POS(expr);
 
-      val = scheme_optimize_info_lookup(info, pos, NULL, NULL, 1, context, NULL);
+      val = scheme_optimize_info_lookup(info, pos, NULL, NULL, 
+                                        (context & OPT_CONTEXT_NO_SINGLE) ? 0 : 1, 
+                                        context, NULL);
       if (val) {
         if (SAME_TYPE(SCHEME_TYPE(val), scheme_once_used_type)) {
           Scheme_Once_Used *o = (Scheme_Once_Used *)val;
@@ -4008,7 +4060,8 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
 	    expr = scheme_toplevel_to_flagged_toplevel(expr, SCHEME_TOPLEVEL_READY);
 	  }
 	}
-        info->vclock += 1;
+        if (!c)
+          info->vclock += 1;
       }
     } else {
       info->vclock += 1;
@@ -11255,7 +11308,7 @@ void scheme_validate_code(Mz_CPort *port, Scheme_Object *code,
                            depth, delta, delta, 
                            num_toplevels, num_stxes, num_lifts,
                            NULL, 0, 0,
-                           vc, 1);
+                           vc, 1, 0);
     }
   } else {
     scheme_validate_expr(port, code, 
@@ -11263,7 +11316,7 @@ void scheme_validate_code(Mz_CPort *port, Scheme_Object *code,
                          depth, delta, delta, 
                          num_toplevels, num_stxes, num_lifts,
                          NULL, 0, 0,
-                         vc, 1);
+                         vc, 1, 0);
   }
 }
 
@@ -11287,7 +11340,8 @@ static Scheme_Object *validate_k(void)
   scheme_validate_expr(port, expr, stack, tls,
                        args[0], args[1], args[2],
                        args[3], args[4], args[5],
-                       app_rator, args[6], args[7], vc, args[8]);
+                       app_rator, args[6], args[7], vc, args[8],
+                       args[9]);
 
   return scheme_true;
 }
@@ -11435,7 +11489,7 @@ void scheme_validate_closure(Mz_CPort *port, Scheme_Object *expr,
   }
 
   scheme_validate_expr(port, data->code, new_stack, tls, sz, sz, base, num_toplevels, num_stxes, num_lifts,
-                       NULL, 0, 0, vc, 1);
+                       NULL, 0, 0, vc, 1, 0);
 }
 
 
@@ -11551,6 +11605,19 @@ static void check_self_call_valid(Scheme_Object *rator, Mz_CPort *port, struct V
   }
 }
 
+static void no_flo(int need_flonum, Mz_CPort *port)
+{
+  if (need_flonum) scheme_ill_formed_code(port);
+}
+
+static void check_flo(Scheme_Object *expr, int need_flonum, Mz_CPort *port)
+{
+  if (need_flonum) {
+    if (!scheme_expr_produces_flonum(expr))
+      scheme_ill_formed_code(port);
+  }
+}
+
 #define CAN_RESET_STACK_SLOT 0
 #if !CAN_RESET_STACK_SLOT
 # define WHEN_CAN_RESET_STACK_SLOT(x) 0
@@ -11564,7 +11631,8 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 			  int num_toplevels, int num_stxes, int num_lifts,
                           Scheme_Object *app_rator, int proc_with_refs_ok,
                           int result_ignored,
-                          struct Validate_Clearing *vc, int tailpos)
+                          struct Validate_Clearing *vc, int tailpos,
+                          int need_flonum)
 {
   Scheme_Type type;
   int did_one = 0, vc_merge = 0, vc_merge_start = 0;
@@ -11576,7 +11644,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
     void **pr;
     int *args;
 
-    args = MALLOC_N_ATOMIC(int, 8);
+    args = MALLOC_N_ATOMIC(int, 10);
 
     p->ku.k.p1 = (void *)port;
     p->ku.k.p2 = (void *)expr;
@@ -11591,6 +11659,8 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
     args[5] = num_lifts;
     args[6] = proc_with_refs_ok;
     args[7] = result_ignored;
+    args[8] = tailpos;
+    args[9] = need_flonum;
 
     pr = MALLOC_N(void*, 3);
     pr[0] = (void *)args;
@@ -11625,6 +11695,8 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
       int c = SCHEME_TOPLEVEL_DEPTH(expr);
       int d = c + delta;
       int p = SCHEME_TOPLEVEL_POS(expr);
+
+      no_flo(need_flonum, port);
 
       if ((c < 0) || (p < 0) || (d >= depth)
 	  || (stack[d] != VALID_TOPLEVELS) 
@@ -11670,6 +11742,9 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       if ((q < 0) || (p >= depth))
 	scheme_ill_formed_code(port);
+
+      if (SCHEME_GET_LOCAL_FLAGS(expr) != SCHEME_LOCAL_FLONUM)
+        no_flo(need_flonum, port);
       
       if (SCHEME_GET_LOCAL_FLAGS(expr) == SCHEME_LOCAL_FLONUM) {
         if (stack[p] != VALID_FLONUM)
@@ -11712,6 +11787,8 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
       int q = SCHEME_LOCAL_POS(expr);
       int p = q + delta;
 
+      no_flo(need_flonum, port);
+
       if ((q < 0) || (p >= depth) || ((stack[p] != VALID_BOX)
                                       && (stack[p] != VALID_BOX_NOCLEAR)))
 	scheme_ill_formed_code(port);
@@ -11735,6 +11812,8 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
     {
       Scheme_Syntax_Validater f;
       int p = SCHEME_PINT_VAL(expr);
+
+      no_flo(need_flonum, port);
 	
       if ((p < 0) || (p >= _COUNT_EXPD_))
 	scheme_ill_formed_code(port);
@@ -11749,6 +11828,8 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
       Scheme_App_Rec *app = (Scheme_App_Rec *)expr;
       int i, n;
       
+      check_flo(expr, need_flonum, port);
+
       n = app->num_args + 1;
 
       delta -= (n - 1);
@@ -11758,7 +11839,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 
       for (i = 0; i < n; i++) {
 	scheme_validate_expr(port, app->args[i], stack, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts, 
-                             i ? app->args[0] : NULL, i + 1, 0, vc, 0);
+                             i ? app->args[0] : NULL, i + 1, 0, vc, 0, 0);
       }
 
       if (tailpos)
@@ -11768,6 +11849,8 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
   case scheme_application2_type:
     {
       Scheme_App2_Rec *app = (Scheme_App2_Rec *)expr;
+
+      check_flo(expr, need_flonum, port);
       
       delta -= 1;
       if (delta < 0)
@@ -11775,9 +11858,9 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
       stack[delta] = VALID_NOT;
 
       scheme_validate_expr(port, app->rator, stack, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts, 
-                           NULL, 1, 0, vc, 0);
+                           NULL, 1, 0, vc, 0, 0);
       scheme_validate_expr(port, app->rand, stack, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts, 
-                           app->rator, 2, 0, vc, 0);
+                           app->rator, 2, 0, vc, 0, 0);
 
       if (tailpos)
         check_self_call_valid(app->rator, port, vc, delta, stack);
@@ -11786,6 +11869,8 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
   case scheme_application3_type:
     {
       Scheme_App3_Rec *app = (Scheme_App3_Rec *)expr;
+
+      check_flo(expr, need_flonum, port);
       
       delta -= 2;
       if (delta < 0)
@@ -11794,11 +11879,11 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
       stack[delta+1] = VALID_NOT;
 
       scheme_validate_expr(port, app->rator, stack, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts, 
-                           NULL, 1, 0, vc, 0);
+                           NULL, 1, 0, vc, 0, 0);
       scheme_validate_expr(port, app->rand1, stack, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts, 
-                           app->rator, 2, 0, vc, 0);
+                           app->rator, 2, 0, vc, 0, 0);
       scheme_validate_expr(port, app->rand2, stack, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts, 
-                           app->rator, 3, 0, vc, 0);
+                           app->rator, 3, 0, vc, 0, 0);
 
       if (tailpos)
         check_self_call_valid(app->rator, port, vc, delta, stack);
@@ -11809,12 +11894,14 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
       Scheme_Sequence *seq = (Scheme_Sequence *)expr;
       int cnt;
       int i;
+
+      no_flo(need_flonum, port);
       
       cnt = seq->count;
 	  
       for (i = 0; i < cnt - 1; i++) {
 	scheme_validate_expr(port, seq->array[i], stack, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts,
-                             NULL, 0, 1, vc, 0);
+                             NULL, 0, 1, vc, 0, 0);
       }
 
       expr = seq->array[cnt - 1];
@@ -11826,9 +11913,11 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
       Scheme_Branch_Rec *b;
       int vc_pos, vc_ncpos;
 
+      no_flo(need_flonum, port);
+
       b = (Scheme_Branch_Rec *)expr;
       scheme_validate_expr(port, b->test, stack, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts,
-                           NULL, 0, 0, vc, 0);
+                           NULL, 0, 0, vc, 0, 0);
       /* This is where letlimit is useful. It prevents let-assignment in the
 	 "then" branch that could permit bad code in the "else" branch (or the
 	 same thing with either branch affecting later code in a sequence). */
@@ -11836,7 +11925,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
       vc_pos = vc->stackpos;
       vc_ncpos = vc->ncstackpos;
       scheme_validate_expr(port, b->tbranch, stack, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts,
-                           NULL, 0, result_ignored, vc, tailpos);
+                           NULL, 0, result_ignored, vc, tailpos, 0);
 
       /* Rewind clears and noclears, but also save the clears,
          so that the branches' effects can be merged. */
@@ -11869,11 +11958,13 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
   case scheme_with_cont_mark_type:
     {
       Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)expr;
+
+      no_flo(need_flonum, port);
       
       scheme_validate_expr(port, wcm->key, stack, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts,
-                           NULL, 0, 0, vc, 0);
+                           NULL, 0, 0, vc, 0, 0);
       scheme_validate_expr(port, wcm->val, stack, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts,
-                           NULL, 0, 0, vc, 0);
+                           NULL, 0, 0, vc, 0, 0);
       expr = wcm->body;
       goto top;
     }
@@ -11886,6 +11977,8 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
       int p = qs->midpoint;
       int d = c + delta;
 
+      no_flo(need_flonum, port);
+
       if ((c < 0) || (p < 0) || (d >= depth)
 	  || (stack[d] != VALID_TOPLEVELS) 
 	  || (p != num_toplevels)
@@ -11895,6 +11988,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
     break;
   case scheme_unclosed_procedure_type:
     {
+      no_flo(need_flonum, port);
       validate_unclosed_procedure(port, expr, stack, tls,
                                   depth, delta, num_toplevels, num_stxes, num_lifts,
                                   app_rator, proc_with_refs_ok, -1);
@@ -11904,9 +11998,9 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
     {
       Scheme_Let_Value *lv = (Scheme_Let_Value *)expr;
       int q, p, c, i;
-
+      
       scheme_validate_expr(port, lv->value, stack, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts,
-                           NULL, 0, 0, vc, 0);
+                           NULL, 0, 0, vc, 0, 0);
       /* memset(stack, VALID_NOT, delta);  <-- seems unnecessary (and slow) */
 
       c = lv->count;
@@ -11952,7 +12046,6 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
 	delta -= c;
 	memset(stack + delta, VALID_UNINIT, c);
       }
-
 
       expr = lv->body;
       goto top;
@@ -12001,7 +12094,7 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
       stack[delta] = VALID_UNINIT;
 
       scheme_validate_expr(port, lo->value, stack, tls, depth, letlimit, delta, num_toplevels, num_stxes, num_lifts,
-                           NULL, 0, 0, vc, 0);
+                           NULL, 0, 0, vc, 0, SCHEME_LET_EVAL_TYPE(lo) & LET_ONE_FLONUM);
 
 #if !CAN_RESET_STACK_SLOT
       if (stack[delta] != VALID_UNINIT)
@@ -12021,9 +12114,10 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
   default:
     /* All values are definitely ok, except pre-closed closures. 
        Such a closure can refer back to itself, so we use a flag
-       to track cycles. */
+       to track cycles. Also check need_flonum. */
     if (SAME_TYPE(type, scheme_closure_type)) {
       Scheme_Closure_Data *data;
+      no_flo(need_flonum, port);
       expr = (Scheme_Object *)SCHEME_COMPILED_CLOS_CODE(expr);
       data = (Scheme_Closure_Data *)expr;        
       if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_VALIDATED) {
@@ -12033,6 +12127,9 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
         did_one = 0;
         goto top;
       }
+    } else if (need_flonum) {
+      if (!SCHEME_FLOATP(expr))
+        no_flo(need_flonum, port);
     }
     break;
   }
@@ -12065,7 +12162,7 @@ void scheme_validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
                        depth, delta, delta, 
                        num_toplevels, num_stxes, num_lifts,
                        NULL, skip_refs_check ? 1 : 0, 0,
-                       make_clearing_stack(), 0);
+                       make_clearing_stack(), 0, 0);
 }
 
 void scheme_validate_boxenv(int p, Mz_CPort *port, char *stack, int depth, int delta)

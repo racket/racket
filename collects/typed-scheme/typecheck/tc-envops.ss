@@ -11,7 +11,7 @@
          (types resolve)
          (only-in (env type-environments lexical-env) env? update-type/lexical env-map env-props replace-props)
          scheme/contract scheme/match
-         mzlib/trace
+         mzlib/trace unstable/debug
          (typecheck tc-metafunctions)
          (for-syntax scheme/base))
 

@@ -306,6 +306,12 @@
 	       (subtypes* A0 flds flds*)]
 	      [((Struct: nm _ flds proc _ _ _) (Struct: nm _ flds* proc* _ _ _))
 	       (subtypes* A0 (cons proc flds) (cons proc* flds*))]
+              [((Struct: _ _ _ _ _ _ _) (StructTop: (? (lambda (s2) (type-equal? s2 s)))))
+               A0]
+              [((Box: _) (BoxTop:)) A0]
+              [((Vector: _) (VectorTop:)) A0]
+              [((MPair: _ _) (MPairTop:)) A0]
+              [((Hashtable: _ _) (HashtableTop:)) A0]
 	      ;; subtyping on structs follows the declared hierarchy
 	      [((Struct: nm (? Type? parent) flds proc _ _ _) other) 
                ;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)

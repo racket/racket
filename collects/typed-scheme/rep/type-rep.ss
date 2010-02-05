@@ -218,8 +218,14 @@
                          poly?
                          pred-id
                          cert)]
-    [#:key #f #;(gensym)])
+    [#:key #f])
 
+;; the supertype of all of these values
+(dt BoxTop () [#:fold-rhs #:base] [#:key 'box])
+(dt VectorTop () [#:fold-rhs #:base] [#:key 'vector])
+(dt HashtableTop () [#:fold-rhs #:base] [#:key 'hash])
+(dt MPairTop () [#:fold-rhs #:base] [#:key 'mpair])
+(dt StructTop ([name Struct?]) [#:key #f])
 
 ;; v : Scheme Value
 (dt Value (v) [#:frees #f] [#:fold-rhs #:base] [#:key (cond [(number? v) 'number]

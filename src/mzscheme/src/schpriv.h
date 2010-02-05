@@ -2308,8 +2308,9 @@ Scheme_Object *scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, in
 
 #define OPT_CONTEXT_FLONUM_ARG 0x1
 #define OPT_CONTEXT_BOOLEAN    0x2
+#define OPT_CONTEXT_NO_SINGLE  0x4
 
-#define scheme_optimize_result_context(c) (c & (~OPT_CONTEXT_FLONUM_ARG))
+#define scheme_optimize_result_context(c) (c & (~(OPT_CONTEXT_FLONUM_ARG | OPT_CONTEXT_NO_SINGLE)))
 #define scheme_optimize_tail_context(c) scheme_optimize_result_context(c) 
 
 Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e, 
@@ -2613,7 +2614,8 @@ void scheme_validate_expr(Mz_CPort *port, Scheme_Object *expr,
                           int depth, int letlimit, int delta,
 			  int num_toplevels, int num_stxes, int num_lifts,
                           Scheme_Object *app_rator, int proc_with_refs_ok, 
-                          int result_ignored, struct Validate_Clearing *vc, int tailpos);
+                          int result_ignored, struct Validate_Clearing *vc, 
+                          int tailpos, int need_flonum);
 void scheme_validate_toplevel(Scheme_Object *expr, Mz_CPort *port,
 			      char *stack, Validate_TLS tls,
                               int depth, int delta,

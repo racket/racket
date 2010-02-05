@@ -791,6 +791,9 @@
               #:ret (ret -Number (-FS (list) (list (make-Bot)))))
         [tc-e (let ([x 1]) (if x x (add1 x))) 
               #:ret (ret -Pos (-FS (list) (list (make-Bot))))]
+        [tc-e (let: ([x : (U (Vectorof Number) String) (vector 1 2 3)])
+                (if (vector? x) (vector-ref x 0) (string-length x)))
+         -Number]
         )
   (test-suite
    "check-type tests"

@@ -11,7 +11,8 @@
  scheme/promise scheme/system
  (only-in string-constants/private/only-once maybe-print-message)
  (only-in scheme/match/runtime match:error matchable? match-equality-test)
- (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])))
+ (for-syntax (only-in (types abbrev) [-Number N] [-Boolean B] [-Symbol Sym])
+             (only-in (rep type-rep) make-HashtableTop make-MPairTop make-BoxTop make-VectorTop)))
 
 [raise (Univ . -> . (Un))]
 
@@ -92,9 +93,9 @@
 [box (-poly (a) (a . -> . (-box a)))]
 [unbox (-poly (a) ((-box a) . -> . a))]
 [set-box! (-poly (a) ((-box a) a . -> . -Void))]
-[box? (make-pred-ty (-box Univ))]
+[box? (make-pred-ty (make-BoxTop))]
 [cons? (make-pred-ty (-pair Univ Univ))]
-[pair? (make-pred-ty (-pair Univ Univ)) #;(-poly (a b) (make-pred-ty (-pair a b)))]
+[pair? (make-pred-ty (-pair Univ Univ))]
 [empty? (make-pred-ty (-val null))]
 [empty (-val null)]
 
@@ -330,7 +331,7 @@
 [keyword->string (-Keyword . -> . -String)]
 
 ;; vectors
-[vector? (make-pred-ty (-vec Univ))]
+[vector? (make-pred-ty (make-VectorTop))]
 
 [vector->list (-poly (a) (-> (-vec a) (-lst a)))]
 [list->vector (-poly (a) (-> (-lst a) (-vec a)))]
@@ -363,6 +364,7 @@
 [directory-list (cl-> [() (-lst -Path)]
                       [(-Path) (-lst -Path)])]
 
+[hash? (make-pred-ty (make-HashtableTop))]
 [make-hash (-poly (a b) (-> (-HT a b)))]
 [make-hasheq (-poly (a b) (-> (-HT a b)))]
 [make-weak-hash (-poly (a b) (-> (-HT a b)))]

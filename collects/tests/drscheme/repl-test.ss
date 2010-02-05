@@ -1074,8 +1074,20 @@ This produces an ACK message
    (normalize-path 
     (collection-path "tests" "drscheme"))))
 
+(define tmp-load-short-filename "repl-test-tmp.ss")
+(define tmp-load-filename (build-path tmp-load-directory tmp-load-short-filename))
+
+(define tmp-load3-short-filename "repl-test-tmp3.ss")
+(define tmp-load3-filename (build-path tmp-load-directory tmp-load3-short-filename))
+
+tmp-load-filename
+
+(define (cleanup-tmp-files)
+  (when (file-exists? tmp-load-filename) (delete-file tmp-load-filename))
+  (when (file-exists? tmp-load3-filename) (delete-file tmp-load3-filename)))
+
 (define (run-test)
-  
+    
   (define drscheme-frame (wait-for-drscheme-frame))
   
   (define interactions-text (send drscheme-frame get-interactions-text))
@@ -1087,11 +1099,6 @@ This produces an ACK message
   (define wait-for-execute (lambda () (wait-for-button execute-button)))
   (define get-int-pos (lambda () (get-text-pos interactions-text)))
   
-  (define tmp-load-short-filename "repl-test-tmp.ss")
-  (define tmp-load-filename (build-path tmp-load-directory tmp-load-short-filename))
-  
-  (define tmp-load3-short-filename "repl-test-tmp3.ss")
-  (define tmp-load3-filename (build-path tmp-load-directory tmp-load3-short-filename))
   
   (define short-tmp-load-filename
     (let-values ([(base name dir?) (split-path tmp-load-filename)])
@@ -1510,5 +1517,11 @@ This produces an ACK message
 
 (let ()
   (fire-up-drscheme)
+  (wait-for-drscheme-frame) ;; after this point, it is safe to set the exit handler
+  (exit-handler
+   (let ([eh (exit-handler)])
+     (λ (val)
+       (cleanup-tmp-files)
+       (eh val))))
   (thread (λ () (run-test) (exit)))
   (yield (make-semaphore 0)))

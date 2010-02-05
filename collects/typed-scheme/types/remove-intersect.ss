@@ -3,7 +3,7 @@
 (require "../utils/utils.ss" 
 	 (rep type-rep rep-utils)
 	 (types union subtype resolve convenience utils)
-         scheme/match mzlib/trace)
+         scheme/match mzlib/trace unstable/debug)
 
 (provide (rename-out [*remove remove]) overlap)
 
@@ -65,14 +65,11 @@
 
 ;(trace overlap)
 
-
-;(trace restrict)
-
 ;; also not yet correct
 ;; produces old without the contents of rem
 (define (*remove old rem)
   (define initial
-    (if (subtype old rem) 
+    (if (subtype old rem)
         (Un) ;; the empty type
         (match (list old rem)
           [(list (or (App: _ _ _) (Name: _)) t)
@@ -87,4 +84,3 @@
   (if (subtype old initial) old initial))
 
 ;(trace *remove)
-;(trace restrict)

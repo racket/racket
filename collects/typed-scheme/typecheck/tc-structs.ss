@@ -131,7 +131,9 @@
      (list (cons (or maker* maker) 
                  (wrapper (->* external-fld-types (if cret cret name))))
            (cons (or pred* pred)
-                 (make-pred-ty (pred-wrapper name))))
+                 (make-pred-ty (if setters?
+                                   (make-StructTop sty)
+                                   (pred-wrapper name)))))
      (for/list ([g (in-list getters)] [t (in-list external-fld-types/no-parent)] [i (in-naturals)])
        (let ([func (if setters? 
                        (->* (list name) t)
