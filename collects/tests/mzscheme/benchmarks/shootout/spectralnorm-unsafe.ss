@@ -6,8 +6,14 @@
 
 #lang scheme/base
 (require scheme/cmdline
-         scheme/flonum
-         scheme/unsafe/ops)
+	 scheme/require (for-syntax scheme/base)
+	 (rename-in
+          (filtered-in
+           (lambda (name) (regexp-replace #rx"unsafe-" name ""))
+           scheme/unsafe/ops)
+          [fx->fl ->fl])
+         (only-in scheme/flonum make-flvector))
+
 
 (define (Approximate n)
   (let ([u (make-flvector n 1.0)]
@@ -21,37 +27,33 @@
     ;; v.Bv /(v.v)   eigenvalue of v
     (let loop ([i 0][vBv 0.0][vv 0.0])
       (if (= i n)
-          (unsafe-flsqrt (unsafe-fl/ vBv vv))
-          (let ([vi (unsafe-flvector-ref v i)])
-            (loop (unsafe-fx+ 1 i)
-                  (unsafe-fl+ vBv (unsafe-fl* (unsafe-flvector-ref u i) vi))
-                  (unsafe-fl+ vv (unsafe-fl* vi vi))))))))
+          (flsqrt (fl/ vBv vv))
+          (let ([vi (flvector-ref v i)])
+            (loop (add1 i)
+                  (fl+ vBv (fl* (flvector-ref u i) vi))
+                  (fl+ vv (fl* vi vi))))))))
 
 ;; return element i,j of infinite matrix A
 (define (A i j)
-  (unsafe-fl/ 1.0 
-              (unsafe-fl+ 
-               (unsafe-fl* (unsafe-fx->fl (unsafe-fx+ i j))
-                           (unsafe-fl/ (unsafe-fx->fl
-                                        (unsafe-fx+ i (unsafe-fx+ j 1)))
-                                       2.0))
-               (unsafe-fx->fl (unsafe-fx+ i 1)))))
+  (fl/ 1.0 (fl+ (fl* (->fl (+ i j))
+                     (fl/ (->fl (+ i (+ j 1))) 2.0)) 
+                (->fl (+ i 1)))))
 
 ;; multiply vector v by matrix A
 (define (MultiplyAv n v Av)
   (for ([i (in-range n)])
-    (unsafe-flvector-set! Av i 
-                        (for/fold ([r 0.0])
-                            ([j (in-range n)])
-                          (unsafe-fl+ r (unsafe-fl* (A i j) (unsafe-flvector-ref v j)))))))
+    (flvector-set! Av i 
+                   (for/fold ([r 0.0])
+                       ([j (in-range n)])
+                     (fl+ r (fl* (A i j) (flvector-ref v j)))))))
 
 ;; multiply vector v by matrix A transposed
 (define (MultiplyAtv n v Atv)
   (for ([i (in-range n)])
-    (unsafe-flvector-set! Atv i
-                 (for/fold ([r 0.0])
-                     ([j (in-range n)])
-                   (unsafe-fl+ r (unsafe-fl* (A j i) (unsafe-flvector-ref v j)))))))
+    (flvector-set! Atv i
+                   (for/fold ([r 0.0])
+                       ([j (in-range n)])
+                     (fl+ r (fl* (A j i) (flvector-ref v j)))))))
 
 ;; multiply vector v by matrix A and then by matrix A transposed 
 (define (MultiplyAtAv n v AtAv)
@@ -63,4 +65,3 @@
         (real->decimal-string
          (Approximate (command-line #:args (n) (string->number n)))
          9))
-

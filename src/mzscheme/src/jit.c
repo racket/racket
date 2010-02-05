@@ -3958,7 +3958,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       int directly;
       jitter->unbox++;
       if (can_unbox_inline(arg, 5, JIT_FPR_NUM-1, 0))
-        directly = 1;
+        directly = 2;
       else if (can_unbox_directly(arg))
         directly = 1;
       else
@@ -4255,35 +4255,51 @@ static int can_unbox_directly(Scheme_Object *obj)
 {
   Scheme_Type t;
 
-  t = SCHEME_TYPE(obj);
-  switch (t) {
-  case scheme_application2_type:
-    {
-      Scheme_App2_Rec *app = (Scheme_App2_Rec *)obj;
-      if (is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_UNARY_INLINED, 1, 1))
-        return 1;
-      if (SCHEME_PRIMP(app->rator)
-          && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
-        if (IS_NAMED_PRIM(app->rator, "->fl")
-            || IS_NAMED_PRIM(app->rator, "fx->fl"))
+  while (1) {
+    t = SCHEME_TYPE(obj);
+    switch (t) {
+    case scheme_application2_type:
+      {
+        Scheme_App2_Rec *app = (Scheme_App2_Rec *)obj;
+        if (is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_UNARY_INLINED, 1, 1))
           return 1;
+        if (SCHEME_PRIMP(app->rator)
+            && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
+          if (IS_NAMED_PRIM(app->rator, "->fl")
+              || IS_NAMED_PRIM(app->rator, "fx->fl"))
+            return 1;
+        }
+        return 0;
       }
+      break;
+    case scheme_application3_type:
+      {
+        Scheme_App3_Rec *app = (Scheme_App3_Rec *)obj;
+        if (is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_BINARY_INLINED, 1, 1))
+          return 1;
+        if (SCHEME_PRIMP(app->rator)
+            && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)) {
+          if (IS_NAMED_PRIM(app->rator, "flvector-ref")) return 1;
+        }
+        return 0;
+      }    
+      break;
+    case scheme_let_value_type:
+      obj = ((Scheme_Let_Value *)obj)->body;
+      break;
+    case scheme_let_one_type:
+      obj = ((Scheme_Let_One *)obj)->body;
+      break;
+    case scheme_let_void_type:
+      obj = ((Scheme_Let_Void *)obj)->body;
+      break;
+    case scheme_letrec_type:
+      obj = ((Scheme_Letrec *)obj)->body;
+      break;
+    default:
+      return 0;
     }
-    break;
-  case scheme_application3_type:
-    {
-      Scheme_App3_Rec *app = (Scheme_App3_Rec *)obj;
-      if (is_inline_unboxable_op(app->rator, SCHEME_PRIM_IS_BINARY_INLINED, 1, 1))
-        return 1;
-      if (SCHEME_PRIMP(app->rator)
-          && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)) {
-        if (IS_NAMED_PRIM(app->rator, "flvector-ref")) return 1;
-      }
-    }    
-    break;
   }
-
-  return 0;
 }
 
 static jit_insn *generate_arith_slow_path(mz_jit_state *jitter, Scheme_Object *rator, 
@@ -4901,11 +4917,11 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
     }
 
     if (inlined_flonum1)
-      can_direct1 = 1;
+      can_direct1 = 2;
     else
       can_direct1 = can_unbox_directly(rand);
     if (inlined_flonum2)
-      can_direct2 = 1;
+      can_direct2 = 2;
     else 
       can_direct2 = can_unbox_directly(rand2);
 
@@ -7855,23 +7871,26 @@ static int generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 	}
       }
 
-      if ((which == 3)
-          && (can_unbox_inline(app->args[3], 5, JIT_FPR_NUM-3, 0)
-              || can_unbox_directly(app->args[3]))) {
-# if !defined(INLINE_FP_OPS) || !defined(CAN_INLINE_ALLOC)
-        /* Error handling will have to box flonum, so don't unbox if
-           that cannot be done inline: */
-        if (!unsafe)
-          flonum_arg = 0;
-        else
-# endif
+      if (which == 3) {
+        if (can_unbox_inline(app->args[3], 5, JIT_FPR_NUM-3, 0))
+          flonum_arg = 2;
+        else if (can_unbox_directly(app->args[3]))
           flonum_arg = 1;
+        else
+          flonum_arg = 0;
       } else
         flonum_arg = 0;
 
+# if !defined(INLINE_FP_OPS) || !defined(CAN_INLINE_ALLOC)
+      /* Error handling will have to box flonum, so don't unbox if
+         that cannot be done inline: */
+      if (flonum_arg && !unsafe)
+        flonum_arg = 0;
+# endif
+
       if (flonum_arg) {
         jitter->unbox++;
-        generate_unboxed(app->args[3], jitter, 1, 0);
+        generate_unboxed(app->args[3], jitter, flonum_arg, 0);
         --jitter->unbox;
       } else {
         generate_non_tail(app->args[3], jitter, 0, 1, 0); /* sync'd below */
@@ -8697,12 +8716,16 @@ static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter,
 }
 
 static int generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inlined_ok, int unbox_anyway)
-/* de-sync's; if refslow, failure jumps conditionally with non-flonum in R0  */
+/* de-sync's; if refslow, failure jumps conditionally with non-flonum in R0;
+   inlined_ok == 2 => can generate directly; inlined_ok == 1 => non-tail unbox */
 {
   int saved;
 
   if (inlined_ok) {
-    return generate(obj, jitter, 0, 1, JIT_R0, NULL);
+    if (inlined_ok == 2)
+      return generate(obj, jitter, 0, 1, JIT_R0, NULL);
+    else
+      return generate_non_tail(obj, jitter, 0, 1, 0);
   }
 
   if (!jitter->unbox || jitter->unbox_depth)
@@ -9625,10 +9648,15 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
   case scheme_let_value_type:
     {
       Scheme_Let_Value *lv = (Scheme_Let_Value *)obj;
-      int ab = SCHEME_LET_AUTOBOX(lv), i, pos;
+      int ab = SCHEME_LET_AUTOBOX(lv), i, pos, to_unbox = 0;
       START_JIT_DATA();
 
       LOG_IT(("let...\n"));
+
+      if (jitter->unbox) {
+        to_unbox = jitter->unbox;
+        jitter->unbox = 0;
+      }
 
       if (lv->count == 1) {
 	/* Expect one result: */
@@ -9707,15 +9735,23 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
       LOG_IT(("...in\n"));
 
+      if (to_unbox)
+        jitter->unbox = to_unbox;
+
       return generate(lv->body, jitter, is_tail, multi_ok, orig_target, for_branch);
     }
   case scheme_let_void_type:
     {
       Scheme_Let_Void *lv = (Scheme_Let_Void *)obj;
-      int c = lv->count;
+      int c = lv->count, to_unbox = 0;
       START_JIT_DATA();
 
       LOG_IT(("letv...\n"));
+
+      if (jitter->unbox) {
+        to_unbox = jitter->unbox;
+        jitter->unbox = 0;
+      }
 
       mz_rs_dec(c);
       CHECK_RUNSTACK_OVERFLOW();
@@ -9742,15 +9778,23 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
       LOG_IT(("...in\n"));
 
+      if (to_unbox)
+        jitter->unbox = to_unbox;
+
       return generate(lv->body, jitter, is_tail, multi_ok, orig_target, for_branch);
     }
   case scheme_letrec_type:
     {
       Scheme_Letrec *l = (Scheme_Letrec *)obj;
-      int i, nsrs, prepped = 0;
+      int i, nsrs, prepped = 0, to_unbox = 0;
       START_JIT_DATA();
 
       LOG_IT(("letrec...\n"));
+
+      if (jitter->unbox) {
+        to_unbox = jitter->unbox;
+        jitter->unbox = 0;
+      }
 
       mz_rs_sync();
 
@@ -9803,15 +9847,23 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
         jitter->need_set_rs = nsrs;
       }
 
+      if (to_unbox)
+        jitter->unbox = to_unbox;
+
       return generate(l->body, jitter, is_tail, multi_ok, orig_target, for_branch);
     }
   case scheme_let_one_type:
     {
       Scheme_Let_One *lv = (Scheme_Let_One *)obj;
-      int flonum;
+      int flonum, to_unbox = 0;
       START_JIT_DATA();
 
       LOG_IT(("leto...\n"));
+
+      if (jitter->unbox) {
+        to_unbox = jitter->unbox;
+        jitter->unbox = 0;
+      }
 
       mz_runstack_skipped(jitter, 1);
 
@@ -9824,12 +9876,15 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       PAUSE_JIT_DATA();
       if (flonum) {
 #ifdef USE_FLONUM_UNBOXING
-        if (can_unbox_inline(lv->value, 5, JIT_FPR_NUM-1, 0)
-            || can_unbox_directly(lv->value)) {
+        if (can_unbox_inline(lv->value, 5, JIT_FPR_NUM-1, 0)) {
+          jitter->unbox++;
+          generate_unboxed(lv->value, jitter, 2, 0);
+        } else {
+          if (0) /* validator should ensure that this is ok */
+            if (!can_unbox_directly(lv->value))
+              scheme_signal_error("internal error: bad FLONUM annotation on let");
           jitter->unbox++;
           generate_unboxed(lv->value, jitter, 1, 0);
-        } else {
-          scheme_signal_error("internal error: bad FLONUM annotation on let");
         }
 #endif
       } else
@@ -9863,6 +9918,9 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       LOG_IT(("...in\n"));
 
       mz_RECORD_STATUS(mz_RS_R0_HAS_RUNSTACK0);
+
+      if (to_unbox)
+        jitter->unbox = to_unbox;
 
       return generate(lv->body, jitter, is_tail, multi_ok, orig_target, for_branch);
     }

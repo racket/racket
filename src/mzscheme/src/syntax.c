@@ -988,7 +988,7 @@ static void define_values_validate(Scheme_Object *data, Mz_CPort *port,
   scheme_validate_expr(port, val, stack, tls, 
                        depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
-                       NULL, !!only_var, 0, vc, 0);
+                       NULL, !!only_var, 0, vc, 0, 0);
 }
 
 static Scheme_Object *
@@ -1533,7 +1533,7 @@ static void set_validate(Scheme_Object *data, Mz_CPort *port,
 
   scheme_validate_expr(port, val, stack, tls, depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
-                       NULL, 0, 0, vc, 0);
+                       NULL, 0, 0, vc, 0, 0);
   scheme_validate_toplevel(tl, port, stack, tls, depth, delta, 
                            num_toplevels, num_stxes, num_lifts,
                            0);
@@ -2178,11 +2178,11 @@ static void apply_values_validate(Scheme_Object *data, Mz_CPort *port,
   scheme_validate_expr(port, f, stack, tls,
                        depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
-                       NULL, 0, 0, vc, 0);
+                       NULL, 0, 0, vc, 0, 0);
   scheme_validate_expr(port, e, stack, tls,
                        depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
-                       NULL, 0, 0, vc, 0);
+                       NULL, 0, 0, vc, 0, 0);
 }
 
 /**********************************************************************/
@@ -2348,7 +2348,7 @@ static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, char *stac
       scheme_ill_formed_code(port);
     scheme_validate_expr(port, e, stack, tls, depth, letlimit, delta, 
                          num_toplevels, num_stxes, num_lifts,
-                         NULL, 0, 0, vc, 0);
+                         NULL, 0, 0, vc, 0, 0);
   }
 }
 
@@ -2740,7 +2740,7 @@ static void bangboxenv_validate(Scheme_Object *data, Mz_CPort *port,
 
   scheme_validate_expr(port, SCHEME_CDR(data), stack, tls, depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
-                       NULL, 0, 0, vc, tailpos);
+                       NULL, 0, 0, vc, tailpos, 0);
 }
 
 /**********************************************************************/
@@ -3030,7 +3030,7 @@ static int worth_lifting(Scheme_Object *v)
 Scheme_Object *
 scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, int context)
 {
-  Optimize_Info *body_info, *rhs_info;
+  Optimize_Info *sub_info, *body_info, *rhs_info;
   Scheme_Let_Header *head = (Scheme_Let_Header *)form;
   Scheme_Compiled_Let_Value *clv, *pre_body, *retry_start, *prev_body;
   Scheme_Object *body, *value, *ready_pairs = NULL, *rp_last = NULL, *ready_pairs_start;
@@ -3053,7 +3053,6 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
             && !SCHEME_LOCAL_POS(b->test)
             && !SCHEME_LOCAL_POS(b->tbranch)) {
           Scheme_Branch_Rec *b3;
-          Optimize_Info *sub_info;
 
           b3 = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
           b3->so.type = scheme_branch_type;
@@ -3099,9 +3098,15 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     }
   }
 
-  body_info = scheme_optimize_info_add_frame(info, head->count, head->count, 0);
+  if (for_inline > 1) {
+    info->vclock++;
+    sub_info = scheme_optimize_info_add_frame(info, for_inline - 1, for_inline - 1, 0);
+  } else
+    sub_info = info;
+
+  body_info = scheme_optimize_info_add_frame(sub_info, head->count, head->count, 0);
   if (for_inline) {
-    rhs_info = scheme_optimize_info_add_frame(info, 0, head->count, 0);
+    rhs_info = scheme_optimize_info_add_frame(info, 0, head->count + (for_inline - 1), 0);
     body_info->inline_fuel >>= 1;
   } else
     rhs_info = body_info;
@@ -3514,6 +3519,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   /* Optimized away all clauses? */
   if (!head->num_clauses) {
     scheme_optimize_info_done(body_info);
+    if (for_inline > 1) scheme_optimize_info_done(sub_info);
     return head->body;
   }
   
@@ -3579,6 +3585,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   }
 
   scheme_optimize_info_done(body_info);
+  if (for_inline > 1) scheme_optimize_info_done(sub_info);
 
   return form;
 }
@@ -4898,7 +4905,7 @@ static void begin0_validate(Scheme_Object *data, Mz_CPort *port,
     scheme_validate_expr(port, seq->array[i], stack, tls,
                          depth, letlimit, delta, 
                          num_toplevels, num_stxes, num_lifts,
-                         NULL, 0, i > 0, vc, 0);
+                         NULL, 0, i > 0, vc, 0, 0);
   }
 }
 
@@ -5246,7 +5253,7 @@ static void splice_validate(Scheme_Object *data, Mz_CPort *port,
   scheme_validate_expr(port, data, stack, tls,
                        depth, letlimit, delta, 
                        num_toplevels, num_stxes, num_lifts,
-                       NULL, 0, 0, vc, 0);
+                       NULL, 0, 0, vc, 0, 0);
 }
 
 /**********************************************************************/
