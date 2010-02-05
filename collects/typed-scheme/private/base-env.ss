@@ -209,8 +209,8 @@
 [char-downcase (-> -Char -Char)]
 [char-titlecase (-> -Char -Char)]
 [char-foldcase (-> -Char -Char)]
-[char->integer (-> -Nat -Char)]
-[integer->char (-> -Char -Nat)]
+[char->integer (-> -Char -Nat)]
+[integer->char (-> -Nat -Char)]
 
 [string-normalize-nfd (-> -String -String)]
 [string-normalize-nfkd (-> -String -String)]
