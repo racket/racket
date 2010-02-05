@@ -239,7 +239,14 @@
   (let ([g (g)]) (test '(1 2 3) list (g) (g) (g)))
   (let ([g (g)]) (test '(1 2 3 10 10) list (g) (g) (g) (g 10) (g)))
   (let ([g (generator (yield (yield (yield 1))))])
-    (test '(1 2 3 4 4 4) list (g) (g 2) (g 3) (g 4) (g) (g))))
+    (test '(1 2 3 4 4 4) list (g) (g 2) (g 3) (g 4) (g) (g)))
+  (let ([g (g)])
+    (test '(fresh 1 running 2 running 3 running last done)
+          list (generator-state g) (g)
+               (generator-state g) (g)
+               (generator-state g) (g)
+               (generator-state g) (g 'last)
+               (generator-state g))))
 
 (let* ([helper (lambda (pred num)
                  (for ([i (in-range 0 3)]) (yield (pred (+ i num)))))]

@@ -4,7 +4,7 @@
          scheme/control
          scheme/stxparam scheme/splicing)
 
-(provide yield generator in-generator infinite-generator
+(provide yield generator generator-state in-generator infinite-generator
          sequence->generator sequence->repeated-generator)
 
 ;; (define-syntax-parameter yield
@@ -50,35 +50,47 @@
 (define yield-tag (make-continuation-prompt-tag))
 
 (define-syntax-rule (generator body0 body ...)
-  (let ()
-    (define cont
+  (let ([state 'fresh])
+    (define (cont)
+      (define (yielder value)
+        (shift-at yield-tag k (set! cont k) value))
+      (set! state 'running)
+      (reset-at yield-tag
+        (parameterize ([current-yielder yielder])
+          (call-with-values
+              (lambda () (begin body0 body ...))
+              ;; get here only on at the end of the generator
+              (case-lambda
+                ;; Note: in the first case, the generator was invoked with no
+                ;; arguments, so returning no values is more symmetric.  But
+                ;; this is a common case, and probably people would expect a
+                ;; void result more than no values.
+                [()  (set! cont void)]
+                [(r) (set! cont (lambda () r))]
+                [rs  (set! cont (lambda () (apply values rs)))]))
+          (set! state 'done)
+          (cont))))
+    (define (err)
+      (error 'generator "cannot send a value to a ~a generator" state))
+    (define generator
       (case-lambda
-        [()
-         (define (yielder value)
-           (shift-at yield-tag k (set! cont k) value))
-         (reset-at yield-tag
-           (parameterize ([current-yielder yielder])
-             (define ret
-               (call-with-values
-                   (lambda () (begin body0 body ...))
-                   ;; get here only on at the end of the generator
-                   (case-lambda
-                     ;; Note: in this case, the generator was invoked with no
-                     ;; arguments, so returning no values is more symmetric.
-                     ;; But this is a common case, and probably people would
-                     ;; expect a void result more than no values.
-                     [() void]
-                     [(r) (lambda () r)]
-                     [rs (lambda () (apply values rs))])))
-             (set! cont (case-lambda
-                          [() (ret)]
-                          [_ (error 'generator "cannot send values to a ~a"
-                                    "generator that has terminated")]))
-             (ret)))]
-        [_ (error 'generator
-                  "cannot send a value to a generator before it starts")]))
-    (define (generator . xs) (apply cont xs))
+        [()  (cont)]
+        ;; yield-tag means return the state (see `generator-state' below)
+        [(x) (cond [(eq? x yield-tag) state]
+                   [(eq? state 'running) (cont x)]
+                   [else (err)])]
+        [xs  (if (eq? state 'running) (apply cont xs) (err))]))
     generator))
+
+;; Get the state -- this is a hack: uses yield-tag as a hidden value that makes
+;; the generator return its state.  Protect against grabbing this tag (eg, with
+;; (generator-state values)) by inspecting the result (so it can still be
+;; deceived, but that will be harmless).
+(define (generator-state g)
+  (let ([s (and (procedure? g) (procedure-arity-includes? g 1) (g yield-tag))])
+    (if (memq s '(fresh running done))
+      s
+      (raise-type-error 'generator-state "generator" g))))
 
 (define-syntax-rule (infinite-generator body0 body ...)
   (generator (let loop () body0 body ... (loop))))
