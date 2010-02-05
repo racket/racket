@@ -54,31 +54,19 @@
 (define-syntax-rule (generator body0 body ...)
   (let ([state 'fresh])
     (define (cont)
-      (define yielder
-        ;; this `case-lambda' is ... um ... for "speed"...
-        (case-lambda
-          [()  (set! state 'suspended)
-               (shift-at yield-tag k (set! cont k) (values))]
-          [(v) (set! state 'suspended)
-               (shift-at yield-tag k (set! cont k) v)]
-          [vs  (set! state 'suspended)
-               (shift-at yield-tag k (set! cont k) (apply values vs))]))
+      (define (yielder . vs)
+        (set! state 'suspended)
+        (shift-at yield-tag k (set! cont k) (apply values vs)))
       (set! state 'running)
       (reset-at yield-tag
         (parameterize ([current-yielder yielder])
           (call-with-values
               (lambda () (begin body0 body ...))
               ;; get here only on at the end of the generator
-              (case-lambda
-                ;; Note: in the first case, the generator was invoked with no
-                ;; arguments, so returning no values is more symmetric.  But
-                ;; this is a common case, and probably people would expect a
-                ;; void result more than no values.
-                [()  (set! cont void)]
-                [(r) (set! cont (lambda () r))]
-                [rs  (set! cont (lambda () (apply values rs)))]))
-          (set! state 'done)
-          (cont))))
+              (lambda rs
+                (set! state 'done)
+                (set! cont (lambda () (apply values rs)))
+                (cont))))))
     (define (err [what "send a value to"])
       (error 'generator "cannot ~a a ~a generator" what state))
     (define generator
