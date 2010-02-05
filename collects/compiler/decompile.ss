@@ -307,7 +307,12 @@
                null)
          ,@(if (null? captures)
                null
-               `('(captures: ,@captures)))
+               `('(captures: ,@(map (lambda (c t)
+                                      (if (eq? t 'flonum)
+                                          `(flonum ,c)
+                                          c))
+                                    captures
+                                    closure-types))))
          ,(decompile-expr body globs
                           (append captures
                                   (append vars rest-vars))
