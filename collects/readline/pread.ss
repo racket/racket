@@ -191,7 +191,7 @@
                         (bytes-set! tgt left LF)
                         (set! buffer #f)
                         (add1 left)]))])))
-    (make-input-port 'readline reader #f close!)))
+    (make-input-port 'readline-input reader #f close!)))
 
 ;; --------------------------------------------------------------------------
 ;; Reading functions
