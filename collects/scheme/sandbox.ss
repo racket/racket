@@ -430,8 +430,8 @@
 (define (input->port inp)
   ;; returns #f when it can't create a port
   (cond [(input-port? inp) inp]
-        [(string? inp) (open-input-string inp)]
-        [(bytes?  inp) (open-input-bytes inp)]
+        [(string? inp) (open-input-string inp #f)]
+        [(bytes?  inp) (open-input-bytes inp #f)]
         [(path?   inp) (open-input-file inp)]
         [else #f]))
 
