@@ -51,24 +51,33 @@
 
 (define-syntax-rule (generator body0 body ...)
   (let ()
-    (define (cont)
-      (define (yielder value)
-        (shift-at yield-tag k (set! cont k) value))
-      (reset-at yield-tag
-        (parameterize ([current-yielder yielder])
-          (call-with-values
-              (lambda () (begin body0 body ...))
-              ;; only a normal return gets here
-              (case-lambda
-                ;; Note: in this case, the generator was invoked with no
-                ;; arguments, so returning no values is more symmetric.  But
-                ;; this is a common case, and probably people would expect a
-                ;; void result more than no values.
-                [() (set! cont void)]
-                [(r) (set! cont (lambda () r))]
-                [rs (set! cont (lambda () (apply values rs)))]))
-          (cont))))
-    (define (generator) (cont))
+    (define cont
+      (case-lambda
+        [()
+         (define (yielder value)
+           (shift-at yield-tag k (set! cont k) value))
+         (reset-at yield-tag
+           (parameterize ([current-yielder yielder])
+             (define ret
+               (call-with-values
+                   (lambda () (begin body0 body ...))
+                   ;; get here only on at the end of the generator
+                   (case-lambda
+                     ;; Note: in this case, the generator was invoked with no
+                     ;; arguments, so returning no values is more symmetric.
+                     ;; But this is a common case, and probably people would
+                     ;; expect a void result more than no values.
+                     [() void]
+                     [(r) (lambda () r)]
+                     [rs (lambda () (apply values rs))])))
+             (set! cont (case-lambda
+                          [() (ret)]
+                          [_ (error 'generator "cannot send values to a ~a"
+                                    "generator that has terminated")]))
+             (ret)))]
+        [_ (error 'generator
+                  "cannot send a value to a generator before it starts")]))
+    (define (generator . xs) (apply cont xs))
     generator))
 
 (define-syntax-rule (infinite-generator body0 body ...)
