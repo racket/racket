@@ -64,16 +64,15 @@
               (lambda () (begin body0 body ...))
               ;; get here only on at the end of the generator
               (lambda rs
-                (set! state 'done)
-                (set! cont (lambda () (apply values rs)))
+                (set! cont (lambda () (set! state 'done) (apply values rs)))
                 (cont))))))
     (define (err [what "send a value to"])
       (error 'generator "cannot ~a a ~a generator" what state))
     (define generator
       (case-lambda
-        [()  (if #t ; (memq state '(fresh suspended done))
-               (begin (set! state 'running) (cont))
-               (err "call"))]
+        [()  (if (eq? state 'running)
+               (err "call")
+               (begin (set! state 'running) (cont)))]
         ;; yield-tag means return the state (see `generator-state' below)
         [(x) (cond [(eq? x yield-tag) state]
                    [(memq state '(suspended running))
