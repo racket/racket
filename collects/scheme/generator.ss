@@ -55,10 +55,14 @@
   (let ([state 'fresh])
     (define (cont)
       (define yielder
+        ;; this `case-lambda' is ... um ... for "speed"...
         (case-lambda
-          [()  (shift-at yield-tag k (set! cont k) (values))]
-          [(v) (shift-at yield-tag k (set! cont k) v)]
-          [vs  (shift-at yield-tag k (set! cont k) (apply values vs))]))
+          [()  (set! state 'suspended)
+               (shift-at yield-tag k (set! cont k) (values))]
+          [(v) (set! state 'suspended)
+               (shift-at yield-tag k (set! cont k) v)]
+          [vs  (set! state 'suspended)
+               (shift-at yield-tag k (set! cont k) (apply values vs))]))
       (set! state 'running)
       (reset-at yield-tag
         (parameterize ([current-yielder yielder])
@@ -75,16 +79,22 @@
                 [rs  (set! cont (lambda () (apply values rs)))]))
           (set! state 'done)
           (cont))))
-    (define (err)
-      (error 'generator "cannot send a value to a ~a generator" state))
+    (define (err [what "send a value to"])
+      (error 'generator "cannot ~a a ~a generator" what state))
     (define generator
       (case-lambda
-        [()  (cont)]
+        [()  (if #t ; (memq state '(fresh suspended done))
+               (begin (set! state 'running) (cont))
+               (err "call"))]
         ;; yield-tag means return the state (see `generator-state' below)
         [(x) (cond [(eq? x yield-tag) state]
-                   [(eq? state 'running) (cont x)]
+                   [(memq state '(suspended running))
+                    (set! state 'running)
+                    (cont x)]
                    [else (err)])]
-        [xs  (if (eq? state 'running) (apply cont xs) (err))]))
+        [xs  (if (memq state '(suspended running))
+               (begin (set! state 'running) (apply cont xs))
+               (err))]))
     generator))
 
 ;; Get the state -- this is a hack: uses yield-tag as a hidden value that makes
@@ -93,7 +103,7 @@
 ;; deceived, but that will be harmless).
 (define (generator-state g)
   (let ([s (and (procedure? g) (procedure-arity-includes? g 1) (g yield-tag))])
-    (if (memq s '(fresh running done))
+    (if (memq s '(fresh running suspended done))
       s
       (raise-type-error 'generator-state "generator" g))))
 
