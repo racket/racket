@@ -548,9 +548,11 @@ scheme_init_fun (Scheme_Env *env)
   REGISTER_SO(is_method_symbol);
   REGISTER_SO(scheme_inferred_name_symbol);
   REGISTER_SO(cont_key);
+  REGISTER_SO(barrier_prompt_key);
   is_method_symbol = scheme_intern_symbol("method-arity-error");
   scheme_inferred_name_symbol = scheme_intern_symbol("inferred-name");
   cont_key = scheme_make_symbol("k"); /* uninterned */
+  barrier_prompt_key = scheme_make_symbol("bar"); /* uninterned */
   
   REGISTER_SO(scheme_default_prompt_tag);
   {
@@ -2149,11 +2151,6 @@ void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread, Schem
       
     if (!new_thread) {
       prompt->is_barrier = 1;
-    }
-
-    if (!barrier_prompt_key) {
-      REGISTER_SO(barrier_prompt_key);
-      barrier_prompt_key = scheme_make_symbol("bar"); /* uninterned */
     }
   }
 
