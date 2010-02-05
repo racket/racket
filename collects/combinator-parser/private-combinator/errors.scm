@@ -288,7 +288,7 @@
                     [(null? (cdr l)) (string-append "or " (car l))]
                     [else (string-append (car l) ", " (formatter (cdr l)))]))])
         (cond
-          [(null? l) (error 'internal-error "nice-list in combinator-parser/errors.scm recieved null list")]
+          [(null? l) (error 'internal-error "nice-list in combinator-parser/errors.scm received null list")]
           [(null? (cdr l)) (car l)]
           [(null? (cddr l)) (string-append (car l) " or " (cadr l))]
           [else (formatter l)])))

@@ -2832,7 +2832,7 @@ typedef struct Scheme_Module_Phase_Exports
   Scheme_Object *kernel_exclusion;   /* we allow up to two exns, but they must be shadowed */
   Scheme_Object *kernel_exclusion2;
 
-  Scheme_Hash_Table *ht;             /* maps external names to array indicies; created lazily */
+  Scheme_Hash_Table *ht;             /* maps external names to array indices; created lazily */
 } Scheme_Module_Phase_Exports;
 
 typedef struct Scheme_Module_Exports

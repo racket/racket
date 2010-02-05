@@ -12,7 +12,7 @@
 (module regexmatch mzscheme
   (define rx
     (string-append
-     "(?:^|[^0-9\\(])"                      ; (1) preceeding non-digit or bol
+     "(?:^|[^0-9\\(])"                    ; (1) preceding non-digit or bol
      "("                                  ; (2) area code
      "\\(([0-9][0-9][0-9])\\)"            ; (3) is either 3 digits in parens
      "|"                                  ; or
@@ -22,7 +22,7 @@
      "([0-9][0-9][0-9])"                  ; (5) exchange is 3 digits
      "[ -]"                               ; separator is either space or dash
      "([0-9][0-9][0-9][0-9])"             ; (6) last 4 digits
-     "(?:[^0-9]|$)"                         ; must be followed by a non-digit
+     "(?:[^0-9]|$)"                       ; must be followed by a non-digit
      ))
 
 

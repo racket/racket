@@ -470,7 +470,7 @@ form is evaluated:
  3]
 ]
 
-The substition and @tech{location}-generation step of procedure
+The substitution and @tech{location}-generation step of procedure
 application requires that the argument is a @tech{value}. Therefore,
 in @scheme[((lambda (x) (+ x 10)) (+ 1 2))], the @scheme[(+ 1 2)]
 sub-expression must be simplified to the @tech{value} @scheme[3], and

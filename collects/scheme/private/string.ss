@@ -98,7 +98,7 @@
              (let ([s (read-bytes drop input-port)])
                (when out
                  (display s out)))
-             ;; Get the matching part, and shift matching indicies
+             ;; Get the matching part, and shift matching indices
              (let ([s (read-bytes (- (cdar m) drop) input-port)])
                (cons s
                      (map (lambda (p)

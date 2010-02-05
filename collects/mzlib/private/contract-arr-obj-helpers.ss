@@ -350,7 +350,7 @@
      (with-syntax ([(dom-x ...) (generate-temporaries (syntax (dom ...)))]
                    [(dom-contract-x ...) (generate-temporaries (syntax (dom ...)))]
                    [(dom-projection-x ...) (generate-temporaries (syntax (dom ...)))]
-                   [(dom-length dom-index ...) (generate-indicies (syntax (dom ...)))]
+                   [(dom-length dom-index ...) (generate-indices (syntax (dom ...)))]
                    [(dom-ant-x ...) (generate-temporaries (syntax (dom ...)))]
                    [(arg-x ...) (generate-temporaries (syntax (dom ...)))])
        (with-syntax ([(name-dom-contract-x ...)
@@ -393,7 +393,7 @@
             (with-syntax ([(rng-x ...) (generate-temporaries (syntax (rng ...)))]
                           [(rng-contract-x ...) (generate-temporaries (syntax (rng ...)))]
                           [(rng-projection-x ...) (generate-temporaries (syntax (rng ...)))]
-                          [(rng-length rng-index ...) (generate-indicies (syntax (rng ...)))]
+                          [(rng-length rng-index ...) (generate-indices (syntax (rng ...)))]
                           [(rng-ant-x ...) (generate-temporaries (syntax (rng ...)))]
                           [(res-x ...) (generate-temporaries (syntax (rng ...)))])
               (values
@@ -493,7 +493,7 @@
                    [(dom-contract-x ...) (generate-temporaries (syntax (dom ...)))]
                    [(dom-projection-x ...) (generate-temporaries (syntax (dom ...)))]
                    [(arg-x ...) (generate-temporaries (syntax (dom ...)))]
-                   [(dom-length dom-index ...) (generate-indicies (syntax (dom ...)))]
+                   [(dom-length dom-index ...) (generate-indices (syntax (dom ...)))]
                    [(dom-ant-x ...) (generate-temporaries (syntax (dom ...)))]
                    [dom-rest-x (car (generate-temporaries (list (syntax rest))))]
                    [dom-rest-contract-x (car (generate-temporaries (list (syntax rest))))]
@@ -503,7 +503,7 @@
                    [(rng-x ...) (generate-temporaries (syntax (rng ...)))]
                    [(rng-contract-x ...) (generate-temporaries (syntax (rng ...)))]
                    [(rng-projection-x ...) (generate-temporaries (syntax (rng ...)))]
-                   [(rng-length rng-index ...) (generate-indicies (syntax (rng ...)))]
+                   [(rng-length rng-index ...) (generate-indices (syntax (rng ...)))]
                    [(rng-ant-x ...) (generate-temporaries (syntax (rng ...)))]
                    [(res-x ...) (generate-temporaries (syntax (rng ...)))]
                    [arity (length (syntax->list (syntax (dom ...))))])
@@ -566,7 +566,7 @@
                    [(dom-contract-x ...) (generate-temporaries (syntax (dom ...)))]
                    [(dom-projection-x ...) (generate-temporaries (syntax (dom ...)))]
                    [(arg-x ...) (generate-temporaries (syntax (dom ...)))]
-                   [(dom-length dom-index ...) (generate-indicies (syntax (dom ...)))]
+                   [(dom-length dom-index ...) (generate-indices (syntax (dom ...)))]
                    [(dom-ant-x ...) (generate-temporaries (syntax (dom ...)))]
                    [dom-rest-x (car (generate-temporaries (list (syntax rest))))]
                    [dom-rest-contract-x (car (generate-temporaries (list (syntax rest))))]
@@ -688,7 +688,7 @@
      (with-syntax ([(dom-x ...) (generate-temporaries (syntax (dom ...)))]
                    [(dom-contract-x ...) (generate-temporaries (syntax (dom ...)))]
                    [(dom-projection-x ...) (generate-temporaries (syntax (dom ...)))]
-                   [(dom-length dom-index ...) (generate-indicies (syntax (dom ...)))]
+                   [(dom-length dom-index ...) (generate-indices (syntax (dom ...)))]
                    [(dom-ant-x ...) (generate-temporaries (syntax (dom ...)))]
                    [(arg-x ...) (generate-temporaries (syntax (dom ...)))])
        (values
@@ -1126,10 +1126,10 @@
          (syntax (let ([name rhs]) name)))]
       [else to-be-named])))
 
-;; generate-indicies : syntax[list] -> (cons number (listof number))
+;; generate-indices : syntax[list] -> (cons number (listof number))
 ;; given a syntax list of length `n', returns a list containing
 ;; the number n followed by th numbers from 0 to n-1
-(define (generate-indicies stx)
+(define (generate-indices stx)
   (let ([n (length (syntax->list stx))])
     (cons n
           (let loop ([i n])

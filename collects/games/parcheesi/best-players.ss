@@ -316,7 +316,7 @@ careful charlie
                     [(eq? their-loc 'start)
                      (let ([their-enter-spot (get-enter-pos (pawn-color pawn))])
                        ;; this code assumes that the enter-pos's are not within 6 of
-                       ;; where the board indicies wrap around.
+                       ;; where the board indices wrap around.
                        (cond
                          [(= my-loc their-enter-spot)
                           (add-single-roll-chances 5)

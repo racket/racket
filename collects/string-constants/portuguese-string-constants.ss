@@ -289,7 +289,7 @@ please adhere to these guidelines:
  (plt:hd:refresh-downloading... "A tirar ~a...")
  (plt:hd:refresh-deleting... "A remover a versão antiga de ~a...")
  (plt:hd:refresh-installing... "A instalar nova versão de ~a...")
- (plt:hd:refresh-clearing-indicies "A apagar os índices em cache")
+ (plt:hd:refresh-clearing-indices "A apagar os índices em cache")
  (plt:hd:refreshing-manuals-finished "Concluído.")
  (plt:hd:about-help-desk "Sobre o Directorio de Ajuda")
  (plt:hd:help-desk-about-string

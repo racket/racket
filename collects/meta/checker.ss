@@ -190,7 +190,7 @@
 
 (provide tree-filter)
 ;; (string -> any) tree -> tree
-;; If the filter returns '+ or '- this qualifies or disqualifies the the
+;; If the filter returns '+ or '- this qualifies or disqualifies the
 ;; current tree immediately, otherwise recurse down directories.  If any other
 ;; result is returned for directories scanning continues, and for files they
 ;; are included if the result is not #f.

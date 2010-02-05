@@ -43,7 +43,7 @@
 ;; and tm:julian-day-at-zero-seconds, which refer to the '0' of CURRENT-SECONDS.
 ;; 
 ;; SRFI-6, String Ports, and SRFI-8, RECEIVE: Binding Multiple Values, 
-;; are also used. MzScheme has String Ports built-in. The RECIEVE form
+;; are also used. MzScheme has String Ports built-in. The RECEIVE form
 ;; is copied below.
 ;;
 ; srfi-8: receive

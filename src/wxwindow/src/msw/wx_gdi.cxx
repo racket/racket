@@ -1377,7 +1377,7 @@ wxCursor::wxCursor(wxBitmap *bm, wxBitmap *mask, int hotSpotX, int hotSpotY)
     mask_dc = temp_mask_mdc;
   }
 
-  c = new wxColour(); /* to recieve bit values */
+  c = new wxColour(); /* to receive bit values */
 
   /* Windows wants cursor data in terms of an "and" bit array and
      "xor" bit array. */

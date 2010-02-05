@@ -142,7 +142,7 @@ A syntax object matches a @scheme[pattern] as follows:
  @specsubform[const]{
 
  A @scheme[const] is any datum that does not match one of the
- preceeding forms; a syntax object matches a @scheme[const] pattern
+ preceding forms; a syntax object matches a @scheme[const] pattern
  when its datum is @scheme[equal?] to the @scheme[quote]d
  @scheme[const].}
 

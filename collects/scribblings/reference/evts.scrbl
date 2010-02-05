@@ -111,7 +111,7 @@ types can generate events (see @scheme[prop:evt]).
 
  @item{@scheme[_choice] --- an event returned by @scheme[choice-evt] is
  ready when one or more of the @scheme[_evt]s supplied to
- @scheme[chocie-evt] are ready. If the choice event is chosen, one of
+ @scheme[choice-evt] are ready. If the choice event is chosen, one of
  its ready @scheme[_evt]s is chosen pseudo-randomly, and the result is
  the chosen @scheme[_evt]'s result.}
 

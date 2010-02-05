@@ -212,7 +212,7 @@
  (plt:hd:refresh-downloading... "~a herunterladen...")
  (plt:hd:refresh-deleting... "Alte Version von ~a löschen...")
  (plt:hd:refresh-installing... "Neue Version von ~a installieren...")
- (plt:hd:refresh-clearing-indicies "Gecachte Indizes löschen")
+ (plt:hd:refresh-clearing-indices "Gecachte Indizes löschen")
  (plt:hd:refreshing-manuals-finished "Fertig.")
  (plt:hd:about-help-desk "Über das Hilfezentrum")
  (plt:hd:help-desk-about-string
@@ -348,7 +348,7 @@
  (revert-to-defaults "Standardeinstellung wiederherstellen")
 
   (black-on-white-color-scheme "Schwarz auf Weiß") ;; these two appear in the color preferences dialog on butttons
-  (white-on-black-color-scheme "Weiß auf Schwarz") ;; clicking the buttons changes teh color schemes to some defaults that've been set up.
+  (white-on-black-color-scheme "Weiß auf Schwarz") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
 
  ; title of the color choosing dialog
 

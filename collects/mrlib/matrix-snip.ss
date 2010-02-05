@@ -64,7 +64,7 @@
     (super-new)
     (set-snipclass matrix-snip-class)))
 
-;; the snip class for matricies 
+;; the snip class for matrices
 (define matrix-snip-class% 
   (class cache-image-snip-class% 
     (super-new)

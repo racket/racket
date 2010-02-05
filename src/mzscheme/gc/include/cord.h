@@ -299,7 +299,7 @@ size_t CORD_rchr(CORD x, size_t i, int c);
 /*    the correct buffer size.						*/
 /* 4. Most of the conversions are implement through the native 		*/
 /*    vsprintf.  Hence they are usually no faster, and 			*/
-/*    idiosyncracies of the native printf are preserved.  However,	*/
+/*    idiosyncrasies of the native printf are preserved.  However,	*/
 /*    CORD arguments to CORD_sprintf and CORD_vsprintf are NOT copied;	*/
 /*    the result shares the original structure.  This may make them	*/
 /*    very efficient in some unusual applications.			*/

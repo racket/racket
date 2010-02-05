@@ -55,7 +55,7 @@
 		state))))
 
 ; Given the size of a vector and a procedure which
-; sends indicies to desired vector elements, create
+; sends indices to desired vector elements, create
 ; and return the vector.
 (define proc->vector
   (lambda (size f)
@@ -278,7 +278,7 @@
 ; vertex.  Each entry is a bool indicating if the edge exists.
 ; The diagonal of the matrix is never examined.
 ; Make-minimal? returns a procedure which tests if a labelling
-; of the verticies is such that the matrix is minimal.
+; of the vertices is such that the matrix is minimal.
 ; If it is, then the procedure returns the result of folding over
 ; the elements of the automoriphism group.  If not, it returns #f.
 ; The folding is done by calling folder via
@@ -382,11 +382,11 @@
 
 
 ; Fold over rooted directed graphs with bounded out-degree.
-; Size is the number of verticies (including the root).  Max-out is the
+; Size is the number of vertices (including the root).  Max-out is the
 ; maximum out-degree for any vertex.  Folder is called via
 ;	(folder edges state)
 ; where edges is a list of length size.  The ith element of the list is
-; a list of the verticies j for which there is an edge from i to j.
+; a list of the vertices j for which there is an edge from i to j.
 ; The last vertex is the root.
 (define fold-over-rdg
     (lambda (size max-out folder state)
@@ -622,7 +622,7 @@
 
 ;;; ==== test input ====
 
-; Produces all directed graphs with N verticies, distinguished root,
+; Produces all directed graphs with N vertices, distinguished root,
 ; and out-degree bounded by 2, upto isomorphism (there are 44).
 
 ;(define go

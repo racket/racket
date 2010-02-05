@@ -312,7 +312,7 @@ please adhere to these guidelines:
  (plt:hd:refresh-downloading... "Downloading ~a...")
  (plt:hd:refresh-deleting... "Deleting old version of ~a...")
  (plt:hd:refresh-installing... "Installing new version of ~a...")
- (plt:hd:refresh-clearing-indicies "Clearing cached indices")
+ (plt:hd:refresh-clearing-indices "Clearing cached indices")
  (plt:hd:refreshing-manuals-finished "Finished.")
  (plt:hd:about-help-desk "About Help Desk")
  (plt:hd:help-desk-about-string
@@ -450,7 +450,7 @@ please adhere to these guidelines:
  (revert-to-defaults "Revert to Defaults")
   
   (black-on-white-color-scheme "Black on White") ;; these two appear in the color preferences dialog on butttons
-  (white-on-black-color-scheme "White on Black") ;; clicking the buttons changes teh color schemes to some defaults that've been set up.
+  (white-on-black-color-scheme "White on Black") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
   
  ; title of the color choosing dialog
 

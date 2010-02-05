@@ -1360,7 +1360,7 @@ System:
     is just the right height to display one line of text.
     inherits from mred:wrapping-canvas%
   mred:frame-title-canvas%
-    updates the title of the frame when it recieves focus
+    updates the title of the frame when it receives focus
     events. inherits from mred:wrapping-canvas%
 - all of the "connection maintenence" ie edits that know which canvses
   they are in, frames that know which canvas is the most recently

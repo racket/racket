@@ -1133,7 +1133,7 @@ tmp-load-filename
   ; given a filename "foo", we perform two operations on the contents 
   ; of the file "foo.ss".  First, we insert its contents into the REPL
   ; directly, and second, we use the load command.  We compare the
-  ; the results of these operations against expected results.
+  ; results of these operations against expected results.
   (define ((run-single-test execute-text-start escape language-cust) in-vector)
     ;(printf "\n>> testing ~s\n" (test-program in-vector))
     (let* ([program (test-program in-vector)]

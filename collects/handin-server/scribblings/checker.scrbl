@@ -152,7 +152,7 @@ Keywords for configuring @scheme[check:]:
 @item{@indexed-scheme[:student-line]---when a submission is converted
   to text, it begins with lines describing the students that have
   submitted it; this is used to specify the format of these lines.  It
-  is a string with holes that that @scheme[user-substs] fills out.
+  is a string with holes that @scheme[user-substs] fills out.
   The default is @scheme["Student: {username} ({Full Name} <{Email}>)"],
   which requires @scheme["Full Name"] and @scheme["Email"] entries in
   the server's extra-fields configuration.  These lines are prefixed

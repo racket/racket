@@ -18,7 +18,7 @@
 ;;                        or the other
 ;; - (vector map) => template portion is a vector,
 ;;                   contents like the list in map
-;; - (box map) => template portion is a box with substition
+;; - (box map) => template portion is a box with substitution
 ;; - #s(ellipses elem count map) => template portion is an ellipses-generated list
 ;; - #s(ellipses-quote map) => template has a quoting ellipses
 ;; - #s(prefab v map) => template portion is a prefab

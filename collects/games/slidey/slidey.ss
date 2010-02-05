@@ -252,10 +252,10 @@
     (define/private (draw-cell draw-i draw-j)
       (let-values ([(xd yd wd hd) (ij->xywh draw-i draw-j)])
         (let* ([dc (get-dc)]
-               [indicies (board-ref board draw-i draw-j)])
-          (if indicies
-            (let ([bm-i (loc-x indicies)]
-                  [bm-j (loc-y indicies)])
+               [indices (board-ref board draw-i draw-j)])
+          (if indices
+            (let ([bm-i (loc-x indices)]
+                  [bm-j (loc-y indices)])
               (let-values ([(xs ys ws hs) (ij->xywh bm-i bm-j)])
                 (send dc set-pen pict-pen)
                 (send dc set-brush pict-brush)

@@ -469,7 +469,7 @@ c_plcont(PLFLT **f, PLINT nx, PLINT ny, PLINT kx, PLINT lx,
  * The subrange of indices used for contouring is kx to lx in the x
  * direction and from ky to ly in the y direction. The array of contour
  * levels is clevel(nlevel), and "pltr" is the name of a function which
- * transforms array indicies into world coordinates.
+ * transforms array indices into world coordinates.
  *
  * Note that the fortran-like minimum and maximum indices (kx, lx, ky, ly)
  * are translated into more C-like ones.  I've only kept them as they are

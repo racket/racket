@@ -236,7 +236,7 @@ Returns the class of an object (or the meta-class of a class).}
          boolean?]{
 
 Adds a method to a class. The @scheme[type] argument must be a FFI C
-type (@seeCtype) that matches both @scheme[imp] and and the not
+type (@seeCtype) that matches both @scheme[imp] and the not
 Objective-C type string @scheme[type-encoding].}
 
 @defproc[(class_addIvar [cls _Class] [name string?] [size exact-nonnegative-integer?]

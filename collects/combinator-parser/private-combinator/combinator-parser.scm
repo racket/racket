@@ -153,7 +153,7 @@
                                    (choice-res-errors result))
                               (fail-type->message (choice-res-errors result))
                               (make-err
-                               (format "Found additional content after ~a, begining with '~a'." 
+                               (format "Found additional content after ~a, beginning with '~a'." 
                                        (res-msg (car used-sort))
                                        (input->output-name (car (res-rest (car used-sort)))))
                                (and src?
@@ -166,7 +166,7 @@
                   [(and (repeat-res? result) (fail-type? (repeat-res-stop result)))
                    ;(printf "repeat-fail~n")
                    (fail-type->message (repeat-res-stop result))]
-                  [else (error 'parser (format "Internal error: recieved unexpected input ~a" 
+                  [else (error 'parser (format "Internal error: received unexpected input ~a" 
                                                result))])])
           (cond
             [(err? out)
