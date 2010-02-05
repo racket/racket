@@ -761,28 +761,22 @@
                   (cond [(eof-object? r) (terminate+kill! #t #t)]
                         [(eq? (car r) 'exn) (raise (cdr r))]
                         [else (apply values (cdr r))]))]))
-  (define get-uncovered
-    (case-lambda
-     [() (get-uncovered #t)]
-     [(prog?) (get-uncovered prog? 'program)]
-     [(prog? src)
-      (unless uncovered
-        (error 'get-uncovered-expressions "no coverage information"))
-      (let ([uncovered (if prog? (car uncovered) ((cadr uncovered)))])
-        (if src
-            (filter (lambda (x) (equal? src (syntax-source x))) uncovered)
-            uncovered))]))
+  (define (get-uncovered [prog? #t] [src 'program])
+    (unless uncovered
+      (error 'get-uncovered-expressions "no coverage information"))
+    (let ([uncovered (if prog? (car uncovered) ((cadr uncovered)))])
+      (if src
+        (filter (lambda (x) (equal? src (syntax-source x))) uncovered)
+        uncovered)))
   (define (output-getter p)
     (if (procedure? p) (user-eval (make-evaluator-message 'thunk (list p))) p))
-  (define input-putter
-    (case-lambda
-     [() (input-putter input)]
-     [(arg) (cond [(not input)
-                   (error 'put-input "evaluator input is not 'pipe")]
-                  [(or (string? arg) (bytes? arg))
-                   (display arg input) (flush-output input)]
-                  [(eof-object? arg) (close-output-port input)]
-                  [else (error 'put-input "bad argument: ~e" arg)])]))
+  (define (input-putter [arg input])
+    (cond [(not input)
+           (error 'put-input "evaluator input is not 'pipe")]
+          [(or (string? arg) (bytes? arg))
+           (display arg input) (flush-output input)]
+          [(eof-object? arg) (close-output-port input)]
+          [else (error 'put-input "bad argument: ~e" arg)]))
   (define (evaluator expr)
     (if (evaluator-message? expr)
       (let ([msg (evaluator-message-msg expr)])
