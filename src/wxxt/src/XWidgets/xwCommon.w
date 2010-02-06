@@ -222,7 +222,7 @@ to define them here. They will end up in the private(!) header file.
 
 @ A private variable is used to track the keyboard focus, but only
 while traversal is on. If |traversal_focus| is |True|, it means that
-the widget has keyboard focus and that that focus is a result of
+the widget has keyboard focus and that focus is a result of
 keyboard traversal. It also means that the widget's border is
 highlighted, although that is only visible if the |highlightThickness|
 is positive.

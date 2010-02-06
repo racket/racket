@@ -195,11 +195,11 @@
  ;; Help Desk configuration
  ;; refreshing manuals
  ;; should not mention `SVN' (plt:hd:refresh-done "Refresco de los manuales via SVN terminado")
- (plt:hd:refresh-clearing-indicies "Eliminando índices guardados")
+ (plt:hd:refresh-clearing-indices "Eliminando índices guardados")
  (plt:hd:refresh-deleting... "Borrando la versión vieja de ~a...")
  (plt:hd:refresh-downloading... "Bajando ~a...")
  (plt:hd:refresh-installing... "Instalando nueva versión de ~a...")
- (plt:hd:refresh-clearing-indicies "Eliminando indices almacenados")
+ (plt:hd:refresh-clearing-indices "Eliminando indices almacenados")
  (plt:hd:refreshing-manuals "Bajando (nuevamente) los Manuales")
  (plt:hd:refreshing-manuals-finished "Terminado.")
  (plt:hd:about-help-desk "Acerca del Módulo de Ayuda")

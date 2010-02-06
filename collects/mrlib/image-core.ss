@@ -9,7 +9,7 @@ work right.
 Most of the exports are just for use in 2htdp/image
 (technically, 2htdp/private/image-more). The main
 use of this library is the snip class addition it
-does (and any code that that does not depend on
+does (and any code that does not depend on
 has been moved out).
 
 

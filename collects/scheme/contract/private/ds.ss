@@ -76,8 +76,8 @@ it around flattened out.
                      [struct-maker struct-maker/val]
                      [predicate predicate/val]
                      [the-contract (add-suffix "-contract")]
-                     [(selector-indicies ...) (nums-up-to field-count/val)]
-                     [(selector-indicies+1 ...) (map add1 (nums-up-to field-count/val))]
+                     [(selector-indices ...) (nums-up-to field-count/val)]
+                     [(selector-indices+1 ...) (map add1 (nums-up-to field-count/val))]
                      [(ctc-x ...) (generate-temporaries (syntax (fields ...)))]
                      [(f-x ...) f-x/vals]
                      [((f-xs ...) ...) f-xs/vals]
@@ -113,7 +113,7 @@ it around flattened out.
                   (lambda (k v)
                     (when (unknown? v)
                       (let ([proc (unknown-proc v)])
-                        (let ([new (proc (wrap-get stct selector-indicies+1) ...)])
+                        (let ([new (proc (wrap-get stct selector-indices+1) ...)])
                           (cond
                             [(unknown? new) 
                              (set! any-unknown? #t)]
@@ -177,7 +177,7 @@ it around flattened out.
                              (cond
                                [(raw-predicate stct)
                                 ;; found the original value
-                                (values #f (get stct selector-indicies) ...)]
+                                (values #f (get stct selector-indices) ...)]
                                
                                [(opt-wrap-predicate stct)
                                 (let ((inner (opt-wrap-get stct 0)))
@@ -187,11 +187,11 @@ it around flattened out.
                                         (let-values ([(inner-stct fields ...) (loop inner)])
                                           (let-values ([(fields ...) (enforcer stct fields ...)])
                                             (opt-wrap-set stct 0 #f)
-                                            (opt-wrap-set stct selector-indicies+1 fields) ...
+                                            (opt-wrap-set stct selector-indices+1 fields) ...
                                             (values stct fields ...))))
                                       
                                       ;; found a cached version
-                                      (values #f (opt-wrap-get stct selector-indicies+1) ...)))]
+                                      (values #f (opt-wrap-get stct selector-indices+1) ...)))]
                                [(wrap-predicate stct)
                                 (let ([inner (wrap-get stct 0)])
                                   (if inner
@@ -201,19 +201,19 @@ it around flattened out.
                                           (let-values ([(fields ...) 
                                                         (rewrite-fields stct contract/info fields ...)])
                                             (wrap-set stct 0 #f)
-                                            (wrap-set stct selector-indicies+1 fields) ...
+                                            (wrap-set stct selector-indices+1 fields) ...
                                             (evaluate-attrs stct contract/info)
                                             (values stct fields ...))))
                                       
                                       ;; found a cached version of the value
-                                      (values #f (wrap-get stct selector-indicies+1) ...)))]))])
+                                      (values #f (wrap-get stct selector-indices+1) ...)))]))])
                (cond 
                  [(opt-wrap-predicate stct) (opt-wrap-get stct i+1)]
                  [(wrap-predicate stct) (wrap-get stct i+1)])))
            
            (define (rewrite-fields parent contract/info ctc-x ...)
              (let* ([f-x (let* ([ctc-field (contract-get (contract/info-contract contract/info)
-                                                         selector-indicies)]
+                                                         selector-indices)]
                                 [ctc (if (contract-struct? ctc-field)
                                          ctc-field
                                          (ctc-field f-xs ...))]
@@ -229,8 +229,8 @@ it around flattened out.
            (define (stronger-lazy-contract? a b)
              (and (contract-predicate b)
                   (contract-stronger? 
-                   (contract-get a selector-indicies)
-                   (contract-get b selector-indicies)) ...))
+                   (contract-get a selector-indices)
+                   (contract-get b selector-indices)) ...))
            
            (define (lazy-contract-proj ctc)
              (λ (blame)
@@ -279,7 +279,7 @@ it around flattened out.
                (contract-maker ctc-x ... #f)))
            
            (define (selectors x)
-             (burrow-in x 'selectors selector-indicies))
+             (burrow-in x 'selectors selector-indices))
            ...
            
            (define (burrow-in struct selector-name i)
@@ -300,7 +300,7 @@ it around flattened out.
            (define (lazy-contract-name ctc)
              (do-contract-name 'struct/c
                                'struct/dc
-                               (list (contract-get ctc selector-indicies) ...)
+                               (list (contract-get ctc selector-indices) ...)
                                '(fields ...)
                                (contract-get ctc field-count)))
 
@@ -316,7 +316,7 @@ it around flattened out.
                                #f
                                (+ field-count 1) ;; extra field is for synthesized attribute ctcs
                                ;; it is a list whose first element is
-                               ;; a procedure (called once teh attrs are known) that
+                               ;; a procedure (called once the attrs are known) that
                                ;; indicates if the test passes. the rest of the elements are
                                ;; procedures that build the attrs
                                ;; this field is #f when there is no synthesized attrs

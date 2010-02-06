@@ -1519,7 +1519,7 @@
                                   (if (and gsnip
                                            (has-flag? (snip->flags gsnip) HARD-NEWLINE)
                                            (eq? (snip->next gsnip) snip))
-                                      ;; preceeding snip was a newline, so the new slip belongs on the next line:
+                                      ;; preceding snip was a newline, so the new slip belongs on the next line:
                                       (let* ([oldline (snip->line gsnip)]
                                              [inserted-new-line?
                                               (if (mline-next oldline)
@@ -4188,7 +4188,7 @@
                    (has-flag? (snip->flags gsnip) NEWLINE)
                    (not (has-flag? (snip->flags gsnip) HARD-NEWLINE)))
               (begin
-                ;; we want the snip on the same line as the preceeding snip:
+                ;; we want the snip on the same line as the preceding snip:
                 (if (snip->next gsnip)
                     (insert-snip (snip->next gsnip) snip)
                     (append-snip snip))

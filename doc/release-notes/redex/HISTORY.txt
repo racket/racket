@@ -178,7 +178,7 @@ v4.1 (this is the first version that was included in the PLT
 
   - handling of non-terminals uses that have underscores in
     them now works properly (only showed up when using them
-    in the definition of a langauge)
+    in the definition of a language)
 
   - an extended language can now define multiple non-terminals
     together

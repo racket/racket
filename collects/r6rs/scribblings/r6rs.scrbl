@@ -216,7 +216,7 @@ a version as a sequence of exact, non-negative integers. Roughly, such
 a name is converted to a PLT Scheme module pathname (see @secref[#:doc
 guide-src "module-paths"]) by concatenating the symbols with a
 @litchar{/} separator, and then appending the version integers each
-with a preceeding @litchar{-}. As a special case, when an @|r6rs| path
+with a preceding @litchar{-}. As a special case, when an @|r6rs| path
 contains a single symbol (optionally followed by a version), a
 @schemeidfont{main} symbol is effectively inserted after the initial
 symbol. See below for further encoding considerations.

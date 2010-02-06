@@ -5,7 +5,7 @@
 (provide split-rows)
 
 ;; split-rows : Listof[Row] -> Listof[Listof[Row]]
-;; takes a matrix, and returns a list of matricies
+;; takes a matrix, and returns a list of matrices
 ;; each returned matrix does not require the mixture rule to do compilation of
 ;; the first column.
 (define (split-rows rows [acc null])

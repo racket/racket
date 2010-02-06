@@ -125,7 +125,7 @@
 
 ;; substitute many variables
 ;; substitution = Listof[U List[Name,Type] List[Name,Listof[Type]]]
-;; subst-all : substition Type -> Type
+;; subst-all : substitution Type -> Type
 (define (subst-all s t)
   (for/fold ([t t]) ([e s])
     (match e

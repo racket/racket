@@ -849,28 +849,21 @@ trigger runtime errors in check syntax.
                  (list '((27 33) (19 26) (36 49) (53 59) (64 66))))))
   
   (define (main)
-    (let ([s (make-semaphore 0)])
-      (thread
-       (λ ()
-         (let ([drs (wait-for-drscheme-frame)])
-           (set-language-level! (list "Pretty Big"))
-           (do-execute drs)
-           (let* ([defs (send drs get-definitions-text)]
-                  [filename (make-temporary-file "syncheck-test~a")])
-             (let-values ([(dir _1 _2) (split-path filename)])
-               (send defs save-file filename)
-               (preferences:set 'framework:coloring-active #f)
-               (for-each (run-one-test (normalize-path dir)) tests)
-               (preferences:set 'framework:coloring-active #t)
-               (send defs save-file) ;; clear out autosave
-               (send defs set-filename #f)
-               (delete-file filename)
-               ;; let the app die.
-               (semaphore-post s))))))
-      (fire-up-drscheme)
-      (yield s)
-      (printf "Tests complete.\n")
-      (exit)))
+    (fire-up-drscheme-and-run-tests
+     (λ ()
+	(let ([drs (wait-for-drscheme-frame)])
+	  (set-language-level! (list "Pretty Big"))
+	  (do-execute drs)
+	  (let* ([defs (send drs get-definitions-text)]
+		 [filename (make-temporary-file "syncheck-test~a")])
+	    (let-values ([(dir _1 _2) (split-path filename)])
+	      (send defs save-file filename)
+	      (preferences:set 'framework:coloring-active #f)
+	      (for-each (run-one-test (normalize-path dir)) tests)
+	      (preferences:set 'framework:coloring-active #t)
+	      (send defs save-file) ;; clear out autosave
+	      (send defs set-filename #f)
+	      (delete-file filename)))))))
   
   (define ((run-one-test save-dir) test)
     (let* ([drs (wait-for-drscheme-frame)]

@@ -76,7 +76,7 @@ less or equal to @scheme[end] if @scheme[step] is negative.
 
 @defproc[(in-naturals [start exact-nonnegative-integer? 0]) sequence?]{
 Returns an infinite sequence of exact integers starting with
-@scheme[start], where each element is one more than the preceeding
+@scheme[start], where each element is one more than the preceding
 element. @speed[in-naturals "integer"]}
 
 @defproc[(in-list [lst list?]) sequence?]{

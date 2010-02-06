@@ -129,7 +129,6 @@
                         error-ranges-expected
                         (send interactions-text get-error-ranges))))])))))
 
-
 (define drs 'not-yet-drs-frame)
 (define interactions-text 'not-yet-interactions-text)
 (define definitions-text 'not-yet-definitions-text)

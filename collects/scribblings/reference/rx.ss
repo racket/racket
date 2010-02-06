@@ -59,8 +59,8 @@ Lrange   ::= ^                        Lrange contains _^_                       
           |  Srange                   Lrange contains everything in Srange                         #co
 Look     ::= (?=Regexp)               Match if Regexp matches                                      #mode
           |  (?!Regexp)               Match if Regexp doesn't match                                #mode
-          |  (?<=Regexp)              Match if Regexp matches preceeding                           #mode
-          |  (?<!Regexp)              Match if Regexp doesn't match preceeding                     #mode
+          |  (?<=Regexp)              Match if Regexp matches preceding                           #mode
+          |  (?<!Regexp)              Match if Regexp doesn't match preceding                     #mode
 Pred     ::= (N)                      True if Nth _(_ has a match                                  #mode
           |  Look                     True if Look matches                                         #mode
 Srange   ::= ...                      ...                                                          #px

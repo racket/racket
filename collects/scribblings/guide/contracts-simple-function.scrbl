@@ -285,7 +285,7 @@ and thus used as a contract.
 
 But many other values also play double duty as contracts.
 For example, if your function accepts a number or @scheme[#f],
-@scheme[(or/c number? #f)] sufficies. Similarly, the @scheme[result/c] contract
+@scheme[(or/c number? #f)] suffices. Similarly, the @scheme[result/c] contract
 could have been written with a @scheme[0] in place of @scheme[zero?].
 
 Even better, if you use a regular expression as a contract, the contract

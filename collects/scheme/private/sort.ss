@@ -24,16 +24,16 @@ doing these checks.
 
 |#
 
-;; This code works with unsafe operations, but don't use it for a while to
-;; catch potential problems.
-;; (#%require (rename '#%unsafe i+ unsafe-fx+)
-;;            (rename '#%unsafe i- unsafe-fx-)
-;;            (rename '#%unsafe i= unsafe-fx=)
-;;            (rename '#%unsafe i< unsafe-fx<)
-;;            (rename '#%unsafe i<= unsafe-fx<=)
-;;            (rename '#%unsafe i>> unsafe-fxrshift)
-;;            (rename '#%unsafe vref unsafe-vector-ref)
-;;            (rename '#%unsafe vset! unsafe-vector-set!))
+;; This code works with unsafe operations, if there are problems, the commented
+;; chunk of code below can be used to run it in safe mode.
+(#%require (rename '#%unsafe i+ unsafe-fx+)
+           (rename '#%unsafe i- unsafe-fx-)
+           (rename '#%unsafe i= unsafe-fx=)
+           (rename '#%unsafe i< unsafe-fx<)
+           (rename '#%unsafe i<= unsafe-fx<=)
+           (rename '#%unsafe i>> unsafe-fxrshift)
+           (rename '#%unsafe vref unsafe-vector-ref)
+           (rename '#%unsafe vset! unsafe-vector-set!))
 
 (define sort (let ()
 
@@ -42,14 +42,15 @@ doing these checks.
     [(dr (foo . pattern) template)
      (define-syntax foo (syntax-rules () [(_ . pattern) template]))]))
 
-(define-syntax-rule (i+ x y) (+ x y))
-(define-syntax-rule (i- x y) (- x y))
-(define-syntax-rule (i= x y) (= x y))
-(define-syntax-rule (i< x y) (< x y))
-(define-syntax-rule (i<= x y) (<= x y))
-(define-syntax-rule (i>> x y) (arithmetic-shift x (- y)))
-(define-syntax-rule (vref v i) (vector-ref v i))
-(define-syntax-rule (vset! v i x) (vector-set! v i x))
+;; Use this to make it safe:
+;; (define-syntax-rule (i+ x y) (+ x y))
+;; (define-syntax-rule (i- x y) (- x y))
+;; (define-syntax-rule (i= x y) (= x y))
+;; (define-syntax-rule (i< x y) (< x y))
+;; (define-syntax-rule (i<= x y) (<= x y))
+;; (define-syntax-rule (i>> x y) (arithmetic-shift x (- y)))
+;; (define-syntax-rule (vref v i) (vector-ref v i))
+;; (define-syntax-rule (vset! v i x) (vector-set! v i x))
 
 (define-syntax-rule (sort-internal-body v *<? n has-getkey? getkey)
   (let* ([n/2- (i>> n 1)] [n/2+ (i- n n/2-)])

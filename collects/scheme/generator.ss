@@ -4,7 +4,7 @@
          scheme/control
          scheme/stxparam scheme/splicing)
 
-(provide yield generator in-generator infinite-generator
+(provide yield generator generator-state in-generator infinite-generator
          sequence->generator sequence->repeated-generator)
 
 ;; (define-syntax-parameter yield
@@ -44,24 +44,55 @@
    (lambda (v)
      (error 'yield "must be called in the context of a generator"))))
 
-(define (yield value)
-  ((current-yielder) value))
+(define yield
+  (case-lambda [()  ((current-yielder))]
+               [(v) ((current-yielder) v)]
+               [vs  (apply (current-yielder) vs)]))
 
 (define yield-tag (make-continuation-prompt-tag))
 
 (define-syntax-rule (generator body0 body ...)
-  (let ()
+  (let ([state 'fresh])
     (define (cont)
-      (define (yielder value)
-        (shift-at yield-tag k (set! cont k) value))
+      (define (yielder . vs)
+        (set! state 'suspended)
+        (shift-at yield-tag k (set! cont k) (apply values vs)))
+      (set! state 'running)
       (reset-at yield-tag
         (parameterize ([current-yielder yielder])
-          (let ([retval (begin body0 body ...)])
-            ;; normal return:
-            (set! cont (lambda () retval))
-            retval))))
-    (define (generator) (cont))
+          (call-with-values
+              (lambda () (begin body0 body ...))
+              ;; get here only on at the end of the generator
+              (lambda rs
+                (set! cont (lambda () (set! state 'done) (apply values rs)))
+                (cont))))))
+    (define (err [what "send a value to"])
+      (error 'generator "cannot ~a a ~a generator" what state))
+    (define generator
+      (case-lambda
+        [()  (if (eq? state 'running)
+               (err "call")
+               (begin (set! state 'running) (cont)))]
+        ;; yield-tag means return the state (see `generator-state' below)
+        [(x) (cond [(eq? x yield-tag) state]
+                   [(memq state '(suspended running))
+                    (set! state 'running)
+                    (cont x)]
+                   [else (err)])]
+        [xs  (if (memq state '(suspended running))
+               (begin (set! state 'running) (apply cont xs))
+               (err))]))
     generator))
+
+;; Get the state -- this is a hack: uses yield-tag as a hidden value that makes
+;; the generator return its state.  Protect against grabbing this tag (eg, with
+;; (generator-state values)) by inspecting the result (so it can still be
+;; deceived, but that will be harmless).
+(define (generator-state g)
+  (let ([s (and (procedure? g) (procedure-arity-includes? g 1) (g yield-tag))])
+    (if (memq s '(fresh running suspended done))
+      s
+      (raise-type-error 'generator-state "generator" g))))
 
 (define-syntax-rule (infinite-generator body0 body ...)
   (generator (let loop () body0 body ... (loop))))

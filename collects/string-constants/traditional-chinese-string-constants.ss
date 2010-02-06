@@ -228,7 +228,7 @@
   (plt:hd:refresh-downloading... "下载~a...")
   (plt:hd:refresh-deleting... "删除旧版本的~a...")
   (plt:hd:refresh-installing... "安装新版本的~a...")
-  (plt:hd:refresh-clearing-indicies "清除缓存中的索引")
+  (plt:hd:refresh-clearing-indices "清除缓存中的索引")
   (plt:hd:refreshing-manuals-finished "完成。")
   (plt:hd:about-help-desk "关于Help Desk")
   (plt:hd:help-desk-about-string
@@ -366,7 +366,7 @@
   (revert-to-defaults "恢复默认")
   
   (black-on-white-color-scheme "白底黑字") ;; these two appear in the color preferences dialog on butttons
-  (white-on-black-color-scheme "黑底白字") ;; clicking the buttons changes teh color schemes to some defaults that've been set up.
+  (white-on-black-color-scheme "黑底白字") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
   
   ; title of the color choosing dialog
   

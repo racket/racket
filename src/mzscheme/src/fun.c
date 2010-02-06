@@ -548,9 +548,11 @@ scheme_init_fun (Scheme_Env *env)
   REGISTER_SO(is_method_symbol);
   REGISTER_SO(scheme_inferred_name_symbol);
   REGISTER_SO(cont_key);
+  REGISTER_SO(barrier_prompt_key);
   is_method_symbol = scheme_intern_symbol("method-arity-error");
   scheme_inferred_name_symbol = scheme_intern_symbol("inferred-name");
   cont_key = scheme_make_symbol("k"); /* uninterned */
+  barrier_prompt_key = scheme_make_symbol("bar"); /* uninterned */
   
   REGISTER_SO(scheme_default_prompt_tag);
   {
@@ -2149,11 +2151,6 @@ void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread, Schem
       
     if (!new_thread) {
       prompt->is_barrier = 1;
-    }
-
-    if (!barrier_prompt_key) {
-      REGISTER_SO(barrier_prompt_key);
-      barrier_prompt_key = scheme_make_symbol("bar"); /* uninterned */
     }
   }
 
@@ -5061,9 +5058,9 @@ call_cc (int argc, Scheme_Object *argv[])
 static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int composable,
                                       Scheme_Object *prompt_tag,
                                       Scheme_Cont *sub_cont, Scheme_Prompt *prompt,
-                                      Scheme_Meta_Continuation *prompt_cont, MZ_MARK_POS_TYPE prompt_pos,
-                                      Scheme_Prompt *barrier_prompt, Scheme_Prompt *effective_barrier_prompt,
-                                      Scheme_Meta_Continuation *barrier_cont, MZ_MARK_POS_TYPE barrier_pos)
+                                      Scheme_Meta_Continuation *prompt_cont, 
+                                      Scheme_Prompt *effective_barrier_prompt
+                                      )
 {
   Scheme_Cont *cont;
   
@@ -5700,8 +5697,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
   }
 
   cont = grab_continuation(p, 0, composable, prompt_tag, sub_cont, 
-                           prompt, prompt_cont, prompt_pos,
-                           barrier_prompt, effective_barrier_prompt, barrier_cont, barrier_pos);
+                           prompt, prompt_cont, effective_barrier_prompt);
 
   scheme_zero_unneeded_rands(p);
 
@@ -6107,7 +6103,7 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
 
   /* Grab a continuation so that we capture the current Scheme stack,
      etc.: */
-  saved = grab_continuation(p, 1, 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, 0);
+  saved = grab_continuation(p, 1, 0, NULL, NULL, NULL, NULL, NULL);
 
   if (p->meta_prompt)
     saved->prompt_stack_start = p->meta_prompt->stack_boundary;

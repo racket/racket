@@ -1188,7 +1188,7 @@ General
  - The teaching libraries are now called teachpacks. See the teachpack
    release notes for more information.
 
- - DrScheme's languages have changed (again). The langauges are now:
+ - DrScheme's languages have changed (again). The languages are now:
 
    - Beginning Student
    - Intermediate Student

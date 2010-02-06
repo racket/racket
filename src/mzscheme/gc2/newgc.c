@@ -1866,6 +1866,7 @@ static void Master_collect() {
       }
       else {
         printf("%i SIGNALED BUT NOT COLLECTED\n", i);
+        children_ready = 0;
       }
     }
     if (children_ready) {

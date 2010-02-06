@@ -141,7 +141,7 @@
            (provide s)
            (define-syntax (s stx) e))}
       @t{(require m) s}
-      @rx{module-lang-test-tmp2.ss:1:[67][90]: compile: bad syntax;
+      @rx{compile: bad syntax;
           literal data is not allowed, because no #%datum syntax transformer
           is bound in: 1$})
 (test @t{(module tmp mzscheme
@@ -247,11 +247,7 @@
   f
   (f)
 --
-      #t
-      #:error-ranges 
-      (λ (defs ints)
-        (list (make-srcloc ints 3 3 107 1)
-              (make-srcloc ints 3 2 106 3))))
+      #t)
 
 ;; test protection against user-code changing the namespace
 (test @t{#lang scheme/base
@@ -265,7 +261,4 @@
 
 
 (require "drscheme-test-util.ss")
-(let ()
-  (fire-up-drscheme)
-  (thread (λ () (run-test) (exit)))
-  (yield (make-semaphore 0)))
+(fire-up-drscheme-and-run-tests run-test)

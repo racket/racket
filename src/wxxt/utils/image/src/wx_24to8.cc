@@ -886,7 +886,7 @@ int wxImage::QuickCheck(byte *pic24, int w, int h, int maxcol)
      finds more than 'maxcol' colors, it returns '0'.  If it DOESN'T, it does
      the 24-to-8 conversion by simply sticking the colors it found into
      a colormap, and changing instances of a color in pic24 into colormap
-     indicies (in pic) */
+     indices (in pic) */
 
   unsigned long colors[256],col;
   int           i, nc, low, high, mid;

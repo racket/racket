@@ -237,7 +237,7 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
   Constructs an arbitrary regular star polygon (a generalization of the regular polygons). 
   The polygon is enclosed by a regular polygon with @scheme[side-count] sides each
   @scheme[side-length] long. The polygon is actually constructed by going from vertex to
-  vertex around the regular polgon, but skipping over every @scheme[step-count] verticies.
+  vertex around the regular polgon, but skipping over every @scheme[step-count] vertices.
   
   For examples, if @scheme[side-count] is @scheme[5] and @scheme[step-count] is @scheme[2],
   then this function produces a shape just like @scheme[star].
@@ -250,15 +250,15 @@ other. The top and bottom pair of angles is @scheme[angle] and the left and righ
  
 }
                 
-@defproc*[([(polygon [verticies (listof posn?)] 
+@defproc*[([(polygon [vertices (listof posn?)] 
                      [mode mode?]
                      [color image-color?])
             image?]
-           [(polygon [verticies (listof posn?)] 
+           [(polygon [vertices (listof posn?)] 
                      [outline-mode (or/c 'outline "outline")]
                      [pen-or-color (or/c pen? image-color?)])
             image?])]{
-  Constructs a polygon connecting the given verticies.
+  Constructs a polygon connecting the given vertices.
   
   @mode/color-text
   

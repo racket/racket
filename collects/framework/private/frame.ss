@@ -543,7 +543,7 @@
     ;; this flag is specific to this frame
     ;; the true state of the info panel is
     ;; the combination of this flag and the 
-    ;; the 'framework:show-status-line preference
+    ;; 'framework:show-status-line preference
     ;; as shown in update-info-visibility
     (define info-hidden? #f)
     (define/public (hide-info)

@@ -307,7 +307,7 @@ please adhere to these guidelines:
  (plt:hd:refresh-downloading... "~a をダウンロードしています...")
  (plt:hd:refresh-deleting... "古いバージョンの ~a を削除しています...")
  (plt:hd:refresh-installing... "新しいバージョンの ~a をインストールしています...")
- (plt:hd:refresh-clearing-indicies "キャッシュ内の索引を消去しています")
+ (plt:hd:refresh-clearing-indices "キャッシュ内の索引を消去しています")
  (plt:hd:refreshing-manuals-finished "完了しました。")
  (plt:hd:about-help-desk "ヘルプデスクについて")
  (plt:hd:help-desk-about-string
@@ -445,7 +445,7 @@ please adhere to these guidelines:
  (revert-to-defaults "デフォルトに戻す")
 
   (black-on-white-color-scheme "白地に黒") ;; these two appear in the color preferences dialog on butttons
-  (white-on-black-color-scheme "黒地に白") ;; clicking the buttons changes teh color schemes to some defaults that've been set up.
+  (white-on-black-color-scheme "黒地に白") ;; clicking the buttons changes the color schemes to some defaults that've been set up.
 
  ; title of the color choosing dialog
 

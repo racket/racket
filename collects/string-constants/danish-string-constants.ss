@@ -285,7 +285,7 @@ please adhere to these guidelines:
   (plt:hd:manual-installed-date "(~a installeret)")
   ; Help Desk configuration
   ;; refreshing manuals
-  (plt:hd:refresh-clearing-indicies "Renser forgemte indekser")
+  (plt:hd:refresh-clearing-indices "Renser forgemte indekser")
   ;; should not mention `SVN' (plt:hd:refresh-done "Færdig med at opdatere SVN-manualer")
   (plt:hd:refreshing-manuals "Genhenter manualer")
   (plt:hd:refresh-downloading... "Henter ~a...")

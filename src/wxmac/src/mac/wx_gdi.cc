@@ -606,7 +606,7 @@ wxCursor::wxCursor(wxBitmap *mask, wxBitmap *bm, int hotSpotX, int hotSpotY)
     }
   }
 
-  c = new WXGC_PTRS wxColour(); /* to recieve bit values */
+  c = new WXGC_PTRS wxColour(); /* to receive bit values */
 
   cMacCustomCursor = new WXGC_ATOMIC Cursor;
 

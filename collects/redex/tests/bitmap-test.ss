@@ -71,7 +71,7 @@
 ;; and a 'where' in the second clause
 (test (render-metafunction T) "metafunction-T.png")
 
-;; in this test, teh `x' is italic and the 'z' is sf, since 'x' is in the grammar, and 'z' is not.
+;; in this test, the `x' is italic and the 'z' is sf, since 'x' is in the grammar, and 'z' is not.
 (test (render-lw 
        lang 
        (to-lw ((λ (x) (x x))

@@ -23,7 +23,7 @@
         (error '_sndfile "got a NULL pointer (bad info?)")))))
 
 ;; sf_count_t is a count type that depends on the operating system however it
-;; seems to be a long int for all teh supported ones so in this scase we just
+;; seems to be a long int for all the supported ones so in this scase we just
 ;; define it as two ints.
 (define _sf-count-t _int64)
 

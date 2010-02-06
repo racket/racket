@@ -209,6 +209,8 @@
 [char-downcase (-> -Char -Char)]
 [char-titlecase (-> -Char -Char)]
 [char-foldcase (-> -Char -Char)]
+[char->integer (-> -Char -Nat)]
+[integer->char (-> -Nat -Char)]
 
 [string-normalize-nfd (-> -String -String)]
 [string-normalize-nfkd (-> -String -String)]
@@ -365,11 +367,20 @@
                       [(-Path) (-lst -Path)])]
 
 [hash? (make-pred-ty (make-HashtableTop))]
+[hash-eq? (-> (make-HashtableTop) B)]
+[hash-eqv? (-> (make-HashtableTop) B)]
+[hash-weak? (-> (make-HashtableTop) B)]
 [make-hash (-poly (a b) (-> (-HT a b)))]
 [make-hasheq (-poly (a b) (-> (-HT a b)))]
+[make-hasheqv (-poly (a b) (-> (-HT a b)))]
 [make-weak-hash (-poly (a b) (-> (-HT a b)))]
 [make-weak-hasheq (-poly (a b) (-> (-HT a b)))]
+[make-weak-hasheqv (-poly (a b) (-> (-HT a b)))]
+[make-immutable-hash (-poly (a b) (-> (-lst (-pair a b)) (-HT a b)))]
+[make-immutable-hasheq (-poly (a b) (-> (-lst (-pair a b)) (-HT a b)))]
+[make-immutable-hasheqv (-poly (a b) (-> (-lst (-pair a b)) (-HT a b)))]
 
+[hash-set (-poly (a b) ((-HT a b) a b . -> . (-HT a b)))]
 [hash-set! (-poly (a b) ((-HT a b) a b . -> . -Void))]
 [hash-map (-poly (a b c) ((-HT a b) (a b . -> . c) . -> . (-lst c)))]
 [hash-ref (-poly (a b c)
@@ -379,6 +390,25 @@
 [hash-ref! (-poly (a b)
                   (cl-> [((-HT a b) a (-> b)) b]
                         [((-HT a b) a b) b]))]
+[hash-has-key? (-poly (a b) (-> (-HT a b) a B))]
+[hash-update! (-poly (a b)
+                     (cl-> [((-HT a b) a (-> b b)) -Void]
+                           [((-HT a b) a (-> b b) (-> a)) -Void]
+                           [((-HT a b) a (-> b b) a) -Void]))]
+[hash-update (-poly (a b)
+                    (cl-> [((-HT a b) a (-> b b)) (-HT a b)]
+                          [((-HT a b) a (-> b b) (-> a)) (-HT a b)]
+                          [((-HT a b) a (-> b b) a) (-HT a b)]))]
+[hash-remove (-poly (a b) ((-HT a b) a . -> . (-HT a b)))]
+[hash-remove! (-poly (a b) ((-HT a b) a . -> . -Void))]
+[hash-map (-poly (a b c) ((-HT a b) (a b . -> . c) . -> . (-lst c)))]
+[hash-for-each (-poly (a b c) (-> (-HT a b) (-> a b c) -Void))]
+[hash-count (-poly (a b) (-> (-HT a b) -Nat))]
+[hash-copy (-poly (a b) (-> (-HT a b) (-HT a b)))]
+[eq-hash-code (-poly (a) (-> a -Integer))]
+[eqv-hash-code (-poly (a) (-> a -Integer))]
+[equal-hash-code (-poly (a) (-> a -Integer))]
+[equal-secondary-hash-code (-poly (a) (-> a -Integer))]
 [hash-iterate-first (-poly (a b)
                            ((-HT a b) . -> . (Un (-val #f) -Integer)))]
 [hash-iterate-next (-poly (a b)
@@ -427,9 +457,6 @@
 [get-output-string (-> -Output-Port -String)]
 
 [make-directory (-> -Path -Void)]
-
-[hash-for-each (-poly (a b c)
-                      (-> (-HT a b) (-> a b c) -Void))]
 
 [delete-file (-> -Pathlike -Void)]
 [make-namespace (->opt [(Un (-val 'empty) (-val 'initial))] -Namespace)]

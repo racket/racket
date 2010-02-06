@@ -132,7 +132,7 @@ result of @scheme[_loop] (and thus the result of the entire
 @deftogether[[
 @defform[(let/cc: v : t . body)]
 @defform[(let/ec: v : t . body)]]]{Type-annotated versions of
-@scheme[let/cc] and @scheme[let/ec].}
+@scheme[let/cc] and @scheme[let/ec].  @scheme[t] is the type that will be provided to the continuation @scheme[v].}
 
 @subsection{Anonymous Functions}
 

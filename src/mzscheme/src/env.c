@@ -3335,7 +3335,7 @@ static void register_transitive_use(Optimize_Info *info, int pos, int j)
 void scheme_env_make_closure_map(Optimize_Info *info, mzshort *_size, mzshort **_map)
 {
   /* A closure map lists the captured variables for a closure; the
-     indices are resolved two new indicies in the second phase of
+     indices are resolved two new indices in the second phase of
      compilation. */
   Optimize_Info *frame;
   int i, j, pos = 0, lpos = 0, tu;

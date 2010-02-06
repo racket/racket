@@ -1352,7 +1352,4 @@ the settings above should match r5rs
   (go pretty-big)
   (go r5rs))
 
-(let ()
-  (fire-up-drscheme)
-  (thread (λ () (run-test) (exit)))
-  (yield (make-semaphore)))
+(fire-up-drscheme-and-run-tests run-test)
