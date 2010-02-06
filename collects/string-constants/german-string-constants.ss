@@ -951,6 +951,7 @@
  (initial-language-category "Sprache am Anfang")
  (no-language-chosen "Keine Sprache ausgewählt")
 
+ (module-language-name "Sprache aus Quelltext ermitteln")
  (module-language-one-line-summary "List die #lang-Zeile, um die tatsächliche Sprache zu ermitteln.")
   
  (module-language-auto-text "Automatisch Zeile mit #lang") ;; shows up in the details section of the module language
