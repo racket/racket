@@ -61,7 +61,7 @@
           (provide/contract (#,start (request? . -> . response/c)))
           (serve/servlet (contract (request? . -> . response/c) #,start
                                    'you 'web-server
-                                   (list (make-srcloc #f #f #f #f #f)
-                                         "start"))
+                                   "start"
+                                   #f)
                          #:extra-files-paths (if extra-files-path (list extra-files-path) empty)
                          #:launch-browser? launch-browser?))))]))

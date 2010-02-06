@@ -14,18 +14,14 @@
     (values
      (with-syntax ((val (opt/info-val opt/info))
                    (ctc (opt/info-contract opt/info))
-                   (pos (opt/info-pos opt/info))
-                   (src-info (opt/info-src-info opt/info))
-                   (orig-str (opt/info-orig-str opt/info)))
+                   (blame (opt/info-blame opt/info)))
        (syntax (if (pred val)
                    val
-                   (raise-contract-error
+                   (raise-blame-error
+                    blame
                     val
-                    src-info
-                    pos
-                    orig-str
                     "expected <~a>, given: ~e"
-                    ((name-get ctc) ctc)
+                    (contract-name ctc)
                     val))))
      null
      null
@@ -96,20 +92,16 @@
             (lift-pred (car lift-vars)))
        (with-syntax ((val (opt/info-val opt/info))
                      (ctc (opt/info-contract opt/info))
-                     (pos (opt/info-pos opt/info))
-                     (src-info (opt/info-src-info opt/info))
-                     (orig-str (opt/info-orig-str opt/info))
+                     (blame (opt/info-blame opt/info))
                      (lift-pred lift-pred))
          (values
           (syntax (if (lift-pred val)
                       val
-                      (raise-contract-error
+                      (raise-blame-error
+                       blame
                        val
-                       src-info
-                       pos
-                       orig-str
                        "expected <~a>, given: ~e"
-                       ((name-get ctc) ctc)
+                       (contract-name ctc)
                        val)))
           (interleave-lifts
            lift-vars

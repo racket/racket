@@ -10,11 +10,7 @@
          make-opt/info
          opt/info-contract
          opt/info-val
-         opt/info-pos
-         opt/info-neg
-         opt/info-src-info
-         opt/info-orig-str
-         opt/info-positive-position?
+         opt/info-blame
          opt/info-free-vars
          opt/info-recf
          opt/info-base-pred
@@ -57,52 +53,22 @@
 
 ;; struct for color-keeping across opters
 (define-struct opt/info
-  (contract val pos neg src-info orig-str position-var position-swap?
-            free-vars recf base-pred this that))
+  (contract val blame-id swap-blame? free-vars recf base-pred this that))
 
-(define (opt/info-positive-position? oi)
-  (if (opt/info-position-swap? oi)
-    #`(not #,(opt/info-position-var oi))
-    (opt/info-position-var oi)))
+(define (opt/info-blame oi)
+  (if (opt/info-swap-blame? oi)
+    #`(blame-swap #,(opt/info-blame-id oi))
+    (opt/info-blame-id oi)))
 
 ;; opt/info-swap-blame : opt/info -> opt/info
 ;; swaps pos and neg
 (define (opt/info-swap-blame info)
-  (let ((ctc (opt/info-contract info))
-        (val (opt/info-val info))
-        (pos (opt/info-pos info))
-        (neg (opt/info-neg info))
-        (position-var (opt/info-position-var info))
-        (position-swap? (opt/info-position-swap? info))
-        (src-info (opt/info-src-info info))
-        (orig-str (opt/info-orig-str info))
-        (free-vars (opt/info-free-vars info))
-        (recf (opt/info-recf info))
-        (base-pred (opt/info-base-pred info))
-        (this (opt/info-this info))
-        (that (opt/info-that info)))
-    (make-opt/info ctc val neg pos src-info orig-str
-                   position-var (not position-swap?)
-                   free-vars recf base-pred this that)))
+  (struct-copy opt/info info [swap-blame? (not (opt/info-swap-blame? info))]))
 
 ;; opt/info-change-val : identifier opt/info -> opt/info
 ;; changes the name of the variable that the value-to-be-contracted is bound to
 (define (opt/info-change-val val info)
-  (let ((ctc (opt/info-contract info))
-        (pos (opt/info-pos info))
-        (neg (opt/info-neg info))
-        (position-var (opt/info-position-var info))
-        (position-swap? (opt/info-position-swap? info))
-        (src-info (opt/info-src-info info))
-        (orig-str (opt/info-orig-str info))
-        (free-vars (opt/info-free-vars info))
-        (recf (opt/info-recf info))
-        (base-pred (opt/info-base-pred info))
-        (this (opt/info-this info))
-        (that (opt/info-that info)))
-    (make-opt/info ctc val pos neg src-info orig-str
-                   position-var position-swap?
-                   free-vars recf base-pred this that)))
+  (struct-copy opt/info info [val val]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -199,17 +165,13 @@
      (list (cons
             partial-var
             (with-syntax ((lift-var lift-var)
-                          (pos (opt/info-pos opt/info))
-                          (neg (opt/info-neg opt/info))
-                          (src-info (opt/info-src-info opt/info))
-                          (orig-str (opt/info-orig-str opt/info))
-                          (positive-position? (opt/info-positive-position? opt/info)))
-              (syntax (((proj-get lift-var) lift-var) pos neg src-info orig-str positive-position?))))
+                          (blame (opt/info-blame opt/info)))
+              (syntax ((contract-projection lift-var) blame))))
            (cons
             partial-flat-var
             (with-syntax ((lift-var lift-var))
-              (syntax (if (flat-pred? lift-var)
-                          ((flat-get lift-var) lift-var)
+              (syntax (if (flat-contract? lift-var)
+                          (flat-contract-predicate lift-var)
                           (lambda (x) (error 'opt/unknown "flat called on an unknown that had no flat pred ~s ~s"
                                              lift-var
                                              x)))))))

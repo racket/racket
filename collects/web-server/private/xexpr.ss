@@ -12,9 +12,10 @@
  [pretty-xexpr/c contract?])
 
 (define pretty-xexpr/c
-  (make-proj-contract
-   'pretty-xexpr/c
-   (lambda (pos neg src-info name)
+  (simple-contract
+   #:name 'pretty-xexpr/c
+   #:projection
+   (lambda (blame)
      (lambda (val)
        (define marks (current-continuation-marks))
        (with-handlers ([exn:fail:contract?
@@ -25,8 +26,7 @@
                             marks
                             `(span ,(drop-after "Context:\n" (exn-message exn)) "\n"
                                    ,(make-cdata #f #f (format-xexpr/errors val))))))])
-         (contract xexpr/c val pos neg src-info))))
-   (lambda (v) #t)))
+         (((contract-projection xexpr/c) blame) val))))))
 
 (define (drop-after delim str)
   (match (regexp-match-positions (regexp-quote delim) str)

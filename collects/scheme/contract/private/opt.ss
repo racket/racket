@@ -62,13 +62,9 @@
   (values
    (with-syntax ((stx stx)
                  (val (opt/info-val opt/info))
-                 (pos (opt/info-pos opt/info))
-                 (neg (opt/info-neg opt/info))
-                 (src-info (opt/info-src-info opt/info))
-                 (orig-str (opt/info-orig-str opt/info))
-                 (positive-position? (opt/info-positive-position? opt/info)))
+                 (blame (opt/info-blame opt/info)))
      (syntax (let ((ctc stx))
-               ((((proj-get ctc) ctc) pos neg src-info orig-str positive-position?) val))))
+               (((contract-projection ctc) blame) val))))
    null
    null
    null
@@ -122,11 +118,7 @@
     [(_ e (opt-recursive-args ...))
      (let*-values ([(info) (make-opt/info #'ctc
                                           #'val
-                                          #'pos
-                                          #'neg
-                                          #'src-info
-                                          #'orig-str
-                                          #'positive-position?
+                                          #'blame
                                           #f
                                           (syntax->list #'(opt-recursive-args ...))
                                           #f
@@ -141,7 +133,7 @@
            lifts
            #`(make-opt-contract
               (λ (ctc)
-                (λ (pos neg src-info orig-str positive-position?)
+                (λ (blame)
                   #,(if (syntax-parameter-value #'define/opt-recursive-fn)
                         (with-syntax ([f (syntax-parameter-value #'define/opt-recursive-fn)])
                           (bind-superlifts
@@ -179,16 +171,18 @@
   (make-struct-type-property 'original-contract))
 
 (define-struct opt-contract (proj orig-ctc stronger stronger-vars stamp)
-  #:property proj-prop (λ (ctc) ((opt-contract-proj ctc) ctc))
-   ;; I think provide/contract and contract calls this, so we are in effect allocating
-   ;; the original once 
-  #:property name-prop (λ (ctc) (contract-name ((orig-ctc-get ctc) ctc)))
   #:property orig-ctc-prop (λ (ctc) ((opt-contract-orig-ctc ctc)))
-  #:property stronger-prop
-  (λ (this that)
-    (and (opt-contract? that)
-         (eq? (opt-contract-stamp this) (opt-contract-stamp that))
-         ((opt-contract-stronger this) this that))))
+  #:property prop:contract
+  (build-contract-property
+   #:projection (λ (ctc) ((opt-contract-proj ctc) ctc))
+   ;; I think provide/contract and contract calls this, so we are in effect allocating
+   ;; the original once
+   #:name (λ (ctc) (contract-name ((orig-ctc-get ctc) ctc)))
+   #:stronger
+   (λ (this that)
+      (and (opt-contract? that)
+           (eq? (opt-contract-stamp this) (opt-contract-stamp that))
+           ((opt-contract-stronger this) this that)))))
 
 ;; opt-stronger-vars-ref : int opt-contract -> any
 (define (opt-stronger-vars-ref i ctc)

@@ -331,37 +331,39 @@
                     ...
                     [field-ctc-var (coerce-contract 'object-contract field-ctc-stx)]
                     ...)
-                (let ([method-var (contract-proc method-ctc-var)] 
+                (let ([method-var (contract-projection method-ctc-var)] 
                       ...
-                      [field-var (contract-proc field-ctc-var)]
+                      [field-var (contract-projection field-ctc-var)]
                       ...)
                   (let ([cls (make-wrapper-class 'wrapper-class 
                                                  '(method-name ...)
                                                  (list methods ...)
                                                  '(field-name ...)
                                                  #t)])
-                    (make-proj-contract
+                    (simple-contract
+                     #:name
                      `(object-contract 
                        ,(build-compound-type-name 'method-name method-ctc-var) ...
                        ,(build-compound-type-name 'field 'field-name field-ctc-var) ...)
-                     (lambda (pos-blame neg-blame src-info orig-str positive-position?)
-                       (let ([method/app-var (method-var pos-blame neg-blame src-info orig-str positive-position?)] 
+                     #:projection
+                     (lambda (blame)
+                       (let ([method/app-var (method-var blame)] 
                              ...
-                             [field/app-var (field-var pos-blame neg-blame src-info orig-str positive-position?)]
+                             [field/app-var (field-var blame)]
                              ...)
                          (let ([field-names-list '(field-name ...)])
                            (lambda (val)
-                             (check-object val src-info pos-blame orig-str)
+                             (check-object val blame)
                              (let ([val-mtd-names
                                     (interface->method-names
                                      (object-interface
                                       val))])
                                (void)
-                               (check-method val 'method-name val-mtd-names src-info pos-blame orig-str)
+                               (check-method val 'method-name val-mtd-names blame)
                                ...)
                              
                              (unless (field-bound? field-name val)
-                               (field-error val 'field-name src-info pos-blame orig-str)) ...
+                               (field-error val 'field-name blame)) ...
                              
                              (let ([vtable (extract-vtable val)]
                                    [method-ht (extract-method-ht val)])
@@ -369,35 +371,19 @@
                                  val
                                  (method/app-var (vector-ref vtable (hash-ref method-ht 'method-name))) ...
                                  (field/app-var (get-field field-name val)) ...
-                                 ))))))
-                     #f)))))))]))))
+                                 )))))))))))))]))))
 
 
-(define (check-object val src-info blame orig-str)
+(define (check-object val blame)
   (unless (object? val)
-    (raise-contract-error val
-                          src-info
-                          blame
-                          orig-str
-                          "expected an object, got ~e"
-                          val)))
+    (raise-blame-error blame val "expected an object, got ~e" val)))
 
-(define (check-method val method-name val-mtd-names src-info blame orig-str)
+(define (check-method val method-name val-mtd-names blame)
   (unless (memq method-name val-mtd-names)
-    (raise-contract-error val
-                          src-info
-                          blame
-                          orig-str
-                          "expected an object with method ~s"
-                          method-name)))
+    (raise-blame-error blame val "expected an object with method ~s" method-name)))
 
-(define (field-error val field-name src-info blame orig-str)
-  (raise-contract-error val
-                        src-info
-                        blame
-                        orig-str
-                        "expected an object with field ~s"
-                        field-name))
+(define (field-error val field-name blame)
+  (raise-blame-error blame val "expected an object with field ~s" field-name))
 
 (define (make-mixin-contract . %/<%>s)
   ((and/c (flat-contract class?)

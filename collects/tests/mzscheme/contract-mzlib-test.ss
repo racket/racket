@@ -78,13 +78,9 @@ of the contract library does not change over time.
   (define (test/spec-failed name expression blame)
     (let ()
       (define (has-proper-blame? msg)
-        (equal?
-         blame
-         (cond
-           [(regexp-match #rx"(^| )(.*) broke" msg) 
-            =>
-            (λ (x) (caddr x))]
-           [else (format "no blame in error message: \"~a\"" msg)])))
+        (regexp-match?
+         (string-append "(^| )" (regexp-quote blame) " broke")
+         msg))
       (printf "testing: ~s\n" name)
       (contract-eval
        `(,thunk-error-test 
@@ -5127,7 +5123,11 @@ so that propagation occurs.
      (and (exn? x)
           (regexp-match #rx"expected field name to be b, but found string?" (exn-message x)))))
   
-  (contract-eval `(,test 'pos guilty-party (with-handlers ((void values)) (contract not #t 'pos 'neg))))
+  (contract-eval
+   `(,test
+     'pos
+     (compose blame-positive exn:fail:contract:blame-object)
+     (with-handlers ((void values)) (contract not #t 'pos 'neg))))
   
   (report-errs)
   

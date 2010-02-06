@@ -48,48 +48,11 @@
              check-between/c
              string-len/c
              check-unary-between/c)
- (rename-out [string-len/c string/len]))
-
-;; from contract-guts.ss
-
-(provide any
-         and/c
-         any/c
-         none/c
-         make-none/c 
-         
-         guilty-party
-         contract-violation->string
-         
-         contract?
-         contract-name
-         contract-proc
-         
-         flat-contract?
-         flat-contract
-         flat-contract-predicate
-         flat-named-contract
-         
-         contract-first-order-passes?
-         
-         ;; below need docs
-         
-         make-proj-contract
-         
-         contract-stronger?
-         
-         coerce-contract 
-         flat-contract/predicate?
-         
-         build-compound-type-name
-         raise-contract-error
-         
-         proj-prop proj-pred? proj-get
-         name-prop name-pred? name-get
-         stronger-prop stronger-pred? stronger-get
-         flat-prop flat-pred? flat-get
-         first-order-prop first-order-get
-         (rename-out [or/c union]))
+ (rename-out [or/c union])
+ (rename-out [string-len/c string/len])
+ (except-out (all-from-out scheme/contract/private/guts)
+             check-flat-contract
+             check-flat-named-contract))
 
 
 ;; copied here because not provided by scheme/contract anymore

@@ -16,6 +16,7 @@
 (require mzlib/etc
          scheme/contract/base
          scheme/stxparam
+         unstable/location
          "private/unit-contract.ss"
          "private/unit-keywords.ss"
          "private/unit-runtime.ss"
@@ -482,7 +483,7 @@
                           (if (pair? v/c)
                               (contract (let-syntax #,renamings ctc-stx) (car v/c) (cdr v/c)
                                         (current-contract-region)
-                                        #,(id->contract-src-info var))
+                                        (quote #,var) (quote-syntax #,var))
                               (error 'unit "contracted import ~a used before definition"
                                      (quote #,(syntax->datum var))))))))
       (quasisyntax/loc (error-syntax)
@@ -747,7 +748,8 @@
                                                                             (contract #,ctc #,tmp
                                                                                       (current-contract-region)
                                                                                       'cant-happen
-                                                                                      #,(id->contract-src-info id))
+                                                                                      (quote #,id)
+                                                                                      (quote-syntax #,id))
                                                                             (set-box! #,export-loc
                                                                                       (cons #,tmp (current-contract-region)))))
                                                                         (quasisyntax/loc defn-or-expr
@@ -824,7 +826,7 @@
                                                  #`(let ([old-v/c (#,vref)])
                                                      (contract ctc-stx (car old-v/c) 
                                                                (cdr old-v/c) (current-contract-region)
-                                                               #,(id->contract-src-info var)))
+                                                               (quote #,var) (quote-syntax #,var)))
                                                  #`(#,vref))
                                            (current-contract-region)))
                                  (if ctc
@@ -832,7 +834,7 @@
                                          (let ([old-v/c (#,vref)])
                                            (contract ctc-stx (car old-v/c) 
                                                      (cdr old-v/c) (current-contract-region)
-                                                     #,(id->contract-src-info var))))
+                                                     (quote #,var) (quote-syntax #,var))))
                                      vref)))))
                        (car target-sig)
                        (cadddr target-sig)))
@@ -1293,7 +1295,7 @@
                      (((wrap-code ...) ...)
                       (map (λ (os ov tbs)
                              (define rename-bindings 
-                               (get-member-bindings def-table os #'(#%variable-reference)))
+                               (get-member-bindings def-table os #'(quote-module-path)))
                              (map (λ (tb i v c)
                                     (if c
                                         (with-syntax ([ctc-stx
@@ -1303,7 +1305,7 @@
                                           #`(let ([v/c (#,tb)])
                                               (contract ctc-stx (car v/c) (cdr v/c)
                                                         (current-contract-region)
-                                                        #,(id->contract-src-info v))))
+                                                        (quote #,v) (quote-syntax #,v))))
                                         #`(#,tb)))
                                   tbs
                                   (iota (length (car os)))
@@ -1503,11 +1505,10 @@
                                      #'name
                                      (syntax/loc stx
                                        ((import (import-tagged-sig-id [i.x i.c] ...) ...)
-                                        (export (export-tagged-sig-id [e.x e.c] ...) ...))))]
-                                   [src-info (id->contract-src-info #'name)])
+                                        (export (export-tagged-sig-id [e.x e.c] ...) ...))))])
                        (values 
                         (syntax/loc stx
-                          (contract unit-contract new-unit '(unit name) (current-contract-region) src-info))
+                          (contract unit-contract new-unit '(unit name) (current-contract-region) (quote name) (quote-syntax name)))
                         isigs esigs deps))))]
                 [(ic:import-clause/contract ec:export-clause/contract . body)
                  (build-unit/contract 

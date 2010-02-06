@@ -13,7 +13,6 @@
                      process-unit-import
                      process-unit-export
                      tagged-info->keys
-                     id->contract-src-info
                      get-member-bindings))
 
 (provide equal-hash-table
@@ -26,20 +25,10 @@
       ((= n 0) acc)
       (else (loop (sub1 n) (cons (sub1 n) acc))))))
 
-  ;; id->contract-src-info : identifier -> syntax
-  ;; constructs the last argument to the contract, given an identifier
-  (define-for-syntax (id->contract-src-info id)
-    #`(list (make-srcloc (quote-syntax #,id)
-                         #,(syntax-line id)
-                         #,(syntax-column id)
-                         #,(syntax-position id)
-                         #,(syntax-span id))
-            #,(format "~s" (syntax->datum id))))
-
 (define-syntax-rule (equal-hash-table [k v] ...)
   (make-immutable-hash (list (cons k v) ...)))
 
-(define-for-syntax (get-member-bindings member-table sig blame)
+(define-for-syntax (get-member-bindings member-table sig pos)
   (for/list ([i (in-list (map car (car sig)))]
              [c (in-list (cadddr sig))])
     (let ([add-ctc
@@ -47,8 +36,8 @@
                  (if c
                      (with-syntax ([c-stx (syntax-property c 'inferred-name v)])
                        #`(let ([v/c (#,stx)])
-                           (contract c-stx (car v/c) (cdr v/c) #,blame
-                                     #,(id->contract-src-info v))))
+                           (contract c-stx (car v/c) (cdr v/c) #,pos
+                                     (quote #,v) (quote-syntax #,v))))
                      #`(#,stx)))])
       #`[#,i
          (make-set!-transformer

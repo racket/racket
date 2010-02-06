@@ -3,6 +3,8 @@
 ;; Unstable library by: Carl Eastlund <cce@ccs.neu.edu>
 ;; intended for use in scheme/contract, so don't try to add contracts!
 
+(require setup/main-collects)
+
 (provide
 
  ;; type predicates
@@ -67,11 +69,11 @@
 (define (source-location-end x)
   (process-source-location x good-end bad! 'source-location-end))
 
-(define (source-location->string x)
-  (process-source-location x good-string bad! 'source-location->string))
+(define (source-location->string x [s ""])
+  (process-source-location x (good-string s) bad! 'source-location->string))
 
-(define (source-location->prefix x)
-  (process-source-location x good-prefix bad! 'source-location->prefix))
+(define (source-location->prefix x [s ""])
+  (process-source-location x (good-prefix s) bad! 'source-location->prefix))
 
 (define (build-source-location . locs)
   (combine-source-locations locs good-srcloc bad!
@@ -124,9 +126,11 @@
    [(or (list? x) (vector? x)) (datum->syntax #f null x)]
    [else (datum->syntax #f null (vector src line col pos span))]))
 
-(define (good-string x src line col pos span)
+(define ((good-string default) x src line col pos span)
   (format "~a~a"
-          (or src "")
+          (cond [(path? src) (collects-path src)]
+                [(not src) default]
+                [else src])
           (if line
             (if col
               (format ":~a.~a" line col)
@@ -137,8 +141,18 @@
                 (format "::~a" pos))
               ""))))
 
-(define (good-prefix x src line col pos span)
-  (let ([str (good-string x src line col pos span)])
+(define (collects-path path)
+  (let* ([rel
+          (with-handlers ([exn:fail? (lambda (exn) path)])
+            (path->main-collects-relative path))])
+    (if (pair? rel)
+      (apply build-path
+             (bytes->path #"<collects>")
+             (map bytes->path-element (cdr rel)))
+      rel)))
+
+(define ((good-prefix default) x src line col pos span)
+  (let ([str ((good-string default) x src line col pos span)])
     (if (string=? str "") "" (string-append str ": "))))
 
 (define (combine-source-locations locs good bad name)
@@ -231,11 +245,21 @@
 
 (define (process-syntax x good bad name)
   (process-elements x good bad name
-                    (syntax-source x)
+                    (syntax-get-source x)
                     (syntax-line x)
                     (syntax-column x)
                     (syntax-position x)
                     (syntax-span x)))
+
+(define (syntax-get-source x)
+  (cond
+   [(syntax-source-module x) =>
+    (lambda (src)
+      (if (module-path-index? src)
+        (resolved-module-path-name
+         (module-path-index-resolve src))
+        src))]
+   [else (syntax-source x)]))
 
 (define (process-list x good bad name)
   (cond

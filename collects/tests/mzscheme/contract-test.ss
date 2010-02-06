@@ -73,13 +73,9 @@
   (define (test/spec-failed name expression blame)
     (let ()
       (define (has-proper-blame? msg)
-        (equal?
-         blame
-         (cond
-           [(regexp-match #rx"(^| )(.*) broke" msg) 
-            =>
-            (λ (x) (caddr x))]
-           [else (format "no blame in error message: \"~a\"" msg)])))
+        (regexp-match?
+         (string-append "(^| )" (regexp-quote blame) " broke")
+         msg))
       (printf "testing: ~s\n" name)
       (contract-eval
        `(,thunk-error-test 
@@ -2291,49 +2287,46 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
-  ;;  make-proj-contract
+  ;;  simple-contract
   ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (contract-eval
    '(define proj:add1->sub1
-      (make-proj-contract
-       'proj:add1->sub1
-       (lambda (pos neg src name blame)
+      (simple-contract
+       #:name 'proj:add1->sub1
+       #:projection
+       (lambda (blame)
          (lambda (f)
            (unless (and (procedure? f) (procedure-arity-includes? f 1))
-             (raise-contract-error f src pos name
-                                   "expected a unary function, got: ~e"
-                                   f))
+             (raise-blame-error blame f "expected a unary function, got: ~e" f))
            (lambda (x)
              (unless (and (integer? x) (exact? x))
-               (raise-contract-error x src neg name
-                                     "expected an integer, got: ~e"
-                                     x))
+               (raise-blame-error (blame-swap blame) x
+                                  "expected an integer, got: ~e" x))
              (let* ([y (f (add1 x))])
                (unless (and (integer? y) (exact? y))
-                 (raise-contract-error y src pos name
-                                       "expected an integer, got: ~e"
-                                       y))
+                 (raise-blame-error blame y "expected an integer, got: ~e" y))
                (sub1 y)))))
+       #:first-order
        (lambda (f)
          (and (procedure? f) (procedure-arity-includes? f 1))))))
 
   (test/spec-passed/result
-   'make-proj-contract-1
+   'simple-contract-1
    '((contract proj:add1->sub1 sqrt 'pos 'neg) 15)
    3)
 
   (test/pos-blame
-   'make-proj-contract-2
+   'simple-contract-2
    '(contract proj:add1->sub1 'dummy 'pos 'neg))
 
   (test/pos-blame
-   'make-proj-contract-3
+   'simple-contract-3
    '((contract proj:add1->sub1 (lambda (x) 'dummy) 'pos 'neg) 2))
 
   (test/neg-blame
-   'make-proj-contract-4
+   'simple-contract-4
    '((contract proj:add1->sub1 sqrt 'pos 'neg) 'dummy))
   
 ;                                                                                           
@@ -5263,12 +5256,12 @@
    '(begin
 
       (define proj:blame/c
-        (make-proj-contract
-         'proj:blame/c
-         (lambda (pos neg src name blame)
+        (simple-contract
+         #:name 'proj:blame/c
+         #:projection
+         (lambda (blame)
            (lambda (x)
-             (if blame 'positive 'negative)))
-         (lambda (x) #t)))
+             (if (blame-swapped? blame) 'negative 'positive)))))
 
       (define call*0 'dummy)
       (define (call*1 x0) x0)
@@ -7162,8 +7155,69 @@ so that propagation occurs.
      (and (exn? x)
           (regexp-match #rx"pce8-bug" (exn-message x)))))
   
-  (contract-eval `(,test 'pos guilty-party (with-handlers ((void values)) (contract not #t 'pos 'neg))))
-  
+  (contract-eval
+   `(,test
+     'pos
+     (compose blame-positive exn:fail:contract:blame-object)
+     (with-handlers ((void values)) (contract not #t 'pos 'neg))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;
+  ;;;;
+  ;;;;  Legacy Contract Constructor tests
+  ;;;;
+  ;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;;  make-proj-contract
+  ;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (contract-eval
+   '(define proj:add1->sub1
+      (make-proj-contract
+       'proj:add1->sub1
+       (lambda (pos neg src name blame)
+         (lambda (f)
+           (unless (and (procedure? f) (procedure-arity-includes? f 1))
+             (raise-contract-error f src pos name
+                                   "expected a unary function, got: ~e"
+                                   f))
+           (lambda (x)
+             (unless (and (integer? x) (exact? x))
+               (raise-contract-error x src neg name
+                                     "expected an integer, got: ~e"
+                                     x))
+             (let* ([y (f (add1 x))])
+               (unless (and (integer? y) (exact? y))
+                 (raise-contract-error y src pos name
+                                       "expected an integer, got: ~e"
+                                       y))
+               (sub1 y)))))
+       (lambda (f)
+         (and (procedure? f) (procedure-arity-includes? f 1))))))
+
+  (test/spec-passed/result
+   'make-proj-contract-1
+   '((contract proj:add1->sub1 sqrt 'pos 'neg) 15)
+   3)
+
+  (test/pos-blame
+   'make-proj-contract-2
+   '(contract proj:add1->sub1 'dummy 'pos 'neg))
+
+  (test/pos-blame
+   'make-proj-contract-3
+   '((contract proj:add1->sub1 (lambda (x) 'dummy) 'pos 'neg) 2))
+
+  (test/neg-blame
+   'make-proj-contract-4
+   '((contract proj:add1->sub1 sqrt 'pos 'neg) 'dummy))
+    
   (report-errs)
   
 ))

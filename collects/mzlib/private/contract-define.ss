@@ -2,9 +2,10 @@
 
 (provide define/contract)
 
-(require (for-syntax scheme/base)
-         (only-in scheme/contract contract)
-         (for-syntax (prefix-in a: scheme/contract/private/helpers)))
+(require (for-syntax scheme/base
+                     unstable/srcloc
+                     (prefix-in a: scheme/contract/private/helpers))
+         (only-in scheme/contract contract))
 
 ;; First, we have the old define/contract implementation, which
 ;; is still used in mzlib/contract.
@@ -12,7 +13,7 @@
 (define-for-syntax (make-define/contract-transformer contract-id id)
   (make-set!-transformer
    (λ (stx)
-     (with-syntax ([neg-blame-str (a:build-src-loc-string stx)]
+     (with-syntax ([neg-blame-str (source-location->string stx "<<unknown>>")]
                    [contract-id contract-id]
                    [id id])
        (syntax-case stx (set!)
@@ -27,6 +28,7 @@
                        id
                        (syntax->datum (quote-syntax f))
                        neg-blame-str
+                       (quote f)
                        (quote-syntax f))
              arg
              ...))]
@@ -37,6 +39,7 @@
                       id
                       (syntax->datum (quote-syntax ident))
                       neg-blame-str
+                      (quote ident)
                       (quote-syntax ident)))])))))
 
 ;; (define/contract id contract expr)

@@ -33,30 +33,29 @@
                                (or/c (cons/c (listof (list/c symbol? string?)) (listof xexpr))
                                      (listof xexpr)))))
 
-(define xexpr/c 
-  (make-proj-contract
-   'xexpr?
-   (lambda (pos neg src-info name)
-     (lambda (val)
-       (with-handlers ([exn:invalid-xexpr?
-                        (lambda (exn)
-                          (raise-contract-error
-                           val
-                           src-info
-                           pos
-                           name
-                           "Not an Xexpr. ~a~n~nContext:~n~a"
-                           (exn-message exn)
-                           (pretty-format val)))])
-         (validate-xexpr val)
-         val)))
-   (lambda (v) #t)))
-
 (define (xexpr? x)
   (correct-xexpr? x (lambda () #t) (lambda (exn) #f)))
 
 (define (validate-xexpr x)
   (correct-xexpr? x (lambda () #t) (lambda (exn) (raise exn))))
+
+(define xexpr/c 
+  (simple-flat-contract
+   #:name 'xexpr?
+   #:projection
+   (lambda (blame)
+     (lambda (val)
+       (with-handlers ([exn:invalid-xexpr?
+                        (lambda (exn)
+                          (raise-blame-error
+                           blame
+                           val
+                           "Not an Xexpr. ~a~n~nContext:~n~a"
+                           (exn-message exn)
+                           (pretty-format val)))])
+         (validate-xexpr val)
+         val)))
+   #:first-order xexpr?))
 
 ;; ;; ;; ;; ;; ;; ;
 ;; ; xexpr? helpers

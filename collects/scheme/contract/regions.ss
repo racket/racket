@@ -22,16 +22,6 @@
     [(_ name x) (a:known-good-contract? #'x) #'x]
     [(_ name x) #'(coerce-contract name x)]))
 
-;; id->contract-src-info : identifier -> syntax
-;; constructs the last argument to the -contract, given an identifier
-(define-for-syntax (id->contract-src-info id)
-  #`(list (make-srcloc #,id
-                       #,(syntax-line id)
-                       #,(syntax-column id)
-                       #,(syntax-position id)
-                       #,(syntax-span id))
-          #,(format "~s" (syntax->datum id))))
-
 
 
 ;                                                                                                    
@@ -322,7 +312,8 @@
                                             #,av-id
                                             '(struct name)
                                             'cant-happen
-                                            #,(id->contract-src-info av-id)))))]
+                                            (quote #,av-id)
+                                            (quote-syntax #,av-id)))))]
                          ;; a list of variables, one for each super field
                          [(super-fields ...) (generate-temporaries super-fields)]
                          ;; the contract for a super field is any/c becuase the
@@ -353,7 +344,8 @@
                                   #:guard (contract (-> super-contracts ... non-auto-contracts ... symbol? any)
                                                     guard
                                                     (current-contract-region) blame-id
-                                                    #'maker)))))))))]
+                                                    (quote maker)
+                                                    (quote-syntax maker))))))))))]
     [(_ name . bad-fields)
      (identifier? #'name)
      (syntax-error "expected a list of field name/contract pairs"
@@ -391,14 +383,16 @@
                           arg
                           #,neg-blame-id
                           #,pos-blame-id
-                          #,(id->contract-src-info id))))]
+                          (quote #,id)
+                          (quote-syntax #,id))))]
        [(f arg ...)
         (quasisyntax/loc stx
           ((contract #,contract-stx
                      #,id
                      #,pos-blame-id
                      #,neg-blame-id
-                     #,(id->contract-src-info id))
+                     (quote #,id)
+                     (quote-syntax #,id))
            arg ...))]
        [ident
         (identifier? (syntax ident))
@@ -407,7 +401,8 @@
                     #,id
                     #,pos-blame-id
                     #,neg-blame-id
-                    #,(id->contract-src-info id)))]))))
+                    (quote #,id)
+                    (quote-syntax #,id)))]))))
 
 (define-for-syntax (check-and-split-with-contracts args)
   (let loop ([args args]
@@ -533,15 +528,13 @@
                                             (syntax-property c 'inferred-name v))
                                           free-ctcs
                                           free-vars)]
-                     [(free-src-info ...) (map id->contract-src-info free-vars)]
                      [(ctc-id ...) (map cid-marker protected)]
                      [(ctc ...) (map (λ (c v)
                                        (syntax-property (add-context c) 'inferred-name v))
                                      protections
                                      protected)]
                      [(p ...) protected]
-                     [(marked-p ...) (add-context #`#,protected)]
-                     [(src-info ...) (map (compose id->contract-src-info add-context) protected)])
+                     [(marked-p ...) (add-context #`#,protected)])
          (with-syntax ([new-stx (add-context #'(splicing-syntax-parameterize 
                                                 ([current-contract-region (λ (stx) #'blame-stx)])
                                                 . body))])
@@ -556,7 +549,8 @@
                                 free-var
                                 blame-id
                                 'cant-happen
-                                free-src-info)
+                                (quote free-var)
+                                (quote-syntax free-var))
                       ...
                       (values)))
              (define-syntaxes (free-var-id ...)
@@ -573,7 +567,8 @@
                                 marked-p
                                 blame-stx
                                 'cant-happen
-                                src-info)
+                                (quote marked-p)
+                                (quote-syntax marked-p))
                       ...
                       (values)))
              (define-syntaxes (p ...)

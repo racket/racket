@@ -15,7 +15,7 @@
 (provide (for-syntax unit/c/core) unit/c)
 
 (define-for-syntax (contract-imports/exports import?)
-  (λ (table-stx import-tagged-infos import-sigs ctc-table pos neg src-info name positive-position?)
+  (λ (table-stx import-tagged-infos import-sigs ctc-table blame-id)
     (define def-table (make-bound-identifier-mapping))
     
     (define (convert-reference var vref ctc sig-ctc rename-bindings)
@@ -25,12 +25,8 @@
                ;; store the result in a local box, then just check the box to
                ;; see if we need to coerce.
                #`(let ([ctc (coerce-contract 'unit/c (letrec-syntax #,rename-bindings #,ctc))])
-                   ((((proj-get ctc) ctc)
-                     #,(if import? neg pos)
-                     #,(if import? pos neg)
-                     #,src-info
-                     #,name
-                     #,(if import? (not positive-position?) positive-position?))
+                   (((contract-projection ctc)
+                     #,(if import? #`(blame-swap #,blame-id) blame-id))
                     #,stx)))])
         (if ctc
             #`(λ ()
@@ -43,9 +39,9 @@
                                                                  var)])
                                    #`(let ([old-v/c (#,vref)])
                                        (contract sig-ctc-stx (car old-v/c)
-                                                 (cdr old-v/c) #,pos
-                                                 #,(id->contract-src-info var)))))
-                              #,neg)
+                                                 (cdr old-v/c) (blame-positive #,blame-id)
+                                                 (quote #,var) (quote-syntax #,var)))))
+                              (blame-negative #,blame-id))
                       (wrap-with-proj ctc #`(#,vref))))
             vref)))
     (for ([tagged-info (in-list import-tagged-infos)]
@@ -57,7 +53,7 @@
                                                #`(vector-ref #,v #,index)))))
     (with-syntax ((((eloc ...) ...)
                    (for/list ([target-sig import-sigs])
-                     (let ([rename-bindings (get-member-bindings def-table target-sig pos)])
+                     (let ([rename-bindings (get-member-bindings def-table target-sig #`(blame-positive #,blame-id))])
                        (for/list ([target-int/ext-name (in-list (car target-sig))]
                                   [sig-ctc (in-list (cadddr target-sig))])
                          (let* ([var (car target-int/ext-name)]
@@ -136,7 +132,8 @@
                            export-tagged-infos)])
          (quasisyntax/loc stx
            (begin
-             (make-proj-contract
+             (simple-contract
+              #:name
               (list 'unit/c
                     (cons 'import 
                           (list (cons 'isig
@@ -148,11 +145,11 @@
                                       (map list (list 'e.x ...)
                                            (build-compound-type-name 'e.c ...)))
                                 ...)))
-              (λ (pos neg src-info name positive-position?)
+              #:projection
+              (λ (blame)
                 (λ (unit-tmp)
                   (unless (unit? unit-tmp)
-                    (raise-contract-error unit-tmp src-info pos name
-                                          "value is not a unit"))
+                    (raise-blame-error blame unit-tmp "value is not a unit"))
                   (contract-check-sigs 
                    unit-tmp
                    (vector-immutable
@@ -161,7 +158,7 @@
                    (vector-immutable 
                     (cons 'export-name 
                           (vector-immutable export-key ...)) ...)
-                   src-info pos name)
+                   blame)
                   (make-unit
                    '#,name
                    (vector-immutable (cons 'import-name
@@ -177,21 +174,14 @@
                                              import-tagged-infos
                                              import-sigs
                                              contract-table
-                                             #'pos
-                                             #'neg
-                                             #'src-info
-                                             #'name
-                                             #'positive-position?)))
+                                             #'blame)))
                                #,(contract-exports 
                                   #'export-table
                                   export-tagged-infos
                                   export-sigs
                                   contract-table
-                                  #'pos
-                                  #'neg
-                                  #'src-info
-                                  #'name
-                                  #'positive-position?)))))))
+                                  #'blame)))))))
+              #:first-order
               (λ (v)
                 (and (unit? v)
                      (with-handlers ([exn:fail:contract? (λ () #f)])
@@ -212,7 +202,7 @@
      (let ([name (syntax-local-infer-name stx)])
        (unit/c/core name #'sstx))]))
 
-(define (contract-check-helper sub-sig super-sig import? val src-info blame ctc)
+(define (contract-check-helper sub-sig super-sig import? val blame)
   (define t (make-hash))
   (let loop ([i (sub1 (vector-length sub-sig))])
     (when (>= i 0)
@@ -232,8 +222,8 @@
              [r (hash-ref t v0 #f)])
         (when (not r)
           (let ([sub-name (car (vector-ref super-sig i))])
-            (raise-contract-error
-             val src-info blame ctc
+            (raise-blame-error
+             blame val
              (cond
                [import?
                 (format "contract does not list import ~a" sub-name)]
@@ -241,6 +231,6 @@
                 (format "unit must export signature ~a" sub-name)])))))
       (loop (sub1 i)))))
 
-(define (contract-check-sigs unit expected-imports expected-exports src-info blame ctc)
-    (contract-check-helper expected-imports (unit-import-sigs unit) #t unit src-info blame ctc)
-    (contract-check-helper (unit-export-sigs unit) expected-exports #f unit src-info blame ctc))
+(define (contract-check-sigs unit expected-imports expected-exports blame)
+    (contract-check-helper expected-imports (unit-import-sigs unit) #t unit blame)
+    (contract-check-helper (unit-export-sigs unit) expected-exports #f unit blame))

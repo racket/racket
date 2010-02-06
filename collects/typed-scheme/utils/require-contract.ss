@@ -1,9 +1,11 @@
 #lang scheme/base
 
-(require scheme/contract (for-syntax scheme/base syntax/kerncase 
-                                     syntax/parse
-                                     "../utils/tc-utils.ss"
-                                     (prefix-in tr: "../private/typed-renaming.ss")))
+(require scheme/contract
+         (for-syntax scheme/base
+                     syntax/kerncase 
+                     syntax/parse
+                     "../utils/tc-utils.ss"
+                     (prefix-in tr: "../private/typed-renaming.ss")))
 
 (provide require/contract define-ignored)
 
@@ -19,7 +21,7 @@
                  (define name #,(syntax-property #'e*
                                                  'inferred-name
                                                  (syntax-e #'name))))]
-       [(begin (begin e))
+       [(begin e)
         #`(define name #,(syntax-property #'e
                                           'inferred-name
                                           (syntax-e #'name)))])]))
@@ -42,6 +44,7 @@
                           (get-alternate nm.r)
                           '(interface for #,(syntax->datum #'nm))
                           'never-happen
+                          (quote nm)
                           (quote-syntax nm))))]
     [(require/contract (orig-nm:renameable nm:id) cnt lib)
      #`(begin (require (only-in lib [orig-nm orig-nm.r]))
@@ -50,4 +53,5 @@
                           (get-alternate orig-nm.r) 
                           '#,(syntax->datum #'nm)
                           'never-happen
+                          (quote nm)
                           (quote-syntax nm))))]))

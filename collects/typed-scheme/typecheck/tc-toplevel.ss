@@ -20,6 +20,7 @@
          "def-binding.ss"
          (for-template
           "internal-forms.ss"
+          unstable/location
           mzlib/contract
           scheme/base))
 
@@ -268,7 +269,7 @@
         ([the-variable-reference (generate-temporary #'blame)]
          [((new-provs ...) ...) (map (generate-prov stx-defs val-defs #'the-variable-reference) provs)])
       #`(begin
-          (define the-variable-reference (#%variable-reference))
+          (define the-variable-reference (quote-module-path))
            #,(env-init-code)
            #,(tname-env-init-code)
            #,(talias-env-init-code)

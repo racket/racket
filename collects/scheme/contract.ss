@@ -9,80 +9,14 @@ differences from v3:
 
 |#
 
-(require "contract/private/arrow.ss"
-         "contract/private/base.ss"
-         scheme/contract/exists
-         "contract/private/misc.ss"
-         "contract/private/provide.ss"
+(require scheme/contract/exists
          scheme/contract/regions
-         "contract/private/guts.ss"
-         "contract/private/ds.ss"
-         "contract/private/opt.ss"
-         "contract/private/basic-opters.ss")
+         "contract/private/basic-opters.ss"
+         "contract/base.ss")
 
-(provide 
- opt/c define-opt/c ;(all-from-out "contract/private/opt.ss")
- (except-out (all-from-out "contract/private/ds.ss")
-             lazy-depth-to-look)
- 
- (except-out (all-from-out "contract/private/arrow.ss") 
-             making-a-method
-             procedure-accepts-and-more?
-             check-procedure
-             check-procedure/more)
+(provide (all-from-out "contract/base.ss")
  (except-out (all-from-out scheme/contract/exists) ∃?)
- (except-out (all-from-out "contract/private/misc.ss")
-             check-between/c
-             check-unary-between/c)
- (all-from-out scheme/contract/regions)
- (all-from-out "contract/private/provide.ss")
- (all-from-out "contract/private/base.ss"))
-
-;; from contract-guts.ss
-
-(provide any
-         and/c
-         any/c
-         none/c
-         make-none/c 
-         
-         guilty-party
-         exn:fail:contract2?
-         exn:fail:contract2-srclocs
-                
-         contract-violation->string
-         
-         contract?
-         contract-name
-         contract-proc
-         
-         flat-contract?
-         flat-contract
-         flat-contract-predicate
-         flat-named-contract
-         
-         contract-first-order-passes?
-         
-         ;; below need docs
-         
-         make-proj-contract
-         
-         contract-stronger?
-         
-         coerce-contract/f
-         coerce-contract
-         coerce-contracts
-         coerce-flat-contract
-         coerce-flat-contracts
-         
-         build-compound-type-name
-         raise-contract-error
-         
-         proj-prop proj-pred? proj-get
-         name-prop name-pred? name-get
-         stronger-prop stronger-pred? stronger-get
-         flat-prop flat-pred? flat-get
-         first-order-prop first-order-get)
+ (all-from-out scheme/contract/regions))
 
 ;; ======================================================================
 ;; The alternate implementation disables contracts. Its useful mainly to

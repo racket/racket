@@ -4,7 +4,7 @@
          "../util.ss"
          syntax/stx
          scheme/struct-info
-         scheme/contract/private/helpers
+         unstable/srcloc
          (for-syntax scheme/base
                      "rep.ss"
                      (only-in "rep-data.ss" make-literalset))
@@ -106,11 +106,13 @@
 (define-syntax-class (expr/c ctc)
   #:attributes (c)
   (pattern x:expr
-           #:with c #`(contract #,ctc
-                                x
-                                (quote #,(string->symbol (or (build-src-loc-string #'x) "")))
-                                (quote #,(or '<this-macro>))
-                                (quote-syntax #,(syntax/loc #'x (<there>))))))
+           #:with
+           c #`(contract #,ctc
+                         x
+                         (quote #,(source-location->string #'x "<<unknown>>"))
+                         '<this-macro>
+                         #f
+                         (quote-syntax x))))
 
 ;; Literal sets
 

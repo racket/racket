@@ -326,6 +326,7 @@
                                                 name 
                                                 'drscheme 
                                                 tool-name
+                                                (quote name)
                                                 (quote-syntax name))]))
                           name
                           ctc)

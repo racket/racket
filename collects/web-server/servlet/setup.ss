@@ -128,10 +128,7 @@
              [neg-blame 'web-server]
              [pos-blame path-sym]
              [module-name `(file ,path-string)]
-             [mk-loc
-              (lambda (name)
-                (list (make-srcloc a-path #f #f #f #f)
-                      name))]
+             [loc (make-srcloc a-path #f #f #f #f)]
              [s (load/use-compiled a-path)])
         (cond
           [(void? s)
@@ -139,47 +136,47 @@
                   (contract (symbols 'v1 'v2 'stateless) 
                             (dynamic-require module-name 'interface-version)
                             pos-blame neg-blame
-                            (mk-loc "interface-version"))])
+                            "interface-version" loc)])
              (case version
                [(v1)
                 (let ([timeout (contract number?
                                          (dynamic-require module-name 'timeout)
                                          pos-blame neg-blame
-                                         (mk-loc "timeout"))]
+                                         "timeout" loc)]
                       [start (contract (request? . -> . response/c)
                                        (dynamic-require module-name 'start)
                                        pos-blame neg-blame
-                                       (mk-loc "start"))])
+                                       "start" loc)])
                   (make-v1.servlet (directory-part a-path) timeout start))]
                [(v2)
                 (let ([start (contract (request? . -> . response/c)
                                        (dynamic-require module-name 'start)
                                        pos-blame neg-blame
-                                       (mk-loc "start"))]
+                                       "start" loc)]
                       [manager (contract manager?
                                          (dynamic-require module-name 'manager)
                                          pos-blame neg-blame
-                                         (mk-loc "manager"))])
+                                         "manager" loc)])
                   (make-v2.servlet (directory-part a-path) manager start))]
                [(stateless)
                 (let ([start (contract (request? . -> . response/c)
                                        (dynamic-require module-name 'start)
                                        pos-blame neg-blame
-                                       (mk-loc "start"))]
+                                       "start" loc)]
                       [manager (contract manager?
                                          (dynamic-require module-name 'manager 
                                                           (lambda () (create-none-manager (lambda (req) (error "No continuations!")))))
                                          pos-blame neg-blame
-                                         (mk-loc "manager"))]
+                                         "manager" loc)]
                       [stuffer (contract (stuffer/c serializable? bytes?)
                                          (dynamic-require module-name 'stuffer (lambda () default-stuffer))
                                          pos-blame neg-blame
-                                         (mk-loc "stuffer"))])
+                                         "stuffer" loc)])
                   (make-stateless.servlet (directory-part a-path) stuffer manager start))]))]
           [else
            (make-v1.servlet (directory-part a-path) timeouts-default-servlet
                             (v0.response->v1.lambda 
                              (contract response/c s
                                        pos-blame neg-blame
-                                       (mk-loc path-string))
+                                       path-string loc)
                              a-path))])))))

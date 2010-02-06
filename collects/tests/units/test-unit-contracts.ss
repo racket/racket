@@ -2,24 +2,14 @@
          scheme/unit
          scheme/contract)
 
-(define temp-unit-blame #rx"(unit temp[0-9]*)")
+(define temp-unit-blame-re "\\(unit temp[0-9]*\\)")
 (define top-level "top-level")
 
-(define (get-blame msg)
-  (cond
-    [(regexp-match #rx"(^| )(.*) broke" msg) 
-     =>
-     (λ (x) (caddr x))]
-    [else (error 'test-contract-error 
-                 (format "no blame in error message: \"~a\"" msg))]))
+(define (match-blame re msg)
+  (regexp-match? (string-append "(^| )" re " broke") msg))
 
-(define (get-obj msg)
-  (cond
-    [(regexp-match #rx"(^| )on (.*);" msg)
-     =>
-     (λ (x) (caddr x))]
-    [else (error 'test-contract-error
-                 (format "no object in error message: \"~a\"" msg))]))
+(define (match-obj re msg)
+  (regexp-match? (string-append "(^| )on " re ";") msg))
 
 (define (get-ctc-err msg)
   (cond
@@ -29,28 +19,29 @@
     [else (error 'test-contract-error
                  (format "no specific error in message: \"~a\"" msg))]))
 
-(define-syntax test-contract-error
+(define-syntax-rule (test-contract-error blame obj err expr)
+  (test-contract-error/regexp
+   (regexp-quote blame) (regexp-quote obj) (regexp-quote err)
+   expr))
+
+(define-syntax test-contract-error/regexp
   (syntax-rules ()
     ((_ blame obj err expr)
      (with-handlers ((exn:fail:contract?
                       (lambda (exn)
-                        (let ([exn-blame (get-blame (exn-message exn))]
-                              [exn-obj (get-obj (exn-message exn))])
+                        (let ([msg (exn-message exn)])
                           (cond
-                            [(and (string? blame)
-                                  (not (equal? blame exn-blame)))
-                             (error 'test-contract-error "expected blame ~a, got ~a"
-                                     blame exn-blame)]
-                            [(and (regexp? blame)
-                                  (not (regexp-match blame exn-blame)))
-                             (error 'test-contract-error "expected blame ~a, got ~a"
-                                     blame exn-blame)]
-                            [(not (equal? obj exn-obj))
-                             (error 'test-contract-error "expected object ~a, got ~a"
-                                     obj exn-obj)]
+                            [(not (match-blame blame msg))
+                             (error 'test-contract-error
+                                    "blame \"~a\" not found in:~n\"~a\""
+                                     blame msg)]
+                            [(not (match-obj obj msg))
+                             (error 'test-contract-error
+                                    "object \"~a\" not found in:~n\"~a\""
+                                    obj msg)]
                             [else 
                              (printf "contract error \"~a\" on ~a blaming ~a: ok\n\t\"~a\"\n\n" 
-                                     err obj exn-blame (get-ctc-err (exn-message exn)))])))))
+                                     err obj blame (get-ctc-err msg))])))))
        expr
        (error 'test-contract-error 
               "expected contract error \"~a\" on ~a, got none"
@@ -123,7 +114,7 @@
   (invoke-unit (compound-unit (import) (export)
                               (link (((S1 : sig1)) unit1)
                                     (() unit2 S1)))))
-(test-contract-error temp-unit-blame "a" "not a number"
+(test-contract-error/regexp temp-unit-blame-re "a" "not a number"
   (invoke-unit (compound-unit (import) (export)
                               (link (((S3 : sig3) (S4 : sig4))
                                      (unit (import) (export sig3 sig4)
@@ -133,7 +124,7 @@
                                            (define (b t) (if t 3 0))))
                                     (() unit3 S3 S4)))))
 
-(test-contract-error temp-unit-blame "g" "not a boolean"
+(test-contract-error/regexp temp-unit-blame-re "g" "not a boolean"
   (invoke-unit (compound-unit (import) (export)
                               (link (((S3 : sig3) (S4 : sig4))
                                      (unit (import) (export sig3 sig4)

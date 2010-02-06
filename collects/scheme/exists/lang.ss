@@ -25,6 +25,7 @@
   '(absolute-path?
     arity-at-least?
     bitwise-bit-set?
+    blame?
     boolean?
     box?
     byte-pregexp?
@@ -60,6 +61,8 @@
     contract-first-order-passes?
     contract-stronger?
     contract?
+    contract-property?
+    contract-struct?
     custodian-box?
     custodian-memory-accounting-available?
     custodian?
@@ -84,8 +87,8 @@
     exact-positive-integer?
     exact?
     exn:break?
-    exn:fail:contract2?
     exn:fail:contract:arity?
+    exn:fail:contract:blame?
     exn:fail:contract:continuation?
     exn:fail:contract:divide-by-zero?
     exn:fail:contract:variable?
@@ -111,7 +114,8 @@
     file-stream-port?
     fixnum?
     flat-contract?
-    flat-pred?
+    flat-contract-property?
+    flat-contract-struct?
     generic?
     handle-evt?
     hash-eq?
@@ -144,7 +148,6 @@
     module-path?
     module-provide-protected?
     mpair?
-    name-pred?
     namespace-anchor?
     namespace?
     negative?
@@ -176,7 +179,6 @@
     procedure-closure-contents-eq?
     procedure-struct-type?
     procedure?
-    proj-pred?
     promise-forced?
     promise-running?
     promise?
@@ -198,7 +200,6 @@
     special-comment?
     srcloc?
     string?
-    stronger-pred?
     struct-accessor-procedure?
     struct-constructor-procedure?
     struct-mutator-procedure?

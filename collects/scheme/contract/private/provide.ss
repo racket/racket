@@ -8,22 +8,14 @@
          "arrow.ss"
          "base.ss"
          scheme/contract/exists
-         "guts.ss")
+         "guts.ss"
+         unstable/location
+         unstable/srcloc)
 
 (define-syntax (verify-contract stx)
   (syntax-case stx ()
     [(_ name x) (a:known-good-contract? #'x) #'x]
     [(_ name x) #'(coerce-contract name x)]))
-
-;; id->contract-src-info : identifier -> syntax
-;; constructs the last argument to the -contract, given an identifier
-(define-for-syntax (id->contract-src-info id)
-  #`(list (make-srcloc #,id
-                       #,(syntax-line id)
-                       #,(syntax-column id)
-                       #,(syntax-position id)
-                       #,(syntax-span id))
-          #,(format "~s" (syntax->datum id))))
 
 (define-for-syntax (make-provide/contract-transformer contract-id id pos-module-source)
   (make-set!-transformer
@@ -52,8 +44,9 @@
                             #`(contract contract-id
                                         id
                                         pos-module-source
-                                        (#%variable-reference)
-                                        #,(id->contract-src-info #'id))))))])
+                                        (quote-module-path)
+                                        'id
+                                        (quote-syntax id))))))])
                (when key
                  (hash-set! saved-id-table key lifted-id))
                ;; Expand to a use of the lifted expression:
@@ -652,7 +645,7 @@
                 (with-syntax ([code
                                (quasisyntax/loc stx
                                  (begin
-                                   (define pos-module-source (#%variable-reference))
+                                   (define pos-module-source (quote-module-path))
                                    
                                    #,@(if no-need-to-check-ctrct?
                                           (list)
@@ -669,7 +662,7 @@
                   (syntax-local-lift-module-end-declaration
                    #`(begin 
                        (unless extra-test
-                         (contract contract-id id pos-module-source 'ignored #,(id->contract-src-info #'id)))
+                         (contract contract-id id pos-module-source 'ignored 'id (quote-syntax id)))
                        (void)))
                   
                   (syntax (code id-rename))))))]))
@@ -702,7 +695,9 @@
                                                     (contract ctc
                                                               val
                                                               'not-enough-info-for-blame
-                                                              'not-enough-info-for-blame))
+                                                              'not-enough-info-for-blame
+                                                              '#f
+                                                              (build-source-location #f)))
                                                   ctcs
                                                   vals)))))])
     struct:struct-name))
