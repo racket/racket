@@ -73,7 +73,7 @@ This produces an ACK message
                                  backtrace-image-string
                                  " "
                                  file-image-string
-                                 " ../../mred/private/snipfile.ss:"))
+                                 " .*mred/private/snipfile.ss:"))
                   "[0-9]+:[0-9]+: "
                   (regexp-quote str))))
 
@@ -190,8 +190,8 @@ This produces an ACK message
             "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
             "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: reference to undefined identifier: xx"
             "reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx")
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx")
            'definitions
            #f
            void
@@ -266,8 +266,8 @@ This produces an ACK message
             "define-values: cannot change constant identifier: +"
             "define-values: cannot change constant identifier: +"
             "define-values: cannot change constant identifier: +"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: define-values: cannot change constant identifier: \\+"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: define-values: cannot change constant identifier: \\+")
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: define-values: cannot change constant identifier: \\+"
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: define-values: cannot change constant identifier: \\+")
            'interactions
            #f
            void
@@ -305,8 +305,8 @@ This produces an ACK message
             "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
             "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:7: reference to undefined identifier: xx"
             "reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx")
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx")
            'definitions
            #f
            void
@@ -350,8 +350,8 @@ This produces an ACK message
             "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
             "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:2:0: reference to undefined identifier: xx"
             "reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx")
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx")
            'definitions
            #f
            void
@@ -417,8 +417,8 @@ This produces an ACK message
             "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
             "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: reference to undefined identifier: x"
             "reference to undefined identifier: x"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: x"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: x")
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: x"
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: x")
            'definitions
            #f
            void
@@ -457,8 +457,8 @@ This produces an ACK message
             "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #<void>"
             "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: expt: expected argument of type <number>; given #<void>"
             "expt: expected argument of type <number>; given #<void>"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #<void>"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #<void>")
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #<void>"
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #<void>")
            'definitions
            #f
            void
@@ -507,8 +507,8 @@ This produces an ACK message
             "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
             "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: reference to undefined identifier: x"
             "1\n2\nreference to undefined identifier: x"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: x"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: x")
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: x"
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: x")
            'definitions
            #f
            void
@@ -620,8 +620,8 @@ This produces an ACK message
      "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f\n15"
      "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:5:19: expt: expected argument of type <number>; given #f\n15"
      "expt: expected argument of type <number>; given #f\n15"
-     #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f\n15"
-     #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f\n15")
+     #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f\n15"
+     #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f\n15")
     'definitions
     #f
     void
@@ -644,12 +644,12 @@ This produces an ACK message
    
    ;; should produce a syntax object with a turn-down triangle.
    (mktest "(write (list (syntax x)))" 
-           (#rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21.*>\"})"
-            #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21.*>\"})"
-            #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:21.*>\"})"
-            #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21.*>\"})"
-            #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:21.*>\"})"
-            #rx"({embedded \".#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:21.*>\"})")
+           (#rx"({embedded \".#<syntax:.*repl-test-tmp.ss:1:21.*>\"})"
+            #rx"({embedded \".#<syntax:.*repl-test-tmp.ss:1:21.*>\"})"
+            #rx"({embedded \".#<syntax:.*repl-test-tmp3.ss:1:21.*>\"})"
+            #rx"({embedded \".#<syntax:.*repl-test-tmp.ss:1:21.*>\"})"
+            #rx"({embedded \".#<syntax:.*repl-test-tmp.ss:1:21.*>\"})"
+            #rx"({embedded \".#<syntax:.*repl-test-tmp3.ss:1:21.*>\"})")
            'interactions
            #f
            void
@@ -685,12 +685,12 @@ This produces an ACK message
    
    (mktest "(parameterize ([current-output-port (open-output-string)]) (fprintf (current-error-port) \"~e\" #'foot))"
            
-           (#rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96.*>"
-            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96.*>"
-            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:96.*>"
-            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96.*>"
-            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp.ss:1:96.*>"
-            #rx"#<syntax:.*/collects/tests/drscheme/repl-test-tmp3.ss:1:96.*>")
+           (#rx"#<syntax:.*repl-test-tmp.ss:1:96.*>"
+            #rx"#<syntax:.*repl-test-tmp.ss:1:96.*>"
+            #rx"#<syntax:.*repl-test-tmp3.ss:1:96.*>"
+            #rx"#<syntax:.*repl-test-tmp.ss:1:96.*>"
+            #rx"#<syntax:.*repl-test-tmp.ss:1:96.*>"
+            #rx"#<syntax:.*repl-test-tmp3.ss:1:96.*>")
            'interactions
            #f
            void
@@ -719,8 +719,8 @@ This produces an ACK message
      "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
      "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:6:15: expt: expected argument of type <number>; given #f"
      "expt: expected argument of type <number>; given #f"
-     #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f"
-     #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f")
+     #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f"
+     #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: expt: expected argument of type <number>; given #f")
     'definitions
     #f
     void
@@ -796,8 +796,8 @@ This produces an ACK message
             "{stop-multi.png} {stop-22x22.png} procedure application: expected procedure, given: 3; arguments were: 3"
             "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:3:13: procedure application: expected procedure, given: 3; arguments were: 3"
             "procedure application: expected procedure, given: 3; arguments were: 3"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: procedure application: expected procedure, given: 3; arguments were: 3"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: procedure application: expected procedure, given: 3; arguments were: 3")
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: procedure application: expected procedure, given: 3; arguments were: 3"
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: procedure application: expected procedure, given: 3; arguments were: 3")
            'definitions
            #f
            void
@@ -898,8 +898,8 @@ This produces an ACK message
             "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
             "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: reference to undefined identifier: xx"
             "reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx"
-            #rx"{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx")
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx"
+            #rx"{stop-multi.png} {stop-22x22.png} .*mred/private/snipfile.ss:[0-9]+:[0-9]+: reference to undefined identifier: xx")
            'definitions
            #f
            void
@@ -1069,7 +1069,8 @@ This produces an ACK message
 (define backtrace-image-string "{stop-multi.png}")
 (define file-image-string "{stop-22x22.png}")
 
-(define tmp-load-directory
+(define tmp-load-directory (find-system-path 'temp-dir)
+  #;
   (normal-case-path
    (normalize-path 
     (collection-path "tests" "drscheme"))))
@@ -1079,8 +1080,6 @@ This produces an ACK message
 
 (define tmp-load3-short-filename "repl-test-tmp3.ss")
 (define tmp-load3-filename (build-path tmp-load-directory tmp-load3-short-filename))
-
-tmp-load-filename
 
 (define (cleanup-tmp-files)
   (when (file-exists? tmp-load-filename) (delete-file tmp-load-filename))
@@ -1515,13 +1514,10 @@ tmp-load-filename
       (string-append a b)))
 
 
-(let ()
-  (fire-up-drscheme)
-  (wait-for-drscheme-frame) ;; after this point, it is safe to set the exit handler
-  (exit-handler
-   (let ([eh (exit-handler)])
-     (λ (val)
-       (cleanup-tmp-files)
-       (eh val))))
-  (thread (λ () (run-test) (exit)))
-  (yield (make-semaphore 0)))
+(exit-handler
+ (let ([eh (exit-handler)])
+   (λ (val)
+      (cleanup-tmp-files)
+      (eh val))))
+
+(fire-up-drscheme-and-run-tests run-test)

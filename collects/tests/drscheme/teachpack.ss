@@ -238,7 +238,4 @@
   ;(bad-tests)
   (test-built-in-teachpacks))
 
-(let ()
-  (fire-up-drscheme)
-  (thread (λ () (run-test) (exit)))
-  (yield (make-semaphore)))
+(fire-up-drscheme-and-run-tests run-test)

@@ -11,7 +11,7 @@
    [use-get/put-dialog (-> (-> any) path? void?)]
    [set-module-language! (->* () (boolean?) void?)])
   
-  (provide fire-up-drscheme
+  (provide fire-up-drscheme-and-run-tests
            save-drscheme-window-as
            do-execute
            test-util-error
@@ -622,13 +622,35 @@
   ;; but just to print and return.
   (define orig-display-handler (error-display-handler))
   
-  (define (fire-up-drscheme)
-    (dynamic-require 'drscheme #f)
-      
-    ;; reset the uncaught exception handler to be sure we kill everything (drscheme sets it)
-    (uncaught-exception-handler
-     (λ (x)
-       (if (exn? x)
-           (orig-display-handler (exn-message x) x)
-           (fprintf (current-error-port) "uncaught exception ~s\n" x))
-       (exit 1))))
+  (define (fire-up-drscheme-and-run-tests run-test)
+    (let ()
+      ;; change the preferences system so that it doesn't write to 
+      ;; a file; partly to avoid problems of concurrency in drdr
+      ;; but also to make the test suite easier for everyone to run.
+      (let ([prefs-table (make-hash)])
+	(fw:preferences:low-level-put-preferences
+	 (lambda (names vals)
+	   (for-each (lambda (name val) (hash-set! prefs-table name val))
+		     names vals)))
+	(fw:preferences:low-level-get-preference 
+	 (lambda (name [fail (lambda () #f)])
+	   (hash-ref prefs-table name fail))))
+	 
+      (dynamic-require 'drscheme #f)
+
+      ;; set all preferences to their defaults (some pref values may have
+      ;; been read by this point, but hopefully that won't affect much
+      ;; of the startup of drscheme)
+      (fw:preferences:restore-defaults)
+
+      (thread (λ () 
+		 (let ([orig-display-handler (error-display-handler)])
+		   (uncaught-exception-handler
+		    (λ (x)
+		       (if (exn? x)
+			   (orig-display-handler (exn-message x) x)
+			   (fprintf (current-error-port) "uncaught exception ~s\n" x))
+		       (exit 1))))
+		 (run-test)
+		 (exit)))
+      (yield (make-semaphore 0))))
