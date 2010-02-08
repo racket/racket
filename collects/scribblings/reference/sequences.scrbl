@@ -392,8 +392,62 @@ completes, the generator will end.
   i)
 ]}
 
-@defform[(yield expr)]{ Saves the point of execution inside a generator
-and returns a value.}
+@defform[(yield expr ...)]{ Saves the point of execution inside a generator
+and returns a value. @scheme[yield] can accept any number of arguments and will
+return them using @scheme[values].
+
+Values can be passed back to the generator after invoking @scheme[yield] by passing
+the arguments to the generator instance. Note that a value cannot be passed back
+to the generator until after the first @scheme[yield] has been invoked.
+
+@examples[#:eval (generator-eval)
+(define my-generator (generator (yield 1) (yield 2 3 4)))
+(my-generator)
+(my-generator)
+]
+
+@examples[#:eval (generator-eval)
+(define pass-values-generator
+  (generator
+    (let* ([from-user (yield 2)]
+           [from-user-again (yield (add1 from-user))])
+      (yield from-user-again))))
+
+(pass-values-generator)
+(pass-values-generator 5)
+(pass-values-generator 12)
+]}
+
+@defproc[(generator-state [g any?]) symbol?]{ Returns a symbol that describes the state
+of the generator.
+
+ @itemize[
+   @item{@scheme['fresh] - The generator has been freshly created and has not
+   been invoked yet. Values cannot be passed to a fresh generator.}
+   @item{@scheme['suspended] - Control within the generator has been suspended due
+   to a call to @scheme[yield]. The generator can be invoked.}
+   @item{@scheme['running] - The generator is currently executing. This state can
+   only be returned if @scheme[generator-state] is invoked inside the generator.}
+   @item{@scheme['done] - The generator has executed its entire body and will not
+   call @scheme[yield] anymore.}
+ ]
+
+@examples[#:eval (generator-eval)
+(define my-generator (generator (yield 1) (yield 2)))
+(generator-state my-generator)
+(my-generator)
+(generator-state my-generator)
+(my-generator)
+(generator-state my-generator)
+(my-generator)
+(generator-state my-generator)
+
+(define introspective-generator (generator ((yield 1))))
+(introspective-generator)
+(introspective-generator (lambda () (generator-state introspective-generator)))
+(generator-state introspective-generator)
+(introspective-generator)
+]}
 
 @defproc[(sequence->generator [s sequence?]) (-> any?)]{ Returns a generator
 that returns elements from the sequence, @scheme[s], each time the generator
