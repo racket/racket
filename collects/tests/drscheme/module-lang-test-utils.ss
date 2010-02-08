@@ -23,7 +23,7 @@
 
 (define in-here
   (let ([here (this-expression-source-directory)])
-    (lambda (file) (format "~s" (path->string (build-path here file))))))
+    (lambda (file) (format "~s" (path->string (build-path (find-system-path 'temp-dir) file))))))
 
 (define tests '())
 (define-syntax (test stx)
