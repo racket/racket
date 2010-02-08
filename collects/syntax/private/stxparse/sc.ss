@@ -3,6 +3,7 @@
                      scheme/private/sc
                      unstable/syntax
                      unstable/struct
+                     "minimatch.ss"
                      "rep-data.ss"
                      "rep.ss")
          scheme/list
@@ -101,12 +102,10 @@
                               [den (cadr line)])
                           (let-values ([(den defs) (create-aux-def den)])
                             (list #`(list (quote #,rx)
-                                          (make-den:parser
-                                           (quote-syntax #,(den:parser-parser den))
-                                           (quote-syntax #,(den:parser-description den))
-                                           (quote #,(den:parser-attrs den))
-                                           (quote #,(den:parser-splicing? den))
-                                           (quote #,(den:parser-commit? den))))
+                                          (make-den:delayed
+                                           (quote-syntax #,(den:delayed-parser den))
+                                           (quote-syntax #,(den:delayed-description den))
+                                           (quote-syntax #,(den:delayed-class den))))
                                   defs))))])
          #'(begin
              def ... ...

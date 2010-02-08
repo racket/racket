@@ -254,8 +254,8 @@ A Dynamic Frontier Context (DFC) is one of
     [(list (make dfc:car pa _) (make dfc:car pb _))
      (compare-idfcs pa pb)]
     [(list (make dfc:cdr pa na) (make dfc:cdr pb nb))
-     (cond [(< na nb) '<]
-           [(> na nb) '>]
+     (cond [(< na nb) (compare-idfcs pa (make dfc:cdr pb (- nb na)))]
+           [(> na nb) (compare-idfcs (make-dfc:cdr pa (- na nb)) pb)]
            [(= na nb) (compare-idfcs pa pb)])]
     [(list (make dfc:pre pa _) (make dfc:pre pb _))
      ;; FIXME: possibly just '= here, treat all sides as equiv
@@ -579,3 +579,21 @@ An Expectation is one of
 
 (define-struct parser (proc errors)
   #:property prop:procedure (struct-field-index proc))
+
+;;
+
+(provide curried-stxclass-procedures)
+
+(define-syntax (curried-stxclass-procedures stx)
+  (syntax-case stx ()
+    [(cp class (arg ...))
+     (let* ([args (syntax->list #'(arg ...))]
+            [sc (get-stxclass/check-arg-count #'class (length args))])
+       (with-syntax ([parser (stxclass-parser-name sc)]
+                     [get-description (stxclass-description sc)]
+                     [(extra ...)
+                      (if (stxclass-commit? sc)
+                          #'()
+                          #'(k))])
+         #'(values (lambda (x extra ...) (parser x extra ... arg ...))
+                   (lambda () (get-description arg ...)))))]))

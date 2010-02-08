@@ -88,17 +88,22 @@ DeclEntry =
   (make-den:lit id id)
   (make-den:class id id (listof syntax) bool)
   (make-den:parser id id (listof SAttr) bool bool)
+  (make-den:delayed id id id)
 |#
 (define-struct declenv (table conventions))
 
 (define-struct den:lit (internal external))
 (define-struct den:class (name class args))
 (define-struct den:parser (parser description attrs splicing? commit?))
+(define-struct den:delayed (parser description class))
 
 (define (new-declenv literals #:conventions [conventions null])
-  (for/fold ([decls (make-declenv (make-immutable-bound-id-table) conventions)])
-      ([literal literals])
-    (declenv-put-literal decls (car literal) (cadr literal))))
+  (make-declenv
+   (for/fold ([table (make-immutable-bound-id-table)])
+       ([literal literals])
+     (bound-id-table-set table (car literal)
+                         (make den:lit (car literal) (cadr literal))))
+   conventions))
 
 (define (declenv-lookup env id #:use-conventions? [use-conventions? #t])
   (or (bound-id-table-ref (declenv-table env) id #f)
@@ -124,25 +129,11 @@ DeclEntry =
        (wrong-syntax id "(internal error) late unbound check")]
       ['#f (void)])))
 
-(define (declenv-put-literal env internal-id lit-id)
-  (declenv-check-unbound env internal-id)
-  (make-declenv
-   (bound-id-table-set (declenv-table env) internal-id
-                       (make den:lit internal-id lit-id))
-   (declenv-conventions env)))
-
 (define (declenv-put-stxclass env id stxclass-name args)
   (declenv-check-unbound env id)
   (make-declenv
    (bound-id-table-set (declenv-table env) id
                        (make den:class id stxclass-name args))
-   (declenv-conventions env)))
-
-(define (declenv-put-parser env id parser get-description attrs splicing? commit?)
-  ;; no unbound check, since replacing 'stxclass entry
-  (make-declenv
-   (bound-id-table-set (declenv-table env) id
-                       (make den:parser parser get-description attrs splicing? commit?))
    (declenv-conventions env)))
 
 ;; declenv-update/fold : DeclEnv (Id/Regexp DeclEntry a -> DeclEntry a) a
@@ -183,14 +174,16 @@ DeclEntry =
   (flat-named-contract 'DeclEnv declenv?))
 
 (define DeclEntry/c
-  (flat-named-contract 'DeclEntry (or/c den:lit? den:class? den:parser?)))
+  (flat-named-contract 'DeclEntry
+                       (or/c den:lit? den:class? den:parser? den:delayed?)))
 
 (define SideClause/c
   (or/c clause:fail? clause:with? clause:attr?))
 
 (provide (struct-out den:lit)
          (struct-out den:class)
-         (struct-out den:parser))
+         (struct-out den:parser)
+         (struct-out den:delayed))
 
 (provide/contract
  [DeclEnv/c contract?]
@@ -208,12 +201,6 @@ DeclEntry =
   (-> DeclEnv/c identifier? any)]
  [declenv-put-stxclass
   (-> DeclEnv/c identifier? identifier? (listof syntax?)
-      DeclEnv/c)]
- [declenv-put-literal
-  (-> DeclEnv/c identifier? identifier?
-      DeclEnv/c)]
- [declenv-put-parser
-  (-> DeclEnv/c identifier? any/c any/c (listof sattr?) boolean? boolean?
       DeclEnv/c)]
  [declenv-domain-difference
   (-> DeclEnv/c (listof identifier?)

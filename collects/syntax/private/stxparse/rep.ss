@@ -212,24 +212,31 @@
     [(struct den:lit (_i _e))
      (values entry null)]
     [(struct den:class (name class args))
-     (let ([sc (get-stxclass/check-arg-count class (length args))])
-       (with-syntax ([sc-parser (stxclass-parser-name sc)]
-                     [sc-description (stxclass-description sc)])
-         (if (pair? args)
-             (with-syntax ([x (generate-temporary 'x)]
-                           [parser (generate-temporary class)]
-                           [description (generate-temporary class)]
-                           [(arg ...) args])
-               (values (make den:parser #'parser #'description
-                             (stxclass-attrs sc) (stxclass/h? sc)
-                             (stxclass-commit? sc))
-                       (list #'(define (parser x) (sc-parser x arg ...))
-                             #'(define (description) (description arg ...)))))
-             (values (make den:parser #'sc-parser #'sc-description
-                           (stxclass-attrs sc) (stxclass/h? sc)
-                           (stxclass-commit? sc))
-                     null))))]
+     (cond [(identifier? name)
+            (let ([sc (get-stxclass/check-arg-count class (length args))])
+              (with-syntax ([sc-parser (stxclass-parser-name sc)]
+                            [sc-description (stxclass-description sc)])
+                (with-syntax ([parser (generate-temporary class)]
+                              [description (generate-temporary class)])
+                  (values (make den:parser #'parser #'description
+                                (stxclass-attrs sc) (stxclass/h? sc)
+                                (stxclass-commit? sc))
+                          (list #`(define-values (parser description)
+                                    (curried-stxclass-procedures
+                                     #,class #,args)))))))]
+           [(regexp? name)
+            ;; Conventions rule; delay class lookup until module/intdefs pass2
+            ;; to allow forward references
+            (fprintf (current-error-port) "conventions aux def\n")
+            (with-syntax ([parser (generate-temporary class)]
+                          [description (generate-temporary class)])
+              (values (make den:delayed #'parser #'get-description class)
+                      (list #`(define-values (parser description)
+                                (curried-stxclass-procedures
+                                 #,class #,args)))))])]
     [(struct den:parser (_p _d _a _sp _c))
+     (values entry null)]
+    [(struct den:delayed (_p _d _c))
      (values entry null)]))
 
 (define (append-lits+litsets lits litsets)
@@ -450,9 +457,29 @@
             "(internal error) decls had leftover stxclass entry: ~s"
             entry)]
     [(struct den:parser (parser desc attrs splicing? commit?))
+     ;; FIXME: why no allow-head? check???
      (if splicing?
-         (parse-pat:id/h id parser null attrs commit?)
+         (begin
+           (unless allow-head?
+             (wrong-syntax id "splicing syntax class not allowed here"))
+           (parse-pat:id/h id parser null attrs commit?))
          (parse-pat:id/s id parser null attrs commit?))]
+    [(struct den:delayed (parser desc class))
+     (let ([sc (get-stxclass class)])
+       (cond [(stxclass/s? sc)
+              (parse-pat:id/s id
+                              parser
+                              null
+                              (stxclass-attrs sc)
+                              (stxclass-commit? sc))]
+             [(stxclass/h? sc)
+              (unless allow-head?
+                (wrong-syntax id "splicing syntax class not allowed here"))
+              (parse-pat:id/h id
+                              parser
+                              null
+                              (stxclass-attrs sc)
+                              (stxclass-commit? sc))]))]
     ['#f
      (when #t ;; FIXME: right place???
        (unless (safe-name? id)
@@ -1007,8 +1034,9 @@
       [_ (raise-syntax-error #f "expected syntax class use" ctx x)]))
   (syntax-case stx ()
     [(rx sc)
-     (list (check-conventions-pattern (syntax-e #'rx) #'rx)
-           (check-sc-expr #'sc #'rx))]))
+     (let ([name-pattern (check-conventions-pattern (syntax-e #'rx) #'rx)])
+       (list name-pattern
+             (check-sc-expr #'sc name-pattern)))]))
 
 ;; bind clauses
 (define (check-bind-clause-list stx ctx)
