@@ -37,7 +37,7 @@
                      [-> (-lst a) a]))]
 [cdddr (-poly (a b c d)
               (cl->* [->acc (list (-pair a (-pair b (-pair c d)))) d (list -cdr -cdr -cdr)]
-                     [-> (-lst a) a]))]
+                     [-> (-lst a) (-lst a)]))]
 
 [cadddr (-poly (a) (-> (-lst a) a))]
 [cddddr (-poly (a) (-> (-lst a) (-lst a)))]
