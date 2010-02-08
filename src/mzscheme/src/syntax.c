@@ -3573,12 +3573,13 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
       value = scheme_optimize_clone(1, value, rhs_info, 0, 0);
 
       if (value) {
-        info = scheme_optimize_info_add_frame(info, extract_depth, 0, 0);
+        info = scheme_optimize_info_add_frame(sub_info, extract_depth, 0, 0);
         info->inline_fuel = 0;
         value = scheme_optimize_expr(value, info, context);
-        info->next->single_result = info->single_result;
-        info->next->preserves_marks = info->preserves_marks;
+        sub_info->single_result = info->single_result;
+        sub_info->preserves_marks = info->preserves_marks;
         scheme_optimize_info_done(info);
+        if (for_inline > 1) scheme_optimize_info_done(sub_info);
         return value;
       }
     }
