@@ -49,7 +49,7 @@
   (set! init-temp-files
         (let ([old init-temp-files])
           (λ ()
-            (let ([file (build-path (this-expression-source-directory) (format "~a.ss" name))])
+            (let ([file (build-path (find-system-path 'temp-dir) (format "~a.ss" name))])
               (set! temp-files (cons file temp-files))
               (with-output-to-file file #:exists 'truncate
                 (lambda () (printf "~s\n" code))))
