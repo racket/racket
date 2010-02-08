@@ -247,6 +247,8 @@
 	      [((Value: (? real? n)) (== -Real type-equal?)) A0]
 	      [((Value: (? number? n)) (Base: 'Number _)) A0]
 
+              [((Value: (? keyword?)) (Base: 'Keyword _)) A0]
+              [((Value: (? char?)) (Base: 'Char _)) A0]
 	      [((Value: (? boolean? n)) (Base: 'Boolean _)) A0]
 	      [((Value: (? symbol? n)) (Base: 'Symbol _)) A0]
 	      [((Value: (? string? n)) (Base: 'String _)) A0]
