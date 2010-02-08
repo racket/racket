@@ -37,6 +37,7 @@
                           '(#s(attr a.name a.depth #f) ...)
                           (quote-syntax parser)
                           (quote-syntax get-description)
+                          #t
                           #t)))]))
 
 

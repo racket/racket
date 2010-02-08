@@ -268,3 +268,10 @@ original procedure accepted.
 A @techlink{check-procedure} that accepts syntax strings.
 
 }
+
+@defproc[(check-stx-boolean [stx syntax?] [ctx (or/c false/c syntax?)])
+         syntax?]{
+
+A @techlink{check-procedure} that accepts syntax booleans.
+
+}

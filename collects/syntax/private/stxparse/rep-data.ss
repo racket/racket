@@ -23,9 +23,10 @@
 
 #|
 A stxclass is
-  (make-sc symbol (listof symbol) (list-of SAttr) identifier identifier boolean)
+  (make-sc symbol (listof symbol) (list-of SAttr) identifier identifier boolean boolean)
 |#
-(define-struct stxclass (name params attrs parser-name description splicing?)
+(define-struct stxclass (name params attrs parser-name description
+                         splicing? commit?)
   #:prefab)
 
 (define (stxclass/s? x)
@@ -38,7 +39,7 @@ An RHS is
   (make-rhs stx (listof SAttr) boolean stx/#f (listof Variant) (listof stx))
 definitions: auxiliary definitions from #:declare
 |#
-(define-struct rhs (ostx attrs transparent? description variants definitions)
+(define-struct rhs (ostx attrs transparent? description variants definitions commit?)
   #:prefab)
 
 #|
@@ -73,7 +74,7 @@ A LiteralSet is
 ;; make-dummy-stxclass : identifier -> SC
 ;; Dummy stxclass for calculating attributes of recursive stxclasses.
 (define (make-dummy-stxclass name)
-  (make stxclass (syntax-e name) null null #f #f #f))
+  (make stxclass (syntax-e name) null null #f #f #f #t))
 
 
 ;; Environments
@@ -86,13 +87,13 @@ DeclEnv =
 DeclEntry =
   (make-den:lit id id)
   (make-den:class id id (listof syntax) bool)
-  (make-den:parser id id (listof SAttr) bool)
+  (make-den:parser id id (listof SAttr) bool bool)
 |#
 (define-struct declenv (table conventions))
 
 (define-struct den:lit (internal external))
 (define-struct den:class (name class args))
-(define-struct den:parser (parser description attrs splicing?))
+(define-struct den:parser (parser description attrs splicing? commit?))
 
 (define (new-declenv literals #:conventions [conventions null])
   (for/fold ([decls (make-declenv (make-immutable-bound-id-table) conventions)])
@@ -119,7 +120,7 @@ DeclEntry =
                          stxclass-name)
            (wrong-syntax (if blame-declare? name id)
                          "identifier previously declared"))]
-      [(struct den:parser (_p _d _a _sp))
+      [(struct den:parser (_p _d _a _sp _c))
        (wrong-syntax id "(internal error) late unbound check")]
       ['#f (void)])))
 
@@ -137,11 +138,11 @@ DeclEntry =
                        (make den:class id stxclass-name args))
    (declenv-conventions env)))
 
-(define (declenv-put-parser env id parser get-description attrs splicing?)
+(define (declenv-put-parser env id parser get-description attrs splicing? commit?)
   ;; no unbound check, since replacing 'stxclass entry
   (make-declenv
    (bound-id-table-set (declenv-table env) id
-                       (make den:parser parser get-description attrs splicing?))
+                       (make den:parser parser get-description attrs splicing? commit?))
    (declenv-conventions env)))
 
 ;; declenv-update/fold : DeclEnv (Id/Regexp DeclEntry a -> DeclEntry a) a
@@ -212,7 +213,7 @@ DeclEntry =
   (-> DeclEnv/c identifier? identifier?
       DeclEnv/c)]
  [declenv-put-parser
-  (-> DeclEnv/c identifier? any/c any/c (listof sattr?) boolean?
+  (-> DeclEnv/c identifier? any/c any/c (listof sattr?) boolean? boolean?
       DeclEnv/c)]
  [declenv-domain-difference
   (-> DeclEnv/c (listof identifier?)

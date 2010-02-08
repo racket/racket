@@ -44,56 +44,88 @@
     [(fail x #:expect p #:fce fce)
      #'(enclosing-fail (make-failure x fce p))]))
 
+;; ----
+
+#|
+
+syntax-class protocol
+---------------------
+
+for  syntax-class SC with args (P ...)
+
+if commit? = #t
+  parser : Stx P ... -> (U list expectation)
+if commit? = #f
+  parser : Stx ((U list expect) FailFunction -> Answer) P ... -> Answer
+
+|#
+
 ;; (parse:rhs RHS (SAttr ...) (id ...) id boolean)
 ;;   : expr[(values ParseFunction DescriptionFunction)]
 ;; Takes a list of the relevant attrs; order is significant!
 ;; Returns either fail or a list having length same as 'relsattrs'
 (define-syntax (parse:rhs stx)
   (syntax-case stx ()
-    [(parse:rhs #s(rhs _ _ transparent? _ variants (def ...))
+    [(parse:rhs #s(rhs _ _ transparent? _ variants (def ...) commit?)
                 relsattrs (arg ...) get-description splicing?)
-     #`(with-error-collector
-         (make-parser
-          (lambda (x arg ...)
-            (define (fail-rhs failure)
+     (with-syntax ([(k-param ...)
+                    (if (syntax-e #'commit?)
+                        #'()
+                        #'(return))]
+                   [k-ref/fail
+                    (if (syntax-e #'commit?)
+                        #'values
+                        #'return)]
+                   [k-ref/ok
+                    (if (syntax-e #'commit?)
+                        #'values
+                        #'(lambda (result) (return (cons enclosing-fail result))))])
+       #| #`(with-error-collector
+             (make-parser
+              (lambda ___)
+              (collect-error)))
+       |#
+       #'(lambda (x k-param ... arg ...)
+           (define (fail-rhs failure)
+             (k-ref/fail
               (expectation-of-thing (get-description arg ...)
                                     transparent?
-                                    (if transparent? failure #f)))
-            def ...
-            (syntax-parameterize ((this-syntax (make-rename-transformer #'x)))
-              (with-enclosing-fail* fail-rhs
-                (parse:variants x relsattrs variants splicing?))))
-          (collect-error)))]))
+                                    (if transparent? failure #f))))
+           def ...
+           (syntax-parameterize ((this-syntax (make-rename-transformer #'x)))
+             (with-enclosing-fail* fail-rhs
+               (parse:variants x relsattrs variants splicing? k-ref/ok)))))]))
 
 ;; (parse:variants id (SAttr ...) (Variant ...) boolean)
 ;;   : expr[SyntaxClassResult]
 (define-syntax (parse:variants stx)
   (syntax-case stx ()
-    [(parse:variants x relsattrs (variant ...) splicing?)
-     #'(try (parse:variant x relsattrs variant splicing?) ...)]))
+    [(parse:variants x relsattrs (variant ...) splicing? k-ref)
+     #'(try (parse:variant x relsattrs variant splicing? k-ref) ...)]))
 
 (define-syntax (parse:variant stx)
   (syntax-case stx ()
-    [(parse:variant x relsattrs variant #f)
+    [(parse:variant x relsattrs variant #f k-ref)
      (with-syntax ([#s(variant _ _ pattern _ (def ...)) #'variant])
        #`(let ([fc (dfc-empty x)])
            def ...
-           (parse:S x fc pattern (variant-success x relsattrs variant ()))))]
-    [(parse:variant x relsattrs variant #t)
+           (parse:S x fc pattern (variant-success x relsattrs variant () k-ref))))]
+    [(parse:variant x relsattrs variant #t k-ref)
      (with-syntax ([#s(variant _ _ pattern _ (def ...)) #'variant])
        #`(let ([fc (dfc-empty x)])
            def ...
            (parse:H x fc pattern rest index
-                    (variant-success x relsattrs variant (rest index)))))]))
+                    (variant-success x relsattrs variant (rest index) k-ref))))]))
 
 ;; (variant-success id (SAttr ...) Variant (expr ...)) : expr[SyntaxClassResult]
 (define-syntax (variant-success stx)
   (syntax-case stx ()
-    [(variant-success x relsattrs #s(variant _ _ pattern sides _) (also ...))
+    [(variant-success x relsattrs #s(variant _ _ pattern sides _) (also ...) k-ref)
      #`(convert-sides x sides
                       (base-success-expr #,(pattern-attrs (wash #'pattern))
                                          relsattrs
-                                         (also ...)))]))
+                                         (also ...)
+                                         k-ref))]))
 
 ;; (convert-sides id (Side ...) (m (IAttr ...) . MArgs)) : expr[X]
 ;;   where (m (IAttr ...) MArgs) : expr[X]
@@ -126,12 +158,12 @@
 ;; (base-success-expr (IAttr ...) (SAttr ...) (expr ...) : expr[SCResult]
 (define-syntax (base-success-expr stx)
   (syntax-case stx ()
-    [(base-success-expr iattrs relsattrs (also ...))
+    [(base-success-expr iattrs relsattrs (also ...) k-ref)
      (let ([reliattrs
             (reorder-iattrs (wash-sattrs #'relsattrs)
                             (wash-iattrs #'iattrs))])
        (with-syntax ([(#s(attr name _ _) ...) reliattrs])
-         #'(list also ... (attribute name) ...)))]))
+         #'(k-ref (list also ... (attribute name) ...))))]))
 
 ;; ----
 
@@ -209,18 +241,34 @@
             (parse:S x fc pattern k))]
        [#s(pat:any attrs)
         #'k]
-       [#s(pat:var _attrs name  #f () ())
+       [#s(pat:var _attrs name #f () () _)
         #'(let-attributes ([#s(attr name 0 #t) x])
             k)]
-       [#s(pat:var _attrs name parser (arg ...) (nested-a ...))
-        #`(let ([result (parser x arg ...)])
-            (if (ok? result)
-                (let-attributes (#,@(if (identifier? #'name)
-                                        #'([#s(attr name 0 #t) x])
-                                        #'()))
-                  (let/unpack ((nested-a ...) result)
-                    k))
-                (fail x #:expect result #:fce fc)))]
+       [#s(pat:var _attrs name parser (arg ...) (nested-a ...) commit?)
+        (with-syntax* ([(name-attr ...)
+                        (if (identifier? #'name)
+                            #'([#s(attr name 0 #t) x])
+                            #'())]
+                       [ok-e
+                        #'(let-attributes (name-attr ...)
+                            (let/unpack ((nested-a ...) result)
+                              k))]
+                       [fail-e
+                        #'(fail x #:expect result #:fce fc)])
+          (if (syntax-e #'commit?)
+              #'(let ([result (parser x arg ...)])
+                  (if (ok? result)
+                      ok-e
+                      fail-e))
+              #'(parser x
+                        (lambda (result)
+                          (if (ok? result)
+                              (let ([fail-k (car result)]
+                                    [result (cdr result)])
+                                (with-enclosing-fail fail-k
+                                  ok-e))
+                              fail-e))
+                        arg ...)))]
        [#s(pat:datum attrs datum)
         #`(let ([d (syntax->datum x)])
             (if (equal? d (quote datum))
@@ -387,19 +435,35 @@
                        (with-enclosing-cut-fail previous-cut-fail
                          (with-enclosing-fail previous-fail
                            k))))))]
-       [#s(hpat:var _attrs name parser (arg ...) (nested-a ...))
-        #`(let ([result (parser x arg ...)])
-            (if (ok? result)
-                (let* ([rest (car result)]
-                       [local-fc (cadr result)]
-                       [rest-fc (dfc-append fc local-fc)])
-                  (let-attributes (#,@(if (identifier? #'name)
-                                          #'([#s(attr name 0 #t)
-                                              (stx-list-take x (dfc->index local-fc))])
-                                          #'()))
-                    (let/unpack ((nested-a ...) (cddr result))
-                      k)))
-                (fail x #:expect result #:fce fc)))]
+       [#s(hpat:var _attrs name parser (arg ...) (nested-a ...) commit?)
+        (with-syntax* ([(name-attr ...)
+                        (if (identifier? #'name)
+                            #'([#s(attr name 0 #t)
+                                (stx-list-take x (dfc->index local-fc))])
+                            #'())]
+                       [ok-e
+                        #'(let* ([rest (car result)]
+                                 [local-fc (cadr result)]
+                                 [rest-fc (dfc-append fc local-fc)])
+                            (let-attributes (name-attr ...)
+                              (let/unpack ((nested-a ...) (cddr result))
+                                k)))]
+                       [fail-e
+                        #'(fail x #:expect result #:fce fc)])
+          (if (syntax-e #'commit?)
+              #'(let ([result (parser x arg ...)])
+                  (if (ok? result)
+                      ok-e
+                      fail-e))
+              #'(parser x
+                        (lambda (result)
+                          (if (ok? result)
+                              (let ([fail-k (car result)]
+                                    [result (cdr result)])
+                                (with-enclosing-fail fail-k
+                                  ok-e))
+                              fail-e))
+                        arg ...)))]
        [#s(hpat:and (a ...) head single)
         #`(parse:H x fc head rest rest-fc
                    (let ([lst (stx-list-take x (dfc-difference fc rest-fc))])

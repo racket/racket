@@ -58,4 +58,5 @@
  [check-expression checker]
  [check-identifier checker]
  [check-stx-string checker]
+ [check-stx-boolean checker]
  [check-stx-listof (-> checker checker)])

@@ -59,13 +59,15 @@
               (parse-rhs #'rhss #f splicing? #:context stx))])
        (with-syntax ([parser (generate-temporary
                               (format-symbol "parse-~a" (syntax-e #'name)))]
-                     [attrs (rhs-attrs the-rhs)])
+                     [attrs (rhs-attrs the-rhs)]
+                     [commit? (rhs-commit? the-rhs)])
          #`(begin (define-syntax name
                     (make stxclass 'name '(arg ...)
                           'attrs
                           ((syntax-local-certifier) (quote-syntax parser))
                           ((syntax-local-certifier) (quote-syntax description))
-                          '#,splicing?))
+                          '#,splicing?
+                          'commit?))
                   (define-values (parser description)
                     (functions/rhs name (arg ...) attrs rhss #,splicing? #,stx))))))))
 
@@ -103,7 +105,8 @@
                                            (quote-syntax #,(den:parser-parser den))
                                            (quote-syntax #,(den:parser-description den))
                                            (quote #,(den:parser-attrs den))
-                                           (quote #,(den:parser-splicing? den))))
+                                           (quote #,(den:parser-splicing? den))
+                                           (quote #,(den:parser-commit? den))))
                                   defs))))])
          #'(begin
              def ... ...

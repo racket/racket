@@ -12,6 +12,7 @@
 
          check-expression
          check-identifier
+         check-stx-boolean
          check-stx-string
          check-stx-listof)
 

@@ -124,8 +124,9 @@
 ;; parser requires stxclasses to be bound.
 (define (parse-rhs stx expected-attrs splicing? #:context ctx)
   (parameterize ((current-syntax-context ctx))
-    (define-values (rest description transp? attributes auto-nested? decls defs)
-      (parse-rhs/part1 stx (and expected-attrs #t)))
+    (define-values (rest description transp? attributes auto-nested?
+                    decls defs commit?)
+      (parse-rhs/part1 stx splicing? (and expected-attrs #t)))
     (define patterns
       (parameterize ((stxclass-lookup-config
                       (cond [expected-attrs 'yes]
@@ -137,9 +138,9 @@
     (let ([sattrs
            (or attributes
                (intersect-sattrss (map variant-attrs patterns)))])
-      (make rhs stx sattrs transp? description patterns defs))))
+      (make rhs stx sattrs transp? description patterns defs commit?))))
 
-(define (parse-rhs/part1 stx strict?)
+(define (parse-rhs/part1 stx splicing? strict?)
   (define-values (chunks rest)
     (parse-keyword-options stx rhs-directive-table
                            #:context (current-syntax-context)
@@ -149,9 +150,11 @@
   (define opaque? (and (assq '#:opaque chunks) #t))
   (define transparent? (not opaque?))
   (define auto-nested? (and (assq '#:auto-nested-attributes chunks) #t))
+  (define commit? ;; FIXME: default value should be (not splicing?) once this works
+    (options-select-value chunks '#:commit? #:default #t))
   (define attributes (options-select-value chunks '#:attributes #:default #f))
   (define-values (decls defs) (get-decls+defs chunks strict?))
-  (values rest description transparent? attributes auto-nested? decls defs))
+  (values rest description transparent? attributes auto-nested? decls defs commit?))
 
 (define (parse-variants rest decls splicing? expected-attrs)
   (define (gather-patterns stx)
@@ -218,13 +221,15 @@
                            [description (generate-temporary class)]
                            [(arg ...) args])
                (values (make den:parser #'parser #'description
-                             (stxclass-attrs sc) (stxclass/h? sc))
+                             (stxclass-attrs sc) (stxclass/h? sc)
+                             (stxclass-commit? sc))
                        (list #'(define (parser x) (sc-parser x arg ...))
                              #'(define (description) (description arg ...)))))
              (values (make den:parser #'sc-parser #'sc-description
-                           (stxclass-attrs sc) (stxclass/h? sc))
+                           (stxclass-attrs sc) (stxclass/h? sc)
+                           (stxclass-commit? sc))
                      null))))]
-    [(struct den:parser (_p _d _a _sp))
+    [(struct den:parser (_p _d _a _sp _c))
      (values entry null)]))
 
 (define (append-lits+litsets lits litsets)
@@ -444,10 +449,10 @@
      (error 'parse-pat:id
             "(internal error) decls had leftover stxclass entry: ~s"
             entry)]
-    [(struct den:parser (parser desc attrs splicing?))
+    [(struct den:parser (parser desc attrs splicing? commit?))
      (if splicing?
-         (parse-pat:id/h id parser null attrs)
-         (parse-pat:id/s id parser null attrs))]
+         (parse-pat:id/h id parser null attrs commit?)
+         (parse-pat:id/s id parser null attrs commit?))]
     ['#f
      (when #t ;; FIXME: right place???
        (unless (safe-name? id)
@@ -455,7 +460,7 @@
      (let-values ([(name sc) (split-id/get-stxclass id decls)])
        (if sc
            (parse-pat:var* id allow-head? name sc null)
-           (create-pat:var name #f null null)))]))
+           (create-pat:var name #f null null #t)))]))
 
 (define (parse-pat:var stx decls allow-head?)
   (define name0
@@ -486,31 +491,33 @@
          (let ([sc (get-stxclass/check-arg-count scname (length args))])
            (parse-pat:var* stx allow-head? name0 sc args))]
         [else ;; Just proper name
-         (create-pat:var name0 #f null null)]))
+         (create-pat:var name0 #f null null #t)]))
 
 (define (parse-pat:var* stx allow-head? name sc args)
   (cond [(stxclass/s? sc)
          (parse-pat:id/s name
                          (stxclass-parser-name sc)
                          args
-                         (stxclass-attrs sc))]
+                         (stxclass-attrs sc)
+                         (stxclass-commit? sc))]
         [(stxclass/h? sc)
          (unless allow-head?
            (wrong-syntax stx "splicing syntax class not allowed here"))
          (parse-pat:id/h name
                          (stxclass-parser-name sc)
                          args
-                         (stxclass-attrs sc))]))
+                         (stxclass-attrs sc)
+                         (stxclass-commit? sc))]))
 
-(define (parse-pat:id/s name parser args attrs)
+(define (parse-pat:id/s name parser args attrs commit?)
   (define prefix (name->prefix name))
   (define bind (name->bind name))
-  (create-pat:var bind parser args (id-pattern-attrs attrs prefix)))
+  (create-pat:var bind parser args (id-pattern-attrs attrs prefix) commit?))
 
-(define (parse-pat:id/h name parser args attrs)
+(define (parse-pat:id/h name parser args attrs commit?)
   (define prefix (name->prefix name))
   (define bind (name->bind name))
-  (create-hpat:var bind parser args (id-pattern-attrs attrs prefix)))
+  (create-hpat:var bind parser args (id-pattern-attrs attrs prefix) commit?))
 
 (define (name->prefix id)
   (cond [(wildcard? id) #f]
@@ -1038,6 +1045,7 @@
          (list '#:opaque)
          (list '#:attributes check-attr-arity-list)
          (list '#:auto-nested-attributes)
+         (list '#:commit? check-stx-boolean)
          common-parse-directive-table))
 
 ;; pattern-directive-table

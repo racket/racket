@@ -16,7 +16,7 @@ A Base is (listof IAttr)
 #|
 A SinglePattern is one of
   (make-pat:any Base)
-  (make-pat:var Base id id (listof stx) (listof IAttr))
+  (make-pat:var Base id id (listof stx) (listof IAttr) bool)
   (make-pat:literal Base identifier)
   (make-pat:datum Base datum)
   (make-pat:ghost Base GhostPattern SinglePattern)
@@ -37,7 +37,7 @@ A ListPattern is a subtype of SinglePattern; one of
 |#
 
 (define-struct pat:any (attrs) #:prefab)
-(define-struct pat:var (attrs name parser args nested-attrs) #:prefab)
+(define-struct pat:var (attrs name parser args nested-attrs commit?) #:prefab)
 (define-struct pat:literal (attrs id) #:prefab)
 (define-struct pat:datum (attrs datum) #:prefab)
 (define-struct pat:ghost (attrs ghost inner) #:prefab)
@@ -68,7 +68,7 @@ ghost:and is desugared below in create-* procedures
 
 #|
 A HeadPattern is one of 
-  (make-hpat:var Base id id (listof stx) (listof IAttr))
+  (make-hpat:var Base id id (listof stx) (listof IAttr) bool)
   (make-hpat:seq Base ListPattern)
   (make-hpat:ghost Base GhostPattern HeadPattern)
   (make-hpat:and Base HeadPattern SinglePattern)
@@ -77,7 +77,7 @@ A HeadPattern is one of
   (make-hpat:describe Base stx/#f boolean HeadPattern)
 |#
 
-(define-struct hpat:var (attrs name parser args nested-attrs) #:prefab)
+(define-struct hpat:var (attrs name parser args nested-attrs commit?) #:prefab)
 (define-struct hpat:seq (attrs inner) #:prefab)
 (define-struct hpat:ghost (attrs ghost inner) #:prefab)
 (define-struct hpat:and (attrs head single) #:prefab)
@@ -178,10 +178,10 @@ A Kind is one of
 (define (create-pat:any)
   (make pat:any null))
 
-(define (create-pat:var name parser args nested-attrs)
+(define (create-pat:var name parser args nested-attrs commit?)
   (let ([attrs
          (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
-    (make pat:var attrs name parser args nested-attrs)))
+    (make pat:var attrs name parser args nested-attrs commit?)))
 
 (define (create-pat:datum datum)
   (make pat:datum null datum))
@@ -239,10 +239,10 @@ A Kind is one of
 
 ;; ----
 
-(define (create-hpat:var name parser args nested-attrs)
+(define (create-hpat:var name parser args nested-attrs commit?)
   (let ([attrs
          (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
-    (make hpat:var attrs name parser args nested-attrs)))
+    (make hpat:var attrs name parser args nested-attrs commit?)))
 
 (define (create-hpat:seq lp)
   (make hpat:seq (pattern-attrs lp) lp))
