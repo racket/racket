@@ -12,12 +12,13 @@
 
 ;; special type names that are not bound to particular types
 (define-other-types
-  -> U mu All Opaque
-  Parameter Tuple Class Values Instance Refinement
+  -> U Rec All Opaque
+  Parameterof List Class Values Instance Refinement
   pred)
 
 (provide (rename-out [All ∀]
                      [U Un]
-                     [Tuple List]
-                     [mu Rec]))
+                     [List Tuple]
+                     [Rec mu]
+                     [Parameterof Parameter]))
 

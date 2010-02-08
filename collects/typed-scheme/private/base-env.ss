@@ -26,34 +26,44 @@
                (->* (list (-lst a)) (-lst a))))]
 
 [cadr (-poly (a b c)
-             (cl-> [((-pair a (-pair b c))) b]
-                   [((-lst a)) a]))]
-[caddr  (-poly (a) (-> (-lst a) a))]
+             (cl->* [->acc (list (-pair a (-pair b c))) b (list -car -cdr)]
+                    [->  (-lst a) a]))]
+[cddr  (-poly (a b c)
+              (cl->* [->acc (list (-pair a (-pair b c))) c (list -cdr -cdr)]
+                     [-> (-lst a) (-lst a)]))]
+
+[caddr  (-poly (a b c d)
+              (cl->* [->acc (list (-pair a (-pair b (-pair c d)))) c (list -car -cdr -cdr)]
+                     [-> (-lst a) a]))]
+[cdddr (-poly (a b c d)
+              (cl->* [->acc (list (-pair a (-pair b (-pair c d)))) d (list -cdr -cdr -cdr)]
+                     [-> (-lst a) a]))]
+
 [cadddr (-poly (a) (-> (-lst a) a))]
-[cddr  (-poly (a) (-> (-lst a) (-lst a)))]
-[cdddr (-poly (a) (-> (-lst a) (-lst a)))]
+[cddddr (-poly (a) (-> (-lst a) (-lst a)))]
+
 
 [first (-poly (a b) 
               (cl->*
-               (->acc (list (-pair a b)) a (list -car))
+               (->acc (list (-pair a (-lst b))) a (list -car))
                (->* (list (-lst a)) a)))]
 [second (-poly (a b c)
-               (cl-> [((-pair a (-pair b c))) b]
-                     [((-lst a)) a]))]
+               (cl->* [->acc (list (-pair a (-pair b (-lst c)))) b (list -car -cdr)]
+                      [->* (list (-lst a)) a]))]
 [third (-poly (a b c d)
-              (cl-> [((-pair a (-pair b (-pair c d)))) c]
-                    [((-lst a)) a]))]
+              (cl->* [->acc (list (-pair a (-pair b (-pair c (-lst d))))) c (list -car -cdr -cdr)]
+                     [->* (list (-lst a)) a]))]
 [fourth (-poly (a) ((-lst a) . -> .  a))]
 [fifth  (-poly (a) ((-lst a) . -> .  a))]
 [sixth  (-poly (a) ((-lst a) . -> .  a))]
 [rest (-poly (a b) 
              (cl->*
-              (->acc (list (-pair a b)) b (list -cdr))
+              (->acc (list (-pair a (-lst b))) (-lst b) (list -cdr))
               (->* (list (-lst a)) (-lst a))))]
 
 [cons (-poly (a b)
-             (cl-> [(a (-lst a)) (-lst a)]
-                   [(a b) (-pair a b)]))]
+             (cl->* [->* (list a (-lst a)) (-lst a)]
+                    [->* (list a b) (-pair a b)]))]
 [*cons (-poly (a b) (cl->
                      [(a b) (-pair a b)]
                      [(a (-lst a)) (-lst a)]))]
@@ -137,14 +147,14 @@
                        . -> .
                        (-lst b))
                       ((a . -> . Univ) (-lst a) . -> . (-lst a))))]
-[filter-not (-poly (a b) (cl->*
-                          ((a . -> . Univ) (-lst a) . -> . (-lst a))))]
+[filter-not (-poly (a) (cl->*
+                        ((a . -> . Univ) (-lst a) . -> . (-lst a))))]
 [remove  (-poly (a) (a (-lst a) . -> . (-lst a)))]
 [remq    (-poly (a) (a (-lst a) . -> . (-lst a)))]
 [remv    (-poly (a) (a (-lst a) . -> . (-lst a)))]
 [remove* (-poly (a b) ((-lst a) (-lst a) [(a b . -> . B)] . ->opt . (-lst b)))]
-[remq*   (-poly (a b) (cl-> [((-lst a) (-lst a)) (-lst a)]))]
-[remv*   (-poly (a b) (cl-> [((-lst a) (-lst a)) (-lst a)]))]
+[remq*   (-poly (a) (cl-> [((-lst a) (-lst a)) (-lst a)]))]
+[remv*   (-poly (a) (cl-> [((-lst a) (-lst a)) (-lst a)]))]
 
 (error 
  (make-Function (list 

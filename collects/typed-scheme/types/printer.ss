@@ -185,9 +185,9 @@
                          (fp ")")]))]
     [(arr: _ _ _ _ _) (print-arr c)]
     [(Vector: e) (fp "(Vectorof ~a)" e)]
-    [(Box: e) (fp "(Box ~a)" e)]
+    [(Box: e) (fp "(Boxof ~a)" e)]
     [(Union: elems) (fp "~a" (cons 'U elems))]
-    [(Pair: l r) (fp "(Pair ~a ~a)" l r)]
+    [(Pair: l r) (fp "(Pairof ~a ~a)" l r)]
     [(F: nm) (fp "~a" nm)]   
     ;; FIXME
     [(Values: (list v)) (fp "~a" v)]
@@ -195,8 +195,8 @@
     [(ValuesDots: v dty dbound) (fp "~a" (cons 'values (append v (list dty '... dbound))))]
     [(Param: in out) 
      (if (equal? in out)
-         (fp "(Parameter ~a)" in)           
-         (fp "(Parameter ~a ~a)" in out))]
+         (fp "(Parameterof ~a)" in)           
+         (fp "(Parameterof ~a ~a)" in out))]
     [(Hashtable: k v) (fp "(HashTable ~a ~a)" k v)]
     
     #;[(Poly-unsafe: n b) (fp "(unsafe-poly ~a ~a ~a)" (Type-seq c) n b)]

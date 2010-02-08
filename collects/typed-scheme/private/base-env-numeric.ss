@@ -105,8 +105,8 @@
 [imag-part (N . -> . -Real)]
 [magnitude (N . -> . -Real)]
 [angle     (N . -> . -Real)]
-[numerator   (-Real . -> . -Integer)]
-[denominator (-Real . -> . -Integer)]
+[numerator   (-Real . -> . -Real)]
+[denominator (-Real . -> . -Real)]
 [rationalize (-Real -Real . -> . N)]
 [expt (cl->* (-Integer -Integer . -> . -Integer) (N N . -> . N))]
 [sqrt (cl->*

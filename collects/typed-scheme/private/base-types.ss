@@ -46,3 +46,7 @@
 [False (-val #f)]
 [True (-val #t)]
 [Null (-val null)]
+[Nothing (Un)]
+[Pairof (-poly (a b) (-pair a b))]
+[MPairof (-poly (a b) (-mpair a b))]
+
