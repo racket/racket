@@ -588,6 +588,7 @@ mach_dep.@LTO@: $(srcdir)/mach_dep.c $(srcdir)/mips_sgi_mach_dep.s \
 	./if_mach SPARC SOLARIS $(CC) -c -o mach_dep2.@LTO@ $(srcdir)/sparc_mach_dep.S
 	./if_mach SPARC OPENBSD $(AS) -o mach_dep2.@LTO@ $(srcdir)/sparc_sunos4_mach_dep.s
 	./if_mach SPARC NETBSD $(AS) -o mach_dep2.@LTO@ $(srcdir)/sparc_netbsd_mach_dep.s
+	./if_mach SPARC "" $(CC) -c -o mach_dep2.@LTO@ $(srcdir)/sparc_mach_dep.S
 	./if_mach SPARC "" $(CC) -c -o mach_dep1.@LTO@ $(SPECIALCFLAGS) $(srcdir)/mach_dep.c
 	./if_mach SPARC "" ld -r -o mach_dep.@LTO@ mach_dep1.@LTO@ mach_dep2.@LTO@
 	./if_mach IA64 "" as $(AS_ABI_FLAG) -o ia64_save_regs_in_stack.@LTO@ $(srcdir)/ia64_save_regs_in_stack.s
