@@ -85,7 +85,7 @@
 
 (define (center base state x)
   (define w (pict-height state))
-  (define d (quotient (- width w) 2))
+  (define d (floor (/ (- width w) 2)))
   (pin-over base x d state))
 
 (define width (pict-height bg))
