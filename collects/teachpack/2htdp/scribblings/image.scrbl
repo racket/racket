@@ -600,7 +600,7 @@ Unlike @scheme[scene+curve], if the line passes outside of @scheme[image], the i
   
   }
 
-@defproc[(above/align [y-place y-place?] [i1 image?] [i2 image?] [is image?] ...) image?]{
+@defproc[(above/align [x-place x-place?] [i1 image?] [i2 image?] [is image?] ...) image?]{
   Constructs an image by placing all of the argument images in a vertical row, lined
   up as indicated by the @scheme[x-place] argument. For example, if @scheme[x-place]
   is @scheme["middle"], then the images are placed above each other with their centers 
