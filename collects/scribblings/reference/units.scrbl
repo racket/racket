@@ -301,7 +301,7 @@ definition is generated for the context of the
   link-id]
 
  [linkage-decl
-  ((link-binding ...) unit-expr tagged-link-id)])]{
+  ((link-binding ...) unit-expr tagged-link-id ...)])]{
 
 Links several units into one new compound unit without immediately
 invoking any of the linked units.  The @scheme[unit-expr]s in the
@@ -404,7 +404,7 @@ See @scheme[unit] for information on @scheme[tagged-sig-spec],
 
  [infer-linkage-decl
   ((link-binding ...) unit-id 
-                      tagged-link-id)
+                      tagged-link-id ...)
   unit-id])]{
 
 Like @scheme[compound-unit]. Syntactically, the difference between
