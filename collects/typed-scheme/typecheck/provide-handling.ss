@@ -5,7 +5,8 @@
          syntax/kerncase syntax/boundmap
          (env type-name-env type-alias-env)
          mzlib/trace
-         (private type-contract typed-renaming)
+         (only-in (private type-contract) type->contract)
+         (private typed-renaming)
          (rep type-rep)
 	 (utils tc-utils)
          scheme/contract/private/provide

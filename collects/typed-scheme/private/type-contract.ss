@@ -13,7 +13,7 @@
  (private parse-type)
  scheme/match syntax/struct syntax/stx mzlib/trace unstable/syntax scheme/list
  (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
- (for-template scheme/base scheme/contract unstable/poly-c (only-in scheme/class object% is-a?/c subclass?/c)))
+ (for-template scheme/base scheme/contract unstable/poly-c (utils any-wrap) (only-in scheme/class object% is-a?/c subclass?/c)))
 
 (define (define/fixup-contract? stx)
   (or (syntax-property stx 'typechecker:contract-def)
@@ -29,7 +29,11 @@
      (let ([typ (if maker?
                     ((Struct-flds (lookup-type-name (Name-id typ))) #f . t:->* . typ)
                     typ)])
-       (with-syntax ([cnt (type->contract typ (lambda () (tc-error/stx prop "Type ~a could not be converted to a contract." typ)))])
+       (with-syntax ([cnt (type->contract 
+                           typ 
+                           ;; this is for a `require/typed', so the value is not from the typed side
+                           #:typed-side #f 
+                           (lambda () (tc-error/stx prop "Type ~a could not be converted to a contract." typ)))])
          (syntax/loc stx (define-values (n) cnt))))]
     [_ (int-err "should never happen - not a define-values: ~a" (syntax->datum stx))]))
 
@@ -44,15 +48,18 @@
   (= (length l) (length (remove-duplicates l))))
 
 
-(define (type->contract ty fail #:out [out? #f])
+(define (type->contract ty fail #:out [out? #f] #:typed-side [from-typed? #t])
   (define vars (make-parameter '()))
   (let/ec exit
-    (let loop ([ty ty] [pos? #t])
-      (define (t->c t) (loop t pos?))
-      (define (t->c/neg t) (loop t (not pos?)))
+    (let loop ([ty ty] [pos? #t] [from-typed? from-typed?])
+      (define (t->c t) (loop t pos? from-typed?))
+      (define (t->c/neg t) (loop t (not pos?) (not from-typed?)))
       (match ty
         [(or (App: _ _ _) (Name: _)) (t->c (resolve-once ty))]
-        [(Univ:) #'any/c]
+        ;; any/c doesn't provide protection in positive position
+        [(Univ:) (if from-typed? 
+                     #'any-wrap/c
+                     #'any/c)]
         ;; we special-case lists:
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
          #`(listof #,(t->c elem-ty))]
@@ -142,4 +149,5 @@
 	[(Hashtable: k v) #`(hash/c #,(t->c k) #,(t->c v) #:immutable 'dont-care)]
         [else          
          (exit (fail))]))))
+
 

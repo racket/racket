@@ -8,7 +8,7 @@ don't depend on any other portion of the system
 (provide (all-defined-out))
 (require "syntax-traversal.ss"
 	 "utils.ss"
-	 syntax/parse (for-syntax scheme/base syntax/parse) scheme/match
+	 syntax/parse (for-syntax scheme/base syntax/parse) scheme/match unstable/debug
          (for-syntax unstable/syntax))
 
 ;; a parameter representing the original location of the syntax being currently checked
@@ -42,11 +42,13 @@ don't depend on any other portion of the system
 (define warn-unreachable? (make-parameter #t))
 
 (define (warn-unreachable e)
-  (let ([l (current-logger)])
+  (let ([l (current-logger)]
+        [stx (locate-stx e)])
     (when (and (warn-unreachable?)
                (log-level? l 'warning)
-               (and (orig-module-stx) (eq? (syntax-source-module e) (syntax-source-module (orig-module-stx))))
-	       (syntax-source-module e))
+               (syntax-original? (syntax-local-introduce e))
+               #;(and (orig-module-stx) (eq? (debug syntax-source-module e) (debug syntax-source-module (orig-module-stx))))
+	       #;(syntax-source-module stx))
       (log-message l 'warning (format "Typed Scheme has detected unreachable code: ~e" (syntax->datum (locate-stx e)))
                    e))))
 
