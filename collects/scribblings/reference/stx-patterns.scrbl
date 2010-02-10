@@ -3,6 +3,12 @@
 
 @(define lit-ellipses (scheme ...))
 
+@(define syntax-eval
+   (lambda ()
+     (let ([the-eval (make-base-eval)])
+       (the-eval '(require (for-syntax scheme/base)))
+       the-eval)))
+
 @title[#:tag "stx-patterns"]{Pattern-Based Syntax Matching}
 
 @defform/subs[(syntax-case stx-expr (literal-id ...)
@@ -146,7 +152,21 @@ A syntax object matches a @scheme[pattern] as follows:
  when its datum is @scheme[equal?] to the @scheme[quote]d
  @scheme[const].}
 
-}
+@mz-examples[
+(require (for-syntax scheme/base))
+(define-syntax (swap stx)
+  (syntax-case stx ()
+    [(_ a b) #'(let ([t a])
+                 (set! a b)
+                 (set! b t))]))
+
+(let ([x 5] [y 10])
+  (swap x y)
+  (list x y))
+
+(syntax-case #'(ops 1 2 3 => +) (=>)
+  [(_ x ... => op) #'(op x ...)])
+]}
 
 @defform[(syntax-case* stx-expr (literal-id ...) id-compare-expr
            clause ...)]{
@@ -187,8 +207,43 @@ A @scheme[with-syntax] form is roughly equivalent to the following
 However, if any individual @scheme[stx-expr] produces a
 non-@tech{syntax object}, then it is converted to one using
 @scheme[datum->syntax] and the lexical context and source location of
-the individual @scheme[stx-expr].}
+the individual @scheme[stx-expr].
 
+@examples[#:eval (syntax-eval)
+(define-syntax (hello stx)
+  (syntax-case stx ()
+    [(_ name place)
+     (with-syntax ([print-name #'(printf "~a\n" 'name)]
+                   [print-place #'(printf "~a\n" 'place)])
+       #'(begin
+           (define (name times)
+             (printf "Hello\n")
+             (for ([i (in-range 0 times)])
+                  print-name))
+           (define (place times)
+             (printf "From\n")
+             (for ([i (in-range 0 times)])
+                  print-place))))]))
+
+(hello jon utah)
+(jon 2)
+(utah 2)
+
+(define-syntax (math stx)
+  (define (make+1 expression)
+    (with-syntax ([e expression])
+      #'(+ e 1)))
+  (syntax-case stx ()
+    [(_ numbers ...)
+     (with-syntax ([(added ...)
+                    (map make+1
+                         (syntax->list #'(numbers ...)))])
+       #'(begin
+           (printf "got ~a\n" added)
+           ...))]))
+
+(math 3 1 4 1 5 9)
+]}
 
 @defform/subs[(syntax template)
               ([template id
