@@ -1270,11 +1270,28 @@ when @scheme[relation] is a relation on @scheme[L] with @scheme[n] rules.}
 @defform/subs[(check-metafunction metafunction property kw-args ...)
               ([kw-arg (code:line #:attempts attempts-expr)
                        (code:line #:retries retries-expr)])
-              #:contracts ([property (-> any/c any/c)]
+              #:contracts ([property (-> (listof any/c) any/c)]
                            [attempts-expr natural-number/c]
                            [retries-expr natural-number/c])]{
-Like @scheme[check-reduction-relation] but for metafunctions.}
+Like @scheme[check-reduction-relation] but for metafunctions. 
+@scheme[check-metafunction] calls @scheme[property] with lists
+containing arguments to the metafunction.}
 
+@examples[
+#:eval redex-eval
+       (define-language empty-lang)
+       
+       (random-seed 0)
+
+       (define-metafunction empty-lang
+         Σ : number ... -> number
+         [(Σ) 0]
+         [(Σ number) number]
+         [(Σ number_1 number_2 number_3 ...) 
+          (Σ ,(+ (term number_1) (term number_2)) number_3 ...)])
+       
+       (check-metafunction Σ (λ (args) (printf "~s\n" args)) #:attempts 2)]
+                                                            
 @defproc[(exn:fail:redex:generation-failure? [v any/c]) boolean?]{
   Recognizes the exceptions raised by @scheme[generate-term], 
   @scheme[redex-check], etc. when those forms are unable to produce
