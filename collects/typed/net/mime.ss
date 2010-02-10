@@ -9,7 +9,7 @@
                        [modification : String]
                        [read : String]                                       
                        [size : Number]
-                       [params : Any])
+                       [params : (Listof (Pair Symbol String))])
                       net/mime)
 (require-typed-struct entity  ([type : (U Symbol String)] 
                                [subtype : (U Symbol String)] 
@@ -20,7 +20,7 @@
                                [id : String]
                                [description : String] 
                                [other : String]
-                               [fields : Any]
+                               [fields : (Listof String)]
                                [parts : (Listof String) ]
                                [body : (Output-Port -> Void)])
                       net/mime)
@@ -30,7 +30,7 @@
 
 
 ;; -- exceptions raised --
-#|
+#| ;; constructors not exported
 (require-typed-struct mime-error () net/mime)
 (require-typed-struct (unexpected-termination mime-error) ([msg : String]) net/mime)
 (require-typed-struct (missing-multipart-boundary-parameter mime-error) () net/mime)
@@ -40,7 +40,6 @@
 (require-typed-struct (empty-subtype mime-error) () net/mime)
 (require-typed-struct (empty-disposition-type mime-error) () net/mime)
 |#
-
 ;; -- mime methods --
 (require/typed/provide net/mime
   [mime-analyze ((U Bytes Input-Port) Any -> message)])

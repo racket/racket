@@ -46,6 +46,8 @@
                        [draw-text (String Number Number -> Void)])))
 (dt Color% (Class () () ([red (-> Number)])))
 
+(dt Snip% (Class () () ()))
+
 (dt Text% (Class ()
 		 ()
 		 ([begin-edit-sequence (-> Void)]
@@ -63,20 +65,26 @@
 		  [get-text (Integer (U Integer 'eof) -> String)]
 		  [insert (String Number Number -> Void)])))
 
+(dt Button% (Class () () ()))
+(dt Event% (Class () () ()))
 
-
-(require/typed/provide mred/mred
-                       [the-font-list (Instance Font-List%)]
-                       [dialog% Dialog%]
-                       [text-field% Text-Field%]
-                       [horizontal-panel% Horizontal-Panel%]
-                       [choice% Choice%]
-                       [get-face-list (-> (Listof String))]
-                       [message% Message%]
-                       [horizontal-pane% Horizontal-Pane%]
-                       [editor-canvas% Editor-Canvas%]
-                       [bitmap-dc% Bitmap-DC%]
-                       [bitmap% Bitmap%]
-                       [color% Color%]
-		       [open-input-text-editor ((Instance Text%) Integer (U 'end Integer) (Any -> Any) Any Any -> Input-Port)])
+(require/typed/provide 
+ scheme/gui
+ [button% Button%]
+ [event% Event%]
+ [the-font-list (Instance Font-List%)] 
+ [dialog% Dialog%] 
+ [text-field% Text-Field%]
+ [horizontal-panel% Horizontal-Panel%]
+ [choice% Choice%]
+ [get-face-list (-> (Listof String))]
+ [message% Message%]
+ [horizontal-pane% Horizontal-Pane%]
+ [editor-canvas% Editor-Canvas%]
+ [bitmap-dc% Bitmap-DC%]
+ [bitmap% Bitmap%]
+ [color% Color%]
+ [snip% Snip%]
+ [open-input-text-editor 
+  ((Instance Text%) Integer (U 'end Integer) ((Instance Snip%) -> (Instance Snip%)) (Instance Text%) Boolean -> Input-Port)])
 

@@ -9,21 +9,23 @@
 (: reader-tag String)
 (define reader-tag "#reader")
 
-(: pick-new-language ((Instance Text%) 
-                      (Listof
-                       (Instance (Class () () ([get-reader-module (-> Any)]
-                                               [get-metadata-lines (-> Number)]
-                                               [metadata->settings (String -> Any)]))))
-                      Any Any -> (values Any Any)))
+(define-type-alias (Language% Settings)
+  (Class () () ([get-reader-module (-> Sexp)]
+                [get-metadata-lines (-> Number)]
+                [metadata->settings (String -> Settings)])))
+
+(: pick-new-language (All (S)
+                          ((Instance Text%) 
+                           (Listof
+                            (Instance (Language% S)))
+                           (U #f (Instance (Language% S))) (U #f S) -> (values (U #f (Instance (Language% S))) (U #f S)))))
 (define (pick-new-language text all-languages module-language module-language-settings)
   (with-handlers ([exn:fail:read? (λ (x) (values #f #f))])
-    (let: ([found-language? : Any #f]
-           [settings : Any #f])
+    (let: ([found-language? : (U #f (Instance (Language% S))) #f]
+           [settings : (U #f S) #f])
       
       (for-each
-       (λ: ([lang : (Instance (Class () () ([get-reader-module (-> Any)]
-					    [get-metadata-lines (-> Number)]
-					    [metadata->settings (String -> Any)])))])
+       (λ: ([lang : (Instance (Language% S))])
          (let ([lang-spec (send lang get-reader-module)])
            (when lang-spec
              (let* ([lines (send lang get-metadata-lines)]
@@ -51,7 +53,7 @@
       (values found-language?
               settings))))
 
-(: looks-like-module? ((Instance Text%) -> Any))
+(: looks-like-module? ((Instance Text%) -> Boolean))
 (define (looks-like-module? text)
   (or (looks-like-new-module-style? text)
       (looks-like-old-module-style? text)))
@@ -66,11 +68,11 @@
            (pair? r1)
            (eq? (car r1) 'module)))))
 
-(: looks-like-new-module-style? ((Instance Text%) -> Any))
+(: looks-like-new-module-style? ((Instance Text%) -> Boolean))
 (define (looks-like-new-module-style? text)
   (let* ([tp (open-input-text-editor text 0 'end (lambda (s) s) text #t)]
          [l1 (with-handlers ([exn:fail? (lambda (exn) eof)])
                ;; If tp contains a snip, read-line fails.
                (read-line tp))])
     (and (string? l1)
-         (regexp-match #rx"#lang .*$" l1))))
+         (regexp-match? #rx"#lang .*$" l1))))
