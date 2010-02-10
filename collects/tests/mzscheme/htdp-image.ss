@@ -376,9 +376,9 @@
       (image=? (rectangle 4 4 'outline 'black) 
                (overlay/xy 
                 (rectangle 4 4 'outline 'black)
-                -1
-                -1
-                (circle 1 'solid 'red))))
+                -2
+                -2
+                (circle 2 'solid 'red))))
 
 (test #t
       'overlay
