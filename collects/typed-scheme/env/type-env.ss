@@ -63,7 +63,13 @@
   (module-identifier-mapping-for-each 
    the-mapping 
    (lambda (id e) 
-     (when (box? e) (tc-error/stx id "Declaration for ~a provided, but with no definition" (syntax-e id))))))
+     (when (box? e) 
+       (let ([bnd (identifier-binding id)])
+         (tc-error/stx id "Declaration for ~a provided, but ~a ~a" 
+                       (syntax-e id) (syntax-e id)
+                       (cond [(eq? bnd 'lexical) "is a lexical binding"] ;; should never happen
+                             [(not bnd) "has no definition"] 
+                             [else "is defined in another module"])))))))
 
 ;; map over the-mapping, producing a list
 ;; (id type -> T) -> listof[T]  
