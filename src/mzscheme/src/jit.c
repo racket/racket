@@ -4207,7 +4207,7 @@ static int is_unboxing_immediate(Scheme_Object *obj, int unsafely)
 }
 
 static int can_unbox_inline(Scheme_Object *obj, int fuel, int regs, int unsafely)
-/* Assuming that `arg' is unsafely assumed to produce a flonum, can we
+/* Assuming that `arg' is [unsafely] assumed to produce a flonum, can we
    just unbox it without using more than `regs' registers? There
    cannot be any errors or function calls, unless we've specifically
    instrumented them to save/pop floating-point values before
@@ -4709,13 +4709,13 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
         mz_rs_sync(); /* needed if arguments were unboxed */
         generate_alloc_double(jitter, 0);
         CHECK_LIMIT();
-#if defined(MZ_USE_JIT_I386)
-        if (need_post_pop)
-          FSTPr(0);
-#endif
       } else if (unboxed_result) {
         jitter->unbox_depth++;
       }
+#if defined(MZ_USE_JIT_I386)
+      if (need_post_pop)
+        FSTPr(0);
+#endif
     } else {
       /* The "anti" variants below invert the branch. Unlike the "un" 
          variants, the "anti" variants invert the comparison result
