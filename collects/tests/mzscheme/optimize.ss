@@ -420,6 +420,8 @@
     (tri 5 'min (lambda () 20) 10 5 void)
     (bin-exact 3.0 'flmin 3.0 4.5)
     (bin-exact 2.5 'flmin 3.0 2.5)
+    (bin0 3.5 '(lambda (x y) (fl+ 1.0 (flmin x y))) 3.0 2.5)
+    (bin0 4.0 '(lambda (x y) (fl+ 1.0 (flmin x y))) 3.0 4.5)
     (bin-exact 30 'fxmin 30 45)
     (bin-exact 25 'fxmin 30 25)
 
@@ -431,6 +433,8 @@
     (tri 50 'max (lambda () 20) 10 50 void)
     (bin-exact 4.5 'flmax 3.0 4.5)
     (bin-exact 3.0 'flmax 3.0 2.5)
+    (bin0 5.5 '(lambda (x y) (fl+ 1.0 (flmax x y))) 3.0 4.5)
+    (bin0 4.0 '(lambda (x y) (fl+ 1.0 (flmax x y))) 3.0 2.5)
     (bin-exact 45 'fxmax 30 45)
     (bin-exact 30 'fxmax 30 25)
 

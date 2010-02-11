@@ -4709,13 +4709,19 @@ static int generate_double_arith(mz_jit_state *jitter, Scheme_Object *rator,
         mz_rs_sync(); /* needed if arguments were unboxed */
         generate_alloc_double(jitter, 0);
         CHECK_LIMIT();
+ #if defined(MZ_USE_JIT_I386)
+        if (need_post_pop)
+          FSTPr(0);
+#endif
       } else if (unboxed_result) {
         jitter->unbox_depth++;
-      }
-#if defined(MZ_USE_JIT_I386)
-      if (need_post_pop)
-        FSTPr(0);
+ #if defined(MZ_USE_JIT_I386)
+        if (need_post_pop) {
+          FXCHr(1);
+          FSTPr(0);
+        }
 #endif
+      }
     } else {
       /* The "anti" variants below invert the branch. Unlike the "un" 
          variants, the "anti" variants invert the comparison result
