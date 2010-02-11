@@ -1974,11 +1974,16 @@ void scheme_schedule_custodian_close(Scheme_Custodian *c)
 
 static void check_scheduled_kills()
 {
+  Scheme_Object *kl, *k;
+
   while (scheduled_kills && !SCHEME_NULLP(scheduled_kills)) {
-    Scheme_Object *k;
-    k = SCHEME_CAR(scheduled_kills);
-    scheduled_kills = SCHEME_CDR(scheduled_kills);
-    scheme_close_managed((Scheme_Custodian *)k);
+    kl = scheduled_kills;
+    scheduled_kills = scheme_null;
+    while (!SCHEME_NULLP(kl)) {
+      k = SCHEME_CAR(kl);
+      kl = SCHEME_CDR(kl);
+      scheme_close_managed((Scheme_Custodian *)k);
+    }
   }
 }
 
