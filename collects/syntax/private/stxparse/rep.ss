@@ -227,7 +227,6 @@
            [(regexp? name)
             ;; Conventions rule; delay class lookup until module/intdefs pass2
             ;; to allow forward references
-            (fprintf (current-error-port) "conventions aux def\n")
             (with-syntax ([parser (generate-temporary class)]
                           [description (generate-temporary class)])
               (values (make den:delayed #'parser #'get-description class)
