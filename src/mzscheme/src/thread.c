@@ -1630,7 +1630,7 @@ static void for_each_managed(Scheme_Type type, Scheme_For_Each_Func cf)
   }
 }
 
-void scheme_close_managed(Scheme_Custodian *m)
+static void do_close_managed(Scheme_Custodian *m)
 /* The trick is that we may need to kill the thread
    that is running us. If so, delay it to the very
    end. */
@@ -1642,6 +1642,12 @@ void scheme_close_managed(Scheme_Custodian *m)
     else
       scheme_thread_block(0.0);
   }
+
+}
+
+void scheme_close_managed(Scheme_Custodian *m)
+{
+  do_close_managed(m);
 
   /* Give killed threads time to die: */
   scheme_thread_block(0);
@@ -1974,16 +1980,11 @@ void scheme_schedule_custodian_close(Scheme_Custodian *c)
 
 static void check_scheduled_kills()
 {
-  Scheme_Object *kl, *k;
-
   while (scheduled_kills && !SCHEME_NULLP(scheduled_kills)) {
-    kl = scheduled_kills;
-    scheduled_kills = scheme_null;
-    while (!SCHEME_NULLP(kl)) {
-      k = SCHEME_CAR(kl);
-      kl = SCHEME_CDR(kl);
-      scheme_close_managed((Scheme_Custodian *)k);
-    }
+    Scheme_Object *k;
+    k = SCHEME_CAR(scheduled_kills);
+    scheduled_kills = SCHEME_CDR(scheduled_kills);
+    do_close_managed((Scheme_Custodian *)k);
   }
 }
 
