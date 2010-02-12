@@ -5,60 +5,91 @@
                      scheme/contract
                      scheme/base))
 
-@title[#:tag "poly-c"]{Anaphoric Contracts}
+@title[#:tag "poly-c"]{Polymorphic Contracts}
 
-@(define the-eval (make-base-eval))
-@(the-eval '(require unstable/poly-c scheme/contract))
+@(define (build-eval)
+   (let* ([e (make-base-eval)])
+     (e '(require unstable/poly-c scheme/contract))
+     e))
 
 @defmodule[unstable/poly-c]
 
 @unstable[@author+email["Sam Tobin-Hochstadt" "samth@ccs.neu.edu"]
           @author+email["Carl Eastlund" "cce@ccs.neu.edu"]]
 
+@defform[(poly/c (x ...) c)]{
 
-@defform[(poly/c ([id+ id-] ...) cnt)]{
-Creates an ``anaphoric'' contract, using the @scheme[id+ ...] as the
-positive positions, and the @scheme[id- ...] as the negative positions.  
+Creates a contract for polymorphic functions that may inspect their arguments.
+Each function is protected by @scheme[c], where each @scheme[x] is bound in
+@scheme[c] and refers to a polymorphic type that is instantiated each time the
+function is applied.
 
-Anaphoric contracts verify that only values provided to a given
-positive position flow out of the corresponding negative position.
+At each application of a function, the @scheme[poly/c] contract constructs a new
+weak, @scheme[eq?]-based hash table for each @scheme[x].  Values flowing into
+the polymorphic function (i.e. values protected by some @scheme[x] in negative
+position with respect to @scheme[poly/c]) are stored in the hash table.  Values
+flowing out of the polymorphic function (i.e. protected by some @scheme[x] in
+positive position with respect to @scheme[poly/c]) are checked for their
+presence in the hash table.  If they are present, they are returned; otherwise,
+a contract violation is signalled.
 
-@examples[#:eval the-eval
-(define/contract (f x) (poly/c ([in out]) (in . -> . out)) 
-  (if (equal? x 17) 18 x))
-(f 1)
-(f #f)
-(f 17)
+@examples[#:eval (build-eval)
+(define/contract (check x y) (poly/c [X] (boolean? X . -> . X))
+  (if (or (not x) (equal? y 'surprise))
+      'invalid
+      y))
+(check #t 'ok)
+(check #f 'ignored)
+(check #t 'surprise)
 ]
+
 }
 
-@defproc[(apply/c [cnt any/c] 
-		  [#:name name any/c 
-		  (build-compound-type-name 'apply/c c)]) contract?]{
-Produces a procedure contract that is like @scheme[cnt], but any delayed
-evalutation in @scheme[cnt] is re-done on every
-application of the contracted function.
+@defform[(parametric/c (x ...) c)]{
+
+Creates a contract for parametric polymorphic functions.  Each function is
+protected by @scheme[c], where each @scheme[x] is bound in @scheme[c] and refers
+to a polymorphic type that is instantiated each time the function is applied.
+
+At each application of a function, the @scheme[parametric/c] contract constructs
+a new opaque wrapper for each @scheme[x]; values flowing into the polymorphic
+function (i.e. values protected by some @scheme[x] in negative position with
+respect to @scheme[parametric/c]) are wrapped in the corresponding opaque
+wrapper.  Values flowing out of the polymorphic function (i.e. values protected
+by some @scheme[x] in positive position with respect to @scheme[parametric/c])
+are checked for the appropriate wrapper.  If they have it, they are unwrapped;
+if they do not, a contract violation is signalled.
+
+@examples[#:eval (build-eval)
+(define/contract (check x y) (parametric/c [X] (boolean? X . -> . X))
+  (if (or (not x) (equal? y 'surprise))
+      'invalid
+      y))
+(check #t 'ok)
+(check #f 'ignored)
+(check #t 'surprise)
+]
+
 }
 
-@defproc[(memory/c [#:name name any/c "memory/c"]
-		   [#:from from any/c (format "~a:from" name)]
-		   [#:to to any/c (format "~a:to" name)]
-		   [#:weak weak? any/c #t]
-		   [#:equal equal (or/c 'eq 'eqv 'equal) 'eq]
-		   [#:table make-table  (-> hash?)
-		   (case equal		
-                     [(eq) (if weak? make-weak-hasheq make-hasheq)]
-                     [(eqv) (if weak? make-weak-hasheqv make-hasheqv)]
-                     [(equal) (if weak? make-weak-hash make-hash)])]
-		   )
-		    (values flat-contract? flat-contract?)]{
+@defproc[(memory/c [positive? boolean?] [name any/c]) contract?]{
 
-Produces a pair of contracts.  The first contract remembers all values
-that flow into it, and rejects nothing.  The second accepts only
-values that have previously been passed to the first contract.  
+This function constructs a contract that records values flowing in one direction
+in a fresh, weak hash table, and looks up values flowing in the other direction,
+signalling a contract violation if those values are not in the table.
 
-If @scheme[weak?] is not @scheme[#f], the first contract holds onto
-the values only weakly.  @scheme[from] and @scheme[to] are the names
-of the of the two contracts. }
+If @scheme[positive?] is true, values in positive position get stored and values
+in negative position are checked.  Otherwise, the reverse happens.
 
+}
 
+@defproc[(opaque/c [positive? boolean?] [name any/c]) contract?]{
+
+This function constructs a contract that wraps values flowing in one direction
+in a unique, opaque wrapper, and unwraps values flowing in the other direction,
+signalling a contract violation if those values are not wrapped.
+
+If @scheme[positive?] is true, values in positive position get wrapped and
+values in negative position get unwrapped.  Otherwise, the reverse happens.
+
+}

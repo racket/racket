@@ -122,18 +122,14 @@
          #`(cons/c #,(t->c t1) #,(t->c t2))]
         [(Opaque: p? cert)
          #`(flat-named-contract (quote #,(syntax-e p?)) #,(cert p?))]
-        [(F: v) (cond [(assoc v (vars)) => (if pos? second third)]
+        [(F: v) (cond [(assoc v (vars)) => second]
                       [else (int-err "unknown var: ~a" v)])]
 	[(Poly: vs (and b (Function: _)))
          (match-let ([(Poly-names: vs-nm _) ty])
-           (with-syntax ([(vs+ ...) (generate-temporaries (for/list ([v vs-nm]) (format-symbol "~a+" v)))]
-			 [(vs- ...) (generate-temporaries (for/list ([v vs-nm]) (format-symbol "~a-" v)))])
-             (parameterize ([vars (append (map list
-					       vs
-					       (syntax->list #'(vs+ ...))
-					       (syntax->list #'(vs- ...)))
+           (with-syntax ([(v ...) (generate-temporaries vs-nm)])
+             (parameterize ([vars (append (map list vs (syntax->list #'(v ...)))
 					  (vars))])
-               #`(poly/c ([vs- vs+] ...) #,(t->c b)))))]
+               #`(poly/c (v ...) #,(t->c b)))))]
         [(Mu: n b)
          (match-let ([(Mu-name: n-nm _) ty])
            (with-syntax ([(n*) (generate-temporaries (list n-nm))])
