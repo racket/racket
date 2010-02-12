@@ -32,6 +32,9 @@
                           stx))
     (define (expected-arguments name stx)
       (raise-syntax-error what (format "~a expected to have arguments" name) orig-stx stx))
+    (define ((expect-identifier src) stx)
+      (unless (identifier? stx)
+        (raise-syntax-error what "expected an identifier" src stx)))
     (let loop ([term orig-stx])
       (syntax-case term (side-condition variable-except variable-prefix hole name in-hole hide-hole side-condition cross)
         [(side-condition pre-pat (and))
@@ -56,9 +59,13 @@
                   src-loc)))))]
         [(side-condition a ...) (expected-exact 'side-condition 2 term)]
         [side-condition (expected-arguments 'side-condition term)]
-        [(variable-except a ...) #`(variable-except #,@(map loop (syntax->list (syntax (a ...)))))]
+        [(variable-except a ...)
+         (for-each (expect-identifier term) (syntax->list #'(a ...)))
+         term]
         [variable-except (expected-arguments 'variable-except term)]
-        [(variable-prefix a) #`(variable-prefix #,(loop (syntax a)))]
+        [(variable-prefix a)
+         ((expect-identifier term) #'a)
+         term]
         [(variable-prefix a ...) (expected-exact 'variable-prefix 1 term)]
         [variable-prefix (expected-arguments 'variable-prefix term)]
         [hole term]
@@ -71,7 +78,9 @@
         [(hide-hole a) #`(hide-hole #,(loop #'a))]
         [(hide-hole a ...) (expected-exact 'hide-hole 1 term)]
         [hide-hole (expected-arguments 'hide-hole term)]
-        [(cross a) #`(cross #,(loop #'a))]
+        [(cross a)
+         ((expect-identifier term) #'a)
+         term]
         [(cross a ...) (expected-exact 'cross 1 term)]
         [cross (expected-arguments 'cross term)]
         [_

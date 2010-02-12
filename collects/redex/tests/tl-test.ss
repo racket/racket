@@ -225,6 +225,14 @@
             (void)))
         "extend-language: new language does not have the same non-terminal aliases as the old, non-terminal P was not in the same group as X in the old language")
   
+  ;; underscores in literals
+  (let ()
+    (define-language L
+      (x (variable-except a_b))
+      (y (variable-prefix a_b)))
+    (test (pair? (redex-match L x (term a_c))) #t)
+    (test (pair? (redex-match L y (term a_bc))) #t))
+  
   ;; test caching
   (let ()
     (define match? #t)
@@ -266,13 +274,20 @@
   (define-namespace-anchor here)
   (define ns (namespace-anchor->namespace here))
   
-  (let ([src 'bad-underscore])
-    (test 
-     (parameterize ([current-namespace ns])
-       (syntax-error-sources
-        '(define-language L (n m_1))
-        src))
-     (list src)))
+  (define-syntax (test-syntax-error stx)
+    (syntax-case stx ()
+      [(_ x)
+       (with-syntax ([expected (syntax/loc stx (list src))])
+         #`(let ([src (gensym)])
+             (test 
+              (parameterize ([current-namespace ns])
+                (syntax-error-sources 'x src))
+              expected)))]))
+  
+  (test-syntax-error (define-language L (n m_1)))
+  (test-syntax-error (define-language L (n (variable-except a 2 c))))
+  (test-syntax-error (define-language L (n (variable-prefix 7))))
+  (test-syntax-error (define-language L (n (cross 7))))
   
 ;                                                                                             
 ;                                                                                             
