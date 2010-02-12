@@ -207,7 +207,8 @@
             [proc (or/c #f Function?)]
             [poly? boolean?] 
             [pred-id identifier?]
-            [cert procedure?])
+            [cert procedure?]
+            [acc-ids (listof identifier?)])
     [#:intern (list name parent flds proc)]
     [#:frees (combine-frees (map free-vars* (append (if proc (list proc) null) (if parent (list parent) null) flds)))
              (combine-frees (map free-idxs* (append (if proc (list proc) null) (if parent (list parent) null) flds)))]
@@ -217,7 +218,8 @@
                          (and proc (type-rec-id proc))
                          poly?
                          pred-id
-                         cert)]
+                         cert
+                         acc-ids)]
     [#:key #f])
 
 ;; the supertype of all of these values

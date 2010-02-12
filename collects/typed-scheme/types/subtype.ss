@@ -304,22 +304,22 @@
 	      [((Union: es) t) (and (andmap (lambda (elem) (subtype* A0 elem t)) es) A0)]
 	      [(s (Union: es)) (and (ormap (lambda (elem) (subtype*/no-fail A0 s elem)) es) A0)]
 	      ;; subtyping on immutable structs is covariant
-	      [((Struct: nm _ flds #f _ _ _) (Struct: nm _ flds* #f _ _ _))
+	      [((Struct: nm _ flds #f _ _ _ _) (Struct: nm _ flds* #f _ _ _ _))
 	       (subtypes* A0 flds flds*)]
-	      [((Struct: nm _ flds proc _ _ _) (Struct: nm _ flds* proc* _ _ _))
+	      [((Struct: nm _ flds proc _ _ _ _) (Struct: nm _ flds* proc* _ _ _ _))
 	       (subtypes* A0 (cons proc flds) (cons proc* flds*))]
-              [((Struct: _ _ _ _ _ _ _) (StructTop: (? (lambda (s2) (type-equal? s2 s)))))
+              [((Struct: _ _ _ _ _ _ _ _) (StructTop: (? (lambda (s2) (type-equal? s2 s)))))
                A0]
               [((Box: _) (BoxTop:)) A0]
               [((Vector: _) (VectorTop:)) A0]
               [((MPair: _ _) (MPairTop:)) A0]
               [((Hashtable: _ _) (HashtableTop:)) A0]
 	      ;; subtyping on structs follows the declared hierarchy
-	      [((Struct: nm (? Type? parent) flds proc _ _ _) other) 
+	      [((Struct: nm (? Type? parent) flds proc _ _ _ _) other) 
                ;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)
 	       (subtype* A0 parent other)]
 	      ;; Promises are covariant
-	      [((Struct: 'Promise _ (list t) _ _ _ _) (Struct: 'Promise _ (list t*) _ _ _ _)) (subtype* A0 t t*)]
+	      [((Struct: 'Promise _ (list t) _ _ _ _ _) (Struct: 'Promise _ (list t*) _ _ _ _ _)) (subtype* A0 t t*)]
 	      ;; subtyping on values is pointwise
 	      [((Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
               ;; trivial case for Result

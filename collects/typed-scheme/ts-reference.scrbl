@@ -46,6 +46,8 @@ These types represent primitive Scheme data.  Note that @scheme[Integer] represe
 
 @defidform[Any]{Any Scheme value. All other types are subtypes of @scheme[Any].}
 
+@defidform[Nothing]{The type with no members.}
+
 The following base types are parameteric in their type arguments.
 
 @defform[(Listof t)]{Homogenous @rtech{lists} of @scheme[t]}
