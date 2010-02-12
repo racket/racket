@@ -144,7 +144,7 @@
   (match c 
     [(Univ:) (fp "Any")]
     ;; special case number until something better happens
-    [(Base: 'Number _) (fp "Number")]
+    ;;[(Base: 'Number _) (fp "Number")]
     [(? has-name?) (fp "~a" (has-name? c))]
     [(StructTop: st) (fp "~a" st)]
     [(BoxTop:) (fp "Box")]
