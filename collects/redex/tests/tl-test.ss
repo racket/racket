@@ -271,24 +271,6 @@
       (term (f 1)))
     (test rhs-eval-count 2))
   
-  (define-namespace-anchor here)
-  (define ns (namespace-anchor->namespace here))
-  
-  (define-syntax (test-syntax-error stx)
-    (syntax-case stx ()
-      [(_ x)
-       (with-syntax ([expected (syntax/loc stx (list src))])
-         #`(let ([src (gensym)])
-             (test 
-              (parameterize ([current-namespace ns])
-                (syntax-error-sources 'x src))
-              expected)))]))
-  
-  (test-syntax-error (define-language L (n m_1)))
-  (test-syntax-error (define-language L (n (variable-except a 2 c))))
-  (test-syntax-error (define-language L (n (variable-prefix 7))))
-  (test-syntax-error (define-language L (n (cross 7))))
-  
 ;                                                                                             
 ;                                                                                             
 ;                                 ;;;                                ;                        
@@ -1065,6 +1047,15 @@
                  [(~~> (M a) (M b)) (==> a b)])
                 #rx"no rules")
   
+  (test-syn-err (reduction-relation 
+                 grammar
+                 (~~> (number_1 number_2)
+                      ,(* (term number_1) (term number_2)))
+                 with
+                 [(--> (M a) (M b)) (~~> a b)]
+                 [(~~> (M a) (M b)) (==> a b)])
+                #rx"no rules")
+  
   (test-syn-err (reduction-relation grammar)
                 #rx"no rules use -->")
   
@@ -1082,30 +1073,36 @@
                  (--> (number_1 number_2) 
                       ,(* (term number_1) (term number_2))
                       mult))
-                #rx"same name on multiple rules")
+                #rx"same name on multiple rules"
+                2)
   
   (test-syn-err (reduction-relation 
                  grammar
                  (--> 1 2)
                  (==> 3 4))
-                #rx"not defined.*==>")
+                #rx"==> relation is not defined")
   
   (test-syn-err  (reduction-relation 
-                  empty-language
+                  grammar
                   (--> 1 2)
                   (==> 3 4)
                   with
                   [(~> a b) (==> a b)])
-                 #rx"not defined.*~>")
+                 #rx"~> relation is not defined")
   
   (test-syn-err (define-language bad-lang1 (e name)) #rx"name")
   (test-syn-err (define-language bad-lang2 (name x)) #rx"name")
-  (test-syn-err (define-language bad-lang3 (x_y x)) #rx"x_y")
+  (test-syn-err (define-language bad-lang3 (x_y x)) #rx"cannot have _")
   (test-syn-err (define-language bad-lang4 (a 1 2) (b)) #rx"no productions")
   (test-syn-err (let ()
                   (define-language good-lang (a 1 2))
                   (define-extended-language bad-lang5 good-lang (a) (b 2)))
                 #rx"no productions")
+  
+  (test-syn-err (redex-match grammar m_1) #rx"before underscore")
+  (test-syn-err (redex-match grammar (variable-except a 2 c)) #rx"expected an identifier")
+  (test-syn-err (redex-match grammar (variable-prefix 7)) #rx"expected an identifier")
+  (test-syn-err (redex-match grammar (cross 7)) #rx"expected an identifier")
   
   ;; expect union with duplicate names to fail
   (test (with-handlers ((exn? (λ (x) 'passed)))

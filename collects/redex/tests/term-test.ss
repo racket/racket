@@ -165,13 +165,7 @@
         src))
      src))
   
-  (let ([src 'term-template])
-    (test 
-     (parameterize ([current-namespace ns])
-       (syntax-error-sources
-        '(term-let ([(x ...) '(a b c)])
-                   (term x))
-        src))
-     (list src)))
+  (test-syn-err (term-let ([(x ...) '(a b c)]) (term x))
+                #rx"missing ellipses")
   
   (print-tests-passed 'term-test.ss))

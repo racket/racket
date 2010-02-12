@@ -7,7 +7,7 @@
          syn-err-test-namespace
          print-tests-passed
          equal/bindings?
-         runtime-error-source syntax-error-sources)
+         runtime-error-source)
 
 (define syn-err-test-namespace (make-base-namespace))
 (parameterize ([current-namespace syn-err-test-namespace])
@@ -22,16 +22,40 @@
                            "<unknown file>")])
        (syntax/loc stx (test/proc (λ () expected) got line fn)))]))
 
+(define (runtime-error-source sexp src)
+  (let/ec return
+    (cadar
+     (continuation-mark-set->list
+      (exn-continuation-marks
+       (with-handlers ((exn:fail? values))
+         (parameterize ([current-compile (make-errortrace-compile-handler)])
+           (eval (read-syntax src (open-input-string (format "~s" sexp)))))
+         (return 'no-source)))
+      errortrace-key))))
+
 (define-syntax (test-syn-err stx)
   (syntax-case stx ()
-    [(_ exp regexp)
-     (syntax/loc stx
-       (test
-        (parameterize ([current-namespace syn-err-test-namespace])
-          (with-handlers ((exn:fail:syntax? exn-message))
-            (expand 'exp)
-            'no-error-raised))
-        regexp))]))
+    [(_ exp msg-re num-locs)
+     (with-syntax ([expected-locs (syntax/loc stx (build-list num-locs (λ (_) src)))])
+       (syntax
+        (let* ([src (gensym)]
+               [p (read-syntax src (open-input-string (format "~s" 'exp)))])
+          (let-values ([(locs msg)
+                        (with-handlers ([exn:fail:syntax?
+                                         (λ (exn)
+                                           (values 
+                                            (if (exn:srclocs? exn)
+                                                (map srcloc-source 
+                                                     ((exn:srclocs-accessor exn) exn))
+                                                null)
+                                            (exn-message exn)))])
+                          (parameterize ([current-namespace syn-err-test-namespace])
+                            (expand p))
+                          (values (void) null))])
+            (test msg msg-re)
+            (test locs expected-locs)))))]
+    [(tse exp msg-re)
+     (syntax/loc stx (tse exp msg-re 1))]))
 
 (define tests 0)
 (define failures 0)
@@ -113,20 +137,3 @@
 ;; rib-lt : rib rib -> boolean
 (define (rib-lt r1 r2) (string<=? (format "~s" (bind-name r1))
                                   (format "~s" (bind-name r2))))
-
-(define (runtime-error-source sexp src)
-  (let/ec return
-    (cadar
-     (continuation-mark-set->list
-      (exn-continuation-marks
-       (with-handlers ((exn:fail? values))
-         (parameterize ([current-compile (make-errortrace-compile-handler)])
-           (eval (read-syntax src (open-input-string (format "~s" sexp)))))
-         (return 'no-source)))
-      errortrace-key))))
-
-(define (syntax-error-sources sexp src)
-    (let ([p (read-syntax src (open-input-string (format "~s" sexp)))])
-      (with-handlers ((exn:srclocs? (λ (x) (map srcloc-source ((exn:srclocs-accessor x) x)))))
-        (expand p)
-        null)))

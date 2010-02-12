@@ -212,12 +212,14 @@
 (define-syntax (-reduction-relation stx)
   (syntax-case stx ()
     [(_ lang args ...)
-     (syntax/loc stx (do-reduction-relation reduction-relation empty-reduction-relation #f lang args ...))]))
+     (with-syntax ([orig-stx stx])
+       (syntax/loc stx (do-reduction-relation orig-stx reduction-relation empty-reduction-relation #f lang args ...)))]))
 
 (define-syntax (extend-reduction-relation stx)
   (syntax-case stx ()
     [(_ orig-reduction-relation lang args ...)
-     (syntax/loc stx (do-reduction-relation extend-reduction-relation orig-reduction-relation #t lang args ...))]))
+     (with-syntax ([orig-stx stx])
+       (syntax/loc stx (do-reduction-relation orig-stx extend-reduction-relation orig-reduction-relation #t lang args ...)))]))
 
 ;; the withs, freshs, and side-conditions come in backwards order
 (define-for-syntax (bind-withs orig-name main lang lang-nts stx where-mode body)
@@ -292,16 +294,16 @@
 (define-syntax-set (do-reduction-relation)
   (define (do-reduction-relation/proc stx)
     (syntax-case stx ()
-      [(_ id orig-reduction-relation allow-zero-rules? lang . w/domain-args)
+      [(_ orig-stx id orig-reduction-relation allow-zero-rules? lang . w/domain-args)
        (identifier? #'lang)
        (prune-syntax
         (let-values ([(domain-pattern main-arrow args)
-                      (parse-keywords stx #'id #'w/domain-args)])
+                      (parse-keywords #'orig-stx #'id #'w/domain-args)])
           (with-syntax ([(rules ...) (before-with args)]
                         [(shortcuts ...) (after-with args)])
             (with-syntax ([(lws ...) (map rule->lws (syntax->list #'(rules ...)))])
               (reduction-relation/helper 
-               stx
+               #'orig-stx
                (syntax-e #'id)
                #'orig-reduction-relation
                (syntax lang)
@@ -311,14 +313,16 @@
                (syntax-e #'allow-zero-rules?)
                domain-pattern
                main-arrow)))))]
-      [(_ id orig-reduction-relation allow-zero-rules? lang args ...)
+      [(_ orig-stx id orig-reduction-relation allow-zero-rules? lang args ...)
        (raise-syntax-error (syntax-e #'id) 
                            "expected an identifier for the language name"
                            #'lang)]))
   
+  (define default-arrow #'-->)
+  
   (define (parse-keywords stx id args)
     (let ([domain-contract #'any]
-          [default-arrow #'-->])
+          [main-arrow default-arrow])
       
       ;; ensure no duplicate keywords
       (let ([ht (make-hash)]
@@ -351,7 +355,7 @@
                                stx)]
           [(#:arrow arrow . args)
            (identifier? #'arrow)
-           (begin (set! default-arrow #'arrow)
+           (begin (set! main-arrow #'arrow)
                   (loop #'args))]
           [(#:arrow arrow . args)
            (raise-syntax-error (syntax-e id) 
@@ -364,7 +368,7 @@
                                stx)]
           [_
            (begin
-             (values domain-contract default-arrow args))]))))
+             (values domain-contract main-arrow args))]))))
 
   
   (define (before-with stx)
@@ -587,7 +591,7 @@
                   (raise-syntax-error orig-name 
                                       (format "no rules use ~a" (syntax->datum id))
                                       stx 
-                                      id))))))))
+                                      (if (equal? id default-arrow) #f id)))))))))
   
   (define (get-tree stx orig-name bm lang case-stx name-table lang-id allow-zero-rules?)
     (syntax-case case-stx ()
