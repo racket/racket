@@ -399,13 +399,6 @@ typedef struct Scheme_Thread_Custodian_Hop {
 
 SHARED_OK static Scheme_Custodian_Extractor *extractors;
 
-typedef struct {
-  MZTAG_IF_REQUIRED
-  Scheme_Object *key;
-  void (*f)(Scheme_Env *);
-} Scheme_NSO;
-
-
 #define SETJMP(p) scheme_setjmpup(&p->jmpup_buf, p, p->stack_start)
 #define LONGJMP(p) scheme_longjmpup(&p->jmpup_buf)
 #define RESETJMP(p) scheme_reset_jmpup_buf(&p->jmpup_buf)
@@ -7685,7 +7678,6 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_config_type, mark_config);
   GC_REG_TRAV(scheme_thread_cell_type, mark_thread_cell);
 
-  GC_REG_TRAV(scheme_rt_namespace_option, mark_namespace_option);
   GC_REG_TRAV(scheme_rt_param_data, mark_param_data);
   GC_REG_TRAV(scheme_rt_will, mark_will);
   GC_REG_TRAV(scheme_rt_evt, mark_evt);

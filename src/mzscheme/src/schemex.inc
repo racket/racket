@@ -537,7 +537,6 @@
   scheme_extension_table->scheme_print_string = scheme_print_string;
   scheme_extension_table->scheme_read_byte_string = scheme_read_byte_string;
   scheme_extension_table->scheme_make_namespace = scheme_make_namespace;
-  scheme_extension_table->scheme_add_namespace_option = scheme_add_namespace_option;
   scheme_extension_table->scheme_add_global = scheme_add_global;
   scheme_extension_table->scheme_add_global_symbol = scheme_add_global_symbol;
   scheme_extension_table->scheme_make_envunbox = scheme_make_envunbox;

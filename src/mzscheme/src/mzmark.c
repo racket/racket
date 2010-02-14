@@ -4217,33 +4217,6 @@ static int mark_thread_hop_FIXUP(void *p) {
 #define mark_thread_hop_IS_CONST_SIZE 1
 
 
-static int mark_namespace_option_SIZE(void *p) {
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_NSO));
-}
-
-static int mark_namespace_option_MARK(void *p) {
-  Scheme_NSO *o = (Scheme_NSO *)p;
-
-  gcMARK(o->key);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_NSO));
-}
-
-static int mark_namespace_option_FIXUP(void *p) {
-  Scheme_NSO *o = (Scheme_NSO *)p;
-
-  gcFIXUP(o->key);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_NSO));
-}
-
-#define mark_namespace_option_IS_ATOMIC 0
-#define mark_namespace_option_IS_CONST_SIZE 1
-
-
 static int mark_param_data_SIZE(void *p) {
   return
    gcBYTES_TO_WORDS(sizeof(ParamData));

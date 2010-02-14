@@ -1721,16 +1721,6 @@ mark_thread_hop {
    gcBYTES_TO_WORDS(sizeof(Scheme_Thread_Custodian_Hop));
 }
 
-mark_namespace_option {
- mark:
-  Scheme_NSO *o = (Scheme_NSO *)p;
-
-  gcMARK(o->key);
-
- size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_NSO));
-}
-
 mark_param_data {
  mark:
   ParamData *d = (ParamData *)p;
