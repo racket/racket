@@ -54,7 +54,6 @@
     (let loop ([ty ty] [pos? #t] [from-typed? from-typed?] [structs-seen null])
       (define (t->c t #:seen [structs-seen structs-seen]) (loop t pos? from-typed? structs-seen))
       (define (t->c/neg t #:seen [structs-seen structs-seen]) (loop t (not pos?) (not from-typed?) structs-seen))
-      (trace t->c)
       (match ty
         [(or (App: _ _ _) (Name: _)) (t->c (resolve-once ty))]
         ;; any/c doesn't provide protection in positive position
