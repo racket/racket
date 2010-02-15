@@ -481,7 +481,9 @@ static void *place_start_proc(void *data_arg) {
     saved_error_buf = p->error_buf;
     p->error_buf = &new_error_buf;
     if (!scheme_setjmp(new_error_buf)) {
-      place_main = scheme_dynamic_require(2, a);
+      Scheme_Object *dynamic_require;
+      dynamic_require = scheme_builtin_value("dynamic-require");
+      place_main = scheme_apply(dynamic_require, 2, a);
       a[0] = channel;
       scheme_apply(place_main, 1, a);
     }
