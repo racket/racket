@@ -178,6 +178,10 @@ static Scheme_Object *current_prompt_read(int, Scheme_Object **);
 
 static Scheme_Object *write_compiled_closure(Scheme_Object *obj);
 static Scheme_Object *read_compiled_closure(Scheme_Object *obj);
+static Scheme_Object *
+scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key, 
+                                     Scheme_Object *prompt_tag, Scheme_Meta_Continuation **_meta,
+                                     MZ_MARK_POS_TYPE *_vpos);
 
 typedef void (*DW_PrePost_Proc)(void *);
 
@@ -5598,8 +5602,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
 
   composable = (argc > 2);
 
-  prompt = (Scheme_Prompt *)scheme_extract_one_cc_mark_with_meta(NULL, SCHEME_PTR_VAL(prompt_tag), 
-                                                                 NULL, &prompt_cont, &prompt_pos);
+  prompt = scheme_get_prompt(SCHEME_PTR_VAL(prompt_tag), &prompt_cont, &prompt_pos);
   if (!prompt && !SAME_OBJ(scheme_default_prompt_tag, prompt_tag)) {
     scheme_arg_mismatch((composable
                          ? "call-with-composable-continuation"
@@ -5862,11 +5865,21 @@ call_with_continuation_barrier (int argc, Scheme_Object *argv[])
 Scheme_Prompt *scheme_get_barrier_prompt(Scheme_Meta_Continuation **_meta_cont,
                                          MZ_MARK_POS_TYPE *_pos)
 {
-  return (Scheme_Prompt *)scheme_extract_one_cc_mark_with_meta(NULL, 
-                                                               barrier_prompt_key,
-                                                               NULL,
-                                                               _meta_cont,
-                                                               _pos);
+  return (Scheme_Prompt *)scheme_extract_one_cc_mark_with_meta(NULL, barrier_prompt_key, NULL, _meta_cont, _pos);
+}
+
+Scheme_Prompt *scheme_get_prompt(Scheme_Object *prompt_tag,
+                                 Scheme_Meta_Continuation **_meta_cont,
+                                 MZ_MARK_POS_TYPE *_pos)
+{
+  return (Scheme_Prompt *)scheme_extract_one_cc_mark_with_meta(NULL, prompt_tag, NULL, _meta_cont, _pos);
+}
+
+static Scheme_Meta_Continuation *scheme_get_meta_continuation(Scheme_Object *key)
+{
+  Scheme_Meta_Continuation *mc;
+  scheme_extract_one_cc_mark_with_meta(NULL, key, NULL, &mc, NULL);
+  return mc;
 }
 
 
@@ -7135,7 +7148,7 @@ cont_marks(int argc, Scheme_Object *argv[])
       return NULL;
     } else {
       Scheme_Meta_Continuation *mc;
-      scheme_extract_one_cc_mark_with_meta(NULL, argv[0], NULL, &mc, NULL);
+      mc = scheme_get_meta_continuation(argv[0]);
 
       return continuation_marks(scheme_current_thread, NULL, argv[0], mc, prompt_tag, 
                                 "continuation-marks", 0);
@@ -7416,7 +7429,7 @@ extract_cc_proc_marks(int argc, Scheme_Object *argv[])
   return scheme_get_stack_trace(argv[0]);
 }
 
-Scheme_Object *
+static Scheme_Object *
 scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key, 
                                      Scheme_Object *prompt_tag, Scheme_Meta_Continuation **_meta,
                                      MZ_MARK_POS_TYPE *_vpos)
@@ -7649,8 +7662,7 @@ extract_one_cc_mark(int argc, Scheme_Object *argv[])
     }
   } 
 
-  r = scheme_extract_one_cc_mark_with_meta(SCHEME_TRUEP(argv[0]) ? argv[0] : NULL, argv[1], 
-                                           prompt_tag, NULL, NULL);
+  r = scheme_extract_one_cc_mark_to_tag(SCHEME_TRUEP(argv[0]) ? argv[0] : NULL, argv[1], prompt_tag);
   if (!r) {
     if (argc > 2)
       r = argv[2];
@@ -7697,7 +7709,7 @@ static Scheme_Object *continuation_prompt_available(int argc, Scheme_Object *arg
         if (SAME_OBJ(scheme_default_prompt_tag, prompt_tag))
           return scheme_true;
 
-        scheme_extract_one_cc_mark_with_meta(NULL, argv[1], NULL, &mc, NULL);
+        mc = scheme_get_meta_continuation(argv[1]);
         
         if (continuation_marks(scheme_current_thread, NULL, argv[1], mc, prompt_tag, 
                                NULL, 0))

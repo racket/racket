@@ -1386,11 +1386,6 @@ typedef struct Scheme_Prompt {
 /* Compiler helper: */
 #define ESCAPED_BEFORE_HERE  return NULL
 
-Scheme_Object *scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, 
-                                                    Scheme_Object *key,
-                                                    Scheme_Object *prompt_tag,
-                                                    Scheme_Meta_Continuation **_meta_cont,
-                                                    MZ_MARK_POS_TYPE *_pos);
 Scheme_Object *scheme_compose_continuation(Scheme_Cont *c, int num_rands, Scheme_Object *value);
 Scheme_Overflow *scheme_get_thread_end_overflow(void);
 void scheme_end_current_thread(void);
@@ -1401,6 +1396,8 @@ void scheme_drop_prompt_meta_continuations(Scheme_Object *prompt_tag);
 
 struct Scheme_Prompt *scheme_get_barrier_prompt(struct Scheme_Meta_Continuation **_meta_cont,
                                                 MZ_MARK_POS_TYPE *_pos);
+Scheme_Prompt *scheme_get_prompt(Scheme_Object *prompt_tag, Scheme_Meta_Continuation **_meta_cont,
+                                 MZ_MARK_POS_TYPE *_pos);
 int scheme_is_cm_deeper(struct Scheme_Meta_Continuation *m1, MZ_MARK_POS_TYPE p1,
                         struct Scheme_Meta_Continuation *m2, MZ_MARK_POS_TYPE p2);
 void scheme_recheck_prompt_and_barrier(struct Scheme_Cont *c);
