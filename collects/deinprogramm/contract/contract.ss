@@ -228,42 +228,43 @@
 	  ((not (procedure? proc))
 	   (contract-violation proc self #f #f))
 	  ((not (procedure-arity-includes? proc arg-count)) ; #### variable arity
-	   (contract-violation proc self "falsche Anzahl von Parametern" #f)))
-	 (attach-name
-	  (object-name proc)
-	  (procedure-reduce-arity
-	  (lambda args
-	    (call-with-immediate-continuation-mark
-	     contract-key
-	     (lambda (maybe)
-	       (if (not (= (length args) arg-count))
-		   (begin
-		     (contract-violation proc self "falsche Anzahl von Argumenten" #f)
-		     (apply-contract return-contract (apply proc args)))
-		   (let* ((old-violation-proc (contract-violation-proc))
-			  (arg-violation? #f)
-			  (args
-			   (call-with-contract-violation-proc
-			    (lambda (obj contract message blame)
-			      (set! arg-violation? #t)
-			      (old-violation-proc obj contract message blame))
-			    (lambda ()
-			      (map apply-contract arg-contracts args)))))
-		     (if (eq? maybe return-contract)
-			 (apply proc args)
-			 (let ((retval
-				(with-continuation-mark 
-				 contract-key return-contract
-				 (apply proc args))))
-			   (if arg-violation?
-			       retval
-			       (call-with-contract-violation-proc
-				(lambda (obj contract message _)
-				  ;; blame the procedure
-				  (old-violation-proc obj contract message blame-syntax))
-				(lambda ()
-				  (apply-contract return-contract retval)))))))))))
-	  (procedure-arity proc)))))
+	   (contract-violation proc self "falsche Anzahl von Parametern" #f))
+	  (else
+	   (attach-name
+	    (object-name proc)
+	    (procedure-reduce-arity
+	     (lambda args
+	       (call-with-immediate-continuation-mark
+		contract-key
+		(lambda (maybe)
+		  (if (not (= (length args) arg-count))
+		      (begin
+			(contract-violation proc self "falsche Anzahl von Argumenten" #f)
+			(apply-contract return-contract (apply proc args)))
+		      (let* ((old-violation-proc (contract-violation-proc))
+			     (arg-violation? #f)
+			     (args
+			      (call-with-contract-violation-proc
+			       (lambda (obj contract message blame)
+				 (set! arg-violation? #t)
+				 (old-violation-proc obj contract message blame))
+			       (lambda ()
+				 (map apply-contract arg-contracts args)))))
+			(if (eq? maybe return-contract)
+			    (apply proc args)
+			    (let ((retval
+				   (with-continuation-mark 
+				    contract-key return-contract
+				    (apply proc args))))
+			      (if arg-violation?
+				  retval
+				  (call-with-contract-violation-proc
+				   (lambda (obj contract message _)
+				     ;; blame the procedure
+				     (old-violation-proc obj contract message blame-syntax))
+				   (lambda ()
+				     (apply-contract return-contract retval)))))))))))
+	     (procedure-arity proc)))))))
      syntax
      (delay
        (apply lift->arbitrary arbitrary-procedure return-contract arg-contracts)))))
