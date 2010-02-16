@@ -2944,10 +2944,12 @@
 ;;               -> (values method-proc object)
 ;; returns the method's procedure and a function to unwrap `this' in the case
 ;; that this is a wrapper object that is just "falling thru".
-(define (find-method/who who in-object name)
+(define (find-method/who who in-object name #:error? [error? #t])
   (unless (object? in-object)
-    (obj-error who "target is not an object: ~e for method: ~a"
-               in-object name))
+    (if error?
+        (obj-error who "target is not an object: ~e for method: ~a"
+                   in-object name)
+        (values #f values)))
   
   (let-syntax ([loop-body
                 (lambda (stx)
@@ -2961,9 +2963,11 @@
                           [pos (values (vector-ref (class-methods c) pos) abs-object)]
                           [(wrapper-object? abs-object) wrapper-case]
                           [else
-                           (obj-error who "no such method: ~a~a"
-                                      name
-                                      (for-class (class-name c)))])))]))])
+                           (if error?
+                               (obj-error who "no such method: ~a~a"
+                                          name
+                                          (for-class (class-name c)))
+                               (values #f values))])))]))])
     (loop-body
      in-object
      (let loop ([loop-object in-object])
@@ -3677,12 +3681,6 @@
       
       cls)))
 
-; extract-vtable : object -> (vectorof method-proc[this args ... -> res])
-(define (extract-vtable o) (class-methods (object-ref o)))
-
-; extract-method-ht : object -> hash-table[sym -> number]
-(define (extract-method-ht o) (class-method-ht (object-ref o)))
-
 ;;--------------------------------------------------------------------
 ;;  misc utils
 ;;--------------------------------------------------------------------
@@ -3871,8 +3869,6 @@
 ;; Providing normal functionality:
 (provide (protect-out make-wrapper-class
                       wrapper-object-wrapped
-                      extract-vtable
-                      extract-method-ht
                       get-field/proc)
          
          (rename-out [_class class]) class* class/derived

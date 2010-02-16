@@ -72,20 +72,18 @@
                 (unless (object? val)
                   (raise-blame-error blame val "expected an object, got ~e" val))
                 
-                (let ([objs-mtds (interface->method-names (object-interface val))]
-                      [vtable (extract-vtable val)]
-                      [method-ht (extract-method-ht val)])
-                  (for-each (λ (m proj)
-                               (let ([index (hash-ref method-ht m #f)])
-                                 (unless index
-                                   (raise-blame-error blame val "expected an object with method ~s" m))
-                                 ;; verify the first-order properties by apply the projection and 
-                                 ;; throwing the result away. Without this, the contract wrappers
-                                 ;; just check the first-order properties of the wrappers, which is
-                                 ;; the wrong thing.
-                                 (proj (vector-ref vtable index))))
-                            meth-names
-                            meth-projs))
+               (for-each (λ (m proj)
+                           (let-values ([(method unwrapper) 
+                                         (find-method/who 'object-contract val m #:error? #f)])
+                             (unless method
+                               (raise-blame-error blame val "expected an object with method ~s" m))
+                             ;; verify the first-order properties by apply the projection and 
+                             ;; throwing the result away. Without this, the contract wrappers
+                             ;; just check the first-order properties of the wrappers, which is
+                             ;; the wrong thing.
+                             (proj method)))
+                         meth-names
+                         meth-projs)
                 
                 (let ([fields (field-names val)])
                   (for-each (λ (f)
