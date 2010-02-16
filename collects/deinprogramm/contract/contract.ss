@@ -268,7 +268,6 @@
      (delay
        (apply lift->arbitrary arbitrary-procedure return-contract arg-contracts)))))
 
-;; Matthew has promised a better way of doing this in the future.
 (define (attach-name name thing)
   (if (and (procedure? thing)
 	   (symbol? name))
