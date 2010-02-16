@@ -655,4 +655,7 @@ mz-extras :+= (- (package: "unstable")
                  ;; obvious that "framework" is only in DrScheme.
                  (cond (not dr) => (collects: "unstable/gui")))
 
+;; -------------------- plai
+plt-extras :+= (package: "plai/")
+
 ;; ============================================================================
