@@ -176,6 +176,10 @@ MZ_EXTERN void scheme_set_can_break(int on);
 MZ_EXTERN void scheme_push_break_enable(Scheme_Cont_Frame_Data *cframe, int on, int pre_check);
 MZ_EXTERN void scheme_pop_break_enable(Scheme_Cont_Frame_Data *cframe, int post_check);
 
+MZ_EXTERN int scheme_with_stack_freeze(Scheme_Frozen_Stack_Proc wha_f, void *wha_data);
+MZ_EXTERN int scheme_frozen_run_some(Scheme_Frozen_Stack_Proc do_f, void *do_data, int run_msecs);
+MZ_EXTERN int scheme_is_in_frozen_stack();
+
 /*========================================================================*/
 /*                              error handling                            */
 /*========================================================================*/

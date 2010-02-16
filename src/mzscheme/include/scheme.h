@@ -1137,6 +1137,7 @@ typedef void (*Scheme_Kill_Action_Func)(void *);
       thread->error_buf = savebuf; \
       thread = NULL; } }
 
+typedef int (*Scheme_Frozen_Stack_Proc)(void *);
 
 /*========================================================================*/
 /*                             parameters                                 */

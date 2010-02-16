@@ -2,7 +2,8 @@
 
 ;; Foreign Scheme interface
 (require '#%foreign setup/dirs scheme/unsafe/ops
-         (for-syntax scheme/base scheme/list syntax/stx))
+         (for-syntax scheme/base scheme/list syntax/stx
+                     scheme/struct-info))
 
 ;; This module is full of unsafe bindings that are not provided to requiring
 ;; modules.  Instead, an `unsafe!' binding is provided that makes these unsafe
@@ -1451,6 +1452,7 @@
          [struct-string        (format "struct:~a" name)]
          [(slot ...)           slot-names-stx]
          [(slot-type ...)      slot-types-stx]
+         [TYPE                 (id name)]
          [_TYPE                _TYPE-stx]
          [_TYPE-pointer        (id "_"name"-pointer")]
          [_TYPE-pointer/null   (id "_"name"-pointer/null")]
@@ -1475,109 +1477,119 @@
                        #'(values #f '() #f #f #f #f)
                        #`(cstruct-info #,1st-type
                            (lambda () (values #f '() #f #f #f #f))))])
-        #'(define-values (_TYPE _TYPE-pointer _TYPE-pointer/null TYPE? TYPE-tag
-                          make-TYPE TYPE-SLOT ... set-TYPE-SLOT! ...
-                          list->TYPE list*->TYPE TYPE->list TYPE->list*)
-            (let-values ([(super-pointer super-tags super-types super-offsets
-                                         super->list* list*->super)
-                          get-super-info])
-              (define-cpointer-type _TYPE super-pointer)
-              ;; these makes it possible to use recursive pointer definitions
-              (define _TYPE-pointer      _TYPE)
-              (define _TYPE-pointer/null _TYPE/null)
-              (let*-values ([(stype ...)  (values slot-type ...)]
-                            [(types)      (list stype ...)]
-                            [(offsets)    (compute-offsets types)]
-                            [(offset ...) (apply values offsets)])
-                (define all-tags (cons TYPE-tag super-tags))
-                (define _TYPE*
-                  ;; c->scheme adjusts all tags
-                  (let* ([cst (make-cstruct-type types)]
-                         [t (_cpointer TYPE-tag cst)]
-                         [c->s (ctype-c->scheme t)])
-                    (make-ctype cst (ctype-scheme->c t)
-                      ;; hack: modify & reuse the procedure made by _cpointer
-                      (lambda (p)
-                        (if p (set-cpointer-tag! p all-tags) (c->s p))
-                        p))))
-                (define-values (all-types all-offsets)
-                  (if (and has-super? super-types super-offsets)
-                    (values (append super-types   (cdr types))
-                            (append super-offsets (cdr offsets)))
-                    (values types offsets)))
-                (define (TYPE-SLOT x)
-                  (unless (TYPE? x)
-                    (raise-type-error 'TYPE-SLOT struct-string x))
-                  (ptr-ref x stype 'abs offset))
-                ...
-                (define (set-TYPE-SLOT! x slot)
-                  (unless (TYPE? x)
-                    (raise-type-error 'set-TYPE-SLOT! struct-string 0 x slot))
-                  (ptr-set! x stype 'abs offset slot))
-                ...
-                (define make-TYPE
-                  (if (and has-super? super-types super-offsets)
-                    ;; init using all slots
-                    (lambda vals
-                      (if (= (length vals) (length all-types))
-                        (let ([block (malloc _TYPE*)])
-                          (set-cpointer-tag! block all-tags)
-                          (for-each (lambda (type ofs value)
-                                      (ptr-set! block type 'abs ofs value))
-                                    all-types all-offsets vals)
-                          block)
-                        (error '_TYPE "expecting ~s values, got ~s: ~e"
-                               (length all-types) (length vals) vals)))
-                    ;; normal initializer
-                    (lambda (slot ...)
+        #'(begin
+            (define-syntax TYPE
+              (make-struct-info
+               (lambda ()
+                 (list #f ; no struct:
+                       (quote-syntax make-TYPE)
+                       (quote-syntax TYPE?)
+                       (reverse (list (quote-syntax TYPE-SLOT) ...))
+                       (reverse (list (quote-syntax set-TYPE-SLOT!) ...))
+                       #t))))
+            (define-values (_TYPE _TYPE-pointer _TYPE-pointer/null TYPE? TYPE-tag
+                                  make-TYPE TYPE-SLOT ... set-TYPE-SLOT! ...
+                                  list->TYPE list*->TYPE TYPE->list TYPE->list*)
+              (let-values ([(super-pointer super-tags super-types super-offsets
+                                           super->list* list*->super)
+                            get-super-info])
+                (define-cpointer-type _TYPE super-pointer)
+                ;; these makes it possible to use recursive pointer definitions
+                (define _TYPE-pointer      _TYPE)
+                (define _TYPE-pointer/null _TYPE/null)
+                (let*-values ([(stype ...)  (values slot-type ...)]
+                              [(types)      (list stype ...)]
+                              [(offsets)    (compute-offsets types)]
+                              [(offset ...) (apply values offsets)])
+                  (define all-tags (cons TYPE-tag super-tags))
+                  (define _TYPE*
+                    ;; c->scheme adjusts all tags
+                    (let* ([cst (make-cstruct-type types)]
+                           [t (_cpointer TYPE-tag cst)]
+                           [c->s (ctype-c->scheme t)])
+                      (make-ctype cst (ctype-scheme->c t)
+                                  ;; hack: modify & reuse the procedure made by _cpointer
+                                  (lambda (p)
+                                    (if p (set-cpointer-tag! p all-tags) (c->s p))
+                                    p))))
+                  (define-values (all-types all-offsets)
+                    (if (and has-super? super-types super-offsets)
+                        (values (append super-types   (cdr types))
+                                (append super-offsets (cdr offsets)))
+                        (values types offsets)))
+                  (define (TYPE-SLOT x)
+                    (unless (TYPE? x)
+                      (raise-type-error 'TYPE-SLOT struct-string x))
+                    (ptr-ref x stype 'abs offset))
+                  ...
+                  (define (set-TYPE-SLOT! x slot)
+                    (unless (TYPE? x)
+                      (raise-type-error 'set-TYPE-SLOT! struct-string 0 x slot))
+                    (ptr-set! x stype 'abs offset slot))
+                  ...
+                  (define make-TYPE
+                    (if (and has-super? super-types super-offsets)
+                        ;; init using all slots
+                        (lambda vals
+                          (if (= (length vals) (length all-types))
+                              (let ([block (malloc _TYPE*)])
+                                (set-cpointer-tag! block all-tags)
+                                (for-each (lambda (type ofs value)
+                                            (ptr-set! block type 'abs ofs value))
+                                          all-types all-offsets vals)
+                                block)
+                              (error '_TYPE "expecting ~s values, got ~s: ~e"
+                                     (length all-types) (length vals) vals)))
+                        ;; normal initializer
+                        (lambda (slot ...)
+                          (let ([block (malloc _TYPE*)])
+                            (set-cpointer-tag! block all-tags)
+                            (ptr-set! block stype 'abs offset slot)
+                            ...
+                            block))))
+                  (define (list->TYPE vals) (apply make-TYPE vals))
+                  (define (list*->TYPE vals)
+                    (cond
+                     [(TYPE? vals) vals]
+                     [(= (length vals) (length all-types))
                       (let ([block (malloc _TYPE*)])
                         (set-cpointer-tag! block all-tags)
-                        (ptr-set! block stype 'abs offset slot)
-                        ...
-                        block))))
-                (define (list->TYPE vals) (apply make-TYPE vals))
-                (define (list*->TYPE vals)
-                  (cond
-                    [(TYPE? vals) vals]
-                    [(= (length vals) (length all-types))
-                     (let ([block (malloc _TYPE*)])
-                       (set-cpointer-tag! block all-tags)
-                       (for-each
-                        (lambda (type ofs value)
-                          (let-values
-                              ([(ptr tags types offsets T->list* list*->T)
-                                (cstruct-info
-                                 type
-                                 (lambda () (values #f '() #f #f #f #f)))])
-                            (ptr-set! block type 'abs ofs
-                                      (if list*->T (list*->T value) value))))
-                        all-types all-offsets vals)
-                       block)]
-                    [else (error '_TYPE "expecting ~s values, got ~s: ~e"
-                                 (length all-types) (length vals) vals)]))
-                (define (TYPE->list x)
-                  (unless (TYPE? x)
-                    (raise-type-error 'TYPE-list struct-string x))
-                  (map (lambda (type ofs) (ptr-ref x type 'abs ofs))
-                       all-types all-offsets))
-                (define (TYPE->list* x)
-                  (unless (TYPE? x)
-                    (raise-type-error 'TYPE-list struct-string x))
-                  (map (lambda (type ofs)
-                         (let-values
-                             ([(v) (ptr-ref x type 'abs ofs)]
-                              [(ptr tags types offsets T->list* list*->T)
-                               (cstruct-info
-                                type
-                                (lambda () (values #f '() #f #f #f #f)))])
-                           (if T->list* (T->list* v) v)))
-                       all-types all-offsets))
-                (cstruct-info
-                 _TYPE* 'set!
-                 _TYPE all-tags all-types all-offsets TYPE->list* list*->TYPE)
-                (values _TYPE* _TYPE-pointer _TYPE-pointer/null TYPE? TYPE-tag
-                        make-TYPE TYPE-SLOT ... set-TYPE-SLOT! ...
-                        list->TYPE list*->TYPE TYPE->list TYPE->list*)))))))
+                        (for-each
+                         (lambda (type ofs value)
+                           (let-values
+                               ([(ptr tags types offsets T->list* list*->T)
+                                 (cstruct-info
+                                  type
+                                  (lambda () (values #f '() #f #f #f #f)))])
+                             (ptr-set! block type 'abs ofs
+                                       (if list*->T (list*->T value) value))))
+                         all-types all-offsets vals)
+                        block)]
+                     [else (error '_TYPE "expecting ~s values, got ~s: ~e"
+                                  (length all-types) (length vals) vals)]))
+                  (define (TYPE->list x)
+                    (unless (TYPE? x)
+                      (raise-type-error 'TYPE-list struct-string x))
+                    (map (lambda (type ofs) (ptr-ref x type 'abs ofs))
+                         all-types all-offsets))
+                  (define (TYPE->list* x)
+                    (unless (TYPE? x)
+                      (raise-type-error 'TYPE-list struct-string x))
+                    (map (lambda (type ofs)
+                           (let-values
+                               ([(v) (ptr-ref x type 'abs ofs)]
+                                [(ptr tags types offsets T->list* list*->T)
+                                 (cstruct-info
+                                  type
+                                  (lambda () (values #f '() #f #f #f #f)))])
+                             (if T->list* (T->list* v) v)))
+                         all-types all-offsets))
+                  (cstruct-info
+                   _TYPE* 'set!
+                   _TYPE all-tags all-types all-offsets TYPE->list* list*->TYPE)
+                  (values _TYPE* _TYPE-pointer _TYPE-pointer/null TYPE? TYPE-tag
+                          make-TYPE TYPE-SLOT ... set-TYPE-SLOT! ...
+                          list->TYPE list*->TYPE TYPE->list TYPE->list*))))))))
   (define (identifiers? stx)
     (andmap identifier? (syntax->list stx)))
   (define (_-identifier? id stx)

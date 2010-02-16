@@ -776,7 +776,7 @@ follows.
  @defsubform[(struct-out id)]{Exports the bindings associated with a
  structure type @scheme[id]. Typically, @scheme[id] is bound with
  @scheme[(define-struct id ....)] or @scheme[(define-struct (id
- super-id) ....)]; more generally, @scheme[id] must have a
+ _super-id) ....)]; more generally, @scheme[id] must have a
  @tech{transformer binding} of structure-type information at
  @tech{phase level} 0; see @secref["structinfo"].  Furthermore, for
  each identifier mentioned in the structure-type information, the

@@ -20,7 +20,7 @@
 
 ;; ----------------------------------------
 
-(provide _id _Class _BOOL _SEL _Ivar
+(provide _id _Class _Protocol _BOOL _SEL _Ivar
          make-objc_super _objc_super)
 
 (define _id (_cpointer/null 'id))
@@ -32,6 +32,11 @@
                            (lambda (p)
                              (when p (cpointer-push-tag! p 'Class))
                              p)))
+(define _Protocol (make-ctype _id
+                              (lambda (v) v)
+                              (lambda (p)
+                                (when p (cpointer-push-tag! p 'Protocol))
+                                p)))
 (define _BOOL (make-ctype _byte
                           (lambda (v) (if v 1 0))
                           (lambda (v) (not (eq? v 0)))))
@@ -46,6 +51,7 @@
 ;; ----------------------------------------
 
 (define-objc objc_lookUpClass (_fun _string -> _Class))
+(define-objc objc_getProtocol (_fun _string -> _Protocol))
 
 (define-objc sel_registerName (_fun _string -> _SEL))
 
@@ -65,32 +71,60 @@
                                               -> (values ivar p)))
 (define-objc object_setInstanceVariable (_fun _id _string _pointer -> _Ivar))
 
+(define-objc class_addProtocol (_fun _Class _Protocol -> _BOOL))
+
 (define-objc/private objc_msgSend _fpointer)
 (define-objc/private objc_msgSend_fpret _fpointer)
+(define-objc/private objc_msgSend_stret _fpointer)
 (define-objc/private objc_msgSendSuper _fpointer)
 (define objc_msgSendSuper_fpret objc_msgSendSuper) ; why no fpret variant?
+(define-objc/private objc_msgSendSuper_stret _fpointer)
 
-(define (lookup-send types msgSends msgSend msgSend_fpret first-arg-type)
+(define sizes-for-direct-struct-results
+  (case (string->symbol (path->string (system-library-subpath #f)))
+    [(i386-macosx i386-darwin) '(1 2 4 8)]
+    [(ppc-macosx ppc-darwin) '(1 2 3 4)]
+    [(x86_64-macosx x86_86-darwin) 
+     ;; Do we need more analysis for unaligned fields?
+     '(1 2 3 4 5 6 7 8)]))
+
+(define (lookup-send types msgSends msgSend msgSend_fpret msgSend_stret first-arg-type)
   ;; First type in `types' vector is the result type
   (or (hash-ref msgSends types #f)
-      (let ([m (function-ptr (if (memq (ctype->layout (vector-ref types 0))
-                                       '(float double double*))
-                                 msgSend_fpret
-                                 msgSend)
-                             (_cprocedure
-                              (list* first-arg-type _SEL (cdr (vector->list types)))
-                              (vector-ref types 0)))])
-        (hash-set! msgSends types m)
-        m)))
+      (let ([ret-layout (ctype->layout (vector-ref types 0))])
+        (if (and (list? ret-layout)
+                 (not (memq (ctype-sizeof (vector-ref types 0)) 
+                            sizes-for-direct-struct-results)))
+            ;; Structure return type:
+            (let* ([pre-m (function-ptr msgSend_stret
+                                        (_cprocedure
+                                         (list* _pointer first-arg-type _SEL (cdr (vector->list types)))
+                                         _void))]
+                   [m (lambda args
+                        (let ([v (malloc (vector-ref types 0))])
+                          (apply pre-m v args)
+                          (ptr-ref v (vector-ref types 0))))])
+              (hash-set! msgSends types m)
+              m)
+            ;; Non-structure return type:
+            (let ([m (function-ptr (if (memq ret-layout
+                                             '(float double double*))
+                                       msgSend_fpret
+                                       msgSend)
+                                   (_cprocedure
+                                    (list* first-arg-type _SEL (cdr (vector->list types)))
+                                    (vector-ref types 0)))])
+              (hash-set! msgSends types m)
+              m)))))
 
 (define msgSends (make-hash))
 (define (objc_msgSend/typed types)
-  (lookup-send types msgSends objc_msgSend objc_msgSend_fpret _id))
+  (lookup-send types msgSends objc_msgSend objc_msgSend_fpret objc_msgSend_stret _id))
 (provide* (unsafe objc_msgSend/typed))
 
 (define msgSendSupers (make-hash))
 (define (objc_msgSendSuper/typed types)
-  (lookup-send types msgSendSupers objc_msgSendSuper objc_msgSendSuper_fpret _pointer))
+  (lookup-send types msgSendSupers objc_msgSendSuper objc_msgSendSuper_fpret objc_msgSendSuper_stret _pointer))
 (provide* (unsafe objc_msgSendSuper/typed))
 
 ;; ----------------------------------------
@@ -103,6 +137,15 @@
        (define id (objc_lookUpClass #,(symbol->string (syntax-e #'id)))))]
     [(_ id ...)
      (syntax/loc stx (begin (import-class id) ...))]))
+
+(provide* (unsafe import-protocol))
+(define-syntax (import-protocol stx)
+  (syntax-case stx ()
+    [(_ id)
+     (quasisyntax/loc stx
+       (define id (objc_getProtocol #,(symbol->string (syntax-e #'id)))))]
+    [(_ id ...)
+     (syntax/loc stx (begin (import-protocol id) ...))]))
 
 ;; ----------------------------------------
 ;; iget-value and set-ivar! work only with fields that contain Scheme values
@@ -329,23 +372,23 @@
 
 ;; ----------------------------------------
 
-(provide* (unsafe define-objc-class) self super-tell)
+(provide* (unsafe define-objc-class) 
+          (unsafe define-objc-mixin) 
+          self super-tell)
+
+(define-for-syntax ((check-id stx what) id)
+  (unless (identifier? id)
+    (raise-syntax-error #f
+                        (format "expected an identifier for ~a" what)
+                        stx
+                        id)))
 
 (define-syntax (define-objc-class stx)
   (syntax-case stx ()
-    [(_ id superclass (ivar ...) method ...)
+    [(_ id superclass #:mixins (mixin ...) #:protocols (proto ...) (ivar ...) method ...)
      (begin
-       (unless (identifier? #'id)
-         (raise-syntax-error #f
-                             "expected an identifier for class definition"
-                             stx
-                             #'id))
-       (for-each (lambda (ivar)
-                   (unless (identifier? ivar)
-                     (raise-syntax-error #f
-                                         "expected an identifier for an instance variable"
-                                         stx
-                                         ivar)))
+       ((check-id stx "class definition") #'id)
+       (for-each (check-id stx "instance variable")
                  (syntax->list #'(ivar ...)))
        (let ([ivars (syntax->list #'(ivar ...))]
              [methods (syntax->list #'(method ...))])
@@ -369,12 +412,56 @@
              (begin
                (define superclass-id superclass)
                (define id (objc_allocateClassPair superclass-id id-str 0))
+               (void (class_addProtocol id proto)) ...
                (add-ivar id 'ivar) ...
                (let-syntax ([ivar (make-ivar-form 'ivar)] ...)
                  (add-method whole-stx id superclass-id method) ...
+                 (mixin id superclass-id '(ivar ...)) ...
                  (add-method whole-stx id superclass-id dealloc-method) ...
                  (void))
-               (objc_registerClassPair id))))))]))
+               (objc_registerClassPair id))))))]
+    [(_ id superclass (ivar ...) method ...)
+     #'(define-objc-class id superclass #:mixins () #:protocols () (ivar ...) method ...)]
+    [(_ id superclass #:mixins (mixin ...) (ivar ...) method ...)
+     #'(define-objc-class id superclass #:mixins (mixin ...) #:protocols () (ivar ...) method ...)]
+    [(_ id superclass #:protocols (proto ...) (ivar ...) method ...)
+     #'(define-objc-class id superclass #:mixins () #:protocols (proto ...) (ivar ...) method ...)]))
+
+(define (check-expected-ivars id got-ivars expected-ivars)
+  (when (ormap (lambda (s) (not (memq s got-ivars)))
+               expected-ivars)
+    (error id "expected to mix into class with at least ivars: ~s; mixed into class with ivars: ~s"
+           expected-ivars
+           got-ivars)))
+
+(define-syntax (define-objc-mixin stx)
+  (syntax-case stx ()
+    [(_ (id superclass-id) #:mixins (mixin ...) #:protocols (proto ...) (ivar ...) method ...)
+     (begin
+       ((check-id stx "class definition") #'id)
+       ((check-id stx "superclass") #'superclass-id)
+       (for-each (check-id stx "instance variable")
+                 (syntax->list #'(ivar ...)))
+       (with-syntax ([whole-stx stx]
+                     [(mixin-id ...) (generate-temporaries #'(mixin ...))]
+                     [(proto-id ...) (generate-temporaries #'(proto ...))])
+         (syntax/loc stx
+           (define id
+             (let ([mixin-id mixin] ...
+                   [protocol-id proto] ...)
+               (lambda (to-id superclass-id ivars)
+                 (check-expected-ivars 'id ivars '(ivar ...))
+                 (void (class_addProtocol to-id proto-id)) ...
+                 (let-syntax ([ivar (make-ivar-form 'ivar)] ...)
+                   (add-method whole-stx to-id superclass-id method) ...
+                   (void))
+                 (mixin-id to-id superclass-id ivars) ...))))))]
+    [(_ (id superclass) (ivar ...) method ...)
+     #'(define-objc-mixin (id superclass) #:mixins () #:protocols () (ivar ...) method ...)]
+    [(_ (id superclass) #:mixins (mixin ...) (ivar ...) method ...)
+     #'(define-objc-mixin (id superclass) #:mixins (mixin ...) #:protocols () (ivar ...) method ...)]
+    [(_ (id superclass) #:protocols (proto ...) (ivar ...) method ...)
+     #'(define-objc-mixin (id superclass) #:mixins () #:protocols (proto ...) (ivar ...) method ...)]))
 
 (define-for-syntax (make-ivar-form sym)
   (with-syntax ([sym sym])
@@ -477,7 +564,7 @@
                             [(dealloc-body ...)
                              (if (eq? (syntax-e id) 'dealloc)
                                  (syntax-case stx ()
-                                   [(_ _ _ [ivar ...] . _)
+                                   [(_ _ _ #:mixins _ #:protocols _ [ivar ...] . _)
                                     (with-syntax ([(ivar-str ...)
                                                    (map (lambda (ivar)
                                                           (symbol->string (syntax-e ivar)))
@@ -491,19 +578,19 @@
                                         #'cls)]
                             [atomic? (or (free-identifier=? #'kind #'+a)
                                          (free-identifier=? #'kind #'-a))])
-                (syntax/loc stx
+                (quasisyntax/loc stx
                   (let ([rt result-type]
                         [arg-id arg-type] ...)
                     (void (class_addMethod in-cls
                                            (sel_registerName id-str)
-                                           (save-method!
-                                            (lambda (self-id cmd arg-id ...)
-                                              (syntax-parameterize ([self (make-id-stx #'self-id)]
-                                                                    [super-class (make-id-stx #'superclass-id)]
-                                                                    [super-tell do-super-tell])
-                                                body0 body ...
-                                                dealloc-body ...)))
-                                           (_fun #:atomic? atomic? _id _id arg-type ... -> rt)
+                                           #,(syntax/loc #'m
+                                               (lambda (self-id cmd arg-id ...)
+                                                 (syntax-parameterize ([self (make-id-stx #'self-id)]
+                                                                       [super-class (make-id-stx #'superclass-id)]
+                                                                       [super-tell do-super-tell])
+                                                   body0 body ...
+                                                   dealloc-body ...)))
+                                           (_fun #:atomic? atomic? #:keep save-method! _id _id arg-type ... -> rt)
                                            (generate-layout rt (list arg-id ...)))))))))]
          [else (raise-syntax-error #f
                                    "bad method form"
@@ -556,6 +643,13 @@
                  #'(method/arg ...))]))
 
 ;; --------------------------------------------------
+
+(provide* (unsafe objc-is-a?))
+
+(define (objc-is-a? v c)
+  (ptr-equal? (object_getClass v) c))
+
+;; ----------------------------------------
 
 (define-unsafer objc-unsafe!)
 

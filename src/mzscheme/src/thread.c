@@ -100,7 +100,7 @@ extern HANDLE scheme_break_semaphore;
 # define SENORA_GC_NO_FREE
 #endif
 
-/* If a finalization callback in MrEd invokes Scheme code,
+/* If a finalization callback invokes Scheme code,
    we can end up with a thread swap in the middle of a thread
    swap (where the outer swap was interrupted by GC). The
    following is a debugging flag to help detect and fix
@@ -209,8 +209,7 @@ HOOK_SHARED_OK void (*scheme_on_atomic_timeout)(void);
 
 ROSYM static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
 ROSYM static Scheme_Object *client_symbol, *server_symbol;
-
-	
+ROSYM static Scheme_Object *froz_key;
 
 THREAD_LOCAL_DECL(static int do_atomic = 0);
 THREAD_LOCAL_DECL(static int missed_context_switch = 0);
@@ -447,6 +446,9 @@ void scheme_init_thread(Scheme_Env *env)
 
   client_symbol = scheme_intern_symbol("client");
   server_symbol = scheme_intern_symbol("server");
+  
+  REGISTER_SO(froz_key);
+  froz_key = scheme_make_symbol("frozen"); /* uninterned */
 
   scheme_add_global_constant("dump-memory-stats",
 			     scheme_make_prim_w_arity(scheme_dump_gc_stats,
@@ -3215,7 +3217,7 @@ Scheme_Object *scheme_thread_w_details(Scheme_Object *thunk,
     Scheme_Thread *p = scheme_current_thread;
 
     /* Don't mangle the stack if we're in atomic mode, because that
-       probably means a MrEd HET trampoline, etc. */
+       probably means a stack-freeze trampoline, etc. */
     wait_until_suspend_ok();
 
     p->ku.k.p1 = thunk;
@@ -7632,13 +7634,273 @@ void scheme_free_gmp(void *p, void **mem_pool)
 }
 
 /*========================================================================*/
+/*                             stack freezer                              */
+/*========================================================================*/
+
+/* When interacting with certain libraries that can lead to Scheme
+   callbacks, the stack region used by the library should not be
+   modified by Scheme thread swaps. In that case, the callback must be
+   constrained. Completely disallowing synchornization with ther
+   threads or unbounded computation, however, is sometimes too
+   difficult. A stack-freezer sequence offer a compromise, where the
+   callback is run as much as possible, but it can be suspended to
+   allow the library call to return so that normal Scheme-thread
+   scheduling can resume. The callback is then completed in a normal
+   scheduling context, where it is no longer specially constrained.
+   
+   The call process is
+    scheme_with_stack_freeze(f, data)
+     -> f(data) in frozen mode
+         -> ... frozen_run_some(g, data2)          \
+             -> Scheme code, may finish or may not  | maybe loop
+         froz->in_progress inicates whether done   /
+     -> continue scheme if not finished
+
+   In this process, it's the call stack between f(data) and the call
+   to frozen_run_some() that won't be copied in or out until f(data)
+   returns.
+
+   Nesting scheme_with_stack_freeze() calls should be safe, but it
+   won't achieve the goal, which is to limit the amount of work done
+   before returning (because the inner scheme_with_stack_freeze() will
+   have to run to completion). */
+
+static unsigned long get_deeper_base();
+
+typedef struct FrozenTramp {
+  MZTAG_IF_REQUIRED
+  Scheme_Frozen_Stack_Proc do_f;
+  void *do_data;
+  int val;
+  int in_progress;
+  int progress_is_resumed;
+  Scheme_Object *old_param;
+  Scheme_Config *config;
+  void *progress_base_addr;
+  mz_jmp_buf progress_base;
+  Scheme_Jumpup_Buf_Holder *progress_cont;
+  int timer_on;
+  double continue_until;
+#ifdef MZ_PRECISE_GC
+  void *fixup_var_stack_chain;
+#endif
+}  FrozenTramp;
+
+int scheme_with_stack_freeze(Scheme_Frozen_Stack_Proc wha_f, void *wha_data)
+{
+  FrozenTramp *froz;
+  Scheme_Cont_Frame_Data cframe;
+  Scheme_Object *bx;
+  int retval;
+  Scheme_Jumpup_Buf_Holder *pc;
+
+  froz = MALLOC_ONE_RT(FrozenTramp);
+  SET_REQUIRED_TAG(froz->type = scheme_rt_frozen_tramp);
+
+  bx = scheme_make_raw_pair((Scheme_Object *)froz, NULL);
+
+  scheme_push_continuation_frame(&cframe);
+  scheme_set_cont_mark(froz_key, bx);
+
+  pc = scheme_new_jmpupbuf_holder();
+  froz->progress_cont = pc;
+
+  scheme_init_jmpup_buf(&froz->progress_cont->buf);
+
+  scheme_start_atomic();
+  retval = wha_f(wha_data);
+  froz->val = retval;
+
+  if (froz->in_progress) {
+    /* We have leftover work; jump and finish it (non-atomically).
+       But don't swap until we've jumped back in, because the jump-in
+       point might be trying to suspend the thread (and that should
+       complete before any swap). */
+    scheme_end_atomic_no_swap();
+    SCHEME_CAR(bx) = NULL;
+    froz->in_progress = 0;
+    froz->progress_is_resumed = 1;
+    if (!scheme_setjmp(froz->progress_base)) {
+#ifdef MZ_PRECISE_GC
+      froz->fixup_var_stack_chain = &__gc_var_stack__;
+#endif
+      scheme_longjmpup(&froz->progress_cont->buf);
+    }
+  } else {
+    scheme_end_atomic();
+  }
+
+  scheme_pop_continuation_frame(&cframe);
+
+  froz->old_param = NULL;
+  froz->progress_cont = NULL;
+  froz->do_data = NULL;
+
+  return froz->val;
+}
+
+static void suspend_froz_progress(void)
+{
+  FrozenTramp * volatile froz;
+  double msecs;
+  Scheme_Object *v;
+
+  v = scheme_extract_one_cc_mark(NULL, froz_key);
+  froz = (FrozenTramp *)SCHEME_CAR(v);
+  v = NULL;
+
+  msecs = scheme_get_inexact_milliseconds();
+  if (msecs < froz->continue_until)
+    return;
+
+  scheme_on_atomic_timeout = NULL;
+
+  froz->in_progress = 1;
+  if (scheme_setjmpup(&froz->progress_cont->buf, (void*)froz->progress_cont, froz->progress_base_addr)) {
+    /* we're back */
+    scheme_reset_jmpup_buf(&froz->progress_cont->buf);
+#ifdef MZ_PRECISE_GC
+    /* Base addr points to the last valid gc_var_stack address.
+       Fixup that link to skip over the part of the stack we're
+       not using right now. */
+    ((void **)froz->progress_base_addr)[0] = froz->fixup_var_stack_chain;
+    ((void **)froz->progress_base_addr)[1] = NULL;
+#endif
+  } else {
+    /* we're leaving */
+    scheme_longjmp(froz->progress_base, 1);
+  }
+}
+
+static void froz_run_new(FrozenTramp * volatile froz, int run_msecs)
+{
+  double msecs;
+
+  /* We're willing to start new work that is specific to this thread */
+  froz->progress_is_resumed = 0;
+
+  msecs = scheme_get_inexact_milliseconds();
+  froz->continue_until = msecs + run_msecs;
+  
+  if (!scheme_setjmp(froz->progress_base)) {
+    Scheme_Frozen_Stack_Proc do_f;
+    scheme_start_atomic();
+    scheme_on_atomic_timeout = suspend_froz_progress;
+    do_f = froz->do_f;
+    do_f(froz->do_data);
+  }
+
+  if (froz->progress_is_resumed) {
+    /* we've already returned once; jump out to new progress base */
+    scheme_longjmp(froz->progress_base, 1);
+  } else {
+    scheme_on_atomic_timeout = NULL;
+    scheme_end_atomic_no_swap();
+  }
+}
+
+static void froz_do_run_new(FrozenTramp * volatile froz, int *iteration, int run_msecs)
+{
+  /* This function just makes room on the stack, eventually calling
+     froz_run_new(). */
+  int new_iter[32];
+
+  if (iteration[0] == 3) {
+#ifdef MZ_PRECISE_GC
+    froz->progress_base_addr = (void *)&__gc_var_stack__;
+#else
+    froz->progress_base_addr = (void *)new_iter;
+#endif
+    froz_run_new(froz, run_msecs);
+  } else {
+    new_iter[0] = iteration[0] + 1;
+    froz_do_run_new(froz, new_iter, run_msecs);
+  }
+}
+
+int scheme_frozen_run_some(Scheme_Frozen_Stack_Proc do_f, void *do_data, int run_msecs)
+{
+  FrozenTramp * volatile froz;
+  int more = 0;
+  Scheme_Object *v;
+  
+  v = scheme_extract_one_cc_mark(NULL, froz_key);
+  if (v)
+    froz = (FrozenTramp *)SCHEME_CAR(v);
+  else
+    froz = NULL;
+  v = NULL;
+
+  if (froz) {
+    if (froz->in_progress) {
+      /* We have work in progress. */
+      if ((unsigned long)froz->progress_base_addr < get_deeper_base()) {
+	/* We have stack space to resume the old work: */
+        double msecs;
+	froz->in_progress = 0;
+	froz->progress_is_resumed = 1;
+        msecs = scheme_get_inexact_milliseconds();
+        froz->continue_until = msecs + run_msecs;
+	scheme_start_atomic();
+	scheme_on_atomic_timeout = suspend_froz_progress;
+	if (!scheme_setjmp(froz->progress_base)) {
+#ifdef MZ_PRECISE_GC
+	  froz->fixup_var_stack_chain = &__gc_var_stack__;
+#endif
+	  scheme_longjmpup(&froz->progress_cont->buf);
+	} else {
+	  scheme_on_atomic_timeout = NULL;
+	  scheme_end_atomic_no_swap();
+	}
+      }
+    } else {
+      int iter[1];
+      iter[0] = 0;
+      froz->do_f = do_f;
+      froz->do_data = do_data;
+      froz_do_run_new(froz, iter, run_msecs);
+    }
+
+    more = froz->in_progress;
+  }
+
+  return more;
+}
+
+int scheme_is_in_frozen_stack()
+{
+  Scheme_Object *v;
+  
+  v = scheme_extract_one_cc_mark(NULL, froz_key);
+  if (v)
+    return 1;
+  else
+    return 0;
+}
+
+/* Disable warning for returning address of local variable: */
+#ifdef _MSC_VER
+#pragma warning (disable:4172)
+#endif
+
+static unsigned long get_deeper_base()
+{
+  long here;
+  return (unsigned long)&here;
+}
+
+#ifdef _MSC_VER
+#pragma warning (default:4172)
+#endif
+
+/*========================================================================*/
 /*                               precise GC                               */
 /*========================================================================*/
 
 Scheme_Jumpup_Buf_Holder *scheme_new_jmpupbuf_holder(void)
 /* Scheme_Jumpup_Buf_Holder exists for precise GC, and for external
    programs that want to store Jumpup_Bufs, because the GC interaction
-   is tricky. For example, MrEd uses it for a special trampoline
+   is tricky. For example, we use it above for a special trampoline
    implementation. */
 {
   Scheme_Jumpup_Buf_Holder *h;
@@ -7683,6 +7945,7 @@ static void register_traversers(void)
   GC_REG_TRAV(scheme_rt_evt, mark_evt);
   GC_REG_TRAV(scheme_rt_syncing, mark_syncing);
   GC_REG_TRAV(scheme_rt_parameterization, mark_parameterization);
+  GC_REG_TRAV(scheme_rt_frozen_tramp, mark_frozen_tramp);
 }
 
 END_XFORM_SKIP;

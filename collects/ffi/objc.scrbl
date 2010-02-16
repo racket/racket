@@ -54,6 +54,10 @@ The type of an Objective-C object, an opaque pointer.}
 
 The type of an Objective-C class, which is also an @scheme[_id].}
 
+@defthing[_Protocol ctype?]{
+
+The type of an Objective-C protocol, which is also an @scheme[_id].}
+
 @defthing[_SEL ctype?]{
 
 The type of an Objective-C selector, an opaque pointer.}
@@ -74,7 +78,7 @@ Synonym for @scheme[#f]}
 
 @; ----------------------------------------------------------------------
 
-@section{Syntactic Forms}
+@section{Syntactic Forms and Procedures}
 
 @defform*/subs[[(tell result-type obj-expr method-id)
                 (tell result-type obj-expr arg ...)]
@@ -117,18 +121,39 @@ Defines each @scheme[class-id] to the class (a value with FFI type
 (eval:alts (import-class NSString) (void))
 ]}
 
+@defform[(import-protocol protocol-id ...)]{
+
+Defines each @scheme[protocol-id] to the protocol (a value with FFI type
+@scheme[_Protocol]) that is registered with the string form of
+@scheme[protocol-id]. The registered class is obtained via
+@scheme[objc_getProtocol].
+
+@examples[
+#:eval objc-eval
+(eval:alts (import-protocol NSCoding) (void))
+]}
+
 @defform/subs[#:literals (+ - +a -a)
               (define-objc-class class-id superclass-expr
+                maybe-mixins
+                maybe-protocols
                 [field-id ...]
                 method)
-              ([method (mode result-ctype-expr (method-id) body ...+)
+              ([maybe-mixins code:blank
+                             (code:line #:mixins (mixin-expr ...))]
+               [maybe-protocols code:blank
+                                (code:line #:protocols (protocol-expr ...))]
+               [method (mode result-ctype-expr (method-id) body ...+)
                        (mode result-ctype-expr (arg ...+) body ...+)]
                [mode + - +a -a]
                [arg (code:line method-id [ctype-expr arg-id])])]{
 
 Defines @scheme[class-id] as a new, registered Objective-C class (of
-FFI type @scheme[_Class]). The @scheme[superclass-expr] should
-produce an Objective-C class or @scheme[#f] for the superclass.
+FFI type @scheme[_Class]). The @scheme[superclass-expr] should produce
+an Objective-C class or @scheme[#f] for the superclass. An optional
+@scheme[#:mixins] clause can specify mixins defined with
+@scheme[define-objc-mixin]. An optional @scheme[#:protocols] clause
+can specify Objective-C protocols to be implemented by the class.
 
 Each @scheme[field-id] is an instance field that holds a Scheme value
 and that is initialized to @scheme[#f] when the object is
@@ -170,19 +195,35 @@ space for each @scheme[field-id] within the instance is deallocated.
  (void))
 ]}
 
+@defform[(define-objc-mixin (class-id superclass-id)
+           maybe-mixins
+           maybe-protocols
+           [field-id ...]
+           method)]{
+
+Like @scheme[define-objc-class], but defines a mixin to be combined
+with other method definitions through either
+@scheme[define-objc-class] or @scheme[define-objc-mixin]. The
+specified @scheme[field-id]s are not added by the mixin, but must be a
+subset of the @scheme[field-id]s declared for the class to which the
+methods are added.}
+
+
 @defidform[self]{
 
-When used within the body of a @scheme[define-objc-class] method,
-refers to the object whose method was called. This form cannot be used
-outside of a @scheme[define-objc-class] method.}
+When used within the body of a @scheme[define-objc-class] or
+@scheme[define-objc-mixin] method, refers to the object whose method
+was called. This form cannot be used outside of a
+@scheme[define-objc-class] or @scheme[define-objc-mixin] method.}
 
 @defform*[[(super-tell result-type method-id)
            (super-tell result-type arg ...)]]{
 
-When used within the body of a @scheme[define-objc-class] method,
-calls a superclass method. The @scheme[result-type] and @scheme[arg]
-sub-forms have the same syntax as in @scheme[tell]. This form cannot
-be used outside of a @scheme[define-objc-class] method.}
+When used within the body of a @scheme[define-objc-class] or
+@scheme[define-objc-mixin] method, calls a superclass method. The
+@scheme[result-type] and @scheme[arg] sub-forms have the same syntax
+as in @scheme[tell]. This form cannot be used outside of a
+@scheme[define-objc-class] or @scheme[define-objc-mixin] method.}
 
 
 @defform[(get-ivar obj-expr field-id)]{
@@ -204,6 +245,11 @@ Returns a selector (of FFI type @scheme[_SEL]) for the string form of
 (eval:alts (tellv button setAction: #:type _SEL (selector terminate:)) (void))
 ]}
 
+@defproc[(objc-is-a? [obj _id] [cls _Class]) boolean?]{
+
+Check whether @scheme[obj] is an instance of the Objective-C class
+@scheme[cls].}
+
 @; ----------------------------------------------------------------------
 
 @section{Raw Runtime Functions}
@@ -211,6 +257,10 @@ Returns a selector (of FFI type @scheme[_SEL]) for the string form of
 @defproc[(objc_lookUpClass [s string?]) (or/c _Class #f)]{
 
 Finds a registered class by name.}
+
+@defproc[(objc_getProtocol [s string?]) (or/c _Protocol #f)]{
+
+Finds a registered protocol by name.}
 
 @defproc[(sel_registerName [s string?]) _SEL]{
 
@@ -282,7 +332,7 @@ as the result type.}
 Like @scheme[objc_msgSend/typed], but for a super call.}
 
 @deftogether[(
-@defproc[(make-obj_csuper [id _id] [super _Class]) _objc_super]
+@defproc[(make-objc_super [id _id] [super _Class]) _objc_super]
 @defthing[_objc_super ctype?]
 )]{
 

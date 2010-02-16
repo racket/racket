@@ -87,6 +87,9 @@
   scheme_extension_table->scheme_set_can_break = scheme_set_can_break;
   scheme_extension_table->scheme_push_break_enable = scheme_push_break_enable;
   scheme_extension_table->scheme_pop_break_enable = scheme_pop_break_enable;
+  scheme_extension_table->scheme_with_stack_freeze = scheme_with_stack_freeze;
+  scheme_extension_table->scheme_frozen_run_some = scheme_frozen_run_some;
+  scheme_extension_table->scheme_is_in_frozen_stack = scheme_is_in_frozen_stack;
   scheme_extension_table->scheme_signal_error = scheme_signal_error;
   scheme_extension_table->scheme_raise_exn = scheme_raise_exn;
   scheme_extension_table->scheme_warning = scheme_warning;

@@ -1804,6 +1804,19 @@ mark_thread_cell {
   gcBYTES_TO_WORDS(sizeof(Thread_Cell));
 }
 
+mark_frozen_tramp {
+ mark:
+  FrozenTramp *f = (FrozenTramp *)p;
+ 
+  gcMARK(f->do_data);
+  gcMARK(f->old_param);
+  gcMARK(f->config);
+  gcMARK(f->progress_cont);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(FrozenTramp));
+}
+
 END thread;
 
 /**********************************************************************/

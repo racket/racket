@@ -249,6 +249,7 @@ enum {
   scheme_rt_sfs_info,                   /* 227 */
   scheme_rt_validate_clearing,          /* 228 */
   scheme_rt_rb_node,                    /* 229 */
+  scheme_rt_frozen_tramp,               /* 230 */
 #endif
 
 

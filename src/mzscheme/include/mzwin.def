@@ -81,6 +81,9 @@ EXPORTS
  scheme_set_can_break
  scheme_push_break_enable
  scheme_pop_break_enable
+ scheme_with_stack_freeze
+ scheme_frozen_run_some
+ scheme_is_in_frozen_stack
  scheme_signal_error
  scheme_raise_exn
  scheme_warning
@@ -468,7 +471,6 @@ EXPORTS
  scheme_print_string
  scheme_read_byte_string
  scheme_make_namespace
- scheme_add_namespace_option
  scheme_add_global
  scheme_add_global_symbol
  scheme_make_envunbox
