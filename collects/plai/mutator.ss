@@ -134,7 +134,7 @@
                                                    (list* #'previous-tmp ...
                                                           (syntax-parameter-value #'mutator-env-roots))]
                                                   [mutator-tail-call? #f])
-                                                 named-expr)]
+                                                 expr)]
                            ...)
                (let-values ([(id ...) (values tmp ...)]
                             ...)
