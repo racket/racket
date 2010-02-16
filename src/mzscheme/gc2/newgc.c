@@ -584,7 +584,7 @@ static inline void* REMOVE_BIG_PAGE_PTR_TAG(void *p) {
 void GC_check_master_gc_request() {
 #ifdef MZ_USE_PLACES 
   NewGC *gc = GC_get_GC();
-  if (MASTERGC && MASTERGC->major_places_gc == 1 && MASTERGCINFO->have_collected[gc->place_id] != 0) {
+  if (MASTERGC && MASTERGC->major_places_gc == 1 && MASTERGCINFO->have_collected[gc->place_id] != 1) {
     GC_gcollect();
   }
 #endif
@@ -1146,6 +1146,13 @@ inline static void resize_gen0(NewGC *gc, unsigned long new_size)
     gc->thread_local_pages = NULL;
   }
 }
+
+#ifdef MZ_USE_PLACES
+inline static void master_set_max_size(NewGC *gc)
+{
+  gc->gen0.max_size = gc->gen0.current_size + GEN0_INITIAL_SIZE;
+}
+#endif
 
 inline static void reset_nursery(NewGC *gc)
 {
@@ -3539,6 +3546,9 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master)
   clean_up_heap(gc);
   TIME_STEP("cleaned heap");
 #ifdef MZ_USE_PLACES
+  if (postmaster_and_master_gc(gc) && !switching_master) {
+    master_set_max_size(gc); 
+  }
   if (premaster_or_place_gc(gc) && !switching_master)
 #endif
     reset_nursery(gc);
