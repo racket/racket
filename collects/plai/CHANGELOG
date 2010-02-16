@@ -1,0 +1,212 @@
+February 2010
+-------------
+Adding to core
+
+From Robby:
+- added test-random-mutator.ss
+- added docs at the end of plai.scrbl
+- added random-mutator.ss
+- changed gc-gui.ss
+
+March 2009
+----------
+
+Updated by JM to PLT 4.1.5 and PLaneT distribution
+
+
+PLAI-4.1.3 (6 December 2008)
+----------------------------
+
++ The GC languages are now compatible with PLT Scheme 4.1.3.
+
++ plai/mutator supports halt-on-errors and print-only-errors.
+
++ Defining a global as an alias for a primitive now works correctly.
+  Previously, a mutator containing a definition such as (define car first) would
+  signal a contract violation.
+
++ A mutator with just allocator-setup and no expression no longer signals a
+  syntax error.
+
++ When installed for --all-users, scribble docs should be in the plai
+  directory and not the manual directory.
+
++ Allocations made in init-allocator are now displayed in the heap 
+  visualization.
+
+
++ Error reporting for type-case and define-type has improved.
+
++ Importing was not broken in the previous release.  Documentation clarified
+  with an example.
+
++ Documentation for gc:set-first! and gc:set-rest! was missing; it's now
+  present.
+
+
+PLAI-4.1.1 (28 October 2008)
+----------------------------
+
++ plai/gc-test.ss and plai/plai-test.ss removed.  They are part of the
+  173tourney (test-fest) distribution.
+
++ Fixed a bug in the GC Mutator languages that manifested itself as missing
+  roots in (get-root-set).  For example, in the previous release, the following   program does not signal an error:
+
+  (allocator-setup "mark-and-sweep.ss" 3) ; assume that 5 occupies 3 locations
+
+  (5 (lambda (x) x))
+
+Known Issues:
+
++ A mutator with just an allocator-setup line and no other expressions signals
+  an error.
+
++ import-gc does not work in all contexts.
+
+
+PLAI-4.1 (August 2008)
+----------------------
+
++ plai/gc-test is analogous to plai/plai-test, but for the GC languages.
+
++ The 'alternate-collector' parameter in plai/private/command-line may be set
+  to override the collector specified in 'allocator-setup' in Mutator Scheme.
+  Note that this parameter is examined during macro expansion.  Set it using
+  'begin-for-syntax' before requiring the mutator.
+
++ The '--plai-gc-no-custom-imports' commmand line argument has been removed.
+  The 'gc-disable-import-gc?' parameter in plai/private/command-line may be used
+  to achieve the same effect for 'import-gc' but not 'import-primitive'.
+
++ The 'error' function in the PLAI language now has the same signature as
+  'error' in scheme/base.
+
++ In Mutator Scheme, define works in the interactions pane.
+
++ Mutator Scheme no longer provides letrec, named let and letrec-values.  These
+  expressions were broken in earlier versions of PLAI.
+
++ Mutator Scheme includes 'begin'.
+
++ In Mutator Scheme, primitive expression that expand to use quote are 
+  properly annotated.  (Bug introduced in PLAI-4.)
+
++ In Mutator Scheme, else-branches are available for cond and case. (Bug
+  introduced in PLAI-4.)
+
++ The 'Stop' button in plai/web works better.
+
++ test/exn, test and other testing macros produce more helpful errors when
+  reporting on exceptions.  When either fails because an exception is raised
+  that is not explicitly signalled by the user, they both print
+
+  (exception <evaluated-expression> <exception-message> <location>)
+
+  where <exception-message> is the message of the exception that was signalled.
+
+  For example,
+
+  (test (/ 1 0) "system exception")
+  > (exception (/ 1 0) "/: division by zero" "at line 1")
+
++ When test fails because *any* exception is raised, it prints (exception ...)
+  as above.
+
++ When test/exn fails because an exception with a mismatched error message is
+  signalled, it prints (bad ...) as in previous versions of PLAI.
+
++ plai/plai-test.ss is a script for running solutions against an external
+  test file.
+
++ plai/private/command-line defines various parameters that affect PLAI
+  (largely tests).  Some of these parameters aren't available without requiring
+  this module.
+
+PLAI-4 (July 2008)
+------------------
+
++ PLAI software has been updated for PLT Scheme 4.0.  
+
++ The PLAI Restricted / PLAI Pretty Big distinction has been removed.  There is
+  now a single PLAI Scheme language, which extends `#lang scheme' with
+  `define-type', `type-case' and the testing procedures.
+
++ PLAI languages are also available as module languages.  Use `#lang plai',
+  `#lang plai/collector' and `#lang plai/mutator'.
+
++ PLAI exceptions are subtypes of exn:fail instead of exn.
+
++ In the GC Mutator language, when expressions are evaluated in the REPL, the
+  value is printed in addition to the address of the value.
+
++ In the GC Mutator language, circular data structures print correctly in the
+  REPL.
+
++ The GC Mutator language includes support for testing.  See `test/value=?'
+  and `test/location=?'.
+
++ The testing framework no longer provides the print-tests parameter.  See
+  `halt-on-errors' and `print-only-errors' instead.  The arguments
+  `--plai-halt-on-errors' and `--plai-print-only-errors' may be specified
+  on the command line as well.
+
++ The testing framework no longer provides procedural (*/proc) testing forms.
+
++ The GC Mutator language dynamically loads MrEd when it's available.  Hence,
+  it may be executed on the command-line.
+
++ In the GC Mutator language, if the heap size specified exceeds 200 locations,
+  the heap visualization is not displayed.
+
++ The heap-offset notion has been removed from the GC languages.  Heaps now
+  begin at address 0 only.  `allocator-setup' has been affected and 
+  `heap-offset' has been removed.
+
++ Testing forms print the supplied expressions, instead of their values.  For
+  example, (test (+ 2 3) 5) prints (good (+ 2 3) 5) instead of (good 5 5).
+
++ GC Mutator allows arbitrary procedures to be imported from the collector
+  and from #lang scheme.  See `import-gc' and `import-primitives'.  These
+  forms may be disabled on the command line with the switch
+  `--plai-gc-no-custom-imports'.
+
++ A 'web application' language level has been added to ease experiments with
+  the PLT Web Server.
+
+PLAI-v371/372 (January 2008)
+----------------------------
+
++ Fixed `type-case' to report the correct error location when an element of a
+  field list is not an identifier.
+
+  (type-case WAE expr
+    [num (10) 5] 
+    ...)  => expected an identifier at 10
+
++ `define-type' gives a more helpful error messages if it isn't given any
+  arguments.
+
++ PLAI Pretty Big Scheme is now derived from plt-pretty-big-text.  This allows
+  you to run the language in MzScheme.
+
++ The testing framework defines the parameter `plai-ignore-exn-strings.' When
+  set to true, exception strings passed to test/exn, test/regexp, etc. are
+  treated as the empty string.  The default value of this parameter is false.
+
++ The testing framework defines the variable `plai-all-test-results.'  This
+  variable is a list of test results (i.e. (good ...), (bad ...), 
+  (exception ...)).
+
++ cons? and empty? signal an error if they are not provided with a `list?'
+
++ cons requires its second argument to be a list.
+
++ PLAI Restricted Scheme now provides `when' and `unless'.
+
++ Modules (i.e. files) written in PLAI Pretty Big and PLAI Restricted now
+  automatically (provide (all-defined)).
+
++ plai-ignore-exn-strings and plai-all-test-results; see doc.txt for details.
+
++ The collector-lang now provides all-from (lib "list.ss") and (lib "etc.ss").
