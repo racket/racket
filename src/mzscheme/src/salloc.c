@@ -197,6 +197,13 @@ static int do_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, vo
   return return_code;
 }
 
+#if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS)
+/* This allows for places gc unit tests to switch the Thread_Local_Variables and simulate places */
+void scheme_set_thread_local_variables(Thread_Local_Variables *tlvs) {
+  pthread_setspecific(scheme_thread_local_key, tlvs);
+}
+#endif
+
 #if defined(IMPLEMENT_THREAD_LOCAL_VIA_PTHREADS) && defined(INLINE_GETSPECIFIC_ASSEMBLY_CODE)
 static void macosx_get_thread_local_key_for_assembly_code() {
   /* Our [highly questionable] strategy for inlining pthread_getspecific() is taken from 
