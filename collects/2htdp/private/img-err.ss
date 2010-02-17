@@ -124,10 +124,17 @@
                 'non-negative-real-number
                 i arg)
      arg]
-    [(dx dy x1 y1 x2 y2 factor x-factor y-factor pull1 pull2)
+    [(dx dy x1 y1 x2 y2 pull1 pull2)
      (check-arg fn-name
                 (real? arg)
                 'real\ number
+                i arg)
+     arg]
+    [(factor x-factor y-factor)
+     (check-arg fn-name
+                (and (real? arg)
+                     (positive? arg))
+                'positive\ real\ number
                 i arg)
      arg]
     [(side-count)

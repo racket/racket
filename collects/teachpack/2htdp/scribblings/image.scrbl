@@ -768,7 +768,7 @@ the parts that fit onto @scheme[scene].
           
 }
 
-@defproc[(scale [factor real?] [image image?]) image?]{
+@defproc[(scale [factor (and/c real? positive?)] [image image?]) image?]{
 
   Scales @scheme[image] by @scheme[factor]. 
   
@@ -788,7 +788,7 @@ the parts that fit onto @scheme[scene].
   
 }
 
-@defproc[(scale/xy [x-factor real?] [y-factor real?] [image image?]) image?]{
+@defproc[(scale/xy [x-factor (and/c real? positive?)] [y-factor (and/c real? positive?)] [image image?]) image?]{
   Scales @scheme[image] by @scheme[x-factor] horizontally and by 
   @scheme[y-factor] vertically. 
   
