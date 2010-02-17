@@ -72,6 +72,12 @@ used as an ephemeron key (see @secref["ephemerons"]).
           (symbol-interned? (gensym))
           (symbol-interned? (string->unreadable-symbol "Apple"))]}
 
+@defproc[(symbol-unreadable? [sym symbol?]) boolean?]{Returns @scheme[#t] if @scheme[sym] is
+ an @tech{unreadable symbol}, @scheme[#f] otherwise.
+
+@examples[(symbol-unreadable? 'Apple)
+          (symbol-unreadable? (gensym))
+          (symbol-unreadable? (string->unreadable-symbol "Apple"))]}
 
 @defproc[(symbol->string [sym symbol?]) symbol?]{Returns a freshly
  allocated mutable string whose characters are the same as in
