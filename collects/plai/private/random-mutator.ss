@@ -137,7 +137,7 @@
       (values (list-ref candidate-terminals choice)
               (list-ref candidate-ids choice)))))
 
-;; obj-graph->code : obj-graph? nat -> (listof sexp)
+;; obj-graph->code : obj-graph? nat nat -> (listof sexp)
 (define (obj-graph->code obj-graph iterations heap-size)
   (let ([graph (obj-graph-graph obj-graph)]
         [init-code '()])
@@ -268,7 +268,8 @@
             (set-rest! set-mcdr!)))])
       (for-each (λ (x) (pretty-print x port))
                 (obj-graph->code (random-obj-graph program-size heap-values) 
-                                 iterations)))
+                                 iterations
+                                 heap-size)))
     #:exists 'truncate))
 
 (define (find-heap-values in)
