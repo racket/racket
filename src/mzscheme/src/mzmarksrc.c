@@ -2164,6 +2164,7 @@ lex_rib {
   gcMARK(rib->rename);
   gcMARK(rib->timestamp);
   gcMARK(rib->sealed);
+  gcMARK(rib->mapped_names);
   gcMARK(rib->next);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));

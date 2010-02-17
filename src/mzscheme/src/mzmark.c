@@ -5286,6 +5286,7 @@ static int lex_rib_MARK(void *p) {
   gcMARK(rib->rename);
   gcMARK(rib->timestamp);
   gcMARK(rib->sealed);
+  gcMARK(rib->mapped_names);
   gcMARK(rib->next);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));
@@ -5296,6 +5297,7 @@ static int lex_rib_FIXUP(void *p) {
   gcFIXUP(rib->rename);
   gcFIXUP(rib->timestamp);
   gcFIXUP(rib->sealed);
+  gcFIXUP(rib->mapped_names);
   gcFIXUP(rib->next);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));

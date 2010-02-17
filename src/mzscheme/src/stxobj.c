@@ -213,6 +213,7 @@ typedef struct Scheme_Lexical_Rib {
   Scheme_Object *rename; /* a vector for a lexical rename */
   Scheme_Object *timestamp;
   int *sealed;
+  Scheme_Object *mapped_names; /* only in the initial link; int or hash table */
   struct Scheme_Lexical_Rib *next;
 } Scheme_Lexical_Rib;
 
@@ -1168,6 +1169,8 @@ void scheme_add_rib_rename(Scheme_Object *ro, Scheme_Object *rename)
 {
   Scheme_Lexical_Rib *rib, *naya;
   Scheme_Object *next;
+  Scheme_Hash_Table *mapped_names;
+  int i;
 
   naya = MALLOC_ONE_TAGGED(Scheme_Lexical_Rib);
   naya->so.type = scheme_lexical_rib_type;
@@ -1185,6 +1188,31 @@ void scheme_add_rib_rename(Scheme_Object *ro, Scheme_Object *rename)
     SCHEME_CAR(unsealed_dependencies) = NULL;
     SCHEME_CDR(unsealed_dependencies) = NULL;    
     unsealed_dependencies = next;
+  }
+
+  if (!rib->mapped_names)
+    rib->mapped_names = scheme_make_integer(1);
+  else if (SCHEME_INTP(rib->mapped_names)) {
+    rib->mapped_names = scheme_make_integer(SCHEME_INT_VAL(rib->mapped_names) + 1);
+    if (SCHEME_INT_VAL(rib->mapped_names) > 32) {
+      /* Build the initial table */
+      mapped_names = scheme_make_hash_table(SCHEME_hash_ptr);
+      while (naya) {
+        for (i = SCHEME_RENAME_LEN(naya->rename); i--; ) {
+          scheme_hash_set(mapped_names, 
+                          SCHEME_STX_SYM(SCHEME_VEC_ELS(naya->rename)[2+i]), 
+                          scheme_true);
+        }
+        naya = naya->next;
+      }
+      rib->mapped_names = (Scheme_Object *)mapped_names;
+    }
+  } else {
+    for (i = SCHEME_RENAME_LEN(naya->rename); i--; ) {
+      scheme_hash_set((Scheme_Hash_Table *)rib->mapped_names, 
+                      SCHEME_STX_SYM(SCHEME_VEC_ELS(naya->rename)[2+i]),
+                      scheme_true);
+    }
   }
 }
 
@@ -4747,7 +4775,12 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
           } else {
             recur_skip_ribs = add_skip_set(rib->timestamp, recur_skip_ribs);
             did_rib = rib;
-            rib = rib->next; /* First rib record has no rename */
+            if (rib->mapped_names
+                && !SCHEME_INTP(rib->mapped_names)
+                && !scheme_hash_get((Scheme_Hash_Table *)rib->mapped_names, SCHEME_STX_VAL(a)))
+              rib = NULL; /* no need to check individual renames */
+            else
+              rib = rib->next; /* First rib record has no rename */
           }
         } else
           rib = NULL;
@@ -4952,7 +4985,13 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 
       rename = WRAP_POS_FIRST(wraps);
       if (SCHEME_RIBP(rename)) {
-        rib = ((Scheme_Lexical_Rib *)rename)->next;
+        rib = (Scheme_Lexical_Rib *)rename;
+        if (rib->mapped_names
+            && !SCHEME_INTP(rib->mapped_names)
+            && !scheme_hash_get((Scheme_Hash_Table *)rib->mapped_names, SCHEME_STX_VAL(a)))
+          rib = NULL; /* no need to check individual renames */
+        else
+          rib = rib->next;
         rename = NULL;
       } else {
         rib = NULL;
