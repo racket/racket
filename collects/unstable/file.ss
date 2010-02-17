@@ -15,10 +15,5 @@
       (with-handlers ([exn:fail:filesystem:exists? void])
         (make-directory dir)))))
 
-(define (rename-file-or-directory/ignore-exists-exn from to)
-  (with-handlers ([exn:fail:filesystem:exists? void])
-    (rename-file-or-directory from to)))
-
 (provide/contract
- [make-directory*/ignore-exists-exn (path-string? . -> . void)]
- [rename-file-or-directory/ignore-exists-exn (path-string? path-string? . -> . void)])
+ [make-directory*/ignore-exists-exn (path-string? . -> . void)])
