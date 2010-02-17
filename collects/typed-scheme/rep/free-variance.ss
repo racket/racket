@@ -4,9 +4,12 @@
          (utils tc-utils) scheme/list
          mzlib/etc scheme/contract)
 
+(provide Covariant Contravariant Invariant Constant Dotted
+         combine-frees flip-variances without-below unless-in-table empty-hash-table
+         fix-bound make-invariant variance?)
+
 ;; this file contains support for calculating the free variables/indexes of types
 ;; actual computation is done in rep-utils.ss  and type-rep.ss
-
 (define-values (Covariant Contravariant Invariant Constant Dotted)
   (let ()
     (define-struct Variance () #:inspector #f)
@@ -19,30 +22,10 @@
     (values (make-Covariant) (make-Contravariant) (make-Invariant) (make-Constant) (make-Dotted))))
 
 
-(provide Covariant Contravariant Invariant Constant Dotted)
-
 (define (variance? e)
   (memq e (list Covariant Contravariant Invariant Constant Dotted)))
 
-;; hashtables for keeping track of free variables and indexes
-(define index-table (make-weak-hash))
-;; maps Type to List[Cons[Number,Variance]]
-(define var-table (make-weak-hash))
-;; maps Type to List[Cons[Symbol,Variance]]
-
-(define ((input/c tbl) val) (hash-ref tbl val #f))
-
-(define (free-idxs* t)
-  (hash-ref index-table t (lambda _ (int-err "type ~a not in index-table" t))))
-(define (free-vars* t)
-  (hash-ref var-table t (lambda _ (int-err "type ~a not in var-table" t))))
-
 (define empty-hash-table (make-immutable-hasheq null))
-
-(p/c [free-vars* (-> (input/c var-table) (hash/c symbol? variance?))]
-     [free-idxs* (-> (input/c index-table) (hash/c exact-nonnegative-integer? variance?))])
-
-(provide empty-hash-table make-invariant)
 
 ;; frees = HT[Idx,Variance] where Idx is either Symbol or Number
 ;; (listof frees) -> frees
@@ -78,8 +61,7 @@
 (define (flip-variances vs)
   (hash-map* 
    (lambda (k v) 
-     (evcase 
-         v
+     (evcase v
        [Covariant Contravariant]
        [Contravariant Covariant]
        [v v]))
@@ -101,9 +83,6 @@
   (for ([(k v) (in-hash frees)])
        (when (>= k n) (hash-set! new-ht k v)))
   new-ht)
-
-(provide combine-frees flip-variances without-below unless-in-table var-table index-table empty-hash-table
-         fix-bound)
 
 (define-syntax (unless-in-table stx) 
   (syntax-case stx ()

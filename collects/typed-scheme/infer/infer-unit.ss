@@ -12,7 +12,7 @@
          scheme/match
          mzlib/etc
          mzlib/trace
-	 unstable/sequence unstable/list
+	 unstable/sequence unstable/list unstable/debug
          scheme/list)
 
 (import dmap^ constraints^ promote-demote^)
@@ -254,7 +254,7 @@
     (insert empty X S T))
   (if (seen? S T)
       empty
-      (parameterize ([match-equality-test type-equal?]
+      (parameterize ([match-equality-test (lambda (a b) (if (and (Rep? a) (Rep? b)) (type-equal? a b) (equal? a b)))]
                      [current-seen (remember S T (current-seen))])
         (match* 
             (S T)
@@ -428,7 +428,7 @@
     (match v
       [(struct c (S X T))
        (let ([var (hash-ref (free-vars* R) (or variable X) Constant)])
-         ;(printf "variance was: ~a~nR was ~a~nX was ~a~n" var R (or variable X))
+         ;(printf "variance was: ~a~nR was ~a~nX was ~a~nS T ~a ~a~n" var R (or variable X) S T)
          (evcase var 
                  [Constant S]
                  [Covariant S]
@@ -440,7 +440,7 @@
      (check-vars
       must-vars
       (append 
-       (for/list ([(k dc) dm])
+       (for/list ([(k dc) (in-hash dm)])
          (match dc
            [(struct dcon (fixed rest))
             (list k
@@ -452,7 +452,7 @@
                   (for/list ([f fixed])
                     (constraint->type f #:variable k))
                   (constraint->type rest))]))
-       (for/list ([(k v) cmap])
+       (for/list ([(k v) (in-hash cmap)])
          (list k (constraint->type v)))))]))
 
 (define (cgen/list V X S T)

@@ -5,21 +5,27 @@
 (provide defintern hash-id)
 
 (define-syntax (defintern stx)
+  (define-splicing-syntax-class extra-kw-spec
+    (pattern (~seq kw:keyword [name:id default:expr])
+             #:with formal #'(kw [name default])))
+  (define-splicing-syntax-class extra-spec
+    (pattern ek:extra-kw-spec
+             #:with e #'ek.name)
+    (pattern e:expr))
   (syntax-parse stx
-    [(_ name+args make-name key (~optional (~seq #:extra-arg e:expr)) ...)
-     (if (attribute e)
-         #'(defintern name+args (lambda () (make-hash #;'weak)) make-name key #:extra-arg e)
-         #'(defintern name+args (lambda () (make-hash #;'weak)) make-name key))]
-    [(_ (*name:id arg:id ...) make-ht make-name key-expr (~seq #:extra-arg e:expr) ...)
-     #'(define *name
-	 (let ([table (make-ht)])
-	   (lambda (arg ...)
-	     (let ([key key-expr])
-	       (hash-ref table key
-			 (lambda ()
-			   (let ([new (make-name (count!) e ... arg ...)])
-			     (hash-set! table key new)
-			     new)))))))]))
+    [(_ name+args make-name key #:extra-args e ...)
+     #'(defintern name+args (lambda () (make-hash)) make-name key #:extra-args e ...)]
+    [(_ (*name:id arg:id ...) make-ht make-name key-expr #:extra-args . (~and ((~seq es:extra-spec) ...) ((~or (~seq ek:extra-kw-spec) e:expr) ...)))
+     (with-syntax ([((extra-formals ...) ...) #'(ek.formal ...)])
+       #'(define *name
+           (let ([table (make-ht)])
+             (lambda (arg ... extra-formals ... ...)
+               (let ([key key-expr])
+                 (hash-ref table key
+                           (lambda ()
+                             (let ([new (make-name (count!) es.e ... arg ...)])
+                               (hash-set! table key new)
+                               new))))))))]))
 
 (define (make-count!)  
   (let ([state 0])

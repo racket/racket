@@ -259,7 +259,7 @@
                                              (with-lexical-env/extend 
                                               (list or-part) (list (restrict t1 (-val #f))) (single-value e2 expected)))]
                     [t1* (remove t1 (-val #f))]
-                    [f1* (-FS fs+ (list (make-Bot)))])
+                    [f1* (-FS null (list (make-Bot)))])
          ;; if we have the same number of values in both cases
          (let ([r (combine-filter f1 f1* f2 t1* t2 o1 o2)])
            (if expected 

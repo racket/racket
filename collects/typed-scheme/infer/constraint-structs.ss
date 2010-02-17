@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "../utils/utils.ss" (rep type-rep) scheme/contract)
+(require "../utils/utils.ss" (rep type-rep) scheme/contract scheme/match (for-syntax scheme/base syntax/parse))
 
 ;; S, T types
 ;; X a var
@@ -29,7 +29,13 @@
 ;; don't want to rule them out too early
 (define-struct cset (maps) #:prefab)
 
-(p/c (struct c ([S Type?] [X symbol?] [T Type?]))
+(define-match-expander c:
+  (lambda (stx)
+    (syntax-parse stx
+      [(_ s x t)
+       #'(struct c ((app (lambda (v) (if (Type? v) v (Un))) s) x (app (lambda (v) (if (Type? v) v Univ)) t)))])))
+
+(p/c (struct c ([S (or/c boolean? Type?)] [X symbol?] [T (or/c boolean? Type?)]))
      (struct dcon ([fixed (listof c?)] [rest (or/c c? false/c)]))
      (struct dcon-exact ([fixed (listof c?)] [rest c?]))
      (struct dcon-dotted ([type c?] [bound symbol?]))

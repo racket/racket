@@ -3,7 +3,7 @@
 (require "../utils/utils.ss"
 	 syntax/kerncase
 	 syntax/parse
-         scheme/match
+         scheme/match unstable/debug
          "signatures.ss" "tc-metafunctions.ss"
          (types utils convenience union subtype)
 	 (utils tc-utils)
@@ -14,7 +14,7 @@
 
 ;; find the subexpressions that need to be typechecked in an ignored form
 ;; syntax -> any
-(define (check-subforms/with-handlers form)
+(define (check-subforms/with-handlers form [expected #f])
   (define handler-tys '())
   (define body-ty #f)    
   (define (get-result-ty t)
