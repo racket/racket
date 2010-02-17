@@ -52,6 +52,35 @@
               [_ 
                (raise-syntax-error #f "malformed object-contract clause" stx (car args))])])))
 
+(define (o-c-first-order ctc val blame meth-projs)
+  (let/ec return
+    (define (failed str . args)
+      (if blame
+          (apply raise-blame-error blame val str args)
+          (return #f)))
+    (unless (object? val)
+      (failed "expected an object, got ~e" val))
+    (let ([meth-names (object-contract-methods ctc)])
+      (for-each (λ (m proj)
+                  (let-values ([(method unwrapper) 
+                                (find-method/who 'object-contract val m #:error? #f)])
+                    (unless method
+                      (failed "expected an object with method ~s" m))
+                    ;; verify the first-order properties by apply the projection and 
+                    ;; throwing the result away. Without this, the contract wrappers
+                    ;; just check the first-order properties of the wrappers, which is
+                    ;; the wrong thing.
+                    (proj method)))
+                meth-names
+                meth-projs))
+    (let ([ctc-field-names (object-contract-fields ctc)]
+          [fields (field-names val)])
+      (for-each (λ (f)
+                  (unless (memq f fields)
+                    (failed "expected an object with field ~s" f)))
+                ctc-field-names))
+    #t))
+
 (define-struct object-contract (methods method-ctcs method-wrappers fields field-ctcs)
   #:omit-define-syntaxes
   #:property prop:contract
@@ -68,29 +97,7 @@
                   [cls (make-wrapper-class 'wrapper-class meth-names meths ctc-field-names #f)]
                   [field-projs (map (λ (x) (x blame)) field-param-projs)])
              (λ (val)
-                
-                (unless (object? val)
-                  (raise-blame-error blame val "expected an object, got ~e" val))
-                
-               (for-each (λ (m proj)
-                           (let-values ([(method unwrapper) 
-                                         (find-method/who 'object-contract val m #:error? #f)])
-                             (unless method
-                               (raise-blame-error blame val "expected an object with method ~s" m))
-                             ;; verify the first-order properties by apply the projection and 
-                             ;; throwing the result away. Without this, the contract wrappers
-                             ;; just check the first-order properties of the wrappers, which is
-                             ;; the wrong thing.
-                             (proj method)))
-                         meth-names
-                         meth-projs)
-                
-                (let ([fields (field-names val)])
-                  (for-each (λ (f)
-                               (unless (memq f fields)
-                                 (raise-blame-error blame val "expected an object with field ~s" f)))
-                            ctc-field-names))
-                
+                (o-c-first-order ctc val blame meth-projs)
                 (apply make-object cls val
                        (map (λ (field proj) (proj (get-field/proc field val)))
                             ctc-field-names field-projs)))))))
@@ -102,7 +109,10 @@
                                      (object-contract-methods ctc)
                                      (object-contract-method-ctcs ctc))))
 
-   #:first-order (λ (ctc) (λ (val) #f))))
+   #:first-order 
+   (λ (ctc)
+     (λ (val)
+       (o-c-first-order ctc val #f (map (λ (x) values) (object-contract-method-ctcs ctc)))))))
 
 (define-syntax (object-contract stx)
   (syntax-case stx ()
