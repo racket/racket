@@ -60,24 +60,36 @@
       
       (inherit get-language-name)
       (define/public (get-users-language-name defs-text)
-        (let ([defs-port (open-input-text-editor defs-text)])
-          (with-handlers ((exn:fail? (λ (x) (void))))
-            (let/ec k
-              (let ([orig-security (current-security-guard)])
-                (parameterize ([current-security-guard
-                                (make-security-guard
-                                 orig-security
-                                 (lambda (what path modes) #t)
-                                 (lambda (what host port mode) (k (void))))])
-                  (read-language defs-port (λ () (void)))
-                  (void)))))
-          (let* ([str (send defs-text get-text 0 (file-position defs-port))]
-                 [pos (regexp-match-positions #rx"#(?:!|lang )" str)])
-            (cond
-              [(not pos)
-               (get-language-name)]
-              [else
-               (substring str (cdr (car pos)) (string-length str))]))))
+        (let* ([defs-port (open-input-text-editor defs-text)]
+               [read-successfully?
+                (with-handlers ((exn:fail? (λ (x) #f)))
+                  (let/ec k
+                    (let ([orig-security (current-security-guard)])
+                      (parameterize ([current-security-guard
+                                      (make-security-guard
+                                       orig-security
+                                       (lambda (what path modes) #t)
+                                       (lambda (what host port mode) (k #f)))])
+                        (read-language defs-port (λ () (void)))
+                        #t))))])
+          (cond
+            [read-successfully?
+             (let* ([str (send defs-text get-text 0 (file-position defs-port))]
+                    [pos (regexp-match-positions #rx"#(?:!|lang )" str)])
+               (cond
+                 [(not pos)
+                  (get-language-name)]
+                 [else
+                  ;; newlines can break things (ie the language text won't 
+                  ;; be in the right place in the interactions window, which
+                  ;; at least makes the test suites unhappy), so get rid of 
+                  ;; them from the name. Otherwise, if there is some wierd formatting,
+                  ;; so be it.
+                  (regexp-replace* #rx"[\r\n]+"
+                                   (substring str (cdr (car pos)) (string-length str))
+                                   " ")]))]
+            [else
+             (get-language-name)])))
                 
       (define/override (use-namespace-require/copy?) #f)
       

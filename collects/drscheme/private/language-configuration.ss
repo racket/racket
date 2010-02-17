@@ -745,6 +745,7 @@
                        module-language*language)
                (module-language-selected)]
               [else
+               (send languages-hier-list focus) ;; only focus when the module language isn't selected
                (send use-chosen-language-rb set-selection 0)
                (send use-language-in-source-rb set-selection #f)
                (let ([language-position (send language-to-show get-language-position)])
@@ -893,6 +894,8 @@
         
         (send languages-hier-list stretchable-width #t)
         (send languages-hier-list stretchable-height #t)
+        (send languages-hier-list accept-tab-focus #t)
+        (send languages-hier-list allow-tab-exit #t)
         (send parent reflow-container)
         (close-all-languages)
         (open-current-language)
@@ -903,7 +906,6 @@
         (when details-shown?
           (do-construct-details))
         (update-show/hide-details)
-        (send languages-hier-list focus)
         (size-discussion-canvas in-source-discussion-editor-canvas)
         (values
          (λ () selected-language)
