@@ -40,6 +40,7 @@
           (mutator-top-interaction #%top-interaction)
           (mutator-module-begin #%module-begin)))
 
+(define-syntax-parameter mutator-name #f)
 (define-syntax-parameter mutator-tail-call? #t)
 (define-syntax-parameter mutator-env-roots empty)
 
@@ -81,11 +82,18 @@
 (define-syntax mutator-define
   (syntax-rules ()
     [(_ (f a ...) e ...)
-     (mutator-define-values (f) (mutator-lambda (a ...) e ...))]
+     (mutator-define-values (f) 
+                            (syntax-parameterize ([mutator-name #'f])
+                                                  (mutator-lambda (a ...) e ...)))]
     [(_ id e)
-     (mutator-define-values (id) e)]))
+     (mutator-define-values (id) 
+                            (syntax-parameterize ([mutator-name #'id])
+                                                  e))]))
 (define-syntax-rule (mutator-let ([id e] ...) be ...)
-  (mutator-let-values ([(id) e] ...) be ...))
+  (mutator-let-values ([(id) (syntax-parameterize ([mutator-name #'id])
+                                                  e)]
+                       ...)
+                      be ...))
 (define-syntax mutator-let*
   (syntax-rules ()
     [(_ () be ...)
@@ -156,7 +164,8 @@
      (let ([env-roots (syntax-parameter-value #'mutator-env-roots)])
        (with-syntax ([(free-id ...) (find-referenced-locals env-roots stx)]
                      [(env-id ...) env-roots]
-                     [closure (or (syntax-local-name)
+                     [closure (or (syntax-parameter-value #'mutator-name)
+                                  (syntax-local-name)
                                   (let ([prop (syntax-property stx 'inferred-name)])
                                     (if (or (identifier? prop)
                                             (symbol? prop))
