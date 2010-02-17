@@ -50,15 +50,9 @@ Interpretation} (PLAI). The full book can be found on the Web at:
 @(link "http://www.cs.brown.edu/~sk/Publications/Books/ProgLangs/"
        "http://www.cs.brown.edu/~sk/Publications/Books/ProgLangs/")
 
-In DrScheme, under the @onscreen{Language} menu, select @onscreen{Choose Language...}. Under the section @onscreen{Programming
-Languages: Application and Interpretation}, you will find the following languages:
+This package contains the following languages:
 
-@itemize{
-  @item{@secref["plai-scheme"] - @schememodlang[plai]}
-  @item{@secref["collector"] - @schememodlang[plai/collector]}
-  @item{@secref["mutator"] - @schememodlang[plai/mutator]}
-  @item{@secref["web"] - @schememodlang[plai/web]}
-}
+@local-table-of-contents[#:style 'immediate-only]
 
 @section[#:tag "plai-scheme"]{@PLAI-LANG} 
 
@@ -486,38 +480,8 @@ In @|MUTATE-LANG|, @scheme[printf] is a syntactic form and not a procedure. The 
 @scheme[_format] is not allocated on the mutator's heap.
 
 }
-
-@section[#:tag "web"]{@WEB-LANG}
-
-@defmodulelang[plai/web]
-
-The @WEB-LANG language allows you to write server-side Web applications for the PLT Web Server.
-
-For more information about writing Web applications, see:
-@other-manual['(lib "web-server/scribblings/web-server.scrbl")].
-
-When you click on the @onscreen{Run} button in DrScheme, your Web application is launched in the Web server.
-
-The application is available at @italic{http://localhost:8000/servlets/standalone.ss}. 
-
-The @WEB-LANG language will automatically load this URL in your Web browser.
-
-You may use @scheme[no-web-browser] to prevent the browser from being launched and @scheme[static-files-path]
-to serve additional static files.
-
-@subsection{Web Application Exports}
-
-@declare-exporting[#:use-sources (plai/scribblings/fake-web)]
-
-A Web application must define a procedure @scheme[start]: 
-
-@defproc[(start (initial-request request?)) response?]{
-
-The initial request to a Web application is serviced by this procedure.
-
-}
-
-@section{Generating Random Mutators}
+                          
+@subsection{Generating Random Mutators}
 
 @defmodule[plai/random-mutator]
 
@@ -581,4 +545,34 @@ of random mutators:
   If @scheme[input] is a port, its contents are assumed to be a well-formed 
   PLAI program. If @scheme[input] is a file, the contents of the file are 
   used.
+}
+
+@section[#:tag "web"]{@WEB-LANG}
+
+@defmodulelang[plai/web]
+
+The @WEB-LANG language allows you to write server-side Web applications for the PLT Web Server.
+
+For more information about writing Web applications, see:
+@other-manual['(lib "web-server/scribblings/web-server.scrbl")].
+
+When you click on the @onscreen{Run} button in DrScheme, your Web application is launched in the Web server.
+
+The application is available at @italic{http://localhost:8000/servlets/standalone.ss}. 
+
+The @WEB-LANG language will automatically load this URL in your Web browser.
+
+You may use @scheme[no-web-browser] to prevent the browser from being launched and @scheme[static-files-path]
+to serve additional static files.
+
+@subsection{Web Application Exports}
+
+@declare-exporting[#:use-sources (plai/scribblings/fake-web)]
+
+A Web application must define a procedure @scheme[start]: 
+
+@defproc[(start (initial-request request?)) response?]{
+
+The initial request to a Web application is serviced by this procedure.
+
 }
