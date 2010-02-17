@@ -346,7 +346,7 @@
   (let loop ([so so])
     (if (zero? (bytes-length so))
         null
-        (cons (integer-bytes->integer (subbytes so 0 n) #f)
+        (cons (integer-bytes->integer (subbytes so 0 n) #f #f)
               (loop (subbytes so n))))))
 
 (define (read-simple-number p)
