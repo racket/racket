@@ -168,23 +168,27 @@
                   (lambda-memocontract (field ...)
                                        (contract (field/c ... . -> . variant?)
                                                  make-variant*
-                                                 'make-variant 'use)))
+                                                 'make-variant 'use
+                                                 'make-variant #'variant)))
                 (define variant
                   (lambda-memocontract (field ...)
                                        (contract (field/c ... . -> . variant?)
                                                  make-variant*
-                                                 'variant 'use)))
+                                                 'variant 'use
+                                                 'variant #'variant)))
                 (define variant-field
                   (lambda-memocontract (v)
                                        (contract (f:variant? . -> . field/c)
                                                  variant*-field
-                                                 'variant-field 'use)))
+                                                 'variant-field 'use
+                                                 'variant-field #'field)))
                 ...
                 (define set-variant-field!
                   (lambda-memocontract (v)
                                        (contract (f:variant? field/c . -> . void)
                                                  set-variant*-field!
-                                                 'set-variant-field! 'use)))
+                                                 'set-variant-field! 'use
+                                                 'set-variant-field! #'field)))
                 ...
                 )
               ...)))))]))
