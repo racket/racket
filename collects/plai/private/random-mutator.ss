@@ -5,12 +5,18 @@
          "gc-core.ss")
 
 (provide save-random-mutator 
-         find-heap-values)
+         find-heap-values
+         (struct-out terminal)
+         (struct-out proc)
+         (struct-out pair)
+         (struct-out obj-graph)
+         obj-graph->code)
 
 ;; graph : hash-table[number -o> obj]
 ;; path : sexp
 ;; result : flat-value
-(define-struct obj-graph (graph path result id) #:transparent)
+;; root : nat (the id of the reference to keep live)
+(define-struct obj-graph (graph path result root) #:transparent)
 
 ;; an obj is either:
 ;;  - (make-terminal <constant>)
@@ -20,6 +26,12 @@
 (define-struct terminal (const) #:transparent)
 (define-struct proc (ids) #:transparent)
 (define-struct pair (hd tl) #:transparent)
+
+;; select : (or/c 'first 'rest nat)
+;;    numbers indicate the selector is to call a proc with that number
+;;    'first and 'rest indicate the selector is either first or rest.
+;; id : num
+(define-struct connection (select id) #:transparent)
 
 (define (random-obj-graph size heap-values)
   (let ([num-cells (+ 1 (random size))]
@@ -36,13 +48,9 @@
                [codes '()])
       (let ([done
              (λ ()
-               (values 
-                (let loop ([codes (reverse codes)])
-                  (cond
-                    [(null? codes) (obj-num->id last-id)]
-                    [else ((car codes) (loop (cdr codes)))]))
-                (terminal-const first-terminal)
-                (obj-num->id last-id)))])
+               (values codes
+                       (terminal-const first-terminal)
+                       last-id))])
         (cond
           [(zero? i) (done)]
           [else
@@ -50,14 +58,42 @@
              (cond
                [next (loop (- i 1)
                            (connection-id next)
-                           (cons (connection-code next) codes))]
+                           (cons (connection-select next) codes))]
                [else (done)]))])))))
 
-;; code : sexp -> sexp
-;; id : number 
-(define-struct connection (code id))
+;; find-connection-to : hash id -> connection
+;; returns a random choice of one of the nodes with a connection to the node 'id'
+(define (find-connections-to hash id) 
+  (let ([candidate-code '()]
+        [candidate-ids '()])
+    (hash-for-each
+     hash
+     (λ (k v)
+       (cond
+         [(pair? v) 
+          (when (equal? id (pair-hd v))
+            (set! candidate-code (cons 'first candidate-code))
+            (set! candidate-ids (cons k candidate-ids)))
+          (when (equal? id (pair-tl v))
+            (set! candidate-code (cons 'rest candidate-code))
+            (set! candidate-ids (cons k candidate-ids)))]
+         [(terminal? v)
+          (void)]
+         [(proc? v)
+          (for ([proc-id (in-list (proc-ids v))]
+                [case-num (in-naturals)])
+            (when (equal? proc-id id)
+              (set! candidate-code (cons case-num candidate-code))
+              (set! candidate-ids (cons k candidate-ids))))])))
+    (cond
+      [(null? candidate-code)
+       #f]
+      [else
+       (let ([choice (random (length candidate-code))])
+         (make-connection (list-ref candidate-code choice)
+                          (list-ref candidate-ids choice)))])))
 
-;; find-connection-to : hash id -> connection or #f
+#;
 (define (find-connections-to hash id) 
   (let ([candidate-code '()]
         [candidate-ids '()])
@@ -101,7 +137,8 @@
       (values (list-ref candidate-terminals choice)
               (list-ref candidate-ids choice)))))
 
-(define (obj-graph->code obj-graph)
+;; obj-graph->code : obj-graph? nat -> (listof sexp)
+(define (obj-graph->code obj-graph iterations heap-size)
   (let ([graph (obj-graph-graph obj-graph)]
         [init-code '()])
     (list 
@@ -113,10 +150,33 @@
                                  (set! init-code (append cell-init-code init-code)) 
                                  `[,(obj-num->id i) ,binding-code]))))
           ,@(reverse init-code)
-          ,(obj-graph-id obj-graph)))
-     `(define (traverse-one ,(obj-graph-id obj-graph))
+          ,(obj-num->id (obj-graph-root obj-graph))))
+     `(define (traverse-one ,(obj-num->id (obj-graph-root obj-graph)))
         ,(result->comparison (obj-graph-result obj-graph)
-                             (obj-graph-path obj-graph))))))
+                             (let loop ([path (reverse (obj-graph-path obj-graph))])
+                               (cond
+                                 [(null? path) (obj-num->id (obj-graph-root obj-graph))]
+                                 [else 
+                                  (case (car path)
+                                    [(first) `(first ,(loop (cdr path)))]
+                                    [(rest) `(rest ,(loop (cdr path)))]
+                                    [else `(,(loop (cdr path)) ,(car path))])]))))
+     
+     `(define (trigger-gc n)
+        (if (zero? n)
+            0
+            (begin 
+              (cons n n)
+              (trigger-gc (- n 1)))))
+     `(define (loop i)
+        (if (zero? i)
+            'passed
+            (let ([obj (build-one)])
+              (trigger-gc ,heap-size)
+              (if (traverse-one obj)
+                  (loop (- i 1))
+                  'failed))))
+     `(loop ,iterations))))
 
 (define (result->comparison expected-result exp)
   (cond
@@ -128,13 +188,11 @@
         (if (boolean? res)
             res
             #f))]
-    [(eq? expected-result #f) `(not ,exp)]
+    [(eq? expected-result #f) `(if ,exp #f #t)]
     [(null? expected-result) `(empty? ,exp)]
     [else (error 'result->comparison "unknown value ~s\n" expected-result)]))
 
 (define (obj-num->id x) (string->symbol (format "x~a" x)))
-
-(define proc-cases 5)
 
 ;; random-obj : number obj -> (values sexp[constructor] (list sexp[init-code]))
 (define (obj->code cell-number obj)
@@ -209,24 +267,8 @@
             (set-first! set-mcar!)
             (set-rest! set-mcdr!)))])
       (for-each (λ (x) (pretty-print x port))
-                (obj-graph->code (random-obj-graph program-size heap-values)))
-      (pretty-print `(define (trigger-gc n)
-                       (if (zero? n)
-                           0
-                           (begin 
-                             (cons n n)
-                             (trigger-gc (- n 1)))))
-                    port)
-      (pretty-print `(define (loop i)
-                       (if (zero? i)
-                           'passed
-                           (let ([obj (build-one)])
-                             (trigger-gc ,heap-size)
-                             (if (traverse-one obj)
-                                 (loop (- i 1))
-                                 'failed))))
-                    port)
-      (pretty-print `(loop ,iterations) port))
+                (obj-graph->code (random-obj-graph program-size heap-values) 
+                                 iterations)))
     #:exists 'truncate))
 
 (define (find-heap-values in)

@@ -453,7 +453,7 @@
   (cond
     [(procedure? proc/loc) proc/loc]
     [(location? proc/loc) (collector:deref proc/loc)]
-    [else (error 'deref "expected <location?> or <procedure?; received ~a" proc/loc)]))
+    [else (error 'deref "expected <location?> or <procedure?>; received ~a" proc/loc)]))
 
 (define (gc->scheme loc)
   (define-struct an-unset ())

@@ -122,7 +122,11 @@ A collector for use in testing the random mutator generator.
 
 
 (define (gc:alloc-flat fv) 
-  (let ([ptr (alloc 2 (λ () (get-root-set)))])
+  (let ([ptr (alloc 2 (λ () 
+                        (if (procedure? fv)
+                            (append (procedure-roots fv)
+                                    (get-root-set))
+                            (get-root-set))))])
     (heap-set! ptr 'flat)
     (heap-set! (+ ptr 1) fv)
     ptr))
