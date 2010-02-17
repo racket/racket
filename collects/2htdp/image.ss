@@ -76,6 +76,7 @@ and they all have good sample contracts. (It is amazing what we can do with kids
          circle
          ellipse
          rectangle
+         empty-scene
          square
          rhombus
          regular-polygon

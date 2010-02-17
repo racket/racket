@@ -630,7 +630,10 @@
        (make-bb 100 100 100)
        #f))
 
-
+(test (empty-scene 185 100)
+      =>
+      (overlay (rectangle 185 100 'outline 'black)
+               (rectangle 185 100 'solid 'white)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  testing normalization
