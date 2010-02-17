@@ -31,6 +31,9 @@
         (for-each (λ (exp) (pretty-print exp port)) exps))
       #:exists 'truncate)
 
+    (printf "tmpfile: ~s\n" tmpfile)
+    (call-with-input-file tmpfile (λ (p) (copy-port p (current-output-port))))
+    
     (let ([sp (open-output-string)])
       (parameterize ([current-output-port sp])
         (dynamic-require tmpfile #f))
