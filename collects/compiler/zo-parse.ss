@@ -1,83 +1,33 @@
 #lang scheme/base
 (require mzlib/etc 
          scheme/match
-         scheme/list)
+         scheme/list
+         compiler/zo-structs)
 
 (provide zo-parse)
+(provide (all-from-out compiler/zo-structs))
 
-;; ----------------------------------------
-;;  Structures to represent bytecode
+#| Unresolved Issues
 
-(define-syntax-rule (define-form-struct* id id+par (field-id ...))
-  (begin
-    (define-struct id+par (field-id ...) #:transparent)
-    (provide (struct-out id))))
+  The order of indirect-et-provides, indirect-syntax-provides, indirect-provides was changed, is that okay?
+ 
+  orig-port of cport struct is never used, is it needed?
 
-(define-syntax define-form-struct
-  (syntax-rules ()
-    [(_ (id sup) . rest)
-     (define-form-struct* id (id sup) . rest)]
-    [(_ id . rest)
-     (define-form-struct* id id . rest)]))
+  Lines 628, 630 seem to be only for debugging and should probably throw errors
 
-(define-form-struct compilation-top (max-let-depth prefix code)) ; compiled code always wrapped with this
+  unmarshal-stx-get also seems to be for debugging and should probably throw an error
 
-(define-form-struct prefix (num-lifts toplevels stxs))   ; sets up top-level and syntax-object array
+  vector and pair cases of decode-wraps seem to do different things from the corresponding C code
 
-;; In toplevels of resove prefix:
-(define-form-struct global-bucket (name)) ; top-level binding
-(define-form-struct module-variable (modidx sym pos phase)) ; direct access to exported id
+  Line 816: This should be an eqv placeholder (but they don't exist)
 
-;; In stxs of prefix:
-(define-form-struct stx (encoded))
+  Line 634: Export registry is always matched as false, but might not be
 
-(define-form-struct form ())
-(define-form-struct (expr form) ())
+  What are the real differences between the module-binding cases?
 
-(define-form-struct (mod form) (name self-modidx prefix provides requires body syntax-body unexported 
-                                     max-let-depth dummy lang-info internal-context))
+  I think parse-module-path-index was only used for debugging, so it is short-circuited now
 
-(define-form-struct (lam expr) (name flags num-params param-types rest? closure-map closure-types max-let-depth body)) ; `lambda'
-(define-form-struct (closure expr) (code gen-id)) ; a static closure (nothing to close over)
-(define-form-struct (case-lam expr) (name clauses)) ; each clause is an lam
-
-(define-form-struct (let-one expr) (rhs body flonum?)) ; pushes one value onto stack
-(define-form-struct (let-void expr) (count boxes? body)) ; create new stack slots
-(define-form-struct (install-value expr) (count pos boxes? rhs body)) ; set existing stack slot(s)
-(define-form-struct (let-rec expr) (procs body)) ; put `letrec'-bound closures into existing stack slots
-(define-form-struct (boxenv expr) (pos body)) ; box existing stack element
-
-(define-form-struct (localref expr) (unbox? pos clear? other-clears? flonum?)) ; access local via stack
-
-(define-form-struct (toplevel expr) (depth pos const? ready?))  ; access binding via prefix array (which is on stack)
-(define-form-struct (topsyntax expr) (depth pos midpt)) ; access syntax object via prefix array (which is on stack)
-
-(define-form-struct (application expr) (rator rands)) ; function call
-(define-form-struct (branch expr) (test then else)) ; `if'
-(define-form-struct (with-cont-mark expr) (key val body)) ; `with-continuation-mark'
-(define-form-struct (beg0 expr) (seq)) ; `begin0'
-(define-form-struct (seq form) (forms)) ; `begin'
-(define-form-struct (splice form) (forms)) ; top-level `begin'
-(define-form-struct (varref expr) (toplevel)) ; `#%variable-reference'
-(define-form-struct (assign expr) (id rhs undef-ok?)) ; top-level or module-level set!
-(define-form-struct (apply-values expr) (proc args-expr)) ; `(call-with-values (lambda () ,args-expr) ,proc)
-(define-form-struct (primval expr) (id)) ; direct preference to a kernel primitive
-
-;; Definitions (top level or within module):
-(define-form-struct (def-values form) (ids rhs))
-(define-form-struct (def-syntaxes form) (ids rhs prefix max-let-depth))
-(define-form-struct (def-for-syntax form) (ids rhs prefix max-let-depth))
-
-;; Top-level `require'
-(define-form-struct (req form) (reqs dummy))
-
-;; A static closure can refer directly to itself, creating a cycle
-(define-struct indirect ([v #:mutable]) #:prefab)
-(provide (struct-out indirect))
-
-;; A provided identifier
-(define-form-struct provided (name src src-name nom-src src-phase protected? insp))
-
+|#
 ;; ----------------------------------------
 ;; Bytecode unmarshalers for various forms
 
@@ -236,14 +186,24 @@
 (define (read-splice v)
   (make-splice (seq-forms v)))
 
+(define (in-list* l n)
+  (make-do-sequence
+   (lambda ()
+     (values (lambda (l) (apply values (take l n)))
+             (lambda (l) (drop l n))
+             l
+             (lambda (l) (>= (length l) n))
+             (lambda _ #t)
+             (lambda _ #t)))))
+
 (define (read-module v)
   (match v
     [`(,name ,self-modidx ,lang-info ,functional? ,et-functional?
              ,rename ,max-let-depth ,dummy
              ,prefix
-             ,indirect-provides ,num-indirect-provides 
-             ,indirect-syntax-provides ,num-indirect-syntax-provides 
              ,indirect-et-provides ,num-indirect-et-provides 
+             ,indirect-syntax-provides ,num-indirect-syntax-provides 
+             ,indirect-provides ,num-indirect-provides 
              ,protects ,et-protects
              ,provide-phase-count . ,rest)
      (let ([phase-data (take rest (* 9 provide-phase-count))])
@@ -288,15 +248,18 @@
                      (cons 1 syntax-requires)
                      (cons -1 template-requires)
                      (cons #f label-requires)
-                     more-requires)
+                     (for/list ([(phase reqs) (in-list* more-requires 2)])
+                       (cons phase reqs)))
                     (vector->list body)
                     (map (lambda (sb)
                            (match sb
+                             [(? def-syntaxes?) sb]
+                             [(? def-for-syntax?) sb]
                              [`#(,ids ,expr ,max-let-depth ,prefix ,for-stx?)
                               ((if for-stx?
                                    make-def-for-syntax
                                    make-def-syntaxes)
-                               ids expr prefix max-let-depth)]))
+                               (if (list? ids) ids (list ids)) expr prefix max-let-depth)]))
                          (vector->list syntax-body))
                     (list (vector->list indirect-provides)
                           (vector->list indirect-syntax-provides)
@@ -387,10 +350,13 @@
               (loop (subbytes so n))))))
 
 (define (read-simple-number p)
-  ;; not sure if it's really unsigned
   (integer-bytes->integer (read-bytes 4 p) #f #f))
 
-(define-struct cport ([pos #:mutable] orig-port size bytes symtab shared-offsets decoded rns mpis))
+
+(define-struct cport ([pos #:mutable] shared-start orig-port size bytes symtab shared-offsets decoded rns mpis))
+
+(define (cport-rpos cp)
+  (+ (cport-pos cp) (cport-shared-start cp)))
 
 (define (cp-getc cp)
   (begin-with-definitions
@@ -453,17 +419,17 @@
 
 (define (cpt-table-lookup i)
   (for/or ([ent cpt-table])
-          (match ent
-            [(list k sym) (and (= k i) (cons k sym))]
-            [(list k k* sym)
-             (and (<= k i)
-                  (< i k*)
-                  (cons k sym))])))
+    (match ent
+      [(list k sym) (and (= k i) (cons k sym))]
+      [(list k k* sym)
+       (and (<= k i)
+            (< i k*)
+            (cons k sym))])))
 
 (define (read-compact-bytes port c)
   (begin0
-   (subbytes (cport-bytes port) (cport-pos port) (+ (cport-pos port) c))
-   (set-cport-pos! port (+ c (cport-pos port)))))
+    (subbytes (cport-bytes port) (cport-pos port) (+ (cport-pos port) c))
+    (set-cport-pos! port (+ c (cport-pos port)))))
 
 (define (read-compact-chars port c)
   (bytes->string/utf-8 (read-compact-bytes port c)))
@@ -516,18 +482,7 @@
 (define-struct not-ready ())
 
 ;; ----------------------------------------
-;; Synatx unmarshaling
-
-(define-form-struct wrapped (datum wraps certs))
-
-(define-form-struct wrap ())
-(define-form-struct (lexical-rename wrap) (alist))
-(define-form-struct (phase-shift wrap) (amt src dest))
-(define-form-struct (prune wrap) (sym))
-(define-form-struct (module-rename wrap) (phase kind set-id unmarshals renames mark-renames plus-kern?))
-
-(define-form-struct all-from-module (path phase src-phase exceptions prefix))
-(define-form-struct module-binding (path mod-phase import-phase id nominal-path nominal-phase nominal-id))
+;; Syntax unmarshaling
 
 (define (decode-stx cp v)
   (if (integer? v)
@@ -546,52 +501,55 @@
           (let* ([wraps (decode-wraps cp encoded-wraps)]
                  [add-wrap (lambda (v) (make-wrapped v wraps cert-marks))])
             (cond
-             [(pair? v)
-              (if (eq? #t (car v))
-                  ;; Share decoded wraps with all nested parts.
-                  (let loop ([v (cdr v)])
-                    (cond
-                     [(pair? v) 
-                      (let ploop ([v v])
+              [(pair? v)
+               (if (eq? #t (car v))
+                   ;; Share decoded wraps with all nested parts.
+                   (let loop ([v (cdr v)])
+                     (cond
+                       [(pair? v) 
+                        (let ploop ([v v])
+                          (cond
+                            [(null? v) null]
+                            [(pair? v) (add-wrap (cons (loop (car v)) (ploop (cdr v))))]
+                            [else (loop v)]))]
+                       [(box? v) (add-wrap (box (loop (unbox v))))]
+                       [(vector? v)
+                        (add-wrap (list->vector (map loop (vector->list v))))]
+                       [(prefab-struct-key v)
+                        => (lambda (k)
+                             (add-wrap
+                              (apply
+                               make-prefab-struct 
+                               k
+                               (map loop (cdr (vector->list (struct->vector v)))))))]
+                       [else (add-wrap v)]))
+                   ;; Decode sub-elements that have their own wraps:
+                   (let-values ([(v counter) (if (exact-integer? (car v))
+                                                 (values (cdr v) (car v))
+                                                 (values v -1))])
+                     (add-wrap
+                      (let ploop ([v v][counter counter])
                         (cond
-                         [(null? v) null]
-                         [(pair? v) (add-wrap (cons (loop (car v)) (ploop (cdr v))))]
-                         [else (loop v)]))]
-                     [(box? v) (add-wrap (box (loop (unbox v))))]
-                     [(vector? v)
-                      (add-wrap (list->vector (map loop (vector->list v))))]
-                     [(prefab-struct-key v)
-                      => (lambda (k)
-                           (add-wrap
-                            (apply
-                             make-prefab-struct 
-                             k
-                             (map loop (cdr (vector->list (struct->vector v)))))))]
-                     [else (add-wrap v)]))
-                  ;; Decode sub-elements that have their own wraps:
-                  (let-values ([(v counter) (if (exact-integer? (car v))
-                                                (values (cdr v) (car v))
-                                                (values v -1))])
+                          [(null? v) null]
+                          [(or (not (pair? v)) (zero? counter)) (loop v)]
+                          [(pair? v) (cons (loop (car v))
+                                           (ploop (cdr v) (sub1 counter)))])))))]
+              [(box? v) (add-wrap (box (loop (unbox v))))]
+              [(vector? v)
+               (add-wrap (list->vector (map loop (vector->list v))))]
+              [(prefab-struct-key v)
+               => (lambda (k)
                     (add-wrap
-                     (let ploop ([v v][counter counter])
-                       (cond
-                        [(null? v) null]
-                        [(or (not (pair? v)) (zero? counter)) (loop v)]
-                        [(pair? v) (cons (loop (car v))
-                                         (ploop (cdr v) (sub1 counter)))])))))]
-             [(box? v) (add-wrap (box (loop (unbox v))))]
-             [(vector? v)
-              (add-wrap (list->vector (map loop (vector->list v))))]
-             [(prefab-struct-key v)
-              => (lambda (k)
-                   (add-wrap
-                    (apply
-                     make-prefab-struct 
-                     k
-                     (map loop (cdr (vector->list (struct->vector v)))))))]
-             [else (add-wrap v)]))))))
+                     (apply
+                      make-prefab-struct 
+                      k
+                      (map loop (cdr (vector->list (struct->vector v)))))))]
+              [else (add-wrap v)]))))))
+
+
 
 (define (decode-wraps cp w)
+  ; A wraps is either a indirect reference or a list of wrap-elems (from stxobj.c:252)
   (if (integer? w)
       (let-values ([(w2 decoded?) (unmarshal-stx-get cp w)])
         (if decoded?
@@ -601,123 +559,130 @@
               w2)))
       (map (lambda (a)
              (let aloop ([a a])
+               ; A wrap-elem is either
                (cond
-                [(integer? a) 
-                 (let-values ([(a2 decoded?) (unmarshal-stx-get cp a)])
-                   (if decoded?
-                       a2
-                       (let ([a2 (aloop a2)])
-                         (unmarshal-stx-set! cp a a2)
-                         a2)))]
-                [(and (pair? a) (null? (cdr a)) (number? (car a)))
-                 ;; a mark
-                 (string->symbol (format "mark~a" (car a)))]
-                [(vector? a)
-                 (make-lexical-rename
-                  (let ([top (+ (/ (- (vector-length a) 2) 2) 2)])
-                    (let loop ([i 2])
-                      (if (= i top)
-                          null
-                          (cons (cons (vector-ref a i)
-                                      (vector-ref a (+ (- top 2) i)))
-                                (loop (+ i 1)))))))]
-                [(pair? a)
-                 (let-values ([(plus-kern? a) (if (eq? (car a) #t)
-                                                  (values #t (cdr a))
-                                                  (values #f a))])
-                   (match a
-                     [`(,phase ,kind ,set-id ,maybe-unmarshals . ,renames)
-                      (let-values ([(unmarshals renames mark-renames)
-                                    (if (vector? maybe-unmarshals)
-                                        (values null maybe-unmarshals renames)
-                                        (values maybe-unmarshals
-                                                (car renames)
-                                                (cdr renames)))])
-                        (make-module-rename phase 
-                                            (if kind 'marked 'normal)
-                                            set-id
-                                            (map (lambda (u)
-                                                   (let ([just-phase? (let ([v (cddr u)])
-                                                                        (or (number? v) (not v)))])
-                                                     (let-values ([(exns prefix)
-                                                                   (if just-phase?
-                                                                       (values null #f)
-                                                                       (let loop ([u (if just-phase? null (cdddr u))]
-                                                                                  [a null])
-                                                                         (if (pair? u)
-                                                                             (loop (cdr u) (cons (car u) a))
-                                                                             (values (reverse a) u))))])
-                                                       (make-all-from-module
-                                                        (parse-module-path-index cp (car u))
-                                                        (cadr u)
-                                                        (if just-phase?
-                                                            (cddr u)
-                                                            (caddr u))
-                                                        exns
-                                                        prefix))))
-                                                 unmarshals)
-                                            (let loop ([i 0])
-                                              (if (= i (vector-length renames))
-                                                  null
-                                                  (cons
-                                                   (let ([key (vector-ref renames i)]
-                                                         [make-mapping
-                                                          (lambda (path mod-phase import-phase id nominal-path nominal-phase nominal-id)
-                                                            (make-module-binding
-                                                             (parse-module-path-index cp path)
-                                                             mod-phase
-                                                             import-phase 
-                                                             id 
-                                                             (parse-module-path-index cp nominal-path)
-                                                             nominal-phase 
-                                                             (if (eq? id nominal-id) #t nominal-id)))])
-                                                     (cons key
-                                                           (let ([m (vector-ref renames (add1 i))]
-                                                                 [parse-nominal-modidx-plus-phase
-                                                                  (lambda (modidx mod-phase exportname nominal-modidx-plus-phase nom-exportname)
-                                                                    (match nominal-modidx-plus-phase
-                                                                      [`(,nominal-modidx ,import-phase-plus-nominal-phase)
-                                                                       (match import-phase-plus-nominal-phase
-                                                                         [`(,import-phase ,nom-phase)
-                                                                          (make-mapping modidx mod-phase import-phase exportname
-                                                                                        nominal-modidx nom-phase nom-exportname)]
-                                                                         [import-phase
-                                                                          (make-mapping modidx mod-phase import-phase exportname
-                                                                                        modidx mod-phase nom-exportname)])]
-                                                                      [nominal-modidx
-                                                                       (make-mapping modidx mod-phase '* exportname
-                                                                                     nominal-modidx mod-phase nom-exportname)]))])
-                                                             (match m
-                                                               [`(,modidx ,mod-phase ,exportname ,nominal-modidx-plus-phase . ,nominal-exportname)
-                                                                (parse-nominal-modidx-plus-phase modidx mod-phase exportname 
-                                                                                                 nominal-modidx-plus-phase nominal-exportname)]
-                                                               [`(,modidx ,exportname ,nominal-modidx-plus-phase . ,nominal-exportname)
-                                                                (parse-nominal-modidx-plus-phase modidx '* exportname 
-                                                                                                 nominal-modidx-plus-phase nominal-exportname)]
-                                                               [`(,modidx ,nominal-modidx)
-                                                                (make-mapping modidx '* '* key nominal-modidx '* key)]
-                                                               [`(,modidx ,exportname)
-                                                                (make-mapping modidx '* '* exportname modidx '* exportname)]
-                                                               [modidx
-                                                                (make-mapping modidx '* '* key modidx '* key)]))))
-                                                   (loop (+ i 2)))))
-                                            mark-renames
-                                            (and plus-kern? 'plus-kern)))]
-                     [else (error "bad module rename: ~e" a)]))]
-                [(boolean? a)
-                 `(#%top-level-rename ,a)]
-                [(symbol? a)
-                 '(#%mark-barrier)]
-                [(box? a)
-                 (match (unbox a)
-                   [(list (? symbol?) ...) (make-prune (unbox a))]
-                   [`#(,amt ,src ,dest #f)
-                    (make-phase-shift amt 
-                                      (parse-module-path-index cp src)
-                                      (parse-module-path-index cp dest))]
-                   [else (error 'parse "bad phase shift: ~e" a)])]
-                [else (error 'decode-wraps "bad wrap element: ~e" a)])))
+                 ; A reference 
+                 [(integer? a) 
+                  (let-values ([(a2 decoded?) (unmarshal-stx-get cp a)])
+                    (if decoded?
+                        a2
+                        (let ([a2 (aloop a2)])
+                          (unmarshal-stx-set! cp a a2)
+                          a2)))]
+                 ; A mark (not actually a number as the C says, but a (list <num>)
+                 [(and (pair? a) (null? (cdr a)) (number? (car a)))
+                  (make-wrap-mark (car a))]
+                 
+                 [(vector? a) 
+                  (make-lexical-rename (vector-ref a 0) (vector-ref a 1)
+                                       (let ([top (+ (/ (- (vector-length a) 2) 2) 2)])
+                                         (let loop ([i 2])
+                                           (if (= i top)
+                                               null
+                                               (cons (cons (vector-ref a i)
+                                                           (vector-ref a (+ (- top 2) i)))
+                                                     (loop (+ i 1)))))))]
+                 [(pair? a)
+                  (let-values ([(plus-kern? a) (if (eq? (car a) #t)
+                                                   (values #t (cdr a))
+                                                   (values #f a))])
+                    (match a
+                      [`(,phase ,kind ,set-id ,maybe-unmarshals . ,renames)
+                       (let-values ([(unmarshals renames mark-renames)
+                                     (if (vector? maybe-unmarshals)
+                                         (values null maybe-unmarshals renames)
+                                         (values maybe-unmarshals
+                                                 (car renames)
+                                                 (cdr renames)))])
+                         (make-module-rename phase 
+                                             (if kind 'marked 'normal)
+                                             set-id
+                                             (let ([results (map (lambda (u)
+                                                                   (let ([just-phase? (let ([v (cddr u)])
+                                                                                        (or (number? v) (not v)))])
+                                                                     (let-values ([(exns prefix)
+                                                                                   (if just-phase?
+                                                                                       (values null #f)
+                                                                                       (let loop ([u (if just-phase? null (cdddr u))]
+                                                                                                  [a null])
+                                                                                         (if (pair? u)
+                                                                                             (loop (cdr u) (cons (car u) a))
+                                                                                             (values (reverse a) u))))])
+                                                                       (make-all-from-module
+                                                                        (parse-module-path-index cp (car u))
+                                                                        (cadr u)
+                                                                        (if just-phase?
+                                                                            (cddr u)
+                                                                            (caddr u))
+                                                                        exns
+                                                                        prefix))))
+                                                                 unmarshals)])
+                                               #;(printf "~nunmarshals: ~S~n" unmarshals)
+                                               #;(printf "~nunmarshal results: ~S~n" results)
+                                               results)
+                                             (decode-renames renames)
+                                             mark-renames
+                                             (and plus-kern? 'plus-kern)))]
+                      [else (error "bad module rename: ~e" a)]))]
+                 [(boolean? a)
+                  `(#%top-level-rename ,a)]
+                 [(symbol? a)
+                  '(#%mark-barrier)]
+                 [(box? a)
+                  (match (unbox a)
+                    [(list (? symbol?) ...) (make-prune (unbox a))]
+                    [`#(,amt ,src ,dest #f) 
+                     (make-phase-shift amt 
+                                       (parse-module-path-index cp src)
+                                       (parse-module-path-index cp dest))]
+                    [else (error 'parse "bad phase shift: ~e" a)])]
+                 [else (error 'decode-wraps "bad wrap element: ~e" a)])))
            w)))
+
+(define (in-vector* v n)
+  (make-do-sequence
+   (λ ()
+     (values (λ (i) (vector->values v i (+ i n)))
+             (λ (i) (+ i n))
+             0
+             (λ (i) (>= (vector-length v) (+ i n)))
+             (λ _ #t)
+             (λ _ #t)))))
+
+(define (decode-renames renames)
+  (define decode-nominal-path
+    (match-lambda
+      [(cons nominal-path (cons import-phase nominal-phase))
+       (make-phased-nominal-path nominal-path import-phase nominal-phase)]
+      [(cons nominal-path import-phase)
+       (make-imported-nominal-path nominal-path import-phase)]
+      [nominal-path
+       (make-simple-nominal-path nominal-path)]))
+  
+  ; XXX Matthew, I'm ashamed
+  (define (nom_mod_p p)
+    (and (pair? p) (not (pair? (cdr p))) (not (symbol? (cdr p))))) 
+  
+  (for/list ([(k v) (in-vector* renames 2)])
+    (cons k 
+          (match v
+            [(list-rest path phase export-name nominal-path nominal-export-name)
+             (make-phased-module-binding path
+                                         phase
+                                         export-name
+                                         (decode-nominal-path nominal-path) 
+                                         nominal-export-name)]
+            [(list-rest path export-name nominal-path nominal-export-name)
+             (make-exported-nominal-module-binding path
+                                                   export-name 
+                                                   (decode-nominal-path nominal-path)
+                                                   nominal-export-name)]
+            [(cons module-path-index (? nom_mod_p nominal-path))
+             (make-nominal-module-binding module-path-index (decode-nominal-path nominal-path))]
+            [(cons module-path-index export-name)
+             (make-exported-module-binding module-path-index export-name)]
+            [module-path-index 
+             (make-simple-module-binding module-path-index)]))))
 
 (define (unmarshal-stx-get cp pos)
   (if (pos . >= . (vector-length (cport-symtab cp)))
@@ -737,19 +702,7 @@
   (vector-set! (cport-decoded cp) pos #t))
 
 (define (parse-module-path-index cp s)
-  (cond
-   [(not s) #f]
-   [(module-path-index? s)
-    (hash-ref (cport-mpis cp) s
-              (lambda ()
-                (let-values ([(name base) (module-path-index-split s)])
-                  (let ([v `(module-path-index-join
-                             (quote ,name)
-                             ,(parse-module-path-index cp base))])
-                    (hash-set! (cport-mpis cp) s v)
-                    v))))]
-   [else `(quote ,s)]))
-
+  s)
 ;; ----------------------------------------
 ;; Main parsing loop
 
@@ -813,8 +766,8 @@
                  [pos (read-compact-number cp)])
              (let-values ([(mod-phase pos)
                            (if (= pos -2)
-                                  (values 1 (read-compact-number cp))
-                                  (values 0 pos))])
+                               (values 1 (read-compact-number cp))
+                               (values 0 pos))])
                (make-module-variable mod var pos mod-phase)))]
           [(local-unbox)
            (let* ([p* (read-compact-number cp)]
@@ -857,9 +810,10 @@
           [(hash-table)
            (let ([eq (read-compact-number cp)]
                  [len (read-compact-number cp)])
-             ((if (zero? eq) 
-                  make-hash-placeholder
-                  make-hasheq-placeholder)
+             ((case eq
+                [(0) make-hasheq-placeholder]
+                [(1) make-hash-placeholder]
+                [(2) make-hash-placeholder])
               (for/list ([i (in-range len)])
                 (cons (read-compact cp)
                       (read-compact cp)))))]
@@ -919,12 +873,15 @@
                      (set-cport-pos! cp pos)
                      (vector-set! (cport-symtab cp) l v)
                      v))
-                 v))]
+                 v))]                           
           [(weird-symbol)
-           (let ([u (read-compact-number cp)]
+           (let ([uninterned (read-compact-number cp)]
                  [str (read-compact-chars cp (read-compact-number cp))])
-             ;; FIXME: no way to construct quasi-interned symbols:
-             (string->uninterned-symbol str))]
+             (if (= 1 uninterned)
+                 ; uninterned is equivalent to weird in the C implementation 
+                 (string->uninterned-symbol str)
+                 ; unreadable is equivalent to parallel in the C implementation
+                 (string->unreadable-symbol str)))]
           [(small-marshalled)
            (read-marshalled (- ch cpt-start) cp)]
           [(small-application2)
@@ -952,9 +909,9 @@
                     [cl (make-closure v (gensym
                                          (let ([s (lam-name v)])
                                            (cond
-                                            [(symbol? s) s]
-                                            [(vector? s) (vector-ref s 0)]
-                                            [else 'closure]))))])
+                                             [(symbol? s) s]
+                                             [(vector? s) (vector-ref s 0)]
+                                             [else 'closure]))))])
                (set-indirect-v! ind cl)
                ind))]
           [(svector)
@@ -973,49 +930,49 @@
 ;; implementes read.c:read_compiled
 (define (zo-parse port)
   (begin-with-definitions    
-   ;; skip the "#~"
-   (unless (equal? #"#~" (read-bytes 2 port))
-     (error 'zo-parse "not a bytecode stream"))
-   
-   (define version (read-bytes (min 63 (read-byte port)) port))
-   
-   (define symtabsize (read-simple-number port))
-   
-   (define all-short (read-byte port))
-   
-   (define cnt (* (if (not (zero? all-short)) 2 4)
-                  (sub1 symtabsize)))
-
-   (define so (read-bytes cnt port))
-   
-   (define so* (list->vector (split-so all-short so)))
-
-   (define shared-size (read-simple-number port))
-   (define size* (read-simple-number port))
-
-   (when (shared-size . >= . size*) 
-     (error 'bad-read))
-
-   (define rst (read-bytes size* port))
-
-   (unless (eof-object? (read-byte port))
-     (error 'not-end))
-   
-   (unless (= size* (bytes-length rst))
-     (error "wrong number of bytes"))
-
-   (define symtab (make-vector symtabsize (make-not-ready)))
-
-   (define cp (make-cport 0 port size* rst symtab so* (make-vector symtabsize #f) (make-hash) (make-hash)))
-
-   (for/list ([i (in-range 1 symtabsize)])
-     (when (not-ready? (vector-ref symtab i))
-       (set-cport-pos! cp (vector-ref so* (sub1 i)))
-       (let ([v (read-compact cp)])
-         (vector-set! symtab i v))))
-
-   (set-cport-pos! cp shared-size)
-   (read-marshalled 'compilation-top-type cp)))
+    ;; skip the "#~"
+    (unless (equal? #"#~" (read-bytes 2 port))
+      (error 'zo-parse "not a bytecode stream"))
+    
+    (define version (read-bytes (min 63 (read-byte port)) port))
+    
+    (define symtabsize (read-simple-number port))
+    
+    (define all-short (read-byte port))
+    
+    (define cnt (* (if (not (zero? all-short)) 2 4)
+                   (sub1 symtabsize)))
+    
+    (define so (read-bytes cnt port))
+    
+    (define so* (list->vector (split-so all-short so)))
+    
+    (define shared-size (read-simple-number port))
+    (define size* (read-simple-number port))
+    
+    (when (shared-size . >= . size*) 
+      (error 'zo-parse "Non-shared data segment start is not after shared data segment (according to offsets)"))
+    
+    (define rst (read-bytes size* port))
+    
+    (unless (eof-object? (read-byte port))
+      (error 'not-end))
+    
+    (unless (= size* (bytes-length rst))
+      (error "wrong number of bytes"))
+    
+    (define symtab (make-vector symtabsize (make-not-ready)))
+    
+    (define cp (make-cport 0 shared-size port size* rst symtab so* (make-vector symtabsize #f) (make-hash) (make-hash)))
+    
+    (for/list ([i (in-range 1 symtabsize)])
+      (define vv (vector-ref symtab i))
+      (when (not-ready? vv)
+        (set-cport-pos! cp (vector-ref so* (sub1 i)))
+        (let ([v (read-compact cp)])
+          (vector-set! symtab i v))))
+    (set-cport-pos! cp shared-size)
+    (read-marshalled 'compilation-top-type cp)))
 
 ;; ----------------------------------------
 
@@ -1028,12 +985,12 @@
              (compile sexp))
            s)
     (get-output-bytes s))
-
+  
   (define (compile/parse sexp)  
     (let* ([bs (compile/write sexp)]
            [p (open-input-bytes bs)])
       (zo-parse p)))
-
+  
   #;(compile/parse #s(foo 10 13))
   (zo-parse (open-input-file "/home/mflatt/proj/plt/collects/scheme/private/compiled/more-scheme_ss.zo"))
-)
+  )

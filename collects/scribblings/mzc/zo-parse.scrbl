@@ -224,7 +224,7 @@ to its depth from before evaluating the form.}
                         [max-let-depth exact-nonnegative-integer?]
                         [dummy toplevel?]
                         [lang-info (or/c #f (vector/c module-path? symbol? any/c))]
-                        [internal-context (or/c #f #t syntax?)])]{
+                        [internal-context (or/c #f #t stx?)])]{
 
 Represents a @scheme[module] declaration. The @scheme[body] forms use
 @scheme[prefix], rather than any prefix in place for the module
@@ -268,7 +268,7 @@ embeds an arbitrary lexical context.}
                       [nom-mod (or/c module-path-index? #f)]
                       [src-phase (or/c 0 1)]
                       [protected? boolean?]
-                      [insp (or #t #f (void))])]{
+                      [insp (or #t #f void?)])]{
 
 Describes an individual provided identifier within a @scheme[mod] instance.}
 
@@ -527,7 +527,7 @@ kernel.}
 
 @defstruct+[wrapped ([datum any/c]
                      [wraps (listof wrap?)]
-                     [certs list?])]{
+                     [certs (or/c list? #f)])]{
 
 Represents a syntax object, where @scheme[wraps] contain the lexical
 information and @scheme[certs] is certificate information. When the
@@ -539,7 +539,7 @@ information and @scheme[certs] is certificate information. When the
 A supertype for lexical-information elements.}
 
 
-@defstruct+[(lexical-rename wrap) ([alist (listof (cons/c identifier? identifier?))])]{
+@defstruct+[(lexical-rename wrap) ([alist (listof (cons/c symbol? symbol?))])]{
 
 A local-binding mapping from symbols to binding-set names.}
 
@@ -569,13 +569,60 @@ Represents a set of module and import bindings.}
 Represents a set of simple imports from one module within a
 @scheme[module-rename].}
 
-@defstruct+[module-binding ([path module-path-index?]
-                            [mod-phase (or/c exact-integer? #f)]
-                            [import-phase (or/c exact-integer? #f)]
-                            [id symbol?]
-                            [nominal-path module-path-index?]
-                            [nominal-phase (or/c exact-integer? #f)]
-                            [nominal-id (or/c exact-integer? #f)])]{
+@defstruct+[module-binding ()]{
 
-Represents a single identifier import (i.e., the general case) within
+A supertype for module bindings.}
+
+@defstruct+[(simple-module-binding module-binding) ([path module-path-index?])]{
+                                                                                
+Represents a single identifier import within
 a @scheme[module-rename].}
+
+@defstruct+[(phased-module-binding module-binding) ([path module-path-index?]
+                                                    [phase exact-integer?]
+                                                    [export-name any/c]
+                                                    [nominal-path nominal-path?]
+                                                    [nominal-export-name any/c])]{
+                                                                                 
+Represents a single identifier import within
+a @scheme[module-rename].}
+                                                                                 
+@defstruct+[(exported-nominal-module-binding module-binding) ([path module-path-index?]
+                                                              [export-name any/c]
+                                                              [nominal-path nominal-path?]
+                                                              [nominal-export-name any/c])]{ 
+                                                                                            
+Represents a single identifier import within
+a @scheme[module-rename].}
+                                                                                           
+@defstruct+[(nominal-module-binding module-binding) ([path module-path-index?]
+                                                     [nominal-path nominal-path?])]{       
+                                                                                            
+Represents a single identifier import within
+a @scheme[module-rename].}
+                                                                                   
+@defstruct+[(exported-module-binding module-binding) ([path module-path-index?]
+                                                      [export-name any/c])]{
+                                                                                                                                                                    
+Represents a single identifier import within
+a @scheme[module-rename].}
+                                                                           
+                                                                           
+@defstruct+[nominal-path ()]{
+                             
+A supertype for nominal paths.}
+
+@defstruct+[(simple-nominal-path nominal-path) ([value module-path-index?])]{
+
+Represents a simple nominal path.}
+
+@defstruct+[(imported-nominal-path nominal-path) ([value module-path-index?] 
+                                                  [import-phase exact-integer?])]{
+                                                                                  
+Represents an imported nominal path.}
+                                                                                 
+@defstruct+[(phased-nominal-path nominal-path) ([value module-path-index?]
+                                                [import-phase exact-integer?]
+                                                [phase exact-integer?])]{
+                                                                         
+Represents a phased nominal path.}

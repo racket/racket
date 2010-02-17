@@ -70,6 +70,7 @@ void scheme_set_case_sensitive(int v) { scheme_case_sensitive =  v; }
 
 /* locals */
 static Scheme_Object *symbol_p_prim (int argc, Scheme_Object *argv[]);
+static Scheme_Object *symbol_unreadable_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *symbol_interned_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_symbol_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *string_to_uninterned_symbol_prim (int argc, Scheme_Object *argv[]);
@@ -318,6 +319,9 @@ scheme_init_symbol (Scheme_Env *env)
   p = scheme_make_folding_prim(symbol_p_prim, "symbol?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("symbol?", p, env);
+
+  p = scheme_make_folding_prim(symbol_unreadable_p_prim, "symbol-unreadable?", 1, 1, 1);
+  scheme_add_global_constant("symbol-unreadable?", p, env);
   
   p = scheme_make_folding_prim(symbol_interned_p_prim, "symbol-interned?", 1, 1, 1);
   scheme_add_global_constant("symbol-interned?", p, env);
@@ -689,6 +693,16 @@ symbol_interned_p_prim (int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
+symbol_unreadable_p_prim (int argc, Scheme_Object *argv[])
+{
+  if (SCHEME_SYMBOLP(argv[0]))
+    return (SCHEME_SYM_PARALLELP(argv[0]) ? scheme_true : scheme_false);
+  
+  scheme_wrong_type("symbol-unreadable?", "symbol", 0, argc, argv);
+  return NULL;
+}
+
+static Scheme_Object *
 string_to_symbol_prim (int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_CHAR_STRINGP(argv[0]))
@@ -713,7 +727,7 @@ string_to_unreadable_symbol_prim (int argc, Scheme_Object *argv[])
   long blen;
 
   if (!SCHEME_CHAR_STRINGP(argv[0]))
-    scheme_wrong_type("string->symbol", "string", 0, argc, argv);
+    scheme_wrong_type("string->unreadable-symbol", "string", 0, argc, argv);
 
   bs = scheme_utf8_encode_to_buffer_len(SCHEME_CHAR_STR_VAL(argv[0]),
                                         SCHEME_CHAR_STRTAG_VAL(argv[0]), 
