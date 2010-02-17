@@ -459,32 +459,32 @@ scheme_init_list (Scheme_Env *env)
   scheme_add_global_constant("make-hash",
 			     scheme_make_immed_prim(make_hash,
 						    "make-hash",
-						    0, 0),
+						    0, 1),
 			     env);
   scheme_add_global_constant("make-hasheq",
 			     scheme_make_immed_prim(make_hasheq,
 						    "make-hasheq",
-						    0, 0),
+						    0, 1),
 			     env);
   scheme_add_global_constant("make-hasheqv",
 			     scheme_make_immed_prim(make_hasheqv,
 						    "make-hasheqv",
-						    0, 0),
+						    0, 1),
 			     env);
   scheme_add_global_constant("make-weak-hash",
 			     scheme_make_immed_prim(make_weak_hash,
 						    "make-weak-hash",
-						    0, 0),
+						    0, 1),
 			     env);
   scheme_add_global_constant("make-weak-hasheq",
 			     scheme_make_immed_prim(make_weak_hasheq,
 						    "make-weak-hasheq",
-						    0, 0),
+						    0, 1),
 			     env);
   scheme_add_global_constant("make-weak-hasheqv",
 			     scheme_make_immed_prim(make_weak_hasheqv,
 						    "make-weak-hasheqv",
-						    0, 0),
+						    0, 1),
 			     env);
   scheme_add_global_constant("make-immutable-hash",
 			     scheme_make_immed_prim(make_immutable_hash,
@@ -1555,34 +1555,77 @@ Scheme_Bucket_Table *scheme_make_weak_eqv_table(void)
   return t;
 }
 
+static Scheme_Object *fill_table(Scheme_Object *ht, const char *who,
+                                 int argc, Scheme_Object **argv)
+{
+  Scheme_Object *l, *a, *args[3];
+
+  if (argc) {
+    l = argv[0];
+    if (scheme_proper_list_length(l) >= 0) {
+      for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+        a = SCHEME_CAR(l);
+        if (!SCHEME_PAIRP(a))
+          break;
+      }
+    }
+    
+    if (!SCHEME_NULLP(l))
+      scheme_wrong_type(who, "list of pairs", 0, argc, argv);
+    
+    args[0] = ht;
+
+    for (l = argv[0]; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+      a = SCHEME_CAR(l);
+      args[1] = SCHEME_CAR(a);
+      args[2] = SCHEME_CDR(a);
+      hash_table_put_bang(3, args);
+    }
+  }
+
+  return ht;
+}
+
 static Scheme_Object *make_hash(int argc, Scheme_Object *argv[])
 {
-  return (Scheme_Object *)scheme_make_hash_table_equal();
+  Scheme_Object *ht;
+  ht = (Scheme_Object *)scheme_make_hash_table_equal();
+  return fill_table(ht, "make-hash", argc, argv);
 }
 
 static Scheme_Object *make_hasheq(int argc, Scheme_Object *argv[])
 {
-  return (Scheme_Object *)scheme_make_hash_table(SCHEME_hash_ptr);
+  Scheme_Object *ht;
+  ht = (Scheme_Object *)scheme_make_hash_table(SCHEME_hash_ptr);
+  return fill_table(ht, "make-hasheq", argc, argv);
 }
 
 static Scheme_Object *make_hasheqv(int argc, Scheme_Object *argv[])
 {
-  return (Scheme_Object *)scheme_make_hash_table_eqv();
+  Scheme_Object *ht;
+  ht = (Scheme_Object *)scheme_make_hash_table_eqv();
+  return fill_table(ht, "make-hasheqv", argc, argv);
 }
 
 static Scheme_Object *make_weak_hash(int argc, Scheme_Object *argv[])
 {
-  return (Scheme_Object *)scheme_make_weak_equal_table();
+  Scheme_Object *ht;
+  ht = (Scheme_Object *)scheme_make_weak_equal_table();
+  return fill_table(ht, "make-weak-hash", argc, argv);
 }
 
 static Scheme_Object *make_weak_hasheq(int argc, Scheme_Object *argv[])
 {
-  return (Scheme_Object *)scheme_make_bucket_table(20, SCHEME_hash_weak_ptr);
+  Scheme_Object *ht;
+  ht = (Scheme_Object *)scheme_make_bucket_table(20, SCHEME_hash_weak_ptr);
+  return fill_table(ht, "make-weak-hasheq", argc, argv);
 }
 
 static Scheme_Object *make_weak_hasheqv(int argc, Scheme_Object *argv[])
 {
-  return (Scheme_Object *)scheme_make_weak_eqv_table();
+  Scheme_Object *ht;
+  ht = (Scheme_Object *)scheme_make_weak_eqv_table();
+  return fill_table(ht, "make-weak-hasheqv", argc, argv);
 }
 
 static Scheme_Object *make_immutable_table(const char *who, int kind, int argc, Scheme_Object *argv[])

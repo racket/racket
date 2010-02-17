@@ -1726,8 +1726,10 @@ tcp_connect_break(int argc, Scheme_Object *argv[])
 static unsigned short get_no_portno(tcp_t socket, int *_errid)
 {
   char here[MZ_SOCK_NAME_MAX_LEN];
+  struct sockaddr_in *addr_in;
   unsigned int l = sizeof(here);
   unsigned short no_port;
+
 
   if (getsockname(socket, (struct sockaddr *)here, &l)) {
     int errid;
@@ -1737,7 +1739,8 @@ static unsigned short get_no_portno(tcp_t socket, int *_errid)
   }
 
   /* don't use ntohs, since the result is put back into another sin_port: */
-  no_port = ((struct sockaddr_in *)here)->sin_port;
+  addr_in = (struct sockaddr_in *)here;
+  no_port = addr_in->sin_port;
   if (!no_port)
     *_errid = 0;
   return no_port;

@@ -403,12 +403,12 @@
 [hash-has-key? (-poly (a b) (-> (-HT a b) a B))]
 [hash-update! (-poly (a b)
                      (cl-> [((-HT a b) a (-> b b)) -Void]
-                           [((-HT a b) a (-> b b) (-> a)) -Void]
-                           [((-HT a b) a (-> b b) a) -Void]))]
+                           [((-HT a b) a (-> b b) (-> b)) -Void]
+                           [((-HT a b) a (-> b b) b) -Void]))]
 [hash-update (-poly (a b)
                     (cl-> [((-HT a b) a (-> b b)) (-HT a b)]
-                          [((-HT a b) a (-> b b) (-> a)) (-HT a b)]
-                          [((-HT a b) a (-> b b) a) (-HT a b)]))]
+                          [((-HT a b) a (-> b b) (-> b)) (-HT a b)]
+                          [((-HT a b) a (-> b b) b) (-HT a b)]))]
 [hash-remove (-poly (a b) ((-HT a b) a . -> . (-HT a b)))]
 [hash-remove! (-poly (a b) ((-HT a b) a . -> . -Void))]
 [hash-map (-poly (a b c) ((-HT a b) (a b . -> . c) . -> . (-lst c)))]

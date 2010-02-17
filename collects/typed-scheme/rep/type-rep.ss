@@ -100,7 +100,7 @@
 (dt Poly (n body) #:no-provide 
     [#:contract (->d ([n natural-number/c]
                       [body (scope-depth n)])
-                     ()
+                     (#:syntax [stx (or/c #f syntax?)])
                      [result Poly?])]
     [#:frees (free-vars* body) (without-below n (free-idxs* body))]
     [#:fold-rhs (let ([body* (remove-scopes n body)])
@@ -113,7 +113,7 @@
 (dt PolyDots (n body) #:no-provide
     [#:contract (->d ([n natural-number/c]
                       [body (scope-depth n)])
-                     ()
+                     (#:syntax [stx (or/c #f syntax?)])
                      [result PolyDots?])]
     [#:key (Type-key body)]
     [#:frees (free-vars* body) (without-below n (free-idxs* body))]
@@ -207,7 +207,8 @@
             [proc (or/c #f Function?)]
             [poly? boolean?] 
             [pred-id identifier?]
-            [cert procedure?])
+            [cert procedure?]
+            [acc-ids (listof identifier?)])
     [#:intern (list name parent flds proc)]
     [#:frees (combine-frees (map free-vars* (append (if proc (list proc) null) (if parent (list parent) null) flds)))
              (combine-frees (map free-idxs* (append (if proc (list proc) null) (if parent (list parent) null) flds)))]
@@ -217,7 +218,8 @@
                          (and proc (type-rec-id proc))
                          poly?
                          pred-id
-                         cert)]
+                         cert
+                         acc-ids)]
     [#:key #f])
 
 ;; the supertype of all of these values
@@ -236,25 +238,24 @@
 ;; elems : Listof[Type]
 (dt Union ([elems (and/c (listof Type/c)                         
                          (lambda (es)
-                           (let-values ([(sorted? k)
-                                         (for/fold ([sorted? #t]
-                                                    [last -1])
-                                           ([e es])
-                                           (let ([seq (Type-seq e)])
-                                             (values
-                                              (and sorted?
-                                                   (< last seq))
-                                              seq)))])
-                             sorted?)))]) 
+                           (or (null? es)
+                               (let-values ([(sorted? k)
+                                             (for/fold ([sorted? #t]
+                                                        [last (car es)])
+                                               ([e (cdr es)])
+                                               (values
+                                                (and sorted? (type<? last e))
+                                                e))])
+                                 sorted?))))]) 
     [#:frees (combine-frees (map free-vars* elems))
              (combine-frees (map free-idxs* elems))]
     [#:fold-rhs ((get-union-maker) (map type-rec-id elems))]
     [#:key (let loop ([res null] [ts elems])
-	     (if (null? ts) res
-		 (let ([k (Type-key (car ts))])
-		   (cond [(pair? k) (loop (append k res) (cdr ts))]
-			 [k (loop (cons k res) (cdr ts))]
-			 [else #f]))))])
+             (if (null? ts) res
+                 (let ([k (Type-key (car ts))])
+                   (cond [(pair? k) (loop (append k res) (cdr ts))]
+                         [k (loop (cons k res) (cdr ts))]
+                         [else #f]))))])
     
 (dt Univ () [#:frees #f] [#:fold-rhs #:base])
 
@@ -325,7 +326,8 @@
 
 ;; remove-dups: List[Type] -> List[Type]
 ;; removes duplicate types from a SORTED list
-(define (remove-dups types)
+(d/c (remove-dups types)
+  ((listof Rep?) . -> . (listof Rep?))
   (cond [(null? types) types]
         [(null? (cdr types)) types]
         [(type-equal? (car types) (cadr types)) (remove-dups (cdr types))]
@@ -347,15 +349,16 @@
         [_ (int-err "Tried to remove too many scopes: ~a" sc)])))
 
 ;; type equality
-(define type-equal? eq?)
+(d/c (type-equal? s t) (Rep? Rep? . -> . boolean?) (eq? (Rep-seq s) (Rep-seq t)))
 
 ;; inequality - good
+(d/c (type<? s t)
+  (Rep? Rep? . -> . boolean?)
+  (< (Rep-seq s) (Rep-seq t)))
 
-(define (type<? s t)
-  (< (Type-seq s) (Type-seq t)))
-
-(define (type-compare s t)
-  (cond [(eq? s t) 0]
+(d/c (type-compare s t)
+  (Rep? Rep? . -> . (or/c -1 0 1))
+  (cond [(type-equal? s t) 0]
         [(type<? s t) 1]
         [else -1]))
 
@@ -612,7 +615,7 @@
  Poly-n
  PolyDots-n
  free-vars*
- type-equal? type-compare type<?
+ type-compare type<?
  remove-dups
  sub-lf sub-lo sub-pe
  Values: Values? Values-rs
@@ -625,5 +628,7 @@
              [Mu-body* Mu-body]
              [Poly-body* Poly-body]
              [PolyDots-body* PolyDots-body]))
+
+(p/c [type-equal? (Rep? Rep? . -> . boolean?)])
 
 ;(trace unfold)

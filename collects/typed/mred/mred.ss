@@ -6,7 +6,10 @@
                    () 
                    ([get-width (-> Number)]
                     [get-height (-> Number)])))
-(dt Font-List% (Class () () ([find-or-create-font (Any * -> (Instance Font%))])))
+(dt Font-List% (Class () () ([find-or-create-font 
+			      (case-lambda
+			       (Integer Symbol Symbol Symbol -> (Instance Font%))
+			       (Integer String Symbol Symbol Symbol -> (Instance Font%)))])))
 (dt Font% (Class () () ([get-face (-> (Option String))]
                         [get-point-size (-> Number)])))
 (dt Dialog% (Class () 

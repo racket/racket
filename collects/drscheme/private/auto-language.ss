@@ -1,4 +1,4 @@
-#lang typed-scheme
+#lang typed-scheme/no-check
 
 (require typed/framework/framework 
 	 typed/mred/mred

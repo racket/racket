@@ -511,13 +511,13 @@
     [(#%plain-app do-make-object cl (#%plain-app list . pos-args) (#%plain-app list (#%plain-app cons 'names named-args) ...))
      (check-do-make-object #'cl #'pos-args #'(names ...) #'(named-args ...))]
     ;; ormap/andmap of ... argument
-    [(#%plain-app or/andmap:id f arg)
-     #:fail-unless (or (free-identifier=? #'or/andmap #'ormap)
-                       (free-identifier=? #'or/andmap #'andmap)) #f
-     #:fail-unless (with-handlers ([exn:fail? (lambda _ #f)])
-                     (tc/dots #'arg)
-                     #t) #f
-     (let-values ([(ty bound) (tc/dots #'arg)])
+    [(#%plain-app (~or (~literal andmap) (~literal ormap)) f arg)
+     #:attr ty+bound
+     (with-handlers ([exn:fail? (lambda _ #f)])
+       (let-values ([(ty bound) (tc/dots #'arg)])
+         (list ty bound)))
+     #:when (attribute ty+bound)
+     (match-let ([(list ty bound) (attribute ty+bound)])
        (parameterize ([current-tvars (extend-env (list bound)
                                                  (list (make-DottedBoth (make-F bound)))
                                                  (current-tvars))])
@@ -708,7 +708,7 @@
                      (lambda (dom rng rest a) (infer/vararg vars argtys-t dom rest rng (fv rng) (and expected (tc-results->values expected))))
                      t argtys expected)]
     ;; procedural structs
-    [((tc-result1: (and sty (Struct: _ _ _ (? Function? proc-ty) _ _ _))) _)
+    [((tc-result1: (and sty (Struct: _ _ _ (? Function? proc-ty) _ _ _ _))) _)
      (tc/funapp f-stx #`(#,(syntax/loc f-stx dummy) . #,args-stx) (ret proc-ty) (cons ftype0 argtys) expected)]
     ;; parameters are functions too
     [((tc-result1: (Param: in out)) (list)) (ret out)]

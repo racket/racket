@@ -38,12 +38,12 @@
      (make-Pair t (update s (make-NotTypeFilter u rst x)))]
     
     ;; struct ops
-    [((Struct: nm par flds proc poly pred cert) 
+    [((Struct: nm par flds proc poly pred cert acc-ids) 
       (TypeFilter: u (list rst ... (StructPE: (? (lambda (s) (subtype t s)) s) idx)) x))     
-     (make-Struct nm par (replace-nth flds idx (lambda (e) (update e (make-TypeFilter u rst x)))) proc poly pred cert)]
-    [((Struct: nm par flds proc poly pred cert) 
+     (make-Struct nm par (replace-nth flds idx (lambda (e) (update e (make-TypeFilter u rst x)))) proc poly pred cert )]
+    [((Struct: nm par flds proc poly pred cert acc-ids) 
       (NotTypeFilter: u (list rst ... (StructPE: (? (lambda (s) (subtype t s)) s) idx)) x))
-     (make-Struct nm par (replace-nth flds idx (lambda (e) (update e (make-NotTypeFilter u rst x)))) proc poly pred cert)]
+     (make-Struct nm par (replace-nth flds idx (lambda (e) (update e (make-NotTypeFilter u rst x)))) proc poly pred cert acc-ids)]
     
     ;; otherwise
     [(t (TypeFilter: u (list) _))

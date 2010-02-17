@@ -139,6 +139,9 @@ void (*scheme_pop_kill_action)();
 void (*scheme_set_can_break)(int on);
 void (*scheme_push_break_enable)(Scheme_Cont_Frame_Data *cframe, int on, int pre_check);
 void (*scheme_pop_break_enable)(Scheme_Cont_Frame_Data *cframe, int post_check);
+int (*scheme_with_stack_freeze)(Scheme_Frozen_Stack_Proc wha_f, void *wha_data);
+int (*scheme_frozen_run_some)(Scheme_Frozen_Stack_Proc do_f, void *do_data, int run_msecs);
+int (*scheme_is_in_frozen_stack)();
 /*========================================================================*/
 /*                              error handling                            */
 /*========================================================================*/
@@ -767,7 +770,6 @@ Scheme_Object *(*scheme_read_byte_string)(Scheme_Object *port);
 /*                        namespace/environment                           */
 /*========================================================================*/
 Scheme_Object *(*scheme_make_namespace)(int argc, Scheme_Object *argv[]);
-void (*scheme_add_namespace_option)(Scheme_Object *key, void (*f)(Scheme_Env *));
 void (*scheme_add_global)(const char *name, Scheme_Object *val, Scheme_Env *env);
 void (*scheme_add_global_symbol)(Scheme_Object *name, Scheme_Object *val,
 			      Scheme_Env *env);

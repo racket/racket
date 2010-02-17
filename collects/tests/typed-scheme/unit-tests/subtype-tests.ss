@@ -113,10 +113,10 @@
    
    [(-values (list -Number)) (-values (list Univ))]
    
-   [(-poly (a) ((Un (make-Base 'foo #'dummy) (-struct 'bar #f (list -Number a))) . -> . (-lst a)))
-    ((Un (make-Base 'foo #'dummy) (-struct 'bar #f (list -Number (-pair -Number (-v a))))) . -> . (-lst (-pair -Number (-v a))))]
-   [(-poly (a) ((-struct 'bar #f (list -Number a)) . -> . (-lst a)))
-    ((-struct 'bar #f (list -Number (-pair -Number (-v a)))) . -> . (-lst (-pair -Number (-v a))))]
+   [(-poly (a) ((Un (make-Base 'foo #'dummy) (-struct 'bar #f (list -Number a) null)) . -> . (-lst a)))
+    ((Un (make-Base 'foo #'dummy) (-struct 'bar #f (list -Number (-pair -Number (-v a))) null)) . -> . (-lst (-pair -Number (-v a))))]
+   [(-poly (a) ((-struct 'bar #f (list -Number a) null) . -> . (-lst a)))
+    ((-struct 'bar #f (list -Number (-pair -Number (-v a))) null) . -> . (-lst (-pair -Number (-v a))))]
    
    [(-poly (a) (a . -> . (make-Listof a))) ((-v b) . -> . (make-Listof (-v b)))]
    [(-poly (a) (a . -> . (make-Listof a))) ((-pair -Number (-v b)) . -> . (make-Listof (-pair -Number (-v b))))]

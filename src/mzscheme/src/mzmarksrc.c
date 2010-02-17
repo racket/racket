@@ -1721,16 +1721,6 @@ mark_thread_hop {
    gcBYTES_TO_WORDS(sizeof(Scheme_Thread_Custodian_Hop));
 }
 
-mark_namespace_option {
- mark:
-  Scheme_NSO *o = (Scheme_NSO *)p;
-
-  gcMARK(o->key);
-
- size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_NSO));
-}
-
 mark_param_data {
  mark:
   ParamData *d = (ParamData *)p;
@@ -1812,6 +1802,19 @@ mark_thread_cell {
 
  size:
   gcBYTES_TO_WORDS(sizeof(Thread_Cell));
+}
+
+mark_frozen_tramp {
+ mark:
+  FrozenTramp *f = (FrozenTramp *)p;
+ 
+  gcMARK(f->do_data);
+  gcMARK(f->old_param);
+  gcMARK(f->config);
+  gcMARK(f->progress_cont);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(FrozenTramp));
 }
 
 END thread;
@@ -2161,6 +2164,7 @@ lex_rib {
   gcMARK(rib->rename);
   gcMARK(rib->timestamp);
   gcMARK(rib->sealed);
+  gcMARK(rib->mapped_names);
   gcMARK(rib->next);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));

@@ -3959,6 +3959,32 @@
           (λ (x) x))
    1)
   
+  (test/spec-passed/result
+   'object-contract-layered1
+   '(send (contract (object-contract (m (-> number? number?)))
+                    (contract (object-contract)
+                              (new (class object% (super-new) (define/public (m x) x)))
+                              'pos
+                              'neg)
+                    'pos
+                    'neg)
+          m
+          5)
+   5)
+  
+  ;; Make sure we're not dropping projections on the floor.
+  (test/neg-blame
+   'object-contract-layered2
+   '(send (contract (object-contract (m (-> number? number?)))
+                    (contract (object-contract (m (-> string? string?)))
+                              (new (class object% (super-new) (define/public (m x) x)))
+                              'pos
+                              'neg)
+                    'pos
+                    'neg)
+          m
+          5))
+  
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
   ;; test error message has right format

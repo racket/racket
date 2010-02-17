@@ -166,8 +166,8 @@
      (fp "~a" (cons 'List (tuple-elems t)))]
     [(Base: n cnt) (fp "~a" n)]      
     [(Opaque: pred _) (fp "(Opaque ~a)" (syntax->datum pred))]
-    [(Struct: 'Promise par (list fld) proc _ _ _) (fp "(Promise ~a)" fld)]      
-    [(Struct: nm par flds proc _ _ _) 
+    [(Struct: 'Promise par (list fld) proc _ _ _ _) (fp "(Promise ~a)" fld)]      
+    [(Struct: nm par flds proc _ _ _ _) 
      (fp "#(struct:~a ~a" nm flds)
      (when proc
        (fp " ~a" proc))

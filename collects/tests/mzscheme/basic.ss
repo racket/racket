@@ -1967,12 +1967,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; hash tables
 
-(arity-test make-hash 0 0)
-(arity-test make-hasheq 0 0)
-(arity-test make-hasheqv 0 0)
-(arity-test make-weak-hash 0 0)
-(arity-test make-weak-hasheq 0 0)
-(arity-test make-weak-hasheqv 0 0)
+(arity-test make-hash 0 1)
+(arity-test make-hasheq 0 1)
+(arity-test make-hasheqv 0 1)
+(arity-test make-weak-hash 0 1)
+(arity-test make-weak-hasheq 0 1)
+(arity-test make-weak-hasheqv 0 1)
 
 (define (hash-tests make-hash make-hasheq make-hasheqv
                     make-weak-hash make-weak-hasheq make-weak-hasheqv

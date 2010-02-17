@@ -177,7 +177,7 @@ static void init_compile_data(Scheme_Comp_Env *env);
 #define COMPILE_DATA(e) (&((Scheme_Full_Comp_Env *)e)->data)
 
 #define SCHEME_NON_SIMPLE_FRAME (SCHEME_NO_RENAME | SCHEME_CAPTURE_WITHOUT_RENAME \
-                                 | SCHEME_FOR_STOPS | SCHEME_FOR_INTDEF | SCHEME_CAPTURE_LIFTED)
+                                 | SCHEME_FOR_STOPS | SCHEME_CAPTURE_LIFTED)
 
 #define ASSERT_IS_VARIABLE_BUCKET(b) /* if (((Scheme_Object *)b)->type != scheme_variable_type) abort() */
 

@@ -13,7 +13,7 @@
 
 
 (define-values (fail-sym exn:infer?)
-  (let ([sym (gensym)])
+  (let ([sym (gensym 'infer-fail)])
     (values sym (lambda (s) (eq? s sym)))))
 
 ;; why does this have to be duplicated?

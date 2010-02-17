@@ -51,9 +51,9 @@
 (define (type->contract ty fail #:out [out? #f] #:typed-side [from-typed? #t])
   (define vars (make-parameter '()))
   (let/ec exit
-    (let loop ([ty ty] [pos? #t] [from-typed? from-typed?])
-      (define (t->c t) (loop t pos? from-typed?))
-      (define (t->c/neg t) (loop t (not pos?) (not from-typed?)))
+    (let loop ([ty ty] [pos? #t] [from-typed? from-typed?] [structs-seen null])
+      (define (t->c t #:seen [structs-seen structs-seen]) (loop t pos? from-typed? structs-seen))
+      (define (t->c/neg t #:seen [structs-seen structs-seen]) (loop t (not pos?) (not from-typed?) structs-seen))
       (match ty
         [(or (App: _ _ _) (Name: _)) (t->c (resolve-once ty))]
         ;; any/c doesn't provide protection in positive position
@@ -79,6 +79,7 @@
            (define (f a)
              (define-values (dom* opt-dom* rngs* rst)
                (match a
+                 ;; functions with no filters or objects
                  [(arr: dom (Values: (list (Result: rngs (LFilterSet: '() '()) (LEmpty:)) ...)) rst #f kws)
                   (let-values ([(mand-kws opt-kws) (partition (match-lambda [(Keyword: _ _ mand?) mand?]) kws)]
                                [(conv) (match-lambda [(Keyword: kw kty _) (list kw (t->c/neg kty))])])
@@ -86,6 +87,7 @@
                             (append-map conv opt-kws)
                             (map t->c rngs) 
                             (and rst (t->c/neg rst))))]
+                 ;; functions with filters or objects
                  [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f '())
                   (if (and out? pos?)
                       (values (map t->c/neg dom)
@@ -119,18 +121,14 @@
          #`(cons/c #,(t->c t1) #,(t->c t2))]
         [(Opaque: p? cert)
          #`(flat-named-contract (quote #,(syntax-e p?)) #,(cert p?))]
-        [(F: v) (cond [(assoc v (vars)) => (if pos? second third)]
+        [(F: v) (cond [(assoc v (vars)) => second]
                       [else (int-err "unknown var: ~a" v)])]
 	[(Poly: vs (and b (Function: _)))
          (match-let ([(Poly-names: vs-nm _) ty])
-           (with-syntax ([(vs+ ...) (generate-temporaries (for/list ([v vs-nm]) (format-symbol "~a+" v)))]
-			 [(vs- ...) (generate-temporaries (for/list ([v vs-nm]) (format-symbol "~a-" v)))])
-             (parameterize ([vars (append (map list
-					       vs
-					       (syntax->list #'(vs+ ...))
-					       (syntax->list #'(vs- ...)))
+           (with-syntax ([(v ...) (generate-temporaries vs-nm)])
+             (parameterize ([vars (append (map list vs (syntax->list #'(v ...)))
 					  (vars))])
-               #`(poly/c ([vs- vs+] ...) #,(t->c b)))))]
+               #`(poly/c (v ...) #,(t->c b)))))]
         [(Mu: n b)
          (match-let ([(Mu-name: n-nm _) ty])
            (with-syntax ([(n*) (generate-temporaries (list n-nm))])
@@ -140,8 +138,25 @@
         [(Instance: _) #'(is-a?/c object%)]
         [(Class: _ _ _) #'(subclass?/c object%)]
         [(Value: '()) #'null?]
-        [(Struct: _ _ _ _ #f pred? cert) 
-         #`(flat-named-contract '#,(syntax-e pred?) #,(cert pred?))]
+        [(Struct: nm par flds proc poly? pred? cert acc-ids)
+         (cond 
+           [(assf (λ (t) (type-equal? t ty)) structs-seen)
+            =>
+            (lambda (pr)
+              (cdr pr))]
+           [proc (exit (fail))]
+               [poly? 
+                (with-syntax* ([(x rec) (generate-temporaries '(x rec))]
+                               [(fld-cnts ...)
+                                (for/list ([fty flds]
+                                           [f-acc acc-ids])
+                                  #`(#,(t->c fty #:seen (cons (cons ty #'rec) structs-seen))
+                                     (#,f-acc x)))])
+                              #`(flat-rec-contract 
+                                 rec
+                                 '#,(syntax-e pred?)
+                                 (lambda (x) (and fld-cnts ...))))]
+               [else #`(flat-named-contract '#,(syntax-e pred?) #,(cert pred?))])]
         [(Syntax: (Base: 'Symbol _)) #'identifier?]
         [(Syntax: t) #`(syntax/c #,(t->c t))]
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]

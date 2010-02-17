@@ -349,77 +349,7 @@
                                            child)))
                                   (send list-item get-items))])
               (when (null? which)
-                (error '(define set-language-level! 
-    (lambda (in-language-spec [close-dialog? #t])
-      (unless (and (pair? in-language-spec)
-                   (list? in-language-spec)
-                   (andmap (lambda (x) (or string? regexp?)) in-language-spec))
-        (error 'set-language-level! "expected a non-empty list of regexps and strings for language, got: ~e" in-language-spec))
-      (let ([drs-frame (get-top-level-focus-window)])
-        (fw:test:menu-select "Language" "Choose Language...")
-        (let* ([language-dialog (wait-for-new-frame drs-frame)]
-               [language-choice (find-labelled-window #f hierarchical-list%)]
-               [b1 (box 0)]
-               [b2 (box 0)]
-               [click-on-snip
-                (lambda (snip)
-                  (let* ([editor (send (send snip get-admin) get-editor)]
-                         [between-threshold (send editor get-between-threshold)])
-                    (send editor get-snip-location snip b1 b2)
-                    (let-values ([(gx gy) (send editor editor-location-to-dc-location
-                                                (unbox b1)
-                                                (unbox b2))])
-                      (let ([x (inexact->exact (+ gx between-threshold 1))]
-                            [y (inexact->exact (+ gy between-threshold 1))])
-                        (fw:test:mouse-click 'left x y)))))])
-          (send language-choice focus)
-          (let loop ([list-item language-choice]
-                     [language-spec in-language-spec])
-            (let* ([name (car language-spec)]
-                   [which (filter (lambda (child)
-                                    (let* ([text (send (send child get-editor) get-text)]
-                                           [matches
-                                            (or (and (regexp? name)
-                                                     (regexp-match name text))
-                                                (and (string? name)
-                                                     (string=? name text)))])
-                                      (and matches
-                                           child)))
-                                  (send list-item get-items))])
-              (when (null? which)
                 (error 'set-language-level! "couldn't find language: ~e, no match at ~e"
-                       in-language-spec name))
-              (unless (= 1 (length which))
-                (error 'set-language-level! "couldn't find language: ~e, double match ~e"
-                       in-language-spec name))
-              (let ([next-item (car which)])
-                (cond
-                  [(null? (rest language-spec))
-                   (when (is-a? next-item hierarchical-list-compound-item<%>)
-                     (error 'set-language-level! "expected no more languages after ~e, but still are, input ~e"
-                            name in-language-spec))
-                   (click-on-snip (send next-item get-clickable-snip))]
-                  [else
-                   (unless (is-a? next-item hierarchical-list-compound-item<%>)
-                     (error 'set-language-level! "expected more languages after ~e, but got to end, input ~e"
-                            name in-language-spec))
-                   (unless (send next-item is-open?)
-                     (click-on-snip (send next-item get-arrow-snip)))
-                   (loop next-item (cdr language-spec))]))))
-          
-          (with-handlers ([exn:fail? (lambda (x) (void))])
-            (fw:test:button-push "Show Details"))
-          
-          (fw:test:button-push "Revert to Language Defaults")
-          
-          (when close-dialog?
-            (fw:test:button-push "OK")
-            (let ([new-frame (wait-for-new-frame language-dialog)])
-              (unless (eq? new-frame drs-frame)
-                (error 'set-language-level! 
-                       "didn't get drscheme frame back, got: ~s (drs-frame ~s)\n"
-                       new-frame
-                       drs-frame)))))))) "couldn't find language: ~e, no match at ~e"
                        in-language-spec name))
               (unless (= 1 (length which))
                 (error 'set-language-level! "couldn't find language: ~e, double match ~e"

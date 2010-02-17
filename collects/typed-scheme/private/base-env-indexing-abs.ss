@@ -44,6 +44,18 @@
        (-StrRx   -String [N ?N ?outp] . ->opt . (optlist -String))
        (-BtsRx   -String [N ?N ?outp] . ->opt . (optlist -Bytes))
        (-Pattern -InpBts [N ?N ?outp] . ->opt . (optlist -Bytes))))]
+   [regexp-match?
+    (let ([?outp   (-opt -Output-Port)]
+          [N       -Nat]
+          [?N      (-opt -Nat)]
+          [optlist (lambda (t) (-opt (-lst (-opt t))))]
+          [-StrRx  (Un -String -Regexp -PRegexp)]
+          [-BtsRx  (Un -Bytes  -Byte-Regexp -Byte-PRegexp)]
+          [-InpBts (Un -Input-Port -Bytes)])
+      (cl->*
+       (-StrRx   -String [N ?N ?outp] . ->opt . -Boolean)
+       (-BtsRx   -String [N ?N ?outp] . ->opt . -Boolean)
+       (-Pattern -InpBts [N ?N ?outp] . ->opt . -Boolean)))]
    [regexp-match*
     (let ([N       -Nat]
           [?N      (-opt -Nat)]

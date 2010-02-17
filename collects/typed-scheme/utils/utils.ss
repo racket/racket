@@ -150,17 +150,18 @@ at least theoretically.
 (define custom-printer (make-parameter #t))
   
 (define-syntax (define-struct/printer stx)
-  (syntax-case stx ()
-    [(form name (flds ...) printer)
-     #`(define-struct/properties name (flds ...) 
-         #,(if printing?
-               #'([prop:custom-write (lambda (a b c) (if (custom-printer) (printer a b c) (pseudo-printer a b c)))]) 
-               #'([prop:custom-write pseudo-printer]))
-         #f)]))
+  (syntax-parse stx
+    [(form name (flds ...) printer:expr)
+     #`(define-struct name (flds ...) 
+         #:property prop:custom-write 
+         #,(if printing? 
+               #'(lambda (a b c) (if (custom-printer) (printer a b c) (pseudo-printer a b c)))
+               #'pseudo-printer)
+         #:inspector #f)]))
 
 
 ;; turn contracts on and off - off by default for performance.
-(define-for-syntax enable-contracts? #f)
+(define-for-syntax enable-contracts? #t)
 (provide (for-syntax enable-contracts?) p/c w/c cnt d-s/c d/c)
 
 ;; these are versions of the contract forms conditionalized by `enable-contracts?'

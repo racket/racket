@@ -4217,33 +4217,6 @@ static int mark_thread_hop_FIXUP(void *p) {
 #define mark_thread_hop_IS_CONST_SIZE 1
 
 
-static int mark_namespace_option_SIZE(void *p) {
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_NSO));
-}
-
-static int mark_namespace_option_MARK(void *p) {
-  Scheme_NSO *o = (Scheme_NSO *)p;
-
-  gcMARK(o->key);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_NSO));
-}
-
-static int mark_namespace_option_FIXUP(void *p) {
-  Scheme_NSO *o = (Scheme_NSO *)p;
-
-  gcFIXUP(o->key);
-
-  return
-  gcBYTES_TO_WORDS(sizeof(Scheme_NSO));
-}
-
-#define mark_namespace_option_IS_ATOMIC 0
-#define mark_namespace_option_IS_CONST_SIZE 1
-
-
 static int mark_param_data_SIZE(void *p) {
   return
    gcBYTES_TO_WORDS(sizeof(ParamData));
@@ -4457,6 +4430,39 @@ static int mark_thread_cell_FIXUP(void *p) {
 
 #define mark_thread_cell_IS_ATOMIC 0
 #define mark_thread_cell_IS_CONST_SIZE 1
+
+
+static int mark_frozen_tramp_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(FrozenTramp));
+}
+
+static int mark_frozen_tramp_MARK(void *p) {
+  FrozenTramp *f = (FrozenTramp *)p;
+ 
+  gcMARK(f->do_data);
+  gcMARK(f->old_param);
+  gcMARK(f->config);
+  gcMARK(f->progress_cont);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(FrozenTramp));
+}
+
+static int mark_frozen_tramp_FIXUP(void *p) {
+  FrozenTramp *f = (FrozenTramp *)p;
+ 
+  gcFIXUP(f->do_data);
+  gcFIXUP(f->old_param);
+  gcFIXUP(f->config);
+  gcFIXUP(f->progress_cont);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(FrozenTramp));
+}
+
+#define mark_frozen_tramp_IS_ATOMIC 0
+#define mark_frozen_tramp_IS_CONST_SIZE 1
 
 
 #endif  /* THREAD */
@@ -5280,6 +5286,7 @@ static int lex_rib_MARK(void *p) {
   gcMARK(rib->rename);
   gcMARK(rib->timestamp);
   gcMARK(rib->sealed);
+  gcMARK(rib->mapped_names);
   gcMARK(rib->next);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));
@@ -5290,6 +5297,7 @@ static int lex_rib_FIXUP(void *p) {
   gcFIXUP(rib->rename);
   gcFIXUP(rib->timestamp);
   gcFIXUP(rib->sealed);
+  gcFIXUP(rib->mapped_names);
   gcFIXUP(rib->next);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));

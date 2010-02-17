@@ -8180,14 +8180,9 @@ static Scheme_Prompt *lookup_cont_prompt(Scheme_Cont *c,
 {
   Scheme_Prompt *prompt;
 
-  prompt = (Scheme_Prompt *)scheme_extract_one_cc_mark_with_meta(NULL, 
-                                                                 SCHEME_PTR_VAL(c->prompt_tag),
-                                                                 NULL,
-                                                                 _prompt_mc,
-                                                                 _prompt_pos);
+  prompt = scheme_get_prompt(SCHEME_PTR_VAL(c->prompt_tag), _prompt_mc, _prompt_pos);
   if (!prompt && !SAME_OBJ(scheme_default_prompt_tag, c->prompt_tag)) {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
-                     msg);
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION, msg);
   }
 
   return prompt;

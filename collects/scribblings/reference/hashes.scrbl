@@ -103,53 +103,60 @@ Returns @scheme[#t] if @scheme[hash] retains its keys weakly,
 @scheme[#f] if it retains keys strongly.}
 
 
-@defproc[(make-hash) hash?]{
+@defproc[(make-hash [assocs (listof pair?) null]) hash?]{
 
-Creates an empty mutable hash table that holds keys strongly and that
-uses @scheme[equal?] to compare keys. See also
-@scheme[make-custom-hash].}
+Creates a mutable hash table that holds keys strongly and that uses
+@scheme[equal?] to compare keys. See also @scheme[make-custom-hash].
 
-
-@defproc[(make-hasheqv) (and/c hash? hash-eqv?)]{
-
-Creates an empty mutable hash table that holds keys strongly and that
-uses @scheme[eqv?] to compare keys.}
-
-
-@defproc[(make-hasheq) (and/c hash? hash-eq?)]{
-
-Creates an empty mutable hash table that holds keys strongly and that
-uses @scheme[eq?] to compare keys.}
+The table is initialized with the content of @scheme[assocs].  In each
+element of @scheme[assocs], the @scheme[car] is a key, and the
+@scheme[cdr] is the corresponding value. The mappings are added to the
+table in the order that they appear in @scheme[assocs], so later
+mappings can hide earlier mappings.}
 
 
-@defproc[(make-weak-hash) (and/c hash? hash-weak?)]{
+@defproc[(make-hasheqv [assocs (listof pair?) null]) (and/c hash? hash-eqv?)]{
 
-Creates an empty mutable hash table that holds keys weakly and that
-uses @scheme[equal?] to compare keys.  See also
-@scheme[make-weak-custom-hash].}
-
-
-@defproc[(make-weak-hasheqv) (and/c hash? hash-eqv? hash-weak?)]{
-
-Creates an empty mutable hash table that holds keys weakly and that
-uses @scheme[eqv?] to compare keys.}
+Creates a mutable hash table that holds keys strongly and that
+uses @scheme[eqv?] to compare keys. The table is initialized with the
+content of @scheme[assocs] as in @scheme[make-hash].}
 
 
-@defproc[(make-weak-hasheq) (and/c hash? hash-eq? hash-weak?)]{
+@defproc[(make-hasheq [assocs (listof pair?) null]) (and/c hash? hash-eq?)]{
 
-Creates an empty mutable hash table that holds keys weakly and that
-uses @scheme[eq?] to compare keys.}
+Creates a mutable hash table that holds keys strongly and that
+uses @scheme[eq?] to compare keys. The table is initialized with the
+content of @scheme[assocs] as in @scheme[make-hash].}
+
+
+@defproc[(make-weak-hash [assocs (listof pair?) null]) (and/c hash? hash-weak?)]{
+
+Creates a mutable hash table that holds keys weakly and that
+uses @scheme[equal?] to compare keys; see also
+@scheme[make-weak-custom-hash]. The table is initialized with the
+content of @scheme[assocs] as in @scheme[make-hash].}
+
+
+@defproc[(make-weak-hasheqv [assocs (listof pair?) null]) (and/c hash? hash-eqv? hash-weak?)]{
+
+Creates a mutable hash table that holds keys weakly and that
+uses @scheme[eqv?] to compare keys. The table is initialized with the
+content of @scheme[assocs] as in @scheme[make-hash].}
+
+
+@defproc[(make-weak-hasheq [assocs (listof pair?) null]) (and/c hash? hash-eq? hash-weak?)]{
+
+Creates a mutable hash table that holds keys weakly and that
+uses @scheme[eq?] to compare keys.  The table is initialized with the
+content of @scheme[assocs] as in @scheme[make-hash].}
 
 
 @defproc[(make-immutable-hash [assocs (listof pair?)])
          (and/c hash? immutable?)]{
 
 Creates an immutable hash table that compares keys with
-@scheme[equal?]. In each element of @scheme[assocs], the @scheme[car]
-of each pair is a key, and the @scheme[cdr] is the corresponding
-value. The mappings are added to the table in the order that they
-appear in @scheme[assocs], so later mappings can hide earlier
-mappings.}
+@scheme[equal?]. The table is created with the content of
+@scheme[assocs] as in @scheme[make-hash].}
 
 @defproc[(make-immutable-hasheqv [assocs (listof pair?)])
          (and/c hash? hash-eqv? immutable?)]{

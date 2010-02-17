@@ -3,6 +3,7 @@
          syntax/modresolve
          setup/main-collects
          scheme/file
+         unstable/file
          scheme/list
          scheme/path)
 
@@ -117,19 +118,30 @@
   (trace-printf "failure"))
 
 ;; with-compile-output : path (output-port -> alpha) -> alpha
-;;  Open path for writing, and arranges to delete path if there's
+;;  Open a temporary path for writing, automatically renames after,
+;;  and arranges to delete path if there's
 ;;  an exception. Breaks are managed so that the port is reliably
 ;;  closed and the file is reliably deleted if there's a break
 (define (with-compile-output path proc)
-  (let ([bp (current-break-parameterization)])
-    (with-handlers ([void (lambda (exn) (try-delete-file path) (raise exn))])
-      (let ([out (open-output-file path #:exists 'truncate/replace)])
-        (dynamic-wind
-          void
-          (lambda ()
-            (call-with-break-parameterization bp (lambda () (proc out))))
-          (lambda ()
-            (close-output-port out)))))))
+  (let ([bp (current-break-parameterization)]
+        [tmp-path (make-temporary-file "tmp~a" #f (path-only path))]
+        [ok? #f])
+    (dynamic-wind
+     void
+     (lambda ()
+       (begin0
+         (let ([out (open-output-file tmp-path #:exists 'truncate/replace)])
+           (dynamic-wind
+            void
+            (lambda ()
+              (call-with-break-parameterization bp (lambda () (proc out tmp-path))))
+            (lambda ()
+              (close-output-port out))))
+         (set! ok? #t)))
+     (lambda ()
+       (if ok?
+           (rename-file-or-directory/ignore-exists-exn tmp-path path)
+           (try-delete-file tmp-path))))))
 
 (define (write-deps code mode path external-deps reader-deps)
   (let ([dep-path (path-add-suffix (get-compilation-path mode path) #".dep")]
@@ -137,7 +149,7 @@
                                          reader-deps))]
         [external-deps (remove-duplicates external-deps)])
     (with-compile-output dep-path
-      (lambda (op)
+      (lambda (op tmp-path)
         (write `(,(version)
                  ,@(map path->main-collects-relative deps)
                  ,@(map (lambda (x)
@@ -239,9 +251,9 @@
 
   ;; Write the code and dependencies:
   (when code
-    (make-directory* code-dir)
+    (make-directory*/ignore-exists-exn code-dir)
     (with-compile-output zo-name
-      (lambda (out)
+      (lambda (out tmp-name)
         (with-handlers ([exn:fail?
                          (lambda (ex)
                            (close-output-port out)
@@ -258,7 +270,7 @@
         (close-output-port out)
         ;; Note that we check time and write .deps before returning from
         ;; with-compile-output...
-        (verify-times path zo-name)
+        (verify-times path tmp-name)
         (write-deps code mode path external-deps reader-deps)))))
 
 (define depth (make-parameter 0))

@@ -43,14 +43,14 @@
      [#:contract (->d ([t (cond [(ormap Bot? t)
                                  (list/c Bot?)]
                                 [(ormap Bot? e)
-                                 (list/c)]
+                                 (flat-named-contract "e was Bot" (list/c))]
                                 [else (listof Filter/c)])]
                        [e (cond [(ormap Bot? e)
                                  (list/c Bot?)]
                                 [(ormap Bot? t)
-                                 (list/c)]
+                                 (flat-named-contract "t was Bot" (list/c))]
                                 [else (listof Filter/c)])])
-                      ()
+                      (#:syntax [stx #f])
                       [result FilterSet?])])
 
 ;; represents no info about the filters of this expression
@@ -82,14 +82,14 @@
      [#:contract (->d ([t (cond [(ormap LBot? t)
                                  (list/c LBot?)]
                                 [(ormap LBot? e)
-                                 (list/c)]
+                                 (flat-named-contract "e was LBot" (list/c))]
                                 [else (listof LatentFilter/c)])]
                        [e (cond [(ormap LBot? e)
                                  (list/c LBot?)]
                                 [(ormap LBot? t)
-                                 (list/c)]
+                                 (flat-named-contract "t was LBot" (list/c))]
                                 [else (listof LatentFilter/c)])])
-                      ()
+                      (#:syntax [stx #f])
                       [result LFilterSet?])])
 
 (define FilterSet/c

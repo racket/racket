@@ -1,14 +1,15 @@
 #lang scheme/base
 (require scheme/function
          scheme/path
-         scheme/file)
+         scheme/file
+         unstable/file)
 (provide compile-file)
 
 (define compile-file
   (case-lambda
     [(src)
      (define cdir (build-path (path-only src) "compiled"))
-     (make-directory* cdir)
+     (make-directory*/ignore-exists-exn cdir)
      (compile-file src (build-path cdir (path-add-suffix (file-name-from-path src) #".zo")))]
     [(src dest) 
      (compile-file src dest values)]
@@ -55,7 +56,7 @@
                 (close-output-port out)))))
          (lambda ()
            (if ok?
-               (rename-file-or-directory temp-filename dest)
+               (rename-file-or-directory/ignore-exists-exn temp-filename dest)
                (with-handlers ([exn:fail:filesystem? void])
                  (delete-file temp-filename))))))
       (lambda () (close-input-port in)))

@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "utils.ss")
+@(require "utils.ss"
+          (for-label scheme/match))
 
 @title[#:tag "types" #:style 'toc]{C Types}
 
@@ -779,6 +780,11 @@ The resulting bindings are as follows:
 
  @item{@schemeidfont{set-}@schemevarfont{id}@schemeidfont{-}@scheme[field-id]@schemeidfont{!}
   : a mutator function for each @scheme[field-id].}
+
+ @item{@schemevarfont{id}: structure-type information compatible with
+  @scheme[struct-out] or @scheme[match] (but not @scheme[define-struct]);
+  currently, this information is correct only when no @scheme[super-id]
+  is specified.}
 
 ]
 
