@@ -2,8 +2,8 @@
 (require syntax/modcode
          syntax/modresolve
          setup/main-collects
+	 unstable/file
          scheme/file
-         unstable/file
          scheme/list
          scheme/path)
 
@@ -140,7 +140,7 @@
          (set! ok? #t)))
      (lambda ()
        (if ok?
-           (rename-file-or-directory/ignore-exists-exn tmp-path path)
+           (rename-file-or-directory tmp-path path #t)
            (try-delete-file tmp-path))))))
 
 (define (write-deps code mode path external-deps reader-deps)
