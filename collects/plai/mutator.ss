@@ -208,12 +208,12 @@
      (with-syntax ([(env-id ...) (syntax-parameter-value #'mutator-env-roots)])
        (if (syntax-parameter-value #'mutator-tail-call?)
            ; If this call is in tail position, we will not need access to its environment when it returns.
-           (syntax/loc stx ((deref fe) ae ...))
+           (syntax/loc stx ((deref-proc fe) ae ...))
            ; If this call is not in tail position, we make the environment at the call site
            ; reachable.
            #`(with-continuation-mark gc-roots-key 
                (list (make-env-root env-id) ...)
-               #,(syntax/loc stx ((deref fe) ae ...)))))]))
+               #,(syntax/loc stx ((deref-proc fe) ae ...)))))]))
 (define-syntax mutator-quote
   (syntax-rules ()
     [(_ (a . d))
@@ -454,6 +454,15 @@
     [(procedure? proc/loc) proc/loc]
     [(location? proc/loc) (collector:deref proc/loc)]
     [else (error 'deref "expected <location?> or <procedure?>; received ~a" proc/loc)]))
+
+(define (deref-proc proc-or-loc)
+  (define v 
+    (with-handlers ([exn? (lambda (x) 
+                            (error 'procedure-application "expected procedure, given something else"))])
+      (deref proc-or-loc)))
+  (if (procedure? v)
+      v
+      (error 'procedure-application "expected procedure, given ~e" v)))
 
 (define (gc->scheme loc)
   (define-struct an-unset ())

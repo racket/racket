@@ -25,6 +25,7 @@
                                                  (find-relative-path 
                                                   (simple-form-path tmpfile)
                                                   (build-path (simple-form-path here)
+                                                              "gc" "good-collectors"
                                                               "no-compact-cheat.ss")))
                                                100))
         (for-each (λ (exp) (pretty-print exp port)) exps))
