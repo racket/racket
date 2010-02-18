@@ -4288,6 +4288,30 @@
                 (class d% (super-new) (define/augride (m x) x)))
               'pos
               'neg))
+  
+  (test/spec-passed
+   'class/c-higher-order-method-1
+   '(let ([c% (contract (class/c [m (-> any/c number? number?)])
+                        (class object% (super-new) (define/public (m x) (add1 x)))
+                        'pos
+                        'neg)])
+      (send (new c%) m 3)))
+
+  (test/neg-blame
+   'class/c-higher-order-method-2
+   '(let ([c% (contract (class/c [m (-> any/c number? number?)])
+                        (class object% (super-new) (define/public (m x) (add1 x)))
+                        'pos
+                        'neg)])
+      (send (new c%) m #f)))
+
+  (test/pos-blame
+   'class/c-higher-order-method-3
+   '(let ([c% (contract (class/c [m (-> any/c number? number?)])
+                        (class object% (super-new) (define/public (m x) (zero? x)))
+                        'pos
+                        'neg)])
+      (send (new c%) m 3)))
 
 ;                                                              
 ;                                                              

@@ -2450,7 +2450,62 @@
   (λ (blame)
     (λ (cls)
       (class/c-check-first-order ctc cls blame)
-      cls)))
+      (let* ([name (class-name cls)]
+             [class-make (if name
+                             (make-naming-constructor 
+                              struct:class
+                              (string->symbol (format "class:~a" name)))
+                             make-class)]
+             [c (class-make name
+                            (class-pos cls)
+                            (list->vector (vector->list (class-supers cls)))
+                            (class-self-interface cls)
+                            void ;; No inspecting
+                            
+                            (class-method-width cls)
+                            (class-method-ht cls)
+                            (class-method-ids cls)
+                            
+                            (class-methods cls)
+                            (class-super-methods cls)
+                            (class-int-methods cls)
+                            (class-beta-methods cls)
+                            (class-meth-flags cls)
+                            
+                            (class-field-width cls)
+                            (class-field-ht cls)
+                            (class-field-ids cls)
+                            
+                            'struct:object 'object? 'make-object
+                            'field-ref 'field-set!
+                            
+                            (class-init-args cls)
+                            (class-init-mode cls)
+                            (class-init cls)
+                            
+                            #f #f ; serializer is never set
+                            #f)]
+             [obj-name (if name
+                           (string->symbol (format "object:~a" name))
+                           'object)])
+        
+        (vector-set! (class-supers c) (class-pos c) c)
+        
+        ;; --- Make the new object struct ---
+        (let-values ([(struct:object object-make object? object-field-ref object-field-set!)
+                      (make-struct-type obj-name
+                                        (class-struct:object cls)
+                                        0 ;; No init fields
+                                        0 ;; No new fields in this class replacement
+                                        undefined
+                                        ;; Map object property to class:
+                                        (list (cons prop:object c)))])
+          (set-class-struct:object! c struct:object)
+          (set-class-object?! c object?)
+          (set-class-make-object! c object-make)
+          (set-class-field-ref! c object-field-ref)
+          (set-class-field-set!! c object-field-set!))
+        c))))
 
 (define-struct class/c 
   (methods method-contracts fields field-contracts
