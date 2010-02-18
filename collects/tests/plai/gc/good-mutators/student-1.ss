@@ -15,7 +15,7 @@
 ; Finally it runs the sample tests distributed with the assignment
 
 
-(allocator-setup "../good-collectors/good-collector.ss" 1000)
+(allocator-setup "../good-collectors/good-collector.ss" 80)
 
 ; Helper to generate long lists
 (define (gen-list x)

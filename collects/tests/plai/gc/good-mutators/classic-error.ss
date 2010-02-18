@@ -1,6 +1,6 @@
 #lang plai/mutator
-; This is `classic' in that caught many bugs in copying collectors that students wrote for CS173, Fall 2007.
-(allocator-setup "../good-collectors/good-collector.ss" 38)
+; This is `classic' in that it caught many bugs in copying collectors that students wrote for CS173, Fall 2007.
+(allocator-setup "../good-collectors/good-collector.ss" 28)
 
 'trash
 'junk

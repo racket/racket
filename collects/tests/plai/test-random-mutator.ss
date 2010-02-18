@@ -11,7 +11,7 @@
 ;;  random mutator generation tests
 ;;
 
-(define-runtime-path no-compact-cheat-path "gc/good-collectors/no-compact-cheat.ss")
+(define-runtime-path collector-path "gc/good-collectors/good-collector.ss")
 
 (define-runtime-path here ".")
 
@@ -27,7 +27,7 @@
                                                  (find-relative-path 
                                                   (normalize-path (simple-form-path tmpfile))
                                                   (normalize-path
-                                                   (simple-form-path no-compact-cheat-path))))
+                                                   (simple-form-path collector-path))))
                                                100))
         (for-each (λ (exp) (pretty-print exp port)) exps))
       #:exists 'truncate)
@@ -36,9 +36,9 @@
     (printf "simple-form tmpfile ~s\n" (simple-form-path tmpfile))
     (printf "normalized tmpfile ~s\n" (normalize-path (simple-form-path tmpfile)))
     (newline)
-    (printf "collector ~s\n" no-compact-cheat-path)
-    (printf "simple-form collector: ~s\n" (simple-form-path no-compact-cheat-path))
-    (printf "normalized simple-form collector: ~s\n" (normalize-path (simple-form-path no-compact-cheat-path)))
+    (printf "collector ~s\n" collector-path)
+    (printf "simple-form collector: ~s\n" (simple-form-path collector-path))
+    (printf "normalized simple-form collector: ~s\n" (normalize-path (simple-form-path collector-path)))
     (newline)
     (printf "here ~s\n" here)
     (printf "simple-form here: ~s\n" (simple-form-path here))

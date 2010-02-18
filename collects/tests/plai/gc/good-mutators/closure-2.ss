@@ -1,5 +1,5 @@
 #lang plai/mutator
-(allocator-setup "../good-collectors/good-collector.ss" 58)
+(allocator-setup "../good-collectors/good-collector.ss" 40)
 
 
 (define make-conser
