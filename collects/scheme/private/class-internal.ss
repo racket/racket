@@ -2456,6 +2456,9 @@
              [methods (if (null? (class/c-methods ctc))
                           (class-methods cls)
                           (make-vector method-width))]
+             [super-methods (if (null? (class/c-supers ctc))
+                                (class-super-methods cls)
+                                (make-vector method-width))]
              [class-make (if name
                              (make-naming-constructor 
                               struct:class
@@ -2472,7 +2475,7 @@
                             (class-method-ids cls)
                             
                             methods
-                            (class-super-methods cls)
+                            super-methods
                             (class-int-methods cls)
                             (class-beta-methods cls)
                             (class-meth-flags cls)
@@ -2523,6 +2526,19 @@
             (let ([i (hash-ref method-ht m)]
                   [p ((contract-projection c) blame)])
               (vector-set! methods i (p (vector-ref methods i))))))
+        
+        ;; Handle super contracts
+        (unless (null? (class/c-supers ctc))
+          ;; First, fill in from old (possibly contracted) super methods
+          (let ([old-super-methods (class-super-methods cls)])
+            (for ([n (in-range method-width)])
+              (vector-set! super-methods n (vector-ref old-super-methods n))))
+          ;; Now apply projections.
+          (for ([m (in-list (class/c-supers ctc))]
+                [c (in-list (class/c-super-contracts ctc))])
+            (let ([i (hash-ref method-ht m)]
+                  [p ((contract-projection c) blame)])
+              (vector-set! super-methods i (p (vector-ref super-methods i))))))
         
         c))))
 
