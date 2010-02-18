@@ -4313,6 +4313,21 @@
                         'neg)])
       (send (new c%) m 3)))
 
+  ;; Test that public method contracts are not checked for implication.
+  ;; Public method contracts do not check behavioral subtyping.
+  ;; Once interfaces have contracts, those will.
+  (test/spec-passed
+   'class/c-higher-order-method-3
+   '(let* ([c% (contract (class/c [m (-> any/c number? number?)])
+                         (class object% (super-new) (define/public (m x) (zero? x)))
+                         'pos
+                         'neg)]
+           [d% (contract (class/c [m (-> any/c boolean?)])
+                         (class c% (super-new) (define/override (m) (super m 5)))
+                         'pos
+                         'neg)])
+      (send (new d%) m)))
+
 ;                                                              
 ;                                                              
 ;             ;;        ;;                     ;    ;;         
