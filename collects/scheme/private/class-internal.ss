@@ -3681,6 +3681,12 @@
       
       cls)))
 
+; extract-vtable : object -> (vectorof method-proc[this args ... -> res])		
+(define (extract-vtable o) (class-methods (object-ref o)))		
+
+; extract-method-ht : object -> hash-table[sym -> number]		
+(define (extract-method-ht o) (class-method-ht (object-ref o)))
+
 ;;--------------------------------------------------------------------
 ;;  misc utils
 ;;--------------------------------------------------------------------
@@ -3869,6 +3875,8 @@
 ;; Providing normal functionality:
 (provide (protect-out make-wrapper-class
                       wrapper-object-wrapped
+                      extract-vtable
+                      extract-method-ht
                       get-field/proc)
          
          (rename-out [_class class]) class* class/derived
