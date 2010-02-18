@@ -11,6 +11,8 @@
 ;;  random mutator generation tests
 ;;
 
+(define-runtime-path no-compact-cheat-path "gc/good-collectors/no-compact-cheat.ss")
+
 (define-runtime-path here ".")
 
 ;; test-code : exp -> boolean
@@ -23,15 +25,27 @@
         (fprintf port "#lang plai/mutator\n")
         (fprintf port "~s\n" `(allocator-setup ,(path->string
                                                  (find-relative-path 
-                                                  (simple-form-path tmpfile)
-                                                  (build-path (simple-form-path here)
-                                                              "gc" "good-collectors"
-                                                              "no-compact-cheat.ss")))
+                                                  (normalize-path (simple-form-path tmpfile))
+                                                  (normalize-path
+                                                   (simple-form-path no-compact-cheat-path))))
                                                100))
         (for-each (λ (exp) (pretty-print exp port)) exps))
       #:exists 'truncate)
 
     (printf "tmpfile: ~s\n" tmpfile)
+    (printf "simple-form tmpfile ~s\n" (simple-form-path tmpfile))
+    (printf "normalized tmpfile ~s\n" (normalize-path (simple-form-path tmpfile)))
+    (newline)
+    (printf "collector ~s\n" no-compact-cheat-path)
+    (printf "simple-form collector: ~s\n" (simple-form-path no-compact-cheat-path))
+    (printf "normalized simple-form collector: ~s\n" (normalize-path (simple-form-path no-compact-cheat-path)))
+    (newline)
+    (printf "here ~s\n" here)
+    (printf "simple-form here: ~s\n" (simple-form-path here))
+    (printf "normalized simple-form here: ~s\n" (normalize-path (simple-form-path here)))
+    (newline)
+    
+    (printf "tmpfile contents:\n")
     (call-with-input-file tmpfile (λ (p) (copy-port p (current-output-port))))
     
     (let ([sp (open-output-string)])
