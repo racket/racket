@@ -4103,9 +4103,37 @@
               'neg))
   
   (test/spec-passed
-   'class/c-first-order-4
+   'class/c-first-order-5
    '(contract (class/c (field [n number?]))
               (class object% (super-new) (field [n 3]))
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'class/c-first-order-6
+   '(contract (class/c (super [m (-> any/c number? number?)]))
+              object%
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'class/c-first-order-7
+   '(contract (class/c (super [m (-> any/c number? number?)]))
+              (class object% (super-new) (define/pubment (m x) (add1 x)))
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'class/c-first-order-7
+   '(contract (class/c (super [m (-> any/c number? number?)]))
+              (class object% (super-new) (define/public-final (m x) (add1 x)))
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'class/c-first-order-8
+   '(contract (class/c (super [m (-> any/c number? number?)]))
+              (class object% (super-new) (define/public (m x) (add1 x)))
               'pos
               'neg))
 
