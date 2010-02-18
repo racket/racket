@@ -658,4 +658,6 @@ mz-extras :+= (- (package: "unstable")
 ;; -------------------- plai
 plt-extras :+= (package: "plai/")
 
+plt-extras :+= (package: "schemeunit/")
+
 ;; ============================================================================

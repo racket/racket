@@ -14,7 +14,7 @@
 (define url "http://schematics.sourceforge.net/")
 
 (define primary-file "main.ss")
-(define scribblings '(("scribblings/schemeunit.scrbl" (multi-page user-doc) (tool))))
+(define scribblings '(("scribblings/schemeunit.scrbl" (multi-page) (tool))))
 
 (define release-notes
   '((p "Correctly handle arbitrary expressions in test suites and fix Scribble errors.")))
