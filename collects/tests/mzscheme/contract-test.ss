@@ -4076,16 +4076,36 @@
 
   (test/spec-passed
    'class/c-first-order-1
-   '(let ()
-      (define/contract cls%
-        (class/c)
-        object%)
-      1))
+   '(contract (class/c)
+              object%
+              'pos
+              'neg))
   
   (test/pos-blame
    'class/c-first-order-2
    '(contract (class/c [m (-> any/c number? number?)])
               object%
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'class/c-first-order-3
+   '(contract (class/c [m (-> any/c number? number?)])
+              (class object% (super-new) (define/public (m x) (add1 x)))
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'class/c-first-order-4
+   '(contract (class/c (field [n number?]))
+              object%
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'class/c-first-order-4
+   '(contract (class/c (field [n number?]))
+              (class object% (super-new) (field [n 3]))
               'pos
               'neg))
 
@@ -4109,11 +4129,38 @@
 
   (test/spec-passed
    'object/c-first-order-1
-   '(let ()
-      (define/contract o
-        (object/c)
-        (new object%))
-      1))
+   '(contract (object/c)
+              (new object%)
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'object/c-first-order-2
+   '(contract (object/c [m (-> any/c number? number?)])
+              (new object%)
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'object/c-first-order-3
+   '(contract (object/c [m (-> any/c number? number?)])
+              (new (class object% (super-new) (define/public (m x) (add1 x))))
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'object/c-first-order-4
+   '(contract (object/c (field [n number?]))
+              (new object%)
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'object/c-first-order-5
+   '(contract (object/c (field [n number?]))
+              (new (class object% (super-new) (field [n 3])))
+              'pos
+              'neg))
 
 ;                                                                                    
 ;                                                                                    
