@@ -4074,64 +4074,71 @@
 ;                                                       
 ;                                                       
 
+  (test/pos-blame
+   'class/c-first-order-class-1
+   '(contract (class/c)
+              3
+              'pos
+              'neg))
+  
   (test/spec-passed
-   'class/c-first-order-1
+   'class/c-first-order-class-2
    '(contract (class/c)
               object%
               'pos
               'neg))
   
   (test/pos-blame
-   'class/c-first-order-2
+   'class/c-first-order-method-1
    '(contract (class/c [m (-> any/c number? number?)])
               object%
               'pos
               'neg))
   
   (test/spec-passed
-   'class/c-first-order-3
+   'class/c-first-order-method-2
    '(contract (class/c [m (-> any/c number? number?)])
               (class object% (super-new) (define/public (m x) (add1 x)))
               'pos
               'neg))
   
   (test/pos-blame
-   'class/c-first-order-4
+   'class/c-first-order-field-1
    '(contract (class/c (field [n number?]))
               object%
               'pos
               'neg))
   
   (test/spec-passed
-   'class/c-first-order-5
+   'class/c-first-order-field-2
    '(contract (class/c (field [n number?]))
               (class object% (super-new) (field [n 3]))
               'pos
               'neg))
   
   (test/pos-blame
-   'class/c-first-order-6
+   'class/c-first-order-super-1
    '(contract (class/c (super [m (-> any/c number? number?)]))
               object%
               'pos
               'neg))
   
   (test/pos-blame
-   'class/c-first-order-7
+   'class/c-first-order-super-2
    '(contract (class/c (super [m (-> any/c number? number?)]))
               (class object% (super-new) (define/pubment (m x) (add1 x)))
               'pos
               'neg))
   
   (test/pos-blame
-   'class/c-first-order-8
+   'class/c-first-order-super-3
    '(contract (class/c (super [m (-> any/c number? number?)]))
               (class object% (super-new) (define/public-final (m x) (add1 x)))
               'pos
               'neg))
   
   (test/pos-blame
-   'class/c-first-order-9
+   'class/c-first-order-super-4
    '(contract (class/c (super [m (-> any/c number? number?)]))
               (let ([c% (class object% (super-new) (define/public (m x) (add1 x)))])
                 (class c% (super-new) (define/overment (m x) (add1 x))))
@@ -4139,17 +4146,31 @@
               'neg))
   
   (test/spec-passed
-   'class/c-first-order-10
+   'class/c-first-order-super-5
    '(contract (class/c (super [m (-> any/c number? number?)]))
               (class object% (super-new) (define/public (m x) (add1 x)))
               'pos
               'neg))
 
   (test/spec-passed
-   'class/c-first-order-11
+   'class/c-first-order-super-6
    '(contract (class/c (super [m (-> any/c number? number?)]))
               (let ([c% (class object% (super-new) (define/pubment (m x) (inner x m x)))])
                 (class c% (super-new) (define/augride (m x) (add1 x))))
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'class/c-first-order-inner-1
+   '(contract (class/c (inner [m (-> any/c number? number?)]))
+              object%
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'class/c-first-order-inner-2
+   '(contract (class/c (inner [m (-> any/c number? number?)]))
+              (class object% (super-new) (define/pubment (m x) (inner x m x)))
               'pos
               'neg))
   
@@ -4171,36 +4192,43 @@
 ;                     ;;;;                                     
 ;                     ;;;                                      
 
+  (test/pos-blame
+   'object/c-first-order-object-1
+   '(contract (object/c)
+              3
+              'pos
+              'neg))
+  
   (test/spec-passed
-   'object/c-first-order-1
+   'object/c-first-order-object-2
    '(contract (object/c)
               (new object%)
               'pos
               'neg))
   
   (test/pos-blame
-   'object/c-first-order-2
+   'object/c-first-order-method-1
    '(contract (object/c [m (-> any/c number? number?)])
               (new object%)
               'pos
               'neg))
   
   (test/spec-passed
-   'object/c-first-order-3
+   'object/c-first-order-method-2
    '(contract (object/c [m (-> any/c number? number?)])
               (new (class object% (super-new) (define/public (m x) (add1 x))))
               'pos
               'neg))
   
   (test/pos-blame
-   'object/c-first-order-4
+   'object/c-first-order-field-1
    '(contract (object/c (field [n number?]))
               (new object%)
               'pos
               'neg))
   
   (test/spec-passed
-   'object/c-first-order-5
+   'object/c-first-order-field-2
    '(contract (object/c (field [n number?]))
               (new (class object% (super-new) (field [n 3])))
               'pos
