@@ -621,10 +621,20 @@ Unlike @scheme[scene+curve], if the line passes outside of @scheme[image], the i
   
   }
 
-@section{Placing Images}
+@section{Placing Images & Scenes}
 
 Placing images into scenes is particularly useful when building worlds
 and universes using @scheme[2htdp/universe].
+
+@defproc[(empty-scene [width (and/c real? (not/c negative?))]
+                      [height (and/c real? (not/c negative?))])
+         image?]{
+
+Creates an empty scene, i.e., a rectangle with a black outline.
+
+@image-examples[(empty-scene 160 90)]
+                                                                 
+}
 
 @defproc[(place-image [image image?] [x real?] [y real?] [scene image?]) image?]{
 
@@ -768,7 +778,7 @@ the parts that fit onto @scheme[scene].
           
 }
 
-@defproc[(scale [factor real?] [image image?]) image?]{
+@defproc[(scale [factor (and/c real? positive?)] [image image?]) image?]{
 
   Scales @scheme[image] by @scheme[factor]. 
   
@@ -788,7 +798,7 @@ the parts that fit onto @scheme[scene].
   
 }
 
-@defproc[(scale/xy [x-factor real?] [y-factor real?] [image image?]) image?]{
+@defproc[(scale/xy [x-factor (and/c real? positive?)] [y-factor (and/c real? positive?)] [image image?]) image?]{
   Scales @scheme[image] by @scheme[x-factor] horizontally and by 
   @scheme[y-factor] vertically. 
   

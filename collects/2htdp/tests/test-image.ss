@@ -630,7 +630,10 @@
        (make-bb 100 100 100)
        #f))
 
-
+(test (empty-scene 185 100)
+      =>
+      (overlay (rectangle 185 100 'outline 'black)
+               (rectangle 185 100 'solid 'white)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  testing normalization
@@ -1512,10 +1515,11 @@
          (underlay image image)
          (underlay/xy image coord coord image)
          (crop coord coord size size image)
-         (scale/xy size size image)
-         (scale size image)
+         (scale/xy factor factor image)
+         (scale factor image)
          (rotate angle image))
-  
+
+  (factor (+ 1 big-nat) 1/2 1/3 1/4) ;; scaling factors
   (size big-nat)
   (mode 'outline 'solid "outline" "solid")
   (color "red" 'red "blue" "orange" "green" "black")

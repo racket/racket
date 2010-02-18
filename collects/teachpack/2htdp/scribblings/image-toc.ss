@@ -244,6 +244,7 @@
       (rectangle 48 48 "solid" "gray"))
     'image
     "126418b230e.png")
+   (list '(empty-scene 160 90) 'image "216addb7809.png")
    (list
     '(above/align
       "left"

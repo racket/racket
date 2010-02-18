@@ -357,15 +357,21 @@
                                     `(mcons ,(recur (mcar expr)) ,(recur (mcdr expr))))]
                                [(weak-box? expr) `(make-weak-box ,(recur (weak-box-value expr)))]
                                [(box? expr) `(box ,(recur (unbox expr)))]
-                               [(hash-table? expr) `(,(cond
-                                                       [(hash-table? expr 'weak 'equal) 'weak-hash]
-                                                       [(hash-table? expr 'equal) 'hash]
-                                                       [(hash-table? expr 'weak) 'weak-hasheq]
-                                                       [else 'hasheq])
-                                                     ,@(hash-table-map
-                                                        expr
-                                                        (lambda (k v)
-                                                          `(,(recur k) ,(recur v)))))]
+                               [(hash-table? expr) 
+                                (let ([contents
+                                       (hash-table-map
+                                        expr
+                                        (lambda (k v)
+                                          `(cons ,(recur k) ,(recur v))))]
+                                      [constructor
+                                       (cond
+                                         [(hash-table? expr 'weak 'equal) 'weak-hash]
+                                         [(hash-table? expr 'equal) 'make-hash]
+                                         [(hash-table? expr 'weak) 'weak-hasheq]
+                                         [else 'hasheq])])
+                                  (if (null? contents)
+                                      `(,constructor)
+                                      `(,constructor (list ,@contents))))]
                                [(vector? expr) `(vector ,@(map recur (vector->list expr)))]
                                [(symbol? expr) `',expr]
                                [(keyword? expr) `',expr]

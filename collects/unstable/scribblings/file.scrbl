@@ -17,8 +17,3 @@
          void]{
  Like @scheme[make-directory*], except it ignores errors when the path already exists. Useful to deal with race conditions on processes that create directories.
 }
-              
-@defproc[(rename-file-or-directory/ignore-exists-exn [from path-string?] [to path-string?])
-         void]{
- Like @scheme[rename-file-or-directory], except it ignores errors when the path already exists. Useful to deal with race conditions on processes that create files.
-}

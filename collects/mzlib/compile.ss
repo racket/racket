@@ -56,7 +56,7 @@
                 (close-output-port out)))))
          (lambda ()
            (if ok?
-               (rename-file-or-directory/ignore-exists-exn temp-filename dest)
+               (rename-file-or-directory temp-filename dest #t)
                (with-handlers ([exn:fail:filesystem? void])
                  (delete-file temp-filename))))))
       (lambda () (close-input-port in)))

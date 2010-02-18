@@ -654,6 +654,10 @@
   (check-mode/color-combination 'square 3 mode color)
   (make-a-polygon (rectangle-points side-length side-length) mode color))
 
+(define/chk (empty-scene width height)
+  (overlay (rectangle width height 'outline 'black)
+           (rectangle width height 'solid 'white)))
+
 (define/chk (rhombus side-length angle mode color)
   (check-mode/color-combination 'rhombus 3 mode color)
   (let* ([left-corner (make-polar side-length (+ (* pi 1/2) (/ (degrees->radians angle) 2)))]
@@ -956,6 +960,7 @@
          circle
          ellipse
          rectangle
+         empty-scene
          square
          rhombus
          

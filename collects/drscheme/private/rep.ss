@@ -1602,13 +1602,13 @@ TODO
             (set-clickback before after (λ args (send-url url))
                            click-delta)))
         (unless (is-default-settings? user-language-settings)
-          (insert/delta this (string-append " " (string-constant custom)) dark-green-delta))
+          (insert/delta this (string-append " [" (string-constant custom) "]") dark-green-delta))
         (when custodian-limit
           (insert/delta this 
                         "; memory limit: "
                         welcome-delta)
           (insert/delta this
-                        (format "~a megabytes" (floor (/ custodian-limit 1024 1024)))
+                        (format "~a MB" (floor (/ custodian-limit 1024 1024)))
                         dark-green-delta))
         (insert/delta this ".\n" welcome-delta)
         

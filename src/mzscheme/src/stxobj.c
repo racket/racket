@@ -255,7 +255,7 @@ static int is_rename_inspector_info(Scheme_Object *v)
    - A wrap-elem <-num> is a certificate-only mark (doesn't conttribute to
        id equivalence)
 
-   - A wrap-elem (vector <sym> <ht> <stx> ... <recur-state> ...) is a lexical rename
+   - A wrap-elem (vector <sym> <ht> <stx> ..._0 <recur-state> ..._0) is a lexical rename
                          env  (sym   var      <var-resolved>:
                               ->pos)           void => not yet computed
                               or #f            sym => var-resolved is answer to replace #f
@@ -266,7 +266,7 @@ static int is_rename_inspector_info(Scheme_Object *v)
                                               or:
                                                (cons <var-resolved> (cons <id> <phase>)) =>
                                                       free-id=? renaming to <id> on match
-   - A wrap-elem (vector <free-id-renames?> <ht> <sym> ... <sym> ...) is also a lexical rename
+   - A wrap-elem (vector <free-id-renames?> <ht> <sym> ..._0 <sym> ..._0) is also a lexical rename
                                bool               var       resolved: sym or (cons <sym> <bind-info>), 
                                                              where <bind-info> is module/lexical binding info:
                                                               (cons <sym> #f) => top-level binding
