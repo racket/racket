@@ -37,6 +37,7 @@
                           (send: controller controller<%> get-primary-partition)
                           (length (send: config config<%> get-colors))
                           (send: config config<%> get-suffix-option)
+                          (send config get-pretty-styles)
                           columns))
    (define output-string (get-output-string output-port))
    (define output-length (sub1 (string-length output-string))) ;; skip final newline

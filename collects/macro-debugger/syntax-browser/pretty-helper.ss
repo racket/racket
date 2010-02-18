@@ -171,8 +171,8 @@
                     (list expr))))))
 
 (define special-expression-keywords
-  '(quote quasiquote unquote unquote-splicing syntax))
-;; FIXME: quasisyntax unsyntax unsyntax-splicing
+  '(quote quasiquote unquote unquote-splicing syntax
+    quasisyntax unsyntax unsyntax-splicing))
 
 (define (suffix sym n)
   (string->symbol (format "~a:~a" sym n)))

@@ -1188,7 +1188,8 @@
      (and (pretty-print-abbreviate-read-macros)
           (let ((head (do-remap (car l))) (tail (cdr l)))
             (case head
-              ((quote quasiquote unquote unquote-splicing syntax unsyntax unsyntax-splicing)
+              ((quote quasiquote unquote unquote-splicing syntax
+                quasisyntax unsyntax unsyntax-splicing)
                (length1? tail))
               (else #f)))))
    
@@ -1203,6 +1204,7 @@
 	 ((unquote)           ",")
 	 ((unquote-splicing)  ",@")
 	 ((syntax)            "#'")
+         ((quasisyntax)       "#`")
 	 ((unsyntax)          "#,")
 	 ((unsyntax-splicing) "#,@"))))
   

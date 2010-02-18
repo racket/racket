@@ -168,6 +168,8 @@
        (lambda (_) (refresh/re-reduce)))
       (listen-extra-navigation?
        (lambda (show?) (show-extra-navigation show?))))
+    (send config listen-pretty-styles
+          (lambda (_) (update/preserve-view)))
 
     (define nav:up
       (new button% (label "Previous term") (parent navigator)

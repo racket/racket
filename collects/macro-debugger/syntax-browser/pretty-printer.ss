@@ -9,9 +9,9 @@
 
 ;; FIXME: Need to disable printing of structs with custom-write property
 
-;; pretty-print-syntax : syntax port partition number SuffixOption number
+;; pretty-print-syntax : syntax port partition number SuffixOption hasheq number
 ;;                    -> range%
-(define (pretty-print-syntax stx port primary-partition colors suffix-option columns)
+(define (pretty-print-syntax stx port primary-partition colors suffix-option styles columns)
   (define range-builder (new range-builder%))
   (define-values (datum ht:flat=>stx ht:stx=>flat)
     (syntax->datum/tables stx primary-partition colors suffix-option))
@@ -45,7 +45,7 @@
     [pretty-print-size-hook pp-size-hook]
     [pretty-print-print-hook pp-print-hook]
     [pretty-print-remap-stylable pp-remap-stylable]
-    [pretty-print-current-style-table (pp-better-style-table)]
+    [pretty-print-current-style-table (pp-better-style-table styles)]
     [pretty-print-columns columns])
    (pretty-print/defaults datum port)
    (new range%
@@ -72,8 +72,21 @@
 (define (pp-remap-stylable obj)
   (and (id-syntax-dummy? obj) (id-syntax-dummy-remap obj)))
 
-(define (pp-better-style-table)
-  (basic-style-list)
+(define (pp-better-style-table styles)
+  (define style-list (for/list ([(k v) (in-hash styles)]) (cons k v)))
+  (pretty-print-extend-style-table
+   (basic-style-list)
+   (map car style-list)
+   (map cdr style-list)))
+
+(define (basic-style-list)
+  (pretty-print-extend-style-table
+   (pretty-print-current-style-table)
+   (map car basic-styles)
+   (map cdr basic-styles)))
+(define basic-styles
+  '((define-values          . define)
+    (define-syntaxes        . define-syntax))
   #|
   ;; Messes up formatting too much :(
   (let* ([pref (pref:tabify)]
@@ -87,15 +100,6 @@
        (map car style-list)
        (map cdr style-list))))
   |#)
-
-(define (basic-style-list)
-  (pretty-print-extend-style-table
-   (pretty-print-current-style-table)
-   (map car basic-styles)
-   (map cdr basic-styles)))
-(define basic-styles
-  '((define-values          . define)
-    (define-syntaxes        . define-syntax)))
 
 (define-local-member-name range:get-ranges)
 
