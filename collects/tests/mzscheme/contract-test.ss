@@ -4124,19 +4124,35 @@
               'neg))
   
   (test/pos-blame
-   'class/c-first-order-7
+   'class/c-first-order-8
    '(contract (class/c (super [m (-> any/c number? number?)]))
               (class object% (super-new) (define/public-final (m x) (add1 x)))
               'pos
               'neg))
   
+  (test/pos-blame
+   'class/c-first-order-9
+   '(contract (class/c (super [m (-> any/c number? number?)]))
+              (let ([c% (class object% (super-new) (define/public (m x) (add1 x)))])
+                (class c% (super-new) (define/overment (m x) (add1 x))))
+              'pos
+              'neg))
+  
   (test/spec-passed
-   'class/c-first-order-8
+   'class/c-first-order-10
    '(contract (class/c (super [m (-> any/c number? number?)]))
               (class object% (super-new) (define/public (m x) (add1 x)))
               'pos
               'neg))
 
+  (test/spec-passed
+   'class/c-first-order-11
+   '(contract (class/c (super [m (-> any/c number? number?)]))
+              (let ([c% (class object% (super-new) (define/pubment (m x) (inner x m x)))])
+                (class c% (super-new) (define/augride (m x) (add1 x))))
+              'pos
+              'neg))
+  
 ;                                                              
 ;                                                              
 ;             ;;        ;;                     ;    ;;         
