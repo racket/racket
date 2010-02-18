@@ -4076,11 +4076,18 @@
 
   (test/spec-passed
    'class/c-first-order-1
-   (let ()
-     (define/contract cls%
-       (class/c)
-       object%)
-     1))
+   '(let ()
+      (define/contract cls%
+        (class/c)
+        object%)
+      1))
+  
+  (test/pos-blame
+   'class/c-first-order-2
+   '(contract (class/c [m (-> any/c number? number?)])
+              object%
+              'pos
+              'neg))
 
 ;                                                              
 ;                                                              
@@ -4102,11 +4109,11 @@
 
   (test/spec-passed
    'object/c-first-order-1
-   (let ()
-     (define/contract o
-       (object/c)
-       (new object%))
-     1))
+   '(let ()
+      (define/contract o
+        (object/c)
+        (new object%))
+      1))
 
 ;                                                                                    
 ;                                                                                    
