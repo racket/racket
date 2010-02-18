@@ -1765,7 +1765,9 @@
                       method-ht      ; maps public names to vector positions
                       method-ids     ; reverse-ordered list of public method names
                       
-                      methods        ; vector of methods
+                      methods        ; vector of methods (for external dynamic dispatch)
+                      super-methods  ; vector of methods (for subclass super calls)
+                      int-methods    ; vector of methods (for internal dynamic dispatch)
                       beta-methods   ; vector of vector of methods
                       meth-flags     ; vector: #f => primitive-implemented
                       ;         'final => final
@@ -2034,6 +2036,12 @@
                  [methods (if no-method-changes?
                               (class-methods super)
                               (make-vector method-width))]
+                 [super-methods (if no-method-changes?
+                                    (class-super-methods super)
+                                    (make-vector method-width))]
+                 [int-methods (if no-method-changes?
+                                    (class-int-methods super)
+                                    (make-vector method-width))]
                  [beta-methods (if no-method-changes?
                                    (class-beta-methods super)
                                    (make-vector method-width))]
@@ -2047,7 +2055,7 @@
                                 (let-values ([(struct: make- ? -ref -set) (make-struct-type 'insp #f 0 0 #f null inspector)])
                                   make-)
                                 method-width method-ht method-names
-                                methods beta-methods meth-flags
+                                methods super-methods int-methods beta-methods meth-flags
                                 field-width field-ht field-names
                                 'struct:object 'object? 'make-object 'field-ref 'field-set!
                                 init-args
@@ -2138,7 +2146,7 @@
                                                                  super
                                                                  mname
                                                                  (for-class name)))
-                                                  (vector-ref (class-methods super) index))))
+                                                  (vector-ref (class-super-methods super) index))))
                                           rename-super-indices
                                           rename-super-names)]
                       [rename-inners (let ([new-augonly (make-vector method-width #f)])
@@ -2195,7 +2203,7 @@
                   ;; -- Create method accessors --
                   (let ([method-accessors (map (lambda (index)
                                                  (lambda (obj)
-                                                   (vector-ref (class-methods (object-ref obj)) index)))
+                                                   (vector-ref (class-int-methods (object-ref obj)) index)))
                                                (append new-normal-indices replace-normal-indices refine-normal-indices
                                                        replace-augonly-indices refine-augonly-indices
                                                        replace-final-indices refine-final-indices
@@ -2218,11 +2226,15 @@
                          super-method-ht
                          (lambda (name index)
                            (vector-set! methods index (vector-ref (class-methods super) index))
+                           (vector-set! super-methods index (vector-ref (class-super-methods super) index))
+                           (vector-set! int-methods index (vector-ref (class-int-methods super) index))
                            (vector-set! beta-methods index (vector-ref (class-beta-methods super) index))
                            (vector-set! meth-flags index (vector-ref (class-meth-flags super) index)))))
                       ;; Add new methods:
                       (for-each (lambda (index method)
                                   (vector-set! methods index method)
+                                  (vector-set! super-methods index method)
+                                  (vector-set! int-methods index method)
                                   (vector-set! beta-methods index (vector)))
                                 (append new-augonly-indices new-final-indices new-normal-indices)
                                 new-methods)
@@ -2236,7 +2248,9 @@
                                   (let ([v (vector-ref beta-methods index)])
                                     (if (zero? (vector-length v))
                                         ;; Normal mode - set vtable entry
-                                        (vector-set! methods index method)
+                                        (begin (vector-set! methods index method)
+                                               (vector-set! super-methods index method)
+                                               (vector-set! int-methods index method))
                                         ;; Under final mode - set extended vtable entry
                                         (let ([v (list->vector (vector->list v))])
                                           (vector-set! v (sub1 (vector-length v)) method)
@@ -2831,7 +2845,7 @@
                  void ; never inspectable
                  
                  0 (make-hasheq) null
-                 (vector) (vector) (vector)
+                 (vector) (vector) (vector) (vector) (vector)
                  
                  0 (make-hasheq) null
                  
@@ -3868,6 +3882,8 @@
                       method-ht
                       (reverse method-ids)
                       
+                      methods-vec
+                      methods-vec
                       methods-vec
                       (list->vector (map (lambda (x) 'final) method-ids))
                       'dont-use-me!
