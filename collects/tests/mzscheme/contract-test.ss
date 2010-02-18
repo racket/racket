@@ -4197,6 +4197,98 @@
               'pos
               'neg))
   
+  (test/pos-blame
+   'class/c-first-order-override-1
+   '(contract (class/c (override [m (-> any/c number? number?)]))
+              object%
+              'pos
+              'neg))
+
+  (test/spec-passed
+   'class/c-first-order-override-2
+   '(contract (class/c (override [m (-> any/c number? number?)]))
+              (class object% (super-new) (define/public (m x) (add1 x)))
+              'pos
+              'neg))
+
+  (test/pos-blame
+   'class/c-first-order-override-3
+   '(contract (class/c (override [m (-> any/c number? number?)]))
+              (class object% (super-new) (define/pubment (m x) (add1 x)))
+              'pos
+              'neg))
+
+  (test/pos-blame
+   'class/c-first-order-override-4
+   '(contract (class/c (override [m (-> any/c number? number?)]))
+              (let ([c% (class object% (super-new) (define/public (m x) (add1 x)))])
+                (class c% (super-new) (define/overment (m x) (+ (super m x) (inner x m x)))))
+              'pos
+              'neg))
+
+  (test/spec-passed
+   'class/c-first-order-override-5
+   '(contract (class/c (override [m (-> any/c number? number?)]))
+              (let ([c% (class object% (super-new) (define/public (m x) (add1 x)))])
+                (class c% (super-new) (define/override (m x) (add1 (super m x)))))
+              'pos
+              'neg))
+
+  (test/pos-blame
+   'class/c-first-order-override-6
+   '(contract (class/c (override [m (-> any/c number? number?)]))
+              (let* ([c% (class object% (super-new) (define/public (m x) (add1 x)))]
+                     [d% (class c% (super-new) (define/overment (m x) (+ (super m x) (inner x m x))))])
+                (class d% (super-new) (define/augride (m x) x)))
+              'pos
+              'neg))
+
+  (test/pos-blame
+   'class/c-first-order-augment-1
+   '(contract (class/c (augment [m (-> any/c number? number?)]))
+              object%
+              'pos
+              'neg))
+
+  (test/spec-passed
+   'class/c-first-order-augment-2
+   '(contract (class/c (augment [m (-> any/c number? number?)]))
+              (class object% (super-new) (define/pubment (m x) (add1 x)))
+              'pos
+              'neg))
+
+  (test/pos-blame
+   'class/c-first-order-augment-3
+   '(contract (class/c (augment [m (-> any/c number? number?)]))
+              (class object% (super-new) (define/public (m x) (add1 x)))
+              'pos
+              'neg))
+
+  (test/spec-passed
+   'class/c-first-order-augment-4
+   '(contract (class/c (augment [m (-> any/c number? number?)]))
+              (let ([c% (class object% (super-new) (define/pubment (m x) (inner x m x)))])
+                (class c% (super-new) (define/augride (m x) (add1 x))))
+              'pos
+              'neg))
+
+  (test/pos-blame
+   'class/c-first-order-augment-5
+   '(contract (class/c (augment [m (-> any/c number? number?)]))
+              (let ([c% (class object% (super-new) (define/public (m x) (add1 x)))])
+                (class c% (super-new) (define/override (m x) (add1 (super m x)))))
+              'pos
+              'neg))
+
+  (test/spec-passed
+   'class/c-first-order-augment-6
+   '(contract (class/c (augment [m (-> any/c number? number?)]))
+              (let* ([c% (class object% (super-new) (define/public (m x) (add1 x)))]
+                     [d% (class c% (super-new) (define/overment (m x) (+ (super m x) (inner x m x))))])
+                (class d% (super-new) (define/augride (m x) x)))
+              'pos
+              'neg))
+
 ;                                                              
 ;                                                              
 ;             ;;        ;;                     ;    ;;         
