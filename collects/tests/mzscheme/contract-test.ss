@@ -4174,6 +4174,29 @@
               'pos
               'neg))
   
+  (test/pos-blame
+   'class/c-first-order-inner-3
+   '(contract (class/c (inner [m (-> any/c number? number?)]))
+              (class object% (super-new) (define/public (m x) (add1 x)))
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'class/c-first-order-inner-4
+   '(contract (class/c (inner [m (-> any/c number? number?)]))
+              (let ([c% (class object% (super-new) (define/pubment (m x) (inner x m x)))])
+                (class c% (super-new) (define/augride (m x) (add1 x))))
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'class/c-first-order-inner-5
+   '(contract (class/c (inner [m (-> any/c number? number?)]))
+              (let ([c% (class object% (super-new) (define/public (m x) (add1 x)))])
+                (class c% (super-new) (define/overment (m x) (+ (super m x) (inner x m x)))))
+              'pos
+              'neg))
+  
 ;                                                              
 ;                                                              
 ;             ;;        ;;                     ;    ;;         
