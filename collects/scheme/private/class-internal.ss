@@ -1773,6 +1773,8 @@
                       ;         'final => final
                       ;         'augmentable => can augment
                       
+                      inner-projs    ; vector of projections for the last inner slot
+                      
                       field-width    ; total number of fields
                       field-ht       ; maps public field names to (cons class pos)
                       field-ids      ; list of public field names
@@ -2045,6 +2047,9 @@
                  [beta-methods (if no-method-changes?
                                    (class-beta-methods super)
                                    (make-vector method-width))]
+                 [inner-projs (if no-method-changes?
+                                  (class-inner-projs super)
+                                  (make-vector method-width))]
                  [meth-flags (if no-method-changes?
                                  (class-meth-flags super)
                                  (make-vector method-width))]
@@ -2056,6 +2061,7 @@
                                   make-)
                                 method-width method-ht method-names
                                 methods super-methods int-methods beta-methods meth-flags
+                                inner-projs
                                 field-width field-ht field-names
                                 'struct:object 'object? 'make-object 'field-ref 'field-set!
                                 init-args
@@ -2229,13 +2235,15 @@
                            (vector-set! super-methods index (vector-ref (class-super-methods super) index))
                            (vector-set! int-methods index (vector-ref (class-int-methods super) index))
                            (vector-set! beta-methods index (vector-ref (class-beta-methods super) index))
-                           (vector-set! meth-flags index (vector-ref (class-meth-flags super) index)))))
+                           (vector-set! meth-flags index (vector-ref (class-meth-flags super) index))
+                           (vector-set! inner-projs index (vector-ref (class-inner-projs super) index)))))
                       ;; Add new methods:
                       (for-each (lambda (index method)
                                   (vector-set! methods index method)
                                   (vector-set! super-methods index method)
                                   (vector-set! int-methods index method)
-                                  (vector-set! beta-methods index (vector)))
+                                  (vector-set! beta-methods index (vector))
+                                  (vector-set! inner-projs index values))
                                 (append new-augonly-indices new-final-indices new-normal-indices)
                                 new-methods)
                       ;; Override old methods:
@@ -2253,7 +2261,9 @@
                                                (vector-set! int-methods index method))
                                         ;; Under final mode - set extended vtable entry
                                         (let ([v (list->vector (vector->list v))])
-                                          (vector-set! v (sub1 (vector-length v)) method)
+                                          (vector-set! v (sub1 (vector-length v))
+                                                       ;; Apply current inner contract projection
+                                                       ((vector-ref inner-projs index) method))
                                           (vector-set! beta-methods index v))))
                                   (when (not (vector-ref meth-flags index))
                                     (vector-set! meth-flags index (not make-struct:prim))))
@@ -2275,6 +2285,8 @@
                                   (let ([index (hash-ref method-ht id)])
                                     (let ([v (list->vector (append (vector->list (vector-ref beta-methods index))
                                                                    (list #f)))])
+                                      ;; Since this starts a new part of the chain, reset the projection.
+                                      (vector-set! inner-projs index values)
                                       (vector-set! beta-methods index v))))
                                 augonly-names)
                       ;; Mark final methods:
@@ -2479,6 +2491,8 @@
                             (class-int-methods cls)
                             (class-beta-methods cls)
                             (class-meth-flags cls)
+                            
+                            (class-inner-projs cls)
                             
                             (class-field-width cls)
                             (class-field-ht cls)
@@ -2941,6 +2955,8 @@
                  
                  0 (make-hasheq) null
                  (vector) (vector) (vector) (vector) (vector)
+
+                 (vector)
                  
                  0 (make-hasheq) null
                  
@@ -3982,6 +3998,7 @@
                       methods-vec
                       (list->vector (map (lambda (x) 'final) method-ids))
                       'dont-use-me!
+                      (make-vector method-count values)
                       
                       (if old-style?
                           (+ field-count method-count 1)
