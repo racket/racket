@@ -1211,7 +1211,9 @@
 					  void)])
 	   (read-eval-print-loop)))
 
-
+(define (listen-port x)
+  (let-values ([(la lp pa pp) (tcp-addresses x #t)])
+    lp))
 
 (define (cust-test open)
   (let ([try
@@ -1244,8 +1246,8 @@
 			    "file.ss")))))
 
 ;; Too time-consuming, does bad things to the network:
-'(let* ([pn 40001]
-       [l (tcp-listen pn)])
+'(let* ( [l (tcp-listen 0)]
+         [pn (listen-port l)])
   (cust-test (lambda ()
 	       (let-values ([(r1 w1) (tcp-connect "localhost" pn)]
 			    [(r2 w2) (tcp-accept l)])
@@ -1257,10 +1259,6 @@
 
 ;;----------------------------------------------------------------------
 ;; TCP
-
-(define (listen-port x)
-  (let-values ([(la lp pa pp) (tcp-addresses x #t)])
-    lp))
 
 (let ([do-once
        (lambda (evt?)

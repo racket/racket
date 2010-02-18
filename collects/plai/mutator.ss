@@ -84,11 +84,11 @@
     [(_ (f a ...) e ...)
      (mutator-define-values (f) 
                             (syntax-parameterize ([mutator-name #'f])
-                                                  (mutator-lambda (a ...) e ...)))]
+                                                 (mutator-lambda (a ...) e ...)))]
     [(_ id e)
      (mutator-define-values (id) 
                             (syntax-parameterize ([mutator-name #'id])
-                                                  e))]))
+                                                 e))]))
 (define-syntax-rule (mutator-let ([id e] ...) be ...)
   (mutator-let-values ([(id) (syntax-parameterize ([mutator-name #'id])
                                                   e)]
@@ -272,25 +272,19 @@
               (gc->scheme result-addr)])])))]))
 
 ; Module Begin
-(define-for-syntax required-allocator-stx false)
-
 (define-for-syntax (allocator-setup-internal stx)
-  (with-syntax ([(init-allocator gc:deref gc:alloc-flat gc:cons 
-                                 gc:first gc:rest 
-                                 gc:flat? gc:cons?
-                                 gc:set-first! gc:set-rest!)
-                 (map (λ (s) (datum->syntax stx s))
-                      '(init-allocator gc:deref gc:alloc-flat gc:cons 
-                                       gc:first gc:rest 
-                                       gc:flat? gc:cons?
-                                       gc:set-first! gc:set-rest!))])
-    (syntax-case stx ()
-      [(collector-module heap-size)
+  (syntax-case stx ()
+    [(collector-module heap-size)
+     (with-syntax ([(init-allocator gc:deref gc:alloc-flat gc:cons 
+                                    gc:first gc:rest 
+                                    gc:flat? gc:cons?
+                                    gc:set-first! gc:set-rest!)
+                    (map (λ (s) (datum->syntax stx s))
+                         '(init-allocator gc:deref gc:alloc-flat gc:cons 
+                                          gc:first gc:rest 
+                                          gc:flat? gc:cons?
+                                          gc:set-first! gc:set-rest!))]) 
        (begin
-         (set! required-allocator-stx 
-               (if (alternate-collector)
-                   (datum->syntax stx (alternate-collector))
-                   #'collector-module))
          #`(begin
              #,(if (alternate-collector)
                    #`(require #,(datum->syntax #'collector-module (alternate-collector)))
@@ -311,10 +305,10 @@
                (if (<= (#%datum . heap-size) 500)
                    (set-ui! (dynamic-require `plai/private/gc-gui 'heap-viz%))
                    (printf "Large heap; the heap visualizer will not be displayed.~n")))
-             (init-allocator)))]
-      [_ (raise-syntax-error 'mutator 
-                             "Mutator must start with an 'allocator-setup' expression, such as: (allocator-setup <literal-string> <literal-number>)"
-                             stx)])))
+             (init-allocator))))]
+    [_ (raise-syntax-error 'mutator 
+                           "Mutator must start with an 'allocator-setup' expression, such as: (allocator-setup <literal-string> <literal-number>)"
+                           stx)]))
 
 (define-for-syntax allocator-setup-error-msg
   "Mutator must start with an 'allocator-setup' expression, such as: (allocator-setup <literal-string> <literal-number>)")
