@@ -2451,6 +2451,11 @@
     (λ (cls)
       (class/c-check-first-order ctc cls blame)
       (let* ([name (class-name cls)]
+             [method-width (class-method-width cls)]
+             [method-ht (class-method-ht cls)]
+             [methods (if (null? (class/c-methods ctc))
+                          (class-methods cls)
+                          (make-vector method-width))]
              [class-make (if name
                              (make-naming-constructor 
                               struct:class
@@ -2462,11 +2467,11 @@
                             (class-self-interface cls)
                             void ;; No inspecting
                             
-                            (class-method-width cls)
-                            (class-method-ht cls)
+                            method-width
+                            method-ht
                             (class-method-ids cls)
                             
-                            (class-methods cls)
+                            methods
                             (class-super-methods cls)
                             (class-int-methods cls)
                             (class-beta-methods cls)
@@ -2505,6 +2510,20 @@
           (set-class-make-object! c object-make)
           (set-class-field-ref! c object-field-ref)
           (set-class-field-set!! c object-field-set!))
+        
+        ;; Handle public method contracts
+        (unless (null? (class/c-methods ctc))
+          ;; First, fill in from old methods
+          (let ([old-methods (class-methods cls)])
+            (for ([n (in-range method-width)])
+              (vector-set! methods n (vector-ref old-methods n))))
+          ;; Now apply projections
+          (for ([m (in-list (class/c-methods ctc))]
+                [c (in-list (class/c-method-contracts ctc))])
+            (let ([i (hash-ref method-ht m)]
+                  [p ((contract-projection c) blame)])
+              (vector-set! methods i (p (vector-ref methods i))))))
+        
         c))))
 
 (define-struct class/c 
