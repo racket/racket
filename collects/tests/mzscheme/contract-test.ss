@@ -4322,10 +4322,7 @@
                          (class object% (super-new) (define/public (m x) (zero? x)))
                          'pos
                          'neg)]
-           [d% (contract (class/c [m (-> any/c boolean?)])
-                         (class c% (super-new) (define/override (m) (super m 5)))
-                         'pos
-                         'neg)])
+           [d% (class c% (super-new) (define/override (m) (super m 5)))])
       (send (new d%) m)))
 
 ;                                                              
