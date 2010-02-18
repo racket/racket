@@ -4325,6 +4325,36 @@
            [d% (class c% (super-new) (define/override (m) (super m 5)))])
       (send (new d%) m)))
 
+  (test/spec-passed
+   'class/c-higher-order-super-1
+   '(let* ([c% (contract (class/c [m (-> any/c integer? integer?)]
+                                  (super [m (-> any/c number? number?)]))
+                         (class object% (super-new) (define/public (m x) (add1 x)))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (define/override (m x) (+ x (super m 3.5))))])
+      (send (new d%) m 4.5)))
+
+  (test/neg-blame
+   'class/c-higher-order-super-2
+   '(let* ([c% (contract (class/c [m (-> any/c integer? integer?)]
+                                  (super [m (-> any/c number? number?)]))
+                         (class object% (super-new) (define/public (m x) (add1 x)))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (define/override (m) (super m #f)))])
+      (send (new d%) m)))
+
+  (test/pos-blame
+   'class/c-higher-order-super-2
+   '(let* ([c% (contract (class/c [m (-> any/c integer? integer?)]
+                                  (super [m (-> any/c number? number?)]))
+                         (class object% (super-new) (define/public (m x) (zero? x)))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (define/override (m) (super m 3.5)))])
+      (send (new d%) m)))
+
 ;                                                              
 ;                                                              
 ;             ;;        ;;                     ;    ;;         
