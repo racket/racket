@@ -1,19 +1,20 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base)
-         mzlib/list
          mzlib/etc
-         mzlib/stxparam
+         scheme/contract/base
+         scheme/list
+         scheme/stxparam
          "class-events.ss"
          "serialize-structs.ss"
-         (for-syntax syntax/kerncase
+         (for-syntax scheme/stxparam
+                     syntax/kerncase
                      syntax/stx
                      syntax/name
                      syntax/context
                      syntax/define
                      syntax/flatten-begin
                      syntax/private/boundmap
-                     mzlib/stxparam
                      "classidmap.ss"))
 
 (define insp (current-inspector)) ; for all opaque structures
@@ -54,6 +55,7 @@
            method-in-interface? interface->method-names class->interface class-info
            (struct-out exn:fail:object)
            make-primitive-class
+           class/c object/c
            
            ;; "keywords":
            private public override augment
@@ -2374,6 +2376,269 @@
 (define-values (prop:object object? object-ref) (make-struct-type-property 'object))
 
 ;;--------------------------------------------------------------------
+;;  class/c
+;;--------------------------------------------------------------------
+
+(define (class/c-check-first-order ctc cls blame)
+  (let/ec return
+    (define (failed str . args)
+      (if blame
+          (apply raise-blame-error blame cls str args)
+          (return #f)))
+    (unless (class? cls)
+      (failed "not a class"))
+    (let ([method-ht (class-method-ht cls)])
+      (for ([m (class/c-methods ctc)])
+        (unless (hash-ref method-ht m #f)
+          (failed "no public method ~a" m)))
+      (for ([m (class/c-overrides ctc)])
+        (let ([index (hash-ref method-ht m #f)])
+          (unless index
+            (failed "no public method ~a" m))
+          (let ([vec (vector-ref (class-beta-methods cls) index)])
+            (when (and (positive? (vector-length vec))
+                       (not (vector-ref vec (sub1 (vector-length vec)))))
+              (failed "method ~a is not overrideable" m)))))
+      (for ([m (class/c-augments ctc)])
+        (let ([index (hash-ref method-ht m #f)])
+          (unless index
+            (failed "no public method ~a" m))
+          (let ([vec (vector-ref (class-beta-methods cls) index)])
+            (when (zero? (vector-length vec))
+              (failed "method ~a has never been augmentable" m)))))
+      (for ([s (class/c-supers ctc)])
+        (let ([index (hash-ref method-ht s #f)])
+          (unless index
+            (failed "no public method ~a" s))
+          (let ([vec (vector-ref (class-beta-methods cls) index)])
+            (when (and (positive? (vector-length vec))
+                       (not (vector-ref vec (sub1 (vector-length vec)))))
+              (failed "method ~a is not overrideable" s)))))
+      (for ([i (class/c-inners ctc)])
+        (let ([index (hash-ref method-ht i #f)])
+          (unless index
+            (failed "no public method ~a" i))
+          (let* ([super (vector-ref (class-supers cls) (sub1 (class-pos cls)))])
+            (unless (eq? (vector-ref (class-meth-flags cls) index) 'augmentable)
+              (failed "method ~a is not augmentable" i))))))
+    (let ([field-ht (class-field-ht cls)])
+      (for ([m (class/c-fields ctc)])
+        (unless (hash-ref field-ht m #f)
+          (failed "no public field ~a" m))))
+    #t))
+
+(define (class/c-proj ctc)
+  (λ (blame)
+    (λ (cls)
+      (class/c-check-first-order ctc cls blame)
+      cls)))
+
+(define-struct class/c 
+  (methods method-contracts fields field-contracts
+   supers super-contracts inners inner-contracts
+   overrides override-contracts augments augment-contracts)
+  #:omit-define-syntaxes
+  #:property prop:contract
+  (build-contract-property
+   #:projection class/c-proj
+   #:name 
+   (λ (ctc)
+     (let* ([pair-ids-ctcs
+             (λ (is ctcs)
+               (map (λ (i ctc)
+                      (if (null? ctc)
+                          i
+                          (build-compound-type-name i ctc)))
+                    is ctcs))]
+            [handle-optional
+             (λ (name is ctcs)
+               (if (null? is)
+                   null
+                   (list (cons name (pair-ids-ctcs is ctcs)))))]
+            [handled-methods
+             (map (λ (i ctc)
+                    (cond
+                      [ctc (build-compound-type-name i ctc)]
+                      [else i]))
+                  (class/c-methods ctc) (class/c-method-contracts ctc))])
+       (apply build-compound-type-name
+              'class/c 
+              (append
+               handled-methods
+               (handle-optional 'field (class/c-fields ctc) (class/c-field-contracts ctc))
+               (handle-optional 'super (class/c-supers ctc) (class/c-super-contracts ctc))
+               (handle-optional 'inner (class/c-inners ctc) (class/c-inner-contracts ctc))
+               (handle-optional 'override (class/c-overrides ctc) (class/c-override-contracts ctc))
+               (handle-optional 'augment (class/c-augments ctc) (class/c-augment-contracts ctc))))))
+   #:first-order
+   (λ (ctc)
+     (λ (cls)
+       (class/c-check-first-order ctc cls #f)))))
+
+(define-for-syntax (parse-class/c-specs forms object/c?)
+  (define parsed-forms (make-hasheq))
+  (define form-name (if object/c? 'object/c 'class/c))
+  (define (parse-name-ctc stx)
+    (syntax-case stx ()
+      [x
+       (identifier? #'x)
+       (values #'(quote x) #f)]
+      [(x ctc)
+       (identifier? #'x)
+       (values #'(quote x) 
+               #`(coerce-contract '#,form-name (let ([x ctc]) x)))]
+      [_
+       (raise-syntax-error 'class/c "expected identifier or (id contract)" stx)]))
+  (define (parse-names-ctcs stx)
+    (for/fold ([names null]
+               [ctcs null])
+      ([stx (in-list (syntax->list stx))])
+      (let-values ([(name ctc) (parse-name-ctc stx)])
+        (values (cons name names) (cons ctc ctcs)))))
+  (define (parse-spec stx)
+    (syntax-case stx (field init super inner override augment)
+      [(field f-spec ...)
+       (let-values ([(names ctcs) (parse-names-ctcs #'(f-spec ...))])
+         (hash-set! parsed-forms 'fields
+                    (append names (hash-ref parsed-forms 'fields null)))
+         (hash-set! parsed-forms 'field-contracts
+                    (append ctcs (hash-ref parsed-forms 'field-contracts null))))]
+      [(super s-spec ...)
+       (begin
+         (when object/c?
+           (raise-syntax-error 'object/c "super contract not allowed in object/c" stx))
+         (let-values ([(names ctcs) (parse-names-ctcs #'(s-spec ...))])
+           (hash-set! parsed-forms 'supers
+                      (append names (hash-ref parsed-forms 'supers null)))
+           (hash-set! parsed-forms 'super-contracts
+                      (append ctcs (hash-ref parsed-forms 'super-contracts null)))))]
+      [(inner i-spec ...)
+       (begin
+         (when object/c?
+           (raise-syntax-error 'object/c "inner contract not allowed in object/c" stx))
+         (let-values ([(names ctcs) (parse-names-ctcs #'(i-spec ...))])
+           (hash-set! parsed-forms 'inners
+                      (append names (hash-ref parsed-forms 'inners null)))
+           (hash-set! parsed-forms 'inner-contracts
+                      (append ctcs (hash-ref parsed-forms 'inner-contracts null)))))]
+      [(override o-spec ...)
+       (begin
+         (when object/c?
+           (raise-syntax-error 'object/c "override contract not allowed in object/c" stx))
+         (let-values ([(names ctcs) (parse-names-ctcs #'(o-spec ...))])
+           (hash-set! parsed-forms 'overrides
+                      (append names (hash-ref parsed-forms 'overrides null)))
+           (hash-set! parsed-forms 'override-contracts
+                      (append ctcs (hash-ref parsed-forms 'override-contracts null)))))]
+      [(augment a-spec ...)
+       (begin
+         (when object/c?
+           (raise-syntax-error 'object/c "augment contract not allowed in object/c" stx))
+         (let-values ([(names ctcs) (parse-names-ctcs #'(a-spec ...))])
+           (hash-set! parsed-forms 'augments
+                      (append names (hash-ref parsed-forms 'augments null)))
+           (hash-set! parsed-forms 'augment-contracts
+                      (append ctcs (hash-ref parsed-forms 'augment-contracts null)))))]
+      [m-spec
+       (let-values ([(name ctc1) (parse-name-ctc #'m-spec)])
+         (hash-set! parsed-forms 'methods
+                    (cons name (hash-ref parsed-forms 'methods null)))
+         (hash-set! parsed-forms 'method-contracts
+                    (cons ctc1 (hash-ref parsed-forms 'method-contracts null))))]
+      [else
+       (raise-syntax-error form-name "expected class/c subform" stx)]))
+  (for ([form (in-list forms)])
+    (parse-spec form))
+  parsed-forms)
+
+(define-syntax (class/c stx)
+  (syntax-case stx ()
+    [(_ form ...)
+     (let ([parsed-forms (parse-class/c-specs (syntax->list #'(form ...)) #f)])
+       (with-syntax ([methods #`(list #,@(reverse (hash-ref parsed-forms 'methods null)))]
+                     [method-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'method-contracts null)))]
+                     [fields #`(list #,@(reverse (hash-ref parsed-forms 'fields null)))]
+                     [field-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'field-contracts null)))]
+                     [supers #`(list #,@(reverse (hash-ref parsed-forms 'supers null)))]
+                     [super-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'super-contracts null)))]
+                     [inners #`(list #,@(reverse (hash-ref parsed-forms 'inners null)))]
+                     [inner-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'inner-contracts null)))]
+                     [overrides #`(list #,@(reverse (hash-ref parsed-forms 'overrides null)))]
+                     [override-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'override-contracts null)))]
+                     [augments #`(list #,@(reverse (hash-ref parsed-forms 'augments null)))]
+                     [augment-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'augment-contracts null)))])
+         (syntax/loc stx
+           (make-class/c methods method-ctcs
+                         fields field-ctcs
+                         supers super-ctcs
+                         inners inner-ctcs
+                         overrides override-ctcs
+                         augments augment-ctcs))))]))
+
+(define (object/c-check-first-order ctc obj blame)
+  (let/ec return
+    (define (failed str . args)
+      (if blame
+          (apply raise-blame-error blame obj str args)
+          (return #f)))
+    (unless (object? obj)
+      (failed "not a object"))
+    (let ([cls (object-ref obj)])
+      (let ([method-ht (class-method-ht cls)])
+        (for ([m (object/c-methods ctc)])
+          (unless (hash-ref method-ht m #f)
+            (failed "no public method ~a" m))))
+      (let ([field-ht (class-field-ht cls)])
+        (for ([m (object/c-fields ctc)])
+          (unless (hash-ref field-ht m #f)
+            (failed "no public field ~a" m)))))))
+
+(define (object/c-proj ctc)
+  (λ (blame)
+    (λ (obj)
+      (object/c-check-first-order ctc obj blame)
+      obj)))
+
+(define-struct object/c (methods method-contracts fields field-contracts)
+  #:omit-define-syntaxes
+  #:property prop:contract
+  (build-contract-property 
+   #:projection object/c-proj
+   #:name
+   (λ (ctc)
+     (let* ([pair-ids-ctcs
+             (λ (is ctcs)
+               (map (λ (i ctc)
+                      (build-compound-type-name i ctc))
+                    is ctcs))]
+            [handle-optional
+             (λ (name is ctcs)
+               (if (null? is)
+                   null
+                   (list (cons name (pair-ids-ctcs is ctcs)))))])
+       (apply build-compound-type-name
+              'object/c 
+              (append
+               (pair-ids-ctcs (object/c-methods ctc) (object/c-method-contracts ctc))
+               (handle-optional 'field (object/c-fields ctc) (object/c-field-contracts ctc))))))
+   #:first-order
+   (λ (ctc)
+     (λ (obj)
+       (with-handlers ([exn:fail:contract? (λ (e) #f)])
+         (object/c-check-first-order ctc obj #f))))))
+
+(define-syntax (object/c stx)
+  (syntax-case stx ()
+    [(_ form ...)
+     (let ([parsed-forms (parse-class/c-specs (syntax->list #'(form ...)) #t)])
+       (with-syntax ([methods #`(list #,@(reverse (hash-ref parsed-forms 'methods null)))]
+                     [method-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'method-contracts null)))]
+                     [fields #`(list #,@(reverse (hash-ref parsed-forms 'fields null)))]
+                     [field-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'field-contracts null)))])
+         (syntax/loc stx
+           (make-object/c methods method-ctcs fields field-ctcs))))]))
+
+;;--------------------------------------------------------------------
 ;;  interfaces
 ;;--------------------------------------------------------------------
 
@@ -3896,5 +4161,6 @@
          object-method-arity-includes?
          method-in-interface? interface->method-names class->interface class-info
          (struct-out exn:fail:object)
-         make-primitive-class)
+         make-primitive-class
+         class/c object/c)
 
