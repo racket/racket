@@ -4346,7 +4346,7 @@
       (send (new d%) m)))
 
   (test/pos-blame
-   'class/c-higher-order-super-2
+   'class/c-higher-order-super-3
    '(let* ([c% (contract (class/c [m (-> any/c integer? integer?)]
                                   (super [m (-> any/c number? number?)]))
                          (class object% (super-new) (define/public (m x) (zero? x)))
@@ -4355,6 +4355,52 @@
            [d% (class c% (super-new) (define/override (m) (super m 3.5)))])
       (send (new d%) m)))
 
+  (test/spec-passed
+   'class/c-higher-order-inner-1
+   '(let* ([c% (contract (class/c (inner [m (-> any/c integer? integer?)]))
+                         (class object% (super-new) (define/pubment (m x) (+ x (inner x m x))))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (define/augride (m x) (add1 x)))])
+      (send (new d%) m 3)))
+
+  (test/pos-blame
+   'class/c-higher-order-inner-2
+   '(let* ([c% (contract (class/c (inner [m (-> any/c integer? integer?)]))
+                         (class object% (super-new) (define/pubment (m x) (+ x (inner x m x))))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (define/augride (m x) (zero? x)))])
+      (send (new d%) m 3)))
+
+  (test/neg-blame
+   'class/c-higher-order-inner-3
+   '(let* ([c% (contract (class/c (inner [m (-> any/c integer? integer?)]))
+                         (class object% (super-new) (define/pubment (m x) (+ x (inner x m (zero? x)))))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (define/augride (m x) (add1 x)))])
+      (send (new d%) m 3)))
+
+  (test/pos-blame
+   'class/c-higher-order-inner-4
+   '(let* ([c% (contract (class/c (inner [m (-> any/c integer? integer?)]))
+                         (class object% (super-new) (define/pubment (m x) (+ x (inner x m x))))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (define/augride (m x) (add1 x)))]
+           [e% (class d% (super-new) (define/override (m x) (zero? (super m x))))])
+      (send (new e%) m 3)))
+
+  (test/spec-passed
+   'class/c-higher-order-inner-5
+   '(let* ([c% (contract (class/c (inner [m (-> any/c integer? integer?)]))
+                         (class object% (super-new) (define/pubment (m x) (+ x (inner x m x))))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (define/augment (m x) (if (inner x m x) (add1 x) x)))]
+           [e% (class d% (super-new) (define/augride (m x) (zero? x)))])
+      (send (new e%) m 3)))
 ;                                                              
 ;                                                              
 ;             ;;        ;;                     ;    ;;         
