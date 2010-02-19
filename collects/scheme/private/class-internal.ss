@@ -2142,22 +2142,21 @@
                 
                 ;; -- Extract superclass methods and make rename-inners ---
                 (let ([rename-supers (map (lambda (index mname)
+                                              ;; While the last part of the vector is indeed the right
+                                              ;; method, if there have been super contracts placed since,
+                                              ;; they won't be reflected there, only in the super-methods
+                                              ;; vector of the superclass.
                                             (let ([vec (vector-ref (class-beta-methods super) index)])
-                                              (if (positive? (vector-length vec))
-                                                  ;; While the last part of the vector is indeed the right
-                                                  ;; method, if there have been super contracts placed since,
-                                                  ;; they won't be reflected there, only in the super-methods
-                                                  ;; vector of the superclass.
-                                                  (if (vector-ref vec (sub1 (vector-length vec)))
-                                                      (vector-ref (class-super-methods super) index)
-                                                      (obj-error 'class* 
-                                                                 (string-append
-                                                                  "superclass ~e method for override, overment, inherit/super, "
-                                                                  "or rename-super is not overrideable: ~a~a")
-                                                                 super
-                                                                 mname
-                                                                 (for-class name)))
-                                                  (vector-ref (class-super-methods super) index))))
+                                              (when (and (positive? (vector-length vec))
+                                                         (not (vector-ref vec (sub1 (vector-length vec)))))
+                                                (obj-error 'class* 
+                                                           (string-append
+                                                            "superclass ~e method for override, overment, inherit/super, "
+                                                            "or rename-super is not overrideable: ~a~a")
+                                                           super
+                                                           mname
+                                                           (for-class name))))
+                                            (vector-ref (class-super-methods super) index))
                                           rename-super-indices
                                           rename-super-names)]
                       [rename-inners (let ([new-augonly (make-vector method-width #f)])
