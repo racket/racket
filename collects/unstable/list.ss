@@ -1,6 +1,7 @@
 #lang scheme/base
 (require scheme/contract
-         scheme/dict)
+         scheme/dict
+         (for-syntax scheme/base))
 
 ; list-prefix : list? list? -> boolean?
 ; Is l a prefix or r?
@@ -84,3 +85,30 @@
                  (same? key-item prev))
                (car items)
                (loop (cdr items) (cons key-item sofar)))))))
+
+;; sam added from carl
+
+(define-syntax (values->list stx)
+  (syntax-case stx ()
+    [(vl expr)
+     (syntax/loc stx
+       (call-with-values (lambda () expr) list))]))
+
+(define (map/list n f ls)
+  (cond
+   [(andmap null? ls) (build-list n (lambda (i) null))]
+   [(andmap pair? ls)
+    (let* ([vs (values->list (apply f (map car ls)))]
+           [k (length vs)])
+      (unless (= k n)
+        (error 'map/values
+               "~a produced ~a values, not ~a: ~e"
+               f k n vs))
+      (map cons vs (map/list n f (map cdr ls))))]
+   [else (error 'map/values "list lengths differ")]))
+
+(define (map/values n f . ls)
+  (apply values (map/list n f ls)))
+
+(provide map/values)
+
