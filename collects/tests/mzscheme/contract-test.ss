@@ -4512,6 +4512,7 @@
 ;                     ;;;;                                     
 ;                     ;;;                                      
 
+#|
   (test/pos-blame
    'object/c-first-order-object-1
    '(contract (object/c)
@@ -4553,6 +4554,7 @@
               (new (class object% (super-new) (field [n 3])))
               'pos
               'neg))
+|#
 
 ;                                                                                    
 ;                                                                                    

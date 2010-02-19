@@ -36,7 +36,7 @@
            object=?
            new make-object instantiate
            send send/apply send* class-field-accessor class-field-mutator with-method
-           get-field field-bound? field-names
+           get-field set-field! field-bound? field-names
            private* public*  pubment*
            override* overment*
            augride* augment*
@@ -55,7 +55,7 @@
            method-in-interface? interface->method-names class->interface class-info
            (struct-out exn:fail:object)
            make-primitive-class
-           class/c object/c
+           class/c #| object/c |#
            
            ;; "keywords":
            private public override augment
@@ -3535,6 +3535,47 @@
            (begin0 (mutator obj value)
                    (set-event obj 'name value)))))]))
 
+(define-syntaxes (set-field! set-field!-traced)
+  (let ()
+    (define (core-set-field! traced?)
+      (λ (stx)
+        (syntax-case stx ()
+          [(_ name obj val)
+           (identifier? #'name)
+           (with-syntax ([set (if traced?
+                                  #'set-field!/proc-traced
+                                  #'set-field!/proc)]
+                         [localized (localize #'name)])
+             (syntax/loc stx (set `localized obj val)))]
+          [(_ name obj val)
+           (raise-syntax-error
+            'set-field! "expected a field name as first argument"
+            stx #'name)])))
+    (values (core-set-field! #f) (core-set-field! #t))))
+
+(define-traced (set-field!/proc id obj val)
+  (unless (object? obj)
+    (raise-mismatch-error
+     'set-field!
+     "expected an object, got "
+     obj))
+  (trace-begin
+   (trace (set-event obj id val))
+   (let loop ([obj obj])
+     (let* ([cls (object-ref obj)]
+            [field-ht (class-field-ht cls)]
+            [index (hash-ref field-ht id #f)])
+       (cond
+         [index
+          ((class-field-set! (car index)) obj (cdr index) val)]
+         [(wrapper-object? obj)
+          (loop (wrapper-object-wrapped obj))]
+         [else
+          (raise-mismatch-error 
+           'get-field
+           (format "expected an object that has a field named ~s, got " id)
+           obj)])))))
+
 (define-syntaxes (get-field get-field-traced)
   (let ()
     (define (core-get-field traced?)
@@ -4303,7 +4344,7 @@
          (rename-out [_interface interface]) interface* interface?
          object% object? object=? externalizable<%> printable<%> equal<%>
          new make-object instantiate
-         get-field field-bound? field-names
+         get-field set-field! field-bound? field-names
          send send/apply send* class-field-accessor class-field-mutator with-method
          private* public*  pubment*
          override* overment*
@@ -4322,5 +4363,5 @@
          method-in-interface? interface->method-names class->interface class-info
          (struct-out exn:fail:object)
          make-primitive-class
-         class/c object/c)
+         class/c #|object/c|#)
 
