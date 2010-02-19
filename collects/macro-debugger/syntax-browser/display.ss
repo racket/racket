@@ -29,7 +29,8 @@
 
 ;; print-syntax-to-editor : syntax text controller<%> config number number
 ;;                       -> display<%>
-(define (print-syntax-to-editor stx text controller config columns insertion-point)
+(define (print-syntax-to-editor stx text controller config columns
+                                [insertion-point (send text last-position)])
   (begin-with-definitions
    (define output-port (open-output-string/count-lines))
    (define range
