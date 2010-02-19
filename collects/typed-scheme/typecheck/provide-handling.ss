@@ -68,6 +68,7 @@
                               (make-provide/contract-transformer
                                (quote-syntax the-contract)
                                (quote-syntax id)
+                               (quote-syntax out-id)
                                (quote-syntax module-source)))
                             (define-syntax export-id
                               (if (unbox typed-context?)
