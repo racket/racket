@@ -13,7 +13,8 @@
  (private parse-type)
  scheme/match syntax/struct syntax/stx mzlib/trace unstable/syntax scheme/list
  (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
- (for-template scheme/base scheme/contract unstable/poly-c (utils any-wrap) (only-in scheme/class object% is-a?/c subclass?/c)))
+ (for-template scheme/base scheme/contract unstable/poly-c (utils any-wrap)
+	       (only-in scheme/class object% is-a?/c subclass?/c object-contract)))
 
 (define (define/fixup-contract? stx)
   (or (syntax-property stx 'typechecker:contract-def)
@@ -135,7 +136,10 @@
              (parameterize ([vars (cons (list n #'n* #'n*) (vars))])
                #`(flat-rec-contract n* #,(t->c b)))))]
         [(Value: #f) #'false/c]    
-        [(Instance: _) #'(is-a?/c object%)]
+        [(Instance: (Class: _ _ (list (list name fcn) ...))) 
+	 (with-syntax ([(fcn-cnts ...) (map t->c fcn)]
+		       [(names ...) name])
+		      #'(object-contract (names fcn-cnts) ...))]
         [(Class: _ _ _) #'(subclass?/c object%)]
         [(Value: '()) #'null?]
         [(Struct: nm par flds proc poly? pred? cert acc-ids)

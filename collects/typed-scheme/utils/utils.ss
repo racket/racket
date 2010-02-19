@@ -172,11 +172,9 @@ at least theoretically.
         (define-syntax-class clause
           #:literals ()
           #:attributes (i)
-          (pattern [struct nm:id (flds ...)]
-                   #:fail-unless (eq? (syntax-e #'struct) 'struct) #f
+          (pattern [(~datum struct) (~or nm:id (nm:id super:id)) (flds ...)]
 		   #:with i #'(struct-out nm))
-	  (pattern [rename out:id in:id cnt:expr]
-                   #:fail-unless (eq? (syntax-e #'rename) 'rename) #f
+	  (pattern [(~datum rename) out:id in:id cnt:expr]
                    #:with i #'(rename-out [out in]))
           (pattern [i:id cnt:expr]))
         (syntax-parse stx

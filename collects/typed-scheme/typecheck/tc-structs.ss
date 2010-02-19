@@ -66,11 +66,11 @@
           (values (reverse getters) (reverse setters))
           (loop (cddr l) (cons (car l) getters) (cons (cadr l) setters)))))
   (match (build-struct-names nm flds #f (not setters?) nm)
-    [(list _ maker pred getters/setters ...) 
+    [(list sty maker pred getters/setters ...) 
      (if setters?
          (let-values ([(getters setters) (split getters/setters)])
-           (values maker pred getters setters))
-         (values maker pred getters/setters #f))]))
+           (values sty maker pred getters setters))
+         (values sty maker pred getters/setters #f))]))
 
 ;; gets the fields of the parent type, if they exist
 ;; Option[Struct-Ty] -> Listof[Type]
@@ -88,6 +88,7 @@
                          #:type-wrapper [type-wrapper values]
                          #:pred-wrapper [pred-wrapper values]
                          #:mutable [setters? #f]
+                         #:struct-info [si #f]
                          #:proc-ty [proc-ty #f]
                          #:maker [maker* #f]
                          #:predicate [pred* #f]
@@ -95,7 +96,7 @@
                          #:poly? [poly? #f]
                          #:type-only [type-only #f])
   ;; create the approriate names that define-struct will bind
-  (define-values (maker pred getters setters) (struct-names nm flds setters?))
+  (define-values (struct-type-id maker pred getters setters) (struct-names nm flds setters?))
   (let* ([name (syntax-e nm)]
          [fld-types (append parent-field-types types)]
          [sty (make-Struct name parent fld-types proc-ty poly? pred (syntax-local-certifier) getters)]
@@ -109,6 +110,7 @@
                                #:pred-wrapper pred-wrapper
                                #:maker (or maker* maker)
                                #:predicate (or pred* pred)
+                               #:struct-info si
                                #:constructor-return cret))))
 
 ;; generate names, and register the approriate types give field types and structure type
@@ -116,24 +118,28 @@
 ;; identifier Type Listof[identifer] Listof[Type] Listof[Type] #:wrapper (Type -> Type) #:maker identifier
 (define (register-struct-types nm sty flds external-fld-types external-fld-types/no-parent setters?
                                #:wrapper [wrapper values]
+                               #:struct-info [si #f]
                                #:type-wrapper [type-wrapper values]
                                #:pred-wrapper [pred-wrapper values]
                                #:maker [maker* #f]
                                #:predicate [pred* #f]
                                #:constructor-return [cret #f])
   ;; create the approriate names that define-struct will bind
-  (define-values (maker pred getters setters) (struct-names nm flds setters?))
+  (define-values (struct-type-id maker pred getters setters) (struct-names nm flds setters?))
   ;; the type name that is used in all the types
   (define name (type-wrapper (make-Name nm)))
   ;; the list of names w/ types
   (define bindings
     (append 
-     (list (cons (or maker* maker) 
-                 (wrapper (->* external-fld-types (if cret cret name))))
-           (cons (or pred* pred)
-                 (make-pred-ty (if setters?
-                                   (make-StructTop sty)
-                                   (pred-wrapper name)))))
+     (list 
+      (cons struct-type-id
+            (make-StructType sty))
+      (cons (or maker* maker)
+            (wrapper (->* external-fld-types (if cret cret name))))
+      (cons (or pred* pred)
+            (make-pred-ty (if setters?
+                              (make-StructTop sty)
+                              (pred-wrapper name)))))
      (for/list ([g (in-list getters)] [t (in-list external-fld-types/no-parent)] [i (in-naturals)])
        (let ([func (if setters? 
                        (->* (list name) t)
@@ -146,7 +152,7 @@
          null)))
   (register-type-name nm (wrapper sty))
   (cons
-   (make-def-stx-binding nm)
+   (make-def-struct-stx-binding nm si)
    (for/list ([e bindings])
              (let ([nm (car e)]
                    [t (cdr e)])
@@ -207,6 +213,7 @@
                    #:proc-ty proc-ty-parsed
                    #:maker maker
                    #:predicate pred
+                   #:struct-info (syntax-property nm/par 'struct-info)
 		   #:constructor-return (and cret (parse-type cret))
                    #:mutable mutable
                    #:type-only type-only))
