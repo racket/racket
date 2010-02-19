@@ -29,6 +29,9 @@
   (hash-update! ht phase (curry list* file) empty))
 
 (define (equal?/why-not v1 v2)
+  (define v1->v2 (make-hasheq))
+  (define (interned-symbol=? s1 s2)
+    (symbol=? (hash-ref! v1->v2 s1 s2) s2))
   (define (yield p m v1 v2)
     (error 'equal?/why-not "~a in ~a: ~S ~S"
            m (reverse p) v1 v2))
@@ -93,6 +96,13 @@
               (yield p "Unequal strings" v1 v2))]
            [_
             (yield p "Not a string on right" v1 v2)])]
+        [(? bytes?)
+         (match v2
+           [(? bytes?)
+            (unless (bytes=? v1 v2)
+              (yield p "Unequal bytes" v1 v2))]
+           [_
+            (yield p "Not a bytes on right" v1 v2)])]
         [(? path?)
          (match v2
            [(? path?)
@@ -107,30 +117,39 @@
               (yield p "Unequal numbers" v1 v2))]
            [_
             (yield p "Not a number on right" v1 v2)])]
+        [(? regexp?)
+         (match v2
+           [(? regexp?)
+            (unless (string=? (object-name v1) (object-name v2))
+              (yield p "Unequal regexp" v1 v2))]
+           [_
+            (yield p "Not a regexp on right" v1 v2)])]
         [(? symbol?)
          (match v2
            [(? symbol?)
-            (do-compare (symbol-interned?
-                         symbol-unreadable?)
-                        yield p v1 v2
-                        symbol=?)]
+            (unless (symbol=? v1 v2)
+              (cond
+                [(and (symbol-interned? v1) (not (symbol-interned? v1)))
+                 (yield p "Not interned symbol on right" v1 v2)]
+                [(and (symbol-unreadable? v1) (not (symbol-unreadable? v1)))
+                 (yield p "Not unreadable symbol on right" v1 v2)]
+                [(and (symbol-uninterned? v1) (not (symbol-uninterned? v1)))
+                 (yield p "Not uninterned symbol on right" v1 v2)]
+                [(and (symbol-uninterned? v1) (symbol-uninterned? v2))
+                 (unless (interned-symbol=? v1 v2)
+                   (yield p "Uninterned symbols don't align" v1 v2))]
+                [else
+                 (yield p "Other symbol-related problem" v1 v2)]))]
            [_
-            (yield p "Not a symbol on right" v1 v2)])]        
+            (yield p "Not a symbol on right" v1 v2)])]
+        [(? empty?)
+         (yield p "Not empty on right" v1 v2)]
         [_
          (yield p "Cannot inspect values deeper" v1 v2)])))
   (inner empty v1 v2))  
 
-(define-syntax do-compare 
-  (syntax-rules ()
-    [(_ () yield p v1 v2 =) 
-     (unless (= v1 v2)
-       (yield p (format "Not ~a" '=) v1 v2))]
-    [(_ (?1 ? ...) yield p v1 v2 =)
-     (if (?1 v1)
-         (if (?1 v2)
-             (do-compare () yield (list* '?1 p) v1 v2 =)
-             (yield p (format "Not ~a or right" '?1) v1 v2))
-         (do-compare (? ...) yield p v1 v2 =))]))
+(define (symbol-uninterned? s)
+  (not (or (symbol-interned? s) (symbol-unreadable? s))))
 
 ;; Parameters
 (define stop-on-first-error (make-parameter #f))
