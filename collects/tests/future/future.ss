@@ -3,6 +3,16 @@
 (Section 'future)
 (require scheme/future)
 
+#|Need to add expressions which raise exceptions inside a 
+future thunk which can be caught at the touch site 
+(as opposed to using with-handlers). 
+
+Both future and touch should be called from within a future thunk. 
+
+We should also test deep continuations.
+
+|# 
+
 ;; ----------------------------------------
 
 (test 2 
