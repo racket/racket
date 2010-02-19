@@ -1,6 +1,7 @@
 #lang scheme/base
 (require compiler/zo-structs
          scheme/match
+         scheme/local
          scheme/list
          scheme/dict)
 
@@ -10,14 +11,9 @@
   
   Less sharing occurs than in the C implementation, creating much larger files
 
-  encode-all-from-module only handles one case
-
-  What is the purpose of protect-quote? It was making it so certain things (like paths) weren't being encoded correctly.
-
+  protect-quote caused some things to be sent to write. But there are some things (like paths) that can be read and passed to protect-quote that cannot be 'read' in after 'write', so we turned it off
 |#
 
-;; Doesn't write as compactly as MzScheme, since list and pair sequences
-;; are not compacted, and symbols are not written in short form
 (define current-wrapped-ht (make-parameter #f))
 (define (zo-marshal top)
   (match top
@@ -318,10 +314,29 @@
   APPVALS_EXPD
   SPLICE_EXPD)
 
+(define CPT_SMALL_NUMBER_START 35)
+(define CPT_SMALL_NUMBER_END 60)
+
+(define CPT_SMALL_SYMBOL_START 60)
+(define CPT_SMALL_SYMBOL_END 80)
+
+(define CPT_SMALL_MARSHALLED_START 80)
+(define CPT_SMALL_MARSHALLED_END 92)
+
+(define CPT_SMALL_LIST_MAX 65)
+(define CPT_SMALL_PROPER_LIST_START 92)
+(define CPT_SMALL_PROPER_LIST_END (+ CPT_SMALL_PROPER_LIST_START CPT_SMALL_LIST_MAX))
+
+(define CPT_SMALL_LIST_START CPT_SMALL_PROPER_LIST_END)
+(define CPT_SMALL_LIST_END 192)
+
 (define CPT_SMALL_LOCAL_START 192)
 (define CPT_SMALL_LOCAL_END 207)
 (define CPT_SMALL_LOCAL_UNBOX_START 207)
 (define CPT_SMALL_LOCAL_UNBOX_END 222)
+
+(define CPT_SMALL_SVECTOR_START 222)
+(define CPT_SMALL_SVECTOR_END 247)
 
 (define CPT_SMALL_APPLICATION_START 247)
 (define CPT_SMALL_APPLICATION_END 255)
@@ -385,8 +400,11 @@
   (out-marshaled syntax-type-num (list* key val) out))
 
 (define (out-marshaled type-num val out)
-  (out-byte CPT_MARSHALLED out)
-  (out-number type-num out)
+  (if (type-num . < . (- CPT_SMALL_MARSHALLED_END CPT_SMALL_MARSHALLED_START))
+      (out-byte (+ CPT_SMALL_MARSHALLED_START type-num) out)
+      (begin
+        (out-byte CPT_MARSHALLED out)
+        (out-number type-num out)))
   (out-data val out))
 
 (define (out-anything v out)
@@ -537,7 +555,9 @@
 (define (encode-all-from-module all)
   (match all
     [(struct all-from-module (path phase src-phase exceptions prefix))
-     (list* path phase src-phase)]))
+     (if (and (empty? exceptions) (not prefix))
+         (list* path phase src-phase)
+         (list* path phase src-phase (append exceptions prefix)))]))
 
 (define (encode-wraps wraps)
   (for/list ([wrap (in-list wraps)])
@@ -592,7 +612,7 @@
                   [(struct stx (encoded))
                    (out-byte CPT_STX out)
                    (out-wrapped encoded out)]))))
-              
+
 (define (out-form form out)
   (match form
     [(? mod?)
@@ -734,13 +754,14 @@
      (out-expr (protect-quote then) out)
      (out-expr (protect-quote else) out)]
     [(struct application (rator rands))
-     (if ((length rands) . < . (- CPT_SMALL_APPLICATION_END CPT_SMALL_APPLICATION_START))
-         (out-byte (+ CPT_SMALL_APPLICATION_START (length rands)) out)
-         (begin
-           (out-byte CPT_APPLICATION out)
-           (out-number (length rands) out)))
-     (for-each (lambda (e) (out-expr (protect-quote e) out))
-               (cons rator rands))]
+     (let ([len (length rands)]) 
+       (if (len . < . (- CPT_SMALL_APPLICATION_END CPT_SMALL_APPLICATION_START))
+           (out-byte (+ CPT_SMALL_APPLICATION_START (length rands)) out)
+           (begin
+             (out-byte CPT_APPLICATION out)
+             (out-number len out)))
+       (for-each (lambda (e) (out-expr (protect-quote e) out))
+                 (cons rator rands)))]
     [(struct apply-values (proc args-expr))
      (out-syntax APPVALS_EXPD
                  (cons (protect-quote proc)
@@ -852,11 +873,15 @@
                    #f
                    out)]     
     [(symbol? expr)
-     (out-as-bytes expr 
-                   (compose string->bytes/utf-8 symbol->string) 
-                   CPT_SYMBOL
-                   #f
-                   out)]
+     (out-shared expr out
+                 (lambda ()
+                   (define bs (string->bytes/utf-8 (symbol->string expr)))
+                   (define len (bytes-length bs))
+                   (if (len . < . (- CPT_SMALL_SYMBOL_END CPT_SMALL_SYMBOL_START))
+                       (out-byte (+ CPT_SMALL_SYMBOL_START len) out)
+                       (begin (out-byte CPT_SYMBOL out)
+                              (out-number len out)))
+                   (out-bytes bs out)))]
     [(keyword? expr)
      (out-as-bytes expr 
                    (compose string->bytes/utf-8 keyword->string) 
@@ -886,8 +911,12 @@
      (out-number (char->integer expr) out)]
     [(and (exact-integer? expr)
           (and (expr . >= . -1073741824) (expr . <= . 1073741823)))
-     (out-byte CPT_INT out)
-     (out-number expr out)]
+     (if (and (expr . >= . 0)
+              (expr . < . (- CPT_SMALL_NUMBER_END CPT_SMALL_NUMBER_START)))
+         (out-byte (+ CPT_SMALL_NUMBER_START expr) out)
+         (begin
+           (out-byte CPT_INT out)
+           (out-number expr out)))]
     [(null? expr)
      (out-byte CPT_NULL out)]
     [(eq? expr #t)
@@ -900,10 +929,46 @@
      (out-byte CPT_BOX out)
      (out-data (unbox expr) out)]
     [(pair? expr)
-     (out-byte CPT_LIST out)
-     (out-number 1 out)
-     (out-data (car expr) out)
-     (out-data (cdr expr) out)]
+     (local [(define seen? (make-hasheq)) ; XXX Maybe this should be global?
+             (define (list-length-before-cycle/improper-end l)
+               (if (hash-has-key? seen? l)
+                   (begin (values 0 #f))
+                   (begin (hash-set! seen? l #t)
+                          (cond
+                            [(null? l)
+                             (values 0 #t)]
+                            [(pair? l)
+                             (let-values ([(len proper?)
+                                           (list-length-before-cycle/improper-end (cdr l))])
+                               (values (add1 len) proper?))]
+                            [else
+                             (values 0 #f)]))))
+             (define-values (len proper?) (list-length-before-cycle/improper-end expr))
+             (define (print-contents-as-proper)
+               (for ([e (in-list expr)])
+                 (out-data e out)))
+             (define (print-contents-as-improper)
+               (let loop ([l expr] [i len])
+                 (cond
+                   [(zero? i)
+                    (out-data l out)]
+                   [else
+                    (out-data (car l) out)
+                    (loop (cdr l) (sub1 i))])))]
+       (if proper?
+           (if (len . < . (- CPT_SMALL_PROPER_LIST_END CPT_SMALL_PROPER_LIST_START))
+               (begin (out-byte (+ CPT_SMALL_PROPER_LIST_START len) out)
+                      (print-contents-as-proper))
+               (begin (out-byte CPT_LIST out)
+                      (out-number len out)
+                      (print-contents-as-proper)
+                      (out-data null out)))
+           (if (len . < . (- CPT_SMALL_LIST_END CPT_SMALL_LIST_START))
+               (begin (out-byte (+ CPT_SMALL_LIST_START len) out)
+                      (print-contents-as-improper))
+               (begin (out-byte CPT_LIST out)
+                      (out-number len out)
+                      (print-contents-as-improper)))))]
     [(vector? expr)
      (out-byte CPT_VECTOR out)
      (out-number (vector-length expr) out)
@@ -921,10 +986,13 @@
        (out-data k out)
        (out-data v out))]
     [(svector? expr)
-     (out-byte CPT_SVECTOR out)
-     (out-number (vector-length (svector-vec expr)) out)
-     (let ([vec (svector-vec expr)])
-       (for ([n (in-range (sub1 (vector-length vec)) -1 -1)])
+     (let* ([vec (svector-vec expr)]
+            [len (vector-length vec)])
+       (if (len . < . (- CPT_SMALL_SVECTOR_END CPT_SMALL_SVECTOR_START))
+           (out-byte (+ CPT_SMALL_SVECTOR_START len) out)
+           (begin (out-byte CPT_SVECTOR out)
+                  (out-number len out)))
+       (for ([n (in-range (sub1 len) -1 -1)])
          (out-number (vector-ref vec n) out)))]
     [(module-path-index? expr)
      (out-shared expr out 
@@ -958,8 +1026,8 @@
 (define (protect-quote v)
   v
   #;(if (or (list? v) (vector? v) (box? v) (hash? v))
-      (make-quoted v)
-      v))
+        (make-quoted v)
+        v))
 
 
 (define-struct svector (vec))
