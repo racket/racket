@@ -7079,7 +7079,8 @@ so that propagation occurs.
       (eval '(require 'provide/contract34-m2))
       (eval 'provide/contract34-x))
    10)
-      
+  
+  
   (contract-error-test
    #'(begin
        (eval '(module pce1-bug scheme/base
@@ -7180,7 +7181,33 @@ so that propagation occurs.
      (printf ">> ~s\n" (exn-message x))
      (and (exn? x)
           (regexp-match #rx"pce8-bug" (exn-message x)))))
+
+  (contract-error-test
+   #'(begin
+       (eval '(module pce9-bug scheme
+                (define (f x) "wrong")
+                (provide/contract
+                 [rename f g
+                         (-> number? number?)])))
+       (eval '(require 'pce9-bug))
+       (eval '(g 12)))
+   (λ (x)
+     (and (exn? x)
+          (regexp-match #rx"broke the contract.*on g" (exn-message x)))))
   
+  (contract-error-test
+   #'(begin
+       (eval '(module pce10-bug scheme
+                (define (f x) "wrong")
+                (provide/contract
+                 [rename f g
+                         (-> number? number?)])))
+       (eval '(require 'pce10-bug))
+       (eval '(g 'a)))
+   (λ (x)
+     (and (exn? x)
+          (regexp-match #rx"broke the contract.*on g" (exn-message x)))))
+   
   (contract-eval
    `(,test
      'pos

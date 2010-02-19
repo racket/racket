@@ -17,7 +17,7 @@
     [(_ name x) (a:known-good-contract? #'x) #'x]
     [(_ name x) #'(coerce-contract name x)]))
 
-(define-for-syntax (make-provide/contract-transformer contract-id id pos-module-source)
+(define-for-syntax (make-provide/contract-transformer contract-id id external-id pos-module-source)
   (make-set!-transformer
    (let ([saved-id-table (make-hasheq)])
      (λ (stx)
@@ -30,6 +30,7 @@
                         ;; No: lift the contract creation:
                         (with-syntax ([contract-id contract-id]
                                       [id id]
+                                      [external-id external-id]
                                       [pos-module-source pos-module-source]
                                       [id-ref (syntax-case stx (set!)
                                                 [(set! whatever e)
@@ -45,7 +46,7 @@
                                         id
                                         pos-module-source
                                         (quote-module-path)
-                                        'id
+                                        'external-id
                                         (quote-syntax id))))))])
                (when key
                  (hash-set! saved-id-table key lifted-id))
@@ -655,6 +656,7 @@
                                    (define-syntax id-rename
                                      (make-provide/contract-transformer (quote-syntax contract-id)
                                                                         (quote-syntax id)
+                                                                        (quote-syntax external-name)
                                                                         (quote-syntax pos-module-source)))
                                    
                                    (provide (rename-out [id-rename external-name]))))])
