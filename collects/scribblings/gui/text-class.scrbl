@@ -519,7 +519,7 @@ Given a @techlink{location} in the editor, returns the line at the
 }
 
 
-@defmethod[(find-newline [direction (one-of/c 'forward 'backward) 'forward]
+@defmethod[(find-newline [direction (or/c 'forward 'backward) 'forward]
                          [start (or/c exact-nonnegative-integer? 'start) 'start]
                          [end (or/c exact-nonnegative-integer? 'eof) 'eof])
            (or/c exact-nonnegative-integer? #f)]{
@@ -590,7 +590,7 @@ See @method[text% find-position] for a discussion of
 
 
 @defmethod[(find-snip [pos exact-nonnegative-integer?]
-                      [direction (one-of/c 'before-or-none 'before 'after 'after-or-none)]
+                      [direction (or/c 'before-or-none 'before 'after 'after-or-none)]
                       [s-pos (or/c (box/c exact-nonnegative-integer?) #f) #f])
            (or/c (is-a?/c snip%) #f)]{
 
@@ -622,7 +622,7 @@ can be any of the following:
 
 
 @defmethod[(find-string [str string?]
-                        [direction (one-of/c 'forward 'backward) 'forward]
+                        [direction (or/c 'forward 'backward) 'forward]
                         [start (or/c exact-nonnegative-integer? 'start) 'start]
                         [end (or/c exact-nonnegative-integer? 'eof) 'eof]
                         [get-start? any/c #t]
@@ -654,7 +654,7 @@ If @scheme[case-sensitive?] is @scheme[#f], then an uppercase and lowercase
 
 
 @defmethod[(find-string-all [str string?]
-                            [direction (one-of/c 'forward 'backward) 'forward]
+                            [direction (or/c 'forward 'backward) 'forward]
                             [start (or/c exact-nonnegative-integer? 'start) 'start]
                             [end (or/c exact-nonnegative-integer? 'eof) 'eof]
                             [get-start? any/c #t]
@@ -670,7 +670,7 @@ Finds all occurrences of a string using @method[text% find-string]. If
 
 @defmethod[(find-wordbreak [start (or/c (box/c exact-nonnegative-integer?) #f)]
                            [end (or/c (box/c exact-nonnegative-integer?) #f)]
-                           [reason (one-of/c 'caret 'line 'selection 'user1 'user2)])
+                           [reason (or/c 'caret 'line 'selection 'user1 'user2)])
            void?]{
 
 Finds wordbreaks in the editor using the current wordbreak procedure.
@@ -789,7 +789,7 @@ Returns the ending @techlink{position} of the current selection. See
 
 
 @defmethod[(get-file-format)
-           (one-of/c 'standard 'text 'text-force-cr)]{
+           (or/c 'standard 'text 'text-force-cr)]{
 
 Returns the format of the last file saved from or loaded into this
  editor. See also @method[editor<%> load-file].
@@ -1259,9 +1259,9 @@ then this method ignores the editor's maximum width and any automatic
 }
 
 
-@defmethod[(move-position [code (one-of/c 'home 'end 'right 'left 'up 'down)]
+@defmethod[(move-position [code (or/c 'home 'end 'right 'left 'up 'down)]
                           [extend? any/c #f]
-                          [kind (one-of/c 'simple 'word 'page 'line) 'simple])
+                          [kind (or/c 'simple 'word 'page 'line) 'simple])
            void?]{
 
 Moves the current selection. 
@@ -1720,7 +1720,7 @@ Removes all clickbacks installed for exactly the range @scheme[start]
 @defmethod[(scroll-to-position [start exact-nonnegative-integer?]
                                [at-eol? any/c #f]
                                [end (or/c exact-nonnegative-integer? 'same) 'same]
-                               [bias (one-of/c 'start 'end 'none) 'none])
+                               [bias (or/c 'start 'end 'none) 'none])
            boolean?]{
 
 Scrolls the editor so that a given @techlink{position} is visible. 
@@ -1836,7 +1836,7 @@ If @scheme[call-on-down?] is not @scheme[#f], the clickback is called
 See also @|clickbackdiscuss|.
  }
 
-@defmethod[(set-file-format [format (one-of/c 'standard 'text 'text-force-cr)])
+@defmethod[(set-file-format [format (or/c 'standard 'text 'text-force-cr)])
            void?]{
 
 Set the format of the file saved from this editor. 
@@ -1875,7 +1875,7 @@ Enables or disables overwrite mode. See @method[text%
 
 
 @defmethod[(set-paragraph-alignment [paragraph exact-nonnegative-integer?]
-                                    [alignment (one-of/c 'left 'center 'right)])
+                                    [alignment (or/c 'left 'center 'right)])
            void?]{
 
 Sets a paragraph-specific horizontal alignment. The alignment is only
@@ -1917,7 +1917,7 @@ The first line of the paragraph is indented by @scheme[first-left] points
                          [end (or/c exact-nonnegative-integer? 'same) 'same]
                          [at-eol? any/c #f]
                          [scroll? any/c #t]
-                         [seltype (one-of/c 'default 'x 'local) 'default])
+                         [seltype (or/c 'default 'x 'local) 'default])
            void?]{
 
 Sets the current selection in the editor. 
@@ -1956,12 +1956,12 @@ See also @scheme[editor-set-x-selection-mode].
 }
 
 
-@defmethod[(set-position-bias-scroll [bias (one-of/c 'start-only 'start 'none 'end 'end-only)]
+@defmethod[(set-position-bias-scroll [bias (or/c 'start-only 'start 'none 'end 'end-only)]
                                      [start exact-nonnegative-integer?]
                                      [end (or/c exact-nonnegative-integer? 'same) 'same]
                                      [ateol? any/c #f]
                                      [scroll? any/c #t]
-                                     [seltype (one-of/c 'default 'x 'local) 'default])
+                                     [seltype (or/c 'default 'x 'local) 'default])
            void?]{
 
 Like  @method[text% set-position], but a scrolling bias can be specified.

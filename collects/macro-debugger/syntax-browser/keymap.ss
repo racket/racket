@@ -74,6 +74,14 @@
                   (lambda (i e)
                     (send config set-props-shown? #f)))
 
+    (define ((pretty-print-as sym) i e)
+      (let ([stx (selected-syntax)])
+        (when (identifier? stx)
+          (send config set-pretty-styles
+                (hash-set (send config get-pretty-styles)
+                          (syntax-e stx)
+                          sym)))))
+
     (define/override (add-context-menu-items menu)
       (new menu-item% (label "Copy") (parent menu)
            (demand-callback
@@ -83,6 +91,27 @@
             (lambda (i e)
               (call-function "copy-syntax-as-text" i e))))
       (new separator-menu-item% (parent menu))
+      (let ([pretty-menu
+             (new menu%
+                  (label "Change layout")
+                  (parent menu)
+                  (demand-callback
+                   (lambda (i)
+                     (send i enable (and (identifier? (selected-syntax)) #t)))))])
+        (for ([sym+desc '((and    "like and")
+                          (begin  "like begin (0 up)")
+                          (lambda "like lambda (1 up)")
+                          (do     "like do (2 up)"))])
+          (new menu-item%
+               (label (format "Format identifier ~a" (cadr sym+desc)))
+               (parent pretty-menu)
+               (demand-callback
+                (lambda (i)
+                  (let ([stx (selected-syntax)])
+                    (send i set-label
+                          (format "Format ~s ~a" (syntax-e stx) (cadr sym+desc))))))
+               (callback
+                (pretty-print-as (car sym+desc))))))
       (new menu-item%
            (label "Clear selection")
            (parent menu)

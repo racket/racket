@@ -260,9 +260,9 @@ Propagates the request to any snip with the editor-local focus.
 
 }}
 
-@defmethod[(can-do-edit-operation? [op (one-of/c 'undo 'redo 'clear 'cut 'copy 'paste 
-                                                 'kill 'select-all 'insert-text-box 
-                                                 'insert-pasteboard-box 'insert-image)]
+@defmethod[(can-do-edit-operation? [op (or/c 'undo 'redo 'clear 'cut 'copy 'paste 
+                                             'kill 'select-all 'insert-text-box 
+                                             'insert-pasteboard-box 'insert-image)]
                                    [recursive? any/c #t])
            boolean?]{
 @methspec{
@@ -282,8 +282,8 @@ locked, etc.
 
 @defmethod[#:mode pubment 
            (can-load-file? [filename path?]
-                           [format (one-of/c 'guess 'same 'copy 'standard
-                                             'text 'text-force-cr)])
+                           [format (or/c 'guess 'same 'copy 'standard
+                                         'text 'text-force-cr)])
            boolean?]{
 @methspec{
 
@@ -308,8 +308,8 @@ Returns @scheme[#t].
 
 @defmethod[#:mode pubment 
            (can-save-file? [filename path?]
-                           [format (one-of/c 'guess 'same 'copy 'standard
-                                             'text 'text-force-cr)])
+                           [format (or/c 'guess 'same 'copy 'standard
+                                         'text 'text-force-cr)])
            boolean?]{
 @methspec{
 
@@ -462,9 +462,9 @@ Returns the name of a style to be used for newly inserted text,
 See @xmethod[text% do-copy] or @xmethod[pasteboard% do-copy].}
 
 
-@defmethod[(do-edit-operation [op (one-of/c 'undo 'redo 'clear 'cut 'copy 'paste 
-                                            'kill 'select-all 'insert-text-box 
-                                            'insert-pasteboard-box 'insert-image)]
+@defmethod[(do-edit-operation [op (or/c 'undo 'redo 'clear 'cut 'copy 'paste 
+                                        'kill 'select-all 'insert-text-box 
+                                        'insert-pasteboard-box 'insert-image)]
                               [recursive? any/c #t]
                               [time (and/c exact? integer?) 0])
            void?]{
@@ -700,7 +700,7 @@ See also @method[editor<%> set-caret-owner].
 
 
 @defmethod[(get-inactive-caret-threshold)
-           (one-of/c 'no-caret 'show-inactive-caret 'show-caret)]{
+           (or/c 'no-caret 'show-inactive-caret 'show-caret)]{
 
 Returns the threshold for painting an inactive selection. This
  threshold is compared with the @scheme[draw-caret] argument to
@@ -928,7 +928,7 @@ Inserts data into the editor. A snip cannot be inserted into multiple
 }
 
 
-@defmethod[(insert-box [type (one-of/c 'text 'pasteboard) 'text])
+@defmethod[(insert-box [type (or/c 'text 'pasteboard) 'text])
            void?]{
 
 Inserts a box (a sub-editor) into the editor by calling
@@ -941,13 +941,13 @@ inserts the resulting snip into the editor.
 
 
 @defmethod*[([(insert-file [filename path-string?]
-                           [format (one-of/c 'guess 'same 'copy 'standard
-                                             'text 'text-force-cr) 'guess]
+                           [format (or/c 'guess 'same 'copy 'standard
+                                         'text 'text-force-cr) 'guess]
                            [show-errors? any/c #t])
               boolean?]
              [(insert-file [port input-port?]
-                           [format (one-of/c 'guess 'same 'copy 'standard
-                                             'text 'text-force-cr) 'guess]
+                           [format (or/c 'guess 'same 'copy 'standard
+                                         'text 'text-force-cr) 'guess]
                            [show-errors? any/c #t])
               boolean?])]{
 
@@ -967,7 +967,7 @@ The @scheme[show-errors?] argument is no longer used.
 
 
 @defmethod[(insert-image [filename (or/c path-string? #f) #f]
-                         [type (one-of/c 'unknown 'gif 'jpeg 'xbm 'xpm 'bmp 'pict) 'unknown]
+                         [type (or/c 'unknown 'gif 'jpeg 'xbm 'xpm 'bmp 'pict) 'unknown]
                          [relative-path? any/c #f]
                          [inline? any/c #t])
            void?]{
@@ -989,10 +989,10 @@ calling
 }
 
 @defmethod[(insert-port [port input-port?]
-                        [format (one-of/c 'guess 'same 'copy 'standard
-                                          'text 'text-force-cr) 'guess]
+                        [format (or/c 'guess 'same 'copy 'standard
+                                      'text 'text-force-cr) 'guess]
                         [replace-styles? any/c #t])
-           (one-of/c 'standard 'text 'text-force-cr)]{
+           (or/c 'standard 'text 'text-force-cr)]{
 
 Use @method[editor<%> insert-file], instead.
 
@@ -1081,8 +1081,8 @@ See also @method[editor<%> cut].
 
 
 @defmethod[(load-file [filename (or/c path-string? #f) #f]
-                      [format (one-of/c 'guess 'same 'copy 'standard
-                                        'text 'text-force-cr) 'guess]
+                      [format (or/c 'guess 'same 'copy 'standard
+                                    'text 'text-force-cr) 'guess]
                       [show-errors? any/c #t])
            boolean?]{
 
@@ -1442,8 +1442,8 @@ Either passes this event on to a caret-owning snip, selects a new
 
 @defmethod[#:mode pubment 
            (on-load-file [filename path?]
-                         [format (one-of/c 'guess 'same 'copy 'standard
-                                           'text 'text-force-cr)])
+                         [format (or/c 'guess 'same 'copy 'standard
+                                       'text 'text-force-cr)])
            void?]{
 @methspec{
 
@@ -1503,7 +1503,7 @@ Either lets the keymap handle the event or calls
 }}
 
 
-@defmethod[(on-new-box [type (one-of/c 'text 'pasteboard)])
+@defmethod[(on-new-box [type (or/c 'text 'pasteboard)])
            (is-a?/c snip%)]{
 @methspec{
 
@@ -1524,7 +1524,7 @@ Creates a @scheme[editor-snip%] with either a sub-editor from
 
 
 @defmethod[(on-new-image-snip [filename path?]
-                              [kind (one-of/c 'unknown 'gif 'jpeg 'xbm 'xpm 'bmp 'pict)]
+                              [kind (or/c 'unknown 'gif 'jpeg 'xbm 'xpm 'bmp 'pict)]
                               [relative-path? any/c]
                               [inline? any/c])
            (is-a?/c image-snip%)]{
@@ -1552,7 +1552,7 @@ Returns @scheme[(make-object image-snip% filename kind relative-path? inline?)].
                      [bottom real?]
                      [dx real?]
                      [dy real?]
-                     [draw-caret (one-of/c 'no-caret 'show-inactive-caret 'show-caret)])
+                     [draw-caret (or/c 'no-caret 'show-inactive-caret 'show-caret)])
            void?]{
 @methspec{
 
@@ -1602,8 +1602,8 @@ Does nothing.
 
 @defmethod[#:mode pubment 
            (on-save-file [filename path?]
-                         [format (one-of/c 'guess 'same 'copy 'standard
-                                           'text 'text-force-cr)])
+                         [format (or/c 'guess 'same 'copy 'standard
+                                       'text 'text-force-cr)])
            void?]{
 @methspec{
 
@@ -1712,7 +1712,7 @@ To extend or re-implement copying, override the @xmethod[text%
 
 @defmethod[(print [interactive? any/c #t]
                   [fit-on-page? any/c #t]
-                  [output-mode (one-of/c 'standard 'postscript) 'standard]
+                  [output-mode (or/c 'standard 'postscript) 'standard]
                   [parent (or/c (or/c (is-a?/c frame%) (is-a?/c dialog%)) #f) #f]
                   [force-ps-page-bbox? any/c #t]
                   [as-eps? any/c #f])
@@ -1891,7 +1891,7 @@ See also @method[editor<%> add-undo].
                     [y real?]
                     [width (and/c real? (not/c negative?))]
                     [height (and/c real? (not/c negative?))]
-                    [draw-caret (one-of/c 'no-caret 'show-inactive-caret 'show-caret)]
+                    [draw-caret (or/c 'no-caret 'show-inactive-caret 'show-caret)]
                     [background (or/c (is-a?/c color%) #f)])
            void?]{
 
@@ -1973,8 +1973,8 @@ If @scheme[redraw-now?] is @scheme[#f], the editor will require
 
 
 @defmethod[(save-file [filename (or/c path-string? #f) #f]
-                      [format (one-of/c 'guess 'same 'copy 'standard
-                                        'text 'text-force-cr) 'same]
+                      [format (or/c 'guess 'same 'copy 'standard
+                                    'text 'text-force-cr) 'same]
                       [show-errors? any/c #t])
            boolean?]{
 
@@ -2004,8 +2004,8 @@ The @scheme[show-errors?] argument is no longer used.
 
 
 @defmethod[(save-port [port output-port?]
-                      [format (one-of/c 'guess 'same 'copy 'standard
-                                        'text 'text-force-cr) 'same]
+                      [format (or/c 'guess 'same 'copy 'standard
+                                    'text 'text-force-cr) 'same]
                       [show-errors? any/c #t])
            boolean?]{
 
@@ -2025,7 +2025,7 @@ The @scheme[show-errors?] argument is no longer used.
                              [width (and/c real? (not/c negative?))]
                              [height (and/c real? (not/c negative?))]
                              [refresh? any/c]
-                             [bias (one-of/c 'start 'end 'none)])
+                             [bias (or/c 'start 'end 'none)])
            boolean?]{
 
 Causes the editor to be scrolled so that a given @techlink{location}
@@ -2061,7 +2061,7 @@ For @scheme[text%] objects: @|FCA| @|EVD|
                       [width (and/c real? (not/c negative?))]
                       [height (and/c real? (not/c negative?))]
                       [refresh? any/c]
-                      [bias (one-of/c 'start 'end 'none) 'none])
+                      [bias (or/c 'start 'end 'none) 'none])
            boolean?]{
 
 Called (indirectly) by snips within the editor: it causes the editor
@@ -2120,7 +2120,7 @@ get-admin]}]
 
 
 @defmethod[(set-caret-owner [snip (or/c (is-a?/c snip%) #f)]
-                            [domain (one-of/c 'immediate 'display 'global) 'immediate])
+                            [domain (or/c 'immediate 'display 'global) 'immediate])
            void?]{
 
 Attempts to give the keyboard focus to @scheme[snip].  If @scheme[snip] is
@@ -2195,7 +2195,7 @@ This method is also called when the filename changes through any
 }
 
 
-@defmethod[(set-inactive-caret-threshold [threshold (one-of/c 'no-caret 'show-inactive-caret 'show-caret)])
+@defmethod[(set-inactive-caret-threshold [threshold (or/c 'no-caret 'show-inactive-caret 'show-caret)])
            void?]{
 
 Sets the threshold for painting an inactive selection.  See

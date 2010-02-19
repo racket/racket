@@ -35,7 +35,7 @@ Also added the timing code at the end.
                 b-res
                 line))))
    tests))
-
+#;
 (define (empty-scene w h) 
   (overlay
    (rectangle w h 'solid 'white)

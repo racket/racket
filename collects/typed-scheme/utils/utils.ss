@@ -161,7 +161,7 @@ at least theoretically.
 
 
 ;; turn contracts on and off - off by default for performance.
-(define-for-syntax enable-contracts? #t)
+(define-for-syntax enable-contracts? #f)
 (provide (for-syntax enable-contracts?) p/c w/c cnt d-s/c d/c)
 
 ;; these are versions of the contract forms conditionalized by `enable-contracts?'

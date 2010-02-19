@@ -24,6 +24,10 @@
     ;; suffix-option : SuffixOption
     (define-notify suffix-option (new notify-box% (value 'over-limit)))
 
+    ;; pretty-styles : ImmutableHash[symbol -> symbol]
+    (define-notify pretty-styles
+      (new notify-box% (value (make-immutable-hasheq null))))
+
     ;; syntax-font-size : number/#f
     ;; When non-false, overrides the default font size
     (define-notify syntax-font-size (new notify-box% (value #f)))

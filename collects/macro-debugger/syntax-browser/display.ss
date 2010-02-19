@@ -29,7 +29,8 @@
 
 ;; print-syntax-to-editor : syntax text controller<%> config number number
 ;;                       -> display<%>
-(define (print-syntax-to-editor stx text controller config columns insertion-point)
+(define (print-syntax-to-editor stx text controller config columns
+                                [insertion-point (send text last-position)])
   (begin-with-definitions
    (define output-port (open-output-string/count-lines))
    (define range
@@ -37,6 +38,7 @@
                           (send: controller controller<%> get-primary-partition)
                           (length (send: config config<%> get-colors))
                           (send: config config<%> get-suffix-option)
+                          (send config get-pretty-styles)
                           columns))
    (define output-string (get-output-string output-port))
    (define output-length (sub1 (string-length output-string))) ;; skip final newline

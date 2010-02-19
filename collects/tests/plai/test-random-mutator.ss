@@ -25,29 +25,14 @@
         (fprintf port "#lang plai/mutator\n")
         (fprintf port "~s\n" `(allocator-setup ,(path->string
                                                  (find-relative-path 
-                                                  (normalize-path (simple-form-path tmpfile))
+                                                  (let-values ([(base name dir?) (split-path tmpfile)])
+                                                    (normalize-path (simple-form-path base)))
                                                   (normalize-path
                                                    (simple-form-path collector-path))))
                                                100))
         (for-each (λ (exp) (pretty-print exp port)) exps))
       #:exists 'truncate)
 
-    (printf "tmpfile: ~s\n" tmpfile)
-    (printf "simple-form tmpfile ~s\n" (simple-form-path tmpfile))
-    (printf "normalized tmpfile ~s\n" (normalize-path (simple-form-path tmpfile)))
-    (newline)
-    (printf "collector ~s\n" collector-path)
-    (printf "simple-form collector: ~s\n" (simple-form-path collector-path))
-    (printf "normalized simple-form collector: ~s\n" (normalize-path (simple-form-path collector-path)))
-    (newline)
-    (printf "here ~s\n" here)
-    (printf "simple-form here: ~s\n" (simple-form-path here))
-    (printf "normalized simple-form here: ~s\n" (normalize-path (simple-form-path here)))
-    (newline)
-    
-    (printf "tmpfile contents:\n")
-    (call-with-input-file tmpfile (λ (p) (copy-port p (current-output-port))))
-    
     (let ([sp (open-output-string)])
       (parameterize ([current-output-port sp])
         (dynamic-require tmpfile #f))

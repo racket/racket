@@ -2,76 +2,17 @@
 (require scheme/class
          (rename-in unstable/class-iop
                     [send/i send:])
-         scheme/match
-         scheme/list
          mzlib/string
          mred
-         framework
-         unstable/gui/notify
          "interfaces.ss"
-         "display.ss"
          "controller.ss"
-         "keymap.ss"
          "properties.ss"
-         "partition.ss"
-         "prefs.ss")
+         "prefs.ss"
+         (except-in "snip.ss"
+                    snip-class))
 
-(provide syntax-snip%
-         syntax-value-snip%)
-
-(define syntax-snip-config%
-  (class prefs-base%
-    (define-notify props-shown? (new notify-box% (value #f)))
-    (super-new)))
-
-;; syntax-value-snip%
-(define syntax-value-snip%
-  (class* editor-snip% (readable-snip<%>)
-    (init-field ((stx syntax)))
-    (init-field (controller (new controller%)))
-    (init-field (config (new syntax-snip-config%)))
-
-    (inherit set-margin
-             set-inset)
-
-    (define text (new text:standard-style-list%))
-    (super-new (editor text) (with-border? #f))
-
-    (set-margin 0 0 0 0)
-    ;;(set-inset 2 2 2 2)
-    ;;(set-margin 2 2 2 2)
-    (set-inset 0 0 0 0)
-
-    (send text begin-edit-sequence)
-    (send text change-style (make-object style-delta% 'change-alignment 'top))
-    (define display
-      (print-syntax-to-editor stx text controller config))
-    (send text lock #t)
-    (send text end-edit-sequence)
-    (send text hide-caret #t)
-
-    (setup-keymap text)
-
-    (define/public (setup-keymap text)
-      (new syntax-keymap%
-           (controller controller)
-           (config config)
-           (editor text)))
-
-    ;; snip% Methods
-    (define/override (copy)
-      (new syntax-value-snip%
-           (config config)
-           (controller controller)
-           (syntax stx)))
-
-    ;; read-special : any number/#f number/#f number/#f -> syntax
-    ;; Produces 3D syntax to preserve eq-ness of syntax
-    ;; #'#'stx would be lose identity when wrapped
-    (define/public (read-special src line col pos)
-      (with-syntax ([p (lambda () stx)])
-        #'(p)))
-    ))
+(provide decorated-syntax-snip%
+         snip-class)
 
 (define top-aligned
   (make-object style-delta% 'change-alignment 'top))
@@ -155,18 +96,18 @@
     (refresh-contents)
     ))
 
-;; syntax-snip%
-(define syntax-snip%
+;; decorated-syntax-snip%
+(define decorated-syntax-snip%
   (class* clicky-snip% (readable-snip<%>)
     (init-field ((stx syntax)))
     (init-field [controller (new controller%)])
-    (init-field [config (new syntax-snip-config%)])
+    (init-field [config (new syntax-prefs%)])
 
     (inherit set-snipclass
              refresh-contents)
 
     (define the-syntax-snip
-      (new syntax-value-snip%
+      (new syntax-snip%
            (syntax stx)
            (controller controller)
            (config config)))
@@ -193,7 +134,10 @@
 
     ;; Snip methods
     (define/override (copy)
-      (new syntax-snip% (syntax stx)))
+      (new decorated-syntax-snip%
+           (syntax stx)
+           (controller controller)
+           (config config)))
     (define/override (write stream)
       (send stream put
             (string->bytes/utf-8
@@ -251,105 +195,19 @@
   (make-object image-snip%
     (build-path (collection-path "icons") "syncheck.png")))
 
-;; marshall-syntax : syntax -> printable
-(define (marshall-syntax stx)
-  (unless (syntax? stx)
-    (error 'marshall-syntax "not syntax: ~s\n" stx))
-  `(syntax
-    (source ,(marshall-object (syntax-source stx)))
-    (source-module ,(marshall-object (syntax-source-module stx)))
-    (position ,(syntax-position stx))
-    (line ,(syntax-line stx))
-    (column ,(syntax-column stx))
-    (span ,(syntax-span stx))
-    (original? ,(syntax-original? stx))
-    (properties 
-     ,@(map (λ (x) `(,x ,(marshall-object (syntax-property stx x))))
-            (syntax-property-symbol-keys stx)))
-    (contents
-     ,(marshall-object (syntax-e stx)))))
 
-;; marshall-object : any -> printable
-;; really only intended for use with marshall-syntax
-(define (marshall-object obj)
-  (cond
-    [(syntax? obj) (marshall-syntax obj)]
-    [(pair? obj) 
-     `(pair ,(cons (marshall-object (car obj))
-                   (marshall-object (cdr obj))))]
-    [(or (symbol? obj)
-         (char? obj)
-         (number? obj)
-         (string? obj)
-         (boolean? obj)
-         (null? obj))
-     `(other ,obj)]
-    [else (string->symbol (format "unknown-object: ~s" obj))]))
+;; SNIPCLASS
 
 ;; COPIED AND MODIFIED from mrlib/syntax-browser.ss
-(define syntax-snipclass%
+(define decorated-syntax-snipclass%
   (class snip-class%
     (define/override (read stream)
-      (make-object syntax-snip%
-        (unmarshall-syntax (read-from-string (send stream get-bytes)))))
-    (super-instantiate ())))
+      (new decorated-syntax-snip%
+           (syntax (unmarshall-syntax
+                    (read-from-string (send stream get-bytes))))))
+    (super-new)))
 
-(define snip-class (make-object syntax-snipclass%))
+(define snip-class (make-object decorated-syntax-snipclass%))
 (send snip-class set-version 2)
 (send snip-class set-classname
-      (format "~s" '(lib "implementation.ss" "macro-debugger" "syntax-browser")))
-(send (get-the-snip-class-list) add snip-class)
-
-(define (unmarshall-syntax stx)
-  (match stx
-    [`(syntax
-       (source ,src)
-       (source-module ,source-module) ;; marshalling
-       (position ,pos)
-       (line ,line)
-       (column ,col)
-       (span ,span)
-       (original? ,original?)
-       (properties . ,properties)
-       (contents ,contents))
-      (foldl
-       add-properties
-       (datum->syntax
-        #'here ;; ack
-        (unmarshall-object contents)
-        (list (unmarshall-object src)
-              line
-              col
-              pos
-              span))
-       properties)]
-    [else #'unknown-syntax-object]))
-
-;; add-properties : syntax any -> syntax
-(define (add-properties prop-spec stx)
-  (match prop-spec
-    [`(,(and sym (? symbol?))
-        ,prop)
-      (syntax-property stx sym (unmarshall-object prop))]
-    [else stx]))
-
-(define (unmarshall-object obj)
-  (let ([unknown (lambda () (string->symbol (format "unknown: ~s" obj)))])
-    (if (and (pair? obj)
-             (symbol? (car obj)))
-        (case (car obj)
-          [(pair) 
-           (if (pair? (cdr obj))
-               (let ([raw-obj (cadr obj)])
-                 (if (pair? raw-obj)
-                     (cons (unmarshall-object (car raw-obj))
-                           (unmarshall-object (cdr raw-obj)))
-                     (unknown)))
-               (unknown))]
-          [(other) 
-           (if (pair? (cdr obj))
-               (cadr obj)
-               (unknown))]
-          [(syntax) (unmarshall-syntax obj)]
-          [else (unknown)])
-        (unknown))))
+      (format "~s" '(lib "macro-debugger/syntax-browser/snip-decorated.ss")))
