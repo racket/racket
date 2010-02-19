@@ -4181,7 +4181,7 @@
               'pos
               'neg))
   
-  (test/pos-blame
+  (test/spec-passed
    'class/c-first-order-inner-4
    '(contract (class/c (inner [m (-> any/c number? number?)]))
               (let ([c% (class object% (super-new) (define/pubment (m x) (inner x m x)))])
@@ -4194,6 +4194,15 @@
    '(contract (class/c (inner [m (-> any/c number? number?)]))
               (let ([c% (class object% (super-new) (define/public (m x) (add1 x)))])
                 (class c% (super-new) (define/overment (m x) (+ (super m x) (inner x m x)))))
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'class/c-first-order-inner-6
+   '(contract (class/c (inner [m (-> any/c number? number?)]))
+              (let* ([c% (class object% (super-new) (define/pubment (m x) (inner x m x)))]
+                     [d% (class c% (super-new) (define/augride (m x) (add1 x)))])
+                (class d% (super-new) (define/override-final (m x) (add1 x))))
               'pos
               'neg))
   
@@ -4427,6 +4436,28 @@
                          'pos1
                          'neg)]
            [e% (class d% (super-new) (define/augride (m x) (add1 x)))])
+      (send (new e%) m 3)))
+
+  ;; Test that overriding an augmenting method can still be effected by an inner contract.
+  (test/neg-blame
+   'class/c-higher-order-inner-8
+   '(let* ([c% (contract (class/c (inner [m (-> any/c number? number?)]))
+                         (class object% (super-new) (define/pubment (m x) (+ x (inner x m 3))))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (define/augride (m x) (add1 x)))]
+           [e% (class d% (super-new) (define/override (m x) (zero? (super m x))))])
+      (send (new e%) m 3)))
+
+  ;; The inner contract can be added before the next augmenting method, as seen here.
+  (test/neg-blame
+   'class/c-higher-order-inner-9
+   '(let* ([c% (class object% (super-new) (define/pubment (m x) (+ x (inner x m 3))))]
+           [d% (contract (class/c (inner [m (-> any/c number? number?)]))
+                         (class c% (super-new) (define/augride (m x) (add1 x)))
+                         'pos
+                         'neg)]
+           [e% (class d% (super-new) (define/override (m x) (zero? (super m x))))])
       (send (new e%) m 3)))
   
 ;                                                              
