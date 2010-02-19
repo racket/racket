@@ -129,28 +129,28 @@ The family and face settings in a style delta are interdependent:
 
 
 
-@defconstructor*/make[(([change-command (one-of/c 'change-nothing 
-                                                  'change-normal 
-                                                  'change-toggle-underline 
-                                                  'change-toggle-size-in-pixels 
-                                                  'change-normal-color 
-                                                  'change-bold) 
+@defconstructor*/make[(([change-command (or/c 'change-nothing 
+                                              'change-normal 
+                                              'change-toggle-underline 
+                                              'change-toggle-size-in-pixels 
+                                              'change-normal-color 
+                                              'change-bold) 
                                         'change-nothing])
-                       ([change-command (one-of/c 'change-family 
-                                                  'change-style 
-                                                  'change-toggle-style 
-                                                  'change-weight 
-                                                  'change-toggle-weight 
-                                                  'change-smoothing 
-                                                  'change-toggle-smoothing
-                                                  'change-alignment)]
+                       ([change-command (or/c 'change-family 
+                                              'change-style 
+                                              'change-toggle-style 
+                                              'change-weight 
+                                              'change-toggle-weight 
+                                              'change-smoothing 
+                                              'change-toggle-smoothing
+                                              'change-alignment)]
                         [v symbol])
-                       ([change-command (one-of/c 'change-size 
-                                                  'change-bigger 
-                                                  'change-smaller)]
+                       ([change-command (or/c 'change-size 
+                                              'change-bigger 
+                                              'change-smaller)]
                         [v (integer-in 0 255)])
-                       ([change-command (one-of/c 'change-underline 
-                                                  'change-size-in-pixels)]
+                       ([change-command (or/c 'change-underline 
+                                              'change-size-in-pixels)]
                         [v any/c]))]{
 
 The initialization arguments are passed on to 
@@ -186,14 +186,14 @@ Returns @scheme[#t] if the given delta is equivalent to this one in
 }
 
 @defmethod[(get-alignment-off)
-           (one-of/c 'base 'top 'center 'bottom)]{
+           (or/c 'base 'top 'center 'bottom)]{
 
 See  @scheme[style-delta%].
 
 }
 
 @defmethod[(get-alignment-on)
-           (one-of/c 'base 'top 'center 'bottom)]{
+           (or/c 'base 'top 'center 'bottom)]{
 
 See  @scheme[style-delta%].
 
@@ -232,8 +232,8 @@ See also @method[style-delta% get-family].
 }
 
 @defmethod[(get-family)
-           (one-of/c 'base 'default 'decorative 'roman 'script 
-                     'swiss 'modern 'symbol 'system)]{
+           (or/c 'base 'default 'decorative 'roman 'script 
+                 'swiss 'modern 'symbol 'system)]{
 
 Returns the delta's font family. The possible values are
 @itemize[
@@ -301,24 +301,24 @@ Gets the multiplicative font size shift (applied before the additive factor).
 }
 
 @defmethod[(get-smoothing-off)
-           (one-of/c 'base 'default 'partly-smoothed 'smoothed 'unsmoothed)]{
+           (or/c 'base 'default 'partly-smoothed 'smoothed 'unsmoothed)]{
 
 See  @scheme[style-delta%].
 
 }
 
 @defmethod[(get-smoothing-on)
-           (one-of/c 'base 'default 'partly-smoothed 'smoothed 'unsmoothed)]{See 
+           (or/c 'base 'default 'partly-smoothed 'smoothed 'unsmoothed)]{See 
 @scheme[style-delta%].
 }
 
 @defmethod[(get-style-off)
-           (one-of/c 'base 'normal 'italic 'slant)]{See 
+           (or/c 'base 'normal 'italic 'slant)]{See 
 @scheme[style-delta%].
 }
 
 @defmethod[(get-style-on)
-           (one-of/c 'base 'normal 'italic 'slant)]{See 
+           (or/c 'base 'normal 'italic 'slant)]{See 
 @scheme[style-delta%].
 }
 
@@ -343,50 +343,50 @@ See  @scheme[style-delta%].
 }
 
 @defmethod[(get-weight-off)
-           (one-of/c 'base 'normal 'bold 'light)]{See 
+           (or/c 'base 'normal 'bold 'light)]{See 
 @scheme[style-delta%].
 }
 
 @defmethod[(get-weight-on)
-           (one-of/c 'base 'normal 'bold 'light)]{See 
+           (or/c 'base 'normal 'bold 'light)]{See 
 @scheme[style-delta%].
 }
 
-@defmethod[(set-alignment-off [v (one-of/c 'base 'top 'center 'bottom)])
+@defmethod[(set-alignment-off [v (or/c 'base 'top 'center 'bottom)])
            void?]{See 
 @scheme[style-delta%].
 }
 
-@defmethod[(set-alignment-on [v (one-of/c 'base 'top 'center 'bottom)])
+@defmethod[(set-alignment-on [v (or/c 'base 'top 'center 'bottom)])
            void?]{See 
 @scheme[style-delta%].
 }
 
-@defmethod*[([(set-delta [change-command (one-of/c 'change-nothing 
-                                                   'change-normal 
-                                                   'change-toggle-underline 
-                                                   'change-toggle-size-in-pixels 
-                                                   'change-normal-color 
-                                                   'change-bold) 
+@defmethod*[([(set-delta [change-command (or/c 'change-nothing 
+                                               'change-normal 
+                                               'change-toggle-underline 
+                                               'change-toggle-size-in-pixels 
+                                               'change-normal-color 
+                                               'change-bold) 
                                          'change-nothing])
               (is-a?/c style-delta%)]
-             [(set-delta [change-command (one-of/c 'change-family 
-                                                   'change-style 
-                                                   'change-toggle-style 
-                                                   'change-weight 
-                                                   'change-toggle-weight 
-                                                   'change-smoothing 
-                                                   'change-toggle-smoothing 
-                                                   'change-alignment)]
+             [(set-delta [change-command (or/c 'change-family 
+                                               'change-style 
+                                               'change-toggle-style 
+                                               'change-weight 
+                                               'change-toggle-weight 
+                                               'change-smoothing 
+                                               'change-toggle-smoothing 
+                                               'change-alignment)]
                          [param symbol])
               (is-a?/c style-delta%)]
-             [(set-delta [change-command (one-of/c 'change-size 
-                                                   'change-bigger 
-                                                   'change-smaller)]
+             [(set-delta [change-command (or/c 'change-size 
+                                               'change-bigger 
+                                               'change-smaller)]
                          [param (integer-in 0 255)])
               (is-a?/c style-delta%)]
-             [(set-delta [change-command (one-of/c 'change-underline 
-                                                   'change-size-in-pixels)]
+             [(set-delta [change-command (or/c 'change-underline 
+                                               'change-size-in-pixels)]
                          [on? any/c])
               (is-a?/c style-delta%)])]{
 
@@ -455,8 +455,8 @@ For the case that a string color name is supplied, see
 }
 
 @defmethod[(set-delta-face [name string?]
-                           [family (one-of/c 'base 'default 'decorative 'roman 
-                                             'script 'swiss 'modern 'symbol 'system)
+                           [family (or/c 'base 'default 'decorative 'roman 
+                                         'script 'swiss 'modern 'symbol 'system)
                                    'default])
            (is-a?/c style-delta%)]{
 
@@ -493,8 +493,8 @@ For the case that a string color name is supplied, see
 
 }
 
-@defmethod[(set-family [v (one-of/c 'base 'default 'decorative 'roman 'script 
-                                    'swiss 'modern 'symbol 'system)])
+@defmethod[(set-family [v (or/c 'base 'default 'decorative 'roman 'script 
+                                'swiss 'modern 'symbol 'system)])
            void?]{
 Sets the delta's font family. See
 @method[style-delta% get-family].
@@ -521,22 +521,22 @@ after the multiplicative factor).
 before the additive factor).
 }
 
-@defmethod[(set-smoothing-off [v (one-of/c 'base 'default 'partly-smoothed 'smoothed 'unsmoothed)])
+@defmethod[(set-smoothing-off [v (or/c 'base 'default 'partly-smoothed 'smoothed 'unsmoothed)])
            void?]{See 
 @scheme[style-delta%].
 }
 
-@defmethod[(set-smoothing-on [v (one-of/c 'base 'default 'partly-smoothed 'smoothed 'unsmoothed)])
+@defmethod[(set-smoothing-on [v (or/c 'base 'default 'partly-smoothed 'smoothed 'unsmoothed)])
            void?]{See 
 @scheme[style-delta%].
 }
 
-@defmethod[(set-style-off [v (one-of/c 'base 'normal 'italic 'slant)])
+@defmethod[(set-style-off [v (or/c 'base 'normal 'italic 'slant)])
            void?]{See 
 @scheme[style-delta%].
 }
 
-@defmethod[(set-style-on [v (one-of/c 'base 'normal 'italic 'slant)])
+@defmethod[(set-style-on [v (or/c 'base 'normal 'italic 'slant)])
            void?]{See 
 @scheme[style-delta%].
 }
@@ -561,12 +561,12 @@ before the additive factor).
 @scheme[style-delta%].
 }
 
-@defmethod[(set-weight-off [v (one-of/c 'base 'normal 'bold 'light)])
+@defmethod[(set-weight-off [v (or/c 'base 'normal 'bold 'light)])
            void?]{See 
 @scheme[style-delta%].
 }
 
-@defmethod[(set-weight-on [v (one-of/c 'base 'normal 'bold 'light)])
+@defmethod[(set-weight-on [v (or/c 'base 'normal 'bold 'light)])
            void?]{See 
 @scheme[style-delta%].
 }}
