@@ -2471,6 +2471,9 @@
              [super-methods (if (null? (class/c-supers ctc))
                                 (class-super-methods cls)
                                 (make-vector method-width))]
+             [inner-projs (if (null? (class/c-inners ctc))
+                              (class-inner-projs cls)
+                              (make-vector method-width))]
              [class-make (if name
                              (make-naming-constructor 
                               struct:class
@@ -2492,7 +2495,7 @@
                             (class-beta-methods cls)
                             (class-meth-flags cls)
                             
-                            (class-inner-projs cls)
+                            inner-projs
                             
                             (class-field-width cls)
                             (class-field-ht cls)
@@ -2553,6 +2556,19 @@
             (let ([i (hash-ref method-ht m)]
                   [p ((contract-projection c) blame)])
               (vector-set! super-methods i (p (vector-ref super-methods i))))))
+        
+        ;; Add inner projections
+        (unless (null? (class/c-inners ctc))
+          (let ([old-inner-projs (class-inner-projs cls)])
+            (for ([n (in-range method-width)])
+              (vector-set! inner-projs n (vector-ref old-inner-projs n))))
+          (let ([b (blame-swap blame)])
+            (for ([m (in-list (class/c-inners ctc))]
+                  [c (in-list (class/c-inner-contracts ctc))])
+              (let ([i (hash-ref method-ht m)]
+                    [p ((contract-projection c) b)])
+                (vector-set! inner-projs i
+                             (compose (vector-ref inner-projs i) p))))))
         
         c))))
 

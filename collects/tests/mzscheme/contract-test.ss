@@ -4364,7 +4364,7 @@
            [d% (class c% (super-new) (define/augride (m x) (add1 x)))])
       (send (new d%) m 3)))
 
-  (test/pos-blame
+  (test/neg-blame
    'class/c-higher-order-inner-2
    '(let* ([c% (contract (class/c (inner [m (-> any/c integer? integer?)]))
                          (class object% (super-new) (define/pubment (m x) (+ x (inner x m x))))
@@ -4373,7 +4373,7 @@
            [d% (class c% (super-new) (define/augride (m x) (zero? x)))])
       (send (new d%) m 3)))
 
-  (test/neg-blame
+  (test/pos-blame
    'class/c-higher-order-inner-3
    '(let* ([c% (contract (class/c (inner [m (-> any/c integer? integer?)]))
                          (class object% (super-new) (define/pubment (m x) (+ x (inner x m (zero? x)))))
@@ -4382,7 +4382,7 @@
            [d% (class c% (super-new) (define/augride (m x) (add1 x)))])
       (send (new d%) m 3)))
 
-  (test/pos-blame
+  (test/neg-blame
    'class/c-higher-order-inner-4
    '(let* ([c% (contract (class/c (inner [m (-> any/c integer? integer?)]))
                          (class object% (super-new) (define/pubment (m x) (+ x (inner x m x))))
@@ -4401,6 +4401,34 @@
            [d% (class c% (super-new) (define/augment (m x) (if (inner x m x) (add1 x) x)))]
            [e% (class d% (super-new) (define/augride (m x) (zero? x)))])
       (send (new e%) m 3)))
+
+  ;; Make sure the order of the wrapping is correct in the next two.
+  (test/neg-blame
+   'class/c-higher-order-inner-6
+   '(let* ([c% (contract (class/c (inner [m (-> any/c integer? integer?)]))
+                         (class object% (super-new) (define/pubment (m x) (+ x (inner x m x))))
+                         'pos
+                         'neg1)]
+           [d% (contract (class/c (inner [m (-> any/c number? number?)]))
+                         c%
+                         'pos1
+                         'neg)]
+           [e% (class d% (super-new) (define/augride (m x) (zero? x)))])
+      (send (new e%) m 3)))
+
+  (test/pos-blame
+   'class/c-higher-order-inner-7
+   '(let* ([c% (contract (class/c (inner [m (-> any/c integer? integer?)]))
+                         (class object% (super-new) (define/pubment (m x) (+ x (inner x m #f))))
+                         'pos
+                         'neg1)]
+           [d% (contract (class/c (inner [m (-> any/c number? number?)]))
+                         c%
+                         'pos1
+                         'neg)]
+           [e% (class d% (super-new) (define/augride (m x) (add1 x)))])
+      (send (new e%) m 3)))
+  
 ;                                                              
 ;                                                              
 ;             ;;        ;;                     ;    ;;         
