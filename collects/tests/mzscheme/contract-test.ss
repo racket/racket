@@ -4460,6 +4460,40 @@
            [e% (class d% (super-new) (define/override (m x) (zero? (super m x))))])
       (send (new e%) m 3)))
   
+  ;; Show both inner and super contracts.
+  (test/spec-passed
+   'class/c-higher-order-inner-10
+   '(let* ([c% (class object% (super-new) (define/pubment (m x) (+ x (inner x m 3))))]
+           [d% (contract (class/c (inner [m (-> any/c number? number?)])
+                                  (super [m (-> any/c number? number?)]))
+                         (class c% (super-new) (define/augride (m x) (add1 x)))
+                         'pos
+                         'neg)]
+           [e% (class d% (super-new) (define/override (m x) (+ x (super m x))))])
+      (send (new e%) m 3)))
+
+  (test/pos-blame
+   'class/c-higher-order-inner-11
+   '(let* ([c% (class object% (super-new) (define/pubment (m x) (+ x (inner x m #f))))]
+           [d% (contract (class/c (inner [m (-> any/c number? number?)])
+                                  (super [m (-> any/c number? number?)]))
+                         (class c% (super-new) (define/augride (m x) (add1 x)))
+                         'pos
+                         'neg)]
+           [e% (class d% (super-new) (define/override (m x) (+ x (super m x))))])
+      (send (new e%) m 3)))
+
+  (test/neg-blame
+   'class/c-higher-order-inner-10
+   '(let* ([c% (class object% (super-new) (define/pubment (m x) (+ x (inner x m 3))))]
+           [d% (contract (class/c (inner [m (-> any/c number? number?)])
+                                  (super [m (-> any/c number? number?)]))
+                         (class c% (super-new) (define/augride (m x) (add1 x)))
+                         'pos
+                         'neg)]
+           [e% (class d% (super-new) (define/override (m x) (+ x (super m #f))))])
+      (send (new e%) m 3)))
+
 ;                                                              
 ;                                                              
 ;             ;;        ;;                     ;    ;;         

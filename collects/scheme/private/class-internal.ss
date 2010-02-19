@@ -2144,7 +2144,12 @@
                 (let ([rename-supers (map (lambda (index mname)
                                             (let ([vec (vector-ref (class-beta-methods super) index)])
                                               (if (positive? (vector-length vec))
-                                                  (or (vector-ref vec (sub1 (vector-length vec)))
+                                                  ;; While the last part of the vector is indeed the right
+                                                  ;; method, if there have been super contracts placed since,
+                                                  ;; they won't be reflected there, only in the super-methods
+                                                  ;; vector of the superclass.
+                                                  (if (vector-ref vec (sub1 (vector-length vec)))
+                                                      (vector-ref (class-super-methods super) index)
                                                       (obj-error 'class* 
                                                                  (string-append
                                                                   "superclass ~e method for override, overment, inherit/super, "
@@ -2261,6 +2266,7 @@
                                                (vector-set! int-methods index method))
                                         ;; Under final mode - set extended vtable entry
                                         (let ([v (list->vector (vector->list v))])
+                                          (vector-set! super-methods index method)
                                           (vector-set! v (sub1 (vector-length v))
                                                        ;; Apply current inner contract projection
                                                        ((vector-ref inner-projs index) method))
