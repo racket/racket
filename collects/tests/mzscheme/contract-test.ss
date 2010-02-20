@@ -4596,14 +4596,16 @@
 
   (test/spec-passed
    'class/c-higher-order-override-1
-   '(let* ([c% (contract (class/c (override [m (-> any/c number? number?)]))
+   '(let* ([c% (contract (class/c (override [m (-> any/c integer? integer?)]))
                          (class object% (super-new)
                            (define/public (m x) x)
                            (define/public (f x) (m x)))
                          'pos
                          'neg)]
-           [d% (class c% (super-new) (define/override (m x) (add1 (super m x))))])
-      (send (new d%) f 3)))
+           [d% (class c% (super-new) 
+                 (define/public (g x) (m x))
+                 (define/override (m x) (add1 (super m x))))])
+      (send (new d%) g 3.5)))
 
   (test/neg-blame
    'class/c-higher-order-override-2
@@ -4662,7 +4664,7 @@
                          'pos
                          'neg1)]
            [d% (contract (class/c (override [m (-> any/c integer? integer?)]))
-                         (class c% (super-new) (define/public (g x) (add1 (m 3))))
+                         (class c% (super-new) (inherit m) (define/public (g x) (add1 (m 3))))
                          'pos1
                          'neg)]
            [e% (class d% (super-new) (define/override (m x) (+ x (super m x))))])
@@ -4682,6 +4684,28 @@
                          'neg)]
            [e% (class d% (super-new) (define/override (m x) (+ x (super m x))))])
       (send (new e%) f 3)))
+
+  (test/spec-passed
+   'class/c-higher-order-augment-1
+   '(let* ([c% (contract (class/c (augment [m (-> any/c integer? integer?)]))
+                         (class object% (super-new)
+                           (define/pubment (m x) x)
+                           (define/public (f x) (m (zero? x))))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (inherit m) (define/public (g x) (m x)))])
+      (send (new d%) f 3)))
+
+  (test/neg-blame
+   'class/c-higher-order-augment-2
+   '(let* ([c% (contract (class/c (augment [m (-> any/c integer? integer?)]))
+                         (class object% (super-new)
+                           (define/pubment (m x) x)
+                           (define/public (f x) (m (zero? x))))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (inherit m) (define/public (g x) (m x)))])
+      (send (new d%) g 3.5)))
 
 ;                                                              
 ;                                                              

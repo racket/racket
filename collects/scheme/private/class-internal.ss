@@ -2346,13 +2346,14 @@
                       (let ([super-int-methods (class-int-methods super)])
                         (for ([n (in-list dynamic-ctc-idxs)])
                           (let ([super-vec (vector-ref super-int-methods n)]
-                                [old-vec (vector-ref int-methods n)])
+                                [old-vec (vector-ref int-methods n)]
+                                [proj-vec (vector-ref dynamic-projs n)])
                             ;; If we didn't already update this in the override block above...
                             (when (eq? super-vec old-vec)
                               (let* ([dyn-idx (vector-ref dynamic-idxs n)]
                                      [new-vec (make-vector (add1 dyn-idx))]
                                      [clean-method (vector-ref old-vec (sub1 dyn-idx))]
-                                     [last-proj (vector-ref dynamic-projs (sub1 dyn-idx))])
+                                     [last-proj (vector-ref proj-vec (sub1 dyn-idx))])
                                 ;; Take the last updated set of projections and apply them to
                                 ;; each location.
                                 (for ([i (in-range dyn-idx)])
