@@ -1811,6 +1811,8 @@
                       ;     named-args
                       ;  -> void
                       
+                      [orig-cls      ; uncontracted version of this class (or same class)
+                       #:mutable]
                       [serializer    ; proc => serializer, #f => not serializable
                        #:mutable]
                       [fixup         ; for deserialization
@@ -2094,7 +2096,7 @@
                                 init-args
                                 init-mode
                                 'init
-                                #f #f ; serializer is set later
+                                #f #f #f ; serializer is set later
                                 (and make-struct:prim #t))]
                  [obj-name (if name
                                (string->symbol (format "object:~a" name))
@@ -2109,6 +2111,7 @@
             
             (setup-all-implemented! i)
             (vector-set! (class-supers c) (add1 (class-pos super)) c)
+            (set-class-orig-cls! c c)
             
             ;; --- Make the new object struct ---
             (let*-values ([(prim-object-make prim-object? struct:prim-object)
@@ -2643,6 +2646,7 @@
                             (class-init-mode cls)
                             (class-init cls)
                             
+                            (class-orig-cls cls)
                             #f #f ; serializer is never set
                             #f)]
              [obj-name (if name
@@ -3220,12 +3224,14 @@
                      (unused-args-error this args))
                    (void))
                  
+                 #f
                  (lambda (obj) #(()))        ; serialize
                  (lambda (obj args) (void))  ; deserialize-fixup
                  
                  #t)) ; no super-init
 
 (vector-set! (class-supers object%) 0 object%)
+(set-class-orig-cls! object% object%)
 (let*-values ([(struct:obj make-obj obj? -get -set!)
                (make-struct-type 'object #f 0 0 #f (list (cons prop:object object%)) #f)])
   (set-class-struct:object! object% struct:obj)
@@ -4310,6 +4316,7 @@
                       'normal ; init-mode - ??
                       
                       #f ; init
+                      #f ; orig-cls
                       #f #f ; not serializable
                       #f)])
     (let-values ([(struct:object make-object object? field-ref field-set!)
@@ -4327,6 +4334,8 @@
       (set-class-make-object! cls make-object)
       (set-class-field-ref! cls field-ref)
       (set-class-field-set!! cls field-set!)
+      
+      (set-class-orig-cls! cls cls)
       
       (let ([init
              (lambda (o continue-make-super c inited? named-args leftover-args)
