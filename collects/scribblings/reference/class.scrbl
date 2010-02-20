@@ -1464,7 +1464,79 @@ resulting trait is the same as for @scheme[trait-sum], otherwise the
 
 @; ------------------------------------------------------------------------
 
-@section{Object and Class Contracts}
+@section{Class and Object Contracts}
+
+@defform/subs[
+#:literals (field inherit-field super inner override augment)
+
+(class/c member-spec ...)
+
+([member-spec
+  method-spec
+  (field field-spec ...)
+  (inherit-field field-spec ...)
+  (super method-spec ...)
+  (inner method-spec ...)
+  (override method-spec ...)
+  (augment method-spec ...)]
+ 
+ [method-spec
+  method-id
+  (method-id method-contract)]
+ [field-spec
+  field-id
+  (field-id field-contract)])]{
+Produces a contract for a class.
+
+There are two major categories of contracts listed in a @scheme[class/c]
+form: external and internal contracts. External contracts govern behavior
+when methods or fields are accessed via an object of that class. Internal
+contracts govern behavior when method or fields are accessed within the
+class hierarchy.  This separation allows for stronger contracts for class
+clients and weaker contracts for subclasses.
+
+Method contracts must contain an additional initial argument which corresponds
+to the @scheme[this] parameter of the method.  This allows for contracts which
+discuss the state of the object when the method is called (or, for dependent
+contracts, in other parts of the contract).
+
+The external contracts are as follows:
+
+@itemize[
+ @item{A method contract without a tag for @scheme[method-id] describes the behavior
+   of the implementation of @scheme[method-id] on method sends to an object of that
+   class.  This contract will continue to be checked in subclasses until the target
+   of dynamic dispatch changes and another implementation is used instead.}
+ @item{A field contract, tagged with @scheme[field], describes the behavior of the
+   value contained in that field when accessed via an object of that class.  Since
+   fields may be mutated, these contracts are checked on any external access and/or
+   mutation of the field.}
+]
+
+The internal contracts are as follows:
+@itemize[
+ @item{A field contract, tagged with @scheme[inherit-field], describes the behavior of the
+   value contained in that field when accessed directly in any subclass
+   (i.e., via @scheme[inherit-field]).  Since fields may be mutated, these contracts are
+   checked on any access and/or mutation of the field that occurs in any subclass.}
+ @item{A method contract, tagged with @scheme[super], describes the behavior of the class's
+   method when called by the @scheme[super] form in a subclass.  This contract affects all
+   @scheme[super] calls in subclasses until the method is overridden.}
+ @item{A method contract, tagged with @scheme[inner], describes the behavior the class
+   expects of an augmenting method in a subclass.  This contract affects any implementations
+   of @scheme[method-id] in subclasses which can be called via @scheme[inner] from the
+   contracted class.  This means a subclass which implements @scheme[method-id] via
+   @scheme[augment] or @scheme[overment] stop future subclasses from being affected by
+   the contract, since further extension cannot be reached via the contracted class.}
+ @item{A method contract, tagged with @scheme[override], describes the behavior expected by
+   the contracted class for @scheme[method-id] when called directly (i.e. by the application
+   @scheme[(method-id ...)]).  This form can only be used if overriding the method in subclasses
+   will change the dynamic dispatch chain (i.e., the method has never been augmentable).}
+ @item{A method contract, tagged with @scheme[augment], describes the behavior provided by
+   the contracted class for @scheme[method-id] when called directly from subclasses.  This form
+   can only be used if the method has previously been augmentable, which means that no augmenting
+   or overriding implementation will change the dynamic dispatch chain.}
+]}
 
 @defform/subs[
 #:literals (field -> ->* ->d)
@@ -1509,9 +1581,11 @@ the corresponding function contract, but the syntax of the
 method contract must be written directly in the body of the
 object-contract---much like the way that methods in class
 definitions use the same syntax as regular function
-definitions, but cannot be arbitrary procedures.  The only
-exception is that @scheme[->d] contracts implicitly bind
-@scheme[this] to the object itself.}
+definitions, but cannot be arbitrary procedures.  Unlike the
+method contracts for @scheme[class/c], the implicit @scheme[this]
+argument is not part of the contract.  To allow for the use of
+@scheme[this] in dependent contracts, @scheme[->d] contracts
+implicitly bind @scheme[this] to the object itself.}
 
 
 @defthing[mixin-contract contract?]{
