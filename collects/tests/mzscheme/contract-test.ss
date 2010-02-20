@@ -4115,6 +4115,20 @@
               (class object% (super-new) (field [n 3]))
               'pos
               'neg))
+
+  (test/pos-blame
+   'class/c-first-order-inherit-field-1
+   '(contract (class/c (inherit-field [n number?]))
+              object%
+              'pos
+              'neg))
+  
+  (test/spec-passed
+   'class/c-first-order-inherit-field-2
+   '(contract (class/c (inherit-field [n number?]))
+              (class object% (super-new) (field [n 3]))
+              'pos
+              'neg))
   
   (test/pos-blame
    'class/c-first-order-super-1
