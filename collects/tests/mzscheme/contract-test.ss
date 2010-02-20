@@ -4494,6 +4494,44 @@
            [e% (class d% (super-new) (define/override (m x) (+ x (super m #f))))])
       (send (new e%) m 3)))
 
+  (test/spec-passed/result
+   'class/c-higher-order-field-1
+   '(let* ([c% (contract (class/c (field [f number?]))
+                         (class object% (super-new) (field [f 10]))
+                         'pos
+                         'neg)])
+      (get-field f (new c%)))
+   10)
+
+  (test/spec-passed/result
+   'class/c-higher-order-field-2
+   '(let* ([c% (contract (class/c (field [f number?]))
+                         (class object% (super-new) (field [f 10]))
+                         'pos
+                         'neg)]
+           [o (new c%)])
+      (set-field! f o 5)
+      (get-field f o))
+   5)
+
+  (test/pos-blame
+   'class/c-higher-order-field-3
+   '(let* ([c% (contract (class/c (field [f number?]))
+                         (class object% (super-new) (field [f #f]))
+                         'pos
+                         'neg)]
+           [o (new c%)])
+      (get-field f o)))
+
+  (test/neg-blame
+   'class/c-higher-order-field-4
+   '(let* ([c% (contract (class/c (field [f number?]))
+                         (class object% (super-new) (field [f 10]))
+                         'pos
+                         'neg)]
+           [o (new c%)])
+      (set-field! f o #f)))
+
 ;                                                              
 ;                                                              
 ;             ;;        ;;                     ;    ;;         

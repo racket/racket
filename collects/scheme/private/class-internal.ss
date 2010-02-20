@@ -2513,6 +2513,14 @@
              [inner-projs (if (null? (class/c-inners ctc))
                               (class-inner-projs cls)
                               (make-vector method-width))]
+             [field-pub-width (class-field-pub-width cls)]
+             [field-ht (class-field-ht cls)]
+             [ext-field-refs (if (null? (class/c-fields ctc))
+                                 (class-ext-field-refs cls)
+                                 (make-vector field-pub-width))]
+             [ext-field-sets (if (null? (class/c-fields ctc))
+                                 (class-ext-field-sets cls)
+                                 (make-vector field-pub-width))]
              [class-make (if name
                              (make-naming-constructor 
                               struct:class
@@ -2537,14 +2545,14 @@
                             inner-projs
                             
                             (class-field-width cls)
-                            (class-field-pub-width cls)
-                            (class-field-ht cls)
+                            field-pub-width
+                            field-ht
                             (class-field-ids cls)
                             
                             (class-int-field-refs cls)
                             (class-int-field-sets cls)
-                            (class-ext-field-refs cls)
-                            (class-ext-field-sets cls)
+                            ext-field-refs
+                            ext-field-sets
                             
                             'struct:object 'object? 'make-object
                             'field-ref 'field-set!
@@ -2614,6 +2622,27 @@
                     [p ((contract-projection c) b)])
                 (vector-set! inner-projs i
                              (compose (vector-ref inner-projs i) p))))))
+        
+        ;; Handle external field contracts
+        (unless (null? (class/c-fields ctc))
+          (let ([old-refs (class-ext-field-refs cls)]
+                [old-sets (class-ext-field-sets cls)])
+            (for ([n (in-range field-pub-width)])
+              (vector-set! ext-field-refs n (vector-ref old-refs n))
+              (vector-set! ext-field-sets n (vector-ref old-sets n))))
+          (let ([bset (blame-swap blame)])
+            (for ([f (in-list (class/c-fields ctc))]
+                  [c (in-list (class/c-field-contracts ctc))])
+              (let* ([i (hash-ref field-ht f)]
+                     [pre-p (contract-projection c)]
+                     [old-ref (vector-ref ext-field-refs i)]
+                     [old-set (vector-ref ext-field-sets i)])
+                (vector-set! ext-field-refs i
+                             (λ (o) 
+                               ((pre-p blame) (old-ref o))))
+                (vector-set! ext-field-sets i
+                             (λ (o v)
+                               (old-set o ((pre-p bset) v))))))))
         
         c))))
 
