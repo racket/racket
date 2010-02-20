@@ -84,7 +84,9 @@ Errors/exceptions and other kinds of control?
 
 |#
 
-(random-seed 2)
+(let ([v (modulo (current-milliseconds) 1000)])
+  (printf "using seed ~a\n" v)
+  (random-seed v))
 
 (define-language fut
   ;; single value, non-error expressions
@@ -185,7 +187,7 @@ Errors/exceptions and other kinds of control?
 
 (define-namespace-anchor ns-here)
 
-(let loop ([n 100])
+(let loop ([n 32])
   (unless (zero? n)
     (printf ".") (flush-output)
     (let ([p (gen-prog)])
