@@ -2037,9 +2037,15 @@
                  [super-methods (if no-method-changes?
                                     (class-super-methods super)
                                     (make-vector method-width))]
-                 [int-methods (if no-method-changes?
-                                    (class-int-methods super)
-                                    (make-vector method-width))]
+                 [no-dynamic-ctcs? (let ([dyn-idxs (class-dynamic-idxs super)]
+                                         [int-meths (class-int-methods super)])
+                                     (for/or ([n (in-range (vector-length dyn-idxs))])
+                                       (= (vector-ref dyn-idxs n)
+                                          (vector-length (vector-ref int-meths n)))))]
+                 [int-methods (if (and no-method-changes?
+                                       no-dynamic-ctcs?)
+                                  (class-int-methods super)
+                                  (make-vector method-width))]
                  [beta-methods (if no-method-changes?
                                    (class-beta-methods super)
                                    (make-vector method-width))]
@@ -2228,6 +2234,15 @@
                                                               depth))))
                                             rename-inner-names
                                             rename-inner-indices))])
+                  
+                  ;; Have to update these before making the method-accessors, since this is a "static" piece
+                  ;; of information (instead of being dynamic => method call time).
+                  (unless no-method-changes?
+                    (vector-copy! dynamic-idxs 0 (class-dynamic-idxs super))
+                    (for-each (lambda (index)
+                                (vector-set! dynamic-idxs index 0))
+                              (append new-augonly-indices new-final-indices new-normal-indices)))
+                  
                   ;; -- Create method accessors --
                   (let ([method-accessors (map (lambda (index)
                                                  (let ([dyn-idx (vector-ref dynamic-idxs index)])
@@ -2255,11 +2270,12 @@
                       (unless no-method-changes?
                         (vector-copy! methods 0 (class-methods super))
                         (vector-copy! super-methods 0 (class-super-methods super))
-                        (vector-copy! int-methods 0 (class-int-methods super))
                         (vector-copy! beta-methods 0 (class-beta-methods super))
                         (vector-copy! meth-flags 0 (class-meth-flags super))
-                        (vector-copy! inner-projs 0 (class-inner-projs super))
-                        (vector-copy! dynamic-idxs 0 (class-dynamic-idxs super)))
+                        (vector-copy! inner-projs 0 (class-inner-projs super)))
+                      (unless (and no-method-changes?
+                                   no-dynamic-ctcs?)
+                        (vector-copy! int-methods 0 (class-int-methods super)))
                       ;; Add new methods:
                       (for-each (lambda (index method)
                                   (vector-set! methods index method)
@@ -2298,6 +2314,13 @@
                                         refine-augonly-indices refine-final-indices refine-normal-indices)
                                 (append override-methods augride-methods)
                                 (append override-names augride-names))
+                      (unless no-dynamic-ctcs?
+                        (for ([n (in-range (class-method-width super))])
+                          (let ([dyn-idx (vector-ref dynamic-idxs n)]
+                                [old-vec (vector-ref int-methods n)])
+                            (when (= dyn-idx (vector-length old-vec))
+                              (let ([new-vec (make-vector (add1 dyn-idx) (vector-ref old-vec 0))])
+                                (vector-set! int-methods new-vec))))))
                       ;; Update 'augmentable flags:
                       (unless no-method-changes?
                         (for-each (lambda (id)
@@ -2507,6 +2530,9 @@
              [inner-projs (if (null? (class/c-inners ctc))
                               (class-inner-projs cls)
                               (make-vector method-width))]
+             [dynamic-idxs (if (null? (class/c-overrides ctc))
+                               (class-dynamic-idxs cls)
+                               (make-vector method-width))]
              [field-pub-width (class-field-pub-width cls)]
              [field-ht (class-field-ht cls)]
              [int-field-refs (if (null? (class/c-inherits ctc))
@@ -2543,7 +2569,7 @@
                             (class-meth-flags cls)
                             
                             inner-projs
-                            (class-dynamic-idxs cls)
+                            dynamic-idxs
                             
                             (class-field-width cls)
                             field-pub-width
@@ -2653,6 +2679,17 @@
                 (vector-set! int-field-sets i
                              (λ (o v)
                                (old-set o ((pre-p bset) v))))))))
+        
+        ;; Now the trickiest of them all, internal dynamic dispatch.
+        (unless (null? (class/c-overrides ctc))
+          (vector-copy! dynamic-idxs 0 (class-dynamic-idxs cls))
+          (let ([int-methods (class-int-methods cls)])
+            (for ([m (in-list (class/c-overrides ctc))])
+              (let* ([i (hash-ref method-ht m)]
+                     [old-idx (vector-ref dynamic-idxs i)]
+                     [int-vec (vector-ref int-methods i)])
+                (unless (= old-idx (vector-length int-vec))
+                  (vector-set! dynamic-idxs i (add1 old-idx)))))))
         
         c))))
 
