@@ -1464,7 +1464,7 @@ resulting trait is the same as for @scheme[trait-sum], otherwise the
 
 @; ------------------------------------------------------------------------
 
-@section{Class and Object Contracts}
+@section{Object and Class Contracts}
 
 @defform/subs[
 #:literals (field inherit-field super inner override augment)
@@ -1504,9 +1504,10 @@ The external contracts are as follows:
 
 @itemize[
  @item{A method contract without a tag for @scheme[method-id] describes the behavior
-   of the implementation of @scheme[method-id] on method sends to an object of that
-   class.  This contract will continue to be checked in subclasses until the target
-   of dynamic dispatch changes and another implementation is used instead.}
+   of the implementation of @scheme[method-id] on method sends to an object of the
+   contracted class.  This contract will continue to be checked in subclasses until
+   the contracted class's implementation is no longer the entry point for dynamic
+   dispatch.}
  @item{A field contract, tagged with @scheme[field], describes the behavior of the
    value contained in that field when accessed via an object of that class.  Since
    fields may be mutated, these contracts are checked on any external access and/or
@@ -1516,12 +1517,13 @@ The external contracts are as follows:
 The internal contracts are as follows:
 @itemize[
  @item{A field contract, tagged with @scheme[inherit-field], describes the behavior of the
-   value contained in that field when accessed directly in any subclass
-   (i.e., via @scheme[inherit-field]).  Since fields may be mutated, these contracts are
-   checked on any access and/or mutation of the field that occurs in any subclass.}
- @item{A method contract, tagged with @scheme[super], describes the behavior of the class's
-   method when called by the @scheme[super] form in a subclass.  This contract affects all
-   @scheme[super] calls in subclasses until the method is overridden.}
+   value contained in that field when accessed directly (i.e., via @scheme[inherit-field])
+   in any subclass of the contracted class.  Since fields may be mutated, these contracts are
+   checked on any access and/or mutation of the field that occurs in such subclasses.}
+ @item{A method contract, tagged with @scheme[super], describes the behavior of
+   @scheme[method-id] when called by the @scheme[super] form in a subclass.  This contract
+   only affects @scheme[super] calls in subclasses which call the contract class's
+   implementation of @scheme[method-id].}
  @item{A method contract, tagged with @scheme[inner], describes the behavior the class
    expects of an augmenting method in a subclass.  This contract affects any implementations
    of @scheme[method-id] in subclasses which can be called via @scheme[inner] from the
@@ -1531,7 +1533,8 @@ The internal contracts are as follows:
  @item{A method contract, tagged with @scheme[override], describes the behavior expected by
    the contracted class for @scheme[method-id] when called directly (i.e. by the application
    @scheme[(method-id ...)]).  This form can only be used if overriding the method in subclasses
-   will change the dynamic dispatch chain (i.e., the method has never been augmentable).}
+   will change the entry point to the dynamic dispatch chain (i.e., the method has never been
+   augmentable).}
  @item{A method contract, tagged with @scheme[augment], describes the behavior provided by
    the contracted class for @scheme[method-id] when called directly from subclasses.  This form
    can only be used if the method has previously been augmentable, which means that no augmenting
