@@ -2584,12 +2584,21 @@
              [super-methods (if (null? (class/c-supers ctc))
                                 (class-super-methods cls)
                                 (make-vector method-width))]
+             [int-methods (if (and (null? (class/c-overrides ctc))
+                                   (null? (class/c-augments ctc)))
+                              (class-int-methods cls)
+                              (make-vector method-width))]
              [inner-projs (if (null? (class/c-inners ctc))
                               (class-inner-projs cls)
                               (make-vector method-width))]
-             [dynamic-idxs (if (null? (class/c-overrides ctc))
+             [dynamic-idxs (if (and (null? (class/c-overrides ctc))
+                                    (null? (class/c-augments ctc)))
                                (class-dynamic-idxs cls)
                                (make-vector method-width))]
+             [dynamic-projs (if (and (null? (class/c-overrides ctc))
+                                     (null? (class/c-augments ctc)))
+                                (class-dynamic-projs cls)
+                                (make-vector method-width))]
              [field-pub-width (class-field-pub-width cls)]
              [field-ht (class-field-ht cls)]
              [int-field-refs (if (null? (class/c-inherits ctc))
@@ -2749,29 +2758,31 @@
                      (null? (class/c-augments ctc)))
           (let ()
             (define (add-projections methods ctcs swap-blame?)
-              (let ([dynamic-projs (class-dynamic-projs cls)])
+              (let ([old-idxs (class-dynamic-idxs (class-orig-cls cls))])
                 (for ([m (in-list methods)]
                       [c (in-list ctcs)])
                   (when c
                     (let* ([i (hash-ref method-ht m)]
                            [p ((contract-projection c) 
                                (if swap-blame? (blame-swap blame) blame))]
-                           [old-idx (vector-ref dynamic-idxs i)]
-                           [proj-vec (vector-ref dynamic-projs i)])
-                      (if (= old-idx (vector-length proj-vec))
-                          (let* ([last-idx (sub1 old-idx)]
-                                 [old-proj (vector-ref proj-vec last-idx)])
-                            (vector-set! proj-vec last-idx
-                                         (if swap-blame?
-                                             (compose old-proj p)
-                                             (compose p old-proj))))
-                          (let ([old-proj (vector-ref proj-vec old-idx)])
+                           [old-idx (vector-ref old-idxs i)]
+                           [new-idx (vector-ref dynamic-idxs i)]
+                           [proj-vec (vector-ref dynamic-projs i)]
+                           [old-proj (vector-ref proj-vec old-idx)])
+                      (if (= old-idx new-idx)
+                          (begin
                             (vector-set! dynamic-idxs i (add1 old-idx))
                             (vector-set! proj-vec old-idx
                                          (if swap-blame?
                                              (compose old-proj p)
-                                             (compose p old-proj))))))))))
+                                             (compose p old-proj))))
+                          (vector-set! proj-vec old-idx
+                                       (if swap-blame?
+                                           (compose old-proj p)
+                                           (compose p old-proj)))))))))
             (vector-copy! dynamic-idxs 0 (class-dynamic-idxs cls))
+            (vector-copy! dynamic-projs 0 (class-dynamic-projs cls))
+            (vector-copy! int-methods 0 (class-int-methods cls))
             (add-projections (class/c-overrides ctc) 
                              (class/c-override-contracts ctc)
                              #t)
