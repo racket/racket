@@ -2526,25 +2526,30 @@
       (let* ([name (class-name cls)]
              [method-width (class-method-width cls)]
              [method-ht (class-method-ht cls)]
+             [dynamic-features
+              (append (class/c-overrides ctc)
+                      (class/c-augments ctc)
+                      (class/c-inherits ctc))]
+             [dynamic-contracts
+              (append (class/c-override-contracts ctc)
+                      (class/c-augment-contracts ctc)
+                      (class/c-inherit-contracts ctc))]
              [methods (if (null? (class/c-methods ctc))
                           (class-methods cls)
                           (make-vector method-width))]
              [super-methods (if (null? (class/c-supers ctc))
                                 (class-super-methods cls)
                                 (make-vector method-width))]
-             [int-methods (if (and (null? (class/c-overrides ctc))
-                                   (null? (class/c-augments ctc)))
+             [int-methods (if (null? dynamic-features)
                               (class-int-methods cls)
                               (make-vector method-width))]
              [inner-projs (if (null? (class/c-inners ctc))
                               (class-inner-projs cls)
                               (make-vector method-width))]
-             [dynamic-idxs (if (and (null? (class/c-overrides ctc))
-                                    (null? (class/c-augments ctc)))
+             [dynamic-idxs (if (null? dynamic-features)
                                (class-dynamic-idxs cls)
                                (make-vector method-width))]
-             [dynamic-projs (if (and (null? (class/c-overrides ctc))
-                                     (null? (class/c-augments ctc)))
+             [dynamic-projs (if (null? dynamic-features)
                                 (class-dynamic-projs cls)
                                 (make-vector method-width))]
              [field-pub-width (class-field-pub-width cls)]
@@ -2704,16 +2709,13 @@
         ;; Now the trickiest of them all, internal dynamic dispatch.
         ;; First we update any dynamic indexes, as applicable.
         (let ([old-idxs (class-dynamic-idxs (class-orig-cls cls))])
-          (unless (and (null? (class/c-overrides ctc))
-                       (null? (class/c-augments ctc)))
+          (unless (null? dynamic-features)
             ;; Go ahead and do all the copies here.
             (vector-copy! dynamic-projs 0 (class-dynamic-projs cls))
             (vector-copy! int-methods 0 (class-int-methods cls))
             (vector-copy! dynamic-idxs 0 (class-dynamic-idxs cls))
-            (for ([m (in-list (append (class/c-overrides ctc)
-                                      (class/c-augments ctc)))]
-                  [c (in-list (append (class/c-override-contracts ctc)
-                                      (class/c-augment-contracts ctc)))])
+            (for ([m (in-list dynamic-features)]
+                  [c (in-list dynamic-contracts)])
               (when c
                 (let* ([i (hash-ref method-ht m)]
                        [old-idx (vector-ref old-idxs i)]
@@ -2765,6 +2767,19 @@
                        [int-vec (vector-ref int-methods i)])
                   (vector-set! proj-vec old-idx
                                (compose p (vector-ref proj-vec old-idx)))
+                  (vector-set! int-vec new-idx
+                               (p (vector-ref int-vec new-idx)))))))
+          
+          ;; Now (that things have been extended appropriately) we handle
+          ;; inherits.
+          (unless (null? (class/c-inherits ctc))
+            (for ([m (in-list (class/c-inherits ctc))]
+                  [c (in-list (class/c-inherit-contracts ctc))])
+              (when c
+                (let* ([i (hash-ref method-ht m)]
+                       [p ((contract-projection c) blame)]
+                       [new-idx (vector-ref dynamic-idxs i)]
+                       [int-vec (vector-ref int-methods i)])
                   (vector-set! int-vec new-idx
                                (p (vector-ref int-vec new-idx))))))))
         

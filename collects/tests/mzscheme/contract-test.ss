@@ -4981,7 +4981,7 @@
                          'neg)]
            [d% (class c% (super-new) (inherit m) (define/public (f) (m 5)))]
            [e% (class d% (super-new) (define/override (m x) x))])
-      (send (new d%) f)))
+      (send (new e%) f)))
 
 ;                                                              
 ;                                                              
