@@ -4404,6 +4404,7 @@
          class-field-mutator-traced
          with-method-traced
          get-field-traced
+         set-field!-traced
          field-bound?-traced
          field-names-traced
          (rename-out [generic/form generic-traced]
