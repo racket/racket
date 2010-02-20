@@ -2518,6 +2518,12 @@
                               (make-vector method-width))]
              [field-pub-width (class-field-pub-width cls)]
              [field-ht (class-field-ht cls)]
+             [int-field-refs (if (null? (class/c-inherits ctc))
+                                 (class-int-field-refs cls)
+                                 (make-vector field-pub-width))]
+             [int-field-sets (if (null? (class/c-inherits ctc))
+                                 (class-int-field-sets cls)
+                                 (make-vector field-pub-width))]
              [ext-field-refs (if (null? (class/c-fields ctc))
                                  (class-ext-field-refs cls)
                                  (make-vector field-pub-width))]
@@ -2552,8 +2558,8 @@
                             field-ht
                             (class-field-ids cls)
                             
-                            (class-int-field-refs cls)
-                            (class-int-field-sets cls)
+                            int-field-refs
+                            int-field-sets
                             ext-field-refs
                             ext-field-sets
                             
@@ -2644,6 +2650,27 @@
                              (λ (o) 
                                ((pre-p blame) (old-ref o))))
                 (vector-set! ext-field-sets i
+                             (λ (o v)
+                               (old-set o ((pre-p bset) v))))))))
+        
+        ;; Handle internal field contracts
+        (unless (null? (class/c-inherits ctc))
+          (let ([old-refs (class-int-field-refs cls)]
+                [old-sets (class-int-field-sets cls)])
+            (for ([n (in-range field-pub-width)])
+              (vector-set! int-field-refs n (vector-ref old-refs n))
+              (vector-set! int-field-sets n (vector-ref old-sets n))))
+          (let ([bset (blame-swap blame)])
+            (for ([f (in-list (class/c-inherits ctc))]
+                  [c (in-list (class/c-inherit-contracts ctc))])
+              (let* ([i (hash-ref field-ht f)]
+                     [pre-p (contract-projection c)]
+                     [old-ref (vector-ref int-field-refs i)]
+                     [old-set (vector-ref int-field-sets i)])
+                (vector-set! int-field-refs i
+                             (λ (o) 
+                               ((pre-p blame) (old-ref o))))
+                (vector-set! int-field-sets i
                              (λ (o v)
                                (old-set o ((pre-p bset) v))))))))
         

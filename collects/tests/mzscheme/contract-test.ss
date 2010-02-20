@@ -4546,6 +4546,54 @@
            [o (new c%)])
       (set-field! f o #f)))
 
+  (test/spec-passed/result
+   'class/c-higher-order-inherit-1
+   '(let* ([c% (contract (class/c (inherit-field [f number?]))
+                         (class object% (super-new) (field [f 10]))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) 
+                 (inherit-field f)
+                 (define/public (m) f))])
+      (send (new d%) m))
+   10)
+
+  (test/spec-passed/result
+   'class/c-higher-order-inherit-2
+   '(let* ([c% (contract (class/c (inherit-field [f number?]))
+                         (class object% (super-new) (field [f 10]))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new)
+                 (inherit-field f)
+                 (define/public (m) (set! f 12)))]
+           [o (new d%)])
+      (send o m)
+      (get-field f o))
+   12)
+
+  (test/pos-blame
+   'class/c-higher-order-inherit-3
+   '(let* ([c% (contract (class/c (inherit-field [f number?]))
+                         (class object% (super-new) (field [f #f]))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) 
+                 (inherit-field f)
+                 (define/public (m) f))])
+      (send (new d%) m)))
+
+  (test/neg-blame
+   'class/c-higher-order-inherit-4
+   '(let* ([c% (contract (class/c (inherit-field [f number?]))
+                         (class object% (super-new) (field [f 10]))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new)
+                 (inherit-field f)
+                 (define/public (m) (set! f #f)))])
+      (send (new d%) m)))
+
 ;                                                              
 ;                                                              
 ;             ;;        ;;                     ;    ;;         
