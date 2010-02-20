@@ -1467,7 +1467,7 @@ resulting trait is the same as for @scheme[trait-sum], otherwise the
 @section{Object and Class Contracts}
 
 @defform/subs[
-#:literals (field inherit-field super inner override augment)
+#:literals (field inherit inherit-field super inner override augment)
 
 (class/c member-spec ...)
 
