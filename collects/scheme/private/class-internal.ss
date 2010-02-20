@@ -1913,26 +1913,14 @@
     ;; -- Match method and field names to indices --
     (let ([method-ht (if no-new-methods?
                          (class-method-ht super)
-                         (make-hasheq))]
+                         (hash-copy (class-method-ht super)))]
           [field-ht (if no-new-fields?
                         (class-field-ht super)
-                        (make-hasheq))]
+                        (hash-copy (class-field-ht super)))]
           [super-method-ht (class-method-ht super)]
           [super-method-ids (class-method-ids super)]
           [super-field-ids (class-field-ids super)]
           [super-field-ht (class-field-ht super)])
-      
-      ;; Put superclass ids in tables, with pos
-      (unless no-new-methods?
-        (let loop ([ids super-method-ids][p (sub1 (class-method-width super))])
-          (unless (null? ids)
-            (hash-set! method-ht (car ids) p)
-            (loop (cdr ids) (sub1 p)))))
-      (unless no-new-fields?
-        (let loop ([ids super-field-ids])
-          (unless (null? ids)
-            (hash-set! field-ht (car ids) (hash-ref super-field-ht (car ids)))
-            (loop (cdr ids)))))
       
       ;; Put new ids in table, with pos (replace field pos with accessor info later)
       (unless no-new-methods?
