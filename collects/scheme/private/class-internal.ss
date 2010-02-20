@@ -2723,13 +2723,22 @@
         ;; Now the trickiest of them all, internal dynamic dispatch.
         (unless (null? (class/c-overrides ctc))
           (vector-copy! dynamic-idxs 0 (class-dynamic-idxs cls))
-          (let ([int-methods (class-int-methods cls)])
-            (for ([m (in-list (class/c-overrides ctc))])
+          (let ([dynamic-projs (class-dynamic-projs cls)])
+            (for ([m (in-list (class/c-overrides ctc))]
+                  [c (in-list (class/c-override-contracts ctc))])
               (let* ([i (hash-ref method-ht m)]
+                     [p ((contract-projection c) (blame-swap blame))]
                      [old-idx (vector-ref dynamic-idxs i)]
-                     [int-vec (vector-ref int-methods i)])
-                (unless (= old-idx (vector-length int-vec))
-                  (vector-set! dynamic-idxs i (add1 old-idx)))))))
+                     [proj-vec (vector-ref dynamic-projs i)])
+                (if (= old-idx (vector-length proj-vec))
+                    (let* ([last-idx (sub1 old-idx)]
+                           [old-proj (vector-ref proj-vec last-idx)])
+                      (vector-set! proj-vec last-idx
+                                   (compose old-proj p)))
+                    (let ([old-proj (vector-ref proj-vec old-idx)])
+                      (vector-set! dynamic-idxs i (add1 old-idx))
+                      (vector-set! proj-vec old-idx
+                                   (compose old-proj p))))))))
         
         c))))
 
