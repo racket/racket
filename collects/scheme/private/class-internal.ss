@@ -1775,6 +1775,7 @@
                       
                       inner-projs    ; vector of projections for the last inner slot
                       dynamic-idxs   ; vector of indexs for access into int-methods
+                      dynamic-projs  ; vector of vector of projections for internal dynamic dispatch
                       
                       field-width    ; total number of fields
                       field-pub-width ; total number of public fields
@@ -2037,13 +2038,17 @@
                  [super-methods (if no-method-changes?
                                     (class-super-methods super)
                                     (make-vector method-width))]
-                 [no-dynamic-ctcs? (let ([dyn-idxs (class-dynamic-idxs super)]
-                                         [int-meths (class-int-methods super)])
-                                     (for/or ([n (in-range (vector-length dyn-idxs))])
-                                       (= (vector-ref dyn-idxs n)
-                                          (vector-length (vector-ref int-meths n)))))]
+                 [dynamic-ctc-idxs
+                  (let ([dyn-idxs (class-dynamic-idxs super)]
+                        [dyn-projs (class-dynamic-projs super)])
+                    (for/fold ([indices null])
+                      ([n (in-range (vector-length dyn-idxs))])
+                      (if (= (vector-ref dyn-idxs n)
+                             (vector-length (vector-ref dyn-projs n)))
+                          (cons n indices)
+                          indices)))]
                  [int-methods (if (and no-method-changes?
-                                       no-dynamic-ctcs?)
+                                       (null? dynamic-ctc-idxs))
                                   (class-int-methods super)
                                   (make-vector method-width))]
                  [beta-methods (if no-method-changes?
@@ -2055,6 +2060,10 @@
                  [dynamic-idxs (if no-method-changes?
                                    (class-dynamic-idxs super)
                                    (make-vector method-width))]
+                 [dynamic-projs (if (and no-method-changes?
+                                         (null? dynamic-ctc-idxs))
+                                    (class-dynamic-projs super)
+                                    (make-vector method-width))]
                  [meth-flags (if no-method-changes?
                                  (class-meth-flags super)
                                  (make-vector method-width))]
@@ -2078,7 +2087,7 @@
                                   make-)
                                 method-width method-ht method-names
                                 methods super-methods int-methods beta-methods meth-flags
-                                inner-projs dynamic-idxs
+                                inner-projs dynamic-idxs dynamic-projs
                                 field-width field-pub-width field-ht field-names
                                 int-field-refs int-field-sets ext-field-refs ext-field-sets
                                 'struct:object 'object? 'make-object 'field-ref 'field-set!
@@ -2274,8 +2283,9 @@
                         (vector-copy! meth-flags 0 (class-meth-flags super))
                         (vector-copy! inner-projs 0 (class-inner-projs super)))
                       (unless (and no-method-changes?
-                                   no-dynamic-ctcs?)
-                        (vector-copy! int-methods 0 (class-int-methods super)))
+                                   (null? dynamic-ctc-idxs))
+                        (vector-copy! int-methods 0 (class-int-methods super))
+                        (vector-copy! dynamic-projs 0 (class-dynamic-projs super)))
                       ;; Add new methods:
                       (for-each (lambda (index method)
                                   (vector-set! methods index method)
@@ -2283,9 +2293,18 @@
                                   (vector-set! int-methods index (vector method))
                                   (vector-set! beta-methods index (vector))
                                   (vector-set! inner-projs index values)
-                                  (vector-set! dynamic-idxs index 0))
+                                  (vector-set! dynamic-idxs index 0)
+                                  (vector-set! dynamic-projs index (vector values)))
                                 (append new-augonly-indices new-final-indices new-normal-indices)
                                 new-methods)
+                      ;; First extend our dynamic projections vectors
+                      (for ([n (in-list dynamic-ctc-idxs)])
+                        (let* ([dyn-idx (vector-ref dynamic-idxs n)]
+                               [old-vec (vector-ref dynamic-projs n)]
+                               [new-vec (make-vector (add1 dyn-idx))])
+                              (vector-copy! new-vec 0 old-vec)
+                              (vector-set! new-vec dyn-idx values)
+                              (vector-set! dynamic-projs n new-vec)))
                       ;; Override old methods:
                       (for-each (lambda (index method id)
                                   (when (eq? 'final (vector-ref meth-flags index))
@@ -2299,8 +2318,16 @@
                                         (begin (vector-set! methods index method)
                                                (vector-set! super-methods index method)
                                                (let* ([dyn-idx (vector-ref dynamic-idxs index)]
-                                                      [new-vec (make-vector (add1 dyn-idx) method)])
-                                                 (vector-set! int-methods index new-vec)))
+                                                      [new-vec (make-vector (add1 dyn-idx))]
+                                                      [proj-vec (vector-ref dynamic-projs index)])
+                                                 (let loop ([n dyn-idx] [m method])
+                                                   (if (< n 0)
+                                                       (void)
+                                                       (let* ([p (vector-ref proj-vec n)]
+                                                              [new-m (p m)])
+                                                         (vector-set! new-vec n new-m)
+                                                         (loop (sub1 n) new-m)))
+                                                 (vector-set! int-methods index new-vec))))
                                         ;; Under final mode - set extended vtable entry
                                         (let ([v (list->vector (vector->list v))])
                                           (vector-set! super-methods index method)
@@ -2314,13 +2341,25 @@
                                         refine-augonly-indices refine-final-indices refine-normal-indices)
                                 (append override-methods augride-methods)
                                 (append override-names augride-names))
-                      (unless no-dynamic-ctcs?
-                        (for ([n (in-range (class-method-width super))])
-                          (let ([dyn-idx (vector-ref dynamic-idxs n)]
+                      ;; Update all int dyn disp methods which have had contracts added since
+                      ;; the superclass, but were not overridden.
+                      (let ([super-int-methods (class-int-methods super)])
+                        (for ([n (in-list dynamic-ctc-idxs)])
+                          (let ([super-vec (vector-ref super-int-methods n)]
                                 [old-vec (vector-ref int-methods n)])
-                            (when (= dyn-idx (vector-length old-vec))
-                              (let ([new-vec (make-vector (add1 dyn-idx) (vector-ref old-vec 0))])
-                                (vector-set! int-methods new-vec))))))
+                            ;; If we didn't already update this in the override block above...
+                            (when (eq? super-vec old-vec)
+                              (let* ([dyn-idx (vector-ref dynamic-idxs n)]
+                                     [new-vec (make-vector (add1 dyn-idx))]
+                                     [clean-method (vector-ref old-vec (sub1 dyn-idx))]
+                                     [last-proj (vector-ref dynamic-projs (sub1 dyn-idx))])
+                                ;; Take the last updated set of projections and apply them to
+                                ;; each location.
+                                (for ([i (in-range dyn-idx)])
+                                  (vector-set! new-vec i (last-proj (vector-ref old-vec i))))
+                                ;; Copy the last (unprotected) version of the method
+                                (vector-set! new-vec dyn-idx clean-method)
+                                (vector-set! int-methods n new-vec))))))
                       ;; Update 'augmentable flags:
                       (unless no-method-changes?
                         (for-each (lambda (id)
@@ -2570,6 +2609,7 @@
                             
                             inner-projs
                             dynamic-idxs
+                            (class-dynamic-projs cls)
                             
                             (class-field-width cls)
                             field-pub-width
@@ -3107,7 +3147,7 @@
                  0 (make-hasheq) null
                  (vector) (vector) (vector) (vector) (vector)
 
-                 (vector) (vector)
+                 (vector) (vector) (vector)
                  
                  0 0 (make-hasheq) null
                  (vector) (vector) (vector) (vector)
@@ -4162,6 +4202,7 @@
          [methods-vec (make-vector method-count #f)]
          [int-methods-vec (make-vector method-count)]
          [dynamic-idxs (make-vector method-count 0)]
+         [dynamic-projs (make-vector method-count (vector values))]
          
          [field-ht (make-hasheq)]
          [field-count (length field-ids)]
@@ -4188,6 +4229,7 @@
                       'dont-use-me!
                       (make-vector method-count values)
                       dynamic-idxs
+                      dynamic-projs
                       
                       (if old-style?
                           (+ field-count method-count 1)
