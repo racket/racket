@@ -4863,7 +4863,7 @@
       (send (new e%) g 3)))
 
   (test/pos-blame
-   'class/c-higher-order-override-6
+   'class/c-higher-order-override-7
    '(let* ([c% (contract (class/c (override [m (-> any/c number? number?)]))
                          (class object% (super-new)
                            (define/public (m x) x)
