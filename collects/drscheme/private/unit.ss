@@ -2081,12 +2081,20 @@ module browser threading seems wrong.
               (send tabs-panel set-item-label (send tab get-i) label))))
         
         (define/private (get-defs-tab-label defs tab)
-          (let ([fn (send defs get-filename)])
-            (add-modified-flag 
-             defs
-             (if fn
-                 (get-tab-label-from-filename fn)
-                 (send defs get-filename/untitled-name)))))
+          (let ([fn (send defs get-filename)]
+                [i-prefix (or (for/or ([i (in-list tabs)]
+                                       [n (in-naturals 1)]
+                                       #:when (<= n 9))
+                                (and (eq? i tab)
+                                     (format "~a: " n)))
+                              "")])
+            (string-append
+             i-prefix
+             (add-modified-flag 
+              defs
+              (if fn
+                  (get-tab-label-from-filename fn)
+                  (send defs get-filename/untitled-name))))))
         
         (define/private (get-tab-label-from-filename fn)
           (let* ([take-n
@@ -2909,7 +2917,8 @@ module browser threading seems wrong.
         (define/public (open-in-new-tab filename)
           (create-new-tab filename))
         
-        (define/private (change-to-nth-tab n)
+        (define/public (get-tab-count) (length tabs))
+        (define/public (change-to-nth-tab n)
           (unless (< n (length tabs))
             (error 'change-to-nth-tab "number too big ~s" n))
           (change-to-tab (list-ref tabs n)))

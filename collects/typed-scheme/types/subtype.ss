@@ -333,6 +333,12 @@
 	       (subtype* A0 t t*)]
 	      [((Instance: t) (Instance: t*))
 	       (subtype* A0 t t*)]
+              [((Class: '() '() (list (and s  (list names  meths )) ...))
+                (Class: '() '() (list (and s* (list names* meths*)) ...)))
+               (for/fold ([A A0]) 
+                         ([n names*] [m meths*])
+                         (cond [(assq n s) => (lambda (spec) (subtype* A (cadr spec) m))]
+                               [else (fail! s t)]))]
 	      ;; otherwise, not a subtype
 	      [(_ _) (fail! s t) #;(printf "failed")])))]))))
 

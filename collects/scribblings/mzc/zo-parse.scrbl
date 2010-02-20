@@ -564,7 +564,7 @@ Represents a set of module and import bindings.}
                              [phase (or/c exact-integer? #f)]
                              [src-phase (or/c exact-integer? #f)]
                              [exceptions (listof symbol?)]
-                             [prefix symbol?])]{
+                             [prefix (or/c symbol? #f)])]{
 
 Represents a set of simple imports from one module within a
 @scheme[module-rename].}

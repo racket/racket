@@ -241,6 +241,25 @@ This file defines two sorts of primitives. All of them are provided into any mod
                         'typechecker:with-handlers
                         #t))]))
 
+(define-syntax (dtsi* stx)
+  (define-syntax-class struct-name
+    #:description "struct name (with optional super-struct name)"
+    #:attributes (name super value)
+    (pattern ((~var name (static struct-info? "struct name")) super:id)
+             #:attr value (attribute name.value))
+    (pattern (~var name (static struct-info? "struct name"))
+             #:attr value (attribute name.value)
+             #:with super #f))
+  (syntax-parse stx
+    [(_ () nm:struct-name . rest)
+     (internal (quasisyntax/loc stx 
+                 (define-typed-struct-internal
+                   #,(syntax-property #'nm 'struct-info (attribute nm.value)) . rest)))]
+    [(_ (vars:id ...) nm:struct-name . rest)
+     (internal (quasisyntax/loc stx 
+                 (define-typed-struct-internal (vars ...)
+                   #,(syntax-property #'nm 'struct-info (attribute nm.value)) . rest)))]))
+
 (define-syntax (define-typed-struct stx)
   (define-syntax-class fld-spec
     #:literals (:)
@@ -259,12 +278,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
                         '())])
        (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fs.fld ...) . opts))
                                            'typechecker:ignore #t)]
-                     [dtsi (internal (quasisyntax/loc stx (define-typed-struct-internal nm (fs ...) #,@mutable)))])
+                     [dtsi (quasisyntax/loc stx (dtsi* () nm (fs ...) #,@mutable))])
          #'(begin d-s dtsi)))]
     [(_ (vars:id ...) nm:struct-name (fs:fld-spec ...) . opts)
      (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fs.fld ...) . opts))
                                          'typechecker:ignore #t)]
-                   [dtsi (internal (syntax/loc stx (define-typed-struct-internal (vars ...) nm (fs ...))))])
+                   [dtsi (syntax/loc stx (dtsi* (vars ...) nm (fs ...)))])
        #'(begin d-s dtsi))]))
 
 (define-syntax (require-typed-struct stx)
@@ -283,7 +302,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                                   (reverse (list #'sel ...))
                                                   (list mut ...)
                                                   #f))))
-                       #,(internal #'(define-typed-struct-internal nm ([fld : ty] ...) #:type-only))
+                       (dtsi* () nm ([fld : ty] ...) #:type-only)
                        #,(ignore #'(require/contract pred (any/c . c-> . boolean?) lib))
                        #,(internal #'(require/typed-internal pred (Any -> Boolean : nm)))
                        (require/typed maker nm lib #:struct-maker #f)
@@ -304,7 +323,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
                                                   (list #'sel ...)
                                                   (list mut ...)
                                                   #f))))
-                       #,(internal #'(define-typed-struct-internal (nm parent) ([fld : ty] ...) #:type-only))
+                       (dtsi* () (nm parent) ([fld : ty] ...) #:type-only)
                        #,(ignore #'(require/contract pred (any/c . c-> . boolean?) lib))
                        #,(internal #'(require/typed-internal pred (Any -> Boolean : nm)))
                        (require/typed maker nm lib #:struct-maker parent)

@@ -27,6 +27,10 @@
 
   I think parse-module-path-index was only used for debugging, so it is short-circuited now
 
+ collects/browser/compiled/browser_scrbl.zo (eg) contains a all-from-module that looks like: (#<module-path-index> 0 (1363072) . #f) --- that doesn't seem to match the spec
+
+  We seem to leave placeholders for hash-tables in the structs
+
 |#
 ;; ----------------------------------------
 ;; Bytecode unmarshalers for various forms
@@ -598,6 +602,8 @@
                                              (if kind 'marked 'normal)
                                              set-id
                                              (let ([results (map (lambda (u)
+                                                                   ; u = (list path phase . src-phase)
+                                                                   ; or u = (list path phase src-phase exn ... . prefix)
                                                                    (let ([just-phase? (let ([v (cddr u)])
                                                                                         (or (number? v) (not v)))])
                                                                      (let-values ([(exns prefix)

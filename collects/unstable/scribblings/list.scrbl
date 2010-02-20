@@ -79,3 +79,27 @@ true value. The procedures @scheme[equal?], @scheme[eqv?], and
 (dict-map id-t list)
 ]
 }
+
+                         
+@addition{Carl Eastlund}
+
+@defproc[(map/values [n natural-number/c]
+                     [f (-> A ... (values B_1 ... B_n))]
+                     [lst (listof A)]
+                     ...)
+         (values (listof B_1) ... (listof B_n))]{
+
+Produces lists of the respective values of @scheme[f] applied to the elements in
+@scheme[lst ...] sequentially.
+
+@defexamples[
+#:eval the-eval
+(map/values
+ 3
+ (lambda (x)
+   (values (+ x 1) x (- x 1)))
+ (list 1 2 3))
+]
+
+}
+

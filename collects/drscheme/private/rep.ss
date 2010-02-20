@@ -262,7 +262,18 @@ TODO
          [add-drs-function
           (λ (name f)
             (send drs-bindings-keymap add-function name
-                  (λ (obj evt) (cond [(get-frame obj) => f]))))])
+                  (λ (obj evt) (cond [(get-frame obj) => f]))))]
+         [show-tab
+          (λ (i)
+            (λ (obj evt)
+              (let ([fr (get-frame obj)])
+                (and fr
+                     (is-a? fr drscheme:unit:frame<%>)
+                     (< i (send fr get-tab-count))
+                     (begin (send fr change-to-nth-tab i)
+                            #t)))))])
+    (for ([i (in-range 1 10)])
+      (send drs-bindings-keymap add-function (format "show-tab-~a" i) (show-tab (- i 1))))
     (send drs-bindings-keymap add-function "search-help-desk"
           (λ (obj evt)
             (if (not (and (is-a? obj text%) (get-frame obj))) ; is `get-frame' needed?
@@ -300,6 +311,14 @@ TODO
   
   (send drs-bindings-keymap map-function "c:x;0" "collapse")
   (send drs-bindings-keymap map-function "c:x;2" "split")
+
+  (for ([i (in-range 1 10)])
+    (send drs-bindings-keymap map-function 
+          (format "a:~a" i) 
+          (format "show-tab-~a" i))
+    (send drs-bindings-keymap map-function 
+          (format "m:~a" i) 
+          (format "show-tab-~a" i)))
   
   (define (get-drs-bindings-keymap) drs-bindings-keymap)
   

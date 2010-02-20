@@ -222,6 +222,10 @@
                          acc-ids)]
     [#:key #f])
 
+;; A structure type descriptor
+;; s : struct
+(dt StructType ([s Struct?]) [#:key 'struct-type])
+
 ;; the supertype of all of these values
 (dt BoxTop () [#:fold-rhs #:base] [#:key 'box])
 (dt VectorTop () [#:fold-rhs #:base] [#:key 'vector])

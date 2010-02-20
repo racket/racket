@@ -3,7 +3,8 @@
 #lang scheme/load
 
 (module m typed-scheme
-  (define-struct: q ())
+  (require (for-syntax scheme/base))
+  (define-syntax (q stx) #'#f)
   (provide (all-defined-out)))
 
 (module n scheme
