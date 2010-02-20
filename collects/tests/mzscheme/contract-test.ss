@@ -4728,7 +4728,7 @@
       (send (new e%) g 3)))
 
   (test/neg-blame
-   'class/c-higher-order-augment-4
+   'class/c-higher-order-augment-5
    '(let* ([c% (contract (class/c (augment [m (-> any/c number? integer?)]))
                          (class object% (super-new) (define/pubment (m x) (floor x)))
                          'pos
@@ -4741,7 +4741,7 @@
       (send (new e%) g 3.5)))
 
   (test/spec-passed
-   'class/c-higher-order-augment-4
+   'class/c-higher-order-augment-6
    '(let* ([c% (contract (class/c (augment [m (-> any/c number? integer?)]))
                          (class object% (super-new) (define/pubment (m x) (floor x)))
                          'pos

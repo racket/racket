@@ -2342,7 +2342,8 @@
                                 (append override-methods augride-methods)
                                 (append override-names augride-names))
                       ;; Update all int dyn disp methods which have had contracts added since
-                      ;; the superclass, but were not overridden.
+                      ;; the superclass, but were not overridden. This includes methods that
+                      ;; have ever been augmentable.
                       (let ([super-int-methods (class-int-methods super)])
                         (for ([n (in-list dynamic-ctc-idxs)])
                           (let ([super-vec (vector-ref super-int-methods n)]
@@ -2352,15 +2353,25 @@
                             (when (eq? super-vec old-vec)
                               (let* ([dyn-idx (vector-ref dynamic-idxs n)]
                                      [new-vec (make-vector (add1 dyn-idx))]
-                                     [clean-method (vector-ref old-vec (sub1 dyn-idx))]
+                                     [last-method (vector-ref old-vec (sub1 dyn-idx))]
                                      [last-proj (vector-ref proj-vec (sub1 dyn-idx))])
-                                ;; Take the last updated set of projections and apply them to
-                                ;; each location.
-                                (for ([i (in-range dyn-idx)])
-                                  (vector-set! new-vec i (last-proj (vector-ref old-vec i))))
-                                ;; Copy the last (unprotected) version of the method
-                                (vector-set! new-vec dyn-idx clean-method)
-                                (vector-set! int-methods n new-vec))))))
+                                (if (zero? (vector-length (vector-ref beta-methods n)))
+                                    (begin
+                                      ;; This method has never been augmentable, so take the last
+                                      ;; updated set of projections and apply them to each location.
+                                      (for ([i (in-range dyn-idx)])
+                                        (vector-set! new-vec i (last-proj (vector-ref old-vec i))))
+                                      ;; Then copy the last (unprotected) version of the method
+                                      ;; into the last slot.
+                                      (vector-set! new-vec dyn-idx last-method)
+                                      (vector-set! int-methods n new-vec))
+                                    (begin
+                                      ;; This method has been augmentable, so we can just copy the
+                                      ;; old vector over wholesale, and then apply the last projection
+                                      ;; to the last slot.
+                                      (vector-copy! new-vec 0 old-vec)
+                                      (vector-set! new-vec dyn-idx (last-proj last-method))
+                                      (vector-set! int-methods n new-vec))))))))
                       ;; Update 'augmentable flags:
                       (unless no-method-changes?
                         (for-each (lambda (id)
@@ -2722,24 +2733,38 @@
                                (old-set o ((pre-p bset) v))))))))
         
         ;; Now the trickiest of them all, internal dynamic dispatch.
-        (unless (null? (class/c-overrides ctc))
-          (vector-copy! dynamic-idxs 0 (class-dynamic-idxs cls))
-          (let ([dynamic-projs (class-dynamic-projs cls)])
-            (for ([m (in-list (class/c-overrides ctc))]
-                  [c (in-list (class/c-override-contracts ctc))])
-              (let* ([i (hash-ref method-ht m)]
-                     [p ((contract-projection c) (blame-swap blame))]
-                     [old-idx (vector-ref dynamic-idxs i)]
-                     [proj-vec (vector-ref dynamic-projs i)])
-                (if (= old-idx (vector-length proj-vec))
-                    (let* ([last-idx (sub1 old-idx)]
-                           [old-proj (vector-ref proj-vec last-idx)])
-                      (vector-set! proj-vec last-idx
-                                   (compose old-proj p)))
-                    (let ([old-proj (vector-ref proj-vec old-idx)])
-                      (vector-set! dynamic-idxs i (add1 old-idx))
-                      (vector-set! proj-vec old-idx
-                                   (compose old-proj p))))))))
+        (unless (and (null? (class/c-overrides ctc))
+                     (null? (class/c-augments ctc)))
+          (let ()
+            (define (add-projections methods ctcs swap-blame?)
+              (let ([dynamic-projs (class-dynamic-projs cls)])
+                (for ([m (in-list methods)]
+                      [c (in-list ctcs)])
+                  (let* ([i (hash-ref method-ht m)]
+                         [p ((contract-projection c) 
+                             (if swap-blame? (blame-swap blame) blame))]
+                         [old-idx (vector-ref dynamic-idxs i)]
+                         [proj-vec (vector-ref dynamic-projs i)])
+                    (if (= old-idx (vector-length proj-vec))
+                        (let* ([last-idx (sub1 old-idx)]
+                               [old-proj (vector-ref proj-vec last-idx)])
+                          (vector-set! proj-vec last-idx
+                                       (if swap-blame?
+                                           (compose old-proj p)
+                                           (compose p old-proj))))
+                        (let ([old-proj (vector-ref proj-vec old-idx)])
+                          (vector-set! dynamic-idxs i (add1 old-idx))
+                          (vector-set! proj-vec old-idx
+                                       (if swap-blame?
+                                           (compose old-proj p)
+                                           (compose p old-proj)))))))))
+            (vector-copy! dynamic-idxs 0 (class-dynamic-idxs cls))
+            (add-projections (class/c-overrides ctc) 
+                             (class/c-override-contracts ctc)
+                             #t)
+            (add-projections (class/c-augments ctc) 
+                             (class/c-augment-contracts ctc)
+                             #f)))
         
         c))))
 
