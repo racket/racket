@@ -2670,9 +2670,10 @@
           ;; Now apply projections
           (for ([m (in-list (class/c-methods ctc))]
                 [c (in-list (class/c-method-contracts ctc))])
-            (let ([i (hash-ref method-ht m)]
-                  [p ((contract-projection c) blame)])
-              (vector-set! methods i (p (vector-ref methods i))))))
+            (when c
+              (let ([i (hash-ref method-ht m)]
+                    [p ((contract-projection c) blame)])
+                (vector-set! methods i (p (vector-ref methods i)))))))
         
         ;; Handle super contracts
         (unless (null? (class/c-supers ctc))
@@ -2681,9 +2682,10 @@
           ;; Now apply projections.
           (for ([m (in-list (class/c-supers ctc))]
                 [c (in-list (class/c-super-contracts ctc))])
-            (let ([i (hash-ref method-ht m)]
-                  [p ((contract-projection c) blame)])
-              (vector-set! super-methods i (p (vector-ref super-methods i))))))
+            (when c
+              (let ([i (hash-ref method-ht m)]
+                    [p ((contract-projection c) blame)])
+                (vector-set! super-methods i (p (vector-ref super-methods i)))))))
         
         ;; Add inner projections
         (unless (null? (class/c-inners ctc))
@@ -2691,10 +2693,11 @@
           (let ([b (blame-swap blame)])
             (for ([m (in-list (class/c-inners ctc))]
                   [c (in-list (class/c-inner-contracts ctc))])
-              (let ([i (hash-ref method-ht m)]
-                    [p ((contract-projection c) b)])
-                (vector-set! inner-projs i
-                             (compose (vector-ref inner-projs i) p))))))
+              (when c
+                (let ([i (hash-ref method-ht m)]
+                      [p ((contract-projection c) b)])
+                  (vector-set! inner-projs i
+                               (compose (vector-ref inner-projs i) p)))))))
         
         ;; Handle external field contracts
         (unless (null? (class/c-fields ctc))
@@ -2703,16 +2706,17 @@
           (let ([bset (blame-swap blame)])
             (for ([f (in-list (class/c-fields ctc))]
                   [c (in-list (class/c-field-contracts ctc))])
-              (let* ([i (hash-ref field-ht f)]
-                     [pre-p (contract-projection c)]
-                     [old-ref (vector-ref ext-field-refs i)]
-                     [old-set (vector-ref ext-field-sets i)])
-                (vector-set! ext-field-refs i
-                             (λ (o) 
-                               ((pre-p blame) (old-ref o))))
-                (vector-set! ext-field-sets i
-                             (λ (o v)
-                               (old-set o ((pre-p bset) v))))))))
+              (when c
+                (let* ([i (hash-ref field-ht f)]
+                       [pre-p (contract-projection c)]
+                       [old-ref (vector-ref ext-field-refs i)]
+                       [old-set (vector-ref ext-field-sets i)])
+                  (vector-set! ext-field-refs i
+                               (λ (o) 
+                                 ((pre-p blame) (old-ref o))))
+                  (vector-set! ext-field-sets i
+                               (λ (o v)
+                                 (old-set o ((pre-p bset) v)))))))))
         
         ;; Handle internal field contracts
         (unless (null? (class/c-inherits ctc))
@@ -2721,16 +2725,17 @@
           (let ([bset (blame-swap blame)])
             (for ([f (in-list (class/c-inherits ctc))]
                   [c (in-list (class/c-inherit-contracts ctc))])
-              (let* ([i (hash-ref field-ht f)]
-                     [pre-p (contract-projection c)]
-                     [old-ref (vector-ref int-field-refs i)]
-                     [old-set (vector-ref int-field-sets i)])
-                (vector-set! int-field-refs i
-                             (λ (o) 
-                               ((pre-p blame) (old-ref o))))
-                (vector-set! int-field-sets i
-                             (λ (o v)
-                               (old-set o ((pre-p bset) v))))))))
+              (when c
+                (let* ([i (hash-ref field-ht f)]
+                       [pre-p (contract-projection c)]
+                       [old-ref (vector-ref int-field-refs i)]
+                       [old-set (vector-ref int-field-sets i)])
+                  (vector-set! int-field-refs i
+                               (λ (o) 
+                                 ((pre-p blame) (old-ref o))))
+                  (vector-set! int-field-sets i
+                               (λ (o v)
+                                 (old-set o ((pre-p bset) v)))))))))
         
         ;; Now the trickiest of them all, internal dynamic dispatch.
         (unless (and (null? (class/c-overrides ctc))
@@ -2740,24 +2745,25 @@
               (let ([dynamic-projs (class-dynamic-projs cls)])
                 (for ([m (in-list methods)]
                       [c (in-list ctcs)])
-                  (let* ([i (hash-ref method-ht m)]
-                         [p ((contract-projection c) 
-                             (if swap-blame? (blame-swap blame) blame))]
-                         [old-idx (vector-ref dynamic-idxs i)]
-                         [proj-vec (vector-ref dynamic-projs i)])
-                    (if (= old-idx (vector-length proj-vec))
-                        (let* ([last-idx (sub1 old-idx)]
-                               [old-proj (vector-ref proj-vec last-idx)])
-                          (vector-set! proj-vec last-idx
-                                       (if swap-blame?
-                                           (compose old-proj p)
-                                           (compose p old-proj))))
-                        (let ([old-proj (vector-ref proj-vec old-idx)])
-                          (vector-set! dynamic-idxs i (add1 old-idx))
-                          (vector-set! proj-vec old-idx
-                                       (if swap-blame?
-                                           (compose old-proj p)
-                                           (compose p old-proj)))))))))
+                  (when c
+                    (let* ([i (hash-ref method-ht m)]
+                           [p ((contract-projection c) 
+                               (if swap-blame? (blame-swap blame) blame))]
+                           [old-idx (vector-ref dynamic-idxs i)]
+                           [proj-vec (vector-ref dynamic-projs i)])
+                      (if (= old-idx (vector-length proj-vec))
+                          (let* ([last-idx (sub1 old-idx)]
+                                 [old-proj (vector-ref proj-vec last-idx)])
+                            (vector-set! proj-vec last-idx
+                                         (if swap-blame?
+                                             (compose old-proj p)
+                                             (compose p old-proj))))
+                          (let ([old-proj (vector-ref proj-vec old-idx)])
+                            (vector-set! dynamic-idxs i (add1 old-idx))
+                            (vector-set! proj-vec old-idx
+                                         (if swap-blame?
+                                             (compose old-proj p)
+                                             (compose p old-proj))))))))))
             (vector-copy! dynamic-idxs 0 (class-dynamic-idxs cls))
             (add-projections (class/c-overrides ctc) 
                              (class/c-override-contracts ctc)
@@ -2781,22 +2787,22 @@
    (λ (ctc)
      (let* ([pair-ids-ctcs
              (λ (is ctcs)
-               (map (λ (i ctc)
-                      (if (null? ctc)
-                          i
-                          (build-compound-type-name i ctc)))
-                    is ctcs))]
+               (for/list ([i (in-list is)]
+                          [ctc (in-list ctcs)])
+                 (if (not ctc)
+                     i
+                     (build-compound-type-name i ctc))))]
             [handle-optional
              (λ (name is ctcs)
                (if (null? is)
                    null
                    (list (cons name (pair-ids-ctcs is ctcs)))))]
             [handled-methods
-             (map (λ (i ctc)
-                    (cond
-                      [ctc (build-compound-type-name i ctc)]
-                      [else i]))
-                  (class/c-methods ctc) (class/c-method-contracts ctc))])
+             (for/list ([i (in-list (class/c-methods ctc))]
+                        [ctc (in-list (class/c-method-contracts ctc))])
+               (cond
+                 [ctc (build-compound-type-name i ctc)]
+                 [else i]))])
        (apply build-compound-type-name
               'class/c 
               (append
