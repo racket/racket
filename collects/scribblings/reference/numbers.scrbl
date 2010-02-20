@@ -596,7 +596,7 @@ but faster and in constant time when @scheme[n] is positive.
                             [start exact-nonnegative-integer?] 
                             [end (and/c exact-nonnegative-integer?
                                         (start . <= . end))])
-         boolean?]{
+         exact-integer?]{
 
 Returns
 
