@@ -2258,15 +2258,12 @@
                       ;; -- Fill in method tables --
                       ;;  First copy old methods
                       (unless no-method-changes?
-                        (hash-for-each
-                         super-method-ht
-                         (lambda (name index)
-                           (vector-set! methods index (vector-ref (class-methods super) index))
-                           (vector-set! super-methods index (vector-ref (class-super-methods super) index))
-                           (vector-set! int-methods index (vector-ref (class-int-methods super) index))
-                           (vector-set! beta-methods index (vector-ref (class-beta-methods super) index))
-                           (vector-set! meth-flags index (vector-ref (class-meth-flags super) index))
-                           (vector-set! inner-projs index (vector-ref (class-inner-projs super) index)))))
+                        (vector-copy! methods 0 (class-methods super))
+                        (vector-copy! super-methods 0 (class-super-methods super))
+                        (vector-copy! int-methods 0 (class-int-methods super))
+                        (vector-copy! beta-methods 0 (class-beta-methods super))
+                        (vector-copy! meth-flags 0 (class-meth-flags super))
+                        (vector-copy! inner-projs 0 (class-inner-projs super)))
                       ;; Add new methods:
                       (for-each (lambda (index method)
                                   (vector-set! methods index method)
