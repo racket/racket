@@ -4699,13 +4699,59 @@
   (test/neg-blame
    'class/c-higher-order-augment-2
    '(let* ([c% (contract (class/c (augment [m (-> any/c integer? integer?)]))
-                         (class object% (super-new)
-                           (define/pubment (m x) x)
-                           (define/public (f x) (m (zero? x))))
+                         (class object% (super-new) (define/pubment (m x) x))
                          'pos
                          'neg)]
            [d% (class c% (super-new) (inherit m) (define/public (g x) (m x)))])
       (send (new d%) g 3.5)))
+
+  (test/pos-blame
+   'class/c-higher-order-augment-3
+   '(let* ([c% (contract (class/c (augment [m (-> any/c integer? integer?)]))
+                         (class object% (super-new) (define/pubment (m x) #f))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (inherit m) (define/public (g x) (m x)))])
+      (send (new d%) g 3)))
+
+  (test/pos-blame
+   'class/c-higher-order-augment-4
+   '(let* ([c% (contract (class/c (augment [m (-> any/c number? integer?)]))
+                         (class object% (super-new) (define/pubment (m x) #f))
+                         'pos
+                         'neg1)]
+           [d% (contract (class/c (augment [m (-> any/c integer? number?)]))
+                         c%
+                         'pos1
+                         'neg)]
+           [e% (class d% (super-new) (inherit m) (define/public (g x) (m x)))])
+      (send (new e%) g 3)))
+
+  (test/neg-blame
+   'class/c-higher-order-augment-4
+   '(let* ([c% (contract (class/c (augment [m (-> any/c number? integer?)]))
+                         (class object% (super-new) (define/pubment (m x) (floor x)))
+                         'pos
+                         'neg1)]
+           [d% (contract (class/c (augment [m (-> any/c integer? number?)]))
+                         c%
+                         'pos1
+                         'neg)]
+           [e% (class d% (super-new) (inherit m) (define/public (g x) (m x)))])
+      (send (new e%) g 3.5)))
+
+  (test/spec-passed
+   'class/c-higher-order-augment-4
+   '(let* ([c% (contract (class/c (augment [m (-> any/c number? integer?)]))
+                         (class object% (super-new) (define/pubment (m x) (floor x)))
+                         'pos
+                         'neg1)]
+           [d% (contract (class/c (augment [m (-> any/c integer? number?)]))
+                         (class c% (super-new) (inherit m) (define/public (f x) (m x)))
+                         'pos1
+                         'neg)]
+           [e% (class d% (super-new) (inherit m) (define/public (g x) (m x)))])
+      (send (new e%) f 3.5)))
 
 ;                                                              
 ;                                                              
