@@ -1538,7 +1538,7 @@ The internal contracts are as follows:
  @item{A method contract, tagged with @scheme[augment], describes the behavior provided by
    the contracted class for @scheme[method-id] when called directly from subclasses.  This form
    can only be used if the method has previously been augmentable, which means that no augmenting
-   or overriding implementation will change the dynamic dispatch chain.}
+   or overriding implementation will change the entry point to the dynamic dispatch chain.}
 ]}
 
 @defform/subs[
