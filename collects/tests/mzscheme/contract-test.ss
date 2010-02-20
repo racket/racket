@@ -4457,6 +4457,33 @@
                         'pos
                         'neg)])
       (class c% (super-new) (inherit m))))
+  
+  (test/pos-blame
+   'class/c-first-order-inherit-1
+   '(let* ([c% (contract (class/c (inherit [m (-> any/c number? number?)]))
+                         object%
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (inherit m) (define/public (f) (m 5)))])
+      (send (new d%) f)))
+
+  (test/spec-passed
+   'class/c-first-order-inherit-2
+   '(let* ([c% (contract (class/c (inherit [m (-> any/c number? number?)]))
+                         (class object% (super-new) (define/public (m x) x))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (inherit m) (define/public (f) (m 5)))])
+      (send (new d%) f)))
+
+  (test/pos-blame
+   'class/c-first-order-inherit-3
+   '(let* ([c% (contract (class/c (inherit [m (-> any/c number? number?)]))
+                         (class object% (super-new) (define/public (m) 3))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (inherit m) (define/public (f) (m 5)))])
+      (send (new d%) f)))
 
   (test/spec-passed
    'class/c-higher-order-method-1
@@ -4486,7 +4513,7 @@
   ;; Public method contracts do not check behavioral subtyping.
   ;; Once interfaces have contracts, those will.
   (test/spec-passed
-   'class/c-higher-order-method-3
+   'class/c-higher-order-method-4
    '(let* ([c% (contract (class/c [m (-> any/c number? number?)])
                          (class object% (super-new) (define/public (m x) (zero? x)))
                          'pos
@@ -4701,7 +4728,7 @@
       (get-field f (new c%))))
 
   (test/spec-passed/result
-   'class/c-higher-order-inherit-1
+   'class/c-higher-order-inherit-field-1
    '(let* ([c% (contract (class/c (inherit-field [f number?]))
                          (class object% (super-new) (field [f 10]))
                          'pos
@@ -4713,7 +4740,7 @@
    10)
 
   (test/spec-passed/result
-   'class/c-higher-order-inherit-2
+   'class/c-higher-order-inherit-field-2
    '(let* ([c% (contract (class/c (inherit-field [f number?]))
                          (class object% (super-new) (field [f 10]))
                          'pos
@@ -4727,7 +4754,7 @@
    12)
 
   (test/pos-blame
-   'class/c-higher-order-inherit-3
+   'class/c-higher-order-inherit-field-3
    '(let* ([c% (contract (class/c (inherit-field [f number?]))
                          (class object% (super-new) (field [f #f]))
                          'pos
@@ -4738,7 +4765,7 @@
       (send (new d%) m)))
 
   (test/neg-blame
-   'class/c-higher-order-inherit-4
+   'class/c-higher-order-inherit-field-4
    '(let* ([c% (contract (class/c (inherit-field [f number?]))
                          (class object% (super-new) (field [f 10]))
                          'pos
@@ -4749,7 +4776,7 @@
       (send (new d%) m)))
 
   (test/spec-passed
-   'class/c-higher-order-inherit-5
+   'class/c-higher-order-inherit-field-5
    '(let* ([c% (contract (class/c (inherit-field f))
                          (class object% (super-new) (field [f 10]))
                          'pos
@@ -4917,6 +4944,44 @@
                          'neg)]
            [e% (class d% (super-new) (inherit m) (define/public (g x) (m x)))])
       (send (new e%) f 3.5)))
+
+  (test/spec-passed
+   'class/c-higher-order-inherit-1
+   '(let* ([c% (contract (class/c (inherit [m (-> any/c number? number?)]))
+                         (class object% (super-new) (define/public (m x) x))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (inherit m) (define/public (f) (m 5)))])
+      (send (new d%) f)))
+
+  (test/neg-blame
+   'class/c-higher-order-inherit-2
+   '(let* ([c% (contract (class/c (inherit [m (-> any/c number? number?)]))
+                         (class object% (super-new) (define/public (m x) x))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (inherit m) (define/public (f) (m #f)))])
+      (send (new d%) f)))
+
+  (test/pos-blame
+   'class/c-higher-order-inherit-3
+   '(let* ([c% (contract (class/c (inherit [m (-> any/c number? number?)]))
+                         (class object% (super-new) (define/public (m x) (zero? x)))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (inherit m) (define/public (f) (m 5)))])
+      (send (new d%) f)))
+
+  ;; Should not be checked if overridden (i.e. target of dyn disp changes).
+  (test/spec-passed
+   'class/c-higher-order-inherit-4
+   '(let* ([c% (contract (class/c (inherit [m (-> any/c number? number?)]))
+                         (class object% (super-new) (define/public (m x) (zero? x)))
+                         'pos
+                         'neg)]
+           [d% (class c% (super-new) (inherit m) (define/public (f) (m 5)))]
+           [e% (class d% (super-new) (define/override (m x) x))])
+      (send (new d%) f)))
 
 ;                                                              
 ;                                                              

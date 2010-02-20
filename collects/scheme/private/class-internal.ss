@@ -2560,7 +2560,7 @@
         (for ([f (class/c-fields ctc)])
           (unless (hash-ref field-ht f #f)
             (failed "no public field ~a" f)))
-        (for ([f (class/c-inherits ctc)])
+        (for ([f (class/c-inherit-fields ctc)])
           (unless (hash-ref field-ht f #f)
             (failed "no public field ~a" f)))))
     #t))
@@ -2719,12 +2719,12 @@
                                  (old-set o ((pre-p bset) v)))))))))
         
         ;; Handle internal field contracts
-        (unless (null? (class/c-inherits ctc))
+        (unless (null? (class/c-inherit-fields ctc))
           (vector-copy! int-field-refs 0 (class-int-field-refs cls))
           (vector-copy! int-field-sets 0 (class-int-field-sets cls))
           (let ([bset (blame-swap blame)])
-            (for ([f (in-list (class/c-inherits ctc))]
-                  [c (in-list (class/c-inherit-contracts ctc))])
+            (for ([f (in-list (class/c-inherit-fields ctc))]
+                  [c (in-list (class/c-inherit-field-contracts ctc))])
               (when c
                 (let* ([i (hash-ref field-ht f)]
                        [pre-p (contract-projection c)]
@@ -2776,7 +2776,7 @@
 
 (define-struct class/c 
   (methods method-contracts fields field-contracts
-   inherits inherit-contracts
+   inherits inherit-contracts inherit-fields inherit-field-contracts
    supers super-contracts inners inner-contracts
    overrides override-contracts augments augment-contracts)
   #:omit-define-syntaxes
@@ -2808,7 +2808,8 @@
               (append
                handled-methods
                (handle-optional 'field (class/c-fields ctc) (class/c-field-contracts ctc))
-               (handle-optional 'inherit-field (class/c-inherits ctc) (class/c-inherit-contracts ctc))
+               (handle-optional 'inherit (class/c-inherits ctc) (class/c-inherit-contracts ctc))
+               (handle-optional 'inherit-field (class/c-inherit-fields ctc) (class/c-inherit-field-contracts ctc))
                (handle-optional 'super (class/c-supers ctc) (class/c-super-contracts ctc))
                (handle-optional 'inner (class/c-inners ctc) (class/c-inner-contracts ctc))
                (handle-optional 'override (class/c-overrides ctc) (class/c-override-contracts ctc))
@@ -2839,22 +2840,31 @@
       (let-values ([(name ctc) (parse-name-ctc stx)])
         (values (cons name names) (cons ctc ctcs)))))
   (define (parse-spec stx)
-    (syntax-case stx (field inherit-field init super inner override augment)
+    (syntax-case stx (field inherit inherit-field init super inner override augment)
       [(field f-spec ...)
        (let-values ([(names ctcs) (parse-names-ctcs #'(f-spec ...))])
          (hash-set! parsed-forms 'fields
                     (append names (hash-ref parsed-forms 'fields null)))
          (hash-set! parsed-forms 'field-contracts
                     (append ctcs (hash-ref parsed-forms 'field-contracts null))))]
+      [(inherit m-spec ...)
+       (begin
+         (when object/c?
+           (raise-syntax-error 'object/c "inherit contract not allowed in object/c" stx))
+         (let-values ([(names ctcs) (parse-names-ctcs #'(m-spec ...))])
+           (hash-set! parsed-forms 'inherits
+                      (append names (hash-ref parsed-forms 'inherits null)))
+           (hash-set! parsed-forms 'inherit-contracts
+                      (append ctcs (hash-ref parsed-forms 'inherit-contracts null)))))]
       [(inherit-field f-spec ...)
        (begin
          (when object/c?
            (raise-syntax-error 'object/c "inherit-field contract not allowed in object/c" stx))
          (let-values ([(names ctcs) (parse-names-ctcs #'(f-spec ...))])
-           (hash-set! parsed-forms 'inherits
-                      (append names (hash-ref parsed-forms 'inherits null)))
-           (hash-set! parsed-forms 'inherit-contracts
-                      (append ctcs (hash-ref parsed-forms 'inherit-contracts null)))))]
+           (hash-set! parsed-forms 'inherit-fields
+                      (append names (hash-ref parsed-forms 'inherit-fields null)))
+           (hash-set! parsed-forms 'inherit-field-contracts
+                      (append ctcs (hash-ref parsed-forms 'inherit-field-contracts null)))))]
       [(super s-spec ...)
        (begin
          (when object/c?
@@ -2913,6 +2923,8 @@
                      [field-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'field-contracts null)))]
                      [inherits #`(list #,@(reverse (hash-ref parsed-forms 'inherits null)))]
                      [inherit-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'inherit-contracts null)))]
+                     [inherit-fields #`(list #,@(reverse (hash-ref parsed-forms 'inherit-fields null)))]
+                     [inherit-field-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'inherit-field-contracts null)))]
                      [supers #`(list #,@(reverse (hash-ref parsed-forms 'supers null)))]
                      [super-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'super-contracts null)))]
                      [inners #`(list #,@(reverse (hash-ref parsed-forms 'inners null)))]
@@ -2925,6 +2937,7 @@
            (make-class/c methods method-ctcs
                          fields field-ctcs
                          inherits inherit-ctcs
+                         inherit-fields inherit-field-ctcs
                          supers super-ctcs
                          inners inner-ctcs
                          overrides override-ctcs
