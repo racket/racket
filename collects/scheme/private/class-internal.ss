@@ -2520,6 +2520,9 @@
       (for ([m (class/c-methods ctc)])
         (unless (hash-ref method-ht m #f)
           (failed "no public method ~a" m)))
+      (for ([m (class/c-inherits ctc)])
+        (unless (hash-ref method-ht m #f)
+          (failed "no public method ~a" m)))
       (for ([m (class/c-overrides ctc)])
         (let ([index (hash-ref method-ht m #f)])
           (unless index
