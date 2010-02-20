@@ -2146,15 +2146,10 @@
                 (set-class-field-set!! c object-field-set!))
               
               (unless no-new-fields?
-                (let ([super-int-field-refs (class-int-field-refs super)]
-                      [super-int-field-sets (class-ext-field-sets super)]
-                      [super-ext-field-refs (class-int-field-refs super)]
-                      [super-ext-field-sets (class-ext-field-sets super)])
-                  (for ([n (in-range (class-field-pub-width super))])
-                    (vector-set! int-field-refs n (vector-ref super-int-field-refs n))
-                    (vector-set! int-field-sets n (vector-ref super-int-field-sets n))
-                    (vector-set! ext-field-refs n (vector-ref super-ext-field-refs n))
-                    (vector-set! ext-field-sets n (vector-ref super-ext-field-sets n))))
+                (vector-copy! int-field-refs 0 (class-int-field-refs super))
+                (vector-copy! int-field-sets 0 (class-int-field-sets super))
+                (vector-copy! ext-field-refs 0 (class-ext-field-refs super))
+                (vector-copy! ext-field-sets 0 (class-ext-field-sets super))
                 (for ([n (in-range (class-field-pub-width super) field-pub-width)]
                       [i (in-naturals)]
                       [id (in-list public-field-names)])
@@ -2596,9 +2591,7 @@
         ;; Handle public method contracts
         (unless (null? (class/c-methods ctc))
           ;; First, fill in from old methods
-          (let ([old-methods (class-methods cls)])
-            (for ([n (in-range method-width)])
-              (vector-set! methods n (vector-ref old-methods n))))
+          (vector-copy! methods 0 (class-methods cls))
           ;; Now apply projections
           (for ([m (in-list (class/c-methods ctc))]
                 [c (in-list (class/c-method-contracts ctc))])
@@ -2609,9 +2602,7 @@
         ;; Handle super contracts
         (unless (null? (class/c-supers ctc))
           ;; First, fill in from old (possibly contracted) super methods
-          (let ([old-super-methods (class-super-methods cls)])
-            (for ([n (in-range method-width)])
-              (vector-set! super-methods n (vector-ref old-super-methods n))))
+          (vector-copy! super-methods 0 (class-super-methods cls))
           ;; Now apply projections.
           (for ([m (in-list (class/c-supers ctc))]
                 [c (in-list (class/c-super-contracts ctc))])
@@ -2621,9 +2612,7 @@
         
         ;; Add inner projections
         (unless (null? (class/c-inners ctc))
-          (let ([old-inner-projs (class-inner-projs cls)])
-            (for ([n (in-range method-width)])
-              (vector-set! inner-projs n (vector-ref old-inner-projs n))))
+          (vector-copy! inner-projs 0 (class-inner-projs cls))
           (let ([b (blame-swap blame)])
             (for ([m (in-list (class/c-inners ctc))]
                   [c (in-list (class/c-inner-contracts ctc))])
@@ -2634,11 +2623,8 @@
         
         ;; Handle external field contracts
         (unless (null? (class/c-fields ctc))
-          (let ([old-refs (class-ext-field-refs cls)]
-                [old-sets (class-ext-field-sets cls)])
-            (for ([n (in-range field-pub-width)])
-              (vector-set! ext-field-refs n (vector-ref old-refs n))
-              (vector-set! ext-field-sets n (vector-ref old-sets n))))
+          (vector-copy! ext-field-refs 0 (class-ext-field-refs cls))
+          (vector-copy! ext-field-sets 0 (class-ext-field-sets cls))
           (let ([bset (blame-swap blame)])
             (for ([f (in-list (class/c-fields ctc))]
                   [c (in-list (class/c-field-contracts ctc))])
@@ -2655,11 +2641,8 @@
         
         ;; Handle internal field contracts
         (unless (null? (class/c-inherits ctc))
-          (let ([old-refs (class-int-field-refs cls)]
-                [old-sets (class-int-field-sets cls)])
-            (for ([n (in-range field-pub-width)])
-              (vector-set! int-field-refs n (vector-ref old-refs n))
-              (vector-set! int-field-sets n (vector-ref old-sets n))))
+          (vector-copy! int-field-refs 0 (class-int-field-refs cls))
+          (vector-copy! int-field-sets 0 (class-int-field-sets cls))
           (let ([bset (blame-swap blame)])
             (for ([f (in-list (class/c-inherits ctc))]
                   [c (in-list (class/c-inherit-contracts ctc))])
