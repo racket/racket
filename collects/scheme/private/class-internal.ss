@@ -1767,13 +1767,14 @@
                       
                       methods        ; vector of methods (for external dynamic dispatch)
                       super-methods  ; vector of methods (for subclass super calls)
-                      int-methods    ; vector of methods (for internal dynamic dispatch)
+                      int-methods    ; vector of vector of methods (for internal dynamic dispatch)
                       beta-methods   ; vector of vector of methods
                       meth-flags     ; vector: #f => primitive-implemented
                       ;         'final => final
                       ;         'augmentable => can augment
                       
                       inner-projs    ; vector of projections for the last inner slot
+                      dynamic-idxs   ; vector of indexs for access into int-methods
                       
                       field-width    ; total number of fields
                       field-pub-width ; total number of public fields
@@ -2045,6 +2046,9 @@
                  [inner-projs (if no-method-changes?
                                   (class-inner-projs super)
                                   (make-vector method-width))]
+                 [dynamic-idxs (if no-method-changes?
+                                   (class-dynamic-idxs super)
+                                   (make-vector method-width))]
                  [meth-flags (if no-method-changes?
                                  (class-meth-flags super)
                                  (make-vector method-width))]
@@ -2068,7 +2072,7 @@
                                   make-)
                                 method-width method-ht method-names
                                 methods super-methods int-methods beta-methods meth-flags
-                                inner-projs
+                                inner-projs dynamic-idxs
                                 field-width field-pub-width field-ht field-names
                                 int-field-refs int-field-sets ext-field-refs ext-field-sets
                                 'struct:object 'object? 'make-object 'field-ref 'field-set!
@@ -2226,8 +2230,11 @@
                                             rename-inner-indices))])
                   ;; -- Create method accessors --
                   (let ([method-accessors (map (lambda (index)
-                                                 (lambda (obj)
-                                                   (vector-ref (class-int-methods (object-ref obj)) index)))
+                                                 (let ([dyn-idx (vector-ref dynamic-idxs index)])
+                                                   (lambda (obj)
+                                                     (vector-ref (vector-ref (class-int-methods (object-ref obj))
+                                                                             index)
+                                                                 dyn-idx))))
                                                (append new-normal-indices replace-normal-indices refine-normal-indices
                                                        replace-augonly-indices refine-augonly-indices
                                                        replace-final-indices refine-final-indices
@@ -2251,14 +2258,16 @@
                         (vector-copy! int-methods 0 (class-int-methods super))
                         (vector-copy! beta-methods 0 (class-beta-methods super))
                         (vector-copy! meth-flags 0 (class-meth-flags super))
-                        (vector-copy! inner-projs 0 (class-inner-projs super)))
+                        (vector-copy! inner-projs 0 (class-inner-projs super))
+                        (vector-copy! dynamic-idxs 0 (class-dynamic-idxs super)))
                       ;; Add new methods:
                       (for-each (lambda (index method)
                                   (vector-set! methods index method)
                                   (vector-set! super-methods index method)
-                                  (vector-set! int-methods index method)
+                                  (vector-set! int-methods index (vector method))
                                   (vector-set! beta-methods index (vector))
-                                  (vector-set! inner-projs index values))
+                                  (vector-set! inner-projs index values)
+                                  (vector-set! dynamic-idxs index 0))
                                 (append new-augonly-indices new-final-indices new-normal-indices)
                                 new-methods)
                       ;; Override old methods:
@@ -2273,7 +2282,9 @@
                                         ;; Normal mode - set vtable entry
                                         (begin (vector-set! methods index method)
                                                (vector-set! super-methods index method)
-                                               (vector-set! int-methods index method))
+                                               (let* ([dyn-idx (vector-ref dynamic-idxs index)]
+                                                      [new-vec (make-vector (add1 dyn-idx) method)])
+                                                 (vector-set! int-methods index new-vec)))
                                         ;; Under final mode - set extended vtable entry
                                         (let ([v (list->vector (vector->list v))])
                                           (vector-set! super-methods index method)
@@ -2532,6 +2543,7 @@
                             (class-meth-flags cls)
                             
                             inner-projs
+                            (class-dynamic-idxs cls)
                             
                             (class-field-width cls)
                             field-pub-width
@@ -3058,7 +3070,7 @@
                  0 (make-hasheq) null
                  (vector) (vector) (vector) (vector) (vector)
 
-                 (vector)
+                 (vector) (vector)
                  
                  0 0 (make-hasheq) null
                  (vector) (vector) (vector) (vector)
@@ -4111,6 +4123,8 @@
          [method-ht (make-hasheq)]
          [method-count (length method-ids)]
          [methods-vec (make-vector method-count #f)]
+         [int-methods-vec (make-vector method-count)]
+         [dynamic-idxs (make-vector method-count 0)]
          
          [field-ht (make-hasheq)]
          [field-count (length field-ids)]
@@ -4132,10 +4146,11 @@
                       
                       methods-vec
                       methods-vec
-                      methods-vec
+                      int-methods-vec
                       (list->vector (map (lambda (x) 'final) method-ids))
                       'dont-use-me!
                       (make-vector method-count values)
+                      dynamic-idxs
                       
                       (if old-style?
                           (+ field-count method-count 1)
@@ -4199,6 +4214,10 @@
           (vector-set! methods-vec i (if old-style? 
                                          ((car methods) field-ref)
                                          (car methods)))
+          (vector-set! int-methods-vec i 
+                       (vector (if old-style? 
+                                   ((car methods) field-ref)
+                                   (car methods))))
           (hash-set! method-ht (car method-ids) i)
           (loop (+ i 1)
                 (cdr methods)
