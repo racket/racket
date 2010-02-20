@@ -444,7 +444,8 @@ of the generator.
 
 (define introspective-generator (generator ((yield 1))))
 (introspective-generator)
-(introspective-generator (lambda () (generator-state introspective-generator)))
+(introspective-generator 
+ (lambda () (generator-state introspective-generator)))
 (generator-state introspective-generator)
 (introspective-generator)
 ]}
