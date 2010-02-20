@@ -1776,8 +1776,14 @@
                       inner-projs    ; vector of projections for the last inner slot
                       
                       field-width    ; total number of fields
-                      field-ht       ; maps public field names to (cons class pos)
+                      field-pub-width ; total number of public fields
+                      field-ht       ; maps public field names to vector positions
                       field-ids      ; list of public field names
+                      
+                      int-field-refs ; vector of accessors for internal field access
+                      int-field-sets ; vector of mutators for internal field access
+                      ext-field-refs ; vector of accessors for external field access
+                      ext-field-sets ; vector of mutators for internal field access
                       
                       [struct:object ; structure type for instances
                        #:mutable]
@@ -1940,7 +1946,7 @@
             (hash-set! method-ht (car ids) p)
             (loop (cdr ids) (add1 p)))))
       (unless no-new-fields?
-        (let loop ([ids public-field-names][p (class-field-width super)])
+        (let loop ([ids public-field-names][p (class-field-pub-width super)])
           (unless (null? ids)
             (when (hash-ref field-ht (car ids) #f)
               (obj-error 'class* "superclass ~e already contains field: ~a~a" 
@@ -1975,7 +1981,8 @@
                                 (for-class name)))))
                 ids))]
             [method-width (+ (class-method-width super) (length public-names))]
-            [field-width (+ (class-field-width super) num-fields)])
+            [field-width (+ (class-field-width super) num-fields)]
+            [field-pub-width (+ (class-field-pub-width super) (length public-field-names))])
         (let ([inherit-indices (get-indices super-method-ht "inherit" inherit-names)]
               [replace-augonly-indices (get-indices super-method-ht "overment" overment-names)]
               [replace-final-indices (get-indices super-method-ht "override-final" override-final-names)]
@@ -2053,6 +2060,18 @@
                  [meth-flags (if no-method-changes?
                                  (class-meth-flags super)
                                  (make-vector method-width))]
+                 [int-field-refs (if no-new-fields?
+                                     (class-int-field-refs super)
+                                     (make-vector field-pub-width))]
+                 [int-field-sets (if no-new-fields?
+                                     (class-int-field-sets super)
+                                     (make-vector field-pub-width))]
+                 [ext-field-refs (if no-new-fields?
+                                     (class-ext-field-refs super)
+                                     (make-vector field-pub-width))]
+                 [ext-field-sets (if no-new-fields?
+                                     (class-ext-field-sets super)
+                                     (make-vector field-pub-width))]
                  [c (class-make name
                                 (add1 (class-pos super))
                                 (list->vector (append (vector->list (class-supers super)) (list #f)))
@@ -2062,7 +2081,8 @@
                                 method-width method-ht method-names
                                 methods super-methods int-methods beta-methods meth-flags
                                 inner-projs
-                                field-width field-ht field-names
+                                field-width field-pub-width field-ht field-names
+                                int-field-refs int-field-sets ext-field-refs ext-field-sets
                                 'struct:object 'object? 'make-object 'field-ref 'field-set!
                                 init-args
                                 init-mode
@@ -2125,20 +2145,31 @@
                 (set-class-field-ref! c object-field-ref)
                 (set-class-field-set!! c object-field-set!))
               
+              (unless no-new-fields?
+                (let ([super-int-field-refs (class-int-field-refs super)]
+                      [super-int-field-sets (class-ext-field-sets super)]
+                      [super-ext-field-refs (class-int-field-refs super)]
+                      [super-ext-field-sets (class-ext-field-sets super)])
+                  (for ([n (in-range (class-field-pub-width super))])
+                    (vector-set! int-field-refs n (vector-ref super-int-field-refs n))
+                    (vector-set! int-field-sets n (vector-ref super-int-field-sets n))
+                    (vector-set! ext-field-refs n (vector-ref super-ext-field-refs n))
+                    (vector-set! ext-field-sets n (vector-ref super-ext-field-sets n))))
+                (for ([n (in-range (class-field-pub-width super) field-pub-width)]
+                      [i (in-naturals)]
+                      [id (in-list public-field-names)])
+                  (vector-set! int-field-refs n (make-struct-field-accessor object-field-ref i #f))
+                  (vector-set! int-field-sets n (make-struct-field-mutator object-field-set! i #f))
+                  (vector-set! ext-field-refs n (make-struct-field-accessor object-field-ref i id))
+                  (vector-set! ext-field-sets n (make-struct-field-mutator object-field-set! i id))))
+              
               ;; --- Build field accessors and mutators ---
               ;;  Use public field names to name the accessors and mutators
               (let-values ([(inh-accessors inh-mutators)
-                            (values
-                             (map (lambda (id) (make-class-field-accessor super id #f))
-                                  inherit-field-names)
-                             (map (lambda (id) (make-class-field-mutator super id #f))
-                                  inherit-field-names))])
-                ;; -- Reset field table to register accessor and mutator info --
-                ;;  There are more accessors and mutators than public fields...
-                (let loop ([ids public-field-names][pos 0])
-                  (unless (null? ids)
-                    (hash-set! field-ht (car ids) (cons c pos))
-                    (loop (cdr ids) (add1 pos))))
+                            (values (map (lambda (id) (vector-ref int-field-refs (hash-ref field-ht id)))
+                                         inherit-field-names)
+                                    (map (lambda (id) (vector-ref int-field-sets (hash-ref field-ht id)))
+                                         inherit-field-names))])
                 
                 ;; -- Extract superclass methods and make rename-inners ---
                 (let ([rename-supers (map (lambda (index mname)
@@ -2506,8 +2537,14 @@
                             inner-projs
                             
                             (class-field-width cls)
+                            (class-field-pub-width cls)
                             (class-field-ht cls)
                             (class-field-ids cls)
+                            
+                            (class-int-field-refs cls)
+                            (class-int-field-sets cls)
+                            (class-ext-field-refs cls)
+                            (class-ext-field-sets cls)
                             
                             'struct:object 'object? 'make-object
                             'field-ref 'field-set!
@@ -2982,7 +3019,8 @@
 
                  (vector)
                  
-                 0 (make-hasheq) null
+                 0 0 (make-hasheq) null
+                 (vector) (vector) (vector) (vector)
                  
                  'struct:object object? 'make-object
                  'field-ref-not-needed 'field-set!-not-needed
@@ -3390,8 +3428,8 @@
         (loop (wrapper-object-wrapped loop-object)))))))
 
 (define-values (make-class-field-accessor make-class-field-mutator)
-  (let ([mk (λ (who which cwhich)
-              (λ (class name keep-name?)
+  (let ([mk (λ (who which)
+              (λ (class name)
                 (unless (class? class)
                   (raise-type-error who "class" class))
                 (unless (symbol? name)
@@ -3401,9 +3439,9 @@
                                      (obj-error who "no such field: ~a~a"
                                                 name
                                                 (for-class (class-name class)))))])
-                  (which (cwhich (car p)) (cdr p) (and keep-name? name)))))])
-    (values (mk 'class-field-accessor make-struct-field-accessor class-field-ref)
-            (mk 'class-field-mutator make-struct-field-mutator class-field-set!))))
+                  (vector-ref (which class) p))))])
+    (values (mk 'class-field-accessor class-ext-field-refs)
+            (mk 'class-field-mutator class-ext-field-sets))))
 
 (define-struct generic (name applicable))
 
@@ -3484,7 +3522,7 @@
 
 (define-syntaxes (class-field-accessor class-field-mutator generic/form)
   (let ([mk
-         (lambda (make targets extra-args)
+         (lambda (make targets)
            (lambda (stx)
              (syntax-case stx ()
                [(_ class-expr name)
@@ -3496,9 +3534,8 @@
                      stx
                      name))
                   (with-syntax ([name (localize name)]
-                                [make make]
-                                [extra-args extra-args])
-                    (syntax/loc stx (make class-expr `name . extra-args))))]
+                                [make make])
+                    (syntax/loc stx (make class-expr `name))))]
                [(_ class-expr)
                 (raise-syntax-error
                  #f
@@ -3506,9 +3543,9 @@
                          targets)
                  stx)])))])
     (values
-     (mk (quote-syntax make-class-field-accessor) "class" (list #'#t))
-     (mk (quote-syntax make-class-field-mutator) "class" (list #'#t))
-     (mk (quote-syntax make-generic/proc) "class or interface" null))))
+     (mk (quote-syntax make-class-field-accessor) "class")
+     (mk (quote-syntax make-class-field-mutator) "class")
+     (mk (quote-syntax make-generic/proc) "class or interface"))))
 
 (define-syntax (class-field-accessor-traced stx)
   (syntax-case stx ()
@@ -3560,7 +3597,7 @@
             [index (hash-ref field-ht id #f)])
        (cond
          [index
-          ((class-field-set! (car index)) obj (cdr index) val)]
+          ((vector-ref (class-ext-field-sets cls) index) obj val)]
          [(wrapper-object? obj)
           (loop (wrapper-object-wrapped obj))]
          [else
@@ -3598,13 +3635,10 @@
    (let loop ([obj obj])
      (let* ([cls (object-ref obj)]
             [field-ht (class-field-ht cls)]
-            [index (hash-ref 
-                    field-ht
-                    id
-                    #f)])
+            [index (hash-ref field-ht id #f)])
        (cond
          [index
-          ((class-field-ref (car index)) obj (cdr index))]
+          ((vector-ref (class-ext-field-refs cls) index) obj)]
          [(wrapper-object? obj)
           (loop (wrapper-object-wrapped obj))]
          [else
@@ -4039,6 +4073,10 @@
          
          [field-ht (make-hasheq)]
          [field-count (length field-ids)]
+         [int-field-refs (make-vector field-count)]
+         [int-field-sets (make-vector field-count)]
+         [ext-field-refs (make-vector field-count)]
+         [ext-field-sets (make-vector field-count)]
          
          [cls
           (make-class class-name
@@ -4061,8 +4099,14 @@
                       (if old-style?
                           (+ field-count method-count 1)
                           field-count)
+                      field-count
                       field-ht
                       field-ids
+                      
+                      int-field-refs
+                      int-field-sets
+                      ext-field-refs
+                      ext-field-sets
                       
                       #f; struct:object
                       #f; object?
@@ -4123,7 +4167,15 @@
       (let loop ([i 0]
                  [field-ids field-ids])
         (when (< i field-count)
-          (hash-set! field-ht (car field-ids) (cons cls i))
+          (hash-set! field-ht (car field-ids) i)
+          (vector-set! int-field-refs i
+                       (make-struct-field-accessor field-ref i #f))
+          (vector-set! int-field-sets i
+                       (make-struct-field-mutator field-set! i #f))
+          (vector-set! ext-field-refs i
+                       (make-struct-field-accessor field-ref i (car field-ids)))
+          (vector-set! ext-field-sets i
+                       (make-struct-field-mutator field-set! i (car field-ids)))
           (loop (+ i 1)
                 (cdr field-ids))))
       
