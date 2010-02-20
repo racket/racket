@@ -123,7 +123,7 @@ result is the result of @scheme[expr].}
 
 @section[#:tag "date-string"]{Date Utilities}
 
-@defmodule[scheme/date]
+@note-lib-only[scheme/date]
 
 @defproc[(date->string [date date?][time? any/c #f]) string?]{
 

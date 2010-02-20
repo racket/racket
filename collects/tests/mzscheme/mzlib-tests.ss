@@ -13,6 +13,7 @@
 (load-in-sandbox "filelib.ss")
 (load-in-sandbox "portlib.ss")
 (load-in-sandbox "threadlib.ss")
+(load-in-sandbox "set.ss")
 (load-in-sandbox "date.ss")
 (load-in-sandbox "compat.ss")
 (load-in-sandbox "cmdline.ss")

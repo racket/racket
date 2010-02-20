@@ -1,4 +1,4 @@
-(load-relative "loadtest.ss")
+(load-relative "../mzscheme/loadtest.ss")
 
 (Section 'future)
 (require scheme/future)

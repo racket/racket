@@ -586,8 +586,12 @@ produces @scheme[+nan.0] in the case that neither @scheme[y] nor
 @defproc[(bitwise-bit-set? [n exact-integer?] [m exact-nonnegative-integer?])
          boolean?]{
 
-Returns @scheme[(not (zero? (bitwise-and n (arithmetic-shift 1 m))))],
-but faster and in constant time when @scheme[n] is positive.
+Returns @scheme[#t] when the @scheme[m]th bit of @scheme[n] is set in @scheme[n]'s
+        (semi-infinite) two's complement representation.
+                   
+This is equivalent to
+@scheme[(not (zero? (bitwise-and n (arithmetic-shift 1 m))))],
+but is faster and runs in constant time when @scheme[n] is positive.
 
 @mz-examples[(bitwise-bit-set? 5 0) (bitwise-bit-set? 5 2) (bitwise-bit-set? -5 (expt 2 700))]}
 
@@ -596,22 +600,32 @@ but faster and in constant time when @scheme[n] is positive.
                             [start exact-nonnegative-integer?] 
                             [end (and/c exact-nonnegative-integer?
                                         (start . <= . end))])
-         boolean?]{
+         exact-integer?]{
 
-Returns
+Extracts the bits between position @scheme[start] and @scheme[(- end 1)] (inclusive)
+from @scheme[n] and shifts them down to the least significant portion of the number.
+
+This is equivalent to this computation,
 
 @schemeblock[
 (bitwise-and (sub1 (arithmetic-shift 1 (- end start)))
              (arithmetic-shift n (- start)))
 ]
 
-but in constant time when @scheme[n] is positive, @scheme[start] and
+but it runs in constant time when @scheme[n] is positive, @scheme[start] and
 @scheme[end] are fixnums, and @scheme[(- end start)] is no more than
 the maximum width of a fixnum.
 
-@mz-examples[(bitwise-bit-field 13 1 1)
+Each pair of examples below uses the same numbers, but shows the result in
+both binary and as integers.
+
+@mz-examples[(format "~b" (bitwise-bit-field (string->number "1101" 2) 1 1))
+             (bitwise-bit-field 13 1 1)
+             (format "~b" (bitwise-bit-field (string->number "1101" 2) 1 3))
              (bitwise-bit-field 13 1 3)
-             (bitwise-bit-field 13 1 4)]}
+             (format "~b" (bitwise-bit-field (string->number "1101" 2) 1 4))
+             (bitwise-bit-field 13 1 4)]
+}
 
 
 @defproc[(arithmetic-shift [n exact-integer?] [m exact-integer?])

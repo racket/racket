@@ -80,9 +80,9 @@
 			    (bytes<? (path->bytes a) (path->bytes b)))))])
       (test #t equal? (sort rel) (sort rel2))
 
-      (when (eq? (system-type) 'unix)
-	(system "ln -s filelib.ss filelib-link.ss")
-	(system "ln -s . loop-link")
+      (unless (eq? (system-type) 'windows)
+        (make-file-or-directory-link "filelib.ss" "filelib-link")
+        (make-file-or-directory-link "." "loop-link")
 
 	(test (+ 2 (length rel2))
 	      fold-files 
@@ -92,7 +92,7 @@
 				   [(file-exists? name) 'file]
 				   [(directory-exists? name) 'dir]
 				   [else '???]))
-		(when (member name '("filelib-link.ss" "loop-link"))
+		(when (member name '("filelib-link" "loop-link"))
 		  (test kind name 'link))
 		(add1 accum))
 	      0
@@ -107,14 +107,14 @@
 				   [(file-exists? name) 'file]
 				   [(directory-exists? name) 'dir]
 				   [else '???]))
-		(when (member name '("filelib-link.ss" "loop-link"))
+		(when (member name '("filelib-link" "loop-link"))
 		  (test kind name 'link))
 		(values (add1 accum) #t))
 	      0
 	      #f
 	      #f)
 
-	(system "rm loop-link")
+        (delete-file "loop-link")
 
 	(test (+ 1 (length rel2))
 	      fold-files 
@@ -122,14 +122,14 @@
 		(test kind values (cond
 				   [(file-exists? name) 'file]
 				   [else 'dir]))
-		(when (member name '("filelib-link.ss"))
+		(when (member name '("filelib-link"))
 		  (test kind name 'file))
 		(add1 accum))
 	      0
 	      #f
 	      #t)
 
-	(system "rm filelib-link.ss")
+	(delete-file "filelib-link")
 
 	'done))))
 

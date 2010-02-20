@@ -105,15 +105,15 @@
 
 (exit (cond
         [(not (null? jumped-out-tests))
-         (printf "Test suites ended with exns ~s\n" jumped-out-tests)
+         (fprintf (current-error-port) "Test suites ended with exns ~s\n" jumped-out-tests)
          1]
         [(null? failed-tests)
          (printf "All tests passed.\n")
          0]
         [else
-         (debug-printf schedule "FAILED tests:\n")
+         (fprintf (current-error-port) "FAILED tests:\n")
          (for-each (lambda (failed-test)
-                     (debug-printf schedule "  ~a // ~a\n"
+                     (fprintf (current-error-port) "  ~a // ~a\n"
                                    (car failed-test) (cdr failed-test)))
                    failed-tests)
          1]))

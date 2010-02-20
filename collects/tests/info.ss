@@ -8,6 +8,7 @@
   '("2htdp"
     "aligned-pasteboard"
     "deinprogramm"
+    "future"
     "honu"
     "match"
     "macro-debugger"
