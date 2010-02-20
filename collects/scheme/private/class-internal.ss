@@ -3389,28 +3389,21 @@
         loop-object
         (loop (wrapper-object-wrapped loop-object)))))))
 
-
-(define (class-field-X who which cwhich class name proc-field-name)
-  (unless (class? class)
-    (raise-type-error who "class" class))
-  (unless (symbol? name)
-    (raise-type-error who "symbol" name))
-  (let ([p (hash-ref (class-field-ht class) name
-                     (lambda ()
-                       (obj-error who "no such field: ~a~a"
-                                  name
-                                  (for-class (class-name class)))))])
-    (which (cwhich (car p)) (cdr p) proc-field-name)))
-
-(define (make-class-field-accessor class name keep-name?)
-  (class-field-X 'class-field-accessor
-                 make-struct-field-accessor class-field-ref
-                 class name (and keep-name? name)))
-
-(define (make-class-field-mutator class name keep-name?)
-  (class-field-X 'class-field-mutator 
-                 make-struct-field-mutator class-field-set!
-                 class name (and keep-name? name)))
+(define-values (make-class-field-accessor make-class-field-mutator)
+  (let ([mk (λ (who which cwhich)
+              (λ (class name keep-name?)
+                (unless (class? class)
+                  (raise-type-error who "class" class))
+                (unless (symbol? name)
+                  (raise-type-error who "symbol" name))
+                (let ([p (hash-ref (class-field-ht class) name
+                                   (lambda ()
+                                     (obj-error who "no such field: ~a~a"
+                                                name
+                                                (for-class (class-name class)))))])
+                  (which (cwhich (car p)) (cdr p) (and keep-name? name)))))])
+    (values (mk 'class-field-accessor make-struct-field-accessor class-field-ref)
+            (mk 'class-field-mutator make-struct-field-mutator class-field-set!))))
 
 (define-struct generic (name applicable))
 
