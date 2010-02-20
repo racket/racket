@@ -1474,6 +1474,7 @@ resulting trait is the same as for @scheme[trait-sum], otherwise the
 ([member-spec
   method-spec
   (field field-spec ...)
+  (inherit method-spec ...)
   (inherit-field field-spec ...)
   (super method-spec ...)
   (inner method-spec ...)
@@ -1516,6 +1517,11 @@ The external contracts are as follows:
 
 The internal contracts are as follows:
 @itemize[
+ @item{A method contract, tagged with @scheme[inherit], describes the behavior of the
+   method when invoked directly (i.e., via @scheme[inherit]) in any subclass of the
+   contracted class.  This contract, like external method contracts, applies until
+   the contracted class's method implementation is no longer the entry point for dynamic
+   dispatch.}
  @item{A field contract, tagged with @scheme[inherit-field], describes the behavior of the
    value contained in that field when accessed directly (i.e., via @scheme[inherit-field])
    in any subclass of the contracted class.  Since fields may be mutated, these contracts are
