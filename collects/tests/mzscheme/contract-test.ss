@@ -4124,6 +4124,13 @@
               'neg))
   
   (test/pos-blame
+   'class/c-first-order-method-4
+   '(contract (class/c [m (-> any/c number? number?)])
+              (class object% (super-new) (define/public (m) 3))
+              'pos
+              'neg))
+  
+  (test/pos-blame
    'class/c-first-order-field-1
    '(contract (class/c (field [n number?]))
               object%
@@ -4238,6 +4245,13 @@
               'neg))
   
   (test/pos-blame
+   'class/c-first-order-super-9
+   '(contract (class/c (super [m (-> any/c number? number?)]))
+              (class object% (super-new) (define/public (m) 3))
+              'pos
+              'neg))
+
+  (test/pos-blame
    'class/c-first-order-inner-1
    '(contract (class/c (inner [m (-> any/c number? number?)]))
               object%
@@ -4294,6 +4308,14 @@
    'class/c-first-order-inner-8
    '(let* ([c% (contract (class/c (inner m))
                          (class object% (super-new) (define/pubment (m) (inner 3 m)))
+                         'pos
+                         'neg)])
+      (class c% (super-new) (define/augment (m) 5))))
+  
+  (test/neg-blame
+   'class/c-first-order-inner-9
+   '(let* ([c% (contract (class/c (inner [m (-> any/c number? number?)]))
+                         (class object% (super-new) (define/pubment (m x) (inner x m x)))
                          'pos
                          'neg)])
       (class c% (super-new) (define/augment (m) 5))))
@@ -4358,6 +4380,14 @@
                         'pos
                         'neg)])
       (class c% (super-new) (define/override (m) 5))))
+  
+  (test/neg-blame
+   'class/c-first-order-override-9
+   '(let ([c% (contract (class/c (override [m (-> any/c number? number?)]))
+                        (class object% (super-new) (define/public (m x) 3))
+                        'pos
+                        'neg)])
+      (class c% (super-new) (define/override (m) 5))))
 
   (test/pos-blame
    'class/c-first-order-augment-1
@@ -4415,6 +4445,14 @@
   (test/spec-passed
    'class/c-first-order-augment-8
    '(let ([c% (contract (class/c (augment m))
+                        (class object% (super-new) (define/pubment (m) 3))
+                        'pos
+                        'neg)])
+      (class c% (super-new) (inherit m))))
+
+  (test/pos-blame
+   'class/c-first-order-augment-9
+   '(let ([c% (contract (class/c (augment [m (-> any/c number? number?)]))
                         (class object% (super-new) (define/pubment (m) 3))
                         'pos
                         'neg)])
