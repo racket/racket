@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require schemeunit/test
+(require schemeunit
          "file.scm")
 
 (check-equal? (my-+ 1 1) 2)
