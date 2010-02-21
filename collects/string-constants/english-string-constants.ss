@@ -730,6 +730,7 @@ please adhere to these guidelines:
  (most-recent-window "Most Recent Window")
   (next-tab "Next Tab")
   (prev-tab "Previous Tab")
+  (tab-i "Tab ~a") ;; menu item in the windows menu under mac os x. ~a is filled with a number between 1 and 9.
 
  (view-menu-label "&View")
  (show-overview "Show &Program Contour") 

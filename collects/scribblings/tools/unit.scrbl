@@ -574,7 +574,16 @@ Shows the interactions window
 Returns the currently active tab.
 
 }
-                                          
+
+@defmethod[(get-tab-filename [i (<=/c 0 (#,(method drscheme:unit:frame% get-tab-count)))]) string?]{
+  Returns a string naming the file in the @scheme[i]th tab or, if
+  the file is not saved, something like ``Untitled''.
+}
+
+@defmethod[(get-tab-count) exact-positive-integer?]{
+  Returns the number of open tabs in the frame.                                                    
+}
+
 @defmethod[(open-in-new-tab [filename (or/c path-string? #f)]) void?]{
   Opens a new tab in this frame. If @scheme[filename] is a @scheme[path-string?],
   It loads that file in the definitions window of the new tab.
