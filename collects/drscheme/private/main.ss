@@ -567,7 +567,9 @@
                #:when (< i 9))
            (new menu-item% 
                 [parent windows-menu]
-                [label (format "Tab ~a: ~a" (+ i 1) (send frame get-tab-filename i))]
+                [label (format (string-constant tab-i)
+                               (+ i 1)
+                               (send frame get-tab-filename i))]
                 [shortcut (integer->char (+ (char->integer #\1) i))]
                 [callback
                  (λ (a b)
