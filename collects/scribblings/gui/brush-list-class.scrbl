@@ -11,7 +11,7 @@ A global brush list, @scheme[the-brush-list], is created
  automatically.
 
 
-@defconstructor/make[()]{
+@defconstructor[()]{
 
 Creates an empty brush list.
 

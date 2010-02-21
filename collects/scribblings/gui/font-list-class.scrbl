@@ -9,7 +9,7 @@ A @scheme[font-list%] object maintains a list of @scheme[font%]
 A global font list, @scheme[the-font-list], is created automatically.
 
 
-@defconstructor/make[()]{
+@defconstructor[()]{
 
 Creates an empty font list.
 

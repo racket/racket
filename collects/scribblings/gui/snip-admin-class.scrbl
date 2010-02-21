@@ -20,7 +20,7 @@ Because a @scheme[snip-admin%] object typically owns more than one
 
 
 
-@defconstructor/make[()]{
+@defconstructor[()]{
 
 Creates a (useless) editor administrator.
 

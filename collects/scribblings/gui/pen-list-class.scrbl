@@ -13,7 +13,7 @@ A global pen list @indexed-scheme[the-pen-list] is created automatically.
 
 
 
-@defconstructor/make[()]{
+@defconstructor[()]{
 
 Creates an empty pen list.
 

@@ -32,7 +32,7 @@ The presence of a flag in a character's value indicates that the
 
 
 
-@defconstructor/make[()]{
+@defconstructor[()]{
 
 All ASCII alpha-numeric characters are initialized with
  @scheme['(caret line selection)]. All other ASCII non-whitespace

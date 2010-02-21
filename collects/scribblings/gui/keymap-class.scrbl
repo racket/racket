@@ -25,7 +25,7 @@ A handler procedure in a keymap is invoked with a @scheme[key-event%]
  @scheme[editor<%>] object that received the keyboard or mouse event.
 
 
-@defconstructor/make[()]{
+@defconstructor[()]{
 
 Creates an empty keymap.
 
