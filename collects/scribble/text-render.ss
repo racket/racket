@@ -54,6 +54,11 @@
                     (render-block p part ht #f))
                   (cdr f)))))
 
+
+      (define/override (render-intrapara-block p part ri first? last? starting-item?)
+        (unless first? (newline) (newline))
+        (super render-intrapara-block p part ri first? last? starting-item?))
+      
       (define/override (render-table i part ht inline?)
         (let ([flowss (table-blockss i)])
           (if (null? flowss)
@@ -63,7 +68,7 @@
                (map (lambda (d) (unless (eq? d 'cont) (render-block d part ht #f))) (car flowss))
                (map (lambda (flows)
                       (newline)
-                      (map (lambda (d) (unless (eq? d 'cont) (render-flow d part ht #f))) flows))
+                      (map (lambda (d) (unless (eq? d 'cont) (render-block d part ht #f))) flows))
                     (cdr flowss))))))
 
       (define/override (render-itemization i part ht)

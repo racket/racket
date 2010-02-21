@@ -183,8 +183,7 @@
         (printf "\n\n")
         (unless (no-noindent? p ri)
           (printf "\\noindent ")))
-      (begin0
-       (super render-intrapara-block p part ri first? last? starting-item?)))
+      (super render-intrapara-block p part ri first? last? starting-item?))
 
     (define/override (render-content e part ri)
       (when (render-element? e)
