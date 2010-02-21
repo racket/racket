@@ -2488,9 +2488,20 @@
         (let ([index (hash-ref method-ht m #f)])
           (unless index
             (failed "no public method ~a" m))
+          (let* ([vec (vector-ref beta-methods index)])
+            (when (zero? (vector-length vec))
+              (failed "method ~a has never been augmentable" m))
+            (when (vector-ref vec (sub1 (vector-length vec)))
+              (failed "method ~a is currently overrideable, not augmentable" m)))))
+      (for ([m (class/c-augrides ctc)])
+        (let ([index (hash-ref method-ht m #f)])
+          (unless index
+            (failed "no public method ~a" m))
           (let ([vec (vector-ref beta-methods index)])
             (when (zero? (vector-length vec))
-              (failed "method ~a has never been augmentable" m)))))
+              (failed "method ~a has never been augmentable" m))
+            (unless (vector-ref vec (sub1 (vector-length vec)))
+              (failed "method ~a is currently augmentable, not overrideable" m)))))
       (for ([s (class/c-supers ctc)])
         (let ([index (hash-ref method-ht s #f)])
           (unless index
@@ -2529,10 +2540,12 @@
              [dynamic-features
               (append (class/c-overrides ctc)
                       (class/c-augments ctc)
+                      (class/c-augrides ctc)
                       (class/c-inherits ctc))]
              [dynamic-contracts
               (append (class/c-override-contracts ctc)
                       (class/c-augment-contracts ctc)
+                      (class/c-augride-contracts ctc)
                       (class/c-inherit-contracts ctc))]
              [methods (if (null? (class/c-methods ctc))
                           (class-methods cls)
@@ -2752,12 +2765,15 @@
                   (vector-set! proj-vec old-idx
                                (compose (vector-ref proj-vec old-idx) p))))))
           
-          ;; For augment contracts, we both update the projection and go
-          ;; ahead and apply the projection to the last slot (which will
+          ;; For augment and augride contracts, we both update the projection
+          ;; and go ahead and apply the projection to the last slot (which will
           ;; only be used by later classes).
-          (unless (null? (class/c-augments ctc))
-            (for ([m (in-list (class/c-augments ctc))]
-                  [c (in-list (class/c-augment-contracts ctc))])
+          (unless (and (null? (class/c-augments ctc))
+                       (null? (class/c-augrides ctc)))
+            (for ([m (in-list (append (class/c-augments ctc)
+                                      (class/c-augrides ctc)))]
+                  [c (in-list (append (class/c-augment-contracts ctc)
+                                      (class/c-augride-contracts ctc)))])
               (when c
                 (let* ([i (hash-ref method-ht m)]
                        [p ((contract-projection c) blame)]
@@ -2789,7 +2805,8 @@
   (methods method-contracts fields field-contracts
    inherits inherit-contracts inherit-fields inherit-field-contracts
    supers super-contracts inners inner-contracts
-   overrides override-contracts augments augment-contracts)
+   overrides override-contracts augments augment-contracts
+   augrides augride-contracts)
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property
@@ -2824,7 +2841,8 @@
                (handle-optional 'super (class/c-supers ctc) (class/c-super-contracts ctc))
                (handle-optional 'inner (class/c-inners ctc) (class/c-inner-contracts ctc))
                (handle-optional 'override (class/c-overrides ctc) (class/c-override-contracts ctc))
-               (handle-optional 'augment (class/c-augments ctc) (class/c-augment-contracts ctc))))))
+               (handle-optional 'augment (class/c-augments ctc) (class/c-augment-contracts ctc))
+               (handle-optional 'augride (class/c-augrides ctc) (class/c-augride-contracts ctc))))))
    #:first-order
    (λ (ctc)
      (λ (cls)
@@ -2851,7 +2869,7 @@
       (let-values ([(name ctc) (parse-name-ctc stx)])
         (values (cons name names) (cons ctc ctcs)))))
   (define (parse-spec stx)
-    (syntax-case stx (field inherit inherit-field init super inner override augment)
+    (syntax-case stx (field inherit inherit-field init super inner override augment augride)
       [(field f-spec ...)
        (let-values ([(names ctcs) (parse-names-ctcs #'(f-spec ...))])
          (hash-set! parsed-forms 'fields
@@ -2912,6 +2930,15 @@
                       (append names (hash-ref parsed-forms 'augments null)))
            (hash-set! parsed-forms 'augment-contracts
                       (append ctcs (hash-ref parsed-forms 'augment-contracts null)))))]
+      [(augride a-spec ...)
+       (begin
+         (when object/c?
+           (raise-syntax-error 'object/c "augride contract not allowed in object/c" stx))
+         (let-values ([(names ctcs) (parse-names-ctcs #'(a-spec ...))])
+           (hash-set! parsed-forms 'augrides
+                      (append names (hash-ref parsed-forms 'augrides null)))
+           (hash-set! parsed-forms 'augride-contracts
+                      (append ctcs (hash-ref parsed-forms 'augride-contracts null)))))]
       [m-spec
        (let-values ([(name ctc1) (parse-name-ctc #'m-spec)])
          (hash-set! parsed-forms 'methods
@@ -2943,7 +2970,9 @@
                      [overrides #`(list #,@(reverse (hash-ref parsed-forms 'overrides null)))]
                      [override-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'override-contracts null)))]
                      [augments #`(list #,@(reverse (hash-ref parsed-forms 'augments null)))]
-                     [augment-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'augment-contracts null)))])
+                     [augment-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'augment-contracts null)))]
+                     [augrides #`(list #,@(reverse (hash-ref parsed-forms 'augrides null)))]
+                     [augride-ctcs #`(list #,@(reverse (hash-ref parsed-forms 'augride-contracts null)))])
          (syntax/loc stx
            (make-class/c methods method-ctcs
                          fields field-ctcs
@@ -2952,7 +2981,8 @@
                          supers super-ctcs
                          inners inner-ctcs
                          overrides override-ctcs
-                         augments augment-ctcs))))]))
+                         augments augment-ctcs
+                         augrides augride-ctcs))))]))
 
 (define (object/c-check-first-order ctc obj blame)
   (let/ec return

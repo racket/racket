@@ -4410,7 +4410,7 @@
               'pos
               'neg))
 
-  (test/spec-passed
+  (test/pos-blame
    'class/c-first-order-augment-4
    '(contract (class/c (augment [m (-> any/c number? number?)]))
               (let ([c% (class object% (super-new) (define/pubment (m x) (inner x m x)))])
@@ -4431,7 +4431,7 @@
    '(contract (class/c (augment [m (-> any/c number? number?)]))
               (let* ([c% (class object% (super-new) (define/public (m x) (add1 x)))]
                      [d% (class c% (super-new) (define/overment (m x) (+ (super m x) (inner x m x))))])
-                (class d% (super-new) (define/augride (m x) x)))
+                (class d% (super-new) (define/augment (m x) x)))
               'pos
               'neg))
   
@@ -4454,6 +4454,77 @@
    'class/c-first-order-augment-9
    '(let ([c% (contract (class/c (augment [m (-> any/c number? number?)]))
                         (class object% (super-new) (define/pubment (m) 3))
+                        'pos
+                        'neg)])
+      (class c% (super-new) (inherit m))))
+  
+  (test/pos-blame
+   'class/c-first-order-augride-1
+   '(contract (class/c (augride [m (-> any/c number? number?)]))
+              object%
+              'pos
+              'neg))
+
+  (test/pos-blame
+   'class/c-first-order-augride-2
+   '(contract (class/c (augride [m (-> any/c number? number?)]))
+              (class object% (super-new) (define/pubment (m x) (add1 x)))
+              'pos
+              'neg))
+
+  (test/pos-blame
+   'class/c-first-order-augride-4
+   '(contract (class/c (augride [m (-> any/c number? number?)]))
+              (class object% (super-new) (define/public (m x) (add1 x)))
+              'pos
+              'neg))
+
+  (test/spec-passed
+   'class/c-first-order-augride-5
+   '(contract (class/c (augride [m (-> any/c number? number?)]))
+              (let ([c% (class object% (super-new) (define/pubment (m x) (inner x m x)))])
+                (class c% (super-new) (define/augride (m x) (add1 x))))
+              'pos
+              'neg))
+
+  (test/pos-blame
+   'class/c-first-order-augride-5
+   '(contract (class/c (augride [m (-> any/c number? number?)]))
+              (let ([c% (class object% (super-new) (define/public (m x) (add1 x)))])
+                (class c% (super-new) (define/override (m x) (add1 (super m x)))))
+              'pos
+              'neg))
+
+  (test/spec-passed
+   'class/c-first-order-augride-6
+   '(contract (class/c (augride [m (-> any/c number? number?)]))
+              (let* ([c% (class object% (super-new) (define/public (m x) (add1 x)))]
+                     [d% (class c% (super-new) (define/overment (m x) (+ (super m x) (inner x m x))))])
+                (class d% (super-new) (define/augride (m x) x)))
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'class/c-first-order-augride-7
+   '(contract (class/c (augride m))
+              object%
+              'pos
+              'neg))
+
+  (test/spec-passed
+   'class/c-first-order-augride-8
+   '(let ([c% (contract (class/c (augride m))
+                        (class (class object% (super-new) (define/pubment (m) 3))
+                          (super-new) (define/augride (m) 4))
+                        'pos
+                        'neg)])
+      (class c% (super-new) (inherit m))))
+
+  (test/pos-blame
+   'class/c-first-order-augride-9
+   '(let ([c% (contract (class/c (augride [m (-> any/c number? number?)]))
+                        (class (class object% (super-new) (define/pubment (m) 3))
+                          (super-new) (define/augride (m) 4))
                         'pos
                         'neg)])
       (class c% (super-new) (inherit m))))

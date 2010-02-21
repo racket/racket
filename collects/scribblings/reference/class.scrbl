@@ -1467,7 +1467,7 @@ resulting trait is the same as for @scheme[trait-sum], otherwise the
 @section{Object and Class Contracts}
 
 @defform/subs[
-#:literals (field inherit inherit-field super inner override augment)
+#:literals (field inherit inherit-field super inner override augment augride)
 
 (class/c member-spec ...)
 
@@ -1541,10 +1541,12 @@ The internal contracts are as follows:
    @scheme[(method-id ...)]).  This form can only be used if overriding the method in subclasses
    will change the entry point to the dynamic dispatch chain (i.e., the method has never been
    augmentable).}
- @item{A method contract, tagged with @scheme[augment], describes the behavior provided by
-   the contracted class for @scheme[method-id] when called directly from subclasses.  This form
-   can only be used if the method has previously been augmentable, which means that no augmenting
-   or overriding implementation will change the entry point to the dynamic dispatch chain.}
+ @item{A method contract, tagged with either @scheme[augment] or @scheme[augride], describes the
+   behavior provided by the contracted class for @scheme[method-id] when called directly from
+   subclasses.  These forms can only be used if the method has previously been augmentable, which
+   means that no augmenting or overriding implementation will change the entry point to the
+   dynamic dispatch chain.  @scheme[augment] is used when subclasses can augment the method, and
+   @scheme[augride] is used when subclasses can override the current augmentation.}
 ]}
 
 @defform/subs[
