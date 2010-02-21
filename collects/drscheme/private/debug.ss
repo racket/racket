@@ -612,7 +612,7 @@ profile todo:
     (let ([dis (if (exn? dis/exn)
                    (cms->srclocs (exn-continuation-marks dis/exn))
                    dis/exn)])
-    (show-backtrace-window/edition-pairs error-text dis (map (λ (x) #f) dis/exn) defs rep)))
+    (show-backtrace-window/edition-pairs error-text dis (map (λ (x) #f) dis) defs rep)))
   
   (define (show-backtrace-window/edition-pairs error-text dis editions defs ints)
     (reset-backtrace-window)

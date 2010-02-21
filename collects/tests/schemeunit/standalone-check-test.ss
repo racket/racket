@@ -1,5 +1,5 @@
 ;;;
-;;; Time-stamp: <2008-07-30 10:46:00 nhw>
+;;; Time-stamp: <2008-06-06 15:32:49 noel>
 ;;;
 ;;; Copyright (C) by Noel Welsh. 
 ;;;
@@ -22,10 +22,33 @@
 ;;; Place, Suite 330, Boston, MA 02111-1307 USA
 
 ;;; Author: Noel Welsh <noelwelsh@yahoo.com>
-;;
-;;
-;; Commentary:
+
+
+;; Here we check the standalone (not within a test-case or
+;; test-suite) semantics of checks.  These tests are not
+;; part of the standard test suite and must be run
+;; separately.
 
 #lang scheme/base
-(require "private/test.ss")
-(provide (all-from-out "private/test.ss"))
+
+(require schemeunit/private/check)
+
+;; This check should succeed
+(check = 1 1 0.0)
+
+;; This check should display an error including the message "Outta here!"
+(check-pred (lambda (x) (error "Outta here!")) 'foo)
+
+
+;; This check should display a failure
+(check = 1 2 0.0)
+
+;; This check should display "Oh HAI!"
+(parameterize
+    ([current-check-handler (lambda (e) (display "Oh HAI!\n"))])
+  (check = 1 2 0.0))
+
+;; This check should display "I didn't run"
+(parameterize
+    ([current-check-around (lambda (t) (display "I didn't run\n"))])
+  (check = 1 1 0.0))

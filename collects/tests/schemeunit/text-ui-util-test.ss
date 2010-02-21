@@ -1,5 +1,5 @@
 ;;;
-;;; Time-stamp: <2008-07-30 10:46:00 nhw>
+;;; Time-stamp: <2008-06-19 21:08:18 noel>
 ;;;
 ;;; Copyright (C) by Noel Welsh. 
 ;;;
@@ -25,7 +25,31 @@
 ;;
 ;;
 ;; Commentary:
-
 #lang scheme/base
-(require "private/test.ss")
-(provide (all-from-out "private/test.ss"))
+
+(require schemeunit
+         schemeunit/private/text-ui-util)
+
+(provide text-ui-util-tests)
+
+(define text-ui-util-tests
+  (test-suite
+   "All tests for text-ui-util"
+   
+   (test-equal?
+    "trim-current-directory leaves directories outside the current directory alone"
+    (trim-current-directory "/foo/bar/")
+    "/foo/bar/")
+   
+   (test-equal?
+    "trim-current-directory strips directory from files in current directory"
+    (trim-current-directory
+     (path->string (build-path (current-directory) "foo.ss")))
+    "foo.ss")
+   
+   (test-equal?
+    "trim-current-directory leaves subdirectories alone"
+    (trim-current-directory
+     (path->string (build-path (current-directory) "foo" "bar.ss")))
+    "foo/bar.ss")
+   ))
