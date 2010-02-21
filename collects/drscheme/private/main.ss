@@ -561,6 +561,19 @@
                       (let ([frame (find-frame item)])
                         (when frame
                           (send frame next-tab))))])
+     (let ([frame (find-frame windows-menu)])
+       (unless (= 1 (send frame get-tab-count))
+         (for ([i (in-range 0 (send frame get-tab-count))]
+               #:when (< i 9))
+           (new menu-item% 
+                [parent windows-menu]
+                [label (format (string-constant tab-i)
+                               (+ i 1)
+                               (send frame get-tab-filename i))]
+                [shortcut (integer->char (+ (char->integer #\1) i))]
+                [callback
+                 (λ (a b)
+                   (send frame change-to-nth-tab i))]))))
      (new separator-menu-item% [parent windows-menu]))))
 
 ;; Check for any files lost last time.

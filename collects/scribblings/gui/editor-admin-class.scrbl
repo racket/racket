@@ -18,7 +18,7 @@ To create a new @scheme[editor-admin%] class, all methods described
 
 
 
-@defconstructor/make[()]{
+@defconstructor[()]{
 
 Creates a (useless) editor administrator.
 

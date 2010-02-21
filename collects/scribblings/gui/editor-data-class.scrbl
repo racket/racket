@@ -8,7 +8,7 @@ snip or region in an editor. See also @|editordatadiscuss|.
 
 
 
-@defconstructor/make[()]{
+@defconstructor[()]{
 
 The element returned by @method[editor-data% get-next] is initialized
 to @scheme[#f].

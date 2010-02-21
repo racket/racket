@@ -7,7 +7,7 @@ An instance of @scheme[tab-snip%] is created automatically when a
  tab is inserted into an editor.
 
 
-@defconstructor/make[()]{
+@defconstructor[()]{
 
 Creates a snip for a single tab, though the tab is initially empty.
 

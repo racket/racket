@@ -15,7 +15,7 @@ See @|stylediscuss| for more information.
 
 
 
-@defconstructor/make[()]{
+@defconstructor[()]{
 
 The root style, named @scheme["Basic"], is automatically created.
 

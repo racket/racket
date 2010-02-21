@@ -74,7 +74,7 @@ To define a class of snips that read specially with
 
 
 
-@defconstructor/make[()]{
+@defconstructor[()]{
 
 Creates a plain snip of length 1 with the @scheme["Basic"] style of
  @scheme[the-style-list].

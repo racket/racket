@@ -1,13 +1,12 @@
 #lang scheme
 (require schemeunit
-         schemeunit/base
-         schemeunit/test-case
-         schemeunit/check
-         schemeunit/test-suite
+         schemeunit/private/check
+         schemeunit/private/test-case
+         schemeunit/private/test-suite
          schemeunit/text-ui
          xml
          scheme/runtime-path)
-(require/expose schemeunit/test-suite
+(require/expose schemeunit/private/test-suite
                 (current-seed))
 
 (define (validate-xml? xml)

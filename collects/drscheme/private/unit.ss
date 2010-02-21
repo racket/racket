@@ -2080,6 +2080,9 @@ module browser threading seems wrong.
             (unless (equal? label (send tabs-panel get-item-label (send tab get-i)))
               (send tabs-panel set-item-label (send tab get-i) label))))
         
+        (define/public (get-tab-filename i)
+          (get-defs-tab-filename (send (list-ref tabs i) get-defs)))
+        
         (define/private (get-defs-tab-label defs tab)
           (let ([fn (send defs get-filename)]
                 [i-prefix (or (for/or ([i (in-list tabs)]
@@ -2090,11 +2093,13 @@ module browser threading seems wrong.
                               "")])
             (string-append
              i-prefix
-             (add-modified-flag 
-              defs
-              (if fn
-                  (get-tab-label-from-filename fn)
-                  (send defs get-filename/untitled-name))))))
+             (get-defs-tab-filename defs))))
+        
+        (define/private (get-defs-tab-filename defs)
+          (let ([fn (send defs get-filename)])
+            (if fn
+                (get-tab-label-from-filename fn)
+                (send defs get-filename/untitled-name))))
         
         (define/private (get-tab-label-from-filename fn)
           (let* ([take-n

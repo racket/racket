@@ -31,7 +31,7 @@ In deriving a new @scheme[snip-class%] class, override the
 See also @|snipclassdiscuss|.
 
 
-@defconstructor/make[()]{
+@defconstructor[()]{
 
 Creates a (useless) snip class.
 

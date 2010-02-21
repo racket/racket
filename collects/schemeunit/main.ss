@@ -27,7 +27,5 @@
 ;; Commentary:
 
 #lang scheme/base
-
-(require "test.ss")
-
-(provide (all-from-out "test.ss"))
+(require "private/test.ss")
+(provide (all-from-out "private/test.ss"))

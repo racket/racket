@@ -33,7 +33,7 @@ A path is not connected to any particular @scheme[dc<%>] object, so
  operations. Instead, a @scheme[dc<%>]'s origin and scale apply at the
  time that the path is drawn or used to set a region.
 
-@defconstructor/make[()]{
+@defconstructor[()]{
 
 Creates a new path that contains no sub-paths (and no @tech{open
 sub-path}).

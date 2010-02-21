@@ -31,19 +31,18 @@
 (require scheme/match
          scheme/pretty
          srfi/13
-         srfi/26)
-
-(require "base.ss"
-         "counter.ss"
-         "format.ss"
-         "location.ss"
-         "result.ss"
-         "test.ss"
-         "check-info.ss"
-         "monad.ss"
-         "hash-monad.ss"
-         "name-collector.ss"
-         "text-ui-util.ss")
+         srfi/26
+         "main.ss"
+         "private/base.ss"
+         "private/counter.ss"
+         "private/format.ss"
+         "private/location.ss"
+         "private/result.ss"
+         "private/check-info.ss"
+         "private/monad.ss"
+         "private/hash-monad.ss"
+         "private/name-collector.ss"
+         "private/text-ui-util.ss")
 
 (provide run-tests
          display-context

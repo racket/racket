@@ -8,7 +8,7 @@
 
 (require srfi/19/time)
 
-(require schemeunit/test
+(require schemeunit
          schemeunit/text-ui)
 
 (define-check (check-comparisons comparison times expected)
