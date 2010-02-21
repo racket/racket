@@ -575,7 +575,7 @@ Returns the currently active tab.
 
 }
 
-@defmethod[(get-tab-filename [i (<=/c 0 (#,(method drscheme:unit:frame% get-tab-count)))]) string?]{
+@defmethod[(get-tab-filename [i (<=/c 0 (#,(method drscheme:unit:frame<%> get-tab-count)))]) string?]{
   Returns a string naming the file in the @scheme[i]th tab or, if
   the file is not saved, something like ``Untitled''.
 }
