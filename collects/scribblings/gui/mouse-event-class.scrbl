@@ -13,9 +13,9 @@ See also @|mousekeydiscuss|.
 
 
 
-@defconstructor[([event-type (one-of/c 'enter 'leave 'left-down 'left-up 
-                                       'middle-down 'middle-up 
-                                       'right-down 'right-up 'motion)]
+@defconstructor[([event-type (or/c 'enter 'leave 'left-down 'left-up 
+                                   'middle-down 'middle-up 
+                                   'right-down 'right-up 'motion)]
                  [left-down any/c #f]
                  [middle-down any/c #f]
                  [right-down any/c #f]
@@ -51,7 +51,7 @@ See the corresponding @schemeidfont{get-} and @schemeidfont{set-}
 
 }
 
-@defmethod[(button-changed? [button (one-of/c 'left 'middle 'right 'any) 'any])
+@defmethod[(button-changed? [button (or/c 'left 'middle 'right 'any) 'any])
            boolean?]{
 
 Returns @scheme[#t] if this was a mouse button press or release event,
@@ -64,7 +64,7 @@ If @scheme[button] is not @scheme['any], then @scheme[#t] is only returned
 
 }
 
-@defmethod[(button-down? [button (one-of/c 'left 'middle 'right 'any) 'any])
+@defmethod[(button-down? [button (or/c 'left 'middle 'right 'any) 'any])
            boolean?]{
 
 Returns @scheme[#t] if the event is for a button press, @scheme[#f]
@@ -75,7 +75,7 @@ If @scheme[button] is not @scheme['any], then @scheme[#t] is only returned
 
 }
 
-@defmethod[(button-up? [button (one-of/c 'left 'middle 'right 'any) 'any])
+@defmethod[(button-up? [button (or/c 'left 'middle 'right 'any) 'any])
            boolean?]{
 
 Returns @scheme[#t] if the event is for a button release, @scheme[#f]
@@ -142,9 +142,9 @@ Under Mac OS X, if a control-key press is combined with a mouse button
 }
 
 @defmethod[(get-event-type)
-           (one-of/c 'enter 'leave 'left-down 'left-up 
-                     'middle-down 'middle-up 
-                     'right-down 'right-up 'motion)]{
+           (or/c 'enter 'leave 'left-down 'left-up 
+                 'middle-down 'middle-up 
+                 'right-down 'right-up 'motion)]{
 
 Returns the type of the event; see @scheme[mouse-event%] for
 information about each event type. See also @method[mouse-event%
@@ -254,9 +254,9 @@ Under Mac OS X, if a control-key press is combined with a mouse button
 
 }
 
-@defmethod[(set-event-type [event-type (one-of/c 'enter 'leave 'left-down 'left-up 
-                                                 'middle-down 'middle-up 
-                                                 'right-down 'right-up 'motion)])
+@defmethod[(set-event-type [event-type (or/c 'enter 'leave 'left-down 'left-up 
+                                             'middle-down 'middle-up 
+                                             'right-down 'right-up 'motion)])
            void?]{
 
 Sets the type of the event; see @scheme[mouse-event%] for information
