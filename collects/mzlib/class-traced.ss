@@ -24,6 +24,7 @@
            (rename class-field-mutator-traced class-field-mutator)
            (rename with-method-traced with-method)
            (rename get-field-traced get-field)
+           (rename set-field!-traced set-field!)
            (rename field-bound?-traced field-bound?)
            (rename field-names-traced field-names)
 	   private* public*  pubment*
