@@ -1479,7 +1479,8 @@ resulting trait is the same as for @scheme[trait-sum], otherwise the
   (super method-spec ...)
   (inner method-spec ...)
   (override method-spec ...)
-  (augment method-spec ...)]
+  (augment method-spec ...)
+  (augride method-spec ...)]
  
  [method-spec
   method-id
