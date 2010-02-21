@@ -5054,6 +5054,34 @@
            [e% (class d% (super-new) (define/override (m x) x))])
       (send (new e%) f)))
 
+  (test/spec-passed
+   '->m-first-order-1
+   '(contract (class/c [m (->m number? number?)])
+              (class object% (super-new) (define/public (m x) x))
+              'pos
+              'neg))
+
+  (test/pos-blame
+   '->m-first-order-2
+   '(contract (class/c [m (->m any/c number? number?)])
+              (class object% (super-new) (define/public (m x) x))
+              'pos
+              'neg))
+
+  (test/spec-passed
+   '->*m-first-order-1
+   '(contract (class/c [m (->*m (number?) (string?) number?)])
+              (class object% (super-new) (define/public (m x [f "foo"]) x))
+              'pos
+              'neg))
+
+  (test/pos-blame
+   '->*m-first-order-2
+   '(contract (class/c [m (->*m (any/c number?) (string?) number?)])
+              (class object% (super-new) (define/public (m x [f "foo"]) x))
+              'pos
+              'neg))
+
 ;                                                              
 ;                                                              
 ;             ;;        ;;                     ;    ;;         

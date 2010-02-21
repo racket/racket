@@ -3,6 +3,7 @@
 (require (for-syntax scheme/base)
          mzlib/etc
          scheme/contract/base
+         (only-in scheme/contract/private/arrow making-a-method)
          scheme/list
          scheme/stxparam
          "class-events.ss"
@@ -55,7 +56,7 @@
            method-in-interface? interface->method-names class->interface class-info
            (struct-out exn:fail:object)
            make-primitive-class
-           class/c #| object/c |#
+           class/c ->m ->*m #| object/c |#
            
            ;; "keywords":
            private public override augment
@@ -2457,6 +2458,14 @@
 ;;  class/c
 ;;--------------------------------------------------------------------
 
+;; Shorthand contracts that treat the implicit object argument as if it were
+;; contracted with any/c.
+(define-syntax-rule (->m . stx)
+  (syntax-parameterize ([making-a-method #t]) (-> . stx)))
+
+(define-syntax-rule (->*m . stx)
+  (syntax-parameterize ([making-a-method #t]) (->* . stx)))
+
 (define (class/c-check-first-order ctc cls blame)
   (let/ec return
     (define (failed str . args)
@@ -4648,5 +4657,5 @@
          method-in-interface? interface->method-names class->interface class-info
          (struct-out exn:fail:object)
          make-primitive-class
-         class/c #|object/c|#)
+         class/c ->m ->*m #|object/c|#)
 

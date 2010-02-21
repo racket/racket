@@ -1498,14 +1498,16 @@ class hierarchy.  This separation allows for stronger contracts for class
 clients and weaker contracts for subclasses.
 
 Method contracts must contain an additional initial argument which corresponds
-to the @scheme[this] parameter of the method.  This allows for contracts which
-discuss the state of the object when the method is called (or, for dependent
-contracts, in other parts of the contract).
+to the implicit @scheme[this] parameter of the method.  This allows for
+contracts which discuss the state of the object when the method is called
+(or, for dependent contracts, in other parts of the contract).  Two alternative
+contract forms, @scheme[->m] and @scheme[->m*], are provided as a shorthand
+for writing method contracts.
 
 The external contracts are as follows:
 
 @itemize[
- @item{A method contract without a tag for @scheme[method-id] describes the behavior
+ @item{A method contract without a tag describes the behavior
    of the implementation of @scheme[method-id] on method sends to an object of the
    contracted class.  This contract will continue to be checked in subclasses until
    the contracted class's implementation is no longer the entry point for dynamic
@@ -1550,6 +1552,18 @@ The internal contracts are as follows:
    @scheme[augride] is used when subclasses can override the current augmentation.}
 ]}
 
+@defform[(->m dom ... range)]{
+Similar to @scheme[->], except that the domain of the resulting contract contains one more element
+than the stated domain, where the first (implicit) argument is contracted with @scheme[any/c].
+This contract is useful for writing simpler method contracts when no properties of @scheme[this]
+need to be checked.}
+                             
+@defform[(->*m (mandatory-dom ...) (optional-dom ...) rest range)]{
+Similar to @scheme[->*], except that the mandatory domain of the resulting contract contains one
+more element than the stated domain, where the first (implicit) argument is contracted with
+@scheme[any/c]. This contract is useful for writing simpler method contracts when no properties
+of @scheme[this] need to be checked.}
+                             
 @defform/subs[
 #:literals (field -> ->* ->d)
 
