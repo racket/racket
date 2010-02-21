@@ -1486,7 +1486,7 @@ resulting trait is the same as for @scheme[trait-sum], otherwise the
   (method-id method-contract)]
  [field-spec
   field-id
-  (field-id field-contract)])]{
+  (field-id contract-expr)])]{
 Produces a contract for a class.
 
 There are two major categories of contracts listed in a @scheme[class/c]
