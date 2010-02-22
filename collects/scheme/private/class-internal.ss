@@ -1329,17 +1329,13 @@
                                    ;; Methods (when given needed super-methods, etc.):
                                    #, ;; Attach srcloc (useful for profiling)
                                    (quasisyntax/loc stx
-                                     (lambda (local-accessor
-                                              local-mutator
+                                     (lambda (local-field-accessor ...
+                                              local-field-mutator ...
                                               inherit-field-accessor ...  ; inherit
                                               inherit-field-mutator ...
                                               rename-super-temp ... rename-super-extra-temp ...
                                               rename-inner-temp ... rename-inner-extra-temp ...
                                               method-accessor ...) ; for a local call that needs a dynamic lookup
-                                       (let ([local-field-accessor (make-struct-field-accessor local-accessor local-field-pos #f)]
-                                             ...
-                                             [local-field-mutator (make-struct-field-mutator local-mutator local-field-pos #f)]
-                                             ...)
                                          (syntax-parameterize
                                           ([this-param (make-this-map (quote-syntax this-id)
                                                                       (quote-syntax the-finder)
@@ -1461,7 +1457,7 @@
                                                                                (quote-syntax plain-init-name-localized))] ...)
                                                         ([(local-plain-init-name) undefined] ...)
                                                         (void) ; in case the body is empty
-                                                        . exprs)))))))))))))
+                                                        . exprs))))))))))))
                                    ;; Not primitive:
                                    #f))))))))))))))))
     
@@ -2160,7 +2156,12 @@
               
               ;; --- Build field accessors and mutators ---
               ;;  Use public field names to name the accessors and mutators
-              (let-values ([(inh-accessors inh-mutators)
+              (let-values ([(local-accessors local-mutators)
+                            (values (for/list ([n (in-range num-fields)]) 
+                                      (make-struct-field-accessor object-field-ref n #f))
+                                    (for/list ([n (in-range num-fields)]) 
+                                      (make-struct-field-mutator object-field-set! n #f)))]
+                           [(inh-accessors inh-mutators)
                             (values (map (lambda (id) (vector-ref int-field-refs (hash-ref field-ht id)))
                                          inherit-field-names)
                                     (map (lambda (id) (vector-ref int-field-sets (hash-ref field-ht id)))
@@ -2260,9 +2261,9 @@
                     ;; -- Get new methods and initializers --
                     (let-values ([(new-methods override-methods augride-methods init)
                                   (apply make-methods
-                                         object-field-ref
-                                         object-field-set!
-                                         (append inh-accessors
+                                         (append local-accessors
+                                                 local-mutators
+                                                 inh-accessors
                                                  inh-mutators
                                                  rename-supers
                                                  rename-inners
