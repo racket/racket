@@ -2157,14 +2157,25 @@
               ;; --- Build field accessors and mutators ---
               ;;  Use public field names to name the accessors and mutators
               (let-values ([(local-accessors local-mutators)
-                            (values (for/list ([n (in-range num-fields)]) 
-                                      (make-struct-field-accessor object-field-ref n #f))
-                                    (for/list ([n (in-range num-fields)]) 
-                                      (make-struct-field-mutator object-field-set! n #f)))]
+                            (let ([num-pub-fields (length public-field-names)])
+                              (values (append 
+                                       (for/list ([n (in-range num-pub-fields)])
+                                         (λ (o) ((vector-ref (class-int-field-refs (object-ref o)) n) o)))
+                                       (for/list ([n (in-range num-pub-fields num-fields)])
+                                         (make-struct-field-accessor object-field-ref n #f)))
+                                      (append 
+                                       (for/list ([n (in-range num-pub-fields)])
+                                         (λ (o v) ((vector-ref (class-int-field-sets (object-ref o)) n) o v)))
+                                       (for/list ([n (in-range num-pub-fields num-fields)])
+                                         (make-struct-field-mutator object-field-set! n #f)))))]
                            [(inh-accessors inh-mutators)
-                            (values (map (lambda (id) (vector-ref int-field-refs (hash-ref field-ht id)))
+                            (values (map (lambda (id) 
+                                           (let ([i (hash-ref field-ht id)])
+                                             (λ (o) ((vector-ref (class-int-field-refs (object-ref o)) i) o))))
                                          inherit-field-names)
-                                    (map (lambda (id) (vector-ref int-field-sets (hash-ref field-ht id)))
+                                    (map (lambda (id)
+                                           (let ([i (hash-ref field-ht id)])
+                                             (λ (o v) ((vector-ref (class-int-field-sets (object-ref o)) i) o v))))
                                          inherit-field-names))])
                 
                 ;; -- Extract superclass methods and make rename-inners ---
@@ -4280,9 +4291,9 @@
   (let* ([name (class-name cls)]
          [method-width (class-method-width cls)]
          [method-ht (class-method-ht cls)]
-         [methods (if (null? methods)
-                      (class-methods cls)
-                      (make-vector method-width))]
+         [meths (if (null? methods)
+                    (class-methods cls)
+                    (make-vector method-width))]
          [field-pub-width (class-field-pub-width cls)]
          [field-ht (class-field-ht cls)]
          [int-field-refs (make-vector field-pub-width)]
@@ -4304,7 +4315,7 @@
                         method-ht
                         (class-method-ids cls)
                         
-                        methods
+                        meths
                         (class-super-methods cls)
                         (class-int-methods cls)
                         (class-beta-methods cls)
@@ -4358,14 +4369,14 @@
     ;; Handle public method contracts
     (unless (null? methods)
       ;; First, fill in from old methods
-      (vector-copy! methods 0 (class-methods cls))
+      (vector-copy! meths 0 (class-methods cls))
       ;; Now apply projections
       (for ([m (in-list methods)]
             [c (in-list method-contracts)])
         (when c
           (let ([i (hash-ref method-ht m)]
                 [p ((contract-projection c) blame)])
-            (vector-set! methods i (p (vector-ref methods i)))))))
+            (vector-set! meths i (p (vector-ref meths i)))))))
     
     ;; Redirect internal/external field accessors/mutators
     (let ([old-int-refs (class-int-field-refs cls)]
