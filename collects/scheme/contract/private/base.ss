@@ -48,7 +48,7 @@ improve method arity mismatch contract violation error messages?
   (syntax-case stx ()
     [(_ arg)
      (syntax
-      (simple-contract
+      (make-contract
        #:name '(recursive-contract arg)
        #:projection
        (λ (blame)

@@ -31,7 +31,7 @@
                    [(res-x ...) (generate-temporaries #'(rngs ...))])
        #'(let ([rngs-x (coerce-contract 'unconstrained-domain-> rngs)] ...)
            (let ([proj-x (contract-projection rngs-x)] ...)
-             (simple-contract
+             (make-contract
               #:name
               (build-compound-type-name 'unconstrained-domain-> (contract-name rngs-x) ...)
               #:projection

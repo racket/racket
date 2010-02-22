@@ -12,7 +12,7 @@
  [pretty-xexpr/c contract?])
 
 (define pretty-xexpr/c
-  (simple-contract
+  (make-contract
    #:name 'pretty-xexpr/c
    #:projection
    (lambda (blame)

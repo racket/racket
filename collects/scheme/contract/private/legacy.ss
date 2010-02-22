@@ -27,7 +27,7 @@
          args))
 
 (define (make-proj-contract name proj test)
-  (simple-contract
+  (make-contract
    #:name name
    #:first-order test
    #:projection

@@ -37,7 +37,7 @@
               (arguments-check
                outer-args
                (syntax/loc stx
-                 (simple-contract
+                 (make-contract
                   #:name name-id
                   #:projection (lambda (blame) proj-code)
                   #:first-order first-order-check))))))))))
@@ -72,7 +72,7 @@
                  (arguments-check
                   outer-args
                   (syntax/loc stx
-                    (simple-contract
+                    (make-contract
                      #:name (apply build-compound-type-name 'case-> name-id)
                      #:projection (lambda (blame) proj-code)
                      #:first-order first-order-check)))))))))]))

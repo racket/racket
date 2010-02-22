@@ -1002,8 +1002,8 @@ other, new kinds of value you might make, can be used with
 the contract library primitives below.
 
 @deftogether[(
-@defproc[(simple-contract
-          [#:name name any/c 'simple-contract]
+@defproc[(make-contract
+          [#:name name any/c 'anonymous-contract]
           [#:first-order test (-> any/c any/c) (λ (x) #t)]
           [#:projection proj (-> blame? (-> any/c any/c))
            (λ (b)
@@ -1013,8 +1013,8 @@ the contract library primitives below.
                  (raise-blame-error
                   b x "expected <~a>, given: ~e" name x))))])
          contract?]
-@defproc[(simple-flat-contract
-          [#:name name any/c 'simple-flat-contract]
+@defproc[(make-flat-contract
+          [#:name name any/c 'anonymous-flat-contract]
           [#:first-order test (-> any/c any/c) (λ (x) #t)]
           [#:projection proj (-> blame? (-> any/c any/c))
            (λ (b)
@@ -1032,8 +1032,8 @@ a first order predicate, and a blame-tracking projection.
 
 The @scheme[name] argument is any value to be rendered using @scheme[display] to
 describe the contract when a violation occurs.  The default name for simple
-higher order contracts is @schemeresult[simple-contract], and for flat contracts
-is @schemeresult[simple-flat-contract].
+higher order contracts is @schemeresult[anonymous-contract], and for flat
+contracts is @schemeresult[anonymous-flat-contract].
 
 The first order predicate @scheme[test] can be used to determine which values
 the contract applies to; usually this is the set of values for which the
@@ -1059,13 +1059,13 @@ flat contracts do not need to supply an explicit projection.
 
 @defexamples[#:eval (contract-eval)
 (define int/c
-  (simple-flat-contract #:name 'int/c #:first-order integer?))
+  (make-flat-contract #:name 'int/c #:first-order integer?))
 (contract int/c 1 'positive 'negative)
 (contract int/c "not one" 'positive 'negative)
 (int/c 1)
 (int/c "not one")
 (define int->int/c
-  (simple-contract
+  (make-contract
    #:name 'int->int/c
    #:first-order
    (λ (x) (and (procedure? x) (procedure-arity-includes? x 1)))
@@ -1272,7 +1272,7 @@ produces a blame-tracking projection defining the behavior of the contract.
 These accessors are passed as (optional) keyword arguments to
 @scheme[build-contract-property], and are applied to instances of the
 appropriate structure type by the contract system.  Their results are used
-analogously to the arguments of @scheme[simple-contract].
+analogously to the arguments of @scheme[make-contract].
 
 A @deftech{flat contract property} specifies the behavior of a structure when
 used as a flat contract.  It is specified using
@@ -1280,7 +1280,7 @@ used as a flat contract.  It is specified using
 arguments as @scheme[build-contract-property].  The only difference is that the
 projection accessor is expected not to wrap its argument in a higher order
 fashion, analogous to the constraint on projections in
-@scheme[simple-flat-contract].
+@scheme[make-flat-contract].
 
 }
 

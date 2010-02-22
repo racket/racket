@@ -31,7 +31,7 @@
   t)
   
 (define any-wrap/c
-  (simple-contract 
+  (make-contract 
    #:name 'Any
    #:projection (compose traverse blame-original?)))
 

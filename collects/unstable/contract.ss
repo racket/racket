@@ -46,7 +46,7 @@
             (if (predicate x)
                 ((then-proj blame) x)
                 ((else-proj blame) x)))
-          (simple-contract
+          (make-contract
            #:name name
            #:projection proj
            #:first-order
@@ -58,7 +58,7 @@
         (flat-named-contract name (flat-contract-predicate ctc))
         (let* ([ctc-fo (contract-first-order ctc)]
                [proj (contract-projection ctc)])
-          (simple-contract #:name name
+          (make-contract #:name name
                            #:projection proj
                            #:first-order ctc-fo)))))
 

@@ -2287,13 +2287,13 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;
-  ;;  simple-contract
+  ;;  make-contract
   ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (contract-eval
    '(define proj:add1->sub1
-      (simple-contract
+      (make-contract
        #:name 'proj:add1->sub1
        #:projection
        (lambda (blame)
@@ -2313,20 +2313,20 @@
          (and (procedure? f) (procedure-arity-includes? f 1))))))
 
   (test/spec-passed/result
-   'simple-contract-1
+   'make-contract-1
    '((contract proj:add1->sub1 sqrt 'pos 'neg) 15)
    3)
 
   (test/pos-blame
-   'simple-contract-2
+   'make-contract-2
    '(contract proj:add1->sub1 'dummy 'pos 'neg))
 
   (test/pos-blame
-   'simple-contract-3
+   'make-contract-3
    '((contract proj:add1->sub1 (lambda (x) 'dummy) 'pos 'neg) 2))
 
   (test/neg-blame
-   'simple-contract-4
+   'make-contract-4
    '((contract proj:add1->sub1 sqrt 'pos 'neg) 'dummy))
   
 ;                                                                                           
@@ -6370,7 +6370,7 @@
    '(begin
 
       (define proj:blame/c
-        (simple-contract
+        (make-contract
          #:name 'proj:blame/c
          #:projection
          (lambda (blame)

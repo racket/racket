@@ -132,7 +132,7 @@
                            export-tagged-infos)])
          (quasisyntax/loc stx
            (begin
-             (simple-contract
+             (make-contract
               #:name
               (list 'unit/c
                     (cons 'import 

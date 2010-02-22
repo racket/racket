@@ -6,7 +6,7 @@
   (define in-proc (contract-projection in))
   (define out (rng . -> . dom))  
   (define out-proc (contract-projection out))
-  (simple-contract
+  (make-contract
    #:name (build-compound-type-name 'stuffer/c in out)
    #:projection
    (λ (blame)

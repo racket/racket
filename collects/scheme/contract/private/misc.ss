@@ -726,7 +726,7 @@
                    `(name ,(contract-name ctc))
                    (lambda (x) (and (predicate? x) (testmap content-pred? x)))))
                 (let ([proj (contract-projection ctc)])
-                  (simple-contract
+                  (make-contract
                    #:name (build-compound-type-name 'name ctc)
                    #:projection
                    (λ (blame)
@@ -884,7 +884,7 @@
                                (p-apps (selector-names x)) 
                                ...))))
                      (let ([procs (contract-projection ctc-x)] ...)
-                       (simple-contract
+                       (make-contract
                         #:name (build-compound-type-name 'name ctc-x ...)
                         #:projection
                         (λ (blame)
@@ -912,7 +912,7 @@
         (λ params
           (let ([ctcs (map (λ (param) (coerce-contract 'name param)) params)])
             (let ([procs (map contract-projection ctcs)])
-              (simple-contract
+              (make-contract
                #:name (apply build-compound-type-name 'name ctcs)
                #:projection
                (λ (blame)
@@ -1008,7 +1008,7 @@
   (λ (ctc-in)
     (let* ([ctc (coerce-contract 'promise/c ctc-in)]
            [ctc-proc (contract-projection ctc)])
-      (simple-contract
+      (make-contract
        #:name (build-compound-type-name 'promise/c ctc)
        #:projection
        (λ (blame)

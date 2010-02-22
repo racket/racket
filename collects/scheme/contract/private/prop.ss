@@ -18,8 +18,8 @@
          flat-contract-property?
          build-flat-contract-property
 
-         simple-contract
-         simple-flat-contract)
+         make-contract
+         make-flat-contract)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -149,24 +149,24 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-struct simple-contract [ name first-order projection stronger ]
+(define-struct make-contract [ name first-order projection stronger ]
   #:omit-define-syntaxes
   #:property prop:contract
   (make-contract-property
-   (lambda (c) (simple-contract-name c))
-   (lambda (c) (simple-contract-first-order c))
-   (lambda (c) (simple-contract-projection c))
-   (lambda (a b) ((simple-contract-stronger a) a b))))
+   (lambda (c) (make-contract-name c))
+   (lambda (c) (make-contract-first-order c))
+   (lambda (c) (make-contract-projection c))
+   (lambda (a b) ((make-contract-stronger a) a b))))
 
-(define-struct simple-flat-contract [ name first-order projection stronger ]
+(define-struct make-flat-contract [ name first-order projection stronger ]
   #:omit-define-syntaxes
   #:property prop:flat-contract
   (make-flat-contract-property
    (make-contract-property
-    (lambda (c) (simple-flat-contract-name c))
-    (lambda (c) (simple-flat-contract-first-order c))
-    (lambda (c) (simple-flat-contract-projection c))
-    (lambda (a b) ((simple-flat-contract-stronger a) a b)))))
+    (lambda (c) (make-flat-contract-name c))
+    (lambda (c) (make-flat-contract-first-order c))
+    (lambda (c) (make-flat-contract-projection c))
+    (lambda (a b) ((make-flat-contract-stronger a) a b)))))
 
 (define ((build-contract mk default-name)
          #:name [name #f]
@@ -186,8 +186,8 @@
    (contract-struct-projection a)
    (contract-struct-projection b)))
 
-(define simple-contract
-  (build-contract make-simple-contract 'simple-contract))
+(define make-contract
+  (build-contract make-make-contract 'anonymous-contract))
 
-(define simple-flat-contract
-  (build-contract make-simple-flat-contract 'simple-flat-contract))
+(define make-flat-contract
+  (build-contract make-make-flat-contract 'anonymous-flat-contract))

@@ -340,7 +340,7 @@
                                                  (list methods ...)
                                                  '(field-name ...)
                                                  #t)])
-                    (simple-contract
+                    (make-contract
                      #:name
                      `(object-contract 
                        ,(build-compound-type-name 'method-name method-ctc-var) ...

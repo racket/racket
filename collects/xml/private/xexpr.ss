@@ -40,7 +40,7 @@
   (correct-xexpr? x (lambda () #t) (lambda (exn) (raise exn))))
 
 (define xexpr/c 
-  (simple-flat-contract
+  (make-flat-contract
    #:name 'xexpr?
    #:projection
    (lambda (blame)
