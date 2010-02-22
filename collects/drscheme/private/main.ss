@@ -89,6 +89,8 @@
                                (finder:default-filters)))
 (application:current-app-name (string-constant drscheme))
 
+(preferences:set-default 'drscheme:logger-gui-tab-panel-level 0 (λ (x) (and (exact-integer? x) (<= 0 x 5)))) 
+
 (preferences:set-default 'drscheme:saved-bug-reports 
                          '() 
                          (λ (ll) 

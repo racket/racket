@@ -1523,7 +1523,9 @@ module browser threading seems wrong.
                             [parent logger-panel]
                             [callback
                              (λ (tp evt)
+                               (preferences:set 'drscheme:logger-gui-tab-panel-level (send logger-gui-tab-panel get-selection))
                                (update-logger-window #f))]))
+                 (send logger-gui-tab-panel set-selection (preferences:get 'drscheme:logger-gui-tab-panel-level))
                  (new-logger-text)
                  (set! logger-gui-canvas 
                        (new editor-canvas% [parent logger-gui-tab-panel] [editor logger-gui-text]))
