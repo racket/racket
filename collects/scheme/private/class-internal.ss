@@ -2576,10 +2576,10 @@
                                 (make-vector method-width))]
              [field-pub-width (class-field-pub-width cls)]
              [field-ht (class-field-ht cls)]
-             [int-field-refs (if (null? (class/c-inherits ctc))
+             [int-field-refs (if (null? (class/c-inherit-fields ctc))
                                  (class-int-field-refs cls)
                                  (make-vector field-pub-width))]
-             [int-field-sets (if (null? (class/c-inherits ctc))
+             [int-field-sets (if (null? (class/c-inherit-fields ctc))
                                  (class-int-field-sets cls)
                                  (make-vector field-pub-width))]
              [ext-field-refs (if (null? (class/c-fields ctc))
