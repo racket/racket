@@ -13,27 +13,6 @@
          implementation?/c
          object-contract)
 
-;; example of how one contract is constructed
-#;
-(let* ([cm (syntax-parameterize ((making-a-method #t)) (-> any/c integer? integer?))]
-       [cf (-> integer? integer?)]
-       [m-proj ((contract-projection cm)
-                (make-blame #'here #f "whatever" 'pos 'neg #t))]
-       [f-proj ((contract-projection cf)
-                (make-blame #'here #f "whatever" 'pos 'neg #t))]
-       [cls (make-wrapper-class 'wrapper-class
-                                '(m)
-                                (list 
-                                 (m-proj (λ (this x) (send (wrapper-object-wrapped this) m x))))
-                                '(f)
-                                #f)]
-       [o (new (class object%
-                 (field [f (λ (x) x)])
-                 (define/public (m x) x)
-                 (super-new)))]
-       [wo (make-object cls o (f-proj (get-field/proc 'f o)))])
-  ((get-field/proc 'f wo) #f))
-
 (define-for-syntax (parse-object-contract stx args)
   (let loop ([args (syntax->list args)]
              [mtds '()]
@@ -52,55 +31,17 @@
               [_ 
                (raise-syntax-error #f "malformed object-contract clause" stx (car args))])])))
 
-(define (o-c-first-order ctc val blame meth-projs)
-  (let/ec return
-    (define (failed str . args)
-      (if blame
-          (apply raise-blame-error blame val str args)
-          (return #f)))
-    (unless (object? val)
-      (failed "expected an object, got ~e" val))
-    (let ([meth-names (object-contract-methods ctc)])
-      (for-each (λ (m proj)
-                  (let-values ([(method unwrapper) 
-                                (find-method/who 'object-contract val m #:error? #f)])
-                    (unless method
-                      (failed "expected an object with method ~s" m))
-                    ;; verify the first-order properties by apply the projection and 
-                    ;; throwing the result away. Without this, the contract wrappers
-                    ;; just check the first-order properties of the wrappers, which is
-                    ;; the wrong thing.
-                    (proj method)))
-                meth-names
-                meth-projs))
-    (let ([ctc-field-names (object-contract-fields ctc)]
-          [fields (field-names val)])
-      (for-each (λ (f)
-                  (unless (memq f fields)
-                    (failed "expected an object with field ~s" f)))
-                ctc-field-names))
-    #t))
-
-(define-struct object-contract (methods method-ctcs method-wrappers fields field-ctcs)
+(define-struct object-contract (methods method-ctcs fields field-ctcs)
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property
    #:projection
    (λ (ctc)
-      (let ([meth-names (object-contract-methods ctc)]
-            [meth-param-projs (map contract-projection (object-contract-method-ctcs ctc))]
-            [ctc-field-names (object-contract-fields ctc)]
-            [field-param-projs (map contract-projection (object-contract-field-ctcs ctc))])
-        (λ (blame)
-           (let* ([meth-projs (map (λ (x) (x blame)) meth-param-projs)]
-                  [meths (map (λ (p x) (p x)) meth-projs (object-contract-method-wrappers ctc))]
-                  [cls (make-wrapper-class 'wrapper-class meth-names meths ctc-field-names #f)]
-                  [field-projs (map (λ (x) (x blame)) field-param-projs)])
-             (λ (val)
-                (o-c-first-order ctc val blame meth-projs)
-                (apply make-object cls val
-                       (map (λ (field proj) (proj (get-field/proc field val)))
-                            ctc-field-names field-projs)))))))
+     (λ (blame)
+       (λ (val)
+         (make-wrapper-object val blame
+                              (object-contract-methods ctc) (object-contract-method-ctcs ctc)
+                              (object-contract-fields ctc) (object-contract-field-ctcs ctc)))))
    #:name
    (λ (ctc) `(object-contract ,@(map (λ (fld ctc) (build-compound-type-name 'field fld ctc))
                                      (object-contract-fields ctc)
@@ -112,7 +53,7 @@
    #:first-order 
    (λ (ctc)
      (λ (val)
-       (o-c-first-order ctc val #f (map (λ (x) values) (object-contract-method-ctcs ctc)))))))
+       (check-object-contract val #f (object-contract-methods ctc) (object-contract-fields ctc))))))
 
 (define-syntax (object-contract stx)
   (syntax-case stx ()
@@ -124,14 +65,12 @@
                                              (syntax->list #'(method-id ...)))])
          #'(build-object-contract '(method-id ...)
                                   (syntax-parameterize ((making-a-method #t)) (list (let ([method-name method-ctc]) method-name) ...))
-                                  (list (λ (this . x) (send (wrapper-object-wrapped this) method-id . x)) ...)
                                   '(field-id ...)
                                   (list field-ctc ...))))]))
 
-(define (build-object-contract methods method-ctcs wrappers fields field-ctcs)
+(define (build-object-contract methods method-ctcs fields field-ctcs)
   (make-object-contract methods 
                         (map (λ (x) (coerce-contract 'object-contract x)) method-ctcs)
-                        wrappers 
                         fields 
                         (map (λ (x) (coerce-contract 'object-contract x)) field-ctcs)))
 
