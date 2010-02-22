@@ -61,15 +61,19 @@ Unlike a check or test case, a test suite is not immediately
 run.  Instead use one of the functions described in
 @secref["ui"] or @secref["running"].
 
-@defform[(test-suite name [#:before before-thunk] [#:after after-thunk] test ...)]{
+@defform/subs[(test-suite name-expr maybe-before maybe-after test ...)
+              ([maybe-before (code:line)
+                             (code:line #:before before-thunk)]
+               [maybe-after (code:line)
+                            (code:line #:after after-thunk)])
+              #:contracts ([name-expr string?])]{
 
 Constructs a test suite with the given name and tests.  The
-tests may be test cases, constructed using
-@scheme[test-begin] or @scheme[test-case], or other test
-suites.
+tests may be test cases, constructed using @scheme[test-begin] or
+@scheme[test-case], or other test suites.
 
 The @scheme[before-thunk] and @scheme[after-thunk] are
-optional thunks (functions are no argument).  They are run
+optional thunks (functions with no argument).  They are run
 before and after the tests are run, respectively. 
 
 Unlike a check or test case, a test suite is not immediately
@@ -87,8 +91,22 @@ finished.
   #:after  (lambda () (display "After"))
   (test-case
     "An example test"
-    (check-eq? 1 1)))
+    (check-eq? 1 1))
+  (test-suite "A nested test suite"
+    (test-case "Another test"
+      (check-< 1 2))))
 ]
+
+@defproc[(make-test-suite [name string?]
+                          [tests (listof (or/c test-case? test-suite?))]
+                          [#:before before-thunk (-> any) void]
+                          [#:after after-thunk (-> any) void])
+         test-suite?]{
+
+Constructs a test suite with the given @scheme[name] containing the
+given @scheme[tests]. Unlike the @scheme[test-suite] form, the tests
+are represented as a list of test values.
+}
 
 @defproc[(test-suite? (obj any)) boolean?]{ True if
 @scheme[obj] is a test suite, and false otherwise}
@@ -118,6 +136,7 @@ the name @scheme["example-suite"]:
 for is just like @scheme[define-test-suite], and in addition
 it @scheme[provide]s the test suite.}
 
+@;{
 Finally, there is the @scheme[test-suite*] macro, which
 defines a test suite and test cases using a shorthand
 syntax:
@@ -129,7 +148,7 @@ body expressions.
 
 As far I know no-one uses this macro, so it might disappear
 in future versions of SchemeUnit.}
-
+}
 
 
 @section{Compound Testing Evaluation Context}

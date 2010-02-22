@@ -17,5 +17,5 @@ especially when mixed with compiled code.  Use at your own risk!
 This example gets @scheme[make-failure-test], which is defined in a SchemeUnit test:
 
 @schemeblock[
-(require/expose schemeunit/check-test (make-failure-test))
+(require/expose schemeunit/private/check-test (make-failure-test))
 ]

@@ -13,13 +13,13 @@ The textual UI is in the @schememodname[schemeunit/text-ui] module.
 It is run via the @scheme[run-tests] function.
 
 @defproc[(run-tests (test (or/c test-case? test-suite?))
-                    (verbosity (symbols 'quite 'normal 'verbose) 'normal))
+                    (verbosity (symbols 'quiet 'normal 'verbose) 'normal))
          natural-number/c]{
 
 The given @scheme[test] is run and the result of running it
 output to the @scheme[current-output-port].  The output is
 compatable with the (X)Emacs next-error command (as used,
-for example, by (X)Emac's compile function)
+for example, by (X)Emacs's compile function)
 
 The optional @scheme[verbosity] is one of @scheme['quiet],
 @scheme['normal], or @scheme['verbose].  Quiet output
