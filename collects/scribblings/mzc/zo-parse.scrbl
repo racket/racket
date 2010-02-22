@@ -622,7 +622,7 @@ Represents a simple nominal path.}
 Represents an imported nominal path.}
                                                                                  
 @defstruct+[(phased-nominal-path nominal-path) ([value module-path-index?]
-                                                [import-phase exact-integer?]
+                                                [import-phase (or/c false/c exact-integer?)]
                                                 [phase exact-integer?])]{
                                                                          
 Represents a phased nominal path.}

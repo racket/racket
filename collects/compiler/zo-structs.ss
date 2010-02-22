@@ -166,7 +166,7 @@
 (define-form-struct (imported-nominal-path nominal-path) ([value module-path-index?] 
                                                           [import-phase exact-integer?]))
 (define-form-struct (phased-nominal-path nominal-path) ([value module-path-index?]
-                                                        [import-phase exact-integer?]
+                                                        [import-phase (or/c false/c exact-integer?)]
                                                         [phase exact-integer?]))
 
 (define-form-struct module-binding ())

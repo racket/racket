@@ -72,6 +72,7 @@
                                 (values (cdr v) #t))])
     (match v
       [`(,i ,tv . ,sv)
+       ; XXX Why not leave them as vectors and change the contract?
        (make-prefix i (vector->list tv) (vector->list sv))])))
 
 (define (read-unclosed-procedure v)
@@ -150,11 +151,13 @@
 (define (read-sequence v) 
   (make-seq v))
 
+; XXX Allocates unnessary list
 (define (read-define-values v)
   (make-def-values
    (cdr (vector->list v))
    (vector-ref v 0)))
 
+; XXX Allocates unnessary list
 (define (read-define-syntaxes mk v)
   (mk (list-tail (vector->list v) 4)
       (vector-ref v 0)
@@ -463,7 +466,10 @@
                  n)))]))
 
 (define (read-compact-svector port n)
-  (list->vector (reverse (for/list ([i (in-range n)]) (read-compact-number port)))))
+  (define v (make-vector n))
+  (for ([i (in-range n)])
+    (vector-set! v (sub1 (- n i)) (read-compact-number port)))
+  v)
 
 (define (read-marshalled type port)
   (let* ([type (if (number? type) (int->type type) type)]
@@ -665,7 +671,7 @@
       [nominal-path
        (make-simple-nominal-path nominal-path)]))
   
-  ; XXX Matthew, I'm ashamed
+  ; XXX Weird test copied from C code. Matthew?
   (define (nom_mod_p p)
     (and (pair? p) (not (pair? (cdr p))) (not (symbol? (cdr p))))) 
   
@@ -799,25 +805,34 @@
           [(true) #t]
           [(null) null]
           [(void) (void)]
-          [(vector) (let* ([n (read-compact-number cp)]
-                           [lst (for/list ([i (in-range n)])
-                                  (read-compact cp))])
-                      (vector->immutable-vector (list->vector lst)))]
-          [(list) (let* ([n (read-compact-number cp)])
-                    (append
-                     (for/list ([i (in-range n)])
-                       (read-compact cp))
-                     (read-compact cp)))]
+          [(vector) 
+           ; XXX We should provide build-immutable-vector and write this as:
+           #;(build-immutable-vector (read-compact-number cp)
+                                     (lambda (i) (read-compact cp)))
+           ; XXX Now it allocates an unnessary list AND vector
+           (let* ([n (read-compact-number cp)]
+                  [lst (for/list ([i (in-range n)])
+                         (read-compact cp))])
+             (vector->immutable-vector (list->vector lst)))]
+          [(list) 
+           (let ([len (read-compact-number cp)])
+             (let loop ([i len])
+               (if (zero? i)
+                   (read-compact cp)
+                   (list* (read-compact cp)
+                          (loop (sub1 i))))))]
           [(prefab)
            (let ([v (read-compact cp)])
-             (apply make-prefab-struct
-                    (vector-ref v 0)
-                    (cdr (vector->list v))))]
+             ; XXX This is faster than apply+->list, but can we avoid allocating the vector?
+             (call-with-values (lambda () (vector->values v))
+                               make-prefab-struct))]
           [(hash-table)
+           ; XXX Allocates an unnessary list (maybe use for/hash(eq))
            (let ([eq (read-compact-number cp)]
                  [len (read-compact-number cp)])
              ((case eq
                 [(0) make-hasheq-placeholder]
+                ; XXX One of these should be eqv
                 [(1) make-hash-placeholder]
                 [(2) make-hash-placeholder])
               (for/list ([i (in-range len)])
