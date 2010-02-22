@@ -1750,6 +1750,28 @@
   (eq-hash-code (member-key-id a)))
 
 ;;--------------------------------------------------------------------
+;;  object wrapper for contracts
+;;--------------------------------------------------------------------
+
+(define-values (wrapper-object? wrapper-object-wrapped set-wrapper-object-wrapped! struct:wrapper-object)
+  (let-values ([(struct:wrapper-object make-wrapper-object wrapper-object? ref set!)
+                (make-struct-type 'raw-wrapper-object
+                                  #f
+                                  1
+                                  0)])
+    (values wrapper-object?
+            (lambda (v) (ref v 0))
+            (lambda (o v) (set! o 0 v))
+            struct:wrapper-object)))
+
+;; unwrap-object : (union wrapper-object object) -> object
+(define (unwrap-object o)
+  (let loop ([o o])
+    (if (wrapper-object? o)
+        (loop (wrapper-object-wrapped o))
+        o)))
+
+;;--------------------------------------------------------------------
 ;;  class implementation
 ;;--------------------------------------------------------------------
 
@@ -1775,6 +1797,7 @@
                       dynamic-projs  ; vector of vector of projections for internal dynamic dispatch
                       
                       field-width    ; total number of fields
+                      field-pub-width ; total number of public fields
                       field-ht       ; maps public field names to vector positions
                       field-ids      ; list of public field names
                       
@@ -1891,7 +1914,7 @@
                                   (null? override-names)
                                   (null? augride-names)
                                   (null? final-names))]
-         [no-new-fields? (zero? num-fields)]
+         [no-new-fields? (null? public-field-names)]
          [xappend (lambda (a b) (if (null? b) a (append a b)))])
     
     ;; -- Check interfaces ---
@@ -1934,7 +1957,7 @@
             (hash-set! method-ht (car ids) p)
             (loop (cdr ids) (add1 p)))))
       (unless no-new-fields?
-        (let loop ([ids public-field-names][p (class-field-width super)])
+        (let loop ([ids public-field-names][p (class-field-pub-width super)])
           (unless (null? ids)
             (when (hash-ref field-ht (car ids) #f)
               (obj-error 'class* "superclass ~e already contains field: ~a~a" 
@@ -1969,7 +1992,8 @@
                                 (for-class name)))))
                 ids))]
             [method-width (+ (class-method-width super) (length public-names))]
-            [field-width (+ (class-field-width super) num-fields)])
+            [field-width (+ (class-field-width super) num-fields)]
+            [field-pub-width (+ (class-field-pub-width super) (length public-field-names))])
         (let ([inherit-indices (get-indices super-method-ht "inherit" inherit-names)]
               [replace-augonly-indices (get-indices super-method-ht "overment" overment-names)]
               [replace-final-indices (get-indices super-method-ht "override-final" override-final-names)]
@@ -2055,16 +2079,16 @@
                                  (make-vector method-width))]
                  [int-field-refs (if no-new-fields?
                                      (class-int-field-refs super)
-                                     (make-vector field-width))]
+                                     (make-vector field-pub-width))]
                  [int-field-sets (if no-new-fields?
                                      (class-int-field-sets super)
-                                     (make-vector field-width))]
+                                     (make-vector field-pub-width))]
                  [ext-field-refs (if no-new-fields?
                                      (class-ext-field-refs super)
-                                     (make-vector field-width))]
+                                     (make-vector field-pub-width))]
                  [ext-field-sets (if no-new-fields?
                                      (class-ext-field-sets super)
-                                     (make-vector field-width))]
+                                     (make-vector field-pub-width))]
                  [c (class-make name
                                 (add1 (class-pos super))
                                 (list->vector (append (vector->list (class-supers super)) (list #f)))
@@ -2074,7 +2098,7 @@
                                 method-width method-ht method-names
                                 methods super-methods int-methods beta-methods meth-flags
                                 inner-projs dynamic-idxs dynamic-projs
-                                field-width field-ht field-names
+                                field-width field-pub-width field-ht field-names
                                 int-field-refs int-field-sets ext-field-refs ext-field-sets
                                 'struct:object 'object? 'make-object 'field-ref 'field-set!
                                 init-args
@@ -2144,31 +2168,24 @@
                 (vector-copy! int-field-sets 0 (class-int-field-sets super))
                 (vector-copy! ext-field-refs 0 (class-ext-field-refs super))
                 (vector-copy! ext-field-sets 0 (class-ext-field-sets super))
-                (let* ([sup-len (class-field-width super)]
-                       [pub-len (length public-field-names)]
-                       [private-start (+ sup-len pub-len)])
-                  ;; For public fields, set both the internal and external accessors/mutators.
-                  (for ([n (in-range sup-len private-start)]
-                        [i (in-naturals)]
-                        [id (in-list public-field-names)])
-                    (vector-set! int-field-refs n (make-struct-field-accessor object-field-ref i #f))
-                    (vector-set! int-field-sets n (make-struct-field-mutator object-field-set! i #f))
-                    (vector-set! ext-field-refs n (make-struct-field-accessor object-field-ref i id))
-                    (vector-set! ext-field-sets n (make-struct-field-mutator object-field-set! i id)))
-                  ;; For private fields, only set the internal accessor/mutator.
-                  (for ([n (in-range private-start field-width)]
-                        [i (in-naturals)])
-                    (vector-set! int-field-refs n (make-struct-field-accessor object-field-ref i #f))
-                    (vector-set! int-field-sets n (make-struct-field-mutator object-field-set! i #f)))))
+                ;; For public fields, set both the internal and external accessors/mutators.
+                (for ([n (in-range (class-field-pub-width super) field-pub-width)]
+                      [i (in-naturals)]
+                      [id (in-list public-field-names)])
+                  (vector-set! int-field-refs n (make-struct-field-accessor object-field-ref i #f))
+                  (vector-set! int-field-sets n (make-struct-field-mutator object-field-set! i #f))
+                  (vector-set! ext-field-refs n (make-struct-field-accessor object-field-ref i id))
+                  (vector-set! ext-field-sets n (make-struct-field-mutator object-field-set! i id))))
               
               ;; --- Build field accessors and mutators ---
               ;;  Use public field names to name the accessors and mutators
               (let-values ([(local-accessors local-mutators)
-                            (let ([super-len (class-field-width super)])
-                              (values (for/list ([n (in-range super-len field-width)])
-                                        (λ (o) ((vector-ref (class-int-field-refs (object-ref o)) n) o)))
-                                      (for/list ([n (in-range super-len field-width)])
-                                        (λ (o v) ((vector-ref (class-int-field-sets (object-ref o)) n) o v)))))]
+                            (values (for/list ([n (in-range num-fields)])
+                                      (let ([acc (make-struct-field-accessor object-field-ref n #f)])
+                                        (λ (o) (acc (unwrap-object o)))))
+                                    (for/list ([n (in-range num-fields)])
+                                      (let ([acc (make-struct-field-mutator object-field-set! n #f)])
+                                        (λ (o v) (acc (unwrap-object o) v)))))]
                            [(inh-accessors inh-mutators)
                             (values (map (lambda (id) 
                                            (let ([i (hash-ref field-ht id)])
@@ -2587,20 +2604,20 @@
              [dynamic-projs (if (null? dynamic-features)
                                 (class-dynamic-projs cls)
                                 (make-vector method-width))]
-             [field-width (class-field-width cls)]
+             [field-pub-width (class-field-pub-width cls)]
              [field-ht (class-field-ht cls)]
              [int-field-refs (if (null? (class/c-inherit-fields ctc))
                                  (class-int-field-refs cls)
-                                 (make-vector field-width))]
+                                 (make-vector field-pub-width))]
              [int-field-sets (if (null? (class/c-inherit-fields ctc))
                                  (class-int-field-sets cls)
-                                 (make-vector field-width))]
+                                 (make-vector field-pub-width))]
              [ext-field-refs (if (null? (class/c-fields ctc))
                                  (class-ext-field-refs cls)
-                                 (make-vector field-width))]
+                                 (make-vector field-pub-width))]
              [ext-field-sets (if (null? (class/c-fields ctc))
                                  (class-ext-field-sets cls)
-                                 (make-vector field-width))]
+                                 (make-vector field-pub-width))]
              [class-make (if name
                              (make-naming-constructor 
                               struct:class
@@ -2626,7 +2643,8 @@
                             dynamic-idxs
                             dynamic-projs
                             
-                            field-width
+                            (class-field-width cls)
+                            field-pub-width
                             field-ht
                             (class-field-ids cls)
                             
@@ -3270,7 +3288,7 @@
 
                  (vector) (vector) (vector)
                  
-                 0 (make-hasheq) null
+                 0 0 (make-hasheq) null
                  (vector) (vector) (vector) (vector)
                  
                  'struct:object object? 'make-object
@@ -4269,24 +4287,6 @@
 ;;  wrapper for contracts
 ;;--------------------------------------------------------------------
 
-(define-values (wrapper-object? wrapper-object-wrapped set-wrapper-object-wrapped! struct:wrapper-object)
-  (let-values ([(struct:wrapper-object make-wrapper-object wrapper-object? ref set!)
-                (make-struct-type 'raw-wrapper-object
-                                  #f
-                                  1
-                                  0)])
-    (values wrapper-object?
-            (lambda (v) (ref v 0))
-            (lambda (o v) (set! o 0 v))
-            struct:wrapper-object)))
-
-;; unwrap-object : (union wrapper-object object) -> object
-(define (unwrap-object o)
-  (let loop ([o o])
-    (if (wrapper-object? o)
-        (loop (wrapper-object-wrapped o))
-        o)))
-
 (define (make-wrapper-class obj cls blame methods method-contracts fields field-contracts)
   (let* ([name (class-name cls)]
          [method-width (class-method-width cls)]
@@ -4294,12 +4294,12 @@
          [meths (if (null? methods)
                     (class-methods cls)
                     (make-vector method-width))]
-         [field-width (class-field-width cls)]
+         [field-pub-width (class-field-pub-width cls)]
          [field-ht (class-field-ht cls)]
-         [int-field-refs (make-vector field-width)]
-         [int-field-sets (make-vector field-width)]
-         [ext-field-refs (make-vector field-width)]
-         [ext-field-sets (make-vector field-width)]
+         [int-field-refs (make-vector field-pub-width)]
+         [int-field-sets (make-vector field-pub-width)]
+         [ext-field-refs (make-vector field-pub-width)]
+         [ext-field-sets (make-vector field-pub-width)]
          [class-make (if name
                          (make-naming-constructor 
                           struct:class
@@ -4325,7 +4325,8 @@
                         (class-dynamic-idxs cls)
                         (class-dynamic-projs cls)
                         
-                        field-width
+                        (class-field-width cls)
+                        field-pub-width
                         field-ht
                         (class-field-ids cls)
                         
@@ -4382,7 +4383,7 @@
           [old-int-sets (class-int-field-sets cls)]
           [old-ext-refs (class-ext-field-refs cls)]
           [old-ext-sets (class-ext-field-sets cls)])
-      (for ([i (in-range field-width)])
+      (for ([i (in-range field-pub-width)])
         (let ([old-int-ref (vector-ref old-int-refs i)]
               [old-int-set (vector-ref old-int-sets i)]
               [old-ext-ref (vector-ref old-ext-refs i)]
