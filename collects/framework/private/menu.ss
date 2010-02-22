@@ -33,9 +33,11 @@
     (mixin (labelled-menu-item<%>) (can-restore-underscore<%>)
       (inherit get-label get-plain-label)
       (define/override (set-label nl)
-        (unless dont-save 
-          (set! saved-label nl))
-        (super set-label nl))
+        (super set-label nl)
+        (unless dont-save
+          (set! saved-label nl)
+          (unless (preferences:get 'framework:menu-bindings)
+            (erase-underscores))))
       (define/public (erase-underscores)
         (set! dont-save #t)
         (set-label (get-plain-label))
