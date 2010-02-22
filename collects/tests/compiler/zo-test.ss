@@ -124,6 +124,19 @@
               (yield p "Unequal regexp" v1 v2))]
            [_
             (yield p "Not a regexp on right" v1 v2)])]
+        [(? byte-regexp?)
+         (match v2
+           [(? byte-regexp?)
+            (unless (bytes=? (object-name v1) (object-name v2))
+              (yield p "Unequal byte-regexp" v1 v2))]
+           [_
+            (yield p "Not a byte-regexp on right" v1 v2)])]
+        [(? box?)
+         (match v2
+           [(? box?)
+            (inner (list* 'unbox) (unbox v1) (unbox v2))]
+           [_
+            (yield p "Not a box on right" v1 v2)])]
         [(? symbol?)
          (match v2
            [(? symbol?)
