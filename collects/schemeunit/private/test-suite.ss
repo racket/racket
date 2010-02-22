@@ -83,15 +83,22 @@
       (let ([the-name name]
             [the-tests
              (lambda (fdown fup fhere seed)
+               (define (run/inner x)
+                 (cond [(schemeunit-test-suite? x)
+                        (current-seed
+                         (apply-test-suite x fdown fup fhere (current-seed)))]
+                       [(list? x)
+                        (for-each run/inner x)]
+                       [else
+                        (void)]))
                (parameterize
                    ([current-seed seed]
                     [current-test-case-around (test-suite-test-case-around fhere)]
                     [current-check-around (test-suite-check-around fhere)])
                  (let ([t test])
-                   (if (schemeunit-test-suite? t)
-                       (current-seed (apply-test-suite t fdown fup fhere (current-seed)))
-                       t))
-                 ... (current-seed)))])
+                   (run/inner t))
+                 ...
+                 (current-seed)))])
         (cond
          [(not (string? the-name))
           (raise-type-error 'test-suite "test-suite name as string" the-name)]

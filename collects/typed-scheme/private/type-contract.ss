@@ -136,7 +136,9 @@
              (parameterize ([vars (cons (list n #'n* #'n*) (vars))])
                #`(flat-rec-contract n* #,(t->c b)))))]
         [(Value: #f) #'false/c]    
-        [(Instance: (Class: _ _ (list (list name fcn) ...))) 
+        [(Instance: (Class: _ _ (list (list name fcn) ...)))
+         #'(is-a?/c object%)
+         #;
 	 (with-syntax ([(fcn-cnts ...) (map t->c fcn)]
 		       [(names ...) name])
 		      #'(object-contract (names fcn-cnts) ...))]
