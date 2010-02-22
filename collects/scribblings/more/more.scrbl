@@ -358,7 +358,7 @@ if we later change @scheme[handle] so that it, say, opens a file, then
 the file handles will also belong to @scheme[cust], so they will be
 reliably closed when @scheme[cust] is shut down.
 
-In fact, it's a good idea to change @scheme[serve] to that it uses a
+In fact, it's a good idea to change @scheme[serve] so that it uses a
 custodian, too:
 
 @schemeblock[
