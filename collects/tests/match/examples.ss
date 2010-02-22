@@ -5,16 +5,14 @@
          scheme/control
          (for-syntax scheme/base)
          (prefix-in m: mzlib/match)
-         (only-in srfi/13 string-contains))
-(require (planet "test-compat2.ss" ("schematics" "schemeunit.plt" 2 10)))
-
-
+         (only-in srfi/13 string-contains)
+         schemeunit)
 
 (define-syntax (comp stx)
   (syntax-case stx ()
     [(mytest tst exp)
-     #`(make-test-case (format "test: ~a" (syntax->datum (quote-syntax tst)))
-                       #,(syntax/loc stx (assert-equal? tst exp)))]))
+     #`(test-case (format "test: ~a" (syntax->datum (quote-syntax tst)))
+                       #,(syntax/loc stx (check-equal? tst exp)))]))
 
 (define-struct X (a b c))
 (define-match-expander X:
@@ -56,7 +54,7 @@
 (provide new-tests)
 
 (define new-tests
-  (make-test-suite 
+  (test-suite 
    "new tests for match"
    
    (comp 

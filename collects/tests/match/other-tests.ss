@@ -1,25 +1,22 @@
 (module other-tests mzscheme
-  (require mzlib/match)
-  
-  
-  (require (planet "test-compat2.ss" ("schematics" "schemeunit.plt" 2 10)))
-  
+  (require mzlib/match schemeunit)
+    
   (provide other-tests)
 
   (define-syntax (mytest stx)
     (syntax-case stx ()
       [(mytest tst exp)
-       #`(make-test-case (format "test: ~a" (syntax-object->datum (quote-syntax tst)))
-                         #,(syntax/loc stx (assert-equal? tst exp)))]))
+       #`(test-case (format "test: ~a" (syntax-object->datum (quote-syntax tst)))
+                         #,(syntax/loc stx (check-equal? tst exp)))]))
   
   (define-syntax mytest-no-order
     (syntax-rules ()
       [(mytest tst exp)
-       (make-test-case (format "no-order test: ~a" (syntax-object->datum (quote-syntax tst)))
-                       (assert set-equal? tst exp))]))
+       (test-case (format "no-order test: ~a" (syntax-object->datum (quote-syntax tst)))
+                       (check set-equal? tst exp))]))
   
   (define other-tests 
-    (make-test-suite "Tests copied from match-test.ss"
+    (test-suite "Tests copied from match-test.ss"
 
 (mytest (letrec ((z 
                 (lambda (x) 
@@ -138,10 +135,10 @@
       '(1 2 7 7))
 
 
-(make-test-case "match-define"
+(test-case "match-define"
                 (let () (match-define (a b) (list (lambda (x) (if (zero? x) '() (cons (b x) (a (sub1 x)))))
                                                   (lambda (x) (if (= x 10) '() (cons  x (b (add1 x)))))))
-                  (assert-equal? (a 10) 
+                  (check-equal? (a 10) 
                                  '(() (9) (8 9) (7 8 9) (6 7 8 9) (5 6 7 8 9) (4 5 6 7 8 9) 
                                       (3 4 5 6 7 8 9) (2 3 4 5 6 7 8 9) (1 2 3 4 5 6 7 8 9)))))
 
