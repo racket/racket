@@ -2093,9 +2093,11 @@ module browser threading seems wrong.
                                 (and (eq? i tab)
                                      (format "~a: " n)))
                               "")])
-            (string-append
-             i-prefix
-             (get-defs-tab-filename defs))))
+            (add-modified-flag
+             defs
+             (string-append
+              i-prefix
+              (get-defs-tab-filename defs)))))
         
         (define/private (get-defs-tab-filename defs)
           (let ([fn (send defs get-filename)])
@@ -2158,11 +2160,13 @@ module browser threading seems wrong.
               string))
         
         (define/private (get-save-diamond-prefix)
-          (let ([candidate-prefixes (list 
-                                     (case (system-type)
-                                       [(windows) "• "]
-                                       [else "◆ "])
-                                     "* ")])
+          (let ([candidate-prefixes 
+                 ;; be sure asterisk is at the end of each list,
+                 ;; since that's a relatively safe character
+                 (case (system-type)
+                   [(windows) '("• " "★ " "◆ " "* ")]
+                   [(unix) '("★ " "◆ " "* ")]
+                   [else '("◆ " "★ " "* ")])])
             (ormap
              (lambda (candidate)
                (and (andmap (λ (x) (send normal-control-font screen-glyph-exists? x #t))
