@@ -18,7 +18,7 @@
         arguments v...
 
       (primitive-class-prepare-struct-type! prim-class gen-property
-        gen-value preparer dispatcher unwrapper extra-props) - prepares a
+        gen-value preparer dispatcher unwrap-prop extra-props) - prepares a
         class's  struct-type for objects generated C-side; returns a
         constructor,  predicate, and a struct:type for derived classes.
         The constructor and struct:type map the given dispatcher to the class.
@@ -30,8 +30,8 @@
         method-specific value produced by the prepaper. It returns a
         method procedure.
 
-        The unwrapper takes a possibly wrapped object and returns the
-        unwrapped version (or the object if not wrapped).
+        The unwrap-prop takes a property that, if found on an object,
+	is paired with a function that unwraps the object.
 
         The extra-props argument is a list of property--value pairs.
 
@@ -178,9 +178,8 @@ static Scheme_Object *class_prepare_struct_type(int argc, Scheme_Object **argv)
   scheme_check_proc_arity("primitive-class-prepare-struct-type!", 2, 4, argc, argv);
   if(SCHEME_TYPE(argv[5]) != scheme_struct_property_type)
     scheme_wrong_type("primitive-class-prepare-struct-type!", "struct-type-property", 5, argc, argv);
-  scheme_check_proc_arity("primitive-class-prepare-struct-type!", 1, 6, argc, argv);
 
-  props = argv[7];
+  props = argv[6];
   while (SCHEME_PAIRP(props)) {
     name = SCHEME_CAR(props);
     if (!SCHEME_PAIRP(name))
@@ -190,8 +189,8 @@ static Scheme_Object *class_prepare_struct_type(int argc, Scheme_Object **argv)
     props = SCHEME_CDR(props);
   }
   if (!SCHEME_NULLP(props))
-    scheme_wrong_type("primitive-class-prepare-struct-type!", "list of struct-type-property--value pairs", 7, argc, argv);
-  props = argv[7];
+    scheme_wrong_type("primitive-class-prepare-struct-type!", "list of struct-type-property--value pairs", 6, argc, argv);
+  props = argv[6];
 
   objscheme_something_prepared = 1;
 
@@ -243,7 +242,6 @@ static Scheme_Object *class_prepare_struct_type(int argc, Scheme_Object **argv)
   /* Type to derive/instantiate from Scheme: */
 
   c->unwrap_property = argv[5];
-  props = scheme_make_pair(scheme_make_pair(argv[5], argv[6]), props);
   props = scheme_make_pair(scheme_make_pair(dispatcher_property, argv[4]), props);
 
   props = scheme_make_pair(scheme_make_pair(preparer_property, argv[3]), props);
@@ -568,7 +566,7 @@ void objscheme_init(Scheme_Env *env)
   scheme_install_xc_global("primitive-class-prepare-struct-type!",
 			   scheme_make_prim_w_arity(class_prepare_struct_type,
 						    "primitive-class-prepare-struct-type!",
-						    8, 8),
+						    7, 7),
 			   env);
   
   scheme_install_xc_global("primitive-class-find-method",

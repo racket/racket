@@ -211,7 +211,7 @@
 
 (define-values (prop:unwrap object-unwrapper)
   (let-values ([(prop:unwrap pred acc) (make-struct-type-property 'prop:unwrap)])
-    (values prop:unwrap acc)))
+    (values prop:unwrap (λ (o) (if (pred o) (wrapper-object-wrapped o) o)))))
 
 ;;--------------------------------------------------------------------
 ;;  class macros
@@ -1184,7 +1184,7 @@
                                      (make-field-map trace-flag
                                                      (quote-syntax the-finder)
                                                      (quote the-obj)
-                                                     (quote-syntax (λ (o) ((object-unwrapper o) o)))
+                                                     (quote-syntax object-unwrapper)
                                                      (quote-syntax inherit-field-name)
                                                      (quote-syntax inherit-field-name-localized)
                                                      (quote-syntax inherit-field-accessor)
@@ -1194,7 +1194,7 @@
                                      (make-field-map trace-flag
                                                      (quote-syntax the-finder)
                                                      (quote the-obj)
-                                                     (quote-syntax (λ (o) ((object-unwrapper o) o)))
+                                                     (quote-syntax object-unwrapper)
                                                      (quote-syntax local-field)
                                                      (quote-syntax local-field-localized)
                                                      (quote-syntax local-field-accessor)
@@ -2125,7 +2125,7 @@
                            (if make-struct:prim
                                (make-struct:prim c prop:object 
                                                  preparer dispatcher
-                                                 prop:unwrap values
+                                                 prop:unwrap
                                                  (get-properties interfaces))
                                (values #f #f #f))]
                           [(struct:object object-make object? object-field-ref object-field-set!)
@@ -2141,7 +2141,6 @@
                                                  ;; Map object property to class:
                                                  (append
                                                   (list (cons prop:object c))
-                                                  (list (cons prop:unwrap values))
                                                   (if deserialize-id
                                                       (list
                                                        (cons prop:serializable
@@ -2683,8 +2682,7 @@
                                         0 ;; No new fields in this class replacement
                                         undefined
                                         ;; Map object property to class:
-                                        (list (cons prop:object c)
-                                              (cons prop:unwrap values)))])
+                                        (list (cons prop:object c)))])
           (set-class-struct:object! c struct:object)
           (set-class-object?! c object?)
           (set-class-make-object! c object-make)
@@ -3310,8 +3308,7 @@
 (vector-set! (class-supers object%) 0 object%)
 (set-class-orig-cls! object% object%)
 (let*-values ([(struct:obj make-obj obj? -get -set!)
-               (make-struct-type 'object #f 0 0 #f (list (cons prop:object object%)
-                                                         (cons prop:unwrap values)) #f)])
+               (make-struct-type 'object #f 0 0 #f (list (cons prop:object object%)) #f)])
   (set-class-struct:object! object% struct:obj)
   (set-class-make-object! object% make-obj))
 (set-class-object?! object% object?) ; don't use struct pred; it wouldn't work with prim classes
@@ -3603,7 +3600,6 @@
               traced?
               stx
               (syntax/loc stx receiver)
-              (syntax/loc stx (λ (o) ((object-unwrapper o) o)))
               (syntax/loc stx method)
               (syntax/loc stx sym)
               args
@@ -3766,7 +3762,6 @@
                      traced?
                      stx
                      (syntax obj)
-                     (syntax/loc stx (λ (o) ((object-unwrapper o) o)))
                      (syntax/loc stx ((generic-applicable gen) obj))
                      (syntax/loc stx (generic-name gen))
                      flat-stx
@@ -3848,7 +3843,7 @@
           [field-ht (class-field-ht cls)]
           [index (hash-ref field-ht id #f)])
      (if index
-         ((vector-ref (class-ext-field-sets cls) index) ((object-unwrapper obj) obj) val)
+         ((vector-ref (class-ext-field-sets cls) index) (object-unwrapper obj) val)
          (raise-mismatch-error 
           'get-field
           (format "expected an object that has a field named ~s, got " id)
@@ -3884,7 +3879,7 @@
           [field-ht (class-field-ht cls)]
           [index (hash-ref field-ht id #f)])
      (if index
-         ((vector-ref (class-ext-field-refs cls) index) ((object-unwrapper obj) obj))
+         ((vector-ref (class-ext-field-refs cls) index) (object-unwrapper obj))
          (raise-mismatch-error 
           'get-field
           (format "expected an object that has a field named ~s, got " id)
@@ -3969,8 +3964,7 @@
                                                                  (quote-syntax set!)
                                                                  (quote-syntax id)
                                                                  (quote-syntax method)
-                                                                 (quote-syntax method-obj)
-                                                                 (syntax (λ (o) ((object-unwrapper o) o))))]
+                                                                 (quote-syntax method-obj))]
                                                           ...)
                                    ()
                                    body0 body1 ...)))))]
@@ -4023,10 +4017,10 @@
    (trace (when (object? v) (inspect-event v)))
    (cond
      [(not (object? v)) #f]
-     [(class? c) ((class-object? (class-orig-cls c)) ((object-unwrapper v) v))]
+     [(class? c) ((class-object? (class-orig-cls c)) (object-unwrapper v))]
      [(interface? c)
       (and (object? v)
-           (implementation? (object-ref ((object-unwrapper v) v)) c))]
+           (implementation? (object-ref (object-unwrapper v)) c))]
      [else (raise-type-error 'is-a? "class or interface" 1 v c)])))
 
 (define (subclass? v c)
@@ -4044,7 +4038,7 @@
     (raise-type-error 'object-interface "object" o))
   (trace-begin
    (trace (inspect-event o))
-   (class-self-interface (object-ref ((object-unwrapper o) o)))))
+   (class-self-interface (object-ref (object-unwrapper o)))))
 
 (define-traced (object-method-arity-includes? o name cnt)
   (unless (object? o)
@@ -4103,7 +4097,7 @@
     (raise-type-error 'object-info "object" o))
   (trace-begin
    (trace (inspect-event o))
-   (let loop ([c (object-ref ((object-unwrapper o) o))]
+   (let loop ([c (object-ref (object-unwrapper o))]
               [skipped? #f])
      (if (struct? ((class-insp-mk c)))
          ;; current inspector can inspect this object
@@ -4143,7 +4137,7 @@
       (raise-type-error 'object->vector "object" in-o))
     (trace-begin
      (trace (inspect-event in-o))
-     (let ([o ((object-unwrapper in-o) in-o)])
+     (let ([o (object-unwrapper in-o)])
        (list->vector
         (cons
          (string->symbol (format "object:~a" (class-name (object-ref o))))
@@ -4170,8 +4164,8 @@
     (raise-type-error 'object=? "object" o1))
   (unless (object? o2)
     (raise-type-error 'object=? "object" o2))
-  (eq? ((object-unwrapper o1) o1)
-       ((object-unwrapper o2) o2)))
+  (eq? (object-unwrapper o1)
+       (object-unwrapper o2)))
 
 ;;--------------------------------------------------------------------
 ;;  primitive classes
@@ -4388,7 +4382,7 @@
 (define (make-wrapper-object obj blame methods method-contracts fields field-contracts)
   (check-object-contract obj blame methods fields)
   (let ([new-cls (make-wrapper-class (object-ref obj) blame methods method-contracts fields field-contracts)])
-    ((class-make-object new-cls) ((object-unwrapper obj) obj))))
+    ((class-make-object new-cls) (object-unwrapper obj))))
 
 ;;--------------------------------------------------------------------
 ;;  misc utils

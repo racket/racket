@@ -270,7 +270,7 @@
      stx)))
 
 (define (make-with-method-map trace-flag set!-stx id-stx
-                              method-stx method-obj-stx unwrap-stx)
+                              method-stx method-obj-stx)
   (make-set!-transformer
    (lambda (stx)
      (syntax-case stx ()
@@ -287,7 +287,6 @@
            trace-flag
            stx
            method-obj-stx
-           unwrap-stx
            method-stx
            (syntax (quote id))
            flat-args-stx
@@ -346,7 +345,7 @@
   (and (pair? ctx)
        (class-context? (car ctx))))
 
-(define (make-method-call traced? source-stx object-stx unwrap-stx
+(define (make-method-call traced? source-stx object-stx
                           method-proc-stx method-name-stx args-stx rest-arg?)
   
   (define-syntax (qstx stx)
@@ -360,7 +359,6 @@
     (if traced?
         (with-syntax ([(mth obj) (generate-temporaries
                                   (list object-stx method-proc-stx))]
-                      [unwrap unwrap-stx]
                       [name method-name-stx]
                       [(arg ...) (qstx args)]
                       [(var ...) (generate-temporaries (qstx args))])
@@ -368,7 +366,7 @@
                       [obj object]
                       [var arg] ...)
                   (initialize-call-event
-                   (unwrap obj) name (app list var ...))
+                   obj name (app list var ...))
                   (call-with-values (lambda () (app mth obj var ...))
                                     finalize-call-event))))
         (qstx (app method object . args)))))
