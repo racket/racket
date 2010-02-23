@@ -589,8 +589,7 @@ A typical program does not use all three of these functions. Furthermore,
  collection of all these functions is your @tech{world} program. 
 
 @centerline{An extended example is available in 
- @link["http://www.ccs.neu.edu/home/matthias/HtDP2e/"]{How to Design Worlds/2e}.}
-
+ @link["http://www.ccs.neu.edu/home/matthias/HtDP2e/"]{How to Design Programs/2e}.}
 
 @; -----------------------------------------------------------------------------
 @section[#:tag "world2"]{The World is not Enough} 
@@ -979,10 +978,7 @@ optional handlers:
               (on-tick tick-expr)
               #:contracts
               ([tick-expr (-> (unsyntax @tech{UniverseState}) bundle?)])]{
- tell DrScheme to apply @scheme[tick-expr] to the current list of
- participating worlds and the current state of the
- universe. 
- }
+ tell DrScheme to apply @scheme[tick-expr] to the current state of the universe.}
 
 @defform/none[#:literals (on-tick)
               (on-tick tick-expr rate-expr)
@@ -990,8 +986,7 @@ optional handlers:
               ([tick-expr (-> (unsyntax @tech{UniverseState}) bundle?)]
                [rate-expr (and/c real? positive?)])]{ 
  tell DrScheme to apply @scheme[tick-expr] as above but use the specified
- clock tick rate instead of the default.
- }
+ clock tick rate instead of the default.}
 }
 
 @item{
@@ -1040,7 +1035,7 @@ optional handlers:
 In order to explore the workings of a universe, it is necessary to launch a
  server and several world programs on one and the same computer. We
  recommend launching one server out of one DrScheme tab and as many worlds
- as necessary out of second lab. For the latter, the teachpack provides a
+ as necessary out of a second tab. For the latter, the teachpack provides a
  special form. 
 
 @defform[(launch-many-worlds expression ...)]{
