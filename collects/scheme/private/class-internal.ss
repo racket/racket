@@ -3836,18 +3836,15 @@
      obj))
   (trace-begin
    (trace (set-event obj id val))
-   (let loop ([obj obj])
-     (let* ([cls (object-ref obj)]
-            [field-ht (class-field-ht cls)]
-            [index (hash-ref field-ht id #f)])
-       (cond
-         [index
-          ((vector-ref (class-ext-field-sets cls) index) obj val)]
-         [else
-          (raise-mismatch-error 
-           'get-field
-           (format "expected an object that has a field named ~s, got " id)
-           obj)])))))
+   (let* ([cls (object-ref obj)]
+          [field-ht (class-field-ht cls)]
+          [index (hash-ref field-ht id #f)])
+     (if index
+         ((vector-ref (class-ext-field-sets cls) index) (unwrap-object obj) val)
+         (raise-mismatch-error 
+          'get-field
+          (format "expected an object that has a field named ~s, got " id)
+          obj)))))
 
 (define-syntaxes (get-field get-field-traced)
   (let ()
@@ -3875,18 +3872,15 @@
      obj))
   (trace-begin
    (trace (get-event obj id))
-   (let loop ([obj obj])
-     (let* ([cls (object-ref obj)]
-            [field-ht (class-field-ht cls)]
-            [index (hash-ref field-ht id #f)])
-       (cond
-         [index
-          ((vector-ref (class-ext-field-refs cls) index) obj)]
-         [else
-          (raise-mismatch-error 
-           'get-field
-           (format "expected an object that has a field named ~s, got " id)
-           obj)])))))
+   (let* ([cls (object-ref obj)]
+          [field-ht (class-field-ht cls)]
+          [index (hash-ref field-ht id #f)])
+     (if index
+         ((vector-ref (class-ext-field-refs cls) index) (unwrap-object obj))
+         (raise-mismatch-error 
+          'get-field
+          (format "expected an object that has a field named ~s, got " id)
+          obj)))))
 
 (define-syntaxes (field-bound? field-bound?-traced)
   (let ()
