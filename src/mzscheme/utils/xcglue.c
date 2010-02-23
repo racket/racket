@@ -562,7 +562,7 @@ void objscheme_init(Scheme_Env *env)
   scheme_install_xc_global("primitive-class-prepare-struct-type!",
 			   scheme_make_prim_w_arity(class_prepare_struct_type,
 						    "primitive-class-prepare-struct-type!",
-						    6, 6),
+						    7, 7),
 			   env);
   
   scheme_install_xc_global("primitive-class-find-method",
