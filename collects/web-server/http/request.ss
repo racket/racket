@@ -168,8 +168,9 @@
          [(and content-type (regexp-match FILE-FORM-REGEXP (header-value content-type)))
           => (match-lambda
                [(list _ content-boundary)
-                (values
-                 (delay
+                ; XXX This can't be delay because it reads from the port, which would otherwise be closed.
+                ;     I think this is reasonable because the Content-Type said it would have this format
+                (define bs
                   (map (match-lambda
                         [(struct mime-part (headers contents))
                          (define rhs (header-value (headers-assq* #"Content-Disposition" headers)))
@@ -182,6 +183,8 @@
                            [(list (list _ _ f00 f01) (list _ _ f10 f11))
                             (make-binding:file (or f10 f11) (or f00 f01) headers (apply bytes-append contents))])])
                       (read-mime-multipart content-boundary in)))
+                (values
+                 (delay bs)
                  #f)])]
          [else        
           (match (headers-assq* #"Content-Length" headers)
