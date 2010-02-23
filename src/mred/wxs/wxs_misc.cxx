@@ -268,7 +268,8 @@ int objscheme_istype_wxTimer(Scheme_Object *obj, const char *stop, int nullOK)
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  if (objscheme_is_a(obj,  os_wxTimer_class))
+  obj = objscheme_unwrap(obj);
+  if (objscheme_is_a(obj, os_wxTimer_class))
     return 1;
   else {
     if (!stop)
@@ -311,6 +312,7 @@ class wxTimer *objscheme_unbundle_wxTimer(Scheme_Object *obj, const char *where,
 
   REMEMBER_VAR_STACK();
 
+  obj = objscheme_unwrap(obj);
   (void)objscheme_istype_wxTimer(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -606,7 +608,8 @@ int objscheme_istype_wxClipboard(Scheme_Object *obj, const char *stop, int nullO
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  if (objscheme_is_a(obj,  os_wxClipboard_class))
+  obj = objscheme_unwrap(obj);
+  if (objscheme_is_a(obj, os_wxClipboard_class))
     return 1;
   else {
     if (!stop)
@@ -649,6 +652,7 @@ class wxClipboard *objscheme_unbundle_wxClipboard(Scheme_Object *obj, const char
 
   REMEMBER_VAR_STACK();
 
+  obj = objscheme_unwrap(obj);
   (void)objscheme_istype_wxClipboard(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -1018,7 +1022,8 @@ int objscheme_istype_wxClipboardClient(Scheme_Object *obj, const char *stop, int
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  if (objscheme_is_a(obj,  os_wxClipboardClient_class))
+  obj = objscheme_unwrap(obj);
+  if (objscheme_is_a(obj, os_wxClipboardClient_class))
     return 1;
   else {
     if (!stop)
@@ -1061,6 +1066,7 @@ class wxClipboardClient *objscheme_unbundle_wxClipboardClient(Scheme_Object *obj
 
   REMEMBER_VAR_STACK();
 
+  obj = objscheme_unwrap(obj);
   (void)objscheme_istype_wxClipboardClient(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -1820,7 +1826,8 @@ int objscheme_istype_wxPrintSetupData(Scheme_Object *obj, const char *stop, int 
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  if (objscheme_is_a(obj,  os_wxPrintSetupData_class))
+  obj = objscheme_unwrap(obj);
+  if (objscheme_is_a(obj, os_wxPrintSetupData_class))
     return 1;
   else {
     if (!stop)
@@ -1863,6 +1870,7 @@ class wxPrintSetupData *objscheme_unbundle_wxPrintSetupData(Scheme_Object *obj, 
 
   REMEMBER_VAR_STACK();
 
+  obj = objscheme_unwrap(obj);
   (void)objscheme_istype_wxPrintSetupData(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));

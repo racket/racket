@@ -120,7 +120,8 @@ int objscheme_istype_wxObject(Scheme_Object *obj, const char *stop, int nullOK)
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  if (objscheme_is_a(obj,  os_wxObject_class))
+  obj = objscheme_unwrap(obj);
+  if (objscheme_is_a(obj, os_wxObject_class))
     return 1;
   else {
     if (!stop)
@@ -163,6 +164,7 @@ class wxObject *objscheme_unbundle_wxObject(Scheme_Object *obj, const char *wher
 
   REMEMBER_VAR_STACK();
 
+  obj = objscheme_unwrap(obj);
   (void)objscheme_istype_wxObject(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));

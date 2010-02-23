@@ -958,7 +958,8 @@ int objscheme_istype_wxPanel(Scheme_Object *obj, const char *stop, int nullOK)
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  if (objscheme_is_a(obj,  os_wxPanel_class))
+  obj = objscheme_unwrap(obj);
+  if (objscheme_is_a(obj, os_wxPanel_class))
     return 1;
   else {
     if (!stop)
@@ -1001,6 +1002,7 @@ class wxPanel *objscheme_unbundle_wxPanel(Scheme_Object *obj, const char *where,
 
   REMEMBER_VAR_STACK();
 
+  obj = objscheme_unwrap(obj);
   (void)objscheme_istype_wxPanel(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -1823,7 +1825,8 @@ int objscheme_istype_wxDialogBox(Scheme_Object *obj, const char *stop, int nullO
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  if (objscheme_is_a(obj,  os_wxDialogBox_class))
+  obj = objscheme_unwrap(obj);
+  if (objscheme_is_a(obj, os_wxDialogBox_class))
     return 1;
   else {
     if (!stop)
@@ -1866,6 +1869,7 @@ class wxDialogBox *objscheme_unbundle_wxDialogBox(Scheme_Object *obj, const char
 
   REMEMBER_VAR_STACK();
 
+  obj = objscheme_unwrap(obj);
   (void)objscheme_istype_wxDialogBox(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));

@@ -451,6 +451,11 @@ int objscheme_is_a(Scheme_Object *o, Scheme_Object *c)
   return !!a;
 }
 
+Scheme_Object *objscheme_unwrap(Scheme_Object *o)
+{
+  return o;
+}
+
 /***************************************************************************/
 
 #ifdef SUPPORT_ARBITRARY_OBJECTS

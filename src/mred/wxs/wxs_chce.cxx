@@ -899,7 +899,8 @@ int objscheme_istype_wxChoice(Scheme_Object *obj, const char *stop, int nullOK)
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  if (objscheme_is_a(obj,  os_wxChoice_class))
+  obj = objscheme_unwrap(obj);
+  if (objscheme_is_a(obj, os_wxChoice_class))
     return 1;
   else {
     if (!stop)
@@ -942,6 +943,7 @@ class wxChoice *objscheme_unbundle_wxChoice(Scheme_Object *obj, const char *wher
 
   REMEMBER_VAR_STACK();
 
+  obj = objscheme_unwrap(obj);
   (void)objscheme_istype_wxChoice(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
