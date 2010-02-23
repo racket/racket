@@ -3040,13 +3040,10 @@
           (unless (hash-ref field-ht m #f)
             (failed "no public field ~a" m)))))))
 
-(define (object/c-check-first-order ctc obj blame)
-  (check-object-contract obj blame (object/c-methods ctc) (object/c-fields ctc)))
-
 (define (object/c-proj ctc)
   (λ (blame)
     (λ (obj)
-      (object/c-check-first-order ctc obj blame)
+      (check-object-contract obj blame (object/c-methods ctc) (object/c-fields ctc))
       (make-wrapper-object obj blame 
                            (object/c-methods ctc) (object/c-method-contracts ctc)
                            (object/c-fields ctc) (object/c-field-contracts ctc)))))
@@ -3076,8 +3073,7 @@
    #:first-order
    (λ (ctc)
      (λ (obj)
-       (with-handlers ([exn:fail:contract? (λ (e) #f)])
-         (object/c-check-first-order ctc obj #f))))))
+       (check-object-contract obj #f (object/c-methods ctc) (object/c-fields ctc))))))
 
 (define-syntax (object/c stx)
   (syntax-case stx ()
