@@ -3659,29 +3659,13 @@
                        (syntax->list (syntax (clause ...)))))))])))])
     (values (core-send* #f) (core-send* #t))))
 
-;; wrapped-primitive-object? : any -> boolean
-;; Checks to see if a value is a wrapped object whose class is primitive
-(define (wrapped-primitive-object? o)
-  (and (wrapper-object? o)
-       (let* ([cls (object-ref (unwrap-object o))])
-         ;; Is there a better way to check this?
-         (and (eq? 'stop (class-init-mode cls))
-              (class-no-super-init? cls)))))
-
-;; unwrap-if-primitive : any -> any
-;; If the target is a wrapped primitive object, this unwraps it, otherwise
-;; it's the identity function.
-(define (unwrap-if-primitive o)
-  (if (wrapped-primitive-object? o)
-      (unwrap-object o)
-      o))
-
 ;; find-method/who : symbol[top-level-form/proc-name]
 ;;                   any[object] 
 ;;                   symbol[method-name] 
-;;               -> (values method-proc unwrapper)
-;; returns the method's procedure and a function to unwrap `this' in the case
-;; that this is a wrapper object where the original class was a primitive one.
+;;               -> (values method-proc object)
+;; returns the method's procedure and the object.  If the object is a contract
+;; wrapped one and the original class was a primitive one, then the method
+;; will automatically unwrap both the object and any wrapped arguments on entry.
 (define (find-method/who who in-object name #:error? [error? #t])
   (unless (object? in-object)
     (if error?
@@ -3689,15 +3673,9 @@
                    in-object name)
         (values #f values)))
   (let* ([cls (object-ref in-object)]
-         [pos (hash-ref (class-method-ht cls) name #f)]
-         [prim? (wrapped-primitive-object? in-object)])
+         [pos (hash-ref (class-method-ht cls) name #f)])
     (cond
-      [pos (if prim?
-               ;; If primitive, we need to unwrap _any_ wrapped arguments.
-               (values (λ args (apply (vector-ref (class-methods cls) pos)
-                                      (map unwrap-if-primitive args)))
-                       in-object)
-               (values (vector-ref (class-methods cls) pos) in-object))]
+      [pos (values (vector-ref (class-methods cls) pos) in-object)]
       [error?
        (obj-error who "no such method: ~a~a"
                   name
@@ -4053,7 +4031,7 @@
    (trace (when (object? v)
             (inspect-event v)))
    (cond
-     [(class? c) ((class-object? c) (unwrap-object v))]
+     [(class? c) ((class-object? (class-orig-cls c)) (unwrap-object v))]
      [(interface? c)
       (and (object? v)
            (implementation? (object-ref (unwrap-object v)) c))]
@@ -4063,7 +4041,9 @@
   (unless (class? c)
     (raise-type-error 'subclass? "class" 1 v c))
   (and (class? v)
-       (let ([p (class-pos c)])
+       (let* ([c (class-orig-cls c)]
+              [v (class-orig-cls v)]
+              [p (class-pos c)])
          (and (<= p (class-pos v))
               (eq? c (vector-ref (class-supers v) p))))))
 
