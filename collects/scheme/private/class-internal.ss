@@ -4266,7 +4266,7 @@
 ;;  wrapper for contracts
 ;;--------------------------------------------------------------------
 
-(define (make-wrapper-class obj cls blame methods method-contracts fields field-contracts)
+(define (make-wrapper-class cls blame methods method-contracts fields field-contracts)
   (let* ([name (class-name cls)]
          [method-width (class-method-width cls)]
          [method-ht (class-method-ht cls)]
@@ -4385,8 +4385,8 @@
 ;; make-wrapper-object: object (listof symbol) (listof contract?) (listof symbol) (listof contract?)
 (define (make-wrapper-object obj blame methods method-contracts fields field-contracts)
   (check-object-contract obj blame methods fields)
-  (let ([new-cls (make-wrapper-class obj (object-ref obj) blame methods method-contracts fields field-contracts)])
-    ((class-make-object new-cls) obj)))
+  (let ([new-cls (make-wrapper-class (object-ref obj) blame methods method-contracts fields field-contracts)])
+    ((class-make-object new-cls) (unwrap-object obj))))
 
 ;;--------------------------------------------------------------------
 ;;  misc utils
