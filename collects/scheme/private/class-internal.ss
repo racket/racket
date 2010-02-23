@@ -2570,6 +2570,13 @@
     (λ (cls)
       (class/c-check-first-order ctc cls blame)
       (let* ([name (class-name cls)]
+             ;; Only add a new slot if we're not projecting an already contracted class.
+             [supers (if (eq? (class-orig-cls cls) cls)
+                         (list->vector (append (vector->list (class-supers cls)) (list #f)))
+                         (list->vector (vector->list (class-supers cls))))]
+             [pos (if (eq? (class-orig-cls cls) cls)
+                      (add1 (class-pos cls))
+                      (class-pos cls))]
              [method-width (class-method-width cls)]
              [method-ht (class-method-ht cls)]
              [dynamic-features
@@ -2620,8 +2627,8 @@
                               (string->symbol (format "class:~a" name)))
                              make-class)]
              [c (class-make name
-                            (class-pos cls)
-                            (list->vector (vector->list (class-supers cls)))
+                            pos
+                            supers
                             (class-self-interface cls)
                             void ;; No inspecting
                             
@@ -2658,12 +2665,12 @@
                             
                             (class-orig-cls cls)
                             #f #f ; serializer is never set
-                            #f)]
+                            (class-no-super-init? cls))]
              [obj-name (if name
                            (string->symbol (format "object:~a" name))
                            'object)])
         
-        (vector-set! (class-supers c) (class-pos c) c)
+        (vector-set! supers pos c)
         
         ;; --- Make the new object struct ---
         (let-values ([(struct:object object-make object? object-field-ref object-field-set!)
