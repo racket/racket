@@ -1,13 +1,8 @@
 #lang scheme
 (require schemeunit
-         schemeunit/private/check
-         schemeunit/private/test-case
-         schemeunit/private/test-suite
          schemeunit/text-ui
          xml
          scheme/runtime-path)
-(require/expose schemeunit/private/test-suite
-                (current-seed))
 
 (define (validate-xml? xml)
   (error 'validate-xml? "Not implemented"))
@@ -17,26 +12,14 @@
 (define (read-xml/file f)
   (with-input-from-file f
     (lambda () (read-xml))))
+
 (define (dir->test-suite d name path->test-case)
-  (make-schemeunit-test-suite
+  (test-suite
    name
-   (lambda (fdown fup fhere seed)
-     (parameterize
-         ([current-seed seed]
-          [current-test-case-around (test-suite-test-case-around fhere)]
-          [current-check-around (test-suite-check-around fhere)])
-       (for-each (lambda (p)
-                   (define t (path->test-case (build-path d p)))
-                   (if (schemeunit-test-suite? t)
-                       (current-seed (apply-test-suite t fdown fup fhere (current-seed)))
-                       t))
-                 (filter (lambda (p)
-                           (define ext (filename-extension p))
-                           (and ext (bytes=? #"xml" ext)))
-                         (directory-list d)))) 
-     (current-seed))
-   void
-   void))
+   (for ([p (directory-list d)]
+         #:when (let ([ext (filename-extension p)])
+                  (and ext (bytes=? #"xml" ext))))
+     (path->test-case (build-path d p)))))
 
 (define (not-wf-dir->test-suite d)
   (define (path->test-case f)

@@ -11,7 +11,9 @@
                       (prefix portuguese: "portuguese-string-constants.ss")
 		      (prefix japanese: "japanese-string-constants.ss")
                       (prefix traditional-chinese: "traditional-chinese-string-constants.ss")
-                      (prefix simplified-chinese: "simplified-chinese-string-constants.ss"))
+                      (prefix simplified-chinese: "simplified-chinese-string-constants.ss")
+                      (prefix russian: "russian-string-constants.ss")
+                      (prefix ukrainian: "ukrainian-string-constants.ss"))
   
   (require mzlib/file
            mzlib/etc
@@ -26,20 +28,22 @@
   ;; table : (listof (list symbol regexp regexp))
   ;; this table indicates what the default value of the natural language
   ;; preference is. the first regexp is used under Windows and the second
-  ;; is used on other platofmr.s All regexps are compared to the result
+  ;; is used on other platforms. All regexps are compared to the result
   ;; of (system-language+country)
   (define table
-    '((english #rx"^en_" #rx"^English_")
-      (spanish #rx"^es_" #rx"^Espanol_")
-      (german #rx"^de_" #rx"^German_")
-      (french #rx"^fr_" #rx"French_")
-      (dutch #rx"nl_" #rx"^Netherlands_")
-      (danish #rx"^da_DK" #rx"^Danish_")
-      (portuguese #rx"^pt_" #rx"Portuguese_")
-      (japanese #rx"^ja_" #rx"^Japan_")
+    '((english             #rx"^en_"        #rx"^English_")
+      (spanish             #rx"^es_"        #rx"^Espanol_")
+      (german              #rx"^de_"        #rx"^German_")
+      (french              #rx"^fr_"        #rx"French_")
+      (dutch               #rx"nl_"         #rx"^Netherlands_")
+      (danish              #rx"^da_DK"      #rx"^Danish_")
+      (portuguese          #rx"^pt_"        #rx"Portuguese_")
+      (japanese            #rx"^ja_"        #rx"^Japan_")
       (traditional-chinese #rx"^zh_(HK|TW)" #rx"Chinese_China")
-      (simplified-chinese #rx"^zh_CN" #rx"Chinese_(Hong|Taiwan)")))
-      
+      (simplified-chinese  #rx"^zh_CN"      #rx"Chinese_(Hong|Taiwan)")
+      (russian             #rx"^ru_"        #rx"^Russian_")
+      (ukrainian           #rx"^uk_"        #rx"^Ukrainian_")))
+
   ;; default-language : -> symbol
   ;; uses `table' and system-language+contry to find what language to start with
   (define (default-language)
@@ -67,7 +71,7 @@
     (define-struct sc (language-name constants ht))
 
     (define available-string-constant-sets
-      (list 
+      (list
        (make-sc 'english english:string-constants #f)
        (make-sc 'spanish spanish:string-constants #f)
        (make-sc 'french french:string-constants #f)
@@ -77,7 +81,9 @@
        (make-sc 'portuguese portuguese:string-constants #f)
        (make-sc 'japanese japanese:string-constants #f)
        (make-sc 'traditional-chinese traditional-chinese:string-constants #f)
-       (make-sc 'simplified-chinese simplified-chinese:string-constants #f)))
+       (make-sc 'simplified-chinese simplified-chinese:string-constants #f)
+       (make-sc 'russian russian:string-constants #f)
+       (make-sc 'ukrainian ukrainian:string-constants #f)))
     
     (define first-string-constant-set (car available-string-constant-sets))
     

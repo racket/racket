@@ -388,7 +388,7 @@
            (cset-meet (cg e e*) (cg e* e))]
           [((Hashtable: s1 s2) (Hashtable: t1 t2))
            ;; the key is contravariant, the value is invariant
-           (cset-meet* (list (cg t1 s1) (cg t2 s2) (cg s2 t2)))]
+           (cset-meet* (list (cg t1 s1) (cg s1 t1) (cg t2 s2) (cg s2 t2)))]
           [((Syntax: s1) (Syntax: s2))
            (cg s1 s2)]
           ;; parameters are just like one-arg functions
