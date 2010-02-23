@@ -1765,11 +1765,9 @@
             struct:wrapper-object)))
 
 ;; unwrap-object : (union wrapper-object object) -> object
+;; wrapped objects can only be one level deep, so just do a quick check and unwrap.
 (define (unwrap-object o)
-  (let loop ([o o])
-    (if (wrapper-object? o)
-        (loop (wrapper-object-wrapped o))
-        o)))
+  (if (wrapper-object? o) (wrapper-object-wrapped o) o))
 
 ;;--------------------------------------------------------------------
 ;;  class implementation
@@ -3661,42 +3659,50 @@
                        (syntax->list (syntax (clause ...)))))))])))])
     (values (core-send* #f) (core-send* #t))))
 
+;; wrapped-primitive-object? : any -> boolean
+;; Checks to see if a value is a wrapped object whose class is primitive
+(define (wrapped-primitive-object? o)
+  (and (wrapper-object? o)
+       (let* ([cls (object-ref (unwrap-object o))])
+         ;; Is there a better way to check this?
+         (and (eq? 'stop (class-init-mode cls))
+              (class-no-super-init? cls)))))
+
+;; unwrap-if-primitive : any -> any
+;; If the target is a wrapped primitive object, this unwraps it, otherwise
+;; it's the identity function.
+(define (unwrap-if-primitive o)
+  (if (wrapped-primitive-object? o)
+      (unwrap-object o)
+      o))
+
 ;; find-method/who : symbol[top-level-form/proc-name]
 ;;                   any[object] 
 ;;                   symbol[method-name] 
-;;               -> (values method-proc object)
+;;               -> (values method-proc unwrapper)
 ;; returns the method's procedure and a function to unwrap `this' in the case
-;; that this is a wrapper object that is just "falling thru".
+;; that this is a wrapper object where the original class was a primitive one.
 (define (find-method/who who in-object name #:error? [error? #t])
   (unless (object? in-object)
     (if error?
         (obj-error who "target is not an object: ~e for method: ~a"
                    in-object name)
         (values #f values)))
-  
-  (let-syntax ([loop-body
-                (lambda (stx)
-                  (syntax-case stx ()
-                    [(_ abs-object wrapper-case)
-                     (identifier? (syntax abs-object))
-                     (syntax
-                      (let* ([c (object-ref abs-object)]
-                             [pos (hash-ref (class-method-ht c) name #f)])
-                        (cond
-                          [pos (values (vector-ref (class-methods c) pos) abs-object)]
-                          [(wrapper-object? abs-object) wrapper-case]
-                          [else
-                           (if error?
-                               (obj-error who "no such method: ~a~a"
-                                          name
-                                          (for-class (class-name c)))
-                               (values #f values))])))]))])
-    (loop-body
-     in-object
-     (let loop ([loop-object in-object])
-       (loop-body
-        loop-object
-        (loop (wrapper-object-wrapped loop-object)))))))
+  (let* ([cls (object-ref in-object)]
+         [pos (hash-ref (class-method-ht cls) name #f)]
+         [prim? (wrapped-primitive-object? in-object)])
+    (cond
+      [pos (if prim?
+               ;; If primitive, we need to unwrap _any_ wrapped arguments.
+               (values (λ args (apply (vector-ref (class-methods cls) pos)
+                                      (map unwrap-if-primitive args)))
+                       in-object)
+               (values (vector-ref (class-methods cls) pos) in-object))]
+      [error?
+       (obj-error who "no such method: ~a~a"
+                  name
+                  (for-class (class-name cls)))]
+      [else (values #f values)])))
 
 (define-values (make-class-field-accessor make-class-field-mutator)
   (let ([mk (λ (who which)
