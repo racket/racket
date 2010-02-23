@@ -3040,7 +3040,7 @@
             (failed "no public field ~a" m)))))))
 
 (define (object/c-check-first-order ctc obj blame)
-  (check-object-contract obj blame (object/c-methods) (object/c-fields)))
+  (check-object-contract obj blame (object/c-methods ctc) (object/c-fields ctc)))
 
 (define (object/c-proj ctc)
   (λ (blame)
