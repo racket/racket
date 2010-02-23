@@ -60,7 +60,7 @@
   (syntax-rules (else)
     [(_) (mutator-begin)]
     [(_ [else e ...]) (mutator-begin e ...)]
-    [(_ [q ans] e ...) (mutator-if q ans (cond e ...))]))
+    [(_ [q ans] e ...) (mutator-if q ans (mutator-cond e ...))]))
 (define-syntax mutator-case
   (syntax-rules (else)
     [(_ value
