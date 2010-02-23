@@ -1100,7 +1100,8 @@ int objscheme_istype_wxRadioBox(Scheme_Object *obj, const char *stop, int nullOK
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  if (objscheme_is_a(obj,  os_wxRadioBox_class))
+  obj = objscheme_unwrap(obj);
+  if (objscheme_is_a(obj, os_wxRadioBox_class))
     return 1;
   else {
     if (!stop)
@@ -1143,6 +1144,7 @@ class wxRadioBox *objscheme_unbundle_wxRadioBox(Scheme_Object *obj, const char *
 
   REMEMBER_VAR_STACK();
 
+  obj = objscheme_unwrap(obj);
   (void)objscheme_istype_wxRadioBox(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));

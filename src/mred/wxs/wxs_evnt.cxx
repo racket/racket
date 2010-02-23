@@ -232,7 +232,8 @@ int objscheme_istype_wxEvent(Scheme_Object *obj, const char *stop, int nullOK)
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  if (objscheme_is_a(obj,  os_wxEvent_class))
+  obj = objscheme_unwrap(obj);
+  if (objscheme_is_a(obj, os_wxEvent_class))
     return 1;
   else {
     if (!stop)
@@ -274,6 +275,7 @@ class wxEvent *objscheme_unbundle_wxEvent(Scheme_Object *obj, const char *where,
 
   REMEMBER_VAR_STACK();
 
+  obj = objscheme_unwrap(obj);
   (void)objscheme_istype_wxEvent(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -500,7 +502,8 @@ int objscheme_istype_wxCommandEvent(Scheme_Object *obj, const char *stop, int nu
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  if (objscheme_is_a(obj,  os_wxCommandEvent_class))
+  obj = objscheme_unwrap(obj);
+  if (objscheme_is_a(obj, os_wxCommandEvent_class))
     return 1;
   else {
     if (!stop)
@@ -542,6 +545,7 @@ class wxCommandEvent *objscheme_unbundle_wxCommandEvent(Scheme_Object *obj, cons
 
   REMEMBER_VAR_STACK();
 
+  obj = objscheme_unwrap(obj);
   (void)objscheme_istype_wxCommandEvent(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -678,7 +682,8 @@ int objscheme_istype_wxPopupEvent(Scheme_Object *obj, const char *stop, int null
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  if (objscheme_is_a(obj,  os_wxPopupEvent_class))
+  obj = objscheme_unwrap(obj);
+  if (objscheme_is_a(obj, os_wxPopupEvent_class))
     return 1;
   else {
     if (!stop)
@@ -720,6 +725,7 @@ class wxPopupEvent *objscheme_unbundle_wxPopupEvent(Scheme_Object *obj, const ch
 
   REMEMBER_VAR_STACK();
 
+  obj = objscheme_unwrap(obj);
   (void)objscheme_istype_wxPopupEvent(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -1035,7 +1041,8 @@ int objscheme_istype_wxScrollEvent(Scheme_Object *obj, const char *stop, int nul
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  if (objscheme_is_a(obj,  os_wxScrollEvent_class))
+  obj = objscheme_unwrap(obj);
+  if (objscheme_is_a(obj, os_wxScrollEvent_class))
     return 1;
   else {
     if (!stop)
@@ -1077,6 +1084,7 @@ class wxScrollEvent *objscheme_unbundle_wxScrollEvent(Scheme_Object *obj, const 
 
   REMEMBER_VAR_STACK();
 
+  obj = objscheme_unwrap(obj);
   (void)objscheme_istype_wxScrollEvent(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -2111,7 +2119,8 @@ int objscheme_istype_wxKeyEvent(Scheme_Object *obj, const char *stop, int nullOK
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  if (objscheme_is_a(obj,  os_wxKeyEvent_class))
+  obj = objscheme_unwrap(obj);
+  if (objscheme_is_a(obj, os_wxKeyEvent_class))
     return 1;
   else {
     if (!stop)
@@ -2153,6 +2162,7 @@ class wxKeyEvent *objscheme_unbundle_wxKeyEvent(Scheme_Object *obj, const char *
 
   REMEMBER_VAR_STACK();
 
+  obj = objscheme_unwrap(obj);
   (void)objscheme_istype_wxKeyEvent(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -3009,7 +3019,8 @@ int objscheme_istype_wxMouseEvent(Scheme_Object *obj, const char *stop, int null
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  if (objscheme_is_a(obj,  os_wxMouseEvent_class))
+  obj = objscheme_unwrap(obj);
+  if (objscheme_is_a(obj, os_wxMouseEvent_class))
     return 1;
   else {
     if (!stop)
@@ -3051,6 +3062,7 @@ class wxMouseEvent *objscheme_unbundle_wxMouseEvent(Scheme_Object *obj, const ch
 
   REMEMBER_VAR_STACK();
 
+  obj = objscheme_unwrap(obj);
   (void)objscheme_istype_wxMouseEvent(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
