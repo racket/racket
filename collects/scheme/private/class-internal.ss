@@ -3660,21 +3660,17 @@
 ;; returns the method's procedure and the object.  If the object is a contract
 ;; wrapped one and the original class was a primitive one, then the method
 ;; will automatically unwrap both the object and any wrapped arguments on entry.
-(define (find-method/who who in-object name #:error? [error? #t])
+(define (find-method/who who in-object name)
   (unless (object? in-object)
-    (if error?
-        (obj-error who "target is not an object: ~e for method: ~a"
-                   in-object name)
-        (values #f values)))
+    (obj-error who "target is not an object: ~e for method: ~a"
+               in-object name))
   (let* ([cls (object-ref in-object)]
          [pos (hash-ref (class-method-ht cls) name #f)])
-    (cond
-      [pos (values (vector-ref (class-methods cls) pos) in-object)]
-      [error?
-       (obj-error who "no such method: ~a~a"
-                  name
-                  (for-class (class-name cls)))]
-      [else (values #f values)])))
+    (if pos
+      (values (vector-ref (class-methods cls) pos) in-object)
+      (obj-error who "no such method: ~a~a"
+                 name
+                 (for-class (class-name cls))))))
 
 (define-values (make-class-field-accessor make-class-field-mutator)
   (let ([mk (λ (who which)
