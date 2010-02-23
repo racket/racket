@@ -4020,9 +4020,9 @@
 
 (define-traced (is-a? v c)
   (trace-begin
-   (trace (when (object? v)
-            (inspect-event v)))
+   (trace (when (object? v) (inspect-event v)))
    (cond
+     [(not (object? v)) #f]
      [(class? c) ((class-object? (class-orig-cls c)) ((object-unwrapper v) v))]
      [(interface? c)
       (and (object? v)
