@@ -564,7 +564,7 @@
                         (when frame
                           (send frame next-tab))))])
      (let ([frame (find-frame windows-menu)])
-       (unless (= 1 (send frame get-tab-count))
+       (unless (or (not frame) (= 1 (send frame get-tab-count)))
          (for ([i (in-range 0 (send frame get-tab-count))]
                #:when (< i 9))
            (new menu-item% 
