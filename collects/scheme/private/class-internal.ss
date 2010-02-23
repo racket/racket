@@ -2124,7 +2124,7 @@
             ;; --- Make the new object struct ---
             (let*-values ([(prim-object-make prim-object? struct:prim-object)
                            (if make-struct:prim
-                               (make-struct:prim c prop:object preparer dispatcher (get-properties interfaces))
+                               (make-struct:prim c prop:object preparer dispatcher unwrap-object (get-properties interfaces))
                                (values #f #f #f))]
                           [(struct:object object-make object? object-field-ref object-field-set!)
                            (if make-struct:prim
@@ -4189,7 +4189,7 @@
          new-methods)         ; list of methods
   
   ; The `make-struct:prim' function takes prop:object, a
-  ;  class, a preparer, a dispatcher function, and a property assoc list, and produces:
+  ;  class, a preparer, a dispatcher function, an unwrapper, and a property assoc list, and produces:
   ;    * a struct constructor (must have prop:object)
   ;    * a struct predicate
   ;    * a struct type for derived classes (mustn't have prop:object)
@@ -4197,6 +4197,8 @@
   ; The supplied preparer takes a symbol and returns a num.
   ; 
   ; The supplied dispatcher takes an object and a num and returns a method.
+  ;
+  ; The supplied unwrapper takes an object and returns the unwrapped version (or the original object).
   ;
   ; When a primitive class has a superclass, the struct:prim maker
   ;  is responsible for ensuring that the returned struct items match

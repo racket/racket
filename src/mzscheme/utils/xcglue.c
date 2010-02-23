@@ -18,10 +18,10 @@
         arguments v...
 
       (primitive-class-prepare-struct-type! prim-class gen-property
-        gen-value preparer dispatcher extra-props) - prepares a class's 
-        struct-type for objects generated C-side; returns a constructor, 
-        predicate, and a struct:type for derived classes. The constructor and
-        struct:type map the given dispatcher to the class.
+        gen-value preparer dispatcher unwrapper extra-props) - prepares a
+        class's  struct-type for objects generated C-side; returns a
+        constructor,  predicate, and a struct:type for derived classes.
+        The constructor and struct:type map the given dispatcher to the class.
 
         The preparer takes a symbol naming the method. It returns a
         value to be used in future calls to the dispatcher.
@@ -29,6 +29,9 @@
         The dispatcher takes two arguments: an object and a
         method-specific value produced by the prepaper. It returns a
         method procedure.
+
+        The unwrapper takes a possibly wrapped object and returns the
+        unwrapped version (or the object if not wrapped).
 
         The extra-props argument is a list of property--value pairs.
 
@@ -96,6 +99,7 @@ static Scheme_Object *object_struct;
 static Scheme_Object *object_property;
 static Scheme_Object *dispatcher_property;
 static Scheme_Object *preparer_property;
+static Scheme_Object *unwrapper_property;
 
 #ifdef MZ_PRECISE_GC
 # include "../gc2/gc2.h"
@@ -170,8 +174,9 @@ static Scheme_Object *class_prepare_struct_type(int argc, Scheme_Object **argv)
     scheme_wrong_type("primitive-class-prepare-struct-type!", "struct-type-property", 1, argc, argv);
   scheme_check_proc_arity("primitive-class-prepare-struct-type!", 1, 3, argc, argv);
   scheme_check_proc_arity("primitive-class-prepare-struct-type!", 2, 4, argc, argv);
+  scheme_check_proc_arity("primitive-class-prepare-struct-type!", 1, 5, argc, argv);
 
-  props = argv[5];
+  props = argv[6];
   while (SCHEME_PAIRP(props)) {
     name = SCHEME_CAR(props);
     if (!SCHEME_PAIRP(name))
@@ -181,8 +186,8 @@ static Scheme_Object *class_prepare_struct_type(int argc, Scheme_Object **argv)
     props = SCHEME_CDR(props);
   }
   if (!SCHEME_NULLP(props))
-    scheme_wrong_type("primitive-class-prepare-struct-type!", "list of struct-type-property--value pairs", 5, argc, argv);
-  props = argv[5];
+    scheme_wrong_type("primitive-class-prepare-struct-type!", "list of struct-type-property--value pairs", 6, argc, argv);
+  props = argv[6];
 
   objscheme_something_prepared = 1;
 
@@ -235,7 +240,8 @@ static Scheme_Object *class_prepare_struct_type(int argc, Scheme_Object **argv)
 
   props = scheme_make_pair(scheme_make_pair(preparer_property, argv[3]),
 			   scheme_make_pair(scheme_make_pair(dispatcher_property, argv[4]),
-					    props));
+					    scheme_make_pair(scheme_make_pair(unwrapper_property, argv[5]),
+							     props)));
   
   stype = scheme_make_struct_type(name,
 				  base_stype, 
@@ -453,7 +459,18 @@ int objscheme_is_a(Scheme_Object *o, Scheme_Object *c)
 
 Scheme_Object *objscheme_unwrap(Scheme_Object *o)
 {
-  return o;
+  Scheme_Object *s[1], *unwrapper;
+
+  if (!o)
+    return NULL;
+
+  unwrapper = scheme_struct_type_property_ref(unwrapper_property, (Scheme_Object *)o);
+  if (!unwrapper)
+    return NULL;
+
+  s[0] = o;
+
+  return _scheme_apply(unwrapper, 1, s);
 }
 
 /***************************************************************************/
@@ -522,6 +539,9 @@ void objscheme_init(Scheme_Env *env)
 
   wxREGGLOB(dispatcher_property);
   dispatcher_property = scheme_make_struct_type_property(scheme_intern_symbol("primitive-dispatcher"));
+
+  wxREGGLOB(unwrapper_property);
+  unwrapper_property = scheme_make_struct_type_property(scheme_intern_symbol("primitive-unwrapper"));
 
   wxREGGLOB(object_struct);
   object_struct = scheme_make_struct_type(scheme_intern_symbol("primitive-object"), 
