@@ -294,7 +294,7 @@
                                           (list 'field-name ...) (list field-ctc-var ...))))
                  #:first-order
                  (lambda (val)
-                   (make-wrapper-object obj #f (list 'method-name ...) (list 'field-name ...))))))))]))))
+                   (check-object-contract val #f (list 'method-name ...) (list 'field-name ...))))))))]))))
 
 
 (define (check-object val blame)
