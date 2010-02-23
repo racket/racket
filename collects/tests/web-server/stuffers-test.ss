@@ -28,7 +28,7 @@
   (parameterize ([current-execution-context
                                (make-execution-context 
                                 (make-request #"GET" (string->url "http://www.google.com") 
-                                              empty empty
+                                              empty (delay empty)
                                               #"" "127.0.0.1" 80
                                               "127.0.0.1"))])
     (thnk)))

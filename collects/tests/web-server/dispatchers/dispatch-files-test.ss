@@ -38,7 +38,7 @@
 (define file-url (string->url "http://test.com/foo"))
 (define dir-url (string->url "http://test.com/foo/"))
 (define (req d? meth heads)
-  (make-request meth (if d? dir-url file-url) heads empty #"" "host" 80 "client"))
+  (make-request meth (if d? dir-url file-url) heads (delay empty) #"" "host" 80 "client"))
 
 (define dispatch-files-tests
   (test-suite

@@ -56,7 +56,7 @@ The @web-server implements many HTTP RFCs that are provided by this module.
 @defstruct[request ([method bytes?]
                     [uri url?]
                     [headers/raw (listof header?)]
-                    [bindings/raw (listof binding?)]
+                    [bindings/raw-promise (promise/c (listof binding?))]
                     [post-data/raw (or/c false/c bytes?)]
                     [host-ip string?]
                     [host-port number?]
@@ -67,6 +67,11 @@ The @web-server implements many HTTP RFCs that are provided by this module.
  POST data.
  
  You are @bold{unlikely to need to construct} a request struct.
+}
+                                         
+@defproc[(request-bindings/raw [r request?])
+         (listof binding?)]{
+ Forces @scheme[(request-bindings/raw-promise r)].
 }
                                          
 Here is an example typical of what you will find in many applications:

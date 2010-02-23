@@ -44,7 +44,7 @@ END
   (make-request 
    #"GET" (string->url "http://test.com/foo")
    hs
-   empty #f
+   (delay empty) #f
    "host" 80 "client"))
 
 (define (header->cons h)

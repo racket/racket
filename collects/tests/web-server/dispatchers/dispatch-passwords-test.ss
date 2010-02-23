@@ -3,8 +3,9 @@
          (only-in mzlib/file
                   make-temporary-file)
          net/url
-         mzlib/list
-         mzlib/serialize
+         scheme/promise
+         scheme/list
+         scheme/serialize
          web-server/http
          web-server/dispatchers/dispatch
          (prefix-in passwords: web-server/dispatchers/dispatch-passwords)
@@ -48,7 +49,7 @@
                        (if authorized?
                            (list (make-header #"Authorization" #"Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ=="))
                            empty)
-                       empty #"" "host" 80 "client"))))
+                       (delay empty) #"" "host" 80 "client"))))
 
 (define dispatch-passwords-tests
   (test-suite

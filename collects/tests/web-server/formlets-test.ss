@@ -126,7 +126,7 @@
              (formlet-process f
                               (make-request #"GET" (string->url "http://test.com")
                                             empty
-                                            bs
+                                            (delay bs)
                                             #f "127.0.0.1" 80 "127.0.0.1")))]
      (test-suite
       "Input"
@@ -161,7 +161,7 @@
       (test-equal? "default"
                    (test-process (default #"def" (text-input)) empty)
                    #"def")
-            
+      
       (test-equal? "to-string"
                    (test-process (to-string (required (text-input))) (list (make-binding:form #"input_0" #"value")))
                    "value")
@@ -244,11 +244,12 @@
                  (check-equal? (formlet-process travel-formlet
                                                 (make-request #"GET" (string->url "http://test.com")
                                                               empty
-                                                              (list (make-binding:form #"input_0" #"Jay")
-                                                                    (make-binding:form #"input_1" #"10")
-                                                                    (make-binding:form #"input_2" #"6")
-                                                                    (make-binding:form #"input_3" #"10")
-                                                                    (make-binding:form #"input_4" #"8"))
+                                                              (delay
+                                                                (list (make-binding:form #"input_0" #"Jay")
+                                                                      (make-binding:form #"input_1" #"10")
+                                                                      (make-binding:form #"input_2" #"6")
+                                                                      (make-binding:form #"input_3" #"10")
+                                                                      (make-binding:form #"input_4" #"8")))
                                                               #f "127.0.0.1" 80 "127.0.0.1"))
                                (list "Jay" (make-date 10 6) (make-date 10 8))))))
    
