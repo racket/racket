@@ -59,7 +59,7 @@
          [(f . args)
           (quasisyntax/loc stx (#,replace-stx . args))])))))
 
-(define (make-field-map trace-flag the-finder the-obj the-binder the-binder-localized
+(define (make-field-map trace-flag the-finder the-obj unwrapper the-binder the-binder-localized
                         field-accessor field-mutator field-pos/null)
   (let ([set!-stx (datum->syntax the-finder 'set!)])
     (mk-set!-trans
@@ -73,7 +73,8 @@
                           [trace (syntax/loc stx (set-event obj (quote id) id))]
                           [set (quasisyntax/loc stx
                                  ((unsyntax field-mutator)
-                                  obj (unsyntax-splicing field-pos/null) id))])
+                                  ((unsyntax unwrapper) obj)
+                                  (unsyntax-splicing field-pos/null) id))])
               (if trace-flag
                   (syntax/loc stx (let* bindings trace set))
                   (syntax/loc stx (let* bindings set))))]
@@ -82,7 +83,8 @@
                           [trace (syntax/loc stx (get-event obj (quote id)))]
                           [call (quasisyntax/loc stx
                                   (((unsyntax field-accessor)
-                                    obj-expr (unsyntax-splicing field-pos/null)) . args))])
+                                    ((unsyntax unwrapper) obj-expr)
+                                    (unsyntax-splicing field-pos/null)) . args))])
               (if trace-flag
                   (syntax/loc stx (let* bindings trace call))
                   (syntax/loc stx (let* bindings call))))]
@@ -91,7 +93,8 @@
                           [trace (syntax/loc stx (get-event obj (quote id)))]
                           [get (quasisyntax/loc stx
                                  ((unsyntax field-accessor)
-                                  obj-expr (unsyntax-splicing field-pos/null)))])
+                                  ((unsyntax unwrapper) obj-expr)
+                                  (unsyntax-splicing field-pos/null)))])
               (if trace-flag
                   (syntax/loc stx (let* bindings trace get))
                   (syntax/loc stx (let* bindings get))))]))))))

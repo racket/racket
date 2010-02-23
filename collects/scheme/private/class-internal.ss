@@ -195,6 +195,26 @@
              orig)))
 
 ;;--------------------------------------------------------------------
+;;  object wrapper for contracts
+;;--------------------------------------------------------------------
+
+(define-values (wrapper-object? wrapper-object-wrapped set-wrapper-object-wrapped! struct:wrapper-object)
+  (let-values ([(struct:wrapper-object make-wrapper-object wrapper-object? ref set!)
+                (make-struct-type 'raw-wrapper-object
+                                  #f
+                                  1
+                                  0)])
+    (values wrapper-object?
+            (lambda (v) (ref v 0))
+            (lambda (o v) (set! o 0 v))
+            struct:wrapper-object)))
+
+;; unwrap-object : (union wrapper-object object) -> object
+;; wrapped objects can only be one level deep, so just do a quick check and unwrap.
+(define (unwrap-object o)
+  (if (wrapper-object? o) (wrapper-object-wrapped o) o))
+
+;;--------------------------------------------------------------------
 ;;  class macros
 ;;--------------------------------------------------------------------
 
@@ -1165,6 +1185,7 @@
                                      (make-field-map trace-flag
                                                      (quote-syntax the-finder)
                                                      (quote the-obj)
+                                                     (quote-syntax unwrap-object)
                                                      (quote-syntax inherit-field-name)
                                                      (quote-syntax inherit-field-name-localized)
                                                      (quote-syntax inherit-field-accessor)
@@ -1174,6 +1195,7 @@
                                      (make-field-map trace-flag
                                                      (quote-syntax the-finder)
                                                      (quote the-obj)
+                                                     (quote-syntax unwrap-object)
                                                      (quote-syntax local-field)
                                                      (quote-syntax local-field-localized)
                                                      (quote-syntax local-field-accessor)
@@ -1750,26 +1772,6 @@
   (eq-hash-code (member-key-id a)))
 
 ;;--------------------------------------------------------------------
-;;  object wrapper for contracts
-;;--------------------------------------------------------------------
-
-(define-values (wrapper-object? wrapper-object-wrapped set-wrapper-object-wrapped! struct:wrapper-object)
-  (let-values ([(struct:wrapper-object make-wrapper-object wrapper-object? ref set!)
-                (make-struct-type 'raw-wrapper-object
-                                  #f
-                                  1
-                                  0)])
-    (values wrapper-object?
-            (lambda (v) (ref v 0))
-            (lambda (o v) (set! o 0 v))
-            struct:wrapper-object)))
-
-;; unwrap-object : (union wrapper-object object) -> object
-;; wrapped objects can only be one level deep, so just do a quick check and unwrap.
-(define (unwrap-object o)
-  (if (wrapper-object? o) (wrapper-object-wrapped o) o))
-
-;;--------------------------------------------------------------------
 ;;  class implementation
 ;;--------------------------------------------------------------------
 
@@ -2179,19 +2181,15 @@
               ;;  Use public field names to name the accessors and mutators
               (let-values ([(local-accessors local-mutators)
                             (values (for/list ([n (in-range num-fields)])
-                                      (let ([acc (make-struct-field-accessor object-field-ref n #f)])
-                                        (λ (o) (acc (unwrap-object o)))))
+                                      (make-struct-field-accessor object-field-ref n #f))
                                     (for/list ([n (in-range num-fields)])
-                                      (let ([acc (make-struct-field-mutator object-field-set! n #f)])
-                                        (λ (o v) (acc (unwrap-object o) v)))))]
+                                      (make-struct-field-mutator object-field-set! n #f)))]
                            [(inh-accessors inh-mutators)
-                            (values (map (lambda (id) 
-                                           (let ([i (hash-ref field-ht id)])
-                                             (λ (o) ((vector-ref (class-int-field-refs (object-ref o)) i) o))))
+                            (values (map (lambda (id)
+                                           (vector-ref int-field-refs (hash-ref field-ht id)))
                                          inherit-field-names)
                                     (map (lambda (id)
-                                           (let ([i (hash-ref field-ht id)])
-                                             (λ (o v) ((vector-ref (class-int-field-sets (object-ref o)) i) o v))))
+                                           (vector-ref int-field-sets (hash-ref field-ht id)))
                                          inherit-field-names))])
                 
                 ;; -- Extract superclass methods and make rename-inners ---
@@ -2731,11 +2729,9 @@
                        [old-ref (vector-ref ext-field-refs i)]
                        [old-set (vector-ref ext-field-sets i)])
                   (vector-set! ext-field-refs i
-                               (λ (o) 
-                                 ((pre-p blame) (old-ref o))))
+                               (λ (o) ((pre-p blame) (old-ref o))))
                   (vector-set! ext-field-sets i
-                               (λ (o v)
-                                 (old-set o ((pre-p bset) v)))))))))
+                               (λ (o v) (old-set o ((pre-p bset) v)))))))))
         
         ;; Handle internal field contracts
         (unless (null? (class/c-inherit-fields ctc))
@@ -2750,11 +2746,9 @@
                        [old-ref (vector-ref int-field-refs i)]
                        [old-set (vector-ref int-field-sets i)])
                   (vector-set! int-field-refs i
-                               (λ (o) 
-                                 ((pre-p blame) (old-ref o))))
+                               (λ (o) ((pre-p blame) (old-ref o))))
                   (vector-set! int-field-sets i
-                               (λ (o v)
-                                 (old-set o ((pre-p bset) v)))))))))
+                               (λ (o v) (old-set o ((pre-p bset) v)))))))))
         
         ;; Now the trickiest of them all, internal dynamic dispatch.
         ;; First we update any dynamic indexes, as applicable.
@@ -4364,21 +4358,13 @@
                 [p ((contract-projection c) blame)])
             (vector-set! meths i (p (vector-ref meths i)))))))
     
-    ;; Redirect internal/external field accessors/mutators
-    (let ([old-int-refs (class-int-field-refs cls)]
-          [old-int-sets (class-int-field-sets cls)]
-          [old-ext-refs (class-ext-field-refs cls)]
-          [old-ext-sets (class-ext-field-sets cls)])
-      (for ([i (in-range field-pub-width)])
-        (let ([old-int-ref (vector-ref old-int-refs i)]
-              [old-int-set (vector-ref old-int-sets i)]
-              [old-ext-ref (vector-ref old-ext-refs i)]
-              [old-ext-set (vector-ref old-ext-sets i)])
-          ;; Take in the object, then completely ignore it.
-          (vector-set! int-field-refs i (λ (o) (old-int-ref obj)))
-          (vector-set! int-field-sets i (λ (o v) (old-int-set obj v)))
-          (vector-set! ext-field-refs i (λ (o) (old-ext-ref obj)))
-          (vector-set! ext-field-sets i (λ (o v) (old-ext-set obj v))))))
+    ;; Fix up internal/external field accessors/mutators
+    ;; Normally we'd redirect these, but since make-field-map now unwraps
+    ;; on all accesses, we just copy over the old vectors.
+    (vector-copy! int-field-refs 0 (class-int-field-refs cls))
+    (vector-copy! int-field-sets 0 (class-int-field-sets cls))
+    (vector-copy! ext-field-refs 0 (class-ext-field-refs cls))
+    (vector-copy! ext-field-sets 0 (class-ext-field-sets cls))
     
     ;; Handle external field contracts
     (unless (null? fields)
@@ -4391,11 +4377,9 @@
                    [old-ref (vector-ref ext-field-refs i)]
                    [old-set (vector-ref ext-field-sets i)])
               (vector-set! ext-field-refs i
-                           (λ (o) 
-                             ((pre-p blame) (old-ref o))))
+                           (λ (o) ((pre-p blame) (old-ref o))))
               (vector-set! ext-field-sets i
-                           (λ (o v)
-                             (old-set o ((pre-p bset) v)))))))))
+                           (λ (o v) (old-set o ((pre-p bset) v)))))))))
     
     c))
 
