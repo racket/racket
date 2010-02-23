@@ -99,9 +99,9 @@ including the following:
 
 @itemize[
 
- @item{@schememodname[typed-scheme] --- like
-       @schememodname[scheme/base], but statically typed; see
-       @other-manual['(lib "typed-scheme/ts-guide.scrbl")]}
+ @item{@schememodname[typed/scheme] --- like
+       @schememodname[scheme], but statically typed; see
+       @other-manual['(lib "typed-scheme/scribblings/ts-guide.scrbl")]}
 
  @item{@schememodname[lazy] --- like @schememodname[scheme/base], but
        avoids evaluating an expression until its value is needed; see
