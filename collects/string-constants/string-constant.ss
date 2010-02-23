@@ -82,8 +82,8 @@
        (make-sc 'japanese japanese:string-constants #f)
        (make-sc 'traditional-chinese traditional-chinese:string-constants #f)
        (make-sc 'simplified-chinese simplified-chinese:string-constants #f)
-       (make-sc 'russian russian: string-constants # f)
-       (make-sc 'ukrainian ukrainian: string-constants # f)))
+       (make-sc 'russian russian:string-constants #f)
+       (make-sc 'ukrainian ukrainian:string-constants #f)))
     
     (define first-string-constant-set (car available-string-constant-sets))
     
