@@ -56,7 +56,7 @@
            method-in-interface? interface->method-names class->interface class-info
            (struct-out exn:fail:object)
            make-primitive-class
-           class/c ->m ->*m #| object/c |#
+           class/c ->m ->*m object/c
            
            ;; "keywords":
            private public override augment
@@ -4642,5 +4642,5 @@
          method-in-interface? interface->method-names class->interface class-info
          (struct-out exn:fail:object)
          make-primitive-class
-         class/c ->m ->*m #|object/c|#)
+         class/c ->m ->*m object/c)
 
