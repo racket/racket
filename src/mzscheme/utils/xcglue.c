@@ -238,10 +238,10 @@ static Scheme_Object *class_prepare_struct_type(int argc, Scheme_Object **argv)
   
   /* Type to derive/instantiate from Scheme: */
 
-  props = scheme_make_pair(scheme_make_pair(preparer_property, argv[3]),
-			   scheme_make_pair(scheme_make_pair(dispatcher_property, argv[4]),
-					    scheme_make_pair(scheme_make_pair(unwrapper_property, argv[5]),
-							     props)));
+  props = scheme_make_pair(scheme_make_pair(unwrapper_property, argv[5]), props);
+  props = scheme_make_pair(scheme_make_pair(dispatcher_property, argv[4]), props);
+
+  props = scheme_make_pair(scheme_make_pair(preparer_property, argv[3]), props);
   
   stype = scheme_make_struct_type(name,
 				  base_stype, 
@@ -457,18 +457,18 @@ int objscheme_is_a(Scheme_Object *o, Scheme_Object *c)
   return !!a;
 }
 
-Scheme_Object *objscheme_unwrap(Scheme_Object *o)
+Scheme_Object *objscheme_unwrap(Scheme_Object *obj)
 {
   Scheme_Object *s[1], *unwrapper;
 
-  if (!o)
+  if (!obj)
     return NULL;
 
-  unwrapper = scheme_struct_type_property_ref(unwrapper_property, (Scheme_Object *)o);
+  unwrapper = scheme_struct_type_property_ref(unwrapper_property, (Scheme_Object *)obj);
   if (!unwrapper)
-    return NULL;
+    return obj;
 
-  s[0] = o;
+  s[0] = obj;
 
   return _scheme_apply(unwrapper, 1, s);
 }
