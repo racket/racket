@@ -91,6 +91,7 @@ typedef struct Scheme_Class {
   Scheme_Object **methods;
   Scheme_Object *base_struct_type;
   Scheme_Object *struct_type;
+  Scheme_Object *unwrap_property;
 } Scheme_Class;
 
 Scheme_Type objscheme_class_type;
@@ -99,7 +100,6 @@ static Scheme_Object *object_struct;
 static Scheme_Object *object_property;
 static Scheme_Object *dispatcher_property;
 static Scheme_Object *preparer_property;
-static Scheme_Object *unwrapper_property;
 
 #ifdef MZ_PRECISE_GC
 # include "../gc2/gc2.h"
@@ -122,6 +122,7 @@ int gc_class_mark(void *_c)
   gcMARK(c->methods);
   gcMARK(c->base_struct_type);
   gcMARK(c->struct_type);
+  gcMARK(c->unwrap_property);
   
   return gcBYTES_TO_WORDS(sizeof(Scheme_Class));
 }
@@ -137,6 +138,7 @@ int gc_class_fixup(void *_c)
   gcFIXUP(c->methods);
   gcFIXUP(c->base_struct_type);
   gcFIXUP(c->struct_type);
+  gcFIXUP(c->unwrap_property);
   
   return gcBYTES_TO_WORDS(sizeof(Scheme_Class));
 }
@@ -174,9 +176,11 @@ static Scheme_Object *class_prepare_struct_type(int argc, Scheme_Object **argv)
     scheme_wrong_type("primitive-class-prepare-struct-type!", "struct-type-property", 1, argc, argv);
   scheme_check_proc_arity("primitive-class-prepare-struct-type!", 1, 3, argc, argv);
   scheme_check_proc_arity("primitive-class-prepare-struct-type!", 2, 4, argc, argv);
-  scheme_check_proc_arity("primitive-class-prepare-struct-type!", 1, 5, argc, argv);
+  if(SCHEME_TYPE(argv[5]) != scheme_struct_property_type)
+    scheme_wrong_type("primitive-class-prepare-struct-type!", "struct-type-property", 5, argc, argv);
+  scheme_check_proc_arity("primitive-class-prepare-struct-type!", 1, 6, argc, argv);
 
-  props = argv[6];
+  props = argv[7];
   while (SCHEME_PAIRP(props)) {
     name = SCHEME_CAR(props);
     if (!SCHEME_PAIRP(name))
@@ -186,8 +190,8 @@ static Scheme_Object *class_prepare_struct_type(int argc, Scheme_Object **argv)
     props = SCHEME_CDR(props);
   }
   if (!SCHEME_NULLP(props))
-    scheme_wrong_type("primitive-class-prepare-struct-type!", "list of struct-type-property--value pairs", 6, argc, argv);
-  props = argv[6];
+    scheme_wrong_type("primitive-class-prepare-struct-type!", "list of struct-type-property--value pairs", 7, argc, argv);
+  props = argv[7];
 
   objscheme_something_prepared = 1;
 
@@ -238,7 +242,8 @@ static Scheme_Object *class_prepare_struct_type(int argc, Scheme_Object **argv)
   
   /* Type to derive/instantiate from Scheme: */
 
-  props = scheme_make_pair(scheme_make_pair(unwrapper_property, argv[5]), props);
+  c->unwrap_property = argv[5];
+  props = scheme_make_pair(scheme_make_pair(argv[5], argv[6]), props);
   props = scheme_make_pair(scheme_make_pair(dispatcher_property, argv[4]), props);
 
   props = scheme_make_pair(scheme_make_pair(preparer_property, argv[3]), props);
@@ -457,14 +462,18 @@ int objscheme_is_a(Scheme_Object *o, Scheme_Object *c)
   return !!a;
 }
 
-Scheme_Object *objscheme_unwrap(Scheme_Object *obj)
+Scheme_Object *objscheme_unwrap(Scheme_Object *obj, Scheme_Object *c)
 {
-  Scheme_Object *s[1], *unwrapper;
+  Scheme_Object *s[1], *unwrapper, *unwrap_prop;
+  Scheme_Class *cls = (Scheme_Class *)cls;
 
   if (!obj)
     return NULL;
 
-  unwrapper = scheme_struct_type_property_ref(unwrapper_property, (Scheme_Object *)obj);
+  unwrap_prop = cls->unwrap_property;
+  if(!unwrap_prop)
+    return obj;
+  unwrapper = scheme_struct_type_property_ref(unwrap_prop, (Scheme_Object *)obj);
   if (!unwrapper)
     return obj;
 
@@ -540,9 +549,6 @@ void objscheme_init(Scheme_Env *env)
   wxREGGLOB(dispatcher_property);
   dispatcher_property = scheme_make_struct_type_property(scheme_intern_symbol("primitive-dispatcher"));
 
-  wxREGGLOB(unwrapper_property);
-  unwrapper_property = scheme_make_struct_type_property(scheme_intern_symbol("primitive-unwrapper"));
-
   wxREGGLOB(object_struct);
   object_struct = scheme_make_struct_type(scheme_intern_symbol("primitive-object"), 
 					  NULL, NULL,
@@ -562,7 +568,7 @@ void objscheme_init(Scheme_Env *env)
   scheme_install_xc_global("primitive-class-prepare-struct-type!",
 			   scheme_make_prim_w_arity(class_prepare_struct_type,
 						    "primitive-class-prepare-struct-type!",
-						    7, 7),
+						    8, 8),
 			   env);
   
   scheme_install_xc_global("primitive-class-find-method",

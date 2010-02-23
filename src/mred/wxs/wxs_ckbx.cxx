@@ -821,7 +821,7 @@ int objscheme_istype_wxCheckBox(Scheme_Object *obj, const char *stop, int nullOK
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxCheckBox_class);
   if (objscheme_is_a(obj, os_wxCheckBox_class))
     return 1;
   else {
@@ -865,7 +865,7 @@ class wxCheckBox *objscheme_unbundle_wxCheckBox(Scheme_Object *obj, const char *
 
   REMEMBER_VAR_STACK();
 
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxCheckBox_class);
   (void)objscheme_istype_wxCheckBox(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
