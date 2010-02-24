@@ -1,7 +1,8 @@
 #lang scheme/base
-(require mzlib/contract
-         mzlib/serialize
-         mzlib/plt-match
+(require scheme/contract
+         scheme/serialize
+         scheme/match
+         scheme/promise
          net/url
          web-server/private/util)
 
@@ -49,12 +50,16 @@
                                  [headers (listof header?)]
                                  [content bytes?])])
 
-(define-serializable-struct request (method uri headers/raw bindings/raw post-data/raw host-ip host-port client-ip))
+(define-serializable-struct request (method uri headers/raw bindings/raw-promise post-data/raw host-ip host-port client-ip))
+(define (request-bindings/raw r)
+  (force (request-bindings/raw-promise r)))
+
 (provide/contract
+ [request-bindings/raw (request? . -> . (listof binding?))]
  [struct request ([method bytes?]
                   [uri url?] 
                   [headers/raw (listof header?)]
-                  [bindings/raw (listof binding?)]
+                  [bindings/raw-promise (promise/c (listof binding?))]
                   [post-data/raw (or/c false/c bytes?)]
                   [host-ip string?] [host-port number?]
                   [client-ip string?])])

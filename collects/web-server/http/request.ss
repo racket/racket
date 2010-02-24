@@ -1,7 +1,5 @@
 #lang scheme
-(require mzlib/plt-match
-         net/url
-         mzlib/list
+(require net/url
          net/uri-codec
          web-server/private/util
          web-server/private/connection-manager
@@ -41,10 +39,10 @@
        (void)]))
   (define-values (host-ip client-ip)
     (port-addresses ip))
-  (define-values (bindings raw-post-data)
+  (define-values (bindings/raw-promise raw-post-data)
     (read-bindings&post-data/raw conn method uri headers))
   (values
-   (make-request method uri headers bindings raw-post-data
+   (make-request method uri headers bindings/raw-promise raw-post-data
                  host-ip host-port client-ip)
    (close-connection? headers major minor
                       client-ip host-ip)))
@@ -152,14 +150,15 @@
 (define (read-bindings&post-data/raw conn meth uri headers)
   (cond
     [(bytes-ci=? #"GET" meth)
-     (values (filter (lambda (x) x)
+     (values (delay
+              (filter (lambda (x) x)
                      (map (match-lambda
                             [(list-rest k v)
                              (if (and (symbol? k) (string? v))
                                  (make-binding:form (string->bytes/utf-8 (symbol->string k))
                                                     (string->bytes/utf-8 v))
                                  #f)])
-                          (url-query uri)))
+                          (url-query uri))))
              #f)]
     [(bytes-ci=? #"POST" meth)
      (local
@@ -169,8 +168,10 @@
          [(and content-type (regexp-match FILE-FORM-REGEXP (header-value content-type)))
           => (match-lambda
                [(list _ content-boundary)
-                (values
-                 (map (match-lambda
+                ; XXX This can't be delay because it reads from the port, which would otherwise be closed.
+                ;     I think this is reasonable because the Content-Type said it would have this format
+                (define bs
+                  (map (match-lambda
                         [(struct mime-part (headers contents))
                          (define rhs (header-value (headers-assq* #"Content-Disposition" headers)))
                          (match (list (regexp-match #"filename=(\"([^\"]*)\"|([^ ;]*))" rhs)
@@ -181,7 +182,9 @@
                             (make-binding:form (or f0 f1) (apply bytes-append contents))]
                            [(list (list _ _ f00 f01) (list _ _ f10 f11))
                             (make-binding:file (or f10 f11) (or f00 f01) headers (apply bytes-append contents))])])
-                      (read-mime-multipart content-boundary in))
+                      (read-mime-multipart content-boundary in)))
+                (values
+                 (delay bs)
                  #f)])]
          [else        
           (match (headers-assq* #"Content-Length" headers)
@@ -190,12 +193,12 @@
                [(string->number (bytes->string/utf-8 value))
                 => (lambda (len) 
                      (let ([raw-bytes (read-bytes len in)])
-                       (values (parse-bindings raw-bytes) raw-bytes)))]
+                       (values (delay (parse-bindings raw-bytes)) raw-bytes)))]
                [else 
                 (network-error 'read-bindings "Post request contained a non-numeric content-length")])]
             [#f
              (let ([raw-bytes (apply bytes-append (read-to-eof in))])
-               (values (parse-bindings raw-bytes) raw-bytes))])]))]
+               (values (delay (parse-bindings raw-bytes)) raw-bytes))])]))]
     [(bytes-ci=? #"PUT" meth)
      (local
        [(define content-type (headers-assq* #"Content-Type" headers))
@@ -205,14 +208,14 @@
           (cond [(string->number (bytes->string/utf-8 value))
                  => (lambda (len)
                       (let ([raw-bytes (read-bytes len in)])
-                        (values empty raw-bytes)))]
+                        (values (delay empty) raw-bytes)))]
                 [else
                  (network-error 'read-bindings "Put request contained a non-numeric content-length")])]
          [#f
           (let ([raw-bytes (apply bytes-append (read-to-eof in))])
-            (values empty raw-bytes))]))]
+            (values (delay empty) raw-bytes))]))]
     [meth
-     (values empty #f)]))
+     (values (delay empty) #f)]))
 
 ;; parse-bindings : bytes? -> (listof binding?)
 (define (parse-bindings raw)

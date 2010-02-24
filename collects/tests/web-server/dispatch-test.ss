@@ -14,7 +14,7 @@
 (provide all-dispatch-tests)
 
 (define (test-request url)
-  (make-request #"GET" url null null #f "1.2.3.4" 123 "4.3.2.1"))
+  (make-request #"GET" url null (delay null) #f "1.2.3.4" 123 "4.3.2.1"))
 
 (define all-dispatch-tests
   (test-suite

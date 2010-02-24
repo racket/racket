@@ -75,7 +75,7 @@
                  (request-cookies 
                   (make-request 
                    #"GET" (string->url "http://test.com/foo")
-                   empty empty #f
+                   empty (delay empty) #f
                    "host" 80 "client"))
                  empty)
     
@@ -84,7 +84,7 @@
                   (make-request 
                    #"GET" (string->url "http://test.com/foo")
                    (list (make-header #"Cookie" #"$Version=\"1\"; name=\"value\""))
-                   empty #f
+                   (delay empty) #f
                    "host" 80 "client"))
                  (list (make-client-cookie "name" "value" #f #f)))
     
@@ -93,7 +93,7 @@
                   (make-request 
                    #"GET" (string->url "http://test.com/foo")
                    (list (make-header #"Cookie" #"$Version=\"1\"; name=\"value\"; $Path=\"/acme\""))
-                   empty #f
+                   (delay empty) #f
                    "host" 80 "client"))
                  (list (make-client-cookie "name" "value" #f "/acme")))
     
@@ -102,7 +102,7 @@
                   (make-request 
                    #"GET" (string->url "http://test.com/foo")
                    (list (make-header #"Cookie" #"$Version=\"1\"; name=\"value\"; $Domain=\".acme\""))
-                   empty #f
+                   (delay empty) #f
                    "host" 80 "client"))
                  (list (make-client-cookie "name" "value" ".acme" #f)))
     
@@ -111,7 +111,7 @@
                   (make-request 
                    #"GET" (string->url "http://test.com/foo")
                    (list (make-header #"Cookie" #"$Version=\"1\"; key1=\"value1\"; key2=\"value2\""))
-                   empty #f
+                   (delay empty) #f
                    "host" 80 "client"))
                  (list (make-client-cookie "key1" "value1" #f #f)
                        (make-client-cookie "key2" "value2" #f #f)))
@@ -121,7 +121,7 @@
                   (make-request 
                    #"GET" (string->url "http://test.com/foo")
                    (list (make-header #"Cookie" #"$Version=\"1\"; key1=\"value1\"; $Path=\"/acme\"; key2=\"value2\"; $Domain=\".acme\""))
-                   empty #f
+                   (delay empty) #f
                    "host" 80 "client"))
                  (list (make-client-cookie "key1" "value1" #f "/acme")
                        (make-client-cookie "key2" "value2" ".acme" #f)))
@@ -132,7 +132,7 @@
                    #"GET" (string->url "http://test.com/foo")
                    (list (make-header #"Cookie" 
                                       #"style_cookie=null; phpbb3_e1p9b_u=54; phpbb3_e1p9b_k=; phpbb3_e1p9b_sid=3fa8d7a7b65fbabcbe9b345861dc079a"))
-                   empty #f
+                   (delay empty) #f
                    "host" 80 "client"))
                  (list (make-client-cookie "style_cookie" "null" #f #f)
                        (make-client-cookie "phpbb3_e1p9b_u" "54" #f #f)
