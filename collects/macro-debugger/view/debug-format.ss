@@ -7,13 +7,15 @@
 (define (write-debug-file file exn events)
   (with-output-to-file file
     (lambda ()
-      (write `(list ,@(map (lambda (e) (serialize-datum e)) events)))
+      (pretty-print
+       `(list ,@(map (lambda (e) (serialize-datum e)) events)))
       (newline)
       (write (exn-message exn))
       (newline)
-      (write (map serialize-context-frame
-                  (continuation-mark-set->context
-                   (exn-continuation-marks exn)))))
+      (pretty-print
+       (map serialize-context-frame
+            (continuation-mark-set->context
+             (exn-continuation-marks exn)))))
     #:exists 'replace))
 
 (define (serialize-datum d)

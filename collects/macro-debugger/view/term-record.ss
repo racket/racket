@@ -275,7 +275,11 @@
 
     ;; display-initial-term : -> void
     (define/public (display-initial-term)
-      (send: displayer step-display<%> add-syntax (wderiv-e1 deriv)))
+      (cond [raw-deriv-oops
+             (send: displayer step-display<%> add-internal-error
+                    "derivation" raw-deriv-oops #f events)]
+            [else
+             (send: displayer step-display<%> add-syntax (wderiv-e1 deriv))]))
 
     ;; display-final-term : -> void
     (define/public (display-final-term)

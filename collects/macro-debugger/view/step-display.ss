@@ -119,17 +119,15 @@
     (define/private (show-lctx step shift-table)
       (define state (protostep-s1 step))
       (define lctx (state-lctx state))
-      (when (pair? lctx)
-        (send: sbview sb:syntax-browser<%> add-text "\n")
-        (for ([bf (reverse lctx)])
-          (send: sbview sb:syntax-browser<%> add-text 
-                 "while executing macro transformer in:\n")
-          (insert-syntax/redex (bigframe-term bf)
-                               (bigframe-foci bf)
-                               (state-binders state)
-                               shift-table
-                               (state-uses state)
-                               (state-frontier state)))))
+      (for ([bf lctx])
+        (send: sbview sb:syntax-browser<%> add-text 
+               "\nwhile executing macro transformer in:\n")
+        (insert-syntax/redex (bigframe-term bf)
+                             (bigframe-foci bf)
+                             (state-binders state)
+                             shift-table
+                             (state-uses state)
+                             (state-frontier state))))
 
     ;; separator : Step -> void
     (define/private (separator step)
