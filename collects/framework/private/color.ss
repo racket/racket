@@ -810,7 +810,9 @@ added get-regions
              (let ([tokens (lexer-state-tokens ls)])
                (tokenize-to-pos ls position)
                (send tokens search! (- position (lexer-state-start-pos ls)))
-               (data-type (send tokens get-root-data))))))
+               (let ([root-data (send tokens get-root-data)])
+                 (and root-data
+                      (data-type root-data)))))))
     
     (define/private (tokenize-to-pos ls position)
       (when (and (not (lexer-state-up-to-date? ls)) 
