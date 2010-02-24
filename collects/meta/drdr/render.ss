@@ -44,6 +44,18 @@
       depth
       (sub1 depth)))
 
+(define (next-rev)
+  (init-revisions!)
+  (local [(define end (newest-completed-revision))]
+    (let loop ([rev (add1 (current-rev))])
+      (cond
+        [(<= end rev)
+         end]
+        [(read-cache* (build-path (revision-dir rev) "analyzed"))
+         rev]
+        [else
+         (loop (add1 rev))]))))
+
 (define (path->breadcrumb pth directory?)
   (define the-rev (current-rev))
   (define new-pth ((rebase-path (revision-log-dir the-rev) "/") pth))
@@ -60,6 +72,7 @@
         "/"
         the-base-path*))
   (define prev-rev-url (format "/~a~a" (previous-rev) the-base-path))
+  (define next-rev-url (format "/~a~a" (next-rev) the-base-path))
   (define cur-rev-url (format "/~a~a" "current" the-base-path))
   ; XXX Don't special case top level
   (values (apply string-append (add-between (list* "DrDr" string-parts) " / "))
@@ -76,9 +89,9 @@
                             ,(last string-parts)))
                     " / "))
             (span ([class "revnav"])
-                  (a ([href ,prev-rev-url]) "<-")
-                  nbsp
-                  (a ([href ,cur-rev-url]) "->|")))))
+                  (a ([href ,prev-rev-url]) (img ([src "/images/rewind.png"])))
+                  (a ([href ,next-rev-url]) (img ([src "/images/fast-forward.png"])))
+                  (a ([href ,cur-rev-url]) (img ([src "/images/skip-forward1.png"])))))))
 
 (define (looks-like-directory? pth)
   (and (regexp-match #rx"/$" pth) #t))
@@ -440,7 +453,7 @@
             @p{The graph is split up into panes that each contain approximately 300 revisions. The green arrowheads to the left
                and right of the image move between panes.}
             @p{The legend at the bottom of the graph shows the current pane, as well as the revision number and any timing information from that revision.}
-            @p{Click on the graph to jump to the DrDrs page for a specific revision.}
+            @p{Click on the graph to jump to the DrDr page for a specific revision.}
 
             @h1{Why are some revisions missing?}
             @p{Some revisions are missing because they only modify branches. Only revisions that change @code{/trunk} are tested.}
@@ -589,18 +602,26 @@
                                 (list-limit
                                  how-many-revs offset
                                  all-revs))))
-          (table ([width "100%"])
+          (table ([id "revnav"] [width "100%"])
                  (tr (td ([align "left"])
-                         (a ([href ,(format "~a?offset=~a"
-                                            (top-url show-revisions)
-                                            (max 0 (- offset how-many-revs)))])
-                            "Newer Revisions"))
+                         (span ([class "revnav"])
+                               (a ([href ,(top-url show-revisions)])
+                                  (img ([src "/images/skip-backward1.png"])))
+                               (a ([href ,(format "~a?offset=~a"
+                                                  (top-url show-revisions)
+                                                  (max 0 (- offset how-many-revs)))])
+                                  (img ([src "/images/rewind.png"])))))
                      (td ([align "right"])
-                         (a ([href ,(format "~a?offset=~a"
-                                            (top-url show-revisions)
-                                            (min (- how-many-total-revs how-many-revs)
-                                                 (+ offset how-many-revs)))])
-                            "Older Revisions"))))
+                         (span ([class "revnav"])
+                               (a ([href ,(format "~a?offset=~a"
+                                                  (top-url show-revisions)
+                                                  (min (- how-many-total-revs how-many-revs)
+                                                       (+ offset how-many-revs)))])
+                                  (img ([src "/images/fast-forward.png"])))
+                               (a ([href ,(format "~a?offset=~a"
+                                                  (top-url show-revisions)
+                                                  (- how-many-total-revs how-many-revs))])
+                                  (img ([src "/images/skip-forward1.png"])))))))
           ,(footer)))))
 
 (define (show-revision req rev)

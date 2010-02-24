@@ -2,6 +2,10 @@ html {
   overflow-y: scroll;
 }
 
+a img {
+ border: 0;
+}
+
 body {
   color: black;
   background-color: white;
@@ -67,6 +71,7 @@ div.error {
 
 span.revnav {
     margin-left: 1em;
+    margin-right: 1em;
     padding-left: 1em;
     padding-right: 1em;
     background: #FFCC66;
