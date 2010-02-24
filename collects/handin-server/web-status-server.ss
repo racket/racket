@@ -233,6 +233,7 @@
          [user      (and user (if (get-conf 'username-case-sensitive)
                                 user (string-foldcase user)))]
          [user-data (get-user-data user)])
+    (redirect/get)
     (cond [(and user-data
                 (string? passwd)
                 (let ([pw (md5 passwd)])
