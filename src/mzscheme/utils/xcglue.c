@@ -463,7 +463,7 @@ int objscheme_is_a(Scheme_Object *o, Scheme_Object *c)
 Scheme_Object *objscheme_unwrap(Scheme_Object *obj, Scheme_Object *c)
 {
   Scheme_Object *s[1], *unwrapper, *unwrap_prop;
-  Scheme_Class *cls = (Scheme_Class *)cls;
+  Scheme_Class *cls = (Scheme_Class *)c;
 
   if (!obj || !cls)
     return NULL;
@@ -471,6 +471,7 @@ Scheme_Object *objscheme_unwrap(Scheme_Object *obj, Scheme_Object *c)
   unwrap_prop = cls->unwrap_property;
   if(!unwrap_prop)
     return obj;
+
   unwrapper = scheme_struct_type_property_ref(unwrap_prop, (Scheme_Object *)obj);
   if (!unwrapper)
     return obj;

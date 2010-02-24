@@ -211,6 +211,9 @@
 
 (define-values (prop:unwrap object-unwrapper)
   (let-values ([(prop:unwrap pred acc) (make-struct-type-property 'prop:unwrap)])
+    ;; Instead of using the accessor if it has prop:unwrap, just use the unwrapper
+    ;; from wrapper-object directly, since we know it must be a wrapped object.
+    ;; (The accessor will just give us that anyway.)
     (values prop:unwrap (λ (o) (if (pred o) (wrapper-object-wrapped o) o)))))
 
 ;;--------------------------------------------------------------------
