@@ -1,0 +1,22 @@
+- build the global .png files with a recent svn build:
+
+    mred-text mk-img.ss
+
+  This will dump some png files in the current directory. Put them in
+  some global place on the server
+
+- to build a script for a particular page, do this:
+
+   mred-text build-graph.ss -l http://drdr.plt-scheme.org/~a/collects/path/to/file.scm \
+                            --image-loc /static/data/graph-images/  \
+                            file_scm.timing \
+                            file_scm_png_file_prefix \
+                            output.html
+
+   The -l flag is optional, without it clicking on the images won't go
+   anywhere; with it, clicking will go to the corresponding revision.
+   The --image-loc flag gives a url path to the directory containing
+   the images from the mk-img.ss setp.  The other three args are the
+   timing data file, a prefix for the png files that generated for the
+   graphs, and the output html (which is a <div> ... </div>).
+

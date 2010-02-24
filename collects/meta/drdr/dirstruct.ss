@@ -75,6 +75,10 @@
 
 (define (path-timing-png p)
   (path-add-suffix (path-timing-log p) #".png"))
+(define (path-timing-html p)
+  (path-add-suffix (path-timing-log p) #".html"))
+(define (path-timing-png-prefix p)
+  (path-timing-log p))
 
 (provide/contract
  [number-of-cpus (parameter/c exact-nonnegative-integer?)]
@@ -91,6 +95,8 @@
  [plt-repository (parameter/c string?)]
  [path-timing-log (path-string? . -> . path?)]
  [path-timing-png (path-string? . -> . path?)]
+ [path-timing-png-prefix (path-string? . -> . path?)]
+ [path-timing-html (path-string? . -> . path?)]
  [future-record-path (exact-nonnegative-integer? . -> . path?)]
  [current-make-timeout-seconds (parameter/c exact-nonnegative-integer?)]
  [current-make-install-timeout-seconds (parameter/c exact-nonnegative-integer?)]

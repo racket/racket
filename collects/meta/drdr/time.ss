@@ -2,6 +2,7 @@
 (require (planet jaymccarthy/job-queue)
          scheme/system
          "config.ss"
+         "path-utils.ss"
          "dirstruct.ss"
          "cache.ss")
 
@@ -9,11 +10,14 @@
 
 (define start-revision #f)
 (define history? #f)
+(define just-graphs? #f)
 
 (command-line #:program "time"
               #:once-each
               ["-H" "Run on all revisions"
                     (set! history? #t)]
+              ["-G" "Just graphs"
+                    (set! just-graphs? #t)]
               ["-r" rev
                     "Start with a particular revision"
                     (set! start-revision (string->number rev))])
@@ -22,31 +26,41 @@
   (init-revisions!)
   (set! start-revision (newest-revision)))
 
+(define rebaser
+  (rebase-path (plt-data-directory) "/data"))
+
 (define (make-log! filename)
   (submit-job!
    test-workers
    (lambda ()
-     (apply 
-      system*/exit-code
-      (path->string
-       (build-path (plt-directory) "plt" "bin" "mzscheme"))
-      "-t" 
-      (path->string (build-path (drdr-directory) "time-file.ss"))
-      "--"
-      (append
-       (if history?
-           (list "-H")
-           (list "-r" (number->string start-revision)))
-       (list
-        (path->string filename))))
+     (define prefix
+       (path-timing-png-prefix filename))
+     (unless just-graphs?
+       (apply 
+        system*/exit-code
+        (path->string
+         (build-path (plt-directory) "plt" "bin" "mzscheme"))
+        "-t" 
+        (path->string (build-path (drdr-directory) "time-file.ss"))
+        "--"
+        (append
+         (if history?
+             (list "-H")
+             (list "-r" (number->string start-revision)))
+         (list
+          (path->string filename)))))
      (system*/exit-code
       (path->string
-       (build-path (plt-directory) "plt" "bin" "mred"))
+       (build-path (plt-directory) "plt" "bin" "mred-text"))
       "-t"
-      (path->string (build-path (drdr-directory) "graph.ss"))
+      (path->string (build-path (drdr-directory) "graphs" "build-graph.ss"))
       "--"
+      "-l" (string-append "http://drdr.plt-scheme.org/~a/" (path->string* filename)) ; XXX
+      "--image-loc" "/graph-images/"
       (path->string (path-timing-log filename))
-      (path->string (path-timing-png filename))))))
+      (path->string prefix)
+      (path->string (rebaser prefix))
+      (path->string (path-timing-html filename))))))
 
 (define (find-files p l)
   (for ([f (in-list (cached-directory-list* p))])

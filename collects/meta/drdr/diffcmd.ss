@@ -21,9 +21,9 @@
   
   (for ([d (in-list (render-log-difference l1 l2))])
     (match d
-      [(struct difference (e))
+      [(struct difference (e1 e2))
        (printf "! ")
-       (event-print e)]
+       (event-print e1)]
       [(struct same-itude (e))
        (printf "  ")
        (event-print e)])))

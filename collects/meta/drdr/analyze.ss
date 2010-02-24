@@ -162,7 +162,9 @@
             (define any-stderr? (ormap stderr? output-log))
             (define changed?
               (if (previous-rev)
-                  (with-handlers ([exn:fail? (lambda (x) #t)])
+                  (with-handlers ([exn:fail? 
+                                   ; This #f means that new files are NOT considered changed
+                                   (lambda (x) #f)])
                     (define prev-log-pth ((rebase-path (revision-log-dir (current-rev)) (revision-log-dir (previous-rev))) log-pth))
                     (log-different? output-log (status-output-log (read-cache prev-log-pth))))
                   #f))

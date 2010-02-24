@@ -1,6 +1,7 @@
 #lang at-exp scheme
 (require scheme/date
          scheme/runtime-path
+         xml
          "config.ss"
          "diff.ss"
          "list-count.ss"
@@ -141,12 +142,15 @@
   (format "http://svn.plt-scheme.org/view?view=rev&revision=~a"
           rev))
 
-(define render-event
-  (match-lambda
-    [(struct stdout (bs))
-     `(pre ([class "stdout"]) ,(bytes->string/utf-8 bs))]
-    [(struct stderr (bs))
-     `(pre ([class "stderr"]) ,(bytes->string/utf-8 bs))]))
+(define (render-event e)
+  (with-handlers ([exn:fail?
+                   (lambda (x)
+                     `(pre ([class "unprintable"]) "UNPRINTABLE"))])
+    (match e
+      [(struct stdout (bs))
+       `(pre ([class "stdout"]) ,(bytes->string/utf-8 bs))]
+      [(struct stderr (bs))
+       `(pre ([class "stderr"]) ,(bytes->string/utf-8 bs))])))
 
 (define (render-log log-pth)
   (match (log-rendering log-pth)
@@ -158,9 +162,6 @@
         (define-values (title breadcrumb) (path->breadcrumb log-pth #f))
         (define the-base-path
           (base-path log-pth))
-        ; XXX use dirstruct functions
-        (define png-path
-          (format "/data~a" (path-add-suffix (path-add-suffix the-base-path #".timing") #".png")))
         (define svn-url
           (format "http://svn.plt-scheme.org/view/trunk/~a?view=markup&pathrev=~a"
                   the-base-path
@@ -197,9 +198,19 @@
                            '()
                            `((div ([class "output"]) " "
                                   ,@output)))
-                     (div ([class "timing"])
-                          (a ([href ,png-path])
-                             (img ([src ,png-path]))))
+                     ,(with-handlers ([exn:fail?
+                                       ; XXX Remove this eventually
+                                       (lambda (x)
+                                         ; XXX use dirstruct functions
+                                         (define png-path
+                                           (format "/data~a" (path-add-suffix (path-add-suffix the-base-path #".timing") #".png")))
+                                         `(div ([class "timing"])
+                                               (a ([href ,png-path])
+                                                  (img ([src ,png-path])))))])
+                        (make-cdata
+                         #f #f
+                         (file->string
+                          (path-timing-html (substring (path->string* the-base-path) 1)))))
                      ,(footer))))])]))
 
 (define (number->string/zero v)
@@ -670,38 +681,52 @@
    (apply top-url show-file (newest-completed-revision) args)))
 
 (define (show-diff req r1 r2 f)
-  (define l1 (status-output-log (read-cache (apply build-path (revision-log-dir r1) f))))
-  (define l2 (status-output-log (read-cache (apply build-path (revision-log-dir r2) f))))
-  (define f-str (path->string (apply build-path f)))
-  (define title 
-    (format "DrDr / File Difference / ~a (~a:~a)"
-            f-str r1 r2))
-  
-  `(html (head (title ,title)
-               (link ([rel "stylesheet"] [type "text/css"] [href "/render.css"])))
-         (body 
-          (div ([class "log, content"])
-               (span ([class "breadcrumb"])
-                     (a ([class "parent"] [href "/"])
-                        "DrDr")
-                     " / "
-                     (span ([class "this"]) 
-                           "File Difference"))
-               (table ([class "data"])
-                       (tr (td "First Revision:") (td (a ([href ,(format "/~a/~a" r1 f-str)]) ,(number->string r1))))
-                       (tr (td "Second Revision:") (td (a ([href ,(format "/~a/~a" r2 f-str)]) ,(number->string r2))))
-                       (tr (td "File:") (td "/" ,f-str)))
-               (div ([class "output"])
-                    (table ([class "diff"])
-                     ,@(for/list ([d (in-list (render-log-difference l1 l2))])
-                         (match d
-                           [(struct difference (old new))
-                            `(tr ([class "difference"])
-                                 (td ,(render-event old))
-                                 (td ,(render-event new)))]
-                           [(struct same-itude (e))
-                            `(tr (td ([colspan "2"]) ,(render-event e)))]))))
-               ,(footer)))))
+  (define f1 (apply build-path (revision-log-dir r1) f))
+  (with-handlers ([(lambda (x)
+                     (regexp-match #rx"File is not cached" (exn-message x)))
+                   (lambda (x)
+                     ; XXX Make a little nicer
+                     (parameterize ([current-rev r1])
+                       (file-not-found f1)))])
+    (define l1 (status-output-log (read-cache f1)))
+    (define f2 (apply build-path (revision-log-dir r2) f))
+    (with-handlers ([(lambda (x)
+                       (regexp-match #rx"File is not cached" (exn-message x)))
+                     (lambda (x)
+                       ; XXX Make a little nicer
+                       (parameterize ([current-rev r2])
+                         (file-not-found f2)))])
+      (define l2 (status-output-log (read-cache f2)))
+      (define f-str (path->string (apply build-path f)))
+      (define title 
+        (format "DrDr / File Difference / ~a (~a:~a)"
+                f-str r1 r2))
+      
+      `(html (head (title ,title)
+                   (link ([rel "stylesheet"] [type "text/css"] [href "/render.css"])))
+             (body 
+              (div ([class "log, content"])
+                   (span ([class "breadcrumb"])
+                         (a ([class "parent"] [href "/"])
+                            "DrDr")
+                         " / "
+                         (span ([class "this"]) 
+                               "File Difference"))
+                   (table ([class "data"])
+                          (tr (td "First Revision:") (td (a ([href ,(format "/~a/~a" r1 f-str)]) ,(number->string r1))))
+                          (tr (td "Second Revision:") (td (a ([href ,(format "/~a/~a" r2 f-str)]) ,(number->string r2))))
+                          (tr (td "File:") (td "/" ,f-str)))
+                   (div ([class "output"])
+                        (table ([class "diff"])
+                               ,@(for/list ([d (in-list (render-log-difference l1 l2))])
+                                   (match d
+                                     [(struct difference (old new))
+                                      `(tr ([class "difference"])
+                                           (td ,(render-event old))
+                                           (td ,(render-event new)))]
+                                     [(struct same-itude (e))
+                                      `(tr (td ([colspan "2"]) ,(render-event e)))]))))
+                   ,(footer)))))))
 
 (define-values (top-dispatch top-url)
   (dispatch-rules
