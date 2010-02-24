@@ -437,7 +437,11 @@
             @p{The gray, horizontal lines show where 0%, 25%, 50%, 75%, and 100% are in the graph.}
             @p{The black line shows the times for overall running of the file. The colored lines show the results from @code{time}. For each color, the "real" time is the darkest version of it and the "cpu" and "gc" time are 50% and 25% of the darkness, respectively.}
             @p{If the number of calls to @code{time} change from one revision to the next, then there is a gray, vertical bar at that point. Also, the scaling to the slowest time is specific to each horizontal chunk.}
-            
+            @p{The graph is split up into panes that each contain approximately 300 revisions. The green arrowheads to the left
+               and right of the image move between panes.}
+            @p{The legend at the bottom of the graph shows the current pane, as well as the revision number and any timing information from that revision.}
+            @p{Click on the graph to jump to the DrDrs page for a specific revision.}
+
             @h1{Why are some revisions missing?}
             @p{Some revisions are missing because they only modify branches. Only revisions that change @code{/trunk} are tested.}
             
