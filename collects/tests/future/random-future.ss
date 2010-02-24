@@ -84,10 +84,6 @@ Errors/exceptions and other kinds of control?
 
 |#
 
-(let ([v (modulo (current-milliseconds) 1000)])
-  (printf "using seed ~a\n" v)
-  (random-seed v))
-
 (define-language fut
   ;; single value, non-error expressions
   (exp (any->any/prim exp)
@@ -186,11 +182,15 @@ Errors/exceptions and other kinds of control?
                (gen-exp))]))
 
 (define-namespace-anchor ns-here)
+(let ([seed (+ 1 (random (expt 2 30)))])
+  (printf "DrDr Ignore! random-seed ~s\n" seed)
+  (random-seed seed))
 
 (let loop ([n 32])
   (unless (zero? n)
     (printf ".") (flush-output)
     (let ([p (gen-prog)])
-      (pretty-print p)
+      ;(pretty-print p)
       (eval p (namespace-anchor->namespace ns-here)))
     (loop (- n 1))))
+(newline)
