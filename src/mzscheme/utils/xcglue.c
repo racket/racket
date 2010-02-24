@@ -178,8 +178,9 @@ static Scheme_Object *class_prepare_struct_type(int argc, Scheme_Object **argv)
   scheme_check_proc_arity("primitive-class-prepare-struct-type!", 2, 4, argc, argv);
   if(SCHEME_TYPE(argv[5]) != scheme_struct_property_type)
     scheme_wrong_type("primitive-class-prepare-struct-type!", "struct-type-property", 5, argc, argv);
+  scheme_check_proc_arity("primitive-class-prepare-struct-type!", 1, 6, argc, argv);
 
-  props = argv[6];
+  props = argv[7];
   while (SCHEME_PAIRP(props)) {
     name = SCHEME_CAR(props);
     if (!SCHEME_PAIRP(name))
@@ -189,8 +190,8 @@ static Scheme_Object *class_prepare_struct_type(int argc, Scheme_Object **argv)
     props = SCHEME_CDR(props);
   }
   if (!SCHEME_NULLP(props))
-    scheme_wrong_type("primitive-class-prepare-struct-type!", "list of struct-type-property--value pairs", 6, argc, argv);
-  props = argv[6];
+    scheme_wrong_type("primitive-class-prepare-struct-type!", "list of struct-type-property--value pairs", 7, argc, argv);
+  props = argv[7];
 
   objscheme_something_prepared = 1;
 
@@ -225,9 +226,9 @@ static Scheme_Object *class_prepare_struct_type(int argc, Scheme_Object **argv)
 
   /* Type to use when instantiating from C: */
 
-  props = scheme_make_pair(scheme_make_pair(object_property, 
-					    argv[0]),
-			   scheme_null);
+  props = scheme_null;
+  props = scheme_make_pair(scheme_make_pair(object_property, argv[0]), props);
+  props = scheme_make_pair(scheme_make_pair(argv[5], argv[6]), props);
 
   stype = scheme_make_struct_type(name,
 				  base_stype, 
@@ -567,7 +568,7 @@ void objscheme_init(Scheme_Env *env)
   scheme_install_xc_global("primitive-class-prepare-struct-type!",
 			   scheme_make_prim_w_arity(class_prepare_struct_type,
 						    "primitive-class-prepare-struct-type!",
-						    7, 7),
+						    8, 8),
 			   env);
   
   scheme_install_xc_global("primitive-class-find-method",

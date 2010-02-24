@@ -211,10 +211,7 @@
 
 (define-values (prop:unwrap object-unwrapper)
   (let-values ([(prop:unwrap pred acc) (make-struct-type-property 'prop:unwrap)])
-    ;; Instead of using the accessor if it has prop:unwrap, just use the unwrapper
-    ;; from wrapper-object directly, since we know it must be a wrapped object.
-    ;; (The accessor will just give us that anyway.)
-    (values prop:unwrap (λ (o) (if (pred o) (wrapper-object-wrapped o) o)))))
+    (values prop:unwrap acc)))
 
 ;;--------------------------------------------------------------------
 ;;  class macros
@@ -2128,7 +2125,7 @@
                            (if make-struct:prim
                                (make-struct:prim c prop:object 
                                                  preparer dispatcher
-                                                 prop:unwrap
+                                                 prop:unwrap values
                                                  (get-properties interfaces))
                                (values #f #f #f))]
                           [(struct:object object-make object? object-field-ref object-field-set!)
@@ -2143,7 +2140,8 @@
                                                  num-fields undefined
                                                  ;; Map object property to class:
                                                  (append
-                                                  (list (cons prop:object c))
+                                                  (list (cons prop:object c)
+                                                        (cons prop:unwrap values))
                                                   (if deserialize-id
                                                       (list
                                                        (cons prop:serializable
@@ -2685,7 +2683,8 @@
                                         0 ;; No new fields in this class replacement
                                         undefined
                                         ;; Map object property to class:
-                                        (list (cons prop:object c)))])
+                                        (list (cons prop:object c)
+                                              (cons prop:unwrap values)))])
           (set-class-struct:object! c struct:object)
           (set-class-object?! c object?)
           (set-class-make-object! c object-make)
@@ -2737,13 +2736,14 @@
                   [c (in-list (class/c-field-contracts ctc))])
               (when c
                 (let* ([i (hash-ref field-ht f)]
-                       [pre-p (contract-projection c)]
+                       [p-pos ((contract-projection c) blame)]
+                       [p-neg ((contract-projection c) bset)]
                        [old-ref (vector-ref ext-field-refs i)]
                        [old-set (vector-ref ext-field-sets i)])
                   (vector-set! ext-field-refs i
-                               (λ (o) ((pre-p blame) (old-ref o))))
+                               (λ (o) (p-pos (old-ref o))))
                   (vector-set! ext-field-sets i
-                               (λ (o v) (old-set o ((pre-p bset) v)))))))))
+                               (λ (o v) (old-set o (p-neg v)))))))))
         
         ;; Handle internal field contracts
         (unless (null? (class/c-inherit-fields ctc))
@@ -2754,13 +2754,14 @@
                   [c (in-list (class/c-inherit-field-contracts ctc))])
               (when c
                 (let* ([i (hash-ref field-ht f)]
-                       [pre-p (contract-projection c)]
+                       [p-pos ((contract-projection c) blame)]
+                       [p-neg ((contract-projection c) bset)]
                        [old-ref (vector-ref int-field-refs i)]
                        [old-set (vector-ref int-field-sets i)])
                   (vector-set! int-field-refs i
-                               (λ (o) ((pre-p blame) (old-ref o))))
+                               (λ (o) (p-pos (old-ref o))))
                   (vector-set! int-field-sets i
-                               (λ (o v) (old-set o ((pre-p bset) v)))))))))
+                               (λ (o v) (old-set o (p-neg v)))))))))
         
         ;; Now the trickiest of them all, internal dynamic dispatch.
         ;; First we update any dynamic indexes, as applicable.
@@ -3311,7 +3312,7 @@
 (vector-set! (class-supers object%) 0 object%)
 (set-class-orig-cls! object% object%)
 (let*-values ([(struct:obj make-obj obj? -get -set!)
-               (make-struct-type 'object #f 0 0 #f (list (cons prop:object object%)) #f)])
+               (make-struct-type 'object #f 0 0 #f (list (cons prop:object object%) (cons prop:unwrap values)) #f)])
   (set-class-struct:object! object% struct:obj)
   (set-class-make-object! object% make-obj))
 (set-class-object?! object% object?) ; don't use struct pred; it wouldn't work with prim classes
@@ -3846,7 +3847,7 @@
           [field-ht (class-field-ht cls)]
           [index (hash-ref field-ht id #f)])
      (if index
-         ((vector-ref (class-ext-field-sets cls) index) (object-unwrapper obj) val)
+         ((vector-ref (class-ext-field-sets cls) index) obj val)
          (raise-mismatch-error 
           'get-field
           (format "expected an object that has a field named ~s, got " id)
@@ -3882,7 +3883,7 @@
           [field-ht (class-field-ht cls)]
           [index (hash-ref field-ht id #f)])
      (if index
-         ((vector-ref (class-ext-field-refs cls) index) (object-unwrapper obj))
+         ((vector-ref (class-ext-field-refs cls) index) obj)
          (raise-mismatch-error 
           'get-field
           (format "expected an object that has a field named ~s, got " id)
@@ -4020,10 +4021,10 @@
    (trace (when (object? v) (inspect-event v)))
    (cond
      [(not (object? v)) #f]
-     [(class? c) ((class-object? (class-orig-cls c)) (object-unwrapper v))]
+     [(class? c) ((class-object? (class-orig-cls c)) ((object-unwrapper v) v))]
      [(interface? c)
       (and (object? v)
-           (implementation? (object-ref (object-unwrapper v)) c))]
+           (implementation? (object-ref ((object-unwrapper v) v)) c))]
      [else (raise-type-error 'is-a? "class or interface" 1 v c)])))
 
 (define (subclass? v c)
@@ -4041,7 +4042,7 @@
     (raise-type-error 'object-interface "object" o))
   (trace-begin
    (trace (inspect-event o))
-   (class-self-interface (object-ref (object-unwrapper o)))))
+   (class-self-interface (object-ref ((object-unwrapper o) o)))))
 
 (define-traced (object-method-arity-includes? o name cnt)
   (unless (object? o)
@@ -4100,7 +4101,7 @@
     (raise-type-error 'object-info "object" o))
   (trace-begin
    (trace (inspect-event o))
-   (let loop ([c (object-ref (object-unwrapper o))]
+   (let loop ([c (object-ref ((object-unwrapper o) o))]
               [skipped? #f])
      (if (struct? ((class-insp-mk c)))
          ;; current inspector can inspect this object
@@ -4140,7 +4141,7 @@
       (raise-type-error 'object->vector "object" in-o))
     (trace-begin
      (trace (inspect-event in-o))
-     (let ([o (object-unwrapper in-o)])
+     (let ([o ((object-unwrapper in-o) in-o)])
        (list->vector
         (cons
          (string->symbol (format "object:~a" (class-name (object-ref o))))
@@ -4167,8 +4168,8 @@
     (raise-type-error 'object=? "object" o1))
   (unless (object? o2)
     (raise-type-error 'object=? "object" o2))
-  (eq? (object-unwrapper o1)
-       (object-unwrapper o2)))
+  (eq? ((object-unwrapper o1) o1)
+       ((object-unwrapper o2) o2)))
 
 ;;--------------------------------------------------------------------
 ;;  primitive classes
@@ -4186,8 +4187,9 @@
          override-methods     ; list of methods
          new-methods)         ; list of methods
   
-  ; The `make-struct:prim' function takes prop:object, a
-  ;  class, a preparer, a dispatcher function, an unwrapper, and a property assoc list, and produces:
+  ; The `make-struct:prim' function takes prop:object, a class,
+  ;  a preparer, a dispatcher function, an unwrap property,
+  ;  an unwrapper, and a property assoc list, and produces:
   ;    * a struct constructor (must have prop:object)
   ;    * a struct predicate
   ;    * a struct type for derived classes (mustn't have prop:object)
@@ -4196,7 +4198,11 @@
   ; 
   ; The supplied dispatcher takes an object and a num and returns a method.
   ;
-  ; The supplied unwrapper takes an object and returns the unwrapped version (or the original object).
+  ; The supplied unwrap property is used for adding the unwrapper
+  ;  as a property value on new objects.
+  ;
+  ; The supplied unwrapper takes an object and returns the unwrapped
+  ;  version (or the original object).
   ;
   ; When a primitive class has a superclass, the struct:prim maker
   ;  is responsible for ensuring that the returned struct items match
@@ -4264,7 +4270,7 @@
 ;;  wrapper for contracts
 ;;--------------------------------------------------------------------
 
-(define (make-wrapper-class cls blame methods method-contracts fields field-contracts)
+(define (make-wrapper-class obj cls blame methods method-contracts fields field-contracts)
   (let* ([name (class-name cls)]
          [method-width (class-method-width cls)]
          [method-ht (class-method-ht cls)]
@@ -4356,13 +4362,20 @@
                 [p ((contract-projection c) blame)])
             (vector-set! meths i (p (vector-ref meths i)))))))
     
-    ;; Fix up internal/external field accessors/mutators
-    ;; Normally we'd redirect these, but since make-field-map now unwraps
-    ;; on all accesses, we just copy over the old vectors.
-    (vector-copy! int-field-refs 0 (class-int-field-refs cls))
-    (vector-copy! int-field-sets 0 (class-int-field-sets cls))
-    (vector-copy! ext-field-refs 0 (class-ext-field-refs cls))
-    (vector-copy! ext-field-sets 0 (class-ext-field-sets cls))
+    ;; Redirect internal/external field accessors/mutators to old object
+    (let ([old-int-refs (class-int-field-refs cls)]
+          [old-int-sets (class-int-field-sets cls)]
+          [old-ext-refs (class-ext-field-refs cls)]
+          [old-ext-sets (class-ext-field-sets cls)])
+      (for ([n (in-range (class-field-pub-width cls))])
+        (let ([int-field-ref (vector-ref old-int-refs n)]
+              [int-field-set (vector-ref old-int-sets n)]
+              [ext-field-ref (vector-ref old-ext-refs n)]
+              [ext-field-set (vector-ref old-ext-sets n)])
+          (vector-set! int-field-refs n (λ (o) (int-field-ref obj)))
+          (vector-set! int-field-sets n (λ (o) (int-field-set obj)))
+          (vector-set! ext-field-refs n (λ (o) (ext-field-ref obj)))
+          (vector-set! ext-field-sets n (λ (o) (ext-field-set obj))))))
     
     ;; Handle external field contracts
     (unless (null? fields)
@@ -4371,21 +4384,23 @@
               [c (in-list field-contracts)])
           (when c
             (let* ([i (hash-ref field-ht f)]
-                   [pre-p (contract-projection c)]
+                   [p-pos ((contract-projection c) blame)]
+                   [p-neg ((contract-projection c) bset)]
                    [old-ref (vector-ref ext-field-refs i)]
                    [old-set (vector-ref ext-field-sets i)])
               (vector-set! ext-field-refs i
-                           (λ (o) ((pre-p blame) (old-ref o))))
+                           (λ (o) (p-pos (old-ref o))))
               (vector-set! ext-field-sets i
-                           (λ (o v) (old-set o ((pre-p bset) v)))))))))
+                           (λ (o v) (old-set o (p-neg v)))))))))
     
     c))
 
 ;; make-wrapper-object: object (listof symbol) (listof contract?) (listof symbol) (listof contract?)
 (define (make-wrapper-object obj blame methods method-contracts fields field-contracts)
   (check-object-contract obj blame methods fields)
-  (let ([new-cls (make-wrapper-class (object-ref obj) blame methods method-contracts fields field-contracts)])
-    ((class-make-object new-cls) (object-unwrapper obj))))
+  (let* ([orig-obj ((object-unwrapper obj) obj)]
+         [new-cls (make-wrapper-class orig-obj (object-ref obj) blame methods method-contracts fields field-contracts)])
+    ((class-make-object new-cls) orig-obj)))
 
 ;;--------------------------------------------------------------------
 ;;  misc utils
