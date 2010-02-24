@@ -1,0 +1,7 @@
+This is the implementation of DrDr.
+
+It currently only runs on a single machine that is set up in an intricate way.
+-- In particular, config.ss mentions many of those details
+-- Also, static/data must be a link to a data directory (/opt/plt/data)
+
+It uses a few of my PLaneT packages and some other ones as well.
