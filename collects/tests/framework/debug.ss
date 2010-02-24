@@ -7,7 +7,7 @@
 
 ;; administrative messages about preferences files and
 ;; command line flags
-(define admin? #f)
+(define admin? #t)
 
 ;; tests that passed and those that failed
 (define schedule? #t)
