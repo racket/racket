@@ -246,51 +246,6 @@
            (raise-syntax-error 'object-contract "malformed ->pp-rest declaration")]
           [else (raise-syntax-error 'object-contract "unknown method contract syntax" stx mtd-stx)]))
       
-      ;; build-methods-stx : syntax[list of lambda arg specs] -> syntax[method realized as proc]
-      (define (build-methods-stx mtds)
-        
-        (define (last-pair l)
-          (cond
-            [(not (pair? (cdr l))) l]
-            [else (last-pair (cdr l))]))
-        
-        (let loop ([arg-spec-stxss (map mtd-mtd-arg-stx mtds)]
-                   [names (map mtd-name mtds)]
-                   [i 0])
-          (cond
-            [(null? arg-spec-stxss) null]
-            [else (let ([arg-spec-stxs (car arg-spec-stxss)])
-                    (with-syntax ([(cases ...)
-                                   (map (lambda (arg-spec-stx)
-                                          (with-syntax ([i i])
-                                            (syntax-case arg-spec-stx ()
-                                              [(this rest-ids ...)
-                                               (syntax
-                                                ((this rest-ids ...)
-                                                 ((field-ref this i) (wrapper-object-wrapped this) rest-ids ...)))]
-                                              [else
-                                               (let-values ([(this rest-ids last-var)
-                                                             (let ([lst (syntax->improper-list arg-spec-stx)])
-                                                               (values (car lst)
-                                                                       (all-but-last (cdr lst))
-                                                                       (cdr (last-pair lst))))])
-                                                 (with-syntax ([this this]
-                                                               [(rest-ids ...) rest-ids]
-                                                               [last-var last-var])
-                                                   (syntax
-                                                    ((this rest-ids ... . last-var)
-                                                     (apply (field-ref this i)
-                                                            (wrapper-object-wrapped this)
-                                                            rest-ids ...
-                                                            last-var)))))])))
-                                        (syntax->list arg-spec-stxs))]
-                                  [name (string->symbol (format "~a method" (syntax->datum (car names))))])
-                      (with-syntax ([proc (syntax-property (syntax (case-lambda cases ...)) 'method-arity-error #t)])
-                        (cons (syntax (lambda (field-ref) (let ([name proc]) name)))
-                              (loop (cdr arg-spec-stxss)
-                                    (cdr names)
-                                    (+ i 1))))))])))
-      
       (define (syntax->improper-list stx)
         (define (se->il se)
           (cond
@@ -317,61 +272,29 @@
            (with-syntax ([(method-ctc-stx ...) (map mtd-ctc-stx mtds)]
                          [(method-name ...) (map mtd-name mtds)]
                          [(method-ctc-var ...) (generate-temporaries mtds)]
-                         [(method-var ...) (generate-temporaries mtds)]
-                         [(method/app-var ...) (generate-temporaries mtds)]
-                         [(methods ...) (build-methods-stx mtds)]
                          
                          [(field-ctc-stx ...) (map fld-ctc-stx flds)]
                          [(field-name ...) (map fld-name flds)]
-                         [(field-ctc-var ...) (generate-temporaries flds)]
-                         [(field-var ...) (generate-temporaries flds)]
-                         [(field/app-var ...) (generate-temporaries flds)])
+                         [(field-ctc-var ...) (generate-temporaries flds)])
              (syntax
               (let ([method-ctc-var method-ctc-stx] 
                     ...
                     [field-ctc-var (coerce-contract 'object-contract field-ctc-stx)]
                     ...)
-                (let ([method-var (contract-projection method-ctc-var)] 
-                      ...
-                      [field-var (contract-projection field-ctc-var)]
-                      ...)
-                  (let ([cls (make-wrapper-class 'wrapper-class 
-                                                 '(method-name ...)
-                                                 (list methods ...)
-                                                 '(field-name ...)
-                                                 #t)])
-                    (make-contract
-                     #:name
-                     `(object-contract 
-                       ,(build-compound-type-name 'method-name method-ctc-var) ...
-                       ,(build-compound-type-name 'field 'field-name field-ctc-var) ...)
-                     #:projection
-                     (lambda (blame)
-                       (let ([method/app-var (method-var blame)] 
-                             ...
-                             [field/app-var (field-var blame)]
-                             ...)
-                         (let ([field-names-list '(field-name ...)])
-                           (lambda (val)
-                             (check-object val blame)
-                             (let ([val-mtd-names
-                                    (interface->method-names
-                                     (object-interface
-                                      val))])
-                               (void)
-                               (check-method val 'method-name val-mtd-names blame)
-                               ...)
-                             
-                             (unless (field-bound? field-name val)
-                               (field-error val 'field-name blame)) ...
-                             
-                             (let ([vtable (extract-vtable val)]
-                                   [method-ht (extract-method-ht val)])
-                               (make-object cls
-                                 val
-                                 (method/app-var (vector-ref vtable (hash-ref method-ht 'method-name))) ...
-                                 (field/app-var (get-field field-name val)) ...
-                                 )))))))))))))]))))
+                (make-contract
+                 #:name
+                 `(object-contract 
+                   ,(build-compound-type-name 'method-name method-ctc-var) ...
+                   ,(build-compound-type-name 'field 'field-name field-ctc-var) ...)
+                 #:projection
+                 (lambda (blame)
+                   (lambda (val)
+                     (make-wrapper-object val blame
+                                          (list 'method-name ...) (list method-ctc-var ...)
+                                          (list 'field-name ...) (list field-ctc-var ...))))
+                 #:first-order
+                 (lambda (val)
+                   (check-object-contract val #f (list 'method-name ...) (list 'field-name ...))))))))]))))
 
 
 (define (check-object val blame)

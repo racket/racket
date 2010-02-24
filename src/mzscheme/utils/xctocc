@@ -1237,7 +1237,7 @@ sub DoPrintClass
 	print "{\n";
 	print "  REMEMBER_VAR_STACK();\n";
 	print "  if (nullOK && XC_SCHEME_NULLP(obj)) return 1;\n";
-	print "  obj = objscheme_unwrap(obj);\n";
+	print "  obj = objscheme_unwrap(obj, ${newclass}_class);\n";
 	print "  if (objscheme_is_a(obj, ${newclass}_class))\n";
 	print "    return 1;\n";
 	print "  else {\n";
@@ -1288,7 +1288,7 @@ sub DoPrintClass
 	print "{\n";
 	print "  if (nullOK && XC_SCHEME_NULLP(obj)) return NULL;\n\n";
 	print "  REMEMBER_VAR_STACK();\n\n";
-	print "  obj = objscheme_unwrap(obj);\n";
+	print "  obj = objscheme_unwrap(obj, ${newclass}_class);\n";
 	print "  (void)objscheme_istype_${oldclass}(obj, where, nullOK);\n";
 
 	print "  Scheme_Class_Object *o = ";

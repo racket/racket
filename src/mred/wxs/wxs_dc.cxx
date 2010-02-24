@@ -2664,7 +2664,7 @@ int objscheme_istype_wxDC(Scheme_Object *obj, const char *stop, int nullOK)
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxDC_class);
   if (objscheme_is_a(obj, os_wxDC_class))
     return 1;
   else {
@@ -2708,7 +2708,7 @@ class wxDC *objscheme_unbundle_wxDC(Scheme_Object *obj, const char *where, int n
 
   REMEMBER_VAR_STACK();
 
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxDC_class);
   (void)objscheme_istype_wxDC(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -3116,7 +3116,7 @@ int objscheme_istype_wxMemoryDC(Scheme_Object *obj, const char *stop, int nullOK
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxMemoryDC_class);
   if (objscheme_is_a(obj, os_wxMemoryDC_class))
     return 1;
   else {
@@ -3160,7 +3160,7 @@ class wxMemoryDC *objscheme_unbundle_wxMemoryDC(Scheme_Object *obj, const char *
 
   REMEMBER_VAR_STACK();
 
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxMemoryDC_class);
   (void)objscheme_istype_wxMemoryDC(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -3281,7 +3281,7 @@ int objscheme_istype_wxPostScriptDC(Scheme_Object *obj, const char *stop, int nu
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxPostScriptDC_class);
   if (objscheme_is_a(obj, os_wxPostScriptDC_class))
     return 1;
   else {
@@ -3325,7 +3325,7 @@ class wxPostScriptDC *objscheme_unbundle_wxPostScriptDC(Scheme_Object *obj, cons
 
   REMEMBER_VAR_STACK();
 
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxPostScriptDC_class);
   (void)objscheme_istype_wxPostScriptDC(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -3467,7 +3467,7 @@ int objscheme_istype_basePrinterDC(Scheme_Object *obj, const char *stop, int nul
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_basePrinterDC_class);
   if (objscheme_is_a(obj, os_basePrinterDC_class))
     return 1;
   else {
@@ -3511,7 +3511,7 @@ class basePrinterDC *objscheme_unbundle_basePrinterDC(Scheme_Object *obj, const 
 
   REMEMBER_VAR_STACK();
 
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_basePrinterDC_class);
   (void)objscheme_istype_basePrinterDC(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -3671,7 +3671,7 @@ int objscheme_istype_wxGL(Scheme_Object *obj, const char *stop, int nullOK)
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxGL_class);
   if (objscheme_is_a(obj, os_wxGL_class))
     return 1;
   else {
@@ -3715,7 +3715,7 @@ class wxGL *objscheme_unbundle_wxGL(Scheme_Object *obj, const char *where, int n
 
   REMEMBER_VAR_STACK();
 
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxGL_class);
   (void)objscheme_istype_wxGL(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -4029,7 +4029,7 @@ int objscheme_istype_wxGLConfig(Scheme_Object *obj, const char *stop, int nullOK
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxGLConfig_class);
   if (objscheme_is_a(obj, os_wxGLConfig_class))
     return 1;
   else {
@@ -4073,7 +4073,7 @@ class wxGLConfig *objscheme_unbundle_wxGLConfig(Scheme_Object *obj, const char *
 
   REMEMBER_VAR_STACK();
 
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxGLConfig_class);
   (void)objscheme_istype_wxGLConfig(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));

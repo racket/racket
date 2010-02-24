@@ -59,7 +59,7 @@
          [(f . args)
           (quasisyntax/loc stx (#,replace-stx . args))])))))
 
-(define (make-field-map trace-flag the-finder the-obj the-binder the-binder-localized
+(define (make-field-map trace-flag the-finder the-obj unwrapper the-binder the-binder-localized
                         field-accessor field-mutator field-pos/null)
   (let ([set!-stx (datum->syntax the-finder 'set!)])
     (mk-set!-trans
@@ -73,7 +73,8 @@
                           [trace (syntax/loc stx (set-event obj (quote id) id))]
                           [set (quasisyntax/loc stx
                                  ((unsyntax field-mutator)
-                                  obj (unsyntax-splicing field-pos/null) id))])
+                                  ((unsyntax unwrapper) obj)
+                                  (unsyntax-splicing field-pos/null) id))])
               (if trace-flag
                   (syntax/loc stx (let* bindings trace set))
                   (syntax/loc stx (let* bindings set))))]
@@ -82,7 +83,8 @@
                           [trace (syntax/loc stx (get-event obj (quote id)))]
                           [call (quasisyntax/loc stx
                                   (((unsyntax field-accessor)
-                                    obj-expr (unsyntax-splicing field-pos/null)) . args))])
+                                    ((unsyntax unwrapper) obj-expr)
+                                    (unsyntax-splicing field-pos/null)) . args))])
               (if trace-flag
                   (syntax/loc stx (let* bindings trace call))
                   (syntax/loc stx (let* bindings call))))]
@@ -91,7 +93,8 @@
                           [trace (syntax/loc stx (get-event obj (quote id)))]
                           [get (quasisyntax/loc stx
                                  ((unsyntax field-accessor)
-                                  obj-expr (unsyntax-splicing field-pos/null)))])
+                                  ((unsyntax unwrapper) obj-expr)
+                                  (unsyntax-splicing field-pos/null)))])
               (if trace-flag
                   (syntax/loc stx (let* bindings trace get))
                   (syntax/loc stx (let* bindings get))))]))))))
@@ -267,7 +270,7 @@
      stx)))
 
 (define (make-with-method-map trace-flag set!-stx id-stx
-                              method-stx method-obj-stx unwrap-stx)
+                              method-stx method-obj-stx)
   (make-set!-transformer
    (lambda (stx)
      (syntax-case stx ()
@@ -284,7 +287,6 @@
            trace-flag
            stx
            method-obj-stx
-           unwrap-stx
            method-stx
            (syntax (quote id))
            flat-args-stx
@@ -343,7 +345,7 @@
   (and (pair? ctx)
        (class-context? (car ctx))))
 
-(define (make-method-call traced? source-stx object-stx unwrap-stx
+(define (make-method-call traced? source-stx object-stx
                           method-proc-stx method-name-stx args-stx rest-arg?)
   
   (define-syntax (qstx stx)
@@ -357,7 +359,6 @@
     (if traced?
         (with-syntax ([(mth obj) (generate-temporaries
                                   (list object-stx method-proc-stx))]
-                      [unwrap unwrap-stx]
                       [name method-name-stx]
                       [(arg ...) (qstx args)]
                       [(var ...) (generate-temporaries (qstx args))])
@@ -365,7 +366,7 @@
                       [obj object]
                       [var arg] ...)
                   (initialize-call-event
-                   (unwrap obj) name (app list var ...))
+                   obj name (app list var ...))
                   (call-with-values (lambda () (app mth obj var ...))
                                     finalize-call-event))))
         (qstx (app method object . args)))))

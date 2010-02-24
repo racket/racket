@@ -78,7 +78,7 @@ Scheme_Object *objscheme_find_method(Scheme_Object *obj,
 int objscheme_is_subclass(Scheme_Object *a, Scheme_Object *sup);
 int objscheme_is_a(Scheme_Object *o, Scheme_Object *c);
 
-Scheme_Object *objscheme_unwrap(Scheme_Object *);
+Scheme_Object *objscheme_unwrap(Scheme_Object *, Scheme_Object *);
 
 Scheme_Object *objscheme_unbox(Scheme_Object *, const char *where);
 Scheme_Object *objscheme_nullable_unbox(Scheme_Object *, const char *where);

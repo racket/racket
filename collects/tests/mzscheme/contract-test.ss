@@ -3043,10 +3043,12 @@
   
   (test/pos-blame
    'object-contract/field2
-   '(contract (object-contract (field x integer?))
-              (new (class object% (field [x #t]) (super-new)))
-              'pos
-              'neg))
+   '(get-field
+     x
+     (contract (object-contract (field x integer?))
+               (new (class object% (field [x #t]) (super-new)))
+               'pos
+               'neg)))
   
   (test/spec-passed/result
    'object-contract/field3
@@ -3060,17 +3062,21 @@
   
   (test/pos-blame
    'object-contract/field4
-   '(contract (object-contract (field x boolean?) (field y boolean?))
-              (new (class object% (field [x #t] [y 'x]) (super-new)))
-              'pos
-              'neg))
+   '(get-field
+     y
+     (contract (object-contract (field x boolean?) (field y boolean?))
+               (new (class object% (field [x #t] [y 'x]) (super-new)))
+               'pos
+               'neg)))
   
   (test/pos-blame
    'object-contract/field5
-   '(contract (object-contract (field x symbol?) (field y symbol?))
-              (new (class object% (field [x #t] [y 'x]) (super-new)))
-              'pos
-              'neg))
+   '(get-field
+     x
+     (contract (object-contract (field x symbol?) (field y symbol?))
+               (new (class object% (field [x #t] [y 'x]) (super-new)))
+               'pos
+               'neg)))
   
   (test/spec-passed/result
    'object-contract/field6

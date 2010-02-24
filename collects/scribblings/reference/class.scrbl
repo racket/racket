@@ -1501,7 +1501,7 @@ Method contracts must contain an additional initial argument which corresponds
 to the implicit @scheme[this] parameter of the method.  This allows for
 contracts which discuss the state of the object when the method is called
 (or, for dependent contracts, in other parts of the contract).  Two alternative
-contract forms, @scheme[->m] and @scheme[->m*], are provided as a shorthand
+contract forms, @scheme[->m] and @scheme[->*m], are provided as a shorthand
 for writing method contracts.
 
 The external contracts are as follows:
@@ -1563,6 +1563,31 @@ Similar to @scheme[->*], except that the mandatory domain of the resulting contr
 more element than the stated domain, where the first (implicit) argument is contracted with
 @scheme[any/c]. This contract is useful for writing simpler method contracts when no properties
 of @scheme[this] need to be checked.}
+
+@defform/subs[
+#:literals (field)
+
+(object/c member-spec ...)
+
+([member-spec
+  method-spec
+  (field field-spec ...)]
+ 
+ [method-spec
+  method-id
+  (method-id method-contract)]
+ [field-spec
+  field-id
+  (field-id contract-expr)])]{
+Produces a contract for an object.
+
+Unlike the older form @scheme[object-contract], but like
+@scheme[class/c], arbitrary contract expressions are allowed.
+Also, method contracts for @scheme[object/c] follow those for
+@scheme[class/c].  An object wrapped with @scheme[object/c]
+behaves as if its class had been wrapped with the equivalent
+@scheme[class/c] contract.
+}
                              
 @defform/subs[
 #:literals (field -> ->* ->d)

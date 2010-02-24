@@ -586,7 +586,7 @@ int objscheme_istype_wxMenu(Scheme_Object *obj, const char *stop, int nullOK)
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxMenu_class);
   if (objscheme_is_a(obj, os_wxMenu_class))
     return 1;
   else {
@@ -630,7 +630,7 @@ class wxMenu *objscheme_unbundle_wxMenu(Scheme_Object *obj, const char *where, i
 
   REMEMBER_VAR_STACK();
 
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxMenu_class);
   (void)objscheme_istype_wxMenu(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -899,7 +899,7 @@ int objscheme_istype_wxMenuBar(Scheme_Object *obj, const char *stop, int nullOK)
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxMenuBar_class);
   if (objscheme_is_a(obj, os_wxMenuBar_class))
     return 1;
   else {
@@ -943,7 +943,7 @@ class wxMenuBar *objscheme_unbundle_wxMenuBar(Scheme_Object *obj, const char *wh
 
   REMEMBER_VAR_STACK();
 
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxMenuBar_class);
   (void)objscheme_istype_wxMenuBar(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
@@ -1119,7 +1119,7 @@ int objscheme_istype_wxsMenuItem(Scheme_Object *obj, const char *stop, int nullO
 {
   REMEMBER_VAR_STACK();
   if (nullOK && XC_SCHEME_NULLP(obj)) return 1;
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxsMenuItem_class);
   if (objscheme_is_a(obj, os_wxsMenuItem_class))
     return 1;
   else {
@@ -1163,7 +1163,7 @@ class wxsMenuItem *objscheme_unbundle_wxsMenuItem(Scheme_Object *obj, const char
 
   REMEMBER_VAR_STACK();
 
-  obj = objscheme_unwrap(obj);
+  obj = objscheme_unwrap(obj, os_wxsMenuItem_class);
   (void)objscheme_istype_wxsMenuItem(obj, where, nullOK);
   Scheme_Class_Object *o = (Scheme_Class_Object *)obj;
   WITH_REMEMBERED_STACK(objscheme_check_valid(NULL, NULL, 0, &obj));
