@@ -39,9 +39,11 @@
          (exact? x)
          (real? x)
          (not (integer? x))))
-  
+
+  (define default-pretty-print-current-style-table (pretty-print-current-style-table))
+
   (define (do-printing pretty value port)
-    (parameterize (;; these three handlers aren't used, but are set to override the user's settings
+    (parameterize (;; these handlers aren't used, but are set to override the user's settings
                    [pretty-print-print-line (λ (line-number op old-line dest-columns) 
                                                 (when (and (not (equal? line-number 0))
                                                            (not (equal? dest-columns 'infinity)))
@@ -50,7 +52,20 @@
                    [pretty-print-pre-print-hook (λ (val port) (void))]
                    [pretty-print-post-print-hook (λ (val port) (void))]
                    [pretty-print-columns 'infinity]
-                     
+                   [pretty-print-exact-as-decimal #f]
+                   [pretty-print-depth #f]
+                   [pretty-print-.-symbol-without-bars #f]
+                   [pretty-print-show-inexactness #f]
+                   [pretty-print-abbreviate-read-macros #t]
+                   [pretty-print-current-style-table default-pretty-print-current-style-table]
+                   [pretty-print-remap-stylable (λ (x) #f)]
+                   [pretty-print-print-line
+                    (lambda (line port offset width)
+                      (when (and (number? width)
+                                 (not (eq? 0 line)))
+                        (newline port))
+                      0)]
+                   
                    [pretty-print-size-hook
                     (λ (value display? port)
                       (cond

@@ -333,21 +333,23 @@
   
   ;; simple-module-based-language-render-value/format : TST settings port (union #f (snip% -> void)) (union 'infinity number) -> void
   (define (simple-module-based-language-render-value/format value settings port width)
-        (let ([converted-value (simple-module-based-language-convert-value value settings)])
-          (setup-printing-parameters 
-           (λ ()
-             (cond
-               [(simple-settings-insert-newlines settings)
-                (if (number? width)
-                    (parameterize ([pretty-print-columns width])
-                      (pretty-print converted-value port))
-                    (pretty-print converted-value port))]
-               [else
-                (parameterize ([pretty-print-columns 'infinity])
+    (let ([converted-value (simple-module-based-language-convert-value value settings)])
+      (setup-printing-parameters 
+       (λ ()
+         (cond
+           [(simple-settings-insert-newlines settings)
+            (if (number? width)
+                (parameterize ([pretty-print-columns width])
                   (pretty-print converted-value port))
-                (newline port)]))
-           settings
-           width)))
+                (pretty-print converted-value port))]
+           [else
+            (parameterize ([pretty-print-columns 'infinity])
+              (pretty-print converted-value port))
+            (newline port)]))
+       settings
+       width)))
+  
+  (define default-pretty-print-current-style-table (pretty-print-current-style-table))
   
   ;; setup-printing-parameters : (-> void) simple-settings number -> void
   (define (setup-printing-parameters thunk settings width)
@@ -366,7 +368,20 @@
                                                 0)]
                      [pretty-print-pre-print-hook (λ (val port) (void))]
                      [pretty-print-post-print-hook (λ (val port) (void))]
-                     
+                     [pretty-print-exact-as-decimal #f]
+                     [pretty-print-depth #f]
+                     [pretty-print-.-symbol-without-bars #f]
+                     [pretty-print-show-inexactness #f]
+                     [pretty-print-abbreviate-read-macros #t]
+                     [pretty-print-current-style-table default-pretty-print-current-style-table]
+                     [pretty-print-remap-stylable (λ (x) #f)]
+                     [pretty-print-print-line
+                      (lambda (line port offset width)
+                        (when (and (number? width)
+                                   (not (eq? 0 line)))
+                          (newline port))
+                        0)]
+                          
                      [pretty-print-columns width]
                      [pretty-print-size-hook
                       (λ (value display? port)

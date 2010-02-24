@@ -283,6 +283,8 @@
    simple-settings->vector
    
    simple-module-based-language-config-panel
+   simple-module-based-language-convert-value
+   setup-printing-parameters
    
    add-snip-value
    setup-setup-values

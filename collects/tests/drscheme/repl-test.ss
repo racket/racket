@@ -972,6 +972,21 @@ This produces an ACK message
            void
            void)
    
+   (mktest (format "~s\n~s"
+                   `(require scheme/pretty)
+                   `(parameterize ((pretty-print-exact-as-decimal #t)) (display 1/4)))
+           
+           ("1/4"
+            "1/4"
+            "1/4"
+            "1/4"
+            "1/4"
+            "1/4")
+           'interactions
+           #f
+           void
+           void)
+   
    (mktest
     (string-append
      "(define p (open-output-string))\n"

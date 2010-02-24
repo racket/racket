@@ -184,16 +184,31 @@
               (thunk)))
           
           (define/override (render-value/format value settings port width)
-            (set-printing-parameters
-             settings
-             (lambda ()
-               (super render-value/format value settings port width))))
-          
+            (teaching-language-render-value/format value settings port width))
           (define/override (render-value value settings port)
-            (set-printing-parameters
+            (teaching-language-render-value/format value settings port 'infinity))
+          
+          (define/private (teaching-language-render-value/format value settings port width)
+            ;; set drscheme's printing parameters
+            (drscheme:language:setup-printing-parameters
+             (λ ()
+               ;; then adjust the settings for the teaching languages
+               (set-printing-parameters
+                settings
+                (λ () 
+                  (let ([converted-value (drscheme:language:simple-module-based-language-convert-value value settings)])
+                    (cond
+                      [(drscheme:language:simple-settings-insert-newlines settings)
+                       (if (number? width)
+                           (parameterize ([pretty-print-columns width])
+                             (pretty-print converted-value port))
+                           (pretty-print converted-value port))]
+                      [else
+                       (parameterize ([pretty-print-columns 'infinity])
+                         (pretty-print converted-value port))
+                       (newline port)])))))
              settings
-             (lambda ()
-               (super render-value value settings port))))
+             width))
           
           (super-new)))
       
