@@ -11,10 +11,6 @@
 ;;  random mutator generation tests
 ;;
 
-(define-runtime-path collector-path "gc/good-collectors/good-collector.ss")
-
-(define-runtime-path here ".")
-
 ;; test-code : exp -> boolean
 ;; returns true if evaluating the example code (as a mutator)
 ;; returns one result at the top-level, namely the symbol 'passed.
@@ -23,13 +19,7 @@
     (call-with-output-file tmpfile
       (λ (port)
         (fprintf port "#lang plai/mutator\n")
-        (fprintf port "~s\n" `(allocator-setup ,(path->string
-                                                 (find-relative-path 
-                                                  (let-values ([(base name dir?) (split-path tmpfile)])
-                                                    (normalize-path (simple-form-path base)))
-                                                  (normalize-path
-                                                   (simple-form-path collector-path))))
-                                               100))
+        (fprintf port "~s\n" `(allocator-setup tests/plai/gc/good-collectors/good-collector 100))
         (for-each (λ (exp) (pretty-print exp port)) exps))
       #:exists 'truncate)
 

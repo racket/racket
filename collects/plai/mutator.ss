@@ -307,11 +307,11 @@
                    (printf "Large heap; the heap visualizer will not be displayed.~n")))
              (init-allocator))))]
     [_ (raise-syntax-error 'mutator 
-                           "Mutator must start with an 'allocator-setup' expression, such as: (allocator-setup <literal-string> <literal-number>)"
+                           "Mutator must start with an 'allocator-setup' expression, such as: (allocator-setup <module-path> <literal-number>)"
                            stx)]))
 
 (define-for-syntax allocator-setup-error-msg
-  "Mutator must start with an 'allocator-setup' expression, such as: (allocator-setup <literal-string> <literal-number>)")
+  "Mutator must start with an 'allocator-setup' expression, such as: (allocator-setup <module-path> <literal-number>)")
 
 (define-syntax (mutator-module-begin stx)
   (syntax-case stx (allocator-setup)
@@ -320,8 +320,8 @@
        (syntax-case #'setup ()
          [(collector heap-size)
           (begin
-            (unless (string? (syntax->datum #'collector))
-              (raise-syntax-error 'allocator-setup "expected a literal string" #'collector))
+            (unless (module-path? (syntax->datum #'collector))
+              (raise-syntax-error 'allocator-setup "expected a module path" #'collector))
             (unless (number? (syntax->datum #'heap-size))
               (raise-syntax-error 'allocator-setup "expected a literal number" #'heap-size)))]
          [_
