@@ -615,6 +615,7 @@ static Scheme_Object *os_wxCanvasOnDropFile(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "on-drop-file in canvas%", n, p);
   epathname x0 INIT_NULLED_OUT;
 
@@ -642,6 +643,7 @@ static Scheme_Object *os_wxCanvasPreOnEvent(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "pre-on-event in canvas%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxMouseEvent* x1 INIT_NULLED_OUT;
@@ -672,6 +674,7 @@ static Scheme_Object *os_wxCanvasPreOnChar(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "pre-on-char in canvas%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxKeyEvent* x1 INIT_NULLED_OUT;
@@ -701,6 +704,7 @@ static Scheme_Object *os_wxCanvasOnSize(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "on-size in canvas%", n, p);
   int x0;
   int x1;
@@ -728,6 +732,7 @@ static Scheme_Object *os_wxCanvasOnSetFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "on-set-focus in canvas%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -751,6 +756,7 @@ static Scheme_Object *os_wxCanvasOnKillFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "on-kill-focus in canvas%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -775,6 +781,7 @@ static Scheme_Object *os_wxCanvasGetCanvasBackground(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   class wxColour* r;
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "get-canvas-background in canvas%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -795,6 +802,7 @@ static Scheme_Object *os_wxCanvasSetCanvasBackground(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "set-canvas-background in canvas%", n, p);
   class wxColour* x0 INIT_NULLED_OUT;
 
@@ -819,6 +827,7 @@ static Scheme_Object *os_wxCanvaswxSetBackgroundToGray(int n,  Scheme_Object *p[
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "set-background-to-gray in canvas%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -839,6 +848,7 @@ static Scheme_Object *os_wxCanvasOnScroll(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "on-scroll in canvas%", n, p);
   class wxScrollEvent* x0 INIT_NULLED_OUT;
 
@@ -865,6 +875,7 @@ static Scheme_Object *os_wxCanvasSetScrollPage(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "set-scroll-page in canvas%", n, p);
   int x0;
   int x1;
@@ -889,6 +900,7 @@ static Scheme_Object *os_wxCanvasSetScrollRange(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "set-scroll-range in canvas%", n, p);
   int x0;
   int x1;
@@ -913,6 +925,7 @@ static Scheme_Object *os_wxCanvasSetScrollPos(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "set-scroll-pos in canvas%", n, p);
   int x0;
   int x1;
@@ -938,6 +951,7 @@ static Scheme_Object *os_wxCanvasGetScrollPage(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   int r;
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "get-scroll-page in canvas%", n, p);
   int x0;
 
@@ -961,6 +975,7 @@ static Scheme_Object *os_wxCanvasGetScrollRange(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   int r;
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "get-scroll-range in canvas%", n, p);
   int x0;
 
@@ -984,6 +999,7 @@ static Scheme_Object *os_wxCanvasGetScrollPos(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   int r;
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "get-scroll-pos in canvas%", n, p);
   int x0;
 
@@ -1006,6 +1022,7 @@ static Scheme_Object *os_wxCanvasScrollPercent(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "scroll in canvas%", n, p);
   double x0;
   double x1;
@@ -1030,6 +1047,7 @@ static Scheme_Object *os_wxCanvasWarpPointer(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "warp-pointer in canvas%", n, p);
   int x0;
   int x1;
@@ -1054,6 +1072,7 @@ static Scheme_Object *os_wxCanvasViewStart(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "view-start in canvas%", n, p);
   int _x0;
   int* x0 = &_x0;
@@ -1085,6 +1104,7 @@ static Scheme_Object *os_wxCanvaswxSetResizeCorner(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "set-resize-corner in canvas%", n, p);
   Bool x0;
 
@@ -1107,6 +1127,7 @@ static Scheme_Object *os_wxCanvasEnableScrolling(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "show-scrollbars in canvas%", n, p);
   Bool x0;
   Bool x1;
@@ -1131,6 +1152,7 @@ static Scheme_Object *os_wxCanvasSetScrollbars(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "set-scrollbars in canvas%", n, p);
   int x0;
   int x1;
@@ -1178,6 +1200,7 @@ static Scheme_Object *os_wxCanvasGetVirtualSize(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "get-virtual-size in canvas%", n, p);
   int _x0;
   int* x0 = &_x0;
@@ -1210,6 +1233,7 @@ static Scheme_Object *os_wxCanvasGetDC(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   class wxDC* r;
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "get-dc in canvas%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -1230,6 +1254,7 @@ static Scheme_Object *os_wxCanvasOnChar(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "on-char in canvas%", n, p);
   class wxKeyEvent* x0 INIT_NULLED_OUT;
 
@@ -1256,6 +1281,7 @@ static Scheme_Object *os_wxCanvasOnEvent(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "on-event in canvas%", n, p);
   class wxMouseEvent* x0 INIT_NULLED_OUT;
 
@@ -1282,6 +1308,7 @@ static Scheme_Object *os_wxCanvasOnPaint(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCanvas_class);
   objscheme_check_valid(os_wxCanvas_class, "on-paint in canvas%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);

@@ -523,6 +523,7 @@ static Scheme_Object *os_wxChoiceSetSelection(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxChoice_class);
   objscheme_check_valid(os_wxChoice_class, "set-selection in choice%", n, p);
   int x0;
 
@@ -546,6 +547,7 @@ static Scheme_Object *os_wxChoiceGetSelection(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   int r;
+  p[0] = objscheme_unwrap(p[0], os_wxChoice_class);
   objscheme_check_valid(os_wxChoice_class, "get-selection in choice%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -567,6 +569,7 @@ static Scheme_Object *os_wxChoiceNumber(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   int r;
+  p[0] = objscheme_unwrap(p[0], os_wxChoice_class);
   objscheme_check_valid(os_wxChoice_class, "number in choice%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -587,6 +590,7 @@ static Scheme_Object *os_wxChoiceClear(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxChoice_class);
   objscheme_check_valid(os_wxChoice_class, "clear in choice%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -607,6 +611,7 @@ static Scheme_Object *os_wxChoiceAppend(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxChoice_class);
   objscheme_check_valid(os_wxChoice_class, "append in choice%", n, p);
   string x0 INIT_NULLED_OUT;
 
@@ -630,6 +635,7 @@ static Scheme_Object *os_wxChoiceOnDropFile(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxChoice_class);
   objscheme_check_valid(os_wxChoice_class, "on-drop-file in choice%", n, p);
   epathname x0 INIT_NULLED_OUT;
 
@@ -657,6 +663,7 @@ static Scheme_Object *os_wxChoicePreOnEvent(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxChoice_class);
   objscheme_check_valid(os_wxChoice_class, "pre-on-event in choice%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxMouseEvent* x1 INIT_NULLED_OUT;
@@ -687,6 +694,7 @@ static Scheme_Object *os_wxChoicePreOnChar(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxChoice_class);
   objscheme_check_valid(os_wxChoice_class, "pre-on-char in choice%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxKeyEvent* x1 INIT_NULLED_OUT;
@@ -716,6 +724,7 @@ static Scheme_Object *os_wxChoiceOnSize(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxChoice_class);
   objscheme_check_valid(os_wxChoice_class, "on-size in choice%", n, p);
   int x0;
   int x1;
@@ -743,6 +752,7 @@ static Scheme_Object *os_wxChoiceOnSetFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxChoice_class);
   objscheme_check_valid(os_wxChoice_class, "on-set-focus in choice%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -766,6 +776,7 @@ static Scheme_Object *os_wxChoiceOnKillFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxChoice_class);
   objscheme_check_valid(os_wxChoice_class, "on-kill-focus in choice%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);

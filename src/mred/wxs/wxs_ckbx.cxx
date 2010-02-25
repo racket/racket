@@ -405,6 +405,7 @@ static Scheme_Object *os_wxCheckBoxSetLabel(int n,  Scheme_Object *p[])
   SETUP_PRE_VAR_STACK(1);
   PRE_VAR_STACK_PUSH(0, p);
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCheckBox_class);
   objscheme_check_valid(os_wxCheckBox_class, "set-label in check-box%", n, p);
   if ((n >= (POFFSET+1)) && WITH_REMEMBERED_STACK(objscheme_istype_wxBitmap(p[POFFSET+0], NULL, 0))) {
     class wxBitmap* x0 INIT_NULLED_OUT;
@@ -451,6 +452,7 @@ static Scheme_Object *os_wxCheckBoxSetValue(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCheckBox_class);
   objscheme_check_valid(os_wxCheckBox_class, "set-value in check-box%", n, p);
   Bool x0;
 
@@ -474,6 +476,7 @@ static Scheme_Object *os_wxCheckBoxGetValue(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxCheckBox_class);
   objscheme_check_valid(os_wxCheckBox_class, "get-value in check-box%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -494,6 +497,7 @@ static Scheme_Object *os_wxCheckBoxOnDropFile(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCheckBox_class);
   objscheme_check_valid(os_wxCheckBox_class, "on-drop-file in check-box%", n, p);
   epathname x0 INIT_NULLED_OUT;
 
@@ -521,6 +525,7 @@ static Scheme_Object *os_wxCheckBoxPreOnEvent(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxCheckBox_class);
   objscheme_check_valid(os_wxCheckBox_class, "pre-on-event in check-box%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxMouseEvent* x1 INIT_NULLED_OUT;
@@ -551,6 +556,7 @@ static Scheme_Object *os_wxCheckBoxPreOnChar(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxCheckBox_class);
   objscheme_check_valid(os_wxCheckBox_class, "pre-on-char in check-box%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxKeyEvent* x1 INIT_NULLED_OUT;
@@ -580,6 +586,7 @@ static Scheme_Object *os_wxCheckBoxOnSize(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCheckBox_class);
   objscheme_check_valid(os_wxCheckBox_class, "on-size in check-box%", n, p);
   int x0;
   int x1;
@@ -607,6 +614,7 @@ static Scheme_Object *os_wxCheckBoxOnSetFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCheckBox_class);
   objscheme_check_valid(os_wxCheckBox_class, "on-set-focus in check-box%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -630,6 +638,7 @@ static Scheme_Object *os_wxCheckBoxOnKillFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxCheckBox_class);
   objscheme_check_valid(os_wxCheckBox_class, "on-kill-focus in check-box%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);

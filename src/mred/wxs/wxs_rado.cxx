@@ -628,6 +628,7 @@ static Scheme_Object *os_wxRadioBoxButtonFocus(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   int r;
+  p[0] = objscheme_unwrap(p[0], os_wxRadioBox_class);
   objscheme_check_valid(os_wxRadioBox_class, "button-focus in radio-box%", n, p);
   int x0;
 
@@ -652,6 +653,7 @@ static Scheme_Object *os_wxRadioBoxEnable(int n,  Scheme_Object *p[])
   SETUP_PRE_VAR_STACK(1);
   PRE_VAR_STACK_PUSH(0, p);
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxRadioBox_class);
   objscheme_check_valid(os_wxRadioBox_class, "enable in radio-box%", n, p);
   if ((n >= (POFFSET+1)) && WITH_REMEMBERED_STACK(objscheme_istype_number(p[POFFSET+0], NULL))) {
     int x0;
@@ -698,6 +700,7 @@ static Scheme_Object *os_wxRadioBoxSetSelection(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxRadioBox_class);
   objscheme_check_valid(os_wxRadioBox_class, "set-selection in radio-box%", n, p);
   int x0;
 
@@ -721,6 +724,7 @@ static Scheme_Object *os_wxRadioBoxNumber(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   int r;
+  p[0] = objscheme_unwrap(p[0], os_wxRadioBox_class);
   objscheme_check_valid(os_wxRadioBox_class, "number in radio-box%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -742,6 +746,7 @@ static Scheme_Object *os_wxRadioBoxGetSelection(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   int r;
+  p[0] = objscheme_unwrap(p[0], os_wxRadioBox_class);
   objscheme_check_valid(os_wxRadioBox_class, "get-selection in radio-box%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -762,6 +767,7 @@ static Scheme_Object *os_wxRadioBoxOnDropFile(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxRadioBox_class);
   objscheme_check_valid(os_wxRadioBox_class, "on-drop-file in radio-box%", n, p);
   epathname x0 INIT_NULLED_OUT;
 
@@ -789,6 +795,7 @@ static Scheme_Object *os_wxRadioBoxPreOnEvent(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxRadioBox_class);
   objscheme_check_valid(os_wxRadioBox_class, "pre-on-event in radio-box%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxMouseEvent* x1 INIT_NULLED_OUT;
@@ -819,6 +826,7 @@ static Scheme_Object *os_wxRadioBoxPreOnChar(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxRadioBox_class);
   objscheme_check_valid(os_wxRadioBox_class, "pre-on-char in radio-box%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxKeyEvent* x1 INIT_NULLED_OUT;
@@ -848,6 +856,7 @@ static Scheme_Object *os_wxRadioBoxOnSize(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxRadioBox_class);
   objscheme_check_valid(os_wxRadioBox_class, "on-size in radio-box%", n, p);
   int x0;
   int x1;
@@ -875,6 +884,7 @@ static Scheme_Object *os_wxRadioBoxOnSetFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxRadioBox_class);
   objscheme_check_valid(os_wxRadioBox_class, "on-set-focus in radio-box%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -898,6 +908,7 @@ static Scheme_Object *os_wxRadioBoxOnKillFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxRadioBox_class);
   objscheme_check_valid(os_wxRadioBox_class, "on-kill-focus in radio-box%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);

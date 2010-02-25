@@ -399,6 +399,7 @@ static Scheme_Object *os_wxButtonButtonSetBorder(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxButton_class);
   objscheme_check_valid(os_wxButton_class, "set-border in button%", n, p);
   Bool x0;
 
@@ -423,6 +424,7 @@ static Scheme_Object *os_wxButtonSetLabel(int n,  Scheme_Object *p[])
   SETUP_PRE_VAR_STACK(1);
   PRE_VAR_STACK_PUSH(0, p);
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxButton_class);
   objscheme_check_valid(os_wxButton_class, "set-label in button%", n, p);
   if ((n >= (POFFSET+1)) && WITH_REMEMBERED_STACK(objscheme_istype_wxBitmap(p[POFFSET+0], NULL, 0))) {
     class wxBitmap* x0 INIT_NULLED_OUT;
@@ -469,6 +471,7 @@ static Scheme_Object *os_wxButtonOnDropFile(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxButton_class);
   objscheme_check_valid(os_wxButton_class, "on-drop-file in button%", n, p);
   epathname x0 INIT_NULLED_OUT;
 
@@ -496,6 +499,7 @@ static Scheme_Object *os_wxButtonPreOnEvent(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxButton_class);
   objscheme_check_valid(os_wxButton_class, "pre-on-event in button%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxMouseEvent* x1 INIT_NULLED_OUT;
@@ -526,6 +530,7 @@ static Scheme_Object *os_wxButtonPreOnChar(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxButton_class);
   objscheme_check_valid(os_wxButton_class, "pre-on-char in button%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxKeyEvent* x1 INIT_NULLED_OUT;
@@ -555,6 +560,7 @@ static Scheme_Object *os_wxButtonOnSize(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxButton_class);
   objscheme_check_valid(os_wxButton_class, "on-size in button%", n, p);
   int x0;
   int x1;
@@ -582,6 +588,7 @@ static Scheme_Object *os_wxButtonOnSetFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxButton_class);
   objscheme_check_valid(os_wxButton_class, "on-set-focus in button%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -605,6 +612,7 @@ static Scheme_Object *os_wxButtonOnKillFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxButton_class);
   objscheme_check_valid(os_wxButton_class, "on-kill-focus in button%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);

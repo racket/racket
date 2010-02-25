@@ -938,6 +938,7 @@ sub DoPrintClass
 	print &NormalType($ivartype, 1) . " v";
 	print ";\n";
 	print "  REMEMBER_VAR_STACK();\n\n";
+        print "  p[0] = objscheme_unwrap(p[0], ${newclass}_class);\n";
 	print "  objscheme_check_valid(${newclass}_class, $longgetname, n, p);\n";
 	print "  if (n > POFFSET) WITH_REMEMBERED_STACK(scheme_wrong_count_m($longgetname, POFFSET, POFFSET, n, p, 1));\n";
 	print "  cobj = (Scheme_Class_Object *)p[0];\n";
@@ -957,7 +958,7 @@ sub DoPrintClass
 	    print "\nstatic Scheme_Object *objscheme_${oldclass}_Set${ivarname}(";
 	    print $scheme_args;
 	    print ")\n{\n  ";
-	    print "Scheme_Class_Object *cobj = (Scheme_Class_Object *)p[0];\n  ";
+	    print "Scheme_Class_Object *cobj = (Scheme_Class_Object *)objscheme_unwrap(p[0], ${newclass}_class);\n  ";
 	    print &NormalType($ivartype, 1) . " v";
 	    print ";\n";
 	    print "  SETUP_VAR_STACK(1);\n  VAR_STACK_PUSH(0, cobj);\n\n";
@@ -1736,6 +1737,7 @@ sub PrintFunction
 	}
 
 	if (!$global) {
+            print "  p[0] = objscheme_unwrap(p[0], ${newclass}_class);\n";
 	    print "  objscheme_check_valid(${newclass}_class, $method, n, p);\n";
 	}
     }

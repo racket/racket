@@ -3681,20 +3681,25 @@
                  (for-class (class-name cls))))))
 
 (define-values (make-class-field-accessor make-class-field-mutator)
-  (let ([mk (λ (who which)
-              (λ (class name)
-                (unless (class? class)
-                  (raise-type-error who "class" class))
-                (unless (symbol? name)
-                  (raise-type-error who "symbol" name))
-                (let ([p (hash-ref (class-field-ht class) name
-                                   (lambda ()
-                                     (obj-error who "no such field: ~a~a"
-                                                name
-                                                (for-class (class-name class)))))])
-                  (vector-ref (which class) p))))])
-    (values (mk 'class-field-accessor class-ext-field-refs)
-            (mk 'class-field-mutator class-ext-field-sets))))
+  (let ([check-and-get-index
+         (λ (who class name)
+           (unless (class? class)
+             (raise-type-error who "class" class))
+           (unless (symbol? name)
+             (raise-type-error who "symbol" name))
+           (hash-ref (class-field-ht class) name
+                     (lambda ()
+                       (obj-error who "no such field: ~a~a"
+                                  name
+                                  (for-class (class-name class))))))])
+    (values (λ (class name)
+              (let* ([p (check-and-get-index 'class-field-accessor class name)]
+                     [ref (vector-ref (class-ext-field-refs class) p)])
+                (λ (o) (ref ((object-unwrapper o) o)))))
+            (λ (class name)
+              (let* ([p (check-and-get-index 'class-field-mutator class name)]
+                     [set (vector-ref (class-ext-field-sets class) p)])
+                (λ (o v) (set ((object-unwrapper o) o) v)))))))
 
 (define-struct generic (name applicable))
 

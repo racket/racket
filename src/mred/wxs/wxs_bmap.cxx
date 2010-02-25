@@ -234,6 +234,7 @@ static Scheme_Object *os_wxBitmapwxGetARGBPixels(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxBitmap_class);
   objscheme_check_valid(os_wxBitmap_class, "get-argb-pixels in bitmap%", n, p);
   double x0;
   double x1;
@@ -271,6 +272,7 @@ static Scheme_Object *os_wxBitmapGetGLConfig(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   class wxGLConfig* r;
+  p[0] = objscheme_unwrap(p[0], os_wxBitmap_class);
   objscheme_check_valid(os_wxBitmap_class, "get-gl-config in bitmap%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -291,6 +293,7 @@ static Scheme_Object *os_wxBitmapSetGLConfig(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxBitmap_class);
   objscheme_check_valid(os_wxBitmap_class, "set-gl-config in bitmap%", n, p);
   class wxGLConfig* x0 INIT_NULLED_OUT;
 
@@ -314,6 +317,7 @@ static Scheme_Object *os_wxBitmapSetMask(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxBitmap_class);
   objscheme_check_valid(os_wxBitmap_class, "set-loaded-mask in bitmap%", n, p);
   class wxBitmap* x0 INIT_NULLED_OUT;
 
@@ -338,6 +342,7 @@ static Scheme_Object *os_wxBitmapGetMask(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   class wxBitmap* r;
+  p[0] = objscheme_unwrap(p[0], os_wxBitmap_class);
   objscheme_check_valid(os_wxBitmap_class, "get-loaded-mask in bitmap%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -359,6 +364,7 @@ static Scheme_Object *os_wxBitmapSaveFile(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxBitmap_class);
   objscheme_check_valid(os_wxBitmap_class, "save-file in bitmap%", n, p);
   wpathname x0 INIT_NULLED_OUT;
   int x1;
@@ -390,6 +396,7 @@ static Scheme_Object *os_wxBitmapLoadFile(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxBitmap_class);
   objscheme_check_valid(os_wxBitmap_class, "load-file in bitmap%", n, p);
   pathname x0 INIT_NULLED_OUT;
   int x1;
@@ -425,6 +432,7 @@ static Scheme_Object *os_wxBitmapIsColor(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxBitmap_class);
   objscheme_check_valid(os_wxBitmap_class, "is-color? in bitmap%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -446,6 +454,7 @@ static Scheme_Object *os_wxBitmapOk(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxBitmap_class);
   objscheme_check_valid(os_wxBitmap_class, "ok? in bitmap%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -467,6 +476,7 @@ static Scheme_Object *os_wxBitmapGetWidth(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   int r;
+  p[0] = objscheme_unwrap(p[0], os_wxBitmap_class);
   objscheme_check_valid(os_wxBitmap_class, "get-width in bitmap%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -488,6 +498,7 @@ static Scheme_Object *os_wxBitmapGetHeight(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   int r;
+  p[0] = objscheme_unwrap(p[0], os_wxBitmap_class);
   objscheme_check_valid(os_wxBitmap_class, "get-height in bitmap%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -509,6 +520,7 @@ static Scheme_Object *os_wxBitmapGetDepth(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   int r;
+  p[0] = objscheme_unwrap(p[0], os_wxBitmap_class);
   objscheme_check_valid(os_wxBitmap_class, "get-depth in bitmap%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);

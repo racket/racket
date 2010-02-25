@@ -432,6 +432,7 @@ static Scheme_Object *os_wxPanelGetLabelPosition(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   int r;
+  p[0] = objscheme_unwrap(p[0], os_wxPanel_class);
   objscheme_check_valid(os_wxPanel_class, "get-label-position in panel%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -452,6 +453,7 @@ static Scheme_Object *os_wxPanelSetLabelPosition(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxPanel_class);
   objscheme_check_valid(os_wxPanel_class, "set-label-position in panel%", n, p);
   int x0;
 
@@ -474,6 +476,7 @@ static Scheme_Object *os_wxPanelOnChar(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxPanel_class);
   objscheme_check_valid(os_wxPanel_class, "on-char in panel%", n, p);
   class wxKeyEvent* x0 INIT_NULLED_OUT;
 
@@ -497,6 +500,7 @@ static Scheme_Object *os_wxPanelOnEvent(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxPanel_class);
   objscheme_check_valid(os_wxPanel_class, "on-event in panel%", n, p);
   class wxMouseEvent* x0 INIT_NULLED_OUT;
 
@@ -520,6 +524,7 @@ static Scheme_Object *os_wxPanelOnPaint(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxPanel_class);
   objscheme_check_valid(os_wxPanel_class, "on-paint in panel%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -540,6 +545,7 @@ static Scheme_Object *os_wxPanelOnDropFile(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxPanel_class);
   objscheme_check_valid(os_wxPanel_class, "on-drop-file in panel%", n, p);
   epathname x0 INIT_NULLED_OUT;
 
@@ -567,6 +573,7 @@ static Scheme_Object *os_wxPanelPreOnEvent(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxPanel_class);
   objscheme_check_valid(os_wxPanel_class, "pre-on-event in panel%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxMouseEvent* x1 INIT_NULLED_OUT;
@@ -597,6 +604,7 @@ static Scheme_Object *os_wxPanelPreOnChar(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxPanel_class);
   objscheme_check_valid(os_wxPanel_class, "pre-on-char in panel%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxKeyEvent* x1 INIT_NULLED_OUT;
@@ -626,6 +634,7 @@ static Scheme_Object *os_wxPanelOnSize(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxPanel_class);
   objscheme_check_valid(os_wxPanel_class, "on-size in panel%", n, p);
   int x0;
   int x1;
@@ -653,6 +662,7 @@ static Scheme_Object *os_wxPanelOnSetFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxPanel_class);
   objscheme_check_valid(os_wxPanel_class, "on-set-focus in panel%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -676,6 +686,7 @@ static Scheme_Object *os_wxPanelOnKillFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxPanel_class);
   objscheme_check_valid(os_wxPanel_class, "on-kill-focus in panel%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -699,6 +710,7 @@ static Scheme_Object *os_wxPanelSetItemCursor(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxPanel_class);
   objscheme_check_valid(os_wxPanel_class, "set-item-cursor in panel%", n, p);
   int x0;
   int x1;
@@ -723,6 +735,7 @@ static Scheme_Object *os_wxPanelGetCursor(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxPanel_class);
   objscheme_check_valid(os_wxPanel_class, "get-item-cursor in panel%", n, p);
   int _x0;
   int* x0 = &_x0;
@@ -1441,6 +1454,7 @@ static Scheme_Object *os_wxDialogBoxdialogMenu(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxDialogBox_class);
   objscheme_check_valid(os_wxDialogBox_class, "system-menu in dialog%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -1461,6 +1475,7 @@ static Scheme_Object *os_wxDialogBoxSetTitle(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxDialogBox_class);
   objscheme_check_valid(os_wxDialogBox_class, "set-title in dialog%", n, p);
   string x0 INIT_NULLED_OUT;
 
@@ -1484,6 +1499,7 @@ static Scheme_Object *os_wxDialogBoxOnDropFile(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxDialogBox_class);
   objscheme_check_valid(os_wxDialogBox_class, "on-drop-file in dialog%", n, p);
   epathname x0 INIT_NULLED_OUT;
 
@@ -1511,6 +1527,7 @@ static Scheme_Object *os_wxDialogBoxPreOnEvent(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxDialogBox_class);
   objscheme_check_valid(os_wxDialogBox_class, "pre-on-event in dialog%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxMouseEvent* x1 INIT_NULLED_OUT;
@@ -1541,6 +1558,7 @@ static Scheme_Object *os_wxDialogBoxPreOnChar(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxDialogBox_class);
   objscheme_check_valid(os_wxDialogBox_class, "pre-on-char in dialog%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxKeyEvent* x1 INIT_NULLED_OUT;
@@ -1570,6 +1588,7 @@ static Scheme_Object *os_wxDialogBoxOnSize(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxDialogBox_class);
   objscheme_check_valid(os_wxDialogBox_class, "on-size in dialog%", n, p);
   int x0;
   int x1;
@@ -1597,6 +1616,7 @@ static Scheme_Object *os_wxDialogBoxOnSetFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxDialogBox_class);
   objscheme_check_valid(os_wxDialogBox_class, "on-set-focus in dialog%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -1620,6 +1640,7 @@ static Scheme_Object *os_wxDialogBoxOnKillFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxDialogBox_class);
   objscheme_check_valid(os_wxDialogBox_class, "on-kill-focus in dialog%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -1643,6 +1664,7 @@ static Scheme_Object *os_wxDialogBoxEnforceSize(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxDialogBox_class);
   objscheme_check_valid(os_wxDialogBox_class, "enforce-size in dialog%", n, p);
   int x0;
   int x1;
@@ -1676,6 +1698,7 @@ static Scheme_Object *os_wxDialogBoxOnClose(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxDialogBox_class);
   objscheme_check_valid(os_wxDialogBox_class, "on-close in dialog%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -1699,6 +1722,7 @@ static Scheme_Object *os_wxDialogBoxOnActivate(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxDialogBox_class);
   objscheme_check_valid(os_wxDialogBox_class, "on-activate in dialog%", n, p);
   Bool x0;
 

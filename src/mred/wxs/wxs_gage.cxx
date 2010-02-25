@@ -410,6 +410,7 @@ static Scheme_Object *os_wxsGaugeGetValue(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   int r;
+  p[0] = objscheme_unwrap(p[0], os_wxsGauge_class);
   objscheme_check_valid(os_wxsGauge_class, "get-value in gauge%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -430,6 +431,7 @@ static Scheme_Object *os_wxsGaugeSetValue(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxsGauge_class);
   objscheme_check_valid(os_wxsGauge_class, "set-value in gauge%", n, p);
   int x0;
 
@@ -453,6 +455,7 @@ static Scheme_Object *os_wxsGaugeGetRange(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   int r;
+  p[0] = objscheme_unwrap(p[0], os_wxsGauge_class);
   objscheme_check_valid(os_wxsGauge_class, "get-range in gauge%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -473,6 +476,7 @@ static Scheme_Object *os_wxsGaugeSetRange(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxsGauge_class);
   objscheme_check_valid(os_wxsGauge_class, "set-range in gauge%", n, p);
   int x0;
 
@@ -495,6 +499,7 @@ static Scheme_Object *os_wxsGaugeOnDropFile(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxsGauge_class);
   objscheme_check_valid(os_wxsGauge_class, "on-drop-file in gauge%", n, p);
   epathname x0 INIT_NULLED_OUT;
 
@@ -522,6 +527,7 @@ static Scheme_Object *os_wxsGaugePreOnEvent(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxsGauge_class);
   objscheme_check_valid(os_wxsGauge_class, "pre-on-event in gauge%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxMouseEvent* x1 INIT_NULLED_OUT;
@@ -552,6 +558,7 @@ static Scheme_Object *os_wxsGaugePreOnChar(int n,  Scheme_Object *p[])
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
   Bool r;
+  p[0] = objscheme_unwrap(p[0], os_wxsGauge_class);
   objscheme_check_valid(os_wxsGauge_class, "pre-on-char in gauge%", n, p);
   class wxWindow* x0 INIT_NULLED_OUT;
   class wxKeyEvent* x1 INIT_NULLED_OUT;
@@ -581,6 +588,7 @@ static Scheme_Object *os_wxsGaugeOnSize(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxsGauge_class);
   objscheme_check_valid(os_wxsGauge_class, "on-size in gauge%", n, p);
   int x0;
   int x1;
@@ -608,6 +616,7 @@ static Scheme_Object *os_wxsGaugeOnSetFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxsGauge_class);
   objscheme_check_valid(os_wxsGauge_class, "on-set-focus in gauge%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
@@ -631,6 +640,7 @@ static Scheme_Object *os_wxsGaugeOnKillFocus(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
   REMEMBER_VAR_STACK();
+  p[0] = objscheme_unwrap(p[0], os_wxsGauge_class);
   objscheme_check_valid(os_wxsGauge_class, "on-kill-focus in gauge%", n, p);
 
   SETUP_VAR_STACK_REMEMBERED(1);
