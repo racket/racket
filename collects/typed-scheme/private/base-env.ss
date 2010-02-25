@@ -4,6 +4,7 @@
  scheme/tcp
  scheme
  scheme/unsafe/ops
+ scheme/fixnum
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
  "extra-procs.ss"
@@ -652,13 +653,13 @@
 
 [unsafe-fx+
  (cl->
-  [(-Integer -Integer) -Integer]
-  [(-Nat -Nat) -Nat])]
+  [(-Nat -Nat) -Nat]
+  [(-Integer -Integer) -Integer])]
 [unsafe-fx- (-Integer -Integer . -> . -Integer)]
 [unsafe-fx*
  (cl->
-  [(-Integer -Integer) -Integer]
-  [(-Nat -Nat) -Nat])]
+  [(-Nat -Nat) -Nat]
+  [(-Integer -Integer) -Integer])]
 [unsafe-fxquotient (-Integer -Integer . -> . -Integer)]
 [unsafe-fxremainder (-Integer -Integer . -> . -Integer)]
 [unsafe-fxmodulo (-Integer -Integer . -> . -Integer)]
@@ -678,13 +679,49 @@
 [unsafe-fx>= (-Integer -Integer . -> . -Boolean)]
 [unsafe-fxmin
  (cl->
-  [(-Integer -Integer) -Integer]
-  [(-Nat -Nat) -Nat])]
+  [(-Nat -Nat) -Nat]
+  [(-Integer -Integer) -Integer])]
 [unsafe-fxmax
  (cl->
-  [(-Integer -Integer) -Integer]
-  [(-Nat -Nat) -Nat])]
+  [(-Nat -Nat) -Nat]
+  [(-Integer -Integer) -Integer])]
 
+;; scheme/fixnum
+
+[fx+
+ (cl->
+  [(-Nat -Nat) -Nat]
+  [(-Integer -Integer) -Integer])]
+[fx- (-Integer -Integer . -> . -Integer)]
+[fx*
+ (cl->
+  [(-Nat -Nat) -Nat]
+  [(-Integer -Integer) -Integer])]
+[fxquotient (-Integer -Integer . -> . -Integer)]
+[fxremainder (-Integer -Integer . -> . -Integer)]
+[fxmodulo (-Integer -Integer . -> . -Integer)]
+[fxabs (-Integer . -> . -Nat)]
+
+[fxand (-Integer -Integer . -> . -Integer)]
+[fxior (-Integer -Integer . -> . -Integer)]
+[fxxor (-Integer -Integer . -> . -Integer)]
+[fxnot (-Integer . -> . -Integer)]
+[fxlshift (-Integer -Integer . -> . -Integer)]
+[fxrshift (-Integer -Integer . -> . -Integer)]
+
+[fx= (-Integer -Integer . -> . -Boolean)]
+[fx< (-Integer -Integer . -> . -Boolean)]
+[fx> (-Integer -Integer . -> . -Boolean)]
+[fx<= (-Integer -Integer . -> . -Boolean)]
+[fx>= (-Integer -Integer . -> . -Boolean)]
+[fxmin
+ (cl->
+  [(-Nat -Nat) -Nat]
+  [(-Integer -Integer) -Integer])]
+[fxmax
+ (cl->
+  [(-Nat -Nat) -Nat]
+  [(-Integer -Integer) -Integer])]
 
 ;; scheme/vector
 [vector-count (-polydots (a b)
