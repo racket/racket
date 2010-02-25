@@ -47,22 +47,29 @@
        (for-each (lambda (kind s-exp)
                    (case (syntax-e kind)
                      [(proc)
-                      (for-each
-                       (lambda (arg)
-                         (if (identifier? arg)
-                             (unless (or (eq? (syntax-e arg) '...)
-                                         (eq? (syntax-e arg) '...+)
-                                         (eq? (syntax-e arg) '_...superclass-args...)
-                                         (memq (syntax-e arg) lits))
-                               (bound-identifier-mapping-put! ht arg #t))
-                             (syntax-case arg ()
-                               [(kw arg . rest)
-                                (keyword? (syntax-e #'kw))
-                                (bound-identifier-mapping-put! ht #'arg #t)]
-                               [(arg . rest)
-                                (identifier? #'arg)
-                                (bound-identifier-mapping-put! ht #'arg #t)])))
-                       (cdr (syntax->list s-exp)))]
+                      (letrec ([do-proc
+                                (lambda (s-exp)
+                                  (let ([s-exp (syntax->list s-exp)])
+                                    (for-each
+                                     (lambda (arg)
+                                       (if (identifier? arg)
+                                           (unless (or (eq? (syntax-e arg) '...)
+                                                       (eq? (syntax-e arg) '...+)
+                                                       (eq? (syntax-e arg) '_...superclass-args...)
+                                                       (memq (syntax-e arg) lits))
+                                             (bound-identifier-mapping-put! ht arg #t))
+                                           (syntax-case arg ()
+                                             [(kw arg . rest)
+                                              (keyword? (syntax-e #'kw))
+                                              (bound-identifier-mapping-put! ht #'arg #t)]
+                                             [(arg . rest)
+                                              (identifier? #'arg)
+                                              (bound-identifier-mapping-put! ht #'arg #t)])))
+                                     (cdr s-exp))
+                                  (unless (identifier? (car s-exp))
+                                    ;; Curried:
+                                    (do-proc (car s-exp)))))])
+                        (do-proc s-exp))]
                      [(form form/none form/maybe non-term)
                       (let loop ([form (case (syntax-e kind)
                                          [(form) (if (identifier? s-exp)
