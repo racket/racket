@@ -58,6 +58,7 @@ and some code that builds an initial world and starts the game.
        <drawing>
        <input>
        <tests>
+       <initial-world>
        <go>]
 
 Each section also comes with a series of test cases that are collected into the 
@@ -1118,17 +1119,21 @@ plus various helper functions.
        <clack-tests>]
 
 The @scheme[change] function handles keyboard input and merely updates the @tt{h-down?} field
-based on the state of the key event.
+based on the state of the key event during gameplay. Once the game has ended it resets to the
+initial world when the user presses @litchar{n}.
 
 @chunk[<change>
        ;; change : world key-event -> world
        (define (change w ke)
-         (make-world (world-board w)
-                     (world-cat w)
-                     (world-state w)
-                     (world-size w)
-                     (world-mouse-posn w)
-                     (key=? ke "h")))]
+         (if (and (not (equal? (world-state w) 'playing))
+                  (key=? ke "n"))
+             (make-initial-world)
+             (make-world (world-board w)
+                         (world-cat w)
+                         (world-state w)
+                         (world-size w)
+                         (world-mouse-posn w)
+                         (key=? ke "h"))))]
 
 The @scheme[clack] function handles mouse input. It has three tasks and each corresponds 
 to a helper function:
@@ -1174,7 +1179,7 @@ is not over, and then it just calls @scheme[circle-at-point].
               (circle-at-point (world-board world) x y)))]
 
 The @scheme[circle-at-point] function returns a @scheme[posn] when
-the coordinate (@scheme[x],@scheme[y]) is inside a circle
+the coordinate (@scheme[x],@scheme[y]) is inside an unblocked circle
 on the given board. Instead of computing the nearest
 circle to the coordinates, it simply iterates over the cells on the
 board and returns the @scheme[posn] of the matching cell.
@@ -1185,6 +1190,7 @@ board and returns the @scheme[posn] of the matching cell.
              (or/c posn? #f))
          (ormap (λ (cell)
                   (and (point-in-this-circle? (cell-p cell) x y)
+                       (not (cell-blocked? cell))
                        (cell-p cell)))
                 board))]
 
@@ -2329,30 +2335,35 @@ and reports the results.
 
 @section{Run, program, run}
 
-This section contains the main expression that starts
-the Chat Noir game going. 
+This section contains expressions that start
+the Chat Noir game going.
 
-@chunk[<go>
-       (let* ([board-size 11]
-              [initial-board
-               (add-n-random-blocked-cells
-                6
-                (empty-board board-size)
-                board-size)]
-              [initial-world
-               (make-world initial-board
+First, a function to compute state of the world at the start of a game is defined.
+
+@chunk[<initial-world>
+       (define board-size 11)
+       (define (make-initial-world)
+         (define initial-board
+           (add-n-random-blocked-cells
+            6
+            (empty-board board-size)
+            board-size))
+         (make-world initial-board
                            (make-posn (quotient board-size 2)
                                       (quotient board-size 2))
                            'playing
                            board-size
                            #f
-                           #f)])
-         
-         (big-bang initial-world
-                   (on-draw render-world
-                            (world-width board-size)
-                            (world-height board-size))
-                   (on-key change)
-                   (on-mouse clack)
-                   (name "Chat Noir"))
-         (void))]
+                           #f))]
+
+Next, the game starts by calling @scheme[big-bang] with the appropriate arguments.
+
+@chunk[<go>
+       (void
+        (big-bang (make-initial-world)
+                  (on-draw render-world
+                           (world-width board-size)
+                           (world-height board-size))
+                  (on-key change)
+                  (on-mouse clack)
+                  (name "Chat Noir")))]
