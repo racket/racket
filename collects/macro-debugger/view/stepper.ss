@@ -425,7 +425,7 @@
       (let ([deriv* (adjust-deriv/lift deriv)])
         deriv*))
 
-    ;; adjust-deriv/lift : Derivation -> (list-of Derivation)
+    ;; adjust-deriv/lift : Deriv -> Deriv/#f
     (define/private (adjust-deriv/lift deriv)
       (match deriv
         [(Wrap lift-deriv (e1 e2 first lifted-stx second))
@@ -442,8 +442,8 @@
 
     ;; adjust-deriv/top : Derivation -> Derivation
     (define/private (adjust-deriv/top deriv)
-      (if (or (and #| (syntax-source (wderiv-e1 deriv)) |#
-                   (syntax-original? (wderiv-e1 deriv)))
+      (if (or (not deriv)
+              (syntax-original? (wderiv-e1 deriv))
               (p:module? deriv))
           deriv
           ;; It's not original...
