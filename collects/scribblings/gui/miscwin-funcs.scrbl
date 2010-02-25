@@ -470,3 +470,6 @@ If @scheme[value] is an integer outside a platform-specific range,
 
 See also @scheme[get-resource].}
 
+@defproc[(label-string? [v any/c]) boolean?]{
+  Returns @scheme[#t] if @scheme[v] is a string whose length is less than or equal to @scheme[200].                                             
+}

@@ -40,7 +40,8 @@
 	   "private/repl.ss"
 	   "private/afm.ss"
            "private/helper.ss"
-           "private/dynamic.ss")
+           "private/dynamic.ss"
+           "private/check.ss")
 
   ;; Initialize AFM/PS:
   (wx:set-ps-procs
@@ -318,4 +319,5 @@
 	   current-ps-afm-file-paths
 	   current-ps-cmap-file-paths
 	   hide-cursor-until-moved
-           system-position-ok-before-cancel?))
+           system-position-ok-before-cancel?
+           label-string?))
