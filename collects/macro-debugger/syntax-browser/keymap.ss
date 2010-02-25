@@ -91,6 +91,17 @@
             (lambda (i e)
               (call-function "copy-syntax-as-text" i e))))
       (new separator-menu-item% (parent menu))
+      (new menu-item%
+           (label "Clear selection")
+           (parent menu)
+           (demand-callback
+            (lambda (i)
+              (send i enable (and (selected-syntax) #t))))
+           (callback 
+            (lambda (i e)
+              (call-function "clear-syntax-selection" i e))))
+      (menu-option/notify-box menu "View syntax properties"
+                              (get-field props-shown? config))
       (let ([pretty-menu
              (new menu%
                   (label "Change layout")
@@ -108,19 +119,8 @@
                (demand-callback
                 (lambda (i)
                   (let ([stx (selected-syntax)])
-                    (send i set-label
-                          (format "Format ~s ~a" (syntax-e stx) (cadr sym+desc))))))
+                    (when stx
+                      (send i set-label
+                            (format "Format ~s ~a" (syntax-e stx) (cadr sym+desc)))))))
                (callback
-                (pretty-print-as (car sym+desc))))))
-      (new menu-item%
-           (label "Clear selection")
-           (parent menu)
-           (demand-callback
-            (lambda (i)
-              (send i enable (and (selected-syntax) #t))))
-           (callback 
-            (lambda (i e)
-              (call-function "clear-syntax-selection" i e))))
-      (menu-option/notify-box menu "View syntax properties"
-                              (get-field props-shown? config)))))
-
+                (pretty-print-as (car sym+desc)))))))))
