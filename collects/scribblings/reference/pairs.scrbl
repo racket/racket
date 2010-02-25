@@ -415,7 +415,7 @@ Returns a list that is like @scheme[lst], omitting the first element
 
 Returns @scheme[(remove v lst eq?)].
 @mz-examples[
-(remq (list 1 2) (list 1 2 3 4 5))
+(remq 2 (list 1 2 3 4 5))
 ]}
 
 
