@@ -641,6 +641,7 @@
 
 ;; unsafe
 
+[unsafe-vector-ref (-poly (a) ((-vec a) -Nat . -> . a))]
 [unsafe-vector-length (-poly (a) ((-vec a) . -> . -Nat))]
 [unsafe-car (-poly (a b) 
               (cl->*
@@ -648,6 +649,42 @@
 [unsafe-cdr (-poly (a b) 
               (cl->*
                (->acc (list (-pair a b)) b (list -cdr))))]
+
+[unsafe-fx+
+ (cl->
+  [(-Integer -Integer) -Integer]
+  [(-Nat -Nat) -Nat])]
+[unsafe-fx- (-Integer -Integer . -> . -Integer)]
+[unsafe-fx*
+ (cl->
+  [(-Integer -Integer) -Integer]
+  [(-Nat -Nat) -Nat])]
+[unsafe-fxquotient (-Integer -Integer . -> . -Integer)]
+[unsafe-fxremainder (-Integer -Integer . -> . -Integer)]
+[unsafe-fxmodulo (-Integer -Integer . -> . -Integer)]
+[unsafe-fxabs (-Integer . -> . -Nat)]
+
+[unsafe-fxand (-Integer -Integer . -> . -Integer)]
+[unsafe-fxior (-Integer -Integer . -> . -Integer)]
+[unsafe-fxxor (-Integer -Integer . -> . -Integer)]
+[unsafe-fxnot (-Integer . -> . -Integer)]
+[unsafe-fxlshift (-Integer -Integer . -> . -Integer)]
+[unsafe-fxrshift (-Integer -Integer . -> . -Integer)]
+
+[unsafe-fx= (-Integer -Integer . -> . -Boolean)]
+[unsafe-fx< (-Integer -Integer . -> . -Boolean)]
+[unsafe-fx> (-Integer -Integer . -> . -Boolean)]
+[unsafe-fx<= (-Integer -Integer . -> . -Boolean)]
+[unsafe-fx>= (-Integer -Integer . -> . -Boolean)]
+[unsafe-fxmin
+ (cl->
+  [(-Integer -Integer) -Integer]
+  [(-Nat -Nat) -Nat])]
+[unsafe-fxmax
+ (cl->
+  [(-Integer -Integer) -Integer]
+  [(-Nat -Nat) -Nat])]
+
 
 ;; scheme/vector
 [vector-count (-polydots (a b)
