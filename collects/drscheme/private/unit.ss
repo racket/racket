@@ -185,7 +185,12 @@ module browser threading seems wrong.
                                  (let ([kind (filename->kind fn)])
                                    (cond
                                      [kind
-                                      (send (send snip get-bitmap) save-file fn kind)]
+                                      (cond
+                                        [(or (is-a? snip image-snip%)
+                                             (is-a? snip cache-image-snip%))
+                                         (send (send snip get-bitmap) save-file fn kind)]
+                                        [else
+                                         (image-core:save-image-as-bitmap snip fn kind)])]
                                      [else
                                       (message-box 
                                        (string-constant drscheme)

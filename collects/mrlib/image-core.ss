@@ -559,6 +559,17 @@ has been moved out).
     (send dc set-text-foreground fg)
     (send dc set-smoothing smoothing)))
 
+(define (save-image-as-bitmap image filename kind)
+  (let* ([bb (send image get-bb)]
+         [bm (make-object bitmap% 
+               (ceiling (inexact->exact (bb-right bb)))
+               (ceiling (inexact->exact (bb-bottom bb))))]
+         [bdc (make-object bitmap-dc% bm)])
+    (send bdc clear)
+    (render-image image bdc 0 0)
+    (send bdc set-bitmap #f)
+    (send bm save-file filename kind)))
+
 (define (render-normalized-shape shape dc dx dy)
   (cond
     [(overlay? shape)
@@ -939,6 +950,7 @@ the mask bitmap and the original bitmap are all together in a single bytes!
          
          text->font
          render-image
+         save-image-as-bitmap
          
          skip-image-equality-fast-path
          
