@@ -1,9 +1,8 @@
 #lang scheme/base
 (require (for-syntax scheme/base))
 
-(provide (rename-out [make-set* make-set])
-         make-seteq make-seteqv
-         set? set-eq? set-eqv?
+(provide set seteq seteqv
+         set? set-eq? set-eqv? set-equal?
          set-empty? set-count
          set-member? set-add set-remove
          set-union set-intersect set-subtract
@@ -11,6 +10,7 @@
          (rename-out [*in-set in-set]))
 
 (define-struct set (ht)
+  #:omit-define-syntaxes
   #:property prop:equal+hash (list 
                               (lambda (set1 set2 =?)
                                 (=? (set-ht set1) (set-ht set2)))
@@ -18,13 +18,11 @@
                               (lambda (set hc) (add1 (hc (set-ht set)))))
   #:property prop:sequence (lambda (v) (*in-set v)))
 
-(define make-set*
-  (let ([make-set (lambda elems
-                    (make-set (make-immutable-hash (map (lambda (k) (cons k #t)) elems))))])
-    make-set))
-(define (make-seteq . elems)
+(define (set . elems)
+  (make-set (make-immutable-hash (map (lambda (k) (cons k #t)) elems))))
+(define (seteq . elems)
   (make-set (make-immutable-hasheq (map (lambda (k) (cons k #t)) elems))))
-(define (make-seteqv . elems)
+(define (seteqv . elems)
   (make-set (make-immutable-hasheqv (map (lambda (k) (cons k #t)) elems))))
 
 (define (set-eq? set)
@@ -33,6 +31,11 @@
 (define (set-eqv? set)
   (unless (set? set) (raise-type-error 'set-eqv? "set" 0 set))
   (hash-eqv? (set-ht set)))
+(define (set-equal? set)
+  (unless (set? set) (raise-type-error 'set-equal? "set" 0 set))
+  (let* ([ht (set-ht set)])
+    (not (or (hash-eq? ht)
+             (hash-eqv? ht)))))
 
 (define (set-empty? set)
   (unless (set? set) (raise-type-error 'set-empty? "set" 0 set))

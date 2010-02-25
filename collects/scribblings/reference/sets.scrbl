@@ -36,9 +36,9 @@ Returns @scheme[#t] if @scheme[set] compares elements with @scheme[eq?],
 @scheme[#f] if it compares with @scheme[equal?] or @scheme[eqv?].}
 
 @deftogether[(
-@defproc[(make-set [v any/c] ...) set?]
-@defproc[(make-seteqv [v any/c] ...) set?]
-@defproc[(make-seteq [v any/c] ...) set?]
+@defproc[(set [v any/c] ...) set?]
+@defproc[(seteqv [v any/c] ...) set?]
+@defproc[(seteq [v any/c] ...) set?]
 )]{
 
 Creates a set that uses @scheme[equal?], @scheme[eq?], or
