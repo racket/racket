@@ -1684,6 +1684,13 @@
                            [else
                             (loop start str (+ sp 1) (+ i 1) (+ cnt 1) inserted-line?)])))))))))))
 
+  (define/private (check-len str len)
+    (unless (len . <= . (string-length str))
+      (raise-mismatch-error (method-name 'text% 'insert)
+                            (format "length ~e too large for given string: "
+                                    len)
+                            str)))
+
   (define/override (insert . args)
     (case-args
      args
@@ -1696,12 +1703,14 @@
       (do-insert #f str #f start end scroll-ok?)]
      [([exact-nonnegative-integer? len] 
        [string? str])
-      (do-insert #f str #f startpos endpos #t)]
+      (check-len str len)
+      (do-insert #f (substring str 0 len) #f startpos endpos #t)]
      [([exact-nonnegative-integer? len] 
        [string? str] 
        [exact-nonnegative-integer? start] 
        [(make-alts exact-nonnegative-integer? (symbol-in same)) [end 'same]]
        [any? [scroll-ok? #t]])
+      (check-len str len)
       (do-insert #f (substring str 0 len) #f start end scroll-ok?)]
      [([snip% snip])
       (do-insert snip #f #f startpos endpos #t)]
