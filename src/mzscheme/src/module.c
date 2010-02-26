@@ -960,9 +960,11 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
                 if (!phase) {
                   /* Evaluate id in a fresh namespace */
                   Scheme_Object *a[3], *ns;
+                  Scheme_Config *config;
+                  Scheme_Cont_Frame_Data cframe;
+
                   start_module(m, env, 0, modidx, 0, 1, base_phase, scheme_null);
-                  a[0] = scheme_intern_symbol("empty");
-                  ns = scheme_make_namespace(1, a);
+                  ns = scheme_make_namespace(0, NULL);
                   a[0] = (Scheme_Object *)env;
                   a[1] = srcm->modname;
                   a[2] = ns;
@@ -972,7 +974,19 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
                                                            scheme_make_pair(name,
                                                                             scheme_null)));
                   do_namespace_require((Scheme_Env *)ns, 1, a, 0, 0);
-                  return scheme_eval(name, (Scheme_Env *)ns);
+
+                  scheme_push_continuation_frame(&cframe);
+                  config = scheme_extend_config(scheme_current_config(),
+                                                MZCONFIG_ENV,
+                                                ns);
+                  scheme_set_cont_mark(scheme_parameterization_key, 
+                                       (Scheme_Object *)config);
+
+                  ns = scheme_eval(name, (Scheme_Env *)ns);
+
+                  scheme_pop_continuation_frame(&cframe);
+
+                  return ns;
                 } else {
                   scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                                    "%s: name is provided as syntax: %V by module: %V",
