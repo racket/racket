@@ -5,7 +5,8 @@
           "guide-utils.ss"
 
           (for-label scheme/class
-                     scheme/trait))
+                     scheme/trait
+                     scheme/contract))
 
 @(define class-eval
    (let ([e (make-base-eval)])
@@ -799,6 +800,83 @@ Using this form in conjunction with trait operators such as
      (define/public (get-color)
        .... (get-spots-color) .... (get-stripes-color) ....))))
 ]
+
+@; ----------------------------------------------------------------------
+
+@; Set up uses of contract forms below
+@(class-eval '(require scheme/contract))
+
+@section{Contracts}
+
+As classes are values, they can flow across contract boundaries, and we
+may wish to protect parts of a given class with contracts.  For this,
+the @scheme[class/c] form is used.  In its simplest form, @scheme[class/c]
+protects the public fields and methods of objects instantiated from the
+contracted class.  There is also an @scheme[object/c] form that can be used
+to similarly protect the public fields and methods of a particular object.
+Take the following definition of @scheme[animal%], which uses a public field
+for its @scheme[size] attribute:
+
+@schemeblock[
+(define animal%
+  (class object% 
+    (super-new)
+    (field [size 10])
+    (define/public (eat food)
+      (set! size (+ size (get-field size food))))))]
+
+For any instantiated @scheme[animal%], accessing the @scheme[size] field
+should return a positive number.  Also, if the @scheme[size] field is set,
+it should be assigned a positive number.  Finally, the @scheme[eat] method
+should receive an argument which is an object with a @scheme[size] field
+that contains a positive number. To ensure these conditions, we will define
+the @scheme[animal%] class with an appropriate contract:
+
+@schemeblock[
+(define positive/c (and/c number? positive?))
+(define edible/c (object/c (field [size positive/c])))
+(define/contract animal%
+  (class/c (field [size positive/c])
+           [eat (->m edible/c void?)])
+  (class object% 
+    (super-new)
+    (field [size 10])
+    (define/public (eat food)
+      (set! size (+ size (get-field size food))))))]
+
+@interaction-eval[
+#:eval class-eval
+(begin
+  (define positive/c
+    (flat-named-contract 'positive/c (and/c number? positive?)))
+  (define edible/c (object/c (field [size positive/c])))
+  (define/contract animal%
+    (class/c (field [size positive/c])
+             [eat (->m edible/c void?)])
+    (class object% 
+      (super-new)
+      (field [size 10])
+      (define/public (eat food)
+        (set! size (+ size (get-field size food)))))))]
+
+Here we use @scheme[->m] to describe the behavior of @scheme[eat] since we
+do not need to describe any requirements for the @scheme[this] parameter.
+Now that we have our contracted class, we can see that the contracts
+on both @scheme[size] and @scheme[eat] are enforced:
+
+@interaction[
+#:eval class-eval
+(define bob (new animal%))
+(set-field! size bob 3)
+(get-field size bob)
+(set-field! size bob 'large)
+(define richie (new animal%))
+(send bob eat richie)
+(get-field size bob)
+(define rock (new object%))
+(send bob eat rock)
+(define giant (new (class object% (super-new) (field [size 'large]))))
+(send bob eat giant)]
 
 @; ----------------------------------------------------------------------
 
