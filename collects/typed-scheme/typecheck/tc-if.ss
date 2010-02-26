@@ -57,9 +57,9 @@
                       r))]
                ;; special case if one of the branches is unreachable
                [(and (= 1 (length us)) (type-equal? (car us) (Un)))
-                (if expected (check-below (ret ts fs2 os2)) (ret ts fs2 os2))]
+                (if expected (check-below (ret ts fs2 os2) expected) (ret ts fs2 os2))]
                [(and (= 1 (length ts)) (type-equal? (car ts) (Un)))
-                (if expected (check-below (ret us fs3 os3)) (ret us fs3 os3))]
+                (if expected (check-below (ret us fs3 os3) expected) (ret us fs3 os3))]
                ;; otherwise, error
                [else
                 (tc-error/expr #:return (ret (or expected Err))
