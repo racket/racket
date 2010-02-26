@@ -1,27 +1,27 @@
 #lang scheme/base
 (provide (all-defined-out))
 
-(require "planet-requires.ss"
-         scheme/require-syntax
+(require scheme/require-syntax
          scheme/match
+         scheme/gui/dynamic
 	 typed-scheme/utils/utils
-         (for-syntax scheme/base))
-
-
-(require (types comparison utils)
-         (schemeunit))
+         (for-syntax scheme/base)
+         (types comparison utils) 
+         schemeunit schemeunit/text-ui)
 
 (provide private typecheck (rename-out [infer r:infer]) utils env rep types)
 
 (define (mk-suite ts)
   (match (map (lambda (f) (f)) ts)
 	 [(list t) t]
-	 [ts (apply test-suite "Combined Test Suite" ts)]))
+	 [ts (make-test-suite "Combined Test Suite" ts)]))
 
 (define (run . ts)
-  (test/text-ui (mk-suite ts)))
+  (run-tests (mk-suite ts)))
 
-(define (test/gui suite) ((dynamic-require '(planet schematics/schemeunit:2/graphical-ui) 'test/graphical-ui) suite))
+(define (test/gui suite) 
+  (((dynamic-require 'schemeunit/private/gui/gui 'make-gui-runner))
+   suite))
 
 (define (run/gui . ts)
   (test/gui (mk-suite ts)))

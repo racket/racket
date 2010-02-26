@@ -1,12 +1,12 @@
 #lang scheme/base
-(require "test-utils.ss" "planet-requires.ss"
-         (for-syntax scheme/base))
-(require (private type-annotation parse-type base-types)
+(require "test-utils.ss"
+         (for-syntax scheme/base)
+         (private type-annotation parse-type base-types)
          (types convenience utils)
 	 (env type-environments type-name-env init-envs)
 	 (utils tc-utils)
 	 (rep type-rep)
-         (schemeunit))
+         schemeunit)
 
 (provide type-annotation-tests)
 

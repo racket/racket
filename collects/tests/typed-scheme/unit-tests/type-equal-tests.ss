@@ -1,9 +1,9 @@
 #lang scheme/base
 
-(require "test-utils.ss" "planet-requires.ss" (for-syntax scheme/base))
-(require (rep type-rep)
+(require "test-utils.ss" (for-syntax scheme/base)
+         (rep type-rep)
 	 (types comparison abbrev union)
-         (schemeunit))
+         schemeunit)
 
 (provide type-equal-tests)
 

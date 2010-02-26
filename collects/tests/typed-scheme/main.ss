@@ -2,8 +2,7 @@
 
 (provide go go/text)
 
-(require (planet schematics/schemeunit:2/test)
-         (planet schematics/schemeunit:2/text-ui)
+(require schemeunit schemeunit/text-ui
          mzlib/etc scheme/port
          compiler/compiler
          scheme/match
@@ -59,8 +58,7 @@
                            [current-directory path]
                            [current-output-port (open-output-nowhere)])
               (loader p)))))))
-    (apply test-suite dir
-           tests)))
+    (make-test-suite dir tests)))
 
 (define (dr p)
   #;((compile-zos #f) (list p) 'auto)
@@ -88,7 +86,7 @@
               unit-tests int-tests))
 
 (define (go) (test/gui tests))
-(define (go/text) (test/text-ui tests))
+(define (go/text) (run-tests tests))
 
 (provide go go/text)
 

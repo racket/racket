@@ -1,6 +1,5 @@
 #lang scheme
-(require "test-utils.ss" "planet-requires.ss")
-(require (schemeunit))
+(require "test-utils.ss" schemeunit)
 
 (provide module-tests)
 

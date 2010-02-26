@@ -2,7 +2,6 @@
 
 (require 
  "test-utils.ss"
- "planet-requires.ss"
  "typecheck-tests.ss" ;;fail
  "subtype-tests.ss" ;; pass
  "type-equal-tests.ss" ;; pass
@@ -13,18 +12,14 @@
  "subst-tests.ss" ;; pass
  "infer-tests.ss" ;; pass
  "contract-tests.ss"
- )
-
-(require (r:infer infer infer-dummy)
-         (schemeunit))
+ (r:infer infer infer-dummy) schemeunit)
 
 (provide unit-tests)
 
 (infer-param infer)
 
 (define unit-tests
-  (apply
-   test-suite 
+  (make-test-suite 
    "Unit Tests"
    (for/list ([f (list
                   typecheck-tests

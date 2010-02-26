@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "test-utils.ss" "planet-requires.ss"
+(require "test-utils.ss"
          (for-syntax scheme/base)
          (for-template scheme/base))
 (require (private base-env prims type-annotation 
@@ -15,20 +15,17 @@
          (utils tc-utils utils)
          unstable/mutated-vars
          (env type-name-env type-environments init-envs)
-         (schemeunit)
-         syntax/parse)
-
-(require (for-syntax (utils tc-utils)
+         schemeunit
+         syntax/parse
+         (for-syntax (utils tc-utils)
                      (typecheck typechecker)
 	             (env type-env)
 	             (private base-env base-env-numeric
 			      base-env-indexing-old))
          (for-template (private base-env base-types-new base-types-extra
 				base-env-numeric
-				base-env-indexing-old)))
-
-
-(require (for-syntax syntax/kerncase syntax/parse))
+				base-env-indexing-old))
+         (for-syntax syntax/kerncase syntax/parse))
 
 (provide typecheck-tests g tc-expr/expand)
 

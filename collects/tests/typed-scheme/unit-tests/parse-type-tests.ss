@@ -1,6 +1,6 @@
 #lang scheme/base
-(require "test-utils.ss" "planet-requires.ss" (for-syntax scheme/base))
-(require (utils tc-utils)
+(require "test-utils.ss" (for-syntax scheme/base)
+         (utils tc-utils)
 	 (env type-alias-env type-environments type-name-env init-envs)
 	 (rep type-rep)
 	 (rename-in (types comparison subtype union utils convenience)
@@ -8,7 +8,7 @@
          (private base-types-new base-types-extra colon)
          (for-template (private base-types-new base-types-extra base-env colon))
          (private parse-type)
-         (schemeunit))
+         schemeunit)
 
 (provide parse-type-tests)
 

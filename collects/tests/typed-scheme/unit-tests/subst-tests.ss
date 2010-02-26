@@ -1,9 +1,9 @@
 #lang scheme/base
 
-(require "test-utils.ss" "planet-requires.ss" (for-syntax scheme/base))
-(require (rep type-rep)
+(require "test-utils.ss" (for-syntax scheme/base)
+         (rep type-rep)
 	 (types utils abbrev)
-         (schemeunit))
+         schemeunit)
 
 (define-syntax-rule (s img var tgt result)
   (test-eq? "test" (substitute img 'var tgt) result))
