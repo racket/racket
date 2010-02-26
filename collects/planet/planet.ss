@@ -137,15 +137,18 @@ This command does not unpack or install the named .plt file."
   
   (define (fail s . args)
     (raise (make-exn:fail (apply format s args) (current-continuation-marks))))
+  (define (warn s . args)
+    (apply printf s args)
+    (newline))
   
   (define (download/install owner name majstr minstr)
     (let* ([maj (read-from-string majstr)]
            [min (read-from-string minstr)]
            [full-pkg-spec (get-package-spec owner name maj min)])
-      (when (get-package-from-cache full-pkg-spec)
-        (fail "No package installed (cache already contains a matching package)"))
-      (unless (download/install-pkg owner name maj min)
-        (fail "Could not find matching package"))))
+      (if (get-package-from-cache full-pkg-spec)
+          (warn "No package installed (cache already contains a matching package)")
+          (unless (download/install-pkg owner name maj min)
+            (fail "Could not find matching package")))))
   
   (define (download/no-install owner pkg majstr minstr)
     (let* ([maj (read-from-string majstr)]
