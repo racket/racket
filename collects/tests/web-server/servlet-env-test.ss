@@ -1,8 +1,5 @@
 #lang scheme/base
 (require schemeunit
-         #;(only (planet "ssax.ss" ("lizorkin" "ssax.plt" 1 3))
-                 ssax:xml->sxml)
-         #;(planet "sxml.ss" ("lizorkin" "sxml.plt" 1 4))
          mzlib/etc
          mzlib/list
          mzlib/pretty

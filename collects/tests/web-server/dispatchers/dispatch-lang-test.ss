@@ -1,6 +1,5 @@
 #lang scheme/base
 (require schemeunit
-         (planet "sxml.ss" ("lizorkin" "sxml.plt" 2 0))
          mzlib/etc
          mzlib/list
          web-server/dispatchers/dispatch
@@ -53,11 +52,11 @@
       (let* ([xs #"10"]
              [ys #"17"]
              [d (mkd (build-path example-servlets "add-param.ss"))]
-             [k0 (first ((sxpath "//form/@action/text()") (call d url0 empty)))]
-             [k1 (first ((sxpath "//form/@action/text()") (call d (format "~a?number=~a" k0 xs)
-                                                                (list (make-binding:form #"number" xs)))))]
-             [n (first ((sxpath "//p/text()") (call d (format "~a?number=~a" k1 ys)
-                                                    (list (make-binding:form #"number" ys)))))])
+             [k0 (simple-xpath* '(form #:action) (call d url0 empty))]
+             [k1 (simple-xpath* '(form #:action) (call d (format "~a?number=~a" k0 xs)
+                                                       (list (make-binding:form #"number" xs))))]
+             [n (simple-xpath* '(p) (call d (format "~a?number=~a" k1 ys)
+                                                    (list (make-binding:form #"number" ys))))])
         n)))
    
    (test-add-two-numbers
@@ -77,11 +76,11 @@
      (test-equal? 
       "add01.ss - no s/s, uri"
       (let* ([d (mkd (build-path example-servlets "add01.ss"))]
-             [k0 (first ((sxpath "//form/@action/text()") (call d url0 empty)))]
-             [k1 (first ((sxpath "//form/@action/text()") (call d (format "~a?first=~a" url0 xs) (list (make-binding:form #"first" xs)))))]
-             [n (first ((sxpath "//p/text()") (call d (format "~a?first=~a&second=~a" url0 xs ys)
+             [k0 (simple-xpath* '(form #:action) (call d url0 empty))]
+             [k1 (simple-xpath* '(form #:action) (call d (format "~a?first=~a" url0 xs) (list (make-binding:form #"first" xs))))]
+             [n (simple-xpath* '(p) (call d (format "~a?first=~a&second=~a" url0 xs ys)
                                                     (list (make-binding:form #"first" xs)
-                                                          (make-binding:form #"second" ys)))))])
+                                                          (make-binding:form #"second" ys))))])
         n)
       (format "The answer is: ~a" (+ x y))))
    
@@ -134,7 +133,7 @@
    
    (test-equal? "check-dir.ss"
                 (let* ([d (mkd (build-path example-servlets "check-dir.ss"))]
-                       [t0 (first ((sxpath "//h2/text()") (call d url0 empty)))])
+                       [t0 (simple-xpath* '(h2) (call d url0 empty))])
                   t0)
                 (format "The current directory: ~a" (path->string example-servlets)))
    

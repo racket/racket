@@ -1,13 +1,13 @@
 #lang scheme
 (require (for-syntax scheme/base)
          web-server/private/connection-manager
-         (only-in (planet "ssax.ss" ("lizorkin" "ssax.plt" 2 0))
-                  ssax:xml->sxml)
          web-server/http
          web-server/private/web-server-structs
          net/url
          mzlib/pretty
          mzlib/list
+         xml
+         tests/eli-tester
          web-server/private/timer)
 (provide make-module-eval
          make-eval/mod-path
@@ -17,14 +17,76 @@
          htxml
          call)
 
+(define keyword->symbol (compose string->symbol keyword->string))
+(define (simple-xpath/xexpr p x)
+  (match p
+    [(list)
+     (list x)]
+    [(list-rest (? symbol? s) r)
+     (match x
+       [(list-rest (? (curry equal? s)) rs)
+        (simple-xpath/tag-body r rs)]
+       [_
+        empty])]
+    [_
+     empty]))
+(define (simple-xpath/tag-body p x)
+  (match p
+    [(list)
+     (match x
+       [(list) empty]
+       [(list-rest (list (list (? symbol?) (? string?)) ...) rs)
+        (simple-xpath/tag-body p rs)]
+       [(? list?)
+        x]
+       [_ 
+        empty])]
+    [(list-rest (? symbol?) _)
+     (match x
+       [(list-rest (list (list (? symbol?) (? string?)) ...) rs)
+        (simple-xpath/tag-body p rs)]
+       [(? list?)
+        (append-map (curry simple-xpath/xexpr p) x)]
+       [_
+        empty])]
+    [(list (? keyword? k))
+     (match x
+       [(list-rest (and attrs (list (list (? symbol?) (? string?)) ...)) rs)
+        (simple-xpath/attr (keyword->symbol k) attrs)]
+       [_
+        empty])]
+    [_
+     empty]))
+(define (simple-xpath/attr k attrs)
+  (dict-ref attrs k empty))
+(define (simple-xpath*/list p x)
+  (append (simple-xpath/xexpr p x)
+          (match x
+            [(list-rest (list (cons (? symbol?) (? string?)) ...) rs)
+             (simple-xpath*/list p rs)]
+            [(? list?)
+             (append-map (curry simple-xpath*/list p) x)]
+            [_
+             empty])))
+(define (simple-xpath* p x)
+  (match (simple-xpath*/list p x)
+    [(list) #f]
+    [(list-rest f rs) f]))
+
+(test
+ (simple-xpath*/list '(p) '(html (body (p "Hey") (p "Bar")))) => (list "Hey" "Bar")
+ (simple-xpath* '(p) '(html (body (p "Hey")))) => "Hey"
+ (simple-xpath* '(p #:bar) '(html (body (p ([bar "Zog"]) "Hey")))) => "Zog")    
+
+(provide simple-xpath*
+         simple-xpath*/list)
+
 (define (call d u bs)
   (htxml (collect d (make-request #"GET" (string->url u) empty (delay bs) #"" "127.0.0.1" 80 "127.0.0.1"))))
 (define (htxml bs)
   (match (regexp-match #"^.+\r\n\r\n(.+)$" bs)
     [(list _ s)
-     (define sx (ssax:xml->sxml (open-input-bytes s) empty))
-     #;(pretty-print sx)
-     sx]
+     (string->xexpr (bytes->string/utf-8 s))]
     [_
      (error 'html "Given ~S~n" bs)]))
 

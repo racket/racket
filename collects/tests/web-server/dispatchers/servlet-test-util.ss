@@ -1,6 +1,5 @@
 #lang scheme/base
-(require schemeunit
-         (planet "sxml.ss" ("lizorkin" "sxml.plt" 2 0))         
+(require schemeunit      
          mzlib/list
          web-server/http
          "../util.ss")
@@ -21,15 +20,15 @@
      t
      (let* ([d (mkd p)]
             [r0 (call d url0 empty)]
-            [k0 (first ((sxpath "//form/@action/text()") r0))]
-            [i0 (first ((sxpath "//form/input/@name/text()") r0))]
+            [k0 (simple-xpath* '(form #:action) r0)]
+            [i0 (simple-xpath* '(form input #:name) r0)]
             [r1 (call d (format "~a?~a=~a" k0 i0 xs)
                       (list (make-binding:form (string->bytes/utf-8 i0) xs)))]
-            [k1 (first ((sxpath "//form/@action/text()") r1))]
-            [i1 (first ((sxpath "//form/input/@name/text()") r1))]
+            [k1 (simple-xpath* '(form #:action) r1)]
+            [i1 (simple-xpath* '(form input #:name) r1)]
             [r2 (call d (format "~a?~a=~a" k1 i1 ys)
                       (list (make-binding:form (string->bytes/utf-8 i1) ys)))]
-            [n (first ((sxpath "//p/text()") r2))])
+            [n (simple-xpath* '(p) r2)])
        n)
      (format "The answer is ~a" (+ x y)))))
 
@@ -37,8 +36,8 @@
   (define d (mkd p))
   (define (invoke u)
     (define sx (call d u empty))
-    (define ks ((sxpath "//div/div/a/@href/text()") sx))
-    (values ((sxpath "//div/div/h3/text()") sx)
+    (define ks (simple-xpath*/list '(div div a #:href) sx))
+    (values (simple-xpath*/list '(div div h3) sx)
             (first ks)
             (second ks)))
   (test-equal? t
