@@ -3454,6 +3454,59 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
     info->single_result = -info->single_result;
   }
 
+  /* Check for things like (cXr (cons X Y)): */
+  if (SCHEME_PRIMP(app->rator) 
+      && (SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)) {
+    if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_application2_type)) {
+      Scheme_App2_Rec *app2 = (Scheme_App2_Rec *)app->rand;
+      if (SAME_OBJ(scheme_list_proc, app2->rator)) {
+        if (IS_NAMED_PRIM(app->rator, "car")) {
+          /* (car (list X)) */
+          if (scheme_omittable_expr(app2->rand, 1, 5, 0, NULL)
+              || single_valued_noncm_expression(app2->rand, 5)) {
+            return app2->rand;
+          }
+        } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
+          /* (cdr (list X)) */
+          if (scheme_omittable_expr(app2->rand, 1, 5, 0, NULL))
+            return scheme_null;
+        }
+      }
+    } else if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_application3_type)) {
+      Scheme_App3_Rec *app3 = (Scheme_App3_Rec *)app->rand;
+      if (IS_NAMED_PRIM(app->rator, "car")) {
+        if (SAME_OBJ(scheme_cons_proc, app3->rator)
+            || SAME_OBJ(scheme_list_proc, app3->rator)
+            || SAME_OBJ(scheme_list_star_proc, app3->rator)) {
+          /* (car ({cons|list|cdr} X Y)) */
+          if ((scheme_omittable_expr(app3->rand1, 1, 5, 0, NULL)
+               || single_valued_noncm_expression(app3->rand1, 5))
+              && scheme_omittable_expr(app3->rand2, 1, 5, 0, NULL)) {
+            return app3->rand1;
+          }
+        }
+      } else if (IS_NAMED_PRIM(app->rator, "cdr")) {
+        /* (car (cons X Y)) */
+        if (SAME_OBJ(scheme_cons_proc, app3->rator)) {
+          if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, NULL)
+               || single_valued_noncm_expression(app3->rand2, 5))
+              && scheme_omittable_expr(app3->rand1, 1, 5, 0, NULL)) {
+            return app3->rand2;
+          }
+        }
+      } else if (IS_NAMED_PRIM(app->rator, "cadr")) {
+        if (SAME_OBJ(scheme_list_proc, app3->rator)) {
+          /* (cadr (list X Y)) */
+          if ((scheme_omittable_expr(app3->rand2, 1, 5, 0, NULL)
+               || single_valued_noncm_expression(app3->rand2, 5))
+              && scheme_omittable_expr(app3->rand1, 1, 5, 0, NULL)) {
+            return app3->rand2;
+          }
+        }
+      }
+    }
+  }
+
   register_flonum_argument_types(NULL, app, NULL, info);
 
   return check_unbox_rotation((Scheme_Object *)app, app->rator, 1, info);
@@ -3585,7 +3638,6 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
       }
     }
   }
-
 
   info->preserves_marks = !!(rator_flags & CLOS_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & CLOS_SINGLE_RESULT);
