@@ -11,6 +11,7 @@
   (define nm . body))
 
 (define-syntax-rule (ann e . rest) e)
+(define-syntax-rule (inst e . rest) e)
 
 (define-syntax-rule (require/typed mod [id . _] ...)
   (require (only-in mod id ...)))
