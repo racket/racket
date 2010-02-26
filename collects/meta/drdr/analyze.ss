@@ -27,6 +27,78 @@
              [i (in-range n)])
     e))
 
+(define responsible-ht-id->str
+  #hasheq([timeout . "Timeout"]
+          [unclean . "Unclean Exit"]
+          [stderr . "STDERR Output"]
+          [changes . "Changes"]))
+(define responsible-ht-severity
+  '(timeout unclean stderr changes))
+(define (rev->responsible-ht rev)
+  (define log-dir (revision-log-dir rev))
+  (define top-analyze
+    (parameterize ([cache/file-mode 'no-cache]
+                   [current-rev rev])
+      (dir-rendering log-dir)))
+  (rendering->responsible-ht rev top-analyze))
+
+(define (rendering->responsible-ht rev top-analyze)
+  (match-define
+   (struct rendering (_ _ _ timeout unclean stderr _ changes))
+   top-analyze)
+  (statuses->responsible-ht rev timeout unclean stderr changes))
+
+(define (statuses->responsible-ht rev timeout unclean stderr changes)
+  (parameterize ([current-rev rev])
+    (define log-dir (revision-log-dir rev))
+    (define base-path 
+      (rebase-path log-dir "/"))
+    
+    (define responsible->problems (make-hash))
+    (for ([lc (in-list (list timeout unclean stderr changes))]
+          [id (in-list responsible-ht-severity)])
+      (for ([pp (in-list (lc->list lc))])
+        (define p (bytes->string/utf-8 pp))
+        (define bp (base-path p))
+        (for ([responsible (in-list (rendering-responsibles (log-rendering p)))])
+          (hash-update! (hash-ref! responsible->problems responsible make-hasheq)
+                        id
+                        (curry list* bp)
+                        empty))))
+    
+    responsible->problems))
+
+(define (2hash-copy ht)
+  (define 2ht (make-hash))
+  (for ([(r ht) (in-hash ht)])
+    (hash-set! 2ht r (hash-copy ht)))
+  2ht)
+(define (responsible-ht-difference old new)
+  (let ([ht (2hash-copy new)])
+    (for ([(r rht) (in-hash old)])
+      (define nrht (hash-ref! ht r make-hash))
+      (for ([(id ps) (in-hash rht)])
+        (hash-update! nrht id
+                      (curry remove* ps)
+                      empty)
+        (when (zero? (length (hash-ref nrht id)))
+          (hash-remove! nrht id)))
+      (when (zero? (hash-count nrht))
+        (hash-remove! ht r)))
+    ht))
+
+(define responsible-ht/c
+  (hash/c string? (hash/c symbol? (listof path?))))
+
+(provide/contract
+ [rendering->responsible-ht
+  (exact-positive-integer? rendering? . -> . responsible-ht/c)]
+ [statuses->responsible-ht 
+  (exact-positive-integer? list/count list/count list/count list/count . -> . responsible-ht/c)]
+ [responsible-ht-severity (listof symbol?)]
+ [responsible-ht-id->str (hash/c symbol? string?)]
+ [responsible-ht-difference (responsible-ht/c responsible-ht/c . -> . responsible-ht/c)])  
+  
 (define (notify cur-rev 
                 start end
                 duration
@@ -37,38 +109,34 @@
          (list timeout unclean stderr changes)))
   (define totals
     (apply format "(timeout ~a) (unclean ~a) (stderr ~a) (changes ~a)" (map number->string nums)))
-  (define log-dir (revision-log-dir cur-rev))
-  (define base-path 
-    (rebase-path log-dir "/"))
   (define (path->url pth)
-    (format "http://drdr.plt-scheme.org/~a~a" cur-rev (base-path pth)))
-  (define responsible-ht (make-hash))
-  (define problems
-    (for/list ([(l id)
-                (in-dict
-                 (append
-                  (list@ (cons timeout "timed out"))
-                  (list@ (cons unclean "exited uncleanly"))
-                  (list@ (cons stderr "had standard error output"))
-                  (list@ (cons changes "changed output since the last build"))))])
-      (list* ""
-             (format "~a files ~a:"
-                     (lc->number l)
-                     id)
-             (for/list ([p (in-list (lc->list l))])
-               (define ps (bytes->string/utf-8 p))
-               (unless (string=? id "changed output since the last build")
-                 (for ([responsible (in-list (rendering-responsibles (log-rendering ps)))])
-                   (hash-set! responsible-ht responsible #t)))
-               (format "\t~a" (path->url ps))))))
-  (define responsibles (hash-map responsible-ht (lambda (k v) k)))
+    (format "http://drdr.plt-scheme.org/~a~a" cur-rev pth))
+  (define responsible-ht (statuses->responsible-ht cur-rev timeout unclean stderr changes))
+  (define responsibles 
+    (for/list ([(responsible ht) (in-hash responsible-ht)]
+               #:when (ormap (curry hash-has-key? ht)
+                             (take responsible-ht-severity 3)))
+      responsible))
   (define committer
     (with-handlers ([exn:fail? (lambda (x) #f)])
       (svn-rev-log-author 
        (read-cache*
         (revision-commit-msg cur-rev)))))
+  (define diff
+    (with-handlers ([exn:fail? (lambda (x) #t)])
+       (define old (rev->responsible-ht (previous-rev)))
+       (responsible-ht-difference old responsible-ht)))
   (define include-committer?
-    (and committer (not (empty? responsibles))))
+    (and ; The committer can be found
+     committer 
+     ; There is a condition
+     (not (empty? responsibles))
+     ; It is different from before
+     diff
+     (for*/or ([(r ht) (in-hash diff)]
+               [(id ps) (in-hash ht)])
+         (and (not (empty? ps))
+              (not (symbol=? id 'changes))))))
   (unless (andmap zero? nums)
     (send-mail-message "drdr@plt-scheme.org"
                        (format "[DrDr] R~a ~a"
@@ -80,24 +148,34 @@
                                                empty)
                                            responsibles)))                              
                        empty empty
-                       (apply
-                        append
-                        (list* (format "DrDr has finished building revision ~a after ~a."
-                                       cur-rev
-                                       (format-duration-ms abs-dur))
-                               ""
-                               (format "http://drdr.plt-scheme.org/~a/" 
-                                       cur-rev)
-                               ""
-                               (format "~a:" (apply string-append (add-between responsibles " ")))
-                               "You are receiving this email because a file you are responsible for has a condition that may need inspecting."
-                               (if include-committer?
-                                   (list
-                                    ""
-                                    (format "~a:" committer)
-                                    (format "You are receiving this email because the DrDr test of revision ~a (which you committed) contained a condition that may need inspecting" cur-rev))
-                                   empty))
-                        (list-limit problems 2))))
+                       (flatten
+                        (list (format "DrDr has finished building revision ~a after ~a."
+                                      cur-rev
+                                      (format-duration-ms abs-dur))
+                              ""
+                              (format "http://drdr.plt-scheme.org/~a/" 
+                                      cur-rev)
+                              ""
+                              (if include-committer?
+                                  (list
+                                   (format "~a:" committer)
+                                   (format "You are receiving this email because the DrDr test of revision ~a (which you committed) contained a NEW condition that may need inspecting." cur-rev)
+                                   (for*/list ([(r ht) (in-hash diff)]
+                                               [(id files) (in-hash ht)]
+                                               [f (in-list files)])
+                                     (format "\t~a (~a)" (path->url f) id))
+                                   "")
+                                  empty)
+                              (for/list ([r (in-list responsibles)])
+                                (list (format "~a:" r)
+                                      "You are receiving this email because a file you are responsible for has a condition that may need inspecting."
+                                      (for/list ([(id files) (in-hash (hash-ref responsible-ht r))]
+                                                 #:when (not (symbol=? id 'changes)))
+                                        (list (format "\t~a:" id)
+                                              (for/list ([f (in-list files)])
+                                                (format "\t\t~a" (path->url f)))
+                                              ""))
+                                      ""))))))
   
   (send-mail-message "drdr"
                      (format "http://drdr.plt-scheme.org/~a/" 

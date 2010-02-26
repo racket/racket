@@ -527,7 +527,12 @@
       (script ((type "text/javascript"))
               ,(format "var current_pane=~a;\n" last-one)
               "function move_bar(rev,x,w,duration,timing_strings) {\n"
-              "  document.getElementById(\"rev_and_duration\").innerHTML='revision '+rev+' duration '+duration+' msec';\n"
+              "  var suffix = ' msec'\n"
+              "  if (duration > 1000) {\n"
+              "    duration = duration/1000;"
+              "    suffix = ' sec'"
+              "  }\n"
+              "  document.getElementById(\"rev_and_duration\").innerHTML='revision '+rev+' duration '+duration+suffix;\n"
               ,(make-cdata 
                 'here
                 'there

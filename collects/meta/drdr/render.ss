@@ -110,34 +110,41 @@
          (date->string (seconds->date (read-cache (build-path (revision-dir (current-rev)) pth))) #t)))
      (define bdate/s (timestamp "checkout-done"))
      (define bdate/e (timestamp "integrated"))
+     (define cg-id (symbol->string (gensym 'changes)))
+     (define ccss-id (symbol->string (gensym 'changes)))
      `(table ([class "data"])
              (tr ([class "author"]) (td "Author:") (td ,author))
              (tr ([class "date"]) (td "Commit Date:") (td ,(svn-date->nice-date date)))
              (tr ([class "date"]) (td "Build Start:") (td ,bdate/s))
              (tr ([class "date"]) (td "Build End:") (td ,bdate/e))
              (tr ([class "msg"]) (td "Log:") (td (pre ,msg)))
-             (tr ([class "changes"]) (td "Changes:")
+             (tr ([class "changes"]) 
+                 (td 
+                  (a ([href ,(format "javascript:TocviewToggle(\"~a\",\"~a\");" cg-id ccss-id)])
+                     (span ([id ,cg-id]) 9658) "Changes:"))
                  (td
-                  ,@(map (match-lambda
-                           [(struct svn-change (action path))
-                            `(p ([class "output"])
-                                ,(symbol->string action) " " 
-                                ,(if (regexp-match #rx"^/trunk/collects" path)
-                                     (local [(define path-w/o-trunk
-                                               (apply build-path (list-tail (explode-path path) 2)))
-                                             (define html-path
-                                               (if (looks-like-directory? path)
-                                                   (format "~a/" path-w/o-trunk)
-                                                   path-w/o-trunk))
-                                             (define path-url
-                                               (path->string* html-path))
-                                             (define path-tested?
-                                               #t)]
-                                       (if path-tested?
-                                           `(a ([href ,path-url]) ,path)
-                                           path))
-                                     path))])
-                         changes)))
+                  (div ([id ,ccss-id]
+                        [style "display: none;"])
+                       ,@(map (match-lambda
+                                [(struct svn-change (action path))
+                                 `(p ([class "output"])
+                                     ,(symbol->string action) " " 
+                                     ,(if (regexp-match #rx"^/trunk/collects" path)
+                                          (local [(define path-w/o-trunk
+                                                    (apply build-path (list-tail (explode-path path) 2)))
+                                                  (define html-path
+                                                    (if (looks-like-directory? path)
+                                                        (format "~a/" path-w/o-trunk)
+                                                        path-w/o-trunk))
+                                                  (define path-url
+                                                    (path->string* html-path))
+                                                  (define path-tested?
+                                                    #t)]
+                                            (if path-tested?
+                                                `(a ([href ,path-url]) ,path)
+                                                path))
+                                          path))])
+                              changes))))
              (tr (td nbsp) (td (a ([href ,url]) "View Commit"))))]
     [else
      'nbsp]))
@@ -262,66 +269,64 @@
                   ,(if show-commit-msg?
                        (format-commit-msg)
                        "")
-                  ,(local [(define log-dir (revision-log-dir (current-rev)))
-                           (define base-path 
-                             (rebase-path log-dir "/"))
-                           (define (path->url pth)
-                             (format "http://drdr.plt-scheme.org/~a~a" (current-rev) (base-path pth)))
-                           (define id->str
-                             #hasheq([timeout . "Timeout"]
-                                     [unclean . "Unclean Exit"]
-                                     [stderr . "STDERR Output"]
-                                     [changes . "Changes"]))
+                  ,(local [(define (path->url pth)
+                             (format "http://drdr.plt-scheme.org/~a~a" (current-rev) pth))
                            
                            (define responsible->problems
-                             (local [(define ht (make-hash))]
-                               (for ([lc (in-list (list tot-timeout tot-unclean tot-stderr tot-changes))]
-                                     [id (in-list (list 'timeout 'unclean 'stderr 'changes))])
-                                 (for ([pp (in-list (lc->list lc))])
-                                   (define p (bytes->string/utf-8 pp))
-                                   (for ([responsible (in-list (rendering-responsibles (log-rendering p)))])
-                                     (hash-update! (hash-ref! ht responsible make-hasheq)
-                                                   id
-                                                   (curry list* p)
-                                                   empty))))
-                               ht))]
-                     (if (zero? (hash-count responsible->problems))
-                         ""
-                         `(div ([class "status"])
-                               ,@(for/list ([(responsible ht) (in-hash responsible->problems)])
-                                   (define rcss-id (symbol->string (gensym)))
-                                   (define rg-id (symbol->string (gensym 'glyph)))
-                                   (define summary
-                                     (for/fold ([s ""])
-                                               ([id (in-list (list 'timeout 'unclean 'stderr 'changes))])
-                                       (define llc (hash-ref ht id empty))
-                                       (if (empty? llc)
-                                           s
-                                           (format "~a [~a: ~a]" s id (length llc)))))                                  
-                                   `(div (a ([href ,(format "javascript:TocviewToggle(\"~a\",\"~a\");" rg-id rcss-id)])
-                                             (span ([id ,rg-id]) 9658) " "
-                                             ,responsible
-                                             " " ,summary)
-                                         (blockquote 
-                                          ([id ,rcss-id]
-                                           [style "display: none;"])
-                                          ,@(local [(define i 0)]
-                                              (for/list ([id (in-list (list 'timeout 'unclean 'stderr 'changes))])
-                                                (define llc (hash-ref ht id empty))
-                                                (if (empty? llc)
-                                                    ""
-                                                    (local [(define display? (< i 2))
-                                                            (define css-id (symbol->string (gensym 'ul)))
-                                                            (define glyph-id (symbol->string (gensym 'glyph)))]
-                                                      (set! i (add1 i))
-                                                      `(div (a ([href ,(format "javascript:TocviewToggle(\"~a\",\"~a\");" glyph-id css-id)])
-                                                              (span ([id ,glyph-id]) ,(if display? 9660 9658)) " "
-                                                              ,(hash-ref id->str id))
-                                                          (ul ([id ,css-id] 
-                                                               [style ,(format "display: ~a"
-                                                                               (if display? "block" "none"))])
-                                                              ,@(for/list ([p llc])
-                                                                  `(li (a ([href ,(path->url p)]) ,(path->string (base-path p)))))))))))))))))
+                             (rendering->responsible-ht (current-rev) pth-rendering))
+                           (define last-responsible->problems
+                             (with-handlers ([exn:fail? (lambda (x) (make-hash))])
+                               (define prev-dir-pth ((rebase-path (revision-log-dir (current-rev))
+                                                                  (revision-log-dir (previous-rev)))
+                                                     dir-pth))
+                               (define previous-pth-rendering
+                                 (parameterize ([current-rev (previous-rev)])
+                                   (dir-rendering prev-dir-pth)))
+                               (rendering->responsible-ht (previous-rev) previous-pth-rendering)))
+                           (define new-responsible->problems
+                             (responsible-ht-difference last-responsible->problems responsible->problems))
+                           
+                           (define (render-responsible->problems tag responsible->problems)
+                             (if (zero? (hash-count responsible->problems))
+                                 ""
+                                 `(div ([class "status"])
+                                       (div ([class "tag"]) ,tag)
+                                       ,@(for/list ([(responsible ht) (in-hash responsible->problems)])
+                                           (define rcss-id (symbol->string (gensym)))
+                                           (define rg-id (symbol->string (gensym 'glyph)))
+                                           (define summary
+                                             (for/fold ([s ""])
+                                               ([id (in-list responsible-ht-severity)])
+                                               (define llc (hash-ref ht id empty))
+                                               (if (empty? llc)
+                                                   s
+                                                   (format "~a [~a: ~a]" s id (length llc)))))                                  
+                                           `(div (a ([href ,(format "javascript:TocviewToggle(\"~a\",\"~a\");" rg-id rcss-id)])
+                                                    (span ([id ,rg-id]) 9658) " "
+                                                    ,responsible
+                                                    " " ,summary)
+                                                 (blockquote 
+                                                  ([id ,rcss-id]
+                                                   [style "display: none;"])
+                                                  ,@(local [(define i 0)]
+                                                      (for/list ([id (in-list responsible-ht-severity)])
+                                                        (define llc (hash-ref ht id empty))
+                                                        (if (empty? llc)
+                                                            ""
+                                                            (local [(define display? (< i 2))
+                                                                    (define css-id (symbol->string (gensym 'ul)))
+                                                                    (define glyph-id (symbol->string (gensym 'glyph)))]
+                                                              (set! i (add1 i))
+                                                              `(div (a ([href ,(format "javascript:TocviewToggle(\"~a\",\"~a\");" glyph-id css-id)])
+                                                                       (span ([id ,glyph-id]) ,(if display? 9660 9658)) " "
+                                                                       ,(hash-ref responsible-ht-id->str id))
+                                                                    (ul ([id ,css-id] 
+                                                                         [style ,(format "display: ~a"
+                                                                                         (if display? "block" "none"))])
+                                                                        ,@(for/list ([p llc])
+                                                                            `(li (a ([href ,(path->url p)]) ,(path->string p))))))))))))))))]
+                     `(div ,(render-responsible->problems "all" responsible->problems)
+                           ,(render-responsible->problems "new" new-responsible->problems)))
                   (table ([class "sortable, dirlist"])
                          (thead
                           (tr (td "Path")

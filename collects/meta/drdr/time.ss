@@ -2,6 +2,7 @@
 (require (planet jaymccarthy/job-queue)
          scheme/system
          "config.ss"
+         "notify.ss"
          "path-utils.ss"
          "dirstruct.ss"
          "cache.ss")
@@ -29,6 +30,8 @@
 (define rebaser
   (rebase-path (plt-data-directory) "/data"))
 
+(define count-sema (make-semaphore 0))
+
 (define (make-log! filename)
   (submit-job!
    test-workers
@@ -36,6 +39,7 @@
      (define prefix
        (path-timing-png-prefix filename))
      (unless just-graphs?
+       (notify! "Dropping timing for ~a" filename)
        (apply 
         system*/exit-code
         (path->string
@@ -49,6 +53,7 @@
              (list "-r" (number->string start-revision)))
          (list
           (path->string filename)))))
+     (notify! "Generating graph for ~a" filename)
      (system*/exit-code
       (path->string
        (build-path (plt-directory) "plt" "bin" "mred-text"))
@@ -60,17 +65,25 @@
       (path->string (path-timing-log filename))
       (path->string prefix)
       (path->string (rebaser prefix))
-      (path->string (path-timing-html filename))))))
+      (path->string (path-timing-html filename)))
+     (notify! "Done with ~a" filename)
+     (semaphore-post count-sema))))
 
 (define (find-files p l)
-  (for ([f (in-list (cached-directory-list* p))])
+  (for/fold ([i 0])
+    ([f (in-list (cached-directory-list* p))])
     (define fp (build-path p f))
     (define fl (list* f l))
     (if (cached-directory-exists? fp)
-        (find-files fp fl)
-        (make-log! (apply build-path (reverse fl))))))
+        (+ i (find-files fp fl))
+        (begin (make-log! (apply build-path (reverse fl)))
+               (add1 i)))))
 
-(find-files (revision-log-dir start-revision)
-            empty)
+(define how-many-files
+  (find-files (revision-log-dir start-revision)
+              empty))
+
+(for ([i (in-range how-many-files)])
+  (semaphore-wait count-sema))
 
 (stop-job-queue! test-workers)

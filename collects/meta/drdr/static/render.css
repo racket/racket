@@ -80,6 +80,7 @@ span.revnav {
 }
 
 span.revnav a {
+    margin-right: 5px;
     color: black;
     text-decoration: none;
     font-weight: normal;
@@ -96,13 +97,25 @@ span.filepath {
 
 table.data {
     margin-top: 1em;
+    width: 100%;
     background-color: rgb(90%,90%,90%);
     border: 1px solid black;
     padding: 1em;
     }
     
+table.data > tbody > tr > td:nth-child(1) > a {
+    color: black;
+    text-decoration: none;
+}
+
+table.data > tbody > tr > td:nth-child(1) > a:hover {
+    color: blue;
+    text-decoration: underline;
+}
+    
 table.data > tbody > tr > td:nth-child(1) {
     font-weight: bold;
+    width: 15%;
     text-align: right;
     vertical-align: top;
     padding-right: 1em;
@@ -139,6 +152,14 @@ div.status a:hover {
     color: blue;
     text-decoration: underline;
 }
+
+.status .tag {
+    float: right;
+    color: rgb(50%,50%,50%);
+    font-size: 200%;
+    margin-top: -0.5em;
+    padding-top: 0px;
+    }
     
 .commandline {
  font-family: monospace;
