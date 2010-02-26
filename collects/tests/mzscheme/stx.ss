@@ -469,7 +469,7 @@
   (let ([b (identifier-binding s)])
     (if (list? b)
         (list* (let-values ([(name base) (module-path-index-split (car b))])
-                 (fprintf (current-error-port) ">>>>base = ~s\n" base)
+                 ;(fprintf (current-error-port) ">>>>base = ~s\n" base)
                  name)
                (cadr b)
                (let-values ([(name base) (module-path-index-split (caddr b))])
