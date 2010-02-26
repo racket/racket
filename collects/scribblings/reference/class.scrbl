@@ -1168,6 +1168,15 @@ If @scheme[obj-expr] does not produce an object, the
 @exnraise[exn:fail:contract]. If the object has no @scheme[id] method,
 the @exnraise[exn:fail:object].}
 
+@defform[(set-field! id obj-expr expr)]{
+
+Sets the field with (external) name @scheme[id] from the value of
+@scheme[obj-expr] to the value of @scheme[expr].
+
+If @scheme[obj-expr] does not produce an object, the
+@exnraise[exn:fail:contract].  If the object has no @scheme[id] method,
+the @exnraise[exn:fail:object].}
+
 @defform[(field-bound? id obj-expr)]{
 
 Produces @scheme[#t] if the object result of @scheme[obj-expr] has an
