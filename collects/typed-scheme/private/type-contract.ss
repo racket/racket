@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(provide type->contract define/fixup-contract? generate-contract-def change-contract-fixups)
+(provide type->contract define/fixup-contract? change-contract-fixups)
 
 (require
  "../utils/utils.ss"
@@ -11,10 +11,10 @@
  (types resolve utils)
  (prefix-in t: (types convenience))
  (private parse-type)
- scheme/match syntax/struct syntax/stx mzlib/trace unstable/syntax scheme/list
+ scheme/match syntax/struct syntax/stx mzlib/trace unstable/syntax scheme/list 
  (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
  (for-template scheme/base scheme/contract unstable/poly-c (utils any-wrap)
-	       (only-in scheme/class object% is-a?/c subclass?/c object-contract)))
+	       (only-in scheme/class object% is-a?/c subclass?/c object-contract class/c object/c class?)))
 
 (define (define/fixup-contract? stx)
   (or (syntax-property stx 'typechecker:contract-def)
@@ -55,12 +55,50 @@
     (let loop ([ty ty] [pos? #t] [from-typed? from-typed?] [structs-seen null])
       (define (t->c t #:seen [structs-seen structs-seen]) (loop t pos? from-typed? structs-seen))
       (define (t->c/neg t #:seen [structs-seen structs-seen]) (loop t (not pos?) (not from-typed?) structs-seen))
+      (define (t->c/fun f #:method [method? #f])
+        (match f
+          [(Function: arrs)
+           (let ()           
+             (define (f a)
+               (define-values (dom* opt-dom* rngs* rst)
+                 (match a
+                   ;; functions with no filters or objects
+                   [(arr: dom (Values: (list (Result: rngs (LFilterSet: '() '()) (LEmpty:)) ...)) rst #f kws)
+                    (let-values ([(mand-kws opt-kws) (partition (match-lambda [(Keyword: _ _ mand?) mand?]) kws)]
+                                 [(conv) (match-lambda [(Keyword: kw kty _) (list kw (t->c/neg kty))])])
+                      (values (append (map t->c/neg dom) (append-map conv mand-kws))
+                              (append-map conv opt-kws)
+                              (map t->c rngs) 
+                              (and rst (t->c/neg rst))))]
+                   ;; functions with filters or objects
+                   [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f '())
+                    (if (and out? pos?)
+                        (values (map t->c/neg dom)
+                                null
+                                (map t->c rngs)
+                                (and rst (t->c/neg rst)))
+                        (exit (fail)))]
+                   [_ (exit (fail))]))
+               (with-syntax 
+                   ([(dom* ...) (if method? (cons #'any/c dom*) dom*)]
+                    [(opt-dom* ...) opt-dom*]
+                    [rng* (match rngs*
+                            [(list r) r]
+                            [_ #`(values #,@rngs*)])]
+                    [rst* rst])
+                 (if (or rst (pair? (syntax-e #'(opt-dom* ...))))
+                     #'((dom* ...) (opt-dom* ...) #:rest (listof rst*) . ->* . rng*)
+                     #'(dom* ... . -> . rng*))))
+             (unless (no-duplicates (for/list ([t arrs])
+                                      (match t [(arr: dom _ _ _ _) (length dom)])))
+               (exit (fail)))
+             (match (map f arrs)
+               [(list e) e]
+               [l #`(case-> #,@l)]))]))
       (match ty
         [(or (App: _ _ _) (Name: _)) (t->c (resolve-once ty))]
         ;; any/c doesn't provide protection in positive position
-        [(Univ:) (if from-typed? 
-                     #'any-wrap/c
-                     #'any/c)]
+        [(Univ:) (if from-typed? #'any-wrap/c #'any/c)]
         ;; we special-case lists:
         [(Mu: var (Union: (list (Value: '()) (Pair: elem-ty (F: var)))))
          #`(listof #,(t->c elem-ty))]
@@ -69,51 +107,12 @@
         [(Refinement: par p? cert)
          #`(and/c #,(t->c par) (flat-contract #,(cert p?)))]
         [(Union: elems)         
-         (let-values ([(vars notvars)
-                       (partition F? elems)])
+         (let-values ([(vars notvars) (partition F? elems)])
            (unless (>= 1 (length vars)) (exit (fail)))
            (with-syntax 
                ([cnts (append (map t->c vars) (map t->c notvars))])
              #'(or/c . cnts)))]
-        [(Function: arrs)
-         (let ()           
-           (define (f a)
-             (define-values (dom* opt-dom* rngs* rst)
-               (match a
-                 ;; functions with no filters or objects
-                 [(arr: dom (Values: (list (Result: rngs (LFilterSet: '() '()) (LEmpty:)) ...)) rst #f kws)
-                  (let-values ([(mand-kws opt-kws) (partition (match-lambda [(Keyword: _ _ mand?) mand?]) kws)]
-                               [(conv) (match-lambda [(Keyword: kw kty _) (list kw (t->c/neg kty))])])
-                    (values (append (map t->c/neg dom) (append-map conv mand-kws))
-                            (append-map conv opt-kws)
-                            (map t->c rngs) 
-                            (and rst (t->c/neg rst))))]
-                 ;; functions with filters or objects
-                 [(arr: dom (Values: (list (Result: rngs _ _) ...)) rst #f '())
-                  (if (and out? pos?)
-                      (values (map t->c/neg dom)
-                              null
-                              (map t->c rngs)
-                              (and rst (t->c/neg rst)))
-                      (exit (fail)))]
-                 [_ (exit (fail))]))
-             (trace f)
-             (with-syntax 
-                 ([(dom* ...) dom*]
-                  [(opt-dom* ...) opt-dom*]
-                  [rng* (match rngs*
-                          [(list r) r]
-                          [_ #`(values #,@rngs*)])]
-                  [rst* rst])
-               (if (or rst (pair? (syntax-e #'(opt-dom* ...))))
-                   #'((dom* ...) (opt-dom* ...) #:rest (listof rst*) . ->* . rng*)
-                   #'(dom* ... . -> . rng*))))
-           (unless (no-duplicates (for/list ([t arrs])
-                                    (match t [(arr: dom _ _ _ _) (length dom)])))
-             (exit (fail)))
-	   (match (map f arrs)
-	     [(list e) e]
-	     [l #`(case-> #,@l)]))]
+        [(and t (Function: _)) (t->c/fun t)]
         [(Vector: t)
          #`(vectorof #,(t->c t))]
         [(Box: t)
@@ -129,7 +128,7 @@
            (with-syntax ([(v ...) (generate-temporaries vs-nm)])
              (parameterize ([vars (append (map list vs (syntax->list #'(v ...)))
 					  (vars))])
-               #`(poly/c (v ...) #,(t->c b)))))]
+               #`(parametric/c (v ...) #,(t->c b)))))]
         [(Mu: n b)
          (match-let ([(Mu-name: n-nm _) ty])
            (with-syntax ([(n*) (generate-temporaries (list n-nm))])
@@ -137,12 +136,16 @@
                #`(flat-rec-contract n* #,(t->c b)))))]
         [(Value: #f) #'false/c]    
         [(Instance: (Class: _ _ (list (list name fcn) ...)))
-         #'(is-a?/c object%)
-         #;
-	 (with-syntax ([(fcn-cnts ...) (map t->c fcn)]
-		       [(names ...) name])
-		      #'(object-contract (names fcn-cnts) ...))]
-        [(Class: _ _ _) #'(subclass?/c object%)]
+         (with-syntax ([(fcn-cnts ...) (for/list ([f fcn]) (t->c/fun f #:method #t))]
+                       [(names ...) name])
+           #'(object/c (names fcn-cnts) ...))]
+        ;; init args not currently handled by class/c
+        [(Class: _ _ (list (list name fcn) ...))
+         (with-syntax ([(fcn-cnts ...) (for/list ([f fcn]) (t->c/fun f #:method #t))]
+                       [(names ...) name])
+           #'class?
+           #;
+           #'(class/c (names fcn-cnts) ...))]
         [(Value: '()) #'null?]
         [(Struct: nm par flds proc poly? pred? cert acc-ids)
          (cond 

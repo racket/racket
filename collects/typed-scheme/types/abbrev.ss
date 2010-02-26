@@ -119,6 +119,7 @@
 
 (define -car (make-CarPE))
 (define -cdr (make-CdrPE))
+(define -syntax-e (make-SyntaxPE))
 
 ;; Numeric hierarchy
 (define -Number (make-Base 'Number #'number?))

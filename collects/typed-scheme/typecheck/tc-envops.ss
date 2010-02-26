@@ -6,7 +6,7 @@
                     [->* -->*]
                     [one-of/c -one-of/c])
          (infer-in infer)
-         (rep type-rep)
+         (rep type-rep object-rep)
          (utils tc-utils)
          (types resolve)
          (only-in (env type-environments lexical-env) env? update-type/lexical env-map env-props replace-props)
@@ -36,6 +36,12 @@
      (make-Pair t (update s (make-TypeFilter u rst x)))]
     [((Pair: t s) (NotTypeFilter: u (list rst ... (CdrPE:)) x))
      (make-Pair t (update s (make-NotTypeFilter u rst x)))]
+    
+    ;; syntax ops
+    [((Syntax: t) (TypeFilter: u (list rst ... (SyntaxPE:)) x))
+     (make-Syntax (update t (make-TypeFilter u rst x)))]
+    [((Syntax: t) (NotTypeFilter: u (list rst ... (SyntaxPE:)) x))
+     (make-Syntax (update t (make-NotTypeFilter u rst x)))]
     
     ;; struct ops
     [((Struct: nm par flds proc poly pred cert acc-ids) 

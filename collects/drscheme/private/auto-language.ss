@@ -1,4 +1,4 @@
-#lang typed-scheme/no-check
+#lang typed-scheme
 
 (require typed/framework/framework 
 	 typed/mred/mred
@@ -9,23 +9,28 @@
 (: reader-tag String)
 (define reader-tag "#reader")
 
-(define-type-alias (Language% Settings)
+(define-type-alias (Language:Language% Settings)
   (Class () () ([get-reader-module (-> Sexp)]
                 [get-metadata-lines (-> Number)]
                 [metadata->settings (String -> Settings)])))
 
+(define-type-alias (Language:Object Settings)
+  (Instance (Class () () ())))
+
 (: pick-new-language (All (S)
                           ((Instance Text%) 
-                           (Listof
-                            (Instance (Language% S)))
-                           (U #f (Instance (Language% S))) (U #f S) -> (values (U #f (Instance (Language% S))) (U #f S)))))
+                           (Listof (Instance (Language:Language% S)))
+                           (U #f (Language:Object S)) (U #f S)
+                           -> 
+                           (values (U #f (Language:Object S))
+                                   (U #f S)))))
 (define (pick-new-language text all-languages module-language module-language-settings)
   (with-handlers ([exn:fail:read? (λ (x) (values #f #f))])
-    (let: ([found-language? : (U #f (Instance (Language% S))) #f]
+    (let: ([found-language? : (U #f (Language:Object S)) #f]
            [settings : (U #f S) #f])
       
       (for-each
-       (λ: ([lang : (Instance (Language% S))])
+       (λ: ([lang : (Instance (Language:Language% S))])
          (let ([lang-spec (send lang get-reader-module)])
            (when lang-spec
              (let* ([lines (send lang get-metadata-lines)]

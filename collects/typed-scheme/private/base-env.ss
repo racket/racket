@@ -16,6 +16,19 @@
              (only-in (rep type-rep) make-HashtableTop make-MPairTop make-BoxTop make-VectorTop)))
 
 [raise (Univ . -> . (Un))]
+[raise-syntax-error (cl->* 
+                     (-> (Un (-val #f) -Symbol)
+                               -String
+                               (Un))
+                     (-> (Un (-val #f) -Symbol)
+                               -String
+                               Univ
+                               (Un))
+                     (-> (Un (-val #f) -Symbol)
+                               -String
+                               Univ
+                               Univ
+                               (Un)))]
 
 [car   (-poly (a b) 
               (cl->*
@@ -512,7 +525,7 @@
 
 [syntax->datum (cl->* (-> Any-Syntax -Sexp)
                       (-> (-Syntax Univ) Univ))]
-[syntax-e (-poly (a) (-> (-Syntax a) a))]
+[syntax-e (-poly (a) (->acc (list (-Syntax a)) a (list -syntax-e)))]
 [syntax-original? (-poly (a) (-> (-Syntax a) B))]
 [identifier? (make-pred-ty (-Syntax Sym))]
 [syntax? (make-pred-ty (-Syntax Univ))]
@@ -650,78 +663,6 @@
 [unsafe-cdr (-poly (a b) 
               (cl->*
                (->acc (list (-pair a b)) b (list -cdr))))]
-
-[unsafe-fx+
- (cl->
-  [(-Nat -Nat) -Nat]
-  [(-Integer -Integer) -Integer])]
-[unsafe-fx- (-Integer -Integer . -> . -Integer)]
-[unsafe-fx*
- (cl->
-  [(-Nat -Nat) -Nat]
-  [(-Integer -Integer) -Integer])]
-[unsafe-fxquotient (-Integer -Integer . -> . -Integer)]
-[unsafe-fxremainder (-Integer -Integer . -> . -Integer)]
-[unsafe-fxmodulo (-Integer -Integer . -> . -Integer)]
-[unsafe-fxabs (-Integer . -> . -Nat)]
-
-[unsafe-fxand (-Integer -Integer . -> . -Integer)]
-[unsafe-fxior (-Integer -Integer . -> . -Integer)]
-[unsafe-fxxor (-Integer -Integer . -> . -Integer)]
-[unsafe-fxnot (-Integer . -> . -Integer)]
-[unsafe-fxlshift (-Integer -Integer . -> . -Integer)]
-[unsafe-fxrshift (-Integer -Integer . -> . -Integer)]
-
-[unsafe-fx= (-Integer -Integer . -> . -Boolean)]
-[unsafe-fx< (-Integer -Integer . -> . -Boolean)]
-[unsafe-fx> (-Integer -Integer . -> . -Boolean)]
-[unsafe-fx<= (-Integer -Integer . -> . -Boolean)]
-[unsafe-fx>= (-Integer -Integer . -> . -Boolean)]
-[unsafe-fxmin
- (cl->
-  [(-Nat -Nat) -Nat]
-  [(-Integer -Integer) -Integer])]
-[unsafe-fxmax
- (cl->
-  [(-Nat -Nat) -Nat]
-  [(-Integer -Integer) -Integer])]
-
-;; scheme/fixnum
-
-[fx+
- (cl->
-  [(-Nat -Nat) -Nat]
-  [(-Integer -Integer) -Integer])]
-[fx- (-Integer -Integer . -> . -Integer)]
-[fx*
- (cl->
-  [(-Nat -Nat) -Nat]
-  [(-Integer -Integer) -Integer])]
-[fxquotient (-Integer -Integer . -> . -Integer)]
-[fxremainder (-Integer -Integer . -> . -Integer)]
-[fxmodulo (-Integer -Integer . -> . -Integer)]
-[fxabs (-Integer . -> . -Nat)]
-
-[fxand (-Integer -Integer . -> . -Integer)]
-[fxior (-Integer -Integer . -> . -Integer)]
-[fxxor (-Integer -Integer . -> . -Integer)]
-[fxnot (-Integer . -> . -Integer)]
-[fxlshift (-Integer -Integer . -> . -Integer)]
-[fxrshift (-Integer -Integer . -> . -Integer)]
-
-[fx= (-Integer -Integer . -> . -Boolean)]
-[fx< (-Integer -Integer . -> . -Boolean)]
-[fx> (-Integer -Integer . -> . -Boolean)]
-[fx<= (-Integer -Integer . -> . -Boolean)]
-[fx>= (-Integer -Integer . -> . -Boolean)]
-[fxmin
- (cl->
-  [(-Nat -Nat) -Nat]
-  [(-Integer -Integer) -Integer])]
-[fxmax
- (cl->
-  [(-Nat -Nat) -Nat]
-  [(-Integer -Integer) -Integer])]
 
 ;; scheme/vector
 [vector-count (-polydots (a b)

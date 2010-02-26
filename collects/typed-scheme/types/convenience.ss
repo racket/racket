@@ -47,13 +47,12 @@
 
 (define In-Syntax
   (-mu e
-       (*Un -Boolean -Symbol -String -Keyword -Char -Number
+       (*Un -Boolean -Symbol -String -Keyword -Char -Number (-val null)
             (make-Vector (-Syntax e))
             (make-Box (-Syntax e))
-            (-mu list
-                 (*Un (-val '())
-                      (-pair (-Syntax e)
-                             (*Un (-Syntax e) list)))))))
+            (-lst (-Syntax e))
+            (-pair (-Syntax e) (-Syntax e)))))
+
 (define Any-Syntax (-Syntax In-Syntax))
 
 (define (-Sexpof t)
