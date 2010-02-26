@@ -28,6 +28,11 @@ Local changes:
  * Removed +live_support in src/powerpc/darwin_closure.S so it builds
    with Mac OS X 10.3 (r8436)
 
+ * Manually added datarootdir handling in libffi/Makefile.in and
+   libffi/include/Makefile.in to eliminate warnings, change taken from
+   git master source at http://github.com/atgreen/libffi/, tree
+   997968323ed45a5ea5db1ff83124619ae1949bfb. (r18350)
+
 Note: recreating "configure" with autoconf 2.61 does not work as is,
 since the scripts require 2.59.  To allow this, the two requirements
 in "libffi/configure.ac" and "config/override.m4" were temporarily
