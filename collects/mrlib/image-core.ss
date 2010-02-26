@@ -562,8 +562,8 @@ has been moved out).
 (define (save-image-as-bitmap image filename kind)
   (let* ([bb (send image get-bb)]
          [bm (make-object bitmap% 
-               (ceiling (inexact->exact (bb-right bb)))
-               (ceiling (inexact->exact (bb-bottom bb))))]
+               (+ 1 (ceiling (inexact->exact (bb-right bb))))
+               (+ 1 (ceiling (inexact->exact (bb-bottom bb)))))]
          [bdc (make-object bitmap-dc% bm)])
     (send bdc clear)
     (render-image image bdc 0 0)
