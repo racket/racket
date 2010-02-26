@@ -3,14 +3,20 @@
           scheme/cmdline
           "guide-utils.ss")
 
-@title[#:tag "scripts"]{Unix Scripts}
+@title[#:tag "scripts"]{Scripts}
 
-Under Unix and Mac OS X, a Scheme file can be turned into an
-executable script using the shell's @as-index{@tt{#!}} convention. The
-first two characters of the file must be @litchar{#!}; the next
-character must be either a space or @litchar{/}, and the remainder of
-the first line must be a command to execute the script. For some
-platforms, the total length of the first line is restricted to 32
+Scheme files can be turned into executable scripts on Unix and Mac OS
+X.  On Windows, one option is to use a compatibility layer like Cygwin,
+or write scripts as batch files.
+
+@section{Unix Scripts}
+
+In a Unix environment (including Linux and Mac OS X), a Scheme file can
+be turned into an executable script using the shell's @as-index{@tt{#!}}
+convention. The first two characters of the file must be @litchar{#!};
+the next character must be either a space or @litchar{/}, and the
+remainder of the first line must be a command to execute the script. For
+some platforms, the total length of the first line is restricted to 32
 characters, and sometimes the space is required.
 
 The simplest script format uses an absolute path to a @exec{mzscheme}
@@ -109,3 +115,30 @@ Note that @litchar{#!} starts a line comment in Scheme, and
 mzscheme} aborts the shell script to start @exec{mzscheme}. That way,
 the script file turns out to be valid input to both @exec{/bin/sh} and
 @exec{mzscheme}.
+
+@section{Windows Batch Files}
+
+A similar trick can be used to write Scheme code in Windows
+@as-index{@tt{batch}} files:
+
+@verbatim[#:indent 2]|{
+  ; @echo off
+  ; MzScheme.exe "%~f0" %*
+  ; exit /b
+  #lang scheme/base
+  "Hello, world!"
+  }|
+
+@;{
+Original trick from Ben Goetter, who used:
+
+  ; @echo off && REM -*- scheme -*-
+  ; "%MZSCHEME%" "%~f0" %*
+  ; exit /b
+  #lang scheme
+  ...
+
+it might be worth documenting the Emacs "-*-" convention and a way to
+set environment variables -- but that would be needed in the unix part
+too.
+;}
