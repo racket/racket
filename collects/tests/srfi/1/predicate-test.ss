@@ -34,10 +34,8 @@
 
 (module predicate-test
   mzscheme
-
-  (require
-   (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-   srfi/1/predicate
+  (require schemeunit)
+  (require srfi/1/predicate
    srfi/1/cons)
 
   (provide predicate-tests)

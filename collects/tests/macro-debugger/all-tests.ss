@@ -1,7 +1,6 @@
-
 #lang scheme/base
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2 9))
-         (planet "graphical-ui.ss" ("schematics" "schemeunit.plt" 2 9)))
+(require schemeunit
+         schemeunit/gui)
 (require macro-debugger/model/debug
          "gentest-framework.ss"
          "gentests.ss"
@@ -16,8 +15,8 @@
          "tests/collects.ss")
 (provide go)
 
-(define (go) (test/graphical-ui all-tests))
-(define (collects) (test/graphical-ui big-libs-tests))
+(define (go) (test/gui all-tests))
+(define (collects) (test/gui big-libs-tests))
 
 (define protos
   (list proto:kernel-forms

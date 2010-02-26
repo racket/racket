@@ -1,7 +1,6 @@
 #lang scheme/base
-
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2 8))
-         macro-debugger/model/debug
+(require schemeunit)
+(require macro-debugger/model/debug
          "../test-setup.ss")
 (provide policy-tests)
 

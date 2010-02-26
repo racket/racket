@@ -1,7 +1,6 @@
 (module all-srfi-40-tests mzscheme
-  
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           srfi/40)
+  (require schemeunit)
+  (require srfi/40)
   (provide all-srfi-40-tests)
   
   (define from0

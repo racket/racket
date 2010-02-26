@@ -27,8 +27,8 @@
 
 (module string-test mzscheme
   ;; Noel's Test Framework: (get your copy @ schematics.sourceforge.net)
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           srfi/13/string
+  (require schemeunit)
+  (require srfi/13/string
            srfi/14/char-set
 	   )
   (provide string-tests)

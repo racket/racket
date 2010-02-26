@@ -254,8 +254,3 @@
                                (list "Jay" (make-date 10 6) (make-date 10 8))))))
    
    ))
-
-#|
-(require (planet "graphical-ui.ss" ("schematics" "schemeunit.plt" 2)))
-(test/graphical-ui all-formlets-tests)
-|#

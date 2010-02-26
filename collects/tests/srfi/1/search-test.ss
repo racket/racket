@@ -35,8 +35,8 @@
 (module search-test
   mzscheme
 
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (all-except srfi/1/search member))
+  (require schemeunit)
+  (require (all-except srfi/1/search member))
 
   (provide search-tests)
 

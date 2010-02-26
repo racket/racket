@@ -1,7 +1,6 @@
 (module all-srfi-43-tests mzscheme
-  
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           "constructor-tests.ss"
+  (require schemeunit)
+  (require "constructor-tests.ss"
            "predicate-tests.ss"
            "iteration-tests.ss"
            "searching-tests.ss"

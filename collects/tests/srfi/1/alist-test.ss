@@ -33,9 +33,8 @@
 ;; stone@math.grin.edu
 
 (module alist-test mzscheme
-
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (all-except srfi/1/alist assoc)
+  (require schemeunit)
+  (require (all-except srfi/1/alist assoc)
            (rename srfi/1/alist s:assoc assoc))
 
   (provide alist-tests)

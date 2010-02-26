@@ -1,6 +1,6 @@
 (module all-1-tests mzscheme
   
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
+  (require schemeunit)
   (require "alist-test.ss"
            "cons-test.ss"
            "delete-test.ss"

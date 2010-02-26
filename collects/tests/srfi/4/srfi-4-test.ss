@@ -1,9 +1,8 @@
 (module srfi-4-test mzscheme
   
-  (require
-   (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-   (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2))
-   srfi/4)
+  (require schemeunit)
+  (require schemeunit/text-ui
+           srfi/4)
   
   (provide srfi-4-tests)
 
@@ -98,6 +97,6 @@
      ))
 
 
-  (test/text-ui srfi-4-tests)
+  (run-tests srfi-4-tests)
   
   )

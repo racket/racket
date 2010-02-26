@@ -1,6 +1,6 @@
 #lang scheme/base
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2 9))
-         macro-debugger/model/debug
+(require schemeunit)
+(require macro-debugger/model/debug
          macro-debugger/model/stx-util
          "gentest-framework.ss"
          "test-setup.ss")
@@ -23,9 +23,9 @@
   (mk-test "Hiding: Reductions" checker-for-hidden-steps protos))
 
 (define (mk-test label checker protos)
-  (apply test-suite label
-         (filter values 
-                 (map (mk-gen-test checker) protos))))
+  (make-test-suite label
+                   (filter values 
+                           (map (mk-gen-test checker) protos))))
 
 (define (mk-gen-test f)
   (define (gen prototest)
@@ -33,7 +33,7 @@
       [(struct collection (label contents))
        (let ([tests (filter values (map gen contents))])
          (and (pair? tests)
-              (apply test-suite label tests)))]
+              (make-test-suite label tests)))]
       [(struct individual (label form attrs))
        (f label form attrs)]))
   gen)

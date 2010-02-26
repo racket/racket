@@ -34,9 +34,8 @@
 
 (module cons-test
   mzscheme
-
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           srfi/1/cons)
+  (require schemeunit)
+  (require srfi/1/cons)
 
   (provide cons-tests)
 

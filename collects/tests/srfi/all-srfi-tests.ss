@@ -1,6 +1,6 @@
 (module all-srfi-tests mzscheme
   
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
+  (require schemeunit)
   (require "1/all-1-tests.ss"
            "2/and-let-test.ss"
            "4/srfi-4-test.ss"

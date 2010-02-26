@@ -34,10 +34,8 @@
 
 (module fold-test
   mzscheme
-
-  (require
-   (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-   (all-except srfi/1/fold map for-each)
+  (require schemeunit)
+  (require (all-except srfi/1/fold map for-each)
    (rename srfi/1/fold s:map map)
    (rename srfi/1/fold s:for-each for-each))
 

@@ -34,9 +34,8 @@
 
 (module filter-test
   mzscheme
-
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (all-except srfi/1/filter member))
+  (require schemeunit)
+  (require (all-except srfi/1/filter member))
 
   (provide filter-tests)
 

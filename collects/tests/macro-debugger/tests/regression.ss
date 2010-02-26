@@ -1,6 +1,6 @@
 #lang scheme/base
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2 8))
-         macro-debugger/model/debug
+(require schemeunit)
+(require macro-debugger/model/debug
          macro-debugger/model/steps
          "../test-setup.ss")
 (provide regression-tests)

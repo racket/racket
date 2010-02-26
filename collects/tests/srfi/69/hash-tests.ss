@@ -1,6 +1,6 @@
 (module hash-tests mzscheme
 
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
+  (require schemeunit)
 
   (require srfi/1/list
            (prefix h: srfi/69))

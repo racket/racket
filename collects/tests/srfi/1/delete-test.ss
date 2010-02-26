@@ -34,9 +34,8 @@
 
 (module delete-test
   mzscheme
-
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-           (all-except srfi/1/delete member))
+  (require schemeunit)
+  (require (all-except srfi/1/delete member))
 
   (provide delete-tests)
 

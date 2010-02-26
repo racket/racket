@@ -114,9 +114,3 @@
                      (sleep 3)
                      (call d k0 empty))
                    "#"))))
-
-
-; Comment in to run tests
-#;(require #;(planet "graphical-ui.ss" ("schematics" "schemeunit.plt" 2))
-           (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2)))
-#;(test/text-ui dispatch-servlets-tests)

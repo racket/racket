@@ -26,8 +26,8 @@
 ;; Commentary:
 
 (module and-let-test mzscheme
-  (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-	   srfi/2/and-let)
+  (require schemeunit)
+  (require srfi/2/and-let)
   (provide and-let*-tests)
 
   (define and-let*-tests

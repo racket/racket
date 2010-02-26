@@ -1,5 +1,5 @@
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2)))
-(require (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2)))
+(require schemeunit)
+(require schemeunit/text-ui)
 (require "all-srfi-40-tests.ss")
 
-(test/text-ui all-srfi-40-tests)
+(run-tests all-srfi-40-tests)

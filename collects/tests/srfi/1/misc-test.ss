@@ -34,10 +34,8 @@
 
 (module misc-test
   mzscheme
-
-  (require
-   (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-   (all-except srfi/1/misc append! reverse!)
+  (require schemeunit)
+  (require (all-except srfi/1/misc append! reverse!)
    (rename srfi/1/misc s:append! append!)
    (rename srfi/1/misc s:reverse! reverse!))
 

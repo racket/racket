@@ -1,6 +1,6 @@
 #lang scheme/base
-(require (planet "test.ss" ("schematics" "schemeunit.plt" 2 9))
-         (planet "graphical-ui.ss" ("schematics" "schemeunit.plt" 2 9)))
+(require schemeunit
+         schemeunit/gui)
 (require macro-debugger/model/debug
          scheme/path
          scheme/gui)
@@ -47,11 +47,11 @@
 
 (define (test-libs name mods)
   (test-suite name
-    (apply test-suite "Trace & Parse"
+    (apply make-test-suite "Trace & Parse"
            (for/list ([m mods]) (test-lib/deriv m)))
-    (apply test-suite "Reductions"
+    (apply make-test-suite "Reductions"
            (for/list ([m mods]) (test-lib/hide m hide-none-policy)))
-    (apply test-suite "Standard hiding"
+    (apply make-test-suite "Standard hiding"
            (for/list ([m mods]) (test-lib/hide m standard-policy)))))
 
 (define (test-lib/deriv m)
