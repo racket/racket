@@ -4378,9 +4378,9 @@
               [ext-field-ref (vector-ref old-ext-refs n)]
               [ext-field-set (vector-ref old-ext-sets n)])
           (vector-set! int-field-refs n (λ (o) (int-field-ref obj)))
-          (vector-set! int-field-sets n (λ (o) (int-field-set obj)))
+          (vector-set! int-field-sets n (λ (o v) (int-field-set obj v)))
           (vector-set! ext-field-refs n (λ (o) (ext-field-ref obj)))
-          (vector-set! ext-field-sets n (λ (o) (ext-field-set obj))))))
+          (vector-set! ext-field-sets n (λ (o v) (ext-field-set obj v))))))
     
     ;; Handle external field contracts
     (unless (null? fields)

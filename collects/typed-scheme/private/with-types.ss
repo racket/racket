@@ -11,19 +11,19 @@
          "base-types.ss"
          scheme/contract/regions scheme/contract/base
          (for-syntax "base-types-extra.ss")
-         (for-syntax (except-in (path-up "utils/utils.ss") infer)
-                     (path-up "utils/tc-utils.ss")
-                     (except-in (combine-in (path-up "types/convenience.ss") (path-up "types/abbrev.ss")) ->)                     
-                     (path-up "types/utils.ss")
-                     (path-up "infer/infer.ss")
-                     (path-up "env/type-env.ss")
-                     (path-up "env/type-environments.ss")
-                     (path-up "env/type-name-env.ss")
-                     (path-up "env/type-alias-env.ss")
-                     (path-up "infer/infer-dummy.ss")
-                     (path-up "private/parse-type.ss")
-                     (path-up "private/type-contract.ss")
-                     (path-up "typecheck/typechecker.ss")))
+         (for-syntax (except-in "../utils/utils.ss" infer)
+                     "../utils/tc-utils.ss"
+                     (except-in (combine-in "../types/convenience.ss" "../types/abbrev.ss") ->)                     
+                     "../types/utils.ss"
+                     "../infer/infer.ss"
+                     "../env/type-env.ss"
+                     "../env/type-environments.ss"
+                     "../env/type-name-env.ss"
+                     "../env/type-alias-env.ss"
+                     "../infer/infer-dummy.ss"
+                     "../private/parse-type.ss"
+                     "../private/type-contract.ss"
+                     "../typecheck/typechecker.ss"))
 
 (provide with-type)
 (define-syntax (with-type stx)
