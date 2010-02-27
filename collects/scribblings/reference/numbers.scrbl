@@ -589,9 +589,9 @@ produces @scheme[+nan.0] in the case that neither @scheme[y] nor
 Returns @scheme[#t] when the @scheme[m]th bit of @scheme[n] is set in @scheme[n]'s
         (semi-infinite) two's complement representation.
                    
-This is equivalent to
+This operation is equivalent to
 @scheme[(not (zero? (bitwise-and n (arithmetic-shift 1 m))))],
-but is faster and runs in constant time when @scheme[n] is positive.
+but it is faster and runs in constant time when @scheme[n] is positive.
 
 @mz-examples[(bitwise-bit-set? 5 0) (bitwise-bit-set? 5 2) (bitwise-bit-set? -5 (expt 2 700))]}
 
@@ -605,7 +605,7 @@ but is faster and runs in constant time when @scheme[n] is positive.
 Extracts the bits between position @scheme[start] and @scheme[(- end 1)] (inclusive)
 from @scheme[n] and shifts them down to the least significant portion of the number.
 
-This is equivalent to this computation,
+This operation is equivalent to the computation
 
 @schemeblock[
 (bitwise-and (sub1 (arithmetic-shift 1 (- end start)))
@@ -616,8 +616,8 @@ but it runs in constant time when @scheme[n] is positive, @scheme[start] and
 @scheme[end] are fixnums, and @scheme[(- end start)] is no more than
 the maximum width of a fixnum.
 
-Each pair of examples below uses the same numbers, but shows the result in
-both binary and as integers.
+Each pair of examples below uses the same numbers, showing the result
+both in binary and as integers.
 
 @mz-examples[(format "~b" (bitwise-bit-field (string->number "1101" 2) 1 1))
              (bitwise-bit-field 13 1 1)

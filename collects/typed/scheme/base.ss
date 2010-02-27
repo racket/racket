@@ -17,5 +17,5 @@
 	 typed-scheme/private/extra-procs
 	 (for-syntax typed-scheme/private/base-types-extra))
 (provide (rename-out [with-handlers: with-handlers])
-	 assert
+	 assert with-type
          (for-syntax (all-from-out typed-scheme/private/base-types-extra)))

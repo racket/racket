@@ -1,6 +1,6 @@
 #lang scheme/base
 (require (for-syntax scheme/base)
-         scheme/contract
+         scheme/contract/base
          scheme/dict
          "private/id-table.ss")
 #|

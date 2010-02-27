@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require scheme/contract
+(require scheme/contract/base
          "private/modcollapse-noctc.ss")
 
 (define simple-rel-to-module-path-v/c

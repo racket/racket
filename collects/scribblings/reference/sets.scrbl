@@ -48,6 +48,12 @@ that they appear as @scheme[v]s, so in the first two cases, an earlier
 element that is @scheme[equal?] or @scheme[eqv?] but not @scheme[eq?]
 to a later element takes precedence over the later element.}
 
+
+@defproc[(set-empty? [set set?]) boolean?]{
+
+Returns @scheme[#t] if @scheme[set] has no members, @scheme[@f]
+otherwise.}
+
 @defproc[(set-member? [set set?] [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is in @scheme[set], @scheme[#f]

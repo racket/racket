@@ -7399,6 +7399,8 @@ scheme_get_stack_trace(Scheme_Object *mark_set)
 
       if (SCHEME_FALSEP(SCHEME_CDR(name)))
         what = "[traversing imports]";
+      else if (SCHEME_VOIDP(SCHEME_CDR(name)))
+        what = "[running expand-time body]";
       else
         what = "[running body]";
 

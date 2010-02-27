@@ -1,6 +1,6 @@
 
 #lang scheme/base
-(require scheme/contract
+(require scheme/contract/base
          "private/modhelp.ss")
 
 (define (force-relto relto dir?)

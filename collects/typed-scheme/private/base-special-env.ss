@@ -12,7 +12,8 @@
  string-constants/string-constant
  ;(prefix-in ce: test-engine/scheme-tests)
  (for-syntax
-  scheme/base syntax/parse mzlib/etc
+  scheme/base syntax/parse
+  (only-in unstable/syntax syntax-local-eval)
   (utils tc-utils)
   (env init-envs)          
   (except-in (rep filter-rep object-rep type-rep) make-arr)
@@ -106,7 +107,8 @@
 
 (define-syntax (define-initial-env stx)
     (syntax-case stx ()
-      [(_ initial-env make-promise-ty language-ty qq-append-ty cl ...)
+      [(_ initial-env make-promise-ty language-ty qq-append-ty
+          [id-expr ty] ...)
        (with-syntax ([(_ make-promise . _)
                       (local-expand #'(delay 3)
                                     'expression
@@ -118,13 +120,16 @@
                      [(_ qq-append . _)
                       (local-expand #'`(,@'() 1)
                                     'expression
-                                    null)])
+                                    null)]
+                     [(id ...)
+                      (for/list ([expr (syntax->list #'(id-expr ...))])
+                        (syntax-local-eval expr))])
          #`(define-for-syntax initial-env
              (make-env
               [make-promise make-promise-ty]
               [language language-ty]
               [qq-append qq-append-ty]
-              cl ...)))]))
+              [id ty] ...)))]))
 
 
 
@@ -140,12 +145,11 @@
           (-> (-lst a) (-val '()) (-lst a))
           (-> (-lst a) (-lst b) (-lst (*Un a b)))))
   ;; make-sequence
-  [(begin-lifted
-     (syntax-parse (local-expand #'(for ([x '()]) x) 'expression #f)
-       #:context #'make-sequence
-       #:literals (let-values quote)
-       [(let-values ([_ (m-s '(_) '())]) . _)
-        #'m-s]))
+  [(syntax-parse (local-expand #'(for ([x '()]) x) 'expression #f)
+     #:context #'make-sequence
+     #:literals (let-values quote)
+     [(let-values ([_ (m-s '(_) '())]) . _)
+      #'m-s])
    (-poly (a) 
           (let ([seq-vals 
                  (lambda ([a a])
@@ -161,9 +165,9 @@
                    (-> Univ -String (seq-vals -Char))
                    (-> Univ -Bytes (seq-vals -Nat))
                    (-> Univ -Input-Port (seq-vals -Nat)))))])
-     
-     
-     
+
+
+
 
 (begin-for-syntax   
   (initialize-type-env initial-env/special-case)

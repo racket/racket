@@ -712,16 +712,41 @@
                                   (label "")
                                   (parent vp)
                                   (stretchable-width #t)))
+          (define font/label-panel (new horizontal-panel%
+                                        [parent vp]
+                                        [stretchable-height #f]))
           (define font-size-gauge
             (instantiate slider% ()
               (label font-size-gauge-label)
               (min-value 1)
               (max-value 72)
               (init-value (preferences:get 'drscheme:module-overview:label-font-size))
-              (parent vp)
+              (parent font/label-panel)
               (callback
                (λ (x y)
                  (send pasteboard set-label-font-size (send font-size-gauge get-value))))))
+          (define module-browser-name-length-choice
+            (new choice%
+                 (parent font/label-panel)
+                 (label (string-constant module-browser-name-length))
+                 (choices (list (string-constant module-browser-name-long)
+                                (string-constant module-browser-name-very-long)))
+                 (selection (case (preferences:get 'drscheme:module-browser:name-length)
+                              [(0) 0]
+                              [(1) 0]
+                              [(2) 0]
+                              [(3) 1]))
+                 (callback
+                  (λ (x y)
+                    ;; note: the preference drscheme:module-browser:name-length is also used for the View|Show Module Browser version of the module browser
+                    ;; here we just treat any pref value except '3' as if it were for the long names.
+                    (let ([selection (send module-browser-name-length-choice get-selection)])
+                      (preferences:set 'drscheme:module-browser:name-length (+ 2 selection))
+                      (send pasteboard set-name-length 
+                            (case selection
+                              [(0) 'long]
+                              [(1) 'very-long])))))))
+          
           (define lib-paths-checkbox
             (instantiate check-box% ()
               (label lib-paths-checkbox-constant)
@@ -746,6 +771,12 @@
                                 (format filename-constant fn lines))))
                       (send label-message set-label ""))))
           
+          (send pasteboard set-name-length 
+                (case (preferences:get 'drscheme:module-browser:name-length)
+                  [(0) 'long]
+                  [(1) 'long]
+                  [(2) 'long]
+                  [(3) 'very-long]))          
           ;; shouldn't be necessary here -- need to find callback on editor
           (send pasteboard render-snips)
           

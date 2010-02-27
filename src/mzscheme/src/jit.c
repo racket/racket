@@ -166,7 +166,7 @@ SHARED_OK static void *struct_proc_extract_code;
 SHARED_OK static void *bad_app_vals_target;
 SHARED_OK static void *app_values_slow_code, *app_values_multi_slow_code, *app_values_tail_slow_code;
 SHARED_OK static void *finish_tail_call_code, *finish_tail_call_fixup_code;
-SHARED_OK static void *module_run_start_code, *module_start_start_code;
+SHARED_OK static void *module_run_start_code, *module_exprun_start_code, *module_start_start_code;
 SHARED_OK static void *box_flonum_from_stack_code;
 SHARED_OK static void *fl1_fail_code, *fl2rr_fail_code[2], *fl2fr_fail_code[2], *fl2rf_fail_code[2];
 
@@ -11555,6 +11555,37 @@ static int do_generate_more_common(mz_jit_state *jitter, void *_data)
     register_sub_func(jitter, module_run_start_code, scheme_eof);
   }
 
+  /* *** module_exprun_start_code *** */
+  /* Pushes a module name onto the stack for stack traces. */
+  {
+    int in;
+    
+    module_exprun_start_code = jit_get_ip().ptr;
+    jit_prolog(3);
+    in = jit_arg_p();
+    jit_getarg_p(JIT_R0, in); /* menv */
+    in = jit_arg_p();
+    jit_getarg_i(JIT_R1, in); /* set_ns */
+    in = jit_arg_p();
+    jit_getarg_p(JIT_R2, in); /* &name */
+    CHECK_LIMIT();
+
+    /* Store the name where we can find it */
+    mz_push_locals();
+    mz_set_local_p(JIT_R2, JIT_LOCAL2);
+
+    jit_prepare(2);
+    jit_pusharg_i(JIT_R1);
+    jit_pusharg_p(JIT_R0);
+    (void)mz_finish(scheme_module_exprun_finish);
+    CHECK_LIMIT();
+    mz_pop_locals();
+    jit_ret();
+    CHECK_LIMIT();
+
+    register_sub_func(jitter, module_exprun_start_code, scheme_eof);
+  }
+
   /* *** module_start_start_code *** */
   /* Pushes a module name onto the stack for stack traces. */
   {
@@ -12822,6 +12853,7 @@ static void release_native_code(void *fnlized, void *p)
 #endif
 
 typedef void *(*Module_Run_Proc)(Scheme_Env *menv, Scheme_Env *env, Scheme_Object **name);
+typedef void *(*Module_Exprun_Proc)(Scheme_Env *menv, int set_ns, Scheme_Object **name);
 typedef void *(*Module_Start_Proc)(struct Start_Module_Args *a, Scheme_Object **name);
 
 void *scheme_module_run_start(Scheme_Env *menv, Scheme_Env *env, Scheme_Object *name)
@@ -12831,6 +12863,15 @@ void *scheme_module_run_start(Scheme_Env *menv, Scheme_Env *env, Scheme_Object *
     return proc(menv, env, &name);
   else
     return scheme_module_run_finish(menv, env);
+}
+
+void *scheme_module_exprun_start(Scheme_Env *menv, int set_ns, Scheme_Object *name)
+{
+  Module_Exprun_Proc proc = (Module_Exprun_Proc)module_exprun_start_code;
+  if (proc)
+    return proc(menv, set_ns, &name);
+  else
+    return scheme_module_exprun_finish(menv, set_ns);
 }
 
 void *scheme_module_start_start(struct Start_Module_Args *a, Scheme_Object *name)

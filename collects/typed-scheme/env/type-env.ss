@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "../utils/utils.ss" 
-	 syntax/boundmap
+	 syntax/id-table
          (utils tc-utils)
          (types utils))
 
@@ -11,21 +11,22 @@
          register-type/undefined
          lookup-type
          register-types
+         unregister-type
          check-all-registered-types
          type-env-map)
 
-;; module-identifier-mapping from id -> type or Box[type]
+;; free-id-table from id -> type or Box[type]
 ;; where id is a variable, and type is the type of the variable
 ;; if the result is a box, then the type has not actually been defined, just registered
-(define the-mapping (make-module-identifier-mapping))
+(define the-mapping (make-free-id-table))
 
 ;; add a single type to the mapping
 ;; identifier type -> void
 (define (register-type id type)
-  (module-identifier-mapping-put! the-mapping id type))
+  (free-id-table-set! the-mapping id type))
 
 (define (register-type-if-undefined id type)
-  (if (module-identifier-mapping-get the-mapping id (lambda _ #f))
+  (if (free-id-table-ref the-mapping id (lambda _ #f))
       (tc-error/stx id "Duplicate type annotation for ~a" (syntax-e id))
       (register-type id type)))
 
@@ -33,9 +34,9 @@
 ;; identifier type -> void
 (define (register-type/undefined id type)
   ;(printf "register-type/undef ~a~n" (syntax-e id))
-  (if (module-identifier-mapping-get the-mapping id (lambda _ #f))
+  (if (free-id-table-ref the-mapping id (lambda _ #f))
       (tc-error/stx id "Duplicate type annotation for ~a" (syntax-e id))
-      (module-identifier-mapping-put! the-mapping id (box type))))
+      (free-id-table-set! the-mapping id (box type))))
 
 ;; add a bunch of types to the mapping
 ;; listof[id] listof[type] -> void
@@ -46,21 +47,24 @@
 ;; if none found, calls lookup-fail
 ;; identifier -> type 
 (define (lookup-type id [fail-handler (lambda () (lookup-type-fail id))])
-  (let ([v (module-identifier-mapping-get the-mapping id fail-handler)])
+  (let ([v (free-id-table-ref the-mapping id fail-handler)])
     (if (box? v) (unbox v) v)))
 
 (define (maybe-finish-register-type id)
-  (let ([v (module-identifier-mapping-get the-mapping id)])
+  (let ([v (free-id-table-ref the-mapping id)])
     (if (box? v)
         (register-type id (unbox v))
         #f)))
+
+(define (unregister-type id)
+  (free-id-table-remove! the-mapping id))
 
 (define (finish-register-type id)
   (unless (maybe-finish-register-type id)
     (tc-error/stx id "Duplicate defintion for ~a" (syntax-e id))))
 
 (define (check-all-registered-types)
-  (module-identifier-mapping-for-each 
+  (free-id-table-for-each 
    the-mapping 
    (lambda (id e) 
      (when (box? e) 
@@ -74,4 +78,4 @@
 ;; map over the-mapping, producing a list
 ;; (id type -> T) -> listof[T]  
 (define (type-env-map f)
-  (module-identifier-mapping-map the-mapping f))
+  (free-id-table-map the-mapping f))

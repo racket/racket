@@ -2,7 +2,7 @@
 
 (require (rename-in "utils/utils.ss" [infer r:infer]))
 
-(require (private base-types)
+(require (private base-types with-types)
          (for-syntax 
           (except-in syntax/parse id)
           scheme/base
@@ -19,14 +19,12 @@
           syntax/kerncase
           scheme/match))
 
-
-
-
 (provide (rename-out [module-begin #%module-begin]
                      [top-interaction #%top-interaction]
                      [#%plain-lambda lambda]
                      [#%app #%app]
-                     [require require]))
+                     [require require])
+         with-type)
 
 (define-for-syntax catch-errors? #f)
 

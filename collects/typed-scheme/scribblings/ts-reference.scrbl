@@ -6,6 +6,8 @@
                            scheme/list srfi/14
                            version/check))]
 
+@(define the-eval (make-base-eval))
+@(the-eval '(require (except-in typed/scheme #%top-interaction #%module-begin)))
 
 @title[#:tag "top"]{The Typed Scheme Reference} 
 
@@ -330,3 +332,33 @@ Examples:
 @schememod[typed-scheme/no-check
 (: x Number)
 (define x "not-a-number")]
+
+@section{Typed Regions}
+
+The @scheme[with-type] for allows for localized Typed Scheme regions in otherwise untyped code.
+
+@defform/subs[(with-type type fv-clause body ...+)
+              ([fv-clause code:blank
+                          (code:line #:freevars ([id fv-type] ...))])]{
+Checks that @scheme[body ...+] has the type @scheme[type].  The @scheme[id]s are assumed to 
+have the types ascribed to them; these types are converted to contracts and checked dynamically.
+Uses of the result value are also appropriately checked by a contract generated from 
+@scheme[type].
+
+@examples[#:eval the-eval
+(with-type Number 3)
+
+((with-type (Number -> Number)
+   (lambda: ([x : Number]) (add1 x)))
+ #f)
+
+(let ([x "hello"])
+  (with-type String
+    #:freevars ([x String])
+    (string-append x ", world")))
+
+(let ([x 'hello])
+  (with-type String
+    #:freevars ([x String])
+    (string-append x ", world")))]
+}
