@@ -5,7 +5,8 @@
           "guide-utils.ss"
 
           (for-label scheme/class
-                     scheme/trait))
+                     scheme/trait
+                     scheme/contract))
 
 @(define class-eval
    (let ([e (make-base-eval)])
@@ -799,6 +800,232 @@ Using this form in conjunction with trait operators such as
      (define/public (get-color)
        .... (get-spots-color) .... (get-stripes-color) ....))))
 ]
+
+@; ----------------------------------------------------------------------
+
+@; Set up uses of contract forms below
+@(class-eval '(require scheme/contract))
+
+@section{Class Contracts}
+
+As classes are values, they can flow across contract boundaries, and we
+may wish to protect parts of a given class with contracts.  For this,
+the @scheme[class/c] form is used.  The @scheme[class/c] form has many
+subforms, which describe two types of contracts on fields and methods:
+those that affect uses via instantiated objects and those that affect
+subclasses.
+
+@subsection{External Class Contracts}
+
+In its simplest form, @scheme[class/c] protects the public fields and methods
+of objects instantiated from the contracted class.  There is also an
+@scheme[object/c] form that can be used to similarly protect the public fields
+and methods of a particular object. Take the following definition of
+@scheme[animal%], which uses a public field for its @scheme[size] attribute:
+
+@schemeblock[
+(define animal%
+  (class object% 
+    (super-new)
+    (field [size 10])
+    (define/public (eat food)
+      (set! size (+ size (get-field size food))))))]
+
+For any instantiated @scheme[animal%], accessing the @scheme[size] field
+should return a positive number.  Also, if the @scheme[size] field is set,
+it should be assigned a positive number.  Finally, the @scheme[eat] method
+should receive an argument which is an object with a @scheme[size] field
+that contains a positive number. To ensure these conditions, we will define
+the @scheme[animal%] class with an appropriate contract:
+
+@schemeblock[
+(define positive/c (and/c number? positive?))
+(define edible/c (object/c (field [size positive/c])))
+(define/contract animal%
+  (class/c (field [size positive/c])
+           [eat (->m edible/c void?)])
+  (class object% 
+    (super-new)
+    (field [size 10])
+    (define/public (eat food)
+      (set! size (+ size (get-field size food))))))]
+
+@interaction-eval[
+#:eval class-eval
+(begin
+  (define positive/c
+    (flat-named-contract 'positive/c (and/c number? positive?)))
+  (define edible/c (object/c (field [size positive/c])))
+  (define/contract animal%
+    (class/c (field [size positive/c])
+             [eat (->m edible/c void?)])
+    (class object% 
+      (super-new)
+      (field [size 10])
+      (define/public (eat food)
+        (set! size (+ size (get-field size food)))))))]
+
+Here we use @scheme[->m] to describe the behavior of @scheme[eat] since we
+do not need to describe any requirements for the @scheme[this] parameter.
+Now that we have our contracted class, we can see that the contracts
+on both @scheme[size] and @scheme[eat] are enforced:
+
+@interaction[
+#:eval class-eval
+(define bob (new animal%))
+(set-field! size bob 3)
+(get-field size bob)
+(set-field! size bob 'large)
+(define richie (new animal%))
+(send bob eat richie)
+(get-field size bob)
+(define rock (new object%))
+(send bob eat rock)
+(define giant (new (class object% (super-new) (field [size 'large]))))
+(send bob eat giant)]
+
+There are two important caveats for external class contracts. First,
+external method contracts are only enforced when the target of dynamic
+dispatch is the method implementation of the contracted class, which
+lies within the contract boundary.  Overriding that implementation, and
+thus changing the target of dynamic dispatch, will mean that the contract
+is no longer enforced for clients, since accessing the method no longer
+crosses the contract boundary.  Unlike external method contracts, external
+field contracts are always enforced for clients of subclasses, since fields
+cannot be overridden or shadowed.
+
+Second, these contracts do not restrict subclasses of @scheme[animal%]
+in any way.  Fields and methods that are inherited and used by subclasses
+are not checked by these contracts, and uses of the superclass's methods
+via @scheme[super] are also unchecked.  The following example illustrates
+both caveats:
+
+@def+int[
+#:eval class-eval
+(define large-animal%
+  (class animal%
+    (super-new)
+    (inherit-field size)
+    (set! size 'large)
+    (define/override (eat food)
+      (display "Nom nom nom") (newline))))
+(define elephant (new large-animal%))
+(send elephant eat (new object%))
+(get-field size elephant)]
+
+@subsection{Internal Class Contracts}
+
+Notice that retrieving the @scheme[size] field from the object
+@scheme[elephant] blames @scheme[animal%] for the contract violation.
+This blame is correct, but unfair to the @scheme[animal%] class,
+as we have not yet provided it with a method for protecting itself from
+subclasses.  To this end we add internal class contracts, which
+provide directives to subclasses for how they may access and override
+features of the superclass.  This distinction between external and internal
+class contracts allows for weaker contracts within the class hierarchy, where
+invariants may be broken internally by subclasses but should be enforced
+for external uses via instantiated objects.
+
+As a simple example of what kinds of protection are available, we provide
+an example aimed at the @scheme[animal%] class that uses all the applicable
+forms:
+
+@schemeblock[
+(class/c (field [size positive/c])
+         (inherit-field [size positive/c])
+         [eat (->m edible/c void?)]
+         (inherit [eat (->m edible/c void?)])
+         (super [eat (->m edible/c void?)])
+         (override [eat (->m edible/c void?)]))]
+
+This class contract not only ensures that objects of class @scheme[animal%]
+are protected as before, but also ensure that subclasses of @scheme[animal%]
+only store appropriate values within the @scheme[size] field and use
+the implementation of @scheme[size] from @scheme[animal%] appropriately.
+These contract forms only affect uses within the class hierarchy, and only
+for method calls that cross the contract boundary.
+
+That means that @scheme[inherit] will only affect subclass uses of a method
+until a subclass overrides that method, and that @scheme[override] only
+affects calls from the superclass into a subclass's overriding implementation
+of that method.  Since these only affect internal uses, the @scheme[override]
+form does not automatically enter subclasses into obligations when objects of
+those classes are used.  Also, use of @scheme[override] only makes sense, and
+thus can only be used, for methods where no Beta-style augmentation has taken
+place. The following example shows this difference:
+
+@schemeblock[
+(define/contract sloppy-eater%
+  (class/c [eat (->m edible/c edible/c)])
+  (begin
+    (define/contract glutton%
+      (class/c (override [eat (->m edible/c void?)]))
+      (class animal%
+        (super-new)
+        (inherit eat)
+        (define/public (gulp food-list)
+          (for ([f food-list])
+            (eat f)))))
+    (class glutton%
+      (super-new)
+      (inherit-field size)
+      (define/override (eat f)
+        (let ([food-size (get-field size f)])
+          (set! size (/ food-size 2))
+          (set-field! size f (/ food-size 2))
+          f)))))]
+
+@interaction-eval[
+#:eval class-eval
+(define/contract sloppy-eater%
+  (class/c [eat (->m edible/c edible/c)])
+  (begin
+    (define/contract glutton%
+      (class/c (override [eat (->m edible/c void?)]))
+      (class animal%
+        (super-new)
+        (inherit eat)
+        (define/public (gulp food-list)
+          (for ([f food-list])
+            (eat f)))))
+    (class glutton%
+      (super-new)
+      (inherit-field size)
+      (define/override (eat f)
+        (let ([food-size (get-field size f)])
+          (set! size (/ food-size 2))
+          (set-field! size f (/ food-size 2))
+          f)))))]
+
+@interaction[
+#:eval class-eval
+(define pig (new sloppy-eater%))
+(define slop1 (new animal%))
+(define slop2 (new animal%))
+(define slop3 (new animal%))
+(send pig eat slop1)
+(get-field size slop1)
+(send pig gulp (list slop1 slop2 slop3))]
+
+In addition to the internal class contract forms shown here, there are
+similar forms for Beta-style augmentable methods.  The @scheme[inner]
+form describes to the subclass what is expected from augmentations of
+a given method.  Both @scheme[augment] and @scheme[augride] tell the
+subclass that the given method is a method which has been augmented and
+that any calls to the method in the subclass will dynamically
+dispatch to the appropriate implementation in the superclass.  Such
+calls will be checked according to the given contract.  The two forms
+differ in that  use of @scheme[augment] signifies that subclasses can
+augment the given method, whereas use of @scheme[augride] signifies that
+subclasses must override the current augmentation instead.
+
+This means that not all forms can be used at the same time.  Only one of the
+@scheme[override], @scheme[augment], and @scheme[augride] forms can be used
+for a given method, and none of these forms can be used if the given method
+has been finalized.  In addition, @scheme[super] can be specified for a given
+method only if @scheme[augride] or @scheme[override] can be specified.
+Similarly, @scheme[inner] can be specified only if @scheme[augment] or
+@scheme[augride] can be specified.
 
 @; ----------------------------------------------------------------------
 
