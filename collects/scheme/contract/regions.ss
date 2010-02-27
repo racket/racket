@@ -48,55 +48,50 @@
 ;; defines `id' with `contract'; initially binding
 ;; it to the result of `expr'.  These variables may not be set!'d.
 (define-syntax (define/contract define-stx)
-  (when (eq? (syntax-local-context) 'expression)
+  (define-splicing-syntax-class fv-clause
+    #:description "a free variable clause"
+    #:attributes ([var 1] [ctc 1])
+    [pattern (~seq #:freevars ([var:id ctc:expr] ...))]
+    [pattern (~seq #:freevar v:id c:expr)
+             #:with (var ...) (list #'v)
+             #:with (ctc ...) (list #'c)])
+  (define-splicing-syntax-class fvs
+    #:description "a sequence of free variable clauses"
+    #:attributes ([var 1] [ctc 1])
+    [pattern (~seq f:fv-clause ...)
+             #:with (var ...) #'(f.var ... ...)
+             #:with (ctc ...) #'(f.ctc ... ...)
+             #:fail-when (check-duplicate-identifier (syntax->list #'(var ...)))
+             (format "duplicate imported name ~a" 
+                     (syntax-e (check-duplicate-identifier (syntax->list #'(var ...)))))])
+  (when (memq (syntax-local-context) '(expression module-begin))
     (raise-syntax-error 'define/contract
-                        "used in expression context"
+                        "not used in definition context"
                         define-stx))
-  (syntax-case define-stx ()
-    [(_ name)
-     (raise-syntax-error 'define/contract
-                         "no contract or body"
-                         define-stx)]
-    [(_ name contract-expr)
-     (raise-syntax-error 'define/contract
-                         "expected a contract expression and a definition body, but found only one expression"
-                         define-stx)]
-    [(_ name+arg-list contract #:freevars args . body)
-     (identifier? #'args)
-     (raise-syntax-error 'define/contract
-                         "expected list of identifier/contract pairs"
-                         #'args)]
-    [(_ name+arg-list contract #:freevars (arg ...) #:freevar x c . body)
+  (syntax-parse define-stx
+    [(_ name:id contract fv:fvs body)
      (syntax/loc define-stx
-       (define/contract name+arg-list contract #:freevars (arg ... [x c]) . body))]
-    [(_ name+arg-list contract #:freevar x c . body)
-     (syntax/loc define-stx
-       (define/contract name+arg-list contract #:freevars () #:freevar x c . body))]
-    [(_ name+arg-list contract #:freevars args body0 body ...)
-     (begin
-       (when (and (identifier? #'name+arg-list)
-                  (not (null? (syntax->list #'(body ...)))))
-         (raise-syntax-error 'define/contract
-                             "multiple expressions after identifier and contract"
-                             #'(body ...)))
-       (let-values ([(name body-expr)
-                     (if (identifier? #'name+arg-list)
-                         (values #'name+arg-list #'body0)
-                         (normalize-definition
-                          (datum->syntax #'define-stx (list* 'define/contract #'name+arg-list
-                                                             #'body0 #'(body ...)))
-                          #'lambda #t #t))])
-         (with-syntax ([name name]
-                       [body-expr body-expr]
-                       [type (if (identifier? #'name+arg-list) 'definition 'function)])
-           (syntax/loc define-stx
-             (with-contract #:region type name
-               ([name contract])
-               #:freevars args
-               (define name body-expr))))))]
-    [(_ name+arg-list contract body0 body ...)
-     (syntax/loc define-stx
-       (define/contract name+arg-list contract #:freevars () body0 body ...))]))
+       (with-contract #:region definition name
+         ([name contract])
+         #:freevars ([fv.var fv.ctc] ...)
+         (define name body)))]
+    [(_ name:id contract fv:fvs body0 body ...)
+     (raise-syntax-error 'define/contract
+                         "multiple expressions after identifier and contract"
+                         #'(body ...))]
+    [(_ name+arg-list contract fv:fvs body0 body ...)
+     (let-values ([(name body-expr)
+                   (normalize-definition
+                    (datum->syntax #'define-stx (list* 'define/contract #'name+arg-list
+                                                       #'body0 #'(body ...)))
+                    #'lambda #t #t)])
+       (with-syntax ([name name]
+                     [body-expr body-expr])
+         (syntax/loc define-stx
+           (with-contract #:region function name
+             ([name contract])
+             #:freevars ([fv.var fv.ctc] ...)
+             (define name body-expr)))))]))
 
 (define-syntax (define-struct/contract stx)
   (define-struct field-info (stx ctc [mutable? #:mutable] auto?))
@@ -375,37 +370,26 @@
 ;                                                                                         
 ;                                                                                         
 
-(define-for-syntax (make-contracted-id-transformer id contract-stx pos-blame-id neg-blame-id)
-  (make-set!-transformer
-   (lambda (stx)
-     (syntax-case stx (set!)
-       [(set! i arg)
-        (quasisyntax/loc stx
-          (set! #,id
-                (contract #,contract-stx
-                          arg
-                          #,neg-blame-id
-                          #,pos-blame-id
-                          (quote #,id)
-                          (quote-syntax #,id))))]
-       [(f arg ...)
-        (quasisyntax/loc stx
-          ((contract #,contract-stx
-                     #,id
-                     #,pos-blame-id
-                     #,neg-blame-id
-                     (quote #,id)
-                     (quote-syntax #,id))
-           arg ...))]
-       [ident
-        (identifier? (syntax ident))
-        (quasisyntax/loc stx
-          (contract #,contract-stx
-                    #,id
-                    #,pos-blame-id
-                    #,neg-blame-id
-                    (quote #,id)
-                    (quote-syntax #,id)))]))))
+(define-for-syntax (make-contracted-id-transformer id contract-stx pos-blame-stx neg-blame-stx)
+  (with-syntax ([ctc contract-stx]
+                [id id]
+                [pos pos-blame-stx]
+                [neg neg-blame-stx])
+    (make-set!-transformer
+     (lambda (stx)
+       (syntax-case stx (set!)
+         [(set! i arg)
+          (quasisyntax/loc stx
+            (set! #,id
+                  (contract ctc arg neg pos (quote id) (quote-syntax id))))]
+         [(f arg ...)
+          (quasisyntax/loc stx
+            ((contract ctc id pos neg (quote id) (quote-syntax id))
+             arg ...))]
+         [ident
+          (identifier? (syntax ident))
+          (quasisyntax/loc stx
+            (contract ctc id pos neg (quote id) (quote-syntax id)))])))))
 
 (define-syntax (with-contract-helper stx)
   (syntax-case stx ()
