@@ -4165,6 +4165,15 @@ static void expstart_module(Scheme_Env *menv, Scheme_Env *env, int restart)
 
 static void run_module_exptime(Scheme_Env *menv, int set_ns)
 {
+#ifdef MZ_USE_JIT
+  (void)scheme_module_exprun_start(menv, set_ns, scheme_make_pair(menv->module->modname, scheme_void));
+#else
+  (void)scheme_module_exprun_finish(menv, set_ns);
+#endif
+}
+
+void *scheme_module_exprun_finish(Scheme_Env *menv, int set_ns)
+{
   int let_depth, for_stx;
   Scheme_Object *names, *e;
   Resolve_Prefix *rp;
@@ -4176,17 +4185,17 @@ static void run_module_exptime(Scheme_Env *menv, int set_ns)
   Scheme_Config *config;
   
   if (menv->module->primitive)
-    return;
+    return NULL;
 
   if (!SCHEME_VEC_SIZE(menv->module->et_body))
-    return;
+    return NULL;
 
   syntax = menv->syntax;
 
   exp_env = menv->exp_env;
 
   if (!exp_env)
-    return;
+    return NULL;
 
   for_stx_globals = exp_env->toplevel;
 
@@ -4222,6 +4231,8 @@ static void run_module_exptime(Scheme_Env *menv, int set_ns)
   if (set_ns) {
     scheme_pop_continuation_frame(&cframe);
   }
+
+  return NULL;
 }
 
 static void do_start_module(Scheme_Module *m, Scheme_Env *menv, Scheme_Env *env, int restart)
@@ -4350,12 +4361,25 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
 
 static void do_prepare_compile_env(Scheme_Env *env, int base_phase, int pos)
 {
-  Scheme_Object *v;
+  Scheme_Object *v, *prev;
   Scheme_Env *menv;
 
   v = MODCHAIN_AVAIL(env->modchain, pos);
   if (!SCHEME_FALSEP(v)) {
     MODCHAIN_AVAIL(env->modchain, pos) = scheme_false;
+
+    /* Reverse order of the list; if X requires Y, Y
+       has been pushed onto the front of the list 
+       before X. */
+    prev = scheme_false;
+    while (SCHEME_NAMESPACEP(v)) {
+      menv = (Scheme_Env *)v;
+      v = menv->available_next[pos];
+      menv->available_next[pos] = prev;
+      prev = (Scheme_Object *)menv;
+    }
+    v = prev;
+
     while (SCHEME_NAMESPACEP(v)) {
       menv = (Scheme_Env *)v;
       v = menv->available_next[pos];

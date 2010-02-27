@@ -1928,8 +1928,8 @@ void scheme_unbound_global(Scheme_Bucket *b)
     else
       errmsg = "reference to an identifier before its definition: %S%_%s";
 
-    if (SCHEME_INT_VAL(((Scheme_Bucket_With_Home *)b)->home->phase)) {
-      sprintf(phase_buf, " phase: %ld", SCHEME_INT_VAL(((Scheme_Bucket_With_Home *)b)->home->phase));
+    if (((Scheme_Bucket_With_Home *)b)->home->phase) {
+      sprintf(phase_buf, " phase: %ld", ((Scheme_Bucket_With_Home *)b)->home->phase);
       phase = phase_buf;
     } else
       phase = "";
