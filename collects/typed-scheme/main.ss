@@ -18,4 +18,4 @@
          (for-syntax "private/base-types-extra.ss"))
 (provide (rename-out [with-handlers: with-handlers] [real? number?])
          (for-syntax (all-from-out "private/base-types-extra.ss"))
-	 assert)
+	 assert with-type)
