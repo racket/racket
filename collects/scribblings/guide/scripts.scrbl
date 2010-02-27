@@ -5,9 +5,9 @@
 
 @title[#:tag "scripts"]{Scripts}
 
-Scheme files can be turned into executable scripts on Unix and Mac OS
-X.  On Windows, one option is to use a compatibility layer like Cygwin,
-or write scripts as batch files.
+Scheme files can be turned into executable scripts under Unix and Mac
+OS X.  Under Windows, a compatibility layer like Cygwin support the
+same kind of scripts, or scripts can be implemented as batch files.
 
 @section{Unix Scripts}
 
@@ -119,7 +119,7 @@ the script file turns out to be valid input to both @exec{/bin/sh} and
 @section{Windows Batch Files}
 
 A similar trick can be used to write Scheme code in Windows
-@as-index{@tt{batch}} files:
+@as-index{@tt{.bat}} batch files:
 
 @verbatim[#:indent 2]|{
   ; @echo off
