@@ -5142,7 +5142,6 @@
 ;                     ;;;;                                     
 ;                     ;;;                                      
 
-#|
   (test/pos-blame
    'object/c-first-order-object-1
    '(contract (object/c)
@@ -5184,7 +5183,85 @@
               (new (class object% (super-new) (field [n 3])))
               'pos
               'neg))
-|#
+  
+  (test/spec-passed/result
+   'object/c-higher-order-field-1
+   '(get-field
+     n
+     (contract (object/c (field [n number?]))
+               (new (class object% (super-new) (field [n 3])))
+               'pos
+               'neg))
+   3)
+
+  (test/pos-blame
+   'object/c-higher-order-field-2
+   '(get-field
+     n
+     (contract (object/c (field [n number?]))
+               (new (class object% (super-new) (field [n #t])))
+               'pos
+               'neg)))
+
+  (test/spec-passed/result
+   'object/c-higher-order-field-3
+   '(let ([o (contract (object/c (field [n number?]))
+                       (new (class object% (super-new) (field [n 3])))
+                       'pos
+                       'neg)])
+      (set-field! n o 5)
+      (get-field n o))
+   5)
+
+  (test/neg-blame
+   'object/c-higher-order-field-4
+   '(let ([o (contract (object/c (field [n number?]))
+                       (new (class object% (super-new) (field [n 3])))
+                       'pos
+                       'neg)])
+      (set-field! n o #t)))
+
+  (test/spec-passed/result
+   'object/c-higher-order-field-5
+   '(let* ([pre-o (new (class object% (super-new) (field [n 3])))]
+           [o (contract (object/c (field [n number?]))
+                        pre-o
+                        'pos
+                        'neg)])
+      (set-field! n pre-o 5)
+      (get-field n o))
+   5)
+  
+  (test/spec-passed/result
+   'object/c-higher-order-field-6
+   '(let* ([pre-o (new (class object% (super-new) (field [n 3])))]
+           [o (contract (object/c (field [n number?]))
+                        pre-o
+                        'pos
+                        'neg)])
+      (set-field! n o 5)
+      (get-field n pre-o))
+   5)
+
+  (test/neg-blame
+   'object/c-higher-order-field-7
+   '(let* ([pre-o (new (class object% (super-new) (field [n 3])))]
+           [o (contract (object/c (field [n number?]))
+                        pre-o
+                        'pos
+                        'neg)])
+      (set-field! n o #t)
+      (get-field n pre-o)))
+
+  (test/pos-blame
+   'object/c-higher-order-field-8
+   '(let* ([pre-o (new (class object% (super-new) (field [n 3])))]
+           [o (contract (object/c (field [n number?]))
+                        pre-o
+                        'pos
+                        'neg)])
+      (set-field! n pre-o #t)
+      (get-field n o)))
 
 ;                                                                                    
 ;                                                                                    
