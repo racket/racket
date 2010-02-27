@@ -48,7 +48,7 @@
                  #:when (scheme-file? p)
 		 ;; skip backup files
 		 #:when (not (regexp-match #rx".*~" (path->string p))))
-        (test-case
+        (test-suite
          (path->string p)
          (test
           (build-path path p)
@@ -72,9 +72,10 @@
                              dr
                              (lambda (p thnk)
                                (define-values (pred info) (exn-pred p))
-                               (with-check-info
-                                (['predicates info])
-                                (check-exn pred thnk)))))
+                               (parameterize ([error-display-handler void])
+                                 (with-check-info
+                                  (['predicates info])
+                                  (check-exn pred thnk))))))
 
 (define int-tests
   (test-suite "Integration tests"
@@ -86,7 +87,7 @@
               unit-tests int-tests))
 
 (define (go) (test/gui tests))
-(define (go/text) (run-tests tests))
+(define (go/text) (run-tests tests 'verbose))
 
 (provide go go/text)
 
