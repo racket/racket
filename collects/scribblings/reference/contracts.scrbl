@@ -744,8 +744,8 @@ ensure that the exported functions are treated parametrically.
 }
 
 @defform*/subs[
- (with-contract blame-id (wc-export ...) free-var-list ... body ...+)
- (with-contract blame-id result-spec free-var-list ... body ...+)
+ [(with-contract blame-id (wc-export ...) free-var-list ... body ...+)
+  (with-contract blame-id result-spec free-var-list ... body ...+)]
  ([wc-export
    (id contract-expr)]
   [result-spec
