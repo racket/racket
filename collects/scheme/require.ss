@@ -13,11 +13,12 @@
         (regexp? (syntax-e #'rx))
         (let ([rx (syntax-e #'rx)])
           (define-values [imports sources] (expand-import #'spec))
-          (values (filter (lambda (i)
-                            (regexp-match? rx (symbol->string
-                                               (syntax-e (import-local-id i)))))
-                          imports)
-                  sources))]))))
+          (values
+           (filter (lambda (i)
+                     (regexp-match? rx (symbol->string
+                                        (syntax-e (import-local-id i)))))
+                   imports)
+           sources))]))))
 
 (provide subtract-in)
 (define-syntax subtract-in
@@ -75,17 +76,18 @@
                        (let-values ([(dir name dir?) (split-path path)]) dir))]
             [srcdir (if (and (path-string? src) (complete-path? src))
                       (dirname src)
-                      (or (current-load-relative-directory) 
+                      (or (current-load-relative-directory)
                           (current-directory)))])
        (define path (syntax-e #'path-stx))
        (unless (complete-path? srcdir) (error 'path-up "internal error"))
        (parameterize ([current-directory srcdir])
-         (let loop ([dir srcdir] [path (string->path path)])
+         (let loop ([dir srcdir] [path (string->path path)] [pathstr path])
            (if (file-exists? path)
-             (datum->syntax stx (path->string path) stx)
+             (datum->syntax stx pathstr stx)
              (let ([dir (dirname dir)])
                (if dir
-                 (loop dir (build-path 'up path))
+                 (loop dir (build-path 'up path)
+                       (string-append "../" pathstr))
                  (raise-syntax-error 'path-up
                                      "file no found in any parent directory"
                                      stx #'path-stx)))))))]))
