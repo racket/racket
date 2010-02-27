@@ -1185,7 +1185,7 @@ please adhere to these guidelines:
  (module-browser-laying-out-graph-label "Laying out graph")
  (module-browser-open-file-format "Open ~a")
  (module-browser "Module Browser") ;; frame title
- (module-browser... "Module Browser...") ;; menu item title
+ (module-browser... "&Module Browser...") ;; menu item title
  (module-browser-error-expanding "Error expanding the program:\n\n~a")
  (module-browser-show-lib-paths "Show files loaded by (lib ..) paths")
  (module-browser-progress "Module Browser: ~a") ;; prefix in the status line
