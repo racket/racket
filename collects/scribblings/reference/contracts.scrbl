@@ -743,20 +743,28 @@ expression to new contracts that hide the values they accept and
 ensure that the exported functions are treated parametrically.
 }
 
-@defform/subs[
- (with-contract blame-id (wc-export ...) free-var-list body ...+)
+@defform*/subs[
+ (with-contract blame-id (wc-export ...) free-var-list ... body ...+)
+ (with-contract blame-id result-spec free-var-list ... body ...+)
  ([wc-export
    (id contract-expr)]
+  [result-spec
+   (code:line #:result contract-expr)]
   [free-var-list
-   code:blank
    (code:line #:freevars ([id contract-expr] ...))
    (code:line #:freevar id contract-expr)])]{
-Generates a local contract boundary.  The @scheme[contract-expr]
-form cannot appear in expression position.  The @scheme[body] of the
-form allows definition/expression interleaving like a @scheme[module]
-body.  All names defined within the @scheme[with-contract] form are
+Generates a local contract boundary.
+
+The first @scheme[with-contract] form cannot appear in expression position.
+All names defined within the first @scheme[with-contract] form are
 visible externally, but those names listed in the @scheme[wc-export]
-list are protected with the corresponding contract.
+list are protected with the corresponding contract.  The @scheme[body] of
+the form allows definition/expression interleaving if its context does.
+
+The second @scheme[with-contract] form must appear in expression position.
+The result of the final @scheme[body] expression is contracted with
+the contract listed in the @scheme[result-spec].  The sequence of @scheme[body]
+forms is treated as for @scheme[let].
 
 The @scheme[blame-id] is used for the positive positions of
 contracts paired with exported @scheme[id]s.  Contracts broken

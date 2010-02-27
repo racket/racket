@@ -2878,7 +2878,7 @@
 ;                                                                                  
 
   (test/spec-passed
-   'with-contract1
+   'with-contract-def-1
    '(let ()
       (with-contract odd-even
         ([oddp (-> number? boolean?)]
@@ -2890,7 +2890,7 @@
       (oddp 5)))
   
   (test/spec-failed
-   'with-contract2
+   'with-contract-def-2
    '(let ()
       (with-contract odd-even
         ([oddp (-> number? boolean?)]
@@ -2903,7 +2903,7 @@
    "top-level")
   
   (test/spec-failed
-   'with-contract3
+   'with-contract-def-3
    '(let ()
       (with-contract odd-even
         ([oddp (-> number? boolean?)]
@@ -2920,7 +2920,7 @@
   ;; call odd? with a boolean, even though its contract in
   ;; the odd-even contract says it only takes numbers.
   (test/spec-passed
-   'with-contract4
+   'with-contract-def-4
    '(let ()
       (with-contract odd-even
         ([oddp (-> number? boolean?)]
@@ -2935,7 +2935,7 @@
       (oddp 5)))
   
   (test/spec-passed
-   'with-contract5
+   'with-contract-def-5
    '(let ()
       (with-contract region1
         ([x (-> number? number?)])
@@ -2946,7 +2946,7 @@
       (x 4)))
   
   (test/spec-failed
-   'with-contract6
+   'with-contract-def-6
    '(let ()
       (with-contract region1
         ([x (-> number? number?)])
@@ -2958,7 +2958,7 @@
    "(region region1)")
   
   (test/spec-failed
-   'with-contract7
+   'with-contract-def-7
    '(let ()
       (with-contract region1
         ([x (-> number? number?)])
@@ -2970,7 +2970,7 @@
    "(region region1)")
   
   (test/spec-failed
-   'with-contract8
+   'with-contract-def-8
    '(let ()
       (with-contract region1
         ([x (-> number? number?)])
@@ -2983,14 +2983,14 @@
   
   ;; make sure uncontracted exports make it out
   (test/spec-passed
-   'with-contract9
+   'with-contract-def-9
    '(let ()
       (with-contract region1 ()
         (define f 3))
       f))
   
   (test/spec-failed
-   'with-contract10
+   'with-contract-def-10
    '(let ()
       (with-contract r
         ([x number?])
@@ -3001,13 +3001,49 @@
    "(region r)")
   
   (test/spec-failed
-   'with-contract11
+   'with-contract-def-11
    '(let ()
       (with-contract r
         ([x number?])
         (define x 3))
       (set! x #f)
       x)
+   "top-level")
+  
+  (test/spec-passed
+   'with-contract-exp-1
+   '(with-contract r
+      #:result number?
+      3))
+  
+  (test/spec-failed
+   'with-contract-exp-2
+   '(with-contract r
+      #:result number?
+      "foo")
+   "(region r)")
+  
+  (test/spec-passed
+   'with-contract-exp-3
+   '((with-contract r
+      #:result (-> number? number?)
+      (λ (x) 5))
+     3))
+  
+  (test/spec-failed
+   'with-contract-exp-4
+   '((with-contract r
+      #:result (-> number? number?)
+      (λ (x) (zero? x)))
+     3)
+   "(region r)")
+  
+  (test/spec-failed
+   'with-contract-exp-5
+   '((with-contract r
+      #:result (-> number? number?)
+      (λ (x) 5))
+     #t)
    "top-level")
 
 ;                                                                                                                         

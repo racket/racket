@@ -9,8 +9,11 @@
                      scheme/struct-info
                      syntax/define
                      syntax/kerncase
+                     syntax/parse
+                     unstable/syntax
                      (prefix-in a: "private/helpers.ss"))
          scheme/splicing
+         scheme/stxparam
          "private/arrow.ss"
          "private/base.ss"
          "private/guts.ss")
@@ -87,7 +90,7 @@
                        [body-expr body-expr]
                        [type (if (identifier? #'name+arg-list) 'definition 'function)])
            (syntax/loc define-stx
-             (with-contract #:type type name
+             (with-contract #:region type name
                ([name contract])
                #:freevars args
                (define name body-expr))))))]
@@ -337,7 +340,7 @@
                    (values super-fields ... non-auto-name ...))
                  (define blame-id
                    (current-contract-region))
-                 (with-contract #:type struct struct-name
+                 (with-contract #:region struct struct-name
                                 ctc-bindings
                                 (define-struct/derived orig name (field ...)
                                   kwds ...
@@ -404,28 +407,6 @@
                     (quote #,id)
                     (quote-syntax #,id)))]))))
 
-(define-for-syntax (check-and-split-with-contracts args)
-  (let loop ([args args]
-             [protected null]
-             [protections null])
-    (cond
-      [(null? args)
-       (values protected protections)]
-      [(let ([lst (syntax->list (car args))])
-         (and (list? lst)
-              (= (length lst) 2)
-              (identifier? (first lst))
-              lst))
-       =>
-       (lambda (l)
-         (loop (cdr args)
-               (cons (first l) protected)
-               (cons (second l) protections)))]
-      [else
-       (raise-syntax-error 'with-contract
-                           "expected (identifier contract)"
-                           (car args))])))
-
 (define-syntax (with-contract-helper stx)
   (syntax-case stx ()
     [(_ ())
@@ -467,39 +448,110 @@
                    (with-contract-helper (p ...) body ...)))]))]))
 
 (define-syntax (with-contract stx)
-  (when (eq? (syntax-local-context) 'expression)
-    (raise-syntax-error 'with-contract
-                        "used in expression context"
-                        stx))
-  (syntax-case stx ()
-    [(_ #:type type etc ...)
-     (not (identifier? #'type))
-     (raise-syntax-error 'with-contract
-                         "expected identifier for type"
-                         #'type)]
-    [(_ #:type type args etc ...)
-     (not (identifier? #'args))
-     (raise-syntax-error 'with-contract
-                         "expected identifier for blame"
-                         #'args)]
-    [(_ #:type type blame (arg ...) #:freevars (fv ...) #:freevar x c . body)
-     (identifier? #'x)
-     (syntax/loc stx
-       (with-contract #:type type blame (arg ...) #:freevars (fv ... [x c]) . body))]
-    [(_ #:type type blame (arg ...) #:freevars (fv ...) #:freevar x c . body)
-     (raise-syntax-error 'with-contract
-                         "use of #:freevar with non-identifier"
-                         #'x)]
-    [(_ #:type type blame (arg ...) #:freevars (fv ...) . body)
-     (and (identifier? #'blame)
-          (identifier? #'type))
+  (define-splicing-syntax-class region-clause
+    #:description "contract region type"
+    [pattern (~seq #:region region:id)])
+  (define-splicing-syntax-class fv-clause
+    #:description "a free variable clause"
+    #:attributes ([var 1] [ctc 1])
+    [pattern (~seq #:freevars ([var:id ctc:expr] ...))]
+    [pattern (~seq #:freevar v:id c:expr)
+             #:with (var ...) (list #'v)
+             #:with (ctc ...) (list #'c)])
+  (define-splicing-syntax-class fvs
+    #:description "a sequence of free variable clauses"
+    #:attributes ([var 1] [ctc 1])
+    [pattern (~seq f:fv-clause ...)
+             #:with (var ...) #'(f.var ... ...)
+             #:with (ctc ...) #'(f.ctc ... ...)
+             #:fail-when (check-duplicate-identifier (syntax->list #'(var ...)))
+             (format "duplicate imported name ~a" 
+                     (syntax-e (check-duplicate-identifier (syntax->list #'(var ...)))))])
+  (define-syntax-class export-clause
+    #:description "a name/contract pair"
+    [pattern (var:id ctc:expr)])
+  (define-syntax-class exports-clause
+    #:attributes ([var 1] [ctc 1])
+    #:description "a sequence of name/contract pairs"
+    [pattern (ec:export-clause ...)
+             #:with (var ...) #'(ec.var ...)
+             #:with (ctc ...) #'(ec.ctc ...)
+             #:fail-when (check-duplicate-identifier (syntax->list #'(var ...)))
+             (format "duplicate exported name ~a" 
+                     (syntax-e (check-duplicate-identifier (syntax->list #'(var ...)))))])
+  (define-splicing-syntax-class result-clause
+    #:description "a results clause"
+    [pattern (~seq #:result ctc:expr)])
+  (syntax-parse stx
+    [(_ (~optional :region-clause #:defaults ([region #'region])) blame:id rc:result-clause fv:fvs . body)
+     (if (not (eq? (syntax-local-context) 'expression))
+         (quasisyntax/loc stx (#%expression #,stx))
+         (let*-values ([(intdef) (syntax-local-make-definition-context)]
+                       [(ctx) (list (gensym 'intdef))]
+                       [(cid-marker) (make-syntax-introducer)]
+                       [(free-vars free-ctcs)
+                        (values (syntax->list #'(fv.var ...))
+                                (syntax->list #'(fv.ctc ...)))])
+           (define (add-context stx)
+             (let ([ctx-added-stx (local-expand #`(quote #,stx)
+                                                ctx
+                                                (list #'quote)
+                                                intdef)])
+               (syntax-case ctx-added-stx ()
+                 [(_ expr) #'expr])))
+           (syntax-local-bind-syntaxes free-vars #f intdef)
+           (internal-definition-context-seal intdef)
+           (with-syntax ([blame-stx #''(region blame)]
+                         [blame-id (generate-temporary)]
+                         [(free-var ...) free-vars]
+                         [(free-var-id ...) (add-context #`#,free-vars)]
+                         [(free-ctc-id ...) (map cid-marker free-vars)]
+                         [(free-ctc ...) (map (λ (c v)
+                                                (syntax-property c 'inferred-name v))
+                                              free-ctcs
+                                              free-vars)])
+             (with-syntax ([new-stx (add-context #'(syntax-parameterize 
+                                                    ([current-contract-region (λ (stx) #'blame-stx)])
+                                                    (contract (verify-contract 'with-contract rc.ctc)
+                                                              (let () . body)
+                                                              blame-stx
+                                                              blame-id)))])
+               (quasisyntax/loc stx
+                 (let ()
+                   (define-values (free-ctc-id ...)
+                     (values (verify-contract 'with-contract free-ctc) ...))
+                   (define blame-id
+                     (current-contract-region))
+                   (define-values ()
+                     (begin (contract free-ctc-id
+                                      free-var
+                                      blame-id
+                                      'cant-happen
+                                      (quote free-var)
+                                      (quote-syntax free-var))
+                            ...
+                            (values)))
+                   (define-syntaxes (free-var-id ...)
+                     (values (make-contracted-id-transformer
+                              (quote-syntax free-var)
+                              (quote-syntax free-ctc-id)
+                              (quote-syntax blame-id)
+                              (quote-syntax blame-stx)) ...))
+                   new-stx))))))]
+    [(_ (~optional :region-clause #:defaults ([region #'region])) blame:id ec:exports-clause fv:fvs . body)
+     (when (memq (syntax-local-context) '(expression module-begin))
+       (raise-syntax-error 'with-contract
+                           "not used in definition context"
+                           stx))
      (let*-values ([(intdef) (syntax-local-make-definition-context)]
                    [(ctx) (list (gensym 'intdef))]
                    [(cid-marker) (make-syntax-introducer)]
                    [(free-vars free-ctcs)
-                    (check-and-split-with-contracts (syntax->list #'(fv ...)))]
+                    (values (syntax->list #'(fv.var ...))
+                            (syntax->list #'(fv.ctc ...)))]
                    [(protected protections)
-                    (check-and-split-with-contracts (syntax->list #'(arg ...)))])
+                    (values (syntax->list #'(ec.var ...))
+                            (syntax->list #'(ec.ctc ...)))])
        (define (add-context stx)
          (let ([ctx-added-stx (local-expand #`(quote #,stx)
                                             ctx
@@ -507,20 +559,11 @@
                                             intdef)])
            (syntax-case ctx-added-stx ()
              [(_ expr) #'expr])))
-       (when (eq? (syntax-local-context) 'expression)
-         (raise-syntax-error 'with-contract
-                             "cannot use in an expression context"
-                             stx))
-       (let ([dupd-id (check-duplicate-identifier protected)])
-         (when dupd-id
-           (raise-syntax-error 'with-contract
-                               "identifier appears twice in exports"
-                               dupd-id)))
        (syntax-local-bind-syntaxes protected #f intdef)
        (syntax-local-bind-syntaxes free-vars #f intdef)
        (internal-definition-context-seal intdef)
-       (with-syntax ([blame-stx #''(type blame)]
-                     [blame-id (car (generate-temporaries (list #t)))]
+       (with-syntax ([blame-stx #''(region blame)]
+                     [blame-id (generate-temporary)]
                      [(free-var ...) free-vars]
                      [(free-var-id ...) (add-context #`#,free-vars)]
                      [(free-ctc-id ...) (map cid-marker free-vars)]
@@ -539,58 +582,41 @@
                                                 ([current-contract-region (λ (stx) #'blame-stx)])
                                                 . body))])
            (quasisyntax/loc stx
-           (begin
-             (define-values (free-ctc-id ...)
-               (values (verify-contract 'with-contract free-ctc) ...))
-             (define blame-id
-               (current-contract-region))
-             (define-values ()
-               (begin (contract free-ctc-id
-                                free-var
-                                blame-id
-                                'cant-happen
-                                (quote free-var)
-                                (quote-syntax free-var))
-                      ...
-                      (values)))
-             (define-syntaxes (free-var-id ...)
-               (values (make-contracted-id-transformer
-                        (quote-syntax free-var)
-                        (quote-syntax free-ctc-id)
-                        (quote-syntax blame-id)
-                        (quote-syntax blame-stx)) ...))
-             (with-contract-helper (marked-p ...) new-stx)
-             (define-values (ctc-id ...)
-               (values (verify-contract 'with-contract ctc) ...))
-             (define-values ()
-               (begin (contract ctc-id
-                                marked-p
-                                blame-stx
-                                'cant-happen
-                                (quote marked-p)
-                                (quote-syntax marked-p))
-                      ...
-                      (values)))
-             (define-syntaxes (p ...)
-               (values (make-contracted-id-transformer
-                        (quote-syntax marked-p)
-                        (quote-syntax ctc-id)
-                        (quote-syntax blame-stx)
-                        (quote-syntax blame-id)) ...)))))))]
-    [(_ #:type type blame (arg ...) #:freevar x c . body)
-     (syntax/loc stx
-       (with-contract #:type type blame (arg ...) #:freevars ([x c]) . body))]
-    [(_ #:type type blame (arg ...) . body)
-     (syntax/loc stx
-       (with-contract #:type type blame (arg ...) #:freevars () . body))]
-    [(_ #:type type blame bad-args etc ...)
-     (raise-syntax-error 'with-contract
-                         "expected list of identifier and/or (identifier contract)"
-                         #'bad-args)]
-    [(_ #:type type blame)
-     (raise-syntax-error 'with-contract
-                         "only blame"
-                         stx)]
-    [(_ etc ...)
-     (syntax/loc stx
-       (with-contract #:type region etc ...))]))
+             (begin
+               (define-values (free-ctc-id ...)
+                 (values (verify-contract 'with-contract free-ctc) ...))
+               (define blame-id
+                 (current-contract-region))
+               (define-values ()
+                 (begin (contract free-ctc-id
+                                  free-var
+                                  blame-id
+                                  'cant-happen
+                                  (quote free-var)
+                                  (quote-syntax free-var))
+                        ...
+                        (values)))
+               (define-syntaxes (free-var-id ...)
+                 (values (make-contracted-id-transformer
+                          (quote-syntax free-var)
+                          (quote-syntax free-ctc-id)
+                          (quote-syntax blame-id)
+                          (quote-syntax blame-stx)) ...))
+               (with-contract-helper (marked-p ...) new-stx)
+               (define-values (ctc-id ...)
+                 (values (verify-contract 'with-contract ctc) ...))
+               (define-values ()
+                 (begin (contract ctc-id
+                                  marked-p
+                                  blame-stx
+                                  'cant-happen
+                                  (quote marked-p)
+                                  (quote-syntax marked-p))
+                        ...
+                        (values)))
+               (define-syntaxes (p ...)
+                 (values (make-contracted-id-transformer
+                          (quote-syntax marked-p)
+                          (quote-syntax ctc-id)
+                          (quote-syntax blame-stx)
+                          (quote-syntax blame-id)) ...)))))))]))
