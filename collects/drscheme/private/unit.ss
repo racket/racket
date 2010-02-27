@@ -3247,7 +3247,7 @@ module browser threading seems wrong.
                  [lang (drscheme:language-configuration:language-settings-language lang/config)]
                  [strs (send lang get-language-position)]
                  [can-browse?
-                  (or (regexp-match #rx"Module" (last strs))
+                  (or (is-a? lang drscheme:module-language:module-language<%>)
                       (ormap (λ (x) (regexp-match #rx"PLT" x))
                              strs))])
             (unless can-browse?
