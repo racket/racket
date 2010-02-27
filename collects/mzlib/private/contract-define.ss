@@ -5,7 +5,7 @@
 (require (for-syntax scheme/base
                      unstable/srcloc
                      (prefix-in a: scheme/contract/private/helpers))
-         (only-in scheme/contract contract))
+         (only-in scheme/contract/private/base contract))
 
 ;; First, we have the old define/contract implementation, which
 ;; is still used in mzlib/contract.

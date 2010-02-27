@@ -1,7 +1,7 @@
 
 (module unit scheme/base
   (require mzlib/unit
-           scheme/contract
+           scheme/contract/base
            (for-syntax scheme/base
                        syntax/struct))
   (provide (except-out (all-from-out mzlib/unit)

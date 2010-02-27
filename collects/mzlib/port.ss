@@ -2,7 +2,7 @@
 
 (require (for-syntax scheme/base)
          mzlib/etc
-         scheme/contract
+         scheme/contract/base
          mzlib/list
          "private/port.ss")
 
