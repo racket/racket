@@ -380,8 +380,7 @@
        (syntax-case stx (set!)
          [(set! i arg)
           (quasisyntax/loc stx
-            (set! #,id
-                  (contract ctc arg neg pos (quote id) (quote-syntax id))))]
+            (set! id (contract ctc arg neg pos (quote id) (quote-syntax id))))]
          [(f arg ...)
           (quasisyntax/loc stx
             ((contract ctc id pos neg (quote id) (quote-syntax id))
