@@ -806,7 +806,7 @@ Using this form in conjunction with trait operators such as
 @; Set up uses of contract forms below
 @(class-eval '(require scheme/contract))
 
-@section{Contracts}
+@section{Class Contracts}
 
 As classes are values, they can flow across contract boundaries, and we
 may wish to protect parts of a given class with contracts.  For this,
@@ -877,6 +877,119 @@ on both @scheme[size] and @scheme[eat] are enforced:
 (send bob eat rock)
 (define giant (new (class object% (super-new) (field [size 'large]))))
 (send bob eat giant)]
+
+There are two important caveats for these contracts, which we will
+call @deftech{external class contracts}.  First, external method contracts
+are only enforced when the target of dynamic dispatch is the method
+implementation of the contracted class, which lies within the contract
+boundary.  Overriding that implementation, and thus changing the target
+of dynamic dispatch, will mean that the contract is no longer enforced
+for clients, since accessing the method no longer crosses the contract
+boundary.  Unlike external method contracts, external field contracts
+are always enforced for clients of subclasses, since fields cannot be
+overridden or shadowed.
+
+Second, these contracts do not restrict subclasses of @scheme[animal%]
+in any way.  Fields and methods that are inherited and used by subclasses
+are not checked by these contracts, and uses of the superclass's methods
+via @scheme[super] are also unchecked.  The following example illustrates
+both caveats:
+
+@def+int[
+#:eval class-eval
+(define large-animal%
+  (class animal%
+    (super-new)
+    (inherit-field size)
+    (set! size 'large)
+    (define/override (eat food)
+      (display "Nom nom nom") (newline))))
+(define elephant (new large-animal%))
+(send elephant eat (new object%))
+(get-field size elephant)]
+
+Notice that retrieving the @scheme[size] field from the object
+@scheme[elephant] blames @scheme[animal%] for the contract violation.
+This blame is correct, but unfair to the @scheme[animal%] class,
+as we have not yet provided it with a method for protecting itself from
+subclasses.  To this end we add @deftech{internal class contracts}, which
+provide directives to subclasses for how they may access and override
+features of the superclass.  We separate external and internal class
+contracts to allow for weaker contracts within the class hierarchy, where
+invariants may be broken internally by subclasses but should be enforced
+for external uses via instantiated objects.
+
+As a simple example of what kinds of protection are available, we provide
+an example aimed at the @scheme[animal%] class that uses all the applicable
+forms:
+
+@schemeblock[
+(class/c (field [size positive/c])
+         (inherit-field [size positive/c])
+         [eat (->m edible/c void?)]
+         (inherit [eat (->m edible/c void?)])
+         (super [eat (->m edible/c void?)])
+         (override [eat (->m edible/c void?)]))]
+
+This class contract not only ensures that objects of class @scheme[animal%]
+are protected as before, but also ensure that subclasses of @scheme[animal%]
+only store appropriate values within the @scheme[size] field and use
+the implementation of @scheme[size] from @scheme[animal%] appropriately.
+These contract forms only affect uses within the class hierarchy, so the
+@scheme[override] form does not automatically enter subclasses into
+obligations when objects of those classes are used.  Instead, such contracts
+are only checked when uses of the method within the superclass dynamically
+dispatch to the subclass's implementation.  The following example shows
+this difference:
+
+@schemeblock[
+(define/contract glutton%
+  (class/c (override [eat (->m edible/c void?)]))
+  (class animal%
+    (super-new)
+    (inherit eat)
+    (define (gulp food-list)
+      (for ([f food-list])
+        (eat f)))))
+(define sloppy-eater%
+  (class glutton%
+    (super-new)
+    (define/override (eat f)
+      (let ([food-size (get-field size f)])
+        (set! size (/ food-size 2))
+        (set-field! size f (/ food-size 2))
+        f))))]
+
+@interaction-eval[
+#:eval class-eval
+(begin
+  (define/contract glutton%
+    (class/c (override [eat (->m edible/c void?)]))
+    (class animal%
+      (super-new)
+      (inherit eat)
+      (define/public (gulp food-list)
+        (for ([f food-list])
+          (eat f)))))
+  (define sloppy-eater%
+    (class glutton%
+      (super-new)
+      (inherit-field size)
+      (define/override (eat f)
+        (let ([food-size (get-field size f)])
+          (set! size (/ food-size 2))
+          (set-field! size f (/ food-size 2))
+          f)))))]
+
+@interaction[
+#:eval class-eval
+(define pig (new sloppy-eater%))
+(define slop1 (new animal%))
+(define slop2 (new animal%))
+(define slop3 (new animal%))
+(send pig eat slop1)
+(get-field size slop1)
+(send pig gulp (list slop1 slop2 slop3))]
 
 @; ----------------------------------------------------------------------
 
