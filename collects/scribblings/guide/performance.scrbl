@@ -20,7 +20,7 @@ and memory performance of Scheme code.
 
 @; ----------------------------------------------------------------------
 
-@section{The Bytecode and Just-in-Time (JIT) Compilers}
+@section[#:tag "JIT"]{The Bytecode and Just-in-Time (JIT) Compilers}
 
 Every definition or expression to be evaluated by Scheme is compiled
 to an internal bytecode format. In interactive mode, this compilation
@@ -264,6 +264,9 @@ the generational garbage collector (described later in
 reasonably cheap. Fixnums, in contrast are never boxed, so they are
 typically cheap to use.
 
+@margin-note{See @secref["effective-futures"] for an example use of
+@tech{flonum}-specific operations.}
+
 The @schememodname[scheme/flonum] library provides flonum-specific
 operations, and combinations of flonum operations allow the @tech{JIT}
 compiler to generate code that avoids boxing and unboxing intermediate
@@ -361,3 +364,7 @@ then the expansion of the @scheme[let] form to implement
 @scheme[m-loop] involves a closure over @scheme[n], but the compiler
 automatically converts the closure to pass itself @scheme[n] as an
 argument instead.
+
+@; ----------------------------------------------------------------------
+
+@include-section["futures.scrbl"]

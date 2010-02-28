@@ -678,7 +678,8 @@ escape-continuation aborts can cross continuation barriers.
 Scheme supports multiple @deftech{threads} of evaluation.  Threads run
 concurrently, in the sense that one thread can preempt another without
 its cooperation, but threads currently all run on the same processor
-(i.e., the same underlying OS process and thread).
+(i.e., the same underlying OS process and thread). See also
+@secref["futures"].
 
 Threads are created explicitly by functions such as @scheme[thread]. 
 In terms of the evaluation model, each step in evaluation actually consists of multiple concurrent

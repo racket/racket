@@ -4,7 +4,7 @@
 @title[#:tag "threads"]{Threads}
 
 See @secref["thread-model"] for basic information on the PLT Scheme
-thread model.
+thread model. See also @secref["futures"].
 
 When a thread is created, it is placed into the management of the
 @tech{current custodian} and added to the current thread group (see
