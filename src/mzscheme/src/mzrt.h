@@ -184,7 +184,7 @@ static MZ_INLINE void mzrt_ensure_max_cas(unsigned long *atomic_val, unsigned lo
   while(!set) {
     unsigned long old_val = *atomic_val;
     if (len > old_val) {
-      set = !mzrt_cas(atomic_val, old_val, len);
+      set = !mzrt_cas((size_t *)atomic_val, old_val, len);
     }
     else {
       set = 1;

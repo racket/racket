@@ -105,7 +105,7 @@ typedef long objhead;
 
 typedef struct Thread_Local_Variables {
   void **GC_variable_stack_;
-  struct NewGC *GC_;
+  struct NewGC *GC_instance_;
   unsigned long GC_gen0_alloc_page_ptr_;
   unsigned long GC_gen0_alloc_page_end_;
   void *bignum_cache_[BIGNUM_CACHE_SIZE];
@@ -387,7 +387,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #endif
 
 #define GC_objhead_template XOA (scheme_get_thread_local_variables()->GC_objhead_template_)
-#define GC XOA (scheme_get_thread_local_variables()->GC_)
+#define GC_instance XOA (scheme_get_thread_local_variables()->GC_instance_)
 #define GC_gen0_alloc_page_ptr XOA (scheme_get_thread_local_variables()->GC_gen0_alloc_page_ptr_)
 #define GC_gen0_alloc_page_end XOA (scheme_get_thread_local_variables()->GC_gen0_alloc_page_end_)
 #define GC_variable_stack XOA (scheme_get_thread_local_variables()->GC_variable_stack_)

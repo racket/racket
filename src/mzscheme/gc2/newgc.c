@@ -136,8 +136,8 @@ static void marking_rmp_debug(NewGC *gc, void *info);
 
 THREAD_LOCAL_DECL(static NewGC *GC);
 #define GCTYPE NewGC
-#define GC_get_GC() (GC)
-#define GC_set_GC(gc) (GC = gc)
+#define GC_get_GC() (GC_instance)
+#define GC_set_GC(gc) (GC_instance = gc)
 
 
 #include "msgprint.c"
@@ -3186,7 +3186,7 @@ static void repair_heap(NewGC *gc)
 static inline void gen1_free_mpage(PageMap pagemap, mpage *page) {
   pagemap_remove(pagemap, page);
   free_backtrace(page);
-  free_pages(GC, page->addr, real_page_size(page));
+  free_pages(GC_instance, page->addr, real_page_size(page));
   free_mpage(page);
 }
 

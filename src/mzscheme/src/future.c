@@ -385,7 +385,7 @@ static void init_future_thread(Scheme_Future_State *fs, int i)
   memset(fts, 0, sizeof(Scheme_Future_Thread_State));
   fts->id = i;
 
-  params.shared_GC = GC;
+  params.shared_GC = GC_instance;
   params.fts = fts;
   params.fs = fs;
 
@@ -776,7 +776,7 @@ void *worker_thread_future_loop(void *arg)
   scheme_future_state = fs;
   scheme_future_thread_state = fts;
 
-  GC = params->shared_GC;
+  GC_instance = params->shared_GC;
   scheme_current_thread = params->thread_skeleton;
 
   //Set processor affinity
