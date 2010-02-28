@@ -5879,7 +5879,7 @@ case $OS in
       alpha)
        EXTRA_GMP_OBJ="gmp_alpha_gcc.o"
        ;;
-      i386,i486,i586,i686)
+      i386|i486|i586|i686)
        enable_futures_by_default=yes
        ;;
       *)
