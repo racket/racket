@@ -344,7 +344,7 @@ mz-manuals := (scribblings: "main/") ; generates main pages (next line)
               (notes: "COPYING.LIB" "COPYING-libscheme.txt")
               (doc: "doc-license.txt") ; needed (when docs are included)
               (doc+src: "reference/" "guide/" "quick/" "more/"
-                        "foreign/" "inside/" "futures/" "places/"
+                        "foreign/" "inside/" "places/"
                         "honu/")
               (doc: "*.{html|css|js|sxref}")
               (scribblings: "{{info|icons}.ss|*.png}" "compiled")
